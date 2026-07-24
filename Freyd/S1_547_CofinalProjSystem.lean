@@ -807,14 +807,6 @@ def WSCover.base (_ : WSCover S) : @WSList S _ _ :=
 
 theorem WSCover.base_chain (W : WSCover S) : (W.base).1 = ([] : List (Tok S)) := rfl
 
-/-- The projections of `cofinalProjSystem` are covers — re-exposed under a `WSCover` (whose `dec`
-    supplies the positional object equality).  This is the `hpc` premise the §1.547 successor's
-    `ratCapPreRegular_of_projCover` consumes. -/
-theorem WSCover.projSystem_cover [DecidableEq S] {i j : @WSList S _ _}
-    (h : (wsDirected S).le i j) :
-    Cover ((cofinalProjSystem (S := S)).proj h) :=
-  cofinalProjSystem_cover h
-
 end Cover2
 
 /-- **THE COFINAL INHABITANT.**  For every bundled pre-regular `S` there IS a `WSCover S.carrier`:

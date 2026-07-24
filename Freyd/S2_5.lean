@@ -171,23 +171,8 @@ def congSetoid {a b : 𝒜} : Setoid (a ⟶ b) where
   r := C.rel
   iseqv := ⟨C.refl, C.symm, C.trans⟩
 
-/-- Quotient composition is well-defined on congruence classes (§2.5):
-    if R ≡ R' and S ≡ S' then RS ≡ R'S'. -/
-theorem quotient_comp_wellDefined {a b c : 𝒜} {R R' : a ⟶ b} {S S' : b ⟶ c}
-    (hR : C.rel R R') (hS : C.rel S S') : C.rel (R ≫ S) (R' ≫ S') :=
-  C.comp_congr hR hS
-
-/-- Quotient reciprocal is well-defined on congruence classes (§2.5):
-    if R ≡ R' then R° ≡ R'°. -/
-theorem quotient_recip_wellDefined {a b : 𝒜} {R R' : a ⟶ b}
-    (hR : C.rel R R') : C.rel (R°) (R'°) :=
-  C.recip_congr hR
-
-/-- Quotient intersection is well-defined on congruence classes (§2.5):
-    if R ≡ R' and S ≡ S' then R∩S ≡ R'∩S'. -/
-theorem quotient_inter_wellDefined {a b : 𝒜} {R R' S S' : a ⟶ b}
-    (hR : C.rel R R') (hS : C.rel S S') : C.rel (R ∩ S) (R' ∩ S') :=
-  C.inter_congr hR hS
+-- Well-definedness of `≫`, `°` and `∩` on congruence classes (§2.5) IS the `Congruence` structure's
+-- `comp_congr` / `recip_congr` / `inter_congr`; the quotient instances below use those fields.
 
 end QuotientConstruction
 
@@ -772,14 +757,14 @@ def QuotAllegory (𝒜 : Type u) [Allegory 𝒜] (_C : Congruence 𝒜) : Type u
 /-! ## §2.5  Category structure: hom-classes under congruence -/
 
 /-- §2.5  `Cat (𝒜/C)`: `Hom a b = Quotient (congSetoid C)`, identity `[1]`,
-    composition the lift of `≫` (well-defined by `quotient_comp_wellDefined`). -/
+    composition the lift of `≫` (well-defined by `C.comp_congr`). -/
 instance QuotAllegory.instCat {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
     Cat (QuotAllegory 𝒜 C) where
   Hom a b := Quotient (congSetoid C (a := a) (b := b))
   id a := Quotient.mk (congSetoid C) (@Cat.id 𝒜 _ a)
   comp {a b c} := Quotient.lift₂
     (fun R S => Quotient.mk (congSetoid C) (R ≫ S))
-    (fun _ _ _ _ hR hS => Quotient.sound (quotient_comp_wellDefined C hR hS))
+    (fun _ _ _ _ hR hS => Quotient.sound (C.comp_congr hR hS))
   id_comp := by
     intro a b f
     refine Quotient.inductionOn f (fun R => ?_)
@@ -796,16 +781,16 @@ instance QuotAllegory.instCat {𝒜 : Type u} [Allegory 𝒜] (C : Congruence �
 /-! ## §2.5  Allegory structure: reciprocation and intersection on classes -/
 
 /-- §2.5  `Allegory (𝒜/C)`: `[R]° = [R°]`, `[R] ∩ [S] = [R ∩ S]` (well-defined
-    by `quotient_recip/inter_wellDefined`).  Every allegory axiom is the lift of
+    by `C.recip_congr` / `C.inter_congr`).  Every allegory axiom is the lift of
     `𝒜`'s — proved by inducting on the class representatives down to `𝒜`'s law. -/
 instance QuotAllegory.instAllegory {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
     Allegory (QuotAllegory 𝒜 C) where
   recip {a b} := Quotient.lift
     (fun R => Quotient.mk (congSetoid C) (R°))
-    (fun _ _ hR => Quotient.sound (quotient_recip_wellDefined C hR))
+    (fun _ _ hR => Quotient.sound (C.recip_congr hR))
   inter {a b} := Quotient.lift₂
     (fun R S => Quotient.mk (congSetoid C) (R ∩ S))
-    (fun _ _ _ _ hR hS => Quotient.sound (quotient_inter_wellDefined C hR hS))
+    (fun _ _ _ _ hR hS => Quotient.sound (C.inter_congr hR hS))
   recip_recip := by
     intro a b R
     refine Quotient.inductionOn R (fun r => ?_)

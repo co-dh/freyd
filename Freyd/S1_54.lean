@@ -125,10 +125,9 @@ def IsRelativeCapitalization [HasTerminal 𝒞] [HasImages 𝒞] : Prop :=
 
   Below, `capitalization_lemma` is the small case (object universe = morphism
   universe `u`, as is forced by the `CatSystem` colimit machinery and matches
-  Freyd's "small" hypothesis); it is `capitalization_lemma_small`, hence reduced
-  to `capData_exists`. -/
+  Freyd's "small" hypothesis), reduced to `capData_exists`. -/
 
--- `capitalization_lemma` (= `capitalization_lemma_small`) is RELOCATED to `Freyd.CapDataWiring`:
+-- `capitalization_lemma` is RELOCATED to `Freyd.CapDataWiring`:
 -- it forwards to `capData_exists`, whose §1.543 discharge wires the §1.547 uniform successor, which
 -- transitively imports this file — so it cannot live upstream here.  See
 -- `Freyd.CapDataWiring.capitalization_lemma`, now PROVEN Sorry-free (axioms

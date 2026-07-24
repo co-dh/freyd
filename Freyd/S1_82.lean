@@ -2244,12 +2244,6 @@ theorem cartesian_iff_finProd_eq (𝒞 : Type u) [Cat.{v} 𝒞] :
     haveI hp : HasBinaryProducts 𝒞 := finiteProducts_implies_binary hfp
     exact ⟨{ toHasTerminal := ht, toHasBinaryProducts := hp, toHasEqualizers := heq }⟩
 
-/-- §1.825 / §1.439 (pullbacks): Given a terminator, CartesianCategory ↔ HasPullbacks.
-    Re-stated here from S1_43 for the §1.825 record. -/
-theorem cartesian_iff_pullbacks_with_terminal (𝒞 : Type u) [Cat.{v} 𝒞] [HasTerminal 𝒞] :
-    Nonempty (CartesianCategory 𝒞) ↔ Nonempty (HasPullbacks 𝒞) :=
-  cartesianCategory_iff_pullbacks
-
 /-- §1.834 GENERAL REPRESENTABILITY THEOREM (Freyd §1.834): for `ℬ` in which idempotents
     split and which is pre-complete, the functor `(A, G(-))` is representable for *every* `A`
     (i.e. `G` is representable in the pointwise sense) iff `G` is *pointwise continuous*

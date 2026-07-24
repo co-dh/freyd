@@ -34,7 +34,7 @@ theorem Tstar_separates (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (g h : X �
   letI : HasEqualizers 𝒞 := products_pullbacks_implies_equalizers
   let e : eqObj g h ⟶ X := eqMap g h
   have he_eq : e ≫ g = e ≫ h := eqMap_eq g h
-  have he_mono : Monic e := eqMap_mono' g h
+  have he_mono : Monic e := eqMap_monic g h
   -- `e` is a PROPER monic: were it iso, `g = h`.
   have he_notiso : ¬ IsIso e := by
     rintro ⟨einv, _, hr⟩

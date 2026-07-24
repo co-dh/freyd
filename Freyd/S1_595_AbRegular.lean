@@ -397,8 +397,8 @@ private noncomputable def em : eqObj f.val g.val ⟶ A.carrier := eqMap f.val g.
 
 /-- The equalizer map is monic in 𝒞.  Kept (not inlined): the statement keeps `em` FOLDED, which the
     downstream `rw [eqAdd_proj, eqZero_em, …]` (stated in terms of `em`) needs — a bare
-    `apply (eqMap_mono' … : Monic (em f g))` re-unfolds the goal to `eqMap`, breaking those rewrites. -/
-private theorem em_mono : Monic (em f g) := eqMap_mono' f.val g.val
+    `apply (eqMap_monic … : Monic (em f g))` re-unfolds the goal to `eqMap`, breaking those rewrites. -/
+private theorem em_mono : Monic (em f g) := eqMap_monic f.val g.val
 
 /-- The equalizer lift. -/
 private noncomputable def eLift {X : 𝒞} (k : X ⟶ A.carrier) (h : k ≫ f.val = k ≫ g.val) :

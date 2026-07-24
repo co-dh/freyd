@@ -200,21 +200,6 @@ theorem cover_from_zero_le [PreLogos 𝒞] {P Q : 𝒞} {Z : 𝒞}
     _ = Cat.id N.dom ≫ N.arr := by rw [hbi2]
     _ = N.arr := Cat.id_comp _
 
-/-- Symmetry of intersection: `S ∩ T ≤ T ∩ S`. -/
-theorem inter_le_swap [PreLogos 𝒞] {A : 𝒞} (S T : Subobject 𝒞 A) :
-    (Subobject.inter S T).le (Subobject.inter T S) := by
-  let pbST := HasPullbacks.has S.arr T.arr
-  let pbTS := HasPullbacks.has T.arr S.arr
-  have hw : pbST.cone.π₂ ≫ T.arr = pbST.cone.π₁ ≫ S.arr := pbST.cone.w.symm
-  let c : Cone T.arr S.arr := ⟨pbST.cone.pt, pbST.cone.π₂, pbST.cone.π₁, hw⟩
-  refine ⟨pbTS.lift c, ?_⟩
-  show pbTS.lift c ≫ (pbTS.cone.π₁ ≫ T.arr) = pbST.cone.π₁ ≫ S.arr
-  have h1 : pbTS.lift c ≫ pbTS.cone.π₁ = pbST.cone.π₂ := pbTS.lift_fst c
-  calc pbTS.lift c ≫ (pbTS.cone.π₁ ≫ T.arr)
-      = (pbTS.lift c ≫ pbTS.cone.π₁) ≫ T.arr := (Cat.assoc _ _ _).symm
-    _ = pbST.cone.π₂ ≫ T.arr := by rw [h1]
-    _ = pbST.cone.π₁ ≫ S.arr := pbST.cone.w.symm
-
 /-- Bridge (⇐): `S.arr# M ≤ 0` implies `S ∩ M ≤ 0`. -/
 theorem inter_le_bottom_of_invImage [PreLogos 𝒞] {A : 𝒞} (S M : Subobject 𝒞 A)
     (h : (InverseImage S.arr M).le (PreLogos.bottom S.dom)) :
@@ -282,7 +267,7 @@ theorem atom_image_disjoint [PreLogos 𝒞] {G A : 𝒞} (hG : IsAtom G)
   let cone_xS : Cone x S.arr := ⟨pb1.cone.pt, pb1.cone.π₁, pb1.cone.π₂ ≫ Npb.cone.π₂, hcone_w⟩
   let j : pb1.cone.pt ⟶ (PreLogos.bottom G).dom := invpb.lift cone_xS ≫ jw
   have hN_le : N.le (PreLogos.bottom (image x).dom) := cover_from_zero_le N pb1.cone.π₂ hcov j
-  exact Subobject.le_trans (inter_le_swap S (image x)) (inter_le_bottom_of_invImage (image x) S hN_le)
+  exact Subobject.le_trans (inter_comm_le S (image x)) (inter_le_bottom_of_invImage (image x) S hN_le)
 
 /-! ## §1.751  Atomically based ⇒ boolean -/
 

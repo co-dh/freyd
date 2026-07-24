@@ -272,6 +272,7 @@ theorem inflation_class_preserves_sat
 theorem inflation_class_reflects_sat
     (Q : QSequence) {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     (T : Functor 𝒜 ℬ)
+    (_hSep : SeparatesObjects T.obj)
     (hEmb : Embedding T)
     (interp   : Q.objects → 𝒜)
     (arrowMap : (a : Q.arrows) → interp (Q.src a) ⟶ interp (Q.tgt a))

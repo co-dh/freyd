@@ -99,8 +99,7 @@ theorem meet_lb_right (a b : L) : meet (meet a b) b = meet a b := by
 theorem le_meet {x a b : L} (h1 : meet x a = x) (h2 : meet x b = x) :
     meet x (meet a b) = x := by rw [meet_assoc, h1, h2]
 
-/-- `a ⩽ a ⊔ b`. -/
-theorem le_join_left (a b : L) : meet a (join a b) = a := meet_absorb a b
+-- `a ⩽ a ⊔ b` IS the absorption law `meet_absorb`, read in the order `x ⩽ y :⇔ x ⊓ y = x`.
 
 /-- `b ⩽ a ⊔ b`. -/
 theorem le_join_right (a b : L) : meet b (join a b) = b := by
@@ -127,7 +126,7 @@ theorem join_le {a b c : L} (ha : meet a c = a) (hb : meet b c = b) :
 /-- The join is MONOTONE: `a ⩽ b → a ⊔ c ⩽ b ⊔ c` — the `mul_mono` field. -/
 theorem join_mono {a b : L} (h : meet a b = a) (c : L) :
     meet (join a c) (join b c) = join a c :=
-  join_le (le_trans h (le_join_left b c)) (le_join_right b c)
+  join_le (le_trans h (meet_absorb b c)) (le_join_right b c)
 
 /-- `0 ⩽ a`: the unit of the l-monoid is the bottom of the lattice.  This is the
     book's "reflexive because 0 ⊂ R". -/
@@ -141,7 +140,7 @@ theorem lmon_modular (R S T : L) :
       = meet (meet (join R S) T) (join (meet R (join T S)) S) := by
   have hX : meet (meet (join R S) T) (meet (join T S) (join R S))
       = meet (join R S) T :=
-    le_meet (le_trans (meet_lb_right (join R S) T) (le_join_left T S))
+    le_meet (le_trans (meet_lb_right (join R S) T) (meet_absorb T S))
       (meet_lb_left (join R S) T)
   have hmod : meet (join T S) (join R S) = join (meet (join T S) R) S :=
     modular (join T S) R S (le_join_right T S)
@@ -187,17 +186,10 @@ section FunctorPreserves
 variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
 variable (F : AllegoryFunctor 𝒜 ℬ)
 
-/-- An allegory functor (§2.154 representation) is MONOTONE: `R ⊑ S` means
-    `R ∩ S = R`, which `map_inter` transports.  (= `Freyd.Alg.AllegoryFunctor.mono`,
-    §2.51, `S2_51.lean` — same statement, kept as a local alias since `F.map_mono`
-    dot-notation is used throughout this section.) -/
-theorem AllegoryFunctor.map_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
-    F.map R ⊑ F.map S := AllegoryFunctor.mono F h
-
 /-- Allegory functors preserve reflexivity (`1 ⊑ R` and `map_id`). -/
 theorem AllegoryFunctor.map_reflexive {a : 𝒜} {R : a ⟶ a} (h : Reflexive R) :
     Reflexive (F.map R) := by
-  have h' : F.map (Cat.id a) ⊑ F.map R := F.map_mono h
+  have h' : F.map (Cat.id a) ⊑ F.map R := F.mono h
   rwa [F.map_id] at h'
 
 /-- Allegory functors preserve symmetry (`R° ⊑ R` and `map_recip`). -/
@@ -205,14 +197,14 @@ theorem AllegoryFunctor.map_symmetric {a : 𝒜} {R : a ⟶ a} (h : Symmetric R)
     Symmetric (F.map R) := by
   show (F.map R)° ⊑ F.map R
   rw [← F.map_recip]
-  exact F.map_mono h
+  exact F.mono h
 
 /-- Allegory functors preserve transitivity (`R ≫ R ⊑ R` and `map_comp`). -/
 theorem AllegoryFunctor.map_transitive {a : 𝒜} {R : a ⟶ a} (h : Transitive R) :
     Transitive (F.map R) := by
   show F.map R ≫ F.map R ⊑ F.map R
   rw [← F.map_comp]
-  exact F.map_mono h
+  exact F.mono h
 
 /-- Allegory functors carry equivalence relations to equivalence relations. -/
 def AllegoryFunctor.mapEquivRel {a : 𝒜} (E : EquivRel a) : EquivRel (F.obj a) :=

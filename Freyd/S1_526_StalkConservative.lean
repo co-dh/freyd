@@ -55,7 +55,7 @@ local instance preLogosEqualizers : HasEqualizers 𝒞 :=
 theorem points_faithful_of_wellPointed {Z W : 𝒞} (hZ : WellPointed Z)
     {a b : Z ⟶ W} (h : ∀ x : one ⟶ Z, x ≫ a = x ≫ b) : a = b := by
   -- Equalizer `E ↣ Z` of `a, b`.
-  have hEm : Monic (eqMap a b) := eqMap_mono' a b
+  have hEm : Monic (eqMap a b) := eqMap_monic a b
   by_cases hiso : IsIso (eqMap a b)
   · -- `E ≅ Z`, so `a = b` via the iso section.
     obtain ⟨e, he₁, he₂⟩ := hiso

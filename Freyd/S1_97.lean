@@ -1138,7 +1138,7 @@ theorem peano_property_of_bicartesian {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞
       -- `inter A' (image ..) ≤ inter U tA'' ≤ inter tA'' U` (monotone + commute).
       have hmono_inter : (Subobject.inter A' (image (A''.arr ≫ t))).le
           (Subobject.inter tA'' U) :=
-        Subobject.le_trans (Subobject.inter_mono hA'U heq) (inter_comm_le U tA'')
+        Subobject.le_trans (inter_mono hA'U heq) (inter_comm_le U tA'')
       -- distribute `inter tA'' U = inter tA'' (aSub ∪ tA') ≤ (tA'' ∩ aSub) ∪ (tA'' ∩ tA')`.
       have hdist : (Subobject.inter tA'' U).le
           (HasSubobjectUnions.union (Subobject.inter tA'' aSub) (Subobject.inter tA'' tA')) := by
@@ -2760,7 +2760,7 @@ theorem free_peano_property_of_bicartesian {𝒞 : Type u} [Cat.{v} 𝒞] [Topos
           (mono_comp'' (prodMap_mono' A A''.monic) hactmono)).1
       have hmono_inter : (Subobject.inter A'
           (image (prodMap A A''.dom α.obj A''.arr ≫ α.act))).le (Subobject.inter actA'' U) :=
-        Subobject.le_trans (Subobject.inter_mono hA'U heq) (inter_comm_le U actA'')
+        Subobject.le_trans (inter_mono hA'U heq) (inter_comm_le U actA'')
       -- distribute `inter actA'' U = inter actA'' (aSub ∪ actA') ≤ (actA''∩aSub) ∪ (actA''∩actA')`.
       have hdist : (Subobject.inter actA'' U).le
           (HasSubobjectUnions.union (Subobject.inter actA'' aSub)

@@ -2402,8 +2402,8 @@ theorem pairLocalisation_faithful_criterion [PullbacksTransferCovers 𝒞] {R X 
   pairs `(fst≫f, snd≫f')` for matching factors — see `pairProd` below; the wide equalizer is the
   reusable kernel. -/
 
--- `eqMap_mono'` (`Monic (eqMap u v)`) now lives in `Freyd.S1_59` (added to master after this file's
--- original); the local copy was deleted to avoid a duplicate declaration.
+-- `eqMap_monic` (`Monic (eqMap u v)`) lives in `Freyd.S1_513_CoveringFamily`; the local copy was
+-- deleted to avoid a duplicate declaration.
 
 /-- A `WideEq` of a list `L` of parallel pairs over `X`: the maximal subobject equalizing all of
     them.  `dom`/`map` is the subobject `w : D ↪ X`; `eq` says `w` equalizes every listed pair;
@@ -2436,7 +2436,7 @@ def wideEqCons [HasEqualizers 𝒞] (X B : 𝒞) (u v : X ⟶ B)
     WideEq X (⟨B, u, v⟩ :: L) where
   dom := tail.dom
   map := tail.map ≫ eqMap u v
-  mono := mono_comp' _ _ tail.mono (eqMap_mono' u v)
+  mono := mono_comp' _ _ tail.mono (eqMap_monic u v)
   eq p hp := by
     rcases List.mem_cons.1 hp with h | h
     · subst h; rw [Cat.assoc, Cat.assoc, eqMap_eq u v]
@@ -3714,7 +3714,7 @@ theorem apexHom_apexInv {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx :
     apexHom x g dx ≫ apexInv x g dx = Cat.id _ := by
   -- cancel mono `eqMap u v`
   have hmono : Monic (eqMap ((pairProjFst Z X).comp g).g ((pairProjSnd Z X).comp x).g) :=
-    eqMap_mono' _ _
+    eqMap_monic _ _
   apply hmono
   rw [Cat.assoc, apexInv_fac, Cat.id_comp]
   -- goal: `apexHom ≫ mProdW = eqMap`.  Cancel mono `pairProdW`.

@@ -239,7 +239,8 @@ theorem cartesian_iff_pullbacks :
       products_pullbacks_implies_equalizers
     exact ⟨⟨hp⟩, ⟨heq⟩⟩
 
-/-- **§1.439** bundled: `Cartesian 𝒞 ↔ HasPullbacks 𝒞` given a terminator. -/
+/-- **§1.439** bundled: `Cartesian 𝒞 ↔ HasPullbacks 𝒞` given a terminator.  Also the §1.825
+    record of the same equivalence. -/
 theorem cartesianCategory_iff_pullbacks :
     Nonempty (CartesianCategory 𝒞) ↔ Nonempty (HasPullbacks 𝒞) := by
   constructor

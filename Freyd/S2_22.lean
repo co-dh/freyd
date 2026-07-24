@@ -1476,12 +1476,6 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-! ## Generic `Sup` helpers (in the base allegory `𝒜`) -/
 
-/-- `Sup` of two propositionally-equal predicates agree. -/
-theorem gcSup_congr {a b : 𝒜} {P Q : (a ⟶ b) → Prop} (h : ∀ T, P T ↔ Q T) :
-    Sup P = Sup Q := by
-  have hPQ : P = Q := funext fun T => propext (h T)
-  rw [hPQ]
-
 /-- If every member of `P` is below `𝟘`, the supremum is `𝟘`. -/
 theorem gcSup_eq_zero {a b : 𝒜} {P : (a ⟶ b) → Prop}
     (h : ∀ T, P T → T ⊑ (𝟘 : a ⟶ b)) : Sup P = (𝟘 : a ⟶ b) :=
@@ -1611,7 +1605,7 @@ theorem globalRecip_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : 
   change (Sup (fun T => ∃ j, T = R i j ≫ S j k))°
        = Sup (fun T' => ∃ j, T' = (S j k)° ≫ (R i j)°)
   rw [recip_Sup]
-  apply gcSup_congr
+  apply Sup_congr
   intro T'
   constructor
   · rintro ⟨W, ⟨j, rfl⟩, rfl⟩
@@ -1862,7 +1856,7 @@ theorem globalInter_Sup_distrib {A B : GlobalObj 𝒜} (R : GlobalMorphism A B)
       = globalSup (fun T => ∃ S, P S ∧ T = globalInter R S) := by
   funext i j
   rw [globalInter_apply, globalSup_apply, globalSup_apply, inter_Sup_distrib]
-  apply gcSup_congr
+  apply Sup_congr
   intro V
   constructor
   · rintro ⟨U, ⟨S, hS, rfl⟩, rfl⟩
