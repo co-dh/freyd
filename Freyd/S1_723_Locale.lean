@@ -62,6 +62,9 @@ variable (F : Frame.{u})
 
 /-! ### Basic order facts -/
 
+/-- Equals are comparable. -/
+theorem le_of_eq {F : Frame.{u}} {a b : F.carrier} (h : a = b) : F.le a b := h ▸ F.le_refl a
+
 /-- `sSup ∅ = bot` (join of empty family = bottom). -/
 theorem sSup_empty : F.sSup (fun _ => False) = F.bot :=
   F.le_antisymm
@@ -729,11 +732,9 @@ def recip (f : OSetHom A B) : OSetHom B A where
     -- meet(meet(B.E j' j, A.E i' i), f.rel i j) ≤ meet(meet(A.E i i', B.E j j'), f.rel i j)
     refine F.le_meet (F.le_meet ?_ ?_) (F.le_trans (F.meet_le_right _ _) (F.le_refl _))
     · exact F.le_trans (F.le_trans (F.meet_le_left _ _) (F.meet_le_right _ _))
-        (le_of_eq (A.symm i' i))
+        (Frame.le_of_eq (A.symm i' i))
     · exact F.le_trans (F.le_trans (F.meet_le_left _ _) (F.meet_le_left _ _))
-        (le_of_eq (B.symm j' j))
-where
-  le_of_eq {a b : F.carrier} (h : a = b) : F.le a b := h ▸ F.le_refl a
+        (Frame.le_of_eq (B.symm j' j))
 
 /-- **Intersection** `f ∩ g : A ⟶ B`: `(f ∩ g) i j = f i j ∧ g i j`.  Bounds/naturality follow
     from those of `f` (taking the left meet projection). -/
@@ -763,10 +764,8 @@ theorem recip_comp (f : OSetHom A B) (g : OSetHom B C) :
      = F.sSup (fun v => ∃ j, v = F.meet (g.rel j k) (f.rel i j))
   apply F.le_antisymm <;>
     refine F.sSup_le _ _ (fun v ⟨j, hv⟩ => ?_) <;> subst hv
-  · exact F.le_trans (le_of_eq (F.meet_comm _ _)) (F.le_sSup _ _ ⟨j, rfl⟩)
-  · exact F.le_trans (le_of_eq (F.meet_comm _ _)) (F.le_sSup _ _ ⟨j, rfl⟩)
-where
-  le_of_eq {a b : F.carrier} (h : a = b) : F.le a b := h ▸ F.le_refl a
+  · exact F.le_trans (Frame.le_of_eq (F.meet_comm _ _)) (F.le_sSup _ _ ⟨j, rfl⟩)
+  · exact F.le_trans (Frame.le_of_eq (F.meet_comm _ _)) (F.le_sSup _ _ ⟨j, rfl⟩)
 
 /-- `(f ∩ g)° = f° ∩ g°`. -/
 theorem recip_inter (f g : OSetHom A B) : recip (inter f g) = inter (recip f) (recip g) := by

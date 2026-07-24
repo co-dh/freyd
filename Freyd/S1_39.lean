@@ -128,9 +128,6 @@ def Skeleton (𝒜 : Type u) [Cat.{v} 𝒜] : Prop :=
 def CoSkeleton (𝒜 : Type u) [Cat.{v} 𝒜] : Prop :=
   ∃ (A' : Type u) (_ : Cat.{v} A'), IsSkeletal A' ∧ EquivalentCategories 𝒜 A'
 
-/-- IDEMPOTENT (§1.28): e: A→A such that e² = e. -/
-def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
-
 /-- SPLIT IDEMPOTENT (§1.281): there exist r: A→B, s: B→A with s≫r = id, r≫s = e. -/
 def SplitIdempotent {A : 𝒞} (e : A ⟶ A) : Prop :=
   Idempotent e ∧ ∃ (B : 𝒞) (r : A ⟶ B) (s : B ⟶ A), s ≫ r = Cat.id B ∧ r ≫ s = e

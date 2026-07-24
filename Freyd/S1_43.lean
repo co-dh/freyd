@@ -342,13 +342,12 @@ end FinProd_equiv
 /-! ## §1.429 Equalizers split idempotents
 
   If a category has equalizers, then every idempotent `e : A → A` splits:
-  the equalizer of `e` and `1_A` gives the splitting.
-  `Idempotent`/`SplitIdempotent` are defined in S1_39; they're re-stated
-  locally here since S1_39 cannot be imported (it has pre-existing errors
-  unrelated to this file). -/
+  the equalizer of `e` and `1_A` gives the splitting.  `SplitIdempotent` (S1_39)
+  cannot be reused here: S1_39 imports THIS file, so importing it back is a cycle.
+  Its unbundled variant is stated locally. -/
 
-/-- IDEMPOTENT: e² = e (S1_39, defined locally to avoid import of broken S1_39). -/
-def Idempotent' {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
+/-- IDEMPOTENT (§1.28): e: A→A such that e² = e. -/
+def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
 
 /-- SPLIT IDEMPOTENT: ∃ B, r : A→B, s : B→A with s≫r = id and r≫s = e. -/
 def SplitIdempotent' {A : 𝒞} (e : A ⟶ A) : Prop :=
@@ -364,7 +363,7 @@ variable [HasEqualizers 𝒞]
   `x ≫ y = e` (exists since `e ≫ e = e ≫ id_A`).  Then
   `(y ≫ x) ≫ y = y ≫ (x ≫ y) = y ≫ e = y ≫ id_A = y`,
   so `y ≫ x = id_B` by equalizer uniqueness (canceling `y` on the right). -/
-theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent' e) :
+theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent e) :
     SplitIdempotent' e := by
   -- Equalizer y : B → A of e and id_A
   let B := eqObj e (Cat.id A)
