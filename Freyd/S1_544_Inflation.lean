@@ -408,16 +408,10 @@ structure Suffix (V U : Infl 𝒞) where
   d : List 𝒞
   eq : V ++ d = U
 
-/-- `appendList d : ∏(s) ⊗ ∏(d)`-style — the underlying base of `s` after appending the list `d`,
-    i.e. the object `s ++ d` of `A′`.  (Object-level; the slice transition uses it below.) -/
-def appendList (d : List 𝒞) (s : Infl 𝒞) : Infl 𝒞 := s ++ d
-
-/-- Appending the empty list is the identity (`s ++ [] = s`). -/
-theorem appendList_nil (s : Infl 𝒞) : appendList [] s = s := List.append_nil s
-
-/-- Appending `d` then `e` is appending `d ++ e` (`(s++d)++e = s++(d++e)`). -/
-theorem appendList_append (d e : List 𝒞) (s : Infl 𝒞) :
-    appendList e (appendList d s) = appendList (d ++ e) s := List.append_assoc s d e
+-- `appendList d s := s ++ d` (a swapped-argument alias of `++`) and its two lemmas used to live
+-- here.  The lemmas were `concat_nil` and `concat_assoc` above with the alias unfolded — same
+-- statements, and literally the same proof terms, `List.append_nil` and `List.append_assoc`.
+-- Nothing referenced any of the three.
 
 /-! ### Whole-suffix concatenation maps `concat*` (generalizing `append*` from `[B]` to a list `d`)
 

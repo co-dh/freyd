@@ -120,7 +120,12 @@ def main : IO Unit := do
           if special.name == general.name then continue
           -- "A is an instance of B" is also what "A was proved from B" looks like; only the pairs
           -- where the proof never mentions B are re-derivations of something already stated.
+          -- BOTH directions matter. `special.usedInProof` catches "A was proved from B"; the
+          -- reverse catches the far commoner shape where the general lemma is proved FROM the
+          -- special one (`all_baseable` from `baseable_omega`, `evalPred` from `evalPred_aux`).
+          -- Rewriting A as a call to B would then be circular, not a de-duplication.
           if special.usedInProof.contains general.name then continue
+          if general.usedInProof.contains special.name then continue
           if special.provedByRfl || general.provedByRfl then continue
           -- Each pair gets its own small budget: one pathological `isDefEq` must not consume the
           -- bucket's, and a timeout is a "no", not a failure of the run.
