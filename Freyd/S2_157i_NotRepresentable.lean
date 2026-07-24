@@ -8,9 +8,9 @@
   `Rel(Set)` — Horn sentences do not axiomatise the representable allegories.
 
   Formalised here:
-  · `AllegoryFunctor.map_le` — an allegory functor preserves the order `⊑` (from
-    `map_inter`, since `⊑` is defined equationally by `R ∩ S = R`); a FAITHFUL one reflects
-    it too (used inline in `desarguesHorn_reflect` via `map_inter` + faithfulness).
+  · monotonicity of an allegory functor (`AllegoryFunctor.mono`, §2.51: preserves `⊑`); a
+    FAITHFUL one reflects it too (used inline in `desarguesHorn_reflect` via `map_inter` +
+    faithfulness).
   · `desarguesHorn_reflect` — the Horn sentence transfers backwards along any faithful
     allegory functor: push the hypothesis inclusion forward, apply the Horn sentence in
     the target, reflect the conclusion inclusion back.
@@ -30,16 +30,9 @@ universe v u u₁ u₂ v₁ v₂
 
 namespace Freyd.Alg
 
-/-! ## Allegory functors preserve and (when faithful) reflect the order `⊑` -/
+/-! ## The Desargues Horn sentence transfers backwards along faithful representations
 
-/-- An allegory functor is MONOTONE: `R ⊑ S → F R ⊑ F S` (from `map_inter`,
-    since `⊑` is defined equationally by `R ∩ S = R`). -/
-theorem AllegoryFunctor.map_le {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-    (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : F.map R ⊑ F.map S := by
-  show F.map R ∩ F.map S = F.map R
-  rw [← F.map_inter, h]
-
-/-! ## The Desargues Horn sentence transfers backwards along faithful representations -/
+  Uses `AllegoryFunctor.mono` (§2.51): an allegory functor preserves the order `⊑`. -/
 
 /-- **Horn reflection**: if `F : 𝒜 → ℬ` is a faithful allegory functor and `ℬ` satisfies
     the Desargues Horn sentence, so does `𝒜`.  Both sides of each inclusion are built from
@@ -52,7 +45,7 @@ theorem desarguesHorn_reflect {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v�
   refine hF _ _ ?_
   rw [F.map_inter]
   have hpush : (F.map A₁ ≫ F.map A₂) ∩ (F.map B₁ ≫ F.map B₂) ⊑ F.map C₁ ≫ F.map C₂ := by
-    have := F.map_le hyp
+    have := F.mono hyp
     rwa [F.map_inter, F.map_comp, F.map_comp, F.map_comp] at this
   have hconc := horn (F.obj p) (F.obj q) (F.obj a) (F.obj b) (F.obj c)
     (F.map A₁) (F.map A₂) (F.map B₁) (F.map B₂) (F.map C₁) (F.map C₂) hpush
