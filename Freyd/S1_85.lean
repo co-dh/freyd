@@ -1439,11 +1439,7 @@ theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
     {B₂ B₃ : 𝒜} (hB₂ : Baseable B₂) (hB₃ : Baseable B₃) (f g : B₂ ⟶ B₃) :
     Baseable (eqObj f g) := by
   -- E := eqObj f g, with q₀ := eqMap f g : E → B₂ monic, q₀≫f = q₀≫g.
-  -- `eqMap f g` is monic (one-liner from eqLift uniqueness; no HasImages needed).
-  have hq₀mono : Monic (eqMap f g) := by
-    intro W u v huv
-    rw [eqLift_uniq f g (u ≫ eqMap f g) (by rw [Cat.assoc, Cat.assoc, eqMap_eq]) u rfl,
-        eqLift_uniq f g (u ≫ eqMap f g) (by rw [Cat.assoc, Cat.assoc, eqMap_eq]) v huv.symm]
+  have hq₀mono : Monic (eqMap f g) := eqMap_monic f g
   intro A
   -- Representing data for B₂ and B₃ at stage A.
   obtain ⟨E₂, ev₂, hu₂⟩ := hB₂ A
@@ -1480,10 +1476,7 @@ theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
     · -- Uniqueness of h.
       intro h' hh'
       -- Composing hh' with q₀ and ev₂ pins down h' ≫ q via hu₂; then q monic ⟹ h'.
-      have hq'mono : Monic (eqMap fA gA) := by
-        intro W u v huv
-        rw [eqLift_uniq fA gA (u ≫ eqMap fA gA) (by rw [Cat.assoc, Cat.assoc, eqMap_eq]) u rfl,
-            eqLift_uniq fA gA (u ≫ eqMap fA gA) (by rw [Cat.assoc, Cat.assoc, eqMap_eq]) v huv.symm]
+      have hq'mono : Monic (eqMap fA gA) := eqMap_monic fA gA
       apply hq'mono
       rw [eqLift_fac]
       -- h' ≫ q = ψ via hu₂ uniqueness: prodMap A X E₂ (h'≫q) ≫ ev₂ = φ ≫ q₀.

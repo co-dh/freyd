@@ -106,6 +106,80 @@ partial def dagSize (root : Expr) : Nat := Id.run do
       | _ => pure ()
   return n
 
+/-! ### Statements a proof re-proves inline
+
+The elaborator compiles `have h : T := e; body` into `(fun h : T => body) e`, and `let` into `.letE`.
+So every intermediate statement a proof establishes on its way is sitting in its proof term, and can
+be compared against the top-level theorems: a match means the proof re-derived a lemma the library
+already has.  This finds INDEPENDENT re-derivations — the proofs need not resemble each other at all,
+which is why neither the statement-key pass nor a literal clone hash can see them. -/
+
+/-- Positions in `ctx` (indices from the innermost binder outward) that `e` refers to, where `e` sits
+    under `depth` binders of its own. -/
+private partial def ctxRefs (ctx depth : Nat) (e : Expr) (acc : Std.HashSet Nat) : Std.HashSet Nat :=
+  if !e.hasLooseBVars then acc else
+  match e with
+  | .bvar d => if d ≥ depth && d - depth < ctx then acc.insert (d - depth) else acc
+  | .app f a => ctxRefs ctx depth a (ctxRefs ctx depth f acc)
+  | .lam _ t b _ | .forallE _ t b _ => ctxRefs ctx (depth + 1) b (ctxRefs ctx depth t acc)
+  | .letE _ t v b _ => ctxRefs ctx (depth + 1) b (ctxRefs ctx depth v (ctxRefs ctx depth t acc))
+  | .mdata _ x | .proj _ _ x => ctxRefs ctx depth x acc
+  | _ => acc
+
+/-- Renumber `e`'s references to the binder context after the unused binders have been dropped.
+    `rank p` is the position `p` binder's index among the kept ones; `dropped` is how many kept
+    binders are already bound outside `e`. `none` if `e` reaches a binder that was not kept. -/
+private partial def remapRefs (ctx : Nat) (rank : Nat → Option Nat) (base dropped depth : Nat)
+    (e : Expr) : Option Expr :=
+  if !e.hasLooseBVars then some e else
+  match e with
+  | .bvar d =>
+    if d < depth then some (.bvar d)
+    else if d - depth ≥ ctx then some e
+    else do
+      let k ← rank (base + (d - depth))
+      guard (k ≥ dropped)
+      some (.bvar (depth + k - dropped))
+  | .app f a => return .app (← remapRefs ctx rank base dropped depth f)
+                           (← remapRefs ctx rank base dropped depth a)
+  | .lam n t b bi => return .lam n (← remapRefs ctx rank base dropped depth t)
+                               (← remapRefs ctx rank base dropped (depth + 1) b) bi
+  | .forallE n t b bi => return .forallE n (← remapRefs ctx rank base dropped depth t)
+                                   (← remapRefs ctx rank base dropped (depth + 1) b) bi
+  | .letE n t v b nd => return .letE n (← remapRefs ctx rank base dropped depth t)
+                                  (← remapRefs ctx rank base dropped depth v)
+                                  (← remapRefs ctx rank base dropped (depth + 1) b) nd
+  | .mdata m x => return .mdata m (← remapRefs ctx rank base dropped depth x)
+  | .proj s i x => return .proj s i (← remapRefs ctx rank base dropped depth x)
+  | _ => some e
+
+/-- Close a sub-statement over exactly the enclosing binders it uses, so it can be compared with a
+    top-level theorem's type.  `ctx` runs innermost-LAST.  Binders it does not mention are dropped —
+    keeping them would make the closed statement strictly more general than the lemma it restates,
+    and the two would never match. -/
+private def closeStatement (ctx : Array (Name × Expr)) (t : Expr) : Option Expr := Id.run do
+  let size := ctx.size
+  let at? (p : Nat) : Option (Name × Expr) := ctx[size - 1 - p]?
+  -- A used binder's own type may mention outer binders, so grow the set to a fixpoint.
+  let mut used := ctxRefs size 0 t {}
+  let mut changed := true
+  while changed do
+    changed := false
+    for p in used.toList do
+      if let some (_, ty) := at? p then
+        for q in (ctxRefs size 0 ty {}).toList do
+          let q := p + 1 + q                       -- `ty` sits one binder outside position `p`
+          if q < size && !used.contains q then used := used.insert q; changed := true
+  let kept := (used.toList.filter (· < size)).mergeSort (· < ·)
+  let rank (p : Nat) : Option Nat := kept.idxOf? p
+  let some body := remapRefs size rank 0 0 0 t | return none
+  let mut result := body
+  for (p, j) in kept.zipIdx do
+    let some (name, ty) := at? p | return none
+    let some domain := remapRefs size rank (p + 1) (j + 1) 0 ty | return none
+    result := .forallE name domain result .default
+  return some result
+
 /-- Statement hash identifying duplicates: two declarations with the same key state the same thing.
 
     Theorems and axioms key on the type alone: proof irrelevance means the same statement IS the same
@@ -173,6 +247,53 @@ partial def sectionHeader (lines : Array String) (line : Nat) : Option String :=
     | some h => some h
     | none   => if i == 0 then none else go (i - 1)
   if lines.isEmpty || line < 2 then none else go (min (line - 2) (lines.size - 1))
+
+/-- Statements `ci`'s proof establishes inline that the library already has as a theorem: for each
+    `have`/`let`, close its type over the binders it uses, key it exactly as a theorem type is keyed,
+    and look it up.  A hit whose sub-proof actually calls that theorem is the declaration USING it —
+    only the others re-proved it.  Returns (lemma, statement size, sub-proof size) per hit.
+
+    Sizes gate the report: below the floor the inline proof is cheaper than the call, and rewriting it
+    to one would be churn, not de-duplication. -/
+private def inlineRestatements (thms : Std.HashMap UInt64 Name) (self : Name) (ci : ConstantInfo)
+    (minStatement := 15) (minProof := 10) : Array (Name × Nat × Nat) := Id.run do
+  let some value := ci.value? | return #[]
+  let mut hits := #[]
+  let mut seen : Std.HashSet Expr := {}
+  let mut stack := [(#[], value)]
+  while true do
+    match stack with
+    | [] => break
+    | (ctx, e) :: rest =>
+      stack := rest
+      if seen.contains e then continue
+      seen := seen.insert e
+      -- The three shapes an intermediate statement takes in a proof term.  A tactic-mode `have` is
+      -- the third: it compiles to `letFun v (fun h : t => body)`, NOT to a beta-redex, so matching
+      -- only the redex finds almost nothing (one hit across the whole library).
+      let sub? : Option (Name × Expr × Expr × Expr) := match e with
+        | .app (.lam n t b _) proof => some (n, t, proof, b)
+        | .letE n t proof b _ => some (n, t, proof, b)
+        | _ => match e.getAppFn, e.getAppArgs with
+          | .const ``letFun _, #[_, _, proof, .lam n t b _] => some (n, t, proof, b)
+          | _, _ => none
+      match sub? with
+      | some (n, t, proof, body) =>
+        if let some closed := closeStatement ctx t then
+          if let some lemmaName := thms[(stripMData (normLevels ci.levelParams closed)).hash]? then
+            if lemmaName != self && !(proof.getUsedConstants.contains lemmaName) then
+              let statementSize := dagSize closed
+              let proofSize := dagSize proof
+              if statementSize ≥ minStatement && proofSize ≥ minProof then
+                hits := hits.push (lemmaName, statementSize, proofSize)
+        stack := (ctx, t) :: (ctx, proof) :: (ctx.push (n, t), body) :: stack
+      | none =>
+        match e with
+        | .app f a => stack := (ctx, f) :: (ctx, a) :: stack
+        | .lam n t b _ | .forallE n t b _ => stack := (ctx, t) :: (ctx.push (n, t), b) :: stack
+        | .mdata _ x | .proj _ _ x => stack := (ctx, x) :: stack
+        | _ => pure ()
+  return hits
 
 /-- Pretty-printed type, first docstring line and duplicate key for each row (needs a MetaM run).
     Strip the ubiquitous `Freyd.` prefix from the printed type and doc text (same reason
@@ -264,12 +385,23 @@ def extract (env : Environment) (wanted : Name → Bool) :
     returns, BEFORE the orphan loop imports anything. Previously `envRoot` stayed live as a `main`
     local across the whole orphan loop, so root + orphan environments coexisted — roughly doubling
     peak memory, a direct OOM contributor. -/
-def processRoot : IO (Array (Row × Ann) × Array (Name × Name) × Std.HashSet Name) := do
+def processRoot : IO (Array (Row × Ann) × Array (Name × Name) × Std.HashSet Name ×
+    Array (Name × Name × Nat × Nat)) := do
   let envRoot ← importModules #[{ module := `Freyd }] {} (trustLevel := 1024) (loadExts := true)
   let done : Std.HashSet Name :=
     .ofArray (envRoot.header.moduleNames.filter (`Freyd |>.isPrefixOf ·))
   let (rows, edges) := extract envRoot done.contains
-  return (← annotate envRoot rows, edges, done)
+  let annotated ← annotate envRoot rows
+  -- The inline scan runs on the root closure only (223 of 224 modules): a `have` can only restate a
+  -- theorem the file can see, and the whole closure is in this one environment.
+  let thms : Std.HashMap UInt64 Name := annotated.foldl (init := {}) fun table ((n, kind, _, _), a) =>
+    if kind == "thm" then table.insert a.key n else table
+  let mut inline := #[]
+  for ((n, _, _, _), _) in annotated do
+    if let some ci := envRoot.find? n then
+      for (lemmaName, statementSize, proofSize) in inlineRestatements thms n ci do
+        inline := inline.push (n, lemmaName, statementSize, proofSize)
+  return (annotated, edges, done, inline)
 
 /-- Same, for one orphan module (each in its own environment, since two orphans may define the same
     constant name). The function boundary frees each orphan environment before the next import. -/
@@ -322,7 +454,7 @@ def main : IO Unit := do
   -- single combined import. `importModules` retains ~350 MB per call permanently, so the old
   -- one-env-per-orphan loop leaked ~16 GB over 46 orphans → OOM. `importOrphans` does it in one call
   -- (peeling out the few name-colliders to import singly), holding the whole run to ~5 GB.
-  let (rows₀, edges₀, done₀) ← processRoot
+  let (rows₀, edges₀, done₀, inline) ← processRoot
   let mut rows := rows₀
   let mut edges := edges₀
   let mut done := done₀
@@ -379,6 +511,10 @@ def main : IO Unit := do
       for line in ← IO.FS.lines (modToPath m "lean") do
         let l := line.trimAscii.toString
         if l.startsWith "import " then h.putStrLn s!"{m}\t{(l.drop 7).trimAscii}"
+  -- declaration whose proof re-proves `lemma` inline, with the sizes that rank the finding
+  IO.FS.withFile "graph/inline.tsv" .write fun h => do
+    for (decl, lemmaName, statementSize, proofSize) in inline do
+      h.putStrLn s!"{shortName decl}\t{shortName lemmaName}\t{statementSize}\t{proofSize}"
   let es := (edges.map fun (s, t) => s!"{shortName s}\t{shortName t}") |>.qsort (· < ·) |>.toList.eraseReps.toArray
   IO.FS.withFile "graph/deps.tsv" .write fun h => do
     for e in es do h.putStrLn e
