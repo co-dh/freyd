@@ -237,34 +237,6 @@ theorem prod_snd_cover {C A : 𝒞} (hC : WellSupported C) :
   apply cover_precomp_iso (prod_comm_iso (A := C) (B := A))
   exact prod_fst_cover (C := A) (B := C) hC
 
-/-- A cover followed by an iso is a cover.  (Mirrors `CofinalHstage.cover_comp_iso`, re-proved here
-    to avoid that file's heavier import closure; needs no `HasImages`.) -/
-theorem cover_postcomp_iso {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z} (hf : Cover f) (he : IsIso e) :
-    Cover (f ≫ e) := by
-  obtain ⟨einv, hee, heinv⟩ := he
-  intro C m g hm hgm
-  have hmono' : Monic (m ≫ einv) := by
-    intro W a b hab
-    apply hm
-    have hcomp : (a ≫ m ≫ einv) ≫ e = (b ≫ m ≫ einv) ≫ e := by rw [hab]
-    calc a ≫ m = a ≫ m ≫ (einv ≫ e) := by rw [heinv, Cat.comp_id]
-      _ = (a ≫ m ≫ einv) ≫ e := by rw [Cat.assoc, Cat.assoc]
-      _ = (b ≫ m ≫ einv) ≫ e := hcomp
-      _ = b ≫ m ≫ (einv ≫ e) := by rw [Cat.assoc, Cat.assoc]
-      _ = b ≫ m := by rw [heinv, Cat.comp_id]
-  have hfac : (g ≫ m ≫ einv) = f := by
-    rw [← Cat.assoc, show g ≫ m = f ≫ e from hgm, Cat.assoc, hee, Cat.comp_id]
-  obtain ⟨minv, hm1, hm2⟩ := hf (m ≫ einv) g hmono' hfac
-  refine ⟨einv ≫ minv, ?_, ?_⟩
-  · calc m ≫ (einv ≫ minv) = (m ≫ einv) ≫ minv := (Cat.assoc _ _ _).symm
-      _ = Cat.id C := hm1
-  · calc (einv ≫ minv) ≫ m = einv ≫ (minv ≫ m) := Cat.assoc _ _ _
-      _ = einv ≫ (minv ≫ m) ≫ (einv ≫ e) := by rw [heinv, Cat.comp_id]
-      _ = einv ≫ (minv ≫ (m ≫ einv)) ≫ e := by rw [Cat.assoc, Cat.assoc, Cat.assoc]
-      _ = einv ≫ (Cat.id Y) ≫ e := by rw [hm2]
-      _ = einv ≫ e := by rw [Cat.id_comp]
-      _ = Cat.id Z := heinv
-
 variable [DecidableEq 𝒞]
 
 /-- When the head `C` of `U` is NOT in `V`, `selectProj (C::U') V` strips `C` via `snd`. -/
@@ -407,7 +379,7 @@ theorem selectProj_cover : ∀ (U V : List 𝒞), V.Nodup → ∀ (h : ∀ B ∈
       have hFV : ∀ B ∈ C :: V.filter (fun x => x ≠ C), B ∈ V := frontList_mem_right hCV
       have hFsub : ∀ B ∈ C :: V.filter (fun x => x ≠ C), B ∈ C :: U' := fun B hB => h B (hFV B hB)
       rw [selectProj_trans hVnd hVF hFsub h]
-      refine cover_postcomp_iso ?_ (selectProj_reorder_iso hFnd hVnd hFV hVF)
+      refine cover_comp_iso_cat ?_ (selectProj_reorder_iso hFnd hVnd hFV hVF)
       rw [selectProj, factorProj_cons_head]
       have hCVrem : C ∉ V.filter (fun x => x ≠ C) := fun hc => (mem_filter_ne.1 hc).2 rfl
       have hVrem' : ∀ B ∈ V.filter (fun x => x ≠ C), B ∈ U' := fun B hB =>
@@ -610,7 +582,7 @@ theorem tSelectProj_cover : ∀ (l m : List τ), m.Nodup → ∀ (h : ∀ t ∈ 
       have hFm : ∀ t ∈ c :: m.filter (fun x => x ≠ c), t ∈ m := tfrontList_mem_right hcm
       have hFsub : ∀ t ∈ c :: m.filter (fun x => x ≠ c), t ∈ c :: l' := fun t ht => h t (hFm t ht)
       rw [tSelectProj_trans f hmnd hmF hFsub h]
-      refine cover_postcomp_iso ?_ (tSelectProj_reorder_iso f hFnd hmnd hFm hmF)
+      refine cover_comp_iso_cat ?_ (tSelectProj_reorder_iso f hFnd hmnd hFm hmF)
       rw [tSelectProj, tFactorProj_cons_head]
       have hcFrem : c ∉ m.filter (fun x => x ≠ c) := fun hcc => (tmem_filter_ne.1 hcc).2 rfl
       have hmrem' : ∀ t ∈ m.filter (fun x => x ≠ c), t ∈ l' := fun t ht =>

@@ -954,30 +954,6 @@ instance inflPreRegular [PreRegularCategory 𝒞] : PreRegularCategory (Infl �
   (a cover post-composed with the iso `prodOneRightInv J`).  Mirrors `inflHasEqualizers`' singleton
   pattern; cover-then-mono is an image (`coverMono_isImage`, needs only `A′`-pullbacks). -/
 
-/-- A cover post-composed with an isomorphism is a cover (the dual of `cover_precomp_iso`; a same-named
-    `cover_postcomp_iso` lives in the topos file `SlicePi`, not in this file's import chain — re-proved
-    here under a distinct name to avoid the import cycle).  If `g ≫ m = e ≫ i` with `m` monic and `i`
-    iso, then `g ≫ (m ≫ i⁻¹) = e`, `m ≫ i⁻¹` is monic, and `e` a cover forces it — hence `m` — iso. -/
-theorem cover_comp_iso_right {X Y Y' : 𝒞} {e : X ⟶ Y} (he : Cover e) {i : Y ⟶ Y'} (hi : IsIso i) :
-    Cover (e ≫ i) := by
-  obtain ⟨i', hii, hi'i⟩ := hi
-  intro C m g hm hgm
-  -- `m ≫ i⁻¹` is monic, and `g ≫ (m ≫ i⁻¹) = e`, so `e` cover ⟹ `m ≫ i⁻¹` iso ⟹ `m` iso.
-  have hmi'_mono : Monic (m ≫ i') := by
-    intro W p q hpq
-    apply hm
-    have := congrArg (fun u => u ≫ i) hpq
-    simpa only [Cat.assoc, hi'i, Cat.comp_id] using this
-  have hfac : g ≫ (m ≫ i') = e := by
-    calc g ≫ (m ≫ i') = (g ≫ m) ≫ i' := (Cat.assoc _ _ _).symm
-      _ = (e ≫ i) ≫ i' := by rw [hgm]
-      _ = e ≫ (i ≫ i') := Cat.assoc _ _ _
-      _ = e := by rw [hii, Cat.comp_id]
-  have hmi'_iso : IsIso (m ≫ i') := he (m ≫ i') g hmi'_mono hfac
-  -- `m = (m ≫ i') ≫ i` (since `i' ≫ i = id`), a composite of two isos.
-  have hmeq : m = (m ≫ i') ≫ i := by rw [Cat.assoc, hi'i, Cat.comp_id]
-  rw [hmeq]; exact isIso_comp hmi'_iso ⟨i', hii, hi'i⟩
-
 /-- The `A`-arrow `fst ≫ m` (`J×1 ⟶ ∏t`) is monic when `m : J ↣ ∏t` is (`fst` iso, cancel via
     `prodOneRightInv J`).  Same unitor-cancellation as `inflCover_to_cover`'s `hm𝒞`. -/
 theorem fst_comp_monic {J : 𝒞} {Z : 𝒞} {m : J ⟶ Z} (hm : Monic m) :
@@ -1003,7 +979,7 @@ noncomputable def inflImage [RegularCategory 𝒞] {s t : Infl 𝒞}
       exact fst_comp_monic (image (𝒞 := 𝒞) f').monic (W := listProd (𝒞 := 𝒞) V) p q hpq)
 
 /-- `inflImage f` is the image of `f` in `A′`: cover-then-mono factorization (`coverMono_isImage`).
-    Cover leg `image.lift f ≫ prodOneRightInv J : ∏s ⟶ J×1` (cover · iso = cover, `cover_postcomp_iso`),
+    Cover leg `image.lift f ≫ prodOneRightInv J : ∏s ⟶ J×1` (cover · iso = cover, `cover_comp_iso_cat`),
     mono leg `fst ≫ (image f).arr`; their composite is `f` (the unitor projection law). -/
 theorem inflImage_isImage [RegularCategory 𝒞] {s t : Infl 𝒞}
     (f : listProd (𝒞 := 𝒞) s ⟶ listProd t) :
@@ -1018,7 +994,7 @@ theorem inflImage_isImage [RegularCategory 𝒞] {s t : Infl 𝒞}
   -- `e` is an `A`-cover (cover `image.lift` post-composed with the iso `prodOneRightInv J`),
   -- hence an `A′`-cover on the same underlying arrow (`coverC_to_inflCover`).
   have hcov𝒞 : Cover (𝒞 := 𝒞) e :=
-    cover_comp_iso_right (Colim.image_lift_cover_local f')
+    cover_comp_iso_cat (Colim.image_lift_cover_local f')
       ⟨_, fst_pair _ _, fst_prodOneRightInv⟩
   have hcov : Cover (𝒞 := Infl 𝒞) (X := s) (Y := ([J] : List 𝒞)) e :=
     coverC_to_inflCover (s := s) (t := ([J] : List 𝒞)) (f := e) hcov𝒞

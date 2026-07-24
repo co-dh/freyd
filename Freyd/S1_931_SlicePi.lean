@@ -589,42 +589,6 @@ end PullbackPreservesEpi
       `id_B`-pullback.  We instead read off `pf.cone.π₂` directly and bridge `c.π₂` by the
       universal-property comparison iso (`cover_precomp_iso`). -/
 
-/-- **Cover post-composed with an iso is a cover** (the post-composition dual of
-    `cover_precomp_iso`).  If `h` is a cover and `i` iso, then `h ≫ i` is a cover:
-    a monic `m` factoring `h ≫ i` also factors `h` (via `g ≫ i⁻¹`), so `h`-cover
-    forces `m` iso. -/
-theorem cover_postcomp_iso {X Y Y' : 𝒞} {h : X ⟶ Y} (hc : Cover h) {i : Y ⟶ Y'}
-    (hi : IsIso i) : Cover (h ≫ i) := by
-  obtain ⟨i', hi1, hi2⟩ := hi
-  intro C m c hm hcm
-  -- `c ≫ m = h ≫ i`, so `(c ≫ (i' ≫ m … )) ` -- factor `h` through `m`? No: through a NEW monic.
-  -- Instead push `i'` in: `h = (h ≫ i) ≫ i' = (c ≫ m) ≫ i' = c ≫ (m ≫ i')`.
-  -- `m ≫ i'` is monic (m monic, i' iso ⇒ monic); `h`-cover forces it iso ⇒ `m` iso.
-  have hmi'_mono : Monic (m ≫ i') := by
-    intro W a b hab
-    apply hm
-    -- a ≫ m = b ≫ m from a ≫ (m ≫ i') = b ≫ (m ≫ i') and i iso.
-    have : (a ≫ m) ≫ i' = (b ≫ m) ≫ i' := by rw [Cat.assoc, Cat.assoc]; exact hab
-    -- cancel i' (post-compose i): right-cancel by composing with i.
-    calc a ≫ m = (a ≫ m) ≫ Cat.id Y' := (Cat.comp_id _).symm
-      _ = (a ≫ m) ≫ (i' ≫ i) := by rw [hi2]
-      _ = ((a ≫ m) ≫ i') ≫ i := (Cat.assoc _ _ _).symm
-      _ = ((b ≫ m) ≫ i') ≫ i := by rw [this]
-      _ = (b ≫ m) ≫ (i' ≫ i) := Cat.assoc _ _ _
-      _ = (b ≫ m) ≫ Cat.id Y' := by rw [hi2]
-      _ = b ≫ m := Cat.comp_id _
-  have hfac : c ≫ (m ≫ i') = h := by
-    calc c ≫ (m ≫ i') = (c ≫ m) ≫ i' := (Cat.assoc _ _ _).symm
-      _ = (h ≫ i) ≫ i' := by rw [hcm]
-      _ = h ≫ (i ≫ i') := Cat.assoc _ _ _
-      _ = h ≫ Cat.id Y := by rw [hi1]
-      _ = h := Cat.comp_id _
-  -- `m ≫ i'` iso; then `m = (m ≫ i') ≫ i` is iso (iso ∘ iso).
-  have hmi'_iso : IsIso (m ≫ i') := hc (m ≫ i') c hmi'_mono hfac
-  -- m = (m ≫ i') ≫ i.
-  have hm_eq : m = (m ≫ i') ≫ i := by rw [Cat.assoc, hi2, Cat.comp_id]
-  rw [hm_eq]; exact isIso_comp hmi'_iso ⟨i', hi1, hi2⟩
-
 noncomputable section ToposTransfer
 variable [Topos 𝒞]
 
@@ -683,7 +647,7 @@ private theorem _chosenPi2_cover {A B C : 𝒞} (f : A ⟶ B) (g : C ⟶ B) (hf 
   rw [← hπ₂, ← hw]
   -- unfold `Cover` by hand to dodge the `Cover`-def `{C}`-binder clash with section `C`.
   intro D m gg hm hgm
-  exact cover_postcomp_iso hbcf (_bcIdB_hom_iso g) m gg hm hgm
+  exact cover_comp_iso_cat hbcf (_bcIdB_hom_iso g) m gg hm hgm
 
 /-- **§1.945 — for a bare topos, the pullback of a cover is a cover.**  Closes the residual
     behind `topos_is_regular_real`.  Non-circular: the cover-stability of `f*` comes from the
