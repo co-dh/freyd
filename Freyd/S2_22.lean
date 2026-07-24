@@ -954,33 +954,7 @@ theorem tab_transport_gap [UnionAllegory 𝒜]
   rw [hUeq] at hRU hSU hTU
   exact interUnionU_distrib_of_srcTabulation hF hG hmonic hRU hSU hTU
 
-/-- **§2.228(a)**: a tabular union allegory satisfies the intersection-over-
-    union distributive law, hence is distributive.
 
-    By `interUnionDistrib_iff_le` it suffices to prove the *reverse*
-    containment `R ∩ (S∪T) ⊑ (R∩S) ∪ (R∩T)`; the forward one is free.
-
-    SORRY-FREE (Task 2): the remaining containment is Freyd's source-apex argument
-    — `srcTabulation_exists` builds a SOURCE-apex jointly-monic map span of
-    `U := R ∪ S ∪ T` (§2.16(10): split `F₀F₀° ∩ G₀G₀°` of a semi-simple
-    factorisation), and `interUnionU_distrib_of_srcTabulation` transports the
-    distributive coreflexive lattice back via the §2.143 order-iso.  Needs the
-    faithful explicit hypotheses `hss` (semi-simplicity) and `hsplit` (effective
-    splitting) — taken as `Prop`s over the single `UnionAllegory` instance to dodge
-    the `UnionAllegory`/`EffectiveAllegory` `Allegory`-diamond.  A tabular union
-    allegory satisfies both (every tabular morphism is semi-simple, every symmetric
-    idempotent splits in a tabular/effective allegory); the binders make that
-    explicit without a non-defeq second `Allegory` instance. -/
-theorem interUnionDistrib_of_tabular [UnionAllegory 𝒜]
-    (hss : ∀ {a b : 𝒜} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem 𝒜)
-    (_h : ∀ {a b : 𝒜} (R : a ⟶ b), Tabular R) : InterUnionDistrib 𝒜 := by
-  rw [interUnionDistrib_iff_le]
-  intro a b R S T
-  -- R, S, T all sit below U := R ∪ S ∪ T; transport along the source-apex span of U.
-  have hRU : R ⊑ R ∪ᵤ S ∪ᵤ T := le_trans (le_unionU_left _ _) (le_unionU_left _ _)
-  have hSU : S ⊑ R ∪ᵤ S ∪ᵤ T := le_trans (le_unionU_right _ _) (le_unionU_left _ _)
-  have hTU : T ⊑ R ∪ᵤ S ∪ᵤ T := le_unionU_right _ _
-  exact tab_transport_gap hss hsplit hRU hSU hTU
 
 
 /-! ## §2.228(b)  A semi-simple union allegory is distributive
@@ -1020,6 +994,31 @@ theorem interUnionDistrib_of_semiSimple [UnionAllegory 𝒜]
   rw [interUnionDistrib_iff_le]
   intro a b R S T
   exact semiSimple_transport_gap h hsplit (h R) (h S) (h T)
+
+/-- **§2.228(a)**: a tabular union allegory satisfies the intersection-over-
+    union distributive law, hence is distributive.
+
+    By `interUnionDistrib_iff_le` it suffices to prove the *reverse*
+    containment `R ∩ (S∪T) ⊑ (R∩S) ∪ (R∩T)`; the forward one is free.
+
+    SORRY-FREE (Task 2): the remaining containment is Freyd's source-apex argument
+    — `srcTabulation_exists` builds a SOURCE-apex jointly-monic map span of
+    `U := R ∪ S ∪ T` (§2.16(10): split `F₀F₀° ∩ G₀G₀°` of a semi-simple
+    factorisation), and `interUnionU_distrib_of_srcTabulation` transports the
+    distributive coreflexive lattice back via the §2.143 order-iso.  Needs the
+    faithful explicit hypotheses `hss` (semi-simplicity) and `hsplit` (effective
+    splitting) — taken as `Prop`s over the single `UnionAllegory` instance to dodge
+    the `UnionAllegory`/`EffectiveAllegory` `Allegory`-diamond.  A tabular union
+    allegory satisfies both (every tabular morphism is semi-simple, every symmetric
+    idempotent splits in a tabular/effective allegory); the binders make that
+    explicit without a non-defeq second `Allegory` instance. -/
+theorem interUnionDistrib_of_tabular [UnionAllegory 𝒜]
+    (hss : ∀ {a b : 𝒜} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem 𝒜)
+    (_h : ∀ {a b : 𝒜} (R : a ⟶ b), Tabular R) : InterUnionDistrib 𝒜 :=
+  -- The tabularity hypothesis is not used: semi-simplicity and splitting already suffice, which is
+  -- `interUnionDistrib_of_semiSimple` below.  §2.228(a) is a book-numbered deliverable, so the
+  -- statement stays; only its (duplicate) derivation is gone.
+  interUnionDistrib_of_semiSimple hsplit hss
 
 /-! ## §2.228(c)  Necessity of one of the two hypotheses
 
