@@ -158,11 +158,10 @@ instance setCat : Cat.{v} (Type v) where
 section Representable
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-- The covariant hom-functor `Hom(i, -) : 𝒞 → Type v`, `f ↦ (h ↦ h ≫ f)` (§1.272). -/
-def homFunctor (i : 𝒞) : 𝒞 → Type v := fun A => (i ⟶ A)
-
+/-- The covariant hom-functor `Hom(i, -) : 𝒞 → Type v`, `f ↦ (h ↦ h ≫ f)` (§1.272).  Its object map
+    is `YonedaEmbedding i` (§1.464), used here bundled as a `Functor`. -/
 def homFunctorFunctor (i : 𝒞) : Functor 𝒞 (Type v) where
-  obj := homFunctor (𝒞 := 𝒞) i
+  obj := Freyd.YonedaEmbedding (𝒞 := 𝒞) i
   map f := fun h => h ≫ f
   map_id A := by funext h; exact Cat.comp_id h
   map_comp f g := by funext h; exact (Cat.assoc h f g).symm
@@ -183,7 +182,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 /-- `Hom(i,-)` preserves TERMINATORS: if `o` is terminal in `𝒞` then `Hom(i,o) = (i⟶o)`
     is terminal in `Type v` (a one-element set). -/
 theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj o) :
-    IsTerminalObj (homFunctor i o) := by
+    IsTerminalObj (Freyd.YonedaEmbedding i o) := by
   -- `Hom(i,o) = (i⟶o)` is a one-element set: the unique global map to `o`, constantly.
   obtain ⟨t, ht⟩ := ho i
   refine fun X => ⟨fun _ => t, fun g => ?_⟩
@@ -239,7 +238,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {nObj : Nat}
 
 /-- Push an environment `ρ` in `𝒞` to one in `Type v` via `Hom(i,-)`. -/
 def pushEnv (i : 𝒞) (ρ : Env 𝒞 nObj) : Env (Type v) nObj where
-  obj o := homFunctor i (ρ.obj o)
+  obj o := Freyd.YonedaEmbedding i (ρ.obj o)
   mor m := (homFunctorFunctor i).map (ρ.mor m)
 
 /-- `morAs` commutes with the push: pushing a retyped morphism is the retyped push. -/
@@ -284,7 +283,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {nObj : Nat}
     then `o` is terminal in `𝒞`.  A global map `X → o` is witnessed at `i := X`;
     uniqueness is `cayley_faithful`. -/
 theorem reflect_terminal {o : 𝒞}
-    (h : ∀ i : 𝒞, IsTerminalObj (homFunctor i o)) : IsTerminalObj o := by
+    (h : ∀ i : 𝒞, IsTerminalObj (Freyd.YonedaEmbedding i o)) : IsTerminalObj o := by
   intro X
   -- existence: probe the terminal Set `Hom(X,o)` at the type `(X⟶X)`, evaluate at `id_X`.
   obtain ⟨w, _⟩ := h X (X ⟶ X)
