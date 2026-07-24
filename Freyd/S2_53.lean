@@ -260,10 +260,6 @@ theorem quot_le_iff {a b : 𝒜} (R S : a ⟶ b) :
     refine amen.cong.trans (amen.largest_rel (R ∩ S)) ?_
     rw [hcl]; exact amen.cong.symm (amen.largest_rel R)
 
-/-- `X ⊑ X⁺` — every element sits below the largest in its class. -/
-theorem le_largest_self {a b : 𝒜} (R : a ⟶ b) : R ⊑ amen.largest R :=
-  amen.largest_max (amen.cong.refl R)
-
 
 end
 
@@ -301,7 +297,7 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
       refine Quotient.inductionOn₂ R S (fun R S => ?_)
       -- (R⁺/S⁺)≫S ⊑ R⁺ :  S ⊑ S⁺, then the division law (R⁺/S⁺)≫S⁺ ⊑ R⁺.
       have hstep : (amen.largest R / amen.largest S) ≫ S ⊑ amen.largest R :=
-        le_trans (comp_mono_left _ (le_largest_self amen S))
+        le_trans (comp_mono_left _ (self_le_largest amen S))
           (DivisionAllegory.div_comp_le (amen.largest R) (amen.largest S))
       -- ((R⁺/S⁺)≫S)⁺ ⊑ (R⁺)⁺ = R⁺.
       refine (quot_le_iff amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
@@ -320,7 +316,7 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
       have hdiv : amen.largest T ⊑ amen.largest R / amen.largest S :=
         DivisionAllegory.le_div _ _ _ hTS
       exact (quot_le_iff amen T (amen.largest R / amen.largest S)).mpr
-        (le_trans hdiv (le_largest_self amen _)) }
+        (le_trans hdiv (self_le_largest amen _)) }
 
 end Division
 
@@ -360,7 +356,7 @@ theorem quot_largest_reflexive {a : 𝒜} {E₀ : a ⟶ a}
     (h : Reflexive ((quotRep amen.cong).map E₀)) : Reflexive (amen.largest E₀) := by
   have h2 : (quotRep amen.cong).map (Cat.id a) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_id]; exact h
-  exact le_trans (le_largest_self amen (Cat.id a)) ((quot_le_iff amen (Cat.id a) E₀).mp h2)
+  exact le_trans (self_le_largest amen (Cat.id a)) ((quot_le_iff amen (Cat.id a) E₀).mp h2)
 
 /-- §2.535: a quotient-symmetric `[E₀]` forces `E₀⁺` symmetric. -/
 theorem quot_largest_symmetric {a : 𝒜} {E₀ : a ⟶ a}

@@ -87,6 +87,11 @@ structure AmenableCongruence (𝒜 : Type u) [DistributiveAllegory 𝒜] where
   largest_rel {a b : 𝒜} (R : a ⟶ b) : cong.rel R (largest R)
   largest_max {a b : 𝒜} {R S : a ⟶ b} (h : cong.rel R S) : S ⊑ largest R
 
+/-- Every morphism is below the largest element of its class: `X ⊑ X⁺` (reflexivity into
+    `largest_max`). -/
+theorem self_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (X : a ⟶ b) :
+    X ⊑ amen.largest X := amen.largest_max (amen.cong.refl X)
+
 /-- §2.531: If R ⊑ S, then R⁺ ⊑ S⁺. -/
 theorem amenable_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
     amen.largest R ⊑ amen.largest S := by
