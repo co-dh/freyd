@@ -1,10 +1,13 @@
 /- Extract the declaration graph of the Freyd library.
    Run from repo root:  lake env lean --run scripts/ExtractGraph.lean
-   Output: graph/decls.tsv  (name  kind  file  line  type  doc-first-line)
-           graph/deps.tsv   (src  dst)
+   Output: graph/decls.tsv    (name  kind  file  line  type  doc-first-line  key  size)
+           graph/deps.tsv     (src  dst)
+           graph/imports.tsv  (module  imported-module)
    The doc column is the decl's own `/-- -/` first line; when it has none (≈26% of decls, mostly
    lemmas grouped under a shared header), we fall back to the nearest `/-! ### … -/` section-header
    title scraped from source — group context, not a per-decl doc, but far better than blank.
+   The `key` column is the alpha/universe-normalised statement hash: equal keys = duplicate
+   declarations (see `declKey`), which is what `scripts/dep_dup.py` groups on.
    Names have the ubiquitous `Freyd.` prefix stripped (8794/8802 decls carry it); the
    only root-level names left as-is are the `Cat` typeclass fields and the tool `main`.
    Edges are true proof-level dependencies (constants of the elaborated type + proof term,
@@ -45,6 +48,94 @@ def shortName (n : Name) : String :=
 
 abbrev Row := Name × String × Name × Nat            -- name, kind, module, line
 
+/-- The columns that need the environment: the pretty-printed type and docstring (a `MetaM` run),
+    plus the duplicate key and term size (pure). -/
+structure Ann where
+  type : String
+  doc : String
+  key : UInt64
+  size : Nat
+
+/-- Drop `mdata` (source positions and elaborator residue): it hashes as a node of its own but says
+    nothing about the statement. Binder names need no erasing — `Expr.hash` mixes only the depth and
+    the child hashes at a binder, so a hash is alpha-invariant already. -/
+partial def stripMData : Expr → Expr
+  | .forallE n t b bi => .forallE n (stripMData t) (stripMData b) bi
+  | .lam n t b bi     => .lam n (stripMData t) (stripMData b) bi
+  | .letE n t v b nd  => .letE n (stripMData t) (stripMData v) (stripMData b) nd
+  | .app f a          => .app (stripMData f) (stripMData a)
+  | .mdata _ e        => stripMData e
+  | .proj s i e       => .proj s i (stripMData e)
+  | e                 => e
+
+/-- The binder names of `e`'s leading `∀` telescope. For a constructor type these are the structure's
+    field names, and since `Expr.hash` cannot see them they must be mixed into an inductive's key
+    separately: `RelObj.carrier` and `Alg.RelMapObj.obj` are both one-field wrappers over `Type u`,
+    and only the field name distinguishes them. -/
+partial def binderNames : Expr → List Name
+  | .forallE n _ b _ => n :: binderNames b
+  | _ => []
+
+/-- `e` with universe parameters renamed to positional `u0, u1, …`, so that a lemma generalised over
+    `{u v}` and its copy over `{v u}` still compare equal. -/
+def normLevels (levelParams : List Name) (e : Expr) : Expr :=
+  e.instantiateLevelParams levelParams
+    (levelParams.mapIdx fun i _ => .param (.mkSimple s!"u{i}"))
+
+/-- Number of *distinct* nodes in `e`'s DAG. Counting structurally would re-walk shared subterms and
+    blow up exponentially on proof terms, so nodes already seen are skipped (`Expr`'s cached hash and
+    pointer-fast `BEq` make the set cheap). Reported as the `size` column and used to tell a real
+    duplicated body from a one-constant alias. -/
+partial def dagSize (root : Expr) : Nat := Id.run do
+  let mut seen : Std.HashSet Expr := {}
+  let mut stack := [root]
+  let mut n := 0
+  while true do
+    match stack with
+    | [] => break
+    | e :: rest =>
+      stack := rest
+      if seen.contains e then continue
+      seen := seen.insert e
+      n := n + 1
+      match e with
+      | .app f a => stack := f :: a :: stack
+      | .lam _ t b _ | .forallE _ t b _ => stack := t :: b :: stack
+      | .letE _ t v b _ => stack := t :: v :: b :: stack
+      | .mdata _ x | .proj _ _ x => stack := x :: stack
+      | _ => pure ()
+  return n
+
+/-- Statement hash identifying duplicates: two declarations with the same key state the same thing.
+
+    Theorems and axioms key on the type alone: proof irrelevance means the same statement IS the same
+    fact however it was proved — which is exactly the case `dep_dup.py`'s dependency-similarity pass
+    cannot see, since two independent proofs have disjoint dependency rows. Definitions key on type
+    AND value: a shared type is weak evidence for a `def` (many share one), an identical body is a
+    copy-paste.
+
+    An inductive has no value, and its *former's* type says nothing about its fields — keying on that
+    collided every class of the same arity (41 of them at `(𝒞 : Type u) → [Cat 𝒞] → Type (max u v)`,
+    from `HasTerminal` to `Topos`). Key on the constructor types instead, with references to the
+    mutual block replaced by positional markers so that two structures are compared by their fields
+    rather than separated by their own names — and on the constructor and field *names* too, which no
+    `Expr` hash sees, without which every pair of equal-arity enumerations (`Quant` with `Alg.Two`)
+    and every pair of like-typed wrappers (`RelObj` with `Alg.RelMapObj`) merged. -/
+def declKey (env : Environment) (ci : ConstantInfo) : UInt64 :=
+  let canon (e : Expr) : UInt64 := (stripMData (normLevels ci.levelParams e)).hash
+  match ci with
+  | .thmInfo _ | .axiomInfo _ => canon ci.type
+  | .inductInfo ind =>
+    let deSelf (e : Expr) : Expr := e.replace fun
+      | .const n _ => (ind.all.idxOf? n).map fun i => .const (.mkSimple s!"#self{i}") []
+      | _ => none
+    let ctorKey (h : UInt64) (c : Name) : UInt64 :=
+      let ty := deSelf ((env.find? c).map (·.type) |>.getD default)
+      let ctorName := match c with | .str _ s => s | _ => ""
+      mixHash (mixHash h (mixHash (hash ctorName) (hash (binderNames ty)))) (canon ty)
+    ind.ctors.foldl ctorKey (mixHash (hash ind.numParams) (canon (deSelf ci.type)))
+  | _ => mixHash (canon ci.type) ((ci.value?.map canon).getD 0)
+
 def oneLine (s : String) : String := Id.run do
   let mut out := ""
   let mut sp := false
@@ -83,12 +174,12 @@ partial def sectionHeader (lines : Array String) (line : Nat) : Option String :=
     | none   => if i == 0 then none else go (i - 1)
   if lines.isEmpty || line < 2 then none else go (min (line - 2) (lines.size - 1))
 
-/-- Pretty-printed type and first docstring line for each row (needs a MetaM run).
+/-- Pretty-printed type, first docstring line and duplicate key for each row (needs a MetaM run).
     Strip the ubiquitous `Freyd.` prefix from the printed type and doc text (same reason
     `shortName` strips it from the decl/edge names) so the whole tsv reads prefix-free. These
     columns are display-only, so a blunt substring strip is fine and also catches names the
     pretty-printer leaves fully qualified (inaccessible `✝` auxiliaries) and literal docstrings. -/
-def annotate (env : Environment) (rows : Array Row) : IO (Array (Row × String × String)) := do
+def annotate (env : Environment) (rows : Array Row) : IO (Array (Row × Ann)) := do
   let ctx : Core.Context := { fileName := "<extract>", fileMap := default }
   -- ONE `CoreM.toIO` PER decl. Batching many decls into a single CoreM run (a `mapM` inside one
   -- `toIO`) accumulates per-decl residue in `Core.State` (delaborator/pp caches) that is freed only
@@ -96,15 +187,15 @@ def annotate (env : Environment) (rows : Array Row) : IO (Array (Row × String �
   -- fresh run per decl releases the residue immediately (Lean is refcounted), holding the pass flat
   -- at ~3.2 GB. Verified by bisection: import+extract+edge-DFS+all-9317-ppExpr, one toIO each, 3.2 GB.
   rows.mapM fun row@(n, _, _, _) => do
-    let one : CoreM (String × String) := do
+    let one : CoreM Ann := do
       let ci := (env.find? n).get!
       let ty ← try
           pure ((oneLine (toString (← Meta.MetaM.run' (Meta.ppExpr ci.type)))).replace "Freyd." "")
         catch _ => pure ""
       let doc := (((← findDocString? env n).getD "").splitOn "\n" |>.headD "").replace "Freyd." ""
-      return (ty, oneLine doc)
-    let (ty, doc) ← Prod.fst <$> one.toIO ctx { env }
-    return (row, ty, doc)
+      return { type := ty, doc := oneLine doc, key := declKey env ci,
+               size := (ci.value?.map dagSize).getD 0 }
+    Prod.mk row <$> Prod.fst <$> one.toIO ctx { env }
 
 /-- Rows and edges for the declarations of `env` living in modules satisfying `wanted`. -/
 def extract (env : Environment) (wanted : Name → Bool) :
@@ -123,9 +214,16 @@ def extract (env : Environment) (wanted : Name → Bool) :
       let some m := freydMod? n | return kept
       -- compiler-generated helpers (injEq, noConfusion, …) carry no declaration range
       let some r := declRangeExt.find? env n | return kept
-      -- `instance` declarations are `.defnInfo` too (kindOf → "def"); relabel via the
-      -- instance-attribute environment extension so they're distinguishable in the graph.
-      let kind := if kind == "def" && Meta.isInstanceCore env n then "instance" else kind
+      -- `instance` and `abbrev` declarations are `.defnInfo` too (kindOf → "def"); relabel from the
+      -- instance-attribute and reducibility extensions so they're distinguishable in the graph. An
+      -- `abbrev` naming an existing term is a deliberate alias, not duplication, so the report needs
+      -- to tell the two apart.
+      let kind :=
+        if kind != "def" then kind
+        else if Meta.isInstanceCore env n then "instance"
+        else match getReducibilityStatusCore env n with
+          | .reducible => "abbrev"
+          | _ => "def"
       return kept.insert n (kind, m, r.range.pos.line)) {}
   -- pass 2: rows for wanted modules; edges routed through generated/internal constants. Iterate the
   -- ~9k `kept` decls directly (was: a second full scan of all ~100k constants), `env.find?`ing each
@@ -166,7 +264,7 @@ def extract (env : Environment) (wanted : Name → Bool) :
     returns, BEFORE the orphan loop imports anything. Previously `envRoot` stayed live as a `main`
     local across the whole orphan loop, so root + orphan environments coexisted — roughly doubling
     peak memory, a direct OOM contributor. -/
-def processRoot : IO (Array (Row × String × String) × Array (Name × Name) × Std.HashSet Name) := do
+def processRoot : IO (Array (Row × Ann) × Array (Name × Name) × Std.HashSet Name) := do
   let envRoot ← importModules #[{ module := `Freyd }] {} (trustLevel := 1024) (loadExts := true)
   let done : Std.HashSet Name :=
     .ofArray (envRoot.header.moduleNames.filter (`Freyd |>.isPrefixOf ·))
@@ -176,7 +274,7 @@ def processRoot : IO (Array (Row × String × String) × Array (Name × Name) ×
 /-- Same, for one orphan module (each in its own environment, since two orphans may define the same
     constant name). The function boundary frees each orphan environment before the next import. -/
 def processOrphan (m : Name) (done : Std.HashSet Name) :
-    IO (Array (Row × String × String) × Array (Name × Name) × Array Name) := do
+    IO (Array (Row × Ann) × Array (Name × Name) × Array Name) := do
   let env ← importModules #[{ module := m }] {} (trustLevel := 1024) (loadExts := true)
   let mods := env.header.moduleNames.filter fun x =>
     (`Freyd |>.isPrefixOf x) && !done.contains x
@@ -249,8 +347,8 @@ def main : IO Unit := do
       edges := edges ++ e
       done := mods.foldl (·.insert ·) done
   IO.FS.createDirAll "graph"
-  let sorted := (rows.map fun ((n, k, m, l), ty, doc) =>
-      ((modToPath m "lean").toString, l, shortName n, k, ty, doc))
+  let sorted := (rows.map fun ((n, k, m, l), a) =>
+      ((modToPath m "lean").toString, l, shortName n, k, a))
     |>.qsort fun a b => a.1 < b.1 || (a.1 == b.1 && a.2.1 < b.2.1)
   -- Fill empty docs with the nearest `/-! ### … -/` section header scraped from source (94% of
   -- undocumented decls sit under one). Group-level context, not a per-decl doc, but far better than
@@ -259,8 +357,8 @@ def main : IO Unit := do
   let mut srcCache : Std.HashMap String (Array String) := {}
   let mut filled := 0
   let mut withHdr := #[]
-  for (f, l, n, k, ty, doc) in sorted do
-    if !doc.isEmpty then withHdr := withHdr.push (f, l, n, k, ty, doc); continue
+  for (f, l, n, k, a) in sorted do
+    if !a.doc.isEmpty then withHdr := withHdr.push (f, l, n, k, a); continue
     let ls ← match srcCache.get? f with
       | some ls => pure ls
       | none =>
@@ -269,11 +367,18 @@ def main : IO Unit := do
         pure ls
     let doc' := (sectionHeader ls l).getD ""
     if !doc'.isEmpty then filled := filled + 1
-    withHdr := withHdr.push (f, l, n, k, ty, doc')
+    withHdr := withHdr.push (f, l, n, k, { a with doc := doc' })
   let sorted := withHdr
   IO.FS.withFile "graph/decls.tsv" .write fun h => do
-    for (f, l, n, k, ty, doc) in sorted do
-      h.putStrLn s!"{n}\t{k}\t{f}\t{l}\t{ty}\t{doc}"
+    for (f, l, n, k, a) in sorted do
+      h.putStrLn s!"{n}\t{k}\t{f}\t{l}\t{a.type}\t{a.doc}\t{a.key}\t{a.size}"
+  -- module → directly imported module: lets the report say whether a proposed forward target is
+  -- upstream of its caller (safe) or downstream (would need the move the skill warns about).
+  IO.FS.withFile "graph/imports.tsv" .write fun h => do
+    for m in built do
+      for line in ← IO.FS.lines (modToPath m "lean") do
+        let l := line.trimAscii.toString
+        if l.startsWith "import " then h.putStrLn s!"{m}\t{(l.drop 7).trimAscii}"
   let es := (edges.map fun (s, t) => s!"{shortName s}\t{shortName t}") |>.qsort (· < ·) |>.toList.eraseReps.toArray
   IO.FS.withFile "graph/deps.tsv" .write fun h => do
     for e in es do h.putStrLn e
