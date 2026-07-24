@@ -707,16 +707,8 @@ theorem image_chosenPullback_isPullback' {𝒞 : Type w} [Cat.{w} 𝒞]
       rw [show (F.map em ≫ φ) ≫ snd = F.map (em ≫ snd) from (Cat.assoc _ _ _).trans hbr₂]
       exact hv₂
 
-/-- **A cone with the binary-product universal property has iso comparison map** (= verbatim
-    `Colim.isIso_of_product_up`, `S1_543_CatColimitRegular.lean` — same single-universe
-    statement, kept as a local alias since this section's downstream lemmas use `'`-names). -/
-theorem isIso_of_product_up' [HasBinaryProducts 𝒟]
-    {A B P : 𝒟} (p₁ : P ⟶ A) (p₂ : P ⟶ B)
-    (hup : ∀ {Z : 𝒟} (f : Z ⟶ A) (g : Z ⟶ B),
-      ∃ u : Z ⟶ P, (u ≫ p₁ = f ∧ u ≫ p₂ = g) ∧
-        ∀ v : Z ⟶ P, v ≫ p₁ = f → v ≫ p₂ = g → v = u) :
-    IsIso (pair p₁ p₂ : P ⟶ prod A B) :=
-  Colim.isIso_of_product_up p₁ p₂ hup
+-- A cone with the binary-product universal property has iso comparison map:
+-- `Colim.isIso_of_product_up` (`S1_543_CatColimitRegular.lean`), used directly below.
 
 end GenericPullbackPres
 
@@ -751,7 +743,7 @@ noncomputable def stageInclFunctorL (i : ι) :
 /-! ### `stageInclFunctorL` preserves binary products
 
   The comparison map `pair (F fst) (F snd) : ⟨i, A×B⟩ ⟶ prod_colim (⟨i,A⟩) (⟨i,B⟩)` is iso.  By
-  `isIso_of_product_up'` it suffices that the cone `(⟨i, A×B⟩, F fst, F snd)` has the binary-product
+  `Colim.isIso_of_product_up` it suffices that the cone `(⟨i, A×B⟩, F fst, F snd)` has the binary-product
   universal property in the colimit: this is the lax mirror of the strict `objIncl_preserves_products`
   mediator construction (push competitors to a common stage `N ≥ i`, use `pData.presPair` there). -/
 
@@ -931,7 +923,7 @@ theorem stageInclL_product_up (pData : LaxProductData L) (i : ι) (x y : L.A i)
 
 /-- **`stageInclFunctorL i` preserves binary products** (for the colimit's
     `laxColimHasBinaryProducts`).  The comparison map `pair (F fst) (F snd)` is iso by
-    `isIso_of_product_up'`, whose hypothesis is the product universal property `stageInclL_product_up`. -/
+    `Colim.isIso_of_product_up`, whose hypothesis is the product universal property `stageInclL_product_up`. -/
 theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) :
     @PreservesBinaryProducts (L.A i) (Obj L) (L.catA i) (laxColimCat L hL)
       (stageInclFunctorL L hL i) (pData.hp i)
@@ -939,7 +931,7 @@ theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) 
   letI : Cat (Obj L) := laxColimCat L hL
   letI : HasBinaryProducts (Obj L) := laxColimHasBinaryProducts L hL pData
   intro A B
-  exact isIso_of_product_up' (𝒟 := Obj L) (stageInclL L hL (pData.hp i).fst)
+  exact Colim.isIso_of_product_up (𝒞 := Obj L) (stageInclL L hL (pData.hp i).fst)
     (stageInclL L hL (pData.hp i).snd)
     (fun {Z} f g => stageInclL_product_up L hL pData i A B f g)
 

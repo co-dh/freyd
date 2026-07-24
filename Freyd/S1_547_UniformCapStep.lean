@@ -235,7 +235,7 @@ theorem terminalSlicePresProds :
   intro A B
   -- the cone `(terminalSliceObj (A×B), map fst, map snd)` has the slice product universal property:
   -- underlying it is the `S`-product of `A, B`, and slice maps are determined by underlying arrows.
-  refine isIso_of_product_up' (𝒟 := Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd)))
+  refine Colim.isIso_of_product_up (𝒞 := Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd)))
     (terminalSliceFunctor W |>.map fst) (terminalSliceFunctor W |>.map snd) ?_
   intro Z f g
   -- mediator: pair the underlying arrows in `S`, lift to the slice (term-uniqueness over `pr base`).
