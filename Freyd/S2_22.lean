@@ -350,31 +350,10 @@ theorem psi_unionU [UnionAllegory 𝒜] {a p c : 𝒜} (f : a ⟶ c) (g : p ⟶ 
 
 /-! ### Modular meet calculus: maps distribute over intersection (§2.136)
 
-  Two genuinely-new modular-law facts, proved Sorry-free, that the §2.228(a)
-  transport needs.  `simple_comp_inter` is Freyd §2.136 (`F(R∩S) = FR ∩ FS`
-  for `F` simple); `modular_le_left` is the left-handed companion of
-  `modular_le` (`(R≫S)∩T ⊑ R≫(S ∩ R°≫T)`), obtained by reciprocating the
-  right modular law.  Together they drive the source-apex round-trip below. -/
-
-/-- **§2.136**: a simple morphism distributes over intersection on the left,
-    `F ≫ (R ∩ S) = (F ≫ R) ∩ (F ≫ S)` for `F` simple.  Proved by reciprocating
-    and applying the right modular law, using `F° ≫ F ⊑ 1`. -/
-theorem simple_comp_inter [UnionAllegory 𝒜] {a b c : 𝒜} {F : a ⟶ b}
-    (hF : Simple F) (R S : b ⟶ c) : F ≫ (R ∩ S) = (F ≫ R) ∩ (F ≫ S) := by
-  apply le_antisymm
-  · exact le_inter (comp_mono_left F (inter_lb_left R S)) (comp_mono_left F (inter_lb_right R S))
-  have hgoal : ((F ≫ R) ∩ (F ≫ S))° ⊑ (F ≫ (R ∩ S))° := by
-    rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_comp,
-        Allegory.recip_comp, Allegory.recip_inter]
-    refine le_trans (modular_le R° F° (S° ≫ F°)) ?_
-    apply comp_mono_right
-    apply le_inter (inter_lb_left _ _)
-    refine le_trans (inter_lb_right _ _) ?_
-    rw [Allegory.recip_recip, Cat.assoc]
-    calc S° ≫ (F° ≫ F) ⊑ S° ≫ Cat.id b := comp_mono_left S° hF
-      _ = S° := Cat.comp_id S°
-  have := recip_mono hgoal
-  rwa [Allegory.recip_recip, Allegory.recip_recip] at this
+  `modular_le_left` is the left-handed companion of `modular_le`
+  (`(R≫S)∩T ⊑ R≫(S ∩ R°≫T)`), obtained by reciprocating the right modular law; it
+  drives the source-apex round-trip below.  (Freyd §2.136, `F(R∩S) = FR ∩ FS` for `F`
+  simple, is `simple_dist_inter` in `S2_1` — proved without `UnionAllegory`; use that.) -/
 
 /-- The **left modular law** in order form: `(R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T)`.
     The reciprocal companion of `modular_le`; both are pure modular-law facts. -/

@@ -994,7 +994,7 @@ theorem inflImage_isImage [RegularCategory 𝒞] {s t : Infl 𝒞}
   -- `e` is an `A`-cover (cover `image.lift` post-composed with the iso `prodOneRightInv J`),
   -- hence an `A′`-cover on the same underlying arrow (`coverC_to_inflCover`).
   have hcov𝒞 : Cover (𝒞 := 𝒞) e :=
-    cover_comp_iso_cat (Colim.image_lift_cover_local f')
+    cover_comp_iso_cat (image_lift_cover f')
       ⟨_, fst_pair _ _, fst_prodOneRightInv⟩
   have hcov : Cover (𝒞 := Infl 𝒞) (X := s) (Y := ([J] : List 𝒞)) e :=
     coverC_to_inflCover (s := s) (t := ([J] : List 𝒞)) (f := e) hcov𝒞
