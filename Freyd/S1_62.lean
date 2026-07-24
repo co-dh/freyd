@@ -1278,7 +1278,7 @@ theorem inter_complemented [HasBinaryCoproducts 𝒞] {B : 𝒞} {U V : Subobjec
 -- `stalkRep`, `horn_holds_of_stalk`), and its COLIMIT atom that no representable can do is now
 -- PROVEN axiom-clean:  ZERO is PRESERVED (`Tstar_preserves_initial` — every stalk of an initial
 -- object is empty, `TF_initial_empty`), and the JOINT-FAITHFULNESS SEED is in hand
--- (`stalk_separates` ⇐ a local re-proof of `exists_ultrafilter_excluding`).
+-- (`stalk_separates` ⇐ `exists_ultrafilter_excluding`, proved above at top level).
 -- STILL OPEN (§2.217-grade, recorded in project memory `Ch2 Rel/Map bridge`), now isolated in
 -- `StalkResidual`:  (a) the §1.625 REGULAR preservation of the COLIMIT functor `T_F̂` (the five
 -- Cartesian/regular atoms + disjointCoprod-preserve, the latter reducing to the PROVEN
@@ -1658,6 +1658,48 @@ theorem exists_ultrafilter_extending (ℱ₀ : (Subobject 𝒞 one) → Prop)
       extends₀ := fun V hV => hm𝒢 V (m.extends₀ V hV) }
   -- m ≤ g, so Zorn-maximality of m gives g ≤ m, i.e. 𝒢 ⊆ m.fam.
   exact hm g hm𝒢 U h𝒢U
+
+/-- §1.754 (the §1.635 detection core).  Every PROPER complemented subterminator `V ⊂ 1` — one
+    not the whole of `1` — is **excluded by some ultra-filter** `F̂` in the Boolean algebra of
+    complemented subterminators (`¬ F̂ V`, i.e. the stalk omits `V`).  Holding for EVERY proper `V`,
+    this is the §1.635 half of Freyd's §1.754 collective-faithfulness criterion at `X = B̂`.
+
+    PROOF.  A complement `Vᶜ` of `V` is not below `0` (else `⊤ ≤ V ∪ Vᶜ ≤ V`, contra properness).
+    The principal up-set `𝒫 = {W complemented | Vᶜ ≤ W}` is a proper complemented pre-filter
+    (`inter_complemented` for directedness); `exists_ultrafilter_extending` lifts it to `F̂ ⊇ 𝒫`, so
+    `Vᶜ ∈ F̂`.  `V ∈ F̂` is impossible: directedness would give `W ∈ F̂` with `W ≤ V ∩ Vᶜ ≤ 0`. -/
+theorem exists_ultrafilter_excluding [HasBinaryCoproducts 𝒞]
+    (V : Subobject 𝒞 one) (hVcomp : IsComplementedSub V)
+    (hVproper : ¬ (Subobject.entire one).le V) :
+    ∃ Fhat, IsUltraFilter Fhat ∧ ¬ Fhat V := by
+  obtain ⟨Vc, hVdisj, hVcov⟩ := hVcomp
+  have hVcComp : IsComplementedSub Vc :=
+    ⟨V, Subobject.le_trans (inter_comm_le Vc V) hVdisj,
+      Subobject.le_trans hVcov (union_comm_le V Vc)⟩
+  have hVcNotZero : ¬ Subobject.le Vc Zero1 := by
+    intro hVc0
+    refine hVproper ?_
+    refine Subobject.le_trans hVcov ?_
+    exact HasSubobjectUnions.union_min _ _ _ (Subobject.le_refl V)
+      (Subobject.le_trans hVc0 (PreLogos.bottom_min V))
+  let 𝒫 : (Subobject 𝒞 one) → Prop := fun W => IsComplementedSub W ∧ Subobject.le Vc W
+  have h𝒫pre : IsPreFilter 𝒫 := by
+    refine ⟨⟨Vc, hVcComp, Subobject.le_refl Vc⟩, ?_⟩
+    rintro W₁ W₂ ⟨hW₁c, hVcW₁⟩ ⟨hW₂c, hVcW₂⟩
+    exact ⟨Subobject.inter W₁ W₂, ⟨inter_complemented hW₁c hW₂c,
+      Subobject.le_inter hVcW₁ hVcW₂⟩,
+      Subobject.inter_le_left _ _, Subobject.inter_le_right _ _⟩
+  have h𝒫proper : IsProperFilter 𝒫 := by
+    refine ⟨h𝒫pre, ?_⟩
+    rintro ⟨W, ⟨_, hVcW⟩, hW0⟩
+    exact hVcNotZero (Subobject.le_trans hVcW hW0)
+  have h𝒫comp : ∀ W, 𝒫 W → IsComplementedSub W := fun W hW => hW.1
+  obtain ⟨Fhat, hUF, hext⟩ := exists_ultrafilter_extending 𝒫 h𝒫proper h𝒫comp
+  refine ⟨Fhat, hUF, ?_⟩
+  have hVcF : Fhat Vc := hext Vc ⟨hVcComp, Subobject.le_refl Vc⟩
+  intro hVF
+  obtain ⟨W, hWF, hWV, hWVc⟩ := hUF.1.1.2 V Vc hVF hVcF
+  exact hUF.1.2 ⟨W, hWF, Subobject.le_trans (Subobject.le_inter hWV hWVc) hVdisj⟩
 
 /-! ## §1.631 Complemented subobject of a projective is projective
 
@@ -4338,44 +4380,6 @@ def TstarFunctor : Functor 𝒞 (StalkIndex 𝒞 → Type u) where
 @[simp] theorem Tstar_map_app {A B : 𝒞} (f : A ⟶ B) (F : StalkIndex 𝒞) (x : Tstar A F) :
     (TstarFunctor.map f) F x = TF.map F.val f x := rfl
 
-/-! #### Re-proof of the §1.635 faithfulness seed `exists_ultrafilter_excluding` (local — importing
-    `S1_75` would cycle). -/
-
-/-- §1.754 / §1.635 detection core, local copy: every PROPER complemented subterminator `V ⊂ 1` is
-    EXCLUDED by some ultra-filter.  Verbatim the `S1_75` proof, which depends only on machinery
-    already in this file (`exists_ultrafilter_extending`, `inter_complemented`). -/
-theorem exists_ultrafilter_excluding (V : Subobject 𝒞 one) (hVcomp : IsComplementedSub V)
-    (hVproper : ¬ (Subobject.entire one).le V) :
-    ∃ Fhat, IsUltraFilter Fhat ∧ ¬ Fhat V := by
-  obtain ⟨Vc, hVdisj, hVcov⟩ := hVcomp
-  have hVcComp : IsComplementedSub Vc :=
-    ⟨V, Subobject.le_trans (inter_comm_le Vc V) hVdisj,
-      Subobject.le_trans hVcov (union_comm_le V Vc)⟩
-  have hVcNotZero : ¬ Subobject.le Vc Zero1 := by
-    intro hVc0
-    refine hVproper ?_
-    refine Subobject.le_trans hVcov ?_
-    exact HasSubobjectUnions.union_min _ _ _ (Subobject.le_refl V)
-      (Subobject.le_trans hVc0 (PreLogos.bottom_min V))
-  let 𝒫 : (Subobject 𝒞 one) → Prop := fun W => IsComplementedSub W ∧ Subobject.le Vc W
-  have h𝒫pre : IsPreFilter 𝒫 := by
-    refine ⟨⟨Vc, hVcComp, Subobject.le_refl Vc⟩, ?_⟩
-    rintro W₁ W₂ ⟨hW₁c, hVcW₁⟩ ⟨hW₂c, hVcW₂⟩
-    exact ⟨Subobject.inter W₁ W₂, ⟨inter_complemented hW₁c hW₂c,
-      Subobject.le_inter hVcW₁ hVcW₂⟩,
-      Subobject.inter_le_left _ _, Subobject.inter_le_right _ _⟩
-  have h𝒫proper : IsProperFilter 𝒫 := by
-    refine ⟨h𝒫pre, ?_⟩
-    rintro ⟨W, ⟨_, hVcW⟩, hW0⟩
-    exact hVcNotZero (Subobject.le_trans hVcW hW0)
-  have h𝒫comp : ∀ W, 𝒫 W → IsComplementedSub W := fun W hW => hW.1
-  obtain ⟨Fhat, hUF, hext⟩ := exists_ultrafilter_extending 𝒫 h𝒫proper h𝒫comp
-  refine ⟨Fhat, hUF, ?_⟩
-  have hVcF : Fhat Vc := hext Vc ⟨hVcComp, Subobject.le_refl Vc⟩
-  intro hVF
-  obtain ⟨W, hWF, hWV, hWVc⟩ := hUF.1.1.2 V Vc hVF hVcF
-  exact hUF.1.2 ⟨W, hWF, Subobject.le_trans (Subobject.le_inter hWV hWVc) hVdisj⟩
-
 /-! #### ZERO atom — each stalk of an initial object is empty.
 
   The §1.636 win the representable push could not do: `T_F̂(Z) = ∅` when `Z` is initial.  Freyd's
@@ -4598,9 +4602,9 @@ end Stalk
      (`TF_initial_empty`, from properness of `F̂` via `TF_coterminator_empty` + `initialObj_iso_zero`
      transporting the canonical-`0` fact across `Z ≅ 0`), and a fibrewise-empty family is initial in
      the power (`isInitialObj_power_of_empty`).  This is the win the `homRep` push provably lacks.
-   • JOINT FAITHFULNESS SEED — `stalk_separates` (re-proving `exists_ultrafilter_excluding` locally,
-     since importing `S1_75` would cycle): every proper complemented `V ⊂ 1` is omitted by some
-     stalk.
+   • JOINT FAITHFULNESS SEED — `stalk_separates` (from `exists_ultrafilter_excluding`, proved at top
+     level in this file alongside `exists_ultrafilter_extending`): every proper complemented `V ⊂ 1`
+     is omitted by some stalk.
 
   These plug into `stalkRep : PreLogosRep 𝒞 (StalkIndex 𝒞 → Type u)` and the corollary
   `horn_holds_of_stalk`.  The `homRep`'s HARD residue is HONESTLY INVERTED into `StalkResidual`:

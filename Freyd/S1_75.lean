@@ -373,67 +373,13 @@ theorem atomicallyBased_isComplementedSub [PreLogos 𝒞] [HasIndexedSubobjectJo
   `T : A → H(B̂)` is faithful.  Freyd's faithfulness criterion (§1.754, second paragraph)
   reads:  for `X ⊂ B̂`, `T : A → H(X)` is faithful **iff** for each complemented `V ⊂ 1`
   there exists `F ∈ X` with `T_F(V) ≠ 1`, i.e. some ultra-filter that EXCLUDES `V`.  When
-  `X = B̂` this is automatic, and that is exactly what we prove below:
+  `X = B̂` this is automatic, and that is exactly `exists_ultrafilter_excluding` (proved upstream
+  in `S1_62` alongside `exists_ultrafilter_extending`, the only machinery it needs):
 
-  `exists_ultrafilter_excluding` — every PROPER complemented subterminator `V` (`V ≠ 1`) is
-  excluded by some ultra-filter.  This is the §1.635 stalk-detection that powers the
-  collective faithfulness of the stalk family over `B̂`.  It is the honest, infrastructure-
-  light core of §1.754; the surrounding `H(X)`/sheaf packaging is the recorded TODO. -/
-
-/-- §1.754 (the §1.635 detection core).  Every PROPER complemented subterminator `V ⊂ 1` —
-    one that is *not* the whole of `1` — is **excluded by some ultra-filter** `F̂` in the
-    Boolean algebra of complemented subterminators.
-
-    This is the content of Freyd's §1.754 faithfulness criterion at `X = B̂` (the whole Stone
-    space): "for each `V ⊂ 1` there exists `F ∈ B̂` with `T_F(V) ≠ 1`".  Here `F̂` excluding
-    `V` (`¬ F̂ V`) is exactly `T_F̂(V) ≠ 1` (the stalk omits `V`).  Since this holds for EVERY
-    proper `V`, the stalk family over all of `B̂` is collectively faithful — the §1.635 half of
-    §1.754.
-
-    PROOF.  Let `Vᶜ` be a complement of `V` (`V ∩ Vᶜ ≤ 0`, `⊤ ≤ V ∪ Vᶜ`).  Since `V` is proper
-    (`¬ ⊤ ≤ V`), `Vᶜ` is *not* below `0`: else `⊤ ≤ V ∪ Vᶜ ≤ V`, contra.  The principal up-set
-    `𝒫 = {W complemented | Vᶜ ≤ W}` is therefore a PROPER complemented pre-filter
-    (`inter_complemented` for directedness; `Vᶜ ⊄ 0` for properness).  By
-    `exists_ultrafilter_extending` it lifts to an ultra-filter `F̂ ⊇ 𝒫`, so `Vᶜ ∈ F̂`.  And
-    `V ∉ F̂`: were `V ∈ F̂`, directedness yields `W ∈ F̂` with `W ≤ V` and `W ≤ Vᶜ`, hence
-    `W ≤ V ∩ Vᶜ ≤ 0`, contradicting properness of `F̂`. -/
-theorem exists_ultrafilter_excluding [PreLogos 𝒞] [HasBinaryCoproducts 𝒞]
-    (V : Subobject 𝒞 one) (hVcomp : IsComplementedSub V)
-    (hVproper : ¬ (Subobject.entire one).le V) :
-    ∃ Fhat, IsUltraFilter Fhat ∧ ¬ Fhat V := by
-  obtain ⟨Vc, hVdisj, hVcov⟩ := hVcomp
-  -- `Vc` is complemented (complement `V`).
-  have hVcComp : IsComplementedSub Vc :=
-    ⟨V, Subobject.le_trans (inter_comm_le Vc V) hVdisj,
-      Subobject.le_trans hVcov (union_comm_le V Vc)⟩
-  -- `Vc` is NOT below `0`: else `⊤ ≤ V ∪ Vc ≤ V`, making `V` entire.
-  have hVcNotZero : ¬ Subobject.le Vc Zero1 := by
-    intro hVc0
-    refine hVproper ?_
-    refine Subobject.le_trans hVcov ?_
-    exact HasSubobjectUnions.union_min _ _ _ (Subobject.le_refl V)
-      (Subobject.le_trans hVc0 (PreLogos.bottom_min V))
-  -- the principal complemented up-set on `Vc`.
-  let 𝒫 : (Subobject 𝒞 one) → Prop := fun W => IsComplementedSub W ∧ Subobject.le Vc W
-  have h𝒫pre : IsPreFilter 𝒫 := by
-    refine ⟨⟨Vc, hVcComp, Subobject.le_refl Vc⟩, ?_⟩
-    rintro W₁ W₂ ⟨hW₁c, hVcW₁⟩ ⟨hW₂c, hVcW₂⟩
-    exact ⟨Subobject.inter W₁ W₂, ⟨inter_complemented hW₁c hW₂c,
-      Subobject.le_inter hVcW₁ hVcW₂⟩,
-      Subobject.inter_le_left _ _, Subobject.inter_le_right _ _⟩
-  have h𝒫proper : IsProperFilter 𝒫 := by
-    refine ⟨h𝒫pre, ?_⟩
-    rintro ⟨W, ⟨_, hVcW⟩, hW0⟩
-    exact hVcNotZero (Subobject.le_trans hVcW hW0)
-  have h𝒫comp : ∀ W, 𝒫 W → IsComplementedSub W := fun W hW => hW.1
-  obtain ⟨Fhat, hUF, hext⟩ := exists_ultrafilter_extending 𝒫 h𝒫proper h𝒫comp
-  refine ⟨Fhat, hUF, ?_⟩
-  -- `Vc ∈ F̂` (it is in `𝒫`).
-  have hVcF : Fhat Vc := hext Vc ⟨hVcComp, Subobject.le_refl Vc⟩
-  -- `V ∉ F̂`: meet with `Vc` would be `≤ 0`, contradicting properness.
-  intro hVF
-  obtain ⟨W, hWF, hWV, hWVc⟩ := hUF.1.1.2 V Vc hVF hVcF
-  exact hUF.1.2 ⟨W, hWF, Subobject.le_trans (Subobject.le_inter hWV hWVc) hVdisj⟩
+  every PROPER complemented subterminator `V` (`V ≠ 1`) is excluded by some ultra-filter.  This is
+  the §1.635 stalk-detection that powers the collective faithfulness of the stalk family over `B̂`.
+  It is the honest, infrastructure-light core of §1.754; the surrounding `H(X)`/sheaf packaging is
+  the recorded TODO. -/
 
 /-! ### §1.753  The reduction:  pre-logos rep + faithful + basis ⟹ logos rep
 

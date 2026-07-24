@@ -181,8 +181,7 @@ print(f"candidate pairs {len(cand)} -> {len(rows_out)} pass (cross-file, same-ki
 # these are the shapes it was added for (two proofs of one statement score ~0 on dependency overlap).
 TESTS=[('FibreDensityProof.fibrePinEqualizers','UniformCap.uniformPinEqualizers'),
        ('RegBundle','S2_154.SmallRegCat'),
-       ('Horn.IsTerminalObj','S2_154.IsTerm'),
-       ('YonedaEmbedding','Horn.homFunctor')]
+       ('Rcat.prNd0','Rcat.prNdA')]
 rank={frozenset((r[6],r[7])):i for i,r in enumerate(rows_out)}
 print("=== known duplicates (test) ===")
 for a,b in TESTS:
