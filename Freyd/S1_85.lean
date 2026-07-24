@@ -1499,6 +1499,11 @@ theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
 def transp {A E Y : 𝒞} (c : Y ⟶ E ^^ A) : prod A Y ⟶ E :=
   prodMap A Y (E ^^ A) c ≫ eval_exp A E
 
+/-- `transp` turns precomposition with `u : Y' ⟶ Y` into precomposition with `(A × u)`. -/
+theorem transp_precomp {A E Y Y' : 𝒞} (u : Y' ⟶ Y) (c : Y ⟶ E ^^ A) :
+    transp (u ≫ c) = prodMap A Y' Y u ≫ transp c := by
+  dsimp [transp]; rw [prodMap_comp, Cat.assoc]
+
 end Baseable
 
 end Freyd

@@ -113,11 +113,6 @@ theorem transp_expCovMap {A E E' Y : 𝒞} (c : Y ⟶ E ^^ A) (p : E ⟶ E') :
   dsimp [transp]
   rw [prodMap_comp, Cat.assoc, expCovMap_eval, ← Cat.assoc]
 
-/-- `transp` turns precomposition with `u : Y' ⟶ Y` into precomposition with `(A × u)`. -/
-theorem transp_precomp {A E Y Y' : 𝒞} (u : Y' ⟶ Y) (c : Y ⟶ E ^^ A) :
-    transp (u ≫ c) = prodMap A Y' Y u ≫ transp c := by
-  dsimp [transp]; rw [prodMap_comp, Cat.assoc]
-
 end ExpTranspose
 
 /-! ## §1.931  The dependent-product functor `Π_f`

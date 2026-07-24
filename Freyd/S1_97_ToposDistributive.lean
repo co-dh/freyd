@@ -57,13 +57,8 @@ variable [HasExponentials 𝒞]
     curry (transp k) = k :=
   (curry_unique_eq (f := transp k) (g := k) rfl).symm
 
-/-- `transp` is natural in `X` on the left: precomposing the transpose by `u : X' ⟶ X`
-    corresponds to precomposing `uncurry k` by `A × u`.
-    Concretely `uncurry (u ≫ k) = (A × u) ≫ uncurry k`. -/
-theorem uncurry_precomp {A Y X X' : 𝒞} (u : X' ⟶ X) (k : X ⟶ Y ^^ A) :
-    transp (u ≫ k) = prodMap A X' X u ≫ transp k := by
-  unfold transp
-  rw [← Cat.assoc, ← prodMap_comp]
+-- Naturality of `transp` in `X` on the left (`transp (u ≫ k) = (A × u) ≫ transp k`) is
+-- `transp_precomp`, in `Freyd.S1_85`.
 
 
 end Adjunction
@@ -95,12 +90,12 @@ def distCase {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
 theorem distCase_inl {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     distInl A B C ≫ distCase f g = f := by
   unfold distInl distCase
-  rw [← uncurry_precomp, case_inl, uncurry_curry]
+  rw [← transp_precomp, case_inl, uncurry_curry]
 
 theorem distCase_inr {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     distInr A B C ≫ distCase f g = g := by
   unfold distInr distCase
-  rw [← uncurry_precomp, case_inr, uncurry_curry]
+  rw [← transp_precomp, case_inr, uncurry_curry]
 
 theorem distCase_uniq {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X)
     (h : prod A (coprod B C) ⟶ X)
@@ -208,7 +203,7 @@ structure CopowerOf (I : Type w) (A : 𝒞) where
 def copInj {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) : A ⟶ prod A P.obj :=
   pair (Cat.id A) (term A ≫ P.inj i)
 
-/-- `copInj` factors as `prodOneRightInv ≫ (A × inj i)` — the bridge to `uncurry_precomp`. -/
+/-- `copInj` factors as `prodOneRightInv ≫ (A × inj i)` — the bridge to `transp_precomp`. -/
 theorem copInj_factor {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) :
     copInj P A i = prodOneRightInv A ≫ prodMap A one P.obj (P.inj i) := by
   unfold copInj
@@ -232,7 +227,7 @@ noncomputable def prod_distrib_copow {I : Type w} (P : CopowerOfOne I 𝒞) (A :
     transp (P.cotup (fun i => curry (fst ≫ g i)))
   inj_cotup {X} g i := by
     -- copInj i ≫ uncurry(cotup f) = prodOneRightInv ≫ uncurry (inj i ≫ cotup f)
-    rw [copInj_factor, Cat.assoc, ← uncurry_precomp, P.inj_cotup,
+    rw [copInj_factor, Cat.assoc, ← transp_precomp, P.inj_cotup,
         uncurry_curry, ← Cat.assoc, show prodOneRightInv A ≫ fst = Cat.id A from fst_pair _ _,
         Cat.id_comp]
   cotup_uniq {X} g h hh := by
