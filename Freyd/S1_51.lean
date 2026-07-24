@@ -284,10 +284,10 @@ def Epic {n : Nat} (x : Fin n → Σ A : 𝒞, A ⟶ B) : Prop :=
 
 
 /-- Post-composing a cover with an isomorphism is still a cover (no `HasImages` needed: a direct
-    `Cover`-definition argument, since `cover_comp` from S1_56 carries an images hypothesis).
-    NOTE: `Freyd.S1_62.cover_comp_iso` proves the same statement but only under `[PreLogos 𝒞]`;
-    here we have merely `[Cat 𝒞]`/pre-regular, so this weaker-hypothesis variant is kept. -/
-theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{u} 𝒞] {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z}
+    `Cover`-definition argument, since `cover_comp` from S1_56 carries an images hypothesis).  This
+    is the general `[Cat 𝒞]` fact at an arbitrary hom universe — the single home for "cover ≫ iso is
+    a cover"; downstream sections (e.g. §1.62 under `[PreLogos]`) apply it directly. -/
+theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{v} 𝒞] {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z}
     (hf : Cover f) (he : IsIso e) : Cover (f ≫ e) := by
   obtain ⟨einv, hee, heinv⟩ := he
   intro C m g hm hgm

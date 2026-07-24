@@ -43,24 +43,7 @@ variable [PreLogos 𝒞]
 
 /-! ### Cover composition helpers (needed for §1.631) -/
 
-/-- A cover pre-composed with an iso is still a cover. -/
-theorem cover_comp_iso {X Y Z : 𝒞} (f : X ⟶ Y) (g : Y ⟶ Z) (hf : Cover f) (hg : IsIso g) :
-    Cover (f ≫ g) := by
-  obtain ⟨g_inv, hgg_inv, hg_inv_g⟩ := hg
-  intro C m h hm heq
-  have hm_ginv_mono : Monic (m ≫ g_inv) := by
-    intro W u v huv
-    apply hm u v
-    have : (u ≫ m ≫ g_inv) ≫ g = (v ≫ m ≫ g_inv) ≫ g := by rw [huv]
-    simp only [Cat.assoc] at this; rw [hg_inv_g, Cat.comp_id] at this; exact this
-  have hfac : h ≫ (m ≫ g_inv) = f :=
-    calc h ≫ (m ≫ g_inv) = (h ≫ m) ≫ g_inv := (Cat.assoc _ _ _).symm
-      _ = (f ≫ g) ≫ g_inv := by rw [heq]
-      _ = f ≫ (g ≫ g_inv) := Cat.assoc _ _ _
-      _ = f := by rw [hgg_inv, Cat.comp_id]
-  have h_iso : IsIso (m ≫ g_inv) := hf (m ≫ g_inv) h hm_ginv_mono hfac
-  rw [show m = (m ≫ g_inv) ≫ g from by rw [Cat.assoc, hg_inv_g, Cat.comp_id]]
-  exact isIso_comp h_iso ⟨g_inv, hgg_inv, hg_inv_g⟩
+-- "cover ≫ iso is a cover" is the general `[Cat]` fact `cover_comp_iso_cat` (§1.51); use it directly.
 
 /-- An iso post-composed with a cover is still a cover. -/
 theorem iso_comp_cover {X Y Z : 𝒞} (f : X ⟶ Y) (g : Y ⟶ Z) (hf : IsIso f) (hg : Cover g) :
@@ -1884,7 +1867,7 @@ theorem complemented_of_projective_is_projective [DisjointBinaryCoproduct 𝒞]
     rw [himgH_arr]
     exact isIso_comp ⟨c_inv, hcc_inv, hc_inv_c⟩ hUh_entire
   -- e := h ≫ φ_inv : B+P' → Q  is a cover (cover ≫ iso).
-  have he : Cover (h ≫ φ_inv) := cover_comp_iso h φ_inv hh ⟨φ, hφ_inv_φ, hφφ_inv⟩
+  have he : Cover (h ≫ φ_inv) := cover_comp_iso_cat hh ⟨φ, hφ_inv_φ, hφφ_inv⟩
   -- Projectivity of Q splits e: s' : Q → B+P', s' ≫ (h ≫ φ_inv) = id_Q.
   obtain ⟨s', hs'⟩ := hQ (h ≫ φ_inv) he
   -- Key identity: φ_inv ≫ s' ≫ h = id_{P+P'}.

@@ -232,13 +232,13 @@ theorem globalToStalk_principal_bijective {A : 𝒞} :
 
 /-- `Projective` transfers along an iso of the witnessed object: if `D` is projective and
     `φ : C → D` is iso, then `C` is projective.  A cover `e : A → C` gives a cover `e ≫ φ : A → D`
-    (`cover_comp_iso`), split by `Projective D` as `s` (`s ≫ (e ≫ φ) = id D`); then `s ≫ φ⁻¹` splits
+    (`cover_comp_iso_cat`), split by `Projective D` as `s` (`s ≫ (e ≫ φ) = id D`); then `s ≫ φ⁻¹` splits
     `e`. -/
 theorem projective_of_iso {C D : 𝒞} (φ : C ⟶ D) (hφ : IsIso φ) (hD : Projective D) :
     Projective C := by
   obtain ⟨ψ, hφψ, hψφ⟩ := id hφ
   intro A e he
-  obtain ⟨s, hs⟩ := hD (e ≫ φ) (cover_comp_iso e φ he hφ)
+  obtain ⟨s, hs⟩ := hD (e ≫ φ) (cover_comp_iso_cat he hφ)
   -- `hs : s ≫ (e ≫ φ) = id D`.  The section of `e` is `t = φ ≫ s`.
   refine ⟨φ ≫ s, ?_⟩
   have hse : s ≫ (e ≫ φ) = Cat.id D := hs
