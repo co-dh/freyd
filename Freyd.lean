@@ -98,7 +98,6 @@ import Freyd.S1_543_LaxColimitCoproduct
 import Freyd.S1_543_LaxGermProducts
 import Freyd.S1_543_LaxGermImages
 import Freyd.S1_543_LaxGermEqualizers
-import Freyd.S1_543_LaxGermPullbacks
 import Freyd.S1_543_LaxGermCoproduct
 import Freyd.S1_61_LaxStrictInitial
 import Freyd.S1_63_LaxInvImageUnion
