@@ -416,3 +416,35 @@ the wrapper's stated type refolds definitions (`imgTransPi1inv` vs `Classical.ch
   `python3 scripts/wrapper_scan.py` and judge individually.
 - 83 book-numbered one-liners (block mentions the section sign) intentionally kept — the statement is the
   deliverable.
+
+## Duplication-detection methods to evaluate (2026-07-24)
+
+The current arsenal (`scripts/ExtractGraph.lean` exact-key + defeq, `scripts/SpecScan.lean` specialization,
+`scripts/dep_dup.py` SVD dep-embedding) ALL key on the **type**. Kind-3 (re-proved infra inlined in a
+bigger proof) and copy-pasted proof bodies live in the **value/proof term** and are invisible to every
+current pass. The embedding pass precision cliffs at ~rank 100. Candidates below; each is a task for
+`codex` to evaluate (feasibility on this repo, expected precision/recall vs the 4 existing passes,
+implementation cost, recommend build/skip). Delegated 2026-07-24 in worktree `codex-dedup-eval`.
+
+- [ ] **Proof-skeleton hashing** (top pick — cheapest, attacks the proof-body gap). In `ExtractGraph`, hash
+      each theorem's *value* `Expr` with leaves abstracted (keep app/lam/const-head structure, blank fvars
+      /literals); emit as a column; bucket on it. Catches copy-pasted-then-adapted proofs (`_923`-style)
+      and Kind-2 from the proof side. Already traverse the value for DAG-size, so low cost.
+- [ ] **Source-level clone detection (Type-2/3)** — Merkle-hash subtrees of parsed proof bodies
+      (tree-sitter) or token-shingle + winnowing (MOSS-style). Catches copy-pasted proof *blocks* inlined
+      in larger proofs (Kind 3), not top-level decls → invisible to type scans. Robust to renaming.
+- [ ] **DiscrTree candidate generation** — mathlib-style discrimination tree over all conclusions; same-slot
+      lemmas are the principled interchangeable set. Replaces SpecScan's ad-hoc `head+first-arg-head` bucket
+      and dep_dup's cosine (keyed on the proposition, not the dep footprint that makes `castHom` noise).
+- [ ] **simp-normal-form collision** — normalize each statement with the repo simp set, then exact-hash.
+      Catches dups differing only by simp-reducible noise (`A∩B` vs `B∩A`). More recall than defeq over the
+      simp-closed fragment.
+- [ ] **MinHash/SimHash on statement subterm shingles** — LSH on the statement's subterm multiset instead
+      of the dependency row. Measures proposition similarity directly, so it won't cluster different facts
+      that merely share deps. Cheaper than SVD.
+- [ ] **`exact?`/`solve_by_elim` per lemma** (frontier) — hide each lemma, ask if it is closed in one step
+      from the rest of the library ⇒ *derivable*, not just duplicated. Expensive (one elaboration each);
+      gate on a cheap pre-filter (small proof DAG, or a DiscrTree neighbour exists).
+- [ ] **Duplicate-subgraph mining** (module scale) — fingerprint each node's dependency neighbourhood, find
+      isomorphic induced subgraphs ⇒ "this whole development is a port of that one" (the `Colim`/`LaxColim`
+      parallel — a duplicated *structure*, the actual unit there, that single-lemma scans cannot collapse).
