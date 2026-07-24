@@ -86,7 +86,7 @@ theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X �
   simpa only [Cat.assoc, hi1, Cat.comp_id] using this
 
 /-- A mono post-composed with an iso is mono. -/
-theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
+theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{u} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
     (hf : Monic f) (hj : IsIso j) : Monic (f ≫ j) := by
   obtain ⟨jj, hj1, hj2⟩ := hj
   intro W u v huv

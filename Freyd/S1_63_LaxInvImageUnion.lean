@@ -55,18 +55,10 @@ namespace Freyd
 universe v u
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-- A mono post-composed with an iso is mono. -/
-theorem monic_postcomp_iso {X Y Z : 𝒞} {f : X ⟶ Y} {j : Y ⟶ Z}
-    (hf : Monic f) (hj : IsIso j) : Monic (f ≫ j) := by
-  obtain ⟨jj, hj1, _⟩ := hj
-  intro W u v huv
-  apply hf
-  have := congrArg (fun t => t ≫ jj) huv
-  simpa only [Cat.assoc, hj1, Cat.comp_id] using this
-
-/-- Transport a subobject `S ⊆ B` along an iso `e : B → B'` (post-compose the arrow). -/
+/-- Transport a subobject `S ⊆ B` along an iso `e : B → B'` (post-compose the arrow).  "mono ≫ iso is
+    mono" is `LaxColim.mono_postcomp_iso'` (RatCapHcanon, general hom universe). -/
 def subConj {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) : Subobject 𝒞 B' :=
-  Subobject.mk S.dom (S.arr ≫ e) (monic_postcomp_iso S.monic he)
+  Subobject.mk S.dom (S.arr ≫ e) (LaxColim.mono_postcomp_iso' S.monic he)
 
 theorem subConj_arr {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) :
     (subConj e he S).arr = S.arr ≫ e := rfl
