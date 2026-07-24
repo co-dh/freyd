@@ -179,10 +179,10 @@ print(f"candidate pairs {len(cand)} -> {len(rows_out)} pass (cross-file, same-ki
 
 # Regression seeds. Either pass may claim a pair; the exact pass is authoritative when it does, and
 # these are the shapes it was added for (two proofs of one statement score ~0 on dependency overlap).
-TESTS=[('Alg.AllegoryFunctor.mono','Alg.AllegoryFunctor.map_mono'),
-       ('eqMap_monic',"eqMap_mono'"),
-       ('FibreDensityProof.fibrePinEqualizers','UniformCap.uniformPinEqualizers'),
-       ('inter_mono','Subobject.inter_mono')]
+TESTS=[('FibreDensityProof.fibrePinEqualizers','UniformCap.uniformPinEqualizers'),
+       ('RegBundle','S2_154.SmallRegCat'),
+       ('Horn.IsTerminalObj','S2_154.IsTerm'),
+       ('YonedaEmbedding','Horn.homFunctor')]
 rank={frozenset((r[6],r[7])):i for i,r in enumerate(rows_out)}
 print("=== known duplicates (test) ===")
 for a,b in TESTS:
