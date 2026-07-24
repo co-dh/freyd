@@ -1495,6 +1495,10 @@ theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
                       ← prodMap_comp, ← prodMap_comp, eqMap_eq]),
             ← Cat.assoc, hh'])]
 
+/-- The evaluation transpose of `c : Y ⟶ E^^A`. -/
+def transp {A E Y : 𝒞} (c : Y ⟶ E ^^ A) : prod A Y ⟶ E :=
+  prodMap A Y (E ^^ A) c ≫ eval_exp A E
+
 end Baseable
 
 end Freyd

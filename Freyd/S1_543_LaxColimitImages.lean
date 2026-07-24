@@ -90,9 +90,9 @@ noncomputable def laxColimHasImages
       unfold pushHom
       rw [(L.functF hae).map_comp e₀ (isoInv (reflApp_isIso L Iobj))]
       refine cover_precomp_iso (transApp_isIso L a.2.1 hae x) ?_
-      refine cover_comp_iso' ?_
+      refine cover_comp_iso_cat ?_
         ⟨transApp L (D.refl a.1) hae Iobj, inv_isoInv_comp _, isoInv_comp _⟩
-      refine cover_comp_iso'
+      refine cover_comp_iso_cat
         (preservesImage_lift_cover (L.functF hae) (hmono hae) f₀ (himgpres hae f₀)) ?_
       exact functor_preserves_iso (F := L.functF hae) (isoInv (reflApp_isIso L Iobj))
         ⟨reflApp L Iobj, inv_isoInv_comp _, isoInv_comp _⟩

@@ -103,10 +103,6 @@ end SliceOfSliceHom
 section ExpTranspose
 variable [HasExponentials 𝒞]
 
-/-- The evaluation transpose of `c : Y ⟶ E^^A`. -/
-def transp {A E Y : 𝒞} (c : Y ⟶ E ^^ A) : prod A Y ⟶ E :=
-  prodMap A Y (E ^^ A) c ≫ eval_exp A E
-
 theorem transp_inj {A E Y : 𝒞} {c₁ c₂ : Y ⟶ E ^^ A} (h : transp c₁ = transp c₂) : c₁ = c₂ := by
   rw [← (show curry (transp c₁) = c₁ from (curry_unique_eq rfl).symm),
       ← (show curry (transp c₂) = c₂ from (curry_unique_eq rfl).symm), h]

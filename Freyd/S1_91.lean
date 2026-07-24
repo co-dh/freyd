@@ -838,16 +838,15 @@ theorem imp_adjunction {A : 𝒞} (S T X : Subobject 𝒞 A)
 
 /-! ### §1.914  The Heyting double-arrow `S ⇔ u` on `Sub(A)` and `φ³ = φ` -/
 
-/-- **Subobject equality** = mutual `≤`.  `Sub(A)` is a preorder; this is the
-    induced equivalence (anti-symmetry up to isomorphism). -/
-def Sub.equiv {A : 𝒞} (S T : Subobject 𝒞 A) : Prop := S.le T ∧ T.le S
+-- Subobject equality (mutual `≤`, the equivalence induced by the `Sub(A)` preorder) is
+-- `Subobject.Equiv` in `Freyd.S1_51`, where `Subobject.le` is defined.
 
 
 /-- **Leibniz characterization of subobject equality**: `S ≃ T` iff they have the
     same lower set (same predecessors).  This reduces equalities of Heyting terms to
     equivalences of their membership predicates `· ≤ S ↔ · ≤ T`. -/
 theorem Sub.equiv_iff_forall_le {A : 𝒞} (S T : Subobject 𝒞 A) :
-    Sub.equiv S T ↔ ∀ X : Subobject 𝒞 A, X.le S ↔ X.le T := by
+    Subobject.Equiv S T ↔ ∀ X : Subobject 𝒞 A, X.le S ↔ X.le T := by
   constructor
   · rintro ⟨hST, hTS⟩ X
     exact ⟨fun h => Subobject.le_trans h hST, fun h => Subobject.le_trans h hTS⟩
@@ -879,7 +878,7 @@ theorem mem_dbar_iff {A : 𝒞} (S u X : Subobject 𝒞 A) :
 
 /-- **§1.914 (⇔ is symmetric)**: `(S ⇔ u) ≃ (u ⇔ S)` as subobjects.  Their
     membership predicates `χ_S = χ_u` and `χ_u = χ_S` along `X.arr` coincide. -/
-theorem dbar_symm {A : 𝒞} (S u : Subobject 𝒞 A) : Sub.equiv (Sub.dbar S u) (Sub.dbar u S) := by
+theorem dbar_symm {A : 𝒞} (S u : Subobject 𝒞 A) : Subobject.Equiv (Sub.dbar S u) (Sub.dbar u S) := by
   rw [Sub.equiv_iff_forall_le]
   intro X
   rw [mem_dbar_iff, mem_dbar_iff]
@@ -993,7 +992,7 @@ theorem comp_dbar {V W : 𝒞} (k : V ⟶ W)
       (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])]
 
 -- NOTE (§1.914, `φ³ = φ` residual).  The Heyting cube law
---   `Sub.equiv (Sub.dbar (Sub.dbar (Sub.dbar S u) u) u) (Sub.dbar S u)`
+--   `Subobject.Equiv (Sub.dbar (Sub.dbar (Sub.dbar S u) u) u) (Sub.dbar S u)`
 -- (with `φ S := S ⇔ u`) is the algebraic heart of §1.919.  Its EASY half
 -- `φ S ≤ φ³ S` is exactly `dbar_unit (Sub.dbar S u) u` (proven).  The hard half
 -- `φ³ S ≤ φ S` reduces, via `mem_dbar_iff` + `comp_dbar` on `e := (φ³S).arr` and the

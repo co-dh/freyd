@@ -70,6 +70,7 @@ for r in csv.reader(open(DEPS), delimiter='\t'):
     if a is not None and b is not None: rows.append(a); cols.append(b)
 A = coo_matrix((np.ones(len(rows)), (rows, cols)), shape=(n,n)).tocsr()
 indeg = np.asarray(A.sum(0)).ravel()                       # dep in-degree (also a decl's own in-degree)
+dout_all = [A.indices[A.indptr[i]:A.indptr[i+1]] for i in range(n)]   # full dep rows (hubs kept)
 
 # --- pass 1: exact statement collisions --------------------------------------------------------
 # Equal `key` = identical elaborated statement up to binder/universe renaming. For a theorem that is
@@ -86,6 +87,15 @@ def canonical(g):
     """The member every other one can already import, most-used first — the collapse target."""
     ok = [a for a in g if all(visible(a, b) for b in g)]
     return max(ok, key=lambda nm: indeg[idx[nm]]) if ok else None
+
+def suggested_home(g):
+    """Where a group with no canonical member has to move to. Candidates are the modules EVERY member
+    already imports. Among those, prefer the ones that define something the declaration is stated in
+    terms of — a `Cover` fact belongs where `Cover` is defined, not merely in the nearest file that
+    can see it. Of those, the most downstream (importing the most of the other candidates)."""
+    common = set.intersection(*(imports_of(modof(nm)) for nm in g))
+    hosts = {modof(names[d]) for nm in g for d in dout_all[idx[nm]] if names[d] in info} & common
+    return max(hosts or common, key=lambda m: len(imports_of(m) & common), default=None)
 
 def blocker(can, nm):
     if modof(can) != modof(nm): return ''                  # `canonical` already proved it upstream
@@ -109,7 +119,9 @@ for g in real:
         tag = 'canon' if nm == can else ('dup  ' if can else 'split')
         print(f"      {tag} {nm}  ({where(nm)})  used={int(indeg[idx[nm]])}"
               f"{blocker(can, nm) if can and nm != can else ''}")
-    if can is None: print("      no member is importable from all the others — needs a move")
+    if can is None:
+        home = suggested_home(g)
+        print(f"      no member is importable from all the others — move to {home or '(no common import)'}")
 
 print(f"\n=== aliases / pins ({len(exact)-len(real)} groups, informational: naming a term is not "
       f"duplication) ===")

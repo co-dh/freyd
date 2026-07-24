@@ -43,27 +43,26 @@ section Adjunction
 
 variable [HasExponentials 𝒞]
 
-/-- The inverse transpose: `k : X ⟶ Y^A` gives `uncurry k : A×X ⟶ Y`,
-    namely `(A × k) ≫ eval`. -/
-def uncurry {A Y X : 𝒞} (k : X ⟶ Y ^^ A) : prod A X ⟶ Y :=
-  prodMap A X (Y ^^ A) k ≫ eval_exp A Y
+-- The inverse transpose `k : X ⟶ Y^A ↦ (A × k) ≫ eval` is `transp`, in `Freyd.S1_85` beside
+-- `curry`; this file's `uncurry` was the same definition under a second name.  The `uncurry_*`
+-- lemmas below are stated about `transp` and keep their names.
 
-/-- `curry` then `uncurry` is the identity (β-rule, restated). -/
+/-- `curry` then `transp` is the identity (β-rule, restated). -/
 @[simp] theorem uncurry_curry {A Y X : 𝒞} (f : prod A X ⟶ Y) :
-    uncurry (curry f) = f := by
-  unfold uncurry; exact curry_eval_eq f
+    transp (curry f) = f := by
+  unfold transp; exact curry_eval_eq f
 
-/-- `uncurry` then `curry` is the identity (uniqueness). -/
+/-- `transp` then `curry` is the identity (uniqueness). -/
 @[simp] theorem curry_uncurry {A Y X : 𝒞} (k : X ⟶ Y ^^ A) :
-    curry (uncurry k) = k :=
-  (curry_unique_eq (f := uncurry k) (g := k) rfl).symm
+    curry (transp k) = k :=
+  (curry_unique_eq (f := transp k) (g := k) rfl).symm
 
-/-- `uncurry` is natural in `X` on the left: precomposing the transpose by `u : X' ⟶ X`
+/-- `transp` is natural in `X` on the left: precomposing the transpose by `u : X' ⟶ X`
     corresponds to precomposing `uncurry k` by `A × u`.
     Concretely `uncurry (u ≫ k) = (A × u) ≫ uncurry k`. -/
 theorem uncurry_precomp {A Y X X' : 𝒞} (u : X' ⟶ X) (k : X ⟶ Y ^^ A) :
-    uncurry (u ≫ k) = prodMap A X' X u ≫ uncurry k := by
-  unfold uncurry
+    transp (u ≫ k) = prodMap A X' X u ≫ transp k := by
+  unfold transp
   rw [← Cat.assoc, ← prodMap_comp]
 
 
@@ -91,7 +90,7 @@ def distInr (A B C : 𝒞) : prod A C ⟶ prod A (coprod B C) :=
     transpose to `B ⟶ X^A`, `C ⟶ X^A`, copair, then transpose back. -/
 def distCase {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     prod A (coprod B C) ⟶ X :=
-  uncurry (case (curry f) (curry g))
+  transp (case (curry f) (curry g))
 
 theorem distCase_inl {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     distInl A B C ≫ distCase f g = f := by
@@ -119,8 +118,8 @@ theorem distCase_uniq {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X)
     · rw [curry_precomp]
       have : prodMap A C (coprod B C) inr ≫ h = g := h₂
       rw [this]
-  calc h = uncurry (curry h) := (uncurry_curry h).symm
-    _ = uncurry (case (curry f) (curry g)) := by rw [key]
+  calc h = transp (curry h) := (uncurry_curry h).symm
+    _ = transp (case (curry f) (curry g)) := by rw [key]
 
 /-- The canonical comparison map `(A×B) + (A×C) → A×(B+C)`, the copairing of the
     two distributed injections. -/
@@ -230,7 +229,7 @@ noncomputable def prod_distrib_copow {I : Type w} (P : CopowerOfOne I 𝒞) (A :
   inj i := copInj P A i
   cotup {X} g :=
     -- transpose family g i : A ⟶ X to one ⟶ X^A, copower-of-1 cotuple, untranspose
-    uncurry (P.cotup (fun i => curry (fst ≫ g i)))
+    transp (P.cotup (fun i => curry (fst ≫ g i)))
   inj_cotup {X} g i := by
     -- copInj i ≫ uncurry(cotup f) = prodOneRightInv ≫ uncurry (inj i ≫ cotup f)
     rw [copInj_factor, Cat.assoc, ← uncurry_precomp, P.inj_cotup,
@@ -259,8 +258,8 @@ noncomputable def prod_distrib_copow {I : Type w} (P : CopowerOfOne I 𝒞) (A :
         _ = fst ≫ (prodOneRightInv A ≫ (prodMap A one P.obj (P.inj i) ≫ h)) := by
             rw [Cat.assoc]
         _ = fst ≫ g i := by rw [e]
-    calc h = uncurry (curry h) := (uncurry_curry h).symm
-      _ = uncurry (P.cotup (fun i => curry (fst ≫ g i))) := by rw [key]
+    calc h = transp (curry h) := (uncurry_curry h).symm
+      _ = transp (P.cotup (fun i => curry (fst ≫ g i))) := by rw [key]
 
 end InfDistrib
 
