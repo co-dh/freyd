@@ -1152,8 +1152,7 @@ theorem effective_regular_additive_is_abelian
         _ = zeroHom A Q := zeroHom_comp_left _
     -- `neg m ≫ q = neg (m ≫ q)`, and `neg X = 0 → X = 0` (apply `neg`, use `neg_neg`, `neg 0 = 0`).
     have h4 : neg (m ≫ q) = zeroHom A Q := by rw [← neg_comp]; exact h3
-    have hneg0 : neg (zeroHom A Q) = zeroHom A Q :=
-      (neg_unique (by rw [add_zero])).symm
+    have hneg0 : neg (zeroHom A Q) = zeroHom A Q := neg_zero A Q
     have h5 : m ≫ q = zeroHom A Q := by
       rw [← neg_neg (m ≫ q), h4, hneg0]
     rw [h5, zeroHom_eq_zeroMorphism']

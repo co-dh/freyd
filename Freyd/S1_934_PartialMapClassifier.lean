@@ -520,9 +520,7 @@ theorem partialMapClassifier_exists (B : 𝒞) : Nonempty (LawfulPMC 𝒞 B) := 
     -- χ ≫ ι is e-fixed; classifies pmRel P against mem ⟹ χ ≫ ι = Λ(pmRel P).
     have hχι_efix : (χ ≫ pmcIota B) ≫ funcIdem B = χ ≫ pmcIota B := by
       -- ι ≫ e = ι ≫ (r ≫ ι) = (ι ≫ r) ≫ ι = ι.
-      have hιe : pmcIota B ≫ funcIdem B = pmcIota B := by
-        rw [← pmcRetr_iota, ← Cat.assoc, pmcIota_retr, Cat.id_comp]
-      rw [Cat.assoc, hιe]
+      rw [Cat.assoc, pmcIota_idem B]
     -- relPullback (χ≫ι) mem ≅ pmRel P : via postcomp_mono + funcMem→mem (e-fixed) + hr.
     obtain ⟨hpc1, hpc2⟩ := pullback_postcomp_mono (pmcIota B) hιmono χ (singletonMap923 B ≫ pmcRetr B)
     -- (singletonMap923 B ≫ pmcRetr B) ≫ ι = {·}.

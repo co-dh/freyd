@@ -1,6 +1,7 @@
 /- Extract the declaration graph of the Freyd library.
    Run from repo root:  lake env lean --run scripts/ExtractGraph.lean
    Output: graph/decls.tsv    (name  kind  file  line  type  doc-first-line  key  size)
+           graph/inline.tsv   (decl  lemma-it-restates  statement-nodes  proof-nodes  proof-shape)
            graph/deps.tsv     (src  dst)
            graph/imports.tsv  (module  imported-module)
    The doc column is the decl's own `/-- -/` first line; when it has none (≈26% of decls, mostly
@@ -248,6 +249,32 @@ partial def sectionHeader (lines : Array String) (line : Nat) : Option String :=
     | none   => if i == 0 then none else go (i - 1)
   if lines.isEmpty || line < 2 then none else go (min (line - 2) (lines.size - 1))
 
+/-- What a sub-proof looks like, which is what decides whether a hit is worth acting on.  Node count
+    cannot decide it: an elaborated `rfl` embeds the whole statement and so weighs as much as a real
+    derivation (50 nodes for `sigmaRel_sliceMem_colA`, against 28 for a genuine one).  A `rfl` or a
+    single call has nothing to collapse — the statement is duplicated, the proof is not. -/
+private def proofShape (proof : Expr) : String := Id.run do
+  let mut binder := false
+  let mut seen : Std.HashSet Expr := {}
+  let mut stack := [proof]
+  while true do
+    match stack with
+    | [] => break
+    | e :: rest =>
+      stack := rest
+      if seen.contains e then continue
+      seen := seen.insert e
+      match e with
+      | .lam .. | .letE .. => binder := true; break
+      | .app f a => stack := f :: a :: stack
+      | .mdata _ x | .proj _ _ x => stack := x :: stack
+      | .forallE _ t b _ => stack := t :: b :: stack
+      | _ => pure ()
+  if binder then return "derivation"
+  match proof.getAppFn with
+  | .const n _ => return if n == ``rfl || n == ``Eq.refl then "rfl" else "call"
+  | _ => return "call"
+
 /-- Statements `ci`'s proof establishes inline that the library already has as a theorem: for each
     `have`/`let`, close its type over the binders it uses, key it exactly as a theorem type is keyed,
     and look it up.  A hit whose sub-proof actually calls that theorem is the declaration USING it —
@@ -256,7 +283,7 @@ partial def sectionHeader (lines : Array String) (line : Nat) : Option String :=
     Sizes gate the report: below the floor the inline proof is cheaper than the call, and rewriting it
     to one would be churn, not de-duplication. -/
 private def inlineRestatements (thms : Std.HashMap UInt64 Name) (self : Name) (ci : ConstantInfo)
-    (minStatement := 15) (minProof := 10) : Array (Name × Nat × Nat) := Id.run do
+    (minStatement := 15) (minProof := 10) : Array (Name × Nat × Nat × String) := Id.run do
   let some value := ci.value? | return #[]
   let mut hits := #[]
   let mut seen : Std.HashSet Expr := {}
@@ -285,7 +312,7 @@ private def inlineRestatements (thms : Std.HashMap UInt64 Name) (self : Name) (c
               let statementSize := dagSize closed
               let proofSize := dagSize proof
               if statementSize ≥ minStatement && proofSize ≥ minProof then
-                hits := hits.push (lemmaName, statementSize, proofSize)
+                hits := hits.push (lemmaName, statementSize, proofSize, proofShape proof)
         stack := (ctx, t) :: (ctx, proof) :: (ctx.push (n, t), body) :: stack
       | none =>
         match e with
@@ -386,7 +413,7 @@ def extract (env : Environment) (wanted : Name → Bool) :
     local across the whole orphan loop, so root + orphan environments coexisted — roughly doubling
     peak memory, a direct OOM contributor. -/
 def processRoot : IO (Array (Row × Ann) × Array (Name × Name) × Std.HashSet Name ×
-    Array (Name × Name × Nat × Nat)) := do
+    Array (Name × Name × Nat × Nat × String)) := do
   let envRoot ← importModules #[{ module := `Freyd }] {} (trustLevel := 1024) (loadExts := true)
   let done : Std.HashSet Name :=
     .ofArray (envRoot.header.moduleNames.filter (`Freyd |>.isPrefixOf ·))
@@ -399,8 +426,8 @@ def processRoot : IO (Array (Row × Ann) × Array (Name × Name) × Std.HashSet 
   let mut inline := #[]
   for ((n, _, _, _), _) in annotated do
     if let some ci := envRoot.find? n then
-      for (lemmaName, statementSize, proofSize) in inlineRestatements thms n ci do
-        inline := inline.push (n, lemmaName, statementSize, proofSize)
+      for (lemmaName, statementSize, proofSize, shape) in inlineRestatements thms n ci do
+        inline := inline.push (n, lemmaName, statementSize, proofSize, shape)
   return (annotated, edges, done, inline)
 
 /-- Same, for one orphan module (each in its own environment, since two orphans may define the same
@@ -511,10 +538,11 @@ def main : IO Unit := do
       for line in ← IO.FS.lines (modToPath m "lean") do
         let l := line.trimAscii.toString
         if l.startsWith "import " then h.putStrLn s!"{m}\t{(l.drop 7).trimAscii}"
-  -- declaration whose proof re-proves `lemma` inline, with the sizes that rank the finding
+  -- declaration whose proof re-proves `lemma` inline, with the sizes and the sub-proof's shape
+  -- (only a `derivation` has a proof to collapse; `rfl`/`call` duplicate the statement alone)
   IO.FS.withFile "graph/inline.tsv" .write fun h => do
-    for (decl, lemmaName, statementSize, proofSize) in inline do
-      h.putStrLn s!"{shortName decl}\t{shortName lemmaName}\t{statementSize}\t{proofSize}"
+    for (decl, lemmaName, statementSize, proofSize, shape) in inline do
+      h.putStrLn s!"{shortName decl}\t{shortName lemmaName}\t{statementSize}\t{proofSize}\t{shape}"
   let es := (edges.map fun (s, t) => s!"{shortName s}\t{shortName t}") |>.qsort (· < ·) |>.toList.eraseReps.toArray
   IO.FS.withFile "graph/deps.tsv" .write fun h => do
     for e in es do h.putStrLn e
