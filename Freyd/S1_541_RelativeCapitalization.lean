@@ -754,11 +754,9 @@ variable [HasEqualizers 𝒞]
 -- `Capitalization` import above), so the duplicate local copy was removed (unused by name, an
 -- `instance` found only via typeclass search — the upstream one already resolves it).
 
-/-- `𝒞` is Cartesian (terminal + binary products + equalizers, all in scope this section). -/
-instance baseCartesian𝒞 : CartesianCategory 𝒞 where
-  toHasTerminal := inferInstance
-  toHasBinaryProducts := inferInstance
-  toHasEqualizers := inferInstance
+-- `baseCartesian𝒞` (a `CartesianCategory 𝒞` instance) used to live here; it is the same instance as
+-- `baseCartesianSelfLoc` upstream in `S1_543_Capitalization`, which already resolves it — same
+-- situation as `innerSliceCartesianNil` above.
 
 end BaseSliceCartesian
 

@@ -136,16 +136,12 @@ class HasNaturalNumbersObject (𝒞 : Type u) [Cat.{v} 𝒞] extends Topos 𝒞 
   In the book: "A topos is IAC if (-)*A [1.853] preserves epics, for any A."
   Here (-)^A : 𝒞 → 𝒞 sends B ↦ B^A and f : B → C to f^A : B^A → C^A. -/
 
-/-- The map f^A : B^A → C^A induced by post-composition (§1.853).
-    Given f : B → C, f^A is the curry of (eval_exp ≫ f) : A × B^A → C. -/
-def expPostMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasExponentials 𝒞] (A B C : 𝒞) (f : B ⟶ C)
-    : exp A B ⟶ exp A C :=
-  curry (eval_exp A B ≫ f)
+-- The map `f^A : B^A → C^A` induced by post-composition (§1.853) is `expCovMap` in `S1_85`.
 
 /-- A TOPOS IS IAC (Internal Axiom of Choice) if for every A, the functor (-)^A
     sends covers to covers (§1.973). -/
 def IsIAC (𝒞 : Type u) [Cat.{v} 𝒞] [Topos 𝒞] [HasExponentials 𝒞] : Prop :=
-  ∀ (A B C : 𝒞) (f : B ⟶ C), Cover f → Cover (expPostMap A B C f)
+  ∀ (A B C : 𝒞) (f : B ⟶ C), Cover f → Cover (expCovMap A f)
 
 /-- Absorbing a `pair` into the product functor: `⟨f,g⟩ ≫ (A × h) = ⟨f, g≫h⟩`. -/
 theorem pair_prodMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
@@ -213,21 +209,21 @@ theorem expApply_expName {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasE
 /-- Uncurry commutes with post-composition: `apply (p ≫ f^C) = apply p ≫ f`. -/
 theorem expApply_postMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasExponentials 𝒞]
     {A B C : 𝒞} (p : one ⟶ A ^^ C) (f : A ⟶ B) :
-    expApply (p ≫ expPostMap C A B f) = expApply p ≫ f := by
-  show pair (Cat.id C) (term C ≫ p ≫ expPostMap C A B f) ≫ eval_exp C B
+    expApply (p ≫ expCovMap C f) = expApply p ≫ f := by
+  show pair (Cat.id C) (term C ≫ p ≫ expCovMap C f) ≫ eval_exp C B
       = (pair (Cat.id C) (term C ≫ p) ≫ eval_exp C A) ≫ f
-  calc pair (Cat.id C) (term C ≫ p ≫ expPostMap C A B f) ≫ eval_exp C B
-      = pair (Cat.id C) ((term C ≫ p) ≫ expPostMap C A B f) ≫ eval_exp C B := by
+  calc pair (Cat.id C) (term C ≫ p ≫ expCovMap C f) ≫ eval_exp C B
+      = pair (Cat.id C) ((term C ≫ p) ≫ expCovMap C f) ≫ eval_exp C B := by
         rw [Cat.assoc]
     _ = (pair (Cat.id C) (term C ≫ p) ≫ prodMap C (A ^^ C) (B ^^ C) (curry (eval_exp C A ≫ f)))
-          ≫ eval_exp C B := by rw [expPostMap, ← pair_prodMap]
+          ≫ eval_exp C B := by rw [expCovMap,← pair_prodMap]
     _ = pair (Cat.id C) (term C ≫ p) ≫ eval_exp C A ≫ f := by rw [Cat.assoc, curry_eval_eq]
     _ = (pair (Cat.id C) (term C ≫ p) ≫ eval_exp C A) ≫ f := (Cat.assoc _ _ _).symm
 
 /-- Naming commutes with post-composition: `⌜g⌝ ≫ f^C = ⌜g ≫ f⌝`. -/
 theorem expName_postMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasExponentials 𝒞]
     {A B C : 𝒞} (g : C ⟶ A) (f : A ⟶ B) :
-    expName g ≫ expPostMap C A B f = expName (g ≫ f) := by
+    expName g ≫ expCovMap C f = expName (g ≫ f) := by
   -- both name `g ≫ f`; check by uncurrying (prodMap_eval_inj on points via curry_unique).
   show expName g ≫ curry (eval_exp C A ≫ f) = curry (fst ≫ g ≫ f)
   apply curry_unique_eq
@@ -249,21 +245,21 @@ theorem ac_iff_iac_and_projective_one [HasExponentials 𝒞] [HasImages 𝒞]
   · -- Forward: all projective ⇒ IAC ∧ 1 projective.
     intro hall
     refine ⟨?_, hall one⟩
-    -- IAC: cover f ⇒ f^A := expPostMap A B C f is a cover.
+    -- IAC: cover f ⇒ f^A := expCovMap A f is a cover.
     intro A B C f hf
     -- f is a cover with codomain C, and C is projective, so f splits.
     obtain ⟨s, hs⟩ := hall C f hf
-    -- s ≫ f = id_C.  expPostMap is functorial: s^A ≫ f^A = (s≫f)^A = id^A = id.
-    have hfun : expPostMap A C B s ≫ expPostMap A B C f = Cat.id (C ^^ A) := by
+    -- s ≫ f = id_C.  expCovMap is functorial: s^A ≫ f^A = (s≫f)^A = id^A = id.
+    have hfun : expCovMap A s ≫ expCovMap A f = Cat.id (C ^^ A) := by
       show expCovMap A s ≫ expCovMap A f = Cat.id (C ^^ A)
       rw [← expCovMap_comp, hs, expCovMap_id]
     intro D m g hm hgm
-    exact (cover_of_split_epi (f := expPostMap A B C f) (s := expPostMap A C B s) hfun)
+    exact (cover_of_split_epi (f := expCovMap A f) (s := expCovMap A s) hfun)
       m g hm hgm
   · -- Backward: IAC ∧ 1 projective ⇒ every object projective.
     rintro ⟨hiac, h1⟩ C A f hf
     -- q := f^C : A^C → C^C is a cover (IAC).
-    let q : (A ^^ C) ⟶ (C ^^ C) := expPostMap C A C f
+    let q : (A ^^ C) ⟶ (C ^^ C) := expCovMap C f
     have hq : Cover q := hiac C A C f hf
     -- name of id_C : 1 → C^C
     let nm : one ⟶ (C ^^ C) := expName (Cat.id C)
@@ -281,8 +277,8 @@ theorem ac_iff_iac_and_projective_one [HasExponentials 𝒞] [HasImages 𝒞]
     refine ⟨expApply p, ?_⟩
     -- s ≫ f = apply p ≫ f = apply (p ≫ f^C) = apply (p ≫ q) = apply nm = id_C.
     rw [← expApply_postMap p f]
-    show expApply (p ≫ expPostMap C A C f) = Cat.id C
-    rw [show expPostMap C A C f = q from rfl, hp]
+    show expApply (p ≫ expCovMap C f) = Cat.id C
+    rw [show expCovMap C f = q from rfl, hp]
     exact expApply_expName (Cat.id C)
 
 /-! ## §1.981  NNO iterate for pairs
@@ -302,13 +298,13 @@ theorem prodMap_eval_inj {𝒞 : Type u} [Cat.{v} 𝒞] [HasExponentials 𝒞]
 /-- §1.981: Given an NNO and exponentials, from a : A → B and b : B → B
     build the unique morphism A × N → B satisfying the recursion equations.
     Construction: transpose a to a_hat : 1 → B^A as curry(fst ≫ a) : 1 → B^A
-    (since fst ≫ a : A × 1 → B); take b_hat = expPostMap A B B b : B^A → B^A;
+    (since fst ≫ a : A × 1 → B); take b_hat = expCovMap A b : B^A → B^A;
     NNO-iterate gives h : N → B^A; uncurry via prodMap + eval gives A × N → B. -/
 def iteratePair {𝒞 : Type u} [Cat.{v} 𝒞]
     [hN : HasNaturalNumbersObject 𝒞] [HasExponentials 𝒞]
     {A B : 𝒞} (a : A ⟶ B) (b : B ⟶ B) : prod A hN.nno ⟶ B :=
   let a_hat : one ⟶ exp A B := curry (fst ≫ a)
-  let b_hat : exp A B ⟶ exp A B := expPostMap A B B b
+  let b_hat : exp A B ⟶ exp A B := expCovMap A b
   prodMap A hN.nno (exp A B) (hN.iterate a_hat b_hat) ≫ eval_exp A B
 
 /-- §1.981 zero equation: (1_A, 0) ≫ iteratePair a b = a. -/
@@ -319,7 +315,7 @@ theorem iteratePair_zero {𝒞 : Type u} [Cat.{v} 𝒞]
   -- iteratePair a b = (A × iter) ≫ eval, with iter = iterate a_hat b_hat.
   -- Absorb the pair, use zero ≫ iter = a_hat, then curry_eval to drop a_hat.
   show pair (Cat.id A) (term A ≫ hN.zero) ≫
-      prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expPostMap A B B b)) ≫ eval_exp A B = a
+      prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expCovMap A b)) ≫ eval_exp A B = a
   rw [← Cat.assoc, pair_prodMap, Cat.assoc, hN.iterate_zero]
   -- goal: ⟨id, term ≫ a_hat⟩ ≫ eval = a, with a_hat = curry (fst ≫ a)
   have key : pair (Cat.id A) (term A ≫ curry (fst ≫ a)) ≫ eval_exp A B
@@ -333,14 +329,14 @@ theorem iteratePair_succ {𝒞 : Type u} [Cat.{v} 𝒞]
     {A B : 𝒞} (a : A ⟶ B) (b : B ⟶ B) :
     prodMap A hN.nno hN.nno (hN.succ) ≫ iteratePair a b = iteratePair a b ≫ b := by
   show prodMap A hN.nno hN.nno hN.succ ≫
-      prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expPostMap A B B b)) ≫ eval_exp A B
-    = (prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expPostMap A B B b)) ≫ eval_exp A B) ≫ b
+      prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expCovMap A b)) ≫ eval_exp A B
+    = (prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expCovMap A b)) ≫ eval_exp A B) ≫ b
   -- collapse the two prodMaps on N, then use succ ≫ iter = iter ≫ b_hat
   rw [← Cat.assoc, ← prodMap_comp, hN.iterate_succ, prodMap_comp]
   -- goal: (A × iter) ≫ (A × b_hat) ≫ eval = ((A × iter) ≫ eval) ≫ b
   rw [Cat.assoc, Cat.assoc]
   congr 1
-  -- (A × b_hat) ≫ eval = eval ≫ b, since b_hat = expPostMap = curry (eval ≫ b)
+  -- (A × b_hat) ≫ eval = eval ≫ b, since b_hat = expCovMap = curry (eval ≫ b)
   show prodMap A (exp A B) (exp A B) (curry (eval_exp A B ≫ b)) ≫ eval_exp A B = eval_exp A B ≫ b
   rw [curry_eval_eq]
 
@@ -354,12 +350,12 @@ theorem iteratePair_unique {𝒞 : Type u} [Cat.{v} 𝒞]
     h = iteratePair a b := by
   -- Transpose h to curry h : N → B^A. Show curry h = iterate a_hat b_hat by NNO uniqueness,
   -- then uncurry both sides.
-  have hbhat : prodMap A (exp A B) (exp A B) (expPostMap A B B b) ≫ eval_exp A B
+  have hbhat : prodMap A (exp A B) (exp A B) (expCovMap A b) ≫ eval_exp A B
       = eval_exp A B ≫ b := by
     show prodMap A (exp A B) (exp A B) (curry (eval_exp A B ≫ b)) ≫ eval_exp A B = eval_exp A B ≫ b
     rw [curry_eval_eq]
   -- curry h iterates the NNO data:
-  have hcurry : curry h = hN.iterate (curry (fst ≫ a)) (expPostMap A B B b) := by
+  have hcurry : curry h = hN.iterate (curry (fst ≫ a)) (expCovMap A b) := by
     apply hN.iterate_unique
     · -- zero ≫ curry h = curry (fst ≫ a)
       apply prodMap_eval_inj
@@ -377,7 +373,7 @@ theorem iteratePair_unique {𝒞 : Type u} [Cat.{v} 𝒞]
       rw [prodMap_comp, Cat.assoc, curry_eval_eq, prodMap_comp, Cat.assoc, hbhat,
           ← Cat.assoc, curry_eval_eq, hs]
   -- now uncurry: h = (A × curry h) ≫ eval = (A × iter) ≫ eval = iteratePair a b
-  show h = prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expPostMap A B B b)) ≫ eval_exp A B
+  show h = prodMap A hN.nno (exp A B) (hN.iterate (curry (fst ≫ a)) (expCovMap A b)) ≫ eval_exp A B
   rw [← hcurry, curry_eval_eq]
 
 /-! ## §1.983  Primitive recursion in a topos
