@@ -44,11 +44,12 @@ theorem cL_inj {i j : Nat} (h : cL i = cL j) : i = j := by
 theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (aL i)) :
     i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).s := by
+  have hd := branch_edge_aL h
   rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
-  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hut, hvs⟩
+  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hut, _⟩
     · exact absurd hlab aL_ne_bL
-    · subst hut; subst hvs
-      exact ⟨aL_inj hlab, hu.symm, hv.symm⟩
+    · subst hut
+      exact ⟨aL_inj hlab, hu.symm, hd⟩
   · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
     · exact absurd hlab aL_ne_dL
     · exact absurd hlab aL_ne_cL
@@ -117,14 +118,15 @@ theorem entL_edge_aL_full {n i : Nat} {c d : (toGraph (entL n)).V}
 theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (cL i)) :
     i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).t := by
+  have hd := branch_edge_cL h
   rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
   · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
     · exact absurd hlab cL_ne_bL
     · exact absurd hlab.symm aL_ne_cL
-  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hus, hvt⟩
+  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hus, _⟩
     · exact absurd hlab cL_ne_dL
-    · subst hus; subst hvt
-      refine ⟨cL_inj hlab, ?_, hv.symm⟩
+    · subst hus
+      refine ⟨cL_inj hlab, ?_, hd⟩
       rw [← hu]
       exact (gcomp_glue _ _).symm
 
