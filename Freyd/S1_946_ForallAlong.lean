@@ -15,6 +15,7 @@
 -/
 
 import Freyd.S1_94_InternalForallTopos
+import Freyd.S1_946_RightAdjointImage
 import Freyd.S1_45
 import Freyd.S1_60
 import Freyd.S1_95_ToposColimits
@@ -49,12 +50,12 @@ noncomputable def forallChar {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) :
 /-- **`∀_f S` — the internal universal image of `S` along `f`.**  Pullback of `true` along
     `forallChar f S` (so it is classified by `forallChar f S`). -/
 noncomputable def forallAlong {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) : Subobject 𝒞 B :=
-  InverseImage (forallChar f S) ⟨one, true (𝒞 := 𝒞), HasSubobjectClassifier.true_monic⟩
+  radjImage f S
 
 theorem classify_forallAlong {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) :
     HasSubobjectClassifier.classify (forallAlong f S).arr (forallAlong f S).monic
       = forallChar f S :=
-  classify_invImage_true (forallChar f S)
+  classify_radjImage f S
 
 /-- `Allows (∀_f S) b ↔ b ≫ forallChar f S = ⊤∘!`. -/
 theorem allows_forallAlong_iff {A B W : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) (b : W ⟶ B) :

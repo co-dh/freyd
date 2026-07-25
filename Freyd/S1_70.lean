@@ -18,6 +18,7 @@ import Freyd.S1_42
 import Freyd.S1_51
 import Freyd.S1_52
 import Freyd.S1_60
+import Freyd.S1_61
 
 
 open Freyd
@@ -298,17 +299,6 @@ class LocallyComplete (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞 wher
       `sup_upper`/`sup_least`. -/
   sup_isSup : ∀ {A : 𝒞} (S : (Subobject 𝒞 A) → Prop), IsSup Subobject.le S (sup S)
 
-/-- §1.712: InverseImage f is monotone: B₁ ≤ B₂ ⟹ f#(B₁) ≤ f#(B₂).
-    Proof: use the pullback mediating map into the cone (π₁, π₂ ≫ k). -/
-theorem invImage_mono {A B : 𝒞} (f : A ⟶ B) {B₁ B₂ : Subobject 𝒞 B}
-    (hle : B₁.le B₂) : (InverseImage f B₁).le (InverseImage f B₂) := by
-  obtain ⟨k, hk⟩ := hle
-  let pb₁ := HasPullbacks.has f B₁.arr
-  let pb₂ := HasPullbacks.has f B₂.arr
-  have hw : pb₁.cone.π₁ ≫ f = (pb₁.cone.π₂ ≫ k) ≫ B₂.arr := by
-    rw [Cat.assoc, hk, ← pb₁.cone.w]
-  exact ⟨pb₂.lift ⟨pb₁.cone.pt, pb₁.cone.π₁, pb₁.cone.π₂ ≫ k, hw⟩, pb₂.lift_fst _⟩
-
 end LogosFacts
 
 /-! ## §1.712 Locally complete + union-preserving ⟹ logos (main theorem) -/
@@ -340,11 +330,10 @@ def locallyComplete_with_union_preserving_is_logos
       -- mono: f#(B') ≤ f#(sup S); h_preserves: f#(sup S) ≤ sup { f#(C) | C ∈ S };
       -- sup_least: every f#(C) in that image satisfies f#(C) ≤ A'.
       intro hB'
-      have hmono := @invImage_mono 𝒞 _
+      have hmono := @inverseImage_mono 𝒞 _
                      PL.toRegularCategory.toHasTerminal
                      PL.toRegularCategory.toHasBinaryProducts
                      PL.toRegularCategory.toHasPullbacks
-                     PL.toRegularCategory.toHasImages
                      _ _ f _ _ hB'
       have hpres := h_preserves f (fun C => (InverseImage f C).le A')
       have himg_le : (LC.sup (fun A'' => ∃ C, (InverseImage f C).le A' ∧ A'' = InverseImage f C)).le A' :=
