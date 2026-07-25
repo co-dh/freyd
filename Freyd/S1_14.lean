@@ -72,14 +72,6 @@ def IsDiscreteCategory {𝒞 : Type u} [Cat.{v} 𝒞] : Prop :=
 
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-- §1.17  `f : X ⟶ Y` is LEFT-INVERTIBLE if some `y : Y ⟶ X` satisfies `y ≫ f = id_Y`. -/
-def LeftInvertible {X Y : 𝒞} (f : X ⟶ Y) : Prop :=
-  ∃ y : Y ⟶ X, y ≫ f = Cat.id Y
-
-/-- §1.17  `f : X ⟶ Y` is RIGHT-INVERTIBLE if some `z : Y ⟶ X` satisfies `f ≫ z = id_X`. -/
-def RightInvertible {X Y : 𝒞} (f : X ⟶ Y) : Prop :=
-  ∃ z : Y ⟶ X, f ≫ z = Cat.id X
-
 /-- §1.17  Any left-inverse equals any right-inverse:
     book's proof `y = y(xz) = (yx)z = z`. -/
 theorem left_inv_eq_right_inv {X Y : 𝒞} {f : X ⟶ Y}

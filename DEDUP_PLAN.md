@@ -24,7 +24,11 @@ build red. No state-changing git commands (no commit, checkout, stash, branch, r
    which" put §1.28's `Idempotent` in the §1.429 file, and made the misnamed `YonedaEmbedding`
    canonical over 9 sites. Before collapsing: grep the book
    (`grep -rni "<term>" /home/dh/anki/typst-book/chapters/`) and confirm the surviving name denotes
-   that object and not a neighbouring one.
+   that object and not a neighbouring one. **A book-defined role name is not a duplicate merely
+   because its implementation is definitionally equal to a generic type or function.** In particular,
+   keep named functor components such as §1.332's `powerSetObj` for `P(S)`: replacing it with the
+   generic predicate-set type `Sub` erases the book's definition and is forbidden. Treat scanner
+   “alias” classifications as presumptively intentional until the book proves otherwise.
 2. **A collapse across independent files needs a common-ancestor MOVE, and the shared prerequisite may
    have no legal home.** Both large collapses so far needed a brand-new leaf file (`S1_28.lean`,
    `S1_241.lean`) because the book's section-numbered home was *downstream* of the users. Compute the
