@@ -72,7 +72,7 @@
 
 import Freyd.S2_16
 import Freyd.S2_16b
-import Freyd.S2_04
+import Freyd.S2_40
 
 universe v u
 

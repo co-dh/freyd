@@ -1,10 +1,10 @@
-import Freyd.S1_01
+import Freyd.S1_1
 import Freyd.S1_241
 import Freyd.S1_24
 import Freyd.S1_28
 import Freyd.S1_39
-import Freyd.S1_08
-import Freyd.S1_09
+import Freyd.S1_80
+import Freyd.S1_90
 import Freyd.S1_18
 import Freyd.S1_81
 import Freyd.S1_85
@@ -123,9 +123,9 @@ import Freyd.S1_543_ColimitCoproductGerm
 import Freyd.S1_63_ColimitInvImageUnion
 import Freyd.S2_218_ColimitPreLogos
 import Freyd.S1_544_Inflation
-import Freyd.S2_01
+import Freyd.S2_10
 import Freyd.S2_16
-import Freyd.S2_02
+import Freyd.S2_20
 import Freyd.S2_22
 import Freyd.S2_16b
 import Freyd.S2_16c
@@ -133,10 +133,10 @@ import Freyd.S2_55
 import Freyd.S2_43
 import Freyd.S2_433_SplEqInstance2
 import Freyd.S2_42
-import Freyd.S2_03
+import Freyd.S2_30
 import Freyd.S2_31
 import Freyd.S2_11
-import Freyd.S2_04
+import Freyd.S2_40
 import Freyd.S2_44
 import Freyd.S2_417_Generator
 import Freyd.S2_417b_NotPower
@@ -145,7 +145,7 @@ import Freyd.S2_438_Godel
 import Freyd.S2_437_REAllegory
 import Freyd.S2_437b_NotDivision
 import Freyd.S2_441_StraightJoin
-import Freyd.S2_05
+import Freyd.S2_50
 import Freyd.S2_51
 import Freyd.S2_53
 import Freyd.S2_54

@@ -1,4 +1,4 @@
-import Freyd.S1_01
+import Freyd.S1_1
 
 /-!
   Freyd & Scedrov, *Categories and Allegories* §1.17.

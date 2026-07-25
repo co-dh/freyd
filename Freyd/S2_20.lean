@@ -7,8 +7,8 @@
   §2.223 GLOBALLY COMPLETE
 -/
 
-import Freyd.S1_01
-import Freyd.S2_01
+import Freyd.S1_1
+import Freyd.S2_10
 
 
 universe v u

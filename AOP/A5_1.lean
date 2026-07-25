@@ -18,7 +18,7 @@
   for the precise blocker (transporting `m`'s simplicity across a not-yet-known-monotone map
   is circular).  Nothing else in this file, or so far outside it, needs that direction.
 -/
-import Freyd.S2_01
+import Freyd.S2_10
 import AOP.A4_2
 
 universe v₁ v₂ v₃ u₁ u₂ u₃ u

@@ -52,7 +52,7 @@
   theorem's `#print axioms` ⊆ {propext, Quot.sound}.  Never `native_decide`.
 -/
 import rel.RelInterp
-import Freyd.S2_01
+import Freyd.S2_10
 import AOP.A4_2
 
 set_option linter.unusedVariables false

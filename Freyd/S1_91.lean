@@ -10,8 +10,8 @@
             classifier, no terminator needed if non-empty).
 -/
 
-import Freyd.S1_01
-import Freyd.S1_09
+import Freyd.S1_1
+import Freyd.S1_90
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_43

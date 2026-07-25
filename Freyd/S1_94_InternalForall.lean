@@ -47,7 +47,7 @@ import Freyd.S1_51
 -- importing the (Sorry-free) topos-regularity infrastructure in InternalForallTopos.
 -- InternalForall uses NO symbol declared in S1_94 (only `Topos`/`Allows`/`Subobject`),
 -- so we import S1_9 directly and break the cycle.
-import Freyd.S1_09
+import Freyd.S1_90
 
 universe v u
 

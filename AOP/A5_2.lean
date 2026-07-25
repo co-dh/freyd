@@ -24,7 +24,7 @@
   more code than mirroring `S2_3.topTab`'s direct `TabularAllegory.tabular (topMor a b)`
   pattern, which is what `relProd` below does.
 -/
-import Freyd.S2_03
+import Freyd.S2_30
 import AOP.A4_2
 import AOP.A5_1
 

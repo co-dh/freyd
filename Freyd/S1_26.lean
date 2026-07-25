@@ -15,7 +15,7 @@
   are informal examples requiring topology/ring infrastructure — recorded as MISSING.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_1
 import Freyd.S1_41
 
 universe v u

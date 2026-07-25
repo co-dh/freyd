@@ -31,9 +31,9 @@
 -/
 
 import Freyd.S2_147_MapCat
-import Freyd.S2_04
+import Freyd.S2_40
 import Freyd.S2_41
-import Freyd.S1_09
+import Freyd.S1_90
 
 universe v u
 

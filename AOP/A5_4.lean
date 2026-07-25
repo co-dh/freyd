@@ -14,7 +14,7 @@
   the natural attempt needs `R` a map to shunt, which it is not in general.
 -/
 
-import Freyd.S2_04
+import Freyd.S2_40
 import AOP.A4_6
 import AOP.A4_2
 import Freyd.S2_41b

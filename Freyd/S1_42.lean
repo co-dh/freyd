@@ -9,7 +9,7 @@
   `fst`, `snd`, `pair` do NOT require `HasTerminal` (§1.85 needs this).
 -/
 
-import Freyd.S1_01
+import Freyd.S1_1
 import Freyd.S1_41
 
 

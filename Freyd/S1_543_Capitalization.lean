@@ -59,7 +59,7 @@
   big reference block comment below (around the `RELOCATED` marker), and is dead code.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_1
 import Freyd.S1_18
 import Freyd.S1_31
 import Freyd.S1_33
