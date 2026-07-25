@@ -41,7 +41,7 @@
   MATHLIB-FREE.  Axioms ⊆ {propext, Classical.choice, Quot.sound}.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 
 namespace Freyd.S2_417
 open Freyd

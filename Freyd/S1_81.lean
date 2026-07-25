@@ -8,9 +8,9 @@
   (the General Adjoint Functor Theorem, §1.83).
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 import Freyd.S1_18
-import Freyd.S1_08
+import Freyd.S1_80
 import Freyd.S1_14
 
 

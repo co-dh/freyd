@@ -12,14 +12,14 @@
   §1.859 BASEABLE objects, inclusion preserves equalizers
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_31
 import Freyd.S1_34
 import Freyd.S1_43
-import Freyd.S1_08
+import Freyd.S1_80
 import Freyd.S1_44
 
 

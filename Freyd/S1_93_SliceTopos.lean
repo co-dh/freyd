@@ -21,7 +21,7 @@
   from the base classifier + slice transport; NO new axioms, NO allegory axioms.
 -/
 
-import Freyd.S1_09
+import Freyd.S1_90
 import Freyd.S1_44
 import Freyd.S1_53_SliceRegular
 

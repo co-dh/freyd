@@ -9,7 +9,7 @@
   §1.913 All subobjects are equalizers; covers = epics.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_45

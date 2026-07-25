@@ -17,8 +17,8 @@
   §1.98(14) Existence of free A-action from NNO.
 -/
 
-import Freyd.S1_01
-import Freyd.S1_09
+import Freyd.S1_10
+import Freyd.S1_90
 import Freyd.S1_42
 import Freyd.S1_47
 import Freyd.S1_51

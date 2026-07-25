@@ -16,7 +16,7 @@
   copies were deduped at collection.
 -/
 
-import Freyd.S2_04
+import Freyd.S2_40
 import AOP.A4_4  -- map_comp_div (and, via A4_2, the shunting rules)
 
 universe u

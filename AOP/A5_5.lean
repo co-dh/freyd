@@ -17,7 +17,7 @@
   canonical home is `A5_1.lean` (added by a parallel wave); a private copy is proved here
   from `recip_of_comp_id` (A4_2) so this file does not block on that landing.
 -/
-import Freyd.S2_04
+import Freyd.S2_40
 import AOP.A4_6
 import AOP.A4_2
 import AOP.A5_1

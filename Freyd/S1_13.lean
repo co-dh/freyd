@@ -19,7 +19,7 @@
     law (vi) must equal `Cat.id X`.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 
 namespace Freyd
 

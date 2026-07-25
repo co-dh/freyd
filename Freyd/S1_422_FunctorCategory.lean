@@ -16,7 +16,7 @@
   Composition in diagram order throughout: `f ≫ g` = first f, then g.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_27
 import Freyd.S1_41

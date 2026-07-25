@@ -71,7 +71,7 @@
   inner-colimit file per the §1.543 CLAUDE.md exception — it is NOT needed to build this file.
 -/
 
-import Freyd.S1_01
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_26
 import Freyd.S1_31

@@ -6,9 +6,9 @@
   §2.35  STRAIGHT morphism, simple part, domain of simplicity
 -/
 
-import Freyd.S1_01
-import Freyd.S2_01
-import Freyd.S2_02
+import Freyd.S1_10
+import Freyd.S2_10
+import Freyd.S2_20
 import AOP.A4_1  -- modular_le_right (dual modular law)
 
 

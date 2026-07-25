@@ -34,7 +34,7 @@
   idempotent-split (equalizers); NO new axioms, NO Chapter-2 allegory axioms.
 -/
 
-import Freyd.S1_09
+import Freyd.S1_90
 import Freyd.S1_44
 import Freyd.S1_92
 import Freyd.S1_53_SliceRegular

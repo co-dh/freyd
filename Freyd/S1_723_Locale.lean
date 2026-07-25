@@ -23,7 +23,7 @@
 -/
 
 import Freyd.S1_72
-import Freyd.S2_01
+import Freyd.S2_10
 
 open Freyd
 
