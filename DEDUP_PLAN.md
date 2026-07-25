@@ -134,7 +134,10 @@ Both scanners now accept `.defnInfo` (commit `7470157`) but have not been run si
 
 ## Section 4 — Two lints that would have prevented today's two errors
 
-Prototypes exist only as throwaway scripts; land them under `scripts/` with the house wrapper style.
+Implemented in the AST/environment-aware `Freyd/tool/LeanRefactor.lean`:
+`./scripts/cap lake exe lean-refactor lint-book --glob 'Freyd/S*.lean'`.  The driver forks once per
+file so elaborated environments do not accumulate in memory.  Findings are review output (exit 1),
+not automatic rewrites.
 
 1. **Range-aware section-home lint.** For each declaration whose docstring cites `§a.bc`, check the
    file's banner-declared section range contains it. A naive version is useless (1393 of 3171 "fail",
