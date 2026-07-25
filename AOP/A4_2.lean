@@ -217,12 +217,6 @@ theorem simple_dist_inter_recip {a b c : 𝒜} {g : c ⟶ b} (hg : Simple g) (X 
   The workhorses of relational program calculation: composing with a total function on
   one side of an inequality is equivalent to composing with its converse on the other. -/
 
-/-- An entire arrow satisfies `1 ⊑ R≫R°` (the other half of `dom R = 1 ∩ R≫R°` collapsing).
-    Canonical public home of a fact several files re-derived inline (A4_3, A4_4, S2_1 proofs). -/
-theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (h : Entire R) : Cat.id a ⊑ R ≫ R° := by
-  dsimp [Entire, dom] at h
-  rw [← h]; exact inter_lb_right _ _
-
 /-- **B&dM 4.19**: for a map `f`, `R≫f ⊑ S ↔ R ⊑ S≫f°`. -/
 theorem map_shunt_right {a b c : 𝒜} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S : a ⟶ c) :
     R ≫ f ⊑ S ↔ R ⊑ S ≫ f° := by

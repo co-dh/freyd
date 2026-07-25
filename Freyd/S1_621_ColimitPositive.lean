@@ -135,16 +135,6 @@ theorem isInitial_of_iso {𝒞 : Type u} [Cat.{v} 𝒞] {X Z : 𝒞} (m : X ⟶ 
     _ = (m ≫ mi) ≫ (m ≫ hZ.out Y) := (Cat.assoc _ _ _).symm
     _ = m ≫ hZ.out Y := by rw [h1, Cat.id_comp]
 
-/-- In a `PreLogos`, the bottom subobject's domain is a STRICT coterminator (every map into it is
-    an iso): it is iso to the strict zero `0` (`bottom_dom_iso`), and `any_map_to_zero_is_iso`. -/
-theorem prelogos_bottom_strict {𝒞 : Type u} [Cat.{v} 𝒞] (h : PreLogos 𝒞) (B : 𝒞) :
-    StrictCoterminator (h.bottom B).dom := by
-  intro X f
-  obtain ⟨e, ei, hei1, hei2⟩ := h.bottom_dom_iso B h.toHasTerminal.one
-  have hfe : IsIso (f ≫ e) := any_map_to_zero_is_iso h (f ≫ e)
-  have hf_eq : f = (f ≫ e) ≫ ei := by rw [Cat.assoc, hei1, Cat.comp_id]
-  rw [hf_eq]; exact isIso_comp hfe ⟨e, hei2, hei1⟩
-
 /-- In a `PreLogos`, the bottom subobject's domain is INITIAL. -/
 theorem prelogos_bottom_initial {𝒞 : Type u} [Cat.{v} 𝒞] (h : PreLogos 𝒞) (B : 𝒞) :
     IsInitial (h.bottom B).dom := by

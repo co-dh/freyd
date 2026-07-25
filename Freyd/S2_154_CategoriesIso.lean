@@ -60,12 +60,6 @@ section UnitFacts
 
 variable {𝒜 : Type u} [Allegory.{v} 𝒜]
 
-/-- `Alg.Entire R` unpacked: `1 ⊑ R ≫ R°`. -/
-theorem entire_le {a b : 𝒜} {R : a ⟶ b} (h : Alg.Entire R) : Cat.id a ⊑ R ≫ R° := by
-  have h' : Cat.id a ∩ R ≫ R° = Cat.id a := h
-  calc Cat.id a = Cat.id a ∩ R ≫ R° := h'.symm
-    _ ⊑ R ≫ R° := inter_lb_right _ _
-
 /-- §2.15: an ENTIRE morphism into a PARTIAL UNIT is a map (simplicity is free:
     `R°≫R : u → u ⊑ 1_u`). -/
 theorem map_of_entire_to_partialUnit {u a : 𝒜} (hu : PartialUnit u)
@@ -77,7 +71,7 @@ theorem maps_to_partialUnit_unique {u a : 𝒜} (hu : PartialUnit u)
     {f g : a ⟶ u} (hf : Alg.Map f) (hg : Alg.Map g) : f = g := by
   apply map_order_discrete hf hg
   have h1 : f ⊑ (g ≫ g°) ≫ f := by
-    have := comp_mono_right (entire_le hg.1) f; rwa [Cat.id_comp] at this
+    have := comp_mono_right (Alg.entire_id_le hg.1) f; rwa [Cat.id_comp] at this
   have h3 : g ≫ g° ≫ f ⊑ g ≫ Cat.id u := comp_mono_left g (hu (g° ≫ f))
   rw [Cat.comp_id] at h3
   exact le_trans h1 ((Cat.assoc g g° f) ▸ h3)
@@ -89,10 +83,10 @@ theorem le_span_of_partialUnit {u x y : 𝒜} (hu : PartialUnit u)
     {p : x ⟶ u} {q : y ⟶ u} (hp : Alg.Map p) (hq : Alg.Map q) (R : x ⟶ y) :
     R ⊑ p ≫ q° := by
   have h1 : R ⊑ (p ≫ p°) ≫ R := by
-    have := comp_mono_right (entire_le hp.1) R; rwa [Cat.id_comp] at this
+    have := comp_mono_right (Alg.entire_id_le hp.1) R; rwa [Cat.id_comp] at this
   have h2 : (p ≫ p°) ≫ R ⊑ (p ≫ p°) ≫ (R ≫ (q ≫ q°)) := by
     apply comp_mono_left
-    have := comp_mono_left R (entire_le hq.1); rwa [Cat.comp_id] at this
+    have := comp_mono_left R (Alg.entire_id_le hq.1); rwa [Cat.comp_id] at this
   have h3 : (p ≫ p°) ≫ (R ≫ (q ≫ q°)) = p ≫ ((p° ≫ R ≫ q) ≫ q°) := by
     simp [Cat.assoc]
   have h4 : p ≫ ((p° ≫ R ≫ q) ≫ q°) ⊑ p ≫ (Cat.id u ≫ q°) :=
@@ -109,13 +103,13 @@ theorem partialUnit_iso {u v : 𝒜} (hu : PartialUnit u) (hv : PartialUnit v)
     {R : u ⟶ v} {S : v ⟶ u} (hR : Alg.Entire R) (hS : Alg.Entire S) :
     Alg.Map R ∧ R ≫ R° = Cat.id u ∧ R° ≫ R = Cat.id v := by
   have hRmap : Alg.Map R := map_of_entire_to_partialUnit hv hR
-  have hRRo : R ≫ R° = Cat.id u := le_antisymm (hu _) (entire_le hR)
+  have hRRo : R ≫ R° = Cat.id u := le_antisymm (hu _) (Alg.entire_id_le hR)
   -- S ≫ R = 1_v : `⊑` is the partial unit, `⊒` is entireness of the composite.
   have hSR : S ≫ R = Cat.id v := by
     apply le_antisymm (hv _)
     have h2 : (S ≫ R)° ⊑ Cat.id v := by
       have := recip_mono (hv (S ≫ R)); rwa [recip_id] at this
-    calc Cat.id v ⊑ (S ≫ R) ≫ (S ≫ R)° := entire_le (entire_comp hS hR)
+    calc Cat.id v ⊑ (S ≫ R) ≫ (S ≫ R)° := Alg.entire_id_le (entire_comp hS hR)
       _ ⊑ (S ≫ R) ≫ Cat.id v := comp_mono_left _ h2
       _ = S ≫ R := Cat.comp_id _
   -- hence S = R° on the nose.
@@ -178,7 +172,7 @@ theorem mapMonic_iff {q : A} {a : MapObj A} (m : q ⟶ a) (hm : Alg.Map m) :
     @Monic (MapObj A) (mapCat (𝒜 := A)) q a ⟨m, hm⟩ ↔ m ≫ m° = Cat.id q := by
   constructor
   · intro h
-    exact le_antisymm (mapMonic_inj hm h) (entire_le hm.1)
+    exact le_antisymm (mapMonic_inj hm h) (Alg.entire_id_le hm.1)
   · intro h
     exact map_retract_monic hm h
 

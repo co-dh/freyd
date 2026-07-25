@@ -128,6 +128,16 @@ theorem any_map_to_zero_is_iso (h : PreLogos 𝒞) {A : 𝒞} (f : A ⟶ (minima
   -- f = u·π₂, composition of isos
   rw [← hu₂]; exact isIso_comp hu_iso hπ₂_iso
 
+/-- In a pre-logos, the bottom subobject's domain is a strict coterminator (§1.61). -/
+theorem prelogos_bottom_strict (h : PreLogos 𝒞) (B : 𝒞) :
+    StrictCoterminator (h.bottom B).dom := by
+  intro X f
+  obtain ⟨e, ei, hei1, hei2⟩ := h.bottom_dom_iso B h.toHasTerminal.one
+  have hfe : IsIso (f ≫ e) := any_map_to_zero_is_iso h (f ≫ e)
+  have hf_eq : f = (f ≫ e) ≫ ei := by rw [Cat.assoc, hei1, Cat.comp_id]
+  rw [hf_eq]
+  exact isIso_comp hfe ⟨e, hei2, hei1⟩
+
 /-- **§1.61**: Degenerate iff 0 ≅ 1. -/
 theorem degenerate_iff_zero_iso_one (h : PreLogos 𝒞) :
     (Nonempty (h.toHasTerminal.one ⟶ (minimal_subobject_of_one_is_coterminator h).zero)) ↔

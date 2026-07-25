@@ -34,6 +34,12 @@ feel free to copy ideas from Mathlib, but do not bring in them as dependency.
   the repo self-contained so builds stay fast and clones stay tiny.
 DRY as much as possible.
 
+For Lean source refactors, use `Freyd/tool/LeanRefactor.lean` through
+`scripts/lean-refactor` instead of making mechanical edits by hand. If the tool cannot safely express
+the required refactor, improve the tool first, verify the tool with `./scripts/cap lake build
+lean-refactor`, and then use the new operation. Refactor operations must preview by default and restore
+the original source when elaboration or the capped repository build fails.
+
 Before starting a large change, commit all current work as a checkpoint unless the user explicitly
 asks not to commit it.
 
