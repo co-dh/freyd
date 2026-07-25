@@ -127,7 +127,13 @@ def main : IO Unit := do
         let jac := jaccard a.hs b.hs
         if jac ≥ minJaccard then
           pairs := pairs.push (jac, a.name, a.mod, b.name, b.mod, min a.sz b.sz)
-  let sorted := pairs.qsort (fun x y => if x.1 == y.1 then x.2.2.2.2.2 > y.2.2.2.2.2 else x.1 > y.1)
+  let sorted := pairs.qsort fun x y =>
+    if x.1 != y.1 then x.1 > y.1
+    else if x.2.2.2.2.2 != y.2.2.2.2.2 then x.2.2.2.2.2 > y.2.2.2.2.2
+    else
+      let xKey := s!"{x.2.1}\t{x.2.2.1}\t{x.2.2.2.1}\t{x.2.2.2.2.1}"
+      let yKey := s!"{y.2.1}\t{y.2.2.1}\t{y.2.2.2.1}\t{y.2.2.2.2.1}"
+      xKey < yKey
   IO.println s!"scanned {scanned} theorem/definition values; {sorted.size} cross-file near-clone pairs (Jaccard ≥ {minJaccard})\n"
   let mut tsv := #["jaccard\tmin_nodes\tleft\tleft_module\tright\tright_module\tclass"]
   for (jac, na, ma, nb, mb, sz) in sorted do

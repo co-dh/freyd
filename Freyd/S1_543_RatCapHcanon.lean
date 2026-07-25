@@ -695,6 +695,32 @@ end GenericPullbackPres
   `max u w`.  These coincide exactly when the index universe `u ≤ w` — concretely when `ι : Type w`,
   matching the strict `colimitCanonicalCover`'s `CatSystem.{u,u}` constraint.  We therefore package the
   stage-inclusion FUNCTOR (and everything downstream toward `hcanon`) for `ι : Type w`. -/
+theorem stageInclL_mono_of_stage
+    (hmono : ∀ {i j : ι} (hij : D.le i j),
+        @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
+    {i : ι} {x y : L.A i} (m : x ⟶ y) (hm : @Monic (L.A i) (L.catA i) _ _ m) :
+    @Monic (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨i, y⟩ (stageInclL L hL m) := by
+  letI : Cat (Obj L) := laxColimCat L hL
+  unfold stageInclL
+  apply homInclL_mono_of_stage L hL x y ⟨i, D.refl i, D.refl i⟩
+  intro e hie z u v huv
+  have hmono_map : Monic (L.Fmap hie m) := hmono hie hm
+  revert huv
+  unfold pushHom
+  rw [(L.functF hie).map_comp (reflApp L x) (m ≫ isoInv (reflApp_isIso L y)),
+      (L.functF hie).map_comp m (isoInv (reflApp_isIso L y))]
+  intro huv
+  have hbig : Monic (L.Fmap hie (reflApp L x)
+        ≫ L.Fmap hie m
+        ≫ L.Fmap hie (isoInv (reflApp_isIso L y))) :=
+    mono_precomp_iso'
+      (functor_preserves_iso (F := L.functF hie) (reflApp L x) (reflApp_isIso L x))
+      (mono_postcomp_iso' hmono_map
+        (functor_preserves_iso (F := L.functF hie) (isoInv (reflApp_isIso L y))
+          ⟨reflApp L y, inv_isoInv_comp _, isoInv_comp _⟩))
+  exact mono_precomp_iso' (transApp_isIso L (D.refl i) hie x)
+    (mono_postcomp_iso' hbig
+      ⟨transApp L (D.refl i) hie y, inv_isoInv_comp _, isoInv_comp _⟩) u v huv
 section SingleUniverse
 
 variable {ι : Type w} {D : Directed ι} (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L)
@@ -1216,32 +1242,7 @@ theorem stageInclFunctorL_preservesMono
     (hmono : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (φ : x ⟶ y),
         Monic φ → Monic ((L.functF hij).map φ))
     {i : ι} {x y : L.A i} (φ : x ⟶ y) (hφ : Monic φ) :
-    @Monic (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨i, y⟩ (stageInclL L hL φ) := by
-  letI : Cat (Obj L) := laxColimCat L hL
-  unfold stageInclL
-  apply homInclL_mono_of_stage L hL x y ⟨i, D.refl i, D.refl i⟩
-  intro e hie z u v huv
-  -- `pushHom (reflApp ≫ φ ≫ isoInv) = transApp ≫ map(reflApp ≫ φ ≫ isoInv) ≫ isoInv`,
-  -- all but `map φ` isos, and `map φ` mono (hmono) ⇒ the push is mono.
-  have hmono_map : Monic ((L.functF hie).map φ) := hmono hie φ hφ
-  revert huv
-  unfold pushHom
-  rw [(L.functF hie).map_comp (reflApp L x)
-        (φ ≫ isoInv (reflApp_isIso L y)),
-      (L.functF hie).map_comp φ (isoInv (reflApp_isIso L y))]
-  intro huv
-  -- the composite map is mono: map φ mono flanked by isos (pre/post compose mono by iso stays mono).
-  have hbig : Monic ((L.functF hie).map (reflApp L x)
-        ≫ (L.functF hie).map φ
-        ≫ (L.functF hie).map (isoInv (reflApp_isIso L y))) :=
-    mono_precomp_iso'
-      (functor_preserves_iso (F := L.functF hie) (reflApp L x) (reflApp_isIso L x))
-      (mono_postcomp_iso' hmono_map
-        (functor_preserves_iso (F := L.functF hie) (isoInv (reflApp_isIso L y))
-          ⟨reflApp L y, inv_isoInv_comp _, isoInv_comp _⟩))
-  exact mono_precomp_iso' (transApp_isIso L (D.refl i) hie x)
-    (mono_postcomp_iso' hbig
-      ⟨transApp L (D.refl i) hie y, inv_isoInv_comp _, isoInv_comp _⟩) u v huv
+    @Monic (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨i, y⟩ (stageInclL L hL φ) := by exact stageInclL_mono_of_stage L hL (fun {i j} hij {x y} {f} hf => hmono hij f hf) φ hφ
 
 /-- **`stageInclFunctorL i` preserves covers.**  A stage cover `φ` includes to a colimit cover: at the
     reflexive bound `stageInclL φ = homInclL … (reflApp ≫ φ ≫ isoInv)`, and `homInclL_cover_of_stage`
@@ -1480,5 +1481,7 @@ theorem laxColim_hcanon_of_stage [Nonempty ι]
     (laxColimHasPullbacks L hL tData pData eqData) A B Z f g c hc_pb hc_cov
 
 end SingleUniverse
+
+
 
 end Freyd.LaxColim

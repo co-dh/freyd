@@ -205,8 +205,9 @@ After that collapse the scan reports 7,673 values and 97 pairs: the same 86 nota
 and 11 ordinary pairs.
 
 The complete current inventory is generated at `graph/proof-near-clones.tsv` by
-`scripts/ProofSkeleton.lean`; do not rely on an agent's temporary `/tmp` report. The 11 ordinary
-rows reduce to:
+`scripts/ProofSkeleton.lean`; do not rely on an agent's temporary `/tmp` report. The current scan
+reports 7,673 values and 96 pairs: 86 generated notation/parser pairs and 10 ordinary pairs. The
+ordinary rows reduce to:
 
 - six pairwise edges among three local equalizer pins and three local pullback pins. These local
   instances deliberately force one representative through separate instance-diamond-sensitive
@@ -215,10 +216,15 @@ rows reduce to:
   distinct book roles as discussed above;
 - `Recursive1.const` against its binary and ternary versions, which are arity-specific closure
   statements rather than aliases;
-- `stageInclFunctorL_preservesMono`/`stageInclL_mono_of_stage`, the remaining substantial proof
-  pair. A direct semantic replacement at its two `UniformCapStep` uses did not elaborate and was
-  transactionally restored; reduce the later proof through the earlier theorem only after the
-  precise universe/typeclass mismatch is diagnosed.
+- The former `stageInclFunctorL_preservesMono`/`stageInclL_mono_of_stage` pair is now resolved.
+  `stageInclL_mono_of_stage` is the universe-general theorem, so it was moved from the downstream
+  `LaxGermImages` module into `RatCapHcanon`, immediately before the `SingleUniverse` section.
+  The section's book-facing functor theorem remains in place as a thin adapter from its explicitly
+  quantified preservation hypothesis to `PreservesMono`. This order matters: placing the general
+  theorem inside `SingleUniverse` specializes its index universe and breaks `LaxGermImages`.
+  `LeanRefactor` now provides preview-by-default, transactional `move`, `relocate-before`,
+  `relocate-before-section`, and `replace-body` operations; failed elaborations and capped builds
+  print diagnostics and restore the original source.
 
 ---
 
