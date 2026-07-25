@@ -476,7 +476,7 @@ theorem laxColim_invImage_union_le [Nonempty ι]
       (subConj dAi ⟨dA, hA2, hA1⟩ (germSubL L hL hmono pbU)) := by
     refine (invImage_subConj_equiv f dB ⟨dBi, hB1, hB2⟩ (HasSubobjectUnions.union S T)).trans ?_
     have hUeq := ((subConj_union_equiv dB dBi ⟨dBi, hB1, hB2⟩ hB1 hB2 S T).trans
-        ⟨union_le_union hBS.1 hBT.1, union_le_union hBS.2 hBT.2⟩).trans
+        ⟨union_mono hBS.1 hBT.1, union_mono hBS.2 hBT.2⟩).trans
         (union_germ_equivL L hL hmono coprData hi hfaith himgpres N S_N T_N)
     refine Subobject.Equiv.trans
       ⟨invImage_le_of_le (f ≫ dB) hUeq.1, invImage_le_of_le (f ≫ dB) hUeq.2⟩ ?_
@@ -516,7 +516,7 @@ theorem laxColim_invImage_union_le [Nonempty ι]
   have hRHS : (HasSubobjectUnions.union (InverseImage f S) (InverseImage f T)).Equiv
       (subConj dAi ⟨dA, hA2, hA1⟩
         (germSubL L hL hmono (unionImg (hi N) (coprData.hcop N) pbS pbT))) := by
-    refine Subobject.Equiv.trans ⟨union_le_union hfS.1 hfT.1, union_le_union hfS.2 hfT.2⟩ ?_
+    refine Subobject.Equiv.trans ⟨union_mono hfS.1 hfT.1, union_mono hfS.2 hfT.2⟩ ?_
     refine (subConj_union_equiv dAi dA ⟨dA, hA2, hA1⟩ hA2 hA1
       (germSubL L hL hmono pbS) (germSubL L hL hmono pbT)).symm.trans ?_
     exact ⟨subConj_le dAi ⟨dA, hA2, hA1⟩
