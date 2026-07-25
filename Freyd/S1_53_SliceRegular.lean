@@ -23,7 +23,7 @@
   Everything is constructive and uses only this repo's hand-built `Cat`.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_26
 import Freyd.S1_42
 import Freyd.S1_44

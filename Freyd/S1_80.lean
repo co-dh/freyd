@@ -8,7 +8,7 @@
   §1.815 CLOSURE OPERATION (poset case: idempotent, inflationary, order-preserving)
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_51_Order  -- §1.51 IsClosureOp (poset closure operations, §1.815)
 

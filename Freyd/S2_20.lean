@@ -7,7 +7,7 @@
   §2.223 GLOBALLY COMPLETE
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S2_10
 
 

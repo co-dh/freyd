@@ -3,7 +3,7 @@
   Monic, MonicPair, MonicFamily, IsIso.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 
 universe v u
 

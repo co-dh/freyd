@@ -10,7 +10,7 @@
   Category theory is hand-built on this repo's `Cat`; no mathlib here.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_543_DirectedColimit
 

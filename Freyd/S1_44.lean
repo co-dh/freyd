@@ -9,7 +9,7 @@
          and equalizers.  Σ is faithful.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_26
 import Freyd.S1_42

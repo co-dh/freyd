@@ -1,4 +1,4 @@
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_241
 import Freyd.S1_24
 import Freyd.S1_28
@@ -155,7 +155,7 @@ import Freyd.S1_38b
 import Freyd.S1_637_FiniteSeparation
 import Freyd.S1_646_Representation
 import Freyd.S1_13
-import Freyd.S1_10
+import Freyd.S1_101
 import Freyd.S1_422_FunctorCategory
 import Freyd.S2_147_MapCat
 import Freyd.S2_165_Spl

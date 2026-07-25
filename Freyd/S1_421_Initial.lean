@@ -23,7 +23,7 @@
       (via the existing §1.58¶2 proof, hence the binary-products hypothesis).
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_43

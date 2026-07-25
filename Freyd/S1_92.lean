@@ -11,7 +11,7 @@
   §1.926 Exponential structure restricts to Heyting algebra on Sub(1)
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_90
 import Freyd.S1_85
 import Freyd.S1_81

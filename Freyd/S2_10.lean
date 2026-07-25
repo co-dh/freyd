@@ -12,7 +12,7 @@
   §2.16 PRE-TABULAR, EFFECTIVE, SEMI-SIMPLE
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_41
 
 

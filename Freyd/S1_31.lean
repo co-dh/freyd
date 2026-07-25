@@ -5,7 +5,7 @@
 -/
 
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_27
 import Freyd.S1_41

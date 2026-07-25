@@ -8,7 +8,7 @@
   No Finset/Fintype/LinearOrder from Std — uses only List, Fin n, List.ofFn.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S2_10
 import Freyd.S2_20
 import Freyd.S2_30

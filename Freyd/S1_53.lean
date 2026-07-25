@@ -8,7 +8,7 @@
   §1.532  The pullback square for B×A₁ → B×A₂ over A₁→A₂.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 import Freyd.S1_18
 import Freyd.S1_26
 import Freyd.S1_41

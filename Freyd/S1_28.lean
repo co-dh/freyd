@@ -3,7 +3,7 @@
   Idempotent, Splits, Split idempotent.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_10
 
 open Freyd
 
