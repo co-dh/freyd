@@ -1,13 +1,36 @@
-# freyd
+# Freyd and Algebra of Programming in Lean
 
-## GitHub configuration
+This repository formalizes two related bodies of work in Lean 4:
 
-To set up your new GitHub repository, follow these steps:
+- Peter Freyd and Andre Scedrov's *Categories, Allegories*;
+- Richard Bird and Oege de Moor's *Algebra of Programming*.
 
-* Under your repository name, click **Settings**.
-* In the **Actions** section of the sidebar, click "General".
-* Check the box **Allow GitHub Actions to create and approve pull requests**.
-* Click the **Pages** section of the settings sidebar.
-* In the **Source** dropdown menu, select "GitHub Actions".
+The goal is to turn the books' definitions, notation, and arguments into a
+machine-checkable reference. Besides supporting formal verification, the
+corpus can be given to an AI assistant as grounded context for studying the
+books, tracing dependencies, and answering questions more reliably than from
+the prose alone.
 
-After following the steps above, you can remove this section from the README file.
+## Layout
+
+- `Freyd/` — the core formalization of *Categories, Allegories*, organized by
+  book section.
+- `AOP/` — the *Algebra of Programming* development.
+- `leet/` — algorithm case studies derived with the AOP machinery.
+- `rel/` — a relation-algebra interpreter, examples, and derivation tools.
+- `graph/` — declaration and dependency data extracted from the Lean sources.
+
+The project follows the books' terminology and diagram-order composition
+convention: `xy` means “first `x`, then `y`.”
+
+## Build
+
+Install [Lean 4](https://lean-lang.org/) through
+[elan](https://github.com/leanprover/elan), then run:
+
+```sh
+lake build
+```
+
+The repository is self-contained and intentionally mathlib-free; its Lean
+version is pinned in `lean-toolchain`.
