@@ -45,7 +45,7 @@
   Sorry-free; every theorem's `#print axioms` ⊆ {propext, Quot.sound}.  Never `native_decide`.
 -/
 import rel.RelInterp
-import Freyd.S2_1
+import Freyd.S2_01
 import AOP.A4_2
 import AOP.A6_6_Sort
 

@@ -21,7 +21,7 @@
   all of which a `Topos` supplies — no power objects, no exponentials, no §1.54.
 -/
 
-import Freyd.S1_9
+import Freyd.S1_09
 import Freyd.S1_52
 
 universe v u

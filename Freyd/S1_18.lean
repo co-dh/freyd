@@ -33,7 +33,7 @@
   `by`          — enters **tactic mode** for a proof block.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_17
 import Freyd.S1_41
 

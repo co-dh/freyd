@@ -1,4 +1,4 @@
-import Freyd.S2_4
+import Freyd.S2_04
 
 universe u
 

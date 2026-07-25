@@ -20,7 +20,7 @@
   §4  Ex 5.12.
   §5  Guards and conditionals (Ex 5.17).
 -/
-import Freyd.S2_2
+import Freyd.S2_02
 import AOP.A4_5
 import AOP.A5_1
 

@@ -11,7 +11,7 @@
   The §1.712 class `LocallyComplete` is the canonical one from S1_70 (imported below).
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_45
