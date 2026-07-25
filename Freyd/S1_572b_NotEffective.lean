@@ -1315,53 +1315,86 @@ theorem checkComplete : ∀ {k : Nat} {c : RecCode k} {v : Vec k} {y : Nat},
     · rw [hEq, hself', hnd, insOf_mkNode]
     · rw [hEq, hself', hnd, outOf_mkNode]
 
-/-! ## Stage 1g: the halting set `Kc`
+/-! ## Stage 1g: the universal checker and the halting set `Kc`
 
-  `acceptN e wit = 1` iff `wit = cp W i` where `W` is a fully checked witness list
+  `acceptOn (cp e r) wit = 1` checks a witness that code `e` halts on input `r`.
+  The diagonal specialization `acceptN e wit = acceptOn (cp e e) wit` holds iff
+  `wit = cp W i` where `W` is a fully checked witness list
   whose node `i` claims "code number `e`, on the one-entry input list `[e]`,
   evaluates (to something)".  `Kc e` — "the code numbered `e` halts on input `e`" —
   is the Σ₁ set searched over `wit`. -/
 
+/-- Universal accept predicate: `er = cp e r` packs the code number `e` and input `r`. -/
+noncomputable def acceptOn (er wit : Nat) : Nat :=
+  bAllN (fun j => nodeOK j (cfst wit)) (csnd wit + 1)
+  * eqInd (codeOf (nthN (csnd wit) (cfst wit))) (cfst er)
+  * eqInd (insOf (nthN (csnd wit) (cfst wit))) (consN (csnd er) 0)
+/-- The claimed output of an accepting witness (depends only on `wit`). -/
+noncomputable def uOut (_er wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
+
+/-- The output extractor as a UNARY recursive function of `wit` alone. -/
+noncomputable def uOutW (wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
+
+theorem uOut_eq (er wit : Nat) : uOut er wit = uOutW wit := rfl
+
+theorem encVec_one (e : Nat) : encVec (fun _ : Fin 1 => e) = consN e 0 := rfl
+
+/-- SOUNDNESS: an accepted witness for a REAL unary code `c` numbered `cfst er`
+    certifies a real evaluation of `c` on input `[csnd er]`, with value `uOut er wit`. -/
+theorem acceptOn_sound {er wit : Nat} (h : acceptOn er wit = 1)
+    {c : RecCode 1} (hc : cfst er = encCode c) :
+    Eval c (fun _ => csnd er) (uOut er wit) := by
+  unfold acceptOn at h
+  obtain ⟨h, hins⟩ := mul_eq_one_iff.mp h
+  obtain ⟨hall, hcode⟩ := mul_eq_one_iff.mp h
+  have hval : ∀ j, j < csnd wit + 1 → nodeOK j (cfst wit) = 1 := of_bAllN_eq_one hall
+  have hcode' : codeOf (nthN (csnd wit) (cfst wit)) = encCode c := by
+    rw [eqInd_one_iff.mp hcode, hc]
+  have hins' : insOf (nthN (csnd wit) (cfst wit)) = encVec (fun _ : Fin 1 => csnd er) := by
+    rw [eqInd_one_iff.mp hins, encVec_one]
+  exact checkSound (csnd wit + 1) (cfst wit) hval (csnd wit) (Nat.lt_succ_self _)
+    c _ hcode' hins'
+
+/-- COMPLETENESS: a real evaluation `Eval c [r] y` is certified by some witness for
+    the packed input `cp (encCode c) r`, with claimed output exactly `y`. -/
+theorem acceptOn_complete {c : RecCode 1} {r y : Nat} (h : Eval c (fun _ => r) y) :
+    ∃ wit, acceptOn (cp (encCode c) r) wit = 1 ∧ uOut (cp (encCode c) r) wit = y := by
+  obtain ⟨L', hval, i, hlen, hcode, hins, hout⟩ := checkComplete h [] allValidL_nil
+  rw [List.nil_append] at hval hlen hcode hins hout
+  refine ⟨cp (encListN L') i, ?_, ?_⟩
+  · unfold acceptOn
+    rw [cfst_cp, csnd_cp, cfst_cp, csnd_cp]
+    have hval' : ∀ j, j < i + 1 → nodeOK j (encListN L') = 1 := fun j hj => hval j (by omega)
+    rw [bAllN_eq_one hval', hcode, hins, encVec_one, eqInd_eq rfl, eqInd_eq rfl]
+  · unfold uOut
+    rw [cfst_cp, csnd_cp, hout]
 /-- The accept predicate (0/1-valued arithmetic in `(e, wit)`). -/
 noncomputable def acceptN (e wit : Nat) : Nat :=
-  bAllN (fun j => nodeOK j (cfst wit)) (csnd wit + 1)
-  * eqInd (codeOf (nthN (csnd wit) (cfst wit))) e
-  * eqInd (insOf (nthN (csnd wit) (cfst wit))) (consN e 0)
+  acceptOn (cp e e) wit
+
+/-- The diagonal halting checker is the universal checker run on `(e,e)`. -/
+theorem acceptN_eq_acceptOn (e wit : Nat) : acceptN e wit = acceptOn (cp e e) wit := rfl
 
 /-- The halting set: some witness certifies that code number `e` halts on `e`. -/
 def Kc (e : Nat) : Prop := ∃ wit, acceptN e wit = 1
-
-theorem encVec_one (e : Nat) : encVec (fun _ : Fin 1 => e) = consN e 0 := rfl
 
 /-- Accepted witnesses are sound: if `Kc e` and `c` is a real unary code numbered
     `e`, then `c` really halts on input `e`. -/
 theorem Kc_sound {e : Nat} (h : Kc e) (c : RecCode 1) (hc : encCode c = e) :
     ∃ y, Eval c (fun _ => e) y := by
   obtain ⟨wit, hwit⟩ := h
-  unfold acceptN at hwit
-  obtain ⟨hwit, hins⟩ := mul_eq_one_iff.mp hwit
-  obtain ⟨hall, hcode⟩ := mul_eq_one_iff.mp hwit
-  have hval : ∀ j, j < csnd wit + 1 → nodeOK j (cfst wit) = 1 := of_bAllN_eq_one hall
-  have hcode' : codeOf (nthN (csnd wit) (cfst wit)) = encCode c := by
-    rw [eqInd_one_iff.mp hcode, hc]
-  have hins' : insOf (nthN (csnd wit) (cfst wit)) = encVec (fun _ : Fin 1 => e) := by
-    rw [eqInd_one_iff.mp hins, encVec_one]
-  exact ⟨outOf (nthN (csnd wit) (cfst wit)),
-    checkSound (csnd wit + 1) (cfst wit) hval (csnd wit) (Nat.lt_succ_self _)
-      c _ hcode' hins'⟩
+  refine ⟨uOut (cp e e) wit, ?_⟩
+  have hAccept : acceptOn (cp e e) wit = 1 := by
+    rwa [← acceptN_eq_acceptOn]
+  have hCode : cfst (cp e e) = encCode c := by rw [cfst_cp, hc]
+  simpa only [csnd_cp] using acceptOn_sound hAccept hCode
 
 /-- Halting is certified: if the unary code `c` halts on its own code number, its
     code number is in `Kc`. -/
 theorem Kc_complete {c : RecCode 1} {y : Nat} (h : Eval c (fun _ => encCode c) y) :
     Kc (encCode c) := by
-  obtain ⟨L', hval, i, hlen, hcode, hins, _⟩ := checkComplete h [] allValidL_nil
-  rw [List.nil_append] at hval hlen hcode hins
-  refine ⟨cp (encListN L') i, ?_⟩
-  unfold acceptN
-  rw [cfst_cp, csnd_cp]
-  have hval' : ∀ j, j < i + 1 → nodeOK j (encListN L') = 1 := fun j hj =>
-    hval j (by omega)
-  rw [bAllN_eq_one hval', hcode, hins, encVec_one, eqInd_eq rfl, eqInd_eq rfl]
+  obtain ⟨wit, hAccept, _⟩ := acceptOn_complete h
+  exact ⟨wit, by rwa [acceptN_eq_acceptOn]⟩
 
 /-! ## Stage 2: the halting set is NOT recursive
 
@@ -1949,41 +1982,53 @@ theorem Recursive2.nodeOK : Recursive2 nodeOK := by
         (Recursive2.comp2 Recursive2.add t0 t1) t2) t3) t4) t5
   exact h2
 
-/-- STAGE 3a HEADLINE: the accept predicate of the derivation checker is a
-    recursive function — the machine that semi-decides the halting set is itself
-    a machine of R. -/
-theorem Recursive2.acceptN : Recursive2 acceptN := by
-  have hF : Recursive3 fun j _ wit => Rcat.nodeOK j (Rcat.cfst wit) :=
+/-- The universal accept predicate is a recursive function of R. -/
+theorem Recursive2_acceptOn : Recursive2 acceptOn := by
+  unfold acceptOn
+  have hF : Recursive3 fun j _ wit => nodeOK j (cfst wit) :=
     Recursive3.comp2 Recursive2.nodeOK (show Recursive3 fun a _ _ => a from RecursiveV.proj 0)
-      (Recursive3.comp1 (F := Rcat.cfst) Recursive1.cfst (show Recursive3 fun _ _ c => c from RecursiveV.proj 2))
-  have hb : Recursive2 fun _ wit => Rcat.csnd wit + 1 :=
+      (Recursive3.comp1 (F := cfst) Recursive1.cfst (show Recursive3 fun _ _ c => c from RecursiveV.proj 2))
+  have hb : Recursive2 fun _ wit => csnd wit + 1 :=
     Recursive2.comp2 Recursive2.add (Recursive2.ofSnd Recursive1.csnd) (Recursive2.const 1)
-  have hball : RecursiveV fun v : Vec 2 =>
-      bAllN (fun j => Rcat.nodeOK j (Rcat.cfst (v 1))) (Rcat.csnd (v 1) + 1) :=
-    RecursiveV.bAllComp hF hb
   have hball' : Recursive2 fun _ wit =>
-      bAllN (fun j => Rcat.nodeOK j (Rcat.cfst wit)) (Rcat.csnd wit + 1) := hball
-  have hroot : Recursive2 fun _ wit => Rcat.nthN (Rcat.csnd wit) (Rcat.cfst wit) :=
+      bAllN (fun j => nodeOK j (cfst wit)) (csnd wit + 1) :=
+    RecursiveV.bAllComp hF hb
+  have hroot : Recursive2 fun _ wit => nthN (csnd wit) (cfst wit) :=
     Recursive2.comp2 Recursive2.nthN (Recursive2.ofSnd Recursive1.csnd)
       (Recursive2.ofSnd Recursive1.cfst)
-  have a2 : Recursive2 fun e wit =>
-      Rcat.eqInd (Rcat.codeOf (Rcat.nthN (Rcat.csnd wit) (Rcat.cfst wit))) e :=
+  have a2 : Recursive2 fun er wit =>
+      eqInd (codeOf (nthN (csnd wit) (cfst wit))) (cfst er) :=
     Recursive2.comp2 Recursive2.eqInd
-      (RecursiveV.comp1 (F := Rcat.codeOf) Recursive1.codeOf hroot) (show Recursive2 fun a _ => a from RecursiveV.proj 0)
-  have a3 : Recursive2 fun e wit =>
-      Rcat.eqInd (Rcat.insOf (Rcat.nthN (Rcat.csnd wit) (Rcat.cfst wit)))
-        (Rcat.consN e 0) :=
+      (RecursiveV.comp1 (F := codeOf) Recursive1.codeOf hroot)
+      (Recursive2.ofFst Recursive1.cfst)
+  have a3 : Recursive2 fun er wit =>
+      eqInd (insOf (nthN (csnd wit) (cfst wit))) (consN (csnd er) 0) :=
     Recursive2.comp2 Recursive2.eqInd
-      (RecursiveV.comp1 (F := Rcat.insOf) Recursive1.insOf hroot)
-      (Recursive2.comp2 Recursive2.consN (show Recursive2 fun a _ => a from RecursiveV.proj 0) (Recursive2.const 0))
-  have h2 : Recursive2 fun e wit =>
-      bAllN (fun j => Rcat.nodeOK j (Rcat.cfst wit)) (Rcat.csnd wit + 1)
-      * Rcat.eqInd (Rcat.codeOf (Rcat.nthN (Rcat.csnd wit) (Rcat.cfst wit))) e
-      * Rcat.eqInd (Rcat.insOf (Rcat.nthN (Rcat.csnd wit) (Rcat.cfst wit)))
-          (Rcat.consN e 0) :=
-    Recursive2.comp2 Recursive2.mul
-      (Recursive2.comp2 Recursive2.mul hball' a2) a3
-  exact h2
+      (RecursiveV.comp1 (F := insOf) Recursive1.insOf hroot)
+      (Recursive2.comp2 Recursive2.consN (Recursive2.ofFst Recursive1.csnd) (Recursive2.const 0))
+  exact Recursive2.comp2 Recursive2.mul (Recursive2.comp2 Recursive2.mul hball' a2) a3
+
+theorem Recursive1_uOutW : Recursive1 uOutW :=
+  Recursive1.comp (f := fun wit => nthN (csnd wit) (cfst wit))
+    (Recursive1.comp2 Recursive2.nthN Recursive1.csnd Recursive1.cfst) Recursive1.outOf
+
+/-- `uOut` is a recursive function of R. -/
+theorem Recursive2_uOut : Recursive2 uOut := by
+  have h1 : Recursive1 fun wit => nthN (csnd wit) (cfst wit) :=
+    Recursive1.comp2 Recursive2.nthN Recursive1.csnd Recursive1.cfst
+  exact Recursive2.ofSnd (Recursive1.comp h1 Recursive1.outOf)
+
+/-- STAGE 3a HEADLINE: the diagonal accept predicate is recursive by specialization
+    of the universal checker — the machine that semi-decides the halting set is
+    itself a machine of R. -/
+theorem Recursive2.acceptN : Recursive2 acceptN := by
+  have hUniversal : Recursive2 fun e wit => Rcat.acceptOn (Rcat.cp e e) wit :=
+    Recursive2.comp2 Rcat.Recursive2_acceptOn
+      (Recursive2.comp2 Recursive2.cp
+        (show Recursive2 fun e _ => e from RecursiveV.proj 0)
+        (show Recursive2 fun e _ => e from RecursiveV.proj 0))
+      (show Recursive2 fun _ wit => wit from RecursiveV.proj 1)
+  simpa only [Rcat.acceptN] using hUniversal
 
 /-! ## Stage 3b: the enumerated equivalence relation E on ω
 
@@ -2602,5 +2647,6 @@ theorem r_not_effective :
 theorem r_not_effective_witness :
     ∃ E : BinRel ExtNat omega omega, EquivalenceRelation E ∧ ¬ IsEffective E :=
   ⟨ERel, ERel_equivalence, ERel_not_effective⟩
+
 
 end Freyd.Rcat
