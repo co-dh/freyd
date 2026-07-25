@@ -198,14 +198,6 @@ def diagSub (A : 𝒞) : Subobject 𝒞 (prod A A) :=
 /-- `A` is decidable (inter-based form): its diagonal subobject is `IsComplementedSub`. -/
 def DecidableObjectSub (A : 𝒞) : Prop := IsComplementedSub (diagSub A)
 
-/-- Monotonicity of the subobject union, from `union_min` + `union_left/right`. -/
-theorem union_mono {B : 𝒞} {S S' T T' : Subobject 𝒞 B}
-    (hS : S.le S') (hT : T.le T') :
-    (HasSubobjectUnions.union S T).le (HasSubobjectUnions.union S' T') :=
-  HasSubobjectUnions.union_min _ _ _
-    (Subobject.le_trans hS (HasSubobjectUnions.union_left S' T'))
-    (Subobject.le_trans hT (HasSubobjectUnions.union_right S' T'))
-
 /-- **§1.658 diagonal-classifies**: if `A` is decidable and `c : B → A×A` is a classifying
     map, then the inverse image `c# (Δ A) ⊆ B` is complemented.  This transfers decidability
     of the diagonal to any subobject realized as an inverse image of it. -/

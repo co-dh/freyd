@@ -25,6 +25,7 @@ import Freyd.S1_543_CatColimitRegular
 import Freyd.S1_543_ColimitCoproductGerm
 import Freyd.S1_543_Capitalization
 import Freyd.S1_61
+import Freyd.S1_62
 import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
@@ -56,14 +57,6 @@ theorem Subobject.map_le {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : F
   exact ⟨T.map k, by
     show T.map k ≫ T.map S'.arr = T.map S.arr
     rw [← T.map_comp, hk]⟩
-
-/-- Binary union is monotone in both arguments. -/
-theorem union_le_union [HasImages 𝒞] [HasSubobjectUnions 𝒞] {B : 𝒞}
-    {S₁ S₂ T₁ T₂ : Subobject 𝒞 B} (hS : S₁.le S₂) (hT : T₁.le T₂) :
-    (HasSubobjectUnions.union S₁ T₁).le (HasSubobjectUnions.union S₂ T₂) :=
-  HasSubobjectUnions.union_min S₁ T₁ _
-    (Subobject.le_trans hS (HasSubobjectUnions.union_left S₂ T₂))
-    (Subobject.le_trans hT (HasSubobjectUnions.union_right S₂ T₂))
 
 /-- The chosen image of `f` is equivalent to any image of `f`. -/
 theorem image_equiv_isImage [HasImages 𝒞] {A B : 𝒞} {f : A ⟶ B} {I : Subobject 𝒞 B}
@@ -231,8 +224,8 @@ theorem stage_invImage_union_le [hPL : PreLogos 𝒞]
     ((hpb (unionImg hii hcop S T)).trans
       ⟨inverseImage_mono f (hun S T).1, inverseImage_mono f (hun S T).2⟩).1 ?_
   refine Subobject.le_trans (PreLogos.invImage_preserves_union f S T).1 ?_
-  exact (Subobject.Equiv.trans ⟨union_le_union (hpb S).symm.1 (hpb T).symm.1,
-      union_le_union (hpb S).symm.2 (hpb T).symm.2⟩
+  exact (Subobject.Equiv.trans ⟨union_mono (hpb S).symm.1 (hpb T).symm.1,
+      union_mono (hpb S).symm.2 (hpb T).symm.2⟩
     (hun (pbSub ht hp he f S) (pbSub ht hp he f T)).symm).1
 
 end Freyd
@@ -570,7 +563,7 @@ theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coherent) 
   have hLHS : (InverseImage f (HasSubobjectUnions.union S T)).Equiv
       (germSub C hC hmono (pbSub (ht N) (hp N) (he N) f_N (unionImg (hi N) (hcop N) S_N T_N))) := by
     rw [hfeq]
-    have hUeq := Subobject.Equiv.trans ⟨union_le_union hSeq.1 hTeq.1, union_le_union hSeq.2 hTeq.2⟩
+    have hUeq := Subobject.Equiv.trans ⟨union_mono hSeq.1 hTeq.1, union_mono hSeq.2 hTeq.2⟩
       (union_germ_equiv C hC hmono hcop hcoppres hcoppres_case hi hfaith himgpres N S_N T_N)
     refine Subobject.Equiv.trans
       ⟨inverseImage_mono (homInclObj C hC f_N) hUeq.1,
@@ -591,7 +584,7 @@ theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coherent) 
           inverseImage_mono (homInclObj C hC f_N) hTeq.2⟩
         (invImage_germ_equiv C hC hmono ht htpres hp hpres hpres_pair he hepres hepres_lift
           N f_N T_N)
-    exact Subobject.Equiv.trans ⟨union_le_union hXS.1 hXT.1, union_le_union hXS.2 hXT.2⟩
+    exact Subobject.Equiv.trans ⟨union_mono hXS.1 hXT.1, union_mono hXS.2 hXT.2⟩
       (union_germ_equiv C hC hmono hcop hcoppres hcoppres_case hi hfaith himgpres N
         (pbSub (ht N) (hp N) (he N) f_N S_N) (pbSub (ht N) (hp N) (he N) f_N T_N))
   -- stage hard direction, transported up

@@ -4609,4 +4609,15 @@ end Stalk
 
 end PreLogosHorn
 
+
+
+omit [PreLogos 𝒞] in
+/-- Monotonicity of the subobject union, from `union_min` + `union_left/right`. -/
+theorem union_mono [HasImages 𝒞] [HasSubobjectUnions 𝒞]
+    {B : 𝒞} {S S' T T' : Subobject 𝒞 B}
+    (hS : S.le S') (hT : T.le T') :
+    (HasSubobjectUnions.union S T).le (HasSubobjectUnions.union S' T') :=
+  HasSubobjectUnions.union_min _ _ _
+    (Subobject.le_trans hS (HasSubobjectUnions.union_left S' T'))
+    (Subobject.le_trans hT (HasSubobjectUnions.union_right S' T'))
 end Freyd
