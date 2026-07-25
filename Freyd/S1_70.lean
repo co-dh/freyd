@@ -18,6 +18,7 @@ import Freyd.S1_42
 import Freyd.S1_51
 import Freyd.S1_52
 import Freyd.S1_60
+import Freyd.S1_61
 
 
 open Freyd
@@ -299,15 +300,10 @@ class LocallyComplete (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞 wher
   sup_isSup : ∀ {A : 𝒞} (S : (Subobject 𝒞 A) → Prop), IsSup Subobject.le S (sup S)
 
 /-- §1.712: InverseImage f is monotone: B₁ ≤ B₂ ⟹ f#(B₁) ≤ f#(B₂).
-    Proof: use the pullback mediating map into the cone (π₁, π₂ ≫ k). -/
+    This is the §1.451 order-preservation theorem under the ambient logos hypotheses. -/
 theorem invImage_mono {A B : 𝒞} (f : A ⟶ B) {B₁ B₂ : Subobject 𝒞 B}
     (hle : B₁.le B₂) : (InverseImage f B₁).le (InverseImage f B₂) := by
-  obtain ⟨k, hk⟩ := hle
-  let pb₁ := HasPullbacks.has f B₁.arr
-  let pb₂ := HasPullbacks.has f B₂.arr
-  have hw : pb₁.cone.π₁ ≫ f = (pb₁.cone.π₂ ≫ k) ≫ B₂.arr := by
-    rw [Cat.assoc, hk, ← pb₁.cone.w]
-  exact ⟨pb₂.lift ⟨pb₁.cone.pt, pb₁.cone.π₁, pb₁.cone.π₂ ≫ k, hw⟩, pb₂.lift_fst _⟩
+  exact inverseImage_mono f hle
 
 end LogosFacts
 
