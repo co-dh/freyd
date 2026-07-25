@@ -155,29 +155,57 @@ def Pv (n : Nat) : (toGraph (entL n)).V :=
 def Qv (n : Nat) : (toGraph (entL n)).V :=
   Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inl (toGraph (mids n)).t)))))
 
+theorem aL_inj {i j : Nat} (h : aL i = aL j) : i = j := by
+  simp only [aL] at h; omega
+
+theorem cL_inj {i j : Nat} (h : cL i = cL j) : i = j := by
+  simp only [cL] at h; omega
+
+/-- The middle vertex of branch `j` (the collapse image of corner `v_{j+1}`):
+    the joint of the branch's two factors. -/
+def branchMid (j : Nat) : (toGraph (branch j)).V :=
+  Quot.mk _ (Sum.inl (toGraph (.meet (.var (bL j)) (.recip (.var (aL (j+1)))))).t)
+
+/-- In a branch, the only `aL`-labelled edge is `aL (j+1)`, from the branch's
+    middle vertex to the `s`-mark (the collapsed `P`). -/
+theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
+    (h : (toGraph (branch j)).edge c d (aL i)) :
+    i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).s := by
+  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
+  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hut, hvs⟩
+    · exact absurd hlab aL_ne_bL
+    · subst hut; subst hvs
+      exact ⟨aL_inj hlab, hu.symm, hv.symm⟩
+  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
+    · exact absurd hlab aL_ne_dL
+    · exact absurd hlab aL_ne_cL
+
+/-- In a branch, the only `cL`-labelled edge is `cL (j+1)`, from the branch's
+    middle vertex to the `t`-mark (the collapsed `Q`). -/
+theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
+    (h : (toGraph (branch j)).edge c d (cL i)) :
+    i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).t := by
+  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
+  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
+    · exact absurd hlab cL_ne_bL
+    · exact absurd hlab.symm aL_ne_cL
+  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hus, hvt⟩
+    · exact absurd hlab cL_ne_dL
+    · subst hus; subst hvt
+      refine ⟨cL_inj hlab, ?_, hv.symm⟩
+      rw [← hu]
+      exact (gcomp_glue _ _).symm
 /-- In a branch, every `aL`-labelled edge ends at the `s`-mark (the collapsed
     top vertex `P`). -/
 theorem branch_edge_aL {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (aL i)) : d = (toGraph (branch j)).s := by
-  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
-  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨_, _, hd⟩
-    · exact absurd hlab aL_ne_bL
-    · subst hv; rw [hd]; rfl
-  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
-    · exact absurd hlab aL_ne_dL
-    · exact absurd hlab aL_ne_cL
+  exact (branch_edge_aL_full h).2.2
 
 /-- In a branch, every `cL`-labelled edge ends at the `t`-mark (the collapsed
     bottom vertex `Q`). -/
 theorem branch_edge_cL {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (cL i)) : d = (toGraph (branch j)).t := by
-  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
-  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
-    · exact absurd hlab cL_ne_bL
-    · exact absurd hlab.symm aL_ne_cL
-  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨_, _, hd⟩
-    · exact absurd hlab cL_ne_dL
-    · subst hv; rw [hd]; rfl
+  exact (branch_edge_cL_full h).2.2
 
 /-- In the `mids` tower, every `aL`-labelled edge ends at the `s`-mark. -/
 theorem mids_edge_aL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
@@ -2505,6 +2533,12 @@ theorem step_merge_bound {Ax : List (Term Nat × Term Nat)} {N : Nat}
     outright (`allegory_step_hom_tame`, `allegory_step_merge_bound`, bound
     `2·10+1 = 21`).  Still open toward `RhombusHard`: the (a) SP-wall
     dichotomy, and the assembly of (a) + (b) + (c) along a chain. -/
+
+
+
+
+
+
 
 end Freyd.S2_158
 
