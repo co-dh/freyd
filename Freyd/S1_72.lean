@@ -916,7 +916,7 @@ theorem connected_projective_one_implies_coprime_one
           (InverseImage s (inrSub (𝒞 := 𝒞) (A := U.dom) (B := V.dom) inr_mono))) :=
       Subobject.le_trans (entire_le_invImage_entire s)
         (Subobject.le_trans
-          (invImage_mono s inl_union_inr_entire)
+          (inverseImage_mono s inl_union_inr_entire)
           (PreLogos.invImage_preserves_union s _ _).1)
     have hle : (HasSubobjectUnions.union
           (InverseImage s (inlSub (𝒞 := 𝒞) (A := U.dom) (B := V.dom) inl_mono))
