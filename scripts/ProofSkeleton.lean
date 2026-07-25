@@ -10,7 +10,10 @@
 
    Precision note: `rfl`-proved and tiny proofs collide en masse and say nothing, so we drop proofs
    whose head is `rfl`/`Eq.refl` and whose skeleton has fewer than `minNodes` distinct nodes.
-   Core-only: reads the already-built .olean files. -/
+   Core-only: reads the already-built .olean files.
+
+   Besides the human-readable stdout report, this writes `graph/proof-near-clones.tsv` so the full
+   candidate set survives the agent/session that ran the scan. -/
 import Freyd
 import Lean
 open Lean
@@ -85,6 +88,11 @@ def generatedDeclName (env : Environment) (name : Name) : Bool :=
   env.isProjectionFn name || compilerTail || compilerFragment ||
     parts.any (·.startsWith "_")
 
+def notationOrParserDecl (name : Name) : Bool :=
+  let tail := (name.toString.splitOn ".").getLastD ""
+  tail.startsWith "term" || tail.startsWith "«term" ||
+    ["relCompose", "underHomComp", "overHomComp", "relUnionNotation", "allegoryRecip"].contains tail
+
 def main : IO Unit := do
   initSearchPath (← findSysroot)
   let env ← importModules #[{ module := `Freyd }] {} (trustLevel := 1024)
@@ -121,6 +129,12 @@ def main : IO Unit := do
           pairs := pairs.push (jac, a.name, a.mod, b.name, b.mod, min a.sz b.sz)
   let sorted := pairs.qsort (fun x y => if x.1 == y.1 then x.2.2.2.2.2 > y.2.2.2.2.2 else x.1 > y.1)
   IO.println s!"scanned {scanned} theorem/definition values; {sorted.size} cross-file near-clone pairs (Jaccard ≥ {minJaccard})\n"
+  let mut tsv := #["jaccard\tmin_nodes\tleft\tleft_module\tright\tright_module\tclass"]
   for (jac, na, ma, nb, mb, sz) in sorted do
     let j100 := (jac * 100.0).toUInt64
     IO.println s!"J={j100}%  ~{sz}n   {na} ({ma})  ~  {nb} ({mb})"
+    let kind := if notationOrParserDecl na || notationOrParserDecl nb then
+      "notation/parser" else "ordinary"
+    tsv := tsv.push s!"{jac}\t{sz}\t{na}\t{ma}\t{nb}\t{mb}\t{kind}"
+  IO.FS.writeFile "graph/proof-near-clones.tsv" (String.intercalate "\n" tsv.toList ++ "\n")
+  IO.println s!"\nwrote {sorted.size} pair(s) to graph/proof-near-clones.tsv"

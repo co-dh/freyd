@@ -204,6 +204,22 @@ The broader audit did expose one genuine non-Section-5 duplicate: §2.216's matr
 After that collapse the scan reports 7,673 values and 97 pairs: the same 86 notation/parser pairs
 and 11 ordinary pairs.
 
+The complete current inventory is generated at `graph/proof-near-clones.tsv` by
+`scripts/ProofSkeleton.lean`; do not rely on an agent's temporary `/tmp` report. The 11 ordinary
+rows reduce to:
+
+- six pairwise edges among three local equalizer pins and three local pullback pins. These local
+  instances deliberately force one representative through separate instance-diamond-sensitive
+  developments; their bodies already reuse the canonical constructors, so keep the pins;
+- `isMor_finite`/`isPMor_finite` and `Recursive1.finTable`/`PrimRec1.finTable`, intentionally
+  distinct book roles as discussed above;
+- `Recursive1.const` against its binary and ternary versions, which are arity-specific closure
+  statements rather than aliases;
+- `stageInclFunctorL_preservesMono`/`stageInclL_mono_of_stage`, the remaining substantial proof
+  pair. A direct semantic replacement at its two `UniformCapStep` uses did not elaborate and was
+  transactionally restored; reduce the later proof through the earlier theorem only after the
+  precise universe/typeclass mismatch is diagnosed.
+
 ---
 
 ## Section 6 — Known-blocked; do not retry without a new idea
