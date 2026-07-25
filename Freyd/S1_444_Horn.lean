@@ -27,6 +27,7 @@
 import Freyd.S1_42
 import Freyd.S1_43
 import Freyd.S1_47
+import Freyd.S1_241
 
 open Freyd
 
@@ -141,33 +142,13 @@ end Semantics
 
   Terminator = `PUnit`, product = `×`, equalizer = subtype `{a // f a = g a}`. -/
 
-instance setCat : Cat.{v} (Type v) where
-  Hom A B := A → B
-  id _ := fun a => a
-  comp f g := fun a => g (f a)
-  id_comp _ := rfl
-  comp_id _ := rfl
-  assoc _ _ _ := rfl
-
-@[simp] theorem set_comp {A B C : Type v} (f : A ⟶ B) (g : B ⟶ C) (a : A) :
-    (f ≫ g) a = g (f a) := rfl
-@[simp] theorem set_id {A : Type v} (a : A) : (Cat.id A) a = a := rfl
-
 /-! ## The representable `Hom(i, -) : 𝒞 → Type v` -/
 
 section Representable
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-- The covariant hom-functor `Hom(i, -) : 𝒞 → Type v`, `f ↦ (h ↦ h ≫ f)` (§1.272).  Its object map
-    is `YonedaEmbedding i` (§1.464), used here bundled as a `Functor`. -/
-def homFunctorFunctor (i : 𝒞) : Functor 𝒞 (Type v) where
-  obj := Freyd.YonedaEmbedding (𝒞 := 𝒞) i
-  map f := fun h => h ≫ f
-  map_id A := by funext h; exact Cat.comp_id h
-  map_comp f g := by funext h; exact (Cat.assoc h f g).symm
-
 @[simp] theorem homFunctor_map (i : 𝒞) {A B : 𝒞} (f : A ⟶ B) (h : i ⟶ A) :
-    (homFunctorFunctor i).map f h = h ≫ f := rfl
+    (homFunctor i).map f h = h ≫ f := rfl
 
 end Representable
 
@@ -182,7 +163,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 /-- `Hom(i,-)` preserves TERMINATORS: if `o` is terminal in `𝒞` then `Hom(i,o) = (i⟶o)`
     is terminal in `Type v` (a one-element set). -/
 theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj o) :
-    IsTerminalObj (Freyd.YonedaEmbedding i o) := by
+    IsTerminalObj (Freyd.representable i o) := by
   -- `Hom(i,o) = (i⟶o)` is a one-element set: the unique global map to `o`, constantly.
   obtain ⟨t, ht⟩ := ho i
   refine fun X => ⟨fun _ => t, fun g => ?_⟩
@@ -194,7 +175,7 @@ theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj 
 theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (hp : IsProductObj pf ps) :
     IsProductObj (𝒞 := Type v)
-      ((homFunctorFunctor i).map pf) ((homFunctorFunctor i).map ps) := by
+      ((homFunctor i).map pf) ((homFunctor i).map ps) := by
   intro X u v
   -- `u : X → (i⟶a)`, `v : X → (i⟶b)`.  For each `x : X`, lift the pair `(u x, v x)`.
   refine ⟨fun x => (hp i (u x) (v x)).choose, ?_, ?_, ?_⟩
@@ -209,8 +190,8 @@ theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {p
 theorem homFunctor_preserves_equalizer (i : 𝒞) {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (he : IsEqualizerObj em f g) :
     IsEqualizerObj (𝒞 := Type v)
-      ((homFunctorFunctor i).map em)
-      ((homFunctorFunctor i).map f) ((homFunctorFunctor i).map g) := by
+      ((homFunctor i).map em)
+      ((homFunctor i).map f) ((homFunctor i).map g) := by
   obtain ⟨hcomm, huniv⟩ := he
   refine ⟨?_, ?_⟩
   · -- (·≫em)≫(·≫f) = (·≫em)≫(·≫g) in Set: pointwise associativity + `hcomm`.
@@ -238,14 +219,14 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {nObj : Nat}
 
 /-- Push an environment `ρ` in `𝒞` to one in `Type v` via `Hom(i,-)`. -/
 def pushEnv (i : 𝒞) (ρ : Env 𝒞 nObj) : Env (Type v) nObj where
-  obj o := Freyd.YonedaEmbedding i (ρ.obj o)
-  mor m := (homFunctorFunctor i).map (ρ.mor m)
+  obj o := Freyd.representable i (ρ.obj o)
+  mor m := (homFunctor i).map (ρ.mor m)
 
 /-- `morAs` commutes with the push: pushing a retyped morphism is the retyped push. -/
 theorem morAs_pushEnv (i : 𝒞) (ρ : Env 𝒞 nObj) (m : MorVar nObj)
     {s t : ObjVar nObj} (hs : m.src = s) (ht : m.tgt = t) :
     morAs (pushEnv i ρ) m hs ht
-      = (homFunctorFunctor i).map (morAs ρ m hs ht) := by
+      = (homFunctor i).map (morAs ρ m hs ht) := by
   subst hs; subst ht; rfl
 
 /-- **PRESERVATION (atom level)**: every atom satisfied by `ρ` in `𝒞` is satisfied by
@@ -283,7 +264,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {nObj : Nat}
     then `o` is terminal in `𝒞`.  A global map `X → o` is witnessed at `i := X`;
     uniqueness is `cayley_faithful`. -/
 theorem reflect_terminal {o : 𝒞}
-    (h : ∀ i : 𝒞, IsTerminalObj (Freyd.YonedaEmbedding i o)) : IsTerminalObj o := by
+    (h : ∀ i : 𝒞, IsTerminalObj (Freyd.representable i o)) : IsTerminalObj o := by
   intro X
   -- existence: probe the terminal Set `Hom(X,o)` at the type `(X⟶X)`, evaluate at `id_X`.
   obtain ⟨w, _⟩ := h X (X ⟶ X)
@@ -303,7 +284,7 @@ theorem reflect_terminal {o : 𝒞}
     `i := X`; uniqueness is `cayley_faithful`. -/
 theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (h : ∀ i : 𝒞, IsProductObj (𝒞 := Type v)
-      ((homFunctorFunctor i).map pf) ((homFunctorFunctor i).map ps)) :
+      ((homFunctor i).map pf) ((homFunctor i).map ps)) :
     IsProductObj pf ps := by
   intro X u v
   -- read the lift off the Set-product at `i := X`, applied to `id_X`.
@@ -337,8 +318,8 @@ theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     `(·≫f), (·≫g)` for every `i`, then `em` is an equalizer of `f, g` in `𝒞`. -/
 theorem reflect_equalizer {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (h : ∀ i : 𝒞, IsEqualizerObj (𝒞 := Type v)
-      ((homFunctorFunctor i).map em)
-      ((homFunctorFunctor i).map f) ((homFunctorFunctor i).map g)) :
+      ((homFunctor i).map em)
+      ((homFunctor i).map f) ((homFunctor i).map g)) :
     IsEqualizerObj em f g := by
   refine ⟨?_, ?_⟩
   · -- `em ≫ f = em ≫ g`: read at `i := e` applied to `id_e` via the Set-comm law.

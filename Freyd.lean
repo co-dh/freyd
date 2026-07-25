@@ -1,4 +1,5 @@
 import Freyd.S1_1
+import Freyd.S1_241
 import Freyd.S1_24
 import Freyd.S1_28
 import Freyd.S1_39

@@ -253,8 +253,8 @@ theorem sliceLift_unique {𝒜 : Type u} [Cat.{v} 𝒜] {B : 𝒜}
   is a full embedding (the YONEDA REPRESENTATION).  It preserves and reflects the
   cartesian predicates.
 
-  The embedding `YonedaEmbedding B : 𝒞 → Type v := fun A => A ⟶ B` is defined
-  in S1_47.lean.  Here we realise the full functor-category statement, using
+  The individual covariant representable `representable B = Hom(B, -)` is defined
+  in S1_47.lean.  Here we instead realise the full contravariant functor-category statement, using
   `setCat : Cat (Type w)` (Horn.lean) and the functor category `𝒮^(A°)` from
   S1_27 / `FunctorCategory.lean`.  The section below shows:
     `yonedaObj`            — `H_B` is a presheaf `(OppCat 𝒞) → Type w`;
@@ -281,9 +281,6 @@ section Yoneda464
 
 universe w
 variable {𝒞 : Type (w+1)} [inst : Cat.{w} 𝒞]
-
--- The hom-type category `Cat.{w} (Type w)` is the codomain of every presheaf here.
-attribute [local instance] Freyd.Horn.setCat
 
 /-- Precomposition action of `H_B`: an `OppCat 𝒞`-hom `f : X ⟶ Y` (i.e. a `𝒞`-hom
     `Y ⟶ X`) sends `h : X ⟶ B` to `f ≫ h : Y ⟶ B`.  Stated with explicit `@`-comp
@@ -407,7 +404,7 @@ private theorem yoneda_app_eq {B C X : 𝒞}
     (α : FunctorHom (yonedaObj B) (yonedaObj C)) (h : @Cat.Hom 𝒞 inst X B) :
     α.app X h = h ≫ α.app B (Cat.id B) := by
   have nat := congrFun (α.naturality (f := (show @Cat.Hom (OppCat 𝒞) _ B X from h))) (Cat.id B)
-  simp only [Horn.set_comp] at nat
+  simp only [set_comp] at nat
   have key_lhs : (yonedaObj B).map
       (show @Cat.Hom (OppCat 𝒞) _ B X from h) (Cat.id B) = h :=
     @Cat.comp_id 𝒞 inst X B h

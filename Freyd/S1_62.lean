@@ -4083,7 +4083,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] {nObj : Nat}
 theorem pushPow_mor_app (ρ : Env 𝒞 nObj) (m : MorVar nObj)
     {s t : ObjVar nObj} (hs : m.src = s) (ht : m.tgt = t) (i : 𝒞) :
     (morAs (pushPow ρ) m hs ht) i
-      = (Freyd.Horn.homFunctorFunctor i).map (morAs ρ m hs ht) := by
+      = (homFunctor i).map (morAs ρ m hs ht) := by
   rw [morAs_pushPow]; rfl
 
 /-- **PRODUCT**, preserved. -/
