@@ -70,11 +70,6 @@ section DomDisjoint
 
 variable {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜]
 
-/-- `(dom R)° = dom R` — the domain is a symmetric coreflexive (§2.12). -/
-theorem dom_recip_self {a b : 𝒜} (R : a ⟶ b) : (dom R)° = dom R := by
-  show (Cat.id a ∩ R ≫ R°)° = Cat.id a ∩ R ≫ R°
-  rw [Allegory.recip_inter, recip_id, Allegory.recip_comp, Allegory.recip_recip]
-
 /-- Freyd §2.217, FIRST displayed chain:
     `(Dom S) ∩ (Dom T) ⊂ (Dom S)(Dom T) ⊂ SS°TT°`.  The first link is §2.121
     (`coreflexive_comp_eq_inter`, an equality for coreflexives); the second is
@@ -94,7 +89,7 @@ theorem recip_comp_le_through_doms {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
   -- `S° ⊑ S° ≫ dom S`: reciprocate `S ⊑ dom S ≫ S` and use `(dom S)° = dom S`.
   have hS : S° ⊑ S° ≫ dom S := by
     have h := recip_mono (le_dom_comp S)
-    rwa [Allegory.recip_comp, dom_recip_self] at h
+    rwa [Allegory.recip_comp, dom_recip] at h
   have hchain : S° ≫ T ⊑ (S° ≫ dom S) ≫ (dom T ≫ T) :=
     le_trans (comp_mono_right hS T) (comp_mono_left (S° ≫ dom S) (le_dom_comp T))
   have hassoc : (S° ≫ dom S) ≫ (dom T ≫ T) = S° ≫ (dom S ≫ dom T) ≫ T := by
@@ -137,14 +132,6 @@ namespace Freyd.Alg.Mat
 section MatCharacterizations
 
 variable {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜]
-
-/-- Diagonal entry of the matrix identity. -/
-theorem matId_diag {X : MatObj 𝒜} (i : Fin X.n) : matId X i i = Cat.id (X.objs i) := by
-  simp only [matId, ↓reduceDIte]
-
-/-- Off-diagonal entry of the matrix identity. -/
-theorem matId_off {X : MatObj 𝒜} {i i' : Fin X.n} (h : i ≠ i') : matId X i i' = 𝟘 := by
-  simp only [matId, dif_neg h]
 
 /-- **§2.217: a matrix is ENTIRE iff each row's polarizations join above the identity** —
     "R is entire iff for each i, `1 ⊂ ∪_j R_ij R_ij°`". -/

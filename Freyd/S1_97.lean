@@ -224,7 +224,7 @@ theorem expApply_postMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasE
 theorem expName_postMap {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasExponentials 𝒞]
     {A B C : 𝒞} (g : C ⟶ A) (f : A ⟶ B) :
     expName g ≫ expCovMap C f = expName (g ≫ f) := by
-  -- both name `g ≫ f`; check by uncurrying (prodMap_eval_inj on points via curry_unique).
+  -- both name `g ≫ f`; check by uncurrying (transp_inj on points via curry_unique).
   show expName g ≫ curry (eval_exp C A ≫ f) = curry (fst ≫ g ≫ f)
   apply curry_unique_eq
   -- (C × (⌜g⌝ ≫ curry(eval≫f))) ≫ eval = fst ≫ g ≫ f
@@ -286,14 +286,6 @@ theorem ac_iff_iac_and_projective_one [HasExponentials 𝒞] [HasImages 𝒞]
   §1.981: If 1 →⁰ N →ˢ N is a NNO, then for every A →ᵃ B ←ᵇ B there
   exists a unique A × N → B such that the two triangles commute.
   This is obtained by transposing through the exponential adjunction. -/
-
-/-- `g ↦ (A × g) ≫ eval` is injective: it is split by `curry`. -/
-theorem prodMap_eval_inj {𝒞 : Type u} [Cat.{v} 𝒞] [HasExponentials 𝒞]
-    {A B X : 𝒞} {g₁ g₂ : X ⟶ B ^^ A}
-    (h : prodMap A X (B ^^ A) g₁ ≫ eval_exp A B = prodMap A X (B ^^ A) g₂ ≫ eval_exp A B) :
-    g₁ = g₂ := by
-  rw [curry_unique_eq (f := prodMap A X (B ^^ A) g₁ ≫ eval_exp A B) rfl,
-      curry_unique_eq (f := prodMap A X (B ^^ A) g₂ ≫ eval_exp A B) rfl, h]
 
 /-- §1.981: Given an NNO and exponentials, from a : A → B and b : B → B
     build the unique morphism A × N → B satisfying the recursion equations.
@@ -358,7 +350,7 @@ theorem iteratePair_unique {𝒞 : Type u} [Cat.{v} 𝒞]
   have hcurry : curry h = hN.iterate (curry (fst ≫ a)) (expCovMap A b) := by
     apply hN.iterate_unique
     · -- zero ≫ curry h = curry (fst ≫ a)
-      apply prodMap_eval_inj
+      apply transp_inj; simp only [transp]
       rw [prodMap_comp, Cat.assoc, curry_eval_eq, curry_eval_eq]
       -- goal: (A × zero) ≫ h = fst ≫ a
       have hpm : prodMap A one hN.nno hN.zero = fst ≫ pair (Cat.id A) (term A ≫ hN.zero) := by
@@ -369,7 +361,7 @@ theorem iteratePair_unique {𝒞 : Type u} [Cat.{v} 𝒞]
       rw [show prodMap A HasTerminal.one hN.nno hN.zero
             = fst ≫ pair (Cat.id A) (term A ≫ hN.zero) from hpm, Cat.assoc, h0]
     · -- succ ≫ curry h = curry h ≫ b_hat
-      apply prodMap_eval_inj
+      apply transp_inj; simp only [transp]
       rw [prodMap_comp, Cat.assoc, curry_eval_eq, prodMap_comp, Cat.assoc, hbhat,
           ← Cat.assoc, curry_eval_eq, hs]
   -- now uncurry: h = (A × curry h) ≫ eval = (A × iter) ≫ eval = iteratePair a b
@@ -4065,7 +4057,7 @@ theorem nil_cons_disjoint {X : 𝒞} (t : X ⟶ one) (q : X ⟶ prod A (wordObj 
 /-- **CONS INJECTIVITY.**  `consMor : A × W ⟶ W` is monic: `cons(a,w) = cons(a',w')` forces
     `(a,w) = (a',w')`.  Proof: read at index `0` recovers the head `a` (`consBody_zero`, `inr`
     monic); read at every `succ m` recovers the tail word `w` (`consBody_succ` exposes `w` at `m`,
-    so the uncurried generic-index reads of `w, w'` agree and `prodMap_eval_inj` gives `w = w'`).
+    so the uncurried generic-index reads of `w, w'` agree and `transp_inj` gives `w = w'`).
     This is the `cons`-step injectivity used to recover the predecessor in single-valuedness. -/
 theorem consMor_mono : Monic (consMor A) := by
   intro Z g h hgh
@@ -4083,9 +4075,9 @@ theorem consMor_mono : Monic (consMor A) := by
       rw [Cat.assoc, Cat.assoc, ← hr g, ← hr h, hgh]
     apply (coprodInr_monic one A)
     rw [← hφr, ← Cat.assoc, ← Cat.assoc, hinr, Cat.assoc, Cat.assoc]
-  -- tail leg: `g ≫ snd = h ≫ snd` from succ-index reads (`prodMap_eval_inj`).
+  -- tail leg: `g ≫ snd = h ≫ snd` from succ-index reads (`transp_inj`).
   have htail : g ≫ snd = h ≫ snd := by
-    apply prodMap_eval_inj (A := hN.nno) (B := letterObj A)
+    apply transp_inj (A := hN.nno) (E := letterObj A); simp only [transp]
     -- generic-index β-law: read of `k≫snd` at `fst` = read of `k≫consMor` at `succ∘fst`.
     have hgen : ∀ k : Z ⟶ prod A (wordObj A),
         prodMap hN.nno Z (wordObj A) (k ≫ snd) ≫ eval_exp hN.nno (letterObj A)
