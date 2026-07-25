@@ -422,6 +422,60 @@ private def verifiedEdits (env : Environment) (path source : String) (edits : Ar
 private def repositoryBuild : IO IO.Process.Output :=
   IO.Process.output { cmd := "./scripts/cap", args := #["lake", "build", "Freyd"] }
 
+/-! ## Book-aware declaration lints
+
+These checks deliberately live beside the refactors rather than consuming `graph/decls.tsv`.
+They inspect the environment produced by elaborating the source file: declaration ownership,
+docstrings and result types are therefore Lean's semantic data, not guesses made from rendered TSV
+columns.  The glob driver still forks once per file, respecting the environment-retention bound.
+-/
+
+private partial def terminalResult (type : Expr) : Expr :=
+  match type.consumeMData with
+  | .forallE _ _ body _ => terminalResult body
+  | .letE _ _ value body _ => terminalResult (body.instantiate1 value)
+  | result => result
+
+private def isFunctorResult (type : Expr) : Bool :=
+  match (terminalResult type).getAppFn with
+  | .const name _ => name.toString == "Freyd.Functor"
+  | _ => false
+
+private def hasFunctorRoleSuffix (name : Name) : Bool :=
+  let short := name.getString!
+  short.endsWith "Functor" || short.endsWith "Embedding" ||
+    short.endsWith "Representation"
+
+private def dropSpace : List Char → List Char
+  | c :: rest => if c.isWhitespace then dropSpace rest else c :: rest
+  | [] => []
+
+private def decimalPrefix (chars : List Char) : Option (Nat × List Char) :=
+  let rec go (chars : List Char) (value count : Nat) :=
+    match chars with
+    | c :: rest =>
+        if c.isDigit then go rest (10 * value + (c.toNat - '0'.toNat)) (count + 1)
+        else if count == 0 then none else some (value, chars)
+    | [] => if count == 0 then none else some (value, [])
+  go chars 0 0
+
+private def sectionCitations (text : String) : Array (Nat × Nat) :=
+  ((text.splitOn "§").drop 1 |>.filterMap fun tail => do
+    let (chapter, rest) ← decimalPrefix (dropSpace tail.toList)
+    let '.' :: rest := rest | none
+    let (sectionDigits, _) ← decimalPrefix rest
+    some (chapter, sectionDigits)).toArray
+
+private def openingBanner (source : String) : String :=
+  String.intercalate "\n" <| (source.splitOn "\n").takeWhile fun line =>
+    !(line.trimAsciiStart.toString.startsWith "import ")
+
+private def bannerRange (source : String) (chapter : Nat) : Option (Nat × Nat) := do
+  let sections := (sectionCitations (openingBanner source)).filter (·.1 == chapter) |>.map (·.2)
+  let first ← sections[0]?
+  some <| sections.foldl (init := (first, first)) fun (lo, hi) sectionDigits =>
+    (min lo sectionDigits, max hi sectionDigits)
+
 /-! ## Moving a declaration between files
 
 The dedup report (`scripts/dep_dup.py`) flags duplicate groups where no member is importable from all
@@ -472,7 +526,7 @@ private def elaborateFile (path : String) : IO (String × FileMap × Array Synta
     for msg in messages.toList do IO.eprintln (← msg.toString)
     throw <| IO.userError s!"{path}: imports failed to elaborate"
   let frontend ← Elab.IO.processCommands ctx parserState (Elab.Command.mkState env {} {})
-  pure (source, ctx.fileMap, frontend.commands, env)
+  pure (source, ctx.fileMap, frontend.commands, frontend.commandState.env)
 
 /-- Re-elaborate a whole file (imports included) from candidate `source` text. -/
 private def fileElaboratesCleanly (path source : String) : IO Bool := do
@@ -539,6 +593,46 @@ private def declarationSite (source : String) (commands : Array Syntax) (declNam
           return .ok (wholeLines source range, state.1)
     state := scopeStep state cmd
   return .error s!"no declaration named `{declName}` in this file"
+
+private def sourceDeclarations (fileMap : FileMap) (env : Environment) (commands : Array Syntax) :
+    Array (Name × ConstantInfo × Nat) := Id.run do
+  let mut declarations := #[]
+  let mut state := (Name.anonymous, ([] : List Name))
+  for command in commands do
+    if command.isOfKind ``Lean.Parser.Command.declaration then
+      if let some short := declIdName? command then
+        let name := state.1 ++ short
+        if let some info := env.find? name then
+          if let some range := command.getRange? then
+            declarations := declarations.push (name, info, (fileMap.toPosition range.start).line)
+    state := scopeStep state command
+  return declarations
+
+private def lintBookFile (path : String) : IO UInt32 := do
+  initSearchPath (← findSysroot)
+  let (source, fileMap, commands, env) ← elaborateFile path
+  let mut hits := 0
+  for (name, info, line) in sourceDeclarations fileMap env commands do
+    let ctx : Core.Context := { fileName := path, fileMap }
+    let doc ←
+      try
+        let action : CoreM (Option String) := findDocString? env name
+        Prod.fst <$> action.toIO ctx { env }
+      catch _ => pure none
+    for (chapter, sectionDigits) in (sectionCitations (doc.getD "")).toList.eraseDups do
+      if let some (lo, hi) := bannerRange source chapter then
+        if sectionDigits < lo || hi < sectionDigits then
+          hits := hits + 1
+          IO.println s!"{path}:{line}: [section-home] {name}: doc cites §{chapter}.{sectionDigits} outside banner §{chapter}.{lo}–§{chapter}.{hi}"
+    if hasFunctorRoleSuffix name && !isFunctorResult info.type then
+      hits := hits + 1
+      let rendered ←
+        try
+          let (formatted, _) ← (Meta.MetaM.run' (Meta.ppExpr info.type)).toIO ctx { env }
+          pure ((toString formatted).replace "\n" " ")
+        catch _ => pure "<type unavailable>"
+      IO.println s!"{path}:{line}: [name-vs-type] {name}: role-name suffix but result is not `Functor`: {rendered}"
+  return if hits == 0 then 0 else 1
 
 /-- Where to splice a declaration whose namespace is `ns`: after the LAST command of the target that
     sits in exactly that namespace, so the surrounding `namespace`/`end` already match and the
@@ -952,10 +1046,14 @@ private def showContext (fileMap : FileMap) (site : ReferenceSite)
   IO.println s!"  {String.intercalate " → " kinds}"
 
 private def usage : String :=
-  "usage:\n  lean-refactor move <source.lean> <full-declaration-name> <target.lean> [--apply]\n  lean-refactor collapse <source.lean> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename <source.lean> <module> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename --glob '<pattern>' <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-file <source.lean> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-token <source.lean> <old-token> <new-token> [--apply]\n  lean-refactor rename-token --glob '<pattern>' <old-token> <new-token> [--apply]\n  lean-refactor unused <source.lean>:<line>:<column> [--apply]\n  lean-refactor unused --glob '<pattern>' [--apply]\n  lean-refactor unused-simp --glob '<pattern>' [--apply]\n  lean-refactor inspect <source.lean> <module> <declaration-module> <full-declaration-name>\n  lean-refactor remove-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <1-based-index> [--apply]\n  lean-refactor insert-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <before-1-based-index> <term> [--apply]\n  lean-refactor remove-parameter <source.lean> <module> <full-declaration-name> <binder-name> <1-based-index> [--apply]"
+  "usage:\n  lean-refactor lint-book-file <source.lean>\n  lean-refactor lint-book --glob '<pattern>'\n  lean-refactor move <source.lean> <full-declaration-name> <target.lean> [--apply]\n  lean-refactor collapse <source.lean> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename <source.lean> <module> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename --glob '<pattern>' <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-file <source.lean> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-token <source.lean> <old-token> <new-token> [--apply]\n  lean-refactor rename-token --glob '<pattern>' <old-token> <new-token> [--apply]\n  lean-refactor unused <source.lean>:<line>:<column> [--apply]\n  lean-refactor unused --glob '<pattern>' [--apply]\n  lean-refactor unused-simp --glob '<pattern>' [--apply]\n  lean-refactor inspect <source.lean> <module> <declaration-module> <full-declaration-name>\n  lean-refactor remove-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <1-based-index> [--apply]\n  lean-refactor insert-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <before-1-based-index> <term> [--apply]\n  lean-refactor remove-parameter <source.lean> <module> <full-declaration-name> <binder-name> <1-based-index> [--apply]"
 
 def main (args : List String) : IO UInt32 := do
   match args with
+  | ["lint-book-file", path] =>
+      return ← lintBookFile path
+  | ["lint-book", "--glob", pattern] =>
+      return ← forkPerFile pattern fun path => #["lint-book-file", path]
   | ["move", sourcePath, declName, targetPath] =>
       return ← moveDeclaration sourcePath declName targetPath false
   | ["move", sourcePath, declName, targetPath, "--apply"] =>
