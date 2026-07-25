@@ -142,15 +142,24 @@ def HasRightInv : MorphProp.{v,u} := λ {_} _ {X Y} f => ∃ (g : Y ⟶ X), f �
 /-- A morphism has a left inverse: there exists `g` such that `g ≫ f = id`. -/
 def HasLeftInv : MorphProp.{v,u} := λ {_} _ {X Y} f => ∃ (g : Y ⟶ X), g ≫ f = Cat.id Y
 
-/-- **§1.181 restated**: every functor preserves isomorphisms.  This is the one
-    morphism-property preserved by *all* functors; preservation of `@Monic`, `@Cover`, … are
-    separate statements that need hypotheses on `F`. -/
-theorem preserves_iso (F : Functor 𝒞 𝒟) : Preserves F @IsIso := by
-  intro X Y f hf
+/-- **§1.181**: a functor preserves isomorphisms.  If `f : X → Y` has a two-sided inverse in `𝒞`,
+    then `F.map f` has a two-sided inverse in `𝒟`.
+
+    Stated across two object universes, unlike `preserves_iso` below, which cannot be: `Preserves`
+    quantifies over a single `MorphProp.{v,u}` and so forces `𝒞` and `𝒟` into one universe.  The
+    cross-universe form is what the §2.218 stalk composite `Map 𝒜 → Set^I` needs. -/
+theorem functor_preserves_iso {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+    {F : Functor 𝒞 𝒟} {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) : IsIso (F.map f) := by
   obtain ⟨g, hfg, hgf⟩ := hf
   exact ⟨F.map g,
     by rw [← F.map_comp, hfg, F.map_id],
     by rw [← F.map_comp, hgf, F.map_id]⟩
+
+/-- **§1.181 restated**: every functor preserves isomorphisms.  This is the one
+    morphism-property preserved by *all* functors; preservation of `@Monic`, `@Cover`, … are
+    separate statements that need hypotheses on `F`. -/
+theorem preserves_iso (F : Functor 𝒞 𝒟) : Preserves F @IsIso :=
+  fun hf => functor_preserves_iso _ hf
 
 /-- **§1.181**: every functor preserves right-invertibility. -/
 theorem preserves_has_right_inv (F : Functor 𝒞 𝒟) : Preserves F HasRightInv := by
@@ -164,15 +173,6 @@ theorem preserves_has_left_inv (F : Functor 𝒞 𝒟) : Preserves F HasLeftInv 
 
 section FunctorProperties
 variable {F : Functor 𝒞 𝒟}
-
-/-- **§1.181**: a functor preserves isomorphisms.
-
-    If `f : X → Y` has a two-sided inverse in `𝒞`, then `F.map f`
-    has a two-sided inverse in `𝒟`.  This is an instance of the
-    general `Preserves` notion — every functor `Preserves` `@IsIso`. -/
-theorem functor_preserves_iso {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) :
-    IsIso (F.map f) :=
-  preserves_iso F hf
 
 /-- **§1.181**: the image of the inverse is an inverse of the image.
 

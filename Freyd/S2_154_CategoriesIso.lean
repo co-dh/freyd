@@ -751,14 +751,6 @@ theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTer
   · obtain ⟨w, hw⟩ := hY Y
     rw [hw (v ≫ u), hw (Cat.id Y)]
 
-/-- Functors carry isomorphisms to isomorphisms. -/
-theorem functor_isIso {C : Type u₁} {D : Type u₂} [Cat.{v} C] [Cat.{v} D]
-    {F : Functor C D} {X Y : C} {e : X ⟶ Y} (he : IsIso e) :
-    IsIso (F.map e) := by
-  obtain ⟨e', h1, h2⟩ := he
-  exact ⟨F.map e', by rw [← F.map_comp, h1, F.map_id],
-    by rw [← F.map_comp, h2, F.map_id]⟩
-
 /-- The chosen terminator satisfies `Horn.IsTerminalObj`. -/
 theorem isTerm_one {D : Type u₁} [Cat.{v} D] [HasTerminal D] :
     @Freyd.Horn.IsTerminalObj D _ (Freyd.one (𝒞 := D)) :=
@@ -855,7 +847,7 @@ instance : Cat.{u} SmallRegCat.{u} where
         obtain ⟨e, he⟩ := isTerm_iso (isTerm_one (D := D.carrier)) F.term
         exact isTerm_transfer G.term
           (G.functor.map e)
-          (@functor_isIso _ _ D.cat E.cat G.functor _ _ e he) }
+          (functor_preserves_iso (F := G.functor) e he) }
   id_comp _ := rfl
   comp_id _ := rfl
   assoc _ _ _ := rfl

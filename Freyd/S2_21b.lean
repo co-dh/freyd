@@ -46,12 +46,6 @@ open Cat RelFunctor PreLogosHorn.Stalk
   The proofs are verbatim ports — only the universe binders widen (`{C : Type u₁} {D : Type u₂}
   {E : Type u₃}`, shared hom universe `v`). -/
 
-/-- A functor preserves isos (cross-universe port of `functor_preserves_iso`). -/
-theorem functor_preserves_iso' {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
-    (F : Functor 𝒞 𝒟) {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) : IsIso (F.map f) := by
-  obtain ⟨g, h1, h2⟩ := hf
-  exact ⟨F.map g, by rw [← F.map_comp, h1, F.map_id], by rw [← F.map_comp, h2, F.map_id]⟩
-
 /-- **Binary-product preservation composes (cross-universe).**  Port of
     `preservesBinaryProducts_comp`. -/
 theorem preservesBinaryProducts_comp' {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ : Type u₃}
@@ -63,7 +57,7 @@ theorem preservesBinaryProducts_comp' {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ 
   let φF : F.obj (prod A B) ⟶ prod (F.obj A) (F.obj B) := pair (F.map (fst (A := A) (B := B))) (F.map snd)
   let φG : G.obj (prod (F.obj A) (F.obj B)) ⟶ prod (G.obj (F.obj A)) (G.obj (F.obj B)) :=
     pair (G.map (fst (A := F.obj A) (B := F.obj B))) (G.map snd)
-  have hGφF_iso : IsIso (G.map φF) := functor_preserves_iso' G φF (hppF (A := A) (B := B))
+  have hGφF_iso : IsIso (G.map φF) := functor_preserves_iso (F := G) φF (hppF (A := A) (B := B))
   have hcomp_iso : IsIso (G.map φF ≫ φG) := isIso_comp hGφF_iso (hppG (A := F.obj A) (B := F.obj B))
   have hfst : (G.map φF ≫ φG) ≫ fst = (compFunctor F G).map (fst (A := A) (B := B)) := by
     rw [Cat.assoc, fst_pair, ← G.map_comp, fst_pair]; rfl
