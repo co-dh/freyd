@@ -27,32 +27,11 @@ namespace Freyd.S2_158
 
 /-! ## Label injectivity (completing the `bL_inj` family) -/
 
-theorem aL_inj {i j : Nat} (h : aL i = aL j) : i = j := by
-  simp only [aL] at h; omega
-
-theorem cL_inj {i j : Nat} (h : cL i = cL j) : i = j := by
-  simp only [cL] at h; omega
-
 /-! ## Edge-uniqueness, top/bottom ENTRIES
 
   `entL_edge_aL` (S2_158c) only pins the END of an `aL`-edge; the segment
   typing needs the START too: `τ x_a = eCorn a` is read off the `aL a`-edge
   of a configuration.  Mirrors the `entL_edge_bL`/`entL_edge_dL` proofs. -/
-
-/-- In a branch, the only `aL`-labelled edge is `aL (j+1)`, from the branch's
-    middle vertex to the `s`-mark (the collapsed `P`). -/
-theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
-    (h : (toGraph (branch j)).edge c d (aL i)) :
-    i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).s := by
-  have hd := branch_edge_aL h
-  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
-  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hut, _⟩
-    · exact absurd hlab aL_ne_bL
-    · subst hut
-      exact ⟨aL_inj hlab, hu.symm, hd⟩
-  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
-    · exact absurd hlab aL_ne_dL
-    · exact absurd hlab aL_ne_cL
 
 /-- In the `mids` tower, every `aL i`-labelled edge has `i = j+1` for some
     branch index `j ≤ k`, and runs from the `j`-th middle vertex to the
@@ -112,23 +91,6 @@ theorem entL_edge_aL_full {n i : Nat} {c d : (toGraph (entL n)).V}
         rcases meet_recip_arrow_edge he'' with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
         · exact absurd hlab aL_ne_cL
         · exact absurd hlab aL_ne_dL
-
-/-- In a branch, the only `cL`-labelled edge is `cL (j+1)`, from the branch's
-    middle vertex to the `t`-mark (the collapsed `Q`). -/
-theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
-    (h : (toGraph (branch j)).edge c d (cL i)) :
-    i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).t := by
-  have hd := branch_edge_cL h
-  rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
-  · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
-    · exact absurd hlab cL_ne_bL
-    · exact absurd hlab.symm aL_ne_cL
-  · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hus, _⟩
-    · exact absurd hlab cL_ne_dL
-    · subst hus
-      refine ⟨cL_inj hlab, ?_, hd⟩
-      rw [← hu]
-      exact (gcomp_glue _ _).symm
 
 /-- In the `mids` tower, every `cL i`-labelled edge has `i = j+1` for some
     branch index `j ≤ k`, and runs from the `j`-th middle vertex to the

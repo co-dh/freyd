@@ -463,11 +463,6 @@ theorem bL_ne_dL {i j : Nat} : bL i ≠ dL j := by simp only [bL, dL]; omega
 theorem bL_inj {i j : Nat} (h : bL i = bL j) : i = j := by
   simp only [bL] at h; omega
 
-/-- The middle vertex of branch `j` (the collapse image of corner `v_{j+1}`):
-    the joint of the branch's two factors. -/
-def branchMid (j : Nat) : (toGraph (branch j)).V :=
-  Quot.mk _ (Sum.inl (toGraph (.meet (.var (bL j)) (.recip (.var (aL (j+1)))))).t)
-
 /-- The middle vertex of branch `j` inside the `mids` tower (for `j ≤ k`). -/
 def midsMid : (k : Nat) → Nat → (toGraph (mids k)).V
   | 0, _ => branchMid 0
