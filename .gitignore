@@ -19,6 +19,7 @@ MachineCheckedCategoricalDiagrammaticReasoning.pdf
 Frobenius.pdf
 # generated declaration-graph data (regenerate: lake env lean --run scripts/ExtractGraph.lean)
 /graph/*.tsv
+!/graph/proof-near-clones.tsv
 /graph/*.dot
 /graph/*.svg
 # npm cruft from the claude-code install, not part of the library

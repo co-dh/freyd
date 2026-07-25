@@ -55,33 +55,6 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
   The push is `transApp ≫ map(reflApp ≫ m ≫ isoInv) ≫ isoInv transApp`; all factors but `map m`
   are isos (`functor_preserves_iso`/`transApp_isIso`), and `map m` is monic by `hmono`, so the
   whole composite is monic (mono preserved by iso pre/post-composition). -/
-theorem stageInclL_mono_of_stage
-    (hmono : ∀ {i j : ι} (hij : D.le i j),
-        @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
-    {i : ι} {x y : L.A i} (m : x ⟶ y) (hm : @Monic (L.A i) (L.catA i) _ _ m) :
-    @Monic (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨i, y⟩ (stageInclL L hL m) := by
-  letI : Cat (Obj L) := laxColimCat L hL
-  unfold stageInclL
-  apply homInclL_mono_of_stage L hL x y ⟨i, D.refl i, D.refl i⟩
-  intro e hie z u v huv
-  have hmono_map : Monic (L.Fmap hie m) := hmono hie hm
-  revert huv
-  unfold pushHom
-  rw [(L.functF hie).map_comp (reflApp L x) (m ≫ isoInv (reflApp_isIso L y)),
-      (L.functF hie).map_comp m (isoInv (reflApp_isIso L y))]
-  intro huv
-  have hbig : Monic (L.Fmap hie (reflApp L x)
-        ≫ L.Fmap hie m
-        ≫ L.Fmap hie (isoInv (reflApp_isIso L y))) :=
-    mono_precomp_iso'
-      (functor_preserves_iso (F := L.functF hie) (reflApp L x) (reflApp_isIso L x))
-      (mono_postcomp_iso' hmono_map
-        (functor_preserves_iso (F := L.functF hie) (isoInv (reflApp_isIso L y))
-          ⟨reflApp L y, inv_isoInv_comp _, isoInv_comp _⟩))
-  exact mono_precomp_iso' (transApp_isIso L (D.refl i) hie x)
-    (mono_postcomp_iso' hbig
-      ⟨transApp L (D.refl i) hie y, inv_isoInv_comp _, isoInv_comp _⟩) u v huv
-
 /-! ## `objIncl i` preserves images
 
   Mirrors `Colim.objIncl_preserves_images`. -/
