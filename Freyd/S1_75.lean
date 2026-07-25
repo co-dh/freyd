@@ -137,26 +137,6 @@ theorem botDom_map_uniq [hPL : PreLogos 𝒞] {X Y : 𝒞}
     _ = (φ ≫ ψ) ≫ g := (Cat.assoc _ _ _).symm
     _ = g := by rw [hφψ, Cat.id_comp]
 
-/-- Any morphism into `(bottom P).dom` is an isomorphism (§1.61 `any_map_to_zero_is_iso`). -/
-theorem mapTo_botDom_iso [hPL : PreLogos 𝒞] {Z P : 𝒞} (j : Z ⟶ (PreLogos.bottom P).dom) :
-    IsIso j := by
-  obtain ⟨θ, θinv, hθ1, hθ2⟩ := hPL.bottom_dom_iso P (hPL.toHasTerminal.one)
-  have hjθ : IsIso (j ≫ θ) := any_map_to_zero_is_iso hPL (j ≫ θ)
-  obtain ⟨w, hw1, hw2⟩ := hjθ
-  have hθmono : Monic θ := fun {W} g h hgh => by
-    calc g = g ≫ (θ ≫ θinv) := by rw [hθ1, Cat.comp_id]
-      _ = (g ≫ θ) ≫ θinv := (Cat.assoc _ _ _).symm
-      _ = (h ≫ θ) ≫ θinv := by rw [hgh]
-      _ = h ≫ (θ ≫ θinv) := Cat.assoc _ _ _
-      _ = h := by rw [hθ1, Cat.comp_id]
-  refine ⟨θ ≫ w, by rw [← Cat.assoc]; exact hw1, ?_⟩
-  apply hθmono
-  calc ((θ ≫ w) ≫ j) ≫ θ = θ ≫ (w ≫ (j ≫ θ)) := by
-        rw [Cat.assoc (θ ≫ w) j θ, Cat.assoc θ w (j ≫ θ)]
-    _ = θ ≫ Cat.id _ := by rw [hw2]
-    _ = θ := Cat.comp_id _
-    _ = Cat.id (PreLogos.bottom P).dom ≫ θ := (Cat.id_comp _).symm
-
 /-- If `x# S` is entire (pullback of `S` along `x` is the whole source), then `x` factors
     through `S`. -/
 theorem allows_of_invImage_entire [PreLogos 𝒞] {G A : 𝒞} (x : G ⟶ A) (S : Subobject 𝒞 A)
@@ -177,7 +157,7 @@ theorem allows_of_invImage_entire [PreLogos 𝒞] {G A : 𝒞} (x : G ⟶ A) (S 
 theorem cover_from_zero_le [PreLogos 𝒞] {P Q : 𝒞} {Z : 𝒞}
     (N : Subobject 𝒞 Q) (cfac : Z ⟶ N.dom) (hc : Cover cfac)
     (j : Z ⟶ (PreLogos.bottom P).dom) : N.le (PreLogos.bottom Q) := by
-  obtain ⟨jinv, hj1, _⟩ := mapTo_botDom_iso j (P := P)
+  obtain ⟨jinv, hj1, _⟩ := prelogos_bottom_strict inferInstance P j
   obtain ⟨γ, _⟩ := PreLogos.bottom_dom_iso P N.dom
   let z₀ : Z ⟶ (PreLogos.bottom N.dom).dom := j ≫ γ
   have hcfac_eq : cfac = z₀ ≫ (PreLogos.bottom N.dom).arr := by
@@ -221,7 +201,7 @@ theorem invImage_le_bottom_of_inter [PreLogos 𝒞] {A : 𝒞} (S M : Subobject 
     (h : (Subobject.inter S M).le (PreLogos.bottom A)) :
     (InverseImage S.arr M).le (PreLogos.bottom S.dom) := by
   obtain ⟨hwit, _⟩ := h
-  obtain ⟨hi, hhi1, _⟩ := mapTo_botDom_iso hwit (P := A)
+  obtain ⟨hi, hhi1, _⟩ := prelogos_bottom_strict inferInstance A hwit
   obtain ⟨ε, _⟩ := PreLogos.bottom_dom_iso A S.dom
   refine ⟨hwit ≫ ε, ?_⟩
   have key : hi ≫ ((hwit ≫ ε) ≫ (PreLogos.bottom S.dom).arr) = hi ≫ (InverseImage S.arr M).arr :=

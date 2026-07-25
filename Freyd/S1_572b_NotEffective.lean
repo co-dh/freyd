@@ -383,8 +383,6 @@ noncomputable def compOK (i W : Nat) : Nat :=
 
 /-- Base child node of a prec node. -/
 noncomputable def prNd0 (i W : Nat) : Nat := rdN i (cfst (kidsAt i W)) W
-/-- Step child A (the smaller prec instance). -/
-noncomputable def prNdA (i W : Nat) : Nat := rdN i (cfst (kidsAt i W)) W
 /-- Step child B (the h-evaluation). -/
 noncomputable def prNdB (i W : Nat) : Nat := rdN i (csnd (kidsAt i W)) W
 
@@ -398,11 +396,11 @@ noncomputable def precOK (i W : Nat) : Nat :=
   + neInd (headN (insAt i W)) 0 *
     (ltInd (cfst (kidsAt i W)) i
      * ltInd (csnd (kidsAt i W)) i
-     * eqInd (codeOf (prNdA i W)) (codeOf (nthN i W))
-     * eqInd (insOf (prNdA i W)) (consN (headN (insAt i W) - 1) (tailN (insAt i W)))
+     * eqInd (codeOf (prNd0 i W)) (codeOf (nthN i W))
+     * eqInd (insOf (prNd0 i W)) (consN (headN (insAt i W) - 1) (tailN (insAt i W)))
      * eqInd (codeOf (prNdB i W)) (csnd (plAt i W))
      * eqInd (insOf (prNdB i W))
-         (consN (headN (insAt i W) - 1) (consN (outOf (prNdA i W)) (tailN (insAt i W))))
+         (consN (headN (insAt i W) - 1) (consN (outOf (prNd0 i W)) (tailN (insAt i W))))
      * eqInd (outOf (prNdB i W)) (outAt i W))
 
 /-! ### `mu` nodes — tag 5
@@ -749,7 +747,7 @@ theorem checkSound : ∀ (B W : Nat), (∀ j, j < B → nodeOK j W = 1) →
         obtain ⟨hltA, hltB⟩ := mul_eq_one_iff.mp hb
         have hidxA : cfst (kidsAt i W) < i := ltInd_one_iff.mp hltA
         have hidxB : csnd (kidsAt i W) < i := ltInd_one_iff.mp hltB
-        have hrdA : prNdA i W = nthN (cfst (kidsAt i W)) W := rdN_of_lt hidxA W
+        have hrdA : prNd0 i W = nthN (cfst (kidsAt i W)) W := rdN_of_lt hidxA W
         have hrdB : prNdB i W = nthN (csnd (kidsAt i W)) W := rdN_of_lt hidxB W
         -- child A: the same prec code, one step down
         have hcA : codeOf (nthN (cfst (kidsAt i W)) W) = encCode (.prec g hstep) := by
@@ -761,13 +759,13 @@ theorem checkSound : ∀ (B W : Nat), (∀ j, j < B → nodeOK j W = 1) →
         have hcB : codeOf (nthN (csnd (kidsAt i W)) W) = encCode hstep := by
           rw [← hrdB, eqInd_one_iff.mp hcodeB, hpl, csnd_cp]
         have hiB' : insOf (nthN (csnd (kidsAt i W)) W)
-            = encVec (vcons n (vcons (outOf (prNdA i W)) (vtail v))) := by
+            = encVec (vcons n (vcons (outOf (prNd0 i W)) (vtail v))) := by
           rw [← hrdB, eqInd_one_iff.mp hinsB, htl, encVec_vcons, encVec_vcons]
-        have hEB := child _ hidxB hstep (vcons n (vcons (outOf (prNdA i W)) (vtail v))) hcB hiB'
+        have hEB := child _ hidxB hstep (vcons n (vcons (outOf (prNd0 i W)) (vtail v))) hcB hiB'
         have hoB : outOf (nthN (csnd (kidsAt i W)) W) = outAt i W := by
           rw [← hrdB]; exact eqInd_one_iff.mp houtB
         rw [hoB] at hEB
-        have hEA' : Eval (.prec g hstep) (vcons n (vtail v)) (outOf (prNdA i W)) := by
+        have hEA' : Eval (.prec g hstep) (vcons n (vtail v)) (outOf (prNd0 i W)) := by
           rwa [hrdA]
         exact .prec_succ hv0 hEA' hEB
     | mu f =>
@@ -870,7 +868,7 @@ theorem nodeOK_congr {i W W' : Nat} (hle : ∀ idx, idx ≤ i → nthN idx W = n
     unfold cmpFnd cmpFIdx kidsAt
     rw [hown]; exact hrd _
   unfold nodeOK compOK precOK muOK gOK muStepOK cmpFnd cmpFIns cmpFIdx cmpGIdx cmpF cmpM
-    cmpGs prNd0 prNdA prNdB muNd tagAt plAt insAt outAt kidsAt
+    cmpGs prNd0 prNdB muNd tagAt plAt insAt outAt kidsAt
   simp only [hown, hrd, hfnd]
 
 /-- All nodes of a witness list check out. -/
@@ -1029,8 +1027,8 @@ theorem nodeOK_prec_step {i W gcode hcode' insN n y' rA iA iB : Nat}
   have hpl : plAt i W = cp gcode hcode' := by unfold plAt; rw [hcode, csnd_cp]
   have hinsAt : insAt i W = insN := hins
   have hkidsAt : kidsAt i W = cp iA iB := hkids
-  have hndA : prNdA i W = nthN iA W := by
-    unfold prNdA; rw [hkidsAt, cfst_cp]; exact rdN_of_lt hA W
+  have hndA : prNd0 i W = nthN iA W := by
+    unfold prNd0; rw [hkidsAt, cfst_cp]; exact rdN_of_lt hA W
   have hndB : prNdB i W = nthN iB W := by
     unfold prNdB; rw [hkidsAt, csnd_cp]; exact rdN_of_lt hB W
   have houtAt : outAt i W = y' := hout

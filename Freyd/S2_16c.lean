@@ -88,11 +88,6 @@ theorem covers_compose {a b c : 𝒜} {f : a ⟶ b} {g : b ⟶ c}
   rw [heq]
   exact le_trans hg h1
 
-/-- An entire morphism satisfies `1 ⊑ f ≫ f°` (public form of the fact inlined in
-    `entire_comp`; the S2_147 version `map_entire_le` is private). -/
-theorem entire_id_le {a b : 𝒜} {f : a ⟶ b} (hf : Entire f) : Cat.id a ⊑ f ≫ f° := by
-  dsimp [Entire, dom] at hf; rw [← hf]; exact inter_lb_right _ _
-
 end ACDefs
 
 /-! ## Milestone (a): the embedding `𝒜 ↪ Spl(Eq 𝒜)`

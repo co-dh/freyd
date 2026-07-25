@@ -407,6 +407,11 @@ theorem dom_inter {a b : 𝒜} (R S : a ⟶ b) : dom (R ∩ S) = Cat.id a ∩ S 
 /-- R is ENTIRE if dom R = 1_a; equivalently 1_a ⊑ RR° (§2.13). -/
 def Entire {a b : 𝒜} (R : a ⟶ b) : Prop := dom R = Cat.id a
 
+/-- An entire morphism satisfies the equivalent inequality `1 ⊑ R ≫ R°` (§2.13). -/
+theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a ⊑ R ≫ R° := by
+  rw [← hR]
+  exact inter_lb_right _ _
+
 /-- R is SIMPLE if R°R ⊑ 1_b (§2.13).
     Note: R°R : b → b, so we compare to id_b. -/
 def Simple {a b : 𝒜} (R : a ⟶ b) : Prop := R° ≫ R ⊑ Cat.id b
