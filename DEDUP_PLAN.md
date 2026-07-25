@@ -198,6 +198,12 @@ book-defined roles, and the second proves closure for two different predicates. 
 proof-shape match does not meet this section's “several pairs share one structure” threshold. Leave
 the developments parallel unless a later scan finds a broader common structure.
 
+The broader audit did expose one genuine non-Section-5 duplicate: §2.216's matrix helper
+`Alg.Mat.listJoin'` repeated §2.315's `Alg.listJoinD`. The matrix development now reuses
+`listJoinD`, `listJoinD_le`, and `le_listJoinD` while retaining its book-facing `finJoin`.
+After that collapse the scan reports 7,673 values and 97 pairs: the same 86 notation/parser pairs
+and 11 ordinary pairs.
+
 ---
 
 ## Section 6 — Known-blocked; do not retry without a new idea
