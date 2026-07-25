@@ -21,46 +21,24 @@ namespace Freyd.Alg.Mat
 
 /-! ## §A  List-based finite join  in a distributive allegory
 
-  `listJoin' l` = fold of `∪` right-to-left with unit `𝟘`. -/
+  Reuse §2.315's `listJoinD`: the fold of `∪` right-to-left with unit `𝟘`.
+  Matrix composition below packages that common list fold as the book-facing finite join `finJoin`. -/
 
 section ListJoin
 
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
-def listJoin' {a b : 𝒜} : List (a ⟶ b) → a ⟶ b
-  | []      => 𝟘
-  | x :: xs => x ∪ listJoin' xs
-
-@[simp] theorem listJoin'_nil  {a b : 𝒜} : listJoin' ([] : List (a ⟶ b)) = 𝟘 := rfl
+@[simp] theorem listJoin'_nil  {a b : 𝒜} : listJoinD ([] : List (a ⟶ b)) = 𝟘 := rfl
 @[simp] theorem listJoin'_cons {a b : 𝒜} (x : a ⟶ b) (xs : List (a ⟶ b)) :
-    listJoin' (x :: xs) = x ∪ listJoin' xs := rfl
-
-theorem le_listJoin' {a b : 𝒜} {x : a ⟶ b} {l : List (a ⟶ b)} (hx : x ∈ l) :
-    x ⊑ listJoin' l := by
-  induction l with
-  | nil => exact absurd hx List.not_mem_nil
-  | cons y ys ih =>
-    simp only [listJoin'_cons]
-    rcases List.mem_cons.mp hx with rfl | hmem
-    · exact le_union_left x _
-    · exact le_trans (ih hmem) (le_union_right _ _)
-
-theorem listJoin'_le {a b : 𝒜} {l : List (a ⟶ b)} {T : a ⟶ b}
-    (h : ∀ x ∈ l, x ⊑ T) : listJoin' l ⊑ T := by
-  induction l with
-  | nil => exact zero_le T
-  | cons y ys ih =>
-    simp only [listJoin'_cons]
-    exact union_lub (h y List.mem_cons_self)
-      (ih (fun x hx => h x (List.mem_cons_of_mem y hx)))
+    listJoinD (x :: xs) = x ∪ listJoinD xs := rfl
 
 /-- `finJoin f = ⨆_{i : Fin n} f i`. -/
 def finJoin {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) : a ⟶ b :=
-  listJoin' (List.ofFn f)
+  listJoinD (List.ofFn f)
 
 theorem finJoin_mono {a b : 𝒜} {n : Nat} {f g : Fin n → (a ⟶ b)}
     (h : ∀ i, f i ⊑ g i) : finJoin f ⊑ finJoin g :=
-  listJoin'_le (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact le_trans (h i) (show g i ⊑ finJoin g from le_listJoin' (List.mem_ofFn.mpr ⟨i, rfl⟩)))
+  listJoinD_le (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact le_trans (h i) (show g i ⊑ finJoin g from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)))
 
 theorem comp_finJoin {a b c : 𝒜} {n : Nat} (R : a ⟶ b) (f : Fin n → (b ⟶ c)) :
     R ≫ finJoin f = finJoin (fun j => R ≫ f j) := by
@@ -84,10 +62,10 @@ theorem recip_finJoin {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) :
     (finJoin f)° = finJoin (fun j => (f j)°) := by
   apply le_antisymm
   · rw [recip_le_iff]
-    refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+    refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     rw [← recip_le_iff]
-    exact show (fun j => (f j)°) j ⊑ finJoin (fun j => (f j)°) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩)
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx; exact recip_mono (show f j ⊑ finJoin f from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩))
+    exact show (fun j => (f j)°) j ⊑ finJoin (fun j => (f j)°) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx; exact recip_mono (show f j ⊑ finJoin f from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩))
 
 theorem inter_finJoin {a b : 𝒜} {n : Nat} (T : a ⟶ b) (f : Fin n → (a ⟶ b)) :
     T ∩ finJoin f = finJoin (fun j => T ∩ f j) := by
@@ -192,21 +170,21 @@ def matComp {X Y Z : MatObj 𝒜} (M : MatHom X Y) (N : MatHom Y Z) : MatHom X Z
 theorem matId_comp {X Y : MatObj 𝒜} (M : MatHom X Y) : matComp (matId X) M = M := by
   funext i k; simp only [matComp, matId]
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     by_cases h : i = j
     · subst h; simp only [↓reduceDIte, Cat.id_comp, le_refl]
     · simp only [h, ↓reduceDIte, DistributiveAllegory.zero_comp]; exact zero_le _
-  · have key := show (fun j => (if h : i = j then (by subst h; exact Cat.id (X.objs i) : X.objs i ⟶ X.objs j) else 𝟘) ≫ M j k) i ⊑ finJoin (fun j => (if h : i = j then (by subst h; exact Cat.id (X.objs i) : X.objs i ⟶ X.objs j) else 𝟘) ≫ M j k) from le_listJoin' (List.mem_ofFn.mpr ⟨i, rfl⟩)
+  · have key := show (fun j => (if h : i = j then (by subst h; exact Cat.id (X.objs i) : X.objs i ⟶ X.objs j) else 𝟘) ≫ M j k) i ⊑ finJoin (fun j => (if h : i = j then (by subst h; exact Cat.id (X.objs i) : X.objs i ⟶ X.objs j) else 𝟘) ≫ M j k) from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)
     simp only [↓reduceDIte, Cat.id_comp] at key; exact key
 
 theorem matComp_id {X Y : MatObj 𝒜} (M : MatHom X Y) : matComp M (matId Y) = M := by
   funext i k; simp only [matComp, matId]
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     by_cases h : j = k
     · subst h; simp only [↓reduceDIte, Cat.comp_id, le_refl]
     · simp only [h, ↓reduceDIte, DistributiveAllegory.comp_zero]; exact zero_le _
-  · have key := show (fun j => M i j ≫ (if h : j = k then (by subst h; exact Cat.id (Y.objs j) : Y.objs j ⟶ Y.objs k) else 𝟘)) k ⊑ finJoin (fun j => M i j ≫ (if h : j = k then (by subst h; exact Cat.id (Y.objs j) : Y.objs j ⟶ Y.objs k) else 𝟘)) from le_listJoin' (List.mem_ofFn.mpr ⟨k, rfl⟩)
+  · have key := show (fun j => M i j ≫ (if h : j = k then (by subst h; exact Cat.id (Y.objs j) : Y.objs j ⟶ Y.objs k) else 𝟘)) k ⊑ finJoin (fun j => M i j ≫ (if h : j = k then (by subst h; exact Cat.id (Y.objs j) : Y.objs j ⟶ Y.objs k) else 𝟘)) from le_listJoinD (List.mem_ofFn.mpr ⟨k, rfl⟩)
     simp only [↓reduceDIte, Cat.comp_id] at key; exact key
 
 theorem matComp_assoc {W X Y Z : MatObj 𝒜}
@@ -214,16 +192,16 @@ theorem matComp_assoc {W X Y Z : MatObj 𝒜}
     matComp (matComp M N) P = matComp M (matComp N P) := by
   funext i l; simp only [matComp]
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
-    rw [finJoin_comp]; refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
+    rw [finJoin_comp]; refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     rw [Cat.assoc]
-    exact le_trans (comp_mono_left (M i j) (show (fun k => N j k ≫ P k l) k ⊑ finJoin (fun k => N j k ≫ P k l) from le_listJoin' (List.mem_ofFn.mpr ⟨k, rfl⟩)))
-                   (show (fun j => M i j ≫ finJoin (fun k => N j k ≫ P k l)) j ⊑ finJoin (fun j => M i j ≫ finJoin (fun k => N j k ≫ P k l)) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩))
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
-    rw [comp_finJoin]; refine listJoin'_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
+    exact le_trans (comp_mono_left (M i j) (show (fun k => N j k ≫ P k l) k ⊑ finJoin (fun k => N j k ≫ P k l) from le_listJoinD (List.mem_ofFn.mpr ⟨k, rfl⟩)))
+                   (show (fun j => M i j ≫ finJoin (fun k => N j k ≫ P k l)) j ⊑ finJoin (fun j => M i j ≫ finJoin (fun k => N j k ≫ P k l)) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩))
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+    rw [comp_finJoin]; refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
     rw [← Cat.assoc]
-    exact le_trans (comp_mono_right (show (fun j => M i j ≫ N j k) j ⊑ finJoin (fun j => M i j ≫ N j k) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩)) (P k l))
-                   (show (fun k => finJoin (fun j => M i j ≫ N j k) ≫ P k l) k ⊑ finJoin (fun k => finJoin (fun j => M i j ≫ N j k) ≫ P k l) from le_listJoin' (List.mem_ofFn.mpr ⟨k, rfl⟩))
+    exact le_trans (comp_mono_right (show (fun j => M i j ≫ N j k) j ⊑ finJoin (fun j => M i j ≫ N j k) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)) (P k l))
+                   (show (fun k => finJoin (fun j => M i j ≫ N j k) ≫ P k l) k ⊑ finJoin (fun k => finJoin (fun j => M i j ≫ N j k) ≫ P k l) from le_listJoinD (List.mem_ofFn.mpr ⟨k, rfl⟩))
 
 instance instCatMatObj : Cat.{v} (MatObj 𝒜) where
   Hom     := MatHom
@@ -276,7 +254,7 @@ theorem matModular {X Y Z : MatObj 𝒜} (R : MatHom X Y) (S : MatHom Y Z) (T : 
     rw [Allegory.inter_comm]
     exact le_trans (modular_le (R i j) (S j k) (T i k))
       (comp_mono_right (le_inter (inter_lb_left _ _)
-        (le_trans (inter_lb_right _ _) (show (fun l => T i l ≫ (S j l)°) k ⊑ finJoin (fun l => T i l ≫ (S j l)°) from le_listJoin' (List.mem_ofFn.mpr ⟨k, rfl⟩)))) _)
+        (le_trans (inter_lb_right _ _) (show (fun l => T i l ≫ (S j l)°) k ⊑ finJoin (fun l => T i l ≫ (S j l)°) from le_listJoinD (List.mem_ofFn.mpr ⟨k, rfl⟩)))) _)
   · exact le_trans (inter_lb_left _ _) (le_refl _)
 
 /-- §2.216: `Mat 𝒜` is an allegory. -/
@@ -307,7 +285,7 @@ theorem matZero_comp {X Y Z : MatObj 𝒜} (N : MatHom Y Z) :
     matComp (matZero (X := X)) N = matZero := by
   funext i k; simp only [matComp, matZero, finJoin]
   apply le_antisymm
-  · apply listJoin'_le; intro x hx
+  · apply listJoinD_le; intro x hx
     obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     rw [DistributiveAllegory.zero_comp]; exact le_refl _
   · exact zero_le _
@@ -316,7 +294,7 @@ theorem matComp_zero {X Y Z : MatObj 𝒜} (M : MatHom X Y) :
     matComp M (matZero (Y := Z)) = matZero := by
   funext i k; simp only [matComp, matZero, finJoin]
   apply le_antisymm
-  · apply listJoin'_le; intro x hx
+  · apply listJoinD_le; intro x hx
     obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     rw [DistributiveAllegory.comp_zero]; exact le_refl _
   · exact zero_le _
@@ -325,11 +303,11 @@ theorem matComp_union_distrib {X Y Z : MatObj 𝒜} (M : MatHom X Y) (N P : MatH
     matComp M (matUnion N P) = matUnion (matComp M N) (matComp M P) := by
   funext i k; simp only [matComp, matUnion]
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     rw [DistributiveAllegory.comp_union_distrib]
     exact union_lub
-      (le_trans (show (fun j => M i j ≫ N j k) j ⊑ finJoin (fun j => M i j ≫ N j k) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩)) (le_union_left _ _))
-      (le_trans (show (fun j => M i j ≫ P j k) j ⊑ finJoin (fun j => M i j ≫ P j k) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩)) (le_union_right _ _))
+      (le_trans (show (fun j => M i j ≫ N j k) j ⊑ finJoin (fun j => M i j ≫ N j k) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)) (le_union_left _ _))
+      (le_trans (show (fun j => M i j ≫ P j k) j ⊑ finJoin (fun j => M i j ≫ P j k) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)) (le_union_right _ _))
   · exact union_lub (finJoin_mono (fun j => comp_mono_left (M i j) (le_union_left _ _)))
                     (finJoin_mono (fun j => comp_mono_left (M i j) (le_union_right _ _)))
 
@@ -359,11 +337,11 @@ instance instDistributiveAllegoryMat : DistributiveAllegory (MatObj 𝒜) :=
 theorem finJoin_single {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) (k₀ : Fin n)
     (h : ∀ k, k ≠ k₀ → f k = 𝟘) : finJoin f = f k₀ := by
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
     by_cases hk : k = k₀
     · subst hk; exact le_refl _
     · rw [h k hk]; exact zero_le _
-  · exact show f k₀ ⊑ finJoin f from le_listJoin' (List.mem_ofFn.mpr ⟨k₀, rfl⟩)
+  · exact show f k₀ ⊑ finJoin f from le_listJoinD (List.mem_ofFn.mpr ⟨k₀, rfl⟩)
 
 theorem zero_inter {a b : 𝒜} (R : a ⟶ b) : (𝟘 : a ⟶ b) ∩ R = 𝟘 :=
   le_antisymm (inter_lb_left _ _) (zero_le _)
@@ -412,7 +390,7 @@ theorem matDiv_le_div {X Y Z : MatObj 𝒜} (T : X ⟶ Y) (R : X ⟶ Z) (S : Y �
     rw [le_div_iff]
     -- The cast in S j (· ▸ k) is rfl after cases Z, so it's identity
     simp only
-    exact le_trans (show (fun j => T i j ≫ S j k) j ⊑ finJoin (fun j => T i j ≫ S j k) from le_listJoin' (List.mem_ofFn.mpr ⟨j, rfl⟩)) (h i k)
+    exact le_trans (show (fun j => T i j ≫ S j k) j ⊑ finJoin (fun j => T i j ≫ S j k) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)) (h i k)
 
 theorem le_matDiv_comp {X Y Z : MatObj 𝒜} (R : X ⟶ Z) (S : Y ⟶ Z) :
     (matDiv R S : X ⟶ Y) ≫ S ⊑ R := by
@@ -423,7 +401,7 @@ theorem le_matDiv_comp {X Y Z : MatObj 𝒜} (R : X ⟶ Z) (S : Y ⟶ Z) :
   | zero => exact Fin.elim0 k
   | succ m =>
     simp only
-    refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+    refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     exact le_trans (comp_mono_right (listMeet'_le _ _ (List.mem_ofFn.mpr ⟨k, rfl⟩)) _)
       (DivisionAllegory.div_comp_le _ _)
 
@@ -432,7 +410,8 @@ theorem le_matDiv_comp {X Y Z : MatObj 𝒜} (R : X ⟶ Z) (S : Y ⟶ Z) :
 
     The positive reflection A⁺ = `MatObj 𝒜` (finite-index-family objects, matrix morphisms).
     Division is entrywise: `(R/S)_{ij} = ⋀_{k} (R_{ik}/S_{jk})` (finite meet over codomain index k).
-    The adjointness `T ⊑ R/S ↔ T≫S ⊑ R` lifts from the base via `le_div_iff` + `listJoin'_le`/`le_finMeet`.
+    The adjointness `T ⊑ R/S ↔ T≫S ⊑ R` lifts from the base via `le_div_iff` +
+    `listJoinD_le`/`le_finMeet`.
     The faithful embedding `embed1 : 𝒜 → MatObj 𝒜` (§2.216) preserves ≫, °, ∩, ∪, 𝟘, /. -/
 noncomputable instance instDivisionAllegoryMat : DivisionAllegory (MatObj 𝒜) :=
   { instDistributiveAllegoryMat with
@@ -560,11 +539,11 @@ theorem cast_zero_recip {A B C : 𝒜} (h : A = B) : (h ▸ (𝟘 : B ⟶ C) : A
 
 theorem finJoin_zero_all {a b : 𝒜} {n : Nat} {f : Fin n → (a ⟶ b)}
     (h : ∀ k, f k = 𝟘) : finJoin f = 𝟘 :=
-  le_antisymm (listJoin'_le (fun x hx => by
+  le_antisymm (listJoinD_le (fun x hx => by
     obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx; rw [h k]; exact le_refl _)) (zero_le _)
 
 theorem listJoin'_append {a b : 𝒜} (l₁ l₂ : List (a ⟶ b)) :
-    listJoin' (l₁ ++ l₂) = listJoin' l₁ ∪ listJoin' l₂ := by
+    listJoinD (l₁ ++ l₂) = listJoinD l₁ ∪ listJoinD l₂ := by
   induction l₁ with
   | nil => simp only [List.nil_append, listJoin'_nil, DistributiveAllegory.zero_union]
   | cons x xs ih =>
@@ -606,11 +585,11 @@ theorem castAdd_ne_natAdd {m n : Nat} (i : Fin m) (j : Fin n) :
 theorem basis_self {X : MatObj 𝒜} (k : Fin X.n) :
     finJoin (fun i => matId X k i ≫ (matId X k i)°) = Cat.id (X.objs k) := by
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx
     by_cases h : k = i
     · subst h; simp only [matId, ↓reduceDIte, Cat.id_comp, recip_id, le_refl]
     · simp only [matId, h, ↓reduceDIte, DistributiveAllegory.zero_comp]; exact zero_le _
-  · have key := show (fun i => matId X k i ≫ (matId X k i)°) k ⊑ finJoin (fun i => matId X k i ≫ (matId X k i)°) from le_listJoin' (List.mem_ofFn.mpr ⟨k, rfl⟩)
+  · have key := show (fun i => matId X k i ≫ (matId X k i)°) k ⊑ finJoin (fun i => matId X k i ≫ (matId X k i)°) from le_listJoinD (List.mem_ofFn.mpr ⟨k, rfl⟩)
     simp only [matId, ↓reduceDIte, Cat.id_comp, recip_id] at key
     exact key
 
@@ -618,7 +597,7 @@ theorem basis_self {X : MatObj 𝒜} (k : Fin X.n) :
 theorem basis_recip_self {X : MatObj 𝒜} (i k : Fin X.n) :
     finJoin (fun j => (matId X j i)° ≫ matId X j k) = matId X i k := by
   apply le_antisymm
-  · refine listJoin'_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
+  · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx
     by_cases hji : j = i
     · subst hji
       by_cases hjk : j = k
@@ -628,7 +607,7 @@ theorem basis_recip_self {X : MatObj 𝒜} (i k : Fin X.n) :
       exact zero_le _
   · by_cases hik : i = k
     · subst hik
-      have key := show (fun j => (matId X j i)° ≫ matId X j i) i ⊑ finJoin (fun j => (matId X j i)° ≫ matId X j i) from le_listJoin' (List.mem_ofFn.mpr ⟨i, rfl⟩)
+      have key := show (fun j => (matId X j i)° ≫ matId X j i) i ⊑ finJoin (fun j => (matId X j i)° ≫ matId X j i) from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)
       simp only [matId, ↓reduceDIte, recip_id, Cat.id_comp] at key
       simpa [matId] using key
     · simp only [matId, hik, ↓reduceDIte]; exact zero_le _
@@ -1041,7 +1020,7 @@ theorem tabFrF_entry_le {X Y : MatObj 𝒜} (M : MatHom X Y) (i i' : Fin X.n) :
   by_cases hii : i = i'
   · subst hii
     simp only [matId, ↓reduceDIte]
-    refine listJoin'_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
+    refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
     by_cases hi : unpairFst k = i
     · simp only [tabF, dif_pos hi]
       rw [idxCast_recip_comp hi hi]
@@ -1064,7 +1043,7 @@ theorem tabGrG_entry_le {X Y : MatObj 𝒜} (M : MatHom X Y) (i i' : Fin Y.n) :
   by_cases hii : i = i'
   · subst hii
     simp only [matId, ↓reduceDIte]
-    refine listJoin'_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
+    refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
     by_cases hi : unpairSnd k = i
     · simp only [tabG, dif_pos hi]
       rw [idxCast_recip_comp hi hi]

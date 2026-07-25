@@ -179,6 +179,31 @@ mathematical objects. The tractable approach, in this order:
 Expect most pairs to resist: if the shared part is only "the same proof shape over different
 recursion schemes", there is nothing to extract and the correct answer is to leave them.
 
+### Latest-master inventory (`bd7a169`)
+
+After rebuilding the renamed modules, `ProofSkeleton.lean` scanned 7,676 theorem/definition values
+and again found 98 cross-file pairs. Of these, 86 are generated notation/parser declarations
+(`term_…`, `relCompose`, notation expanders, and similar): a few declarations with identical parser
+machinery produce large pairwise cliques, so they are scanner noise rather than 86 independent
+mathematical duplicates. The remaining 12 pairs are ordinary declarations.
+
+Only nine pairs mention `Rcat`/`Pcat`/`Colim`/`LaxColim`; the cross-family candidates relevant here are:
+
+- `Rcat.isMor_finite` ~ `Pcat.isPMor_finite` (J=100%, 14 nodes);
+- `Rcat.Recursive1.finTable` ~ `Pcat.PrimRec1.finTable` (J=76%, 694 nodes).
+
+No common interface is warranted. Book §§1.572–1.573 deliberately distinguish recursive from
+primitive-recursive morphisms; the first pair is the same trivial finite-domain fact under those two
+book-defined roles, and the second proves closure for two different predicates. One substantial
+proof-shape match does not meet this section's “several pairs share one structure” threshold. Leave
+the developments parallel unless a later scan finds a broader common structure.
+
+The broader audit did expose one genuine non-Section-5 duplicate: §2.216's matrix helper
+`Alg.Mat.listJoin'` repeated §2.315's `Alg.listJoinD`. The matrix development now reuses
+`listJoinD`, `listJoinD_le`, and `le_listJoinD` while retaining its book-facing `finJoin`.
+After that collapse the scan reports 7,673 values and 97 pairs: the same 86 notation/parser pairs
+and 11 ordinary pairs.
+
 ---
 
 ## Section 6 — Known-blocked; do not retry without a new idea

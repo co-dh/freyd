@@ -182,11 +182,11 @@ theorem mat_simple_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     refine ⟨fun i j => ?_, fun i j j' hne => ?_⟩
     · -- diagonal entry (j,j) of `M°≫M ⊑ 1`, restricted to the i-th summand.
       have hij : (M i j)° ≫ M i j ⊑ matId Y j j :=
-        le_trans (show (fun i => (M i j)° ≫ M i j) i ⊑ finJoin (fun i => (M i j)° ≫ M i j) from le_listJoin' (List.mem_ofFn.mpr ⟨i, rfl⟩)) (h' j j)
+        le_trans (show (fun i => (M i j)° ≫ M i j) i ⊑ finJoin (fun i => (M i j)° ≫ M i j) from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)) (h' j j)
       rwa [matId_diag] at hij
     · -- off-diagonal entry (j,j') forces every summand under `𝟘`.
       have hij : (M i j)° ≫ M i j' ⊑ matId Y j j' :=
-        le_trans (show (fun i => (M i j)° ≫ M i j') i ⊑ finJoin (fun i => (M i j)° ≫ M i j') from le_listJoin' (List.mem_ofFn.mpr ⟨i, rfl⟩)) (h' j j')
+        le_trans (show (fun i => (M i j)° ≫ M i j') i ⊑ finJoin (fun i => (M i j)° ≫ M i j') from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)) (h' j j')
       rw [matId_off hne] at hij
       exact le_antisymm hij (zero_le _)
   · rintro ⟨hsimp, hdisj⟩
@@ -194,7 +194,7 @@ theorem mat_simple_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     by_cases hjj : j = j'
     · subst hjj
       have hle : finJoin (fun i => (M i j)° ≫ M i j) ⊑ Cat.id (Y.objs j) :=
-        listJoin'_le (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact hsimp i j)
+        listJoinD_le (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact hsimp i j)
       rwa [← matId_diag (X := Y) j] at hle
     · have hz : finJoin (fun i => (M i j)° ≫ M i j') = (𝟘 : Y.objs j ⟶ Y.objs j') :=
         finJoin_zero_all (fun i => hdisj i j j' hjj)
