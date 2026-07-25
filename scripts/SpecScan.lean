@@ -43,7 +43,9 @@ partial def proofHead : Expr → Expr
 structure Thm where
   name : Name
   mod : Name
+  kind : String
   type : Expr
+  value : Expr
   levelParams : List Name
   usedInProof : Std.HashSet Name
   /-- Proved by `rfl`.  Such a statement reduces to reflexivity, so ANY lemma that reduces the same
@@ -61,13 +63,25 @@ structure Thm where
   isGenerated : Bool
   deriving Inhabited
 
+def generatedDeclName (env : Environment) (name : Name) : Bool :=
+  let parts := name.toString.splitOn "."
+  let tail := parts.getLastD ""
+  let compilerTail :=
+    ["inj", "injEq", "noConfusion", "noConfusionType", "sizeOf_spec"].contains tail
+  let compilerFragment :=
+    ["match_", "proof_", "eq_def", ".mk."].any fun needle =>
+      (name.toString.splitOn needle).length > 1
+  env.isProjectionFn name || compilerTail || compilerFragment ||
+    parts.any (·.startsWith "_")
+
 /-- Can `general` be applied to prove `special`?  Unify the conclusions under fresh metavariables for
     `general`'s binders, then discharge the leftovers: instance binders by synthesis, the rest by
     matching a hypothesis of `special` or by `solveByElim` over those hypotheses.  Returns a note
     naming what had to be discharged. -/
 def specializes (special general : Thm) : MetaM (Option String) := do
-  let generalType := general.type.instantiateLevelParams general.levelParams
-    (← general.levelParams.mapM fun _ => mkFreshLevelMVar)
+  unless special.kind == general.kind do return none
+  let generalLevels ← general.levelParams.mapM fun _ => mkFreshLevelMVar
+  let generalType := general.type.instantiateLevelParams general.levelParams generalLevels
   forallTelescopeReducing special.type fun hypotheses specialConcl => do
     let (mvars, binderInfos, generalConcl) ← forallMetaTelescopeReducing generalType
     unless ← isDefEq specialConcl generalConcl do return none
@@ -98,7 +112,11 @@ def specializes (special general : Thm) : MetaM (Option String) := do
               (fun _ => pure false)
           unless ok do return none
           derived := derived + 1
-    return some s!"{synthesized} instance(s), {assumed} hypothesis(es), {derived} solveByElim"
+    if special.kind == "def" then
+      let generalValue := general.value.instantiateLevelParams general.levelParams generalLevels
+      unless ← isDefEq special.value generalValue do return none
+    let matchKind := if special.kind == "def" then "def signature+value" else "theorem specialization"
+    return some s!"{matchKind}; {synthesized} instance(s), {assumed} hypothesis(es), {derived} solveByElim"
 
 /-- Index every theorem's conclusion as a PATTERN (binders → metavariables → `Key.star`), so that
     `getMatch goal` returns the lemmas applicable to `goal`.  A conclusion indexed as a bare `*` is a
@@ -121,23 +139,26 @@ def main : IO Unit := do
   let mut thms : Array Thm := #[]
   for (name, ci) in env.constants.toList do
     if name.isInternalDetail then continue
-    let .thmInfo info := ci | continue
+    let some (kind, type, value, levelParams) := (match ci with
+      | .thmInfo info => some ("thm", info.type, info.value, info.levelParams)
+      | .defnInfo info => some ("def", info.type, info.value, info.levelParams)
+      | _ => none)
+      | continue
     let some idx := env.getModuleIdxFor? name | continue
     unless `Freyd |>.isPrefixOf env.header.moduleNames[idx.toNat]! do continue
-    let provedByRfl := match proofHead info.value with
+    let provedByRfl := match proofHead value with
       | .const c _ => c == ``rfl || c == ``Eq.refl
       | _ => false
-    let generated := env.isProjectionFn name ||
-      ["inj", "injEq", "noConfusion", "noConfusionType", "sizeOf_spec"].contains name.getString!
-    thms := thms.push { name, mod := env.header.moduleNames[idx.toNat]!, type := info.type,
-                        levelParams := info.levelParams, isGenerated := generated,
-                        usedInProof := .ofArray info.value.getUsedConstants, provedByRfl }
+    let generated := generatedDeclName env name
+    thms := thms.push { name, mod := env.header.moduleNames[idx.toNat]!, kind, type, value,
+                        levelParams, isGenerated := generated,
+                        usedInProof := .ofArray value.getUsedConstants, provedByRfl }
   let byName : Std.HashMap Name Thm := .ofList (thms.toList.map fun t => (t.name, t))
   -- `maxHeartbeats := 0`: the budget is per candidate pair (below) and never shared, so one
   -- pathological pair can no longer exhaust — and silently discard — a whole batch of results.
   let ctx : Core.Context := { fileName := "<spec>", fileMap := default, maxHeartbeats := 0 }
   let tree ← Prod.fst <$> ((buildIndex thms).run' : CoreM _).toIO ctx { env }
-  IO.eprintln s!"{thms.size} theorems indexed"
+  IO.eprintln s!"{thms.size} theorems/definitions indexed"
   let mut rows : Array (Name × Name × String) := #[]
   let mut pairs := 0
   -- One `CoreM.toIO` per batch keeps the per-run metavariable/instance-cache residue bounded, the
