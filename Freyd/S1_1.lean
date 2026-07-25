@@ -1,3 +1,5 @@
+import Freyd.PredicateSet
+
 /-
   Freyd & Scedrov, *Categories and Allegories* §1.1  Basic definitions.
 
@@ -25,4 +27,3 @@ scoped infixr:80 " ≫ "  => Cat.comp
 /-- The book's identity morphism `1_A`, with the object explicit for reliable elaboration. -/
 scoped notation:max "𝟙" A:max => Cat.id A
 end Freyd
-

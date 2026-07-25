@@ -28,6 +28,7 @@
   Zorn-free "g-tower" route (Zermelo 1904 / Bourbaki).  We develop the tiny amount of order theory we
   need (sets as predicates, initial segments) inline.  See `exists_wellOrder` for the construction.
 -/
+import Freyd.PredicateSet
 import Freyd.S1_543_DirectedColimit
 
 namespace Freyd
@@ -40,9 +41,6 @@ The ONE copy of "a subset of `α`, as a predicate" for the whole repo.  Shared b
 construction (§1.543), its Zorn machinery, and the §1.646 ultrafilter development.  The
 filter-specific boolean operations (`univ`, `empty`, `compl` / `ᶜ`, `inter` / `∩ᵤ`) stay in
 `S1_646_Ultrafilter.lean` — a global `ᶜ` would clash with the Heyting complement. -/
-
-/-- A subset of `α`, as a predicate.  We avoid any library `Set` to stay self-contained. -/
-abbrev Sub (α : Type u) := α → Prop
 
 namespace Sub
 variable {α : Type u}

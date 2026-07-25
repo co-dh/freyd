@@ -155,13 +155,8 @@ theorem contraCayley_reflects_rightInv {𝒞 : Type u} [Cat.{v} 𝒞] {A B : �
 
 /-! ## §1.332 Power-set functor -/
 
-/-- The contravariant POWER-SET functor P : Type → Type (§1.332).
-    P(S) = the type of predicates on S (= subsets of S).
-    P(f : S₁ → S₂) : P(S₂) → P(S₁) is inverse image: y ∈ P(f)(T) iff f(y) ∈ T. -/
-def powerSetObj (S : Type u) : Type u := S → Prop
-
 /-- P(f) = inverse image along f. -/
-def powerSetMap {S T : Type u} (f : S → T) : powerSetObj T → powerSetObj S :=
+def powerSetMap {S T : Type u} (f : S → T) : Sub T → Sub S :=
   fun T' x => T' (f x)
 
 theorem powerSetMap_id (S : Type u) : powerSetMap (id : S → S) = id := rfl
