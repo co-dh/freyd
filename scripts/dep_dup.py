@@ -23,9 +23,7 @@ row so they carry no duplicate signal.
 
 Run:  uv run scripts/dep_dup.py     (regen data first: lake env lean --run scripts/ExtractGraph.lean)
 """
-import numpy as np, csv, re, collections
-from scipy.sparse import coo_matrix, diags
-from scipy.sparse.linalg import svds
+import csv, re, collections
 
 HUB_INDEG = 100    # dep used by more than this many decls = hub, dropped from every row
 K         = 32     # SVD embedding dimension
@@ -63,14 +61,14 @@ def imports_of(m, seen=None):
         if i not in seen: out |= {i} | imports_of(i, seen)
     upstream[m] = out
     return out
-n=len(names); rows=[]; cols=[]
+n=len(names); dep_rows=[[] for _ in range(n)]; indeg=[0] * n
 for r in csv.reader(open(DEPS), delimiter='\t'):
     if len(r) < 2: continue
     a,b = idx.get(r[0]), idx.get(r[1])
-    if a is not None and b is not None: rows.append(a); cols.append(b)
-A = coo_matrix((np.ones(len(rows)), (rows, cols)), shape=(n,n)).tocsr()
-indeg = np.asarray(A.sum(0)).ravel()                       # dep in-degree (also a decl's own in-degree)
-dout_all = [A.indices[A.indptr[i]:A.indptr[i+1]] for i in range(n)]   # full dep rows (hubs kept)
+    if a is not None and b is not None:
+        dep_rows[a].append(b)
+        indeg[b] += 1
+dout_all = dep_rows
 
 # --- pass 1: exact statement collisions --------------------------------------------------------
 # Equal `key` = identical elaborated statement up to binder/universe renaming. For a theorem that is
@@ -106,13 +104,24 @@ for nm in names:
     if nm in key: groups[key[nm]].append(nm)
 alias = lambda g: info[g[0]][0] == 'abbrev' or (info[g[0]][0] in ('def', 'instance')
                                                 and max(size.get(nm, 0) for nm in g) <= ALIAS_SZ)
-exact = sorted((g for g in groups.values() if len(g) > 1),
-               key=lambda g: (info[g[0]][0] != 'thm', -len(g), g[0]))
-real = [g for g in exact if not alias(g)]
+def generated(nm):
+    parts = nm.split('.')
+    tail = parts[-1]
+    return (tail in {'inj', 'injEq', 'noConfusion', 'noConfusionType', 'sizeOf_spec'}
+            or any(x in nm for x in ('match_', 'proof_', 'eq_def', '.mk.'))
+            or any(p.startswith('_') for p in parts))
+
+exact = [g for g in groups.values() if len(g) > 1]
+theorem_exact = sorted((g for g in exact if info[g[0]][0] == 'thm'),
+                       key=lambda g: (-len(g), g[0]))
+nonthm_exact = sorted((g for g in exact if info[g[0]][0] != 'thm'
+                       and not any(generated(nm) for nm in g)),
+                      key=lambda g: (len({info[nm][1] for nm in g}) == 1, -len(g), g[0]))
+theorem_real = [g for g in theorem_exact if not alias(g)]
+nonthm_real = [g for g in nonthm_exact if not alias(g)]
 exact_pairs = {frozenset((g[i], g[j])) for g in exact for i in range(len(g)) for j in range(i+1, len(g))}
 
-print(f"=== exact duplicates ({len(real)} groups, {sum(len(g) for g in real)} declarations) ===")
-for g in real:
+def print_group(g):
     can = canonical(g)
     print(f"[{len(g)}x {info[g[0]][0]}] {info[g[0]][3][:140]}")
     for nm in sorted(g, key=lambda nm: (nm != can, -indeg[idx[nm]])):
@@ -123,11 +132,44 @@ for g in real:
         home = suggested_home(g)
         print(f"      no member is importable from all the others — move to {home or '(no common import)'}")
 
-print(f"\n=== aliases / pins ({len(exact)-len(real)} groups, informational: naming a term is not "
+print(f"=== exact non-theorem duplicates ({len(nonthm_real)} groups, "
+      f"{sum(len(g) for g in nonthm_real)} declarations; cross-file first) ===")
+for g in nonthm_real:
+    print_group(g)
+
+nonthm_aliases = [g for g in nonthm_exact if alias(g)]
+print(f"\n=== non-theorem aliases / pins dropped ({len(nonthm_aliases)} groups, informational) ===")
+for g in nonthm_aliases:
+    print(f"  DROPPED [{len(g)}x {info[g[0]][0]}] "
+          + ", ".join(f"{nm} ({where(nm)})" for nm in g))
+
+print(f"\n=== exact theorem duplicates ({len(theorem_real)} groups, "
+      f"{sum(len(g) for g in theorem_real)} declarations) ===")
+for g in theorem_real:
+    print_group(g)
+
+print(f"\n=== theorem aliases / pins ({len(theorem_exact)-len(theorem_real)} groups, informational: naming a term is not "
       f"duplication) ===")
-for g in exact:
+for g in theorem_exact:
     if alias(g): print(f"  [{len(g)}x {info[g[0]][0]}] " + ", ".join(f"{nm} ({where(nm)})" for nm in g))
 print()
+
+# Pass 1 above is pure Python.  Keep it useful on minimal installations; Pass 2 must either run with
+# its numeric implementation present or explicitly say why it did not run.
+try:
+    import numpy as np
+    from scipy.sparse import coo_matrix, diags
+    from scipy.sparse.linalg import svds
+except ImportError as e:
+    print(f"=== embedding pass skipped: {e}; install numpy and scipy to run Pass 2 ===")
+    raise SystemExit(0)
+
+rows=[]; cols=[]
+for a, ds in enumerate(dep_rows):
+    for b in ds:
+        rows.append(a); cols.append(b)
+A = coo_matrix((np.ones(len(rows)), (rows, cols)), shape=(n,n)).tocsr()
+indeg = np.asarray(indeg)
 keep  = (indeg <= HUB_INDEG).astype(float)
 Ah    = (A @ diags(keep)).tocsr(); Ah.eliminate_zeros()    # hub columns zeroed
 dout  = [set(Ah.indices[Ah.indptr[i]:Ah.indptr[i+1]]) for i in range(n)]
