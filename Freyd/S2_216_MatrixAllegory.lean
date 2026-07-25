@@ -8,10 +8,10 @@
   No Finset/Fintype/LinearOrder from Std — uses only List, Fin n, List.ofFn.
 -/
 
-import Freyd.S1_1
-import Freyd.S2_1
-import Freyd.S2_2
-import Freyd.S2_3
+import Freyd.S1_01
+import Freyd.S2_01
+import Freyd.S2_02
+import Freyd.S2_03
 
 universe v u
 

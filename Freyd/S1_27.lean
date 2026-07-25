@@ -16,7 +16,7 @@
   §1.274 Natural equivalence = natural transformation with iso components (§1.274).
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_18
 import Freyd.S1_41
 

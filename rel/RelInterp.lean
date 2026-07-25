@@ -31,8 +31,8 @@
   relational DIVISION query, LC 207 cycle detection, the LC 121 spec/fold runs — live in
   `rel/RelInterpDemo.lean` (`#eval` + `by decide`).
 -/
-import Freyd.S2_3
-import Freyd.S2_4
+import Freyd.S2_03
+import Freyd.S2_04
 
 set_option linter.unusedVariables false
 

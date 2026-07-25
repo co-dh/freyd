@@ -9,7 +9,7 @@
   §1.1(10) ISOMORPHISM OF CATEGORIES (functor with a two-sided inverse functor).
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_41
 import Freyd.S1_18
 

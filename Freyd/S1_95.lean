@@ -15,8 +15,8 @@
   §1.969  Lawvere and Tierney definitions of Grothendieck topos.
 -/
 
-import Freyd.S1_1
-import Freyd.S1_9
+import Freyd.S1_01
+import Freyd.S1_09
 import Freyd.S1_51
 import Freyd.S1_52
 import Freyd.S1_56

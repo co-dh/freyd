@@ -33,8 +33,8 @@
   The allegory equivalence `RelMap 𝒜 ≅ 𝒜` is packaged below (`relMap_allegoryEquiv`).
 -/
 
-import Freyd.S2_1
-import Freyd.S2_3
+import Freyd.S2_01
+import Freyd.S2_03
 import Freyd.S2_16b
 import Freyd.S1_60
 import Freyd.S1_62

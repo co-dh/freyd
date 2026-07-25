@@ -13,7 +13,7 @@
   `Allegory` diamond to a single instance.
 -/
 import AOP.A5_2
-import Freyd.S2_4
+import Freyd.S2_04
 import AOP.A4_6
 import Freyd.S2_41b
 

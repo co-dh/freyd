@@ -1,5 +1,5 @@
-import Freyd.S2_1
-import Freyd.S2_2
+import Freyd.S2_01
+import Freyd.S2_02
 import Freyd.S2_216_MatrixAllegory
 
 universe v u

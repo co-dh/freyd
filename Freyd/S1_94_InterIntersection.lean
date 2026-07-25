@@ -24,7 +24,7 @@
   originals — this is a pure mechanical move, no statement or proof changed.
 -/
 
-import Freyd.S1_9
+import Freyd.S1_09
 import Freyd.S1_92
 import Freyd.S1_60
 

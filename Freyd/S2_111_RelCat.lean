@@ -35,8 +35,8 @@ import Freyd.S1_59
 import Freyd.S1_60
 import Freyd.S1_61
 import Freyd.S1_62
-import Freyd.S2_1
-import Freyd.S2_2
+import Freyd.S2_01
+import Freyd.S2_02
 import Freyd.S2_147_MapCat
 import Freyd.S2_216_MatrixAllegory
 import Freyd.S2_165_Spl

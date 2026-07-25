@@ -3,7 +3,7 @@
   The category of sets.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 
 universe v u
 

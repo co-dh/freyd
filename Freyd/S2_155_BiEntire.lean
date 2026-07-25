@@ -24,7 +24,7 @@
   upward closed, so any nonzero lower bound in B already forces the guard.
 -/
 
-import Freyd.S2_1
+import Freyd.S2_01
 
 universe u
 

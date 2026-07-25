@@ -31,7 +31,7 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_1
+import Freyd.S2_01
 
 namespace Freyd.S2_158
 
