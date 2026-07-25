@@ -57,7 +57,7 @@ theorem full_embedding_faithful (F : Functor 𝒞 𝒟)
     Then z = z ≫ id_B = z ≫ g ≫ f = (z ≫ g) ≫ f = id_A ≫ f = f,
     so f ≫ g = id_A.  Combined with g ≫ f = id_B, f is an isomorphism. -/
 theorem reflects_leftInv_reflects_iso (F : Functor 𝒞 𝒟)
-    (reflLI : ∀ {A B : 𝒞} (f : A ⟶ B), HasLeftInv (F.map f) → HasLeftInv f)
+    (reflLI : ∀ {A B : 𝒞} (f : A ⟶ B), LeftInvertible (F.map f) → LeftInvertible f)
     {A B : 𝒞} (f : A ⟶ B) (hiso : IsIso (F.map f)) : IsIso f := by
   obtain ⟨finv, hfinv1, hfinv2⟩ := hiso
   -- hfinv1 : F.map f ≫ finv = Cat.id (F.obj A)
@@ -196,7 +196,7 @@ def combinedCayleyMap {𝒞 : Type u} [Cat.{v} 𝒞] {A B : 𝒞} (f : A ⟶ B) 
 
 /-- F reflects left-invertibility (§1.332): if `combinedCayleyMap x` has a *function* right
     inverse `r` (`combinedCayleyMap x ∘ r = id`), then `x` has a left inverse `y`,
-    `y ≫ x = id_B` (repo `HasLeftInv x`).
+    `y ≫ x = id_B` (repo `LeftInvertible x`).
 
     Convention note.  In the repo's Cat-of-Types, a morphism's left inverse `g` satisfies
     `g ≫ f = id`, i.e. (diagram order) `f ∘ g = id` in Lean's `∘` — a *function right

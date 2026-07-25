@@ -34,6 +34,7 @@
 -/
 
 import Freyd.S1_1
+import Freyd.S1_17
 import Freyd.S1_41
 
 
@@ -136,12 +137,6 @@ def ReflectsMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (F : Functor C D) : Prop :=
   ∀ {X Y : C} {f : X ⟶ Y}, Monic (F.map f) → Monic f
 
-/-- A morphism has a right inverse: there exists `g` such that `f ≫ g = id`. -/
-def HasRightInv : MorphProp.{v,u} := λ {_} _ {X Y} f => ∃ (g : Y ⟶ X), f ≫ g = Cat.id X
-
-/-- A morphism has a left inverse: there exists `g` such that `g ≫ f = id`. -/
-def HasLeftInv : MorphProp.{v,u} := λ {_} _ {X Y} f => ∃ (g : Y ⟶ X), g ≫ f = Cat.id Y
-
 /-- **§1.181**: a functor preserves isomorphisms.  If `f : X → Y` has a two-sided inverse in `𝒞`,
     then `F.map f` has a two-sided inverse in `𝒟`.
 
@@ -162,12 +157,12 @@ theorem preserves_iso (F : Functor 𝒞 𝒟) : Preserves F @IsIso :=
   fun hf => functor_preserves_iso _ hf
 
 /-- **§1.181**: every functor preserves right-invertibility. -/
-theorem preserves_has_right_inv (F : Functor 𝒞 𝒟) : Preserves F HasRightInv := by
+theorem preserves_has_right_inv (F : Functor 𝒞 𝒟) : Preserves F RightInvertible := by
   intro X Y f ⟨g, hfg⟩
   exact ⟨F.map g, by rw [← F.map_comp, hfg, F.map_id]⟩
 
 /-- **§1.181**: every functor preserves left-invertibility. -/
-theorem preserves_has_left_inv (F : Functor 𝒞 𝒟) : Preserves F HasLeftInv := by
+theorem preserves_has_left_inv (F : Functor 𝒞 𝒟) : Preserves F LeftInvertible := by
   intro X Y f ⟨g, hgf⟩
   exact ⟨F.map g, by rw [← F.map_comp, hgf, F.map_id]⟩
 
@@ -236,5 +231,3 @@ def IdMorphs (C : Type u) [Cat.{v} C] := C
     by sending each identity `id_X` to the identity `id_{FX}`. -/
 def functor_on_idMorphs {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (F : Functor C D) : IdMorphs C → IdMorphs D := F.obj
-
-
