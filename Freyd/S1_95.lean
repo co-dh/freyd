@@ -880,7 +880,7 @@ private theorem prodMap_mono [HasBinaryProducts 𝒞] (A : 𝒞) {X Y : 𝒞} {f
 
 /-- **§1.962**: If E is injective in an exponential category, then E^A is injective
     for any A.  Proof: (−, E^A) ≅ (− × A, E) and − × A preserves monics in any category.
-    Concretely: given a monic `f : X ↣ Y` and `g : X → E^A`, uncurry `g` to
+    Concretely: given a monic `f : X ↣ Y` and `g : X → E^A`, transp `g` to
     `ĝ : A×X → E`; the map `A×f : A×X ↣ A×Y` is monic, so by injectivity of E it
     extends to `k : A×Y → E` with `(A×f) ≫ k = ĝ`; then `h = curry k` satisfies
     `f ≫ h = g` by transpose naturality. -/
@@ -1152,7 +1152,7 @@ theorem topos_value_based_iff_terminal_progenitor [Topos 𝒞] :
   -- both sides unfold to `IsGeneratingSet (fun X => ∃ m : X ⟶ one, Monic m)`
   Iff.rfl
 
-/-- The swap-transpose `Φ : (G ⟶ Ω^B) → (B ⟶ Ω^G)`: uncurry `k` (exponent base `B`),
+/-- The swap-transpose `Φ : (G ⟶ Ω^B) → (B ⟶ Ω^G)`: transp `k` (exponent base `B`),
     swap the product factors, then curry (exponent base `G`).  This realises the natural
     bijection `Hom(G, Ω^B) ≅ Hom(prod B G, Ω) ≅ Hom(prod G B, Ω) ≅ Hom(B, Ω^G)`. -/
 private noncomputable def swapTranspose [Topos 𝒞] {G B : 𝒞}
@@ -1167,14 +1167,14 @@ private theorem swapTranspose_inj [Topos 𝒞] {G B : 𝒞}
     {k k' : G ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) ^^ B}
     (h : swapTranspose k = swapTranspose k') : k = k' := by
   let Ω := HasSubobjectClassifier.omega (𝒞 := 𝒞)
-  -- curry_inj then strip the prodSwap iso, then curry-cancel the uncurry.
+  -- curry_inj then strip the prodSwap iso, then curry-cancel the transp.
   have h1 : prodSwap G B ≫ prodMap B G (Ω ^^ B) k ≫ eval_exp B Ω =
             prodSwap G B ≫ prodMap B G (Ω ^^ B) k' ≫ eval_exp B Ω := curry_inj h
   have h2 : prodMap B G (Ω ^^ B) k ≫ eval_exp B Ω =
             prodMap B G (Ω ^^ B) k' ≫ eval_exp B Ω := by
     have := congrArg (prodSwap B G ≫ ·) h1
     simpa only [← Cat.assoc, prodSwap_prodSwap, Cat.id_comp] using this
-  -- k = curry (uncurry k) = curry (uncurry k') = k'
+  -- k = curry (transp k) = curry (transp k') = k'
   have hk : k = curry (prodMap B G (Ω ^^ B) k ≫ eval_exp B Ω) := curry_unique_eq rfl
   have hk' : k' = curry (prodMap B G (Ω ^^ B) k' ≫ eval_exp B Ω) := curry_unique_eq rfl
   rw [hk, hk', h2]
@@ -1515,12 +1515,12 @@ private noncomputable def powTup {I : Type v} (P : CopowerOfOne I 𝒞) {A X : �
   curry (prodSwap P.obj X ≫ (prod_distrib_copow P X).cotup f)
 
 /-- Key reduction: precomposing `proj i` by any `k : X ⟶ A^cI` plugs `k` into evaluation at
-    coordinate `i`, i.e. `k ≫ proj i = copInj P X i ≫ prodSwap X cI ≫ uncurry k`.
+    coordinate `i`, i.e. `k ≫ proj i = copInj P X i ≫ prodSwap X cI ≫ transp k`.
     (`copInj P X i = pair id (term ≫ inj i)`, the `i`-th copower injection of `X`.) -/
 private theorem powProj_precomp {I : Type v} (P : CopowerOfOne I 𝒞) {A X : 𝒞}
     (k : X ⟶ (A ^^ P.obj)) (i : I) :
-    k ≫ powProj P A i = copInj P X i ≫ prodSwap X P.obj ≫ uncurry k := by
-  unfold powProj uncurry copInj
+    k ≫ powProj P A i = copInj P X i ≫ prodSwap X P.obj ≫ transp k := by
+  unfold powProj transp copInj
   -- LHS: k ≫ (pair (term ≫ inj i) id ≫ eval) = pair (term X ≫ inj i) k ≫ eval
   have hL : k ≫ pair (term (A ^^ P.obj) ≫ P.inj i) (Cat.id (A ^^ P.obj)) =
       pair (term X ≫ P.inj i) k := by
@@ -1549,28 +1549,28 @@ noncomputable def powersOfCopowersOfOne
   tupling {I A X} f := powTup (P I) f
   tupling_proj {I A X} f i := by
     rw [powTup, powProj_precomp]
-    -- copInj ≫ prodSwap ≫ uncurry (curry g) = copInj ≫ prodSwap ≫ g  with g = swap ≫ cotup f
+    -- copInj ≫ prodSwap ≫ transp (curry g) = copInj ≫ prodSwap ≫ g  with g = swap ≫ cotup f
     rw [uncurry_curry, ← Cat.assoc (prodSwap X (P I).obj), prodSwap_prodSwap, Cat.id_comp]
     -- copInj P X i = (prod_distrib_copow P X).inj i ; inj_cotup
     show (prod_distrib_copow (P I) X).inj i ≫ (prod_distrib_copow (P I) X).cotup f = f i
     rw [(prod_distrib_copow (P I) X).inj_cotup]
   tupling_uniq {I A X} f h hh := by
-    -- show h = curry (prodSwap ≫ cotup f); use uncurry injectivity then cotup_uniq.
+    -- show h = curry (prodSwap ≫ cotup f); use transp injectivity then cotup_uniq.
     rw [powTup, ← curry_uncurry h]
     apply congrArg curry
-    -- goal: uncurry h = prodSwap P.obj X ≫ cotup f
+    -- goal: transp h = prodSwap P.obj X ≫ cotup f
     -- precompose by prodSwap X P.obj (iso) and use cotup_uniq
-    have hswap : prodSwap X (P I).obj ≫ uncurry h = (prod_distrib_copow (P I) X).cotup f := by
+    have hswap : prodSwap X (P I).obj ≫ transp h = (prod_distrib_copow (P I) X).cotup f := by
       apply (prod_distrib_copow (P I) X).cotup_uniq
       intro i
-      -- inj i ≫ prodSwap ≫ uncurry h = f i, via powProj_precomp on h
-      show copInj (P I) X i ≫ prodSwap X (P I).obj ≫ uncurry h = f i
+      -- inj i ≫ prodSwap ≫ transp h = f i, via powProj_precomp on h
+      show copInj (P I) X i ≫ prodSwap X (P I).obj ≫ transp h = f i
       rw [← powProj_precomp]
       exact hh i
-    calc uncurry h = Cat.id _ ≫ uncurry h := (Cat.id_comp _).symm
-      _ = (prodSwap (P I).obj X ≫ prodSwap X (P I).obj) ≫ uncurry h := by
+    calc transp h = Cat.id _ ≫ transp h := (Cat.id_comp _).symm
+      _ = (prodSwap (P I).obj X ≫ prodSwap X (P I).obj) ≫ transp h := by
             rw [prodSwap_prodSwap]
-      _ = prodSwap (P I).obj X ≫ (prodSwap X (P I).obj ≫ uncurry h) := by rw [Cat.assoc]
+      _ = prodSwap (P I).obj X ≫ (prodSwap X (P I).obj ≫ transp h) := by rw [Cat.assoc]
       _ = prodSwap (P I).obj X ≫ (prod_distrib_copow (P I) X).cotup f := by rw [hswap]
 
 end PowersOfCopowersOfOne

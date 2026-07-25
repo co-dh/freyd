@@ -56,7 +56,8 @@ def EpicFamily {ι : Type} {A : ι → 𝒞} {B : 𝒞} (f : ∀ i, A i ⟶ B) :
 
 /-- The equalizer inclusion `eqMap g h : E ⟶ B` is monic: two maps into `E`
     agreeing after it are both the equalizer lift of the same cone, hence equal.
-    (Proved locally to keep this file's imports minimal — cf. `eqMap_mono'`.) -/
+    Stated from the bare equalizer API, so it needs no Cartesian context and this file's imports
+    stay minimal; it is the repo's single statement of the fact. -/
 theorem eqMap_monic [HasEqualizers 𝒞] {A B : 𝒞} (g h : A ⟶ B) : Monic (eqMap g h) := by
   intro W p q hpq
   have hp_eq : (p ≫ eqMap g h) ≫ g = (p ≫ eqMap g h) ≫ h := by

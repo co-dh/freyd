@@ -6,6 +6,7 @@
 
 
 import Freyd.S1_1
+import Freyd.S1_241
 import Freyd.S1_18
 import Freyd.S1_27
 import Freyd.S1_31
@@ -1006,11 +1007,18 @@ theorem loc_is_cartesianFunctor [CartesianCategory 𝒞] [HasPullbacks 𝒞] {G 
 
 /-! ## Representable functor, Yoneda, fiber, evaluation -/
 
-/-- The YONEDA EMBEDDING: A ↦ Hom(A, -) (§1.464). -/
-def YonedaEmbedding (A : 𝒞) : 𝒞 → Type v := λ X => A ⟶ X
+/-- The `i`-th covariant representable `H_i = Hom(i, -)` (sections 1.463, 1.465), as
+    an object map.  This is one representable, not the section 1.464 Yoneda representation,
+    which is the full embedding `𝒞 → (𝒞 → Type v)`. -/
+def representable (i : 𝒞) : 𝒞 → Type v := fun X => i ⟶ X
 
-/-- REPRESENTABLE FUNCTOR (§1.442): same as YonedaEmbedding. -/
-def RepresentableFunctor (A : 𝒞) : 𝒞 → Type v := YonedaEmbedding A
+/-- The covariant hom-functor `Hom(i, -) : 𝒞 → 𝒮`, `f ↦ (h ↦ h ≫ f)`
+    (sections 1.463, 1.465). -/
+def homFunctor {𝒞 : Type u} [Cat.{v} 𝒞] (i : 𝒞) : Functor 𝒞 (Type v) where
+  obj := representable i
+  map f := fun h => h ≫ f
+  map_id A := by funext h; exact Cat.comp_id h
+  map_comp f g := by funext h; exact (Cat.assoc h f g).symm
 
 /-- The fiber of f: A→B at y: X→B is the pullback object (§1.462). -/
 def fiber {A B X : 𝒞} (f : A ⟶ B) (y : X ⟶ B) [HasPullbacks 𝒞] : 𝒞 :=

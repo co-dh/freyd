@@ -7,7 +7,7 @@
   as morphisms, and a power 𝒮^I as I-indexed families of sets with pointwise
   families of functions.
 
-  The faithful representation is the covariant hom-functor (Cayley, §1.272)
+  The faithful representation is the covariant hom-functor (§§1.463, 1.465)
   family `i ↦ Hom(i, -)`: the product functor `𝒞 → 𝒮^|𝒞|`, `A ↦ (i ↦ (i ⟶ A))`,
   separates morphisms because `id_A` distinguishes `f` from `g` (`cayley_faithful`).
   This is constructive and choice-free, so it holds for ANY small category — the
@@ -26,6 +26,7 @@
 
 
 import Freyd.S1_1
+import Freyd.S1_241
 import Freyd.S1_18
 import Freyd.S1_27
 import Freyd.S1_31
@@ -41,15 +42,6 @@ universe w u v
 namespace Freyd
 
 /-! ## §1.55 The category of sets and its powers -/
-
-/-- §1.55  The CATEGORY OF SETS 𝒮: objects are types, morphisms are functions. -/
-instance setCat : Cat.{w} (Type w) where
-  Hom A B := A → B
-  id _ := fun a => a
-  comp f g := fun a => g (f a)
-  id_comp _ := rfl
-  comp_id _ := rfl
-  assoc _ _ _ := rfl
 
 /-- §1.55  A POWER 𝒮^I of the category of sets: objects are I-indexed families
     of sets, morphisms are I-indexed families of functions, composed pointwise. -/
@@ -93,15 +85,10 @@ end
 
 section HomRep
 
-/-- The covariant hom-functor `Hom(i, -) : 𝒞 → 𝒮`, `f ↦ (h ↦ h ≫ f)` (§1.272). -/
-def homFunctor {𝒞 : Type u} [Cat.{w} 𝒞] (i : 𝒞) : Functor 𝒞 (Type w) where
-  obj := fun A : 𝒞 => (i ⟶ A)
-  map f := fun h => h ≫ f
-  map_id A := by funext h; exact Cat.comp_id h
-  map_comp f g := by funext h; exact (Cat.assoc h f g).symm
-
 /-- The **Henkin–Lubkin representation** `T : 𝒞 → 𝒮^|𝒞|`, `A ↦ (i ↦ Hom(i, A))` —
-    the witness used by `henkin_lubkin`, here named so its exactness can be stated. -/
+    the witness used by `henkin_lubkin`, here named so its exactness can be stated.
+    As a map `𝒞 → (𝒞 → Type u)`, it has the shape section 1.465 calls the covariant
+    Yoneda representation. -/
 def homRep (𝒞 : Type u) [Cat.{u} 𝒞] : 𝒞 → (𝒞 → Type u) := familyFunctor (fun i A => (i ⟶ A))
 
 def homRepFunctor (𝒞 : Type u) [Cat.{u} 𝒞] : Functor 𝒞 (𝒞 → Type u) :=
@@ -192,7 +179,7 @@ end Points
 /-! ## §1.55 Henkin-Lubkin representation theorem -/
 
 /-- A `|𝒞|`-indexed family of functors into `𝒮` that COLLECTIVELY separate
-    morphisms.  The family is the covariant hom-functor (Cayley/§1.272)
+    morphisms.  The family is the covariant hom-functor (§§1.463, 1.465)
     representation `i ↦ Hom(i, -)`, `f ↦ (h ↦ h ≫ f)`; collective separation is
     `cayley_faithful` (taking `i = A`, `h = id_A`).  Constructive and choice-free,
     valid for ANY small category — the regularity hypothesis is not used here. -/

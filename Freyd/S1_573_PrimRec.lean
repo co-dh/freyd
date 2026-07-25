@@ -30,6 +30,7 @@
 -/
 
 import Freyd.S1_572_Recursive
+import Freyd.S1_28
 import Freyd.S1_39
 import Freyd.S1_55
 import Freyd.S2_21c
@@ -684,8 +685,9 @@ theorem embP_faithful : Faithful embPFunctor :=
 theorem phat_idem_split {E : PhatObj} (Φ : E ⟶ E) (h : Idempotent Φ) :
     SplitIdempotent Φ := by
   have h1 : Φ.1 ≫ Φ.1 = Φ.1 := congrArg Subtype.val h
-  exact ⟨h, ⟨E.carrier, Φ.1, h1⟩, ⟨Φ.1, Φ.2.1, h1⟩, ⟨Φ.1, h1, Φ.2.2⟩,
-    PhatHom.ext h1, PhatHom.ext h1⟩
+  refine ⟨⟨E.carrier, Φ.1, h1⟩, ⟨Φ.1, Φ.2.1, h1⟩, ⟨Φ.1, h1, Φ.2.2⟩, ?_, ?_⟩
+  · exact PhatHom.ext h1
+  · exact PhatHom.ext h1
 
 /-! ### P̂ has a terminator and binary products (they lift from P) -/
 

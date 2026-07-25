@@ -2314,19 +2314,6 @@ theorem preservesImage_lift_cover {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} �
   a cover-then-mono factorization `F f = F(image.lift f) ≫ F((image f).arr)` in `ℬ`; by
   `coverMono_isImage` that IS the image of `F f`.  Hence `Subobject.map F hpm (image f)` — whose
   arrow is exactly `F((image f).arr)` — is the image of `F f`. -/
-theorem image_lift_cover_local {𝒜 : Type w} [Cat.{w} 𝒜] [HasImages 𝒜] {A B : 𝒜} (f : A ⟶ B) :
-    Cover (image.lift f) := by
-  -- (self-contained copy of `S1_56.image_lift_cover`, to avoid importing S1_56 here)
-  intro D m g hm hfac
-  have hmono_comp : Monic (m ≫ (image f).arr) := fun u v huv =>
-    hm _ _ ((image f).monic _ _ (by simpa [Cat.assoc] using huv))
-  have h_allows : Allows ⟨D, m ≫ (image f).arr, hmono_comp⟩ f :=
-    ⟨g, by rw [← Cat.assoc, hfac, image.lift_fac]⟩
-  obtain ⟨h, hh⟩ := image_min f _ h_allows
-  have hhm : h ≫ m = Cat.id (image f).dom := (image f).monic (h ≫ m) (Cat.id _) (by
-    rw [Cat.assoc, hh, Cat.id_comp])
-  exact ⟨h, hm _ _ (by rw [Cat.assoc, hhm, Cat.id_comp, Cat.comp_id]), hhm⟩
-
 /-- **Transition image-preservation from cover + mono + pullback preservation.**  Supplies the
     `himgpres` shape (`IsImage (F.map f) (Subobject.map F hpm (image f))`) WITHOUT it being a
     primitive axiom: it is derived from `F` preserving covers (`hcov`), preserving monos (`hpm`),
@@ -2340,7 +2327,7 @@ theorem transitions_preserve_images {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} 
   have hfac : F.map (image.lift f) ≫ (Subobject.map F hpm (image f)).arr = F.map f := by
     show F.map (image.lift f) ≫ F.map (image f).arr = F.map f
     rw [← F.map_comp, image.lift_fac]
-  have hcover : Cover (F.map (image.lift f)) := hcov _ (image_lift_cover_local f)
+  have hcover : Cover (F.map (image.lift f)) := hcov _ (image_lift_cover f)
   exact coverMono_isImage (Subobject.map F hpm (image f)).monic hcover hfac
 
 /-- **`objIncl i` preserves images** (the image analog of `objIncl_preserves_equalizers`).

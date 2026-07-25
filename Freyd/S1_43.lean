@@ -8,6 +8,7 @@
 
 import Freyd.S1_1
 import Freyd.S1_18
+import Freyd.S1_28
 import Freyd.S1_31
 import Freyd.S1_41
 import Freyd.S1_42
@@ -239,7 +240,8 @@ theorem cartesian_iff_pullbacks :
       products_pullbacks_implies_equalizers
     exact ⟨⟨hp⟩, ⟨heq⟩⟩
 
-/-- **§1.439** bundled: `Cartesian 𝒞 ↔ HasPullbacks 𝒞` given a terminator. -/
+/-- **§1.439** bundled: `Cartesian 𝒞 ↔ HasPullbacks 𝒞` given a terminator.  Also the §1.825
+    record of the same equivalence. -/
 theorem cartesianCategory_iff_pullbacks :
     Nonempty (CartesianCategory 𝒞) ↔ Nonempty (HasPullbacks 𝒞) := by
   constructor
@@ -341,17 +343,7 @@ end FinProd_equiv
 /-! ## §1.429 Equalizers split idempotents
 
   If a category has equalizers, then every idempotent `e : A → A` splits:
-  the equalizer of `e` and `1_A` gives the splitting.
-  `Idempotent`/`SplitIdempotent` are defined in S1_39; they're re-stated
-  locally here since S1_39 cannot be imported (it has pre-existing errors
-  unrelated to this file). -/
-
-/-- IDEMPOTENT: e² = e (S1_39, defined locally to avoid import of broken S1_39). -/
-def Idempotent' {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
-
-/-- SPLIT IDEMPOTENT: ∃ B, r : A→B, s : B→A with s≫r = id and r≫s = e. -/
-def SplitIdempotent' {A : 𝒞} (e : A ⟶ A) : Prop :=
-  ∃ (B : 𝒞) (r : A ⟶ B) (s : B ⟶ A), s ≫ r = Cat.id B ∧ r ≫ s = e
+  the equalizer of `e` and `1_A` gives the splitting.  §1.28/§1.281 live in `S1_28`. -/
 
 section S1_429
 variable [HasEqualizers 𝒞]
@@ -363,8 +355,8 @@ variable [HasEqualizers 𝒞]
   `x ≫ y = e` (exists since `e ≫ e = e ≫ id_A`).  Then
   `(y ≫ x) ≫ y = y ≫ (x ≫ y) = y ≫ e = y ≫ id_A = y`,
   so `y ≫ x = id_B` by equalizer uniqueness (canceling `y` on the right). -/
-theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent' e) :
-    SplitIdempotent' e := by
+theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent e) :
+    SplitIdempotent e := by
   -- Equalizer y : B → A of e and id_A
   let B := eqObj e (Cat.id A)
   let y := eqMap e (Cat.id A)
@@ -381,7 +373,7 @@ theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent' 
     have h1 : y ≫ x = eqLift e (Cat.id A) y hy := eqLift_uniq _ _ _ hy _ hyx_fac
     have h2 : Cat.id B = eqLift e (Cat.id A) y hy := eqLift_uniq _ _ _ hy _ hid_fac
     rw [h1, ← h2]
-  exact ⟨B, x, y, hyx, hxy⟩
+  exact ⟨B, x, y, hxy, hyx⟩
 
 end S1_429
 

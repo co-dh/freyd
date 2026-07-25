@@ -1922,12 +1922,6 @@ theorem listProdPartitionInv_projR (p : 𝒞 → Bool) (l : List 𝒞) (k : Fin 
   refine (comp_right_heq h.symm snd _ _ ?_).symm
   exact eqRec_heq (φ := fun z => listProd (l.filter (fun a => !p a)) ⟶ z) h _
 
-/-- A binary product of well-supported objects is well-supported. -/
-theorem wellSupported_prod' [PullbacksTransferCovers 𝒞] {B D : 𝒞}
-    (hB : WellSupported B) (hD : WellSupported D) : WellSupported (prod B D) := by
-  show Cover (term (prod B D))
-  rw [show term (prod B D) = (fst : prod B D ⟶ B) ≫ term B from term_uniq _ _]
-  exact cover_comp' (prod_fst_cover hD) hB
 
 /-- A right factor of a well-supported binary product is well-supported.  The unique
     `prod B D ⟶ 1` equals `snd ≫ (D ⟶ 1)` by terminal uniqueness, and is a cover (`prod B D`
@@ -2099,7 +2093,7 @@ theorem retractExtendLeft {T Wf W D : 𝒞} (p : W ⟶ prod T Wf) (q : prod T Wf
 
 /-- **§1.547 — dense morphisms are closed under COMPOSITION.**  `x : X→Y`, `y : Y→Z` dense with
     surviving objects `Wₓ`, `W_y`; `x.comp y` is dense with surviving object `W_y × Wₓ`
-    (well-supported, `wellSupported_prod'`), the iso `X.A ≅ Z.A × (W_y × Wₓ)` being `dx.e`
+    (well-supported, `wellSupported_prod`), the iso `X.A ≅ Z.A × (W_y × Wₓ)` being `dx.e`
     followed by the reassociator `r : (Z.A × W_y) × Wₓ ≅ Z.A × (W_y × Wₓ)` (built from `dy.e`
     on the left factor), carrying `x.g ≫ y.g` to `fst`. -/
 def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
@@ -2141,7 +2135,7 @@ def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
       · -- ≫ snd
         rw [Cat.assoc, snd_pair, hr'snd]
   { W := prod dy.W dx.W
-    wsupp := wellSupported_prod' dy.wsupp dx.wsupp
+    wsupp := wellSupported_prod dy.wsupp dx.wsupp
     e := dx.e ≫ r
     einv := r' ≫ dx.einv
     e_iso₁ := by
@@ -2402,8 +2396,8 @@ theorem pairLocalisation_faithful_criterion [PullbacksTransferCovers 𝒞] {R X 
   pairs `(fst≫f, snd≫f')` for matching factors — see `pairProd` below; the wide equalizer is the
   reusable kernel. -/
 
--- `eqMap_mono'` (`Monic (eqMap u v)`) now lives in `Freyd.S1_59` (added to master after this file's
--- original); the local copy was deleted to avoid a duplicate declaration.
+-- `eqMap_monic` (`Monic (eqMap u v)`) lives in `Freyd.S1_513_CoveringFamily`; the local copy was
+-- deleted to avoid a duplicate declaration.
 
 /-- A `WideEq` of a list `L` of parallel pairs over `X`: the maximal subobject equalizing all of
     them.  `dom`/`map` is the subobject `w : D ↪ X`; `eq` says `w` equalizes every listed pair;
@@ -2436,7 +2430,7 @@ def wideEqCons [HasEqualizers 𝒞] (X B : 𝒞) (u v : X ⟶ B)
     WideEq X (⟨B, u, v⟩ :: L) where
   dom := tail.dom
   map := tail.map ≫ eqMap u v
-  mono := mono_comp' _ _ tail.mono (eqMap_mono' u v)
+  mono := mono_comp' _ _ tail.mono (eqMap_monic u v)
   eq p hp := by
     rcases List.mem_cons.1 hp with h | h
     · subst h; rw [Cat.assoc, Cat.assoc, eqMap_eq u v]
@@ -3714,7 +3708,7 @@ theorem apexHom_apexInv {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx :
     apexHom x g dx ≫ apexInv x g dx = Cat.id _ := by
   -- cancel mono `eqMap u v`
   have hmono : Monic (eqMap ((pairProjFst Z X).comp g).g ((pairProjSnd Z X).comp x).g) :=
-    eqMap_mono' _ _
+    eqMap_monic _ _
   apply hmono
   rw [Cat.assoc, apexInv_fac, Cat.id_comp]
   -- goal: `apexHom ≫ mProdW = eqMap`.  Cancel mono `pairProdW`.
@@ -3760,11 +3754,11 @@ structure ApexIso {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx : PairD
 
 /-- A `listProd` of well-supported objects is well-supported (inlined; the `Capitalization.lean`
     version is not imported here).  `∏[] = 1` (`wellSupported_one'`); `∏(C::l) = C × ∏l`
-    (`wellSupported_prod'`). -/
+    (`wellSupported_prod`). -/
 theorem wellSupported_listProd' [PullbacksTransferCovers 𝒞] :
     ∀ {l : List 𝒞}, (∀ B ∈ l, WellSupported B) → WellSupported (listProd l)
   | [], _ => wellSupported_one'
-  | C :: _, h => wellSupported_prod' (h C (List.mem_cons_self))
+  | C :: _, h => wellSupported_prod (h C (List.mem_cons_self))
       (wellSupported_listProd' (fun B hB => h B (List.mem_cons_of_mem _ hB)))
 
 /-- **§1.547 — the FIRST LEG of the canonical `Â`-pullback of `(g, x)` is DENSE.**  The absorption

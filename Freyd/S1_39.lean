@@ -1,12 +1,13 @@
 /-
   Freyd & Scedrov, *Categories and Allegories* §1.34–§1.39 — remaining TOC entries.
-  Adjoint pair, Skeleton/Coskeleton, Idempotent/Split idempotent,
+  Adjoint pair, Skeleton/Coskeleton (§1.28/§1.281 — Idempotent/Split idempotent — in S1_28),
   Equivalent categories, Exact sequence, Complete measure, Atomic measure.
 -/
 
 
 import Freyd.S1_1
 import Freyd.S1_18
+import Freyd.S1_28
 import Freyd.S1_31
 import Freyd.S1_34
 import Freyd.S1_38b
@@ -127,13 +128,6 @@ def Skeleton (𝒜 : Type u) [Cat.{v} 𝒜] : Prop :=
 /-- COSKELETON of A: a skeletal category A' with an equivalence A → A'. -/
 def CoSkeleton (𝒜 : Type u) [Cat.{v} 𝒜] : Prop :=
   ∃ (A' : Type u) (_ : Cat.{v} A'), IsSkeletal A' ∧ EquivalentCategories 𝒜 A'
-
-/-- IDEMPOTENT (§1.28): e: A→A such that e² = e. -/
-def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
-
-/-- SPLIT IDEMPOTENT (§1.281): there exist r: A→B, s: B→A with s≫r = id, r≫s = e. -/
-def SplitIdempotent {A : 𝒞} (e : A ⟶ A) : Prop :=
-  Idempotent e ∧ ∃ (B : 𝒞) (r : A ⟶ B) (s : B ⟶ A), s ≫ r = Cat.id B ∧ r ≫ s = e
 
 /-- EXACT AT (§1.599): a composable pair `A —f→ B —g→ C` is EXACT at `B` when the
     image of `f` coincides (is isomorphic, as a subobject of `B`) with the kernel of `g`.

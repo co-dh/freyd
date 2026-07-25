@@ -70,33 +70,9 @@ theorem compL_homInclL_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr :
   rw [compL_homInclL L hL, homCompRawL_eq_compAtL L hL xp xq xr a f b g e hae hbe]
   rfl
 
-/-- **A cover post-composed with an iso is a cover** (bare-`Cat` version; the `PreLogos`
-    `cover_comp_iso` is unavailable here).  A mono `m` with `h ≫ m = f ≫ g` gives `m ≫ g⁻¹` mono with
-    `h ≫ (m ≫ g⁻¹) = f`, so `f`'s cover forces `m ≫ g⁻¹` iso, hence `m` iso. -/
-theorem cover_comp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {g : Y ⟶ Z}
-    (hf : Cover f) (hg : IsIso g) : Cover (f ≫ g) := by
-  obtain ⟨gi, hg1, hg2⟩ := hg
-  intro C m h hm hcm
-  -- `m ≫ gi` is mono and factors `f` (via `h`).
-  have hmgi_mono : Monic (m ≫ gi) := by
-    intro W u v huv
-    apply hm u v
-    -- u ≫ m = v ≫ m from u ≫ (m ≫ gi) = v ≫ (m ≫ gi) by post-composing `g`.
-    have := congrArg (fun t => t ≫ g) huv
-    simp only [Cat.assoc, hg2, Cat.comp_id] at this
-    exact this
-  have hf_iso : IsIso (m ≫ gi) := hf (m ≫ gi) h hmgi_mono (by
-    rw [← Cat.assoc, hcm, Cat.assoc, hg1, Cat.comp_id])
-  -- `m = (m ≫ gi) ≫ g`, a composite of isos.
-  obtain ⟨w, hw1, hw2⟩ := hf_iso
-  -- `w ≫ m = g` (post-compose `hw2 : w ≫ (m ≫ gi) = id` with `g`).
-  have hwm : w ≫ m = g := by
-    have := congrArg (fun t => t ≫ g) hw2
-    simp only [Cat.assoc, hg2, Cat.comp_id, Cat.id_comp] at this
-    exact this
-  refine ⟨gi ≫ w, ?_, ?_⟩
-  · rw [← Cat.assoc m gi w, hw1]
-  · rw [Cat.assoc, hwm, hg2]
+-- `cover_comp_iso'` (the bare-`Cat` cover-post-composed-with-iso lemma) moved upstream to
+-- `Freyd.S1_51` as `cover_comp_iso_cat`, where `Cover` is defined, so the §1.543 lax and cofinal
+-- files share one statement of it.
 
 /-- A mono pre-composed with an iso is mono. -/
 theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X ⟶ Y} {f : Y ⟶ Z}
@@ -110,7 +86,7 @@ theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X �
   simpa only [Cat.assoc, hi1, Cat.comp_id] using this
 
 /-- A mono post-composed with an iso is mono. -/
-theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
+theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{u} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
     (hf : Monic f) (hj : IsIso j) : Monic (f ≫ j) := by
   obtain ⟨jj, hj1, hj2⟩ := hj
   intro W u v huv
@@ -428,7 +404,7 @@ theorem homInclL_cover_of_stage
   -- peel the flanking isos: transApp (pre), isoInv transApp (post), map reflApp x (pre), map isoInv (post).
   have c1 : Cover ((L.functF hie).map g
       ≫ (L.functF hie).map (isoInv (reflApp_isIso L y))) :=
-    cover_comp_iso' hg_cov hi3
+    cover_comp_iso_cat hg_cov hi3
   have c2 : Cover ((L.functF hie).map (reflApp L x)
       ≫ (L.functF hie).map g
       ≫ (L.functF hie).map (isoInv (reflApp_isIso L y))) :=
@@ -437,7 +413,7 @@ theorem homInclL_cover_of_stage
       ≫ (L.functF hie).map g
       ≫ (L.functF hie).map (isoInv (reflApp_isIso L y)))
       ≫ isoInv (transApp_isIso L (D.refl i) hie y)) :=
-    cover_comp_iso' c2 hi4
+    cover_comp_iso_cat c2 hi4
   exact @cover_precomp_iso _ _ _ _ _ _ hi1 _ c3
 
 /-- **Iso reflection (clean form).**  If `homInclL a g` is iso and transitions are conservative,
@@ -707,16 +683,8 @@ theorem image_chosenPullback_isPullback' {𝒞 : Type w} [Cat.{w} 𝒞]
       rw [show (F.map em ≫ φ) ≫ snd = F.map (em ≫ snd) from (Cat.assoc _ _ _).trans hbr₂]
       exact hv₂
 
-/-- **A cone with the binary-product universal property has iso comparison map** (= verbatim
-    `Colim.isIso_of_product_up`, `S1_543_CatColimitRegular.lean` — same single-universe
-    statement, kept as a local alias since this section's downstream lemmas use `'`-names). -/
-theorem isIso_of_product_up' [HasBinaryProducts 𝒟]
-    {A B P : 𝒟} (p₁ : P ⟶ A) (p₂ : P ⟶ B)
-    (hup : ∀ {Z : 𝒟} (f : Z ⟶ A) (g : Z ⟶ B),
-      ∃ u : Z ⟶ P, (u ≫ p₁ = f ∧ u ≫ p₂ = g) ∧
-        ∀ v : Z ⟶ P, v ≫ p₁ = f → v ≫ p₂ = g → v = u) :
-    IsIso (pair p₁ p₂ : P ⟶ prod A B) :=
-  Colim.isIso_of_product_up p₁ p₂ hup
+-- A cone with the binary-product universal property has iso comparison map:
+-- `Colim.isIso_of_product_up` (`S1_543_CatColimitRegular.lean`), used directly below.
 
 end GenericPullbackPres
 
@@ -751,7 +719,7 @@ noncomputable def stageInclFunctorL (i : ι) :
 /-! ### `stageInclFunctorL` preserves binary products
 
   The comparison map `pair (F fst) (F snd) : ⟨i, A×B⟩ ⟶ prod_colim (⟨i,A⟩) (⟨i,B⟩)` is iso.  By
-  `isIso_of_product_up'` it suffices that the cone `(⟨i, A×B⟩, F fst, F snd)` has the binary-product
+  `Colim.isIso_of_product_up` it suffices that the cone `(⟨i, A×B⟩, F fst, F snd)` has the binary-product
   universal property in the colimit: this is the lax mirror of the strict `objIncl_preserves_products`
   mediator construction (push competitors to a common stage `N ≥ i`, use `pData.presPair` there). -/
 
@@ -931,7 +899,7 @@ theorem stageInclL_product_up (pData : LaxProductData L) (i : ι) (x y : L.A i)
 
 /-- **`stageInclFunctorL i` preserves binary products** (for the colimit's
     `laxColimHasBinaryProducts`).  The comparison map `pair (F fst) (F snd)` is iso by
-    `isIso_of_product_up'`, whose hypothesis is the product universal property `stageInclL_product_up`. -/
+    `Colim.isIso_of_product_up`, whose hypothesis is the product universal property `stageInclL_product_up`. -/
 theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) :
     @PreservesBinaryProducts (L.A i) (Obj L) (L.catA i) (laxColimCat L hL)
       (stageInclFunctorL L hL i) (pData.hp i)
@@ -939,7 +907,7 @@ theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) 
   letI : Cat (Obj L) := laxColimCat L hL
   letI : HasBinaryProducts (Obj L) := laxColimHasBinaryProducts L hL pData
   intro A B
-  exact isIso_of_product_up' (𝒟 := Obj L) (stageInclL L hL (pData.hp i).fst)
+  exact Colim.isIso_of_product_up (𝒞 := Obj L) (stageInclL L hL (pData.hp i).fst)
     (stageInclL L hL (pData.hp i).snd)
     (fun {Z} f g => stageInclL_product_up L hL pData i A B f g)
 
@@ -1359,7 +1327,7 @@ theorem cospanIsoTransferPullback {𝒜 : Type w} [Cat.{w} 𝒜]
   have hBg : eB ≫ g' = g ≫ isoInv hZiso := by
     rw [hg, Cat.assoc, Cat.assoc, isoInv_comp, Cat.comp_id]
   let c : Cone f g := ⟨c'.pt, c'.π₁ ≫ isoInv hAiso, c'.π₂ ≫ isoInv hBiso, hw⟩
-  refine ⟨c, ?_, cover_comp_iso' hcov ⟨eB, inv_isoInv_comp hBiso, isoInv_comp hBiso⟩⟩
+  refine ⟨c, ?_, cover_comp_iso_cat hcov ⟨eB, inv_isoInv_comp hBiso, isoInv_comp hBiso⟩⟩
   -- universal property: a competitor `d` of `(f,g)` becomes a competitor of `(f',g')` by
   -- post-composing the legs with `eA, eB` (`hAf`/`hBg` + `d.w`); lift through `c'`.
   show c.IsPullback
@@ -1489,7 +1457,7 @@ theorem laxColim_hcanon_of_stage [Nonempty ι]
   have hstagefN_cov : @Cover (Obj L) (laxColimCat L hL) _ _ (stageInclL L hL fN) := by
     rw [hrw]
     exact cover_precomp_iso ⟨eA, inv_isoInv_comp hAiso, isoInv_comp hAiso⟩
-      (cover_comp_iso' hfcov ⟨eZinv, inv_isoInv_comp hZiso, isoInv_comp hZiso⟩)
+      (cover_comp_iso_cat hfcov ⟨eZinv, inv_isoInv_comp hZiso, isoInv_comp hZiso⟩)
   -- reflect to a fibre cover `Cover fN`.
   have hfN_cov : Cover fN := homInclL_cover_reflects L hL hcons hmono fN hstagefN_cov
   -- 3. fibre PTC on the chosen pullback of `(fN, gN)` gives `Cover (chosen π₂)`.

@@ -59,9 +59,6 @@ theorem rel_of_largest_eq (amen : AmenableCongruence 𝒜) {a b : 𝒜} {X Y : a
   exact amen.cong.trans h1 h2
 
 
-/-- Every morphism is below the largest element of its class: `R ⊑ R⁺`. -/
-theorem self_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (X : a ⟶ b) :
-    X ⊑ amen.largest X := amen.largest_max (amen.cong.refl X)
 
 end LargestCalculus
 

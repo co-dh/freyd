@@ -40,9 +40,6 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
   These are pure §1.5 facts; none mentions the colimit.  They let the germ-transport reason about
   `Subobject.le` up to equivalence (mutual `≤`) without pinning a particular limit/colimit choice. -/
 
-/-- Two subobjects are EQUIVALENT (`≈`) when each is `≤` the other (antisymmetry up to iso). -/
-def Subobject.Equiv {B : 𝒞} (S T : Subobject 𝒞 B) : Prop := S.le T ∧ T.le S
-
 theorem Subobject.Equiv.refl {B : 𝒞} (S : Subobject 𝒞 B) : S.Equiv S := ⟨S.le_refl, S.le_refl⟩
 
 theorem Subobject.Equiv.symm {B : 𝒞} {S T : Subobject 𝒞 B} (h : S.Equiv T) : T.Equiv S := ⟨h.2, h.1⟩

@@ -426,10 +426,8 @@ theorem map_dom {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [All
   show T.map (Cat.id a ∩ R ≫ R°) = Cat.id _ ∩ T.map R ≫ (T.map R)°
   rw [T.map_inter, T.map_id, T.map_comp, T.map_recip]
 
-/-- `X` is a terminator (predicate form; the shape of the §2.154 "preserves terminators"
-    clause carried by `RegRep` below). -/
-def IsTerm {D : Type u₁} [Cat.{v} D] (X : D) : Prop :=
-  ∀ Y : D, ∃ f : Y ⟶ X, ∀ g : Y ⟶ X, g = f
+-- The §2.154 "preserves terminators" clause carried by `RegRep` below uses `Horn.IsTerminalObj`
+-- (the predicate `∀ Y, ∃! f : Y ⟶ X`, imported from S1_444).
 
 -- carrier universes may differ, but the HOM universe `v` must match on both sides
 -- (`RegularFunctor` lives at a single hom universe).
@@ -495,7 +493,7 @@ theorem mapRep_pres_image :
 /-- **§2.154**: a UNITARY `T'` preserves TERMINATORS: the terminator of `Map 𝒜` is the
     unit, `T` sends it to a unit, and units are terminators in `Map ℬ` (§2.15). -/
 theorem mapRep_pres_term (hu : IsUnit (T.obj (UnitaryAllegory.unit_obj (𝒜 := A)))) :
-    @IsTerm (MapObj B) (mapCat (𝒜 := B)) (T.obj (UnitaryAllegory.unit_obj (𝒜 := A))) := by
+    @Freyd.Horn.IsTerminalObj (MapObj B) (mapCat (𝒜 := B)) (T.obj (UnitaryAllegory.unit_obj (𝒜 := A))) := by
   intro Y
   obtain ⟨E, hE⟩ := hu.2 Y
   refine ⟨⟨E, map_of_entire_to_partialUnit hu.1 hE⟩, fun g => ?_⟩
@@ -612,7 +610,7 @@ section RelSide
     `relUnitaryAllegory`'s designated unit `⟨1⟩` to any terminal object — the form needed
     for `Rel F`, whose value on the unit is the `F`-image of the terminator.) -/
 theorem relIsUnit_of_terminal {D : Type u} [Cat.{u} D] [RegularCategory D]
-    {T : D} (hT : @IsTerm D _ T) : IsUnit (⟨T⟩ : RelObj D) := by
+    {T : D} (hT : @Freyd.Horn.IsTerminalObj D _ T) : IsUnit (⟨T⟩ : RelObj D) := by
   constructor
   · -- partial unit: both legs of any table over `T` are THE map to the terminator.
     intro x
@@ -731,8 +729,8 @@ theorem allegFunctor_ext {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} �
   rfl
 
 /-- Terminality is preserved along an isomorphism. -/
-theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @IsTerm D _ X)
-    (e : X ⟶ Y) (he : IsIso e) : @IsTerm D _ Y := by
+theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
+    (e : X ⟶ Y) (he : IsIso e) : @Freyd.Horn.IsTerminalObj D _ Y := by
   intro W
   obtain ⟨f, hf⟩ := hX W
   obtain ⟨e', _he1, he2⟩ := he
@@ -743,8 +741,8 @@ theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @IsTerm D _ 
     _ = f ≫ e := by rw [hf (g ≫ e')]
 
 /-- Any two terminators are isomorphic. -/
-theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @IsTerm D _ X)
-    (hY : @IsTerm D _ Y) : ∃ e : X ⟶ Y, IsIso e := by
+theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
+    (hY : @Freyd.Horn.IsTerminalObj D _ Y) : ∃ e : X ⟶ Y, IsIso e := by
   obtain ⟨u, _⟩ := hY X
   obtain ⟨v, _⟩ := hX Y
   refine ⟨u, v, ?_, ?_⟩
@@ -753,17 +751,9 @@ theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @IsTerm D _ X)
   · obtain ⟨w, hw⟩ := hY Y
     rw [hw (v ≫ u), hw (Cat.id Y)]
 
-/-- Functors carry isomorphisms to isomorphisms. -/
-theorem functor_isIso {C : Type u₁} {D : Type u₂} [Cat.{v} C] [Cat.{v} D]
-    {F : Functor C D} {X Y : C} {e : X ⟶ Y} (he : IsIso e) :
-    IsIso (F.map e) := by
-  obtain ⟨e', h1, h2⟩ := he
-  exact ⟨F.map e', by rw [← F.map_comp, h1, F.map_id],
-    by rw [← F.map_comp, h2, F.map_id]⟩
-
-/-- The chosen terminator satisfies `IsTerm`. -/
+/-- The chosen terminator satisfies `Horn.IsTerminalObj`. -/
 theorem isTerm_one {D : Type u₁} [Cat.{v} D] [HasTerminal D] :
-    @IsTerm D _ (Freyd.one (𝒞 := D)) :=
+    @Freyd.Horn.IsTerminalObj D _ (Freyd.one (𝒞 := D)) :=
   fun Y => ⟨Freyd.term Y, fun g => Freyd.term_uniq g (Freyd.term Y)⟩
 
 /-- **§2.154**: a SMALL REGULAR CATEGORY (bundled). -/
@@ -793,7 +783,7 @@ structure RegRep (C D : SmallRegCat.{u}) : Type u where
   regular : @RelFunctor.RegularFunctor C.carrier D.carrier C.cat D.cat
     ({ obj := obj, map := @map, map_id := map_id, map_comp := @map_comp } :
       @Functor C.carrier D.carrier C.cat D.cat) C.reg D.reg
-  term : @IsTerm D.carrier D.cat (obj (Freyd.one (𝒞 := C.carrier)))
+  term : @Freyd.Horn.IsTerminalObj D.carrier D.cat (obj (Freyd.one (𝒞 := C.carrier)))
 
 /-- The bundled functor of a `RegRep`. -/
 def RegRep.functor {C D : SmallRegCat.{u}} (F : RegRep C D) :
@@ -857,7 +847,7 @@ instance : Cat.{u} SmallRegCat.{u} where
         obtain ⟨e, he⟩ := isTerm_iso (isTerm_one (D := D.carrier)) F.term
         exact isTerm_transfer G.term
           (G.functor.map e)
-          (@functor_isIso _ _ D.cat E.cat G.functor _ _ e he) }
+          (functor_preserves_iso (F := G.functor) e he) }
   id_comp _ := rfl
   comp_id _ := rfl
   assoc _ _ _ := rfl

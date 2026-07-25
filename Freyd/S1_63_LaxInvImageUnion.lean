@@ -22,7 +22,7 @@
   `pullback_subobject_le` (`Freyd/S1_43`, `Freyd/ColimitInvImageUnion`).
 
   The per-stage germ-preservation steps reuse the committed lax keystones verbatim:
-    * inverse image is a pullback, `objIncl N` preserves pullbacks (`objInclL_preserves_pullbacks`);
+    * inverse image is a pullback, `objIncl N` preserves pullbacks (`stageInclFunctorL_preservesPullbacks`);
     * union is the image of a copairing, `objIncl N` preserves coproducts + images
       (`objInclL_preserves_coproducts`, `objInclL_preserves_images`);
     * `stageInclL` sends a stage `Subobject.le` to a colimit one (`germSubL_le`).
@@ -34,7 +34,6 @@
   colimit unchanged.  Mathlib-free.  Single universe `{w, w}` (the equalizer-derived pullback germ).
 -/
 import Freyd.S1_63_ColimitInvImageUnion
-import Freyd.S1_543_LaxGermPullbacks
 import Freyd.S1_543_LaxGermCoproduct
 import Freyd.S1_543_LaxGermImages
 import Freyd.S1_543_LaxColimitImages
@@ -56,18 +55,10 @@ namespace Freyd
 universe v u
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-- A mono post-composed with an iso is mono. -/
-theorem monic_postcomp_iso {X Y Z : 𝒞} {f : X ⟶ Y} {j : Y ⟶ Z}
-    (hf : Monic f) (hj : IsIso j) : Monic (f ≫ j) := by
-  obtain ⟨jj, hj1, _⟩ := hj
-  intro W u v huv
-  apply hf
-  have := congrArg (fun t => t ≫ jj) huv
-  simpa only [Cat.assoc, hj1, Cat.comp_id] using this
-
-/-- Transport a subobject `S ⊆ B` along an iso `e : B → B'` (post-compose the arrow). -/
+/-- Transport a subobject `S ⊆ B` along an iso `e : B → B'` (post-compose the arrow).  "mono ≫ iso is
+    mono" is `LaxColim.mono_postcomp_iso'` (RatCapHcanon, general hom universe). -/
 def subConj {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) : Subobject 𝒞 B' :=
-  Subobject.mk S.dom (S.arr ≫ e) (monic_postcomp_iso S.monic he)
+  Subobject.mk S.dom (S.arr ≫ e) (LaxColim.mono_postcomp_iso' S.monic he)
 
 theorem subConj_arr {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) :
     (subConj e he S).arr = S.arr ≫ e := rfl
@@ -182,7 +173,7 @@ end Freyd
   `germSubL X` is the `stageInclL`-germ of a stage subobject `X ⊆ y` (of `L.A N`), a subobject of
   `objIncl N y = ⟨N, y⟩` in the colimit — the lax mirror of `Colim.germSub`.  `invImage_germ_equivL` /
   `union_germ_equivL` are the lax mirrors of `Colim.invImage_germ_equiv` / `Colim.union_germ_equiv`,
-  proved from the committed lax keystones `objInclL_preserves_pullbacks` /
+  proved from the committed lax keystones `stageInclFunctorL_preservesPullbacks` /
   `objInclL_preserves_coproducts` / `objInclL_preserves_images`. -/
 
 namespace Freyd.LaxColim
@@ -231,7 +222,7 @@ theorem germSubL_equiv (hmono : TransMonoL L) {N : ι} {y : L.A N} {X Y : Subobj
 set_option maxHeartbeats 1000000 in
 /-- **Lax `invImage_germ_equiv`.**  The colimit inverse image of a germ is the germ of the stage
     inverse image (a pullback): `(stageInclL f_N)#(germSubL X_N) ≈ germSubL (pbSub f_N X_N)`, via
-    `objInclL_preserves_pullbacks` + `pullback_subobject_le` (in both directions). -/
+    `stageInclFunctorL_preservesPullbacks` + `pullback_subobject_le` (in both directions). -/
 theorem invImage_germ_equivL (hmono : TransMonoL L) [Nonempty ι]
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
     [hpull : @HasPullbacks (Obj L) (laxColimCat L hL)]
@@ -246,7 +237,7 @@ theorem invImage_germ_equivL (hmono : TransMonoL L) [Nonempty ι]
   letI : HasTerminal (L.A N) := tData.ht N
   letI : HasBinaryProducts (L.A N) := pData.hp N
   letI : HasEqualizers (L.A N) := eqData.he N
-  have himgPB := objInclL_preserves_pullbacks L hL tData pData eqData N f_N X_N.arr
+  have himgPB := stageInclFunctorL_preservesPullbacks L hL tData pData eqData N f_N X_N.arr
   have hcanon : (HasPullbacks.has (stageInclL L hL f_N)
       (germSubL L hL hmono X_N).arr).cone.IsPullback := HasPullback.cone_isPullback _
   exact ⟨pullback_subobject_le himgPB

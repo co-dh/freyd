@@ -350,31 +350,10 @@ theorem psi_unionU [UnionAllegory 𝒜] {a p c : 𝒜} (f : a ⟶ c) (g : p ⟶ 
 
 /-! ### Modular meet calculus: maps distribute over intersection (§2.136)
 
-  Two genuinely-new modular-law facts, proved Sorry-free, that the §2.228(a)
-  transport needs.  `simple_comp_inter` is Freyd §2.136 (`F(R∩S) = FR ∩ FS`
-  for `F` simple); `modular_le_left` is the left-handed companion of
-  `modular_le` (`(R≫S)∩T ⊑ R≫(S ∩ R°≫T)`), obtained by reciprocating the
-  right modular law.  Together they drive the source-apex round-trip below. -/
-
-/-- **§2.136**: a simple morphism distributes over intersection on the left,
-    `F ≫ (R ∩ S) = (F ≫ R) ∩ (F ≫ S)` for `F` simple.  Proved by reciprocating
-    and applying the right modular law, using `F° ≫ F ⊑ 1`. -/
-theorem simple_comp_inter [UnionAllegory 𝒜] {a b c : 𝒜} {F : a ⟶ b}
-    (hF : Simple F) (R S : b ⟶ c) : F ≫ (R ∩ S) = (F ≫ R) ∩ (F ≫ S) := by
-  apply le_antisymm
-  · exact le_inter (comp_mono_left F (inter_lb_left R S)) (comp_mono_left F (inter_lb_right R S))
-  have hgoal : ((F ≫ R) ∩ (F ≫ S))° ⊑ (F ≫ (R ∩ S))° := by
-    rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_comp,
-        Allegory.recip_comp, Allegory.recip_inter]
-    refine le_trans (modular_le R° F° (S° ≫ F°)) ?_
-    apply comp_mono_right
-    apply le_inter (inter_lb_left _ _)
-    refine le_trans (inter_lb_right _ _) ?_
-    rw [Allegory.recip_recip, Cat.assoc]
-    calc S° ≫ (F° ≫ F) ⊑ S° ≫ Cat.id b := comp_mono_left S° hF
-      _ = S° := Cat.comp_id S°
-  have := recip_mono hgoal
-  rwa [Allegory.recip_recip, Allegory.recip_recip] at this
+  `modular_le_left` is the left-handed companion of `modular_le`
+  (`(R≫S)∩T ⊑ R≫(S ∩ R°≫T)`), obtained by reciprocating the right modular law; it
+  drives the source-apex round-trip below.  (Freyd §2.136, `F(R∩S) = FR ∩ FS` for `F`
+  simple, is `simple_dist_inter` in `S2_1` — proved without `UnionAllegory`; use that.) -/
 
 /-- The **left modular law** in order form: `(R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T)`.
     The reciprocal companion of `modular_le`; both are pure modular-law facts. -/
@@ -954,33 +933,7 @@ theorem tab_transport_gap [UnionAllegory 𝒜]
   rw [hUeq] at hRU hSU hTU
   exact interUnionU_distrib_of_srcTabulation hF hG hmonic hRU hSU hTU
 
-/-- **§2.228(a)**: a tabular union allegory satisfies the intersection-over-
-    union distributive law, hence is distributive.
 
-    By `interUnionDistrib_iff_le` it suffices to prove the *reverse*
-    containment `R ∩ (S∪T) ⊑ (R∩S) ∪ (R∩T)`; the forward one is free.
-
-    SORRY-FREE (Task 2): the remaining containment is Freyd's source-apex argument
-    — `srcTabulation_exists` builds a SOURCE-apex jointly-monic map span of
-    `U := R ∪ S ∪ T` (§2.16(10): split `F₀F₀° ∩ G₀G₀°` of a semi-simple
-    factorisation), and `interUnionU_distrib_of_srcTabulation` transports the
-    distributive coreflexive lattice back via the §2.143 order-iso.  Needs the
-    faithful explicit hypotheses `hss` (semi-simplicity) and `hsplit` (effective
-    splitting) — taken as `Prop`s over the single `UnionAllegory` instance to dodge
-    the `UnionAllegory`/`EffectiveAllegory` `Allegory`-diamond.  A tabular union
-    allegory satisfies both (every tabular morphism is semi-simple, every symmetric
-    idempotent splits in a tabular/effective allegory); the binders make that
-    explicit without a non-defeq second `Allegory` instance. -/
-theorem interUnionDistrib_of_tabular [UnionAllegory 𝒜]
-    (hss : ∀ {a b : 𝒜} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem 𝒜)
-    (_h : ∀ {a b : 𝒜} (R : a ⟶ b), Tabular R) : InterUnionDistrib 𝒜 := by
-  rw [interUnionDistrib_iff_le]
-  intro a b R S T
-  -- R, S, T all sit below U := R ∪ S ∪ T; transport along the source-apex span of U.
-  have hRU : R ⊑ R ∪ᵤ S ∪ᵤ T := le_trans (le_unionU_left _ _) (le_unionU_left _ _)
-  have hSU : S ⊑ R ∪ᵤ S ∪ᵤ T := le_trans (le_unionU_right _ _) (le_unionU_left _ _)
-  have hTU : T ⊑ R ∪ᵤ S ∪ᵤ T := le_unionU_right _ _
-  exact tab_transport_gap hss hsplit hRU hSU hTU
 
 
 /-! ## §2.228(b)  A semi-simple union allegory is distributive
@@ -1020,6 +973,31 @@ theorem interUnionDistrib_of_semiSimple [UnionAllegory 𝒜]
   rw [interUnionDistrib_iff_le]
   intro a b R S T
   exact semiSimple_transport_gap h hsplit (h R) (h S) (h T)
+
+/-- **§2.228(a)**: a tabular union allegory satisfies the intersection-over-
+    union distributive law, hence is distributive.
+
+    By `interUnionDistrib_iff_le` it suffices to prove the *reverse*
+    containment `R ∩ (S∪T) ⊑ (R∩S) ∪ (R∩T)`; the forward one is free.
+
+    SORRY-FREE (Task 2): the remaining containment is Freyd's source-apex argument
+    — `srcTabulation_exists` builds a SOURCE-apex jointly-monic map span of
+    `U := R ∪ S ∪ T` (§2.16(10): split `F₀F₀° ∩ G₀G₀°` of a semi-simple
+    factorisation), and `interUnionU_distrib_of_srcTabulation` transports the
+    distributive coreflexive lattice back via the §2.143 order-iso.  Needs the
+    faithful explicit hypotheses `hss` (semi-simplicity) and `hsplit` (effective
+    splitting) — taken as `Prop`s over the single `UnionAllegory` instance to dodge
+    the `UnionAllegory`/`EffectiveAllegory` `Allegory`-diamond.  A tabular union
+    allegory satisfies both (every tabular morphism is semi-simple, every symmetric
+    idempotent splits in a tabular/effective allegory); the binders make that
+    explicit without a non-defeq second `Allegory` instance. -/
+theorem interUnionDistrib_of_tabular [UnionAllegory 𝒜]
+    (hss : ∀ {a b : 𝒜} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem 𝒜)
+    (_h : ∀ {a b : 𝒜} (R : a ⟶ b), Tabular R) : InterUnionDistrib 𝒜 :=
+  -- The tabularity hypothesis is not used: semi-simplicity and splitting already suffice, which is
+  -- `interUnionDistrib_of_semiSimple` below.  §2.228(a) is a book-numbered deliverable, so the
+  -- statement stays; only its (duplicate) derivation is gone.
+  interUnionDistrib_of_semiSimple hsplit hss
 
 /-! ## §2.228(c)  Necessity of one of the two hypotheses
 
@@ -1476,12 +1454,6 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-! ## Generic `Sup` helpers (in the base allegory `𝒜`) -/
 
-/-- `Sup` of two propositionally-equal predicates agree. -/
-theorem gcSup_congr {a b : 𝒜} {P Q : (a ⟶ b) → Prop} (h : ∀ T, P T ↔ Q T) :
-    Sup P = Sup Q := by
-  have hPQ : P = Q := funext fun T => propext (h T)
-  rw [hPQ]
-
 /-- If every member of `P` is below `𝟘`, the supremum is `𝟘`. -/
 theorem gcSup_eq_zero {a b : 𝒜} {P : (a ⟶ b) → Prop}
     (h : ∀ T, P T → T ⊑ (𝟘 : a ⟶ b)) : Sup P = (𝟘 : a ⟶ b) :=
@@ -1611,7 +1583,7 @@ theorem globalRecip_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : 
   change (Sup (fun T => ∃ j, T = R i j ≫ S j k))°
        = Sup (fun T' => ∃ j, T' = (S j k)° ≫ (R i j)°)
   rw [recip_Sup]
-  apply gcSup_congr
+  apply Sup_congr
   intro T'
   constructor
   · rintro ⟨W, ⟨j, rfl⟩, rfl⟩
@@ -1862,7 +1834,7 @@ theorem globalInter_Sup_distrib {A B : GlobalObj 𝒜} (R : GlobalMorphism A B)
       = globalSup (fun T => ∃ S, P S ∧ T = globalInter R S) := by
   funext i j
   rw [globalInter_apply, globalSup_apply, globalSup_apply, inter_Sup_distrib]
-  apply gcSup_congr
+  apply Sup_congr
   intro V
   constructor
   · rintro ⟨U, ⟨S, hS, rfl⟩, rfl⟩

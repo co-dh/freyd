@@ -178,6 +178,14 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 def matId (X : MatObj 𝒜) : MatHom X X :=
   fun i j => if h : i = j then (by subst h; exact Cat.id (X.objs i)) else 𝟘
 
+/-- Diagonal entry of the matrix identity. -/
+theorem matId_diag {X : MatObj 𝒜} (i : Fin X.n) : matId X i i = Cat.id (X.objs i) := by
+  simp only [matId, ↓reduceDIte]
+
+/-- Off-diagonal entry of the matrix identity. -/
+theorem matId_off {X : MatObj 𝒜} {i i' : Fin X.n} (h : i ≠ i') : matId X i i' = 𝟘 := by
+  simp only [matId, dif_neg h]
+
 def matComp {X Y Z : MatObj 𝒜} (M : MatHom X Y) (N : MatHom Y Z) : MatHom X Z :=
   fun i k => finJoin (fun j => M i j ≫ N j k)
 
@@ -678,9 +686,6 @@ theorem mInrR_castAdd (X Y : MatObj 𝒜) (j : Fin X.n) (i : Fin Y.n) :
 
 /-! ### `matId` on the coproduct object. -/
 
-theorem matId_mCP_LL_diag (X Y : MatObj 𝒜) (k_l : Fin X.n) :
-    matId (mCP X Y) (Fin.castAdd Y.n k_l) (Fin.castAdd Y.n k_l)
-      = Cat.id ((mCP X Y).objs (Fin.castAdd Y.n k_l)) := by simp only [matId, ↓reduceDIte]
 theorem matId_mCP_LL_off (X Y : MatObj 𝒜) (k_l k_l' : Fin X.n) (h : k_l ≠ k_l') :
     matId (mCP X Y) (Fin.castAdd Y.n k_l) (Fin.castAdd Y.n k_l') = 𝟘 := by
   simp only [matId, dite_eq_right_iff]; intro he; exact absurd (castAdd_inj he) h
@@ -690,9 +695,6 @@ theorem matId_mCP_LR (X Y : MatObj 𝒜) (k_l : Fin X.n) (k_r : Fin Y.n) :
 theorem matId_mCP_RL (X Y : MatObj 𝒜) (k_r : Fin Y.n) (k_l : Fin X.n) :
     matId (mCP X Y) (Fin.natAdd X.n k_r) (Fin.castAdd Y.n k_l) = 𝟘 := by
   simp only [matId, dite_eq_right_iff]; intro he; exact absurd he.symm (castAdd_ne_natAdd k_l k_r)
-theorem matId_mCP_RR_diag (X Y : MatObj 𝒜) (k_r : Fin Y.n) :
-    matId (mCP X Y) (Fin.natAdd X.n k_r) (Fin.natAdd X.n k_r)
-      = Cat.id ((mCP X Y).objs (Fin.natAdd X.n k_r)) := by simp only [matId, ↓reduceDIte]
 theorem matId_mCP_RR_off (X Y : MatObj 𝒜) (k_r k_r' : Fin Y.n) (h : k_r ≠ k_r') :
     matId (mCP X Y) (Fin.natAdd X.n k_r) (Fin.natAdd X.n k_r') = 𝟘 := by
   simp only [matId, dite_eq_right_iff]; intro he; exact absurd (natAdd_inj he) h
@@ -770,7 +772,7 @@ theorem mCoprod_eq5 (X Y : MatObj 𝒜) :
   · by_cases hkk : k_l = k_l'
     · subst hkk
       rw [finJoin_diag_L, finJoin_first_zero _ _ (fun i => mInrR_castAdd X Y k_l i), union_zero,
-        matId_mCP_LL_diag]
+        matId_diag]
     · rw [finJoin_cross_LL X Y k_l k_l' hkk,
         finJoin_first_zero _ _ (fun i => mInrR_castAdd X Y k_l i), union_zero,
         matId_mCP_LL_off X Y k_l k_l' hkk]
@@ -781,7 +783,7 @@ theorem mCoprod_eq5 (X Y : MatObj 𝒜) :
   · by_cases hkk : k_r = k_r'
     · subst hkk
       rw [finJoin_diag_R, finJoin_first_zero _ _ (fun i => mInlR_natAdd X Y k_r i),
-        DistributiveAllegory.zero_union, matId_mCP_RR_diag]
+        DistributiveAllegory.zero_union, matId_diag]
     · rw [finJoin_cross_RR X Y k_r k_r' hkk,
         finJoin_first_zero _ _ (fun i => mInlR_natAdd X Y k_r i),
         DistributiveAllegory.zero_union, matId_mCP_RR_off X Y k_r k_r' hkk]

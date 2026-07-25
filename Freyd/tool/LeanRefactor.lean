@@ -337,6 +337,15 @@ private partial def leanFilesUnder (dir : System.FilePath) : IO (Array String) :
       files := files.push entry.path.toString
   pure files
 
+/-- Repository-relative `.lean` paths matching `pattern`.  Reports and returns empty if none match,
+    so every `--glob` subcommand shares one selection rule and one message. -/
+private def globSelectedFiles (pattern : String) : IO (Array String) := do
+  let files ← leanFilesUnder "."
+  let selected := files.map (fun path => if path.startsWith "./" then (path.drop 2).toString else path)
+    |>.filter (globMatches pattern)
+  if selected.isEmpty then IO.eprintln s!"glob matched no Lean files: {pattern}"
+  return selected
+
 private def moduleNameOfPath (path : String) : Except String String := do
   unless path.endsWith ".lean" do throw s!"not a Lean source file: {path}"
   let relative := if path.startsWith "./" then path.drop 2 else path
@@ -410,8 +419,326 @@ private def verifiedEdits (env : Environment) (path source : String) (edits : Ar
     if ← elaboratesCleanly env path (applyEdits source candidate) then kept := candidate
   pure kept
 
+private def repositoryBuild : IO IO.Process.Output :=
+  IO.Process.output { cmd := "lake", args := #["build"] }
+
+/-! ## Moving a declaration between files
+
+The dedup report (`scripts/dep_dup.py`) flags duplicate groups where no member is importable from all
+the others: collapsing those needs the survivor RELOCATED to a module every caller already imports.
+That is the one edit the subcommands above cannot express, and the one the skill calls the riskiest
+to do by hand, so it is mechanised here: cut the declaration with its docstring, splice it into the
+target inside the same namespace, and refuse the edit unless BOTH files still elaborate. -/
+
+/-- Distinct files whose `Environment` this process has built.  Re-elaborating the SAME file is
+    routine — `verifiedEdits` does it once per candidate edit — so only distinct paths are counted. -/
+initialize elaboratedFiles : IO.Ref (Array String) ← IO.mkRef #[]
+
+/-- `move` legitimately elaborates two files (the source and the target).  Nothing legitimately
+    elaborates more, so this cap bounds a process to a constant number of environments. -/
+private def maxElaboratedFiles : Nat := 2
+
+/-- Record that `path`'s environment is about to be built; refuse once the cap is reached.
+
+    An `Environment` is retained for as long as anything derived from it lives, so a loop that
+    elaborates file after file IN-PROCESS accumulates one per file: `rename --glob 'Freyd/*.lean'`
+    reached 18.3 GB resident of 30 GB and was OOM-killed by the kernel twenty minutes in, taking a
+    running agent down with it.  `forkPerFile` is the cure, but a convention cannot enforce itself —
+    the next in-process loop would reintroduce the leak silently and fail the same slow way.  So the
+    bound is CHECKED, here, at the one operation that costs the memory, and a violation fails on the
+    third file with the fix named in the message. -/
+private def claimElaboration (path : String) : IO Unit := do
+  let claimed ← elaboratedFiles.get
+  if claimed.contains path then return
+  if claimed.size ≥ maxElaboratedFiles then
+    throw <| IO.userError <|
+      s!"lean-refactor: refusing to build a {claimed.size + 1}th file environment in one process " ++
+      s!"({path}; already elaborated {claimed}).  Each one is retained, so looping over files " ++
+      "in-process accumulates them and runs the machine out of memory.  Drive the loop with " ++
+      "`forkPerFile` instead — one child process per file."
+  elaboratedFiles.set (claimed.push path)
+
+/-- Source text, file map and command syntax of `path`.  Lean's parser is extensible, so a file
+    using custom notation cannot be parsed without the environment its imports build — hence a full
+    elaboration rather than a bare parse. -/
+private def elaborateFile (path : String) : IO (String × FileMap × Array Syntax × Environment) := do
+  claimElaboration path
+  let moduleName ← IO.ofExcept (moduleNameOfPath path)
+  let source ← IO.FS.readFile path
+  let ctx := Parser.mkInputContext source path
+  let (header, parserState, messages) ← Parser.parseHeader ctx
+  let (env, messages) ← Elab.processHeader header {} messages ctx (mainModule := parseName moduleName)
+  if messages.hasErrors then
+    for msg in messages.toList do IO.eprintln (← msg.toString)
+    throw <| IO.userError s!"{path}: imports failed to elaborate"
+  let frontend ← Elab.IO.processCommands ctx parserState (Elab.Command.mkState env {} {})
+  pure (source, ctx.fileMap, frontend.commands, env)
+
+/-- Re-elaborate a whole file (imports included) from candidate `source` text. -/
+private def fileElaboratesCleanly (path source : String) : IO Bool := do
+  claimElaboration path
+  let ctx := Parser.mkInputContext source path
+  let (header, parserState, messages) ← Parser.parseHeader ctx
+  if messages.hasErrors then return false
+  let moduleName := match moduleNameOfPath path with | .ok n => n | .error _ => path
+  let (env, messages) ← Elab.processHeader header {} messages ctx (mainModule := parseName moduleName)
+  if messages.hasErrors then return false
+  elaboratesCleanly env path source
+
+/-- Namespace in force after `cmd`, given the namespace before it and the stack of enclosing scopes.
+    `section` is tracked too: it consumes an `end`, so ignoring it would pop the wrong scope. -/
+private def scopeStep (state : Name × List Name) (cmd : Syntax) : Name × List Name :=
+  let (ns, saved) := state
+  if cmd.isOfKind ``Lean.Parser.Command.namespace then
+    match cmd.getArgs[1]? with
+    | some ident => (ns ++ ident.getId, ns :: saved)
+    | none => state
+  else if cmd.isOfKind ``Lean.Parser.Command.section then (ns, ns :: saved)
+  else if cmd.isOfKind ``Lean.Parser.Command.end then
+    match saved with
+    | previous :: rest => (previous, rest)
+    | [] => state
+  else state
+
+/-- The name a `declaration` command introduces, relative to its enclosing namespace. -/
+private partial def declIdName? (stx : Syntax) : Option Name :=
+  if stx.isOfKind ``Lean.Parser.Command.declId then stx.getArgs[0]?.map (·.getId)
+  else stx.getArgs.findSome? declIdName?
+
+/-- Extend a declaration's range to whole lines, absorbing the blank line that follows it, so a cut
+    leaves neither a half-line nor a widening run of blanks. -/
+private def wholeLines (source : String) (range : Lean.Syntax.Range) : String.Pos.Raw × String.Pos.Raw :=
+  let start := Id.run do
+    let mut p := range.start
+    while p.byteIdx > 0 do
+      let previous := p.unoffsetBy ⟨1⟩
+      if String.Pos.Raw.extract source previous p == "\n" then break else p := previous
+    return p
+  let stop := Id.run do
+    let mut p := range.stop
+    let mut newlines := 0
+    while !p.atEnd source && newlines < 2 do
+      let next := p.next source
+      let char := String.Pos.Raw.extract source p next
+      if char == "\n" then newlines := newlines + 1
+      else if char != " " && char != "\t" then break
+      p := next
+    return p
+  (start, stop)
+
+/-- Locate `declName` in `commands`: its cut range and the namespace open around it. -/
+private def declarationSite (source : String) (commands : Array Syntax) (declName : String) :
+    Except String ((String.Pos.Raw × String.Pos.Raw) × Name) := Id.run do
+  let wanted := parseName declName
+  let mut state := (Name.anonymous, ([] : List Name))
+  for cmd in commands do
+    if cmd.isOfKind ``Lean.Parser.Command.declaration then
+      if let some short := declIdName? cmd then
+        if state.1 ++ short == wanted then
+          let some range := cmd.getRange? | return .error s!"`{declName}` has no source range"
+          return .ok (wholeLines source range, state.1)
+    state := scopeStep state cmd
+  return .error s!"no declaration named `{declName}` in this file"
+
+/-- Where to splice a declaration whose namespace is `ns`: after the LAST command of the target that
+    sits in exactly that namespace, so the surrounding `namespace`/`end` already match and the
+    arrival is in scope for nothing that precedes it.  `none` if the target never opens `ns`.
+
+    Scope commands are skipped, not just tested: `end ns` is itself reached with `ns` still open, so
+    counting it puts the declaration one line PAST the `end` — at the root namespace, where it
+    elaborates perfectly well under the wrong name and only fails at its call sites. -/
+private def insertionPoint? (commands : Array Syntax) (ns : Name) : Option String.Pos.Raw := Id.run do
+  let mut state := (Name.anonymous, ([] : List Name))
+  let mut best := none
+  for cmd in commands do
+    let isScope := cmd.isOfKind ``Lean.Parser.Command.namespace ||
+      cmd.isOfKind ``Lean.Parser.Command.section || cmd.isOfKind ``Lean.Parser.Command.end
+    if state.1 == ns && !isScope then
+      if let some tail := cmd.getTailPos? then best := some tail
+    state := scopeStep state cmd
+  return best
+
+private def moveDeclaration (sourcePath declName targetPath : String) (apply : Bool) : IO UInt32 := do
+  initSearchPath (← findSysroot)
+  let (source, _, sourceCommands, _) ← elaborateFile sourcePath
+  let ((start, stop), ns) ← match declarationSite source sourceCommands declName with
+    | .ok site => pure site
+    | .error message => IO.eprintln s!"{sourcePath}: {message}"; return 1
+  let text := (String.Pos.Raw.extract source start stop).trimAscii.toString
+  let (target, _, targetCommands, _) ← elaborateFile targetPath
+  let some anchor := insertionPoint? targetCommands ns
+    | IO.eprintln s!"{targetPath}: never opens namespace `{ns}`, so `{declName}` has nowhere to land"
+      return 1
+  let newSource := applyEdits source #[{ start, stop, line := 0 }]
+  let newTarget := applyEdits target #[{ start := anchor, stop := anchor, line := 0,
+                                         replacement := "\n\n" ++ text }]
+  IO.println s!"move `{declName}` ({text.length} bytes, namespace `{ns}`)"
+  IO.println s!"  from {sourcePath}  to {targetPath}"
+  unless apply do IO.println "preview only; pass --apply to write"; return 0
+  IO.FS.writeFile targetPath newTarget
+  IO.FS.writeFile sourcePath newSource
+  let restore : IO Unit := do
+    IO.FS.writeFile targetPath target; IO.FS.writeFile sourcePath source
+  -- The declaration may have leaned on `variable`s of the section it is leaving, or on dependencies
+  -- the target cannot reach; both surface here, in one cheap elaboration, before any build.
+  unless ← fileElaboratesCleanly targetPath newTarget do
+    restore
+    IO.eprintln (s!"{targetPath} does not elaborate with `{declName}` added (it needs `variable`s " ++
+      "or dependencies not available there); both files restored")
+    return 1
+  -- The SOURCE cannot be checked in-process: it now resolves the declaration through the target's
+  -- `.olean`, which is still the pre-move one until the target is recompiled.  So the gate for that
+  -- side is a real build, as for binder removal.
+  IO.println "verifying the repository after the move..."
+  let build ← repositoryBuild
+  if build.exitCode == 0 then
+    IO.println s!"whole-repository build passed; `{declName}` now lives in {targetPath}"
+    return 0
+  restore
+  IO.eprintln build.stdout
+  IO.eprintln s!"whole-repository build failed after moving `{declName}`; both files restored"
+  return 1
+
+/-- Does `line` use `name` as a standalone identifier (not as part of a longer one)? -/
+private def isIdentifierUse (line name : String) : Bool := Id.run do
+  let isPart (c : Char) := c.isAlphanum || c == '_' || c == '\'' || c == '.'
+  let chars := line.toList
+  let target := name.toList
+  let mut rest := chars
+  let mut previous : Option Char := none
+  while !rest.isEmpty do
+    if rest.take target.length == target then
+      let after := rest.drop target.length
+      if !previous.any isPart && !(after.head?.any isPart) then return true
+    previous := rest.head?
+    rest := rest.drop 1
+  return false
+
+/-- Rewrite every reference to `declName` in `path` to `replacement`, resolved semantically: the
+    `.ilean` reference data first, then this module's own info trees, and only then identifier
+    syntax.  The declaration's own binding site is left alone — renaming a use is not renaming a
+    definition, and the two are different edits. -/
+private def renameReferences (path moduleName declName replacement : String) (apply : Bool) :
+    IO UInt32 := do
+  claimElaboration path
+  initSearchPath (← findSysroot)
+  let source ← IO.FS.readFile path
+  let inputCtx := Parser.mkInputContext source path
+  let (header, parserState, headerMessages) ← Parser.parseHeader inputCtx
+  let (env, headerMessages) ← Elab.processHeader header {} headerMessages inputCtx
+    (mainModule := parseName moduleName)
+  unless !headerMessages.hasErrors do
+    for msg in headerMessages.toList do IO.eprintln (← msg.toString)
+    return 1
+  let frontend ← Elab.IO.processCommands inputCtx parserState (Elab.Command.mkState env {} {})
+  let references := Server.findModuleRefs inputCtx.fileMap
+    frontend.commandState.infoState.trees.toArray (localVars := false)
+  let (liveReferences, _) ← references.toLspModuleRefs
+  let mut sites := usageSitesNamed liveReferences declName
+  if sites.isEmpty then
+    for cmd in frontend.commands do
+      sites := sites ++ syntaxSitesNamed inputCtx.fileMap declName cmd
+  if sites.isEmpty then IO.println s!"{path}: no reference to `{declName}`"; return 0
+  let edits := sites.map fun site =>
+    { start := inputCtx.fileMap.lspPosToUtf8Pos site.range.start,
+      stop := inputCtx.fileMap.lspPosToUtf8Pos site.range.end,
+      line := site.range.start.line + 1, replacement }
+  for edit in edits do
+    IO.println s!"{path}:{edit.line}: {repr (String.Pos.Raw.extract source edit.start edit.stop)} -> {repr replacement}"
+  unless apply do IO.println "preview only; pass --apply to write"; return 0
+  let updated := applyEdits source (independentEdits edits).1
+  IO.FS.writeFile path updated
+  unless ← elaboratesCleanly env path updated do
+    IO.FS.writeFile path source
+    IO.eprintln s!"{path}: rewriting `{declName}` to `{replacement}` does not elaborate; restored"
+    return 1
+  IO.println s!"applied {edits.size} rename(s) to {path}"
+  -- The info trees do not record EVERY occurrence — `unfold`'s arguments, among others, resolve
+  -- without leaving a term reference — so a semantic pass can silently half-rename a file and only
+  -- break once the old declaration is deleted.  Say so rather than report a clean run.
+  let short := (declName.splitOn ".").getLastD declName
+  let leftovers := (updated.splitOn "\n").zipIdx.filterMap fun (line, i) =>
+    if isIdentifierUse line short then some (i + 1) else none
+  unless leftovers.isEmpty do
+    IO.eprintln s!"{path}: `{short}` still occurs on line(s) {leftovers} — the info trees did not"
+    IO.eprintln "  resolve those; check them by hand before deleting the declaration"
+  return 0
+
+/-- Run one `lean-refactor` subcommand per matching file, each in a CHILD process.
+
+    Elaborating a file retains its whole `Environment`, so looping over a glob IN-PROCESS
+    accumulates one environment per file.  Measured: a `rename --glob 'Freyd/*.lean'` over 200+
+    modules reached 18.3 GB resident and was OOM-killed.  A child per file hands the memory back at
+    every step, and one file's failure no longer takes the run down. -/
+private def forkPerFile (pattern : String) (childArgs : String → Array String) : IO UInt32 := do
+  let selected ← globSelectedFiles pattern
+  if selected.isEmpty then return 1
+  let mut status : UInt32 := 0
+  for path in selected do
+    let output ← IO.Process.output { cmd := "lake", args := #["exe", "lean-refactor"] ++ childArgs path }
+    unless output.stdout.isEmpty do IO.print output.stdout
+    unless output.stderr.isEmpty do IO.eprint output.stderr
+    if output.exitCode != 0 then status := output.exitCode
+  return status
+
+private def renameGlob (pattern declName replacement : String) (apply : Bool) : IO UInt32 :=
+  forkPerFile pattern fun path =>
+    #["rename-file", path, declName, replacement] ++ (if apply then #["--apply"] else #[])
+
+/-! ## Token renaming (syntax-atom-anchored, for notation)
+
+`rename-token` rewrites a notation token (like `⊆c` → `⊆ₛ`) by walking the elaborated command
+syntax tree and replacing every `Syntax.atom` node whose value matches `<old-token>`.  Because it
+operates on the parse tree, it never touches a token inside a docstring, comment or string literal —
+those are not atom nodes.  The file is elaborated first so that the repo's own custom notation
+parses correctly. -/
+
+private partial def renameTokenAtoms (stx : Syntax) (oldToken newToken : String)
+    (fileMap : FileMap) : Array Edit := Id.run do
+  let mut edits := #[]
+  for child in stx.getArgs do
+    edits := edits ++ renameTokenAtoms child oldToken newToken fileMap
+  match stx with
+  | .atom _ val =>
+    if val.trimAscii.toString == oldToken then
+      if let some range := stx.getRange? then
+        let ln := (fileMap.toPosition range.start).line + 1
+        edits := edits.push { start := range.start, stop := range.stop, line := ln, replacement := newToken }
+  | _ => pure ()
+  return edits
+
+private def renameTokenFile (path oldToken newToken : String) (apply : Bool) : IO UInt32 := do
+  initSearchPath (← findSysroot)
+  let (source, fileMap, commands, _) ← elaborateFile path
+  let mut edits := #[]
+  for cmd in commands do
+    edits := edits ++ renameTokenAtoms cmd oldToken newToken fileMap
+  if edits.isEmpty then
+    IO.println s!"{path}: no atom `{oldToken}` in parse tree"
+    return 0
+  let (selected, deferred) := independentEdits edits
+  if deferred > 0 then
+    IO.println s!"deferred {deferred} overlapping token edit(s)"
+  for edit in selected do
+    let old := String.Pos.Raw.extract source edit.start edit.stop
+    IO.println s!"{path}:{edit.line}: {repr old} -> {repr newToken}"
+  unless apply do IO.println "preview only; pass --apply to write"; return 0
+  let updated := applyEdits source selected
+  IO.FS.writeFile path updated
+  unless ← fileElaboratesCleanly path updated do
+    IO.FS.writeFile path source
+    IO.eprintln s!"{path}: token rename does not elaborate; restored"
+    return 1
+  IO.println s!"applied {selected.size} token rename(s) to {path}"
+  return 0
+
+private def renameTokenGlob (pattern oldToken newToken : String) (apply : Bool) : IO UInt32 :=
+  forkPerFile pattern fun path =>
+    #["rename-token", path, oldToken, newToken] ++ (if apply then #["--apply"] else #[])
+
 private def refactorSuggestedWarnings (selector : WarningSelector) (apply : Bool)
     (tryRemoval := false) (includeVariables := true) : IO UInt32 := do
+  claimElaboration selector.path
   let moduleName ← match moduleNameOfPath selector.path with
     | .ok name => pure name
     | .error message => IO.eprintln message; return 2
@@ -505,9 +832,6 @@ private partial def refactorSuggestedWarningsUntilStable
   if before == after then return 0
   refactorSuggestedWarningsUntilStable selector (fuel - 1)
 
-private def repositoryBuild : IO IO.Process.Output :=
-  IO.Process.output { cmd := "lake", args := #["build"] }
-
 private def transactionalWarningRefactor (selector : WarningSelector) : IO UInt32 := do
   let original ← IO.FS.readFile selector.path
   let status ← refactorSuggestedWarnings selector true (tryRemoval := true)
@@ -543,10 +867,36 @@ private def showContext (fileMap : FileMap) (site : ReferenceSite)
   IO.println s!"  {String.intercalate " → " kinds}"
 
 private def usage : String :=
-  "usage:\n  lean-refactor unused <source.lean>:<line>:<column> [--apply]\n  lean-refactor unused --glob '<pattern>' [--apply]\n  lean-refactor unused-simp --glob '<pattern>' [--apply]\n  lean-refactor inspect <source.lean> <module> <declaration-module> <full-declaration-name>\n  lean-refactor remove-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <1-based-index> [--apply]\n  lean-refactor insert-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <before-1-based-index> <term> [--apply]\n  lean-refactor remove-parameter <source.lean> <module> <full-declaration-name> <binder-name> <1-based-index> [--apply]"
+  "usage:\n  lean-refactor move <source.lean> <full-declaration-name> <target.lean> [--apply]\n  lean-refactor rename <source.lean> <module> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename --glob '<pattern>' <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-file <source.lean> <full-declaration-name> <replacement> [--apply]\n  lean-refactor rename-token <source.lean> <old-token> <new-token> [--apply]\n  lean-refactor rename-token --glob '<pattern>' <old-token> <new-token> [--apply]\n  lean-refactor unused <source.lean>:<line>:<column> [--apply]\n  lean-refactor unused --glob '<pattern>' [--apply]\n  lean-refactor unused-simp --glob '<pattern>' [--apply]\n  lean-refactor inspect <source.lean> <module> <declaration-module> <full-declaration-name>\n  lean-refactor remove-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <1-based-index> [--apply]\n  lean-refactor insert-call-arg <source.lean> <module> <declaration-module> <full-declaration-name> <before-1-based-index> <term> [--apply]\n  lean-refactor remove-parameter <source.lean> <module> <full-declaration-name> <binder-name> <1-based-index> [--apply]"
 
 def main (args : List String) : IO UInt32 := do
   match args with
+  | ["move", sourcePath, declName, targetPath] =>
+      return ← moveDeclaration sourcePath declName targetPath false
+  | ["move", sourcePath, declName, targetPath, "--apply"] =>
+      return ← moveDeclaration sourcePath declName targetPath true
+  | ["rename-file", path, declName, replacement] | ["rename-file", path, declName, replacement, "--apply"] =>
+      let moduleName ← match moduleNameOfPath path with
+        | .ok n => pure n
+        | .error message => IO.eprintln message; return 2
+      return ← renameReferences path moduleName declName replacement
+        (args.getLast? == some "--apply")
+  | ["rename", "--glob", pattern, declName, replacement] =>
+      return ← renameGlob pattern declName replacement false
+  | ["rename", "--glob", pattern, declName, replacement, "--apply"] =>
+      return ← renameGlob pattern declName replacement true
+  | ["rename", path, moduleName, declName, replacement] =>
+      return ← renameReferences path moduleName declName replacement false
+  | ["rename", path, moduleName, declName, replacement, "--apply"] =>
+      return ← renameReferences path moduleName declName replacement true
+  | ["rename-token", "--glob", pattern, oldToken, newToken] =>
+      return ← renameTokenGlob pattern oldToken newToken false
+  | ["rename-token", "--glob", pattern, oldToken, newToken, "--apply"] =>
+      return ← renameTokenGlob pattern oldToken newToken true
+  | ["rename-token", path, oldToken, newToken] =>
+      return ← renameTokenFile path oldToken newToken false
+  | ["rename-token", path, oldToken, newToken, "--apply"] =>
+      return ← renameTokenFile path oldToken newToken true
   | ["unused", selector] | ["unused", selector, "--apply"] =>
       let parsed ← match parseWarningSelector selector with
         | .ok parsed => pure parsed
@@ -556,10 +906,8 @@ def main (args : List String) : IO UInt32 := do
       return ← refactorSuggestedWarnings parsed false
   | ["unused", "--glob", pattern] | ["unused", "--glob", pattern, "--apply"] =>
       let apply := args.getLast? == some "--apply"
-      let files ← leanFilesUnder "."
-      let selected := files.map (fun path => if path.startsWith "./" then (path.drop 2).toString else path)
-        |>.filter (globMatches pattern)
-      if selected.isEmpty then IO.eprintln s!"glob matched no Lean files: {pattern}"; return 1
+      let selected ← globSelectedFiles pattern
+      if selected.isEmpty then return 1
       let mut status := 0
       for path in selected do
         let code ← if apply then refactorSuggestedWarningsUntilStable { path }
@@ -571,19 +919,8 @@ def main (args : List String) : IO UInt32 := do
         (includeVariables := false)
   | ["unused-simp", "--glob", pattern] | ["unused-simp", "--glob", pattern, "--apply"] =>
       let apply := args.getLast? == some "--apply"
-      let files ← leanFilesUnder "."
-      let selected := files.map (fun path => if path.startsWith "./" then (path.drop 2).toString else path)
-        |>.filter (globMatches pattern)
-      if selected.isEmpty then IO.eprintln s!"glob matched no Lean files: {pattern}"; return 1
-      let mut status := 0
-      for path in selected do
-        let childArgs := #["exe", "lean-refactor", "unused-simp-file", path] ++
-          (if apply then #["--apply"] else #[])
-        let output ← IO.Process.output { cmd := "lake", args := childArgs }
-        unless output.stdout.isEmpty do IO.print output.stdout
-        unless output.stderr.isEmpty do IO.eprint output.stderr
-        if output.exitCode != 0 then status := output.exitCode
-      return status
+      return ← forkPerFile pattern fun path =>
+        #["unused-simp-file", path] ++ (if apply then #["--apply"] else #[])
   | _ => pure ()
   let (mode, sourcePath, moduleName, declModule, declName, binderName?, argIndex?, insertText?, apply) ← match args with
     | ["inspect", sourcePath, moduleName, declModule, declName] =>
@@ -601,6 +938,7 @@ def main (args : List String) : IO UInt32 := do
     | ["remove-parameter", sourcePath, moduleName, declName, binderName, index, "--apply"] =>
         pure ("parameter", sourcePath, moduleName, moduleName, declName, some binderName, index.toNat?, none, true)
     | _ => IO.eprintln usage; return 2
+  claimElaboration sourcePath
   let source ← IO.FS.readFile sourcePath
   let inputCtx := Parser.mkInputContext source sourcePath
   let (header, parserState, headerMessages) ← Parser.parseHeader inputCtx

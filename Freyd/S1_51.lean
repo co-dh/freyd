@@ -282,4 +282,33 @@ theorem preservesImages_reflectsImages_of_reflectsIso
 def Epic {n : Nat} (x : Fin n → Σ A : 𝒞, A ⟶ B) : Prop :=
   ∀ (X : 𝒞) (g h : B ⟶ X), (∀ i : Fin n, (x i).2 ≫ g = (x i).2 ≫ h) → g = h
 
+
+/-- Post-composing a cover with an isomorphism is still a cover (no `HasImages` needed: a direct
+    `Cover`-definition argument, since `cover_comp` from S1_56 carries an images hypothesis).  This
+    is the general `[Cat 𝒞]` fact at an arbitrary hom universe — the single home for "cover ≫ iso is
+    a cover"; downstream sections (e.g. §1.62 under `[PreLogos]`) apply it directly. -/
+theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{v} 𝒞] {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z}
+    (hf : Cover f) (he : IsIso e) : Cover (f ≫ e) := by
+  obtain ⟨einv, hee, heinv⟩ := he
+  intro C m g hm hgm
+  have hmono' : Monic (m ≫ einv) := by
+    intro W a b hab; apply hm
+    have hcomp : (a ≫ m ≫ einv) ≫ e = (b ≫ m ≫ einv) ≫ e := by rw [hab]
+    calc a ≫ m = a ≫ m ≫ (einv ≫ e) := by rw [heinv, Cat.comp_id]
+      _ = (a ≫ m ≫ einv) ≫ e := by rw [Cat.assoc, Cat.assoc]
+      _ = (b ≫ m ≫ einv) ≫ e := hcomp
+      _ = b ≫ m ≫ (einv ≫ e) := by rw [Cat.assoc, Cat.assoc]
+      _ = b ≫ m := by rw [heinv, Cat.comp_id]
+  have hfact : g ≫ (m ≫ einv) = f := by
+    calc g ≫ (m ≫ einv) = (g ≫ m) ≫ einv := by rw [Cat.assoc]
+      _ = (f ≫ e) ≫ einv := by rw [hgm]
+      _ = f ≫ (e ≫ einv) := by rw [Cat.assoc]
+      _ = f := by rw [hee, Cat.comp_id]
+  have hmiso : IsIso (m ≫ einv) := hf (m ≫ einv) g hmono' hfact
+  have hmeq : m = (m ≫ einv) ≫ e := by rw [Cat.assoc, heinv, Cat.comp_id]
+  rw [hmeq]; exact isIso_comp hmiso ⟨einv, hee, heinv⟩
+
+/-- Two subobjects are EQUIVALENT (`≈`) when each is `≤` the other (antisymmetry up to iso). -/
+def Subobject.Equiv {B : 𝒞} (S T : Subobject 𝒞 B) : Prop := S.le T ∧ T.le S
+
 end Freyd

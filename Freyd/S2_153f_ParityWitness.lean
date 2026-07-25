@@ -256,13 +256,11 @@ theorem parityRel_not_effective : ¬ IsEffective (parityRel (K := K)) := by
 
 /-! ## The headline: `Rel(Assembly K)` has a non-splitting equivalence relation
 
-  Quotient-level packaging (mirroring the `Krec`-specific bridge of `S2_153c`,
-  generic in `K`): `I := [E]` is a §2.12 equivalence relation of the allegory
-  `Rel(Assembly K)`, and no map splits it — a splitting `f` is, by §2.148-dual
-  fullness, the graph-class of an assembly morphism `q`, and `f ≫ f° = I` says
-  exactly that `E` is mutually contained with the level of `q`, killed by
-  `parityRel_not_level`.  (The second splitting equation `f° ≫ f = 1` is not
-  needed.) -/
+  Quotient-level packaging is `asm_not_effective_of_binRel` (S2_153c): `I := [E]` is a
+  §2.12 equivalence relation of the allegory `Rel(Assembly K)`, and no map splits it — a
+  splitting `f` is, by §2.148-dual fullness, the graph-class of an assembly morphism `q`,
+  and `f ≫ f° = I` says exactly that `E` is mutually contained with the level of `q`,
+  killed here by `parityRel_not_effective`. -/
 
 /-- **§2.153 for any projection-bounded modulus system**: some assembly over `K`
     carries an equivalence relation of `Rel(Assembly K)` that does not split as a
@@ -270,36 +268,8 @@ theorem parityRel_not_effective : ¬ IsEffective (parityRel (K := K)) := by
 theorem asm_not_effective_of_projBounded (hb : ProjBounded K) :
     ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I := by
-  have hequiv := parityRel_equivalence (K := K) hb
-  -- `I := [E]`, read as an endomorphism `⟨∇ℕ⟩ ⟶ ⟨∇ℕ⟩` of `Rel(Assembly K)`
-  let I : (⟨nablaNat⟩ : AsmRel K) ⟶ ⟨nablaNat⟩ := relClass parityRel
-  refine ⟨nablaNat, I, ?_, ?_, ?_, ?_⟩
-  · -- Reflexive: the diagonal witness is a `RelHom (graph 1) E`
-    exact (quotLe_iff_algLe (relClass (graph (Cat.id nablaNat))) (relClass parityRel)).mp
-      (relClass_mono (⟨hequiv.1⟩ : RelLe (graph (Cat.id nablaNat)) parityRel))
-  · -- Symmetric: `E ⊂ E°` and its reciprocal give `[E°] = [E]`
-    refine (symmetric_iff _).mpr ?_
-    have h2 : RelLe (parityRel (K := K)) (reciprocal parityRel) := hequiv.2.1
-    have h1 : RelLe (reciprocal (parityRel (K := K))) parityRel := by
-      have h3 := reciprocal_mono h2
-      rwa [reciprocal_invol] at h3
-    show relClass (reciprocal (parityRel (K := K))) = relClass parityRel
-    exact Quotient.sound ⟨h1, h2⟩
-  · -- Transitive: `E ⊚ E ⊂ E`
-    exact (quotLe_iff_algLe (relClass (parityRel ⊚ parityRel)) (relClass parityRel)).mp
-      (relClass_mono hequiv.2.2)
-  · -- No map-splitting: it would exhibit `E` as the level of a morphism
-    intro d f
-    refine Quotient.inductionOn f fun R => ?_
-    show ¬ SplitsAsMap (relClass R) I
-    rintro ⟨hmap, hff, -⟩
-    obtain ⟨q, hq⟩ := embedRel_full R hmap
-    rw [hq] at hff
-    have hff2 : relClass (graph q ⊚ (graph q)°) = relClass (parityRel (K := K)) := by
-      rw [← qComp_mk, ← qRecip_mk]; exact hff
-    obtain ⟨hlevelE, hEle⟩ := Quotient.exact hff2
-    exact parityRel_not_level q hEle hlevelE
+      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I :=
+  asm_not_effective_of_binRel parityRel (parityRel_equivalence hb) parityRel_not_effective
 
 /-- Generic headline: over any projection-bounded `K`, the effective reflection of
     `Rel(Assembly K)` (§2.16(14)) is not an allegory of choice. -/

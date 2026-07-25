@@ -1,0 +1,9 @@
+#!/bin/sh
+# lean-refactor — the refactoring tool, run under `cap`'s address-space limit.
+#
+# Belt to `claimElaboration`'s braces (Freyd/tool/LeanRefactor.lean): that guard catches the KNOWN
+# way to accumulate Lean `Environment`s — looping over files in one process — but not a runaway that
+# is not a file loop. The cap lives in `scripts/cap` because the same hazard applies to every
+# long-running Lean process, not just this tool; see the reasoning and the measurements there.
+cd "$(dirname "$0")/.." || exit 1
+exec ./scripts/cap lake exe lean-refactor "$@"

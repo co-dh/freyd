@@ -12,12 +12,13 @@
 
   ## The bridge (this section, hole-free)
 
-  `asmReflection_not_ac_of_binRel_not_effective`: the assembly mirror of the recursive
+  `asm_not_effective_of_binRel`: the assembly mirror of the recursive
   category's `Freyd.RecEff.no_splitsAsMap` (`Freyd/S2_16_Recursive.lean`), lifted to a
-  reusable reduction.  For ANY assembly `A` over `Krec` and ANY category-level (§1.56)
-  BinRel-equivalence-relation `E : BinRel (Assembly Krec) A A` that is NOT EFFECTIVE
-  (`¬ IsEffective E`, §1.568 — not the level of any cover), the effective reflection
-  `E = Spl(Eq (Rel(Assembly Krec)))` (§2.16(14)) fails AC.
+  reusable reduction, generic in the modulus system `K`.  For ANY assembly `A` over `K` and
+  ANY category-level (§1.56) BinRel-equivalence-relation `E : BinRel (Assembly K) A A` that
+  is NOT EFFECTIVE (`¬ IsEffective E`, §1.568 — not the level of any cover),
+  `Rel(Assembly K)` is not effective; via `asmReflection_not_ac_of_notEffective` the
+  effective reflection `E = Spl(Eq (Rel(Assembly K)))` (§2.16(14)) then fails AC.
 
   The proof is the exact transport of `Freyd.RecEff.no_splitsAsMap` through the graph
   embedding `Assembly Krec ↪ Map(Rel(Assembly Krec))` (all lemmas generic over a regular
@@ -29,8 +30,8 @@
     (`embedRel_full`, §2.148 dual), the class `[graph g]` of an assembly morphism `g`;
     then `f ≫ f° = I` says `graph g ⊚ (graph g)° ≈ E` and `f° ≫ f = 1` says `g` is a
     COVER (`cover_iff_one_le_reciprocal_comp_self`, §1.569) — i.e. exactly `IsEffective E`,
-    which `hne` forbids.  So no splitting exists, and
-    `asmReflection_not_ac_of_nonsplitting` fires.
+    which `hne` forbids.  So no splitting exists, and `asmReflection_not_ac_of_nonsplitting`
+    fires on the result.
 
   ## The concrete witness (Layers 3–4) — CLOSED in `S2_153f` (see the corrected note below)
 
@@ -40,7 +41,7 @@
       ∃ (A : Assembly Krec) (E : BinRel (Assembly Krec) A A),
         EquivalenceRelation E ∧ ¬ IsEffective E
 
-  and then applying `asmReflection_not_ac_of_binRel_not_effective`.  This is the genuine
+  and then applying `asm_not_effective_of_binRel`.  This is the genuine
   hard core of §2.153; it is NOT a transport of §1.572b's `ERel` (see below).
 
   ### Why `¬ IsEffective E` is the hard part — the structural obstruction
@@ -98,20 +99,26 @@ namespace Freyd.Alg
   `Freyd.RecEff.reflection_not_ac`, packaged to accept the category-level (§1.56)
   witness `¬ IsEffective E` directly. -/
 
-/-- **§2.153 / §2.16(13) for assemblies over `Krec` — the BinRel reduction.**  For an
-    assembly `A` over `Krec` and a §1.56 BinRel-equivalence-relation `E : A → A` that is
-    NOT the level of any cover (`¬ IsEffective E`), the effective reflection of
-    `Rel(Assembly Krec)` is not an allegory of choice: covers do not all split there.
+/-- **§2.153 / §2.16(13) — the BinRel reduction.**  For an assembly `A` over any modulus
+    system `K` and a §1.56 BinRel-equivalence-relation `E : A → A` that is NOT the level of
+    any cover (`¬ IsEffective E`), `Rel(Assembly K)` is not effective: `[E]` is a §2.12
+    equivalence relation of the allegory that no map splits.  Composing with
+    `asmReflection_not_ac_of_notEffective` gives the §2.16(13) headline — the effective
+    reflection of `Rel(Assembly K)` is then not an allegory of choice.
 
     This reduces the concrete §2.153 non-effectiveness to a single category-theoretic
-    obligation about assemblies over `Krec`, in exactly the shape of the recursive
-    category's `Freyd.RecEff.reflection_not_ac` (whose witness is `ERel_not_effective`). -/
-theorem asmReflection_not_ac_of_binRel_not_effective {A : Assembly.{u} Krec}
-    (E : BinRel (Assembly.{u} Krec) A A)
+    obligation about assemblies, in exactly the shape of the recursive category's
+    `Freyd.RecEff.reflection_not_ac` (whose witness is `ERel_not_effective`).  The parity
+    witness of `S2_153f` (`asm_not_effective_of_projBounded`) is this lemma applied to
+    `parityRel`. -/
+theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u} K}
+    (E : BinRel (Assembly.{u} K) A A)
     (hequiv : EquivalenceRelation E) (hne : ¬ IsEffective E) :
-    ¬ CoversSplit (AsmEffReflection.{u} Krec) := by
-  -- `I := relClass E`, read as an endomorphism `⟨A⟩ ⟶ ⟨A⟩` of `Rel(Assembly Krec)`.
-  let I : (⟨A⟩ : AsmRel Krec) ⟶ ⟨A⟩ := relClass E
+    ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
+      Reflexive I ∧ Symmetric I ∧ Transitive I ∧
+      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I := by
+  -- `I := relClass E`, read as an endomorphism `⟨A⟩ ⟶ ⟨A⟩` of `Rel(Assembly K)`.
+  let I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩ := relClass E
   -- Reflexive: the diagonal witness of `hequiv` is a `RelHom (graph 1_A) E`.
   have hrefl : Reflexive I :=
     (quotLe_iff_algLe (relClass (graph (Cat.id A))) (relClass E)).mp
@@ -129,7 +136,7 @@ theorem asmReflection_not_ac_of_binRel_not_effective {A : Assembly.{u} Krec}
     (quotLe_iff_algLe (relClass (E ⊚ E)) (relClass E)).mp
       (relClass_mono (hequiv.2.2 : RelLe (E ⊚ E) E))
   -- No map-splitting exists: it would exhibit `E` as the level of a cover.
-  have hno : ∀ (d : AsmRel.{u} Krec) (f : (⟨A⟩ : AsmRel Krec) ⟶ d),
+  have hno : ∀ (d : AsmRel.{u} K) (f : (⟨A⟩ : AsmRel K) ⟶ d),
       ¬ SplitsAsMap f I := by
     intro d f
     refine Quotient.inductionOn f (fun R => ?_)
@@ -147,6 +154,6 @@ theorem asmReflection_not_ac_of_binRel_not_effective {A : Assembly.{u} Krec}
     obtain ⟨_, hone_le⟩ := Quotient.exact hf'f2
     have hcover : Cover g := (cover_iff_one_le_reciprocal_comp_self g).mpr hone_le
     exact hne ⟨hequiv, d.carrier, g, hcover, hle_gg, hgg_le⟩
-  exact asmReflection_not_ac_of_nonsplitting I hrefl hsym htrans hno
+  exact ⟨A, I, hrefl, hsym, htrans, hno⟩
 
 end Freyd.Alg

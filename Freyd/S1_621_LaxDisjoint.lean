@@ -28,8 +28,8 @@
 
     * DISJOINT — the intersection's domain is the lax-colimit pullback `pbC` of `(coprInl, coprInr)`.
       Via (★) and `pbC`'s square, `(pbC.π₁ ≫ ν_A, pbC.π₂ ≫ ν_B)` is a cone over the germ cospan
-      `(stageInclL inlS, stageInclL inrS)`; the keystone `objInclL_preserves_pullbacks`
-      (`Freyd/LaxGermPullbacks.lean`) gives a mediator `m₁ : pbC.pt ⟶ objIncl k pdqₖ.pt` into the
+      `(stageInclL inlS, stageInclL inrS)`; the keystone `stageInclFunctorL_preservesPullbacks`
+      (`Freyd/RatCapHcanon.lean`) gives a mediator `m₁ : pbC.pt ⟶ objIncl k pdqₖ.pt` into the
       §1.432 stage pullback's `objIncl`.  That stage pullback is INITIAL (`disjoint_pullback_initial`,
       imported, from the per-stage §1.621 disjointness), so `m₁` followed by `stageInclL` of its
       universal map lands `pbC.pt` in the lax strict initial `objIncl k 0_k`
@@ -39,12 +39,11 @@
   The genuinely generic helpers — `monic_inl/inr_of_factor`,
   `subobject_le_of_initial_dom`, `isInitial_of_iso`, `prelogos_bottom_strict/_initial`,
   `disjoint_pullback_initial` — are IMPORTED from `Freyd.ColimitPositive` (they mention no colimit).
-  Mathlib-free; single universe `{w,w}` (forced by the pullback germ `objInclL_preserves_pullbacks`).
+  Mathlib-free; single universe `{w,w}` (forced by the pullback germ `stageInclFunctorL_preservesPullbacks`).
 -/
 import Freyd.S1_621_ColimitPositive
 import Freyd.S1_543_LaxColimitCoproduct
 import Freyd.S1_543_LaxGermImages
-import Freyd.S1_543_LaxGermPullbacks
 import Freyd.S1_61_LaxStrictInitial
 
 open Freyd
@@ -239,7 +238,7 @@ theorem laxColim_inr_monic
     For arbitrary `A = ⟨iA,xA⟩`, `B = ⟨iB,xB⟩` the intersection's domain is the lax-colimit pullback
     `pbC` of `(inl, inr) = (coprInl, coprInr)` into `coprObj = ⟨k, P0⟩`.  By the factorization (★),
     `(pbC.π₁ ≫ ν_A, pbC.π₂ ≫ ν_B)` is a cone over the germ cospan `(stageInclL inlS, stageInclL inrS)`
-    (`inlS/inrS` the stage injections `(hcop k).inl/inr`), so the keystone `objInclL_preserves_pullbacks`
+    (`inlS/inrS` the stage injections `(hcop k).inl/inr`), so the keystone `stageInclFunctorL_preservesPullbacks`
     yields a mediator `m₁ : pbC.pt ⟶ objIncl k pdqₖ.pt` into the §1.432 stage pullback's `objIncl`.
     That stage pullback `pdqₖ.pt` is INITIAL (`disjoint_pullback_initial`, from per-stage §1.621
     disjointness), so `m₁ ≫ stageInclL (pdqₖ.pt → 0_k)` lands `pbC.pt` in the strict-initial
@@ -305,7 +304,7 @@ theorem laxColim_inl_inter_inr [Nonempty ι]
   have hw : pbC.cone.π₁ ≫ coprInl L hL data xA xB = pbC.cone.π₂ ≫ coprInr L hL data xA xB :=
     pbC.cone.w
   -- the germ-cospan pullback keystone, and a cone over it with apex `pbC.pt`
-  have hgermPB := objInclL_preserves_pullbacks L hL tData pData eqData (prK D iA iB) inlS inrS
+  have hgermPB := stageInclFunctorL_preservesPullbacks L hL tData pData eqData (prK D iA iB) inlS inrS
   let interCone' : Cone (stageInclL L hL inlS) (stageInclL L hL inrS) :=
     { pt := pbC.cone.pt
       π₁ := pbC.cone.π₁ ≫ coprStageIncl L hL xA (prK_le D iA iB).1

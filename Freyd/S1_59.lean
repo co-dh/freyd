@@ -484,9 +484,6 @@ def IsExactStructure (𝒞 : Type u) [Cat.{v} 𝒞]
   (←) exact ⟹ every monic x is the kernel of its cokernel, i.e. normal (re-derived inline against
   the ambient zero/eq/coeq instances). -/
 
-/-- Equalizer maps are monic, from the bare equalizer API (no Cartesian context). -/
-theorem eqMap_mono' [HasEqualizers 𝒞] {A B : 𝒞} (f g : A ⟶ B) : Monic (eqMap f g) := eqMap_monic f g
-
 /-- Universal property of the cokernel: a map `h : B ⟶ X` with `f ≫ h = 0` descends uniquely
     through `cokernelMap f`.  (The cokernel is the coequalizer of `(f, 0)`; `f ≫ h = 0` is the
     `f ≫ h = 0 ≫ h` coequalizing condition.) -/
@@ -593,7 +590,7 @@ theorem monic_kernel_of_cokernel' [HasZeroObject 𝒞] [HasEqualizers 𝒞] [Has
       _ = kernelMap (cokernelMap m) := hlift_f
   -- `w` and `v` are mutually inverse (both legs cancel against the monos `m`, `kernelMap`).
   have hmono_k : Monic (kernelMap (cokernelMap m)) :=
-    eqMap_mono' (cokernelMap m) (zeroMorphism B (Cokernel m))
+    eqMap_monic (cokernelMap m) (zeroMorphism B (Cokernel m))
   have hwv : w ≫ v = Cat.id A := by
     apply hm; rw [Cat.assoc, hv, hw, Cat.id_comp]
   have hvw : v ≫ w = Cat.id (Kernel (cokernelMap m)) := by
@@ -614,7 +611,7 @@ theorem abelian_iff_regular_additive_all_normal
     -- coimage projection `p := coker(ker x)` and image inclusion `i := ker(coker x)`.
     let p : A ⟶ Cokernel (kernelMap x) := cokernelMap (kernelMap x)
     let i : Kernel (cokernelMap x) ⟶ B := kernelMap (cokernelMap x)
-    have hi_mono : Monic i := eqMap_mono' (cokernelMap x) (zeroMorphism B (Cokernel x))
+    have hi_mono : Monic i := eqMap_monic (cokernelMap x) (zeroMorphism B (Cokernel x))
     -- STEP 1: `xbar : A → Im` with `xbar ≫ i = x`.
     have hx_kc : x ≫ cokernelMap x = x ≫ zeroMorphism B (Cokernel x) := by
       rw [comp_cokernelMap x, zero_morphism_comp x]
@@ -1155,8 +1152,7 @@ theorem effective_regular_additive_is_abelian
         _ = zeroHom A Q := zeroHom_comp_left _
     -- `neg m ≫ q = neg (m ≫ q)`, and `neg X = 0 → X = 0` (apply `neg`, use `neg_neg`, `neg 0 = 0`).
     have h4 : neg (m ≫ q) = zeroHom A Q := by rw [← neg_comp]; exact h3
-    have hneg0 : neg (zeroHom A Q) = zeroHom A Q :=
-      (neg_unique (by rw [add_zero])).symm
+    have hneg0 : neg (zeroHom A Q) = zeroHom A Q := neg_zero A Q
     have h5 : m ≫ q = zeroHom A Q := by
       rw [← neg_neg (m ≫ q), h4, hneg0]
     rw [h5, zeroHom_eq_zeroMorphism']
@@ -1236,7 +1232,7 @@ theorem effective_regular_additive_is_abelian
       _ = m := hhfac
       _ = Cat.id A ≫ m := (Cat.id_comp m).symm
   · -- `r ≫ h = id (Kernel q)`:  `(r ≫ h) ≫ kernelMap q = r ≫ m = kernelMap q`, `kernelMap q` monic.
-    apply eqMap_mono' q (zeroMorphism B Q)
+    apply eqMap_monic q (zeroMorphism B Q)
     calc (r ≫ h) ≫ kernelMap q = r ≫ (h ≫ kernelMap q) := Cat.assoc _ _ _
       _ = r ≫ m := by rw [hhfac]
       _ = kernelMap q := hrm
@@ -1592,7 +1588,7 @@ theorem monic_kernel_of_cokernel {𝒞 : Type u} [Cat.{v} 𝒞] [ExactCategory �
 def imageSub [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞}
     (f : A ⟶ B) : Subobject 𝒞 B :=
   ⟨Kernel (cokernelMap f), kernelMap (cokernelMap f),
-    eqMap_mono' (cokernelMap f) (zeroMorphism B (Cokernel f))⟩
+    eqMap_monic (cokernelMap f) (zeroMorphism B (Cokernel f))⟩
 
 /-- `f` factors through its normal image (lifts through `ker(coker f)`). -/
 theorem imageSub_allows [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞]
@@ -1665,7 +1661,7 @@ theorem kernelMap_zero_isIso [HasZeroObject 𝒞] [HasEqualizers 𝒞] (B C : �
   have hs : s ≫ kernelMap (zeroMorphism B C) = Cat.id B :=
     eqLift_fac (zeroMorphism B C) (zeroMorphism B C) (Cat.id B) hid
   have hother : kernelMap (zeroMorphism B C) ≫ s = Cat.id (Kernel (zeroMorphism B C)) := by
-    apply eqMap_mono' (zeroMorphism B C) (zeroMorphism B C)
+    apply eqMap_monic (zeroMorphism B C) (zeroMorphism B C)
     show (kernelMap (zeroMorphism B C) ≫ s) ≫ kernelMap (zeroMorphism B C)
        = Cat.id (Kernel (zeroMorphism B C)) ≫ kernelMap (zeroMorphism B C)
     rw [Cat.assoc, hs, Cat.comp_id, Cat.id_comp]
@@ -1844,7 +1840,7 @@ theorem kernel_snd_epi [ExactCategory 𝒞] [AdditiveCategory 𝒞] {A C B : �
 theorem epi_is_cover [ExactCategory 𝒞] {A B : 𝒞} (f : A ⟶ B)
     (he : ∀ {Z : 𝒞} (a b : B ⟶ Z), f ≫ a = f ≫ b → a = b) : Cover f := by
   have hm_mono : Monic (kernelMap (cokernelMap f)) :=
-    eqMap_mono' (cokernelMap f) (zeroMorphism B (Cokernel f))
+    eqMap_monic (cokernelMap f) (zeroMorphism B (Cokernel f))
   have heqf : f ≫ cokernelMap f = f ≫ zeroMorphism B (Cokernel f) := by
     rw [comp_cokernelMap f, zero_morphism_comp f]
   let ell : A ⟶ Kernel (cokernelMap f) :=
@@ -2330,7 +2326,7 @@ noncomputable def exactOfNormal {𝒞 : Type u} [Cat.{v} 𝒞] [HasZeroObject �
   intro A B x
   let p : A ⟶ Cokernel (kernelMap x) := cokernelMap (kernelMap x)
   let i : Kernel (cokernelMap x) ⟶ B := kernelMap (cokernelMap x)
-  have hi_mono : Monic i := eqMap_mono' (cokernelMap x) (zeroMorphism B (Cokernel x))
+  have hi_mono : Monic i := eqMap_monic (cokernelMap x) (zeroMorphism B (Cokernel x))
   have hx_kc : x ≫ cokernelMap x = x ≫ zeroMorphism B (Cokernel x) := by
     rw [comp_cokernelMap x, zero_morphism_comp x]
   let xbar : A ⟶ Kernel (cokernelMap x) :=
@@ -3085,7 +3081,7 @@ theorem kernelLift_fac [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B X : 𝒞} 
 
 /-- `kernelMap x` is monic (it is an equalizer map). -/
 theorem kernelMap_mono [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
-    Monic (kernelMap x) := eqMap_mono' x (zeroMorphism A B)
+    Monic (kernelMap x) := eqMap_monic x (zeroMorphism A B)
 
 /-- `kernelMap x ≫ x = 0`: the kernel is killed by `x`. -/
 theorem kernelMap_comp [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
@@ -3252,7 +3248,7 @@ theorem mono_factors_image [HasImages 𝒞] [RegularCategory 𝒞]
 theorem relExact_self_cokernel [AbelianCategory 𝒞] {A B : 𝒞} (x : A ⟶ B) :
     RelExact x (cokernelMap x) := by
   let i : Kernel (cokernelMap x) ⟶ B := kernelMap (cokernelMap x)
-  have hi_mono : Monic i := eqMap_mono' (cokernelMap x) (zeroMorphism B (Cokernel x))
+  have hi_mono : Monic i := eqMap_monic (cokernelMap x) (zeroMorphism B (Cokernel x))
   -- `xbar : A → ker(coker x)` with `xbar ≫ i = x`.
   have hx_kc : x ≫ cokernelMap x = x ≫ zeroMorphism B (Cokernel x) := by
     rw [comp_cokernelMap x, zero_morphism_comp x]

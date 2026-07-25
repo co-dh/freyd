@@ -8,7 +8,7 @@
       ∃ (A : Assembly Krec) (E : BinRel (Assembly Krec) A A),
         EquivalenceRelation E ∧ ¬ IsEffective E
 
-  via `asmReflection_not_ac_of_binRel_not_effective`.  This file supplies the reusable
+  via `asm_not_effective_of_binRel`.  This file supplies the reusable
   categorical HEART of that construction (the "level bridge"), Sorry-free and generic
   over any cover, plus an honest record of the remaining research-level obligation and a
   correctness caveat that rules out the obvious-but-WRONG witness.

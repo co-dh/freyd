@@ -54,7 +54,7 @@ contains `{S | A ∈ S}` for every object `A` — the largeness used in faithful
 non-iso. -/
 
 /-- The coideal of a list `c`: the lists `S` containing every object of `c`. -/
-def coideal (c : List 𝒞) : Set (List 𝒞) := fun S => ∀ x ∈ c, x ∈ S
+def coideal (c : List 𝒞) : Sub (List 𝒞) := fun S => ∀ x ∈ c, x ∈ S
 
 /-- The coideal of `[A]` is `{S | A ∈ S}`. -/
 theorem coideal_singleton (A : 𝒞) : coideal [A] = (fun S => A ∈ S) := by

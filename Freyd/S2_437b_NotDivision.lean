@@ -204,7 +204,7 @@ theorem relT_smnNum {t : Nat → Nat → Nat} {ct : RecCode 2}
   `constCode 2 a`, so its Gödel number is a fixed recursive context `Ψ` applied
   to `encCode (constCode 2 a)`, which is itself a primitive recursion in `a`. -/
 
-theorem encVec_one (x : Nat) : encVec (fun _ : Fin 1 => x) = consN x 0 := rfl
+-- `encVec_one` is `Freyd.Rcat.encVec_one` (opened above); only the two-element case is new here.
 theorem encVec_two (f : Vec 2) : encVec f = consN (f 0) (consN (f 1) 0) := rfl
 
 /-- The step function of the `encCode ∘ constCode 2` primitive recursion. -/

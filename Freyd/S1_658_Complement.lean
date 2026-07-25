@@ -73,11 +73,6 @@ theorem le_bottom_of_dom_iso {B : 𝒞} (Z : Subobject 𝒞 B)
   `Subobject.inter_le_right`, `Subobject.le_inter` are proved next to `Subobject.inter`
   in S1_62 (needed there for the §1.635 ultra-filter algebra); reused here. -/
 
-/-- `Subobject.inter` is monotone in both arguments. -/
-theorem Subobject.inter_mono {B : 𝒞} {S S' T T' : Subobject 𝒞 B}
-    (hS : S.le S') (hT : T.le T') : (Subobject.inter S T).le (Subobject.inter S' T') :=
-  Freyd.inter_mono hS hT
-
 /-! ## §1.452 Inverse image preserves intersection
 
   `f#` is a meet-homomorphism: `f#(S ∩ T) = f#S ∩ f#T`.  This is `S1_45`'s
@@ -211,13 +206,6 @@ theorem union_mono {B : 𝒞} {S S' T T' : Subobject 𝒞 B}
     (Subobject.le_trans hS (HasSubobjectUnions.union_left S' T'))
     (Subobject.le_trans hT (HasSubobjectUnions.union_right S' T'))
 
-/-- `IsComplementedSub` is invariant under subobject equality (mutual `≤`): if `S` and `T`
-    are the same subobject and `T` is complemented, then so is `S` (with the same complement).
-    `S ∩ T₂ ≤ T ∩ T₂ ≤ ⊥` and `⊤ ≤ T ∪ T₂ ≤ S ∪ T₂`. -/
-theorem IsComplementedSub_congr {A : 𝒞} {S T : Subobject 𝒞 A}
-    (hST : S.le T) (hTS : T.le S) (hT : IsComplementedSub T) : IsComplementedSub S :=
-  complementedSub_congr hST hTS hT
-
 /-- **§1.658 diagonal-classifies**: if `A` is decidable and `c : B → A×A` is a classifying
     map, then the inverse image `c# (Δ A) ⊆ B` is complemented.  This transfers decidability
     of the diagonal to any subobject realized as an inverse image of it. -/
@@ -234,7 +222,7 @@ theorem diagonal_classifies {A B : 𝒞} (hA : DecidableObjectSub A)
     (hS₁ : S.le (InverseImage c (diagSub A)))
     (hS₂ : (InverseImage c (diagSub A)).le S) :
     IsComplementedSub S :=
-  IsComplementedSub_congr hS₁ hS₂ (invImage_diagSub_complementedSub hA c)
+  complementedSub_congr hS₁ hS₂ (invImage_diagSub_complementedSub hA c)
 
 /-- The product map `φ × φ : X×X → Y×Y` for `φ : X → Y`, as `pair (fst≫φ) (snd≫φ)`. -/
 def prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) : prod X X ⟶ prod Y Y := pair (fst ≫ φ) (snd ≫ φ)

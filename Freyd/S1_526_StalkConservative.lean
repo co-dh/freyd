@@ -55,7 +55,7 @@ local instance preLogosEqualizers : HasEqualizers 𝒞 :=
 theorem points_faithful_of_wellPointed {Z W : 𝒞} (hZ : WellPointed Z)
     {a b : Z ⟶ W} (h : ∀ x : one ⟶ Z, x ≫ a = x ≫ b) : a = b := by
   -- Equalizer `E ↣ Z` of `a, b`.
-  have hEm : Monic (eqMap a b) := eqMap_mono' a b
+  have hEm : Monic (eqMap a b) := eqMap_monic a b
   by_cases hiso : IsIso (eqMap a b)
   · -- `E ≅ Z`, so `a = b` via the iso section.
     obtain ⟨e, he₁, he₂⟩ := hiso
@@ -232,13 +232,13 @@ theorem globalToStalk_principal_bijective {A : 𝒞} :
 
 /-- `Projective` transfers along an iso of the witnessed object: if `D` is projective and
     `φ : C → D` is iso, then `C` is projective.  A cover `e : A → C` gives a cover `e ≫ φ : A → D`
-    (`cover_comp_iso`), split by `Projective D` as `s` (`s ≫ (e ≫ φ) = id D`); then `s ≫ φ⁻¹` splits
+    (`cover_comp_iso_cat`), split by `Projective D` as `s` (`s ≫ (e ≫ φ) = id D`); then `s ≫ φ⁻¹` splits
     `e`. -/
 theorem projective_of_iso {C D : 𝒞} (φ : C ⟶ D) (hφ : IsIso φ) (hD : Projective D) :
     Projective C := by
   obtain ⟨ψ, hφψ, hψφ⟩ := id hφ
   intro A e he
-  obtain ⟨s, hs⟩ := hD (e ≫ φ) (cover_comp_iso e φ he hφ)
+  obtain ⟨s, hs⟩ := hD (e ≫ φ) (cover_comp_iso_cat he hφ)
   -- `hs : s ≫ (e ≫ φ) = id D`.  The section of `e` is `t = φ ≫ s`.
   refine ⟨φ ≫ s, ?_⟩
   have hse : s ≫ (e ≫ φ) = Cat.id D := hs

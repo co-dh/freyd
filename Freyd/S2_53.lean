@@ -260,10 +260,6 @@ theorem quot_le_iff {a b : 𝒜} (R S : a ⟶ b) :
     refine amen.cong.trans (amen.largest_rel (R ∩ S)) ?_
     rw [hcl]; exact amen.cong.symm (amen.largest_rel R)
 
-/-- `X ⊑ X⁺` — every element sits below the largest in its class. -/
-theorem le_largest_self {a b : 𝒜} (R : a ⟶ b) : R ⊑ amen.largest R :=
-  amen.largest_max (amen.cong.refl R)
-
 
 end
 
@@ -301,7 +297,7 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
       refine Quotient.inductionOn₂ R S (fun R S => ?_)
       -- (R⁺/S⁺)≫S ⊑ R⁺ :  S ⊑ S⁺, then the division law (R⁺/S⁺)≫S⁺ ⊑ R⁺.
       have hstep : (amen.largest R / amen.largest S) ≫ S ⊑ amen.largest R :=
-        le_trans (comp_mono_left _ (le_largest_self amen S))
+        le_trans (comp_mono_left _ (self_le_largest amen S))
           (DivisionAllegory.div_comp_le (amen.largest R) (amen.largest S))
       -- ((R⁺/S⁺)≫S)⁺ ⊑ (R⁺)⁺ = R⁺.
       refine (quot_le_iff amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
@@ -320,7 +316,7 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
       have hdiv : amen.largest T ⊑ amen.largest R / amen.largest S :=
         DivisionAllegory.le_div _ _ _ hTS
       exact (quot_le_iff amen T (amen.largest R / amen.largest S)).mpr
-        (le_trans hdiv (le_largest_self amen _)) }
+        (le_trans hdiv (self_le_largest amen _)) }
 
 end Division
 
@@ -340,27 +336,8 @@ theorem quotRep_dom {a b : 𝒜} (R : a ⟶ b) :
   rw [(quotRep amen.cong).map_inter, (quotRep amen.cong).map_comp,
     (quotRep amen.cong).map_recip, (quotRep amen.cong).map_id]
 
-/-- `quotRep` preserves `Entire`: `[R]` entire when `R` is. -/
-theorem quotRep_entire {a b : 𝒜} {R : a ⟶ b} (h : Entire R) :
-    Entire ((quotRep amen.cong).map R) := by
-  dsimp [Entire] at h ⊢
-  rw [quotRep_dom, h, (quotRep amen.cong).map_id]
-
-/-- `quotRep` preserves `Simple`: `[R]` simple when `R` is. -/
-theorem quotRep_simple {a b : 𝒜} {R : a ⟶ b} (h : Simple R) :
-    Simple ((quotRep amen.cong).map R) := by
-  dsimp [Simple] at h ⊢
-  rw [← (quotRep amen.cong).map_recip, ← (quotRep amen.cong).map_comp]
-  -- [R°≫R] ⊑ [Cat.id b] = [R°≫R ∩ Cat.id b] = [R°≫R] (since R°≫R ⊑ Cat.id b).
-  show (quotRep amen.cong).map (R° ≫ R) ∩ (quotRep amen.cong).map (Cat.id b) = _
-  rw [← (quotRep amen.cong).map_inter]
-  -- R°≫R ⊑ Cat.id b is `(R°≫R) ∩ Cat.id b = R°≫R`.
-  rw [show (R° ≫ R) ∩ Cat.id b = R° ≫ R from h]
-
-/-- `quotRep` preserves `Map`. -/
-theorem quotRep_map_isMap {a b : 𝒜} {R : a ⟶ b} (h : Map R) :
-    Map ((quotRep amen.cong).map R) :=
-  ⟨quotRep_entire amen h.1, quotRep_simple amen h.2⟩
+-- `quotRep` preserving `Entire`/`Simple`/`Map` is `quotRep_preserves_entire`/`_simple`/`_map` in
+-- `Freyd.S2_51`; the proofs that used to sit here re-derived them.
 
 end Descent
 
@@ -368,7 +345,7 @@ end Descent
 
   A quotient equivalence relation `[E₀]` forces `E₀⁺` reflexive/symmetric/transitive
   (§2.535), hence an equivalence relation of `𝒜`, which splits by effectiveness of `𝒜`;
-  the splitting `f₀` descends to `[f₀]` (`quotRep_map_isMap`), giving the quotient
+  the splitting `f₀` descends to `[f₀]` (`quotRep_preserves_map`), giving the quotient
   splitting. -/
 
 section Effectivity
@@ -379,7 +356,7 @@ theorem quot_largest_reflexive {a : 𝒜} {E₀ : a ⟶ a}
     (h : Reflexive ((quotRep amen.cong).map E₀)) : Reflexive (amen.largest E₀) := by
   have h2 : (quotRep amen.cong).map (Cat.id a) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_id]; exact h
-  exact le_trans (le_largest_self amen (Cat.id a)) ((quot_le_iff amen (Cat.id a) E₀).mp h2)
+  exact le_trans (self_le_largest amen (Cat.id a)) ((quot_le_iff amen (Cat.id a) E₀).mp h2)
 
 /-- §2.535: a quotient-symmetric `[E₀]` forces `E₀⁺` symmetric. -/
 theorem quot_largest_symmetric {a : 𝒜} {E₀ : a ⟶ a}
@@ -405,7 +382,7 @@ theorem quot_largest_idempotent {a : 𝒜} {E₀ : a ⟶ a}
 /-- §2.535: EVERY quotient equivalence relation splits — the quotient is effective.
     `E₀⁺` is a reflexive/symmetric/idempotent (equivalence) relation of `𝒜`, so it splits
     in `𝒜` (`EffectiveAllegory.split_symmetric_idempotent`); the leg `[f₀]` is a map
-    (`quotRep_map_isMap`) and the two split equations descend. -/
+    (`quotRep_preserves_map`) and the two split equations descend. -/
 theorem quotSplit {a : 𝒜} (E : (quotRep amen.cong).obj a ⟶ (quotRep amen.cong).obj a)
     (hR : Reflexive E) (hS : Symmetric E) (hI : E ≫ E = E) :
     ∃ (c : QuotAllegory 𝒜 amen.cong) (f : (quotRep amen.cong).obj a ⟶ c),
@@ -419,7 +396,7 @@ theorem quotSplit {a : 𝒜} (E : (quotRep amen.cong).obj a ⟶ (quotRep amen.co
     quot_largest_idempotent amen hRefl' hI
   obtain ⟨c, f₀, hf₀Map, hff, hffid⟩ :=
     EffectiveAllegory.split_symmetric_idempotent (amen.largest E₀) hRefl' hSym' hIdem'
-  refine ⟨c, (quotRep amen.cong).map f₀, quotRep_map_isMap amen hf₀Map, ?_, ?_⟩
+  refine ⟨c, (quotRep amen.cong).map f₀, quotRep_preserves_map amen.cong hf₀Map, ?_, ?_⟩
   · -- [f₀][f₀]° = [f₀f₀°] = [E₀⁺] = [E₀] = E.
     rw [← (quotRep amen.cong).map_recip, ← (quotRep amen.cong).map_comp, hff]
     exact Quotient.sound (amen.cong.symm (amen.largest_rel E₀))
@@ -475,7 +452,7 @@ theorem quotThickEps (b : 𝒜)
   obtain ⟨f₀, hEnt, hf₀_le, hf₀o⟩ :=
     (thick_iff_existential (∋ b)).mp (fun _ R hbox => (A_is_map R hbox).1)
       c (amen.largest R₀) hboxA
-  refine ⟨(quotRep amen.cong).map f₀, quotRep_entire amen hEnt, ?_, ?_⟩
+  refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hEnt, ?_, ?_⟩
   · -- [f₀][∋] ⊑ [R₀] :  largest(f₀∋) ⊑ largest(R₀⁺) = R₀⁺ = largest R₀  (§2.531).
     refine (quot_le_iff amen (f₀ ≫ ∋ b) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
@@ -573,7 +550,7 @@ theorem quotThickEps_unguarded (b : 𝒜) :
   have hf₀o : f₀° ≫ amen.largest R₀ ⊑ ∋ b := by
     rw [← hf₀eq, ← Cat.assoc]
     have h := comp_mono_right hf₀map.2 (∋ b); rwa [Cat.id_comp] at h
-  refine ⟨(quotRep amen.cong).map f₀, quotRep_entire amen hf₀map.1, ?_, ?_⟩
+  refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hf₀map.1, ?_, ?_⟩
   · refine (quot_le_iff amen (f₀ ≫ ∋ b) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
     rwa [largest_idem amen] at h

@@ -589,10 +589,6 @@ theorem simple_coref_comp {a c : 𝒜} {E : c ⟶ c} {F : c ⟶ a}
       _ = F° ≫ F := by rw [Cat.id_comp]
   exact le_trans hstep hF
 
-/-- dom is symmetric: (dom R)° = dom R. -/
-theorem dom_recip {a b : 𝒜} (R : a ⟶ b) : (dom R)° = dom R :=
-  symmetric_eq (coreflexive_symmetric_idempotent (dom_coreflexive R)).1
-
 /-- `R° ≫ dom R = R°` (recip of `dom_comp_self`). -/
 theorem recip_comp_dom {a b : 𝒜} (R : a ⟶ b) : R° ≫ dom R = R° := by
   have := congrArg (·°) (dom_comp_self R)

@@ -8,7 +8,7 @@
       ∃ (A : Assembly Krec) (E : BinRel (Assembly Krec) A A),
         EquivalenceRelation E ∧ ¬ IsEffective E
 
-  via `asmReflection_not_ac_of_binRel_not_effective`.  `Freyd/S2_153d_NonEffWitness.lean`
+  via `asm_not_effective_of_binRel`.  `Freyd/S2_153d_NonEffWitness.lean`
   supplies the forward level bridge (`level_forward`, `effective_xIdentifies`).
 
   ## Layer 1 (this file) — the compose-caucus characterization

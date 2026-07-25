@@ -64,6 +64,7 @@
 import Freyd.S1_1
 import Freyd.S1_18
 import Freyd.S1_8
+import Freyd.S1_28
 import Freyd.S1_41
 import Freyd.S1_42
 import Freyd.S1_43
@@ -1601,18 +1602,12 @@ theorem isUniformlyContinuous_of_adjunction
     intro i
     rw [← φ_eq adj (adj.ψ (legs i)), adj.φψ]
 
-/-- An idempotent `e : B ⟶ B` (i.e. `e ≫ e = e`) SPLITS if it factors as `r ≫ s`
-    through some `C` with `s ≫ r = id` (§1.281; same content as `S1_39.SplitIdempotent`,
-    restated locally to avoid importing the heavy `S1_39` chain). -/
-def IdempotentSplits {ℬ : Type u₁} [Cat.{v} ℬ] {B : ℬ} (e : B ⟶ B) : Prop :=
-  e ≫ e = e → ∃ (C : ℬ) (r : B ⟶ C) (s : C ⟶ B), r ≫ s = e ∧ s ≫ r = Cat.id C
-
 /-- ℬ has the property that ALL idempotents split (§1.281). Required by §1.831/§1.835:
     `more_general_adjoint_functor_theorem` is FALSE without it (Freyd §1.836 gives an explicit
     counterexample — the formal idempotent-splitting embedding is uniformly continuous and
     pre-adjoint yet has no left adjoint). -/
 def IdempotentsSplit (ℬ : Type u₁) [Cat.{v} ℬ] : Prop :=
-  ∀ {B : ℬ} (e : B ⟶ B), IdempotentSplits e
+  ∀ {B : ℬ} (e : B ⟶ B), Idempotent e → SplitIdempotent e
 
 -- ---------------------------------------------------------------------------
 -- Wide-fork shape (for the §1.835 weak wide-equalizer via pre-limit + UC)
@@ -2243,12 +2238,6 @@ theorem cartesian_iff_finProd_eq (𝒞 : Type u) [Cat.{v} 𝒞] :
     haveI ht : HasTerminal 𝒞 := finiteProducts_implies_terminal hfp
     haveI hp : HasBinaryProducts 𝒞 := finiteProducts_implies_binary hfp
     exact ⟨{ toHasTerminal := ht, toHasBinaryProducts := hp, toHasEqualizers := heq }⟩
-
-/-- §1.825 / §1.439 (pullbacks): Given a terminator, CartesianCategory ↔ HasPullbacks.
-    Re-stated here from S1_43 for the §1.825 record. -/
-theorem cartesian_iff_pullbacks_with_terminal (𝒞 : Type u) [Cat.{v} 𝒞] [HasTerminal 𝒞] :
-    Nonempty (CartesianCategory 𝒞) ↔ Nonempty (HasPullbacks 𝒞) :=
-  cartesianCategory_iff_pullbacks
 
 /-- §1.834 GENERAL REPRESENTABILITY THEOREM (Freyd §1.834): for `ℬ` in which idempotents
     split and which is pre-complete, the functor `(A, G(-))` is representable for *every* `A`

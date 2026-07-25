@@ -325,6 +325,10 @@ def dom {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := Cat.id a ∩ R ≫ R°
 theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : Coreflexive (dom R) :=
   inter_lb_left (Cat.id a) (R ≫ R°)
 
+/-- dom is symmetric: (dom R)° = dom R. -/
+theorem dom_recip {a b : 𝒜} (R : a ⟶ b) : (dom R)° = dom R :=
+  symmetric_eq (coreflexive_symmetric_idempotent (dom_coreflexive R)).1
+
 /-! ## §2.124  Domain of intersection -/
 
 /-- dom(R ∩ S) = 1 ∩ SR° (§2.124).

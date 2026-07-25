@@ -95,24 +95,17 @@ theorem capData_exists (A : Type u) [Cat.{u} A] [PreRegularCategory A] :
       (fun {i j} hij _ _ f g z k hk => towerHepresLift b ccs.step hij f g z k hk)
       (towerHcanon b ccs.step))
 
-/-- **§1.543 Capitalization Lemma** (small case, object universe = morphism universe).
+/-- **§1.54 / §1.543 Capitalization Lemma** (small case, object universe = morphism universe).
     Every small pre-regular category `A` admits a faithful representation into a capital
-    pre-regular category `Ā`.  Reduced to `capData_exists` (the §1.547/§1.543 construction above)
-    via `capitalization_of_capData` (the colimit packaging, in `Capitalization.lean`). -/
-theorem capitalization_lemma_small (A : Type u) [Cat.{u} A] [PreRegularCategory A] :
-    ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hP : PreRegularCategory Ā),
-      @Capital.{u, u} Ā hC (hP.toHasTerminal) ∧
-      ∃ F : @Functor A Ā _ hC, @Faithful.{u, u} A _ Ā hC F :=
-  (capData_exists A).elim (fun cd => capitalization_of_capData cd)
-
-/-- **§1.54 Capitalization Lemma** (small case).  `= capitalization_lemma_small`; the §1.543
-    construction lives in `capData_exists` above (relocated here, downstream of the §1.547
-    uniform-successor pieces, which a `Capitalization.lean` placement could not reach). -/
+    pre-regular category `Ā`.  Reduced to `capData_exists` (the §1.547/§1.543 construction above,
+    relocated here — downstream of the §1.547 uniform-successor pieces, which a
+    `Capitalization.lean` placement could not reach) via `capitalization_of_capData` (the colimit
+    packaging, in `Capitalization.lean`). -/
 theorem capitalization_lemma (A : Type u) [Cat.{u} A] [PreRegularCategory A] :
     ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hP : PreRegularCategory Ā),
       @Capital.{u, u} Ā hC (hP.toHasTerminal) ∧
       ∃ F : @Functor A Ā _ hC, @Faithful.{u, u} A _ Ā hC F :=
-  capitalization_lemma_small A
+  (capData_exists A).elim (fun cd => capitalization_of_capData cd)
 
 end Freyd
 
