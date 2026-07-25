@@ -8,6 +8,7 @@
 
 import Freyd.S1_1
 import Freyd.S1_18
+import Freyd.S1_28
 import Freyd.S1_31
 import Freyd.S1_41
 import Freyd.S1_42
@@ -342,16 +343,7 @@ end FinProd_equiv
 /-! ## §1.429 Equalizers split idempotents
 
   If a category has equalizers, then every idempotent `e : A → A` splits:
-  the equalizer of `e` and `1_A` gives the splitting.  `SplitIdempotent` (S1_39)
-  cannot be reused here: S1_39 imports THIS file, so importing it back is a cycle.
-  Its unbundled variant is stated locally. -/
-
-/-- IDEMPOTENT (§1.28): e: A→A such that e² = e. -/
-def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
-
-/-- SPLIT IDEMPOTENT: ∃ B, r : A→B, s : B→A with s≫r = id and r≫s = e. -/
-def SplitIdempotent' {A : 𝒞} (e : A ⟶ A) : Prop :=
-  ∃ (B : 𝒞) (r : A ⟶ B) (s : B ⟶ A), s ≫ r = Cat.id B ∧ r ≫ s = e
+  the equalizer of `e` and `1_A` gives the splitting.  §1.28/§1.281 live in `S1_28`. -/
 
 section S1_429
 variable [HasEqualizers 𝒞]
@@ -364,7 +356,7 @@ variable [HasEqualizers 𝒞]
   `(y ≫ x) ≫ y = y ≫ (x ≫ y) = y ≫ e = y ≫ id_A = y`,
   so `y ≫ x = id_B` by equalizer uniqueness (canceling `y` on the right). -/
 theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent e) :
-    SplitIdempotent' e := by
+    SplitIdempotent e := by
   -- Equalizer y : B → A of e and id_A
   let B := eqObj e (Cat.id A)
   let y := eqMap e (Cat.id A)
@@ -381,7 +373,7 @@ theorem equalizers_split_idempotents {A : 𝒞} (e : A ⟶ A) (he : Idempotent e
     have h1 : y ≫ x = eqLift e (Cat.id A) y hy := eqLift_uniq _ _ _ hy _ hyx_fac
     have h2 : Cat.id B = eqLift e (Cat.id A) y hy := eqLift_uniq _ _ _ hy _ hid_fac
     rw [h1, ← h2]
-  exact ⟨B, x, y, hyx, hxy⟩
+  exact ⟨B, x, y, hxy, hyx⟩
 
 end S1_429
 
