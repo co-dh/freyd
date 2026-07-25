@@ -1,5 +1,8 @@
 /- Proof-skeleton duplicate detector (Kind-3 / copy-pasted-proof finder).
    Run from the worktree root:  lake env lean --run scripts/ProofSkeleton.lean
+   Optional focused scan:
+     lake env lean --run scripts/ProofSkeleton.lean --min-nodes 100 --min-jaccard 0.60 \
+       --output /tmp/proof-near-clones-60.tsv
 
    The exact-key / defeq / specialization / dep-embedding passes all key on the THEOREM TYPE. A
    copy-pasted-then-adapted proof (e.g. a lemma re-proved under a weaker hypothesis) has a DIFFERENT
@@ -66,9 +69,37 @@ def jaccard (a b : Std.HashSet UInt64) : Float :=
   let uni := a.size + b.size - inter
   if uni == 0 then 0.0 else inter.toFloat / uni.toFloat
 
-def minNodes : Nat := 12
-def minJaccard : Float := 0.75
-def bucketCap : Nat := 300
+structure Config where
+  minNodes : Nat := 12
+  minJaccard : Float := 0.75
+  bucketCap : Nat := 300
+  output : String := "graph/proof-near-clones.tsv"
+
+private def parseDecimal (text : String) : Option Float := do
+  match text.splitOn "." with
+  | [whole] => return (← whole.toNat?).toFloat
+  | [whole, fraction] =>
+      let lhs ← whole.toNat?
+      let rhs ← fraction.toNat?
+      let scale := 10 ^ fraction.length
+      return lhs.toFloat + rhs.toFloat / scale.toFloat
+  | _ => none
+
+private def parseConfig : List String → Except String Config
+  | [] => pure {}
+  | "--min-nodes" :: value :: rest => do
+      let some n := value.toNat? | throw s!"invalid --min-nodes value `{value}`"
+      return { (← parseConfig rest) with minNodes := n }
+  | "--min-jaccard" :: value :: rest => do
+      let some n := parseDecimal value | throw s!"invalid --min-jaccard value `{value}`"
+      unless 0.0 ≤ n && n ≤ 1.0 do throw "--min-jaccard must be between 0 and 1"
+      return { (← parseConfig rest) with minJaccard := n }
+  | "--bucket-cap" :: value :: rest => do
+      let some n := value.toNat? | throw s!"invalid --bucket-cap value `{value}`"
+      return { (← parseConfig rest) with bucketCap := n }
+  | "--output" :: value :: rest =>
+      return { (← parseConfig rest) with output := value }
+  | option :: _ => throw s!"unknown or incomplete option `{option}`"
 
 structure Thm where
   name : Name
@@ -93,7 +124,8 @@ def notationOrParserDecl (name : Name) : Bool :=
   tail.startsWith "term" || tail.startsWith "«term" ||
     ["relCompose", "underHomComp", "overHomComp", "relUnionNotation", "allegoryRecip"].contains tail
 
-def main : IO Unit := do
+def main (args : List String) : IO Unit := do
+  let config ← IO.ofExcept (parseConfig args)
   initSearchPath (← findSysroot)
   let env ← importModules #[{ module := `Freyd }] {} (trustLevel := 1024)
   -- bucket by proof-head const; within a bucket, near-clones share most of their subtree-hash set.
@@ -113,19 +145,19 @@ def main : IO Unit := do
     let head := match proofHead value with | .const c _ => c | _ => `_lam
     if head == ``rfl || head == ``Eq.refl then continue
     let hs := subtreeHashes (skeleton value)
-    if hs.size < minNodes then continue
+    if hs.size < config.minNodes then continue
     scanned := scanned + 1
     buckets := buckets.insert head ((buckets.getD head #[]).push ⟨n, mod, hs, hs.size⟩)
   -- pairwise near-clone check within each (bounded) bucket; CROSS-FILE pairs only.
   let mut pairs : Array (Float × Name × Name × Name × Name × Nat) := #[]
   for (_, arr) in buckets do
-    if arr.size > bucketCap then continue
+    if arr.size > config.bucketCap then continue
     for i in [0:arr.size] do
       for j in [i+1:arr.size] do
         let a := arr[i]!; let b := arr[j]!
         if a.mod == b.mod then continue
         let jac := jaccard a.hs b.hs
-        if jac ≥ minJaccard then
+        if jac ≥ config.minJaccard then
           pairs := pairs.push (jac, a.name, a.mod, b.name, b.mod, min a.sz b.sz)
   let sorted := pairs.qsort fun x y =>
     if x.1 != y.1 then x.1 > y.1
@@ -134,7 +166,7 @@ def main : IO Unit := do
       let xKey := s!"{x.2.1}\t{x.2.2.1}\t{x.2.2.2.1}\t{x.2.2.2.2.1}"
       let yKey := s!"{y.2.1}\t{y.2.2.1}\t{y.2.2.2.1}\t{y.2.2.2.2.1}"
       xKey < yKey
-  IO.println s!"scanned {scanned} theorem/definition values; {sorted.size} cross-file near-clone pairs (Jaccard ≥ {minJaccard})\n"
+  IO.println s!"scanned {scanned} theorem/definition values; {sorted.size} cross-file near-clone pairs (Jaccard ≥ {config.minJaccard})\n"
   let mut tsv := #["jaccard\tmin_nodes\tleft\tleft_module\tright\tright_module\tclass"]
   for (jac, na, ma, nb, mb, sz) in sorted do
     let j100 := (jac * 100.0).toUInt64
@@ -142,5 +174,5 @@ def main : IO Unit := do
     let kind := if notationOrParserDecl na || notationOrParserDecl nb then
       "notation/parser" else "ordinary"
     tsv := tsv.push s!"{jac}\t{sz}\t{na}\t{ma}\t{nb}\t{mb}\t{kind}"
-  IO.FS.writeFile "graph/proof-near-clones.tsv" (String.intercalate "\n" tsv.toList ++ "\n")
-  IO.println s!"\nwrote {sorted.size} pair(s) to graph/proof-near-clones.tsv"
+  IO.FS.writeFile config.output (String.intercalate "\n" tsv.toList ++ "\n")
+  IO.println s!"\nwrote {sorted.size} pair(s) to {config.output}"
