@@ -17,8 +17,8 @@
              small colimits.
 -/
 
-import Freyd.S1_1
-import Freyd.S1_9
+import Freyd.S1_01
+import Freyd.S1_09
 import Freyd.S1_72
 import Freyd.S1_84
 import Freyd.S1_97

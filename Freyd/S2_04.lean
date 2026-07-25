@@ -10,10 +10,10 @@
   §2.442 LAW OF METONYMY
 -/
 
-import Freyd.S1_1
-import Freyd.S2_1
-import Freyd.S2_2
-import Freyd.S2_3
+import Freyd.S1_01
+import Freyd.S2_01
+import Freyd.S2_02
+import Freyd.S2_03
 import Freyd.S2_22
 
 

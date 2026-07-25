@@ -8,7 +8,7 @@
   taken over verbatim, not re-derived from the book's own notation.
 -/
 
-import Freyd.S2_1
+import Freyd.S2_01
 import Freyd.S1_38
 
 universe v u

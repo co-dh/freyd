@@ -22,7 +22,7 @@
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
 
-import Freyd.S2_2
+import Freyd.S2_02
 import Freyd.S2_16
 import Freyd.S2_22  -- le_comp_recip_comp (A4_1, via S2_22), symmetric_transitive_idempotent (§2.12)
 

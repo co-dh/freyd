@@ -12,7 +12,7 @@
   §1.284  PREFUNCTOR: preserves composition, not necessarily identities.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_18
 import Freyd.S1_26
 import Freyd.S1_41

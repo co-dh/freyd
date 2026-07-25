@@ -61,9 +61,9 @@
   `IdempotentsSplit` hypothesis.  See S1_82.md.
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_18
-import Freyd.S1_8
+import Freyd.S1_08
 import Freyd.S1_28
 import Freyd.S1_41
 import Freyd.S1_42

@@ -17,9 +17,9 @@
   S1_70 (imported below).
 -/
 
-import Freyd.S1_1
+import Freyd.S1_01
 import Freyd.S1_70
-import Freyd.S1_9
+import Freyd.S1_09
 import Freyd.S1_85
 import Freyd.S1_92
 import Freyd.S1_52

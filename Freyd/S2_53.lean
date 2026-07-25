@@ -1,5 +1,5 @@
-import Freyd.S2_3
-import Freyd.S2_5
+import Freyd.S2_03
+import Freyd.S2_05
 import Freyd.S2_51
 
 universe v u

@@ -1,8 +1,8 @@
-import Freyd.S1_1
-import Freyd.S2_1
-import Freyd.S2_2
-import Freyd.S2_3
-import Freyd.S2_4
+import Freyd.S1_01
+import Freyd.S2_01
+import Freyd.S2_02
+import Freyd.S2_03
+import Freyd.S2_04
 import Freyd.S2_165_Spl
 import Freyd.S2_22
 import Freyd.S2_42

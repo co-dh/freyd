@@ -13,7 +13,7 @@
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
 import Freyd.S2_43
-import Freyd.S2_4
+import Freyd.S2_04
 
 universe v u
 
