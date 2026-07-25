@@ -38,6 +38,7 @@
 
   Axioms (headline): `[propext, Classical.choice, Quot.sound]`.
 -/
+import Freyd.S2_154_SmallRegCat
 import Freyd.S2_111_RelCat
 import Freyd.S2_218_ObjInclRegular
 import Freyd.S2_51
@@ -749,14 +750,6 @@ theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTer
 theorem isTerm_one {D : Type u₁} [Cat.{v} D] [HasTerminal D] :
     @Freyd.Horn.IsTerminalObj D _ (Freyd.one (𝒞 := D)) :=
   fun Y => ⟨Freyd.term Y, fun g => Freyd.term_uniq g (Freyd.term Y)⟩
-
-/-- **§2.154**: a SMALL REGULAR CATEGORY (bundled). -/
-structure SmallRegCat : Type (u + 1) where
-  carrier : Type u
-  [cat : Cat.{u} carrier]
-  [reg : RegularCategory carrier]
-
-attribute [instance] SmallRegCat.cat SmallRegCat.reg
 
 /-- **§2.154**: a SMALL UNITARY TABULAR ALLEGORY (bundled). -/
 structure SmallTabAlleg : Type (u + 1) where

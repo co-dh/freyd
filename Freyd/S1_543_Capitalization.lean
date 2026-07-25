@@ -66,6 +66,7 @@ import Freyd.S1_33
 import Freyd.S1_52
 import Freyd.S1_53_SliceRegular
 import Freyd.S1_543_CatColimit
+import Freyd.S2_154_SmallRegCat
 import Freyd.S1_543_CatColimitRegular
 import Freyd.S1_544_Inflation
 
@@ -468,6 +469,7 @@ end Freyd.Colim
 namespace Freyd
 
 open Freyd.Colim
+open Freyd.S2_154
 
 /-! ## §1.547 (B-package) — discharging `hcanon` for the inner `OrdChain`-slice colimit
 
@@ -828,20 +830,8 @@ structure PreRegBundle where
 
 attribute [instance] PreRegBundle.cat PreRegBundle.pre
 
-/-- A bundled small REGULAR category (the §1.543 successor's input once images are threaded): carrier,
-    `Cat`, `RegularCategory` (= pre-regular + images).  `toPreRegBundle` forgets images.  The
-    image-carrying successor `Freyd.nextStep` (`nextStepOfEnum`) needs `RegularCategory S` to fill its
-    `CapStep.stepImages` field, so it is stated over `RegBundle`; the underlying tower machinery stays
-    on `PreRegBundle` (regularity threads through it via the per-stage `stepImages`, not the bundle). -/
-structure RegBundle where
-  carrier : Type u
-  cat : Cat.{u} carrier
-  reg : @RegularCategory carrier cat
-
-attribute [instance] RegBundle.cat RegBundle.reg
-
-/-- Forget images: a `RegBundle` is a `PreRegBundle`. -/
-def RegBundle.toPreRegBundle (S : RegBundle.{u}) : PreRegBundle.{u} :=
+/-- Forget images: a §2.154 small regular category is a `PreRegBundle`. -/
+def Freyd.S2_154.SmallRegCat.toPreRegBundle (S : SmallRegCat.{u}) : PreRegBundle.{u} :=
   ⟨S.carrier, S.cat, inferInstance⟩
 
 variable {A : Type u} [Cat.{u} A] [PreRegularCategory A]
@@ -2417,7 +2407,7 @@ theorem exists_wellSupported_enum (S : Type u) [Cat.{u} S] [PreRegularCategory S
     `S ↦ S*` as the single polymorphic rung the outer ω-tower iterates.  `nextStepOfEnum` applied to
     a `Classical.choice`-picked well-supported enumeration (always available, `exists_wellSupported_enum`).
     Faithful pre-regular embedding `S → S*`, Sorry-free.  This is the §1.546/§1.547 keystone. -/
-noncomputable def nextStep (S : RegBundle.{u}) : CapStep S.carrier :=
+noncomputable def nextStep (S : SmallRegCat.{u}) : CapStep S.carrier :=
   nextStepOfEnum (Classical.choose (exists_wellSupported_enum S.carrier))
     (Classical.choose_spec (exists_wellSupported_enum S.carrier))
 
@@ -2429,9 +2419,9 @@ noncomputable def nextStep (S : RegBundle.{u}) : CapStep S.carrier :=
 -- `chainSliceHasImages` (its `PrefixChain P` is built internally).  Left out until the regular path is
 -- needed; the pre-regular `capData_exists`/`capitalization_lemma` below do not use them.
 --
--- noncomputable def nextStepRegular (S : RegBundle.{u}) :
+-- noncomputable def nextStepRegular (S : SmallRegCat.{u}) :
 --     @RegularCategory (nextStep S).T (nextStep S).catT := …  (used (nextStep S).stepImages)
--- noncomputable def nextStep_hasImages (S : RegBundle.{u}) :
+-- noncomputable def nextStep_hasImages (S : SmallRegCat.{u}) :
 --     @HasImages (nextStep S).T (nextStep S).catT := (nextStep S).stepImages
 
 -- `capData_exists` (the §1.543 discharge) is RELOCATED to `Freyd.CapDataWiring` — it must reference

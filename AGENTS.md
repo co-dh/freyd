@@ -19,6 +19,9 @@ The code should follow the book's terminology, wording, convension.
 Write composition in diagram order, by juxtaposition: `xy` means first x then y (the book's convention).
 Use the global book notation `𝟙 A` for the categorical identity `Cat.id A`; do not spell identities
 as `Cat.id A` in new code.
+Use the shortest unambiguous book name in signatures and prose. Once its namespace is deliberately
+opened, write `SmallRegCat`, for example, rather than `Freyd.S2_154.SmallRegCat`; keep full
+qualification only where ambiguity or declaration syntax requires it.
 Always prefer the book's definition over ad-hoc simplifications — even if the
 book version requires more typeclasses (e.g., `Entire R := 1_A ≤ R°R` via
 `compose` rather than `∃ h, h ≫ R.colA = id_A`).
