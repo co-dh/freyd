@@ -1582,7 +1582,7 @@ theorem exists_ultrafilter_extending (ℱ₀ : (Subobject 𝒞 one) → Prop)
     fun {a b c} hab hbc U h => hbc U (hab U h)
   -- the union of a chain of ExtFilters, joined with ℱ₀ to stay nonempty even on the empty chain.
   -- chain-upper-bound: take the family  ℱ₀ ∪ (⋃ of the chain).
-  have hub : ∀ s : Freyd.WO.Sub (ExtFilter ℱ₀), Freyd.WO.IsChain le s →
+  have hub : ∀ s : Freyd.Sub (ExtFilter ℱ₀), Freyd.WO.IsChain le s →
       ∃ b, Freyd.WO.IsUB le s b := by
     intro s hchain
     -- the union family

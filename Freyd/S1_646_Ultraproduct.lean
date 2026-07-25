@@ -35,7 +35,7 @@ namespace Freyd.UF
 
 universe u v w
 
-open Set Filter
+open Filter
 
 variable {I : Type u}
 
@@ -46,10 +46,10 @@ symmetry uses symmetry of `=`; transitivity intersects the two agreement sets (`
 up-closes along `{i | x i = z i} ⊇ {x = y} ∩ {y = z}`. -/
 
 /-- The agreement set `{i | x i = y i}` of two sections. -/
-def agree {X : I → Type w} (x y : ∀ i, X i) : Set I := fun i => x i = y i
+def agree {X : I → Type w} (x y : ∀ i, X i) : Sub I := fun i => x i = y i
 
 theorem agree_refl {X : I → Type w} (x : ∀ i, X i) : agree x x = univ :=
-  Set.ext fun _ => ⟨fun _ => trivial, fun _ => rfl⟩
+  Sub.ext fun _ => ⟨fun _ => trivial, fun _ => rfl⟩
 
 /-- The ultra-product relation on sections: agreement on a `U`-large set. -/
 def UEq {X : I → Type w} (U : Ultrafilter I) (x y : ∀ i, X i) : Prop :=
@@ -61,7 +61,7 @@ theorem UEq.refl {X : I → Type w} (U : Ultrafilter I) (x : ∀ i, X i) : UEq U
 
 theorem UEq.symm {X : I → Type w} {U : Ultrafilter I} {x y : ∀ i, X i}
     (h : UEq U x y) : UEq U y x := by
-  have he : agree x y = agree y x := Set.ext fun _ => ⟨Eq.symm, Eq.symm⟩
+  have he : agree x y = agree y x := Sub.ext fun _ => ⟨Eq.symm, Eq.symm⟩
   unfold UEq at h ⊢; rwa [he] at h
 
 theorem UEq.trans {X : I → Type w} {U : Ultrafilter I} {x y z : ∀ i, X i}

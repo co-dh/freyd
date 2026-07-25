@@ -30,11 +30,16 @@
 -/
 import Freyd.S1_543_DirectedColimit
 
-namespace Freyd.WO
+namespace Freyd
 
 universe u
 
-/-! ## Sets as predicates (mathlib-free) -/
+/-! ## Sets as predicates
+
+The ONE copy of "a subset of `α`, as a predicate" for the whole repo.  Shared by the well-ordering
+construction (§1.543), its Zorn machinery, and the §1.646 ultrafilter development.  The
+filter-specific boolean operations (`univ`, `empty`, `compl` / `ᶜ`, `inter` / `∩ᵤ`) stay in
+`S1_646_Ultrafilter.lean` — a global `ᶜ` would clash with the Heyting complement. -/
 
 /-- A subset of `α`, as a predicate.  We avoid any library `Set` to stay self-contained. -/
 abbrev Sub (α : Type u) := α → Prop
@@ -55,6 +60,8 @@ theorem Subset.antisymm {s t : Sub α} (h₁ : s ⊆ₛ t) (h₂ : t ⊆ₛ s) :
   Sub.ext fun a => ⟨@h₁ a, @h₂ a⟩
 
 end Sub
+
+namespace WO
 
 /-! ## The well-order, bundled
 
@@ -569,4 +576,6 @@ theorem zorn (le : T → T → Prop) (hrefl : ∀ a, le a a)
 
 end Zorn
 
-end Freyd.WO
+end WO
+
+end Freyd
