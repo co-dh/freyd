@@ -117,6 +117,115 @@ theorem special (n : 𝒞) : cop n ≫ mer n = 𝟙 n := by
   rw [← hcollapse]
   exact hstep
 
+/-- The counit law (10) read on the LEFT strand: `Δ;(! ⊗ 𝟙);λ = 𝟙`.  Only the right-hand form is a
+    field, since cocommutativity (9) plus the unitor–symmetry coherence gives this one. -/
+theorem cop_counit_left (n : 𝒞) :
+    cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
+  calc cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
+      = (cop n ≫ SymMonCat.swap n n) ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [cop_comm]
+    _ = cop n ≫ (SymMonCat.swap n n ≫ (dis n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by
+          simp only [Cat.assoc]
+    _ = cop n ≫ ((𝟙 n ⊗ₕ dis n) ≫ SymMonCat.swap n 𝕀) ≫ SymMonCat.lunit n := by
+          rw [← SymMonCat.swap_nat]
+    _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.swap n 𝕀 ≫ SymMonCat.lunit n := by
+          simp only [Cat.assoc]
+    _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by rw [SymMonCat.swap_lunit]
+    _ = 𝟙 n := cop_counit n
+
+/-- The unit law (7) read on the LEFT strand: `λ⁻¹;(? ⊗ 𝟙);∇ = 𝟙`, dual to `cop_counit_left`. -/
+theorem mer_unit_left (n : 𝒞) :
+    SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n = 𝟙 n := by
+  calc SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n
+      = SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ mer n := by rw [mer_comm]
+    _ = SymMonCat.lunitInv n ≫ ((un n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ mer n := by
+          simp only [Cat.assoc]
+    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ un n)) ≫ mer n := by
+          rw [SymMonCat.swap_nat]
+    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by
+          simp only [Cat.assoc]
+    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by rw [lunitInv_swap]
+    _ = 𝟙 n := mer_unit n
+
+/-- The CUP `? ; Δ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
+    structure the Frobenius equations induce (functorialSemanticsForRelationalTheories.pdf p. 19). -/
+def cup (n : 𝒞) : (𝕀 : 𝒞) ⟶ n ⊗ n := un n ≫ cop n
+
+/-- The CAP `∇ ; ! : n ⊗ n ⟶ I` — in `Rel`, `(x,y) ↦ •` exactly when `x = y`. -/
+def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := mer n ≫ dis n
+
+/-- The SNAKE (yanking) equation: a wire bent down by a cup and back up by a cap is straight.
+    This is where the Frobenius equation (41) earns its place — the middle three factors are
+    literally the left-hand side of `frob_left`, which collapses them to `∇;Δ`, and then the monoid
+    unit law (7) and the left counit law finish it. -/
+theorem snake (n : 𝒞) :
+    SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
+      ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
+  have hcup : (𝟙 n ⊗ₕ cup n) = (𝟙 n ⊗ₕ un n) ≫ (𝟙 n ⊗ₕ cop n) := by
+    dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  have hcap : (cap n ⊗ₕ 𝟙 n) = (mer n ⊗ₕ 𝟙 n) ≫ (dis n ⊗ₕ 𝟙 n) := by
+    dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  calc SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
+        ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
+      = SymMonCat.runitInv n ≫ ((𝟙 n ⊗ₕ un n) ≫ (𝟙 n ⊗ₕ cop n)) ≫ SymMonCat.tensAssocInv n n n
+          ≫ ((mer n ⊗ₕ 𝟙 n) ≫ (dis n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n))
+          ≫ ((𝟙 n ⊗ₕ cop n) ≫ SymMonCat.tensAssocInv n n n ≫ (mer n ⊗ₕ 𝟙 n))
+          ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by simp only [Cat.assoc]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n)) ≫ (mer n ≫ cop n)
+          ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [frob_left]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n)
+          ≫ (cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n) := by simp only [Cat.assoc]
+    _ = 𝟙 n ≫ 𝟙 n := by rw [mer_unit, cop_counit_left]
+    _ = 𝟙 n := Cat.id_comp _
+
+/-- The mirror snake, bending the other way.  Same shape as `snake` with `frob_right` in place of
+    `frob_left` and the left/right unit laws exchanged. -/
+theorem snake' (n : 𝒞) :
+    SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
+      ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n = 𝟙 n := by
+  have hcup : (cup n ⊗ₕ 𝟙 n) = (un n ⊗ₕ 𝟙 n) ≫ (cop n ⊗ₕ 𝟙 n) := by
+    dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n) := by
+    dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  calc SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
+        ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n
+      = SymMonCat.lunitInv n ≫ ((un n ⊗ₕ 𝟙 n) ≫ (cop n ⊗ₕ 𝟙 n)) ≫ SymMonCat.tensAssoc n n n
+          ≫ ((𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
+    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n))
+          ≫ ((cop n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n))
+          ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by simp only [Cat.assoc]
+    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n)) ≫ (mer n ≫ cop n)
+          ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by rw [frob_right]
+    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n)
+          ≫ (cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n) := by simp only [Cat.assoc]
+    _ = 𝟙 n ≫ 𝟙 n := by rw [mer_unit_left, cop_counit]
+    _ = 𝟙 n := Cat.id_comp _
+
+/-- The CONVERSE `R†`, by bending both of `R`'s wires around
+    (functorialSemanticsForRelationalTheories.pdf p. 19, "`R†` is just the opposite relation").
+    In `Rel` this reads `y ↦ x` exactly when `x R y`.
+
+    NOTE the symbol: this is the paper's `(−)†` and Freyd's `R°`.  The paper's own `(−)°` is the
+    colour swap of its §7 and is NOT order-reversing — never conflate the two. -/
+def conv {a b : 𝒞} (R : a ⟶ b) : b ⟶ a :=
+  SymMonCat.lunitInv b ≫ (cup a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
+    ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) ≫ SymMonCat.runit a
+
+/-- `𝟙† = 𝟙`, which is exactly the mirror snake once `𝟙 ⊗ 𝟙` is collapsed. -/
+theorem conv_id (a : 𝒞) : conv (𝟙 a) = 𝟙 a := by
+  dsimp [conv]
+  rw [SymMonCat.tensHom_id, Cat.id_comp]
+  exact snake' a
+
+/-- The converse is monotone: it is built only from `≫` and `⊗`, both of which are. -/
+theorem conv_mono {a b : 𝒞} {R S : a ⟶ b} (h : OrderedCat.le R S) :
+    OrderedCat.le (conv R) (conv S) := by
+  dsimp [conv]
+  refine OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono (OrderedCat.le_refl _)
+    (OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono ?_ (OrderedCat.le_refl _))))
+  exact SymMonCat.tensHom_mono (OrderedCat.le_refl _)
+    (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.le_refl _)) (OrderedCat.le_refl _))
+
 end CartBicat
 
 end Freyd.Diag

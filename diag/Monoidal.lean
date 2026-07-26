@@ -72,6 +72,10 @@ class SymMonCat (𝒞 : Type u) extends OrderedCat.{v} 𝒞 where
   swap_swap (a b : 𝒞) : swap a b ≫ swap b a = 𝟙 (tens a b)
   swap_nat {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
     tensHom R S ≫ swap a' b' = swap a b ≫ tensHom S R
+  /-- Unitor–symmetry compatibility, `γ_{a,I} ; λ_a = ρ_a`.  Part of the standard axioms for a
+      symmetric monoidal category (Mac Lane), not an extra assumption of our own; it is what lets
+      a discard be moved from one side of a product to the other. -/
+  swap_lunit (a : 𝒞) : swap a tunit ≫ lunit a = runit a
 
   /-- Pentagon. -/
   pentagon (a b c d : 𝒞) :
@@ -108,6 +112,26 @@ theorem tensHom_split {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
 theorem tensHom_split' {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
     (𝟙 a ⊗ₕ S) ≫ (R ⊗ₕ 𝟙 b') = R ⊗ₕ S := by
   rw [← SymMonCat.tensHom_comp, Cat.comp_id, Cat.id_comp]
+
+/-- The inverse form of `swap_lunit`: `λ⁻¹_a ; γ_{I,a} = ρ⁻¹_a`. -/
+theorem lunitInv_swap (a : 𝒞) :
+    SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a = SymMonCat.runitInv a := by
+  have hround : (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a = 𝟙 a := by
+    calc (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a
+        = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a)
+            ≫ SymMonCat.swap a (𝕀 : 𝒞) ≫ SymMonCat.lunit a := by rw [SymMonCat.swap_lunit]
+      _ = SymMonCat.lunitInv a ≫ (SymMonCat.swap (𝕀 : 𝒞) a ≫ SymMonCat.swap a (𝕀 : 𝒞))
+            ≫ SymMonCat.lunit a := by simp only [Cat.assoc]
+      _ = SymMonCat.lunitInv a ≫ 𝟙 ((𝕀 : 𝒞) ⊗ a) ≫ SymMonCat.lunit a := by
+            rw [SymMonCat.swap_swap]
+      _ = 𝟙 a := by rw [Cat.id_comp, SymMonCat.inv_lunit]
+  calc SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a
+      = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ 𝟙 (a ⊗ (𝕀 : 𝒞)) := (Cat.comp_id _).symm
+    _ = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a)
+          ≫ SymMonCat.runit a ≫ SymMonCat.runitInv a := by rw [SymMonCat.runit_inv]
+    _ = ((SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a)
+          ≫ SymMonCat.runitInv a := by simp only [Cat.assoc]
+    _ = SymMonCat.runitInv a := by rw [hround, Cat.id_comp]
 
 /-- Naturality of the associator read in the inverse direction — obtained by conjugating
     `tensAssoc_nat` with `tensAssoc_inv`/`inv_tensAssoc`.  Needed whenever a proof pushes a

@@ -150,9 +150,28 @@ A shape trap worth remembering: `≫` is `infixr`, and the staging lemmas origin
 which right-nested everything and left `(X ≫ Y) ≫ Z` patterns unmatchable by `rw`. The fix was to state the staging
 lemmas already fused, so no `tensHom_split` rewrite is needed at the call site.
 
-Still open in this phase: the full glb statement, the converse `†` by wire-bending with its snake lemmas, and the map
-characterisations (Lemmas 4.4, 4.8, Cor. 4.5). The converse is the gate to phase 5 — Freyd's `recip` and the modular
-law both need it.
+**The snakes and the converse are in, in `diag/CB.lean`.** All `[propext]` only.
+
+| declaration                      | content                                                            |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `cop_counit_left`, `mer_unit_left` | the left-strand forms of (10) and (7), from (9)/(6) plus `swap_lunit` |
+| `cup`, `cap`                     | `?;Δ` and `∇;!`                                                     |
+| `snake`, `snake'`                | both yanking equations                                              |
+| `conv`                           | `R†` by bending both wires                                          |
+| `conv_id`, `conv_mono`           | `𝟙† = 𝟙`; monotonicity                                              |
+
+The snakes are where the Frobenius equation (41) earns its place: in each, the middle three factors are literally the
+left-hand side of `frob_left`/`frob_right`, collapsing to `∇;Δ`, after which a unit law and a counit law finish it.
+Both proofs went through first try, which is evidence the Def. 4.1 field set is right.
+
+One field was added to `SymMonCat` to make this work: `swap_lunit`, the unitor–symmetry compatibility
+`γ_{a,I};λ_a = ρ_a`. It is part of Mac Lane's standard axioms for a symmetric monoidal category, not an invention of
+ours, and it is what lets a discard move from one strand to the other — without it `cop_counit_left` is unreachable.
+`lunitInv_swap` in `diag/Monoidal.lean` is its inverse form.
+
+Still open in this phase: the full glb statement, `conv_conv` (involutivity), contravariant functoriality
+`(R;S)† = S†;R†`, `conv_inter`, and the map characterisations (Lemmas 4.4, 4.8, Cor. 4.5). Those four are what
+phase 5 consumes — Freyd's `recip_recip`, `recip_comp`, `recip_inter` are literally the first three.
 
 ## Phase 4 — `Rel(Set)` is a cartesian bicategory (`diag/RelSetCB.lean`)
 
