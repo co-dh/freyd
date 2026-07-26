@@ -13,7 +13,7 @@
     `Colim.colimitStrictInitial`; the substantive §1.63 union-condition field
     `invImage_preserves_union` is discharged by `laxColim_invImage_union_le`
     (`Freyd/LaxInvImageUnion.lean`) for the hard direction and by monotonicity of the inverse image
-    (`invImage_le_of_le`, only `HasPullbacks`) + `union_min` for the reverse.
+    (`inverseImage_mono`, only `HasPullbacks`) + `union_min` for the reverse.
 
   * `laxColimPositive` — the lax colimit of `DisjointBinaryCoproduct` stages is itself a
     `DisjointBinaryCoproduct` (§1.621).  The three disjointness facts come from the committed
@@ -55,7 +55,7 @@ variable {ι : Type w} {D : Directed ι}
 
   The four bottom fields rest on the single brick `laxColimStrictInitial`; the substantive
   coherent-stability law `invImage_preserves_union` is `laxColim_invImage_union_le` for the hard
-  direction and `invImage_le_of_le` + `union_min` for the reverse (monotonicity of inverse image). -/
+  direction and `inverseImage_mono` + `union_min` for the reverse (monotonicity of inverse image). -/
 noncomputable def laxColimPreLogos (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L) [Nonempty ι]
     (hbot : ∀ i, PreLogos (L.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
@@ -88,8 +88,8 @@ noncomputable def laxColimPreLogos (L : LaxCatSystem.{w, w} ι D) (hL : Coherent
         ⟨laxColim_invImage_union_le L hL tData pData eqData coprData hi hfaith hmono himgpres hbot
            f S T,
          HasSubobjectUnions.union_min _ _ _
-           (invImage_le_of_le f (HasSubobjectUnions.union_left S T))
-           (invImage_le_of_le f (HasSubobjectUnions.union_right S T))⟩
+           (inverseImage_mono f (HasSubobjectUnions.union_left S T))
+           (inverseImage_mono f (HasSubobjectUnions.union_right S T))⟩
       invImage_preserves_bottom := fun {A B} f =>
         ⟨(HasPullbacks.has f (hInit.out B)).cone.π₂, hSI _⟩ }
 

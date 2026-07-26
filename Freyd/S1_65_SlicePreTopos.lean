@@ -1098,11 +1098,11 @@ theorem swap_fixed_le_bottom {X : 𝒞} (g : X ⟶ coprod (one : 𝒞) one)
   -- entire X ≤ g#(entire C) ≤ g#(Inl ∪ Inr) ≤ g#Inl ∪ g#Inr = A₁ ∪ A₂ ≤ ⊥ X.
   have hentU : (Subobject.entire X).le (HasSubobjectUnions.union A₁ A₂) := by
     have ha : (Subobject.entire X).le (InverseImage g (Subobject.entire C)) :=
-      entire_le_invImage_entire g
+      entire_le_inverseImage_entire g
     have hbu : (Subobject.entire C).le (HasSubobjectUnions.union Inl Inr) :=
       inl_union_inr_entire (𝒟 := 𝒞) (A := (one : 𝒞)) (B := one)
     have hb : (InverseImage g (Subobject.entire C)).le
-        (InverseImage g (HasSubobjectUnions.union Inl Inr)) := invImage_mono_local g hbu
+        (InverseImage g (HasSubobjectUnions.union Inl Inr)) := inverseImage_mono g hbu
     have hc : (InverseImage g (HasSubobjectUnions.union Inl Inr)).le
         (HasSubobjectUnions.union A₁ A₂) := (PreLogos.invImage_preserves_union g Inl Inr).1
     exact Subobject.le_trans ha (Subobject.le_trans hb hc)
@@ -1263,13 +1263,6 @@ theorem cover_splits_of_dom_choice {𝒟 : Type u} [Cat.{v} 𝒟] [RegularCatego
   dsimp [graph, reciprocal] at hkA hkB
   rw [Cat.comp_id] at hkB
   exact ⟨s, by rw [← hkB]; exact hkA⟩
-
-/-- A split mono is monic. -/
-theorem mono_of_split {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟} (s : Y ⟶ X) (r : X ⟶ Y)
-    (h : s ≫ r = Cat.id Y) : Monic s := by
-  intro W u v huv
-  have := congrArg (· ≫ r) huv
-  simpa only [Cat.assoc, h, Cat.comp_id] using this
 
 /-- **PIECE F (transport)**: `IsComplemented` of a slice subobject `U ⊆ Y` forgets to
     `IsComplemented (forgetSlice U)` in `𝒞`.  Complement = `forgetSlice U₂`; both clauses

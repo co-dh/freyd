@@ -374,23 +374,10 @@ private theorem _piForallMap_sec {X X' : Over A} (m : X ⟶ X') :
 def piForallMap {X X' : Over A} (m : X ⟶ X') : piForallObj f X ⟶ piForallObj f X' :=
   piLift f (piEqMap f X ≫ expCovMap (fHat f) (PbMap f m)) (_piForallMap_sec f m)
 
-/-- The equalizer arrow `piEqMap` is monic: maps into `Π_f X` agreeing after `≫ piEqMap` agree. -/
-theorem piEqMap_mono {X : Over A} {Y : Over B} {u v : Y ⟶ piForallObj f X}
-    (h : u ≫ piEqMap f X = v ≫ piEqMap f X) : u = v := by
-  have huniq := @eqLift_uniq (Over B) _ _ (expPb f X) (expHatHat f) Y
-    (piAlpha f X) (piBeta f X) (u ≫ piEqMap f X)
-    (by
-      show (u ≫ piEqMap f X) ≫ piAlpha f X = (u ≫ piEqMap f X) ≫ piBeta f X
-      rw [Cat.assoc, Cat.assoc]
-      show u ≫ (@eqMap (Over B) _ _ (expPb f X) (expHatHat f) (piAlpha f X) (piBeta f X) ≫ piAlpha f X)
-         = u ≫ (@eqMap (Over B) _ _ (expPb f X) (expHatHat f) (piAlpha f X) (piBeta f X) ≫ piBeta f X)
-      rw [eqMap_eq])
-  exact (huniq u rfl).trans (huniq v h.symm).symm
-
 /-- `Π_f` preserves identities. -/
 theorem piForallMap_id (X : Over A) :
     piForallMap f (Cat.id X) = Cat.id (piForallObj f X) := by
-  apply piEqMap_mono
+  apply (show Monic (piEqMap f X) from eqMap_monic _ _)
   rw [show piForallMap f (Cat.id X) ≫ piEqMap f X =
         piEqMap f X ≫ expCovMap (fHat f) (PbMap f (Cat.id X)) from piLift_eqMap f _ _,
       PbMap_id, expCovMap_id, Cat.comp_id, Cat.id_comp]
@@ -398,7 +385,7 @@ theorem piForallMap_id (X : Over A) :
 /-- `Π_f` preserves composition. -/
 theorem piForallMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
     piForallMap f (m ≫ n) = piForallMap f m ≫ piForallMap f n := by
-  apply piEqMap_mono
+  apply (show Monic (piEqMap f X'') from eqMap_monic _ _)
   rw [Cat.assoc]
   rw [show piForallMap f (m ≫ n) ≫ piEqMap f X'' =
         piEqMap f X ≫ expCovMap (fHat f) (PbMap f (m ≫ n)) from piLift_eqMap f _ _,
@@ -426,15 +413,12 @@ def piForallFunctor : Functor (Over A) (Over B) where
 theorem piPhi_nat_right {Y : Over B} {X X' : Over A}
     (g : OverHom (baseChangeObj f Y) X) (b : X ⟶ X') :
     piPhi f (g ≫ b) = piPhi f g ≫ piForallMap f b := by
-  apply piEqMap_mono
+  apply (show Monic (piEqMap f X') from eqMap_monic _ _)
   apply transp_inj
-  -- LHS: transp(piPhi(g≫b) ≫ eqMap) = piPhiK (g≫b)
   rw [_piPhi_transp]
-  -- RHS: (piPhi g ≫ Π_f b) ≫ eqMap = piPhi g ≫ (eqMap ≫ expCovMap (PbMap b))
   rw [Cat.assoc, show piForallMap f b ≫ piEqMap f X' =
         piEqMap f X ≫ expCovMap (fHat f) (PbMap f b) from piLift_eqMap f _ _,
       ← Cat.assoc, transp_expCovMap, _piPhi_transp]
-  -- piPhiK (g≫b) = piPhiK g ≫ PbMap b  (underlying arrows)
   apply OverHom.ext
   show prodToBc f Y ≫ (g ≫ b).f = (prodToBc f Y ≫ g.f) ≫ b.f
   show prodToBc f Y ≫ (g.f ≫ b.f) = (prodToBc f Y ≫ g.f) ≫ b.f
@@ -495,16 +479,11 @@ theorem prodToBc_baseChangeMap {Y' Y : Over B} (a : Y' ⟶ Y) :
 theorem piPhi_nat_left {Y' Y : Over B} {X : Over A}
     (a : Y' ⟶ Y) (g : OverHom (baseChangeObj f Y) X) :
     piPhi f ((baseChangeFunctor f).map a ≫ g) = a ≫ piPhi f g := by
-  apply piEqMap_mono
+  apply (show Monic (piEqMap f X) from eqMap_monic _ _)
   apply transp_inj
-  -- LHS: transp(piPhi(f*a ≫ g) ≫ eqMap) = piPhiK (f*a ≫ g),  .f = prodToBc Y' ≫ (f*a).f ≫ g.f
   rw [_piPhi_transp]
-  -- RHS: (a ≫ piPhi g) ≫ eqMap = a ≫ (piPhi g ≫ eqMap);
-  --   transp (a ≫ d) = prodMap f̂ Y' Y a ≫ transp d  (transp_precomp);
-  --   transp (piPhi g ≫ eqMap) = piPhiK g.
   rw [Cat.assoc, transp_precomp, _piPhi_transp]
   apply OverHom.ext
-  -- `Functor.map a = baseChangeMap f a`; reduce to the bridge identity, cancel `≫ g.f`.
   show prodToBc f Y' ≫ ((baseChangeMap f a).f ≫ g.f)
      = (prodMap (fHat f) Y' Y a).f ≫ prodToBc f Y ≫ g.f
   rw [← Cat.assoc, prodToBc_baseChangeMap, Cat.assoc]

@@ -196,11 +196,6 @@ def ThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] {a b : 𝒜} (T : a ⟶ b) 
 section ThickAllDescent
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
-/-- `Entire R ⟹ 1 ⊑ R ≫ R°` (S2_4's `entire_iff_one_le` is private; re-derive locally). -/
-theorem oneLeOfEntire {a b : 𝒜} (R : a ⟶ b) (hR : Entire R) : Cat.id a ⊑ R ≫ R° := by
-  have h := hR; unfold Entire dom at h
-  rw [← h]; exact inter_lb_right _ _
-
 /-- `1 ⊑ R ≫ R° ⟹ Entire R`. -/
 theorem entireOfOneLe {a b : 𝒜} {R : a ⟶ b} (h : Cat.id a ⊑ R ≫ R°) : Entire R := by
   unfold Entire dom
@@ -276,7 +271,7 @@ theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
   refine ⟨⟨?_, ?_⟩, ?_⟩
   · -- Entire (R /ₛ S).
     refine entireOfOneLe ?_
-    refine le_trans (oneLeOfEntire R' hEnt') ?_
+    refine le_trans (entire_id_le hEnt') ?_
     exact le_trans (comp_mono_right hR'_le _) (comp_mono_left _ (recip_mono hR'_le))
   · -- Simple (R /ₛ S): S straight ⟹ R/ₛS simple [§2.356].
     exact straight_symmDiv_simple hStr R
@@ -285,7 +280,7 @@ theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
     · exact ((le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)).1
     · have hRle : R ⊑ R' ≫ S := by
         have e1 : R ⊑ (R' ≫ R'°) ≫ R := by
-          have := comp_mono_right (oneLeOfEntire R' hEnt') R
+          have := comp_mono_right (entire_id_le hEnt') R
           rwa [Cat.id_comp] at this
         rw [Cat.assoc] at e1
         exact le_trans e1 (comp_mono_left R' hR'oR)

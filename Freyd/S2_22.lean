@@ -1236,10 +1236,6 @@ section LCDAGeneral
 
 variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
-/-- An equality refines to the allegory order. -/
-theorem le_of_eq' {a b : 𝒜} {R S : a ⟶ b} (h : R = S) : R ⊑ S := by
-  rw [h]; exact le_refl S
-
 /-- `Sup` depends only on the predicate up to logical equivalence. -/
 theorem Sup_congr {a b : 𝒜} {P Q : (a ⟶ b) → Prop} (h : ∀ T, P T ↔ Q T) :
     Sup P = Sup Q := by
@@ -1290,7 +1286,7 @@ theorem IndexedDisjointUnion.inject_mediator (du : IndexedDisjointUnion α β)
     by_cases hij : i = j
     · have h : du.U j ≫ ((du.U i)° ≫ R i) = R j := by
         subst hij; rw [← Cat.assoc, du.self, Cat.id_comp]
-      exact le_of_eq' h
+      exact le_of_eq h
     · have h : du.U j ≫ ((du.U i)° ≫ R i) = (𝟘 : α j ⟶ c) := by
         rw [← Cat.assoc, du.cross (Ne.symm hij), DistributiveAllegory.zero_comp]
       rw [h]; exact zero_le _
@@ -1944,7 +1940,7 @@ def deltaFamEntry (i j : I) : α j ⟶ α i :=
 /-- The diagonal entry of the delta family is the identity. -/
 theorem deltaFamEntry_diag (i : I) : deltaFamEntry (α := α) i i = Cat.id (α i) := by
   apply le_antisymm
-  · apply Sup_le; rintro T ⟨_, hT⟩; exact le_of_eq' (eq_of_heq hT)
+  · apply Sup_le; rintro T ⟨_, hT⟩; exact le_of_eq (eq_of_heq hT)
   · exact le_Sup ⟨rfl, HEq.refl _⟩
 
 /-- An off-diagonal entry of the delta family is `𝟘`. -/
@@ -1987,7 +1983,7 @@ theorem indexedCoproduct_to_disjointUnion
         rintro T ⟨S, ⟨i, rfl⟩, rfl⟩
         by_cases hij : i = j
         · subst hij
-          exact le_of_eq' (by rw [← Cat.assoc, hUp i, Cat.id_comp])
+          exact le_of_eq (by rw [← Cat.assoc, hUp i, Cat.id_comp])
         · have h0 : U j ≫ (p i ≫ U i) = (𝟘 : α j ⟶ β) := by
             rw [← Cat.assoc, hUp_off i j (Ne.symm hij), DistributiveAllegory.zero_comp]
           rw [h0]; exact zero_le _
@@ -2113,7 +2109,7 @@ theorem IndexedDisjointUnion.inject_map {I : Type u} {α : I → 𝒜} {β : �
     rw [du.self i, Allegory.inter_idem]
   · -- Simple: Uᵢ° Uᵢ ⊑ 1_β
     show (du.U i)° ≫ du.U i ⊑ Cat.id β
-    exact le_trans (le_Sup ⟨i, rfl⟩) (le_of_eq' du.complete)
+    exact le_trans (le_Sup ⟨i, rfl⟩) (le_of_eq du.complete)
 
 /-! ## §2.226  The partial-unit step
 

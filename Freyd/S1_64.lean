@@ -2924,10 +2924,10 @@ theorem boolean_to_coprod_choice_is_choice [HasBinaryProducts 𝒞]
   have hRsrc : (Subobject.entire R.src).le
       (HasSubobjectUnions.union (InverseImage R.colB Inl) (InverseImage R.colB Inr)) := by
     have ha : (Subobject.entire R.src).le (InverseImage R.colB (Subobject.entire Bc)) :=
-      entire_le_invImage_entire R.colB
+      entire_le_inverseImage_entire R.colB
     have hbu : (Subobject.entire Bc).le (HasSubobjectUnions.union Inl Inr) :=
       inl_union_inr_entire (𝒟 := 𝒞) (A := B₁) (B := B₂)
-    exact Subobject.le_trans ha (Subobject.le_trans (invImage_mono_local R.colB hbu)
+    exact Subobject.le_trans ha (Subobject.le_trans (inverseImage_mono R.colB hbu)
       (PreLogos.invImage_preserves_union R.colB Inl Inr).1)
   have hAex : (Subobject.entire A).le (existsAlong R.colA (Subobject.entire R.src)) := by
     -- existsAlong R.colA (entire R.src) = image ((entire).arr ≫ colA); (entire).arr ≫ colA

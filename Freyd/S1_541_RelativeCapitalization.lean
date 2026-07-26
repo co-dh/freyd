@@ -32,10 +32,6 @@
                                (underlying arrow `pair g id_P`).  With `P = ∏U`,
                                `g = projection`, this is the point the product-slice
                                rung adds for a factor `B ∈ U`.
-    * `prodSliceAcquiresBothFactors`
-                            — the two-factor crux: the SINGLE slice `A/(B×B')` points
-                               BOTH factors at once, so one rung over `∏U` points every
-                               member of `U` simultaneously.
     * `listProd` / `listProdProj` / `listSubset` / `listDirected`
                             — the §1.547 FINITE-SET INDEX (mathlib-free): finite sets of
                                objects modelled as `List 𝒞`, `⊆`-ordered into a `Directed`
@@ -290,20 +286,6 @@ theorem sliceAcquiresFactorPoint {P : 𝒞} (B : 𝒞) (g : P ⟶ B) :
     (sliceFactorPoint B g).f ≫ (sliceEmbedObj P B).hom = (overTerm P).hom := by
   show pair g (Cat.id P) ≫ snd = Cat.id P
   exact snd_pair g (Cat.id P)
-
-/-- **Both factors of a binary product slice are pointed (§1.547, two-factor crux).**
-    The single slice `A/(B × B')` acquires, from its own base, a point of the factor `B`
-    (along `fst`) AND a point of the factor `B'` (along `snd`).  This is the elementary fact
-    behind "the slice over the *product* of `U` points every member of `U` simultaneously":
-    iterating it over a finite `U` (its product carries a projection to each member) gives one
-    rung that points all of `U` at once, the content of the directed-union construction. -/
-theorem prodSliceAcquiresBothFactors (B B' : 𝒞) :
-    (sliceFactorPoint B (fst : prod B B' ⟶ B)).f ≫ (sliceEmbedObj (prod B B') B).hom
-        = (overTerm (prod B B')).hom
-      ∧ (sliceFactorPoint B' (snd : prod B B' ⟶ B')).f ≫ (sliceEmbedObj (prod B B') B').hom
-        = (overTerm (prod B B')).hom :=
-  ⟨sliceAcquiresFactorPoint B (fst : prod B B' ⟶ B),
-   sliceAcquiresFactorPoint B' (snd : prod B B' ⟶ B')⟩
 
 /-! ## §1.547  The finite-set index and the product over a finite set
 
@@ -744,7 +726,7 @@ variable [PullbacksTransferCovers 𝒞]
   `nextStepOfEnum`/`exists_wellSupported_enum`/`nextStep` itself now live UPSTREAM in
   `Freyd.Capitalization` (after `CapStep`, before `capData_exists`), so `capData_exists`/`hwall_step`
   can NAME the §1.546/§1.547 successor in place.  They are still in scope HERE via the `Capitalization`
-  import (`open Freyd`), used by `enumChain_stage_acquires` below.  Pure relocation; no semantics changed. -/
+  import (`open Freyd`).  Pure relocation; no semantics changed. -/
 
 section BaseSliceCartesian
 variable [HasEqualizers 𝒞]
@@ -759,28 +741,6 @@ variable [HasEqualizers 𝒞]
 -- situation as `innerSliceCartesianNil` above.
 
 end BaseSliceCartesian
-
-/-! ### The §1.547 point-acquisition payoff `enumChain_stage_acquires`
-
-  The enumeration `PrefixChain` infrastructure (`enumPrefix`/`enumPrefix_succ`/`enumChain`/
-  `enumPrefix_suffix_mem`/`enumChain_hwsuf`) now lives UPSTREAM in `Freyd.Capitalization` (in scope
-  here via the import).  Below is the §1.546 point-acquisition payoff, which needs the per-factor
-  slice points (`sliceFactorPoint`/`listProdSliceAcquiresEveryFactor`) defined ONLY in this file. -/
-
-/-- **§1.547 point acquisition at the chain stage.**  The stage-`(n+1)` slice of the enumeration
-    chain, `innerSliceObj (enumPrefix enum (n+1)) = Over (∏[enum 0,…,enum n])`, acquires a point of
-    the factor `enum n` (the freshly-appended object): the over-arrow `sliceFactorPoint (enum n)
-    (listProdProj …)` from the terminator, whose composite with the slice structure map is the
-    terminator's (`sliceAcquiresFactorPoint`).  This is the §1.546 generic point the chain adds for
-    `enum n`, read off via `listProdSliceAcquiresEveryFactor`; pushing it along the stage-inclusion
-    into `S* = (chainSliceSystem (enumChain enum)).Obj` gives the colimit point (the WALL 2 input). -/
-theorem enumChain_stage_acquires (enum : Nat → 𝒞) (n : Nat)
-    (k : Fin (enumPrefix enum (n + 1)).length) :
-    (sliceFactorPoint ((enumPrefix enum (n + 1)).get k)
-        (listProdProj (enumPrefix enum (n + 1)) k)).f
-      ≫ (sliceEmbedObj (listProd (enumPrefix enum (n + 1))) ((enumPrefix enum (n + 1)).get k)).hom
-      = (overTerm (listProd (enumPrefix enum (n + 1)))).hom :=
-  listProdSliceAcquiresEveryFactor (enumPrefix enum (n + 1)) k
 
 /-! ### `enumChain_hwsuf` and the uniform successor `nextStep` — RELOCATED to `Freyd.Capitalization`
 

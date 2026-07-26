@@ -129,18 +129,6 @@ theorem invImage_iso_precomp_equiv [HasPullbacks 𝒞] {A A'' B : 𝒞}
   exact pullback_subobject_equiv hc' hc2PB (InverseImage (d ≫ g) Y).monic
     (subConj e' ⟨d, h2, h1⟩ (InverseImage g Y)).monic
 
-/-- Inverse image is monotone using ONLY `HasPullbacks` (avoids the `inverseImage_mono`
-    terminal/product instances, so it never forces the `HasTerminal`/`HasBinaryProducts` diamond
-    against `laxColimHasPullbacks`).  `S ≤ T` (mediator `k`) lifts the pullback of `(f, S.arr)` to the
-    pullback of `(f, T.arr)`. -/
-theorem invImage_le_of_le [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) {S T : Subobject 𝒞 B}
-    (h : S.le T) : (InverseImage f S).le (InverseImage f T) := by
-  obtain ⟨k, hk⟩ := h
-  let cS := (HasPullbacks.has f S.arr).cone
-  have hw : cS.π₁ ≫ f = (cS.π₂ ≫ k) ≫ T.arr := by rw [Cat.assoc, hk]; exact cS.w
-  exact ⟨(HasPullbacks.has f T.arr).lift ⟨cS.pt, cS.π₁, cS.π₂ ≫ k, hw⟩,
-    (HasPullbacks.has f T.arr).lift_fst ⟨cS.pt, cS.π₁, cS.π₂ ≫ k, hw⟩⟩
-
 /-- **Conjugation commutes with binary union.**  `subConj e (S ∪ T) ≈ (subConj e S) ∪ (subConj e T)`:
     each side is the join of the two conjugated subobjects (joins are preserved by the order-iso
     `subConj e` / `subConj e'`). -/
@@ -479,7 +467,7 @@ theorem laxColim_invImage_union_le [Nonempty ι]
         ⟨union_mono hBS.1 hBT.1, union_mono hBS.2 hBT.2⟩).trans
         (union_germ_equivL L hL hmono coprData hi hfaith himgpres N S_N T_N)
     refine Subobject.Equiv.trans
-      ⟨invImage_le_of_le (f ≫ dB) hUeq.1, invImage_le_of_le (f ≫ dB) hUeq.2⟩ ?_
+      ⟨inverseImage_mono (f ≫ dB) hUeq.1, inverseImage_mono (f ≫ dB) hUeq.2⟩ ?_
     rw [hBf]
     refine (invImage_iso_precomp_equiv dA dAi hA1 hA2 (stageInclL L hL f_N)
       (germSubL L hL hmono (unionImg (hi N) (coprData.hcop N) S_N T_N))).trans ?_
@@ -493,7 +481,7 @@ theorem laxColim_invImage_union_le [Nonempty ι]
   have hfS : (InverseImage f S).Equiv (subConj dAi ⟨dA, hA2, hA1⟩ (germSubL L hL hmono pbS)) := by
     refine (invImage_subConj_equiv f dB ⟨dBi, hB1, hB2⟩ S).trans ?_
     refine Subobject.Equiv.trans
-      ⟨invImage_le_of_le (f ≫ dB) hBS.1, invImage_le_of_le (f ≫ dB) hBS.2⟩ ?_
+      ⟨inverseImage_mono (f ≫ dB) hBS.1, inverseImage_mono (f ≫ dB) hBS.2⟩ ?_
     rw [hBf]
     refine (invImage_iso_precomp_equiv dA dAi hA1 hA2 (stageInclL L hL f_N)
       (germSubL L hL hmono S_N)).trans ?_
@@ -504,7 +492,7 @@ theorem laxColim_invImage_union_le [Nonempty ι]
   have hfT : (InverseImage f T).Equiv (subConj dAi ⟨dA, hA2, hA1⟩ (germSubL L hL hmono pbT)) := by
     refine (invImage_subConj_equiv f dB ⟨dBi, hB1, hB2⟩ T).trans ?_
     refine Subobject.Equiv.trans
-      ⟨invImage_le_of_le (f ≫ dB) hBT.1, invImage_le_of_le (f ≫ dB) hBT.2⟩ ?_
+      ⟨inverseImage_mono (f ≫ dB) hBT.1, inverseImage_mono (f ≫ dB) hBT.2⟩ ?_
     rw [hBf]
     refine (invImage_iso_precomp_equiv dA dAi hA1 hA2 (stageInclL L hL f_N)
       (germSubL L hL hmono T_N)).trans ?_

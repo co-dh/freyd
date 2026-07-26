@@ -1169,4 +1169,7 @@ theorem equiv_rel_split_iff_effective {a : 𝒜} {E : a ⟶ a} (hE : Equivalence
 -- then C is equivalent to the full subcategory of projective objects in Ĉ;
 -- hence if Ĉ is not effective then C is not AC.
 
+/-- `R = S → R ⊑ S`. -/
+theorem le_of_eq {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {R S : a ⟶ b}
+    (h : R = S) : R ⊑ S := h ▸ le_refl R
 end Freyd.Alg

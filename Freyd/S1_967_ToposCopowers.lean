@@ -276,7 +276,7 @@ theorem compose_extJoin_right {A B C : 𝒞} (R : BinRel 𝒞 A B)
       (existsAlong (omegaR R C)
         (InverseImage (thetaR R C) (extJoin hpow wp S))) :=
     existsAlong_mono (omegaR R C)
-      (invImage_mono_local (thetaR R C) (relSub_binRelSub_le (extJoin hpow wp S)))
+      (inverseImage_mono (thetaR R C) (relSub_binRelSub_le (extJoin hpow wp S)))
   -- θ#(extJoin S) ≤ extJoin {θ# W}.
   have hframe := extJoin_invImage_le hpow wp (thetaR R C) S
   have h2 : (existsAlong (omegaR R C) (InverseImage (thetaR R C) (extJoin hpow wp S))).le
@@ -288,7 +288,7 @@ theorem compose_extJoin_right {A B C : 𝒞} (R : BinRel 𝒞 A B)
     -- relSub(binRelSub W) = W as subobjects.  Use `extJoin_mono_pred`.
     refine extJoin_mono_pred hpow (fun s ⟨W, hSW, hs⟩ => ?_)
     exact ⟨_, ⟨W, hSW, rfl⟩,
-      hs ▸ invImage_mono_local (thetaR R C) (binRelSub_relSub_le W)⟩
+      hs ▸ inverseImage_mono (thetaR R C) (binRelSub_relSub_le W)⟩
   -- ∃_ω (extJoin {θ#(relSub(binRelSub W))}) ≤ extJoin {∃_ω (θ#(relSub(binRelSub W)))}.
   have h3 := existsAlong_extJoin_le hpow (omegaR R C)
     (fun A' => ∃ W, S W ∧ A' = InverseImage (thetaR R C) (relSub (binRelSub W)))

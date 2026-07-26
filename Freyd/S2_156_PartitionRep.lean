@@ -177,10 +177,6 @@ example {L : Type u} [ModularLattice L] : Allegory (LMonObj L) := inferInstance
 
 /-! ## Order lemmas for allegories and allegory functors -/
 
-/-- `R = S → R ⊑ S`. -/
-theorem le_of_eq {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {R S : a ⟶ b}
-    (h : R = S) : R ⊑ S := h ▸ le_refl R
-
 section FunctorPreserves
 
 variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]

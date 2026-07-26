@@ -934,12 +934,20 @@ theorem quotient_le_iff_largest {𝒜 : Type u} [DistributiveAllegory 𝒜]
     apply amen.cong.trans (amen.largest_rel (R ∩ S))
     rw [amenable_inter_largest amen, h]
     exact amen.cong.symm (amen.largest_rel R)
+
+/-- An allegory functor is monotone for the allegory order: `R ⊑ S`
+    maps to `F R ⊑ F S` because allegory functors preserve intersection. -/
+theorem AllegoryFunctor.mono {𝒜 : Type u₁} {ℬ : Type u₂}
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : AllegoryFunctor 𝒜 ℬ)
+    {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : F.map R ⊑ F.map S := by
+  have h' : R ∩ S = R := h
+  show F.map R ∩ F.map S = F.map R
+  rw [← F.map_inter, h']
+
 /-- `quotRep` is monotone: `R ⊑ S → [R] ⊑ [S]`.  (`⊑` is `R = R ∩ S`, and `quotRep`
-    preserves `∩`.)  The single canonical version of this fact. -/
+    preserves `∩`.) -/
 theorem quotRep_mono {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜}
-    {R S : a ⟶ b} (h : R ⊑ S) : (quotRep C).map R ⊑ (quotRep C).map S := by
-  show (quotRep C).map R ∩ (quotRep C).map S = (quotRep C).map R
-  rw [← (quotRep C).map_inter, inter_eq_left h]
+    {R S : a ⟶ b} (h : R ⊑ S) : (quotRep C).map R ⊑ (quotRep C).map S := (quotRep C).mono h
 
 /-- The largest-element operator is idempotent: `R⁺⁺ = R⁺` (the book's "largest
     idempotent").  The single canonical version of this fact. -/

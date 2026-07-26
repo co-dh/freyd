@@ -11,7 +11,7 @@
 
   All the supporting pieces live in `SlicePreTopos`: the slice pre-topos bundling instance
   `overPreToposDisjoint`, `one_one_decidable`, `slice_choice_codiag`, `cover_splits_of_dom_choice`,
-  `mono_of_split`, `forgetSlice_isComplemented`.  Only the two final theorems land here, in a file
+  `mono_of_retraction`, `forgetSlice_isComplemented`.  Only the two final theorems land here, in a file
   that IMPORTS `SlicePreTopos` (rather than living inside it) for clean separation.
 -/
 import Freyd.S1_65_SlicePreTopos
@@ -49,7 +49,7 @@ theorem all_decidable_of_one_one_choice [PreToposDisjoint 𝒞] [HasReflTransClo
   -- split the cover `case u v : 1_𝒮+1_𝒮 ↠ D` (its domain `1_𝒮+1_𝒮` is choice).
   obtain ⟨s, hs⟩ := cover_splits_of_dom_choice (case u v) hcov hchS
   -- `s : D ↣ 1_𝒮+1_𝒮` is a split mono, so `D` is decidable.
-  have hDmono : Monic s := mono_of_split s (case u v) hs
+  have hDmono : Monic s := mono_of_retraction s (case u v) hs
   have hDdec : DecidableObjectSub D := decidableSub_of_mono s hDmono hdecS
   -- complement `U` in `Over B`, then forget to `IsComplemented (diagSub A) = DecidableObject A`.
   have hUcomp : IsComplemented U :=

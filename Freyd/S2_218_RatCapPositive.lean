@@ -172,8 +172,8 @@ theorem baseChange_coprod_iso :
   -- complemented-pair iso on the apex.
   -- cover: entire ≤ π₁#(entire) ≤ π₁#(inl ∪ inr) ≤ π₁#inl ∪ π₁#inr.
   have hcover : (Subobject.entire pbcp.cone.pt).le (HasSubobjectUnions.union Ul Ur) := by
-    refine Subobject.le_trans (entire_le_invImage_entire π₁) ?_
-    refine Subobject.le_trans (invImage_mono_local π₁ inl_union_inr_entire) ?_
+    refine Subobject.le_trans (entire_le_inverseImage_entire π₁) ?_
+    refine Subobject.le_trans (inverseImage_mono π₁ inl_union_inr_entire) ?_
     exact (PreLogos.invImage_preserves_union π₁ _ _).1
   -- disjoint: a point of `Ul ∩ Ur` collides `inl`/`inr`, hence is initial (`≤ ⊥`).
   have hdisj : (Subobject.inter Ul Ur).le (PreLogos.bottom pbcp.cone.pt) := by

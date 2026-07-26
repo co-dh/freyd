@@ -1270,17 +1270,6 @@ noncomputable def towerHasTerminal (nextStep : ∀ (S : PreRegBundle.{u}), CapSt
     ∀ i : ULift.{u} Nat, HasTerminal ((towerSystem b nextStep).A i) :=
   fun i => towerHasTerminalN b nextStep i.down
 
-/-- **Single-step on-the-nose `htpres`** (the `j = i+1` case): the difference recursion's one-rung
-    transition sends the stage-`n` terminal to the stage-`(n+1)` terminal, modulo the carrier cast
-    which is HEq-transparent. -/
-theorem towerHtpres_succ (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
-    HEq (transN nextStep b n 1 (towerHasTerminalN b nextStep n).one)
-      (towerHasTerminalN b nextStep (n+1)).one := by
-  -- `transN n 1 x = stageStep (n+0) (transN n 0 x) = stageStep n x`, and the successor terminal's
-  -- `.one` is `stageStep n (prev).one` by def.
-  show HEq (stageStep nextStep b (n+0) (transN nextStep b n 0 (towerHasTerminalN b nextStep n).one)) _
-  rfl
-
 /-- **The tower's on-the-nose terminal preservation** `F hij (ht i).one = (ht j).one`, by induction
     on the difference `d = j.down - i.down`.  `F hij` is `stageCast ∘ transN i.down d`; we prove the
     HEq form `transN i.down d (ht i).one ≈ (ht (i.down+d)).one` and discharge the cast. -/
