@@ -29,7 +29,8 @@ root; the full mapping is the legend in the Sources section of `Freyd/note/diagr
 | `diag/S2_124.lean`          | §2.124 by the diagram route, abstract (done)   | Freyd §2.124; `diag/S2_124.typ`           | 6     |
 | `diag/Tape.lean`            | biproduct `⊕`; `∪`, `⊥` derived (done)    | `TapeDiagrams` Def. 7.1                        | 8     |
 | `diag/RelSetTape.lean`      | `Sum` is that biproduct; `∪`-agreement (done) | —                                          | 8     |
-| `diag/FO.lean`              | linear bicategory, complement, residuals  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
+| `diag/FO.lean`              | linear bicategory → fo-bicategory (done)  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
+| `diag/RelSetFO.lean`        | fo-instance; residual = `div` (done)      | — (the one classical file)                     | 9     |
 | `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`) | —                                              | 7     |
 
 Deliberately NOT built: the free syntactic props `CB_Σ` / `TCB_Σ` and any completeness theorem. We need soundness
@@ -506,6 +507,68 @@ obstruction").
 
 Acceptance: abstract layer builds with no axioms; `lemma_5_4_residuation` axiom-free; `RelSetFO` flagged.
 Risk: high; scheduled last. Committed deliverables are the abstract classes + Lemma 5.4 only.
+
+**DONE**, including the `Rel(Set)` instance for every class. Every declaration in `diag/FO.lean` needs **no axioms
+at all** — not `propext`, not anything — because the residual and Lemma 5.4 are pure inequational rewriting;
+`diag/RelSetFO.lean` is `[propext, Classical.choice, Quot.sound]` and is the ONLY file in `diag/` that mentions
+`Classical`.
+
+Lemma 5.4 is `le_residual_iff` at `T := id°`, so it carries no proof of its own: the general statement holds the
+one calculation the layer exists for, and the paper-numbered lemma is its instance. The paper states them the other
+way round (lemma first, residual read off it), which would duplicate the calculation.
+
+| declaration              | content                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `class LinearBicat`      | Def. 5.1's linear-bicategory half: `bid`, `bcomp`, the category and monotonicity laws, (δ_l), (δ_r) |
+| `RightLinAdj`            | `S ⊪ R`, the paper's linear adjunction: unit in `⨟•`, counit out of `⨟°`             |
+| `lemma_5_3_uniq`         | Lemma 5.3, a right linear adjoint is unique                                         |
+| `class ClosedLinearBicat`| Def. 5.5's adjoint clause: `perp` (`R⊥`) and `lperp`                                |
+| `residual`, `le_residual_iff`, `residual_comp_le`, `residual_mono` | `R ⨟• S⊥` and its universal property   |
+| `lemma_5_4_residuation`  | `a ≤ b ↔ id° ≤ b ⨟• a⊥`, which is `le_residual_iff` at `T := id°`                   |
+| `class MonLinearBicat`   | Def. 5.1.1–2: `⊗•` on arrows over the SAME object-level `⊗`, black coherence isos, the four linear strengths (ν), and (⊗°)/(⊗•) |
+| `class CocartBicat`      | Fig. 3, field for field against `CartBicat`                                          |
+| `class FOBicat`          | Def. 6.1: Def. 5.5's symmetry clause, Fig. 5's sixteen inequalities as eight `RightLinAdj`s, and the four linear Frobenius equalities |
+
+**The residual agrees with the repo's `div`, and the proof unfolds neither.** `le_residual_iff` and Freyd's
+`le_div_iff` (`Freyd/S2_30.lean`) are the same Galois connection, so `residual_eq_div` is antisymmetry applied to
+`residual_comp_le` and `div_comp_le`. The constructive `div` (`AOP/A6_1_RelSet.lean`, a direct `∀`) stays canonical
+for AOP work; the fo-layer residual is its classical presentation.
+
+**Why the class hierarchy is not one big `Co` type synonym.** The paper says Fig. 3 is Fig. 2 "with both the colours
+and the order inverted", which invites `CocartBicat 𝒞 := CartBicat (Co 𝒞)` for a synonym carrying `⨟•` and `≥` — and
+that would have handed us every Fig. 3 law plus all of `CB_Derived` for free. It does not work: `CartBicat` extends
+`SymMonCat` extends `OrderedCat` extends `Cat`, so `CartBicat (Co 𝒞)` brings its OWN `Hom`, whereas Def. 5.1 demands
+literally the same arrows. The black composition is therefore a FIELD, and Fig. 3 is transcribed. Recorded in
+`diag/FO.lean`'s header so it is not re-attempted.
+
+**What made the instance cheap anyway.** At `Rel(Set)` the whole black structure is the COMPLEMENT of the white one:
+`id• = ¬𝟙`, `R ⨟• S = ¬(¬R ; ¬S)`, `R ⊗• S = ¬(¬R ⊗ ¬S)`, and `α• = ¬α`. `compl` is an order-reversing bijection
+carrying `(≫, 𝟙, ⊗ₕ)` to `(≫•, 𝟙•, ⊗•ₕ)`, so the `black_transport` tactic turns each of the ~30 black laws into the
+white law of the same name — the paper's "inverting the colours and the order" made computational. Only six
+inequations resist it, the four linear strengths and (⊗°)/(⊗•), because they mention both colours at once; those and
+the two mixed-colour Frobenius laws are the file's only pointwise proofs. The BLACK Frobenius laws `(F_•^°)` and
+`(F_∘^•)` are the complements of the white ones — crosswise, since complementing swaps the generators' colours as
+well as the composition's — so the two pointwise proofs serve four fields.
+
+**Fig. 4 and Fig. 5 are fully inhabited at `Rel(Set)`** — nothing in either figure had to be weakened or dropped.
+Three readings needed the figure rather than the prose and are worth recording, since the OCR loses the colours: the
+strengths are `(a ⨟• b) ⊗ (c ⨟• d) ≤ (a ⊗ c) ⨟• (b ⊗• d)` and its three siblings (NOT a `⊗`/`⊗•` interchange);
+(⊗•) is `id•_X ⊗ id•_Y ≤ id•_{X⊗Y}` while (⊗°) is `id°_{X⊗Y} ≤ id°_X ⊗• id°_Y`; and Fig. 5's sixteen inequalities
+pair up as eight linear adjunctions, of which each `Rel(Set)` case is one application of `perp_adj` because
+`▶• = ¬(◀°)°` is `(◀°)⊥` on the nose. Fig. 3 and Fig. 5 now carry `lean_decl` rows in
+`diag/paperfigs/manifest.tsv`, so `./scripts/paper-figs` re-clips them beside the classes they were read off.
+
+Two label traps in Fig. 5. Its four Frobenius laws are `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)`, told apart by
+where each colour mark sits; write them without the sub/superscript positions and two pairs collide, since `°` and
+`∘` are one glyph. And a black identity is drawn as a black box with the white WIRES through it, so `id•_{X⊗X}`
+(one black box, two white lines) is easy to misread as `id•_X ⊗ id•_X` (two black boxes with a white gap) — the
+counits of Def. 6.1.4 are the former.
+
+**One Lean-specific trap, worth not re-hitting.** `class FOBicat extends CocartBicat 𝒞, CartBicat 𝒞,
+ClosedLinearBicat 𝒞` flattens the non-first parents, so inside the class body a bare `delta` does NOT resolve to the
+`CartBicat` field — write `CartBicat.delta` in any field that mixes parents. And because Lean makes `SymMonCat` the
+subobject of `MonLinearBicat`, a goal reached through `CocartBicat` reads `MonLinearBicat.bcomp` where the field was
+written `≫•`; `mbcomp_eq`/`mbid_eq` record that the two projection paths agree.
 
 ## The converse bridge direction (recorded, deferred)
 

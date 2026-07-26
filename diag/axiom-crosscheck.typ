@@ -102,6 +102,15 @@ check — the picture and the equation number in the docstring must be the same 
   clip("fol-fig2", 4.80in),
   [`Freyd.Diag.CartBicat` \ #src[DiagrammaticAlgebraOfFirstOrderLogic.pdf] \ #src[p. 6]],
   doc("fol-fig2"),
+  clip("fol-fig3", 4.80in),
+  [`Freyd.Diag.CocartBicat` \ #src[DiagrammaticAlgebraOfFirstOrderLogic.pdf] \ #src[p. 6]],
+  doc("fol-fig3"),
+  clip("fol-fig4", 4.80in),
+  [`Freyd.Diag.LinearBicat` \ #src[DiagrammaticAlgebraOfFirstOrderLogic.pdf] \ #src[p. 7]],
+  doc("fol-fig4"),
+  clip("fol-fig5", 4.80in),
+  [`Freyd.Diag.FOBicat` \ #src[DiagrammaticAlgebraOfFirstOrderLogic.pdf] \ #src[p. 9]],
+  doc("fol-fig5"),
   clip("tape-fig3", 4.80in),
   [`Freyd.Diag.CartBicat` \ #src[TapeDiagrams.pdf] \ #src[p. 6]],
   doc("tape-fig3"),
@@ -118,12 +127,6 @@ No Lean counterpart yet: the tape layer (`diag/Tape.lean`) and the first-order l
 #figure(clip("fs-eq15-16", 2.43in), caption: src[functorialSemanticsForRelationalTheories.pdf p. 8])
 
 #figure(clip("fs-eq17-19", 5.33in), caption: src[functorialSemanticsForRelationalTheories.pdf p. 9])
-
-#figure(clip("fol-fig3", 7.37in), caption: src[DiagrammaticAlgebraOfFirstOrderLogic.pdf p. 6])
-
-#figure(clip("fol-fig4", 7.30in), caption: src[DiagrammaticAlgebraOfFirstOrderLogic.pdf p. 7])
-
-#figure(clip("fol-fig5", 7.33in), caption: src[DiagrammaticAlgebraOfFirstOrderLogic.pdf p. 9])
 
 #figure(clip("fol-fig9", 6.20in), caption: src[DiagrammaticAlgebraOfFirstOrderLogic.pdf p. 15])
 

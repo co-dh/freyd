@@ -48,9 +48,9 @@ functorialSemanticsForRelationalTheories.pdf	9	265	225	800	80	fs-eq17-19	-
 #
 # ---- DiagrammaticAlgebraOfFirstOrderLogic.pdf -------------------------------------------------
 DiagrammaticAlgebraOfFirstOrderLogic.pdf	6	95	160	1105	215	fol-fig2	Freyd.Diag.CartBicat
-DiagrammaticAlgebraOfFirstOrderLogic.pdf	6	95	375	1105	215	fol-fig3	-
-DiagrammaticAlgebraOfFirstOrderLogic.pdf	7	100	158	1095	295	fol-fig4	-
-DiagrammaticAlgebraOfFirstOrderLogic.pdf	9	100	430	1100	255	fol-fig5	-
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	6	95	375	1105	215	fol-fig3	Freyd.Diag.CocartBicat
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	7	100	158	1095	295	fol-fig4	Freyd.Diag.LinearBicat
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	9	100	430	1100	255	fol-fig5	Freyd.Diag.FOBicat
 DiagrammaticAlgebraOfFirstOrderLogic.pdf	15	190	215	930	1170	fol-fig9	-
 #
 # ---- TapeDiagrams.pdf -------------------------------------------------------------------------
