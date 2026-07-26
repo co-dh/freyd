@@ -1,0 +1,59 @@
+# Crop boxes for scripts/paper-figs.  TAB separated; lines starting with # are comments.
+#
+# pdf	page	x	y	w	h	name	lean_decl
+#
+# page  is the 1-based physical PDF page (all three papers number their printed pages the same).
+# x y w h  are PIXELS at 150 dpi, origin top-left — the -x -y -W -H of pdftoppm -r 150.
+# lean_decl  is the fully qualified Lean declaration the clip is the source for, or "-" when the
+#            figure is recorded for a phase that has no Lean yet (diag/Tape.lean, diag/FO.lean).
+# Several rows may name the same declaration: an axiom stated twice in a paper gets both clips.
+#
+# ---- functorialSemanticsForRelationalTheories.pdf: Definition 4.1, the CartBicat fields --------
+functorialSemanticsForRelationalTheories.pdf	17	382	1286	54	48	fs-def41-cop	Freyd.Diag.CartBicat.cop
+functorialSemanticsForRelationalTheories.pdf	17	484	1286	40	48	fs-def41-dis	Freyd.Diag.CartBicat.dis
+functorialSemanticsForRelationalTheories.pdf	17	376	1373	50	48	fs-def41-mer	Freyd.Diag.CartBicat.mer
+functorialSemanticsForRelationalTheories.pdf	17	484	1373	44	48	fs-def41-un	Freyd.Diag.CartBicat.un
+# Example 2.3(a), the commutative monoid (∇, ?)
+functorialSemanticsForRelationalTheories.pdf	8	280	487	230	100	fs-eq05	Freyd.Diag.CartBicat.mer_assoc
+functorialSemanticsForRelationalTheories.pdf	8	545	484	250	48	fs-eq06	Freyd.Diag.CartBicat.mer_comm
+functorialSemanticsForRelationalTheories.pdf	8	805	484	260	48	fs-eq07	Freyd.Diag.CartBicat.mer_unit
+# Example 2.3(b), the cocommutative comonoid (Δ, !)
+functorialSemanticsForRelationalTheories.pdf	8	280	710	230	100	fs-eq08	Freyd.Diag.CartBicat.cop_assoc
+functorialSemanticsForRelationalTheories.pdf	8	550	710	240	100	fs-eq09	Freyd.Diag.CartBicat.cop_comm
+functorialSemanticsForRelationalTheories.pdf	8	805	713	260	44	fs-eq10	Freyd.Diag.CartBicat.cop_counit
+# Example 2.3(c), special Frobenius: (11) is the Frobenius equation, (12) the special law
+functorialSemanticsForRelationalTheories.pdf	8	280	922	380	62	fs-eq11	Freyd.Diag.CartBicat.frob_left
+functorialSemanticsForRelationalTheories.pdf	8	730	922	330	62	fs-eq12	Freyd.Diag.CartBicat.special
+# Definition 4.1 clause 3, the adjunction and Frobenius inequations
+functorialSemanticsForRelationalTheories.pdf	18	350	225	325	80	fs-ineq37	Freyd.Diag.CartBicat.ineq_37
+functorialSemanticsForRelationalTheories.pdf	18	710	225	355	80	fs-ineq38	Freyd.Diag.CartBicat.ineq_38
+functorialSemanticsForRelationalTheories.pdf	18	350	320	325	65	fs-ineq39	Freyd.Diag.CartBicat.ineq_39
+functorialSemanticsForRelationalTheories.pdf	18	710	320	355	65	fs-ineq40	Freyd.Diag.CartBicat.ineq_40
+functorialSemanticsForRelationalTheories.pdf	18	475	425	232	90	fs-eq41-left	Freyd.Diag.CartBicat.frob_left
+functorialSemanticsForRelationalTheories.pdf	18	600	425	255	90	fs-eq41-right	Freyd.Diag.CartBicat.frob_right
+# Definition 4.1 clause 4, laxness — the same statements as eq. (3) on p. 4
+functorialSemanticsForRelationalTheories.pdf	18	275	582	410	85	fs-ineq42	Freyd.Diag.CartBicat.lax_cop
+functorialSemanticsForRelationalTheories.pdf	18	710	592	355	68	fs-ineq43	Freyd.Diag.CartBicat.lax_dis
+functorialSemanticsForRelationalTheories.pdf	4	315	908	372	100	fs-eq03-cop	Freyd.Diag.CartBicat.lax_cop
+functorialSemanticsForRelationalTheories.pdf	4	685	912	290	90	fs-eq03-dis	Freyd.Diag.CartBicat.lax_dis
+# p. 18, the displayed derivation of the special law from (38) + (40) + the unit laws
+functorialSemanticsForRelationalTheories.pdf	18	380	890	540	78	fs-special-derivation	Freyd.Diag.CartBicat.special
+#
+# ---- Example 2.3(d)(e): the equations Def. 4.1 does NOT take ----------------------------------
+# Bialgebra (13)–(16) and Hopf (17)–(19) combine the same monoid and comonoid a different way.
+# Recorded so the omission is visibly deliberate, not an oversight; no Lean counterpart exists.
+functorialSemanticsForRelationalTheories.pdf	8	370	1112	300	120	fs-eq13-14	-
+functorialSemanticsForRelationalTheories.pdf	8	700	1105	365	130	fs-eq15-16	-
+functorialSemanticsForRelationalTheories.pdf	9	265	225	800	80	fs-eq17-19	-
+#
+# ---- DiagrammaticAlgebraOfFirstOrderLogic.pdf -------------------------------------------------
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	6	95	160	1105	215	fol-fig2	Freyd.Diag.CartBicat
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	6	95	375	1105	215	fol-fig3	-
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	7	100	158	1095	295	fol-fig4	-
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	9	100	430	1100	255	fol-fig5	-
+DiagrammaticAlgebraOfFirstOrderLogic.pdf	15	190	215	930	1170	fol-fig9	-
+#
+# ---- TapeDiagrams.pdf -------------------------------------------------------------------------
+TapeDiagrams.pdf	6	125	160	805	595	tape-fig1	-
+TapeDiagrams.pdf	6	125	752	805	182	tape-fig2	-
+TapeDiagrams.pdf	6	125	925	805	405	tape-fig3	Freyd.Diag.CartBicat
