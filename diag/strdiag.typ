@@ -28,14 +28,13 @@
 // private copies.  Line weight, dot radius, bezier control fractions and the default stub lengths
 // are its values unchanged, so its rendered PDF is unaffected.
 //
-// ONE VOCABULARY.  The generators are named after Freyd/S2_124.lean, which proves `Rel` is a model
-// of exactly this calculus, so a picture and its Lean statement use the same word:
+// ONE VOCABULARY.  A picture and its Lean statement use the same word — these are the `CartBicat`
+// field names of diag/CB.lean, unchanged:
 //
 //   delta  Δ : a → a ⊗ a     nabla  ∇ : a ⊗ a → a     cap  : a ⊗ a → I     swap  σ
 //   bang   ! : a → I         unitR  ? : I → a         cup  : I → a ⊗ a
 //
-// functorialSemanticsForRelationalTheories.pdf calls the same four `Δ`, `!`, `∇`, `?` (Def. 4.1)
-// and diag/CB.lean fields them as `cop`, `dis`, `mer`, `un`.
+// functorialSemanticsForRelationalTheories.pdf calls the same four `Δ`, `!`, `∇`, `?` (Def. 4.1).
 //
 // Every function takes its anchor `p` as the LEFT edge of what it draws, on the wire it sits on,
 // so a picture is laid out by walking an x grid rightwards.

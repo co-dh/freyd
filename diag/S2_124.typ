@@ -52,7 +52,7 @@
     generators, the axioms they obey, two lemmas, and a step-by-step calculation in point-free (AOP)
     style, then drawn. Every algebraic step is tagged with the axiom it uses. The three underlying
     identities are proved in Lean for #emph[arbitrary] relations — not a random sample — in
-    `Freyd/S2_124.lean` (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`).
+    `diag/S2_124.lean` (sorry-free, axioms `[propext]`).
   ],
 )
 #set text(hyphenate: false)
@@ -130,8 +130,8 @@ The *domain* used below is `Dom R = 1 ∩ R R°` (Freyd §2.122): the coreflexiv
       delta((1.7, 0), li: 0.3, lo: 0.42, sp: 0.33)
     }),
     [*coassociative* #h(5pt) `Δ;(Δ⊗1) = Δ;(1⊗Δ)` \
-     #gloss[the picture re-brackets three wires for free; `coassoc` in the Lean spells the
-     associator `assocLR` out]], cetz.canvas({
+     #gloss[the picture re-brackets three wires for free; `delta_assoc` in the Lean spells the
+     associator `tensAssoc` out]], cetz.canvas({
       delta((0.3, 0), li: 0.3, lo: 0.4, sp: 0.42)
       delta((0.7, 0.42), li: 0, lo: 0.4, sp: 0.26)
       wire((0.7, -0.42), (1.1, -0.42))
@@ -148,7 +148,7 @@ The *domain* used below is `Dom R = 1 ∩ R R°` (Freyd §2.122): the coreflexiv
       d.content((1.5, 0), $=$); wire((1.75, 0), (2.4, 0))
     }),
     [*Frobenius* #h(5pt) `(Δ⊗1);(1⊗∇) = ∇;Δ = (1⊗Δ);(∇⊗1)` \
-     #gloss[same suppression: `frobenius` in the Lean carries `assocLR` too, because `Prod` is not
+     #gloss[same suppression: `frob_left`/`frob_right` carry `tensAssoc` too, because the tensor is not
      strictly associative]], cetz.canvas({
       wire((0.0, 0.42), (0.35, 0.42)); delta((0.35, 0.42), li: 0, lo: 0.4, sp: 0.26)
       wire((0.0, -0.42), (0.75, -0.42))
@@ -265,28 +265,35 @@ modular law appears; §2.124 is here *derived* from Frobenius + converse.
 
 = Is this checked in Lean?
 
-*Yes — every boxed result above is a Lean theorem in `Freyd/S2_124.lean`, sorry-free, for arbitrary
+*Yes — every boxed result above is a Lean theorem in `diag/S2_124.lean`, sorry-free, for arbitrary
 relations `R, S`:*
 
 #align(center, table(
   columns: (auto, auto), align: (left, left), inset: 6pt, stroke: 0.4pt + luma(180),
-  table.header([*in this note*], [*in `Freyd/S2_124.lean`*]),
+  table.header([*in this note*], [*in `diag/S2_124.lean`*]),
   [Lemma 3.1 (domain = copy·run·discard)], [`dom_cd`],
   [Lemma 3.2 (converse folds into a cap)], [`cv_merge`],
-  [Theorem 4.1 #h(2pt) `1 ∩ SR° = Dom(R∩S)`], [`dom_inter_rel` #h(2pt) — via `left_eq_W`, `right_eq_W`],
-  [the axioms of §2 (special, Frobenius, coassoc, …)], [`special`, `frobenius`, `coassoc`, `counit`, …],
+  [Theorem 4.1 #h(2pt) `1 ∩ SR° = Dom(R∩S)`], [`dom_inter_diag` #h(2pt) — via `left_eq_W`, `right_eq_W`],
+  [the axioms of §2 (special, Frobenius, coassoc, …)], [the `CartBicat` fields of `diag/CB.lean`, and
+   `special` there],
 ))
 
-One honest caveat about *how* Lean checks them. Lean works in the concrete model #smallcaps[Rel]
-(`Rel A B := A → B → Prop`) and confirms each equality holds there for all relations; the §2 axioms are
-also proved there, so #smallcaps[Rel] is shown to be a model of the calculus. The step-by-step diagram
-*rewriting* above is the human "why"; a fully point-free Lean replay of it would additionally need the
-associator/unitor coherence lemmas (`Prod` is not strictly associative). The `1∩PP° → Δ;(1⊗P);!` collapse
-of Lemma 1 needs one extra relational law beyond bare Frobenius — `adequacy` (`Δ;(R⊗R);∇ = R`) — stated
-explicitly in the file. No modular law is used anywhere.
+How Lean checks them. Not in a concrete model: the statements are made over an arbitrary *cartesian
+bicategory of relations* (`diag/CB.lean`, Definition 4.1) and the proofs ARE the diagram rewriting
+above, step for step. Nothing is suppressed — the associators and unitors a picture hides are
+written out, which `diag/Monoidal.lean` supplies. `diag/RelSetCB.lean` then instantiates all of it at
+this repo's `Rel(Set)`.
 
-The abstract, allegory-level §2.124 that *does* use the modular law is `dom_inter` in `Freyd/S2_1.lean`;
-its two halves are the two moves this diagram fuses into one:
+The `1∩PP° → Δ;(1⊗P);!` collapse of Lemma 1 was, in an earlier version of this file, an extra
+relational axiom called `adequacy` (`Δ;(R⊗R);∇ = R`). It is not an axiom: it is `meet_idem`, a
+theorem of Definition 4.1.
+
+One genuine use of the modular law survives, inside Lemma 1 — `𝟙 ∩ P⊤ ⊑ PP°`, which is
+`modular_right` at `S := ⊤`. The modular law is itself a theorem here (`modular_of_frobenius`),
+derived from the Frobenius equation and the lax copy inequation, so the calculus is not assuming it.
+
+The allegory-level §2.124, which Freyd proves from the modular law directly, is `dom_inter` in
+`Freyd/S2_10.lean`; its two halves are the two moves this diagram fuses into one:
 
 #align(center, table(
   columns: (auto, auto),

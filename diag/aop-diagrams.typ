@@ -34,8 +34,7 @@ Each picture below is a Lean statement from this repo, drawn field for field. Co
 = 0. The vocabulary
 
 The four dots are `Δ` (copy), `!` (discard), `∇` (merge), `?` (unit) — Definition 4.1, clauses 1
-and 2, the `cop`/`dis`/`mer`/`un` fields of `diag/CB.lean`, and `delta`/`bang`/`nabla`/`unitR` in
-`Freyd/S2_124.lean`.
+and 2, carried by `diag/CB.lean` as the `CartBicat` fields `delta`/`bang`/`nabla`/`unitR`.
 
 #canvas({
   delta((0.6, 0)); d.content((0.65, -1.05), text(8.5pt)[copy #h(2pt) $Delta : a -> a ⊗ a$])
@@ -58,7 +57,7 @@ turned around at all (p. 19).
 })
 
 Two derived pieces are used in every diagram that follows, so they come first. The *meet* `R ∩ S` is
-not a new generator: it is the convolution `Δ ≫ (R ⊗ S) ≫ ∇` (p. 22, `convolution` in
+not a new generator: it is the convolution `Δ ≫ (R ⊗ S) ≫ ∇` (p. 22, `meet` in
 `diag/CB_Derived.lean`). Copy the input, run `R` and `S` on the two copies, then merge — and the
 merge forces the two results to coincide, which is exactly "both `R` and `S`". The *converse* `R°`
 is not a new generator either: bend both of `R`'s wires around, and what was an input is read as an
@@ -84,13 +83,13 @@ like them. That file gives the whole dictionary:
   columns: (auto, 1fr),
   inset: 5pt, stroke: 0.4pt + luma(200), align: (left + horizon, left + horizon),
   table.header([*drawn*], [*what it is in `Rel(Set)`, and the theorem that says so*]),
-  [a copy dot `Δ`],    [`copRel n = graph (fun x => (x, x))`, the diagonal — and `cop_eq`],
-  [a discard dot `!`], [`disRel n = graph (fun _ => PUnit.unit)`, the map to a point — `dis_eq`],
-  [a merge dot `∇`],   [`mer_eq`: `∇ = Δ°`; `copRel_recip_apply` says `(x, y) ∇ z ↔ x = z ∧ y = z`,
+  [a copy dot `Δ`],    [`deltaRel n = graph (fun x => (x, x))`, the diagonal — and `delta_eq`],
+  [a discard dot `!`], [`bangRel n = graph (fun _ => PUnit.unit)`, the map to a point — `bang_eq`],
+  [a merge dot `∇`],   [`nabla_eq`: `∇ = Δ°`; `deltaRel_recip_apply` says `(x, y) ∇ z ↔ x = z ∧ y = z`,
                         which is why merging two strands demands that both agree],
-  [a unit dot `?`],    [`un_eq`: `? = !°`; `disRel_recip_apply` says it relates the point to
+  [a unit dot `?`],    [`unitR_eq`: `? = !°`; `bangRel_recip_apply` says it relates the point to
                         everything],
-  [the `meet` combinator], [`convolution_eq_inter`: `Δ ≫ (R ⊗ S) ≫ ∇ = R ∩ S`, the intersection of
+  [the `meet` combinator], [`meet_eq_inter`: `Δ ≫ (R ⊗ S) ≫ ∇ = R ∩ S`, the intersection of
                         `Allegory RelSet`],
   [a bent-wire converse],  [`conv_eq_recip`: `conv R = R°`, the ordinary relational converse],
   [`! ≫ ?`],               [`top_apply`: `⊤` relates everything to everything],
@@ -101,8 +100,8 @@ like them. That file gives the whole dictionary:
 One thing every picture here silently does that its Lean statement does not: it *suppresses the
 coherence maps*. Stacking three wires and re-bracketing them is free on paper, but `(a × b) × c` is
 not `a × (b × c)` as a Lean type, so `diag/Monoidal.lean` carries a real associator arrow
-`tensAssoc` and `Freyd/S2_124.lean` carries `assocLR` in `coassoc` and `frobenius` for the same
-reason. Wherever a diagram below stacks more than two strands — the modular law and the tabulation
+`tensAssoc`, spelled out in `delta_assoc` and in both halves of the Frobenius equation
+`frob_left`/`frob_right`. Wherever a diagram below stacks more than two strands — the modular law and the tabulation
 meet — read it as the picture of a statement that has associators written out.
 
 = 1. Map shunting — `map_shunt_right`, `map_shunt_left`
@@ -155,7 +154,7 @@ p. 20, where the paper calls them single-valued and total.
 })
 
 The same two conditions read off the Frobenius structure instead. Every arrow is only a *lax*
-comonoid homomorphism — that is eq. (3), p. 4, the `lax_cop` and `lax_dis` fields — and a map is
+comonoid homomorphism — that is eq. (3), p. 4, the `lax_delta` and `lax_bang` fields — and a map is
 precisely an arrow for which those two inequations are equalities.
 
 #canvas({

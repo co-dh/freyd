@@ -26,6 +26,7 @@ root; the full mapping is the legend in the Sources section of `Freyd/note/diagr
 | `diag/RelSetCB.lean`        | `RelSet` instance + operation agreement (done) | `functorialSemantics` p. 18               | 4     |
 | `diag/CB_Allegory.lean`     | CB ⟹ `Allegory`; modular law a theorem (done)  | reconstructed, see phase 5                | 5     |
 | `diag/RelSetAllegory.lean`  | the phase-4 × phase-5 composite check (done)   | —                                         | 5     |
+| `diag/S2_124.lean`          | §2.124 by the diagram route, abstract (done)   | Freyd §2.124; `diag/S2_124.typ`           | 6     |
 | `diag/Tape.lean`            | fb-cb rig — `∪`, `⊥`                      | `TapeDiagrams` Def. 7.1                        | 8     |
 | `diag/FO.lean`              | linear bicategory, complement, residuals  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
 | `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`) | —                                              | 7     |
@@ -61,7 +62,7 @@ Declarations:
   (assessment note, "Equation (3) is not new mathematics").
 
 Field names follow the diagram vocabulary (`delta`, `nabla`, `bang`, `unitR`, `frob_left`/`frob_right`, `lax_delta`,
-`lax_bang`, …) — the same names `Freyd/S2_124.lean` uses; every docstring carries the
+`lax_bang`, …) — the same names `diag/S2_124.lean` uses; every docstring carries the
 paper equation number and page. The special law `Δ;∇ = id` is NOT a field: the paper derives it from (38) plus
 Frobenius (p. 18, the displayed derivation after (41)).
 
@@ -368,7 +369,9 @@ Risk: low; cetz layout only.
 
 **DONE**, but not from the source this plan named. `AllegoryStringDiagrams.typ` is not the repo's prior art:
 `diag/S2_124.typ` is — a hand-authored string-diagram *proof* of `Dom(R ∩ S) = 1 ∩ S R°`, with a Lean
-companion `Freyd/S2_124.lean` that proves `Rel` is a model of the same calculus. `strdiag.typ` was extracted from
+companion `diag/S2_124.lean` that now proves it over any `CartBicat` rather than in a private copy of
+`Rel`; the calculus half of the old `Freyd/S2_124.lean` was `diag/CB.lean` said twice and is gone, and its extra
+axiom `adequacy` is `meet_idem`. `strdiag.typ` was extracted from
 *that* file (line weight, dot radius, bezier control fractions and stub defaults unchanged), and `S2_124.typ` now
 imports it and keeps no drawing code of its own. Verified by pixel diff: all four of its pages render byte-identical
 to the pre-refactor PDF.
@@ -379,7 +382,7 @@ to the pre-refactor PDF.
 | `diag/aop-diagrams.typ`  | the vocabulary, the `Rel(Set)` dictionary, and all seven theorems                 |
 | `diag/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
 
-Generators are named after `Freyd/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its
+Generators are named after `diag/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its
 Lean statement use one word. **Import `strdiag.typ` by name, never with `*`:** `delta`, `nabla`, `cap`, `cup` and
 `dot` are also Typst math symbols, and a wildcard import silently turns `$nabla$` into a drawing function with no
 error — this bit once, in `S2_124.typ`, and cost a page of ∇s. The module header says so; both importers list the
@@ -406,7 +409,7 @@ Two things the page states rather than hides. It carries the `Rel(Set)` dictiona
 (`cop_eq`, `mer_eq`, `deltaRel_recip_apply`, `meet_eq_inter`, `conv_eq_recip`, `top_apply`), because those are
 what license calling a shape `∩` or `°` instead of merely something shaped like them. And it says outright that the
 pictures **suppress the coherence maps**: re-bracketing three wires is free on paper but `(a × b) × c` is not
-`a × (b × c)` in Lean, which is why `diag/Monoidal.lean` carries `tensAssoc` and `Freyd/S2_124.lean` carries
+`a × (b × c)` in Lean, which is why `diag/Monoidal.lean` carries `tensAssoc` and `diag/S2_124.lean` carries
 `assocLR` in `coassoc` and `frobenius`. Those two axioms in `S2_124.typ` now say so at the picture.
 
 Layout needed several rounds of render-and-look. Recurring cause, worth remembering: cetz `content` centres on its
