@@ -81,15 +81,35 @@ theorem U_separatesMaps : SeparatesMaps (instFunctorU (𝒞 := 𝒞)) := by
   intro A B f g h
   exact Subtype.ext h
 
-/-- `U` reflects isomorphisms: a carrier iso whose inverse is itself a homomorphism
-    lifts to an `Ab(𝒞)`-iso.  Stated in the form actually available: if `f`'s carrier
-    is iso with inverse `g` that is a homomorphism, `f` is iso in `Ab(𝒞)`. -/
-theorem U_reflectsIso {A B : AbelianGroupObject 𝒞} (f : A ⟶ B)
-    (_hiso : IsIso (instFunctorU.map f)) (g : B.carrier ⟶ A.carrier)
-    (hg : IsHomAbelianGroupObject B A g)
-    (h1 : f.val ≫ g = Cat.id A.carrier) (h2 : g ≫ f.val = Cat.id B.carrier) :
-    IsIso f :=
-  ⟨⟨g, hg⟩, Subtype.ext h1, Subtype.ext h2⟩
+/-- **§1.595: `U` reflects isomorphisms.** If `m : M ⟶ B` has isomorphic carrier
+    `m.val`, then `m` is an isomorphism in `Ab(𝒞)`.
+
+    The inverse hom property of `inv = m.val⁻¹` follows by post-composing with the monic
+    `m.val`: `B.add ≫ inv ≫ m.val = B.add` (LHS) equals `pair (fst≫inv) (snd≫inv) ≫ M.add ≫ m.val`
+    (RHS, via `m.property` + `inv ≫ m.val = id`), so monicity of `m.val` gives the hom square. -/
+theorem isHom_of_carrier_iso {M B : AbelianGroupObject 𝒞} (m : M ⟶ B)
+    (hiso : IsIso m.val) : IsIso m := by
+  obtain ⟨inv, hinv_l, hinv_r⟩ := hiso
+  -- m.val is monic (it has a retraction inv with m.val ≫ inv = id).
+  have hm_mono : Monic m.val := mono_of_retraction m.val inv hinv_l
+  have hinv_hom : IsHomAbelianGroupObject B M inv := by
+    -- Goal: B.add ≫ inv = pair (fst ≫ inv) (snd ≫ inv) ≫ M.add.
+    -- Post-compose with m.val (monic) and show both sides equal B.add.
+    apply hm_mono
+    -- After apply: goal is (B.add ≫ inv) ≫ m.val = (pair(fst≫inv)(snd≫inv) ≫ M.add) ≫ m.val.
+    -- LHS = B.add (by hinv_r).  RHS = B.add (by m.property + hinv_r + pair_fst_snd).
+    have lhs : (B.add ≫ inv) ≫ m.val = B.add := by
+      rw [Cat.assoc, hinv_r, Cat.comp_id]
+    have rhs : (pair (fst ≫ inv) (snd ≫ inv) ≫ M.add) ≫ m.val = B.add := by
+      -- reassociate inner: pair(a)(b) ≫ (x ≫ m.val) = (pair(a)(b) ≫ x) ≫ m.val = ... ≫ m.val
+      have fst_eq : pair (fst ≫ inv) (snd ≫ inv) ≫ (fst ≫ m.val) = fst ≫ inv ≫ m.val := by
+        rw [← Cat.assoc, fst_pair]; exact Cat.assoc _ _ _
+      have snd_eq : pair (fst ≫ inv) (snd ≫ inv) ≫ (snd ≫ m.val) = snd ≫ inv ≫ m.val := by
+        rw [← Cat.assoc, snd_pair]; exact Cat.assoc _ _ _
+      rw [Cat.assoc, m.property, ← Cat.assoc, ab_pair_precomp, fst_eq, snd_eq, hinv_r]
+      simp only [Cat.comp_id, pair_fst_snd, Cat.id_comp]
+    rw [lhs, rhs]
+  exact ⟨⟨inv, hinv_hom⟩, Subtype.ext hinv_l, Subtype.ext hinv_r⟩
 
 /-! ### §1.595 `U` reflects monos
 
@@ -582,36 +602,6 @@ end Equalizer
   This lets us show `Cover f.val → Cover f` for maps in `Ab(𝒞)`. -/
 
 section Covers
-
-/-- If `m : M ⟶ B` is a `HomAb` morphism and `m.val` is an isomorphism in 𝒞,
-    then `m` is an isomorphism in `Ab(𝒞)`.
-
-    The inverse hom property of `inv = m.val⁻¹` follows by post-composing with the monic
-    `m.val`: `B.add ≫ inv ≫ m.val = B.add` (LHS) equals `pair (fst≫inv) (snd≫inv) ≫ M.add ≫ m.val`
-    (RHS, via `m.property` + `inv ≫ m.val = id`), so monicity of `m.val` gives the hom square. -/
-theorem isHom_of_carrier_iso {M B : AbelianGroupObject 𝒞} (m : M ⟶ B)
-    (hiso : IsIso m.val) : IsIso m := by
-  obtain ⟨inv, hinv_l, hinv_r⟩ := hiso
-  -- m.val is monic (it has a retraction inv with m.val ≫ inv = id).
-  have hm_mono : Monic m.val := mono_of_retraction m.val inv hinv_l
-  have hinv_hom : IsHomAbelianGroupObject B M inv := by
-    -- Goal: B.add ≫ inv = pair (fst ≫ inv) (snd ≫ inv) ≫ M.add.
-    -- Post-compose with m.val (monic) and show both sides equal B.add.
-    apply hm_mono
-    -- After apply: goal is (B.add ≫ inv) ≫ m.val = (pair(fst≫inv)(snd≫inv) ≫ M.add) ≫ m.val.
-    -- LHS = B.add (by hinv_r).  RHS = B.add (by m.property + hinv_r + pair_fst_snd).
-    have lhs : (B.add ≫ inv) ≫ m.val = B.add := by
-      rw [Cat.assoc, hinv_r, Cat.comp_id]
-    have rhs : (pair (fst ≫ inv) (snd ≫ inv) ≫ M.add) ≫ m.val = B.add := by
-      -- reassociate inner: pair(a)(b) ≫ (x ≫ m.val) = (pair(a)(b) ≫ x) ≫ m.val = ... ≫ m.val
-      have fst_eq : pair (fst ≫ inv) (snd ≫ inv) ≫ (fst ≫ m.val) = fst ≫ inv ≫ m.val := by
-        rw [← Cat.assoc, fst_pair]; exact Cat.assoc _ _ _
-      have snd_eq : pair (fst ≫ inv) (snd ≫ inv) ≫ (snd ≫ m.val) = snd ≫ inv ≫ m.val := by
-        rw [← Cat.assoc, snd_pair]; exact Cat.assoc _ _ _
-      rw [Cat.assoc, m.property, ← Cat.assoc, ab_pair_precomp, fst_eq, snd_eq, hinv_r]
-      simp only [Cat.comp_id, pair_fst_snd, Cat.id_comp]
-    rw [lhs, rhs]
-  exact ⟨⟨inv, hinv_hom⟩, Subtype.ext hinv_l, Subtype.ext hinv_r⟩
 
 /-! **RESIDUAL: Ab-monics have monic carriers** (`ab_monic_carrier_monic`)
 

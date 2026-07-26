@@ -1092,15 +1092,6 @@ theorem invTrue_subterminal (g : HasSubobjectClassifier.omega (𝒞 := 𝒞) ⟶
     rw [hGarr, Cat.assoc, hp.cone.w, ← Cat.assoc, term_uniq (b ≫ hp.cone.π₂) (term W), htopArr]
   exact (invTrue g).monic _ _ (hm _ _ (by rw [ha, hb]))
 
-/-- **§1.919 (cancellation skeleton)**: a monic endomorphism `g` of `Ω` is an
-    involution as soon as `g ≫ g ≫ g = g` (idempotence of `g ≫ g` up to the cube
-    law): cancel the rightmost `g` by monicity.  This isolates the genuine content
-    `g³ = g` from the trivial final step. -/
-theorem omega_involution_of_cube (g : HasSubobjectClassifier.omega (𝒞 := 𝒞) ⟶
-    HasSubobjectClassifier.omega (𝒞 := 𝒞)) (hm : Monic g)
-    (hcube : (g ≫ g) ≫ g = g) : g ≫ g = Cat.id _ :=
-  hm (g ≫ g) (Cat.id _) (by rw [Cat.id_comp]; exact hcube)
-
 /-- The "operation form" of `g` at the generic element (`A = Ω`, `χ = id`):
     `u₀ := term Ω ≫ (t ≫ g) : Ω → Ω` is the classifier of `ĝ(⊤_Ω) = g⁻¹(t)`. -/
 noncomputable abbrev opPoint (g : HasSubobjectClassifier.omega (𝒞 := 𝒞) ⟶

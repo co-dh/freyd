@@ -68,39 +68,6 @@ section QuotSup
 
 variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
-/-- §2.533 in `Sup` form: in the quotient, `[X] ⊑ [Y] ↔ X⁺ ⊑ Y⁺`.  Forward uses
-    `amenable_largest_class_invariant` + §2.532; backward §2.532 + `rel_of_largest_eq`. -/
-theorem quot_le_iff_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (X Y : a ⟶ b) :
-    (@le (QuotAllegory 𝒜 amen.cong) a b (QuotAllegory.instAllegory amen.cong)
-        (Quotient.mk (congSetoid amen.cong) X) (Quotient.mk (congSetoid amen.cong) Y))
-      ↔ amen.largest X ⊑ amen.largest Y := by
-  -- The quotient order `[X] ⊑ [Y]` is `[X ∩ Y] = [X]`, i.e. `X ∩ Y ≡ X`.
-  have hbridge :
-      (@le (QuotAllegory 𝒜 amen.cong) a b (QuotAllegory.instAllegory amen.cong)
-          (Quotient.mk (congSetoid amen.cong) X) (Quotient.mk (congSetoid amen.cong) Y))
-        ↔ amen.cong.rel (X ∩ Y) X := by
-    constructor
-    · intro hle
-      have hle' : (Quotient.mk (congSetoid amen.cong) (X ∩ Y))
-          = Quotient.mk (congSetoid amen.cong) X := hle
-      exact Quotient.exact hle'
-    · intro hr
-      exact Quotient.sound hr
-  rw [hbridge]
-  constructor
-  · intro hr
-    have hci : amen.largest (X ∩ Y) = amen.largest X := amenable_largest_class_invariant amen hr
-    have hil : amen.largest (X ∩ Y) = amen.largest X ∩ amen.largest Y :=
-      amenable_inter_largest amen X Y
-    show amen.largest X ∩ amen.largest Y = amen.largest X
-    rw [← hil, hci]
-  · intro hle
-    have hil : amen.largest (X ∩ Y) = amen.largest X ∩ amen.largest Y :=
-      amenable_inter_largest amen X Y
-    have heq : amen.largest X ∩ amen.largest Y = amen.largest X := hle
-    rw [heq] at hil
-    exact rel_of_largest_eq amen hil
-
 /-- The crux of §2.55.  Two base predicates `P₁ ⊆ P₂` whose `P₂`-elements are each
     congruent to a `P₁`-element have congruent suprema: `Sup P₁ ≡ Sup P₂`.
 
@@ -156,7 +123,7 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
       intro a b P R hR
       induction R using Quotient.inductionOn with
       | _ r =>
-        refine (quot_le_iff_largest amen r _).mpr ?_
+        refine (Freyd.Alg.quotient_le_iff_largest amen r _).mpr ?_
         exact amenable_le_largest amen
           (@LocallyCompleteDistributiveAllegory.le_Sup 𝒜 _ a b
             (fun r => P (Quotient.mk (congSetoid amen.cong) r)) r hR)
@@ -166,7 +133,7 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
       intro a b P T h
       induction T using Quotient.inductionOn with
       | _ t =>
-        refine (quot_le_iff_largest amen _ t).mpr ?_
+        refine (Freyd.Alg.quotient_le_iff_largest amen _ t).mpr ?_
         have hbound :
             (@LocallyCompleteDistributiveAllegory.Sup 𝒜 _ a b
               (fun r => P (Quotient.mk (congSetoid amen.cong) r))) ⊑ amen.largest t := by
@@ -174,7 +141,7 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
             (fun r => P (Quotient.mk (congSetoid amen.cong) r)) (amen.largest t) ?_
           intro r hr
           have hrt : amen.largest r ⊑ amen.largest t :=
-            (quot_le_iff_largest amen r t).mp (h (Quotient.mk (congSetoid amen.cong) r) hr)
+            (Freyd.Alg.quotient_le_iff_largest amen r t).mp (h (Quotient.mk (congSetoid amen.cong) r) hr)
           exact le_trans (self_le_largest amen r) hrt
         have hh := amenable_le_largest amen hbound
         rwa [largest_idem amen] at hh
