@@ -99,11 +99,70 @@ theorem convolution_comm {a b : 𝒞} (R S : a ⟶ b) : convolution R S = convol
     _ = cop a ≫ (S ⊗ₕ R) ≫ SymMonCat.swap b b ≫ mer b := by simp only [Cat.assoc]
     _ = cop a ≫ (S ⊗ₕ R) ≫ mer b := by rw [mer_comm]
 
+/-- `(R ∩ S) ∩ T` with the left-leaning copy and merge trees exposed, ready for (8) and (6). -/
+theorem convolution_left_staged {a b : 𝒞} (R S T : a ⟶ b) :
+    convolution (convolution R S) T
+      = cop a ≫ (cop a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+  dsimp [convolution]
+  have hsplit : ((cop a ≫ (R ⊗ₕ S) ≫ mer b) ⊗ₕ T)
+      = (cop a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) := by
+    rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
+    simp only [Cat.id_comp, Cat.comp_id]
+  rw [hsplit]
+  simp only [Cat.assoc]
+
+/-- The mirror staging for `R ∩ (S ∩ T)`, right-leaning. -/
+theorem convolution_right_staged {a b : 𝒞} (R S T : a ⟶ b) :
+    convolution R (convolution S T)
+      = cop a ≫ (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ mer b) ≫ mer b := by
+  dsimp [convolution]
+  have hsplit : (R ⊗ₕ (cop a ≫ (S ⊗ₕ T) ≫ mer b))
+      = (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ mer b) := by
+    rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
+    simp only [Cat.id_comp, Cat.comp_id]
+  rw [hsplit]
+  simp only [Cat.assoc]
+
 /-- `R ∩ S ≤ S`, the other half of the greatest-lower-bound property. -/
 theorem convolution_le_right {a b : 𝒞} (R S : a ⟶ b) :
     OrderedCat.le (convolution R S) S := by
   rw [convolution_comm]
   exact convolution_le_left S R
+
+/-- `(R ∩ S) ∩ T = R ∩ (S ∩ T)` — Freyd's `inter_assoc` (§2.11), derived.  Both staged forms are
+    normalised to `Δ;(𝟙 ⊗ Δ);(R ⊗ (S ⊗ T));(𝟙 ⊗ ∇);∇`: coassociativity (8) turns the left copy
+    tree into the right one, associativity (6) does the same for the merge tree, and
+    `tensAssocInv_nat` carries the re-bracketing past `(R ⊗ S) ⊗ T` in between. -/
+theorem convolution_assoc {a b : 𝒞} (R S T : a ⟶ b) :
+    convolution (convolution R S) T = convolution R (convolution S T) := by
+  rw [convolution_left_staged, convolution_right_staged]
+  -- Insert `α ; α⁻¹ = 𝟙` after the left copy tree, then apply (8), naturality, and (6).
+  calc cop a ≫ (cop a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b
+      = cop a ≫ (cop a ⊗ₕ 𝟙 a) ≫ (SymMonCat.tensAssoc a a a ≫ SymMonCat.tensAssocInv a a a)
+          ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+        rw [SymMonCat.tensAssoc_inv, Cat.id_comp]
+    _ = (cop a ≫ (cop a ⊗ₕ 𝟙 a) ≫ SymMonCat.tensAssoc a a a)
+          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+        simp only [Cat.assoc]
+    _ = (cop a ≫ (𝟙 a ⊗ₕ cop a))
+          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+        rw [cop_assoc]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a)
+          ≫ (SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T)) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+        simp only [Cat.assoc]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a)
+          ≫ ((R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv b b b) ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by
+        rw [tensAssocInv_nat]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T))
+          ≫ SymMonCat.tensAssocInv b b b ≫ (mer b ⊗ₕ 𝟙 b) ≫ mer b := by simp only [Cat.assoc]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T))
+          ≫ SymMonCat.tensAssocInv b b b ≫ SymMonCat.tensAssoc b b b
+          ≫ (𝟙 b ⊗ₕ mer b) ≫ mer b := by rw [mer_assoc]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T))
+          ≫ (SymMonCat.tensAssocInv b b b ≫ SymMonCat.tensAssoc b b b)
+          ≫ (𝟙 b ⊗ₕ mer b) ≫ mer b := by simp only [Cat.assoc]
+    _ = cop a ≫ (𝟙 a ⊗ₕ cop a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ mer b) ≫ mer b := by
+        rw [SymMonCat.inv_tensAssoc, Cat.id_comp]
 
 /-- `R ∩ R = R` — Freyd's `inter_idem` (§2.11), derived.  `≤` is the glb property; `≥` is exactly
     where the lax inequation (42) and the special law meet: copying `R` and running it on both

@@ -137,10 +137,22 @@ under their own names, and never unfold `cup`/`cap` afterwards.
 | `convolution_le_left/right` | the glb halves, by weakening the other strand to `⊤`                  |
 | `convolution_comm`       | symmetric, via (9) on copy and (6) on merge                              |
 | `convolution_idem`       | `R ∩ R = R` = Freyd's `inter_idem`; where (42) and the special law meet    |
+| `convolution_*_staged`   | the two bracketings with their copy/merge trees exposed                   |
+| `convolution_assoc`      | `(R ∩ S) ∩ T = R ∩ (S ∩ T)` = Freyd's `inter_assoc`                        |
+| `tensAssocInv_nat`        | associator naturality in the inverse direction (in `diag/Monoidal.lean`)  |
 
-These were done first, ahead of the converse, because they live at a single object and so need no associator.
-Still open in this phase: `convolution_assoc`, the full glb statement, the converse `†` by wire-bending with its
-snake lemmas, and the map characterisations (Lemmas 4.4, 4.8, Cor. 4.5).
+So all three of Freyd's `inter` semilattice axioms — `inter_idem`, `inter_comm`, `inter_assoc` — are now theorems
+about the diagram axioms rather than assumptions. The `∩`/`⊤` group was done ahead of the converse because it lives
+at a single object; `convolution_assoc` is the first proof here that touches an associator, and it needed one new
+Monoidal lemma (`tensAssocInv_nat`) to push a re-bracketing past `(R ⊗ S) ⊗ T`.
+
+A shape trap worth remembering: `≫` is `infixr`, and the staging lemmas originally ended with `simp only [Cat.assoc]`,
+which right-nested everything and left `(X ≫ Y) ≫ Z` patterns unmatchable by `rw`. The fix was to state the staging
+lemmas already fused, so no `tensHom_split` rewrite is needed at the call site.
+
+Still open in this phase: the full glb statement, the converse `†` by wire-bending with its snake lemmas, and the map
+characterisations (Lemmas 4.4, 4.8, Cor. 4.5). The converse is the gate to phase 5 — Freyd's `recip` and the modular
+law both need it.
 
 ## Phase 4 — `Rel(Set)` is a cartesian bicategory (`diag/RelSetCB.lean`)
 

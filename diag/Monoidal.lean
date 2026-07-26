@@ -109,4 +109,24 @@ theorem tensHom_split' {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
     (𝟙 a ⊗ₕ S) ≫ (R ⊗ₕ 𝟙 b') = R ⊗ₕ S := by
   rw [← SymMonCat.tensHom_comp, Cat.comp_id, Cat.id_comp]
 
+/-- Naturality of the associator read in the inverse direction — obtained by conjugating
+    `tensAssoc_nat` with `tensAssoc_inv`/`inv_tensAssoc`.  Needed whenever a proof pushes a
+    re-bracketing past a product of arrows rather than pulling it. -/
+theorem tensAssocInv_nat {a a' b b' c c' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c') :
+    SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+      = (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by
+  have hnat := SymMonCat.tensAssoc_nat (𝒞 := 𝒞) R S T
+  calc SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+      = SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+          ≫ (SymMonCat.tensAssoc a' b' c' ≫ SymMonCat.tensAssocInv a' b' c') := by
+        rw [SymMonCat.tensAssoc_inv, Cat.comp_id]
+    _ = SymMonCat.tensAssocInv a b c ≫ (((R ⊗ₕ S) ⊗ₕ T) ≫ SymMonCat.tensAssoc a' b' c')
+          ≫ SymMonCat.tensAssocInv a' b' c' := by simp only [Cat.assoc]
+    _ = SymMonCat.tensAssocInv a b c ≫ (SymMonCat.tensAssoc a b c ≫ (R ⊗ₕ (S ⊗ₕ T)))
+          ≫ SymMonCat.tensAssocInv a' b' c' := by rw [hnat]
+    _ = (SymMonCat.tensAssocInv a b c ≫ SymMonCat.tensAssoc a b c)
+          ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by simp only [Cat.assoc]
+    _ = (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by
+        rw [SymMonCat.inv_tensAssoc, Cat.id_comp]
+
 end Freyd.Diag
