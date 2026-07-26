@@ -21,19 +21,13 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.LaxColim
+open scoped PreRegularCategory
 
 universe u
 
 variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [PreRegularCategory 𝒞] [HasImages 𝒞]
 
--- INSTANCE-DIAMOND PIN (§1.543) — see `UniformCapStep.lean`/`FibreDensityProof.lean`.  `laxOfProjSystem'`
--- resolves its `[HasPullbacks 𝒞]` to either `PreRegularCategory.toHasPullbacks` or the global
--- `exactPullbacks` inconsistently across def sites; pin both so every `laxOfProjSystem' P` agrees.
-local instance (priority := 10000) ratCapImgPinEq : HasEqualizers 𝒞 :=
-  products_pullbacks_implies_equalizers
-local instance (priority := 10000) ratCapImgPinPb : HasPullbacks 𝒞 :=
-  PreRegularCategory.toHasPullbacks
-
+-- Keep every elaboration of `laxOfProjSystem' P` on the shared finite-limit representatives.
 /-- **`ratCapCat P` has images**, given cover-projections.  The §1.547 lax-colimit successor target,
     pre-regular by `ratCapPreRegular_of_projCover`, is in fact REGULAR. -/
 noncomputable def ratCapHasImages [Nonempty ι] (P : ProjSystem ι D 𝒞)

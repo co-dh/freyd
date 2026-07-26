@@ -13,7 +13,7 @@ import Freyd.S1_52
 import Freyd.S1_58
 open Freyd
 namespace Freyd.Colim
-universe u w
+universe u w u₁ u₂ u₃ v
 variable {ι : Type u} {D : Directed ι}
 
 noncomputable def colimitHasTerminal (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
@@ -3235,8 +3235,10 @@ theorem preservesTerminal_comp [HasTerminal 𝒜] [HasTerminal ℬ] [HasTerminal
 /-- **Binary-product preservation composes.**  If `F` and `G` each make their product comparison an
     iso, so does `G ∘ F`: the composite comparison factors as `G(φF) ≫ φG` (`φF`, `φG` the rung
     comparisons), a composite of isos (`φF` iso ⟹ `G φF` iso by `functor_preserves_iso`). -/
-theorem preservesBinaryProducts_comp [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ]
-    [HasBinaryProducts ℰ] (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
+theorem preservesBinaryProducts_comp {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ : Type u₃}
+    [Cat.{v} 𝒜] [Cat.{v} ℬ] [Cat.{v} ℰ]
+    [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ] [HasBinaryProducts ℰ]
+    (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
     (hppF : PreservesBinaryProducts F) (hppG : PreservesBinaryProducts G) :
     PreservesBinaryProducts (compFunctor F G) := by
   intro A B

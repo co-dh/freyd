@@ -63,8 +63,7 @@ theorem topA_S_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
 theorem topA_S_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (ha1 : a₁.le (c₁.join b₁)) (ha2 : a₂.le (c₂.join b₂)) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=
-  hornConc_of_le_cb
-    (meet_mono (join_le ha1 (le_join_right _ _)) (join_le ha2 (le_join_right _ _)))
+  HornConc.of_swap_ab (topA_S_ac (by rw [join_comm]; exact ha1) (by rw [join_comm]; exact ha2))
 
 /-- DOMINATION (column-2): if `c₁` joins to `⊤` with BOTH `a₁` and `b₁`, then
     both conclusion meets collapse onto their row-2 factors, whose join already
@@ -84,13 +83,7 @@ theorem topA_S_col2 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     their row-1 factors, dominating `a₁⊔b₁ ⊒ LHS`. -/
 theorem topA_S_row1 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (hac2 : a₂.join c₂ = top) (hcb2 : c₂.join b₂ = top) :
-    HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
-  show ((a₁.join b₁).meet (a₂.join b₂)).le
-    (((a₁.join c₁).meet (a₂.join c₂)).join ((c₁.join b₁).meet (c₂.join b₂)))
-  rw [hac2, hcb2, meet_top_right, meet_top_right]
-  exact le_trans (meet_le_left _ _)
-    (join_le (le_trans (le_join_left a₁ c₁) (le_join_left _ _))
-      (le_trans (le_join_right c₁ b₁) (le_join_right _ _)))
+    HornConc a₁ a₂ b₁ b₂ c₁ c₂ := HornConc.of_swap_idx (topA_S_col2 hac2 hcb2)
 
 /-! ## Geometric micro-helpers for the residual (double-incidence) cores -/
 

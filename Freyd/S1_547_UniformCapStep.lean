@@ -54,6 +54,7 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.UniformCap
+open scoped PreRegularCategory
 
 universe u
 
@@ -66,20 +67,7 @@ open Freyd.CofinalProj
 -- `uniformStep` inhabitant instantiates it from `W.dec` (`wsCover S` in `CofinalProjSystem.lean`).
 variable [DecidableEq S]
 
--- INSTANCE-DIAMOND PIN (§1.543 restore).  `laxOfProjSystem'` needs `[HasPullbacks S]`, for which two
--- instances compete: `PreRegularCategory.toHasPullbacks` and the global `exactPullbacks` (= binary
--- products + equalizers, `S1_59`).  Resolution picks between them INCONSISTENTLY across the def sites of
--- this file, so the successor category `uniformTargetCat W` and the lax lemmas' outputs end up as
--- syntactically distinct `laxOfProjSystem' …` terms that never defeq-bridge in the elaborator (every
--- `CapStep` preservation field then reports a spurious type mismatch).  Pinning `HasPullbacks`/
--- `HasEqualizers S` to one representative each forces every `laxOfProjSystem' (cofinalProjSystem …)` to
--- resolve identically.  (The defeq still holds for the un-pinned form — see the `rfl` check — but only at
--- full transparency, which the field/argument elaborator does not use.)
-local instance (priority := 10000) uniformPinEqualizers : HasEqualizers S :=
-  products_pullbacks_implies_equalizers
-local instance (priority := 10000) uniformPinPullbacks : HasPullbacks S :=
-  PreRegularCategory.toHasPullbacks
-
+-- Keep the successor and its lax lemmas on the shared finite-limit representatives.
 /-! ## Phase 1–2 — the STRICT, COFINAL product-projection `ProjSystem` (imported)
 
   `ProjSystem.proj_refl`/`proj_trans` must be ON-THE-NOSE.  Over the SUBSET-ordered index they cannot

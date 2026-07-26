@@ -1192,22 +1192,7 @@ theorem omega_endo_ext
     (hlarge : ∀ {A : 𝒞} (p : A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)),
       p ≫ g = term A ≫ HasSubobjectClassifier.true
         ↔ p ≫ h = term A ≫ HasSubobjectClassifier.true) :
-    g = h := by
-  -- The defining inclusions are large for their own classifier (classifier square).
-  have hLg : (invTrue g).arr ≫ g = term (invTrue g).dom ≫ HasSubobjectClassifier.true := by
-    have := HasSubobjectClassifier.classify_sq (invTrue g).arr (invTrue g).monic
-    rwa [classify_invTrue] at this
-  have hLh : (invTrue h).arr ≫ h = term (invTrue h).dom ≫ HasSubobjectClassifier.true := by
-    have := HasSubobjectClassifier.classify_sq (invTrue h).arr (invTrue h).monic
-    rwa [classify_invTrue] at this
-  -- g⁻¹(t) and h⁻¹(t) allow exactly the same maps, hence are le-equivalent.
-  have hgh : (invTrue g).le (invTrue h) := by
-    rw [le_iff_classify, classify_invTrue]; exact (hlarge (invTrue g).arr).1 hLg
-  have hhg : (invTrue h).le (invTrue g) := by
-    rw [le_iff_classify, classify_invTrue]; exact (hlarge (invTrue h).arr).2 hLh
-  have := classify_eq_of_le_le hgh hhg
-  rwa [show subChar (invTrue g) = g from classify_invTrue g,
-       show subChar (invTrue h) = h from classify_invTrue h] at this
+    g = h := by exact omega_ext g h hlarge
 
 /-! ### §1.919  The subterminals `V = g⁻¹(t)` and `U = f⁻¹(t)` as subobjects of `1` -/
 

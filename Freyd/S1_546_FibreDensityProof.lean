@@ -46,20 +46,13 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.FibreDensityProof
+open scoped PreRegularCategory
 
 universe u
 
 variable {S : Type u} [Cat.{u} S] [PreRegularCategory S] [DecidableEq S]
 
--- INSTANCE-DIAMOND PIN (§1.543 restore) — see `UniformCapStep.lean`.  `laxOfProjSystem'` resolves its
--- `[HasPullbacks S]` to either `PreRegularCategory.toHasPullbacks` or the global `exactPullbacks`
--- inconsistently across def sites, leaving `uniformTargetCat`/lax data as un-bridgeable syntactic forms.
--- Pin both to one representative so every `laxOfProjSystem' (cofinalProjSystem …)` resolves identically.
-local instance (priority := 10000) fibrePinEqualizers : HasEqualizers S :=
-  products_pullbacks_implies_equalizers
-local instance (priority := 10000) fibrePinPullbacks : HasPullbacks S :=
-  PreRegularCategory.toHasPullbacks
-
+-- Keep the cofinal lax system on the shared finite-limit representatives.
 open Freyd.UniformCap
 open Freyd.CofinalProj
 open Freyd.UniformWellPoints
