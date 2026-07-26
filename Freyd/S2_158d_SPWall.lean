@@ -460,9 +460,6 @@ theorem chain_edge_b : ∀ k i, i ≤ k →
   (`entL_edge_bL`) that forces a stage map's corner values. -/
 
 theorem bL_ne_dL {i j : Nat} : bL i ≠ dL j := by simp only [bL, dL]; omega
-theorem bL_inj {i j : Nat} (h : bL i = bL j) : i = j := by
-  simp only [bL] at h; omega
-
 /-- The middle vertex of branch `j` inside the `mids` tower (for `j ≤ k`). -/
 def midsMid : (k : Nat) → Nat → (toGraph (mids k)).V
   | 0, _ => branchMid 0
@@ -488,7 +485,7 @@ theorem branch_edge_bL {j i : Nat} {c d : (toGraph (branch j)).V}
   rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
   · rcases meet_arrow_recip_edge he with ⟨hlab, hus, hvt⟩ | ⟨hlab, _, _⟩
     · subst hus; subst hvt
-      exact ⟨bL_inj hlab, hu.symm, hv.symm⟩
+      exact ⟨strideFour_injective 1 hlab, hu.symm, hv.symm⟩
     · exact absurd hlab.symm aL_ne_bL
   · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
     · exact absurd hlab bL_ne_dL
@@ -532,7 +529,7 @@ theorem entL_edge_bL {n i : Nat} {c d : (toGraph (entL n)).V}
       subst hu'; subst hv'
       rcases meet_arrow_recip_edge he' with ⟨hlab, _, _⟩ | ⟨hlab, hut, hvs⟩
       · exact absurd hlab.symm aL_ne_bL
-      · obtain rfl := bL_inj hlab
+      · obtain rfl := strideFour_injective 1 hlab
         subst hut; subst hvs
         refine ⟨Nat.le_refl _, ?_, ?_⟩
         · exact congrArg

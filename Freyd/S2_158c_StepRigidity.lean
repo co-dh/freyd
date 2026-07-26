@@ -155,12 +155,6 @@ def Pv (n : Nat) : (toGraph (entL n)).V :=
 def Qv (n : Nat) : (toGraph (entL n)).V :=
   Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inl (toGraph (mids n)).t)))))
 
-theorem aL_inj {i j : Nat} (h : aL i = aL j) : i = j := by
-  simp only [aL] at h; omega
-
-theorem cL_inj {i j : Nat} (h : cL i = cL j) : i = j := by
-  simp only [cL] at h; omega
-
 /-- The middle vertex of branch `j` (the collapse image of corner `v_{j+1}`):
     the joint of the branch's two factors. -/
 def branchMid (j : Nat) : (toGraph (branch j)).V :=
@@ -175,7 +169,7 @@ theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
   · rcases meet_arrow_recip_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hut, hvs⟩
     · exact absurd hlab aL_ne_bL
     · subst hut; subst hvs
-      exact ⟨aL_inj hlab, hu.symm, hv.symm⟩
+      exact ⟨(fun h => by simp only [aL] at h; omega) hlab, hu.symm, hv.symm⟩
   · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, _, _⟩
     · exact absurd hlab aL_ne_dL
     · exact absurd hlab aL_ne_cL
@@ -192,7 +186,7 @@ theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
   · rcases meet_recip_arrow_edge he with ⟨hlab, _, _⟩ | ⟨hlab, hus, hvt⟩
     · exact absurd hlab cL_ne_dL
     · subst hus; subst hvt
-      refine ⟨cL_inj hlab, ?_, hv.symm⟩
+      refine ⟨(fun h => by simp only [cL] at h; omega) hlab, ?_, hv.symm⟩
       rw [← hu]
       exact (gcomp_glue _ _).symm
 /-- In a branch, every `aL`-labelled edge ends at the `s`-mark (the collapsed

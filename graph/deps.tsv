@@ -21404,41 +21404,6 @@ Alg.psi_unionU	Alg.UnionAllegory.union
 Alg.psi_unionU	Alg.unionU_comp_distrib
 Alg.psi_unionU	Cat.Hom
 Alg.psi_unionU	Cat.comp
-Alg.quotDiv	Alg.Allegory.toCat
-Alg.quotDiv	Alg.AllegoryFunctor.map
-Alg.quotDiv	Alg.AllegoryFunctor.obj
-Alg.quotDiv	Alg.AmenableCongruence
-Alg.quotDiv	Alg.AmenableCongruence.cong
-Alg.quotDiv	Alg.AmenableCongruence.largest
-Alg.quotDiv	Alg.AmenableCongruence.union_congr
-Alg.quotDiv	Alg.Congruence.rel
-Alg.quotDiv	Alg.DistributiveAllegory
-Alg.quotDiv	Alg.DistributiveAllegory.toAllegory
-Alg.quotDiv	Alg.DistributiveAllegory.union
-Alg.quotDiv	Alg.DivisionAllegory
-Alg.quotDiv	Alg.DivisionAllegory.div
-Alg.quotDiv	Alg.DivisionAllegory.div_comp_le
-Alg.quotDiv	Alg.DivisionAllegory.le_div
-Alg.quotDiv	Alg.DivisionAllegory.toDistributiveAllegory
-Alg.quotDiv	Alg.QuotAllegory
-Alg.quotDiv	Alg.QuotAllegory.instAllegory
-Alg.quotDiv	Alg.QuotAllegory.instDistributiveAllegory
-Alg.quotDiv	Alg.UnionAllegory.toAllegory
-Alg.quotDiv	Alg.amenable_largest_class_invariant
-Alg.quotDiv	Alg.amenable_le_largest
-Alg.quotDiv	Alg.comp_mono_left
-Alg.quotDiv	Alg.congSetoid
-Alg.quotDiv	Alg.distributiveAllegory_isUnionAllegory
-Alg.quotDiv	Alg.largest_comp_le
-Alg.quotDiv	Alg.largest_idem
-Alg.quotDiv	Alg.le
-Alg.quotDiv	Alg.le_refl
-Alg.quotDiv	Alg.le_trans
-Alg.quotDiv	Alg.quotRep
-Alg.quotDiv	Alg.quotient_le_iff_largest
-Alg.quotDiv	Alg.self_le_largest
-Alg.quotDiv	Cat.Hom
-Alg.quotDiv	Cat.comp
 Alg.quotEffectivePrePower	Alg.Allegory.toCat
 Alg.quotEffectivePrePower	Alg.AllegoryFunctor.map
 Alg.quotEffectivePrePower	Alg.AmenableCongruence
@@ -21457,6 +21422,7 @@ Alg.quotEffectivePrePower	Alg.PowerAllegory.powerObj
 Alg.quotEffectivePrePower	Alg.PowerAllegory.toDivisionAllegory
 Alg.quotEffectivePrePower	Alg.QuotAllegory
 Alg.quotEffectivePrePower	Alg.QuotAllegory.instAllegory
+Alg.quotEffectivePrePower	Alg.QuotAllegory.instDivisionAllegory
 Alg.quotEffectivePrePower	Alg.QuotBoxNaming
 Alg.quotEffectivePrePower	Alg.Reflexive
 Alg.quotEffectivePrePower	Alg.Symmetric
@@ -21466,7 +21432,6 @@ Alg.quotEffectivePrePower	Alg.Thick
 Alg.quotEffectivePrePower	Alg.UnionAllegory.toAllegory
 Alg.quotEffectivePrePower	Alg.congSetoid
 Alg.quotEffectivePrePower	Alg.distributiveAllegory_isUnionAllegory
-Alg.quotEffectivePrePower	Alg.quotDiv
 Alg.quotEffectivePrePower	Alg.quotRep
 Alg.quotEffectivePrePower	Alg.quotRep_preserves_tabular
 Alg.quotEffectivePrePower	Alg.quotSplit
@@ -21496,6 +21461,7 @@ Alg.quotEffectivePrePower_unguarded	Alg.PowerAllegory.toDivisionAllegory
 Alg.quotEffectivePrePower_unguarded	Alg.QuotAllegory
 Alg.quotEffectivePrePower_unguarded	Alg.QuotAllegory.instAllegory
 Alg.quotEffectivePrePower_unguarded	Alg.QuotAllegory.instCat
+Alg.quotEffectivePrePower_unguarded	Alg.QuotAllegory.instDivisionAllegory
 Alg.quotEffectivePrePower_unguarded	Alg.Reflexive
 Alg.quotEffectivePrePower_unguarded	Alg.Symmetric
 Alg.quotEffectivePrePower_unguarded	Alg.Tabular
@@ -21504,7 +21470,6 @@ Alg.quotEffectivePrePower_unguarded	Alg.Thick
 Alg.quotEffectivePrePower_unguarded	Alg.UnionAllegory.toAllegory
 Alg.quotEffectivePrePower_unguarded	Alg.congSetoid
 Alg.quotEffectivePrePower_unguarded	Alg.distributiveAllegory_isUnionAllegory
-Alg.quotEffectivePrePower_unguarded	Alg.quotDiv
 Alg.quotEffectivePrePower_unguarded	Alg.quotRep
 Alg.quotEffectivePrePower_unguarded	Alg.quotRep_preserves_tabular
 Alg.quotEffectivePrePower_unguarded	Alg.quotSplit
@@ -21813,6 +21778,7 @@ Alg.quotThickEps	Alg.PowerAllegory.powerObj
 Alg.quotThickEps	Alg.PowerAllegory.toDivisionAllegory
 Alg.quotThickEps	Alg.QuotAllegory
 Alg.quotThickEps	Alg.QuotAllegory.instAllegory
+Alg.quotThickEps	Alg.QuotAllegory.instDivisionAllegory
 Alg.quotThickEps	Alg.Simple
 Alg.quotThickEps	Alg.Thick
 Alg.quotThickEps	Alg.UnionAllegory.toAllegory
@@ -21823,7 +21789,6 @@ Alg.quotThickEps	Alg.congSetoid
 Alg.quotThickEps	Alg.distributiveAllegory_isUnionAllegory
 Alg.quotThickEps	Alg.largest_idem
 Alg.quotThickEps	Alg.le
-Alg.quotThickEps	Alg.quotDiv
 Alg.quotThickEps	Alg.quotRep
 Alg.quotThickEps	Alg.quotRep_codBox
 Alg.quotThickEps	Alg.quotRep_map
@@ -21856,6 +21821,7 @@ Alg.quotThickEps_unguarded	Alg.PowerAllegory.powerObj
 Alg.quotThickEps_unguarded	Alg.PowerAllegory.toDivisionAllegory
 Alg.quotThickEps_unguarded	Alg.QuotAllegory
 Alg.quotThickEps_unguarded	Alg.QuotAllegory.instAllegory
+Alg.quotThickEps_unguarded	Alg.QuotAllegory.instDivisionAllegory
 Alg.quotThickEps_unguarded	Alg.Simple
 Alg.quotThickEps_unguarded	Alg.Thick
 Alg.quotThickEps_unguarded	Alg.UnguardedPowerAllegory.eps_thick_all
@@ -21870,7 +21836,6 @@ Alg.quotThickEps_unguarded	Alg.distributiveAllegory_isUnionAllegory
 Alg.quotThickEps_unguarded	Alg.largest_idem
 Alg.quotThickEps_unguarded	Alg.le
 Alg.quotThickEps_unguarded	Alg.le_refl
-Alg.quotThickEps_unguarded	Alg.quotDiv
 Alg.quotThickEps_unguarded	Alg.quotRep
 Alg.quotThickEps_unguarded	Alg.quotRep_preserves_entire
 Alg.quotThickEps_unguarded	Alg.quotient_le_iff_largest
@@ -57316,7 +57281,6 @@ S2_158.WalkE.rev	S2_158.LGraph.V
 S2_158.WalkE.rev	S2_158.LGraph.edge
 S2_158.WalkE.rev	S2_158.WalkE
 S2_158.WalkE.rev	S2_158.WalkE.append
-S2_158.aL_inj	S2_158.aL
 S2_158.aL_ne_bL	S2_158.aL
 S2_158.aL_ne_bL	S2_158.bL
 S2_158.aL_ne_cL	S2_158.aL
@@ -57362,7 +57326,6 @@ S2_158.arrow_edge	S2_158.LGraph.edge
 S2_158.arrow_edge	S2_158.LGraph.s
 S2_158.arrow_edge	S2_158.LGraph.t
 S2_158.arrow_edge	S2_158.arrow
-S2_158.bL_inj	S2_158.bL
 S2_158.bL_ne_dL	S2_158.bL
 S2_158.bL_ne_dL	S2_158.dL
 S2_158.branch	S2_158.Term
@@ -57408,7 +57371,6 @@ S2_158.branch_edge_aL_full	S2_158.LGraph.s
 S2_158.branch_edge_aL_full	S2_158.LGraph.t
 S2_158.branch_edge_aL_full	S2_158.Term
 S2_158.branch_edge_aL_full	S2_158.aL
-S2_158.branch_edge_aL_full	S2_158.aL_inj
 S2_158.branch_edge_aL_full	S2_158.aL_ne_bL
 S2_158.branch_edge_aL_full	S2_158.aL_ne_cL
 S2_158.branch_edge_aL_full	S2_158.aL_ne_dL
@@ -57434,7 +57396,6 @@ S2_158.branch_edge_bL	S2_158.aL
 S2_158.branch_edge_bL	S2_158.aL_ne_bL
 S2_158.branch_edge_bL	S2_158.arrow
 S2_158.branch_edge_bL	S2_158.bL
-S2_158.branch_edge_bL	S2_158.bL_inj
 S2_158.branch_edge_bL	S2_158.bL_ne_dL
 S2_158.branch_edge_bL	S2_158.branch
 S2_158.branch_edge_bL	S2_158.branchMid
@@ -57447,6 +57408,7 @@ S2_158.branch_edge_bL	S2_158.meet
 S2_158.branch_edge_bL	S2_158.meet_arrow_recip_edge
 S2_158.branch_edge_bL	S2_158.meet_recip_arrow_edge
 S2_158.branch_edge_bL	S2_158.recip
+S2_158.branch_edge_bL	S2_158.strideFour_injective
 S2_158.branch_edge_bL	S2_158.toGraph
 S2_158.branch_edge_cL	S2_158.LGraph.V
 S2_158.branch_edge_cL	S2_158.LGraph.edge
@@ -57468,7 +57430,6 @@ S2_158.branch_edge_cL_full	S2_158.bL
 S2_158.branch_edge_cL_full	S2_158.branch
 S2_158.branch_edge_cL_full	S2_158.branchMid
 S2_158.branch_edge_cL_full	S2_158.cL
-S2_158.branch_edge_cL_full	S2_158.cL_inj
 S2_158.branch_edge_cL_full	S2_158.cL_ne_bL
 S2_158.branch_edge_cL_full	S2_158.cL_ne_dL
 S2_158.branch_edge_cL_full	S2_158.compRel
@@ -57503,7 +57464,6 @@ S2_158.branch_edge_dL	S2_158.meet_arrow_recip_edge
 S2_158.branch_edge_dL	S2_158.meet_recip_arrow_edge
 S2_158.branch_edge_dL	S2_158.recip
 S2_158.branch_edge_dL	S2_158.toGraph
-S2_158.cL_inj	S2_158.cL
 S2_158.cL_ne_bL	S2_158.bL
 S2_158.cL_ne_bL	S2_158.cL
 S2_158.cL_ne_dL	S2_158.cL
@@ -57983,7 +57943,6 @@ S2_158.entL_edge_aL_full	S2_158.LGraph.t
 S2_158.entL_edge_aL_full	S2_158.Pv
 S2_158.entL_edge_aL_full	S2_158.Term
 S2_158.entL_edge_aL_full	S2_158.aL
-S2_158.entL_edge_aL_full	S2_158.aL_inj
 S2_158.entL_edge_aL_full	S2_158.aL_ne_bL
 S2_158.entL_edge_aL_full	S2_158.aL_ne_cL
 S2_158.entL_edge_aL_full	S2_158.aL_ne_dL
@@ -58016,7 +57975,6 @@ S2_158.entL_edge_bL	S2_158.aL
 S2_158.entL_edge_bL	S2_158.aL_ne_bL
 S2_158.entL_edge_bL	S2_158.arrow
 S2_158.entL_edge_bL	S2_158.bL
-S2_158.entL_edge_bL	S2_158.bL_inj
 S2_158.entL_edge_bL	S2_158.bL_ne_dL
 S2_158.entL_edge_bL	S2_158.cL
 S2_158.entL_edge_bL	S2_158.cL_ne_bL
@@ -58035,6 +57993,7 @@ S2_158.entL_edge_bL	S2_158.mids
 S2_158.entL_edge_bL	S2_158.midsMid
 S2_158.entL_edge_bL	S2_158.mids_edge_bL
 S2_158.entL_edge_bL	S2_158.recip
+S2_158.entL_edge_bL	S2_158.strideFour_injective
 S2_158.entL_edge_bL	S2_158.toGraph
 S2_158.entL_edge_cL	S2_158.LGraph.V
 S2_158.entL_edge_cL	S2_158.LGraph.edge
@@ -58073,7 +58032,6 @@ S2_158.entL_edge_cL_full	S2_158.aL_ne_cL
 S2_158.entL_edge_cL_full	S2_158.arrow
 S2_158.entL_edge_cL_full	S2_158.bL
 S2_158.entL_edge_cL_full	S2_158.cL
-S2_158.entL_edge_cL_full	S2_158.cL_inj
 S2_158.entL_edge_cL_full	S2_158.cL_ne_bL
 S2_158.entL_edge_cL_full	S2_158.cL_ne_dL
 S2_158.entL_edge_cL_full	S2_158.compRel
