@@ -390,6 +390,11 @@ def cL (i : Nat) : Nat := 4 * i + 2
 /-- Bottom-out label of the `i`-th rhombus (edge `qᵢ → vᵢ₊₁`; the book's `S₂ᵢ₊₂`). -/
 def dL (i : Nat) : Nat := 4 * i + 3
 
+/-- Arithmetic injectivity shared by the four stride-four label families. -/
+def strideFour_injective (r : Nat) : Function.Injective (fun i => 4 * i + r) := by
+  intro i j h
+  change 4 * i + r = 4 * j + r at h
+  omega
 /-- The `i`-th rhombus as a term: the lens `aᵢbᵢ ∩ cᵢdᵢ`. -/
 def lens (i : Nat) : Term Nat :=
   .meet (.comp (.var (aL i)) (.var (bL i))) (.comp (.var (cL i)) (.var (dL i)))

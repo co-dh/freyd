@@ -25,7 +25,7 @@ import Freyd.S2_158d_SPWall
 
 namespace Freyd.S2_158
 
-/-! ## Label injectivity (completing the `bL_inj` family) -/
+/-! ## Label injectivity via the shared stride-four arithmetic -/
 
 /-! ## Edge-uniqueness, top/bottom ENTRIES
 
@@ -70,7 +70,7 @@ theorem entL_edge_aL_full {n i : Nat} {c d : (toGraph (entL n)).V}
     · -- first border factor `a₀ ∩ b_{n+1}°`: the `a₀`-edge runs `s → t`.
       subst hu'; subst hv'
       rcases meet_arrow_recip_edge he' with ⟨hlab, hus, hvt⟩ | ⟨hlab, _, _⟩
-      · obtain rfl : i = 0 := aL_inj hlab
+      · obtain rfl : i = 0 := (fun h => by simp only [aL] at h; omega) hlab
         subst hus; subst hvt
         refine ⟨Nat.zero_le _, ?_, ?_⟩
         · exact meet_inr_s _ _
@@ -142,7 +142,7 @@ theorem entL_edge_cL_full {n i : Nat} {c d : (toGraph (entL n)).V}
       · -- last border factor `c₀° ∩ d_{n+1}`: the `c₀`-edge runs `t → s`.
         subst hu''; subst hv''
         rcases meet_recip_arrow_edge he'' with ⟨hlab, hut, hvs⟩ | ⟨hlab, _, _⟩
-        · obtain rfl : i = 0 := cL_inj hlab
+        · obtain rfl : i = 0 := (fun h => by simp only [cL] at h; omega) hlab
           subst hut; subst hvs
           refine ⟨Nat.zero_le _, ?_, ?_⟩
           · exact meet_inr_t _ _

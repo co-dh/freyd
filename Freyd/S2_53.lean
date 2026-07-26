@@ -143,7 +143,8 @@ end Freyd.Alg
   prove the §2.537 theorem.  Following the book, the proof has three layers:
 
   1.  §2.536 division on the quotient — `R̄/S̄ := overline(R⁺/S⁺)`.  Built UNCONDITIONALLY
-      as a `DivisionAllegory (QuotAllegory …)` instance (`quotDiv`) from the amenable ⁺
+      as a `DivisionAllegory (QuotAllegory …)` instance
+      (`QuotAllegory.instDivisionAllegory`) from the amenable ⁺
       calculus (§2.531 `amenable_le_largest`, §2.532 `amenable_inter_largest`, §2.534
       `largest_comp_le`).  The bridge `quotient_le_iff_largest` (§2.533,
       `[R]⊑[S] ↔ R⁺⊑S⁺`) is the
@@ -220,52 +221,6 @@ end
 
 section Division
 variable {𝒜 : Type u} [DivisionAllegory 𝒜] (amen : AmenableCongruence 𝒜)
-
-/-- §2.536: the quotient of a division allegory is a division allegory, with
-    `R̄/S̄ = overline(R⁺/S⁺)`.  Built on the existing distributive structure
-    (`QuotAllegory.instDistributiveAllegory`, fed `amen.union_congr`).
-
-    The two division laws use `quotient_le_iff_largest` (§2.533) via `.mp`/`.mpr`, relying on the
-    defeq `(quotRep).map X = Quotient.mk _ X` so that the quotient `div`/`≫`/`⊑` of the
-    `Quotient.lift₂` body match the `(quotRep).map …` form of `quotient_le_iff_largest`. -/
-noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
-  { QuotAllegory.instDistributiveAllegory amen.cong amen.union_congr with
-    div := fun {a b c} => Quotient.lift₂
-      (fun R S => (quotRep amen.cong).map (amen.largest R / amen.largest S))
-      (by
-        -- Well-defined: R ≡ R', S ≡ S' ⟹ R⁺ = R'⁺, S⁺ = S'⁺ (class-inv), so the
-        -- representatives R⁺/S⁺ and R'⁺/S'⁺ are literally equal.
-        intro R S R' S' hR hS
-        have e1 : amen.largest R = amen.largest R' := amenable_largest_class_invariant amen hR
-        have e2 : amen.largest S = amen.largest S' := amenable_largest_class_invariant amen hS
-        simp only [e1, e2])
-    div_comp_le := by
-      -- (R̄/S̄)S̄ ⊑ R̄ :  [R⁺/S⁺][S] = [(R⁺/S⁺)≫S]; (R⁺/S⁺)≫S ⊑ (R⁺/S⁺)≫S⁺ ⊑ R⁺, so by
-      -- §2.531 its ⁺ sits below (R⁺)⁺ = R⁺; conclude with `quotient_le_iff_largest`.
-      intro a b c R S
-      refine Quotient.inductionOn₂ R S (fun R S => ?_)
-      -- (R⁺/S⁺)≫S ⊑ R⁺ :  S ⊑ S⁺, then the division law (R⁺/S⁺)≫S⁺ ⊑ R⁺.
-      have hstep : (amen.largest R / amen.largest S) ≫ S ⊑ amen.largest R :=
-        le_trans (comp_mono_left _ (self_le_largest amen S))
-          (DivisionAllegory.div_comp_le (amen.largest R) (amen.largest S))
-      -- ((R⁺/S⁺)≫S)⁺ ⊑ (R⁺)⁺ = R⁺.
-      refine (Freyd.Alg.quotient_le_iff_largest amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
-      refine le_trans (amenable_le_largest amen hstep) ?_
-      rw [largest_idem amen]; exact le_refl _
-    le_div := by
-      -- T̄S̄ ⊑ R̄ ⟹ T̄ ⊑ R̄/S̄ : via §2.533 (TS)⁺ ⊑ R⁺; with §2.534 T⁺S⁺ ⊑ (TS)⁺ ⊑ R⁺,
-      -- so T⁺ ⊑ R⁺/S⁺ ⊑ (R⁺/S⁺)⁺ = the largest of the RHS representative.
-      intro a b c T R S h
-      refine Quotient.inductionOn₃ T R S (fun T R S h => ?_) h
-      -- h : [T][S] ⊑ [R];  convert to (T≫S)⁺ ⊑ R⁺.
-      have h' : amen.largest (T ≫ S) ⊑ amen.largest R := (Freyd.Alg.quotient_le_iff_largest amen (T ≫ S) R).mp h
-      -- T⁺S⁺ ⊑ (TS)⁺ ⊑ R⁺  ⟹  T⁺ ⊑ R⁺/S⁺  ⟹  T⁺ ⊑ (R⁺/S⁺)⁺.
-      have hTS : amen.largest T ≫ amen.largest S ⊑ amen.largest R :=
-        le_trans (largest_comp_le amen T S) h'
-      have hdiv : amen.largest T ⊑ amen.largest R / amen.largest S :=
-        DivisionAllegory.le_div _ _ _ hTS
-      exact (Freyd.Alg.quotient_le_iff_largest amen T (amen.largest R / amen.largest S)).mpr
-        (le_trans hdiv (self_le_largest amen _)) }
 
 end Division
 
@@ -385,9 +340,9 @@ theorem quotRep_codBox {a b : 𝒜} (R : a ⟶ b) :
 theorem quotThickEps (b : 𝒜)
     (hbox : ∀ {c : 𝒜} (R₀ : c ⟶ b),
       amen.cong.rel (codBox R₀) (codBox (∋ b)) → codBox (amen.largest R₀) = codBox (∋ b)) :
-    letI := quotDiv amen
+    letI := QuotAllegory.instDivisionAllegory amen
     Thick ((quotRep amen.cong).map (∋ b)) := by
-  letI := quotDiv amen
+  letI := QuotAllegory.instDivisionAllegory amen
   rw [thick_iff_existential]
   intro c R hboxQ
   refine Quotient.inductionOn R (fun R₀ => ?_) hboxQ
@@ -444,7 +399,7 @@ def QuotBoxNaming : Prop :=
 noncomputable def quotEffectivePrePower
     (hbox : QuotBoxNaming amen) :
     EffectivePrePowerAllegory (QuotAllegory 𝒜 amen.cong) :=
-  { quotDiv amen with
+  { QuotAllegory.instDivisionAllegory amen with
     tabular := fun {_ _} R => Quotient.inductionOn R
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
@@ -487,9 +442,9 @@ variable {𝒜 : Type u} [EffectiveUnguardedPowerAllegory 𝒜] (amen : Amenable
     (a map with `f₀ ∋ = R₀⁺`); the two quotient containments are read off exactly as in
     `quotThickEps` via `quotient_le_iff_largest`/`amenable_le_largest`/`largest_idem`. -/
 theorem quotThickEps_unguarded (b : 𝒜) :
-    letI := quotDiv amen
+    letI := QuotAllegory.instDivisionAllegory amen
     Thick ((quotRep amen.cong).map (∋ b)) := by
-  letI := quotDiv amen
+  letI := QuotAllegory.instDivisionAllegory amen
   rw [thick_iff_existential]
   intro c R _hboxQ
   refine Quotient.inductionOn R (fun R₀ => ?_) _hboxQ
@@ -512,7 +467,7 @@ theorem quotThickEps_unguarded (b : 𝒜) :
 /-- §2.537 (unguarded): the amenable quotient is an effective pre-power allegory — no `hbox`. -/
 noncomputable def quotEffectivePrePower_unguarded :
     EffectivePrePowerAllegory (QuotAllegory 𝒜 amen.cong) :=
-  { quotDiv amen with
+  { QuotAllegory.instDivisionAllegory amen with
     tabular := fun {_ _} R => Quotient.inductionOn R
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
