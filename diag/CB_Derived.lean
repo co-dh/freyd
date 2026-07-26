@@ -178,4 +178,38 @@ theorem convolution_idem {a b : 𝒞} (R : a ⟶ b) : convolution R R = R := by
   rw [hL, hR] at h
   exact h
 
+/-- `∩` is the GREATEST lower bound: anything below both `S` and `T` is below `S ∩ T`
+    (functorialSemanticsForRelationalTheories.pdf p. 22, "every hom-set is a meet semi-lattice").
+    With `convolution_le_left`/`convolution_le_right` this completes the semilattice statement.
+    Idempotency is what does the work — `R = R ∩ R ≤ S ∩ T`. -/
+theorem convolution_glb {a b : 𝒞} {R S T : a ⟶ b}
+    (hS : OrderedCat.le R S) (hT : OrderedCat.le R T) :
+    OrderedCat.le R (convolution S T) := by
+  have h := convolution_mono hS hT
+  rw [convolution_idem] at h
+  exact h
+
+/-- `(R ∩ S)† = R† ∩ S†` — Freyd's `recip_inter` (§2.11).
+
+    NOT proved through Lemma 4.2 (iii) (`(R ⊗ S)† = R† ⊗ S†`), which would need the Frobenius
+    structure at the COMPOSITE object `a ⊗ b` — the clause of Carboni & Walters' definition that
+    `functorialSemanticsForRelationalTheories.pdf` Def. 4.1 as printed omits (see `diag/CB.lean`'s
+    header).  Instead: `∩` is the greatest lower bound, and `†` is an order isomorphism
+    (`conv_mono` both ways, `conv_conv`), so it carries greatest lower bounds to greatest lower
+    bounds.  This keeps every arrow in the proof at a simple object. -/
+theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
+    conv (convolution R S) = convolution (conv R) (conv S) := by
+  refine OrderedCat.le_antisymm ?_ ?_
+  · exact convolution_glb (conv_mono (convolution_le_left R S))
+      (conv_mono (convolution_le_right R S))
+  · -- `(R† ∩ S†)†` is below both `R` and `S`, hence below `R ∩ S`; apply `†` once more.
+    have h1 : OrderedCat.le (conv (convolution (conv R) (conv S))) R := by
+      have h := conv_mono (convolution_le_left (conv R) (conv S))
+      rwa [conv_conv] at h
+    have h2 : OrderedCat.le (conv (convolution (conv R) (conv S))) S := by
+      have h := conv_mono (convolution_le_right (conv R) (conv S))
+      rwa [conv_conv] at h
+    have h3 := conv_mono (convolution_glb h1 h2)
+    rwa [conv_conv] at h3
+
 end Freyd.Diag
