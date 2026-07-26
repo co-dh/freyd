@@ -155,12 +155,6 @@ noncomputable def selectProj (U : List 𝒞) : ∀ (V : List 𝒞), (∀ B ∈ V
     pair (factorProj U C (h C List.mem_cons_self))
          (selectProj U V' (fun B hB => h B (List.mem_cons.2 (Or.inr hB))))
 
-/-- `g ≫ pair a b = pair (g ≫ a) (g ≫ b)`. -/
-theorem pair_precomp {X Y A B : 𝒞} (g : X ⟶ Y) (a : Y ⟶ A) (b : Y ⟶ B) :
-    g ≫ pair a b = pair (g ≫ a) (g ≫ b) :=
-  pair_uniq (g ≫ a) (g ≫ b) (g ≫ pair a b)
-    (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
-
 /-- **Recovery — `selectProj` followed by a V-factor projection IS the U-factor projection.**  The
     keystone strict-coherence fact: positional selection composes.  By construction of `selectProj`
     (`fst_pair`/`snd_pair`). -/

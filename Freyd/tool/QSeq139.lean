@@ -1,10 +1,8 @@
 /-
   The user's §1.39 blackboard proof that ⟨x,y⟩ is monic, in three forms:
 
-    PART 1  — the proof itself, as a direct Lean term (`monic_of_monicPair`): the projection
-              chase.  Assume the parallel pair a,b : W ⇉ T agree after ⟨x,y⟩ (the puncture:
-              a=b is NOT assumed); post-compose fst, snd to get a≫x=b≫x, a≫y=b≫y; the
-              §1.41 monic pair x,y then forces a=b.
+    PART 1  — the two directions of the canonical §1.426 theorem
+              `monicPair_iff_monic_pair`, exposed under the Q-sequence vocabulary.
 
     PART 2  — the same statement as a §1.395 Q-SEQUENCE (the §1.41 *second* monic-pair
               diagram, puncture form) with its satisfaction relation `SatMon` written in the
@@ -15,8 +13,8 @@
               pairing, to `MonicPair x y`.
 
     PART 2' — the SYNTACTIC Q-sequence as pure data (`monicPairQSeq`), the object the generic
-              renderer (`QSeq139Render.lean`) consumes; `satMon_is_meaning` records that its
-              §1.395 satisfaction is `SatMon`.
+              renderer (`QSeq139Render.lean`) consumes; `satMon_pair_iff_monicPair` records
+              that its §1.395 satisfaction is `SatMon`.
 -/
 
 import Freyd.S1_42   -- Monic, MonicPair (§1.41); pair, fst, snd, fst_pair, snd_pair (§1.42); monicPair_iff_monic_pair (§1.426)
@@ -28,46 +26,17 @@ namespace QSeq139
 
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
-/-! ## Part 1 — the projection-chase proof (the user's §1.39 blackboard argument) -/
+/-! ## Part 1 — the canonical §1.426 equivalence -/
 
-/-- §1.41/§1.426 (one direction), the user's diagram proof read off arrow-by-arrow:
-    a MONIC PAIR `x : T→A`, `y : T→B` makes the pairing `⟨x,y⟩ : T → A×B` monic.
-
-    Read the tactic block as the blackboard sequence:
-    * `intro W a b hab` — draw the parallel pair `a, b : W ⇉ T` with `a⟨x,y⟩ = b⟨x,y⟩`
-      asserted; the goal `a = b` is the PUNCTURED equation (not assumed — to be derived).
-    * `refine hxy a b ?_ ?_` — the monic pair `x,y` reduces `a = b` to its two feet
-      `a≫x = b≫x` and `a≫y = b≫y`.
-    * each `calc` — EXTEND by a projection (`fst`, then `snd`) and use `⟨x,y⟩≫fst = x`,
-      `⟨x,y⟩≫snd = y`: the asserted `a⟨x,y⟩ = b⟨x,y⟩` post-composes down to the foot equation,
-      removing the puncture. -/
+/-- §1.41/§1.426: a monic pair makes its pairing monic. -/
 theorem monic_of_monicPair [HasBinaryProducts 𝒞] {T A B : 𝒞}
-    (x : T ⟶ A) (y : T ⟶ B) (hxy : MonicPair x y) : Monic (pair x y) := by
-  intro W a b hab
-  refine hxy a b ?_ ?_
-  · calc a ≫ x = (a ≫ pair x y) ≫ fst := by rw [Cat.assoc, fst_pair]
-      _ = (b ≫ pair x y) ≫ fst := by rw [hab]
-      _ = b ≫ x := by rw [Cat.assoc, fst_pair]
-  · calc a ≫ y = (a ≫ pair x y) ≫ snd := by rw [Cat.assoc, snd_pair]
-      _ = (b ≫ pair x y) ≫ snd := by rw [hab]
-      _ = b ≫ y := by rw [Cat.assoc, snd_pair]
+    (x : T ⟶ A) (y : T ⟶ B) (hxy : MonicPair x y) : Monic (pair x y) :=
+  (monicPair_iff_monic_pair x y).1 hxy
 
-/-- §1.426 (other direction), the DUAL chase: if the pairing `⟨x,y⟩ : T → A×B` is monic then
-    `x, y` is a monic pair.  Where `monic_of_monicPair` *projects out* (post-compose `fst,snd`),
-    this one *pairs in*: the parallel pair `a, b : W ⇉ T` with `a≫x=b≫x`, `a≫y=b≫y` is glued by
-    the product's universal property into a single equation `a≫⟨x,y⟩ = b≫⟨x,y⟩` — because a map
-    into `A×B` is the UNIQUE one with its two components (`pair_uniq`), and `a,b` share both
-    components — and then `⟨x,y⟩` monic removes the cross. -/
+/-- §1.426, conversely: a monic pairing gives a monic pair. -/
 theorem monicPair_of_monic [HasBinaryProducts 𝒞] {T A B : 𝒞}
-    (x : T ⟶ A) (y : T ⟶ B) (hm : Monic (pair x y)) : MonicPair x y := by
-  intro W a b hx hy
-  apply hm a b
-  -- glue: a≫⟨x,y⟩ is the unique map with components a≫x, a≫y; same for b; components agree
-  calc a ≫ pair x y = pair (a ≫ x) (a ≫ y) :=
-        pair_uniq _ _ _ (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
-    _ = pair (b ≫ x) (b ≫ y) := by rw [hx, hy]
-    _ = b ≫ pair x y :=
-        (pair_uniq _ _ _ (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])).symm
+    (x : T ⟶ A) (y : T ⟶ B) (hm : Monic (pair x y)) : MonicPair x y :=
+  (monicPair_iff_monic_pair x y).2 hm
 
 /-! ## Part 2 — the §1.395 satisfaction of the monic Q-sequence (∀/∃ puncture form) -/
 
@@ -149,13 +118,6 @@ def monicPairQSeq : QSeq139 :=
                  puncture := [⟨["a"], ["b"]⟩],              -- a = b  (the + mark)
                  parallel := [["a", "b"]] }),
         (.ex,  { impose := [⟨["a"], ["b"]⟩] }) ] }          -- impose a = b (puncture removed)
-
-/-- The §1.395 satisfaction of `monicPairQSeq` (interpreting `m ↦ pair x y`) is `SatMon`,
-    which `satMon_pair_iff_monicPair` proves equals `MonicPair x y`.  (A generic string-keyed
-    interpreter `Satisfies : QSeq139 → … → Prop` in an ambient `Cat` is the §1.394
-    category-of-categories construction; for this Q-sequence its value is exactly `SatMon`.) -/
-theorem satMon_is_meaning [HasBinaryProducts 𝒞] {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) :
-    SatMon (pair x y) ↔ MonicPair x y := satMon_pair_iff_monicPair x y
 
 end QSeq139
 end Freyd
