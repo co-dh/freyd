@@ -28,24 +28,6 @@ namespace Freyd.LaxColim
 
 universe u w
 
-/-- **General lax-colimit strict coterminator** (generalises `laxColimStrictInitial` from the chosen
-    `stageZero` to an ARBITRARY fibre object `Y` whose transitions out of `i₀` all land on strict
-    coterminators).  Same proof: a map `g` into `objIncl i₀ Y` is a germ `homInclL xX Y a f₀`; its
-    codomain `L.F a.2.2 Y` is a strict coterminator (`htrans a.2.2`), so `f₀` (a map into it) is iso,
-    lifted to the colimit by `homInclL_isIso_of_rep`. -/
-theorem laxColimStrictCot {ι : Type u} {D : Directed ι} (L : LaxCatSystem.{u, w} ι D)
-    (hL : Coherent L) {i₀ : ι} (Y : L.A i₀)
-    (htrans : ∀ {j : ι} (hij : D.le i₀ j), @StrictCoterminator (L.A j) (L.catA j) (L.F hij Y)) :
-    letI : Cat (Obj L) := laxColimCat L hL
-    @StrictCoterminator (Obj L) (laxColimCat L hL) (objIncl L i₀ Y) := by
-  letI : Cat (Obj L) := laxColimCat L hL
-  intro X g
-  obtain ⟨jX, xX⟩ := X
-  refine Quotient.inductionOn g (fun rep => ?_)
-  obtain ⟨a, f₀⟩ := rep
-  obtain ⟨g₀, h1, h2⟩ := htrans a.2.2 f₀
-  exact homInclL_isIso_of_rep L hL xX Y a f₀ g₀ h1 h2
-
 end Freyd.LaxColim
 
 namespace Freyd.UniformCap
