@@ -125,6 +125,23 @@ Acceptance: build green; `#print axioms` on each theorem: none (abstract, class-
 Risk: yanking equalities are where non-strict associators bite first. Mitigation: prove the snake lemmas once,
 under their own names, and never unfold `cup`/`cap` afterwards.
 
+**PARTLY DONE — the `∩`/`⊤` half.** `diag/CB_Derived.lean` has, all derived, all `[propext]` only:
+
+| declaration              | content                                                                 |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `convolution`            | `Δ;(R ⊗ S);∇`, the paper's `∩` (p. 22)                                   |
+| `top`                    | `!;?`                                                                    |
+| `le_top`                 | `R ≤ ⊤`, from lax (43) plus (40)                                         |
+| `convolution_top`        | `R ∩ ⊤ = R`; the `runit_nat` step is what moves `R` past the unitor       |
+| `convolution_mono`       | monotone in both holes — so `∩` needs no monotonicity axiom               |
+| `convolution_le_left/right` | the glb halves, by weakening the other strand to `⊤`                  |
+| `convolution_comm`       | symmetric, via (9) on copy and (6) on merge                              |
+| `convolution_idem`       | `R ∩ R = R` = Freyd's `inter_idem`; where (42) and the special law meet    |
+
+These were done first, ahead of the converse, because they live at a single object and so need no associator.
+Still open in this phase: `convolution_assoc`, the full glb statement, the converse `†` by wire-bending with its
+snake lemmas, and the map characterisations (Lemmas 4.4, 4.8, Cor. 4.5).
+
 ## Phase 4 — `Rel(Set)` is a cartesian bicategory (`diag/RelSetCB.lean`)
 
 Goal: soundness — every abstract CB theorem instantiates to the repo's own `Rel(Set)`.
