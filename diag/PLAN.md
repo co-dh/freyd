@@ -25,6 +25,7 @@ root; the full mapping is the legend in the Sources section of `Freyd/note/diagr
 | `diag/CB_Derived.lean`      | converse, `∩`, `⊤`, maps — all theorems (done) | `functorialSemantics` §4, pp. 18–22       | 3     |
 | `diag/RelSetCB.lean`        | `RelSet` instance + operation agreement (done) | `functorialSemantics` p. 18               | 4     |
 | `diag/CB_Allegory.lean`     | CB ⟹ `Allegory`; modular law a theorem (done)  | reconstructed, see phase 5                | 5     |
+| `diag/RelSetAllegory.lean`  | the phase-4 × phase-5 composite check (done)   | —                                         | 5     |
 | `diag/Tape.lean`            | fb-cb rig — `∪`, `⊥`                      | `TapeDiagrams` Def. 7.1                        | 8     |
 | `diag/FO.lean`              | linear bicategory, complement, residuals  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
 | `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`) | —                                              | 7     |
@@ -277,6 +278,12 @@ and `recip` (via phase 4's agreement theorems).
 | `mer_slide_conv`         | `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S` — modularity with its outer factors stripped off      |
 | `modular_of_frobenius`   | `RS ∩ T ≤ (R ∩ TS†)S`, DERIVED                                                  |
 | `allegoryOfCartBicat`    | the ten-field `Allegory`, a `def` not an instance                               |
+| `allegoryOfCartBicat_inter/_recip` | the composite check, in `diag/RelSetAllegory.lean`                    |
+
+The composite check is the part that makes the bridge mean something: `allegoryOfCartBicat` applied to `RelSet`'s
+`CartBicat` instance yields the SAME `Allegory RelSet` the repo already had, not an isomorphic copy — its `inter`
+field is the existing `∩` and its `recip` field the existing `°`, by phase 4's `convolution_eq_inter` and
+`conv_eq_recip`. Those two theorems typecheck directly as the bridge's fields.
 
 **How the modular law was found.** `Frobenius.pdf` p. 4 only *cites* CW87 Rem. 2.9(ii); every occurrence of "modular
 law" in that paper USES the law rather than deriving it, so the "equational fallback route" the plan hoped for does
