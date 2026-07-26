@@ -35,6 +35,9 @@ Frobenius.pdf
 # same copyright rule applies.  Regenerate both with: ./scripts/paper-figs
 /diag/paperfigs/*.png
 /diag/paperfigs/*.doc.txt
+# Diagrams drawn from Lean statements by `diag-export`; regenerate with
+#   ./scripts/diag-export <declaration-name> ...
+/diag/generated
 # npm cruft from the claude-code install, not part of the library
 /node_modules
 /package.json
