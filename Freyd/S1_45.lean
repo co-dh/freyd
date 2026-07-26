@@ -177,6 +177,11 @@ noncomputable def invImg {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
   arr   := hp.cone.π₁
   monic := mono_pullback f S.arr S.monic hp
 
+/-- Any two chosen pullbacks defining the same inverse image represent the same subobject. -/
+theorem invImg_compare {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
+    (hp hq : HasPullback f S.arr) : (invImg f S hp).le (invImg f S hq) :=
+  ⟨hq.lift hp.cone, hq.lift_fst hp.cone⟩
+
 /-- §1.451: inverse image is order-preserving: if `S ≤ T` in `Sub(B)`, then
     `f# S ≤ f# T` in `Sub(A)`. -/
 theorem invImg_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)

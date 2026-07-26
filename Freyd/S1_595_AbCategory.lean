@@ -43,12 +43,6 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
   functoriality of the "square" `x×y = pair (fst ≫ x) (snd ≫ y)` underlie every proof below.
   We keep them local so this file imports only `S1_59`. -/
 
-/-- `g ≫ ⟨a, b⟩ = ⟨g ≫ a, g ≫ b⟩`. -/
-theorem ab_pair_precomp {X Y A B : 𝒞} (g : X ⟶ Y) (a : Y ⟶ A) (b : Y ⟶ B) :
-    g ≫ pair a b = pair (g ≫ a) (g ≫ b) :=
-  pair_uniq (g ≫ a) (g ≫ b) (g ≫ pair a b)
-    (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
-
 /-- The product map `x × y : A×B → C×D`, written `⟨fst ≫ x, snd ≫ y⟩`. -/
 private def abSq {A B C D : 𝒞} (x : A ⟶ C) (y : B ⟶ D) : prod A B ⟶ prod C D :=
   pair (fst ≫ x) (snd ≫ y)
@@ -58,7 +52,7 @@ private theorem abSq_comp {A B C D E F : 𝒞}
     (x : A ⟶ C) (y : B ⟶ D) (x' : C ⟶ E) (y' : D ⟶ F) :
     abSq x y ≫ abSq x' y' = abSq (x ≫ x') (y ≫ y') := by
   unfold abSq
-  rw [ab_pair_precomp]
+  rw [pair_precomp]
   congr 1
   · rw [← Cat.assoc, fst_pair, Cat.assoc]
   · rw [← Cat.assoc, snd_pair, Cat.assoc]
@@ -159,7 +153,7 @@ theorem zero_add (f : T ⟶ B.carrier) :
     pair (term T ≫ B.zero) f ≫ B.add = f := by
   have h := congrArg (fun m => f ≫ m) B.add_zero
   simp only at h
-  rw [← Cat.assoc, ab_pair_precomp] at h
+  rw [← Cat.assoc, pair_precomp] at h
   -- f ≫ (term ≫ zero) = term_T ≫ zero  and  f ≫ id = f
   rwa [Cat.comp_id, ← Cat.assoc, term_uniq (f ≫ term B.carrier) (term T)] at h
 
@@ -168,7 +162,7 @@ theorem add_comm (f g : T ⟶ B.carrier) :
     pair f g ≫ B.add = pair g f ≫ B.add := by
   have h := congrArg (fun m => pair f g ≫ m) B.add_comm
   simp only at h
-  rw [← Cat.assoc, ab_pair_precomp, snd_pair, fst_pair] at h
+  rw [← Cat.assoc, pair_precomp, snd_pair, fst_pair] at h
   exact h.symm
 
 /-- `f ⊕ O = f` (zero is a right unit), by commutativity + left unit. -/
@@ -181,7 +175,7 @@ theorem neg_add (f : T ⟶ B.carrier) :
     pair (f ≫ B.neg) f ≫ B.add = term T ≫ B.zero := by
   have h := congrArg (fun m => f ≫ m) B.add_neg
   simp only at h
-  rw [← Cat.assoc, ab_pair_precomp, Cat.comp_id, ← Cat.assoc,
+  rw [← Cat.assoc, pair_precomp, Cat.comp_id, ← Cat.assoc,
       term_uniq (f ≫ term B.carrier) (term T)] at h
   exact h
 
@@ -198,14 +192,14 @@ theorem add_assoc (f g h : T ⟶ B.carrier) :
   have h0 := congrArg (fun m => pair (pair f g) h ≫ m) B.add_assoc
   simp only at h0
   -- Distribute the leading composite ⟨⟨f,g⟩,h⟩ through every pair/projection.
-  simp only [← Cat.assoc, fst_pair, snd_pair, ab_pair_precomp] at h0
+  simp only [← Cat.assoc, fst_pair, snd_pair, pair_precomp] at h0
   exact h0
 
 /-- Composition distributes on the LEFT over `⊕`: `(k ≫ f) ⊕ (k ≫ g) = k ≫ (f ⊕ g)`
     for `k : S ⟶ T`.  (`k` factors out of `⟨k≫f, k≫g⟩ = k ≫ ⟨f,g⟩`.) -/
 theorem comp_add {S : 𝒞} (k : S ⟶ T) (f g : T ⟶ B.carrier) :
     pair (k ≫ f) (k ≫ g) ≫ B.add = k ≫ (pair f g ≫ B.add) := by
-  rw [← ab_pair_precomp, Cat.assoc]
+  rw [← pair_precomp, Cat.assoc]
 
 /-- **Middle-two interchange** `(p ⊕ q) ⊕ (r ⊕ s) = (p ⊕ r) ⊕ (q ⊕ s)`,
     from associativity + commutativity.  This is the Eckmann–Hilton step that makes
@@ -263,11 +257,11 @@ theorem isHom_addCar (x y : HomAb A B) :
   -- RHS: ⟨fst ≫ ⟨x,y⟩≫B.add, snd ≫ ⟨x,y⟩≫B.add⟩ ≫ B.add
   --    = ⟨⟨fst≫x,fst≫y⟩≫B.add, ⟨snd≫x,snd≫y⟩≫B.add⟩ ≫ B.add
   -- equal by middle_two with p=fst≫x, q=snd≫x, r=fst≫y, s=snd≫y.
-  rw [← Cat.assoc, ab_pair_precomp, x.property, y.property]
+  rw [← Cat.assoc, pair_precomp, x.property, y.property]
   rw [show pair (fst ≫ (pair x.val y.val ≫ B.add)) (snd ≫ (pair x.val y.val ≫ B.add))
         = pair (pair (fst ≫ x.val) (fst ≫ y.val) ≫ B.add)
                (pair (snd ≫ x.val) (snd ≫ y.val) ≫ B.add) by
-      rw [← Cat.assoc, ab_pair_precomp, ← Cat.assoc, ab_pair_precomp]]
+      rw [← Cat.assoc, pair_precomp, ← Cat.assoc, pair_precomp]]
   exact GElt.middle_two B (fst ≫ x.val) (snd ≫ x.val) (fst ≫ y.val) (snd ≫ y.val)
 
 /-- The pointwise zero `! ≫ B.zero` is a homomorphism (`O ⊕ O = O`). -/
@@ -347,7 +341,7 @@ theorem addCar_comp (x y : HomAb A B) (z : HomAb B C) :
   unfold addCar
   -- ⟨x,y⟩ ≫ B.add ≫ z = ⟨x,y⟩ ≫ ⟨fst≫z, snd≫z⟩ ≫ C.add  (z hom)
   --                   = ⟨x≫z, y≫z⟩ ≫ C.add.
-  rw [Cat.assoc, z.property, ← Cat.assoc, ab_pair_precomp]
+  rw [Cat.assoc, z.property, ← Cat.assoc, pair_precomp]
   simp only [← Cat.assoc, fst_pair, snd_pair]
 
 /-- Left distributivity at the carrier level: `w ≫ (x + y) = w ≫ x + w ≫ y`. -/
@@ -355,7 +349,7 @@ theorem comp_addCar {A' : AbelianGroupObject 𝒞} (w : HomAb A' A) (x y : HomAb
     w.val ≫ addCar x y = addCar (⟨w.val ≫ x.val, isHom_comp w.property x.property⟩)
                                 (⟨w.val ≫ y.val, isHom_comp w.property y.property⟩) := by
   unfold addCar
-  rw [← Cat.assoc, ab_pair_precomp]
+  rw [← Cat.assoc, pair_precomp]
 
 end HomAb
 

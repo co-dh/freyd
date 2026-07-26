@@ -317,4 +317,11 @@ def finiteProduct_from_term_binary [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
           exact hl
     }
 
+/-- Precomposition distributes over pairing. -/
+theorem pair_precomp {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
+    {X Y A B : 𝒞} (g : X ⟶ Y) (a : Y ⟶ A) (b : Y ⟶ B) :
+    g ≫ pair a b = pair (g ≫ a) (g ≫ b) :=
+  pair_uniq (g ≫ a) (g ≫ b) (g ≫ pair a b)
+    (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
+
 end Freyd
