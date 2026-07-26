@@ -17,7 +17,8 @@ A sibling of `Freyd/`, `AOP/`, `leet/`, `rel/`; lowercase like `leet`/`rel`; glo
 | module                   | layer                                          | source                    | phase |
 | ------------------------ | ---------------------------------------------- | ------------------------- | ----- |
 | `diag/Basic.lean`        | poset-enriched category (done)                 | 1711.08699 Def. 4.1       | 0     |
-| `diag/CB.lean`           | cartesian bicategory of relations — classes    | 1711.08699 Def. 4.1       | 1     |
+| `diag/Monoidal.lean`     | poset-enriched symmetric monoidal (done)       | 1711.08699 Def. 4.1       | 1     |
+| `diag/CB.lean`           | cartesian bicategory of relations (done)       | 1711.08699 Def. 4.1       | 1     |
 | `diag/CB_Derived.lean`   | converse, `∩`, `⊤`, maps — all theorems        | 1711.08699 §4, pp. 18–22  | 3     |
 | `diag/RelSetCB.lean`     | `RelSet` instance + operation agreement        | 1711.08699 p. 18          | 4     |
 | `diag/CB_Allegory.lean`  | CB ⟹ `Allegory`; modular law as a theorem      | CW87 Rem. 2.9(ii)         | 5     |
@@ -66,6 +67,20 @@ conflate them.
 Acceptance: `./scripts/cap lake build diag` green; `#print axioms` on the classes' constructors shows none.
 Risk: coherence bookkeeping for the non-strict tensor. Mitigation: state the standard coherence fields up front,
 and record (in docstrings) which of them later proofs actually consume; do not invent a bespoke weaker structure.
+
+**DONE.** Split across two files: `diag/Monoidal.lean` (`SymMonCat` — tensor, associator, unitors, symmetry,
+pentagon/triangle/hexagon, `tensHom_mono`) and `diag/CB.lean` (`CartBicat` — Def. 4.1 items 1–4 field for field:
+`cop`/`dis`/`mer`/`un`, the comonoid and monoid equations (5)–(10), inequations (37)–(41), and the lax
+inequations (42)–(43)). Build green. `CartBicat.special` — the special law `Δ;∇ = 𝟙`, eq. (12) — is proved, not
+assumed: `𝟙 ≤ Δ;∇` is (38); the converse weakens one strand of the bubble to `!;?` by (40), then collapses with
+the counit law (10) and the unit law (7), exactly the paper's displayed derivation on p. 18.
+`#print axioms Freyd.Diag.CartBicat.special` → `[propext]`.
+
+One deviation from the plan, recorded in `diag/CB.lean`'s header: Carboni & Walters also require the Frobenius
+structure to be the *unique* comonoid per object (`Frobenius.pdf` Def. 1 clause 2), which equationally means
+`Δ_{a⊗b}`/`!_{a⊗b}` are the shuffled products of the components. Def. 4.1 as printed omits it and nothing so far
+needs it, so it is deferred to the first proof that uses `Δ` at a composite object — where the shuffle must be
+written out. Do not treat its absence as an oversight.
 
 ## Phase 2 — tool (b): render the papers' axiom figures (`scripts/paper-figs`)
 
