@@ -50,9 +50,11 @@ weaker Lean fact would prove the immediate goal.
 
 ### Dependency inversion
 
-A general theorem in a later module cannot justify an earlier specialization.
-Move genuinely shared prerequisites to the earliest legal module or leave the
-proofs separate. Never create an import cycle merely to save lines.
+Prove the general theorem first in the earliest legal common home, move its
+genuinely shared prerequisites there, and remove the special case. The current
+file order is not a reason to retain duplication. If moving the theorem exposes
+a real mathematical dependency, reorganize that dependency explicitly; never
+hide the problem with an import cycle or a second proof.
 
 ### Instance drift
 
@@ -85,9 +87,8 @@ and change unrelated instance search.
   same construction.
 - `capData_of_cofinalSystem` and `capData_exists` operate at different assembly
   levels.
-- A strict-initial coterminator cannot be routed through a later general
-  strict-coterminator theorem when doing so reverses the legal dependency
-  direction.
+- The general strict-coterminator theorem belongs before the strict-initial
+  specialization; move it earlier instead of preserving two proofs.
 
 Record rejected candidates with their reason. Otherwise the same false
 positive will be audited repeatedly.

@@ -27,7 +27,7 @@ universe v u
       `T̄ ⊑ overline(R⁺/S⁺) = R̄/S̄`                                  [le_div].
 
   The quotient order is detected by the largest-element calculus
-  (`quotLe_iff_largest`, a repackaging of §2.532/§2.533): in the quotient
+  (`quotient_le_iff_largest`, §2.533): in the quotient
   `[R] ⊑ [S] ↔ R⁺ ⊑ S⁺`.
 
   STRICTLY mathlib-free; only `Freyd.*` + Lean core.
@@ -48,36 +48,11 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
   typeclass search) so it cannot be confused with the under-construction division
   structure below. -/
 
-/-- §2.533 (order form).  In `QuotAllegory 𝒜 amen.cong`,
-    `[R] ⊑ [S]  ↔  R⁺ ⊑ S⁺`. -/
-theorem quotLe_iff_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
-    @le (QuotAllegory 𝒜 amen.cong) a b (QuotAllegory.instAllegory amen.cong)
-        (Quotient.mk (congSetoid amen.cong) R) (Quotient.mk (congSetoid amen.cong) S)
-      ↔ amen.largest R ⊑ amen.largest S := by
-  -- `[R] ⊑ [S]` unfolds to `[R] ∩ [S] = [R]`, and `[R] ∩ [S] = [R ∩ S]`.
-  show (Quotient.mk (congSetoid amen.cong) (R ∩ S) = Quotient.mk (congSetoid amen.cong) R)
-        ↔ amen.largest R ⊑ amen.largest S
-  constructor
-  · intro h
-    -- `[R ∩ S] = [R]` means `R ∩ S ≡ R`, so `(R ∩ S)⁺ = R⁺`; and `(R ∩ S)⁺ = R⁺ ∩ S⁺`.
-    have hrel : amen.cong.rel (R ∩ S) R := Quotient.exact h
-    have e1 : amen.largest (R ∩ S) = amen.largest R := amenable_largest_class_invariant amen hrel
-    have e2 : amen.largest (R ∩ S) = amen.largest R ∩ amen.largest S := amenable_inter_largest amen R S
-    show amen.largest R ∩ amen.largest S = amen.largest R
-    rw [← e2, e1]
-  · intro h
-    -- `R⁺ ∩ S⁺ = R⁺` and `(R ∩ S)⁺ = R⁺ ∩ S⁺` give `(R ∩ S)⁺ = R⁺`, hence `R ∩ S ≡ R`.
-    have e2 : amen.largest (R ∩ S) = amen.largest R ∩ amen.largest S := amenable_inter_largest amen R S
-    have e1 : amen.largest (R ∩ S) = amen.largest R := by rw [e2]; exact h
-    have hRS : amen.cong.rel (R ∩ S) (amen.largest (R ∩ S)) := amen.largest_rel (R ∩ S)
-    rw [e1] at hRS
-    exact Quotient.sound (amen.cong.trans hRS (amen.cong.symm (amen.largest_rel R)))
-
 
 /-! ## §2.536  The quotient division allegory
 
   `R̄ / S̄ := overline(R⁺ / S⁺)`, well-defined by class-invariance of `⁺`.  The
-  adjunction is the book's proof, routed through `quotLe_iff_largest`. -/
+  adjunction is the book's proof, routed through `quotient_le_iff_largest`. -/
 
 /-- §2.536  An amenable quotient of a division allegory is a division allegory.
 
@@ -99,9 +74,9 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
     div_comp_le := by
       intro a b c Rq Sq
       refine Quotient.inductionOn₂ Rq Sq (fun R S => ?_)
-      -- Goal (defeq): `[(R⁺/S⁺) ≫ S] ⊑ [R]`.  By `quotLe_iff_largest`:
+      -- Goal (defeq): `[(R⁺/S⁺) ≫ S] ⊑ [R]`.  By `quotient_le_iff_largest`:
       --   `((R⁺/S⁺) ≫ S)⁺ ⊑ R⁺`.
-      refine (quotLe_iff_largest amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
+      refine (Freyd.Alg.quotient_le_iff_largest amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
       -- Base triangle `(R⁺/S⁺) ≫ S⁺ ⊑ R⁺`.
       have base : (amen.largest R / amen.largest S) ≫ amen.largest S ⊑ amen.largest R :=
         DivisionAllegory.div_comp_le (amen.largest R) (amen.largest S)
@@ -122,7 +97,7 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
       intro h
       -- `h : [T ≫ S] ⊑ [R]`, i.e. `(TS)⁺ ⊑ R⁺` by §2.533.
       have hTS : amen.largest (T ≫ S) ⊑ amen.largest R :=
-        (quotLe_iff_largest amen (T ≫ S) R).mp h
+        (Freyd.Alg.quotient_le_iff_largest amen (T ≫ S) R).mp h
       -- §2.534: `T⁺S⁺ ⊑ (TS)⁺`, so `T⁺S⁺ ⊑ R⁺`.
       have hcomp : amen.largest T ≫ amen.largest S ⊑ amen.largest R :=
         le_trans (largest_comp_le amen T S) hTS
@@ -133,8 +108,8 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
       have hmono : amen.largest (amen.largest T)
                  ⊑ amen.largest (amen.largest R / amen.largest S) := amenable_le_largest amen hdiv
       rw [largest_idem amen T] at hmono
-      -- Goal (defeq): `[T] ⊑ [R⁺/S⁺]`.  By `quotLe_iff_largest`: `T⁺ ⊑ (R⁺/S⁺)⁺`.
-      exact (quotLe_iff_largest amen T (amen.largest R / amen.largest S)).mpr hmono }
+      -- Goal (defeq): `[T] ⊑ [R⁺/S⁺]`.  By `quotient_le_iff_largest`: `T⁺ ⊑ (R⁺/S⁺)⁺`.
+      exact (Freyd.Alg.quotient_le_iff_largest amen T (amen.largest R / amen.largest S)).mpr hmono }
 
 /-- §2.536 (statement of the delivered adjunction).  In the amenable quotient,
     `T̄ ⊑ R̄/S̄  ↔  T̄ ≫ S̄ ⊑ R̄`, where `R̄/S̄ = overline(R⁺/S⁺)`.  This is the
@@ -170,7 +145,8 @@ end Freyd.Alg
   1.  §2.536 division on the quotient — `R̄/S̄ := overline(R⁺/S⁺)`.  Built UNCONDITIONALLY
       as a `DivisionAllegory (QuotAllegory …)` instance (`quotDiv`) from the amenable ⁺
       calculus (§2.531 `amenable_le_largest`, §2.532 `amenable_inter_largest`, §2.534
-      `largest_comp_le`).  The bridge `quot_le_iff` (§2.533, `[R]⊑[S] ↔ R⁺⊑S⁺`) is the
+      `largest_comp_le`).  The bridge `quotient_le_iff_largest` (§2.533,
+      `[R]⊑[S] ↔ R⁺⊑S⁺`) is the
       workhorse.
 
   2.  §2.535 effectivity — every quotient equivalence relation splits.  Built
@@ -233,20 +209,13 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] (amen : AmenableCongruence 𝒜
   allegory's `⟶` type syntactically (so `⊑`/`≫`/`∩` resolve to the quotient instances),
   while being definitionally `Quotient.mk (congSetoid amen.cong) R`. -/
 
-/-- §2.533: in `QuotAllegory 𝒜 amen.cong`, `[R] ⊑ [S] ↔ R⁺ ⊑ S⁺`.
-    `[R] ⊑ [S]` unfolds (lattice order) to `[R∩S] = [R]`, i.e. `R∩S ≡ R`; then §2.532
-    `(R∩S)⁺ = R⁺∩S⁺` plus class-invariance of `⁺` give the equivalence with `R⁺ ⊑ S⁺`. -/
-theorem quot_le_iff {a b : 𝒜} (R S : a ⟶ b) :
-    (quotRep amen.cong).map R ⊑ (quotRep amen.cong).map S ↔
-      amen.largest R ⊑ amen.largest S := by exact quotLe_iff_largest amen R S
-
 
 end
 
 /-! ## §2.536  The division allegory of the quotient
 
   `R̄/S̄ := overline(R⁺/S⁺)`.  Well-defined because `⁺` is class-invariant; the two
-  division laws reduce, via `quot_le_iff`, to the ⁺-calculus (`amenable_le_largest §2.531`,
+  division laws reduce, via `quotient_le_iff_largest`, to the ⁺-calculus (`amenable_le_largest §2.531`,
   `largest_comp_le §2.534`). -/
 
 section Division
@@ -256,9 +225,9 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] (amen : AmenableCongruence 𝒜
     `R̄/S̄ = overline(R⁺/S⁺)`.  Built on the existing distributive structure
     (`QuotAllegory.instDistributiveAllegory`, fed `amen.union_congr`).
 
-    The two division laws use `quot_le_iff` (§2.533) via `.mp`/`.mpr`, relying on the
+    The two division laws use `quotient_le_iff_largest` (§2.533) via `.mp`/`.mpr`, relying on the
     defeq `(quotRep).map X = Quotient.mk _ X` so that the quotient `div`/`≫`/`⊑` of the
-    `Quotient.lift₂` body match the `(quotRep).map …` form of `quot_le_iff`. -/
+    `Quotient.lift₂` body match the `(quotRep).map …` form of `quotient_le_iff_largest`. -/
 noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
   { QuotAllegory.instDistributiveAllegory amen.cong amen.union_congr with
     div := fun {a b c} => Quotient.lift₂
@@ -272,7 +241,7 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
         simp only [e1, e2])
     div_comp_le := by
       -- (R̄/S̄)S̄ ⊑ R̄ :  [R⁺/S⁺][S] = [(R⁺/S⁺)≫S]; (R⁺/S⁺)≫S ⊑ (R⁺/S⁺)≫S⁺ ⊑ R⁺, so by
-      -- §2.531 its ⁺ sits below (R⁺)⁺ = R⁺; conclude with quot_le_iff.
+      -- §2.531 its ⁺ sits below (R⁺)⁺ = R⁺; conclude with `quotient_le_iff_largest`.
       intro a b c R S
       refine Quotient.inductionOn₂ R S (fun R S => ?_)
       -- (R⁺/S⁺)≫S ⊑ R⁺ :  S ⊑ S⁺, then the division law (R⁺/S⁺)≫S⁺ ⊑ R⁺.
@@ -280,22 +249,22 @@ noncomputable def quotDiv : DivisionAllegory (QuotAllegory 𝒜 amen.cong) :=
         le_trans (comp_mono_left _ (self_le_largest amen S))
           (DivisionAllegory.div_comp_le (amen.largest R) (amen.largest S))
       -- ((R⁺/S⁺)≫S)⁺ ⊑ (R⁺)⁺ = R⁺.
-      refine (quot_le_iff amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
+      refine (Freyd.Alg.quotient_le_iff_largest amen ((amen.largest R / amen.largest S) ≫ S) R).mpr ?_
       refine le_trans (amenable_le_largest amen hstep) ?_
       rw [largest_idem amen]; exact le_refl _
     le_div := by
-      -- T̄S̄ ⊑ R̄ ⟹ T̄ ⊑ R̄/S̄ :  via quot_le_iff (TS)⁺ ⊑ R⁺; with §2.534 T⁺S⁺ ⊑ (TS)⁺ ⊑ R⁺,
+      -- T̄S̄ ⊑ R̄ ⟹ T̄ ⊑ R̄/S̄ : via §2.533 (TS)⁺ ⊑ R⁺; with §2.534 T⁺S⁺ ⊑ (TS)⁺ ⊑ R⁺,
       -- so T⁺ ⊑ R⁺/S⁺ ⊑ (R⁺/S⁺)⁺ = the largest of the RHS representative.
       intro a b c T R S h
       refine Quotient.inductionOn₃ T R S (fun T R S h => ?_) h
       -- h : [T][S] ⊑ [R];  convert to (T≫S)⁺ ⊑ R⁺.
-      have h' : amen.largest (T ≫ S) ⊑ amen.largest R := (quot_le_iff amen (T ≫ S) R).mp h
+      have h' : amen.largest (T ≫ S) ⊑ amen.largest R := (Freyd.Alg.quotient_le_iff_largest amen (T ≫ S) R).mp h
       -- T⁺S⁺ ⊑ (TS)⁺ ⊑ R⁺  ⟹  T⁺ ⊑ R⁺/S⁺  ⟹  T⁺ ⊑ (R⁺/S⁺)⁺.
       have hTS : amen.largest T ≫ amen.largest S ⊑ amen.largest R :=
         le_trans (largest_comp_le amen T S) h'
       have hdiv : amen.largest T ⊑ amen.largest R / amen.largest S :=
         DivisionAllegory.le_div _ _ _ hTS
-      exact (quot_le_iff amen T (amen.largest R / amen.largest S)).mpr
+      exact (Freyd.Alg.quotient_le_iff_largest amen T (amen.largest R / amen.largest S)).mpr
         (le_trans hdiv (self_le_largest amen _)) }
 
 end Division
@@ -336,14 +305,14 @@ theorem quot_largest_reflexive {a : 𝒜} {E₀ : a ⟶ a}
     (h : Reflexive ((quotRep amen.cong).map E₀)) : Reflexive (amen.largest E₀) := by
   have h2 : (quotRep amen.cong).map (Cat.id a) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_id]; exact h
-  exact le_trans (self_le_largest amen (Cat.id a)) ((quot_le_iff amen (Cat.id a) E₀).mp h2)
+  exact le_trans (self_le_largest amen (Cat.id a)) ((Freyd.Alg.quotient_le_iff_largest amen (Cat.id a) E₀).mp h2)
 
 /-- §2.535: a quotient-symmetric `[E₀]` forces `E₀⁺` symmetric. -/
 theorem quot_largest_symmetric {a : 𝒜} {E₀ : a ⟶ a}
     (h : Symmetric ((quotRep amen.cong).map E₀)) : Symmetric (amen.largest E₀) := by
   have h2 : (quotRep amen.cong).map (E₀°) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_recip]; exact h
-  exact le_trans (largest_recip_le amen E₀) ((quot_le_iff amen (E₀°) E₀).mp h2)
+  exact le_trans (largest_recip_le amen E₀) ((Freyd.Alg.quotient_le_iff_largest amen (E₀°) E₀).mp h2)
 
 /-- §2.535: a quotient-idempotent `[E₀]` (with `E₀⁺` reflexive) forces `E₀⁺` idempotent. -/
 theorem quot_largest_idempotent {a : 𝒜} {E₀ : a ⟶ a}
@@ -411,7 +380,7 @@ theorem quotRep_codBox {a b : 𝒜} (R : a ⟶ b) :
     `𝒜`-box-match for the largest representative, the domain on which `𝒜`'s membership
     thickness is defined.  Given it, the witness for `thick_iff_existential` is `[f₀]` where
     `f₀ = A(R₀⁺)` comes from `𝒜`-thickness of `∋_b` applied to `R₀⁺`; the three quotient
-    containments are read off from `f₀`'s three `𝒜`-containments through `quot_le_iff`
+    containments are read off from `f₀`'s three `𝒜`-containments through `quotient_le_iff_largest`
     (§2.533) and `amenable_le_largest` (§2.531). -/
 theorem quotThickEps (b : 𝒜)
     (hbox : ∀ {c : 𝒜} (R₀ : c ⟶ b),
@@ -434,11 +403,11 @@ theorem quotThickEps (b : 𝒜)
       c (amen.largest R₀) hboxA
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hEnt, ?_, ?_⟩
   · -- [f₀][∋] ⊑ [R₀] :  largest(f₀∋) ⊑ largest(R₀⁺) = R₀⁺ = largest R₀  (§2.531).
-    refine (quot_le_iff amen (f₀ ≫ ∋ b) R₀).mpr ?_
+    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ b) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
     rwa [largest_idem amen] at h
   · -- [f₀]°[R₀] ⊑ [∋] :  R₀ ≡ R₀⁺ ⟹ largest(f₀°R₀)=largest(f₀°R₀⁺) ⊑ largest(∋)  (§2.531).
-    refine (quot_le_iff amen (f₀° ≫ R₀) (∋ b)).mpr ?_
+    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ b)).mpr ?_
     have hcong : amen.cong.rel (f₀° ≫ R₀) (f₀° ≫ amen.largest R₀) :=
       amen.cong.comp_congr (amen.cong.refl _) (amen.largest_rel R₀)
     rw [amenable_largest_class_invariant amen hcong]
@@ -516,7 +485,7 @@ variable {𝒜 : Type u} [EffectiveUnguardedPowerAllegory 𝒜] (amen : Amenable
 /-- §2.537 over an unguarded base: the quotient membership `[∋_b]` is thick — `hbox`-free.
     The witness `[f₀]` comes from the UNGUARDED thickness `eps_thick_all` applied to `R₀⁺`
     (a map with `f₀ ∋ = R₀⁺`); the two quotient containments are read off exactly as in
-    `quotThickEps` via `quot_le_iff`/`amenable_le_largest`/`largest_idem`. -/
+    `quotThickEps` via `quotient_le_iff_largest`/`amenable_le_largest`/`largest_idem`. -/
 theorem quotThickEps_unguarded (b : 𝒜) :
     letI := quotDiv amen
     Thick ((quotRep amen.cong).map (∋ b)) := by
@@ -531,10 +500,10 @@ theorem quotThickEps_unguarded (b : 𝒜) :
     rw [← hf₀eq, ← Cat.assoc]
     have h := comp_mono_right hf₀map.2 (∋ b); rwa [Cat.id_comp] at h
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hf₀map.1, ?_, ?_⟩
-  · refine (quot_le_iff amen (f₀ ≫ ∋ b) R₀).mpr ?_
+  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ b) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
     rwa [largest_idem amen] at h
-  · refine (quot_le_iff amen (f₀° ≫ R₀) (∋ b)).mpr ?_
+  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ b)).mpr ?_
     have hcong : amen.cong.rel (f₀° ≫ R₀) (f₀° ≫ amen.largest R₀) :=
       amen.cong.comp_congr (amen.cong.refl _) (amen.largest_rel R₀)
     rw [amenable_largest_class_invariant amen hcong]

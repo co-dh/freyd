@@ -443,21 +443,6 @@ section AmenableOrder
 
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
-/-- §2.533 (main statement): In the quotient allegory, [R] ⊑ [S] iff R⁺ ⊑ S⁺. -/
-theorem quotient_order_iff_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
-    (∃ R' S', amen.cong.rel R R' ∧ amen.cong.rel S S' ∧ R' ⊑ S') ↔
-    amen.largest R ⊑ amen.largest S := by
-  constructor
-  · rintro ⟨R', S', hR, hS, hle⟩
-    -- ⁺ is class-invariant: largest R = largest R' and largest S = largest S'.
-    have hR' : amen.largest R = amen.largest R' := amenable_largest_class_invariant amen hR
-    have hS' : amen.largest S = amen.largest S' := amenable_largest_class_invariant amen hS
-    rw [hR', hS']
-    -- §2.531 applied to R' ⊑ S'.
-    exact amenable_le_largest amen hle
-  · intro h
-    exact ⟨_, _, amen.largest_rel R, amen.largest_rel S, h⟩
-
 /-- §2.534: T⁺S⁺ ⊑ (TS)⁺.
     Proof: T ≡ T⁺ and S ≡ S⁺, so T⁺S⁺ ≡ TS by comp_congr; then largest_max. -/
 theorem largest_comp_le (amen : AmenableCongruence 𝒜) {a b c : 𝒜} (T : a ⟶ b) (S : b ⟶ c) :
@@ -933,6 +918,22 @@ theorem quotRep_map_zero {𝒜 : Type u} [DistributiveAllegory 𝒜] (C : Congru
 
 /-! ## Shared helpers (used across §2.51/§2.536/§2.537/§2.541/§2.55) -/
 
+/-- §2.533: in the quotient allegory, `[R] ⊑ [S]` iff `R⁺ ⊑ S⁺`. -/
+theorem quotient_le_iff_largest {𝒜 : Type u} [DistributiveAllegory 𝒜]
+    (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
+    (quotRep amen.cong).map R ⊑ (quotRep amen.cong).map S ↔ amen.largest R ⊑ amen.largest S := by
+  show Quotient.mk (congSetoid amen.cong) (R ∩ S) = Quotient.mk (congSetoid amen.cong) R ↔ _
+  constructor
+  · intro h
+    have hrel : amen.cong.rel (R ∩ S) R := Quotient.exact h
+    have hcl := amenable_largest_class_invariant amen hrel
+    rw [amenable_inter_largest amen] at hcl
+    exact hcl
+  · intro h
+    apply Quotient.sound
+    apply amen.cong.trans (amen.largest_rel (R ∩ S))
+    rw [amenable_inter_largest amen, h]
+    exact amen.cong.symm (amen.largest_rel R)
 /-- `quotRep` is monotone: `R ⊑ S → [R] ⊑ [S]`.  (`⊑` is `R = R ∩ S`, and `quotRep`
     preserves `∩`.)  The single canonical version of this fact. -/
 theorem quotRep_mono {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜}

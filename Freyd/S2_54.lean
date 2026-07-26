@@ -73,21 +73,6 @@ end QuotOrder
 section AmenableQuot
 
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
-
-/-- §2.533 in the quotient order: `[R] ⊑ [S]` iff `R⁺ ⊑ S⁺`.  Combines
-    `quotRep_le_iff_rel` with `quotient_order_iff_largest`. -/
-theorem quotRep_le_iff_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
-    (quotRep amen.cong).map R ⊑ (quotRep amen.cong).map S ↔ amen.largest R ⊑ amen.largest S := by
-  rw [quotRep_le_iff_rel amen.cong R S, ← quotient_order_iff_largest amen R S]
-  constructor
-  · intro h
-    exact ⟨R ∩ S, S, amen.cong.symm h, amen.cong.refl S, inter_lb_right R S⟩
-  · rintro ⟨R', S', hR, hS, hle⟩
-    have h1 : amen.cong.rel (R ∩ S) (R' ∩ S') := amen.cong.inter_congr hR hS
-    rw [inter_eq_left hle] at h1
-    exact amen.cong.trans h1 (amen.cong.symm hR)
-
-
 /-! ## §2.541  Transitive closure survives an amenable quotient -/
 
 /-- §2.541: TRANSITIVE CLOSURE IN AN ALLEGORY REMAINS SUCH IN AN AMENABLE
@@ -116,9 +101,9 @@ theorem quotRep_isTransClosure (amen : AmenableCongruence 𝒜) {a : 𝒜} {R Rs
     have hrefl' : (quotRep amen.cong).map (Cat.id a) ⊑ (quotRep amen.cong).map S₀ := hrefl
     have habs' : (quotRep amen.cong).map (R ≫ S₀) ⊑ (quotRep amen.cong).map S₀ := habs
     have h1 : amen.largest (Cat.id a) ⊑ amen.largest S₀ :=
-      (quotRep_le_iff_largest amen (Cat.id a) S₀).mp hrefl'
+      (Freyd.Alg.quotient_le_iff_largest amen (Cat.id a) S₀).mp hrefl'
     have h2 : amen.largest (R ≫ S₀) ⊑ amen.largest S₀ :=
-      (quotRep_le_iff_largest amen (R ≫ S₀) S₀).mp habs'
+      (Freyd.Alg.quotient_le_iff_largest amen (R ≫ S₀) S₀).mp habs'
     -- (a) `S₀⁺` reflexive: `1 ⊑ 1⁺ ⊑ S₀⁺`.
     have h1plus : Cat.id a ⊑ amen.largest (Cat.id a) := amen.largest_max (amen.cong.refl (Cat.id a))
     have hSref : Reflexive (amen.largest S₀) := le_trans h1plus h1
@@ -134,7 +119,7 @@ theorem quotRep_isTransClosure (amen : AmenableCongruence 𝒜) {a : 𝒜} {R Rs
       have hstep := amenable_le_largest amen hstar
       rwa [largest_idem amen S₀] at hstep
     -- [2.533]: `overline(R*) ⊑ [S₀]`.
-    exact (quotRep_le_iff_largest amen Rstar S₀).mpr hfin
+    exact (Freyd.Alg.quotient_le_iff_largest amen Rstar S₀).mpr hfin
 
 end AmenableQuot
 

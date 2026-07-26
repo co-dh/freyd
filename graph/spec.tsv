@@ -1,7 +1,6 @@
 Freyd.Alg.PElem.cP_LLLL	Freyd.Alg.PElem.hornConc_pt_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter
 Freyd.forallChar	Freyd.radjChar	def signature+value; 0 instance(s), 3 hypothesis(es), 0 solveByElim	Freyd.S1_946_ForallAlong	Freyd.S1_946_RightAdjointImage
 Freyd.Alg.corEmb_faithful	Freyd.Alg.splEmb_faithful	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_34	Freyd.S2_34
-Freyd.LaxColim.laxColimStrictInitial	Freyd.LaxColim.laxColimStrictCot	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S1_61_LaxStrictInitial	Freyd.S2_218_CapDataPositiveTower
 Freyd.Rcat.encCode_succ	Freyd.S2_158.cL_inj	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S1_572b_NotEffective	Freyd.S2_158c_StepRigidity
 Freyd.Rcat.encCode_succ	Freyd.S2_158.aL_inj	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S1_572b_NotEffective	Freyd.S2_158c_StepRigidity
 Freyd.Rcat.encCode_succ	Freyd.S2_158.bL_inj	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S1_572b_NotEffective	Freyd.S2_158d_SPWall
@@ -27,11 +26,8 @@ Freyd.Alg.PElem.join_pt_ln_incid	Freyd.Alg.PElem.join_eq_of_le_right	theorem spe
 Freyd.Alg.PElem.cP_PLLP	Freyd.Alg.PElem.hornConc_pt_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter
 Freyd.Alg.splObj_semiSimple	Freyd.Alg.tabular_is_semiSimple	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S2_165_Spl	Freyd.S2_10
 Freyd.Alg.VW.Line9	Freyd.Alg.VW.Point9	def signature+value; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S2_157h_VeblenWedderburn	Freyd.S2_157h_VeblenWedderburn
-Freyd.U_reflectsIso	Freyd.isHom_of_carrier_iso	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S1_595_AbRegular	Freyd.S1_595_AbRegular
-Freyd.omega_involution_of_cube	Freyd.omega_monic_endo_is_involution	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S1_91	Freyd.S1_91
 Freyd.eqToHom_comp_eqToHom_symm	Freyd.eqToHom_symm_comp_eqToHom	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S1_36	Freyd.S1_36
 Freyd.IsStrictInitial.equalizer_entire	Freyd.IsStrictInitial.strict	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S1_421_Initial	Freyd.S1_421_Initial
-Freyd.Alg.quot_le_iff	Freyd.Alg.quotRep_le_iff_largest	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S2_53	Freyd.S2_54
 Freyd.Sub	Freyd.powerSetObj	def signature+value; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S1_543_WellOrdering	Freyd.S1_33
 Freyd.capData_of_cofinalSystem	Freyd.capData_exists	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S1_543_CapitalizationTransfinite	Freyd.S1_543_CapDataWiring
 Freyd.prod_hom_ext	Freyd.fst_snd_jointly_monic	theorem specialization; 0 instance(s), 2 hypothesis(es), 0 solveByElim	Freyd.S1_48_RationalCapitalization	Freyd.S1_42
@@ -133,7 +129,6 @@ Freyd.Subobject.liftSlice_mono	Freyd.Subobject.forgetSlice_reflects	theorem spec
 Freyd.Alg.PElem.cP_LPLP	Freyd.Alg.PElem.hornConc_pt_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter
 Freyd.Alg.positiveReflectionEmbed_injective	Freyd.Alg.globalCompletionEmbed_injective	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_20	Freyd.S2_20
 Freyd.Alg.PElem.cL_LLPL	Freyd.Alg.PElem.hornConc_ln_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter
-Freyd.powerClassify_natural	Freyd.powerClassify_natural923	theorem specialization; 3 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S1_91	Freyd.S1_923_Baseable
 Freyd.Alg.QuotAllegory.instDivisionAllegory	Freyd.Alg.quotDiv	def signature+value; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S2_53	Freyd.S2_53
 Freyd.Alg.PElem.join_pt_pt_self	Freyd.Alg.PElem.join_idem	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S2_157_ProjectivePlane	Freyd.S2_157_ProjectivePlane
 Freyd.branchNum_zero	Freyd.S2_158.cL_inj	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S2_153b_RecursiveModulus	Freyd.S2_158c_StepRigidity
