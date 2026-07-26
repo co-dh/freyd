@@ -1249,7 +1249,7 @@ theorem effective_regular_additive_is_abelian
 /-- The kernel-pair relation of `q` is contained in its level relation `graph q ⊚ (graph q)°`.
     (`kp(q)` lifts into the level pullback then the level image, matching legs.) -/
 theorem kernelPairRel_le_level [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
-    [HasImages 𝒞] [RegularCategory 𝒞] {A Q : 𝒞} (q : A ⟶ Q) :
+    [HasImages 𝒞] {A Q : 𝒞} (q : A ⟶ Q) :
     kernelPairRel q ⊂ (graph q ⊚ (graph q)°) := by
   let pb := HasPullbacks.has (graph q).colB ((graph q)°).colA
   have hkp : kp₁ (f:=q) ≫ q = kp₂ (f:=q) ≫ q := kp_sq

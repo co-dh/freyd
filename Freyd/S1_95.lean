@@ -62,7 +62,7 @@ theorem effective_of_quotient_cover {A Q : 𝒞} (E : BinRel 𝒞 A A)
     (hElx : RelLe E (kernelPairRel x)) (hlxE : RelLe (kernelPairRel x) E) :
     IsEffective E :=
   ⟨hE, Q, x, hx,
-    rel_le_trans hElx (kernelPairRel_le_graphComp x),
+    rel_le_trans hElx (kernelPairRel_le_level x),
     rel_le_trans (graphComp_le_kernelPairRel x) hlxE⟩
 
 /-- **Kernel pair is invariant under post-composition with a monic.**  If `m` is
