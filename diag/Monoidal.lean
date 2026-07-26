@@ -41,7 +41,7 @@ class SymMonCat (𝒞 : Type u) extends OrderedCat.{v} 𝒞 where
     tensHom (R ≫ R') (S ≫ S') = tensHom R S ≫ tensHom R' S'
   /-- Poset enrichment of `⊗`, the counterpart of `comp_mono`. -/
   tensHom_mono {a a' b b' : 𝒞} {R R' : a ⟶ a'} {S S' : b ⟶ b'} :
-    le R R' → le S S' → le (tensHom R S) (tensHom R' S')
+    R ≤ R' → S ≤ S' → (tensHom R S) ≤ (tensHom R' S')
 
   /-- Associator `(a ⊗ b) ⊗ c ⟶ a ⊗ (b ⊗ c)`. -/
   tensAssoc (a b c : 𝒞) : tens (tens a b) c ⟶ tens a (tens b c)

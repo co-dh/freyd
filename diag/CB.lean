@@ -59,13 +59,13 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
   nabla_unit (n : 𝒞) : SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n = 𝟙 n
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
-  ineq_37 (n : 𝒞) : le (nabla n ≫ delta n) (𝟙 (n ⊗ n))
+  ineq_37 (n : 𝒞) : (nabla n ≫ delta n) ≤ (𝟙 (n ⊗ n))
   /-- (38): `𝟙 ≤ Δ;∇`.  With (37), `Δ ⊣ ∇`. -/
-  ineq_38 (n : 𝒞) : le (𝟙 n) (delta n ≫ nabla n)
+  ineq_38 (n : 𝒞) : (𝟙 n) ≤ (delta n ≫ nabla n)
   /-- (39): `?;! ≤ 𝟙_I`.  With (40), `! ⊣ ?`. -/
-  ineq_39 (n : 𝒞) : le (unitR n ≫ bang n) (𝟙 (𝕀 : 𝒞))
+  ineq_39 (n : 𝒞) : (unitR n ≫ bang n) ≤ (𝟙 (𝕀 : 𝒞))
   /-- (40): `𝟙 ≤ !;?`.  With (39), `! ⊣ ?`. -/
-  ineq_40 (n : 𝒞) : le (𝟙 n) (bang n ≫ unitR n)
+  ineq_40 (n : 𝒞) : (𝟙 n) ≤ (bang n ≫ unitR n)
 
   /-- (41), left form: `(𝟙 ⊗ Δ);α⁻¹;(∇ ⊗ 𝟙) = ∇;Δ`. -/
   frob_left (n : 𝒞) :
@@ -76,10 +76,10 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
 
   /-- (42): every arrow is lax for the comultiplication — `R;Δ ≤ Δ;(R ⊗ R)`.  This is eq. (3),
       p. 4; Freyd has it product-free as §2.136's `R(S ∩ T) ⊑ RS ∩ RT` at `S := π₁°, T := π₂°`. -/
-  lax_delta {m n : 𝒞} (R : m ⟶ n) : le (R ≫ delta n) (delta m ≫ (R ⊗ₕ R))
+  lax_delta {m n : 𝒞} (R : m ⟶ n) : (R ≫ delta n) ≤ (delta m ≫ (R ⊗ₕ R))
   /-- (43): every arrow is lax for the counit — `R;! ≤ !`.  Freyd: §2.152's step "`p_α` is maximal
       in `(α,λ)`, hence `R p_β ⊆ p_α`". -/
-  lax_bang {m n : 𝒞} (R : m ⟶ n) : le (R ≫ bang n) (bang m)
+  lax_bang {m n : 𝒞} (R : m ⟶ n) : (R ≫ bang n) ≤ (bang m)
 
 namespace CartBicat
 
@@ -92,8 +92,8 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
 theorem special (n : 𝒞) : delta n ≫ nabla n = 𝟙 n := by
   refine OrderedCat.le_antisymm ?_ (ineq_38 n)
   -- `Δ;∇ ≤ Δ;(𝟙 ⊗ (!;?));∇`, by (40) under `⊗` and then under `;`.
-  have hstep : OrderedCat.le (delta n ≫ nabla n) (delta n ≫ (𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) := by
-    have h : OrderedCat.le ((𝟙 n ⊗ₕ 𝟙 n) ≫ nabla n) ((𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) :=
+  have hstep : (delta n ≫ nabla n) ≤ (delta n ≫ (𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) := by
+    have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ nabla n) ≤ ((𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) :=
       OrderedCat.comp_mono
         (SymMonCat.tensHom_mono (OrderedCat.le_refl _) (ineq_40 n)) (OrderedCat.le_refl _)
     rw [SymMonCat.tensHom_id, Cat.id_comp] at h
@@ -229,8 +229,8 @@ theorem conv_id (a : 𝒞) : conv (𝟙 a) = 𝟙 a := by
   exact snake' a
 
 /-- The converse is monotone: it is built only from `≫` and `⊗`, both of which are. -/
-theorem conv_mono {a b : 𝒞} {R S : a ⟶ b} (h : OrderedCat.le R S) :
-    OrderedCat.le (conv R) (conv S) := by
+theorem conv_mono {a b : 𝒞} {R S : a ⟶ b} (h : R ≤ S) :
+    (conv R) ≤ (conv S) := by
   dsimp [conv, bend]
   refine OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono (OrderedCat.le_refl _)
     (OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono ?_ (OrderedCat.le_refl _))))
@@ -554,7 +554,7 @@ theorem cap_tens_nabla {b c : 𝒞} (T : c ⟶ b) :
     be the inequality step, and it is.  `nabla_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
     that (42) applies to, and `conv_slide` turns the surviving duplicate into `S†`. -/
 theorem nabla_slide_conv {b c : 𝒞} (S : b ⟶ c) :
-    OrderedCat.le ((S ⊗ₕ 𝟙 c) ≫ nabla c) ((𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S) := by
+    ((S ⊗ₕ 𝟙 c) ≫ nabla c) ≤ ((𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S) := by
   have hL : ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
       = (S ⊗ₕ 𝟙 c) ≫ nabla c := by
     calc ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c

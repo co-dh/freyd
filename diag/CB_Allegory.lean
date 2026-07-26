@@ -35,7 +35,7 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
     monotonicity of composition, so it is below their greatest lower bound.  The lax inequation (42)
     is what makes `∩` a greatest lower bound in the first place (via `meet_idem`). -/
 theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
-    OrderedCat.le (R ≫ meet S T) (meet (R ≫ S) (R ≫ T)) :=
+    (R ≫ meet S T) ≤ (meet (R ≫ S) (R ≫ T)) :=
   meet_glb (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T))
     (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T))
 
@@ -46,7 +46,7 @@ theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
     `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.  That is where the Frobenius equation and the lax copy inequation
     are spent; everything here is bookkeeping. -/
 theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
-    OrderedCat.le (meet (R ≫ S) T) (meet R (T ≫ conv S) ≫ S) := by
+    (meet (R ≫ S) T) ≤ (meet R (T ≫ conv S) ≫ S) := by
   have hL : meet (R ≫ S) T
       = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := by
     dsimp [meet]
@@ -87,9 +87,9 @@ def allegoryOfCartBicat (𝒞 : Type u) [CartBicat.{v} 𝒞] : Freyd.Alg.Allegor
     inter_assoc := fun R S T => (meet_assoc R S T).symm
     semidistrib := fun R S T => by
       -- `R(S ∩ T) ≤ RS` and `≤ RT`, so intersecting it with either changes nothing.
-      have hS : OrderedCat.le (R ≫ meet S T) (R ≫ S) :=
+      have hS : (R ≫ meet S T) ≤ (R ≫ S) :=
         OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T)
-      have hT : OrderedCat.le (R ≫ meet S T) (R ≫ T) :=
+      have hT : (R ≫ meet S T) ≤ (R ≫ T) :=
         OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T)
       calc R ≫ meet S T
           = meet (R ≫ meet S T) (R ≫ T) := (meet_eq_left_of_le hT).symm

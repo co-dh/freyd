@@ -19,20 +19,25 @@ universe v u
 
 namespace Freyd.Diag
 
+/-- The hom order, carried on its own so that the `LE` instance below — hence Lean's own `≤` — is in
+    scope for the LAWS about it, which are the whole point: this theory is inequational, and its
+    axioms should read on the page the way the paper prints them.  Core's `Preorder extends LE` is
+    the same split, one relation per type instead of one per hom-set. -/
+class HomLE (𝒞 : Type u) [Cat.{v} 𝒞] where
+  le {a b : 𝒞} (R S : a ⟶ b) : Prop
+
+instance {𝒞 : Type u} [Cat.{v} 𝒞] [HomLE.{v} 𝒞] {a b : 𝒞} : LE (a ⟶ b) := ⟨HomLE.le⟩
+
 /-- A poset-enriched category (functorialSemanticsForRelationalTheories.pdf, Def. 4.1
     preamble: "a poset enriched category that
     is symmetric monoidal"; the symmetric monoidal part is layered on in `diag.CB`): every
     hom-set is a partial order and composition is monotone in both arguments. -/
-class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞 where
-  le {a b : 𝒞} (R S : a ⟶ b) : Prop
-  le_refl {a b : 𝒞} (R : a ⟶ b) : le R R
-  le_trans {a b : 𝒞} {R S T : a ⟶ b} : le R S → le S T → le R T
-  le_antisymm {a b : 𝒞} {R S : a ⟶ b} : le R S → le S R → R = S
+class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞, HomLE.{v} 𝒞 where
+  le_refl {a b : 𝒞} (R : a ⟶ b) : R ≤ R
+  le_trans {a b : 𝒞} {R S T : a ⟶ b} : R ≤ S → S ≤ T → R ≤ T
+  le_antisymm {a b : 𝒞} {R S : a ⟶ b} : R ≤ S → S ≤ R → R = S
   /-- Poset enrichment of `≫`: composition is monotone in both arguments. -/
   comp_mono {a b c : 𝒞} {R R' : a ⟶ b} {S S' : b ⟶ c} :
-    le R R' → le S S' → le (R ≫ S) (R' ≫ S')
-
-/-- The hom order as core `≤`, so the papers' inequations read as written. -/
-instance {𝒞 : Type u} [OrderedCat.{v} 𝒞] {a b : 𝒞} : LE (a ⟶ b) := ⟨OrderedCat.le⟩
+    R ≤ R' → S ≤ S' → R ≫ S ≤ R' ≫ S'
 
 end Freyd.Diag
