@@ -141,10 +141,10 @@ theorem foldR_computation (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶
   · rintro ⟨ys, hf, hR⟩; exact ⟨ys, (hb ys).mpr hf, hR⟩
 
 theorem foldR_computation_le (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
-    inGraph F A ≫ foldRel F R ⊑ fmapR F (foldRel F R) ≫ R := Freyd.Alg.le_of_eq (foldR_computation F R)
+    inGraph F A ≫ foldRel F R ⊑ fmapR F (foldRel F R) ≫ R := le_of_eq (foldR_computation F R)
 
 theorem foldR_computation_ge (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
-    fmapR F (foldRel F R) ≫ R ⊑ inGraph F A ≫ foldRel F R := Freyd.Alg.le_of_eq (foldR_computation F R).symm
+    fmapR F (foldRel F R) ≫ R ⊑ inGraph F A ≫ foldRel F R := le_of_eq (foldR_computation F R).symm
 
 /-- aopa `foldR-computation'`: `⦇R⦈ = In° ≫ ⟦F⟧⦇R⦈ ≫ R`. -/
 theorem foldR_computation' (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
@@ -273,8 +273,8 @@ theorem idR_foldR (F : PolyF) {A : Type} :
       = fmapR F (Cat.id (⟨Mu F A⟩ : RelSet.{0})) ≫ inGraph F A := by
     rw [Cat.comp_id, hbid, Cat.id_comp]
   exact le_antisymm
-    (foldR_universal_le F (Cat.id _) (inGraph F A) (Freyd.Alg.le_of_eq key))
-    (foldR_universal_ge F (Cat.id _) (inGraph F A) (Freyd.Alg.le_of_eq key.symm))
+    (foldR_universal_le F (Cat.id _) (inGraph F A) (le_of_eq key))
+    (foldR_universal_ge F (Cat.id _) (inGraph F A) (le_of_eq key.symm))
 
 /-! ### Fusion (aopa `foldR-fusion`) -/
 
@@ -298,7 +298,7 @@ theorem foldR_fusion_ge (F : PolyF) {A B C : Type} (S : (⟨B⟩ : RelSet.{0}) �
 theorem foldR_fusion (F : PolyF) {A B C : Type} (S : (⟨B⟩ : RelSet.{0}) ⟶ ⟨C⟩)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) (T : Fo F ⟨A⟩ ⟨C⟩ ⟶ (⟨C⟩ : RelSet.{0}))
     (hyp : R ≫ S = fmapR F S ≫ T) : foldRel F R ≫ S = foldRel F T :=
-  le_antisymm (foldR_fusion_le F S R T (Freyd.Alg.le_of_eq hyp)) (foldR_fusion_ge F S R T (Freyd.Alg.le_of_eq hyp.symm))
+  le_antisymm (foldR_fusion_le F S R T (le_of_eq hyp)) (foldR_fusion_ge F S R T (le_of_eq hyp.symm))
 
 /-! ## Functional fold: universal property and fusion (aopa `fold-universal`, `fold-fusion`) -/
 
@@ -356,14 +356,14 @@ theorem foldR_fun (F : PolyF) {A B : Type} (f : sem F A B → B) :
     show (y = fold F f (In s)) ↔ (y = f (fmap F (fold F f) s))
     rw [fold_computation]; exact Iff.rfl
   exact le_antisymm
-    (foldR_universal_le F (graph (fold F f)) (graph f) (Freyd.Alg.le_of_eq hom_eq))
-    (foldR_universal_ge F (graph (fold F f)) (graph f) (Freyd.Alg.le_of_eq hom_eq.symm))
+    (foldR_universal_le F (graph (fold F f)) (graph f) (le_of_eq hom_eq))
+    (foldR_universal_ge F (graph (fold F f)) (graph f) (le_of_eq hom_eq.symm))
 
 /-- aopa `foldR-fold`: `graph f ⊑ R → graph (fold F f) ⊑ ⦇R⦈`. -/
 theorem foldR_fold (F : PolyF) {A B : Type} (f : sem F A B → B)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (h : (graph f : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) ⊑ R) :
     (graph (fold F f) : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩) ⊑ foldRel F R :=
-  le_trans (Freyd.Alg.le_of_eq (foldR_fun F f)) (foldR_monotonic F (graph f) R h)
+  le_trans (le_of_eq (foldR_fun F f)) (foldR_monotonic F (graph f) R h)
 
 end Freyd.Alg.RelSet.Poly

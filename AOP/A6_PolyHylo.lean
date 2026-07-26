@@ -57,6 +57,6 @@ theorem hylo_fixed (F : PolyF) {A B C : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨
 theorem hylo_pfp (F : PolyF) {A B C : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (S : Fo F ⟨A⟩ ⟨C⟩ ⟶ (⟨C⟩ : RelSet.{0})) :
     S° ≫ fmapR F ((foldRel F S)° ≫ foldRel F R) ≫ R ⊑ (foldRel F S)° ≫ foldRel F R :=
-  Freyd.Alg.le_of_eq (hylo_fixed F R S).symm
+  le_of_eq (hylo_fixed F R S).symm
 
 end Freyd.Alg.RelSet.Poly
