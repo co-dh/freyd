@@ -30,7 +30,7 @@ theorem stalk_detects_proper_mono_class {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic
   let S : Subobject 𝒞 A := ⟨A', m, hm⟩
   let pb := HasPullbacks.has x' S.arr
   let P : Subobject 𝒞 U.dom := InverseImage x' S
-  let Usub : Subobject 𝒞 one := pushforwardSub U.arr U.monic P
+  let Usub : Subobject 𝒞 one := pushMono U.arr U.monic P
   -- `Usub ≤ U` (witnessed by `P.arr`), and `Usub` does NOT exhaust `U`.
   have hsub : Usub.le U := ⟨P.arr, rfl⟩
   have hUproper : ¬ U.le Usub := by
