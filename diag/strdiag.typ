@@ -90,14 +90,30 @@
   }
 }
 
-/// A labelled relation box; `p` is the midpoint of its LEFT edge.  `dashed` marks a box that is not
-/// a composite of the generators (the residual `R/S`, which needs diag/FO.lean).
-#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false) = {
+/// A labelled relation box; `p` is the midpoint of its LEFT edge.
+///
+/// NOT a rectangle: a rectangle is symmetric, and the box has to say which way the relation runs.
+/// functorialSemanticsForRelationalTheories.pdf §4 chamfers the TOP-RIGHT corner, and defines the
+/// converse to be that same box MIRRORED — p. 19, `R†` drawn as an `Я` in a box cut at the top left.
+/// So `flip: true` is not a decoration: it is how the paper writes `†`, and the label is mirrored
+/// with the frame, which is what makes the two tell apart at a glance.
+///
+/// `dashed` marks a box that is not a composite of the generators (the residual `R/S`, which needs
+/// diag/FO.lean).
+#let CHAMFER = 0.35     // fraction of the height taken off the corner
+#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false) = {
   let (x, y) = p
   let paint = if invert { white } else { black }
   let st = if dashed { (thickness: lw, paint: paint, dash: "dashed") } else { (thickness: lw, paint: paint) }
-  d.rect((x, y - h / 2), (x + w, y + h / 2), fill: if invert { black } else { white }, stroke: st)
-  d.content((x + w / 2, y), text(fill: paint, label))
+  let c = CHAMFER * h
+  let pts = if flip {
+    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
+  } else {
+    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2 - c), (x + w - c, y + h / 2), (x, y + h / 2))
+  }
+  d.line(..pts, close: true, fill: if invert { black } else { white }, stroke: st)
+  let body = text(fill: paint, label)
+  d.content((x + w / 2, y), if flip { scale(x: -100%, reflow: false, body) } else { body })
 }
 
 /// An annotation set to the right of a picture, left-aligned so it can never run back into it.

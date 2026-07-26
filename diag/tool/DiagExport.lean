@@ -40,9 +40,8 @@ def BW : Float := 0.92
 def BH : Float := 0.60
 def LEAD : Float := 0.34
 def GAP : Float := 0.34
-/-- `meet-w`/`conv-w` of `strdiag.typ` minus the box width, which the caller sizes to its label. -/
+/-- `meet-w` of `strdiag.typ` minus the box width, which the caller sizes to its label. -/
 def meetPad : Float := 1.40
-def convPad : Float := 2.40
 def wireW : Float := 0.60
 
 /-- One left-to-right slot of a picture.  `gen` is a generator `strdiag.typ` draws directly — it
@@ -52,7 +51,9 @@ inductive Cell where
   | box (label : String)
   | gen (fn : String) (width : Float)
   | meet (upper lower : String)
-  | conv (label : String)
+  /-- A converse: the same box MIRRORED, which is how
+      functorialSemanticsForRelationalTheories.pdf p. 19 writes `†`. -/
+  | dagger (label : String)
   deriving Inhabited
 
 /-- A box has to hold its label.  `strdiag.typ`'s default `BW` fits about six characters at 10pt;
@@ -64,7 +65,7 @@ def Cell.width : Cell → Float
   | .box l => boxWidth l
   | .gen _ w => w
   | .meet u l => meetPad + max (boxWidth u) (boxWidth l)
-  | .conv l => convPad + boxWidth l
+  | .dagger l => boxWidth l
 
 /-- Typst string literal: only `\` and `"` can end it early. -/
 def typstString (s : String) : String :=
@@ -90,7 +91,8 @@ def Cell.render (c : Cell) (x : Float) : String :=
   | .gen fn _ => s!"  {fn}({p})"
   | .meet u l =>
     s!"  meet({p}, {labelContent u}, {labelContent l}, w: {fmt (max (boxWidth u) (boxWidth l))})"
-  | .conv l => s!"  conv({p}, {labelContent l}, w: {fmt (boxWidth l)})"
+  | .dagger l =>
+    s!"  gbox({p}, {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, flip: true)"
 
 /-- Lay the cells out at `y = 0` from `x0`, joining consecutive ones with a wire, and return the
     drawing plus the x it ends at. -/
@@ -189,7 +191,7 @@ partial def toCell (e : Expr) : MetaM Cell := do
   | (``Freyd.Alg.Allegory.recip, args)
   | (``Freyd.Diag.CartBicat.conv, args) =>
     match args.back? with
-    | some r => return .conv (← label r)
+    | some r => return .dagger (← label r)
     | none => return .box (← label e)
   | _ => return .box (← label e)
 
