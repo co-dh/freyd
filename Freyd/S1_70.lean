@@ -330,11 +330,7 @@ def locallyComplete_with_union_preserving_is_logos
       -- mono: f#(B') ≤ f#(sup S); h_preserves: f#(sup S) ≤ sup { f#(C) | C ∈ S };
       -- sup_least: every f#(C) in that image satisfies f#(C) ≤ A'.
       intro hB'
-      have hmono := @inverseImage_mono 𝒞 _
-                     PL.toRegularCategory.toHasTerminal
-                     PL.toRegularCategory.toHasBinaryProducts
-                     PL.toRegularCategory.toHasPullbacks
-                     _ _ f _ _ hB'
+      have hmono := inverseImage_mono f hB'
       have hpres := h_preserves f (fun C => (InverseImage f C).le A')
       have himg_le : (LC.sup (fun A'' => ∃ C, (InverseImage f C).le A' ∧ A'' = InverseImage f C)).le A' :=
         (LC.sup_isSup _).least A' (fun A'' ⟨_, hC, heq⟩ => heq ▸ hC)

@@ -603,20 +603,6 @@ theorem entire_of_entire_le {A : 𝒞} {S : Subobject 𝒞 A}
     _ = S.arr := Cat.comp_id _
     _ = Cat.id _ ≫ S.arr := (Cat.id_comp _).symm
 
-/-- `entire A ≤ f#(entire B)`: the inverse image of the whole of `B` along `f : A → B`
-    is the whole of `A`.  Witness: the pullback lift of the cone `⟨A, id_A, f⟩` over
-    `(f, id_B)`, which composes with `(InverseImage f (entire B)).arr = π₁` to `id_A`. -/
-theorem entire_le_invImage_entire {A B : 𝒞} (f : A ⟶ B) :
-    (Subobject.entire A).le (InverseImage f (Subobject.entire B)) := by
-  let pb := HasPullbacks.has f (Subobject.entire B).arr
-  let c : Cone f (Subobject.entire B).arr :=
-    ⟨A, Cat.id A, f, by
-      show Cat.id A ≫ f = f ≫ (Subobject.entire B).arr
-      rw [Cat.id_comp, show (Subobject.entire B).arr = Cat.id B from rfl, Cat.comp_id]⟩
-  refine ⟨pb.lift c, ?_⟩
-  show pb.lift c ≫ pb.cone.π₁ = Cat.id A
-  exact pb.lift_fst c
-
 omit [PreLogos 𝒞] in
 /-- §1.624: In a positive pre-logos, f: A → B₁+B₂ decomposes as
     f₁+f₂ from A₁ → B₁, A₂ → B₂ where A = A₁+A₂.
@@ -649,13 +635,13 @@ theorem decompose_via_coproduct [DisjointBinaryCoproduct 𝒞] {A B₁ B₂ : �
     apply entire_of_entire_le
     -- step a: entire A ≤ f#(entire B)
     have ha : (Subobject.entire A).le (InverseImage f (Subobject.entire B)) :=
-      entire_le_invImage_entire f
+      entire_le_inverseImage_entire f
     -- step b: entire B ≤ Inl ∪ Inr  (disjoint coproduct union covers the whole)
     have hbu : (Subobject.entire B).le (HasSubobjectUnions.union Inl Inr) :=
       inl_union_inr_entire (𝒟 := 𝒞) (A := B₁) (B := B₂)
     have hb : (InverseImage f (Subobject.entire B)).le
         (InverseImage f (HasSubobjectUnions.union Inl Inr)) :=
-      invImage_mono_local f hbu
+      inverseImage_mono f hbu
     -- step c (pre-logos): f#(Inl ∪ Inr) ≤ f#Inl ∪ f#Inr = A₁ ∪ A₂
     have hc : (InverseImage f (HasSubobjectUnions.union Inl Inr)).le
         (HasSubobjectUnions.union (InverseImage f Inl) (InverseImage f Inr)) :=
@@ -1935,13 +1921,13 @@ theorem complemented_of_projective_is_projective [DisjointBinaryCoproduct 𝒞]
   have hEntireP_le_union : (Subobject.entire P).le (HasSubobjectUnions.union P₁ P₂) := by
     have ha : (Subobject.entire P).le
         (InverseImage σ (Subobject.entire (HasBinaryCoproducts.coprod B P'))) :=
-      entire_le_invImage_entire σ
+      entire_le_inverseImage_entire σ
     have hbu : (Subobject.entire (HasBinaryCoproducts.coprod B P')).le
         (HasSubobjectUnions.union Inl_B Inr_P') :=
       inl_union_inr_entire (𝒟 := 𝒞) (A := B) (B := P')
     have hb : (InverseImage σ (Subobject.entire (HasBinaryCoproducts.coprod B P'))).le
         (InverseImage σ (HasSubobjectUnions.union Inl_B Inr_P')) :=
-      invImage_mono_local σ hbu
+      inverseImage_mono σ hbu
     have hc : (InverseImage σ (HasSubobjectUnions.union Inl_B Inr_P')).le
         (HasSubobjectUnions.union (InverseImage σ Inl_B) (InverseImage σ Inr_P')) :=
       (PreLogos.invImage_preserves_union σ Inl_B Inr_P').1
@@ -2314,12 +2300,12 @@ theorem point_inl_complementedSubterminator [DisjointBinaryCoproduct 𝒞] {B₁
     exact ⟨(e ≫ ζ) ≫ (minimal_subobject_of_one_is_coterminator hDPL).init _, hinit (X := one) _ _⟩
   -- COVER `entire 1 ≤ U ∪ U₂`:  entire 1 ≤ φ#(entire) ≤ φ#(Inl∪Inr) ≤ φ#Inl ∪ φ#Inr = U ∪ U₂.
   have hcover : (Subobject.entire one).le (HasSubobjectUnions.union U U₂) := by
-    have ha := entire_le_invImage_entire (B := HasBinaryCoproducts.coprod B₁ B₂) φ
+    have ha := entire_le_inverseImage_entire (B := HasBinaryCoproducts.coprod B₁ B₂) φ
     have hbu : (Subobject.entire (HasBinaryCoproducts.coprod B₁ B₂)).le
         (HasSubobjectUnions.union (inlSub (𝒞 := 𝒞) (A := B₁) (B := B₂) inl_mono)
           (inrSub (𝒞 := 𝒞) (A := B₁) (B := B₂) inr_mono)) :=
       inl_union_inr_entire (𝒟 := 𝒞) (A := B₁) (B := B₂)
-    have hb := invImage_mono_local φ hbu
+    have hb := inverseImage_mono φ hbu
     have hc := (PreLogos.invImage_preserves_union φ
       (inlSub (𝒞 := 𝒞) (A := B₁) (B := B₂) inl_mono)
       (inrSub (𝒞 := 𝒞) (A := B₁) (B := B₂) inr_mono)).1
@@ -2429,13 +2415,13 @@ theorem coprodMapOne_image_proper {A' A : 𝒞} (m : A' ⟶ A)
   let il : A ⟶ HasBinaryCoproducts.coprod A one := HasBinaryCoproducts.inl
   -- entire A ≤ inl⁻¹(entire (A+1))
   have ha : (Subobject.entire A).le (InverseImage il (Subobject.entire _)) :=
-    entire_le_invImage_entire il
+    entire_le_inverseImage_entire il
   -- union J Kr is entire ⟹ entire (A+1) ≤ union J Kr
   have hbu : (Subobject.entire (HasBinaryCoproducts.coprod A one)).le (HasSubobjectUnions.union J Kr) := by
     obtain ⟨inv, hinv1, hinv2⟩ := hUnion_entire
     exact ⟨inv, hinv2⟩
   have hb : (InverseImage il (Subobject.entire _)).le (InverseImage il (HasSubobjectUnions.union J Kr)) :=
-    invImage_mono_local il hbu
+    inverseImage_mono il hbu
   have hc : (InverseImage il (HasSubobjectUnions.union J Kr)).le
       (HasSubobjectUnions.union (InverseImage il J) (InverseImage il Kr)) :=
     (PreLogos.invImage_preserves_union il J Kr).1
@@ -2445,13 +2431,13 @@ theorem coprodMapOne_image_proper {A' A : 𝒞} (m : A' ⟶ A)
     show image.lift m ≫ ((image m).arr ≫ HasBinaryCoproducts.inl) = m ≫ HasBinaryCoproducts.inl
     rw [← Cat.assoc, image.lift_fac]
   have hJl : (InverseImage il J).le (image m) :=
-    Subobject.le_trans (invImage_mono_local il hJ_le) (invImage_postcompSub_le (image m) inl_mono)
+    Subobject.le_trans (inverseImage_mono il hJ_le) (invImage_postcompSub_le (image m) inl_mono)
   -- inl⁻¹ Kr ≤ bottom A ≤ image m :  Kr = image inr ≤ inrSub, so inl⁻¹ Kr ≤ inl⁻¹ inrSub = inl ∩ inr ≤ ⊥.
   have hKr_le : Kr.le (inrSub (𝒞 := 𝒞) (A := A) (B := one) inr_mono) :=
     image_min _ _ ⟨Cat.id _, Cat.id_comp _⟩
   have hKl : (InverseImage il Kr).le (image m) :=
     -- inl⁻¹ Kr ≤ inl⁻¹ inrSub ≤ image m  (the latter has an initial domain).
-    Subobject.le_trans (invImage_mono_local il hKr_le)
+    Subobject.le_trans (inverseImage_mono il hKr_le)
       (invImage_inl_inrSub_le_any (A := A) (B := one) (image m))
   -- assemble: entire A ≤ inl⁻¹(entire) ≤ inl⁻¹(union) ≤ union(inl⁻¹J)(inl⁻¹Kr) ≤ image m.
   exact Subobject.le_trans ha (Subobject.le_trans hb (Subobject.le_trans hc
@@ -2498,11 +2484,11 @@ theorem decompose_witnesses {X A₁ A₂ : 𝒞} (h : X ⟶ HasBinaryCoproducts.
   · -- COVER:  entire X ≤ h#(entire) ≤ h#(Inl∪Inr) ≤ h#Inl ∪ h#Inr = U₁∪U₂.
     have ha : (Subobject.entire X).le
         (InverseImage h (Subobject.entire (HasBinaryCoproducts.coprod A₁ A₂))) :=
-      entire_le_invImage_entire h
+      entire_le_inverseImage_entire h
     have hbu : (Subobject.entire (HasBinaryCoproducts.coprod A₁ A₂)).le
         (HasSubobjectUnions.union Inl Inr) := inl_union_inr_entire (𝒟 := 𝒞) (A := A₁) (B := A₂)
     have hb : (InverseImage h (Subobject.entire _)).le
-        (InverseImage h (HasSubobjectUnions.union Inl Inr)) := invImage_mono_local h hbu
+        (InverseImage h (HasSubobjectUnions.union Inl Inr)) := inverseImage_mono h hbu
     have hc : (InverseImage h (HasSubobjectUnions.union Inl Inr)).le
         (HasSubobjectUnions.union U₁ U₂) := (PreLogos.invImage_preserves_union h Inl Inr).1
     exact Subobject.le_trans ha (Subobject.le_trans hb hc)
@@ -2638,7 +2624,7 @@ theorem prodCoprod_entire_le_union (A B C : 𝒞) :
       (HasSubobjectUnions.union (prodCoprodInlSub A B C) (prodCoprodInrSub A B C)) := by
   let f : prod (coprod A B) C ⟶ coprod A B := fst
   have ha : (Subobject.entire (prod (coprod A B) C)).le (InverseImage f (Subobject.entire _)) :=
-    entire_le_invImage_entire f
+    entire_le_inverseImage_entire f
   have hbu : (Subobject.entire (coprod A B)).le
       (HasSubobjectUnions.union (inlSub (𝒞 := 𝒞) (A := A) (B := B) inl_mono)
                                 (inrSub (𝒞 := 𝒞) (A := A) (B := B) inr_mono)) :=
@@ -2646,7 +2632,7 @@ theorem prodCoprod_entire_le_union (A B C : 𝒞) :
   have hb : (InverseImage f (Subobject.entire _)).le
       (InverseImage f (HasSubobjectUnions.union (inlSub (𝒞 := 𝒞) (A := A) (B := B) inl_mono)
                                                 (inrSub (𝒞 := 𝒞) (A := A) (B := B) inr_mono))) :=
-    invImage_mono_local f hbu
+    inverseImage_mono f hbu
   have hc : (InverseImage f (HasSubobjectUnions.union (inlSub (𝒞 := 𝒞) (A := A) (B := B) inl_mono)
                                                       (inrSub (𝒞 := 𝒞) (A := A) (B := B) inr_mono))).le
       (HasSubobjectUnions.union (InverseImage f (inlSub (𝒞 := 𝒞) (A := A) (B := B) inl_mono))

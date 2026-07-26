@@ -165,11 +165,11 @@ theorem complementedSub_of_projective {Q : 𝒞} (U U₂ : Subobject 𝒞 Q)
   have hwIl_entire : (InverseImage w Il).IsEntire := by
     apply entire_of_entire_le
     have ha : (Subobject.entire U.dom).le (InverseImage w (Subobject.entire _)) :=
-      entire_le_invImage_entire w
+      entire_le_inverseImage_entire w
     have hbu : (Subobject.entire (HasBinaryCoproducts.coprod A U₂.dom)).le
         (HasSubobjectUnions.union Il Ir) := inl_union_inr_entire
     have hb : (InverseImage w (Subobject.entire _)).le
-        (InverseImage w (HasSubobjectUnions.union Il Ir)) := invImage_mono_local w hbu
+        (InverseImage w (HasSubobjectUnions.union Il Ir)) := inverseImage_mono w hbu
     have hc : (InverseImage w (HasSubobjectUnions.union Il Ir)).le
         (HasSubobjectUnions.union (InverseImage w Il) (InverseImage w Ir)) :=
       (PreLogos.invImage_preserves_union w Il Ir).1

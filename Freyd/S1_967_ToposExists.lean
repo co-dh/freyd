@@ -47,14 +47,14 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     * bottom `∅_A := bottomSub A` with `bottomSub_le` and the cross-base iso
       `bottomSub_dom_iso` (§1.944, `ToposStrictZero`);
     * `f#(S∪T) = f#S ∪ f#T` — the FRAME LAW `ForallAlong.invImage_preserves_union`
-      (forward) and `invImage_mono_local` (reverse);
+      (forward) and `inverseImage_mono` (reverse);
     * `f#(∅_B) ≅ ∅_A` — `invImage_bottomSub_dom_iso` (§1.946, `ToposStrictZero`).
   This is the `PreLogos 𝒞` instance the rest of the file (and the §1.621 disjoint-gluing
   copairing) needs, previously the missing link flagged in the residual note below. -/
 /-- The frame law in the `inverseImage_preserves_unions` (PreLogos-field) shape, proved with
     the canonical topos instances OUTSIDE the structure builder to avoid the
     `PreLogos`-self-reference diamond.  FORWARD = `ForallAlong.invImage_preserves_union`
-    (`f#` is a left adjoint), REVERSE = monotonicity (`invImage_mono_local`). -/
+    (`f#` is a left adjoint), REVERSE = monotonicity (`inverseImage_mono`). -/
 theorem topos_invImage_preserves_unions {A B : 𝒞} (f : A ⟶ B) :
     inverseImage_preserves_unions f := by
   intro S T

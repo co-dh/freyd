@@ -103,7 +103,7 @@ theorem inter_invImage_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B) :
       `≤ f#(⊥ C)` (`inverseImage_mono`, since `K ∩ K₂ ≤ ⊥ C`)
       `≤ ⊥ B` (`le_bottom_of_dom_iso` + `invImage_preserves_bottom`);
   * **cover** `⊤ B ≤ f#K ∪ f#K₂`:
-      `⊤ B ≤ f#(⊤ C)` (`entire_le_invImage_entire`)
+      `⊤ B ≤ f#(⊤ C)` (`entire_le_inverseImage_entire`)
       `≤ f#(K ∪ K₂)` (`inverseImage_mono`, since `⊤ C ≤ K ∪ K₂`)
       `≤ f#K ∪ f#K₂` (`PreLogos.invImage_preserves_union`, forward half). -/
 theorem invImage_complementedSub {B C : 𝒞} (f : B ⟶ C) {K : Subobject 𝒞 C}
@@ -120,7 +120,7 @@ theorem invImage_complementedSub {B C : 𝒞} (f : B ⟶ C) {K : Subobject 𝒞 
     exact Subobject.le_trans h1 (Subobject.le_trans h2 h3)
   · -- cover
     have h1 : (Subobject.entire B).le (InverseImage f (Subobject.entire C)) :=
-      entire_le_invImage_entire f
+      entire_le_inverseImage_entire f
     have h2 : (InverseImage f (Subobject.entire C)).le
         (InverseImage f (HasSubobjectUnions.union K K₂)) := inverseImage_mono f hcover
     have h3 : (InverseImage f (HasSubobjectUnions.union K K₂)).le

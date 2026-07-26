@@ -147,15 +147,6 @@ theorem degenerate_iff_zero_iso_one (h : PreLogos 𝒞) :
     rcases hf with ⟨g, hfg, hgf⟩; exact ⟨g, ⟨f, hgf, hfg⟩⟩
   · rintro ⟨f, hf⟩; rcases hf with ⟨g, hfg, hgf⟩; exact ⟨g⟩
 
-/-- `InverseImage` is order-preserving (§1.451), packaged for the canonical
-    `HasPullbacks` instance: `S ≤ T ⟹ f# S ≤ f# T`.  This is `invImg_le`
-    specialized to the pullbacks `InverseImage` itself chooses, so the two
-    `Subobject`s agree definitionally (same `dom`/`arr`). -/
-theorem inverseImage_mono [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
-    {A B : 𝒞} (f : A ⟶ B) {S T : Subobject 𝒞 B} (hle : S.le T) :
-    (InverseImage f S).le (InverseImage f T) :=
-  invImg_le f S T (HasPullbacks.has f S.arr) (HasPullbacks.has f T.arr) hle
-
 /-! ### §1.611  The three definitions of a pre-logos and their equivalence
 
   Freyd §1.6 gives three descriptions of a pre-logos over a regular category:

@@ -473,19 +473,6 @@ theorem isEntire_iff_entire_le {A : 𝒞} (S : Subobject 𝒞 A) :
     apply S.monic
     rw [Cat.assoc, hsec', Cat.comp_id, Cat.id_comp]
 
-/-- The inverse image of the top subobject is the top subobject:
-    `f#(1_B) = 1_A` (each side `≤` the other).  The `entire B ≤` direction is
-    trivial; the other uses that `f` itself lifts through the pullback cone of
-    `f` against `id_B`. -/
-theorem entire_le_inverseImage_entire [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) :
-    Subobject.le (Subobject.entire A) (InverseImage f (Subobject.entire B)) := by
-  -- the pullback of (f, id_B); lift the cone ⟨A, id_A, f⟩ through it
-  let pb := HasPullbacks.has f (Subobject.entire B).arr
-  let c : Cone f (Subobject.entire B).arr :=
-    ⟨A, Cat.id A, f, by simp [Subobject.entire, Cat.id_comp, Cat.comp_id]⟩
-  -- the π₁-leg (the InverseImage's arrow) of this lift is id_A
-  exact ⟨pb.lift c, by simpa [InverseImage, Subobject.entire] using pb.lift_fst c⟩
-
 /-- **§1.73 double-sharp bridge.** For any object `A` in a logos and any
     subobject `A' ⊆ A`, writing `pA = term A : A → 1` for the unique map to the
     terminator and `pA## = rightAdj (term A)`:
@@ -914,7 +901,7 @@ theorem connected_projective_one_implies_coprime_one
         (HasSubobjectUnions.union
           (InverseImage s (inlSub (𝒞 := 𝒞) (A := U.dom) (B := V.dom) inl_mono))
           (InverseImage s (inrSub (𝒞 := 𝒞) (A := U.dom) (B := V.dom) inr_mono))) :=
-      Subobject.le_trans (entire_le_invImage_entire s)
+      Subobject.le_trans (entire_le_inverseImage_entire s)
         (Subobject.le_trans
           (inverseImage_mono s inl_union_inr_entire)
           (PreLogos.invImage_preserves_union s _ _).1)

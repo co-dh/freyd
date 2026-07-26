@@ -1371,7 +1371,7 @@ theorem sub_one_point_or_bot {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     any global point `x : 1 → A+B` of the canonical coproduct factors through `coprodInl` or
     through `coprodInr`.  Proof: the inverse images `U := x#(image inl)` and `V := x#(image inr)`
     are subobjects of `1` whose union is ENTIRE (`coprodInjections_union_entire` pulled back, via
-    `entire_le_invImage_entire` + `invImage_preserves_union`).  By `sub_one_point_or_bot` each is
+    `entire_le_inverseImage_entire` + `invImage_preserves_union`).  By `sub_one_point_or_bot` each is
     point-or-`⊥`; if both were `≤ ⊥` their union would be `≤ ⊥`, forcing a point of `(⊥ 1).dom`
     (`point_bottom_absurd`).  So one has a point, and a point of an inverse image lifts `x`
     through that injection. -/
@@ -1390,7 +1390,7 @@ theorem coprod_point_split_canonical {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
       obtain ⟨ι, _, hι⟩ := coprodInjections_union_entire A B
       exact ⟨ι, by simpa using hι⟩
     have h1 : (Subobject.entire (one : 𝒞)).le
-        (InverseImage x (Subobject.entire (coprodObj A B))) := entire_le_invImage_entire x
+        (InverseImage x (Subobject.entire (coprodObj A B))) := entire_le_inverseImage_entire x
     have h2 : (InverseImage x (Subobject.entire (coprodObj A B))).le
         (InverseImage x (HasSubobjectUnions.union (inlSubobj A B) (inrSubobj A B))) :=
       inverseImage_mono x hunion_top

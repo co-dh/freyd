@@ -64,6 +64,29 @@ def InverseImage (f : A ⟶ B) (B' : Subobject 𝒞 B) [HasPullbacks 𝒞] : Sub
         ⟨W, u ≫ pb.cone.π₁, u ≫ pb.cone.π₂, by rw [Cat.assoc, pb.cone.w, ← Cat.assoc]⟩
       rw [pb.lift_uniq c u rfl rfl, pb.lift_uniq c v huv.symm hπ₂.symm] }
 
+/-- Inverse image is order-preserving (§1.451): `S ≤ T` implies `f#S ≤ f#T`. -/
+theorem inverseImage_mono [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B)
+    {S T : Subobject 𝒞 B} (h : S.le T) :
+    (InverseImage f S).le (InverseImage f T) := by
+  obtain ⟨k, hk⟩ := h
+  let pbS := HasPullbacks.has f S.arr
+  let pbT := HasPullbacks.has f T.arr
+  let c : Cone f T.arr :=
+    ⟨pbS.cone.pt, pbS.cone.π₁, pbS.cone.π₂ ≫ k,
+      by rw [Cat.assoc, hk, pbS.cone.w]⟩
+  exact ⟨pbT.lift c, pbT.lift_fst c⟩
+
+/-- The inverse image of the entire subobject contains the entire subobject:
+    `1_A ≤ f#(1_B)`. -/
+theorem entire_le_inverseImage_entire [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+    (Subobject.entire A).le (InverseImage f (Subobject.entire B)) := by
+  let pb := HasPullbacks.has f (Subobject.entire B).arr
+  let c : Cone f (Subobject.entire B).arr :=
+    ⟨A, 𝟙 A, f, by
+      show 𝟙 A ≫ f = f ≫ (Subobject.entire B).arr
+      rw [Cat.id_comp, show (Subobject.entire B).arr = 𝟙 B from rfl, Cat.comp_id]⟩
+  exact ⟨pb.lift c, pb.lift_fst c⟩
+
 /-- f# preserves binary unions: for any S,T subobjects of B,
     f#(S ∪ T) EQUALS f#(S) ∪ f#(T) as subobjects of A — i.e. each is
     `Subobject.le` the other.  This is stronger than a bare object
@@ -535,22 +558,6 @@ theorem relSub_inter_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
         = (HasPullbacks.has (pair R.colA R.colB) (pair S.colA S.colB)).cone.π₁ ≫ pair R.colA R.colB
   exact (pair_uniq _ _ _ (by rw [Cat.assoc, fst_pair]; rfl) (by rw [Cat.assoc, snd_pair]; rfl)).symm
 
-/-- Local copy of inverse-image monotonicity (the canonical one lives downstream in `S1_61`,
-    which imports this file).  If `S ≤ T` then `f# S ≤ f# T`: the `S`-pullback cone maps into
-    the `T`-pullback via the factorization, and pullback-lift gives the comparison on `π₁`. -/
-theorem invImage_mono_local {A B : 𝒞} (f : A ⟶ B) {S T : Subobject 𝒞 B} (hle : S.le T) :
-    (InverseImage f S).le (InverseImage f T) := by
-  obtain ⟨l, hl⟩ := hle
-  let pbS := HasPullbacks.has f S.arr
-  let pbT := HasPullbacks.has f T.arr
-  -- cone over (f, T.arr): pt = pbS.pt, legs π₁ and π₂≫l (since (π₂≫l)≫T.arr = π₂≫S.arr = π₁≫f).
-  let c : Cone f T.arr :=
-    ⟨pbS.cone.pt, pbS.cone.π₁, pbS.cone.π₂ ≫ l,
-      by rw [Cat.assoc, hl, pbS.cone.w]⟩
-  refine ⟨pbT.lift c, ?_⟩
-  show pbT.lift c ≫ pbT.cone.π₁ = pbS.cone.π₁
-  exact pbT.lift_fst c
-
 /-- **§1.616** (pre-logos): `BinRel(A,B)` is a DISTRIBUTIVE lattice — the meet-over-join law
     `R ⊓ (S ∪ T) ≤ (R ⊓ S) ∪ (R ⊓ T)`.  Transported across `relSub` from the pre-logos fact
     that inverse images preserve unions (`PreLogos.invImage_preserves_union`) plus monotonicity
@@ -566,7 +573,7 @@ theorem rel_inter_union_le {A B : 𝒞} (R S T : BinRel 𝒞 A B) :
   -- step 1: InverseImage pR (relSub(S∪T)) ≤ InverseImage pR (union (relSub S)(relSub T))
   have h1 : (InverseImage pR (relSub (S ∪ᵣ T))).le
               (InverseImage pR (HasSubobjectUnions.union (relSub S) (relSub T))) :=
-    invImage_mono_local pR (relSub_union_le S T)
+    inverseImage_mono pR (relSub_union_le S T)
   -- step 2 (PreLogos): InverseImage pR (union ..) ≤ union (InverseImage pR (relSub S)) (.. T)
   have h2 := (PreLogos.invImage_preserves_union pR (relSub S) (relSub T)).1
   have h12 := Subobject.le_trans h1 h2
@@ -802,7 +809,7 @@ theorem compose_union_right {A B C : 𝒞} (R : BinRel 𝒞 A B) (S T : BinRel �
   -- LHS  =  ∃_ω (θ# relSub(S∪T)).
   have hL := (relSub_compose_eq R (S ∪ᵣ T)).1
   -- θ# relSub(S∪T) ≤ θ# (union (relSub S)(relSub T))   (monotone of θ#).
-  have h1 := invImage_mono_local (thetaR R C) (relSub_union_le S T)
+  have h1 := inverseImage_mono (thetaR R C) (relSub_union_le S T)
   -- θ# (union ..) ≤ union (θ# relSub S)(θ# relSub T)   (PreLogos: # preserves unions).
   have h2 := (PreLogos.invImage_preserves_union (thetaR R C) (relSub S) (relSub T)).1
   -- ∃_ω preserves the resulting union  ≤ union (∃_ω θ# relSub S)(∃_ω θ# relSub T).
