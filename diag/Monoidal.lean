@@ -1,7 +1,8 @@
 /-
   `diag.Monoidal` — the poset-enriched symmetric monoidal category underlying every layer.
 
-  arXiv:1711.08699 Def. 4.1 opens "A cartesian bicategory of relations is a poset enriched category
+  functorialSemanticsForRelationalTheories.pdf Def. 4.1 opens "A cartesian bicategory of
+  relations is a poset enriched category
   that is symmetric monoidal and additionally …".  This file supplies exactly that opening clause;
   `diag.CB` adds the "additionally".
 
@@ -10,8 +11,9 @@
   semantics we must reach is `RelSet` (`AOP/A6_1_RelSet.lean`), whose tensor is the carrier product,
   and `(a × b) × c` is not `a × (b × c)` as a Lean type.  So the coherence isos are real arrows.
 
-  SYMBOL CHOICE.  1711.08699 writes its single monoidal product `⊕`.  We write `⊗` and keep `⊕`
-  free for the biproduct that `diag.Tape` adds (2210.09950 Def. 7.1), so the two products never
+  SYMBOL CHOICE.  functorialSemanticsForRelationalTheories.pdf writes its single monoidal
+  product `⊕`.  We write `⊗` and keep `⊕`
+  free for the biproduct that `diag.Tape` adds (TapeDiagrams.pdf Def. 7.1), so the two products never
   collide once both layers exist.
 -/
 import diag.Basic

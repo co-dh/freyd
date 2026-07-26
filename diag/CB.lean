@@ -1,7 +1,7 @@
 /-
   `diag.CB` — cartesian bicategories of relations.
 
-  arXiv:1711.08699 Definition 4.1 (pp. 17–18), stated field for field:
+  functorialSemanticsForRelationalTheories.pdf Definition 4.1 (pp. 17–18), stated field for field:
 
     1. every object `n` carries `Δ_n : n → n ⊗ n`, `!_n : n → I` forming a cocommutative comonoid;
     2. every object `n` carries `∇_n : n ⊗ n → n`, `?_n : I → n` forming a commutative monoid;
@@ -31,7 +31,7 @@ namespace Freyd.Diag
 open Freyd
 open scoped SymMonCat
 
-/-- A CARTESIAN BICATEGORY OF RELATIONS (1711.08699 Def. 4.1). -/
+/-- A CARTESIAN BICATEGORY OF RELATIONS (functorialSemanticsForRelationalTheories.pdf Def. 4.1). -/
 class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
   /-- `Δ_n : n ⟶ n ⊗ n`, the copy (Def. 4.1.1). -/
   cop (n : 𝒞) : n ⟶ n ⊗ n
@@ -85,7 +85,8 @@ namespace CartBicat
 
 variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
 
-/-- The SPECIAL law `Δ;∇ = 𝟙` (1711.08699 p. 18, eq. (12)).  Not an axiom: `𝟙 ≤ Δ;∇` is (38), and
+/-- The SPECIAL law `Δ;∇ = 𝟙` (functorialSemanticsForRelationalTheories.pdf p. 18, eq. (12)).
+    Not an axiom: `𝟙 ≤ Δ;∇` is (38), and
     the reverse is the paper's displayed derivation — weaken the identity on one strand of the
     bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
 theorem special (n : 𝒞) : cop n ≫ mer n = 𝟙 n := by

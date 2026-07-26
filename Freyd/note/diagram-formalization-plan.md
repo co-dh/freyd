@@ -14,20 +14,23 @@ wrappers, declarations named and doc-cited after their sources.
 A sibling of `Freyd/`, `AOP/`, `leet/`, `rel/`; lowercase like `leet`/`rel`; glob'd in `lakefile.toml` and in
 `defaultTargets`. Module layout mirrors the paper tower (each layer keeps the one below):
 
-| module                   | layer                                          | source                    | phase |
-| ------------------------ | ---------------------------------------------- | ------------------------- | ----- |
-| `diag/Basic.lean`        | poset-enriched category (done)                 | 1711.08699 Def. 4.1       | 0     |
-| `diag/Monoidal.lean`     | poset-enriched symmetric monoidal (done)       | 1711.08699 Def. 4.1       | 1     |
-| `diag/CB.lean`           | cartesian bicategory of relations (done)       | 1711.08699 Def. 4.1       | 1     |
-| `diag/CB_Derived.lean`   | converse, `∩`, `⊤`, maps — all theorems        | 1711.08699 §4, pp. 18–22  | 3     |
-| `diag/RelSetCB.lean`     | `RelSet` instance + operation agreement        | 1711.08699 p. 18          | 4     |
-| `diag/CB_Allegory.lean`  | CB ⟹ `Allegory`; modular law as a theorem      | CW87 Rem. 2.9(ii)         | 5     |
-| `diag/Tape.lean`         | fb-cb rig — `∪`, `⊥`                           | 2210.09950 Def. 7.1       | 8     |
-| `diag/FO.lean`           | linear bicategory, complement, residuals       | 2401.07055 §5–6           | 9     |
-| `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`)   | —                         | 7     |
+Papers are cited by FILE NAME, never arXiv id. The short forms below are exact prefixes of the file names at the repo
+root; the full mapping is the legend in the Sources section of `Freyd/note/diagrams-for-aop.md`.
+
+| module                      | layer                                     | source                                        | phase |
+| --------------------------- | ----------------------------------------- | --------------------------------------------- | ----- |
+| `diag/Basic.lean`           | poset-enriched category (done)            | `functorialSemantics` Def. 4.1                 | 0     |
+| `diag/Monoidal.lean`        | poset-enriched symmetric monoidal (done)  | `functorialSemantics` Def. 4.1                 | 1     |
+| `diag/CB.lean`              | cartesian bicategory of relations (done)  | `functorialSemantics` Def. 4.1                 | 1     |
+| `diag/CB_Derived.lean`      | converse, `∩`, `⊤`, maps — all theorems   | `functorialSemantics` §4, pp. 18–22            | 3     |
+| `diag/RelSetCB.lean`        | `RelSet` instance + operation agreement   | `functorialSemantics` p. 18                    | 4     |
+| `diag/CB_Allegory.lean`     | CB ⟹ `Allegory`; modular law as a theorem | CW87 Rem. 2.9(ii)                              | 5     |
+| `diag/Tape.lean`            | fb-cb rig — `∪`, `⊥`                      | `TapeDiagrams` Def. 7.1                        | 8     |
+| `diag/FO.lean`              | linear bicategory, complement, residuals  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
+| `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`) | —                                              | 7     |
 
 Deliberately NOT built: the free syntactic props `CB_Σ` / `TCB_Σ` and any completeness theorem. We need soundness
-of diagram reasoning for `Rel(Set)`; completeness (2210.09950 Thm. 7.5) needs free constructions and hypergraph
+of diagram reasoning for `Rel(Set)`; completeness (`TapeDiagrams` Thm. 7.5) needs free constructions and hypergraph
 combinatorics that buy nothing toward the acceptance criterion.
 
 ## Phase 0 — skeleton (DONE in this session)
@@ -35,12 +38,12 @@ combinatorics that buy nothing toward the acceptance criterion.
 `diag/Basic.lean` holds the one piece every layer shares: `class OrderedCat` (hom partial order `le`, `comp_mono`)
 plus the `LE` instance so paper inequations read as written. The order is primitive here — unlike the allegory's
 derived `R ⊑ S := R ∩ S = R` (`Freyd/S2_10.lean:75`) — because in this presentation `∩` is not a generator but the
-derived convolution (1711.08699 p. 22). Registered in `lakefile.toml` (`globs = ["diag.+"]`, added to
+derived convolution (`functorialSemantics` p. 22). Registered in `lakefile.toml` (`globs = ["diag.+"]`, added to
 `defaultTargets`). Verified: `./scripts/cap lake build diag` succeeds.
 
 ## Phase 1 — the cartesian-bicategory classes (`diag/CB.lean`)
 
-Goal: state 1711.08699 Definition 4.1 (pp. 17–18) faithfully — the paper's definition, not a simplification.
+Goal: state `functorialSemantics` Definition 4.1 (pp. 17–18) faithfully — the paper's definition, not a simplification.
 
 Declarations:
 
@@ -61,7 +64,7 @@ paper equation number and page. The special law `Δ;∇ = id` is NOT a field: th
 Frobenius (p. 18, the displayed derivation after (41)).
 
 Notation: scoped postfix `†` for the phase-3 converse, matching the paper — `°` stays reserved for
-`Allegory.recip`, and 1711.08699's own `(−)°` means colour swap, which is NOT order-reversing (§7, p. 37); never
+`Allegory.recip`, and `functorialSemantics`'s own `(−)°` means colour swap, which is NOT order-reversing (§7, p. 37); never
 conflate them.
 
 Acceptance: `./scripts/cap lake build diag` green; `#print axioms` on the classes' constructors shows none.
@@ -93,11 +96,11 @@ Concrete I/O: a manifest `Freyd/note/paperfigs/manifest.tsv` with columns
 
 Initial manifest coverage:
 
-| paper       | figures                                                              |
-| ----------- | -------------------------------------------------------------------- |
-| 1711.08699  | eq. (3) p. 4; Example 2.3 eqs. (5)–(19) pp. 7–8; ineqs. (37)–(43) pp. 17–18 |
-| 2401.07055  | Figs. 2, 3, 4, 5; Fig. 9 (App. B, the complete term system)          |
-| 2210.09950  | Figs. 1, 2, 3                                                        |
+| paper                                  | figures                                                    |
+| -------------------------------------- | ---------------------------------------------------------- |
+| `functorialSemantics`                  | eq. (3) p. 4; eqs. (5)–(19) pp. 7–8; ineqs. (37)–(43) pp. 17–18 |
+| `DiagrammaticAlgebraOfFirstOrderLogic` | Figs. 2, 3, 4, 5; Fig. 9 (App. B, the complete term system) |
+| `TapeDiagrams`                         | Figs. 1, 2, 3                                              |
 
 Acceptance: every `CartBicat` field has a manifest row; the crosscheck page compiles with `typst compile`.
 Risk: none technical; crop coordinates need hand-tuning once.
@@ -106,7 +109,7 @@ Risk: none technical; crop coordinates need hand-tuning once.
 
 Goal: the operations AOP needs, derived — nothing added as an axiom.
 
-- `special_of_frobenius`: `Δ;∇ = 𝟙` (1711.08699 p. 18, derivation after (41), from (38) + Frobenius).
+- `special_of_frobenius`: `Δ;∇ = 𝟙` (`functorialSemantics` p. 18, derivation after (41), from (38) + Frobenius).
 - converse `†` as wire-bending: `def conv R := (cup ⊗ 𝟙);(𝟙 ⊗ R ⊗ 𝟙);(𝟙 ⊗ cap)` with `cup := ?;Δ`,
   `cap := ∇;!` (p. 19, "Compact closed structure"); theorems = Lemma 4.2 (i)–(iv): identity, contravariant
   functoriality, `⊗`-compatibility, monotonicity; plus involutivity (snake/yanking).
@@ -130,7 +133,7 @@ Goal: soundness — every abstract CB theorem instantiates to the repo's own `Re
   (`AOP/A6_1_RelSet.lean:249`), `I := ⟨PUnit⟩`; structural isos are graphs of the obvious bijections
   (`graph_map`, `A6_1_RelSet.lean:104`, discharges all map obligations).
 - `instance : CartBicat RelSet` — `Δ := graph (fun x => (x,x))`, `! := graph (fun _ => PUnit.unit)`,
-  `∇ := Δ°`, `? := !°`, exactly as 1711.08699 p. 18 lists for `Rel`; all inequations pointwise.
+  `∇ := Δ°`, `? := !°`, exactly as `functorialSemantics` p. 18 lists for `Rel`; all inequations pointwise.
 - Agreement theorems, the load-bearing step: `convolution R S = R ∩ S` (the existing `Allegory RelSet` inter,
   `A6_1_RelSet.lean:58`), `conv R = R°`, `top = ⊤`. These make CB theorems interoperable with the whole
   existing AOP corpus without translation.
@@ -225,7 +228,7 @@ Risk: medium — pretty-layout quality; contained, since unknown subterms degrad
 
 ## Phase 8 — the tape layer: `∪` and `⊥` (`diag/Tape.lean`)
 
-Goal: the §2.2 operations, per 2210.09950 — the one place union is genuinely diagrammatic.
+Goal: the §2.2 operations, per `TapeDiagrams` — the one place union is genuinely diagrammatic.
 
 - `class FbCbRig` (Def. 7.1): a rig category where `⊗` carries a `CartBicat` and `⊕` is a finite biproduct,
   plus the adjointness axioms of Fig. 2 (axioms for plain tapes are Fig. 1; the ordered layer Figs. 2–3).
@@ -242,7 +245,7 @@ derivation consumes.
 
 ## Phase 9 — the fo layer: residuals and complement (`diag/FO.lean`)
 
-Goal: the §2.31 operations, per 2401.07055 — residuals exist because the calculus leaves the monotone fragment
+Goal: the §2.31 operations, per `DiagrammaticAlgebraOfFirstOrderLogic` — residuals exist because the calculus leaves the monotone fragment
 (an order-reversing generator plus a second composition; assessment note, "How this escapes the variance
 obstruction").
 
@@ -265,7 +268,7 @@ Risk: high; scheduled last. Committed deliverables are the abstract classes + Le
 Allegory ⟹ CB needs Freyd's unitary and pre-tabular conditions (book §2.148 for the unitary representation;
 `UnitaryAllegory` at `Freyd/S2_10.lean:549`, `PreTabularAllegory` at `:556`): the tensor is rebuilt from
 tabulations of `⊤` and products in `Map(𝒜)` (`Frobenius.pdf` Props. 2 and 6). The known correspondence is
-cartesian bicategory ≃ unitary PRETABULAR allegory (2401.07055 §10, citing Carboni–Walters) — no more than that.
+cartesian bicategory ≃ unitary PRETABULAR allegory (`DiagrammaticAlgebraOfFirstOrderLogic` §10, citing Carboni–Walters) — no more than that.
 A future `cartBicatOfUnitaryPretabular` is legal mathematics but serves no phase above; do not build it until a
 consumer exists.
 
@@ -277,7 +280,7 @@ consumer exists.
 - folds, hylomorphisms, `μ`: absent from every language in the tower — these papers present theories and logical
   fragments, not recursion schemes. The tape paper names Kleene star via an `⊕`-trace as future work. Getting a
   hylo and a relational composite into one picture is the actual open problem of this programme.
-- fo-bicategory ↔ division/Peirce allegory: explicitly open — 2401.07055 §10 only *suggests* the connection to
+- fo-bicategory ↔ division/Peirce allegory: explicitly open — `DiagrammaticAlgebraOfFirstOrderLogic` §10 only *suggests* the connection to
   Peirce allegories (Olivier–Serrato); never state it as a Lean theorem or instance.
 - tapes' `∪` (second monoidal product) vs fo-bicategories' `∪` (cocartesian in one layer): nothing published
   reconciles the two presentations. Phases 8 and 9 stay independent class hierarchies; never merge them.

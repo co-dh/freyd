@@ -3,14 +3,15 @@
   Plan: `Freyd/note/diagram-formalization-plan.md`; assessment: `Freyd/note/diagrams-for-aop.md`.
 
   Layers (each keeps the one below):
-    diag.CB    cartesian bicategory of relations — `;`, `∩`, `°`, `⊤`  (arXiv:1711.08699, Def. 4.1)
-    diag.Tape  fb-cb rig category — `∪`, `⊥`                           (arXiv:2210.09950, Def. 7.1)
-    diag.FO    fo-bicategory — complement, residuals                   (arXiv:2401.07055, §5–6)
+    diag.CB    cartesian bicategory — `;`, `∩`, `°`, `⊤`  functorialSemanticsForRelationalTheories.pdf
+    diag.Tape  fb-cb rig category — `∪`, `⊥`               TapeDiagrams.pdf Def. 7.1
+    diag.FO    fo-bicategory — complement, residuals      DiagrammaticAlgebraOfFirstOrderLogic.pdf §5–6
 
   This file: the poset enrichment all three layers share.  The hom order is PRIMITIVE here —
   unlike the allegory's derived order `R ⊑ S := R ∩ S = R` (`Freyd/S2_10.lean`) — because in the
   diagrammatic presentation `∩` is not a generator: it is the derived convolution `Δ;(R ⊗ S);∇`
-  (1711.08699, p. 22), and the inequational axioms (37)–(43) mention `≤` before `∩` exists.
+  (functorialSemanticsForRelationalTheories.pdf p. 22), and the inequational axioms (37)–(43)
+  mention `≤` before `∩` exists.
 -/
 import Freyd.S1_10
 
@@ -18,7 +19,8 @@ universe v u
 
 namespace Freyd.Diag
 
-/-- A poset-enriched category (1711.08699, Def. 4.1 preamble: "a poset enriched category that
+/-- A poset-enriched category (functorialSemanticsForRelationalTheories.pdf, Def. 4.1
+    preamble: "a poset enriched category that
     is symmetric monoidal"; the symmetric monoidal part is layered on in `diag.CB`): every
     hom-set is a partial order and composition is monotone in both arguments. -/
 class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞 where
