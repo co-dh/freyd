@@ -22,7 +22,7 @@ open Freyd.RelFunctor
 
 namespace Freyd
 
-universe v u
+universe v u u₁ u₂ u₃
 
 /-! ## `Subobject.map` composes -/
 
@@ -53,7 +53,8 @@ theorem regularFunctor_id {C : Type u} [Cat.{u} C] [RegularCategory C] :
 
 /-- `RegularFunctor` composes: `pres_prod` via `preservesBinaryProducts_comp`; the other four fields
     compose directly (they are instance-free `∀`-statements), `pres_image` using `Subobject.map_comp`. -/
-theorem regularFunctor_comp {C D E : Type u} [Cat.{u} C] [Cat.{u} D] [Cat.{u} E]
+theorem regularFunctor_comp {C : Type u₁} {D : Type u₂} {E : Type u₃}
+    [Cat.{v} C] [Cat.{v} D] [Cat.{v} E]
     [RegularCategory C] [RegularCategory D] [RegularCategory E]
     {F : Functor C D} {G : Functor D E}
     (hrF : RegularFunctor F) (hrG : RegularFunctor G) :
