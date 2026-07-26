@@ -372,10 +372,6 @@ theorem meet_union_le_distrib [HasImages 𝒞] [HeytingAlgebra 𝒞]
   a Boolean algebra (§1.728).
   Alternatively: x = ¬¬x suffices: x ∨ ¬x = ¬¬(x ∨ ¬x) = ¬(¬x ∧ ¬¬x) = ¬0 = 1. -/
 
-/-- Every subobject is ≤ the entire (top) subobject. -/
-theorem le_entire {A : 𝒞} (S : Subobject 𝒞 A) : Subobject.le S (Subobject.entire A) :=
-  ⟨S.arr, by simp [Subobject.entire, Cat.comp_id]⟩
-
 /-- Under excluded middle, double negation is the identity: ¬¬x ≤ x
     (the converse `x ≤ ¬¬x` is `le_double_neg`, so ¬¬x = x).  (§1.728)
     Proof (Boolean): ¬¬x = ¬¬x ∧ 1 = ¬¬x ∧ (x∨¬x) ≤ (¬¬x∧x) ∨ (¬¬x∧¬x) ≤ x∨⊥ = x,
