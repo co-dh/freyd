@@ -72,7 +72,7 @@ theorem eqToHom_comp_eqToHom_symm {X Y : 𝒞} (e : X = Y) :
     eqToHom e ≫ eqToHom e.symm = Cat.id X := by cases e; exact Cat.id_comp _
 
 theorem eqToHom_symm_comp_eqToHom {X Y : 𝒞} (e : X = Y) :
-    eqToHom e.symm ≫ eqToHom e = Cat.id Y := by cases e; exact Cat.id_comp _
+    eqToHom e.symm ≫ eqToHom e = Cat.id Y := by cases e; exact eqToHom_comp_eqToHom_symm rfl
 
 /-- The cross-section functor `𝒞 → [T]`, sending `b ↦ S b`.  On a map `h : X ⟶ Y`
     it returns `h` transported along `S.sec : I.T (S X) = X` at each endpoint, since

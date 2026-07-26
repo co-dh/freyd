@@ -101,13 +101,6 @@ theorem IsStrictInitial.isInitial {o : 𝒞} (h : IsStrictInitial o) : IsInitial
 
 theorem IsStrictInitial.strict {o : 𝒞} (h : IsStrictInitial o) : StrictCoterminator o := h.2
 
-/-- **Strictness, hypothesis-free.**  Every equalizer targeted at a strict initial
-    object is entire (its inclusion is an iso).  Reuses
-    `strictCoterminator_equalizer_entire`. -/
-theorem IsStrictInitial.equalizer_entire {o B : 𝒞} (h : IsStrictInitial o)
-    {f g : o ⟶ B} (c : EqualizerCone f g) : IsIso c.map :=
-  strictCoterminator_equalizer_entire h.2 c
-
 
 /-- **§1.58¶2.**  In any category with binary products, a strict coterminator is
     initial.  The map out is `fst⁻¹ ≫ snd : Z → A` (with `fst : Z×A → Z` an iso since

@@ -20,6 +20,8 @@ Frobenius.pdf
 # generated declaration-graph data (regenerate: lake env lean --run scripts/ExtractGraph.lean)
 /graph/*.tsv
 !/graph/proof-near-clones.tsv
+!/graph/spec-derived.tsv
+!/graph/spec-defs.tsv
 /graph/*.dot
 /graph/*.svg
 # npm cruft from the claude-code install, not part of the library

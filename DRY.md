@@ -38,7 +38,12 @@ Near-clone reports contain several different kinds of evidence:
    exists.
 
 The specialization scan is candidate generation, not a refactoring decision.
-For every hit, inspect its statement, book source, imports, and downstream uses.
+Its primary `graph/spec.tsv` contains direct theorem specializations. Matches
+that require a local-context elimination search are retained separately in
+`graph/spec-derived.tsv`, and exact definition signature/value matches in
+`graph/spec-defs.tsv`; these two classes are useful audit evidence but are not
+direct theorem-specialization work. For every hit, inspect its statement, book
+source, imports, and downstream uses.
 
 ## Three traps
 

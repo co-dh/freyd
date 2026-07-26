@@ -569,14 +569,6 @@ theorem Subobject.forgetSlice_reflects {Y : Over B} {S T : Subobject (Over B) Y}
     rwa [T.arr.w, S.arr.w] at this
   exact ⟨⟨g, hgw⟩, OverHom.ext hgf⟩
 
-/-- `liftSlice` is monotone: a `𝒞` `S ≤ T` lifts to a slice `liftSlice S ≤ liftSlice T`. -/
-theorem Subobject.liftSlice_mono {Y : Over B} {S T : Subobject 𝒞 Y.dom}
-    (h : S.le T) : (Subobject.liftSlice Y S).le (Subobject.liftSlice Y T) := by
-  obtain ⟨g, hg⟩ := h
-  refine ⟨⟨g, ?_⟩, OverHom.ext hg⟩
-  show g ≫ (T.arr ≫ Y.hom) = S.arr ≫ Y.hom
-  rw [← Cat.assoc, hg]
-
 /-! ### `Σ_B` transports the inverse image (it preserves pullbacks)
 
   The slice inverse image `InverseImage (Over B) f S` is the slice pullback of `f` along
