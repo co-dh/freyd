@@ -84,11 +84,8 @@ theorem sigma_preserves_monicPair {B : 𝒞} {T X Y : Over B}
 
 /-- **Σ-transport of a slice relation** to a base relation on the underlying objects. -/
 def sigmaRel {B : 𝒞} {Z C : Over B} (R : BinRel (Over B) Z C) :
-    BinRel 𝒞 Z.dom C.dom where
-  src := R.src.dom
-  colA := R.colA.f
-  colB := R.colB.f
-  isMonicPair := sigma_preserves_monicPair R.isMonicPair
+    BinRel 𝒞 Z.dom C.dom :=
+  R.forgetSlice
 
 /-! ## §1.93  The slice power object `Δ([Σ C])`
 
