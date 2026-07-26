@@ -154,7 +154,7 @@ The *domain* used below is `Dom R = 1 ∩ R R°` (Freyd §2.122): the coreflexiv
       wire((0.0, -0.42), (0.75, -0.42))
       d.bezier((0.75, 0.16), (1.25, -0.1), (1.05, 0.16), stroke: (thickness: lw))
       d.bezier((0.75, -0.42), (1.25, -0.1), (1.05, -0.42), stroke: (thickness: lw))
-      dot((1.25, -0.1), hollow: true); wire((1.25, -0.1), (1.5, -0.1))
+      dot((1.25, -0.1)); wire((1.25, -0.1), (1.5, -0.1))
       wire((0.75, 0.68), (1.5, 0.68))
       d.content((1.95, 0.1), text(11pt)[$=$])
       nabla((2.75, 0.1), li: 0.45, lo: 0.0, sp: 0.4)

@@ -5,16 +5,23 @@
 //
 //   left to right   composition `;` — the book's diagram order, `x y` = first x then y
 //   vertical stack  the monoidal product
-//   solid dots      the COMONOID `(Δ, !)` — copy and discard
-//   hollow dots     the MONOID `(∇, ?)` — merge and create
+//   solid dots      ALL FOUR generators `Δ`, `!`, `∇`, `?` — the shape says which
 //   white boxes     relations; a bare wire is the identity
 //
-// The fill convention is the paper's, not ours: functorialSemanticsForRelationalTheories.pdf p. 8,
-// Example 2.3 draws the monoid's multiplication and unit hollow (a) and the comonoid's
-// comultiplication and counit solid (b), and eqs. (13)–(16) put both in one picture, where the fill
-// is the only thing telling them apart.  It earns its keep here too: in the Frobenius equation and
-// in both snakes, `Δ` and `∇` sit adjacent, and without the fill you must trace wire direction to
-// see which is which.
+// WHY ALL FOUR ARE SOLID, since the paper also uses a hollow dot.  In
+// functorialSemanticsForRelationalTheories.pdf the fill separates a monoid from a comonoid that is a
+// DIFFERENT structure: Example 2.3 (a) draws a bare commutative monoid hollow, (b) a bare
+// commutative comonoid solid, and (d)/(e) — bialgebras and Hopf algebras — put a hollow monoid and a
+// solid comonoid in one picture, where the fill is the only thing telling the two apart.
+//
+// This calculus is neither of those.  It is Example 2.3(c), special Frobenius algebras, and there
+// the monoid and the comonoid are two halves of ONE structure — in `Rel(Set)` each is literally the
+// converse of the other.  Nothing needs telling apart, and the paper accordingly draws eqs. (11) and
+// (12) with every dot solid, as it does the four generators of Def. 4.1 itself (p. 17, clauses 1 and
+// 2).  The shape already carries the distinction: `Δ` opens to the right, `∇` closes from the left.
+//
+// `dot`'s `hollow` argument is kept for the case the paper reserves it for — a second, genuinely
+// different monoid alongside this one.  That arrives in phase 8, where the tape layer adds `∪`/`⊥`.
 //
 // PROVENANCE.  The drawing code here was extracted from diag/S2_124.typ, the repo's own
 // hand-authored string-diagram proof of §2.124, which now imports this file instead of keeping
@@ -43,8 +50,8 @@
 
 // ---------------------------------------------------------------- style constants
 #let lw = 1.1pt         // wire thickness            (S2_124.typ)
-#let Rr = 0.07          // solid (comonoid) dot radius   (S2_124.typ)
-#let Rh = 0.088         // hollow (monoid) dot radius — larger, or the ring closes up at `lw`
+#let Rr = 0.07          // solid dot radius          (S2_124.typ)
+#let Rh = 0.088         // hollow dot radius — larger, or the ring closes up at `lw`
 #let BW = 0.92          // default box width
 #let BH = 0.60          // default box height
 #let LEAD = 0.34        // wire stub before the first box of a chain and after the last
@@ -68,12 +75,12 @@
   d.bezier(a, b, (mx, ay), (mx, by), stroke: wstroke(invert: invert))
 }
 
-/// One node of the Frobenius structure.  `hollow` selects monoid (`∇`, `?`) over comonoid (`Δ`,
-/// `!`), per the fill convention in the header.  `invert` is a SEPARATE axis — it flips the page to
-/// light-on-dark for the complement region of diag/FO.lean — so the two never collapse into one
-/// flag, and all four combinations are spelled out: a hollow dot on a black page is black-filled
-/// with a white ring.  The fill is always opaque, so a wire cannot show through a hollow dot and
-/// make it read as a crossing.
+/// One node of the Frobenius structure.  Solid by default, which is every generator of THIS
+/// calculus; `hollow` is for a second monoid drawn beside it, as the header explains.  `invert` is a
+/// SEPARATE axis — it flips the page to light-on-dark for the complement region of diag/FO.lean — so
+/// the two never collapse into one flag, and all four combinations are spelled out: a hollow dot on
+/// a black page is black-filled with a white ring.  The fill is always opaque, so a wire cannot show
+/// through a hollow dot and make it read as a crossing.
 #let dot(p, hollow: false, invert: false) = {
   let ink = if invert { white } else { black }
   let paper = if invert { black } else { white }
@@ -116,7 +123,7 @@
   bend((x - li, y + sp), p, k: 0.4, invert: invert)
   bend((x - li, y - sp), p, k: 0.4, invert: invert)
   if lo > 0 { wire(p, (x + lo, y), invert: invert) }
-  dot(p, hollow: true, invert: invert)
+  dot(p, invert: invert)
 }
 
 /// Discard `! : a → I` (`bang`).  In Rel, the map to a point.
@@ -125,10 +132,10 @@
   dot(p, invert: invert)
 }
 
-/// Unit `? : I → a` (`unitR`) — `!°`.
+/// Unit `? : I → a` (`unitR`) — `!°`.  Told from `bang` by which side the wire leaves on.
 #let unitR(p, lo: 0.7, invert: false) = {
   wire(p, (p.at(0) + lo, p.at(1)), invert: invert)
-  dot(p, hollow: true, invert: invert)
+  dot(p, invert: invert)
 }
 
 /// The wire swap `σ`, a crossing of two strands.
@@ -143,22 +150,19 @@
 /// The cap `a ⊗ a → I` (`∇ ; !`): the strands arriving at `p1` and `p2` converge on `tip`, to the
 /// right, and are discarded there — so the picture says the two strands must agree.
 ///
-/// `tip` is where `∇` and `!` coincide, and only one dot fits there.  It is drawn as the BINARY
-/// generator — hollow, for the merge — because the merge is what the picture is asserting; the
-/// unary `!` that follows it has no strand of its own to show.  `cup` makes the mirror choice, so
-/// the two are told apart by fill rather than by which way the strands bend.
+/// `tip` is where `∇` and `!` coincide, and only one dot fits there; it is solid like every other
+/// node, and a cap is told from a cup by which side its two strands are on.
 #let cap(p1, p2, tip, invert: false) = {
   d.bezier(p1, tip, (tip.at(0) - 0.15, p1.at(1)), stroke: wstroke(invert: invert))
   d.bezier(p2, tip, (tip.at(0) - 0.15, p2.at(1)), stroke: wstroke(invert: invert))
-  dot(tip, hollow: true, invert: invert)
+  dot(tip, invert: invert)
 }
 
 /// The cup `I → a ⊗ a` (`? ; Δ`), the mirror of `cap`: one value is created at `tip` and leaves on
 /// both strands.  Bending a wire with a cup and straightening it with a cap is what makes the
 /// category compact closed (functorialSemanticsForRelationalTheories.pdf p. 19).
 ///
-/// By the rule stated on `cap`, `tip` shows the binary generator — here `Δ`, so solid.  A cup and a
-/// cap are therefore never confusable even where the bend direction is hard to read.
+/// Its `tip` carries `Δ`; as with `cap`, one solid dot, and the strands say which of the two it is.
 #let cup(tip, p1, p2, invert: false) = {
   d.bezier(tip, p1, (tip.at(0) + 0.15, p1.at(1)), stroke: wstroke(invert: invert))
   d.bezier(tip, p2, (tip.at(0) + 0.15, p2.at(1)), stroke: wstroke(invert: invert))
