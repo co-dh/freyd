@@ -81,17 +81,10 @@ jaccard	min_nodes	left	left_module	right	right_module	class
 1.000000	27	Freyd.«term_⟹_»	Freyd.S1_27	Freyd.«term_⊂_»	Freyd.S1_56	notation/parser
 1.000000	27	Freyd.«term_⟹_»	Freyd.S1_27	Freyd.«term_⊣_»	Freyd.S1_80	notation/parser
 1.000000	27	Freyd.«term_⟹_»	Freyd.S1_27	Freyd.«term_⟶_»	Freyd.S1_10	notation/parser
-1.000000	25	Freyd.FibreDensityProof.fibrePinEqualizers	Freyd.S1_546_FibreDensityProof	Freyd.UniformCap.uniformPinEqualizers	Freyd.S1_547_UniformCapStep	ordinary
-1.000000	25	Freyd.LaxColim.ratCapImgPinEq	Freyd.S1_543_RatCapImages	Freyd.FibreDensityProof.fibrePinEqualizers	Freyd.S1_546_FibreDensityProof	ordinary
-1.000000	25	Freyd.LaxColim.ratCapImgPinEq	Freyd.S1_543_RatCapImages	Freyd.UniformCap.uniformPinEqualizers	Freyd.S1_547_UniformCapStep	ordinary
 1.000000	19	Freyd.Alg.allegoryRecip	Freyd.S2_10	Freyd.UF.«term_ᶜ»	Freyd.S1_646_Ultrafilter	notation/parser
 1.000000	18	Freyd.Alg.«term∋»	Freyd.S2_40	Freyd.Alg.«term𝟘»	Freyd.S2_20	notation/parser
 1.000000	18	Freyd.Alg.«term∋»	Freyd.S2_40	Freyd.Alg.«term𝟘ᵤ»	Freyd.S2_22	notation/parser
 1.000000	18	Freyd.Alg.«term𝟘»	Freyd.S2_20	Freyd.Alg.«term𝟘ᵤ»	Freyd.S2_22	notation/parser
-1.000000	16	Freyd.LaxColim.ratCapImgPinPb	Freyd.S1_543_RatCapImages	Freyd.FibreDensityProof.fibrePinPullbacks	Freyd.S1_546_FibreDensityProof	ordinary
-1.000000	16	Freyd.LaxColim.ratCapImgPinPb	Freyd.S1_543_RatCapImages	Freyd.UniformCap.uniformPinPullbacks	Freyd.S1_547_UniformCapStep	ordinary
-1.000000	16	Freyd.UniformCap.uniformPinPullbacks	Freyd.S1_547_UniformCapStep	Freyd.FibreDensityProof.fibrePinPullbacks	Freyd.S1_546_FibreDensityProof	ordinary
 1.000000	14	Freyd.Rcat.isMor_finite	Freyd.S1_572_Recursive	Freyd.Pcat.isPMor_finite	Freyd.S1_573_PrimRec	ordinary
 1.000000	13	Freyd.Rcat.Recursive1.const	Freyd.S1_572_Recursive	Freyd.Rcat.Recursive3.const	Freyd.S1_572b_NotEffective	ordinary
 1.000000	13	Freyd.Rcat.Recursive2.const	Freyd.S1_572b_NotEffective	Freyd.Rcat.Recursive1.const	Freyd.S1_572_Recursive	ordinary
-0.763659	694	Freyd.Rcat.Recursive1.finTable	Freyd.S1_572_Recursive	Freyd.Pcat.PrimRec1.finTable	Freyd.S1_573_PrimRec	ordinary
