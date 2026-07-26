@@ -1085,11 +1085,10 @@ theorem complementedSub_congr {A : 𝒞} {S T : Subobject 𝒞 A}
         (Subobject.le_trans hTS (HasSubobjectUnions.union_left S T₂))
         (HasSubobjectUnions.union_right S T₂))
 
-/-- Every subobject is below the entire subobject (whose arrow is `id`): witness `S.arr`. -/
-theorem sub_le_entire {B : 𝒞} (S : Subobject 𝒞 B) : S.le (Subobject.entire B) := by
-  refine ⟨S.arr, ?_⟩
-  show S.arr ≫ (Subobject.entire B).arr = S.arr
-  rw [show (Subobject.entire B).arr = Cat.id B from rfl, Cat.comp_id]
+/-- Every subobject is below the entire subobject. -/
+theorem le_entire {𝒞 : Type u} [Cat.{v} 𝒞] {A : 𝒞} (S : Subobject 𝒞 A) :
+    Subobject.le S (Subobject.entire A) :=
+  ⟨S.arr, by simp [Subobject.entire, Cat.comp_id]⟩
 
 /-- Intersection of subobjects is symmetric up to `≤`: swapping the pullback legs gives
     `inter S T ≤ inter T S`.  Both intersections are pullbacks of the same cospan in the two
@@ -1508,7 +1507,7 @@ theorem ultrafilter_unionPrime [HasBinaryCoproducts 𝒞] (Fhat : (Subobject �
       have hS_le : S.le (HasSubobjectUnions.union (Subobject.inter S U₁) (Subobject.inter S U1c)) := by
         have h1 : S.le (Subobject.inter S (HasSubobjectUnions.union U₁ U1c)) :=
           Subobject.le_inter (Subobject.le_refl S)
-            (Subobject.le_trans (sub_le_entire S) hU1cov)
+            (Subobject.le_trans (le_entire S) hU1cov)
         exact Subobject.le_trans h1 (inter_union_le S U₁ U1c)
       -- (S∩U₁) ∪ (S∩U1c) ≤ (S∩U₁) ∪ 0 ≤ S∩U₁ ≤ U₁.
       have hS_U1 : S.le U₁ := by
@@ -2173,7 +2172,7 @@ theorem complement_le_other [HasBinaryCoproducts 𝒞] {A : 𝒞} (D₁ D₂ Dc 
     Dc.le D₂ := by
   have hA : Dc.le (Subobject.inter Dc (HasSubobjectUnions.union D₁ D₂)) :=
     Subobject.le_inter (Subobject.le_refl Dc)
-      (Subobject.le_trans (Y := Subobject.entire A) (sub_le_entire Dc) hcov)
+      (Subobject.le_trans (Y := Subobject.entire A) (le_entire Dc) hcov)
   have hdist : (Subobject.inter Dc (HasSubobjectUnions.union D₁ D₂)).le
       (HasSubobjectUnions.union (Subobject.inter Dc D₁) (Subobject.inter Dc D₂)) :=
     inter_union_le Dc D₁ D₂
@@ -2926,9 +2925,9 @@ theorem disjUnionCompare_surjective (ℱ : (Subobject 𝒞 one) → Prop)
       show p.U.arr = Cat.id p.U.dom ≫ p.U.arr
       rw [Cat.id_comp]⟩
   have hV₁_le_U : V₁.le p.U :=
-    Subobject.le_trans (pushforwardSub_mono p.U.arr p.U.monic (sub_le_entire U₁)) hpushEntire_le_U
+    Subobject.le_trans (pushforwardSub_mono p.U.arr p.U.monic (le_entire U₁)) hpushEntire_le_U
   have hV₂_le_U : V₂.le p.U :=
-    Subobject.le_trans (pushforwardSub_mono p.U.arr p.U.monic (sub_le_entire U₂)) hpushEntire_le_U
+    Subobject.le_trans (pushforwardSub_mono p.U.arr p.U.monic (le_entire U₂)) hpushEntire_le_U
   -- (a) V₁ ∩ V₂ ≤ 0.
   have hVdisj : (Subobject.inter V₁ V₂).le Zero1 := by
     refine Subobject.le_trans (inter_pushforward_le p.U.arr p.U.monic U₁ U₂) ?_

@@ -54,6 +54,9 @@ Before every `git add`, `git commit`, or `git push`, verify the current branch e
 the standing approvals for these commands on `master`; mutations of `master` require a separate,
 action-specific user request.
 
+After a DRY pull request is merged, continue the DRY plan from the updated `master` on a fresh
+non-`master` branch and open the next review pull request without waiting for another request.
+
 ## Book notation pitfalls (OCR drops bold)
 - **Follow the book's names strictly.** Never coin your own name for a functor/object and never
   reuse a book symbol for a different thing. In particular `Δ` is the *diagonal* functor `𝐀 → 𝐀/B`

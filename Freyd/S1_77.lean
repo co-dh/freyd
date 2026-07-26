@@ -625,44 +625,6 @@ theorem transRefClos_le_quotClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [H
   exact rel_le_trans (comp_graph_id_right hr.clos)
     (rel_le_trans (compose_le (rel_le_refl hr.clos) qBar.refl) hstarS_le_S)
 
-/-- §1.787: R̄ is transitive: R̄ ⊚ R̄ ⊑ R̄.
-    Book proof (§1.787): once R* exists, R̄ = R* (mutual containment), and R* is transitive.
-    `quotClos_le_transRefClos` gives R̄ ⊑ R*; `transRefClos_le_quotClos` gives R* ⊑ R̄, so
-    R̄ ⊚ R̄ ⊑ R* ⊚ R* ⊑ R* ⊑ R̄ using transitivity of R*.
-    Needs the self-quotient R̄/R̄ (`qSS`), available in a logos by §1.784. -/
-theorem quotClos_is_transitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
-    [PullbacksTransferCovers 𝒞]
-    {A : 𝒞} (R : BinRel 𝒞 A A)
-    (hr : TransRefClos R) (qBar : QuotClos R) (qSS : RelQuot qBar.clos qBar.clos) :
-    IsTransitive qBar.clos := by
-  -- R̄ ⊑ R* and R* ⊑ R̄ (mutual containment).
-  have h_bar_le_star : RelLe qBar.clos hr.clos := quotClos_le_transRefClos R hr qBar
-  have h_star_le_bar : RelLe hr.clos qBar.clos := transRefClos_le_quotClos R hr qBar qSS
-  -- R̄·R̄ ⊑ R*·R* ⊑ R* ⊑ R̄.
-  exact rel_le_trans (compose_le h_bar_le_star h_bar_le_star)
-    (rel_le_trans hr.trans h_star_le_bar)
-
-/-- §1.787 main: R̄ = R* — the quotient closure and transitive-reflexive closure coincide.
-    Needs the self-quotient R̄/R̄ (`qSS`), available in a logos by §1.784. -/
-theorem quotClos_eq_transRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
-    [PullbacksTransferCovers 𝒞]
-    {A : 𝒞} (R : BinRel 𝒞 A A)
-    (hr : TransRefClos R) (qBar : QuotClos R) (qSS : RelQuot qBar.clos qBar.clos) :
-    RelLe qBar.clos hr.clos ∧ RelLe hr.clos qBar.clos :=
-  ⟨quotClos_le_transRefClos R hr qBar, transRefClos_le_quotClos R hr qBar qSS⟩
-
-/-! ## §1.787 / §1.947 Constructing R* from R̄ (the keystone bridge)
-
-  KEYSTONE.  Downstream §1.84 (coequalizer in Rel), §1.947 (`topos_has_rtc`) and §1.64
-  (`HasMinEquivContaining` via the equivalence closure) all need an *honest* `TransRefClos R`
-  — the reflexive-transitive closure R* as a usable relation with its four properties (R ⊑ R*,
-  reflexive, transitive, minimal).  Freyd never posits R* in a bare regular category; he
-  *constructs* it.  §1.947's topos construction produces exactly the glb `⋂F` of all reflexive
-  S with R⊚S ⊑ S — which is precisely `QuotClos R` (R̄).  This block closes the gap §1.787 leaves
-  open: it manufactures a full `TransRefClos R` out of an R̄ together with the self-quotient R̄/R̄
-  (a logos always has R̄/R̄ by §1.784).  No new axiom: every input is a structure Freyd's text
-  supplies. -/
-
 /-- §1.787: R̄ is transitive, proved *directly* from its own minimality (no prior R* needed).
     With S := R̄ and its self-quotient S/S (§1.784):
     · S/S is reflexive and transitive (§1.786);
@@ -687,6 +649,27 @@ theorem quotClos_self_transitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [H
   have hS_le_SS : RelLe qBar.clos qSS.quot := qBar.minimal qSS.quot hrefl_SS hstable_SS
   -- S⊚S ⊑ (S/S)⊚S ⊑ S.
   exact rel_le_trans (compose_le_left hS_le_SS qBar.clos) qSS.le
+
+/-- §1.787 main: R̄ = R* — the quotient closure and transitive-reflexive closure coincide.
+    Needs the self-quotient R̄/R̄ (`qSS`), available in a logos by §1.784. -/
+theorem quotClos_eq_transRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+    [PullbacksTransferCovers 𝒞]
+    {A : 𝒞} (R : BinRel 𝒞 A A)
+    (hr : TransRefClos R) (qBar : QuotClos R) (qSS : RelQuot qBar.clos qBar.clos) :
+    RelLe qBar.clos hr.clos ∧ RelLe hr.clos qBar.clos :=
+  ⟨quotClos_le_transRefClos R hr qBar, transRefClos_le_quotClos R hr qBar qSS⟩
+
+/-! ## §1.787 / §1.947 Constructing R* from R̄ (the keystone bridge)
+
+  KEYSTONE.  Downstream §1.84 (coequalizer in Rel), §1.947 (`topos_has_rtc`) and §1.64
+  (`HasMinEquivContaining` via the equivalence closure) all need an *honest* `TransRefClos R`
+  — the reflexive-transitive closure R* as a usable relation with its four properties (R ⊑ R*,
+  reflexive, transitive, minimal).  Freyd never posits R* in a bare regular category; he
+  *constructs* it.  §1.947's topos construction produces exactly the glb `⋂F` of all reflexive
+  S with R⊚S ⊑ S — which is precisely `QuotClos R` (R̄).  This block closes the gap §1.787 leaves
+  open: it manufactures a full `TransRefClos R` out of an R̄ together with the self-quotient R̄/R̄
+  (a logos always has R̄/R̄ by §1.784).  No new axiom: every input is a structure Freyd's text
+  supplies. -/
 
 /-- §1.787 / §1.947 KEYSTONE: an R̄ (`QuotClos R`) together with its self-quotient R̄/R̄
     assembles into a genuine `TransRefClos R`.

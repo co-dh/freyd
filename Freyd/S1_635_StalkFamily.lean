@@ -100,7 +100,7 @@ theorem exists_ultrafilter_excluding_within (U : Subobject 𝒞 one) (hUcomp : I
   have hVcComp : IsComplementedSub Vc :=
     ⟨V, Subobject.le_trans (inter_comm_le Vc V) hVdisj, Subobject.le_trans hVcov (union_comm_le V Vc)⟩
   have hVcInP : 𝒫 Vc := by
-    refine ⟨hVcComp, Subobject.le_trans (sub_le_entire U) (Subobject.le_trans hVcov ?_)⟩
+    refine ⟨hVcComp, Subobject.le_trans (le_entire U) (Subobject.le_trans hVcov ?_)⟩
     exact HasSubobjectUnions.union_min _ _ _
       (Subobject.le_trans hVsub (HasSubobjectUnions.union_left Usub Vc))
       (HasSubobjectUnions.union_right Usub Vc)
