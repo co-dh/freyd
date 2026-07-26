@@ -238,27 +238,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] (amen : AmenableCongruence 𝒜
     `(R∩S)⁺ = R⁺∩S⁺` plus class-invariance of `⁺` give the equivalence with `R⁺ ⊑ S⁺`. -/
 theorem quot_le_iff {a b : 𝒜} (R S : a ⟶ b) :
     (quotRep amen.cong).map R ⊑ (quotRep amen.cong).map S ↔
-      amen.largest R ⊑ amen.largest S := by
-  -- `[R] ⊑ [S]` is `[R] ∩ [S] = [R]`; the quotient `∩` lifts to `[R∩S]`.
-  show (quotRep amen.cong).map R ∩ (quotRep amen.cong).map S = (quotRep amen.cong).map R ↔ _
-  rw [← (quotRep amen.cong).map_inter R S, quotRep_map, quotRep_map]
-  constructor
-  · intro h
-    -- (R∩S) ≡ R ⟹ (R∩S)⁺ = R⁺; and (R∩S)⁺ = R⁺ ∩ S⁺ (§2.532) ⟹ R⁺ ⊑ S⁺.
-    have hrel : amen.cong.rel (R ∩ S) R := Quotient.exact h
-    have hcl : amen.largest (R ∩ S) = amen.largest R := amenable_largest_class_invariant amen hrel
-    rw [amenable_inter_largest amen] at hcl
-    -- `⊑` is definitionally `_ ∩ _ = _`.
-    exact hcl
-  · intro h
-    -- R⁺ ⊑ S⁺ ⟹ R⁺∩S⁺ = R⁺ = (R∩S)⁺ (§2.532); X ≡ X⁺ gives (R∩S) ≡ R.
-    apply Quotient.sound
-    show amen.cong.rel (R ∩ S) R
-    have hcl : amen.largest (R ∩ S) = amen.largest R := by
-      rw [amenable_inter_largest amen]; exact h
-    -- R∩S ≡ (R∩S)⁺ = R⁺ ≡ R.
-    refine amen.cong.trans (amen.largest_rel (R ∩ S)) ?_
-    rw [hcl]; exact amen.cong.symm (amen.largest_rel R)
+      amen.largest R ⊑ amen.largest S := by exact quotLe_iff_largest amen R S
 
 
 end
