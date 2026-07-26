@@ -1,6 +1,6 @@
 /-
   `diag` — the diagrammatic-calculus tower over `Rel(Set)`.
-  Plan: `Freyd/note/diagram-formalization-plan.md`; assessment: `Freyd/note/diagrams-for-aop.md`.
+  Plan: `diag/PLAN.md`; assessment: `Freyd/note/diagrams-for-aop.md`.
 
   Layers (each keeps the one below):
     diag.CB    cartesian bicategory — `;`, `∩`, `°`, `⊤`  functorialSemanticsForRelationalTheories.pdf
