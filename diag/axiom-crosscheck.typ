@@ -1,5 +1,5 @@
 // GENERATED FILE — do not edit.  Regenerate:  ./scripts/paper-figs
-// Source of truth: Freyd/note/paperfigs/manifest.tsv (crop boxes) and diag/*.lean
+// Source of truth: diag/paperfigs/manifest.tsv (crop boxes) and diag/*.lean
 // (docstrings).  The .png clips and .doc.txt sidecars it reads are regenerated too.
 
 #set page(width: 29.7cm, height: auto, margin: 1.4cm)

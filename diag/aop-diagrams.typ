@@ -13,7 +13,7 @@
 #align(center)[
   #text(15pt)[*Seven AOP theorems, drawn*] \
   #text(9pt, luma(90))[
-    primitives in `Freyd/note/strdiag.typ`; the calculus is
+    primitives in `diag/strdiag.typ`; the calculus is
     `functorialSemanticsForRelationalTheories.pdf` §4
   ]
 ]
@@ -24,7 +24,7 @@ A string diagram is an arrow of the monoidal category drawn as a circuit. Left-t
 is composition `≫` — the book's diagram order, so `R S` means first `R` then `S` — and vertical
 stacking is the monoidal product. A wire is an identity, a white box is a relation, and the black
 dots are one algebraic structure: the special Frobenius (co)monoid every object carries in a
-cartesian bicategory of relations. `Freyd/note/S2_124.typ` is the companion note that proves a
+cartesian bicategory of relations. `diag/S2_124.typ` is the companion note that proves a
 theorem in this calculus rather than only displaying one.
 
 Each picture below is a Lean statement from this repo, drawn field for field. Converse is written

@@ -33,8 +33,8 @@ Frobenius.pdf
 # Figure clips cut out of the papers above by scripts/paper-figs, plus the docstring sidecars the
 # generated crosscheck page reads.  The clips are derivative works of those gitignored PDFs, so the
 # same copyright rule applies.  Regenerate both with: ./scripts/paper-figs
-/Freyd/note/paperfigs/*.png
-/Freyd/note/paperfigs/*.doc.txt
+/diag/paperfigs/*.png
+/diag/paperfigs/*.doc.txt
 # npm cruft from the claude-code install, not part of the library
 /node_modules
 /package.json

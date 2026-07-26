@@ -1,6 +1,6 @@
 // strdiag.typ — string-diagram primitives for the Rel(Set) calculus.  cetz 0.3.4.
 //
-// Reading conventions, as in Freyd/note/S2_124.typ and
+// Reading conventions, as in diag/S2_124.typ and
 // functorialSemanticsForRelationalTheories.pdf §2 (p. 7):
 //
 //   left to right   composition `;` — the book's diagram order, `x y` = first x then y
@@ -16,7 +16,7 @@
 // in both snakes, `Δ` and `∇` sit adjacent, and without the fill you must trace wire direction to
 // see which is which.
 //
-// PROVENANCE.  The drawing code here was extracted from Freyd/note/S2_124.typ, the repo's own
+// PROVENANCE.  The drawing code here was extracted from diag/S2_124.typ, the repo's own
 // hand-authored string-diagram proof of §2.124, which now imports this file instead of keeping
 // private copies.  Line weight, dot radius, bezier control fractions and the default stub lengths
 // are its values unchanged, so its rendered PDF is unaffected.

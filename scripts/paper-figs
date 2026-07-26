@@ -2,10 +2,10 @@
 # paper-figs — clip the source papers' axiom figures, so every Lean axiom can be checked side by
 # side against the picture it was transcribed from.
 #
-#   reads   Freyd/note/paperfigs/manifest.tsv     pdf page x y w h name lean_decl
-#   writes  Freyd/note/paperfigs/<name>.png       one pdftoppm crop per manifest row
-#           Freyd/note/paperfigs/<name>.doc.txt   the declaration's Lean docstring
-#           Freyd/note/axiom-crosscheck.typ       source clip | Lean field | docstring, per axiom
+#   reads   diag/paperfigs/manifest.tsv     pdf page x y w h name lean_decl
+#   writes  diag/paperfigs/<name>.png       one pdftoppm crop per manifest row
+#           diag/paperfigs/<name>.doc.txt   the declaration's Lean docstring
+#           diag/axiom-crosscheck.typ       source clip | Lean field | docstring, per axiom
 #
 # Crop boxes are pixels at 150 dpi with the origin at the top-left.  To retune one, render its
 # whole page at the same resolution, read the box off the image, edit the row, rerun:
@@ -14,15 +14,15 @@
 # The three source PDFs are gitignored (third-party copyright — see .gitignore), and so are the
 # clips derived from them; diag/*.lean may also be missing from an old checkout.  A git worktree
 # therefore has none of the three, so each input is looked up in the main checkout as a fallback.
-# Everything written stays under Freyd/note/.
+# Everything written stays under diag/.
 set -e
 
 cd "$(dirname "$0")/.." || exit 1
 ROOT=$PWD
 DPI=150
-OUTDIR=Freyd/note/paperfigs
+OUTDIR=diag/paperfigs
 MANIFEST=$OUTDIR/manifest.tsv
-TYPFILE=Freyd/note/axiom-crosscheck.typ
+TYPFILE=diag/axiom-crosscheck.typ
 CBFILE=diag/CB.lean
 
 # A worktree carries neither the gitignored PDFs nor an uncommitted diag/; the main checkout is
@@ -136,7 +136,7 @@ END {
   for (d in DUP) print "paper-figs: docstring for " d " is ambiguous (declared twice in diag/)" > "/dev/stderr"
 
   print "// GENERATED FILE — do not edit.  Regenerate:  ./scripts/paper-figs" > TYPFILE
-  print "// Source of truth: Freyd/note/paperfigs/manifest.tsv (crop boxes) and diag/*.lean" > TYPFILE
+  print "// Source of truth: diag/paperfigs/manifest.tsv (crop boxes) and diag/*.lean" > TYPFILE
   print "// (docstrings).  The .png clips and .doc.txt sidecars it reads are regenerated too." > TYPFILE
   print "" > TYPFILE
   # Landscape: the third column holds Lean docstrings, and a portrait page leaves it too narrow

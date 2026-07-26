@@ -36,8 +36,8 @@ combinatorics that buy nothing toward the acceptance criterion.
 
 ## Phase 0 — skeleton (DONE in this session)
 
-`diag/Basic.lean` holds the one piece every layer shares: `class OrderedCat` (hom partial order `le`, `comp_mono`)
-plus the `LE` instance so paper inequations read as written. The order is primitive here — unlike the allegory's
+`diag/Basic.lean` holds the one piece every layer shares: `class HomLE` (the hom order) and `class OrderedCat` (its laws, `comp_mono`)
+plus the `LE` instance, so the paper inequations read as written — `≤`, not `OrderedCat.le R S`. The order is primitive here — unlike the allegory's
 derived `R ⊑ S := R ∩ S = R` (`Freyd/S2_10.lean:75`) — because in this presentation `∩` is not a generator but the
 derived meet (`functorialSemantics` p. 22). Registered in `lakefile.toml` (`globs = ["diag.+"]`, added to
 `defaultTargets`). Verified: `./scripts/cap lake build diag` succeeds.
@@ -91,10 +91,10 @@ written out. Do not treat its absence as an oversight.
 
 Goal: every Lean axiom checkable side by side against the source picture, *before* the risky proofs start.
 
-Concrete I/O: a manifest `Freyd/note/paperfigs/manifest.tsv` with columns
+Concrete I/O: a manifest `diag/paperfigs/manifest.tsv` with columns
 `pdf  page  x  y  w  h  name  lean_decl`; the script `scripts/paper-figs` (shell, like `scripts/lean-graph`) runs
-`pdftoppm -f p -l p -r 150 -x -y -W -H -png` per row, writes `Freyd/note/paperfigs/<name>.png`, and generates
-`Freyd/note/axiom-crosscheck.typ` — one row per axiom: source clip | Lean field name | docstring citation.
+`pdftoppm -f p -l p -r 150 -x -y -W -H -png` per row, writes `diag/paperfigs/<name>.png`, and generates
+`diag/axiom-crosscheck.typ` — one row per axiom: source clip | Lean field name | docstring citation.
 
 Initial manifest coverage:
 
@@ -112,8 +112,8 @@ Risk: none technical; crop coordinates need hand-tuning once.
 | artefact                             | content                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------ |
 | `scripts/paper-figs`                 | one `pdftoppm` crop per manifest row, then generates the crosscheck page        |
-| `Freyd/note/paperfigs/manifest.tsv`  | 34 rows: 25 carrying a Lean declaration, 9 recorded for phases 8–9              |
-| `Freyd/note/axiom-crosscheck.typ`    | generated; 25 table rows (clip │ declaration │ docstring) + 9 figure blocks     |
+| `diag/paperfigs/manifest.tsv`  | 34 rows: 25 carrying a Lean declaration, 9 recorded for phases 8–9              |
+| `diag/axiom-crosscheck.typ`    | generated; 25 table rows (clip │ declaration │ docstring) + 9 figure blocks     |
 
 All 18 `CartBicat` fields are covered, and the script *enforces* it: it reads the field list straight out of
 `diag/CB.lean` and exits non-zero naming any field with no manifest row, so the check cannot rot. `special` gets two
@@ -125,7 +125,7 @@ rather than an omission.
 Three things worth knowing before touching it:
 
 - **The clips are gitignored, like the PDFs they come from.** `.gitignore` now covers
-  `/Freyd/note/paperfigs/*.png` and `*.doc.txt`: they are derivative works of third-party copyrighted papers, so the
+  `/diag/paperfigs/*.png` and `*.doc.txt`: they are derivative works of third-party copyrighted papers, so the
   rule already in force for the PDFs applies to them. The manifest, the script and the generated `.typ` are tracked;
   run `./scripts/paper-figs` once after cloning to produce the images.
 - **Inputs are resolved against the main checkout as a fallback.** A worktree has neither the gitignored PDFs nor,
@@ -338,7 +338,7 @@ Freyd states `inter_assoc`, `semidistrib` and `modular` as EQUALITIES; `meet_ass
 (hence `.symm`), and `meet_eq_left_of_le` (`X ≤ Y → X ∩ Y = X`) converts the two `≤` forms. That lemma is also
 the conceptual bridge between `diag`'s primitive hom order and Freyd's derived `R ⊑ S := R ∩ S = R`.
 
-## Phase 6 — Typst module + the first AOP diagrams (`Freyd/note/strdiag.typ`)
+## Phase 6 — Typst module + the first AOP diagrams (`diag/strdiag.typ`)
 
 Goal: see AOP theorems as diagrams. cetz 0.3.4 (already the repo standard — `Freyd/note/1.272.typ` etc.).
 
@@ -367,7 +367,7 @@ Acceptance: one demo page embedding all seven compiles with `typst compile`; vis
 Risk: low; cetz layout only.
 
 **DONE**, but not from the source this plan named. `AllegoryStringDiagrams.typ` is not the repo's prior art:
-`Freyd/note/S2_124.typ` is — a hand-authored string-diagram *proof* of `Dom(R ∩ S) = 1 ∩ S R°`, with a Lean
+`diag/S2_124.typ` is — a hand-authored string-diagram *proof* of `Dom(R ∩ S) = 1 ∩ S R°`, with a Lean
 companion `Freyd/S2_124.lean` that proves `Rel` is a model of the same calculus. `strdiag.typ` was extracted from
 *that* file (line weight, dot radius, bezier control fractions and stub defaults unchanged), and `S2_124.typ` now
 imports it and keeps no drawing code of its own. Verified by pixel diff: all four of its pages render byte-identical
@@ -375,9 +375,9 @@ to the pre-refactor PDF.
 
 | artefact                       | content                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------- |
-| `Freyd/note/strdiag.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
-| `Freyd/note/aop-diagrams.typ`  | the vocabulary, the `Rel(Set)` dictionary, and all seven theorems                 |
-| `Freyd/note/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
+| `diag/strdiag.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
+| `diag/aop-diagrams.typ`  | the vocabulary, the `Rel(Set)` dictionary, and all seven theorems                 |
+| `diag/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
 
 Generators are named after `Freyd/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its
 Lean statement use one word. **Import `strdiag.typ` by name, never with `*`:** `delta`, `nabla`, `cap`, `cup` and
