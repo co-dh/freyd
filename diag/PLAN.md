@@ -27,7 +27,8 @@ root; the full mapping is the legend in the Sources section of `Freyd/note/diagr
 | `diag/CB_Allegory.lean`     | CB ⟹ `Allegory`; modular law a theorem (done)  | reconstructed, see phase 5                | 5     |
 | `diag/RelSetAllegory.lean`  | the phase-4 × phase-5 composite check (done)   | —                                         | 5     |
 | `diag/S2_124.lean`          | §2.124 by the diagram route, abstract (done)   | Freyd §2.124; `diag/S2_124.typ`           | 6     |
-| `diag/Tape.lean`            | fb-cb rig — `∪`, `⊥`                      | `TapeDiagrams` Def. 7.1                        | 8     |
+| `diag/Tape.lean`            | biproduct `⊕`; `∪`, `⊥` derived (done)    | `TapeDiagrams` Def. 7.1                        | 8     |
+| `diag/RelSetTape.lean`      | `Sum` is that biproduct; `∪`-agreement (done) | —                                          | 8     |
 | `diag/FO.lean`              | linear bicategory, complement, residuals  | `DiagrammaticAlgebraOfFirstOrderLogic` §5–6    | 9     |
 | `diag/tool/DiagExport.lean` | Lean → Typst exporter (exe `diag-export`) | —                                              | 7     |
 
@@ -454,6 +455,37 @@ Goal: the §2.2 operations, per `TapeDiagrams` — the one place union is genuin
 Acceptance: build green, axioms ⊆ {`propext`, `Quot.sound`}, `∪`-agreement with `DistributiveAllegory RelSet`.
 Risk: high tedium — two interacting monoidal structures with distributors; scope strictly to what the `∪`/`⊥`
 derivation consumes.
+
+**DONE**, and the risk did not materialise, because `⊕` is presented by its UNIVERSAL PROPERTY rather than as the
+second half of a rig category: injections, a copairing, and joint epicness. No second set of associators, unitors or
+symmetries, and no distributors — none of that coherence is consumed by `∪`/`⊥`. `pair` is the converse of a
+copairing, so the product half of the biproduct costs one `conv`.
+
+`⊕` could NOT be another `CartBicat`, which would have made every `∩` proof a `∪` proof for free. In `Rel(Set)`,
+`Δ⊕;∇⊕ = 𝟙` but `∇⊕;Δ⊕ ≥ 𝟙` — the bubble is bigger than the identity, so Def. 4.1's inequation (37) fails at `⊕`.
+`⊗` is special Frobenius; `⊕` is a biproduct; they are different structures.
+
+What made it short: `∪` is proved to be the JOIN of the hom order (`le_union_left/right`, `union_le`), of which `∩`
+is already the greatest lower bound (`meet_glb`). Idempotence, commutativity, associativity, both absorption laws
+and `⊥ ∪ R = R` then follow as lattice facts, not as eleven diagram derivations. Only one law needs more than the
+biproduct — `R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)` — and that is exactly the rig content, isolated as the single field
+`tensHom_union` of `class FbCbRig extends Biprod`.
+
+| declaration                        | content                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `class Biprod`                     | `⊕` by universal property, plus the zero object and `⊥ ≤ R`                 |
+| `pair`, `union`, `bot`             | `⟨R,S⟩ := [R°,S°]°`; `R ∪ S := ⟨R,S⟩;[𝟙,𝟙]`; `⊥ := !;?` through `0`         |
+| `pair_uniq`, `comp_pair`, `copair_comp` | the matrix calculus, all from `copair_uniq` through `conv`             |
+| `le_union_left/right`, `union_le`  | `∪` is the join — where `conv_inl_le` and `diag_codiag` are spent           |
+| `union_comm/assoc`, the absorptions | lattice consequences of join + `meet_glb`                                  |
+| `comp_union`, `union_comp`, `conv_union` | `≫` and `°` carry `∪`; the second by conv-dualising the first          |
+| `class FbCbRig`                    | `Biprod` + `tensHom_union`, the one rig law                                 |
+| `meet_union_distrib`               | `R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)`                                          |
+| `distributiveAllegoryOfFbCb`       | the twelve-field `DistributiveAllegory`, a `def` not an instance            |
+
+`diag/RelSetTape.lean` instantiates it at `Sum` and checks the two operations land where they should:
+`union_apply` (`∪` computes disjunction) and `distributiveAllegoryOfFbCb_union`/`_zero` against the
+`DistributiveAllegory RelSet` the repo already had. All abstract results `[propext]` only.
 
 ## Phase 9 — the fo layer: residuals and complement (`diag/FO.lean`)
 
