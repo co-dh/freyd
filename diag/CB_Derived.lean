@@ -178,4 +178,138 @@ theorem convolution_idem {a b : 𝒞} (R : a ⟶ b) : convolution R R = R := by
   rw [hL, hR] at h
   exact h
 
+/-- `∩` is the GREATEST lower bound: anything below both `S` and `T` is below `S ∩ T`
+    (functorialSemanticsForRelationalTheories.pdf p. 22, "every hom-set is a meet semi-lattice").
+    With `convolution_le_left`/`convolution_le_right` this completes the semilattice statement.
+    Idempotency is what does the work — `R = R ∩ R ≤ S ∩ T`. -/
+theorem convolution_glb {a b : 𝒞} {R S T : a ⟶ b}
+    (hS : OrderedCat.le R S) (hT : OrderedCat.le R T) :
+    OrderedCat.le R (convolution S T) := by
+  have h := convolution_mono hS hT
+  rw [convolution_idem] at h
+  exact h
+
+/-- `X ≤ Y` iff `X ∩ Y = X`.  This is the bridge between `diag`'s PRIMITIVE hom order and Freyd's
+    DERIVED one (`Freyd/S2_10.lean`, where `R ⊑ S` is *defined* as `R ∩ S = R`), and it is what
+    turns the `≤` forms of semi-distributivity and modularity into the equalities the `Allegory`
+    class asks for. -/
+theorem convolution_eq_left_of_le {a b : 𝒞} {X Y : a ⟶ b} (h : OrderedCat.le X Y) :
+    convolution X Y = X :=
+  OrderedCat.le_antisymm (convolution_le_left X Y) (convolution_glb (OrderedCat.le_refl X) h)
+
+/-- `(R ∩ S)† = R† ∩ S†` — Freyd's `recip_inter` (§2.11).
+
+    NOT proved through Lemma 4.2 (iii) (`(R ⊗ S)† = R† ⊗ S†`), which would need the Frobenius
+    structure at the COMPOSITE object `a ⊗ b` — the clause of Carboni & Walters' definition that
+    `functorialSemanticsForRelationalTheories.pdf` Def. 4.1 as printed omits (see `diag/CB.lean`'s
+    header).  Instead: `∩` is the greatest lower bound, and `†` is an order isomorphism
+    (`conv_mono` both ways, `conv_conv`), so it carries greatest lower bounds to greatest lower
+    bounds.  This keeps every arrow in the proof at a simple object. -/
+theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
+    conv (convolution R S) = convolution (conv R) (conv S) := by
+  refine OrderedCat.le_antisymm ?_ ?_
+  · exact convolution_glb (conv_mono (convolution_le_left R S))
+      (conv_mono (convolution_le_right R S))
+  · -- `(R† ∩ S†)†` is below both `R` and `S`, hence below `R ∩ S`; apply `†` once more.
+    have h1 : OrderedCat.le (conv (convolution (conv R) (conv S))) R := by
+      have h := conv_mono (convolution_le_left (conv R) (conv S))
+      rwa [conv_conv] at h
+    have h2 : OrderedCat.le (conv (convolution (conv R) (conv S))) S := by
+      have h := conv_mono (convolution_le_right (conv R) (conv S))
+      rwa [conv_conv] at h
+    have h3 := conv_mono (convolution_glb h1 h2)
+    rwa [conv_conv] at h3
+
+/-! ### Maps (functorialSemanticsForRelationalTheories.pdf pp. 20–21)
+
+  The paper gives the map conditions twice.  (SV)/(TOT)/(INJ)/(SUR) on p. 20 are COMONOID
+  conditions; (46)–(49) of Lemma 4.4 are ADJOINT conditions; the lemma says the two agree.
+
+  We take the ADJOINT forms as the definitions, because they are literally Freyd's `Simple` and
+  `Entire` (`Freyd/S2_10.lean` §2.13) — so a `diag` map and a book map are the same predicate, with
+  no translation layer — and because they are the forms every downstream AOP derivation quotes.
+  The comonoid forms are recorded beside them under the paper's own equation labels.
+
+  NOT PROVED: Lemma 4.4 itself, that the two presentations agree.  The paper's proof slides a copy
+  dot past a `⊗` of two boxes, which needs the Frobenius structure at a COMPOSITE object — the
+  clause of Carboni & Walters' definition that Def. 4.1 as printed omits (see `diag/CB.lean`'s
+  header).  Nothing below depends on it: every result here uses only the adjoint forms. -/
+
+/-- (46), SINGLE VALUED: `R†R ≤ 𝟙`.  Freyd's `Simple` (§2.13). -/
+def SingleValued {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (conv R ≫ R) (𝟙 b)
+
+/-- (47), TOTAL: `𝟙 ≤ RR†`.  Freyd's `Entire` (§2.13). -/
+def Total {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (𝟙 a) (R ≫ conv R)
+
+/-- (48), INJECTIVE: `RR† ≤ 𝟙`. -/
+def Injective {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (R ≫ conv R) (𝟙 a)
+
+/-- (49), SURJECTIVE: `𝟙 ≤ R†R`. -/
+def Surjective {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (𝟙 b) (conv R ≫ R)
+
+/-- A MAP is single valued and total (p. 20) — equivalently, by `lemma_4_8`, an arrow whose
+    converse is its right adjoint. -/
+def Map {a b : 𝒞} (R : a ⟶ b) : Prop := SingleValued R ∧ Total R
+
+/-- (SV) as the paper writes it on p. 20: `Δ;(R ⊗ R) ≤ R;Δ`, the reverse of the lax inequation
+    (42).  Recorded for reference; `SingleValued` above is the form everything uses. -/
+def ineq_SV {a b : 𝒞} (R : a ⟶ b) : Prop :=
+  OrderedCat.le (cop a ≫ (R ⊗ₕ R)) (R ≫ cop b)
+
+/-- (TOT) as the paper writes it: `! ≤ R;!`, the reverse of the lax inequation (43). -/
+def ineq_TOT {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (dis a) (R ≫ dis b)
+
+/-- (INJ) as the paper writes it: `(R ⊗ R);∇ ≤ ∇;R`. -/
+def ineq_INJ {a b : 𝒞} (R : a ⟶ b) : Prop :=
+  OrderedCat.le ((R ⊗ₕ R) ≫ mer b) (mer a ≫ R)
+
+/-- (SUR) as the paper writes it: `? ≤ ?;R`. -/
+def ineq_SUR {a b : 𝒞} (R : a ⟶ b) : Prop := OrderedCat.le (un b) (un a ≫ R)
+
+/-- COROLLARY 4.5 (p. 21): two maps ordered by `≤` are EQUAL.  Freyd's `map_order_discrete`
+    (§2.133).  Insert the unit of `R` on the left of `S` and cancel with the counit of `S`:
+    `S = 𝟙S ≤ (RR†)S = R(R†S) ≤ R(S†S) ≤ R𝟙 = R`. -/
+theorem cor_4_5 {a b : 𝒞} {R S : a ⟶ b} (hR : Map R) (hS : Map S) (h : OrderedCat.le R S) :
+    R = S := by
+  refine OrderedCat.le_antisymm h ?_
+  have h1 : OrderedCat.le (𝟙 a ≫ S) ((R ≫ conv R) ≫ S) :=
+    OrderedCat.comp_mono hR.2 (OrderedCat.le_refl S)
+  have h2 : OrderedCat.le (conv R ≫ S) (conv S ≫ S) :=
+    OrderedCat.comp_mono (conv_mono h) (OrderedCat.le_refl S)
+  have h3 : OrderedCat.le (R ≫ conv R ≫ S) (R ≫ 𝟙 b) :=
+    OrderedCat.comp_mono (OrderedCat.le_refl R) (OrderedCat.le_trans h2 hS.1)
+  rw [Cat.id_comp] at h1
+  rw [Cat.assoc] at h1
+  rw [Cat.comp_id] at h3
+  exact OrderedCat.le_trans h1 h3
+
+/-- LEMMA 4.8 (p. 21): a map's RIGHT ADJOINT is its converse — B&dM's shunting rule.
+
+    Being a map IS the adjunction `R ⊣ R†`: `Total` is its unit and `SingleValued` its counit.  So
+    any other right adjoint `S` must agree with `R†`, by the standard uniqueness argument run in
+    both directions (`S ≤ R†` uses `Total R`, `R† ≤ S` uses `SingleValued R`).
+
+    The paper's converse half — that an arrow WITH a right adjoint is a map — is not proved here:
+    its proof is the diagram chase that establishes (SV) and (TOT) in comonoid form, which is
+    exactly what Lemma 4.4 needs and what the note above explains is out of reach of Def. 4.1 as
+    printed. -/
+theorem lemma_4_8 {a b : 𝒞} {R : a ⟶ b} {S : b ⟶ a} (hR : Map R)
+    (hunit : OrderedCat.le (𝟙 a) (R ≫ S)) (hcounit : OrderedCat.le (S ≫ R) (𝟙 b)) :
+    S = conv R := by
+  refine OrderedCat.le_antisymm ?_ ?_
+  · have h1 : OrderedCat.le (S ≫ 𝟙 a) (S ≫ R ≫ conv R) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl S) hR.2
+    have h2 : OrderedCat.le ((S ≫ R) ≫ conv R) (𝟙 b ≫ conv R) :=
+      OrderedCat.comp_mono hcounit (OrderedCat.le_refl (conv R))
+    rw [Cat.comp_id] at h1
+    rw [Cat.assoc, Cat.id_comp] at h2
+    exact OrderedCat.le_trans h1 h2
+  · have h1 : OrderedCat.le (conv R ≫ 𝟙 a) (conv R ≫ R ≫ S) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl (conv R)) hunit
+    have h2 : OrderedCat.le ((conv R ≫ R) ≫ S) (𝟙 b ≫ S) :=
+      OrderedCat.comp_mono hR.1 (OrderedCat.le_refl S)
+    rw [Cat.comp_id] at h1
+    rw [Cat.assoc, Cat.id_comp] at h2
+    exact OrderedCat.le_trans h1 h2
+
 end Freyd.Diag
