@@ -238,23 +238,8 @@ theorem PrimRec1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : PrimRec1 w) :
 /-- Any finite lookup table (0 outside its domain) is primitive recursive — the book's
     "any function from a finite natural number" convention, in P. -/
 theorem PrimRec1.finTable (m : Nat) (t : Fin m → Nat) :
-    PrimRec1 fun j => if h : j < m then t ⟨j, h⟩ else 0 := by
-  induction m with
-  | zero =>
-    refine (PrimRec1.const 0).congr fun n => ?_
-    rw [dif_neg (by omega)]
-  | succ m ih =>
-    have prev := ih fun i => t i.castSucc
-    have := PrimRec1.ifEqConst m (t ⟨m, Nat.lt_succ_self m⟩) prev
-    refine this.congr fun j => ?_
-    by_cases hjm : j = m
-    · subst hjm
-      rw [if_pos rfl, dif_pos (Nat.lt_succ_self j)]
-    · rw [if_neg hjm]
-      by_cases hj : j < m
-      · rw [dif_pos hj, dif_pos (Nat.lt_succ_of_lt hj)]
-        rfl
-      · rw [dif_neg hj, dif_neg (by omega)]
+    PrimRec1 fun j => if h : j < m then t ⟨j, h⟩ else 0 :=
+  finTable_of (PrimRec1.const 0) (fun h e => h.congr e) PrimRec1.ifEqConst m t
 
 /-- Unary primitive recursion (`natIter`) preserves primitive recursiveness —
     §1.572's `Recursive1.natIter` restricted to mu-free codes. -/

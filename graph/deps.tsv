@@ -45707,6 +45707,7 @@ Pcat.PrimRec1.finTable	Pcat.PrimRec1
 Pcat.PrimRec1.finTable	Pcat.PrimRec1.congr
 Pcat.PrimRec1.finTable	Pcat.PrimRec1.const
 Pcat.PrimRec1.finTable	Pcat.PrimRec1.ifEqConst
+Pcat.PrimRec1.finTable	Rcat.finTable_of
 Pcat.PrimRec1.id	Pcat.PrimRec1
 Pcat.PrimRec1.id	Pcat.PrimRecV.proj
 Pcat.PrimRec1.ifEqConst	Pcat.PrimRec1
@@ -50781,6 +50782,7 @@ Rcat.Recursive1.finTable	Rcat.Recursive1
 Rcat.Recursive1.finTable	Rcat.Recursive1.congr
 Rcat.Recursive1.finTable	Rcat.Recursive1.const
 Rcat.Recursive1.finTable	Rcat.Recursive1.ifEqConst
+Rcat.Recursive1.finTable	Rcat.finTable_of
 Rcat.Recursive1.headN	Rcat.Recursive1
 Rcat.Recursive1.headN	Rcat.Recursive1.cfst
 Rcat.Recursive1.headN	Rcat.Recursive1.comp
@@ -109440,18 +109442,11 @@ shear_isIso_of_reflectingAdditiveFunctor	ReflectingAdditiveFunctor
 shear_isIso_of_reflectingAdditiveFunctor	ReflectingAdditiveFunctor.maps_shear_iso
 shear_isIso_of_reflectingAdditiveFunctor	ReflectingAdditiveFunctor.reflects_iso
 sigmaRel	BinRel
-sigmaRel	BinRel.colA
-sigmaRel	BinRel.colB
-sigmaRel	BinRel.isMonicPair
-sigmaRel	BinRel.src
+sigmaRel	BinRel.forgetSlice
 sigmaRel	Cat
-sigmaRel	Cat.Hom
-sigmaRel	Cat.comp
 sigmaRel	Over
 sigmaRel	Over.dom
-sigmaRel	OverHom.f
 sigmaRel	overCat
-sigmaRel	sigma_preserves_monicPair
 sigmaRel_le_pullback_fib	BinRel
 sigmaRel_le_pullback_fib	BinRel.colA
 sigmaRel_le_pullback_fib	BinRel.colB

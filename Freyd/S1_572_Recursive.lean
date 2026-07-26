@@ -342,19 +342,22 @@ theorem Recursive1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : Recursive1 w) :
   · rw [if_pos h, eqInd_eq h]; simp
   · rw [if_neg h, eqInd_ne h]; simp
 
-/-- Any finite lookup table (0 outside its domain) is recursive.  This is the
-    formal content of the book's "any function from a finite natural number is
-    understood to be recursive". -/
-theorem Recursive1.finTable (m : Nat) (t : Fin m → Nat) :
-    Recursive1 fun j => if h : j < m then t ⟨j, h⟩ else 0 := by
+/-- Finite tables belong to any unary function class containing zero and closed
+    under extensional equality and replacement at one argument. -/
+theorem finTable_of {P : (Nat → Nat) → Prop}
+    (zero : P fun _ => 0)
+    (congr : ∀ {f g}, P f → (∀ n, f n = g n) → P g)
+    (replace : ∀ c a {w}, P w → P fun n => if n = c then a else w n)
+    (m : Nat) (t : Fin m → Nat) :
+    P fun j => if h : j < m then t ⟨j, h⟩ else 0 := by
   induction m with
   | zero =>
-    refine (Recursive1.const 0).congr fun n => ?_
+    refine congr zero fun n => ?_
     rw [dif_neg (by omega)]
   | succ m ih =>
     have prev := ih fun i => t i.castSucc
-    have := Recursive1.ifEqConst m (t ⟨m, Nat.lt_succ_self m⟩) prev
-    refine this.congr fun j => ?_
+    have next := replace m (t ⟨m, Nat.lt_succ_self m⟩) prev
+    refine congr next fun j => ?_
     by_cases hjm : j = m
     · subst hjm
       rw [if_pos rfl, dif_pos (Nat.lt_succ_self j)]
@@ -363,6 +366,13 @@ theorem Recursive1.finTable (m : Nat) (t : Fin m → Nat) :
       · rw [dif_pos hj, dif_pos (Nat.lt_succ_of_lt hj)]
         rfl
       · rw [dif_neg hj, dif_neg (by omega)]
+
+/-- Any finite lookup table (0 outside its domain) is recursive.  This is the
+    formal content of the book's "any function from a finite natural number is
+    understood to be recursive". -/
+theorem Recursive1.finTable (m : Nat) (t : Fin m → Nat) :
+    Recursive1 fun j => if h : j < m then t ⟨j, h⟩ else 0 :=
+  finTable_of (Recursive1.const 0) (fun h e => h.congr e) Recursive1.ifEqConst m t
 
 /-- Closure under total minimization: if `t` is a recursive binary test and `f n`
     is the least `i` with `t i n = 0` (which always exists), then `f` is recursive.

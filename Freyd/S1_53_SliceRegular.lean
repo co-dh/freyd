@@ -439,4 +439,23 @@ def listProd : List 𝒞 → 𝒞
 
 end listProd
 
+/-- The underlying `𝒞`-relation of a slice relation `R : BinRel (Over B) X Y`. -/
+def BinRel.forgetSlice {X Y : Over B} (R : BinRel (Over B) X Y) :
+    BinRel 𝒞 X.dom Y.dom where
+  src := R.src.dom
+  colA := R.colA.f
+  colB := R.colB.f
+  isMonicPair := by
+    intro W f g hA hB
+    -- Promote `f` to the slice span `⟨W, f ≫ R.src.hom⟩ ⟶ R.src`.
+    have hgw : g ≫ R.src.hom = f ≫ R.src.hom := by
+      have : f ≫ (R.colA.f ≫ X.hom) = g ≫ (R.colA.f ≫ X.hom) := by
+        rw [← Cat.assoc, ← Cat.assoc, hA]
+      rw [R.colA.w] at this; exact this.symm
+    let Wo : Over B := ⟨W, f ≫ R.src.hom⟩
+    let fo : OverHom Wo R.src := ⟨f, rfl⟩
+    let go : OverHom Wo R.src := ⟨g, hgw⟩
+    have := R.isMonicPair fo go (OverHom.ext hA) (OverHom.ext hB)
+    exact congrArg OverHom.f this
+
 end Freyd
