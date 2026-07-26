@@ -366,17 +366,11 @@ end BaseChangeInitial
   exactly as `ratCapHasImages` sources them. -/
 
 section Assembly
+open scoped PreRegularCategory
 
 variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
 
--- INSTANCE-DIAMOND PIN (§1.543) — mirror `RatCapImages`: pin `HasPullbacks`/`HasEqualizers` so every
--- `laxOfProjSystem' P` site resolves them identically (avoids the `exactPullbacks` vs
--- `PreRegularCategory.toHasPullbacks` diamond the lax union/positivity lemmas are sensitive to).
-local instance (priority := 10000) ratCapPosPinPb : HasPullbacks 𝒞 :=
-  PreRegularCategory.toHasPullbacks
-local instance (priority := 10000) ratCapPosPinEq : HasEqualizers 𝒞 :=
-  products_pullbacks_implies_equalizers
-
+-- Keep the lax positivity data on the shared finite-limit representatives.
 /-- **§2.218 / §1.621: `ratCapCat P` is a disjoint binary coproduct (positive) when the base `𝒞` is.**
     Single entry point: instantiates `laxColimPositive` with the slice fibre data and the base-change
     transition-preservation bundles (PIECE 1–3). -/

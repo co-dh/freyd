@@ -46,6 +46,22 @@ class PreRegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasPullbacks 𝒞,
     PullbacksTransferCovers 𝒞
 
+namespace PreRegularCategory
+
+/-- A deliberately selected equalizer instance for code whose elaborated types must use one
+    representative of the `PreRegularCategory`/derived-exactness instance diamond.  Opening the
+    `PreRegularCategory` scope is local to the importing file or section; ordinary instance search is
+    unchanged elsewhere. -/
+scoped instance (priority := 10000) pinnedEqualizers
+    {𝒞 : Type u} [Cat.{v} 𝒞] [PreRegularCategory 𝒞] : HasEqualizers 𝒞 :=
+  products_pullbacks_implies_equalizers
+
+scoped instance (priority := 10000) pinnedPullbacks
+    {𝒞 : Type u} [Cat.{v} 𝒞] [PreRegularCategory 𝒞] : HasPullbacks 𝒞 :=
+  PreRegularCategory.toHasPullbacks
+
+end PreRegularCategory
+
 /-- Every regular category is pre-regular (forget images).  The four shared parents
     (`HasTerminal`/`HasBinaryProducts`/`HasPullbacks`/`PullbacksTransferCovers`) are projected
     directly, so this introduces no new data and merges cleanly with any other `PreRegularCategory`
