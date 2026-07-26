@@ -1,147 +1,172 @@
 // strdiag.typ — string-diagram primitives for the Rel(Set) calculus.  cetz 0.3.4.
 //
-// Reading conventions, from functorialSemanticsForRelationalTheories.pdf §2 (p. 7):
+// Reading conventions, as in Freyd/note/S2_124.typ and
+// functorialSemanticsForRelationalTheories.pdf §2 (p. 7):
 //
-//   left to right   composition `;`  — the book's diagram order, `x y` = first x then y
+//   left to right   composition `;` — the book's diagram order, `x y` = first x then y
 //   vertical stack  the monoidal product
-//   black dots      the Frobenius structure: copy Δ, discard !, merge ∇, unit ?
-//   white boxes     relation generators; a wire is the identity
+//   black dots      the special Frobenius (co)monoid every object carries
+//   white boxes     relations; a bare wire is the identity
+//
+// PROVENANCE.  The drawing code here was extracted from Freyd/note/S2_124.typ, the repo's own
+// hand-authored string-diagram proof of §2.124, which now imports this file instead of keeping
+// private copies.  Line weight, dot radius, bezier control fractions and the default stub lengths
+// are its values unchanged, so its rendered PDF is unaffected.
+//
+// ONE VOCABULARY.  The generators are named after Freyd/S2_124.lean, which proves `Rel` is a model
+// of exactly this calculus, so a picture and its Lean statement use the same word:
+//
+//   delta  Δ : a → a ⊗ a     nabla  ∇ : a ⊗ a → a     cap  : a ⊗ a → I     swap  σ
+//   bang   ! : a → I         unitR  ? : I → a         cup  : I → a ⊗ a
+//
+// functorialSemanticsForRelationalTheories.pdf calls the same four `Δ`, `!`, `∇`, `?` (Def. 4.1)
+// and diag/CB.lean fields them as `cop`, `dis`, `mer`, `un`.
 //
 // Every function takes its anchor `p` as the LEFT edge of what it draws, on the wire it sits on,
-// so a picture is laid out by walking an x grid rightwards.  Dots are one size everywhere (DOTR)
-// because they are one algebraic structure; box width and height are one size (BW, BH) so that
-// stacked strands line up without per-call tuning.
+// so a picture is laid out by walking an x grid rightwards.
 //
-// The wire/gbox/copy/merge/discard/unit drawing code was salvaged from the repo-root file
-// AllegoryStringDiagrams.typ.  That file is an AI-written cheatsheet and is NOT a source: cite
-// functorialSemanticsForRelationalTheories.pdf for every mathematical claim.
+// IMPORT BY NAME, NOT WITH `*`.  `delta`, `nabla`, `cap`, `cup` and `dot` are also Typst math
+// symbols (δ, ∇, ∩, ∪, ⋅).  A wildcard import shadows them, and `$nabla$` then silently typesets a
+// drawing function instead of ∇ — with no error.  Import the handful of names a note actually uses,
+// and write the symbol itself in math.
 
 #import "@preview/cetz:0.3.4"
 #let d = cetz.draw
 
 // ---------------------------------------------------------------- style constants
-#let W = 1.0pt          // wire thickness
-#let DOTR = 0.075       // Frobenius dot radius
+#let lw = 1.1pt         // wire thickness            (S2_124.typ)
+#let Rr = 0.07          // Frobenius dot radius      (S2_124.typ)
 #let BW = 0.92          // default box width
 #let BH = 0.60          // default box height
-#let LEAD = 0.34        // wire stub before the first box and after the last
+#let LEAD = 0.34        // wire stub before the first box of a chain and after the last
 #let TAPEFILL = rgb("#f6cfcf")
 #let TAPEEDGE = rgb("#c25b5b")
 
-#let wstroke(invert: false) = (thickness: W, paint: if invert { white } else { black })
+#let wstroke(invert: false) = (thickness: lw, paint: if invert { white } else { black })
 
 // ---------------------------------------------------------------- wires and boxes
 
 /// A straight wire from `a` to `b`.
 #let wire(a, b, invert: false) = d.line(a, b, stroke: wstroke(invert: invert))
 
-/// A wire from `a` to `b` that leaves and arrives horizontally — the shape every fork, cup and
-/// cap is built from, so that strands meet boxes and dots at right angles.
-#let bend(a, b, invert: false) = {
+/// A wire from `a` to `b` leaving and arriving horizontally, so strands always meet boxes and dots
+/// at right angles.  `k` is where the control points sit along the run: 0.6 opening out of a dot,
+/// 0.4 closing into one — the two are mirror images, which is why forks and joins match.
+#let bend(a, b, k: 0.6, invert: false) = {
   let (ax, ay) = a
   let (bx, by) = b
-  let mx = ax + (bx - ax) * 0.55
+  let mx = ax + (bx - ax) * k
   d.bezier(a, b, (mx, ay), (mx, by), stroke: wstroke(invert: invert))
 }
 
 /// One node of the Frobenius structure.
-#let dot(p, invert: false) = d.circle(p, radius: DOTR, fill: if invert { white } else { black },
+#let dot(p, invert: false) = d.circle(p, radius: Rr, fill: if invert { white } else { black },
   stroke: none)
 
-/// A labelled generator box; `p` is the midpoint of its LEFT edge.  `dashed` marks a box that is
-/// not a composite of the generators (the residual `R/S`, which needs diag/FO.lean).
+/// A labelled relation box; `p` is the midpoint of its LEFT edge.  `dashed` marks a box that is not
+/// a composite of the generators (the residual `R/S`, which needs diag/FO.lean).
 #let gbox(p, label, w: BW, h: BH, dashed: false, invert: false) = {
   let (x, y) = p
   let paint = if invert { white } else { black }
-  let st = if dashed { (thickness: W, paint: paint, dash: "dashed") } else { (thickness: W, paint: paint) }
+  let st = if dashed { (thickness: lw, paint: paint, dash: "dashed") } else { (thickness: lw, paint: paint) }
   d.rect((x, y - h / 2), (x + w, y + h / 2), fill: if invert { black } else { white }, stroke: st)
   d.content((x + w / 2, y), text(fill: paint, label))
 }
 
+/// An annotation set to the right of a picture, left-aligned so it can never run back into it.
+#let note(p, body) = d.content(p, text(8.5pt, body), anchor: "west")
+
 // ---------------------------------------------------- the four Frobenius generators
 
-/// Copy `Δ : n → n ⊗ n` (Def. 4.1.1).  In Rel, `x ↦ (x, x)`.
-#let copy(p, li: 0.5, lo: 0.5, sp: 0.5, invert: false) = {
+/// Copy `Δ : a → a ⊗ a` (`delta`).  In Rel, `x ↦ (x, x)`.  Pass `li: 0` to grow a copy tree with no
+/// incoming stub of its own.
+#let delta(p, li: 0.7, lo: 0.7, sp: 0.5, invert: false) = {
   let (x, y) = p
   if li > 0 { wire((x - li, y), p, invert: invert) }
-  bend(p, (x + lo, y + sp), invert: invert)
-  bend(p, (x + lo, y - sp), invert: invert)
+  bend(p, (x + lo, y + sp), k: 0.6, invert: invert)
+  bend(p, (x + lo, y - sp), k: 0.6, invert: invert)
   dot(p, invert: invert)
 }
 
-/// Merge `∇ : n ⊗ n → n` (Def. 4.1.2), the mirror of `copy`.  In Rel it is `Δ†`, so it forces the
-/// two incoming strands to carry the same value — which is why `meet` below is an intersection.
-#let merge(p, li: 0.5, lo: 0.5, sp: 0.5, invert: false) = {
+/// Merge `∇ : a ⊗ a → a` (`nabla`), the mirror of `delta`.  In Rel it is `Δ°`, so it forces the two
+/// incoming strands to carry the same value — which is why `meet` below is an intersection.
+#let nabla(p, li: 0.7, lo: 0.7, sp: 0.5, invert: false) = {
   let (x, y) = p
-  bend((x - li, y + sp), p, invert: invert)
-  bend((x - li, y - sp), p, invert: invert)
+  bend((x - li, y + sp), p, k: 0.4, invert: invert)
+  bend((x - li, y - sp), p, k: 0.4, invert: invert)
   if lo > 0 { wire(p, (x + lo, y), invert: invert) }
   dot(p, invert: invert)
 }
 
-/// Discard `! : n → I` (Def. 4.1.1).  In Rel, the map to a point.
-#let discard(p, li: 0.6, invert: false) = {
+/// Discard `! : a → I` (`bang`).  In Rel, the map to a point.
+#let bang(p, li: 0.7, invert: false) = {
   wire((p.at(0) - li, p.at(1)), p, invert: invert)
   dot(p, invert: invert)
 }
 
-/// Unit `? : I → n` (Def. 4.1.2) — `!†`.
-#let unit(p, lo: 0.6, invert: false) = {
+/// Unit `? : I → a` (`unitR`) — `!°`.
+#let unitR(p, lo: 0.7, invert: false) = {
   wire(p, (p.at(0) + lo, p.at(1)), invert: invert)
   dot(p, invert: invert)
 }
 
-// ------------------------------------------------------- compact-closed cup and cap
-
-/// The cup `I → n ⊗ n`; `p` is its apex, at the left.  As a term it is `? ; Δ`, but the Frobenius
-/// equations collapse those two dots (functorialSemanticsForRelationalTheories.pdf p. 19), so it
-/// is drawn as the bare bent wire it is equal to.
-#let cup(p, len: 0.55, sp: 0.5, invert: false) = {
+/// The wire swap `σ`, a crossing of two strands.
+#let swap(p, w: 0.55, sp: 0.33, invert: false) = {
   let (x, y) = p
-  bend(p, (x + len, y + sp), invert: invert)
-  bend(p, (x + len, y - sp), invert: invert)
+  bend((x, y + sp), (x + w, y - sp), k: 0.5, invert: invert)
+  bend((x, y - sp), (x + w, y + sp), k: 0.5, invert: invert)
 }
 
-/// The cap `n ⊗ n → I` (`∇ ; !`); `p` is its apex, at the right.
-#let cap(p, len: 0.55, sp: 0.5, invert: false) = {
-  let (x, y) = p
-  bend((x - len, y + sp), p, invert: invert)
-  bend((x - len, y - sp), p, invert: invert)
+// ------------------------------------------------------- compact-closed cup and cap
+
+/// The cap `a ⊗ a → I` (`∇ ; !`): the strands arriving at `p1` and `p2` converge on `tip`, to the
+/// right, and are discarded there — so the picture says the two strands must agree.
+#let cap(p1, p2, tip, invert: false) = {
+  d.bezier(p1, tip, (tip.at(0) - 0.15, p1.at(1)), stroke: wstroke(invert: invert))
+  d.bezier(p2, tip, (tip.at(0) - 0.15, p2.at(1)), stroke: wstroke(invert: invert))
+  dot(tip, invert: invert)
+}
+
+/// The cup `I → a ⊗ a` (`? ; Δ`), the mirror of `cap`: one value is created at `tip` and leaves on
+/// both strands.  Bending a wire with a cup and straightening it with a cap is what makes the
+/// category compact closed (functorialSemanticsForRelationalTheories.pdf p. 19).
+#let cup(tip, p1, p2, invert: false) = {
+  d.bezier(tip, p1, (tip.at(0) + 0.15, p1.at(1)), stroke: wstroke(invert: invert))
+  d.bezier(tip, p2, (tip.at(0) + 0.15, p2.at(1)), stroke: wstroke(invert: invert))
+  dot(tip, invert: invert)
 }
 
 // ---------------------------------------------------------------------- the converse
 
-/// The converse `R†` — Freyd's `R°` — drawn as its definition: bend both of `R`'s wires around,
-/// so what was an input is read as an output (functorialSemanticsForRelationalTheories.pdf p. 19,
-/// `conv` in diag/CB.lean).  `p` is the left end of the incoming wire, on the lower strand; the
-/// box sits `rise` above it.
+/// The converse `R°` drawn as its definition: bend both of `R`'s wires around, so what was an input
+/// is read as an output (functorialSemanticsForRelationalTheories.pdf p. 19; `conv` in
+/// diag/CB.lean, proved equal to the ordinary relational converse by `conv_eq_recip` in
+/// diag/RelSetCB.lean).  `p` is the left end of the incoming wire, on the lower strand.
 #let conv(p, label, w: BW, h: BH, rise: 0.85, lead: 0.45, arc: 0.75) = {
   let (x, y) = p
   let by = y + rise
   wire(p, (x + lead, y))
-  bend((x + lead, y), (x + lead + arc, by))
+  bend((x + lead, y), (x + lead + arc, by), k: 0.5)
   gbox((x + lead + arc, by), label, w: w, h: h)
-  bend((x + lead + arc + w, by), (x + lead + 2 * arc + w, y))
+  bend((x + lead + arc + w, by), (x + lead + 2 * arc + w, y), k: 0.5)
   wire((x + lead + 2 * arc + w, y), (x + 2 * lead + 2 * arc + w, y))
 }
 
 #let conv-w(w: BW, lead: 0.45, arc: 0.75) = 2 * lead + 2 * arc + w
 
-/// An annotation set to the right of a picture, left-aligned so it can never run back into it.
-#let note(p, body) = d.content(p, text(8.5pt, body), anchor: "west")
-
 // -------------------------------------------------------- convolution: the meet `∩`
 
 /// The CONVOLUTION `Δ ; (R ⊗ S) ; ∇` — the meet `R ∩ S`
-/// (functorialSemanticsForRelationalTheories.pdf p. 22, `convolution` in diag/CB_Derived.lean).
+/// (functorialSemanticsForRelationalTheories.pdf p. 22, `convolution` in diag/CB_Derived.lean,
+/// proved equal to the allegory intersection by `convolution_eq_inter` in diag/RelSetCB.lean).
 /// Copy the input, run `R` on one strand and `S` on the other, merge; the merge forces the two
 /// results to coincide, so the picture demands both.  `p` is the copy dot.
 #let meet(p, upper, lower, w: BW, h: BH, sp: 0.62, li: 0.4, lo: 0.4, gap: 0.3) = {
   let (x, y) = p
-  copy(p, li: li, lo: gap, sp: sp)
+  delta(p, li: li, lo: gap, sp: sp)
   gbox((x + gap, y + sp), upper, w: w, h: h)
   gbox((x + gap, y - sp), lower, w: w, h: h)
-  merge((x + 2 * gap + w, y), li: gap, lo: lo, sp: sp)
+  nabla((x + 2 * gap + w, y), li: gap, lo: lo, sp: sp)
 }
 
 #let meet-w(w: BW, li: 0.4, lo: 0.4, gap: 0.3) = li + 2 * gap + w + lo
@@ -151,8 +176,8 @@
 /// The total width of `n` boxes wired in series, so callers can place what comes next.
 #let chain-w(n, w: BW, lead: LEAD, gap: LEAD) = 2 * lead + n * w + calc.max(n - 1, 0) * gap
 
-/// `— [a] — [b] — …` in series, i.e. the composite `a ; b ; …`; `p` is the left end of the
-/// leading wire stub.  `dashed` lists the indices of boxes to draw dashed.
+/// `— [a] — [b] — …` in series, i.e. the composite `a ; b ; …`; `p` is the left end of the leading
+/// wire stub.  `dashed` lists the indices of boxes to draw dashed.
 #let chain(p, labels, w: BW, h: BH, lead: LEAD, gap: LEAD, dashed: ()) = {
   let (x, y) = p
   wire((x, y), (x + lead, y))
@@ -179,16 +204,16 @@
 #let tape-fork(p, sp: 0.7, len: 0.5) = {
   let (x, y) = p
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
-  d.bezier(p, (x + len, y + sp), (x + len * 0.55, y), (x + len * 0.55, y + sp), stroke: st)
-  d.bezier(p, (x + len, y - sp), (x + len * 0.55, y), (x + len * 0.55, y - sp), stroke: st)
+  d.bezier(p, (x + len, y + sp), (x + len * 0.6, y), (x + len * 0.6, y + sp), stroke: st)
+  d.bezier(p, (x + len, y - sp), (x + len * 0.6, y), (x + len * 0.6, y - sp), stroke: st)
 }
 
 /// The join `◁` that closes the two branches of a tape.
 #let tape-join(p, sp: 0.7, len: 0.5) = {
   let (x, y) = p
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
-  d.bezier((x - len, y + sp), p, (x - len * 0.55, y + sp), (x - len * 0.55, y), stroke: st)
-  d.bezier((x - len, y - sp), p, (x - len * 0.55, y - sp), (x - len * 0.55, y), stroke: st)
+  d.bezier((x - len, y + sp), p, (x - len * 0.6, y + sp), (x - len * 0.6, y), stroke: st)
+  d.bezier((x - len, y - sp), p, (x - len * 0.6, y - sp), (x - len * 0.6, y), stroke: st)
 }
 
 // ----------------------------------------- cuts: complement as colour switch (phase 9)

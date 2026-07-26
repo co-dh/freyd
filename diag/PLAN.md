@@ -105,6 +105,41 @@ Initial manifest coverage:
 Acceptance: every `CartBicat` field has a manifest row; the crosscheck page compiles with `typst compile`.
 Risk: none technical; crop coordinates need hand-tuning once.
 
+**DONE.**
+
+| artefact                             | content                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| `scripts/paper-figs`                 | one `pdftoppm` crop per manifest row, then generates the crosscheck page        |
+| `Freyd/note/paperfigs/manifest.tsv`  | 34 rows: 25 carrying a Lean declaration, 9 recorded for phases 8–9              |
+| `Freyd/note/axiom-crosscheck.typ`    | generated; 25 table rows (clip │ declaration │ docstring) + 9 figure blocks     |
+
+All 18 `CartBicat` fields are covered, and the script *enforces* it: it reads the field list straight out of
+`diag/CB.lean` and exits non-zero naming any field with no manifest row, so the check cannot rot. `special` gets two
+clips (eq. (12) and the p. 18 derivation) and `lax_cop`/`lax_dis` get two each (eq. (3) on p. 4 and (42)/(43) on
+p. 18) — a field stated twice in the paper gets both pictures. Example 2.3(d)(e) — the bialgebra and Hopf equations
+(13)–(19) — is clipped with `lean_decl = -` so that the road Definition 4.1 does *not* take is visibly a decision
+rather than an omission.
+
+Three things worth knowing before touching it:
+
+- **The clips are gitignored, like the PDFs they come from.** `.gitignore` now covers
+  `/Freyd/note/paperfigs/*.png` and `*.doc.txt`: they are derivative works of third-party copyrighted papers, so the
+  rule already in force for the PDFs applies to them. The manifest, the script and the generated `.typ` are tracked;
+  run `./scripts/paper-figs` once after cloning to produce the images.
+- **Inputs are resolved against the main checkout as a fallback.** A worktree has neither the gitignored PDFs nor,
+  before a merge, `diag/`; the script looks beside the shared git directory when a file is missing locally, so it
+  works from either.
+- **Docstrings reach Typst through `.doc.txt` sidecars, read with `read()`.** Nothing is escaped into the generated
+  source, so no docstring — backticks, quotes, `⊗`, whatever — can break the page. The generator also refuses to
+  invent text: a declaration it cannot find in `diag/` is reported on stderr and the row says so.
+
+Hand-tuning took two passes over the crops. The four Definition 4.1 generator glyphs are inline in running prose and
+had to be cut to ~50 px to exclude the surrounding words; eq. (41) is one picture of `A = B = C`, so it is clipped
+twice, overlapping, once for `frob_left` and once for `frob_right`. Two generated-layout bugs also needed fixing and
+are worth not re-introducing: a `raw` block does not wrap, so docstrings in a `1fr` column collapsed the column to
+nothing (they are now plain wrapped text on a landscape page), and Typst's own figure counter captioned the tape
+paper's "Fig. 1" as "Figure 8", so numbering is switched off.
+
 ## Phase 3 — derived structure, all theorems (`diag/CB_Derived.lean`)
 
 Goal: the operations AOP needs, derived — nothing added as an axiom.
@@ -252,6 +287,54 @@ First diagrams, highest payoff first (chosen from what the repo's own AOP proofs
 Acceptance: one demo page embedding all seven compiles with `typst compile`; visual conventions match the papers
 (left-to-right = `≫`, vertical stacking = `⊗`, black dots = Frobenius structure).
 Risk: low; cetz layout only.
+
+**DONE**, but not from the source this plan named. `AllegoryStringDiagrams.typ` is not the repo's prior art:
+`Freyd/note/S2_124.typ` is — a hand-authored string-diagram *proof* of `Dom(R ∩ S) = 1 ∩ S R°`, with a Lean
+companion `Freyd/S2_124.lean` that proves `Rel` is a model of the same calculus. `strdiag.typ` was extracted from
+*that* file (line weight, dot radius, bezier control fractions and stub defaults unchanged), and `S2_124.typ` now
+imports it and keeps no drawing code of its own. Verified by pixel diff: all four of its pages render byte-identical
+to the pre-refactor PDF.
+
+| artefact                       | content                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| `Freyd/note/strdiag.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
+| `Freyd/note/aop-diagrams.typ`  | the vocabulary, the `Rel(Set)` dictionary, and all seven theorems                 |
+| `Freyd/note/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
+
+Generators are named after `Freyd/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its
+Lean statement use one word. **Import `strdiag.typ` by name, never with `*`:** `delta`, `nabla`, `cap`, `cup` and
+`dot` are also Typst math symbols, and a wildcard import silently turns `$nabla$` into a drawing function with no
+error — this bit once, in `S2_124.typ`, and cost a page of ∇s. The module header says so; both importers list the
+names they use.
+
+The seven, each drawn from the Lean statement rather than from memory:
+
+| # | drawn                                                        | from                                    |
+| - | ------------------------------------------------------------ | --------------------------------------- |
+| 1 | `map_shunt_right`, `map_shunt_left` as two-row equivalences   | `AOP/A4_2.lean`                         |
+| 2 | `Simple`/`Entire` as (46)/(47), then as the Frobenius equalities | `Freyd/S2_10.lean` §2.13             |
+| 3 | `simple_dist_inter`                                          | `Freyd/S2_10.lean` §2.136               |
+| 4 | `modular_le`, `modular_le_right`, `modular_sym`, stacked      | `Freyd/S2_10.lean` §2.11, `AOP/A4_1.lean` |
+| 5 | `Coreflexive`, then `dom`, then `dom_UP`                      | `Freyd/S2_10.lean` §2.122, `AOP/A4_2.lean` |
+| 6 | `Tabulates`, then `tabulates_monic_pair` as one rewrite       | `Freyd/S2_10.lean` §2.14, §2.141        |
+| 7 | `le_div_iff` two-sided, then `div_comp_le`                    | `Freyd/S2_30.lean` §2.31                |
+
+Row 4 is laid out so `modular_sym` is visibly rows 1 and 2 applied at once, and row 6's second picture is row 3 with
+`F := h`, which is exactly why `simple_dist_inter` is the engine of §2.141. `R / S` is drawn with a dashed box
+because it is not a composite of the generators — every operation here is monotone in each hole and division is
+antitone in `S`; a real residual box waits for phase 9.
+
+Two things the page states rather than hides. It carries the `Rel(Set)` dictionary from `diag/RelSetCB.lean`
+(`cop_eq`, `mer_eq`, `copRel_recip_apply`, `convolution_eq_inter`, `conv_eq_recip`, `top_apply`), because those are
+what license calling a shape `∩` or `°` instead of merely something shaped like them. And it says outright that the
+pictures **suppress the coherence maps**: re-bracketing three wires is free on paper but `(a × b) × c` is not
+`a × (b × c)` in Lean, which is why `diag/Monoidal.lean` carries `tensAssoc` and `Freyd/S2_124.lean` carries
+`assocLR` in `coassoc` and `frobenius`. Those two axioms in `S2_124.typ` now say so at the picture.
+
+Layout needed several rounds of render-and-look. Recurring cause, worth remembering: cetz `content` centres on its
+point, so every trailing annotation ran backwards into the diagram — hence `note`, which anchors west. The rest was
+arithmetic: right-aligning the left-hand sides of two-row rules with `chain-w` instead of hard-coded widths, and
+moving each `⊑` clear of the wire stub that starts the right-hand side.
 
 ## Phase 7 — tool (a): Lean → diagram exporter (`diag/tool/DiagExport.lean`, exe `diag-export`)
 
