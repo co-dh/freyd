@@ -396,7 +396,7 @@ theorem sliceIsEffective (E : BinRel (Over B) X X) (hE : EquivalenceRelation E) 
   -- hf1 : E̅ ⊂ graph q̄ ⊚ graph q̄°,  hf2 : graph q̄ ⊚ graph q̄° ⊂ E̅
   -- `X.hom` equalises `q̄`'s kernel pair, so it factors `q̄ ≫ b`.
   have hkpb : kp₁ (f := qbar) ≫ X.hom = kp₂ (f := qbar) ≫ X.hom := by
-    obtain ⟨w, hwA0, hwB0⟩ := rel_le_trans (kernelPairRel_le_graphComp qbar) hf2
+    obtain ⟨w, hwA0, hwB0⟩ := rel_le_trans (kernelPairRel_le_level qbar) hf2
     -- restate with the defeq-normalised kernel-pair legs.
     have hwA : w ≫ E.forgetSlice.colA = kp₁ (f := qbar) := hwA0
     have hwB : w ≫ E.forgetSlice.colB = kp₂ (f := qbar) := hwB0

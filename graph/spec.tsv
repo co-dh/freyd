@@ -77,7 +77,6 @@ Freyd.eq_sharpHom	Freyd.contraCayley_faithful	theorem specialization; 0 instance
 Freyd.eq_sharpHom	Freyd.Alg.principalDowndeal_injective	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S2_168_ValuedSetsTabular	Freyd.S2_20
 Freyd.eq_sharpHom	Freyd.yoneda_faithful	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S2_168_ValuedSetsTabular	Freyd.S1_44
 Freyd.eq_sharpHom	Freyd.Alg.embHom_injective	theorem specialization; 0 instance(s), 0 hypothesis(es), 1 solveByElim	Freyd.S2_168_ValuedSetsTabular	Freyd.S2_16
-Freyd.kernelPairRel_le_level	Freyd.kernelPairRel_le_graphComp	theorem specialization; 0 instance(s), 0 hypothesis(es), 0 solveByElim	Freyd.S1_59	Freyd.S1_64
 Freyd.Alg.PElem.cL_PLPL	Freyd.Alg.PElem.hornConc_ln_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter
 Freyd.UF.Chain	Freyd.WO.IsChain	def signature+value; 0 instance(s), 3 hypothesis(es), 0 solveByElim	Freyd.S1_646_Ultrafilter	Freyd.S1_543_WellOrdering
 Freyd.Alg.PElem.cP_LLPL	Freyd.Alg.PElem.hornConc_pt_ln	theorem specialization; 0 instance(s), 1 hypothesis(es), 0 solveByElim	Freyd.S2_157d_HornTop	Freyd.S2_157e_HornCenter

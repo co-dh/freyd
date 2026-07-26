@@ -331,37 +331,6 @@ theorem graphComp_le_kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
             rw [Cat.assoc, snd_pair]
       _ = (image sp).arr ≫ snd := by rw [hk]
 
-/-- The level (kernel pair) of `g` is contained in `(graph g) ⊚ (graph g)°`: the
-    kernel-pair legs `(kp₁, kp₂)` form a cone over `g, g`, hence lift into the
-    composition's pullback, then through `image.lift`. -/
-theorem kernelPairRel_le_graphComp [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
-    [HasPullbacks 𝒞] [HasImages 𝒞] {A Q : 𝒞} (g : A ⟶ Q) :
-    RelLe (kernelPairRel g) ((graph g) ⊚ (graph g)°) := by
-  let pb := HasPullbacks.has (graph g).colB ((graph g)°).colA
-  let a' := pb.cone.π₁ ≫ (graph g).colA
-  let c' := pb.cone.π₂ ≫ ((graph g)°).colB
-  let sp : pb.cone.pt ⟶ prod A A := pair a' c'
-  have hcone : kp₁ (f := g) ≫ (graph g).colB = kp₂ (f := g) ≫ ((graph g)°).colA := by
-    simp only [graph, reciprocal]; exact kp_sq
-  let v := pb.lift ⟨_, kp₁ (f := g), kp₂ (f := g), hcone⟩
-  have hv1 : v ≫ pb.cone.π₁ = kp₁ (f := g) := pb.lift_fst _
-  have hv2 : v ≫ pb.cone.π₂ = kp₂ (f := g) := pb.lift_snd _
-  refine ⟨⟨v ≫ image.lift sp, ?_, ?_⟩⟩
-  · show (v ≫ image.lift sp) ≫ ((image sp).arr ≫ fst) = kp₁ (f := g)
-    calc (v ≫ image.lift sp) ≫ ((image sp).arr ≫ fst)
-        = v ≫ ((image.lift sp ≫ (image sp).arr) ≫ fst) := by simp [Cat.assoc]
-      _ = v ≫ (sp ≫ fst) := by rw [image.lift_fac]
-      _ = v ≫ a' := by rw [fst_pair]
-      _ = (v ≫ pb.cone.π₁) ≫ (graph g).colA := by dsimp [a']; rw [Cat.assoc]
-      _ = kp₁ (f := g) := by rw [hv1]; simp [graph, Cat.comp_id]
-  · show (v ≫ image.lift sp) ≫ ((image sp).arr ≫ snd) = kp₂ (f := g)
-    calc (v ≫ image.lift sp) ≫ ((image sp).arr ≫ snd)
-        = v ≫ ((image.lift sp ≫ (image sp).arr) ≫ snd) := by simp [Cat.assoc]
-      _ = v ≫ (sp ≫ snd) := by rw [image.lift_fac]
-      _ = v ≫ c' := by rw [snd_pair]
-      _ = (v ≫ pb.cone.π₂) ≫ ((graph g)°).colB := by dsimp [c']; rw [Cat.assoc]
-      _ = kp₂ (f := g) := by rw [hv2]; simp [graph, reciprocal, Cat.comp_id]
-
 /-- **§1.657**: A pre-topos with coequalizers satisfies HasMinEquivContaining.
     Given `R` on `A`, take the coequalizer `q : A → Q` of `R.colA, R.colB`; its
     level `Ê := kernelPairRel q` is an equivalence relation (§1.567) containing `R`
@@ -401,7 +370,7 @@ theorem preTopos_cocartesian_to_minEquiv {𝒞 : Type u} [Cat.{v} 𝒞] [PreTopo
       exact ⟨⟨l, kp_lift_p₁ _ _ hsq, kp_lift_p₂ _ _ hsq⟩⟩
     -- kernelPairRel g ⊂ (graph g ⊚ graph g°) ⊂ F.
     have hkpF : RelLe (kernelPairRel g) F :=
-      rel_le_trans (kernelPairRel_le_graphComp g) hleF
+      rel_le_trans (kernelPairRel_le_level g) hleF
     exact rel_le_trans hkpkp hkpF
 
 /-! ### Bridge: §1.775 `IsEquivRel` (RelLe-form) ↔ §1.567 `EquivalenceRelation` (RelHom-form).
@@ -966,7 +935,7 @@ theorem amalgamation_lemma [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
       RelLe (kernelPairRel (j ≫ q)) (graph j ⊚ ((graph q ⊚ (graph q)°) ⊚ (graph j)°)) := by
     intro Bj j
     have s0 : RelLe (kernelPairRel (j ≫ q)) (graph (j ≫ q) ⊚ (graph (j ≫ q))°) :=
-      kernelPairRel_le_graphComp (j ≫ q)
+      kernelPairRel_le_level (j ≫ q)
     have s1 : RelLe (graph (j ≫ q)) (graph j ⊚ graph q) := graph_comp j q
     have s2 : RelLe ((graph (j ≫ q))°) ((graph q)° ⊚ (graph j)°) :=
       rel_le_trans (reciprocal_mono s1) (reciprocal_comp_le (graph j) (graph q))
@@ -1169,7 +1138,7 @@ theorem amalgamation_is_pullback [PreToposDisjoint 𝒞] [HasReflTransClosure �
   -- Full cross collapse as a SUBOBJECT containment (for the pointwise factorization).
   have hcross : RelLe (graph inl' ⊚ ((kernelPairRel q) ⊚ (graph inr')°)) ((graph m)° ⊚ graph n) := by
     have hkpE : RelLe (kernelPairRel q) E :=
-      rel_le_trans (kernelPairRel_le_graphComp q) hleE
+      rel_le_trans (kernelPairRel_le_level q) hleE
     refine rel_le_trans (compose_le (rel_le_refl _) (compose_le hkpE (rel_le_refl _))) ?_
     exact rel_le_trans hEFcross (rel_le_trans hcollapseF hcollapse)
   have hcrossSub : (relSub (graph inl' ⊚ ((kernelPairRel q) ⊚ (graph inr')°))).le
@@ -1274,7 +1243,7 @@ theorem amalgamation_is_pullback [PreToposDisjoint 𝒞] [HasReflTransClosure �
     exact ⟨⟨l, kp_lift_p₁ R₀.colA R₀.colB hR₀case, kp_lift_p₂ R₀.colA R₀.colB hR₀case⟩⟩
   have hEkpc := hEmin (kernelPairRel caseuv) (level_is_equivalence_relation caseuv) hR₀kpc
   have hkpqkpc : RelLe (kernelPairRel q) (kernelPairRel caseuv) :=
-    rel_le_trans (rel_le_trans (kernelPairRel_le_graphComp q) hleE) hEkpc
+    rel_le_trans (rel_le_trans (kernelPairRel_le_level q) hleE) hEkpc
   have hkpeq : kp₁ (f := q) ≫ caseuv = kp₂ (f := q) ≫ caseuv := by
     obtain ⟨⟨φ, hφA, hφB⟩⟩ := hkpqkpc
     have e1 : φ ≫ kp₁ (f := caseuv) = kp₁ (f := q) := by simpa [kernelPairRel] using hφA
@@ -1369,7 +1338,7 @@ theorem amalgamation_is_pushout [PreToposDisjoint 𝒞] [HasReflTransClosure �
     exact ⟨⟨l, kp_lift_p₁ R₀.colA R₀.colB hR₀case, kp_lift_p₂ R₀.colA R₀.colB hR₀case⟩⟩
   have hEkpc := hEmin (kernelPairRel caseuv) (level_is_equivalence_relation caseuv) hR₀kpc
   have hkpqkpc : RelLe (kernelPairRel q) (kernelPairRel caseuv) :=
-    rel_le_trans (rel_le_trans (kernelPairRel_le_graphComp q) hleE) hEkpc
+    rel_le_trans (rel_le_trans (kernelPairRel_le_level q) hleE) hEkpc
   have hkpeq : kp₁ (f := q) ≫ caseuv = kp₂ (f := q) ≫ caseuv := by
     obtain ⟨⟨φ, hφA, hφB⟩⟩ := hkpqkpc
     have e1 : φ ≫ kp₁ (f := caseuv) = kp₁ (f := q) := by simpa [kernelPairRel] using hφA
@@ -1503,7 +1472,7 @@ theorem preTopos_minEquiv_to_cocartesian {𝒞 : Type u} [Cat.{v} 𝒞] [PreTopo
     have hEkpk := hEmin (kernelPairRel k) (level_is_equivalence_relation k) hRkpk
     -- kernelPairRel z ⊂ kernelPairRel k.
     have hkpzkpk : RelLe (kernelPairRel z) (kernelPairRel k) :=
-      rel_le_trans (rel_le_trans (kernelPairRel_le_graphComp z) hleE) hEkpk
+      rel_le_trans (rel_le_trans (kernelPairRel_le_level z) hleE) hEkpk
     -- kp₁(z) ≫ k = kp₂(z) ≫ k.
     have hkpeq : kp₁ (f := z) ≫ k = kp₂ (f := z) ≫ k := by
       obtain ⟨⟨φ, hφA, hφB⟩⟩ := hkpzkpk
@@ -1918,7 +1887,7 @@ private theorem cover_transport_mono [PreToposDisjoint 𝒞] [HasReflTransClosur
   have hEsym' : RelLe E (E°) := by
     have h2 := reciprocal_mono hEsym; rwa [reciprocal_invol] at h2
   have hEtrans : RelLe (E ⊚ E) E := by
-    have h1 : RelLe (kernelPairRel e) E := kernelPairRel_le_graphComp e
+    have h1 : RelLe (kernelPairRel e) E := kernelPairRel_le_level e
     have h2 : RelLe E (kernelPairRel e) := graphComp_le_kernelPairRel e
     have h3 : RelLe (E ⊚ E) (kernelPairRel e ⊚ kernelPairRel e) := compose_le h2 h2
     exact rel_le_trans h3 (rel_le_trans (kernelPair_transitive e) h1)
@@ -2004,7 +1973,7 @@ private theorem cover_transport_mono [PreToposDisjoint 𝒞] [HasReflTransClosur
   -- R₀ = y°(level e)y ⊂ E' ⊂ level c', so y maps level-e-related points to c'-equal points.
   have hkpe_g : kp₁ (f := e) ≫ (y ≫ c') = kp₂ (f := e) ≫ (y ≫ c') := by
     -- The kernel-pair span (kp₁, kp₂) of `e` sits inside `E = level e` (via kernelPairRel ⊂ E).
-    have hkpE : RelLe (kernelPairRel e) E := kernelPairRel_le_graphComp e
+    have hkpE : RelLe (kernelPairRel e) E := kernelPairRel_le_level e
     obtain ⟨⟨w, hwA, hwB⟩⟩ := hkpE
     -- w : kernelPair e → E.src with w ≫ E.colA = kp₁, w ≫ E.colB = kp₂.
     have hwA' : w ≫ E.colA = kp₁ (f := e) := by simpa [kernelPairRel] using hwA
@@ -2079,7 +2048,7 @@ private theorem cover_transport_mono [PreToposDisjoint 𝒞] [HasReflTransClosur
         (show RelLe (graph (Cat.id A)) (kernelPairRel e) from
           ⟨⟨kp_diag (f := e), by simpa [kernelPairRel, graph] using hd1,
             by simpa [kernelPairRel, graph] using hd2⟩⟩)
-        (kernelPairRel_le_graphComp e)
+        (kernelPairRel_le_level e)
     have p1 : RelLe (graph y ⊚ (Δ ⊚ (graph y)°)) E :=
       rel_le_trans (compose_le (rel_le_refl _) (graph_id_comp ((graph y)°)))
         (rel_le_trans hyy hΔE)
@@ -2109,7 +2078,7 @@ private theorem cover_transport_mono [PreToposDisjoint 𝒞] [HasReflTransClosur
       (rel_le_trans t5 (rel_le_trans t6 t7))))
   -- level (y≫c') ⊂ E ⊂ kernelPairRel e.
   have hkp_le : RelLe (kernelPairRel (y ≫ c')) (kernelPairRel e) :=
-    rel_le_trans (kernelPairRel_le_graphComp (y ≫ c'))
+    rel_le_trans (kernelPairRel_le_level (y ≫ c'))
       (rel_le_trans hge2 (graphComp_le_kernelPairRel e))
   -- Monic y':  pull the cover `e` back along any pair `u,v : W → I` with `u≫y' = v≫y'`.
   have hy'mono : Monic y' := by
