@@ -72,10 +72,8 @@
                                 finite limits + covers through `T_𝒟` is a large separate effort
                                 and, per the faithfulness finding, would still not yield `ratCap`
                                 without the refined class; left for R3 rather than stubbed.
-    * `ratStep_points_every_factor` / `slice_factor_point_acquired` — SORRY-FREE.  The §1.547
-                                per-step PAYOFF: the product-slice `A/(∏U)` carries a global
-                                point of every factor (re-exposed `listProdSliceAcquiresEvery
-                                Factor`).
+    * `listProdSliceAcquiresEveryFactor` — SORRY-FREE.  The §1.547 per-step PAYOFF:
+                                the product-slice `A/(∏U)` carries a global point of every factor.
     * `sliceEmbed_factor_wellPointed` — the §1.547 well-pointedness CORE, stated with the
                                 slice's genuine `HasTerminal` (overHasTerminal) — NO Sorry in
                                 the type, so it is the book's real `WellPointed`.  The descent
@@ -4404,19 +4402,6 @@ theorem pairSlice_base_wellSupported [HasPullbacks 𝒞] [HasEqualizers 𝒞] [D
     obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hB
     exact X.wsupp p hp)
 
-/-- **§1.547 — the slice over `pairSliceObj X`'s base acquires a point of every factor.**  Directly
-    `listProdSliceAcquiresEveryFactor` at `X.targets`: for each positional factor index `k`, the
-    slice `A/(∏ X.targets)` (where `pairSliceObj X` lives) carries a global point
-    `1 → sliceEmbedObj (∏ X.targets) (X.targets.get k)`.  Together with `pairSlice_base_wellSupported`
-    (the base is well-supported, so the slice is pre-regular and the point exists) this is the
-    per-object §1.547 structure: every object of `Â` determines a slice that points all its factors. -/
-theorem pairSlice_points_every_factor [HasPullbacks 𝒞] (X : PairObj 𝒞)
-    (k : Fin X.targets.length) :
-    (sliceFactorPoint (X.targets.get k) (listProdProj X.targets k)).f
-        ≫ (sliceEmbedObj (listProd X.targets) (X.targets.get k)).hom
-      = (overTerm (listProd X.targets)).hom :=
-  listProdSliceAcquiresEveryFactor X.targets k
-
 end FactorSlice
 
 /-! ## §1.547  The relative-capitalization statement and the points-everything payoff
@@ -4438,30 +4423,6 @@ end FactorSlice
 
 section WellPointed
 variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞]
-
-/-- **§1.547 — the generic point of factor `A` in the product-slice `A/(∏U)`.**  This is the
-    point the §1.547 rational step adds for the well-supported target `A` reached from the
-    base `∏U` by the projection `g : ∏U → A`: the over-arrow `1 → sliceEmbedObj (∏U) A` whose
-    underlying arrow is `pair g id`.  Read off `sliceFactorPoint`/`listProdSliceAcquiresEvery
-    Factor` (RelativeCapitalization.lean), which are Sorry-free.  Restated here as the
-    rational-category-level "global point of `loc A`": in the directed-union model of
-    `A[𝒟⁻¹]`, the slice `A/(∏U)` IS the stage `A*|U`, its terminator `overTerm (∏U)` is the
-    `1` of that stage, and this is a genuine point `1 → A` at that stage. -/
-theorem slice_factor_point_acquired {P : 𝒞} (A : 𝒞) (g : P ⟶ A) :
-    (sliceFactorPoint A g).f ≫ (sliceEmbedObj P A).hom = (overTerm P).hom :=
-  sliceAcquiresFactorPoint A g
-
-/-- **§1.547 core — `A/(∏U)` points every factor (the one-step payoff).**  For each factor
-    `A = U.get k` of a finite set `U` of well-supported objects, the single product-slice
-    `A/(∏U)` carries a global point `1 → sliceEmbedObj (∏U) A` (`sliceFactorPoint` along the
-    projection `listProdProj U k`).  Iterated over `U`, one rung points all of `U` at once —
-    the structural reason the §1.547 relative capitalization needs only ω iterations (each
-    rational step `A ⊆ A*` points every well-supported object simultaneously).  Sorry-free;
-    this is `listProdSliceAcquiresEveryFactor` re-exposed as the rational-step payoff. -/
-theorem ratStep_points_every_factor (U : List 𝒞) (k : Fin U.length) :
-    (sliceFactorPoint (U.get k) (listProdProj U k)).f
-        ≫ (sliceEmbedObj (listProd U) (U.get k)).hom = (overTerm (listProd U)).hom :=
-  listProdSliceAcquiresEveryFactor U k
 
 /-! ### §1.547 — the descent reduction for the factor-slice well-pointedness
 
