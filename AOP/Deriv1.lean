@@ -190,11 +190,6 @@ theorem Fmap_graph (f : Int → Int) :
         have hq : q = (f p.1, p.2) := Sum.inr.inj h
         subst hq; exact ⟨rfl, rfl⟩
 
-/-- Diagram-order composition of two graphs is the graph of the composite function. -/
-theorem graph_comp {a b c : RelSet.{0}} (f : a.carrier → b.carrier) (g : b.carrier → c.carrier) :
-    graph f ≫ graph g = graph (fun x => g (f x)) :=
-  hom_ext fun x z => ⟨fun ⟨y, hy, hz⟩ => hz.trans (congrArg g hy), fun hz => ⟨f x, rfl, hz⟩⟩
-
 /-- **The emerged algebra.**  `scaleAlg base k` is the closed-form SOLUTION `ψ` of the fusion
     equation `valAlg base ≫ (k·) = F(k·) ≫ ψ`, obtained by solving that equation pointwise:
     on the `snoc` component the equation reads `ψ (k·a, d) = k·(base·a + d) = base·(k·a) + k·d`,

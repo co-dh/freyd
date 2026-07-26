@@ -90,6 +90,12 @@ theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y �
 /-- The graph relation `y = f x` of an ordinary function `f`. -/
 def graph {a b : RelSet.{u}} (f : a.carrier → b.carrier) : a ⟶ b := fun x y => y = f x
 
+theorem graph_apply {a b : RelSet.{u}} (f : a.carrier → b.carrier) (x : a.carrier)
+    (y : b.carrier) : graph f x y = (y = f x) := rfl
+
+theorem recip_apply {a b : RelSet.{u}} (R : a ⟶ b) (y : b.carrier) (x : a.carrier) :
+    R° y x = R x y := rfl
+
 theorem graph_simple {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Simple (graph f) := by
   show (graph f)° ≫ graph f ⊑ Cat.id b
   rw [le_iff]; intro y y' h
@@ -103,6 +109,21 @@ theorem graph_entire {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Entire (
 
 theorem graph_map {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Map (graph f) :=
   ⟨graph_entire f, graph_simple f⟩
+
+/-- Diagram-order composition of two graphs is the graph of the composite function. -/
+theorem graph_comp {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (g : b.carrier → c.carrier) :
+    graph f ≫ graph g = graph (fun x => g (f x)) :=
+  hom_ext fun x z => ⟨fun ⟨y, hy, hz⟩ => hz.trans (congrArg g hy), fun hz => ⟨f x, rfl, hz⟩⟩
+
+/-- Precomposing an ARBITRARY relation with a graph just renames the source point. -/
+theorem graph_comp_left {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (S : b ⟶ c) :
+    graph f ≫ S = fun x z => S (f x) z :=
+  hom_ext fun x z => ⟨fun ⟨y, hy, hS⟩ => hy ▸ hS, fun h => ⟨f x, rfl, h⟩⟩
+
+/-- The graph of the identity function is the identity relation.  Not `rfl`: `graph` orients its
+    equation as `y = f x` and the identity as `x = y`. -/
+theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
+  hom_ext fun _ _ => ⟨Eq.symm, Eq.symm⟩
 
 /-! ### Distributive structure: `𝟘` = empty relation, `∪` = union -/
 
@@ -246,13 +267,28 @@ theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : a.carri
   le_iff.mp h y y' ⟨x, hy, hy'⟩
 
 /-- The product action `R × S` in `Rel(Set)`: `(x,y) ~ (x',y')` iff `R x x'` and `S y y'`. -/
-def rprodMap {a a' b b' : RelSet.{0}} (R : a ⟶ a') (S : b ⟶ b') :
-    (⟨a.carrier × b.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier × b'.carrier⟩ :=
+def rprodMap {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+    (⟨a.carrier × b.carrier⟩ : RelSet.{u}) ⟶ ⟨a'.carrier × b'.carrier⟩ :=
   fun p q => R p.1 q.1 ∧ S p.2 q.2
 
+theorem rprodMap_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
+    (p : a.carrier × b.carrier) (q : a'.carrier × b'.carrier) :
+    rprodMap R S p q = (R p.1 q.1 ∧ S p.2 q.2) := rfl
+
 /-- Converse acts componentwise on the product action: `(R × S)° = R° × S°`. -/
-theorem rprodMap_recip {a a' b b' : RelSet.{0}} (R : a ⟶ a') (S : b ⟶ b') :
+theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     (rprodMap R S)° = rprodMap R° S° := rfl
+
+/-- The product action on two graphs is the graph of the product function — the fact that makes
+    every structural isomorphism of the cartesian product a graph, hence a map. -/
+theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
+    (g : b.carrier → b'.carrier) :
+    rprodMap (graph f) (graph g)
+      = (graph (fun p : a.carrier × b.carrier => (f p.1, g p.2))
+          : (⟨a.carrier × b.carrier⟩ : RelSet.{u}) ⟶ (⟨a'.carrier × b'.carrier⟩ : RelSet.{u})) := by
+  apply hom_ext; intro p q
+  exact ⟨fun h => Prod.ext_iff.mpr ⟨h.1, h.2⟩,
+    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
 
 /-- The sum type `a ⊕ b` with the injection graphs satisfies the five coproduct equations of
     §2.214 — Rel(Set)'s concrete coproducts, feeding the `junc`/`sumMap` calculus of `A5_3`. -/

@@ -1,17 +1,23 @@
 /.lake
 cate*.pdf
 # Third-party copyrighted reference material — kept locally only, NEVER commit (copyright).
-# The books: Freyd "Categories, Allegories" (book-all/book-color) and Bird & de Moor
-# "Algebra of Programming" (algprog); plus downloaded papers. Own typst work (AllegoryStringDiagrams.*,
-# Freyd/S*.pdf) is NOT listed here and stays tracked.
+# The books: Freyd "Categories, Allegories" (book-all/book-color), Bird & de Moor
+# "Algebra of Programming" (algprog) and Coecke & Kissinger "Picturing Quantum Processes" (PQP);
+# plus downloaded papers. Kissinger & van de Wetering "Picturing Quantum Software" is CC BY-NC so
+# redistribution would be legal, but it is still a 7.7 MB third-party binary — keep it local too.
+# Own typst work (AllegoryStringDiagrams.*, Freyd/S*.pdf) is NOT listed here and stays tracked.
 algprog.pdf
 book-all.pdf
 book-all.typ
 book-color.pdf
+PQP.pdf
+PicturingQuantumSoftware.pdf
 jacobs.pdf
 koch-frobenius-algebras.pdf
-2210.09950v1.pdf
+TapeDiagrams.pdf
 functorialSemanticsForRelationalTheories.pdf
+DiagrammaticAlgebraOfFirstOrderLogic.pdf
+GraphicalConjunctiveQueries.pdf
 DiagramChasingNotes.pdf
 FirstOrderTheoryOfDiagramChasing.pdf
 GraphicRewritingLean4.pdf

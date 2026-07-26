@@ -22,7 +22,7 @@ namespace RelSet
 
 variable {α β : Type}
 
-/-- Object abbreviations, pinned to universe 0 (`rprodMap` lives at `RelSet.{0}`). -/
+/-- Object abbreviations at universe 0, where this file's concrete datatypes live. -/
 abbrev dEl (τ : Type) : RelSet.{0} := ⟨τ⟩
 abbrev dPair (σ τ : Type) : RelSet.{0} := ⟨σ × τ⟩
 abbrev dList (τ : Type) : RelSet.{0} := ⟨List τ⟩

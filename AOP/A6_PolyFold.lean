@@ -105,13 +105,7 @@ theorem mapFold_bimap (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (
       have er := iff_of_eq (congrFun (congrFun ihr s.2) y.2)
       exact ⟨fun h => ⟨el.mp h.1, er.mp h.2⟩, fun h => ⟨el.mpr h.1, er.mpr h.2⟩⟩
 
-/-! ### `graph`-composition helper and the `In` isomorphism -/
-
-/-- `graph f ≫ S = fun x z => S (f x) z`. -/
-theorem graph_comp_left {a b c : RelSet.{0}} (f : a.carrier → b.carrier) (S : b ⟶ c) :
-    graph f ≫ S = fun x z => S (f x) z := by
-  apply hom_ext; intro x z
-  exact ⟨fun ⟨y, hy, hS⟩ => hy ▸ hS, fun h => ⟨f x, rfl, h⟩⟩
+/-! ### The `In` isomorphism -/
 
 /-- `In` is an isomorphism: `In° ≫ In = 𝟙` on `μ F A`. -/
 theorem In_iso (F : PolyF) {A : Type} :
