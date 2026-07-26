@@ -1264,13 +1264,6 @@ theorem cover_splits_of_dom_choice {𝒟 : Type u} [Cat.{v} 𝒟] [RegularCatego
   rw [Cat.comp_id] at hkB
   exact ⟨s, by rw [← hkB]; exact hkA⟩
 
-/-- A split mono is monic. -/
-theorem mono_of_split {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟} (s : Y ⟶ X) (r : X ⟶ Y)
-    (h : s ≫ r = Cat.id Y) : Monic s := by
-  intro W u v huv
-  have := congrArg (· ≫ r) huv
-  simpa only [Cat.assoc, h, Cat.comp_id] using this
-
 /-- **PIECE F (transport)**: `IsComplemented` of a slice subobject `U ⊆ Y` forgets to
     `IsComplemented (forgetSlice U)` in `𝒞`.  Complement = `forgetSlice U₂`; both clauses
     transport through the `forgetSlice`/`liftSlice` order-iso (`forgetSlice` of `bottom`/`union`/

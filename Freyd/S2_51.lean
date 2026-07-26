@@ -37,14 +37,6 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
 
-/-- §2.51  An allegory functor is MONOTONE for the allegory order: `R ⊑ S`
-    (i.e. `R ∩ S = R`) maps to `F R ⊑ F S`, because `F(R ∩ S) = F R ∩ F S`. -/
-theorem AllegoryFunctor.mono (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜} {R S : a ⟶ b}
-    (h : R ⊑ S) : F.map R ⊑ F.map S := by
-  have h' : R ∩ S = R := h
-  show F.map R ∩ F.map S = F.map R
-  rw [← F.map_inter, h']
-
 /-- §2.51  The equivalence class (image under any allegory functor) of an ENTIRE
     morphism is entire.  `Entire R : dom R = 1`, i.e. `1 ∩ R≫R° = 1`; apply `F`
     and push it through `map_inter`/`map_comp`/`map_recip`/`map_id`. -/

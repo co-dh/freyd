@@ -125,7 +125,7 @@
                                 `w : D ↪ A₁×A₂`, `K = {w≫h | h∈H}`.  Projections `pairProjFst/Snd`.
                                 SORRY-FREE, choice-free.
     * `pairProd_hom_ext` — UNIQUENESS of the product pairing (unconditional): agreement after both
-                                projections + `w` monic + `prod_hom_ext` ⟹ equality.  SORRY-FREE.
+                                projections + `w` monic + joint monicity ⟹ equality.  SORRY-FREE.
     * `pairPair`/`pairPair_fst`/`pairPair_snd`/`pairProd_lift` — EXISTENCE of the pairing (data,
                                 choice-free) under the book's target-distinctness `Z.DistinctTargets`.
     * `PairTargetsDistinct` + `pairHasBinaryProducts` — `Â` HAS BINARY PRODUCTS, under the book's
@@ -1240,20 +1240,15 @@ theorem wellSupported_one' : WellSupported (HasTerminal.one : 𝒞) := by
   rw [show term (HasTerminal.one : 𝒞) = Cat.id _ from term_uniq _ _]
   exact cover_id _
 
-/-- Product extensionality: two maps into a product agree iff they agree after both projections. -/
-theorem prod_hom_ext {X A B : 𝒞} {u v : X ⟶ prod A B}
-    (h₁ : u ≫ fst = v ≫ fst) (h₂ : u ≫ snd = v ≫ snd) : u = v := by
-  rw [pair_uniq _ _ u rfl rfl, pair_uniq _ _ v rfl rfl, h₁, h₂]
-
 /-- **Joint monicity of the `listProd` projections.**  Two maps into `∏U` agree iff they agree
-    after every factor projection `listProdProj U k`.  Iterated `prod_hom_ext`: the head projection
+    after every factor projection `listProdProj U k`.  Iterated joint monicity: the head projection
     is `fst`, the tail projections are `snd ≫ listProdProj U k`, so agreement on all of them forces
     agreement after `fst` and (by induction) after `snd`. -/
 theorem listProd_hom_ext {Z : 𝒞} : ∀ (U : List 𝒞) (u v : Z ⟶ listProd U),
     (∀ k : Fin U.length, u ≫ listProdProj U k = v ≫ listProdProj U k) → u = v
   | [], u, v, _ => HasTerminal.uniq u v
   | C :: U, u, v, h => by
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · exact h ⟨0, Nat.succ_pos _⟩
       · apply listProd_hom_ext U
         intro k
@@ -1291,7 +1286,7 @@ theorem listProdAppend_hom_inv : ∀ (l₁ l₂ : List 𝒞),
                  (snd ≫ listProdAppendHom l₁ l₂ ≫ fst))
            (snd ≫ listProdAppendHom l₁ l₂ ≫ snd)
         ≫ listProdAppendInv (C :: l₁) l₂ = Cat.id _
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · show _ ≫ (fst : prod C (listProd (l₁ ++ l₂)) ⟶ C) = _
         rw [Cat.id_comp]
         unfold listProdAppendInv
@@ -1309,7 +1304,7 @@ theorem listProdAppend_hom_inv : ∀ (l₁ l₂ : List 𝒞),
                  (snd ≫ listProdAppendHom l₁ l₂ ≫ snd)
               ≫ pair (fst ≫ (snd : prod C (listProd l₁) ⟶ listProd l₁)) snd
             = snd ≫ listProdAppendHom l₁ l₂ := by
-          apply prod_hom_ext
+          apply fst_snd_jointly_monic
           · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, snd_pair, Cat.assoc]
           · rw [Cat.assoc, snd_pair, snd_pair, Cat.assoc]
         rw [← Cat.assoc, hcollapse, Cat.assoc, hrec, Cat.comp_id]
@@ -1319,17 +1314,17 @@ theorem listProdAppend_inv_hom : ∀ (l₁ l₂ : List 𝒞),
   | [],      l₂ => by
       show (snd : prod (listProd ([] : List 𝒞)) _ ⟶ _)
           ≫ pair (term (listProd l₂)) (Cat.id (listProd l₂)) = Cat.id _
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · rw [Cat.assoc, fst_pair, Cat.id_comp]; apply HasTerminal.uniq
       · rw [Cat.assoc, snd_pair, Cat.comp_id, Cat.id_comp]
   | C :: l₁, l₂ => by
       show listProdAppendInv (C :: l₁) l₂ ≫ listProdAppendHom (C :: l₁) l₂ = Cat.id _
       have hrec := listProdAppend_inv_hom l₁ l₂
       unfold listProdAppendHom listProdAppendInv
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · -- ≫ fst : recover prod C (listProd l₁)
         rw [Cat.assoc, fst_pair, Cat.id_comp]
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · -- ≫ fst : `inv ≫ fst = fst ≫ fst`
           rw [Cat.assoc, fst_pair, fst_pair]
         · -- ≫ snd : `inv ≫ (snd≫hom≫fst)`, use `inv l₁ ≫ hom l₁ = id`
@@ -1457,7 +1452,7 @@ theorem listProdPartition_hom_inv (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
       split <;> rename_i heq <;> simp only [eq_mpr_eq_cast]
       · -- p C = true : head `C` joined the left block
         rw [castObj_comp (by simp [heq])]
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · show _ ≫ (fst : prod C (listProd l) ⟶ C) = _
           rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, fst_pair, Cat.id_comp]
         · show _ ≫ (snd : prod C (listProd l) ⟶ listProd l) = _
@@ -1468,13 +1463,13 @@ theorem listProdPartition_hom_inv (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
                    (snd ≫ listProdPartitionHom p l ≫ snd)
                 ≫ pair (fst ≫ (snd : prod C (listProd (l.filter p)) ⟶ _)) snd
               = snd ≫ listProdPartitionHom p l := by
-            apply prod_hom_ext
+            apply fst_snd_jointly_monic
             · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, snd_pair, Cat.assoc]
             · rw [Cat.assoc, snd_pair, snd_pair, Cat.assoc]
           rw [← Cat.assoc, hcollapse, Cat.assoc, hrec, Cat.comp_id]
       · -- p C = false : head `C` joined the right block
         rw [castObj_comp (by simp [heq])]
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · show _ ≫ (fst : prod C (listProd l) ⟶ C) = _
           rw [Cat.assoc, fst_pair, ← Cat.assoc, snd_pair, fst_pair, Cat.id_comp]
         · show _ ≫ (snd : prod C (listProd l) ⟶ listProd l) = _
@@ -1485,7 +1480,7 @@ theorem listProdPartition_hom_inv (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
                      (snd ≫ listProdPartitionHom p l ≫ snd))
                 ≫ pair fst (snd ≫ (snd : prod C (listProd (l.filter (fun a => !p a))) ⟶ _))
               = snd ≫ listProdPartitionHom p l := by
-            apply prod_hom_ext
+            apply fst_snd_jointly_monic
             · rw [Cat.assoc, fst_pair, fst_pair, Cat.assoc]
             · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, snd_pair, Cat.assoc]
           rw [← Cat.assoc, hcollapse, Cat.assoc, hrec, Cat.comp_id]
@@ -1494,7 +1489,7 @@ theorem listProdPartition_inv_hom (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
     listProdPartitionInv p l ≫ listProdPartitionHom p l
       = Cat.id (prod (listProd (l.filter p)) (listProd (l.filter (fun a => !p a))))
   | [] => by
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · apply HasTerminal.uniq
       · apply HasTerminal.uniq
   | C :: l => by
@@ -1504,9 +1499,9 @@ theorem listProdPartition_inv_hom (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
       split <;> rename_i heq <;> simp only [eq_mpr_eq_cast]
       · -- p C = true
         refine castObj_idcomp (by simp [heq]) _ _ _ _ ?_
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · rw [Cat.assoc, fst_pair, Cat.id_comp]
-          apply prod_hom_ext
+          apply fst_snd_jointly_monic
           · rw [Cat.assoc, fst_pair, fst_pair]
           · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc,
                 ← Cat.assoc (listProdPartitionInv p l), hrec, Cat.id_comp, fst_pair]
@@ -1514,11 +1509,11 @@ theorem listProdPartition_inv_hom (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
               ← Cat.assoc (listProdPartitionInv p l), hrec, Cat.id_comp, snd_pair]
       · -- p C = false
         refine castObj_idcomp (by simp [heq]) _ _ _ _ ?_
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · rw [Cat.assoc, fst_pair, Cat.id_comp, ← Cat.assoc, snd_pair, Cat.assoc,
               ← Cat.assoc (listProdPartitionInv p l), hrec, Cat.id_comp, fst_pair]
         · rw [Cat.assoc, snd_pair, Cat.id_comp]
-          apply prod_hom_ext
+          apply fst_snd_jointly_monic
           · rw [Cat.assoc, fst_pair, fst_pair]
           · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc,
                 ← Cat.assoc (listProdPartitionInv p l), hrec, Cat.id_comp, snd_pair]
@@ -1944,7 +1939,7 @@ theorem wellSupported_prod_right {B D : 𝒞} (h : WellSupported (prod B D)) :
     -in-`Â` with the underlying map being monic-in-`A`).
 
     Proof.  Given `Â`-maps `a, b : Z → X` with `a.comp x = b.comp x`, show `a = b`, i.e. `a.g = b.g`.
-    Via the iso `e : X.A ≅ Y.A × W` it suffices to show `a.g ≫ e = b.g ≫ e`, and by `prod_hom_ext`
+    Via the iso `e : X.A ≅ Y.A × W` it suffices to show `a.g ≫ e = b.g ≫ e`, and by joint monicity
     this splits into the two product components:
       • `fst` : `a.g ≫ e ≫ fst = a.g ≫ x.g = b.g ≫ x.g = b.g ≫ e ≫ fst` (from `a.comp x = b.comp x`);
       • `snd` : `a.g ≫ e ≫ snd = b.g ≫ e ≫ snd` into `W`, which is the `survPinned` field — `W` is the
@@ -1963,7 +1958,7 @@ theorem pairDense_monic {X Y : PairObj 𝒞} {x : PairHom X Y} (d : PairDense x)
     d.survPinned a b
   -- glue the two components through the iso `e`
   have hee : a.g ≫ d.e = b.g ≫ d.e := by
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · calc (a.g ≫ d.e) ≫ (fst : prod Y.A d.W ⟶ Y.A)
           = a.g ≫ (d.e ≫ fst) := by rw [Cat.assoc]
         _ = a.g ≫ x.g := by rw [d.proj]
@@ -1994,7 +1989,7 @@ def pairDense_of_iso {X Y : PairObj 𝒞} {x : PairHom X Y}
       rw [← Cat.assoc, fst_pair]; exact hxx'
     e_iso₂ := by
       -- `(fst ≫ x'.g) ≫ pair x.g (term) = id` on `Y.A × 1`: agree on both projections
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · -- ≫ fst : `(fst ≫ x'.g) ≫ x.g = fst ≫ id = fst`
         rw [Cat.assoc, fst_pair, Cat.assoc, hx'x, Cat.comp_id, Cat.id_comp]
       · -- ≫ snd : both sides into `1`, unique
@@ -2044,21 +2039,21 @@ theorem retractExtendRight {T Wf W D : 𝒞} (p : W ⟶ prod T Wf) (q : prod T W
   refine ⟨pair (snd ≫ p ≫ fst) (pair fst (snd ≫ p ≫ snd)),
           pair (snd ≫ fst) (pair fst (snd ≫ snd) ≫ q), ?_, ?_, fst_pair _ _⟩
   · -- p' ≫ q' = id on `prod D W`: check both projections
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, ← Cat.assoc, snd_pair, fst_pair, Cat.id_comp]
     · rw [Cat.assoc, snd_pair, Cat.id_comp, ← Cat.assoc]
       have hrec : pair (snd ≫ p ≫ fst) (pair (fst : prod D W ⟶ D) (snd ≫ p ≫ snd))
           ≫ pair fst (snd ≫ snd) = (snd : prod D W ⟶ W) ≫ p := by
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · rw [Cat.assoc, fst_pair, fst_pair, Cat.assoc]
         · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, snd_pair, Cat.assoc]
       rw [hrec, Cat.assoc, hpq, Cat.comp_id]
   · -- q' ≫ p' = id on `prod T (prod D Wf)`: check both projections
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, Cat.id_comp, ← Cat.assoc, snd_pair, Cat.assoc,
         ← Cat.assoc q p fst, hqp, Cat.id_comp, fst_pair]
     · rw [Cat.assoc, snd_pair, Cat.id_comp]
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · rw [Cat.assoc, fst_pair, fst_pair]
       · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc,
           ← Cat.assoc q p snd, hqp, Cat.id_comp, snd_pair]
@@ -2073,20 +2068,20 @@ theorem retractExtendLeft {T Wf W D : 𝒞} (p : W ⟶ prod T Wf) (q : prod T Wf
       ∧ p' ≫ (fst : prod T (prod Wf D) ⟶ T) = (fst : prod W D ⟶ W) ≫ p ≫ fst := by
   refine ⟨pair (fst ≫ p ≫ fst) (pair (fst ≫ p ≫ snd) snd),
           pair (pair fst (snd ≫ fst) ≫ q) (snd ≫ snd), ?_, ?_, fst_pair _ _⟩
-  · apply prod_hom_ext
+  · apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, Cat.id_comp, ← Cat.assoc]
       have hrec : pair (fst ≫ p ≫ fst) (pair (fst ≫ p ≫ snd) (snd : prod W D ⟶ D))
           ≫ pair fst (snd ≫ fst) = (fst : prod W D ⟶ W) ≫ p := by
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · rw [Cat.assoc, fst_pair, fst_pair, Cat.assoc]
         · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, fst_pair, Cat.assoc]
       rw [hrec, Cat.assoc, hpq, Cat.comp_id]
     · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, snd_pair, Cat.id_comp]
-  · apply prod_hom_ext
+  · apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, Cat.id_comp, ← Cat.assoc, fst_pair, Cat.assoc,
         ← Cat.assoc q p fst, hqp, Cat.id_comp, fst_pair]
     · rw [Cat.assoc, snd_pair, Cat.id_comp]
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, Cat.assoc,
           ← Cat.assoc q p snd, hqp, Cat.id_comp, snd_pair]
       · rw [Cat.assoc, snd_pair, snd_pair]
@@ -2112,23 +2107,23 @@ def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
   have hr'snd : r' ≫ (snd : prod Y.A dx.W ⟶ dx.W) = snd ≫ snd := snd_pair _ _
   -- key: `r ≫ pair fst (snd≫fst) = fst ≫ dy.e` (recover `(Z.A, W_y)` from the reassociated form)
   have hkey : r ≫ pair (fst : prod Z.A (prod dy.W dx.W) ⟶ Z.A) (snd ≫ fst) = fst ≫ dy.e := by
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, hrfst, Cat.assoc]
     · rw [Cat.assoc, snd_pair, ← Cat.assoc, hrsnd, fst_pair, Cat.assoc]
   have hrr' : r ≫ r' = Cat.id (prod Y.A dx.W) := by
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · -- (r ≫ r') ≫ fst = fst
       rw [Cat.assoc, hr'fst, ← Cat.assoc, hkey, Cat.assoc, dy.e_iso₁, Cat.comp_id, Cat.id_comp]
     · -- (r ≫ r') ≫ snd = snd
       rw [Cat.assoc, hr'snd, ← Cat.assoc, hrsnd, snd_pair, Cat.id_comp]
   have hr'r : r' ≫ r = Cat.id (prod Z.A (prod dy.W dx.W)) := by
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · -- fst : (r'≫r)≫fst = r'≫(fst≫dy.e≫fst) = (pair…≫dy.einv)≫(dy.e≫fst) = pair…≫(dy.einv≫dy.e)≫fst
       rw [Cat.assoc, hrfst, ← Cat.assoc, hr'fst, Cat.assoc, ← Cat.assoc dy.einv dy.e fst,
         dy.e_iso₂, Cat.id_comp, fst_pair, Cat.id_comp]
     · -- snd: split further on the (W_y × Wₓ) product
       rw [Cat.assoc, hrsnd, Cat.id_comp]
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · -- ≫ fst
         rw [Cat.assoc, fst_pair, ← Cat.assoc, hr'fst, Cat.assoc, ← Cat.assoc dy.einv dy.e snd,
           dy.e_iso₂, Cat.id_comp, snd_pair]
@@ -2158,7 +2153,7 @@ def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
         rw [← Cat.assoc, hrsnd, snd_pair]
       show a.g ≫ (dx.e ≫ r) ≫ (snd : prod Z.A (prod dy.W dx.W) ⟶ prod dy.W dx.W)
         = b.g ≫ (dx.e ≫ r) ≫ (snd : prod Z.A (prod dy.W dx.W) ⟶ prod dy.W dx.W)
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · -- `≫ fst` into `dy.W`
         have hax : (a.comp x).g ≫ dy.e ≫ (snd : prod Z.A dy.W ⟶ dy.W)
             = (b.comp x).g ≫ dy.e ≫ (snd : prod Z.A dy.W ⟶ dy.W) := dy.survPinned (a.comp x) (b.comp x)
@@ -2190,7 +2185,7 @@ def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
       -- pair(..) ≫ (Inv ≫ Hom) ≫ pair(..) = pair(..) ≫ pair(..) = id
       rw [Cat.assoc, ← Cat.assoc (listProdAppendInv _ _), listProdAppend_inv_hom,
         Cat.id_comp]
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, Cat.assoc, dy.wfg, Cat.comp_id,
           Cat.id_comp]
       · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc, dx.wfg, Cat.comp_id,
@@ -2200,7 +2195,7 @@ def pairDense_comp [PullbacksTransferCovers 𝒞] {X Y Z : PairObj 𝒞}
       rw [Cat.assoc, ← Cat.assoc (pair (fst ≫ dy.wg) (snd ≫ dx.wg))]
       have hmid : pair (fst ≫ dy.wg) (snd ≫ dx.wg) ≫ pair (fst ≫ dy.wf) (snd ≫ dx.wf)
           = Cat.id (prod (listProd dy.surv) (listProd dx.surv)) := by
-        apply prod_hom_ext
+        apply fst_snd_jointly_monic
         · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair, Cat.assoc, dy.wgf, Cat.comp_id,
             Cat.id_comp]
         · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc, dx.wgf, Cat.comp_id,
@@ -2333,10 +2328,10 @@ theorem dense_exactlyU_isIso {X Y : PairObj 𝒞} {x : PairHom X Y}
     show (pair (Cat.id Y.A) (tW ≫ d.wg) ≫ d.einv) ≫ d.e ≫ fst = Cat.id Y.A
     rw [Cat.assoc, ← Cat.assoc d.einv d.e fst, d.e_iso₂, Cat.id_comp, fst_pair]
   -- `x.g ≫ ginv = id X.A`: reduces (after `← proj`, `← e_iso₁`) to
-  -- `fst ≫ pair id (tW ≫ wg) = id (prod Y.A W)`, proven by `prod_hom_ext`.
+  -- `fst ≫ pair id (tW ≫ wg) = id (prod Y.A W)`, proven by joint monicity.
   have hcollapse : (fst : prod Y.A d.W ⟶ Y.A) ≫ pair (Cat.id Y.A) (tW ≫ d.wg)
       = Cat.id (prod Y.A d.W) := by
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, Cat.comp_id, Cat.id_comp]
     · rw [Cat.assoc, snd_pair, Cat.id_comp]
       -- `fst ≫ tW ≫ wg = snd`: `snd = (snd ≫ wf) ≫ wg` (wfg) and `fst ≫ tW = snd ≫ wf` (htermInto).
@@ -2626,14 +2621,14 @@ def pairProjSnd (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) Y where
 
 /-- **§1.547 — UNIQUENESS of the product pairing** (unconditional).  Two `Â`-arrows into `(D,K)`
     agreeing after both projections are equal: underlying `α≫(w≫fst) = β≫(w≫fst)` and the `snd`
-    analogue give `(α≫w)≫fst = (β≫w)≫fst` and `≫snd`, so `α≫w = β≫w` (`prod_hom_ext`), then
+    analogue give `(α≫w)≫fst = (β≫w)≫fst` and `≫snd`, so `α≫w = β≫w` by joint monicity, then
     `α = β` (`w` monic, `pairProdW_mono`), then `PairHom.ext`. -/
 theorem pairProd_hom_ext {Z X Y : PairObj 𝒞} (a b : PairHom Z (pairProdObj X Y))
     (h₁ : a.comp (pairProjFst X Y) = b.comp (pairProjFst X Y))
     (h₂ : a.comp (pairProjSnd X Y) = b.comp (pairProjSnd X Y)) : a = b := by
   apply PairHom.ext
   apply pairProdW_mono X Y
-  apply prod_hom_ext
+  apply fst_snd_jointly_monic
   · have := congrArg PairHom.g h₁
     simpa [PairHom.comp, pairProjFst, Cat.assoc] using this
   · have := congrArg PairHom.g h₂
@@ -2987,12 +2982,12 @@ theorem projBaseChangeCone_isPullback {Z Y W : 𝒞} (g : Z ⟶ Y) :
     exact fst_pair _ _
   · -- `≫ π₂ = pair (fst≫g) snd`: agree on both projections with `d.π₂`
     show pair d.π₁ (d.π₂ ≫ snd) ≫ pair (fst ≫ g) snd = d.π₂
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, ← Cat.assoc, fst_pair]; exact d.w
     · rw [Cat.assoc, snd_pair, snd_pair]
   · -- uniqueness: any `v` with the two leg equations equals the pair
     intro v hv₁ hv₂
-    apply prod_hom_ext
+    apply fst_snd_jointly_monic
     · rw [fst_pair]; exact hv₁
     · -- `v ≫ snd = (v ≫ π₂) ≫ snd = d.π₂ ≫ snd`
       rw [snd_pair]
@@ -3570,7 +3565,7 @@ theorem apexInv_apexL2 {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx : 
     handle `survRecon_hom_snd` back to `snd`. -/
 theorem apexInv_apexHom {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx : PairDense x) :
     apexInv x g dx ≫ apexHom x g dx = Cat.id _ := by
-  apply prod_hom_ext
+  apply fst_snd_jointly_monic
   · rw [Cat.assoc, apexHom_fst]
     show apexInv x g dx ≫ apexL1 x g = Cat.id _ ≫ fst
     rw [apexInv_apexL1, Cat.id_comp]
@@ -3715,7 +3710,7 @@ theorem apexHom_apexInv {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx :
   apply pairProdW_mono Z X
   rw [Cat.assoc, mProdW_fac]
   -- goal: `apexHom ≫ mProd = eqMap ≫ pairProdW`.  Compare on both product projections.
-  apply prod_hom_ext
+  apply fst_snd_jointly_monic
   · -- `≫ fst`: both `apexL1`
     rw [Cat.assoc, Cat.assoc]
     rw [show pairProdW Z X ≫ fst = (pairProjFst Z X).g from rfl,
@@ -3732,7 +3727,7 @@ theorem apexHom_apexInv {X Y Z : PairObj 𝒞} (x : X ⟶ Y) (g : Z ⟶ Y) (dx :
     have hiso : (apexHom x g dx ≫ pair (fst ≫ g.g) (wRecon x g dx) ≫ dx.einv) ≫ dx.e
         = apexL2 x g ≫ dx.e := by
       rw [Cat.assoc, Cat.assoc, dx.e_iso₂, Cat.comp_id]
-      apply prod_hom_ext
+      apply fst_snd_jointly_monic
       · -- `(apexHom ≫ pair (fst≫g.g) wRecon) ≫ fst = (apexL2 ≫ dx.e) ≫ fst`
         rw [Cat.assoc, fst_pair, ← Cat.assoc, apexHom_fst, Cat.assoc, dx.proj]
         exact (apex_square x g)
