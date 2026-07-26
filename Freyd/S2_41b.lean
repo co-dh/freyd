@@ -548,17 +548,14 @@ theorem relOf_relPullback_of_tab {a p c : 𝒜}
     _ = f.val ≫ ((relColA U)° ≫ relColB U) := by rw [Cat.assoc]
     _ = f.val ≫ relOf U := rfl
 
-/-- Allegory-order reflexivity from equality (`R = S ⟹ R ⊑ S`). -/
-theorem relLe_of_eq {a b : 𝒜} {R S : a ⟶ b} (h : R = S) : R ⊑ S := h ▸ le_refl R
-
 /-- **§2.217(2) dictionary**: equal allegory relation ⟹ mutual `RelHom` in `Map(A)`.  Both
     directions of `relLe_of_relOf_le` (the reverse dictionary), one per inequality. -/
 theorem mutual_relHom_of_relOf_eq {a b : 𝒜}
     (E F : @BinRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a b) (h : relOf E = relOf F) :
     @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a b E F
       ∧ @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a b F E := by
-  obtain ⟨w1⟩ := relLe_of_relOf_le (relLe_of_eq h)
-  obtain ⟨w2⟩ := relLe_of_relOf_le (relLe_of_eq h.symm)
+  obtain ⟨w1⟩ := relLe_of_relOf_le (le_of_eq h)
+  obtain ⟨w2⟩ := relLe_of_relOf_le (le_of_eq h.symm)
   exact ⟨w1, w2⟩
 
 end RelPullbackRelOf

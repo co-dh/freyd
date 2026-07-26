@@ -400,16 +400,6 @@ theorem coprodInr_monic (A B : 𝒞) : Monic (coprodInr A B) := by
   refine inrRaw_monic A B u v ?_
   rw [← coprodInr_arr, ← Cat.assoc, ← Cat.assoc, huv]
 
-/-- Equalizer maps are monic (local copy; `S1_57.eqMap_mono` is not imported here). -/
-theorem eqMap_mono_local {A B : 𝒞} (f g : A ⟶ B) : Monic (eqMap f g) := by
-  intro W u v huv
-  -- c := u ≫ eqMap equalizes f, g; both u and v are its (unique) lift.
-  have hc : (u ≫ eqMap f g) ≫ f = (u ≫ eqMap f g) ≫ g := by
-    rw [Cat.assoc, Cat.assoc, eqMap_eq]
-  have h1 : u = eqLift f g (u ≫ eqMap f g) hc := eqLift_uniq f g _ hc u rfl
-  have h2 : v = eqLift f g (u ≫ eqMap f g) hc := eqLift_uniq f g _ hc v huv.symm
-  rw [h1, h2]
-
 /-- **Joint epimorphism of the injections.**  `coprodInl` and `coprodInr` are jointly epic:
     any two maps out of `A + B` agreeing after `inl` and `inr` are equal.  This is the
     cover-by-injections fact (`case_uniq` content), proved elementarily via the equalizer of
@@ -420,7 +410,7 @@ theorem coprod_jointly_epi {A B X : 𝒞} (h k : coprodObj A B ⟶ X)
     (hr : coprodInr A B ≫ h = coprodInr A B ≫ k) : h = k := by
   -- E = equalizer of h, k, with monic inclusion e : E ↪ A+B.
   let e : eqObj h k ⟶ coprodObj A B := eqMap h k
-  have he_mono : Monic e := eqMap_mono_local h k
+  have he_mono : Monic e := eqMap_monic h k
   let E : Subobject 𝒞 (coprodObj A B) := ⟨eqObj h k, e, he_mono⟩
   -- both injections factor through E.
   let l₁ : A ⟶ eqObj h k := eqLift h k (coprodInl A B) hl

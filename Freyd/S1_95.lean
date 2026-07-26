@@ -1306,7 +1306,7 @@ noncomputable def familyMeet {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A
   let chi  : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := hpow.tupling (fun i => subChar (B i))
   let chiT : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
     hpow.tupling (fun _ => term A ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
-  ⟨eqObj chi chiT, eqMap chi chiT, eqMap_mono_local chi chiT⟩
+  ⟨eqObj chi chiT, eqMap chi chiT, eqMap_monic chi chiT⟩
 
 /-- **LOWER bound** — `⋂ᵢ Bᵢ ≤ Bⱼ` for every `j`.  The equalizer arrow equalises the two
     tuples; projecting at `j` gives `(⋂B).arr ≫ χ(Bⱼ) = (⋂B).arr ≫ ⊤ = term ≫ true`, i.e. the
