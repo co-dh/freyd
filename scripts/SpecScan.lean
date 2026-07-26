@@ -1,6 +1,12 @@
 /- Find theorems that are SPECIAL CASES of other theorems (the dedup skill's kind 2).
    Run from repo root:  lake env lean --run scripts/SpecScan.lean
-   Output: graph/spec.tsv  (specialized  general  discharge  specialized-module  general-module)
+   Outputs:
+   * graph/spec.tsv          — direct theorem specializations
+   * graph/spec-derived.tsv  — theorem matches requiring local-context search
+   * graph/spec-defs.tsv     — exact definition signature/value matches
+
+   Each file has columns:
+     specialized  general  discharge  specialized-module  general-module
 
    The statement-key pass in `ExtractGraph` finds theorems whose types are EQUAL. A specialization
    has a DIFFERENT type — it fixes a parameter, takes a stronger typeclass, or discharges a
@@ -23,10 +29,11 @@
    pair, never a batch of results.
 
    DISCHARGE of the general lemma's leftover binders: `synthInstance` for instance binders, then a
-   hypothesis of the special one, then `solveByElim` restricted to those hypotheses (an empty lemma
-   list, so it can only chain the local context — never the library, so it cannot circle back through
-   the lemma under test). That last step is the `exact?`-redundancy idea, made affordable by keying
-   candidates instead of asking the library for every lemma with a matching head.
+   hypothesis of the special one. Matches needing `solveByElim` over the local context are retained
+   in `spec-derived.tsv`: they are useful evidence, but are not direct specializations and frequently
+   compare unrelated injectivity or order lemmas merely because the local context can derive the
+   requested binder. Exact definition matches likewise go to `spec-defs.tsv`; they are aliases or
+   shared-shape candidates, not theorem specializations.
 
    Core-only: reads the already-built .olean files. -/
 import Freyd
@@ -78,7 +85,12 @@ def generatedDeclName (env : Environment) (name : Name) : Bool :=
     `general`'s binders, then discharge the leftovers: instance binders by synthesis, the rest by
     matching a hypothesis of `special` or by `solveByElim` over those hypotheses.  Returns a note
     naming what had to be discharged. -/
-def specializes (special general : Thm) : MetaM (Option String) := do
+structure SpecMatch where
+  note : String
+  isDef : Bool
+  usedDerivation : Bool
+
+def specializes (special general : Thm) : MetaM (Option SpecMatch) := do
   unless special.kind == general.kind do return none
   let generalLevels ← general.levelParams.mapM fun _ => mkFreshLevelMVar
   let generalType := general.type.instantiateLevelParams general.levelParams generalLevels
@@ -116,7 +128,11 @@ def specializes (special general : Thm) : MetaM (Option String) := do
       let generalValue := general.value.instantiateLevelParams general.levelParams generalLevels
       unless ← isDefEq special.value generalValue do return none
     let matchKind := if special.kind == "def" then "def signature+value" else "theorem specialization"
-    return some s!"{matchKind}; {synthesized} instance(s), {assumed} hypothesis(es), {derived} solveByElim"
+    return some {
+      note := s!"{matchKind}; {synthesized} instance(s), {assumed} hypothesis(es), {derived} solveByElim"
+      isDef := special.kind == "def"
+      usedDerivation := derived > 0
+    }
 
 /-- Index every theorem's conclusion as a PATTERN (binders → metavariables → `Key.star`), so that
     `getMatch goal` returns the lemmas applicable to `goal`.  A conclusion indexed as a bare `*` is a
@@ -160,14 +176,20 @@ def main : IO Unit := do
   let tree ← Prod.fst <$> ((buildIndex thms).run' : CoreM _).toIO ctx { env }
   IO.eprintln s!"{thms.size} theorems/definitions indexed"
   let mut rows : Array (Name × Name × String) := #[]
+  let mut derivedRows : Array (Name × Name × String) := #[]
+  let mut defRows : Array (Name × Name × String) := #[]
   let mut pairs := 0
   -- One `CoreM.toIO` per batch keeps the per-run metavariable/instance-cache residue bounded, the
   -- same discipline ExtractGraph's `annotate` needs.
   let batch := 64
   for lo in [0:thms.size:batch] do
     let hi := min (lo + batch) thms.size
-    let action : MetaM (Array (Name × Name × String) × Nat) := do
+    let action : MetaM
+        (Array (Name × Name × String) × Array (Name × Name × String) ×
+          Array (Name × Name × String) × Nat) := do
       let mut found := #[]
+      let mut derivedFound := #[]
+      let mut defFound := #[]
       let mut seen := 0
       for special in thms.extract lo hi do
         if special.provedByRfl || special.isGenerated then continue
@@ -194,16 +216,32 @@ def main : IO Unit := do
               (withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 })
                 (Core.withCurrHeartbeats (withNewMCtxDepth (specializes special general))))
               (fun _ => pure none)
-          if let some note := outcome then
-            found := found.push (special.name, general.name,
-              s!"{note}\t{special.mod}\t{general.mod}")
-      return (found, seen)
-    let (found, seen) ← try Prod.fst <$> (action.run' : CoreM _).toIO ctx { env }
-      catch e => IO.eprintln s!"  batch at {lo} FAILED: {e}"; pure (#[], 0)
-    rows := rows ++ found; pairs := pairs + seen
-    IO.eprintln s!"  … {hi}/{thms.size}  ({pairs} pairs, {rows.size} hits)"
+          if let some result := outcome then
+            let row := (special.name, general.name,
+              s!"{result.note}\t{special.mod}\t{general.mod}")
+            if result.isDef then
+              defFound := defFound.push row
+            else if result.usedDerivation then
+              derivedFound := derivedFound.push row
+            else
+              found := found.push row
+      return (found, derivedFound, defFound, seen)
+    let (found, derivedFound, defFound, seen) ←
+      try Prod.fst <$> (action.run' : CoreM _).toIO ctx { env }
+      catch e => IO.eprintln s!"  batch at {lo} FAILED: {e}"; pure (#[], #[], #[], 0)
+    rows := rows ++ found
+    derivedRows := derivedRows ++ derivedFound
+    defRows := defRows ++ defFound
+    pairs := pairs + seen
+    IO.eprintln (s!"  … {hi}/{thms.size}  ({pairs} pairs, {rows.size} direct, " ++
+      s!"{derivedRows.size} derived, {defRows.size} definitions)")
   IO.FS.createDirAll "graph"
-  IO.FS.withFile "graph/spec.tsv" .write fun h => do
-    for (special, general, note) in rows do
-      h.putStrLn s!"{special}\t{general}\t{note}"
-  IO.println s!"{pairs} candidate pairs; {rows.size} specialization(s) written to graph/spec.tsv"
+  let writeRows (path : System.FilePath) (items : Array (Name × Name × String)) : IO Unit :=
+    IO.FS.withFile path .write fun h => do
+      for (special, general, note) in items do
+        h.putStrLn s!"{special}\t{general}\t{note}"
+  writeRows "graph/spec.tsv" rows
+  writeRows "graph/spec-derived.tsv" derivedRows
+  writeRows "graph/spec-defs.tsv" defRows
+  IO.println (s!"{pairs} candidate pairs; {rows.size} direct specialization(s), " ++
+    s!"{derivedRows.size} derived match(es), {defRows.size} definition match(es) written")

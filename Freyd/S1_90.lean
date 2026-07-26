@@ -139,12 +139,4 @@ instance (priority := 100) Topos.hasPowerObject {𝒞 : Type u} [Cat.{v} 𝒞]
 
 /-! ## §1.912  Derived facts -/
 
-/-- §1.912: The characteristic map does not depend on the proof of monicity. -/
-theorem classify_congr [HasSubobjectClassifier 𝒞]
-    {A A' : 𝒞} (m : A' ⟶ A) (hm hm' : Monic m) :
-    HasSubobjectClassifier.classify m hm = HasSubobjectClassifier.classify m hm' :=
-  HasSubobjectClassifier.classify_unique m hm _
-    (HasSubobjectClassifier.classify_sq m hm')
-    (HasSubobjectClassifier.classify_pullback m hm')
-
 end Freyd
