@@ -1,7 +1,7 @@
 name = "freyd"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["Freyd", "AOP", "leet", "rel"]
+defaultTargets = ["Freyd", "AOP", "leet", "rel", "diag"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -25,6 +25,10 @@ globs = ["leet.+"]
 [[lean_lib]]
 name = "rel"             # the relation-algebra interpreter + case studies + auto-derivation drivers
 globs = ["rel.+"]
+
+[[lean_lib]]
+name = "diag"            # diagrammatic-calculus tower (cartesian bicategory → tapes → fo-bicategory)
+globs = ["diag.+"]
 
 [[lean_exe]]
 name = "lean-refactor"
