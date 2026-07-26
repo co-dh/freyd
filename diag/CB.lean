@@ -499,6 +499,100 @@ theorem conv_comp {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) :
     _ = ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c)) ≫ cap c := by simp only [Cat.assoc]
     _ = ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c := by rw [← tensHom_comp, Cat.comp_id]
 
+/-! ### Towards the modular law
+
+  The three results below are everything the modular law needs.  `mer_of_cap` is the only Frobenius
+  computation in the group: it says the merge can be rebuilt from a copy and a cap.  `cap_tens_mer`
+  is that fact with a box riding on the bent strand, and `mer_slide_conv` is the modular law with
+  its two outer factors stripped off — the step where the lax inequation (42) duplicates `S`. -/
+
+/-- The MERGE rebuilt from a copy and a cap: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ cap);ρ = ∇`.  Unfold `cap = ∇;!` and
+    the three middle factors become the left-hand side of `frob_right`, collapsing to `∇;Δ`; the
+    counit law (10) then eats the `Δ`.  This single equation is the whole Frobenius content of the
+    modular law. -/
+theorem mer_of_cap (n : 𝒞) :
+    (cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = mer n := by
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n) := by
+    dsimp [cap]; rw [← tensHom_comp, Cat.id_comp]
+  calc (cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n
+      = ((cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n))
+          ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by rw [hcap]; simp only [Cat.assoc]
+    _ = (mer n ≫ cop n) ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by rw [frob_right]
+    _ = mer n ≫ cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by simp only [Cat.assoc]
+    _ = mer n ≫ 𝟙 n := by rw [cop_counit]
+    _ = mer n := Cat.comp_id _
+
+/-- `mer_of_cap` with a box on the bent strand: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ((𝟙 ⊗ T);cap));ρ = (𝟙 ⊗ T);∇`.
+    `tensAssoc_nat` and the two splittings pull `T` out to the front, after which the box-free
+    `mer_of_cap` closes it. -/
+theorem cap_tens_mer {b c : 𝒞} (T : c ⟶ b) :
+    (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
+      = (𝟙 b ⊗ₕ T) ≫ mer b := by
+  have hsplit : (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b))
+      = (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ cap b) := by rw [← tensHom_comp, Cat.id_comp]
+  calc (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
+      = (cop b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)))
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [hsplit]; simp only [Cat.assoc]
+    _ = (cop b ⊗ₕ 𝟙 c) ≫ (((𝟙 b ⊗ₕ 𝟙 b) ⊗ₕ T) ≫ tensAssoc b b b)
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [← tensAssoc_nat]
+    _ = (cop b ⊗ₕ 𝟙 c) ≫ ((𝟙 (b ⊗ b) ⊗ₕ T) ≫ tensAssoc b b b)
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_id]
+    _ = ((cop b ⊗ₕ 𝟙 c) ≫ (𝟙 (b ⊗ b) ⊗ₕ T)) ≫ tensAssoc b b b
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
+    _ = (cop b ⊗ₕ T) ≫ tensAssoc b b b ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split]
+    _ = ((𝟙 b ⊗ₕ T) ≫ (cop b ⊗ₕ 𝟙 b)) ≫ tensAssoc b b b
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split']
+    _ = (𝟙 b ⊗ₕ T) ≫ (cop b ⊗ₕ 𝟙 b) ≫ tensAssoc b b b
+          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
+    _ = (𝟙 b ⊗ₕ T) ≫ mer b := by rw [mer_of_cap]
+
+/-- THE HEART OF THE MODULAR LAW: `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.
+
+    Read relationally, the left-hand side sends `(y, z)` to `z` when `S y z`, and the right-hand
+    side sends it to any `z'` with `S y z`; so `S` occurs once on the left and twice on the right.
+    That is the tell: the lax copy inequation (42) — the ONLY place a box may be duplicated — has to
+    be the inequality step, and it is.  `mer_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
+    that (42) applies to, and `conv_slide` turns the surviving duplicate into `S†`. -/
+theorem mer_slide_conv {b c : 𝒞} (S : b ⟶ c) :
+    OrderedCat.le ((S ⊗ₕ 𝟙 c) ≫ mer c) ((𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S) := by
+  have hL : ((S ≫ cop c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+      = (S ⊗ₕ 𝟙 c) ≫ mer c := by
+    calc ((S ≫ cop c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+        = ((S ⊗ₕ 𝟙 c) ≫ (cop c ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
+            ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
+      _ = (S ⊗ₕ 𝟙 c) ≫ (cop c ⊗ₕ 𝟙 c) ≫ tensAssoc c c c
+            ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by simp only [Cat.assoc]
+      _ = (S ⊗ₕ 𝟙 c) ≫ mer c := by rw [mer_of_cap]
+  have hR : ((cop b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+      = (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by
+    calc ((cop b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+        = ((cop b ⊗ₕ 𝟙 c) ≫ ((S ⊗ₕ S) ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
+            ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ (((S ⊗ₕ S) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c)
+            ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by simp only [Cat.assoc]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (S ⊗ₕ (S ⊗ₕ 𝟙 c)))
+            ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [tensAssoc_nat]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ ((S ⊗ₕ (S ⊗ₕ 𝟙 c)) ≫ (𝟙 c ⊗ₕ cap c))
+            ≫ runit c := by simp only [Cat.assoc]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((S ⊗ₕ 𝟙 c) ≫ cap c))
+            ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+            ≫ runit c := by rw [conv_slide]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c
+            ≫ ((𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)))
+            ≫ runit c := by rw [tensHom_split']
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+            ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit c := by simp only [Cat.assoc]
+      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+            ≫ runit b ≫ S := by rw [runit_nat]
+      _ = ((cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+            ≫ runit b) ≫ S := by simp only [Cat.assoc]
+      _ = ((𝟙 b ⊗ₕ conv S) ≫ mer b) ≫ S := by rw [cap_tens_mer]
+      _ = (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by simp only [Cat.assoc]
+  rw [← hL, ← hR]
+  exact OrderedCat.comp_mono (tensHom_mono (lax_cop S) (OrderedCat.le_refl _))
+    (OrderedCat.le_refl _)
+
 end Bending
 
 end CartBicat
