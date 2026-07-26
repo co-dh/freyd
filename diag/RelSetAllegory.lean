@@ -6,9 +6,9 @@
   the repo already had (`AOP/A6_1_RelSet.lean`) — not merely an isomorphic copy.  Without this the
   bridge would be a theorem about a structure nobody uses.
 
-  Both checks are phase 4's agreement theorems, `convolution_eq_inter` and `conv_eq_recip`, read at
+  Both checks are phase 4's agreement theorems, `meet_eq_inter` and `conv_eq_recip`, read at
   the bridge's two operation fields.  The point is that they typecheck AS the bridge's fields: it is
-  the composite `allegoryOfCartBicat ∘ (the RelSet instance)` being pinned down, not `convolution`
+  the composite `allegoryOfCartBicat ∘ (the RelSet instance)` being pinned down, not `meet`
   and `conv` in isolation.
 -/
 import diag.CB_Allegory
@@ -23,7 +23,7 @@ open Freyd.Alg
 
 /-- The bridge's `∩` on `Rel(Set)` is the allegory intersection the repo already had. -/
 theorem allegoryOfCartBicat_inter {a b : RelSet.{u}} (R S : a ⟶ b) :
-    (allegoryOfCartBicat RelSet.{u}).inter R S = R ∩ S := convolution_eq_inter R S
+    (allegoryOfCartBicat RelSet.{u}).inter R S = R ∩ S := meet_eq_inter R S
 
 /-- The bridge's `°` on `Rel(Set)` is the ordinary relational converse — so the wire-bending
     definition of the converse really did land on `Allegory.recip`. -/

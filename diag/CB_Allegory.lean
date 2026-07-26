@@ -9,7 +9,7 @@
   Nothing here is assumed.  In particular the MODULAR LAW is a theorem: adding it as a `CartBicat`
   field would make this bridge circular, and Freyd's own presentation takes it as an axiom precisely
   because an allegory has no Frobenius structure to derive it from.  What derives it is the Frobenius
-  equation (41) together with the lax copy inequation (42); see `CartBicat.mer_slide_conv`
+  equation (41) together with the lax copy inequation (42); see `CartBicat.nabla_slide_conv`
   (`diag/CB.lean`), which carries the argument.
 
   `Frobenius.pdf` p. 4 asserts "The Frobenius law implies the modular law [CW87, remark 2.9(ii)]"
@@ -33,70 +33,70 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
 /-- SEMI-DISTRIBUTIVITY, `R(S ∩ T) ≤ RS ∩ RT` — Freyd's `semidistrib` (§2.11), and eq. (3) on p. 4
     of functorialSemanticsForRelationalTheories.pdf.  `R(S ∩ T)` is below `RS` and below `RT` by
     monotonicity of composition, so it is below their greatest lower bound.  The lax inequation (42)
-    is what makes `∩` a greatest lower bound in the first place (via `convolution_idem`). -/
+    is what makes `∩` a greatest lower bound in the first place (via `meet_idem`). -/
 theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
-    OrderedCat.le (R ≫ convolution S T) (convolution (R ≫ S) (R ≫ T)) :=
-  convolution_glb (OrderedCat.comp_mono (OrderedCat.le_refl R) (convolution_le_left S T))
-    (OrderedCat.comp_mono (OrderedCat.le_refl R) (convolution_le_right S T))
+    OrderedCat.le (R ≫ meet S T) (meet (R ≫ S) (R ≫ T)) :=
+  meet_glb (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T))
+    (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T))
 
 /-- THE MODULAR LAW, `RS ∩ T ≤ (R ∩ TS†)S` — Freyd's `modular` (§2.11), DERIVED.
 
     Strip the shared prefix `Δ_a;(R ⊗ T)` off both sides — `(RS) ⊗ T` factors as `(R ⊗ T);(S ⊗ 𝟙)`
-    and `R ⊗ (TS†)` as `(R ⊗ T);(𝟙 ⊗ S†)` — and what is left is exactly `mer_slide_conv`,
+    and `R ⊗ (TS†)` as `(R ⊗ T);(𝟙 ⊗ S†)` — and what is left is exactly `nabla_slide_conv`,
     `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.  That is where the Frobenius equation and the lax copy inequation
     are spent; everything here is bookkeeping. -/
 theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
-    OrderedCat.le (convolution (R ≫ S) T) (convolution R (T ≫ conv S) ≫ S) := by
-  have hL : convolution (R ≫ S) T
-      = (cop a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ mer c := by
-    dsimp [convolution]
-    calc cop a ≫ ((R ≫ S) ⊗ₕ T) ≫ mer c
-        = cop a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ mer c := by
+    OrderedCat.le (meet (R ≫ S) T) (meet R (T ≫ conv S) ≫ S) := by
+  have hL : meet (R ≫ S) T
+      = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := by
+    dsimp [meet]
+    calc delta a ≫ ((R ≫ S) ⊗ₕ T) ≫ nabla c
+        = delta a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ nabla c := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (cop a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ mer c := by simp only [Cat.assoc]
-  have hR : convolution R (T ≫ conv S) ≫ S
-      = (cop a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by
-    dsimp [convolution]
-    calc (cop a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ mer b) ≫ S
-        = (cop a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ mer b) ≫ S := by
+      _ = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := by simp only [Cat.assoc]
+  have hR : meet R (T ≫ conv S) ≫ S
+      = (delta a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by
+    dsimp [meet]
+    calc (delta a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ nabla b) ≫ S
+        = (delta a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ nabla b) ≫ S := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (cop a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by simp only [Cat.assoc]
+      _ = (delta a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by simp only [Cat.assoc]
   rw [hL, hR]
-  exact OrderedCat.comp_mono (OrderedCat.le_refl _) (mer_slide_conv S)
+  exact OrderedCat.comp_mono (OrderedCat.le_refl _) (nabla_slide_conv S)
 
 /-- **Every cartesian bicategory of relations is an allegory.**  `recip := conv`, `inter :=
-    convolution`; all ten `Allegory` fields are theorems of `diag.CB`/`diag.CB_Derived`.
+    meet`; all ten `Allegory` fields are theorems of `diag.CB`/`diag.CB_Derived`.
 
     A `def`, NOT a global instance, so that it cannot form a diamond with the hand-built
     `Allegory RelSet` (`AOP/A6_1_RelSet.lean`) — the same precedent as
     `Freyd.Alg.semiSimpleAllegory_of_tabular` (`Freyd/S2_10.lean`).  Phase 4's agreement theorems
-    `conv_eq_recip` and `convolution_eq_inter` (`diag/RelSetCB.lean`) say the two agree on `Rel(Set)`
+    `conv_eq_recip` and `meet_eq_inter` (`diag/RelSetCB.lean`) say the two agree on `Rel(Set)`
     anyway.
 
-    Freyd states `inter_assoc`, `semidistrib` and `modular` in equality form; `convolution_assoc`
-    is the mirror bracketing, and `convolution_eq_left_of_le` converts the two `≤` forms. -/
+    Freyd states `inter_assoc`, `semidistrib` and `modular` in equality form; `meet_assoc`
+    is the mirror bracketing, and `meet_eq_left_of_le` converts the two `≤` forms. -/
 def allegoryOfCartBicat (𝒞 : Type u) [CartBicat.{v} 𝒞] : Freyd.Alg.Allegory 𝒞 :=
   { (inferInstance : Cat.{v} 𝒞) with
     recip := conv
-    inter := convolution
+    inter := meet
     recip_recip := conv_conv
     recip_comp := conv_comp
     recip_inter := conv_inter
-    inter_idem := convolution_idem
-    inter_comm := convolution_comm
-    inter_assoc := fun R S T => (convolution_assoc R S T).symm
+    inter_idem := meet_idem
+    inter_comm := meet_comm
+    inter_assoc := fun R S T => (meet_assoc R S T).symm
     semidistrib := fun R S T => by
       -- `R(S ∩ T) ≤ RS` and `≤ RT`, so intersecting it with either changes nothing.
-      have hS : OrderedCat.le (R ≫ convolution S T) (R ≫ S) :=
-        OrderedCat.comp_mono (OrderedCat.le_refl R) (convolution_le_left S T)
-      have hT : OrderedCat.le (R ≫ convolution S T) (R ≫ T) :=
-        OrderedCat.comp_mono (OrderedCat.le_refl R) (convolution_le_right S T)
-      calc R ≫ convolution S T
-          = convolution (R ≫ convolution S T) (R ≫ T) := (convolution_eq_left_of_le hT).symm
-        _ = convolution (convolution (R ≫ S) (R ≫ convolution S T)) (R ≫ T) := by
-              rw [convolution_comm (R ≫ S), convolution_eq_left_of_le hS]
+      have hS : OrderedCat.le (R ≫ meet S T) (R ≫ S) :=
+        OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T)
+      have hT : OrderedCat.le (R ≫ meet S T) (R ≫ T) :=
+        OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T)
+      calc R ≫ meet S T
+          = meet (R ≫ meet S T) (R ≫ T) := (meet_eq_left_of_le hT).symm
+        _ = meet (meet (R ≫ S) (R ≫ meet S T)) (R ≫ T) := by
+              rw [meet_comm (R ≫ S), meet_eq_left_of_le hS]
     modular := fun R S T => by
       have h := modular_of_frobenius R S T
-      exact (convolution_eq_left_of_le h).symm }
+      exact (meet_eq_left_of_le h).symm }
 
 end Freyd.Diag

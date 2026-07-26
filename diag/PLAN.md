@@ -39,7 +39,7 @@ combinatorics that buy nothing toward the acceptance criterion.
 `diag/Basic.lean` holds the one piece every layer shares: `class OrderedCat` (hom partial order `le`, `comp_mono`)
 plus the `LE` instance so paper inequations read as written. The order is primitive here — unlike the allegory's
 derived `R ⊑ S := R ∩ S = R` (`Freyd/S2_10.lean:75`) — because in this presentation `∩` is not a generator but the
-derived convolution (`functorialSemantics` p. 22). Registered in `lakefile.toml` (`globs = ["diag.+"]`, added to
+derived meet (`functorialSemantics` p. 22). Registered in `lakefile.toml` (`globs = ["diag.+"]`, added to
 `defaultTargets`). Verified: `./scripts/cap lake build diag` succeeds.
 
 ## Phase 1 — the cartesian-bicategory classes (`diag/CB.lean`)
@@ -60,7 +60,8 @@ Declarations:
   for every arrow — these are exactly eq. (3) on p. 4, and the book already holds both halves product-free
   (assessment note, "Equation (3) is not new mathematics").
 
-Field names are descriptive (`copy`, `merge_copy_frob`, `lax_copy`, `lax_discard`, …); every docstring carries the
+Field names follow the diagram vocabulary (`delta`, `nabla`, `bang`, `unitR`, `frob_left`/`frob_right`, `lax_delta`,
+`lax_bang`, …) — the same names `Freyd/S2_124.lean` uses; every docstring carries the
 paper equation number and page. The special law `Δ;∇ = id` is NOT a field: the paper derives it from (38) plus
 Frobenius (p. 18, the displayed derivation after (41)).
 
@@ -74,7 +75,7 @@ and record (in docstrings) which of them later proofs actually consume; do not i
 
 **DONE.** Split across two files: `diag/Monoidal.lean` (`SymMonCat` — tensor, associator, unitors, symmetry,
 pentagon/triangle/hexagon, `tensHom_mono`) and `diag/CB.lean` (`CartBicat` — Def. 4.1 items 1–4 field for field:
-`cop`/`dis`/`mer`/`un`, the comonoid and monoid equations (5)–(10), inequations (37)–(41), and the lax
+`delta`/`bang`/`nabla`/`unitR`, the comonoid and monoid equations (5)–(10), inequations (37)–(41), and the lax
 inequations (42)–(43)). Build green. `CartBicat.special` — the special law `Δ;∇ = 𝟙`, eq. (12) — is proved, not
 assumed: `𝟙 ≤ Δ;∇` is (38); the converse weakens one strand of the bubble to `!;?` by (40), then collapses with
 the counit law (10) and the unit law (7), exactly the paper's displayed derivation on p. 18.
@@ -116,7 +117,7 @@ Risk: none technical; crop coordinates need hand-tuning once.
 
 All 18 `CartBicat` fields are covered, and the script *enforces* it: it reads the field list straight out of
 `diag/CB.lean` and exits non-zero naming any field with no manifest row, so the check cannot rot. `special` gets two
-clips (eq. (12) and the p. 18 derivation) and `lax_cop`/`lax_dis` get two each (eq. (3) on p. 4 and (42)/(43) on
+clips (eq. (12) and the p. 18 derivation) and `lax_delta`/`lax_bang` get two each (eq. (3) on p. 4 and (42)/(43) on
 p. 18) — a field stated twice in the paper gets both pictures. Example 2.3(d)(e) — the bialgebra and Hopf equations
 (13)–(19) — is clipped with `lean_decl = -` so that the road Definition 4.1 does *not* take is visibly a decision
 rather than an omission.
@@ -149,8 +150,8 @@ Goal: the operations AOP needs, derived — nothing added as an axiom.
 - converse `†` as wire-bending: `def conv R := (cup ⊗ 𝟙);(𝟙 ⊗ R ⊗ 𝟙);(𝟙 ⊗ cap)` with `cup := ?;Δ`,
   `cap := ∇;!` (p. 19, "Compact closed structure"); theorems = Lemma 4.2 (i)–(iv): identity, contravariant
   functoriality, `⊗`-compatibility, monotonicity; plus involutivity (snake/yanking).
-- convolution `∩`: `def convolution R S := Δ;(R ⊗ S);∇` (p. 22); Lemma 4.11: associative, commutative,
-  idempotent (needs lax (42) + Frobenius), unital with `⊤ := !;?`; then: convolution is the greatest lower bound
+- meet `∩`: `def meet R S := Δ;(R ⊗ S);∇` (p. 22); Lemma 4.11: associative, commutative,
+  idempotent (needs lax (42) + Frobenius), unital with `⊤ := !;?`; then: meet is the greatest lower bound
   in the hom poset (p. 22, "every hom-set is a meet semi-lattice").
 - maps: `def SingleValued` (SV), `def Total` (TOT) (p. 20); `lemma_4_4` — the four adjoint characterisations
   (46)–(49); `cor_4_5` — two maps with `R ≤ S` are equal (p. 21); `lemma_4_8` — `R` is a map iff it has a right
@@ -163,23 +164,23 @@ under their own names, and never unfold `cup`/`cap` afterwards.
 
 **PARTLY DONE — the `∩`/`⊤` half.** `diag/CB_Derived.lean` has, all derived, all `[propext]` only:
 
-| declaration              | content                                                                 |
-| ------------------------ | ----------------------------------------------------------------------- |
-| `convolution`            | `Δ;(R ⊗ S);∇`, the paper's `∩` (p. 22)                                   |
-| `top`                    | `!;?`                                                                    |
-| `le_top`                 | `R ≤ ⊤`, from lax (43) plus (40)                                         |
-| `convolution_top`        | `R ∩ ⊤ = R`; the `runit_nat` step is what moves `R` past the unitor       |
-| `convolution_mono`       | monotone in both holes — so `∩` needs no monotonicity axiom               |
-| `convolution_le_left/right` | the glb halves, by weakening the other strand to `⊤`                  |
-| `convolution_comm`       | symmetric, via (9) on copy and (6) on merge                              |
-| `convolution_idem`       | `R ∩ R = R` = Freyd's `inter_idem`; where (42) and the special law meet    |
-| `convolution_*_staged`   | the two bracketings with their copy/merge trees exposed                   |
-| `convolution_assoc`      | `(R ∩ S) ∩ T = R ∩ (S ∩ T)` = Freyd's `inter_assoc`                        |
+| declaration          | content                                                                   |
+| -------------------- | ------------------------------------------------------------------------- |
+| `meet`               | `Δ;(R ⊗ S);∇`, the paper's `∩` (p. 22)                                    |
+| `top`                | `!;?`                                                                     |
+| `le_top`             | `R ≤ ⊤`, from lax (43) plus (40)                                          |
+| `meet_top`           | `R ∩ ⊤ = R`; the `runit_nat` step is what moves `R` past the unitor        |
+| `meet_mono`          | monotone in both holes — so `∩` needs no monotonicity axiom                |
+| `meet_le_left/right` | the glb halves, by weakening the other strand to `⊤`                      |
+| `meet_comm`          | symmetric, via (9) on copy and (6) on merge                               |
+| `meet_idem`          | `R ∩ R = R` = Freyd's `inter_idem`; where (42) and the special law combine |
+| `meet_*_staged`      | the two bracketings with their copy/merge trees exposed                    |
+| `meet_assoc`         | `(R ∩ S) ∩ T = R ∩ (S ∩ T)` = Freyd's `inter_assoc`                        |
 | `tensAssocInv_nat`        | associator naturality in the inverse direction (in `diag/Monoidal.lean`)  |
 
 So all three of Freyd's `inter` semilattice axioms — `inter_idem`, `inter_comm`, `inter_assoc` — are now theorems
 about the diagram axioms rather than assumptions. The `∩`/`⊤` group was done ahead of the converse because it lives
-at a single object; `convolution_assoc` is the first proof here that touches an associator, and it needed one new
+at a single object; `meet_assoc` is the first proof here that touches an associator, and it needed one new
 Monoidal lemma (`tensAssocInv_nat`) to push a re-bracketing past `(R ⊗ S) ⊗ T`.
 
 A shape trap worth remembering: `≫` is `infixr`, and the staging lemmas originally ended with `simp only [Cat.assoc]`,
@@ -188,13 +189,13 @@ lemmas already fused, so no `tensHom_split` rewrite is needed at the call site.
 
 **The snakes and the converse are in, in `diag/CB.lean`.** All `[propext]` only.
 
-| declaration                      | content                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `cop_counit_left`, `mer_unit_left` | the left-strand forms of (10) and (7), from (9)/(6) plus `swap_lunit` |
-| `cup`, `cap`                     | `?;Δ` and `∇;!`                                                     |
-| `snake`, `snake'`                | both yanking equations                                              |
-| `conv`                           | `R†` by bending both wires                                          |
-| `conv_id`, `conv_mono`           | `𝟙† = 𝟙`; monotonicity                                              |
+| declaration                            | content                                                               |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| `delta_counit_left`, `nabla_unit_left` | the left-strand forms of (10) and (7), from (9)/(6) plus `swap_lunit` |
+| `cup`, `cap`                           | `?;Δ` and `∇;!`                                                       |
+| `snake`, `snake'`                      | both yanking equations                                                |
+| `conv`                                 | `R†` by bending both wires                                            |
+| `conv_id`, `conv_mono`                 | `𝟙† = 𝟙`; monotonicity                                                |
 
 The snakes are where the Frobenius equation (41) earns its place: in each, the middle three factors are literally the
 left-hand side of `frob_left`/`frob_right`, collapsing to `∇;Δ`, after which a unit law and a counit law finish it.
@@ -202,7 +203,7 @@ Both proofs went through first try, which is evidence the Def. 4.1 field set is 
 
 One field was added to `SymMonCat` to make this work: `swap_lunit`, the unitor–symmetry compatibility
 `γ_{a,I};λ_a = ρ_a`. It is part of Mac Lane's standard axioms for a symmetric monoidal category, not an invention of
-ours, and it is what lets a discard move from one strand to the other — without it `cop_counit_left` is unreachable.
+ours, and it is what lets a discard move from one strand to the other — without it `delta_counit_left` is unreachable.
 `lunitInv_swap` in `diag/Monoidal.lean` is its inverse form.
 
 **DONE — the converse laws, the glb, and the map layer.** All `[propext]` only.
@@ -222,8 +223,8 @@ uniqueness principle for the converse, and every converse law is one application
 | `conv_unique`                              | an arrow that unbends to `(R ⊗ 𝟙);cap` IS `R†`                                |
 | `conv_conv`                                | `R†† = R` = Freyd's `recip_recip`                                             |
 | `conv_comp`                                | `(R;S)† = S†;R†` = Lemma 4.2 (ii) = Freyd's `recip_comp`                      |
-| `convolution_glb`                          | the third glb clause, completing the meet semilattice                        |
-| `convolution_eq_left_of_le`                | `X ≤ Y ↔ X ∩ Y = X` — bridges the primitive order to Freyd's derived one      |
+| `meet_glb`                                 | the third glb clause, completing the meet semilattice                        |
+| `meet_eq_left_of_le`                       | `X ≤ Y ↔ X ∩ Y = X` — bridges the primitive order to Freyd's derived one      |
 | `conv_inter`                               | `(R ∩ S)† = R† ∩ S†` = Freyd's `recip_inter`                                  |
 | `SingleValued`/`Total`/`Injective`/`Surjective`/`Map` | (46)–(49) and the map notion                                       |
 | `ineq_SV`/`ineq_TOT`/`ineq_INJ`/`ineq_SUR` | the comonoid forms as the paper writes them on p. 20                         |
@@ -260,7 +261,7 @@ Goal: soundness — every abstract CB theorem instantiates to the repo's own `Re
   (`graph_map`, `A6_1_RelSet.lean:104`, discharges all map obligations).
 - `instance : CartBicat RelSet` — `Δ := graph (fun x => (x,x))`, `! := graph (fun _ => PUnit.unit)`,
   `∇ := Δ°`, `? := !°`, exactly as `functorialSemantics` p. 18 lists for `Rel`; all inequations pointwise.
-- Agreement theorems, the load-bearing step: `convolution R S = R ∩ S` (the existing `Allegory RelSet` inter,
+- Agreement theorems, the load-bearing step: `meet R S = R ∩ S` (the existing `Allegory RelSet` inter,
   `A6_1_RelSet.lean:58`), `conv R = R°`, `top = ⊤`. These make CB theorems interoperable with the whole
   existing AOP corpus without translation.
 
@@ -286,7 +287,7 @@ Goal: the acceptance criterion. Every cartesian bicategory of relations yields F
   feed it: the Frobenius equation (41) is the engine — `Frobenius.pdf` p. 4 (proof plan of its Prop. 6) states
   "The Frobenius law implies the modular law [CW87, remark 2.9(ii)]" — supported by the adjunction inequations
   (37)–(40) (inserting/removing dots), the special law (phase 3), the snake lemmas, and monotonicity of `≫`/`⊗`.
-- `def allegoryOfCartBicat (𝒞) [CartBicat 𝒞] : Allegory 𝒞` — `recip := conv`, `inter := convolution`; a `def`,
+- `def allegoryOfCartBicat (𝒞) [CartBicat 𝒞] : Allegory 𝒞` — `recip := conv`, `inter := meet`; a `def`,
   not a global instance, to avoid diamonds with existing `Allegory` instances (precedent:
   `semiSimpleAllegory_of_tabular`, `Freyd/S2_10.lean:594`). Freyd's `modular` field takes the equality form
   `RS ∩ T = (RS ∩ T) ∩ (R ∩ TS°)S`; convert from the `≤` form as `S2_10`'s `modular_le` does in reverse.
@@ -308,16 +309,16 @@ and `recip` (via phase 4's agreement theorems).
 | declaration              | content                                                                        |
 | ------------------------ | ------------------------------------------------------------------------------ |
 | `semidistrib_of_lax`     | `R(S ∩ T) ≤ RS ∩ RT`, from `comp_mono` into the glb                             |
-| `mer_of_cap`             | `(Δ ⊗ 𝟙);α;(𝟙 ⊗ cap);ρ = ∇` — the whole Frobenius content of modularity          |
-| `cap_tens_mer`           | the same with a box riding the bent strand                                      |
-| `mer_slide_conv`         | `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S` — modularity with its outer factors stripped off      |
+| `nabla_of_cap`           | `(Δ ⊗ 𝟙);α;(𝟙 ⊗ cap);ρ = ∇` — the whole Frobenius content of modularity          |
+| `cap_tens_nabla`         | the same with a box riding the bent strand                                      |
+| `nabla_slide_conv`       | `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S` — modularity with its outer factors stripped off      |
 | `modular_of_frobenius`   | `RS ∩ T ≤ (R ∩ TS†)S`, DERIVED                                                  |
 | `allegoryOfCartBicat`    | the ten-field `Allegory`, a `def` not an instance                               |
 | `allegoryOfCartBicat_inter/_recip` | the composite check, in `diag/RelSetAllegory.lean`                    |
 
 The composite check is the part that makes the bridge mean something: `allegoryOfCartBicat` applied to `RelSet`'s
 `CartBicat` instance yields the SAME `Allegory RelSet` the repo already had, not an isomorphic copy — its `inter`
-field is the existing `∩` and its `recip` field the existing `°`, by phase 4's `convolution_eq_inter` and
+field is the existing `∩` and its `recip` field the existing `°`, by phase 4's `meet_eq_inter` and
 `conv_eq_recip`. Those two theorems typecheck directly as the bridge's fields.
 
 **How the modular law was found.** `Frobenius.pdf` p. 4 only *cites* CW87 Rem. 2.9(ii); every occurrence of "modular
@@ -325,16 +326,16 @@ law" in that paper USES the law rather than deriving it, so the "equational fall
 not exist there and the derivation had to be reconstructed. What worked was counting occurrences of `S`: in
 `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S` the left side mentions `S` once and the right side twice, and the ONLY axiom that may
 duplicate a box is the lax copy inequation (42). That pins the shape of the proof — the rest is finding the equality
-that exposes an `S;Δ` for (42) to act on, and that equality is `mer_of_cap`, whose own proof is four lines
+that exposes an `S;Δ` for (42) to act on, and that equality is `nabla_of_cap`, whose own proof is four lines
 (`cap = ∇;!`, then `frob_right` collapses the middle three factors to `∇;Δ`, then the counit law (10) eats the `Δ`).
 `conv_slide` then turns the surviving duplicate into `S†`. Stripping the shared prefix `Δ_a;(R ⊗ T)` off both sides
 of modularity reduces it to exactly that inequality.
 
 Modularity is NOT a class field, and adding it would have been circular — recorded here because the temptation is
-real: `mer_slide_conv` is the only genuinely hard step in the whole bridge.
+real: `nabla_slide_conv` is the only genuinely hard step in the whole bridge.
 
-Freyd states `inter_assoc`, `semidistrib` and `modular` as EQUALITIES; `convolution_assoc` is the mirror bracketing
-(hence `.symm`), and `convolution_eq_left_of_le` (`X ≤ Y → X ∩ Y = X`) converts the two `≤` forms. That lemma is also
+Freyd states `inter_assoc`, `semidistrib` and `modular` as EQUALITIES; `meet_assoc` is the mirror bracketing
+(hence `.symm`), and `meet_eq_left_of_le` (`X ≤ Y → X ∩ Y = X`) converts the two `≤` forms. That lemma is also
 the conceptual bridge between `diag`'s primitive hom order and Freyd's derived `R ⊑ S := R ∩ S = R`.
 
 ## Phase 6 — Typst module + the first AOP diagrams (`Freyd/note/strdiag.typ`)
@@ -343,7 +344,7 @@ Goal: see AOP theorems as diagrams. cetz 0.3.4 (already the repo standard — `F
 
 Helpers (one module, reused by hand-written notes AND the phase-7 exporter): `wire`, `gbox` (labelled box), the
 four Frobenius dots `copy`/`merge`/`discard`/`unit`, `cup`/`cap`, `conv` (box with both wires bent), `meet` (the
-convolution combinator), `tape` (rounded wrapper + fork/join, for phase 8), `cut` (colour-switch region for
+meet combinator), `tape` (rounded wrapper + fork/join, for phase 8), `cut` (colour-switch region for
 phase 9's complement). The AI-written `AllegoryStringDiagrams.typ` already contains working cetz code for the
 first six — salvage the drawing code, discard the prose (it is not a source and must never be cited).
 
@@ -402,7 +403,7 @@ because it is not a composite of the generators — every operation here is mono
 antitone in `S`; a real residual box waits for phase 9.
 
 Two things the page states rather than hides. It carries the `Rel(Set)` dictionary from `diag/RelSetCB.lean`
-(`cop_eq`, `mer_eq`, `copRel_recip_apply`, `convolution_eq_inter`, `conv_eq_recip`, `top_apply`), because those are
+(`cop_eq`, `mer_eq`, `deltaRel_recip_apply`, `meet_eq_inter`, `conv_eq_recip`, `top_apply`), because those are
 what license calling a shape `∩` or `°` instead of merely something shaped like them. And it says outright that the
 pictures **suppress the coherence maps**: re-bracketing three wires is free on paper but `(a × b) × c` is not
 `a × (b × c)` in Lean, which is why `diag/Monoidal.lean` carries `tensAssoc` and `Freyd/S2_124.lean` carries

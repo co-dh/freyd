@@ -34,52 +34,52 @@ open scoped SymMonCat
 /-- A CARTESIAN BICATEGORY OF RELATIONS (functorialSemanticsForRelationalTheories.pdf Def. 4.1). -/
 class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
   /-- `Δ_n : n ⟶ n ⊗ n`, the copy (Def. 4.1.1). -/
-  cop (n : 𝒞) : n ⟶ n ⊗ n
+  delta (n : 𝒞) : n ⟶ n ⊗ n
   /-- `!_n : n ⟶ I`, the discard (Def. 4.1.1). -/
-  dis (n : 𝒞) : n ⟶ 𝕀
+  bang (n : 𝒞) : n ⟶ 𝕀
   /-- `∇_n : n ⊗ n ⟶ n`, the merge (Def. 4.1.2). -/
-  mer (n : 𝒞) : n ⊗ n ⟶ n
+  nabla (n : 𝒞) : n ⊗ n ⟶ n
   /-- `?_n : I ⟶ n`, the unit (Def. 4.1.2). -/
-  un (n : 𝒞) : 𝕀 ⟶ n
+  unitR (n : 𝒞) : 𝕀 ⟶ n
 
   /-- Coassociativity of `Δ`; Example 2.3(b) eq. (8). -/
-  cop_assoc (n : 𝒞) :
-    cop n ≫ (cop n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n = cop n ≫ (𝟙 n ⊗ₕ cop n)
+  delta_assoc (n : 𝒞) :
+    delta n ≫ (delta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n = delta n ≫ (𝟙 n ⊗ₕ delta n)
   /-- Cocommutativity of `Δ`; eq. (9). -/
-  cop_comm (n : 𝒞) : cop n ≫ SymMonCat.swap n n = cop n
+  delta_comm (n : 𝒞) : delta n ≫ SymMonCat.swap n n = delta n
   /-- Counit law for `(Δ, !)`; eq. (10). -/
-  cop_counit (n : 𝒞) : cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n = 𝟙 n
+  delta_counit (n : 𝒞) : delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n = 𝟙 n
 
   /-- Associativity of `∇`; Example 2.3(a) eq. (5). -/
-  mer_assoc (n : 𝒞) :
-    (mer n ⊗ₕ 𝟙 n) ≫ mer n = SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n) ≫ mer n
+  nabla_assoc (n : 𝒞) :
+    (nabla n ⊗ₕ 𝟙 n) ≫ nabla n = SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ nabla n) ≫ nabla n
   /-- Commutativity of `∇`; eq. (6). -/
-  mer_comm (n : 𝒞) : SymMonCat.swap n n ≫ mer n = mer n
+  nabla_comm (n : 𝒞) : SymMonCat.swap n n ≫ nabla n = nabla n
   /-- Unit law for `(∇, ?)`; eq. (7). -/
-  mer_unit (n : 𝒞) : SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n = 𝟙 n
+  nabla_unit (n : 𝒞) : SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n = 𝟙 n
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
-  ineq_37 (n : 𝒞) : le (mer n ≫ cop n) (𝟙 (n ⊗ n))
+  ineq_37 (n : 𝒞) : le (nabla n ≫ delta n) (𝟙 (n ⊗ n))
   /-- (38): `𝟙 ≤ Δ;∇`.  With (37), `Δ ⊣ ∇`. -/
-  ineq_38 (n : 𝒞) : le (𝟙 n) (cop n ≫ mer n)
+  ineq_38 (n : 𝒞) : le (𝟙 n) (delta n ≫ nabla n)
   /-- (39): `?;! ≤ 𝟙_I`.  With (40), `! ⊣ ?`. -/
-  ineq_39 (n : 𝒞) : le (un n ≫ dis n) (𝟙 (𝕀 : 𝒞))
+  ineq_39 (n : 𝒞) : le (unitR n ≫ bang n) (𝟙 (𝕀 : 𝒞))
   /-- (40): `𝟙 ≤ !;?`.  With (39), `! ⊣ ?`. -/
-  ineq_40 (n : 𝒞) : le (𝟙 n) (dis n ≫ un n)
+  ineq_40 (n : 𝒞) : le (𝟙 n) (bang n ≫ unitR n)
 
   /-- (41), left form: `(𝟙 ⊗ Δ);α⁻¹;(∇ ⊗ 𝟙) = ∇;Δ`. -/
   frob_left (n : 𝒞) :
-    (𝟙 n ⊗ₕ cop n) ≫ SymMonCat.tensAssocInv n n n ≫ (mer n ⊗ₕ 𝟙 n) = mer n ≫ cop n
+    (𝟙 n ⊗ₕ delta n) ≫ SymMonCat.tensAssocInv n n n ≫ (nabla n ⊗ₕ 𝟙 n) = nabla n ≫ delta n
   /-- (41), right form: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ∇) = ∇;Δ`. -/
   frob_right (n : 𝒞) :
-    (cop n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n) = mer n ≫ cop n
+    (delta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ nabla n) = nabla n ≫ delta n
 
   /-- (42): every arrow is lax for the comultiplication — `R;Δ ≤ Δ;(R ⊗ R)`.  This is eq. (3),
       p. 4; Freyd has it product-free as §2.136's `R(S ∩ T) ⊑ RS ∩ RT` at `S := π₁°, T := π₂°`. -/
-  lax_cop {m n : 𝒞} (R : m ⟶ n) : le (R ≫ cop n) (cop m ≫ (R ⊗ₕ R))
+  lax_delta {m n : 𝒞} (R : m ⟶ n) : le (R ≫ delta n) (delta m ≫ (R ⊗ₕ R))
   /-- (43): every arrow is lax for the counit — `R;! ≤ !`.  Freyd: §2.152's step "`p_α` is maximal
       in `(α,λ)`, hence `R p_β ⊆ p_α`". -/
-  lax_dis {m n : 𝒞} (R : m ⟶ n) : le (R ≫ dis n) (dis m)
+  lax_bang {m n : 𝒞} (R : m ⟶ n) : le (R ≫ bang n) (bang m)
 
 namespace CartBicat
 
@@ -89,69 +89,69 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
     Not an axiom: `𝟙 ≤ Δ;∇` is (38), and
     the reverse is the paper's displayed derivation — weaken the identity on one strand of the
     bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
-theorem special (n : 𝒞) : cop n ≫ mer n = 𝟙 n := by
+theorem special (n : 𝒞) : delta n ≫ nabla n = 𝟙 n := by
   refine OrderedCat.le_antisymm ?_ (ineq_38 n)
   -- `Δ;∇ ≤ Δ;(𝟙 ⊗ (!;?));∇`, by (40) under `⊗` and then under `;`.
-  have hstep : OrderedCat.le (cop n ≫ mer n) (cop n ≫ (𝟙 n ⊗ₕ (dis n ≫ un n)) ≫ mer n) := by
-    have h : OrderedCat.le ((𝟙 n ⊗ₕ 𝟙 n) ≫ mer n) ((𝟙 n ⊗ₕ (dis n ≫ un n)) ≫ mer n) :=
+  have hstep : OrderedCat.le (delta n ≫ nabla n) (delta n ≫ (𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) := by
+    have h : OrderedCat.le ((𝟙 n ⊗ₕ 𝟙 n) ≫ nabla n) ((𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n) :=
       OrderedCat.comp_mono
         (SymMonCat.tensHom_mono (OrderedCat.le_refl _) (ineq_40 n)) (OrderedCat.le_refl _)
     rw [SymMonCat.tensHom_id, Cat.id_comp] at h
     exact OrderedCat.comp_mono (OrderedCat.le_refl _) h
   -- The right-hand side is `𝟙`: split the `⊗`, insert `runit ≫ runitInv = 𝟙`, then use the
   -- counit law (10) on the left half and the unit law (7) on the right half.
-  have hcollapse : cop n ≫ (𝟙 n ⊗ₕ (dis n ≫ un n)) ≫ mer n = 𝟙 n := by
-    have hsplit : (𝟙 n ⊗ₕ (dis n ≫ un n)) = (𝟙 n ⊗ₕ dis n) ≫ (𝟙 n ⊗ₕ un n) := by
+  have hcollapse : delta n ≫ (𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n = 𝟙 n := by
+    have hsplit : (𝟙 n ⊗ₕ (bang n ≫ unitR n)) = (𝟙 n ⊗ₕ bang n) ≫ (𝟙 n ⊗ₕ unitR n) := by
       rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    calc cop n ≫ (𝟙 n ⊗ₕ (dis n ≫ un n)) ≫ mer n
-        = cop n ≫ ((𝟙 n ⊗ₕ dis n) ≫ (𝟙 n ⊗ₕ un n)) ≫ mer n := by rw [hsplit]
-      _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ 𝟙 (n ⊗ 𝕀) ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by
+    calc delta n ≫ (𝟙 n ⊗ₕ (bang n ≫ unitR n)) ≫ nabla n
+        = delta n ≫ ((𝟙 n ⊗ₕ bang n) ≫ (𝟙 n ⊗ₕ unitR n)) ≫ nabla n := by rw [hsplit]
+      _ = delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ 𝟙 (n ⊗ 𝕀) ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n := by
             rw [Cat.id_comp, Cat.assoc]
-      _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ (SymMonCat.runit n ≫ SymMonCat.runitInv n)
-            ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by rw [SymMonCat.runit_inv]
-      _ = (cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n)
-            ≫ (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n) := by
+      _ = delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ (SymMonCat.runit n ≫ SymMonCat.runitInv n)
+            ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n := by rw [SymMonCat.runit_inv]
+      _ = (delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n)
+            ≫ (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n) := by
             simp only [Cat.assoc]
-      _ = 𝟙 n ≫ 𝟙 n := by rw [cop_counit, mer_unit]
+      _ = 𝟙 n ≫ 𝟙 n := by rw [delta_counit, nabla_unit]
       _ = 𝟙 n := Cat.id_comp _
   rw [← hcollapse]
   exact hstep
 
 /-- The counit law (10) read on the LEFT strand: `Δ;(! ⊗ 𝟙);λ = 𝟙`.  Only the right-hand form is a
     field, since cocommutativity (9) plus the unitor–symmetry coherence gives this one. -/
-theorem cop_counit_left (n : 𝒞) :
-    cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
-  calc cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
-      = (cop n ≫ SymMonCat.swap n n) ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [cop_comm]
-    _ = cop n ≫ (SymMonCat.swap n n ≫ (dis n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by
+theorem delta_counit_left (n : 𝒞) :
+    delta n ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
+  calc delta n ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
+      = (delta n ≫ SymMonCat.swap n n) ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [delta_comm]
+    _ = delta n ≫ (SymMonCat.swap n n ≫ (bang n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by
           simp only [Cat.assoc]
-    _ = cop n ≫ ((𝟙 n ⊗ₕ dis n) ≫ SymMonCat.swap n 𝕀) ≫ SymMonCat.lunit n := by
+    _ = delta n ≫ ((𝟙 n ⊗ₕ bang n) ≫ SymMonCat.swap n 𝕀) ≫ SymMonCat.lunit n := by
           rw [← SymMonCat.swap_nat]
-    _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.swap n 𝕀 ≫ SymMonCat.lunit n := by
+    _ = delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.swap n 𝕀 ≫ SymMonCat.lunit n := by
           simp only [Cat.assoc]
-    _ = cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by rw [SymMonCat.swap_lunit]
-    _ = 𝟙 n := cop_counit n
+    _ = delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n := by rw [SymMonCat.swap_lunit]
+    _ = 𝟙 n := delta_counit n
 
-/-- The unit law (7) read on the LEFT strand: `λ⁻¹;(? ⊗ 𝟙);∇ = 𝟙`, dual to `cop_counit_left`. -/
-theorem mer_unit_left (n : 𝒞) :
-    SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n = 𝟙 n := by
-  calc SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n
-      = SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ mer n := by rw [mer_comm]
-    _ = SymMonCat.lunitInv n ≫ ((un n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ mer n := by
+/-- The unit law (7) read on the LEFT strand: `λ⁻¹;(? ⊗ 𝟙);∇ = 𝟙`, dual to `delta_counit_left`. -/
+theorem nabla_unit_left (n : 𝒞) :
+    SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n) ≫ nabla n = 𝟙 n := by
+  calc SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n) ≫ nabla n
+      = SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ nabla n := by rw [nabla_comm]
+    _ = SymMonCat.lunitInv n ≫ ((unitR n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ nabla n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ un n)) ≫ mer n := by
+    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ unitR n)) ≫ nabla n := by
           rw [SymMonCat.swap_nat]
-    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by
+    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n := by rw [lunitInv_swap]
-    _ = 𝟙 n := mer_unit n
+    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n := by rw [lunitInv_swap]
+    _ = 𝟙 n := nabla_unit n
 
 /-- The CUP `? ; Δ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
     structure the Frobenius equations induce (functorialSemanticsForRelationalTheories.pdf p. 19). -/
-def cup (n : 𝒞) : (𝕀 : 𝒞) ⟶ n ⊗ n := un n ≫ cop n
+def cup (n : 𝒞) : (𝕀 : 𝒞) ⟶ n ⊗ n := unitR n ≫ delta n
 
 /-- The CAP `∇ ; ! : n ⊗ n ⟶ I` — in `Rel`, `(x,y) ↦ •` exactly when `x = y`. -/
-def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := mer n ≫ dis n
+def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := nabla n ≫ bang n
 
 /-- The SNAKE (yanking) equation: a wire bent down by a cup and back up by a cap is straight.
     This is where the Frobenius equation (41) earns its place — the middle three factors are
@@ -160,22 +160,22 @@ def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := mer n ≫ dis n
 theorem snake (n : 𝒞) :
     SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
       ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
-  have hcup : (𝟙 n ⊗ₕ cup n) = (𝟙 n ⊗ₕ un n) ≫ (𝟙 n ⊗ₕ cop n) := by
+  have hcup : (𝟙 n ⊗ₕ cup n) = (𝟙 n ⊗ₕ unitR n) ≫ (𝟙 n ⊗ₕ delta n) := by
     dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  have hcap : (cap n ⊗ₕ 𝟙 n) = (mer n ⊗ₕ 𝟙 n) ≫ (dis n ⊗ₕ 𝟙 n) := by
+  have hcap : (cap n ⊗ₕ 𝟙 n) = (nabla n ⊗ₕ 𝟙 n) ≫ (bang n ⊗ₕ 𝟙 n) := by
     dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
   calc SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
         ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
-      = SymMonCat.runitInv n ≫ ((𝟙 n ⊗ₕ un n) ≫ (𝟙 n ⊗ₕ cop n)) ≫ SymMonCat.tensAssocInv n n n
-          ≫ ((mer n ⊗ₕ 𝟙 n) ≫ (dis n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n))
-          ≫ ((𝟙 n ⊗ₕ cop n) ≫ SymMonCat.tensAssocInv n n n ≫ (mer n ⊗ₕ 𝟙 n))
-          ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n)) ≫ (mer n ≫ cop n)
-          ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [frob_left]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ un n) ≫ mer n)
-          ≫ (cop n ≫ (dis n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n) := by simp only [Cat.assoc]
-    _ = 𝟙 n ≫ 𝟙 n := by rw [mer_unit, cop_counit_left]
+      = SymMonCat.runitInv n ≫ ((𝟙 n ⊗ₕ unitR n) ≫ (𝟙 n ⊗ₕ delta n)) ≫ SymMonCat.tensAssocInv n n n
+          ≫ ((nabla n ⊗ₕ 𝟙 n) ≫ (bang n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n))
+          ≫ ((𝟙 n ⊗ₕ delta n) ≫ SymMonCat.tensAssocInv n n n ≫ (nabla n ⊗ₕ 𝟙 n))
+          ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by simp only [Cat.assoc]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n)) ≫ (nabla n ≫ delta n)
+          ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [frob_left]
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ unitR n) ≫ nabla n)
+          ≫ (delta n ≫ (bang n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n) := by simp only [Cat.assoc]
+    _ = 𝟙 n ≫ 𝟙 n := by rw [nabla_unit, delta_counit_left]
     _ = 𝟙 n := Cat.id_comp _
 
 /-- The mirror snake, bending the other way.  Same shape as `snake` with `frob_right` in place of
@@ -183,22 +183,22 @@ theorem snake (n : 𝒞) :
 theorem snake' (n : 𝒞) :
     SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
       ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n = 𝟙 n := by
-  have hcup : (cup n ⊗ₕ 𝟙 n) = (un n ⊗ₕ 𝟙 n) ≫ (cop n ⊗ₕ 𝟙 n) := by
+  have hcup : (cup n ⊗ₕ 𝟙 n) = (unitR n ⊗ₕ 𝟙 n) ≫ (delta n ⊗ₕ 𝟙 n) := by
     dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n) := by
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ nabla n) ≫ (𝟙 n ⊗ₕ bang n) := by
     dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
   calc SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
         ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n
-      = SymMonCat.lunitInv n ≫ ((un n ⊗ₕ 𝟙 n) ≫ (cop n ⊗ₕ 𝟙 n)) ≫ SymMonCat.tensAssoc n n n
-          ≫ ((𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
-    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n))
-          ≫ ((cop n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n))
-          ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n)) ≫ (mer n ≫ cop n)
-          ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n := by rw [frob_right]
-    _ = (SymMonCat.lunitInv n ≫ (un n ⊗ₕ 𝟙 n) ≫ mer n)
-          ≫ (cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ SymMonCat.runit n) := by simp only [Cat.assoc]
-    _ = 𝟙 n ≫ 𝟙 n := by rw [mer_unit_left, cop_counit]
+      = SymMonCat.lunitInv n ≫ ((unitR n ⊗ₕ 𝟙 n) ≫ (delta n ⊗ₕ 𝟙 n)) ≫ SymMonCat.tensAssoc n n n
+          ≫ ((𝟙 n ⊗ₕ nabla n) ≫ (𝟙 n ⊗ₕ bang n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
+    _ = (SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n))
+          ≫ ((delta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ nabla n))
+          ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n := by simp only [Cat.assoc]
+    _ = (SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n)) ≫ (nabla n ≫ delta n)
+          ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n := by rw [frob_right]
+    _ = (SymMonCat.lunitInv n ≫ (unitR n ⊗ₕ 𝟙 n) ≫ nabla n)
+          ≫ (delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ SymMonCat.runit n) := by simp only [Cat.assoc]
+    _ = 𝟙 n ≫ 𝟙 n := by rw [nabla_unit_left, delta_counit]
     _ = 𝟙 n := Cat.id_comp _
 
 /-- UNBEND: straighten `S : b ⟶ a` into its `I`-valued form `(𝟙_a ⊗ S);cap_a : a ⊗ b ⟶ I`.  This
@@ -244,11 +244,11 @@ open SymMonCat
 /-- The cap is symmetric: `γ;cap = cap`.  Immediate from commutativity (6) of the merge, and the
     reason the two ways of capping a pair of `a`-wires agree. -/
 theorem swap_cap (n : 𝒞) : swap n n ≫ cap n = cap n := by
-  dsimp [cap]; rw [← Cat.assoc, mer_comm]
+  dsimp [cap]; rw [← Cat.assoc, nabla_comm]
 
 /-- The cup is symmetric: `cup;γ = cup`, dual to `swap_cap`, from cocommutativity (9). -/
 theorem cup_swap (n : 𝒞) : cup n ≫ swap n n = cup n := by
-  dsimp [cup]; rw [Cat.assoc, cop_comm]
+  dsimp [cup]; rw [Cat.assoc, delta_comm]
 
 /-- `bend` undoes `unbend`.  Distribute `𝟙_a ⊗ −` over the composite, push the re-bracketing past
     `(𝟙 ⊗ 𝟙) ⊗ S` with `tensAssoc_nat`, fuse the cup with `S` into `cup ⊗ S`, and then
@@ -501,96 +501,96 @@ theorem conv_comp {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) :
 
 /-! ### Towards the modular law
 
-  The three results below are everything the modular law needs.  `mer_of_cap` is the only Frobenius
-  computation in the group: it says the merge can be rebuilt from a copy and a cap.  `cap_tens_mer`
-  is that fact with a box riding on the bent strand, and `mer_slide_conv` is the modular law with
+  The three results below are everything the modular law needs.  `nabla_of_cap` is the only Frobenius
+  computation in the group: it says the merge can be rebuilt from a copy and a cap.  `cap_tens_nabla`
+  is that fact with a box riding on the bent strand, and `nabla_slide_conv` is the modular law with
   its two outer factors stripped off — the step where the lax inequation (42) duplicates `S`. -/
 
 /-- The MERGE rebuilt from a copy and a cap: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ cap);ρ = ∇`.  Unfold `cap = ∇;!` and
     the three middle factors become the left-hand side of `frob_right`, collapsing to `∇;Δ`; the
     counit law (10) then eats the `Δ`.  This single equation is the whole Frobenius content of the
     modular law. -/
-theorem mer_of_cap (n : 𝒞) :
-    (cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = mer n := by
-  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ mer n) ≫ (𝟙 n ⊗ₕ dis n) := by
+theorem nabla_of_cap (n : 𝒞) :
+    (delta n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = nabla n := by
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ nabla n) ≫ (𝟙 n ⊗ₕ bang n) := by
     dsimp [cap]; rw [← tensHom_comp, Cat.id_comp]
-  calc (cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n
-      = ((cop n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ mer n))
-          ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by rw [hcap]; simp only [Cat.assoc]
-    _ = (mer n ≫ cop n) ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by rw [frob_right]
-    _ = mer n ≫ cop n ≫ (𝟙 n ⊗ₕ dis n) ≫ runit n := by simp only [Cat.assoc]
-    _ = mer n ≫ 𝟙 n := by rw [cop_counit]
-    _ = mer n := Cat.comp_id _
+  calc (delta n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n
+      = ((delta n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ nabla n))
+          ≫ (𝟙 n ⊗ₕ bang n) ≫ runit n := by rw [hcap]; simp only [Cat.assoc]
+    _ = (nabla n ≫ delta n) ≫ (𝟙 n ⊗ₕ bang n) ≫ runit n := by rw [frob_right]
+    _ = nabla n ≫ delta n ≫ (𝟙 n ⊗ₕ bang n) ≫ runit n := by simp only [Cat.assoc]
+    _ = nabla n ≫ 𝟙 n := by rw [delta_counit]
+    _ = nabla n := Cat.comp_id _
 
-/-- `mer_of_cap` with a box on the bent strand: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ((𝟙 ⊗ T);cap));ρ = (𝟙 ⊗ T);∇`.
+/-- `nabla_of_cap` with a box on the bent strand: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ((𝟙 ⊗ T);cap));ρ = (𝟙 ⊗ T);∇`.
     `tensAssoc_nat` and the two splittings pull `T` out to the front, after which the box-free
-    `mer_of_cap` closes it. -/
-theorem cap_tens_mer {b c : 𝒞} (T : c ⟶ b) :
-    (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
-      = (𝟙 b ⊗ₕ T) ≫ mer b := by
+    `nabla_of_cap` closes it. -/
+theorem cap_tens_nabla {b c : 𝒞} (T : c ⟶ b) :
+    (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
+      = (𝟙 b ⊗ₕ T) ≫ nabla b := by
   have hsplit : (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b))
       = (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ cap b) := by rw [← tensHom_comp, Cat.id_comp]
-  calc (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
-      = (cop b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)))
+  calc (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
+      = (delta b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)))
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [hsplit]; simp only [Cat.assoc]
-    _ = (cop b ⊗ₕ 𝟙 c) ≫ (((𝟙 b ⊗ₕ 𝟙 b) ⊗ₕ T) ≫ tensAssoc b b b)
+    _ = (delta b ⊗ₕ 𝟙 c) ≫ (((𝟙 b ⊗ₕ 𝟙 b) ⊗ₕ T) ≫ tensAssoc b b b)
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [← tensAssoc_nat]
-    _ = (cop b ⊗ₕ 𝟙 c) ≫ ((𝟙 (b ⊗ b) ⊗ₕ T) ≫ tensAssoc b b b)
+    _ = (delta b ⊗ₕ 𝟙 c) ≫ ((𝟙 (b ⊗ b) ⊗ₕ T) ≫ tensAssoc b b b)
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_id]
-    _ = ((cop b ⊗ₕ 𝟙 c) ≫ (𝟙 (b ⊗ b) ⊗ₕ T)) ≫ tensAssoc b b b
+    _ = ((delta b ⊗ₕ 𝟙 c) ≫ (𝟙 (b ⊗ b) ⊗ₕ T)) ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
-    _ = (cop b ⊗ₕ T) ≫ tensAssoc b b b ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split]
-    _ = ((𝟙 b ⊗ₕ T) ≫ (cop b ⊗ₕ 𝟙 b)) ≫ tensAssoc b b b
+    _ = (delta b ⊗ₕ T) ≫ tensAssoc b b b ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split]
+    _ = ((𝟙 b ⊗ₕ T) ≫ (delta b ⊗ₕ 𝟙 b)) ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split']
-    _ = (𝟙 b ⊗ₕ T) ≫ (cop b ⊗ₕ 𝟙 b) ≫ tensAssoc b b b
+    _ = (𝟙 b ⊗ₕ T) ≫ (delta b ⊗ₕ 𝟙 b) ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
-    _ = (𝟙 b ⊗ₕ T) ≫ mer b := by rw [mer_of_cap]
+    _ = (𝟙 b ⊗ₕ T) ≫ nabla b := by rw [nabla_of_cap]
 
 /-- THE HEART OF THE MODULAR LAW: `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.
 
     Read relationally, the left-hand side sends `(y, z)` to `z` when `S y z`, and the right-hand
     side sends it to any `z'` with `S y z`; so `S` occurs once on the left and twice on the right.
     That is the tell: the lax copy inequation (42) — the ONLY place a box may be duplicated — has to
-    be the inequality step, and it is.  `mer_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
+    be the inequality step, and it is.  `nabla_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
     that (42) applies to, and `conv_slide` turns the surviving duplicate into `S†`. -/
-theorem mer_slide_conv {b c : 𝒞} (S : b ⟶ c) :
-    OrderedCat.le ((S ⊗ₕ 𝟙 c) ≫ mer c) ((𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S) := by
-  have hL : ((S ≫ cop c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-      = (S ⊗ₕ 𝟙 c) ≫ mer c := by
-    calc ((S ≫ cop c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-        = ((S ⊗ₕ 𝟙 c) ≫ (cop c ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
+theorem nabla_slide_conv {b c : 𝒞} (S : b ⟶ c) :
+    OrderedCat.le ((S ⊗ₕ 𝟙 c) ≫ nabla c) ((𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S) := by
+  have hL : ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+      = (S ⊗ₕ 𝟙 c) ≫ nabla c := by
+    calc ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+        = ((S ⊗ₕ 𝟙 c) ≫ (delta c ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
-      _ = (S ⊗ₕ 𝟙 c) ≫ (cop c ⊗ₕ 𝟙 c) ≫ tensAssoc c c c
+      _ = (S ⊗ₕ 𝟙 c) ≫ (delta c ⊗ₕ 𝟙 c) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by simp only [Cat.assoc]
-      _ = (S ⊗ₕ 𝟙 c) ≫ mer c := by rw [mer_of_cap]
-  have hR : ((cop b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-      = (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by
-    calc ((cop b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-        = ((cop b ⊗ₕ 𝟙 c) ≫ ((S ⊗ₕ S) ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
+      _ = (S ⊗ₕ 𝟙 c) ≫ nabla c := by rw [nabla_of_cap]
+  have hR : ((delta b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+      = (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by
+    calc ((delta b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
+        = ((delta b ⊗ₕ 𝟙 c) ≫ ((S ⊗ₕ S) ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ (((S ⊗ₕ S) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c)
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ (((S ⊗ₕ S) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c)
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by simp only [Cat.assoc]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (S ⊗ₕ (S ⊗ₕ 𝟙 c)))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ (tensAssoc b b c ≫ (S ⊗ₕ (S ⊗ₕ 𝟙 c)))
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [tensAssoc_nat]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ ((S ⊗ₕ (S ⊗ₕ 𝟙 c)) ≫ (𝟙 c ⊗ₕ cap c))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ ((S ⊗ₕ (S ⊗ₕ 𝟙 c)) ≫ (𝟙 c ⊗ₕ cap c))
             ≫ runit c := by simp only [Cat.assoc]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((S ⊗ₕ 𝟙 c) ≫ cap c))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((S ⊗ₕ 𝟙 c) ≫ cap c))
             ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ runit c := by rw [conv_slide]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c
             ≫ ((𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)))
             ≫ runit c := by rw [tensHom_split']
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit c := by simp only [Cat.assoc]
-      _ = (cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+      _ = (delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ runit b ≫ S := by rw [runit_nat]
-      _ = ((cop b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
+      _ = ((delta b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ runit b) ≫ S := by simp only [Cat.assoc]
-      _ = ((𝟙 b ⊗ₕ conv S) ≫ mer b) ≫ S := by rw [cap_tens_mer]
-      _ = (𝟙 b ⊗ₕ conv S) ≫ mer b ≫ S := by simp only [Cat.assoc]
+      _ = ((𝟙 b ⊗ₕ conv S) ≫ nabla b) ≫ S := by rw [cap_tens_nabla]
+      _ = (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by simp only [Cat.assoc]
   rw [← hL, ← hR]
-  exact OrderedCat.comp_mono (tensHom_mono (lax_cop S) (OrderedCat.le_refl _))
+  exact OrderedCat.comp_mono (tensHom_mono (lax_delta S) (OrderedCat.le_refl _))
     (OrderedCat.le_refl _)
 
 end Bending

@@ -9,7 +9,7 @@
 
   This file: the poset enrichment all three layers share.  The hom order is PRIMITIVE here —
   unlike the allegory's derived order `R ⊑ S := R ∩ S = R` (`Freyd/S2_10.lean`) — because in the
-  diagrammatic presentation `∩` is not a generator: it is the derived convolution `Δ;(R ⊗ S);∇`
+  diagrammatic presentation `∩` is not a generator: it is the derived meet `Δ;(R ⊗ S);∇`
   (functorialSemanticsForRelationalTheories.pdf p. 22), and the inequational axioms (37)–(43)
   mention `≤` before `∩` exists.
 -/
