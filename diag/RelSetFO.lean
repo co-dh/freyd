@@ -361,13 +361,13 @@ instance : CocartBicat RelSet.{u} :=
       exact CartBicat.«∇_unit» n
 
     bineq_37 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.«∇Δ_le_𝟙» n
+      black_transport; exact CartBicat.«∇Δ_≤_𝟙» n
     bineq_38 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.«𝟙_le_Δ∇» n
+      black_transport; exact CartBicat.«𝟙_≤_Δ∇» n
     bineq_39 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.«?!_le_𝟙» n
+      black_transport; exact CartBicat.«?!_≤_𝟙» n
     bineq_40 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.«𝟙_le_!?» n
+      black_transport; exact CartBicat.«𝟙_≤_!?» n
 
     bfrob_left := fun n => compl_inj <| by
       black_transport

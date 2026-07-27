@@ -240,18 +240,18 @@ instance : CartBicat RelSet.{u} :=
         have h' : x = w := h
         exact ⟨(x, PUnit.unit), rfl, (w, w), ⟨h', rfl⟩, rfl⟩
 
-    «∇Δ_le_𝟙» := fun n => RelSet.le_iff.mpr <| by
+    «∇Δ_≤_𝟙» := fun n => RelSet.le_iff.mpr <| by
       rintro p q ⟨z, h1, h2⟩
       have h1' := (ΔRel_recip_apply n p z).mp h1
       have h2' : q = (z, z) := h2
       exact Prod.ext_iff.mpr ⟨h1'.1.trans (congrArg Prod.fst h2').symm,
         h1'.2.trans (congrArg Prod.snd h2').symm⟩
-    «𝟙_le_Δ∇» := fun n => RelSet.le_iff.mpr <| by
+    «𝟙_≤_Δ∇» := fun n => RelSet.le_iff.mpr <| by
       intro x y h
       exact ⟨(x, x), rfl, (ΔRel_recip_apply n _ y).mpr ⟨h, h⟩⟩
-    «?!_le_𝟙» := fun n => RelSet.le_iff.mpr <| by
+    «?!_≤_𝟙» := fun n => RelSet.le_iff.mpr <| by
       rintro u v _; rfl
-    «𝟙_le_!?» := fun n => RelSet.le_iff.mpr <| by
+    «𝟙_≤_!?» := fun n => RelSet.le_iff.mpr <| by
       intro x y _; exact ⟨PUnit.unit, rfl, rfl⟩
 
     frob_left := fun n => by

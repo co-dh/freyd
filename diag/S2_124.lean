@@ -58,11 +58,11 @@ def W {a b : 𝒞} (R S : a ⟶ b) : a ⟶ a :=
 /-! ### Two preliminaries -/
 
 /-- The unit law (7) with the unitor moved to the other side: `(𝟙 ⊗ ?);∇ = ρ`. -/
-theorem «∇_of_?» (a : 𝒞) : (𝟙 a ⊗ₕ «?» a) ≫ «∇» a = SymMonCat.runit a := by
-  calc (𝟙 a ⊗ₕ «?» a) ≫ «∇» a
-      = (SymMonCat.runit a ≫ SymMonCat.runitInv a) ≫ (𝟙 a ⊗ₕ «?» a) ≫ «∇» a := by
+theorem «∇_of_?» (a : 𝒞) : (𝟙 a ⊗ₕ «?» a) ≫ ∇ a = SymMonCat.runit a := by
+  calc (𝟙 a ⊗ₕ «?» a) ≫ ∇ a
+      = (SymMonCat.runit a ≫ SymMonCat.runitInv a) ≫ (𝟙 a ⊗ₕ «?» a) ≫ ∇ a := by
         rw [SymMonCat.runit_inv, Cat.id_comp]
-    _ = SymMonCat.runit a ≫ SymMonCat.runitInv a ≫ (𝟙 a ⊗ₕ «?» a) ≫ «∇» a := by
+    _ = SymMonCat.runit a ≫ SymMonCat.runitInv a ≫ (𝟙 a ⊗ₕ «?» a) ≫ ∇ a := by
         simp only [Cat.assoc]
     _ = SymMonCat.runit a := by rw [«∇_unit», Cat.comp_id]
 
@@ -121,10 +121,10 @@ theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     box-carrying merge-from-a-cap, and `conv_slide` is what lets `P°` on one strand be read as `P` on
     the other. -/
 theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
-    (𝟙 a ⊗ₕ conv P) ≫ «∇» a
+    (𝟙 a ⊗ₕ conv P) ≫ ∇ a
       = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
   dsimp [capKeep]
-  calc (𝟙 a ⊗ₕ conv P) ≫ «∇» a
+  calc (𝟙 a ⊗ₕ conv P) ≫ ∇ a
       = (Δ a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
           ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) ≫ SymMonCat.runit a :=
         («cap_tens_∇» (conv P)).symm
@@ -146,10 +146,10 @@ theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
     both sides are `Δ;((Δ;(𝟙 ⊗ R)) ⊗ S);capKeep`, by functoriality of `⊗` alone. -/
 theorem left_eq_W {a b : 𝒞} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = W R S := by
   dsimp [meet, W]
-  calc Δ a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ «∇» a
-      = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ «∇» a := by
+  calc Δ a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ∇ a
+      = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ∇ a := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ «∇» a := by simp only [Cat.assoc]
+    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ a := by simp only [Cat.assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
         rw [cv_merge R]
     _ = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by

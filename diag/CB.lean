@@ -33,16 +33,11 @@ open scoped SymMonCat
 
 /-- A CARTESIAN BICATEGORY OF RELATIONS (functorialSemanticsForRelationalTheories.pdf Def. 4.1). -/
 class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
-  /-- `Δ_n : n ⟶ n ⊗ n`, the copy (Def. 4.1.1). -/
-  Δ (n : 𝒞) : n ⟶ n ⊗ n
-  /-- `!_n : n ⟶ I`, the discard (Def. 4.1.1). -/
-  «!» (n : 𝒞) : n ⟶ 𝕀
-  /-- `∇_n : n ⊗ n ⟶ n`, the merge (Def. 4.1.2). -/
-  «∇» (n : 𝒞) : n ⊗ n ⟶ n
-  /-- `?_n : I ⟶ n`, the unit (Def. 4.1.2). -/
-  «?» (n : 𝒞) : 𝕀 ⟶ n
+  Δ (n : 𝒞) : n ⟶ n ⊗ n     --copy 
+  «!» (n : 𝒞) : n ⟶ 𝕀       --discard
+  «∇» (n : 𝒞) : n ⊗ n ⟶ n   --merge
+  «?» (n : 𝒞) : 𝕀 ⟶ n       --unit
 
-  /-- Coassociativity of `Δ`; Example 2.3(b) eq. (8). -/
   Δ_assoc (n : 𝒞) :
     Δ n ≫ (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n = Δ n ≫ (𝟙 n ⊗ₕ Δ n)
   /-- Cocommutativity of `Δ`; eq. (9). -/
@@ -59,13 +54,13 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
   «∇_unit» (n : 𝒞) : SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n = 𝟙 n
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
-  «∇Δ_le_𝟙» (n : 𝒞) : («∇» n ≫ Δ n) ≤ (𝟙 (n ⊗ n))
+  «∇Δ_≤_𝟙» (n : 𝒞) : («∇» n ≫ Δ n) ≤ (𝟙 (n ⊗ n))
   /-- (38): `𝟙 ≤ Δ;∇`.  With (37), `Δ ⊣ ∇`. -/
-  «𝟙_le_Δ∇» (n : 𝒞) : (𝟙 n) ≤ (Δ n ≫ «∇» n)
+  «𝟙_≤_Δ∇» (n : 𝒞) : (𝟙 n) ≤ (Δ n ≫ «∇» n)
   /-- (39): `?;! ≤ 𝟙_I`.  With (40), `! ⊣ ?`. -/
-  «?!_le_𝟙» (n : 𝒞) : («?» n ≫ «!» n) ≤ (𝟙 (𝕀 : 𝒞))
+  «?!_≤_𝟙» (n : 𝒞) : («?» n ≫ «!» n) ≤ (𝟙 (𝕀 : 𝒞))
   /-- (40): `𝟙 ≤ !;?`.  With (39), `! ⊣ ?`. -/
-  «𝟙_le_!?» (n : 𝒞) : (𝟙 n) ≤ («!» n ≫ «?» n)
+  «𝟙_≤_!?» (n : 𝒞) : (𝟙 n) ≤ («!» n ≫ «?» n)
 
   /-- (41), left form: `(𝟙 ⊗ Δ);α⁻¹;(∇ ⊗ 𝟙) = ∇;Δ`. -/
   frob_left (n : 𝒞) :
@@ -83,34 +78,43 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
 
 namespace CartBicat
 
+/-- `∇` at the USE sites, so the merge reads as the paper draws it rather than as `∇`.  The field
+    itself has to keep the guillemets — U+2207 is a mathematical operator, outside Lean's
+    letterlike whitelist (`Init/Meta/Defs.lean:100`), so it is not a legal bare identifier — and the
+    class body above is elaborated before this line, so it keeps them too.
+
+    Only the merge gets this.  `!` loses to core's Bool negation even at `priority := high`, and `?`
+    is read as a metavariable before notation is consulted; both stay `«!»` and `«?»` throughout. -/
+scoped notation "∇" => CartBicat.«∇»
+
 variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
 
 /-- The SPECIAL law `Δ;∇ = 𝟙` (functorialSemanticsForRelationalTheories.pdf p. 18, eq. (12)).
     Not an axiom: `𝟙 ≤ Δ;∇` is (38), and
     the reverse is the paper's displayed derivation — weaken the identity on one strand of the
     bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
-theorem special (n : 𝒞) : Δ n ≫ «∇» n = 𝟙 n := by
-  refine OrderedCat.le_antisymm ?_ («𝟙_le_Δ∇» n)
+theorem special (n : 𝒞) : Δ n ≫ ∇ n = 𝟙 n := by
+  refine OrderedCat.le_antisymm ?_ («𝟙_≤_Δ∇» n)
   -- `Δ;∇ ≤ Δ;(𝟙 ⊗ (!;?));∇`, by (40) under `⊗` and then under `;`.
-  have hstep : (Δ n ≫ «∇» n) ≤ (Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ «∇» n) := by
-    have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ «∇» n) ≤ ((𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ «∇» n) :=
+  have hstep : (Δ n ≫ ∇ n) ≤ (Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) := by
+    have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ ∇ n) ≤ ((𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) :=
       OrderedCat.comp_mono
-        (SymMonCat.tensHom_mono (OrderedCat.le_refl _) («𝟙_le_!?» n)) (OrderedCat.le_refl _)
+        (SymMonCat.tensHom_mono (OrderedCat.le_refl _) («𝟙_≤_!?» n)) (OrderedCat.le_refl _)
     rw [SymMonCat.tensHom_id, Cat.id_comp] at h
     exact OrderedCat.comp_mono (OrderedCat.le_refl _) h
   -- The right-hand side is `𝟙`: split the `⊗`, insert `runit ≫ runitInv = 𝟙`, then use the
   -- counit law (10) on the left half and the unit law (7) on the right half.
-  have hcollapse : Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ «∇» n = 𝟙 n := by
+  have hcollapse : Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n = 𝟙 n := by
     have hsplit : (𝟙 n ⊗ₕ («!» n ≫ «?» n)) = (𝟙 n ⊗ₕ «!» n) ≫ (𝟙 n ⊗ₕ «?» n) := by
       rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    calc Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ «∇» n
-        = Δ n ≫ ((𝟙 n ⊗ₕ «!» n) ≫ (𝟙 n ⊗ₕ «?» n)) ≫ «∇» n := by rw [hsplit]
-      _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ 𝟙 (n ⊗ 𝕀) ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n := by
+    calc Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n
+        = Δ n ≫ ((𝟙 n ⊗ₕ «!» n) ≫ (𝟙 n ⊗ₕ «?» n)) ≫ ∇ n := by rw [hsplit]
+      _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ 𝟙 (n ⊗ 𝕀) ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by
             rw [Cat.id_comp, Cat.assoc]
       _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ (SymMonCat.runit n ≫ SymMonCat.runitInv n)
-            ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n := by rw [SymMonCat.runit_inv]
+            ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [SymMonCat.runit_inv]
       _ = (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n)
-            ≫ (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n) := by
+            ≫ (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n) := by
             simp only [Cat.assoc]
       _ = 𝟙 n ≫ 𝟙 n := by rw [Δ_counit, «∇_unit»]
       _ = 𝟙 n := Cat.id_comp _
@@ -134,16 +138,16 @@ theorem Δ_counit_left (n : 𝒞) :
 
 /-- The unit law (7) read on the LEFT strand: `λ⁻¹;(? ⊗ 𝟙);∇ = 𝟙`, dual to `delta_counit_left`. -/
 theorem «∇_unit_left» (n : 𝒞) :
-    SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ «∇» n = 𝟙 n := by
-  calc SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ «∇» n
-      = SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ «∇» n := by rw [«∇_comm»]
-    _ = SymMonCat.lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ «∇» n := by
+    SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n = 𝟙 n := by
+  calc SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n
+      = SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ ∇ n := by rw [«∇_comm»]
+    _ = SymMonCat.lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ ∇ n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ «∇» n := by
+    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ ∇ n := by
           rw [SymMonCat.swap_nat]
-    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n := by
+    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n := by rw [lunitInv_swap]
+    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [lunitInv_swap]
     _ = 𝟙 n := «∇_unit» n
 
 /-- The CUP `? ; Δ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
@@ -151,7 +155,7 @@ theorem «∇_unit_left» (n : 𝒞) :
 def cup (n : 𝒞) : (𝕀 : 𝒞) ⟶ n ⊗ n := «?» n ≫ Δ n
 
 /-- The CAP `∇ ; ! : n ⊗ n ⟶ I` — in `Rel`, `(x,y) ↦ •` exactly when `x = y`. -/
-def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := «∇» n ≫ «!» n
+def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := ∇ n ≫ «!» n
 
 /-- The SNAKE (yanking) equation: a wire bent down by a cup and back up by a cap is straight.
     This is where the Frobenius equation (41) earns its place — the middle three factors are
@@ -162,18 +166,18 @@ theorem snake (n : 𝒞) :
       ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
   have hcup : (𝟙 n ⊗ₕ cup n) = (𝟙 n ⊗ₕ «?» n) ≫ (𝟙 n ⊗ₕ Δ n) := by
     dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  have hcap : (cap n ⊗ₕ 𝟙 n) = («∇» n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n) := by
+  have hcap : (cap n ⊗ₕ 𝟙 n) = (∇ n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n) := by
     dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
   calc SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
         ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
       = SymMonCat.runitInv n ≫ ((𝟙 n ⊗ₕ «?» n) ≫ (𝟙 n ⊗ₕ Δ n)) ≫ SymMonCat.tensAssocInv n n n
-          ≫ ((«∇» n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
+          ≫ ((∇ n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
     _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n))
-          ≫ ((𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ («∇» n ⊗ₕ 𝟙 n))
+          ≫ ((𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n))
           ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ («∇» n ≫ Δ n)
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ (∇ n ≫ Δ n)
           ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [frob_left]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n)
+    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n)
           ≫ (Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n) := by simp only [Cat.assoc]
     _ = 𝟙 n ≫ 𝟙 n := by rw [«∇_unit», Δ_counit_left]
     _ = 𝟙 n := Cat.id_comp _
@@ -185,18 +189,18 @@ theorem snake' (n : 𝒞) :
       ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n = 𝟙 n := by
   have hcup : (cup n ⊗ₕ 𝟙 n) = («?» n ⊗ₕ 𝟙 n) ≫ (Δ n ⊗ₕ 𝟙 n) := by
     dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ «∇» n) ≫ (𝟙 n ⊗ₕ «!» n) := by
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n) := by
     dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
   calc SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
         ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n
       = SymMonCat.lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ (Δ n ⊗ₕ 𝟙 n)) ≫ SymMonCat.tensAssoc n n n
-          ≫ ((𝟙 n ⊗ₕ «∇» n) ≫ (𝟙 n ⊗ₕ «!» n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
+          ≫ ((𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
     _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n))
-          ≫ ((Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n))
+          ≫ ((Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n))
           ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n)) ≫ («∇» n ≫ Δ n)
+    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n)) ≫ (∇ n ≫ Δ n)
           ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n := by rw [frob_right]
-    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ «∇» n)
+    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n)
           ≫ (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n) := by simp only [Cat.assoc]
     _ = 𝟙 n ≫ 𝟙 n := by rw [«∇_unit_left», Δ_counit]
     _ = 𝟙 n := Cat.id_comp _
@@ -515,23 +519,23 @@ theorem conv_comp {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) :
     counit law (10) then eats the `Δ`.  This single equation is the whole Frobenius content of the
     modular law. -/
 theorem «∇_of_cap» (n : 𝒞) :
-    (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = «∇» n := by
-  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ «∇» n) ≫ (𝟙 n ⊗ₕ «!» n) := by
+    (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = ∇ n := by
+  have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n) := by
     dsimp [cap]; rw [← tensHom_comp, Cat.id_comp]
   calc (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n
-      = ((Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n))
+      = ((Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n))
           ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [hcap]; simp only [Cat.assoc]
-    _ = («∇» n ≫ Δ n) ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [frob_right]
-    _ = «∇» n ≫ Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by simp only [Cat.assoc]
-    _ = «∇» n ≫ 𝟙 n := by rw [Δ_counit]
-    _ = «∇» n := Cat.comp_id _
+    _ = (∇ n ≫ Δ n) ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [frob_right]
+    _ = ∇ n ≫ Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by simp only [Cat.assoc]
+    _ = ∇ n ≫ 𝟙 n := by rw [Δ_counit]
+    _ = ∇ n := Cat.comp_id _
 
 /-- `nabla_of_cap` with a box on the bent strand: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ((𝟙 ⊗ T);cap));ρ = (𝟙 ⊗ T);∇`.
     `tensAssoc_nat` and the two splittings pull `T` out to the front, after which the box-free
     `nabla_of_cap` closes it. -/
 theorem «cap_tens_∇» {b c : 𝒞} (T : c ⟶ b) :
     (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
-      = (𝟙 b ⊗ₕ T) ≫ «∇» b := by
+      = (𝟙 b ⊗ₕ T) ≫ ∇ b := by
   have hsplit : (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b))
       = (𝟙 b ⊗ₕ (𝟙 b ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ cap b) := by rw [← tensHom_comp, Cat.id_comp]
   calc (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ T) ≫ cap b)) ≫ runit b
@@ -548,7 +552,7 @@ theorem «cap_tens_∇» {b c : 𝒞} (T : c ⟶ b) :
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_split']
     _ = (𝟙 b ⊗ₕ T) ≫ (Δ b ⊗ₕ 𝟙 b) ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
-    _ = (𝟙 b ⊗ₕ T) ≫ «∇» b := by rw [«∇_of_cap»]
+    _ = (𝟙 b ⊗ₕ T) ≫ ∇ b := by rw [«∇_of_cap»]
 
 /-- THE HEART OF THE MODULAR LAW: `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S°);∇;S`.
 
@@ -558,17 +562,17 @@ theorem «cap_tens_∇» {b c : 𝒞} (T : c ⟶ b) :
     be the inequality step, and it is.  `nabla_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
     that (42) applies to, and `conv_slide` turns the surviving duplicate into `S°`. -/
 theorem «∇_slide_conv» {b c : 𝒞} (S : b ⟶ c) :
-    ((S ⊗ₕ 𝟙 c) ≫ «∇» c) ≤ ((𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S) := by
+    ((S ⊗ₕ 𝟙 c) ≫ ∇ c) ≤ ((𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S) := by
   have hL : ((S ≫ Δ c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-      = (S ⊗ₕ 𝟙 c) ≫ «∇» c := by
+      = (S ⊗ₕ 𝟙 c) ≫ ∇ c := by
     calc ((S ≫ Δ c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
         = ((S ⊗ₕ 𝟙 c) ≫ (Δ c ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
       _ = (S ⊗ₕ 𝟙 c) ≫ (Δ c ⊗ₕ 𝟙 c) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by simp only [Cat.assoc]
-      _ = (S ⊗ₕ 𝟙 c) ≫ «∇» c := by rw [«∇_of_cap»]
+      _ = (S ⊗ₕ 𝟙 c) ≫ ∇ c := by rw [«∇_of_cap»]
   have hR : ((Δ b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
-      = (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S := by
+      = (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by
     calc ((Δ b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c
         = ((Δ b ⊗ₕ 𝟙 c) ≫ ((S ⊗ₕ S) ⊗ₕ 𝟙 c)) ≫ tensAssoc c c c
             ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := by rw [← tensHom_comp, Cat.comp_id]
@@ -591,18 +595,18 @@ theorem «∇_slide_conv» {b c : 𝒞} (S : b ⟶ c) :
             ≫ runit b ≫ S := by rw [runit_nat]
       _ = ((Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ runit b) ≫ S := by simp only [Cat.assoc]
-      _ = ((𝟙 b ⊗ₕ conv S) ≫ «∇» b) ≫ S := by rw [«cap_tens_∇»]
-      _ = (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S := by simp only [Cat.assoc]
+      _ = ((𝟙 b ⊗ₕ conv S) ≫ ∇ b) ≫ S := by rw [«cap_tens_∇»]
+      _ = (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by simp only [Cat.assoc]
   -- Spelled as a THREE-LINK `calc` rather than `rw [← hL, ← hR]; exact …`, so that the argument sits
   -- in the proof TERM where `diag-export --proof` can draw it: reshape, the one inequality, reshape
   -- back.  `hL` and `hR` are the reshaping and are stated at `=`, so the drawn chain shows exactly
   -- one `≤`, which is `lax_delta` — the whole of the mathematics.
-  calc (S ⊗ₕ 𝟙 c) ≫ «∇» c
+  calc (S ⊗ₕ 𝟙 c) ≫ ∇ c
       = ((S ≫ Δ c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := hL.symm
     _ ≤ ((Δ b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c :=
         OrderedCat.comp_mono (tensHom_mono (lax_Δ S) (OrderedCat.le_refl _))
           (OrderedCat.le_refl _)
-    _ = (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S := hR
+    _ = (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := hR
 
 end Bending
 

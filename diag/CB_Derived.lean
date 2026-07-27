@@ -21,7 +21,7 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
 /-- The CONVOLUTION `Δ;(R ⊗ S);∇`
     (functorialSemanticsForRelationalTheories.pdf p. 22).  Copy the input, run `R` and `S` on the
     two copies, then merge — the merge forces the two results to coincide, so this is `R ∩ S`. -/
-def meet {a b : 𝒞} (R S : a ⟶ b) : a ⟶ b := Δ a ≫ (R ⊗ₕ S) ≫ «∇» b
+def meet {a b : 𝒞} (R S : a ⟶ b) : a ⟶ b := Δ a ≫ (R ⊗ₕ S) ≫ ∇ b
 
 /-- `⊤ := !;?`, the maximum arrow: discard everything, then create everything.  The unit of
     `meet` (functorialSemanticsForRelationalTheories.pdf p. 22). -/
@@ -31,7 +31,7 @@ def top (a b : 𝒞) : a ⟶ b := «!» a ≫ «?» b
 theorem le_top {a b : 𝒞} (R : a ⟶ b) : R ≤ (top a b) := by
   -- `R = R;𝟙 ≤ R;(!;?) = (R;!);? ≤ !;? = ⊤`.
   have h1 : (R ≫ 𝟙 b) ≤ (R ≫ «!» b ≫ «?» b) :=
-    OrderedCat.comp_mono (OrderedCat.le_refl R) («𝟙_le_!?» b)
+    OrderedCat.comp_mono (OrderedCat.le_refl R) («𝟙_≤_!?» b)
   have h2 : ((R ≫ «!» b) ≫ «?» b) ≤ («!» a ≫ «?» b) :=
     OrderedCat.comp_mono (lax_! R) (OrderedCat.le_refl («?» b))
   rw [Cat.comp_id] at h1
@@ -49,20 +49,20 @@ theorem meet_top {a b : 𝒞} (R : a ⟶ b) : meet R (top a b) = R := by
     rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
     simp only [Cat.id_comp, Cat.comp_id]
   -- `(𝟙 ⊗ ?);∇ = ρ`, read off the unit law (7) by cancelling `ρ ; ρ⁻¹ = 𝟙`.
-  have hun : (𝟙 b ⊗ₕ «?» b) ≫ «∇» b = SymMonCat.runit b := by
+  have hun : (𝟙 b ⊗ₕ «?» b) ≫ ∇ b = SymMonCat.runit b := by
     have h := «∇_unit» (𝒞 := 𝒞) b
-    calc (𝟙 b ⊗ₕ «?» b) ≫ «∇» b
-        = 𝟙 (b ⊗ 𝕀) ≫ (𝟙 b ⊗ₕ «?» b) ≫ «∇» b := by rw [Cat.id_comp]
-      _ = (SymMonCat.runit b ≫ SymMonCat.runitInv b) ≫ (𝟙 b ⊗ₕ «?» b) ≫ «∇» b := by
+    calc (𝟙 b ⊗ₕ «?» b) ≫ ∇ b
+        = 𝟙 (b ⊗ 𝕀) ≫ (𝟙 b ⊗ₕ «?» b) ≫ ∇ b := by rw [Cat.id_comp]
+      _ = (SymMonCat.runit b ≫ SymMonCat.runitInv b) ≫ (𝟙 b ⊗ₕ «?» b) ≫ ∇ b := by
             rw [SymMonCat.runit_inv]
-      _ = SymMonCat.runit b ≫ (SymMonCat.runitInv b ≫ (𝟙 b ⊗ₕ «?» b) ≫ «∇» b) := by
+      _ = SymMonCat.runit b ≫ (SymMonCat.runitInv b ≫ (𝟙 b ⊗ₕ «?» b) ≫ ∇ b) := by
             rw [Cat.assoc]
       _ = SymMonCat.runit b ≫ 𝟙 b := by rw [h]
       _ = SymMonCat.runit b := Cat.comp_id _
   dsimp [meet, top]
-  calc Δ a ≫ (R ⊗ₕ («!» a ≫ «?» b)) ≫ «∇» b
-      = Δ a ≫ (((𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))) ≫ (𝟙 b ⊗ₕ «?» b)) ≫ «∇» b := by rw [hR]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ (𝟙 b ⊗ₕ «?» b) ≫ «∇» b := by
+  calc Δ a ≫ (R ⊗ₕ («!» a ≫ «?» b)) ≫ ∇ b
+      = Δ a ≫ (((𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))) ≫ (𝟙 b ⊗ₕ «?» b)) ≫ ∇ b := by rw [hR]
+    _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ (𝟙 b ⊗ₕ «?» b) ≫ ∇ b := by
           simp only [Cat.assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.runit b := by rw [hun]
     _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ SymMonCat.runit a ≫ R := by rw [SymMonCat.runit_nat]
@@ -92,20 +92,20 @@ theorem meet_le_left {a b : 𝒞} (R S : a ⟶ b) :
     merge, bridged by naturality of the symmetry. -/
 theorem meet_comm {a b : 𝒞} (R S : a ⟶ b) : meet R S = meet S R := by
   dsimp [meet]
-  calc Δ a ≫ (R ⊗ₕ S) ≫ «∇» b
-      = (Δ a ≫ SymMonCat.swap a a) ≫ (R ⊗ₕ S) ≫ «∇» b := by rw [Δ_comm]
-    _ = Δ a ≫ (SymMonCat.swap a a ≫ (R ⊗ₕ S)) ≫ «∇» b := by simp only [Cat.assoc]
-    _ = Δ a ≫ ((S ⊗ₕ R) ≫ SymMonCat.swap b b) ≫ «∇» b := by rw [← SymMonCat.swap_nat]
-    _ = Δ a ≫ (S ⊗ₕ R) ≫ SymMonCat.swap b b ≫ «∇» b := by simp only [Cat.assoc]
-    _ = Δ a ≫ (S ⊗ₕ R) ≫ «∇» b := by rw [«∇_comm»]
+  calc Δ a ≫ (R ⊗ₕ S) ≫ ∇ b
+      = (Δ a ≫ SymMonCat.swap a a) ≫ (R ⊗ₕ S) ≫ ∇ b := by rw [Δ_comm]
+    _ = Δ a ≫ (SymMonCat.swap a a ≫ (R ⊗ₕ S)) ≫ ∇ b := by simp only [Cat.assoc]
+    _ = Δ a ≫ ((S ⊗ₕ R) ≫ SymMonCat.swap b b) ≫ ∇ b := by rw [← SymMonCat.swap_nat]
+    _ = Δ a ≫ (S ⊗ₕ R) ≫ SymMonCat.swap b b ≫ ∇ b := by simp only [Cat.assoc]
+    _ = Δ a ≫ (S ⊗ₕ R) ≫ ∇ b := by rw [«∇_comm»]
 
 /-- `(R ∩ S) ∩ T` with the left-leaning copy and merge trees exposed, ready for (8) and (6). -/
 theorem meet_left_staged {a b : 𝒞} (R S T : a ⟶ b) :
     meet (meet R S) T
-      = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+      = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
   dsimp [meet]
-  have hsplit : ((Δ a ≫ (R ⊗ₕ S) ≫ «∇» b) ⊗ₕ T)
-      = (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) := by
+  have hsplit : ((Δ a ≫ (R ⊗ₕ S) ≫ ∇ b) ⊗ₕ T)
+      = (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) := by
     rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
     simp only [Cat.id_comp, Cat.comp_id]
   rw [hsplit]
@@ -114,10 +114,10 @@ theorem meet_left_staged {a b : 𝒞} (R S T : a ⟶ b) :
 /-- The mirror staging for `R ∩ (S ∩ T)`, right-leaning. -/
 theorem meet_right_staged {a b : 𝒞} (R S T : a ⟶ b) :
     meet R (meet S T)
-      = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ «∇» b) ≫ «∇» b := by
+      = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by
   dsimp [meet]
-  have hsplit : (R ⊗ₕ (Δ a ≫ (S ⊗ₕ T) ≫ «∇» b))
-      = (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ «∇» b) := by
+  have hsplit : (R ⊗ₕ (Δ a ≫ (S ⊗ₕ T) ≫ ∇ b))
+      = (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇ b) := by
     rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
     simp only [Cat.id_comp, Cat.comp_id]
   rw [hsplit]
@@ -137,31 +137,31 @@ theorem meet_assoc {a b : 𝒞} (R S T : a ⟶ b) :
     meet (meet R S) T = meet R (meet S T) := by
   rw [meet_left_staged, meet_right_staged]
   -- Insert `α ; α⁻¹ = 𝟙` after the left copy tree, then apply (8), naturality, and (6).
-  calc Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b
+  calc Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b
       = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (SymMonCat.tensAssoc a a a ≫ SymMonCat.tensAssocInv a a a)
-          ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+          ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         rw [SymMonCat.tensAssoc_inv, Cat.id_comp]
     _ = (Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ SymMonCat.tensAssoc a a a)
-          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         simp only [Cat.assoc]
     _ = (Δ a ≫ (𝟙 a ⊗ₕ Δ a))
-          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+          ≫ SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         rw [Δ_assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a)
-          ≫ (SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T)) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+          ≫ (SymMonCat.tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T)) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         simp only [Cat.assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a)
-          ≫ ((R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv b b b) ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by
+          ≫ ((R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv b b b) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         rw [tensAssocInv_nat]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
-          ≫ SymMonCat.tensAssocInv b b b ≫ («∇» b ⊗ₕ 𝟙 b) ≫ «∇» b := by simp only [Cat.assoc]
+          ≫ SymMonCat.tensAssocInv b b b ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by simp only [Cat.assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
           ≫ SymMonCat.tensAssocInv b b b ≫ SymMonCat.tensAssoc b b b
-          ≫ (𝟙 b ⊗ₕ «∇» b) ≫ «∇» b := by rw [«∇_assoc»]
+          ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by rw [«∇_assoc»]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
           ≫ (SymMonCat.tensAssocInv b b b ≫ SymMonCat.tensAssoc b b b)
-          ≫ (𝟙 b ⊗ₕ «∇» b) ≫ «∇» b := by simp only [Cat.assoc]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ «∇» b) ≫ «∇» b := by
+          ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by simp only [Cat.assoc]
+    _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by
         rw [SymMonCat.inv_tensAssoc, Cat.id_comp]
 
 /-- `R ∩ R = R` — Freyd's `inter_idem` (§2.11), derived.  `≤` is the glb property; `≥` is exactly
@@ -169,11 +169,11 @@ theorem meet_assoc {a b : 𝒞} (R S T : a ⟶ b) :
     strands can only produce more than running it once, and `Δ;∇ = 𝟙` closes the loop. -/
 theorem meet_idem {a b : 𝒞} (R : a ⟶ b) : meet R R = R := by
   refine OrderedCat.le_antisymm (meet_le_left R R) ?_
-  have h : ((R ≫ Δ b) ≫ «∇» b) ≤ ((Δ a ≫ (R ⊗ₕ R)) ≫ «∇» b) :=
-    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.le_refl («∇» b))
-  have hL : (R ≫ Δ b) ≫ «∇» b = R := by
+  have h : ((R ≫ Δ b) ≫ ∇ b) ≤ ((Δ a ≫ (R ⊗ₕ R)) ≫ ∇ b) :=
+    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.le_refl (∇ b))
+  have hL : (R ≫ Δ b) ≫ ∇ b = R := by
     rw [Cat.assoc, special, Cat.comp_id]
-  have hR : (Δ a ≫ (R ⊗ₕ R)) ≫ «∇» b = meet R R := by
+  have hR : (Δ a ≫ (R ⊗ₕ R)) ≫ ∇ b = meet R R := by
     dsimp [meet]; rw [Cat.assoc]
   rw [hL, hR] at h
   exact h
@@ -261,7 +261,7 @@ def ineq_TOT {a b : 𝒞} (R : a ⟶ b) : Prop := («!» a) ≤ (R ≫ «!» b)
 
 /-- (INJ) as the paper writes it: `(R ⊗ R);∇ ≤ ∇;R`. -/
 def ineq_INJ {a b : 𝒞} (R : a ⟶ b) : Prop :=
-  ((R ⊗ₕ R) ≫ «∇» b) ≤ («∇» a ≫ R)
+  ((R ⊗ₕ R) ≫ ∇ b) ≤ (∇ a ≫ R)
 
 /-- (SUR) as the paper writes it: `? ≤ ?;R`. -/
 def ineq_SUR {a b : 𝒞} (R : a ⟶ b) : Prop := («?» b) ≤ («?» a ≫ R)

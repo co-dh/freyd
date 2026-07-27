@@ -25,10 +25,10 @@ functorialSemanticsForRelationalTheories.pdf	8	805	713	260	44	fs-eq10	Freyd.Diag
 functorialSemanticsForRelationalTheories.pdf	8	280	922	380	62	fs-eq11	Freyd.Diag.CartBicat.frob_left
 functorialSemanticsForRelationalTheories.pdf	8	730	922	330	62	fs-eq12	Freyd.Diag.CartBicat.special
 # Definition 4.1 clause 3, the adjunction and Frobenius inequations
-functorialSemanticsForRelationalTheories.pdf	18	350	225	325	80	fs-ineq37	Freyd.Diag.CartBicat.«∇Δ_le_𝟙»
-functorialSemanticsForRelationalTheories.pdf	18	710	225	355	80	fs-ineq38	Freyd.Diag.CartBicat.«𝟙_le_Δ∇»
-functorialSemanticsForRelationalTheories.pdf	18	350	320	325	65	fs-ineq39	Freyd.Diag.CartBicat.«?!_le_𝟙»
-functorialSemanticsForRelationalTheories.pdf	18	710	320	355	65	fs-ineq40	Freyd.Diag.CartBicat.«𝟙_le_!?»
+functorialSemanticsForRelationalTheories.pdf	18	350	225	325	80	fs-ineq37	Freyd.Diag.CartBicat.«∇Δ_≤_𝟙»
+functorialSemanticsForRelationalTheories.pdf	18	710	225	355	80	fs-ineq38	Freyd.Diag.CartBicat.«𝟙_≤_Δ∇»
+functorialSemanticsForRelationalTheories.pdf	18	350	320	325	65	fs-ineq39	Freyd.Diag.CartBicat.«?!_≤_𝟙»
+functorialSemanticsForRelationalTheories.pdf	18	710	320	355	65	fs-ineq40	Freyd.Diag.CartBicat.«𝟙_≤_!?»
 functorialSemanticsForRelationalTheories.pdf	18	475	425	232	90	fs-eq41-left	Freyd.Diag.CartBicat.frob_left
 functorialSemanticsForRelationalTheories.pdf	18	600	425	255	90	fs-eq41-right	Freyd.Diag.CartBicat.frob_right
 # Definition 4.1 clause 4, laxness — the same statements as eq. (3) on p. 4
