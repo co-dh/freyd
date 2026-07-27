@@ -32,10 +32,10 @@ open scoped SymMonCat
 
 instance : OrderedCat RelSet.{u} :=
   { (inferInstance : Cat RelSet.{u}) with
-    le := Freyd.Alg.le
-    le_refl := Freyd.Alg.le_refl
-    le_trans := Freyd.Alg.le_trans
-    le_antisymm := Freyd.Alg.le_antisymm
+    «≤» := Freyd.Alg.le
+    «≤_refl» := Freyd.Alg.le_refl
+    «≤_trans» := Freyd.Alg.le_trans
+    «≤_antisymm» := Freyd.Alg.le_antisymm
     comp_mono := fun h₁ h₂ => Freyd.Alg.le_trans (comp_mono_right h₁ _) (comp_mono_left _ h₂) }
 
 instance : SymMonCat RelSet.{u} :=

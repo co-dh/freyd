@@ -94,14 +94,14 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
     the reverse is the paper's displayed derivation — weaken the identity on one strand of the
     bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
 theorem special (n : 𝒞) : Δ n ≫ ∇ n = 𝟙 n := by
-  refine OrderedCat.le_antisymm ?_ («𝟙_≤_Δ∇» n)
+  refine OrderedCat.«≤_antisymm» ?_ («𝟙_≤_Δ∇» n)
   -- `Δ;∇ ≤ Δ;(𝟙 ⊗ (!;?));∇`, by (40) under `⊗` and then under `;`.
   have hstep : (Δ n ≫ ∇ n) ≤ (Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) := by
     have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ ∇ n) ≤ ((𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) :=
       OrderedCat.comp_mono
-        (SymMonCat.tensHom_mono (OrderedCat.le_refl _) («𝟙_≤_!?» n)) (OrderedCat.le_refl _)
+        (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙_≤_!?» n)) (OrderedCat.«≤_refl» _)
     rw [SymMonCat.tensHom_id, Cat.id_comp] at h
-    exact OrderedCat.comp_mono (OrderedCat.le_refl _) h
+    exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) h
   -- The right-hand side is `𝟙`: split the `⊗`, insert `runit ≫ runitInv = 𝟙`, then use the
   -- counit law (10) on the left half and the unit law (7) on the right half.
   have hcollapse : Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n = 𝟙 n := by
@@ -240,10 +240,10 @@ theorem conv_id (a : 𝒞) : conv (𝟙 a) = 𝟙 a := by
 theorem conv_mono {a b : 𝒞} {R S : a ⟶ b} (h : R ≤ S) :
     (conv R) ≤ (conv S) := by
   dsimp [conv, bend]
-  refine OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono (OrderedCat.le_refl _)
-    (OrderedCat.comp_mono (OrderedCat.le_refl _) (OrderedCat.comp_mono ?_ (OrderedCat.le_refl _))))
-  exact SymMonCat.tensHom_mono (OrderedCat.le_refl _)
-    (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.le_refl _)) (OrderedCat.le_refl _))
+  refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+    (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (OrderedCat.comp_mono ?_ (OrderedCat.«≤_refl» _))))
+  exact SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _)
+    (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.«≤_refl» _)) (OrderedCat.«≤_refl» _))
 
 section Bending
 
@@ -604,8 +604,8 @@ theorem «∇_slide_conv» {b c : 𝒞} (S : b ⟶ c) :
   calc (S ⊗ₕ 𝟙 c) ≫ ∇ c
       = ((S ≫ Δ c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := hL.symm
     _ ≤ ((Δ b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c :=
-        OrderedCat.comp_mono (tensHom_mono (lax_Δ S) (OrderedCat.le_refl _))
-          (OrderedCat.le_refl _)
+        OrderedCat.comp_mono (tensHom_mono (lax_Δ S) (OrderedCat.«≤_refl» _))
+          (OrderedCat.«≤_refl» _)
     _ = (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := hR
 
 end Bending

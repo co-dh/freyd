@@ -105,10 +105,10 @@ theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     simp only [Cat.assoc]
   rw [hshape]
   dsimp [Dom]
-  refine OrderedCat.le_antisymm ?_ ?_
-  · exact meet_mono (OrderedCat.le_refl _)
-      (OrderedCat.comp_mono (OrderedCat.le_refl P) (le_top (conv P)))
-  · refine meet_glb (meet_le_left _ _) ?_
+  refine OrderedCat.«≤_antisymm» ?_ ?_
+  · exact meet_mono (OrderedCat.«≤_refl» _)
+      (OrderedCat.comp_mono (OrderedCat.«≤_refl» P) («≤_top» (conv P)))
+  · refine meet_glb («meet_≤_left» _ _) ?_
     have hmod := modular_right P (top b a) (𝟙 a)
     rw [Cat.comp_id, meet_comm (top b a) (conv P), meet_top] at hmod
     rw [meet_comm (𝟙 a) (P ≫ top b a)]
@@ -208,7 +208,7 @@ theorem dom_inter_diag {a b : 𝒞} (R S : a ⟶ b) :
     statement for a bare allegory, where it is `Iff.rfl` on top of `dom_inter` because there `⊑` is
     *defined* as `X ∩ Y = X`; here `≤` is primitive, so both directions are real steps.
 
-    Written as two explicit `le_trans` chains rather than `rw`s, so that the argument sits in the
+    Written as two explicit `«≤_trans»` chains rather than `rw`s, so that the argument sits in the
     proof TERM where `diag-export --proof` can draw it. -/
 theorem entire_inter_iff {a b : 𝒞} (R S : a ⟶ b) :
     Total (meet R S) ↔ (𝟙 a) ≤ (R ≫ conv S) := by
@@ -216,8 +216,8 @@ theorem entire_inter_iff {a b : 𝒞} (R S : a ⟶ b) :
   · intro h
     -- `𝟙 ≤ (R ∩ S)(R ∩ S)° ≤ R S°`: monotone in each factor, and nothing else is used.  This is
     -- the direction that holds in any allegory-like setting, modular law or not.
-    exact OrderedCat.le_trans h
-      (OrderedCat.comp_mono (meet_le_left R S) (conv_mono (meet_le_right R S)))
+    exact OrderedCat.«≤_trans» h
+      (OrderedCat.comp_mono («meet_≤_left» R S) (conv_mono («meet_≤_right» R S)))
   · intro h
     -- The other way needs §2.124, which is where the modular law is spent.  That link is an
     -- EQUALITY and is stated as one, so the drawn chain shows it as `=` rather than hiding it
@@ -225,9 +225,9 @@ theorem entire_inter_iff {a b : 𝒞} (R S : a ⟶ b) :
     -- The `Dom` is unfolded in the step, not left folded: `diag-export` draws a term, and `Dom P`
     -- has no shape in the picture language — it would come out as one opaque box where the whole
     -- content is the meet inside it.
-    calc (𝟙 a) ≤ meet (𝟙 a) (R ≫ conv S) := meet_glb (OrderedCat.le_refl _) h
+    calc (𝟙 a) ≤ meet (𝟙 a) (R ≫ conv S) := meet_glb (OrderedCat.«≤_refl» _) h
       _ = meet (𝟙 a) (meet S R ≫ conv (meet S R)) := by
             rw [dom_inter_diag S R]; rfl
-      _ ≤ meet R S ≫ conv (meet R S) := by rw [meet_comm R S]; exact meet_le_right _ _
+      _ ≤ meet R S ≫ conv (meet R S) := by rw [meet_comm R S]; exact «meet_≤_right» _ _
 
 end Freyd.Diag

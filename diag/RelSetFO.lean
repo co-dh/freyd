@@ -17,7 +17,7 @@
       R⊥ y x      ↔  ¬ R x y                  the complement of the converse
 
   `residual_eq_div` is the payoff: `R ⨟• S⊥` and `R / S` are proved equal WITHOUT unfolding either,
-  purely because they satisfy the same Galois connection (`le_residual_iff` and `le_div_iff`) and
+  purely because they satisfy the same Galois connection (`«≤_residual_iff»` and `le_div_iff`) and
   the hom order is a partial order.
 -/
 import diag.FO
@@ -119,13 +119,13 @@ complement and no excluded middle, and that stays the canonical division for AOP
 layer arrives at the same relation from the other side, as `R ⨟• S⊥`. -/
 
 /-- **The fo-layer residual is Freyd's division.**  Proved from the two universal properties alone:
-    `le_residual_iff` and `le_div_iff` are the same Galois connection, and a right adjoint to
+    `«≤_residual_iff»` and `le_div_iff` are the same Galois connection, and a right adjoint to
     `(−) ≫ S` is unique.  Neither definition is unfolded. -/
 theorem residual_eq_div {a b c : RelSet.{u}} (R : a ⟶ c) (S : b ⟶ c) :
     ClosedLinearBicat.residual R S = R / S :=
-  OrderedCat.le_antisymm
-    ((le_div_iff _ R S).mpr (ClosedLinearBicat.residual_comp_le R S))
-    ((ClosedLinearBicat.le_residual_iff _ R S).mp (DivisionAllegory.div_comp_le R S))
+  OrderedCat.«≤_antisymm»
+    ((le_div_iff _ R S).mpr (ClosedLinearBicat.«residual_comp_≤» R S))
+    ((ClosedLinearBicat.«≤_residual_iff» _ R S).mp (DivisionAllegory.div_comp_le R S))
 
 /-- The same statement pointwise: `R ⨟• S⊥` unfolds to `∀ z, S y z → R x z`.  This is where the
     classical step is visible — `¬ S y z ∨ R x z` is `S y z → R x z` only with excluded middle. -/
@@ -153,7 +153,7 @@ theorem compl_inj {a b : RelSet.{u}} {R S : a ⟶ b} (h : compl R = compl S) : R
   rw [← compl_compl R, ← compl_compl S, h]
 
 /-- Complement REVERSES the hom order — the "inverting the order" half of the paper's remark. -/
-theorem compl_le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : compl R ≤ compl S ↔ S ≤ R := by
+theorem «compl_≤_iff» {a b : RelSet.{u}} {R S : a ⟶ b} : compl R ≤ compl S ↔ S ≤ R := by
   constructor
   · exact fun h => RelSet.le_iff.mpr fun x y hS =>
       Classical.byContradiction fun hn => RelSet.le_iff.mp h x y hn hS
@@ -190,7 +190,7 @@ theorem relBtensHom_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
 /-- The `≤`-facing form of the transport, used by every inequational field below. -/
 theorem compl_tensHom_mono {a a' b b' : RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
     (hR : R ≤ R') (hS : S ≤ S') : relBtensHom R S ≤ relBtensHom R' S' :=
-  compl_le_iff.mpr (SymMonCat.tensHom_mono (compl_le_iff.mpr hR) (compl_le_iff.mpr hS))
+  «compl_≤_iff».mpr (SymMonCat.tensHom_mono («compl_≤_iff».mpr hR) («compl_≤_iff».mpr hS))
 
 /-! ### Definition 5.1 at `Rel(Set)`
 
@@ -360,13 +360,13 @@ instance : CocartBicat RelSet.{u} :=
       black_transport
       exact CartBicat.«∇_unit» n
 
-    bineq_37 := fun n => compl_le_iff.mp <| by
+    bineq_37 := fun n => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.«∇Δ_≤_𝟙» n
-    bineq_38 := fun n => compl_le_iff.mp <| by
+    bineq_38 := fun n => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.«𝟙_≤_Δ∇» n
-    bineq_39 := fun n => compl_le_iff.mp <| by
+    bineq_39 := fun n => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.«?!_≤_𝟙» n
-    bineq_40 := fun n => compl_le_iff.mp <| by
+    bineq_40 := fun n => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.«𝟙_≤_!?» n
 
     bfrob_left := fun n => compl_inj <| by
@@ -376,9 +376,9 @@ instance : CocartBicat RelSet.{u} :=
       black_transport
       exact CartBicat.frob_right n
 
-    blax_delta := fun R => compl_le_iff.mp <| by
+    blax_delta := fun R => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.lax_Δ _
-    blax_bang := fun R => compl_le_iff.mp <| by
+    blax_bang := fun R => «compl_≤_iff».mp <| by
       black_transport; exact CartBicat.lax_! _ }
 
 /-! ### Definition 6.1 at `Rel(Set)`

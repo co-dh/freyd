@@ -36,8 +36,8 @@ variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
     is what makes `∩` a greatest lower bound in the first place (via `meet_idem`). -/
 theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
     (R ≫ meet S T) ≤ (meet (R ≫ S) (R ≫ T)) :=
-  meet_glb (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T))
-    (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T))
+  meet_glb (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_left» S T))
+    (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_right» S T))
 
 /-- THE MODULAR LAW, `RS ∩ T ≤ (R ∩ TS°)S` — Freyd's `modular` (§2.11), DERIVED.
 
@@ -68,7 +68,7 @@ theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a �
   calc meet (R ≫ S) T
       = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := hL
     _ ≤ (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S :=
-        OrderedCat.comp_mono (OrderedCat.le_refl _) («∇_slide_conv» S)
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _) («∇_slide_conv» S)
     _ = meet R (T ≫ conv S) ≫ S := hR.symm
 
 /-- **Every cartesian bicategory of relations is an allegory.**  `recip := conv`, `inter :=
@@ -81,7 +81,7 @@ theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a �
     anyway.
 
     Freyd states `inter_assoc`, `semidistrib` and `modular` in equality form; `meet_assoc`
-    is the mirror bracketing, and `meet_eq_left_of_le` converts the two `≤` forms. -/
+    is the mirror bracketing, and `«meet_eq_left_of_≤»` converts the two `≤` forms. -/
 def allegoryOfCartBicat (𝒞 : Type u) [CartBicat.{v} 𝒞] : Freyd.Alg.Allegory 𝒞 :=
   { (inferInstance : Cat.{v} 𝒞) with
     recip := conv
@@ -95,15 +95,15 @@ def allegoryOfCartBicat (𝒞 : Type u) [CartBicat.{v} 𝒞] : Freyd.Alg.Allegor
     semidistrib := fun R S T => by
       -- `R(S ∩ T) ≤ RS` and `≤ RT`, so intersecting it with either changes nothing.
       have hS : (R ≫ meet S T) ≤ (R ≫ S) :=
-        OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T)
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_left» S T)
       have hT : (R ≫ meet S T) ≤ (R ≫ T) :=
-        OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T)
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_right» S T)
       calc R ≫ meet S T
-          = meet (R ≫ meet S T) (R ≫ T) := (meet_eq_left_of_le hT).symm
+          = meet (R ≫ meet S T) (R ≫ T) := («meet_eq_left_of_≤» hT).symm
         _ = meet (meet (R ≫ S) (R ≫ meet S T)) (R ≫ T) := by
-              rw [meet_comm (R ≫ S), meet_eq_left_of_le hS]
+              rw [meet_comm (R ≫ S), «meet_eq_left_of_≤» hS]
     modular := fun R S T => by
       have h := modular_of_frobenius R S T
-      exact (meet_eq_left_of_le h).symm }
+      exact («meet_eq_left_of_≤» h).symm }
 
 end Freyd.Diag

@@ -107,13 +107,13 @@ theorem lemma_5_3_uniq {a b : 𝒞} {R : a ⟶ b} {S S' : b ⟶ a}
   have key : ∀ {T T' : b ⟶ a}, RightLinAdj R T → RightLinAdj R T' → T' ≤ T := by
     intro T T' hT hT'
     have h1 : T' ≤ (T' ≫ (R ≫• T)) := by
-      have := OrderedCat.comp_mono (OrderedCat.le_refl T') hT.unit
+      have := OrderedCat.comp_mono (OrderedCat.«≤_refl» T') hT.unit
       rwa [Cat.comp_id] at this
     have h2 : (T' ≫ (R ≫• T)) ≤ ((T' ≫ R) ≫• T) := linDistrib_left _ _ _
-    have h3 : ((T' ≫ R) ≫• T) ≤ ((𝟙• b) ≫• T) := bcomp_mono hT'.counit (OrderedCat.le_refl T)
+    have h3 : ((T' ≫ R) ≫• T) ≤ ((𝟙• b) ≫• T) := bcomp_mono hT'.counit (OrderedCat.«≤_refl» T)
     rw [bid_bcomp] at h3
-    exact OrderedCat.le_trans h1 (OrderedCat.le_trans h2 h3)
-  exact OrderedCat.le_antisymm (key h' h) (key h h')
+    exact OrderedCat.«≤_trans» h1 (OrderedCat.«≤_trans» h2 h3)
+  exact OrderedCat.«≤_antisymm» (key h' h) (key h h')
 
 end LinearBicat
 
@@ -148,7 +148,7 @@ variable {𝒞 : Type u} [ClosedLinearBicat.{v} 𝒞]
 
 The paper (p. 7): "one can write the LEFT RESIDUAL of `b : Z → Y` by `a : X → Y` as `b ⨟• a⊥`.  The
 left residual is the greatest arrow `Z → X` making the diagram commute laxly in `C°`, namely if
-`c ⨟° a ≤ b` then `c ≤ b ⨟• a⊥`."  `le_residual_iff` is that sentence, both directions; it is the
+`c ⨟° a ≤ b` then `c ≤ b ⨟• a⊥`."  `«≤_residual_iff»` is that sentence, both directions; it is the
 same Galois connection Freyd's `le_div_iff` (`Freyd/S2_30.lean`) states for `R / S`, which is what
 lets `diag/RelSetFO.lean` identify the two without unfolding either.
 
@@ -167,28 +167,28 @@ def residual {X Y Z : 𝒞} (R : Z ⟶ Y) (S : X ⟶ Y) : Z ⟶ X := R ≫• pe
     reassociates with (δ_l).  Backwards is
     `T ⨟° S ≤ (R ⨟• S⊥) ⨟° S ≤ R ⨟• (S⊥ ⨟° S) ≤ R ⨟• id• = R`, whose middle step is (δ_r) — the
     ONLY place the two compositions meet. -/
-theorem le_residual_iff {X Y Z : 𝒞} (T : Z ⟶ X) (R : Z ⟶ Y) (S : X ⟶ Y) :
+theorem «≤_residual_iff» {X Y Z : 𝒞} (T : Z ⟶ X) (R : Z ⟶ Y) (S : X ⟶ Y) :
     (T ≫ S) ≤ R ↔ T ≤ residual R S := by
   constructor
   · intro h
     have h1 : T ≤ (T ≫ (S ≫• perp S)) := by
-      have := OrderedCat.comp_mono (OrderedCat.le_refl T) (perp_adj S).unit
+      have := OrderedCat.comp_mono (OrderedCat.«≤_refl» T) (perp_adj S).unit
       rwa [Cat.comp_id] at this
-    exact OrderedCat.le_trans h1
-      (OrderedCat.le_trans (linDistrib_left _ _ _) (bcomp_mono h (OrderedCat.le_refl _)))
+    exact OrderedCat.«≤_trans» h1
+      (OrderedCat.«≤_trans» (linDistrib_left _ _ _) (bcomp_mono h (OrderedCat.«≤_refl» _)))
   · intro h
     have h1 : (T ≫ S) ≤ ((R ≫• perp S) ≫ S) :=
-      OrderedCat.comp_mono h (OrderedCat.le_refl S)
+      OrderedCat.comp_mono h (OrderedCat.«≤_refl» S)
     have h2 : ((R ≫• perp S) ≫ S) ≤ (R ≫• (perp S ≫ S)) := linDistrib_right _ _ _
     have h3 : (R ≫• (perp S ≫ S)) ≤ (R ≫• (𝟙• Y)) :=
-      bcomp_mono (OrderedCat.le_refl R) (perp_adj S).counit
+      bcomp_mono (OrderedCat.«≤_refl» R) (perp_adj S).counit
     rw [bcomp_bid] at h3
-    exact OrderedCat.le_trans h1 (OrderedCat.le_trans h2 h3)
+    exact OrderedCat.«≤_trans» h1 (OrderedCat.«≤_trans» h2 h3)
 
 /-- `T ⨟° S ≤ R` at `T := R ⨟• S⊥`: the residual is a lower bound of the arrows it is the greatest
     of.  Freyd's `div_comp_le`. -/
-theorem residual_comp_le {X Y Z : 𝒞} (R : Z ⟶ Y) (S : X ⟶ Y) : (residual R S ≫ S) ≤ R :=
-  (le_residual_iff _ R S).mpr (OrderedCat.le_refl _)
+theorem «residual_comp_≤» {X Y Z : 𝒞} (R : Z ⟶ Y) (S : X ⟶ Y) : (residual R S ≫ S) ≤ R :=
+  («≤_residual_iff» _ R S).mpr (OrderedCat.«≤_refl» _)
 
 /-- The residual is MONOTONE in the numerator and ANTITONE in the denominator — the variance no
     combinator of `diag/CB.lean`'s monotone generators could have had, and the reason this layer
@@ -196,9 +196,9 @@ theorem residual_comp_le {X Y Z : 𝒞} (R : Z ⟶ Y) (S : X ⟶ Y) : (residual 
     shrinking `S` weakens the hypothesis `T ⨟° S ≤ R`, so it admits more `T`. -/
 theorem residual_mono {X Y Z : 𝒞} {R R' : Z ⟶ Y} {S S' : X ⟶ Y}
     (hR : R ≤ R') (hS : S' ≤ S) : residual R S ≤ residual R' S' :=
-  (le_residual_iff _ _ _).mp
-    (OrderedCat.le_trans (OrderedCat.comp_mono (OrderedCat.le_refl _) hS)
-      (OrderedCat.le_trans (residual_comp_le R S) hR))
+  («≤_residual_iff» _ _ _).mp
+    (OrderedCat.«≤_trans» (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) hS)
+      (OrderedCat.«≤_trans» («residual_comp_≤» R S) hR))
 
 /-- **Lemma 5.4 (Residuation)** (`DiagrammaticAlgebraOfFirstOrderLogic.pdf` §5):
     `a ≤ b` iff `id°_X ≤ b ⨟• a⊥`.
@@ -207,7 +207,7 @@ theorem residual_mono {X Y Z : 𝒞} {R R' : Z ⟶ Y} {S S' : X ⟶ Y}
     same one read with the identity in the numerator. -/
 theorem lemma_5_4_residuation {X Y : 𝒞} (a b : X ⟶ Y) :
     a ≤ b ↔ (𝟙 X) ≤ (b ≫• perp a) := by
-  have h := le_residual_iff (𝟙 X) b a
+  have h := «≤_residual_iff» (𝟙 X) b a
   rw [Cat.id_comp] at h
   exact h
 

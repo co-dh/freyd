@@ -139,59 +139,59 @@ theorem union_idem {a b : 𝒞} (R : a ⟶ b) : union R R = R := by
 
 /-- Half of `𝟙 = ⟨inl, inr⟩`: the left projection is below the codiagonal.  This is the one step
     that spends `conv_inl_le`, i.e. that the injection is injective. -/
-theorem conv_inl_le_codiag (b : 𝒞) : conv (inl b b) ≤ copair (𝟙 b) (𝟙 b) := by
-  have h := OrderedCat.comp_mono (conv_inl_le b b) (OrderedCat.le_refl (copair (𝟙 b) (𝟙 b)))
+theorem «conv_inl_≤_codiag» (b : 𝒞) : conv (inl b b) ≤ copair (𝟙 b) (𝟙 b) := by
+  have h := OrderedCat.comp_mono (conv_inl_le b b) (OrderedCat.«≤_refl» (copair (𝟙 b) (𝟙 b)))
   rwa [Cat.assoc, inl_copair, Cat.comp_id, Cat.id_comp] at h
 
-theorem conv_inr_le_codiag (b : 𝒞) : conv (inr b b) ≤ copair (𝟙 b) (𝟙 b) := by
-  have h := OrderedCat.comp_mono (conv_inr_le b b) (OrderedCat.le_refl (copair (𝟙 b) (𝟙 b)))
+theorem «conv_inr_≤_codiag» (b : 𝒞) : conv (inr b b) ≤ copair (𝟙 b) (𝟙 b) := by
+  have h := OrderedCat.comp_mono (conv_inr_le b b) (OrderedCat.«≤_refl» (copair (𝟙 b) (𝟙 b)))
   rwa [Cat.assoc, inr_copair, Cat.comp_id, Cat.id_comp] at h
 
-theorem le_union_left {a b : 𝒞} (R S : a ⟶ b) : R ≤ union R S := by
-  have h := OrderedCat.comp_mono (OrderedCat.le_refl (pair R S)) (conv_inl_le_codiag b)
+theorem «≤_union_left» {a b : 𝒞} (R S : a ⟶ b) : R ≤ union R S := by
+  have h := OrderedCat.comp_mono (OrderedCat.«≤_refl» (pair R S)) («conv_inl_≤_codiag» b)
   rwa [pair_conv_inl] at h
 
-theorem le_union_right {a b : 𝒞} (R S : a ⟶ b) : S ≤ union R S := by
-  have h := OrderedCat.comp_mono (OrderedCat.le_refl (pair R S)) (conv_inr_le_codiag b)
+theorem «≤_union_right» {a b : 𝒞} (R S : a ⟶ b) : S ≤ union R S := by
+  have h := OrderedCat.comp_mono (OrderedCat.«≤_refl» (pair R S)) («conv_inr_≤_codiag» b)
   rwa [pair_conv_inr] at h
 
-theorem union_le {a b : 𝒞} {R S T : a ⟶ b} (hR : R ≤ T) (hS : S ≤ T) : union R S ≤ T := by
+theorem «union_≤» {a b : 𝒞} {R S T : a ⟶ b} (hR : R ≤ T) (hS : S ≤ T) : union R S ≤ T := by
   have h : union R S ≤ union T T :=
-    OrderedCat.comp_mono (pair_mono hR hS) (OrderedCat.le_refl _)
+    OrderedCat.comp_mono (pair_mono hR hS) (OrderedCat.«≤_refl» _)
   rwa [union_idem] at h
 
 theorem union_mono {a b : 𝒞} {R R' S S' : a ⟶ b} (hR : R ≤ R') (hS : S ≤ S') :
     union R S ≤ union R' S' :=
-  union_le (OrderedCat.le_trans hR (le_union_left R' S'))
-    (OrderedCat.le_trans hS (le_union_right R' S'))
+  «union_≤» (OrderedCat.«≤_trans» hR («≤_union_left» R' S'))
+    (OrderedCat.«≤_trans» hS («≤_union_right» R' S'))
 
 theorem union_comm {a b : 𝒞} (R S : a ⟶ b) : union R S = union S R :=
-  OrderedCat.le_antisymm (union_le (le_union_right S R) (le_union_left S R))
-    (union_le (le_union_right R S) (le_union_left R S))
+  OrderedCat.«≤_antisymm» («union_≤» («≤_union_right» S R) («≤_union_left» S R))
+    («union_≤» («≤_union_right» R S) («≤_union_left» R S))
 
 theorem union_assoc {a b : 𝒞} (R S T : a ⟶ b) :
     union R (union S T) = union (union R S) T := by
-  refine OrderedCat.le_antisymm (union_le ?_ ?_) (union_le ?_ ?_)
-  · exact OrderedCat.le_trans (le_union_left R S) (le_union_left _ T)
-  · exact union_le (OrderedCat.le_trans (le_union_right R S) (le_union_left _ T))
-      (le_union_right _ T)
-  · exact union_le (le_union_left R _)
-      (OrderedCat.le_trans (le_union_left S T) (le_union_right R _))
-  · exact OrderedCat.le_trans (le_union_right S T) (le_union_right R _)
+  refine OrderedCat.«≤_antisymm» («union_≤» ?_ ?_) («union_≤» ?_ ?_)
+  · exact OrderedCat.«≤_trans» («≤_union_left» R S) («≤_union_left» _ T)
+  · exact «union_≤» (OrderedCat.«≤_trans» («≤_union_right» R S) («≤_union_left» _ T))
+      («≤_union_right» _ T)
+  · exact «union_≤» («≤_union_left» R _)
+      (OrderedCat.«≤_trans» («≤_union_left» S T) («≤_union_right» R _))
+  · exact OrderedCat.«≤_trans» («≤_union_right» S T) («≤_union_right» R _)
 
 /-! ### `∪` against `∩`, `≫`, `°` and `⊥` -/
 
 theorem union_meet_absorb {a b : 𝒞} (R S : a ⟶ b) : union R (meet S R) = R :=
-  OrderedCat.le_antisymm (union_le (OrderedCat.le_refl R) (meet_le_right S R))
-    (le_union_left R (meet S R))
+  OrderedCat.«≤_antisymm» («union_≤» (OrderedCat.«≤_refl» R) («meet_≤_right» S R))
+    («≤_union_left» R (meet S R))
 
 theorem meet_union_absorb {a b : 𝒞} (R S : a ⟶ b) : meet (union R S) R = R :=
-  OrderedCat.le_antisymm (meet_le_right (union R S) R)
-    (meet_glb (le_union_left R S) (OrderedCat.le_refl R))
+  OrderedCat.«≤_antisymm» («meet_≤_right» (union R S) R)
+    (meet_glb («≤_union_left» R S) (OrderedCat.«≤_refl» R))
 
 theorem bot_union {a b : 𝒞} (R : a ⟶ b) : union (bot a b) R = R :=
-  OrderedCat.le_antisymm (union_le (bot_le R) (OrderedCat.le_refl R))
-    (le_union_right (bot a b) R)
+  OrderedCat.«≤_antisymm» («union_≤» (bot_le R) (OrderedCat.«≤_refl» R))
+    («≤_union_right» (bot a b) R)
 
 theorem comp_union {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
     R ≫ union S T = union (R ≫ S) (R ≫ T) := by
@@ -199,12 +199,12 @@ theorem comp_union {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
 
 theorem conv_union {a b : 𝒞} (R S : a ⟶ b) :
     conv (union R S) = union (conv R) (conv S) := by
-  refine OrderedCat.le_antisymm ?_ (union_le (conv_mono (le_union_left R S))
-    (conv_mono (le_union_right R S)))
+  refine OrderedCat.«≤_antisymm» ?_ («union_≤» (conv_mono («≤_union_left» R S))
+    (conv_mono («≤_union_right» R S)))
   have h : union R S ≤ conv (union (conv R) (conv S)) := by
-    refine union_le ?_ ?_
-    · have := conv_mono (le_union_left (conv R) (conv S)); rwa [conv_conv] at this
-    · have := conv_mono (le_union_right (conv R) (conv S)); rwa [conv_conv] at this
+    refine «union_≤» ?_ ?_
+    · have := conv_mono («≤_union_left» (conv R) (conv S)); rwa [conv_conv] at this
+    · have := conv_mono («≤_union_right» (conv R) (conv S)); rwa [conv_conv] at this
   have := conv_mono h; rwa [conv_conv] at this
 
 theorem union_comp {a b c : 𝒞} (R S : a ⟶ b) (T : b ⟶ c) :

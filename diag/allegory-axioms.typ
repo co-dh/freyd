@@ -11,13 +11,13 @@
 //
 //   ./scripts/diag-export Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
 //     Freyd.Diag.conv_inter Freyd.Diag.meet_idem Freyd.Diag.meet_comm Freyd.Diag.meet_assoc \
-//     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.le_top \
+//     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.«≤_top» \
 //     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ_≤_𝟙» Freyd.Diag.CartBicat.«𝟙_≤_Δ∇» \
 //     Freyd.Diag.CartBicat.«?!_≤_𝟙» Freyd.Diag.CartBicat.«𝟙_≤_!?» Freyd.Diag.CartBicat.frob_left \
-//     Freyd.Diag.CartBicat.lax_Δ Freyd.Diag.CartBicat.lax_! Freyd.Diag.Biprod.le_union_left \
+//     Freyd.Diag.CartBicat.lax_Δ Freyd.Diag.CartBicat.lax_! Freyd.Diag.Biprod.«≤_union_left» \
 //     Freyd.Diag.Biprod.union_comm Freyd.Diag.Biprod.bot_union Freyd.Diag.Biprod.comp_union \
 //     Freyd.Diag.Biprod.conv_union Freyd.Diag.FbCbRig.meet_union_distrib \
-//     Freyd.Diag.ClosedLinearBicat.residual_comp_le Freyd.Diag.SingleValued Freyd.Diag.Total \
+//     Freyd.Diag.ClosedLinearBicat.«residual_comp_≤» Freyd.Diag.SingleValued Freyd.Diag.Total \
 //     Freyd.Diag.Injective Freyd.Diag.Surjective Freyd.Diag.ineq_SV Freyd.Diag.ineq_TOT \
 //     Freyd.Diag.ineq_INJ Freyd.Diag.ineq_SUR Freyd.Diag.shunt_right Freyd.Diag.shunt_left \
 //     Freyd.Diag.entire_inter_iff Freyd.Diag.CartBicat.«∇_slide_conv»
@@ -34,7 +34,7 @@
 #import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
-#import "generated/Freyd.Diag.le_top.typ": pic as p-le-top
+#import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.special.typ": pic as p-special
 #import "generated/Freyd.Diag.CartBicat.«∇Δ_≤_𝟙».typ": pic as p-37
 #import "generated/Freyd.Diag.CartBicat.«𝟙_≤_Δ∇».typ": pic as p-38
@@ -43,13 +43,13 @@
 #import "generated/Freyd.Diag.CartBicat.frob_left.typ": pic as p-frob
 #import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
 #import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
-#import "generated/Freyd.Diag.Biprod.le_union_left.typ": pic as p-union-left
+#import "generated/Freyd.Diag.Biprod.«≤_union_left».typ": pic as p-union-left
 #import "generated/Freyd.Diag.Biprod.union_comm.typ": pic as p-union-comm
 #import "generated/Freyd.Diag.Biprod.bot_union.typ": pic as p-bot-union
 #import "generated/Freyd.Diag.Biprod.comp_union.typ": pic as p-comp-union
 #import "generated/Freyd.Diag.Biprod.conv_union.typ": pic as p-conv-union
 #import "generated/Freyd.Diag.FbCbRig.meet_union_distrib.typ": pic as p-distrib
-#import "generated/Freyd.Diag.ClosedLinearBicat.residual_comp_le.typ": pic as p-residual
+#import "generated/Freyd.Diag.ClosedLinearBicat.«residual_comp_≤».typ": pic as p-residual
 #import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42b
 #import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
 #import "generated/Freyd.Diag.shunt_left.proof.typ": branches as slb
@@ -77,7 +77,7 @@
 #show heading: set block(above: 16pt, below: 9pt)
 #set heading(numbering: "1.")
 // Justification inside a table cell stretches the spaces around long unbreakable monospace runs
-// (`Freyd.Diag.ClosedLinearBicat.residual_comp_le`) into gaps you can drive a car through.
+// (`Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`) into gaps you can drive a car through.
 #show table: set par(justify: false)
 
 #let src(s) = text(9.2pt, luma(105))[#s]
@@ -174,7 +174,7 @@ for a reshaping, `≤` for a genuine inequality. Counting them is the point of d
 
   [*maximal morphism* `⊤` — §2.15, and Freyd needs a *unitary* allegory for it. Here
    `top a b := ! ; ?` (`diag/CB_Derived.lean:28`) is free in Def. 4.1. \
-   #src[`Freyd.Diag.le_top`.]],
+   #src[`Freyd.Diag.«≤_top»`.]],
   P(p-le-top),
 )
 
@@ -294,7 +294,7 @@ are quoted from `Freyd/S2_10.lean`, which follows the book.
    "`R p_β ⊆ p_α`" — the repo's (43) — comes from.]],
   [*already there, for free.* The monoidal unit `𝕀` is the unit object, `!_a : a ⟶ 𝕀` is the entire
    arrow every object carries to it — (40) says so — and `⊤ = ! ; ?` is maximal by
-   `Freyd.Diag.le_top`. So every cartesian bicategory of relations is unitary, with nothing
+   `Freyd.Diag.«≤_top»`. So every cartesian bicategory of relations is unitary, with nothing
    assumed. \ #src[Not recorded in Lean: `allegoryOfCartBicat` builds a plain `Allegory`, and no
    `UnitaryAllegory` instance is derived from `CartBicat`.]],
 
@@ -335,7 +335,7 @@ composition, and a solid box would claim it was drawable in the first.
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*statement*], [*picture, from the Lean statement*]),
 
-  [`R ⊑ R ∪ S` — §2.2 in Freyd; here `Freyd.Diag.Biprod.le_union_left`. \
+  [`R ⊑ R ∪ S` — §2.2 in Freyd; here `Freyd.Diag.Biprod.«≤_union_left»`. \
    #src[`union R S := ⟨R, S⟩ ; [𝟙, 𝟙]` (`diag/Tape.lean:84`): offer both branches, then forget which
    was taken.]],
   P(p-union-left),
@@ -364,7 +364,7 @@ composition, and a solid box would claim it was drawable in the first.
    on the right.]],
   P(p-distrib, s: 78%),
 
-  [`(R / S) S ⊑ R` — `Freyd.Diag.ClosedLinearBicat.residual_comp_le`; the residual is a lower bound
+  [`(R / S) S ⊑ R` — `Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`; the residual is a lower bound
    of the arrows it is the greatest of. \ #src[Freyd's §2.31 division: `R / S` is the largest `T`
    with `T S ⊑ R`, and `le_residual_iff` (`diag/FO.lean:170`) is that Galois statement in full. The
    dashed frame marks the box as belonging to the second composition.]],

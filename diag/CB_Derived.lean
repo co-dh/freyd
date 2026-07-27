@@ -28,15 +28,15 @@ def meet {a b : 𝒞} (R S : a ⟶ b) : a ⟶ b := Δ a ≫ (R ⊗ₕ S) ≫ ∇
 def top (a b : 𝒞) : a ⟶ b := «!» a ≫ «?» b
 
 /-- Every arrow is below `⊤`.  Lax counit (43) sends `R;!` under `!`, and (40) supplies the `?`. -/
-theorem le_top {a b : 𝒞} (R : a ⟶ b) : R ≤ (top a b) := by
+theorem «≤_top» {a b : 𝒞} (R : a ⟶ b) : R ≤ (top a b) := by
   -- `R = R;𝟙 ≤ R;(!;?) = (R;!);? ≤ !;? = ⊤`.
   have h1 : (R ≫ 𝟙 b) ≤ (R ≫ «!» b ≫ «?» b) :=
-    OrderedCat.comp_mono (OrderedCat.le_refl R) («𝟙_≤_!?» b)
+    OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙_≤_!?» b)
   have h2 : ((R ≫ «!» b) ≫ «?» b) ≤ («!» a ≫ «?» b) :=
-    OrderedCat.comp_mono (lax_! R) (OrderedCat.le_refl («?» b))
+    OrderedCat.comp_mono (lax_! R) (OrderedCat.«≤_refl» («?» b))
   rw [Cat.comp_id] at h1
   rw [Cat.assoc] at h2
-  exact OrderedCat.le_trans h1 h2
+  exact OrderedCat.«≤_trans» h1 h2
 
 /-- `⊤` is the unit of the meet: `R ∩ ⊤ = R`
     (functorialSemanticsForRelationalTheories.pdf p. 22, unitality in Lemma 4.11).  The `⊤` strand
@@ -76,15 +76,15 @@ theorem meet_mono {a b : 𝒞} {R R' S S' : a ⟶ b}
     (hR : R ≤ R') (hS : S ≤ S') :
     (meet R S) ≤ (meet R' S') := by
   dsimp [meet]
-  exact OrderedCat.comp_mono (OrderedCat.le_refl _)
-    (OrderedCat.comp_mono (SymMonCat.tensHom_mono hR hS) (OrderedCat.le_refl _))
+  exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+    (OrderedCat.comp_mono (SymMonCat.tensHom_mono hR hS) (OrderedCat.«≤_refl» _))
 
 /-- `R ∩ S ≤ R`: the first half of the greatest-lower-bound property
     (functorialSemanticsForRelationalTheories.pdf p. 22).  Weaken the `S` strand all the way to `⊤`
-    by `le_top`, then `meet_top` collapses it. -/
-theorem meet_le_left {a b : 𝒞} (R S : a ⟶ b) :
+    by `«≤_top»`, then `meet_top` collapses it. -/
+theorem «meet_≤_left» {a b : 𝒞} (R S : a ⟶ b) :
     (meet R S) ≤ R := by
-  have h := meet_mono (OrderedCat.le_refl R) (le_top S)
+  have h := meet_mono (OrderedCat.«≤_refl» R) («≤_top» S)
   rw [meet_top] at h
   exact h
 
@@ -124,10 +124,10 @@ theorem meet_right_staged {a b : 𝒞} (R S T : a ⟶ b) :
   simp only [Cat.assoc]
 
 /-- `R ∩ S ≤ S`, the other half of the greatest-lower-bound property. -/
-theorem meet_le_right {a b : 𝒞} (R S : a ⟶ b) :
+theorem «meet_≤_right» {a b : 𝒞} (R S : a ⟶ b) :
     (meet R S) ≤ S := by
   rw [meet_comm]
-  exact meet_le_left S R
+  exact «meet_≤_left» S R
 
 /-- `(R ∩ S) ∩ T = R ∩ (S ∩ T)` — Freyd's `inter_assoc` (§2.11), derived.  Both staged forms are
     normalised to `Δ;(𝟙 ⊗ Δ);(R ⊗ (S ⊗ T));(𝟙 ⊗ ∇);∇`: coassociativity (8) turns the left copy
@@ -168,9 +168,9 @@ theorem meet_assoc {a b : 𝒞} (R S T : a ⟶ b) :
     where the lax inequation (42) and the special law meet: copying `R` and running it on both
     strands can only produce more than running it once, and `Δ;∇ = 𝟙` closes the loop. -/
 theorem meet_idem {a b : 𝒞} (R : a ⟶ b) : meet R R = R := by
-  refine OrderedCat.le_antisymm (meet_le_left R R) ?_
+  refine OrderedCat.«≤_antisymm» («meet_≤_left» R R) ?_
   have h : ((R ≫ Δ b) ≫ ∇ b) ≤ ((Δ a ≫ (R ⊗ₕ R)) ≫ ∇ b) :=
-    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.le_refl (∇ b))
+    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» (∇ b))
   have hL : (R ≫ Δ b) ≫ ∇ b = R := by
     rw [Cat.assoc, special, Cat.comp_id]
   have hR : (Δ a ≫ (R ⊗ₕ R)) ≫ ∇ b = meet R R := by
@@ -180,7 +180,7 @@ theorem meet_idem {a b : 𝒞} (R : a ⟶ b) : meet R R = R := by
 
 /-- `∩` is the GREATEST lower bound: anything below both `S` and `T` is below `S ∩ T`
     (functorialSemanticsForRelationalTheories.pdf p. 22, "every hom-set is a meet semi-lattice").
-    With `meet_le_left`/`meet_le_right` this completes the semilattice statement.
+    With `«meet_≤_left»`/`«meet_≤_right»` this completes the semilattice statement.
     Idempotency is what does the work — `R = R ∩ R ≤ S ∩ T`. -/
 theorem meet_glb {a b : 𝒞} {R S T : a ⟶ b}
     (hS : R ≤ S) (hT : R ≤ T) :
@@ -193,9 +193,9 @@ theorem meet_glb {a b : 𝒞} {R S T : a ⟶ b}
     DERIVED one (`Freyd/S2_10.lean`, where `R ⊑ S` is *defined* as `R ∩ S = R`), and it is what
     turns the `≤` forms of semi-distributivity and modularity into the equalities the `Allegory`
     class asks for. -/
-theorem meet_eq_left_of_le {a b : 𝒞} {X Y : a ⟶ b} (h : X ≤ Y) :
+theorem «meet_eq_left_of_≤» {a b : 𝒞} {X Y : a ⟶ b} (h : X ≤ Y) :
     meet X Y = X :=
-  OrderedCat.le_antisymm (meet_le_left X Y) (meet_glb (OrderedCat.le_refl X) h)
+  OrderedCat.«≤_antisymm» («meet_≤_left» X Y) (meet_glb (OrderedCat.«≤_refl» X) h)
 
 /-- `(R ∩ S)° = R° ∩ S°` — Freyd's `recip_inter` (§2.11).
 
@@ -207,15 +207,15 @@ theorem meet_eq_left_of_le {a b : 𝒞} {X Y : a ⟶ b} (h : X ≤ Y) :
     bounds.  This keeps every arrow in the proof at a simple object. -/
 theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
     conv (meet R S) = meet (conv R) (conv S) := by
-  refine OrderedCat.le_antisymm ?_ ?_
-  · exact meet_glb (conv_mono (meet_le_left R S))
-      (conv_mono (meet_le_right R S))
+  refine OrderedCat.«≤_antisymm» ?_ ?_
+  · exact meet_glb (conv_mono («meet_≤_left» R S))
+      (conv_mono («meet_≤_right» R S))
   · -- `(R° ∩ S°)°` is below both `R` and `S`, hence below `R ∩ S`; apply `°` once more.
     have h1 : (conv (meet (conv R) (conv S))) ≤ R := by
-      have h := conv_mono (meet_le_left (conv R) (conv S))
+      have h := conv_mono («meet_≤_left» (conv R) (conv S))
       rwa [conv_conv] at h
     have h2 : (conv (meet (conv R) (conv S))) ≤ S := by
-      have h := conv_mono (meet_le_right (conv R) (conv S))
+      have h := conv_mono («meet_≤_right» (conv R) (conv S))
       rwa [conv_conv] at h
     have h3 := conv_mono (meet_glb h1 h2)
     rwa [conv_conv] at h3
@@ -271,17 +271,17 @@ def ineq_SUR {a b : 𝒞} (R : a ⟶ b) : Prop := («?» b) ≤ («?» a ≫ R)
     `S = 𝟙S ≤ (RR°)S = R(R°S) ≤ R(S°S) ≤ R𝟙 = R`. -/
 theorem cor_4_5 {a b : 𝒞} {R S : a ⟶ b} (hR : Map R) (hS : Map S) (h : R ≤ S) :
     R = S := by
-  refine OrderedCat.le_antisymm h ?_
+  refine OrderedCat.«≤_antisymm» h ?_
   have h1 : (𝟙 a ≫ S) ≤ ((R ≫ conv R) ≫ S) :=
-    OrderedCat.comp_mono hR.2 (OrderedCat.le_refl S)
+    OrderedCat.comp_mono hR.2 (OrderedCat.«≤_refl» S)
   have h2 : (conv R ≫ S) ≤ (conv S ≫ S) :=
-    OrderedCat.comp_mono (conv_mono h) (OrderedCat.le_refl S)
+    OrderedCat.comp_mono (conv_mono h) (OrderedCat.«≤_refl» S)
   have h3 : (R ≫ conv R ≫ S) ≤ (R ≫ 𝟙 b) :=
-    OrderedCat.comp_mono (OrderedCat.le_refl R) (OrderedCat.le_trans h2 hS.1)
+    OrderedCat.comp_mono (OrderedCat.«≤_refl» R) (OrderedCat.«≤_trans» h2 hS.1)
   rw [Cat.id_comp] at h1
   rw [Cat.assoc] at h1
   rw [Cat.comp_id] at h3
-  exact OrderedCat.le_trans h1 h3
+  exact OrderedCat.«≤_trans» h1 h3
 
 /-! ### The shunting rules (B&dM 4.19 and 4.20)
 
@@ -299,21 +299,21 @@ theorem shunt_right {a b c : 𝒞} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S :
   · intro h
     -- `R = R𝟙 ≤ R(f f°) = (R f) f° ≤ S f°`; only `Total f` is used.
     have h1 : (R ≫ 𝟙 b) ≤ (R ≫ f ≫ conv f) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl R) hf.2
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» R) hf.2
     have h2 : ((R ≫ f) ≫ conv f) ≤ (S ≫ conv f) :=
-      OrderedCat.comp_mono h (OrderedCat.le_refl (conv f))
+      OrderedCat.comp_mono h (OrderedCat.«≤_refl» (conv f))
     rw [Cat.comp_id] at h1
     rw [Cat.assoc] at h2
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
   · intro h
     -- `R f ≤ (S f°) f = S (f° f) ≤ S𝟙 = S`; only `SingleValued f` is used.
     have h1 : (R ≫ f) ≤ ((S ≫ conv f) ≫ f) :=
-      OrderedCat.comp_mono h (OrderedCat.le_refl f)
+      OrderedCat.comp_mono h (OrderedCat.«≤_refl» f)
     have h2 : (S ≫ conv f ≫ f) ≤ (S ≫ 𝟙 c) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl S) hf.1
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» S) hf.1
     rw [Cat.assoc] at h1
     rw [Cat.comp_id] at h2
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
 
 /-- **B&dM 4.20**, shunting on the LEFT: for a map `f`, `f° R ≤ S` iff `R ≤ f S`. -/
 theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : a ⟶ c) :
@@ -322,20 +322,20 @@ theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : 
   · intro h
     -- `R = 𝟙R ≤ (f f°) R = f (f° R) ≤ f S`; `Total f` again.
     have h1 : (𝟙 b ≫ R) ≤ ((f ≫ conv f) ≫ R) :=
-      OrderedCat.comp_mono hf.2 (OrderedCat.le_refl R)
+      OrderedCat.comp_mono hf.2 (OrderedCat.«≤_refl» R)
     have h2 : (f ≫ conv f ≫ R) ≤ (f ≫ S) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl f) h
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» f) h
     rw [Cat.id_comp, Cat.assoc] at h1
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
   · intro h
     -- `f° R ≤ f° (f S) = (f° f) S ≤ 𝟙S = S`; `SingleValued f` again.
     have h1 : (conv f ≫ R) ≤ (conv f ≫ f ≫ S) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl (conv f)) h
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» (conv f)) h
     have h2 : ((conv f ≫ f) ≫ S) ≤ (𝟙 a ≫ S) :=
-      OrderedCat.comp_mono hf.1 (OrderedCat.le_refl S)
+      OrderedCat.comp_mono hf.1 (OrderedCat.«≤_refl» S)
     rw [← Cat.assoc] at h1
     rw [Cat.id_comp] at h2
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
 
 /-- LEMMA 4.8 (p. 21): a map's RIGHT ADJOINT is its converse — B&dM's shunting rule.
 
@@ -350,20 +350,20 @@ theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : 
 theorem lemma_4_8 {a b : 𝒞} {R : a ⟶ b} {S : b ⟶ a} (hR : Map R)
     (hunit : (𝟙 a) ≤ (R ≫ S)) (hcounit : (S ≫ R) ≤ (𝟙 b)) :
     S = conv R := by
-  refine OrderedCat.le_antisymm ?_ ?_
+  refine OrderedCat.«≤_antisymm» ?_ ?_
   · have h1 : (S ≫ 𝟙 a) ≤ (S ≫ R ≫ conv R) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl S) hR.2
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» S) hR.2
     have h2 : ((S ≫ R) ≫ conv R) ≤ (𝟙 b ≫ conv R) :=
-      OrderedCat.comp_mono hcounit (OrderedCat.le_refl (conv R))
+      OrderedCat.comp_mono hcounit (OrderedCat.«≤_refl» (conv R))
     rw [Cat.comp_id] at h1
     rw [Cat.assoc, Cat.id_comp] at h2
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
   · have h1 : (conv R ≫ 𝟙 a) ≤ (conv R ≫ R ≫ S) :=
-      OrderedCat.comp_mono (OrderedCat.le_refl (conv R)) hunit
+      OrderedCat.comp_mono (OrderedCat.«≤_refl» (conv R)) hunit
     have h2 : ((conv R ≫ R) ≫ S) ≤ (𝟙 b ≫ S) :=
-      OrderedCat.comp_mono hR.1 (OrderedCat.le_refl S)
+      OrderedCat.comp_mono hR.1 (OrderedCat.«≤_refl» S)
     rw [Cat.comp_id] at h1
     rw [Cat.assoc, Cat.id_comp] at h2
-    exact OrderedCat.le_trans h1 h2
+    exact OrderedCat.«≤_trans» h1 h2
 
 end Freyd.Diag

@@ -457,7 +457,7 @@ mutual
 partial def transChain (e : Expr) : MetaM (Option (Array Step)) := do
   match e.getAppFnArgs with
   | (``Trans.trans, args) | (``Eq.trans, args)
-  | (``Freyd.Diag.OrderedCat.le_trans, args) | (``Freyd.Alg.le_trans, args) =>
+  | (``Freyd.Diag.OrderedCat.«≤_trans», args) | (``Freyd.Alg.le_trans, args) =>
     match lastTwo args with
     | some (f, g) => return some ((← chainOrLeaf f) ++ (← chainOrLeaf g))
     | none => return none
