@@ -1,0 +1,235 @@
+#!/bin/sh
+# paper-figs — clip the source papers' axiom figures, so every Lean axiom can be checked side by
+# side against the picture it was transcribed from.
+#
+#   reads   diag/paperfigs/manifest.tsv     pdf page x y w h name lean_decl
+#   writes  diag/paperfigs/<name>.png       one pdftoppm crop per manifest row
+#           diag/paperfigs/<name>.doc.txt   the declaration's Lean docstring
+#           diag/axiom-crosscheck.typ       source clip | Lean field | docstring, per axiom
+#
+# Crop boxes are pixels at 150 dpi with the origin at the top-left.  To retune one, render its
+# whole page at the same resolution, read the box off the image, edit the row, rerun:
+#   pdftoppm -f PAGE -l PAGE -r 150 -png PAPER.pdf "$TMPDIR"/page
+#
+# The three source PDFs are gitignored (third-party copyright — see .gitignore), and so are the
+# clips derived from them; diag/*.lean may also be missing from an old checkout.  A git worktree
+# therefore has none of the three, so each input is looked up in the main checkout as a fallback.
+# Everything written stays under diag/.
+set -e
+
+cd "$(dirname "$0")/.." || exit 1
+ROOT=$PWD
+DPI=150
+OUTDIR=diag/paperfigs
+MANIFEST=$OUTDIR/manifest.tsv
+TYPFILE=diag/axiom-crosscheck.typ
+CBFILE=diag/CB.lean
+
+# A worktree carries neither the gitignored PDFs nor an uncommitted diag/; the main checkout is
+# the parent of the shared git directory.
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+MAIN=${MAIN%/.git}
+
+# find_src PATH — echo the first existing copy of PATH, here or in the main checkout.
+find_src() {
+  if [ -e "$ROOT/$1" ]; then printf '%s\n' "$ROOT/$1"
+  elif [ -n "$MAIN" ] && [ -e "$MAIN/$1" ]; then printf '%s\n' "$MAIN/$1"
+  fi
+}
+
+command -v pdftoppm >/dev/null 2>&1 || { echo "paper-figs: pdftoppm not found (poppler-utils)" >&2; exit 1; }
+[ -r "$MANIFEST" ] || { echo "paper-figs: no $MANIFEST" >&2; exit 1; }
+
+TMP=${TMPDIR:-/tmp}/paper-figs.$$
+mkdir -p "$TMP" "$OUTDIR"
+trap 'rm -rf "$TMP"' EXIT INT TERM
+
+# ---------------------------------------------------------------- 1. the clips
+rows=0
+while IFS='	' read -r pdf page x y w h name decl; do
+  case $pdf in ''|\#*) continue ;; esac
+  [ -n "$name" ] || continue
+  src=$(find_src "$pdf")
+  [ -n "$src" ] || {
+    echo "paper-figs: $pdf not found in $ROOT or ${MAIN:-<no main checkout>}." >&2
+    echo "            It is gitignored for copyright; keep a copy at the repo root." >&2
+    exit 1
+  }
+  rm -f "$TMP"/clip-*.png
+  pdftoppm -f "$page" -l "$page" -r "$DPI" -x "$x" -y "$y" -W "$w" -H "$h" -png "$src" "$TMP/clip"
+  clip=$(ls "$TMP"/clip-*.png 2>/dev/null | head -1)
+  [ -n "$clip" ] || { echo "paper-figs: pdftoppm produced nothing for $name ($pdf p. $page)" >&2; exit 1; }
+  mv "$clip" "$OUTDIR/$name.png"
+  rows=$((rows + 1))
+done < "$MANIFEST"
+echo "paper-figs: $rows clips -> $OUTDIR/"
+
+# ------------------------------------------- 2. every CartBicat field needs a row
+cb=$(find_src "$CBFILE")
+if [ -n "$cb" ]; then
+  missing=$(awk '
+    /^class CartBicat/ { inclass = 1; next }
+    /^namespace|^end / { inclass = 0 }
+    # Any line indented exactly two spaces that is not a docstring is a field.  NOT `^  [a-z]`:
+    # the fields are named `Δ`, `«∇»`, `«!»`, `«?»` now, and an ASCII-lowercase test matched none
+    # of them — the check would have passed by covering nothing.
+    inclass && /^  [^ ]/ && !/^  \/-/ && !/^  --/ {
+      s = $1; sub(/[({:].*$/, "", s); sub(/\[.*$/, "", s)
+      if (s != "") print s
+    }
+  ' "$cb" | while read -r f; do
+    grep -q "CartBicat\.$f\$" "$MANIFEST" || printf '%s ' "$f"
+  done)
+  if [ -n "$missing" ]; then
+    echo "paper-figs: CartBicat fields with no manifest row: $missing" >&2
+    echo "            Add a row citing the figure each was transcribed from." >&2
+    exit 1
+  fi
+  echo "paper-figs: every CartBicat field has a source clip"
+else
+  echo "paper-figs: $CBFILE not found — skipping the field-coverage check" >&2
+fi
+
+# ------------------------------- 3. docstrings + the crosscheck page, in one awk
+# Pass 1 (the files on the command line) harvests each declaration's docstring; the END block
+# reads the manifest and emits both the .doc.txt sidecars and the Typst page.  Sidecars exist so
+# that Typst can `read()` the text verbatim: no string escaping, so no docstring can break the
+# generated page.
+DIAGDIR=$(find_src diag)
+if [ -n "$DIAGDIR" ]; then
+  set -- "$DIAGDIR"/*.lean
+else
+  echo "paper-figs: diag/ not found — the docstring column will be empty" >&2
+  set -- /dev/null
+fi
+
+awk -v MANIFEST="$MANIFEST" -v OUTDIR="$OUTDIR" -v TYPFILE="$TYPFILE" -v DPI="$DPI" '
+function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+function shortname(d,   p, k) { k = split(d, p, "."); return p[k] }
+
+# ---- harvest docstrings ----
+{
+  if (state == 1) {                                   # continuing a docstring
+    if ($0 ~ /-\//) { s = $0; sub(/[ \t]*-\/[ \t]*$/, "", s); s = trim(s)
+                      if (s != "") doc = doc "\n" s
+                      state = 2 }
+    else doc = doc "\n" trim($0)
+    next
+  }
+  if (state == 0 && $0 ~ /^[ \t]*\/--/) {             # opening a docstring
+    s = $0; sub(/^[ \t]*\/--[ \t]?/, "", s)
+    if (s ~ /-\//) { sub(/[ \t]*-\/[ \t]*$/, "", s); doc = trim(s); state = 2 }
+    else { doc = trim(s); state = 1 }
+    next
+  }
+  if (state == 2) {                                   # the declaration the docstring belongs to
+    s = trim($0)
+    if (s == "" || s ~ /^--/ || s ~ /^\/-/) next
+    while (s ~ /^(private|protected|noncomputable|scoped|partial|unsafe)[ \t]/) sub(/^[a-z]+[ \t]+/, "", s)
+    if (s ~ /^(theorem|lemma|def|abbrev|instance|class|structure|inductive)[ \t]/) sub(/^[a-z]+[ \t]+/, "", s)
+    split(s, p, /[ \t]+/); nm = p[1]
+    sub(/[({:].*$/, "", nm); sub(/\[.*$/, "", nm)
+    if (nm != "") { if (nm in DOC) DUP[nm] = 1; else DOC[nm] = doc }
+    state = 0; doc = ""
+  }
+}
+
+# ---- emit ----
+END {
+  for (d in DUP) print "paper-figs: docstring for " d " is ambiguous (declared twice in diag/)" > "/dev/stderr"
+
+  print "// GENERATED FILE — do not edit.  Regenerate:  ./scripts/paper-figs" > TYPFILE
+  print "// Source of truth: diag/paperfigs/manifest.tsv (crop boxes) and diag/*.lean" > TYPFILE
+  print "// (docstrings).  The .png clips and .doc.txt sidecars it reads are regenerated too." > TYPFILE
+  print "" > TYPFILE
+  # Landscape: the third column holds Lean docstrings, and a portrait page leaves it too narrow
+  # once the full paper file names (which never break) have taken their width.
+  print "#set page(width: 29.7cm, height: auto, margin: 1.4cm)" > TYPFILE
+  print "#set text(size: 9.5pt)" > TYPFILE
+  print "#set par(justify: true)" > TYPFILE
+  print "#show raw: set text(size: 8pt)" > TYPFILE
+  print "" > TYPFILE
+  print "#let figdir = \"paperfigs/\"" > TYPFILE
+  print "#let clip(name, w) = image(figdir + name + \".png\", width: w)" > TYPFILE
+  # read() inserts a string, which Typst renders literally and wraps at spaces — so no docstring
+  # can be reinterpreted as markup, and none can overflow the column the way a raw block would.
+  print "#let doc(name) = text(8.2pt, read(figdir + name + \".doc.txt\"))" > TYPFILE
+  print "#let src(s) = text(7.5pt, luma(100))[#s]" > TYPFILE
+  # No figure numbering: every clip already carries the papers own figure number, and a second
+  # counter beside it (Typst calling their Fig. 9 "Figure 7") reads as a contradiction.
+  print "#show figure: set figure(numbering: none)" > TYPFILE
+  print "#show figure.caption: it => it.body" > TYPFILE
+  print "" > TYPFILE
+  print "#align(center)[" > TYPFILE
+  print "  #text(15pt)[*Axiom crosscheck — source figure against Lean field*] \\" > TYPFILE
+  print "  #src[generated by `scripts/paper-figs`; papers cited by file name, never by arXiv id]" > TYPFILE
+  print "]" > TYPFILE
+  print "" > TYPFILE
+  print "Left column: the figure as printed, clipped from the paper at " DPI " dpi.  Right column: the" > TYPFILE
+  print "docstring of the Lean declaration transcribed from it, verbatim.  Reading a row across is the" > TYPFILE
+  print "check — the picture and the equation number in the docstring must be the same equation." > TYPFILE
+  print "" > TYPFILE
+  print "= Cartesian bicategories of relations" > TYPFILE
+  print "" > TYPFILE
+
+  emit_table()
+
+  print "" > TYPFILE
+  print "= Sources recorded for later phases" > TYPFILE
+  print "" > TYPFILE
+  print "No Lean counterpart yet: the tape layer (`diag/Tape.lean`) and the first-order layer" > TYPFILE
+  print "(`diag/FO.lean`) are unwritten, and Example 2.3(d)(e) is the road Definition 4.1 does not take" > TYPFILE
+  print "— the same monoid and comonoid combined as a bialgebra rather than as a Frobenius algebra." > TYPFILE
+  print "" > TYPFILE
+
+  emit_figures()
+
+  close(TYPFILE)
+  print "paper-figs: wrote " TYPFILE > "/dev/stderr"
+}
+
+# Clip width in inches: the paper is reproduced at its printed size, except that the inline
+# generator glyphs of Def. 4.1 are a quarter inch wide there and unreadable at that size here.
+function inches(px,   w) { w = px / DPI; if (w < 0.9) w = 0.9; if (w > 4.8) w = 4.8; return w }
+
+function emit_table(   ln, F, n, name, decl, short, sc, txt, nrow) {
+  print "#table(" > TYPFILE
+  print "  columns: (auto, auto, 1fr)," > TYPFILE
+  print "  align: (center + horizon, left + horizon, left + top)," > TYPFILE
+  print "  inset: 6pt, stroke: 0.4pt + luma(190)," > TYPFILE
+  print "  table.header([*source clip*], [*Lean declaration*], [*its docstring*])," > TYPFILE
+  while ((getline ln < MANIFEST) > 0) {
+    if (ln ~ /^[ \t]*#/ || ln ~ /^[ \t]*$/) continue
+    n = split(ln, F, "\t"); if (n < 8) continue
+    name = F[7]; decl = F[8]
+    if (decl == "-") continue
+    short = shortname(decl)
+    if (short in DOC) {
+      sc = OUTDIR "/" name ".doc.txt"
+      txt = DOC[short]; gsub(/\n/, " ", txt)   # one paragraph, so the column wraps it
+      print txt > sc; close(sc)
+    } else print "paper-figs: no docstring found for " decl > "/dev/stderr"
+    print "  clip(\"" name "\", " sprintf("%.2fin", inches(F[5])) ")," > TYPFILE
+    print "  [`" decl "` \\ #src[" F[1] "] \\ #src[p. " F[2] "]]," > TYPFILE
+    if (short in DOC) print "  doc(\"" name "\")," > TYPFILE
+    else print "  src[no docstring — declaration not found in `diag/`]," > TYPFILE
+    nrow++
+  }
+  close(MANIFEST)
+  print ")" > TYPFILE
+  print "paper-figs: " nrow " axiom rows" > "/dev/stderr"
+}
+
+function emit_figures(   ln, F, n, name, wid) {
+  while ((getline ln < MANIFEST) > 0) {
+    if (ln ~ /^[ \t]*#/ || ln ~ /^[ \t]*$/) continue
+    n = split(ln, F, "\t"); if (n < 8) continue
+    if (F[8] != "-") continue
+    name = F[7]
+    wid = F[5] / DPI; if (wid > 10.2) wid = 10.2
+    print "#figure(clip(\"" name "\", " sprintf("%.2fin", wid) "), caption: src[" F[1] " p. " F[2] "])" > TYPFILE
+    print "" > TYPFILE
+  }
+  close(MANIFEST)
+}
+' "$@"

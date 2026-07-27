@@ -1,0 +1,13 @@
+#!/bin/sh
+# diag-export — draw a declaration's STATEMENT as a string diagram, under `cap`'s address-space
+# limit.  Writes diag/generated/<name>.typ and prints the path.
+#
+#   ./scripts/diag-export Freyd.Diag.dom_cd Freyd.Diag.cv_merge
+#   typst compile diag/generated/Freyd.Diag.dom_cd.typ
+#
+# The exe imports `Freyd` plus every `diag.*` module in ONE environment (importModules retains it
+# for the life of the process), so name as many declarations as you like in a single run rather
+# than invoking this per declaration.  The cap is here for the same reason as in lean-refactor:
+# every long-running Lean process in this repo runs under it — see scripts/cap.
+cd "$(dirname "$0")/.." || exit 1
+exec ./scripts/cap lake exe diag-export "$@"
