@@ -333,10 +333,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | none => plain e
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
-  | (``Freyd.Diag.CartBicat.delta, _) => return "Δ"
-  | (``Freyd.Diag.CartBicat.nabla, _) => return "∇"
-  | (``Freyd.Diag.CartBicat.bang, _) => return "!"
-  | (``Freyd.Diag.CartBicat.unitR, _) => return "?"
+  | (``Freyd.Diag.CartBicat.Δ, _) => return "Δ"
+  | (``Freyd.Diag.CartBicat.«∇», _) => return "∇"
+  | (``Freyd.Diag.CartBicat.«!», _) => return "!"
+  | (``Freyd.Diag.CartBicat.«?», _) => return "?"
   | (``Freyd.Diag.CartBicat.cap, _) => return "cap"
   | (``Freyd.Diag.CartBicat.cup, _) => return "cup"
   | (``Freyd.Diag.top, _) => return "⊤"
@@ -375,10 +375,10 @@ partial def toCell (e : Expr) : MetaM Cell := do
   | (``Cat.id, _) => return .wire
   -- width and lead are the generators' own stubs in `strdiag.typ`: `li + lo` wide, `li` of it to
   -- the left of the anchor (`unitR` and `swap` anchor on their left edge, so their lead is 0).
-  | (``Freyd.Diag.CartBicat.delta, _) => return .gen "delta" 1.4 0.7
-  | (``Freyd.Diag.CartBicat.nabla, _) => return .gen "nabla" 1.4 0.7
-  | (``Freyd.Diag.CartBicat.bang, _) => return .gen "bang" 0.7 0.7
-  | (``Freyd.Diag.CartBicat.unitR, _) => return .gen "unitR" 0.7 0.0
+  | (``Freyd.Diag.CartBicat.Δ, _) => return .gen "delta" 1.4 0.7
+  | (``Freyd.Diag.CartBicat.«∇», _) => return .gen "nabla" 1.4 0.7
+  | (``Freyd.Diag.CartBicat.«!», _) => return .gen "bang" 0.7 0.7
+  | (``Freyd.Diag.CartBicat.«?», _) => return .gen "unitR" 0.7 0.0
   | (``Freyd.Diag.SymMonCat.swap, _) => return .gen "swap" 0.55 0.0
   | (``Freyd.Diag.CartBicat.cap, _) => return .capC
   | (``Freyd.Diag.CartBicat.cup, _) => return .cupC

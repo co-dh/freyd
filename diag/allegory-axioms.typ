@@ -12,19 +12,19 @@
 //   ./scripts/diag-export Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
 //     Freyd.Diag.conv_inter Freyd.Diag.meet_idem Freyd.Diag.meet_comm Freyd.Diag.meet_assoc \
 //     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.le_top \
-//     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.ineq_37 Freyd.Diag.CartBicat.ineq_38 \
-//     Freyd.Diag.CartBicat.ineq_39 Freyd.Diag.CartBicat.ineq_40 Freyd.Diag.CartBicat.frob_left \
-//     Freyd.Diag.CartBicat.lax_delta Freyd.Diag.CartBicat.lax_bang Freyd.Diag.Biprod.le_union_left \
+//     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ_le_𝟙» Freyd.Diag.CartBicat.«𝟙_le_Δ∇» \
+//     Freyd.Diag.CartBicat.«?!_le_𝟙» Freyd.Diag.CartBicat.«𝟙_le_!?» Freyd.Diag.CartBicat.frob_left \
+//     Freyd.Diag.CartBicat.lax_Δ Freyd.Diag.CartBicat.lax_! Freyd.Diag.Biprod.le_union_left \
 //     Freyd.Diag.Biprod.union_comm Freyd.Diag.Biprod.bot_union Freyd.Diag.Biprod.comp_union \
 //     Freyd.Diag.Biprod.conv_union Freyd.Diag.FbCbRig.meet_union_distrib \
 //     Freyd.Diag.ClosedLinearBicat.residual_comp_le Freyd.Diag.SingleValued Freyd.Diag.Total \
 //     Freyd.Diag.Injective Freyd.Diag.Surjective Freyd.Diag.ineq_SV Freyd.Diag.ineq_TOT \
 //     Freyd.Diag.ineq_INJ Freyd.Diag.ineq_SUR Freyd.Diag.shunt_right Freyd.Diag.shunt_left \
-//     Freyd.Diag.entire_inter_iff Freyd.Diag.CartBicat.nabla_slide_conv
+//     Freyd.Diag.entire_inter_iff Freyd.Diag.CartBicat.«∇_slide_conv»
 // and the PROOF chains:
 //   ./scripts/diag-export Freyd.Diag.CartBicat.conv_slide
 //   ./scripts/diag-export --proof Freyd.Diag.CartBicat.conv_comp Freyd.Diag.shunt_right \
-//     Freyd.Diag.shunt_left Freyd.Diag.CartBicat.nabla_slide_conv \
+//     Freyd.Diag.shunt_left Freyd.Diag.CartBicat.«∇_slide_conv» \
 //     Freyd.Diag.modular_of_frobenius Freyd.Diag.entire_inter_iff
 #import "generated/Freyd.Diag.CartBicat.conv_conv.typ": pic as p-conv-conv
 #import "generated/Freyd.Diag.CartBicat.conv_comp.typ": pic as p-conv-comp
@@ -36,13 +36,13 @@
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.le_top.typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.special.typ": pic as p-special
-#import "generated/Freyd.Diag.CartBicat.ineq_37.typ": pic as p-37
-#import "generated/Freyd.Diag.CartBicat.ineq_38.typ": pic as p-38
-#import "generated/Freyd.Diag.CartBicat.ineq_39.typ": pic as p-39
-#import "generated/Freyd.Diag.CartBicat.ineq_40.typ": pic as p-40
+#import "generated/Freyd.Diag.CartBicat.«∇Δ_le_𝟙».typ": pic as p-37
+#import "generated/Freyd.Diag.CartBicat.«𝟙_le_Δ∇».typ": pic as p-38
+#import "generated/Freyd.Diag.CartBicat.«?!_le_𝟙».typ": pic as p-39
+#import "generated/Freyd.Diag.CartBicat.«𝟙_le_!?».typ": pic as p-40
 #import "generated/Freyd.Diag.CartBicat.frob_left.typ": pic as p-frob
-#import "generated/Freyd.Diag.CartBicat.lax_delta.typ": pic as p-lax-delta
-#import "generated/Freyd.Diag.CartBicat.lax_bang.typ": pic as p-lax-bang
+#import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
+#import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
 #import "generated/Freyd.Diag.Biprod.le_union_left.typ": pic as p-union-left
 #import "generated/Freyd.Diag.Biprod.union_comm.typ": pic as p-union-comm
 #import "generated/Freyd.Diag.Biprod.bot_union.typ": pic as p-bot-union
@@ -53,10 +53,10 @@
 #import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42b
 #import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
 #import "generated/Freyd.Diag.shunt_left.proof.typ": branches as slb
-#import "generated/Freyd.Diag.CartBicat.nabla_slide_conv.proof.typ": branches as nsb
+#import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.conv_slide.typ": pic as p-conv-slide
-#import "generated/Freyd.Diag.CartBicat.nabla_slide_conv.typ": pic as p-nabla-slide
+#import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
 #import "generated/Freyd.Diag.SingleValued.typ": pic as p-sv46
 #import "generated/Freyd.Diag.Total.typ": pic as p-tot47
 #import "generated/Freyd.Diag.Injective.typ": pic as p-inj48
@@ -109,8 +109,9 @@
 ])
 
 #align(center, block(width: 90%, inset: (y: 4pt))[
-  #src[*Equation numbering.* The numbers below are the 2017 preprint's, which is what
-  `diag/CB.lean`'s field names encode (`ineq_37` … `ineq_40`). The repo's copy of the paper is now
+  #src[*Equation numbering.* The numbers below are the 2017 preprint's. The `CartBicat`
+  fields no longer encode them — a field is named for what it says, `«∇Δ_le_𝟙»` rather than
+  `ineq_37` — and each docstring carries the preprint number. The repo's copy of the paper is now
   the published version — Poly. J. Math. *2* (6), 20 Oct 2025, doi:10.69763/polyjmath.2.6 — which
   renumbers. Translation, published ← preprint: (34)←(37), (35)←(38), (36)←(39), (37)←(40),
   (38)←(41), (39)←(42), (40)←(43), (33)←(35), and Example 2.3(c)'s (13),(14)←(11),(12); the
@@ -223,7 +224,7 @@ for a reshaping, `≤` for a genuine inequality. Counting them is the point of d
   [*modular identity* `R S ∩ T ⊑ (R ∩ T S°) S` — §2.112 `modular`, the axiom Freyd *adjoins*: "we
    adjoin one more containment, the law of modularity". Here (41) and (42), *derived*. \
    #src[`Freyd.Diag.modular_of_frobenius`. Strip the shared prefix `Δ ; (R ⊗ T)` off both sides and
-   what is left is `nabla_slide_conv` (`diag/CB.lean:556`) — a box slides through a merge at the
+   what is left is `«∇_slide_conv»` (`diag/CB.lean:560`) — a box slides through a merge at the
    cost of its converse on the other strand.]],
   P(p-modular),
 )
@@ -498,7 +499,7 @@ as an axiom. Here it is a theorem, and this is its proof — `Freyd.Diag.modular
    `S` is common to both sides and can be set aside. #src[An equality, and drawn as one.]],
 
   raw(mfb.at(0).terms.at(2)), P(mfb.at(0).steps.at(2), s: 62%),
-  [*`nabla_slide_conv`,* under the shared prefix. #src[`S` slides through the merge and reappears as
+  [*`«∇_slide_conv»`,* under the shared prefix. #src[`S` slides through the merge and reappears as
    `S°` on the other strand. *The only inequality in the proof* — everything else is reshaping.]],
 
   raw(mfb.at(0).terms.at(3)), P(mfb.at(0).steps.at(3), s: 62%),
@@ -508,7 +509,7 @@ as an axiom. Here it is a theorem, and this is its proof — `Freyd.Diag.modular
 
 == Inside the middle step
 
-`nabla_slide_conv` (`diag/CB.lean:556`) is where the mathematics is, and it mentions only `S` —
+`«∇_slide_conv»` (`diag/CB.lean:560`) is where the mathematics is, and it mentions only `S` —
 `R` and `T` sit untouched in the prefix throughout. Read on its own it says one arrow slides
 through a merge:
 
@@ -523,7 +524,7 @@ own chain shows it is the only one.
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header(
-    Th[*`nabla_slide_conv`,* `(S ⊗ 𝟙) ; ∇ ≤ (𝟙 ⊗ S°) ; ∇ ; S`
+    Th[*`«∇_slide_conv»`,* `(S ⊗ 𝟙) ; ∇ ≤ (𝟙 ⊗ S°) ; ∇ ; S`
       #h(8pt) #Pin(p-nabla-slide)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
@@ -531,15 +532,15 @@ own chain shows it is the only one.
   [*the start:* `(S ⊗ 𝟙) ; ∇`.],
 
   raw(nsb.at(0).terms.at(1)), P(nsb.at(0).steps.at(1), s: 62%),
-  [*`nabla_of_cap`,* backwards. #src[The merge is rebuilt from a copy and a cap, which puts the term
+  [*`«∇_of_cap»`,* backwards. #src[The merge is rebuilt from a copy and a cap, which puts the term
    into the shape `(S ; Δ) ⊗ 𝟙` that (42) applies to.]],
 
   raw(nsb.at(0).terms.at(2)), P(nsb.at(0).steps.at(2), s: 62%),
-  [*(42), `lax_delta`.* `S ; Δ` becomes `Δ ; (S ⊗ S)`: the box is copied. \ #src[*The whole of the
+  [*(42), `lax_Δ`.* `S ; Δ` becomes `Δ ; (S ⊗ S)`: the box is copied. \ #src[*The whole of the
    modular law, in one step.*]],
 
   raw(nsb.at(0).terms.at(3)), P(nsb.at(0).steps.at(3), s: 62%),
-  [*`cap_tens_nabla` and `conv_slide`.* #src[Reshaping back, and the surviving duplicate slides round
+  [*`«cap_tens_∇»` and `conv_slide`.* #src[Reshaping back, and the surviving duplicate slides round
    the cap to become `S°` — the same rule Lemma 4.2 (ii) is made of.]],
 )
 
@@ -685,16 +686,16 @@ row of the second table is the whole strength of the lemma, and everything else 
 = Anything missing?
 
 *Nothing on Freyd's side.* All eight §2.11 axioms are theorems of Def. 4.1, and
-`allegoryOfCartBicat` (`diag/CB_Allegory.lean:77`) discharges the `Allegory` structure field for
+`allegoryOfCartBicat` (`diag/CB_Allegory.lean:85`) discharges the `Allegory` structure field for
 field. The modular identity, which Freyd has to *adjoin* because an allegory has no structure to
 derive it from, comes out of (41) and (42).
 
-*Three things are stated but unproved.* `ineq_37` and `ineq_39` are discharged and never used (see
+*Three things are stated but unproved.* `«∇Δ_le_𝟙»` and `«?!_le_𝟙»` are discharged and never used (see
 below); (44) and (45) are not stated at all; and Lemma 4.4, that the comonoid and adjoint forms of
 the map conditions agree, is not proved. All three trace to one omission in Def. 4.1 as printed — no
 Frobenius structure at a composite object — which `diag/CB.lean`'s header records.
 
-*Two laws on the Frobenius side do no work here.* Grepping the repo, `ineq_37` and `ineq_39` are
+*Two laws on the Frobenius side do no work here.* Grepping the repo, `«∇Δ_le_𝟙»` and `«?!_le_𝟙»` are
 never used: they appear only in the class definition and in `diag/RelSetCB.lean`, where the
 `Rel(Set)` instance discharges them. They are there to make `Δ ⊣ ∇` and `! ⊣ ?` genuine adjunctions
 — which is what pins `∇ = Δ°` and `? = !°` by uniqueness of adjoints — not to prove any allegory

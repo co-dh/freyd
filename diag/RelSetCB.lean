@@ -168,90 +168,90 @@ instance : SymMonCat RelSet.{u} :=
   the one-point set, and the monoid is their converse — `∇ := Δ°`, `? := !°`. -/
 
 /-- `Δ_n : n ⟶ n ⊗ n`, the diagonal. -/
-def deltaRel (n : RelSet.{u}) : n ⟶ (⟨n.carrier × n.carrier⟩ : RelSet.{u}) :=
+def ΔRel (n : RelSet.{u}) : n ⟶ (⟨n.carrier × n.carrier⟩ : RelSet.{u}) :=
   RelSet.graph fun x => (x, x)
 
 /-- `!_n : n ⟶ I`, the map to the one-point set. -/
-def bangRel (n : RelSet.{u}) : n ⟶ (⟨PUnit⟩ : RelSet.{u}) := RelSet.graph fun _ => PUnit.unit
+def «!Rel» (n : RelSet.{u}) : n ⟶ (⟨PUnit⟩ : RelSet.{u}) := RelSet.graph fun _ => PUnit.unit
 
 /-- `∇ = Δ°` merges two strands: `(x, y)` reaches `z` exactly when both components are `z`. -/
-theorem deltaRel_recip_apply (n : RelSet.{u}) (p : n.carrier × n.carrier) (z : n.carrier) :
-    (deltaRel n)° p z ↔ (p.1 = z ∧ p.2 = z) :=
+theorem ΔRel_recip_apply (n : RelSet.{u}) (p : n.carrier × n.carrier) (z : n.carrier) :
+    (ΔRel n)° p z ↔ (p.1 = z ∧ p.2 = z) :=
   ⟨fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩, fun h => Prod.ext_iff.mpr ⟨h.1, h.2⟩⟩
 
 /-- `? = !°` relates the point of `I` to everything: the one-point set has nothing to distinguish. -/
-theorem bangRel_recip_apply (n : RelSet.{u}) (u : PUnit) (x : n.carrier) :
-    (bangRel n)° u x ↔ True :=
+theorem «!Rel_recip_apply» (n : RelSet.{u}) (u : PUnit) (x : n.carrier) :
+    («!Rel» n)° u x ↔ True :=
   ⟨fun _ => trivial, fun _ => rfl⟩
 
 instance : CartBicat RelSet.{u} :=
   { (inferInstance : SymMonCat RelSet.{u}) with
-    delta := deltaRel
-    bang := bangRel
-    nabla := fun n => (deltaRel n)°
-    unitR := fun n => (bangRel n)°
+    Δ := ΔRel
+    «!» := «!Rel»
+    «∇» := fun n => (ΔRel n)°
+    «?» := fun n => («!Rel» n)°
 
-    delta_assoc := fun n => by
-      simp only [deltaRel, tensHom_eq, tensAssoc_eq, ← RelSet.graph_id n, RelSet.rprodMap_graph,
+    Δ_assoc := fun n => by
+      simp only [ΔRel, tensHom_eq, tensAssoc_eq, ← RelSet.graph_id n, RelSet.rprodMap_graph,
         RelSet.graph_comp]
-    delta_comm := fun n => by
-      simp only [deltaRel, swap_eq, RelSet.graph_comp]
-    delta_counit := fun n => by
-      simp only [deltaRel, bangRel, tensHom_eq, runit_eq, ← RelSet.graph_id n, RelSet.rprodMap_graph,
+    Δ_comm := fun n => by
+      simp only [ΔRel, swap_eq, RelSet.graph_comp]
+    Δ_counit := fun n => by
+      simp only [ΔRel, «!Rel», tensHom_eq, runit_eq, ← RelSet.graph_id n, RelSet.rprodMap_graph,
         RelSet.graph_comp]
 
-    nabla_assoc := fun n => by
+    «∇_assoc» := fun n => by
       apply RelSet.hom_ext; intro p w
       constructor
       · rintro ⟨m, ⟨h1, h2⟩, h3⟩
-        have h1' : p.1.1 = m.1 ∧ p.1.2 = m.1 := (deltaRel_recip_apply n p.1 m.1).mp h1
+        have h1' : p.1.1 = m.1 ∧ p.1.2 = m.1 := (ΔRel_recip_apply n p.1 m.1).mp h1
         have h2' : p.2 = m.2 := h2
-        have h3' : m.1 = w ∧ m.2 = w := (deltaRel_recip_apply n m w).mp h3
+        have h3' : m.1 = w ∧ m.2 = w := (ΔRel_recip_apply n m w).mp h3
         exact ⟨(p.1.1, (p.1.2, p.2)), rfl,
-          (w, w), ⟨h1'.1.trans h3'.1, (deltaRel_recip_apply n _ w).mpr
+          (w, w), ⟨h1'.1.trans h3'.1, (ΔRel_recip_apply n _ w).mpr
             ⟨h1'.2.trans h3'.1, h2'.trans h3'.2⟩⟩, rfl⟩
       · rintro ⟨r, hr, s, ⟨h1, h2⟩, h3⟩
         have hr' : r = (p.1.1, (p.1.2, p.2)) := hr
         subst hr'
         have h1' : p.1.1 = s.1 := h1
-        have h2' : p.1.2 = s.2 ∧ p.2 = s.2 := (deltaRel_recip_apply n _ s.2).mp h2
-        have h3' : s.1 = w ∧ s.2 = w := (deltaRel_recip_apply n s w).mp h3
-        exact ⟨(w, w), ⟨(deltaRel_recip_apply n p.1 w).mpr
+        have h2' : p.1.2 = s.2 ∧ p.2 = s.2 := (ΔRel_recip_apply n _ s.2).mp h2
+        have h3' : s.1 = w ∧ s.2 = w := (ΔRel_recip_apply n s w).mp h3
+        exact ⟨(w, w), ⟨(ΔRel_recip_apply n p.1 w).mpr
           ⟨h1'.trans h3'.1, h2'.1.trans h3'.2⟩, h2'.2.trans h3'.2⟩, rfl⟩
-    nabla_comm := fun n => by
+    «∇_comm» := fun n => by
       apply RelSet.hom_ext; intro p z
       constructor
       · rintro ⟨m, hm, h⟩
         have hm' : m = (p.2, p.1) := hm
         subst hm'
-        have h' := (deltaRel_recip_apply n _ z).mp h
-        exact (deltaRel_recip_apply n p z).mpr ⟨h'.2, h'.1⟩
+        have h' := (ΔRel_recip_apply n _ z).mp h
+        exact (ΔRel_recip_apply n p z).mpr ⟨h'.2, h'.1⟩
       · intro h
-        have h' := (deltaRel_recip_apply n p z).mp h
-        exact ⟨(p.2, p.1), rfl, (deltaRel_recip_apply n _ z).mpr ⟨h'.2, h'.1⟩⟩
-    nabla_unit := fun n => by
+        have h' := (ΔRel_recip_apply n p z).mp h
+        exact ⟨(p.2, p.1), rfl, (ΔRel_recip_apply n _ z).mpr ⟨h'.2, h'.1⟩⟩
+    «∇_unit» := fun n => by
       apply RelSet.hom_ext; intro x w
       constructor
       · rintro ⟨r, hr, s, ⟨h1, _⟩, h2⟩
         have hr' : r = (x, PUnit.unit) := hr
         subst hr'
-        exact (h1 : x = s.1).trans ((deltaRel_recip_apply n s w).mp h2).1
+        exact (h1 : x = s.1).trans ((ΔRel_recip_apply n s w).mp h2).1
       · intro h
         have h' : x = w := h
         exact ⟨(x, PUnit.unit), rfl, (w, w), ⟨h', rfl⟩, rfl⟩
 
-    ineq_37 := fun n => RelSet.le_iff.mpr <| by
+    «∇Δ_le_𝟙» := fun n => RelSet.le_iff.mpr <| by
       rintro p q ⟨z, h1, h2⟩
-      have h1' := (deltaRel_recip_apply n p z).mp h1
+      have h1' := (ΔRel_recip_apply n p z).mp h1
       have h2' : q = (z, z) := h2
       exact Prod.ext_iff.mpr ⟨h1'.1.trans (congrArg Prod.fst h2').symm,
         h1'.2.trans (congrArg Prod.snd h2').symm⟩
-    ineq_38 := fun n => RelSet.le_iff.mpr <| by
+    «𝟙_le_Δ∇» := fun n => RelSet.le_iff.mpr <| by
       intro x y h
-      exact ⟨(x, x), rfl, (deltaRel_recip_apply n _ y).mpr ⟨h, h⟩⟩
-    ineq_39 := fun n => RelSet.le_iff.mpr <| by
+      exact ⟨(x, x), rfl, (ΔRel_recip_apply n _ y).mpr ⟨h, h⟩⟩
+    «?!_le_𝟙» := fun n => RelSet.le_iff.mpr <| by
       rintro u v _; rfl
-    ineq_40 := fun n => RelSet.le_iff.mpr <| by
+    «𝟙_le_!?» := fun n => RelSet.le_iff.mpr <| by
       intro x y _; exact ⟨PUnit.unit, rfl, rfl⟩
 
     frob_left := fun n => by
@@ -263,7 +263,7 @@ instance : CartBicat RelSet.{u} :=
         subst h2'
         have hs' : s = ((r1, p.2), p.2) := hs
         subst hs'
-        have h3' := (deltaRel_recip_apply n (r1, p.2) q.1).mp h3
+        have h3' := (ΔRel_recip_apply n (r1, p.2) q.1).mp h3
         have h4' : p.2 = q.2 := h4
         -- The copy on the right strand forces `p.2 = q.1 = q.2`, and the merge `p.1 = q.1`.
         exact ⟨q.1, Prod.ext_iff.mpr ⟨h1'.trans h3'.1, h3'.2⟩,
@@ -284,7 +284,7 @@ instance : CartBicat RelSet.{u} :=
         have hs' : s = (p.1, (p.1, p.2)) := hs
         subst hs'
         have h3' : p.1 = q.1 := h3
-        have h4' := (deltaRel_recip_apply n (p.1, p.2) q.2).mp h4
+        have h4' := (ΔRel_recip_apply n (p.1, p.2) q.2).mp h4
         -- The copy on the left strand forces `p.1 = q.1 = q.2`, and the merge `p.2 = q.2`.
         have hq2 : q.2 = q.1 := h4'.1.symm.trans h3'
         exact ⟨q.1, Prod.ext_iff.mpr ⟨h3', h4'.2.trans hq2⟩, Prod.ext_iff.mpr ⟨rfl, hq2⟩⟩
@@ -294,18 +294,18 @@ instance : CartBicat RelSet.{u} :=
         subst h1'; subst h2'
         exact ⟨((z, z), z), ⟨rfl, rfl⟩, (z, (z, z)), rfl, rfl, rfl⟩
 
-    lax_delta := fun R => RelSet.le_iff.mpr <| by
+    lax_Δ := fun R => RelSet.le_iff.mpr <| by
       rintro x q ⟨y, hR, hq⟩
       have hq' : q = (y, y) := hq
       subst hq'
       exact ⟨(x, x), rfl, hR, hR⟩
-    lax_bang := fun R => RelSet.le_iff.mpr <| by
+    lax_! := fun R => RelSet.le_iff.mpr <| by
       rintro x u ⟨_, _, hu⟩; exact hu }
 
-@[simp] theorem delta_eq (n : RelSet.{u}) : CartBicat.delta n = deltaRel n := rfl
-@[simp] theorem bang_eq (n : RelSet.{u}) : CartBicat.bang n = bangRel n := rfl
-@[simp] theorem nabla_eq (n : RelSet.{u}) : CartBicat.nabla n = (deltaRel n)° := rfl
-@[simp] theorem unitR_eq (n : RelSet.{u}) : CartBicat.unitR n = (bangRel n)° := rfl
+@[simp] theorem delta_eq (n : RelSet.{u}) : CartBicat.Δ n = ΔRel n := rfl
+@[simp] theorem bang_eq (n : RelSet.{u}) : CartBicat.«!» n = «!Rel» n := rfl
+@[simp] theorem nabla_eq (n : RelSet.{u}) : CartBicat.«∇» n = (ΔRel n)° := rfl
+@[simp] theorem unitR_eq (n : RelSet.{u}) : CartBicat.«?» n = («!Rel» n)° := rfl
 
 /-! ### Agreement — the load-bearing part of this file
 
@@ -321,7 +321,7 @@ theorem meet_eq_inter {a b : RelSet.{u}} (R S : a ⟶ b) : meet R S = R ∩ S :=
   · rintro ⟨p, hp, m, ⟨hR, hS⟩, hm⟩
     have hp' : p = (x, x) := hp
     subst hp'
-    have hm' := (deltaRel_recip_apply b m y).mp hm
+    have hm' := (ΔRel_recip_apply b m y).mp hm
     exact ⟨hm'.1 ▸ hR, hm'.2 ▸ hS⟩
   · rintro ⟨hR, hS⟩
     exact ⟨(x, x), rfl, (y, y), ⟨hR, hS⟩, rfl⟩

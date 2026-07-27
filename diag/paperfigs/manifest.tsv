@@ -9,33 +9,33 @@
 # Several rows may name the same declaration: an axiom stated twice in a paper gets both clips.
 #
 # ---- functorialSemanticsForRelationalTheories.pdf: Definition 4.1, the CartBicat fields --------
-functorialSemanticsForRelationalTheories.pdf	17	382	1286	54	48	fs-def41-delta	Freyd.Diag.CartBicat.delta
-functorialSemanticsForRelationalTheories.pdf	17	484	1286	40	48	fs-def41-bang	Freyd.Diag.CartBicat.bang
-functorialSemanticsForRelationalTheories.pdf	17	376	1373	50	48	fs-def41-nabla	Freyd.Diag.CartBicat.nabla
-functorialSemanticsForRelationalTheories.pdf	17	484	1373	44	48	fs-def41-unitR	Freyd.Diag.CartBicat.unitR
+functorialSemanticsForRelationalTheories.pdf	17	382	1286	54	48	fs-def41-delta	Freyd.Diag.CartBicat.Δ
+functorialSemanticsForRelationalTheories.pdf	17	484	1286	40	48	fs-def41-bang	Freyd.Diag.CartBicat.«!»
+functorialSemanticsForRelationalTheories.pdf	17	376	1373	50	48	fs-def41-nabla	Freyd.Diag.CartBicat.«∇»
+functorialSemanticsForRelationalTheories.pdf	17	484	1373	44	48	fs-def41-unitR	Freyd.Diag.CartBicat.«?»
 # Example 2.3(a), the commutative monoid (∇, ?)
-functorialSemanticsForRelationalTheories.pdf	8	280	487	230	100	fs-eq05	Freyd.Diag.CartBicat.nabla_assoc
-functorialSemanticsForRelationalTheories.pdf	8	545	484	250	48	fs-eq06	Freyd.Diag.CartBicat.nabla_comm
-functorialSemanticsForRelationalTheories.pdf	8	805	484	260	48	fs-eq07	Freyd.Diag.CartBicat.nabla_unit
+functorialSemanticsForRelationalTheories.pdf	8	280	487	230	100	fs-eq05	Freyd.Diag.CartBicat.«∇_assoc»
+functorialSemanticsForRelationalTheories.pdf	8	545	484	250	48	fs-eq06	Freyd.Diag.CartBicat.«∇_comm»
+functorialSemanticsForRelationalTheories.pdf	8	805	484	260	48	fs-eq07	Freyd.Diag.CartBicat.«∇_unit»
 # Example 2.3(b), the cocommutative comonoid (Δ, !)
-functorialSemanticsForRelationalTheories.pdf	8	280	710	230	100	fs-eq08	Freyd.Diag.CartBicat.delta_assoc
-functorialSemanticsForRelationalTheories.pdf	8	550	710	240	100	fs-eq09	Freyd.Diag.CartBicat.delta_comm
-functorialSemanticsForRelationalTheories.pdf	8	805	713	260	44	fs-eq10	Freyd.Diag.CartBicat.delta_counit
+functorialSemanticsForRelationalTheories.pdf	8	280	710	230	100	fs-eq08	Freyd.Diag.CartBicat.Δ_assoc
+functorialSemanticsForRelationalTheories.pdf	8	550	710	240	100	fs-eq09	Freyd.Diag.CartBicat.Δ_comm
+functorialSemanticsForRelationalTheories.pdf	8	805	713	260	44	fs-eq10	Freyd.Diag.CartBicat.Δ_counit
 # Example 2.3(c), special Frobenius: (11) is the Frobenius equation, (12) the special law
 functorialSemanticsForRelationalTheories.pdf	8	280	922	380	62	fs-eq11	Freyd.Diag.CartBicat.frob_left
 functorialSemanticsForRelationalTheories.pdf	8	730	922	330	62	fs-eq12	Freyd.Diag.CartBicat.special
 # Definition 4.1 clause 3, the adjunction and Frobenius inequations
-functorialSemanticsForRelationalTheories.pdf	18	350	225	325	80	fs-ineq37	Freyd.Diag.CartBicat.ineq_37
-functorialSemanticsForRelationalTheories.pdf	18	710	225	355	80	fs-ineq38	Freyd.Diag.CartBicat.ineq_38
-functorialSemanticsForRelationalTheories.pdf	18	350	320	325	65	fs-ineq39	Freyd.Diag.CartBicat.ineq_39
-functorialSemanticsForRelationalTheories.pdf	18	710	320	355	65	fs-ineq40	Freyd.Diag.CartBicat.ineq_40
+functorialSemanticsForRelationalTheories.pdf	18	350	225	325	80	fs-ineq37	Freyd.Diag.CartBicat.«∇Δ_le_𝟙»
+functorialSemanticsForRelationalTheories.pdf	18	710	225	355	80	fs-ineq38	Freyd.Diag.CartBicat.«𝟙_le_Δ∇»
+functorialSemanticsForRelationalTheories.pdf	18	350	320	325	65	fs-ineq39	Freyd.Diag.CartBicat.«?!_le_𝟙»
+functorialSemanticsForRelationalTheories.pdf	18	710	320	355	65	fs-ineq40	Freyd.Diag.CartBicat.«𝟙_le_!?»
 functorialSemanticsForRelationalTheories.pdf	18	475	425	232	90	fs-eq41-left	Freyd.Diag.CartBicat.frob_left
 functorialSemanticsForRelationalTheories.pdf	18	600	425	255	90	fs-eq41-right	Freyd.Diag.CartBicat.frob_right
 # Definition 4.1 clause 4, laxness — the same statements as eq. (3) on p. 4
-functorialSemanticsForRelationalTheories.pdf	18	275	582	410	85	fs-ineq42	Freyd.Diag.CartBicat.lax_delta
-functorialSemanticsForRelationalTheories.pdf	18	710	592	355	68	fs-ineq43	Freyd.Diag.CartBicat.lax_bang
-functorialSemanticsForRelationalTheories.pdf	4	315	908	372	100	fs-eq03-delta	Freyd.Diag.CartBicat.lax_delta
-functorialSemanticsForRelationalTheories.pdf	4	685	912	290	90	fs-eq03-bang	Freyd.Diag.CartBicat.lax_bang
+functorialSemanticsForRelationalTheories.pdf	18	275	582	410	85	fs-ineq42	Freyd.Diag.CartBicat.lax_Δ
+functorialSemanticsForRelationalTheories.pdf	18	710	592	355	68	fs-ineq43	Freyd.Diag.CartBicat.lax_!
+functorialSemanticsForRelationalTheories.pdf	4	315	908	372	100	fs-eq03-delta	Freyd.Diag.CartBicat.lax_Δ
+functorialSemanticsForRelationalTheories.pdf	4	685	912	290	90	fs-eq03-bang	Freyd.Diag.CartBicat.lax_!
 # p. 18, the displayed derivation of the special law from (38) + (40) + the unit laws
 functorialSemanticsForRelationalTheories.pdf	18	380	890	540	78	fs-special-derivation	Freyd.Diag.CartBicat.special
 #

@@ -48,27 +48,27 @@ theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
 theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (meet (R ≫ S) T) ≤ (meet R (T ≫ conv S) ≫ S) := by
   have hL : meet (R ≫ S) T
-      = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := by
+      = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ «∇» c := by
     dsimp [meet]
-    calc delta a ≫ ((R ≫ S) ⊗ₕ T) ≫ nabla c
-        = delta a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ nabla c := by
+    calc Δ a ≫ ((R ≫ S) ⊗ₕ T) ≫ «∇» c
+        = Δ a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ «∇» c := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := by simp only [Cat.assoc]
+      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ «∇» c := by simp only [Cat.assoc]
   have hR : meet R (T ≫ conv S) ≫ S
-      = (delta a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by
+      = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S := by
     dsimp [meet]
-    calc (delta a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ nabla b) ≫ S
-        = (delta a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ nabla b) ≫ S := by
+    calc (Δ a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ «∇» b) ≫ S
+        = (Δ a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ «∇» b) ≫ S := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (delta a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by simp only [Cat.assoc]
+      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S := by simp only [Cat.assoc]
   -- A THREE-LINK `calc` rather than `rw [hL, hR]; exact …`, so the argument sits in the proof TERM
   -- where `diag-export --proof` can draw it — and draw it with `R`, `S` and `T` all present, which
   -- is what the modular law is about.  `nabla_slide_conv` alone mentions only `S`.  The reshaping
   -- links are stated at `=`, so the drawn chain shows the middle step as the one inequality.
   calc meet (R ≫ S) T
-      = (delta a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ nabla c := hL
-    _ ≤ (delta a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S :=
-        OrderedCat.comp_mono (OrderedCat.le_refl _) (nabla_slide_conv S)
+      = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ «∇» c := hL
+    _ ≤ (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ «∇» b ≫ S :=
+        OrderedCat.comp_mono (OrderedCat.le_refl _) («∇_slide_conv» S)
     _ = meet R (T ≫ conv S) ≫ S := hR.symm
 
 /-- **Every cartesian bicategory of relations is an allegory.**  `recip := conv`, `inter :=

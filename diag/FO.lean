@@ -419,21 +419,21 @@ class FOBicat (𝒞 : Type u) extends
     RightLinAdj (bswap a b) (SymMonCat.swap b a)
 
   /-- Def. 6.1.4, (τ◀°)/(γ◀°): `◀°` is left linear adjoint to `▶•`. -/
-  delta_linAdj (n : 𝒞) : RightLinAdj (CartBicat.delta n) (CocartBicat.bnabla n)
+  delta_linAdj (n : 𝒞) : RightLinAdj (CartBicat.Δ n) (CocartBicat.bnabla n)
   /-- (τ!°)/(γ!°): `!°` is left linear adjoint to `¡•`. -/
-  bang_linAdj (n : 𝒞) : RightLinAdj (CartBicat.bang n) (CocartBicat.bunitR n)
+  bang_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«!» n) (CocartBicat.bunitR n)
   /-- (τ▶°)/(γ▶°): `▶°` is left linear adjoint to `◀•`. -/
-  nabla_linAdj (n : 𝒞) : RightLinAdj (CartBicat.nabla n) (CocartBicat.bdelta n)
+  nabla_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«∇» n) (CocartBicat.bdelta n)
   /-- (τ¡°)/(γ¡°): `¡°` is left linear adjoint to `!•`. -/
-  unitR_linAdj (n : 𝒞) : RightLinAdj (CartBicat.unitR n) (CocartBicat.bbang n)
+  unitR_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«?» n) (CocartBicat.bbang n)
   /-- (τ◀•)/(γ◀•): `◀•` is left linear adjoint to `▶°` — the "and right" half of Def. 6.1.4. -/
-  bdelta_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.nabla n)
+  bdelta_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.«∇» n)
   /-- (τ!•)/(γ!•): `!•` is left linear adjoint to `¡°`. -/
-  bbang_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bbang n) (CartBicat.unitR n)
+  bbang_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bbang n) (CartBicat.«?» n)
   /-- (τ▶•)/(γ▶•): `▶•` is left linear adjoint to `◀°`. -/
-  bnabla_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.delta n)
+  bnabla_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.Δ n)
   /-- (τ¡•)/(γ¡•): `¡•` is left linear adjoint to `!°`. -/
-  bunitR_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.bang n)
+  bunitR_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.«!» n)
 
   /-- Def. 6.1.5, `(F^•_∘)`: the LINEAR FROBENIUS law in the white structure, with the black
       comultiplication copying and the white multiplication merging.  Compare `frob_right`: the
@@ -443,21 +443,21 @@ class FOBicat (𝒞 : Type u) extends
       their order — `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)` — and `°` and `∘` are the same glyph,
       so dropping the sub/superscript positions makes two pairs of labels collide.  Keep them. -/
   linfrob_bw (n : 𝒞) :
-    (bdelta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ nabla n)
-      = (𝟙 n ⊗ₕ delta n) ≫ SymMonCat.tensAssocInv n n n ≫ (bnabla n ⊗ₕ 𝟙 n)
+    (bdelta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n)
+      = (𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ (bnabla n ⊗ₕ 𝟙 n)
   /-- `(F^°_•)`: the mirror of `linfrob_bw`, white copying and black merging. -/
   linfrob_wb (n : 𝒞) :
-    (delta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ bnabla n)
-      = (𝟙 n ⊗ₕ bdelta n) ≫ SymMonCat.tensAssocInv n n n ≫ (nabla n ⊗ₕ 𝟙 n)
+    (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ bnabla n)
+      = (𝟙 n ⊗ₕ bdelta n) ≫ SymMonCat.tensAssocInv n n n ≫ («∇» n ⊗ₕ 𝟙 n)
   /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`/`α•`
       for `⨟°`/`⊗`/`α`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
       because complementing swaps the generators' colours as well as the composition's. -/
   blinfrob_wb (n : 𝒞) :
-    (delta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ bnabla n)
-      = (𝟙• n ⊗•ₕ bdelta n) ≫• bassocInv n n n ≫• (nabla n ⊗•ₕ 𝟙• n)
+    (Δ n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ bnabla n)
+      = (𝟙• n ⊗•ₕ bdelta n) ≫• bassocInv n n n ≫• («∇» n ⊗•ₕ 𝟙• n)
   /-- `(F_∘^•)`: `linfrob_bw` said in the black structure. -/
   blinfrob_bw (n : 𝒞) :
-    (bdelta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ nabla n)
-      = (𝟙• n ⊗•ₕ delta n) ≫• bassocInv n n n ≫• (bnabla n ⊗•ₕ 𝟙• n)
+    (bdelta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ «∇» n)
+      = (𝟙• n ⊗•ₕ Δ n) ≫• bassocInv n n n ≫• (bnabla n ⊗•ₕ 𝟙• n)
 
 end Freyd.Diag

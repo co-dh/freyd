@@ -40,7 +40,7 @@ String diagrams suppress unitors and associators; these two composites are what 
 a single bent wire, and they are spelled out here so that no proof below hides one. -/
 
 /-- `keepFst = (𝟙 ⊗ !);ρ : a ⊗ b ⟶ a` — keep the first wire, discard the second. -/
-def keepFst (a b : 𝒞) : a ⊗ b ⟶ a := (𝟙 a ⊗ₕ bang b) ≫ SymMonCat.runit a
+def keepFst (a b : 𝒞) : a ⊗ b ⟶ a := (𝟙 a ⊗ₕ «!» b) ≫ SymMonCat.runit a
 
 /-- `capKeep = α;(𝟙 ⊗ cap);ρ : (a ⊗ b) ⊗ b ⟶ a` — keep the first wire, cap the two `b`-wires
     against each other. -/
@@ -53,30 +53,30 @@ def Dom {a b : 𝒞} (R : a ⟶ b) : a ⟶ a := meet (𝟙 a) (R ≫ conv R)
 /-- The normal form both sides of §2.124 are driven to:
     `W = Δ;(Δ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);capKeep`  (`Δ;(Δ ⊗ 𝟙)` is the three-way copy). -/
 def W {a b : 𝒞} (R S : a ⟶ b) : a ⟶ a :=
-  delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ capKeep a b
+  Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ capKeep a b
 
 /-! ### Two preliminaries -/
 
 /-- The unit law (7) with the unitor moved to the other side: `(𝟙 ⊗ ?);∇ = ρ`. -/
-theorem nabla_of_unitR (a : 𝒞) : (𝟙 a ⊗ₕ unitR a) ≫ nabla a = SymMonCat.runit a := by
-  calc (𝟙 a ⊗ₕ unitR a) ≫ nabla a
-      = (SymMonCat.runit a ≫ SymMonCat.runitInv a) ≫ (𝟙 a ⊗ₕ unitR a) ≫ nabla a := by
+theorem «∇_of_?» (a : 𝒞) : (𝟙 a ⊗ₕ «?» a) ≫ «∇» a = SymMonCat.runit a := by
+  calc (𝟙 a ⊗ₕ «?» a) ≫ «∇» a
+      = (SymMonCat.runit a ≫ SymMonCat.runitInv a) ≫ (𝟙 a ⊗ₕ «?» a) ≫ «∇» a := by
         rw [SymMonCat.runit_inv, Cat.id_comp]
-    _ = SymMonCat.runit a ≫ SymMonCat.runitInv a ≫ (𝟙 a ⊗ₕ unitR a) ≫ nabla a := by
+    _ = SymMonCat.runit a ≫ SymMonCat.runitInv a ≫ (𝟙 a ⊗ₕ «?» a) ≫ «∇» a := by
         simp only [Cat.assoc]
-    _ = SymMonCat.runit a := by rw [nabla_unit, Cat.comp_id]
+    _ = SymMonCat.runit a := by rw [«∇_unit», Cat.comp_id]
 
 /-- An arrow into the unit object restricts the identity: `𝟙 ∩ (L;?) = Δ;(𝟙 ⊗ L);ρ`.  This is the
     step that turns a discarded strand back into a meet — the picture draws both as "keep the wire
     only where `L` is defined". -/
-theorem meet_unitR {a : 𝒞} (L : a ⟶ (𝕀 : 𝒞)) :
-    meet (𝟙 a) (L ≫ unitR a) = delta a ≫ (𝟙 a ⊗ₕ L) ≫ SymMonCat.runit a := by
-  have hsplit : (𝟙 a ⊗ₕ (L ≫ unitR a)) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ unitR a) := by
+theorem «meet_?» {a : 𝒞} (L : a ⟶ (𝕀 : 𝒞)) :
+    meet (𝟙 a) (L ≫ «?» a) = Δ a ≫ (𝟙 a ⊗ₕ L) ≫ SymMonCat.runit a := by
+  have hsplit : (𝟙 a ⊗ₕ (L ≫ «?» a)) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» a) := by
     rw [← SymMonCat.tensHom_comp, Cat.comp_id]
   dsimp [meet]
   rw [hsplit]
   simp only [Cat.assoc]
-  rw [nabla_of_unitR]
+  rw [«∇_of_?»]
 
 /-- THE MODULAR LAW ON THE OTHER SIDE, `RS ∩ T ≤ R(S ∩ R°T)` — `modular_of_frobenius` read through
     the converse, which is an order isomorphism (`conv_mono`, `conv_conv`) and turns each of `≫`,
@@ -96,12 +96,12 @@ theorem modular_right {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     this file where the modular law is spent — `modular_right` at `S := ⊤` turns the discarded
     strand back into `P°`, because `⊤ ∩ P° = P°`. -/
 theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
-    Dom P = delta a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b := by
-  have hshape : delta a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b = meet (𝟙 a) (P ≫ top b a) := by
-    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ bang b) = (𝟙 a ⊗ₕ (P ≫ bang b)) := by
+    Dom P = Δ a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b := by
+  have hshape : Δ a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b = meet (𝟙 a) (P ≫ top b a) := by
+    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!» b) = (𝟙 a ⊗ₕ (P ≫ «!» b)) := by
       rw [← SymMonCat.tensHom_comp, Cat.comp_id]
     dsimp [keepFst, top]
-    rw [← Cat.assoc P (bang b) (unitR a), meet_unitR (P ≫ bang b), ← hsplit]
+    rw [← Cat.assoc P («!» b) («?» a), «meet_?» (P ≫ «!» b), ← hsplit]
     simp only [Cat.assoc]
   rw [hshape]
   dsimp [Dom]
@@ -121,23 +121,23 @@ theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     box-carrying merge-from-a-cap, and `conv_slide` is what lets `P°` on one strand be read as `P` on
     the other. -/
 theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
-    (𝟙 a ⊗ₕ conv P) ≫ nabla a
-      = (delta a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
+    (𝟙 a ⊗ₕ conv P) ≫ «∇» a
+      = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
   dsimp [capKeep]
-  calc (𝟙 a ⊗ₕ conv P) ≫ nabla a
-      = (delta a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
+  calc (𝟙 a ⊗ₕ conv P) ≫ «∇» a
+      = (Δ a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
           ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) ≫ SymMonCat.runit a :=
-        (cap_tens_nabla (conv P)).symm
-    _ = (delta a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
+        («cap_tens_∇» (conv P)).symm
+    _ = (Δ a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
           ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) ≫ SymMonCat.runit a := by rw [← conv_slide]
-    _ = (delta a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
+    _ = (Δ a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
           ≫ ((𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b)) ≫ SymMonCat.runit a := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = (delta a ⊗ₕ 𝟙 b) ≫ (SymMonCat.tensAssoc a a b ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)))
+    _ = (Δ a ⊗ₕ 𝟙 b) ≫ (SymMonCat.tensAssoc a a b ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)))
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by simp only [Cat.assoc]
-    _ = (delta a ⊗ₕ 𝟙 b) ≫ (((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a b b)
+    _ = (Δ a ⊗ₕ 𝟙 b) ≫ (((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a b b)
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by rw [← SymMonCat.tensAssoc_nat]
-    _ = (delta a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a b b
+    _ = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a b b
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by simp only [Cat.assoc]
 
 /-! ### §2.124 — both sides to the same normal form -/
@@ -146,23 +146,23 @@ theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
     both sides are `Δ;((Δ;(𝟙 ⊗ R)) ⊗ S);capKeep`, by functoriality of `⊗` alone. -/
 theorem left_eq_W {a b : 𝒞} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = W R S := by
   dsimp [meet, W]
-  calc delta a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ nabla a
-      = delta a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ nabla a := by
+  calc Δ a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ «∇» a
+      = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ «∇» a := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = delta a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ nabla a := by simp only [Cat.assoc]
-    _ = delta a ≫ (𝟙 a ⊗ₕ S) ≫ (delta a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
+    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ «∇» a := by simp only [Cat.assoc]
+    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
         rw [cv_merge R]
-    _ = delta a ≫ ((𝟙 a ⊗ₕ S) ≫ (delta a ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
+    _ = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
         simp only [Cat.assoc]
-    _ = delta a ≫ (delta a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
+    _ = Δ a ≫ (Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp, Cat.comp_id]
-    _ = delta a ≫ ((delta a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ capKeep a b := by
+    _ = Δ a ≫ ((Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ capKeep a b := by
         simp only [Cat.assoc]
-    _ = delta a ≫ ((delta a ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ capKeep a b := by
+    _ = Δ a ≫ ((Δ a ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ capKeep a b := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = delta a ≫ ((delta a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ capKeep a b := by
+    _ = Δ a ≫ ((Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ capKeep a b := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    _ = delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ capKeep a b := by
+    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ capKeep a b := by
         simp only [Cat.assoc]
 
 /-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `∇;! = cap` unfolds the meet into the
@@ -170,25 +170,25 @@ theorem left_eq_W {a b : 𝒞} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = 
 theorem right_eq_W {a b : 𝒞} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
   rw [dom_cd (meet R S)]
   dsimp [keepFst, W, capKeep]
-  calc delta a ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ bang b) ≫ SymMonCat.runit a
-      = delta a ≫ ((𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ bang b)) ≫ SymMonCat.runit a := by
+  calc Δ a ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!» b) ≫ SymMonCat.runit a
+      = Δ a ≫ ((𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!» b)) ≫ SymMonCat.runit a := by
         simp only [Cat.assoc]
-    _ = delta a ≫ (𝟙 a ⊗ₕ (meet R S ≫ bang b)) ≫ SymMonCat.runit a := by
+    _ = Δ a ≫ (𝟙 a ⊗ₕ (meet R S ≫ «!» b)) ≫ SymMonCat.runit a := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = delta a ≫ (𝟙 a ⊗ₕ (delta a ≫ ((R ⊗ₕ S) ≫ cap b))) ≫ SymMonCat.runit a := by
+    _ = Δ a ≫ (𝟙 a ⊗ₕ (Δ a ≫ ((R ⊗ₕ S) ≫ cap b))) ≫ SymMonCat.runit a := by
         dsimp [meet, cap]; simp only [Cat.assoc]
-    _ = delta a ≫ ((𝟙 a ⊗ₕ delta a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b))
+    _ = Δ a ≫ ((𝟙 a ⊗ₕ Δ a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b))
           ≫ SymMonCat.runit a := by
         rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp, Cat.comp_id, Cat.comp_id]
-    _ = (delta a ≫ (𝟙 a ⊗ₕ delta a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b)
+    _ = (Δ a ≫ (𝟙 a ⊗ₕ Δ a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b)
           ≫ SymMonCat.runit a := by simp only [Cat.assoc]
-    _ = (delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ SymMonCat.tensAssoc a a a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S))
-          ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by rw [delta_assoc]
-    _ = delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ (SymMonCat.tensAssoc a a a ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)))
+    _ = (Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ SymMonCat.tensAssoc a a a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S))
+          ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by rw [Δ_assoc]
+    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (SymMonCat.tensAssoc a a a ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)))
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by simp only [Cat.assoc]
-    _ = delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ (((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ SymMonCat.tensAssoc a b b)
+    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ SymMonCat.tensAssoc a b b)
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by rw [← SymMonCat.tensAssoc_nat]
-    _ = delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ SymMonCat.tensAssoc a b b
+    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ SymMonCat.tensAssoc a b b
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by simp only [Cat.assoc]
 
 /-- **§2.124.**  `𝟙 ∩ S R° = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving

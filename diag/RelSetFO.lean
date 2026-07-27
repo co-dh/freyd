@@ -338,36 +338,36 @@ scoped macro "black_transport" : tactic =>
 
 instance : CocartBicat RelSet.{u} :=
   { (inferInstance : MonLinearBicat RelSet.{u}) with
-    bdelta := fun n => compl (deltaRel n)
-    bbang := fun n => compl (bangRel n)
-    bnabla := fun n => compl ((deltaRel n)°)
-    bunitR := fun n => compl ((bangRel n)°)
+    bdelta := fun n => compl (ΔRel n)
+    bbang := fun n => compl («!Rel» n)
+    bnabla := fun n => compl ((ΔRel n)°)
+    bunitR := fun n => compl ((«!Rel» n)°)
 
     bdelta_assoc := fun n => compl_inj <| by
       black_transport
-      exact CartBicat.delta_assoc n
+      exact CartBicat.Δ_assoc n
     bdelta_comm := fun n => compl_inj <| by
-      black_transport; exact CartBicat.delta_comm n
+      black_transport; exact CartBicat.Δ_comm n
     bdelta_counit := fun n => compl_inj <| by
       black_transport
-      exact CartBicat.delta_counit n
+      exact CartBicat.Δ_counit n
     bnabla_assoc := fun n => compl_inj <| by
       black_transport
-      exact CartBicat.nabla_assoc n
+      exact CartBicat.«∇_assoc» n
     bnabla_comm := fun n => compl_inj <| by
-      black_transport; exact CartBicat.nabla_comm n
+      black_transport; exact CartBicat.«∇_comm» n
     bnabla_unit := fun n => compl_inj <| by
       black_transport
-      exact CartBicat.nabla_unit n
+      exact CartBicat.«∇_unit» n
 
     bineq_37 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.ineq_37 n
+      black_transport; exact CartBicat.«∇Δ_le_𝟙» n
     bineq_38 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.ineq_38 n
+      black_transport; exact CartBicat.«𝟙_le_Δ∇» n
     bineq_39 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.ineq_39 n
+      black_transport; exact CartBicat.«?!_le_𝟙» n
     bineq_40 := fun n => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.ineq_40 n
+      black_transport; exact CartBicat.«𝟙_le_!?» n
 
     bfrob_left := fun n => compl_inj <| by
       black_transport
@@ -377,9 +377,9 @@ instance : CocartBicat RelSet.{u} :=
       exact CartBicat.frob_right n
 
     blax_delta := fun R => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.lax_delta _
+      black_transport; exact CartBicat.lax_Δ _
     blax_bang := fun R => compl_le_iff.mp <| by
-      black_transport; exact CartBicat.lax_bang _ }
+      black_transport; exact CartBicat.lax_! _ }
 
 /-! ### Definition 6.1 at `Rel(Set)`
 
@@ -396,10 +396,10 @@ theorem perp_compl {a b : RelSet.{u}} (R : a ⟶ b) :
 /-- The two black merges/copies are the complements of the white ones — `rfl` the one way, double
     negation the other.  Needed only to line Fig. 5's black Frobenius laws up with the white ones. -/
 theorem compl_bdelta (n : RelSet.{u}) :
-    compl (CocartBicat.bdelta n) = CartBicat.delta n := compl_compl _
+    compl (CocartBicat.bdelta n) = CartBicat.Δ n := compl_compl _
 
 theorem compl_bnabla (n : RelSet.{u}) :
-    compl (CocartBicat.bnabla n) = CartBicat.nabla n := compl_compl _
+    compl (CocartBicat.bnabla n) = CartBicat.«∇» n := compl_compl _
 
 /-- `σ°`'s converse is `σ°` the other way round — needed so that `σ•` is `(σ°)⊥`. -/
 theorem swap_recip (a b : RelSet.{u}) :
@@ -413,11 +413,11 @@ theorem swap_recip (a b : RelSet.{u}) :
     instance because Fig. 5's black law `(F_•^°)` is its complement, so the same proof serves
     twice. -/
 theorem relLinfrob_bw (n : RelSet.{u}) :
-    (compl (deltaRel n) ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ (deltaRel n)°)
-      = (𝟙 n ⊗ₕ deltaRel n) ≫ SymMonCat.tensAssocInv n n n ≫ (compl ((deltaRel n)°) ⊗ₕ 𝟙 n) :=
+    (compl (ΔRel n) ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ (ΔRel n)°)
+      = (𝟙 n ⊗ₕ ΔRel n) ≫ SymMonCat.tensAssocInv n n n ≫ (compl ((ΔRel n)°) ⊗ₕ 𝟙 n) :=
   RelSet.hom_ext fun p q => by
     simp only [tensHom_eq, tensAssoc_eq, tensAssocInv_eq, RelSet.comp_apply,
-      RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, deltaRel,
+      RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, ΔRel,
       RelSet.recip_apply]
     constructor
     · rintro ⟨m, ⟨hd, hx⟩, r, rfl, hy1, hy2⟩
@@ -441,11 +441,11 @@ theorem relLinfrob_bw (n : RelSet.{u}) :
 
 /-- `(F^°_•)`, the other mixed-colour Frobenius law; Fig. 5's `(F_∘^•)` is its complement. -/
 theorem relLinfrob_wb (n : RelSet.{u}) :
-    (deltaRel n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ compl ((deltaRel n)°))
-      = (𝟙 n ⊗ₕ compl (deltaRel n)) ≫ SymMonCat.tensAssocInv n n n ≫ ((deltaRel n)° ⊗ₕ 𝟙 n) :=
+    (ΔRel n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ compl ((ΔRel n)°))
+      = (𝟙 n ⊗ₕ compl (ΔRel n)) ≫ SymMonCat.tensAssocInv n n n ≫ ((ΔRel n)° ⊗ₕ 𝟙 n) :=
   RelSet.hom_ext fun p q => by
     simp only [tensHom_eq, tensAssoc_eq, tensAssocInv_eq, RelSet.comp_apply,
-      RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, deltaRel,
+      RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, ΔRel,
       RelSet.recip_apply]
     constructor
     · rintro ⟨m, ⟨hd, hx⟩, r, rfl, hy1, hy2⟩
@@ -480,25 +480,25 @@ instance : FOBicat RelSet.{u} :=
       have h := ClosedLinearBicat.perp_adj (compl (SymMonCat.swap a b))
       rwa [perp_compl, swap_recip] at h
 
-    delta_linAdj := fun n => ClosedLinearBicat.perp_adj (deltaRel n)
-    bang_linAdj := fun n => ClosedLinearBicat.perp_adj (bangRel n)
+    delta_linAdj := fun n => ClosedLinearBicat.perp_adj (ΔRel n)
+    bang_linAdj := fun n => ClosedLinearBicat.perp_adj («!Rel» n)
     nabla_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj ((deltaRel n)°)
-      rwa [show ClosedLinearBicat.perp ((deltaRel n)°) = compl (deltaRel n) from rfl] at h
+      have h := ClosedLinearBicat.perp_adj ((ΔRel n)°)
+      rwa [show ClosedLinearBicat.perp ((ΔRel n)°) = compl (ΔRel n) from rfl] at h
     unitR_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj ((bangRel n)°)
-      rwa [show ClosedLinearBicat.perp ((bangRel n)°) = compl (bangRel n) from rfl] at h
+      have h := ClosedLinearBicat.perp_adj ((«!Rel» n)°)
+      rwa [show ClosedLinearBicat.perp ((«!Rel» n)°) = compl («!Rel» n) from rfl] at h
     bdelta_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj (compl (deltaRel n))
+      have h := ClosedLinearBicat.perp_adj (compl (ΔRel n))
       rwa [perp_compl] at h
     bbang_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj (compl (bangRel n))
+      have h := ClosedLinearBicat.perp_adj (compl («!Rel» n))
       rwa [perp_compl] at h
     bnabla_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj (compl ((deltaRel n)°))
+      have h := ClosedLinearBicat.perp_adj (compl ((ΔRel n)°))
       rwa [perp_compl, Allegory.recip_recip] at h
     bunitR_linAdj := fun n => by
-      have h := ClosedLinearBicat.perp_adj (compl ((bangRel n)°))
+      have h := ClosedLinearBicat.perp_adj (compl ((«!Rel» n)°))
       rwa [perp_compl, Allegory.recip_recip] at h
 
     linfrob_bw := relLinfrob_bw

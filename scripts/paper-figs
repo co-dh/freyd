@@ -70,7 +70,10 @@ if [ -n "$cb" ]; then
   missing=$(awk '
     /^class CartBicat/ { inclass = 1; next }
     /^namespace|^end / { inclass = 0 }
-    inclass && /^  [a-z]/ {
+    # Any line indented exactly two spaces that is not a docstring is a field.  NOT `^  [a-z]`:
+    # the fields are named `Δ`, `«∇»`, `«!»`, `«?»` now, and an ASCII-lowercase test matched none
+    # of them — the check would have passed by covering nothing.
+    inclass && /^  [^ ]/ && !/^  \/-/ && !/^  --/ {
       s = $1; sub(/[({:].*$/, "", s); sub(/\[.*$/, "", s)
       if (s != "") print s
     }

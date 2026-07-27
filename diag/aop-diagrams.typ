@@ -154,7 +154,7 @@ p. 20, where the paper calls them single-valued and total.
 })
 
 The same two conditions read off the Frobenius structure instead. Every arrow is only a *lax*
-comonoid homomorphism — that is eq. (3), p. 4, the `lax_delta` and `lax_bang` fields — and a map is
+comonoid homomorphism — that is eq. (3), p. 4, the `lax_Δ` and `lax_!` fields — and a map is
 precisely an arrow for which those two inequations are equalities.
 
 #canvas({
