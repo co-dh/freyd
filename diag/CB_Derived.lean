@@ -197,12 +197,12 @@ theorem meet_eq_left_of_le {a b : 𝒞} {X Y : a ⟶ b} (h : X ≤ Y) :
     meet X Y = X :=
   OrderedCat.le_antisymm (meet_le_left X Y) (meet_glb (OrderedCat.le_refl X) h)
 
-/-- `(R ∩ S)† = R† ∩ S†` — Freyd's `recip_inter` (§2.11).
+/-- `(R ∩ S)° = R° ∩ S°` — Freyd's `recip_inter` (§2.11).
 
-    NOT proved through Lemma 4.2 (iii) (`(R ⊗ S)† = R† ⊗ S†`), which would need the Frobenius
+    NOT proved through Lemma 4.2 (iii) (`(R ⊗ S)° = R° ⊗ S°`), which would need the Frobenius
     structure at the COMPOSITE object `a ⊗ b` — the clause of Carboni & Walters' definition that
     `functorialSemanticsForRelationalTheories.pdf` Def. 4.1 as printed omits (see `diag/CB.lean`'s
-    header).  Instead: `∩` is the greatest lower bound, and `†` is an order isomorphism
+    header).  Instead: `∩` is the greatest lower bound, and `°` is an order isomorphism
     (`conv_mono` both ways, `conv_conv`), so it carries greatest lower bounds to greatest lower
     bounds.  This keeps every arrow in the proof at a simple object. -/
 theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
@@ -210,7 +210,7 @@ theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
   refine OrderedCat.le_antisymm ?_ ?_
   · exact meet_glb (conv_mono (meet_le_left R S))
       (conv_mono (meet_le_right R S))
-  · -- `(R† ∩ S†)†` is below both `R` and `S`, hence below `R ∩ S`; apply `†` once more.
+  · -- `(R° ∩ S°)°` is below both `R` and `S`, hence below `R ∩ S`; apply `°` once more.
     have h1 : (conv (meet (conv R) (conv S))) ≤ R := by
       have h := conv_mono (meet_le_left (conv R) (conv S))
       rwa [conv_conv] at h
@@ -235,16 +235,16 @@ theorem conv_inter {a b : 𝒞} (R S : a ⟶ b) :
   clause of Carboni & Walters' definition that Def. 4.1 as printed omits (see `diag/CB.lean`'s
   header).  Nothing below depends on it: every result here uses only the adjoint forms. -/
 
-/-- (46), SINGLE VALUED: `R†R ≤ 𝟙`.  Freyd's `Simple` (§2.13). -/
+/-- (46), SINGLE VALUED: `R°R ≤ 𝟙`.  Freyd's `Simple` (§2.13). -/
 def SingleValued {a b : 𝒞} (R : a ⟶ b) : Prop := (conv R ≫ R) ≤ (𝟙 b)
 
-/-- (47), TOTAL: `𝟙 ≤ RR†`.  Freyd's `Entire` (§2.13). -/
+/-- (47), TOTAL: `𝟙 ≤ RR°`.  Freyd's `Entire` (§2.13). -/
 def Total {a b : 𝒞} (R : a ⟶ b) : Prop := (𝟙 a) ≤ (R ≫ conv R)
 
-/-- (48), INJECTIVE: `RR† ≤ 𝟙`. -/
+/-- (48), INJECTIVE: `RR° ≤ 𝟙`. -/
 def Injective {a b : 𝒞} (R : a ⟶ b) : Prop := (R ≫ conv R) ≤ (𝟙 a)
 
-/-- (49), SURJECTIVE: `𝟙 ≤ R†R`. -/
+/-- (49), SURJECTIVE: `𝟙 ≤ R°R`. -/
 def Surjective {a b : 𝒞} (R : a ⟶ b) : Prop := (𝟙 b) ≤ (conv R ≫ R)
 
 /-- A MAP is single valued and total (p. 20) — equivalently, by `lemma_4_8`, an arrow whose
@@ -268,7 +268,7 @@ def ineq_SUR {a b : 𝒞} (R : a ⟶ b) : Prop := (unitR b) ≤ (unitR a ≫ R)
 
 /-- COROLLARY 4.5 (p. 21): two maps ordered by `≤` are EQUAL.  Freyd's `map_order_discrete`
     (§2.133).  Insert the unit of `R` on the left of `S` and cancel with the counit of `S`:
-    `S = 𝟙S ≤ (RR†)S = R(R†S) ≤ R(S†S) ≤ R𝟙 = R`. -/
+    `S = 𝟙S ≤ (RR°)S = R(R°S) ≤ R(S°S) ≤ R𝟙 = R`. -/
 theorem cor_4_5 {a b : 𝒞} {R S : a ⟶ b} (hR : Map R) (hS : Map S) (h : R ≤ S) :
     R = S := by
   refine OrderedCat.le_antisymm h ?_
@@ -289,15 +289,15 @@ theorem cor_4_5 {a b : 𝒞} {R S : a ⟶ b} (hR : Map R) (hS : Map S) (h : R �
   containment to the other, at the cost of its converse.  `AOP/A4_2.lean` has both for a bare
   `Allegory` (`map_shunt_right`/`map_shunt_left`); these are the same statements in the DIAGRAMMATIC
   layer, so that `diag-export` has something to draw.  Nothing is assumed that `Map` does not
-  already give: `Total f` inserts `f f†` on the way out, `SingleValued f` cancels `f† f` on the way
+  already give: `Total f` inserts `f f°` on the way out, `SingleValued f` cancels `f° f` on the way
   back, and the two directions of each rule use exactly one of them each. -/
 
-/-- **B&dM 4.19**, shunting on the RIGHT: for a map `f`, `R f ≤ S` iff `R ≤ S f†`. -/
+/-- **B&dM 4.19**, shunting on the RIGHT: for a map `f`, `R f ≤ S` iff `R ≤ S f°`. -/
 theorem shunt_right {a b c : 𝒞} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S : a ⟶ c) :
     (R ≫ f) ≤ S ↔ R ≤ (S ≫ conv f) := by
   constructor
   · intro h
-    -- `R = R𝟙 ≤ R(f f†) = (R f) f† ≤ S f†`; only `Total f` is used.
+    -- `R = R𝟙 ≤ R(f f°) = (R f) f° ≤ S f°`; only `Total f` is used.
     have h1 : (R ≫ 𝟙 b) ≤ (R ≫ f ≫ conv f) :=
       OrderedCat.comp_mono (OrderedCat.le_refl R) hf.2
     have h2 : ((R ≫ f) ≫ conv f) ≤ (S ≫ conv f) :=
@@ -306,7 +306,7 @@ theorem shunt_right {a b c : 𝒞} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S :
     rw [Cat.assoc] at h2
     exact OrderedCat.le_trans h1 h2
   · intro h
-    -- `R f ≤ (S f†) f = S (f† f) ≤ S𝟙 = S`; only `SingleValued f` is used.
+    -- `R f ≤ (S f°) f = S (f° f) ≤ S𝟙 = S`; only `SingleValued f` is used.
     have h1 : (R ≫ f) ≤ ((S ≫ conv f) ≫ f) :=
       OrderedCat.comp_mono h (OrderedCat.le_refl f)
     have h2 : (S ≫ conv f ≫ f) ≤ (S ≫ 𝟙 c) :=
@@ -315,12 +315,12 @@ theorem shunt_right {a b c : 𝒞} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S :
     rw [Cat.comp_id] at h2
     exact OrderedCat.le_trans h1 h2
 
-/-- **B&dM 4.20**, shunting on the LEFT: for a map `f`, `f† R ≤ S` iff `R ≤ f S`. -/
+/-- **B&dM 4.20**, shunting on the LEFT: for a map `f`, `f° R ≤ S` iff `R ≤ f S`. -/
 theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : a ⟶ c) :
     (conv f ≫ R) ≤ S ↔ R ≤ (f ≫ S) := by
   constructor
   · intro h
-    -- `R = 𝟙R ≤ (f f†) R = f (f† R) ≤ f S`; `Total f` again.
+    -- `R = 𝟙R ≤ (f f°) R = f (f° R) ≤ f S`; `Total f` again.
     have h1 : (𝟙 b ≫ R) ≤ ((f ≫ conv f) ≫ R) :=
       OrderedCat.comp_mono hf.2 (OrderedCat.le_refl R)
     have h2 : (f ≫ conv f ≫ R) ≤ (f ≫ S) :=
@@ -328,7 +328,7 @@ theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : 
     rw [Cat.id_comp, Cat.assoc] at h1
     exact OrderedCat.le_trans h1 h2
   · intro h
-    -- `f† R ≤ f† (f S) = (f† f) S ≤ 𝟙S = S`; `SingleValued f` again.
+    -- `f° R ≤ f° (f S) = (f° f) S ≤ 𝟙S = S`; `SingleValued f` again.
     have h1 : (conv f ≫ R) ≤ (conv f ≫ f ≫ S) :=
       OrderedCat.comp_mono (OrderedCat.le_refl (conv f)) h
     have h2 : ((conv f ≫ f) ≫ S) ≤ (𝟙 a ≫ S) :=
@@ -339,9 +339,9 @@ theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : 
 
 /-- LEMMA 4.8 (p. 21): a map's RIGHT ADJOINT is its converse — B&dM's shunting rule.
 
-    Being a map IS the adjunction `R ⊣ R†`: `Total` is its unit and `SingleValued` its counit.  So
-    any other right adjoint `S` must agree with `R†`, by the standard uniqueness argument run in
-    both directions (`S ≤ R†` uses `Total R`, `R† ≤ S` uses `SingleValued R`).
+    Being a map IS the adjunction `R ⊣ R°`: `Total` is its unit and `SingleValued` its counit.  So
+    any other right adjoint `S` must agree with `R°`, by the standard uniqueness argument run in
+    both directions (`S ≤ R°` uses `Total R`, `R° ≤ S` uses `SingleValued R`).
 
     The paper's converse half — that an arrow WITH a right adjoint is a map — is not proved here:
     its proof is the diagram chase that establishes (SV) and (TOT) in comonoid form, which is

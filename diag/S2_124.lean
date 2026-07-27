@@ -1,5 +1,5 @@
 /-
-  `diag.S2_124` — Freyd & Scedrov §2.124, `𝟙 ∩ S R† = Dom (R ∩ S)`, proved DIAGRAMMATICALLY.
+  `diag.S2_124` — Freyd & Scedrov §2.124, `𝟙 ∩ S R° = Dom (R ∩ S)`, proved DIAGRAMMATICALLY.
 
   This file replaces `Freyd/S2_124.lean`, which built a Frobenius calculus from scratch on a private
   `Rel A B := A → B → Prop` in order to check the companion picture `diag/S2_124.typ`.  Everything in
@@ -47,7 +47,7 @@ def keepFst (a b : 𝒞) : a ⊗ b ⟶ a := (𝟙 a ⊗ₕ bang b) ≫ SymMonCat
 def capKeep (a b : 𝒞) : (a ⊗ b) ⊗ b ⟶ a :=
   SymMonCat.tensAssoc a b b ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a
 
-/-- DOMAIN, Freyd §2.122: `Dom R = 𝟙 ∩ R R†`. -/
+/-- DOMAIN, Freyd §2.122: `Dom R = 𝟙 ∩ R R°`. -/
 def Dom {a b : 𝒞} (R : a ⟶ b) : a ⟶ a := meet (𝟙 a) (R ≫ conv R)
 
 /-- The normal form both sides of §2.124 are driven to:
@@ -78,7 +78,7 @@ theorem meet_unitR {a : 𝒞} (L : a ⟶ (𝕀 : 𝒞)) :
   simp only [Cat.assoc]
   rw [nabla_of_unitR]
 
-/-- THE MODULAR LAW ON THE OTHER SIDE, `RS ∩ T ≤ R(S ∩ R†T)` — `modular_of_frobenius` read through
+/-- THE MODULAR LAW ON THE OTHER SIDE, `RS ∩ T ≤ R(S ∩ R°T)` — `modular_of_frobenius` read through
     the converse, which is an order isomorphism (`conv_mono`, `conv_conv`) and turns each of `≫`,
     `∩` around (`conv_comp`, `conv_inter`). -/
 theorem modular_right {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
@@ -91,10 +91,10 @@ theorem modular_right {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
 
 /-- **Lemma 1.**  `Dom P = Δ;(𝟙 ⊗ P);keepFst`.
 
-    `Dom P = 𝟙 ∩ P P†` names `P` twice; this form names it once and throws its output away.  The
-    collapse is `𝟙 ∩ P P† = 𝟙 ∩ P⊤`: one direction is `P† ≤ ⊤`, and the other is the only place in
+    `Dom P = 𝟙 ∩ P P°` names `P` twice; this form names it once and throws its output away.  The
+    collapse is `𝟙 ∩ P P° = 𝟙 ∩ P⊤`: one direction is `P° ≤ ⊤`, and the other is the only place in
     this file where the modular law is spent — `modular_right` at `S := ⊤` turns the discarded
-    strand back into `P†`, because `⊤ ∩ P† = P†`. -/
+    strand back into `P°`, because `⊤ ∩ P° = P°`. -/
 theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     Dom P = delta a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b := by
   have hshape : delta a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b = meet (𝟙 a) (P ≫ top b a) := by
@@ -114,11 +114,11 @@ theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     rw [meet_comm (𝟙 a) (P ≫ top b a)]
     exact hmod
 
-/-- **Lemma 2.**  `(𝟙 ⊗ P†);∇ = (Δ ⊗ 𝟙);((𝟙 ⊗ P) ⊗ 𝟙);capKeep`.
+/-- **Lemma 2.**  `(𝟙 ⊗ P°);∇ = (Δ ⊗ 𝟙);((𝟙 ⊗ P) ⊗ 𝟙);capKeep`.
 
     The move that turns a converse into a witness: copy the surviving wire, run `P` FORWARD on the
     copy, and cap its output against the wire that was already there.  `cap_tens_nabla` is the
-    box-carrying merge-from-a-cap, and `conv_slide` is what lets `P†` on one strand be read as `P` on
+    box-carrying merge-from-a-cap, and `conv_slide` is what lets `P°` on one strand be read as `P` on
     the other. -/
 theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
     (𝟙 a ⊗ₕ conv P) ≫ nabla a
@@ -142,7 +142,7 @@ theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
 
 /-! ### §2.124 — both sides to the same normal form -/
 
-/-- Left side: `𝟙 ∩ S R† = W`.  Apply Lemma 2 at `R`, then the two copy trees are the same one:
+/-- Left side: `𝟙 ∩ S R° = W`.  Apply Lemma 2 at `R`, then the two copy trees are the same one:
     both sides are `Δ;((Δ;(𝟙 ⊗ R)) ⊗ S);capKeep`, by functoriality of `⊗` alone. -/
 theorem left_eq_W {a b : 𝒞} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = W R S := by
   dsimp [meet, W]
@@ -191,7 +191,7 @@ theorem right_eq_W {a b : 𝒞} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
     _ = delta a ≫ (delta a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ SymMonCat.tensAssoc a b b
           ≫ (𝟙 a ⊗ₕ cap b) ≫ SymMonCat.runit a := by simp only [Cat.assoc]
 
-/-- **§2.124.**  `𝟙 ∩ S R† = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving
+/-- **§2.124.**  `𝟙 ∩ S R° = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving
     both sides to `W`.  The allegory-level statement, which Freyd proves from the modular law
     directly, is `Freyd.Alg.dom_inter`. -/
 theorem dom_inter_diag {a b : 𝒞} (R S : a ⟶ b) :
@@ -200,9 +200,9 @@ theorem dom_inter_diag {a b : 𝒞} (R S : a ⟶ b) :
 
 /-! ### §2.13 — what §2.124 is repeatedly used FOR -/
 
-/-- **`R ∩ S` is entire iff `𝟙 ≤ R S†`** — Freyd §2.13 read through §2.124, B&dM 4.18.
+/-- **`R ∩ S` is entire iff `𝟙 ≤ R S°`** — Freyd §2.13 read through §2.124, B&dM 4.18.
 
-    `Total` is Freyd's `Entire`, `𝟙 ≤ P P†`, so the left side names `R ∩ S` twice and the right side
+    `Total` is Freyd's `Entire`, `𝟙 ≤ P P°`, so the left side names `R ∩ S` twice and the right side
     names each of `R`, `S` once.  That is the whole content: the meet on the left is not needed to
     ASK the question, only to answer it.  `Freyd.Alg.entire_inter_iff` (`AOP/A4_2.lean`) is the same
     statement for a bare allegory, where it is `Iff.rfl` on top of `dom_inter` because there `⊑` is
@@ -214,7 +214,7 @@ theorem entire_inter_iff {a b : 𝒞} (R S : a ⟶ b) :
     Total (meet R S) ↔ (𝟙 a) ≤ (R ≫ conv S) := by
   constructor
   · intro h
-    -- `𝟙 ≤ (R ∩ S)(R ∩ S)† ≤ R S†`: monotone in each factor, and nothing else is used.  This is
+    -- `𝟙 ≤ (R ∩ S)(R ∩ S)° ≤ R S°`: monotone in each factor, and nothing else is used.  This is
     -- the direction that holds in any allegory-like setting, modular law or not.
     exact OrderedCat.le_trans h
       (OrderedCat.comp_mono (meet_le_left R S) (conv_mono (meet_le_right R S)))

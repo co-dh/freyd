@@ -2,7 +2,7 @@
   `diag.RelSetCB` — SOUNDNESS: the repo's own `Rel(Set)` is a cartesian bicategory of relations.
 
   functorialSemanticsForRelationalTheories.pdf p. 18 lists the structure for `Rel`: `Δ` the
-  diagonal, `!` the terminal map, and `∇ := Δ†`, `? := !†`.  We take exactly that, with `⊗` the
+  diagonal, `!` the terminal map, and `∇ := Δ°`, `? := !°`.  We take exactly that, with `⊗` the
   carrier product (the existing action `rprodMap`, `AOP/A6_1_RelSet.lean`) and `I := ⟨PUnit⟩`.
 
   Two decisions worth stating, because everything downstream leans on them:
@@ -165,7 +165,7 @@ instance : SymMonCat RelSet.{u} :=
 /-! ### The Frobenius structure
 
   functorialSemanticsForRelationalTheories.pdf p. 18 for `Rel`: `Δ` is the diagonal, `!` the map to
-  the one-point set, and the monoid is their converse — `∇ := Δ†`, `? := !†`. -/
+  the one-point set, and the monoid is their converse — `∇ := Δ°`, `? := !°`. -/
 
 /-- `Δ_n : n ⟶ n ⊗ n`, the diagonal. -/
 def deltaRel (n : RelSet.{u}) : n ⟶ (⟨n.carrier × n.carrier⟩ : RelSet.{u}) :=

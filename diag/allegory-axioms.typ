@@ -136,8 +136,10 @@ as a *labelled* block, so a composite under a `°` appears as a single box readi
 draws as two stacked runs; and any subterm with no shape in this calculus — an associator, say —
 degrades to an opaque box. The term columns write the converse `R°`, Freyd's symbol, where the paper
 writes `R†`: these terms are read against the book throughout, and one symbol per idea beats asking
-the reader to match two. (The Lean docstrings keep `†`, deliberately — they cite the paper, whose
-own `(−)°` is the §7 colour swap and is not order-reversing.)
+the reader to match two. The Lean sources write `R°` as well. The paper reserves `(−)°` for the
+colour swap of its §7, but §7 is a worked example in other models — see the caution at the end of
+this note — and nothing here formalises it, so in a repo that is `Rel(Set)` throughout there is no
+clash to protect against.
 
 In a chain table the symbol at the head of each row is the relation *that step was proved at*: `=`
 for a reshaping, `≤` for a genuine inequality. Counting them is the point of drawing a proof at all

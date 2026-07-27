@@ -214,15 +214,19 @@ def bend {a b : 𝒞} (k : a ⊗ b ⟶ (𝕀 : 𝒞)) : b ⟶ a :=
   SymMonCat.lunitInv b ≫ (cup a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
     ≫ (𝟙 a ⊗ₕ k) ≫ SymMonCat.runit a
 
-/-- The CONVERSE `R†`, by bending both of `R`'s wires around
+/-- The CONVERSE `R°`, by bending both of `R`'s wires around
     (functorialSemanticsForRelationalTheories.pdf p. 19, "`R†` is just the opposite relation").
     In `Rel` this reads `y ↦ x` exactly when `x R y`.
 
-    NOTE the symbol: this is the paper's `(−)†` and Freyd's `R°`.  The paper's own `(−)°` is the
-    colour swap of its §7 and is NOT order-reversing — never conflate the two. -/
+    ONE SYMBOL: `R°`, the book's.  The paper writes this same operation `R†` and reserves `(−)°` for
+    the colour swap of its §7 — but §7 is a worked example in OTHER models, as the paper says itself:
+    only the black fragment `⊤, ∩, (−)†, ; , id` coincides with the calculus of relations there,
+    "`⊥` is not the empty relation and `>` is not the union".  Nothing in this repo formalises it.
+    Everything here is `Rel(Set)`, where `†` and `°` name the one operation, so there is no clash to
+    protect against and the reader is never asked to match two symbols. -/
 def conv {a b : 𝒞} (R : a ⟶ b) : b ⟶ a := bend ((R ⊗ₕ 𝟙 b) ≫ cap b)
 
-/-- `𝟙† = 𝟙`, which is exactly the mirror snake once `𝟙 ⊗ 𝟙` is collapsed. -/
+/-- `𝟙° = 𝟙`, which is exactly the mirror snake once `𝟙 ⊗ 𝟙` is collapsed. -/
 theorem conv_id (a : 𝒞) : conv (𝟙 a) = 𝟙 a := by
   dsimp [conv, bend]
   rw [SymMonCat.tensHom_id, Cat.id_comp]
@@ -443,8 +447,8 @@ theorem unbend_bend {a b : 𝒞} (k : a ⊗ b ⟶ (𝕀 : 𝒞)) : unbend (bend 
     _ = 𝟙 (a ⊗ b) ≫ k := by rw [hstruct]
     _ = k := Cat.id_comp _
 
-/-- SLIDING a box around the cap: `(𝟙_a ⊗ R†);cap_a = (R ⊗ 𝟙_b);cap_b`.  This is `unbend_bend`
-    read at `R`'s own unbending — `R†` is by definition the bending of `(R ⊗ 𝟙);cap`, so straightening
+/-- SLIDING a box around the cap: `(𝟙_a ⊗ R°);cap_a = (R ⊗ 𝟙_b);cap_b`.  This is `unbend_bend`
+    read at `R`'s own unbending — `R°` is by definition the bending of `(R ⊗ 𝟙);cap`, so straightening
     it again returns what we started from.  Every converse law below is one application of this. -/
 theorem conv_slide {a b : 𝒞} (R : a ⟶ b) :
     (𝟙 a ⊗ₕ conv R) ≫ cap a = (R ⊗ₕ 𝟙 b) ≫ cap b := unbend_bend _
@@ -459,7 +463,7 @@ theorem tens_cap_swap {a b : 𝒞} (S : b ⟶ a) :
     _ = (swap b a ≫ (𝟙 a ⊗ₕ S)) ≫ cap a := by rw [swap_nat]
     _ = swap b a ≫ (𝟙 a ⊗ₕ S) ≫ cap a := by simp only [Cat.assoc]
 
-/-- UNIQUENESS of the converse: an arrow that unbends to `(R ⊗ 𝟙);cap` IS `R†`.  `bend` inverts
+/-- UNIQUENESS of the converse: an arrow that unbends to `(R ⊗ 𝟙);cap` IS `R°`.  `bend` inverts
     `unbend` (`bend_unbend`), so `unbend` is injective — this is that injectivity, packaged. -/
 theorem conv_unique {a b : 𝒞} {R : a ⟶ b} {S : b ⟶ a}
     (h : (𝟙 a ⊗ₕ S) ≫ cap a = (R ⊗ₕ 𝟙 b) ≫ cap b) : S = conv R := by
@@ -467,8 +471,8 @@ theorem conv_unique {a b : 𝒞} {R : a ⟶ b} {S : b ⟶ a}
     _ = bend ((R ⊗ₕ 𝟙 b) ≫ cap b) := by dsimp only [unbend]; rw [h]
     _ = conv R := rfl
 
-/-- INVOLUTIVITY, `R†† = R` — Freyd's `recip_recip` (§2.11).  By uniqueness it is enough to unbend
-    `R` itself and recognise `R†`'s unbending, which `tens_cap_swap` supplies once the two symmetries
+/-- INVOLUTIVITY, `R°° = R` — Freyd's `recip_recip` (§2.11).  By uniqueness it is enough to unbend
+    `R` itself and recognise `R°`'s unbending, which `tens_cap_swap` supplies once the two symmetries
     cancel. -/
 theorem conv_conv {a b : 𝒞} (R : a ⟶ b) : conv (conv R) = R := by
   refine (conv_unique ?_).symm
@@ -479,10 +483,10 @@ theorem conv_conv {a b : 𝒞} (R : a ⟶ b) : conv (conv R) = R := by
     _ = swap b a ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [conv_slide]
     _ = (conv R ⊗ₕ 𝟙 a) ≫ cap a := (tens_cap_swap (conv R)).symm
 
-/-- CONTRAVARIANT FUNCTORIALITY, `(R;S)† = S†;R†` — Lemma 4.2 (ii)
+/-- CONTRAVARIANT FUNCTORIALITY, `(R;S)° = S°;R°` — Lemma 4.2 (ii)
     (functorialSemanticsForRelationalTheories.pdf p. 19) and Freyd's `recip_comp` (§2.11).  Unbend
-    `S†;R†` one factor at a time: `conv_slide` turns the inner `R†` into `R`, `tensHom_split` walks
-    `S†` across to the other strand, and a second `conv_slide` turns it into `S`. -/
+    `S°;R°` one factor at a time: `conv_slide` turns the inner `R°` into `R`, `tensHom_split` walks
+    `S°` across to the other strand, and a second `conv_slide` turns it into `S`. -/
 theorem conv_comp {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) :
     conv (R ≫ S) = conv S ≫ conv R := by
   refine (conv_unique ?_).symm
@@ -546,13 +550,13 @@ theorem cap_tens_nabla {b c : 𝒞} (T : c ⟶ b) :
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by simp only [Cat.assoc]
     _ = (𝟙 b ⊗ₕ T) ≫ nabla b := by rw [nabla_of_cap]
 
-/-- THE HEART OF THE MODULAR LAW: `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.
+/-- THE HEART OF THE MODULAR LAW: `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S°);∇;S`.
 
     Read relationally, the left-hand side sends `(y, z)` to `z` when `S y z`, and the right-hand
     side sends it to any `z'` with `S y z`; so `S` occurs once on the left and twice on the right.
     That is the tell: the lax copy inequation (42) — the ONLY place a box may be duplicated — has to
     be the inequality step, and it is.  `nabla_of_cap` puts the left-hand side into the shape `(S;Δ) ⊗ 𝟙`
-    that (42) applies to, and `conv_slide` turns the surviving duplicate into `S†`. -/
+    that (42) applies to, and `conv_slide` turns the surviving duplicate into `S°`. -/
 theorem nabla_slide_conv {b c : 𝒞} (S : b ⟶ c) :
     ((S ⊗ₕ 𝟙 c) ≫ nabla c) ≤ ((𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S) := by
   have hL : ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c

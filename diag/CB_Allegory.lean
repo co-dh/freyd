@@ -39,11 +39,11 @@ theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
   meet_glb (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_left S T))
     (OrderedCat.comp_mono (OrderedCat.le_refl R) (meet_le_right S T))
 
-/-- THE MODULAR LAW, `RS ∩ T ≤ (R ∩ TS†)S` — Freyd's `modular` (§2.11), DERIVED.
+/-- THE MODULAR LAW, `RS ∩ T ≤ (R ∩ TS°)S` — Freyd's `modular` (§2.11), DERIVED.
 
     Strip the shared prefix `Δ_a;(R ⊗ T)` off both sides — `(RS) ⊗ T` factors as `(R ⊗ T);(S ⊗ 𝟙)`
-    and `R ⊗ (TS†)` as `(R ⊗ T);(𝟙 ⊗ S†)` — and what is left is exactly `nabla_slide_conv`,
-    `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S†);∇;S`.  That is where the Frobenius equation and the lax copy inequation
+    and `R ⊗ (TS°)` as `(R ⊗ T);(𝟙 ⊗ S°)` — and what is left is exactly `nabla_slide_conv`,
+    `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S°);∇;S`.  That is where the Frobenius equation and the lax copy inequation
     are spent; everything here is bookkeeping. -/
 theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (meet (R ≫ S) T) ≤ (meet R (T ≫ conv S) ≫ S) := by
