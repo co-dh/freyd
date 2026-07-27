@@ -283,6 +283,60 @@ theorem cor_4_5 {a b : 𝒞} {R S : a ⟶ b} (hR : Map R) (hS : Map S) (h : R �
   rw [Cat.comp_id] at h3
   exact OrderedCat.le_trans h1 h3
 
+/-! ### The shunting rules (B&dM 4.19 and 4.20)
+
+  The workhorses of relational program calculation: a map may be moved from one side of a
+  containment to the other, at the cost of its converse.  `AOP/A4_2.lean` has both for a bare
+  `Allegory` (`map_shunt_right`/`map_shunt_left`); these are the same statements in the DIAGRAMMATIC
+  layer, so that `diag-export` has something to draw.  Nothing is assumed that `Map` does not
+  already give: `Total f` inserts `f f†` on the way out, `SingleValued f` cancels `f† f` on the way
+  back, and the two directions of each rule use exactly one of them each. -/
+
+/-- **B&dM 4.19**, shunting on the RIGHT: for a map `f`, `R f ≤ S` iff `R ≤ S f†`. -/
+theorem shunt_right {a b c : 𝒞} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S : a ⟶ c) :
+    (R ≫ f) ≤ S ↔ R ≤ (S ≫ conv f) := by
+  constructor
+  · intro h
+    -- `R = R𝟙 ≤ R(f f†) = (R f) f† ≤ S f†`; only `Total f` is used.
+    have h1 : (R ≫ 𝟙 b) ≤ (R ≫ f ≫ conv f) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl R) hf.2
+    have h2 : ((R ≫ f) ≫ conv f) ≤ (S ≫ conv f) :=
+      OrderedCat.comp_mono h (OrderedCat.le_refl (conv f))
+    rw [Cat.comp_id] at h1
+    rw [Cat.assoc] at h2
+    exact OrderedCat.le_trans h1 h2
+  · intro h
+    -- `R f ≤ (S f†) f = S (f† f) ≤ S𝟙 = S`; only `SingleValued f` is used.
+    have h1 : (R ≫ f) ≤ ((S ≫ conv f) ≫ f) :=
+      OrderedCat.comp_mono h (OrderedCat.le_refl f)
+    have h2 : (S ≫ conv f ≫ f) ≤ (S ≫ 𝟙 c) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl S) hf.1
+    rw [Cat.assoc] at h1
+    rw [Cat.comp_id] at h2
+    exact OrderedCat.le_trans h1 h2
+
+/-- **B&dM 4.20**, shunting on the LEFT: for a map `f`, `f† R ≤ S` iff `R ≤ f S`. -/
+theorem shunt_left {a b c : 𝒞} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : a ⟶ c) :
+    (conv f ≫ R) ≤ S ↔ R ≤ (f ≫ S) := by
+  constructor
+  · intro h
+    -- `R = 𝟙R ≤ (f f†) R = f (f† R) ≤ f S`; `Total f` again.
+    have h1 : (𝟙 b ≫ R) ≤ ((f ≫ conv f) ≫ R) :=
+      OrderedCat.comp_mono hf.2 (OrderedCat.le_refl R)
+    have h2 : (f ≫ conv f ≫ R) ≤ (f ≫ S) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl f) h
+    rw [Cat.id_comp, Cat.assoc] at h1
+    exact OrderedCat.le_trans h1 h2
+  · intro h
+    -- `f† R ≤ f† (f S) = (f† f) S ≤ 𝟙S = S`; `SingleValued f` again.
+    have h1 : (conv f ≫ R) ≤ (conv f ≫ f ≫ S) :=
+      OrderedCat.comp_mono (OrderedCat.le_refl (conv f)) h
+    have h2 : ((conv f ≫ f) ≫ S) ≤ (𝟙 a ≫ S) :=
+      OrderedCat.comp_mono hf.1 (OrderedCat.le_refl S)
+    rw [← Cat.assoc] at h1
+    rw [Cat.id_comp] at h2
+    exact OrderedCat.le_trans h1 h2
+
 /-- LEMMA 4.8 (p. 21): a map's RIGHT ADJOINT is its converse — B&dM's shunting rule.
 
     Being a map IS the adjunction `R ⊣ R†`: `Total` is its unit and `SingleValued` its counit.  So

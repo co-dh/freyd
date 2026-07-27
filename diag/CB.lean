@@ -589,9 +589,16 @@ theorem nabla_slide_conv {b c : 𝒞} (S : b ⟶ c) :
             ≫ runit b) ≫ S := by simp only [Cat.assoc]
       _ = ((𝟙 b ⊗ₕ conv S) ≫ nabla b) ≫ S := by rw [cap_tens_nabla]
       _ = (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := by simp only [Cat.assoc]
-  rw [← hL, ← hR]
-  exact OrderedCat.comp_mono (tensHom_mono (lax_delta S) (OrderedCat.le_refl _))
-    (OrderedCat.le_refl _)
+  -- Spelled as a THREE-LINK `calc` rather than `rw [← hL, ← hR]; exact …`, so that the argument sits
+  -- in the proof TERM where `diag-export --proof` can draw it: reshape, the one inequality, reshape
+  -- back.  `hL` and `hR` are the reshaping and are stated at `=`, so the drawn chain shows exactly
+  -- one `≤`, which is `lax_delta` — the whole of the mathematics.
+  calc (S ⊗ₕ 𝟙 c) ≫ nabla c
+      = ((S ≫ delta c) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c := hL.symm
+    _ ≤ ((delta b ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ tensAssoc c c c ≫ (𝟙 c ⊗ₕ cap c) ≫ runit c :=
+        OrderedCat.comp_mono (tensHom_mono (lax_delta S) (OrderedCat.le_refl _))
+          (OrderedCat.le_refl _)
+    _ = (𝟙 b ⊗ₕ conv S) ≫ nabla b ≫ S := hR
 
 end Bending
 

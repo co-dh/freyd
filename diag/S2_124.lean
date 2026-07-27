@@ -198,4 +198,36 @@ theorem dom_inter_diag {a b : 𝒞} (R S : a ⟶ b) :
     meet (𝟙 a) (S ≫ conv R) = Dom (meet R S) :=
   (left_eq_W R S).trans (right_eq_W R S).symm
 
+/-! ### §2.13 — what §2.124 is repeatedly used FOR -/
+
+/-- **`R ∩ S` is entire iff `𝟙 ≤ R S†`** — Freyd §2.13 read through §2.124, B&dM 4.18.
+
+    `Total` is Freyd's `Entire`, `𝟙 ≤ P P†`, so the left side names `R ∩ S` twice and the right side
+    names each of `R`, `S` once.  That is the whole content: the meet on the left is not needed to
+    ASK the question, only to answer it.  `Freyd.Alg.entire_inter_iff` (`AOP/A4_2.lean`) is the same
+    statement for a bare allegory, where it is `Iff.rfl` on top of `dom_inter` because there `⊑` is
+    *defined* as `X ∩ Y = X`; here `≤` is primitive, so both directions are real steps.
+
+    Written as two explicit `le_trans` chains rather than `rw`s, so that the argument sits in the
+    proof TERM where `diag-export --proof` can draw it. -/
+theorem entire_inter_iff {a b : 𝒞} (R S : a ⟶ b) :
+    Total (meet R S) ↔ (𝟙 a) ≤ (R ≫ conv S) := by
+  constructor
+  · intro h
+    -- `𝟙 ≤ (R ∩ S)(R ∩ S)† ≤ R S†`: monotone in each factor, and nothing else is used.  This is
+    -- the direction that holds in any allegory-like setting, modular law or not.
+    exact OrderedCat.le_trans h
+      (OrderedCat.comp_mono (meet_le_left R S) (conv_mono (meet_le_right R S)))
+  · intro h
+    -- The other way needs §2.124, which is where the modular law is spent.  That link is an
+    -- EQUALITY and is stated as one, so the drawn chain shows it as `=` rather than hiding it
+    -- among the `≤`s.
+    -- The `Dom` is unfolded in the step, not left folded: `diag-export` draws a term, and `Dom P`
+    -- has no shape in the picture language — it would come out as one opaque box where the whole
+    -- content is the meet inside it.
+    calc (𝟙 a) ≤ meet (𝟙 a) (R ≫ conv S) := meet_glb (OrderedCat.le_refl _) h
+      _ = meet (𝟙 a) (meet S R ≫ conv (meet S R)) := by
+            rw [dom_inter_diag S R]; rfl
+      _ ≤ meet R S ≫ conv (meet R S) := by rw [meet_comm R S]; exact meet_le_right _ _
+
 end Freyd.Diag
