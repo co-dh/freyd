@@ -67,7 +67,7 @@ output (p. 19, `conv` in `diag/CB.lean`).
   d.content((-1.0, 0), $R inter S :=$)
   meet((0.0, 0), $R$, $S$)
   d.content((3.1, 0), $R^degree :=$)
-  conv((3.95, -0.45), $R$)
+  conv((3.95, -0.80), $R$)
 })
 
 Everywhere below, `R°` is drawn as a plain box rather than as that bent picture — the bending is
