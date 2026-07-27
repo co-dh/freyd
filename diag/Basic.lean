@@ -40,4 +40,14 @@ class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞, HomLE.{v} 𝒞 where
   comp_mono {a b c : 𝒞} {R R' : a ⟶ b} {S S' : b ⟶ c} :
     R ≤ R' → S ≤ S' → R ≫ S ≤ R' ≫ S'
 
+/-- So that `calc` can carry the hom order, and MIX it with `=` — core's `Trans Eq r r` and
+    `Trans r Eq r` supply the mixed links once this one exists.
+
+    Not a convenience: a proof spelled `le_trans l₁ (le_trans l₂ l₃)` states every link at `≤` even
+    where the link is an equality, and `diag-export --proof` then draws a chain of `≤`s that hides
+    which step is the real inequality.  Written as a `calc`, each step carries its true relation and
+    the drawing says so. -/
+instance {𝒞 : Type u} [OrderedCat.{v} 𝒞] {a b : 𝒞} :
+    @Trans (a ⟶ b) _ _ (· ≤ ·) (· ≤ ·) (· ≤ ·) := ⟨OrderedCat.le_trans⟩
+
 end Freyd.Diag

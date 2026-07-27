@@ -93,17 +93,29 @@
 /// A labelled relation box; `p` is the midpoint of its LEFT edge.
 ///
 /// NOT a rectangle: a rectangle is symmetric, and the box has to say which way the relation runs.
-/// functorialSemanticsForRelationalTheories.pdf §4 chamfers the TOP-RIGHT corner, and defines the
-/// converse to be that same box MIRRORED — p. 19, `R†` drawn as an `Я` in a box cut at the top left.
-/// So `flip: true` is not a decoration: it is how the paper writes `†`, and the label is mirrored
-/// with the frame, which is what makes the two tell apart at a glance.
+/// functorialSemanticsForRelationalTheories.pdf §4 chamfers the TOP-RIGHT corner and defines the
+/// converse to be that same box MIRRORED, so `flip: true` is not a decoration: it is how the paper
+/// writes `†`.
+///
+/// THE FRAME IS MIRRORED, THE LABEL IS NOT.  The paper can mirror its label because the label is a
+/// single letter, and `Я` still reads as an R.  A label here is often a whole term — `R ∪ S` — and
+/// mirrored it is unreadable, right to left with every glyph reversed.  The chamfer already says
+/// which way the box runs, and `TINT` says it again, so the text has no work left to do.
 ///
 /// `dashed` marks a box that is not a composite of the generators (the residual `R/S`, which needs
 /// diag/FO.lean).
+///
+/// `fill` overrides the paper colour.  `TINT` is what a converse gets: mirroring alone tells `R`
+/// from `R°` only if the reader looks at which corner is cut, and in a chain where a box crosses a
+/// bend and comes back upright — the whole content of Lemma 4.2 — that has to be legible at a
+/// glance.  Pale BLUE, not grey: grey reads as "disabled", and it would also collide with the
+/// greyed-out prose this repo's notes use for provenance.  It is a hint, not a second kind of box.
 #let CHAMFER = 0.35     // fraction of the height taken off the corner
-#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false) = {
+#let TINT = rgb("#dbe8f7")
+#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false, fill: none) = {
   let (x, y) = p
   let paint = if invert { white } else { black }
+  let paper = if fill != none { fill } else if invert { black } else { white }
   let st = if dashed { (thickness: lw, paint: paint, dash: "dashed") } else { (thickness: lw, paint: paint) }
   let c = CHAMFER * h
   let pts = if flip {
@@ -111,9 +123,8 @@
   } else {
     ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2 - c), (x + w - c, y + h / 2), (x, y + h / 2))
   }
-  d.line(..pts, close: true, fill: if invert { black } else { white }, stroke: st)
-  let body = text(fill: paint, label)
-  d.content((x + w / 2, y), if flip { scale(x: -100%, reflow: false, body) } else { body })
+  d.line(..pts, close: true, fill: paper, stroke: st)
+  d.content((x + w / 2, y), text(fill: paint, label))
 }
 
 /// An annotation set to the right of a picture, left-aligned so it can never run back into it.
@@ -162,15 +173,28 @@
 
 // ------------------------------------------------------- compact-closed cup and cap
 
+/// The stub between the two dots of a `split` cup or cap.
+#let SPLIT = 0.34
+
 /// The cap `a ⊗ a → I` (`∇ ; !`): the strands arriving at `p1` and `p2` converge on `tip`, to the
 /// right, and are discarded there — so the picture says the two strands must agree.
 ///
 /// `tip` is where `∇` and `!` coincide, and only one dot fits there; it is solid like every other
 /// node, and a cap is told from a cup by which side its two strands are on.
-#let cap(p1, p2, tip, invert: false) = {
+///
+/// `split: true` draws the two dots separately, `∇` at `tip` and `!` a stub to its right — which is
+/// how functorialSemanticsForRelationalTheories.pdf draws the cap in the `†` definition figure, and
+/// the collapse to one dot is a theorem rather than a notation.  Use it where the figure is quoting
+/// that definition; the collapsed form everywhere else.
+#let cap(p1, p2, tip, invert: false, split: false) = {
   d.bezier(p1, tip, (tip.at(0) - 0.15, p1.at(1)), stroke: wstroke(invert: invert))
   d.bezier(p2, tip, (tip.at(0) - 0.15, p2.at(1)), stroke: wstroke(invert: invert))
   dot(tip, invert: invert)
+  if split {
+    let (tx, ty) = tip
+    wire(tip, (tx + SPLIT, ty), invert: invert)
+    dot((tx + SPLIT, ty), invert: invert)
+  }
 }
 
 /// The cup `I → a ⊗ a` (`? ; Δ`), the mirror of `cap`: one value is created at `tip` and leaves on
@@ -178,29 +202,63 @@
 /// category compact closed (functorialSemanticsForRelationalTheories.pdf p. 19).
 ///
 /// Its `tip` carries `Δ`; as with `cap`, one solid dot, and the strands say which of the two it is.
-#let cup(tip, p1, p2, invert: false) = {
+/// `split: true` puts `?` a stub to the LEFT of that `Δ`, the form the `†` definition figure uses.
+#let cup(tip, p1, p2, invert: false, split: false) = {
   d.bezier(tip, p1, (tip.at(0) + 0.15, p1.at(1)), stroke: wstroke(invert: invert))
   d.bezier(tip, p2, (tip.at(0) + 0.15, p2.at(1)), stroke: wstroke(invert: invert))
   dot(tip, invert: invert)
+  if split {
+    let (tx, ty) = tip
+    wire((tx - SPLIT, ty), tip, invert: invert)
+    dot((tx - SPLIT, ty), invert: invert)
+  }
+}
+
+/// `cap` and `cup` in the ONE-ANCHOR convention every other generator uses: `p` is the left edge on
+/// the centre line and `sp` the strand offset, so `diag-export` can place them by walking an x grid
+/// like any other cell.  `cap` consumes a pair on its left and offers nothing on its right; `cup`
+/// is the mirror.
+///
+/// SPLIT BY DEFAULT, unlike bare `cup`/`cap`.  These are the forms that appear in pictures OF THE
+/// CONVERSE, and functorialSemanticsForRelationalTheories.pdf draws the converse with two dots at
+/// each bend — `? ; Δ` and `∇ ; !` — never one.  Collapsing them is a legitimate abbreviation
+/// elsewhere; here it would make a quoted picture disagree with the paper it quotes.
+#let capAt(p, sp: 0.62, w: 0.60, invert: false, split: true) = {
+  let (x, y) = p
+  cap((x, y + sp), (x, y - sp), (x + w, y), invert: invert, split: split)
+}
+
+#let cupAt(p, sp: 0.62, w: 0.60, invert: false, split: true) = {
+  let (x, y) = p
+  cup((x, y), (x + w, y + sp), (x + w, y - sp), invert: invert, split: split)
 }
 
 // ---------------------------------------------------------------------- the converse
 
-/// The converse `R°` drawn as its definition: bend both of `R`'s wires around, so what was an input
-/// is read as an output (functorialSemanticsForRelationalTheories.pdf p. 19; `conv` in
-/// diag/CB.lean, proved equal to the ordinary relational converse by `conv_eq_recip` in
-/// diag/RelSetCB.lean).  `p` is the left end of the incoming wire, on the lower strand.
-#let conv(p, label, w: BW, h: BH, rise: 0.85, lead: 0.45, arc: 0.75) = {
+/// The converse `R°` drawn as its definition — the third picture of the `†` notation in
+/// functorialSemanticsForRelationalTheories.pdf ("we adopt the graphical notation", `R† =def Я =def`
+/// …); `conv` in diag/CB.lean, proved equal to the ordinary relational converse by `conv_eq_recip`
+/// in diag/RelSetCB.lean.  `p` is the left end of the INCOMING wire, on the bottom strand.
+///
+/// Three levels, and it is the CUP and the CAP that make it a converse — a wire merely bumped up
+/// over the box and back down is an isotopy of `R` itself and reverses nothing.  Input arrives
+/// bottom left and runs under `R`; the cup at the top left creates a pair, one strand feeding `R`
+/// and the other leaving as the output at the top right; the cap at the bottom right annihilates
+/// `R`'s output against the input.
+#let conv(p, label, w: BW, h: BH, rise: 1.6, lead: 0.40, arc: 0.78) = {
   let (x, y) = p
-  let by = y + rise
-  wire(p, (x + lead, y))
-  bend((x + lead, y), (x + lead + arc, by), k: 0.5)
-  gbox((x + lead + arc, by), label, w: w, h: h)
-  bend((x + lead + arc + w, by), (x + lead + 2 * arc + w, y), k: 0.5)
-  wire((x + lead + 2 * arc + w, y), (x + 2 * lead + 2 * arc + w, y))
+  let ym = y + rise / 2               // the level `R` sits on
+  let yt = y + rise                   // the outgoing strand
+  let bx = x + 0.28 + SPLIT + arc     // `R`'s left edge
+  let cx = bx + w + arc               // the cap's tip, where `∇` sits
+  cup((x + 0.28 + SPLIT, y + rise * 0.80), (bx, yt), (bx, ym), split: true)
+  wire((bx, yt), (cx + lead, yt))
+  gbox((bx, ym), label, w: w, h: h)
+  wire((x, y), (bx + w, y))
+  cap((bx + w, ym), (bx + w, y), (cx, y + rise * 0.20), split: true)
 }
 
-#let conv-w(w: BW, lead: 0.45, arc: 0.75) = 2 * lead + 2 * arc + w
+#let conv-w(w: BW, lead: 0.40, arc: 0.78) = 0.28 + SPLIT + 2 * arc + w + SPLIT + lead
 
 // -------------------------------------------------------- convolution: the meet `∩`
 
@@ -209,11 +267,15 @@
 /// proved equal to the allegory intersection by `convolution_eq_inter` in diag/RelSetCB.lean).
 /// Copy the input, run `R` on one strand and `S` on the other, merge; the merge forces the two
 /// results to coincide, so the picture demands both.  `p` is the copy dot.
-#let meet(p, upper, lower, w: BW, h: BH, sp: 0.62, li: 0.4, lo: 0.4, gap: 0.3) = {
+///
+/// `flip` mirrors both boxes, which is how the whole picture reads when it is itself mirrored: `Δ`
+/// and `∇` are each other's mirror image, so reflecting `R ∩ S` leaves the shape alone and only
+/// turns the boxes round — the one-picture proof of `(R ∩ S)° = R° ∩ S°`.
+#let meet(p, upper, lower, w: BW, h: BH, sp: 0.62, li: 0.4, lo: 0.4, gap: 0.3, flip: false) = {
   let (x, y) = p
   delta(p, li: li, lo: gap, sp: sp)
-  gbox((x + gap, y + sp), upper, w: w, h: h)
-  gbox((x + gap, y - sp), lower, w: w, h: h)
+  gbox((x + gap, y + sp), upper, w: w, h: h, flip: flip)
+  gbox((x + gap, y - sp), lower, w: w, h: h, flip: flip)
   nabla((x + 2 * gap + w, y), li: gap, lo: lo, sp: sp)
 }
 
