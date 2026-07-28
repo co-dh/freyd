@@ -26,8 +26,8 @@
   handles every declaration named on the command line from that one environment.
 -/
 import Lean
-import diag.RelSetFO
-import diag.RelSetTape
+import diag.FO
+import diag.Tape
 import diag.S2_124
 
 open Lean
@@ -341,12 +341,8 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Diag.CartBicat.cup, _) => return "cup"
   | (``Freyd.Diag.top, _) => return "⊤"
   | (``Freyd.Diag.Biprod.bot, _) => return "⊥"
-  | (``Freyd.Diag.SymMonCat.tensAssoc, _) => return "α"
-  | (``Freyd.Diag.SymMonCat.tensAssocInv, _) => return "α⁻¹"
-  | (``Freyd.Diag.SymMonCat.runit, _) => return "ρ"
-  | (``Freyd.Diag.SymMonCat.runitInv, _) => return "ρ⁻¹"
-  | (``Freyd.Diag.SymMonCat.lunit, _) => return "λ"
-  | (``Freyd.Diag.SymMonCat.lunitInv, _) => return "λ⁻¹"
+  -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
+  -- do not exist and no statement can mention one.
   | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
   | (``Cat.comp, args) => bin 0 " ; " args
   | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args
@@ -701,8 +697,9 @@ def main (args : List String) : IO UInt32 := do
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default,
       options := opts,
-      -- `≫` and `⟶` live in `Freyd`, `⊗`/`⊗ₕ`/`𝕀` in `Freyd.Diag.SymMonCat`.
-      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat []] }
+      -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
+      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat [],
+        .simple `Freyd.Diag.Word []] }
   let mut status : UInt32 := 0
   for arg in args do
     let run : CoreM String :=

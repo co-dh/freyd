@@ -25,16 +25,16 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open SymMonCat
+open scoped Word SymMonCat
 open CartBicat
 
-variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
+variable {O : Type u} [CartBicat.{v} O]
 
 /-- SEMI-DISTRIBUTIVITY, `R(S ∩ T) ≤ RS ∩ RT` — Freyd's `semidistrib` (§2.11), and eq. (3) on p. 4
     of functorialSemanticsForRelationalTheories.pdf.  `R(S ∩ T)` is below `RS` and below `RT` by
     monotonicity of composition, so it is below their greatest lower bound.  The lax inequation (42)
     is what makes `∩` a greatest lower bound in the first place (via `meet_idem`). -/
-theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
+theorem semidistrib_of_lax {a b c : Word O} (R : a ⟶ b) (S T : b ⟶ c) :
     (R ≫ meet S T) ≤ (meet (R ≫ S) (R ≫ T)) :=
   meet_glb (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_left» S T))
     (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («meet_≤_right» S T))
@@ -45,21 +45,21 @@ theorem semidistrib_of_lax {a b c : 𝒞} (R : a ⟶ b) (S T : b ⟶ c) :
     and `R ⊗ (TS°)` as `(R ⊗ T);(𝟙 ⊗ S°)` — and what is left is exactly `nabla_slide_conv`,
     `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S°);∇;S`.  That is where the Frobenius equation and the lax copy inequation
     are spent; everything here is bookkeeping. -/
-theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+theorem modular_of_frobenius {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (meet (R ≫ S) T) ≤ (meet R (T ≫ conv S) ≫ S) := by
   have hL : meet (R ≫ S) T
       = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := by
     dsimp [meet]
     calc Δ a ≫ ((R ≫ S) ⊗ₕ T) ≫ ∇ c
         = Δ a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ ∇ c := by
-          rw [← tensHom_comp, Cat.comp_id]
+          rw [← SymMonCat.tensHom_comp, Cat.comp_id]
       _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := by simp only [Cat.assoc]
   have hR : meet R (T ≫ conv S) ≫ S
       = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by
     dsimp [meet]
     calc (Δ a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ ∇ b) ≫ S
         = (Δ a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ ∇ b) ≫ S := by
-          rw [← tensHom_comp, Cat.comp_id]
+          rw [← SymMonCat.tensHom_comp, Cat.comp_id]
       _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by simp only [Cat.assoc]
   -- A THREE-LINK `calc` rather than `rw [hL, hR]; exact …`, so the argument sits in the proof TERM
   -- where `diag-export --proof` can draw it — and draw it with `R`, `S` and `T` all present, which
@@ -74,16 +74,15 @@ theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a �
 /-- **Every cartesian bicategory of relations is an allegory.**  `recip := conv`, `inter :=
     meet`; all ten `Allegory` fields are theorems of `diag.CB`/`diag.CB_Derived`.
 
-    A `def`, NOT a global instance, so that it cannot form a diamond with the hand-built
-    `Allegory RelSet` (`AOP/A6_1_RelSet.lean`) — the same precedent as
-    `Freyd.Alg.semiSimpleAllegory_of_tabular` (`Freyd/S2_10.lean`).  Phase 4's agreement theorems
-    `conv_eq_recip` and `meet_eq_inter` (`diag/RelSetCB.lean`) say the two agree on `Rel(Set)`
-    anyway.
+    A `def`, NOT a global instance, following `Freyd.Alg.semiSimpleAllegory_of_tabular`
+    (`Freyd/S2_10.lean`).  In the non-strict tower the reason is to avoid a diamond with the
+    hand-built `Allegory RelSet` (`AOP/A6_1_RelSet.lean`); on this STRICT branch `RelSet` is not a
+    `CartBicat` at all, so there is no diamond to avoid and no soundness file to agree with.
 
     Freyd states `inter_assoc`, `semidistrib` and `modular` in equality form; `meet_assoc`
     is the mirror bracketing, and `«meet_eq_left_of_≤»` converts the two `≤` forms. -/
-def allegoryOfCartBicat (𝒞 : Type u) [CartBicat.{v} 𝒞] : Freyd.Alg.Allegory 𝒞 :=
-  { (inferInstance : Cat.{v} 𝒞) with
+def allegoryOfCartBicat (O : Type u) [CartBicat.{v} O] : Freyd.Alg.Allegory (Word O) :=
+  { (inferInstance : Cat.{v} (Word O)) with
     recip := conv
     inter := meet
     recip_recip := conv_conv
