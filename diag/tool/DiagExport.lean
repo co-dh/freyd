@@ -152,47 +152,27 @@ def boxWidth (l : String) : Float := max BW (0.225 * l.length.toFloat + 0.30)
 
 mutual
 
-/-- How far a `⊗`'s run has to climb to reach its lanes, and so how much lead the `⊗` needs on each
-    side: nothing at all when the strand count does not change, which is the common case. -/
-partial def stackClimb (u l : Array Cell) : Float :=
-  let nIn := runLeftN u + runLeftN l
-  let nOut := runRightN u + runRightN l
-  let d (fromTop : Bool) (kIn kOut : Nat) :=
-    (laneCentre nIn kIn fromTop - laneCentre nOut kOut fromTop).abs
-  max (d true (runLeftN u) (runRightN u)) (d false (runLeftN l) (runRightN l))
-
-partial def stackLead (u l : Array Cell) : Float :=
-  if stackClimb u l < 0.005 then 0.0 else LEAD + 0.5 * stackClimb u l
-
 partial def Cell.width : Cell → Float
   | .wire => wireW
   | .box l | .dbox l => boxWidth l
   | .gen _ w _ => w
   | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
-  | .stack u l => max (runWidth u) (runWidth l) + 2.0 * stackLead u l
+  | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
   | .dagger l => boxWidth l
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
     abut into one bubble. -/
-partial def joinGap (c next : Cell) (sep : Float) : Float :=
-  if c.rightPort == .pair && next.leftPort == .pair then 0.0
-  else
-    -- Where the two ports sit at different heights the join has to slope.  Give it room in
-    -- proportion to the climb, so the strand runs at a readable angle instead of a near-vertical
-    -- jump: this is the Frobenius law's picture, whose middle strand really does change groups.
-    let a := c.rightOffsets sep
-    let b := next.leftOffsets sep
-    let rise := (Array.zip a b).foldl (fun acc (p : Float × Float) => max acc (p.1 - p.2).abs) 0.0
-    GAP + 1.1 * rise
+partial def joinGap (c next : Cell) : Float :=
+  if c.rightPort == .pair && next.leftPort == .pair then 0.0 else GAP
 
 /-- A run of cells wired in series, without the outer stubs a whole picture gets. -/
 partial def runWidth (cells : Array Cell) : Float := Id.run do
   let mut w := 0.0
   for i in [0 : cells.size] do
     w := w + cells[i]!.width
-    if h : i + 1 < cells.size then w := w + joinGap cells[i]! cells[i + 1] (runSep cells)
+    if h : i + 1 < cells.size then w := w + joinGap cells[i]! cells[i + 1]
   return w
 
 /-- Half the vertical extent, so a meet can separate its strands by enough to clear whatever is
@@ -300,121 +280,108 @@ def joinWire (x₀ x₁ y₀ y₁ : Float) : Array String :=
 
 mutual
 
-partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
+/-- Draw one cell, and say where its strands come out.
+
+    A STRAND KEEPS ITS HEIGHT.  The cell is told the heights its incoming strands arrive at and
+    draws itself around them; whatever it produces leaves at heights the next cell then arrives on.
+    Nothing is re-centred between cells, so every wire between two cells is horizontal — which is
+    the whole point.  A shape may still move a strand INSIDE itself: that is what a fork's prongs,
+    a merge's arms and a crossing are, and they are curves, not wires. -/
+partial def Cell.step (c : Cell) (x y : Float) (ys : Array Float) : Array String × Array Float :=
+  let y0 := ys[0]?.getD y
+  let y1 := ys[1]?.getD (y0 - 2.0 * STACKSEP)
+  let mid := (y0 + y1) / 2.0
+  let half := (y0 - y1) / 2.0
   match c with
-  | .wire => hwire x (x + wireW) y
-  | .box l => #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH})"]
-  | .gen fn w lead =>
-    -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
-    -- offers are the strands its neighbours expect.  `strdiag.typ`'s defaults are narrower; this
-    -- overrides them.  The swap also spans its cell, or the wires into it stop short of the
-    -- crossing.
-    let sp :=
-      if fn == "delta" || fn == "nabla" then s!", sp: {fmt sep}"
-      else if fn == "swap" then s!", sp: {fmt sep}, w: {fmt w}"
-      else ""
-    #[s!"  {fn}(({fmt (x + lead)}, {fmt y}){sp})"]
-  -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
-  -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
-  -- which corner is chamfered.
+  | .wire => (hwire x (x + wireW) y0, ys)
+  | .box l =>
+    (#[s!"  gbox(({fmt x}, {fmt y0}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH})"], ys)
   | .dagger l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH},        flip: true, fill: TINT)"]
+    (#[s!"  gbox(({fmt x}, {fmt y0}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH},        flip: true, fill: TINT)"], ys)
   | .dbox l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, dashed: true)"]
-  -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
-  -- one stub in from this cell's left edge.
-  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
-  | .cupC => #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
+    (#[s!"  gbox(({fmt x}, {fmt y0}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, dashed: true)"], ys)
+  | .gen "delta" _ lead =>
+    (#[s!"  delta(({fmt (x + lead)}, {fmt y0}), sp: {fmt STACKSEP})"],
+     #[y0 + STACKSEP, y0 - STACKSEP])
+  | .gen "nabla" _ lead =>
+    -- Opens exactly as wide as the two strands it is handed, so its arms end ON them.
+    (#[s!"  nabla(({fmt (x + lead)}, {fmt mid}), sp: {fmt half})"], #[mid])
+  | .gen "swap" w lead =>
+    (#[s!"  swap(({fmt (x + lead)}, {fmt mid}), sp: {fmt half}, w: {fmt w})"], ys)
+  | .gen "bang" _ lead => (#[s!"  bang(({fmt (x + lead)}, {fmt y0}))"], #[])
+  | .gen "unitR" _ lead => (#[s!"  unitR(({fmt (x + lead)}, {fmt y}))"], #[y])
+  | .gen fn _ lead => (#[s!"  {fn}(({fmt (x + lead)}, {fmt y0}))"], ys)
+  | .capC => (#[s!"  capAt(({fmt x}, {fmt mid}), sp: {fmt half}, w: {fmt CAPBEND})"], #[])
+  | .cupC =>
+    (#[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt STACKSEP}, w: {fmt CAPBEND})"],
+     #[y + STACKSEP, y - STACKSEP])
   | .stack u l => Id.run do
+    -- The two runs each keep the strands they were handed.  A run that arrives with none — a `?`
+    -- or a cup — is placed clear of the other one instead.
     let iw := max (runWidth u) (runWidth l)
-    let lead := stackLead u l
-    let nIn := runLeftN u + runLeftN l
-    let nOut := runRightN u + runRightN l
-    let inLanes := laneYs nIn
-    let outLanes := laneYs nOut
+    let ku := runLeftN u
+    let upperYs := if ku == 0 then #[] else ys.extract 0 (min ku ys.size)
+    let lowerYs := if ku == 0 then ys else ys.extract (min ku ys.size) ys.size
+    let sep := meetSep u l
     let mut out := #[]
-    let mut inTaken := 0
-    let mut outTaken := 0
-    for (run, fromTop) in [(u, true), (l, false)] do
-      let kIn := runLeftN run
-      let kOut := runRightN run
-      -- The run sits between the lanes it arrives on and the lanes it leaves on, so a climb is
-      -- split evenly between its two stubs instead of falling entirely on one.
-      let dy := (laneCentre nIn kIn fromTop + laneCentre nOut kOut fromTop) / 2.0
-      let rx := x + lead + (iw - runWidth run) / 2.0
-      let runIn := (laneYs kIn).map (· + dy)
-      let runOut := (laneYs kOut).map (· + dy)
-      for j in [0 : kIn] do
-        out := out ++ joinWire x rx (y + inLanes[inTaken + j]!) (y + runIn[j]!)
-      out := out ++ renderRun run rx (y + dy)
-      for j in [0 : kOut] do
-        out := out ++ joinWire (rx + runWidth run) (x + iw + 2.0 * lead)
-          (y + runOut[j]!) (y + outLanes[outTaken + j]!)
-      inTaken := inTaken + kIn
-      outTaken := outTaken + kOut
-    return out
+    let mut outYs := #[]
+    for (run, inYs, fallback) in [(u, upperYs, y + sep), (l, lowerYs, y - sep)] do
+      let rx := x + (iw - runWidth run) / 2.0
+      let (drawn, rys) := renderRun run rx fallback inYs
+      out := out ++ inYs.foldl (fun acc h => acc ++ hwire x rx h) #[] ++ drawn
+        ++ rys.foldl (fun acc h => acc ++ hwire (rx + runWidth run) (x + iw) h) #[]
+      outYs := outYs ++ rys
+    return (out, outYs)
   | .union u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
     let sep := meetSep u l
     let inner := max (runSpan u) (runSpan l)
-    let x₁ := x + TAPEPAD + FORK             -- where the tape's two branches begin
+    let x₁ := x + TAPEPAD + FORK
     let x₂ := x₁ + iw
     let w := 2.0 * FORK + 2.0 * TAPEPAD + iw
-    -- The wrapper is drawn FIRST so the circuit sits on top of it, not under it.
-    let mut out := #[s!"  tape(({fmt x}, {fmt (y - sep - inner - TAPEPAD)}), \
-      ({fmt (x + w)}, {fmt (y + sep + inner + TAPEPAD)}))",
-      s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"]
+    let mut out := #[s!"  tape(({fmt x}, {fmt (y0 - sep - inner - TAPEPAD)}), \
+      ({fmt (x + w)}, {fmt (y0 + sep + inner + TAPEPAD)}))",
+      s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y0}), sp: {fmt sep}, len: {fmt FORK})"]
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x₁ + (iw - runWidth run) / 2.0
-      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy)
-        ++ hwire (rx + runWidth run) x₂ (y + dy)
-    return out.push
-      s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"
+      let (drawn, _) := renderRun run rx (y0 + dy) #[y0 + dy]
+      out := out ++ hwire x₁ rx (y0 + dy) ++ drawn ++ hwire (rx + runWidth run) x₂ (y0 + dy)
+    return (out.push
+      s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt y0}), sp: {fmt sep}, len: {fmt FORK})", ys)
   | .meet u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
     let sep := meetSep u l
-    let x₁ := x + FORK                       -- where `Δ`'s two strands arrive
-    let x₂ := x₁ + iw                        -- where `∇`'s two strands leave
+    let x₁ := x + FORK
+    let x₂ := x₁ + iw
     let mut out :=
-      #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt sep})"]
-    -- Each operand run is centred in the shared inner width, and wired out to both ends.
+      #[s!"  delta(({fmt x}, {fmt y0}), li: 0, lo: {fmt FORK}, sp: {fmt sep})"]
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x₁ + (iw - runWidth run) / 2.0
-      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy)
-        ++ hwire (rx + runWidth run) x₂ (y + dy)
-    return out.push
-      s!"  nabla(({fmt (x₂ + FORK)}, {fmt y}), li: {fmt FORK}, lo: 0, sp: {fmt sep})"
+      let (drawn, _) := renderRun run rx (y0 + dy) #[y0 + dy]
+      out := out ++ hwire x₁ rx (y0 + dy) ++ drawn ++ hwire (rx + runWidth run) x₂ (y0 + dy)
+    return (out.push
+      s!"  nabla(({fmt (x₂ + FORK)}, {fmt y0}), li: {fmt FORK}, lo: 0, sp: {fmt sep})", ys)
 
-/-- Lay a run of cells out at height `y` from `x0`, joining consecutive ones with a wire.  Two forks
-    facing each other ABUT — `Δ ; ∇` is one bubble, not two shapes with a gap — so `runWidth` has to
-    agree with this, which is what `joinGap` is for. -/
-partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.run do
-  let sep := runSep cells
+/-- Lay a run out from `x0`, carrying the strand heights along.  `y` is only a fallback, for the
+    cells that CREATE a strand and so have no height to inherit. -/
+partial def renderRun (cells : Array Cell) (x0 y : Float) (ys : Array Float) :
+    Array String × Array Float := Id.run do
   let mut out := #[]
+  let mut cur := if ys.isEmpty then #[y] else ys
   let mut x := x0
   for i in [0 : cells.size] do
     let c := cells[i]!
-    out := out ++ c.render x y sep
+    let (drawn, next) := c.step x y cur
+    out := out ++ drawn
+    cur := next
     x := x + c.width
     if h : i + 1 < cells.size then
-      let next := cells[i + 1]
-      -- Nothing to join when the two abut: a fork straight into a fork is ONE bubble, and a wire
-      -- drawn across it would run through the middle of the shape.
-      let gap := joinGap c next sep
-      if gap < 0.005 then
-        pure ()
-      else if c.rightPort == .one && next.leftPort == .one then
-        out := out ++ hwire x (x + gap) y
-      else if c.rightPort.isTwo && next.leftPort.isTwo then
-        -- One join per strand, from where THIS cell's strands end to where the next one's begin.
-        -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
-        -- not model made them disagree, wire what can be wired rather than drop the join entirely.
-        let a := c.rightOffsets sep
-        let b := next.leftOffsets sep
-        for j in [0 : min a.size b.size] do
-          out := out ++ joinWire x (x + gap) (y + a[j]!) (y + b[j]!)
+      let gap := joinGap c cells[i + 1]
+      -- Every join is horizontal: the strand leaves at the height the next cell expects it at.
+      if gap > 0.005 then
+        out := out ++ cur.foldl (fun acc h => acc ++ hwire x (x + gap) h) #[]
       x := x + gap
-  return out
+  return (out, cur)
 
 end
 
@@ -428,8 +395,9 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   let w := runWidth cells
   let stub (x₀ x₁ : Float) (offs : Array Float) : Array String :=
     offs.foldl (fun acc o => acc ++ hwire x₀ x₁ o) #[]
-  let out := stub x0 (x0 + lead) (runLeftOffsets cells) ++ renderRun cells (x0 + lead) 0.0
-    ++ stub (x0 + lead + w) (x0 + lead + w + tail) (runRightOffsets cells)
+  let inYs := laneYs (runLeftN cells)
+  let (drawn, outYs) := renderRun cells (x0 + lead) 0.0 inYs
+  let out := stub x0 (x0 + lead) inYs ++ drawn ++ stub (x0 + lead + w) (x0 + lead + w + tail) outYs
   (String.intercalate "\n" out.toList, x0 + lead + w + tail)
 
 /-! ### The term walk -/
