@@ -47,7 +47,7 @@ theorem meet_top {a b : 𝒞} (R : a ⟶ b) : meet R (top a b) = R := by
   have hR : (R ⊗ₕ («!» a ≫ «?» b))
       = ((𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))) ≫ (𝟙 b ⊗ₕ «?» b) := by
     rw [← tensHom_comp, ← tensHom_comp]
-    simp only [Cat.id_comp, Cat.comp_id]
+    coherence
   -- `(𝟙 ⊗ ?);∇ = ρ`, read off the unit law (7) by cancelling `ρ ; ρ⁻¹ = 𝟙`.
   have hun : (𝟙 b ⊗ₕ «?» b) ≫ ∇ b = runit b := by
     have h := «∇_unit» (𝒞 := 𝒞) b
@@ -63,10 +63,10 @@ theorem meet_top {a b : 𝒞} (R : a ⟶ b) : meet R (top a b) = R := by
   calc Δ a ≫ (R ⊗ₕ («!» a ≫ «?» b)) ≫ ∇ b
       = Δ a ≫ (((𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))) ≫ (𝟙 b ⊗ₕ «?» b)) ≫ ∇ b := by rw [hR]
     _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ (𝟙 b ⊗ₕ «?» b) ≫ ∇ b := by
-          simp only [Cat.assoc]
+          coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b := by rw [hun]
     _ = Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ runit a ≫ R := by rw [runit_nat]
-    _ = (Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ runit a) ≫ R := by simp only [Cat.assoc]
+    _ = (Δ a ≫ (𝟙 a ⊗ₕ «!» a) ≫ runit a) ≫ R := by coherence
     _ = 𝟙 a ≫ R := by rw [Δ_counit]
     _ = R := Cat.id_comp _
 
@@ -94,10 +94,9 @@ theorem meet_comm {a b : 𝒞} (R S : a ⟶ b) : meet R S = meet S R := by
   dsimp [meet]
   calc Δ a ≫ (R ⊗ₕ S) ≫ ∇ b
       = (Δ a ≫ swap a a) ≫ (R ⊗ₕ S) ≫ ∇ b := by rw [Δ_comm]
-    _ = Δ a ≫ (swap a a ≫ (R ⊗ₕ S)) ≫ ∇ b := by simp only [Cat.assoc]
+    _ = Δ a ≫ (swap a a ≫ (R ⊗ₕ S)) ≫ ∇ b := by coherence
     _ = Δ a ≫ ((S ⊗ₕ R) ≫ swap b b) ≫ ∇ b := by rw [← swap_nat]
-    _ = Δ a ≫ (S ⊗ₕ R) ≫ swap b b ≫ ∇ b := by simp only [Cat.assoc]
-    _ = Δ a ≫ (S ⊗ₕ R) ≫ ∇ b := by rw [«∇_comm»]
+    _ = Δ a ≫ (S ⊗ₕ R) ≫ ∇ b := by coherence; rw [«∇_comm»]
 
 /-- `(R ∩ S) ∩ T` with the left-leaning copy and merge trees exposed, ready for (8) and (6). -/
 theorem meet_left_staged {a b : 𝒞} (R S T : a ⟶ b) :
@@ -107,9 +106,9 @@ theorem meet_left_staged {a b : 𝒞} (R S T : a ⟶ b) :
   have hsplit : ((Δ a ≫ (R ⊗ₕ S) ≫ ∇ b) ⊗ₕ T)
       = (Δ a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) := by
     rw [← tensHom_comp, ← tensHom_comp]
-    simp only [Cat.id_comp, Cat.comp_id]
+    coherence
   rw [hsplit]
-  simp only [Cat.assoc]
+  coherence
 
 /-- The mirror staging for `R ∩ (S ∩ T)`, right-leaning. -/
 theorem meet_right_staged {a b : 𝒞} (R S T : a ⟶ b) :
@@ -119,9 +118,9 @@ theorem meet_right_staged {a b : 𝒞} (R S T : a ⟶ b) :
   have hsplit : (R ⊗ₕ (Δ a ≫ (S ⊗ₕ T) ≫ ∇ b))
       = (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇ b) := by
     rw [← tensHom_comp, ← tensHom_comp]
-    simp only [Cat.id_comp, Cat.comp_id]
+    coherence
   rw [hsplit]
-  simp only [Cat.assoc]
+  coherence
 
 /-- `R ∩ S ≤ S`, the other half of the greatest-lower-bound property. -/
 theorem «meet_≤_right» {a b : 𝒞} (R S : a ⟶ b) :
@@ -143,24 +142,24 @@ theorem meet_assoc {a b : 𝒞} (R S T : a ⟶ b) :
         rw [tensAssoc_inv, Cat.id_comp]
     _ = (Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ tensAssoc a a a)
           ≫ tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
-        simp only [Cat.assoc]
+        coherence
     _ = (Δ a ≫ (𝟙 a ⊗ₕ Δ a))
           ≫ tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         rw [Δ_assoc]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a)
           ≫ (tensAssocInv a a a ≫ ((R ⊗ₕ S) ⊗ₕ T)) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
-        simp only [Cat.assoc]
+        coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a)
           ≫ ((R ⊗ₕ (S ⊗ₕ T)) ≫ tensAssocInv b b b) ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by
         rw [tensAssocInv_nat]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
-          ≫ tensAssocInv b b b ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by simp only [Cat.assoc]
+          ≫ tensAssocInv b b b ≫ (∇ b ⊗ₕ 𝟙 b) ≫ ∇ b := by coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
           ≫ tensAssocInv b b b ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by rw [«∇_assoc»]
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T))
           ≫ (tensAssocInv b b b ≫ tensAssoc b b b)
-          ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by simp only [Cat.assoc]
+          ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇ b) ≫ ∇ b := by
         rw [inv_tensAssoc, Cat.id_comp]
 

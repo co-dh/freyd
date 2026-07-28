@@ -75,6 +75,10 @@ conflate them.
 Acceptance: `./scripts/cap lake build diag` green; `#print axioms` on the classes' constructors shows none.
 Risk: coherence bookkeeping for the non-strict tensor. Mitigation: state the standard coherence fields up front,
 and record (in docstrings) which of them later proofs actually consume; do not invent a bespoke weaker structure.
+The bookkeeping itself is now a tactic: `coherence` (`diag/Monoidal.lean`) right-nests `≫`, drops identities,
+merges neighbouring tensors and cancels a coherence iso against its inverse, so no proof spells those steps out.
+`coherence [h, ...]` adds `h, ...` to the same pass — the `*_tail` laws beside it (each naturality law restated
+with the rest of the composite, so it matches inside a chain) are the usual arguments.
 
 **DONE.** Split across two files: `diag/Monoidal.lean` (`SymMonCat` — tensor, associator, unitors, symmetry,
 pentagon/triangle/hexagon, `tensHom_mono`) and `diag/CB.lean` (`CartBicat` — Def. 4.1 items 1–4 field for field:

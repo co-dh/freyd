@@ -52,15 +52,15 @@ theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a �
     dsimp [meet]
     calc Δ a ≫ ((R ≫ S) ⊗ₕ T) ≫ ∇ c
         = Δ a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ ∇ c := by
-          rw [← tensHom_comp, Cat.comp_id]
-      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := by simp only [Cat.assoc]
+          coherence
+      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := by coherence
   have hR : meet R (T ≫ conv S) ≫ S
       = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by
     dsimp [meet]
     calc (Δ a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ ∇ b) ≫ S
         = (Δ a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ ∇ b) ≫ S := by
-          rw [← tensHom_comp, Cat.comp_id]
-      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by simp only [Cat.assoc]
+          coherence
+      _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by coherence
   -- A THREE-LINK `calc` rather than `rw [hL, hR]; exact …`, so the argument sits in the proof TERM
   -- where `diag-export --proof` can draw it — and draw it with `R`, `S` and `T` all present, which
   -- is what the modular law is about.  `nabla_slide_conv` alone mentions only `S`.  The reshaping

@@ -63,7 +63,7 @@ theorem «∇_of_?» (a : 𝒞) : (𝟙 a ⊗ₕ «?» a) ≫ ∇ a = runit a :=
       = (runit a ≫ runitInv a) ≫ (𝟙 a ⊗ₕ «?» a) ≫ ∇ a := by
         rw [runit_inv, Cat.id_comp]
     _ = runit a ≫ runitInv a ≫ (𝟙 a ⊗ₕ «?» a) ≫ ∇ a := by
-        simp only [Cat.assoc]
+        coherence
     _ = runit a := by rw [«∇_unit», Cat.comp_id]
 
 /-- An arrow into the unit object restricts the identity: `𝟙 ∩ (L;?) = Δ;(𝟙 ⊗ L);ρ`.  This is the
@@ -72,9 +72,10 @@ theorem «∇_of_?» (a : 𝒞) : (𝟙 a ⊗ₕ «?» a) ≫ ∇ a = runit a :=
 theorem «meet_?» {a : 𝒞} (L : a ⟶ (𝕀 : 𝒞)) :
     meet (𝟙 a) (L ≫ «?» a) = Δ a ≫ (𝟙 a ⊗ₕ L) ≫ runit a := by
   have hsplit : (𝟙 a ⊗ₕ (L ≫ «?» a)) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» a) := by
-    rw [← tensHom_comp, Cat.comp_id]
+    coherence
   dsimp [meet]
   rw [hsplit]
+  -- NOT `coherence`: it would merge the two tensors back and hide `∇_of_?`'s left-hand side.
   simp only [Cat.assoc]
   rw [«∇_of_?»]
 
@@ -99,10 +100,10 @@ theorem dom_cd {a b : 𝒞} (P : a ⟶ b) :
     Dom P = Δ a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b := by
   have hshape : Δ a ≫ (𝟙 a ⊗ₕ P) ≫ keepFst a b = meet (𝟙 a) (P ≫ top b a) := by
     have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!» b) = (𝟙 a ⊗ₕ (P ≫ «!» b)) := by
-      rw [← tensHom_comp, Cat.comp_id]
+      coherence
     dsimp [keepFst, top]
     rw [← Cat.assoc P («!» b) («?» a), «meet_?» (P ≫ «!» b), ← hsplit]
-    simp only [Cat.assoc]
+    coherence
   rw [hshape]
   dsimp [Dom]
   refine OrderedCat.«≤_antisymm» ?_ ?_
@@ -132,13 +133,13 @@ theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
           ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) ≫ runit a := by rw [← conv_slide]
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ tensAssoc a a b
           ≫ ((𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b)) ≫ runit a := by
-        rw [← tensHom_comp, Cat.comp_id]
+        coherence
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ (tensAssoc a a b ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)))
-          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by simp only [Cat.assoc]
+          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by coherence
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ (((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ tensAssoc a b b)
           ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by rw [← tensAssoc_nat]
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ tensAssoc a b b
-          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by simp only [Cat.assoc]
+          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by coherence
 
 /-! ### §2.124 — both sides to the same normal form -/
 
@@ -148,22 +149,22 @@ theorem left_eq_W {a b : 𝒞} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = 
   dsimp [meet, W]
   calc Δ a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ∇ a
       = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ∇ a := by
-        rw [← tensHom_comp, Cat.comp_id]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ a := by simp only [Cat.assoc]
+        coherence
+    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ a := by coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
         rw [cv_merge R]
     _ = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
-        simp only [Cat.assoc]
+        coherence
     _ = Δ a ≫ (Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ capKeep a b := by
-        rw [← tensHom_comp, Cat.id_comp, Cat.comp_id]
+        coherence
     _ = Δ a ≫ ((Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ capKeep a b := by
-        simp only [Cat.assoc]
+        coherence
     _ = Δ a ≫ ((Δ a ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ capKeep a b := by
-        rw [← tensHom_comp, Cat.comp_id]
+        coherence
     _ = Δ a ≫ ((Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ capKeep a b := by
-        rw [← tensHom_comp, Cat.id_comp]
+        coherence
     _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ capKeep a b := by
-        simp only [Cat.assoc]
+        coherence
 
 /-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `∇;! = cap` unfolds the meet into the
     picture's cap, and `delta_assoc` — coassociativity (8) — identifies the two copy trees. -/
@@ -172,24 +173,24 @@ theorem right_eq_W {a b : 𝒞} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
   dsimp [keepFst, W, capKeep]
   calc Δ a ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!» b) ≫ runit a
       = Δ a ≫ ((𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!» b)) ≫ runit a := by
-        simp only [Cat.assoc]
+        coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ (meet R S ≫ «!» b)) ≫ runit a := by
-        rw [← tensHom_comp, Cat.comp_id]
+        coherence
     _ = Δ a ≫ (𝟙 a ⊗ₕ (Δ a ≫ ((R ⊗ₕ S) ≫ cap b))) ≫ runit a := by
-        dsimp [meet, cap]; simp only [Cat.assoc]
+        dsimp [meet, cap]; coherence
     _ = Δ a ≫ ((𝟙 a ⊗ₕ Δ a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b))
           ≫ runit a := by
         rw [← tensHom_comp, ← tensHom_comp, Cat.comp_id, Cat.comp_id]
     _ = (Δ a ≫ (𝟙 a ⊗ₕ Δ a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b)
-          ≫ runit a := by simp only [Cat.assoc]
+          ≫ runit a := by coherence
     _ = (Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ tensAssoc a a a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S))
           ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by rw [Δ_assoc]
     _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (tensAssoc a a a ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)))
-          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by simp only [Cat.assoc]
+          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by coherence
     _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ tensAssoc a b b)
           ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by rw [← tensAssoc_nat]
     _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ tensAssoc a b b
-          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by simp only [Cat.assoc]
+          ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by coherence
 
 /-- **§2.124.**  `𝟙 ∩ S R° = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving
     both sides to `W`.  The allegory-level statement, which Freyd proves from the modular law
