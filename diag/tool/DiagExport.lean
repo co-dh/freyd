@@ -305,13 +305,26 @@ partial def runRightOffsets (cells : Array Cell) : Array Float :=
 partial def runSpan (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => max acc c.span) (BH / 2.0)
 
-/-- Horizontal room a run needs at an end whose port does NOT sit on the centre line, so the wire
-    joining it has somewhere to fall.  Zero for every run that begins and ends on the centre line,
-    which is all of them except those that begin or end in a snake. -/
+/-- How far a run's end is off the centre line, and 0 unless it is off it in the ONE way that needs
+    a bend: a single strand that does not arrive at `y`, which is exactly a snake.
+
+    A fork and a `⊗` also report non-zero offsets, and they must NOT be caught here.  Their two
+    strands are wired by the geometry enclosing them — `Δ`'s prongs are `Δ`'s own — and treating
+    those offsets as skew drew a wire from each prong down to the centre line, joining two points
+    that were already connected and wrecking every copy and merge in the note. -/
+partial def runSkewL (cells : Array Cell) : Float :=
+  match cells[0]? with
+  | some c => if c.leftPort == .one then ((runLeftOffsets cells)[0]?).getD 0.0 else 0.0
+  | none => 0.0
+partial def runSkewR (cells : Array Cell) : Float :=
+  match cells.back? with
+  | some c => if c.rightPort == .one then ((runRightOffsets cells)[0]?).getD 0.0 else 0.0
+  | none => 0.0
+/-- Horizontal room for that bend to fall through, and none when there is no bend. -/
 partial def runPadL (cells : Array Cell) : Float :=
-  if (runLeftOffsets cells).any (fun o => o.abs > 0.01) then RISE / 2.0 else 0.0
+  if (runSkewL cells).abs > 0.01 then RISE / 2.0 else 0.0
 partial def runPadR (cells : Array Cell) : Float :=
-  if (runRightOffsets cells).any (fun o => o.abs > 0.01) then RISE / 2.0 else 0.0
+  if (runSkewR cells).abs > 0.01 then RISE / 2.0 else 0.0
 /-- What a run occupies inside a meet, a stack or a tape: its cells plus that room. -/
 partial def runOuterWidth (cells : Array Cell) : Float :=
   runPadL cells + runWidth cells + runPadR cells
@@ -374,11 +387,11 @@ partial def renderStrand (run : Array Cell) (x₁ iw ys : Float) (iv : Bool) : A
   let rx := l₀ + runPadL run                -- where its cells begin
   let re := rx + runWidth run               -- where they end
   let mut out := hwire x₁ l₀ ys iv
-  for o in runLeftOffsets run do
-    out := out ++ joinWire l₀ rx ys (ys + o) iv
+  let sl := runSkewL run
+  if sl.abs > 0.01 then out := out ++ joinWire l₀ rx ys (ys + sl) iv
   out := out ++ renderRun run rx ys iv
-  for o in runRightOffsets run do
-    out := out ++ joinWire re (re + runPadR run) (ys + o) ys iv
+  let sr := runSkewR run
+  if sr.abs > 0.01 then out := out ++ joinWire re (re + runPadR run) (ys + sr) ys iv
   return out ++ hwire (re + runPadR run) (x₁ + iw) ys iv
 
 -- Two parameters, two independent facts about the surroundings: `sep` is where this run puts its
