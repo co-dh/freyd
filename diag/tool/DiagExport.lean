@@ -59,9 +59,8 @@ def SPLITW : Float := 0.34
 def CAPW : Float := CAPBEND + SPLITW
 /-- The column a chain's relation symbol sits in, to the left of every term. -/
 def SYMCOL : Float := 0.95
-/-- The strand offset a cap or a cup bends over.  KNOWN LIMIT: it is a constant, so a cap next to a
-    `⊗` of two LEAF runs lines up exactly (both are `0.62`) but a cap next to a `⊗` with something
-    nested inside it does not.  Every statement drawn so far is of the first kind. -/
+/-- The strand offset a fork, a cap and a cup open by.  A `⊗` may sit wider — `meetSep` grows with
+    what is nested in its runs — and `joinWire` bends between the two, so the two need not agree. -/
 def STACKSEP : Float := 0.62
 
 /-- One left-to-right slot of a picture. -/
@@ -169,6 +168,40 @@ partial def Cell.span : Cell → Float
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
   | _ => BH / 2.0
 
+/-- The height at which a two-strand port's strands sit, above and below the centre line.  A `⊗`
+    separates its runs by `meetSep`, which grows with what is nested inside them; a fork, a cap and a
+    cup always open by `STACKSEP`.  `renderRun` reads both sides and joins them. -/
+partial def Cell.strandSep : Cell → Float
+  | .stack u l => meetSep u l
+  | _ => STACKSEP
+
+/-- Where a cell's strands MEET its left edge, top to bottom.  A port is not one strand or two: a
+    `⊗` of a fork and a wire offers three, and whatever follows has to be wired to all three.
+    Composing two pictures means connecting these lists, so they are computed structurally rather
+    than assumed. -/
+partial def Cell.leftOffsets : Cell → Array Float
+  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[STACKSEP, -STACKSEP]
+  | .gen "unitR" _ _ | .cupC => #[]
+  | .stack u l =>
+    let s := meetSep u l
+    (runLeftOffsets u).map (· + s) ++ (runLeftOffsets l).map (· - s)
+  | _ => #[0.0]
+
+/-- Where a cell's strands meet its right edge, top to bottom. -/
+partial def Cell.rightOffsets : Cell → Array Float
+  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[STACKSEP, -STACKSEP]
+  | .gen "bang" _ _ | .capC => #[]
+  | .stack u l =>
+    let s := meetSep u l
+    (runRightOffsets u).map (· + s) ++ (runRightOffsets l).map (· - s)
+  | _ => #[0.0]
+
+partial def runLeftOffsets (cells : Array Cell) : Array Float :=
+  match cells[0]? with | some c => c.leftOffsets | none => #[0.0]
+
+partial def runRightOffsets (cells : Array Cell) : Array Float :=
+  match cells.back? with | some c => c.rightOffsets | none => #[0.0]
+
 partial def runSpan (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => max acc c.span) (BH / 2.0)
 
@@ -200,6 +233,15 @@ def fmt (x : Float) : String :=
     the joint. -/
 def hwire (x₀ x₁ y : Float) : Array String :=
   if x₁ - x₀ > 0.005 then #[s!"  wire(({fmt x₀}, {fmt y}), ({fmt x₁}, {fmt y}))"] else #[]
+
+/-- Join two ports that are at DIFFERENT heights: a wire when they agree, a bend when they do not.
+    Composition has to connect — the output strands of one cell are the input strands of the next,
+    wherever each happens to sit — and the offsets do not always agree: a `⊗` separates its two runs
+    by enough to clear whatever is nested in them, while a fork always opens by `STACKSEP`.  Drawing
+    both at a fixed offset is what left `Δ ; (Δ ⊗ 𝟙)` as four strands meeting nothing. -/
+def joinWire (x₀ x₁ y₀ y₁ : Float) : Array String :=
+  if (y₁ - y₀).abs < 0.005 then hwire x₀ x₁ y₀
+  else #[s!"  bend(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}), k: 0.5)"]
 
 mutual
 
@@ -280,9 +322,13 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.r
       if c.rightPort == .one && next.leftPort == .one then
         out := out ++ hwire x (x + GAP) y
       else if c.rightPort.isTwo && next.leftPort.isTwo then
-        -- One wire per level.  `STACKSEP` is the offset every two-strand port agrees on, which is
-        -- why a `Δ` can be wired straight into a `⊗` of two boxes.
-        out := out ++ hwire x (x + GAP) (y + STACKSEP) ++ hwire x (x + GAP) (y - STACKSEP)
+        -- One join per strand, from where THIS cell's strands end to where the next one's begin.
+        -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
+        -- not model made them disagree, wire what can be wired rather than drop the join entirely.
+        let a := c.rightOffsets
+        let b := next.leftOffsets
+        for j in [0 : min a.size b.size] do
+          out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!)
       x := x + joinGap c next
   return out
 
@@ -296,10 +342,10 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   let lead := if lp == .nothing || lp == .pair then 0.0 else LEAD
   let tail := if rp == .nothing || rp == .pair then 0.0 else LEAD
   let w := runWidth cells
-  let stub (x₀ x₁ : Float) (p : Port) : Array String :=
-    if p == .strands then hwire x₀ x₁ STACKSEP ++ hwire x₀ x₁ (-STACKSEP) else hwire x₀ x₁ 0.0
-  let out := stub x0 (x0 + lead) lp ++ renderRun cells (x0 + lead) 0.0
-    ++ stub (x0 + lead + w) (x0 + lead + w + tail) rp
+  let stub (x₀ x₁ : Float) (offs : Array Float) : Array String :=
+    offs.foldl (fun acc o => acc ++ hwire x₀ x₁ o) #[]
+  let out := stub x0 (x0 + lead) (runLeftOffsets cells) ++ renderRun cells (x0 + lead) 0.0
+    ++ stub (x0 + lead + w) (x0 + lead + w + tail) (runRightOffsets cells)
   (String.intercalate "\n" out.toList, x0 + lead + w + tail)
 
 /-! ### The term walk -/
@@ -526,7 +572,7 @@ def page (declName : Name) (doc : Option String) (body : String) (isChain := fal
     | none => "#let doc = none\n"
   "// GENERATED by `diag-export` — do not edit; regenerate with\n\
    //   ./scripts/diag-export " ++ (if isChain then "--proof " else "") ++ declName.toString ++ "\n\
-   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, capAt, cupAt, TINT\n\n"
+   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \
