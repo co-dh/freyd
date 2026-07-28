@@ -130,6 +130,46 @@
 /// An annotation set to the right of a picture, left-aligned so it can never run back into it.
 #let note(p, body) = d.content(p, text(8.5pt, body), anchor: "west")
 
+// ------------------------------------------------------- division, drawn as long division
+#let DIVNUM = rgb("#f6e3bd")    // the numerator's ground — amber, NOT a red: the tape is pale red
+#let DIVDEN = rgb("#cfe6cd")    // the divisor laid inside it
+
+/// `R / S`, drawn instead of spelled.  A chamfered box like any other relation — same outline, same
+/// corner cut, so it wires up and says which way it runs — but its INTERIOR is the long-division
+/// picture rather than the string `R / S`: the amber ground is the numerator `R`, the green tile
+/// inset at the far end is the divisor `S` laid inside it, and the hairline of amber past the tile
+/// is the slack that makes the cancel law `(R/S) S ⊑ R` an inclusion and not an equality.
+///
+/// The tile is DASHED and the frame is SOLID.  The frame is solid because this is an arrow of the
+/// allegory like any other; the tile is dashed because `T S ⊑ R` pins nothing beyond it — which is
+/// also why the slack is drawn as a sliver: `R / S` is the LARGEST quotient, so what is left when
+/// nothing more can be taken is exactly a hairline.
+///
+/// `flip` mirrors both the chamfer and the tile, which is what left division needs: `S \ R` lays
+/// the divisor down FIRST.  Transcribed, in the sense that matters — the interior is a metaphor for
+/// the universal property, not a composite of the generators, and it is the one account of `/` in
+/// this file that needs no complement.
+#let divbox(p, num, den, w: 2.4, h: BH, denw: 0.72, slack: 0.09, flip: false, invert: false) = {
+  let (x, y) = p
+  let ink = if invert { white } else { black }
+  let c = CHAMFER * h
+  let pts = if flip {
+    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
+  } else {
+    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2 - c), (x + w - c, y + h / 2), (x, y + h / 2))
+  }
+  d.line(..pts, close: true, fill: DIVNUM, stroke: (thickness: lw, paint: ink))
+  let ty = h / 2 - 0.11
+  let t0 = if flip { x + slack } else { x + w - slack - denw }
+  let t1 = t0 + denw
+  d.rect((t0, y - ty), (t1, y + ty), fill: DIVDEN,
+    stroke: (thickness: 0.9pt, paint: ink, dash: "dashed"))
+  // The numerator sits in whatever the tile leaves, which is the other end of the box.
+  let nx = if flip { (t1 + x + w) / 2 } else { (x + t0) / 2 }
+  d.content((nx, y), text(9pt, fill: ink, num))
+  d.content(((t0 + t1) / 2, y), text(8pt, fill: ink, den))
+}
+
 // ---------------------------------------------------- the four Frobenius generators
 
 /// Copy `Δ : a → a ⊗ a` (`delta`).  In Rel, `x ↦ (x, x)`.  Pass `li: 0` to grow a copy tree with no

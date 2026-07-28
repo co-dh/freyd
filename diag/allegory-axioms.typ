@@ -1078,11 +1078,10 @@ residual of the earlier section is drawn this way too: `residual R S` is `R ⨟�
 mirrored in a white island.
 
 *What stays a box, and why.* Dashed still means "no definition in terms of the generators to
-unfold", and after the cut is taken out that is four things: `/` itself, which is a *field* of
-`DivisionAllegory`; `\` and `/ₛ`, defined from it; and `⇨`, a `Sup`. A dashed box takes a label, so
-whatever sits under one is set as text — `(R /ₛ S)°` is a mirrored box reading `R /ₛ S`, not a
-picture of the meet in its definition. The theorem that says what `/` *is* is `div_eq_neg_comp`,
-and that one draws.
+unfold, and no metaphor either", and after the cut and the long-division bar are taken out that is
+three things: `/ₛ`, a meet of two converses; `⇨`, a `Sup`; and `⨾`, built from `⇨`. A dashed box
+takes a label, so whatever sits under one is set as text — `(R /ₛ S)°` is a mirrored box reading
+`R /ₛ S`, not a picture of the meet in its definition.
 
 *The residual drawn earlier is this `/`.* `«≤_residual_iff»` (`diag/FO.lean:171`) and `le_div_iff`
 (`Freyd/S2_30.lean:54`) are the same Galois statement, `T S ⊑ R ⟺ T ⊑ R/S`, so in a model carrying
@@ -1095,6 +1094,13 @@ to right, as a composite: `R / S` first, then `S`, and the two together stay ins
 is the whole reason the cancel law is `(R/S) S ⊑ R` and not an equality — and it is drawn as a
 hairline on purpose, because `R / S` is the *largest* such quotient. Any wider and `S` stops fitting;
 the sliver is what is left when nothing more can be taken.
+
+*This figure is also the `/` box in every picture below.* Where the exported diagrams used to carry
+a dashed box with `R / S` printed in it — a frame around the same string the term column was already
+showing — they now carry this bar in miniature: the amber ground is the numerator, the dashed green
+tile is the divisor laid inside it, and the chamfered corner is the ordinary one every relation box
+has, so it wires up and says which way it runs. Left division mirrors both, chamfer and tile
+together, because `S \ R` lays `S` down first.
 
 Solid is what the equation pins: `R`'s left edge, `S`'s left edge, and the stretch before `S`, which
 is what `R / S` measures. Dashed is the slack: nothing to the right of `S` is determined by
@@ -1135,8 +1141,7 @@ not])
    #src[`S\R ≜ (R°/S°)°` (`:301`), so left division is right division conjugated by the converse
    and is not a second primitive.]
    #v(4pt)
-   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
-     Pl(p-le-ldiv), divbar(($S$, "d"), ($S backslash R$, "q"), qw: 3.4))],
+   #Pl(p-le-ldiv)],
 
   [*cancel:* `(R/S) S ⊑ R` — the field `DivisionAllegory.div_comp_le` (`:35`); and `S (S\R) ⊑ R` —
    `Freyd.Alg.leftDiv_comp_le` (`:317`). \ #src[The counit of each adjunction: the quotient composed
@@ -1239,9 +1244,10 @@ row.
   P(p-galois, s: 80%),
 )
 
-*The measurement.* Twenty-one pictures. Nine show a cut, a meet or a tape — every row of the
-negation table except the lexical order and the Galois connection — so §4.5 draws essentially in
-full. The ten rows of the division table do not.
+*The measurement.* Twenty-one pictures. Nine show a *generator* — a cut, a meet or a tape: every row
+of the negation table except the lexical order and the Galois connection, so §4.5 draws essentially
+in full. Not one of the division laws does, and eight of the ten instead carry the long-division
+bar, which is a metaphor for the universal property and not a composite of anything.
 
 *And they cannot, at the generality Freyd states them.* This is the one thing to take from the
 section. Every picture of `/` above goes through a complement: `R / S` drawn as a cut is `R ⨟• S⊥`,

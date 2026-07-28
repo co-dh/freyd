@@ -29,10 +29,17 @@
   THE ALLEGORY LAYER IS RECOGNISED TOO.  `DistributiveAllegory.union` is the tape and `Alg.neg` the
   cut, so B&dM §4.4–4.5 draws.  The tape is the picture of `∪`, not a claim that a distributive
   allegory carries the biproduct `diag/Tape.lean` builds it from; `distributiveAllegoryOfFbCb` is
-  what makes the two `∪`s the same operation.  What is left DASHED is what has no definition in
-  terms of the generators to unfold at any layer: `DivisionAllegory.div` (a class field), `leftDiv`,
-  `symmDiv`, `impl` (`Sup`s) and `thenRel`.  What `/` is, `div_eq_neg_comp` says — and that theorem
-  draws as a cut.
+  what makes the two `∪`s the same operation.
+
+  DIVISION DRAWS AS LONG DIVISION.  `DivisionAllegory.div` has no definition to unfold — it is a
+  class field — but that is a reason to draw its universal property, not a reason to print the term
+  twice, which a dashed box reading `R / S` beside a term column reading `R / S` does.  `divbox`
+  keeps the chamfered outline, so it wires up and says which way it runs, and puts the numerator's
+  ground, the divisor laid inside it and a hairline of slack where the label was.  `leftDiv` is the
+  mirror.  This is the one account of `/` in the tower that needs NO complement, which matters:
+  a division allegory need not be Boolean, so the cut picture of `residual` is not available at that
+  generality and this one is.  Still DASHED, having neither a definition nor a quotient metaphor:
+  `symmDiv`, `impl` and `thenRel`.
 
   A converse's operand is still a single box: `strdiag.typ`'s mirrored `gbox` takes a LABEL, so a
   composite under a `°` appears as one box reading `R ; S`.
@@ -105,6 +112,11 @@ inductive Cell where
       (`diag/FO.lean`), which needs the second composition and the linear adjoint.  `strdiag.typ`
       reserves the dashed frame for exactly this. -/
   | dbox (label : String)
+  /-- `R / S`, drawn as long division: a chamfered box like any other, whose interior is the
+      numerator's ground with the divisor laid inside it and a hairline of slack past it.  What
+      replaced a dashed box reading `R / S`, which said only what the term column already said.
+      `flip` mirrors chamfer and tile together, for left division. -/
+  | divbox (num den : String) (flip : Bool)
   /-- A CUT: the run drawn on the other colour.  This is how
       `DiagrammaticAlgebraOfFirstOrderLogic.pdf` writes complement — p. 2, "take its mirror image and
       then its photographic negative", and p. 10, "each cut [is] a color switch" — so `∼R`, the black
@@ -171,6 +183,11 @@ partial def Cell.rightPort : Cell → Port
     anything longer widens the box rather than spilling out of it. -/
 def boxWidth (l : String) : Float := max BW (0.225 * l.length.toFloat + 0.30)
 
+/-- The divisor tile inside a `divbox`, and the box that has to hold it beside the numerator.
+    Same per-character figure as `boxWidth`, one size down, since the tile's label is set at 8pt. -/
+def denWidth (l : String) : Float := max 0.62 (0.185 * l.length.toFloat + 0.22)
+def divboxWidth (num den : String) : Float := boxWidth num + denWidth den + 0.34
+
 mutual
 
 partial def Cell.width : Cell → Float
@@ -182,6 +199,7 @@ partial def Cell.width : Cell → Float
   | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
   | .dagger l _ => boxWidth l
+  | .divbox n dn _ => divboxWidth n dn
   | .cut inner => 2.0 * CUTPAD + runWidth inner
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
@@ -330,6 +348,10 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
   | .dbox l =>
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
         h: {fmt BH}, dashed: true{inv iv})"]
+  | .divbox n dn flip =>
+    let fl := if flip then ", flip: true" else ""
+    #[s!"  divbox(({fmt x}, {fmt y}), {labelContent n}, {labelContent dn}, \
+        w: {fmt (divboxWidth n dn)}, h: {fmt BH}, denw: {fmt (denWidth dn)}{fl}{inv iv})"]
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
   -- one stub in from this cell's left edge.
   | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
@@ -570,11 +592,23 @@ partial def toCell (e : Expr) : MetaM Cell := do
     match lastTwo args with
     | some (r, s) => return .cut ((← toCells r) ++ #[.cut #[.dagger (← label s) false]])
     | none => return .box (← label e)
-  -- Still dashed: these four have no definition in terms of the generators to unfold, at any layer.
-  -- `div` is a FIELD of `DivisionAllegory`, `impl` and `symmDiv` are `Sup`s, `thenRel` is built from
-  -- `impl`.  What `/` is, `div_eq_neg_comp` says, and that theorem draws.
-  | (``Freyd.Alg.DivisionAllegory.div, _) | (``Freyd.Alg.leftDiv, _) | (``Freyd.Alg.symmDiv, _)
-  | (``Freyd.Alg.impl, _) | (``Freyd.Alg.thenRel, _) =>
+  -- Division draws as LONG DIVISION.  `div` has no definition to unfold — it is a field of
+  -- `DivisionAllegory` — but that is a reason to draw the universal property, not a reason to print
+  -- the term twice: a dashed box reading `R / S` beside a term column reading `R / S` is a frame
+  -- around a string.  The box keeps its chamfer and wires up as before; only its interior changes.
+  -- `leftDiv` is the mirror, chamfer and divisor tile together, since `S \ R` lays `S` down first.
+  | (``Freyd.Alg.DivisionAllegory.div, args) =>
+    match lastTwo args with
+    | some (r, sd) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) false
+    | none => return .box (← label e)
+  | (``Freyd.Alg.leftDiv, args) =>
+    match lastTwo args with
+    | some (sd, r) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) true
+    | none => return .box (← label e)
+  -- Still dashed: no definition to unfold at any layer, and no quotient metaphor either.  `impl`
+  -- and `symmDiv` are `Sup`s and `thenRel` is built from `impl`; a meet of two converses is not a
+  -- quotient with a remainder.
+  | (``Freyd.Alg.symmDiv, _) | (``Freyd.Alg.impl, _) | (``Freyd.Alg.thenRel, _) =>
     return .dbox (← label e)
   | (``Freyd.Alg.Allegory.recip, args)
   | (``Freyd.Diag.CartBicat.conv, args) =>
@@ -710,7 +744,7 @@ def page (declName : Name) (doc : Option String) (body : String) (isChain := fal
     | none => "#let doc = none\n"
   "// GENERATED by `diag-export` — do not edit; regenerate with\n\
    //   ./scripts/diag-export " ++ (if isChain then "--proof " else "") ++ declName.toString ++ "\n\
-   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, cut, capAt, cupAt, TINT\n\n"
+   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \
