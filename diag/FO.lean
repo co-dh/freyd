@@ -12,10 +12,11 @@
 
   WHAT `⨟•` IS.  In `Rel(Set)`, `⨟°` is the usual `∃`-composition and `⨟•` is its de Morgan dual,
   `(R ⨟• S) x z := ∀ y, R x y ∨ S y z`; the black identity `id•` is the INEQUALITY relation, not
-  the identity, and `R⊥` is the complement of the converse.  `diag/RelSetFO.lean` carries that
-  instance — and, because complement is `¬`, it is the one file in `diag/` that uses
-  `Classical.choice`.  Everything in THIS file needs NO axioms at all — not even `propext`, because
-  Lemma 5.4 and the residual are pure inequational rewriting.
+  the identity, and `R⊥` is the complement of the converse.  In the non-strict tower
+  `diag/RelSetFO.lean` carries that instance; on this STRICT branch `RelSet` is not a model of
+  `diag.Monoidal` and the file is absent, so the layer has no model here.  Everything in THIS file
+  needs NO axioms at all — not even `propext`, because Lemma 5.4 and the residual are pure
+  inequational rewriting.
 
   WHAT IS ASSUMED, AND WHY THIS PRESENTATION.  Definition 5.1 defines a linear bicategory (two
   poset enriched categories sharing objects, arrows and order, with `⨟°` linearly distributing over
@@ -45,7 +46,7 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open scoped SymMonCat
+open scoped Word SymMonCat
 
 /-! ### Definition 5.1 — the linear bicategory -/
 
@@ -150,7 +151,7 @@ The paper (p. 7): "one can write the LEFT RESIDUAL of `b : Z → Y` by `a : X �
 left residual is the greatest arrow `Z → X` making the diagram commute laxly in `C°`, namely if
 `c ⨟° a ≤ b` then `c ≤ b ⨟• a⊥`."  `«≤_residual_iff»` is that sentence, both directions; it is the
 same Galois connection Freyd's `le_div_iff` (`Freyd/S2_30.lean`) states for `R / S`, which is what
-lets `diag/RelSetFO.lean` identify the two without unfolding either.
+would let a model identify the two without unfolding either.
 
 Lemma 5.4 is that connection at `T := id°`, so it comes after it rather than before: the paper
 states the lemma first and reads the residual off it, but here the general statement is the one
@@ -220,9 +221,12 @@ symmetric monoidal structures `(C, ⊗, I)` and `(C, ⊗•, I)` that AGREE ON O
 — so `⊗•` adds no object-level operation, only a second action on arrows with its own coherence
 isos — plus (1) the four linear strengths and (2) the two `id`-preservation inequations.
 
-The black structural isos really are separate arrows, not the white ones reused: in `Rel(Set)` the
-black identity is the inequality relation, so an arrow is a black iso exactly when its COMPLEMENT
-is a white one, and the black associator is the complement of the white associator. -/
+The black structural isos are separate arrows, not the white ones reused: in `Rel(Set)` the black
+identity is the inequality relation, so an arrow is a black iso exactly when its COMPLEMENT is a
+white one.  On this STRICT branch they nonetheless disappear along with the white ones: the two
+structures agree on objects, so the black monoidal category is strict for the same reason the white
+one is, and `α• = 𝟙•`, `λ• = ρ• = 𝟙•`.  What survives is the black symmetry and, as with `⊗ₕ`, the
+three arrow-level strictness equations. -/
 
 open LinearBicat in
 /-- A SYMMETRIC MONOIDAL LINEAR BICATEGORY (`DiagrammaticAlgebraOfFirstOrderLogic.pdf` Def. 5.1,
@@ -231,92 +235,67 @@ open LinearBicat in
     The black monoidal fields mirror `SymMonCat`'s white ones one for one, with `≫•` for `≫`, `𝟙•`
     for `𝟙` and `⊗•ₕ` for `⊗ₕ` — which is exactly what "two symmetric monoidal categories on the
     same objects and arrows" means once the object level is shared. -/
-class MonLinearBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞, LinearBicat.{v} 𝒞 where
+class MonLinearBicat (O : Type u) extends SymMonCat.{v} O, LinearBicat.{v} (Word O) where
   /-- `⊗•` on arrows.  Def. 5.1: `X ⊗ Y = X ⊗• Y`, so the object level is the white `⊗`. -/
-  btensHom {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') : a ⊗ b ⟶ a' ⊗ b'
-  btensHom_bid (a b : 𝒞) : btensHom (𝟙• a) (𝟙• b) = 𝟙• (a ⊗ b)
-  btensHom_bcomp {a a' a'' b b' b'' : 𝒞} (R : a ⟶ a') (R' : a' ⟶ a'') (S : b ⟶ b') (S' : b' ⟶ b'') :
+  btensHom {a a' b b' : Word O} (R : a ⟶ a') (S : b ⟶ b') : a ⊗ b ⟶ a' ⊗ b'
+  btensHom_bid (a b : Word O) : btensHom (𝟙• a) (𝟙• b) = 𝟙• (a ⊗ b)
+  btensHom_bcomp {a a' a'' b b' b'' : Word O} (R : a ⟶ a') (R' : a' ⟶ a'') (S : b ⟶ b') (S' : b' ⟶ b'') :
     btensHom (R ≫• R') (S ≫• S') = btensHom R S ≫• btensHom R' S'
-  btensHom_mono {a a' b b' : 𝒞} {R R' : a ⟶ a'} {S S' : b ⟶ b'} :
+  btensHom_mono {a a' b b' : Word O} {R R' : a ⟶ a'} {S S' : b ⟶ b'} :
     R ≤ R' → S ≤ S' → (btensHom R S) ≤ (btensHom R' S')
 
-  /-- The black associator `α•`.  Invertible for `≫•`/`𝟙•`, not for `≫`/`𝟙`. -/
-  bassoc (a b c : 𝒞) :
-    (a ⊗ b) ⊗ c ⟶ a ⊗ (b ⊗ c)
-  bassocInv (a b c : 𝒞) :
-    a ⊗ (b ⊗ c) ⟶ (a ⊗ b) ⊗ c
-  bassoc_inv (a b c : 𝒞) :
-    bassoc a b c ≫• bassocInv a b c = 𝟙• ((a ⊗ b) ⊗ c)
-  inv_bassoc (a b c : 𝒞) :
-    bassocInv a b c ≫• bassoc a b c = 𝟙• (a ⊗ (b ⊗ c))
-  bassoc_nat {a a' b b' c c' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c') :
-    btensHom (btensHom R S) T ≫• bassoc a' b' c' = bassoc a b c ≫• btensHom R (btensHom S T)
+  /-- STRICT ASSOCIATIVITY for `⊗•`, what is left of `α• = 𝟙•`. -/
+  btensHom_bassoc {a a' b b' c c' : Word O} (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c') :
+    btensHom (btensHom R S) T = (btensHom R (btensHom S T) : _)
+  /-- STRICT LEFT UNIT for `⊗•`, what is left of `λ• = 𝟙•`. -/
+  btensHom_blunit {a b : Word O} (R : a ⟶ b) : btensHom (𝟙• 𝕀) R = R
+  /-- STRICT RIGHT UNIT for `⊗•`, what is left of `ρ• = 𝟙•`. -/
+  btensHom_brunit {a b : Word O} (R : a ⟶ b) : btensHom R (𝟙• 𝕀) = R
 
-  /-- The black left unitor `λ•`. -/
-  blunit (a : 𝒞) : 𝕀 ⊗ a ⟶ a
-  blunitInv (a : 𝒞) : a ⟶ 𝕀 ⊗ a
-  blunit_inv (a : 𝒞) :
-    blunit a ≫• blunitInv a = 𝟙• (𝕀 ⊗ a)
-  inv_blunit (a : 𝒞) : blunitInv a ≫• blunit a = 𝟙• a
-  blunit_nat {a b : 𝒞} (R : a ⟶ b) :
-    btensHom (𝟙• 𝕀) R ≫• blunit b = blunit a ≫• R
-
-  /-- The black right unitor `ρ•`. -/
-  brunit (a : 𝒞) : a ⊗ 𝕀 ⟶ a
-  brunitInv (a : 𝒞) : a ⟶ a ⊗ 𝕀
-  brunit_inv (a : 𝒞) :
-    brunit a ≫• brunitInv a = 𝟙• (a ⊗ 𝕀)
-  inv_brunit (a : 𝒞) : brunitInv a ≫• brunit a = 𝟙• a
-  brunit_nat {a b : 𝒞} (R : a ⟶ b) :
-    btensHom R (𝟙• 𝕀) ≫• brunit b = brunit a ≫• R
-
-  /-- The black symmetry `σ•`. -/
-  bswap (a b : 𝒞) : a ⊗ b ⟶ b ⊗ a
-  bswap_bswap (a b : 𝒞) : bswap a b ≫• bswap b a = 𝟙• (a ⊗ b)
-  bswap_nat {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
+  /-- The black symmetry `σ•`.  `σ•_{a,I} = 𝟙•_a` is derivable from `bhexagon`, `bswap_bswap` and
+      the two black unit laws exactly as `swap_unit_right` is in `diag/Monoidal.lean`; nothing here
+      consumes it, so it is left underived rather than stated. -/
+  bswap (a b : Word O) : a ⊗ b ⟶ b ⊗ a
+  bswap_bswap (a b : Word O) : bswap a b ≫• bswap b a = 𝟙• (a ⊗ b)
+  bswap_nat {a a' b b' : Word O} (R : a ⟶ a') (S : b ⟶ b') :
     btensHom R S ≫• bswap a' b' = bswap a b ≫• btensHom S R
-  bswap_blunit (a : 𝒞) : bswap a 𝕀 ≫• blunit a = brunit a
-
-  bpentagon (a b c d : 𝒞) :
-    btensHom (bassoc a b c) (𝟙• d) ≫• bassoc a (b ⊗ c) d
-        ≫• btensHom (𝟙• a) (bassoc b c d)
-      = bassoc (a ⊗ b) c d ≫• bassoc a b (c ⊗ d)
-  btriangle (a b : 𝒞) :
-    bassoc a 𝕀 b ≫• btensHom (𝟙• a) (blunit b) = btensHom (brunit a) (𝟙• b)
-  bhexagon (a b c : 𝒞) :
-    bassoc a b c ≫• bswap a (b ⊗ c) ≫• bassoc b c a
-      = btensHom (bswap a b) (𝟙• c) ≫• bassoc b a c ≫• btensHom (𝟙• b) (bswap a c)
+  /-- The black hexagon, read with `α• = 𝟙•`. -/
+  bhexagon (a b c : Word O) :
+    bswap a (b ⊗ c) = (btensHom (bswap a b) (𝟙• c) : _) ≫• (btensHom (𝟙• b) (bswap a c) : _)
 
   /-- (ν_l°), Fig. 4: `(a ⨟• b) ⊗ (c ⨟• d) ≤ (a ⊗ c) ⨟• (b ⊗• d)`.  The first of the four LINEAR
       STRENGTHS of Def. 5.1.1 — the pair `(⊗, ⊗•)` seen as a linear functor.  The paper notes
       (Remark 2) that the two `(⊗)` inequations below are, to its authors' knowledge, novel, and
       that all six are what Lemma 5.2 rests on. -/
-  strength_lw {a b c a' b' c' : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
+  strength_lw {a b c a' b' c' : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
     (((R ≫• S) ⊗ₕ (T ≫• U)))
       ≤ ((R ⊗ₕ T) ≫• btensHom S U)
   /-- (ν_r°), Fig. 4: `(a ⨟• b) ⊗ (c ⨟• d) ≤ (a ⊗• c) ⨟• (b ⊗ d)`. -/
-  strength_rw {a b c a' b' c' : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
+  strength_rw {a b c a' b' c' : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
     (((R ≫• S) ⊗ₕ (T ≫• U)))
       ≤ (btensHom R T ≫• (S ⊗ₕ U))
   /-- (ν_l•), Fig. 4: `(a ⊗• c) ⨟° (b ⊗ d) ≤ (a ⨟° b) ⊗• (c ⨟° d)`. -/
-  strength_lb {a b c a' b' c' : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
+  strength_lb {a b c a' b' c' : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
     (btensHom R T ≫ (S ⊗ₕ U)) ≤ (btensHom (R ≫ S) (T ≫ U))
   /-- (ν_r•), Fig. 4: `(a ⊗ c) ⨟° (b ⊗• d) ≤ (a ⨟° b) ⊗• (c ⨟° d)`. -/
-  strength_rb {a b c a' b' c' : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
+  strength_rb {a b c a' b' c' : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a' ⟶ b') (U : b' ⟶ c') :
     ((R ⊗ₕ T) ≫ btensHom S U) ≤ (btensHom (R ≫ S) (T ≫ U))
 
   /-- (⊗•), Fig. 4: `⊗` preserves `id•` LAXLY — `id•_X ⊗ id•_Y ≤ id•_{X⊗Y}` (Def. 5.1.2).  In
       `Rel(Set)`: `x ≠ y ∧ z ≠ w` implies `(x,z) ≠ (y,w)`, and not conversely. -/
-  tens_bid_lax (a b : 𝒞) :
+  tens_bid_lax (a b : Word O) :
     ((𝟙• a ⊗ₕ 𝟙• b)) ≤ (𝟙• (a ⊗ b))
   /-- (⊗°), Fig. 4: `⊗•` preserves `id°` COLAXLY — `id°_{X⊗Y} ≤ id°_X ⊗• id°_Y` (Def. 5.1.2).  In
       `Rel(Set)`: `x = y ∧ z = w` implies `x = y ∨ z = w`. -/
-  btens_id_colax (a b : 𝒞) :
+  btens_id_colax (a b : Word O) :
     (𝟙 (a ⊗ b)) ≤ (btensHom (𝟙 a) (𝟙 b))
 
 namespace MonLinearBicat
 
-@[inherit_doc] scoped infixr:70 " ⊗•ₕ " => MonLinearBicat.btensHom
+/-- `⊗•` on arrows.  The ascription is load-bearing for the same reason as in `⊗ₕ`
+    (`diag/Monoidal.lean`): the object level is strict, so a type does not record its own
+    bracketing and `Word.tens ?x ?y` must be solved from the arrows, not from the expected type. -/
+scoped notation:70 R:71 " ⊗•ₕ " S:70 => ((MonLinearBicat.btensHom R S : _))
 
 end MonLinearBicat
 
@@ -324,8 +303,8 @@ end MonLinearBicat
 
 The paper (§4, p. 6): the axioms of cocartesian bicategories "can also be obtained from Fig. 2 by
 inverting both the colours and the order".  Fig. 2 is `diag/CB.lean`'s `CartBicat` field for field,
-so every field below is a `CartBicat` field with `≫` ↦ `≫•`, `𝟙` ↦ `𝟙•`, `⊗ₕ` ↦ `⊗•ₕ`, the white
-structural isos ↦ the black ones, and every `≤` turned around.  The four generators keep the paper's
+so every field below is a `CartBicat` field with `≫` ↦ `≫•`, `𝟙` ↦ `𝟙•`, `⊗ₕ` ↦ `⊗•ₕ` and every
+`≤` turned around; both structures are strict, so no structural iso appears on either side.  The four generators keep the paper's
 `◀•`, `!•`, `▶•`, `¡•` under the repo's diagram names, prefixed `b` for black.
 
 NOT a field, for the same reason as in `diag/CB.lean`: Fig. 3's special law (S•), `◀•;•▶• = 𝟙•`.  It
@@ -337,55 +316,55 @@ open LinearBicat MonLinearBicat in
 /-- A COCARTESIAN BICATEGORY (`DiagrammaticAlgebraOfFirstOrderLogic.pdf` Fig. 3): `CartBicat` with
     the colours and the order inverted.  Read every field against the `CartBicat` field of the same
     name in `diag/CB.lean`. -/
-class CocartBicat (𝒞 : Type u) extends MonLinearBicat.{v} 𝒞 where
+class CocartBicat (O : Type u) extends MonLinearBicat.{v} O where
   /-- `◀•`, the black comultiplication. -/
-  bdelta (n : 𝒞) : n ⟶ n ⊗ n
+  bdelta (n : Word O) : n ⟶ n ⊗ n
   /-- `!•`, the black counit. -/
-  bbang (n : 𝒞) : n ⟶ 𝕀
+  bbang (n : Word O) : n ⟶ 𝕀
   /-- `▶•`, the black multiplication. -/
-  bnabla (n : 𝒞) : n ⊗ n ⟶ n
+  bnabla (n : Word O) : n ⊗ n ⟶ n
   /-- `¡•`, the black unit. -/
-  bunitR (n : 𝒞) : 𝕀 ⟶ n
+  bunitR (n : Word O) : 𝕀 ⟶ n
 
-  /-- (◀•-as), the mirror of `delta_assoc`. -/
-  bdelta_assoc (n : 𝒞) :
-    bdelta n ≫• (bdelta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n = bdelta n ≫• (𝟙• n ⊗•ₕ bdelta n)
-  /-- (◀•-co), the mirror of `delta_comm`. -/
-  bdelta_comm (n : 𝒞) : bdelta n ≫• bswap n n = bdelta n
-  /-- (◀•-un), the mirror of `delta_counit`. -/
-  bdelta_counit (n : 𝒞) : bdelta n ≫• (𝟙• n ⊗•ₕ bbang n) ≫• brunit n = 𝟙• n
+  /-- (◀•-as), the mirror of `Δ_assoc`. -/
+  bdelta_assoc (n : Word O) :
+    bdelta n ≫• (bdelta n ⊗•ₕ 𝟙• n) = (bdelta n ≫• (𝟙• n ⊗•ₕ bdelta n) : _)
+  /-- (◀•-co), the mirror of `Δ_comm`. -/
+  bdelta_comm (n : Word O) : bdelta n ≫• bswap n n = bdelta n
+  /-- (◀•-un), the mirror of `Δ_counit`. -/
+  bdelta_counit (n : Word O) : bdelta n ≫• (𝟙• n ⊗•ₕ bbang n) = 𝟙• n
 
-  /-- (▶•-as), the mirror of `nabla_assoc`. -/
-  bnabla_assoc (n : 𝒞) :
-    (bnabla n ⊗•ₕ 𝟙• n) ≫• bnabla n = bassoc n n n ≫• (𝟙• n ⊗•ₕ bnabla n) ≫• bnabla n
-  /-- (▶•-co), the mirror of `nabla_comm`. -/
-  bnabla_comm (n : 𝒞) : bswap n n ≫• bnabla n = bnabla n
-  /-- (▶•-un), the mirror of `nabla_unit`. -/
-  bnabla_unit (n : 𝒞) : brunitInv n ≫• (𝟙• n ⊗•ₕ bunitR n) ≫• bnabla n = 𝟙• n
+  /-- (▶•-as), the mirror of `«∇_assoc»`. -/
+  bnabla_assoc (n : Word O) :
+    (bnabla n ⊗•ₕ 𝟙• n) ≫• bnabla n = ((𝟙• n ⊗•ₕ bnabla n) ≫• bnabla n : _)
+  /-- (▶•-co), the mirror of `«∇_comm»`. -/
+  bnabla_comm (n : Word O) : bswap n n ≫• bnabla n = bnabla n
+  /-- (▶•-un), the mirror of `«∇_unit»`. -/
+  bnabla_unit (n : Word O) : (𝟙• n ⊗•ₕ bunitR n) ≫• bnabla n = 𝟙• n
 
   /-- (η▶•): `𝟙• ≤ ▶•;•◀•`, the mirror of (37) — the order is inverted, so the bubble is now ABOVE
       the identity.  This is precisely why `⊕` could not be a second `CartBicat` in
       `diag/Tape.lean`, and the same asymmetry surfaces here as the reason Fig. 3 is not Fig. 2. -/
-  bineq_37 (n : 𝒞) : (𝟙• (n ⊗ n)) ≤ (bnabla n ≫• bdelta n)
+  bineq_37 (n : Word O) : (𝟙• (n ⊗ n)) ≤ (bnabla n ≫• bdelta n)
   /-- (ε▶•): `◀•;•▶• ≤ 𝟙•`, the mirror of (38). -/
-  bineq_38 (n : 𝒞) : (bdelta n ≫• bnabla n) ≤ (𝟙• n)
+  bineq_38 (n : Word O) : (bdelta n ≫• bnabla n) ≤ (𝟙• n)
   /-- (η¡•), the mirror of (39). -/
-  bineq_39 (n : 𝒞) :
-    (𝟙• (𝕀 : 𝒞)) ≤ (bunitR n ≫• bbang n)
+  bineq_39 (n : Word O) :
+    (𝟙• (𝕀 : Word O)) ≤ (bunitR n ≫• bbang n)
   /-- (ε¡•), the mirror of (40). -/
-  bineq_40 (n : 𝒞) : (bbang n ≫• bunitR n) ≤ (𝟙• n)
+  bineq_40 (n : Word O) : (bbang n ≫• bunitR n) ≤ (𝟙• n)
 
   /-- (F•), the mirror of `frob_left`. -/
-  bfrob_left (n : 𝒞) :
-    (𝟙• n ⊗•ₕ bdelta n) ≫• bassocInv n n n ≫• (bnabla n ⊗•ₕ 𝟙• n) = bnabla n ≫• bdelta n
+  bfrob_left (n : Word O) :
+    (𝟙• n ⊗•ₕ bdelta n) ≫• (bnabla n ⊗•ₕ 𝟙• n) = (bnabla n ≫• bdelta n : _)
   /-- (F•), the mirror of `frob_right`. -/
-  bfrob_right (n : 𝒞) :
-    (bdelta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ bnabla n) = bnabla n ≫• bdelta n
+  bfrob_right (n : Word O) :
+    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = (bnabla n ≫• bdelta n : _)
 
   /-- (◀•-nat), the mirror of `lax_delta`: every arrow is a COLAX black comonoid homomorphism. -/
-  blax_delta {m n : 𝒞} (R : m ⟶ n) : (bdelta m ≫• (R ⊗•ₕ R)) ≤ (R ≫• bdelta n)
+  blax_delta {m n : Word O} (R : m ⟶ n) : (bdelta m ≫• (R ⊗•ₕ R)) ≤ (R ≫• bdelta n)
   /-- (!•-nat), the mirror of `lax_bang`. -/
-  blax_bang {m n : 𝒞} (R : m ⟶ n) : (bbang m) ≤ (R ≫• bbang n)
+  blax_bang {m n : Word O} (R : m ⟶ n) : (bbang m) ≤ (R ≫• bbang n)
 
 /-! ### Definition 6.1 — first order bicategories
 
@@ -408,32 +387,32 @@ pretabular allegory correspondence it does cite is not that statement. -/
 
 open LinearBicat MonLinearBicat CartBicat CocartBicat in
 /-- A FIRST ORDER BICATEGORY (`DiagrammaticAlgebraOfFirstOrderLogic.pdf` Def. 6.1). -/
-class FOBicat (𝒞 : Type u) extends
-    CocartBicat.{v} 𝒞, CartBicat.{v} 𝒞, ClosedLinearBicat.{v} 𝒞 where
+class FOBicat (O : Type u) extends
+    CocartBicat.{v} O, CartBicat.{v} O, ClosedLinearBicat.{v} (Word O) where
   /-- Def. 5.5's remaining clause, hence part of Def. 6.1.1: the white symmetry is LEFT linear
       adjoint to the black one — (τσ°) and (γσ°) of Fig. 4. -/
-  swap_linAdj (a b : 𝒞) :
+  swap_linAdj (a b : Word O) :
     RightLinAdj (SymMonCat.swap a b) (bswap b a)
   /-- Def. 5.5, continued: and RIGHT linear adjoint to it — (τσ•) and (γσ•). -/
-  bswap_linAdj (a b : 𝒞) :
+  bswap_linAdj (a b : Word O) :
     RightLinAdj (bswap a b) (SymMonCat.swap b a)
 
   /-- Def. 6.1.4, (τ◀°)/(γ◀°): `◀°` is left linear adjoint to `▶•`. -/
-  delta_linAdj (n : 𝒞) : RightLinAdj (CartBicat.Δ n) (CocartBicat.bnabla n)
+  delta_linAdj (n : Word O) : RightLinAdj (CartBicat.Δ n) (CocartBicat.bnabla n)
   /-- (τ!°)/(γ!°): `!°` is left linear adjoint to `¡•`. -/
-  bang_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«!» n) (CocartBicat.bunitR n)
+  bang_linAdj (n : Word O) : RightLinAdj (CartBicat.«!» n) (CocartBicat.bunitR n)
   /-- (τ▶°)/(γ▶°): `▶°` is left linear adjoint to `◀•`. -/
-  nabla_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«∇» n) (CocartBicat.bdelta n)
+  nabla_linAdj (n : Word O) : RightLinAdj (CartBicat.«∇» n) (CocartBicat.bdelta n)
   /-- (τ¡°)/(γ¡°): `¡°` is left linear adjoint to `!•`. -/
-  unitR_linAdj (n : 𝒞) : RightLinAdj (CartBicat.«?» n) (CocartBicat.bbang n)
+  unitR_linAdj (n : Word O) : RightLinAdj (CartBicat.«?» n) (CocartBicat.bbang n)
   /-- (τ◀•)/(γ◀•): `◀•` is left linear adjoint to `▶°` — the "and right" half of Def. 6.1.4. -/
-  bdelta_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.«∇» n)
+  bdelta_linAdj (n : Word O) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.«∇» n)
   /-- (τ!•)/(γ!•): `!•` is left linear adjoint to `¡°`. -/
-  bbang_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bbang n) (CartBicat.«?» n)
+  bbang_linAdj (n : Word O) : RightLinAdj (CocartBicat.bbang n) (CartBicat.«?» n)
   /-- (τ▶•)/(γ▶•): `▶•` is left linear adjoint to `◀°`. -/
-  bnabla_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.Δ n)
+  bnabla_linAdj (n : Word O) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.Δ n)
   /-- (τ¡•)/(γ¡•): `¡•` is left linear adjoint to `!°`. -/
-  bunitR_linAdj (n : 𝒞) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.«!» n)
+  bunitR_linAdj (n : Word O) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.«!» n)
 
   /-- Def. 6.1.5, `(F^•_∘)`: the LINEAR FROBENIUS law in the white structure, with the black
       comultiplication copying and the white multiplication merging.  Compare `frob_right`: the
@@ -442,22 +421,18 @@ class FOBicat (𝒞 : Type u) extends
       Fig. 5 tells its four Frobenius laws apart by WHERE the two colour marks sit, not just by
       their order — `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)` — and `°` and `∘` are the same glyph,
       so dropping the sub/superscript positions makes two pairs of labels collide.  Keep them. -/
-  linfrob_bw (n : 𝒞) :
-    (bdelta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n)
-      = (𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ (bnabla n ⊗ₕ 𝟙 n)
+  linfrob_bw (n : Word O) :
+    (bdelta n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ∇ n) = ((𝟙 n ⊗ₕ Δ n) ≫ (bnabla n ⊗ₕ 𝟙 n) : _)
   /-- `(F^°_•)`: the mirror of `linfrob_bw`, white copying and black merging. -/
-  linfrob_wb (n : 𝒞) :
-    (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ bnabla n)
-      = (𝟙 n ⊗ₕ bdelta n) ≫ SymMonCat.tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n)
-  /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`/`α•`
-      for `⨟°`/`⊗`/`α`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
+  linfrob_wb (n : Word O) :
+    (Δ n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ bnabla n) = ((𝟙 n ⊗ₕ bdelta n) ≫ (∇ n ⊗ₕ 𝟙 n) : _)
+  /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`
+      for `⨟°`/`⊗`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
       because complementing swaps the generators' colours as well as the composition's. -/
-  blinfrob_wb (n : 𝒞) :
-    (Δ n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ bnabla n)
-      = (𝟙• n ⊗•ₕ bdelta n) ≫• bassocInv n n n ≫• (∇ n ⊗•ₕ 𝟙• n)
+  blinfrob_wb (n : Word O) :
+    (Δ n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = ((𝟙• n ⊗•ₕ bdelta n) ≫• (∇ n ⊗•ₕ 𝟙• n) : _)
   /-- `(F_∘^•)`: `linfrob_bw` said in the black structure. -/
-  blinfrob_bw (n : 𝒞) :
-    (bdelta n ⊗•ₕ 𝟙• n) ≫• bassoc n n n ≫• (𝟙• n ⊗•ₕ ∇ n)
-      = (𝟙• n ⊗•ₕ Δ n) ≫• bassocInv n n n ≫• (bnabla n ⊗•ₕ 𝟙• n)
+  blinfrob_bw (n : Word O) :
+    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ ∇ n) = ((𝟙• n ⊗•ₕ Δ n) ≫• (bnabla n ⊗•ₕ 𝟙• n) : _)
 
 end Freyd.Diag
