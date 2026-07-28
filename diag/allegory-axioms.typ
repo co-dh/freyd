@@ -1049,9 +1049,9 @@ quotient is how far along it reaches. Pushed too far, the metaphor breaks in the
   let y0 = -0.55
   let y1 = 0.55
   let ys = 0.36                      // S is inset top and bottom: it sits INSIDE R
-  let xq = 5.0                       // R/S ends, S begins
-  let xs = 6.9                       // S ends
-  let xr = 7.02                      // R ends — a hairline past S, and that hairline is the point
+  let xq = 3.0                       // R/S ends, S begins
+  let xs = 4.9                       // S ends
+  let xr = 5.02                      // R ends — a hairline past S, and that hairline is the point
   let sol = (thickness: 1.1pt, paint: black)
   let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
   // AMBER for `R`, not a red: the tape that draws `∪` elsewhere in this note is pale red, and two
