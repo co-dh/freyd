@@ -112,4 +112,64 @@ instance : OrderedCat (Word RelSet.{u}) where
     funext fun x => funext fun y => propext ⟨fun h => hRS x y h, fun h => hSR x y h⟩
   comp_mono hR hS x z := fun ⟨y, hxy, hyz⟩ => ⟨y, hR x y hxy, hS y z hyz⟩
 
+/-! ### The tensor of two relations
+
+  `R ⊗ S` relates a pair to a pair componentwise, the pairs read off by `splitTens`.  Everything
+  below is proved by turning an element of `⟦a ⊗ b⟧` into the pair it splits into and back, so the
+  only facts used are that `splitTens` and `mergeTens` are inverse. -/
+
+/-- The tensor of two relations. -/
+def tensRel {a a' b b' : Word RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+    Word.tens a b ⟶ Word.tens a' b' :=
+  fun p q => R (splitTens a b p).1 (splitTens a' b' q).1 ∧ S (splitTens a b p).2 (splitTens a' b' q).2
+
+/-- `splitTens` is injective, because `mergeTens` undoes it. -/
+theorem splitTens_inj {a b : Word RelSet.{u}} {p q : carrier (Word.tens a b)}
+    (h : splitTens a b p = splitTens a b q) : p = q := by
+  rw [← mergeTens_splitTens a b p, ← mergeTens_splitTens a b q, h]
+
+theorem tensRel_id (a b : Word RelSet.{u}) :
+    tensRel (𝟙 a) (𝟙 b) = 𝟙 (Word.tens a b) := by
+  funext p q
+  refine propext ⟨fun ⟨h1, h2⟩ => splitTens_inj ?_, fun h => ?_⟩
+  · exact Prod.ext h1 h2
+  · exact ⟨congrArg (·.1) (congrArg (splitTens a b) h), congrArg (·.2) (congrArg (splitTens a b) h)⟩
+
+theorem tensRel_comp {a a' a'' b b' b'' : Word RelSet.{u}}
+    (R : a ⟶ a') (R' : a' ⟶ a'') (S : b ⟶ b') (S' : b' ⟶ b'') :
+    tensRel (R ≫ R') (S ≫ S') = tensRel R S ≫ tensRel R' S' := by
+  funext p q
+  refine propext ⟨fun ⟨⟨y, hR, hR'⟩, ⟨z, hS, hS'⟩⟩ => ⟨mergeTens a' b' (y, z), ?_, ?_⟩,
+    fun ⟨m, ⟨hR, hS⟩, ⟨hR', hS'⟩⟩ => ⟨⟨_, hR, hR'⟩, ⟨_, hS, hS'⟩⟩⟩
+  · simp only [tensRel, splitTens_mergeTens]; exact ⟨hR, hS⟩
+  · simp only [tensRel, splitTens_mergeTens]; exact ⟨hR', hS'⟩
+
+theorem tensRel_mono {a a' b b' : Word RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
+    (hR : R ≤ R') (hS : S ≤ S') : tensRel R S ≤ tensRel R' S' :=
+  fun _ _ ⟨h1, h2⟩ => ⟨hR _ _ h1, hS _ _ h2⟩
+
+/-! ### Re-bracketing
+
+  `(a ⊗ b) ⊗ c` and `a ⊗ (b ⊗ c)` are the same word, so the two ways of building an element of it
+  out of three pieces must agree — that agreement is what `tensHom_assoc` needs, and it is the one
+  place an induction over the letters is unavoidable. -/
+
+/-- A transport along a list equality passes through a `cons`. -/
+theorem cast_cons {x : RelSet.{u}} {l l' : List RelSet.{u}} (h : l = l')
+    (v : x.carrier) (p : Interp l) :
+    cast (congrArg Interp (congrArg (x :: ·) h)) ((v, p) : Interp (x :: l))
+      = ((v, cast (congrArg Interp h) p) : Interp (x :: l')) := by
+  subst h; rfl
+
+theorem merge_assoc (u v w : List RelSet.{u}) (x : Interp u) (y : Interp v) (z : Interp w) :
+    merge (u ++ v) w (merge u v (x, y), z)
+      = cast (congrArg Interp (List.append_assoc u v w).symm)
+          (merge u (v ++ w) (x, merge v w (y, z))) := by
+  induction u with
+  | nil => rfl
+  | cons head u ih =>
+    show (x.1, merge (u ++ v) w (merge u v (x.2, y), z)) = _
+    rw [ih x.2, ← cast_cons (List.append_assoc u v w).symm x.1]
+    rfl
+
 end Freyd.Diag
