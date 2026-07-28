@@ -201,6 +201,24 @@ theorem residual_mono {X Y Z : 𝒞} {R R' : Z ⟶ Y} {S S' : X ⟶ Y}
     (OrderedCat.«≤_trans» (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) hS)
       (OrderedCat.«≤_trans» («residual_comp_≤» R S) hR))
 
+/-- Dividing by a composite, one factor at a time: `R / (S₁ ⨟° S₂) = (R / S₂) / S₁`.  Freyd's
+    `div_comp_assoc` (`Freyd/S2_30.lean:141`) for `R / S`, stated here over the residual.
+
+    Same theorem, different picture.  Over `DivisionAllegory.div` — a class field with no definition
+    to unfold — both sides come out as boxes with the term printed inside them, which says nothing
+    the term column does not.  Over `residual` the walk unfolds `R ⨟• S⊥` and the equation becomes
+    two grounds against three: `S₁` and `S₂` sit on the same black region on the left, and on the
+    right the outer region carries `S₁` while `S₂` has been pushed one cut deeper.  What division by
+    a composite DOES is then visible — it nests. -/
+theorem residual_comp_assoc {W X Y Z : 𝒞} (R : Z ⟶ Y) (S₁ : X ⟶ W) (S₂ : W ⟶ Y) :
+    residual R (S₁ ≫ S₂) = residual (residual R S₂) S₁ := by
+  -- Indirect equality: both sides are greatest solutions of the SAME condition, `(T ⨟° S₁) ⨟° S₂ ≤ R`
+  -- read with the brackets either way, so `≤_residual_iff` applied three times is the whole proof.
+  have key : ∀ T : Z ⟶ X, T ≤ residual R (S₁ ≫ S₂) ↔ T ≤ residual (residual R S₂) S₁ := fun T => by
+    rw [← «≤_residual_iff», ← «≤_residual_iff», ← «≤_residual_iff», Cat.assoc]
+  exact OrderedCat.«≤_antisymm» ((key _).mp (OrderedCat.«≤_refl» _))
+    ((key _).mpr (OrderedCat.«≤_refl» _))
+
 /-- **Lemma 5.4 (Residuation)** (`DiagrammaticAlgebraOfFirstOrderLogic.pdf` §5):
     `a ≤ b` iff `id°_X ≤ b ⨟• a⊥`.
 
