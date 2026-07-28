@@ -9,7 +9,10 @@
 // — and dropped the `=` from `recip_inter`.  A picture derived from the statement cannot drift from
 // it.  Regenerate every binding used here with:
 //
-//   ./scripts/diag-export Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
+//   ./scripts/diag-export Freyd.Diag.CartBicat.Δ_assoc Freyd.Diag.CartBicat.Δ_comm \
+//     Freyd.Diag.CartBicat.Δ_counit Freyd.Diag.CartBicat.«∇_assoc» Freyd.Diag.CartBicat.«∇_comm» \
+//     Freyd.Diag.CartBicat.«∇_unit» \
+//     Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
 //     Freyd.Diag.conv_inter Freyd.Diag.meet_idem Freyd.Diag.meet_comm Freyd.Diag.meet_assoc \
 //     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.«≤_top» \
 //     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ≤𝟙» Freyd.Diag.CartBicat.«𝟙≤Δ∇» \
@@ -36,6 +39,12 @@
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.special.typ": pic as p-special
+#import "generated/Freyd.Diag.CartBicat.Δ_assoc.typ": pic as p-d-assoc
+#import "generated/Freyd.Diag.CartBicat.Δ_comm.typ": pic as p-d-comm
+#import "generated/Freyd.Diag.CartBicat.Δ_counit.typ": pic as p-d-counit
+#import "generated/Freyd.Diag.CartBicat.«∇_assoc».typ": pic as p-n-assoc
+#import "generated/Freyd.Diag.CartBicat.«∇_comm».typ": pic as p-n-comm
+#import "generated/Freyd.Diag.CartBicat.«∇_unit».typ": pic as p-n-unit
 #import "generated/Freyd.Diag.CartBicat.«∇Δ≤𝟙».typ": pic as p-37
 #import "generated/Freyd.Diag.CartBicat.«𝟙≤Δ∇».typ": pic as p-38
 #import "generated/Freyd.Diag.CartBicat.«?!≤𝟙».typ": pic as p-39
@@ -145,6 +154,78 @@ clash to protect against.
 In a chain table the symbol at the head of each row is the relation *that step was proved at*: `=`
 for a reshaping, `≤` for a genuine inequality. Counting them is the point of drawing a proof at all
 — a chain of one `≤` between equalities says the theorem is one law and a lot of bookkeeping.
+
+= Definition 4.1, as the paper states it
+
+#src[`functorialSemanticsForRelationalTheories.pdf` Def. 4.1, pp. 20–21 — transcribed here as
+`class CartBicat` (`diag/CB.lean`), field for field. Every picture below is exported from the Lean
+field, so the class and the definition cannot drift apart.]
+
+A *cartesian bicategory of relations* is a poset-enriched category, symmetric monoidal, satisfying
+four conditions. Clauses 1 and 2 are the two structures every object carries; clause 3 makes each
+the other's adjoint and imposes Frobenius; clause 4 is the only condition on arrows.
+
+The tower this note describes is STRICT: the two bracketings of a threefold product are the same
+object, so no associator or unitor appears in any picture. The coherence arrows the paper suppresses
+in its own diagrams are absent here because they do not exist.
+
+== Every object carries a cocommutative comonoid `(Δ, !)`
+
+#table(
+  columns: (1fr, 5.6cm),
+  align: (center + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  P(p-d-assoc, s: 84%), [(8) *coassociativity* \ #src[`CartBicat.Δ_assoc` — copying twice on the
+   left is copying twice on the right.]],
+  P(p-d-comm, s: 84%), [(9) *cocommutativity* \ #src[`CartBicat.Δ_comm` — the two copies are
+   interchangeable.]],
+  P(p-d-counit, s: 84%), [(10) *counit* \ #src[`CartBicat.Δ_counit` — copy, then discard one
+   copy, and nothing has happened.]],
+)
+
+== Every object carries a commutative monoid `(∇, ?)`
+
+#table(
+  columns: (1fr, 5.6cm),
+  align: (center + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  P(p-n-assoc, s: 84%), [(5) *associativity* \ #src[`CartBicat.«∇_assoc»`.]],
+  P(p-n-comm, s: 84%), [(6) *commutativity* \ #src[`CartBicat.«∇_comm»`.]],
+  P(p-n-unit, s: 84%), [(7) *unit* \ #src[`CartBicat.«∇_unit»` — create, then merge, and nothing
+   has happened.]],
+)
+
+== Five inequations relate the monoid and the comonoid
+
+#table(
+  columns: (1fr, 5.6cm),
+  align: (center + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  P(p-37, s: 84%), [(37) `∇ ; Δ ≤ 𝟙` #src[— half of `Δ ⊣ ∇`]],
+  P(p-38, s: 84%), [(38) `𝟙 ≤ Δ ; ∇` #src[— the other half]],
+  P(p-39, s: 84%), [(39) `? ; ! ≤ 𝟙` #src[— half of `! ⊣ ?`]],
+  P(p-40, s: 84%), [(40) `𝟙 ≤ ! ; ?` #src[— the other half]],
+  P(p-frob, s: 72%), [(41) the *Frobenius* law \ #src[`CartBicat.frob_left`, and its mirror
+   `frob_right`. This is the one equation of the group; the other four are inequalities.]],
+)
+
+The *special* law `Δ ; ∇ = 𝟙` is NOT part of the definition. The paper derives it — "one direction
+is given by (38) and the other is proved as follows" — and so does the Lean, as
+`Freyd.Diag.CartBicat.special`; its picture is in the correspondence table below.
+
+== Every arrow is a lax comonoid homomorphism
+
+#table(
+  columns: (1fr, 5.6cm),
+  align: (center + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  P(p-lax-delta, s: 84%), [(42) `R ; Δ ≤ Δ ; (R ⊗ R)` \ #src[`CartBicat.lax_Δ` — running `R` once
+   and copying is below copying and running it on both strands.]],
+  P(p-lax-bang, s: 84%), [(43) `R ; ! ≤ !` \ #src[`CartBicat.lax_!`.]],
+)
+
+Read as inequalities in one direction only: an arrow that satisfied these as EQUATIONS would be a
+map, and the whole point is that a general relation is not.
 
 = Freyd's primitives are the Frobenius calculus's definitions
 
