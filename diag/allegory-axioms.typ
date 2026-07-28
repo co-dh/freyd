@@ -12,8 +12,8 @@
 //   ./scripts/diag-export Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
 //     Freyd.Diag.conv_inter Freyd.Diag.meet_idem Freyd.Diag.meet_comm Freyd.Diag.meet_assoc \
 //     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.«≤_top» \
-//     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ_≤_𝟙» Freyd.Diag.CartBicat.«𝟙_≤_Δ∇» \
-//     Freyd.Diag.CartBicat.«?!_≤_𝟙» Freyd.Diag.CartBicat.«𝟙_≤_!?» Freyd.Diag.CartBicat.frob_left \
+//     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ≤𝟙» Freyd.Diag.CartBicat.«𝟙≤Δ∇» \
+//     Freyd.Diag.CartBicat.«?!≤𝟙» Freyd.Diag.CartBicat.«𝟙≤!?» Freyd.Diag.CartBicat.frob_left \
 //     Freyd.Diag.CartBicat.lax_Δ Freyd.Diag.CartBicat.lax_! Freyd.Diag.Biprod.«≤_union_left» \
 //     Freyd.Diag.Biprod.union_comm Freyd.Diag.Biprod.bot_union Freyd.Diag.Biprod.comp_union \
 //     Freyd.Diag.Biprod.conv_union Freyd.Diag.FbCbRig.meet_union_distrib \
@@ -36,10 +36,10 @@
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.special.typ": pic as p-special
-#import "generated/Freyd.Diag.CartBicat.«∇Δ_≤_𝟙».typ": pic as p-37
-#import "generated/Freyd.Diag.CartBicat.«𝟙_≤_Δ∇».typ": pic as p-38
-#import "generated/Freyd.Diag.CartBicat.«?!_≤_𝟙».typ": pic as p-39
-#import "generated/Freyd.Diag.CartBicat.«𝟙_≤_!?».typ": pic as p-40
+#import "generated/Freyd.Diag.CartBicat.«∇Δ≤𝟙».typ": pic as p-37
+#import "generated/Freyd.Diag.CartBicat.«𝟙≤Δ∇».typ": pic as p-38
+#import "generated/Freyd.Diag.CartBicat.«?!≤𝟙».typ": pic as p-39
+#import "generated/Freyd.Diag.CartBicat.«𝟙≤!?».typ": pic as p-40
 #import "generated/Freyd.Diag.CartBicat.frob_left.typ": pic as p-frob
 #import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
 #import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
@@ -110,7 +110,7 @@
 
 #align(center, block(width: 90%, inset: (y: 4pt))[
   #src[*Equation numbering.* The numbers below are the 2017 preprint's. The `CartBicat`
-  fields no longer encode them — a field is named for what it says, `«∇Δ_≤_𝟙»` rather than
+  fields no longer encode them — a field is named for what it says, `«∇Δ≤𝟙»` rather than
   `ineq_37` — and each docstring carries the preprint number. The repo's copy of the paper is now
   the published version — Poly. J. Math. *2* (6), 20 Oct 2025, doi:10.69763/polyjmath.2.6 — which
   renumbers. Translation, published ← preprint: (34)←(37), (35)←(38), (36)←(39), (37)←(40),
@@ -690,12 +690,12 @@ row of the second table is the whole strength of the lemma, and everything else 
 field. The modular identity, which Freyd has to *adjoin* because an allegory has no structure to
 derive it from, comes out of (41) and (42).
 
-*Three things are stated but unproved.* `«∇Δ_≤_𝟙»` and `«?!_≤_𝟙»` are discharged and never used (see
+*Three things are stated but unproved.* `«∇Δ≤𝟙»` and `«?!≤𝟙»` are discharged and never used (see
 below); (44) and (45) are not stated at all; and Lemma 4.4, that the comonoid and adjoint forms of
 the map conditions agree, is not proved. All three trace to one omission in Def. 4.1 as printed — no
 Frobenius structure at a composite object — which `diag/CB.lean`'s header records.
 
-*Two laws on the Frobenius side do no work here.* Grepping the repo, `«∇Δ_≤_𝟙»` and `«?!_≤_𝟙»` are
+*Two laws on the Frobenius side do no work here.* Grepping the repo, `«∇Δ≤𝟙»` and `«?!≤𝟙»` are
 never used: they appear only in the class definition and in `diag/RelSetCB.lean`, where the
 `Rel(Set)` instance discharges them. They are there to make `Δ ⊣ ∇` and `! ⊣ ?` genuine adjunctions
 — which is what pins `∇ = Δ°` and `? = !°` by uniqueness of adjoints — not to prove any allegory
