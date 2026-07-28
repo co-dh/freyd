@@ -13,17 +13,26 @@
   WHAT IS RECOGNISED.  `Cat.comp` flattens into a run of cells; `Cat.id` is a bare wire;
   `Allegory.inter`/`Diag.meet` draw the `Δ;(R ⊗ S);∇` block NESTED, so `(R ∩ S) ∩ T` shows its inner
   meet rather than a box labelled `R ∩ S`; `Diag.union` (phase 8) draws the tape, the same shape on
-  the second monoidal product; `Allegory.recip`/`Diag.conv` draw the mirrored box.  `Diag.residual`
-  and `LinearBicat.perp` (phase 9) draw a DASHED box: they are not composites of the generators, and
-  the dashed frame is what `strdiag.typ` reserves for that.  At the top, `Alg.le` (`⊑`), `LE.le`
-  (`≤`) and `Eq` split the statement into two pictures with the symbol between them.
+  the second monoidal product; `Allegory.recip`/`Diag.conv` draw the mirrored box.  At the top,
+  `Alg.le` (`⊑`), `LE.le` (`≤`) and `Eq` split the statement into two pictures with the symbol
+  between them.
 
-  THE ALLEGORY LAYER IS RECOGNISED TOO, with the same two shapes.  `DistributiveAllegory.union` is
-  the tape and `DivisionAllegory.div`, `leftDiv`, `symmDiv`, `impl`, `neg` and `thenRel` are dashed
-  boxes — none of them is a composite of the generators either, and the allegory has no structure to
-  build them from at all.  The tape is the picture of `∪`, not a claim that a distributive allegory
-  carries the biproduct `diag/Tape.lean` builds it from; `distributiveAllegoryOfFbCb` is what makes
-  the two `∪`s the same operation.
+  NEGATION IS A CUT, NOT A BOX.  `DiagrammaticAlgebraOfFirstOrderLogic.pdf` p. 2: given `c`, "take
+  its mirror image and then its photographic negative" — that is `c⊥`; and p. 10, on translating
+  Peirce's existential graphs, "each cut [is] a color switch".  So `Alg.neg`, `LinearBicat.bcomp`
+  and `ClosedLinearBicat.perp` draw REGIONS on the other colour, and `Diag.residual`, which is
+  `R ⨟• S⊥` by definition, is unfolded and drawn as one: `R` on black with `S` mirrored in a white
+  island.  Nesting alternates the ground — Peirce's double cut — so `∼∼R = R` is two grounds
+  cancelling.  A box labelled `R / S` would have said only what the term beside it already says,
+  which is what an earlier version of this file drew.
+
+  THE ALLEGORY LAYER IS RECOGNISED TOO.  `DistributiveAllegory.union` is the tape and `Alg.neg` the
+  cut, so B&dM §4.4–4.5 draws.  The tape is the picture of `∪`, not a claim that a distributive
+  allegory carries the biproduct `diag/Tape.lean` builds it from; `distributiveAllegoryOfFbCb` is
+  what makes the two `∪`s the same operation.  What is left DASHED is what has no definition in
+  terms of the generators to unfold at any layer: `DivisionAllegory.div` (a class field), `leftDiv`,
+  `symmDiv`, `impl` (`Sup`s) and `thenRel`.  What `/` is, `div_eq_neg_comp` says — and that theorem
+  draws as a cut.
 
   A converse's operand is still a single box: `strdiag.typ`'s mirrored `gbox` takes a LABEL, so a
   composite under a `°` appears as one box reading `R ; S`.
@@ -60,6 +69,9 @@ def FORK : Float := 0.42
 def STRANDGAP : Float := 0.64
 /-- How far the tape's rounded wrapper stands off the circuit inside it. -/
 def TAPEPAD : Float := 0.22
+/-- How far a cut's ground extends past the circuit inside it.  Wider than `TAPEPAD`: the tape has an
+    edge stroke to read against, a cut has only the colour change. -/
+def CUTPAD : Float := 0.30
 /-- How far a cap's or a cup's strands bend over. -/
 def CAPBEND : Float := 0.60
 /-- `strdiag.typ`'s `SPLIT`: the stub between the two dots of a cap (`∇` then `!`) or a cup (`?`
@@ -93,6 +105,14 @@ inductive Cell where
       (`diag/FO.lean`), which needs the second composition and the linear adjoint.  `strdiag.typ`
       reserves the dashed frame for exactly this. -/
   | dbox (label : String)
+  /-- A CUT: the run drawn on the other colour.  This is how
+      `DiagrammaticAlgebraOfFirstOrderLogic.pdf` writes complement — p. 2, "take its mirror image and
+      then its photographic negative", and p. 10, "each cut [is] a color switch" — so `∼R`, the black
+      composition `⨟•` and hence the residual are REGIONS, not boxes with the operator printed in
+      them.  A box labelled `R / S` says only what the term already says.
+      Cuts nest, and nesting alternates the ground: that is Peirce's double cut, and it is why
+      `R / S = ∼(∼R ; S°)` comes out as a white island inside a black region. -/
+  | cut (inner : Array Cell)
   /-- A monoidal product `f ⊗ g`, drawn as the two runs STACKED — no fork, no join, since `⊗` puts
       two arrows side by side rather than copying one.  This is what makes a proof about bent wires
       readable: `𝟙 ⊗ S°` is a wire above a mirrored box, not an opaque label. -/
@@ -123,23 +143,28 @@ inductive Port where
   /-- the two levels of a `⊗`, or of a cap or cup. -/
   | strands
   | nothing
-  deriving BEq
+  -- `Inhabited` because `leftPort`/`rightPort` are `partial`: a cut reports its CONTENTS' ports, and
+  -- the recursion through nested cuts is what Lean cannot see terminating.
+  deriving BEq, Inhabited
 
 /-- Carries two strands, whichever kind. -/
 def Port.isTwo : Port → Bool
   | .pair | .strands => true
   | _ => false
 
-def Cell.leftPort : Cell → Port
+partial def Cell.leftPort : Cell → Port
   | .gen "nabla" _ _ | .gen "swap" _ _ => .pair
   | .gen "unitR" _ _ | .cupC => .nothing
   | .stack _ _ | .capC => .strands
+  -- A cut is transparent to wiring: what meets its left edge is whatever its contents meet.
+  | .cut inner => match inner[0]? with | some c => c.leftPort | none => .one
   | _ => .one
 
-def Cell.rightPort : Cell → Port
+partial def Cell.rightPort : Cell → Port
   | .gen "delta" _ _ | .gen "swap" _ _ => .pair
   | .gen "bang" _ _ | .capC => .nothing
   | .stack _ _ | .cupC => .strands
+  | .cut inner => match inner.back? with | some c => c.rightPort | none => .one
   | _ => .one
 
 /-- A box has to hold its label.  `strdiag.typ`'s default `BW` fits about six characters at 10pt;
@@ -157,6 +182,7 @@ partial def Cell.width : Cell → Float
   | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
   | .dagger l _ => boxWidth l
+  | .cut inner => 2.0 * CUTPAD + runWidth inner
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
     abut into one bubble. -/
@@ -179,6 +205,7 @@ partial def Cell.span : Cell → Float
   | .stack u l => meetSep u l + max (runSpan u) (runSpan l)
   | .capC | .cupC => STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
+  | .cut inner => runSpan inner + CUTPAD
   | _ => BH / 2.0
 
 /-- The height at which a two-strand port's strands sit, above and below the centre line.  A `⊗`
@@ -197,6 +224,7 @@ partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
   | .gen "unitR" _ _ | .cupC => #[]
   | .stack u l =>
     (runLeftOffsets u).map (· + sep) ++ (runLeftOffsets l).map (· - sep)
+  | .cut inner => runLeftOffsets inner
   | _ => #[0.0]
 
 /-- Where a cell's strands meet its right edge, top to bottom. -/
@@ -205,6 +233,7 @@ partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
   | .gen "bang" _ _ | .capC => #[]
   | .stack u l =>
     (runRightOffsets u).map (· + sep) ++ (runRightOffsets l).map (· - sep)
+  | .cut inner => runRightOffsets inner
   | _ => #[0.0]
 
 /-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
@@ -252,26 +281,34 @@ def fmt (x : Float) : String :=
   let s := s!"{m / 100}.{if frac < 10 then "0" else ""}{frac}"
   if n < 0.0 then "-" ++ s else s
 
+/-- `, invert: true` when the ground under this primitive is black, and nothing when it is white.
+    Every drawing function in `strdiag.typ` takes the same flag on the same axis, so one suffix
+    serves them all. -/
+def inv (b : Bool) : String := if b then ", invert: true" else ""
+
 /-- A horizontal wire, or nothing when the two ends coincide — a zero-length `wire` draws a blob at
     the joint. -/
-def hwire (x₀ x₁ y : Float) : Array String :=
-  if x₁ - x₀ > 0.005 then #[s!"  wire(({fmt x₀}, {fmt y}), ({fmt x₁}, {fmt y}))"] else #[]
+def hwire (x₀ x₁ y : Float) (iv : Bool := false) : Array String :=
+  if x₁ - x₀ > 0.005 then #[s!"  wire(({fmt x₀}, {fmt y}), ({fmt x₁}, {fmt y}){inv iv})"] else #[]
 
 /-- Join two ports that are at DIFFERENT heights: a wire when they agree, a bend when they do not.
     Composition has to connect — the output strands of one cell are the input strands of the next,
     wherever each happens to sit — and the offsets do not always agree: a `⊗` separates its two runs
     by enough to clear whatever is nested in them, while a fork always opens by `STACKSEP`.  Drawing
     both at a fixed offset is what left `Δ ; (Δ ⊗ 𝟙)` as four strands meeting nothing. -/
-def joinWire (x₀ x₁ y₀ y₁ : Float) : Array String :=
-  if (y₁ - y₀).abs < 0.005 then hwire x₀ x₁ y₀
-  else #[s!"  bend(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}), k: 0.5)"]
+def joinWire (x₀ x₁ y₀ y₁ : Float) (iv : Bool := false) : Array String :=
+  if (y₁ - y₀).abs < 0.005 then hwire x₀ x₁ y₀ iv
+  else #[s!"  bend(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}), k: 0.5{inv iv})"]
 
 mutual
 
-partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
+-- Two parameters, two independent facts about the surroundings: `sep` is where this run puts its
+-- strands, `iv` is which colour the ground under it is.
+partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String :=
   match c with
-  | .wire => hwire x (x + wireW) y
-  | .box l => #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH})"]
+  | .wire => hwire x (x + wireW) y iv
+  | .box l =>
+    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}{inv iv})"]
   | .gen fn w lead =>
     -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
     -- offers are the strands its neighbours expect.  `strdiag.typ`'s defaults are narrower; this
@@ -281,27 +318,30 @@ partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
       if fn == "delta" || fn == "nabla" then s!", sp: {fmt sep}"
       else if fn == "swap" then s!", sp: {fmt sep}, w: {fmt w}"
       else ""
-    #[s!"  {fn}(({fmt (x + lead)}, {fmt y}){sp})"]
+    #[s!"  {fn}(({fmt (x + lead)}, {fmt y}){sp}{inv iv})"]
   -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
   -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
-  -- which corner is chamfered.
+  -- which corner is chamfered.  On black ground the tint is dropped: `invert` supplies the paper.
   | .dagger l dashed =>
     let dsh := if dashed then ", dashed: true" else ""
+    let fl := if iv then ", invert: true" else ", fill: TINT"
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
-        h: {fmt BH}{dsh}, flip: true, fill: TINT)"]
+        h: {fmt BH}{dsh}, flip: true{fl})"]
   | .dbox l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, dashed: true)"]
+    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
+        h: {fmt BH}, dashed: true{inv iv})"]
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
   -- one stub in from this cell's left edge.
-  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
-  | .cupC => #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
+  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
+  | .cupC =>
+    #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
   | .stack u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
     let mut out := #[]
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x + (iw - runWidth run) / 2.0
-      out := out ++ hwire x rx (y + dy) ++ renderRun run rx (y + dy)
-        ++ hwire (rx + runWidth run) (x + iw) (y + dy)
+      out := out ++ hwire x rx (y + dy) iv ++ renderRun run rx (y + dy) iv
+        ++ hwire (rx + runWidth run) (x + iw) (y + dy) iv
     return out
   | .union u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
@@ -316,7 +356,8 @@ partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
       s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"]
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x₁ + (iw - runWidth run) / 2.0
-      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy)
+      -- The tape carries its own colour, so its interior is white ground whatever is outside it.
+      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy) false
         ++ hwire (rx + runWidth run) x₂ (y + dy)
     return out.push
       s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"
@@ -326,25 +367,42 @@ partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
     let x₁ := x + FORK                       -- where `Δ`'s two strands arrive
     let x₂ := x₁ + iw                        -- where `∇`'s two strands leave
     let mut out :=
-      #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt sep})"]
+      #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt sep}{inv iv})"]
     -- Each operand run is centred in the shared inner width, and wired out to both ends.
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x₁ + (iw - runWidth run) / 2.0
-      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy)
-        ++ hwire (rx + runWidth run) x₂ (y + dy)
+      out := out ++ hwire x₁ rx (y + dy) iv ++ renderRun run rx (y + dy) iv
+        ++ hwire (rx + runWidth run) x₂ (y + dy) iv
     return out.push
-      s!"  nabla(({fmt (x₂ + FORK)}, {fmt y}), li: {fmt FORK}, lo: 0, sp: {fmt sep})"
+      s!"  nabla(({fmt (x₂ + FORK)}, {fmt y}), li: {fmt FORK}, lo: 0, sp: {fmt sep}{inv iv})"
+  -- The cut.  Ground first, contents on top of it with the colour flipped, and a stub at each edge
+  -- so the wire crosses the boundary instead of stopping at it — a cut is a region a strand passes
+  -- through, not a box it ends on.
+  | .cut inner => Id.run do
+    let w := runWidth inner
+    let h := runSpan inner + CUTPAD
+    let x₁ := x + CUTPAD
+    let mut out := #[s!"  cut(({fmt x}, {fmt (y - h)}), ({fmt (x + w + 2.0 * CUTPAD)}, {fmt (y + h)})\
+{inv iv})"]
+    out := out ++ renderRun inner x₁ y (!iv)
+    -- The stubs are drawn in the OUTER colour on the outer side of each edge; the inner run already
+    -- carries its own.  Both are only a `CUTPAD` long, so drawing them in one colour is enough.
+    for o in runLeftOffsets inner do
+      out := out ++ hwire x x₁ (y + o) (!iv)
+    for o in runRightOffsets inner do
+      out := out ++ hwire (x₁ + w) (x + w + 2.0 * CUTPAD) (y + o) (!iv)
+    return out
 
 /-- Lay a run of cells out at height `y` from `x0`, joining consecutive ones with a wire.  Two forks
     facing each other ABUT — `Δ ; ∇` is one bubble, not two shapes with a gap — so `runWidth` has to
     agree with this, which is what `joinGap` is for. -/
-partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.run do
+partial def renderRun (cells : Array Cell) (x0 y : Float) (iv : Bool) : Array String := Id.run do
   let sep := runSep cells
   let mut out := #[]
   let mut x := x0
   for i in [0 : cells.size] do
     let c := cells[i]!
-    out := out ++ c.render x y sep
+    out := out ++ c.render x y sep iv
     x := x + c.width
     if h : i + 1 < cells.size then
       let next := cells[i + 1]
@@ -353,7 +411,7 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.r
       if joinGap c next < 0.005 then
         pure ()
       else if c.rightPort == .one && next.leftPort == .one then
-        out := out ++ hwire x (x + GAP) y
+        out := out ++ hwire x (x + GAP) y iv
       else if c.rightPort.isTwo && next.leftPort.isTwo then
         -- One join per strand, from where THIS cell's strands end to where the next one's begin.
         -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
@@ -361,7 +419,7 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.r
         let a := c.rightOffsets sep
         let b := next.leftOffsets sep
         for j in [0 : min a.size b.size] do
-          out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!)
+          out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!) iv
       x := x + joinGap c next
   return out
 
@@ -377,7 +435,7 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   let w := runWidth cells
   let stub (x₀ x₁ : Float) (offs : Array Float) : Array String :=
     offs.foldl (fun acc o => acc ++ hwire x₀ x₁ o) #[]
-  let out := stub x0 (x0 + lead) (runLeftOffsets cells) ++ renderRun cells (x0 + lead) 0.0
+  let out := stub x0 (x0 + lead) (runLeftOffsets cells) ++ renderRun cells (x0 + lead) 0.0 false
     ++ stub (x0 + lead + w) (x0 + lead + w + tail) (runRightOffsets cells)
   (String.intercalate "\n" out.toList, x0 + lead + w + tail)
 
@@ -485,13 +543,38 @@ partial def toCell (e : Expr) : MetaM Cell := do
     match lastTwo args with
     | some (u, l) => return .union (← toCells u) (← toCells l)
     | none => return .box (← label e)
-  -- The residual is NOT a composite of the generators; `strdiag.typ`'s dashed frame says so.  Nor
-  -- is anything on the next line: division, negation and the lexical order are what a DIVISION or
-  -- BOOLEAN allegory adds to `Allegory`, and no allegory can build one of them.
-  | (``Freyd.Diag.ClosedLinearBicat.residual, _) => return .dbox (← label e)
-  | (``Freyd.Diag.ClosedLinearBicat.perp, _) => return .dbox (← label e)
+  -- THE CUT, and the three things drawn with it.
+  --
+  -- `∼R` is the photographic negative of `R`'s own picture — `R` drawn on the other colour, not a
+  -- box with `∼R` printed inside it.  So `∼(R ∪ S)` shows the tape it is the negative OF, and
+  -- `∼∼R = R` is two grounds cancelling.
+  | (``Freyd.Alg.neg, args) =>
+    match args.back? with
+    | some r => return .cut (← toCells r)
+    | none => return .box (← label e)
+  -- The black composition is the same switch: `DiagrammaticAlgebraOfFirstOrderLogic.pdf` Fig. 4
+  -- draws `d ⨟• e` as `d` and `e` on black ground, which is what (δl) and (δr) are pictures of.
+  | (``Freyd.Diag.LinearBicat.bcomp, args) =>
+    match lastTwo args with
+    | some (f, g) => return .cut ((← toCells f) ++ (← toCells g))
+    | none => return .box (← label e)
+  -- `R⊥` is the mirror image AND the negative (paper, p. 2), so it is a cut around a `°`.  The
+  -- residual is `R ⨟• S⊥` BY DEFINITION (`diag/FO.lean:162`), and unfolding it here is what turns
+  -- `R / S` from a box repeating its own label into the picture the paper draws: `R` on black, with
+  -- `S` mirrored inside a white island — Peirce's double cut.
+  | (``Freyd.Diag.ClosedLinearBicat.perp, args) =>
+    match args.back? with
+    | some r => return .cut #[.dagger (← label r) false]
+    | none => return .box (← label e)
+  | (``Freyd.Diag.ClosedLinearBicat.residual, args) =>
+    match lastTwo args with
+    | some (r, s) => return .cut ((← toCells r) ++ #[.cut #[.dagger (← label s) false]])
+    | none => return .box (← label e)
+  -- Still dashed: these four have no definition in terms of the generators to unfold, at any layer.
+  -- `div` is a FIELD of `DivisionAllegory`, `impl` and `symmDiv` are `Sup`s, `thenRel` is built from
+  -- `impl`.  What `/` is, `div_eq_neg_comp` says, and that theorem draws.
   | (``Freyd.Alg.DivisionAllegory.div, _) | (``Freyd.Alg.leftDiv, _) | (``Freyd.Alg.symmDiv, _)
-  | (``Freyd.Alg.impl, _) | (``Freyd.Alg.neg, _) | (``Freyd.Alg.thenRel, _) =>
+  | (``Freyd.Alg.impl, _) | (``Freyd.Alg.thenRel, _) =>
     return .dbox (← label e)
   | (``Freyd.Alg.Allegory.recip, args)
   | (``Freyd.Diag.CartBicat.conv, args) =>
@@ -627,7 +710,7 @@ def page (declName : Name) (doc : Option String) (body : String) (isChain := fal
     | none => "#let doc = none\n"
   "// GENERATED by `diag-export` — do not edit; regenerate with\n\
    //   ./scripts/diag-export " ++ (if isChain then "--proof " else "") ++ declName.toString ++ "\n\
-   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, capAt, cupAt, TINT\n\n"
+   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, cut, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \

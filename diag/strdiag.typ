@@ -331,4 +331,14 @@
 /// Peirce's cut — the colour-switch region that carries complement
 /// (DiagrammaticAlgebraOfFirstOrderLogic.pdf §5).  Draw the region, then draw its contents with
 /// `invert: true` so wires, dots and boxes come out white on black.
-#let cut(a, b, radius: 0.1) = d.rect(a, b, radius: radius, fill: black, stroke: none)
+///
+/// The paper's own words, p. 2: "given `c`, take its mirror image `c` and then its photographic
+/// negative `c`" — that is `c⊥`; and p. 10, on translating Peirce's existential graphs, "each cut
+/// [is] a color switch".  So a cut is not a frame drawn AROUND a picture, it is the picture drawn on
+/// the other colour, and `R / S` is a black region rather than a box labelled `R / S`.
+///
+/// `invert` is what makes cuts NEST: a cut inside a cut switches back to white, which is Peirce's
+/// double cut, and `∼∼R = R` is that pair of regions cancelling.  Same axis as everywhere else in
+/// this file — `invert` always means "the ground under this is black".
+#let cut(a, b, radius: 0.1, invert: false) = d.rect(
+  a, b, radius: radius, fill: if invert { white } else { black }, stroke: none)

@@ -438,9 +438,12 @@ Together they are the whole gap: *cartesian bicategory of relations ≃ unitary 
 
 The two notations say which layer a picture is in. A union is a *tape*: the rounded wrapper is the
 second monoidal product, and its `▷`/`◁` open and close a branch a particle takes exactly one of —
-the same fork-runs-join shape as a meet, on a different product. A residual is a *dashed* box,
-because it is not a composite of the generators at all: `R / S := R ⨟• S⊥` lives in the second
-composition, and a solid box would claim it was drawable in the first.
+the same fork-runs-join shape as a meet, on a different product. A residual is a *cut*: `R / S` is
+`R ⨟• S⊥` by definition, the black composition is drawn on black ground and the linear adjoint `S⊥`
+is `S` mirrored and negated, so the picture is `R` on black beside `S` mirrored in a white island.
+Both conventions are `DiagrammaticAlgebraOfFirstOrderLogic.pdf`'s own; the last section of this note
+sets out where the paper states them, and what goes wrong if a residual is drawn as a box labelled
+`R / S` instead.
 
 #table(
   columns: (9.4cm, 1fr),
@@ -479,8 +482,10 @@ composition, and a solid box would claim it was drawable in the first.
 
   [`(R / S) S ⊑ R` — `Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`; the residual is a lower bound
    of the arrows it is the greatest of. \ #src[Freyd's §2.31 division: `R / S` is the largest `T`
-   with `T S ⊑ R`, and `le_residual_iff` (`diag/FO.lean:170`) is that Galois statement in full. The
-   dashed frame marks the box as belonging to the second composition.]],
+   with `T S ⊑ R`, and `«≤_residual_iff»` (`diag/FO.lean:171`) is that Galois statement in full. The
+   two colour switches are the definition `R ⨟• S⊥` unfolded — one for the black composition, one for
+   the linear adjoint — and the `S` in the island is mirrored because a linear adjoint is a converse
+   as well as a negative.]],
   P(p-residual),
 )
 
@@ -988,22 +993,35 @@ theorem here — division in `Freyd/S2_30.lean` (Freyd's §2.31), implication, t
 the division map-laws in `AOP/A4_4.lean`, negation and Schröder in `AOP/A4_5.lean` — so every one of
 them draws. Not one of them is a theorem of the diagrammatic tower, and the pictures say so.
 
-*What the notation says here.* Dashed means "not a composite of the generators", and in this section
-everything is dashed: `/`, `\`, `/ₛ`, `⇨` and `∼` are what a *division* or a *Boolean* allegory adds
-to `Allegory`, and no allegory builds any of them. Two shapes carry the whole visible content: the
-meet `Δ ; (R ⊗ S) ; ∇`, and the tape. So De Morgan comes out as "one box equals a meet of two
-boxes", excluded middle as "a tape of `R` and `∼R` is `⊤`", and Schröder as a composite on one side
-against a mirrored box on the other — where the converse falls is the one thing to look at.
+*Negation is a CUT, and that is what makes these pictures pictures.*
+`DiagrammaticAlgebraOfFirstOrderLogic.pdf` says how, twice. On p. 2: given `c`, "take its mirror
+image and then its photographic negative" — that is `c⊥`, and its figure is a box on a black ground
+with the chamfer on the other side. On p. 10, translating Peirce's existential graphs, where a
+closed curve round a subgraph is negation: to move from those to these diagrams "it suffices to
+treat lines and predicate symbols in the obvious way and each cut as a *color switch*". So a
+complement is not a frame drawn round a picture and it is certainly not a box with `∼R` printed
+inside it — it is the *same picture on the other colour*. Fig. 4 of that paper draws the black
+composition `⨟•` the same way, as a black band round the run, which is what its (δl) and (δr) are
+pictures of.
 
-*The same caveat as for `°`.* A dashed box takes a LABEL, so whatever sits under it is set as text
-and not drawn: `∼(R ∪ S)` is one box, not a tape inside a frame, while the `∼R ∩ ∼S` opposite it is
-a real meet. That is why the two sides of De Morgan look like different kinds of picture.
+*Cuts nest, and nesting alternates the ground.* That is Peirce's double cut: `∼∼R = R` is two
+grounds cancelling. It is also why `R / Y = ∼(∼R ; Y°)` comes out as a black region with a white
+island inside it — the shape of Fig. 4's (νr°) — rather than as a box repeating its own label. The
+residual of the earlier section is drawn this way too: `residual R S` is `R ⨟• S⊥` by definition
+(`diag/FO.lean:162`), so the exporter unfolds it and the picture shows `R` on black beside `S`
+mirrored in a white island.
+
+*What stays a box, and why.* Dashed still means "no definition in terms of the generators to
+unfold", and after the cut is taken out that is four things: `/` itself, which is a *field* of
+`DivisionAllegory`; `\` and `/ₛ`, defined from it; and `⇨`, a `Sup`. A dashed box takes a label, so
+whatever sits under one is set as text — `(R /ₛ S)°` is a mirrored box reading `R /ₛ S`, not a
+picture of the meet in its definition. The theorem that says what `/` *is* is `div_eq_neg_comp`,
+and that one draws.
 
 *The residual drawn earlier is this `/`.* `«≤_residual_iff»` (`diag/FO.lean:171`) and `le_div_iff`
 (`Freyd/S2_30.lean:54`) are the same Galois statement, `T S ⊑ R ⟺ T ⊑ R/S`, so in a model carrying
 both structures the two operations agree by uniqueness of adjoints, with neither definition being
-unfolded. The connection stops there: negation has no counterpart anywhere in the tower, which is
-why this section leaves the diagrammatic layer and draws the allegory itself.
+unfolded.
 
 #table(
   columns: (9.4cm, 1fr),
@@ -1069,8 +1087,9 @@ row.
    `∼`.]],
   P(p-neg-contra, s: 80%),
 
-  [*De Morgan:* `∼(R ∪ S) = ∼R ∩ ∼S` — `Freyd.Alg.neg_union` (`:58`). \ #src[The union is under the
-   `∼` on the left, so it prints; the meet on the right is drawn. One equation, both conventions.]],
+  [*De Morgan:* `∼(R ∪ S) = ∼R ∩ ∼S` — `Freyd.Alg.neg_union` (`:58`). \ #src[A cut round a tape
+   equals a meet of two cuts. Nothing in this picture is a label: `∪`, `∩` and `∼` each have a shape,
+   and the equation is the three of them rearranging.]],
   P(p-neg-union, s: 80%),
 
   [*De Morgan, other side* #text(9.2pt, luma(105))[(boolean)]: `∼(R ∩ S) = ∼R ∪ ∼S` —
@@ -1086,14 +1105,16 @@ row.
   [*Schröder:* `R S ⊑ T ⟺ R° ∼T ⊑ ∼S` — `Freyd.Alg.schroeder_left` (`:181`); and
    `R S ⊑ T ⟺ ∼T S° ⊑ ∼R` — `Freyd.Alg.schroeder_right` (`:188`). \ #src[The workhorse of §4.5, and
    the picture is the clearest in this section: a two-box composite on the left, and on the right
-   the *same* two boxes with one of them mirrored and both survivors dashed. Which factor keeps its
-   orientation is which form you are in.]],
+   the *same* two boxes, one mirrored and both on black. Which factor keeps its orientation is which
+   form you are in.]],
   stack(dir: ttb, spacing: 6pt, P(p-schroeder-l, s: 80%), P(p-schroeder-r, s: 80%)),
 
   [*division through negation:* `(∼R)/Y = ∼(R Y°)` — `Freyd.Alg.neg_div` (`:275`), which holds
    without the Boolean axiom; and `R/Y = ∼((∼R) Y°)` — `Freyd.Alg.div_eq_neg_comp` (`:293`), which
-   needs it. \ #src[The cheatsheet's "neg. division" row. In a Boolean allegory division is not
-   independent structure at all: the second equation defines `/` from `∼`, `°` and composition.]],
+   needs it. \ #src[The cheatsheet's "neg. division" row, and the row that earns the notation: on
+   the right of the second equation `/` has become a black region with a white island in it — a
+   composite of the generators and two colour switches. In a Boolean allegory division is not
+   independent structure at all.]],
   stack(dir: ttb, spacing: 6pt, P(p-neg-div, s: 80%), P(p-div-neg, s: 80%)),
 
   [*lexical order:* `⊤ ⨾ R = R` — `Freyd.Alg.topHom_thenRel` (`AOP/A4_4.lean:304`). \
@@ -1110,11 +1131,12 @@ row.
   P(p-galois, s: 80%),
 )
 
-*The measurement.* Twenty-one pictures, and a generator appears in five of them: a meet in
-`le_iff_inter_neg_zero`, `inter_neg_zero` and `neg_union`, a tape in `neg_inter` and
-`union_neg_eq_top`. The other sixteen are boxes threaded on a wire. That is not a defect of the
-rendering — it is the content: `∩`, `∪`, `°` and composition are what the Frobenius generators
-build, and §4.4–4.5 is made of the four operations that they do not.
+*The measurement.* Twenty-one pictures. Nine show a cut, a meet or a tape — every row of the
+negation table except the lexical order and the Galois connection — so §4.5 draws essentially in
+full. The ten rows of the division table do not, and the reason is the one the paragraph on boxes
+gives: `/` is a *field* of `DivisionAllegory`, an operation posited rather than built, so there is
+nothing to unfold. It becomes drawable at exactly the point where a Boolean allegory defines it
+away, `div_eq_neg_comp`, and there it is two colour switches and no new notation at all.
 
 *What is not drawn, and why.* The cheatsheet's pointwise row,
 `x (T\U) y ⟺ ∀w. w T x ⟹ w U y`, quantifies over elements and has no arrow to draw; the strict part
