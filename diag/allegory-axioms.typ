@@ -133,6 +133,67 @@
 /// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
 /// export, i.e. for the two primitive operations.
 #let fig(body) = align(center, box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, body)))
+/// `P`, but not centred.  In the one-column division table the exported picture sits BESIDE the
+/// long-division figure, and two centred blocks leave a gutter down the middle of the page.
+#let Pl(p, s: 90%) = box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p))
+
+// ------------------------------------------------------------------ the long-division figure
+#let AMBER = rgb("#f6e3bd")
+#let GREEN = rgb("#cfe6cd")
+/// The long-division bar: `R` as a bar, the composite laid inside it left to right, and a hairline
+/// of slack at the far end.
+///
+/// `tiles` are `(label, kind)` in DIAGRAM order.  `"q"` is the quotient — amber, full height, solid
+/// outline, because `T S ⊑ R` is what pins it.  `"d"` is a divisor laid down inside `R`: green,
+/// inset top and bottom so it reads as embedded, dashed because its far edge is not pinned either.
+/// The slack closes the bar and is deliberately a sliver: `R / S` is the LARGEST quotient, so what
+/// is left when nothing more can be taken is exactly a hairline.
+///
+/// Transcribed, every one of them — this is a metaphor for the universal property, not a picture of
+/// a term, and it is the one account of `/` in this note that needs no complement.
+#let divbar(..tiles, qw: 3.0, dw: 1.9, slack: 0.12, note: none) = {
+  let y0 = -0.55
+  let y1 = 0.55
+  let ys = 0.36
+  let sol = (thickness: 1.1pt, paint: black)
+  let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
+  let ts = tiles.pos()
+  let ws = ts.map(t => if t.at(1) == "q" { qw } else { dw })
+  let total = ws.sum() + slack
+  box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, {
+    d.rect((0, y0), (total, y1), fill: AMBER, stroke: none)
+    // `R`'s own outline: far edge not pinned; top and bottom are drawn tile by tile below.  The
+    // LEFT edge comes last, after the tiles, or a divisor laid first — left division — covers it
+    // with its own dashed edge and `R`'s one pinned boundary reads as slack.
+    d.line((total, y0), (total, y1), stroke: dsh)
+    let x = 0.0
+    for t in ts {
+      let w = if t.at(1) == "q" { qw } else { dw }
+      let st = if t.at(1) == "q" { sol } else { dsh }
+      d.line((x, y1), (x + w, y1), stroke: st)
+      d.line((x, y0), (x + w, y0), stroke: st)
+      if t.at(1) == "q" {
+        d.line((x, y0), (x, y1), stroke: sol)
+        d.line((x + w, y0), (x + w, y1), stroke: sol)
+      } else {
+        d.rect((x, -ys), (x + w, ys), fill: GREEN, stroke: none)
+        d.line((x, ys), (x + w, ys), stroke: dsh)
+        d.line((x, -ys), (x + w, -ys), stroke: dsh)
+        d.line((x, -ys), (x, ys), stroke: dsh)
+        d.line((x + w, -ys), (x + w, ys), stroke: dsh)
+      }
+      d.content((x + w / 2, 0), text(10.5pt)[#t.at(0)])
+      x = x + w
+    }
+    d.line((total - slack, y1), (total, y1), stroke: dsh)
+    d.line((total - slack, y0), (total, y0), stroke: dsh)
+    d.line((0, y0), (0, y1), stroke: sol)
+    if note != none {
+      d.line((total, y0 - 0.42), (total, y0 - 0.1), stroke: (thickness: 0.6pt, paint: luma(110)))
+      d.content((total, y0 - 0.62), text(8.5pt, luma(90))[#note])
+    }
+  }))
+}
 
 #align(center)[
   #text(16pt)[*The allegory axioms, and what defines them in the Frobenius calculus*] \
@@ -1045,78 +1106,71 @@ in the same hom-set, so `S` is not a sub-relation of `R` and neither is `R / S` 
 quotient is how far along it reaches. Pushed too far, the metaphor breaks in the usual place:
 `⊥ / ⊥ = ⊤`, which no picture of a part of `⊥` is going to show.
 
-#fig({
-  let y0 = -0.55
-  let y1 = 0.55
-  let ys = 0.36                      // S is inset top and bottom: it sits INSIDE R
-  let xq = 3.0                       // R/S ends, S begins
-  let xs = 4.9                       // S ends
-  let xr = 5.02                      // R ends — a hairline past S, and that hairline is the point
-  let sol = (thickness: 1.1pt, paint: black)
-  let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
-  // AMBER for `R`, not a red: the tape that draws `∪` elsewhere in this note is pale red, and two
-  // pale reds in one document read as one notation.  Green keeps `S`.
-  d.rect((0, y0), (xr, y1), fill: rgb("#f6e3bd"), stroke: none)
-  d.rect((xq, -ys), (xs, ys), fill: rgb("#cfe6cd"), stroke: none)
-  d.line((0, y0), (0, y1), stroke: sol)
-  d.line((xq, y0), (xq, y1), stroke: sol)
-  d.line((0, y1), (xq, y1), stroke: sol)
-  d.line((0, y0), (xq, y0), stroke: sol)
-  d.line((xq, y1), (xr, y1), stroke: dsh)
-  d.line((xq, y0), (xr, y0), stroke: dsh)
-  d.line((xq, ys), (xs, ys), stroke: dsh)
-  d.line((xq, -ys), (xs, -ys), stroke: dsh)
-  d.line((xs, -ys), (xs, ys), stroke: dsh)
-  d.line((xr, y0), (xr, y1), stroke: dsh)
-  d.content((xq / 2, 0), text(11pt)[$R slash S$])
-  d.content(((xq + xs) / 2, 0), text(11pt)[$S$])
-  // The slack is too thin to label in place, so the label stands off and points at it.
-  d.line((xr, y0 - 0.42), (xr, y0 - 0.1), stroke: (thickness: 0.6pt, paint: luma(110)))
-  d.content((xr, y0 - 0.62), text(9pt, luma(90))[the slack: why `⊑`])
-})
+#align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: why `⊑`]))
 #align(center, src[transcribed — the universal property has a Lean statement, this metaphor does
 not])
 
+// ONE COLUMN, and only this table.  The exported pictures here are the widest in the note —
+// `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before scaling
+// — and a second picture column for the long-division figure would have squeezed them to 60%.  One
+// column at the full 22cm takes both side by side at 90%, and the six rows the metaphor does not
+// reach simply have nothing beside them.  The negation table below keeps the two-column shape: its
+// pictures are small and none of them is a division.
 #table(
-  columns: (9.4cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*statement*], [*picture, from the Lean statement*]),
+  columns: (1fr,),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*the ten laws, their exported pictures, and — where the metaphor reaches — the same
+    law as long division*]),
 
   [*Division is the right adjoint of composition:* `T ⊑ R/S ⟺ T S ⊑ R` — `Freyd.Alg.le_div_iff`
    (`Freyd/S2_30.lean:54`). The cheatsheet's `\` reversed, since Freyd divides on the right. \
    #src[Everything else in the division half of §8 is this one line applied twice and read
-   backwards; `div` itself is a field of `DivisionAllegory` with no definition to unfold.]],
-  P(p-le-div, s: 80%),
+   backwards; `div` itself is a field of `DivisionAllegory` with no definition to unfold.]
+   #v(4pt)
+   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
+     Pl(p-le-div), divbar(($T$, "q"), ($S$, "d"), slack: 1.5,
+       note: [any `T` that fits; `R/S` is the longest]))],
 
   [`T ⊑ S\R ⟺ S T ⊑ R` — `Freyd.Alg.le_leftDiv_iff` (`:309`), the mirror. \
    #src[`S\R ≜ (R°/S°)°` (`:301`), so left division is right division conjugated by the converse
-   and is not a second primitive.]],
-  P(p-le-ldiv, s: 80%),
+   and is not a second primitive.]
+   #v(4pt)
+   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
+     Pl(p-le-ldiv), divbar(($S$, "d"), ($S backslash R$, "q"), qw: 3.4))],
 
   [*cancel:* `(R/S) S ⊑ R` — the field `DivisionAllegory.div_comp_le` (`:35`); and `S (S\R) ⊑ R` —
    `Freyd.Alg.leftDiv_comp_le` (`:317`). \ #src[The counit of each adjunction: the quotient composed
-   back with the divisor lands under the numerator, never on it.]],
-  stack(dir: ttb, spacing: 6pt, P(p-div-cancel, s: 80%), P(p-ldiv-cancel, s: 80%)),
+   back with the divisor lands under the numerator, never on it. This is the law the figure above
+   the table draws, so it is not drawn again here.]
+   #v(4pt)
+   #stack(dir: ttb, spacing: 6pt, Pl(p-div-cancel), Pl(p-ldiv-cancel))],
 
   [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` — `Freyd.Alg.div_comp_assoc` (`:141`); and
    `(S T)\R = T\(S\R)` — `Freyd.Alg.leftDiv_comp` (`:332`). \ #src[Dividing by a composite one
    factor at a time. The composition is drawn on the left of each equation and swallowed into a
-   label on the right, which is exactly what "the calculus cannot see inside `/`" looks like.]],
-  stack(dir: ttb, spacing: 6pt, P(p-div-assoc, s: 80%), P(p-ldiv-assoc, s: 80%)),
+   label on the right, which is exactly what "the calculus cannot see inside `/`" looks like — and
+   is exactly what the bar shows instead: two tiles laid where there was one.]
+   #v(4pt)
+   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
+     stack(dir: ttb, spacing: 6pt, Pl(p-div-assoc), Pl(p-ldiv-assoc)),
+     divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2))],
 
   [*maps:* `f (R/S) = (f R)/S` — `Freyd.Alg.map_comp_div` (`AOP/A4_4.lean:366`); and
    `R/(f S) = (R/S) f°` — `Freyd.Alg.div_comp_recip_map` (`:376`). \ #src[Both are the shunting rule
    of the previous section, spent twice inside an indirect-equality argument. The second is the one
-   that pays: a map moves out of a denominator and reappears as `f°` outside the box.]],
-  stack(dir: ttb, spacing: 6pt, P(p-map-div, s: 80%), P(p-div-map, s: 80%)),
+   that pays: a map moves out of a denominator and reappears as `f°` outside the box. No bar: the
+   metaphor has no handle on prefixing by a map.]
+   #v(4pt)
+   #stack(dir: ttb, spacing: 6pt, Pl(p-map-div), Pl(p-div-map))],
 
   [*symmetric division:* `(R/ₛS)° = S/ₛR` — `Freyd.Alg.symmDiv_recip` (`Freyd/S2_30.lean:237`); and
    `(R/ₛS)(S/ₛT) ⊑ R/ₛT` — `Freyd.Alg.symmDiv_comp` (`:254`). \ #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`
    (`:203`) — the cheatsheet's row. The meet is inside the definition, not inside the statement, so
    it stays under the label: what the pictures show is that `/ₛ` is converse-symmetric and
-   transitive, i.e. behaves like an equality of columns.]],
-  stack(dir: ttb, spacing: 6pt, P(p-sdiv-recip, s: 80%), P(p-sdiv-comp, s: 80%)),
+   transitive, i.e. behaves like an equality of columns. No bar: a meet of two converses is not a
+   quotient with a remainder.]
+   #v(4pt)
+   #stack(dir: ttb, spacing: 6pt, Pl(p-sdiv-recip), Pl(p-sdiv-comp))],
 )
 
 *Negation is `⇨` into `𝟘`.* `∼R ≜ R ⇨ 𝟘` (`AOP/A4_5.lean:44`) on top of `R ⇨ S ≜ ⊔ {X : X ∩ R ⊑ S}`
