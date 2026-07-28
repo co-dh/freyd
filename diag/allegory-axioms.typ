@@ -1028,6 +1028,49 @@ and that one draws.
 both structures the two operations agree by uniqueness of adjoints, with neither definition being
 unfolded.
 
+*What `/` is, without a complement anywhere: long division.* `R / S` is how much of `R` you can lay
+down before `S` still fits inside what is left, and the figure says exactly that. Read the bar
+left to right, as a composite: `R / S` first, then `S`, and the two together stay inside `R` with
+room to spare. That leftover is the whole reason the cancel law is `(R/S) S ⊑ R` and not an
+equality, and it is where the quotient's *largest* comes from — push the boundary right and `S` no
+longer fits.
+
+Solid is what the equation pins: `R`'s left edge, `S`'s left edge, and the stretch before `S`, which
+is what `R / S` measures. Dashed is the slack: nothing to the right of `S` is determined by
+`T S ⊑ R`, so `S`'s far edge, `R`'s far edge and the gap between them are all drawn as not-pinned.
+
+Read it as a *measurement*, not as a containment of relations. `R : a → c` and `S : b → c` are not
+in the same hom-set, so `S` is not a sub-relation of `R` and neither is `R / S` — what sits inside
+`R` is the composite `(R/S) S`, which does have `R`'s type. The bar is that composite, and the
+quotient is how far along it reaches. Pushed too far, the metaphor breaks in the usual place:
+`⊥ / ⊥ = ⊤`, which no picture of a part of `⊥` is going to show.
+
+#fig({
+  let y0 = -0.55
+  let y1 = 0.55
+  let xq = 3.4                       // R/S ends, S begins
+  let xs = 6.4                       // S ends
+  let xr = 8.6                       // R ends
+  let sol = (thickness: 1.1pt, paint: black)
+  let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
+  d.rect((0, y0), (xr, y1), fill: rgb("#f2c9c4"), stroke: none)
+  d.rect((xq, y0), (xs, y1), fill: rgb("#cfe6cd"), stroke: none)
+  d.line((0, y0), (0, y1), stroke: sol)
+  d.line((xq, y0), (xq, y1), stroke: sol)
+  d.line((0, y1), (xq, y1), stroke: sol)
+  d.line((0, y0), (xq, y0), stroke: sol)
+  d.line((xq, y1), (xr, y1), stroke: dsh)
+  d.line((xq, y0), (xr, y0), stroke: dsh)
+  d.line((xs, y0), (xs, y1), stroke: dsh)
+  d.line((xr, y0), (xr, y1), stroke: dsh)
+  d.content((xq / 2, 0), text(11pt)[$R slash S$])
+  d.content(((xq + xs) / 2, 0), text(11pt)[$S$])
+  d.content((xr / 2, y1 + 0.5), text(11pt)[$R$])
+  d.content(((xs + xr) / 2, y0 - 0.5), text(9pt)[the slack: why `⊑`])
+})
+#align(center, src[transcribed — the universal property has a Lean statement, this metaphor does
+not])
+
 #table(
   columns: (9.4cm, 1fr),
   align: (left + horizon, center + horizon),
