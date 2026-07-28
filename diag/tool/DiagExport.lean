@@ -148,6 +148,13 @@ inductive Cell where
       dropping the frame on the way through the mirror would draw the two sides of
       `(R /ₛ S)° = S /ₛ R` as two different kinds of thing. -/
   | dagger (label : String) (dashed : Bool)
+  /-- A MAP, drawn as a plain rectangle.  The chamfer says which way a relation runs; a map runs one
+      way by construction, so there is nothing for the corner to disambiguate, and dropping it makes
+      the maps findable at a glance — which is what shunting, and most of the division laws, turn
+      on.  Recognised from the LOCAL CONTEXT: a statement that quantifies over `f` with a hypothesis
+      `Map f` is the only place the walk can learn it, and inside the telescope that hypothesis is
+      simply there to be read. -/
+  | mbox (label : String)
 
 instance : Inhabited Cell := ⟨.wire⟩
 
@@ -206,7 +213,7 @@ mutual
 
 partial def Cell.width : Cell → Float
   | .wire => wireW
-  | .box l | .dbox l => boxWidth l
+  | .box l | .dbox l | .mbox l => boxWidth l
   | .gen _ w _ => w
   | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
@@ -350,6 +357,9 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
   | .wire => hwire x (x + wireW) y iv
   | .box l =>
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}{inv iv})"]
+  | .mbox l =>
+    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, \
+        chamfer: false{inv iv})"]
   | .gen fn w lead =>
     -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
     -- offers are the strands its neighbours expect.  `strdiag.typ`'s defaults are narrower; this
@@ -568,6 +578,19 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
 /-- A label at the top of its own picture or box: no outer parentheses. -/
 def label (e : Expr) : MetaM String := labelAt 0 e
 
+/-- Whether the local context carries a `Map` hypothesis for this arrow.  No threading needed: the
+    walk runs inside the statement's own `forallTelescope`, so `Map f` is a local hypothesis right
+    there to be read, exactly as the reader of the Lean statement reads it. -/
+def isMap (e : Expr) : MetaM Bool := do
+  unless e.isFVar do return false
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    match d.type.getAppFnArgs with
+    | (``Freyd.Alg.Map, args) | (``Freyd.Diag.Map, args) =>
+      if args.back? == some e then return true
+    | _ => pure ()
+  return false
+
 mutual
 
 /-- One cell for `e`, used where a sub-picture is not available (inside a meet or a converse). -/
@@ -649,7 +672,7 @@ partial def toCell (e : Expr) : MetaM Cell := do
     -- list of dashed constructs above stays the only place that classification is made.
     | some r => return .dagger (← label r) (match ← toCell r with | .dbox _ => true | _ => false)
     | none => return .box (← label e)
-  | _ => return .box (← label e)
+  | _ => if ← isMap e then return .mbox (← label e) else return .box (← label e)
 
 /-- The run of cells for `e`, flattening composition. -/
 partial def toCells (e : Expr) : MetaM (Array Cell) := do

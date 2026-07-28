@@ -112,12 +112,16 @@
 /// greyed-out prose this repo's notes use for provenance.  It is a hint, not a second kind of box.
 #let CHAMFER = 0.35     // fraction of the height taken off the corner
 #let TINT = rgb("#dbe8f7")
-#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false, fill: none) = {
+#let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false, fill: none,
+          chamfer: true) = {
   let (x, y) = p
   let paint = if invert { white } else { black }
   let paper = if fill != none { fill } else if invert { black } else { white }
   let st = if dashed { (thickness: lw, paint: paint, dash: "dashed") } else { (thickness: lw, paint: paint) }
-  let c = CHAMFER * h
+  // `chamfer: false` is a MAP: a plain rectangle.  The cut corner exists to say which way a relation
+  // runs, and a map runs one way by construction — there is nothing for the corner to disambiguate.
+  // It also makes maps findable at a glance, which is what most of the calculational steps turn on.
+  let c = if chamfer { CHAMFER * h } else { 0.0 }
   let pts = if flip {
     ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
   } else {

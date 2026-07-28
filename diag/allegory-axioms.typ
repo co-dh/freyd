@@ -24,15 +24,11 @@
 //     Freyd.Diag.Injective Freyd.Diag.Surjective Freyd.Diag.ineq_SV Freyd.Diag.ineq_TOT \
 //     Freyd.Diag.ineq_INJ Freyd.Diag.ineq_SUR Freyd.Diag.shunt_right Freyd.Diag.shunt_left \
 //     Freyd.Diag.entire_inter_iff Freyd.Diag.CartBicat.«∇_slide_conv»
-// and, for the last section, the ALLEGORY layer's division and negation:
+// and, for the last section, the ALLEGORY layer's division:
 //   ./scripts/diag-export Freyd.Alg.le_div_iff Freyd.Alg.le_leftDiv_iff \
 //     Freyd.Alg.DivisionAllegory.div_comp_le Freyd.Alg.leftDiv_comp_le Freyd.Alg.div_comp_assoc \
 //     Freyd.Alg.leftDiv_comp Freyd.Alg.map_comp_div Freyd.Alg.div_comp_recip_map \
-//     Freyd.Alg.symmDiv_recip Freyd.Alg.symmDiv_comp Freyd.Alg.inter_neg_zero \
-//     Freyd.Alg.neg_union Freyd.Alg.neg_inter Freyd.Alg.union_neg_eq_top \
-//     Freyd.Alg.le_iff_inter_neg_zero Freyd.Alg.schroeder_left Freyd.Alg.schroeder_right \
-//     Freyd.Alg.neg_div Freyd.Alg.div_eq_neg_comp Freyd.Alg.topHom_thenRel \
-//     Freyd.Alg.RelSet.galoisPF
+//     Freyd.Alg.symmDiv_recip Freyd.Alg.symmDiv_comp
 // and the PROOF chains:
 //   ./scripts/diag-export Freyd.Diag.CartBicat.conv_slide
 //   ./scripts/diag-export --proof Freyd.Diag.CartBicat.conv_comp Freyd.Diag.shunt_right \
@@ -87,8 +83,8 @@
 #import "generated/Freyd.Diag.shunt_left.typ": lhs as sl-a, rhs as sl-b
 #import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b
 #import "generated/Freyd.Diag.entire_inter_iff.proof.typ": branches as entb
-// The allegory layer's §4.4–4.5 (last section).  `Freyd.Alg`, not `Freyd.Diag`: division and
-// negation are theorems of `Freyd/S2_30.lean` and `AOP/A4_4`–`A4_5`, and of nothing in `diag/`.
+// The allegory layer's division (last section).  `Freyd.Alg`, not `Freyd.Diag`: `/` is a theorem of
+// `Freyd/S2_30.lean` and `AOP/A4_4`, and of nothing in `diag/`.
 #import "generated/Freyd.Alg.le_div_iff.typ": pic as p-le-div
 #import "generated/Freyd.Alg.le_leftDiv_iff.typ": pic as p-le-ldiv
 #import "generated/Freyd.Alg.DivisionAllegory.div_comp_le.typ": pic as p-div-cancel
@@ -99,17 +95,6 @@
 #import "generated/Freyd.Alg.div_comp_recip_map.typ": pic as p-div-map
 #import "generated/Freyd.Alg.symmDiv_recip.typ": pic as p-sdiv-recip
 #import "generated/Freyd.Alg.symmDiv_comp.typ": pic as p-sdiv-comp
-#import "generated/Freyd.Alg.inter_neg_zero.typ": pic as p-neg-contra
-#import "generated/Freyd.Alg.neg_union.typ": pic as p-neg-union
-#import "generated/Freyd.Alg.neg_inter.typ": pic as p-neg-inter
-#import "generated/Freyd.Alg.union_neg_eq_top.typ": pic as p-neg-excl
-#import "generated/Freyd.Alg.le_iff_inter_neg_zero.typ": pic as p-le-neg
-#import "generated/Freyd.Alg.schroeder_left.typ": pic as p-schroeder-l
-#import "generated/Freyd.Alg.schroeder_right.typ": pic as p-schroeder-r
-#import "generated/Freyd.Alg.neg_div.typ": pic as p-neg-div
-#import "generated/Freyd.Alg.div_eq_neg_comp.typ": pic as p-div-neg
-#import "generated/Freyd.Alg.topHom_thenRel.typ": pic as p-lex
-#import "generated/Freyd.Alg.RelSet.galoisPF.typ": pic as p-galois
 
 #set page(width: 25cm, height: auto, margin: 1.5cm)
 #set text(size: 11.5pt)
@@ -502,9 +487,12 @@ second monoidal product, and its `▷`/`◁` open and close a branch a particle 
 the same fork-runs-join shape as a meet, on a different product. A residual is a *cut*: `R / S` is
 `R ⨟• S⊥` by definition, the black composition is drawn on black ground and the linear adjoint `S⊥`
 is `S` mirrored and negated, so the picture is `R` on black beside `S` mirrored in a white island.
-Both conventions are `DiagrammaticAlgebraOfFirstOrderLogic.pdf`'s own; the last section of this note
-sets out where the paper states them, and what goes wrong if a residual is drawn as a box labelled
-`R / S` instead.
+Both conventions are `DiagrammaticAlgebraOfFirstOrderLogic.pdf`'s own, and it states the second one
+twice: on p. 2, given `c`, "take its mirror image and then its photographic negative" — that is
+`c⊥`; and on p. 10, translating Peirce's existential graphs, "each cut [is] a *color switch*". Its
+Fig. 4 draws the black composition the same way, as a black ground, which is what (δl) and (δr) are
+pictures of. Nesting alternates the ground, so the white island inside a black region is Peirce's
+double cut.
 
 #table(
   columns: (9.4cm, 1fr),
@@ -1051,37 +1039,41 @@ conditions (`AOP/A5_7.lean:67`) and the catamorphism work (`AOP/A6_5.lean:372`).
 most-used lemma of the AOP layer.
 
 
-= Division and negation — the cheatsheet's §8, drawn
+= Division — half of the cheatsheet's §8, and the half that matters
 
-`AOP/Cheatsheet.typ`'s eighth section is B&dM §4.4–4.5: the two divisions, the symmetric division,
-negation, and Schröder's rule. Every law of it that is about arrows rather than elements is a
-theorem here — division in `Freyd/S2_30.lean` (Freyd's §2.31), implication, the lexical order and
-the division map-laws in `AOP/A4_4.lean`, negation and Schröder in `AOP/A4_5.lean` — so every one of
-them draws. Not one of them is a theorem of the diagrammatic tower, and the pictures say so.
+`AOP/Cheatsheet.typ`'s eighth section is B&dM §4.4–4.5, division and negation. Only division is
+drawn here, and the reason is not layout.
 
-*Negation is a CUT, and that is what makes these pictures pictures.*
-`DiagrammaticAlgebraOfFirstOrderLogic.pdf` says how, twice. On p. 2: given `c`, "take its mirror
-image and then its photographic negative" — that is `c⊥`, and its figure is a box on a black ground
-with the chamfer on the other side. On p. 10, translating Peirce's existential graphs, where a
-closed curve round a subgraph is negation: to move from those to these diagrams "it suffices to
-treat lines and predicate symbols in the obvious way and each cut as a *color switch*". So a
-complement is not a frame drawn round a picture and it is certainly not a box with `∼R` printed
-inside it — it is the *same picture on the other colour*. Fig. 4 of that paper draws the black
-composition `⨟•` the same way, as a black band round the run, which is what its (δl) and (δr) are
-pictures of.
+*Negation is not how the book specifies programs.* Grepping the formalisation: `∼` and
+`BooleanAllegory` occur in four files of `AOP/`, and every one of them is theory. §4.5 itself; the
+complement of a *coreflexive*, `∼X ∩ 𝟙`, so that a conditional can split on a guard
+(`AOP/A5_3.lean:188`); one direction of "well-founded = inductive" (`AOP/A6_5.lean:203`), the other
+direction needing nothing; and subtraction. Chapters 7 to 10, where the programs are actually
+specified and derived — greedy, thinning, dynamic programming, Horner, knapsack, paragraph
+formatting, string edit, bracketing, compression — are twenty-four files with *zero* occurrences,
+working under `UnguardedPowerLCDA` and `TabularUnitaryDivisionAllegory`: locally complete, division,
+power objects, not Boolean. One thing in those chapters looks like negation and is not:
+`mnl R ≜ min(R° ⇨ R)` (`AOP/A7_1.lean:432`) uses *implication*, a `Sup` that lives in any locally
+complete allegory. `∼R` is its special case `R ⇨ 𝟘`, and the book only takes it in §4.5.
 
-*Cuts nest, and nesting alternates the ground.* That is Peirce's double cut: `∼∼R = R` is two
-grounds cancelling. It is also why `R / Y = ∼(∼R ; Y°)` comes out as a black region with a white
-island inside it — the shape of Fig. 4's (νr°) — rather than as a box repeating its own label. The
-residual of the earlier section is drawn this way too: `residual R S` is `R ⨟• S⊥` by definition
-(`diag/FO.lean:162`), so the exporter unfolds it and the picture shows `R` on black beside `S`
-mirrored in a white island.
+So the specification vocabulary is `;`, `∩`, `∪`, `°`, `/`, `Λ`, `min`/`max`, `thin` and
+catamorphisms, and a note about what those pictures look like has no business spending a page on the
+one operation the book keeps at arm's length.
 
-*What stays a box, and why.* Dashed still means "no definition in terms of the generators to
-unfold, and no metaphor either", and after the cut and the long-division bar are taken out that is
-three things: `/ₛ`, a meet of two converses; `⇨`, a `Sup`; and `⨾`, built from `⇨`. A dashed box
-takes a label, so whatever sits under one is set as text — `(R /ₛ S)°` is a mirrored box reading
-`R /ₛ S`, not a picture of the meet in its definition.
+*Which also settles which picture of `/` is the right one.* There are two. `residual` is `R ⨟• S⊥`
+and draws as a cut — that is the section above — but `S⊥` is `∼(S°)`, so the picture needs a
+complement, and the paper's Prop. 6.5 makes every homset of a first order bicategory a Boolean
+algebra. Division asks for nothing of the kind. A `DivisionAllegory` (`Freyd/S2_30.lean:30`) wants
+one thing, the Galois connection `T ⊑ R/S ⟺ T S ⊑ R`, and `Rel(Set)` satisfies it with a bare `∀`:
+`(R / S) x y ≜ ∀z. S y z → R x z` (`AOP/A6_1_RelSet.lean:157`), no negation in the definition. `Rel`
+over a non-Boolean topos is a division allegory with no `∼` to draw with at all. What follows is the
+account that needs none.
+
+*What stays a box.* Dashed means "no definition to unfold and no metaphor either", which here leaves
+one thing: `/ₛ`, a meet of two converses. A dashed box takes a label, so whatever sits under one is
+set as text — `(R /ₛ S)°` is a mirrored box reading `R /ₛ S`, not a picture of the meet in its
+definition. Maps are the other exception, the other way round: `f` is a plain *rectangle*, since the
+chamfer exists to say which way a relation runs and a map runs one way by construction.
 
 *The residual drawn earlier is this `/`.* `«≤_residual_iff»` (`diag/FO.lean:171`) and `le_div_iff`
 (`Freyd/S2_30.lean:54`) are the same Galois statement, `T S ⊑ R ⟺ T ⊑ R/S`, so in a model carrying
@@ -1120,152 +1112,61 @@ not])
 // `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before scaling
 // — and a second picture column for the long-division figure would have squeezed them to 60%.  One
 // column at the full 22cm takes both side by side at 90%, and the six rows the metaphor does not
-// reach simply have nothing beside them.  The negation table below keeps the two-column shape: its
-// pictures are small and none of them is a division.
+// reach simply have nothing beside them.  Every other table in the note keeps the two-column shape:
+// their pictures are small and none of them is a division.
 #table(
   columns: (1fr,),
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*the ten laws, their exported pictures, and — where the metaphor reaches — the same
     law as long division*]),
 
-  [*Division is the right adjoint of composition:* `T ⊑ R/S ⟺ T S ⊑ R` — `Freyd.Alg.le_div_iff`
-   (`Freyd/S2_30.lean:54`). The cheatsheet's `\` reversed, since Freyd divides on the right. \
-   #src[Everything else in the division half of §8 is this one line applied twice and read
-   backwards; `div` itself is a field of `DivisionAllegory` with no definition to unfold.]
+  [*Division is the right adjoint of composition:* `T ⊑ R/S ⟺ T S ⊑ R`
    #v(4pt)
-   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
-     Pl(p-le-div), divbar(($T$, "q"), ($S$, "d"), slack: 1.5,
-       note: [any `T` that fits; `R/S` is the longest]))],
+   #Pl(p-le-div)],
 
-  [`T ⊑ S\R ⟺ S T ⊑ R` — `Freyd.Alg.le_leftDiv_iff` (`:309`), the mirror. \
-   #src[`S\R ≜ (R°/S°)°` (`:301`), so left division is right division conjugated by the converse
-   and is not a second primitive.]
+  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[`S\R ≜ (R°/S°)°`: left division is right division conjugated by
+   the converse, not a second primitive.]
    #v(4pt)
    #Pl(p-le-ldiv)],
 
-  [*cancel:* `(R/S) S ⊑ R` — the field `DivisionAllegory.div_comp_le` (`:35`); and `S (S\R) ⊑ R` —
-   `Freyd.Alg.leftDiv_comp_le` (`:317`). \ #src[The counit of each adjunction: the quotient composed
-   back with the divisor lands under the numerator, never on it. This is the law the figure above
-   the table draws, so it is not drawn again here.]
+  [*cancel:* `(R/S) S ⊑ R`, and `S (S\R) ⊑ R` \ #src[The counit of each adjunction: the quotient
+   composed back with the divisor lands under the numerator, never on it. This is the law the figure
+   above the table draws, so it is not drawn again here.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-div-cancel), Pl(p-ldiv-cancel))],
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` — `Freyd.Alg.div_comp_assoc` (`:141`); and
-   `(S T)\R = T\(S\R)` — `Freyd.Alg.leftDiv_comp` (`:332`). \ #src[Dividing by a composite one
-   factor at a time. The composition is drawn on the left of each equation and swallowed into a
-   label on the right, which is exactly what "the calculus cannot see inside `/`" looks like — and
-   is exactly what the bar shows instead: two tiles laid where there was one.]
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`, and `(S T)\R = T\(S\R)` \ #src[Dividing by a composite
+   one factor at a time. The composition is drawn on the left of each equation and swallowed into a
+   label on the right — and the bar shows what that swallowing hides: two tiles laid where there was
+   one.]
    #v(4pt)
    #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
      stack(dir: ttb, spacing: 6pt, Pl(p-div-assoc), Pl(p-ldiv-assoc)),
      divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2))],
 
-  [*maps:* `f (R/S) = (f R)/S` — `Freyd.Alg.map_comp_div` (`AOP/A4_4.lean:366`); and
-   `R/(f S) = (R/S) f°` — `Freyd.Alg.div_comp_recip_map` (`:376`). \ #src[Both are the shunting rule
-   of the previous section, spent twice inside an indirect-equality argument. The second is the one
-   that pays: a map moves out of a denominator and reappears as `f°` outside the box. No bar: the
-   metaphor has no handle on prefixing by a map.]
+  [*maps:* `f (R/S) = (f R)/S`, and `R/(f S) = (R/S) f°` \ #src[`f` is a rectangle, so the first
+   law reads off the picture: the same three pieces, bracketed two ways. That is exactly the licence
+   to drop the brackets and write `f R / S`. The second is the one that pays — a map moves out of a
+   denominator and reappears as `f°` outside the box. Both are the shunting rule of the previous
+   section, spent twice. No bar: the metaphor has no handle on prefixing by a map.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-map-div), Pl(p-div-map))],
 
-  [*symmetric division:* `(R/ₛS)° = S/ₛR` — `Freyd.Alg.symmDiv_recip` (`Freyd/S2_30.lean:237`); and
-   `(R/ₛS)(S/ₛT) ⊑ R/ₛT` — `Freyd.Alg.symmDiv_comp` (`:254`). \ #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`
-   (`:203`) — the cheatsheet's row. The meet is inside the definition, not inside the statement, so
-   it stays under the label: what the pictures show is that `/ₛ` is converse-symmetric and
-   transitive, i.e. behaves like an equality of columns. No bar: a meet of two converses is not a
-   quotient with a remainder.]
+  [*symmetric division:* `(R/ₛS)° = S/ₛR`, and `(R/ₛS)(S/ₛT) ⊑ R/ₛT` \
+   #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the definition, not inside the statement, so it
+   stays under the label: what the pictures show is that `/ₛ` is converse-symmetric and transitive,
+   i.e. behaves like an equality of columns. No bar: a meet of two converses is not a quotient with
+   a remainder.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-sdiv-recip), Pl(p-sdiv-comp))],
 )
 
-*Negation is `⇨` into `𝟘`.* `∼R ≜ R ⇨ 𝟘` (`AOP/A4_5.lean:44`) on top of `R ⇨ S ≜ ⊔ {X : X ∩ R ⊑ S}`
-(`AOP/A4_4.lean:100`), so it needs joins of arbitrary families — a *locally complete* distributive
-allegory — and involutivity `∼∼R = R` is an extra axiom, `BooleanAllegory` (`AOP/A4_5.lean:123`).
-The two rows marked _boolean_ spend it, and so does the second half of the division-through-negation
-row.
+*The measurement.* Ten laws, ten pictures, and not one of them shows a generator. That is the
+honest result: `∩`, `∪`, `°` and composition are what the Frobenius generators build, and `/` is
+none of those — it is posited, a field of `DivisionAllegory` with nothing to unfold. Eight of the
+ten carry the long-division bar instead, which is a metaphor for the universal property rather than
+a composite of anything, and the two that do not say why in place.
 
-#table(
-  columns: (9.4cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*statement*], [*picture, from the Lean statement*]),
-
-  [`R ⊑ S ⟺ R ∩ ∼S = 𝟘` — `Freyd.Alg.le_iff_inter_neg_zero` (`AOP/A4_5.lean:144`). \
-   #src[The bridge every Schröder proof crosses: containment turned into a disjointness, where
-   `comp_inter_zero_iff` can rotate a composite through a converse.]],
-  P(p-le-neg, s: 80%),
-
-  [`R ∩ ∼R = 𝟘` — `Freyd.Alg.inter_neg_zero` (`:53`). \ #src[Non-contradiction, and the only law of
-   the section that holds with no completeness or Boolean assumption beyond the `⇨` that defines
-   `∼`.]],
-  P(p-neg-contra, s: 80%),
-
-  [*De Morgan:* `∼(R ∪ S) = ∼R ∩ ∼S` — `Freyd.Alg.neg_union` (`:58`). \ #src[A cut round a tape
-   equals a meet of two cuts. Nothing in this picture is a label: `∪`, `∩` and `∼` each have a shape,
-   and the equation is the three of them rearranging.]],
-  P(p-neg-union, s: 80%),
-
-  [*De Morgan, other side* #text(9.2pt, luma(105))[(boolean)]: `∼(R ∩ S) = ∼R ∪ ∼S` —
-   `Freyd.Alg.neg_inter` (`:131`). \ #src[Needs `∼∼R = R`: it is `neg_union` applied to `∼R`, `∼S`
-   and then un-negated.]],
-  P(p-neg-inter, s: 80%),
-
-  [*excluded middle* #text(9.2pt, luma(105))[(boolean)]: `R ∪ ∼R = ⊤` — `Freyd.Alg.union_neg_eq_top`
-   (`:139`). \ #src[`boolean_iff` (`:101`) is the converse: `∼∼` is the identity everywhere exactly
-   when this holds everywhere. The two are one axiom, stated two ways.]],
-  P(p-neg-excl, s: 80%),
-
-  [*Schröder:* `R S ⊑ T ⟺ R° ∼T ⊑ ∼S` — `Freyd.Alg.schroeder_left` (`:181`); and
-   `R S ⊑ T ⟺ ∼T S° ⊑ ∼R` — `Freyd.Alg.schroeder_right` (`:188`). \ #src[The workhorse of §4.5, and
-   the picture is the clearest in this section: a two-box composite on the left, and on the right
-   the *same* two boxes, one mirrored and both on black. Which factor keeps its orientation is which
-   form you are in.]],
-  stack(dir: ttb, spacing: 6pt, P(p-schroeder-l, s: 80%), P(p-schroeder-r, s: 80%)),
-
-  [*division through negation:* `(∼R)/Y = ∼(R Y°)` — `Freyd.Alg.neg_div` (`:275`), which holds
-   without the Boolean axiom; and `R/Y = ∼((∼R) Y°)` — `Freyd.Alg.div_eq_neg_comp` (`:293`), which
-   needs it. \ #src[The cheatsheet's "neg. division" row, and the row that earns the notation: on
-   the right of the second equation `/` has become a black region with a white island in it — a
-   composite of the generators and two colour switches. In a Boolean allegory division is not
-   independent structure at all.]],
-  stack(dir: ttb, spacing: 6pt, P(p-neg-div, s: 80%), P(p-div-neg, s: 80%)),
-
-  [*lexical order:* `⊤ ⨾ R = R` — `Freyd.Alg.topHom_thenRel` (`AOP/A4_4.lean:304`). \
-   #src[`R ⨾ S ≜ R ∩ (R° ⇨ S)` (`:269`) — compare by `R`, break ties by `S`. Preorders are closed
-   under it (`thenRel_transitive`, `:282`) and `⊤` is its unit, which is the cheatsheet's "unit
-   `Π`".]],
-  P(p-lex, s: 80%),
-
-  [*Galois, point-free:* `f(x) ≼ y ⟺ x ⊴ g(y)` is `R f° = g S` — `Freyd.Alg.RelSet.galoisPF`
-   (`AOP/A4_7_Galois.lean:36`), with `galois_iff` (`:63`) proving it equivalent to the pointwise
-   form. \ #src[Stated in `Rel(Set)` rather than in an allegory, because the pointwise side needs
-   elements; `graph f` is `f` as a relation. The picture is the point-free form's whole advantage —
-   two composites, no quantifiers.]],
-  P(p-galois, s: 80%),
-)
-
-*The measurement.* Twenty-one pictures. Nine show a *generator* — a cut, a meet or a tape: every row
-of the negation table except the lexical order and the Galois connection, so §4.5 draws essentially
-in full. Not one of the division laws does, and eight of the ten instead carry the long-division
-bar, which is a metaphor for the universal property and not a composite of anything.
-
-*And they cannot, at the generality Freyd states them.* This is the one thing to take from the
-section. Every picture of `/` above goes through a complement: `R / S` drawn as a cut is `R ⨟• S⊥`,
-and `S⊥` is `∼(S°)`. But division needs no complement. A `DivisionAllegory` (`Freyd/S2_30.lean:30`)
-asks for one thing, the Galois connection `T ⊑ R/S ⟺ T S ⊑ R`, and `Rel(Set)` satisfies it with a
-bare `∀`: `(R / S) x y ≜ ∀z. S y z → R x z` (`AOP/A6_1_RelSet.lean:157`), no negation anywhere in
-the definition. `Rel` over a non-Boolean topos is a division allegory too, and there is no `∼` to
-draw with at all.
-
-The diagrammatic route buys the picture at a price, and the price is exactly Booleanness: the
-paper's Prop. 6.5 is that *every homset of a first order bicategory is a Boolean algebra*. So the
-dashed box on `DivisionAllegory.div` is not a gap in the notation waiting to be filled — it is the
-correct picture. Restating these ten laws over `residual` would draw them, and would silently
-replace each one by a strictly weaker theorem. `div_eq_neg_comp` is where the trade is made in the
-open: it assumes `∼∼R = R` and gets `/` as two colour switches, and it is the only row here that
-should.
-
-*What is not drawn, and why.* The cheatsheet's pointwise row,
-`x (T\U) y ⟺ ∀w. w T x ⟹ w U y`, quantifies over elements and has no arrow to draw; the strict part
-`|R| ≜ R ∩ ∼R°` has no definition in the repo to export. Both are one-line additions if a later
-section wants them — the first as a `Rel(Set)` lemma beside `galoisPF`, the second beside `neg`.
+*What is not drawn, and why.* The cheatsheet's pointwise row, `x (T\U) y ⟺ ∀w. w T x ⟹ w U y`,
+quantifies over elements and has no arrow to draw. The rest of §8 is the negation half, and the
+first paragraphs of this section are the argument for leaving it out.
