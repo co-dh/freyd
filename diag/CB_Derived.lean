@@ -32,7 +32,7 @@ def top (a b : Word O) : a ⟶ b := «!» ≫ «?»
 theorem «≤_top» {a b : Word O} (R : a ⟶ b) : R ≤ (top a b) := by
   -- `R = R;𝟙 ≤ R;(!;?) = (R;!);? ≤ !;? = ⊤`.
   have h1 : (R ≫ 𝟙 b) ≤ (R ≫ «!» ≫ «?») :=
-    OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙_≤_!?» b)
+    OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙≤!?» b)
   -- Both `!`s and both `?`s are named: `top a b` is `!ₐ ; ?_b`, and a statement whose ends are
   -- `a` and `b` cannot say which object the `𝕀` in the middle came from.
   have h2 : ((R ≫ «!» (n := b)) ≫ «?» (n := b)) ≤ («!» (n := a) ≫ «?» (n := b)) :=

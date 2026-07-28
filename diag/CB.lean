@@ -58,15 +58,15 @@ class CartBicat (O : Type u) extends SymMonCat.{v} O where
   «∇_unit» (n : Word O) : (𝟙 n ⊗ₕ «?») ≫ «∇» = 𝟙 n
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
-  «∇Δ_≤_𝟙» (n : Word O) : («∇» ≫ Δ) ≤ (𝟙 (n ⊗ n))
+  «∇Δ≤𝟙» (n : Word O) : («∇» ≫ Δ) ≤ (𝟙 (n ⊗ n))
   /-- (38): `𝟙 ≤ Δ;∇`.  With (37), `Δ ⊣ ∇`. -/
-  «𝟙_≤_Δ∇» (n : Word O) : (𝟙 n) ≤ (Δ ≫ «∇»)
+  «𝟙≤Δ∇» (n : Word O) : (𝟙 n) ≤ (Δ ≫ «∇»)
   /-- (39): `?;! ≤ 𝟙_I`.  With (40), `! ⊣ ?`. -/
   -- `n` is named here: it is the object the round trip passes THROUGH, and both ends of the
   -- statement are `𝕀`, so nothing else can determine it.
-  «?!_≤_𝟙» (n : Word O) : («?» (n := n) ≫ «!») ≤ (𝟙 (𝕀 : Word O))
+  «?!≤𝟙» (n : Word O) : («?» (n := n) ≫ «!») ≤ (𝟙 (𝕀 : Word O))
   /-- (40): `𝟙 ≤ !;?`.  With (39), `! ⊣ ?`. -/
-  «𝟙_≤_!?» (n : Word O) : (𝟙 n) ≤ («!» ≫ «?»)
+  «𝟙≤!?» (n : Word O) : (𝟙 n) ≤ («!» ≫ «?»)
 
   /-- (41), left form: `(𝟙 ⊗ Δ);(∇ ⊗ 𝟙) = ∇;Δ`. -/
   frob_left (n : Word O) : (𝟙 n ⊗ₕ Δ) ≫ («∇» ⊗ₕ 𝟙 n) = («∇» ≫ Δ : _)
@@ -98,12 +98,12 @@ variable {O : Type u} [CartBicat.{v} O]
     the reverse is the paper's displayed derivation — weaken the identity on one strand of the
     bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
 theorem special (n : Word O) : Δ ≫ ∇ = 𝟙 n := by
-  refine OrderedCat.«≤_antisymm» ?_ («𝟙_≤_Δ∇» n)
+  refine OrderedCat.«≤_antisymm» ?_ («𝟙≤Δ∇» n)
   -- `Δ;∇ ≤ Δ;(𝟙 ⊗ (!;?));∇`, by (40) under `⊗` and then under `;`.
   have hstep : (Δ ≫ ∇) ≤ (Δ ≫ (𝟙 n ⊗ₕ («!» ≫ «?»)) ≫ ∇) := by
     have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ ∇) ≤ ((𝟙 n ⊗ₕ («!» ≫ «?»)) ≫ ∇) :=
       OrderedCat.comp_mono
-        (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙_≤_!?» n)) (OrderedCat.«≤_refl» _)
+        (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙≤!?» n)) (OrderedCat.«≤_refl» _)
     rw [SymMonCat.tensHom_id, Cat.id_comp] at h
     exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) h
   -- The right-hand side is `𝟙`: split the `⊗`, then use the counit law (10) on the left half and
