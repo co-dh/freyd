@@ -156,28 +156,11 @@ theorem runitInv_cancel {a d : 𝒞} (f : a ⟶ d) : runitInv a ≫ runit a ≫ 
 theorem swap_cancel {a b d : 𝒞} (f : a ⊗ b ⟶ d) : swap a b ≫ swap b a ≫ f = f := by
   rw [← Cat.assoc, swap_swap, Cat.id_comp]
 
-/-! The four naturality laws, each with the rest of the composite spelled out.  Same reason as
-    `tensHom_merge`: in the normal form the pair the law names is never adjacent at the top, so the
-    law as stated cannot fire.  These are what let a proof push a coherence iso past an arrow
-    without first re-bracketing by hand — hand them to `coherence [...]`. -/
-
-/-- `α ; (R ⊗ (S ⊗ T)) ; f`, reached from `((R ⊗ S) ⊗ T) ; α ; f`. -/
-theorem tensAssoc_nat_tail {a a' b b' c c' d : 𝒞} (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c')
-    (f : a' ⊗ (b' ⊗ c') ⟶ d) :
-    ((R ⊗ₕ S) ⊗ₕ T) ≫ tensAssoc a' b' c' ≫ f = tensAssoc a b c ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ f := by
-  rw [← Cat.assoc, tensAssoc_nat, Cat.assoc]
-
-/-- `λ` past an arrow: `(𝟙_I ⊗ R) ; λ ; f = λ ; R ; f`. -/
-theorem lunit_nat_tail {a b d : 𝒞} (R : a ⟶ b) (f : b ⟶ d) :
-    (𝟙 (𝕀 : 𝒞) ⊗ₕ R) ≫ lunit b ≫ f = lunit a ≫ R ≫ f := by
-  rw [← Cat.assoc, lunit_nat, Cat.assoc]
-
-/-- `ρ` past an arrow: `(R ⊗ 𝟙_I) ; ρ ; f = ρ ; R ; f`. -/
-theorem runit_nat_tail {a b d : 𝒞} (R : a ⟶ b) (f : b ⟶ d) :
-    (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b ≫ f = runit a ≫ R ≫ f := by
-  rw [← Cat.assoc, runit_nat, Cat.assoc]
-
-/-- `γ` past a tensor: `(R ⊗ S) ; γ ; f = γ ; (S ⊗ R) ; f`. -/
+/-- `γ` past a tensor: `(R ⊗ S) ; γ ; f = γ ; (S ⊗ R) ; f`.  Same reason as `tensHom_merge`: in the
+    normal form the pair the law names is never adjacent at the top, so `swap_nat` as stated cannot
+    fire.  This is what lets a proof push the symmetry past an arrow without first re-bracketing by
+    hand — hand it to `coherence [...]`.  Only the laws the proofs below consume are restated this
+    way; mathlib generates the whole family with `@[reassoc]`. -/
 theorem swap_nat_tail {a a' b b' d : 𝒞} (R : a ⟶ a') (S : b ⟶ b') (f : b' ⊗ a' ⟶ d) :
     (R ⊗ₕ S) ≫ swap a' b' ≫ f = swap a b ≫ (S ⊗ₕ R) ≫ f := by
   rw [← Cat.assoc, swap_nat, Cat.assoc]

@@ -270,9 +270,7 @@ theorem bend_unbend {a b : 𝒞} (S : b ⟶ a) : bend (unbend S) = S := by
         coherence
     _ = (S ≫ lunitInv a)
           ≫ (cup a ⊗ₕ 𝟙 a) ≫ tensAssoc a a a ≫ (𝟙 a ⊗ₕ cap a) ≫ runit a := by rw [lunitInv_nat]
-    _ = S ≫ (lunitInv a ≫ (cup a ⊗ₕ 𝟙 a) ≫ tensAssoc a a a
-          ≫ (𝟙 a ⊗ₕ cap a) ≫ runit a) := by coherence
-    _ = S ≫ 𝟙 a := by rw [snake']
+    _ = S ≫ 𝟙 a := by coherence [snake']
     _ = S := Cat.comp_id _
 
 /-- The triangle read with both unitors inverted: `(𝟙_a ⊗ λ⁻¹_b);α⁻¹ = ρ⁻¹_a ⊗ 𝟙_b`.  Both sides
@@ -361,11 +359,6 @@ theorem unbend_bend {a b : 𝒞} (k : a ⊗ b ⟶ (𝕀 : 𝒞)) : unbend (bend 
           rw [tensHom_id]
       _ = (tensAssocInv a a (a ⊗ b) ≫ (𝟙 (a ⊗ a) ⊗ₕ k))
             ≫ (cap a ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit (𝕀 : 𝒞) := by rw [← runit_nat]
-      _ = tensAssocInv a a (a ⊗ b) ≫ ((𝟙 (a ⊗ a) ⊗ₕ k) ≫ (cap a ⊗ₕ 𝟙 (𝕀 : 𝒞)))
-            ≫ runit (𝕀 : 𝒞) := by coherence
-      _ = tensAssocInv a a (a ⊗ b) ≫ (cap a ⊗ₕ k) ≫ runit (𝕀 : 𝒞) := by coherence
-      _ = tensAssocInv a a (a ⊗ b) ≫ ((cap a ⊗ₕ 𝟙 (a ⊗ b)) ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ k))
-            ≫ runit (𝕀 : 𝒞) := by coherence
       _ = tensAssocInv a a (a ⊗ b) ≫ (cap a ⊗ₕ 𝟙 (a ⊗ b)) ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ k)
             ≫ lunit (𝕀 : 𝒞) := by rw [← lunit_unit]; coherence
       _ = tensAssocInv a a (a ⊗ b) ≫ (cap a ⊗ₕ 𝟙 (a ⊗ b)) ≫ lunit (a ⊗ b) ≫ k := by
@@ -413,10 +406,7 @@ theorem unbend_bend {a b : 𝒞} (k : a ⊗ b ⟶ (𝕀 : 𝒞)) : unbend (bend 
             ≫ (((cap a ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ tensAssoc (𝕀 : 𝒞) a b) ≫ lunit (a ⊗ b) := by
           rw [hcapslide]
       _ = (runitInv a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ cup a) ⊗ₕ 𝟙 b) ≫ (tensAssocInv a a a ⊗ₕ 𝟙 b)
-            ≫ ((cap a ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b)) := by
-          coherence
-      _ = (runitInv a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ cup a) ⊗ₕ 𝟙 b) ≫ (tensAssocInv a a a ⊗ₕ 𝟙 b)
-            ≫ ((cap a ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ (lunit a ⊗ₕ 𝟙 b) := by rw [lunit_tens]
+            ≫ ((cap a ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ (lunit a ⊗ₕ 𝟙 b) := by coherence [lunit_tens]
       _ = ((runitInv a ≫ (𝟙 a ⊗ₕ cup a) ≫ tensAssocInv a a a
             ≫ (cap a ⊗ₕ 𝟙 a) ≫ lunit a) ⊗ₕ 𝟙 b) := hcollapse.symm
       _ = (𝟙 a ⊗ₕ 𝟙 b) := by rw [snake]
@@ -446,8 +436,7 @@ theorem tens_cap_swap {a b : 𝒞} (S : b ⟶ a) :
     (S ⊗ₕ 𝟙 a) ≫ cap a = swap b a ≫ (𝟙 a ⊗ₕ S) ≫ cap a := by
   calc (S ⊗ₕ 𝟙 a) ≫ cap a
       = (S ⊗ₕ 𝟙 a) ≫ swap a a ≫ cap a := by rw [swap_cap]
-    _ = ((S ⊗ₕ 𝟙 a) ≫ swap a a) ≫ cap a := by coherence
-    _ = (swap b a ≫ (𝟙 a ⊗ₕ S)) ≫ cap a := by rw [swap_nat]
+    _ = (swap b a ≫ (𝟙 a ⊗ₕ S)) ≫ cap a := by coherence [swap_nat_tail]
     _ = swap b a ≫ (𝟙 a ⊗ₕ S) ≫ cap a := by coherence
 
 /-- UNIQUENESS of the converse: an arrow that unbends to `(R ⊗ 𝟙);cap` IS `R°`.  `bend` inverts
@@ -482,12 +471,8 @@ theorem conv_comp {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) :
   calc (𝟙 a ⊗ₕ (conv S ≫ conv R)) ≫ cap a
       = (𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [hs]; coherence
     _ = (𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by rw [conv_slide]
-    _ = ((𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b)) ≫ cap b := by coherence
-    _ = (R ⊗ₕ conv S) ≫ cap b := by coherence
-    _ = ((R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S)) ≫ cap b := by coherence
     _ = (R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S) ≫ cap b := by coherence
     _ = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by rw [conv_slide]
-    _ = ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c)) ≫ cap c := by coherence
     _ = ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c := by coherence
 
 /-! ### Towards the modular law
@@ -509,8 +494,7 @@ theorem «∇_of_cap» (n : 𝒞) :
       = ((Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n))
           ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [hcap]; coherence
     _ = (∇ n ≫ Δ n) ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [frob_right]
-    _ = ∇ n ≫ Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by coherence
-    _ = ∇ n ≫ 𝟙 n := by rw [Δ_counit]
+    _ = ∇ n ≫ 𝟙 n := by coherence [Δ_counit]
     _ = ∇ n := Cat.comp_id _
 
 /-- `nabla_of_cap` with a box on the bent strand: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ((𝟙 ⊗ T);cap));ρ = (𝟙 ⊗ T);∇`.
@@ -528,11 +512,6 @@ theorem «cap_tens_∇» {b c : 𝒞} (T : c ⟶ b) :
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [← tensAssoc_nat]
     _ = (Δ b ⊗ₕ 𝟙 c) ≫ ((𝟙 (b ⊗ b) ⊗ₕ T) ≫ tensAssoc b b b)
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by rw [tensHom_id]
-    _ = ((Δ b ⊗ₕ 𝟙 c) ≫ (𝟙 (b ⊗ b) ⊗ₕ T)) ≫ tensAssoc b b b
-          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by coherence
-    _ = (Δ b ⊗ₕ T) ≫ tensAssoc b b b ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by coherence
-    _ = ((𝟙 b ⊗ₕ T) ≫ (Δ b ⊗ₕ 𝟙 b)) ≫ tensAssoc b b b
-          ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by coherence
     _ = (𝟙 b ⊗ₕ T) ≫ (Δ b ⊗ₕ 𝟙 b) ≫ tensAssoc b b b
           ≫ (𝟙 b ⊗ₕ cap b) ≫ runit b := by coherence
     _ = (𝟙 b ⊗ₕ T) ≫ ∇ b := by rw [«∇_of_cap»]
@@ -567,9 +546,6 @@ theorem «∇_slide_conv» {b c : 𝒞} (S : b ⟶ c) :
             ≫ runit c := by coherence
       _ = (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ runit c := by coherence; rw [conv_slide]
-      _ = (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c
-            ≫ ((𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)))
-            ≫ runit c := by coherence
       _ = (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))
             ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit c := by coherence
       _ = (Δ b ⊗ₕ 𝟙 c) ≫ tensAssoc b b c ≫ (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b))

@@ -131,9 +131,6 @@ theorem cv_merge {a b : 𝒞} (P : a ⟶ b) :
         («cap_tens_∇» (conv P)).symm
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ tensAssoc a a b
           ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) ≫ runit a := by rw [← conv_slide]
-    _ = (Δ a ⊗ₕ 𝟙 b) ≫ tensAssoc a a b
-          ≫ ((𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b)) ≫ runit a := by
-        coherence
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ (tensAssoc a a b ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)))
           ≫ (𝟙 a ⊗ₕ cap b) ≫ runit a := by coherence
     _ = (Δ a ⊗ₕ 𝟙 b) ≫ (((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ tensAssoc a b b)
