@@ -641,7 +641,7 @@ never bends. Same theorem, different route, and the export shows the route the k
 Drawn by hand it would have shown the paper's three pictures and quietly implied those were what the
 repo had checked.
 
-= The modular law — proved, drawn
+= The modular law, from Frobenius
 
 Freyd *adjoins* the modular identity: an allegory has no structure to derive it from, so it goes in
 as an axiom. Here it is a theorem, and this is its proof — `Freyd.Diag.modular_of_frobenius`
@@ -673,15 +673,13 @@ as an axiom. Here it is a theorem, and this is its proof — `Freyd.Diag.modular
 
 == Inside the middle step
 
-`«∇_slide_conv»` (`diag/CB.lean:560`) is where the mathematics is, and it mentions only `S` —
-`R` and `T` sit untouched in the prefix throughout. Read on its own it says one arrow slides
-through a merge:
+`«∇_slide_conv»` (`diag/CB.lean:560`) is where the mathematics is, and it mentions only `S` — `R`
+and `T` sit untouched in the prefix throughout. Read on its own it says one arrow slides through a
+merge, which is the statement in the header below.
 
-#align(center, block(inset: (y: 8pt))[#P(p-nabla-slide, s: 74%)])
-
-`S` occurs once on the left and twice on the right. That is the tell: the lax copy inequation (42)
-is the only law in Def. 4.1 that may duplicate a box, so it has to be the inequality step — and its
-own chain shows it is the only one.
+Look at how often `S` occurs there: once on the left, twice on the right. That is the tell. The lax
+copy inequation (42) is the only law in Def. 4.1 that may duplicate a box, so it has to be the
+inequality step — and the chain shows it is the only one.
 
 #table(
   columns: (5.4cm, 1fr, 5.8cm),
