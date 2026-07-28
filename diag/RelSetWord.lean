@@ -23,44 +23,44 @@ namespace Freyd.Diag
 open Freyd Freyd.Alg
 open scoped Word
 
-/-- A word of sets interpreted as a set: the letters' product, right-nested, empty word to `PUnit`.
-    The tail `PUnit` is what makes `⟦u ++ v⟧ ≅ ⟦u⟧ × ⟦v⟧` hold for EVERY split, including the two
-    where one side is empty — with `⟦[a]⟧ = a` the empty split would need `a ≅ a × PUnit` instead,
-    which is the same isomorphism moved somewhere less convenient. -/
+/-- A word of sets interpreted as a set: the letters' product, right-nested, with NO unit tail —
+    a one-letter word denotes its letter, `⟦[a]⟧ = a`, not `a × PUnit`.
+
+    That choice is the whole point of the file.  An AOP relation `List α ⇸ Nat` is then literally an
+    arrow of this model between one-letter words; with a tail it would only be one up to
+    `a × PUnit ≅ a`, and that isomorphism would have to be spent at every statement AOP ever borrows
+    from the tower.  The price is paid here instead: `split` and `merge` below case on whether
+    either side is empty, and their proofs carry those cases. -/
 def Interp : List RelSet.{u} → Type u
   | [] => PUnit
+  | [a] => a.carrier
   | a :: rest => a.carrier × Interp rest
 
 /-- The set a word denotes. -/
 def carrier (a : Word RelSet.{u}) : Type u := Interp (Word.letters a)
 
-/-- `⟦u ++ v⟧ → ⟦u⟧ × ⟦v⟧`, by recursion on the left word. -/
+/-- `⟦u ++ v⟧ → ⟦u⟧ × ⟦v⟧`, by recursion on the left word.  The two singleton cases are where the
+    missing unit tail is paid for: a one-letter left word carries no pair to take apart. -/
 def split : (u v : List RelSet.{u}) → Interp (u ++ v) → Interp u × Interp v
   | [], _, p => (PUnit.unit, p)
-  | _ :: u, v, p => ((p.1, (split u v p.2).1), (split u v p.2).2)
+  | [_], [], p => (p, PUnit.unit)
+  | [_], _ :: _, p => (p.1, p.2)
+  | _ :: (b :: u), v, p => ((p.1, (split (b :: u) v p.2).1), (split (b :: u) v p.2).2)
 
 /-- `⟦u⟧ × ⟦v⟧ → ⟦u ++ v⟧`, the inverse. -/
 def merge : (u v : List RelSet.{u}) → Interp u × Interp v → Interp (u ++ v)
   | [], _, p => p.2
-  | _ :: u, v, p => (p.1.1, merge u v (p.1.2, p.2))
+  | [_], [], p => p.1
+  | [_], _ :: _, p => (p.1, p.2)
+  | _ :: (b :: u), v, p => (p.1.1, merge (b :: u) v (p.1.2, p.2))
 
 @[simp] theorem split_merge (u v : List RelSet.{u}) (p : Interp u × Interp v) :
     split u v (merge u v p) = p := by
-  induction u with
-  | nil => exact match p with | (PUnit.unit, _) => rfl
-  | cons _ u ih =>
-    show ((p.1.1, (split u v (merge u v (p.1.2, p.2))).1), (split u v (merge u v (p.1.2, p.2))).2) = p
-    rw [ih (p.1.2, p.2)]
-    rfl
+  induction u, v, p using merge.induct <;> simp_all only [split, merge] <;> rfl
 
 @[simp] theorem merge_split (u v : List RelSet.{u}) (p : Interp (u ++ v)) :
     merge u v (split u v p) = p := by
-  induction u with
-  | nil => rfl
-  | cons _ u ih =>
-    show (p.1, merge u v ((split u v p.2).1, (split u v p.2).2)) = p
-    rw [show ((split u v p.2).1, (split u v p.2).2) = split u v p.2 from rfl, ih p.2]
-    rfl
+  induction u, v, p using split.induct <;> simp_all only [split, merge] <;> rfl
 
 /-! ### The isomorphism at the level of words
 
@@ -154,22 +154,13 @@ theorem tensRel_mono {a a' b b' : Word RelSet.{u}} {R R' : a ⟶ a'} {S S' : b �
   out of three pieces must agree — that agreement is what `tensHom_assoc` needs, and it is the one
   place an induction over the letters is unavoidable. -/
 
-/-- A transport along a list equality passes through a `cons`. -/
-theorem cast_cons {x : RelSet.{u}} {l l' : List RelSet.{u}} (h : l = l')
-    (v : x.carrier) (p : Interp l) :
-    cast (congrArg Interp (congrArg (x :: ·) h)) ((v, p) : Interp (x :: l))
-      = ((v, cast (congrArg Interp h) p) : Interp (x :: l')) := by
-  subst h; rfl
-
-theorem merge_assoc (u v w : List RelSet.{u}) (x : Interp u) (y : Interp v) (z : Interp w) :
-    merge (u ++ v) w (merge u v (x, y), z)
-      = cast (congrArg Interp (List.append_assoc u v w).symm)
-          (merge u (v ++ w) (x, merge v w (y, z))) := by
-  induction u with
-  | nil => rfl
-  | cons head u ih =>
-    show (x.1, merge (u ++ v) w (merge u v (x.2, y), z)) = _
-    rw [ih x.2, ← cast_cons (List.append_assoc u v w).symm x.1]
-    rfl
+/-- A transport along a list equality passes through a `cons` whose tail is itself a `cons` — the
+    only shape in which `Interp` is a pair, now that a one-letter word denotes its letter. -/
+theorem cast_cons {x b b' : RelSet.{u}} {l l' : List RelSet.{u}} (h : b :: l = b' :: l')
+    (v : x.carrier) (p : Interp (b :: l)) :
+    cast (congrArg Interp (congrArg (x :: ·) h)) ((v, p) : Interp (x :: b :: l))
+      = ((v, cast (congrArg Interp h) p) : Interp (x :: b' :: l')) := by
+  injection h with hb hl
+  subst hb; subst hl; rfl
 
 end Freyd.Diag
