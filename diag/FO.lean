@@ -398,21 +398,21 @@ class FOBicat (O : Type u) extends
     RightLinAdj (bswap a b) (SymMonCat.swap b a)
 
   /-- Def. 6.1.4, (τ◀°)/(γ◀°): `◀°` is left linear adjoint to `▶•`. -/
-  delta_linAdj (n : Word O) : RightLinAdj (CartBicat.Δ n) (CocartBicat.bnabla n)
+  delta_linAdj (n : Word O) : RightLinAdj (CartBicat.Δ) (CocartBicat.bnabla n)
   /-- (τ!°)/(γ!°): `!°` is left linear adjoint to `¡•`. -/
-  bang_linAdj (n : Word O) : RightLinAdj (CartBicat.«!» n) (CocartBicat.bunitR n)
+  bang_linAdj (n : Word O) : RightLinAdj (CartBicat.«!») (CocartBicat.bunitR n)
   /-- (τ▶°)/(γ▶°): `▶°` is left linear adjoint to `◀•`. -/
-  nabla_linAdj (n : Word O) : RightLinAdj (CartBicat.«∇» n) (CocartBicat.bdelta n)
+  nabla_linAdj (n : Word O) : RightLinAdj (CartBicat.«∇») (CocartBicat.bdelta n)
   /-- (τ¡°)/(γ¡°): `¡°` is left linear adjoint to `!•`. -/
-  unitR_linAdj (n : Word O) : RightLinAdj (CartBicat.«?» n) (CocartBicat.bbang n)
+  unitR_linAdj (n : Word O) : RightLinAdj (CartBicat.«?») (CocartBicat.bbang n)
   /-- (τ◀•)/(γ◀•): `◀•` is left linear adjoint to `▶°` — the "and right" half of Def. 6.1.4. -/
-  bdelta_linAdj (n : Word O) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.«∇» n)
+  bdelta_linAdj (n : Word O) : RightLinAdj (CocartBicat.bdelta n) (CartBicat.«∇»)
   /-- (τ!•)/(γ!•): `!•` is left linear adjoint to `¡°`. -/
-  bbang_linAdj (n : Word O) : RightLinAdj (CocartBicat.bbang n) (CartBicat.«?» n)
+  bbang_linAdj (n : Word O) : RightLinAdj (CocartBicat.bbang n) (CartBicat.«?»)
   /-- (τ▶•)/(γ▶•): `▶•` is left linear adjoint to `◀°`. -/
-  bnabla_linAdj (n : Word O) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.Δ n)
+  bnabla_linAdj (n : Word O) : RightLinAdj (CocartBicat.bnabla n) (CartBicat.Δ)
   /-- (τ¡•)/(γ¡•): `¡•` is left linear adjoint to `!°`. -/
-  bunitR_linAdj (n : Word O) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.«!» n)
+  bunitR_linAdj (n : Word O) : RightLinAdj (CocartBicat.bunitR n) (CartBicat.«!»)
 
   /-- Def. 6.1.5, `(F^•_∘)`: the LINEAR FROBENIUS law in the white structure, with the black
       comultiplication copying and the white multiplication merging.  Compare `frob_right`: the
@@ -422,17 +422,17 @@ class FOBicat (O : Type u) extends
       their order — `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)` — and `°` and `∘` are the same glyph,
       so dropping the sub/superscript positions makes two pairs of labels collide.  Keep them. -/
   linfrob_bw (n : Word O) :
-    (bdelta n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ∇ n) = ((𝟙 n ⊗ₕ Δ n) ≫ (bnabla n ⊗ₕ 𝟙 n) : _)
+    (bdelta n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ∇) = ((𝟙 n ⊗ₕ Δ) ≫ (bnabla n ⊗ₕ 𝟙 n) : _)
   /-- `(F^°_•)`: the mirror of `linfrob_bw`, white copying and black merging. -/
   linfrob_wb (n : Word O) :
-    (Δ n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ bnabla n) = ((𝟙 n ⊗ₕ bdelta n) ≫ (∇ n ⊗ₕ 𝟙 n) : _)
+    (Δ ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ bnabla n) = ((𝟙 n ⊗ₕ bdelta n) ≫ (∇ ⊗ₕ 𝟙 n) : _)
   /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`
       for `⨟°`/`⊗`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
       because complementing swaps the generators' colours as well as the composition's. -/
   blinfrob_wb (n : Word O) :
-    (Δ n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = ((𝟙• n ⊗•ₕ bdelta n) ≫• (∇ n ⊗•ₕ 𝟙• n) : _)
+    (Δ ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = ((𝟙• n ⊗•ₕ bdelta n) ≫• (∇ ⊗•ₕ 𝟙• n) : _)
   /-- `(F_∘^•)`: `linfrob_bw` said in the black structure. -/
   blinfrob_bw (n : Word O) :
-    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ ∇ n) = ((𝟙• n ⊗•ₕ Δ n) ≫• (bnabla n ⊗•ₕ 𝟙• n) : _)
+    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ ∇) = ((𝟙• n ⊗•ₕ Δ) ≫• (bnabla n ⊗•ₕ 𝟙• n) : _)
 
 end Freyd.Diag

@@ -49,7 +49,7 @@ def Dom {a b : Word O} (R : a ⟶ b) : a ⟶ a := meet (𝟙 a) (R ≫ conv R)
 /-- The normal form both sides of §2.124 are driven to:
     `W = Δ;(Δ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);(𝟙 ⊗ cap)`  (`Δ;(Δ ⊗ 𝟙)` is the three-way copy). -/
 def W {a b : Word O} (R S : a ⟶ b) : a ⟶ a :=
-  Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b)
+  Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b)
 
 /-! ### Two preliminaries -/
 
@@ -60,10 +60,10 @@ def W {a b : Word O} (R S : a ⟶ b) : a ⟶ a :=
     In the non-strict tower this proof first needs `(𝟙 ⊗ ?);∇ = ρ`, the unit law (7) with the
     unitor moved across.  With `ρ = 𝟙` that lemma IS the unit law, so it is gone. -/
 theorem «meet_?» {a : Word O} (L : a ⟶ (𝕀 : Word O)) :
-    meet (𝟙 a) (L ≫ «?» a) = Δ a ≫ (𝟙 a ⊗ₕ L) := by
-  have hsplit : (𝟙 a ⊗ₕ (L ≫ «?» a)) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» a) := by
+    meet (𝟙 a) (L ≫ «?») = Δ ≫ (𝟙 a ⊗ₕ L) := by
+  have hsplit : (𝟙 a ⊗ₕ (L ≫ «?» (n := a))) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» (n := a)) := by
     rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-  have htail : (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» a) ≫ ∇ a = (𝟙 a ⊗ₕ L) := by
+  have htail : (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» (n := a)) ≫ ∇ = (𝟙 a ⊗ₕ L) := by
     rw [«∇_unit»]; exact Cat.comp_id _
   dsimp [meet]
   rw [hsplit]
@@ -88,12 +88,12 @@ theorem modular_right {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c)
     this file where the modular law is spent — `modular_right` at `S := ⊤` turns the discarded
     strand back into `P°`, because `⊤ ∩ P° = P°`. -/
 theorem dom_cd {a b : Word O} (P : a ⟶ b) :
-    Dom P = Δ a ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!» b) := by
-  have hshape : Δ a ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!» b) = meet (𝟙 a) (P ≫ top b a) := by
-    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!» b) = (𝟙 a ⊗ₕ (P ≫ «!» b)) := by
+    Dom P = Δ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») := by
+  have hshape : Δ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») = meet (𝟙 a) (P ≫ top b a) := by
+    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») = (𝟙 a ⊗ₕ (P ≫ «!»)) := by
       rw [← SymMonCat.tensHom_comp, Cat.comp_id]
     dsimp [top]
-    rw [← Cat.assoc P («!» b) («?» a), «meet_?» (P ≫ «!» b), ← hsplit]
+    rw [← Cat.assoc P («!») («?»), «meet_?» (P ≫ «!»), ← hsplit]
   rw [hshape]
   dsimp [Dom]
   refine OrderedCat.«≤_antisymm» ?_ ?_
@@ -112,14 +112,14 @@ theorem dom_cd {a b : Word O} (P : a ⟶ b) :
     box-carrying merge-from-a-cap, and `conv_slide` is what lets `P°` on one strand be read as `P` on
     the other.  The associator naturality of the non-strict proof is now one `tensHom_assoc`. -/
 theorem cv_merge {a b : Word O} (P : a ⟶ b) :
-    (𝟙 a ⊗ₕ conv P) ≫ ∇ a
-      = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
-  calc (𝟙 a ⊗ₕ conv P) ≫ ∇ a
-      = (Δ a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) := («cap_tens_∇» (conv P)).symm
-    _ = (Δ a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← conv_slide]
-    _ = (Δ a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    (𝟙 a ⊗ₕ conv P) ≫ ∇
+      = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+  calc (𝟙 a ⊗ₕ conv P) ≫ ∇
+      = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) := («cap_tens_∇» (conv P)).symm
+    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← conv_slide]
+    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_assoc]
 
 /-! ### §2.124 — both sides to the same normal form -/
@@ -128,23 +128,23 @@ theorem cv_merge {a b : Word O} (P : a ⟶ b) :
     both sides are `Δ;((Δ;(𝟙 ⊗ R)) ⊗ S);(𝟙 ⊗ cap)`, by functoriality of `⊗` alone. -/
 theorem left_eq_W {a b : Word O} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = W R S := by
   dsimp [meet, W]
-  calc Δ a ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ∇ a
-      = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ∇ a := by
+  calc Δ ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ∇
+      = Δ ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ∇ := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ a := by simp only [Cat.assoc]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ := by simp only [Cat.assoc]
+    _ = Δ ≫ (𝟙 a ⊗ₕ S) ≫ (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [cv_merge R]
-    _ = Δ a ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ a ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
-    _ = Δ a ≫ (Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ (Δ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp, Cat.comp_id]
-    _ = Δ a ≫ ((Δ a ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ ((Δ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
-    _ = Δ a ≫ ((Δ a ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ ((Δ ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ a ≫ ((Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ ((Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
 
 /-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `∇;! = cap` unfolds the meet into the
@@ -152,17 +152,17 @@ theorem left_eq_W {a b : Word O} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) 
 theorem right_eq_W {a b : Word O} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
   rw [dom_cd (meet R S)]
   dsimp [W]
-  calc Δ a ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!» b)
-      = Δ a ≫ (𝟙 a ⊗ₕ (meet R S ≫ «!» b)) := by
+  calc Δ ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!»)
+      = Δ ≫ (𝟙 a ⊗ₕ (meet R S ≫ «!»)) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ (Δ a ≫ (R ⊗ₕ S) ≫ cap b)) := by
+    _ = Δ ≫ (𝟙 a ⊗ₕ (Δ ≫ (R ⊗ₕ S) ≫ cap b)) := by
         dsimp [meet, cap]; simp only [Cat.assoc]
-    _ = Δ a ≫ (𝟙 a ⊗ₕ Δ a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp, Cat.comp_id, Cat.comp_id]
-    _ = (Δ a ≫ (𝟙 a ⊗ₕ Δ a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := (Cat.assoc _ _ _).symm
-    _ = (Δ a ≫ (Δ a ⊗ₕ 𝟙 a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by rw [← Δ_assoc]
-    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := Cat.assoc _ _ _
-    _ = Δ a ≫ (Δ a ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = (Δ ≫ (𝟙 a ⊗ₕ Δ)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := (Cat.assoc _ _ _).symm
+    _ = (Δ ≫ (Δ ⊗ₕ 𝟙 a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by rw [← Δ_assoc]
+    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := Cat.assoc _ _ _
+    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_assoc]
 
 /-- **§2.124.**  `𝟙 ∩ S R° = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving
