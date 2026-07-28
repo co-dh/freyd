@@ -147,15 +147,23 @@ partial def Cell.width : Cell → Float
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
     abut into one bubble. -/
-partial def joinGap (c next : Cell) : Float :=
-  if c.rightPort == .pair && next.leftPort == .pair then 0.0 else GAP
+partial def joinGap (c next : Cell) (sep : Float) : Float :=
+  if c.rightPort == .pair && next.leftPort == .pair then 0.0
+  else
+    -- Where the two ports sit at different heights the join has to slope.  Give it room in
+    -- proportion to the climb, so the strand runs at a readable angle instead of a near-vertical
+    -- jump: this is the Frobenius law's picture, whose middle strand really does change groups.
+    let a := c.rightOffsets sep
+    let b := next.leftOffsets sep
+    let rise := (Array.zip a b).foldl (fun acc (p : Float × Float) => max acc (p.1 - p.2).abs) 0.0
+    GAP + 1.1 * rise
 
 /-- A run of cells wired in series, without the outer stubs a whole picture gets. -/
 partial def runWidth (cells : Array Cell) : Float := Id.run do
   let mut w := 0.0
   for i in [0 : cells.size] do
     w := w + cells[i]!.width
-    if h : i + 1 < cells.size then w := w + joinGap cells[i]! cells[i + 1]
+    if h : i + 1 < cells.size then w := w + joinGap cells[i]! cells[i + 1] (runSep cells)
   return w
 
 /-- Half the vertical extent, so a meet can separate its strands by enough to clear whatever is
@@ -250,8 +258,8 @@ def hwire (x₀ x₁ y : Float) : Array String :=
     by enough to clear whatever is nested in them, while a fork always opens by `STACKSEP`.  Drawing
     both at a fixed offset is what left `Δ ; (Δ ⊗ 𝟙)` as four strands meeting nothing. -/
 def joinWire (x₀ x₁ y₀ y₁ : Float) : Array String :=
-  if (y₁ - y₀).abs < 0.005 then hwire x₀ x₁ y₀
-  else #[s!"  bend(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}), k: 0.5)"]
+  if x₁ - x₀ < 0.005 then #[]
+  else #[s!"  wire(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}))"]
 
 mutual
 
@@ -335,10 +343,11 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.r
       let next := cells[i + 1]
       -- Nothing to join when the two abut: a fork straight into a fork is ONE bubble, and a wire
       -- drawn across it would run through the middle of the shape.
-      if joinGap c next < 0.005 then
+      let gap := joinGap c next sep
+      if gap < 0.005 then
         pure ()
       else if c.rightPort == .one && next.leftPort == .one then
-        out := out ++ hwire x (x + GAP) y
+        out := out ++ hwire x (x + gap) y
       else if c.rightPort.isTwo && next.leftPort.isTwo then
         -- One join per strand, from where THIS cell's strands end to where the next one's begin.
         -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
@@ -346,8 +355,8 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.r
         let a := c.rightOffsets sep
         let b := next.leftOffsets sep
         for j in [0 : min a.size b.size] do
-          out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!)
-      x := x + joinGap c next
+          out := out ++ joinWire x (x + gap) (y + a[j]!) (y + b[j]!)
+      x := x + gap
   return out
 
 end

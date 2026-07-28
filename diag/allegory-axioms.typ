@@ -211,7 +211,9 @@ in its own diagrams are absent here because they do not exist.
 
 The *special* law `Δ ; ∇ = 𝟙` is NOT part of the definition. The paper derives it — "one direction
 is given by (38) and the other is proved as follows" — and so does the Lean, as
-`Freyd.Diag.CartBicat.special`; its picture is in the correspondence table below.
+`Freyd.Diag.CartBicat.special`:
+
+#P(p-special, s: 84%)
 
 == Every arrow is a lax comonoid homomorphism
 
@@ -309,50 +311,6 @@ map, and the whole point is that a general relation is not.
    cost of its converse on the other strand.]],
   P(p-modular),
 )
-
-= The other direction: what each law of Def. 4.1 says in Freyd's language
-
-// One size down: the declaration names here (`Freyd.Diag.CartBicat.special`) are unbreakable
-// monospace words that overrun the middle column at 8.5pt and print over the next one.
-#[
-#show raw: set text(size: 8.4pt)
-#table(
-  columns: (8.8cm, 5.0cm, 1fr),
-  align: (center + horizon, left + horizon, left + horizon),
-  inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*picture, from the Lean statement*], [*Def. 4.1*], [*Freyd*]),
-
-  P(p-37, s: 88%), [(37) `∇ ; Δ ≤ 𝟙` \ #src[half of `Δ ⊣ ∇`]],
-  [`Δ° Δ ⊑ 1` — *`Δ` is simple* \ #src[§2.13. Not used anywhere in the bridge; see below.]],
-
-  P(p-38, s: 88%), [(38) `𝟙 ≤ Δ ; ∇` \ #src[the other half of `Δ ⊣ ∇`]],
-  [`1 ⊑ Δ Δ°` — *`Δ` is entire* \ #src[§2.13; with (37), `Δ` is a *map*.]],
-
-  P(p-39, s: 88%), [(39) `? ; ! ≤ 𝟙` \ #src[half of `! ⊣ ?`]],
-  [`!° ! ⊑ 1` — *`!` is simple* \ #src[§2.13. Also unused in the bridge.]],
-
-  P(p-40, s: 88%), [(40) `𝟙 ≤ ! ; ?` \ #src[the other half of `! ⊣ ?`]],
-  [`1 ⊑ ! !°` — *`!` is entire* \ #src[§2.13; with (39), `!` is a map. This is what makes
-   `⊤ = ! ; ?` contain every arrow.]],
-
-  P(p-frob, s: 74%), [(41) the *Frobenius* law \ #src[an axiom. `𝟙 ⊗ Δ` and `∇ ⊗ 𝟙` draw as stacked runs; only the
-  associator `α⁻¹` stays an opaque box, having no shape in this calculus.]],
-  [the *modular identity* §2.112 — and reciprocation §2.11 itself, since the cup and cap only
-   satisfy the snake because of (41).],
-
-  P(p-special, s: 88%), [the *special* law \ #src[*not* an axiom: derived from (38) and (40),
-  `Freyd.Diag.CartBicat.special`]],
-  [`Δ Δ° = 1` — *`Δ` is injective*, so by §2.141 at `f = g = Δ` it is a monic map. In `Rel(Set)`:
-   copying is total and loses nothing.],
-
-  P(p-lax-delta, s: 84%), [(42) every arrow is a *lax comonoid homomorphism*],
-  [§2.136's `R (S ∩ T) ⊑ R S ∩ R T`, read at `S := π₁°`, `T := π₂°` — Freyd's semi-distributivity,
-   product-free.],
-
-  P(p-lax-bang, s: 88%), [(43) every arrow is *lax for the counit*],
-  [§2.152's step "`p_α` is maximal in `(α, λ)`, hence `R p_β ⊆ p_α`" — that is, `R ⊑ ⊤`.],
-)
-]
 
 = Unitary and pre-tabular — the two conditions the converse needs
 
