@@ -484,15 +484,17 @@ Together they are the whole gap: *cartesian bicategory of relations ≃ unitary 
 
 The two notations say which layer a picture is in. A union is a *tape*: the rounded wrapper is the
 second monoidal product, and its `▷`/`◁` open and close a branch a particle takes exactly one of —
-the same fork-runs-join shape as a meet, on a different product. A residual is a *cut*: `R / S` is
-`R ⨟• S⊥` by definition, the black composition is drawn on black ground and the linear adjoint `S⊥`
-is `S` mirrored and negated, so the picture is `R` on black beside `S` mirrored in a white island.
-Both conventions are `DiagrammaticAlgebraOfFirstOrderLogic.pdf`'s own, and it states the second one
-twice: on p. 2, given `c`, "take its mirror image and then its photographic negative" — that is
-`c⊥`; and on p. 10, translating Peirce's existential graphs, "each cut [is] a *color switch*". Its
-Fig. 4 draws the black composition the same way, as a black ground, which is what (δl) and (δr) are
-pictures of. Nesting alternates the ground, so the white island inside a black region is Peirce's
-double cut.
+the same fork-runs-join shape as a meet, on a different product.
+
+A residual is drawn as *long division*, and deliberately not as its own definition. `residual R S`
+is `R ⨟• S⊥`, and `DiagrammaticAlgebraOfFirstOrderLogic.pdf` says exactly how to picture that: p. 2,
+given `c`, "take its mirror image and then its photographic negative" — that is `c⊥` — and p. 10,
+on Peirce's existential graphs, "each cut [is] a *color switch*", with Fig. 4 drawing the black
+composition as a black ground. Unfolded that way, `R / S` comes out as `R` on black with `S`
+mirrored in a white island. It is a faithful picture of the phase-9 term, and it needs a complement
+to mean anything. The operation does not: `«≤_residual_iff»` here and `le_div_iff` in the allegory
+are one Galois statement, and the last section of this note draws it with no complement anywhere.
+One operation, one picture, and it is that one.
 
 #table(
   columns: (9.4cm, 1fr),
@@ -532,9 +534,8 @@ double cut.
   [`(R / S) S ⊑ R` — `Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`; the residual is a lower bound
    of the arrows it is the greatest of. \ #src[Freyd's §2.31 division: `R / S` is the largest `T`
    with `T S ⊑ R`, and `«≤_residual_iff»` (`diag/FO.lean:171`) is that Galois statement in full. The
-   two colour switches are the definition `R ⨟• S⊥` unfolded — one for the black composition, one for
-   the linear adjoint — and the `S` in the island is mirrored because a linear adjoint is a converse
-   as well as a negative.]],
+   bar is the last section's: amber ground for the numerator, the divisor laid inside it, a hairline
+   of slack past it.]],
   P(p-residual),
 )
 

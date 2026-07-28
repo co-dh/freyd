@@ -269,7 +269,7 @@ partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
   | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[sep, -sep]
   | .gen "unitR" _ _ | .cupC => #[]
   | .stack u l =>
-    (runLeftOffsets u).map (· + sep) ++ (runLeftOffsets l).map (· - sep)
+    (runPortL u).map (· + sep) ++ (runPortL l).map (· - sep)
   | .cut inner => runLeftOffsets inner
   | .dagger _ _ => #[-RISE / 2.0]
   | _ => #[0.0]
@@ -279,7 +279,7 @@ partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
   | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[sep, -sep]
   | .gen "bang" _ _ | .capC => #[]
   | .stack u l =>
-    (runRightOffsets u).map (· + sep) ++ (runRightOffsets l).map (· - sep)
+    (runPortR u).map (· + sep) ++ (runPortR l).map (· - sep)
   | .cut inner => runRightOffsets inner
   | .dagger _ _ => #[RISE / 2.0]
   | _ => #[0.0]
@@ -320,6 +320,16 @@ partial def runSkewR (cells : Array Cell) : Float :=
   match cells.back? with
   | some c => if c.rightPort == .one then ((runRightOffsets cells)[0]?).getD 0.0 else 0.0
   | none => 0.0
+/-- What a run presents at its boundary, which is not always what its first cell wants.
+    `renderStrand` bends a single skewed strand back to the centre line, so an enclosing `⊗`, meet
+    or tape sees it there — reporting the skew outwards as well counted it twice, and drew the outer
+    stub at the snake's height and the strand's own wire at the centre, connected to each other by
+    nothing.  Genuine multi-strand ports pass through untouched. -/
+partial def runPortL (cells : Array Cell) : Array Float :=
+  if (runSkewL cells).abs > 0.01 then #[0.0] else runLeftOffsets cells
+partial def runPortR (cells : Array Cell) : Array Float :=
+  if (runSkewR cells).abs > 0.01 then #[0.0] else runRightOffsets cells
+
 /-- Horizontal room for that bend to fall through, and none when there is no bend. -/
 partial def runPadL (cells : Array Cell) : Float :=
   if (runSkewL cells).abs > 0.01 then RISE / 2.0 else 0.0
@@ -406,9 +416,12 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
         chamfer: false{inv iv})"]
   | .gen fn w lead =>
     -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
-    -- offers are the strands its neighbours expect.  `strdiag.typ`'s defaults are narrower; this
-    -- overrides them.  The swap also spans its cell, or the wires into it stop short of the
-    -- crossing.
+    -- offers are the strands its neighbours expect, and they meet as straight wires rather than
+    -- being bent into place afterwards.  Never a `strdiag.typ` default: those are not all
+    -- `STACKSEP` — `swap`'s is 0.33 — and a generator drawn at one separation while REPORTING
+    -- another abuts a fork whose prongs are somewhere else, which is what left the swap in
+    -- `Δ ; σ = Δ` hanging beside the copy that feeds it.  The swap also spans its cell, or the
+    -- wires into it stop short of the crossing.
     let sp :=
       if fn == "delta" || fn == "nabla" then s!", sp: {fmt sep}"
       else if fn == "swap" then s!", sp: {fmt sep}, w: {fmt w}"
@@ -680,9 +693,13 @@ partial def toCell (e : Expr) : MetaM Cell := do
     match args.back? with
     | some r => return .cut #[.dagger (← label r) false]
     | none => return .box (← label e)
+  -- The residual draws as LONG DIVISION, not as its own definition unfolded.  `R ⨟• S⊥` is a cut
+  -- with a cut inside it, which is a faithful picture of the phase-9 term and needs a complement to
+  -- mean anything; `R / S` needs none, and it is the same operation — `«≤_residual_iff»` and
+  -- `le_div_iff` are one Galois statement.  One picture for one operation.
   | (``Freyd.Diag.ClosedLinearBicat.residual, args) =>
     match lastTwo args with
-    | some (r, s) => return .cut ((← toCells r) ++ #[.cut #[.dagger (← label s) false]])
+    | some (r, sd) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) false
     | none => return .box (← label e)
   -- Division draws as LONG DIVISION.  `div` has no definition to unfold — it is a field of
   -- `DivisionAllegory` — but that is a reason to draw the universal property, not a reason to print
