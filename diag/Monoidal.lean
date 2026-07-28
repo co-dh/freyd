@@ -98,7 +98,7 @@ scoped notation "𝕀" => SymMonCat.tunit
 
 end SymMonCat
 
-open scoped SymMonCat
+open SymMonCat
 
 variable {𝒞 : Type u} [SymMonCat.{v} 𝒞]
 
@@ -106,79 +106,79 @@ variable {𝒞 : Type u} [SymMonCat.{v} 𝒞]
     Used constantly to split a `⊗` of composites into stages. -/
 theorem tensHom_split {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
     (R ⊗ₕ 𝟙 b) ≫ (𝟙 a' ⊗ₕ S) = R ⊗ₕ S := by
-  rw [← SymMonCat.tensHom_comp, Cat.comp_id, Cat.id_comp]
+  rw [← tensHom_comp, Cat.comp_id, Cat.id_comp]
 
 /-- The other splitting order. -/
 theorem tensHom_split' {a a' b b' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') :
     (𝟙 a ⊗ₕ S) ≫ (R ⊗ₕ 𝟙 b') = R ⊗ₕ S := by
-  rw [← SymMonCat.tensHom_comp, Cat.comp_id, Cat.id_comp]
+  rw [← tensHom_comp, Cat.comp_id, Cat.id_comp]
 
 /-- The inverse form of `swap_lunit`: `λ⁻¹_a ; γ_{I,a} = ρ⁻¹_a`. -/
 theorem lunitInv_swap (a : 𝒞) :
-    SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a = SymMonCat.runitInv a := by
-  have hround : (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a = 𝟙 a := by
-    calc (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a
-        = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a)
-            ≫ SymMonCat.swap a (𝕀 : 𝒞) ≫ SymMonCat.lunit a := by rw [SymMonCat.swap_lunit]
-      _ = SymMonCat.lunitInv a ≫ (SymMonCat.swap (𝕀 : 𝒞) a ≫ SymMonCat.swap a (𝕀 : 𝒞))
-            ≫ SymMonCat.lunit a := by simp only [Cat.assoc]
-      _ = SymMonCat.lunitInv a ≫ 𝟙 ((𝕀 : 𝒞) ⊗ a) ≫ SymMonCat.lunit a := by
-            rw [SymMonCat.swap_swap]
-      _ = 𝟙 a := by rw [Cat.id_comp, SymMonCat.inv_lunit]
-  calc SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a
-      = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ 𝟙 (a ⊗ (𝕀 : 𝒞)) := (Cat.comp_id _).symm
-    _ = (SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a)
-          ≫ SymMonCat.runit a ≫ SymMonCat.runitInv a := by rw [SymMonCat.runit_inv]
-    _ = ((SymMonCat.lunitInv a ≫ SymMonCat.swap (𝕀 : 𝒞) a) ≫ SymMonCat.runit a)
-          ≫ SymMonCat.runitInv a := by simp only [Cat.assoc]
-    _ = SymMonCat.runitInv a := by rw [hround, Cat.id_comp]
+    lunitInv a ≫ swap (𝕀 : 𝒞) a = runitInv a := by
+  have hround : (lunitInv a ≫ swap (𝕀 : 𝒞) a) ≫ runit a = 𝟙 a := by
+    calc (lunitInv a ≫ swap (𝕀 : 𝒞) a) ≫ runit a
+        = (lunitInv a ≫ swap (𝕀 : 𝒞) a)
+            ≫ swap a (𝕀 : 𝒞) ≫ lunit a := by rw [swap_lunit]
+      _ = lunitInv a ≫ (swap (𝕀 : 𝒞) a ≫ swap a (𝕀 : 𝒞))
+            ≫ lunit a := by simp only [Cat.assoc]
+      _ = lunitInv a ≫ 𝟙 ((𝕀 : 𝒞) ⊗ a) ≫ lunit a := by
+            rw [swap_swap]
+      _ = 𝟙 a := by rw [Cat.id_comp, inv_lunit]
+  calc lunitInv a ≫ swap (𝕀 : 𝒞) a
+      = (lunitInv a ≫ swap (𝕀 : 𝒞) a) ≫ 𝟙 (a ⊗ (𝕀 : 𝒞)) := (Cat.comp_id _).symm
+    _ = (lunitInv a ≫ swap (𝕀 : 𝒞) a)
+          ≫ runit a ≫ runitInv a := by rw [runit_inv]
+    _ = ((lunitInv a ≫ swap (𝕀 : 𝒞) a) ≫ runit a)
+          ≫ runitInv a := by simp only [Cat.assoc]
+    _ = runitInv a := by rw [hround, Cat.id_comp]
 
 /-- Naturality of the associator read in the inverse direction — obtained by conjugating
     `tensAssoc_nat` with `tensAssoc_inv`/`inv_tensAssoc`.  Needed whenever a proof pushes a
     re-bracketing past a product of arrows rather than pulling it. -/
 theorem tensAssocInv_nat {a a' b b' c c' : 𝒞} (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c') :
-    SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
-      = (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by
-  have hnat := SymMonCat.tensAssoc_nat (𝒞 := 𝒞) R S T
-  calc SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
-      = SymMonCat.tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
-          ≫ (SymMonCat.tensAssoc a' b' c' ≫ SymMonCat.tensAssocInv a' b' c') := by
-        rw [SymMonCat.tensAssoc_inv, Cat.comp_id]
-    _ = SymMonCat.tensAssocInv a b c ≫ (((R ⊗ₕ S) ⊗ₕ T) ≫ SymMonCat.tensAssoc a' b' c')
-          ≫ SymMonCat.tensAssocInv a' b' c' := by simp only [Cat.assoc]
-    _ = SymMonCat.tensAssocInv a b c ≫ (SymMonCat.tensAssoc a b c ≫ (R ⊗ₕ (S ⊗ₕ T)))
-          ≫ SymMonCat.tensAssocInv a' b' c' := by rw [hnat]
-    _ = (SymMonCat.tensAssocInv a b c ≫ SymMonCat.tensAssoc a b c)
-          ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by simp only [Cat.assoc]
-    _ = (R ⊗ₕ (S ⊗ₕ T)) ≫ SymMonCat.tensAssocInv a' b' c' := by
-        rw [SymMonCat.inv_tensAssoc, Cat.id_comp]
+    tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+      = (R ⊗ₕ (S ⊗ₕ T)) ≫ tensAssocInv a' b' c' := by
+  have hnat := tensAssoc_nat (𝒞 := 𝒞) R S T
+  calc tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+      = tensAssocInv a b c ≫ ((R ⊗ₕ S) ⊗ₕ T)
+          ≫ (tensAssoc a' b' c' ≫ tensAssocInv a' b' c') := by
+        rw [tensAssoc_inv, Cat.comp_id]
+    _ = tensAssocInv a b c ≫ (((R ⊗ₕ S) ⊗ₕ T) ≫ tensAssoc a' b' c')
+          ≫ tensAssocInv a' b' c' := by simp only [Cat.assoc]
+    _ = tensAssocInv a b c ≫ (tensAssoc a b c ≫ (R ⊗ₕ (S ⊗ₕ T)))
+          ≫ tensAssocInv a' b' c' := by rw [hnat]
+    _ = (tensAssocInv a b c ≫ tensAssoc a b c)
+          ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ tensAssocInv a' b' c' := by simp only [Cat.assoc]
+    _ = (R ⊗ₕ (S ⊗ₕ T)) ≫ tensAssocInv a' b' c' := by
+        rw [inv_tensAssoc, Cat.id_comp]
 
 /-- Naturality of the left unitor read in the inverse direction, `λ⁻¹_a ; (𝟙_I ⊗ R) = R ; λ⁻¹_b`.
     This is the step that pulls an arrow out to the front of a bent wire (`CartBicat.bend_unbend`). -/
 theorem lunitInv_nat {a b : 𝒞} (R : a ⟶ b) :
-    SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R) = R ≫ SymMonCat.lunitInv b := by
-  calc SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R)
-      = SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R)
-          ≫ SymMonCat.lunit b ≫ SymMonCat.lunitInv b := by
-        rw [SymMonCat.lunit_inv, Cat.comp_id]
-    _ = SymMonCat.lunitInv a ≫ ((𝟙 (𝕀 : 𝒞) ⊗ₕ R) ≫ SymMonCat.lunit b)
-          ≫ SymMonCat.lunitInv b := by simp only [Cat.assoc]
-    _ = (SymMonCat.lunitInv a ≫ SymMonCat.lunit a) ≫ R ≫ SymMonCat.lunitInv b := by
-        rw [SymMonCat.lunit_nat]; simp only [Cat.assoc]
-    _ = R ≫ SymMonCat.lunitInv b := by rw [SymMonCat.inv_lunit, Cat.id_comp]
+    lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R) = R ≫ lunitInv b := by
+  calc lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R)
+      = lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R)
+          ≫ lunit b ≫ lunitInv b := by
+        rw [lunit_inv, Cat.comp_id]
+    _ = lunitInv a ≫ ((𝟙 (𝕀 : 𝒞) ⊗ₕ R) ≫ lunit b)
+          ≫ lunitInv b := by simp only [Cat.assoc]
+    _ = (lunitInv a ≫ lunit a) ≫ R ≫ lunitInv b := by
+        rw [lunit_nat]; simp only [Cat.assoc]
+    _ = R ≫ lunitInv b := by rw [inv_lunit, Cat.id_comp]
 
 /-- Naturality of the right unitor read in the inverse direction, `ρ⁻¹_a ; (R ⊗ 𝟙_I) = R ; ρ⁻¹_b`. -/
 theorem runitInv_nat {a b : 𝒞} (R : a ⟶ b) :
-    SymMonCat.runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) = R ≫ SymMonCat.runitInv b := by
-  calc SymMonCat.runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))
-      = SymMonCat.runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))
-          ≫ SymMonCat.runit b ≫ SymMonCat.runitInv b := by
-        rw [SymMonCat.runit_inv, Cat.comp_id]
-    _ = SymMonCat.runitInv a ≫ ((R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.runit b)
-          ≫ SymMonCat.runitInv b := by simp only [Cat.assoc]
-    _ = (SymMonCat.runitInv a ≫ SymMonCat.runit a) ≫ R ≫ SymMonCat.runitInv b := by
-        rw [SymMonCat.runit_nat]; simp only [Cat.assoc]
-    _ = R ≫ SymMonCat.runitInv b := by rw [SymMonCat.inv_runit, Cat.id_comp]
+    runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) = R ≫ runitInv b := by
+  calc runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))
+      = runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞))
+          ≫ runit b ≫ runitInv b := by
+        rw [runit_inv, Cat.comp_id]
+    _ = runitInv a ≫ ((R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b)
+          ≫ runitInv b := by simp only [Cat.assoc]
+    _ = (runitInv a ≫ runit a) ≫ R ≫ runitInv b := by
+        rw [runit_nat]; simp only [Cat.assoc]
+    _ = R ≫ runitInv b := by rw [inv_runit, Cat.id_comp]
 
 /-! ### Kelly's coherence lemmas
 
@@ -195,22 +195,22 @@ theorem runitInv_nat {a b : 𝒞} (R : a ⟶ b) :
 theorem tensUnit_left_faithful {a b : 𝒞} {R S : a ⟶ b}
     (h : (𝟙 (𝕀 : 𝒞) ⊗ₕ R) = (𝟙 (𝕀 : 𝒞) ⊗ₕ S)) : R = S := by
   have key : ∀ T : a ⟶ b,
-      SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ T) ≫ SymMonCat.lunit b = T := by
+      lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ T) ≫ lunit b = T := by
     intro T
-    rw [SymMonCat.lunit_nat, ← Cat.assoc, SymMonCat.inv_lunit, Cat.id_comp]
-  calc R = SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R) ≫ SymMonCat.lunit b := (key R).symm
-    _ = SymMonCat.lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ S) ≫ SymMonCat.lunit b := by rw [h]
+    rw [lunit_nat, ← Cat.assoc, inv_lunit, Cat.id_comp]
+  calc R = lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ R) ≫ lunit b := (key R).symm
+    _ = lunitInv a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ S) ≫ lunit b := by rw [h]
     _ = S := key S
 
 /-- `− ⊗ 𝟙_I` is faithful, the mirror of `tensUnit_left_faithful` via `ρ`. -/
 theorem tensUnit_right_faithful {a b : 𝒞} {R S : a ⟶ b}
     (h : (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) = (S ⊗ₕ 𝟙 (𝕀 : 𝒞))) : R = S := by
   have key : ∀ T : a ⟶ b,
-      SymMonCat.runitInv a ≫ (T ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.runit b = T := by
+      runitInv a ≫ (T ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b = T := by
     intro T
-    rw [SymMonCat.runit_nat, ← Cat.assoc, SymMonCat.inv_runit, Cat.id_comp]
-  calc R = SymMonCat.runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.runit b := (key R).symm
-    _ = SymMonCat.runitInv a ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.runit b := by rw [h]
+    rw [runit_nat, ← Cat.assoc, inv_runit, Cat.id_comp]
+  calc R = runitInv a ≫ (R ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b := (key R).symm
+    _ = runitInv a ≫ (S ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ runit b := by rw [h]
     _ = S := key S
 
 /-- KELLY: `α_{I,a,b} ; λ_{a⊗b} = λ_a ⊗ 𝟙_b`.  Both sides, prefixed by the isomorphism
@@ -218,196 +218,196 @@ theorem tensUnit_right_faithful {a b : 𝒞} {R S : a ⟶ b}
     `α_{I⊗I,a,b} ; (ρ_I ⊗ 𝟙_{a⊗b})` — the first by the pentagon and the triangle at `(I, a⊗b)`,
     the second by associator naturality and the triangle at `(I, a)`. -/
 theorem lunit_tens (a b : 𝒞) :
-    SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b)
-      = SymMonCat.lunit a ⊗ₕ 𝟙 b := by
+    tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b)
+      = lunit a ⊗ₕ 𝟙 b := by
   refine tensUnit_left_faithful ?_
   -- The common prefix, and its inverse.
-  have hPP : (SymMonCat.tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-        ≫ (SymMonCat.tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
-      ≫ ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-        ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b) = 𝟙 _ := by
-    calc (SymMonCat.tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-          ≫ (SymMonCat.tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
-        ≫ ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-          ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-        = SymMonCat.tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-            ≫ ((SymMonCat.tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a
-                  ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a) ⊗ₕ (𝟙 b ≫ 𝟙 b))
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b := by
-          rw [SymMonCat.tensHom_comp]; simp only [Cat.assoc]
+  have hPP : (tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+        ≫ (tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
+      ≫ ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+        ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b) = 𝟙 _ := by
+    calc (tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+          ≫ (tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
+        ≫ ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+          ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+        = tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+            ≫ ((tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a
+                  ≫ tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a) ⊗ₕ (𝟙 b ≫ 𝟙 b))
+            ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b := by
+          rw [tensHom_comp]; simp only [Cat.assoc]
       _ = 𝟙 _ := by
-          rw [SymMonCat.inv_tensAssoc, Cat.id_comp, SymMonCat.tensHom_id, Cat.id_comp,
-            SymMonCat.inv_tensAssoc]
+          rw [inv_tensAssoc, Cat.id_comp, tensHom_id, Cat.id_comp,
+            inv_tensAssoc]
   -- Claim A: the pentagon route.
-  have hA : ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-        ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-      ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b)))
-      = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by
-    have hsplit : (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b)))
-        = (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.tensAssoc (𝕀 : 𝒞) a b)
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (a ⊗ b)) := by
-      rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  have hA : ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+        ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+      ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b)))
+      = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by
+    have hsplit : (𝟙 (𝕀 : 𝒞) ⊗ₕ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b)))
+        = (𝟙 (𝕀 : 𝒞) ⊗ₕ tensAssoc (𝕀 : 𝒞) a b)
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (a ⊗ b)) := by
+      rw [← tensHom_comp, Cat.id_comp]
     rw [hsplit]
-    calc ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-          ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-        ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.tensAssoc (𝕀 : 𝒞) a b)
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (a ⊗ b))
-        = ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.tensAssoc (𝕀 : 𝒞) a b))
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (a ⊗ b)) := by simp only [Cat.assoc]
-      _ = (SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (a ⊗ b))
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (a ⊗ b)) := by rw [SymMonCat.pentagon]
-      _ = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (a ⊗ b)
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (a ⊗ b)) := by simp only [Cat.assoc]
-      _ = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
-            ≫ (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by rw [SymMonCat.triangle]
+    calc ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+          ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+        ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ tensAssoc (𝕀 : 𝒞) a b)
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (a ⊗ b))
+        = ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+            ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ tensAssoc (𝕀 : 𝒞) a b))
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (a ⊗ b)) := by simp only [Cat.assoc]
+      _ = (tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (a ⊗ b))
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (a ⊗ b)) := by rw [pentagon]
+      _ = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
+            ≫ tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (a ⊗ b)
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (a ⊗ b)) := by simp only [Cat.assoc]
+      _ = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
+            ≫ (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by rw [triangle]
   -- Claim B: the naturality route.
-  have hB : ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-        ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-      ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b))
-      = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by
-    calc ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-          ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-        ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b))
-        = (SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b)) := by simp only [Cat.assoc]
-      _ = (SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-            ≫ ((𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit a) ⊗ₕ 𝟙 b)
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) a b := by rw [← SymMonCat.tensAssoc_nat]
-      _ = ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit a))
+  have hB : ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+        ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+      ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b))
+      = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b ≫ (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by
+    calc ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+          ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+        ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b))
+        = (tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+            ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b)) := by simp only [Cat.assoc]
+      _ = (tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+            ≫ ((𝟙 (𝕀 : 𝒞) ⊗ₕ lunit a) ⊗ₕ 𝟙 b)
+            ≫ tensAssoc (𝕀 : 𝒞) a b := by rw [← tensAssoc_nat]
+      _ = ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit a))
               ⊗ₕ (𝟙 b ≫ 𝟙 b))
-            ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) a b := by
-          rw [SymMonCat.tensHom_comp]; simp only [Cat.assoc]
-      _ = ((SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) a b := by
-          rw [SymMonCat.triangle, Cat.id_comp]
-      _ = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
-            ≫ (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ (𝟙 a ⊗ₕ 𝟙 b)) := by rw [SymMonCat.tensAssoc_nat]
-      _ = SymMonCat.tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
-            ≫ (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by rw [SymMonCat.tensHom_id]
+            ≫ tensAssoc (𝕀 : 𝒞) a b := by
+          rw [tensHom_comp]; simp only [Cat.assoc]
+      _ = ((runit (𝕀 : 𝒞) ⊗ₕ 𝟙 a) ⊗ₕ 𝟙 b) ≫ tensAssoc (𝕀 : 𝒞) a b := by
+          rw [triangle, Cat.id_comp]
+      _ = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
+            ≫ (runit (𝕀 : 𝒞) ⊗ₕ (𝟙 a ⊗ₕ 𝟙 b)) := by rw [tensAssoc_nat]
+      _ = tensAssoc ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) a b
+            ≫ (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (a ⊗ b)) := by rw [tensHom_id]
   -- Cancel the common prefix.
   have hAB := hA.trans hB.symm
-  calc (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b)))
-      = 𝟙 _ ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b))) :=
+  calc (𝟙 (𝕀 : 𝒞) ⊗ₕ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b)))
+      = 𝟙 _ ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b))) :=
         (Cat.id_comp _).symm
-    _ = (SymMonCat.tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-            ≫ (SymMonCat.tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
-          ≫ ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-              ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-          ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.tensAssoc (𝕀 : 𝒞) a b ≫ SymMonCat.lunit (a ⊗ b))) := by
+    _ = (tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+            ≫ (tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
+          ≫ ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+              ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+          ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (tensAssoc (𝕀 : 𝒞) a b ≫ lunit (a ⊗ b))) := by
         rw [← hPP]; simp only [Cat.assoc]
-    _ = (SymMonCat.tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
-            ≫ (SymMonCat.tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
-          ≫ ((SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
-              ≫ SymMonCat.tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
-          ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b)) := by rw [hAB]
-    _ = 𝟙 _ ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b)) := by
+    _ = (tensAssocInv (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b
+            ≫ (tensAssocInv (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b))
+          ≫ ((tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) a ⊗ₕ 𝟙 b)
+              ≫ tensAssoc (𝕀 : 𝒞) ((𝕀 : 𝒞) ⊗ a) b)
+          ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b)) := by rw [hAB]
+    _ = 𝟙 _ ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b)) := by
         rw [← hPP]; simp only [Cat.assoc]
-    _ = (𝟙 (𝕀 : 𝒞) ⊗ₕ (SymMonCat.lunit a ⊗ₕ 𝟙 b)) := Cat.id_comp _
+    _ = (𝟙 (𝕀 : 𝒞) ⊗ₕ (lunit a ⊗ₕ 𝟙 b)) := Cat.id_comp _
 
 /-- KELLY, the mirror of `lunit_tens`: `α_{a,b,I} ; (𝟙_a ⊗ ρ_b) = ρ_{a⊗b}`.  Both sides, tensored
     with `𝟙_I` and followed by `α_{a,b,I}`, are the two halves of the pentagon at `(a, b, I, I)`
     post-composed with `𝟙_a ⊗ (𝟙_b ⊗ λ_I)`; the triangle at `(b, I)` closes one and the triangle
     at `(a⊗b, I)` the other. -/
 theorem runit_tens (a b : 𝒞) :
-    SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b) = SymMonCat.runit (a ⊗ b) := by
+    tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b) = runit (a ⊗ b) := by
   refine tensUnit_right_faithful ?_
   -- Claim A: the pentagon's left-hand side, closed by the triangle at `(b, I)`.
-  have hA : ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-        ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)
-      = ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-          ≫ SymMonCat.tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
-          ≫ (𝟙 a ⊗ₕ SymMonCat.tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)))
-        ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by
-    calc ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-          ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)
-        = ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ ((𝟙 a ⊗ₕ SymMonCat.runit b) ⊗ₕ 𝟙 (𝕀 : 𝒞)))
-            ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞) := by
-          rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ ((𝟙 a ⊗ₕ SymMonCat.runit b) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞) := by simp only [Cat.assoc]
-      _ = (SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ SymMonCat.tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
-            ≫ (𝟙 a ⊗ₕ (SymMonCat.runit b ⊗ₕ 𝟙 (𝕀 : 𝒞))) := by rw [SymMonCat.tensAssoc_nat]
-      _ = (SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ SymMonCat.tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
-            ≫ (𝟙 a ⊗ₕ (SymMonCat.tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)
-                ≫ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞)))) := by rw [SymMonCat.triangle]
-      _ = ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-            ≫ SymMonCat.tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
-            ≫ (𝟙 a ⊗ₕ SymMonCat.tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)))
-            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by
-          have hs : (𝟙 a ⊗ₕ (SymMonCat.tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)
-                ≫ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))))
-              = (𝟙 a ⊗ₕ SymMonCat.tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞))
-                  ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by
-            rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  have hA : ((tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+        ≫ tensAssoc a b (𝕀 : 𝒞)
+      = ((tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+          ≫ tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
+          ≫ (𝟙 a ⊗ₕ tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)))
+        ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by
+    calc ((tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+          ≫ tensAssoc a b (𝕀 : 𝒞)
+        = ((tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ ((𝟙 a ⊗ₕ runit b) ⊗ₕ 𝟙 (𝕀 : 𝒞)))
+            ≫ tensAssoc a b (𝕀 : 𝒞) := by
+          rw [← tensHom_comp, Cat.comp_id]
+      _ = (tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ ((𝟙 a ⊗ₕ runit b) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ tensAssoc a b (𝕀 : 𝒞) := by simp only [Cat.assoc]
+      _ = (tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
+            ≫ (𝟙 a ⊗ₕ (runit b ⊗ₕ 𝟙 (𝕀 : 𝒞))) := by rw [tensAssoc_nat]
+      _ = (tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
+            ≫ (𝟙 a ⊗ₕ (tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)
+                ≫ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞)))) := by rw [triangle]
+      _ = ((tensAssoc a b (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+            ≫ tensAssoc a (b ⊗ (𝕀 : 𝒞)) (𝕀 : 𝒞)
+            ≫ (𝟙 a ⊗ₕ tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)))
+            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by
+          have hs : (𝟙 a ⊗ₕ (tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞)
+                ≫ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))))
+              = (𝟙 a ⊗ₕ tensAssoc b (𝕀 : 𝒞) (𝕀 : 𝒞))
+                  ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by
+            rw [← tensHom_comp, Cat.id_comp]
           rw [hs]; simp only [Cat.assoc]
   -- Claim B: the pentagon's right-hand side, closed by the triangle at `(a⊗b, I)`.
-  have hB : (SymMonCat.runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)
-      = (SymMonCat.tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞) ≫ SymMonCat.tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)))
-        ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by
-    calc (SymMonCat.runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)
-        = (SymMonCat.tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ (𝟙 (a ⊗ b) ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞)))
-            ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞) := by rw [SymMonCat.triangle]
-      _ = SymMonCat.tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ ((𝟙 a ⊗ₕ 𝟙 b) ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))
-            ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞) := by
-          rw [SymMonCat.tensHom_id]; simp only [Cat.assoc]
-      _ = SymMonCat.tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ SymMonCat.tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞))
-            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by rw [SymMonCat.tensAssoc_nat]
-      _ = (SymMonCat.tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ SymMonCat.tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)))
-            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) := by simp only [Cat.assoc]
+  have hB : (runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ tensAssoc a b (𝕀 : 𝒞)
+      = (tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞) ≫ tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)))
+        ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by
+    calc (runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ tensAssoc a b (𝕀 : 𝒞)
+        = (tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ (𝟙 (a ⊗ b) ⊗ₕ lunit (𝕀 : 𝒞)))
+            ≫ tensAssoc a b (𝕀 : 𝒞) := by rw [triangle]
+      _ = tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ ((𝟙 a ⊗ₕ 𝟙 b) ⊗ₕ lunit (𝕀 : 𝒞))
+            ≫ tensAssoc a b (𝕀 : 𝒞) := by
+          rw [tensHom_id]; simp only [Cat.assoc]
+      _ = tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞))
+            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by rw [tensAssoc_nat]
+      _ = (tensAssoc (a ⊗ b) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ tensAssoc a b ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)))
+            ≫ (𝟙 a ⊗ₕ (𝟙 b ⊗ₕ lunit (𝕀 : 𝒞))) := by simp only [Cat.assoc]
   -- The two prefixes agree by the pentagon, so the two `⊗ 𝟙_I`s agree once `α` is cancelled.
-  have hcancel : ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-        ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)
-      = (SymMonCat.runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞) := by
-    rw [hA, hB, SymMonCat.pentagon]
-  calc ((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-      = (((SymMonCat.tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ SymMonCat.runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-          ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞)) ≫ SymMonCat.tensAssocInv a b (𝕀 : 𝒞) := by
-        rw [Cat.assoc, SymMonCat.tensAssoc_inv, Cat.comp_id]
-    _ = ((SymMonCat.runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.tensAssoc a b (𝕀 : 𝒞))
-          ≫ SymMonCat.tensAssocInv a b (𝕀 : 𝒞) := by rw [hcancel]
-    _ = (SymMonCat.runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) := by
-        rw [Cat.assoc, SymMonCat.tensAssoc_inv, Cat.comp_id]
+  have hcancel : ((tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+        ≫ tensAssoc a b (𝕀 : 𝒞)
+      = (runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ tensAssoc a b (𝕀 : 𝒞) := by
+    rw [hA, hB, pentagon]
+  calc ((tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+      = (((tensAssoc a b (𝕀 : 𝒞) ≫ (𝟙 a ⊗ₕ runit b)) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+          ≫ tensAssoc a b (𝕀 : 𝒞)) ≫ tensAssocInv a b (𝕀 : 𝒞) := by
+        rw [Cat.assoc, tensAssoc_inv, Cat.comp_id]
+    _ = ((runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ tensAssoc a b (𝕀 : 𝒞))
+          ≫ tensAssocInv a b (𝕀 : 𝒞) := by rw [hcancel]
+    _ = (runit (a ⊗ b) ⊗ₕ 𝟙 (𝕀 : 𝒞)) := by
+        rw [Cat.assoc, tensAssoc_inv, Cat.comp_id]
 
 /-- KELLY: `λ_I = ρ_I`, Mac Lane's third redundant axiom.  Both `λ_I ⊗ 𝟙_I` and `ρ_I ⊗ 𝟙_I`,
     followed by `λ_I`, equal `α_{I,I,I} ; (𝟙_I ⊗ λ_I) ; λ_I` — the first by `lunit_tens` plus
     naturality of `λ`, the second by the triangle at `(I, I)`. -/
-theorem lunit_unit : SymMonCat.lunit (𝕀 : 𝒞) = SymMonCat.runit (𝕀 : 𝒞) := by
+theorem lunit_unit : lunit (𝕀 : 𝒞) = runit (𝕀 : 𝒞) := by
   refine tensUnit_right_faithful ?_
-  have hkey : (SymMonCat.lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞)
-      = (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
-    calc (SymMonCat.lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞)
-        = (SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ SymMonCat.lunit ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞))) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
+  have hkey : (lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞)
+      = (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞) := by
+    calc (lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞)
+        = (tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ lunit ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞))) ≫ lunit (𝕀 : 𝒞) := by
           rw [lunit_tens]
-      _ = SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ SymMonCat.lunit ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
+      _ = tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ lunit ((𝕀 : 𝒞) ⊗ (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞) := by
           simp only [Cat.assoc]
-      _ = SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
-          rw [SymMonCat.lunit_nat]
-      _ = (SymMonCat.tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
-            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ SymMonCat.lunit (𝕀 : 𝒞))) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
+      _ = tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞) := by
+          rw [lunit_nat]
+      _ = (tensAssoc (𝕀 : 𝒞) (𝕀 : 𝒞) (𝕀 : 𝒞)
+            ≫ (𝟙 (𝕀 : 𝒞) ⊗ₕ lunit (𝕀 : 𝒞))) ≫ lunit (𝕀 : 𝒞) := by
           simp only [Cat.assoc]
-      _ = (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞) := by
-          rw [SymMonCat.triangle]
-  calc (SymMonCat.lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
-      = ((SymMonCat.lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞))
-          ≫ SymMonCat.lunitInv (𝕀 : 𝒞) := by
-        rw [Cat.assoc, SymMonCat.lunit_inv, Cat.comp_id]
-    _ = ((SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ SymMonCat.lunit (𝕀 : 𝒞))
-          ≫ SymMonCat.lunitInv (𝕀 : 𝒞) := by rw [hkey]
-    _ = (SymMonCat.runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) := by
-        rw [Cat.assoc, SymMonCat.lunit_inv, Cat.comp_id]
+      _ = (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞) := by
+          rw [triangle]
+  calc (lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞))
+      = ((lunit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞))
+          ≫ lunitInv (𝕀 : 𝒞) := by
+        rw [Cat.assoc, lunit_inv, Cat.comp_id]
+    _ = ((runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) ≫ lunit (𝕀 : 𝒞))
+          ≫ lunitInv (𝕀 : 𝒞) := by rw [hkey]
+    _ = (runit (𝕀 : 𝒞) ⊗ₕ 𝟙 (𝕀 : 𝒞)) := by
+        rw [Cat.assoc, lunit_inv, Cat.comp_id]
 
 end Freyd.Diag

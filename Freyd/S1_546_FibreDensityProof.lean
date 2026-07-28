@@ -46,7 +46,7 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.FibreDensityProof
-open scoped PreRegularCategory
+open PreRegularCategory
 
 universe u
 

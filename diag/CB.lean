@@ -29,7 +29,7 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open scoped SymMonCat
+open SymMonCat
 
 /-- A CARTESIAN BICATEGORY OF RELATIONS (functorialSemanticsForRelationalTheories.pdf Def. 4.1). -/
 class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
@@ -39,19 +39,19 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
   «?» (n : 𝒞) : 𝕀 ⟶ n       --unit
 
   Δ_assoc (n : 𝒞) :
-    Δ n ≫ (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n = Δ n ≫ (𝟙 n ⊗ₕ Δ n)
+    Δ n ≫ (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n = Δ n ≫ (𝟙 n ⊗ₕ Δ n)
   /-- Cocommutativity of `Δ`; eq. (9). -/
-  Δ_comm (n : 𝒞) : Δ n ≫ SymMonCat.swap n n = Δ n
+  Δ_comm (n : 𝒞) : Δ n ≫ swap n n = Δ n
   /-- Counit law for `(Δ, !)`; eq. (10). -/
-  Δ_counit (n : 𝒞) : Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n = 𝟙 n
+  Δ_counit (n : 𝒞) : Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n = 𝟙 n
 
   /-- Associativity of `∇`; Example 2.3(a) eq. (5). -/
   «∇_assoc» (n : 𝒞) :
-    («∇» n ⊗ₕ 𝟙 n) ≫ «∇» n = SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n) ≫ «∇» n
+    («∇» n ⊗ₕ 𝟙 n) ≫ «∇» n = tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n) ≫ «∇» n
   /-- Commutativity of `∇`; eq. (6). -/
-  «∇_comm» (n : 𝒞) : SymMonCat.swap n n ≫ «∇» n = «∇» n
+  «∇_comm» (n : 𝒞) : swap n n ≫ «∇» n = «∇» n
   /-- Unit law for `(∇, ?)`; eq. (7). -/
-  «∇_unit» (n : 𝒞) : SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n = 𝟙 n
+  «∇_unit» (n : 𝒞) : runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ «∇» n = 𝟙 n
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
   «∇Δ_≤_𝟙» (n : 𝒞) : («∇» n ≫ Δ n) ≤ (𝟙 (n ⊗ n))
@@ -64,10 +64,10 @@ class CartBicat (𝒞 : Type u) extends SymMonCat.{v} 𝒞 where
 
   /-- (41), left form: `(𝟙 ⊗ Δ);α⁻¹;(∇ ⊗ 𝟙) = ∇;Δ`. -/
   frob_left (n : 𝒞) :
-    (𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ («∇» n ⊗ₕ 𝟙 n) = «∇» n ≫ Δ n
+    (𝟙 n ⊗ₕ Δ n) ≫ tensAssocInv n n n ≫ («∇» n ⊗ₕ 𝟙 n) = «∇» n ≫ Δ n
   /-- (41), right form: `(Δ ⊗ 𝟙);α;(𝟙 ⊗ ∇) = ∇;Δ`. -/
   frob_right (n : 𝒞) :
-    (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n) = «∇» n ≫ Δ n
+    (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ «∇» n) = «∇» n ≫ Δ n
 
   /-- (42): every arrow is lax for the comultiplication — `R;Δ ≤ Δ;(R ⊗ R)`.  This is eq. (3),
       p. 4; Freyd has it product-free as §2.136's `R(S ∩ T) ⊑ RS ∩ RT` at `S := π₁°, T := π₂°`. -/
@@ -99,22 +99,22 @@ theorem special (n : 𝒞) : Δ n ≫ ∇ n = 𝟙 n := by
   have hstep : (Δ n ≫ ∇ n) ≤ (Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) := by
     have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ ∇ n) ≤ ((𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n) :=
       OrderedCat.comp_mono
-        (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙_≤_!?» n)) (OrderedCat.«≤_refl» _)
-    rw [SymMonCat.tensHom_id, Cat.id_comp] at h
+        (tensHom_mono (OrderedCat.«≤_refl» _) («𝟙_≤_!?» n)) (OrderedCat.«≤_refl» _)
+    rw [tensHom_id, Cat.id_comp] at h
     exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) h
   -- The right-hand side is `𝟙`: split the `⊗`, insert `runit ≫ runitInv = 𝟙`, then use the
   -- counit law (10) on the left half and the unit law (7) on the right half.
   have hcollapse : Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n = 𝟙 n := by
     have hsplit : (𝟙 n ⊗ₕ («!» n ≫ «?» n)) = (𝟙 n ⊗ₕ «!» n) ≫ (𝟙 n ⊗ₕ «?» n) := by
-      rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+      rw [← tensHom_comp, Cat.id_comp]
     calc Δ n ≫ (𝟙 n ⊗ₕ («!» n ≫ «?» n)) ≫ ∇ n
         = Δ n ≫ ((𝟙 n ⊗ₕ «!» n) ≫ (𝟙 n ⊗ₕ «?» n)) ≫ ∇ n := by rw [hsplit]
       _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ 𝟙 (n ⊗ 𝕀) ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by
             rw [Cat.id_comp, Cat.assoc]
-      _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ (SymMonCat.runit n ≫ SymMonCat.runitInv n)
-            ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [SymMonCat.runit_inv]
-      _ = (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n)
-            ≫ (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n) := by
+      _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ (runit n ≫ runitInv n)
+            ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [runit_inv]
+      _ = (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n)
+            ≫ (runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n) := by
             simp only [Cat.assoc]
       _ = 𝟙 n ≫ 𝟙 n := by rw [Δ_counit, «∇_unit»]
       _ = 𝟙 n := Cat.id_comp _
@@ -124,30 +124,30 @@ theorem special (n : 𝒞) : Δ n ≫ ∇ n = 𝟙 n := by
 /-- The counit law (10) read on the LEFT strand: `Δ;(! ⊗ 𝟙);λ = 𝟙`.  Only the right-hand form is a
     field, since cocommutativity (9) plus the unitor–symmetry coherence gives this one. -/
 theorem Δ_counit_left (n : 𝒞) :
-    Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
-  calc Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
-      = (Δ n ≫ SymMonCat.swap n n) ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [Δ_comm]
-    _ = Δ n ≫ (SymMonCat.swap n n ≫ («!» n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by
+    Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n = 𝟙 n := by
+  calc Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n
+      = (Δ n ≫ swap n n) ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n := by rw [Δ_comm]
+    _ = Δ n ≫ (swap n n ≫ («!» n ⊗ₕ 𝟙 n)) ≫ lunit n := by
           simp only [Cat.assoc]
-    _ = Δ n ≫ ((𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.swap n 𝕀) ≫ SymMonCat.lunit n := by
-          rw [← SymMonCat.swap_nat]
-    _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.swap n 𝕀 ≫ SymMonCat.lunit n := by
+    _ = Δ n ≫ ((𝟙 n ⊗ₕ «!» n) ≫ swap n 𝕀) ≫ lunit n := by
+          rw [← swap_nat]
+    _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ swap n 𝕀 ≫ lunit n := by
           simp only [Cat.assoc]
-    _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n := by rw [SymMonCat.swap_lunit]
+    _ = Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [swap_lunit]
     _ = 𝟙 n := Δ_counit n
 
 /-- The unit law (7) read on the LEFT strand: `λ⁻¹;(? ⊗ 𝟙);∇ = 𝟙`, dual to `delta_counit_left`. -/
 theorem «∇_unit_left» (n : 𝒞) :
-    SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n = 𝟙 n := by
-  calc SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n
-      = SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n ≫ ∇ n := by rw [«∇_comm»]
-    _ = SymMonCat.lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ SymMonCat.swap n n) ≫ ∇ n := by
+    lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n = 𝟙 n := by
+  calc lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n
+      = lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ swap n n ≫ ∇ n := by rw [«∇_comm»]
+    _ = lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ swap n n) ≫ ∇ n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.lunitInv n ≫ (SymMonCat.swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ ∇ n := by
-          rw [SymMonCat.swap_nat]
-    _ = (SymMonCat.lunitInv n ≫ SymMonCat.swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by
+    _ = lunitInv n ≫ (swap (𝕀 : 𝒞) n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ ∇ n := by
+          rw [swap_nat]
+    _ = (lunitInv n ≫ swap (𝕀 : 𝒞) n) ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by
           simp only [Cat.assoc]
-    _ = SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [lunitInv_swap]
+    _ = runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n := by rw [lunitInv_swap]
     _ = 𝟙 n := «∇_unit» n
 
 /-- The CUP `? ; Δ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
@@ -162,46 +162,46 @@ def cap (n : 𝒞) : n ⊗ n ⟶ (𝕀 : 𝒞) := ∇ n ≫ «!» n
     literally the left-hand side of `frob_left`, which collapses them to `∇;Δ`, and then the monoid
     unit law (7) and the left counit law finish it. -/
 theorem snake (n : 𝒞) :
-    SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
-      ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n = 𝟙 n := by
+    runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ tensAssocInv n n n
+      ≫ (cap n ⊗ₕ 𝟙 n) ≫ lunit n = 𝟙 n := by
   have hcup : (𝟙 n ⊗ₕ cup n) = (𝟙 n ⊗ₕ «?» n) ≫ (𝟙 n ⊗ₕ Δ n) := by
-    dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+    dsimp [cup]; rw [← tensHom_comp, Cat.id_comp]
   have hcap : (cap n ⊗ₕ 𝟙 n) = (∇ n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n) := by
-    dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  calc SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ SymMonCat.tensAssocInv n n n
-        ≫ (cap n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n
-      = SymMonCat.runitInv n ≫ ((𝟙 n ⊗ₕ «?» n) ≫ (𝟙 n ⊗ₕ Δ n)) ≫ SymMonCat.tensAssocInv n n n
-          ≫ ((∇ n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n)) ≫ SymMonCat.lunit n := by rw [hcup, hcap]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n))
-          ≫ ((𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n))
-          ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ (∇ n ≫ Δ n)
-          ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n := by rw [frob_left]
-    _ = (SymMonCat.runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n)
-          ≫ (Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ SymMonCat.lunit n) := by simp only [Cat.assoc]
+    dsimp [cap]; rw [← tensHom_comp, Cat.id_comp]
+  calc runitInv n ≫ (𝟙 n ⊗ₕ cup n) ≫ tensAssocInv n n n
+        ≫ (cap n ⊗ₕ 𝟙 n) ≫ lunit n
+      = runitInv n ≫ ((𝟙 n ⊗ₕ «?» n) ≫ (𝟙 n ⊗ₕ Δ n)) ≫ tensAssocInv n n n
+          ≫ ((∇ n ⊗ₕ 𝟙 n) ≫ («!» n ⊗ₕ 𝟙 n)) ≫ lunit n := by rw [hcup, hcap]
+    _ = (runitInv n ≫ (𝟙 n ⊗ₕ «?» n))
+          ≫ ((𝟙 n ⊗ₕ Δ n) ≫ tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n))
+          ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n := by simp only [Cat.assoc]
+    _ = (runitInv n ≫ (𝟙 n ⊗ₕ «?» n)) ≫ (∇ n ≫ Δ n)
+          ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n := by rw [frob_left]
+    _ = (runitInv n ≫ (𝟙 n ⊗ₕ «?» n) ≫ ∇ n)
+          ≫ (Δ n ≫ («!» n ⊗ₕ 𝟙 n) ≫ lunit n) := by simp only [Cat.assoc]
     _ = 𝟙 n ≫ 𝟙 n := by rw [«∇_unit», Δ_counit_left]
     _ = 𝟙 n := Cat.id_comp _
 
 /-- The mirror snake, bending the other way.  Same shape as `snake` with `frob_right` in place of
     `frob_left` and the left/right unit laws exchanged. -/
 theorem snake' (n : 𝒞) :
-    SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
-      ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n = 𝟙 n := by
+    lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n
+      ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n = 𝟙 n := by
   have hcup : (cup n ⊗ₕ 𝟙 n) = («?» n ⊗ₕ 𝟙 n) ≫ (Δ n ⊗ₕ 𝟙 n) := by
-    dsimp [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+    dsimp [cup]; rw [← tensHom_comp, Cat.id_comp]
   have hcap : (𝟙 n ⊗ₕ cap n) = (𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n) := by
-    dsimp [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-  calc SymMonCat.lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n
-        ≫ (𝟙 n ⊗ₕ cap n) ≫ SymMonCat.runit n
-      = SymMonCat.lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ (Δ n ⊗ₕ 𝟙 n)) ≫ SymMonCat.tensAssoc n n n
-          ≫ ((𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n)) ≫ SymMonCat.runit n := by rw [hcup, hcap]
-    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n))
-          ≫ ((Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n))
-          ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n := by simp only [Cat.assoc]
-    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n)) ≫ (∇ n ≫ Δ n)
-          ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n := by rw [frob_right]
-    _ = (SymMonCat.lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n)
-          ≫ (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ SymMonCat.runit n) := by simp only [Cat.assoc]
+    dsimp [cap]; rw [← tensHom_comp, Cat.id_comp]
+  calc lunitInv n ≫ (cup n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n
+        ≫ (𝟙 n ⊗ₕ cap n) ≫ runit n
+      = lunitInv n ≫ ((«?» n ⊗ₕ 𝟙 n) ≫ (Δ n ⊗ₕ 𝟙 n)) ≫ tensAssoc n n n
+          ≫ ((𝟙 n ⊗ₕ ∇ n) ≫ (𝟙 n ⊗ₕ «!» n)) ≫ runit n := by rw [hcup, hcap]
+    _ = (lunitInv n ≫ («?» n ⊗ₕ 𝟙 n))
+          ≫ ((Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n))
+          ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by simp only [Cat.assoc]
+    _ = (lunitInv n ≫ («?» n ⊗ₕ 𝟙 n)) ≫ (∇ n ≫ Δ n)
+          ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n := by rw [frob_right]
+    _ = (lunitInv n ≫ («?» n ⊗ₕ 𝟙 n) ≫ ∇ n)
+          ≫ (Δ n ≫ (𝟙 n ⊗ₕ «!» n) ≫ runit n) := by simp only [Cat.assoc]
     _ = 𝟙 n ≫ 𝟙 n := by rw [«∇_unit_left», Δ_counit]
     _ = 𝟙 n := Cat.id_comp _
 
@@ -215,8 +215,8 @@ def unbend {a b : 𝒞} (S : b ⟶ a) : a ⊗ b ⟶ (𝕀 : 𝒞) := (𝟙 a ⊗
     bijection is what makes the converse well behaved, and it is the "snake lemma" the paper
     appeals to for Lemma 4.2. -/
 def bend {a b : 𝒞} (k : a ⊗ b ⟶ (𝕀 : 𝒞)) : b ⟶ a :=
-  SymMonCat.lunitInv b ≫ (cup a ⊗ₕ 𝟙 b) ≫ SymMonCat.tensAssoc a a b
-    ≫ (𝟙 a ⊗ₕ k) ≫ SymMonCat.runit a
+  lunitInv b ≫ (cup a ⊗ₕ 𝟙 b) ≫ tensAssoc a a b
+    ≫ (𝟙 a ⊗ₕ k) ≫ runit a
 
 /-- The CONVERSE `R°`, by bending both of `R`'s wires around
     (functorialSemanticsForRelationalTheories.pdf p. 19, "`R†` is just the opposite relation").
@@ -233,7 +233,7 @@ def conv {a b : 𝒞} (R : a ⟶ b) : b ⟶ a := bend ((R ⊗ₕ 𝟙 b) ≫ cap
 /-- `𝟙° = 𝟙`, which is exactly the mirror snake once `𝟙 ⊗ 𝟙` is collapsed. -/
 theorem conv_id (a : 𝒞) : conv (𝟙 a) = 𝟙 a := by
   dsimp [conv, bend]
-  rw [SymMonCat.tensHom_id, Cat.id_comp]
+  rw [tensHom_id, Cat.id_comp]
   exact snake' a
 
 /-- The converse is monotone: it is built only from `≫` and `⊗`, both of which are. -/
@@ -242,12 +242,8 @@ theorem conv_mono {a b : 𝒞} {R S : a ⟶ b} (h : R ≤ S) :
   dsimp [conv, bend]
   refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
     (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (OrderedCat.comp_mono ?_ (OrderedCat.«≤_refl» _))))
-  exact SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _)
-    (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.«≤_refl» _)) (OrderedCat.«≤_refl» _))
-
-section Bending
-
-open SymMonCat
+  exact tensHom_mono (OrderedCat.«≤_refl» _)
+    (OrderedCat.comp_mono (tensHom_mono h (OrderedCat.«≤_refl» _)) (OrderedCat.«≤_refl» _))
 
 /-- The cap is symmetric: `γ;cap = cap`.  Immediate from commutativity (6) of the merge, and the
     reason the two ways of capping a pair of `a`-wires agree. -/
@@ -607,8 +603,6 @@ theorem «∇_slide_conv» {b c : 𝒞} (S : b ⟶ c) :
         OrderedCat.comp_mono (tensHom_mono (lax_Δ S) (OrderedCat.«≤_refl» _))
           (OrderedCat.«≤_refl» _)
     _ = (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := hR
-
-end Bending
 
 end CartBicat
 

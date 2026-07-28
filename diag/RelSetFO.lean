@@ -31,7 +31,7 @@ namespace Freyd.Diag
 open Freyd
 open Freyd.Alg
 open LinearBicat
-open scoped SymMonCat
+open SymMonCat
 
 /-- `⨟•` on `Rel(Set)`: the de Morgan dual of composition — `∀`/`∨` where `≫` has `∃`/`∧`. -/
 def relBcomp {a b c : RelSet.{u}} (R : a ⟶ b) (S : b ⟶ c) : a ⟶ c :=
@@ -190,7 +190,7 @@ theorem relBtensHom_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
 /-- The `≤`-facing form of the transport, used by every inequational field below. -/
 theorem compl_tensHom_mono {a a' b b' : RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
     (hR : R ≤ R') (hS : S ≤ S') : relBtensHom R S ≤ relBtensHom R' S' :=
-  «compl_≤_iff».mpr (SymMonCat.tensHom_mono («compl_≤_iff».mpr hR) («compl_≤_iff».mpr hS))
+  «compl_≤_iff».mpr (tensHom_mono («compl_≤_iff».mpr hR) («compl_≤_iff».mpr hS))
 
 /-! ### Definition 5.1 at `Rel(Set)`
 
@@ -203,57 +203,57 @@ instance : MonLinearBicat RelSet.{u} :=
   { (inferInstance : SymMonCat RelSet.{u}), (inferInstance : LinearBicat RelSet.{u}) with
     btensHom := relBtensHom
     btensHom_bid := fun a b => compl_inj <| by
-      simp only [compl_relBtensHom, compl_bid]; exact SymMonCat.tensHom_id a b
+      simp only [compl_relBtensHom, compl_bid]; exact tensHom_id a b
     btensHom_bcomp := fun R R' S S' => compl_inj <| by
-      simp only [compl_relBtensHom, compl_bcomp]; exact SymMonCat.tensHom_comp _ _ _ _
+      simp only [compl_relBtensHom, compl_bcomp]; exact tensHom_comp _ _ _ _
     btensHom_mono := compl_tensHom_mono
 
-    bassoc := fun a b c => compl (SymMonCat.tensAssoc a b c)
-    bassocInv := fun a b c => compl (SymMonCat.tensAssocInv a b c)
+    bassoc := fun a b c => compl (tensAssoc a b c)
+    bassocInv := fun a b c => compl (tensAssocInv a b c)
     bassoc_inv := fun a b c => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.tensAssoc_inv a b c
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact tensAssoc_inv a b c
     inv_bassoc := fun a b c => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.inv_tensAssoc a b c
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact inv_tensAssoc a b c
     bassoc_nat := fun R S T => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_relBtensHom]; exact SymMonCat.tensAssoc_nat _ _ _
+      simp only [compl_bcomp, compl_compl, compl_relBtensHom]; exact tensAssoc_nat _ _ _
 
-    blunit := fun a => compl (SymMonCat.lunit a)
-    blunitInv := fun a => compl (SymMonCat.lunitInv a)
+    blunit := fun a => compl (lunit a)
+    blunitInv := fun a => compl (lunitInv a)
     blunit_inv := fun a => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.lunit_inv a
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact lunit_inv a
     inv_blunit := fun a => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.inv_lunit a
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact inv_lunit a
     blunit_nat := fun R => compl_inj <| by
       simp only [compl_bcomp, compl_compl, compl_relBtensHom, compl_bid]
-      exact SymMonCat.lunit_nat _
+      exact lunit_nat _
 
-    brunit := fun a => compl (SymMonCat.runit a)
-    brunitInv := fun a => compl (SymMonCat.runitInv a)
+    brunit := fun a => compl (runit a)
+    brunitInv := fun a => compl (runitInv a)
     brunit_inv := fun a => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.runit_inv a
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact runit_inv a
     inv_brunit := fun a => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.inv_runit a
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact inv_runit a
     brunit_nat := fun R => compl_inj <| by
       simp only [compl_bcomp, compl_compl, compl_relBtensHom, compl_bid]
-      exact SymMonCat.runit_nat _
+      exact runit_nat _
 
-    bswap := fun a b => compl (SymMonCat.swap a b)
+    bswap := fun a b => compl (swap a b)
     bswap_bswap := fun a b => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_bid]; exact SymMonCat.swap_swap a b
+      simp only [compl_bcomp, compl_compl, compl_bid]; exact swap_swap a b
     bswap_nat := fun R S => compl_inj <| by
-      simp only [compl_bcomp, compl_compl, compl_relBtensHom]; exact SymMonCat.swap_nat _ _
+      simp only [compl_bcomp, compl_compl, compl_relBtensHom]; exact swap_nat _ _
     bswap_blunit := fun a => compl_inj <| by
-      simp only [compl_bcomp, compl_compl]; exact SymMonCat.swap_lunit a
+      simp only [compl_bcomp, compl_compl]; exact swap_lunit a
 
     bpentagon := fun a b c d => compl_inj <| by
       simp only [compl_bcomp, compl_compl, compl_relBtensHom, compl_bid]
-      exact SymMonCat.pentagon a b c d
+      exact pentagon a b c d
     btriangle := fun a b => compl_inj <| by
       simp only [compl_bcomp, compl_compl, compl_relBtensHom, compl_bid]
-      exact SymMonCat.triangle a b
+      exact triangle a b
     bhexagon := fun a b c => compl_inj <| by
       simp only [compl_bcomp, compl_compl, compl_relBtensHom, compl_bid]
-      exact SymMonCat.hexagon a b c
+      exact hexagon a b c
 
     -- (ν_l°): fix the middle pair `m`; either both left factors fire, or one of the right ones
     -- does, and a right one is exactly what the black `⊗•` on the right needs.
@@ -311,22 +311,22 @@ theorem btensHom_eq {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     MonLinearBicat.btensHom R S = relBtensHom R S := rfl
 
 theorem bassoc_eq (a b c : RelSet.{u}) :
-    MonLinearBicat.bassoc a b c = compl (SymMonCat.tensAssoc a b c) := rfl
+    MonLinearBicat.bassoc a b c = compl (tensAssoc a b c) := rfl
 
 theorem bassocInv_eq (a b c : RelSet.{u}) :
-    MonLinearBicat.bassocInv a b c = compl (SymMonCat.tensAssocInv a b c) := rfl
+    MonLinearBicat.bassocInv a b c = compl (tensAssocInv a b c) := rfl
 
-theorem blunit_eq (a : RelSet.{u}) : MonLinearBicat.blunit a = compl (SymMonCat.lunit a) := rfl
+theorem blunit_eq (a : RelSet.{u}) : MonLinearBicat.blunit a = compl (lunit a) := rfl
 
 theorem blunitInv_eq (a : RelSet.{u}) :
-    MonLinearBicat.blunitInv a = compl (SymMonCat.lunitInv a) := rfl
+    MonLinearBicat.blunitInv a = compl (lunitInv a) := rfl
 
-theorem brunit_eq (a : RelSet.{u}) : MonLinearBicat.brunit a = compl (SymMonCat.runit a) := rfl
+theorem brunit_eq (a : RelSet.{u}) : MonLinearBicat.brunit a = compl (runit a) := rfl
 
 theorem brunitInv_eq (a : RelSet.{u}) :
-    MonLinearBicat.brunitInv a = compl (SymMonCat.runitInv a) := rfl
+    MonLinearBicat.brunitInv a = compl (runitInv a) := rfl
 
-theorem bswap_eq (a b : RelSet.{u}) : MonLinearBicat.bswap a b = compl (SymMonCat.swap a b) := rfl
+theorem bswap_eq (a b : RelSet.{u}) : MonLinearBicat.bswap a b = compl (swap a b) := rfl
 
 /-- Rewrite a BLACK law into the WHITE law it is the complement of. -/
 scoped macro "black_transport" : tactic =>
@@ -403,7 +403,7 @@ theorem compl_bnabla (n : RelSet.{u}) :
 
 /-- `σ°`'s converse is `σ°` the other way round — needed so that `σ•` is `(σ°)⊥`. -/
 theorem swap_recip (a b : RelSet.{u}) :
-    (SymMonCat.swap a b : (a ⊗ b : RelSet.{u}) ⟶ (b ⊗ a))° = SymMonCat.swap b a :=
+    (swap a b : (a ⊗ b : RelSet.{u}) ⟶ (b ⊗ a))° = swap b a :=
   RelSet.hom_ext fun m p => by
     simp only [swap_eq, RelSet.recip_apply, RelSet.graph_apply]
     exact ⟨fun h => by subst h; rfl, fun h => by subst h; rfl⟩
@@ -413,8 +413,8 @@ theorem swap_recip (a b : RelSet.{u}) :
     instance because Fig. 5's black law `(F_•^°)` is its complement, so the same proof serves
     twice. -/
 theorem relLinfrob_bw (n : RelSet.{u}) :
-    (compl (ΔRel n) ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ (ΔRel n)°)
-      = (𝟙 n ⊗ₕ ΔRel n) ≫ SymMonCat.tensAssocInv n n n ≫ (compl ((ΔRel n)°) ⊗ₕ 𝟙 n) :=
+    (compl (ΔRel n) ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ (ΔRel n)°)
+      = (𝟙 n ⊗ₕ ΔRel n) ≫ tensAssocInv n n n ≫ (compl ((ΔRel n)°) ⊗ₕ 𝟙 n) :=
   RelSet.hom_ext fun p q => by
     simp only [tensHom_eq, tensAssoc_eq, tensAssocInv_eq, RelSet.comp_apply,
       RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, ΔRel,
@@ -441,8 +441,8 @@ theorem relLinfrob_bw (n : RelSet.{u}) :
 
 /-- `(F^°_•)`, the other mixed-colour Frobenius law; Fig. 5's `(F_∘^•)` is its complement. -/
 theorem relLinfrob_wb (n : RelSet.{u}) :
-    (ΔRel n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ compl ((ΔRel n)°))
-      = (𝟙 n ⊗ₕ compl (ΔRel n)) ≫ SymMonCat.tensAssocInv n n n ≫ ((ΔRel n)° ⊗ₕ 𝟙 n) :=
+    (ΔRel n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ compl ((ΔRel n)°))
+      = (𝟙 n ⊗ₕ compl (ΔRel n)) ≫ tensAssocInv n n n ≫ ((ΔRel n)° ⊗ₕ 𝟙 n) :=
   RelSet.hom_ext fun p q => by
     simp only [tensHom_eq, tensAssoc_eq, tensAssocInv_eq, RelSet.comp_apply,
       RelSet.rprodMap_apply, RelSet.graph_apply, RelSet.id_apply, compl, ΔRel,
@@ -473,11 +473,11 @@ instance : FOBicat RelSet.{u} :=
     (inferInstance : ClosedLinearBicat RelSet.{u}) with
     -- Def. 5.5's symmetry clause: `σ• = compl σ°`, so `σ• = (σ°)⊥` by `swap_recip`.
     swap_linAdj := fun a b => by
-      have h := ClosedLinearBicat.perp_adj (SymMonCat.swap a b : (a ⊗ b : RelSet.{u}) ⟶ (b ⊗ a))
-      rwa [show ClosedLinearBicat.perp (SymMonCat.swap a b) = compl (SymMonCat.swap b a) from by
+      have h := ClosedLinearBicat.perp_adj (swap a b : (a ⊗ b : RelSet.{u}) ⟶ (b ⊗ a))
+      rwa [show ClosedLinearBicat.perp (swap a b) = compl (swap b a) from by
         rw [← swap_recip a b]; rfl] at h
     bswap_linAdj := fun a b => by
-      have h := ClosedLinearBicat.perp_adj (compl (SymMonCat.swap a b))
+      have h := ClosedLinearBicat.perp_adj (compl (swap a b))
       rwa [perp_compl, swap_recip] at h
 
     delta_linAdj := fun n => ClosedLinearBicat.perp_adj (ΔRel n)

@@ -366,7 +366,7 @@ end BaseChangeInitial
   exactly as `ratCapHasImages` sources them. -/
 
 section Assembly
-open scoped PreRegularCategory
+open PreRegularCategory
 
 variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
 

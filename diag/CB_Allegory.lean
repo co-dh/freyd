@@ -25,7 +25,7 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open scoped SymMonCat
+open SymMonCat
 open CartBicat
 
 variable {𝒞 : Type u} [CartBicat.{v} 𝒞]
@@ -52,14 +52,14 @@ theorem modular_of_frobenius {a b c : 𝒞} (R : a ⟶ b) (S : b ⟶ c) (T : a �
     dsimp [meet]
     calc Δ a ≫ ((R ≫ S) ⊗ₕ T) ≫ ∇ c
         = Δ a ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ ∇ c := by
-          rw [← SymMonCat.tensHom_comp, Cat.comp_id]
+          rw [← tensHom_comp, Cat.comp_id]
       _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ c := by simp only [Cat.assoc]
   have hR : meet R (T ≫ conv S) ≫ S
       = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by
     dsimp [meet]
     calc (Δ a ≫ (R ⊗ₕ (T ≫ conv S)) ≫ ∇ b) ≫ S
         = (Δ a ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ ∇ b) ≫ S := by
-          rw [← SymMonCat.tensHom_comp, Cat.comp_id]
+          rw [← tensHom_comp, Cat.comp_id]
       _ = (Δ a ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ b ≫ S := by simp only [Cat.assoc]
   -- A THREE-LINK `calc` rather than `rw [hL, hR]; exact …`, so the argument sits in the proof TERM
   -- where `diag-export --proof` can draw it — and draw it with `R`, `S` and `T` all present, which

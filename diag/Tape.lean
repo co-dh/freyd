@@ -31,7 +31,7 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open scoped SymMonCat
+open SymMonCat
 open CartBicat
 
 /-! ### The biproduct -/

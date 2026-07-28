@@ -28,7 +28,7 @@ namespace Freyd.Diag
 
 open Freyd
 open Freyd.Alg
-open scoped SymMonCat
+open SymMonCat
 
 instance : OrderedCat RelSet.{u} :=
   { (inferInstance : Cat RelSet.{u}) with
@@ -133,33 +133,33 @@ instance : SymMonCat RelSet.{u} :=
     (R ⊗ₕ S) = RelSet.rprodMap R S := rfl
 
 @[simp] theorem tensAssoc_eq (a b c : RelSet.{u}) :
-    SymMonCat.tensAssoc a b c
+    tensAssoc a b c
       = (RelSet.graph fun p : (a.carrier × b.carrier) × c.carrier => (p.1.1, (p.1.2, p.2))
           : ((a ⊗ b) ⊗ c) ⟶ (a ⊗ (b ⊗ c))) := rfl
 
 @[simp] theorem tensAssocInv_eq (a b c : RelSet.{u}) :
-    SymMonCat.tensAssocInv a b c
+    tensAssocInv a b c
       = (RelSet.graph fun p : a.carrier × (b.carrier × c.carrier) => ((p.1, p.2.1), p.2.2)
           : (a ⊗ (b ⊗ c)) ⟶ ((a ⊗ b) ⊗ c)) := rfl
 
 @[simp] theorem lunit_eq (a : RelSet.{u}) :
-    SymMonCat.lunit a
+    lunit a
       = (RelSet.graph fun p : PUnit × a.carrier => p.2 : ((𝕀 : RelSet.{u}) ⊗ a) ⟶ a) := rfl
 
 @[simp] theorem lunitInv_eq (a : RelSet.{u}) :
-    SymMonCat.lunitInv a
+    lunitInv a
       = (RelSet.graph fun x : a.carrier => (PUnit.unit, x) : a ⟶ ((𝕀 : RelSet.{u}) ⊗ a)) := rfl
 
 @[simp] theorem runit_eq (a : RelSet.{u}) :
-    SymMonCat.runit a
+    runit a
       = (RelSet.graph fun p : a.carrier × PUnit => p.1 : (a ⊗ (𝕀 : RelSet.{u})) ⟶ a) := rfl
 
 @[simp] theorem runitInv_eq (a : RelSet.{u}) :
-    SymMonCat.runitInv a
+    runitInv a
       = (RelSet.graph fun x : a.carrier => (x, PUnit.unit) : a ⟶ (a ⊗ (𝕀 : RelSet.{u}))) := rfl
 
 @[simp] theorem swap_eq (a b : RelSet.{u}) :
-    SymMonCat.swap a b
+    swap a b
       = (RelSet.graph fun p : a.carrier × b.carrier => (p.2, p.1) : (a ⊗ b) ⟶ (b ⊗ a)) := rfl
 
 /-! ### The Frobenius structure

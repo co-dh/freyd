@@ -16,7 +16,7 @@ namespace Freyd.Diag
 
 open Freyd
 open Freyd.Alg
-open scoped SymMonCat
+open SymMonCat
 
 /-- `[R, S]` on `Rel(Set)`: case on the summand. -/
 def sumCopair {a b c : RelSet.{u}} (R : a ⟶ c) (S : b ⟶ c) :

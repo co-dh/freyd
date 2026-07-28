@@ -45,7 +45,7 @@ universe v u
 namespace Freyd.Diag
 
 open Freyd
-open scoped SymMonCat
+open SymMonCat
 
 /-! ### Definition 5.1 — the linear bicategory -/
 
@@ -443,12 +443,12 @@ class FOBicat (𝒞 : Type u) extends
       their order — `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)` — and `°` and `∘` are the same glyph,
       so dropping the sub/superscript positions makes two pairs of labels collide.  Keep them. -/
   linfrob_bw (n : 𝒞) :
-    (bdelta n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n)
-      = (𝟙 n ⊗ₕ Δ n) ≫ SymMonCat.tensAssocInv n n n ≫ (bnabla n ⊗ₕ 𝟙 n)
+    (bdelta n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ ∇ n)
+      = (𝟙 n ⊗ₕ Δ n) ≫ tensAssocInv n n n ≫ (bnabla n ⊗ₕ 𝟙 n)
   /-- `(F^°_•)`: the mirror of `linfrob_bw`, white copying and black merging. -/
   linfrob_wb (n : 𝒞) :
-    (Δ n ⊗ₕ 𝟙 n) ≫ SymMonCat.tensAssoc n n n ≫ (𝟙 n ⊗ₕ bnabla n)
-      = (𝟙 n ⊗ₕ bdelta n) ≫ SymMonCat.tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n)
+    (Δ n ⊗ₕ 𝟙 n) ≫ tensAssoc n n n ≫ (𝟙 n ⊗ₕ bnabla n)
+      = (𝟙 n ⊗ₕ bdelta n) ≫ tensAssocInv n n n ≫ (∇ n ⊗ₕ 𝟙 n)
   /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`/`α•`
       for `⨟°`/`⊗`/`α`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
       because complementing swaps the generators' colours as well as the composition's. -/
