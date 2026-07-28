@@ -18,6 +18,13 @@
   the dashed frame is what `strdiag.typ` reserves for that.  At the top, `Alg.le` (`⊑`), `LE.le`
   (`≤`) and `Eq` split the statement into two pictures with the symbol between them.
 
+  THE ALLEGORY LAYER IS RECOGNISED TOO, with the same two shapes.  `DistributiveAllegory.union` is
+  the tape and `DivisionAllegory.div`, `leftDiv`, `symmDiv`, `impl`, `neg` and `thenRel` are dashed
+  boxes — none of them is a composite of the generators either, and the allegory has no structure to
+  build them from at all.  The tape is the picture of `∪`, not a claim that a distributive allegory
+  carries the biproduct `diag/Tape.lean` builds it from; `distributiveAllegoryOfFbCb` is what makes
+  the two `∪`s the same operation.
+
   A converse's operand is still a single box: `strdiag.typ`'s mirrored `gbox` takes a LABEL, so a
   composite under a `°` appears as one box reading `R ; S`.
 
@@ -29,6 +36,9 @@ import Lean
 import diag.FO
 import diag.Tape
 import diag.S2_124
+-- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
+-- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
+import AOP.A4_5
 
 open Lean
 
@@ -92,8 +102,11 @@ inductive Cell where
   | capC
   | cupC
   /-- A converse: the same box MIRRORED, which is how
-      functorialSemanticsForRelationalTheories.pdf writes `†`. -/
-  | dagger (label : String)
+      functorialSemanticsForRelationalTheories.pdf writes `†`.  `dashed` when the operand would have
+      been a `dbox`: `(R /ₛ S)°` is a converse OF a construct the generators cannot build, and
+      dropping the frame on the way through the mirror would draw the two sides of
+      `(R /ₛ S)° = S /ₛ R` as two different kinds of thing. -/
+  | dagger (label : String) (dashed : Bool)
 
 instance : Inhabited Cell := ⟨.wire⟩
 
@@ -143,7 +156,7 @@ partial def Cell.width : Cell → Float
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
   | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
-  | .dagger l => boxWidth l
+  | .dagger l _ => boxWidth l
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
     abut into one bubble. -/
@@ -272,8 +285,10 @@ partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
   -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
   -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
   -- which corner is chamfered.
-  | .dagger l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH},        flip: true, fill: TINT)"]
+  | .dagger l dashed =>
+    let dsh := if dashed then ", dashed: true" else ""
+    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
+        h: {fmt BH}{dsh}, flip: true, fill: TINT)"]
   | .dbox l =>
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, dashed: true)"]
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
@@ -378,7 +393,7 @@ def plain (e : Expr) : MetaM String := do
   let s := toString (← Meta.ppExpr e)
   -- Both the fully qualified form and the form the printer shortens to under `open Freyd`.
   let s := s.replace "Freyd." "" |>.replace "Diag.CartBicat." "" |>.replace "Diag." ""
-    |>.replace "Alg.Allegory." "" |>.replace "Alg." ""
+    |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- A term, spelled the way the BOOK spells it — `;` for composition, `°` for the converse —
@@ -403,8 +418,11 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Diag.CartBicat.«?», _) => return "?"
   | (``Freyd.Diag.CartBicat.cap, _) => return "cap"
   | (``Freyd.Diag.CartBicat.cup, _) => return "cup"
-  | (``Freyd.Diag.top, _) => return "⊤"
+  | (``Freyd.Diag.top, _) | (``Freyd.Alg.topHom, _) => return "⊤"
   | (``Freyd.Diag.Biprod.bot, _) => return "⊥"
+  -- The allegory's zero keeps the book's own `𝟘`; the tape layer's is `⊥` and they are different
+  -- arrows of different towers, so they are not spelled alike.
+  | (``Freyd.Alg.DistributiveAllegory.zero, _) => return "𝟘"
   -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
   -- do not exist and no statement can mention one.
   | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
@@ -412,8 +430,14 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args
   | (``Freyd.Diag.SymMonCat.tensHom, args) => bin 1 " ⊗ " args
   | (``Freyd.Alg.Allegory.inter, args) | (``Freyd.Diag.meet, args) => bin 1 " ∩ " args
-  | (``Freyd.Diag.Biprod.union, args) => bin 1 " ∪ " args
-  | (``Freyd.Diag.ClosedLinearBicat.residual, args) => bin 1 " / " args
+  | (``Freyd.Diag.Biprod.union, args) | (``Freyd.Alg.DistributiveAllegory.union, args) =>
+    bin 1 " ∪ " args
+  | (``Freyd.Diag.ClosedLinearBicat.residual, args)
+  | (``Freyd.Alg.DivisionAllegory.div, args) => bin 1 " / " args
+  | (``Freyd.Alg.leftDiv, args) => bin 1 " \\ " args
+  | (``Freyd.Alg.symmDiv, args) => bin 1 " /ₛ " args
+  | (``Freyd.Alg.impl, args) => bin 1 " ⇨ " args
+  | (``Freyd.Alg.thenRel, args) => bin 1 " ⨾ " args
   | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) =>
     match args.back? with
     | some r => return (← labelAt 3 r) ++ "°"
@@ -421,6 +445,11 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) =>
     match args.back? with
     | some r => return (← labelAt 3 r) ++ "⊥"
+    | none => plain e
+  -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
+  | (``Freyd.Alg.neg, args) =>
+    match args.back? with
+    | some r => return "∼" ++ (← labelAt 3 r)
     | none => plain e
   | _ => plain e
 
@@ -451,17 +480,25 @@ partial def toCell (e : Expr) : MetaM Cell := do
     match lastTwo args with
     | some (u, l) => return .meet (← toCells u) (← toCells l)
     | none => return .box (← label e)
-  | (``Freyd.Diag.Biprod.union, args) =>
+  | (``Freyd.Diag.Biprod.union, args)
+  | (``Freyd.Alg.DistributiveAllegory.union, args) =>
     match lastTwo args with
     | some (u, l) => return .union (← toCells u) (← toCells l)
     | none => return .box (← label e)
-  -- The residual is NOT a composite of the generators; `strdiag.typ`'s dashed frame says so.
+  -- The residual is NOT a composite of the generators; `strdiag.typ`'s dashed frame says so.  Nor
+  -- is anything on the next line: division, negation and the lexical order are what a DIVISION or
+  -- BOOLEAN allegory adds to `Allegory`, and no allegory can build one of them.
   | (``Freyd.Diag.ClosedLinearBicat.residual, _) => return .dbox (← label e)
   | (``Freyd.Diag.ClosedLinearBicat.perp, _) => return .dbox (← label e)
+  | (``Freyd.Alg.DivisionAllegory.div, _) | (``Freyd.Alg.leftDiv, _) | (``Freyd.Alg.symmDiv, _)
+  | (``Freyd.Alg.impl, _) | (``Freyd.Alg.neg, _) | (``Freyd.Alg.thenRel, _) =>
+    return .dbox (← label e)
   | (``Freyd.Alg.Allegory.recip, args)
   | (``Freyd.Diag.CartBicat.conv, args) =>
     match args.back? with
-    | some r => return .dagger (← label r)
+    -- Whether the mirrored box keeps a dashed frame is read off the operand's OWN cell, so the one
+    -- list of dashed constructs above stays the only place that classification is made.
+    | some r => return .dagger (← label r) (match ← toCell r with | .dbox _ => true | _ => false)
     | none => return .box (← label e)
   | _ => return .box (← label e)
 
@@ -724,14 +761,16 @@ def draw (declName : Name) : MetaM String := do
 
 /-! ### Driver -/
 
-/-- Every `diag.*` module except this tool, so the exporter can name any declaration of the tower
-    without the caller listing imports. -/
-partial def diagModules (dir : System.FilePath) (pre : Name) : IO (Array Name) := do
+/-- Every module of a library root except this tool, so the exporter can name any declaration of
+    the tower without the caller listing imports.  Walked for `diag` and for `AOP`: the cheatsheet
+    the notes are drawn against is an AOP cheatsheet, and its division and negation laws are
+    theorems of `AOP.A4_4`/`AOP.A4_5`, not of the diagrammatic tower. -/
+partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) := do
   let mut out := #[]
   for e in (← dir.readDir) do
     if (← e.path.isDir) then
       if e.fileName != "tool" && e.fileName != "generated" then
-        out := out ++ (← diagModules e.path (pre.str e.fileName))
+        out := out ++ (← libModules e.path (pre.str e.fileName))
     else if e.path.extension == some "lean" then
       out := out.push (pre.str (e.path.fileStem.getD ""))
   return out
@@ -747,7 +786,7 @@ def main (args : List String) : IO UInt32 := do
   let args := args.filter (· != "--proof")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
-  let mods := #[`Freyd] ++ (← diagModules "diag" `diag)
+  let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
   IO.FS.createDirAll "diag/generated"
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
