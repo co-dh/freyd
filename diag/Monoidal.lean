@@ -52,9 +52,17 @@ namespace Freyd.Diag
 open Freyd
 
 /-- The objects of a strict monoidal category: WORDS in the generators `O`, in Cayley form —
-    a word is represented by the function that prefixes it.  Concatenation then becomes function
-    composition, which Lean's definitional equality already knows to be associative and unital. -/
-def Word (O : Type u) : Type u := List O → List O
+    a word is represented by the function that prefixes it, together with the witness that it IS a
+    prefixing.  Concatenation then becomes function composition, which Lean's definitional equality
+    already knows to be associative and unital; the witness lives in `Prop`, so proof irrelevance
+    keeps `(a ⊗ b) ⊗ c = a ⊗ (b ⊗ c)`, `𝕀 ⊗ a = a` and `a ⊗ 𝕀 = a` true by `rfl`.
+
+    WHY THE WITNESS.  Without it the type is every endofunction of `List O`, `List.reverse`
+    included, and a MODEL would have to supply arrows at objects no word names — which is what
+    stopped `Rel(Set)` from interpreting this tower.  `letters` below recovers the word itself, and
+    `letters_tens` says the recovery is a monoid map; that pair is what `diag/RelSetWord.lean`
+    interprets. -/
+def Word (O : Type u) : Type u := { w : List O → List O // ∃ ws, ∀ l, w l = ws ++ l }
 
 namespace Word
 
@@ -62,14 +70,37 @@ variable {O : Type u}
 
 /-- The monoidal product on objects: concatenation of words, i.e. composition of the functions
     that represent them. -/
-def tens (a b : Word O) : Word O := fun w => a (b w)
+def tens (a b : Word O) : Word O :=
+  ⟨fun l => a.val (b.val l), by
+    obtain ⟨as, ha⟩ := a.property
+    obtain ⟨bs, hb⟩ := b.property
+    exact ⟨as ++ bs, fun l => by
+      show a.val (b.val l) = _
+      rw [hb l, ha (bs ++ l), List.append_assoc]⟩⟩
 
 /-- The monoidal unit `I`: the empty word, i.e. the identity function. -/
-def unit : Word O := fun w => w
+def unit : Word O := ⟨fun l => l, ⟨[], fun _ => rfl⟩⟩
 
 /-- The one-letter word on a generator — what makes `Word O` the words over `O` rather than an
     anonymous monoid of endofunctions. -/
-def gen (x : O) : Word O := fun w => x :: w
+def gen (x : O) : Word O := ⟨fun l => x :: l, ⟨[x], fun _ => rfl⟩⟩
+
+/-- The word itself, read off by prefixing to nothing. -/
+def letters (a : Word O) : List O := a.val []
+
+/-- Prefixing is what the witness says it is. -/
+theorem val_eq (a : Word O) (l : List O) : a.val l = letters a ++ l := by
+  obtain ⟨as, ha⟩ := a.property
+  show a.val l = a.val [] ++ l
+  rw [ha l, ha [], List.append_nil]
+
+/-- Reading the word off a product concatenates: `letters` is the monoid map back to `List O`. -/
+theorem letters_tens (a b : Word O) : letters (tens a b) = letters a ++ letters b :=
+  val_eq a (letters b)
+
+@[simp] theorem letters_unit : letters (unit : Word O) = [] := rfl
+
+@[simp] theorem letters_gen (x : O) : letters (gen x) = [x] := rfl
 
 scoped infixr:70 " ⊗ " => Word.tens
 scoped notation:max "𝕀" => Word.unit
