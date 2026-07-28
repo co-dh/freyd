@@ -4,7 +4,7 @@
   WHY THIS FILE EXISTS.  The tower is strict, so its objects are WORDS, not sets: `(a ⊗ b) ⊗ c` and
   `a ⊗ (b ⊗ c)` are the same word and the associator is gone.  `Rel(Set)` (`AOP/A6_1_RelSet.lean`)
   cannot be the object type — `(A × B) × C` is not `A × (B × C)` as a Lean type — so a word is
-  INTERPRETED as a set instead: `⟦[a, b, c]⟧ = a × (b × (c × PUnit))`, and an arrow of the tower is
+  INTERPRETED as a set instead: `⟦[a, b, c]⟧ = a × (b × c)`, and an arrow of the tower is
   an honest relation between interpretations.  This is where the coherence isomorphisms of the
   non-strict presentation went: `⟦u ++ v⟧ ≅ ⟦u⟧ × ⟦v⟧` is `split`/`merge` below, proved once here
   rather than carried through every theorem of the tower.
@@ -162,5 +162,204 @@ theorem cast_cons {x b b' : RelSet.{u}} {l l' : List RelSet.{u}} (h : b :: l = b
       = ((v, cast (congrArg Interp h) p) : Interp (x :: b' :: l')) := by
   injection h with hb hl
   subst hb; subst hl; rfl
+
+/-- Building an element of `u ++ v ++ w` from three pieces does not depend on the bracketing.  This
+    is what `tensHom_assoc` consumes, and the one place the letters have to be inducted over. -/
+theorem merge_assoc (u v w : List RelSet.{u}) (x : Interp u) (y : Interp v) (z : Interp w) :
+    merge (u ++ v) w (merge u v (x, y), z)
+      = cast (congrArg Interp (List.append_assoc u v w).symm)
+          (merge u (v ++ w) (x, merge v w (y, z))) := by
+  induction u with
+  | nil => rfl
+  | cons head u ih =>
+    cases u with
+    | nil => cases v with
+      | nil => rfl
+      | cons _ _ => rfl
+    | cons b u' =>
+      show (x.1, merge ((b :: u') ++ v) w (merge (b :: u') v (x.2, y), z)) = _
+      rw [ih x.2, ← cast_cons (List.append_assoc (b :: u') v w).symm x.1]
+      rfl
+
+/-- A transport on the left factor comes out of the merge. -/
+theorem merge_cast_left {u u' v : List RelSet.{u}} (h : u = u') (m : Interp u) (z : Interp v) :
+    merge u' v (cast (congrArg Interp h) m, z)
+      = cast (congrArg Interp (congrArg (· ++ v) h)) (merge u v (m, z)) := by
+  subst h; rfl
+
+/-- A transport on the right factor comes out of the merge. -/
+theorem merge_cast_right {u v v' : List RelSet.{u}} (h : v = v') (m : Interp u) (z : Interp v) :
+    merge u v' (m, cast (congrArg Interp h) z)
+      = cast (congrArg Interp (congrArg (u ++ ·) h)) (merge u v (m, z)) := by
+  subst h; rfl
+
+/-- The word-level re-bracketing: `(x ⊗ y) ⊗ z` and `x ⊗ (y ⊗ z)` are the same element of the same
+    object.  Every transport in sight is an equality of TYPES, so proof irrelevance identifies them
+    and the two sides differ by nothing. -/
+theorem mergeTens_assoc (a b c : Word RelSet.{u})
+    (x : carrier a) (y : carrier b) (z : carrier c) :
+    mergeTens (Word.tens a b) c (mergeTens a b (x, y), z)
+      = mergeTens a (Word.tens b c) (x, mergeTens b c (y, z)) := by
+  show cast _ (merge _ _ (cast _ (merge _ _ (x, y)), z))
+      = cast _ (merge _ _ (x, cast _ (merge _ _ (y, z))))
+  rw [merge_cast_left, merge_cast_right, merge_assoc, cast_cast, cast_cast, cast_cast]
+  · exact (Word.letters_tens b c).symm
+  · exact (Word.letters_tens a b).symm
+
+/-- Reading three pieces off `a ⊗ (b ⊗ c)` gives back the three that built it as `(a ⊗ b) ⊗ c`. -/
+theorem splitTens_assoc (a b c : Word RelSet.{u})
+    (x : carrier a) (y : carrier b) (z : carrier c) :
+    splitTens a (Word.tens b c) (mergeTens (Word.tens a b) c (mergeTens a b (x, y), z))
+      = (x, mergeTens b c (y, z)) := by
+  rw [mergeTens_assoc, splitTens_mergeTens]
+
+theorem tensRel_assoc {a a' b b' c c' : Word RelSet.{u}}
+    (R : a ⟶ a') (S : b ⟶ b') (T : c ⟶ c') :
+    tensRel (tensRel R S) T = tensRel R (tensRel S T) := by
+  funext p q
+  -- Every element of `(a ⊗ b) ⊗ c` is three pieces put together; say so, and both sides read the
+  -- same three back.
+  rw [← mergeTens_splitTens (Word.tens a b) c p, ← mergeTens_splitTens (Word.tens a' b') c' q]
+  generalize splitTens (Word.tens a b) c p = P
+  generalize splitTens (Word.tens a' b') c' q = Q
+  obtain ⟨pab, pc⟩ := P
+  obtain ⟨qab, qc⟩ := Q
+  rw [← mergeTens_splitTens a b pab, ← mergeTens_splitTens a' b' qab]
+  generalize splitTens a b pab = X
+  generalize splitTens a' b' qab = Y
+  obtain ⟨pa, pb⟩ := X
+  obtain ⟨qa, qb⟩ := Y
+  simp only [tensRel, splitTens_mergeTens, splitTens_assoc]
+  exact propext ⟨fun ⟨⟨h1, h2⟩, h3⟩ => ⟨h1, h2, h3⟩, fun ⟨h1, h2, h3⟩ => ⟨⟨h1, h2⟩, h3⟩⟩
+
+/-! ### The units and the symmetry -/
+
+theorem tensRel_lunit {a b : Word RelSet.{u}} (R : a ⟶ b) :
+    tensRel (𝟙 (Word.unit : Word RelSet.{u})) R = R := by
+  funext p q
+  exact propext ⟨fun h => h.2, fun h => ⟨rfl, h⟩⟩
+
+/-- Splitting off the empty word on the RIGHT gives back what you started with.  The left unit needs
+    no such lemma — `split` recurses on its left argument, so `𝕀 ⊗ b` reduces on its own. -/
+theorem split_nil (u : List RelSet.{u}) (p : Interp (u ++ [])) :
+    (split u [] p).1 = cast (congrArg Interp (List.append_nil u)) p := by
+  induction u with
+  | nil => rfl
+  | cons head u ih =>
+    cases u with
+    | nil => rfl
+    | cons b u' =>
+      show (p.1, (split (b :: u') [] p.2).1) = _
+      rw [ih p.2, ← cast_cons (List.append_nil (b :: u')) p.1]
+      rfl
+
+theorem splitTens_unit_right (a : Word RelSet.{u}) (p : carrier (Word.tens a Word.unit)) :
+    (splitTens a Word.unit p).1 = p := by
+  show (split a.letters [] (cast (congrArg Interp (Word.letters_tens a Word.unit)) p)).1 = p
+  rw [split_nil, cast_cast]
+  rfl
+
+theorem tensRel_runit {a b : Word RelSet.{u}} (R : a ⟶ b) :
+    tensRel R (𝟙 (Word.unit : Word RelSet.{u})) = R := by
+  funext p q
+  rw [tensRel, splitTens_unit_right, splitTens_unit_right]
+  exact propext ⟨fun h => h.1, fun h => ⟨h, rfl⟩⟩
+
+/-- Two elements built from pieces agree exactly when the pieces do. -/
+@[simp] theorem mergeTens_inj {a b : Word RelSet.{u}} {p q : carrier a × carrier b} :
+    mergeTens a b p = mergeTens a b q ↔ p = q := by
+  refine ⟨fun h => ?_, fun h => by rw [h]⟩
+  have := congrArg (splitTens a b) h
+  rwa [splitTens_mergeTens, splitTens_mergeTens] at this
+
+/-- The symmetry: the two halves change places. -/
+def swapRel (a b : Word RelSet.{u}) : Word.tens a b ⟶ Word.tens b a :=
+  fun p q => (splitTens a b p).1 = (splitTens b a q).2 ∧ (splitTens a b p).2 = (splitTens b a q).1
+
+theorem swapRel_swapRel (a b : Word RelSet.{u}) :
+    swapRel a b ≫ swapRel b a = 𝟙 (Word.tens a b) := by
+  funext p r
+  refine propext ⟨fun ⟨q, ⟨h1, h2⟩, ⟨h3, h4⟩⟩ => splitTens_inj (Prod.ext ?_ ?_), fun h => ?_⟩
+  · rw [h1, h4]
+  · rw [h2, h3]
+  · subst h
+    exact ⟨mergeTens b a ((splitTens a b p).2, (splitTens a b p).1), by
+      simp [swapRel, splitTens_mergeTens], by simp [swapRel, splitTens_mergeTens]⟩
+
+theorem swapRel_nat {a a' b b' : Word RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+    tensRel R S ≫ swapRel a' b' = swapRel a b ≫ tensRel S R := by
+  funext p q
+  refine propext ⟨fun ⟨m, ⟨hR, hS⟩, ⟨h1, h2⟩⟩ => ?_, fun ⟨n, ⟨h1, h2⟩, ⟨hS, hR⟩⟩ => ?_⟩
+  · refine ⟨mergeTens b a ((splitTens a b p).2, (splitTens a b p).1), ?_, ?_⟩
+    · simp [swapRel, splitTens_mergeTens]
+    · simp only [tensRel, splitTens_mergeTens]
+      exact ⟨h2 ▸ hS, h1 ▸ hR⟩
+  · refine ⟨mergeTens a' b' ((splitTens b' a' q).2, (splitTens b' a' q).1), ?_, ?_⟩
+    · simp only [tensRel, splitTens_mergeTens]
+      exact ⟨h1 ▸ hR, h2 ▸ hS⟩
+    · simp [swapRel, splitTens_mergeTens]
+
+/-- The hexagon, with every associator an identity: taking `a` past `b ⊗ c` is taking it past `b`
+    and then past `c`.  Both sides are read off the same three pieces. -/
+theorem swapRel_hexagon (a b c : Word RelSet.{u}) :
+    swapRel a (Word.tens b c)
+      = ((tensRel (swapRel a b) (𝟙 c) :
+            Word.tens (Word.tens a b) c ⟶ Word.tens (Word.tens b a) c)
+          ≫ (tensRel (𝟙 b) (swapRel a c) :
+            Word.tens b (Word.tens a c) ⟶ Word.tens b (Word.tens c a))) := by
+  funext p q
+  rw [← mergeTens_splitTens (Word.tens a b) c p,
+    ← mergeTens_splitTens (Word.tens b c) a q]
+  generalize splitTens (Word.tens a b) c p = P
+  generalize splitTens (Word.tens b c) a q = Q
+  obtain ⟨pab, pc⟩ := P
+  obtain ⟨qbc, qa⟩ := Q
+  rw [← mergeTens_splitTens a b pab, ← mergeTens_splitTens b c qbc]
+  generalize splitTens a b pab = X
+  generalize splitTens b c qbc = Y
+  obtain ⟨pa, pb⟩ := X
+  obtain ⟨qb, qc⟩ := Y
+  refine propext ⟨fun ⟨h1, h2⟩ => ⟨mergeTens (Word.tens b a) c (mergeTens b a (pb, pa), pc), ?_, ?_⟩,
+    fun ⟨m, hm1, hm2⟩ => ?_⟩
+  · simp_all only [tensRel, swapRel, splitTens_mergeTens, splitTens_assoc, mergeTens_inj,
+      Prod.mk.injEq]
+    exact ⟨⟨trivial, trivial⟩, rfl⟩
+  · simp_all only [tensRel, swapRel, splitTens_mergeTens, splitTens_assoc, mergeTens_inj,
+      Prod.mk.injEq]
+    exact ⟨rfl, trivial, trivial⟩
+  · rw [← mergeTens_splitTens (Word.tens b a) c m] at hm1 hm2
+    generalize splitTens (Word.tens b a) c m = M at hm1 hm2
+    obtain ⟨mba, mc⟩ := M
+    rw [← mergeTens_splitTens b a mba] at hm1 hm2
+    generalize splitTens b a mba = N at hm1 hm2
+    obtain ⟨mb, ma⟩ := N
+    simp only [tensRel, swapRel, splitTens_mergeTens, splitTens_assoc, mergeTens_inj,
+      Prod.mk.injEq] at hm1 hm2 ⊢
+    exact ⟨hm1.1.1.trans hm2.2.1, hm1.1.2.trans hm2.1, hm1.2.trans hm2.2.2⟩
+
+/-! ### The model
+
+  Everything above assembles into the interpretation the strict tower was missing. -/
+
+instance : SymMonCat RelSet.{u} :=
+  { (inferInstance : OrderedCat (Word RelSet.{u})) with
+    tensHom := tensRel
+    tensHom_id := tensRel_id
+    tensHom_comp := tensRel_comp
+    tensHom_mono := tensRel_mono
+    tensHom_assoc := tensRel_assoc
+    tensHom_lunit := tensRel_lunit
+    tensHom_runit := tensRel_runit
+    swap := swapRel
+    swap_swap := swapRel_swapRel
+    swap_nat := swapRel_nat
+    hexagon := swapRel_hexagon }
+
+/-- THE PAYOFF, stated so it cannot rot: an arrow between one-letter words IS a relation between the
+    letters — the same thing `AOP/A6_1_RelSet.lean` calls an arrow of `RelSet`.  This is what the
+    unit-tail-free `Interp` bought, and what makes a theorem of the tower a statement about the
+    types the AOP layer manipulates. -/
+theorem hom_gen (X Y : RelSet.{u}) :
+    (Word.gen X ⟶ Word.gen Y) = (X.carrier → Y.carrier → Prop) := rfl
 
 end Freyd.Diag
