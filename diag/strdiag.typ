@@ -285,17 +285,18 @@
 /// bottom left and runs under `R`; the cup at the top left creates a pair, one strand feeding `R`
 /// and the other leaving as the output at the top right; the cap at the bottom right annihilates
 /// `R`'s output against the input.
-#let conv(p, label, w: BW, h: BH, rise: 1.6, lead: 0.40, arc: 0.78) = {
+#let conv(p, label, w: BW, h: BH, rise: 1.6, lead: 0.40, arc: 0.78,
+          dashed: false, invert: false) = {
   let (x, y) = p
   let ym = y + rise / 2               // the level `R` sits on
   let yt = y + rise                   // the outgoing strand
   let bx = x + 0.28 + SPLIT + arc     // `R`'s left edge
   let cx = bx + w + arc               // the cap's tip, where `∇` sits
-  cup((x + 0.28 + SPLIT, y + rise * 0.80), (bx, yt), (bx, ym), split: true)
-  wire((bx, yt), (cx + lead, yt))
-  gbox((bx, ym), label, w: w, h: h)
-  wire((x, y), (bx + w, y))
-  cap((bx + w, ym), (bx + w, y), (cx, y + rise * 0.20), split: true)
+  cup((x + 0.28 + SPLIT, y + rise * 0.80), (bx, yt), (bx, ym), split: true, invert: invert)
+  wire((bx, yt), (cx + lead, yt), invert: invert)
+  gbox((bx, ym), label, w: w, h: h, dashed: dashed, invert: invert)
+  wire((x, y), (bx + w, y), invert: invert)
+  cap((bx + w, ym), (bx + w, y), (cx, y + rise * 0.20), split: true, invert: invert)
 }
 
 #let conv-w(w: BW, lead: 0.40, arc: 0.78) = 0.28 + SPLIT + 2 * arc + w + SPLIT + lead

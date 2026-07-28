@@ -91,6 +91,15 @@ def SYMCOL : Float := 0.95
 /-- The strand offset a fork, a cap and a cup open by.  A `⊗` may sit wider — `meetSep` grows with
     what is nested in its runs — and `joinWire` bends between the two, so the two need not agree. -/
 def STACKSEP : Float := 0.62
+/-- `strdiag.typ`'s `conv` geometry: how far the snake climbs from its incoming strand to its
+    outgoing one, and the fixed width its two bends and stubs cost around the box.
+
+    NOT `conv-w`, which is one `SPLIT` wider than what `conv` actually draws — its outgoing wire
+    stops at `0.28 + SPLIT + 2·arc + w + lead`.  The note only ever set a snake on its own, where
+    trailing air costs nothing; in a run it is a gap between the snake and whatever follows, and the
+    joining wire starts after it.  That gap is what made the first snake pictures look unwired. -/
+def RISE : Float := 1.6
+def CONVPAD : Float := 0.28 + 0.34 + 2.0 * 0.78 + 0.40
 
 /-- One left-to-right slot of a picture. -/
 inductive Cell where
@@ -164,6 +173,11 @@ def Port.isTwo : Port → Bool
   | .pair | .strands => true
   | _ => false
 
+/-- Whether this cell's ports sit off the centre line, which is true of exactly the snake. -/
+def Cell.isDagger : Cell → Bool
+  | .dagger _ _ => true
+  | _ => false
+
 partial def Cell.leftPort : Cell → Port
   | .gen "nabla" _ _ | .gen "swap" _ _ => .pair
   | .gen "unitR" _ _ | .cupC => .nothing
@@ -198,14 +212,18 @@ partial def Cell.width : Cell → Float
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
   | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
-  | .dagger l _ => boxWidth l
+  | .dagger l _ => CONVPAD + boxWidth l
   | .divbox n dn _ => divboxWidth n dn
   | .cut inner => 2.0 * CUTPAD + runWidth inner
 
 /-- The horizontal room between two adjacent cells: none when two forks face each other, since they
     abut into one bubble. -/
 partial def joinGap (c next : Cell) : Float :=
-  if c.rightPort == .pair && next.leftPort == .pair then 0.0 else GAP
+  if c.rightPort == .pair && next.leftPort == .pair then 0.0
+  -- A snake leaves `RISE` above where the next cell wants its strand, and a bend that has to fall
+  -- that far inside `GAP` comes out as a near-vertical hook.  Give it room proportional to the drop.
+  else if c.isDagger || next.isDagger then GAP + RISE / 2.0
+  else GAP
 
 /-- A run of cells wired in series, without the outer stubs a whole picture gets. -/
 partial def runWidth (cells : Array Cell) : Float := Id.run do
@@ -224,6 +242,9 @@ partial def Cell.span : Cell → Float
   | .capC | .cupC => STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
   | .cut inner => runSpan inner + CUTPAD
+  -- The snake occupies its climb as well as its box: the incoming strand sits `RISE/2` below the
+  -- centre line and the outgoing one `RISE/2` above it.
+  | .dagger _ _ => RISE / 2.0 + BH / 2.0
   | _ => BH / 2.0
 
 /-- The height at which a two-strand port's strands sit, above and below the centre line.  A `⊗`
@@ -243,6 +264,7 @@ partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
   | .stack u l =>
     (runLeftOffsets u).map (· + sep) ++ (runLeftOffsets l).map (· - sep)
   | .cut inner => runLeftOffsets inner
+  | .dagger _ _ => #[-RISE / 2.0]
   | _ => #[0.0]
 
 /-- Where a cell's strands meet its right edge, top to bottom. -/
@@ -252,6 +274,7 @@ partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
   | .stack u l =>
     (runRightOffsets u).map (· + sep) ++ (runRightOffsets l).map (· - sep)
   | .cut inner => runRightOffsets inner
+  | .dagger _ _ => #[RISE / 2.0]
   | _ => #[0.0]
 
 /-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
@@ -340,11 +363,12 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
   -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
   -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
   -- which corner is chamfered.  On black ground the tint is dropped: `invert` supplies the paper.
+  -- THE SNAKE, and it is the only drawing of a converse in this file.  `conv` anchors on its
+  -- INCOMING strand, which sits `RISE/2` below the centre line, so the cell straddles `y`.
   | .dagger l dashed =>
     let dsh := if dashed then ", dashed: true" else ""
-    let fl := if iv then ", invert: true" else ", fill: TINT"
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
-        h: {fmt BH}{dsh}, flip: true{fl})"]
+    #[s!"  conv(({fmt x}, {fmt (y - RISE / 2.0)}), {labelContent l}, \
+        w: {fmt (boxWidth l)}, h: {fmt BH}{dsh}{inv iv})"]
   | .dbox l =>
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
         h: {fmt BH}, dashed: true{inv iv})"]
@@ -429,11 +453,19 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) (iv : Bool) : Array St
     if h : i + 1 < cells.size then
       let next := cells[i + 1]
       -- Nothing to join when the two abut: a fork straight into a fork is ONE bubble, and a wire
-      -- drawn across it would run through the middle of the shape.
-      if joinGap c next < 0.005 then
+      -- drawn across it would run through the middle of the shape.  Otherwise the wire spans the
+      -- WHOLE gap, which is not always `GAP` — a snake gets extra room to fall through, and drawing
+      -- at `GAP` while advancing by more left the strand short of the next cell.
+      let g := joinGap c next
+      if g < 0.005 then
         pure ()
       else if c.rightPort == .one && next.leftPort == .one then
-        out := out ++ hwire x (x + GAP) y iv
+        -- Offset-aware, because a snake leaves higher than it entered: a flat stub here left the
+        -- outgoing strand of `R°` hanging in mid-air beside whatever followed it.  Every other cell
+        -- reports 0 on both sides, so nothing else moves.
+        let a := (c.rightOffsets sep)[0]!
+        let b := (next.leftOffsets sep)[0]!
+        out := out ++ joinWire x (x + g) (y + a) (y + b) iv
       else if c.rightPort.isTwo && next.leftPort.isTwo then
         -- One join per strand, from where THIS cell's strands end to where the next one's begin.
         -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
@@ -441,8 +473,8 @@ partial def renderRun (cells : Array Cell) (x0 y : Float) (iv : Bool) : Array St
         let a := c.rightOffsets sep
         let b := next.leftOffsets sep
         for j in [0 : min a.size b.size] do
-          out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!) iv
-      x := x + joinGap c next
+          out := out ++ joinWire x (x + g) (y + a[j]!) (y + b[j]!) iv
+      x := x + g
   return out
 
 end
