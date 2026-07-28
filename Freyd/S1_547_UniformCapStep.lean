@@ -54,7 +54,7 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.UniformCap
-open scoped PreRegularCategory
+open PreRegularCategory
 
 universe u
 
@@ -207,7 +207,7 @@ theorem terminalSlicePresTerminal :
     letI : HasTerminal (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) := overHasTerminal _
     @PreservesTerminal S (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) _ _
       (terminalSliceFunctor W)
-      PreRegularCategory.toHasTerminal (overHasTerminal _) := by
+      toHasTerminal (overHasTerminal _) := by
   intro X f g
   exact OverHom.ext (term_uniq f.f g.f)
 
@@ -218,7 +218,7 @@ theorem terminalSlicePresProds :
     letI : HasBinaryProducts (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) := overHasBinaryProducts _
     @PreservesBinaryProducts S (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) _ _
       (terminalSliceFunctor W)
-      PreRegularCategory.toHasBinaryProducts (overHasBinaryProducts _) := by
+      toHasBinaryProducts (overHasBinaryProducts _) := by
   letI : HasBinaryProducts (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) := overHasBinaryProducts _
   intro A B
   -- the cone `(terminalSliceObj (A×B), map fst, map snd)` has the slice product universal property:

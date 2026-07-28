@@ -22,6 +22,12 @@ as `Cat.id A` in new code.
 Use the shortest unambiguous book name in signatures and prose. Once its namespace is deliberately
 opened, write `SmallRegCat`, for example, rather than `Freyd.S2_154.SmallRegCat`; keep full
 qualification only where ambiguity or declaration syntax requires it.
+A repeated qualifier is noise: `open` the namespace at the top of the file instead of writing the
+prefix at every use (`open SymMonCat`, not 226 × `SymMonCat.`), and prefer `open N` over
+`open scoped N` — it activates the scoped notations too. Two places still need the prefix: the class
+name itself (`extends SymMonCat.{v} 𝒞`), and uses inside a `structure`/`class` body, where a bare
+inherited field name resolves to a local of the structure elaborator instead of the global constant
+(that is also why go-to-definition is dead on those).
 Always prefer the book's definition over ad-hoc simplifications — even if the
 book version requires more typeclasses (e.g., `Entire R := 1_A ≤ R°R` via
 `compose` rather than `∃ h, h ≫ R.colA = id_A`).

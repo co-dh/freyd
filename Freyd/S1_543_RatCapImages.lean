@@ -21,7 +21,7 @@ open Freyd.Colim
 open Freyd.LaxColim
 
 namespace Freyd.LaxColim
-open scoped PreRegularCategory
+open PreRegularCategory
 
 universe u
 
