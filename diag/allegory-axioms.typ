@@ -814,10 +814,15 @@ the map conditions agree, is not proved. All three trace to one omission in Def.
 Frobenius structure at a composite object — which `diag/CB.lean`'s header records.
 
 *Two laws on the Frobenius side do no work here.* Grepping the repo, `«∇Δ≤𝟙»` and `«?!≤𝟙»` are
-never used: they appear only in the class definition and in `diag/RelSetCB.lean`, where the
-`Rel(Set)` instance discharges them. They are there to make `Δ ⊣ ∇` and `! ⊣ ?` genuine adjunctions
-— which is what pins `∇ = Δ°` and `? = !°` by uniqueness of adjoints — not to prove any allegory
-law.
+never used: they appear only in the class definition. They are there to make `Δ ⊣ ∇` and `! ⊣ ?`
+genuine adjunctions — which is what pins `∇ = Δ°` and `? = !°` by uniqueness of adjoints — not to
+prove any allegory law.
+
+*And nothing on this branch discharges them, because the tower has no model.* `diag/RelSetCB.lean`
+and `diag/RelSetFO.lean` carried the `Rel(Set)` instances and were dropped when the monoidal
+structure was made strict: `RelSet` is not a model of `diag/Monoidal.lean`, so, as `diag/FO.lean`'s
+own header puts it, "the layer has no model here". Everything below Def. 4.1 in this note is a
+theorem OF the axioms; that the axioms are satisfied by relations is the paper's, not this repo's.
 
 *The bridge runs one way only*, for the reason the section above sets out: a cartesian bicategory
 carries a symmetric monoidal `⊗` and an allegory carries nothing of the kind.
@@ -848,8 +853,8 @@ this is the point — from *different sources*, not from
   [`R / S`, complement], [§2.31, division allegory],
   [`LinearBicat`, `ClosedLinearBicat`, `residual` — `diag/FO.lean`;
    `DiagrammaticAlgebraOfFirstOrderLogic.pdf`],
-  [built, and drawn above. The `Rel(Set)` instance (`diag/RelSetFO.lean`) needs
-   `Classical.choice`.],
+  [built, and drawn above — but axiomatised only. `perp` is a field of `ClosedLinearBicat` that
+   nothing on this branch instantiates.],
 
   [`Λ`, power transpose], [§2.4], [none], [open. No calculus in this tower has a power object.],
 
@@ -1133,10 +1138,23 @@ row.
 
 *The measurement.* Twenty-one pictures. Nine show a cut, a meet or a tape — every row of the
 negation table except the lexical order and the Galois connection — so §4.5 draws essentially in
-full. The ten rows of the division table do not, and the reason is the one the paragraph on boxes
-gives: `/` is a *field* of `DivisionAllegory`, an operation posited rather than built, so there is
-nothing to unfold. It becomes drawable at exactly the point where a Boolean allegory defines it
-away, `div_eq_neg_comp`, and there it is two colour switches and no new notation at all.
+full. The ten rows of the division table do not.
+
+*And they cannot, at the generality Freyd states them.* This is the one thing to take from the
+section. Every picture of `/` above goes through a complement: `R / S` drawn as a cut is `R ⨟• S⊥`,
+and `S⊥` is `∼(S°)`. But division needs no complement. A `DivisionAllegory` (`Freyd/S2_30.lean:30`)
+asks for one thing, the Galois connection `T ⊑ R/S ⟺ T S ⊑ R`, and `Rel(Set)` satisfies it with a
+bare `∀`: `(R / S) x y ≜ ∀z. S y z → R x z` (`AOP/A6_1_RelSet.lean:157`), no negation anywhere in
+the definition. `Rel` over a non-Boolean topos is a division allegory too, and there is no `∼` to
+draw with at all.
+
+The diagrammatic route buys the picture at a price, and the price is exactly Booleanness: the
+paper's Prop. 6.5 is that *every homset of a first order bicategory is a Boolean algebra*. So the
+dashed box on `DivisionAllegory.div` is not a gap in the notation waiting to be filled — it is the
+correct picture. Restating these ten laws over `residual` would draw them, and would silently
+replace each one by a strictly weaker theorem. `div_eq_neg_comp` is where the trade is made in the
+open: it assumes `∼∼R = R` and gets `/` as two colour switches, and it is the only row here that
+should.
 
 *What is not drawn, and why.* The cheatsheet's pointwise row,
 `x (T\U) y ⟺ ∀w. w T x ⟹ w U y`, quantifies over elements and has no arrow to draw; the strict part
