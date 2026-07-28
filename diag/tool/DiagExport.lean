@@ -179,28 +179,38 @@ partial def Cell.strandSep : Cell → Float
     `⊗` of a fork and a wire offers three, and whatever follows has to be wired to all three.
     Composing two pictures means connecting these lists, so they are computed structurally rather
     than assumed. -/
-partial def Cell.leftOffsets : Cell → Array Float
-  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[STACKSEP, -STACKSEP]
+partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
+  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[sep, -sep]
   | .gen "unitR" _ _ | .cupC => #[]
   | .stack u l =>
-    let s := meetSep u l
-    (runLeftOffsets u).map (· + s) ++ (runLeftOffsets l).map (· - s)
+    (runLeftOffsets u).map (· + sep) ++ (runLeftOffsets l).map (· - sep)
   | _ => #[0.0]
 
 /-- Where a cell's strands meet its right edge, top to bottom. -/
-partial def Cell.rightOffsets : Cell → Array Float
-  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[STACKSEP, -STACKSEP]
+partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
+  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[sep, -sep]
   | .gen "bang" _ _ | .capC => #[]
   | .stack u l =>
-    let s := meetSep u l
-    (runRightOffsets u).map (· + s) ++ (runRightOffsets l).map (· - s)
+    (runRightOffsets u).map (· + sep) ++ (runRightOffsets l).map (· - sep)
   | _ => #[0.0]
 
+/-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
+    other; a fork, a swap, a cap and a cup by nothing in particular. -/
+partial def Cell.natSep : Cell → Float
+  | .stack u l => meetSep u l
+  | _ => STACKSEP
+
+/-- THE SEPARATION EVERY TWO-STRAND CELL OF A RUN IS DRAWN AT.  Composition has to line up: a fork
+    feeding a `⊗` opens exactly as wide as the `⊗` stacks, so the strands meet as straight wires
+    instead of being bent into place afterwards.  One number per run, the widest any cell needs. -/
+partial def runSep (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => max acc c.natSep) STACKSEP
+
 partial def runLeftOffsets (cells : Array Cell) : Array Float :=
-  match cells[0]? with | some c => c.leftOffsets | none => #[0.0]
+  match cells[0]? with | some c => c.leftOffsets (runSep cells) | none => #[0.0]
 
 partial def runRightOffsets (cells : Array Cell) : Array Float :=
-  match cells.back? with | some c => c.rightOffsets | none => #[0.0]
+  match cells.back? with | some c => c.rightOffsets (runSep cells) | none => #[0.0]
 
 partial def runSpan (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => max acc c.span) (BH / 2.0)
@@ -245,15 +255,19 @@ def joinWire (x₀ x₁ y₀ y₁ : Float) : Array String :=
 
 mutual
 
-partial def Cell.render (c : Cell) (x y : Float) : Array String :=
+partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
   match c with
   | .wire => hwire x (x + wireW) y
   | .box l => #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH})"]
-  | .gen fn _ lead =>
-    -- `Δ` and `∇` must open at exactly the offset a `⊗` stacks at, or the fork's prongs and the
-    -- boxes beside them sit at different heights and the joining wires are drawn between two
-    -- levels that never meet.  `strdiag.typ`'s own default is 0.5; this overrides it.
-    let sp := if fn == "delta" || fn == "nabla" then s!", sp: {fmt STACKSEP}" else ""
+  | .gen fn w lead =>
+    -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
+    -- offers are the strands its neighbours expect.  `strdiag.typ`'s defaults are narrower; this
+    -- overrides them.  The swap also spans its cell, or the wires into it stop short of the
+    -- crossing.
+    let sp :=
+      if fn == "delta" || fn == "nabla" then s!", sp: {fmt sep}"
+      else if fn == "swap" then s!", sp: {fmt sep}, w: {fmt w}"
+      else ""
     #[s!"  {fn}(({fmt (x + lead)}, {fmt y}){sp})"]
   -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
   -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
@@ -264,11 +278,10 @@ partial def Cell.render (c : Cell) (x y : Float) : Array String :=
     #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, dashed: true)"]
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
   -- one stub in from this cell's left edge.
-  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt STACKSEP}, w: {fmt CAPBEND})"]
-  | .cupC => #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt STACKSEP}, w: {fmt CAPBEND})"]
+  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
+  | .cupC => #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
   | .stack u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
-    let sep := meetSep u l
     let mut out := #[]
     for (run, dy) in [(u, sep), (l, -sep)] do
       let rx := x + (iw - runWidth run) / 2.0
@@ -311,22 +324,27 @@ partial def Cell.render (c : Cell) (x y : Float) : Array String :=
     facing each other ABUT — `Δ ; ∇` is one bubble, not two shapes with a gap — so `runWidth` has to
     agree with this, which is what `joinGap` is for. -/
 partial def renderRun (cells : Array Cell) (x0 y : Float) : Array String := Id.run do
+  let sep := runSep cells
   let mut out := #[]
   let mut x := x0
   for i in [0 : cells.size] do
     let c := cells[i]!
-    out := out ++ c.render x y
+    out := out ++ c.render x y sep
     x := x + c.width
     if h : i + 1 < cells.size then
       let next := cells[i + 1]
-      if c.rightPort == .one && next.leftPort == .one then
+      -- Nothing to join when the two abut: a fork straight into a fork is ONE bubble, and a wire
+      -- drawn across it would run through the middle of the shape.
+      if joinGap c next < 0.005 then
+        pure ()
+      else if c.rightPort == .one && next.leftPort == .one then
         out := out ++ hwire x (x + GAP) y
       else if c.rightPort.isTwo && next.leftPort.isTwo then
         -- One join per strand, from where THIS cell's strands end to where the next one's begin.
         -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
         -- not model made them disagree, wire what can be wired rather than drop the join entirely.
-        let a := c.rightOffsets
-        let b := next.leftOffsets
+        let a := c.rightOffsets sep
+        let b := next.leftOffsets sep
         for j in [0 : min a.size b.size] do
           out := out ++ joinWire x (x + GAP) (y + a[j]!) (y + b[j]!)
       x := x + joinGap c next
