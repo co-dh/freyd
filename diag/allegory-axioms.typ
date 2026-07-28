@@ -1029,11 +1029,11 @@ both structures the two operations agree by uniqueness of adjoints, with neither
 unfolded.
 
 *What `/` is, without a complement anywhere: long division.* `R / S` is how much of `R` you can lay
-down before `S` still fits inside what is left, and the figure says exactly that. Read the bar
-left to right, as a composite: `R / S` first, then `S`, and the two together stay inside `R` with
-room to spare. That leftover is the whole reason the cancel law is `(R/S) S ⊑ R` and not an
-equality, and it is where the quotient's *largest* comes from — push the boundary right and `S` no
-longer fits.
+down before `S` still fits inside what is left, and the figure says exactly that. Read the bar left
+to right, as a composite: `R / S` first, then `S`, and the two together stay inside `R`. The leftover
+is the whole reason the cancel law is `(R/S) S ⊑ R` and not an equality — and it is drawn as a
+hairline on purpose, because `R / S` is the *largest* such quotient. Any wider and `S` stops fitting;
+the sliver is what is left when nothing more can be taken.
 
 Solid is what the equation pins: `R`'s left edge, `S`'s left edge, and the stretch before `S`, which
 is what `R / S` measures. Dashed is the slack: nothing to the right of `S` is determined by
@@ -1048,25 +1048,31 @@ quotient is how far along it reaches. Pushed too far, the metaphor breaks in the
 #fig({
   let y0 = -0.55
   let y1 = 0.55
-  let xq = 3.4                       // R/S ends, S begins
-  let xs = 6.4                       // S ends
-  let xr = 8.6                       // R ends
+  let ys = 0.36                      // S is inset top and bottom: it sits INSIDE R
+  let xq = 5.0                       // R/S ends, S begins
+  let xs = 6.9                       // S ends
+  let xr = 7.02                      // R ends — a hairline past S, and that hairline is the point
   let sol = (thickness: 1.1pt, paint: black)
   let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
-  d.rect((0, y0), (xr, y1), fill: rgb("#f2c9c4"), stroke: none)
-  d.rect((xq, y0), (xs, y1), fill: rgb("#cfe6cd"), stroke: none)
+  // AMBER for `R`, not a red: the tape that draws `∪` elsewhere in this note is pale red, and two
+  // pale reds in one document read as one notation.  Green keeps `S`.
+  d.rect((0, y0), (xr, y1), fill: rgb("#f6e3bd"), stroke: none)
+  d.rect((xq, -ys), (xs, ys), fill: rgb("#cfe6cd"), stroke: none)
   d.line((0, y0), (0, y1), stroke: sol)
   d.line((xq, y0), (xq, y1), stroke: sol)
   d.line((0, y1), (xq, y1), stroke: sol)
   d.line((0, y0), (xq, y0), stroke: sol)
   d.line((xq, y1), (xr, y1), stroke: dsh)
   d.line((xq, y0), (xr, y0), stroke: dsh)
-  d.line((xs, y0), (xs, y1), stroke: dsh)
+  d.line((xq, ys), (xs, ys), stroke: dsh)
+  d.line((xq, -ys), (xs, -ys), stroke: dsh)
+  d.line((xs, -ys), (xs, ys), stroke: dsh)
   d.line((xr, y0), (xr, y1), stroke: dsh)
   d.content((xq / 2, 0), text(11pt)[$R slash S$])
   d.content(((xq + xs) / 2, 0), text(11pt)[$S$])
-  d.content((xr / 2, y1 + 0.5), text(11pt)[$R$])
-  d.content(((xs + xr) / 2, y0 - 0.5), text(9pt)[the slack: why `⊑`])
+  // The slack is too thin to label in place, so the label stands off and points at it.
+  d.line((xr, y0 - 0.42), (xr, y0 - 0.1), stroke: (thickness: 0.6pt, paint: luma(110)))
+  d.content((xr, y0 - 0.62), text(9pt, luma(90))[the slack: why `⊑`])
 })
 #align(center, src[transcribed — the universal property has a Lean statement, this metaphor does
 not])
