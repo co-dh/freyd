@@ -305,7 +305,7 @@ theorem unbend_bend {a b : Word O} (k : a ⊗ b ⟶ (𝕀 : Word O)) : unbend (b
 /-- SLIDING a box around the cap: `(𝟙_a ⊗ R°);cap_a = (R ⊗ 𝟙_b);cap_b`.  This is `unbend_bend`
     read at `R`'s own unbending — `R°` is by definition the bending of `(R ⊗ 𝟙);cap`, so straightening
     it again returns what we started from.  Every converse law below is one application of this. -/
-theorem conv_slide {a b : Word O} (R : a ⟶ b) :
+theorem «°_slide» {a b : Word O} (R : a ⟶ b) :
     (𝟙 a ⊗ₕ conv R) ≫ cap a = (R ⊗ₕ 𝟙 b) ≫ cap b := unbend_bend _
 
 /-- Capping a box on the left is capping it on the right, past a symmetry — the cap does not care
@@ -335,13 +335,13 @@ theorem conv_conv {a b : Word O} (R : a ⟶ b) : conv (conv R) = R := by
       = (swap b a ≫ swap a b) ≫ (𝟙 b ⊗ₕ R) ≫ cap b := by rw [swap_swap, Cat.id_comp]
     _ = swap b a ≫ swap a b ≫ (𝟙 b ⊗ₕ R) ≫ cap b := by simp only [Cat.assoc]
     _ = swap b a ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by rw [← tens_cap_swap]
-    _ = swap b a ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [conv_slide]
+    _ = swap b a ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [«°_slide»]
     _ = (conv R ⊗ₕ 𝟙 a) ≫ cap a := (tens_cap_swap (conv R)).symm
 
 /-- CONTRAVARIANT FUNCTORIALITY, `(R;S)° = S°;R°` — Lemma 4.2 (ii)
     (functorialSemanticsForRelationalTheories.pdf p. 19) and Freyd's `recip_comp` (§2.11).  Unbend
-    `S°;R°` one factor at a time: `conv_slide` turns the inner `R°` into `R`, `tensHom_split` walks
-    `S°` across to the other strand, and a second `conv_slide` turns it into `S`. -/
+    `S°;R°` one factor at a time: `«°_slide»` turns the inner `R°` into `R`, `tensHom_split` walks
+    `S°` across to the other strand, and a second `«°_slide»` turns it into `S`. -/
 theorem conv_comp {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) :
     conv (R ≫ S) = conv S ≫ conv R := by
   refine (conv_unique ?_).symm
@@ -349,12 +349,12 @@ theorem conv_comp {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) :
     rw [← tensHom_comp, Cat.id_comp]
   calc (𝟙 a ⊗ₕ (conv S ≫ conv R)) ≫ cap a
       = (𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [hs]; simp only [Cat.assoc]
-    _ = (𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by rw [conv_slide]
+    _ = (𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by rw [«°_slide»]
     _ = ((𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b)) ≫ cap b := by simp only [Cat.assoc]
     _ = (R ⊗ₕ conv S) ≫ cap b := by rw [tensHom_split']
     _ = ((R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S)) ≫ cap b := by rw [tensHom_split]
     _ = (R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S) ≫ cap b := by simp only [Cat.assoc]
-    _ = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by rw [conv_slide]
+    _ = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by rw [«°_slide»]
     _ = ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c)) ≫ cap c := by simp only [Cat.assoc]
     _ = ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c := by rw [← tensHom_comp, Cat.comp_id]
 
@@ -403,7 +403,7 @@ theorem «cap_tens_∇» {b c : Word O} (T : c ⟶ b) :
     side sends it to any `z'` with `S y z`; so `S` occurs once on the left and twice on the right.
     That is the tell: the lax copy inequation (42) — the ONLY place a box may be duplicated — has to
     be the inequality step, and it is.  `«∇_of_cap»` puts the left-hand side into the shape
-    `(S;Δ) ⊗ 𝟙` that (42) applies to, and `conv_slide` turns the surviving duplicate into `S°`. -/
+    `(S;Δ) ⊗ 𝟙` that (42) applies to, and `«°_slide»` turns the surviving duplicate into `S°`. -/
 theorem «∇_slide_conv» {b c : Word O} (S : b ⟶ c) :
     ((S ⊗ₕ 𝟙 c) ≫ ∇) ≤ ((𝟙 b ⊗ₕ conv S) ≫ ∇ ≫ S) := by
   have hfacL : ((S ≫ Δ) ⊗ₕ 𝟙 c) = (S ⊗ₕ 𝟙 c) ≫ (Δ ⊗ₕ 𝟙 c) := by
@@ -421,7 +421,7 @@ theorem «∇_slide_conv» {b c : Word O} (S : b ⟶ c) :
       calc ((S ⊗ₕ S) ⊗ₕ 𝟙 c) ≫ (𝟙 c ⊗ₕ cap c)
           = (S ⊗ₕ (S ⊗ₕ 𝟙 c)) ≫ (𝟙 c ⊗ₕ cap c) := by rw [tensHom_assoc]
         _ = (S ⊗ₕ ((S ⊗ₕ 𝟙 c) ≫ cap c)) := by rw [← tensHom_comp, Cat.comp_id]
-        _ = (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) := by rw [conv_slide]
+        _ = (S ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) := by rw [«°_slide»]
         _ = (𝟙 b ⊗ₕ ((𝟙 b ⊗ₕ conv S) ≫ cap b)) ≫ (S ⊗ₕ 𝟙 (𝕀 : Word O)) := by
               rw [tensHom_split']
     calc ((Δ ≫ (S ⊗ₕ S)) ⊗ₕ 𝟙 c) ≫ (𝟙 c ⊗ₕ cap c)

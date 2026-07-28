@@ -30,7 +30,7 @@
 //     Freyd.Alg.leftDiv_comp Freyd.Alg.map_comp_div Freyd.Alg.div_comp_recip_map \
 //     Freyd.Alg.symmDiv_recip Freyd.Alg.symmDiv_comp
 // and the PROOF chains:
-//   ./scripts/diag-export Freyd.Diag.CartBicat.conv_slide
+//   ./scripts/diag-export Freyd.Diag.CartBicat.«°_slide»
 //   ./scripts/diag-export --proof Freyd.Diag.CartBicat.conv_comp Freyd.Diag.shunt_right \
 //     Freyd.Diag.shunt_left Freyd.Diag.CartBicat.«∇_slide_conv» \
 //     Freyd.Diag.modular_of_frobenius Freyd.Diag.entire_inter_iff
@@ -69,7 +69,7 @@
 #import "generated/Freyd.Diag.shunt_left.proof.typ": branches as slb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
-#import "generated/Freyd.Diag.CartBicat.conv_slide.typ": pic as p-conv-slide
+#import "generated/Freyd.Diag.CartBicat.«°_slide».typ": pic as p-conv-slide
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
 #import "generated/Freyd.Diag.SingleValued.typ": pic as p-sv46
 #import "generated/Freyd.Diag.Total.typ": pic as p-tot47
@@ -556,22 +556,18 @@ strands in on the left, one cap on the right. Bending is a bijection (`bend_unbe
 so settling the unbent equation settles the bent one, and the cup never has to be drawn at all.
 
 That is why every row below has a cap and no cup, and why an arrow that "is a converse" shows up not
-as a bent box but as a box sitting on the *bottom* strand, mirrored.
+as a bent box but as a box sitting on the *bottom* strand, mirrored. The snake that `R°` is drawn as
+everywhere else in this note is not redrawn here: it is the same picture, and the point of this
+section is that the proof never builds one.
 
 #table(
-  columns: (1fr, 1fr),
-  align: (center + horizon, center + horizon),
+  columns: (1fr,),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*the converse, as the paper draws it*], [*the one rule the proof uses, twice*]),
-  fig({ conv((0, -0.80), $R$) }),
-  P(p-conv-slide, s: 80%),
-  [#src[`R°` is `R` with both wires bent round: in at the bottom left, cup at the top left, cap at
-   the bottom right. Two dots at each bend, as `functorialSemanticsForRelationalTheories.pdf` draws
-   it — a cup is `?` then `Δ`, a cap is `∇` then `!`. *Transcribed by hand;* a definition has no
-   statement to export.]],
-  [#src[`conv_slide` (`diag/CB.lean:449`): a box on the BOTTOM strand facing a cap is the same as
-   that box on the TOP strand, upright. Sliding round the bend is what turns `R°` into `R`. This is
-   the entire content of Lemma 4.2 (ii); the other seven steps are bookkeeping.]],
+  table.header([*`«°_slide»` — the one rule the proof uses, and it uses it twice*]),
+  P(p-conv-slide, s: 88%),
+  [#src[A box on the BOTTOM strand facing a cap is the same as that box on the TOP strand, upright.
+   Sliding round the bend is what turns `R°` into `R`, and it is the entire content of Lemma
+   4.2 (ii) — the other seven steps are bookkeeping.]],
 )
 
 == The chain
@@ -600,7 +596,7 @@ means upright.
 
   raw(l42b.at(0).terms.at(2)),
   P(l42b.at(0).steps.at(2), s: 66%),
-  [*2. `conv_slide`.* `R°` is the box nearest the cap, so it slides round the bend: it leaves the bottom strand, arrives on the top, and comes back upright as `R`. #src[*The first of the two steps that prove anything.*]],
+  [*2. `«°_slide»`.* `R°` is the box nearest the cap, so it slides round the bend: it leaves the bottom strand, arrives on the top, and comes back upright as `R`. #src[*The first of the two steps that prove anything.*]],
 
   raw(l42b.at(0).terms.at(3)),
   P(l42b.at(0).steps.at(3), s: 66%),
@@ -620,7 +616,7 @@ means upright.
 
   raw(l42b.at(0).terms.at(7)),
   P(l42b.at(0).steps.at(7), s: 66%),
-  [*7. `conv_slide`,* on `S` this time. `S°` slides round the bend and arrives upright on the top strand. Both boxes are now on top, both upright, in the order `R` then `S`. #src[*The second and last real step.*]],
+  [*7. `«°_slide»`,* on `S` this time. `S°` slides round the bend and arrives upright on the top strand. Both boxes are now on top, both upright, in the order `R` then `S`. #src[*The second and last real step.*]],
 
   raw(l42b.at(0).terms.at(8)),
   P(l42b.at(0).steps.at(8), s: 66%),
@@ -636,7 +632,7 @@ steps 1, 3, 6, 8 and 9 change nothing at all, and step 4 changes only spacing �
 column beside them changes at every row. Those are
 associativity, the unit laws and interchange — precisely the laws a string diagram has built into
 its geometry rather than as rewrites. Seven of these nine Lean steps are bureaucracy the picture
-language does not charge for, and the theorem is two applications of `conv_slide`.
+language does not charge for, and the theorem is two applications of `«°_slide»`.
 
 *How this differs from the paper's proof.* The paper proves (ii) by inserting a snake in the middle
 of `R ; S` and reading the two halves off as `S°` and `R°` — three pictures, all bent. The Lean
@@ -707,7 +703,7 @@ own chain shows it is the only one.
    modular law, in one step.*]],
 
   raw(nsb.at(0).terms.at(3)), P(nsb.at(0).steps.at(3), s: 62%),
-  [*`«cap_tens_∇»` and `conv_slide`.* #src[Reshaping back, and the surviving duplicate slides round
+  [*`«cap_tens_∇»` and `«°_slide»`.* #src[Reshaping back, and the surviving duplicate slides round
    the cap to become `S°` — the same rule Lemma 4.2 (ii) is made of.]],
 )
 

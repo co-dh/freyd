@@ -215,9 +215,9 @@ partial def Cell.width : Cell → Float
   | .wire => wireW
   | .box l | .dbox l | .mbox l => boxWidth l
   | .gen _ w _ => w
-  | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
-  | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
-  | .stack u l => max (runWidth u) (runWidth l)
+  | .meet u l => 2.0 * FORK + max (runOuterWidth u) (runOuterWidth l)
+  | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runOuterWidth u) (runOuterWidth l)
+  | .stack u l => max (runOuterWidth u) (runOuterWidth l)
   | .capC | .cupC => CAPW
   | .dagger l _ => CONVPAD + boxWidth l
   | .divbox n dn _ => divboxWidth n dn
@@ -305,6 +305,17 @@ partial def runRightOffsets (cells : Array Cell) : Array Float :=
 partial def runSpan (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => max acc c.span) (BH / 2.0)
 
+/-- Horizontal room a run needs at an end whose port does NOT sit on the centre line, so the wire
+    joining it has somewhere to fall.  Zero for every run that begins and ends on the centre line,
+    which is all of them except those that begin or end in a snake. -/
+partial def runPadL (cells : Array Cell) : Float :=
+  if (runLeftOffsets cells).any (fun o => o.abs > 0.01) then RISE / 2.0 else 0.0
+partial def runPadR (cells : Array Cell) : Float :=
+  if (runRightOffsets cells).any (fun o => o.abs > 0.01) then RISE / 2.0 else 0.0
+/-- What a run occupies inside a meet, a stack or a tape: its cells plus that room. -/
+partial def runOuterWidth (cells : Array Cell) : Float :=
+  runPadL cells + runWidth cells + runPadR cells
+
 /-- The offset of each strand of a meet from its centre line: enough that the two runs clear each
     other by `STRANDGAP`.  At the leaves this is `strdiag.typ`'s own `0.62`. -/
 partial def meetSep (u l : Array Cell) : Float :=
@@ -350,6 +361,26 @@ def joinWire (x₀ x₁ y₀ y₁ : Float) (iv : Bool := false) : Array String :
 
 mutual
 
+/-- One operand run of a meet, a stack or a tape: centred in the shared inner width `iw` and wired
+    to both ends of it at strand level `ys`.
+
+    The wires are BENDS wherever the run does not begin and end on the centre line.  A snake takes
+    its strand `RISE/2` low and gives it back `RISE/2` high, so a flat stub here left the prongs of
+    `∇` — and of `Δ`, and of a tape's fork — ending in mid-air beside `R°`, connected to nothing.
+    That is what `runPadL`/`runPadR` reserve the room for. -/
+partial def renderStrand (run : Array Cell) (x₁ iw ys : Float) (iv : Bool) : Array String := Id.run do
+  let ow := runOuterWidth run
+  let l₀ := x₁ + (iw - ow) / 2.0            -- where this run's outer extent begins
+  let rx := l₀ + runPadL run                -- where its cells begin
+  let re := rx + runWidth run               -- where they end
+  let mut out := hwire x₁ l₀ ys iv
+  for o in runLeftOffsets run do
+    out := out ++ joinWire l₀ rx ys (ys + o) iv
+  out := out ++ renderRun run rx ys iv
+  for o in runRightOffsets run do
+    out := out ++ joinWire re (re + runPadR run) (ys + o) ys iv
+  return out ++ hwire (re + runPadR run) (x₁ + iw) ys iv
+
 -- Two parameters, two independent facts about the surroundings: `sep` is where this run puts its
 -- strands, `iv` is which colour the ground under it is.
 partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String :=
@@ -392,33 +423,28 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
   | .cupC =>
     #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
   | .stack u l => Id.run do
-    let iw := max (runWidth u) (runWidth l)
+    let iw := max (runOuterWidth u) (runOuterWidth l)
     let mut out := #[]
     for (run, dy) in [(u, sep), (l, -sep)] do
-      let rx := x + (iw - runWidth run) / 2.0
-      out := out ++ hwire x rx (y + dy) iv ++ renderRun run rx (y + dy) iv
-        ++ hwire (rx + runWidth run) (x + iw) (y + dy) iv
+      out := out ++ renderStrand run x iw (y + dy) iv
     return out
   | .union u l => Id.run do
-    let iw := max (runWidth u) (runWidth l)
+    let iw := max (runOuterWidth u) (runOuterWidth l)
     let sep := meetSep u l
     let inner := max (runSpan u) (runSpan l)
     let x₁ := x + TAPEPAD + FORK             -- where the tape's two branches begin
-    let x₂ := x₁ + iw
     let w := 2.0 * FORK + 2.0 * TAPEPAD + iw
     -- The wrapper is drawn FIRST so the circuit sits on top of it, not under it.
     let mut out := #[s!"  tape(({fmt x}, {fmt (y - sep - inner - TAPEPAD)}), \
       ({fmt (x + w)}, {fmt (y + sep + inner + TAPEPAD)}))",
       s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"]
     for (run, dy) in [(u, sep), (l, -sep)] do
-      let rx := x₁ + (iw - runWidth run) / 2.0
       -- The tape carries its own colour, so its interior is white ground whatever is outside it.
-      out := out ++ hwire x₁ rx (y + dy) ++ renderRun run rx (y + dy) false
-        ++ hwire (rx + runWidth run) x₂ (y + dy)
+      out := out ++ renderStrand run x₁ iw (y + dy) false
     return out.push
       s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"
   | .meet u l => Id.run do
-    let iw := max (runWidth u) (runWidth l)
+    let iw := max (runOuterWidth u) (runOuterWidth l)
     let sep := meetSep u l
     let x₁ := x + FORK                       -- where `Δ`'s two strands arrive
     let x₂ := x₁ + iw                        -- where `∇`'s two strands leave
@@ -426,9 +452,7 @@ partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String 
       #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt sep}{inv iv})"]
     -- Each operand run is centred in the shared inner width, and wired out to both ends.
     for (run, dy) in [(u, sep), (l, -sep)] do
-      let rx := x₁ + (iw - runWidth run) / 2.0
-      out := out ++ hwire x₁ rx (y + dy) iv ++ renderRun run rx (y + dy) iv
-        ++ hwire (rx + runWidth run) x₂ (y + dy) iv
+      out := out ++ renderStrand run x₁ iw (y + dy) iv
     return out.push
       s!"  nabla(({fmt (x₂ + FORK)}, {fmt y}), li: {fmt FORK}, lo: 0, sp: {fmt sep}{inv iv})"
   -- The cut.  Ground first, contents on top of it with the colour flipped, and a stub at each edge

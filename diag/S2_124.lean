@@ -109,14 +109,14 @@ theorem dom_cd {a b : Word O} (P : a ⟶ b) :
 
     The move that turns a converse into a witness: copy the surviving wire, run `P` FORWARD on the
     copy, and cap its output against the wire that was already there.  `«cap_tens_∇»` is the
-    box-carrying merge-from-a-cap, and `conv_slide` is what lets `P°` on one strand be read as `P` on
+    box-carrying merge-from-a-cap, and `«°_slide»` is what lets `P°` on one strand be read as `P` on
     the other.  The associator naturality of the non-strict proof is now one `tensHom_assoc`. -/
 theorem cv_merge {a b : Word O} (P : a ⟶ b) :
     (𝟙 a ⊗ₕ conv P) ≫ ∇
       = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
   calc (𝟙 a ⊗ₕ conv P) ≫ ∇
       = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) := («cap_tens_∇» (conv P)).symm
-    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← conv_slide]
+    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← «°_slide»]
     _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
     _ = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
