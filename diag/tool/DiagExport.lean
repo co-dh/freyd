@@ -63,6 +63,23 @@ def SYMCOL : Float := 0.95
     what is nested in its runs — and `joinWire` bends between the two, so the two need not agree. -/
 def STACKSEP : Float := 0.62
 
+/-- THE LANE PITCH.  A bundle of `n` strands always occupies the same `n` heights, symmetric about
+    the run's centre line and `PITCH` apart, whatever produced it.  That is what makes composition
+    line up without bending anything: two cells that carry the same number of strands agree on where
+    those strands are, so the wire between them is horizontal. -/
+def PITCH : Float := 1.24
+
+/-- The heights of a bundle of `n` strands, top to bottom. -/
+def laneYs (n : Nat) : Array Float :=
+  (Array.range n).map fun i => ((n.toFloat - 1.0) / 2.0 - i.toFloat) * PITCH
+
+/-- The centre of the top `k` of `n` lanes — where a `⊗`'s upper run has to sit for its strands to
+    land on the bundle's lanes. -/
+def laneCentre (n k : Nat) (fromTop : Bool) : Float :=
+  let ys := laneYs n
+  let chosen := if fromTop then ys.extract 0 k else ys.extract (n - k) n
+  if chosen.isEmpty then 0.0 else chosen.foldl (· + ·) 0.0 / chosen.size.toFloat
+
 /-- One left-to-right slot of a picture. -/
 inductive Cell where
   | wire
@@ -135,13 +152,25 @@ def boxWidth (l : String) : Float := max BW (0.225 * l.length.toFloat + 0.30)
 
 mutual
 
+/-- How far a `⊗`'s run has to climb to reach its lanes, and so how much lead the `⊗` needs on each
+    side: nothing at all when the strand count does not change, which is the common case. -/
+partial def stackClimb (u l : Array Cell) : Float :=
+  let nIn := runLeftN u + runLeftN l
+  let nOut := runRightN u + runRightN l
+  let d (fromTop : Bool) (kIn kOut : Nat) :=
+    (laneCentre nIn kIn fromTop - laneCentre nOut kOut fromTop).abs
+  max (d true (runLeftN u) (runRightN u)) (d false (runLeftN l) (runRightN l))
+
+partial def stackLead (u l : Array Cell) : Float :=
+  if stackClimb u l < 0.005 then 0.0 else LEAD + 0.5 * stackClimb u l
+
 partial def Cell.width : Cell → Float
   | .wire => wireW
   | .box l | .dbox l => boxWidth l
   | .gen _ w _ => w
   | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
-  | .stack u l => max (runWidth u) (runWidth l)
+  | .stack u l => max (runWidth u) (runWidth l) + 2.0 * stackLead u l
   | .capC | .cupC => CAPW
   | .dagger l => boxWidth l
 
@@ -183,29 +212,37 @@ partial def Cell.strandSep : Cell → Float
   | .stack u l => meetSep u l
   | _ => STACKSEP
 
-/-- Where a cell's strands MEET its left edge, top to bottom.  A port is not one strand or two: a
-    `⊗` of a fork and a wire offers three, and whatever follows has to be wired to all three.
-    Composing two pictures means connecting these lists, so they are computed structurally rather
-    than assumed. -/
-partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
-  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[sep, -sep]
-  | .gen "unitR" _ _ | .cupC => #[]
-  | .stack u l =>
-    (runLeftOffsets u).map (· + sep) ++ (runLeftOffsets l).map (· - sep)
-  | _ => #[0.0]
+/-- HOW MANY strands a cell offers on each edge.  This, not any nesting, decides where they sit. -/
+partial def Cell.leftN : Cell → Nat
+  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => 2
+  | .gen "unitR" _ _ | .cupC => 0
+  | .stack u l => runLeftN u + runLeftN l
+  | _ => 1
+
+partial def Cell.rightN : Cell → Nat
+  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => 2
+  | .gen "bang" _ _ | .capC => 0
+  | .stack u l => runRightN u + runRightN l
+  | _ => 1
+
+partial def runLeftN (cells : Array Cell) : Nat :=
+  match cells[0]? with | some c => c.leftN | none => 1
+
+partial def runRightN (cells : Array Cell) : Nat :=
+  match cells.back? with | some c => c.rightN | none => 1
+
+/-- Where a cell's strands meet its left edge, top to bottom. -/
+partial def Cell.leftOffsets (_sep : Float) (c : Cell) : Array Float :=
+  laneYs c.leftN
 
 /-- Where a cell's strands meet its right edge, top to bottom. -/
-partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
-  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[sep, -sep]
-  | .gen "bang" _ _ | .capC => #[]
-  | .stack u l =>
-    (runRightOffsets u).map (· + sep) ++ (runRightOffsets l).map (· - sep)
-  | _ => #[0.0]
+partial def Cell.rightOffsets (_sep : Float) (c : Cell) : Array Float :=
+  laneYs c.rightN
 
-/-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
-    other; a fork, a swap, a cap and a cup by nothing in particular. -/
+/-- What a cell needs its two strands separated by.  Since a bundle sits on lanes, every fork, swap,
+    cap and cup opens by exactly one lane pitch — a `⊗` no longer widens its neighbours, it places
+    its runs on the lanes instead. -/
 partial def Cell.natSep : Cell → Float
-  | .stack u l => meetSep u l
   | _ => STACKSEP
 
 /-- THE SEPARATION EVERY TWO-STRAND CELL OF A RUN IS DRAWN AT.  Composition has to line up: a fork
@@ -290,11 +327,31 @@ partial def Cell.render (c : Cell) (x y sep : Float) : Array String :=
   | .cupC => #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND})"]
   | .stack u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
+    let lead := stackLead u l
+    let nIn := runLeftN u + runLeftN l
+    let nOut := runRightN u + runRightN l
+    let inLanes := laneYs nIn
+    let outLanes := laneYs nOut
     let mut out := #[]
-    for (run, dy) in [(u, sep), (l, -sep)] do
-      let rx := x + (iw - runWidth run) / 2.0
-      out := out ++ hwire x rx (y + dy) ++ renderRun run rx (y + dy)
-        ++ hwire (rx + runWidth run) (x + iw) (y + dy)
+    let mut inTaken := 0
+    let mut outTaken := 0
+    for (run, fromTop) in [(u, true), (l, false)] do
+      let kIn := runLeftN run
+      let kOut := runRightN run
+      -- The run sits between the lanes it arrives on and the lanes it leaves on, so a climb is
+      -- split evenly between its two stubs instead of falling entirely on one.
+      let dy := (laneCentre nIn kIn fromTop + laneCentre nOut kOut fromTop) / 2.0
+      let rx := x + lead + (iw - runWidth run) / 2.0
+      let runIn := (laneYs kIn).map (· + dy)
+      let runOut := (laneYs kOut).map (· + dy)
+      for j in [0 : kIn] do
+        out := out ++ joinWire x rx (y + inLanes[inTaken + j]!) (y + runIn[j]!)
+      out := out ++ renderRun run rx (y + dy)
+      for j in [0 : kOut] do
+        out := out ++ joinWire (rx + runWidth run) (x + iw + 2.0 * lead)
+          (y + runOut[j]!) (y + outLanes[outTaken + j]!)
+      inTaken := inTaken + kIn
+      outTaken := outTaken + kOut
     return out
   | .union u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
