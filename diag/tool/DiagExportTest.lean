@@ -26,13 +26,16 @@ open Freyd.DiagExport
 
 /-! ### A generator drawn at one separation and reported at another -/
 
-/-- Every generator that presents two strands must SAY where they are, at the separation it reports.
-    `strdiag.typ`'s defaults are not all `STACKSEP` — `swap`'s is 0.33 — so silence here means the
-    drawing and the ports drift apart with nothing to notice it. -/
+/-- Every generator that presents two strands must SAY where they are, at the separation its RUN
+    settled on — never at a `strdiag.typ` default, since those are not all alike (`swap`'s is 0.33).
+    Checked at a separation deliberately unlike any default, so a shape that ignores the argument and
+    falls back cannot pass. -/
+def oddSep : Float := 0.77
+
 def statesItsStrands (c : Cell) : Bool :=
-  let s := String.join (c.render 0.0 0.0 false).toList
+  let s := String.join (c.render 0.0 0.0 oddSep false).toList
   if c.leftPort.isTwo || c.rightPort.isTwo then
-    (s.splitOn ("sp: " ++ fmt STACKSEP)).length > 1
+    (s.splitOn ("sp: " ++ fmt oddSep)).length > 1
   else true
 
 def delta : Cell := .gen "delta" 1.4 0.7
@@ -51,7 +54,8 @@ Two `pair` ports facing each other are drawn touching, with no wire between them
 mismatch, so they have to be at the same heights. -/
 
 def abuts (c next : Cell) : Bool :=
-  !(c.rightPort == .pair && next.leftPort == .pair) || c.rightOffsets == next.leftOffsets
+  !(c.rightPort == .pair && next.leftPort == .pair)
+    || c.rightOffsets oddSep == next.leftOffsets oddSep
 
 #guard abuts delta nabla
 #guard abuts delta swapC
