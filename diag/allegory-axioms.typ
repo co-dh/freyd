@@ -5,35 +5,9 @@
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN.  `./scripts/diag-export <decl>` walks the
 // Lean declaration's TYPE and writes diag/generated/<decl>.typ, which binds the cetz drawing to
 // `pic`; this note only places those bindings in table cells.  Hand-drawing them is how the first
-// draft of this page got `inter_assoc` wrong — it showed coassociativity of `Δ` instead of the axiom
+// draft of this page got `inter_assoc` wrong — it showed coassociativity of `◁` instead of the axiom
 // — and dropped the `=` from `recip_inter`.  A picture derived from the statement cannot drift from
-// it.  Regenerate every binding used here with:
-//
-//   ./scripts/diag-export Freyd.Diag.CartBicat.Δ_assoc Freyd.Diag.CartBicat.Δ_comm \
-//     Freyd.Diag.CartBicat.Δ_counit Freyd.Diag.CartBicat.«∇_assoc» Freyd.Diag.CartBicat.«∇_comm» \
-//     Freyd.Diag.CartBicat.«∇_unit» \
-//     Freyd.Diag.CartBicat.conv_conv Freyd.Diag.CartBicat.conv_comp \
-//     Freyd.Diag.conv_inter Freyd.Diag.meet_idem Freyd.Diag.meet_comm Freyd.Diag.meet_assoc \
-//     Freyd.Diag.semidistrib_of_lax Freyd.Diag.modular_of_frobenius Freyd.Diag.«≤_top» \
-//     Freyd.Diag.CartBicat.special Freyd.Diag.CartBicat.«∇Δ≤𝟙» Freyd.Diag.CartBicat.«𝟙≤Δ∇» \
-//     Freyd.Diag.CartBicat.«?!≤𝟙» Freyd.Diag.CartBicat.«𝟙≤!?» Freyd.Diag.CartBicat.frob_left \
-//     Freyd.Diag.CartBicat.lax_Δ Freyd.Diag.CartBicat.lax_! Freyd.Diag.Biprod.«≤_union_left» \
-//     Freyd.Diag.Biprod.union_comm Freyd.Diag.Biprod.bot_union Freyd.Diag.Biprod.comp_union \
-//     Freyd.Diag.Biprod.conv_union Freyd.Diag.FbCbRig.meet_union_distrib \
-//     Freyd.Diag.ClosedLinearBicat.«residual_comp_≤» Freyd.Diag.SingleValued Freyd.Diag.Total \
-//     Freyd.Diag.Injective Freyd.Diag.Surjective Freyd.Diag.ineq_SV Freyd.Diag.ineq_TOT \
-//     Freyd.Diag.ineq_INJ Freyd.Diag.ineq_SUR Freyd.Diag.shunt_right Freyd.Diag.shunt_left \
-//     Freyd.Diag.entire_inter_iff Freyd.Diag.CartBicat.«∇_slide_conv»
-// and, for the last section, the ALLEGORY layer's division:
-//   ./scripts/diag-export Freyd.Alg.le_div_iff Freyd.Alg.le_leftDiv_iff \
-//     Freyd.Alg.DivisionAllegory.div_comp_le Freyd.Alg.leftDiv_comp_le Freyd.Alg.div_comp_assoc \
-//     Freyd.Alg.leftDiv_comp Freyd.Alg.map_comp_div Freyd.Alg.div_comp_recip_map \
-//     Freyd.Alg.symmDiv_recip Freyd.Alg.symmDiv_comp
-// and the PROOF chains:
-//   ./scripts/diag-export Freyd.Diag.CartBicat.«°_slide»
-//   ./scripts/diag-export --proof Freyd.Diag.CartBicat.conv_comp Freyd.Diag.shunt_right \
-//     Freyd.Diag.shunt_left Freyd.Diag.CartBicat.«∇_slide_conv» \
-//     Freyd.Diag.modular_of_frobenius Freyd.Diag.entire_inter_iff
+// it.  `./scripts/diag-regen` redraws every binding below, reading the list off these very imports.
 #import "generated/Freyd.Diag.CartBicat.conv_conv.typ": pic as p-conv-conv
 #import "generated/Freyd.Diag.CartBicat.conv_comp.typ": pic as p-conv-comp
 #import "generated/Freyd.Diag.conv_inter.typ": pic as p-conv-inter
@@ -43,7 +17,6 @@
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
-#import "generated/Freyd.Diag.CartBicat.special.typ": pic as p-special
 #import "generated/Freyd.Diag.CartBicat.Δ_assoc.typ": pic as p-d-assoc
 #import "generated/Freyd.Diag.CartBicat.Δ_comm.typ": pic as p-d-comm
 #import "generated/Freyd.Diag.CartBicat.Δ_counit.typ": pic as p-d-counit
@@ -54,12 +27,8 @@
 #import "generated/Freyd.Diag.CartBicat.«𝟙≤Δ∇».typ": pic as p-38
 #import "generated/Freyd.Diag.CartBicat.«?!≤𝟙».typ": pic as p-39
 #import "generated/Freyd.Diag.CartBicat.«𝟙≤!?».typ": pic as p-40
-#import "generated/Freyd.Diag.CartBicat.frob_left.typ": pic as p-frob
-#import "generated/Freyd.Diag.CartBicat.frob_right.typ": pic as p-frob-r
 #import "generated/Freyd.Diag.CartBicat.frob.proof.typ": branches as frobb
 #import "generated/Freyd.Diag.CartBicat.snakes.proof.typ": branches as snakeb
-#import "generated/Freyd.Diag.CartBicat.snake.typ": pic as p-snake
-#import "generated/Freyd.Diag.CartBicat.snake'.typ": pic as p-snake-r
 #import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
 #import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
 #import "generated/Freyd.Diag.Biprod.«≤_union_left».typ": pic as p-union-left
@@ -80,10 +49,6 @@
 #import "generated/Freyd.Diag.Total.typ": pic as p-tot47
 #import "generated/Freyd.Diag.Injective.typ": pic as p-inj48
 #import "generated/Freyd.Diag.Surjective.typ": pic as p-sur49
-#import "generated/Freyd.Diag.ineq_SV.typ": pic as p-sv
-#import "generated/Freyd.Diag.ineq_TOT.typ": pic as p-tot
-#import "generated/Freyd.Diag.ineq_INJ.typ": pic as p-inj
-#import "generated/Freyd.Diag.ineq_SUR.typ": pic as p-sur
 #import "generated/Freyd.Diag.shunt_right.typ": lhs as sr-a, rhs as sr-b
 #import "generated/Freyd.Diag.shunt_left.typ": lhs as sl-a, rhs as sl-b
 #import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b

@@ -1,0 +1,11 @@
+#!/bin/sh
+# diag-regen — redraw every picture `diag/allegory-axioms.typ` imports, and nothing else.
+#
+# The note's own `#import` lines ARE the list.  A second copy of it in a header comment is how the
+# two drifted: three declarations were renamed and the comment went on naming the old ones.
+cd "$(dirname "$0")/.." || exit 1
+names=$(sed -n 's|^#import "generated/\(.*\)\.typ".*|\1|p' diag/allegory-axioms.typ | sort -u)
+# A `<decl>.proof.typ` is drawn by `--proof <decl>`; everything else by naming the declaration.
+# Unquoted on purpose: the names carry no spaces, and quoting would pass the whole list as one word.
+./scripts/diag-export $(printf '%s\n' "$names" | grep -v '\.proof$') || exit 1
+./scripts/diag-export --proof $(printf '%s\n' "$names" | sed -n 's|\.proof$||p')

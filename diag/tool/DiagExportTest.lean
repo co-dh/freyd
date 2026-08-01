@@ -77,6 +77,34 @@ def countsItsStrands (c : Cell) : Bool := (lay c).ys.size == c.rightCount
 #guard countsItsStrands (.stack #[.capC] #[.wire])
 #guard countsItsStrands (.meet #[plainBox] #[.box "S"])
 
+/-! ### A cell is drawn WHERE IT IS WIRED, not where it would centre itself
+
+The whole of thread mode.  Handed lanes that are not symmetric about anything, every cell has to
+draw itself across exactly those lanes — a cap between them, a wire along one — rather than at an
+offset computed from its own shape.  Drawing at the shape is what put the same three strands at two
+different heights on either side of the snake's middle. -/
+
+/-- Deliberately off centre and unevenly spaced about zero: a cell that centres itself, or that
+    opens at its own `sep`, cannot land on both of these. -/
+def odd : Array Float := #[1.30, -0.10]
+
+def laidAt (c : Cell) (ys : Array Float) : String :=
+  String.join (c.lay 0.0 ys 0.0 oddSep false).out.toList
+
+def mentions (s pat : String) : Bool := (s.splitOn pat).length > 1
+
+-- A cap bends over the two lanes it is handed: midpoint `0.60`, half-separation `0.70`.
+#guard mentions (laidAt .capC odd) "capAt((0.00, 0.60), sp: 0.70"
+#guard mentions (laidAt nabla odd) "nabla((0.70, 0.60), sp: 0.70)"
+#guard mentions (laidAt swapC odd) "swap((0.00, 0.60), sp: 0.70"
+-- A `⊗` passes its lanes straight through to its operands; it does not recentre them.
+#guard mentions (laidAt (.stack #[plainBox] #[.box "S"]) odd) ", 1.30)"
+#guard mentions (laidAt (.stack #[plainBox] #[.box "S"]) odd) ", -0.10)"
+-- And the one that was wrong: the wire above a cup stays where it came in, and the cup's two
+-- strands are opened BELOW it rather than the pair being centred on the cell.
+#guard (Cell.lay (.stack #[.wire] #[.cupC]) 0.0 #[0.0] 0.0 oddSep false).ys[0]! == 0.0
+#guard mentions (laidAt (.stack #[.wire] #[.cupC]) #[0.0]) "wire((0.00, 0.00)"
+
 /-! ### Composition is flat
 
 A strand is where upstream put it.  Nothing in this exporter may move one sideways, so nothing it
