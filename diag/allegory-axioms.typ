@@ -212,7 +212,7 @@ In `Rel(Set)`, the four generators are these relations on a set `A`:
 
 #align(center, table(
   columns: 2, stroke: none, inset: (x: 8pt, y: 2.5pt), align: left,
-  [`◁`], src[`= {(a, (a, a))}` — fork: one in, two copies out],
+  [`◁`], src[`= {(a, (a, a))}` — copy: one in, two identical out],
   [`▷`], src[`= {((a, a), a)}` — merge: a pair passes only when its two components agree, and the
    common value comes out],
   [`⊸`], src[`= A × {∗}` — discard: forget the value, keep only that there was one],
@@ -273,13 +273,15 @@ the input of `R°` is where the output of `R` was. And it is a contravariant 2-f
 
 == The slide
 
-The one rule (ii) and (iii) use, and each of them uses it twice. A converse facing a cap on the
+The one rule (ii) and (iii) use, and each of them uses it twice. A converse facing a merge on the
 lower strand is the box itself, upright, on the upper one:
 
 #P(p-conv-slide, s: 62%)
 
-It is the snake again, read at `R`'s own bending: `R°` IS the bending of `(R ⊗ 𝟙) cap`, so
-straightening it gives back what it was bent from. Nothing else is spent below.
+`R°` is DEFINED as the bending of `(R ⊗ 𝟙) ▷⊸`, so the slide claims only that unbending it gives
+that back — and unbending undoes bending for every arrow. That is the snake above with a passenger:
+the `⟜◁` bends the `a` strand down and the `▷⊸` brings it back up, while the `b` strand rides
+through untouched. Nothing else is spent below.
 
 == `(R S)° = S° R°`
 
@@ -290,8 +292,8 @@ straightening it gives back what it was bent from. Nothing else is spent below.
 
 == `(R ⊗ S)° = R° ⊗ S°`
 
-A cap at a product is two caps behind a crossing, so the pair unbends one strand at a time and the
-crossing is all that is left to move.
+A merge at a product is two merges behind a crossing, so the pair unbends one strand at a time and
+the crossing is all that is left to move.
 
 #chain(
   (l42iii.at(0).steps.at(0), l42iii.at(0).steps.at(1), l42iii.at(0).steps.at(3),
@@ -302,8 +304,8 @@ crossing is all that is left to move.
 #block(breakable: false)[
 == `R ≤ S` implies `R° ≤ S°`
 
-Here the cup IS drawn: `R` sits in a frame of wires built from `≫` and `⊗`, and both of those are
-monotone, so the box may be replaced where it stands.
+`R` sits in a frame of wires built from `≫` and `⊗`, and both of those are monotone, so the box may
+be replaced where it stands.
 
 #chain(
   (l42iv.at(0).steps.at(1), l42iv.at(0).steps.at(2)),
@@ -398,7 +400,7 @@ anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*primitive, and what defines it here*], [*picture*]),
 
-  [*reciprocation* `R° := bend ((R ⊗ 𝟙) cap)`, not a generator.],
+  [*reciprocation* `R° := bend ((R ⊗ 𝟙) ▷⊸)`, not a generator.],
   fig({ conv((0, -0.80), $R$) }),
 
   [*containment* `R ⊑ S`, which an allegory *defines* as `R ∩ S = R`. Here `≤` is primitive and `∩`
