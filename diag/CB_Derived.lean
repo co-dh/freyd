@@ -146,14 +146,12 @@ theorem meet_assoc {a b : Word O} (R S T : a ⟶ b) :
     strands can only produce more than running it once, and `◁;▷ = 𝟙` closes the loop. -/
 theorem meet_idem {a b : Word O} (R : a ⟶ b) : meet R R = R := by
   refine OrderedCat.«≤_antisymm» («meet_≤_left» R R) ?_
-  have h : ((R ≫ ◁) ≫ ▷) ≤ ((◁ ≫ (R ⊗ₕ R)) ≫ ▷) :=
-    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» (▷))
-  have hL : (R ≫ ◁) ≫ ▷ = R := by
-    rw [Cat.assoc, special, Cat.comp_id]
-  have hR : (◁ ≫ (R ⊗ₕ R)) ≫ ▷ = meet R R := by
-    dsimp [meet]; rw [Cat.assoc]
-  rw [hL, hR] at h
-  exact h
+  -- A `calc`, not a `rw` between two `have`s: this is the one law of Lemma 4.11 the paper proves in
+  -- pictures, so the chain has to survive into `diag-export --proof` — and a `calc` keeps each link
+  -- at its true relation, which shows that only the middle one is an inequality.
+  calc R = (R ≫ ◁) ≫ ▷ := by rw [Cat.assoc, special, Cat.comp_id]
+    _ ≤ (◁ ≫ (R ⊗ₕ R)) ≫ ▷ := OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» (▷))
+    _ = meet R R := by dsimp [meet]; rw [Cat.assoc]
 
 /-- `∩` is the GREATEST lower bound: anything below both `S` and `T` is below `S ∩ T`
     (functorialSemanticsForRelationalTheories.pdf p. 22, "every hom-set is a meet semi-lattice").

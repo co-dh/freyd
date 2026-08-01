@@ -12,9 +12,10 @@
 #import "generated/Freyd.Diag.CartBicat.conv_conv.typ": pic as p-conv-conv
 #import "generated/Freyd.Diag.CartBicat.conv_comp.typ": pic as p-conv-comp
 #import "generated/Freyd.Diag.conv_inter.typ": pic as p-conv-inter
-#import "generated/Freyd.Diag.meet_idem.typ": pic as p-meet-idem
+#import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
 #import "generated/Freyd.Diag.meet_comm.typ": pic as p-meet-comm
 #import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
+#import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
@@ -224,7 +225,7 @@ The only clause coupling the comonoid to the monoid beyond adjointness. Both sid
 same picture, `▷ ◁` — merge, then copy — which is the two-in two-out *spider*. Every connected
 diagram built from these four generators collapses to the spider on its own inputs and outputs, and
 this equation is what starts that collapse. A *bubble* is the other order, `◁ ▷`: copy then merge,
-a closed loop, which §4 uses.
+a closed loop, which the idempotency of `∩` uses below.
 
 == Every arrow is a lax comonoid homomorphism
 
@@ -332,6 +333,46 @@ maps reads off them.
   P(p-lax-unit),
 )
 
+= `∩` is a commutative idempotent monoid on every hom-set
+
+#definition[
+The *meet* of `R, S : a ⟶ b`, the paper's *convolution*, is `R ∩ S := ◁ (R ⊗ S) ▷` — copy the
+input, run `R` and `S` on the two copies, merge the results — so what comes out is what both of them
+do.
+
+#fig({ meet((0, 0), $R$, $S$) })
+#align(center, src[transcribed: a definition has no statement to export])
+
+On every hom-set it is associative, commutative and idempotent, with unit the maximal arrow
+`⊤ = ⊸ ⟜` #src[(the paper's Lemma 4.11)].
+]
+
+#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
+  [#P(p-meet-top, s: 60%) #v(-7pt) \ #src[*unit:* one half of `⊤` per end — the merge's unit law
+   absorbs the `⟜`, the copy's counit law the `⊸`]],
+  [#P(p-meet-comm, s: 60%) #v(-7pt) \ #src[*commutative:* `σ` crosses `R ⊗ S` by naturality and is
+   absorbed by cocommutativity and commutativity]],
+  [#P(p-meet-assoc, s: 44%) #v(-7pt) \ #src[*associative:* coassociativity and associativity; `⊗`
+   re-brackets for nothing, being strict here]],
+)
+
+// Heading, chain and its paragraph kept together — `width: 100%` because a block sizes to its
+// contents, and inside one that has shrunk the `align(center)` of `chain` has nothing to centre in.
+#block(breakable: false, width: 100%)[
+== `R ∩ R = R`, the one that is not bookkeeping
+
+#chain(
+  (mib.at(0).steps.at(0), mib.at(0).steps.at(1), mib.at(0).steps.at(2)),
+  ([], [`◁ ▷ = 𝟙`], [lax copy]))
+
+The last picture is `R ∩ R` itself, so this is `R ≤ R ∩ R` and the lax copy law is the whole of it.
+The other direction is not proved here: `R ∩ S ≤ R` holds for every `S`, by weakening `S` to `⊤` and
+then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, packaged once.
+]
+
+So `≤` is the order this monoid induces. `R ∩ S ≤ R` comes from the unit, and idempotency turns
+anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩ R ≤ S ∩ T`.
+
 = The allegory primitives are definitions here
 
 #table(
@@ -343,9 +384,6 @@ maps reads off them.
   [*reciprocation* `R° := bend ((R ⊗ 𝟙) cap)`, not a generator.],
   fig({ conv((0, -0.80), $R$) }),
 
-  [*intersection* `R ∩ S := ◁ (R ⊗ S) ▷` — copy, run both, merge.],
-  fig({ meet((0, 0), $R$, $S$) }),
-
   [*containment* `R ⊑ S`, which an allegory *defines* as `R ∩ S = R`. Here `≤` is primitive and `∩`
    is derived, so the two directions are swapped.],
   align(center, src[the 2-cell itself]),
@@ -355,6 +393,9 @@ maps reads off them.
 )
 
 = The eight axioms, and what proves each
+
+Three of the eight — `∩` idempotent, commutative, associative — are the monoid laws above. The
+other five:
 
 #table(
   columns: (9.4cm, 1fr),
@@ -366,9 +407,6 @@ maps reads off them.
   [`(R S)° = S° R°` — mirroring the picture.], P(p-conv-comp),
   [`(R ∩ S)° = R° ∩ S°` — the same mirroring; `◁` and `▷` are each other's mirror image.],
   P(p-conv-inter),
-  [`R ∩ R = R` — the lax copy law, then `◁ ▷ = 𝟙` closes the bubble.], P(p-meet-idem),
-  [`R ∩ S = S ∩ R` — cocommutativity and commutativity.], P(p-meet-comm),
-  [`R ∩ (S ∩ T) = (R ∩ S) ∩ T` — coassociativity and associativity.], P(p-meet-assoc, s: 70%),
   [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law.], P(p-semidistrib),
   [`R S ∩ T ⊑ (R ∩ T S°) S`, the modular law — *adjoined* as an axiom by an allegory, which has no
    structure to derive it from. Here Frobenius and the lax copy law give it.], P(p-modular),
