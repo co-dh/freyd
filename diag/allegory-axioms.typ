@@ -40,7 +40,6 @@
 #import "generated/Freyd.Diag.ClosedLinearBicat.«residual_comp_≤».typ": pic as p-residual
 #import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42b
 #import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
-#import "generated/Freyd.Diag.shunt_left.proof.typ": branches as slb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«°_slide».typ": pic as p-conv-slide
@@ -50,7 +49,6 @@
 #import "generated/Freyd.Diag.Injective.typ": pic as p-inj48
 #import "generated/Freyd.Diag.Surjective.typ": pic as p-sur49
 #import "generated/Freyd.Diag.shunt_right.typ": lhs as sr-a, rhs as sr-b
-#import "generated/Freyd.Diag.shunt_left.typ": lhs as sl-a, rhs as sl-b
 #import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b
 #import "generated/Freyd.Diag.entire_inter_iff.proof.typ": branches as entb
 // The allegory layer's division (last section).  `Freyd.Alg`, not `Freyd.Diag`: `/` is a theorem of
@@ -193,7 +191,10 @@
 #row(frobb.at(0).steps, s: 54%)
 
 The only clause coupling the comonoid to the monoid beyond adjointness. Both sides reduce to the
-same picture, the bubble `▷ ◁`.
+same picture, `▷ ◁` — merge, then copy — which is the two-in two-out *spider*. Every connected
+diagram built from these four generators collapses to the spider on its own inputs and outputs, and
+this equation is what starts that collapse. A *bubble* is the other order, `◁ ▷`: copy then merge,
+a closed loop, which §4 uses.
 
 == Every arrow a lax comonoid homomorphism
 
@@ -204,20 +205,17 @@ same picture, the bubble `▷ ◁`.
 
 = Compact closed, and where the converse comes from
 
-The cup `⟜ ◁` and the cap `▷ ⊸` come with the definition — create then copy, merge then discard —
-and they satisfy the snakes:
+The cup `⟜ ◁` and the cap `▷ ⊸` come with the definition, and they satisfy the snakes:
 
 #row(snakeb.at(0).steps, s: 54%)
 
-So every object is its own dual, and `R°` is `R` with its wires bent round the cup and the cap.
-That is what makes reciprocation *definable* rather than primitive, and its four laws theorems:
+So every object is its own dual, `R°` is `R` with its wires bent round the cup and the cap, and the
+four laws of `°` are theorems rather than assumptions:
 
 #align(center, block(inset: (y: 5pt))[
   (i) `𝟙° = 𝟙`  #h(1cm) (ii) `(R S)° = S° R°`  #h(1cm) (iii) `(R ⊗ S)° = R° ⊗ S°`
   #h(1cm) (iv) `R ≤ S` implies `R° ≤ S°`
 ])
-
-(i) is the snake above; (ii) is drawn below. The other two say nothing a picture makes clearer.
 
 = The allegory primitives are definitions here
 
@@ -227,20 +225,17 @@ That is what makes reciprocation *definable* rather than primitive, and its four
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*primitive, and what defines it here*], [*picture*]),
 
-  [*reciprocation* `R° := bend ((R ⊗ 𝟙) cap)`, not a generator. \
-   #src[It is the cup and the cap that reverse the arrow — a wire merely bumped up over the box and
-   back down is an isotopy of `R` itself.]],
+  [*reciprocation* `R° := bend ((R ⊗ 𝟙) cap)`, not a generator.],
   fig({ conv((0, -0.80), $R$) }),
 
-  [*intersection* `R ∩ S := ◁ (R ⊗ S) ▷`. \
-   #src[Copy the input, run both, merge; the merge forces the two results to agree.]],
+  [*intersection* `R ∩ S := ◁ (R ⊗ S) ▷` — copy, run both, merge.],
   fig({ meet((0, 0), $R$, $S$) }),
 
   [*containment* `R ⊑ S`, which an allegory *defines* as `R ∩ S = R`. Here `≤` is primitive and `∩`
    is derived, so the two directions are swapped.],
-  align(center, src[no picture — this is the 2-cell itself]),
+  align(center, src[the 2-cell itself]),
 
-  [*maximal morphism* `⊤ := ⊸ ⟜`, free here; an allegory needs a unit object before it has one.],
+  [*maximal morphism* `⊤ := ⊸ ⟜`, free here; an allegory needs a unit object first.],
   P(p-le-top),
 )
 
@@ -252,47 +247,19 @@ That is what makes reciprocation *definable* rather than primitive, and its four
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*axiom, and what supplies it*], [*picture*]),
 
-  [`(R°)° = R` — the *snake*. \
-   #src[Bending down and back up straightens out, so bending twice is the identity.]],
-  P(p-conv-conv),
-
-  [`(R S)° = S° R°` — mirroring the picture. \
-   #src[Reflecting a chain left to right reverses it; each box comes back flipped.]],
-  P(p-conv-comp),
-
-  [`(R ∩ S)° = R° ∩ S°` — the same mirroring. \
-   #src[`◁` and `▷` are each other's mirror image, so reflecting the convolution leaves its shape
-   alone and only turns the boxes round.]],
+  [`(R°)° = R` — the *snake*.], P(p-conv-conv),
+  [`(R S)° = S° R°` — mirroring the picture.], P(p-conv-comp),
+  [`(R ∩ S)° = R° ∩ S°` — the same mirroring; `◁` and `▷` are each other's mirror image.],
   P(p-conv-inter),
-
-  [`R ∩ R = R` — the lax copy law and the *special* law. \
-   #src[Copy, run `R` twice, merge — the lax copy law pushes `R` back through the copy and
-   `◁ ▷ = 𝟙` closes the bubble.]],
-  P(p-meet-idem),
-
-  [`R ∩ S = S ∩ R` — cocommutativity and commutativity. \
-   #src[The two strands of `◁` are interchangeable, and so are those of `▷`.]],
-  P(p-meet-comm),
-
-  [`R ∩ (S ∩ T) = (R ∩ S) ∩ T` — coassociativity and associativity. \
-   #src[Either bracketing builds the same three-way copy tree, and dually the same merge tree.]],
-  P(p-meet-assoc, s: 70%),
-
-  [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law. \
-   #src[Running `R` and then copying is below copying and then running `R` on each strand.]],
-  P(p-semidistrib),
-
+  [`R ∩ R = R` — the lax copy law, then `◁ ▷ = 𝟙` closes the bubble.], P(p-meet-idem),
+  [`R ∩ S = S ∩ R` — cocommutativity and commutativity.], P(p-meet-comm),
+  [`R ∩ (S ∩ T) = (R ∩ S) ∩ T` — coassociativity and associativity.], P(p-meet-assoc, s: 70%),
+  [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law.], P(p-semidistrib),
   [`R S ∩ T ⊑ (R ∩ T S°) S`, the modular law — *adjoined* as an axiom by an allegory, which has no
-   structure to derive it from. Here Frobenius and the lax copy law give it. \
-   #src[Strip the shared prefix `◁ (R ⊗ T)` off both sides and what is left is the merge slide: a
-   box slides through a merge at the cost of its converse on the other strand.]],
-  P(p-modular),
+   structure to derive it from. Here Frobenius and the lax copy law give it.], P(p-modular),
 )
 
 = Unitary and pre-tabular — what the other direction needs
-
-The eight axioms are all a cartesian bicategory has to give back. Going the other way needs two
-further conditions.
 
 #table(
   columns: (3.2cm, 1fr, 1fr),
@@ -302,41 +269,32 @@ further conditions.
 
   [*unitary*],
   [`T` is a *unit* when `𝟙 T` is the largest endomorphism on it and every object carries an entire
-   arrow to it. \ #src[The point of a unit is that it makes `⊤` exist, as `p_α p_β°` through the
-   unit — which is also where the lax discard law comes from.]],
-  [*already there, for free.* The monoidal unit `𝕀` is the unit object, `⊸ : n ⟶ 𝕀` is the entire
-   arrow every object carries to it — `𝟙 ≤ ⊸ ⟜` says so — and `⊤ = ⊸ ⟜` is maximal. Every
-   cartesian bicategory of relations is unitary, with nothing assumed.],
+   arrow to it. A unit is what makes `⊤` exist.],
+  [*free.* `𝕀` is the unit object, `𝟙 ≤ ⊸ ⟜` says `⊸` is entire, and `⊤ = ⊸ ⟜` is maximal.],
 
   [*pre-tabular*],
-  [`f, g` *tabulate* `R` when both are maps, `R = f° g`, and the two agree only on the diagonal:
+  [`f, g` *tabulate* `R` when both are maps, `R = f° g`, and
 
    #row((cetz.canvas(length: 0.72cm, { meet((0, 0), $f f°$, $g g°$) }),
          $=$,
          cetz.canvas(length: 0.72cm, { wire((0, 0), (1.5, 0)) })))
 
-   `R` is *tabular* when some pair tabulates it, and the allegory *pre-tabular* when every arrow
-   lies under a tabular one.],
-  [*this is what `⊗` is.* Given unitarity the condition reduces to tabulating each `⊤`, and a
-   tabulation of `⊤` is precisely an object `n ⊗ m` with its two projections. One side derives the
-   product from tabulations, the other posits it.],
+   `R` is *tabular* when some pair tabulates it, the allegory *pre-tabular* when every arrow lies
+   under a tabular one.],
+  [*this is what `⊗` is.* Given unitarity it reduces to tabulating each `⊤`, and a tabulation of `⊤`
+   is an object `n ⊗ m` with its two projections. One side derives the product from tabulations, the
+   other posits it.],
 )
 
-Together they are the whole gap: *cartesian bicategory of relations ≃ unitary pre-tabular allegory*.
+Together: *cartesian bicategory of relations ≃ unitary pre-tabular allegory*.
 
 = Union and residual
 
-`∪` and `/` are past where the eight axioms stop and past what the definition can build: a union
-needs a *biproduct* on top of the Frobenius structure, a residual a *second composition* with linear
-adjoints. Both are built, so both draw.
-
-A union is a *tape*: the rounded wrapper is the second monoidal product, and its `▷`/`◁` open and
-close a branch a particle takes exactly one of — the same fork-runs-join shape as a meet, on a
-different product.
-
-A residual is drawn as *long division*, deliberately not as its own definition. As a term it is a
-composition against a complement, and drawing it that way needs a complement to mean anything. The
-operation does not: it is one Galois connection, and the last section draws it with none.
+Both are past what the definition can build: a union needs a *biproduct* on top of the Frobenius
+structure, a residual a *second composition* with linear adjoints. A union draws as a *tape* — the
+rounded wrapper is the second product, and its fork and join open and close a branch a particle
+takes exactly one of. A residual draws as *long division*, not as its own term, which is a
+composition against a complement.
 
 #table(
   columns: (9.4cm, 1fr),
@@ -344,64 +302,35 @@ operation does not: it is one Galois connection, and the last section draws it w
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*statement*], [*picture*]),
 
-  [`R ⊑ R ∪ S`. \ #src[`union R S := ⟨R, S⟩ [𝟙, 𝟙]`: offer both branches, then forget which was
+  [`R ⊑ R ∪ S` #h(4pt) #src[`union R S := ⟨R, S⟩ [𝟙, 𝟙]`: offer both branches, then forget which was
    taken.]],
   P(p-union-left),
 
-  [`R ∪ S = S ∪ R`. \ #src[The two branches of a tape are interchangeable, exactly as the two
-   strands of `◁` are.]],
-  P(p-union-comm),
-
-  [`⊥ ∪ R = R`. \ #src[`⊥` is routed through the zero object; there is no shape for it, so it
-   prints as a box.]],
+  [`R ∪ S = S ∪ R`], P(p-union-comm),
+  [`⊥ ∪ R = R` #h(4pt) #src[`⊥` routes through the zero object; there is no shape for it.]],
   P(p-bot-union),
-
-  [`R (S ∪ T) = R S ∪ R T` — composition distributes over union, which `∩` does not. \
-   #src[This is what a *distributive* allegory has over an allegory.]],
+  [`R (S ∪ T) = R S ∪ R T` — composition distributes over union, which `∩` does not.],
   P(p-comp-union),
-
-  [`(R ∪ S)° = R° ∪ S°`. \ #src[The converse is a 2-functor for the tape layer too.]],
-  P(p-conv-union),
-
-  [`R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)`, the law that makes the whole distributive. \
-   #src[The one picture with both layers in it: meets inside a tape on the left, tapes around meets
-   on the right.]],
-  P(p-distrib, s: 78%),
-
-  [`(R / S) S ⊑ R` — the residual is a lower bound of the arrows it is the greatest of. \
-   #src[The bar is the last section's: amber ground for the numerator, the divisor laid inside it, a
-   hairline of slack past it.]],
+  [`(R ∪ S)° = R° ∪ S°`], P(p-conv-union),
+  [`R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)` — what makes the whole *distributive*, and the one picture with
+   both layers in it.], P(p-distrib, s: 78%),
+  [`(R / S) S ⊑ R` — the residual is a lower bound of the arrows it is the greatest of.],
   P(p-residual),
 )
 
 = `(R S)° = S° R°`, drawn
 
-The pictures below are not a retelling: each is drawn from one term of the chain that was actually
-checked, so a picture and the term beside it cannot drift apart.
-
-== These are not pictures of a converse
-
-The converse is drawn with *two* bends, a cup on the way in and a cap on the way out. The proof
-never draws that. An arrow is *the* converse of `R` as soon as it satisfies one equation between
-UNBENT arrows into `𝕀` — two strands in on the left, one cap on the right — and bending is a
-bijection, so settling the unbent equation settles the bent one. Hence every row below has a cap and
-no cup, and an arrow that "is a converse" shows up not as a bent box but as a box sitting on the
-*bottom* strand, mirrored.
+Not a picture of a converse. An arrow is *the* converse of `R` as soon as it satisfies one equation
+between UNBENT arrows into `𝕀`, and bending is a bijection, so the cup is never drawn: every row
+below has a cap and no cup, and "is a converse" shows up as a box on the *bottom* strand, mirrored.
 
 #table(
   columns: (1fr,),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the slide — the one rule the proof uses, and it uses it twice*]),
   P(p-conv-slide, s: 88%),
-  [#src[A box on the BOTTOM strand facing a cap is the same as that box on the TOP strand, upright.
-   Sliding round the bend is what turns `R°` into `R`, and it is the entire content of the theorem
-   — the other seven steps are bookkeeping.]],
+  [#src[A box on the bottom strand facing a cap is that box on the top strand, upright.]],
 )
-
-== The chain
-
-One row per *term*: the right-hand side of every step is the left-hand side of the next. Watch which
-*strand* each box is on — bottom means mirrored, top means upright.
 
 #table(
   columns: (4.4cm, 1fr, 6.6cm),
@@ -411,60 +340,42 @@ One row per *term*: the right-hand side of every step is the left-hand side of t
     Th[`(R S)° = S° R°` #h(8pt) #Pin(p-conv-comp)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
-  raw(l42b.at(0).terms.at(0)),
-  P(l42b.at(0).steps.at(0), s: 66%),
-  [*the start.* #src[What has to be shown about `S° R°`: both boxes on the bottom strand, mirrored.]],
+  raw(l42b.at(0).terms.at(0)), P(l42b.at(0).steps.at(0), s: 66%),
+  [*the start:* both boxes on the bottom strand, mirrored.],
 
-  raw(l42b.at(0).terms.at(1)),
-  P(l42b.at(0).steps.at(1), s: 66%),
-  [*1.* `⊗` is a functor. #src[*Same picture.*]],
+  raw(l42b.at(0).terms.at(1)), P(l42b.at(0).steps.at(1), s: 66%),
+  [`⊗` is a functor. #src[*Same picture.*]],
 
-  raw(l42b.at(0).terms.at(2)),
-  P(l42b.at(0).steps.at(2), s: 66%),
-  [*2. the slide.* `R°` is the box nearest the cap: it leaves the bottom strand, arrives on the top,
-   and comes back upright as `R`. #src[*The first of the two steps that prove anything.*]],
+  raw(l42b.at(0).terms.at(2)), P(l42b.at(0).steps.at(2), s: 66%),
+  [*the slide.* `R°` is the box nearest the cap: it leaves the bottom strand and comes back upright
+   as `R` on the top.],
 
-  raw(l42b.at(0).terms.at(3)),
-  P(l42b.at(0).steps.at(3), s: 66%),
-  [*3.* re-bracketing. #src[*Same picture.*]],
+  raw(l42b.at(0).terms.at(3)), P(l42b.at(0).steps.at(3), s: 66%),
+  [re-bracketing. #src[*Same picture.*]],
 
-  raw(l42b.at(0).terms.at(4)),
-  P(l42b.at(0).steps.at(4), s: 66%),
-  [*4. interchange.* `R` is on the top strand and `S°` on the bottom, so running them in sequence
-   and running them side by side are the same thing. #src[Shows as a re-spacing only.]],
+  raw(l42b.at(0).terms.at(4)), P(l42b.at(0).steps.at(4), s: 66%),
+  [*interchange.* In sequence and side by side are the same thing. #src[A re-spacing only.]],
 
-  raw(l42b.at(0).terms.at(5)),
-  P(l42b.at(0).steps.at(5), s: 66%),
-  [*5. interchange back.* Split them apart again, `R` first, so `S°` is the box facing the cap.],
+  raw(l42b.at(0).terms.at(5)), P(l42b.at(0).steps.at(5), s: 66%),
+  [*interchange back,* `R` first, so `S°` faces the cap.],
 
-  raw(l42b.at(0).terms.at(6)),
-  P(l42b.at(0).steps.at(6), s: 66%),
-  [*6.* re-bracketing. #src[*Same picture.*]],
+  raw(l42b.at(0).terms.at(6)), P(l42b.at(0).steps.at(6), s: 66%),
+  [re-bracketing. #src[*Same picture.*]],
 
-  raw(l42b.at(0).terms.at(7)),
-  P(l42b.at(0).steps.at(7), s: 66%),
-  [*7. the slide,* on `S` this time. Both boxes are now on top, both upright, in the order `R` then
-   `S`. #src[*The second and last real step.*]],
+  raw(l42b.at(0).terms.at(7)), P(l42b.at(0).steps.at(7), s: 66%),
+  [*the slide,* on `S`. Both boxes now on top, upright, `R` then `S`.],
 
-  raw(l42b.at(0).terms.at(8)),
-  P(l42b.at(0).steps.at(8), s: 66%),
-  [*8.* re-bracketing. #src[*Same picture.*]],
+  raw(l42b.at(0).terms.at(8)), P(l42b.at(0).steps.at(8), s: 66%),
+  [re-bracketing. #src[*Same picture.*]],
 
-  raw(l42b.at(0).terms.at(9)),
-  P(l42b.at(0).steps.at(9), s: 66%),
-  [*9. interchange* once more; the two top-strand boxes merge into one. This is `R S` unbent.
-   #src[*Done.*]],
+  raw(l42b.at(0).terms.at(9)), P(l42b.at(0).steps.at(9), s: 66%),
+  [*interchange;* the two top boxes merge. This is `R S` unbent.],
 )
 
-*What the chain measures.* Steps 1, 3, 6, 8 and 9 change nothing and step 4 changes only spacing,
-while the term column changes at every row. Those are associativity, the unit laws and interchange —
-precisely the laws a string diagram has built into its geometry rather than as rewrites. Seven of
-the nine steps are bureaucracy the picture language does not charge for, and the theorem is two
-slides.
+Seven of the nine steps change no picture: they are associativity, the unit laws and interchange,
+which a string diagram has in its geometry rather than as rewrites. The theorem is two slides.
 
 = The modular law, from Frobenius
-
-Four terms, of which exactly one step is an inequality.
 
 #table(
   columns: (5.4cm, 1fr, 5.8cm),
@@ -475,26 +386,21 @@ Four terms, of which exactly one step is an inequality.
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(mfb.at(0).terms.at(0)), P(mfb.at(0).steps.at(0), s: 62%),
-  [*the start:* `R S ∩ T`. #src[A copy and a merge with `R S` above and `T` below.]],
+  [*the start:* `R S ∩ T`.],
 
   raw(mfb.at(0).terms.at(1)), P(mfb.at(0).steps.at(1), s: 62%),
-  [*Factor out the shared prefix.* `(R S) ⊗ T` is `(R ⊗ T) (S ⊗ 𝟙)`, so everything before the `S`
-   is common to both sides. #src[An equality, and drawn as one.]],
+  [*Factor out the shared prefix:* `(R S) ⊗ T` is `(R ⊗ T) (S ⊗ 𝟙)`.],
 
   raw(mfb.at(0).terms.at(2)), P(mfb.at(0).steps.at(2), s: 62%),
-  [*The merge slide,* under the shared prefix. #src[`S` slides through the merge and reappears as
-   `S°` on the other strand. *The only inequality in the proof.*]],
+  [*The merge slide.* `S` slides through the merge and reappears as `S°` on the other strand.
+   #src[*The only inequality in the proof.*]],
 
   raw(mfb.at(0).terms.at(3)), P(mfb.at(0).steps.at(3), s: 62%),
-  [*Fold the prefix back in.* `R ⊗ (T S°)` is `(R ⊗ T) (𝟙 ⊗ S°)`, and the copy-merge pair reads as
-   a meet again. #src[`(R ∩ T S°) S`, the goal.]],
+  [*Fold the prefix back in;* the copy-merge pair reads as a meet again.],
 )
 
-== Inside the middle step
-
-The merge slide mentions only `S` — `R` and `T` sit untouched in the prefix throughout. `S` occurs
-once on the left and twice on the right, and the lax copy law is the only law in the definition that
-may duplicate a box, so it has to be the inequality step. The chain shows it is the only one.
+`S` occurs once on the left of the slide and twice on the right, and the lax copy law is the only law
+in the definition that may duplicate a box — so that is where the inequality has to be.
 
 #table(
   columns: (5.4cm, 1fr, 5.8cm),
@@ -508,26 +414,23 @@ may duplicate a box, so it has to be the inequality step. The chain shows it is 
   [*the start:* `(S ⊗ 𝟙) ▷`.],
 
   raw(nsb.at(0).terms.at(1)), P(nsb.at(0).steps.at(1), s: 62%),
-  [*Rebuild the merge* from a copy and a cap. #src[Which puts the term into the shape `(S ◁) ⊗ 𝟙`
-   the lax copy law applies to.]],
+  [*Rebuild the merge* from a copy and a cap, the shape the lax copy law applies to.],
 
   raw(nsb.at(0).terms.at(2)), P(nsb.at(0).steps.at(2), s: 62%),
-  [*The lax copy law.* `S ◁` becomes `◁ (S ⊗ S)`: the box is copied. \
-   #src[*The whole of the modular law, in one step.*]],
+  [*The lax copy law:* `S ◁` becomes `◁ (S ⊗ S)`, the box copied. #src[*The whole of the modular law,
+   in one step.*]],
 
   raw(nsb.at(0).terms.at(3)), P(nsb.at(0).steps.at(3), s: 62%),
   [*Reshape back,* and the surviving duplicate slides round the cap to become `S°`.],
 )
 
-*What the associators cost.* `α` and `ρ` have no shape in this calculus and print as opaque boxes,
-so the two middle terms are less legible than the ends. That is the honest price of drawing what was
-checked; a hand-drawn version would have hidden them by working up to coherence.
-
 = Maps
 
-Every arrow is lax for `◁` and for `⊸`. Applying (ii) and (iv) above gives the merge form and the
-unit form, the same statements about `▷` and `⟜`. Those four hold for *every* arrow. Their four
-REVERSES do not, and each one holding is a property of the arrow.
+Every arrow is lax for `◁` and for `⊸`; (ii) and (iv) above turn those into the same statements
+about `▷` and `⟜`. All four hold for *every* arrow, their REVERSES do not, and each reverse holding
+is a property of the arrow. The right-hand column is the *adjoint* form, which is the definition
+used here because it is literally the allegory's `Simple` and `Entire`; that the two forms agree is
+a separate theorem, not proved here.
 
 #table(
   columns: (1fr, 4.6cm, 1fr),
@@ -540,45 +443,33 @@ REVERSES do not, and each one holding is a property of the arrow.
   P(p-sv46, s: 74%),
 
   [#src[`R ⊸ ≤ ⊸`] #v(-2pt) #P(p-lax-bang, s: 74%)],
-  [(TOT) *total* \ #src[`𝟙 ⊑ R R°`. With *single valued*, `R` is a *map*.]],
+  [(TOT) *total* \ #src[`𝟙 ⊑ R R°`. With *single valued*, a *map*.]],
   P(p-tot47, s: 74%),
 
-  [#src[`▷ R ≤ (R ⊗ R) ▷` — the converse of the lax copy law. *Not stated;* see below.]],
+  [#src[`▷ R ≤ (R ⊗ R) ▷` — *not stated;* see below.]],
   [(INJ) *injective* \ #src[`R R° ⊑ 𝟙`]],
   P(p-inj48, s: 74%),
 
-  [#src[`⟜ R ≤ ⟜` — the converse of the lax discard law. *Not stated;* see below.]],
-  [(SUR) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` is entire.]],
+  [#src[`⟜ R ≤ ⟜` — *not stated;* see below.]],
+  [(SUR) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` entire.]],
   P(p-sur49, s: 74%),
 )
 
-The right-hand column is the ADJOINT form of each property, and it is the definition used here,
-because it is literally the allegory's own `Simple` and `Entire` — so a diagrammatic map and a book
-map are one predicate with no translation layer. That the comonoid form and the adjoint form agree
-is a separate theorem, and it is not proved here.
-
-*Why the merge form and the unit form have no picture.* Both are converse-images, and getting them
-needs `◁° = ▷`, `⊸° = ⟜` and `(f ⊗ g)° = f° ⊗ g°`. The first is a Frobenius computation at a
-COMPOSITE object, which is the clause the printed definition omits — the same gap that leaves the
-agreement above unproved. The four reverse inequations are unaffected.
+The two unstated ones are converse-images, and getting them needs `◁° = ▷` and `⊸° = ⟜` — a
+Frobenius computation at a COMPOSITE object, which is the clause the printed definition omits.
 
 = Entireness of an intersection
 
-The *domain* of `R` is the part of the identity where `R` is defined, `Dom R = 𝟙 ∩ R R°`; `R` is
-*entire* when it is defined everywhere, `Dom R = 𝟙`, equivalently `𝟙 ⊑ R R°` — which is (TOT)
-above. When is an *intersection* entire?
+`R` is *entire* when `𝟙 ⊑ R R°`, which is (TOT) above. When is an *intersection* entire?
 
 #align(center, block(inset: (y: 6pt))[
   #P(p-entire, s: 80%) \
   #src[`Total (R ∩ S) ↔ 𝟙 ≤ R S°`]])
 
-On the left `R ∩ S` is named *twice*; on the right `R` and `S` are named *once each* and the meet is
-gone. That is the point of the lemma — the meet is needed to *ask* whether something is entire, not
-to *answer* it — and it is why every later use quotes the right-hand form.
-
-Where `⊑` is *defined* as `X ∩ Y = X`, the two sides are the same proposition and there is nothing
-to prove. Here `≤` is primitive, so both directions are real steps — and they cost very different
-things.
+On the left `R ∩ S` is named *twice*; on the right `R` and `S` once each and the meet is gone. The
+meet is needed to *ask* whether something is entire, not to *answer* it. Where `⊑` is *defined* as
+`X ∩ Y = X` the two sides are one proposition; here `≤` is primitive, so both directions are real
+steps — and they cost very different things.
 
 #table(
   columns: (5.0cm, 1fr, 6.0cm),
@@ -588,14 +479,11 @@ things.
     #h(6pt) show #Pin(ent-b)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
-  raw(entb.at(0).terms.at(0)), P(entb.at(0).steps.at(0), s: 68%),
-  [*the start:* `𝟙`.],
-
+  raw(entb.at(0).terms.at(0)), P(entb.at(0).steps.at(0), s: 68%), [*the start:* `𝟙`.],
   raw(entb.at(0).terms.at(1)), P(entb.at(0).steps.at(1), s: 68%),
   [*the hypothesis:* `𝟙 ≤ P P°` at `P = R ∩ S`.],
-
   raw(entb.at(0).terms.at(2)), P(entb.at(0).steps.at(2), s: 68%),
-  [*monotonicity, twice:* `R ∩ S ≤ R`, and `R ∩ S ≤ S` under `°`. #src[No modular law.]],
+  [*monotonicity, twice.* #src[No modular law.]],
 )
 
 #table(
@@ -606,46 +494,30 @@ things.
     `R ∩ S` entire, #Pin(ent-a)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
-  raw(entb.at(1).terms.at(0)), P(entb.at(1).steps.at(0), s: 68%),
-  [*the start:* `𝟙`.],
+  raw(entb.at(1).terms.at(0)), P(entb.at(1).steps.at(0), s: 68%), [*the start:* `𝟙`.],
 
   raw(entb.at(1).terms.at(1)), P(entb.at(1).steps.at(1), s: 68%),
-  [*the hypothesis,* met with `𝟙`. #src[`𝟙 ≤ 𝟙` and `𝟙 ≤ R S°`, so `𝟙` is below the meet.]],
+  [*the hypothesis,* met with `𝟙`.],
 
   raw(entb.at(1).terms.at(2)), P(entb.at(1).steps.at(2), s: 68%),
   [`𝟙 ∩ R S° = 𝟙 ∩ (S ∩ R)(S ∩ R)°`. #src[`R S°` relates `a` to `a′` when some `b` has `a R b` and
-   `a′ S b`. The `𝟙 ∩` sets `a′ = a`, and it then reads "some `b` has `a R b` and `a S b`" — one
-   arrow of `R ∩ S`. Two arrows become one; that is the step, and it is what needs the modular law.]],
+   `a′ S b`; the `𝟙 ∩` sets `a′ = a`, and it reads "some `b` has `a R b` and `a S b`" — one arrow of
+   `R ∩ S`. Two arrows become one, and that is what needs the modular law.]],
 
   raw(entb.at(1).terms.at(3)), P(entb.at(1).steps.at(3), s: 68%),
-  [*`X ∩ Y ≤ Y`,* then `S ∩ R = R ∩ S`. #src[The outer fork drops away, leaving the goal.]],
+  [*`X ∩ Y ≤ Y`,* then `S ∩ R = R ∩ S`.],
 )
-
-*What the asymmetry says.* One direction is two applications of monotonicity; the other needs the
-modular law, which needs Frobenius and the lax copy law. The third row of the second table is the
-whole strength of the lemma; everything else is bookkeeping.
 
 = The gaps
 
-*Nothing on the allegory side.* All eight axioms are theorems of the definition, the modular
-identity included.
-
-*Two laws do no work here.* `▷◁≤𝟙` and `⟜⊸≤𝟙` occur only in the definition and are never used.
-They are there to make `◁ ⊣ ▷` and `⊸ ⊣ ⟜` genuine adjunctions — which is what pins `▷ = ◁°` and
-`⟜ = ⊸°` by uniqueness of adjoints — not to prove any allegory law.
-
-*Two things are stated but unproved:* the merge form and the unit form of the lax laws, and the
-agreement of the comonoid and adjoint forms of the map conditions. Both trace to the one omission in
-the printed definition — no Frobenius structure at a composite object.
-
-*The bridge runs one way only.* A cartesian bicategory carries a symmetric monoidal `⊗`; an
-allegory carries nothing of the kind, which is what the two conditions above supply.
-
-*Everything here is a theorem OF the axioms.* That relations satisfy them is not checked on this
-branch: making the monoidal structure strict cost the `Rel(Set)` instances, so the layer has no
-model here.
-
-*What the definition alone does not have.*
+- All eight axioms are theorems of the definition, the modular identity included.
+- `▷◁≤𝟙` and `⟜⊸≤𝟙` are never used. They are there to make `◁ ⊣ ▷` and `⊸ ⊣ ⟜` genuine
+  adjunctions, which is what pins `▷ = ◁°` and `⟜ = ⊸°`.
+- Unproved: the merge and unit forms of the lax laws, and the agreement of the comonoid and adjoint
+  forms of the map conditions. Both trace to the one omission above.
+- The bridge runs one way only: a cartesian bicategory carries `⊗`, an allegory carries nothing of
+  the kind, which is what the two conditions supply.
+- Everything here is a theorem OF the axioms. That relations satisfy them is not checked here.
 
 #table(
   columns: (3.4cm, 6.0cm, auto),
@@ -653,28 +525,20 @@ model here.
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*construct*], [*counterpart*], [*status*]),
 
-  [*tabulation*], [none], [no splitting of coreflexives; `⊤ = ⊸ ⟜` is all the tabular
-  content there is.],
-
-  [`∪`, `⊥`], [a *biproduct* `⊕` on top of the Frobenius structure], [built, and drawn above. Not
-  derivable from the definition alone — the calculus has no union at all.],
-
-  [`R / S`, complement], [a *second composition* with linear adjoints], [built, and drawn above,
-  but axiomatised only: nothing on this branch instantiates the complement.],
-
-  [`Λ`, power transpose], [none], [open. No calculus in this tower has a power object.],
-
+  [*tabulation*], [none], [`⊤ = ⊸ ⟜` is all the tabular content there is.],
+  [`∪`, `⊥`], [a *biproduct* `⊕` on top of the Frobenius structure],
+  [built, and drawn above. The calculus itself has no union.],
+  [`R / S`, complement], [a *second composition* with linear adjoints],
+  [built, and drawn above, but axiomatised only: nothing instantiates the complement.],
+  [`Λ`, power transpose], [none], [open. No power object anywhere in this tower.],
   [allegory ⟹ cartesian bicategory], [rebuild `⊗` from tabulations], [deliberately not built.],
 )
 
 = The shunting rule
 
-A map may be moved from one side of a containment to the other, at the cost of its converse:
-`R f ≤ S ⟺ R ≤ S f°`, and its mirror. That is the workhorse of relational program calculation and
-what makes point-free derivation possible at all — it is how a function gets out of the way so the
-relation underneath can be reasoned about.
-
-Each `↔` is two chains, and each direction spends exactly one half of *map* — never both.
+A map moves from one side of a containment to the other at the cost of its converse,
+`R f ≤ S ⟺ R ≤ S f°`. It is how a function gets out of the way so the relation underneath can be
+reasoned about. Each direction spends exactly one half of *map* — never both.
 
 #table(
   columns: (4.4cm, 1fr, 6.4cm),
@@ -684,17 +548,11 @@ Each `↔` is two chains, and each direction spends exactly one half of *map* �
     show #Pin(sr-b)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
-  raw(srb.at(0).terms.at(0)),
-  P(srb.at(0).steps.at(0), s: 74%),
-  [*the start:* `R`.],
-
-  raw(srb.at(0).terms.at(1)),
-  P(srb.at(0).steps.at(1), s: 74%),
-  [*total.* `𝟙 ≤ f f°`, so `f f°` may be inserted after `R`. #src[The only cost of this direction.]],
-
-  raw(srb.at(0).terms.at(2)),
-  P(srb.at(0).steps.at(2), s: 74%),
-  [Re-bracket to `(R f) f°` and apply the hypothesis. #src[`R ≤ S f°`, the goal.]],
+  raw(srb.at(0).terms.at(0)), P(srb.at(0).steps.at(0), s: 74%), [*the start:* `R`.],
+  raw(srb.at(0).terms.at(1)), P(srb.at(0).steps.at(1), s: 74%),
+  [*total:* `𝟙 ≤ f f°`, so `f f°` may be inserted after `R`.],
+  raw(srb.at(0).terms.at(2)), P(srb.at(0).steps.at(2), s: 74%),
+  [Re-bracket to `(R f) f°` and apply the hypothesis.],
 )
 
 #table(
@@ -705,113 +563,36 @@ Each `↔` is two chains, and each direction spends exactly one half of *map* �
     show #Pin(sr-a)],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
-  raw(srb.at(1).terms.at(0)),
-  P(srb.at(1).steps.at(0), s: 74%),
-  [*the start:* `R f`.],
-
-  raw(srb.at(1).terms.at(1)),
-  P(srb.at(1).steps.at(1), s: 74%),
-  [Apply the hypothesis on the left. #src[The two `f`s are now adjacent.]],
-
-  raw(srb.at(1).terms.at(2)),
-  P(srb.at(1).steps.at(2), s: 74%),
-  [*single valued.* `f° f ≤ 𝟙`, so the pair cancels and `S` is left.],
+  raw(srb.at(1).terms.at(0)), P(srb.at(1).steps.at(0), s: 74%), [*the start:* `R f`.],
+  raw(srb.at(1).terms.at(1)), P(srb.at(1).steps.at(1), s: 74%),
+  [Apply the hypothesis on the left; the two `f`s are now adjacent.],
+  raw(srb.at(1).terms.at(2)), P(srb.at(1).steps.at(2), s: 74%),
+  [*single valued:* `f° f ≤ 𝟙`, so the pair cancels.],
 )
 
-*Shunting left is the mirror,* same shape, map on the other side throughout.
-
-#table(
-  columns: (4.4cm, 1fr, 6.4cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting left, `⟹`* #h(6pt) given #Pin(sl-a) #h(4pt)
-    show #Pin(sl-b)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(slb.at(0).terms.at(0)),
-  P(slb.at(0).steps.at(0), s: 74%),
-  [*the start:* `R`.],
-
-  raw(slb.at(0).terms.at(1)),
-  P(slb.at(0).steps.at(1), s: 74%),
-  [*total.* `f f°` inserted before `R`.],
-
-  raw(slb.at(0).terms.at(2)),
-  P(slb.at(0).steps.at(2), s: 74%),
-  [Re-bracket to `f (f° R)` and apply the hypothesis. #src[`R ≤ f S`.]],
-)
-
-#table(
-  columns: (4.4cm, 1fr, 6.4cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting left, `⟸`* #h(6pt) given #Pin(sl-b) #h(4pt)
-    show #Pin(sl-a)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(slb.at(1).terms.at(0)),
-  P(slb.at(1).steps.at(0), s: 74%),
-  [*the start:* `f° R`.],
-
-  raw(slb.at(1).terms.at(1)),
-  P(slb.at(1).steps.at(1), s: 74%),
-  [Apply the hypothesis on the right.],
-
-  raw(slb.at(1).terms.at(2)),
-  P(slb.at(1).steps.at(2), s: 74%),
-  [*single valued.* The pair cancels, leaving `S`.],
-)
-
-*What the rule really is.* An adjunction. `R f ≤ S ⟺ R ≤ S f°` says `f ⊣ f°` in the
-poset-enriched sense — *total* is its unit and *single valued* its counit — so "`f` is a map" and
-"`f` has a right adjoint, namely `f°`" are the same statement, and any right adjoint of a map must
-be its converse. The converse half, that an arrow with a right adjoint is a map, needs the
-unproved agreement above.
+Shunting left is the mirror, same shape, map on the other side throughout. What the rule is, is an
+adjunction: `f ⊣ f°`, with *total* the unit and *single valued* the counit, so "`f` is a map" and
+"`f` has a right adjoint, namely `f°`" are one statement.
 
 = Division
 
-Only division is drawn here, and not negation. The reason is not layout.
+Division is drawn and negation is not, because negation is not how programs get specified: the
+chapters where they are — greedy, thinning, dynamic programming, Horner, knapsack, paragraph
+formatting, string edit, bracketing, compression — use local completeness, division and power
+objects, and no Boolean structure at all. That also settles which picture of `/` is right. As a term
+a residual is a composition against a complement, which makes every homset Boolean; division asks
+for nothing of the kind, only the Galois connection `T ⊑ R/S ⟺ T S ⊑ R`, which `Rel(Set)` satisfies
+with a bare `∀`, `(R / S) x y ≜ ∀z. S y z → R x z`.
 
-*Negation is not how programs get specified.* Complement occurs only in theory: the complement of a
-*coreflexive*, `∼X ∩ 𝟙`, so a conditional can split on a guard; one direction of "well-founded =
-inductive", the other direction needing nothing; and subtraction. Where the programs are actually
-specified and derived — greedy, thinning, dynamic programming, Horner, knapsack, paragraph
-formatting, string edit, bracketing, compression — there are *no* occurrences at all: that work runs
-on local completeness, division and power objects, not on a Boolean structure. The one thing there
-that looks like negation is not: `mnl R ≜ min(R° ⇨ R)` uses *implication*, a `Sup` that lives in any
-locally complete allegory, and `∼R` is only its special case `R ⇨ 𝟘`.
+*Long division.* `R / S` is how much of `R` you can lay down before `S` still fits in what is left.
+Read the bar as a composite: `R / S` first, then `S`, the two together inside `R`. Solid is what the
+equation pins — `R`'s left edge, `S`'s left edge, and the stretch before `S`. Dashed is the slack:
+nothing to the right of `S` is determined by `T S ⊑ R`, which is why the cancel law is `(R/S) S ⊑ R`
+and not an equality, and why the slack is a hairline — `R / S` is the *largest* such quotient.
 
-So the specification vocabulary is ` `, `∩`, `∪`, `°`, `/`, `Λ`, `min`/`max`, `thin` and
-catamorphisms, and a note about what those pictures look like has no business spending a page on an
-operation none of them uses.
-
-*Which also settles which picture of `/` is the right one.* As a term a residual is a composition
-against a complement, and drawing it that way makes every homset a Boolean algebra. Division asks
-for nothing of the kind: it wants one Galois connection, `T ⊑ R/S ⟺ T S ⊑ R`, and `Rel(Set)`
-satisfies it with a bare `∀`, `(R / S) x y ≜ ∀z. S y z → R x z`, no negation in the definition.
-`Rel` over a non-Boolean topos is a division allegory with no `∼` to draw with at all. What follows
-is the account that needs none.
-
-*What stays a box.* Dashed means "no definition to unfold and no metaphor either", which here leaves
-one thing: `/ₛ`, a meet of two converses. A dashed box takes a label, so `(R /ₛ S)°` is a mirrored
-box reading `R /ₛ S`, not a picture of the meet in its definition. Maps are the other exception, the
-other way round: `f` is a plain *rectangle*, since the chamfer exists to say which way a relation
-runs and a map runs one way by construction.
-
-*What `/` is, without a complement anywhere: long division.* `R / S` is how much of `R` you can lay
-down before `S` still fits inside what is left. Read the bar left to right, as a composite: `R / S`
-first, then `S`, and the two together stay inside `R`. The leftover is the whole reason the cancel
-law is `(R/S) S ⊑ R` and not an equality — and it is a hairline on purpose, because `R / S` is the
-*largest* such quotient: any wider and `S` stops fitting.
-
-Solid is what the equation pins: `R`'s left edge, `S`'s left edge, and the stretch before `S`, which
-is what `R / S` measures. Dashed is the slack: nothing to the right of `S` is determined by
-`T S ⊑ R`.
-
-Read it as a *measurement*, not as a containment of relations. `R : a → c` and `S : b → c` are not
-in the same hom-set, so `S` is not a sub-relation of `R` and neither is `R / S` — what sits inside
-`R` is the composite `(R/S) S`, which does have `R`'s type. Pushed too far, the metaphor breaks in
-the usual place: `⊥ / ⊥ = ⊤`.
+It is a *measurement*, not a containment: `R : a → c` and `S : b → c` are not in the same hom-set,
+so what sits inside `R` is the composite `(R/S) S`. Pushed too far the metaphor breaks in the usual
+place, `⊥ / ⊥ = ⊤`.
 
 #align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: why `⊑`]))
 #align(center, src[transcribed — the universal property has a statement, this metaphor does not])
@@ -832,44 +613,36 @@ the usual place: `⊥ / ⊥ = ⊤`.
    #v(4pt)
    #Pl(p-le-div)],
 
-  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[`S\R ≜ (R°/S°)°`: left division is right division conjugated by
-   the converse, not a second primitive.]
+  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[`S\R ≜ (R°/S°)°`: left division is right division conjugated by the
+   converse, not a second primitive.]
    #v(4pt)
    #Pl(p-le-ldiv)],
 
-  [*cancel:* `(R/S) S ⊑ R`, and `S (S\R) ⊑ R` \ #src[The counit of each adjunction: the quotient
-   composed back with the divisor lands under the numerator, never on it — the law the figure above
-   draws.]
+  [*cancel:* `(R/S) S ⊑ R`, and `S (S\R) ⊑ R` \ #src[The counit of each adjunction — the law the
+   figure above draws.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-div-cancel), Pl(p-ldiv-cancel))],
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`, and `(S T)\R = T\(S\R)` \ #src[Dividing by a composite
-   one factor at a time. The composition is drawn on the left of each equation and swallowed into a
-   label on the right — and the bar shows what that swallowing hides: two tiles laid where there was
-   one.]
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`, and `(S T)\R = T\(S\R)` \ #src[Dividing by a composite one
+   factor at a time; the bar shows what the label on the right hides — two tiles laid where there
+   was one.]
    #v(4pt)
    #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
      stack(dir: ttb, spacing: 6pt, Pl(p-div-assoc), Pl(p-ldiv-assoc)),
      divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2))],
 
-  [*maps:* `f (R/S) = (f R)/S`, and `R/(f S) = (R/S) f°` \ #src[`f` is a rectangle, so the first
-   law reads off the picture: the same three pieces, bracketed two ways — the licence to drop the
-   brackets and write `f R / S`. The second is the one that pays: a map moves out of a denominator
-   and reappears as `f°` outside the box. Both are the shunting rule, spent twice. No bar: the
-   metaphor has no handle on prefixing by a map.]
+  [*maps:* `f (R/S) = (f R)/S`, and `R/(f S) = (R/S) f°` \ #src[The same three pieces bracketed two
+   ways, which is the licence to write `f R / S`; then a map moves out of a denominator and
+   reappears as `f°` outside the box. Both are the shunting rule, spent twice.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-map-div), Pl(p-div-map))],
 
   [*symmetric division:* `(R/ₛS)° = S/ₛR`, and `(R/ₛS)(S/ₛT) ⊑ R/ₛT` \
-   #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the definition, not inside the statement, so it
-   stays under the label: what the pictures show is that `/ₛ` is converse-symmetric and transitive,
-   i.e. behaves like an equality of columns. No bar: a meet of two converses is not a quotient with
-   a remainder.]
+   #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the definition, not the statement, so it stays
+   under the label: `/ₛ` is converse-symmetric and transitive, like an equality of columns.]
    #v(4pt)
    #stack(dir: ttb, spacing: 6pt, Pl(p-sdiv-recip), Pl(p-sdiv-comp))],
 )
 
-*The measurement.* Ten laws, ten pictures, and not one of them shows a generator. `∩`, `∪`, `°` and
-composition are what the Frobenius generators build; `/` is none of those — it is posited, with
-nothing to unfold. Eight of the ten carry the long-division bar instead, which is a metaphor for the
-universal property rather than a composite of anything, and the two that do not say why in place.
+Ten laws, ten pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what the
+Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
