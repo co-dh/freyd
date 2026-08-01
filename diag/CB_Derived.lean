@@ -1,7 +1,7 @@
 /-
   `diag.CB_Derived` — the operations AOP needs, DERIVED from `CartBicat`.  Nothing here is an axiom.
 
-  functorialSemanticsForRelationalTheories.pdf §4, pp. 18–22.  The meet `Δ;(R ⊗ S);∇` is the
+  functorialSemanticsForRelationalTheories.pdf §4, pp. 18–22.  The meet `◁;(R ⊗ S);▷` is the
   paper's `∩` (p. 22, "every hom-set is a meet semi-lattice") and `⊤ := !;?` is its unit.  In the
   non-strict tower they come before the wire-bending converse because they are defined at a single
   object and so need no associator; here the monoidal structure is strict and no result in `diag/`
@@ -19,19 +19,19 @@ open CartBicat
 
 variable {O : Type u} [CartBicat.{v} O]
 
-/-- The CONVOLUTION `Δ;(R ⊗ S);∇`
+/-- The CONVOLUTION `◁;(R ⊗ S);▷`
     (functorialSemanticsForRelationalTheories.pdf p. 22).  Copy the input, run `R` and `S` on the
     two copies, then merge — the merge forces the two results to coincide, so this is `R ∩ S`. -/
-def meet {a b : Word O} (R S : a ⟶ b) : a ⟶ b := Δ ≫ (R ⊗ₕ S) ≫ ∇
+def meet {a b : Word O} (R S : a ⟶ b) : a ⟶ b := ◁ ≫ (R ⊗ₕ S) ≫ ▷
 
 /-- `⊤ := !;?`, the maximum arrow: discard everything, then create everything.  The unit of
     `meet` (functorialSemanticsForRelationalTheories.pdf p. 22). -/
-def top (a b : Word O) : a ⟶ b := «!» ≫ «?»
+def top (a b : Word O) : a ⟶ b := ⊸ ≫ ⟜
 
 /-- Every arrow is below `⊤`.  Lax counit (43) sends `R;!` under `!`, and (40) supplies the `?`. -/
 theorem «≤_top» {a b : Word O} (R : a ⟶ b) : R ≤ (top a b) := by
   -- `R = R;𝟙 ≤ R;(!;?) = (R;!);? ≤ !;? = ⊤`.
-  have h1 : (R ≫ 𝟙 b) ≤ (R ≫ «!» ≫ «?») :=
+  have h1 : (R ≫ 𝟙 b) ≤ (R ≫ ⊸ ≫ ⟜) :=
     OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙≤!?» b)
   -- Both `!`s and both `?`s are named: `top a b` is `!ₐ ; ?_b`, and a statement whose ends are
   -- `a` and `b` cannot say which object the `𝕀` in the middle came from.
@@ -47,22 +47,22 @@ theorem «≤_top» {a b : Word O} (R : a ⟶ b) : R ≤ (top a b) := by
     no unitor left to move `R` past, so the naturality step of the non-strict proof is gone. -/
 theorem meet_top {a b : Word O} (R : a ⟶ b) : meet R (top a b) = R := by
   -- Stage the `⊗`: `R ⊗ (!;?) = (R ⊗ !) ; (𝟙 ⊗ ?)`.
-  have hR : (R ⊗ₕ («!» (n := a) ≫ «?» (n := b))) = (R ⊗ₕ «!») ≫ (𝟙 b ⊗ₕ «?») := by
+  have hR : (R ⊗ₕ («!» (n := a) ≫ «?» (n := b))) = (R ⊗ₕ ⊸) ≫ (𝟙 b ⊗ₕ ⟜) := by
     rw [← SymMonCat.tensHom_comp, Cat.comp_id]
   -- `R ⊗ !` is `(𝟙 ⊗ !) ; R`, since `R ⊗ 𝟙_I` IS `R`.
   have hsplit : (R ⊗ₕ «!» (n := a)) = (𝟙 a ⊗ₕ «!» (n := a)) ≫ R := by
-    calc (R ⊗ₕ «!»)
-        = (𝟙 a ⊗ₕ «!») ≫ (R ⊗ₕ 𝟙 (𝕀 : Word O)) := (tensHom_split' _ _).symm
-      _ = (𝟙 a ⊗ₕ «!») ≫ R := by rw [SymMonCat.tensHom_runit]
-  have hun : (R ⊗ₕ «!» (n := a)) ≫ (𝟙 b ⊗ₕ «?») ≫ ∇ = (R ⊗ₕ «!» (n := a)) := by
+    calc (R ⊗ₕ ⊸)
+        = (𝟙 a ⊗ₕ ⊸) ≫ (R ⊗ₕ 𝟙 (𝕀 : Word O)) := (tensHom_split' _ _).symm
+      _ = (𝟙 a ⊗ₕ ⊸) ≫ R := by rw [SymMonCat.tensHom_runit]
+  have hun : (R ⊗ₕ «!» (n := a)) ≫ (𝟙 b ⊗ₕ ⟜) ≫ ▷ = (R ⊗ₕ «!» (n := a)) := by
     rw [«∇_unit»]; exact Cat.comp_id _
   dsimp [meet, top]
-  calc Δ ≫ (R ⊗ₕ («!» (n := a) ≫ «?» (n := b))) ≫ ∇
-      = Δ ≫ ((R ⊗ₕ «!») ≫ (𝟙 b ⊗ₕ «?»)) ≫ ∇ := by rw [hR]
-    _ = Δ ≫ (R ⊗ₕ «!») ≫ (𝟙 b ⊗ₕ «?») ≫ ∇ := by simp only [Cat.assoc]
-    _ = Δ ≫ (R ⊗ₕ «!») := by rw [hun]
-    _ = Δ ≫ (𝟙 a ⊗ₕ «!») ≫ R := by rw [hsplit]
-    _ = (Δ ≫ (𝟙 a ⊗ₕ «!»)) ≫ R := (Cat.assoc _ _ _).symm
+  calc ◁ ≫ (R ⊗ₕ («!» (n := a) ≫ «?» (n := b))) ≫ ▷
+      = ◁ ≫ ((R ⊗ₕ ⊸) ≫ (𝟙 b ⊗ₕ ⟜)) ≫ ▷ := by rw [hR]
+    _ = ◁ ≫ (R ⊗ₕ ⊸) ≫ (𝟙 b ⊗ₕ ⟜) ≫ ▷ := by simp only [Cat.assoc]
+    _ = ◁ ≫ (R ⊗ₕ ⊸) := by rw [hun]
+    _ = ◁ ≫ (𝟙 a ⊗ₕ ⊸) ≫ R := by rw [hsplit]
+    _ = (◁ ≫ (𝟙 a ⊗ₕ ⊸)) ≫ R := (Cat.assoc _ _ _).symm
     _ = 𝟙 a ≫ R := by rw [Δ_counit]
     _ = R := Cat.id_comp _
 
@@ -88,20 +88,20 @@ theorem «meet_≤_left» {a b : Word O} (R S : a ⟶ b) :
     merge, bridged by naturality of the symmetry. -/
 theorem meet_comm {a b : Word O} (R S : a ⟶ b) : meet R S = meet S R := by
   dsimp [meet]
-  calc Δ ≫ (R ⊗ₕ S) ≫ ∇
-      = (Δ ≫ SymMonCat.swap a a) ≫ (R ⊗ₕ S) ≫ ∇ := by rw [Δ_comm]
-    _ = Δ ≫ (SymMonCat.swap a a ≫ (R ⊗ₕ S)) ≫ ∇ := by simp only [Cat.assoc]
-    _ = Δ ≫ ((S ⊗ₕ R) ≫ SymMonCat.swap b b) ≫ ∇ := by rw [← SymMonCat.swap_nat]
-    _ = Δ ≫ (S ⊗ₕ R) ≫ SymMonCat.swap b b ≫ ∇ := by simp only [Cat.assoc]
-    _ = Δ ≫ (S ⊗ₕ R) ≫ ∇ := by rw [«∇_comm»]
+  calc ◁ ≫ (R ⊗ₕ S) ≫ ▷
+      = (◁ ≫ SymMonCat.swap a a) ≫ (R ⊗ₕ S) ≫ ▷ := by rw [Δ_comm]
+    _ = ◁ ≫ (SymMonCat.swap a a ≫ (R ⊗ₕ S)) ≫ ▷ := by simp only [Cat.assoc]
+    _ = ◁ ≫ ((S ⊗ₕ R) ≫ SymMonCat.swap b b) ≫ ▷ := by rw [← SymMonCat.swap_nat]
+    _ = ◁ ≫ (S ⊗ₕ R) ≫ SymMonCat.swap b b ≫ ▷ := by simp only [Cat.assoc]
+    _ = ◁ ≫ (S ⊗ₕ R) ≫ ▷ := by rw [«∇_comm»]
 
 /-- `(R ∩ S) ∩ T` with the left-leaning copy and merge trees exposed, ready for (8) and (6). -/
 theorem meet_left_staged {a b : Word O} (R S T : a ⟶ b) :
     meet (meet R S) T
-      = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇ := by
+      = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷ := by
   dsimp [meet]
-  have hsplit : ((Δ ≫ (R ⊗ₕ S) ≫ ∇) ⊗ₕ T)
-      = (Δ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) := by
+  have hsplit : ((◁ ≫ (R ⊗ₕ S) ≫ ▷) ⊗ₕ T)
+      = (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) := by
     rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
     simp only [Cat.id_comp, Cat.comp_id]
   rw [hsplit]
@@ -110,10 +110,10 @@ theorem meet_left_staged {a b : Word O} (R S T : a ⟶ b) :
 /-- The mirror staging for `R ∩ (S ∩ T)`, right-leaning. -/
 theorem meet_right_staged {a b : Word O} (R S T : a ⟶ b) :
     meet R (meet S T)
-      = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇) ≫ ∇ := by
+      = ◁ ≫ (𝟙 a ⊗ₕ ◁) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ▷) ≫ ▷ := by
   dsimp [meet]
-  have hsplit : (R ⊗ₕ (Δ ≫ (S ⊗ₕ T) ≫ ∇))
-      = (𝟙 a ⊗ₕ Δ) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇) := by
+  have hsplit : (R ⊗ₕ (◁ ≫ (S ⊗ₕ T) ≫ ▷))
+      = (𝟙 a ⊗ₕ ◁) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ▷) := by
     rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp]
     simp only [Cat.id_comp, Cat.comp_id]
   rw [hsplit]
@@ -126,31 +126,31 @@ theorem «meet_≤_right» {a b : Word O} (R S : a ⟶ b) :
   exact «meet_≤_left» S R
 
 /-- `(R ∩ S) ∩ T = R ∩ (S ∩ T)` — Freyd's `inter_assoc` (§2.11), derived.  Both staged forms are
-    normalised to `Δ;(𝟙 ⊗ Δ);(R ⊗ (S ⊗ T));(𝟙 ⊗ ∇);∇`: coassociativity (8) turns the left copy tree
+    normalised to `◁;(𝟙 ⊗ ◁);(R ⊗ (S ⊗ T));(𝟙 ⊗ ▷);▷`: coassociativity (8) turns the left copy tree
     into the right one, associativity (6) does the same for the merge tree, and strict associativity
     re-brackets `(R ⊗ S) ⊗ T` in between.  In the non-strict tower that middle step is an insertion
     of `α ; α⁻¹ = 𝟙` followed by `tensAssocInv_nat`. -/
 theorem meet_assoc {a b : Word O} (R S T : a ⟶ b) :
     meet (meet R S) T = meet R (meet S T) := by
   rw [meet_left_staged, meet_right_staged]
-  calc Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇
-      = (Δ ≫ (Δ ⊗ₕ 𝟙 a)) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇ := (Cat.assoc _ _ _).symm
-    _ = (Δ ≫ (𝟙 a ⊗ₕ Δ)) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇ := by rw [Δ_assoc]
-    _ = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇ := Cat.assoc _ _ _
-    _ = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (∇ ⊗ₕ 𝟙 b) ≫ ∇ := by
+  calc ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷
+      = (◁ ≫ (◁ ⊗ₕ 𝟙 a)) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷ := (Cat.assoc _ _ _).symm
+    _ = (◁ ≫ (𝟙 a ⊗ₕ ◁)) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷ := by rw [Δ_assoc]
+    _ = ◁ ≫ (𝟙 a ⊗ₕ ◁) ≫ ((R ⊗ₕ S) ⊗ₕ T) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷ := Cat.assoc _ _ _
+    _ = ◁ ≫ (𝟙 a ⊗ₕ ◁) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (▷ ⊗ₕ 𝟙 b) ≫ ▷ := by
         rw [SymMonCat.tensHom_assoc]
-    _ = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ∇) ≫ ∇ := by rw [«∇_assoc»]
+    _ = ◁ ≫ (𝟙 a ⊗ₕ ◁) ≫ (R ⊗ₕ (S ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ ▷) ≫ ▷ := by rw [«∇_assoc»]
 
 /-- `R ∩ R = R` — Freyd's `inter_idem` (§2.11), derived.  `≤` is the glb property; `≥` is exactly
     where the lax inequation (42) and the special law meet: copying `R` and running it on both
-    strands can only produce more than running it once, and `Δ;∇ = 𝟙` closes the loop. -/
+    strands can only produce more than running it once, and `◁;▷ = 𝟙` closes the loop. -/
 theorem meet_idem {a b : Word O} (R : a ⟶ b) : meet R R = R := by
   refine OrderedCat.«≤_antisymm» («meet_≤_left» R R) ?_
-  have h : ((R ≫ Δ) ≫ ∇) ≤ ((Δ ≫ (R ⊗ₕ R)) ≫ ∇) :=
-    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» (∇))
-  have hL : (R ≫ Δ) ≫ ∇ = R := by
+  have h : ((R ≫ ◁) ≫ ▷) ≤ ((◁ ≫ (R ⊗ₕ R)) ≫ ▷) :=
+    OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» (▷))
+  have hL : (R ≫ ◁) ≫ ▷ = R := by
     rw [Cat.assoc, special, Cat.comp_id]
-  have hR : (Δ ≫ (R ⊗ₕ R)) ≫ ∇ = meet R R := by
+  have hR : (◁ ≫ (R ⊗ₕ R)) ≫ ▷ = meet R R := by
     dsimp [meet]; rw [Cat.assoc]
   rw [hL, hR] at h
   exact h
@@ -228,20 +228,20 @@ def Surjective {a b : Word O} (R : a ⟶ b) : Prop := (𝟙 b) ≤ (conv R ≫ R
     converse is its right adjoint. -/
 def Map {a b : Word O} (R : a ⟶ b) : Prop := SingleValued R ∧ Total R
 
-/-- (SV) as the paper writes it on p. 20: `Δ;(R ⊗ R) ≤ R;Δ`, the reverse of the lax inequation
+/-- (SV) as the paper writes it on p. 20: `◁;(R ⊗ R) ≤ R;◁`, the reverse of the lax inequation
     (42).  Recorded for reference; `SingleValued` above is the form everything uses. -/
 def ineq_SV {a b : Word O} (R : a ⟶ b) : Prop :=
-  (Δ ≫ (R ⊗ₕ R)) ≤ (R ≫ Δ)
+  (◁ ≫ (R ⊗ₕ R)) ≤ (R ≫ ◁)
 
 /-- (TOT) as the paper writes it: `! ≤ R;!`, the reverse of the lax inequation (43). -/
-def ineq_TOT {a b : Word O} (R : a ⟶ b) : Prop := («!») ≤ (R ≫ «!»)
+def ineq_TOT {a b : Word O} (R : a ⟶ b) : Prop := (⊸) ≤ (R ≫ ⊸)
 
-/-- (INJ) as the paper writes it: `(R ⊗ R);∇ ≤ ∇;R`. -/
+/-- (INJ) as the paper writes it: `(R ⊗ R);▷ ≤ ▷;R`. -/
 def ineq_INJ {a b : Word O} (R : a ⟶ b) : Prop :=
-  ((R ⊗ₕ R) ≫ ∇) ≤ (∇ ≫ R)
+  ((R ⊗ₕ R) ≫ ▷) ≤ (▷ ≫ R)
 
 /-- (SUR) as the paper writes it: `? ≤ ?;R`. -/
-def ineq_SUR {a b : Word O} (R : a ⟶ b) : Prop := («?») ≤ («?» ≫ R)
+def ineq_SUR {a b : Word O} (R : a ⟶ b) : Prop := (⟜) ≤ (⟜ ≫ R)
 
 /-- COROLLARY 4.5 (p. 21): two maps ordered by `≤` are EQUAL.  Freyd's `map_order_discrete`
     (§2.133).  Insert the unit of `R` on the left of `S` and cancel with the counit of `S`:

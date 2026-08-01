@@ -8,7 +8,7 @@
   WHY `⊕` IS NOT ANOTHER `CartBicat`.  The obvious economy — reuse `CartBicat` at `⊕` and get every
   `∩` proof over again as a `∪` proof — does not work, and it is worth recording why.  `Rel(Set)`'s
   `⊕` is `Sum`, and there `Δ⊕;∇⊕ = 𝟙` while `∇⊕;Δ⊕ ≥ 𝟙`: the bubble is BIGGER than the identity,
-  because `∇⊕;Δ⊕` sends `inl x` to both `inl x` and `inr x`.  Def. 4.1's inequation (37), `∇;Δ ≤ 𝟙`,
+  because `∇⊕;Δ⊕` sends `inl x` to both `inl x` and `inr x`.  Def. 4.1's inequation (37), `▷;◁ ≤ 𝟙`,
   therefore fails at `⊕`.  The two structures are genuinely different: `⊗` is special Frobenius, `⊕`
   is a biproduct.
 
@@ -232,7 +232,7 @@ end Biprod
 
 /-! ### The rig: `⊗` distributes over `⊕`
 
-The one axiom the biproduct alone does not give.  `∩` is `Δ;(R ⊗ S);∇`, so `R ∩ (S ∪ T)` reduces to
+The one axiom the biproduct alone does not give.  `∩` is `◁;(R ⊗ S);▷`, so `R ∩ (S ∪ T)` reduces to
 `(R ∩ S) ∪ (R ∩ T)` exactly when `⊗` carries `∪` through — which is what makes the two structures a
 RIG rather than two unrelated monoidal products.  `TapeDiagrams.pdf` Def. 7.1 packages it as the
 distributors of a rig category; here it is stated where it is used. -/
@@ -249,7 +249,7 @@ open Biprod
 
 variable {O : Type u} [FbCbRig.{v} O]
 
-/-- The distributive law, `R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)`.  `∩` is `Δ;(R ⊗ −);∇`, so this is
+/-- The distributive law, `R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)`.  `∩` is `◁;(R ⊗ −);▷`, so this is
     `tensHom_union` with a copy in front and a merge behind, and the two composition-distributes-over-
     union laws carry `∪` past each. -/
 theorem meet_union_distrib {a b : Word O} (R S T : a ⟶ b) :

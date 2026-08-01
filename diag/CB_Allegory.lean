@@ -43,31 +43,31 @@ theorem semidistrib_of_lax {a b c : Word O} (R : a ⟶ b) (S T : b ⟶ c) :
 
     Strip the shared prefix `Δ_a;(R ⊗ T)` off both sides — `(RS) ⊗ T` factors as `(R ⊗ T);(S ⊗ 𝟙)`
     and `R ⊗ (TS°)` as `(R ⊗ T);(𝟙 ⊗ S°)` — and what is left is exactly `nabla_slide_conv`,
-    `(S ⊗ 𝟙);∇ ≤ (𝟙 ⊗ S°);∇;S`.  That is where the Frobenius equation and the lax copy inequation
+    `(S ⊗ 𝟙);▷ ≤ (𝟙 ⊗ S°);▷;S`.  That is where the Frobenius equation and the lax copy inequation
     are spent; everything here is bookkeeping. -/
 theorem modular_of_frobenius {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (meet (R ≫ S) T) ≤ (meet R (T ≫ conv S) ≫ S) := by
   have hL : meet (R ≫ S) T
-      = (Δ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ := by
+      = (◁ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ▷ := by
     dsimp [meet]
-    calc Δ ≫ ((R ≫ S) ⊗ₕ T) ≫ ∇
-        = Δ ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ ∇ := by
+    calc ◁ ≫ ((R ≫ S) ⊗ₕ T) ≫ ▷
+        = ◁ ≫ ((R ⊗ₕ T) ≫ (S ⊗ₕ 𝟙 c)) ≫ ▷ := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (Δ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ := by simp only [Cat.assoc]
+      _ = (◁ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ▷ := by simp only [Cat.assoc]
   have hR : meet R (T ≫ conv S) ≫ S
-      = (Δ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ ≫ S := by
+      = (◁ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ▷ ≫ S := by
     dsimp [meet]
-    calc (Δ ≫ (R ⊗ₕ (T ≫ conv S)) ≫ ∇) ≫ S
-        = (Δ ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ ∇) ≫ S := by
+    calc (◁ ≫ (R ⊗ₕ (T ≫ conv S)) ≫ ▷) ≫ S
+        = (◁ ≫ ((R ⊗ₕ T) ≫ (𝟙 b ⊗ₕ conv S)) ≫ ▷) ≫ S := by
           rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-      _ = (Δ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ ≫ S := by simp only [Cat.assoc]
+      _ = (◁ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ▷ ≫ S := by simp only [Cat.assoc]
   -- A THREE-LINK `calc` rather than `rw [hL, hR]; exact …`, so the argument sits in the proof TERM
   -- where `diag-export --proof` can draw it — and draw it with `R`, `S` and `T` all present, which
   -- is what the modular law is about.  `nabla_slide_conv` alone mentions only `S`.  The reshaping
   -- links are stated at `=`, so the drawn chain shows the middle step as the one inequality.
   calc meet (R ≫ S) T
-      = (Δ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ∇ := hL
-    _ ≤ (Δ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ∇ ≫ S :=
+      = (◁ ≫ (R ⊗ₕ T)) ≫ (S ⊗ₕ 𝟙 c) ≫ ▷ := hL
+    _ ≤ (◁ ≫ (R ⊗ₕ T)) ≫ (𝟙 b ⊗ₕ conv S) ≫ ▷ ≫ S :=
         OrderedCat.comp_mono (OrderedCat.«≤_refl» _) («∇_slide_conv» S)
     _ = meet R (T ≫ conv S) ≫ S := hR.symm
 

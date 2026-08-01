@@ -114,7 +114,7 @@ inductive Cell where
       Nesting is why the operands are cell RUNS: `(R ∩ S) ∩ T` has to show its inner meet. -/
   | meet (upper lower : Array Cell)
   /-- A union (phase 8, `diag/Tape.lean`), drawn as a TAPE: the same fork-runs-join shape as a meet,
-      but on the second monoidal product, so it is the tape's `▷`/`◁` and not `Δ`/`∇`
+      but on the second monoidal product, so it is the tape's `Δ⊕`/`∇⊕` and not the Frobenius `◁`/`▷`
       (`TapeDiagrams.pdf` Fig. 1).  A particle takes exactly one branch, which is the union. -/
   | union (upper lower : Array Cell)
   /-- A box the calculus cannot build out of its generators — the residual `R / S` of phase 9
@@ -584,10 +584,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | none => plain e
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
-  | (``Freyd.Diag.CartBicat.Δ, _) => return "Δ"
-  | (``Freyd.Diag.CartBicat.«∇», _) => return "∇"
-  | (``Freyd.Diag.CartBicat.«!», _) => return "!"
-  | (``Freyd.Diag.CartBicat.«?», _) => return "?"
+  | (``Freyd.Diag.CartBicat.Δ, _) => return "◁"
+  | (``Freyd.Diag.CartBicat.«∇», _) => return "▷"
+  | (``Freyd.Diag.CartBicat.«!», _) => return "⊸"
+  | (``Freyd.Diag.CartBicat.«?», _) => return "⟜"
   | (``Freyd.Diag.CartBicat.cap, _) => return "cap"
   | (``Freyd.Diag.CartBicat.cup, _) => return "cup"
   | (``Freyd.Diag.top, _) | (``Freyd.Alg.topHom, _) => return "⊤"

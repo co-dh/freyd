@@ -440,17 +440,17 @@ class FOBicat (O : Type u) extends
       their order — `(F^•_∘)`, `(F^°_•)`, `(F_•^°)`, `(F_∘^•)` — and `°` and `∘` are the same glyph,
       so dropping the sub/superscript positions makes two pairs of labels collide.  Keep them. -/
   linfrob_bw (n : Word O) :
-    (bdelta n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ∇) = ((𝟙 n ⊗ₕ Δ) ≫ (bnabla n ⊗ₕ 𝟙 n) : _)
+    (bdelta n ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ▷) = ((𝟙 n ⊗ₕ ◁) ≫ (bnabla n ⊗ₕ 𝟙 n) : _)
   /-- `(F^°_•)`: the mirror of `linfrob_bw`, white copying and black merging. -/
   linfrob_wb (n : Word O) :
-    (Δ ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ bnabla n) = ((𝟙 n ⊗ₕ bdelta n) ≫ (∇ ⊗ₕ 𝟙 n) : _)
+    (◁ ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ bnabla n) = ((𝟙 n ⊗ₕ bdelta n) ≫ (▷ ⊗ₕ 𝟙 n) : _)
   /-- `(F_•^°)`: `linfrob_wb` said in the BLACK structure — same four generators, `⨟•`/`⊗•`
       for `⨟°`/`⊗`.  Its `Rel(Set)` proof is nonetheless the COMPLEMENT of `linfrob_bw`'s,
       because complementing swaps the generators' colours as well as the composition's. -/
   blinfrob_wb (n : Word O) :
-    (Δ ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = ((𝟙• n ⊗•ₕ bdelta n) ≫• (∇ ⊗•ₕ 𝟙• n) : _)
+    (◁ ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ bnabla n) = ((𝟙• n ⊗•ₕ bdelta n) ≫• (▷ ⊗•ₕ 𝟙• n) : _)
   /-- `(F_∘^•)`: `linfrob_bw` said in the black structure. -/
   blinfrob_bw (n : Word O) :
-    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ ∇) = ((𝟙• n ⊗•ₕ Δ) ≫• (bnabla n ⊗•ₕ 𝟙• n) : _)
+    (bdelta n ⊗•ₕ 𝟙• n) ≫• (𝟙• n ⊗•ₕ ▷) = ((𝟙• n ⊗•ₕ ◁) ≫• (bnabla n ⊗•ₕ 𝟙• n) : _)
 
 end Freyd.Diag

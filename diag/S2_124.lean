@@ -5,7 +5,7 @@
   `Rel A B := A → B → Prop` in order to check the companion picture `diag/S2_124.typ`.  Everything in
   its first half — the generators, the (co)monoid and Frobenius equations, converse, the monoidal
   laws — is `diag/CB.lean` said twice, so it is gone; and its extra axiom
-  `adequacy` (`Δ;(R ⊗ R);∇ = R`) is `meet_idem`, a theorem.  What is left is what was actually its
+  `adequacy` (`◁;(R ⊗ R);▷ = R`) is `meet_idem`, a theorem.  What is left is what was actually its
   own: the normal form `W` and the two identities the drawn proof rests on.
 
   They are now stated over an ARBITRARY cartesian bicategory of relations rather than over `Rel`.
@@ -16,7 +16,7 @@
   associators are identities and the proofs below are the derivations with nothing hidden.
 
   The route is the picture's, NOT Freyd's.  Freyd proves §2.124 from the modular law; here both sides
-  are driven to `W = Δ;(Δ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);(𝟙 ⊗ cap)` and the modular law is used only inside
+  are driven to `W = ◁;(◁ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);(𝟙 ⊗ cap)` and the modular law is used only inside
   `dom_cd`, in the one step (`meet_top_eq_conv`) where a top has to be turned back into a converse.
 
   `Freyd.Alg.dom_inter` (`Freyd/S2_10.lean`) is the same statement for allegories, and by
@@ -47,23 +47,23 @@ already one generator wide.  They are written out at their use sites below. -/
 def Dom {a b : Word O} (R : a ⟶ b) : a ⟶ a := meet (𝟙 a) (R ≫ conv R)
 
 /-- The normal form both sides of §2.124 are driven to:
-    `W = Δ;(Δ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);(𝟙 ⊗ cap)`  (`Δ;(Δ ⊗ 𝟙)` is the three-way copy). -/
+    `W = ◁;(◁ ⊗ 𝟙);((𝟙 ⊗ R) ⊗ S);(𝟙 ⊗ cap)`  (`◁;(◁ ⊗ 𝟙)` is the three-way copy). -/
 def W {a b : Word O} (R S : a ⟶ b) : a ⟶ a :=
-  Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b)
+  ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b)
 
 /-! ### Two preliminaries -/
 
-/-- An arrow into the unit object restricts the identity: `𝟙 ∩ (L;?) = Δ;(𝟙 ⊗ L)`.  This is the
+/-- An arrow into the unit object restricts the identity: `𝟙 ∩ (L;?) = ◁;(𝟙 ⊗ L)`.  This is the
     step that turns a discarded strand back into a meet — the picture draws both as "keep the wire
     only where `L` is defined".
 
-    In the non-strict tower this proof first needs `(𝟙 ⊗ ?);∇ = ρ`, the unit law (7) with the
+    In the non-strict tower this proof first needs `(𝟙 ⊗ ?);▷ = ρ`, the unit law (7) with the
     unitor moved across.  With `ρ = 𝟙` that lemma IS the unit law, so it is gone. -/
 theorem «meet_?» {a : Word O} (L : a ⟶ (𝕀 : Word O)) :
-    meet (𝟙 a) (L ≫ «?») = Δ ≫ (𝟙 a ⊗ₕ L) := by
+    meet (𝟙 a) (L ≫ ⟜) = ◁ ≫ (𝟙 a ⊗ₕ L) := by
   have hsplit : (𝟙 a ⊗ₕ (L ≫ «?» (n := a))) = (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» (n := a)) := by
     rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-  have htail : (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» (n := a)) ≫ ∇ = (𝟙 a ⊗ₕ L) := by
+  have htail : (𝟙 a ⊗ₕ L) ≫ (𝟙 a ⊗ₕ «?» (n := a)) ≫ ▷ = (𝟙 a ⊗ₕ L) := by
     rw [«∇_unit»]; exact Cat.comp_id _
   dsimp [meet]
   rw [hsplit]
@@ -81,19 +81,19 @@ theorem modular_right {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c)
 
 /-! ### The two identities the drawn proof rests on -/
 
-/-- **Lemma 1.**  `Dom P = Δ;(𝟙 ⊗ P);(𝟙 ⊗ !)`.
+/-- **Lemma 1.**  `Dom P = ◁;(𝟙 ⊗ P);(𝟙 ⊗ !)`.
 
     `Dom P = 𝟙 ∩ P P°` names `P` twice; this form names it once and throws its output away.  The
     collapse is `𝟙 ∩ P P° = 𝟙 ∩ P⊤`: one direction is `P° ≤ ⊤`, and the other is the only place in
     this file where the modular law is spent — `modular_right` at `S := ⊤` turns the discarded
     strand back into `P°`, because `⊤ ∩ P° = P°`. -/
 theorem dom_cd {a b : Word O} (P : a ⟶ b) :
-    Dom P = Δ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») := by
-  have hshape : Δ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») = meet (𝟙 a) (P ≫ top b a) := by
-    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ «!») = (𝟙 a ⊗ₕ (P ≫ «!»)) := by
+    Dom P = ◁ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) := by
+  have hshape : ◁ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) = meet (𝟙 a) (P ≫ top b a) := by
+    have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) = (𝟙 a ⊗ₕ (P ≫ ⊸)) := by
       rw [← SymMonCat.tensHom_comp, Cat.comp_id]
     dsimp [top]
-    rw [← Cat.assoc P («!») («?»), «meet_?» (P ≫ «!»), ← hsplit]
+    rw [← Cat.assoc P (⊸) (⟜), «meet_?» (P ≫ ⊸), ← hsplit]
   rw [hshape]
   dsimp [Dom]
   refine OrderedCat.«≤_antisymm» ?_ ?_
@@ -105,64 +105,64 @@ theorem dom_cd {a b : Word O} (P : a ⟶ b) :
     rw [meet_comm (𝟙 a) (P ≫ top b a)]
     exact hmod
 
-/-- **Lemma 2.**  `(𝟙 ⊗ P°);∇ = (Δ ⊗ 𝟙);((𝟙 ⊗ P) ⊗ 𝟙);(𝟙 ⊗ cap)`.
+/-- **Lemma 2.**  `(𝟙 ⊗ P°);▷ = (◁ ⊗ 𝟙);((𝟙 ⊗ P) ⊗ 𝟙);(𝟙 ⊗ cap)`.
 
     The move that turns a converse into a witness: copy the surviving wire, run `P` FORWARD on the
     copy, and cap its output against the wire that was already there.  `«cap_tens_∇»` is the
     box-carrying merge-from-a-cap, and `«°_slide»` is what lets `P°` on one strand be read as `P` on
     the other.  The associator naturality of the non-strict proof is now one `tensHom_assoc`. -/
 theorem cv_merge {a b : Word O} (P : a ⟶ b) :
-    (𝟙 a ⊗ₕ conv P) ≫ ∇
-      = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
-  calc (𝟙 a ⊗ₕ conv P) ≫ ∇
-      = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) := («cap_tens_∇» (conv P)).symm
-    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← «°_slide»]
-    _ = (Δ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    (𝟙 a ⊗ₕ conv P) ≫ ▷
+      = (◁ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+  calc (𝟙 a ⊗ₕ conv P) ≫ ▷
+      = (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv P) ≫ cap a)) := («cap_tens_∇» (conv P)).symm
+    _ = (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((P ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← «°_slide»]
+    _ = (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ (P ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = (◁ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ P) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_assoc]
 
 /-! ### §2.124 — both sides to the same normal form -/
 
 /-- Left side: `𝟙 ∩ S R° = W`.  Apply Lemma 2 at `R`, then the two copy trees are the same one:
-    both sides are `Δ;((Δ;(𝟙 ⊗ R)) ⊗ S);(𝟙 ⊗ cap)`, by functoriality of `⊗` alone. -/
+    both sides are `◁;((◁;(𝟙 ⊗ R)) ⊗ S);(𝟙 ⊗ cap)`, by functoriality of `⊗` alone. -/
 theorem left_eq_W {a b : Word O} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) = W R S := by
   dsimp [meet, W]
-  calc Δ ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ∇
-      = Δ ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ∇ := by
+  calc ◁ ≫ (𝟙 a ⊗ₕ (S ≫ conv R)) ≫ ▷
+      = ◁ ≫ ((𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R)) ≫ ▷ := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ∇ := by simp only [Cat.assoc]
-    _ = Δ ≫ (𝟙 a ⊗ₕ S) ≫ (Δ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ (𝟙 a ⊗ₕ S) ≫ (𝟙 a ⊗ₕ conv R) ≫ ▷ := by simp only [Cat.assoc]
+    _ = ◁ ≫ (𝟙 a ⊗ₕ S) ≫ (◁ ⊗ₕ 𝟙 b) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [cv_merge R]
-    _ = Δ ≫ ((𝟙 a ⊗ₕ S) ≫ (Δ ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ ((𝟙 a ⊗ₕ S) ≫ (◁ ⊗ₕ 𝟙 b)) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
-    _ = Δ ≫ (Δ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ (◁ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp, Cat.comp_id]
-    _ = Δ ≫ ((Δ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ ((◁ ⊗ₕ S) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
-    _ = Δ ≫ ((Δ ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ ((◁ ≫ (𝟙 a ⊗ₕ R)) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ ≫ ((Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ ((◁ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         simp only [Cat.assoc]
 
-/-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `∇;! = cap` unfolds the meet into the
+/-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `▷;! = cap` unfolds the meet into the
     picture's cap, and `Δ_assoc` — coassociativity (8) — identifies the two copy trees. -/
 theorem right_eq_W {a b : Word O} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
   rw [dom_cd (meet R S)]
   dsimp [W]
-  calc Δ ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ «!»)
-      = Δ ≫ (𝟙 a ⊗ₕ (meet R S ≫ «!»)) := by
+  calc ◁ ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ ⊸)
+      = ◁ ≫ (𝟙 a ⊗ₕ (meet R S ≫ ⊸)) := by
         rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-    _ = Δ ≫ (𝟙 a ⊗ₕ (Δ ≫ (R ⊗ₕ S) ≫ cap b)) := by
+    _ = ◁ ≫ (𝟙 a ⊗ₕ (◁ ≫ (R ⊗ₕ S) ≫ cap b)) := by
         dsimp [meet, cap]; simp only [Cat.assoc]
-    _ = Δ ≫ (𝟙 a ⊗ₕ Δ) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = ◁ ≫ (𝟙 a ⊗ₕ ◁) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_comp, ← SymMonCat.tensHom_comp, Cat.comp_id, Cat.comp_id]
-    _ = (Δ ≫ (𝟙 a ⊗ₕ Δ)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := (Cat.assoc _ _ _).symm
-    _ = (Δ ≫ (Δ ⊗ₕ 𝟙 a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by rw [← Δ_assoc]
-    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := Cat.assoc _ _ _
-    _ = Δ ≫ (Δ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
+    _ = (◁ ≫ (𝟙 a ⊗ₕ ◁)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := (Cat.assoc _ _ _).symm
+    _ = (◁ ≫ (◁ ⊗ₕ 𝟙 a)) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := by rw [← Δ_assoc]
+    _ = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ (𝟙 a ⊗ₕ (R ⊗ₕ S)) ≫ (𝟙 a ⊗ₕ cap b) := Cat.assoc _ _ _
+    _ = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((𝟙 a ⊗ₕ R) ⊗ₕ S) ≫ (𝟙 a ⊗ₕ cap b) := by
         rw [← SymMonCat.tensHom_assoc]
 
 /-- **§2.124.**  `𝟙 ∩ S R° = Dom (R ∩ S)` — Freyd's "a lemma we will use repeatedly", by driving
