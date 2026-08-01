@@ -57,8 +57,8 @@ def statesItsStrands (c : Cell) : Bool :=
 #guard statesItsStrands delta
 #guard statesItsStrands nabla
 #guard statesItsStrands swapC
-#guard statesItsStrands (.capC)
-#guard statesItsStrands (.cupC)
+#guard statesItsStrands (.capC 1)
+#guard statesItsStrands (.cupC 1)
 
 /-! ### Declared counts are the counts the render threads -/
 
@@ -70,11 +70,11 @@ def countsItsStrands (c : Cell) : Bool := (lay c).ys.size == c.rightCount
 #guard countsItsStrands delta
 #guard countsItsStrands nabla
 #guard countsItsStrands swapC
-#guard countsItsStrands (.capC)
-#guard countsItsStrands (.cupC)
+#guard countsItsStrands (.capC 1)
+#guard countsItsStrands (.cupC 1)
 #guard countsItsStrands snake
-#guard countsItsStrands (.stack #[.wire] #[.cupC])
-#guard countsItsStrands (.stack #[.capC] #[.wire])
+#guard countsItsStrands (.stack #[.wire] #[.cupC 1])
+#guard countsItsStrands (.stack #[.capC 1] #[.wire])
 #guard countsItsStrands (.meet #[plainBox] #[.box "S"])
 
 /-! ### A cell is drawn WHERE IT IS WIRED, not where it would centre itself
@@ -94,7 +94,7 @@ def laidAt (c : Cell) (ys : Array Float) : String :=
 def mentions (s pat : String) : Bool := (s.splitOn pat).length > 1
 
 -- A cap bends over the two lanes it is handed: midpoint `0.60`, half-separation `0.70`.
-#guard mentions (laidAt .capC odd) "capAt((0.00, 0.60), sp: 0.70"
+#guard mentions (laidAt (.capC 1) odd) "capAt((0.00, 0.60), sp: 0.70"
 #guard mentions (laidAt nabla odd) "nabla((0.70, 0.60), sp: 0.70)"
 #guard mentions (laidAt swapC odd) "swap((0.00, 0.60), sp: 0.70"
 -- A `⊗` passes its lanes straight through to its operands; it does not recentre them.
@@ -102,8 +102,47 @@ def mentions (s pat : String) : Bool := (s.splitOn pat).length > 1
 #guard mentions (laidAt (.stack #[plainBox] #[.box "S"]) odd) ", -0.10)"
 -- And the one that was wrong: the wire above a cup stays where it came in, and the cup's two
 -- strands are opened BELOW it rather than the pair being centred on the cell.
-#guard (Cell.lay (.stack #[.wire] #[.cupC]) 0.0 #[0.0] 0.0 oddSep false).ys[0]! == 0.0
-#guard mentions (laidAt (.stack #[.wire] #[.cupC]) #[0.0]) "wire((0.00, 0.00)"
+#guard (Cell.lay (.stack #[.wire] #[.cupC 1]) 0.0 #[0.0] 0.0 oddSep false).ys[0]! == 0.0
+#guard mentions (laidAt (.stack #[.wire] #[.cupC 1]) #[0.0]) "wire((0.00, 0.00)"
+
+/-! ### A cap at a PRODUCT object is one arc per letter, and the arcs interleave
+
+`cap_{m⊗n}` joins the first strand to the third and the second to the fourth — it is `cap_m ⊗ cap_n`
+behind a crossing, which is what `cap_tens` says. Drawn as ONE arc it was two strands short of the
+term it claims to picture, and the last step of `conv_tensHom` came out as two loose wires. -/
+
+def four : Array Float := #[3.0, 1.0, -1.0, -3.0]
+
+#guard (Cell.capC 2).leftCount == 4
+#guard countsItsStrands (.cupC 2)
+-- Arc 0 joins lane 0 to lane 2, arc 1 joins lane 1 to lane 3, and the second bends `ARCSTEP` wider
+-- so that the crossing is drawn rather than laid on top of the first arc.
+#guard mentions (laidAt (.capC 2) four) "capAt((0.00, 1.00), sp: 2.00, w: 0.60)"
+#guard mentions (laidAt (.capC 2) four) "capAt((0.00, -1.00), sp: 2.00, w: 0.90)"
+
+/-! ### One gap per PAIR of lanes, not one pitch for the whole picture
+
+A converse rises `RISE` above the strand it is entered at, so the lane above it has to clear that.
+Under one pitch for the picture, EVERY lane cleared it — including the two that only ever hold a
+plain wire — and `((𝟙 ⊗ R°) cap) ⊗ ((𝟙 ⊗ S°) cap)` came out three times taller than it is. -/
+
+def bentPair : Cell :=
+  .stack #[.stack #[.wire] #[snake], .capC 1] #[.stack #[.wire] #[.dagger "S" false], .capC 1]
+
+#guard bentPair.laneGaps.size == 3
+-- Inside an operand: over a rise.  Between the operands: over two plain wires.
+#guard bentPair.laneGaps[1]! < bentPair.laneGaps[0]!
+#guard bentPair.laneGaps[0]! == bentPair.laneGaps[2]!
+
+/-- `(𝟙 ⊗ (S° R°)) cap`, the first step of `conv_comp`.  Two converses IN SERIES each hand their
+    strand on `RISE` higher, so the lane above them has to be opened for both rises — as a plain
+    maximum it was opened for one, the second output overshot the strand above it, and the cap
+    closing the two was drawn inside out. -/
+def bentTwice : Array Cell := #[.stack #[.wire] #[snake, .dagger "S" false], .capC 1]
+
+#guard (Cell.stack #[.wire] #[snake, .dagger "S" false]).laneGaps[0]! > 2.0 * RISE
+-- A negative `sp` IS the inside-out cap: no picture may contain one.
+#guard !(mentions (renderCells bentTwice 0.0).1 "sp: -")
 
 /-! ### Composition is flat
 
@@ -113,7 +152,7 @@ does.  This is the invariant the snake broke. -/
 
 def flat (s : String) : Bool := (s.splitOn "bend(").length == 1
 
-#guard flat (drawn (.stack #[.wire] #[.cupC]))
+#guard flat (drawn (.stack #[.wire] #[.cupC 1]))
 #guard flat (drawn (.meet #[snake] #[plainBox]))
 #guard flat (drawn (.union #[plainBox] #[.box "S"]))
 #guard flat (drawn (.cut #[plainBox]))
@@ -121,7 +160,7 @@ def flat (s : String) : Bool := (s.splitOn "bend(").length == 1
 /-- The snake itself: `(𝟙 ⊗ cup) (cap ⊗ 𝟙)`, one strand in and one out, drawn without a single
     bend between cells — the cup and the cap open at the same separation because they are wired to
     the same three lanes. -/
-def snakeRun : Array Cell := #[.stack #[.wire] #[.cupC], .stack #[.capC] #[.wire]]
+def snakeRun : Array Cell := #[.stack #[.wire] #[.cupC 1], .stack #[.capC 1] #[.wire]]
 
 #guard flat (String.join (renderRun snakeRun 0.0 #[0.0] 0.0 false).out.toList)
 #guard (renderRun snakeRun 0.0 #[0.0] 0.0 false).ys.size == 1

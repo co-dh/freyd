@@ -30,6 +30,7 @@
 #import "generated/Freyd.Diag.CartBicat.«𝟙≤!?».typ": pic as p-40
 #import "generated/Freyd.Diag.CartBicat.frob.proof.typ": branches as frobb
 #import "generated/Freyd.Diag.CartBicat.snakes.proof.typ": branches as snakeb
+#import "generated/Freyd.Diag.CartBicat.snake'.proof.typ": branches as snkb
 #import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
 #import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
 #import "generated/Freyd.Diag.Biprod.«≤_union_left».typ": pic as p-union-left
@@ -39,7 +40,9 @@
 #import "generated/Freyd.Diag.Biprod.conv_union.typ": pic as p-conv-union
 #import "generated/Freyd.Diag.FbCbRig.meet_union_distrib.typ": pic as p-distrib
 #import "generated/Freyd.Diag.ClosedLinearBicat.«residual_comp_≤».typ": pic as p-residual
-#import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42b
+#import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42ii
+#import "generated/Freyd.Diag.CartBicat.conv_tensHom.proof.typ": branches as l42iii
+#import "generated/Freyd.Diag.CartBicat.conv_mono.proof.typ": branches as l42iv
 #import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
@@ -167,6 +170,19 @@
   columns: items.len(), align: horizon, column-gutter: 3pt,
   ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
 
+/// A proof in ONE ROW: the steps side by side, and under each the rule that reached it.  The
+/// exporter draws the `=` (or `≤`) at the LEFT edge of every step after the first, so a hint
+/// left-aligned in the same column lands under it — a `place`d one collided with the wires.
+/// The first hint is therefore always empty.  Steps that change no picture are simply left out:
+/// this is a note for a reader who is ahead of it, not a transcript.
+///
+/// `horizon` for the same reason as `row`: every canvas is symmetric about its own `y = 0`, so
+/// centring them puts all the `=` of the chain on one line even when one step is twice as tall.
+#let chain(steps, hints, s: 62%) = align(center, box(inset: (y: 6pt), grid(
+  columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
+  ..steps.map(t => scale(x: s, y: s, reflow: true, t)),
+  ..hints.map(h => src[#h]))))
+
 = Cartesian bicategory of relations
 
 #definition[
@@ -217,40 +233,67 @@ a closed loop, which §4 uses.
 
 // Its definition box was straddling the break, which reads as two half-boxes.
 #pagebreak(weak: true)
-= Compact closed, and where the converse comes from
+= ° : 𝒞ᵒᵖ ⟶ 𝒞 is a 2 functor 
 
 #definition[
-A symmetric monoidal category is *closed* when `⊗` can be divided by, `(− ⊗ B) ⊣ (B ⇒ −)` for every
-`B`, so the hom is an OBJECT of the category and not a set outside it. It is *compact* closed when every
-object has a dual `A*`, that is a left and a right bracket satisfying the *snakes* — and then the
-division degenerates, `B ⇒ C = B* ⊗ C`, division by `B` being multiplication by `B*` exactly as
-`x / y = x y⁻¹`.
+The *converse* `R°` of `R : a ⟶ b` is `R` with both of its wires turned round,
 
-A cartesian bicategory of relations is not such a category — it is poset-enriched, and nothing in
-§1 asks for a dual. What it HAS is the *structure*: the two brackets are the composites `⟜◁` and
-`▷⊸`, and the snakes below are proved, not assumed. Discard the order `≤` and what is left is a
-*hypergraph category*, also called a well-supported compact closed category, in which every object
-is its own dual, `A* = A`.
-]
+#fig({ conv((0, -0.80), $R$) })
 
-#quote(block: true, attribution: [Bonchi, Seeber and Sobociński])[
-  In any cartesian bicategory of relations we have a self-dual compact closed structure. To describe
-  it, we adopt the graphical notation \[the two brackets, and `R†` drawn by bending\]. For an
-  intuition consider `Rel`: it is easy to check that `R†` is just the opposite relation of `R`.
-]
+#align(center, block(inset: (y: 4pt))[#text(12.5pt)[`R° = (⟜◁ ⊗ 𝟙) (𝟙 ⊗ R ⊗ 𝟙) (𝟙 ⊗ ▷⊸)`]])
 
-The left bracket `⟜◁` and the right bracket `▷⊸` come with the definition, and they satisfy the
-snakes:
-
-#row(snakeb.at(0).steps, s: 54%)
-
-So every object is its own dual, `R°` is `R` with its wires bent round the two brackets, and the
-four laws of `°` are theorems rather than assumptions:
+where `⟜◁ : 𝕀 ⟶ a ⊗ a` opens a pair of wires out of nothing and `▷⊸ : b ⊗ b ⟶ 𝕀` closes one, so
+the input of `R°` is where the output of `R` was. And it is a contravariant 2-functor `° : 𝒞ᵒᵖ ⟶ 𝒞`:
 
 #align(center, block(inset: (y: 5pt))[
   (i) `𝟙° = 𝟙`  #h(1cm) (ii) `(R S)° = S° R°`  #h(1cm) (iii) `(R ⊗ S)° = R° ⊗ S°`
   #h(1cm) (iv) `R ≤ S` implies `R° ≤ S°`
 ])
+]
+
+== `𝟙° = 𝟙`  (snake)
+
+#chain(
+  (snkb.at(0).steps.at(2), snkb.at(0).steps.at(3), snkb.at(0).steps.at(5)),
+  ([], [Frobenius], [unit, counit]))
+
+(ii) and (iii) are not pictures of a converse. An arrow IS the converse of `R` as soon as it
+satisfies one equation between UNBENT arrows into `𝕀`, and bending is a bijection, so the cup is
+never drawn: every step below closes with a cap and opens with nothing, and "is a converse" shows
+up as a box on the *bottom* strand, mirrored. Both use one rule, the *slide* — a box on the bottom
+strand facing a cap is that box on the top strand, upright:
+
+#P(p-conv-slide, s: 62%)
+
+== `(R S)° = S° R°`
+
+#chain(
+  (l42ii.at(0).steps.at(0), l42ii.at(0).steps.at(2), l42ii.at(0).steps.at(5),
+   l42ii.at(0).steps.at(7)),
+  ([], [slide], [interchange], [slide]), s: 46%)
+
+== `(R ⊗ S)° = R° ⊗ S°`
+
+A cap at a product is two caps behind a crossing, so the pair unbends one strand at a time and the
+crossing is all that is left to move.
+
+#chain(
+  (l42iii.at(0).steps.at(0), l42iii.at(0).steps.at(2), l42iii.at(0).steps.at(5)),
+  ([], [two caps, then slide twice], [`σ` past `S`]), s: 52%)
+
+// Kept whole: the row is two pictures, and the break was falling between them and their heading.
+#block(breakable: false)[
+== `R ≤ S` implies `R° ≤ S°`
+
+Here the cup IS drawn: `R` sits in a frame of wires built from `≫` and `⊗`, and both of those are
+monotone, so the box may be replaced where it stands.
+
+#chain(
+  (l42iv.at(0).steps.at(1), l42iv.at(0).steps.at(2)),
+  ([], [`≫`, `⊗` monotone]), s: 55%)
+]
+
+
 
 = The allegory primitives are definitions here
 
@@ -352,63 +395,6 @@ composition against a complement.
   [`(R / S) S ⊑ R` — the residual is a lower bound of the arrows it is the greatest of.],
   P(p-residual),
 )
-
-= `(R S)° = S° R°`, drawn
-
-Not a picture of a converse. An arrow is *the* converse of `R` as soon as it satisfies one equation
-between UNBENT arrows into `𝕀`, and bending is a bijection, so the left bracket is never drawn:
-every row below closes with a right bracket and opens with nothing, and "is a converse" shows up as a box on the *bottom* strand, mirrored.
-
-#table(
-  columns: (1fr,),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*the slide — the one rule the proof uses, and it uses it twice*]),
-  P(p-conv-slide, s: 88%),
-  [#src[A box on the bottom strand facing a right bracket is that box on the top strand, upright.]],
-)
-
-#table(
-  columns: (4.4cm, 1fr, 6.6cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(
-    Th[`(R S)° = S° R°` #h(8pt) #Pin(p-conv-comp)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(l42b.at(0).terms.at(0)), P(l42b.at(0).steps.at(0), s: 66%),
-  [*the start:* both boxes on the bottom strand, mirrored.],
-
-  raw(l42b.at(0).terms.at(1)), P(l42b.at(0).steps.at(1), s: 66%),
-  [`⊗` is a functor. #src[*Same picture.*]],
-
-  raw(l42b.at(0).terms.at(2)), P(l42b.at(0).steps.at(2), s: 66%),
-  [*the slide.* `R°` is the box nearest the right bracket: it leaves the bottom strand and comes upright
-   as `R` on the top.],
-
-  raw(l42b.at(0).terms.at(3)), P(l42b.at(0).steps.at(3), s: 66%),
-  [re-bracketing. #src[*Same picture.*]],
-
-  raw(l42b.at(0).terms.at(4)), P(l42b.at(0).steps.at(4), s: 66%),
-  [*interchange.* In sequence and side by side are the same thing. #src[A re-spacing only.]],
-
-  raw(l42b.at(0).terms.at(5)), P(l42b.at(0).steps.at(5), s: 66%),
-  [*interchange back,* `R` first, so `S°` faces the right bracket.],
-
-  raw(l42b.at(0).terms.at(6)), P(l42b.at(0).steps.at(6), s: 66%),
-  [re-bracketing. #src[*Same picture.*]],
-
-  raw(l42b.at(0).terms.at(7)), P(l42b.at(0).steps.at(7), s: 66%),
-  [*the slide,* on `S`. Both boxes now on top, upright, `R` then `S`.],
-
-  raw(l42b.at(0).terms.at(8)), P(l42b.at(0).steps.at(8), s: 66%),
-  [re-bracketing. #src[*Same picture.*]],
-
-  raw(l42b.at(0).terms.at(9)), P(l42b.at(0).steps.at(9), s: 66%),
-  [*interchange;* the two top boxes merge. This is `R S` unbent.],
-)
-
-Seven of the nine steps change no picture: they are associativity, the unit laws and interchange,
-which a string diagram has in its geometry rather than as rewrites. The theorem is two slides.
 
 = The modular law, from Frobenius
 

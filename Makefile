@@ -13,19 +13,21 @@ STAMP := diag/generated/.drawn
 
 .PHONY: p w
 
-p: $(PDF)
+# The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
+# the same second as the last build is invisible to make's mtime comparison, and `make p` answering
+# "nothing to be done" while the PDF still shows the old page is a worse trade than one second of
+# typst.  The expensive half — a Lean elaboration per picture — is what `$(STAMP)` protects.
+p: $(STAMP)
+	typst compile $(TYP) $(PDF)
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file
 # that changed under it IN PLACE, keeping the page and scroll position.  Chrome does not, which is
 # why this is not a browser.  Ctrl-C closes both.
-w: $(PDF)
+w: p
 	@zathura $(PDF) & \
 	  v=$$!; trap "kill $$v 2>/dev/null" EXIT INT TERM; \
 	  typst watch $(TYP) $(PDF)
-
-$(PDF): $(TYP) diag/strdiag.typ $(STAMP)
-	typst compile $< $@
 
 # The pictures are exported from the Lean STATEMENTS, so only the Lean makes them stale.  NOT the
 # note: `diag-regen` reads its list off the note's imports, but editing prose changes no picture,

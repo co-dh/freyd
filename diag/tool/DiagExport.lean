@@ -84,8 +84,14 @@ def CAPBEND : Float := 0.60
 /-- `strdiag.typ`'s `SPLIT`: the stub between the two dots of a cap (`▷` then `⊸`) or a cup (`⟜`
     then `◁`).  They are drawn split, as the paper draws the converse. -/
 def SPLITW : Float := 0.34
-/-- A cap or cup occupies its bend plus that stub. -/
-def CAPW : Float := CAPBEND + SPLITW
+/-- How much wider each further arc of a cap at a PRODUCT object bends.  The arcs of such a cap
+    interleave rather than nest — `cap_{m⊗n}` joins the first `m` to the third and the second `n` to
+    the fourth — so drawing them at one bend width would lay their vertical segments on top of each
+    other and read as a single bracket.  One crossing per extra arc is the honest picture, and it is
+    the picture `cap_tens` states: two caps behind a crossing. -/
+def ARCSTEP : Float := 0.30
+/-- A cap or cup occupies its widest bend plus that stub. -/
+def capW (n : Nat) : Float := CAPBEND + (n.toFloat - 1.0) * ARCSTEP + SPLITW
 /-- The column a chain's relation symbol sits in, to the left of every term. -/
 def SYMCOL : Float := 0.95
 /-- The strand offset a fork, a cap and a cup open by, and the pitch new lanes are opened at.  A `⊗`
@@ -139,9 +145,13 @@ inductive Cell where
       readable: `𝟙 ⊗ S°` is a wire above a mirrored box, not an opaque label. -/
   | stack (upper lower : Array Cell)
   /-- The cap `▷ ⊸` and the cup `⟜ ◁`, in `strdiag.typ`'s `capAt`/`cupAt` one-anchor form.  A cap
-      takes a pair on the left and gives nothing on the right; a cup is its mirror. -/
-  | capC
-  | cupC
+      takes a pair on the left and gives nothing on the right; a cup is its mirror.
+
+      `n` is the WIDTH OF THE OBJECT, so `cap` at a two-letter word is two arcs and not one: it
+      takes four strands and joins the first to the third, the second to the fourth.  Drawing it as
+      a single arc was silently wrong — the picture ended two strands short of the term. -/
+  | capC (n : Nat)
+  | cupC (n : Nat)
   /-- A converse: the same box MIRRORED, which is how
       functorialSemanticsForRelationalTheories.pdf writes `†`.  `dashed` when the operand would have
       been a `dbox`: `(R /ₛ S)°` is a converse OF a construct the generators cannot build, and
@@ -182,16 +192,16 @@ def Cell.isDagger : Cell → Bool
 
 partial def Cell.leftPort : Cell → Port
   | .gen "nabla" _ _ | .gen "swap" _ _ => .pair
-  | .gen "unitR" _ _ | .cupC => .nothing
-  | .stack _ _ | .capC => .strands
+  | .gen "unitR" _ _ | .cupC _ => .nothing
+  | .stack _ _ | .capC _ => .strands
   -- A cut is transparent to wiring: what meets its left edge is whatever its contents meet.
   | .cut inner => match inner[0]? with | some c => c.leftPort | none => .one
   | _ => .one
 
 partial def Cell.rightPort : Cell → Port
   | .gen "delta" _ _ | .gen "swap" _ _ => .pair
-  | .gen "bang" _ _ | .capC => .nothing
-  | .stack _ _ | .cupC => .strands
+  | .gen "bang" _ _ | .capC _ => .nothing
+  | .stack _ _ | .cupC _ => .strands
   | .cut inner => match inner.back? with | some c => c.rightPort | none => .one
   | _ => .one
 
@@ -213,7 +223,7 @@ partial def Cell.width : Cell → Float
   | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
   | .stack u l => max (runWidth u) (runWidth l)
-  | .capC | .cupC => CAPW
+  | .capC n | .cupC n => capW n
   | .dagger l _ => CONVPAD + boxWidth l
   | .divbox n dn _ => divboxWidth n dn
   | .cut inner => 2.0 * CUTPAD + runWidth inner
@@ -243,7 +253,7 @@ partial def runWidth (cells : Array Cell) : Float := Id.run do
 partial def Cell.spanUp : Cell → Float
   | .meet u l | .stack u l => meetSep u l + runSpanUp u
   | .union u l => meetSep u l + runSpanUp u + TAPEPAD
-  | .capC | .cupC => STACKSEP + BH / 2.0
+  | .capC n | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
   | .cut inner => runSpanUp inner + CUTPAD
   | .dagger _ _ => RISE + BH / 2.0
@@ -252,7 +262,7 @@ partial def Cell.spanUp : Cell → Float
 partial def Cell.spanDown : Cell → Float
   | .meet u l | .stack u l => meetSep u l + runSpanDown l
   | .union u l => meetSep u l + runSpanDown l + TAPEPAD
-  | .capC | .cupC => STACKSEP + BH / 2.0
+  | .capC n | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
   | .cut inner => runSpanDown inner + CUTPAD
   | _ => BH / 2.0
@@ -261,15 +271,17 @@ partial def Cell.spanDown : Cell → Float
     all that is structural: WHERE those strands sit is threaded along the run, cell by cell, and is
     not a property of any one cell.  A `⊗` of a fork and a wire takes one strand and gives three. -/
 partial def Cell.leftCount : Cell → Nat
-  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => 2
-  | .gen "unitR" _ _ | .cupC => 0
+  | .gen "nabla" _ _ | .gen "swap" _ _ => 2
+  | .capC n => 2 * n
+  | .gen "unitR" _ _ | .cupC _ => 0
   | .stack u l => runLeftCount u + runLeftCount l
   | .cut inner => runLeftCount inner
   | _ => 1
 
 partial def Cell.rightCount : Cell → Nat
-  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => 2
-  | .gen "bang" _ _ | .capC => 0
+  | .gen "delta" _ _ | .gen "swap" _ _ => 2
+  | .cupC n => 2 * n
+  | .gen "bang" _ _ | .capC _ => 0
   | .stack u l => runRightCount u + runRightCount l
   | .cut inner => runRightCount inner
   | _ => 1
@@ -301,6 +313,97 @@ partial def runSep (cells : Array Cell) : Float :=
     other by `STRANDGAP`.  At the leaves this is `strdiag.typ`'s own `0.62`. -/
 partial def meetSep (u l : Array Cell) : Float :=
   (runSpanDown u + runSpanUp l + STRANDGAP) / 2.0
+
+/-- How far a cell reaches above the FIRST lane it is handed, and below the LAST.
+
+    Not `spanUp`/`spanDown`, which are both measured from the entry lane: for a cell that takes
+    SEVERAL lanes they therefore contain the spread between those lanes, and feeding that back into
+    the gap between them counts it twice.  `((𝟙 ⊗ R°) cap) ⊗ ((𝟙 ⊗ S°) cap)` is where it showed:
+    each operand needs `2.84` between its own two lanes, and the two operands then need `4.08`
+    between them — measured from the wrong ends, `1.72 + 1.72 + 0.64`, when nothing at all is drawn
+    outside the four lanes and `1.24` is enough.  Every lane in the picture was pitched at the
+    worst of those, so a crossing came out looking like a bracket. -/
+partial def Cell.edgeUp : Cell → Float
+  | .stack u l => if runLeftCount u == 0 then runEdgeUp l else runEdgeUp u
+  | .meet u l => meetSep u l + runSpanUp u
+  | .union u l => meetSep u l + runSpanUp u + TAPEPAD
+  | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
+  | .gen "delta" _ _ => STACKSEP
+  | .cut inner => runEdgeUp inner + CUTPAD
+  | .dagger _ _ => RISE + BH / 2.0
+  | _ => BH / 2.0
+
+partial def Cell.edgeDown : Cell → Float
+  | .stack u l => if runLeftCount l == 0 then runEdgeDown u else runEdgeDown l
+  | .meet u l => meetSep u l + runSpanDown l
+  | .union u l => meetSep u l + runSpanDown l + TAPEPAD
+  | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
+  | .gen "delta" _ _ => STACKSEP
+  | .cut inner => runEdgeDown inner + CUTPAD
+  | _ => BH / 2.0
+
+/-- How far a cell LIFTS the first lane it is handed, and the last.  Only the converse lifts
+    anything: it is entered at its lane and left `RISE` higher, and everything after it runs at the
+    new height. -/
+partial def Cell.riseFirst : Cell → Float
+  | .dagger _ _ => RISE
+  | .stack u _ => runRiseFirst u
+  | .cut inner => runRiseFirst inner
+  | _ => 0.0
+
+partial def Cell.riseLast : Cell → Float
+  | .dagger _ _ => RISE
+  | .stack _ l => runRiseLast l
+  | .cut inner => runRiseLast inner
+  | _ => 0.0
+
+partial def runRiseFirst (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => acc + c.riseFirst) 0.0
+partial def runRiseLast (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => acc + c.riseLast) 0.0
+
+/-- A run's reach, ACCUMULATING the lifts on the way: the second converse of `S° R°` starts a whole
+    `RISE` above where the first one did, so the two of them in series reach twice as far as either.
+    Taken as a plain maximum, the lane above them was opened for one rise, the second output
+    overshot it, and the cap that closes the two came out inside out — `sp` negative, a 0.36-high
+    hook over strands 3.2 apart. -/
+partial def runEdgeUp (cells : Array Cell) : Float := Id.run do
+  let mut drift := 0.0
+  let mut reach := BH / 2.0
+  for c in cells do
+    reach := max reach (drift + c.edgeUp)
+    drift := drift + c.riseFirst
+  return reach
+
+partial def runEdgeDown (cells : Array Cell) : Float := Id.run do
+  let mut drift := 0.0
+  let mut reach := BH / 2.0
+  for c in cells do
+    reach := max reach (c.edgeDown - drift)
+    drift := drift + c.riseLast
+  return reach
+
+/-- THE GAP EACH ADJACENT PAIR of a cell's incoming lanes needs — one number per pair, not one
+    number for the picture.  A `⊗` is the only cell that divides the lanes it is handed between two
+    runs, so it is the only one with anything to say; everything else wants the plain pitch. -/
+partial def Cell.laneGaps : Cell → Array Float
+  | .stack u l =>
+    if runLeftCount u == 0 then runLaneGaps l
+    else if runLeftCount l == 0 then runLaneGaps u
+    else (runLaneGaps u |>.push (runEdgeDown u + runEdgeUp l + STRANDGAP)) ++ runLaneGaps l
+  | .cut inner => runLaneGaps inner
+  | c => Array.replicate (c.leftCount - 1) (2.0 * STACKSEP)
+
+/-- The run's lane gaps: what its cells need, pair by pair.  Only the first cell is handed the run's
+    own lanes, but the later ones inherit their positions, so each has a say — pairwise, and from
+    the top, which is how a `⊗` divides them.  Where a cell takes fewer lanes than the run does
+    there is nothing to line its gaps up with, and those pairs keep the plain pitch. -/
+partial def runLaneGaps (cells : Array Cell) : Array Float := Id.run do
+  let mut g := Array.replicate (runLeftCount cells - 1) (2.0 * STACKSEP)
+  for c in cells do
+    let gc := c.laneGaps
+    for i in [0 : min g.size gc.size] do g := g.set! i (max g[i]! gc[i]!)
+  return g
 
 end
 
@@ -418,13 +521,29 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
         w: {fmt (divboxWidth n dn)}, h: {fmt BH}, denw: {fmt (denWidth dn)}{fl}{inv iv})"],
      #[y], y, y⟩
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
-  -- one stub in from this cell's left edge.  The cap bends over the two lanes that arrive; the cup,
+  -- one stub in from this cell's left edge.  The cap bends over the lanes that arrive; the cup,
   -- with nothing arriving, opens either side of the anchor its surroundings reserved for it.
-  | .capC => ⟨#[s!"  capAt(({fmt x}, {fmt mid}), sp: {fmt half}, w: {fmt CAPBEND}{inv iv})"],
-              #[], y₂, y⟩
-  | .cupC =>
-    ⟨#[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"],
-     #[y + sep, y - sep], y - sep, y + sep⟩
+  --
+  -- ARC `i` OF `k` JOINS LANE `i` TO LANE `i + k`, which is what `cap_{m⊗n}` does — the first `m`
+  -- to the third strand, the second `n` to the fourth — and each further arc bends `ARCSTEP` wider
+  -- so the crossing that pairing implies is drawn as a crossing instead of as overlapping ink.
+  | .capC k => Id.run do
+    let mut out := #[]
+    for i in [0 : k] do
+      let ya := (ys[i]?).getD y
+      let yb := (ys[i + k]?).getD y₂
+      out := out.push s!"  capAt(({fmt x}, {fmt ((ya + yb) / 2.0)}), sp: {fmt ((ya - yb) / 2.0)}, \
+        w: {fmt (CAPBEND + i.toFloat * ARCSTEP)}{inv iv})"
+    return ⟨out, #[], ys.foldl min y, ys.foldl max y⟩
+  | .cupC k => Id.run do
+    let mut out := #[]
+    let mut lanes := #[]
+    for i in [0 : k] do
+      out := out.push s!"  cupAt(({fmt (x + SPLITW)}, {fmt (y + (k.toFloat - 1.0 - 2.0 * i.toFloat) * sep)}), \
+        sp: {fmt (k.toFloat * sep)}, w: {fmt (CAPBEND + i.toFloat * ARCSTEP)}{inv iv})"
+    for j in [0 : 2 * k] do lanes := lanes.push (y + (2.0 * k.toFloat - 1.0 - 2.0 * j.toFloat) * sep)
+    let edge := (2.0 * k.toFloat - 1.0) * sep
+    return ⟨out, lanes, y - edge, y + edge⟩
   | .stack u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
     let nu := min (runLeftCount u) ys.size
@@ -546,11 +665,16 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   let lead := if lp == .nothing || lp == .pair then 0.0 else LEAD
   let tail := if rp == .nothing || rp == .pair then 0.0 else LEAD
   let w := runWidth cells
-  let sep := runSep cells
-  let k := runLeftCount cells
-  -- The strands the picture is entered at: `k` lanes of pitch `2 sep`, centred on `a`.
-  let entry (a : Float) : Array Float :=
-    (Array.range k).map fun i => a + ((k - 1).toFloat / 2.0 - i.toFloat) * 2.0 * sep
+  -- The strands the picture is entered at: one lane per gap its cells actually need, centred
+  -- on `a`.  ONE PITCH FOR ALL OF THEM was the old rule, and with a converse anywhere in the run
+  -- that pitch was the converse's — every lane in the picture spread to clear a rise that only one
+  -- of them had.
+  let gaps := runLaneGaps cells
+  let total := gaps.foldl (· + ·) 0.0
+  let entry (a : Float) : Array Float := Id.run do
+    let mut ys := #[a + total / 2.0]
+    for g in gaps do ys := ys.push (ys.back! - g)
+    return ys
   let probe := renderRun cells (x0 + lead) (entry 0.0) 0.0 false
   let a := -(probe.lo + probe.hi) / 2.0
   let b := renderRun cells (x0 + lead) (entry a) a false
@@ -681,8 +805,10 @@ partial def toCell (e : Expr) : MetaM Cell := do
   | (``Freyd.Diag.CartBicat.«!», _) => return .gen "bang" 0.7 0.7
   | (``Freyd.Diag.CartBicat.«?», _) => return .gen "unitR" 0.7 0.0
   | (``Freyd.Diag.SymMonCat.swap, _) => return .gen "swap" 0.55 0.0
-  | (``Freyd.Diag.CartBicat.cap, _) => return .capC
-  | (``Freyd.Diag.CartBicat.cup, _) => return .cupC
+  -- One arc per LETTER of the object, as `cap_tens` says: the cap at `m ⊗ n` is `cap_m` and `cap_n`
+  -- behind a crossing, so it takes four strands and not two.
+  | (``Freyd.Diag.CartBicat.cap, args) => return .capC (max 1 (args.back?.map wordWidth |>.getD 1))
+  | (``Freyd.Diag.CartBicat.cup, args) => return .cupC (max 1 (args.back?.map wordWidth |>.getD 1))
   | (``Freyd.Diag.SymMonCat.tensHom, args) =>
     match lastTwo args with
     | some (u, l) => return .stack (← toCells u) (← toCells l)
