@@ -352,6 +352,7 @@ maps reads off them.
   P(p-lax-unit),
 )
 
+#pagebreak(weak: true)
 = `∩` is a commutative idempotent monoid on every hom-set
 
 #definition[
@@ -392,29 +393,7 @@ then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, 
 So `≤` is the order this monoid induces. `R ∩ S ≤ R` comes from the unit, and idempotency turns
 anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩ R ≤ S ∩ T`.
 
-= The allegory primitives are definitions here
-
-#table(
-  columns: (9.4cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*primitive, and what defines it here*], [*picture*]),
-
-  [*reciprocation* `R° := bend ((R ⊗ 𝟙) ▷⊸)`, not a generator.],
-  fig({ conv((0, -0.80), $R$) }),
-
-  [*containment* `R ⊑ S`, which an allegory *defines* as `R ∩ S = R`. Here `≤` is primitive and `∩`
-   is derived, so the two directions are swapped.],
-  align(center, src[the 2-cell itself]),
-
-  [*maximal morphism* `⊤ := ⊸ ⟜`, free here; an allegory needs a unit object first.],
-  P(p-le-top),
-)
-
 = The eight axioms, and what proves each
-
-Three of the eight — `∩` idempotent, commutative, associative — are the monoid laws above. The
-other five:
 
 #table(
   columns: (9.4cm, 1fr),
@@ -422,13 +401,7 @@ other five:
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*axiom, and what supplies it*], [*picture*]),
 
-  [`(R°)° = R` — the *snake*.], P(p-conv-conv),
-  [`(R S)° = S° R°` — mirroring the picture.], P(p-conv-comp),
-  [`(R ∩ S)° = R° ∩ S°` — the same mirroring; `◁` and `▷` are each other's mirror image.],
-  P(p-conv-inter),
   [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law.], P(p-semidistrib),
-  [`R S ∩ T ⊑ (R ∩ T S°) S`, the modular law — *adjoined* as an axiom by an allegory, which has no
-   structure to derive it from. Here Frobenius and the lax copy law give it.], P(p-modular),
 )
 
 = Unitary and pre-tabular — what the other direction needs
@@ -460,6 +433,7 @@ other five:
 
 Together: *cartesian bicategory of relations ≃ unitary pre-tabular allegory*.
 
+#pagebreak(weak: true)
 = Union and residual
 
 Both are past what the definition can build: a union needs a *biproduct* on top of the Frobenius
@@ -620,31 +594,6 @@ steps — and they cost very different things.
   [*`X ∩ Y ≤ Y`,* then `S ∩ R = R ∩ S`.],
 )
 
-= The gaps
-
-- All eight axioms are theorems of the definition, the modular identity included.
-- `▷◁≤𝟙` and `⟜⊸≤𝟙` are never used. They are there to make `◁ ⊣ ▷` and `⊸ ⊣ ⟜` genuine
-  adjunctions, which is what pins `▷ = ◁°` and `⟜ = ⊸°`.
-- Unproved: the merge and unit forms of the lax laws, and the agreement of the comonoid and adjoint
-  forms of the map conditions. Both trace to the one omission above.
-- The bridge runs one way only: a cartesian bicategory carries `⊗`, an allegory carries nothing of
-  the kind, which is what the two conditions supply.
-- Everything here is a theorem OF the axioms. That relations satisfy them is not checked here.
-
-#table(
-  columns: (3.4cm, 6.0cm, auto),
-  align: (left + top, left + top, left + top),
-  inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*construct*], [*counterpart*], [*status*]),
-
-  [*tabulation*], [none], [`⊤ = ⊸ ⟜` is all the tabular content there is.],
-  [`∪`, `⊥`], [a *biproduct* `⊕` on top of the Frobenius structure],
-  [built, and drawn above. The calculus itself has no union.],
-  [`R / S`, complement], [a *second composition* with linear adjoints],
-  [built, and drawn above, but axiomatised only: nothing instantiates the complement.],
-  [`Λ`, power transpose], [none], [open. No power object anywhere in this tower.],
-  [allegory ⟹ cartesian bicategory], [rebuild `⊗` from tabulations], [deliberately not built.],
-)
 
 = The shunting rule
 
@@ -686,74 +635,55 @@ Shunting left is the mirror, same shape, map on the other side throughout. What 
 adjunction: `f ⊣ f°`, with *total* the unit and *single valued* the counit, so "`f` is a map" and
 "`f` has a right adjoint, namely `f°`" are one statement.
 
+// Its own page: the ten rows are one table and the long-division figure heads them, so a break
+// inside would separate the metaphor from the laws it explains.
+#pagebreak(weak: true)
 = Division
 
-Division is drawn and negation is not, because negation is not how programs get specified: the
-chapters where they are — greedy, thinning, dynamic programming, Horner, knapsack, paragraph
-formatting, string edit, bracketing, compression — use local completeness, division and power
-objects, and no Boolean structure at all. That also settles which picture of `/` is right. As a term
-a residual is a composition against a complement, which makes every homset Boolean; division asks
-for nothing of the kind, only the Galois connection `T ⊑ R/S ⟺ T S ⊑ R`, which `Rel(Set)` satisfies
-with a bare `∀`, `(R / S) x y ≜ ∀z. S y z → R x z`.
+#align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: `⊑`]))
 
-*Long division.* `R / S` is how much of `R` you can lay down before `S` still fits in what is left.
-Read the bar as a composite: `R / S` first, then `S`, the two together inside `R`. Solid is what the
-equation pins — `R`'s left edge, `S`'s left edge, and the stretch before `S`. Dashed is the slack:
-nothing to the right of `S` is determined by `T S ⊑ R`, which is why the cancel law is `(R/S) S ⊑ R`
-and not an equality, and why the slack is a hairline — `R / S` is the *largest* such quotient.
-
-It is a *measurement*, not a containment: `R : a → c` and `S : b → c` are not in the same hom-set,
-so what sits inside `R` is the composite `(R/S) S`. Pushed too far the metaphor breaks in the usual
-place, `⊥ / ⊥ = ⊤`.
-
-#align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: why `⊑`]))
-#align(center, src[transcribed — the universal property has a statement, this metaphor does not])
-
-// ONE COLUMN, and only this table.  The exported pictures here are the widest in the note —
-// `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before scaling
-// — and a second picture column for the long-division figure would have squeezed them to 60%.  One
-// column at the full 22cm takes both side by side at 90%, and the six rows the metaphor does not
-// reach simply have nothing beside them.  Every other table in the note keeps the two-column shape:
-// their pictures are small and none of them is a division.
+// Two columns like every other table, one law per row.  The pictures here are the widest in the
+// note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
+// scaling — which is why the picture column gets the rest of the 22cm and the laws that used to
+// share a row are split: one picture per row is what keeps them at readable size.
 #table(
-  columns: (1fr,),
+  columns: (8.6cm, 1fr),
+  align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*the ten laws, their pictures, and — where the metaphor reaches — the same law as
-    long division*]),
 
-  [*Division is the right adjoint of composition:* `T ⊑ R/S ⟺ T S ⊑ R`
-   #v(4pt)
-   #Pl(p-le-div)],
+  [`T ⊑ R/S ⟺ T S ⊑ R`],
+  P(p-le-div),
 
-  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[`S\R ≜ (R°/S°)°`: left division is right division conjugated by the
-   converse, not a second primitive.]
-   #v(4pt)
-   #Pl(p-le-ldiv)],
+  [`T ⊑ S\R ⟺ S T ⊑ R`],
+  P(p-le-ldiv),
 
-  [*cancel:* `(R/S) S ⊑ R`, and `S (S\R) ⊑ R` \ #src[The counit of each adjunction — the law the
-   figure above draws.]
-   #v(4pt)
-   #stack(dir: ttb, spacing: 6pt, Pl(p-div-cancel), Pl(p-ldiv-cancel))],
+  [`(R/S) S ⊑ R`],
+  P(p-div-cancel),
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`, and `(S T)\R = T\(S\R)` \ #src[Dividing by a composite one
-   factor at a time; the bar shows what the label on the right hides — two tiles laid where there
-   was one.]
-   #v(4pt)
-   #grid(columns: (10.5cm, auto), column-gutter: 18pt, align: horizon,
-     stack(dir: ttb, spacing: 6pt, Pl(p-div-assoc), Pl(p-ldiv-assoc)),
-     divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2))],
+  [`S (S\R) ⊑ R`],
+  P(p-ldiv-cancel),
 
-  [*maps:* `f (R/S) = (f R)/S`, and `R/(f S) = (R/S) f°` \ #src[The same three pieces bracketed two
-   ways, which is the licence to write `f R / S`; then a map moves out of a denominator and
-   reappears as `f°` outside the box. Both are the shunting rule, spent twice.]
-   #v(4pt)
-   #stack(dir: ttb, spacing: 6pt, Pl(p-map-div), Pl(p-div-map))],
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`],
+  divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2),
 
-  [*symmetric division:* `(R/ₛS)° = S/ₛR`, and `(R/ₛS)(S/ₛT) ⊑ R/ₛT` \
-   #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the definition, not the statement, so it stays
-   under the label: `/ₛ` is converse-symmetric and transitive, like an equality of columns.]
-   #v(4pt)
-   #stack(dir: ttb, spacing: 6pt, Pl(p-sdiv-recip), Pl(p-sdiv-comp))],
+  [`(S T)\R = T\(S\R)`],
+  divbar(($S$, "d"), ($T$, "d"), ($T backslash (S backslash R)$, "q"), qw: 4.2),
+
+  [*maps:* `f (R/S) = (f R)/S` \ #src[The same three pieces bracketed two ways, which is the licence
+   to write `f R / S`. The shunting rule.]],
+  P(p-map-div),
+
+  [`R/(f S) = (R/S) f°` \ #src[A map moves out of a denominator and reappears as `f°` outside the
+   box. The shunting rule again.]],
+  P(p-div-map),
+
+  [*symmetric division:* `(R/ₛS)° = S/ₛR` \ #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the
+   definition, not the statement, so it stays under the label.]],
+  P(p-sdiv-recip),
+
+  [`(R/ₛS)(S/ₛT) ⊑ R/ₛT` \ #src[`/ₛ` is converse-symmetric and transitive, like an equality of
+   columns.]],
+  P(p-sdiv-comp),
 )
 
 Ten laws, ten pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what the
