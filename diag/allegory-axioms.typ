@@ -208,6 +208,17 @@ that is has a symmetric monoidal product $times.o$ (cartisin product of set in R
   P(p-n-assoc, s: 60%), P(p-n-comm, s: 60%), P(p-n-unit, s: 60%),
 )
 
+In `Rel(Set)`, the four generators are these relations on a set `A`:
+
+#align(center, table(
+  columns: 2, stroke: none, inset: (x: 8pt, y: 2.5pt), align: left,
+  [`◁`], src[`= {(a, (a, a))}` — fork: one in, two copies out],
+  [`▷`], src[`= {((a, a), a)}` — merge: a pair passes only when its two components agree, and the
+   common value comes out],
+  [`⊸`], src[`= A × {∗}` — discard: forget the value, keep only that there was one],
+  [`⟜`], src[`= {∗} × A` — create: any element at all],
+))
+
 == $forall$ object A, `(A, ◁, ⊸) ⊣ (A, ▷, ⟜)`
 
 #grid(columns: (1fr, 1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
