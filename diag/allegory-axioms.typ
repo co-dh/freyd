@@ -298,7 +298,7 @@ the crossing is all that is left to move.
 #chain(
   (l42iii.at(0).steps.at(0), l42iii.at(0).steps.at(1), l42iii.at(0).steps.at(3),
    l42iii.at(0).steps.at(4), l42iii.at(0).steps.at(6)),
-  ([], [a strand per letter], [`σ` past both boxes], [slide, twice], [snake]), s: 48%)
+  ([], [a strand per letter], [`σ` past both boxes], [slide, twice], [snake]), s: 36%)
 
 // Kept whole: the row is two pictures, and the break was falling between them and their heading.
 #block(breakable: false)[
