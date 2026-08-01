@@ -13,7 +13,8 @@
   WHAT IS RECOGNISED.  `Cat.comp` flattens into a run of cells; `Cat.id` is a bare wire;
   `Allegory.inter`/`Diag.meet` draw the `Δ;(R ⊗ S);∇` block NESTED, so `(R ∩ S) ∩ T` shows its inner
   meet rather than a box labelled `R ∩ S`; `Diag.union` (phase 8) draws the tape, the same shape on
-  the second monoidal product; `Allegory.recip`/`Diag.conv` draw the mirrored box.  At the top,
+  the second monoidal product; `Allegory.recip`/`Diag.conv` draw the frame of the `†` notation,
+  NESTED for the same reason.  At the top,
   `Alg.le` (`⊑`), `LE.le` (`≤`) and `Eq` split the statement into two pictures with the symbol
   between them.
 
@@ -41,8 +42,9 @@
   generality and this one is.  Still DASHED, having neither a definition nor a quotient metaphor:
   `symmDiv`, `impl` and `thenRel`.
 
-  A converse's operand is still a single box: `strdiag.typ`'s mirrored `gbox` takes a LABEL, so a
-  composite under a `°` appears as one box reading `R S`.
+  A CONVERSE'S OPERAND IS A RUN, like a meet's: `(R S)°` draws the frame round two boxes, `(R ∩ S)°`
+  round a whole meet, and `(R /ₛ S)°` round the dashed box that construct already has.  `conv-frame`
+  is the frame with its middle left empty, and the cells that ride it are drawn here.
 
   ONE ENVIRONMENT PER PROCESS — the `lean-refactor` OOM lesson (`Freyd/tool/LeanRefactor.lean`):
   `importModules` retains its environment for the life of the process, so this exe imports once and
@@ -97,15 +99,20 @@ def SYMCOL : Float := 0.95
 /-- The strand offset a fork, a cap and a cup open by, and the pitch new lanes are opened at.  A `⊗`
     may sit wider: `meetSep` grows with what is nested in its runs. -/
 def STACKSEP : Float := 0.62
-/-- `strdiag.typ`'s `conv` geometry: how far the snake climbs from its incoming strand to its
-    outgoing one, and the fixed width its two bends and stubs cost around the box.
+/-- `strdiag.typ`'s `conv-frame` geometry: the least a converse climbs from its incoming strand to
+    its outgoing one, the fixed width its two bends and stubs cost around whatever rides the middle,
+    and how far in from its left edge that middle begins.
 
-    NOT `conv-w`, which is one `SPLIT` wider than what `conv` actually draws — its outgoing wire
-    stops at `0.28 + SPLIT + 2·arc + w + lead`.  The note only ever set a snake on its own, where
+    NOT `conv-w`, which is one `SPLIT` wider than what the frame actually draws — its outgoing wire
+    stops at `CONVIN + 2·arc + w + lead`.  The note only ever set a snake on its own, where
     trailing air costs nothing; in a run it is a gap between the snake and whatever follows, and the
     joining wire starts after it.  That gap is what made the first snake pictures look unwired. -/
 def RISE : Float := 1.6
-def CONVPAD : Float := 0.28 + 0.34 + 2.0 * 0.78 + 0.40
+def CONVLEAD : Float := 0.28 + SPLITW + 0.78
+def CONVPAD : Float := CONVLEAD + 0.78 + 0.40
+/-- The clear room a converse leaves between what rides its middle and the two strands that frame
+    it — half a box, the same clearance a box gets from the wire above it anywhere else. -/
+def CONVCLEAR : Float := BH / 2.0
 
 /-- One left-to-right slot of a picture. -/
 inductive Cell where
@@ -152,12 +159,14 @@ inductive Cell where
       a single arc was silently wrong — the picture ended two strands short of the term. -/
   | capC (n : Nat)
   | cupC (n : Nat)
-  /-- A converse: the same box MIRRORED, which is how
-      functorialSemanticsForRelationalTheories.pdf writes `†`.  `dashed` when the operand would have
-      been a `dbox`: `(R /ₛ S)°` is a converse OF a construct the generators cannot build, and
-      dropping the frame on the way through the mirror would draw the two sides of
-      `(R /ₛ S)° = S /ₛ R` as two different kinds of thing. -/
-  | dagger (label : String) (dashed : Bool)
+  /-- A converse: the frame of functorialSemanticsForRelationalTheories.pdf's `†` — a cup, the thing
+      being reversed on the middle strand, a cap — with what rides that middle a cell RUN, for the
+      same reason a meet's operands are runs.  `(R S)°` is the frame round two boxes, which is how
+      the paper draws Lemma 4.2 (ii); as a label it read `R S` in one box, and a picture of the
+      composite was nowhere.  A `dbox` operand keeps its dashed frame by being a `dbox`: `(R /ₛ S)°`
+      is a converse OF a construct the generators cannot build, and losing the dashes on the way
+      through would draw the two sides of `(R /ₛ S)° = S /ₛ R` as two different kinds of thing. -/
+  | dagger (body : Array Cell)
   /-- A MAP, drawn as a plain rectangle.  The chamfer says which way a relation runs; a map runs one
       way by construction, so there is nothing for the corner to disambiguate, and dropping it makes
       the maps findable at a glance — which is what shunting, and most of the division laws, turn
@@ -187,7 +196,7 @@ inductive Port where
 
 /-- Whether this cell's ports sit off the centre line, which is true of exactly the snake. -/
 def Cell.isDagger : Cell → Bool
-  | .dagger _ _ => true
+  | .dagger _ => true
   | _ => false
 
 partial def Cell.leftPort : Cell → Port
@@ -224,7 +233,7 @@ partial def Cell.width : Cell → Float
   | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
   | .stack u l => max (runWidth u) (runWidth l)
   | .capC n | .cupC n => capW n
-  | .dagger l _ => CONVPAD + boxWidth l
+  | .dagger body => CONVPAD + runWidth body
   | .divbox n dn _ => divboxWidth n dn
   | .cut inner => 2.0 * CUTPAD + runWidth inner
 
@@ -256,7 +265,7 @@ partial def Cell.spanUp : Cell → Float
   | .capC n | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
   | .cut inner => runSpanUp inner + CUTPAD
-  | .dagger _ _ => RISE + BH / 2.0
+  | .dagger body => convRise body + BH / 2.0
   | _ => BH / 2.0
 
 partial def Cell.spanDown : Cell → Float
@@ -330,7 +339,7 @@ partial def Cell.edgeUp : Cell → Float
   | .cupC n => (2.0 * n.toFloat - 1.0) * STACKSEP + BH / 2.0
   | .gen "delta" _ _ => STACKSEP
   | .cut inner => runEdgeUp inner + CUTPAD
-  | .dagger _ _ => RISE + BH / 2.0
+  | .dagger body => convRise body + BH / 2.0
   | _ => BH / 2.0
 
 partial def Cell.edgeDown : Cell → Float
@@ -343,16 +352,16 @@ partial def Cell.edgeDown : Cell → Float
   | _ => BH / 2.0
 
 /-- How far a cell LIFTS the first lane it is handed, and the last.  Only the converse lifts
-    anything: it is entered at its lane and left `RISE` higher, and everything after it runs at the
-    new height. -/
+    anything: it is entered at its lane and left its own rise higher, and everything after it runs
+    at the new height. -/
 partial def Cell.riseFirst : Cell → Float
-  | .dagger _ _ => RISE
+  | .dagger body => convRise body
   | .stack u _ => runRiseFirst u
   | .cut inner => runRiseFirst inner
   | _ => 0.0
 
 partial def Cell.riseLast : Cell → Float
-  | .dagger _ _ => RISE
+  | .dagger body => convRise body
   | .stack _ l => runRiseLast l
   | .cut inner => runRiseLast inner
   | _ => 0.0
@@ -382,6 +391,15 @@ partial def runEdgeDown (cells : Array Cell) : Float := Id.run do
     reach := max reach (c.edgeDown - drift)
     drift := drift + c.riseLast
   return reach
+
+/-- WHERE THE MIDDLE OF A CONVERSE SITS, above the strand the frame is entered at, and how far above
+    that strand the frame's outgoing one goes.  A single box wants `strdiag.typ`'s own `RISE / 2`
+    and `RISE`; anything taller — a meet, or another converse, which also climbs on its way through
+    — pushes both out so that the frame still clears what rides it by `CONVCLEAR`. -/
+partial def convMid (body : Array Cell) : Float := max (RISE / 2.0) (runEdgeDown body + CONVCLEAR)
+
+partial def convRise (body : Array Cell) : Float :=
+  max RISE (convMid body + runEdgeUp body + CONVCLEAR)
 
 /-- THE GAP EACH ADJACENT PAIR of a cell's incoming lanes needs — one number per pair, not one
     number for the picture.  A `⊗` is the only cell that divides the lanes it is handed between two
@@ -502,16 +520,21 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     | "swap" => ⟨draw, #[y, y₂], y₂, y⟩
     | "bang" => ⟨draw, #[], y, y⟩
     | _ => ⟨draw, #[y], y, y⟩
-  -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
-  -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
-  -- which corner is chamfered.  On black ground the tint is dropped: `invert` supplies the paper.
-  -- THE SNAKE, and it is the only drawing of a converse in this file.  It is the one cell that
-  -- hands its strand on at a different height from the one it took: `conv` enters low and leaves
-  -- `RISE` higher, and everything after it simply runs at the new height.
-  | .dagger l dashed =>
-    let dsh := if dashed then ", dashed: true" else ""
-    ⟨#[s!"  conv(({fmt x}, {fmt y}), {labelContent l}, \
-        w: {fmt (boxWidth l)}, h: {fmt BH}{dsh}{inv iv})"], #[y + RISE], y, y + RISE⟩
+  -- THE CONVERSE, and it is the only drawing of one in this file.  It is the one cell that hands
+  -- its strand on at a different height from the one it took: the frame is entered low and left
+  -- `convRise` higher, and everything after it simply runs at the new height.
+  --
+  -- The frame is drawn EMPTY and the run that rides it laid out inside, at `CONVLEAD` in from the
+  -- left edge, exactly as a meet lays its two runs between `◁` and `▷`.  `out` is where that run
+  -- actually leaves, which is where the cap has to close it: a converse INSIDE a converse climbs on
+  -- its way through, and a cap drawn at the entry level would miss it.
+  | .dagger body => Id.run do
+    let rise := convRise body
+    let mid := convMid body
+    let b := renderRun body (x + CONVLEAD) #[y + mid] (y + mid) iv
+    let out := (b.ys[0]?).getD (y + mid)
+    return ⟨#[s!"  conv-frame(({fmt x}, {fmt y}), w: {fmt (runWidth body)}, rise: {fmt rise}, \
+        mid: {fmt mid}, out: {fmt (out - y)}{inv iv})"] ++ b.out, #[y + rise], y, y + rise⟩
   | .dbox l =>
     ⟨#[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
         h: {fmt BH}, dashed: true{inv iv})"], #[y], y, y⟩
@@ -844,7 +867,7 @@ partial def toCell (e : Expr) : MetaM Cell := do
   -- `S` mirrored inside a white island — Peirce's double cut.
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) =>
     match args.back? with
-    | some r => return .cut #[.dagger (← label r) false]
+    | some r => return .cut #[.dagger (← toCells r)]
     | none => return .box (← label e)
   -- The residual draws as LONG DIVISION, not as its own definition unfolded.  `R ⨟• S⊥` is a cut
   -- with a cut inside it, which is a faithful picture of the phase-9 term and needs a complement to
@@ -875,9 +898,17 @@ partial def toCell (e : Expr) : MetaM Cell := do
   | (``Freyd.Alg.Allegory.recip, args)
   | (``Freyd.Diag.CartBicat.conv, args) =>
     match args.back? with
-    -- Whether the mirrored box keeps a dashed frame is read off the operand's OWN cell, so the one
-    -- list of dashed constructs above stays the only place that classification is made.
-    | some r => return .dagger (← label r) (match ← toCell r with | .dbox _ => true | _ => false)
+    -- The operand's OWN cells ride the frame, so a construct that draws dashed goes on drawing
+    -- dashed under a `°` without this walk classifying anything twice.
+    --
+    -- Unless it is WIDER THAN ONE STRAND.  The frame is a one-strand picture — one cup, one cap —
+    -- and a converse at a product object has a strand per letter; the picture of that one is the
+    -- frame written out, which is `conv_def` and which any chain needing it already draws.  So
+    -- `(R ⊗ S)°` keeps its label and the frame goes round the one box, as every operand did before.
+    | some r =>
+      let body ← toCells r
+      if runLeftCount body == 1 && runRightCount body == 1 then return .dagger body
+      else return .dagger #[.box (← label r)]
     | none => return .box (← label e)
   | _ => if ← isMap e then return .mbox (← label e) else return .box (← label e)
 
@@ -1006,7 +1037,7 @@ def page (declName : Name) (doc : Option String) (body : String) (isChain := fal
     | none => "#let doc = none\n"
   "// GENERATED by `diag-export` — do not edit; regenerate with\n\
    //   ./scripts/diag-export " ++ (if isChain then "--proof " else "") ++ declName.toString ++ "\n\
-   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
+   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv-frame, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \

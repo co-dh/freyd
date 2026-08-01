@@ -415,55 +415,76 @@ theorem conv_conv {a b : Word O} (R : a ⟶ b) : conv (conv R) = R := by
     _ = (conv R ⊗ₕ 𝟙 a) ≫ cap a := (tens_cap_swap (conv R)).symm
 
 /-- CONTRAVARIANT FUNCTORIALITY, `(R;S)° = S°;R°` — Lemma 4.2 (ii)
-    (functorialSemanticsForRelationalTheories.pdf p. 19) and Freyd's `recip_comp` (§2.11).  Unbend
-    `S°;R°` one factor at a time: `«°_slide»` turns the inner `R°` into `R`, `tensHom_split` walks
-    `S°` across to the other strand, and a second `«°_slide»` turns it into `S`. -/
+    (functorialSemanticsForRelationalTheories.pdf p. 19) and Freyd's `recip_comp` (§2.11).
+
+    IN THE FRAME, not unbent.  `conv_unique` would prove this in half the steps, by comparing two
+    arrows into `𝕀` — but those are pictures with two inputs and no output, and the paper's are one
+    in and one out, `R°` where the frame is drawn round the box.  So the chain runs inside `bend`
+    from `(R S)°` to `S° R°`: split the composite, slide `S` round the cap and it comes back as
+    `S°` on the other strand, walk it past `R` by interchange, slide `R` the same way, and what is
+    left is `bend (unbend (S° R°))`. -/
 theorem conv_comp {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) :
     conv (R ≫ S) = conv S ≫ conv R := by
-  refine (conv_unique ?_).symm
-  have hs : (𝟙 a ⊗ₕ (conv S ≫ conv R)) = (𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) := by
-    rw [← tensHom_comp, Cat.id_comp]
-  calc (𝟙 a ⊗ₕ (conv S ≫ conv R)) ≫ cap a
-      = (𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a := by rw [hs]; simp only [Cat.assoc]
-    _ = (𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by rw [«°_slide»]
-    _ = ((𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b)) ≫ cap b := by simp only [Cat.assoc]
-    _ = (R ⊗ₕ conv S) ≫ cap b := by rw [tensHom_split']
-    _ = ((R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S)) ≫ cap b := by rw [tensHom_split]
-    _ = (R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S) ≫ cap b := by simp only [Cat.assoc]
-    _ = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by rw [«°_slide»]
-    _ = ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c)) ≫ cap c := by simp only [Cat.assoc]
-    _ = ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c := by rw [← tensHom_comp, Cat.comp_id]
+  -- Each `have` is one inner arrow `a ⊗ c ⟶ 𝕀` rewritten to the next, so every `calc` step below
+  -- is a single `rw` and the chain stays at the frame — which is the level the pictures are drawn.
+  have hsplit : ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by
+    rw [← Cat.assoc, ← tensHom_comp, Cat.comp_id]
+  have hpast : (R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S) ≫ cap b
+      = (𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b := by
+    rw [← Cat.assoc, ← Cat.assoc, tensHom_split, tensHom_split']
+  have hfuse : (𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a
+      = (𝟙 a ⊗ₕ (conv S ≫ conv R)) ≫ cap a := by
+    rw [← Cat.assoc, ← tensHom_comp, Cat.id_comp]
+  calc conv (R ≫ S)
+      = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ (((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c)) := conv_def _
+    _ = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c)) := by rw [hsplit]
+    _ = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 c) ≫ (𝟙 b ⊗ₕ conv S) ≫ cap b)) := by
+        rw [← «°_slide» S]
+    _ = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv S) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [hpast]
+    _ = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ conv S) ≫ (𝟙 a ⊗ₕ conv R) ≫ cap a)) := by
+        rw [← «°_slide» R]
+    _ = (cup a ⊗ₕ 𝟙 c) ≫ (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ (conv S ≫ conv R)) ≫ cap a)) := by rw [hfuse]
+    _ = conv S ≫ conv R := bend_unbend _
 
 /-- MONOIDALITY, `(R ⊗ S)° = R° ⊗ S°` — Lemma 4.2 (iii)
-    (functorialSemanticsForRelationalTheories.pdf p. 21).  The cap at a product is two caps nested
-    (`cap_tens`), so the two boxes bend independently and `«°_slide»` turns each one over on its
-    own strand; all that is left is the crossing, which naturality of the symmetry walks past `S`
-    (`hcross`). -/
+    (functorialSemanticsForRelationalTheories.pdf p. 21).  In the frame, for the reason `conv_comp`
+    gives: the paper's three pictures are two wires in and two out, which is what `bend` draws and
+    an arrow into `𝕀` does not.  The cap at a product is two caps behind a crossing (`cap_tens`),
+    so the pair unbends one strand at a time; naturality of the symmetry walks the crossing to the
+    front past both boxes (`hcross`), `«°_slide»` turns each box over on its own strand, and
+    `unbend_tens` re-nests the two caps into one. -/
 theorem conv_tensHom {a b c e : Word O} (R : a ⟶ b) (S : c ⟶ e) :
     conv (R ⊗ₕ S) = (conv R ⊗ₕ conv S : _) := by
-  refine (conv_unique ?_).symm
-  have hcross : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
-      = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) := by
-    have hl : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
-        = (R ⊗ₕ (swap c b ≫ (𝟙 b ⊗ₕ S)) ⊗ₕ 𝟙 e : _) := by
-      rw [tensHom_assoc R (𝟙 b) (S ⊗ₕ 𝟙 e), ← tensHom_assoc (𝟙 b) S (𝟙 e),
-        ← tensHom_comp, Cat.id_comp, ← tensHom_comp, Cat.comp_id]
-    have hr : ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e)
-        = (R ⊗ₕ ((S ⊗ₕ 𝟙 b) ≫ swap e b) ⊗ₕ 𝟙 e : _) := by
-      rw [← tensHom_id b e, tensHom_assoc R S (𝟙 b ⊗ₕ 𝟙 e), ← tensHom_assoc S (𝟙 b) (𝟙 e),
-        ← tensHom_comp, Cat.comp_id, ← tensHom_comp, Cat.id_comp]
-    rw [hl, hr, swap_nat S (𝟙 b)]
-  calc (𝟙 (a ⊗ c) ⊗ₕ (conv R ⊗ₕ conv S)) ≫ cap (a ⊗ c)
-      = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e)
-          ≫ (((𝟙 a ⊗ₕ conv R) ≫ cap a) ⊗ₕ ((𝟙 c ⊗ₕ conv S) ≫ cap c)) :=
-        unbend_tens (conv R) (conv S)
-    _ = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (((R ⊗ₕ 𝟙 b) ≫ cap b) ⊗ₕ ((S ⊗ₕ 𝟙 e) ≫ cap e)) := by
-        rw [«°_slide», «°_slide»]
-    _ = ((𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))) ≫ (cap b ⊗ₕ cap e) := by
-        rw [tensHom_comp, ← Cat.assoc]
-    _ = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) ≫ (cap b ⊗ₕ cap e) := by
-        rw [hcross, Cat.assoc]
-    _ = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ cap (b ⊗ e) := by rw [cap_tens]
+  -- The crossing walks from behind the two boxes to in front of them, which lands the term in the
+  -- shape `unbend_tens` reads: one unbending per strand.
+  have hcross : ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) ≫ (cap b ⊗ₕ cap e)
+      = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (((R ⊗ₕ 𝟙 b) ≫ cap b) ⊗ₕ ((S ⊗ₕ 𝟙 e) ≫ cap e)) := by
+    have hσ : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
+        = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) := by
+      have hl : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
+          = (R ⊗ₕ (swap c b ≫ (𝟙 b ⊗ₕ S)) ⊗ₕ 𝟙 e : _) := by
+        rw [tensHom_assoc R (𝟙 b) (S ⊗ₕ 𝟙 e), ← tensHom_assoc (𝟙 b) S (𝟙 e),
+          ← tensHom_comp, Cat.id_comp, ← tensHom_comp, Cat.comp_id]
+      have hr : ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e)
+          = (R ⊗ₕ ((S ⊗ₕ 𝟙 b) ≫ swap e b) ⊗ₕ 𝟙 e : _) := by
+        rw [← tensHom_id b e, tensHom_assoc R S (𝟙 b ⊗ₕ 𝟙 e), ← tensHom_assoc S (𝟙 b) (𝟙 e),
+          ← tensHom_comp, Cat.comp_id, ← tensHom_comp, Cat.id_comp]
+      rw [hl, hr, swap_nat S (𝟙 b)]
+    rw [tensHom_comp, ← Cat.assoc, ← Cat.assoc, hσ]
+  calc conv (R ⊗ₕ S)
+      = (cup (a ⊗ c) ⊗ₕ 𝟙 (b ⊗ e))
+          ≫ (𝟙 (a ⊗ c) ⊗ₕ (((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ cap (b ⊗ e))) := conv_def _
+    _ = (cup (a ⊗ c) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 (a ⊗ c) ⊗ₕ (((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e))
+          ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) ≫ (cap b ⊗ₕ cap e))) := by rw [cap_tens]
+    _ = (cup (a ⊗ c) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 (a ⊗ c) ⊗ₕ ((𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e)
+          ≫ (((R ⊗ₕ 𝟙 b) ≫ cap b) ⊗ₕ ((S ⊗ₕ 𝟙 e) ≫ cap e)))) := by rw [hcross]
+    _ = (cup (a ⊗ c) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 (a ⊗ c) ⊗ₕ ((𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e)
+          ≫ (((𝟙 a ⊗ₕ conv R) ≫ cap a) ⊗ₕ ((𝟙 c ⊗ₕ conv S) ≫ cap c)))) := by
+        rw [← «°_slide» R, ← «°_slide» S]
+    _ = (cup (a ⊗ c) ⊗ₕ 𝟙 (b ⊗ e))
+          ≫ (𝟙 (a ⊗ c) ⊗ₕ ((𝟙 (a ⊗ c) ⊗ₕ (conv R ⊗ₕ conv S)) ≫ cap (a ⊗ c))) := by
+        rw [← unbend_tens (conv R) (conv S)]
+    _ = (conv R ⊗ₕ conv S : _) := bend_unbend _
 
 /-! ### Towards the modular law
 

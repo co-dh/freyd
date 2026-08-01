@@ -279,31 +279,48 @@
 
 // ---------------------------------------------------------------------- the converse
 
-/// The converse `R°` drawn as its definition — the third picture of the `†` notation in
-/// functorialSemanticsForRelationalTheories.pdf ("we adopt the graphical notation", `R† =def Я =def`
-/// …); `conv` in diag/CB.lean, proved equal to the ordinary relational converse by `conv_eq_recip`
-/// in diag/RelSetCB.lean.  `p` is the left end of the INCOMING wire, on the bottom strand.
+/// THE FRAME a converse sits in, with the middle left empty — the third picture of the `†` notation
+/// in functorialSemanticsForRelationalTheories.pdf ("we adopt the graphical notation",
+/// `R† =def Я =def` …); `conv` in diag/CB.lean, proved equal to the ordinary relational converse by
+/// `conv_eq_recip` in diag/RelSetCB.lean.  `p` is the left end of the INCOMING wire, on the bottom
+/// strand.
 ///
 /// Three levels, and it is the CUP and the CAP that make it a converse — a wire merely bumped up
-/// over the box and back down is an isotopy of `R` itself and reverses nothing.  Input arrives
-/// bottom left and runs under `R`; the cup at the top left creates a pair, one strand feeding `R`
-/// and the other leaving as the output at the top right; the cap at the bottom right annihilates
-/// `R`'s output against the input.
-#let conv(p, label, w: BW, h: BH, rise: 1.6, lead: 0.40, arc: 0.78,
-          dashed: false, invert: false) = {
+/// over what it reverses and back down is an isotopy of that thing and reverses nothing.  Input
+/// arrives bottom left and runs underneath; the cup at the top left creates a pair, one strand
+/// feeding the middle and the other leaving as the output at the top right; the cap at the bottom
+/// right annihilates the middle's output against the input.
+///
+/// EMPTY IN THE MIDDLE because what rides there is not always one box: `(R S)°` is two, `(R ∩ S)°`
+/// is a whole meet, and `(R /ₛ S)°` is a dashed box.  `w` is the width of whatever does ride it,
+/// `mid` the level it is entered at and `out` the level it leaves at — the two differ only when the
+/// middle itself climbs, which is what a converse inside a converse does.  `conv-body` is where its
+/// left edge goes; `diag-export` draws its own cells there, and `conv` below draws a single box.
+#let CONVIN = 0.28 + SPLIT            // in from the left edge to the cup's `◁`
+#let conv-body(p, rise: 1.6, mid: none, arc: 0.78) = (
+  p.at(0) + CONVIN + arc, p.at(1) + (if mid == none { rise / 2 } else { mid }))
+
+#let conv-frame(p, w: BW, rise: 1.6, mid: none, out: none, lead: 0.40, arc: 0.78, invert: false) = {
   let (x, y) = p
-  let ym = y + rise / 2               // the level `R` sits on
+  let ym = y + (if mid == none { rise / 2 } else { mid })   // the level the middle is entered at
+  let yo = y + (if out == none { rise / 2 } else { out })   // the level it leaves at
   let yt = y + rise                   // the outgoing strand
-  let bx = x + 0.28 + SPLIT + arc     // `R`'s left edge
+  let bx = x + CONVIN + arc           // the middle's left edge
   let cx = bx + w + arc               // the cap's tip, where `∇` sits
-  cup((x + 0.28 + SPLIT, y + rise * 0.80), (bx, yt), (bx, ym), split: true, invert: invert)
+  cup((x + CONVIN, ym + 0.6 * (yt - ym)), (bx, yt), (bx, ym), split: true, invert: invert)
   wire((bx, yt), (cx + lead, yt), invert: invert)
-  gbox((bx, ym), label, w: w, h: h, dashed: dashed, invert: invert)
   wire((x, y), (bx + w, y), invert: invert)
-  cap((bx + w, ym), (bx + w, y), (cx, y + rise * 0.20), split: true, invert: invert)
+  cap((bx + w, yo), (bx + w, y), (cx, y + 0.4 * (yo - y)), split: true, invert: invert)
 }
 
-#let conv-w(w: BW, lead: 0.40, arc: 0.78) = 0.28 + SPLIT + 2 * arc + w + SPLIT + lead
+/// The converse of ONE BOX, which is the frame with that box on its middle strand.  What a note
+/// draws by hand where there is no Lean statement to export from — the definition figures.
+#let conv(p, label, w: BW, h: BH, rise: 1.6, lead: 0.40, arc: 0.78, invert: false) = {
+  conv-frame(p, w: w, rise: rise, lead: lead, arc: arc, invert: invert)
+  gbox(conv-body(p, rise: rise, arc: arc), label, w: w, h: h, invert: invert)
+}
+
+#let conv-w(w: BW, lead: 0.40, arc: 0.78) = CONVIN + 2 * arc + w + SPLIT + lead
 
 // -------------------------------------------------------- convolution: the meet `∩`
 

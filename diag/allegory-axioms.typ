@@ -257,20 +257,22 @@ the input of `R°` is where the output of `R` was. And it is a contravariant 2-f
   (snkb.at(0).steps.at(2), snkb.at(0).steps.at(3), snkb.at(0).steps.at(5)),
   ([], [Frobenius], [unit, counit]))
 
-(ii) and (iii) are not pictures of a converse. An arrow IS the converse of `R` as soon as it
-satisfies one equation between UNBENT arrows into `𝕀`, and bending is a bijection, so the cup is
-never drawn: every step below closes with a cap and opens with nothing, and "is a converse" shows
-up as a box on the *bottom* strand, mirrored. Both use one rule, the *slide* — a box on the bottom
-strand facing a cap is that box on the top strand, upright:
+== The slide
+
+The one rule (ii) and (iii) use, and each of them uses it twice. A converse facing a cap on the
+lower strand is the box itself, upright, on the upper one:
 
 #P(p-conv-slide, s: 62%)
+
+It is the snake again, read at `R`'s own bending: `R°` IS the bending of `(R ⊗ 𝟙) cap`, so
+straightening it gives back what it was bent from. Nothing else is spent below.
 
 == `(R S)° = S° R°`
 
 #chain(
-  (l42ii.at(0).steps.at(0), l42ii.at(0).steps.at(2), l42ii.at(0).steps.at(5),
-   l42ii.at(0).steps.at(7)),
-  ([], [slide], [interchange], [slide]), s: 46%)
+  (l42ii.at(0).steps.at(0), l42ii.at(0).steps.at(3), l42ii.at(0).steps.at(4),
+   l42ii.at(0).steps.at(5), l42ii.at(0).steps.at(7)),
+  ([], [slide], [interchange], [slide], [snake]), s: 41%)
 
 == `(R ⊗ S)° = R° ⊗ S°`
 
@@ -278,8 +280,9 @@ A cap at a product is two caps behind a crossing, so the pair unbends one strand
 crossing is all that is left to move.
 
 #chain(
-  (l42iii.at(0).steps.at(0), l42iii.at(0).steps.at(2), l42iii.at(0).steps.at(5)),
-  ([], [two caps, then slide twice], [`σ` past `S`]), s: 52%)
+  (l42iii.at(0).steps.at(0), l42iii.at(0).steps.at(1), l42iii.at(0).steps.at(3),
+   l42iii.at(0).steps.at(4), l42iii.at(0).steps.at(6)),
+  ([], [a strand per letter], [`σ` past both boxes], [slide, twice], [snake]), s: 48%)
 
 // Kept whole: the row is two pictures, and the break was falling between them and their heading.
 #block(breakable: false)[

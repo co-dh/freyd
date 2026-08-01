@@ -41,7 +41,7 @@ def drawn (c : Cell) : String := String.join (lay c).out.toList
 def delta : Cell := .gen "delta" 1.4 0.7
 def nabla : Cell := .gen "nabla" 1.4 0.7
 def swapC : Cell := .gen "swap" 0.55 0.0
-def snake : Cell := .dagger "R" false
+def snake : Cell := .dagger #[.box "R"]
 def plainBox : Cell := .box "R"
 
 /-! ### A generator drawn at one separation and reported at another -/
@@ -127,7 +127,7 @@ Under one pitch for the picture, EVERY lane cleared it — including the two tha
 plain wire — and `((𝟙 ⊗ R°) cap) ⊗ ((𝟙 ⊗ S°) cap)` came out three times taller than it is. -/
 
 def bentPair : Cell :=
-  .stack #[.stack #[.wire] #[snake], .capC 1] #[.stack #[.wire] #[.dagger "S" false], .capC 1]
+  .stack #[.stack #[.wire] #[snake], .capC 1] #[.stack #[.wire] #[.dagger #[.box "S"]], .capC 1]
 
 #guard bentPair.laneGaps.size == 3
 -- Inside an operand: over a rise.  Between the operands: over two plain wires.
@@ -138,11 +138,28 @@ def bentPair : Cell :=
     strand on `RISE` higher, so the lane above them has to be opened for both rises — as a plain
     maximum it was opened for one, the second output overshot the strand above it, and the cap
     closing the two was drawn inside out. -/
-def bentTwice : Array Cell := #[.stack #[.wire] #[snake, .dagger "S" false], .capC 1]
+def bentTwice : Array Cell := #[.stack #[.wire] #[snake, .dagger #[.box "S"]], .capC 1]
 
-#guard (Cell.stack #[.wire] #[snake, .dagger "S" false]).laneGaps[0]! > 2.0 * RISE
+#guard (Cell.stack #[.wire] #[snake, .dagger #[.box "S"]]).laneGaps[0]! > 2.0 * RISE
 -- A negative `sp` IS the inside-out cap: no picture may contain one.
 #guard !(mentions (renderCells bentTwice 0.0).1 "sp: -")
+
+/-! ### What rides a converse's middle is a RUN
+
+`(R S)°` is the frame round TWO boxes, which is how functorialSemanticsForRelationalTheories.pdf
+draws Lemma 4.2 (ii).  As a label it read `R S` in one box and the composite was nowhere.  What
+rides the middle keeps its own drawing — a dashed box is still dashed under a `°` — and a middle
+taller than a box pushes the frame out around it, or the meet inside `(R ∩ S)°` runs through the
+strand that is supposed to clear it. -/
+
+def convComp : Cell := .dagger #[plainBox, .box "S"]
+
+#guard Cell.width convComp == CONVPAD + runWidth #[plainBox, .box "S"]
+#guard countsItsStrands convComp
+#guard mentions (drawn convComp) "conv-frame((0.00, 0.00), w: 2.18"
+#guard ((drawn convComp).splitOn "gbox(").length == 3
+#guard mentions (drawn (.dagger #[.dbox "R /ₛ S"])) "dashed: true"
+#guard convRise #[Cell.meet #[plainBox] #[.box "S"]] > convRise #[plainBox]
 
 /-! ### Composition is flat
 
