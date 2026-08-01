@@ -20,12 +20,13 @@
   holds in any Cartesian bicategory of relations: one direction is given by (38) and the other is
   proved as follows."  It is `special` below.
 
-  DEFERRED, and recorded here so it is not mistaken for an oversight: Carboni & Walters additionally
-  require the Frobenius structure to be the *unique* comonoid on each object (`Frobenius.pdf` Def. 1,
-  clause 2, "and this is the only such comonoid structure on X"), which equationally means
-  `Δ_{a⊗b}` and `!_{a⊗b}` are built from `Δ_a, Δ_b, !_a, !_b` by a shuffle.  Def. 4.1 as printed does
-  not state it, and nothing below needs it; the first proof that needs `Δ` at a composite object must
-  add it, with the shuffle written out.
+  THE SHUFFLE.  Carboni & Walters additionally require the Frobenius structure to be the *unique*
+  comonoid on each object (`Frobenius.pdf` Def. 1, clause 2, "and this is the only such comonoid
+  structure on X"), which equationally means the structure at `a ⊗ b` is the two structures side by
+  side.  Def. 4.1 as printed leaves it in the pictures, where a cap at a product is simply drawn as
+  two nested caps.  `«∇_tens»` and `«!_tens»` below state it for the monoid, which is what Lemma
+  4.2 (iii) needs — the converse bends round `cap = ∇;!`, so only that side is ever at a composite
+  object.  The comonoid half is not stated because nothing cups at a composite.
 -/
 import diag.Monoidal
 
@@ -56,6 +57,14 @@ class CartBicat (O : Type u) extends SymMonCat.{v} O where
   «∇_comm» (n : Word O) : SymMonCat.swap n n ≫ «∇» = «∇»
   /-- Unit law for `(∇, ?)`; eq. (7). -/
   «∇_unit» (n : Word O) : (𝟙 n ⊗ₕ «?») ≫ «∇» = 𝟙 n
+
+  /-- THE SHUFFLE for the merge: `∇_{m⊗n}` merges the two `m`s and the two `n`s, which needs the
+      middle two strands crossed first.  See the header. -/
+  «∇_tens» (m n : Word O) :
+    («∇» : (m ⊗ n) ⊗ (m ⊗ n) ⟶ m ⊗ n)
+      = ((𝟙 m ⊗ₕ SymMonCat.swap n m ⊗ₕ 𝟙 n) ≫ («∇» ⊗ₕ «∇») : _)
+  /-- THE SHUFFLE for the unit: discarding a pair is discarding each. -/
+  «!_tens» (m n : Word O) : («!» : m ⊗ n ⟶ 𝕀) = («!» ⊗ₕ «!» : _)
 
   /-- (37): `∇;Δ ≤ 𝟙`.  With (38), `Δ ⊣ ∇`. -/
   «∇Δ≤𝟙» (n : Word O) : («∇» ≫ Δ) ≤ (𝟙 (n ⊗ n))
@@ -246,13 +255,25 @@ theorem conv_id (a : Word O) : conv (𝟙 a) = 𝟙 a := by
   rw [SymMonCat.tensHom_id, Cat.id_comp]
   exact snake' a
 
-/-- The converse is monotone: it is built only from `≫` and `⊗`, both of which are. -/
-theorem conv_mono {a b : Word O} {R S : a ⟶ b} (h : R ≤ S) : (conv R) ≤ (conv S) := by
-  dsimp [conv, bend]
-  refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) ?_
-  exact SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _)
-    (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.«≤_refl» _))
-      (OrderedCat.«≤_refl» _))
+/-- The converse with its two `def`s unfolded: the FRAME `R` sits in — a cup, the box on the middle
+    strand, a cap.  True by `rfl`, and stated anyway because a bare `rfl` step in a `calc` carries
+    the type `conv R = conv R`, so `diag-export --proof` would draw the box twice instead of the
+    frame once. -/
+theorem conv_def {a b : Word O} (R : a ⟶ b) :
+    conv R = (cup a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) := rfl
+
+/-- MONOTONICITY, `R ≤ S ⟹ R° ≤ S°` — Lemma 4.2 (iv).  The converse is `R` in a fixed frame of
+    wires, built only from `≫` and `⊗`, and both of those are monotone, so the box may be replaced
+    where it stands.  Spelled as a `calc` with the frame written out, so that `diag-export --proof`
+    can draw it — the same reason as `«∇_slide_conv»` below. -/
+theorem conv_mono {a b : Word O} {R S : a ⟶ b} (h : R ≤ S) : (conv R) ≤ (conv S) :=
+  calc conv R = (cup a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) := conv_def R
+    _ ≤ (cup a ⊗ₕ 𝟙 b) ≫ (𝟙 a ⊗ₕ ((S ⊗ₕ 𝟙 b) ≫ cap b)) :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+          (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _)
+            (OrderedCat.comp_mono (SymMonCat.tensHom_mono h (OrderedCat.«≤_refl» _))
+              (OrderedCat.«≤_refl» _)))
+    _ = conv S := (conv_def S).symm
 
 section Bending
 
@@ -262,6 +283,39 @@ open SymMonCat
     reason the two ways of capping a pair of `a`-wires agree. -/
 theorem swap_cap (n : Word O) : swap n n ≫ cap n = cap n := by
   dsimp [cap]; rw [← Cat.assoc, «∇_comm»]
+
+/-- The CAP AT A PRODUCT is two caps nested: `cap_{m⊗n} = (𝟙 ⊗ γ ⊗ 𝟙);(cap_m ⊗ cap_n)`.  Both
+    shuffle fields at once, since `cap = ▷;⊸`. -/
+theorem cap_tens (m n : Word O) :
+    cap (m ⊗ n) = ((𝟙 m ⊗ₕ swap n m ⊗ₕ 𝟙 n) ≫ (cap m ⊗ₕ cap n) : _) := by
+  dsimp [cap]
+  rw [«∇_tens», «!_tens», Cat.assoc, ← tensHom_comp]
+
+/-- UNBENDING A PAIR is unbending each, after the shuffle.  The two boxes never meet: `cap_tens`
+    nests the caps, and naturality of the symmetry walks the crossing to the front, past both. -/
+theorem unbend_tens {a b c e : Word O} (X : b ⟶ a) (Y : e ⟶ c) :
+    (𝟙 (a ⊗ c) ⊗ₕ (X ⊗ₕ Y)) ≫ cap (a ⊗ c)
+      = ((𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (((𝟙 a ⊗ₕ X) ≫ cap a) ⊗ₕ ((𝟙 c ⊗ₕ Y) ≫ cap c)) : _) := by
+  -- The crossing meets `X` on the strand it moves and nothing on the other.  That is the whole
+  -- content; `hl`, `hr` and `hsplit` are re-bracketings, which the pictures do not show at all.
+  have hl : (𝟙 (a ⊗ c) ⊗ₕ (X ⊗ₕ Y)) ≫ (𝟙 a ⊗ₕ swap c a ⊗ₕ 𝟙 c)
+      = (𝟙 a ⊗ₕ ((𝟙 c ⊗ₕ X) ≫ swap c a) ⊗ₕ Y : _) := by
+    rw [← tensHom_id a c, tensHom_assoc (𝟙 a) (𝟙 c) (X ⊗ₕ Y), ← tensHom_assoc (𝟙 c) X Y,
+      ← tensHom_comp, Cat.id_comp, ← tensHom_comp, Cat.comp_id]
+  have hr : (𝟙 a ⊗ₕ (swap c b ≫ (X ⊗ₕ 𝟙 c)) ⊗ₕ Y : _)
+      = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (𝟙 a ⊗ₕ (X ⊗ₕ 𝟙 c) ⊗ₕ Y) := by
+    rw [← tensHom_comp, Cat.id_comp, ← tensHom_comp, Cat.id_comp]
+  have hsplit : (𝟙 a ⊗ₕ (X ⊗ₕ 𝟙 c) ⊗ₕ Y : _) = ((𝟙 a ⊗ₕ X) ⊗ₕ (𝟙 c ⊗ₕ Y) : _) := by
+    rw [tensHom_assoc X (𝟙 c) Y, ← tensHom_assoc (𝟙 a) X (𝟙 c ⊗ₕ Y)]
+  calc (𝟙 (a ⊗ c) ⊗ₕ (X ⊗ₕ Y)) ≫ cap (a ⊗ c)
+      = ((𝟙 (a ⊗ c) ⊗ₕ (X ⊗ₕ Y)) ≫ (𝟙 a ⊗ₕ swap c a ⊗ₕ 𝟙 c)) ≫ (cap a ⊗ₕ cap c) := by
+        rw [cap_tens, Cat.assoc]
+    _ = (𝟙 a ⊗ₕ ((𝟙 c ⊗ₕ X) ≫ swap c a) ⊗ₕ Y) ≫ (cap a ⊗ₕ cap c) := by rw [hl]
+    _ = (𝟙 a ⊗ₕ (swap c b ≫ (X ⊗ₕ 𝟙 c)) ⊗ₕ Y) ≫ (cap a ⊗ₕ cap c) := by rw [swap_nat (𝟙 c) X]
+    _ = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((𝟙 a ⊗ₕ (X ⊗ₕ 𝟙 c) ⊗ₕ Y) ≫ (cap a ⊗ₕ cap c)) := by
+        rw [hr, Cat.assoc]
+    _ = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (((𝟙 a ⊗ₕ X) ≫ cap a) ⊗ₕ ((𝟙 c ⊗ₕ Y) ≫ cap c)) := by
+        rw [hsplit, ← tensHom_comp]
 
 /-- The cup is symmetric: `cup;γ = cup`, dual to `swap_cap`, from cocommutativity (9). -/
 theorem cup_swap (n : Word O) : cup n ≫ swap n n = cup n := by
@@ -379,6 +433,37 @@ theorem conv_comp {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) :
     _ = (R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c) ≫ cap c := by rw [«°_slide»]
     _ = ((R ⊗ₕ 𝟙 c) ≫ (S ⊗ₕ 𝟙 c)) ≫ cap c := by simp only [Cat.assoc]
     _ = ((R ≫ S) ⊗ₕ 𝟙 c) ≫ cap c := by rw [← tensHom_comp, Cat.comp_id]
+
+/-- MONOIDALITY, `(R ⊗ S)° = R° ⊗ S°` — Lemma 4.2 (iii)
+    (functorialSemanticsForRelationalTheories.pdf p. 21).  The cap at a product is two caps nested
+    (`cap_tens`), so the two boxes bend independently and `«°_slide»` turns each one over on its
+    own strand; all that is left is the crossing, which naturality of the symmetry walks past `S`
+    (`hcross`). -/
+theorem conv_tensHom {a b c e : Word O} (R : a ⟶ b) (S : c ⟶ e) :
+    conv (R ⊗ₕ S) = (conv R ⊗ₕ conv S : _) := by
+  refine (conv_unique ?_).symm
+  have hcross : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
+      = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) := by
+    have hl : (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))
+        = (R ⊗ₕ (swap c b ≫ (𝟙 b ⊗ₕ S)) ⊗ₕ 𝟙 e : _) := by
+      rw [tensHom_assoc R (𝟙 b) (S ⊗ₕ 𝟙 e), ← tensHom_assoc (𝟙 b) S (𝟙 e),
+        ← tensHom_comp, Cat.id_comp, ← tensHom_comp, Cat.comp_id]
+    have hr : ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e)
+        = (R ⊗ₕ ((S ⊗ₕ 𝟙 b) ≫ swap e b) ⊗ₕ 𝟙 e : _) := by
+      rw [← tensHom_id b e, tensHom_assoc R S (𝟙 b ⊗ₕ 𝟙 e), ← tensHom_assoc S (𝟙 b) (𝟙 e),
+        ← tensHom_comp, Cat.comp_id, ← tensHom_comp, Cat.id_comp]
+    rw [hl, hr, swap_nat S (𝟙 b)]
+  calc (𝟙 (a ⊗ c) ⊗ₕ (conv R ⊗ₕ conv S)) ≫ cap (a ⊗ c)
+      = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e)
+          ≫ (((𝟙 a ⊗ₕ conv R) ≫ cap a) ⊗ₕ ((𝟙 c ⊗ₕ conv S) ≫ cap c)) :=
+        unbend_tens (conv R) (conv S)
+    _ = (𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ (((R ⊗ₕ 𝟙 b) ≫ cap b) ⊗ₕ ((S ⊗ₕ 𝟙 e) ≫ cap e)) := by
+        rw [«°_slide», «°_slide»]
+    _ = ((𝟙 a ⊗ₕ swap c b ⊗ₕ 𝟙 e) ≫ ((R ⊗ₕ 𝟙 b) ⊗ₕ (S ⊗ₕ 𝟙 e))) ≫ (cap b ⊗ₕ cap e) := by
+        rw [tensHom_comp, ← Cat.assoc]
+    _ = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ (𝟙 b ⊗ₕ swap e b ⊗ₕ 𝟙 e) ≫ (cap b ⊗ₕ cap e) := by
+        rw [hcross, Cat.assoc]
+    _ = ((R ⊗ₕ S) ⊗ₕ 𝟙 (b ⊗ e)) ≫ cap (b ⊗ e) := by rw [cap_tens]
 
 /-! ### Towards the modular law
 

@@ -197,6 +197,53 @@ theorem conv_inter {a b : Word O} (R S : a ⟶ b) :
     have h3 := conv_mono (meet_glb h1 h2)
     rwa [conv_conv] at h3
 
+/-! ### Every arrow is a lax MONOID homomorphism (p. 22)
+
+  The merge/create mirror of the axioms `lax_Δ` and `lax_!`.  The paper obtains them by bending the
+  comonoid pair with the converse — Lemma 4.2 (ii) and (iv) applied to (39), (40).  Both are proved
+  here without bending: expand by the unit of the adjunction, duplicate the box with the comonoid
+  law, contract by the counit.  Their reverses are `ineq_INJ` and `ineq_SUR` below, which do not
+  hold in general.
+
+  NUMBERING: the paper prints these two as (41), (42) (p. 22).  The numbers in `diag/CB.lean`'s
+  docstrings come from an earlier printing and run three higher throughout — there (41) names the
+  Frobenius law and (42), (43) the two comonoid laws used just below. -/
+
+/-- (41): `▷;R ≤ (R ⊗ R);▷`.  In `Rel`, the left side demands the two INPUTS be equal and runs `R`
+    once; the right side runs `R` on each input and demands the two RESULTS be equal.  So the
+    reverse is injectivity of `R` (`ineq_INJ`). -/
+theorem «lax_∇» {m n : Word O} (R : m ⟶ n) : (▷ ≫ R) ≤ ((R ⊗ₕ R) ≫ ▷) :=
+  calc (▷ ≫ R : m ⊗ m ⟶ n)
+      = ▷ ≫ R ≫ 𝟙 n := by rw [Cat.comp_id]
+    _ ≤ ▷ ≫ R ≫ ◁ ≫ ▷ :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+          (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙≤Δ∇» n))
+    _ = (▷ ≫ R ≫ ◁) ≫ ▷ := by simp only [Cat.assoc]
+    _ ≤ (▷ ≫ ◁ ≫ (R ⊗ₕ R)) ≫ ▷ :=
+        OrderedCat.comp_mono
+          (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (lax_Δ R)) (OrderedCat.«≤_refl» _)
+    _ = (▷ ≫ ◁) ≫ (R ⊗ₕ R) ≫ ▷ := by simp only [Cat.assoc]
+    _ ≤ 𝟙 (m ⊗ m) ≫ (R ⊗ₕ R) ≫ ▷ :=
+        OrderedCat.comp_mono («∇Δ≤𝟙» m) (OrderedCat.«≤_refl» _)
+    _ = (R ⊗ₕ R) ≫ ▷ := Cat.id_comp _
+
+/-- (42): `⟜;R ≤ ⟜`.  In `Rel`, the left side is the image of `R` and the right side is everything,
+    so the reverse is surjectivity of `R` (`ineq_SUR`).  Same three steps as `«lax_∇»`, one object
+    down. -/
+theorem lax_? {m n : Word O} (R : m ⟶ n) : (⟜ ≫ R) ≤ (⟜) :=
+  calc (⟜ ≫ R : (𝕀 : Word O) ⟶ n)
+      = ⟜ ≫ R ≫ 𝟙 n := by rw [Cat.comp_id]
+    _ ≤ ⟜ ≫ R ≫ ⊸ ≫ ⟜ :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+          (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙≤!?» n))
+    _ = (⟜ ≫ R ≫ ⊸) ≫ ⟜ := by simp only [Cat.assoc]
+    _ ≤ (⟜ ≫ ⊸) ≫ ⟜ :=
+        OrderedCat.comp_mono
+          (OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (lax_! R)) (OrderedCat.«≤_refl» _)
+    _ ≤ 𝟙 (𝕀 : Word O) ≫ ⟜ :=
+        OrderedCat.comp_mono («?!≤𝟙» m) (OrderedCat.«≤_refl» _)
+    _ = ⟜ := Cat.id_comp _
+
 /-! ### Maps (functorialSemanticsForRelationalTheories.pdf pp. 20–21)
 
   The paper gives the map conditions twice.  (SV)/(TOT)/(INJ)/(SUR) on p. 20 are COMONOID
