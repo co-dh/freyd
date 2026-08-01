@@ -1,5 +1,6 @@
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name.  See the header of strdiag.typ.
+#import "@preview/dvdtyp:1.0.1": dvdtyp, definition, theorem, example
 #import "strdiag.typ": cetz, d, conv, meet, wire
 
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN.  `./scripts/diag-export <decl>` walks the
@@ -64,12 +65,19 @@
 #import "generated/Freyd.Alg.symmDiv_recip.typ": pic as p-sdiv-recip
 #import "generated/Freyd.Alg.symmDiv_comp.typ": pic as p-sdiv-comp
 
-#set page(width: 25cm, height: auto, margin: 1.5cm)
+// PAGINATED, not one endless page: a viewer's page number and page keys are worth more than the
+// unbroken column, and the tables here are short enough that few of them straddle a break.  25cm
+// wide because the widest exported picture is a `⟺` between two containments, four sub-pictures in
+// a row.
+#set page(width: 25cm, height: 35cm, margin: 1.5cm)
 #set text(size: 11.5pt)
-#set par(justify: true)
+// The template supplies the title block, the running header, page numbers, heading numbering and
+// the definition environment.  Everything it sets is merged into, not replaced by, the rules above.
+#show: dvdtyp.with(
+  title: "The allegory axioms, and what defines them in the Frobenius calculus",
+)
 #show raw: set text(size: 9.6pt)
 #show heading: set block(above: 16pt, below: 9pt)
-#set heading(numbering: "1.")
 // Justification inside a table cell stretches the spaces around long unbreakable monospace runs
 // (`Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`) into gaps you can drive a car through.
 #show table: set par(justify: false)
@@ -159,15 +167,19 @@
   columns: items.len(), align: horizon, column-gutter: 3pt,
   ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
 
-#align(center)[#text(16pt)[*The allegory axioms, and what defines them in the Frobenius calculus*]]
-
-#v(4pt)
-
 = Cartesian bicategory of relations
 
-#align(center, block(inset: (y: 6pt))[
-  #text(12.5pt)[`(◁, ⊸) ⊣ (▷, ⟜)`, commutative, *Frobenius*, arrows *lax*.]
-])
+#definition[
+A *cartesian bicategory of relations* is a poset-enriched category(bicategory)
+that is has a symmetric monoidal product $times.o$ (cartisin product of set in Rel, vertical junctposition in the diagram) and
+
+  #align(center, block(inset: (y: 6pt))[
+    #text(12.5pt)[ $forall$ object A, `(A, ◁, ⊸) ⊣ (A, ▷, ⟜)`,  *Frobenius*, arrows *lax*.]
+    #v(3pt)
+    #src[`(◁ : A ⟶ A ⊗ A, ⊸ : A ⟶ 𝕀)` formed a cocommutative comonoid] \
+    #src[`(▷ : A ⊗ A ⟶ A, ⟜ : 𝕀 ⟶ A)` formed a commutative monoid]
+  ])
+]
 
 #grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + horizon,
   P(p-d-assoc, s: 60%), P(p-d-comm, s: 60%), P(p-d-counit, s: 60%),
@@ -177,7 +189,7 @@
   P(p-n-assoc, s: 60%), P(p-n-comm, s: 60%), P(p-n-unit, s: 60%),
 )
 
-== `◁ ⊣ ▷` and `⊸ ⊣ ⟜`
+== $forall$ object A, `(A, ◁, ⊸) ⊣ (A, ▷, ⟜)`
 
 #grid(columns: (1fr, 1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
   [#P(p-37, s: 52%) #v(-7pt) \ #src[`▷ ◁ ≤ 𝟙`]],
@@ -196,20 +208,43 @@ diagram built from these four generators collapses to the spider on its own inpu
 this equation is what starts that collapse. A *bubble* is the other order, `◁ ▷`: copy then merge,
 a closed loop, which §4 uses.
 
-== Every arrow a lax comonoid homomorphism
+== Every arrow is a lax comonoid homomorphism
 
 #grid(columns: (1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(p-lax-delta, s: 60%) #v(-7pt) \ #src[`R ◁ ≤ ◁ (R ⊗ R)`]],
-  [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[`R ⊸ ≤ ⊸`]],
+  [#P(p-lax-delta, s: 60%) #v(-7pt) \ #src[`R◁ ≤ ◁(R⊗R)`]],
+  [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[`R⊸ ≤ ⊸`]],
 )
 
+// Its definition box was straddling the break, which reads as two half-boxes.
+#pagebreak(weak: true)
 = Compact closed, and where the converse comes from
 
-The cup `⟜ ◁` and the cap `▷ ⊸` come with the definition, and they satisfy the snakes:
+#definition[
+A symmetric monoidal category is *closed* when `⊗` can be divided by, `(− ⊗ B) ⊣ (B ⇒ −)` for every
+`B`, so the hom is an OBJECT of the category and not a set outside it. It is *compact* closed when every
+object has a dual `A*`, that is a left and a right bracket satisfying the *snakes* — and then the
+division degenerates, `B ⇒ C = B* ⊗ C`, division by `B` being multiplication by `B*` exactly as
+`x / y = x y⁻¹`.
+
+A cartesian bicategory of relations is not such a category — it is poset-enriched, and nothing in
+§1 asks for a dual. What it HAS is the *structure*: the two brackets are the composites `⟜◁` and
+`▷⊸`, and the snakes below are proved, not assumed. Discard the order `≤` and what is left is a
+*hypergraph category*, also called a well-supported compact closed category, in which every object
+is its own dual, `A* = A`.
+]
+
+#quote(block: true, attribution: [Bonchi, Seeber and Sobociński])[
+  In any cartesian bicategory of relations we have a self-dual compact closed structure. To describe
+  it, we adopt the graphical notation \[the two brackets, and `R†` drawn by bending\]. For an
+  intuition consider `Rel`: it is easy to check that `R†` is just the opposite relation of `R`.
+]
+
+The left bracket `⟜◁` and the right bracket `▷⊸` come with the definition, and they satisfy the
+snakes:
 
 #row(snakeb.at(0).steps, s: 54%)
 
-So every object is its own dual, `R°` is `R` with its wires bent round the cup and the cap, and the
+So every object is its own dual, `R°` is `R` with its wires bent round the two brackets, and the
 four laws of `°` are theorems rather than assumptions:
 
 #align(center, block(inset: (y: 5pt))[
@@ -321,15 +356,15 @@ composition against a complement.
 = `(R S)° = S° R°`, drawn
 
 Not a picture of a converse. An arrow is *the* converse of `R` as soon as it satisfies one equation
-between UNBENT arrows into `𝕀`, and bending is a bijection, so the cup is never drawn: every row
-below has a cap and no cup, and "is a converse" shows up as a box on the *bottom* strand, mirrored.
+between UNBENT arrows into `𝕀`, and bending is a bijection, so the left bracket is never drawn:
+every row below closes with a right bracket and opens with nothing, and "is a converse" shows up as a box on the *bottom* strand, mirrored.
 
 #table(
   columns: (1fr,),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the slide — the one rule the proof uses, and it uses it twice*]),
   P(p-conv-slide, s: 88%),
-  [#src[A box on the bottom strand facing a cap is that box on the top strand, upright.]],
+  [#src[A box on the bottom strand facing a right bracket is that box on the top strand, upright.]],
 )
 
 #table(
@@ -347,7 +382,7 @@ below has a cap and no cup, and "is a converse" shows up as a box on the *bottom
   [`⊗` is a functor. #src[*Same picture.*]],
 
   raw(l42b.at(0).terms.at(2)), P(l42b.at(0).steps.at(2), s: 66%),
-  [*the slide.* `R°` is the box nearest the cap: it leaves the bottom strand and comes back upright
+  [*the slide.* `R°` is the box nearest the right bracket: it leaves the bottom strand and comes upright
    as `R` on the top.],
 
   raw(l42b.at(0).terms.at(3)), P(l42b.at(0).steps.at(3), s: 66%),
@@ -357,7 +392,7 @@ below has a cap and no cup, and "is a converse" shows up as a box on the *bottom
   [*interchange.* In sequence and side by side are the same thing. #src[A re-spacing only.]],
 
   raw(l42b.at(0).terms.at(5)), P(l42b.at(0).steps.at(5), s: 66%),
-  [*interchange back,* `R` first, so `S°` faces the cap.],
+  [*interchange back,* `R` first, so `S°` faces the right bracket.],
 
   raw(l42b.at(0).terms.at(6)), P(l42b.at(0).steps.at(6), s: 66%),
   [re-bracketing. #src[*Same picture.*]],
@@ -414,14 +449,14 @@ in the definition that may duplicate a box — so that is where the inequality h
   [*the start:* `(S ⊗ 𝟙) ▷`.],
 
   raw(nsb.at(0).terms.at(1)), P(nsb.at(0).steps.at(1), s: 62%),
-  [*Rebuild the merge* from a copy and a cap, the shape the lax copy law applies to.],
+  [*Rebuild the merge* from a copy and a right bracket, the shape the lax copy law applies to.],
 
   raw(nsb.at(0).terms.at(2)), P(nsb.at(0).steps.at(2), s: 62%),
   [*The lax copy law:* `S ◁` becomes `◁ (S ⊗ S)`, the box copied. #src[*The whole of the modular law,
    in one step.*]],
 
   raw(nsb.at(0).terms.at(3)), P(nsb.at(0).steps.at(3), s: 62%),
-  [*Reshape back,* and the surviving duplicate slides round the cap to become `S°`.],
+  [*Reshape back,* and the surviving duplicate slides round the right bracket to become `S°`.],
 )
 
 = Maps
