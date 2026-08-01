@@ -80,7 +80,7 @@ variable {O : Type u} [Biprod.{v} O]
 def pair {a b c : Word O} (R : c ⟶ a) (S : c ⟶ b) : c ⟶ sum a b :=
   conv (copair (conv R) (conv S))
 
-/-- `R ∪ S = ⟨R, S⟩ ; [𝟙, 𝟙]`: offer both, then forget which was taken. -/
+/-- `R ∪ S = ⟨R, S⟩ [𝟙, 𝟙]`: offer both, then forget which was taken. -/
 def union {a b : Word O} (R S : a ⟶ b) : a ⟶ b := pair R S ≫ copair (𝟙 b) (𝟙 b)
 
 /-- `⊥`, the zero arrow, routed through the zero object. -/

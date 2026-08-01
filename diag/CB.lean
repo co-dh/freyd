@@ -115,7 +115,7 @@ theorem special (n : Word O) : ◁ ≫ ▷ = 𝟙 n := by
     exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) h
   -- The right-hand side is `𝟙`: split the `⊗`, then use the counit law (10) on the left half and
   -- the unit law (7) on the right half.  In the non-strict tower this step also had to insert
-  -- `ρ ; ρ⁻¹ = 𝟙` between the halves; with `ρ = 𝟙` there is nothing between them.
+  -- `ρ ρ⁻¹ = 𝟙` between the halves; with `ρ = 𝟙` there is nothing between them.
   have hcollapse : ◁ ≫ (𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷ = 𝟙 n := by
     -- `⟜`'s object is named: this statement is the only one in the proof with no `▷` to fix it.
     have hsplit : (𝟙 n ⊗ₕ («!» ≫ «?» (n := n)))
@@ -166,11 +166,11 @@ theorem frob (n : Word O) :
   calc (𝟙 n ⊗ₕ ◁) ≫ (▷ ⊗ₕ 𝟙 n) = (▷ ≫ ◁ : _) := frob_left n
     _ = ((◁ ⊗ₕ 𝟙 n) ≫ (𝟙 n ⊗ₕ ▷) : _) := (frob_right n).symm
 
-/-- The CUP `? ; ◁ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
+/-- The CUP `⟜ ◁ : I ⟶ n ⊗ n` — in `Rel`, `• ↦ (x,x)` for every `x`.  The compact-closed
     structure the Frobenius equations induce (functorialSemanticsForRelationalTheories.pdf p. 19). -/
 def cup (n : Word O) : (𝕀 : Word O) ⟶ n ⊗ n := ⟜ ≫ ◁
 
-/-- The CAP `▷ ; ! : n ⊗ n ⟶ I` — in `Rel`, `(x,y) ↦ •` exactly when `x = y`. -/
+/-- The CAP `▷ ⊸ : n ⊗ n ⟶ I` — in `Rel`, `(x,y) ↦ •` exactly when `x = y`. -/
 def cap (n : Word O) : n ⊗ n ⟶ (𝕀 : Word O) := ▷ ≫ ⊸
 
 /-- The SNAKE (yanking) equation: a wire bent down by a cup and back up by a cap is straight.
@@ -234,7 +234,7 @@ def bend {a b : Word O} (k : a ⊗ b ⟶ (𝕀 : Word O)) : b ⟶ a :=
 
     ONE SYMBOL: `R°`, the book's.  The paper writes this same operation `R†` and reserves `(−)°` for
     the colour swap of its §7 — but §7 is a worked example in OTHER models, as the paper says itself:
-    only the black fragment `⊤, ∩, (−)†, ; , id` coincides with the calculus of relations there,
+    only the black fragment `⊤, ∩, (−)†, composition, id` coincides with the calculus of relations there,
     "`⊥` is not the empty relation and `>` is not the union".  Nothing in this repo formalises it.
     Everything here is `Rel(Set)`, where `†` and `°` name the one operation, so there is no clash to
     protect against and the reader is never asked to match two symbols. -/

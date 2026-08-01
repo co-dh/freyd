@@ -33,7 +33,7 @@ theorem «≤_top» {a b : Word O} (R : a ⟶ b) : R ≤ (top a b) := by
   -- `R = R;𝟙 ≤ R;(!;?) = (R;!);? ≤ !;? = ⊤`.
   have h1 : (R ≫ 𝟙 b) ≤ (R ≫ ⊸ ≫ ⟜) :=
     OrderedCat.comp_mono (OrderedCat.«≤_refl» R) («𝟙≤!?» b)
-  -- Both `!`s and both `?`s are named: `top a b` is `!ₐ ; ?_b`, and a statement whose ends are
+  -- Both `⊸`s and both `⟜`s are named: `top a b` is `⊸ₐ ⟜_b`, and a statement whose ends are
   -- `a` and `b` cannot say which object the `𝕀` in the middle came from.
   have h2 : ((R ≫ «!» (n := b)) ≫ «?» (n := b)) ≤ («!» (n := a) ≫ «?» (n := b)) :=
     OrderedCat.comp_mono (lax_! R) (OrderedCat.«≤_refl» («?» (n := b)))
@@ -46,10 +46,10 @@ theorem «≤_top» {a b : Word O} (R : a ⟶ b) : R ≤ (top a b) := by
     is discarded by the counit law (10) and re-absorbed by the unit law (7).  With `ρ = 𝟙` there is
     no unitor left to move `R` past, so the naturality step of the non-strict proof is gone. -/
 theorem meet_top {a b : Word O} (R : a ⟶ b) : meet R (top a b) = R := by
-  -- Stage the `⊗`: `R ⊗ (!;?) = (R ⊗ !) ; (𝟙 ⊗ ?)`.
+  -- Stage the `⊗`: `R ⊗ (⊸ ⟜) = (R ⊗ ⊸) (𝟙 ⊗ ⟜)`.
   have hR : (R ⊗ₕ («!» (n := a) ≫ «?» (n := b))) = (R ⊗ₕ ⊸) ≫ (𝟙 b ⊗ₕ ⟜) := by
     rw [← SymMonCat.tensHom_comp, Cat.comp_id]
-  -- `R ⊗ !` is `(𝟙 ⊗ !) ; R`, since `R ⊗ 𝟙_I` IS `R`.
+  -- `R ⊗ ⊸` is `(𝟙 ⊗ ⊸) R`, since `R ⊗ 𝟙_I` IS `R`.
   have hsplit : (R ⊗ₕ «!» (n := a)) = (𝟙 a ⊗ₕ «!» (n := a)) ≫ R := by
     calc (R ⊗ₕ ⊸)
         = (𝟙 a ⊗ₕ ⊸) ≫ (R ⊗ₕ 𝟙 (𝕀 : Word O)) := (tensHom_split' _ _).symm
@@ -129,7 +129,7 @@ theorem «meet_≤_right» {a b : Word O} (R S : a ⟶ b) :
     normalised to `◁;(𝟙 ⊗ ◁);(R ⊗ (S ⊗ T));(𝟙 ⊗ ▷);▷`: coassociativity (8) turns the left copy tree
     into the right one, associativity (6) does the same for the merge tree, and strict associativity
     re-brackets `(R ⊗ S) ⊗ T` in between.  In the non-strict tower that middle step is an insertion
-    of `α ; α⁻¹ = 𝟙` followed by `tensAssocInv_nat`. -/
+    of `α α⁻¹ = 𝟙` followed by `tensAssocInv_nat`. -/
 theorem meet_assoc {a b : Word O} (R S T : a ⟶ b) :
     meet (meet R S) T = meet R (meet S T) := by
   rw [meet_left_staged, meet_right_staged]

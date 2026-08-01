@@ -3,16 +3,19 @@
 
   WHY THIS FILE EXISTS.  Every wrong picture this exporter has shipped was one bug: a cell's
   DECLARED geometry disagreeing with what its render actually draws.  The declared side is
-  `leftPort`/`rightPort`, `leftOffsets`/`rightOffsets` and `width`; the drawn side is the string
-  `Cell.render` emits.  Nothing forced them to agree, and four times running they did not:
+  `leftCount`/`rightCount` and `width`; the drawn side is the string `Cell.lay` emits.  Nothing
+  forces them to agree, and five times running they did not:
 
   * `swap` reported its strands at `STACKSEP` and was drawn at `strdiag.typ`'s default `0.33`, so the
-    fork feeding `Δ ; σ = Δ` abutted a crossing that was somewhere else;
-  * a run ending in a snake reported the snake's skew outwards while `renderStrand` was also bending
-    it away inside, so the outer stub and the strand's own wire were drawn at two different heights;
-  * `runPad` fired on every non-zero offset, which includes a fork's two prongs, and tied them to the
-    centre line;
-  * `conv-w` was one `SPLIT` wider than `conv` draws, so a snake ended before its cell did.
+    fork feeding `◁ σ = ◁` abutted a crossing that was somewhere else;
+  * a run ending in a snake reported the snake's skew outwards while its stub was also bending it
+    away inside, so the outer stub and the strand's own wire were drawn at two different heights;
+  * the room reserved for that bend fired on every non-zero offset, which includes a fork's two
+    prongs, and tied them to the centre line;
+  * `conv-w` was one `SPLIT` wider than `conv` draws, so a snake ended before its cell did;
+  * a `⊗` centred its two operands on ITS middle rather than passing the strands through, so
+    `𝟙 ⊗ cup` and `cap ⊗ 𝟙` put the same three strands at different heights and the snake came out
+    with three diagonal bends through the middle of it.
 
   These `#guard`s are cheap and run on every `lake build diag`.  They do not check that a picture is
   BEAUTIFUL — they check that the model is self-consistent, which is the part a reader cannot see and
@@ -24,23 +27,32 @@ namespace Freyd.DiagExport.Test
 
 open Freyd.DiagExport
 
-/-! ### A generator drawn at one separation and reported at another -/
-
-/-- Every generator that presents two strands must SAY where they are, at the separation its RUN
-    settled on — never at a `strdiag.typ` default, since those are not all alike (`swap`'s is 0.33).
-    Checked at a separation deliberately unlike any default, so a shape that ignores the argument and
-    falls back cannot pass. -/
+/-- A separation deliberately unlike any `strdiag.typ` default, so a shape that ignores the
+    argument and falls back to its own cannot pass. -/
 def oddSep : Float := 0.77
 
-def statesItsStrands (c : Cell) : Bool :=
-  let s := String.join (c.render 0.0 0.0 oddSep false).toList
-  if c.leftPort.isTwo || c.rightPort.isTwo then
-    (s.splitOn ("sp: " ++ fmt oddSep)).length > 1
-  else true
+/-- The lanes a cell of this many strands is entered at: centred on zero, `2 · oddSep` apart. -/
+def lanes (k : Nat) : Array Float :=
+  (Array.range k).map fun i => ((k - 1).toFloat / 2.0 - i.toFloat) * 2.0 * oddSep
+
+def lay (c : Cell) : Lay := c.lay 0.0 (lanes c.leftCount) 0.0 oddSep false
+def drawn (c : Cell) : String := String.join (lay c).out.toList
 
 def delta : Cell := .gen "delta" 1.4 0.7
 def nabla : Cell := .gen "nabla" 1.4 0.7
 def swapC : Cell := .gen "swap" 0.55 0.0
+def snake : Cell := .dagger "R" false
+def plainBox : Cell := .box "R"
+
+/-! ### A generator drawn at one separation and reported at another -/
+
+/-- Every cell that carries two strands must be DRAWN at the separation of the lanes it is wired to
+    — the ones it was handed, or the ones it opens at `sep` — never at a `strdiag.typ` default,
+    since those are not all alike (`swap`'s is 0.33). -/
+def statesItsStrands (c : Cell) : Bool :=
+  if c.leftCount ≥ 2 || c.rightCount ≥ 2 then
+    ((drawn c).splitOn ("sp: " ++ fmt oddSep)).length > 1
+  else true
 
 #guard statesItsStrands delta
 #guard statesItsStrands nabla
@@ -48,39 +60,52 @@ def swapC : Cell := .gen "swap" 0.55 0.0
 #guard statesItsStrands (.capC)
 #guard statesItsStrands (.cupC)
 
-/-! ### Ports must agree across an abutment
+/-! ### Declared counts are the counts the render threads -/
 
-Two `pair` ports facing each other are drawn touching, with no wire between them to absorb a
-mismatch, so they have to be at the same heights. -/
+/-- What a cell says it hands downstream is what laying it out actually hands downstream.  A `⊗` of
+    a wire and a cup takes one strand and gives three, and every cell after it is placed by those
+    three. -/
+def countsItsStrands (c : Cell) : Bool := (lay c).ys.size == c.rightCount
 
-def abuts (c next : Cell) : Bool :=
-  !(c.rightPort == .pair && next.leftPort == .pair)
-    || c.rightOffsets oddSep == next.leftOffsets oddSep
+#guard countsItsStrands delta
+#guard countsItsStrands nabla
+#guard countsItsStrands swapC
+#guard countsItsStrands (.capC)
+#guard countsItsStrands (.cupC)
+#guard countsItsStrands snake
+#guard countsItsStrands (.stack #[.wire] #[.cupC])
+#guard countsItsStrands (.stack #[.capC] #[.wire])
+#guard countsItsStrands (.meet #[plainBox] #[.box "S"])
 
-#guard abuts delta nabla
-#guard abuts delta swapC
-#guard abuts swapC nabla
-#guard abuts delta (.capC)
+/-! ### Composition is flat
 
-/-! ### A run reports what `renderStrand` delivers, not what its cells want
+A strand is where upstream put it.  Nothing in this exporter may move one sideways, so nothing it
+emits is ever a `bend` — the drawing functions bend inside themselves, but no wire between two cells
+does.  This is the invariant the snake broke. -/
 
-`renderStrand` bends a single skewed strand back to the centre line, so an enclosing `⊗`, meet or
-tape must see it there.  A snake at either end is the only skew there is; anything else passes
-through. -/
+def flat (s : String) : Bool := (s.splitOn "bend(").length == 1
 
-def snake : Cell := .dagger "R" false
-def plainBox : Cell := .box "R"
+#guard flat (drawn (.stack #[.wire] #[.cupC]))
+#guard flat (drawn (.meet #[snake] #[plainBox]))
+#guard flat (drawn (.union #[plainBox] #[.box "S"]))
+#guard flat (drawn (.cut #[plainBox]))
 
-#guard runPortL #[snake] == #[0.0]
-#guard runPortR #[snake] == #[0.0]
-#guard runPortL #[plainBox] == runLeftOffsets #[plainBox]
-#guard runPortR #[delta] == runRightOffsets #[delta]
--- A fork is not skew, so it reserves no room.
-#guard runPadR #[delta] == 0.0
-#guard runPadL #[delta] == 0.0
--- A snake is, so it does.
-#guard runPadL #[snake] > 0.0
-#guard runPadR #[snake] > 0.0
+/-- The snake itself: `(𝟙 ⊗ cup) (cap ⊗ 𝟙)`, one strand in and one out, drawn without a single
+    bend between cells — the cup and the cap open at the same separation because they are wired to
+    the same three lanes. -/
+def snakeRun : Array Cell := #[.stack #[.wire] #[.cupC], .stack #[.capC] #[.wire]]
+
+#guard flat (String.join (renderRun snakeRun 0.0 #[0.0] 0.0 false).out.toList)
+#guard (renderRun snakeRun 0.0 #[0.0] 0.0 false).ys.size == 1
+
+/-! ### The identity is as wide as its object
+
+`𝟙` at an `n`-letter word is `n` wires.  Drawn as one it does not line up with the `▷ ◁` it is
+compared against. -/
+
+#guard (wires 2).rightCount == 2
+#guard (wires 3).rightCount == 3
+#guard (wires 1).rightCount == 1
 
 /-! ### Width is what the render occupies
 
@@ -92,11 +117,9 @@ what made the first snakes look unwired. -/
 #guard (Cell.width snake - boxWidth "R") == CONVPAD
 #guard CONVPAD < 0.28 + 0.34 + 2.0 * 0.78 + 0.34 + 0.40
 
--- A composite's width is the same arithmetic its render lays out with: the shared inner width is
--- `runOuterWidth`, padding included, or the strands are centred against the wrong total.
-def meetOfSnakes : Cell := .meet #[snake] #[.box "S"]
-#guard Cell.width meetOfSnakes ==
-  2.0 * FORK + max (runOuterWidth #[snake]) (runOuterWidth #[.box "S"])
-#guard runOuterWidth #[snake] == runPadL #[snake] + runWidth #[snake] + runPadR #[snake]
+-- A composite's width is the same arithmetic its render lays out with: the shared inner width the
+-- operands are centred in, or they are centred against the wrong total.
+#guard Cell.width (.meet #[snake] #[.box "S"]) ==
+  2.0 * FORK + max (runWidth #[snake]) (runWidth #[.box "S"])
 
 end Freyd.DiagExport.Test

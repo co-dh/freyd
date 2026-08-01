@@ -688,8 +688,8 @@ model here.
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*construct*], [*counterpart*], [*status*]),
 
-  [*tabulation*], [none], [Def. 4.1 gives no splitting of coreflexives; `⊤ = ⊸ ⟜` is all the
-  tabular content there is.],
+  [*tabulation*], [none], [no splitting of coreflexives; `⊤ = ⊸ ⟜` is all the tabular
+  content there is.],
 
   [`∪`, `⊥`], [a *biproduct* `⊕` on top of the Frobenius structure], [built, and drawn above. Not
   derivable from the definition alone — the calculus has no union at all.],
@@ -817,8 +817,8 @@ that looks like negation is not: `mnl R ≜ min(R° ⇨ R)` uses *implication*, 
 locally complete allegory, and `∼R` is only its special case `R ⇨ 𝟘`.
 
 So the specification vocabulary is ` `, `∩`, `∪`, `°`, `/`, `Λ`, `min`/`max`, `thin` and
-catamorphisms, and a note about what those pictures look like has no business spending a page on the
-one operation the book keeps at arm's length.
+catamorphisms, and a note about what those pictures look like has no business spending a page on an
+operation none of them uses.
 
 *Which also settles which picture of `/` is the right one.* As a term a residual is a composition
 against a complement, and drawing it that way makes every homset a Boolean algebra. Division asks

@@ -42,7 +42,7 @@
   `symmDiv`, `impl` and `thenRel`.
 
   A converse's operand is still a single box: `strdiag.typ`'s mirrored `gbox` takes a LABEL, so a
-  composite under a `°` appears as one box reading `R ; S`.
+  composite under a `°` appears as one box reading `R S`.
 
   ONE ENVIRONMENT PER PROCESS — the `lean-refactor` OOM lesson (`Freyd/tool/LeanRefactor.lean`):
   `importModules` retains its environment for the life of the process, so this exe imports once and
@@ -81,15 +81,15 @@ def TAPEPAD : Float := 0.22
 def CUTPAD : Float := 0.30
 /-- How far a cap's or a cup's strands bend over. -/
 def CAPBEND : Float := 0.60
-/-- `strdiag.typ`'s `SPLIT`: the stub between the two dots of a cap (`∇` then `!`) or a cup (`?`
-    then `Δ`).  They are drawn split, as the paper draws the converse. -/
+/-- `strdiag.typ`'s `SPLIT`: the stub between the two dots of a cap (`▷` then `⊸`) or a cup (`⟜`
+    then `◁`).  They are drawn split, as the paper draws the converse. -/
 def SPLITW : Float := 0.34
 /-- A cap or cup occupies its bend plus that stub. -/
 def CAPW : Float := CAPBEND + SPLITW
 /-- The column a chain's relation symbol sits in, to the left of every term. -/
 def SYMCOL : Float := 0.95
-/-- The strand offset a fork, a cap and a cup open by.  A `⊗` may sit wider — `meetSep` grows with
-    what is nested in its runs — and `joinWire` bends between the two, so the two need not agree. -/
+/-- The strand offset a fork, a cap and a cup open by, and the pitch new lanes are opened at.  A `⊗`
+    may sit wider: `meetSep` grows with what is nested in its runs. -/
 def STACKSEP : Float := 0.62
 /-- `strdiag.typ`'s `conv` geometry: how far the snake climbs from its incoming strand to its
     outgoing one, and the fixed width its two bends and stubs cost around the box.
@@ -108,9 +108,9 @@ inductive Cell where
   /-- A generator `strdiag.typ` draws directly.  `lead` is the distance from this cell's LEFT EDGE
       to the anchor the drawing function wants: `delta`, `nabla` and `bang` hang their incoming stub
       to the LEFT of that anchor, so passing the left edge straight through leaves the wire hanging
-      in mid-air — which is what disconnected `∇ ; Δ` pictures were. -/
+      in mid-air — which is what disconnected `▷ ◁` pictures were. -/
   | gen (fn : String) (width lead : Float)
-  /-- A meet, drawn as the nested picture `Δ ; (upper ⊗ lower) ; ∇`, not as a box with a label.
+  /-- A meet, drawn as the nested picture `◁ (upper ⊗ lower) ▷`, not as a box with a label.
       Nesting is why the operands are cell RUNS: `(R ∩ S) ∩ T` has to show its inner meet. -/
   | meet (upper lower : Array Cell)
   /-- A union (phase 8, `diag/Tape.lean`), drawn as a TAPE: the same fork-runs-join shape as a meet,
@@ -132,13 +132,13 @@ inductive Cell where
       composition `⨟•` and hence the residual are REGIONS, not boxes with the operator printed in
       them.  A box labelled `R / S` says only what the term already says.
       Cuts nest, and nesting alternates the ground: that is Peirce's double cut, and it is why
-      `R / S = ∼(∼R ; S°)` comes out as a white island inside a black region. -/
+      `R / S = ∼(∼R S°)` comes out as a white island inside a black region. -/
   | cut (inner : Array Cell)
   /-- A monoidal product `f ⊗ g`, drawn as the two runs STACKED — no fork, no join, since `⊗` puts
       two arrows side by side rather than copying one.  This is what makes a proof about bent wires
       readable: `𝟙 ⊗ S°` is a wire above a mirrored box, not an opaque label. -/
   | stack (upper lower : Array Cell)
-  /-- The cap `∇ ; !` and the cup `? ; Δ`, in `strdiag.typ`'s `capAt`/`cupAt` one-anchor form.  A cap
+  /-- The cap `▷ ⊸` and the cup `⟜ ◁`, in `strdiag.typ`'s `capAt`/`cupAt` one-anchor form.  A cap
       takes a pair on the left and gives nothing on the right; a cup is its mirror. -/
   | capC
   | cupC
@@ -175,11 +175,6 @@ inductive Port where
   -- the recursion through nested cuts is what Lean cannot see terminating.
   deriving BEq, Inhabited
 
-/-- Carries two strands, whichever kind. -/
-def Port.isTwo : Port → Bool
-  | .pair | .strands => true
-  | _ => false
-
 /-- Whether this cell's ports sit off the centre line, which is true of exactly the snake. -/
 def Cell.isDagger : Cell → Bool
   | .dagger _ _ => true
@@ -215,9 +210,9 @@ partial def Cell.width : Cell → Float
   | .wire => wireW
   | .box l | .dbox l | .mbox l => boxWidth l
   | .gen _ w _ => w
-  | .meet u l => 2.0 * FORK + max (runOuterWidth u) (runOuterWidth l)
-  | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runOuterWidth u) (runOuterWidth l)
-  | .stack u l => max (runOuterWidth u) (runOuterWidth l)
+  | .meet u l => 2.0 * FORK + max (runWidth u) (runWidth l)
+  | .union u l => 2.0 * FORK + 2.0 * TAPEPAD + max (runWidth u) (runWidth l)
+  | .stack u l => max (runWidth u) (runWidth l)
   | .capC | .cupC => CAPW
   | .dagger l _ => CONVPAD + boxWidth l
   | .divbox n dn _ => divboxWidth n dn
@@ -240,49 +235,54 @@ partial def runWidth (cells : Array Cell) : Float := Id.run do
     if h : i + 1 < cells.size then w := w + joinGap cells[i]! cells[i + 1]
   return w
 
-/-- Half the vertical extent, so a meet can separate its strands by enough to clear whatever is
-    nested inside them. -/
-partial def Cell.span : Cell → Float
-  | .meet u l => meetSep u l + max (runSpan u) (runSpan l)
-  | .union u l => meetSep u l + max (runSpan u) (runSpan l) + TAPEPAD
-  | .stack u l => meetSep u l + max (runSpan u) (runSpan l)
+/-- How far a cell reaches ABOVE the lane it is entered at, and how far BELOW.  Not one number: the
+    snake is entered at its lane and left `RISE` higher, so it reaches up and not down, and a `⊗`
+    that reserved the same room on either side of it would hold its other operand a whole rise clear
+    of nothing.  What has to be kept apart is the DOWNWARD reach of the upper operand and the UPWARD
+    reach of the lower one, which is what `meetSep` adds up. -/
+partial def Cell.spanUp : Cell → Float
+  | .meet u l | .stack u l => meetSep u l + runSpanUp u
+  | .union u l => meetSep u l + runSpanUp u + TAPEPAD
   | .capC | .cupC => STACKSEP + BH / 2.0
   | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
-  | .cut inner => runSpan inner + CUTPAD
-  -- The snake occupies its climb as well as its box: the incoming strand sits `RISE/2` below the
-  -- centre line and the outgoing one `RISE/2` above it.
-  | .dagger _ _ => RISE / 2.0 + BH / 2.0
+  | .cut inner => runSpanUp inner + CUTPAD
+  | .dagger _ _ => RISE + BH / 2.0
   | _ => BH / 2.0
 
-/-- The height at which a two-strand port's strands sit, above and below the centre line.  A `⊗`
-    separates its runs by `meetSep`, which grows with what is nested inside them; a fork, a cap and a
-    cup always open by `STACKSEP`.  `renderRun` reads both sides and joins them. -/
-partial def Cell.strandSep : Cell → Float
-  | .stack u l => meetSep u l
-  | _ => STACKSEP
+partial def Cell.spanDown : Cell → Float
+  | .meet u l | .stack u l => meetSep u l + runSpanDown l
+  | .union u l => meetSep u l + runSpanDown l + TAPEPAD
+  | .capC | .cupC => STACKSEP + BH / 2.0
+  | .gen "delta" _ _ | .gen "nabla" _ _ => STACKSEP
+  | .cut inner => runSpanDown inner + CUTPAD
+  | _ => BH / 2.0
 
-/-- Where a cell's strands MEET its left edge, top to bottom.  A port is not one strand or two: a
-    `⊗` of a fork and a wire offers three, and whatever follows has to be wired to all three.
-    Composing two pictures means connecting these lists, so they are computed structurally rather
-    than assumed. -/
-partial def Cell.leftOffsets (sep : Float) : Cell → Array Float
-  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => #[sep, -sep]
-  | .gen "unitR" _ _ | .cupC => #[]
-  | .stack u l =>
-    (runPortL u).map (· + sep) ++ (runPortL l).map (· - sep)
-  | .cut inner => runLeftOffsets inner
-  | .dagger _ _ => #[-RISE / 2.0]
-  | _ => #[0.0]
+/-- How many strands a cell takes from upstream, and how many it hands downstream.  The COUNT is
+    all that is structural: WHERE those strands sit is threaded along the run, cell by cell, and is
+    not a property of any one cell.  A `⊗` of a fork and a wire takes one strand and gives three. -/
+partial def Cell.leftCount : Cell → Nat
+  | .gen "nabla" _ _ | .gen "swap" _ _ | .capC => 2
+  | .gen "unitR" _ _ | .cupC => 0
+  | .stack u l => runLeftCount u + runLeftCount l
+  | .cut inner => runLeftCount inner
+  | _ => 1
 
-/-- Where a cell's strands meet its right edge, top to bottom. -/
-partial def Cell.rightOffsets (sep : Float) : Cell → Array Float
-  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => #[sep, -sep]
-  | .gen "bang" _ _ | .capC => #[]
-  | .stack u l =>
-    (runPortR u).map (· + sep) ++ (runPortR l).map (· - sep)
-  | .cut inner => runRightOffsets inner
-  | .dagger _ _ => #[RISE / 2.0]
-  | _ => #[0.0]
+partial def Cell.rightCount : Cell → Nat
+  | .gen "delta" _ _ | .gen "swap" _ _ | .cupC => 2
+  | .gen "bang" _ _ | .capC => 0
+  | .stack u l => runRightCount u + runRightCount l
+  | .cut inner => runRightCount inner
+  | _ => 1
+
+partial def runLeftCount (cells : Array Cell) : Nat :=
+  match cells[0]? with | some c => c.leftCount | none => 1
+partial def runRightCount (cells : Array Cell) : Nat :=
+  match cells.back? with | some c => c.rightCount | none => 1
+
+partial def runSpanUp (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => max acc c.spanUp) (BH / 2.0)
+partial def runSpanDown (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => max acc c.spanDown) (BH / 2.0)
 
 /-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
     other; a fork, a swap, a cap and a cup by nothing in particular. -/
@@ -290,59 +290,17 @@ partial def Cell.natSep : Cell → Float
   | .stack u l => meetSep u l
   | _ => STACKSEP
 
-/-- THE SEPARATION EVERY TWO-STRAND CELL OF A RUN IS DRAWN AT.  Composition has to line up: a fork
-    feeding a `⊗` opens exactly as wide as the `⊗` stacks, so the strands meet as straight wires
-    instead of being bent into place afterwards.  One number per run, the widest any cell needs. -/
+/-- HALF THE PITCH A RUN OPENS NEW LANES AT.  Only the cells that CREATE strands consult it — a
+    fork, a cup, and a `⊗` reserving room for an operand upstream handed nothing to.  One number per
+    run, the widest any cell needs, so lanes opened at one point of the run clear whatever is nested
+    further along it. -/
 partial def runSep (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => max acc c.natSep) STACKSEP
-
-partial def runLeftOffsets (cells : Array Cell) : Array Float :=
-  match cells[0]? with | some c => c.leftOffsets (runSep cells) | none => #[0.0]
-
-partial def runRightOffsets (cells : Array Cell) : Array Float :=
-  match cells.back? with | some c => c.rightOffsets (runSep cells) | none => #[0.0]
-
-partial def runSpan (cells : Array Cell) : Float :=
-  cells.foldl (fun acc c => max acc c.span) (BH / 2.0)
-
-/-- How far a run's end is off the centre line, and 0 unless it is off it in the ONE way that needs
-    a bend: a single strand that does not arrive at `y`, which is exactly a snake.
-
-    A fork and a `⊗` also report non-zero offsets, and they must NOT be caught here.  Their two
-    strands are wired by the geometry enclosing them — `Δ`'s prongs are `Δ`'s own — and treating
-    those offsets as skew drew a wire from each prong down to the centre line, joining two points
-    that were already connected and wrecking every copy and merge in the note. -/
-partial def runSkewL (cells : Array Cell) : Float :=
-  match cells[0]? with
-  | some c => if c.leftPort == .one then ((runLeftOffsets cells)[0]?).getD 0.0 else 0.0
-  | none => 0.0
-partial def runSkewR (cells : Array Cell) : Float :=
-  match cells.back? with
-  | some c => if c.rightPort == .one then ((runRightOffsets cells)[0]?).getD 0.0 else 0.0
-  | none => 0.0
-/-- What a run presents at its boundary, which is not always what its first cell wants.
-    `renderStrand` bends a single skewed strand back to the centre line, so an enclosing `⊗`, meet
-    or tape sees it there — reporting the skew outwards as well counted it twice, and drew the outer
-    stub at the snake's height and the strand's own wire at the centre, connected to each other by
-    nothing.  Genuine multi-strand ports pass through untouched. -/
-partial def runPortL (cells : Array Cell) : Array Float :=
-  if (runSkewL cells).abs > 0.01 then #[0.0] else runLeftOffsets cells
-partial def runPortR (cells : Array Cell) : Array Float :=
-  if (runSkewR cells).abs > 0.01 then #[0.0] else runRightOffsets cells
-
-/-- Horizontal room for that bend to fall through, and none when there is no bend. -/
-partial def runPadL (cells : Array Cell) : Float :=
-  if (runSkewL cells).abs > 0.01 then RISE / 2.0 else 0.0
-partial def runPadR (cells : Array Cell) : Float :=
-  if (runSkewR cells).abs > 0.01 then RISE / 2.0 else 0.0
-/-- What a run occupies inside a meet, a stack or a tape: its cells plus that room. -/
-partial def runOuterWidth (cells : Array Cell) : Float :=
-  runPadL cells + runWidth cells + runPadR cells
 
 /-- The offset of each strand of a meet from its centre line: enough that the two runs clear each
     other by `STRANDGAP`.  At the leaves this is `strdiag.typ`'s own `0.62`. -/
 partial def meetSep (u l : Array Cell) : Float :=
-  (runSpan u + runSpan l + STRANDGAP) / 2.0
+  (runSpanDown u + runSpanUp l + STRANDGAP) / 2.0
 
 end
 
@@ -373,184 +331,233 @@ def inv (b : Bool) : String := if b then ", invert: true" else ""
 def hwire (x₀ x₁ y : Float) (iv : Bool := false) : Array String :=
   if x₁ - x₀ > 0.005 then #[s!"  wire(({fmt x₀}, {fmt y}), ({fmt x₁}, {fmt y}){inv iv})"] else #[]
 
-/-- Join two ports that are at DIFFERENT heights: a wire when they agree, a bend when they do not.
-    Composition has to connect — the output strands of one cell are the input strands of the next,
-    wherever each happens to sit — and the offsets do not always agree: a `⊗` separates its two runs
-    by enough to clear whatever is nested in them, while a fork always opens by `STACKSEP`.  Drawing
-    both at a fixed offset is what left `Δ ; (Δ ⊗ 𝟙)` as four strands meeting nothing. -/
-def joinWire (x₀ x₁ y₀ y₁ : Float) (iv : Bool := false) : Array String :=
-  if (y₁ - y₀).abs < 0.005 then hwire x₀ x₁ y₀ iv
-  else #[s!"  bend(({fmt x₀}, {fmt y₀}), ({fmt x₁}, {fmt y₁}), k: 0.5{inv iv})"]
+/-- What laying a run out produced: the drawing, the lane positions it hands DOWNSTREAM, and the
+    lowest and highest strand it touched — which is what an enclosing `⊗` needs in order to put its
+    other operand clear of it. -/
+structure Lay where
+  out : Array String
+  ys : Array Float
+  lo : Float
+  hi : Float
+  deriving Inhabited
 
 mutual
 
-/-- One operand run of a meet, a stack or a tape: centred in the shared inner width `iw` and wired
-    to both ends of it at strand level `ys`.
+/-- One operand run of a meet, a stack or a tape: centred in the shared inner width `iw`, entered at
+    the heights `ys` it is handed and left at the heights it hands on, with a flat stub to each edge
+    of the shared width.  The stubs are flat because the run neither moved the strands nor may: a
+    strand is where upstream put it. -/
+partial def layStrand (run : Array Cell) (x₁ iw : Float) (ys : Array Float) (anchor : Float)
+    (iv : Bool) : Lay := Id.run do
+  let w := runWidth run
+  let l₀ := x₁ + (iw - w) / 2.0            -- where this run's cells begin
+  let b := renderRun run l₀ ys anchor iv
+  let mut out := #[]
+  for y in ys do out := out ++ hwire x₁ l₀ y iv
+  out := out ++ b.out
+  for y in b.ys do out := out ++ hwire (l₀ + w) (x₁ + iw) y iv
+  return { b with out }
 
-    The wires are BENDS wherever the run does not begin and end on the centre line.  A snake takes
-    its strand `RISE/2` low and gives it back `RISE/2` high, so a flat stub here left the prongs of
-    `∇` — and of `Δ`, and of a tape's fork — ending in mid-air beside `R°`, connected to nothing.
-    That is what `runPadL`/`runPadR` reserve the room for. -/
-partial def renderStrand (run : Array Cell) (x₁ iw ys : Float) (iv : Bool) : Array String := Id.run do
-  let ow := runOuterWidth run
-  let l₀ := x₁ + (iw - ow) / 2.0            -- where this run's outer extent begins
-  let rx := l₀ + runPadL run                -- where its cells begin
-  let re := rx + runWidth run               -- where they end
-  let mut out := hwire x₁ l₀ ys iv
-  let sl := runSkewL run
-  if sl.abs > 0.01 then out := out ++ joinWire l₀ rx ys (ys + sl) iv
-  out := out ++ renderRun run rx ys iv
-  let sr := runSkewR run
-  if sr.abs > 0.01 then out := out ++ joinWire re (re + runPadR run) (ys + sr) ys iv
-  return out ++ hwire (re + runPadR run) (x₁ + iw) ys iv
+/-- Lay one cell out at `x`, entered at the lane heights `ys`.
 
--- Two parameters, two independent facts about the surroundings: `sep` is where this run puts its
--- strands, `iv` is which colour the ground under it is.
-partial def Cell.render (c : Cell) (x y sep : Float) (iv : Bool) : Array String :=
+    `anchor` is where to put a strand there is no upstream lane for — a cup creates two strands out
+    of nothing, so only its surroundings can say where they go — and `sep` is the half-pitch the run
+    opens new lanes at.  Everything else follows from `ys`: a fork opens either side of the strand it
+    is handed, a merge closes on the midpoint of the two it is handed, a cap bends over exactly the
+    two that arrive. -/
+partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Float)
+    (iv : Bool) : Lay :=
+  let y := (ys[0]?).getD anchor
+  let y₂ := (ys[1]?).getD (y - 2.0 * sep)
+  let mid := (y + y₂) / 2.0
+  let half := (y - y₂) / 2.0
   match c with
-  | .wire => hwire x (x + wireW) y iv
+  | .wire => ⟨hwire x (x + wireW) y iv, #[y], y, y⟩
   | .box l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}{inv iv})"]
+    ⟨#[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}{inv iv})"],
+     #[y], y, y⟩
   | .mbox l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, \
-        chamfer: false{inv iv})"]
+    ⟨#[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, h: {fmt BH}, \
+        chamfer: false{inv iv})"], #[y], y, y⟩
   | .gen fn w lead =>
-    -- Every two-strand generator opens at the separation its RUN settled on, so the strands it
-    -- offers are the strands its neighbours expect, and they meet as straight wires rather than
-    -- being bent into place afterwards.  Never a `strdiag.typ` default: those are not all
-    -- `STACKSEP` — `swap`'s is 0.33 — and a generator drawn at one separation while REPORTING
-    -- another abuts a fork whose prongs are somewhere else, which is what left the swap in
-    -- `Δ ; σ = Δ` hanging beside the copy that feeds it.  The swap also spans its cell, or the
-    -- wires into it stop short of the crossing.
+    -- A generator is drawn at the lanes it is actually wired to, and REPORTS those lanes, so what
+    -- it offers is what its neighbour expects and the two meet as a straight wire.  Never a
+    -- `strdiag.typ` default: those are not all `STACKSEP` — `swap`'s is 0.33 — and a generator drawn
+    -- at one separation while reporting another abuts a fork whose prongs are somewhere else, which
+    -- is what left the swap in `◁ σ = ◁` hanging beside the copy that feeds it.  The swap also
+    -- spans its cell, or the wires into it stop short of the crossing.
+    let ay := if fn == "nabla" || fn == "swap" then mid else y
     let sp :=
-      if fn == "delta" || fn == "nabla" then s!", sp: {fmt sep}"
-      else if fn == "swap" then s!", sp: {fmt sep}, w: {fmt w}"
+      if fn == "delta" then s!", sp: {fmt sep}"
+      else if fn == "nabla" then s!", sp: {fmt half}"
+      else if fn == "swap" then s!", sp: {fmt half}, w: {fmt w}"
       else ""
-    #[s!"  {fn}(({fmt (x + lead)}, {fmt y}){sp}{inv iv})"]
+    let draw := #[s!"  {fn}(({fmt (x + lead)}, {fmt ay}){sp}{inv iv})"]
+    match fn with
+    | "delta" => ⟨draw, #[y + sep, y - sep], y - sep, y + sep⟩
+    | "nabla" => ⟨draw, #[mid], y₂, y⟩
+    | "swap" => ⟨draw, #[y, y₂], y₂, y⟩
+    | "bang" => ⟨draw, #[], y, y⟩
+    | _ => ⟨draw, #[y], y, y⟩
   -- Tinted as well as mirrored: see `TINT` in `strdiag.typ`.  A chain whose whole content is a box
   -- crossing a bend and coming back upright has to show that at a glance, not on inspection of
   -- which corner is chamfered.  On black ground the tint is dropped: `invert` supplies the paper.
-  -- THE SNAKE, and it is the only drawing of a converse in this file.  `conv` anchors on its
-  -- INCOMING strand, which sits `RISE/2` below the centre line, so the cell straddles `y`.
+  -- THE SNAKE, and it is the only drawing of a converse in this file.  It is the one cell that
+  -- hands its strand on at a different height from the one it took: `conv` enters low and leaves
+  -- `RISE` higher, and everything after it simply runs at the new height.
   | .dagger l dashed =>
     let dsh := if dashed then ", dashed: true" else ""
-    #[s!"  conv(({fmt x}, {fmt (y - RISE / 2.0)}), {labelContent l}, \
-        w: {fmt (boxWidth l)}, h: {fmt BH}{dsh}{inv iv})"]
+    ⟨#[s!"  conv(({fmt x}, {fmt y}), {labelContent l}, \
+        w: {fmt (boxWidth l)}, h: {fmt BH}{dsh}{inv iv})"], #[y + RISE], y, y + RISE⟩
   | .dbox l =>
-    #[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
-        h: {fmt BH}, dashed: true{inv iv})"]
+    ⟨#[s!"  gbox(({fmt x}, {fmt y}), {labelContent l}, w: {fmt (boxWidth l)}, \
+        h: {fmt BH}, dashed: true{inv iv})"], #[y], y, y⟩
   | .divbox n dn flip =>
     let fl := if flip then ", flip: true" else ""
-    #[s!"  divbox(({fmt x}, {fmt y}), {labelContent n}, {labelContent dn}, \
-        w: {fmt (divboxWidth n dn)}, h: {fmt BH}, denw: {fmt (denWidth dn)}{fl}{inv iv})"]
+    ⟨#[s!"  divbox(({fmt x}, {fmt y}), {labelContent n}, {labelContent dn}, \
+        w: {fmt (divboxWidth n dn)}, h: {fmt BH}, denw: {fmt (denWidth dn)}{fl}{inv iv})"],
+     #[y], y, y⟩
   -- A cap's second dot sits to the RIGHT of its bend, a cup's to the LEFT, so the cup is anchored
-  -- one stub in from this cell's left edge.
-  | .capC => #[s!"  capAt(({fmt x}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
+  -- one stub in from this cell's left edge.  The cap bends over the two lanes that arrive; the cup,
+  -- with nothing arriving, opens either side of the anchor its surroundings reserved for it.
+  | .capC => ⟨#[s!"  capAt(({fmt x}, {fmt mid}), sp: {fmt half}, w: {fmt CAPBEND}{inv iv})"],
+              #[], y₂, y⟩
   | .cupC =>
-    #[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"]
+    ⟨#[s!"  cupAt(({fmt (x + SPLITW)}, {fmt y}), sp: {fmt sep}, w: {fmt CAPBEND}{inv iv})"],
+     #[y + sep, y - sep], y - sep, y + sep⟩
   | .stack u l => Id.run do
-    let iw := max (runOuterWidth u) (runOuterWidth l)
-    let mut out := #[]
-    for (run, dy) in [(u, sep), (l, -sep)] do
-      out := out ++ renderStrand run x iw (y + dy) iv
-    return out
+    let iw := max (runWidth u) (runWidth l)
+    let nu := min (runLeftCount u) ys.size
+    let msep := meetSep u l
+    let yu := ys.extract 0 nu
+    let yl := ys.extract nu ys.size
+    -- The operand upstream hands strands to is placed BY them; the other has nothing to be placed
+    -- by, so it is put clear of the first — below it when it is the lower half of the `⊗`, above it
+    -- when it is the upper half.  That is the whole of the vertical layout: no operand is centred
+    -- on anything, so composing two `⊗`s that split their strands differently still meets flat.
+    let (bu, bl) :=
+      if yu.isEmpty && !yl.isEmpty then
+        let bl := layStrand l x iw yl anchor iv
+        (layStrand u x iw yu (bl.hi + 2.0 * msep) iv, bl)
+      else
+        let bu := layStrand u x iw yu anchor iv
+        (bu, layStrand l x iw yl (bu.lo - 2.0 * msep) iv)
+    return ⟨bu.out ++ bl.out, bu.ys ++ bl.ys, min bu.lo bl.lo, max bu.hi bl.hi⟩
   | .union u l => Id.run do
-    let iw := max (runOuterWidth u) (runOuterWidth l)
-    let sep := meetSep u l
-    let inner := max (runSpan u) (runSpan l)
+    let iw := max (runWidth u) (runWidth l)
+    let s := meetSep u l
+    let top := y + s + runSpanUp u + TAPEPAD
+    let bot := y - s - runSpanDown l - TAPEPAD
     let x₁ := x + TAPEPAD + FORK             -- where the tape's two branches begin
     let w := 2.0 * FORK + 2.0 * TAPEPAD + iw
+    -- The tape carries its own colour, so its interior is white ground whatever is outside it.
+    let bu := layStrand u x₁ iw #[y + s] (y + s) false
+    let bl := layStrand l x₁ iw #[y - s] (y - s) false
+    let a := (bu.ys[0]?).getD (y + s)
+    let b := (bl.ys[0]?).getD (y - s)
     -- The wrapper is drawn FIRST so the circuit sits on top of it, not under it.
-    let mut out := #[s!"  tape(({fmt x}, {fmt (y - sep - inner - TAPEPAD)}), \
-      ({fmt (x + w)}, {fmt (y + sep + inner + TAPEPAD)}))",
-      s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"]
-    for (run, dy) in [(u, sep), (l, -sep)] do
-      -- The tape carries its own colour, so its interior is white ground whatever is outside it.
-      out := out ++ renderStrand run x₁ iw (y + dy) false
-    return out.push
-      s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt y}), sp: {fmt sep}, len: {fmt FORK})"
+    let out := #[s!"  tape(({fmt x}, {fmt bot}), ({fmt (x + w)}, {fmt top}))",
+      s!"  tape-fork(({fmt (x + TAPEPAD)}, {fmt y}), sp: {fmt s}, len: {fmt FORK})"]
+      ++ bu.out ++ bl.out
+      ++ #[s!"  tape-join(({fmt (x + w - TAPEPAD)}, {fmt ((a + b) / 2.0)}), \
+        sp: {fmt ((a - b) / 2.0)}, len: {fmt FORK})"]
+    return ⟨out, #[(a + b) / 2.0], bot, top⟩
   | .meet u l => Id.run do
-    let iw := max (runOuterWidth u) (runOuterWidth l)
-    let sep := meetSep u l
+    let iw := max (runWidth u) (runWidth l)
+    let s := meetSep u l
     let x₁ := x + FORK                       -- where `Δ`'s two strands arrive
     let x₂ := x₁ + iw                        -- where `∇`'s two strands leave
-    let mut out :=
-      #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt sep}{inv iv})"]
-    -- Each operand run is centred in the shared inner width, and wired out to both ends.
-    for (run, dy) in [(u, sep), (l, -sep)] do
-      out := out ++ renderStrand run x₁ iw (y + dy) iv
-    return out.push
-      s!"  nabla(({fmt (x₂ + FORK)}, {fmt y}), li: {fmt FORK}, lo: 0, sp: {fmt sep}{inv iv})"
+    let bu := layStrand u x₁ iw #[y + s] (y + s) iv
+    let bl := layStrand l x₁ iw #[y - s] (y - s) iv
+    let a := (bu.ys[0]?).getD (y + s)
+    let b := (bl.ys[0]?).getD (y - s)
+    let out := #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt s}{inv iv})"]
+      ++ bu.out ++ bl.out
+      ++ #[s!"  nabla(({fmt (x₂ + FORK)}, {fmt ((a + b) / 2.0)}), li: {fmt FORK}, lo: 0, \
+        sp: {fmt ((a - b) / 2.0)}{inv iv})"]
+    return ⟨out, #[(a + b) / 2.0], min bl.lo (y - s), max bu.hi (y + s)⟩
   -- The cut.  Ground first, contents on top of it with the colour flipped, and a stub at each edge
   -- so the wire crosses the boundary instead of stopping at it — a cut is a region a strand passes
   -- through, not a box it ends on.
   | .cut inner => Id.run do
     let w := runWidth inner
-    let h := runSpan inner + CUTPAD
+    let top := y + runSpanUp inner + CUTPAD
+    let bot := y - runSpanDown inner - CUTPAD
     let x₁ := x + CUTPAD
-    let mut out := #[s!"  cut(({fmt x}, {fmt (y - h)}), ({fmt (x + w + 2.0 * CUTPAD)}, {fmt (y + h)})\
-{inv iv})"]
-    out := out ++ renderRun inner x₁ y (!iv)
+    let b := renderRun inner x₁ ys y (!iv)
+    let mut out := #[s!"  cut(({fmt x}, {fmt bot}), ({fmt (x + w + 2.0 * CUTPAD)}, {fmt top})\
+{inv iv})"] ++ b.out
     -- The stubs are drawn in the OUTER colour on the outer side of each edge; the inner run already
     -- carries its own.  Both are only a `CUTPAD` long, so drawing them in one colour is enough.
-    for o in runLeftOffsets inner do
-      out := out ++ hwire x x₁ (y + o) (!iv)
-    for o in runRightOffsets inner do
-      out := out ++ hwire (x₁ + w) (x + w + 2.0 * CUTPAD) (y + o) (!iv)
-    return out
+    for o in ys do out := out ++ hwire x x₁ o (!iv)
+    for o in b.ys do out := out ++ hwire (x₁ + w) (x + w + 2.0 * CUTPAD) o (!iv)
+    return ⟨out, b.ys, min b.lo bot, max b.hi top⟩
 
-/-- Lay a run of cells out at height `y` from `x0`, joining consecutive ones with a wire.  Two forks
-    facing each other ABUT — `Δ ; ∇` is one bubble, not two shapes with a gap — so `runWidth` has to
-    agree with this, which is what `joinGap` is for. -/
-partial def renderRun (cells : Array Cell) (x0 y : Float) (iv : Bool) : Array String := Id.run do
+/-- Lay a run of cells out from `x0`, entered at the lane heights `ys`, THREADING those heights: each
+    cell is handed what the one before it gave, so every joining wire is flat and no strand is ever
+    bent back to a centre line it was never on.  Drawing each cell at a height computed from its own
+    shape instead is what put three diagonal bends through the middle of the snake, where the same
+    three strands leave one `⊗` and enter the next. -/
+partial def renderRun (cells : Array Cell) (x0 : Float) (ys : Array Float) (anchor : Float)
+    (iv : Bool) : Lay := Id.run do
   let sep := runSep cells
+  let mut cur := ys
   let mut out := #[]
+  -- `anchor` is where a strand goes when there is none to inherit; it is NOT part of the extent
+  -- unless something is actually drawn there, or an operand a `⊗` reserved room below would drag
+  -- the picture's centre down by room nothing occupies.
+  let mut lo := (ys[0]?).getD anchor
+  let mut hi := lo
+  for y in ys do
+    lo := min lo y
+    hi := max hi y
   let mut x := x0
   for i in [0 : cells.size] do
     let c := cells[i]!
-    out := out ++ c.render x y sep iv
+    let b := c.lay x cur anchor sep iv
+    out := out ++ b.out
+    lo := min lo b.lo
+    hi := max hi b.hi
+    cur := b.ys
     x := x + c.width
     if h : i + 1 < cells.size then
-      let next := cells[i + 1]
       -- Nothing to join when the two abut: a fork straight into a fork is ONE bubble, and a wire
       -- drawn across it would run through the middle of the shape.  Otherwise the wire spans the
-      -- WHOLE gap, which is not always `GAP` — a snake gets extra room to fall through, and drawing
+      -- WHOLE gap, which is not always `GAP` — a snake gets extra room to climb through, and drawing
       -- at `GAP` while advancing by more left the strand short of the next cell.
-      let g := joinGap c next
-      if g < 0.005 then
-        pure ()
-      else if c.rightPort == .one && next.leftPort == .one then
-        -- Offset-aware, because a snake leaves higher than it entered: a flat stub here left the
-        -- outgoing strand of `R°` hanging in mid-air beside whatever followed it.  Every other cell
-        -- reports 0 on both sides, so nothing else moves.
-        let a := (c.rightOffsets sep)[0]!
-        let b := (next.leftOffsets sep)[0]!
-        out := out ++ joinWire x (x + g) (y + a) (y + b) iv
-      else if c.rightPort.isTwo && next.leftPort.isTwo then
-        -- One join per strand, from where THIS cell's strands end to where the next one's begin.
-        -- The two lists agree in length whenever the statement typechecks; if a cell this walk does
-        -- not model made them disagree, wire what can be wired rather than drop the join entirely.
-        let a := c.rightOffsets sep
-        let b := next.leftOffsets sep
-        for j in [0 : min a.size b.size] do
-          out := out ++ joinWire x (x + g) (y + a[j]!) (y + b[j]!) iv
+      let g := joinGap c cells[i + 1]
+      if g > 0.005 then
+        for y in cur do out := out ++ hwire x (x + g) y iv
       x := x + g
-  return out
+  return ⟨out, cur, lo, hi⟩
 
 end
 
 /-- A whole side of a statement: the run with a stub at each end — but only where the end really is
-    a single strand — and the x it ends at. -/
+    a single strand — and the x it ends at.
+
+    Laid out TWICE.  The first pass only measures how far the picture reaches above and below its
+    entry, so the second can enter where the whole drawing comes out centred on `y = 0`: a chain
+    sets its relation symbol at 0 and the note aligns its pictures on the horizon, so a picture that
+    drifts off zero reads as a picture that is falling over. -/
 def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   let lp := (cells[0]?.map Cell.leftPort).getD .one
   let rp := (cells.back?.map Cell.rightPort).getD .one
   let lead := if lp == .nothing || lp == .pair then 0.0 else LEAD
   let tail := if rp == .nothing || rp == .pair then 0.0 else LEAD
   let w := runWidth cells
+  let sep := runSep cells
+  let k := runLeftCount cells
+  -- The strands the picture is entered at: `k` lanes of pitch `2 sep`, centred on `a`.
+  let entry (a : Float) : Array Float :=
+    (Array.range k).map fun i => a + ((k - 1).toFloat / 2.0 - i.toFloat) * 2.0 * sep
+  let probe := renderRun cells (x0 + lead) (entry 0.0) 0.0 false
+  let a := -(probe.lo + probe.hi) / 2.0
+  let b := renderRun cells (x0 + lead) (entry a) a false
   let stub (x₀ x₁ : Float) (offs : Array Float) : Array String :=
     offs.foldl (fun acc o => acc ++ hwire x₀ x₁ o) #[]
-  let out := stub x0 (x0 + lead) (runLeftOffsets cells) ++ renderRun cells (x0 + lead) 0.0 false
-    ++ stub (x0 + lead + w) (x0 + lead + w + tail) (runRightOffsets cells)
+  let out := stub x0 (x0 + lead) (entry a) ++ b.out
+    ++ stub (x0 + lead + w) (x0 + lead + w + tail) b.ys
   (String.intercalate "\n" out.toList, x0 + lead + w + tail)
 
 /-! ### The term walk -/
@@ -568,19 +575,23 @@ def plain (e : Expr) : MetaM String := do
     |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
-/-- A term, spelled the way the BOOK spells it — `;` for composition, `°` for the converse —
-    rather than left to the pretty printer, because it is read beside a picture, where
+/-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
+    — rather than left to the pretty printer, because it is read beside a picture, where
     `CartBicat.conv S` is noise and `S°` is the thing itself.  `°`, not the paper's `†`: these terms
     are read against Freyd throughout, and one symbol per idea beats matching two.
 
-    PARENTHESISED BY PRECEDENCE, `;` loosest and `°` tightest, so the bracketing is visible.  That
+    PARENTHESISED BY PRECEDENCE, composition loosest and `°` tightest, so the bracketing is visible.  That
     matters: several steps of a `calc` do nothing but re-bracket, and the term column is the only
     place a reader can see them happen — the picture, quite correctly, does not change. -/
 partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
-  let bin (p : Nat) (op : String) (args : Array Expr) : MetaM String :=
+  -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
+  -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
+  -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
+  -- `(R S) ∩ T`.
+  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String :=
     match lastTwo args with
-    | some (f, g) => return wrap p ((← labelAt (p + 1) f) ++ op ++ (← labelAt (p + 1) g))
+    | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
     | none => plain e
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
@@ -598,7 +609,7 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
   -- do not exist and no statement can mention one.
   | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
-  | (``Cat.comp, args) => bin 0 " ; " args
+  | (``Cat.comp, args) => bin 0 " " args 2
   | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args
   | (``Freyd.Diag.SymMonCat.tensHom, args) => bin 1 " ⊗ " args
   | (``Freyd.Alg.Allegory.inter, args) | (``Freyd.Diag.meet, args) => bin 1 " ∩ " args
@@ -641,12 +652,28 @@ def isMap (e : Expr) : MetaM Bool := do
     | _ => pure ()
   return false
 
+/-- How many strands an object is: one per letter of its word.  The identity at `n ⊗ n` is TWO
+    wires, and drawing it as one does not even line up with the `▷ ◁` it is compared against. -/
+partial def wordWidth (e : Expr) : Nat :=
+  match e.getAppFnArgs with
+  | (``Freyd.Diag.Word.tens, args) =>
+    match lastTwo args with
+    | some (a, b) => wordWidth a + wordWidth b
+    | none => 1
+  | (``Freyd.Diag.Word.unit, _) => 0
+  | _ => 1
+
+/-- That many wires, stacked. -/
+def wires : Nat → Cell
+  | 0 | 1 => .wire
+  | n + 2 => .stack #[.wire] #[wires (n + 1)]
+
 mutual
 
 /-- One cell for `e`, used where a sub-picture is not available (inside a meet or a converse). -/
 partial def toCell (e : Expr) : MetaM Cell := do
   match e.getAppFnArgs with
-  | (``Cat.id, _) => return .wire
+  | (``Cat.id, args) => return wires (args.back?.map wordWidth |>.getD 1)
   -- width and lead are the generators' own stubs in `strdiag.typ`: `li + lo` wide, `li` of it to
   -- the left of the anchor (`unitR` and `swap` anchor on their left edge, so their lead is 0).
   | (``Freyd.Diag.CartBicat.Δ, _) => return .gen "delta" 1.4 0.7
