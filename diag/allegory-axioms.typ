@@ -12,9 +12,10 @@
 #import "generated/Freyd.Diag.CartBicat.conv_conv.typ": pic as p-conv-conv
 #import "generated/Freyd.Diag.CartBicat.conv_comp.typ": pic as p-conv-comp
 #import "generated/Freyd.Diag.conv_inter.typ": pic as p-conv-inter
-#import "generated/Freyd.Diag.meet_idem.typ": pic as p-meet-idem
+#import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
 #import "generated/Freyd.Diag.meet_comm.typ": pic as p-meet-comm
 #import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
+#import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
@@ -33,6 +34,8 @@
 #import "generated/Freyd.Diag.CartBicat.snake'.proof.typ": branches as snkb
 #import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
 #import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
+#import "generated/Freyd.Diag.«lax_∇».typ": pic as p-lax-nabla
+#import "generated/Freyd.Diag.lax_?.typ": pic as p-lax-unit
 #import "generated/Freyd.Diag.Biprod.«≤_union_left».typ": pic as p-union-left
 #import "generated/Freyd.Diag.Biprod.union_comm.typ": pic as p-union-comm
 #import "generated/Freyd.Diag.Biprod.bot_union.typ": pic as p-bot-union
@@ -222,7 +225,7 @@ The only clause coupling the comonoid to the monoid beyond adjointness. Both sid
 same picture, `▷ ◁` — merge, then copy — which is the two-in two-out *spider*. Every connected
 diagram built from these four generators collapses to the spider on its own inputs and outputs, and
 this equation is what starts that collapse. A *bubble* is the other order, `◁ ▷`: copy then merge,
-a closed loop, which §4 uses.
+a closed loop, which the idempotency of `∩` uses below.
 
 == Every arrow is a lax comonoid homomorphism
 
@@ -298,6 +301,84 @@ monotone, so the box may be replaced where it stands.
 
 
 
+= Every arrow is a lax monoid homomorphism
+
+The merge/create mirror of the two comonoid laws opening this note — the paper's (41) and (42),
+p. 22, which it gets by bending them with (ii) and (iv) above. No bending is needed: expand by the
+unit `𝟙 ≤ ◁ ▷`, duplicate the box with the comonoid law, contract by the counit `▷ ◁ ≤ 𝟙`. Both
+halves of the adjunction, and nothing else.
+
+In `Rel(Set)` with `R ⊆ A × B`, where `▷` is the equality test on a pair and `⟜` produces any
+element at all:
+
+#align(center, table(
+  columns: 2, stroke: none, inset: (x: 8pt, y: 2.5pt), align: left,
+  [`▷ R`], src[`= {((a, a ), b) : a R b}` — two equal inputs, then one run of `R`],
+  [`(R ⊗ R) ▷`], src[`= {((a, a'), b) : a R b and a' R b}` — a run on each input, then the results
+   merged],
+  [`⟜ R`], src[`= {(∗, b) : ∃a. a R b}` — the image of `R`],
+  [`⟜`], src[`= {∗} × B` — all of `B`],
+))
+
+Take `a' = a` for the first containment; every `b` lies in `B` for the second. Each is strict exactly
+when its reverse fails — `R` not injective, `R` not surjective — which is what the later table on
+maps reads off them.
+
+#table(
+  columns: (9.4cm, 1fr),
+  align: (left + horizon, center + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*inequation, and what proves it*], [*picture*]),
+
+  [(41) `▷ R ≤ (R ⊗ R) ▷` \
+   #src[`▷R = ▷R𝟙 ≤ ▷R◁▷ ≤ ▷◁(R⊗R)▷ ≤ (R⊗R)▷` — unit, lax `◁`, counit.]],
+  P(p-lax-nabla),
+
+  [(42) `⟜ R ≤ ⟜` \
+   #src[`⟜R = ⟜R𝟙 ≤ ⟜R⊸⟜ ≤ ⟜⊸⟜ ≤ ⟜` — the same three steps at `𝕀`.]],
+  P(p-lax-unit),
+)
+
+= `∩` is a commutative idempotent monoid on every hom-set
+
+#definition[
+The *meet* of `R, S : a ⟶ b`, the paper's *convolution*, is `R ∩ S := ◁ (R ⊗ S) ▷` — copy the
+input, run `R` and `S` on the two copies, merge the results — so what comes out is what both of them
+do.
+
+#fig({ meet((0, 0), $R$, $S$) })
+#align(center, src[transcribed: a definition has no statement to export])
+
+On every hom-set it is associative, commutative and idempotent, with unit the maximal arrow
+`⊤ = ⊸ ⟜` #src[(the paper's Lemma 4.11)].
+]
+
+#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
+  [#P(p-meet-top, s: 60%) #v(-7pt) \ #src[*unit:* one half of `⊤` per end — the merge's unit law
+   absorbs the `⟜`, the copy's counit law the `⊸`]],
+  [#P(p-meet-comm, s: 60%) #v(-7pt) \ #src[*commutative:* `σ` crosses `R ⊗ S` by naturality and is
+   absorbed by cocommutativity and commutativity]],
+  [#P(p-meet-assoc, s: 44%) #v(-7pt) \ #src[*associative:* coassociativity and associativity; `⊗`
+   re-brackets for nothing, being strict here]],
+)
+
+// Heading, chain and its paragraph kept together — `width: 100%` because a block sizes to its
+// contents, and inside one that has shrunk the `align(center)` of `chain` has nothing to centre in.
+#block(breakable: false, width: 100%)[
+== `R ∩ R = R`, the one that is not bookkeeping
+
+#chain(
+  (mib.at(0).steps.at(0), mib.at(0).steps.at(1), mib.at(0).steps.at(2)),
+  ([], [`◁ ▷ = 𝟙`], [lax copy]))
+
+The last picture is `R ∩ R` itself, so this is `R ≤ R ∩ R` and the lax copy law is the whole of it.
+The other direction is not proved here: `R ∩ S ≤ R` holds for every `S`, by weakening `S` to `⊤` and
+then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, packaged once.
+]
+
+So `≤` is the order this monoid induces. `R ∩ S ≤ R` comes from the unit, and idempotency turns
+anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩ R ≤ S ∩ T`.
+
 = The allegory primitives are definitions here
 
 #table(
@@ -309,9 +390,6 @@ monotone, so the box may be replaced where it stands.
   [*reciprocation* `R° := bend ((R ⊗ 𝟙) cap)`, not a generator.],
   fig({ conv((0, -0.80), $R$) }),
 
-  [*intersection* `R ∩ S := ◁ (R ⊗ S) ▷` — copy, run both, merge.],
-  fig({ meet((0, 0), $R$, $S$) }),
-
   [*containment* `R ⊑ S`, which an allegory *defines* as `R ∩ S = R`. Here `≤` is primitive and `∩`
    is derived, so the two directions are swapped.],
   align(center, src[the 2-cell itself]),
@@ -321,6 +399,9 @@ monotone, so the box may be replaced where it stands.
 )
 
 = The eight axioms, and what proves each
+
+Three of the eight — `∩` idempotent, commutative, associative — are the monoid laws above. The
+other five:
 
 #table(
   columns: (9.4cm, 1fr),
@@ -332,9 +413,6 @@ monotone, so the box may be replaced where it stands.
   [`(R S)° = S° R°` — mirroring the picture.], P(p-conv-comp),
   [`(R ∩ S)° = R° ∩ S°` — the same mirroring; `◁` and `▷` are each other's mirror image.],
   P(p-conv-inter),
-  [`R ∩ R = R` — the lax copy law, then `◁ ▷ = 𝟙` closes the bubble.], P(p-meet-idem),
-  [`R ∩ S = S ∩ R` — cocommutativity and commutativity.], P(p-meet-comm),
-  [`R ∩ (S ∩ T) = (R ∩ S) ∩ T` — coassociativity and associativity.], P(p-meet-assoc, s: 70%),
   [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law.], P(p-semidistrib),
   [`R S ∩ T ⊑ (R ∩ T S°) S`, the modular law — *adjoined* as an axiom by an allegory, which has no
    structure to derive it from. Here Frobenius and the lax copy law give it.], P(p-modular),
@@ -450,9 +528,9 @@ in the definition that may duplicate a box — so that is where the inequality h
 
 = Maps
 
-Every arrow is lax for `◁` and for `⊸`; (ii) and (iv) above turn those into the same statements
-about `▷` and `⟜`. All four hold for *every* arrow, their REVERSES do not, and each reverse holding
-is a property of the arrow. The right-hand column is the *adjoint* form, which is the definition
+Every arrow is lax for `◁` and for `⊸` by axiom, and for `▷` and `⟜` by the section above. All four
+hold for *every* arrow, their REVERSES do not, and each reverse holding is a property of the arrow.
+The right-hand column is the *adjoint* form, which is the definition
 used here because it is literally the allegory's `Simple` and `Entire`; that the two forms agree is
 a separate theorem, not proved here.
 
@@ -470,17 +548,14 @@ a separate theorem, not proved here.
   [(TOT) *total* \ #src[`𝟙 ⊑ R R°`. With *single valued*, a *map*.]],
   P(p-tot47, s: 74%),
 
-  [#src[`▷ R ≤ (R ⊗ R) ▷` — *not stated;* see below.]],
+  [#src[`▷ R ≤ (R ⊗ R) ▷`] #v(-2pt) #P(p-lax-nabla, s: 74%)],
   [(INJ) *injective* \ #src[`R R° ⊑ 𝟙`]],
   P(p-inj48, s: 74%),
 
-  [#src[`⟜ R ≤ ⟜` — *not stated;* see below.]],
+  [#src[`⟜ R ≤ ⟜`] #v(-2pt) #P(p-lax-unit, s: 74%)],
   [(SUR) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` entire.]],
   P(p-sur49, s: 74%),
 )
-
-The two unstated ones are converse-images, and getting them needs `◁° = ▷` and `⊸° = ⟜` — a
-Frobenius computation at a COMPOSITE object, which is the clause the printed definition omits.
 
 = Entireness of an intersection
 
