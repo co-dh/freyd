@@ -419,10 +419,34 @@ never used.
 #pagebreak(weak: true)
 = Division
 
-#align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: `⊑`]))
+// The vocabulary as a GRAPH, not a list: the three arrows all land on `item`, and each quotient is
+// the arrow between two sources that the two legs into `item` force.  A table of six rows said the
+// same thing and hid which arrow was a composite of which.
+#align(center, box(inset: (y: 10pt), cetz.canvas(length: 1cm, {
+  let arrow(a, b) = d.line(a, b, mark: (end: ">", scale: 0.55), stroke: 0.9pt)
+  arrow((0, 1.22), (0, 0.38))
+  arrow((0, -0.38), (0, -1.22))
+  d.bezier((-0.8, 1.45), (-0.8, -1.45), (-2.4, 0.9), (-2.4, -0.9),
+    mark: (end: ">", scale: 0.55), stroke: 0.9pt)
+  arrow((1.0, 1.48), (4.3, 0.3))
+  arrow((0.7, 0), (4.3, 0))
+  arrow((1.0, -1.48), (4.3, -0.3))
+  d.content((0.2, 0.8), text(9.5pt)[`R/S` #h(2pt) fills], anchor: "west")
+  d.content((0.2, -0.8), text(9.5pt)[`S/T` #h(2pt) satisfies], anchor: "west")
+  d.content((-2.0, 0), text(9.5pt)[serves #h(2pt) `R/T`], anchor: "east")
+  d.content((2.9, 1.15), text(9.5pt)[`R` #h(2pt) retails])
+  d.content((2.5, 0.26), text(9.5pt)[`S` #h(2pt) specifies])
+  d.content((2.9, -1.15), text(9.5pt)[`T` #h(2pt) takes])
+  let node(p, w) = d.content(p, box(inset: 4pt, fill: white)[#text(10.5pt)[#w]])
+  node((0, 1.6), [market `m`])
+  node((0, 0), [dish `d`])
+  node((0, -1.6), [guest `g`])
+  node((5, 0), [item `i`])
+})))
 
-`R` = shop `a` stocks item `c` throughout, so `R/S` reads *`a` stocks everything `b` stocks* — `a`
-*covers* `b`. Every row below is that one sentence in a different bracketing.
+#align(center, `m (R/S) d  ⟺  ∀i. d S i → m R i`)
+
+`(R/S) S` reads "some dish `m` fills specifies `i`" — composition hides an existential.
 
 // Two columns like every other table, one law per row.  The pictures here are the widest in the
 // note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
@@ -433,53 +457,52 @@ never used.
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`T ⊑ R/S ⟺ T S ⊑ R` \ #src[The universal property: any `T` whose `S`-shopping stays inside `a`'s
-   stock is a covering list, and `R/S` is the largest of them.]],
+  [`T ⊑ R/S ⟺ T S ⊑ R` \ #src[Any `T` pairing a market only with dishes it fills lies inside `R/S`, and
+   `R/S` is the largest such.]],
   P(p-le-div),
 
-  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[The mirror — divide on the left when the shop comes first.]],
+  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[The mirror — divide on the left when the market comes first.]],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R` \ #src[What you can buy at a shop you cover, you stock already. Strict at `S = ∅`:
-   `R/S` is everything, `(R/S) S = ∅`.]],
+  [`(R/S) S ⊑ R` \ #src[Some dish `m` fills specifies `i` — then `m` retails `i` too. Strict at
+   `S = ∅`: `R/S` is everything, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
   [`S (S\R) ⊑ R` \ #src[The mirror.]],
   P(p-ldiv-cancel),
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[Two-stage supply: divide by the far end first.]],
-  divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2),
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[A dish of dishes: divide by the far end first.]],
+  P(p-div-assoc),
 
   [`(S T)\R = T\(S\R)` \ #src[The mirror.]],
-  divbar(($S$, "d"), ($T$, "d"), ($T backslash (S backslash R)$, "q"), qw: 4.2),
+  P(p-ldiv-assoc),
 
-  [*maps:* `f (R/S) = (f R)/S` \ #src[Rename the covering shop before or after dividing — the licence
-   to write `f R / S`.]],
+  [*maps:* `f (R/S) = (f R)/S` \ #src[Rename the market before or after dividing — the licence to write
+   `f R / S`.]],
   P(p-map-div),
 
-  [`R/(f S) = (R/S) f°` \ #src[Rename the covered shop: a map leaves a denominator as `f°` outside
-   the box.]],
+  [`R/(f S) = (R/S) f°` \ #src[Rename the dish: a map leaves a denominator as `f°` outside the box.]],
   P(p-div-map),
 
-  [`(R/S)(S/T) ⊑ R/T` \ #src[Covering is transitive: `a` covers `b` covers `c`.]],
+  [`(R/S)(S/T) ⊑ R/T` \ #src[Filling then satisfying is serving.]],
   P(p-div-comp),
 
-  [`𝟙 ⊑ R/R` \ #src[Every shop covers itself. Strict: two shops stocking only rice cover each other
-   and stay two shops.]],
+  [`𝟙 ⊑ R/R` \ #src[`R/R` runs market to market: each fills its own list. Strict: two markets
+   retailing only rice fill each other's and stay two markets.]],
   P(p-one-div),
 
-  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *stocks at least as much as*, and a preorder is
+  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *retails at least as much as*, and a preorder is
    idempotent. Freyd writes `⊑`; with `𝟙 ⊑ R/R` above it is an equality.]],
   P(p-div-self-idem),
 
-  [`(R/R) R = R` \ #src[Buying at a shop you cover gets you your own stock back, no more and no
-   less — `a` covers `a`.]],
+  [`(R/R) R = R` \ #src[Reaching `i` through a market whose list `m` fills is reaching it
+   directly, since `m` fills its own.]],
   P(p-div-self),
 
-  [`R/𝟙 = R` \ #src[Covering the shop that stocks exactly `c` is stocking `c`.]],
+  [`R/𝟙 = R` \ #src[Filling the dish that specifies exactly `i` is retailing `i`.]],
   P(p-div-one),
 
-  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Covering a shop with two aisles is covering each aisle.]],
+  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Filling a dish made of two is filling each of them.]],
   P(p-div-union),
 
   [`S\(R/T) = (S\R)/T` \ #src[Which is why `S\R/T` needs no bracket.]],
@@ -491,8 +514,8 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 
 = Symmetric division
 
-$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` it relates `x` and `y` when they reach the same things,
-`∀z. (x R z ⟺ y S z)` — two shops with the same stock list.
+$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` it relates `m` and `d` when they reach the same things,
+`∀i. (m R i ⟺ d S i)` — market `m` retails exactly what dish `d` specifies, no more and no less.
 
 A meet of two long divisions, the second turned round by the converse frame:
 
@@ -504,10 +527,10 @@ A meet of two long divisions, the second turned round by the converse frame:
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [$(frac(R, S))^circle.small = frac(S, R)$ \ #src[Stocking alike is symmetric.]],
+  [$(frac(R, S))^circle.small = frac(S, R)$ \ #src[Matching is symmetric.]],
   P(p-sdiv-recip),
 
-  [$frac(R, S) frac(S, T) ⊑ frac(R, T)$ \ #src[And transitive: `a` stocks like `b`, `b` like `c`.]],
+  [$frac(R, S) frac(S, T) ⊑ frac(R, T)$ \ #src[And transitive.]],
   P(p-sdiv-comp),
 )
 
@@ -520,44 +543,101 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   table.header([*law*], [*the rice reading*]),
 
   [$T ⊑ frac(R, S) ⟺ T S ⊑ R$ and `T° R ⊑ S`],
-  [`T` may pair two shops only when each covers the other. Both halves must typecheck, so the
+  [`T` may pair `m` with `d` only when each fills the other. Both halves must typecheck, so the
    operation is *partial*.],
 
   [$frac(R, S) S ⊑ R$],
-  [Buy at a shop with your stock list and you get your own stock.],
+  [`m` matches `d` and `d` specifies `i`, so `m` retails `i`.],
 
   [$frac(R, R) R ⊑ R$],
-  [The same, one shop against itself.],
+  [The same with `R` against itself, market to market.],
 
   [$𝟙 ⊑ frac(R, R)$],
-  [Every shop stocks like itself.],
+  [Every market matches itself.],
 
   [$(frac(R, R))^2 = frac(R, R)$],
-  [So *stocks alike* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
+  [So *matches* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
    equality.],
 
   [$T ⊑ frac(R, R) ⟺ T R ⊑ R$, for symmetric `T`],
   [The largest symmetric arrow that leaves `R` alone.],
 
   [$frac(S, S) = 𝟙$, `S` is *straight*],
-  [No two shops stock alike. Equivalently every symmetric `T` with `T S ⊑ S` is coreflexive.],
+  [No two dishes specify the same items. Equivalently every symmetric `T` with `T S ⊑ S` is
+   coreflexive.],
 
   [`f S = g S ⟹ f = g`, `S` straight],
-  [A straight `S` tells its shops apart, so it cancels on the right.],
+  [A straight `S` tells its dishes apart, so it cancels on the right.],
 
   [`S R` straight `⟹ S` straight],
-  [If the longer chain tells shops apart, the first step already does.],
+  [If the longer chain tells them apart, the first step already does.],
 
   [`S` straight `⟺ R/S` simple for all `R`],
-  [If no two shops stock alike, at most one can match a given list.],
+  [If no two dishes agree, at most one market can match a given dish.],
 
   [`R = h S`, `h` a cover, `S` straight],
   [In an effective division allegory every arrow factors that way.],
 
   [$frac(R, 𝟙)$ is the *simple part* of `R`],
-  [The shops stocking one item and nothing else. It equals `R` only when `R` is simple, unlike
+  [The markets retailing one item and nothing else. It equals `R` only when `R` is simple, unlike
    `R/𝟙 = R`.],
 
   [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
   [Its domain is the *domain of simplicity* of `R`.],
+)
+
+= Power allegories
+
+One more operation on a division allegory: `∋`, Freyd's *epsiloff*. In `Rel` its source is the
+powerset of its target and `l ∋ i` iff `i ∈ l` — the shopping lists over the items, and `∋` reads a
+list `l` back into the items on it. Everything else is forced.
+
+#table(
+  columns: (7.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*law*], [*the rice reading*]),
+
+  [`∋ ⊤ = R ⊤`],
+  [Same target as `R`, and depending on nothing else: one `∋` per object, not per arrow. What is
+   being listed fixes it, not who lists it.],
+
+  [$frac(∋, ∋) ⊑ 𝟙$, `∋` is *straight*],
+  [*Extensionality*: two lists with the same items are the same list.],
+
+  [`𝟙 ⊑ (R/∋)(∋/R)`, `∋` is *thick*],
+  [*Comprehension*: every market has a list of exactly what it retails. Equivalently every `R`
+   factors as a map followed by `∋`.],
+
+  [`Λ(R) ≜` $frac(R, ∋)$],
+  [The list-of map: send a market to its list.],
+
+  [`Λ(R)` is simple],
+  [`∋` is straight, and dividing by a straight arrow is simple. At most one list per market.],
+
+  [`Λ(R)` is entire `⟺ ∋` thick],
+  [`Dom` $frac(R, ∋)$ `= 𝟙 ∩ (R/∋)(∋/R)`, the domain row above. At least one list per market, so
+   `Λ(R)` is a *map*.],
+
+  [`Λ(R) ∋ = R`],
+  [Look up a market's list, then read off its items: what it retails.],
+
+  [`Λ(R)` is the only map with `Λ(R) ∋ = R`],
+  [Two maps naming the same items name the same list — extensionality again.],
+
+  [`F ⊑ Λ(F ∋)`, `F` simple],
+  [A partial choice of lists is inside the total one.],
+
+  [`[α]` = source of `∋`, the *power-object*],
+  [Every list over `α`.],
+
+  [`{·} ≜ Λ(𝟙)`, the *singleton map*, monic],
+  [The one-item list. `Λ(𝟙)Λ°(𝟙) ⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
+
+  [`Λ(f) = f {·}`, `f` a map],
+  [Rename first or take singletons first.],
+
+  [`C` a topos `⟹ Rel(C)` a power allegory],
+  [And back: a unitary tabular power allegory has `Map(A)` a topos. Extensionality and comprehension
+   are all a topos adds.],
 )

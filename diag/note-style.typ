@@ -54,68 +54,6 @@
 /// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
 /// export, i.e. for the two primitive operations.
 #let fig(body) = align(center, box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, body)))
-/// `P`, but not centred.  In the one-column division table the exported picture sits BESIDE the
-/// long-division figure, and two centred blocks leave a gutter down the middle of the page.
-#let Pl(p, s: 90%) = box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p))
-
-// ------------------------------------------------------------------ the long-division figure
-#let AMBER = rgb("#f6e3bd")
-#let GREEN = rgb("#cfe6cd")
-/// The long-division bar: `R` as a bar, the composite laid inside it left to right, and a hairline
-/// of slack at the far end.
-///
-/// `tiles` are `(label, kind)` in DIAGRAM order.  `"q"` is the quotient — amber, full height, solid
-/// outline, because `T S ⊑ R` is what pins it.  `"d"` is a divisor laid down inside `R`: green,
-/// inset top and bottom so it reads as embedded, dashed because its far edge is not pinned either.
-/// The slack closes the bar and is deliberately a sliver: `R / S` is the LARGEST quotient, so what
-/// is left when nothing more can be taken is exactly a hairline.
-///
-/// Transcribed, every one of them — this is a metaphor for the universal property, not a picture of
-/// a term, and it is the one account of `/` in this note that needs no complement.
-#let divbar(..tiles, qw: 3.0, dw: 1.9, slack: 0.12, note: none) = {
-  let y0 = -0.55
-  let y1 = 0.55
-  let ys = 0.36
-  let sol = (thickness: 1.1pt, paint: black)
-  let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
-  let ts = tiles.pos()
-  let ws = ts.map(t => if t.at(1) == "q" { qw } else { dw })
-  let total = ws.sum() + slack
-  box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, {
-    d.rect((0, y0), (total, y1), fill: AMBER, stroke: none)
-    // `R`'s own outline: far edge not pinned; top and bottom are drawn tile by tile below.  The
-    // LEFT edge comes last, after the tiles, or a divisor laid first — left division — covers it
-    // with its own dashed edge and `R`'s one pinned boundary reads as slack.
-    d.line((total, y0), (total, y1), stroke: dsh)
-    let x = 0.0
-    for t in ts {
-      let w = if t.at(1) == "q" { qw } else { dw }
-      let st = if t.at(1) == "q" { sol } else { dsh }
-      d.line((x, y1), (x + w, y1), stroke: st)
-      d.line((x, y0), (x + w, y0), stroke: st)
-      if t.at(1) == "q" {
-        d.line((x, y0), (x, y1), stroke: sol)
-        d.line((x + w, y0), (x + w, y1), stroke: sol)
-      } else {
-        d.rect((x, -ys), (x + w, ys), fill: GREEN, stroke: none)
-        d.line((x, ys), (x + w, ys), stroke: dsh)
-        d.line((x, -ys), (x + w, -ys), stroke: dsh)
-        d.line((x, -ys), (x, ys), stroke: dsh)
-        d.line((x + w, -ys), (x + w, ys), stroke: dsh)
-      }
-      d.content((x + w / 2, 0), text(10.5pt)[#t.at(0)])
-      x = x + w
-    }
-    d.line((total - slack, y1), (total, y1), stroke: dsh)
-    d.line((total - slack, y0), (total, y0), stroke: dsh)
-    d.line((0, y0), (0, y1), stroke: sol)
-    if note != none {
-      d.line((total, y0 - 0.42), (total, y0 - 0.1), stroke: (thickness: 0.6pt, paint: luma(110)))
-      d.content((total, y0 - 0.62), text(8.5pt, luma(90))[#note])
-    }
-  }))
-}
-
 /// Pictures laid side by side in one row.  Every exported canvas is drawn symmetrically about its
 /// own `y = 0`, so aligning the cells on the horizon puts the wires of all of them at one height;
 /// a per-box `baseline:` shift cannot, because each box is shifted by a fraction of its OWN height.
