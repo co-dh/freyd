@@ -50,11 +50,16 @@
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«°_slide».typ": pic as p-conv-slide
+#import "generated/Freyd.Diag.CartBicat.«Δ≤?𝟙».typ": pic as p-cut-copy
+#import "generated/Freyd.Diag.CartBicat.«∇≤𝟙!».typ": pic as p-cut-merge
+#import "generated/Freyd.Diag.le_comp_conv_comp.proof.typ": branches as zzb
+#import "generated/Freyd.Diag.le_comp_conv_comp_of_lax.proof.typ": branches as zzlax
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
 #import "generated/Freyd.Diag.SingleValued.typ": pic as p-sv46
 #import "generated/Freyd.Diag.Total.typ": pic as p-tot47
 #import "generated/Freyd.Diag.Injective.typ": pic as p-inj48
 #import "generated/Freyd.Diag.Surjective.typ": pic as p-sur49
+#import "generated/Freyd.Diag.comp_meet_of_singleValued.typ": lhs as p-236a, rhs as p-236b
 #import "generated/Freyd.Diag.shunt_right.typ": lhs as sr-a, rhs as sr-b
 #import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b
 #import "generated/Freyd.Diag.entire_inter_iff.proof.typ": branches as entb
@@ -70,6 +75,14 @@
 #import "generated/Freyd.Alg.div_comp_recip_map.typ": pic as p-div-map
 #import "generated/Freyd.Alg.symmDiv_recip.typ": pic as p-sdiv-recip
 #import "generated/Freyd.Alg.symmDiv_comp.typ": pic as p-sdiv-comp
+// §2.314's list, in the book's order.
+#import "generated/Freyd.Alg.div_comp.typ": pic as p-div-comp
+#import "generated/Freyd.Alg.one_le_div_self.typ": pic as p-one-div
+#import "generated/Freyd.Alg.div_self_comp_self.typ": pic as p-div-self-idem
+#import "generated/Freyd.Alg.div_self_comp.typ": pic as p-div-self
+#import "generated/Freyd.Alg.div_one.typ": pic as p-div-one
+#import "generated/Freyd.Alg.div_union.typ": pic as p-div-union
+#import "generated/Freyd.Alg.leftDiv_div.typ": pic as p-ldiv-div
 
 // PAGINATED, not one endless page: a viewer's page number and page keys are worth more than the
 // unbroken column, and the tables here are short enough that few of them straddle a break.  25cm
@@ -227,6 +240,10 @@ In `Rel(Set)`, the four generators are these relations on a set `A`:
   [#P(p-39, s: 52%) #v(-7pt) \ #src[`⟜ ⊸ ≤ 𝟙`]],
   [#P(p-40, s: 52%) #v(-7pt) \ #src[`𝟙 ≤ ⊸ ⟜`]],
 )
+
+The last of these is the only one that makes a picture *bigger*, and it is worth a name: *a wire is
+below the cut wire*. In `Rel` it reads `{(a, a)} ⊆ A × A` — cut a wire and its two ends stop having
+to agree, so cutting can only add pairs. It is the one weakening this calculus gives away for free.
 
 == The Frobenius law
 
@@ -464,6 +481,7 @@ composition against a complement.
   P(p-residual),
 )
 
+#pagebreak(weak: true)
 = The modular law, from Frobenius
 
 #table(
@@ -513,6 +531,63 @@ in the definition that may duplicate a box — so that is where the inequality h
   [*Reshape back,* and the surviving duplicate slides round the right bracket to become `S°`.],
 )
 
+// One section, one page: the chain is only readable beside the two cuts it is made of.
+#block(breakable: false, width: 100%)[
+= `R ≤ R R° R`, by cutting two wires
+
+Freyd reads this off the modular law #src[(§2.112)]: `R ⊑ 1R ∩ R ⊑ (1 ∩ R R°) R ⊑ R R° R`. In
+pictures neither the modular law nor a meet with `1` is wanted. The one law that makes a picture
+bigger is spent twice, and it is the cut, `𝟙 ≤ ⊸ ⟜`:
+
+#grid(columns: (1fr, 1fr), gutter: 30pt, align: center + bottom,
+  [#P(p-cut-copy, s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
+   *anything at all*]],
+  [#P(p-cut-merge, s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
+   discarded*]],
+)
+
+`R` is its own three-fold meet — three copies of the box between a copy tree and a merge tree — and
+the two cuts turn the trees into a `⟜◁` and a `▷⊸`. The three boxes never move:
+
+#chain(
+  (zzb.at(0).steps.at(1), zzb.at(0).steps.at(2), zzb.at(0).steps.at(3), zzb.at(0).steps.at(4),
+   zzb.at(0).steps.at(5)),
+  ([`R ∩ R ∩ R = R`], [cut], [cut], [`⟜◁`, `▷⊸`], [that is `R°`]),
+  s: 46%)
+
+Read the last picture from the input, which is now the bottom strand: through the bottom box, up the
+`▷⊸` and back along the middle box — which is that box turned round, so it is `R°` — down the `⟜◁`
+and out along the top box. Where the meet had one input feeding all three boxes and one output
+draining all three, the zig-zag has both of those *cut*, and a cut wire is the one thing this
+calculus lets you add for free.
+]
+
+// The other route to the same containment.  Kept next to it because the interesting thing is what
+// each one SPENDS, and that is only visible with both chains on the page.
+#block(breakable: false, width: 100%)[
+= The same, from the cap end
+
+The section above cuts twice in its chain. This one cuts once and pays for the other cut with the
+*lax copy law* — `R ◁ ≤ ◁ (R ⊗ R)`, the only law in the definition that may duplicate a box. Read
+`𝟙` as a copy tree whose last two legs are capped back:
+
+#chain(
+  (zzlax.at(0).steps.at(2), zzlax.at(0).steps.at(4), zzlax.at(0).steps.at(6),
+   zzlax.at(0).steps.at(7)),
+  ([`◁ (◁ ⊗ 𝟙) (𝟙 ⊗ ▷⊸) = 𝟙`], [lax copy, twice], [cut], [that is `R°`]),
+  s: 46%)
+
+The three boxes are not there to begin with: there is one, and the two copy dots walk back *through*
+it, leaving it behind three times. So the `▷⊸` is the frame's own cap before anything is cut, and
+the copy tree is the only thing left to cut.
+
+Neither chain is cheaper in what it *spends*. `◁ ▷ = 𝟙` is itself the merge cut, so the second
+`𝟙 ≤ ⊸ ⟜` is underneath this one; `R ∩ R = R` is the lax copy law, so that is underneath §9. Both
+routes pay both. What differs is the *layer*: this chain names only the copy, the cap and the box,
+so it holds as soon as the converse does — before `∩` exists. §9 climbs into the meet semilattice
+and back down to state a containment in which no meet occurs.
+]
+
 = Maps
 
 Every arrow is lax for `◁` and for `⊸` by axiom, and for `▷` and `⟜` by the section above. All four
@@ -542,6 +617,25 @@ a separate theorem, not proved here.
   [#src[`⟜ R ≤ ⟜`] #v(-2pt) #P(p-lax-unit, s: 74%)],
   [(SUR) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` entire.]],
   P(p-sur49, s: 74%),
+)
+
+What (SV) buys, in one law. Only single valuedness is spent: `F` may be partial, and entireness is
+never used.
+
+#table(
+  columns: (1fr, 2.2fr),
+  align: (center + horizon, center + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*law*], [*picture*]),
+
+  [`F (R ∩ S) = F R ∩ F S` \ #v(2pt) #src[`F` single valued] \ #v(6pt)
+   #src[`F` = shops Ann may go to, `R` = has milk, `S` = has bread. Single valued means one shop, so
+   the sides agree.]],
+  grid(columns: 3, align: horizon, column-gutter: 10pt,
+    [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one shop with both])],
+    text(17pt)[=],
+    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[milk at A, bread at B])],
+  ),
 )
 
 = Entireness of an intersection
@@ -657,7 +751,7 @@ adjunction: `f ⊣ f°`, with *total* the unit and *single valued* the counit, s
   [`T ⊑ S\R ⟺ S T ⊑ R`],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R`],
+  [`(R/S) S ⊑ R` \ #src[Strict at `S = ∅`: `R/S` is everything, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
   [`S (S\R) ⊑ R`],
@@ -677,14 +771,49 @@ adjunction: `f ⊣ f°`, with *total* the unit and *single valued* the counit, s
    box. The shunting rule again.]],
   P(p-div-map),
 
-  [*symmetric division:* `(R/ₛS)° = S/ₛR` \ #src[`R/ₛS ≜ (R/S) ∩ (S/R)°`. The meet is inside the
-   definition, not the statement, so it stays under the label.]],
+  [*§2.314:* `(R/S)(S/T) ⊑ R/T`],
+  P(p-div-comp),
+
+  [`𝟙 ⊑ R/R` \ #src[`R` = shop `a` stocks `c`, so `R/R` = "`a` stocks all `a'` does", true of every
+   shop. Strict: two shops stocking only milk contain each other and stay two shops.]],
+  P(p-one-div),
+
+  [`(R/R)(R/R) = R/R` \ #src[Freyd writes `⊑`, but with `𝟙 ⊑ R/R` above it is an equality:
+   `R/R = 𝟙(R/R) ⊑ (R/R)(R/R)` is the other direction. A preorder is idempotent.]],
+  P(p-div-self-idem),
+
+  [`(R/R) R = R`],
+  P(p-div-self),
+
+  [`R/𝟙 = R`],
+  P(p-div-one),
+
+  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[A denominator's union becomes a numerator's meet: dividing by
+   more leaves less.]],
+  P(p-div-union),
+
+  [`S\(R/T) = (S\R)/T` \ #src[Which is why `S\R/T` needs no bracket.]],
+  P(p-ldiv-div),
+)
+
+Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what
+the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
+
+= Symmetric division
+
+`R/ₛS ≜ (R/S) ∩ (S/R)°`, the two-sided quotient: everything `R` says about a column and everything
+`S` says about it, in both directions.
+
+#table(
+  columns: (8.6cm, 1fr),
+  align: (left + horizon, center + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+
+  [`(R/ₛS)° = S/ₛR` \ #src[The meet is inside the definition, not the statement, so it stays under
+   the label.]],
   P(p-sdiv-recip),
 
   [`(R/ₛS)(S/ₛT) ⊑ R/ₛT` \ #src[`/ₛ` is converse-symmetric and transitive, like an equality of
    columns.]],
   P(p-sdiv-comp),
 )
-
-Ten laws, ten pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what the
-Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.

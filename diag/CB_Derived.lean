@@ -195,6 +195,97 @@ theorem conv_inter {a b : Word O} (R S : a ⟶ b) :
     have h3 := conv_mono (meet_glb h1 h2)
     rwa [conv_conv] at h3
 
+/-- `R ≤ R R° R` — Freyd's §2.112.
+
+    Freyd reads it off the modular law: `R ⊆ 1R ∩ R ⊆ (1 ∩ R R°) R ⊆ R R° R`.  In pictures neither
+    the modular law nor a meet with `1` is needed, and the whole proof is (40) — a wire is below the
+    CUT wire — applied twice.
+
+    `R` is its own THREE-fold meet: three copies of the box between a copy tree and a merge tree.
+    Cut the copy tree's stem and the pair it feeds is no longer the input but a `⟜◁`, opened out of
+    nothing; cut the merge tree's output and the pair it took is no longer the output but a `▷⊸`,
+    closed off.  The three boxes have not moved, and what is now drawn round them is the zig-zag
+    `R R° R` (`comp_conv_comp_def`). -/
+theorem le_comp_conv_comp {a b : Word O} (R : a ⟶ b) :
+    R ≤ (R ≫ conv R ≫ R) := by
+  -- `R ∩ R ∩ R = R`, with the copy tree leaning LEFT and the merge tree RIGHT — the two brackets
+  -- that put the cut wires next to the strands they close over.
+  have hthree : ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ ▷) ≫ ▷ = R := by
+    rw [← «∇_assoc», ← meet_left_staged, meet_idem, meet_idem]
+  have hcup : (⟜ ⊗ₕ 𝟙 a) ≫ (◁ ⊗ₕ 𝟙 a) = (cup a ⊗ₕ 𝟙 a) := by
+    dsimp only [cup]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  have hcap : (𝟙 b ⊗ₕ ▷) ≫ (𝟙 b ⊗ₕ ⊸) = (𝟙 b ⊗ₕ cap b) := by
+    dsimp only [cap]; rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  -- The two cut wires are the only arrows in the chain whose object no neighbour determines:
+  -- `⟜`'s is the strand it opens, `⊸`'s the strand it closes.
+  calc R = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ ▷) ≫ ▷ := hthree.symm
+    _ ≤ ((⟜ ⊗ₕ 𝟙 a) ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ ▷) ≫ ▷ : a ⟶ b) :=
+        OrderedCat.comp_mono («Δ≤?𝟙» a) (OrderedCat.«≤_refl» _)
+    _ ≤ ((⟜ ⊗ₕ 𝟙 a) ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ ▷) ≫ (𝟙 b ⊗ₕ ⊸) :
+          a ⟶ b) := by
+        refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) ?_
+        refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) ?_
+        refine OrderedCat.comp_mono (OrderedCat.«≤_refl» _) ?_
+        exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) («∇≤𝟙!» b)
+    _ = ((cup a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) : a ⟶ b) := by
+        rw [← Cat.assoc, hcup, hcap]
+    _ = R ≫ conv R ≫ R := (comp_conv_comp_def R).symm
+
+/-- `R ≤ R R° R` by the OTHER route, reaching the zig-zag from the cap end.
+
+    A SECOND PROOF OF ONE STATEMENT, which is duplication, and it is here for one reason: the note
+    contrasts the two, and a picture may only be exported from a declaration.  `le_comp_conv_comp`
+    is the canonical one — cite that.
+
+    The two spend different laws.  That one starts from `R ∩ R ∩ R = R` and cuts BOTH trees.  This
+    one never mentions `∩`: a copy tree whose last two legs are capped back is a bare wire, so `R`
+    may be written with that tree behind it; `lax_Δ` then walks the two copy dots back THROUGH the
+    box, which is what makes the three copies; and only the surviving copy tree is cut.  One cut
+    instead of two, with `lax_Δ` paying for the other. -/
+theorem le_comp_conv_comp_of_lax {a b : Word O} (R : a ⟶ b) :
+    R ≤ (R ≫ conv R ≫ R) := by
+  -- A copy meeting a cap is a discard: `special` collapses the bubble and `⊸` is what is left.
+  have hcapfold : (◁ : b ⟶ b ⊗ b) ≫ cap b = ⊸ := by
+    dsimp [cap]; rw [← Cat.assoc, special, Cat.id_comp]
+  -- …so the three-legged copy tree with its last two legs capped is the bare wire.
+  have hstraight : ◁ ≫ (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 b ⊗ₕ cap b) = 𝟙 b :=
+    calc ◁ ≫ (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 b ⊗ₕ cap b)
+        = (◁ ≫ (◁ ⊗ₕ 𝟙 b)) ≫ (𝟙 b ⊗ₕ cap b) := (Cat.assoc _ _ _).symm
+      _ = (◁ ≫ (𝟙 b ⊗ₕ ◁)) ≫ (𝟙 b ⊗ₕ cap b) := by rw [Δ_assoc]
+      _ = ◁ ≫ (𝟙 b ⊗ₕ (◁ ≫ cap b)) := by
+          rw [Cat.assoc, ← SymMonCat.tensHom_comp, Cat.comp_id]
+      _ = ◁ ≫ (𝟙 b ⊗ₕ ⊸) := by rw [hcapfold]
+      _ = 𝟙 b := Δ_counit b
+  -- `lax_Δ` twice, once per copy dot: both walk back through the box and it is left behind three
+  -- times.
+  have hlax : R ≫ ◁ ≫ (◁ ⊗ₕ 𝟙 b) ≤ ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) :=
+    calc R ≫ ◁ ≫ (◁ ⊗ₕ 𝟙 b)
+        = (R ≫ ◁) ≫ (◁ ⊗ₕ 𝟙 b) := (Cat.assoc _ _ _).symm
+      _ ≤ (◁ ≫ (R ⊗ₕ R)) ≫ (◁ ⊗ₕ 𝟙 b) :=
+          OrderedCat.comp_mono (lax_Δ R) (OrderedCat.«≤_refl» _)
+      _ = ◁ ≫ ((R ≫ ◁) ⊗ₕ R) := by
+          rw [Cat.assoc, ← SymMonCat.tensHom_comp, Cat.comp_id]
+      _ ≤ ◁ ≫ ((◁ ≫ (R ⊗ₕ R)) ⊗ₕ (𝟙 a ≫ R)) :=
+          OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+            (SymMonCat.tensHom_mono (lax_Δ R)
+              (by rw [Cat.id_comp]; exact OrderedCat.«≤_refl» R))
+      _ = ◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) := by rw [SymMonCat.tensHom_comp]
+  -- THE ONE CUT: what is left of the copy tree becomes the converse frame's own `⟜◁`.
+  have hcup : (◁ : a ⟶ a ⊗ a) ≫ (◁ ⊗ₕ 𝟙 a) ≤ (cup a ⊗ₕ 𝟙 a) :=
+    calc (◁ : a ⟶ a ⊗ a) ≫ (◁ ⊗ₕ 𝟙 a)
+        ≤ (⟜ ⊗ₕ 𝟙 a) ≫ (◁ ⊗ₕ 𝟙 a) :=
+          OrderedCat.comp_mono («Δ≤?𝟙» a) (OrderedCat.«≤_refl» _)
+      _ = (cup a ⊗ₕ 𝟙 a) := by rw [← SymMonCat.tensHom_comp, Cat.id_comp]; rfl
+  calc R = R ≫ 𝟙 b := (Cat.comp_id _).symm
+    _ = R ≫ ◁ ≫ (◁ ⊗ₕ 𝟙 b) ≫ (𝟙 b ⊗ₕ cap b) := by rw [hstraight]
+    _ = (R ≫ ◁ ≫ (◁ ⊗ₕ 𝟙 b)) ≫ (𝟙 b ⊗ₕ cap b) := by simp only [Cat.assoc]
+    _ ≤ (◁ ≫ (◁ ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R)) ≫ (𝟙 b ⊗ₕ cap b) :=
+        OrderedCat.comp_mono hlax (OrderedCat.«≤_refl» _)
+    _ = (◁ ≫ (◁ ⊗ₕ 𝟙 a)) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) := by simp only [Cat.assoc]
+    _ ≤ (cup a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) :=
+        OrderedCat.comp_mono hcup (OrderedCat.«≤_refl» _)
+    _ = R ≫ conv R ≫ R := (comp_conv_comp_def R).symm
+
 /-! ### Every arrow is a lax MONOID homomorphism (p. 22)
 
   The merge/create mirror of the axioms `lax_Δ` and `lax_!`.  The paper obtains them by bending the

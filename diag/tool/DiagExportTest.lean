@@ -141,8 +141,36 @@ def bentPair : Cell :=
 def bentTwice : Array Cell := #[.stack #[.wire] #[snake, .dagger #[.box "S"]], .capC 1]
 
 #guard (Cell.stack #[.wire] #[snake, .dagger #[.box "S"]]).laneGaps[0]! > 2.0 * RISE
--- A negative `sp` IS the inside-out cap: no picture may contain one.
-#guard !(mentions (renderCells bentTwice 0.0).1 "sp: -")
+
+/-- A NEGATIVE SEPARATION is a cap, a cup or a merge drawn inside out: the strand it was told to
+    close over the top of is below the other one.  It is what every one of these pictures showed
+    when a converse rose through a lane that had not been opened wide enough for it, and it is
+    checkable without looking at anything. -/
+def noInsideOut (cells : Array Cell) : Bool := !(mentions (renderCells cells 0.0).1 "sp: -")
+
+#guard noInsideOut bentTwice
+
+/-- The same two converses in SEPARATE cells, `(𝟙 ⊗ S°) ((𝟙 ⊗ R°) cap)`: each asks for its own
+    clearance, and the second asks it of a gap the first has already narrowed by a whole rise.  A
+    demand is met AT THE CELL, so it has to be carried back through the drift before it. -/
+def bentApart : Array Cell :=
+  #[.stack #[.wire] #[.dagger #[.box "S"]], .stack #[.wire] #[snake], .capC 1]
+
+#guard noInsideOut bentApart
+
+/-- The modular law's shape: a fork opens two strands, a converse rides one of them, a merge closes
+    them.  Nothing is handed in — the fork CREATES the pair — so the pitch it opens at is the only
+    thing that can clear the converse, and it has to be told. -/
+def forkedConv : Array Cell := #[delta, .stack #[.wire] #[snake], nabla]
+
+#guard noInsideOut forkedConv
+
+/-- A frame round a pair of converses, `(cup ⊗ 𝟙) (𝟙 ⊗ ((𝟙 ⊗ S°) ((𝟙 ⊗ R°) cap)))` — lanes from
+    two different sources, the cup's and the picture's own, meeting in one run. -/
+def framedApart : Array Cell :=
+  #[.stack #[.cupC 1] #[.wire], .stack #[.wire] #[bentApart[0]!, bentApart[1]!, bentApart[2]!]]
+
+#guard noInsideOut framedApart
 
 /-! ### What rides a converse's middle is a RUN
 
@@ -179,8 +207,8 @@ def flat (s : String) : Bool := (s.splitOn "bend(").length == 1
     the same three lanes. -/
 def snakeRun : Array Cell := #[.stack #[.wire] #[.cupC 1], .stack #[.capC 1] #[.wire]]
 
-#guard flat (String.join (renderRun snakeRun 0.0 #[0.0] 0.0 false).out.toList)
-#guard (renderRun snakeRun 0.0 #[0.0] 0.0 false).ys.size == 1
+#guard flat (String.join (renderRun snakeRun 0.0 #[0.0] 0.0 oddSep false).out.toList)
+#guard (renderRun snakeRun 0.0 #[0.0] 0.0 oddSep false).ys.size == 1
 
 /-! ### The identity is as wide as its object
 

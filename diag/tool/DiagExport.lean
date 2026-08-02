@@ -300,23 +300,52 @@ partial def runLeftCount (cells : Array Cell) : Nat :=
 partial def runRightCount (cells : Array Cell) : Nat :=
   match cells.back? with | some c => c.rightCount | none => 1
 
-partial def runSpanUp (cells : Array Cell) : Float :=
-  cells.foldl (fun acc c => max acc c.spanUp) (BH / 2.0)
-partial def runSpanDown (cells : Array Cell) : Float :=
-  cells.foldl (fun acc c => max acc c.spanDown) (BH / 2.0)
+-- ACCUMULATING the converses' lifts on the way, for the reason `runEdgeUp` gives: `S° R°` is two
+-- of them in series and reaches twice as far as either.  As a plain maximum, the pitch a cup opened
+-- at cleared one rise, the second converse rose through the strand above it, and the cap closing
+-- them came out inside out.
+partial def runSpanUp (cells : Array Cell) : Float := Id.run do
+  let mut drift := 0.0
+  let mut reach := BH / 2.0
+  for c in cells do
+    reach := max reach (drift + c.spanUp)
+    drift := drift + c.riseFirst
+  return reach
 
-/-- What a cell needs its two strands separated by: a `⊗` by `meetSep`, so its runs clear each
-    other; a fork, a swap, a cap and a cup by nothing in particular. -/
-partial def Cell.natSep : Cell → Float
-  | .stack u l => meetSep u l
+partial def runSpanDown (cells : Array Cell) : Float := Id.run do
+  let mut drift := 0.0
+  let mut reach := BH / 2.0
+  for c in cells do
+    reach := max reach (c.spanDown - drift)
+    drift := drift + c.riseLast
+  return reach
+
+/-- What a cell needs its two strands separated by, LOOKING ALL THE WAY DOWN: a `⊗` by `meetSep`,
+    so its runs clear each other, and by whatever is nested inside those runs.
+
+    The recursion is the point.  A cup creates its lanes out of nothing, so only its surroundings
+    can say how far apart to open them — and the run a cup sits in is usually just `#[cupC]`, which
+    knows nothing.  Asked only about itself, the cup in `(cup ⊗ 𝟙) (𝟙 ⊗ ((R ⊗ 𝟙) ((𝟙 ⊗ S°) cap)))`
+    opened at the bare `STACKSEP`, and the `S°` two levels down then rose `RISE` through the lane
+    `R` was travelling on: R's output ran into S, and the cap closing them came out inside out. -/
+partial def Cell.deepSep : Cell → Float
+  -- A `⊗` deeper in a run than the run's own entry is invisible to `runLaneGaps`, which can only
+  -- speak about the lanes the picture is entered with: `◁ (R ⊗ T) (𝟙 ⊗ S°) ▷ S` is entered on ONE
+  -- strand, and the fork that opens the two has to be told what the `S°` between them will need.
+  | .stack u l =>
+    max ((runEdgeDown u + runEdgeUp l + STRANDGAP) / 2.0) (max (runDeepSep u) (runDeepSep l))
+  | .meet u l | .union u l => max (meetSep u l) (max (runDeepSep u) (runDeepSep l))
+  | .cut inner | .dagger inner => runDeepSep inner
   | _ => STACKSEP
 
-/-- HALF THE PITCH A RUN OPENS NEW LANES AT.  Only the cells that CREATE strands consult it — a
-    fork, a cup, and a `⊗` reserving room for an operand upstream handed nothing to.  One number per
-    run, the widest any cell needs, so lanes opened at one point of the run clear whatever is nested
-    further along it. -/
-partial def runSep (cells : Array Cell) : Float :=
-  cells.foldl (fun acc c => max acc c.natSep) STACKSEP
+/-- HALF THE PITCH A PICTURE OPENS NEW LANES AT.  Only the cells that CREATE strands consult it — a
+    fork, a cup, and a `⊗` reserving room for an operand upstream handed nothing to.  ONE number for
+    the whole picture, threaded down from `renderCells`, so that lanes opened at one point clear
+    what rides them at any other.  Lanes a picture is HANDED are not pitched by this: they get one
+    gap per pair, from `runLaneGaps`. -/
+partial def runDeepSep (cells : Array Cell) : Float :=
+  cells.foldl (fun acc c => max acc c.deepSep)
+    ((runLaneGaps cells).foldl (fun acc g => max acc (g / 2.0)) STACKSEP)
 
 /-- The offset of each strand of a meet from its centre line: enough that the two runs clear each
     other by `STRANDGAP`.  At the leaves this is `strdiag.typ`'s own `0.62`. -/
@@ -371,6 +400,24 @@ partial def runRiseFirst (cells : Array Cell) : Float :=
 partial def runRiseLast (cells : Array Cell) : Float :=
   cells.foldl (fun acc c => acc + c.riseLast) 0.0
 
+/-- The lift this cell applies to EACH lane it hands on, one entry per outgoing strand.  `riseFirst`
+    and `riseLast` are the two ends of this; the whole vector is what a run needs in order to know
+    how the gap between two lanes changes as it goes along. -/
+partial def Cell.riseVec : Cell → Array Float
+  | .dagger body => #[convRise body]
+  | .stack u l => runRiseVec u ++ runRiseVec l
+  | .cut inner => runRiseVec inner
+  | c => Array.replicate c.rightCount 0.0
+
+/-- The lifts of a run's lanes, summed cell by cell.  A cell that changes the strand COUNT — a cap,
+    a cup — has nothing to line up with what came before, so the tally starts again at zero there. -/
+partial def runRiseVec (cells : Array Cell) : Array Float := Id.run do
+  let mut v := Array.replicate (runLeftCount cells) 0.0
+  for c in cells do
+    let cv := c.riseVec
+    v := if cv.size == v.size then (Array.range v.size).map (fun i => v[i]! + cv[i]!) else cv
+  return v
+
 /-- A run's reach, ACCUMULATING the lifts on the way: the second converse of `S° R°` starts a whole
     `RISE` above where the first one did, so the two of them in series reach twice as far as either.
     Taken as a plain maximum, the lane above them was opened for one rise, the second output
@@ -415,12 +462,24 @@ partial def Cell.laneGaps : Cell → Array Float
 /-- The run's lane gaps: what its cells need, pair by pair.  Only the first cell is handed the run's
     own lanes, but the later ones inherit their positions, so each has a say — pairwise, and from
     the top, which is how a `⊗` divides them.  Where a cell takes fewer lanes than the run does
-    there is nothing to line its gaps up with, and those pairs keep the plain pitch. -/
+    there is nothing to line its gaps up with, and those pairs keep the plain pitch.
+
+    A cell's demand is met AT THE CELL, not at the run's entry, and the two differ once a converse
+    has lifted one of the lanes on the way there: `(𝟙 ⊗ S°) ((𝟙 ⊗ R°) cap)` puts two of them on the
+    same strand in separate cells, and the second asks for its `2.84` from a gap already `1.6`
+    narrower than it started.  So each demand is carried back through the drift accumulated so
+    far — which is the whole reason `riseVec` exists. -/
 partial def runLaneGaps (cells : Array Cell) : Array Float := Id.run do
   let mut g := Array.replicate (runLeftCount cells - 1) (2.0 * STACKSEP)
+  let mut drift := Array.replicate (runLeftCount cells) 0.0
   for c in cells do
     let gc := c.laneGaps
-    for i in [0 : min g.size gc.size] do g := g.set! i (max g[i]! gc[i]!)
+    for i in [0 : min g.size gc.size] do
+      let back := if i + 1 < drift.size then drift[i + 1]! - drift[i]! else 0.0
+      g := g.set! i (max g[i]! (gc[i]! + back))
+    let rv := c.riseVec
+    drift := if rv.size == drift.size then (Array.range drift.size).map (fun i => drift[i]! + rv[i]!)
+             else Array.replicate rv.size 0.0
   return g
 
 end
@@ -468,11 +527,11 @@ mutual
     the heights `ys` it is handed and left at the heights it hands on, with a flat stub to each edge
     of the shared width.  The stubs are flat because the run neither moved the strands nor may: a
     strand is where upstream put it. -/
-partial def layStrand (run : Array Cell) (x₁ iw : Float) (ys : Array Float) (anchor : Float)
+partial def layStrand (run : Array Cell) (x₁ iw : Float) (ys : Array Float) (anchor sep : Float)
     (iv : Bool) : Lay := Id.run do
   let w := runWidth run
   let l₀ := x₁ + (iw - w) / 2.0            -- where this run's cells begin
-  let b := renderRun run l₀ ys anchor iv
+  let b := renderRun run l₀ ys anchor sep iv
   let mut out := #[]
   for y in ys do out := out ++ hwire x₁ l₀ y iv
   out := out ++ b.out
@@ -531,7 +590,7 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
   | .dagger body => Id.run do
     let rise := convRise body
     let mid := convMid body
-    let b := renderRun body (x + CONVLEAD) #[y + mid] (y + mid) iv
+    let b := renderRun body (x + CONVLEAD) #[y + mid] (y + mid) sep iv
     let out := (b.ys[0]?).getD (y + mid)
     return ⟨#[s!"  conv-frame(({fmt x}, {fmt y}), w: {fmt (runWidth body)}, rise: {fmt rise}, \
         mid: {fmt mid}, out: {fmt (out - y)}{inv iv})"] ++ b.out, #[y + rise], y, y + rise⟩
@@ -577,13 +636,25 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     -- by, so it is put clear of the first — below it when it is the lower half of the `⊗`, above it
     -- when it is the upper half.  That is the whole of the vertical layout: no operand is centred
     -- on anything, so composing two `⊗`s that split their strands differently still meets flat.
+    --
+    -- An operand with no lanes of its own is MEASURED first and placed second: laid at a
+    -- provisional anchor, it reports where its own strands actually fell, and it is then laid again
+    -- clear of the other by the picture's pitch.  Placing it at a static `meetSep` instead assumed
+    -- a cup opens at `STACKSEP`, which it no longer does — in `(cup ⊗ 𝟙) (𝟙 ⊗ ((R ⊗ 𝟙) ((𝟙 ⊗ S°)
+    -- cap)))` that left the cup's lower lane 0.44 above the passenger it had to clear by 2.84, and
+    -- the `S°` downstream rose straight through the strand `R` was travelling on.
     let (bu, bl) :=
       if yu.isEmpty && !yl.isEmpty then
-        let bl := layStrand l x iw yl anchor iv
-        (layStrand u x iw yu (bl.hi + 2.0 * msep) iv, bl)
+        let bl := layStrand l x iw yl anchor sep iv
+        let probe := layStrand u x iw yu 0.0 sep iv
+        (layStrand u x iw yu (bl.hi + 2.0 * sep - probe.lo) sep iv, bl)
+      else if yl.isEmpty && !yu.isEmpty then
+        let bu := layStrand u x iw yu anchor sep iv
+        let probe := layStrand l x iw yl 0.0 sep iv
+        (bu, layStrand l x iw yl (bu.lo - 2.0 * sep - probe.hi) sep iv)
       else
-        let bu := layStrand u x iw yu anchor iv
-        (bu, layStrand l x iw yl (bu.lo - 2.0 * msep) iv)
+        let bu := layStrand u x iw yu anchor sep iv
+        (bu, layStrand l x iw yl (bu.lo - 2.0 * msep) sep iv)
     return ⟨bu.out ++ bl.out, bu.ys ++ bl.ys, min bu.lo bl.lo, max bu.hi bl.hi⟩
   | .union u l => Id.run do
     let iw := max (runWidth u) (runWidth l)
@@ -593,8 +664,8 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     let x₁ := x + TAPEPAD + FORK             -- where the tape's two branches begin
     let w := 2.0 * FORK + 2.0 * TAPEPAD + iw
     -- The tape carries its own colour, so its interior is white ground whatever is outside it.
-    let bu := layStrand u x₁ iw #[y + s] (y + s) false
-    let bl := layStrand l x₁ iw #[y - s] (y - s) false
+    let bu := layStrand u x₁ iw #[y + s] (y + s) sep false
+    let bl := layStrand l x₁ iw #[y - s] (y - s) sep false
     let a := (bu.ys[0]?).getD (y + s)
     let b := (bl.ys[0]?).getD (y - s)
     -- The wrapper is drawn FIRST so the circuit sits on top of it, not under it.
@@ -609,8 +680,8 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     let s := meetSep u l
     let x₁ := x + FORK                       -- where `Δ`'s two strands arrive
     let x₂ := x₁ + iw                        -- where `∇`'s two strands leave
-    let bu := layStrand u x₁ iw #[y + s] (y + s) iv
-    let bl := layStrand l x₁ iw #[y - s] (y - s) iv
+    let bu := layStrand u x₁ iw #[y + s] (y + s) sep iv
+    let bl := layStrand l x₁ iw #[y - s] (y - s) sep iv
     let a := (bu.ys[0]?).getD (y + s)
     let b := (bl.ys[0]?).getD (y - s)
     let out := #[s!"  delta(({fmt x}, {fmt y}), li: 0, lo: {fmt FORK}, sp: {fmt s}{inv iv})"]
@@ -626,7 +697,7 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     let top := y + runSpanUp inner + CUTPAD
     let bot := y - runSpanDown inner - CUTPAD
     let x₁ := x + CUTPAD
-    let b := renderRun inner x₁ ys y (!iv)
+    let b := renderRun inner x₁ ys y sep (!iv)
     let mut out := #[s!"  cut(({fmt x}, {fmt bot}), ({fmt (x + w + 2.0 * CUTPAD)}, {fmt top})\
 {inv iv})"] ++ b.out
     -- The stubs are drawn in the OUTER colour on the outer side of each edge; the inner run already
@@ -640,9 +711,8 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
     bent back to a centre line it was never on.  Drawing each cell at a height computed from its own
     shape instead is what put three diagonal bends through the middle of the snake, where the same
     three strands leave one `⊗` and enter the next. -/
-partial def renderRun (cells : Array Cell) (x0 : Float) (ys : Array Float) (anchor : Float)
+partial def renderRun (cells : Array Cell) (x0 : Float) (ys : Array Float) (anchor sep : Float)
     (iv : Bool) : Lay := Id.run do
-  let sep := runSep cells
   let mut cur := ys
   let mut out := #[]
   -- `anchor` is where a strand goes when there is none to inherit; it is NOT part of the extent
@@ -692,15 +762,25 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
   -- on `a`.  ONE PITCH FOR ALL OF THEM was the old rule, and with a converse anywhere in the run
   -- that pitch was the converse's — every lane in the picture spread to clear a rise that only one
   -- of them had.
-  let gaps := runLaneGaps cells
+  -- ONE pitch for every lane this picture CREATES, taken from the deepest `⊗` in it — see
+  -- `Cell.deepSep`.  A cup asked only about the run it sits in opens at the bare `STACKSEP`.
+  let sep := runDeepSep cells
+  -- Where a cell of the run takes a different NUMBER of lanes than the run is entered with, a cup
+  -- has opened lanes in between and the two lists cannot be lined up at all: what that cell needs
+  -- between its third and fourth strand says nothing about the picture's first and second.  The
+  -- entry lanes then fall back to the pitch the created ones opened at, the one number known to
+  -- clear everything.  `(cup ⊗ 𝟙) (𝟙 ⊗ ((𝟙 ⊗ (σ ⊗ 𝟙)) ((… cap) ⊗ (… cap))))` is the case: its two
+  -- passenger strands were pitched at `1.24` while the `S°` riding them rose `1.6`.
+  let ragged := cells.any (fun c => c.leftCount != runLeftCount cells)
+  let gaps := (runLaneGaps cells).map (fun g => if ragged then max g (2.0 * sep) else g)
   let total := gaps.foldl (· + ·) 0.0
   let entry (a : Float) : Array Float := Id.run do
     let mut ys := #[a + total / 2.0]
     for g in gaps do ys := ys.push (ys.back! - g)
     return ys
-  let probe := renderRun cells (x0 + lead) (entry 0.0) 0.0 false
+  let probe := renderRun cells (x0 + lead) (entry 0.0) 0.0 sep false
   let a := -(probe.lo + probe.hi) / 2.0
-  let b := renderRun cells (x0 + lead) (entry a) a false
+  let b := renderRun cells (x0 + lead) (entry a) a sep false
   let stub (x₀ x₁ : Float) (offs : Array Float) : Array String :=
     offs.foldl (fun acc o => acc ++ hwire x₀ x₁ o) #[]
   let out := stub x0 (x0 + lead) (entry a) ++ b.out
@@ -746,8 +826,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Diag.CartBicat.«∇», _) => return "▷"
   | (``Freyd.Diag.CartBicat.«!», _) => return "⊸"
   | (``Freyd.Diag.CartBicat.«?», _) => return "⟜"
-  | (``Freyd.Diag.CartBicat.cap, _) => return "cap"
-  | (``Freyd.Diag.CartBicat.cup, _) => return "cup"
+  -- BY THEIR DEFINITIONS, not by name.  `cap` and `cup` are `def`s over the four generators —
+  -- `cap = ▷⊸`, `cup = ⟜◁` — and a term column that prints them as words introduces two more
+  -- things to look up, in a note whose whole claim is that everything is built from those four.
+  -- The pictures already draw them as the merge and the fork with their dot.
+  | (``Freyd.Diag.CartBicat.cap, _) => return "▷⊸"
+  | (``Freyd.Diag.CartBicat.cup, _) => return "⟜◁"
   | (``Freyd.Diag.top, _) | (``Freyd.Alg.topHom, _) => return "⊤"
   | (``Freyd.Diag.Biprod.bot, _) => return "⊥"
   -- The allegory's zero keeps the book's own `𝟘`; the tape layer's is `⊥` and they are different
@@ -1151,7 +1235,13 @@ def draw (declName : Name) : MetaM String := do
       else tybody
     match ← splitM body with
     | some (sym, lhs, rhs) =>
-      return page declName doc (← canvasOf sym lhs rhs)
+      -- The two SIDES are bound as well as the whole statement, as for `↔` below: a note that wants
+      -- to caption each side — "one shop with both" under one, "two shops" under the other — needs
+      -- them apart, and splitting the joint canvas by hand would put the caption under a picture
+      -- the exporter is free to relayout.
+      let sides := "#let lhs = " ++ (← canvasOfParts #[("", lhs)])
+        ++ "#let rhs = " ++ (← canvasOfParts #[("", rhs)])
+      return page declName doc (← canvasOf sym lhs rhs) (extra := sides)
     | none =>
       -- An `↔` between two containments — the shunting rules — is four drawings in a row.
       match body.getAppFnArgs with

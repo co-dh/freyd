@@ -378,6 +378,15 @@ theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (T : c ⟶ d) :
 theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) ⊑ R / R :=
   div_comp R R R
 
+/-- `(R/R)² = R/R`.  Freyd states §2.314 as two containments, `1 ⊑ R/R` and `(R/R)² ⊑ R/R` — that
+    `R/R` is a preorder — but the two together give the equality: reflexivity turns `R/R = 1(R/R)`
+    into `⊑ (R/R)(R/R)`, which is the missing direction.  A preorder is idempotent under
+    composition. -/
+theorem div_self_comp_self {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) = R / R := by
+  apply le_antisymm (div_self_idem R)
+  calc R / R = (Cat.id a) ≫ (R / R) := by rw [Cat.id_comp]
+    _ ⊑ (R / R) ≫ (R / R) := comp_mono_right (one_le_div_self R) (R / R)
+
 /-- **§2.314**: `(S\R/T)° = T°\R°/S°`.  With `(S \ X) = (X°/S°)°`, both sides reduce
     by `recip_recip` to `(R/T)°/S°` (the LHS unfolds directly; the RHS via `R°° = R`, `T°° = T`).
     This is what makes the two-sided division `S\R/T` self-dual under reciprocation. -/

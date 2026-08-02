@@ -105,4 +105,35 @@ def allegoryOfCartBicat (O : Type u) [CartBicat.{v} O] : Freyd.Alg.Allegory (Wor
       have h := modular_of_frobenius R S T
       exact («meet_eq_left_of_≤» h).symm }
 
+
+
+/-- THE MODULAR LAW ON THE OTHER SIDE, `RS ∩ T ≤ R(S ∩ R°T)` — `modular_of_frobenius` read through
+    the converse, which is an order isomorphism (`conv_mono`, `conv_conv`) and turns each of `≫`,
+    `∩` around (`conv_comp`, `conv_inter`). -/
+theorem modular_right {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+    meet (R ≫ S) T ≤ R ≫ meet S (conv R ≫ T) := by
+  have h := conv_mono (modular_of_frobenius (conv S) (conv R) (conv T))
+  simp only [conv_comp, conv_inter, conv_conv] at h
+  exact h
+
+/-- **Freyd §2.136**, `F(R ∩ S) = FR ∩ FS` for SIMPLE `F` — the meet distributes over a composite
+    when the composite cannot branch.
+
+    One direction is free and holds for every arrow: `semidistrib_of_lax`, Freyd's "and, as always".
+    The other is his three-step line `FR ∩ FS ⊆ F(R ∩ F°FS) ⊆ F(R ∩ S)`, where the first step is
+    `modular_right` and the second spends simplicity, `F°F ⊑ 𝟙`.
+
+    SIMPLE, not a map: entireness is never used.  Freyd's headline writes `f` because in §2.13 he is
+    talking about maps, but the proof he gives underneath needs only that `F` is single valued. -/
+theorem comp_meet_of_singleValued {a b c : Word O} {F : a ⟶ b} (hF : SingleValued F)
+    (R S : b ⟶ c) : F ≫ meet R S = meet (F ≫ R) (F ≫ S) := by
+  refine OrderedCat.«≤_antisymm» (semidistrib_of_lax F R S) ?_
+  have hcut : conv F ≫ F ≫ S ≤ S :=
+    calc conv F ≫ F ≫ S = (conv F ≫ F) ≫ S := (Cat.assoc _ _ _).symm
+      _ ≤ 𝟙 b ≫ S := OrderedCat.comp_mono hF (OrderedCat.«≤_refl» S)
+      _ = S := Cat.id_comp S
+  calc meet (F ≫ R) (F ≫ S)
+      ≤ F ≫ meet R (conv F ≫ F ≫ S) := modular_right F R (F ≫ S)
+    _ ≤ F ≫ meet R S :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» F) (meet_mono (OrderedCat.«≤_refl» R) hcut)
 end Freyd.Diag

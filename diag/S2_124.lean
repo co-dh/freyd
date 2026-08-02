@@ -70,15 +70,6 @@ theorem «meet_?» {a : Word O} (L : a ⟶ (𝕀 : Word O)) :
   simp only [Cat.assoc]
   rw [htail]
 
-/-- THE MODULAR LAW ON THE OTHER SIDE, `RS ∩ T ≤ R(S ∩ R°T)` — `modular_of_frobenius` read through
-    the converse, which is an order isomorphism (`conv_mono`, `conv_conv`) and turns each of `≫`,
-    `∩` around (`conv_comp`, `conv_inter`). -/
-theorem modular_right {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
-    meet (R ≫ S) T ≤ R ≫ meet S (conv R ≫ T) := by
-  have h := conv_mono (modular_of_frobenius (conv S) (conv R) (conv T))
-  simp only [conv_comp, conv_inter, conv_conv] at h
-  exact h
-
 /-! ### The two identities the drawn proof rests on -/
 
 /-- **Lemma 1.**  `Dom P = ◁;(𝟙 ⊗ P);(𝟙 ⊗ !)`.

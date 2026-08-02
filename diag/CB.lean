@@ -109,34 +109,34 @@ scoped notation "⟜" => CartBicat.«?»
 
 variable {O : Type u} [CartBicat.{v} O]
 
+/-- CUTTING A WIRE at the merge: `▷ ≤ 𝟙 ⊗ ⊸`.  A wire is below the CUT wire — that is (40),
+    `𝟙 ≤ ⊸ ⟜` — so cutting the merge's right input can only add pairs, and once cut there is nothing
+    left to force the two inputs to agree: the `⟜` is absorbed by the unit law (7) and the right
+    input is simply discarded.  In `Rel`: `((x,x), x)` is one of the pairs `((x,y), x)`. -/
+theorem «∇≤𝟙!» (n : Word O) : (▷ : n ⊗ n ⟶ n) ≤ (𝟙 n ⊗ₕ ⊸) := by
+  -- `⟜`'s object is named: the statement of `hsplit` has no `▷` to fix it.
+  have hsplit : (𝟙 n ⊗ₕ («!» ≫ «?» (n := n)))
+      = (𝟙 n ⊗ₕ «!» (n := n)) ≫ (𝟙 n ⊗ₕ «?» (n := n)) := by
+    rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  calc (▷ : n ⊗ n ⟶ n)
+      = (𝟙 n ⊗ₕ 𝟙 n) ≫ ▷ := by rw [SymMonCat.tensHom_id, Cat.id_comp]
+    _ ≤ (𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷ :=
+        OrderedCat.comp_mono (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙≤!?» n))
+          (OrderedCat.«≤_refl» _)
+    _ = (𝟙 n ⊗ₕ ⊸) ≫ (𝟙 n ⊗ₕ ⟜) ≫ ▷ := by rw [hsplit, Cat.assoc]
+    _ = (𝟙 n ⊗ₕ ⊸) := by rw [«∇_unit»]; exact Cat.comp_id _
+
 /-- The SPECIAL law `◁;▷ = 𝟙` (functorialSemanticsForRelationalTheories.pdf p. 18, eq. (12)).
-    Not an axiom: `𝟙 ≤ ◁;▷` is (38), and
-    the reverse is the paper's displayed derivation — weaken the identity on one strand of the
-    bubble to `!;?` by (40), then collapse with the counit and unit laws. -/
-theorem special (n : Word O) : ◁ ≫ ▷ = 𝟙 n := by
-  refine OrderedCat.«≤_antisymm» ?_ («𝟙≤Δ∇» n)
-  -- `◁;▷ ≤ ◁;(𝟙 ⊗ (!;?));▷`, by (40) under `⊗` and then under `;`.
-  have hstep : (◁ ≫ ▷) ≤ (◁ ≫ (𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷) := by
-    have h : ((𝟙 n ⊗ₕ 𝟙 n) ≫ ▷) ≤ ((𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷) :=
-      OrderedCat.comp_mono
-        (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _) («𝟙≤!?» n)) (OrderedCat.«≤_refl» _)
-    rw [SymMonCat.tensHom_id, Cat.id_comp] at h
-    exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _) h
-  -- The right-hand side is `𝟙`: split the `⊗`, then use the counit law (10) on the left half and
-  -- the unit law (7) on the right half.  In the non-strict tower this step also had to insert
-  -- `ρ ρ⁻¹ = 𝟙` between the halves; with `ρ = 𝟙` there is nothing between them.
-  have hcollapse : ◁ ≫ (𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷ = 𝟙 n := by
-    -- `⟜`'s object is named: this statement is the only one in the proof with no `▷` to fix it.
-    have hsplit : (𝟙 n ⊗ₕ («!» ≫ «?» (n := n)))
-        = (𝟙 n ⊗ₕ «!» (n := n)) ≫ (𝟙 n ⊗ₕ «?» (n := n)) := by
-      rw [← SymMonCat.tensHom_comp, Cat.id_comp]
-    calc ◁ ≫ (𝟙 n ⊗ₕ (⊸ ≫ ⟜)) ≫ ▷
-        = ◁ ≫ ((𝟙 n ⊗ₕ ⊸) ≫ (𝟙 n ⊗ₕ ⟜)) ≫ ▷ := by rw [hsplit]
-      _ = (◁ ≫ (𝟙 n ⊗ₕ ⊸)) ≫ (𝟙 n ⊗ₕ ⟜) ≫ ▷ := by simp only [Cat.assoc]
-      _ = 𝟙 n ≫ 𝟙 n := by rw [Δ_counit, «∇_unit»]
-      _ = 𝟙 n := Cat.id_comp _
-  rw [← hcollapse]
-  exact hstep
+    Not an axiom: `𝟙 ≤ ◁;▷` is (38), and the reverse is the paper's displayed derivation — weaken
+    the identity on one strand of the bubble to `!;?` by (40), then collapse with the counit and
+    unit laws.  That weakening is `«∇≤𝟙!»`, which spends the unit law; the counit law (10) then eats
+    the copy. -/
+theorem special (n : Word O) : ◁ ≫ ▷ = 𝟙 n :=
+  OrderedCat.«≤_antisymm»
+    (calc ◁ ≫ ▷ ≤ ◁ ≫ (𝟙 n ⊗ₕ ⊸) :=
+          OrderedCat.comp_mono (OrderedCat.«≤_refl» _) («∇≤𝟙!» n)
+      _ = 𝟙 n := Δ_counit n)
+    («𝟙≤Δ∇» n)
 
 /-- The counit law (10) read on the LEFT strand: `◁;(! ⊗ 𝟙) = 𝟙`.  Only the right-hand form is a
     field, since cocommutativity (9) plus `swap_unit_right` gives this one. -/
@@ -152,6 +152,21 @@ theorem Δ_counit_left (n : Word O) : ◁ ≫ (⊸ ⊗ₕ 𝟙 n) = 𝟙 n := by
     _ = ◁ ≫ SymMonCat.swap n n ≫ (⊸ ⊗ₕ 𝟙 n) := Cat.assoc _ _ _
     _ = ◁ ≫ (𝟙 n ⊗ₕ ⊸) := by rw [h]
     _ = 𝟙 n := Δ_counit n
+
+/-- CUTTING A WIRE at the copy: `◁ ≤ ⟜ ⊗ 𝟙`, the mirror of `«∇≤𝟙!»` — cut the copy's left output
+    and the `⊸` is absorbed by the counit law, leaving a `⟜` that creates anything at all beside the
+    untouched input.  In `Rel`: `(x, (x,x))` is one of the pairs `(x, (y,x))`. -/
+theorem «Δ≤?𝟙» (n : Word O) : (◁ : n ⟶ n ⊗ n) ≤ (⟜ ⊗ₕ 𝟙 n) := by
+  have hsplit : ((«!» ≫ «?» (n := n)) ⊗ₕ 𝟙 n)
+      = («!» (n := n) ⊗ₕ 𝟙 n) ≫ («?» (n := n) ⊗ₕ 𝟙 n) := by
+    rw [← SymMonCat.tensHom_comp, Cat.id_comp]
+  calc (◁ : n ⟶ n ⊗ n)
+      = ◁ ≫ (𝟙 n ⊗ₕ 𝟙 n) := by rw [SymMonCat.tensHom_id, Cat.comp_id]
+    _ ≤ ◁ ≫ ((⊸ ≫ ⟜) ⊗ₕ 𝟙 n) :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+          (SymMonCat.tensHom_mono («𝟙≤!?» n) (OrderedCat.«≤_refl» _))
+    _ = (◁ ≫ (⊸ ⊗ₕ 𝟙 n)) ≫ (⟜ ⊗ₕ 𝟙 n) := by rw [hsplit, ← Cat.assoc]
+    _ = (⟜ ⊗ₕ 𝟙 n) := by rw [Δ_counit_left]; exact Cat.id_comp _
 
 /-- The unit law (7) read on the LEFT strand: `(? ⊗ 𝟙);▷ = 𝟙`, dual to `Δ_counit_left`. -/
 theorem «∇_unit_left» (n : Word O) : (⟜ ⊗ₕ 𝟙 n) ≫ ▷ = 𝟙 n := by
@@ -378,11 +393,50 @@ theorem unbend_bend {a b : Word O} (k : a ⊗ b ⟶ (𝕀 : Word O)) : unbend (b
     _ = 𝟙 (a ⊗ b) ≫ k := by rw [tensHom_id]
     _ = k := Cat.id_comp _
 
-/-- SLIDING a box around the cap: `(𝟙_a ⊗ R°);cap_a = (R ⊗ 𝟙_b);cap_b`.  This is `unbend_bend`
-    read at `R`'s own unbending — `R°` is by definition the bending of `(R ⊗ 𝟙);cap`, so straightening
+/-- SLIDING a box around the cap: `(𝟙_a ⊗ R°) cap_a = (R ⊗ 𝟙_b) cap_b`.  This is `unbend_bend`
+    read at `R`'s own unbending — `R°` is by definition the bending of `(R ⊗ 𝟙) cap`, so straightening
     it again returns what we started from.  Every converse law below is one application of this. -/
 theorem «°_slide» {a b : Word O} (R : a ⟶ b) :
     (𝟙 a ⊗ₕ conv R) ≫ cap a = (R ⊗ₕ 𝟙 b) ≫ cap b := unbend_bend _
+
+/-- `R R° R` FLAT: three copies of the box side by side, the `⟜◁` of the middle one's frame opening
+    the top two strands and its `▷⊸` closing the bottom two.  So the picture is a zig-zag — in on
+    the bottom strand, up the cap, back along the middle box, down the cup, out on the top strand —
+    and the three boxes never touch each other.  This is the shape Freyd's §2.112 lands on. -/
+theorem comp_conv_comp_def {a b : Word O} (R : a ⟶ b) :
+    R ≫ conv R ≫ R = ((cup a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) : _) := by
+  -- The two capped strands fold into ONE tensor factor beside the output strand's box.
+  have hfold : ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) = (R ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := by
+    rw [tensHom_assoc, ← tensHom_comp, Cat.comp_id]
+  -- …and the box on that strand is the LAST factor of `R R° R`, since `R ⊗ 𝟙_I` IS `R`.
+  have htail : (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) ≫ R = (R ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := by
+    calc (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) ≫ R
+        = (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) ≫ (R ⊗ₕ 𝟙 (𝕀 : Word O)) := by rw [tensHom_runit]
+      _ = (R ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := tensHom_split' _ _
+  -- The FIRST factor walks through the frame's cup and meets the frame's own box at the cap.
+  have hhead : R ≫ (cup a ⊗ₕ 𝟙 b) = (cup a ⊗ₕ 𝟙 a) ≫ (𝟙 (a ⊗ a) ⊗ₕ R) := by
+    calc R ≫ (cup a ⊗ₕ 𝟙 b)
+        = (𝟙 (𝕀 : Word O) ⊗ₕ R) ≫ (cup a ⊗ₕ 𝟙 b) := by rw [tensHom_lunit]
+      _ = (cup a ⊗ₕ R) := tensHom_split' _ _
+      _ = (cup a ⊗ₕ 𝟙 a) ≫ (𝟙 (a ⊗ a) ⊗ₕ R) := (tensHom_split _ _).symm
+  have hmid : (𝟙 (a ⊗ a) ⊗ₕ R) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b))
+      = (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := by
+    calc (𝟙 (a ⊗ a) ⊗ₕ R) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b))
+        = (𝟙 a ⊗ₕ (𝟙 a ⊗ₕ R)) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) := by
+          rw [← tensHom_id a a, tensHom_assoc]
+      _ = (𝟙 a ⊗ₕ ((𝟙 a ⊗ₕ R) ≫ (R ⊗ₕ 𝟙 b) ≫ cap b)) := by rw [← tensHom_comp, Cat.id_comp]
+      _ = (𝟙 a ⊗ₕ (((𝟙 a ⊗ₕ R) ≫ (R ⊗ₕ 𝟙 b)) ≫ cap b)) := by rw [Cat.assoc]
+      _ = (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := by rw [tensHom_split']
+  calc R ≫ conv R ≫ R
+      = (R ≫ (cup a ⊗ₕ 𝟙 b)) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) ≫ R := by
+        rw [conv_def]; simp only [Cat.assoc]
+    _ = ((cup a ⊗ₕ 𝟙 a) ≫ (𝟙 (a ⊗ a) ⊗ₕ R)) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b)) ≫ R := by
+        rw [hhead]
+    _ = (cup a ⊗ₕ 𝟙 a) ≫ ((𝟙 (a ⊗ a) ⊗ₕ R) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ 𝟙 b) ≫ cap b))) ≫ R := by
+        simp only [Cat.assoc]
+    _ = (cup a ⊗ₕ 𝟙 a) ≫ (𝟙 a ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) ≫ R := by rw [hmid]
+    _ = (cup a ⊗ₕ 𝟙 a) ≫ (R ⊗ₕ ((R ⊗ₕ R) ≫ cap b)) := by rw [htail]
+    _ = ((cup a ⊗ₕ 𝟙 a) ≫ ((R ⊗ₕ R) ⊗ₕ R) ≫ (𝟙 b ⊗ₕ cap b) : _) := by rw [hfold]
 
 /-- Capping a box on the left is capping it on the right, past a symmetry — the cap does not care
     which strand the box sits on (`swap_cap`). -/
