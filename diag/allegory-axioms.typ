@@ -1,7 +1,9 @@
+// The page setup and the cell helpers live in note-style.typ, shared with diag/allegory2.typ, which
+// carries the PROOFS this note leaves out.
+#import "note-style.typ": *
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name.  See the header of strdiag.typ.
-#import "@preview/dvdtyp:1.0.1": dvdtyp, definition, theorem, example
-#import "strdiag.typ": cetz, d, conv, meet, wire
+#import "strdiag.typ": conv, meet, wire
 
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN.  `./scripts/diag-export <decl>` walks the
 // Lean declaration's TYPE and writes diag/generated/<decl>.typ, which binds the cetz drawing to
@@ -17,7 +19,6 @@
 #import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
 #import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
-#import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.Δ_assoc.typ": pic as p-d-assoc
 #import "generated/Freyd.Diag.CartBicat.Δ_comm.typ": pic as p-d-comm
@@ -46,23 +47,12 @@
 #import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42ii
 #import "generated/Freyd.Diag.CartBicat.conv_tensHom.proof.typ": branches as l42iii
 #import "generated/Freyd.Diag.CartBicat.conv_mono.proof.typ": branches as l42iv
-#import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
-#import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
-#import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«°_slide».typ": pic as p-conv-slide
-#import "generated/Freyd.Diag.CartBicat.«Δ≤?𝟙».typ": pic as p-cut-copy
-#import "generated/Freyd.Diag.CartBicat.«∇≤𝟙!».typ": pic as p-cut-merge
-#import "generated/Freyd.Diag.le_comp_conv_comp.proof.typ": branches as zzb
-#import "generated/Freyd.Diag.le_comp_conv_comp_of_lax.proof.typ": branches as zzlax
-#import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
 #import "generated/Freyd.Diag.SingleValued.typ": pic as p-sv46
 #import "generated/Freyd.Diag.Total.typ": pic as p-tot47
 #import "generated/Freyd.Diag.Injective.typ": pic as p-inj48
 #import "generated/Freyd.Diag.Surjective.typ": pic as p-sur49
 #import "generated/Freyd.Diag.comp_meet_of_singleValued.typ": lhs as p-236a, rhs as p-236b
-#import "generated/Freyd.Diag.shunt_right.typ": lhs as sr-a, rhs as sr-b
-#import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b
-#import "generated/Freyd.Diag.entire_inter_iff.proof.typ": branches as entb
 // The allegory layer's division (last section).  `Freyd.Alg`, not `Freyd.Diag`: `/` is a theorem of
 // `Freyd/S2_30.lean` and `AOP/A4_4`, and of nothing in `diag/`.
 #import "generated/Freyd.Alg.le_div_iff.typ": pic as p-le-div
@@ -84,120 +74,7 @@
 #import "generated/Freyd.Alg.div_union.typ": pic as p-div-union
 #import "generated/Freyd.Alg.leftDiv_div.typ": pic as p-ldiv-div
 
-// PAGINATED, not one endless page: a viewer's page number and page keys are worth more than the
-// unbroken column, and the tables here are short enough that few of them straddle a break.  25cm
-// wide because the widest exported picture is a `⟺` between two containments, four sub-pictures in
-// a row.
-#set page(width: 25cm, height: 35cm, margin: 1.5cm)
-#set text(size: 11.5pt)
-// The template supplies the title block, the running header, page numbers, heading numbering and
-// the definition environment.  Everything it sets is merged into, not replaced by, the rules above.
-#show: dvdtyp.with(
-  title: "The allegory axioms, and what defines them in the Frobenius calculus",
-)
-#show raw: set text(size: 9.6pt)
-#show heading: set block(above: 16pt, below: 9pt)
-// Justification inside a table cell stretches the spaces around long unbreakable monospace runs
-// (`Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`) into gaps you can drive a car through.
-#show table: set par(justify: false)
-// The four generators are relation-operator glyphs, cut to sit inline beside `→` and `⊢`, so at
-// running-text size their rings and triangles are too fine to tell apart.  They are read here as
-// pictures, not as operators, so scale them back up to the surrounding cap height.
-#show regex("[◁▷⊸⟜]"): it => text(size: 1.45em, it)
-
-#let src(s) = text(9.2pt, luma(105))[#s]
-/// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
-#let P(p, s: 92%) = align(center, box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p)))
-/// A picture set INLINE in a table header, naming the statement the chain proves.  Deliberately
-/// large: the header is the one row every reader looks at first, and at running-text size the
-/// theorem it states cannot be read at all.
-#let Pin(p, s: 70%) = box(baseline: 36%, scale(x: s, y: s, reflow: true, p))
-/// A chain table's top header row: the theorem, one size up from the body.
-#let Th(body) = table.cell(colspan: 3, text(12.5pt)[#body])
-/// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
-/// export, i.e. for the two primitive operations.
-#let fig(body) = align(center, box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, body)))
-/// `P`, but not centred.  In the one-column division table the exported picture sits BESIDE the
-/// long-division figure, and two centred blocks leave a gutter down the middle of the page.
-#let Pl(p, s: 90%) = box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p))
-
-// ------------------------------------------------------------------ the long-division figure
-#let AMBER = rgb("#f6e3bd")
-#let GREEN = rgb("#cfe6cd")
-/// The long-division bar: `R` as a bar, the composite laid inside it left to right, and a hairline
-/// of slack at the far end.
-///
-/// `tiles` are `(label, kind)` in DIAGRAM order.  `"q"` is the quotient — amber, full height, solid
-/// outline, because `T S ⊑ R` is what pins it.  `"d"` is a divisor laid down inside `R`: green,
-/// inset top and bottom so it reads as embedded, dashed because its far edge is not pinned either.
-/// The slack closes the bar and is deliberately a sliver: `R / S` is the LARGEST quotient, so what
-/// is left when nothing more can be taken is exactly a hairline.
-///
-/// Transcribed, every one of them — this is a metaphor for the universal property, not a picture of
-/// a term, and it is the one account of `/` in this note that needs no complement.
-#let divbar(..tiles, qw: 3.0, dw: 1.9, slack: 0.12, note: none) = {
-  let y0 = -0.55
-  let y1 = 0.55
-  let ys = 0.36
-  let sol = (thickness: 1.1pt, paint: black)
-  let dsh = (thickness: 1.1pt, paint: black, dash: "dashed")
-  let ts = tiles.pos()
-  let ws = ts.map(t => if t.at(1) == "q" { qw } else { dw })
-  let total = ws.sum() + slack
-  box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, {
-    d.rect((0, y0), (total, y1), fill: AMBER, stroke: none)
-    // `R`'s own outline: far edge not pinned; top and bottom are drawn tile by tile below.  The
-    // LEFT edge comes last, after the tiles, or a divisor laid first — left division — covers it
-    // with its own dashed edge and `R`'s one pinned boundary reads as slack.
-    d.line((total, y0), (total, y1), stroke: dsh)
-    let x = 0.0
-    for t in ts {
-      let w = if t.at(1) == "q" { qw } else { dw }
-      let st = if t.at(1) == "q" { sol } else { dsh }
-      d.line((x, y1), (x + w, y1), stroke: st)
-      d.line((x, y0), (x + w, y0), stroke: st)
-      if t.at(1) == "q" {
-        d.line((x, y0), (x, y1), stroke: sol)
-        d.line((x + w, y0), (x + w, y1), stroke: sol)
-      } else {
-        d.rect((x, -ys), (x + w, ys), fill: GREEN, stroke: none)
-        d.line((x, ys), (x + w, ys), stroke: dsh)
-        d.line((x, -ys), (x + w, -ys), stroke: dsh)
-        d.line((x, -ys), (x, ys), stroke: dsh)
-        d.line((x + w, -ys), (x + w, ys), stroke: dsh)
-      }
-      d.content((x + w / 2, 0), text(10.5pt)[#t.at(0)])
-      x = x + w
-    }
-    d.line((total - slack, y1), (total, y1), stroke: dsh)
-    d.line((total - slack, y0), (total, y0), stroke: dsh)
-    d.line((0, y0), (0, y1), stroke: sol)
-    if note != none {
-      d.line((total, y0 - 0.42), (total, y0 - 0.1), stroke: (thickness: 0.6pt, paint: luma(110)))
-      d.content((total, y0 - 0.62), text(8.5pt, luma(90))[#note])
-    }
-  }))
-}
-
-/// Pictures laid side by side in one row.  Every exported canvas is drawn symmetrically about its
-/// own `y = 0`, so aligning the cells on the horizon puts the wires of all of them at one height;
-/// a per-box `baseline:` shift cannot, because each box is shifted by a fraction of its OWN height.
-#let row(items, s: 100%) = align(center, box(inset: (y: 4pt), grid(
-  columns: items.len(), align: horizon, column-gutter: 3pt,
-  ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
-
-/// A proof in ONE ROW: the steps side by side, and under each the rule that reached it.  The
-/// exporter draws the `=` (or `≤`) at the LEFT edge of every step after the first, so a hint
-/// left-aligned in the same column lands under it — a `place`d one collided with the wires.
-/// The first hint is therefore always empty.  Steps that change no picture are simply left out:
-/// this is a note for a reader who is ahead of it, not a transcript.
-///
-/// `horizon` for the same reason as `row`: every canvas is symmetric about its own `y = 0`, so
-/// centring them puts all the `=` of the chain on one line even when one step is twice as tall.
-#let chain(steps, hints, s: 62%) = align(center, box(inset: (y: 6pt), grid(
-  columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
-  ..steps.map(t => scale(x: s, y: s, reflow: true, t)),
-  ..hints.map(h => src[#h]))))
+#show: conf.with(title: "The allegory axioms, and what defines them in the Frobenius calculus")
 
 = Cartesian bicategory of relations
 
@@ -482,115 +359,9 @@ composition against a complement.
 )
 
 #pagebreak(weak: true)
-= The modular law, from Frobenius
-
-#table(
-  columns: (5.4cm, 1fr, 5.8cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(
-    Th[*the modular law,* `R S ∩ T ≤ (R ∩ T S°) S` #h(8pt) #Pin(p-modular)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(mfb.at(0).terms.at(0)), P(mfb.at(0).steps.at(0), s: 62%),
-  [*the start:* `R S ∩ T`.],
-
-  raw(mfb.at(0).terms.at(1)), P(mfb.at(0).steps.at(1), s: 62%),
-  [*Factor out the shared prefix:* `(R S) ⊗ T` is `(R ⊗ T) (S ⊗ 𝟙)`.],
-
-  raw(mfb.at(0).terms.at(2)), P(mfb.at(0).steps.at(2), s: 62%),
-  [*The merge slide.* `S` slides through the merge and reappears as `S°` on the other strand.
-   #src[*The only inequality in the proof.*]],
-
-  raw(mfb.at(0).terms.at(3)), P(mfb.at(0).steps.at(3), s: 62%),
-  [*Fold the prefix back in;* the copy-merge pair reads as a meet again.],
-)
-
-`S` occurs once on the left of the slide and twice on the right, and the lax copy law is the only law
-in the definition that may duplicate a box — so that is where the inequality has to be.
-
-#table(
-  columns: (5.4cm, 1fr, 5.8cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(
-    Th[*the merge slide,* `(S ⊗ 𝟙) ▷ ≤ (𝟙 ⊗ S°) ▷ S` #h(8pt) #Pin(p-nabla-slide)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(nsb.at(0).terms.at(0)), P(nsb.at(0).steps.at(0), s: 62%),
-  [*the start:* `(S ⊗ 𝟙) ▷`.],
-
-  raw(nsb.at(0).terms.at(1)), P(nsb.at(0).steps.at(1), s: 62%),
-  [*Rebuild the merge* from a copy and a right bracket, the shape the lax copy law applies to.],
-
-  raw(nsb.at(0).terms.at(2)), P(nsb.at(0).steps.at(2), s: 62%),
-  [*The lax copy law:* `S ◁` becomes `◁ (S ⊗ S)`, the box copied. #src[*The whole of the modular law,
-   in one step.*]],
-
-  raw(nsb.at(0).terms.at(3)), P(nsb.at(0).steps.at(3), s: 62%),
-  [*Reshape back,* and the surviving duplicate slides round the right bracket to become `S°`.],
-)
-
-// One section, one page: the chain is only readable beside the two cuts it is made of.
-#block(breakable: false, width: 100%)[
-= `R ≤ R R° R`, by cutting two wires
-
-Freyd reads this off the modular law #src[(§2.112)]: `R ⊑ 1R ∩ R ⊑ (1 ∩ R R°) R ⊑ R R° R`. In
-pictures neither the modular law nor a meet with `1` is wanted. The one law that makes a picture
-bigger is spent twice, and it is the cut, `𝟙 ≤ ⊸ ⟜`:
-
-#grid(columns: (1fr, 1fr), gutter: 30pt, align: center + bottom,
-  [#P(p-cut-copy, s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
-   *anything at all*]],
-  [#P(p-cut-merge, s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
-   discarded*]],
-)
-
-`R` is its own three-fold meet — three copies of the box between a copy tree and a merge tree — and
-the two cuts turn the trees into a `⟜◁` and a `▷⊸`. The three boxes never move:
-
-#chain(
-  (zzb.at(0).steps.at(1), zzb.at(0).steps.at(2), zzb.at(0).steps.at(3), zzb.at(0).steps.at(4),
-   zzb.at(0).steps.at(5)),
-  ([`R ∩ R ∩ R = R`], [cut], [cut], [`⟜◁`, `▷⊸`], [that is `R°`]),
-  s: 46%)
-
-Read the last picture from the input, which is now the bottom strand: through the bottom box, up the
-`▷⊸` and back along the middle box — which is that box turned round, so it is `R°` — down the `⟜◁`
-and out along the top box. Where the meet had one input feeding all three boxes and one output
-draining all three, the zig-zag has both of those *cut*, and a cut wire is the one thing this
-calculus lets you add for free.
-]
-
-// The other route to the same containment.  Kept next to it because the interesting thing is what
-// each one SPENDS, and that is only visible with both chains on the page.
-#block(breakable: false, width: 100%)[
-= The same, from the cap end
-
-The section above cuts twice in its chain. This one cuts once and pays for the other cut with the
-*lax copy law* — `R ◁ ≤ ◁ (R ⊗ R)`, the only law in the definition that may duplicate a box. Read
-`𝟙` as a copy tree whose last two legs are capped back:
-
-#chain(
-  (zzlax.at(0).steps.at(2), zzlax.at(0).steps.at(4), zzlax.at(0).steps.at(6),
-   zzlax.at(0).steps.at(7)),
-  ([`◁ (◁ ⊗ 𝟙) (𝟙 ⊗ ▷⊸) = 𝟙`], [lax copy, twice], [cut], [that is `R°`]),
-  s: 46%)
-
-The three boxes are not there to begin with: there is one, and the two copy dots walk back *through*
-it, leaving it behind three times. So the `▷⊸` is the frame's own cap before anything is cut, and
-the copy tree is the only thing left to cut.
-
-Neither chain is cheaper in what it *spends*. `◁ ▷ = 𝟙` is itself the merge cut, so the second
-`𝟙 ≤ ⊸ ⟜` is underneath this one; `R ∩ R = R` is the lax copy law, so that is underneath §9. Both
-routes pay both. What differs is the *layer*: this chain names only the copy, the cap and the box,
-so it holds as soon as the converse does — before `∩` exists. §9 climbs into the meet semilattice
-and back down to state a containment in which no meet occurs.
-]
-
 = Maps
 
-Every arrow is lax for `◁` and for `⊸` by axiom, and for `▷` and `⟜` by the section above. All four
+Every arrow is lax for `◁` and for `⊸` by axiom, and for `▷` and `⟜` by the lax monoid section. All four
 hold for *every* arrow, their REVERSES do not, and each reverse holding is a property of the arrow.
 The right-hand column is the *adjoint* form, which is the definition
 used here because it is literally the allegory's `Simple` and `Entire`; that the two forms agree is
@@ -637,97 +408,6 @@ never used.
     [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[milk at A, bread at B])],
   ),
 )
-
-= Entireness of an intersection
-
-`R` is *entire* when `𝟙 ⊑ R R°`, which is (TOT) above. When is an *intersection* entire?
-
-#align(center, block(inset: (y: 6pt))[
-  #P(p-entire, s: 80%) \
-  #src[`Total (R ∩ S) ↔ 𝟙 ≤ R S°`]])
-
-On the left `R ∩ S` is named *twice*; on the right `R` and `S` once each and the meet is gone. The
-meet is needed to *ask* whether something is entire, not to *answer* it. Where `⊑` is *defined* as
-`X ∩ Y = X` the two sides are one proposition; here `≤` is primitive, so both directions are real
-steps — and they cost very different things.
-
-#table(
-  columns: (5.0cm, 1fr, 6.0cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*`⟹`* #h(6pt) given `R ∩ S` entire, #Pin(ent-a)
-    #h(6pt) show #Pin(ent-b)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(entb.at(0).terms.at(0)), P(entb.at(0).steps.at(0), s: 68%), [*the start:* `𝟙`.],
-  raw(entb.at(0).terms.at(1)), P(entb.at(0).steps.at(1), s: 68%),
-  [*the hypothesis:* `𝟙 ≤ P P°` at `P = R ∩ S`.],
-  raw(entb.at(0).terms.at(2)), P(entb.at(0).steps.at(2), s: 68%),
-  [*monotonicity, twice.* #src[No modular law.]],
-)
-
-#table(
-  columns: (5.0cm, 1fr, 6.0cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*`⟸`* #h(6pt) given #Pin(ent-b) #h(6pt) show
-    `R ∩ S` entire, #Pin(ent-a)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(entb.at(1).terms.at(0)), P(entb.at(1).steps.at(0), s: 68%), [*the start:* `𝟙`.],
-
-  raw(entb.at(1).terms.at(1)), P(entb.at(1).steps.at(1), s: 68%),
-  [*the hypothesis,* met with `𝟙`.],
-
-  raw(entb.at(1).terms.at(2)), P(entb.at(1).steps.at(2), s: 68%),
-  [`𝟙 ∩ R S° = 𝟙 ∩ (S ∩ R)(S ∩ R)°`. #src[`R S°` relates `a` to `a′` when some `b` has `a R b` and
-   `a′ S b`; the `𝟙 ∩` sets `a′ = a`, and it reads "some `b` has `a R b` and `a S b`" — one arrow of
-   `R ∩ S`. Two arrows become one, and that is what needs the modular law.]],
-
-  raw(entb.at(1).terms.at(3)), P(entb.at(1).steps.at(3), s: 68%),
-  [*`X ∩ Y ≤ Y`,* then `S ∩ R = R ∩ S`.],
-)
-
-
-= The shunting rule
-
-A map moves from one side of a containment to the other at the cost of its converse,
-`R f ≤ S ⟺ R ≤ S f°`. It is how a function gets out of the way so the relation underneath can be
-reasoned about. Each direction spends exactly one half of *map* — never both.
-
-#table(
-  columns: (4.4cm, 1fr, 6.4cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting right, `⟹`* #h(6pt) given #Pin(sr-a) #h(4pt)
-    show #Pin(sr-b)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(srb.at(0).terms.at(0)), P(srb.at(0).steps.at(0), s: 74%), [*the start:* `R`.],
-  raw(srb.at(0).terms.at(1)), P(srb.at(0).steps.at(1), s: 74%),
-  [*total:* `𝟙 ≤ f f°`, so `f f°` may be inserted after `R`.],
-  raw(srb.at(0).terms.at(2)), P(srb.at(0).steps.at(2), s: 74%),
-  [Re-bracket to `(R f) f°` and apply the hypothesis.],
-)
-
-#table(
-  columns: (4.4cm, 1fr, 6.4cm),
-  align: (left + horizon, center + horizon, left + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting right, `⟸`* #h(6pt) given #Pin(sr-b) #h(4pt)
-    show #Pin(sr-a)],
-    [*term*], [*picture*], [*the rule that reaches it*]),
-
-  raw(srb.at(1).terms.at(0)), P(srb.at(1).steps.at(0), s: 74%), [*the start:* `R f`.],
-  raw(srb.at(1).terms.at(1)), P(srb.at(1).steps.at(1), s: 74%),
-  [Apply the hypothesis on the left; the two `f`s are now adjacent.],
-  raw(srb.at(1).terms.at(2)), P(srb.at(1).steps.at(2), s: 74%),
-  [*single valued:* `f° f ≤ 𝟙`, so the pair cancels.],
-)
-
-Shunting left is the mirror, same shape, map on the other side throughout. What the rule is, is an
-adjunction: `f ⊣ f°`, with *total* the unit and *single valued* the counit, so "`f` is a map" and
-"`f` has a right adjoint, namely `f°`" are one statement.
 
 // Its own page: the ten rows are one table and the long-division figure heads them, so a break
 // inside would separate the metaphor from the laws it explains.

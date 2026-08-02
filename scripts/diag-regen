@@ -1,10 +1,14 @@
 #!/bin/sh
-# diag-regen — redraw every picture `diag/allegory-axioms.typ` imports, and nothing else.
+# diag-regen — redraw every picture the notes import, and nothing else.
 #
-# The note's own `#import` lines ARE the list.  A second copy of it in a header comment is how the
+# The notes' own `#import` lines ARE the list.  A second copy of it in a header comment is how the
 # two drifted: three declarations were renamed and the comment went on naming the old ones.
+#
+# BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
+# and a picture named by only one of them is still a picture that has to be redrawn — listing one
+# file here is the same drift in a new place.
 cd "$(dirname "$0")/.." || exit 1
-names=$(sed -n 's|^#import "generated/\(.*\)\.typ".*|\1|p' diag/allegory-axioms.typ | sort -u)
+names=$(sed -n 's|^#import "generated/\(.*\)\.typ".*|\1|p' diag/*.typ | sort -u)
 # A `<decl>.proof.typ` is drawn by `--proof <decl>`; everything else by naming the declaration.
 # Unquoted on purpose: the names carry no spaces, and quoting would pass the whole list as one word.
 ./scripts/diag-export $(printf '%s\n' "$names" | grep -v '\.proof$') || exit 1
