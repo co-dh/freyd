@@ -345,18 +345,18 @@ with linear adjoints, is in the division section below.]
 )
 
 The last of Freyd's §2.21 equations that have no picture here — a tape around nothing, or a tape
-around what is already inside it, is not worth drawing. `R` = shops with milk, `S` = shops with
-bread throughout.
+around what is already inside it, is not worth drawing. `R` = shops with rice, `S` = shops with
+sugar throughout.
 
 #table(
   columns: (9.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*equation*], [*the milk reading*]),
+  table.header([*equation*], [*the rice reading*]),
 
   [`R ∪ (S ∩ R) = R` #h(10pt) `(R ∪ S) ∩ R = R` #h(4pt) #src[absorption]],
-  [Shops with milk, or with both: still the shops with milk. Shops with milk or bread, and with
-   milk: the same. The smaller side of each pair is already inside the larger.],
+  [Shops with rice, or with both: still the shops with rice. Shops with rice or sugar, and with
+   rice: the same. The smaller side of each pair is already inside the larger.],
 
   [`R ⊥ = ⊥` #h(4pt) #src[`R 0_S = 0_{R S}` — and `⊥ R = ⊥` on the other side]],
   [Going to a shop and then taking a road that leads nowhere gets you nowhere. `⊥` is a two-sided
@@ -405,12 +405,12 @@ never used.
   table.header([*law*], [*picture*]),
 
   [`F (R ∩ S) = F R ∩ F S` \ #v(2pt) #src[`F` single valued] \ #v(6pt)
-   #src[`F` = shops Ann may go to, `R` = has milk, `S` = has bread. Single valued means one shop, so
+   #src[`F` = shops Ann may go to, `R` = has rice, `S` = has sugar. Single valued means one shop, so
    the sides agree.]],
   grid(columns: 3, align: horizon, column-gutter: 10pt,
     [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one shop with both])],
     text(17pt)[=],
-    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[milk at A, bread at B])],
+    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[rice at A, sugar at B])],
   ),
 )
 
@@ -421,6 +421,9 @@ never used.
 
 #align(center, divbar(($R slash S$, "q"), ($S$, "d"), note: [the slack: `⊑`]))
 
+`R` = shop `a` stocks item `c` throughout, so `R/S` reads *`a` stocks everything `b` stocks* — `a`
+*covers* `b`. Every row below is that one sentence in a different bracketing.
+
 // Two columns like every other table, one law per row.  The pictures here are the widest in the
 // note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
 // scaling — which is why the picture column gets the rest of the 22cm and the laws that used to
@@ -430,51 +433,53 @@ never used.
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`T ⊑ R/S ⟺ T S ⊑ R`],
+  [`T ⊑ R/S ⟺ T S ⊑ R` \ #src[The universal property: any `T` whose `S`-shopping stays inside `a`'s
+   stock is a covering list, and `R/S` is the largest of them.]],
   P(p-le-div),
 
-  [`T ⊑ S\R ⟺ S T ⊑ R`],
+  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[The mirror — divide on the left when the shop comes first.]],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R` \ #src[Strict at `S = ∅`: `R/S` is everything, `(R/S) S = ∅`.]],
+  [`(R/S) S ⊑ R` \ #src[What you can buy at a shop you cover, you stock already. Strict at `S = ∅`:
+   `R/S` is everything, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
-  [`S (S\R) ⊑ R`],
+  [`S (S\R) ⊑ R` \ #src[The mirror.]],
   P(p-ldiv-cancel),
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁`],
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[Two-stage supply: divide by the far end first.]],
   divbar(($(R slash S_2) slash S_1$, "q"), ($S_1$, "d"), ($S_2$, "d"), qw: 4.2),
 
-  [`(S T)\R = T\(S\R)`],
+  [`(S T)\R = T\(S\R)` \ #src[The mirror.]],
   divbar(($S$, "d"), ($T$, "d"), ($T backslash (S backslash R)$, "q"), qw: 4.2),
 
-  [*maps:* `f (R/S) = (f R)/S` \ #src[The same three pieces bracketed two ways, which is the licence
-   to write `f R / S`. The shunting rule.]],
+  [*maps:* `f (R/S) = (f R)/S` \ #src[Rename the covering shop before or after dividing — the licence
+   to write `f R / S`.]],
   P(p-map-div),
 
-  [`R/(f S) = (R/S) f°` \ #src[A map moves out of a denominator and reappears as `f°` outside the
-   box. The shunting rule again.]],
+  [`R/(f S) = (R/S) f°` \ #src[Rename the covered shop: a map leaves a denominator as `f°` outside
+   the box.]],
   P(p-div-map),
 
-  [*§2.314:* `(R/S)(S/T) ⊑ R/T`],
+  [`(R/S)(S/T) ⊑ R/T` \ #src[Covering is transitive: `a` covers `b` covers `c`.]],
   P(p-div-comp),
 
-  [`𝟙 ⊑ R/R` \ #src[`R` = shop `a` stocks `c`, so `R/R` = "`a` stocks all `a'` does", true of every
-   shop. Strict: two shops stocking only milk contain each other and stay two shops.]],
+  [`𝟙 ⊑ R/R` \ #src[Every shop covers itself. Strict: two shops stocking only rice cover each other
+   and stay two shops.]],
   P(p-one-div),
 
-  [`(R/R)(R/R) = R/R` \ #src[Freyd writes `⊑`, but with `𝟙 ⊑ R/R` above it is an equality:
-   `R/R = 𝟙(R/R) ⊑ (R/R)(R/R)` is the other direction. A preorder is idempotent.]],
+  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *stocks at least as much as*, and a preorder is
+   idempotent. Freyd writes `⊑`; with `𝟙 ⊑ R/R` above it is an equality.]],
   P(p-div-self-idem),
 
-  [`(R/R) R = R`],
+  [`(R/R) R = R` \ #src[Buying at a shop you cover gets you your own stock back, no more and no
+   less — `a` covers `a`.]],
   P(p-div-self),
 
-  [`R/𝟙 = R`],
+  [`R/𝟙 = R` \ #src[Covering the shop that stocks exactly `c` is stocking `c`.]],
   P(p-div-one),
 
-  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[A denominator's union becomes a numerator's meet: dividing by
-   more leaves less.]],
+  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Covering a shop with two aisles is covering each aisle.]],
   P(p-div-union),
 
   [`S\(R/T) = (S\R)/T` \ #src[Which is why `S\R/T` needs no bracket.]],
@@ -486,77 +491,73 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 
 = Symmetric division
 
-`R/ₛS ≜ (R/S) ∩ (S/R)°`, the two-sided quotient: everything `R` says about a column and everything
-`S` says about it, in both directions. In `Rel` it relates `x` to `y` when the two are related to the
-*same* things, `∀z. (x R z ⟺ y S z)` — the shops again: `x` stocks under `R` exactly what `y` stocks
-under `S`.
+$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` it relates `x` and `y` when they reach the same things,
+`∀z. (x R z ⟺ y S z)` — two shops with the same stock list.
 
-Freyd writes it as a fraction, `R` over `S`: #box(baseline: 32%, $frac(R, S)$). The definition drawn
-is a meet of two long divisions, the second turned round by the converse frame:
+A meet of two long divisions, the second turned round by the converse frame:
 
 #P(p-symmdiv, s: 66%)
-#align(center, src[`◁ ((R/S) ⊗ (S/R)°) ▷` — exported from the definition, not transcribed])
+#align(center, src[exported from the definition, not transcribed])
 
 #table(
   columns: (8.6cm, 1fr),
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`(R/ₛS)° = S/ₛR` \ #src[The meet is inside the definition, not the statement, so it stays under
-   the label.]],
+  [$(frac(R, S))^circle.small = frac(S, R)$ \ #src[Stocking alike is symmetric.]],
   P(p-sdiv-recip),
 
-  [`(R/ₛS)(S/ₛT) ⊑ R/ₛT` \ #src[`/ₛ` is converse-symmetric and transitive, like an equality of
-   columns.]],
+  [$frac(R, S) frac(S, T) ⊑ frac(R, T)$ \ #src[And transitive: `a` stocks like `b`, `b` like `c`.]],
   P(p-sdiv-comp),
 )
 
-The rest of §2.35, without pictures: `/ₛ` is not built from the generators, so a dashed box says no
-more than the formula does. Equations are written as equations even where Freyd writes `⊑`.
+No pictures for the rest of §2.35: symmetric division is not built from the generators.
 
 #table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*what it says*]),
+  table.header([*law*], [*the rice reading*]),
 
-  [`T ⊑ R/ₛS ⟺ T S ⊑ R` and `T° R ⊑ S`],
-  [The characterization — one condition per half of the meet. `/ₛ` is *partial*: both halves must
-   typecheck.],
+  [$T ⊑ frac(R, S) ⟺ T S ⊑ R$ and `T° R ⊑ S`],
+  [`T` may pair two shops only when each covers the other. Both halves must typecheck, so the
+   operation is *partial*.],
 
-  [`(R/ₛS) S ⊑ R` #h(6pt) `(R/ₛR) R ⊑ R`],
-  [Cancellation, one bar's slack. Shops with the same stock, fed back through `S`, reach no more than
-   `R` did.],
+  [$frac(R, S) S ⊑ R$],
+  [Buy at a shop with your stock list and you get your own stock.],
 
-  [`𝟙 ⊑ R/ₛR` #h(6pt) `(R/ₛR)(R/ₛR) = R/ₛR`],
-  [`R/ₛR` is *reflexive* and *transitive*, and symmetric by the row above, so it is an *equivalence
-   relation*: same stock. Freyd writes `⊑` for the square; with `𝟙 ⊑ R/ₛR` it is an equality, exactly
-   as for `R/R`.],
+  [$frac(R, R) R ⊑ R$],
+  [The same, one shop against itself.],
 
-  [`T ⊑ R/ₛR ⟺ T R ⊑ R`, for symmetric `T` #src[(§2.351)]],
-  [What picks `R/ₛR` out among the symmetric arrows: the largest one `R` is invariant under.],
+  [$𝟙 ⊑ frac(R, R)$],
+  [Every shop stocks like itself.],
 
-  [`S/ₛS = 𝟙`, `S` is *straight*],
-  [No two things have the same `S`-stock. Equivalently every symmetric `T` with `T S ⊑ S` is
-   coreflexive.],
+  [$(frac(R, R))^2 = frac(R, R)$],
+  [So *stocks alike* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
+   equality.],
 
-  [`f S = g S ⟹ f = g`, `S` straight #src[(§2.352)]],
-  [A straight `S` cancels on the right. #src[A converse holds where every morphism is a union of
-   semisimple ones, §2.353.]],
+  [$T ⊑ frac(R, R) ⟺ T R ⊑ R$, for symmetric `T`],
+  [The largest symmetric arrow that leaves `R` alone.],
 
-  [`S R` straight `⟹ S` straight #src[(§2.355)]],
-  [Straightness passes to a prefix; in particular a right-invertible `S` is straight.],
+  [$frac(S, S) = 𝟙$, `S` is *straight*],
+  [No two shops stock alike. Equivalently every symmetric `T` with `T S ⊑ S` is coreflexive.],
 
-  [`S` straight `⟺ R/S` simple for all `R` #src[(§2.356)]],
-  [`(R/S)°(R/S) ⊑ (S/ₛR)(R/ₛS) ⊑ S/ₛS ⊑ 𝟙`.],
+  [`f S = g S ⟹ f = g`, `S` straight],
+  [A straight `S` tells its shops apart, so it cancels on the right.],
 
-  [`R = h S`, `h` a cover, `S` straight #src[(§2.354)]],
+  [`S R` straight `⟹ S` straight],
+  [If the longer chain tells shops apart, the first step already does.],
+
+  [`S` straight `⟺ R/S` simple for all `R`],
+  [If no two shops stock alike, at most one can match a given list.],
+
+  [`R = h S`, `h` a cover, `S` straight],
   [In an effective division allegory every arrow factors that way.],
 
-  [`R/ₛ𝟙` is the *simple part* of `R` #src[(§2.357)]],
-  [`x (R/ₛ𝟙) y` iff `x`'s image is exactly `{y}` — the shops stocking one item and nothing else. So
-   `R/ₛ𝟙 = R` iff `R` is simple, unlike `R/𝟙 = R`, which is unconditional.],
+  [$frac(R, 𝟙)$ is the *simple part* of `R`],
+  [The shops stocking one item and nothing else. It equals `R` only when `R` is simple, unlike
+   `R/𝟙 = R`.],
 
-  [`Dom (R/ₛS) = 𝟙 ∩ (R/S)(S/R)` #src[(§2.357)]],
+  [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
   [Its domain is the *domain of simplicity* of `R`.],
 )
