@@ -17,7 +17,7 @@
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
 #import "generated/Freyd.Diag.meet_comm.typ": pic as p-meet-comm
 #import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
-#import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
+#import "generated/Freyd.Diag.meet_idem.typ": pic as p-meet-idem
 #import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
 #import "generated/Freyd.Diag.«≤_top».typ": pic as p-le-top
 #import "generated/Freyd.Diag.CartBicat.Δ_assoc.typ": pic as p-d-assoc
@@ -43,7 +43,6 @@
 #import "generated/Freyd.Diag.Biprod.comp_union.typ": pic as p-comp-union
 #import "generated/Freyd.Diag.Biprod.conv_union.typ": pic as p-conv-union
 #import "generated/Freyd.Diag.FbCbRig.meet_union_distrib.typ": pic as p-distrib
-#import "generated/Freyd.Diag.ClosedLinearBicat.«residual_comp_≤».typ": pic as p-residual
 #import "generated/Freyd.Diag.CartBicat.conv_comp.proof.typ": branches as l42ii
 #import "generated/Freyd.Diag.CartBicat.conv_tensHom.proof.typ": branches as l42iii
 #import "generated/Freyd.Diag.CartBicat.conv_mono.proof.typ": branches as l42iv
@@ -63,6 +62,7 @@
 #import "generated/Freyd.Alg.leftDiv_comp.typ": pic as p-ldiv-assoc
 #import "generated/Freyd.Alg.map_comp_div.typ": pic as p-map-div
 #import "generated/Freyd.Alg.div_comp_recip_map.typ": pic as p-div-map
+#import "generated/Freyd.Alg.symmDiv.typ": pic as p-symmdiv
 #import "generated/Freyd.Alg.symmDiv_recip.typ": pic as p-sdiv-recip
 #import "generated/Freyd.Alg.symmDiv_comp.typ": pic as p-sdiv-comp
 // §2.314's list, in the book's order.
@@ -261,41 +261,30 @@ On every hom-set it is associative, commutative and idempotent, with unit the ma
 `⊤ = ⊸ ⟜` #src[(the paper's Lemma 4.11)].
 ]
 
-#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
+#grid(columns: (1fr, 1fr), gutter: 6pt, align: center + bottom,
   [#P(p-meet-top, s: 60%) #v(-7pt) \ #src[*unit:* one half of `⊤` per end — the merge's unit law
    absorbs the `⟜`, the copy's counit law the `⊸`]],
   [#P(p-meet-comm, s: 60%) #v(-7pt) \ #src[*commutative:* `σ` crosses `R ⊗ S` by naturality and is
    absorbed by cocommutativity and commutativity]],
   [#P(p-meet-assoc, s: 44%) #v(-7pt) \ #src[*associative:* coassociativity and associativity; `⊗`
    re-brackets for nothing, being strict here]],
+  [#P(p-meet-idem, s: 60%) #v(-7pt) \ #src[*idempotent:* the one that is not bookkeeping — the lax
+   copy law is the whole of it, worked in allegory2]],
 )
-
-// Heading, chain and its paragraph kept together — `width: 100%` because a block sizes to its
-// contents, and inside one that has shrunk the `align(center)` of `chain` has nothing to centre in.
-#block(breakable: false, width: 100%)[
-== `R ∩ R = R`, the one that is not bookkeeping
-
-#chain(
-  (mib.at(0).steps.at(0), mib.at(0).steps.at(1), mib.at(0).steps.at(2)),
-  ([], [`◁ ▷ = 𝟙`], [lax copy]))
-
-The last picture is `R ∩ R` itself, so this is `R ≤ R ∩ R` and the lax copy law is the whole of it.
-The other direction is not proved here: `R ∩ S ≤ R` holds for every `S`, by weakening `S` to `⊤` and
-then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, packaged once.
-]
 
 So `≤` is the order this monoid induces. `R ∩ S ≤ R` comes from the unit, and idempotency turns
 anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩ R ≤ S ∩ T`.
 
-= The eight axioms, and what proves each
+And one law relating `∩` to composition, which is *not* an equation:
 
 #table(
   columns: (9.4cm, 1fr),
   align: (left + horizon, center + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*axiom, and what supplies it*], [*picture*]),
+  table.header([*semi-distributivity, and what supplies it*], [*picture*]),
 
-  [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law.], P(p-semidistrib),
+  [`R (S ∩ T) ⊑ R S ∩ R T` — the lax copy law. #src[Equality exactly when `R` is single valued: the Maps section's
+   `F (R ∩ S) = F R ∩ F S`.]], P(p-semidistrib),
 )
 
 = Unitary and pre-tabular — what the other direction needs
@@ -328,13 +317,12 @@ anything under both `S` and `T` into something under `S ∩ T`, since `R = R ∩
 Together: *cartesian bicategory of relations ≃ unitary pre-tabular allegory*.
 
 #pagebreak(weak: true)
-= Union and residual
+= Union
 
-Both are past what the definition can build: a union needs a *biproduct* on top of the Frobenius
-structure, a residual a *second composition* with linear adjoints. A union draws as a *tape* — the
-rounded wrapper is the second product, and its fork and join open and close a branch a particle
-takes exactly one of. A residual draws as *long division*, not as its own term, which is a
-composition against a complement.
+Past what the definition can build: a union needs a *biproduct* on top of the Frobenius structure.
+It draws as a *tape* — the rounded wrapper is the second product, and its fork and join open and
+close a branch a particle takes exactly one of. #src[The residual, which needs a second composition
+with linear adjoints, is in the division section below.]
 
 #table(
   columns: (9.4cm, 1fr),
@@ -354,8 +342,25 @@ composition against a complement.
   [`(R ∪ S)° = R° ∪ S°`], P(p-conv-union),
   [`R ∩ (S ∪ T) = (R ∩ S) ∪ (R ∩ T)` — what makes the whole *distributive*, and the one picture with
    both layers in it.], P(p-distrib, s: 78%),
-  [`(R / S) S ⊑ R` — the residual is a lower bound of the arrows it is the greatest of.],
-  P(p-residual),
+)
+
+The last of Freyd's §2.21 equations that have no picture here — a tape around nothing, or a tape
+around what is already inside it, is not worth drawing. `R` = shops with milk, `S` = shops with
+bread throughout.
+
+#table(
+  columns: (9.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*equation*], [*the milk reading*]),
+
+  [`R ∪ (S ∩ R) = R` #h(10pt) `(R ∪ S) ∩ R = R` #h(4pt) #src[absorption]],
+  [Shops with milk, or with both: still the shops with milk. Shops with milk or bread, and with
+   milk: the same. The smaller side of each pair is already inside the larger.],
+
+  [`R ⊥ = ⊥` #h(4pt) #src[`R 0_S = 0_{R S}` — and `⊥ R = ⊥` on the other side]],
+  [Going to a shop and then taking a road that leads nowhere gets you nowhere. `⊥` is a two-sided
+   zero for composition, as `⊤` is not.],
 )
 
 #pagebreak(weak: true)
@@ -482,7 +487,15 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 = Symmetric division
 
 `R/ₛS ≜ (R/S) ∩ (S/R)°`, the two-sided quotient: everything `R` says about a column and everything
-`S` says about it, in both directions.
+`S` says about it, in both directions. In `Rel` it relates `x` to `y` when the two are related to the
+*same* things, `∀z. (x R z ⟺ y S z)` — the shops again: `x` stocks under `R` exactly what `y` stocks
+under `S`.
+
+Freyd writes it as a fraction, `R` over `S`: #box(baseline: 32%, $frac(R, S)$). The definition drawn
+is a meet of two long divisions, the second turned round by the converse frame:
+
+#P(p-symmdiv, s: 66%)
+#align(center, src[`◁ ((R/S) ⊗ (S/R)°) ▷` — exported from the definition, not transcribed])
 
 #table(
   columns: (8.6cm, 1fr),
@@ -496,4 +509,54 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
   [`(R/ₛS)(S/ₛT) ⊑ R/ₛT` \ #src[`/ₛ` is converse-symmetric and transitive, like an equality of
    columns.]],
   P(p-sdiv-comp),
+)
+
+The rest of §2.35, without pictures: `/ₛ` is not built from the generators, so a dashed box says no
+more than the formula does. Equations are written as equations even where Freyd writes `⊑`.
+
+#table(
+  columns: (7.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*law*], [*what it says*]),
+
+  [`T ⊑ R/ₛS ⟺ T S ⊑ R` and `T° R ⊑ S`],
+  [The characterization — one condition per half of the meet. `/ₛ` is *partial*: both halves must
+   typecheck.],
+
+  [`(R/ₛS) S ⊑ R` #h(6pt) `(R/ₛR) R ⊑ R`],
+  [Cancellation, one bar's slack. Shops with the same stock, fed back through `S`, reach no more than
+   `R` did.],
+
+  [`𝟙 ⊑ R/ₛR` #h(6pt) `(R/ₛR)(R/ₛR) = R/ₛR`],
+  [`R/ₛR` is *reflexive* and *transitive*, and symmetric by the row above, so it is an *equivalence
+   relation*: same stock. Freyd writes `⊑` for the square; with `𝟙 ⊑ R/ₛR` it is an equality, exactly
+   as for `R/R`.],
+
+  [`T ⊑ R/ₛR ⟺ T R ⊑ R`, for symmetric `T` #src[(§2.351)]],
+  [What picks `R/ₛR` out among the symmetric arrows: the largest one `R` is invariant under.],
+
+  [`S/ₛS = 𝟙`, `S` is *straight*],
+  [No two things have the same `S`-stock. Equivalently every symmetric `T` with `T S ⊑ S` is
+   coreflexive.],
+
+  [`f S = g S ⟹ f = g`, `S` straight #src[(§2.352)]],
+  [A straight `S` cancels on the right. #src[A converse holds where every morphism is a union of
+   semisimple ones, §2.353.]],
+
+  [`S R` straight `⟹ S` straight #src[(§2.355)]],
+  [Straightness passes to a prefix; in particular a right-invertible `S` is straight.],
+
+  [`S` straight `⟺ R/S` simple for all `R` #src[(§2.356)]],
+  [`(R/S)°(R/S) ⊑ (S/ₛR)(R/ₛS) ⊑ S/ₛS ⊑ 𝟙`.],
+
+  [`R = h S`, `h` a cover, `S` straight #src[(§2.354)]],
+  [In an effective division allegory every arrow factors that way.],
+
+  [`R/ₛ𝟙` is the *simple part* of `R` #src[(§2.357)]],
+  [`x (R/ₛ𝟙) y` iff `x`'s image is exactly `{y}` — the shops stocking one item and nothing else. So
+   `R/ₛ𝟙 = R` iff `R` is simple, unlike `R/𝟙 = R`, which is unconditional.],
+
+  [`Dom (R/ₛS) = 𝟙 ∩ (R/S)(S/R)` #src[(§2.357)]],
+  [Its domain is the *domain of simplicity* of `R`.],
 )

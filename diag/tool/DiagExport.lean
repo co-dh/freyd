@@ -1228,7 +1228,12 @@ def draw (declName : Name) : MetaM String := do
     -- BETA only, never `whnf`: `whnf` keeps going past `LE.le` into the `OrderedCat` projection it
     -- is a field of, and the whole inequation then prints as one opaque box.  Unfolding the
     -- definition is all that is wanted; its body is already `_ ≤ _`.
-    let body := if tybody.isProp && (split tybody).isNone then
+    -- A DEFINITION is drawn by its BODY, whether it lands in `Prop` or in a hom: `SingleValued`'s
+    -- body is the inequation to draw, and `symmDiv`'s is `(R/S) ∩ (S/R)°`, while its type is the
+    -- bare `a ⟶ b` and says nothing.  A THEOREM is never unfolded — `ci.value?` is its proof, and an
+    -- `↔` statement does not split, so testing only for a split would draw the proof term.
+    let isDef := match ci with | .defnInfo _ => true | _ => false
+    let body := if isDef && (split tybody).isNone then
         match ci.value? with
         | some v => (mkAppN v xs).headBeta
         | none => tybody

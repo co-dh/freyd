@@ -7,6 +7,7 @@
 // only places them. `./scripts/diag-regen` redraws every binding below, reading the list off these
 // very imports.
 #import "note-style.typ": *
+#import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
@@ -24,6 +25,20 @@
 
 The companion to `allegory-axioms.typ`, which states these laws and their pictures. Here each one is
 worked: the steps of the Lean proof, side by side, with the rule that reaches each under it.
+
+// Heading, chain and its paragraph kept together — `width: 100%` because a block sizes to its
+// contents, and inside one that has shrunk the `align(center)` of `chain` has nothing to centre in.
+#block(breakable: false, width: 100%)[
+= `R ∩ R = R`, the one that is not bookkeeping
+
+#chain(
+  (mib.at(0).steps.at(0), mib.at(0).steps.at(1), mib.at(0).steps.at(2)),
+  ([], [`◁ ▷ = 𝟙`], [lax copy]))
+
+The last picture is `R ∩ R` itself, so this is `R ≤ R ∩ R` and the lax copy law is the whole of it.
+The other direction is not proved here: `R ∩ S ≤ R` holds for every `S`, by weakening `S` to `⊤` and
+then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, packaged once.
+]
 
 = The modular law, from Frobenius
 
