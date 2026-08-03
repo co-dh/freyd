@@ -417,36 +417,106 @@ never used.
 // Its own page: the ten rows are one table and the long-division figure heads them, so a break
 // inside would separate the metaphor from the laws it explains.
 #pagebreak(weak: true)
-= Division
-
-// The vocabulary as a GRAPH, not a list: the three arrows all land on `item`, and each quotient is
-// the arrow between two sources that the two legs into `item` force.  A table of six rows said the
-// same thing and hid which arrow was a composite of which.
-#align(center, box(inset: (y: 10pt), cetz.canvas(length: 1cm, {
-  let arrow(a, b) = d.line(a, b, mark: (end: ">", scale: 0.55), stroke: 0.9pt)
-  arrow((0, 1.22), (0, 0.38))
-  arrow((0, -0.38), (0, -1.22))
-  d.bezier((-0.8, 1.45), (-0.8, -1.45), (-2.4, 0.9), (-2.4, -0.9),
-    mark: (end: ">", scale: 0.55), stroke: 0.9pt)
-  arrow((1.0, 1.48), (4.3, 0.3))
-  arrow((0.7, 0), (4.3, 0))
-  arrow((1.0, -1.48), (4.3, -0.3))
-  d.content((0.2, 0.8), text(9.5pt)[`R/S` #h(2pt) fills], anchor: "west")
-  d.content((0.2, -0.8), text(9.5pt)[`S/T` #h(2pt) satisfies], anchor: "west")
-  d.content((-2.0, 0), text(9.5pt)[serves #h(2pt) `R/T`], anchor: "east")
-  d.content((2.9, 1.15), text(9.5pt)[`R` #h(2pt) retails])
-  d.content((2.5, 0.26), text(9.5pt)[`S` #h(2pt) specifies])
-  d.content((2.9, -1.15), text(9.5pt)[`T` #h(2pt) takes])
-  let node(p, w) = d.content(p, box(inset: 4pt, fill: white)[#text(10.5pt)[#w]])
-  node((0, 1.6), [market `m`])
-  node((0, 0), [dish `d`])
-  node((0, -1.6), [guest `g`])
-  node((5, 0), [item `i`])
-})))
+= Division is WHAT!
 
 #align(center, `m (R/S) d  ⟺  ∀i. d S i → m R i`)
 
-`(R/S) S` reads "some dish `m` fills specifies `i`" — composition hides an existential.
+Read the bar as *what*: `R/S` relates a producer to a consumer when the producer supplies #emph[what]
+the consumer asks for. Each picture below is one such reading — supply on the left, demand on the
+right, the ingredients they meet over in the middle.
+
+// The three quotients, a drawing each: SUPPLY on the left, the ingredients in a column down the
+// middle, DEMAND on the right, every arrow pointing at the ingredient it names.  A quotient is then
+// a question the reader answers by eye — is every arrow into an ingredient from the right matched by
+// one from the left? — and its answer is the arc over (or under) the column.  ONE function, not
+// three canvases: the pictures differ only in their two lists, their two colours and their arcs.
+// Colour marks WHICH node, not which side — the sides are already told apart by position, so
+// spending a hue on them would leave nothing to tell `m` from `m'`.  First in a column blue, second
+// pink, on both sides.
+#let PAL = (rgb("#1a5fb4"), rgb("#c2247f"))
+#let ARC = rgb("#7d3c98")
+#let quot(sup, dem, arcs, supLab, demLab, arcLab, reading) = {
+  align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.86cm, {
+    let iy = (spice: 2.4, chicken: 0.8, peanut: -0.8, oil: -2.4)
+    // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the
+    // box cover the stub — every edge then ends the same distance from its label, whatever its width.
+    for (k, row) in sup.enumerate() { for it in row.at(2) {
+      d.line((-5.6, row.at(0)), (-1.05, iy.at(it)), mark: (end: ">", scale: 0.5),
+        stroke: 0.75pt + PAL.at(k)) } }
+    for (k, row) in dem.enumerate() { for it in row.at(2) {
+      d.line((5.6, row.at(0)), (1.05, iy.at(it)), mark: (end: ">", scale: 0.5),
+        stroke: 0.75pt + PAL.at(k)) } }
+    for (ys, ye, up) in arcs {
+      d.bezier((-5.6, ys + 0.45 * up), (5.6, ye + 0.45 * up), (-3.2, 3.8 * up), (3.2, 3.8 * up),
+        mark: (end: ">", scale: 0.55), stroke: 0.9pt + ARC) }
+    let node(x, y, c, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
+    for (k, row) in sup.enumerate() { node(-5.6, row.at(0), PAL.at(k), row.at(1)) }
+    for (k, row) in dem.enumerate() { node(5.6, row.at(0), PAL.at(k), row.at(1)) }
+    for (it, y) in iy { node(0, y, black, [#it]) }
+    for (ys, ye, up) in arcs {
+      d.content((0, 3.3 * up), box(inset: 3pt, fill: white)[#text(9.5pt, ARC)[#arcLab]]) }
+    d.content((-5.6, 3.75), text(9.5pt, luma(60))[#supLab])
+    d.content((5.6, 3.75), text(9.5pt, luma(60))[#demLab])
+  })))
+  // The whole of the quotient in one line of English, under the picture that built it.
+  align(center, text(11pt)[#reading])
+}
+
+#quot(
+  ((1.6, [market `m`], ("spice", "chicken", "peanut")), (-1.6, [market `m'`], ("spice", "chicken"))),
+  ((1.6, [kung pao], ("spice", "chicken", "peanut")), (-1.6, [chilli chicken], ("spice", "chicken", "oil"))),
+  ((1.6, 1.6, 1),), [`R` retails — supply], [`S` specifies — demand], [`R/S` fills],
+  [`R/S` — market retails #emph[what] dish specifies])
+
+Every arrow the dish sends into the ingredient column has to be matched by one from the market, so
+here a single pair survives: `m'` fills no dish, lacking both peanut and oil, and chilli chicken is
+filled by no market, since neither stocks oil.
+
+#quot(
+  ((1.6, [kung pao], ("spice", "chicken", "peanut")), (-1.6, [chilli chicken], ("spice", "chicken", "oil"))),
+  ((0, [guest `g`], ("spice", "chicken")),),
+  ((1.6, 0, 1), (-1.6, 0, -1)), [`S` specifies — supply], [`W` takes — demand], [`S/W` satisfies],
+  [`S/W` — dish specifies #emph[what] guest takes])
+
+The same test with the guest as the consumer. `g` takes spice and chicken, and both dishes need
+both, so both satisfy him — a dish may need more, never less.
+
+#quot(
+  ((1.6, [market `m`], ("spice", "chicken", "peanut")), (-1.6, [market `m'`], ("spice", "chicken"))),
+  ((0, [guest `g`], ("spice", "chicken")),),
+  ((1.6, 0, 1), (-1.6, 0, -1)), [`R` retails — supply], [`W` takes — demand], [`R/W` feeds],
+  [`R/W` — market retails #emph[what] guest takes])
+
+And with the market as the producer: both markets sell spice and chicken, so both feed `g` —
+`m'` included, though it fills no dish. Dropping the ingredients now, the three arcs sit like this:
+
+// The composite, with the ingredient column gone: at this level `(R/S)(S/W) ⊑ R/W` is the statement
+// that a PATH is a special case of an arrow, and its strictness is a missing path you can see.
+#align(center, box(inset: (y: 12pt), cetz.canvas(length: 1cm, {
+  let QUO = ARC
+  let WANT = rgb("#26734d")
+  let arrow(a, b, c) = d.line(a, b, mark: (end: ">", scale: 0.55), stroke: 0.9pt + c)
+  arrow((-3.5, 1.3), (-1.4, 1.3), QUO)
+  arrow((1.4, 1.3), (3.3, 0.35), WANT)
+  arrow((1.5, -1.3), (3.3, -0.35), WANT)
+  d.bezier((-4.6, 1.85), (4.1, 0.6), (-2.6, 3.2), (2.4, 2.9),
+    mark: (end: ">", scale: 0.55), stroke: (paint: luma(70), thickness: 0.8pt, dash: "dashed"))
+  d.bezier((-4.6, -1.85), (4.1, -0.6), (-2.6, -3.2), (2.4, -2.9),
+    mark: (end: ">", scale: 0.55), stroke: (paint: luma(70), thickness: 0.8pt, dash: "dashed"))
+  let node(x, y, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt)[#w]])
+  node(-4.6, 1.3, text(PAL.at(0))[market `m`]); node(-4.6, -1.3, text(PAL.at(1))[market `m'`])
+  node(0, 1.3, text(PAL.at(0))[kung pao]); node(0, -1.3, text(PAL.at(1))[chilli chicken])
+  node(4.1, 0, text(PAL.at(0))[guest `g`])
+  d.content((-2.45, 1.75), text(9.5pt, QUO)[`R/S`])
+  d.content((2.6, 1.15), text(9.5pt, WANT)[`S/W`])
+  d.content((-0.4, 2.62), box(inset: 3pt, fill: white)[#text(9.5pt, luma(70))[`R/W`]])
+  d.content((-0.4, -2.62), box(inset: 3pt, fill: white)[#text(9.5pt, luma(70))[`R/W`]])
+  d.content((-0.4, -3.35), text(9pt, luma(70))[`m'` reaches `g` through no dish])
+})))
+
+`(R/S)(S/W)` is a path: `m` → kung pao → `g`, and that is all of it. `R/W` also holds of `m'`,
+which retails everything `g` wants — but `m'` fills no dish, so nothing composes to it. The missing
+path is exactly the strictness of `(R/S)(S/W) ⊑ R/W`.
 
 // Two columns like every other table, one law per row.  The pictures here are the widest in the
 // note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
@@ -457,14 +527,14 @@ never used.
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`T ⊑ R/S ⟺ T S ⊑ R` \ #src[Any `T` pairing a market only with dishes it fills lies inside `R/S`, and
-   `R/S` is the largest such.]],
+  [`X ⊑ R/S ⟺ X S ⊑ R` \ #src[`X` is any market-to-dish pairing; one that only pairs a market with
+   dishes it fills lies inside `R/S`, and `R/S` is the largest such.]],
   P(p-le-div),
 
-  [`T ⊑ S\R ⟺ S T ⊑ R` \ #src[The mirror — divide on the left when the market comes first.]],
+  [`X ⊑ S\R ⟺ S X ⊑ R` \ #src[The mirror — divide on the left when the market comes first.]],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R` \ #src[Some dish `m` fills specifies `i` — then `m` retails `i` too. Strict at
+  [`(R/S) S ⊑ R` \ #src[There is a dish `m` fills that specifies `i` — then `m` retails `i` too. Strict at
    `S = ∅`: `R/S` is everything, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
@@ -474,7 +544,7 @@ never used.
   [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[A dish of dishes: divide by the far end first.]],
   P(p-div-assoc),
 
-  [`(S T)\R = T\(S\R)` \ #src[The mirror.]],
+  [`(S₁ S₂)\R = S₂\(S₁\R)` \ #src[The mirror.]],
   P(p-ldiv-assoc),
 
   [*maps:* `f (R/S) = (f R)/S` \ #src[Rename the market before or after dividing — the licence to write
@@ -484,11 +554,11 @@ never used.
   [`R/(f S) = (R/S) f°` \ #src[Rename the dish: a map leaves a denominator as `f°` outside the box.]],
   P(p-div-map),
 
-  [`(R/S)(S/T) ⊑ R/T` \ #src[Filling then satisfying is serving.]],
+  [`(R/S)(S/W) ⊑ R/W` \ #src[A market that fills a dish that satisfies a guest feeds that guest.]],
   P(p-div-comp),
 
   [`𝟙 ⊑ R/R` \ #src[`R/R` runs market to market: each fills its own list. Strict: two markets
-   retailing only rice fill each other's and stay two markets.]],
+   retailing only spice fill each other's and stay two markets.]],
   P(p-one-div),
 
   [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *retails at least as much as*, and a preorder is
@@ -505,7 +575,7 @@ never used.
   [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Filling a dish made of two is filling each of them.]],
   P(p-div-union),
 
-  [`S\(R/T) = (S\R)/T` \ #src[Which is why `S\R/T` needs no bracket.]],
+  [`S\(R/W) = (S\R)/W` \ #src[Which is why `S\R/W` needs no bracket.]],
   P(p-ldiv-div),
 )
 
@@ -530,7 +600,7 @@ A meet of two long divisions, the second turned round by the converse frame:
   [$(frac(R, S))^circle.small = frac(S, R)$ \ #src[Matching is symmetric.]],
   P(p-sdiv-recip),
 
-  [$frac(R, S) frac(S, T) ⊑ frac(R, T)$ \ #src[And transitive.]],
+  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ \ #src[And transitive.]],
   P(p-sdiv-comp),
 )
 
@@ -540,10 +610,10 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the rice reading*]),
+  table.header([*law*], [*the market reading*]),
 
-  [$T ⊑ frac(R, S) ⟺ T S ⊑ R$ and `T° R ⊑ S`],
-  [`T` may pair `m` with `d` only when each fills the other. Both halves must typecheck, so the
+  [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X° R ⊑ S`],
+  [`X` may pair `m` with `d` only when each fills the other. Both halves must typecheck, so the
    operation is *partial*.],
 
   [$frac(R, S) S ⊑ R$],
@@ -559,11 +629,11 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [So *matches* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
    equality.],
 
-  [$T ⊑ frac(R, R) ⟺ T R ⊑ R$, for symmetric `T`],
+  [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`],
   [The largest symmetric arrow that leaves `R` alone.],
 
   [$frac(S, S) = 𝟙$, `S` is *straight*],
-  [No two dishes specify the same items. Equivalently every symmetric `T` with `T S ⊑ S` is
+  [No two dishes specify the same ingredients. Equivalently every symmetric `X` with `X S ⊑ S` is
    coreflexive.],
 
   [`f S = g S ⟹ f = g`, `S` straight],
@@ -579,7 +649,7 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [In an effective division allegory every arrow factors that way.],
 
   [$frac(R, 𝟙)$ is the *simple part* of `R`],
-  [The markets retailing one item and nothing else. It equals `R` only when `R` is simple, unlike
+  [The markets retailing one ingredient and nothing else. It equals `R` only when `R` is simple, unlike
    `R/𝟙 = R`.],
 
   [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
@@ -589,21 +659,21 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
 = Power allegories
 
 One more operation on a division allegory: `∋`, Freyd's *epsiloff*. In `Rel` its source is the
-powerset of its target and `l ∋ i` iff `i ∈ l` — the shopping lists over the items, and `∋` reads a
-list `l` back into the items on it. Everything else is forced.
+powerset of its target and `l ∋ i` iff `i ∈ l` — the shopping lists over the ingredients, and `∋` reads a
+list `l` back into the ingredients on it. Everything else is forced.
 
 #table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the rice reading*]),
+  table.header([*law*], [*the market reading*]),
 
   [`∋ ⊤ = R ⊤`],
   [Same target as `R`, and depending on nothing else: one `∋` per object, not per arrow. What is
    being listed fixes it, not who lists it.],
 
   [$frac(∋, ∋) ⊑ 𝟙$, `∋` is *straight*],
-  [*Extensionality*: two lists with the same items are the same list.],
+  [*Extensionality*: two lists with the same ingredients are the same list.],
 
   [`𝟙 ⊑ (R/∋)(∋/R)`, `∋` is *thick*],
   [*Comprehension*: every market has a list of exactly what it retails. Equivalently every `R`
@@ -620,10 +690,10 @@ list `l` back into the items on it. Everything else is forced.
    `Λ(R)` is a *map*.],
 
   [`Λ(R) ∋ = R`],
-  [Look up a market's list, then read off its items: what it retails.],
+  [Look up a market's list, then read off its ingredients: what it retails.],
 
   [`Λ(R)` is the only map with `Λ(R) ∋ = R`],
-  [Two maps naming the same items name the same list — extensionality again.],
+  [Two maps naming the same ingredients name the same list — extensionality again.],
 
   [`F ⊑ Λ(F ∋)`, `F` simple],
   [A partial choice of lists is inside the total one.],
@@ -632,7 +702,7 @@ list `l` back into the items on it. Everything else is forced.
   [Every list over `α`.],
 
   [`{·} ≜ Λ(𝟙)`, the *singleton map*, monic],
-  [The one-item list. `Λ(𝟙)Λ°(𝟙) ⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
+  [The one-ingredient list. `Λ(𝟙)Λ°(𝟙) ⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
 
   [`Λ(f) = f {·}`, `f` a map],
   [Rename first or take singletons first.],

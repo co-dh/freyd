@@ -51,14 +51,14 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 /-! ### Derived properties of division -/
 
 /-- The defining equivalence: T ⊑ R/S iff TS ⊑ R (§2.31). -/
-theorem le_div_iff {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
-    T ⊑ R / S ↔ T ≫ S ⊑ R := by
+theorem le_div_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
+    X ⊑ R / S ↔ X ≫ S ⊑ R := by
   constructor
   · intro h
-    -- T ⊑ R/S → TS ⊑ (R/S)S ⊑ R
+    -- X ⊑ R/S → XS ⊑ (R/S)S ⊑ R
     apply le_trans ?_ (DivisionAllegory.div_comp_le R S)
     exact comp_mono_right h S
-  · exact DivisionAllegory.le_div T R S
+  · exact DivisionAllegory.le_div X R S
 
 /-- (R ∩ R')/S = (R/S) ∩ (R'/S) (§2.31, full equality).
 
@@ -112,13 +112,15 @@ theorem div_mono_left {a b c : 𝒜} {R R' : a ⟶ c} (h : R ⊑ R') (S : b ⟶ 
     R / S ⊑ R' / S :=
   (le_div_iff _ _ _).mpr (le_trans (DivisionAllegory.div_comp_le R S) h)
 
-/-- (R/S)(S/T) ⊑ R/T (§2.314). -/
-theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (T : c ⟶ d) :
-    (R / S) ≫ (S / T) ⊑ R / T := by
+/-- (R/S)(S/W) ⊑ R/W (§2.314).
+    `W`, not the book's `T`: `diag/allegory-axioms.typ` §8 exports its picture from this
+    statement, and reads the third relation as what a guest **wants**. -/
+theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+    (R / S) ≫ (S / W) ⊑ R / W := by
   apply (le_div_iff _ _ _).mpr
   apply le_trans ?_ (DivisionAllegory.div_comp_le R S)
   rw [Cat.assoc]
-  exact comp_mono_left (R / S) (DivisionAllegory.div_comp_le S T)
+  exact comp_mono_left (R / S) (DivisionAllegory.div_comp_le S W)
 
 /-- R/(S₁∪S₂) = (R/S₁) ∩ (R/S₂) (§2.314). -/
 theorem div_union {a b c : 𝒜} (R : a ⟶ c) (S₁ S₂ : b ⟶ c) :
@@ -250,22 +252,23 @@ theorem symmDiv_recip {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     -- h.2 : (S/ₛR)°≫S ⊑ R; h.1 : (S/ₛR)≫R ⊑ S, and (S/ₛR)°° = S/ₛR
     exact ⟨h.2, by rw [Allegory.recip_recip]; exact h.1⟩
 
-/-- Symmetric division is transitive: (R/ₛS)(S/ₛT) ⊑ R/ₛT (§2.35). -/
-theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (T : c ⟶ d) :
-    (R /ₛ S) ≫ (S /ₛ T) ⊑ R /ₛ T := by
+/-- Symmetric division is transitive: (R/ₛS)(S/ₛW) ⊑ R/ₛW (§2.35).
+    `W` for the third relation, as in `div_comp`. -/
+theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+    (R /ₛ S) ≫ (S /ₛ W) ⊑ R /ₛ W := by
   rw [le_symmDiv_iff]
   have hRS := (le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)
-  have hST := (le_symmDiv_iff (S /ₛ T) S T).mp (le_refl _)
+  have hSW := (le_symmDiv_iff (S /ₛ W) S W).mp (le_refl _)
   constructor
-  · -- ((R/ₛS)(S/ₛT)) ≫ T ⊑ R
+  · -- ((R/ₛS)(S/ₛW)) ≫ W ⊑ R
     rw [Cat.assoc]
-    exact le_trans (comp_mono_left _ hST.1) hRS.1
-  · -- ((R/ₛS)(S/ₛT))° ≫ R ⊑ T
-    -- = (S/ₛT)°(R/ₛS)° ≫ R ⊑ T
+    exact le_trans (comp_mono_left _ hSW.1) hRS.1
+  · -- ((R/ₛS)(S/ₛW))° ≫ R ⊑ W
+    -- = (S/ₛW)°(R/ₛS)° ≫ R ⊑ W
     rw [Allegory.recip_comp, Cat.assoc]
-    -- (R/ₛS)° = S/ₛR, and (S/ₛT)° = T/ₛS
+    -- (R/ₛS)° = S/ₛR, and (S/ₛW)° = W/ₛS
     have h_rs_rec : (R /ₛ S)° ≫ R ⊑ S := hRS.2
-    exact le_trans (comp_mono_left _ h_rs_rec) hST.2
+    exact le_trans (comp_mono_left _ h_rs_rec) hSW.2
 
 -- Note: "R/ₛS ⊑ R" is listed in the book as a containment (§2.35) but only for the
 -- case where the objects match (S = 1), i.e. simplePart R ⊑ R. See simplePart_le.
@@ -306,10 +309,10 @@ def leftDiv {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : b ⟶ c :=
 infixl:70 " \\ " => leftDiv
 
 /-- The defining equivalence: T ⊑ S\R iff ST ⊑ R (§2.312). -/
-theorem le_leftDiv_iff {a b c : 𝒜} (T : b ⟶ c) (S : a ⟶ b) (R : a ⟶ c) :
-    T ⊑ (S \ R) ↔ S ≫ T ⊑ R := by
+theorem le_leftDiv_iff {a b c : 𝒜} (X : b ⟶ c) (S : a ⟶ b) (R : a ⟶ c) :
+    X ⊑ (S \ R) ↔ S ≫ X ⊑ R := by
   dsimp [leftDiv]
-  -- T ⊑ (R°/S°)° ↔ T° ⊑ R°/S° ↔ T°S° ⊑ R° ↔ (ST)° ⊑ R° ↔ ST ⊑ R
+  -- X ⊑ (R°/S°)° ↔ X° ⊑ R°/S° ↔ X°S° ⊑ R° ↔ (SX)° ⊑ R° ↔ SX ⊑ R
   rw [← recip_le_iff, le_div_iff, ← Allegory.recip_comp, recip_le_iff,
       Allegory.recip_recip]
 
@@ -329,16 +332,16 @@ theorem leftDiv_id {a b : 𝒜} (R : a ⟶ b) : ((Cat.id a) \ R) = R := by
   · apply (le_leftDiv_iff _ _ _).mpr; rw [Cat.id_comp]; exact le_refl R
 
 /-- Left division composes: `(ST)\R = T\(S\R)`, by the double universal property. -/
-theorem leftDiv_comp {a b c d : 𝒜} (S : a ⟶ b) (T : b ⟶ c) (R : a ⟶ d) :
-    ((S ≫ T) \ R) = (T \ (S \ R)) := by
+theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (R : a ⟶ d) :
+    ((S₁ ≫ S₂) \ R) = (S₂ \ (S₁ \ R)) := by
   apply le_antisymm
-  · apply (le_leftDiv_iff _ T _).mpr
-    apply (le_leftDiv_iff _ S _).mpr
+  · apply (le_leftDiv_iff _ S₂ _).mpr
+    apply (le_leftDiv_iff _ S₁ _).mpr
     rw [← Cat.assoc]
-    exact leftDiv_comp_le (S ≫ T) R
-  · apply (le_leftDiv_iff _ (S ≫ T) _).mpr
+    exact leftDiv_comp_le (S₁ ≫ S₂) R
+  · apply (le_leftDiv_iff _ (S₁ ≫ S₂) _).mpr
     rw [Cat.assoc]
-    exact le_trans (comp_mono_left S (leftDiv_comp_le T (S \ R))) (leftDiv_comp_le S R)
+    exact le_trans (comp_mono_left S₁ (leftDiv_comp_le S₂ (S₁ \ R))) (leftDiv_comp_le S₁ R)
 
 /-- Numerator meets distribute over left division: `S\(R∩R') = (S\R)∩(S\R')`. -/
 theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
@@ -348,33 +351,33 @@ theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
 
 /-! ## §2.314  The equation S\(R/T) = (S\R)/T -/
 
-/-- S\(R/T) = (S\R)/T (§2.314).
-    S : a ⟶ b, R : a ⟶ d, T : c ⟶ d.
-    LHS: (S \ (R/T)) where R/T : a ⟶ c, so (S \ (R/T)) : b ⟶ c.
-    RHS: (S \ R) / T where (S \ R) : b ⟶ d, T : c ⟶ d, so result : b ⟶ c. ✓
+/-- S\(R/W) = (S\R)/W (§2.314).
+    S : a ⟶ b, R : a ⟶ d, W : c ⟶ d.
+    LHS: (S \ (R/W)) where R/W : a ⟶ c, so (S \ (R/W)) : b ⟶ c.
+    RHS: (S \ R) / W where (S \ R) : b ⟶ d, W : c ⟶ d, so result : b ⟶ c. ✓
     -/
-theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (T : c ⟶ d) :
-    (S \ (R / T)) = (S \ R) / T := by
+theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (W : c ⟶ d) :
+    (S \ (R / W)) = (S \ R) / W := by
   apply le_antisymm
-  · -- S\(R/T) ⊑ (S\R)/T: show S ≫ ((S \ (R/T)) ≫ T) ⊑ R
+  · -- S\(R/W) ⊑ (S\R)/W: show S ≫ ((S \ (R/W)) ≫ W) ⊑ R
     apply (le_div_iff _ _ _).mpr
     apply (le_leftDiv_iff _ S R).mpr
-    have h1 : (S ≫ (S \ (R / T))) ≫ T ⊑ (R / T) ≫ T :=
-      comp_mono_right (leftDiv_comp_le S (R / T)) T
-    have h2 : (R / T) ≫ T ⊑ R := DivisionAllegory.div_comp_le R T
+    have h1 : (S ≫ (S \ (R / W))) ≫ W ⊑ (R / W) ≫ W :=
+      comp_mono_right (leftDiv_comp_le S (R / W)) W
+    have h2 : (R / W) ≫ W ⊑ R := DivisionAllegory.div_comp_le R W
     rw [← Cat.assoc]; exact le_trans h1 h2
-  · -- (S\R)/T ⊑ S\(R/T): show (S ≫ (S\R)/T) ≫ T ⊑ R
+  · -- (S\R)/W ⊑ S\(R/W): show (S ≫ (S\R)/W) ≫ W ⊑ R
     apply (le_leftDiv_iff _ S _).mpr
     apply (le_div_iff _ _ _).mpr
-    -- goal: (S ≫ (S \ R)/T) ≫ T ⊑ R
-    have step1 : ((S \ R) / T) ≫ T ⊑ (S \ R) := DivisionAllegory.div_comp_le (S \ R) T
-    have step2 : S ≫ (((S \ R) / T) ≫ T) ⊑ S ≫ (S \ R) :=
+    -- goal: (S ≫ (S \ R)/W) ≫ W ⊑ R
+    have step1 : ((S \ R) / W) ≫ W ⊑ (S \ R) := DivisionAllegory.div_comp_le (S \ R) W
+    have step2 : S ≫ (((S \ R) / W) ≫ W) ⊑ S ≫ (S \ R) :=
       comp_mono_left S step1
     have step3 : S ≫ (S \ R) ⊑ R := leftDiv_comp_le S R
-    have step4 : S ≫ (((S \ R) / T) ≫ T) ⊑ R := le_trans step2 step3
+    have step4 : S ≫ (((S \ R) / W) ≫ W) ⊑ R := le_trans step2 step3
     rwa [← Cat.assoc] at step4
 
-/-- **§2.314**: `(R/R)² ⊑ R/R`.  Immediate instance of `div_comp` with `S = T = R`. -/
+/-- **§2.314**: `(R/R)² ⊑ R/R`.  Immediate instance of `div_comp` with `S = W = R`. -/
 theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) ⊑ R / R :=
   div_comp R R R
 
