@@ -989,7 +989,7 @@ boxes are what makes the branches disjoint.
 
 #definition[
 `F` a relator with an *initial algebra* `α : F T ⟶ T` among the maps. For a relational algebra
-`R : F B ⟶ B`, the *catamorphism* `([R]) : T ⟶ B` is the unique arrow with `α ([R]) = (F ([R])) R`.
+`R : F B ⟶ B`, the *catamorphism* `⦇R⦈ : T ⟶ B` is the unique arrow with `α ⦇R⦈ = (F ⦇R⦈) R`.
 ]
 
 // A COMMUTATIVE SQUARE, hand-drawn like §12's: same `ar`/`lab`/`node`, same palette, the induced arrow
@@ -1007,22 +1007,22 @@ boxes are what makes the branches disjoint.
   node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), RW, `B`)
 })))
 
-With `X = ([R])` the square commutes on the nose: unlike the product's triangles, there is no slack
+With `X = ⦇R⦈` the square commutes on the nose: unlike the product's triangles, there is no slack
 here, so no `⊑` appears anywhere in it.
 
 #align(center, table(
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`X = ([R]) ⟺ α X = (F X) R`],
+  [`X = ⦇R⦈ ⟺ α X = (F X) R`],
   [`α° = α⁻¹`, the initial algebra is an isomorphism],
-  [`Λ([R]) = ([Λ((F ∋) R)])`],
-  [`([R]) = ([Λ((F ∋) R)]) ∋`],
+  [`Λ⦇R⦈ = ⦇Λ((F ∋) R)⦈`],
+  [`⦇R⦈ = ⦇Λ((F ∋) R)⦈ ∋`],
   [`(T R)° = T (R°)`, so a type functor is a relator],
 ))
 
 The last two rows are the *Eilenberg–Wright Lemma*:
 
-// TWO SQUARES, sharing the middle column.  `([Λ((F ∋) R)])` is three times the width of a node box, so
+// TWO SQUARES, sharing the middle column.  `⦇Λ((F ∋) R)⦈` is three times the width of a node box, so
 // inside the picture it is the single letter `K` and the sentence below says what `K` is; the table
 // keeps the term in full.  The middle arrow stays spelled out — it is the algebra whose catamorphism
 // `K` is, and abbreviating it too would leave the left square with nothing to be the square OF.
@@ -1043,6 +1043,6 @@ The last two rows are the *Eilenberg–Wright Lemma*:
   node(FB.at(0), FB.at(1), RW, `F B`); node(B.at(0), B.at(1), RW, `B`)
 })))
 
-The left square is that catamorphism's own defining square, `K = ([Λ((F ∋) R)])`, and the right one is
-`Λ`'s cancellation, so the outer rectangle says `K ∋` satisfies the defining equation of `([R])` — and
+The left square is that catamorphism's own defining square, `K = ⦇Λ((F ∋) R)⦈`, and the right one is
+`Λ`'s cancellation, so the outer rectangle says `K ∋` satisfies the defining equation of `⦇R⦈` — and
 uniqueness finishes it.
