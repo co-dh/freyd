@@ -152,6 +152,18 @@ theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
   coreflexives `∩` collapses to `≫` (`coreflexive_comp_eq_inter`, S2_1 §2.121), where
   `map_comp` applies directly. -/
 
+/-- The one half of meet-preservation that monotonicity alone buys, for arbitrary `R S`:
+    `R ∩ S` is below both, so its image is below both images, hence below their meet.
+    The reverse inclusion FAILS in general — the power relator `P` is a counterexample:
+    with `R = {(a₁,b₁),(a₂,b₂)}`, `S = {(a₁,b₂),(a₂,b₁)}`, the pair `({a₁,a₂},{b₁,b₂})` is
+    in `P R ∩ P S` while `R ∩ S = ∅` makes it absent from `P (R ∩ S)`.  Equality needs
+    either coreflexivity (`map_inter_coreflexive` below) or the stronger
+    `AllegoryFunctor.map_inter` (S2_147). -/
+theorem Relator.map_inter_le {𝒜 : Type u₁} {ℬ : Type u₂}
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} (R S : a ⟶ b) :
+    F.map (R ∩ S) ⊑ F.map R ∩ F.map S :=
+  le_inter (F.map_mono (inter_lb_left R S)) (F.map_mono (inter_lb_right R S))
+
 theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
     {a : 𝒜} {X Y : a ⟶ a} (hX : Coreflexive X) (hY : Coreflexive Y) :
