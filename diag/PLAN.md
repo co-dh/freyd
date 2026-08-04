@@ -381,7 +381,8 @@ to the pre-refactor PDF.
 | artefact                       | content                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------- |
 | `diag/strdiag.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
-| `diag/aop-diagrams.typ`  | the vocabulary, the `Rel(Set)` dictionary, and all seven theorems                 |
+| `diag/allegory-axioms.typ` | the vocabulary, the `Rel(Set)` dictionary, and the laws                          |
+| `diag/allegory2.typ`     | the same calculus carrying the proofs the laws note leaves out                    |
 | `diag/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
 
 Generators are named after `diag/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its

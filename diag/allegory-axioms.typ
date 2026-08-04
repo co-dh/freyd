@@ -4,7 +4,7 @@
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name.  See the header of strdiag.typ.
 // `dot` is renamed on the way in for the same reason: it is Typst's math `dot`.
-#import "strdiag.typ": conv, meet, wire, bend, gbox, dot as wiredot
+#import "strdiag.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
 
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN.  `./scripts/diag-export <decl>` walks the
 // Lean declaration's TYPE and writes diag/generated/<decl>.typ, which binds the cetz drawing to
@@ -943,3 +943,41 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
   wire((4.12, y), (4.7, y)); wire((4.12, -y), (4.7, -y))
   lab(-0.35, 0, black)[$E$]; lab(5.05, y, RW)[$A$]; lab(5.05, -y, ARC)[$B$]
 })))
+
+== The coproduct `[R,S]`
+
+The injections `ιₗ : A ⟶ A + B` and `ιᵣ : B ⟶ A + B` are maps, and the coproduct they make of the maps
+stays a coproduct once every arrow is allowed: both equations hold on the nose and `[R,S]` is the only
+arrow satisfying them, with none of the `Dom` slack `⟨R,S⟩` carries.
+
+// THE DEFINITION, DRAWN — and it needs no new generator.  `+` shares none of `◁ ▷ ⊸ ⟜`, but it does
+// not have to: the definition is a UNION, and the union is already drawn, as the tape of the laws
+// above.  So the one picture this subsection gets is the one line the other rows are calculated from;
+// the rest stay formulas, which read as written.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let y = 0.62                    // the tape's two branches, at the exported pictures' half-spacing
+  wire((0, 0), (0.34, 0))
+  tape((0.34, -1.14), (3.80, 1.14))
+  tape-fork((0.56, 0), sp: y, len: 0.42)
+  // Mirrored and tinted: this file draws a converse by flipping the box, so these are `ιₗ°` and `ιᵣ°`.
+  gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
+  gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
+  tape-join((3.58, 0), sp: y, len: 0.42)
+  wire((3.80, 0), (4.14, 0))
+  lab(-0.9, 0, black)[$A + B$]; lab(4.49, 0, black)[$C$]
+})))
+
+The tape is the union — a particle entering at `A + B` takes exactly one branch — and the two mirrored
+boxes are what makes the branches disjoint.
+
+#align(center, table(
+  columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
+
+  [`[R,S] ≜ ιₗ° R ∪ ιᵣ° S`],
+  [`ιₗ [R,S] = R`, `ιᵣ [R,S] = S`, and `[R,S]` is the only such arrow],
+  [`R + S ≜ [R ιₗ, S ιᵣ]`],
+  [`ιₗ ιₗ° = 𝟙 = ιᵣ ιᵣ°`],
+  [`ιₗ ιᵣ° = ⊥ = ιᵣ ιₗ°`],
+  [`ιₗ° ιₗ ∪ ιᵣ° ιᵣ = 𝟙`],
+  [`[U,V]° [R,S] = U° R ∪ V° S`],
+))
