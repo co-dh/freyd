@@ -1059,10 +1059,6 @@ only the initial algebra.
   [`⦇R⦈ S = ⦇Q⦈ ⟸ R S = (F S) Q`],
   [Both halves at once: a fold followed by `S` collapses into a single fold, which is how an
    intermediate structure is got rid of.],
-
-  [type relator],
-  [`(T R)° = T (R°)`, so a type functor is a relator],
-  [A datatype acts on relations, not only on maps.],
 ))
 
 // The name column already says which two rows these are, so the sentence only points at them.
@@ -1092,3 +1088,93 @@ The two `Λ` rows, drawn:
 The left square is that catamorphism's own defining square, `K = ⦇Λ((F ∋) R)⦈`, and the right one is
 `Λ`'s cancellation, so the outer rectangle says `K ∋` satisfies the defining equation of `⦇R⦈` — and
 uniqueness finishes it.
+
+// Its own page: the definition below only says what `T R` is, and the square after it is the reason
+// that arrow exists, so the two have to be read together — under the picture above they would not be.
+#pagebreak(weak: true)
+= Type functor
+
+#definition[
+`F` a *binary* relator: `F(R, S)` is its action on a pair, and `F X` abbreviates `F(𝟙, X)`, the `F` of
+the catamorphism section. For every object `A` the initial algebra is `α : F(A, T A) ⟶ T A`, among the
+maps. The *type functor* `T` acts on an arrow `R : A ⟶ B` by
+
+  #align(center, block(inset: (y: 6pt))[`T R = ⦇F(R, 𝟙) α⦈ : T A ⟶ T B`])
+]
+
+`F` is the *base functor* — one layer of the structure, acting on the recursive position — while `T` is
+the datatype itself, acting on the parameter. For cons-lists, `list R = ⦇[nil, (R ⊗ 𝟙) cons]⦈`, which
+is `map R`.
+
+// THE DEFINING SQUARE: the catamorphism square with `T R`'s algebra spelled out as the composite it
+// is, `F(R, 𝟙) α`, which is why the top row has three nodes and the bottom two.  The middle node is
+// where the recursive positions have already been mapped and the parameters have not.
+// x = ±5, not the ±3 of the square above: `F(A, T A)` is three times the width of `F T`, and at ±3
+// the boxes would meet.  `s0`/`s1` are how far to stay clear of a node — 1.45 leaves a box that wide
+// sideways, 0.65 leaves `T A`, 0.55 enters one from above or below.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (FA, FM, FB) = ((-5, 1.25), (0, 1.25), (5, 1.25))
+  let (TA, TB) = ((-5, -1.25), (5, -1.25))
+  ar(FA, FM, PAL.at(0), dash: "dashed", s0: 1.45, s1: 1.45)
+  ar(FM, FB, black, s0: 1.45, s1: 1.45)
+  ar(TA, TB, PAL.at(0), dash: "dashed", s0: 0.65, s1: 0.65)
+  ar(FA, TA, ARC, s0: 0.55, s1: 0.55); ar(FB, TB, RW, s0: 0.55, s1: 0.55)
+  lab(-2.5, 1.85, PAL.at(0))[`F(𝟙, T R)`]; lab(2.5, 1.85, black)[`F(R, 𝟙)`]
+  lab(0, -1.85, PAL.at(0))[`T R`]
+  lab(-5.6, 0, ARC)[`α`]; lab(5.55, 0, RW)[`α`]
+  node(FA.at(0), FA.at(1), black, `F(A, T A)`); node(TA.at(0), TA.at(1), black, `T A`)
+  node(FM.at(0), FM.at(1), PAL.at(0), `F(A, T B)`)
+  node(FB.at(0), FB.at(1), RW, `F(B, T B)`); node(TB.at(0), TB.at(1), RW, `T B`)
+})))
+
+`T R` is the unique arrow making it commute; there is no `⊑` in it.
+
+// Same widths and stroke as the catamorphism table: the two tables are read one after the other, and
+// a law column that changes width between them reads as a different kind of column.
+#align(center, table(
+  columns: (4.2cm, 7.4cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*law*], [*what it says*]),
+
+  [the defining equation],
+  [`T R = ⦇F(R, 𝟙) α⦈`],
+  [Rebuild the structure with `α`, applying `R` to the parameter on the way; that is `map R`.],
+
+  [functor],
+  [`T 𝟙 = 𝟙` and `(T R)(T S) = T (R S)`],
+  [Mapping the identity changes nothing, and two maps in a row are one map.],
+
+  [type functor fusion],
+  [`(T R) ⦇Q⦈ = ⦇F(R, 𝟙) Q⦈`],
+  [A map followed by a fold is a single fold — the mapped structure is never built.],
+
+  [naturality of `α`],
+  [`α (T R) = F(R, T R) α`],
+  [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
+   from `G R = F(R, T R)` to `T`.],
+
+  [type relator],
+  [`(T R)° = T (R°)`],
+  [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
+   map.],
+))
+
+Type functor fusion is the equality fusion row above applied to `T R`'s own defining algebra, whose
+side condition holds because `F` is a bifunctor — `F(R, 𝟙) F(𝟙, ⦇Q⦈) = F(R, ⦇Q⦈) = F(𝟙, ⦇Q⦈) F(R, 𝟙)`
+— so it inherits that row's local-completeness requirement.
+
+// THE NATURALITY ROW, drawn: the square above with its two top arrows composed into the one relator
+// action `F(R, T R)`, which is why this one is back to the ±3 of the catamorphism square.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (FA, FB, TA, TB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+  ar(FA, FB, PAL.at(0), s0: 1.45, s1: 1.45)
+  ar(TA, TB, PAL.at(0), s0: 0.65, s1: 0.65)
+  ar(FA, TA, ARC, s0: 0.55, s1: 0.55); ar(FB, TB, RW, s0: 0.55, s1: 0.55)
+  lab(0, 1.85, PAL.at(0))[`F(R, T R)`]; lab(0, -1.85, PAL.at(0))[`T R`]
+  lab(-3.6, 0, ARC)[`α`]; lab(3.55, 0, RW)[`α`]
+  node(FA.at(0), FA.at(1), black, `F(A, T A)`); node(TA.at(0), TA.at(1), black, `T A`)
+  node(FB.at(0), FB.at(1), RW, `F(B, T B)`); node(TB.at(0), TB.at(1), RW, `T B`)
+})))
+
+It commutes strictly: it is the naturality square of `α`.
