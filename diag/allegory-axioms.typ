@@ -981,3 +981,68 @@ boxes are what makes the branches disjoint.
   [`ιₗ° ιₗ ∪ ιᵣ° ιᵣ = 𝟙`],
   [`[U,V]° [R,S] = U° R ∪ V° S`],
 ))
+
+// Its own page: the heading otherwise lands as the last line under §12's table, an orphan a page away
+// from the definition it names, and the two squares below then straddle the break.
+#pagebreak(weak: true)
+= Catamorphism
+
+#definition[
+`F` a relator with an *initial algebra* `α : F T ⟶ T` among the maps. For a relational algebra
+`R : F B ⟶ B`, the *catamorphism* `([R]) : T ⟶ B` is the unique arrow with `α ([R]) = (F ([R])) R`.
+]
+
+// A COMMUTATIVE SQUARE, hand-drawn like §12's: same `ar`/`lab`/`node`, same palette, the induced arrow
+// dashed and blue.  Left to right with the source on the left, so this picture flows the way every
+// string diagram above does.  The given data are the two solid arrows `α` and `R`; everything blue is
+// what the initial algebra produces.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (FT, FB, T, B) = ((-3, 1.7), (3, 1.7), (-3, -1.7), (3, -1.7))
+  ar(FT, FB, PAL.at(0), dash: "dashed", s0: 0.75, s1: 0.75)
+  ar(T, B, PAL.at(0), dash: "dashed", s0: 0.55, s1: 0.55)
+  ar(FT, T, ARC, s0: 0.55, s1: 0.55); ar(FB, B, RW, s0: 0.55, s1: 0.55)
+  lab(0, 2.25, PAL.at(0))[`F X`]; lab(0, -2.25, PAL.at(0))[`X`]
+  lab(-3.6, 0, ARC)[`α`]; lab(3.55, 0, RW)[`R`]
+  node(FT.at(0), FT.at(1), black, `F T`); node(FB.at(0), FB.at(1), RW, `F B`)
+  node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), RW, `B`)
+})))
+
+With `X = ([R])` the square commutes on the nose: unlike the product's triangles, there is no slack
+here, so no `⊑` appears anywhere in it.
+
+#align(center, table(
+  columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
+
+  [`X = ([R]) ⟺ α X = (F X) R`],
+  [`α° = α⁻¹`, the initial algebra is an isomorphism],
+  [`Λ([R]) = ([Λ((F ∋) R)])`],
+  [`([R]) = ([Λ((F ∋) R)]) ∋`],
+  [`(T R)° = T (R°)`, so a type functor is a relator],
+))
+
+The last two rows are the *Eilenberg–Wright Lemma*:
+
+// TWO SQUARES, sharing the middle column.  `([Λ((F ∋) R)])` is three times the width of a node box, so
+// inside the picture it is the single letter `K` and the sentence below says what `K` is; the table
+// keeps the term in full.  The middle arrow stays spelled out — it is the algebra whose catamorphism
+// `K` is, and abbreviating it too would leave the left square with nothing to be the square OF.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (FT, FP, FB) = ((-6, 1.7), (0, 1.7), (6, 1.7))
+  let (T, P, B) = ((-6, -1.7), (0, -1.7), (6, -1.7))
+  ar(FT, FP, PAL.at(0), dash: "dashed", s0: 0.75, s1: 0.95)
+  ar(FP, FB, black, s0: 0.95, s1: 0.75)
+  ar(T, P, PAL.at(0), dash: "dashed", s0: 0.55, s1: 0.7)
+  ar(P, B, black, s0: 0.7, s1: 0.55)
+  ar(FT, T, ARC, s0: 0.55, s1: 0.55); ar(FP, P, black, s0: 0.55, s1: 0.55)
+  ar(FB, B, RW, s0: 0.55, s1: 0.55)
+  lab(-3, 2.25, PAL.at(0))[`F K`]; lab(3, 2.25, black)[`F ∋`]
+  lab(-3, -2.25, PAL.at(0))[`K`]; lab(3, -2.25, black)[`∋`]
+  lab(-6.6, 0, ARC)[`α`]; lab(6.55, 0, RW)[`R`]; lab(2.05, 0, black)[`Λ((F ∋) R)`]
+  node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
+  node(FP.at(0), FP.at(1), PAL.at(0), `F [B]`); node(P.at(0), P.at(1), PAL.at(0), `[B]`)
+  node(FB.at(0), FB.at(1), RW, `F B`); node(B.at(0), B.at(1), RW, `B`)
+})))
+
+The left square is that catamorphism's own defining square, `K = ([Λ((F ∋) R)])`, and the right one is
+`Λ`'s cancellation, so the outer rectangle says `K ∋` satisfies the defining equation of `([R])` — and
+uniqueness finishes it.
