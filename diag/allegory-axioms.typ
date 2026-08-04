@@ -388,6 +388,7 @@ sugar throughout.
   lab(-0.35, 0, black)[$A$]; lab(4.1, y, black)[$A$]
 })
 
+#pagebreak(weak: true)
 = Domain and range
 
 #definition[
@@ -650,6 +651,7 @@ path is exactly the strictness of `(R/S)(S/W) ⊑ R/W`.
 Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what
 the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
 
+#pagebreak(weak: true)
 = Symmetric division
 
 $frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` it relates `m` and `d` when they reach the same things,
@@ -724,6 +726,7 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [Its domain is the *domain of simplicity* of `R`.],
 )
 
+#pagebreak(weak: true)
 = Power allegories
 
 One more operation on a division allegory: `∋`, Freyd's *epsiloff*. In `Rel` its source is the
@@ -780,6 +783,7 @@ list `l` back into the ingredients on it. Everything else is forced.
    are all a topos adds.],
 )
 
+#pagebreak(weak: true)
 = Relator
 
 #definition[
@@ -947,7 +951,7 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
 == The coproduct `[R,S]`
 
 The injections `ιₗ : A ⟶ A + B` and `ιᵣ : B ⟶ A + B` are maps, and the coproduct they make of the maps
-stays a coproduct once every arrow is allowed: both equations hold on the nose and `[R,S]` is the only
+stays a coproduct once every arrow is allowed: both equations hold with equality and `[R,S]` is the only
 arrow satisfying them, with none of the `Dom` slack `⟨R,S⟩` carries.
 
 // THE DEFINITION, DRAWN — and it needs no new generator.  `+` shares none of `◁ ▷ ⊸ ⟜`, but it does
@@ -1007,8 +1011,14 @@ boxes are what makes the branches disjoint.
   node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), RW, `B`)
 })))
 
-With `X = ⦇R⦈` the square commutes on the nose: unlike the product's triangles, there is no slack
+With `X = ⦇R⦈` the square commutes strictly: unlike the product's triangles, there is no slack
 here, so no `⊑` appears anywhere in it.
+
+// `T` is already the initial algebra's carrier, so the second algebra's carrier is `C`, never `T`.
+The three *fusion* rows rewrite `⦇R⦈ S` through a second algebra `Q : F C ⟶ C` along an arrow
+`S : B ⟶ C`. They are the only rows here that need the allegory *locally complete* — every hom-set a
+complete lattice — because they come from a least-fixed-point argument; the rest of the table needs
+only the initial algebra.
 
 #align(center, table(
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
@@ -1017,10 +1027,14 @@ here, so no `⊑` appears anywhere in it.
   [`α° = α⁻¹`, the initial algebra is an isomorphism],
   [`Λ⦇R⦈ = ⦇Λ((F ∋) R)⦈`],
   [`⦇R⦈ = ⦇Λ((F ∋) R)⦈ ∋`],
+  [`⦇Q⦈ ⊑ ⦇R⦈ S ⟸ (F S) Q ⊑ R S`],
+  [`⦇R⦈ S ⊑ ⦇Q⦈ ⟸ R S ⊑ (F S) Q`],
+  [`⦇R⦈ S = ⦇Q⦈ ⟸ R S = (F S) Q`],
   [`(T R)° = T (R°)`, so a type functor is a relator],
 ))
 
-The last two rows are the *Eilenberg–Wright Lemma*:
+// "The last two rows" no longer locates them once the fusion rows sit between: name them instead.
+The two `Λ` rows are the *Eilenberg–Wright Lemma*:
 
 // TWO SQUARES, sharing the middle column.  `⦇Λ((F ∋) R)⦈` is three times the width of a node box, so
 // inside the picture it is the single letter `K` and the sentence below says what `K` is; the table
