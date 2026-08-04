@@ -1001,11 +1001,11 @@ boxes are what makes the branches disjoint.
 // string diagram above does.  The given data are the two solid arrows `α` and `R`; everything blue is
 // what the initial algebra produces.
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let (FT, FB, T, B) = ((-3, 1.7), (3, 1.7), (-3, -1.7), (3, -1.7))
+  let (FT, FB, T, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
   ar(FT, FB, PAL.at(0), dash: "dashed", s0: 0.75, s1: 0.75)
   ar(T, B, PAL.at(0), dash: "dashed", s0: 0.55, s1: 0.55)
   ar(FT, T, ARC, s0: 0.55, s1: 0.55); ar(FB, B, RW, s0: 0.55, s1: 0.55)
-  lab(0, 2.25, PAL.at(0))[`F X`]; lab(0, -2.25, PAL.at(0))[`X`]
+  lab(0, 1.8, PAL.at(0))[`F X`]; lab(0, -1.8, PAL.at(0))[`X`]
   lab(-3.6, 0, ARC)[`α`]; lab(3.55, 0, RW)[`R`]
   node(FT.at(0), FT.at(1), black, `F T`); node(FB.at(0), FB.at(1), RW, `F B`)
   node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), RW, `B`)
@@ -1020,37 +1020,69 @@ The three *fusion* rows rewrite `⦇R⦈ S` through a second algebra `Q : F C �
 complete lattice — because they come from a least-fixed-point argument; the rest of the table needs
 only the initial algebra.
 
+// The law column is 7.4cm, the width the market tables use, so the widest row —
+// `⦇Q⦈ ⊑ ⦇R⦈ S ⟸ (F S) Q ⊑ R S` — stays on one line; the name column is wide enough for
+// `Eilenberg–Wright` unbroken, since a hyphenated name split across lines reads as two names.
 #align(center, table(
-  columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
+  columns: (4.2cm, 7.4cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*law*], [*what it says*]),
 
+  [the defining equation],
   [`X = ⦇R⦈ ⟺ α X = (F X) R`],
+  [Folding a value that `α` has just built is the same as folding its parts and combining them with
+   `R`. Nothing else has that property.],
+
+  [Lambek],
   [`α° = α⁻¹`, the initial algebra is an isomorphism],
+  [A constructor can be undone — `α°` takes a value apart into the parts it was built from.],
+
+  [Eilenberg–Wright],
   [`Λ⦇R⦈ = ⦇Λ((F ∋) R)⦈`],
+  [A relational fold is a deterministic fold of SETS: `Λ` pushes the nondeterminism into the
+   power-object, where the fold is a map again.],
+
+  [Eilenberg–Wright],
   [`⦇R⦈ = ⦇Λ((F ∋) R)⦈ ∋`],
+  [The same fact read back — fold deterministically into a set, then take a member of it.],
+
+  [fusion],
   [`⦇Q⦈ ⊑ ⦇R⦈ S ⟸ (F S) Q ⊑ R S`],
+  [Half of fusion: an inclusion between the two algebras is inherited by the folds.],
+
+  [fusion],
   [`⦇R⦈ S ⊑ ⦇Q⦈ ⟸ R S ⊑ (F S) Q`],
+  [The other half, with both inclusions turned around.],
+
+  [fusion],
   [`⦇R⦈ S = ⦇Q⦈ ⟸ R S = (F S) Q`],
+  [Both halves at once: a fold followed by `S` collapses into a single fold, which is how an
+   intermediate structure is got rid of.],
+
+  [type relator],
   [`(T R)° = T (R°)`, so a type functor is a relator],
+  [A datatype acts on relations, not only on maps.],
 ))
 
-// "The last two rows" no longer locates them once the fusion rows sit between: name them instead.
-The two `Λ` rows are the *Eilenberg–Wright Lemma*:
+// The name column already says which two rows these are, so the sentence only points at them.
+The two `Λ` rows, drawn:
 
 // TWO SQUARES, sharing the middle column.  `⦇Λ((F ∋) R)⦈` is three times the width of a node box, so
 // inside the picture it is the single letter `K` and the sentence below says what `K` is; the table
 // keeps the term in full.  The middle arrow stays spelled out — it is the algebra whose catamorphism
 // `K` is, and abbreviating it too would leave the left square with nothing to be the square OF.
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let (FT, FP, FB) = ((-6, 1.7), (0, 1.7), (6, 1.7))
-  let (T, P, B) = ((-6, -1.7), (0, -1.7), (6, -1.7))
+  let (FT, FP, FB) = ((-6, 1.25), (0, 1.25), (6, 1.25))
+  let (T, P, B) = ((-6, -1.25), (0, -1.25), (6, -1.25))
   ar(FT, FP, PAL.at(0), dash: "dashed", s0: 0.75, s1: 0.95)
   ar(FP, FB, black, s0: 0.95, s1: 0.75)
   ar(T, P, PAL.at(0), dash: "dashed", s0: 0.55, s1: 0.7)
   ar(P, B, black, s0: 0.7, s1: 0.55)
   ar(FT, T, ARC, s0: 0.55, s1: 0.55); ar(FP, P, black, s0: 0.55, s1: 0.55)
   ar(FB, B, RW, s0: 0.55, s1: 0.55)
-  lab(-3, 2.25, PAL.at(0))[`F K`]; lab(3, 2.25, black)[`F ∋`]
-  lab(-3, -2.25, PAL.at(0))[`K`]; lab(3, -2.25, black)[`∋`]
+  lab(-3, 1.8, PAL.at(0))[`F K`]; lab(3, 1.8, black)[`F ∋`]
+  lab(-3, -1.8, PAL.at(0))[`K`]; lab(3, -1.8, black)[`∋`]
   lab(-6.6, 0, ARC)[`α`]; lab(6.55, 0, RW)[`R`]; lab(2.05, 0, black)[`Λ((F ∋) R)`]
   node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
   node(FP.at(0), FP.at(1), PAL.at(0), `F [B]`); node(P.at(0), P.at(1), PAL.at(0), `[B]`)
