@@ -654,8 +654,57 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 #pagebreak(weak: true)
 = Symmetric division
 
-$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` it relates `m` and `d` when they reach the same things,
-`∀i. (m R i ⟺ d S i)` — market `m` retails exactly what dish `d` specifies, no more and no less.
+$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `m` and `d` has the same image:
+`∀i. (m R i ⟺ d S i)` 
+
+// The same supply/ingredients/demand picture as the division section, with one column each side and
+// the ingredients between: matching is read by eye as "the two fans land on the same dots".
+// Weight, not hue, carries the comparison — the heavy fans are the pair being compared, the washed
+// out ones the pairs that fail, so the reader sees WHICH two are claimed to match before reading
+// anything.  Colour stays with the family, blue for `R` and pink for `S`, as everywhere else here.
+#let syqnode(p, c, fill, w, ring: none) = d.content(p,
+  box(inset: 4pt, fill: fill, radius: 3pt, stroke: ring)[#text(10pt, c)[#w]])
+// Every arrow stops short of the dot it names, on the side it comes from, so the two columns' heads
+// meet over the ingredient instead of piling onto it.
+#let syqedge(from, to, col, w) = {
+  let dir = if from.at(0) < to.at(0) { -1 } else { 1 }
+  d.line(from, (to.at(0) + 0.42 * dir, to.at(1)),
+    mark: (end: ">", scale: if w > 0.9 { 0.55 } else { 0.4 }), stroke: w * 1pt + col)
+}
+#let MK = (m1: (-5.2, 1.8), m2: (-5.2, -1.8))
+#let DI = (d1: (5.2, 1.8), d2: (5.2, -1.8))
+#let ING = (spice: (0, 2.4), peanut: (0, 0), oil: (0, -2.4))
+
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  // `R`: what each market stocks.  `S`: what each dish specifies.  `m₁` and `d₁` name the same two.
+  for i in ("peanut", "oil") { syqedge(MK.m1, ING.at(i), PAL.at(0), 1.1) }
+  for i in ("spice", "peanut", "oil") { syqedge(MK.m2, ING.at(i), PAL.at(0).lighten(60%), 0.7) }
+  for i in ("peanut", "oil") { syqedge(DI.d1, ING.at(i), PAL.at(1), 1.1) }
+  syqedge(DI.d2, ING.peanut, PAL.at(1).lighten(60%), 0.7)
+
+  // The shared column, filled: exactly the ingredients both sides of the matched pair reach.
+  // `spice` stays hollow — `m₂` reaches it and no dish does.
+  for i in ("peanut", "oil") { d.circle(ING.at(i), radius: 0.17, fill: ARC, stroke: ARC) }
+  d.circle(ING.spice, radius: 0.17, fill: white, stroke: 0.9pt + black)
+
+  // The result: the one pair whose two sets agree.  It runs over the top from `m₁` to `d₁` — an arc
+  // slung underneath would start below `m₂` and read as the wrong pair.
+  d.bezier((MK.m1.at(0), 2.35), (DI.d1.at(0), 2.35), (-2.6, 4.4), (2.6, 4.4),
+    mark: (end: ">", scale: 0.6), stroke: 1pt + ARC)
+  // Clear of the curve's apex (y ≈ 3.9), because the fraction is two lines tall and its bar sitting
+  // on the arc would read as part of it.
+  d.content((0, 4.4), box(inset: 3pt, fill: white)[#text(10pt, ARC)[$frac(R, S)$]])
+
+  syqnode(MK.m1, ARC, rgb("#f2e9f8"), `m₁`, ring: 0.7pt + ARC); syqnode(MK.m2, black, white, `m₂`)
+  syqnode(DI.d1, ARC, rgb("#f2e9f8"), `d₁`, ring: 0.7pt + ARC); syqnode(DI.d2, black, white, `d₂`)
+  // The family names sit outside the columns at mid-height: the top belongs to the arc, and beside
+  // an arrow they would land on another arrow.
+  d.content((-6.5, 0), text(10pt, PAL.at(0))[`R`]); d.content((6.5, 0), text(10pt, PAL.at(1))[`S`])
+})))
+
+`m₁` and `d₁` reach the same two ingredients, so they match; `m₂` reaches one more and `d₂` one
+fewer. `m₁` does supply everything `d₂` asks for — ordinary division pairs them, symmetric division
+does not.
 
 A meet of two long divisions, the second turned round by the converse frame:
 
