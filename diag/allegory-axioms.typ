@@ -461,31 +461,22 @@ The right-hand column is the *adjoint* form, which is the definition
 used here because it is literally the allegory's `Simple` and `Entire`; that the two forms agree is
 a separate theorem, not proved here.
 
+// A 2×2, not a list of four: the ROW says which composite the law is about — `R° R` on top,
+// `R R°` below — and the COLUMN which way the containment runs, `𝟙 ⊑ …` on the left and `… ⊑ 𝟙` on
+// the right.  The four properties then sit at the four corners of one square, and each one's
+// opposite is the cell diagonally across.  The name goes under its own picture, so the picture is
+// read first and the word only names what was just seen.
 #table(
-  columns: (1fr, 4.6cm, 1fr),
-  align: (center + horizon, left + horizon, center + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*holds for every arrow*], [*property*], [*holds iff*]),
+  columns: (1fr, 1fr),
+  align: center + horizon,
+  inset: 10pt, stroke: 0.4pt + luma(190),
 
-  [#src[`R ◁ ≤ ◁ (R ⊗ R)`] #v(-2pt) #P(p-lax-delta, s: 74%)],
-  [(SV) *single valued* \ #src[`R° R ⊑ 𝟙`]],
-  P(p-sv46, s: 74%),
+  [#P(p-sur49, s: 74%) #v(-4pt) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` entire.]],
+  [#P(p-sv46, s: 74%) #v(-4pt) *single valued* \ #src[`R° R ⊑ 𝟙`]],
 
-  [#src[`R ⊸ ≤ ⊸`] #v(-2pt) #P(p-lax-bang, s: 74%)],
-  [(TOT) *total* \ #src[`𝟙 ⊑ R R°`. With *single valued*, a *map*.]],
-  P(p-tot47, s: 74%),
-
-  [#src[`▷ R ≤ (R ⊗ R) ▷`] #v(-2pt) #P(p-lax-nabla, s: 74%)],
-  [(INJ) *injective* \ #src[`R R° ⊑ 𝟙`]],
-  P(p-inj48, s: 74%),
-
-  [#src[`⟜ R ≤ ⟜`] #v(-2pt) #P(p-lax-unit, s: 74%)],
-  [(SUR) *surjective* \ #src[`𝟙 ⊑ R° R`, that is, `R°` entire.]],
-  P(p-sur49, s: 74%),
+  [#P(p-tot47, s: 74%) #v(-4pt) *entire* \ #src[`𝟙 ⊑ R R°`. With *single valued*, a *map*.]],
+  [#P(p-inj48, s: 74%) #v(-4pt) *injective* \ #src[`R R° ⊑ 𝟙`]],
 )
-
-What (SV) buys, in one law. Only single valuedness is spent: `F` may be partial, and entireness is
-never used.
 
 #table(
   columns: (1fr, 2.2fr),
@@ -508,8 +499,10 @@ never used.
 #pagebreak(weak: true)
 = Division is WHAT!
 
+#definition[
 #align(center, `m (R/S) d  ⟺  ∀i. d S i → m R i`)
 #align(center, `m's image contains d's pre image.`)
+]
 
 `R/S` relates a producer to a consumer when the producer supplies #emph[WHAT]
 the consumer asks for. m' fills no dish, even it has everything the guest wants.
@@ -654,8 +647,10 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 #pagebreak(weak: true)
 = Symmetric division
 
+#definition[
 $frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `m` and `d` has the same image:
-`∀i. (m R i ⟺ d S i)` 
+`∀i. (m R i ⟺ d S i)`
+]
 
 // The same supply/ingredients/demand picture as the division section, with one column each side and
 // the ingredients between: matching is read by eye as "the two fans land on the same dots".
@@ -702,10 +697,6 @@ $frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `m` and `d` has the same image:
   d.content((-6.5, 0), text(10pt, PAL.at(0))[`R`]); d.content((6.5, 0), text(10pt, PAL.at(1))[`S`])
 })))
 
-`m₁` and `d₁` reach the same two ingredients, so they match; `m₂` reaches one more and `d₂` one
-fewer. `m₁` does supply everything `d₂` asks for — ordinary division pairs them, symmetric division
-does not.
-
 A meet of two long divisions, the second turned round by the converse frame:
 
 #P(p-symmdiv, s: 66%)
@@ -736,13 +727,13 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
    operation is *partial*.],
 
   [$frac(R, S) S ⊑ R$],
-  [`m` matches `d` and `d` specifies `i`, so `m` retails `i`.],
+  [ $frac(R, S) S = $ `Dom`($frac(R, S)) R$, which is `R` with the unmatched markets cut out.],
 
   [$frac(R, R) R ⊑ R$],
   [The same with `R` against itself, market to market.],
 
   [$𝟙 ⊑ frac(R, R)$],
-  [Every market matches itself.],
+  [$m_1$ R {i1,i2} R° $m_2$ , 2 different market can have the same image and create extra pair than 𝟙],
 
   [$(frac(R, R))^2 = frac(R, R)$],
   [So *matches* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
@@ -751,11 +742,32 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`],
   [The largest symmetric arrow that leaves `R` alone.],
 
-  [$frac(S, S) = 𝟙$, `S` is *straight*],
-  [No two dishes specify the same ingredients. Equivalently every symmetric `X` with `X S ⊑ S` is
-   coreflexive.],
+  [$frac(R, 𝟙)$ is the *simple part* of `R`],
+  [The markets retailing one ingredient and nothing else. It equals `R` only when `R` is simple, unlike
+   `R/𝟙 = R`.],
 
-  [`f S = g S ⟹ f = g`, `S` straight],
+  [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
+  [Its domain is the *domain of simplicity* of `R`.],
+)
+
+// The heading otherwise lands as the last line of the page before, a page away from its own table.
+#pagebreak(weak: true)
+== Straight
+
+#definition[
+`S` is *straight* when $frac(S, S) = 𝟙$ — no two dishes specify the same ingredients.
+]
+
+#table(
+  columns: (7.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*law*], [*the market reading*]),
+
+  [every symmetric `X` with `X S ⊑ S` is coreflexive],
+  [Equivalently, `S` is straight.],
+
+  [`f S = g S ⟹ f = g`],
   [A straight `S` tells its dishes apart, so it cancels on the right.],
 
   [`S R` straight `⟹ S` straight],
@@ -766,21 +778,36 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
 
   [`R = h S`, `h` a cover, `S` straight],
   [In an effective division allegory every arrow factors that way.],
-
-  [$frac(R, 𝟙)$ is the *simple part* of `R`],
-  [The markets retailing one ingredient and nothing else. It equals `R` only when `R` is simple, unlike
-   `R/𝟙 = R`.],
-
-  [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
-  [Its domain is the *domain of simplicity* of `R`.],
 )
 
 #pagebreak(weak: true)
 = Power allegories
 
-One more operation on a division allegory: `∋`, Freyd's *epsiloff*. In `Rel` its source is the
-powerset of its target and `l ∋ i` iff `i ∈ l` — the shopping lists over the ingredients, and `∋` reads a
-list `l` back into the ingredients on it. Everything else is forced.
+// `∋` is a large operator in math, so a plain `∋_R` sets the R UNDERNEATH it; `attach(.., br: ..)`
+// puts the subscript where Freyd has it.  `slash` for a related reason: a plain `/` in math sets a
+// stacked fraction, and in this note a stacked fraction is symmetric division.  Defined out here,
+// not inside the block, because the table below the block subscripts `∋` too.
+#let e(x) = math.attach(math.class("normal", [∋]), br: x)
+
+#definition[
+A *power allegory* is a division allegory with one unary operation on arrows, `∋` *epsiloff*,
+subject to
+
+// Freyd's three display lines, in his order, with the names he gives the last two.  A stroke-less
+// table, not three centred lines: the names have to hang off the containments they name.
+#align(center, table(
+  columns: 2, stroke: none, inset: (x: 14pt, y: 3pt), align: (left + horizon, left + horizon),
+  [$#e[R] □ = R □, quad #e[R] = #e[R □]$], [],
+  [$𝟙 ⊑ (R slash #e[R])(#e[R] slash R)$], [$#e[R]$ is *thick*],
+  [$(#e[R] slash #e[R]) ∩ (#e[R] slash #e[R])^circle.small ⊑ 𝟙$], [$#e[R]$ is *straight*],
+))
+
+`R □` is `R`'s target, an identity arrow. For `R : A ⟶ B` write `∋ : [B] ⟶ B`, dropping the
+subscript.
+]
+
+In `Rel` its source is the powerset of its target and `l ∋ i` iff `i ∈ l`, and `∋` reads a
+list `l` back into the ingredients on it. 
 
 #table(
   columns: (7.4cm, 1fr),
@@ -788,18 +815,18 @@ list `l` back into the ingredients on it. Everything else is forced.
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the market reading*]),
 
-  [`∋ ⊤ = R ⊤`],
-  [Same target as `R`, and depending on nothing else: one `∋` per object, not per arrow. What is
-   being listed fixes it, not who lists it.],
+  [$#e[R] □ = R □$, #h(4pt) $#e[R] = #e[R □]$],
+  [`∋` has the same target as `R`, and replacing `R` by the identity at that target leaves it
+   unchanged: one `∋` per object, not per arrow.],
 
-  [$frac(∋, ∋) ⊑ 𝟙$, `∋` is *straight*],
-  [*Extensionality*: two lists with the same ingredients are the same list.],
-
-  [`𝟙 ⊑ (R/∋)(∋/R)`, `∋` is *thick*],
+  [`∋` is *thick*],
   [*Comprehension*: every market has a list of exactly what it retails. Equivalently every `R`
    factors as a map followed by `∋`.],
 
-  [`Λ(R) ≜` $frac(R, ∋)$],
+  [`∋` is *straight*, that is $frac(∋, ∋) ⊑ 𝟙$],
+  [*Extensionality*: two lists with the same ingredients are the same list.],
+
+  [`Λ(R) ≜` $frac(R, ∋)$ `: A ⟶ [B]`, for `R : A ⟶ B`],
   [The list-of map: send a market to its list.],
 
   [`Λ(R)` is simple],
@@ -1003,6 +1030,10 @@ The injections `ιₗ : A ⟶ A + B` and `ιᵣ : B ⟶ A + B` are maps, and the
 stays a coproduct once every arrow is allowed: both equations hold with equality and `[R,S]` is the only
 arrow satisfying them, with none of the `Dom` slack `⟨R,S⟩` carries.
 
+#definition[
+`[R,S] ≜ ιₗ° R ∪ ιᵣ° S`, and `R + S ≜ [R ιₗ, S ιᵣ]`.
+]
+
 // THE DEFINITION, DRAWN — and it needs no new generator.  `+` shares none of `◁ ▷ ⊸ ⟜`, but it does
 // not have to: the definition is a UNION, and the union is already drawn, as the tape of the laws
 // above.  So the one picture this subsection gets is the one line the other rows are calculated from;
@@ -1026,9 +1057,7 @@ boxes are what makes the branches disjoint.
 #align(center, table(
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`[R,S] ≜ ιₗ° R ∪ ιᵣ° S`],
   [`ιₗ [R,S] = R`, `ιᵣ [R,S] = S`, and `[R,S]` is the only such arrow],
-  [`R + S ≜ [R ιₗ, S ιᵣ]`],
   [`ιₗ ιₗ° = 𝟙 = ιᵣ ιᵣ°`],
   [`ιₗ ιᵣ° = ⊥ = ιᵣ ιₗ°`],
   [`ιₗ° ιₗ ∪ ιᵣ° ιᵣ = 𝟙`],

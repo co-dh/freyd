@@ -10,10 +10,15 @@
 // not reach the importer, so the document rules have to be applied by a function the note shows
 // itself through.  The helpers below are ordinary `#let`s and travel by import.
 
-// `definition`, `theorem`, `example` are re-exported: a note that shows itself through `conf` uses
-// the template's environments too, and importing the template twice is the copy this file exists to
-// avoid.
-#import "@preview/dvdtyp:1.0.1": dvdtyp, definition, theorem, example
+// `theorem`, `example` are re-exported: a note that shows itself through `conf` uses the template's
+// environments too, and importing the template twice is the copy this file exists to avoid.
+#import "@preview/dvdtyp:1.0.1": dvdtyp, builder-thmline, colors, theorem, example
+// `definition` is rebuilt rather than re-exported, to drop the "Definition 9.1." head: every block
+// already names in bold the term it defines, and nothing ever cited a definition by number.  The
+// empty separator goes with it — the template's separator is the period and line break that the
+// head used to end with.
+#let definition = builder-thmline(color: colors.at(8))(
+  "definition", "", separator: []).with(numbering: none)
 #import "strdiag.typ": cetz, d
 
 /// The document rules.  A note begins with `#show: conf.with(title: "…")`.
