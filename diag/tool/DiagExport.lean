@@ -46,7 +46,7 @@
   round a whole meet, and `(R /ₛ S)°` round the dashed box that construct already has.  `conv-frame`
   is the frame with its middle left empty, and the cells that ride it are drawn here.
 
-  ONE ENVIRONMENT PER PROCESS — the `lean-refactor` OOM lesson (`Freyd/tool/LeanRefactor.lean`):
+  ONE ENVIRONMENT PER PROCESS — the `lean-refactor` OOM lesson (that tool is its own repository now):
   `importModules` retains its environment for the life of the process, so this exe imports once and
   handles every declaration named on the command line from that one environment.
 -/

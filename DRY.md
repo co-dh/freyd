@@ -105,8 +105,8 @@ positive will be audited repeatedly.
 2. Locate declarations and uses with `rg`.
 3. Check the import direction and choose the canonical declaration.
 4. Preview the mechanical change with `scripts/lean-refactor`.
-5. If the operation is missing, improve `Freyd/tool/LeanRefactor.lean`, build
-   `lean-refactor`, and then use the new operation.
+5. If the operation is missing, improve the tool in its own repository
+   (`../lean-refactor`), build it there, and then use the new operation.
 6. Apply the refactor only through the tool. Its apply mode must restore the
    source if elaboration or the capped build fails.
 7. Build the combined branch, not only each isolated worktree.
@@ -188,8 +188,8 @@ For every work package below:
 - Preserve useful book-facing names as short corollaries or delegating
   definitions. Removing a duplicate proof does not require erasing the book's
   vocabulary.
-- Use `scripts/lean-refactor` for Lean source refactors. Improve
-  `Freyd/tool/LeanRefactor.lean` first if the operation cannot be expressed
+- Use `scripts/lean-refactor` for Lean source refactors. Improve the tool in its
+  own repository (`../lean-refactor`) first if the operation cannot be expressed
   safely.
 - Require a net reduction in duplicated reasoning and normally a net Lean
   source-line reduction. Count graph artifacts separately.

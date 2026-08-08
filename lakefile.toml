@@ -31,11 +31,6 @@ name = "diag"            # diagrammatic-calculus tower (cartesian bicategory →
 globs = ["diag.+"]
 
 [[lean_exe]]
-name = "lean-refactor"
-root = "Freyd.tool.LeanRefactor"
-supportInterpreter = true
-
-[[lean_exe]]
 name = "diag-export"     # draw a declaration's STATEMENT as a string diagram (diag/generated/*.typ)
 root = "diag.tool.DiagExport"
 supportInterpreter = true

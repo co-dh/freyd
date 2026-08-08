@@ -1,9 +1,16 @@
 #!/bin/sh
-# lean-refactor — the refactoring tool, run under `cap`'s address-space limit.
+# lean-refactor — the refactoring tool, which now lives in its own repository (github.com/co-dh/lean-refactor).
+# It is a general Lean 4 tool with no book content in it, so it was promoted out; nothing about the workflow
+# changes, this script still runs it against THIS repository.
 #
-# Belt to `claimElaboration`'s braces (Freyd/tool/LeanRefactor.lean): that guard catches the KNOWN
-# way to accumulate Lean `Environment`s — looping over files in one process — but not a runaway that
-# is not a file loop. The cap lives in `scripts/cap` because the same hazard applies to every
-# long-running Lean process, not just this tool; see the reasoning and the measurements there.
+# The tool is CWD-relative — it reads `.lake/build/lib/lean/<Module>.ilean` and verifies edits with
+# `./scripts/cap lake build` — so cd to the repository root first and let the tool's own launcher supply
+# `lake env` and the address-space cap.
 cd "$(dirname "$0")/.." || exit 1
-exec ./scripts/cap lake exe lean-refactor "$@"
+root=${LEAN_REFACTOR_ROOT:-$HOME/repo/lean-refactor}
+[ -x "$root/scripts/lean-refactor" ] || {
+  echo "lean-refactor: not found at $root — clone git@github.com:co-dh/lean-refactor.git there," >&2
+  echo "               or point LEAN_REFACTOR_ROOT at your checkout." >&2
+  exit 1
+}
+exec "$root/scripts/lean-refactor" "$@"

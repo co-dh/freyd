@@ -47,11 +47,13 @@ book module and define the weaker theorem by projection or specialization. Move 
 prerequisites to that legal home instead of keeping parallel case splits; judge the refactor by net
 duplication/line reduction, not merely by replacing a few conclusions inside both proofs.
 
-For Lean source refactors, use `Freyd/tool/LeanRefactor.lean` through
-`scripts/lean-refactor` instead of making mechanical edits by hand. If the tool cannot safely express
-the required refactor, improve the tool first, verify the tool with `./scripts/cap lake build
-lean-refactor`, and then use the new operation. Refactor operations must preview by default and restore
-the original source when elaboration or the capped repository build fails.
+For Lean source refactors, use the `lean-refactor` tool through `scripts/lean-refactor` instead of
+making mechanical edits by hand. The tool has its own repository — `git@github.com:co-dh/lean-refactor.git`,
+checked out as a sibling of this one — because nothing in it is book-specific; `scripts/lean-refactor`
+runs it against this repository. If the tool cannot safely express the required refactor, improve it
+there first, verify it with `./scripts/cap lake build` in that checkout, and then use the new operation.
+Refactor operations must preview by default and restore the original source when elaboration or the
+capped repository build fails.
 
 Before starting a large change, commit all current work as a checkpoint unless the user explicitly
 asks not to commit it.

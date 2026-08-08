@@ -48,4 +48,6 @@ scripts/lean-graph
 
 Run `scripts/lean-refactor` without arguments to see the available
 refactorings. Changes are previewed by default and applied only with
-`--apply`.
+`--apply`. The tool itself lives in a sibling repository,
+[lean-refactor](https://github.com/co-dh/lean-refactor) — it carries no book
+content, so it was promoted out; the script runs it against this repository.

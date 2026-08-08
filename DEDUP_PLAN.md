@@ -134,8 +134,8 @@ Both scanners now accept `.defnInfo` (commit `7470157`) but have not been run si
 
 ## Section 4 — Two lints that would have prevented today's two errors
 
-Implemented in the AST/environment-aware `Freyd/tool/LeanRefactor.lean`:
-`./scripts/cap lake exe lean-refactor lint-book --glob 'Freyd/S*.lean'`.  The driver forks once per
+Implemented in the AST/environment-aware `lean-refactor` tool (its own repository, `../lean-refactor`):
+`./scripts/lean-refactor lint-book --glob 'Freyd/S*.lean'`.  The driver forks once per
 file so elaborated environments do not accumulate in memory.  Findings are review output (exit 1),
 not automatic rewrites.
 
