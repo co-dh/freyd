@@ -6,17 +6,24 @@
 #let accent = colors.at(6)
 #let dimc = luma(100)
 
-// The sheet is read on a phone, so: one column, a screen-shaped page, and type big
-// enough to read at that width. Both the full sheet and the per-section review copies
-// go through here, so they always look the same.
-#let sheet(title: "", subtitle: [], body) = {
-  set page(width: 9cm, height: 16cm, margin: (x: 0.5cm, y: 0.5cm))
-  set text(size: 8.5pt)
+// One body, two shapes. `cols: 1` is the phone sheet — a screen-shaped page, one column,
+// type big enough to read at that width; `cols: 2` is the desktop sheet — A4 in two
+// columns, whose measure comes out slightly wider than the phone's, so the diagrams that
+// were drawn to fit a phone fit here unchanged. Everything else is shared, so the two
+// PDFs (and the per-section review copies) always say the same thing the same way.
+#let sheet(title: "", subtitle: [], cols: 1, body) = {
+  let phone = cols == 1
+  set page(..if phone { (width: 9cm, height: 16cm, margin: (x: 0.5cm, y: 0.5cm)) }
+           else { (paper: "a4", margin: (x: 1.2cm, y: 1.2cm)) })
+  // A4 is read at arm's length, a phone at reading distance, so the desktop shape needs the
+  // larger type even though its column is the wider of the two.
+  set text(size: if phone { 8.5pt } else { 9.8pt })
   show figure.where(kind: "thmenv"): set block(breakable: false)
-  show table: set text(size: 8.2pt)
-  // dvdtyp hard-codes 25pt/18pt for the title row, which wraps at this measure.
-  show text.where(size: 25pt): set text(size: 15pt)
-  show text.where(size: 18pt): set text(size: 10pt)
+  show table: set text(size: if phone { 8.2pt } else { 9.5pt })
+  // dvdtyp hard-codes 25pt/18pt for the title row. The 25pt title wraps at the phone's
+  // measure, and the 18pt subtitle wraps at both, so each gets a size that fits one line.
+  show text.where(size: 25pt): it => if phone { text(size: 15pt, it) } else { it }
+  show text.where(size: 18pt): it => text(size: if phone { 10pt } else { 14pt }, it)
   // dvdtyp re-sets heading numbering and par itself, so anything they touch has to go
   // inside its body or it loses: no "§3." before a book section number, and no
   // justification — at 8cm of measure it opens rivers.
@@ -24,16 +31,20 @@
     set par(leading: 0.5em, spacing: 0.7em, justify: false, first-line-indent: 0pt)
     set heading(numbering: none)
     // Sections are the only landmarks in a 50-page scroll, and the rows below them are
-    // dense, so a size bump is not enough: break the page, rule it off, and give it air.
+    // dense, so a size bump is not enough: break, rule it off, give it air. Typst forbids a
+    // pagebreak inside `columns`, so the two-column shape breaks the column instead — and a
+    // bare column break read as no separation at all, the new section landing level with the
+    // tail of the old one, so it also takes a fixed (non-collapsing) gap above the rule.
     show heading: it => {
-      pagebreak(weak: true)
-      block(width: 100%, above: 0em, below: 1.1em, {
+      if phone { pagebreak(weak: true) } else { colbreak(weak: true); v(1.8em) }
+      block(width: 100%, above: 0em, below: if phone { 1.1em } else { 1.4em }, {
         line(length: 100%, stroke: 1.2pt + accent)
         v(0.5em, weak: true)
         text(font: "New Computer Modern Sans", size: 13pt, weight: 700, fill: accent, it.body)
       })
     }
-    body
+    // The title stays full width; only the entries below it are set in columns.
+    if phone { body } else { columns(2, gutter: 11pt, body) }
   })
 }
 

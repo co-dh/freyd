@@ -1,12 +1,14 @@
 // §1.9 TOPOI
-// kept: 1.9 1.911 1.912 1.913 1.914 1.919 1.91(10) 1.92 1.921 1.922 1.923 1.926 1.93
+// kept: 1.9 1.911 1.912 1.913 1.914 1.919 1.91(10) 1.92 1.921 1.922 1.923 1.93
 //       1.931 1.932 1.933 1.934 1.935 1.94 1.941 1.942 1.943 1.944 1.945 1.946 1.947
 //       1.949 1.94(10) 1.95 1.951 1.952 1.954 1.955 1.961 1.962 1.963 1.964 1.965
 //       1.966 1.967 1.968 1.969 1.96(11) 1.971 1.972 1.973 1.974 1.976 1.977 1.979
 //       1.98 1.981 1.983 1.984 1.985 1.986 1.987 1.988 1.989 1.98(10) 1.98(11)
 //       1.98(12) 1.98(13) 1.98(14)
 // headings carrying no statement of their own: 1.96, 1.97
-// dropped: 1.915 (example: S^G); 1.916 (example: N-sets, monoid Omega); 1.917 (example:
+// dropped: 1.926 and the closing clause of 1.914 (Sub(A) is a Heyting semi-lattice, Omega's
+//       Heyting structure) — Rel is no Heyting category, see part-1.7;
+//       1.915 (example: S^G); 1.916 (example: N-sets, monoid Omega); 1.917 (example:
 //       S^A power-objects, "no use"); 1.918 (LH); 1.924 1.925 (example: S^A exponentials,
 //       the N-set A^A); 1.948 (example: G-sets); 1.953 (example: the S computation of
 //       A/E and A+B); 1.96(10) (example: three counterexample topoi); 1.975 (diversion:
@@ -48,7 +50,7 @@
 
   ("1.914", [An $n$-ary $g: Omega^n -> Omega$ induces $hat(g)$ on each $Sub(A)$: $hat(g)(A_1, ..., A_n)$ is the subobject with characteristic map $chevron.l chi_(A_1), ..., chi_(A_n) chevron.r g$. Every operation on $Sub(-)$ so arises, and each commutes with inverse images: $hat(g)(f^\# A_1, ..., f^\# A_n) = f^\# hat(g)(A_1, ..., A_n)$.]),
 
-  ("", [$g = chi$ of $chevron.l t, t chevron.r: 1 -> Omega times Omega$ gives $hat(g)(A_1, A_2) = A_1 inter A_2$: $Omega$ is a semi-lattice with unit $1 ->^t Omega$. $g = chi$ of $chevron.l 1, 1 chevron.r: Omega -> Omega times Omega$ makes $hat(g)(A_1, A_2)$ the equalizer of $chi_(A_1), chi_(A_2)$, so $A' subset hat(g)(A_1, A_2)$ iff $A_1 inter A' = A_2 inter A'$ — the Heyting $<->$, with $x -> y = x <-> (x and y)$. Each $Sub(A)$ is a Heyting semi-lattice.]),
+  ("", [$g = chi$ of $chevron.l t, t chevron.r: 1 -> Omega times Omega$ gives $hat(g)(A_1, A_2) = A_1 inter A_2$: $Omega$ is a semi-lattice with unit $1 ->^t Omega$. $g = chi$ of $chevron.l 1, 1 chevron.r: Omega -> Omega times Omega$ makes $hat(g)(A_1, A_2)$ the equalizer of $chi_(A_1), chi_(A_2)$, so $A' subset hat(g)(A_1, A_2)$ iff $A_1 inter A' = A_2 inter A'$.]),
 
   ("1.919", [#Th[Every monic endomorphism of $Omega$ is an involution.] Absence of non-automorphic monic endomorphisms is a finiteness condition; $Omega$ need not satisfy the dual condition.]),
 
@@ -73,8 +75,6 @@
     edge((0, 1), (1, 1), $⌜A⌝$, "->"), edge((1, 0), (1, 1), $f$, "->"), corner((0.2, 0.28)),
   )
   In $cal(S)$, $f$ sends $R subset A times B$ to $\{a | exists! b, chevron.l a, b chevron.r in R\}$, and $1 -> [A]$ names the entire subobject.]),
-
-  ("1.926", [#Th[In a topos exponential structure restricts to the Heyting algebra structure on $Sub(1)$.]]),
 
   ("1.93", [#Th[Slice lemma for topoi: for a topos $bold(E)$ and an object $B$, $bold(E) slash B$ is a topos and $Delta: bold(E) -> bold(E) slash B$ is a representation of topoi.] $Delta[A]$ is the power-object of $Delta(A)$; and for $A' subset A$, $[A']$ is the equalizer of $1_([A])$ and the idempotent $e = Lambda(eps inter ([A] times A'))$.]),
 

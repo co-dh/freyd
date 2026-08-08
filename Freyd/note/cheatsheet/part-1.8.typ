@@ -12,7 +12,10 @@
 //       and universal-covering-space cases, the 1.828 homotopy-category and COSCANECOF cases,
 //       the 1.836 non-splitting-idempotent construction, the 1.838 ring-with-distinguished-
 //       element and group-ring cases, the 1.839 compact-Hausdorff-group cardinality bounds,
-//       the 1.856 poset construction (example).
+//       the 1.856 poset construction (example); every Heyting clause — the 1.852 pointer to
+//       the Heyting arrow, the 1.858 remark that the open elements form a Heyting algebra, and
+//       the theorem that the closed elements of an L-T closure operation on a Heyting algebra
+//       form an exponential ideal (Rel is no Heyting category, see part-1.7).
 // note: the source carries no numbered item 1.826 — the two statements dual to 1.825 are
 //       printed under 1.825 and are gathered into its row.
 #import "style.typ": *
@@ -195,7 +198,7 @@
       prodm((0.75, 1)), prodm((0.75, 2))),
   )]),
 
-  ("1.852", [a poset is exponential iff it has binary intersections and every $a, b$ have $b^a$ with $x lt.eq b^a$ iff $a and x lt.eq b$ — the Heyting arrow $a -> b$ of 1.72.]),
+  ("1.852", [a poset is exponential iff it has binary intersections and every $a, b$ have $b^a$ with $x lt.eq b^a$ iff $a and x lt.eq b$.]),
 
   ("1.853", [$B^A$ is a bifunctor $bold(A)^circle.small times bold(A) -> bold(A)$, with $f^A = lambda(A times B_1^A ->^e B_1 ->^f B_2)$ and $B^g = lambda(A_1 times B^(A_2) ->^(g times 1) A_2 times B^(A_2) ->^e B)$: #dia(
     node((0, 0), $B_1^(A_2)$), node((1, 0), $B_2^(A_2)$),
@@ -239,11 +242,9 @@
     edge((0, 0), (2, 0), "->"), edge((0, 0), (1, 1), "->", label-side: right),
     edge((2, 0), (1, 1), "-->")) At $C = B^A$ this forces $C -> overline(C)$ to be an isomorphism.]),
 
-  ("1.858", [#D("kuratowski interior operation") on a lattice: deflationary, idempotent, intersection-preserving — $x^bullet lt.eq x$, #h(0.3em) $x^bullet = (x^bullet)^bullet$, #h(0.3em) $(x and y)^bullet = x^bullet and y^bullet$. Its values are the #emph[open] elements; they form a Heyting algebra whenever the ambient lattice does.]),
+  ("1.858", [#D("kuratowski interior operation") on a lattice: deflationary, idempotent, intersection-preserving — $x^bullet lt.eq x$, #h(0.3em) $x^bullet = (x^bullet)^bullet$, #h(0.3em) $(x and y)^bullet = x^bullet and y^bullet$. Its values are the #emph[open] elements.]),
 
   ("", [#D("lawvere-tierney closure operation") (L-T): inflationary, idempotent, intersection-preserving — $x lt.eq overline(x)$, #h(0.3em) $overline(overline(x)) = overline(x)$, #h(0.3em) $overline(overline(x) and overline(y)) = overline(x) and overline(y)$. Its values are the #emph[closed] elements.]),
-
-  ("", [#Th[The closed elements of an L-T closure operation on a Heyting algebra form an exponential ideal] — $a -> b$ is closed whenever $b$ is; conversely a closure operation whose closed elements form an exponential ideal is L-T. Double negation is one.]),
 
   ("1.859", [#D("baseable") $B$, in a category with binary products: $B^A$ exists — i.e. $(A times -, B)$ is representable — for every $A$. The baseable objects form a full subcategory $bold(B)$, with $f^A: B_1^A -> B_2^A$ defined as if all objects were baseable.]),
 

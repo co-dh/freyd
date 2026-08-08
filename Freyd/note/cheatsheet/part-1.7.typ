@@ -1,8 +1,13 @@
 // §1.7 LOGOI
-// kept: 1.7 1.71 1.711 1.712 1.714 1.72 1.721 1.722 1.723 1.724 1.725 1.726 1.727 1.728
-//       1.729 1.72(10) 1.72(11) 1.73 1.731 1.732 1.733 1.734 1.735 1.74 1.742 1.743 1.744
-//       1.745 1.746 1.74(10) 1.75 1.751 1.752 1.761 1.77 1.771 1.772 1.773 1.775 1.776
-//       1.78 1.781 1.782 1.783 1.784 1.785 1.786 1.787
+// kept: 1.7 1.71 1.711 1.712 1.714 1.73 1.731 1.732 1.733 1.734 1.735 1.74 1.742 1.743
+//       1.744 1.745 1.746 1.74(10) 1.75 1.751 1.752 1.761 1.77 1.771 1.772 1.773 1.775
+//       1.776 1.78 1.781 1.782 1.783 1.784 1.785 1.786 1.787
+// dropped: 1.72 1.721 1.722 1.723 1.724 1.725 1.726 1.727 1.728 1.729 1.72(10) 1.72(11)
+//       — the whole Heyting-algebra block (Heyting algebras, locales, ↔, negation, excluded
+//       middle, the scone). Rel is no Heyting category: ∅ is at once initial and terminal, so
+//       1 = 0 and the subobject logic collapses; its product is the disjoint sum, so it is not
+//       cartesian closed; and its monics are the R whose direct image is injective on
+//       subsets, so Sub(A) is not the powerset.
 // dropped: 1.713 (S^A and Sh(Y) are locally complete: example); 1.741 1.747 1.748 1.753
 //       1.754 1.755 1.76 (Sh(SR), Lazard sheaves on 2*, pullback of sheaves along a
 //       continuous map, the construction of T: A -> Sh(X), micro-sheaves: LH); 1.749
@@ -46,59 +51,6 @@
       edge((1, 1), (1, 0), "->", shift: -4pt),
       corner((0.2, 0.2)), corner((0.2, 1.2))),
   )]),
-
-  ("1.72", [a #D("heyting algebra") is a lattice with a binary $x -> y$ satisfying the double-Horn sentence $z <= x -> y$ iff $z and x <= y$: the largest element meeting $x$ inside $y$. So $x -> (\_)$ is right adjoint to $x and (\_)$.]),
-
-  ("", [as a category a Heyting algebra is a logos: for $x <= y$ with $f$ the unique morphism, $f^(\#)(u) = x and u$ and $f^(\#\#)(v) = (x -> v) and y$.]),
-
-  ("1.721", [in a logos $Sub(A)$ is a Heyting algebra: with $f$ the inclusion of $A_1$, $(A_1 -> A_2) = f^(\#\#)(A_1 inter A_2)$.]),
-
-  ("1.722", [#Th[a poset viewed as a category is a logos iff it is the poset underlying a (necessarily unique) Heyting algebra.]]),
-
-  ("1.723", [a #D("locale") is a complete lattice in which finite intersections distribute over arbitrary unions, $x and or.big y_i = or.big (x and y_i)$; that is exactly the preservation of arbitrary unions by inverse images, so a locale is a Heyting algebra.]),
-
-  ("", [locale morphisms are the union-preserving lattice maps; they need not preserve $->$. So 'complete Heyting algebras' and 'locales' name the same objects, different morphisms.]),
-
-  ("1.724", [$x <-> y = (x -> y) and (y -> x)$, characterized by $z <= x <-> y$ iff $z and x = z and y$: the largest element meeting $x$ and $y$ in the same way. Conversely $x -> y = x <-> (x and y)$.]),
-
-  ("", [$<->$ is commutative with unit $1$, every element its own inverse ($x <-> x = 1$); $x and (x <-> y) = x and y$; and it almost distributes with $->$: $z and (x <-> y) = z and [(z and x) -> (z and y)]$.]),
-
-  ("1.725", [Heyting algebras are equational: to the lattice equations add $x <-> 1 = x = 1 <-> x$, $x <-> x = 1$, and $z and (x <-> y) = z and [(z and x) <-> (z and y)]$.]),
-)
-
-#laws(
-  [1.726], [$x -> (y -> z) = (x and y) -> z$; #h(0.5em) $(x or y) -> z = (x -> z) and (y -> z)$; #h(0.5em) $x -> (y and z) = (x -> y) and (x -> z)$],
-  [], [$x -> x = 1$, #h(0.5em) $1 -> x = x$, #h(0.5em) $x -> 1 = 1$; #h(0.7em) $x and (x -> y) = x and y$, #h(0.5em) $x <= (x -> y) -> y$],
-  [], [$x and (y or z) = (x and y) or (x and z)$, a case of [1.711]; #h(0.5em) $x -> y$ is covariant in $y$, contravariant in $x$],
-)
-
-#dt(
-  ("1.727", [the #D("negation") $not x$ is $x -> 0$, characterized by $z <= not x$ iff $z and x = 0$: the largest element disjoint from $x$. $not$ is contravariant.]),
-
-  ("", [special cases of [1.726]: $not (x or y) = not x and not y$, #h(0.4em) $not 1 = 0$, #h(0.4em) $not 0 = 1$, #h(0.4em) $x <= not not x$, #h(0.4em) $not x = not not not x$.]),
-
-  ("", [double negation $overline(x) = not not x$: $x <= y$ implies $overline(x) <= overline(y)$; $x <= overline(x)$, #h(0.4em) $overline(overline(x)) = overline(x)$, and it preserves intersection, $overline(x and y) = overline(x) and overline(y)$.]),
-
-  ("1.728", [adjoining the #D("law of excluded middle") $x or not x = 1$ gives every element a complement; Heyting algebras are distributive lattices, so this makes them boolean. Adjoining $x = not not x$ does the same.]),
-
-  ("1.729", [let $f^\#: bold(B) -> bold(A)$ be order-preserving between Heyting algebras, with a left adjoint $f$ satisfying $b and f(a) = f(f^(\#)(b) and a)$. Then $f^\#$ preserves $->$; conversely, preservation of $->$ forces that identity.]),
-
-  ("", [#Th[hence $Sub(-)$ on a logos is a contravariant functor with values in Heyting algebras.]]),
-
-  ("1.72(10)", [#Th[every Heyting algebra $bold(A)$ is covered by a Heyting algebra, its scone $hat(bold(A))$, for which $Gamma = (1, \_)$ is a representation of bicartesian categories.] $hat(bold(A))$ adjoins a new $1$ above the old top $mu$, so $hat(bold(A)) slash mu tilde.eq bold(A)$ and $1$ is no union of objects properly below it: #dia(
-    node((0, 0.6), $1$), node((-0.5, 1.3), []), node((0.5, 1.3), []), node((0, 2), $0$),
-    node((0, 2.7), $bold(A)$),
-    edge((0, 0.6), (-0.5, 1.3), "-"), edge((0, 0.6), (0.5, 1.3), "-"),
-    edge((-0.5, 1.3), (0, 2), "-"), edge((0.5, 1.3), (0, 2), "-"),
-    node((1.6, 0), $1$), node((1.6, 0.6), $mu$), node((1.1, 1.3), []), node((2.1, 1.3), []),
-    node((1.6, 2), $0$), node((1.6, 2.7), $hat(bold(A))$),
-    edge((1.6, 0), (1.6, 0.6), "-"),
-    edge((1.6, 0.6), (1.1, 1.3), "-"), edge((1.6, 0.6), (2.1, 1.3), "-"),
-    edge((1.1, 1.3), (1.6, 2), "-"), edge((2.1, 1.3), (1.6, 2), "-"))]),
-
-  ("1.72(11)", [for free $bold(A)$ there is a representation of Heyting algebras $bold(A) -> hat(bold(A))$ with $(bold(A) -> hat(bold(A)) -> hat(bold(A)) slash mu tilde.eq bold(A)) = 1_bold(A)$: $bold(A)$ is a #D("retract") of its scone.]),
-
-  ("", [then $Gamma$ is a representation of bicartesian categories on $bold(A)$ too; in particular every finite collection of objects whose join is $1$ contains $1$.]),
 
   ("1.73", [for a representation of logoi $T: bold(A) -> bold(B)$, $cal("Fil")(T) subset Val_bold(A)$ collects the values $U$ with $T(U) = 1$; it is a filter.]),
 
