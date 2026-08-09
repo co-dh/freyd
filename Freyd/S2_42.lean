@@ -1,7 +1,9 @@
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_30
-import Freyd.S2_40
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_30
+public import Freyd.S2_40
 
 universe v u
 
@@ -178,7 +180,7 @@ end Division
 /-- §2.423: an allegory is STRONGLY CONNECTED if every object has a MAP to every object.
     Freyd: connectivity in any allegory implies strong connectivity, so this is the working
     form of "connected". -/
-def StronglyConnectedAllegory (𝒜 : Type u) [Allegory 𝒜] : Prop :=
+@[expose] public def StronglyConnectedAllegory (𝒜 : Type u) [Allegory 𝒜] : Prop :=
   ∀ (a b : 𝒜), ∃ (g : a ⟶ b), Map g
 
 /-! ## §2.423  A connected power allegory in which coreflexives split has a unit -/

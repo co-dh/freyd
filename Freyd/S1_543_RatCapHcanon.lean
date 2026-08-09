@@ -30,8 +30,10 @@
   Mathlib-free; built on the repo's own `Cat` + `RatCapPreReg` + `CapitalizationLaxColimit` +
   `LaxColimitPreReg` + `SliceRegular`.
 -/
-import Freyd.S1_543_RatCapPreReg
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S1_543_RatCapPreReg
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim
@@ -52,7 +54,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
 
 /-- `compL` of two stage inclusions is `homCompRawL` of the two representatives (both `homInclL`s are
     `Quotient.mk`, and `compL` is `Quotient.lift₂` of `homCompRawL`). -/
-theorem compL_homInclL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem compL_homInclL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr) :
     @compL _ _ L hL ⟨ip, xp⟩ ⟨iq, xq⟩ ⟨ir, xr⟩ (homInclL L hL xp xq a f) (homInclL L hL xq xr b g)
@@ -60,7 +62,7 @@ theorem compL_homInclL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
 
 /-- `compL` of two stage inclusions equals the inclusion of the pushed composite at any common bound
     `e` (the lax `homInclObj_comp`). -/
-theorem compL_homInclL_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem compL_homInclL_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     (e : ι) (hae : D.le a.1 e) (hbe : D.le b.1 e) :
@@ -75,7 +77,7 @@ theorem compL_homInclL_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr :
 -- files share one statement of it.
 
 /-- A mono pre-composed with an iso is mono. -/
-theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X ⟶ Y} {f : Y ⟶ Z}
+public theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X ⟶ Y} {f : Y ⟶ Z}
     (hi : IsIso i) (hf : Monic f) : Monic (i ≫ f) := by
   obtain ⟨ii, hi1, hi2⟩ := hi
   intro W u v huv
@@ -86,7 +88,7 @@ theorem mono_precomp_iso' {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z : 𝒜} {i : X �
   simpa only [Cat.assoc, hi1, Cat.comp_id] using this
 
 /-- A mono post-composed with an iso is mono. -/
-theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{u} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
+public theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{u} 𝒜] {X Y Z : 𝒜} {f : X ⟶ Y} {j : Y ⟶ Z}
     (hf : Monic f) (hj : IsIso j) : Monic (f ≫ j) := by
   obtain ⟨jj, hj1, hj2⟩ := hj
   intro W u v huv
@@ -98,7 +100,7 @@ theorem mono_postcomp_iso' {𝒜 : Type w} [Cat.{u} 𝒜] {X Y Z : 𝒜} {f : X 
 /-- **Iso un-conjugation.**  If `i`, `j` are isos and `i ≫ f ≫ j` is an iso, then `f` is an iso
     (`f = i⁻¹ ≫ (i ≫ f ≫ j) ≫ j⁻¹`, a composite of isos).  Used to strip the coherence isos that
     flank `Functor.map` inside `pushHom`. -/
-theorem isIso_unconj {𝒜 : Type w} [Cat.{w} 𝒜] {W X Y Z : 𝒜}
+public theorem isIso_unconj {𝒜 : Type w} [Cat.{w} 𝒜] {W X Y Z : 𝒜}
     {i : W ⟶ X} {f : X ⟶ Y} {j : Y ⟶ Z}
     (hi : IsIso i) (hj : IsIso j) (h : IsIso (i ≫ f ≫ j)) : IsIso f := by
   obtain ⟨ii, hi1, hi2⟩ := hi
@@ -124,7 +126,7 @@ theorem isIso_unconj {𝒜 : Type w} [Cat.{w} 𝒜] {W X Y Z : 𝒜}
 /-- `pushHom` is injective when `functF` is faithful: `pushHom = transApp ≫ map · ≫ isoInv transApp`
     is `map ·` flanked by two isos, so equal pushes give equal `map`s, hence (faithfulness) equal
     arrows.  The lax companion of stripping `homTr`'s `castHom`. -/
-theorem pushHom_injective
+public theorem pushHom_injective
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -148,7 +150,7 @@ theorem pushHom_injective
 /-- **`homInclL` is injective on hom-sets when transitions are faithful.**  Two germs at the same
     bound `a` including to the same colimit morphism agree: `Quotient.exact` gives a higher bound
     where the `pushHom`s agree, and `pushHom_injective` strips back.  Lax `homIncl_injective`. -/
-theorem homInclL_injective
+public theorem homInclL_injective
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -163,7 +165,7 @@ theorem homInclL_injective
 /-- **Stage equation from a colimit composite equality.**  If `homInclL a f ⊚ homInclL b g`
     (= `homCompRawL a f b g`) equals `homInclL c hh`, then at a common stage `N` the pushed germs
     compose to the pushed `hh`.  Lax `homCompRaw_eq_stage`. -/
-theorem homCompRawL_eq_stage {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem homCompRawL_eq_stage {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     (c : UpperBound D ip ir) (hh : L.F c.2.1 xp ⟶ L.F c.2.2 xr)
@@ -183,7 +185,7 @@ theorem homCompRawL_eq_stage {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L
 
 /-- **A colimit composite equal to the identity becomes a stage identity.**  The `homInclL … id`
     special case of `homCompRawL_eq_stage`, finished by `pushHom_id`.  Lax `homCompRaw_eq_id_stage`. -/
-theorem homCompRawL_eq_id_stage {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
+public theorem homCompRawL_eq_id_stage {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ip) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xp)
     (h : homCompRawL L hL xp xq xp a f b g
@@ -198,7 +200,7 @@ theorem homCompRawL_eq_id_stage {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
 
 /-- **Iso reflection through the stage inclusion.**  If `homInclL a g` is iso in the colimit, then
     at some higher stage `L'` the transition `map g` is iso.  Lax `colimHom_isIso_reflects`. -/
-theorem homInclL_isIso_reflects
+public theorem homInclL_isIso_reflects
     {i j : ι} (x : L.A i) (y : L.A j) (a : UpperBound D i j)
     (g : L.F a.2.1 x ⟶ L.F a.2.2 y)
     (hiso : @IsIso (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨j, y⟩ (homInclL L hL x y a g)) :
@@ -245,7 +247,7 @@ theorem homInclL_isIso_reflects
     colimit cancellation `u ⊚ (homInclL a g) = v ⊚ (homInclL a g)` to a stage equation of pushed
     competitors (`homCompRawL` + `Quotient.exact`), cancel by `hcancel`, repackage as a germ relation.
     Lax `colimHom_mono_of_rep`/`homInclObj_mono_of_stage`. -/
-theorem homInclL_mono_of_stage
+public theorem homInclL_mono_of_stage
     {i j : ι} (x : L.A i) (y : L.A j) (a : UpperBound D i j)
     (g : L.F a.2.1 x ⟶ L.F a.2.2 y)
     (hcancel : ∀ {e : ι} (hae : D.le a.1 e) (z : L.A e)
@@ -295,7 +297,7 @@ theorem homInclL_mono_of_stage
     the two stage competitors `u, v` as colimit germs `⟨e,z⟩ ⟶ ⟨i,x⟩` and compose with `homInclL a g`;
     the colimit mono forces the inclusions equal, and `homInclL_injective`/`pushHom_injective` strip
     back.  Lax `colimHom_mono_reflects`. -/
-theorem homInclL_mono_reflects
+public theorem homInclL_mono_reflects
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -333,7 +335,7 @@ theorem homInclL_mono_reflects
     (`homCompRawL_eq_stage`); the stage `pushHom m` is mono (mono reflection) and factors the stage
     cover `pushHom g`, so it is a stage iso; lift to the colimit (`homInclL_isIso_of_rep`) and absorb
     the level shift (`homInclL_compat`).  Lax `colimHom_cover_of_rep`. -/
-theorem homInclL_cover_of_rep
+public theorem homInclL_cover_of_rep
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -372,7 +374,7 @@ theorem homInclL_cover_of_rep
     transition from `a.1` (each `(functF hij).map g` a cover), then `homInclL a g` is a colimit
     cover.  Feed `homInclL_cover_of_rep` the pushed covers: `pushHom = transApp ≫ map · ≫ isoInv`, and
     pre/post-composing a cover with isos keeps it a cover.  Lax `homInclObj_cover_of_stage`. -/
-theorem homInclL_cover_of_stage
+public theorem homInclL_cover_of_stage
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -420,7 +422,7 @@ theorem homInclL_cover_of_stage
     then `g` is iso.  `homInclL_isIso_reflects` gives a stage `e` with `pushHom g` iso; `pushHom` is
     `map g` flanked by isos, so `map g` is iso, and `hcons` reflects to `g`.  Lax
     `homInclObj_isIso_reflects`. -/
-theorem homInclL_isIso_reflects'
+public theorem homInclL_isIso_reflects'
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (φ : x ⟶ y),
         Monic φ → IsIso ((L.functF hij).map φ) → IsIso φ)
     {i : ι} (x y : L.A i) (g : x ⟶ y) (hgmono : Monic g)
@@ -451,13 +453,13 @@ theorem homInclL_isIso_reflects'
 /-- The reflexive-bound germ of a stage morphism `g : x ⟶ y` in `L.A i`: the colimit hom
     `⟨i,x⟩ ⟶ ⟨i,y⟩` given by `reflApp x ≫ g ≫ (reflApp y)⁻¹` at the bound `⟨i, refl, refl⟩`.  This is
     the lax stage-inclusion of `g` (the `homInclObj` analogue). -/
-noncomputable def stageInclL {i : ι} {x y : L.A i} (g : x ⟶ y) :
+@[expose] public noncomputable def stageInclL {i : ι} {x y : L.A i} (g : x ⟶ y) :
     @homL _ _ L hL ⟨i, x⟩ ⟨i, y⟩ :=
   homInclL L hL x y ⟨i, D.refl i, D.refl i⟩ (reflApp L x ≫ g ≫ isoInv (reflApp_isIso L y))
 
 /-- `stageInclL` is functorial on identities: `stageInclL (id) = idL`.  (`reflApp x ≫ id ≫
     (reflApp x)⁻¹ = id`, the reflexive-bound identity germ.) -/
-theorem stageInclL_id {i : ι} (x : L.A i) :
+public theorem stageInclL_id {i : ι} (x : L.A i) :
     stageInclL L hL (Cat.id x) = @idL _ _ L hL ⟨i, x⟩ := by
   unfold stageInclL
   rw [Cat.id_comp, isoInv_comp]
@@ -465,7 +467,7 @@ theorem stageInclL_id {i : ι} (x : L.A i) :
 
 /-- `stageInclL` preserves composition: `stageInclL (g ≫ h) = compL (stageInclL g) (stageInclL h)`.
     The middle `(reflApp y)⁻¹ ≫ reflApp y = id` cancels (lax functoriality of the inclusion). -/
-theorem stageInclL_comp {i : ι} {x y z : L.A i} (g : x ⟶ y) (h : y ⟶ z) :
+public theorem stageInclL_comp {i : ι} {x y z : L.A i} (g : x ⟶ y) (h : y ⟶ z) :
     stageInclL L hL (g ≫ h)
       = @compL _ _ L hL ⟨i, x⟩ ⟨i, y⟩ ⟨i, z⟩ (stageInclL L hL g) (stageInclL L hL h) := by
   unfold stageInclL
@@ -485,7 +487,7 @@ theorem stageInclL_comp {i : ι} {x y z : L.A i} (g : x ⟶ y) (h : y ⟶ z) :
     colimit mono (`homInclL_mono_of_stage` via `hmono`) factoring `stageInclL g`; the colimit cover
     forces it iso; iso reflection (`homInclL_isIso_reflects'` via `hcons`) brings the iso back.  Lax
     `homInclObj_cover_reflects`. -/
-theorem homInclL_cover_reflects
+public theorem homInclL_cover_reflects
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (φ : x ⟶ y),
         Monic φ → IsIso ((L.functF hij).map φ) → IsIso φ)
     (hmono : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (φ : x ⟶ y),
@@ -540,18 +542,18 @@ theorem homInclL_cover_reflects
 /-- The realignment germ `⟨i,x⟩ ⟶ ⟨e, F (i≤e) x⟩`: the germ of `reflApp (F x)`-style identity at the
     bound `⟨e, hie, refl e⟩`.  Concretely the identity map `id (F (i≤e) x)` viewed as a germ from `x`
     (at source transition `hie`) to `F x` (at target transition `refl e`). -/
-noncomputable def alignGerm {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
+@[expose] public noncomputable def alignGerm {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     @homL _ _ L hL ⟨i, x⟩ ⟨e, L.F hie x⟩ :=
   homInclL L hL x (L.F hie x) ⟨e, hie, D.refl e⟩ (isoInv (reflApp_isIso L (L.F hie x)))
 
 /-- The inverse realignment germ `⟨e, F x⟩ ⟶ ⟨i,x⟩`. -/
-noncomputable def alignGermInv {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
+@[expose] public noncomputable def alignGermInv {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     @homL _ _ L hL ⟨e, L.F hie x⟩ ⟨i, x⟩ :=
   homInclL L hL (L.F hie x) x ⟨e, D.refl e, hie⟩ (reflApp L (L.F hie x))
 
 /-- `alignGerm` is an iso (the realignment identifies `⟨i,x⟩` with `⟨e, F x⟩`).  Both round-trips
     reduce, at stage `e`, to the included identity via `homInclL_isIso_of_rep`. -/
-theorem alignGerm_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
+public theorem alignGerm_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     @IsIso (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨e, L.F hie x⟩ (alignGerm L hL x hie) := by
   unfold alignGerm
   refine homInclL_isIso_of_rep L hL x (L.F hie x) ⟨e, hie, D.refl e⟩
@@ -564,7 +566,7 @@ theorem alignGerm_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     `pushHom f₀ : F(ia≤U) xa ⟶ F(iz≤U) xz` is the stage-`U` push.  This expresses any colimit hom as a
     stage-inclusion flanked by the (iso) realignments — the bridge to single-fibre cospans.  Both
     sides reduce, at stage `U`, to the same germ (the `reflApp`/`isoInv` units cancel telescopically). -/
-theorem homInclL_factor {ia iz : ι} (xa : L.A ia) (xz : L.A iz) (a : UpperBound D ia iz)
+public theorem homInclL_factor {ia iz : ι} (xa : L.A ia) (xz : L.A iz) (a : UpperBound D ia iz)
     (f₀ : L.F a.2.1 xa ⟶ L.F a.2.2 xz) {U : ι} (haU : D.le a.1 U) :
     homInclL L hL xa xz a f₀
       = @compL _ _ L hL ⟨ia, xa⟩ ⟨U, L.F (D.trans a.2.1 haU) xa⟩ ⟨iz, xz⟩
@@ -610,7 +612,7 @@ variable {𝒟 : Type w} [Cat.{w} 𝒟]
 
 /-- **A product- and equalizer-preserving functor sends the §1.432 chosen pullback to a pullback
     cone** (ported verbatim from `CatColimitRegular.image_chosenPullback_isPullback`). -/
-theorem image_chosenPullback_isPullback' {𝒞 : Type w} [Cat.{w} 𝒞]
+public theorem image_chosenPullback_isPullback' {𝒞 : Type w} [Cat.{w} 𝒞]
     [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasEqualizers 𝒞]
     [HasTerminal 𝒟] [HasBinaryProducts 𝒟] [HasEqualizers 𝒟]
     (F : Functor 𝒞 𝒟)
@@ -695,7 +697,7 @@ end GenericPullbackPres
   `max u w`.  These coincide exactly when the index universe `u ≤ w` — concretely when `ι : Type w`,
   matching the strict `colimitCanonicalCover`'s `CatSystem.{u,u}` constraint.  We therefore package the
   stage-inclusion FUNCTOR (and everything downstream toward `hcanon`) for `ι : Type w`. -/
-theorem stageInclL_mono_of_stage
+public theorem stageInclL_mono_of_stage
     (hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
     {i : ι} {x y : L.A i} (m : x ⟶ y) (hm : @Monic (L.A i) (L.catA i) _ _ m) :
@@ -727,7 +729,7 @@ variable {ι : Type w} {D : Directed ι} (L : LaxCatSystem.{w, w} ι D) (hL : Co
 
 /-- The lax stage-inclusion functor at stage `i` (object map `⟨i,·⟩`, morphism map `stageInclL`).
     Requires `ι : Type w` so source `L.A i` and target `Obj L` share the hom-universe `w`. -/
-noncomputable def stageInclFunctorL (i : ι) :
+@[expose] public noncomputable def stageInclFunctorL (i : ι) :
     @Functor (L.A i) (Obj L) (L.catA i) (laxColimCat L hL) :=
   letI : Cat (Obj L) := laxColimCat L hL
   { obj := fun x => ⟨i, x⟩
@@ -750,7 +752,7 @@ noncomputable def stageInclFunctorL (i : ι) :
   mediator construction (push competitors to a common stage `N ≥ i`, use `pData.presPair` there). -/
 
 /-- Universal property of the `F`-image product cone `(⟨i, (hp i).prod x y⟩, F fst, F snd)`. -/
-theorem stageInclL_product_up (pData : LaxProductData L) (i : ι) (x y : L.A i)
+public theorem stageInclL_product_up (pData : LaxProductData L) (i : ι) (x y : L.A i)
     {Z : Obj L}
     (f : homL L hL Z ⟨i, x⟩)
     (g : homL L hL Z ⟨i, y⟩) :
@@ -926,7 +928,7 @@ theorem stageInclL_product_up (pData : LaxProductData L) (i : ι) (x y : L.A i)
 /-- **`stageInclFunctorL i` preserves binary products** (for the colimit's
     `laxColimHasBinaryProducts`).  The comparison map `pair (F fst) (F snd)` is iso by
     `Colim.isIso_of_product_up`, whose hypothesis is the product universal property `stageInclL_product_up`. -/
-theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) :
+public theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) :
     @PreservesBinaryProducts (L.A i) (Obj L) (L.catA i) (laxColimCat L hL)
       (stageInclFunctorL L hL i) (pData.hp i)
       (laxColimHasBinaryProducts L hL pData) := by
@@ -947,7 +949,7 @@ theorem stageInclFunctorL_preservesProducts (pData : LaxProductData L) (i : ι) 
 /-- Universal property of the `F`-image equalizer cone `(⟨i, eqObj f g⟩, stageInclL (eqMap f g))`
     for the stage-`i` parallel pair `f, g`.  A competitor `c : Z ⟶ ⟨i,x⟩` equalizing `stageInclL f`
     and `stageInclL g` factors uniquely through `stageInclL (eqMap f g)`. -/
-theorem stageInclL_equalizer_up (eqData : LaxEqualizerData L) (i : ι) {x y : L.A i}
+public theorem stageInclL_equalizer_up (eqData : LaxEqualizerData L) (i : ι) {x y : L.A i}
     (f g : x ⟶ y) {Z : Obj L}
     (c : homL L hL Z ⟨i, x⟩)
     (hc : compL L hL c (stageInclL L hL f) = compL L hL c (stageInclL L hL g)) :
@@ -1110,7 +1112,7 @@ theorem stageInclL_equalizer_up (eqData : LaxEqualizerData L) (i : ι) {x y : L.
 /-- **`stageInclFunctorL i` preserves equalizers** (for the colimit's `laxColimHasEqualizers`).  The
     `F`-image of the fibre equalizer cone is an equalizer in the colimit (`stageInclL_equalizer_up`),
     so the canonical comparison to the chosen colimit equalizer is iso (`isIso_of_two_equalizers`). -/
-theorem stageInclFunctorL_preservesEqualizers (eqData : LaxEqualizerData L) (i : ι) :
+public theorem stageInclFunctorL_preservesEqualizers (eqData : LaxEqualizerData L) (i : ι) :
     @PreservesEqualizers (L.A i) (Obj L) (L.catA i) (laxColimCat L hL)
       (stageInclFunctorL L hL i) (eqData.he i)
       (laxColimHasEqualizers L hL eqData) := by
@@ -1148,7 +1150,7 @@ theorem stageInclFunctorL_preservesEqualizers (eqData : LaxEqualizerData L) (i :
 /-- **`stageInclFunctorL i` sends the §1.432 chosen pullback to a pullback cone in the colimit.**  For
     a cospan `f : A ⟶ C`, `g : B ⟶ C` in `L.A i`, the image under `stageInclFunctorL` of the chosen
     pullback cone of `f, g` is a pullback of `stageInclL f`, `stageInclL g` in the colimit. -/
-theorem stageInclFunctorL_preservesPullbacks [Nonempty ι]
+public theorem stageInclFunctorL_preservesPullbacks [Nonempty ι]
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L) (i : ι)
     {A B C : L.A i} (f : A ⟶ C) (g : B ⟶ C) :
     letI : HasTerminal (L.A i) := tData.ht i
@@ -1181,7 +1183,7 @@ theorem stageInclFunctorL_preservesPullbacks [Nonempty ι]
     `hfaith`.  `stageInclL g = stageInclL g'` is an equality of reflexive-bound germs, which
     `homInclL_injective` reduces to `reflApp ≫ g ≫ isoInv = reflApp ≫ g' ≫ isoInv`; cancelling the
     flanking isos `reflApp` gives `g = g'`.  Lax `objIncl_faithful` (embedding part). -/
-theorem stageInclFunctorL_faithful
+public theorem stageInclFunctorL_faithful
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -1238,7 +1240,7 @@ theorem stageInclFunctorL_faithful
     reduces colimit monicity to per-transition left-cancellability of the pushed germ, where the
     pushed `φ` is `(functF).map φ` (mono by `hmono`) flanked by isos.  Standalone form of the
     `hM_mono` block inside `homInclL_cover_reflects`. -/
-theorem stageInclFunctorL_preservesMono
+public theorem stageInclFunctorL_preservesMono
     (hmono : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (φ : x ⟶ y),
         Monic φ → Monic ((L.functF hij).map φ))
     {i : ι} {x y : L.A i} (φ : x ⟶ y) (hφ : Monic φ) :
@@ -1248,7 +1250,7 @@ theorem stageInclFunctorL_preservesMono
     reflexive bound `stageInclL φ = homInclL … (reflApp ≫ φ ≫ isoInv)`, and `homInclL_cover_of_stage`
     turns a per-transition cover (`hcovpres φ` keeps `(functF).map φ` a cover) into a colimit cover.
     Wrapper of `homInclL_cover_of_stage` at the reflexive bound. -/
-theorem stageInclFunctorL_preservesCover
+public theorem stageInclFunctorL_preservesCover
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p
           = (L.functF hij).map q → p = q)
@@ -1294,7 +1296,7 @@ private theorem pullbackComparisonIsoL {𝒜 : Type w} [Cat.{w} 𝒜] {A B Z : �
 /-- **Cover of the canonical pullback's `π₂` from *any* witnessing pullback cone** (generic, lax
     copy of `Colim.canonicalPullback_cover_of_witness`).  Reduces `hcanon` to: exhibit one pullback
     cone of `(f,g)` whose `π₂` is a cover. -/
-theorem canonicalPullbackL_cover_of_witness {𝒜 : Type w} [Cat.{w} 𝒜] [HasPullbacks 𝒜]
+public theorem canonicalPullbackL_cover_of_witness {𝒜 : Type w} [Cat.{w} 𝒜] [HasPullbacks 𝒜]
     {A B Z : 𝒜} (f : A ⟶ Z) (g : B ⟶ Z)
     (c : Cone f g) (hc : c.IsPullback) (hcov : Cover c.π₂) :
     Cover (HasPullbacks.has f g).cone.π₂ := by
@@ -1308,7 +1310,7 @@ theorem canonicalPullbackL_cover_of_witness {𝒜 : Type w} [Cat.{w} 𝒜] [HasP
     a pullback cone `c'` of the re-coordinatized cospan `(f', g')` transfers to a pullback cone of
     `(f,g)` with `π₁ = c'.π₁ ≫ eA⁻¹`, `π₂ = c'.π₂ ≫ eB⁻¹` (same apex).  Used to push the fibre
     pullback back onto the original colimit cospan. -/
-theorem cospanIsoTransferPullback {𝒜 : Type w} [Cat.{w} 𝒜]
+public theorem cospanIsoTransferPullback {𝒜 : Type w} [Cat.{w} 𝒜]
     {A B Z A' B' Z' : 𝒜} {f : A ⟶ Z} {g : B ⟶ Z} {f' : A' ⟶ Z'} {g' : B' ⟶ Z'}
     {eA : A ⟶ A'} {eB : B ⟶ B'} {eZinv : Z' ⟶ Z}
     (hAiso : IsIso eA) (hBiso : IsIso eB) (hZiso : IsIso eZinv)
@@ -1355,7 +1357,7 @@ theorem cospanIsoTransferPullback {𝒜 : Type w} [Cat.{w} 𝒜]
 
 /-- `alignGermInv` is an iso (inverse realignment `⟨e, F x⟩ ⟶ ⟨i,x⟩`).  Mirror of `alignGerm_isIso`
     with the two round-trip reps (`reflApp`/`isoInv reflApp`) swapped. -/
-theorem alignGermInv_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
+public theorem alignGermInv_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     @IsIso (Obj L) (laxColimCat L hL) ⟨e, L.F hie x⟩ ⟨i, x⟩ (alignGermInv L hL x hie) := by
   unfold alignGermInv
   refine homInclL_isIso_of_rep L hL (L.F hie x) x ⟨e, D.refl e, hie⟩
@@ -1370,7 +1372,7 @@ theorem alignGermInv_isIso {i : ι} (x : L.A i) {e : ι} (hie : D.le i e) :
     realignment isos `alignGerm xA`, `alignGerm xB`, `alignGerm xZ` identify the stage objects with
     `A, B, Z`; the SHARED codomain rep `xZ` is the common bound `U ≥ a.1, b.1` push of `Z`'s rep.
     Lax analogue of the strict `colimHom_cospan_as_homInclObj`. -/
-theorem colimHom_cospan_as_stageInclL {A B Z : Obj L}
+public theorem colimHom_cospan_as_stageInclL {A B Z : Obj L}
     (f : @homL _ _ L hL A Z) (g : @homL _ _ L hL B Z) :
     ∃ (N : ι) (xA xB xZ : L.A N) (fN : xA ⟶ xZ) (gN : xB ⟶ xZ)
       (eA : @homL _ _ L hL A ⟨N, xA⟩) (eB : @homL _ _ L hL B ⟨N, xB⟩)
@@ -1421,7 +1423,7 @@ theorem colimHom_cospan_as_stageInclL {A B Z : Obj L}
     5. transfer the colimit pullback back onto `(f,g)` across the realignment isos
        (`cospanIsoTransferPullback`), giving a witness pullback of `(f,g)` with `π₂` a cover;
     6. `canonicalPullbackL_cover_of_witness` closes. -/
-theorem laxColim_hcanon_of_stage [Nonempty ι]
+public theorem laxColim_hcanon_of_stage [Nonempty ι]
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         (L.functF hij).map p

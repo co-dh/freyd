@@ -16,19 +16,21 @@
           Galois adjunction `∃_f S ≤ T ↔ S ≤ f# T`.
 -/
 
-import Freyd.S1_91
-import Freyd.S1_92
-import Freyd.S1_45
-import Freyd.S1_60
-import Freyd.S1_94_InterIntersection
-import Freyd.S1_94_InternalForallTopos
-import Freyd.S1_95_ToposColimits
-import Freyd.S1_946_ForallAlong
-import Freyd.S1_56
-import Freyd.S1_61
-import Freyd.S1_94
-import Freyd.S1_944_ToposStrictZero
-import Freyd.S1_934_PartialMapClassifier
+module
+
+public import Freyd.S1_91
+public import Freyd.S1_92
+public import Freyd.S1_45
+public import Freyd.S1_60
+public import Freyd.S1_94_InterIntersection
+public import Freyd.S1_94_InternalForallTopos
+public import Freyd.S1_95_ToposColimits
+public import Freyd.S1_946_ForallAlong
+public import Freyd.S1_56
+public import Freyd.S1_61
+public import Freyd.S1_94
+public import Freyd.S1_944_ToposStrictZero
+public import Freyd.S1_934_PartialMapClassifier
 
 universe v u
 
@@ -55,7 +57,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     the canonical topos instances OUTSIDE the structure builder to avoid the
     `PreLogos`-self-reference diamond.  FORWARD = `ForallAlong.invImage_preserves_union`
     (`f#` is a left adjoint), REVERSE = monotonicity (`inverseImage_mono`). -/
-theorem topos_invImage_preserves_unions {A B : 𝒞} (f : A ⟶ B) :
+public theorem topos_invImage_preserves_unions {A B : 𝒞} (f : A ⟶ B) :
     inverseImage_preserves_unions f := by
   intro S T
   refine And.intro ?_ ?_
@@ -68,7 +70,7 @@ theorem topos_invImage_preserves_unions {A B : 𝒞} (f : A ⟶ B) :
       (invImg_le f T (HasSubobjectUnions.union S T) (HasPullbacks.has f _) (HasPullbacks.has f _)
         (HasSubobjectUnions.union_right S T))
 
-noncomputable def toposPreLogos : PreLogos 𝒞 :=
+@[expose] public noncomputable def toposPreLogos : PreLogos 𝒞 :=
   -- Build `RegularCategory` from the CANONICAL topos instances (`{ }` — all super-classes
   -- `HasImages`/`PullbacksTransferCovers`/… are already instances), so the resulting
   -- `PreLogos.toHasPullbacks`/`toHasImages` coincide with the topos's and there is no
@@ -89,7 +91,7 @@ noncomputable def toposPreLogos : PreLogos 𝒞 :=
 
 /-- Make `toposPreLogos` available to instance search (so the §1.61 `DisjointGluing`
     relational layer and `disjoint_cover_is_coproduct` resolve under `[Topos 𝒞]`). -/
-noncomputable instance : PreLogos 𝒞 := toposPreLogos
+@[expose] public noncomputable instance : PreLogos 𝒞 := toposPreLogos
 
 /-! ## Subobject ↔ classifier glue
 
@@ -317,85 +319,85 @@ theorem directImage_adjunction {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A)
   the carrier by `union_left`/`union_right`. -/
 
 /-- The global NAME `1 → [A]` of the empty subobject `∅ ⊆ A` (the empty element of `[A]`). -/
-noncomputable def emptyName (A : 𝒞) : one (𝒞 := 𝒞) ⟶ powObj A :=
+@[expose] public noncomputable def emptyName (A : 𝒞) : one (𝒞 := 𝒞) ⟶ powObj A :=
   nameOf (bottomSub A).arr (bottomSub A).monic
 
 /-- The raw left injection `A → [A]×[B]`, `a ↦ ({a}, ∅)`. -/
-noncomputable def inlRaw (A B : 𝒞) : A ⟶ prod (powObj A) (powObj B) :=
+@[expose] public noncomputable def inlRaw (A B : 𝒞) : A ⟶ prod (powObj A) (powObj B) :=
   pair (singletonMap A) (term A ≫ emptyName B)
 
 /-- The raw right injection `B → [A]×[B]`, `b ↦ (∅, {b})`. -/
-noncomputable def inrRaw (A B : 𝒞) : B ⟶ prod (powObj A) (powObj B) :=
+@[expose] public noncomputable def inrRaw (A B : 𝒞) : B ⟶ prod (powObj A) (powObj B) :=
   pair (term B ≫ emptyName A) (singletonMap B)
 
 /-- The CARRIER subobject `A + B ⊆ [A]×[B]`: the union of the two singleton-image
     subobjects. -/
-noncomputable def coprodSub (A B : 𝒞) : Subobject 𝒞 (prod (powObj A) (powObj B)) :=
+@[expose] public noncomputable def coprodSub (A B : 𝒞) : Subobject 𝒞 (prod (powObj A) (powObj B)) :=
   HasSubobjectUnions.union (image (inlRaw A B)) (image (inrRaw A B))
 
 /-- The coproduct OBJECT `A + B` (domain of the carrier subobject). -/
-noncomputable def coprodObj (A B : 𝒞) : 𝒞 := (coprodSub A B).dom
+@[expose] public noncomputable def coprodObj (A B : 𝒞) : 𝒞 := (coprodSub A B).dom
 
 /-- The carrier inclusion `A + B ↪ [A]×[B]` (monic). -/
-noncomputable def coprodArr (A B : 𝒞) : coprodObj A B ⟶ prod (powObj A) (powObj B) :=
+@[expose] public noncomputable def coprodArr (A B : 𝒞) : coprodObj A B ⟶ prod (powObj A) (powObj B) :=
   (coprodSub A B).arr
 
-theorem coprodArr_monic (A B : 𝒞) : Monic (coprodArr A B) := (coprodSub A B).monic
+public theorem coprodArr_monic (A B : 𝒞) : Monic (coprodArr A B) := (coprodSub A B).monic
 
 /-- The chosen factorization `image (inlRaw) ≤ coprodSub` (from `union_left`). -/
-noncomputable def imLeftToCarrier (A B : 𝒞) : (image (inlRaw A B)).dom ⟶ coprodObj A B :=
+@[expose] public noncomputable def imLeftToCarrier (A B : 𝒞) : (image (inlRaw A B)).dom ⟶ coprodObj A B :=
   (HasSubobjectUnions.union_left (image (inlRaw A B)) (image (inrRaw A B))).choose
 
-theorem imLeftToCarrier_fac (A B : 𝒞) :
+public theorem imLeftToCarrier_fac (A B : 𝒞) :
     imLeftToCarrier A B ≫ coprodArr A B = (image (inlRaw A B)).arr :=
   (HasSubobjectUnions.union_left (image (inlRaw A B)) (image (inrRaw A B))).choose_spec
 
-noncomputable def imRightToCarrier (A B : 𝒞) : (image (inrRaw A B)).dom ⟶ coprodObj A B :=
+@[expose] public noncomputable def imRightToCarrier (A B : 𝒞) : (image (inrRaw A B)).dom ⟶ coprodObj A B :=
   (HasSubobjectUnions.union_right (image (inlRaw A B)) (image (inrRaw A B))).choose
 
-theorem imRightToCarrier_fac (A B : 𝒞) :
+public theorem imRightToCarrier_fac (A B : 𝒞) :
     imRightToCarrier A B ≫ coprodArr A B = (image (inrRaw A B)).arr :=
   (HasSubobjectUnions.union_right (image (inlRaw A B)) (image (inrRaw A B))).choose_spec
 
 /-- **Left injection** `inl : A → A + B`: factor `inlRaw` through its image, then into the
     carrier union. -/
-noncomputable def coprodInl (A B : 𝒞) : A ⟶ coprodObj A B :=
+@[expose] public noncomputable def coprodInl (A B : 𝒞) : A ⟶ coprodObj A B :=
   image.lift (inlRaw A B) ≫ imLeftToCarrier A B
 
 /-- **Right injection** `inr : B → A + B`. -/
-noncomputable def coprodInr (A B : 𝒞) : B ⟶ coprodObj A B :=
+@[expose] public noncomputable def coprodInr (A B : 𝒞) : B ⟶ coprodObj A B :=
   image.lift (inrRaw A B) ≫ imRightToCarrier A B
 
 /-- `coprodInl ≫ carrier-inclusion = inlRaw`: the left injection composed with the carrier
     embedding is the raw map `a ↦ ({a}, ∅)`. -/
-theorem coprodInl_arr (A B : 𝒞) : coprodInl A B ≫ coprodArr A B = inlRaw A B := by
+public theorem coprodInl_arr (A B : 𝒞) : coprodInl A B ≫ coprodArr A B = inlRaw A B := by
   rw [coprodInl, Cat.assoc, imLeftToCarrier_fac, image.lift_fac]
 
-theorem coprodInr_arr (A B : 𝒞) : coprodInr A B ≫ coprodArr A B = inrRaw A B := by
+public theorem coprodInr_arr (A B : 𝒞) : coprodInr A B ≫ coprodArr A B = inrRaw A B := by
   rw [coprodInr, Cat.assoc, imRightToCarrier_fac, image.lift_fac]
 
 /-- `inlRaw` is monic: `inlRaw ≫ fst = singletonMap A`, which is monic. -/
-theorem inlRaw_monic (A B : 𝒞) : Monic (inlRaw A B) := by
+public theorem inlRaw_monic (A B : 𝒞) : Monic (inlRaw A B) := by
   intro W u v huv
   refine singletonMap_monic A u v ?_
   have : (u ≫ inlRaw A B) ≫ fst = (v ≫ inlRaw A B) ≫ fst := by rw [huv]
   rwa [Cat.assoc, Cat.assoc, inlRaw, fst_pair] at this
 
 /-- `inrRaw` is monic: `inrRaw ≫ snd = singletonMap B`, which is monic. -/
-theorem inrRaw_monic (A B : 𝒞) : Monic (inrRaw A B) := by
+public theorem inrRaw_monic (A B : 𝒞) : Monic (inrRaw A B) := by
   intro W u v huv
   refine singletonMap_monic B u v ?_
   have : (u ≫ inrRaw A B) ≫ snd = (v ≫ inrRaw A B) ≫ snd := by rw [huv]
   rwa [Cat.assoc, Cat.assoc, inrRaw, snd_pair] at this
 
 /-- **`inl` is monic.**  `coprodInl ≫ coprodArr = inlRaw` is monic, so `coprodInl` is. -/
-theorem coprodInl_monic (A B : 𝒞) : Monic (coprodInl A B) := by
+public theorem coprodInl_monic (A B : 𝒞) : Monic (coprodInl A B) := by
   intro W u v huv
   refine inlRaw_monic A B u v ?_
   rw [← coprodInl_arr, ← Cat.assoc, ← Cat.assoc, huv]
 
 /-- **`inr` is monic.** -/
-theorem coprodInr_monic (A B : 𝒞) : Monic (coprodInr A B) := by
+public theorem coprodInr_monic (A B : 𝒞) : Monic (coprodInr A B) := by
   intro W u v huv
   refine inrRaw_monic A B u v ?_
   rw [← coprodInr_arr, ← Cat.assoc, ← Cat.assoc, huv]
@@ -405,7 +407,7 @@ theorem coprodInr_monic (A B : 𝒞) : Monic (coprodInr A B) := by
     cover-by-injections fact (`case_uniq` content), proved elementarily via the equalizer of
     the two maps: both injections factor through it, so their image subobjects lie in it, so the
     whole carrier (the union of those images) lies in it — forcing the equalizer to be entire. -/
-theorem coprod_jointly_epi {A B X : 𝒞} (h k : coprodObj A B ⟶ X)
+public theorem coprod_jointly_epi {A B X : 𝒞} (h k : coprodObj A B ⟶ X)
     (hl : coprodInl A B ≫ h = coprodInl A B ≫ k)
     (hr : coprodInr A B ≫ h = coprodInr A B ≫ k) : h = k := by
   -- E = equalizer of h, k, with monic inclusion e : E ↪ A+B.
@@ -528,7 +530,7 @@ noncomputable def caseRel {A B X : 𝒞} (f : A ⟶ X) (g : B ⟶ X) :
     `coprodInl` and `coprodInr` factor is an iso.  (Same equalizer/`union_min` argument as
     `coprod_jointly_epi`, repackaged as a covering statement: the images of the two
     injections inside `A+B` union to the whole carrier.) -/
-theorem coprod_injections_cover {A B C : 𝒞} (m : C ⟶ coprodObj A B) (hm : Monic m)
+public theorem coprod_injections_cover {A B C : 𝒞} (m : C ⟶ coprodObj A B) (hm : Monic m)
     (sl : A ⟶ C) (hsl : sl ≫ m = coprodInl A B)
     (sr : B ⟶ C) (hsr : sr ≫ m = coprodInr A B) : IsIso m := by
   -- `Cm := ⟨C, m ≫ coprodArr⟩ ⊆ [A]×[B]` (composite of two monics).
@@ -609,7 +611,7 @@ theorem caseRel_colA_cover {A B X : 𝒞} (f : A ⟶ X) (g : B ⟶ X) :
   NO `DisjointBinaryCoproduct` class assumption: a common point `(a,b)` with `inl a = inr b`
   forces (post-`coprodArr`, take `fst`) `{a} = ∅` in `[A]`; but `a ∈ {a} = ⊤` (`mem_singleton_self`)
   while `a ∈ ∅ = ⊥`, so the apex maps to `0`, hence is `≅ 0` by strict-initiality. -/
-theorem coprodInjections_disjoint (A B : 𝒞) :
+public theorem coprodInjections_disjoint (A B : 𝒞) :
     Isomorphic (HasPullbacks.has (coprodInl A B) (coprodInr A B)).cone.pt
       (bottomSub (coprodObj A B)).dom := by
   let pb := HasPullbacks.has (coprodInl A B) (coprodInr A B)
@@ -658,7 +660,7 @@ theorem coprodInjections_disjoint (A B : 𝒞) :
     `(bottomSub one).dom`'s strict-coterminator uniqueness collapses maps out of `X`.  Keeps
     the pullback/instance plumbing INSIDE the topos layer, so callers never compose across
     two `HasPullbacks` instances. -/
-theorem coprodInjections_disjoint_elt {A B X : 𝒞} (p : X ⟶ A) (q : X ⟶ B)
+public theorem coprodInjections_disjoint_elt {A B X : 𝒞} (p : X ⟶ A) (q : X ⟶ B)
     (hpq : p ≫ coprodInl A B = q ≫ coprodInr A B) :
     ∀ {Y : 𝒞} (u v : X ⟶ Y), u = v := by
   let pb := HasPullbacks.has (coprodInl A B) (coprodInr A B)
@@ -674,15 +676,15 @@ theorem coprodInjections_disjoint_elt {A B X : 𝒞} (p : X ⟶ A) (q : X ⟶ B)
       strictCoterminator_hom_unique strict_coterminator_bottomSub_one (mi ≫ u) (mi ≫ v)]
 
 /-- The two injections as SUBOBJECTS of `A+B` (monic). -/
-noncomputable def inlSubobj (A B : 𝒞) : Subobject 𝒞 (coprodObj A B) :=
+@[expose] public noncomputable def inlSubobj (A B : 𝒞) : Subobject 𝒞 (coprodObj A B) :=
   ⟨A, coprodInl A B, coprodInl_monic A B⟩
-noncomputable def inrSubobj (A B : 𝒞) : Subobject 𝒞 (coprodObj A B) :=
+@[expose] public noncomputable def inrSubobj (A B : 𝒞) : Subobject 𝒞 (coprodObj A B) :=
   ⟨B, coprodInr A B, coprodInr_monic A B⟩
 
 /-- **§1.621 cover**: `image inl ∪ image inr = A+B` — the union of the two injection
     subobjects is ENTIRE (its inclusion is iso), since both injections factor through it and
     they jointly cover the carrier (`coprod_injections_cover`). -/
-theorem coprodInjections_union_entire (A B : 𝒞) :
+public theorem coprodInjections_union_entire (A B : 𝒞) :
     (HasSubobjectUnions.union (inlSubobj A B) (inrSubobj A B)).IsEntire := by
   obtain ⟨l₁, hl₁⟩ := HasSubobjectUnions.union_left (inlSubobj A B) (inrSubobj A B)
   obtain ⟨l₂, hl₂⟩ := HasSubobjectUnions.union_right (inlSubobj A B) (inrSubobj A B)
@@ -693,7 +695,7 @@ theorem coprodInjections_union_entire (A B : 𝒞) :
     Freyd's §1.621 disjoint-complemented-union pasting (`disjoint_cover_is_coproduct`),
     instantiated at the two injection subobjects with disjointness `coprodInjections_disjoint`
     and joint cover `coprodInjections_union_entire`. -/
-theorem case_morphism_exists {A B X : 𝒞} (f : A ⟶ X) (g : B ⟶ X) :
+public theorem case_morphism_exists {A B X : 𝒞} (f : A ⟶ X) (g : B ⟶ X) :
     ∃ c : coprodObj A B ⟶ X, coprodInl A B ≫ c = f ∧ coprodInr A B ≫ c = g :=
   let ⟨c, h1, h2, _⟩ :=
     disjoint_cover_is_coproduct (inlSubobj A B) (inrSubobj A B)
@@ -751,7 +753,7 @@ theorem caseRel_colA_monic {A B X : 𝒞} (f : A ⟶ X) (g : B ⟶ X) :
   The carrier `A+B = coprodObj A B`, injections `coprodInl`/`coprodInr`, copairing
   `case f g := (case_morphism_exists f g).choose` with its two β-laws (`.choose_spec`) and
   uniqueness `coprod_jointly_epi`.  Sorry-free; axioms `[propext, Classical.choice]`. -/
-noncomputable instance toposHasBinaryCoproducts : HasBinaryCoproducts 𝒞 where
+@[expose] public noncomputable instance toposHasBinaryCoproducts : HasBinaryCoproducts 𝒞 where
   coprod   := coprodObj
   inl      := coprodInl _ _
   inr      := coprodInr _ _

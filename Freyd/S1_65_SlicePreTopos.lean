@@ -18,17 +18,19 @@
   `HasReflTransClosure (Over B)`) and the final Diaconescu transport are tracked in the
   trailing doc-comment; this file lands the image foundation Sorry-free.
 -/
-import Freyd.S1_44
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_59
-import Freyd.S1_62
-import Freyd.S1_77
-import Freyd.S1_64
-import Freyd.S1_658_Complement
-import Freyd.S1_53_SliceRegular
+module
+
+public import Freyd.S1_44
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_59
+public import Freyd.S1_62
+public import Freyd.S1_77
+public import Freyd.S1_64
+public import Freyd.S1_658_Complement
+public import Freyd.S1_53_SliceRegular
 
 universe v u
 
@@ -49,20 +51,20 @@ variable [HasPullbacks 𝒞]
 variable {B : 𝒞}
 
 /-- The underlying `𝒞`-subobject of a slice subobject `S` of `Y`. -/
-def Subobject.forgetSlice (Y : Over B) (S : Subobject (Over B) Y) : Subobject 𝒞 Y.dom where
+@[expose] public def Subobject.forgetSlice (Y : Over B) (S : Subobject (Over B) Y) : Subobject 𝒞 Y.dom where
   dom := S.dom.dom
   arr := S.arr.f
   monic := sigma_preserves_mono S.arr S.monic
 
 /-- Lift a `𝒞`-subobject `T` of `Y.dom` to a slice subobject of `Y`. -/
-def Subobject.liftSlice (Y : Over B) (T : Subobject 𝒞 Y.dom) : Subobject (Over B) Y where
+@[expose] public def Subobject.liftSlice (Y : Over B) (T : Subobject 𝒞 Y.dom) : Subobject (Over B) Y where
   dom := ⟨T.dom, T.arr ≫ Y.hom⟩
   arr := ⟨T.arr, rfl⟩
   monic := sigma_reflects_mono (⟨T.arr, rfl⟩ : OverHom ⟨T.dom, T.arr ≫ Y.hom⟩ Y) T.monic
 
 /-- A slice subobject `S` allows a slice arrow `m` iff its underlying `𝒞`-subobject allows
     the underlying arrow `m.f`. -/
-theorem allows_forgetSlice_iff {Y X : Over B} (S : Subobject (Over B) Y) (m : OverHom X Y) :
+public theorem allows_forgetSlice_iff {Y X : Over B} (S : Subobject (Over B) Y) (m : OverHom X Y) :
     Allows S m ↔ Allows (Subobject.forgetSlice Y S) m.f := by
   constructor
   · rintro ⟨g, hg⟩
@@ -80,11 +82,11 @@ theorem allows_forgetSlice_iff {Y X : Over B} (S : Subobject (Over B) Y) (m : Ov
   The image of `m : X ⟶ Y` in `Over B` is the lift of the `𝒞`-image of `m.f`. -/
 
 /-- The slice image of `m : X ⟶ Y`: lift the `𝒞`-image of `m.f` to a slice subobject of `Y`. -/
-def sliceImage [HasImages 𝒞] {X Y : Over B} (m : OverHom X Y) : Subobject (Over B) Y :=
+@[expose] public def sliceImage [HasImages 𝒞] {X Y : Over B} (m : OverHom X Y) : Subobject (Over B) Y :=
   Subobject.liftSlice Y (image m.f)
 
 /-- The slice image is an image: it allows `m` and is below any slice subobject allowing `m`. -/
-theorem sliceImage_isImage [HasImages 𝒞] {X Y : Over B} (m : OverHom X Y) :
+public theorem sliceImage_isImage [HasImages 𝒞] {X Y : Over B} (m : OverHom X Y) :
     IsImage m (sliceImage m) := by
   refine ⟨?_, ?_⟩
   · -- allows `m`: the underlying subobject of the lift of `image m.f` is `image m.f`.
@@ -106,7 +108,7 @@ theorem sliceImage_isImage [HasImages 𝒞] {X Y : Over B} (m : OverHom X Y) :
 
 /-- **The slice of a category with images has images.**  Built by transporting the
     `𝒞`-image along the faithful forgetful functor `Σ_B`. -/
-instance overHasImages [HasImages 𝒞] (B : 𝒞) : HasImages (Over B) where
+@[expose] public instance overHasImages [HasImages 𝒞] (B : 𝒞) : HasImages (Over B) where
   image := sliceImage
   isImage := sliceImage_isImage
 
@@ -117,7 +119,7 @@ instance overHasImages [HasImages 𝒞] (B : 𝒞) : HasImages (Over B) where
   (`overHasBinaryProducts`, §1.441), `HasPullbacks` (`overHasPullbacks`, §1.441), and
   `PullbacksTransferCovers` (`overPullbacksTransferCovers`, §1.52).  The slice of a regular
   category is regular. -/
-instance overRegular (B : 𝒞) [RegularCategory 𝒞] : RegularCategory (Over B) where
+@[expose] public instance overRegular (B : 𝒞) [RegularCategory 𝒞] : RegularCategory (Over B) where
 
 /-! ## Rung 1: the forgetful functor on binary relations
 
@@ -135,23 +137,23 @@ instance overRegular (B : 𝒞) [RegularCategory 𝒞] : RegularCategory (Over B
     R.forgetSlice.colB = R.colB.f := rfl
 
 /-- `Σ_B` commutes with `reciprocal` on the nose. -/
-theorem forgetSlice_reciprocal {X Y : Over B} (R : BinRel (Over B) X Y) :
+public theorem forgetSlice_reciprocal {X Y : Over B} (R : BinRel (Over B) X Y) :
     (reciprocal R).forgetSlice = reciprocal R.forgetSlice := rfl
 
 /-- `Σ_B` commutes with `graph` on the nose: `Σ_B (graph m) = graph m.f`. -/
-theorem forgetSlice_graph {X Y : Over B} (m : OverHom X Y) :
+public theorem forgetSlice_graph {X Y : Over B} (m : OverHom X Y) :
     (graph m).forgetSlice = graph m.f := rfl
 
 /-- `Σ_B` is monotone on relations: a slice `RelHom R ⟶ S` forgets to a `𝒞`
     `RelHom R.forgetSlice ⟶ S.forgetSlice` (its witness arrow is `.f`). -/
-theorem forgetSlice_mono_relLe {X Y : Over B} {R S : BinRel (Over B) X Y}
+public theorem forgetSlice_mono_relLe {X Y : Over B} {R S : BinRel (Over B) X Y}
     (h : R ⊂ S) : R.forgetSlice ⊂ S.forgetSlice := by
   obtain ⟨k, hA, hB⟩ := h
   exact ⟨⟨k.f, congrArg OverHom.f hA, congrArg OverHom.f hB⟩⟩
 
 /-- `Σ_B` reflects relation containment: a `𝒞` `RelHom` between forgotten relations
     promotes (object-promotion trick) to a slice `RelHom`. -/
-theorem forgetSlice_reflects_relLe {X Y : Over B} {R S : BinRel (Over B) X Y}
+public theorem forgetSlice_reflects_relLe {X Y : Over B} {R S : BinRel (Over B) X Y}
     (h : R.forgetSlice ⊂ S.forgetSlice) : R ⊂ S := by
   obtain ⟨k, hA, hB⟩ := h
   -- `k : R.src.dom ⟶ S.src.dom`, `k ≫ S.colA.f = R.colA.f`, etc.  Promote `k`.
@@ -175,7 +177,7 @@ section composeComparison
 variable [RegularCategory 𝒞] {X Y Z : Over B}
 
 /-- `Σ_B (R ⊚ S) ⊂ (Σ_B R) ⊚ (Σ_B S)`: the slice composite forgets into the base composite. -/
-theorem forgetSlice_compose_le (R : BinRel (Over B) X Y) (S : BinRel (Over B) Y Z) :
+public theorem forgetSlice_compose_le (R : BinRel (Over B) X Y) (S : BinRel (Over B) Y Z) :
     (R ⊚ S).forgetSlice ⊂ (R.forgetSlice ⊚ S.forgetSlice) := by
   -- slice pullback of the inner legs, and its forgotten (base) span
   let pbs := HasPullbacks.has R.colB S.colA
@@ -243,7 +245,7 @@ theorem forgetSlice_compose_le (R : BinRel (Over B) X Y) (S : BinRel (Over B) Y 
 /-- `(Σ_B R) ⊚ (Σ_B S) ⊂ Σ_B (R ⊚ S)`: the base composite forgets back into the slice
     composite.  The base pullback `pbc` maps into the forgotten slice pullback (a base
     pullback by `sliceForget_preserves_isPullback`); the rest mirrors `forgetSlice_compose_le`. -/
-theorem le_forgetSlice_compose (R : BinRel (Over B) X Y) (S : BinRel (Over B) Y Z) :
+public theorem le_forgetSlice_compose (R : BinRel (Over B) X Y) (S : BinRel (Over B) Y Z) :
     (R.forgetSlice ⊚ S.forgetSlice) ⊂ (R ⊚ S).forgetSlice := by
   let pbs := HasPullbacks.has R.colB S.colA
   let spans : pbs.cone.pt ⟶ (overProdPt X Z) :=
@@ -331,7 +333,7 @@ section effective
 variable [EffectiveRegular 𝒞] {X : Over B}
 
 /-- The forgotten relation of a slice equivalence relation is a `𝒞`-equivalence relation. -/
-theorem forgetSlice_equivalenceRelation (E : BinRel (Over B) X X)
+public theorem forgetSlice_equivalenceRelation (E : BinRel (Over B) X X)
     (hE : EquivalenceRelation E) : EquivalenceRelation E.forgetSlice := by
   obtain ⟨⟨ho, hoA, hoB⟩, hsym, htrans⟩ := hE
   refine ⟨⟨ho.f, ?_, ?_⟩, ?_, ?_⟩
@@ -346,14 +348,14 @@ theorem forgetSlice_equivalenceRelation (E : BinRel (Over B) X X)
     exact rel_le_trans (le_forgetSlice_compose E E) (forgetSlice_mono_relLe htrans)
 
 /-- Both legs of `E̅ = E.forgetSlice` equalise `X.hom` (both compose to `E.src.hom`). -/
-theorem forgetSlice_legs_equalise (E : BinRel (Over B) X X) :
+public theorem forgetSlice_legs_equalise (E : BinRel (Over B) X X) :
     E.forgetSlice.colA ≫ X.hom = E.forgetSlice.colB ≫ X.hom := by
   show E.colA.f ≫ X.hom = E.colB.f ≫ X.hom
   rw [E.colA.w, E.colB.w]
 
 /-- `Σ_B (graph q ⊚ (graph q)°) ` versus `graph q.f ⊚ (graph q.f)°`: contained each way
     via rung 1 and the on-the-nose `forgetSlice_graph` / `forgetSlice_reciprocal`. -/
-theorem forgetSlice_graphComp_iso {Q : Over B} (q : OverHom X Q) :
+public theorem forgetSlice_graphComp_iso {Q : Over B} (q : OverHom X Q) :
     ((graph q ⊚ (graph q)°).forgetSlice ⊂ (graph q.f ⊚ (graph q.f)°)) ∧
     ((graph q.f ⊚ (graph q.f)°) ⊂ (graph q ⊚ (graph q)°).forgetSlice) := by
   have he : (graph q).forgetSlice = graph q.f := forgetSlice_graph q
@@ -369,7 +371,7 @@ theorem forgetSlice_graphComp_iso {Q : Over B} (q : OverHom X Q) :
     effectiveness for the cover `q̄`, factor `X.hom = q̄ ≫ b` (leg-equalisation + coequaliser),
     lift `q̄` to a slice cover `q : X ↠ ⟨Q₀, b⟩`, and reflect the `𝒞`-iso `E̅ ≅ q̄q̄°` back through
     `Σ_B` (faithful) using rung 1. -/
-theorem sliceIsEffective (E : BinRel (Over B) X X) (hE : EquivalenceRelation E) :
+public theorem sliceIsEffective (E : BinRel (Over B) X X) (hE : EquivalenceRelation E) :
     IsEffective E := by
   -- forget and apply 𝒞-effectiveness
   obtain ⟨_, Q₀, qbar, hqcov, hf1, hf2⟩ :=
@@ -403,7 +405,7 @@ theorem sliceIsEffective (E : BinRel (Over B) X X) (hE : EquivalenceRelation E) 
 end effective
 
 /-- **The slice of an effective regular category is effective regular** (rung 2). -/
-instance overEffectiveRegular (B : 𝒞) [EffectiveRegular 𝒞] : EffectiveRegular (Over B) where
+@[expose] public instance overEffectiveRegular (B : 𝒞) [EffectiveRegular 𝒞] : EffectiveRegular (Over B) where
   effective E hE := sliceIsEffective E hE
 
 /-! ## Rung 4: `HasReflTransClosure (Over B)`
@@ -420,7 +422,7 @@ variable [RegularCategory 𝒞] [HasReflTransClosure 𝒞] {A : Over B}
 
 /-- Lift a `𝒞`-relation on `A.dom` whose legs equalise `A.hom` back to a slice relation on `A`.
     Round-trips with `forgetSlice` on the nose. -/
-def BinRel.liftSlice (M : BinRel 𝒞 A.dom A.dom)
+@[expose] public def BinRel.liftSlice (M : BinRel 𝒞 A.dom A.dom)
     (hleg : M.colA ≫ A.hom = M.colB ≫ A.hom) : BinRel (Over B) A A where
   src := ⟨M.src, M.colA ≫ A.hom⟩
   colA := ⟨M.colA, rfl⟩
@@ -430,19 +432,19 @@ def BinRel.liftSlice (M : BinRel 𝒞 A.dom A.dom)
     apply OverHom.ext
     exact M.isMonicPair f.f g.f (congrArg OverHom.f hA) (congrArg OverHom.f hB)
 
-@[simp] theorem BinRel.forgetSlice_liftSlice (M : BinRel 𝒞 A.dom A.dom)
+@[simp] public theorem BinRel.forgetSlice_liftSlice (M : BinRel 𝒞 A.dom A.dom)
     (hleg : M.colA ≫ A.hom = M.colB ≫ A.hom) :
     (BinRel.liftSlice M hleg).forgetSlice = M := rfl
 
 /-- `R.forgetSlice`'s legs equalise `A.hom` (they are slice arrows). -/
-theorem forgetSlice_endo_legs_equalise (R : BinRel (Over B) A A) :
+public theorem forgetSlice_endo_legs_equalise (R : BinRel (Over B) A A) :
     R.forgetSlice.colA ≫ A.hom = R.forgetSlice.colB ≫ A.hom := by
   show R.colA.f ≫ A.hom = R.colB.f ≫ A.hom
   rw [R.colA.w, R.colB.w]
 
 /-- `rtc R̄`'s legs equalise `A.hom`: `rtc R̄ ⊂ kernelPairRel A.hom` (a reflexive+transitive
     relation containing `R̄`), and the latter equalises by `kp_sq`. -/
-theorem rtc_forgetSlice_legs_equalise (R : BinRel (Over B) A A) :
+public theorem rtc_forgetSlice_legs_equalise (R : BinRel (Over B) A A) :
     (rtc R.forgetSlice).colA ≫ A.hom = (rtc R.forgetSlice).colB ≫ A.hom := by
   -- `R̄ ⊂ kernelPairRel A.hom`: the kernel-pair lift of `R̄`'s (equalising) legs is the witness.
   have hRle : RelLe R.forgetSlice (kernelPairRel A.hom) :=
@@ -468,7 +470,7 @@ theorem rtc_forgetSlice_legs_equalise (R : BinRel (Over B) A A) :
     _ = (rtc R.forgetSlice).colB ≫ A.hom := by rw [hwB]
 
 /-- The slice reflexive-transitive closure: lift `rtc R̄` back to the slice. -/
-def sliceTransRefClos (R : BinRel (Over B) A A) : TransRefClos R where
+@[expose] public def sliceTransRefClos (R : BinRel (Over B) A A) : TransRefClos R where
   clos := BinRel.liftSlice (rtc R.forgetSlice) (rtc_forgetSlice_legs_equalise R)
   le := by
     apply forgetSlice_reflects_relLe
@@ -506,7 +508,7 @@ def sliceTransRefClos (R : BinRel (Over B) A A) : TransRefClos R where
 end rtc
 
 /-- **The slice of a category with reflexive-transitive closures has them** (rung 4). -/
-instance overHasReflTransClosure (B : 𝒞) [RegularCategory 𝒞] [HasReflTransClosure 𝒞] :
+@[expose] public instance overHasReflTransClosure (B : 𝒞) [RegularCategory 𝒞] [HasReflTransClosure 𝒞] :
     HasReflTransClosure (Over B) where
   transRefClos R := sliceTransRefClos R
 
@@ -536,12 +538,12 @@ variable {B : 𝒞} [HasPullbacks 𝒞]
   nose, so each lattice operation transports field-for-field. -/
 
 /-- `forgetSlice` is monotone: a slice `S ≤ T` forgets to `S.forgetSlice ≤ T.forgetSlice`. -/
-theorem Subobject.forgetSlice_mono {Y : Over B} {S T : Subobject (Over B) Y}
+public theorem Subobject.forgetSlice_mono {Y : Over B} {S T : Subobject (Over B) Y}
     (h : S.le T) : (Subobject.forgetSlice Y S).le (Subobject.forgetSlice Y T) := by
   obtain ⟨g, hg⟩ := h; exact ⟨g.f, congrArg OverHom.f hg⟩
 
 /-- `forgetSlice` reflects `≤`: promote the underlying factorization arrow to a slice arrow. -/
-theorem Subobject.forgetSlice_reflects {Y : Over B} {S T : Subobject (Over B) Y}
+public theorem Subobject.forgetSlice_reflects {Y : Over B} {S T : Subobject (Over B) Y}
     (h : (Subobject.forgetSlice Y S).le (Subobject.forgetSlice Y T)) : S.le T := by
   obtain ⟨g, hg⟩ := h
   have hgf : g ≫ T.arr.f = S.arr.f := hg
@@ -558,7 +560,7 @@ theorem Subobject.forgetSlice_reflects {Y : Over B} {S T : Subobject (Over B) Y}
   `InverseImage f.f S.forgetSlice`. -/
 
 /-- The forgotten slice inverse image is below the base inverse image. -/
-theorem forgetSlice_invImage_le {X Y : Over B} (f : OverHom X Y) (S : Subobject (Over B) Y) :
+public theorem forgetSlice_invImage_le {X Y : Over B} (f : OverHom X Y) (S : Subobject (Over B) Y) :
     Subobject.le (Subobject.forgetSlice X (InverseImage f S))
                  (InverseImage f.f (Subobject.forgetSlice Y S)) := by
   let pbc := HasPullbacks.has f.f (Subobject.forgetSlice Y S).arr
@@ -566,7 +568,7 @@ theorem forgetSlice_invImage_le {X Y : Over B} (f : OverHom X Y) (S : Subobject 
     pbc.lift_fst (sliceConeForget (overPullbackCone f S.arr))⟩
 
 /-- The base inverse image is below the forgotten slice inverse image. -/
-theorem le_forgetSlice_invImage {X Y : Over B} (f : OverHom X Y) (S : Subobject (Over B) Y) :
+public theorem le_forgetSlice_invImage {X Y : Over B} (f : OverHom X Y) (S : Subobject (Over B) Y) :
     Subobject.le (InverseImage f.f (Subobject.forgetSlice Y S))
                  (Subobject.forgetSlice X (InverseImage f S)) := by
   have hfor : (sliceConeForget (B := B) (overPullbackCone f S.arr)).IsPullback :=
@@ -584,7 +586,7 @@ end rung3
 open HasBinaryCoproducts in
 /-- **The slice of a category with binary coproducts has binary coproducts.**  The coproduct of
     `X→B`, `Y→B` is `X.dom + Y.dom → B` via the copairing `case X.hom Y.hom`. -/
-instance overHasBinaryCoproducts (B : 𝒞) [HasBinaryCoproducts 𝒞] :
+@[expose] public instance overHasBinaryCoproducts (B : 𝒞) [HasBinaryCoproducts 𝒞] :
     HasBinaryCoproducts (Over B) where
   coprod X Y := ⟨coprod X.dom Y.dom, case X.hom Y.hom⟩
   inl {X Y} := ⟨inl, case_inl _ _⟩
@@ -607,11 +609,11 @@ section overPreLogos
 variable [PreLogos 𝒞]
 
 /-- `forgetSlice` is a retraction of `liftSlice` on the nose. -/
-@[simp] theorem forgetSlice_liftSlice (Y : Over B) (T : Subobject 𝒞 Y.dom) :
+@[simp] public theorem forgetSlice_liftSlice (Y : Over B) (T : Subobject 𝒞 Y.dom) :
     Subobject.forgetSlice Y (Subobject.liftSlice Y T) = T := rfl
 
 /-- Slice subobject unions: lift the `𝒞`-union of the forgotten subobjects. -/
-instance overHasSubobjectUnions (B : 𝒞) : HasSubobjectUnions (Over B) where
+@[expose] public instance overHasSubobjectUnions (B : 𝒞) : HasSubobjectUnions (Over B) where
   union {Y} S T := Subobject.liftSlice Y
     (HasSubobjectUnions.union (Subobject.forgetSlice Y S) (Subobject.forgetSlice Y T))
   union_left {Y} S T := by
@@ -635,7 +637,7 @@ instance overHasSubobjectUnions (B : 𝒞) : HasSubobjectUnions (Over B) where
 /-- **The slice of a pre-logos is a pre-logos.**  Subobject lattices, bottom, and inverse-image
     preservation all transport from `𝒞`'s lattice on `Y.dom` along the subobject identification
     `Sub (Over B) Y ≃ Sub 𝒞 Y.dom`. -/
-instance overPreLogos (B : 𝒞) : PreLogos (Over B) where
+@[expose] public instance overPreLogos (B : 𝒞) : PreLogos (Over B) where
   bottom A := Subobject.liftSlice A (PreLogos.bottom A.dom)
   bottom_min {A} S := by
     apply Subobject.forgetSlice_reflects
@@ -727,22 +729,22 @@ end overPreLogos
 section overDisjoint
 variable [DisjointBinaryCoproduct 𝒞]
 
-instance overPositivePreLogos (B : 𝒞) : PositivePreLogos (Over B) where
+@[expose] public instance overPositivePreLogos (B : 𝒞) : PositivePreLogos (Over B) where
 
 /-- The slice left injection `inl : X ⟶ X+Y` is monic (`Σ_B` reflects monos). -/
-theorem over_inl_monic {X Y : Over B} :
+public theorem over_inl_monic {X Y : Over B} :
     Monic (HasBinaryCoproducts.inl (𝒞 := Over B) (A := X) (B := Y)) :=
   sigma_reflects_mono (HasBinaryCoproducts.inl (𝒞 := Over B)) DisjointBinaryCoproduct.inl_monic
 
 /-- The slice right injection `inr : Y ⟶ X+Y` is monic. -/
-theorem over_inr_monic {X Y : Over B} :
+public theorem over_inr_monic {X Y : Over B} :
     Monic (HasBinaryCoproducts.inr (𝒞 := Over B) (A := X) (B := Y)) :=
   sigma_reflects_mono (HasBinaryCoproducts.inr (𝒞 := Over B)) DisjointBinaryCoproduct.inr_monic
 
 /-- The forgotten slice intersection is below the `𝒞`-intersection of the forgotten subobjects
     (`Σ_B` preserves the defining pullback): lift the forgotten slice pullback into the chosen
     base pullback. -/
-theorem forgetSlice_inter_le {Y : Over B} (S T : Subobject (Over B) Y) :
+public theorem forgetSlice_inter_le {Y : Over B} (S T : Subobject (Over B) Y) :
     Subobject.le (Subobject.forgetSlice Y (Subobject.inter S T))
                  (Subobject.inter (Subobject.forgetSlice Y S) (Subobject.forgetSlice Y T)) := by
   let pbc := HasPullbacks.has (Subobject.forgetSlice Y S).arr (Subobject.forgetSlice Y T).arr
@@ -755,7 +757,7 @@ theorem forgetSlice_inter_le {Y : Over B} (S T : Subobject (Over B) Y) :
     Sub 𝒞 Y.dom`:  injections are monic by `sigma_reflects_mono`; `inl ∩ inr ≤ ⊥` forgets to the
     `𝒞` disjointness through `forgetSlice_inter_le`; `⊤ ≤ inl ∪ inr` forgets to the `𝒞` union
     cover (the slice union/bottom/entire forget on the nose). -/
-instance overDisjointBinaryCoproduct (B : 𝒞) : DisjointBinaryCoproduct (Over B) where
+@[expose] public instance overDisjointBinaryCoproduct (B : 𝒞) : DisjointBinaryCoproduct (Over B) where
   inl_monic := over_inl_monic
   inr_monic := over_inr_monic
   inl_inter_inr {X Y} := by
@@ -788,7 +790,7 @@ end overDisjoint
 section overPreToposDisjoint
 variable [PreToposDisjoint 𝒞]
 
-instance overPreToposDisjoint (B : 𝒞) : PreToposDisjoint (Over B) where
+@[expose] public instance overPreToposDisjoint (B : 𝒞) : PreToposDisjoint (Over B) where
   toPositivePreLogos := overPositivePreLogos B
   effective := fun E hE => sliceIsEffective E hE
   inl_monic := over_inl_monic
@@ -855,26 +857,26 @@ variable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
     `case (pair (term≫inl) id) (pair (term≫inr) id)`.  An ISO (`distOPO_iso`); its `snd`
     component is the codiagonal `∇ = case id id` (`distOPO_snd`), which is the pin used by
     `choice_prod_pinned`. -/
-noncomputable def distOPO (B : 𝒞) :
+@[expose] public noncomputable def distOPO (B : 𝒞) :
     coprod B B ⟶ prod (coprod (one : 𝒞) one) B :=
   case (pair (term B ≫ inl) (Cat.id B)) (pair (term B ≫ inr) (Cat.id B))
 
 /-- The distributivity comparison's middle leg `(1×B)+(1×B) → (1+1)×B` (an iso by
     `complemented_legs_iso` for the distributivity-summand complemented pair). -/
-noncomputable def distComp (B : 𝒞) :
+@[expose] public noncomputable def distComp (B : 𝒞) :
     coprod (prod (one : 𝒞) B) (prod (one : 𝒞) B) ⟶ prod (coprod (one : 𝒞) one) B :=
   case (prodCoprodInl one one B) (prodCoprodInr one one B)
 
 /-- The distributivity comparison's prefix `(B+B) → (1×B)+(1×B)` (coproduct of the
     `B ≅ 1×B` iso, hence iso). -/
-noncomputable def distPre (B : 𝒞) :
+@[expose] public noncomputable def distPre (B : 𝒞) :
     coprod B B ⟶ coprod (prod (one : 𝒞) B) (prod (one : 𝒞) B) :=
   case (prodOneLeftInv B ≫ inl) (prodOneLeftInv B ≫ inr)
 
 /-- `distComp B` is iso: its two legs are exactly the distributivity-summand inclusions
     `prodCoprodInl/Inr`, a complemented pair (`prodCoprod_inter_le_bottom` /
     `prodCoprod_entire_le_union`), so `complemented_legs_iso` gives the inverse. -/
-theorem distComp_iso (B : 𝒞) : IsIso (distComp B) := by
+public theorem distComp_iso (B : 𝒞) : IsIso (distComp B) := by
   obtain ⟨ψ, ψinv, hψψ, hψinvψ, hl, hr⟩ :=
     complemented_legs_iso (prodCoprodInlSub one one B) (prodCoprodInrSub one one B)
       (prodCoprod_inter_le_bottom one one B) (prodCoprod_entire_le_union one one B)
@@ -882,7 +884,7 @@ theorem distComp_iso (B : 𝒞) : IsIso (distComp B) := by
   rw [hd]; exact ⟨ψinv, hψψ, hψinvψ⟩
 
 /-- `distPre B` is iso (coproduct of the `prodOneLeftInv`/`snd` iso pair). -/
-theorem distPre_iso (B : 𝒞) : IsIso (distPre B) := by
+public theorem distPre_iso (B : 𝒞) : IsIso (distPre B) := by
   refine ⟨case ((snd : prod (one : 𝒞) B ⟶ B) ≫ inl) ((snd : prod (one : 𝒞) B ⟶ B) ≫ inr),
     ?_, ?_⟩
   · refine (case_uniq _ _ _ ?_ ?_).trans
@@ -899,7 +901,7 @@ theorem distPre_iso (B : 𝒞) : IsIso (distPre B) := by
         Cat.id_comp]
 
 /-- `distOPO = distPre ≫ distComp` (both factor legs agree after `fst`/`snd`). -/
-theorem distOPO_factor (B : 𝒞) : distOPO B = distPre B ≫ distComp B := by
+public theorem distOPO_factor (B : 𝒞) : distOPO B = distPre B ≫ distComp B := by
   refine (case_uniq (A := B) (B := B) (pair (term B ≫ inl) (Cat.id B))
     (pair (term B ≫ inr) (Cat.id B)) (distPre B ≫ distComp B) ?_ ?_).symm
   · rw [← Cat.assoc, distPre, case_inl, Cat.assoc, distComp, case_inl]
@@ -918,7 +920,7 @@ theorem distOPO_factor (B : 𝒞) : distOPO B = distPre B ≫ distComp B := by
         show prodOneLeftInv B ≫ snd = Cat.id B from snd_pair _ _]
 
 /-- **PIECE B**: the distributivity comparison `(B+B) → (1+1)×B` is an ISO. -/
-theorem distOPO_iso (B : 𝒞) : IsIso (distOPO B) := by
+public theorem distOPO_iso (B : 𝒞) : IsIso (distOPO B) := by
   rw [distOPO_factor]
   obtain ⟨pinv, hp1, hp2⟩ := distPre_iso B
   obtain ⟨cinv, hc1, hc2⟩ := distComp_iso B
@@ -926,14 +928,14 @@ theorem distOPO_iso (B : 𝒞) : IsIso (distOPO B) := by
     by rw [Cat.assoc, ← Cat.assoc pinv, hp2, Cat.id_comp, hc2]⟩
 
 /-- `distOPO B` is monic (it is an iso). -/
-theorem distOPO_mono (B : 𝒞) : Monic (distOPO B) := by
+public theorem distOPO_mono (B : 𝒞) : Monic (distOPO B) := by
   obtain ⟨g, hfg, _⟩ := distOPO_iso B
   intro W u v huv
   have := congrArg (· ≫ g) huv
   simpa only [Cat.assoc, hfg, Cat.comp_id] using this
 
 /-- The pin: `distOPO B ≫ snd = ∇ = case id id` (the codiagonal on `B`). -/
-theorem distOPO_snd (B : 𝒞) :
+public theorem distOPO_snd (B : 𝒞) :
     distOPO B ≫ snd = case (Cat.id B) (Cat.id B) := by
   refine case_uniq _ _ _ ?_ ?_
   · rw [← Cat.assoc]; show (inl ≫ distOPO B) ≫ snd = _; rw [distOPO, case_inl, snd_pair]
@@ -950,7 +952,7 @@ theorem distOPO_snd (B : 𝒞) :
     alone, giving a witness `w : X.dom → R.src.dom`.  The slice value `w ≫ R̄.colB : X.dom → B+B`
     and `w` are *automatically* slice arrows (their composites with the structure maps collapse
     via `R`'s legs), exactly as in `slice_choice_of_dom_choice`. -/
-theorem slice_choice_codiag (A : 𝒞)
+public theorem slice_choice_codiag (A : 𝒞)
     (hch : Choice (coprod (one : 𝒞) one)) :
     Choice (coprod (HasTerminal.one : Over (prod A A)) HasTerminal.one) := by
   intro X R hent
@@ -996,22 +998,22 @@ theorem slice_choice_codiag (A : 𝒞)
 
 /-- The antidiagonal `(1+1) ↣ (1+1)×(1+1)`, `case (pair inl inr) (pair inr inl)` — the candidate
     complement of the diagonal `Δ_{1+1}`. -/
-noncomputable def adiag :
+@[expose] public noncomputable def adiag :
     coprod (one : 𝒞) one ⟶ prod (coprod (one : 𝒞) one) (coprod (one : 𝒞) one) :=
   case (pair (inl : (one : 𝒞) ⟶ _) inr) (pair (inr : (one : 𝒞) ⟶ _) inl)
 
-theorem adiag_fst : adiag (𝒞 := 𝒞) ≫ fst = case inl inr := by
+public theorem adiag_fst : adiag (𝒞 := 𝒞) ≫ fst = case inl inr := by
   refine case_uniq _ _ _ ?_ ?_
   · rw [← Cat.assoc]; show (inl ≫ adiag) ≫ fst = _; rw [adiag, case_inl, fst_pair]
   · rw [← Cat.assoc]; show (inr ≫ adiag) ≫ fst = _; rw [adiag, case_inr, fst_pair]
 
-theorem adiag_snd : adiag (𝒞 := 𝒞) ≫ snd = case inr inl := by
+public theorem adiag_snd : adiag (𝒞 := 𝒞) ≫ snd = case inr inl := by
   refine case_uniq _ _ _ ?_ ?_
   · rw [← Cat.assoc]; show (inl ≫ adiag) ≫ snd = _; rw [adiag, case_inl, snd_pair]
   · rw [← Cat.assoc]; show (inr ≫ adiag) ≫ snd = _; rw [adiag, case_inr, snd_pair]
 
 /-- `adiag` is monic: post-`fst` gives `case inl inr = id`, which already cancels. -/
-theorem adiag_mono : Monic (adiag (𝒞 := 𝒞)) := by
+public theorem adiag_mono : Monic (adiag (𝒞 := 𝒞)) := by
   intro W u v huv
   have hf : u ≫ case inl inr = v ≫ case inl inr := by
     have := congrArg (· ≫ fst) huv; simpa only [Cat.assoc, adiag_fst] using this
@@ -1020,8 +1022,8 @@ theorem adiag_mono : Monic (adiag (𝒞 := 𝒞)) := by
   rw [hid1, Cat.comp_id, Cat.comp_id] at hf; exact hf
 
 /-- `case inr inl` (the swap on `1+1`) precomposed with `inl` is `inr`, and with `inr` is `inl`. -/
-theorem inl_swap : (inl : (one : 𝒞) ⟶ coprod one one) ≫ case inr inl = inr := case_inl _ _
-theorem inr_swap : (inr : (one : 𝒞) ⟶ coprod one one) ≫ case inr inl = inl := case_inr _ _
+public theorem inl_swap : (inl : (one : 𝒞) ⟶ coprod one one) ≫ case inr inl = inr := case_inl _ _
+public theorem inr_swap : (inr : (one : 𝒞) ⟶ coprod one one) ≫ case inr inl = inl := case_inr _ _
 
 -- `le_bottom_of_map_to_bottom` (a subobject whose domain maps to any bottom is `≤ ⊥`) is now the
 -- canonical `Freyd.le_bottom_of_map_to_bottom` in `S1_62` (DRY — was duplicated here).
@@ -1030,7 +1032,7 @@ theorem inr_swap : (inr : (one : 𝒞) ⟶ coprod one one) ≫ case inr inl = in
     INITIAL domain: on the `inl`-part of `X` the swap turns `inl` into `inr`, an `inl/inr` clash,
     so that part is `≤ ⊥`; likewise the `inr`-part; the two cover `X`, so `X` itself is `≤ ⊥`.
     Returns `entire X ≤ ⊥ X` (i.e. `id_X` factors through `⊥`, so `X` is initial). -/
-theorem swap_fixed_le_bottom {X : 𝒞} (g : X ⟶ coprod (one : 𝒞) one)
+public theorem swap_fixed_le_bottom {X : 𝒞} (g : X ⟶ coprod (one : 𝒞) one)
     (hg : g ≫ case inr inl = g) :
     (Subobject.entire X).le (PreLogos.bottom X) := by
   let C := coprod (one : 𝒞) one
@@ -1082,47 +1084,47 @@ theorem swap_fixed_le_bottom {X : 𝒞} (g : X ⟶ coprod (one : 𝒞) one)
   exact Subobject.le_trans hentU (HasSubobjectUnions.union_min A₁ A₂ _ hA₁bot hA₂bot)
 
 /-- The diagonal subobject `Δ_{1+1}` of `(1+1)×(1+1)`. -/
-noncomputable def diagSub11 : Subobject 𝒞 (prod (coprod (one : 𝒞) one) (coprod one one)) :=
+@[expose] public noncomputable def diagSub11 : Subobject 𝒞 (prod (coprod (one : 𝒞) one) (coprod one one)) :=
   diagSub (coprod (one : 𝒞) one)
 
 /-- The antidiagonal subobject `Δᶜ_{1+1}` of `(1+1)×(1+1)`, candidate complement of `Δ`. -/
-noncomputable def adiagSub : Subobject 𝒞 (prod (coprod (one : 𝒞) one) (coprod one one)) :=
+@[expose] public noncomputable def adiagSub : Subobject 𝒞 (prod (coprod (one : 𝒞) one) (coprod one one)) :=
   ⟨coprod (one : 𝒞) one, adiag, adiag_mono⟩
 
 /-- `case inl inr = id` on `1+1` (the `fst` leg of `adiag`). -/
-theorem case_inl_inr_id : case (inl : (one : 𝒞) ⟶ _) inr = Cat.id (coprod one one) :=
+public theorem case_inl_inr_id : case (inl : (one : 𝒞) ⟶ _) inr = Cat.id (coprod one one) :=
   (case_uniq inl inr (Cat.id _) (Cat.comp_id _) (Cat.comp_id _)).symm
 
 /-- The diagonal corners `inl ≫ Δ = pair inl inl`, `inr ≫ Δ = pair inr inr`. -/
-theorem inl_diag11 : (inl : (one : 𝒞) ⟶ _) ≫ diag (coprod one one) = pair inl inl := by
+public theorem inl_diag11 : (inl : (one : 𝒞) ⟶ _) ≫ diag (coprod one one) = pair inl inl := by
   apply fst_snd_jointly_monic
   · rw [Cat.assoc, show diag (coprod (one : 𝒞) one) ≫ fst = Cat.id (coprod one one)
         from fst_pair _ _, Cat.comp_id, fst_pair]
   · rw [Cat.assoc, show diag (coprod (one : 𝒞) one) ≫ snd = Cat.id (coprod one one)
         from snd_pair _ _, Cat.comp_id, snd_pair]
-theorem inr_diag11 : (inr : (one : 𝒞) ⟶ _) ≫ diag (coprod one one) = pair inr inr := by
+public theorem inr_diag11 : (inr : (one : 𝒞) ⟶ _) ≫ diag (coprod one one) = pair inr inr := by
   apply fst_snd_jointly_monic
   · rw [Cat.assoc, show diag (coprod (one : 𝒞) one) ≫ fst = Cat.id (coprod one one)
         from fst_pair _ _, Cat.comp_id, fst_pair]
   · rw [Cat.assoc, show diag (coprod (one : 𝒞) one) ≫ snd = Cat.id (coprod one one)
         from snd_pair _ _, Cat.comp_id, snd_pair]
 /-- The antidiagonal corners `inl ≫ adiag = pair inl inr`, `inr ≫ adiag = pair inr inl`. -/
-theorem inl_adiag : (inl : (one : 𝒞) ⟶ _) ≫ adiag = pair inl inr := by rw [adiag, case_inl]
-theorem inr_adiag : (inr : (one : 𝒞) ⟶ _) ≫ adiag = pair inr inl := by rw [adiag, case_inr]
+public theorem inl_adiag : (inl : (one : 𝒞) ⟶ _) ≫ adiag = pair inl inr := by rw [adiag, case_inl]
+public theorem inr_adiag : (inr : (one : 𝒞) ⟶ _) ≫ adiag = pair inr inl := by rw [adiag, case_inr]
 
 /-- The four `distOPO`-corner identities: `inl ≫ term ≫ inl = inl`, etc. (`term` collapses `1+1`
     to `1`, then `inl`/`inr` re-injects), used to compute `distOPO`'s summand legs. -/
-theorem term_inl_self (x : (one : 𝒞) ⟶ coprod one one) :
+public theorem term_inl_self (x : (one : 𝒞) ⟶ coprod one one) :
     x ≫ term (coprod one one) ≫ (inl : (one : 𝒞) ⟶ coprod one one) = inl := by
   rw [← Cat.assoc, show x ≫ term (coprod one one) = Cat.id one from term_uniq _ _, Cat.id_comp]
-theorem term_inr_self (x : (one : 𝒞) ⟶ coprod one one) :
+public theorem term_inr_self (x : (one : 𝒞) ⟶ coprod one one) :
     x ≫ term (coprod one one) ≫ (inr : (one : 𝒞) ⟶ coprod one one) = inr := by
   rw [← Cat.assoc, show x ≫ term (coprod one one) = Cat.id one from term_uniq _ _, Cat.id_comp]
 
 /-- The two summand legs of `distOPO (1+1)`:
     `inl ≫ distOPO = case (pair inl inl) (pair inl inr)` (`= case Δ-corner adiag-corner`) and
     `inr ≫ distOPO = case (pair inr inl) (pair inr inr)`. -/
-theorem inl_distOPO :
+public theorem inl_distOPO :
     (inl : coprod (one : 𝒞) one ⟶ _) ≫ distOPO (coprod one one)
       = case (pair inl inl) (pair inl inr) := by
   rw [distOPO, case_inl]
@@ -1133,7 +1135,7 @@ theorem inl_distOPO :
   · apply fst_snd_jointly_monic
     · rw [Cat.assoc, fst_pair, fst_pair]; exact term_inl_self _
     · rw [Cat.assoc, snd_pair, Cat.comp_id, snd_pair]
-theorem inr_distOPO :
+public theorem inr_distOPO :
     (inr : coprod (one : 𝒞) one ⟶ _) ≫ distOPO (coprod one one)
       = case (pair inr inl) (pair inr inr) := by
   rw [distOPO, case_inr]
@@ -1151,7 +1153,7 @@ theorem inr_distOPO :
     its domain is initial (`swap_fixed_le_bottom`).  ENTIRE: the distributivity iso
     `distOPO (1+1) : (1+1)+(1+1) ≅ (1+1)²` is a cover that factors through `Δ ∪ Δᶜ` (its four corners
     are the four points, two on `Δ`, two on `Δᶜ`), so its image — entire — is `≤ Δ ∪ Δᶜ`. -/
-theorem one_one_decidable : DecidableObject (HasBinaryCoproducts.coprod (one : 𝒞) one) := by
+public theorem one_one_decidable : DecidableObject (HasBinaryCoproducts.coprod (one : 𝒞) one) := by
   classical
   refine ⟨adiagSub, ?_, ?_⟩
   · -- DISJOINTNESS (universal form): any S ≤ Δ and S ≤ adiag has S ≤ ⊥.
@@ -1227,7 +1229,7 @@ theorem one_one_decidable : DecidableObject (HasBinaryCoproducts.coprod (one : �
 /-- A cover whose DOMAIN is a choice object splits (single-object projectivity, §1.57).
     `(graph f)°` is entire because its left leg `f` is a cover; `Choice (domain)` extracts the
     section. -/
-theorem cover_splits_of_dom_choice {𝒟 : Type u} [Cat.{v} 𝒟] [RegularCategory 𝒟]
+public theorem cover_splits_of_dom_choice {𝒟 : Type u} [Cat.{v} 𝒟] [RegularCategory 𝒟]
     {X Y : 𝒟} (f : X ⟶ Y) (hcov : Cover f) (hX : Choice X) :
     ∃ s : Y ⟶ X, s ≫ f = Cat.id Y := by
   have hent : Entire ((graph f)°) :=
@@ -1241,7 +1243,7 @@ theorem cover_splits_of_dom_choice {𝒟 : Type u} [Cat.{v} 𝒟] [RegularCatego
     `IsComplemented (forgetSlice U)` in `𝒞`.  Complement = `forgetSlice U₂`; both clauses
     transport through the `forgetSlice`/`liftSlice` order-iso (`forgetSlice` of `bottom`/`union`/
     `entire` are on the nose). -/
-theorem forgetSlice_isComplemented {B : 𝒞} {Y : Over B} (U : Subobject (Over B) Y)
+public theorem forgetSlice_isComplemented {B : 𝒞} {Y : Over B} (U : Subobject (Over B) Y)
     (hU : IsComplemented U) : IsComplemented (Subobject.forgetSlice Y U) := by
   obtain ⟨U₂, hdisj, hcover⟩ := hU
   refine ⟨Subobject.forgetSlice Y U₂, ?_, ?_⟩

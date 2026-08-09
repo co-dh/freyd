@@ -27,8 +27,10 @@
   of the whole line: `Classical.choice` only — NO `SorryAx`.
 -/
 
-import Freyd.S1_91
-import Freyd.S1_85
+module
+
+public import Freyd.S1_91
+public import Freyd.S1_85
 
 universe v u
 
@@ -52,7 +54,7 @@ variable [∀ C : 𝒞, HasPowerObject C] [HasEqualizers 𝒞]
     universality field `classify_exists`, with NO `[Topos 𝒞]` hypothesis (unlike the
     S1_91 uses of this same fact, which sit under a file-wide `[Topos 𝒞]`), so it
     depends only on power objects. -/
-theorem powerClassify_pullback_iso {C Z : 𝒞} (R : BinRel 𝒞 Z C) :
+public theorem powerClassify_pullback_iso {C Z : 𝒞} (R : BinRel 𝒞 Z C) :
     RelHom R (relPullback (powerClassify R) HasPowerObject.mem) ∧
     RelHom (relPullback (powerClassify R) HasPowerObject.mem) R :=
   (HasPowerObject.is_universal.classify_exists Z R).choose_spec
@@ -80,7 +82,7 @@ theorem powerObj_hom_ext {C Z : 𝒞} (f g : Z ⟶ HasPowerObject.powerObj (C :=
 /-- Fold the `A`-index of a relation `R ⊆ (A×X) × B` into its target:
     `R̂ ⊆ X × (A×B)`, with `colA := R.colA ≫ snd : src → X` and
     `colB := ⟨R.colA ≫ fst, R.colB⟩ : src → A×B`. -/
-def relUncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) : BinRel 𝒞 X (prod A B) where
+@[expose] public def relUncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) : BinRel 𝒞 X (prod A B) where
   src  := R.src
   colA := R.colA ≫ snd
   colB := pair (R.colA ≫ fst) R.colB
@@ -99,7 +101,7 @@ def relUncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) : BinRel 𝒞 X (pr
 
 /-- Inverse: unfold a relation `S ⊆ X × (A×B)` to `Š ⊆ (A×X) × B`, with
     `colA := ⟨S.colB ≫ fst, S.colA⟩ : src → A×X` and `colB := S.colB ≫ snd`. -/
-def relCurry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) : BinRel 𝒞 (prod A X) B where
+@[expose] public def relCurry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) : BinRel 𝒞 (prod A X) B where
   src  := S.src
   colA := pair (S.colB ≫ fst) S.colA
   colB := S.colB ≫ snd
@@ -118,7 +120,7 @@ def relCurry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) : BinRel 𝒞 (prod A
 /-- `relCurry` and `relUncurry` are mutually inverse on the nose (same `src`,
     legs equal by product-eta).  Stated as the two round-trip equalities of the
     *spans* (`colA`,`colB`), which is what the `RelHom` bijection needs. -/
-theorem relCurry_uncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
+public theorem relCurry_uncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
     (relCurry (relUncurry R)).colA = R.colA ∧ (relCurry (relUncurry R)).colB = R.colB := by
   refine ⟨?_, ?_⟩
   · show pair ((pair (R.colA ≫ fst) R.colB) ≫ fst) (R.colA ≫ snd) = R.colA
@@ -126,7 +128,7 @@ theorem relCurry_uncurry {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
   · show (pair (R.colA ≫ fst) R.colB) ≫ snd = R.colB
     rw [snd_pair]
 
-theorem relUncurry_curry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
+public theorem relUncurry_curry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
     (relUncurry (relCurry S)).colA = S.colA ∧ (relUncurry (relCurry S)).colB = S.colB := by
   refine ⟨?_, ?_⟩
   · show (pair (S.colB ≫ fst) S.colA) ≫ snd = S.colA
@@ -142,13 +144,13 @@ theorem relUncurry_curry {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
   three we need here (the proofs use only products/pullbacks, no classifier). -/
 
 /-- Transitivity of `RelHom` (local, classifier-free). -/
-theorem relHom_trans923 {A C : 𝒞} {R S T : BinRel 𝒞 A C}
+public theorem relHom_trans923 {A C : 𝒞} {R S T : BinRel 𝒞 A C}
     (h₁ : RelHom R S) (h₂ : RelHom S T) : RelHom R T := by
   obtain ⟨h, hA, hB⟩ := h₁; obtain ⟨k, kA, kB⟩ := h₂
   exact ⟨h ≫ k, by rw [Cat.assoc, kA, hA], by rw [Cat.assoc, kB, hB]⟩
 
 /-- `RelHom` is preserved by pulling back along a fixed `g` (local copy). -/
-theorem relHom_pullback923 {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
+public theorem relHom_pullback923 {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
     (h : RelHom R S) : RelHom (relPullback g R) (relPullback g S) := by
   obtain ⟨w, hwA, hwB⟩ := h
   let P  := HasPullbacks.has g R.colA
@@ -167,7 +169,7 @@ theorem relHom_pullback923 {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
     _ = P.cone.π₂ ≫ R.colB := congrArg (P.cone.π₂ ≫ ·) hwB
 
 /-- **Naturality of `Λ`** (local, classifier-free): `Λ(relPullback g R) = g ≫ Λ(R)`. -/
-theorem powerClassify_natural923 {C A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶ A) :
+public theorem powerClassify_natural923 {C A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶ A) :
     powerClassify (relPullback g R) = g ≫ powerClassify R := by
   have hR := powerClassify_pullback_iso R
   obtain ⟨hc1, hc2⟩ := relPullback_comp g (powerClassify R) HasPowerObject.mem
@@ -191,7 +193,7 @@ theorem powerClassify_natural923 {C A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶
 
 /-- **Step A**: a functional-total relation `R` (left leg monic + cover) is the
     graph of a unique morphism `m : Y ⟶ B`, with mutual `RelHom`s `R ↔ graph m`. -/
-theorem functional_total_relation_is_graph {Y B : 𝒞} (R : BinRel 𝒞 Y B)
+public theorem functional_total_relation_is_graph {Y B : 𝒞} (R : BinRel 𝒞 Y B)
     (hmono : Monic R.colA) (hcover : Cover R.colA) :
     ∃ m : Y ⟶ B, (RelHom R (graph m) ∧ RelHom (graph m) R) ∧
       ∀ m' : Y ⟶ B, (RelHom R (graph m') ∧ RelHom (graph m') R) → m' = m := by
@@ -232,13 +234,13 @@ theorem functional_total_relation_is_graph {Y B : 𝒞} (R : BinRel 𝒞 Y B)
   equal names force `h = k`. -/
 
 /-- The singleton (description) map `{·} : B ⟶ [B]`, naming the diagonal. -/
-noncomputable def singletonMap923 (B : 𝒞) : B ⟶ HasPowerObject.powerObj (C := B) :=
+@[expose] public noncomputable def singletonMap923 (B : 𝒞) : B ⟶ HasPowerObject.powerObj (C := B) :=
   powerClassify (graph (Cat.id B))
 
 /-- Pulling the diagonal `graph (id B)` back along `h : X ⟶ B` gives `graph h`
     (up to relation iso, both directions).  The pullback of `Δ_B` along `h` is
     `{(x) | (h x, x)} = graph h`; concretely the pullback span has a section. -/
-theorem relPullback_graph_id {X B : 𝒞} (h : X ⟶ B) :
+public theorem relPullback_graph_id {X B : 𝒞} (h : X ⟶ B) :
     RelHom (graph h) (relPullback h (graph (Cat.id B))) ∧
     RelHom (relPullback h (graph (Cat.id B))) (graph h) := by
   -- graph h : src=X, colA=id X, colB=h.  relPullback h (graph id): pullback of
@@ -265,7 +267,7 @@ theorem relPullback_graph_id {X B : 𝒞} (h : X ⟶ B) :
       rw [Cat.comp_id, hw, Cat.comp_id]
 
 /-- Naming a graph: `h ≫ singletonMap923 B = Λ(graph h)`. -/
-theorem singletonMapNaming923 {X B : 𝒞} (h : X ⟶ B) :
+public theorem singletonMapNaming923 {X B : 𝒞} (h : X ⟶ B) :
     h ≫ singletonMap923 B = powerClassify (graph h) := by
   rw [singletonMap923, ← powerClassify_natural923 (graph (Cat.id B)) h]
   -- Goal: Λ(relPullback h (graph id)) = Λ(graph h).  Both classify the relation
@@ -280,7 +282,7 @@ theorem singletonMapNaming923 {X B : 𝒞} (h : X ⟶ B) :
 /-- **Step B**: the singleton map `{·} : B ↣ [B]` is MONIC.  If `h, k : X ⟶ B`
     have `h ≫ {·} = k ≫ {·}`, both name `graph h` resp. `graph k`; the names being
     equal makes `graph h ≅ graph k`, whose right legs are `h, k`, forcing `h = k`. -/
-theorem singletonMapMonic923 (B : 𝒞) : Monic (singletonMap923 (𝒞 := 𝒞) B) := by
+public theorem singletonMapMonic923 (B : 𝒞) : Monic (singletonMap923 (𝒞 := 𝒞) B) := by
   intro X h k hΔ
   -- Λ(graph h) = Λ(graph k).
   have hΛ : powerClassify (graph h) = powerClassify (graph k) := by
@@ -310,7 +312,7 @@ theorem singletonMapMonic923 (B : 𝒞) : Monic (singletonMap923 (𝒞 := 𝒞) 
 /-- **Baseable transports across isomorphism.**  If `B ≅ B'` and `B'` is baseable,
     so is `B`: the representing object/eval for `B` at `A` are those of `B'`, with
     `ev` post-composed by the iso `B' → B`. -/
-theorem baseable_of_iso {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
+public theorem baseable_of_iso {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
     (he : e ≫ e' = Cat.id B) (he' : e' ≫ e = Cat.id B') (hB' : Baseable B') :
     Baseable B := by
   intro A
@@ -340,7 +342,7 @@ theorem baseable_of_iso {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
   concrete: it says transposing-then-reindexing equals reindexing-then-transposing.
   Both sides have the SAME `src` up to a canonical iso of pullback apices; we build
   the two `RelHom`s by hand from the pullback universal properties. -/
-theorem relCurry_natural {A X P C : 𝒞} (g : X ⟶ P) (S : BinRel 𝒞 P (prod A C)) :
+public theorem relCurry_natural {A X P C : 𝒞} (g : X ⟶ P) (S : BinRel 𝒞 P (prod A C)) :
     RelHom (relPullback (prodMap A X P g) (relCurry S)) (relCurry (relPullback g S)) ∧
     RelHom (relCurry (relPullback g S)) (relPullback (prodMap A X P g) (relCurry S)) := by
   -- LHS apex: PL := pullback of (prodMap A X P g) and (relCurry S).colA = pair (S.colB≫fst) S.colA.
@@ -423,7 +425,7 @@ theorem relCurry_natural {A X P C : 𝒞} (g : X ⟶ P) (S : BinRel 𝒞 P (prod
 /-- The `relCurry∘relUncurry` round trip is the identity relation, both ways.
     (`relCurry (relUncurry R)` shares `src` with `R` on the nose; legs equal by
     `relCurry_uncurry`.) -/
-theorem relCurry_uncurry_iso {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
+public theorem relCurry_uncurry_iso {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
     RelHom R (relCurry (relUncurry R)) ∧ RelHom (relCurry (relUncurry R)) R := by
   obtain ⟨hA, hB⟩ := relCurry_uncurry R
   refine ⟨⟨Cat.id R.src, ?_, ?_⟩, ⟨Cat.id R.src, ?_, ?_⟩⟩
@@ -433,7 +435,7 @@ theorem relCurry_uncurry_iso {A X B : 𝒞} (R : BinRel 𝒞 (prod A X) B) :
   · show Cat.id R.src ≫ R.colB = (relCurry (relUncurry R)).colB; rw [Cat.id_comp, hB]
 
 /-- The `relUncurry∘relCurry` round trip is the identity relation, both ways. -/
-theorem relUncurry_curry_iso {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
+public theorem relUncurry_curry_iso {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
     RelHom S (relUncurry (relCurry S)) ∧ RelHom (relUncurry (relCurry S)) S := by
   obtain ⟨hA, hB⟩ := relUncurry_curry S
   refine ⟨⟨Cat.id S.src, ?_, ?_⟩, ⟨Cat.id S.src, ?_, ?_⟩⟩
@@ -444,7 +446,7 @@ theorem relUncurry_curry_iso {A X B : 𝒞} (S : BinRel 𝒞 X (prod A B)) :
 
 /-- `relCurry` is functorial on `RelHom`: a witness `R ⊂ S` of relations to `A×C`
     transports to `relCurry R ⊂ relCurry S` (same witness, repackaged legs). -/
-theorem relCurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 X (prod A C)} (h : RelHom R S) :
+public theorem relCurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 X (prod A C)} (h : RelHom R S) :
     RelHom (relCurry R) (relCurry S) := by
   obtain ⟨w, hA, hB⟩ := h
   -- relCurry R: src=R.src, colA = pair (R.colB≫fst) R.colA, colB = R.colB≫snd.
@@ -459,7 +461,7 @@ theorem relCurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 X (prod A C)} (h : Rel
     rw [← Cat.assoc, hB]
 
 /-- `relUncurry` is functorial on `RelHom`. -/
-theorem relUncurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 (prod A X) C} (h : RelHom R S) :
+public theorem relUncurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 (prod A X) C} (h : RelHom R S) :
     RelHom (relUncurry R) (relUncurry S) := by
   obtain ⟨w, hA, hB⟩ := h
   -- relUncurry R: src=R.src, colA = R.colA≫snd, colB = pair (R.colA≫fst) R.colB.
@@ -479,11 +481,11 @@ theorem relUncurry_relHom {A X C : 𝒞} {R S : BinRel 𝒞 (prod A X) C} (h : R
   arbitrary `IsUniversalRel U` and instantiate it twice. -/
 
 /-- Classifying map of `R` by a universal relation `U : BinRel P C`. -/
-noncomputable def univClassify923 {P C : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
+@[expose] public noncomputable def univClassify923 {P C : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
     {Z : 𝒞} (R : BinRel 𝒞 Z C) : Z ⟶ P :=
   (hU.classify_exists Z R).choose
 
-theorem univClassifyIso923 {P C : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
+public theorem univClassifyIso923 {P C : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
     {Z : 𝒞} (R : BinRel 𝒞 Z C) :
     RelHom R (relPullback (univClassify923 hU R) U) ∧
     RelHom (relPullback (univClassify923 hU R) U) R :=
@@ -501,7 +503,7 @@ theorem univClassifyNatural923 {P C A X : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUn
      relHom_trans923 hc2 (relHom_pullback923 g hR.2)⟩
 
 /-- Extensionality: maps into `P` are determined by the `U`-relation they pull back. -/
-theorem univHomExt923 {P C Z : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
+public theorem univHomExt923 {P C Z : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
     (f g : Z ⟶ P)
     (h : RelHom (relPullback f U) (relPullback g U) ∧ RelHom (relPullback g U) (relPullback f U)) :
     f = g :=
@@ -513,7 +515,7 @@ theorem univHomExt923 {P C Z : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel 
 /-- **β-relation lemma** for a universal `U : BinRel P C`.  For `h : X ⟶ [A×C]` and
     `ev := Λ_U(relCurry ∈_{A×C})`, the relation classified by `prodMap h ≫ ev` is
     `relCurry (relPullback h ∈_{A×C})`. -/
-theorem betaRelU {A X C P : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
+public theorem betaRelU {A X C P : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
     (h : X ⟶ HasPowerObject.powerObj (C := prod A C)) :
     RelHom (relPullback (prodMap A X _ h ≫ univClassify923 hU (relCurry (HasPowerObject.mem (C := prod A C)))) U)
            (relCurry (relPullback h (HasPowerObject.mem (C := prod A C)))) ∧
@@ -532,7 +534,7 @@ theorem betaRelU {A X C P : 𝒞} {U : BinRel 𝒞 P C} (hU : IsUniversalRel U)
     `ev := Λ_U(relCurry ∈_{A×C})`.  The β/η bijection is the representability iso
     `P^A ≅ [A×C]`, assembled from the relation transpose `relCurry`/`relUncurry`,
     its naturality `relCurry_natural`, and the universality of `U`. -/
-theorem baseable_of_universalRel {P C : 𝒞} (U : BinRel 𝒞 P C) (hU : IsUniversalRel U) :
+public theorem baseable_of_universalRel {P C : 𝒞} (U : BinRel 𝒞 P C) (hU : IsUniversalRel U) :
     Baseable P := by
   intro A
   refine ⟨HasPowerObject.powerObj (C := prod A C),
@@ -563,7 +565,7 @@ theorem baseable_of_universalRel {P C : 𝒞} (U : BinRel 𝒞 P C) (hU : IsUniv
     · exact ⟨(powerClassify_pullback_iso _).1, (powerClassify_pullback_iso _).2⟩
 
 /-- **(1′) Every power object `[C]` is baseable.** -/
-theorem baseable_powerObj (C : 𝒞) : Baseable (HasPowerObject.powerObj (C := C)) :=
+public theorem baseable_powerObj (C : 𝒞) : Baseable (HasPowerObject.powerObj (C := C)) :=
   baseable_of_universalRel HasPowerObject.mem HasPowerObject.is_universal
 
 /-! ### (2)+(3)+(4): `Ω` baseable, `B` as an equalizer, every object baseable
@@ -579,10 +581,10 @@ variable [Topos 𝒞]
 /-- The terminal object as seen by the subobject classifier (the domain of `true`).
     Naming it explicitly sidesteps the `HasTerminal` diamond in `Topos`
     (`Topos.toHasTerminal` vs `…toHasSubobjectClassifier.toHasTerminal`). -/
-abbrev oneΩ : 𝒞 := @one 𝒞 _ (HasSubobjectClassifier.toHasTerminal)
+@[expose] public abbrev oneΩ : 𝒞 := @one 𝒞 _ (HasSubobjectClassifier.toHasTerminal)
 
 /-- The universal relation packaging the universal subobject `t : 1 ↣ Ω`. -/
-def trueRel : BinRel 𝒞 HasSubobjectClassifier.omega oneΩ where
+@[expose] public def trueRel : BinRel 𝒞 HasSubobjectClassifier.omega oneΩ where
   src  := oneΩ
   colA := HasSubobjectClassifier.true
   colB := @term 𝒞 _ HasSubobjectClassifier.toHasTerminal oneΩ
@@ -591,19 +593,19 @@ def trueRel : BinRel 𝒞 HasSubobjectClassifier.omega oneΩ where
     exact HasSubobjectClassifier.true_monic u v hA
 
 /-- `term` into the classifier's terminal (avoids the `HasTerminal` diamond). -/
-abbrev termΩ (X : 𝒞) : X ⟶ oneΩ := @term 𝒞 _ HasSubobjectClassifier.toHasTerminal X
+@[expose] public abbrev termΩ (X : 𝒞) : X ⟶ oneΩ := @term 𝒞 _ HasSubobjectClassifier.toHasTerminal X
 
-theorem termΩ_uniq {X : 𝒞} (f g : X ⟶ oneΩ) : f = g :=
+public theorem termΩ_uniq {X : 𝒞} (f g : X ⟶ oneΩ) : f = g :=
   @term_uniq 𝒞 _ HasSubobjectClassifier.toHasTerminal X f g
 
 /-- A relation targeted at `1` (the classifier's terminal) has a monic left leg. -/
-theorem relTo1_colA_mono {Z : 𝒞} (R : BinRel 𝒞 Z oneΩ) : Monic R.colA := by
+public theorem relTo1_colA_mono {Z : 𝒞} (R : BinRel 𝒞 Z oneΩ) : Monic R.colA := by
   intro W u v huv
   exact R.isMonicPair u v huv (termΩ_uniq _ _)
 
 /-- **(2-core) `Ω` carries a universal relation targeted at `1`.**  Classifying a
     relation `R : BinRel Z 1` is classifying its monic left leg via `χ`. -/
-theorem trueRel_universal : IsUniversalRel (trueRel (𝒞 := 𝒞)) := by
+public theorem trueRel_universal : IsUniversalRel (trueRel (𝒞 := 𝒞)) := by
   constructor
   · -- classify_exists.
     intro Z R
@@ -681,14 +683,14 @@ theorem trueRel_universal : IsUniversalRel (trueRel (𝒞 := 𝒞)) := by
     rw [key f hf, key g hg]
 
 /-- **(2) `Ω` is baseable.** -/
-theorem baseable_omega : Baseable (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
+public theorem baseable_omega : Baseable (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
   baseable_of_universalRel trueRel trueRel_universal
 
 /-- **(3)+(4) Every object `B` is baseable.**  `B` is the equalizer of
     `χ := χ_{·} , ⊤∘! : [B] ⇉ Ω` (the classifying square of the singleton mono
     `{·} : B ↣ [B]` makes `B` the pullback of `t` along `χ`, i.e. that equalizer).
     `[B]` and `Ω` are baseable by (1),(2), and §1.859 closes the equalizer. -/
-theorem all_baseable (B : 𝒞) : Baseable B := by
+public theorem all_baseable (B : 𝒞) : Baseable B := by
   -- χ classifies the singleton mono; t∘! the constant ⊤.
   let m  := singletonMap923 B
   have hm : Monic m := singletonMapMonic923 B

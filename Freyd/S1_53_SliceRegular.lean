@@ -23,14 +23,16 @@
   Everything is constructive and uses only this repo's hand-built `Cat`.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_26
-import Freyd.S1_42
-import Freyd.S1_44
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_53
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_26
+public import Freyd.S1_42
+public import Freyd.S1_44
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_53
 
 
 universe v u
@@ -47,12 +49,12 @@ variable [hpull : HasPullbacks 𝒞]
   `overPullbackπ₁/π₂`, `overPullbackLift`, …) as a `HasPullbacks` instance. -/
 
 /-- The pullback cone in `A/B` of a slice cospan `m, n`. -/
-def overPullbackCone {B : 𝒞} {X Y Z : Over B} (m : X ⟶ Z) (n : Y ⟶ Z) :
+@[expose] public def overPullbackCone {B : 𝒞} {X Y Z : Over B} (m : X ⟶ Z) (n : Y ⟶ Z) :
     Cone m n :=
   ⟨overPullbackPt m n, overPullbackπ₁ m n, overPullbackπ₂ m n, overPullback_sq m n⟩
 
 /-- **§1.441**: `A/B` has all pullbacks (when `A` does). -/
-instance overHasPullbacks (B : 𝒞) : HasPullbacks (Over B) where
+@[expose] public instance overHasPullbacks (B : 𝒞) : HasPullbacks (Over B) where
   has m n :=
     { cone := overPullbackCone m n
       lift := fun c => overPullbackLift m n c.π₁ c.π₂ c.w
@@ -73,24 +75,24 @@ section overProd
 variable {B : 𝒞} (X Y : Over B)
 
 /-- The base pullback of the two structure maps `X.hom`, `Y.hom`. -/
-private def _prodPB : HasPullback X.hom Y.hom := hpull.has X.hom Y.hom
+@[expose] public def _prodPB : HasPullback X.hom Y.hom := hpull.has X.hom Y.hom
 
 /-- The product object `X ×_B Y` in `A/B`: the base pullback point, with structure
     map `π₁ ≫ X.hom` (= `π₂ ≫ Y.hom`). -/
-def overProdPt : Over B := ⟨(_prodPB X Y).cone.pt, (_prodPB X Y).cone.π₁ ≫ X.hom⟩
+@[expose] public def overProdPt : Over B := ⟨(_prodPB X Y).cone.pt, (_prodPB X Y).cone.π₁ ≫ X.hom⟩
 
 /-- First projection `X ×_B Y → X`. -/
-def overProdFst : OverHom (overProdPt X Y) X := ⟨(_prodPB X Y).cone.π₁, rfl⟩
+@[expose] public def overProdFst : OverHom (overProdPt X Y) X := ⟨(_prodPB X Y).cone.π₁, rfl⟩
 
 /-- Second projection `X ×_B Y → Y`.  Its over-hom law is the pullback square. -/
-def overProdSnd : OverHom (overProdPt X Y) Y :=
+@[expose] public def overProdSnd : OverHom (overProdPt X Y) Y :=
   ⟨(_prodPB X Y).cone.π₂, ((_prodPB X Y).cone.w).symm⟩
 
 variable {X Y}
 
 /-- Pairing into `X ×_B Y`: given `a : W → X`, `b : W → Y` over `B`, the base lift of
     the cone `(a.f, b.f)` (which commutes over `B` since `a.f ≫ X.hom = W.hom = b.f ≫ Y.hom`). -/
-def overProdPair {W : Over B} (a : OverHom W X) (b : OverHom W Y) :
+@[expose] public def overProdPair {W : Over B} (a : OverHom W X) (b : OverHom W Y) :
     OverHom W (overProdPt X Y) :=
   let hbase : a.f ≫ X.hom = b.f ≫ Y.hom := by rw [a.w, b.w]
   let u := (_prodPB X Y).lift ⟨W.dom, a.f, b.f, hbase⟩
@@ -98,7 +100,7 @@ def overProdPair {W : Over B} (a : OverHom W X) (b : OverHom W Y) :
     show u ≫ ((_prodPB X Y).cone.π₁ ≫ X.hom) = W.hom
     rw [← Cat.assoc, (_prodPB X Y).lift_fst _]; exact a.w⟩
 
-theorem overProdPair_uniq {W : Over B} (a : OverHom W X) (b : OverHom W Y)
+public theorem overProdPair_uniq {W : Over B} (a : OverHom W X) (b : OverHom W Y)
     (h : OverHom W (overProdPt X Y))
     (h₁ : h ⊚ overProdFst X Y = a) (h₂ : h ⊚ overProdSnd X Y = b) :
     h = overProdPair a b := by
@@ -110,7 +112,7 @@ theorem overProdPair_uniq {W : Over B} (a : OverHom W X) (b : OverHom W Y)
 end overProd
 
 /-- **§1.441**: `A/B` has binary products — the product is the base pullback over `B`. -/
-instance overHasBinaryProducts (B : 𝒞) : HasBinaryProducts (Over B) where
+@[expose] public instance overHasBinaryProducts (B : 𝒞) : HasBinaryProducts (Over B) where
   prod := overProdPt
   fst {X Y} := overProdFst X Y
   snd {X Y} := overProdSnd X Y
@@ -129,7 +131,7 @@ instance overHasBinaryProducts (B : 𝒞) : HasBinaryProducts (Over B) where
 
 /-- **§1.531 (⟸)**: if `m.f` is a cover in `A` then `m` is a cover in `A/B`.
     This is `sigma_reflects_cover` packaged as a `Cover` statement. -/
-theorem cover_of_cover_f {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
+public theorem cover_of_cover_f {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
     (hm : Cover m.f) : Cover (𝒞 := Over B) m := by
   intro Z n g hn hgn
   -- `n` monic in A/B; `n.f` monic in A (Σ preserves monos); `g.f ≫ n.f = m.f`.
@@ -142,7 +144,7 @@ theorem cover_of_cover_f {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
     A base monic `n : C → Y.dom` through which `m.f` factors is lifted to a slice
     monic into `Y` (over `n ≫ Y.hom`); `m`-as-cover forces it iso in `A/B`, hence
     iso in `A`. -/
-theorem cover_f_of_cover {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
+public theorem cover_f_of_cover {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
     (hm : Cover (𝒞 := Over B) m) : Cover m.f := by
   intro C n g hn hgn
   -- lift `n` to a slice object `Z = ⟨C, n ≫ Y.hom⟩` and slice monic `Z → Y`.
@@ -168,12 +170,12 @@ theorem cover_f_of_cover {B : 𝒞} {X Y : Over B} (m : OverHom X Y)
   property, and project the lift back down. -/
 
 /-- The `Σ`-image base cone of a slice cone `c` over `(m, n)`. -/
-def sliceConeForget {B : 𝒞} {X Y Z : Over B} {m : X ⟶ Z} {n : Y ⟶ Z}
+@[expose] public def sliceConeForget {B : 𝒞} {X Y Z : Over B} {m : X ⟶ Z} {n : Y ⟶ Z}
     (c : Cone m n) : Cone m.f n.f :=
   ⟨c.pt.dom, c.π₁.f, c.π₂.f, congrArg OverHom.f c.w⟩
 
 /-- **§1.441 / §1.531**: `Σ` takes a slice pullback cone to a base pullback cone. -/
-theorem sliceForget_preserves_isPullback {B : 𝒞} {X Y Z : Over B}
+public theorem sliceForget_preserves_isPullback {B : 𝒞} {X Y Z : Over B}
     {m : X ⟶ Z} {n : Y ⟶ Z} (c : Cone m n) (hc : c.IsPullback) :
     (sliceConeForget c).IsPullback := by
   intro d
@@ -210,7 +212,7 @@ theorem sliceForget_preserves_isPullback {B : 𝒞} {X Y Z : Over B}
 
 /-- **`Σ` reflects pullbacks over the terminal.**  For `Over (one : A)`, a slice cone `c` over `(m, n)`
     whose `Σ`-image is a base pullback is a slice pullback.  (`Over 1 ≃ A`; over-hom triangles are free.) -/
-theorem sliceForget_reflects_isPullback_terminal [HasTerminal 𝒞]
+public theorem sliceForget_reflects_isPullback_terminal [HasTerminal 𝒞]
     {X Y Z : Over (HasTerminal.one : 𝒞)} {m : X ⟶ Z} {n : Y ⟶ Z}
     (c : Cone m n) (hc : (sliceConeForget c).IsPullback) : c.IsPullback := by
   intro d
@@ -230,7 +232,7 @@ theorem sliceForget_reflects_isPullback_terminal [HasTerminal 𝒞]
   (`cover_f_of_cover`); `PullbacksTransferCovers A` makes the opposite base projection
   a base cover, which lifts back to a slice cover (`cover_of_cover_f`). -/
 
-instance overPullbacksTransferCovers (B : 𝒞)
+@[expose] public instance overPullbacksTransferCovers (B : 𝒞)
     [PullbacksTransferCovers 𝒞] : PullbacksTransferCovers (Over B) where
   pullbacks_transfer_covers {A' B' C'} f g c hc hcov := by
     -- project the slice pullback square down to a base pullback square.
@@ -251,7 +253,7 @@ instance overPullbacksTransferCovers (B : 𝒞)
   (`overPullbacksTransferCovers`).  Hence the slice `A/B` of a pre-regular `A` is
   pre-regular. -/
 
-instance overPreRegular (B : 𝒞) [PreRegularCategory 𝒞] :
+@[expose] public instance overPreRegular (B : 𝒞) [PreRegularCategory 𝒞] :
     PreRegularCategory (Over B) where
 
 /-! ## `HasEqualizers (Over B)` — slice equalizers are base equalizers
@@ -263,7 +265,7 @@ instance overPreRegular (B : 𝒞) [PreRegularCategory 𝒞] :
   the base lift `eqLift` (which is an over-hom because `eqLift ≫ eqMap = c.f`, so its structure map
   matches `W.hom`).  Needed for the §1.543 inner colimit's `he : ∀ i, HasEqualizers (Over (chain i))`. -/
 
-instance overHasEqualizers (B : 𝒞) [HasEqualizers 𝒞] : HasEqualizers (Over B) where
+@[expose] public instance overHasEqualizers (B : 𝒞) [HasEqualizers 𝒞] : HasEqualizers (Over B) where
   eq X Y f g :=
     { cone :=
         { dom := ⟨eqObj f.f g.f, eqMap f.f g.f ≫ X.hom⟩
@@ -296,32 +298,32 @@ section baseChange
 variable {C D : 𝒞} (g : C ⟶ D)
 
 /-- The base pullback `HasPullback (X.hom) g` of an `A/D`-object along `g`. -/
-private def _bcPB (X : Over D) : HasPullback X.hom g := hpull.has X.hom g
+@[expose] public def _bcPB (X : Over D) : HasPullback X.hom g := hpull.has X.hom g
 
 /-- Object part of base-change: `⟨X, h⟩ ↦ ⟨X ×_D C, π₂⟩`, the pullback of `h` along
     `g` with structure map the second projection to `C`. -/
-def baseChangeObj (X : Over D) : Over C :=
+@[expose] public def baseChangeObj (X : Over D) : Over C :=
   ⟨(_bcPB g X).cone.pt, (_bcPB g X).cone.π₂⟩
 
 /-- The pullback square of `baseChangeObj g X`: `π₁ ≫ X.hom = π₂ ≫ g`. -/
-private theorem _bc_w (X : Over D) :
+public theorem _bc_w (X : Over D) :
     (_bcPB g X).cone.π₁ ≫ X.hom = (_bcPB g X).cone.π₂ ≫ g := (_bcPB g X).cone.w
 
 /-- The `X`-pullback cone of `m : ⟨X,h⟩ ⟶ ⟨Y,k⟩`, viewed over the cospan `(k, g)`:
     legs `(π₁ˣ ≫ m.f, π₂ˣ)`, commuting since `(π₁ˣ ≫ m.f) ≫ k = π₁ˣ ≫ h = π₂ˣ ≫ g`. -/
-def baseChangeCone {X Y : Over D} (m : OverHom X Y) : Cone Y.hom g :=
+@[expose] public def baseChangeCone {X Y : Over D} (m : OverHom X Y) : Cone Y.hom g :=
   ⟨(_bcPB g X).cone.pt, (_bcPB g X).cone.π₁ ≫ m.f, (_bcPB g X).cone.π₂, by
     rw [Cat.assoc, m.w]; exact _bc_w g X⟩
 
 /-- Morphism part of base-change: the induced map on pullbacks.  For
     `m : ⟨X,h⟩ ⟶ ⟨Y,k⟩`, lift the `X`-cone `(π₁ˣ ≫ m.f, π₂ˣ)` through the
     `Y`-pullback; `π₂` is preserved, so the lift is an over-`C` arrow. -/
-def baseChangeMap {X Y : Over D} (m : OverHom X Y) :
+@[expose] public def baseChangeMap {X Y : Over D} (m : OverHom X Y) :
     OverHom (baseChangeObj g X) (baseChangeObj g Y) :=
   ⟨(_bcPB g Y).lift (baseChangeCone g m), (_bcPB g Y).lift_snd (baseChangeCone g m)⟩
 
 /-- Base-change is a `Functor A/D → A/C`. -/
-def baseChangeFunctor : Functor (Over D) (Over C) where
+@[expose] public def baseChangeFunctor : Functor (Over D) (Over C) where
   obj := baseChangeObj g
   map m := baseChangeMap g m
   map_id X := by
@@ -386,19 +388,19 @@ section reindex
 variable {C D E : 𝒞}
 
 /-- Object part of strict reindexing along `m : C ⟶ D`: `⟨X, x⟩ ↦ ⟨X, x ≫ m⟩`. -/
-def reindexObj (m : C ⟶ D) (X : Over C) : Over D := ⟨X.dom, X.hom ≫ m⟩
+@[expose] public def reindexObj (m : C ⟶ D) (X : Over C) : Over D := ⟨X.dom, X.hom ≫ m⟩
 
 /-- The domain is UNCHANGED by reindexing (the structural reason Σ cannot grow `∏V ↝ ∏U`). -/
 @[simp] theorem reindexObj_dom (m : C ⟶ D) (X : Over C) : (reindexObj m X).dom = X.dom := rfl
 
 /-- Morphism part of strict reindexing: the SAME underlying arrow, re-typed over `D`. -/
-def reindexMap (m : C ⟶ D) {X Y : Over C} (h : OverHom X Y) :
+@[expose] public def reindexMap (m : C ⟶ D) {X Y : Over C} (h : OverHom X Y) :
     OverHom (reindexObj m X) (reindexObj m Y) :=
   ⟨h.f, by show h.f ≫ (Y.hom ≫ m) = X.hom ≫ m; rw [← Cat.assoc, h.w]⟩
 
 /-- **Strict reindexing is a `Functor A/C → A/D`** — and STRICTLY so: `map_id`/`map_comp` are
     `OverHom.ext rfl` because the underlying arrow is untouched. -/
-def reindexFunctor (m : C ⟶ D) : Functor (Over C) (Over D) where
+@[expose] public def reindexFunctor (m : C ⟶ D) : Functor (Over C) (Over D) where
   obj := reindexObj m
   map h := reindexMap m h
   map_id _ := OverHom.ext rfl
@@ -406,13 +408,13 @@ def reindexFunctor (m : C ⟶ D) : Functor (Over C) (Over D) where
 
 /-- **Strict `F_refl` (object level): `reindexObj (id) X = X` ON THE NOSE.**  The pseudo-functorial
     `baseChangeObj (id) X = X ×_C C` is only iso to `X`; Σ is equal. -/
-@[simp] theorem reindexObj_id (X : Over C) : reindexObj (Cat.id C) X = X := by
+@[simp] public theorem reindexObj_id (X : Over C) : reindexObj (Cat.id C) X = X := by
   show (⟨X.dom, X.hom ≫ Cat.id C⟩ : Over C) = X; rw [Cat.comp_id]
 
 /-- **Strict `F_trans` (object level): `reindexObj (m ≫ m') = reindexObj m' ∘ reindexObj m` ON THE
     NOSE** (by strict associativity of `≫`).  Base-change re-associates an iterated pullback, equal
     only up to canonical iso. -/
-theorem reindexObj_comp (m : C ⟶ D) (m' : D ⟶ E) (X : Over C) :
+public theorem reindexObj_comp (m : C ⟶ D) (m' : D ⟶ E) (X : Over C) :
     reindexObj (m ≫ m') X = reindexObj m' (reindexObj m X) := by
   show (⟨X.dom, X.hom ≫ (m ≫ m')⟩ : Over E) = ⟨X.dom, (X.hom ≫ m) ≫ m'⟩; rw [Cat.assoc]
 
@@ -429,18 +431,18 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
 
 /-- The product `∏U` of a finite list `U` of objects: right-folded binary product, with the
     empty product `∏[] = 1` (the terminator).  `∏(B :: U) = B × (∏U)`. -/
-def listProd : List 𝒞 → 𝒞
+@[expose] public def listProd : List 𝒞 → 𝒞
   | [] => HasTerminal.one
   | B :: U => prod B (listProd U)
 
 @[simp] theorem listProd_nil : listProd ([] : List 𝒞) = HasTerminal.one := rfl
-@[simp] theorem listProd_cons (B : 𝒞) (U : List 𝒞) :
+@[simp] public theorem listProd_cons (B : 𝒞) (U : List 𝒞) :
     listProd (B :: U) = prod B (listProd U) := rfl
 
 end listProd
 
 /-- The underlying `𝒞`-relation of a slice relation `R : BinRel (Over B) X Y`. -/
-def BinRel.forgetSlice {X Y : Over B} (R : BinRel (Over B) X Y) :
+@[expose] public def BinRel.forgetSlice {X Y : Over B} (R : BinRel (Over B) X Y) :
     BinRel 𝒞 X.dom Y.dom where
   src := R.src.dom
   colA := R.colA.f

@@ -1,4 +1,6 @@
-import Freyd.S1_543_Capitalization
+module
+
+public import Freyd.S1_543_Capitalization
 
 /-! # §1.543 — the capital-closure fixpoint `hwall_cap`, transfinite analysis
 
@@ -69,7 +71,7 @@ universe u
     `st.stepFun.obj A` is **well-pointed** in `st.T` (the book's `WellPointed`, S1_52.lean).  This is the
     field `CapStep` lacks; the concrete `nextStep` satisfies it only when its inner enumeration is
     cofinal over the well-supported objects (obstruction (2)). -/
-def StepWellPoints {S : Type u} [Cat.{u} S] [PreRegularCategory S] (st : CapStep S) : Prop :=
+@[expose] public def StepWellPoints {S : Type u} [Cat.{u} S] [PreRegularCategory S] (st : CapStep S) : Prop :=
   letI : Cat st.T := st.catT
   letI : PreRegularCategory st.T := st.preT
   ∀ A : S, WellSupported A → WellPointed (st.stepFun.obj A)
@@ -80,7 +82,7 @@ def StepWellPoints {S : Type u} [Cat.{u} S] [PreRegularCategory S] (st : CapStep
     bundle.  Producing a `CofinalCapStep` is the whole remaining work of §1.543: for the constant-`1` /
     countable enumeration the current `nextStep` uses, `wellPoints` FAILS over an uncountable carrier
     (obstruction (2)); closing it needs the transfinite cofinal `<+:`-chain over `Infl 𝒞`. -/
-structure CofinalCapStep where
+public structure CofinalCapStep where
   /-- the uniform successor — `nextStep`'s content. -/
   step : ∀ (S : PreRegBundle.{u}), CapStep S.carrier
   /-- the obligation the bare `CapStep` omits: each rung points every well-supported object. -/
@@ -95,7 +97,7 @@ structure CofinalCapStep where
     missing point to live at stage `j` itself).  Def 1.545 only guarantees each subobject is missed at
     *some later* stage — exactly what one §1.547 relative-capitalization step provides; after one step
     the stage is NOT fully well-pointed.  This is the honest hypothesis `wellPointed_of_stage` consumes. -/
-def StageRelCap {ι : Type u} {D : Colim.Directed ι} (C : Colim.CatSystem.{u, u} ι D)
+@[expose] public def StageRelCap {ι : Type u} {D : Colim.Directed ι} (C : Colim.CatSystem.{u, u} ι D)
     (ht : ∀ i, HasTerminal (C.A i)) (i : ι) (A₀ : C.A i) : Prop :=
   ∀ {j} (hij : D.le i j) {E' : C.A j} (m' : E' ⟶ C.F hij A₀),
     @Monic (C.A j) (C.catA j) _ _ m' → ¬ @IsIso (C.A j) (C.catA j) _ _ m' →
@@ -111,7 +113,7 @@ def StageRelCap {ι : Type u} {D : Colim.Directed ι} (C : Colim.CatSystem.{u, u
     isomorphism.  Forward: a factor `y` makes `(y, 1_B) : B → c.pt` a section of `c.π₂`, and since
     `f` mono forces `c.π₂` mono (pullback of a mono is mono), a split-mono section makes `c.π₂` iso.
     Backward: `y := c.π₂⁻¹ ≫ c.π₁` factors `g` (using the square `c.w` and `π₂⁻¹ ≫ π₂ = 1`). -/
-theorem factor_iff_pullback_π₂_iso {𝒞 : Type u} [Cat.{u} 𝒞] {A B C : 𝒞}
+public theorem factor_iff_pullback_π₂_iso {𝒞 : Type u} [Cat.{u} 𝒞] {A B C : 𝒞}
     {f : A ⟶ C} {g : B ⟶ C} (hf : Monic f) (c : Cone f g) (hpb : c.IsPullback) :
     (∃ y : B ⟶ A, y ≫ f = g) ↔ IsIso c.π₂ := by
   constructor
@@ -144,7 +146,7 @@ variable {ι : Type u} {D : Directed ι}
     inclusion (`objIncl_preserves_pullbacks`), so its `homInclObj`-image is a level of `homInclObj g`
     whose diagonal is `homInclObj kp_diag`.  `homInclObj g` monic forces that colimit diagonal iso;
     iso-reflection (`homInclObj_isIso_reflects`, via `hcons`) brings it back to the stage diagonal. -/
-theorem homInclObj_mono_reflects (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem homInclObj_mono_reflects (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
@@ -241,7 +243,7 @@ theorem homInclObj_mono_reflects (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [
     `objIncl i A₀` (`objIncl_terminal_eq`) not factoring through `m` — a colimit factorization would
     reflect (via the stage pullback of `(mNk, pt)`, preserved by `objIncl_preserves_pullbacks`, and
     `homInclObj_isIso_reflects`) to a stage factorization of `pt` through `mNk`, contradicting `hRC`. -/
-theorem wellPointed_of_stage
+public theorem wellPointed_of_stage
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
@@ -399,7 +401,7 @@ theorem wellPointed_of_stage
     book's `Capital` (S1_52.lean) — no weakening.  Proven Sorry-free *on top of* `wellPointed_of_stage`:
     the residual is confined to that one lemma plus the explicit `hstage` premise (the cofinal-coverage
     obligation, not hidden in a `Sorry`). -/
-theorem tower_capital_of_cofinal
+public theorem tower_capital_of_cofinal
     (A : Type u) [Cat.{u} A] [PreRegularCategory A]
     (ccs : CofinalCapStep.{u}) (b : PreRegBundle.{u})
     (ht : ∀ i, HasTerminal ((towerSystem b ccs.step).A i))

@@ -39,7 +39,9 @@
   MATHLIB-FREE.  Axioms ⊆ {propext, Classical.choice, Quot.sound}.
 -/
 
-import Freyd.S2_417_Generator
+module
+
+public import Freyd.S2_417_Generator
 
 namespace Freyd.S2_417
 open Freyd
@@ -58,17 +60,17 @@ variable {L : Type}
 /-- **§2.41 concrete power-object.**  `mem : P → X` is a power-object of `X` in `Rel(C)`:
     for every object `A` and every equivariant relation `R : A → X` there is a unique
     `C`-map `g : A → P` with `R = graph g ⊚ mem`, i.e. `R.rel a x ↔ mem.rel (g x) x`. -/
-def IsPowerObj (X P : Obj L) (mem : CRel P X) : Prop :=
+@[expose] public def IsPowerObj (X P : Obj L) (mem : CRel P X) : Prop :=
   ∀ (A : Obj L) (R : CRel A X),
     ∃ g : CHom A P, (∀ (a : A.S) (x : X.S), R.rel a x ↔ mem.rel (g.g a) x) ∧
       ∀ g' : CHom A P, (∀ (a : A.S) (x : X.S), R.rel a x ↔ mem.rel (g'.g a) x) → g' = g
 
 /-- `X` has a power-object in `Rel(C)` (§2.414: needed of EVERY object for a power allegory). -/
-def HasPowerObj (X : Obj L) : Prop := ∃ (P : Obj L) (mem : CRel P X), IsPowerObj X P mem
+@[expose] public def HasPowerObj (X : Obj L) : Prop := ∃ (P : Obj L) (mem : CRel P X), IsPowerObj X P mem
 
 /-- **§2.414 concrete.**  "`Rel(C)` is a power allegory" — every object of `C` has a
     power-object.  §2.417 target 3 is the negation of this. -/
-def RelCIsPowerAllegory (L : Type) : Prop := ∀ X : Obj L, HasPowerObj X
+@[expose] public def RelCIsPowerAllegory (L : Type) : Prop := ∀ X : Obj L, HasPowerObj X
 
 /-! ## §2.415  The singleton map — a necessary consequence of a power-object -/
 
@@ -87,7 +89,7 @@ theorem singleton_of_power {X P : Obj L} {mem : CRel P X} (h : IsPowerObj X P me
 /-! ## §2.417  The coterminator has a power-object (positive half of the dichotomy) -/
 
 /-- Auxiliary: the terminator carrier is a subsingleton. -/
-theorem unit_eq (a b : Unit) : a = b := by cases a; cases b; rfl
+public theorem unit_eq (a b : Unit) : a = b := by cases a; cases b; rfl
 
 /-- The COTERMINATOR `O` of `C`: empty carrier (the initial object). -/
 def zeroObj (L : Type) : Obj L where
@@ -97,7 +99,7 @@ def zeroObj (L : Type) : Obj L where
   f := fun _ x => x
 
 /-- The TERMINATOR `1` of `C`: one point, fixed by every action. -/
-def oneObj (L : Type) : Obj L where
+@[expose] public def oneObj (L : Type) : Obj L where
   S := Unit
   s := fun _ => ()
   A := fun _ => False

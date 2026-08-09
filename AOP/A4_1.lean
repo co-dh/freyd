@@ -8,8 +8,10 @@
   taken over verbatim, not re-derived from the book's own notation.
 -/
 
-import Freyd.S2_10
-import Freyd.S1_38
+module
+
+public import Freyd.S2_10
+public import Freyd.S1_38
 
 universe v u
 
@@ -29,7 +31,7 @@ theorem comp_inter_le {a b c : 𝒜} (R : a ⟶ b) (S T : b ⟶ c) :
   le_inter (comp_mono_left R (inter_lb_left S T)) (comp_mono_left R (inter_lb_right S T))
 
 /-- Order form of semi-distributivity, other side (B&dM p.83): `(S∩T)R ⊑ SR ∩ TR`. -/
-theorem inter_comp_le {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
+public theorem inter_comp_le {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
     (S ∩ T) ≫ R ⊑ (S ≫ R) ∩ (T ≫ R) :=
   le_inter (comp_mono_right (inter_lb_left S T) R) (comp_mono_right (inter_lb_right S T) R)
 
@@ -42,7 +44,7 @@ theorem inter_comp_le {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
   remains, kept to preserve that file's import footprint). -/
 
 /-- Dual form of the modular law (B&dM p.83 proof step): `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`. -/
-theorem modular_le_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem modular_le_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
   have hr := recip_mono (modular_le S° R° T°)
   rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
@@ -56,7 +58,7 @@ theorem modular_le_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c
     Book proof: `(R≫S)∩T ⊑ ((R∩T≫S°)≫S)∩T` (`modular_le` plus `T` on the nose), then
     `modular_le_right` on `U := R∩T≫S°` gives `U≫S ∩ T ⊑ U≫(S∩U°≫T)`, and `U°≫T ⊑ R°≫T`
     since `U ⊑ R`. -/
-theorem modular_sym {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem modular_sym {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (R ≫ S) ∩ T ⊑ (R ∩ T ≫ S°) ≫ (S ∩ R° ≫ T) := by
   have step1 : (R ≫ S) ∩ T ⊑ ((R ∩ T ≫ S°) ≫ S) ∩ T :=
     le_inter (modular_le R S T) (inter_lb_right _ _)
@@ -81,7 +83,7 @@ theorem recip_comp_inter_id_le {a b : 𝒜} (R S : a ⟶ b) :
 
 /-- **B&dM 4.10**: `R ⊑ R≫R°≫R`, for any `R`.  Canonical home — S2_22's identical
     `self_le_comp_recip_comp` was deduped into this lemma at wave collection. -/
-theorem le_comp_recip_comp {a b : 𝒜} (R : a ⟶ b) : R ⊑ (R ≫ R°) ≫ R := by
+public theorem le_comp_recip_comp {a b : 𝒜} (R : a ⟶ b) : R ⊑ (R ≫ R°) ≫ R := by
   have h := modular_le (Cat.id a) R R
   have h1 : R ⊑ (Cat.id a ∩ R ≫ R°) ≫ R := by
     simpa [Cat.id_comp, Allegory.inter_idem] using h
@@ -112,7 +114,7 @@ theorem inter_comp_refine {a b c : 𝒜} (U : a ⟶ b) (V : b ⟶ c) (R : a ⟶ 
   a separate `Cat X` instance in scope). -/
 
 /-- **Ex 4.7**: the product of two allegories is an allegory, with `°` and `∩` componentwise. -/
-instance prodAllegory {𝒜 ℬ : Type u} [Allegory.{v} 𝒜] [Allegory.{v} ℬ] : Allegory (𝒜 × ℬ) where
+@[expose] public instance prodAllegory {𝒜 ℬ : Type u} [Allegory.{v} 𝒜] [Allegory.{v} ℬ] : Allegory (𝒜 × ℬ) where
   recip R := (R.1°, R.2°)
   inter R S := (R.1 ∩ S.1, R.2 ∩ S.2)
   recip_recip R := Prod.ext (Allegory.recip_recip R.1) (Allegory.recip_recip R.2)

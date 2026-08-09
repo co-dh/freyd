@@ -53,7 +53,9 @@
   Conventions: diagram-order composition `R ≫ S`, reciprocation `R°`, containment
   `⊂` (BinRel) / `⊑` (allegory).  Mathlib-free.
 -/
-import Freyd.S2_153e_ComposeCaucus
+module
+
+public import Freyd.S2_153e_ComposeCaucus
 
 universe u
 

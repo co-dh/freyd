@@ -15,8 +15,10 @@
   explicit *variable* `pr` so that `subst` makes the `ratCapDisjointBinaryCoproduct` result land on
   `(stage (n+1)).cat` on the nose — no surviving `cast`.  The base equality is `rfl` for the real
   §2.218 consumer (which builds `b` from the same `[DisjointBinaryCoproduct A]`). -/
-import Freyd.S1_543_CapDataRegular
-import Freyd.S2_218_RatCapPositive
+module
+
+public import Freyd.S1_543_CapDataRegular
+public import Freyd.S2_218_RatCapPositive
 
 open Freyd
 open Freyd.Colim
@@ -31,7 +33,7 @@ universe u
     to pre-regular).  This is exactly the `[PreRegularCategory 𝒞]` whose pullbacks
     `ratCapDisjointBinaryCoproduct`'s output `Cat` is built over (`ratCapPosPinPb` reduces to its
     `toHasPullbacks`). -/
-def dbcPreReg {𝒞 : Type u} {inst : Cat.{u} 𝒞} (d : @DisjointBinaryCoproduct 𝒞 inst) :
+@[expose] public def dbcPreReg {𝒞 : Type u} {inst : Cat.{u} 𝒞} (d : @DisjointBinaryCoproduct 𝒞 inst) :
     @PreRegularCategory 𝒞 inst :=
   @RegularCategory.toPreRegularCategory 𝒞 inst d.toPositivePreLogos.toPreLogos.toRegularCategory
 
@@ -41,7 +43,7 @@ def dbcPreReg {𝒞 : Type u} {inst : Cat.{u} 𝒞} (d : @DisjointBinaryCoproduc
     disjoint binary coproduct, and its pre-regular structure is the stage's `preT`.  Stating `pr` as a
     variable lets `subst hpre` align `dC`'s base pullbacks with `pr`'s on the nose, so the
     `ratCapDisjointBinaryCoproduct` result fits the stage `Cat` without a residual `cast`. -/
-noncomputable def succ_component {C : Type u} (ct : Cat.{u} C) (pr : @PreRegularCategory C ct)
+@[expose] public noncomputable def succ_component {C : Type u} (ct : Cat.{u} C) (pr : @PreRegularCategory C ct)
     (dC : @DisjointBinaryCoproduct C ct) (hpre : dbcPreReg dC = pr) :
     PSigma fun d : @DisjointBinaryCoproduct (uniformStepFun ⟨C, ct, pr⟩).T
         (uniformStepFun ⟨C, ct, pr⟩).catT =>
@@ -58,7 +60,7 @@ noncomputable def succ_component {C : Type u} (ct : Cat.{u} C) (pr : @PreRegular
       (fun {_ _} h => cofinalProjSystem_cover h), rfl⟩
 
 /-- **Tower of disjoint binary coproducts, with the threaded pre-regular-structure equality.** -/
-noncomputable def stageDisjointAux (b : PreRegBundle.{u})
+@[expose] public noncomputable def stageDisjointAux (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre) :
     ∀ n, PSigma fun d : @DisjointBinaryCoproduct (stageBundle uniformStepFun b n).carrier
         (stageBundle uniformStepFun b n).cat =>
@@ -71,7 +73,7 @@ noncomputable def stageDisjointAux (b : PreRegBundle.{u})
 
 /-- **Every stage of the cofinal ω-tower is a disjoint binary coproduct (positive).**  `hpb0` is `rfl`
     for the §2.218 consumer (whose `b.pre` is `hb0`'s own pre-regular structure). -/
-noncomputable def stageDisjoint (b : PreRegBundle.{u})
+@[expose] public noncomputable def stageDisjoint (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre) (n : Nat) :
     @DisjointBinaryCoproduct (stageBundle uniformStepFun b n).carrier
       (stageBundle uniformStepFun b n).cat :=

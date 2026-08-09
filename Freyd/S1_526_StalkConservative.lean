@@ -23,8 +23,10 @@
   STRICTLY MATHLIB-FREE; depends only on `Freyd.*`.
 -/
 
-import Freyd.S1_625_StalkRegular
-import Freyd.S2_21
+module
+
+public import Freyd.S1_625_StalkRegular
+public import Freyd.S2_21
 
 universe u
 
@@ -44,7 +46,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
 /-- A `PreLogos` has EQUALIZERS (products + pullbacks ⟹ equalizers).  We install ONLY
     `HasEqualizers` (not a full `CartesianCategory`, which would re-export `HasBinaryProducts` and
     create an instance diamond with the genuine `PreLogos` one). -/
-local instance preLogosEqualizers : HasEqualizers 𝒞 :=
+@[expose] public local instance preLogosEqualizers : HasEqualizers 𝒞 :=
   products_pullbacks_implies_equalizers
 
 /-- **§1.526 (faithfulness).**  Maps out of a WELL-POINTED object are determined by their action on

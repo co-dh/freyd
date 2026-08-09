@@ -4,10 +4,12 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_41
 
 
 open Freyd
@@ -27,13 +29,13 @@ namespace Freyd
 
 /-- An inflation: artificially replicate objects of B.  Given T : 𝛂 → |B| onto,
     the category [T] has objects 𝛂, hom 𝛂(A,B) = B(TA,TB). -/
-structure Inflation (B : 𝒞) where
+public structure Inflation (B : 𝒞) where
   objSet  : Type u
   T       : objSet → 𝒞
   isOnto  : ∀ b : 𝒞, ∃ a : objSet, T a = b  -- T is surjective (onto)
 
 /-- The inflated category [T] with objects objSet and hom via T. -/
-instance (B : 𝒞) (I : Inflation B) : Cat.{v} I.objSet where
+@[expose] public instance (B : 𝒞) (I : Inflation B) : Cat.{v} I.objSet where
   Hom A B := I.T A ⟶ I.T B
   id A := Cat.id (I.T A)
   comp f g := f ≫ g
@@ -60,18 +62,18 @@ structure InflationCrossSection (B : 𝒞) (I : Inflation B) where
 
 /-- Transport of an identity morphism along an object equality `e : X = Y`.
     This is the canonical iso `X ⟶ Y` witnessing `X = Y` in any category. -/
-def eqToHom {X Y : 𝒞} (e : X = Y) : X ⟶ Y := e ▸ Cat.id X
+@[expose] public def eqToHom {X Y : 𝒞} (e : X = Y) : X ⟶ Y := e ▸ Cat.id X
 
-@[simp] theorem eqToHom_refl (X : 𝒞) : eqToHom (rfl : X = X) = Cat.id X := rfl
+@[simp] public theorem eqToHom_refl (X : 𝒞) : eqToHom (rfl : X = X) = Cat.id X := rfl
 
-theorem eqToHom_trans {X Y Z : 𝒞} (e : X = Y) (e' : Y = Z) :
+public theorem eqToHom_trans {X Y Z : 𝒞} (e : X = Y) (e' : Y = Z) :
     eqToHom e ≫ eqToHom e' = eqToHom (e.trans e') := by
   cases e; cases e'; exact Cat.id_comp _
 
-theorem eqToHom_comp_eqToHom_symm {X Y : 𝒞} (e : X = Y) :
+public theorem eqToHom_comp_eqToHom_symm {X Y : 𝒞} (e : X = Y) :
     eqToHom e ≫ eqToHom e.symm = Cat.id X := by cases e; exact Cat.id_comp _
 
-theorem eqToHom_symm_comp_eqToHom {X Y : 𝒞} (e : X = Y) :
+public theorem eqToHom_symm_comp_eqToHom {X Y : 𝒞} (e : X = Y) :
     eqToHom e.symm ≫ eqToHom e = Cat.id Y := by cases e; exact eqToHom_comp_eqToHom_symm rfl
 
 /-- The cross-section functor `𝒞 → [T]`, sending `b ↦ S b`.  On a map `h : X ⟶ Y`
@@ -137,7 +139,7 @@ theorem inflation_strong_equiv (B : 𝒞) (I : Inflation B) (S : InflationCrossS
     1. id_X ∈ K for all X
     2. If f ∈ K then f is iso and f⁻¹ ∈ K
     3. There is at most one K-map between any two objects. -/
-structure EquivalenceKernel (𝒞 : Type u) [Cat.{v} 𝒞] where
+public structure EquivalenceKernel (𝒞 : Type u) [Cat.{v} 𝒞] where
   mem    : {X Y : 𝒞} → (X ⟶ Y) → Prop
   mem_id : ∀ X : 𝒞, mem (Cat.id X)
   isGroupoid : ∀ {X Y : 𝒞} (f : X ⟶ Y), mem f → (∃ g : Y ⟶ X, mem g ∧ f ≫ g = Cat.id X ∧ g ≫ f = Cat.id Y)
@@ -305,22 +307,22 @@ variable (K : EquivalenceKernel 𝒞)
 /-- `X` and `Y` are glued iff there is a `K`-map between them.  This is an
     equivalence relation: reflexive by `mem_id`, symmetric by `isGroupoid`,
     transitive by `mem_comp`. -/
-def Rel (X Y : 𝒞) : Prop := ∃ f : X ⟶ Y, K.mem f
+@[expose] public def Rel (X Y : 𝒞) : Prop := ∃ f : X ⟶ Y, K.mem f
 
-theorem rel_symm {X Y : 𝒞} : Rel K X Y → Rel K Y X := by
+public theorem rel_symm {X Y : 𝒞} : Rel K X Y → Rel K Y X := by
   rintro ⟨f, hf⟩; obtain ⟨g, hg, _, _⟩ := K.isGroupoid f hf; exact ⟨g, hg⟩
 
-theorem rel_trans {X Y Z : 𝒞} : Rel K X Y → Rel K Y Z → Rel K X Z := by
+public theorem rel_trans {X Y Z : 𝒞} : Rel K X Y → Rel K Y Z → Rel K X Z := by
   rintro ⟨f, hf⟩ ⟨g, hg⟩; exact ⟨f ≫ g, K.mem_comp f g hf hg⟩
 
 /-- The setoid gluing `K`-connected objects. -/
-def setoid : Setoid 𝒞 := ⟨Rel K, ⟨fun X => ⟨Cat.id X, K.mem_id X⟩, rel_symm K, rel_trans K⟩⟩
+@[expose] public def setoid : Setoid 𝒞 := ⟨Rel K, ⟨fun X => ⟨Cat.id X, K.mem_id X⟩, rel_symm K, rel_trans K⟩⟩
 
 /-- Objects of the quotient `𝒞/K`: the `K`-classes. -/
-def Obj : Type u := Quotient (setoid K)
+@[expose] public def Obj : Type u := Quotient (setoid K)
 
 /-- The chosen representative object of a class (Classical choice). -/
-noncomputable def rep (d : Obj K) : 𝒞 := Classical.choose (Quotient.exists_rep d)
+@[expose] public noncomputable def rep (d : Obj K) : 𝒞 := Classical.choose (Quotient.exists_rep d)
 
 theorem rep_spec (d : Obj K) : Quotient.mk (setoid K) (rep K d) = d :=
   Classical.choose_spec (Quotient.exists_rep d)
@@ -342,7 +344,7 @@ noncomputable def kappaInv (X : 𝒞) : rep K (Quotient.mk (setoid K) X) ⟶ X :
 /-- The quotient category `𝒞/K`: a hom between two classes is a `𝒞`-hom between
     their representatives.  Identity, composition, and the axioms are inherited
     from `𝒞` verbatim. -/
-noncomputable instance catObj : Cat.{v} (Obj K) where
+@[expose] public noncomputable instance catObj : Cat.{v} (Obj K) where
   Hom d e := rep K d ⟶ rep K e
   id d := Cat.id (rep K d)
   comp f g := f ≫ g

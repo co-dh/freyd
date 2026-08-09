@@ -28,7 +28,9 @@
   Zorn-free "g-tower" route (Zermelo 1904 / Bourbaki).  We develop the tiny amount of order theory we
   need (sets as predicates, initial segments) inline.  See `exists_wellOrder` for the construction.
 -/
-import Freyd.S1_543_DirectedColimit
+module
+
+public import Freyd.S1_543_DirectedColimit
 
 namespace Freyd
 
@@ -42,21 +44,21 @@ filter-specific boolean operations (`univ`, `empty`, `compl` / `ᶜ`, `inter` / 
 `S1_646_Ultrafilter.lean` — a global `ᶜ` would clash with the Heyting complement. -/
 
 /-- A subset of `α`, as a predicate.  We avoid any library `Set` to stay self-contained. -/
-abbrev Sub (α : Type u) := α → Prop
+@[expose] public abbrev Sub (α : Type u) := α → Prop
 
 namespace Sub
 variable {α : Type u}
 
-@[ext] theorem ext {s t : Sub α} (h : ∀ a, s a ↔ t a) : s = t := funext fun a => propext (h a)
+@[ext] public theorem ext {s t : Sub α} (h : ∀ a, s a ↔ t a) : s = t := funext fun a => propext (h a)
 
 /-- `s ⊆ t`. -/
-def Subset (s t : Sub α) : Prop := ∀ ⦃a⦄, s a → t a
+@[expose] public def Subset (s t : Sub α) : Prop := ∀ ⦃a⦄, s a → t a
 
 @[inherit_doc] infixl:50 " ⊆ₛ " => Sub.Subset
 
-theorem Subset.refl (s : Sub α) : s ⊆ₛ s := fun _ h => h
-theorem Subset.trans {s t u : Sub α} (h₁ : s ⊆ₛ t) (h₂ : t ⊆ₛ u) : s ⊆ₛ u := fun _ h => h₂ (h₁ h)
-theorem Subset.antisymm {s t : Sub α} (h₁ : s ⊆ₛ t) (h₂ : t ⊆ₛ s) : s = t :=
+public theorem Subset.refl (s : Sub α) : s ⊆ₛ s := fun _ h => h
+public theorem Subset.trans {s t u : Sub α} (h₁ : s ⊆ₛ t) (h₂ : t ⊆ₛ u) : s ⊆ₛ u := fun _ h => h₂ (h₁ h)
+public theorem Subset.antisymm {s t : Sub α} (h₁ : s ⊆ₛ t) (h₂ : t ⊆ₛ s) : s = t :=
   Sub.ext fun a => ⟨@h₁ a, @h₂ a⟩
 
 end Sub
@@ -118,14 +120,14 @@ chain (any two are `⊆`-comparable) and are `succ`-closed, which is the Bourbak
 variable (g : Sub α → α)
 
 /-- Successor of a set: adjoin the chosen new point `g s`. -/
-def succ (s : Sub α) : Sub α := fun x => s x ∨ x = g s
+@[expose] public def succ (s : Sub α) : Sub α := fun x => s x ∨ x = g s
 
-theorem subset_succ (s : Sub α) : s ⊆ₛ succ g s := fun _ h => Or.inl h
+public theorem subset_succ (s : Sub α) : s ⊆ₛ succ g s := fun _ h => Or.inl h
 
-theorem mem_succ_self (s : Sub α) : succ g s (g s) := Or.inr rfl
+public theorem mem_succ_self (s : Sub α) : succ g s (g s) := Or.inr rfl
 
 /-- A **tower**: built from `∅` by `succ` and arbitrary unions. -/
-inductive Tower : Sub α → Prop
+public inductive Tower : Sub α → Prop
   | step (s : Sub α) : Tower s → Tower (succ g s)
   | sUnion (P : Sub α → Prop) (h : ∀ s, P s → Tower s) :
       Tower (fun x => ∃ s : Sub α, P s ∧ s x)
@@ -146,12 +148,12 @@ admits no tower strictly between `s` and `succ s`).  We prove every tower is nar
 towers are comparable with all towers; hence any two towers are `⊆`-comparable. -/
 
 /-- `c` is narrow: no tower sits strictly between any `s ⊆ c` and its successor. -/
-def Narrow (c : Sub α) : Prop :=
+@[expose] public def Narrow (c : Sub α) : Prop :=
   ∀ s, Tower g s → s ⊆ₛ c → s = c ∨ succ g s ⊆ₛ c
 
 /-- If `c` is a narrow tower then every tower `s` is comparable with it.  Induction on `s`:
     successor and union steps both reduce to narrowness of `c`. -/
-theorem compare_of_narrow {c : Sub α} (hcN : Narrow (g := g) c) :
+public theorem compare_of_narrow {c : Sub α} (hcN : Narrow (g := g) c) :
     ∀ {s}, Tower g s → s ⊆ₛ c ∨ c ⊆ₛ s := by
   intro s hs
   induction hs with
@@ -180,7 +182,7 @@ theorem compare_of_narrow {c : Sub α} (hcN : Narrow (g := g) c) :
 
 /-- Every tower is narrow.  Induction on the tower; the successor and union cases each use
     comparability (`compare_of_narrow`) of the relevant sub-tower, available by the IH. -/
-theorem Tower.narrow : ∀ {c}, Tower g c → Narrow (g := g) c := by
+public theorem Tower.narrow : ∀ {c}, Tower g c → Narrow (g := g) c := by
   intro c hc
   induction hc with
   | step t ht iht =>
@@ -232,7 +234,7 @@ theorem Tower.narrow : ∀ {c}, Tower g c → Narrow (g := g) c := by
       · exact absurd hps hnp
 
 /-- **Chain lemma**: any two towers are `⊆`-comparable. -/
-theorem tower_compare {s t : Sub α} (hs : Tower g s) (ht : Tower g t) : s ⊆ₛ t ∨ t ⊆ₛ s :=
+public theorem tower_compare {s t : Sub α} (hs : Tower g s) (ht : Tower g t) : s ⊆ₛ t ∨ t ⊆ₛ s :=
   compare_of_narrow ht.narrow hs
 
 /-! #### The maximal tower
@@ -241,16 +243,16 @@ theorem tower_compare {s t : Sub α} (hs : Tower g s) (ht : Tower g t) : s ⊆�
 all of `α`.  This is the Bourbaki–Witt fixpoint. -/
 
 /-- The union of all towers. -/
-def bigU : Sub α := fun x => ∃ t : Sub α, Tower g t ∧ t x
+@[expose] public def bigU : Sub α := fun x => ∃ t : Sub α, Tower g t ∧ t x
 
-theorem bigU_tower : Tower g (bigU (g := g)) :=
+public theorem bigU_tower : Tower g (bigU (g := g)) :=
   Tower.sUnion (g := g) (Tower g) (fun _ h => h)
 
 /-- Membership in `bigU` unfolds to: some tower contains the point. -/
 theorem mem_bigU {x : α} : bigU (g := g) x ↔ ∃ t, Tower g t ∧ t x := Iff.rfl
 
 /-- `bigU` is `succ`-closed: `g (bigU) ∈ bigU` (its successor is a tower, hence below `bigU`). -/
-theorem g_bigU_mem : bigU (g := g) (g (bigU (g := g))) := by
+public theorem g_bigU_mem : bigU (g := g) (g (bigU (g := g))) := by
   have h : Tower g (succ g (bigU (g := g))) := Tower.step _ bigU_tower
   exact ⟨_, h, mem_succ_self g _⟩
 
@@ -487,32 +489,32 @@ variable {T : Type u}
 open Classical
 
 /-- A `Sub T` is a `le`-CHAIN: any two of its members are `le`-comparable. -/
-def IsChain (le : T → T → Prop) (s : Sub T) : Prop :=
+@[expose] public def IsChain (le : T → T → Prop) (s : Sub T) : Prop :=
   ∀ ⦃x⦄, s x → ∀ ⦃y⦄, s y → le x y ∨ le y x
 
 /-- `b` is an upper bound of `s`. -/
-def IsUB (le : T → T → Prop) (s : Sub T) (b : T) : Prop := ∀ ⦃x⦄, s x → le x b
+@[expose] public def IsUB (le : T → T → Prop) (s : Sub T) (b : T) : Prop := ∀ ⦃x⦄, s x → le x b
 
 /-- `c` is a STRICT upper bound of `s`: an upper bound of `s` that is `le`-below NO member of `s`.
     (Reflexivity then forces `c ∉ s`, which is the contradiction that terminates the tower.) -/
-def IsStrictUB (le : T → T → Prop) (s : Sub T) (c : T) : Prop :=
+@[expose] public def IsStrictUB (le : T → T → Prop) (s : Sub T) (c : T) : Prop :=
   IsUB le s c ∧ ∀ x, s x → ¬ le c x
 
 /-- The Zorn choice function.  `zg le d s` returns a STRICT upper bound of `s` if one exists; else
     ANY upper bound of `s` if one exists; else the default `d`.  On every chain (which, by the Zorn
     hypothesis, has an upper bound) `zg le d s` is therefore an upper bound of `s` — this is what
     keeps the towers chains.  When `s` additionally has a strict upper bound, `zg le d s` is one. -/
-noncomputable def zg (le : T → T → Prop) (d : T) : Sub T → T :=
+@[expose] public noncomputable def zg (le : T → T → Prop) (d : T) : Sub T → T :=
   fun s => if hstr : ∃ c, IsStrictUB le s c then Classical.choose hstr
            else if hub : ∃ c, IsUB le s c then Classical.choose hub else d
 
 /-- When `s` has a strict upper bound, `zg le d s` is one. -/
-theorem zg_strict {le : T → T → Prop} {d : T} {s : Sub T} (h : ∃ c, IsStrictUB le s c) :
+public theorem zg_strict {le : T → T → Prop} {d : T} {s : Sub T} (h : ∃ c, IsStrictUB le s c) :
     IsStrictUB le s (zg le d s) := by
   unfold zg; rw [dif_pos h]; exact Classical.choose_spec h
 
 /-- When `s` has any upper bound, `zg le d s` is one (whether or not a strict one exists). -/
-theorem zg_ub {le : T → T → Prop} {d : T} {s : Sub T} (h : ∃ c, IsUB le s c) :
+public theorem zg_ub {le : T → T → Prop} {d : T} {s : Sub T} (h : ∃ c, IsUB le s c) :
     IsUB le s (zg le d s) := by
   unfold zg
   by_cases hstr : ∃ c, IsStrictUB le s c
@@ -522,7 +524,7 @@ theorem zg_ub {le : T → T → Prop} {d : T} {s : Sub T} (h : ∃ c, IsUB le s 
 /-- Every tower (for `g = zg le d`) is a `le`-chain.  Induction on the tower: the successor
     `succ s = s ∪ {g s}` stays a chain because `g s` is an upper bound of the chain `s` (`zg_ub`,
     using the Zorn hypothesis `hub` to know `s` has an upper bound). -/
-theorem zg_tower_chain (le : T → T → Prop) (hrefl : ∀ a, le a a) (d : T)
+public theorem zg_tower_chain (le : T → T → Prop) (hrefl : ∀ a, le a a) (d : T)
     (hub : ∀ s : Sub T, IsChain le s → ∃ b, IsUB le s b) :
     ∀ {t : Sub T}, Tower (zg le d) t → IsChain le t := by
   intro t ht
@@ -553,7 +555,7 @@ theorem zg_tower_chain (le : T → T → Prop) (hrefl : ∀ a, le a a) (d : T)
     `bigU`), so `bigU` has a strict upper bound and `g bigU := zg le d bigU` is one
     (`zg_strict`).  But `g bigU ∈ bigU` (`g_bigU_mem`), so applying the strictness clause to
     `b := g bigU` (an upper bound, with `le (g bigU)(g bigU)` by reflexivity) yields `False`. -/
-theorem zorn (le : T → T → Prop) (hrefl : ∀ a, le a a)
+public theorem zorn (le : T → T → Prop) (hrefl : ∀ a, le a a)
     (htrans : ∀ {a b c}, le a b → le b c → le a c)
     (hub : ∀ s : Sub T, IsChain le s → ∃ b, IsUB le s b) (hne : Nonempty T) :
     ∃ m : T, ∀ c, le m c → le c m := by

@@ -1,5 +1,7 @@
-import Freyd.S2_10
-import Freyd.S2_20
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_20
 
 universe v u
 
@@ -64,7 +66,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
   stated for a `DivisionAllegory`; §2.438 must avoid division, so we re-derive it
   here for a plain `DistributiveAllegory` (the proof uses only the modular law
   and reciprocal identities — no division). -/
-theorem le_comp_codom {a b : 𝒜} (R : a ⟶ b) :
+public theorem le_comp_codom {a b : 𝒜} (R : a ⟶ b) :
     R ⊑ R ≫ (Cat.id b ∩ R° ≫ R) := by
   have h : R° ⊑ (Cat.id b ∩ R° ≫ R) ≫ R° := by
     have hm := modular_le (Cat.id b) (R°) (R°)
@@ -78,7 +80,7 @@ theorem le_comp_codom {a b : 𝒜} (R : a ⟶ b) :
 
   The recipes `T`, `R` and the §2.437 unary operation `R̂ = hat` on a single
   object `a`, packaging the three §2.437/§2.438 containments (i)–(iii). -/
-structure HatWitness (a : 𝒜) where
+public structure HatWitness (a : 𝒜) where
   /-- The recursive-enumeration morphism `T` (§2.437). -/
   T : a ⟶ a
   /-- The specific "Gödel diagonal" morphism `R` (§2.438: `mRn` iff provably not `nTn`). -/
@@ -103,7 +105,7 @@ structure HatWitness (a : 𝒜) where
   * `consistency` — `R(1∩T) = 𝟘`.  This is exactly the content the hypothesised
     simulated consistency proof supplies ("directly allows us to prove that
     `R(1∩T)=0`"). -/
-structure GodelHyp [DistributiveAllegory 𝒜] {a : 𝒜} (T R : a ⟶ a) : Prop where
+public structure GodelHyp [DistributiveAllegory 𝒜] {a : 𝒜} (T R : a ⟶ a) : Prop where
   /-- `R` is the lax right-divisor `𝟘/(1∩T)` (the sole division instance needed). -/
   divisor : ∀ S : a ⟶ a, S ≫ (Cat.id a ∩ T) = (𝟘 : a ⟶ a) → S ⊑ R
   /-- The simulated consistency proof yields `R(1∩T) = 𝟘`. -/
@@ -127,7 +129,7 @@ structure GodelHyp [DistributiveAllegory 𝒜] {a : 𝒜} (T R : a ⟶ a) : Prop
     (the lax divisor `𝟘/(1∩T)` property and `R(1∩T) = 𝟘`), the identity collapses:
     `1_a = 𝟘`.  NO division allegory is assumed — Freyd's "we do not need division
     in general, we need only show the existence of `0/(1∩T)`". -/
-theorem godel_collapse {a : 𝒜} (W : HatWitness a) (H : GodelHyp W.T W.R) :
+public theorem godel_collapse {a : 𝒜} (W : HatWitness a) (H : GodelHyp W.T W.R) :
     Cat.id a = (𝟘 : a ⟶ a) := by
   -- The coreflexive cut c = 1 ∩ T is idempotent and below T.
   have hc_coref : Coreflexive (Cat.id a ∩ W.T) := inter_lb_left _ _

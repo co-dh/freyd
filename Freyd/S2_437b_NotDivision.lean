@@ -39,9 +39,11 @@
   `Freyd.S2_438_Godel` (`HatWitness`/`GodelHyp`/`godel_collapse`) and
   `Freyd.S2_43` (`diag`, `le_diag_iff`, `diag_comp_le_zero`).
 -/
-import Freyd.S2_437_REAllegory
-import Freyd.S2_438_Godel
-import Freyd.S2_43
+module
+
+public import Freyd.S2_437_REAllegory
+public import Freyd.S2_438_Godel
+public import Freyd.S2_43
 
 namespace Freyd.REAlleg
 
@@ -53,10 +55,10 @@ open Freyd.Rcat Freyd.Alg Freyd.Godel
   relations with zero and union (both `IsRE`, from §2.437). -/
 
 /-- The empty relation as a morphism of `A`. -/
-def reZero : RERel := ⟨relZero, isRE_zero⟩
+@[expose] public def reZero : RERel := ⟨relZero, isRE_zero⟩
 
 /-- Union of two r.e. relations as a morphism of `A`. -/
-def reUnion (R S : RERel) : RERel := ⟨relUnion R.1 S.1, isRE_union R.2 S.2⟩
+@[expose] public def reUnion (R S : RERel) : RERel := ⟨relUnion R.1 S.1, isRE_union R.2 S.2⟩
 
 /-- The allegory order on `A` is pointwise implication. -/
 theorem reLe_iff {R S : REObj.star ⟶ REObj.star} : R ⊑ S ↔ ∀ a b, R.1 a b → S.1 a b := by
@@ -78,7 +80,7 @@ theorem reId_ne_zero : (reId : RERel) ≠ reZero := by
 
 /-- The one-object DISTRIBUTIVE allegory of r.e. relations: zero and union added
     to `instAllegory`.  Every axiom is a `Rel`-identity, proved pointwise. -/
-instance instDist : DistributiveAllegory REObj where
+@[expose] public instance instDist : DistributiveAllegory REObj where
   toAllegory := instAllegory
   zero := reZero
   union R S := reUnion R S

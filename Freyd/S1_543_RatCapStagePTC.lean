@@ -27,9 +27,11 @@
   Mathlib-free; built on the repo's own `Cat` + `RatCapPreReg` + `SliceRegular` +
   `CapitalizationLaxColimit` + `BaseChangeDescent` + `RatCapHcanon`.
 -/
-import Freyd.S1_543_RatCapPreReg
-import Freyd.S1_53_BaseChangeDescent
-import Freyd.S1_543_RatCapHcanon
+module
+
+public import Freyd.S1_543_RatCapPreReg
+public import Freyd.S1_53_BaseChangeDescent
+public import Freyd.S1_543_RatCapHcanon
 
 open Freyd
 open Freyd.Colim
@@ -51,10 +53,10 @@ section Stage
 variable (P : ProjSystem ι D 𝒞)
 
 /-- The base map of the `i ≤ j` transition: the projection `P.proj hij : P.pr j ⟶ P.pr i`. -/
-private abbrev sproj {i j : ι} (hij : D.le i j) : P.pr j ⟶ P.pr i := P.proj hij
+@[expose] public abbrev sproj {i j : ι} (hij : D.le i j) : P.pr j ⟶ P.pr i := P.proj hij
 
 /-- `(laxOfProjSystem' P).functF hij` acts on arrows as `baseChangeMap (P.proj hij)`. -/
-theorem stage_functF_map {i j : ι} (hij : D.le i j) {X Y : Over (P.pr i)} (m : X ⟶ Y) :
+public theorem stage_functF_map {i j : ι} (hij : D.le i j) {X Y : Over (P.pr i)} (m : X ⟶ Y) :
     ((laxOfProjSystem' P).functF hij).map m
       = baseChangeMap (sproj P hij) m := rfl
 
@@ -63,7 +65,7 @@ theorem stage_functF_map {i j : ι} (hij : D.le i j) {X Y : Over (P.pr i)} (m : 
   A parallel pair `u v : z ⟶ g* x` with `u ⊚ g*φ = v ⊚ g*φ` transposes, via `bcTranspose_natural`, to
   `bcTranspose u ⊚ φ = bcTranspose v ⊚ φ`; `φ` mono cancels `φ`; `bcTranspose_inj` reflects to
   `u = v`. -/
-theorem projStage_preservesMono {i j : ι} (hij : D.le i j)
+public theorem projStage_preservesMono {i j : ι} (hij : D.le i j)
     {x y : (laxOfProjSystem' P).A i} (φ : x ⟶ y)
     (hφ : Monic φ) :
     Monic (((laxOfProjSystem' P).functF hij).map φ) := by
@@ -85,7 +87,7 @@ theorem projStage_preservesMono {i j : ι} (hij : D.le i j)
   Each fibre `Over (P.pr i)` is `overPreRegular` (`SliceRegular`), and `PreRegularCategory` extends
   `PullbacksTransferCovers`; so the fibre `PullbacksTransferCovers` instance is the `overPreRegular`
   one.  Needs `[PreRegularCategory 𝒞]` (the source-fibre slice pre-regularity hypothesis). -/
-theorem projStage_PTC [PreRegularCategory 𝒞] (i : ι) :
+public theorem projStage_PTC [PreRegularCategory 𝒞] (i : ι) :
     @PullbacksTransferCovers ((laxOfProjSystem' P).A i) ((laxOfProjSystem' P).catA i) :=
   (inferInstance : @PullbacksTransferCovers (Over (P.pr i)) (overCat (P.pr i)))
 
@@ -100,7 +102,7 @@ theorem projStage_PTC [PreRegularCategory 𝒞] (i : ι) :
   The proof is `BaseChangeDescent.isIso_of_baseChange_isIso_of_cover`: base-change along a cover
   reflects isos among monos.  The fibre `IsIso`/`Monic` are definitionally the slice `OverIso`/
   `OverMono`, and `Functor.map φ = baseChangeMap (P.proj hij) φ` (`stage_functF_map`). -/
-theorem projStage_conservative [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
+public theorem projStage_conservative [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
     (hpc : Cover (sproj P hij))
     {x y : (laxOfProjSystem' P).A i} (φ : x ⟶ y) (hφmono : Monic φ)
     (hiso : IsIso (((laxOfProjSystem' P).functF hij).map φ)) :
@@ -115,7 +117,7 @@ theorem projStage_conservative [PreRegularCategory 𝒞] {i j : ι} (hij : D.le 
   along `x.hom`, hence a cover (`coverProj_of_cover`).  The naturality square `(g* p).f ≫ π₁ʸ =
   π₁ˣ ≫ p.f` (`lift_fst` of `baseChangeCone`) turns `g* p = g* q` into `π₁ˣ ≫ p.f = π₁ˣ ≫ q.f`;
   the cover `π₁ˣ` is epic (`cover_epi`), so `p.f = q.f`, hence `p = q` (`OverHom.ext`). -/
-theorem projStage_faithful [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
+public theorem projStage_faithful [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
     (hpc : Cover (sproj P hij))
     {x y : (laxOfProjSystem' P).A i} (p q : x ⟶ y)
     (heq : ((laxOfProjSystem' P).functF hij).map p
@@ -143,7 +145,7 @@ theorem projStage_faithful [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
     faithful — reflects monos) ⟹ `φ` iso (mono-restricted descent).  This is the unconditional
     `hcons` shape `RatCapHcanon.stageInclFunctorL_faithful` / `capData_of_cofinalSystem` consume.
     (The §1.543 generic "g* not conservative" obstruction needed `g` NOT a cover; here `g` IS.) -/
-theorem projStage_conservative_full [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
+public theorem projStage_conservative_full [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
     (hpc : Cover (sproj P hij))
     {x y : (laxOfProjSystem' P).A i} (φ : x ⟶ y)
     (hiso : IsIso (((laxOfProjSystem' P).functF hij).map φ)) :
@@ -174,7 +176,7 @@ theorem projStage_conservative_full [PreRegularCategory 𝒞] {i j : ι} (hij : 
   the pullback square `π₁ˣ ≫ m.f = (g* m).f ≫ π₁ʸ`, which IS a pullback (pasting the two base-change
   pullbacks).  `m.f` is a cover (`cover_f_of_cover`), so `PullbacksTransferCovers` makes the opposite
   leg `(g* m).f` a cover, lifting back to a slice cover (`cover_of_cover_f`). -/
-theorem projStage_preservesCover [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
+public theorem projStage_preservesCover [PreRegularCategory 𝒞] {i j : ι} (hij : D.le i j)
     {x y : (laxOfProjSystem' P).A i} (φ : x ⟶ y) (hφ : Cover φ) :
     Cover (((laxOfProjSystem' P).functF hij).map φ) := by
   rw [stage_functF_map P hij φ]
@@ -252,7 +254,7 @@ variable {𝒞 : Type w'} [Cat.{w'} 𝒞] [PreRegularCategory 𝒞] [HasEqualize
     (faithful, mono-restricted conservative, mono-preserving, cover-preserving, fibre-PTC) are
     supplied by the `projStage_*` lemmas; `laxColim_hcanon_of_stage` (Part A) assembles them into the
     canonical-pullback cover-transfer `hcanon`, which `ratCapPreRegular` consumes. -/
-noncomputable def ratCapPreRegular_of_projCover [Nonempty ι] (P : ProjSystem ι D 𝒞)
+@[expose] public noncomputable def ratCapPreRegular_of_projCover [Nonempty ι] (P : ProjSystem ι D 𝒞)
     (hpc : ∀ {i j : ι} (h : D.le i j), Cover (P.proj h)) :
     @PreRegularCategory (Obj (laxOfProjSystem' P)) (ratCat P) :=
   ratCapPreRegular P

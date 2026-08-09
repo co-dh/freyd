@@ -17,9 +17,11 @@
     · `H = ⊤`   — `hornTop_famA`   (§2.157d)       — the top degeneracy.
   Together with the forward direction this gives the full equivalence `desarguesND_iff_desarguesHorn`.
 -/
-import Freyd.S2_157d_HornTop
-import Freyd.S2_157e_HornCenter
-import Freyd.S2_157f_HornLine
+module
+
+public import Freyd.S2_157d_HornTop
+public import Freyd.S2_157e_HornCenter
+public import Freyd.S2_157f_HornLine
 
 universe u
 
@@ -29,7 +31,7 @@ namespace Freyd.Alg
     theorem of Desargues, the allegory Horn sentence `DesarguesHorn` holds on `LMonObj (PElem P)`.
     Assembled from the four `H`-shape families via `latticeHorn_of_families`; only the
     perspective-centre family `hornCenter_famB` uses `DesarguesND`. -/
-theorem desarguesND_implies_desarguesHorn {P : ProjectivePlane.{u}} (hDes : P.DesarguesND) :
+public theorem desarguesND_implies_desarguesHorn {P : ProjectivePlane.{u}} (hDes : P.DesarguesND) :
     DesarguesHorn (LMonObj (PElem P)) :=
   desarguesHorn_of_latticeHorn (fun a₁ a₂ b₁ b₂ c₁ c₂ h =>
     PElem.latticeHorn_of_families (PElem.hornCenter_famB hDes) PElem.hornLine_famC
@@ -38,7 +40,7 @@ theorem desarguesND_implies_desarguesHorn {P : ProjectivePlane.{u}} (hDes : P.De
 /-- **§2.157, in full**: on the allegory associated to `𝓛(P)`, the Desargues Horn sentence is
     EQUIVALENT to the plane's theorem of Desargues.  Forward: `desarguesHorn_implies_desargues`
     (§2.157b).  Converse: `desarguesND_implies_desarguesHorn` (the four-family case tree). -/
-theorem desarguesND_iff_desarguesHorn {P : ProjectivePlane.{u}} :
+public theorem desarguesND_iff_desarguesHorn {P : ProjectivePlane.{u}} :
     P.DesarguesND ↔ DesarguesHorn (LMonObj (PElem P)) :=
   ⟨desarguesND_implies_desarguesHorn, desarguesHorn_implies_desargues⟩
 

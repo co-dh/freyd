@@ -52,8 +52,10 @@
 
   Conventions: diagram-order `R ≫ S`, reciprocation `R°`, order `R ⊑ S`.  Mathlib-free.
 -/
-import Freyd.S2_16d
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_16d
+public import Freyd.S2_111_RelCat
 
 universe u
 

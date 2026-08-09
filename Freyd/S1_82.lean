@@ -61,15 +61,17 @@
   `IdempotentsSplit` hypothesis.  See S1_82.md.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_80
-import Freyd.S1_28
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_51
-import Freyd.S1_58
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_80
+public import Freyd.S1_28
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_51
+public import Freyd.S1_58
 
 universe v u u₁ u₂
 
@@ -86,14 +88,14 @@ namespace Freyd
 
 /-- A CONE of a diagram D : 𝒟 → ℬ with apex B: compatible family
     {π_i : B → D i} such that for x : i → j, π i ≫ D(x) = π j (§1.821). -/
-structure DiagCone {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure DiagCone {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   apex : ℬ
   π    : (i : 𝒟) → apex ⟶ D.obj i
   nat  : ∀ {i j : 𝒟} (x : i ⟶ j), π i ≫ D.map x = π j
 
 /-- A COCONE of D with nadir B: compatible family {ι_i : D i → B} (§1.821). -/
-structure DiagCocone {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure DiagCocone {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   nadir : ℬ
   ι     : (i : 𝒟) → D.obj i ⟶ nadir
@@ -104,7 +106,7 @@ structure DiagCocone {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} �
 -- ---------------------------------------------------------------------------
 
 /-- A LIMIT of D: a cone with a unique factorization for every other cone (§1.822). -/
-structure HasLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure HasLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   cone  : DiagCone D
   lift  : (c : DiagCone D) → c.apex ⟶ cone.apex
@@ -113,7 +115,7 @@ structure HasLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ
             (∀ i, u ≫ cone.π i = c.π i) → u = lift c
 
 /-- A COLIMIT of D: a cocone with a unique factorization for every other cocone (§1.822). -/
-structure HasColimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure HasColimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   cocone : DiagCocone D
   lift   : (c : DiagCocone D) → cocone.nadir ⟶ c.nadir
@@ -126,11 +128,11 @@ structure HasColimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} �
 -- ---------------------------------------------------------------------------
 
 /-- ℬ is COMPLETE: every small diagram (shape in universe v) has a limit (§1.823). -/
-class Complete (ℬ : Type u₁) [Cat.{v} ℬ] where
+public class Complete (ℬ : Type u₁) [Cat.{v} ℬ] where
   hasLimit : {𝒟 : Type v} → [Cat.{v} 𝒟] → (D : Functor 𝒟 ℬ) → HasLimit D
 
 /-- ℬ is COCOMPLETE: every small diagram has a colimit (§1.823). -/
-class Cocomplete (ℬ : Type u₁) [Cat.{v} ℬ] where
+public class Cocomplete (ℬ : Type u₁) [Cat.{v} ℬ] where
   hasColimit : {𝒟 : Type v} → [Cat.{v} 𝒟] → (D : Functor 𝒟 ℬ) → HasColimit D
 
 -- ---------------------------------------------------------------------------
@@ -144,7 +146,7 @@ class Cocomplete (ℬ : Type u₁) [Cat.{v} ℬ] where
     `Type v` here); the former repackaged fields `prodObj`/`proj`/`tupling`/`tupling_fac`/
     `tupling_uniq` were a DRY duplicate of `HasIndexedProduct.prod`/`proj`/`lift`/`lift_π`/
     `lift_uniq` and were replaced by this one field. -/
-class HasProducts (ℬ : Type u₁) [Cat.{v} ℬ] where
+public class HasProducts (ℬ : Type u₁) [Cat.{v} ℬ] where
   prod : ∀ {I : Type v} (F : I → ℬ), HasIndexedProduct F
 
 -- ---------------------------------------------------------------------------
@@ -199,20 +201,20 @@ private def complete_hasProducts {ℬ : Type u₁} [Cat.{v} ℬ] (hc : Complete 
         (hc.hasLimit (discreteFunctor F)).uniq (discreteCone F X legs) u hu }
 
 /-- Walking-parallel-pair category: two objects with two parallel arrows 0→1. -/
-private inductive WPP : Type where | src | tgt
+public inductive WPP : Type where | src | tgt
 
 /-- Morphisms of the walking parallel pair. -/
-private inductive WPPHom : WPP → WPP → Type where
+public inductive WPPHom : WPP → WPP → Type where
   | idS  : WPPHom .src .src
   | idT  : WPPHom .tgt .tgt
   | arr0 : WPPHom .src .tgt
   | arr1 : WPPHom .src .tgt
 
-private def wppComp : {X Y Z : WPP} → WPPHom X Y → WPPHom Y Z → WPPHom X Z
+@[expose] public def wppComp : {X Y Z : WPP} → WPPHom X Y → WPPHom Y Z → WPPHom X Z
   | _, _, _, .idS, g => g
   | _, _, _, f, .idT => f
 
-private instance wppCat : Cat.{0} WPP where
+@[expose] public instance wppCat : Cat.{0} WPP where
   Hom := WPPHom
   id  := fun | .src => .idS | .tgt => .idT
   comp := wppComp
@@ -222,9 +224,9 @@ private instance wppCat : Cat.{0} WPP where
 
 /-- Walking-parallel-pair shape lifted to universe `v` (so it is a legal `Complete`
     diagram shape).  Objects = `ULift WPP`, morphisms = `ULift` of the WPP homs. -/
-private abbrev WPPv : Type v := ULift.{v} WPP
+@[expose] public abbrev WPPv : Type v := ULift.{v} WPP
 
-private instance wppCatV : Cat.{v} WPPv where
+@[expose] public instance wppCatV : Cat.{v} WPPv where
   Hom X Y    := ULift.{v} (WPPHom X.down Y.down)
   id X       := ⟨wppCat.id X.down⟩
   comp f g   := ⟨wppComp f.down g.down⟩
@@ -352,7 +354,7 @@ private def eq_prod_complete {ℬ : Type u₁} [Cat.{v} ℬ]
         rw [Cat.assoc]; exact hu i }
 
 /-- §1.825: A category is complete iff it has equalizers and all products. -/
-theorem complete_iff_eq_prod (ℬ : Type u₁) [Cat.{v} ℬ] :
+public theorem complete_iff_eq_prod (ℬ : Type u₁) [Cat.{v} ℬ] :
     Nonempty (Complete ℬ) ↔ (Nonempty (HasEqualizers ℬ) ∧ Nonempty (HasProducts ℬ)) := by
   constructor
   · intro ⟨hc⟩
@@ -401,17 +403,17 @@ def IsCocontinuous {ℬ : Type u₁} [Cat.{v} ℬ] {𝒞 : Type u₂} [Cat.{v} �
 
   A WEAK-LIMIT is a cone admitting (not necessarily unique) factorizations. -/
 
-structure HasWeakLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure HasWeakLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   cone  : DiagCone D
   exist : (c : DiagCone D) → ∃ u : c.apex ⟶ cone.apex, ∀ i, u ≫ cone.π i = c.π i
 
 /-- A category is WEAKLY-COMPLETE if every small diagram has a weak-limit (§1.828). -/
-class WeaklyComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
+public class WeaklyComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
   hasWeakLimit : {𝒟 : Type v} → [Cat.{v} 𝒟] → (D : Functor 𝒟 ℬ) → HasWeakLimit D
 
 /-- Every complete category is weakly-complete. -/
-instance complete_imp_weaklyComplete {ℬ : Type u₁} [Cat.{v} ℬ] [hc : Complete ℬ] :
+@[expose] public instance complete_imp_weaklyComplete {ℬ : Type u₁} [Cat.{v} ℬ] [hc : Complete ℬ] :
     WeaklyComplete ℬ where
   hasWeakLimit := fun {_} _ D =>
     let hl := hc.hasLimit D
@@ -426,7 +428,7 @@ instance complete_imp_weaklyComplete {ℬ : Type u₁} [Cat.{v} ℬ] [hc : Compl
   A PRE-LIMIT for D is a J-indexed family of cones cofinal in all cones:
   for every cone {B → D i} some member cone admits a (non-unique) factorization. -/
 
-structure HasPreLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
+public structure HasPreLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   J       : Type v
   cones   : J → DiagCone D
@@ -434,11 +436,11 @@ structure HasPreLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} 
               ∃ (j : J) (u : c.apex ⟶ (cones j).apex), ∀ i, u ≫ (cones j).π i = c.π i
 
 /-- A category is PRE-COMPLETE if every small diagram has a pre-limit (§1.82(10)). -/
-class PreComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
+public class PreComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
   hasPreLimit : {𝒟 : Type v} → [Cat.{v} 𝒟] → (D : Functor 𝒟 ℬ) → HasPreLimit D
 
 /-- Every complete category is pre-complete (singleton pre-limit). -/
-instance complete_imp_preComplete {ℬ : Type u₁} [Cat.{v} ℬ] [hc : Complete ℬ] :
+@[expose] public instance complete_imp_preComplete {ℬ : Type u₁} [Cat.{v} ℬ] [hc : Complete ℬ] :
     PreComplete ℬ where
   hasPreLimit := fun {_} _ D =>
     let hl := hc.hasLimit D
@@ -1001,11 +1003,11 @@ theorem general_adjoint_functor_theorem
 -- (SUBOBJECT is defined canonically in S1_51 §1.51 as `Subobject ℬ B`; reused here.)
 
 /-- Two subobjects of B are isomorphic if there is a compatible iso on domains. -/
-def SubobjectIso {ℬ : Type u₁} [Cat.{v} ℬ] {B : ℬ} (s t : Subobject ℬ B) : Prop :=
+@[expose] public def SubobjectIso {ℬ : Type u₁} [Cat.{v} ℬ] {B : ℬ} (s t : Subobject ℬ B) : Prop :=
   ∃ (i : s.dom ⟶ t.dom), IsIso i ∧ i ≫ t.arr = s.arr
 
 /-- ℬ is WELL-POWERED: for every B the class of subobjects is essentially a set (§1.838). -/
-class WellPowered (ℬ : Type u₁) [Cat.{v} ℬ] : Prop where
+public class WellPowered (ℬ : Type u₁) [Cat.{v} ℬ] : Prop where
   small : ∀ (B : ℬ), ∃ (I : Type v) (repr : I → Subobject ℬ B),
             ∀ s : Subobject ℬ B, ∃ i : I, SubobjectIso s (repr i)
 
@@ -1059,23 +1061,23 @@ theorem cogenerating_embeds_in_product {ℬ : Type u₁} [Cat.{v} ℬ] (hp : Has
 -- ---------------------------------------------------------------------------
 
 /-- Walking cospan: three objects `lft, rgt, mid` with arrows `lft → mid ← rgt`. -/
-private inductive Cospan : Type where | lft | rgt | mid
+public inductive Cospan : Type where | lft | rgt | mid
 
 /-- Morphisms of the walking cospan (only identities and the two legs into `mid`). -/
-private inductive CospanHom : Cospan → Cospan → Type where
+public inductive CospanHom : Cospan → Cospan → Type where
   | idL : CospanHom .lft .lft
   | idR : CospanHom .rgt .rgt
   | idM : CospanHom .mid .mid
   | inl : CospanHom .lft .mid
   | inr : CospanHom .rgt .mid
 
-private def cospanComp : {X Y Z : Cospan} → CospanHom X Y → CospanHom Y Z → CospanHom X Z
+@[expose] public def cospanComp : {X Y Z : Cospan} → CospanHom X Y → CospanHom Y Z → CospanHom X Z
   | _, _, _, .idL, g => g
   | _, _, _, .idR, g => g
   | _, _, _, .idM, g => g
   | _, _, _, f, .idM => f
 
-private instance cospanCat : Cat.{0} Cospan where
+@[expose] public instance cospanCat : Cat.{0} Cospan where
   Hom := CospanHom
   id  := fun | .lft => .idL | .rgt => .idR | .mid => .idM
   comp := cospanComp
@@ -1084,9 +1086,9 @@ private instance cospanCat : Cat.{0} Cospan where
   assoc := by intro W X Y Z f g h; cases f <;> cases g <;> cases h <;> rfl
 
 /-- Cospan shape lifted to universe `v` (a legal `Complete` diagram shape). -/
-private abbrev Cospanv : Type v := ULift.{v} Cospan
+@[expose] public abbrev Cospanv : Type v := ULift.{v} Cospan
 
-private instance cospanCatV : Cat.{v} Cospanv where
+@[expose] public instance cospanCatV : Cat.{v} Cospanv where
   Hom X Y    := ULift.{v} (CospanHom X.down Y.down)
   id X       := ⟨cospanCat.id X.down⟩
   comp f g   := ⟨cospanComp f.down g.down⟩
@@ -2821,24 +2823,24 @@ private noncomputable def dual_gaft_finalElement
 /-! ### §1.83(11)  Span (pushout) diagram and `F`-preserves-pushout factoring (dual SAFT infra) -/
 
 /-- Walking span: three objects `lft, rgt, mid` with arrows `lft ← mid → rgt` (dual of `Cospan`). -/
-private inductive Span : Type where | lft | rgt | mid
+public inductive Span : Type where | lft | rgt | mid
 
 /-- Morphisms of the walking span (only identities and the two legs out of `mid`). -/
-private inductive SpanHom : Span → Span → Type where
+public inductive SpanHom : Span → Span → Type where
   | idL : SpanHom .lft .lft
   | idR : SpanHom .rgt .rgt
   | idM : SpanHom .mid .mid
   | outl : SpanHom .mid .lft
   | outr : SpanHom .mid .rgt
 
-private def spanComp : {X Y Z : Span} → SpanHom X Y → SpanHom Y Z → SpanHom X Z
+@[expose] public def spanComp : {X Y Z : Span} → SpanHom X Y → SpanHom Y Z → SpanHom X Z
   | _, _, _, .idL, g => g
   | _, _, _, .idR, g => g
   | _, _, _, .idM, g => g
   | _, _, _, .outl, .idL => .outl
   | _, _, _, .outr, .idR => .outr
 
-private instance spanCat : Cat.{0} Span where
+@[expose] public instance spanCat : Cat.{0} Span where
   Hom := SpanHom
   id  := fun | .lft => .idL | .rgt => .idR | .mid => .idM
   comp := spanComp
@@ -2847,9 +2849,9 @@ private instance spanCat : Cat.{0} Span where
   assoc := by intro W X Y Z f g h; cases f <;> cases g <;> cases h <;> rfl
 
 /-- Span shape lifted to universe `v` (a legal `Cocomplete` diagram shape). -/
-private abbrev Spanv : Type v := ULift.{v} Span
+@[expose] public abbrev Spanv : Type v := ULift.{v} Span
 
-private instance spanCatV : Cat.{v} Spanv where
+@[expose] public instance spanCatV : Cat.{v} Spanv where
   Hom X Y    := ULift.{v} (SpanHom X.down Y.down)
   id X       := ⟨spanCat.id X.down⟩
   comp f g   := ⟨spanComp f.down g.down⟩

@@ -6,10 +6,12 @@
   §2.35  STRAIGHT morphism, simple part, domain of simplicity
 -/
 
-import Freyd.S1_10
-import Freyd.S2_10
-import Freyd.S2_20
-import AOP.A4_1  -- modular_le_right (dual modular law)
+module
+
+public import Freyd.S1_10
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import AOP.A4_1  -- modular_le_right (dual modular law)
 
 
 universe v u
@@ -27,7 +29,7 @@ namespace Freyd.Alg
 
 /-- A DIVISION ALLEGORY (§2.31): distributive allegory with right division R/S,
     the right adjoint to composition (-) ≫ S. -/
-class DivisionAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
+public class DivisionAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
   /-- Right division R/S : □R → □S, defined when R□ = S□. -/
   div {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : a ⟶ b
 
@@ -51,7 +53,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 /-! ### Derived properties of division -/
 
 /-- The defining equivalence: T ⊑ R/S iff TS ⊑ R (§2.31). -/
-theorem le_div_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
+public theorem le_div_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
     X ⊑ R / S ↔ X ≫ S ⊑ R := by
   constructor
   · intro h
@@ -64,7 +66,7 @@ theorem le_div_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
 
     Book §2.31: "The first containment may be replaced with an equality:
     (R₁/S ∩ R₂/S) ⊑ (R₁∩R₂)/S because (R₁/S ∩ R₂/S)S ⊑ (R₁/S)S ∩ (R₂/S)S ⊑ (R₁∩R₂)." -/
-theorem div_inter_eq {a b c : 𝒜} (R R' : a ⟶ c) (S : b ⟶ c) :
+public theorem div_inter_eq {a b c : 𝒜} (R R' : a ⟶ c) (S : b ⟶ c) :
     (R ∩ R') / S = (R / S) ∩ (R' / S) := by
   apply le_antisymm
   · -- ⊑ : (R∩R')/S ⊑ R/S and ⊑ R'/S
@@ -88,7 +90,7 @@ theorem div_inter_le {a b c : 𝒜} (R R' : a ⟶ c) (S : b ⟶ c) :
   rw [div_inter_eq]; exact le_refl _
 
 /-- R/1 = R (§2.314). -/
-theorem div_one {a b : 𝒜} (R : a ⟶ b) : R / Cat.id b = R := by
+public theorem div_one {a b : 𝒜} (R : a ⟶ b) : R / Cat.id b = R := by
   apply le_antisymm
   · -- (R/1) ⊑ R: DivisionAllegory.div_comp_le gives (R/1)≫1 ⊑ R, and (R/1)≫1 = R/1
     have h := DivisionAllegory.div_comp_le R (Cat.id b)
@@ -98,24 +100,24 @@ theorem div_one {a b : 𝒜} (R : a ⟶ b) : R / Cat.id b = R := by
     simpa [Cat.comp_id] using le_refl R
 
 /-- 1 ⊑ R/R (§2.314). -/
-theorem one_le_div_self {a b : 𝒜} (R : a ⟶ b) : Cat.id a ⊑ R / R := by
+public theorem one_le_div_self {a b : 𝒜} (R : a ⟶ b) : Cat.id a ⊑ R / R := by
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
 
 /-- (R/R)R ⊑ R (§2.314). -/
-theorem div_self_comp_le {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R ⊑ R :=
+public theorem div_self_comp_le {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R ⊑ R :=
   DivisionAllegory.div_comp_le R R
 
 /-- Division is monotone in the numerator: R ⊑ R' → R/S ⊑ R'/S. -/
-theorem div_mono_left {a b c : 𝒜} {R R' : a ⟶ c} (h : R ⊑ R') (S : b ⟶ c) :
+public theorem div_mono_left {a b c : 𝒜} {R R' : a ⟶ c} (h : R ⊑ R') (S : b ⟶ c) :
     R / S ⊑ R' / S :=
   (le_div_iff _ _ _).mpr (le_trans (DivisionAllegory.div_comp_le R S) h)
 
 /-- (R/S)(S/W) ⊑ R/W (§2.314).
     `W`, not the book's `T`: `diag/allegory-axioms.typ` §8 exports its picture from this
     statement, and reads the third relation as what a guest **wants**. -/
-theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+public theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
     (R / S) ≫ (S / W) ⊑ R / W := by
   apply (le_div_iff _ _ _).mpr
   apply le_trans ?_ (DivisionAllegory.div_comp_le R S)
@@ -140,7 +142,7 @@ theorem div_union {a b c : 𝒜} (R : a ⟶ c) (S₁ S₂ : b ⟶ c) :
       (le_trans (comp_mono_right (inter_lb_right _ _) S₂) (DivisionAllegory.div_comp_le R S₂))
 
 /-- R/(S₁≫S₂) = (R/S₂)/S₁ (§2.314). -/
-theorem div_comp_assoc {a b c d : 𝒜} (R : a ⟶ d) (S₁ : b ⟶ c) (S₂ : c ⟶ d) :
+public theorem div_comp_assoc {a b c d : 𝒜} (R : a ⟶ d) (S₁ : b ⟶ c) (S₂ : c ⟶ d) :
     R / (S₁ ≫ S₂) = (R / S₂) / S₁ := by
   apply le_antisymm
   · -- R/(S₁S₂) ⊑ (R/S₂)/S₁: need ((R/(S₁S₂)) ≫ S₁) ≫ S₂ ⊑ R
@@ -166,7 +168,7 @@ theorem div_comp_assoc {a b c d : 𝒜} (R : a ⟶ d) (S₁ : b ⟶ c) (S₂ : c
   A ⊃ B := 1 ∩ B/A  (§2.316). -/
 
 /-- Heyting implication in (a,a): A ⊃ B := 1 ∩ B/A (§2.316). -/
-def heytingImpl {a : 𝒜} (A B : a ⟶ a) : a ⟶ a :=
+@[expose] public def heytingImpl {a : 𝒜} (A B : a ⟶ a) : a ⟶ a :=
   Cat.id a ∩ (B / A)
 
 -- Note: the book's §2.316 Heyting algebra is on coreflexive morphisms (subidentities).
@@ -176,7 +178,7 @@ def heytingImpl {a : 𝒜} (A B : a ⟶ a) : a ⟶ a :=
 
 /-- Heyting adjointness for coreflexive morphisms (§2.316):
     if A, B, C : a → a are coreflexive, then A ≫ C ⊑ B ↔ C ⊑ 1 ∩ B/A. -/
-theorem heyting_adj_coref {a : 𝒜} {A B C : a ⟶ a}
+public theorem heyting_adj_coref {a : 𝒜} {A B C : a ⟶ a}
     (hA : Coreflexive A) (hC : Coreflexive C) :
     A ≫ C ⊑ B ↔ C ⊑ heytingImpl A B := by
   -- Coreflexive morphisms commute: A≫C = A∩C = C∩A = C≫A
@@ -202,13 +204,13 @@ theorem heyting_adj_coref {a : 𝒜} {A B C : a ⟶ a}
   T ⊑ R/ₛS  iff  TS ⊑ R and T°R ⊑ S. -/
 
 /-- SYMMETRIC DIVISION: R/ₛS = (R/S) ∩ (S/R)° (§2.35, §2.331). -/
-def symmDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : a ⟶ b :=
+@[expose] public def symmDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : a ⟶ b :=
   (R / S) ∩ ((S / R)°)
 
 infixl:70 " /ₛ " => symmDiv
 
 /-- Characterizing property of symmetric division (§2.35). -/
-theorem le_symmDiv_iff {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
+public theorem le_symmDiv_iff {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
     T ⊑ R /ₛ S ↔ T ≫ S ⊑ R ∧ T° ≫ R ⊑ S := by
   dsimp [symmDiv]
   constructor
@@ -236,7 +238,7 @@ theorem le_symmDiv_iff {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) 
 /-! ### Properties of symmetric division (§2.35) -/
 
 /-- Symmetric division satisfies (R/ₛS)° = S/ₛR (§2.35). -/
-theorem symmDiv_recip {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
+public theorem symmDiv_recip {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     (R /ₛ S)° = S /ₛ R := by
   apply le_antisymm
   · -- (R/ₛS)° ⊑ S/ₛR.  R:a→c, S:b→c, R/ₛS:a→b, (R/ₛS)°:b→a, S/ₛR:b→a.
@@ -281,7 +283,7 @@ theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) 
   In a division allegory, for any R, R/(R/ₛR) is the simple part. -/
 
 /-- R is STRAIGHT if R/ₛR ⊑ 1 (§2.351). -/
-def Straight {a b : 𝒜} (R : a ⟶ b) : Prop := R /ₛ R ⊑ Cat.id a
+@[expose] public def Straight {a b : 𝒜} (R : a ⟶ b) : Prop := R /ₛ R ⊑ Cat.id a
 
 /-- In a division allegory, (R/R)R = R (§2.314). -/
 theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := by
@@ -301,7 +303,7 @@ theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := by
 
 /-- LEFT DIVISION: S\R := (R°/S°)° (§2.312).
     S : a ⟶ b, R : a ⟶ c, result S\R : b ⟶ c. -/
-def leftDiv {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : b ⟶ c :=
+@[expose] public def leftDiv {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : b ⟶ c :=
   (R° / S°)°
 
 /-- Left division notation `S \ R` (§2.312), mirroring the `R / S` of §2.31.
@@ -309,7 +311,7 @@ def leftDiv {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : b ⟶ c :=
 infixl:70 " \\ " => leftDiv
 
 /-- The defining equivalence: T ⊑ S\R iff ST ⊑ R (§2.312). -/
-theorem le_leftDiv_iff {a b c : 𝒜} (X : b ⟶ c) (S : a ⟶ b) (R : a ⟶ c) :
+public theorem le_leftDiv_iff {a b c : 𝒜} (X : b ⟶ c) (S : a ⟶ b) (R : a ⟶ c) :
     X ⊑ (S \ R) ↔ S ≫ X ⊑ R := by
   dsimp [leftDiv]
   -- X ⊑ (R°/S°)° ↔ X° ⊑ R°/S° ↔ X°S° ⊑ R° ↔ (SX)° ⊑ R° ↔ SX ⊑ R
@@ -317,22 +319,22 @@ theorem le_leftDiv_iff {a b c : 𝒜} (X : b ⟶ c) (S : a ⟶ b) (R : a ⟶ c) 
       Allegory.recip_recip]
 
 /-- The semi-commutative triangle for left division: S(S\R) ⊑ R (§2.312). -/
-theorem leftDiv_comp_le {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : S ≫ (S \ R) ⊑ R :=
+public theorem leftDiv_comp_le {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : S ≫ (S \ R) ⊑ R :=
   (le_leftDiv_iff _ S R).mp (le_refl _)
 
 /-- Left division is monotone in the numerator: R ⊑ R' → S\R ⊑ S\R'. -/
-theorem leftDiv_mono_right {a b c : 𝒜} (S : a ⟶ b) {R R' : a ⟶ c} (h : R ⊑ R') :
+public theorem leftDiv_mono_right {a b c : 𝒜} (S : a ⟶ b) {R R' : a ⟶ c} (h : R ⊑ R') :
     (S \ R) ⊑ (S \ R') :=
   (le_leftDiv_iff _ _ _).mpr (le_trans (leftDiv_comp_le S R) h)
 
 /-- Division by the identity is trivial: `1\R = R`. -/
-theorem leftDiv_id {a b : 𝒜} (R : a ⟶ b) : ((Cat.id a) \ R) = R := by
+public theorem leftDiv_id {a b : 𝒜} (R : a ⟶ b) : ((Cat.id a) \ R) = R := by
   apply le_antisymm
   · have h := leftDiv_comp_le (Cat.id a) R; rwa [Cat.id_comp] at h
   · apply (le_leftDiv_iff _ _ _).mpr; rw [Cat.id_comp]; exact le_refl R
 
 /-- Left division composes: `(ST)\R = T\(S\R)`, by the double universal property. -/
-theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (R : a ⟶ d) :
+public theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (R : a ⟶ d) :
     ((S₁ ≫ S₂) \ R) = (S₂ \ (S₁ \ R)) := by
   apply le_antisymm
   · apply (le_leftDiv_iff _ S₂ _).mpr
@@ -344,7 +346,7 @@ theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (R : a �
     exact le_trans (comp_mono_left S₁ (leftDiv_comp_le S₂ (S₁ \ R))) (leftDiv_comp_le S₁ R)
 
 /-- Numerator meets distribute over left division: `S\(R∩R') = (S\R)∩(S\R')`. -/
-theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
+public theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
     (S \ (R ∩ R')) = (S \ R) ∩ (S \ R') := by
   show ((R ∩ R')° / S°)° = (R° / S°)° ∩ (R'° / S°)°
   rw [Allegory.recip_inter, div_inter_eq, Allegory.recip_inter]
@@ -378,7 +380,7 @@ theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (W : c ⟶ d) :
     rwa [← Cat.assoc] at step4
 
 /-- **§2.314**: `(R/R)² ⊑ R/R`.  Immediate instance of `div_comp` with `S = W = R`. -/
-theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) ⊑ R / R :=
+public theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) ⊑ R / R :=
   div_comp R R R
 
 /-- `(R/R)² = R/R`.  Freyd states §2.314 as two containments, `1 ⊑ R/R` and `(R/R)² ⊑ R/R` — that
@@ -418,7 +420,7 @@ theorem straight_iff_symmetric_invariant_coreflexive {a b : 𝒜} (S : a ⟶ b) 
 
 /-- R/ₛR is symmetric (§2.351).
     (R/ₛR)° = ((R/R) ∩ (R/R)°)° = (R/R)° ∩ (R/R)°° = (R/R)° ∩ (R/R) = R/ₛR. -/
-theorem symmDiv_self_symmetric {a b : 𝒜} (R : a ⟶ b) : Symmetric (R /ₛ R) := by
+public theorem symmDiv_self_symmetric {a b : 𝒜} (R : a ⟶ b) : Symmetric (R /ₛ R) := by
   -- R/ₛR = (R/R) ∩ (R/R)°. Show (R/ₛR)° ⊑ R/ₛR.
   -- (R/ₛR)° ⊑ R/ₛR = (R/R) ∩ (R/R)°. Check each component:
   -- (R/ₛR)° ⊑ R/R: (R/ₛR)° ⊑ ((R/R)°)° = R/R. ✓
@@ -433,14 +435,14 @@ theorem symmDiv_self_symmetric {a b : 𝒜} (R : a ⟶ b) : Symmetric (R /ₛ R)
   apply Allegory.inter_idem
 
 /-- R/ₛR is reflexive: 1 ⊑ R/ₛR (§2.351). -/
-theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R /ₛ R) := by
+public theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R /ₛ R) := by
   dsimp [Reflexive]
   rw [le_symmDiv_iff (Cat.id a) R R]
   exact ⟨by rw [Cat.id_comp]; exact le_refl R,
          by rw [recip_id, Cat.id_comp]; exact le_refl R⟩
 
 /-- R/ₛR is transitive: (R/ₛR)(R/ₛR) ⊑ R/ₛR (§2.351). -/
-theorem symmDiv_self_transitive {a b : 𝒜} (R : a ⟶ b) : Transitive (R /ₛ R) := by
+public theorem symmDiv_self_transitive {a b : 𝒜} (R : a ⟶ b) : Transitive (R /ₛ R) := by
   dsimp [Transitive]
   rw [le_symmDiv_iff ((R /ₛ R) ≫ (R /ₛ R)) R R]
   have h1 : (R /ₛ R) ≫ R ⊑ R := ((le_symmDiv_iff (R /ₛ R) R R).mp (le_refl _)).1
@@ -471,7 +473,7 @@ theorem symmDiv_self_equiv {a b : 𝒜} (R : a ⟶ b) :
 /-! ## §2.352  Left cancellation for straight morphisms -/
 
 /-- If S is straight, F and G are simple with same source, and FS = GS, then (dom F)G = (dom G)F (§2.352). -/
-theorem straight_cancel_simple {a b c : 𝒜} {S : a ⟶ b} (hS : Straight S)
+public theorem straight_cancel_simple {a b c : 𝒜} {S : a ⟶ b} (hS : Straight S)
     {F G : c ⟶ a} (hF : Simple F) (hG : Simple G)
     (h : F ≫ S = G ≫ S) :
     dom F ≫ G = dom G ≫ F := by
@@ -578,13 +580,13 @@ omit [DivisionAllegory 𝒜] in
 /-- `dom R ≫ R = R` (the domain restricts nothing): one half is `dom R ⊑ 1`,
     the other is `le_dom_comp`.  Needs only `[Allegory]` (the ambient `[DivisionAllegory]` is
     dropped so `[Allegory]`-only call sites can invoke this directly). -/
-theorem dom_comp_self [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) : dom R ≫ R = R :=
+public theorem dom_comp_self [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) : dom R ≫ R = R :=
   le_antisymm (le_trans (comp_mono_right (dom_coreflexive R) R)
     (by rw [Cat.id_comp]; exact le_refl R)) (le_dom_comp R)
 
 /-- `Simple (E ≫ F)` when `E` is coreflexive and `F` simple
     (E°E ⊑ 1 so (EF)°(EF) = F°(E°E)F ⊑ F°F ⊑ 1). -/
-theorem simple_coref_comp {a c : 𝒜} {E : c ⟶ c} {F : c ⟶ a}
+public theorem simple_coref_comp {a c : 𝒜} {E : c ⟶ c} {F : c ⟶ a}
     (hE : Coreflexive E) (hF : Simple F) : Simple (E ≫ F) := by
   dsimp [Simple]
   have hErec : E° ⊑ Cat.id c := by have := recip_mono hE; rwa [recip_id] at this
@@ -782,7 +784,7 @@ theorem straight_of_cancel {a b : 𝒜} {S : a ⟶ b}
 
 /-- If SR is straight then S is straight (§2.355).
     Proof: S/ₛS ⊑ (SR)/ₛ(SR) ⊑ 1. -/
-theorem straight_of_comp_straight {a b c : 𝒜} {S : a ⟶ b} {R : b ⟶ c}
+public theorem straight_of_comp_straight {a b c : 𝒜} {S : a ⟶ b} {R : b ⟶ c}
     (h : Straight (S ≫ R)) : Straight S := by
   apply le_trans _ h
   -- Show S/ₛS ⊑ (SR)/ₛ(SR): need (S/ₛS)(SR) ⊑ SR and (S/ₛS)°(SR) ⊑ SR.
@@ -797,7 +799,7 @@ theorem straight_of_comp_straight {a b c : 𝒜} {S : a ⟶ b} {R : b ⟶ c}
     rw [← Cat.assoc]; exact comp_mono_right hss_sym_le R
 
 /-- Right-invertible morphisms are straight (§2.355). -/
-theorem rightInvertible_straight {a b : 𝒜} {S : a ⟶ b} {T : b ⟶ a}
+public theorem rightInvertible_straight {a b : 𝒜} {S : a ⟶ b} {T : b ⟶ a}
     (h : S ≫ T = Cat.id a) : Straight S := by
   -- S(ST) = (SS)T? No. Use: ST = 1, so straight_of_comp_straight with R=T.
   -- Need Straight (S ≫ T). Since S ≫ T = Cat.id a and Cat.id a is straight, done.
@@ -813,7 +815,7 @@ theorem rightInvertible_straight {a b : 𝒜} {S : a ⟶ b} {T : b ⟶ a}
 
 /-- If S is straight then R/ₛS is simple (§2.356).
     Proof: (R/ₛS)°(R/ₛS) ⊑ S/ₛS ⊑ 1. -/
-theorem straight_symmDiv_simple {a b c : 𝒜} {S : b ⟶ c} (hS : Straight S)
+public theorem straight_symmDiv_simple {a b c : 𝒜} {S : b ⟶ c} (hS : Straight S)
     (R : a ⟶ c) : Simple (R /ₛ S) := by
   dsimp [Simple]
   apply le_trans _ hS
@@ -839,10 +841,10 @@ theorem straight_symmDiv_simple {a b c : 𝒜} {S : b ⟶ c} (hS : Straight S)
 
 /-- The SIMPLE PART of R: R/ₛ1 (§2.357).
     T ⊑ R/ₛ1 iff T ⊑ R and T°R ⊑ 1 (simplicity of T, contained in R). -/
-def simplePart {a b : 𝒜} (R : a ⟶ b) : a ⟶ b := R /ₛ Cat.id b
+@[expose] public def simplePart {a b : 𝒜} (R : a ⟶ b) : a ⟶ b := R /ₛ Cat.id b
 
 /-- The DOMAIN OF SIMPLICITY of R: dom(R/ₛ1) (§2.357). -/
-def domSimplicity {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := dom (simplePart R)
+@[expose] public def domSimplicity {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := dom (simplePart R)
 
 /-- The simple part is simple (§2.357).
     1_b is straight (right-invertible), so R/ₛ1 is simple by §2.356. -/
@@ -851,7 +853,7 @@ theorem simplePart_simple {a b : 𝒜} (R : a ⟶ b) : Simple (simplePart R) := 
   exact rightInvertible_straight (Cat.comp_id (Cat.id b))
 
 /-- The simple part is contained in R: R/ₛ1 ⊑ R (§2.357). -/
-theorem simplePart_le {a b : 𝒜} (R : a ⟶ b) : simplePart R ⊑ R := by
+public theorem simplePart_le {a b : 𝒜} (R : a ⟶ b) : simplePart R ⊑ R := by
   dsimp [simplePart, symmDiv]
   calc (R / Cat.id b) ∩ ((Cat.id b / R)°) ⊑ R / Cat.id b := inter_lb_left _ _
       _ = R := div_one R
@@ -883,7 +885,7 @@ theorem domSimplicity_eq {a b : 𝒜} (R : a ⟶ b) :
     Here the "simple" condition on AR is expressed directly as the
     symmDiv characterization: AR ⊑ R and (AR)°R ⊑ 1.
     (The book's proof of the equivalence with Simple uses A°A = A for coreflexive A.) -/
-theorem simplePart_largest {a b : 𝒜} (R : a ⟶ b) (A : a ⟶ a)
+public theorem simplePart_largest {a b : 𝒜} (R : a ⟶ b) (A : a ⟶ a)
     (hA : Coreflexive A) (hAR : (A ≫ R)° ≫ R ⊑ Cat.id b) :
     A ≫ R ⊑ simplePart R := by
   dsimp [simplePart]
@@ -910,7 +912,7 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-- Reciprocation commutes with `Sup`: `(Sup P)° = Sup {R° | P R}`.
     Reciprocation is an order-isomorphism, so it carries suprema to suprema. -/
-theorem recip_Sup {a b : 𝒜} (P : (a ⟶ b) → Prop) :
+public theorem recip_Sup {a b : 𝒜} (P : (a ⟶ b) → Prop) :
     (Sup P)° = Sup (fun T : b ⟶ a => ∃ R, P R ∧ T = R°) := by
   apply le_antisymm
   · -- (Sup P)° ⊑ Sup Pᵒ  ↔  Sup P ⊑ (Sup Pᵒ)°  (recip adjoint); then Sup_le pointwise.
@@ -924,7 +926,7 @@ theorem recip_Sup {a b : 𝒜} (P : (a ⟶ b) → Prop) :
 
 /-- Composition on the right distributes over `Sup`: `(Sup P) ≫ S = ⊔ {T ≫ S | P T}`.
     Derived from the left law `comp_Sup_distrib` by reciprocation. -/
-theorem Sup_comp_distrib {a b c : 𝒜} (P : (a ⟶ b) → Prop) (S : b ⟶ c) :
+public theorem Sup_comp_distrib {a b c : 𝒜} (P : (a ⟶ b) → Prop) (S : b ⟶ c) :
     Sup P ≫ S = Sup (fun T : a ⟶ c => ∃ R, P R ∧ T = R ≫ S) := by
   apply le_antisymm
   · -- (Sup P)S ⊑ ⊔{RS}.  Reciprocate both sides: ((Sup P)S)° ⊑ (⊔{RS})°, i.e.
@@ -944,17 +946,17 @@ theorem Sup_comp_distrib {a b c : 𝒜} (P : (a ⟶ b) → Prop) (S : b ⟶ c) :
     subst hT; exact comp_mono_right (le_Sup hR) S
 
 /-- Right division in a locally complete distributive allegory: `R / S := ⊔ {T | T ≫ S ⊑ R}`. -/
-def lcdaDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : a ⟶ b :=
+@[expose] public def lcdaDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : a ⟶ b :=
   Sup (fun T : a ⟶ b => T ≫ S ⊑ R)
 
 /-- The semi-commutative triangle `(R / S) ≫ S ⊑ R` (§2.31 field). -/
-theorem lcdaDiv_comp_le {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : lcdaDiv R S ≫ S ⊑ R := by
+public theorem lcdaDiv_comp_le {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) : lcdaDiv R S ≫ S ⊑ R := by
   rw [lcdaDiv, Sup_comp_distrib]
   apply Sup_le; intro T ⟨U, hU, hT⟩
   subst hT; exact hU
 
 /-- The adjointness `T ≫ S ⊑ R → T ⊑ R / S` (§2.31 field). -/
-theorem le_lcdaDiv {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) (h : T ≫ S ⊑ R) :
+public theorem le_lcdaDiv {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) (h : T ≫ S ⊑ R) :
     T ⊑ lcdaDiv R S :=
   le_Sup h
 
@@ -963,7 +965,7 @@ theorem le_lcdaDiv {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) (h :
     typeclass-resolution loop: `DivisionAllegory` extends `DistributiveAllegory`, so a global
     instance here would give `DistributiveAllegory X` two derivations (direct, and via this).
     Apply with `letI`/`@`. -/
-def divisionAllegoryLCDA : DivisionAllegory 𝒜 :=
+@[expose] public def divisionAllegoryLCDA : DivisionAllegory 𝒜 :=
   { (inferInstance : LocallyCompleteDistributiveAllegory 𝒜).toDistributiveAllegory with
     div         := fun R S => lcdaDiv R S
     div_comp_le := fun R S => lcdaDiv_comp_le R S
@@ -1036,7 +1038,7 @@ end Representation
     grandparent is merged into ONE `toAllegory` field (the diamond-safe inheritance pattern;
     `DivisionAllegory` brings `DistributiveAllegory`, hence `∪`/`𝟘`).  This is exactly the
     hypothesis under which `Mσn(𝒜)` is a logos (§2.32). -/
-class TabularUnitaryDivisionAllegory (𝒜 : Type u) extends
+public class TabularUnitaryDivisionAllegory (𝒜 : Type u) extends
     TabularAllegory 𝒜, UnitaryAllegory 𝒜, DivisionAllegory 𝒜
 
 section HeytingHom
@@ -1045,24 +1047,24 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜]
 open Allegory in
 /-- The maximal morphism `⊤ : a → b` of a unitary allegory: `p_a ≫ p_b°` for the
     (map) projections to the unit.  `topMor_max`: every `R ⊑ ⊤`. -/
-noncomputable def topMor (a b : 𝒜) : a ⟶ b :=
+@[expose] public noncomputable def topMor (a b : 𝒜) : a ⟶ b :=
   (unit_proj_is_map a).choose ≫ (unit_proj_is_map b).choose°
 
-theorem topMor_max {a b : 𝒜} (R : a ⟶ b) : R ⊑ topMor a b :=
+public theorem topMor_max {a b : 𝒜} (R : a ⟶ b) : R ⊑ topMor a b :=
   unit_proj_max _ (unit_proj_is_map a).choose_spec _ (unit_proj_is_map b).choose_spec R
 
 /-- A chosen tabulation `(ℓ₁, ℓ₂) : γ → a` of the maximal morphism `⊤ : a → a`. -/
-noncomputable def topTab (a : 𝒜) : Σ γ : 𝒜, (γ ⟶ a) × (γ ⟶ a) :=
+@[expose] public noncomputable def topTab (a : 𝒜) : Σ γ : 𝒜, (γ ⟶ a) × (γ ⟶ a) :=
   ⟨(TabularAllegory.tabular (topMor a a)).choose,
    ((TabularAllegory.tabular (topMor a a)).choose_spec.choose,
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose)⟩
 
 /-- `Φ : (a,a) → Cor(γ)` sends `R` to `1_γ ∩ ℓ₁ R ℓ₂°`. -/
-noncomputable def phiCor {a : 𝒜} (R : a ⟶ a) : (topTab a).1 ⟶ (topTab a).1 :=
+@[expose] public noncomputable def phiCor {a : 𝒜} (R : a ⟶ a) : (topTab a).1 ⟶ (topTab a).1 :=
   Cat.id (topTab a).1 ∩ ((topTab a).2.1 ≫ R ≫ (topTab a).2.2°)
 
 /-- `Ψ : Cor(γ) → (a,a)` sends `c` to `ℓ₁° c ℓ₂`. -/
-noncomputable def psiCor {a : 𝒜} (c : (topTab a).1 ⟶ (topTab a).1) : a ⟶ a :=
+@[expose] public noncomputable def psiCor {a : 𝒜} (c : (topTab a).1 ⟶ (topTab a).1) : a ⟶ a :=
   (topTab a).2.1° ≫ c ≫ (topTab a).2.2
 
 -- (The dual modular law `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)` is `modular_le_right` from A4_1,
@@ -1071,7 +1073,7 @@ noncomputable def psiCor {a : 𝒜} (c : (topTab a).1 ⟶ (topTab a).1) : a ⟶ 
 /-- **Tabulation recovery**: if `(f, g)` are maps from `γ` with `f° ≫ g` maximal
     (so `R ⊑ f° ≫ g` for all `R : a → a`), then `R = f° ≫ (1_γ ∩ f ≫ R ≫ g°) ≫ g`.
     This is the recovery half of the order-iso `(a,a) ≅ Cor(γ)`. -/
-theorem tab_recover {a γ : 𝒜} {R : a ⟶ a} {f g : γ ⟶ a} (hfm : Map f) (hgm : Map g)
+public theorem tab_recover {a γ : 𝒜} {R : a ⟶ a} {f g : γ ⟶ a} (hfm : Map f) (hgm : Map g)
     (htop : R ⊑ f° ≫ g) :
     f° ≫ (Cat.id γ ∩ f ≫ R ≫ g°) ≫ g = R := by
   have hfs : f° ≫ f ⊑ Cat.id a := hfm.2
@@ -1101,7 +1103,7 @@ theorem tab_recover {a γ : 𝒜} {R : a ⟶ a} {f g : γ ⟶ a} (hfm : Map f) (
       _ ⊑ f° ≫ (Cat.id γ ∩ f ≫ R ≫ g°) ≫ g := le_trans step2 (step5 ▸ step4)
 
 /-- **§2.316 crux**: `ψ(φ(R)) = R`. -/
-theorem psi_phi {a : 𝒜} (R : a ⟶ a) : psiCor (phiCor R) = R :=
+public theorem psi_phi {a : 𝒜} (R : a ⟶ a) : psiCor (phiCor R) = R :=
   tab_recover (R := R)
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose_spec.1
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose_spec.2.1
@@ -1111,7 +1113,7 @@ theorem psi_phi {a : 𝒜} (R : a ⟶ a) : psiCor (phiCor R) = R :=
 /-- **Tabulation co-recovery**: `φ(ψ(c)) = c` for coreflexive `c` on the apex `γ`, when
     `(f, g)` are maps with `f ≫ f° ∩ g ≫ g° = 1_γ` (jointly monic).  I.e.
     `1_γ ∩ f ≫ (f° ≫ c ≫ g) ≫ g° = c`. -/
-theorem tab_corecover {a γ : 𝒜} {c : γ ⟶ γ} {f g : γ ⟶ a} (hfm : Map f) (hgm : Map g)
+public theorem tab_corecover {a γ : 𝒜} {c : γ ⟶ γ} {f g : γ ⟶ a} (hfm : Map f) (hgm : Map g)
     (hjm : f ≫ f° ∩ g ≫ g° = Cat.id γ) (hc : Coreflexive c) :
     Cat.id γ ∩ f ≫ (f° ≫ c ≫ g) ≫ g° = c := by
   have hfe : Cat.id γ ⊑ f ≫ f° := by
@@ -1181,18 +1183,18 @@ theorem tab_corecover {a γ : 𝒜} {c : γ ⟶ γ} {f g : γ ⟶ a} (hfm : Map 
     exact hassoc ▸ le_trans l1 l2
 
 /-- `φ` is monotone. -/
-theorem phiCor_mono {a : 𝒜} {R S : a ⟶ a} (h : R ⊑ S) : phiCor R ⊑ phiCor S :=
+public theorem phiCor_mono {a : 𝒜} {R S : a ⟶ a} (h : R ⊑ S) : phiCor R ⊑ phiCor S :=
   le_inter (inter_lb_left _ _)
     (le_trans (inter_lb_right _ _) (comp_mono_left _ (comp_mono_right h _)))
 
 /-- `ψ` is monotone. -/
-theorem psiCor_mono {a : 𝒜} {c d : (topTab a).1 ⟶ (topTab a).1} (h : c ⊑ d) :
+public theorem psiCor_mono {a : 𝒜} {c d : (topTab a).1 ⟶ (topTab a).1} (h : c ⊑ d) :
     psiCor c ⊑ psiCor d :=
   comp_mono_left _ (comp_mono_right h _)
 
 /-- `φ(ψ(c)) = c` for coreflexive `c` (specialization of `tab_corecover` to the chosen
     tabulation of `⊤_a`). -/
-theorem phi_psi {a : 𝒜} {c : (topTab a).1 ⟶ (topTab a).1} (hc : Coreflexive c) :
+public theorem phi_psi {a : 𝒜} {c : (topTab a).1 ⟶ (topTab a).1} (hc : Coreflexive c) :
     phiCor (psiCor c) = c :=
   tab_corecover
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose_spec.1
@@ -1200,7 +1202,7 @@ theorem phi_psi {a : 𝒜} {c : (topTab a).1 ⟶ (topTab a).1} (hc : Coreflexive
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose_spec.2.2.2 hc
 
 /-- `φ` reflects order: `φ(X) ⊑ φ(Y) ↔ X ⊑ Y` (an order-iso onto `Cor(γ)`). -/
-theorem phiCor_le_iff {a : 𝒜} (X Y : a ⟶ a) : phiCor X ⊑ phiCor Y ↔ X ⊑ Y := by
+public theorem phiCor_le_iff {a : 𝒜} (X Y : a ⟶ a) : phiCor X ⊑ phiCor Y ↔ X ⊑ Y := by
   constructor
   · intro h
     have := psiCor_mono h
@@ -1208,7 +1210,7 @@ theorem phiCor_le_iff {a : 𝒜} (X Y : a ⟶ a) : phiCor X ⊑ phiCor Y ↔ X �
   · exact phiCor_mono
 
 /-- `ψ`-`φ` Galois iff for coreflexive targets: `Z ⊑ ψ(c) ↔ φ(Z) ⊑ c`. -/
-theorem le_psiCor_iff {a : 𝒜} (Z : a ⟶ a) {c : (topTab a).1 ⟶ (topTab a).1}
+public theorem le_psiCor_iff {a : 𝒜} (Z : a ⟶ a) {c : (topTab a).1 ⟶ (topTab a).1}
     (hc : Coreflexive c) : Z ⊑ psiCor c ↔ phiCor Z ⊑ c := by
   constructor
   · intro h
@@ -1219,7 +1221,7 @@ theorem le_psiCor_iff {a : 𝒜} (Z : a ⟶ a) {c : (topTab a).1 ⟶ (topTab a).
     rwa [psi_phi] at this
 
 /-- `φ` preserves meets: `φ(X ∩ Y) = φ(X) ∩ φ(Y)`. -/
-theorem phiCor_inter {a : 𝒜} (X Y : a ⟶ a) : phiCor (X ∩ Y) = phiCor X ∩ phiCor Y := by
+public theorem phiCor_inter {a : 𝒜} (X Y : a ⟶ a) : phiCor (X ∩ Y) = phiCor X ∩ phiCor Y := by
   apply le_antisymm
   · exact le_inter (phiCor_mono (inter_lb_left _ _)) (phiCor_mono (inter_lb_right _ _))
   · -- φX ∩ φY ⊑ φ(X∩Y): both coreflexive; transport back via ψ and the meet-on-Cor.
@@ -1239,12 +1241,12 @@ theorem phiCor_inter {a : 𝒜} (X Y : a ⟶ a) : phiCor (X ∩ Y) = phiCor X �
 -- ⊤ → A : the largest H with H ∩ 1 ⊑ A.
 /-- The Heyting special arrow `1 → A` on the full poset `(a,a)`: `Ψ(Φ(1) ⟹ Φ(A))`,
     where `⟹` is the Cor(γ) Heyting arrow. -/
-noncomputable def oneHeyting {a : 𝒜} (A : a ⟶ a) : a ⟶ a :=
+@[expose] public noncomputable def oneHeyting {a : 𝒜} (A : a ⟶ a) : a ⟶ a :=
   psiCor (heytingImpl (phiCor (Cat.id a)) (phiCor A))
 
 /-- **§2.316 / §2.32 adjunction**: for coreflexive `A`, `oneHeyting A` is the largest
     `Z : (a,a)` whose coreflexive part lies under `A`:  `Z ∩ 1 ⊑ A ↔ Z ⊑ oneHeyting A`. -/
-theorem oneHeyting_adj {a : 𝒜} (A : a ⟶ a) (Z : a ⟶ a) :
+public theorem oneHeyting_adj {a : 𝒜} (A : a ⟶ a) (Z : a ⟶ a) :
     Z ∩ Cat.id a ⊑ A ↔ Z ⊑ oneHeyting A := by
   have hP : Coreflexive (heytingImpl (phiCor (Cat.id a)) (phiCor A)) := inter_lb_left _ _
   rw [oneHeyting, le_psiCor_iff Z hP]
@@ -1286,7 +1288,7 @@ theorem dom_comp_coref {a b : 𝒜} (f : a ⟶ b) {c : b ⟶ b} (hc : Coreflexiv
     `dom R = 1 ∩ R R°` collapses because `R := f c f°` is symmetric and `f° f ⊑ 1` makes
     `R R° ⊑ R`, while `R` is itself a meet of symmetric idempotents.)  Together with
     `dom_comp_coref` this says `dom (f ≫ c) = dom (f ≫ c ≫ f°) = 1 ∩ f c f°`. -/
-theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ b} (hc : Coreflexive c) :
+public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ b} (hc : Coreflexive c) :
     dom (f ≫ c ≫ f°) = Cat.id a ∩ (f ≫ c ≫ f°) := by
   have hsym : (f ≫ c ≫ f°)° = f ≫ c ≫ f° := by
     have hCsym : c° = c := symmetric_eq (coreflexive_symmetric_idempotent hc).1

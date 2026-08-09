@@ -32,10 +32,12 @@
 
   Mathlib-free.  Single universe (forced by the lax stage-inclusion machinery).
 -/
-import Freyd.S1_547_UniformCapStep
-import Freyd.S2_218_RatCapPositive
-import Freyd.S1_543_LaxGermCoproduct
-import Freyd.S1_543_RatCapHcanon
+module
+
+public import Freyd.S1_547_UniformCapStep
+public import Freyd.S2_218_RatCapPositive
+public import Freyd.S1_543_LaxGermCoproduct
+public import Freyd.S1_543_RatCapHcanon
 
 open Freyd
 open Freyd.Colim
@@ -51,7 +53,7 @@ universe u₁ u₂ v
     `F A + F B → F(A + B)` (given by `case (F inl) (F inr)`) is an isomorphism.  Dual of
     `PreservesBinaryProducts`; note the comparison runs `F A + F B → F(A + B)` (the opposite
     direction to the product comparison `F(A × B) → F A × F B`). -/
-def PreservesBinaryCoproducts {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+@[expose] public def PreservesBinaryCoproducts {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     (F : Functor 𝒞 𝒟) [HasBinaryCoproducts 𝒞] [HasBinaryCoproducts 𝒟] : Prop :=
   ∀ {A B : 𝒞},
     IsIso (HasBinaryCoproducts.case (F.map (HasBinaryCoproducts.inl (A := A) (B := B)))
@@ -73,7 +75,7 @@ variable {𝒜 ℬ ℰ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ] [Cat.{u} ℰ]
     comparisons), a composite of isos (`φF` iso ⟹ `G φF` iso by `functor_preserves_iso`).  Dual of
     `preservesBinaryProducts_comp` (the factor order flips because the coproduct comparison runs the
     opposite way). -/
-theorem preservesBinaryCoproducts_comp [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
+public theorem preservesBinaryCoproducts_comp [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
     [HasBinaryCoproducts ℰ] (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
     (hpcF : PreservesBinaryCoproducts F) (hpcG : PreservesBinaryCoproducts G) :
     PreservesBinaryCoproducts (compFunctor F G) := by
@@ -116,7 +118,7 @@ variable {ι : Type w} {D : Directed ι} (L : LaxCatSystem.{w, w} ι D) (hL : Co
     `objInclL_preserves_coproducts` (its target object `objIncl L i ((data.hcop i).coprod a b)` is
     `(fun x => ⟨i,x⟩) (a + b)` and its legs are `stageInclL inl|inr = stageInclFunctorL.map inl|inr`).
     Dual of `stageInclFunctorL_preservesProducts`. -/
-theorem stageInclFunctorL_preservesCoproducts (data : LaxCoproductData L) (i : ι) :
+public theorem stageInclFunctorL_preservesCoproducts (data : LaxCoproductData L) (i : ι) :
     @PreservesBinaryCoproducts (L.A i) (Obj L) (L.catA i) (laxColimCat L hL)
       (stageInclFunctorL L hL i) (data.hcop i)
       (laxColimHasBinaryCoproducts L hL data) := by
@@ -139,7 +141,7 @@ variable {ι : Type u'} {D : Directed ι} {𝒞 : Type u'} [Cat.{u'} 𝒞] [Disj
     `pres` (joint-epi preservation) and `presCase` (copairing preservation) are the committed
     base-change coproduct facts `baseChange_coprod_jointEpi` / `baseChange_coprod_copair` applied to
     the projection `g = P.proj hij`.  Coproduct mirror of `ratLaxProductData`. -/
-noncomputable def ratLaxCoproductData (P : ProjSystem ι D 𝒞) :
+@[expose] public noncomputable def ratLaxCoproductData (P : ProjSystem ι D 𝒞) :
     LaxCoproductData (laxOfProjSystem' P) where
   hcop i := overHasBinaryCoproducts (P.pr i)
   pres {_i _j} hij a b z u v hl hr := baseChange_coprod_jointEpi (P.proj hij) a b z u v hl hr
@@ -173,7 +175,7 @@ variable (W : WSCover S)
     (`S ≅ S/1`, the base stage product `listProd (chain base) = 1` being terminal), so the comparison
     is the `S`-coproduct comparison — an iso by `isIso_of_coproduct_up`.  Dual of
     `terminalSlicePresProds`; built with `case` in place of `pair`. -/
-theorem terminalSlicePresCoprods :
+public theorem terminalSlicePresCoprods :
     letI : HasBinaryCoproducts (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) :=
       overHasBinaryCoproducts _
     @PreservesBinaryCoproducts S (Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) _ _
@@ -204,7 +206,7 @@ set_option maxHeartbeats 1000000 in
     `S/1` is `S`) and the lax stage-inclusion's coproduct preservation
     (`stageInclFunctorL_preservesCoproducts` on the §1.547 lax coproduct bundle
     `ratLaxCoproductData`).  Sorry-free. -/
-theorem uniformStep_preservesBinaryCoproducts :
+public theorem uniformStep_preservesBinaryCoproducts :
     letI : HasBinaryCoproducts (uniformTargetTy W) :=
       laxColimHasBinaryCoproducts (laxOfProjSystem' (cofinalProjSystem (S := S)))
         (coherentProj (cofinalProjSystem (S := S))) (ratLaxCoproductData (cofinalProjSystem (S := S)))

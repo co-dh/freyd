@@ -60,7 +60,9 @@
 
   MATHLIB-FREE.  Composition in DIAGRAM ORDER.
 -/
-import Freyd.S2_153d_NonEffWitness
+module
+
+public import Freyd.S2_153d_NonEffWitness
 
 open Freyd Freyd.Alg
 
@@ -79,7 +81,7 @@ variable {K : ModulusSystem}
 /-- **Compose-caucus lemma (Layer 1).**  For a point `y` of the level `graph x ⊚ (graph x)°`,
     membership in caucus `n` is exactly: `A|_{ℓn}` contains the first column `colA y` and
     `A|_{ϰn}` contains the second column `colB y`.  INDEPENDENT of the codomain `Q`. -/
-theorem level_caucus_iff {A Q : Assembly.{u} K} (x : A ⟶ Q) (n : Nat)
+public theorem level_caucus_iff {A Q : Assembly.{u} K} (x : A ⟶ Q) (n : Nat)
     (y : (graph x ⊚ (graph x)°).src.X) :
     (graph x ⊚ (graph x)°).src.caucus n y ↔
       A.caucus (K.proj₁ n) ((graph x ⊚ (graph x)°).colA.toFun y) ∧

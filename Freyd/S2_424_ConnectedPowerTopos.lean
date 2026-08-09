@@ -37,9 +37,11 @@
   therefore stated gated on that residual (see `s2424_topos_of_boxNaming`).
 -/
 
-import Freyd.S2_43
-import Freyd.S2_165_Spl
-import Freyd.S2_41b
+module
+
+public import Freyd.S2_43
+public import Freyd.S2_165_Spl
+public import Freyd.S2_41b
 
 universe v u
 
@@ -58,7 +60,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] {x a b : 𝒜}
     (`hRE`) — so the base symmetric-division bound `(R/ₛT)° ≫ R ⊑ T` upgrades to `⊑ T ≫ E`
     by appending `E`:  `(R/ₛT)° ≫ R = ((R/ₛT)° ≫ R) ≫ E ⊑ T ≫ E`.  Works for coreflexive
     (`E ⊑ 1`), PER, and reflexive objects alike. -/
-theorem splEqChain2_general (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
+public theorem splEqChain2_general (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
     (hE_idem : E ≫ E = E) (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
     (hfix : E' ≫ R ≫ E = R) :
     (E' ≫ (R /ₛ T))° ≫ R ⊑ T ≫ E := by
@@ -190,21 +192,21 @@ theorem splTargetThick_unguarded (E : SplObj 𝒜)
 /-- `ThickAll T`: the box-FREE §2.431 thickness of `T` — an entire witness `Rhat` for EVERY `R`
     (no `codBox R = codBox T` guard).  Holds for the membership `∋` of an unguarded power
     allegory. -/
-def ThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] {a b : 𝒜} (T : a ⟶ b) : Prop :=
+@[expose] public def ThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] {a b : 𝒜} (T : a ⟶ b) : Prop :=
   ∀ {d : 𝒜} (R : d ⟶ b), ∃ (Rhat : d ⟶ a), Entire Rhat ∧ Rhat ≫ T ⊑ R ∧ Rhat° ≫ R ⊑ T
 
 section ThickAllDescent
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-- `1 ⊑ R ≫ R° ⟹ Entire R`. -/
-theorem entireOfOneLe {a b : 𝒜} {R : a ⟶ b} (h : Cat.id a ⊑ R ≫ R°) : Entire R := by
+public theorem entireOfOneLe {a b : 𝒜} {R : a ⟶ b} (h : Cat.id a ⊑ R ≫ R°) : Entire R := by
   unfold Entire dom
   exact le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) h)
 
 /-- `ThickAll` descends along a map factorization `T = h ≫ S`, `h° ≫ h = 1`: if `T` is
     unconditionally thick then so is `S = h° ≫ T`.  Witness `Shat = Rhat ≫ h` where `Rhat` is `T`'s
     witness; `Shat° ≫ R ⊑ h° ≫ T = S` uses `h° ≫ h ≫ S = S`. -/
-theorem thickAll_descent {x c a : 𝒜} {h : x ⟶ c} {S : c ⟶ a} {T : x ⟶ a}
+public theorem thickAll_descent {x c a : 𝒜} {h : x ⟶ c} {S : c ⟶ a} {T : x ⟶ a}
     (hMap : Map h) (hch : h° ≫ h = Cat.id c) (hTeq : T = h ≫ S) (hTA : ThickAll T) :
     ThickAll S := by
   intro d R
@@ -221,7 +223,7 @@ theorem thickAll_descent {x c a : 𝒜} {h : x ⟶ c} {S : c ⟶ a} {T : x ⟶ a
 /-- **§2.433 thick target, `ThickAll` (box-free) form.**  Same witness as
     `splTargetThick_unguarded`, but delivering the box-FREE `ThickAll` of `splEqTarget E T`
     directly (the proof never touches the box guard). -/
-theorem splTargetThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] (E : SplObj 𝒜)
+public theorem splTargetThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] (E : SplObj 𝒜)
     {x : 𝒜} (T : x ⟶ E.carrier)
     (hUnthick : ∀ {c : 𝒜} (R : c ⟶ E.carrier), Entire (R /ₛ T)) :
     ThickAll (splEqTarget E T) := by
@@ -253,7 +255,7 @@ theorem splTargetThickAll {𝒜 : Type u} [DivisionAllegory 𝒜] (E : SplObj �
 
 /-- Straight UNCONDITIONALLY-thick target (packaged like `exists_straight_thick_target_of_split`
     but box-free): straight-factor the unconditionally-thick `T` and descend `ThickAll`. -/
-theorem exists_straight_thickAll_target
+public theorem exists_straight_thickAll_target
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (T : x ⟶ a), ThickAll T) (b : 𝒜) :
     ∃ (p : 𝒜) (S : p ⟶ b), Straight S ∧ ThickAll S := by
   obtain ⟨x, T, hTA⟩ := hthick b
@@ -263,7 +265,7 @@ theorem exists_straight_thickAll_target
 /-- The §2.413 membership map from an unconditionally-thick STRAIGHT `S`: `f = R /ₛ S` is a map
     with `f ≫ S = R`, for EVERY `R` (no box).  This is `power_of_split_thick`'s `eps_thick`
     algebra with the box guard dropped (the witness `Rhat` exists unconditionally). -/
-theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
+public theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
     (hStr : Straight S) (hTA : ThickAll S) {c : 𝒜} (R : c ⟶ b) :
     Map (R /ₛ S) ∧ (R /ₛ S) ≫ S = R := by
   obtain ⟨R', hEnt', hR'S, hR'oR⟩ := hTA R
@@ -292,7 +294,7 @@ theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
     target (`exists_straight_thickAll_target`); `eps_thick_all` = `thickAll_straight_classifies`.
     NO progenitor / copower needed — the §2.416 obstacle (S2_4 note) is bypassed because the
     targets are already box-free thick. -/
-noncomputable def unguardedPowerOfSplitThickAll
+@[expose] public noncomputable def unguardedPowerOfSplitThickAll
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (T : x ⟶ a), ThickAll T) :
     UnguardedPowerAllegory 𝒜 :=
   { powerObj := fun b => (exists_straight_thickAll_target hsplit hthick b).choose
@@ -332,7 +334,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- The base membership `∋ b` is UNCONDITIONALLY thick in an unguarded power allegory:
     `A(R) = R /ₛ ∋ b` is entire for every `R` (`A_is_map'`). -/
-theorem eps_unthick (b : 𝒜) {c : 𝒜} (R : c ⟶ b) : Entire (R /ₛ ∋ b) :=
+public theorem eps_unthick (b : 𝒜) {c : 𝒜} (R : c ⟶ b) : Entire (R /ₛ ∋ b) :=
   (A_is_map' R).1
 
 /-- **§2.422 (thick_target for `SplObj 𝒜`, unguarded base).**  EVERY object `E` of
@@ -348,7 +350,7 @@ theorem splObj_thick_target (E : SplObj 𝒜) :
 /-- **§2.422 (thick_target for `SplObj 𝒜`, `ThickAll` form).**  EVERY object `E` of `SplObj 𝒜`
     has a box-FREE unconditionally-thick target — the membership `∋ (E.carrier)` split-lifted by
     `splTargetThickAll`.  This is the input the UNGUARDED power builder needs. -/
-theorem splObj_thickAll_target (E : SplObj 𝒜) :
+public theorem splObj_thickAll_target (E : SplObj 𝒜) :
     ∃ (P : SplObj 𝒜) (S : P ⟶ E), ThickAll S :=
   ⟨embObj (PowerAllegory.powerObj E.carrier),
    splEqTarget E (∋ E.carrier),
@@ -376,7 +378,7 @@ end UnguardedThickTargets
 /-- Freyd §2.424 base: a SEMI-SIMPLE, UNITARY, UNGUARDED power allegory (one `Allegory`
     base — `DivisionAllegory` is shared by the semi-simple-division and unguarded-power
     parents, so Lean's structure inheritance collapses the diamond). -/
-class SemiSimpleUnitaryUnguardedPowerAllegory (𝒜 : Type u) extends
+public class SemiSimpleUnitaryUnguardedPowerAllegory (𝒜 : Type u) extends
     SemiSimpleDivisionAllegory 𝒜, UnitaryAllegory 𝒜, UnguardedPowerAllegory 𝒜
 
 section Assembly
@@ -391,7 +393,7 @@ noncomputable def splObjEffectivePrePower : EffectivePrePowerAllegory (SplObj �
 
 /-- Equivalence relations split in `SplObj 𝒜` (`splObj_split_equivalence`, needs only the
     ambient allegory). -/
-theorem splObj_eqSplits : EqSplits (SplObj 𝒜) :=
+public theorem splObj_eqSplits : EqSplits (SplObj 𝒜) :=
   fun E hrefl hsym hidem => splObj_split_equivalence E hrefl hsym hidem
 
 /-- **§2.424 (HEADLINE, UNGUARDED power).**  `Sid(Cor A) = SplObj 𝒜` is an UNGUARDED POWER
@@ -399,7 +401,7 @@ theorem splObj_eqSplits : EqSplits (SplObj 𝒜) :=
     from the unguarded base membership), and equivalence relations split (`splObj_eqSplits`), so
     the progenitor-free builder `unguardedPowerOfSplitThickAll` applies.  This is the structure
     Freyd's §2.414-converse (`mapTopos`) requires. -/
-noncomputable def splObjUnguardedPower : UnguardedPowerAllegory (SplObj 𝒜) :=
+@[expose] public noncomputable def splObjUnguardedPower : UnguardedPowerAllegory (SplObj 𝒜) :=
   unguardedPowerOfSplitThickAll splObj_eqSplits (fun E => splObj_thickAll_target E)
 
 /-- **§2.422 / §2.424 (power).**  `Sid(Cor A) = SplObj 𝒜` is a POWER ALLEGORY (the box-guarded
@@ -415,7 +417,7 @@ noncomputable def splObjPowerAllegory : PowerAllegory (SplObj 𝒜) :=
       * distributive — `instDistributiveSpl`;
       * unguarded power — `splObjUnguardedPower` (§2.422 + the box-free thick targets).
     This is the exact §2.414-converse hypothesis. -/
-noncomputable instance splObjTUUP : TabularUnitaryUnguardedPowerAllegory (SplObj 𝒜) :=
+@[expose] public noncomputable instance splObjTUUP : TabularUnitaryUnguardedPowerAllegory (SplObj 𝒜) :=
   { (splObj_tabular_of_semiSimple : TabularAllegory (SplObj 𝒜)),
     (instUnitarySpl : UnitaryAllegory (SplObj 𝒜)),
     (instDistributiveSpl : DistributiveAllegory (SplObj 𝒜)),

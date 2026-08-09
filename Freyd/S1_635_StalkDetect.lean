@@ -9,7 +9,9 @@
   inverse image of `m` along `x'`; were `T_F̂(m)` onto, the class of `x'` would lift through `m`,
   putting a member of `F̂` below `Usub`, against the construction.
 -/
-import Freyd.S1_635_StalkFamily
+module
+
+public import Freyd.S1_635_StalkFamily
 
 namespace Freyd
 open PreLogosHorn.Stalk
@@ -21,7 +23,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞] [HasBinaryCoproducts �
     probe escapes the image of `T_F̂(m)`.  Names the escaping class (unlike the `¬ Surjective`
     corollary below), so it can be combined with an external equation on the stalk — e.g. the
     equalizing identity that drives `Tstar_separates`. -/
-theorem stalk_detects_proper_mono_class {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic m)
+public theorem stalk_detects_proper_mono_class {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic m)
     (U : Subobject 𝒞 one) (hUcomp : IsComplementedSub U)
     (x' : U.dom ⟶ A) (hx' : ¬ ∃ y : U.dom ⟶ A', y ≫ m = x') :
     ∃ F : StalkIndex 𝒞, ∃ hU : F.val U,
@@ -81,7 +83,7 @@ theorem stalk_detects_proper_mono_class {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic
 /-- §1.635:239 — a proper subobject probed by a complemented subterminator is DETECTED by some
     ultra-filter stalk: the post-composition `T_F̂(m)` fails to be surjective.  Corollary of the
     strong form `stalk_detects_proper_mono_class`, forgetting WHICH class escapes. -/
-theorem stalk_detects_proper_mono {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic m)
+public theorem stalk_detects_proper_mono {A' A : 𝒞} (m : A' ⟶ A) (hm : Monic m)
     (U : Subobject 𝒞 one) (hUcomp : IsComplementedSub U)
     (x' : U.dom ⟶ A) (hx' : ¬ ∃ y : U.dom ⟶ A', y ≫ m = x') :
     ∃ F : StalkIndex 𝒞, ¬ Function.Surjective (TF.map F.val m) := by

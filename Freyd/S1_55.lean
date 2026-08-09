@@ -25,14 +25,16 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_241
-import Freyd.S1_18
-import Freyd.S1_27
-import Freyd.S1_31
-import Freyd.S1_42
-import Freyd.S1_47
-import Freyd.S1_52
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_241
+public import Freyd.S1_18
+public import Freyd.S1_27
+public import Freyd.S1_31
+public import Freyd.S1_42
+public import Freyd.S1_47
+public import Freyd.S1_52
 
 
 open Freyd
@@ -45,7 +47,7 @@ namespace Freyd
 
 /-- §1.55  A POWER 𝒮^I of the category of sets: objects are I-indexed families
     of sets, morphisms are I-indexed families of functions, composed pointwise. -/
-instance powerCat (I : Type w) : Cat.{w} (I → Type w) where
+@[expose] public instance powerCat (I : Type w) : Cat.{w} (I → Type w) where
   Hom X Y := ∀ i, X i → Y i
   id _ := fun _ a => a
   comp f g := fun i a => g i (f i a)
@@ -60,10 +62,10 @@ variable {𝒞 : Type u} [Cat.{w} 𝒞]
 
 /-- The PRODUCT FUNCTOR of an I-indexed family of functors `F i : 𝒞 → 𝒮`,
     sending `A ↦ (i ↦ F i A)` into the power 𝒮^I. -/
-def familyFunctor {I : Type w} (F : I → (𝒞 → Type w)) : 𝒞 → (I → Type w) :=
+@[expose] public def familyFunctor {I : Type w} (F : I → (𝒞 → Type w)) : 𝒞 → (I → Type w) :=
   fun A i => F i A
 
-def familyFunctorFunctor {I : Type w} (F : I → Functor 𝒞 (Type w)) :
+@[expose] public def familyFunctorFunctor {I : Type w} (F : I → Functor 𝒞 (Type w)) :
     Functor 𝒞 (I → Type w) where
   obj := familyFunctor (fun i => (F i).obj)
   map f := fun i => (F i).map f
@@ -89,21 +91,21 @@ section HomRep
     the witness used by `henkin_lubkin`, here named so its exactness can be stated.
     As a map `𝒞 → (𝒞 → Type u)`, it has the shape section 1.465 calls the covariant
     Yoneda representation. -/
-def homRep (𝒞 : Type u) [Cat.{u} 𝒞] : 𝒞 → (𝒞 → Type u) := familyFunctor (fun i A => (i ⟶ A))
+@[expose] public def homRep (𝒞 : Type u) [Cat.{u} 𝒞] : 𝒞 → (𝒞 → Type u) := familyFunctor (fun i A => (i ⟶ A))
 
-def homRepFunctor (𝒞 : Type u) [Cat.{u} 𝒞] : Functor 𝒞 (𝒞 → Type u) :=
+@[expose] public def homRepFunctor (𝒞 : Type u) [Cat.{u} 𝒞] : Functor 𝒞 (𝒞 → Type u) :=
   familyFunctorFunctor (fun i => homFunctor i)
 
 /-- The Henkin–Lubkin representation `homRep` SEPARATES MAPS (re-derives the
     faithfulness of `henkin_lubkin` for the explicit witness). -/
-theorem homRep_separates (𝒞 : Type u) [Cat.{u} 𝒞] : SeparatesMaps (homRepFunctor 𝒞) := by
+public theorem homRep_separates (𝒞 : Type u) [Cat.{u} 𝒞] : SeparatesMaps (homRepFunctor 𝒞) := by
   intro A B f g h
   exact cayley_faithful f g (fun {X} hX => congrFun (congrFun h X) hX)
 
 /-- **Exactness, limit side (i):** `homRep` PRESERVES monos.  `Hom(i, f)` is
     injective for every `i` precisely because `f` is left-cancellable, so the
     induced family of functions is a mono in the power `𝒮^|𝒞|`. -/
-theorem homRep_preserves_mono (𝒞 : Type u) [Cat.{u} 𝒞] : PreservesMono (homRepFunctor 𝒞) := by
+public theorem homRep_preserves_mono (𝒞 : Type u) [Cat.{u} 𝒞] : PreservesMono (homRepFunctor 𝒞) := by
   intro X Y f hf W p q h
   funext i a
   exact hf (p i a) (q i a) (congrFun (congrFun h i) a)
@@ -129,7 +131,7 @@ theorem homRep_reflects_mono (𝒞 : Type u) [Cat.{u} 𝒞] : ReflectsMono (homR
     the §1.543 capitalization supplies — now proven Sorry-free as
     `Freyd.capitalization_lemma` — so this pinpoints the remaining work for an
     *exact* Henkin–Lubkin representation as WIRING that proven lemma in.) -/
-theorem hom_lifts_cover_of_projective {𝒞 : Type u} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
+public theorem hom_lifts_cover_of_projective {𝒞 : Type u} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
     [PullbacksTransferCovers 𝒞] {i X Y : 𝒞}
     (hi : ∀ {P : 𝒞} (e : P ⟶ i), Cover e → ∃ s : i ⟶ P, s ≫ e = Cat.id i)
     {f : X ⟶ Y} (hf : Cover f) (h : i ⟶ Y) : ∃ h' : i ⟶ X, h' ≫ f = h := by
@@ -149,7 +151,7 @@ theorem hom_lifts_cover_of_projective {𝒞 : Type u} [Cat.{w} 𝒞] [HasPullbac
     `homRep_preserves_mono`/`_reflects_mono`, this is the full exactness of the
     representation; the projectivity hypothesis is taken as `hproj` here, to be
     discharged by applying the (proven) capitalization lemma. -/
-theorem homRep_preserves_cover_pointwise {𝒞 : Type u} [Cat.{u} 𝒞] [HasPullbacks 𝒞]
+public theorem homRep_preserves_cover_pointwise {𝒞 : Type u} [Cat.{u} 𝒞] [HasPullbacks 𝒞]
     [PullbacksTransferCovers 𝒞]
     (hproj : ∀ C : 𝒞, ∀ {P : 𝒞} (e : P ⟶ C), Cover e → ∃ s : C ⟶ P, s ≫ e = Cat.id C)
     {X Y : 𝒞} {f : X ⟶ Y} (hf : Cover f) (i : 𝒞) (h : homRep 𝒞 Y i) :
@@ -195,7 +197,7 @@ theorem exists_separating_family (𝒞 : Type u) [Cat.{u} 𝒞] [PreRegularCateg
     separates morphisms.  The witness is the covariant hom-functor representation;
     the proof is Sorry-free and choice-free (depends only on `Quot.sound`, via
     `funext`).  See the file header for the faithful-vs-exact scope note. -/
-theorem henkin_lubkin (𝒞 : Type u) [Cat.{u} 𝒞] [PreRegularCategory 𝒞] :
+public theorem henkin_lubkin (𝒞 : Type u) [Cat.{u} 𝒞] [PreRegularCategory 𝒞] :
     ∃ T : Functor 𝒞 (𝒞 → Type u), SeparatesMaps T :=
   ⟨homRepFunctor 𝒞, homRep_separates 𝒞⟩
 

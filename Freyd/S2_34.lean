@@ -1,5 +1,7 @@
-import Freyd.S2_165_Spl
-import Freyd.S2_147_MapCat
+module
+
+public import Freyd.S2_165_Spl
+public import Freyd.S2_147_MapCat
 
 universe v u
 
@@ -53,12 +55,12 @@ open Cat
 
 /-- A **PRE-TABULAR DIVISION ALLEGORY** (§2.341 hypothesis): simultaneously a
     `DivisionAllegory` and a `PreTabularAllegory` over the **same** `Allegory` base. -/
-class PreTabularDivisionAllegory (𝒜 : Type u)
+public class PreTabularDivisionAllegory (𝒜 : Type u)
     extends DivisionAllegory 𝒜, PreTabularAllegory 𝒜
 
 /-- A **TABULAR DIVISION ALLEGORY** (§2.341 target): a `DivisionAllegory` that is also
     `TabularAllegory`, over one shared `Allegory` base — Freyd's "tabular division allegory". -/
-class TabularDivisionAllegory (𝒜 : Type u)
+public class TabularDivisionAllegory (𝒜 : Type u)
     extends DivisionAllegory 𝒜, TabularAllegory 𝒜
 
 /-! ## §2.34 (coreflexive case)  `Spl(Cor 𝒜)` is a distributive / division allegory
@@ -70,14 +72,14 @@ class TabularDivisionAllegory (𝒜 : Type u)
 
 /-- Order on `SplCorObj 𝒜` is read off the underlying `𝒜`-morphisms (the coreflexive analogue
     of `splLe_iff`): `Φ ⊑ Ψ ↔ Φ.R ⊑ Ψ.R`. -/
-theorem splCorLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplCorObj 𝒜} (Φ Ψ : E ⟶ F) :
+public theorem splCorLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplCorObj 𝒜} (Φ Ψ : E ⟶ F) :
     Φ ⊑ Ψ ↔ Φ.R ⊑ Ψ.R := by
   show splInter Φ Ψ = Φ ↔ Φ.R ∩ Ψ.R = Φ.R
   exact ⟨fun h => congrArg SplHom.R h, fun h => SplHom.ext h⟩
 
 /-- **§2.21 (coreflexive)**: if `𝒜` is distributive then so is `Spl(Cor 𝒜)`, with union and
     zero taken pointwise (`splUnion`, `splZero`).  Each law descends via `SplHom.ext`. -/
-instance instDistributiveSplCor {𝒜 : Type u} [DistributiveAllegory 𝒜] :
+@[expose] public instance instDistributiveSplCor {𝒜 : Type u} [DistributiveAllegory 𝒜] :
     DistributiveAllegory (SplCorObj 𝒜) :=
   { SplCorObj.instAllegorySplCor with
     zero := splZero
@@ -111,7 +113,7 @@ instance instDistributiveSplCor {𝒜 : Type u} [DistributiveAllegory 𝒜] :
 /-- **§2.34 (coreflexive)**: if `𝒜` is a DIVISION allegory then so is `Spl(Cor 𝒜)`, with right
     division taken pointwise (`splDiv`).  Both §2.31 laws reduce to the base `div_comp_le` /
     `le_div`, exactly as for the full `SplObj 𝒜` (`instDivisionSpl`). -/
-noncomputable instance instDivisionSplCor {𝒜 : Type u} [DivisionAllegory 𝒜] :
+@[expose] public noncomputable instance instDivisionSplCor {𝒜 : Type u} [DivisionAllegory 𝒜] :
     DivisionAllegory (SplCorObj 𝒜) :=
   { instDistributiveSplCor with
     div := fun Φ Ψ => splDiv Φ Ψ
@@ -135,7 +137,7 @@ noncomputable instance instDivisionSplCor {𝒜 : Type u} [DivisionAllegory 𝒜
     TABULAR DIVISION allegory — the §2.341 target.  Tabularity from
     `SplCorObj.tabular_of_preTabular`, division from `instDivisionSplCor`; both rest on the
     same `Allegory (SplCorObj 𝒜)` (`SplCorObj.instAllegorySplCor`). -/
-noncomputable instance instTabularDivisionSplCor {𝒜 : Type u} [PreTabularDivisionAllegory 𝒜] :
+@[expose] public noncomputable instance instTabularDivisionSplCor {𝒜 : Type u} [PreTabularDivisionAllegory 𝒜] :
     TabularDivisionAllegory (SplCorObj 𝒜) :=
   { instDivisionSplCor, SplCorObj.tabular_of_preTabular with }
 

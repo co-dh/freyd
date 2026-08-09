@@ -56,7 +56,9 @@
   Conventions: diagram-order composition `R ≫ S`, reciprocation `R°`, order `R ⊑ S`.
   Mathlib-free.
 -/
-import Freyd.S2_16d
+module
+
+public import Freyd.S2_16d
 
 universe u
 
@@ -79,7 +81,7 @@ variable {K : ModulusSystem}
     `AsmRel K = Rel(Assembly K)`.  It is the direct assembly analogue of
     `Freyd.RecEff.reflection_not_ac`, awaiting the halting-relation witness `I`
     (see the module docstring for why that witness needs the recursive modulus system). -/
-theorem asmReflection_not_ac_of_nonsplitting {A : Assembly.{u} K}
+public theorem asmReflection_not_ac_of_nonsplitting {A : Assembly.{u} K}
     (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩)
     (hrefl : Reflexive I) (hsym : Symmetric I) (htrans : Transitive I)
     (hno : ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I) :
@@ -96,7 +98,7 @@ theorem asmReflection_not_ac_of_nonsplitting {A : Assembly.{u} K}
     by ANY non-splitting equivalence relation on some assembly over `K`.  The hypothesis
     is exactly "`Rel(A)` has an equivalence relation that is not the level of a cover"
     (§2.153: "not all equivalence relations split as idempotents"). -/
-theorem asmReflection_not_ac_of_notEffective
+public theorem asmReflection_not_ac_of_notEffective
     (hne : ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
       ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I) :

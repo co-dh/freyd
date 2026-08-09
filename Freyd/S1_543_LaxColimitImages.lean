@@ -14,8 +14,10 @@
   This supplies the `hi : ∀ i, HasImages (stage i)` premise of `capitalization_regular_of_cofinalSystem`
   for the COFINAL `ratCapCat` tower (each stage being a `laxColimCat`), making §2.218 R3
   (`RegularCategory Ā`) reachable. -/
-import Freyd.S1_543_RatCapHcanon
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S1_543_RatCapHcanon
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim
@@ -29,7 +31,7 @@ variable {ι : Type w} {D : Directed ι} (L : LaxCatSystem.{w, w} ι D) (hL : Co
 /-- **The lax hom-colimit has images** (port of `Colim.colimitHasImages`).  Premises mirror the strict
     version: per-fibre images (`hi`), faithful (`hfaith`), mono-preserving (`hmono`) and image-preserving
     (`himgpres`) transitions, and pullbacks in the colimit. -/
-noncomputable def laxColimHasImages
+@[expose] public noncomputable def laxColimHasImages
     (hi : ∀ i, @HasImages (L.A i) (L.catA i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         L.Fmap hij p = L.Fmap hij q → p = q)

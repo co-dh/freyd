@@ -45,8 +45,10 @@
   Conventions: diagram-order composition `R ≫ S`, reciprocation `R°`, intersection
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
-import Freyd.S2_433_SplEqInstance2
-import Freyd.S2_16b
+module
+
+public import Freyd.S2_433_SplEqInstance2
+public import Freyd.S2_16b
 
 universe v u
 
@@ -66,14 +68,14 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- **§1.57 (allegory form)**: `c` is PROJECTIVE if every §2.147 cover onto it —
     a map `f : x ⟶ c` with `Cat.id c ⊑ f° ≫ f` — splits with a MAP section.
     Mirrors the retract-form `Freyd.Projective` of S1_57 (every cover onto C splits). -/
-def ProjectiveObj (c : 𝒜) : Prop :=
+@[expose] public def ProjectiveObj (c : 𝒜) : Prop :=
   ∀ {x : 𝒜} (f : x ⟶ c), Map f → Cat.id c ⊑ f° ≫ f →
     ∃ s : c ⟶ x, Map s ∧ s ≫ f = Cat.id c
 
 /-- **AC** (§1.57, §2.16(13)): every cover of `Map 𝒜` splits, i.e. every object is
     projective.  This is the "axiom of choice" of an AC regular category, stated for
     its allegory of relations. -/
-def CoversSplit (𝒜 : Type u) [Allegory 𝒜] : Prop :=
+@[expose] public def CoversSplit (𝒜 : Type u) [Allegory 𝒜] : Prop :=
   ∀ c : 𝒜, ProjectiveObj c
 
 /-- §2.147 covers compose: `(f ≫ g)° ≫ (f ≫ g) = g° ≫ (f° ≫ f) ≫ g ⊒ g° ≫ g ⊒ 1`. -/
@@ -103,20 +105,20 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- The embedding `𝒜 → Spl(Eq 𝒜)` on objects: `a ↦ (a, 1_a)` (the identity idempotent
     is reflexive).  On homs it is literally `embHom` (§2.164), since `Spl(Eq)`-homs
     ARE the underlying `SplHom`s. -/
-def embEq (a : 𝒜) : SplEqObj 𝒜 := ⟨embObj a, le_refl _⟩
+@[expose] public def embEq (a : 𝒜) : SplEqObj 𝒜 := ⟨embObj a, le_refl _⟩
 
 /-- The embedding `𝒜 → Spl(Eq 𝒜)` on homs: `embHom` (§2.164), retyped at the
     embedded `Spl(Eq)`-objects. -/
-def embEqHom {a b : 𝒜} (R : a ⟶ b) : (embEq a : SplEqObj 𝒜) ⟶ embEq b := embHom R
+@[expose] public def embEqHom {a b : 𝒜} (R : a ⟶ b) : (embEq a : SplEqObj 𝒜) ⟶ embEq b := embHom R
 
 @[simp] theorem embEqHom_R {a b : 𝒜} (R : a ⟶ b) : (embEqHom R).R = R := rfl
 
 /-- The embedding preserves identities in `Spl(Eq 𝒜)`. -/
-theorem embEq_id (a : 𝒜) : embEqHom (Cat.id a) = Cat.id (embEq a : SplEqObj 𝒜) :=
+public theorem embEq_id (a : 𝒜) : embEqHom (Cat.id a) = Cat.id (embEq a : SplEqObj 𝒜) :=
   SplHom.ext rfl
 
 /-- The embedding preserves composition in `Spl(Eq 𝒜)`. -/
-theorem embEq_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem embEq_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     embEqHom (R ≫ S) = embEqHom R ≫ embEqHom S :=
   SplHom.ext rfl
 
@@ -132,7 +134,7 @@ theorem embEq_inter {a b : 𝒜} (R S : a ⟶ b) :
 
 /-- The embedding preserves and reflects MAPS: `embEqHom f` is a map of `Spl(Eq 𝒜)`
     iff `f` is a map of `𝒜` (both `dom` and the simplicity order compute underlying). -/
-theorem embEq_map_iff {a b : 𝒜} (f : a ⟶ b) :
+public theorem embEq_map_iff {a b : 𝒜} (f : a ⟶ b) :
     Map (embEqHom f) ↔ Map f := by
   constructor
   · rintro ⟨hent, hsimp⟩
@@ -157,21 +159,21 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- **Step 1 (the canonical cover)**: the §2.164 "down" leg `splDown`, viewed in
     `Spl(Eq 𝒜)`: the hom `embEq a ⟶ (a, e)` with underlying morphism `e`. -/
-def covHom (E : SplEqObj 𝒜) : (embEq E.1.carrier : SplEqObj 𝒜) ⟶ E :=
+@[expose] public def covHom (E : SplEqObj 𝒜) : (embEq E.1.carrier : SplEqObj 𝒜) ⟶ E :=
   splDown E.1.idem
 
 @[simp] theorem covHom_R (E : SplEqObj 𝒜) : (covHom E).R = E.1.idem.e := rfl
 
 /-- The canonical cover is SPLIT at the relation level: `covHom° ≫ covHom = 1_E`
     (underlying `e° ≫ e = e`, which is the identity of `(a, e)`). -/
-theorem covHom_recip_comp (E : SplEqObj 𝒜) :
+public theorem covHom_recip_comp (E : SplEqObj 𝒜) :
     (covHom E)° ≫ covHom E = Cat.id E := by
   apply SplHom.ext
   show E.1.idem.e° ≫ E.1.idem.e = E.1.idem.e
   rw [E.1.idem.sym, E.1.idem.idem]
 
 /-- The canonical cover is a §2.147 COVER: `1_E ⊑ covHom° ≫ covHom`. -/
-theorem covHom_cover (E : SplEqObj 𝒜) :
+public theorem covHom_cover (E : SplEqObj 𝒜) :
     Cat.id E ⊑ (covHom E)° ≫ covHom E := by
   rw [covHom_recip_comp]; exact le_refl _
 
@@ -187,7 +189,7 @@ theorem covHom_comp_recip (E : SplEqObj 𝒜) :
 /-- **Step 1**: the canonical cover is a MAP of `Spl(Eq 𝒜)`.  Entireness is exactly
     REFLEXIVITY of `e` (`1 ⊑ e`, the `Spl(Eq)` condition `E.2`); simplicity is the
     split equation `covHom° ≫ covHom = 1`. -/
-theorem covHom_map (E : SplEqObj 𝒜) : Map (covHom E) := by
+public theorem covHom_map (E : SplEqObj 𝒜) : Map (covHom E) := by
   refine ⟨?_, ?_⟩
   · -- Entire: dom(covHom) = 1.  Underlying: `1_a ∩ e ≫ e° = 1_a`, i.e. `1 ⊑ e`.
     apply SplHom.ext
@@ -251,7 +253,7 @@ end EmbeddedProjective
     map-splitting of the equivalence relation `e` in `𝒜` (§2.163 effectiveness of
     `e`).  Tabularity of `𝒜` supplies the splitting of the coreflexive `S° ≫ S` —
     the book's "B is an equalizer of 1_A and A → B → A". -/
-theorem splitsAsMap_of_section {𝒜 : Type u} [TabularAllegory 𝒜] (B : SplEqObj 𝒜)
+public theorem splitsAsMap_of_section {𝒜 : Type u} [TabularAllegory 𝒜] (B : SplEqObj 𝒜)
     {s : B ⟶ (embEq B.1.carrier : SplEqObj 𝒜)} (hs : Map s)
     (hsec : s ≫ covHom B = Cat.id B) :
     ∃ (d : 𝒜) (f : B.1.carrier ⟶ d), SplitsAsMap f B.1.idem.e := by
@@ -309,14 +311,14 @@ variable {𝒜 : Type u} [TabularAllegory 𝒜]
 
 /-- The object of `Spl(Eq 𝒜)` carried by an equivalence relation
     (reflexive symmetric idempotent) `e : a ⟶ a` of `𝒜`. -/
-def eqRelObj {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e)
+@[expose] public def eqRelObj {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e)
     (hidem : e ≫ e = e) : SplEqObj 𝒜 :=
   ⟨⟨a, e, hsym, hidem⟩, hrefl⟩
 
 /-- **Step 4 (§2.16(13))**: if every cover of `Map (Spl(Eq 𝒜))` splits (the effective
     reflection is AC), then every equivalence relation of `𝒜` splits as a map — `𝒜`
     is EFFECTIVE (§2.169 shape, cf. `EffectiveAllegory.split_symmetric_idempotent`). -/
-theorem effective_of_coversSplit (hAC : CoversSplit (SplEqObj 𝒜))
+public theorem effective_of_coversSplit (hAC : CoversSplit (SplEqObj 𝒜))
     {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e) :
     ∃ (d : 𝒜) (f : a ⟶ d), SplitsAsMap f e := by
   obtain ⟨s, hs_map, hs_sec⟩ :=
@@ -326,7 +328,7 @@ theorem effective_of_coversSplit (hAC : CoversSplit (SplEqObj 𝒜))
 /-- **§2.16(13), "hence if C is not effective then Ĉ is not AC"**: an equivalence
     relation of `𝒜` with no map-splitting witnesses that covers do NOT all split in
     the effective reflection `Spl(Eq 𝒜)`. -/
-theorem not_coversSplit_of_not_effective
+public theorem not_coversSplit_of_not_effective
     {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e)
     (hno : ∀ (d : 𝒜) (f : a ⟶ d), ¬ SplitsAsMap f e) :
     ¬ CoversSplit (SplEqObj 𝒜) := fun hAC =>

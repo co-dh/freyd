@@ -12,7 +12,9 @@
   same-codomain germs (`colimHom_epiCase_of_rep`).
 -/
 
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 
@@ -29,7 +31,7 @@ variable {ι : Type u} {D : Directed ι}
     is an isomorphism.  The inverse is the mediator of `(inl, inr)`; the two
     round-trips collapse by `case_uniq` (on the `coprod A B` side) and the UP
     uniqueness (on the `P` side). -/
-theorem isIso_of_coproduct_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryCoproducts 𝒞]
+public theorem isIso_of_coproduct_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryCoproducts 𝒞]
     {A B P : 𝒞} (i₁ : A ⟶ P) (i₂ : B ⟶ P)
     (hup : ∀ {Z : 𝒞} (f : A ⟶ Z) (g : B ⟶ Z),
       ∃ u : P ⟶ Z, (i₁ ≫ u = f ∧ i₂ ≫ u = g) ∧
@@ -62,7 +64,7 @@ theorem isIso_of_coproduct_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryCoproduct
     LEFT) is already equal (`hcancel`), then the two `homIncl`-germs are jointly
     right-cancellable.  Push the two competitors `s, t : P → W` to a common stage,
     where both leg-equations become stage equations, and apply `hcancel`. -/
-theorem colimHom_epiCase_of_rep (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimHom_epiCase_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     {P A B : C.Obj} {L : ι}
     (hpd : D.le (colimOut C P).1 L) (hca : D.le (colimOut C A).1 L) (hcb : D.le (colimOut C B).1 L)
     (f₀ : C.F hca (colimOut C A).2 ⟶ C.F hpd (colimOut C P).2)
@@ -158,7 +160,7 @@ theorem colimHom_epiCase_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     `colimitHasBinaryCoproducts`, the canonical comparison
     `case (homInclObj inl) (homInclObj inr) : coprod (objIncl a) (objIncl b) ⟶
     objIncl (a + b)` is an iso in `colimitCat`. -/
-theorem objIncl_preserves_coproducts (C : CatSystem ι D) (hC : C.Coherent)
+public theorem objIncl_preserves_coproducts (C : CatSystem ι D) (hC : C.Coherent)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : C.F hij ((hcop i).coprod a b) ⟶ z),

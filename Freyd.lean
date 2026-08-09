@@ -310,3 +310,69 @@ import rel.AutoDeriveSearch
 -- verified generic Pareto prune (`thinList`, closing §8.3's deferred implementation) + the set-valued
 -- fold-bridge. Demo closes B&dM §8.4's concrete 0/1-knapsack binary-thinning program (was only abstract).
 import rel.AutoDeriveThin
+
+/-! ## Axiom hygiene
+
+  `#print axioms` cannot run inside a `module` (Lean rejects the command outright), and every
+  `Freyd/*.lean` is one. The reports live here instead, in the aggregator that already imports the
+  whole book core, so each headline still names its axioms on every build — one place rather than
+  eight file tails. -/
+
+-- §1.48
+#print axioms Freyd.listProdAppendInv_projL
+#print axioms Freyd.listProdAppendInv_projR
+
+-- §1.543 FULLY DONE: the capitalization lemma depends only on [propext, Classical.choice, Quot.sound]
+-- — NO `SorryAx`.  The §1.546 c.ii (`A ∈ U`) fresh-copy gap is closed by the token-indexed cofinal
+-- system (`richerSliceMiss` is uniform over a fresh-tagged token).
+#print axioms Freyd.capData_exists
+#print axioms Freyd.capitalization_lemma
+
+-- §1.543 slice equivalence
+#print axioms Freyd.bridge_roundtrip_f
+#print axioms Freyd.wellPointed_of_productForm
+#print axioms Freyd.sliceEmbed_factor_wellPointed_of_productForm
+#print axioms Freyd.pairOnUToSlice_full
+#print axioms Freyd.padFactors_factorTuple
+#print axioms Freyd.pairOnUToSlice_representativeImage
+#print axioms Freyd.pairOnUToSlice_equivalence
+#print axioms Freyd.properMono_forces_graph_iso
+#print axioms Freyd.properMono_one_forces_wellPointed
+#print axioms Freyd.prodFormMono_proper
+#print axioms Freyd.prodFormMono_wellPointed
+
+-- §1.546 slice well-pointedness
+#print axioms Freyd.cover_imp_slice_iso
+#print axioms Freyd.mono_pair_of_mono_fst
+#print axioms Freyd.factorWP_imp_wp
+
+-- The §1.547 reduction is SORRY-FREE / axiom-clean; the residuals are isolated in `richerSliceMiss`.
+-- The §1.546(a) base-change/slice comparison is Sorry-free:
+#print axioms Freyd.FibreDensityProof.bcSlice_isPullback
+#print axioms Freyd.FibreDensityProof.bcSliceIso_isIso
+#print axioms Freyd.FibreDensityProof.stageInclL_g''_factor
+#print axioms Freyd.FibreDensityProof.fibreDensity_of_richerSliceMiss
+-- `fibreDensity` / `wsCover_fibreDensity` depend on `SorryAx` *only* through `richerSliceMiss`,
+-- whose two isolated residuals are (i) the §1.546(c) `stageInclFunctorL U'` fullness reflection
+-- (`richerSliceSection`) and (ii) the `A ∈ U` fresh-copy case.  The whole §1.546 escape
+-- (`baseChange_freshFactor_missed`), the (a) base-change comparison, the (b) colimit point, and the
+-- §1.547 colimit↔fibre reduction are machine-checked Sorry-free.
+#print axioms Freyd.FibreDensityProof.fibreDensity
+#print axioms Freyd.FibreDensityProof.richerSliceSection
+#print axioms Freyd.FibreDensityProof.richerSliceMiss
+
+-- §2.21b
+#print axioms Freyd.tabular_repr_in_power_of_sets
+#print axioms Freyd.tabular_repr_in_power_of_sets_distributive
+
+-- §2.217 positive representation
+#print axioms Freyd.Alg.recip_comp_eq_zero_iff_dom_disjoint
+#print axioms Freyd.Alg.Mat.mat_entire_iff
+#print axioms Freyd.Alg.Mat.mat_simple_iff_dom_disjoint
+#print axioms Freyd.Alg.Mat.mat_map_iff
+#print axioms Freyd.matEmbed_faithful
+#print axioms Freyd.prelogos_repr_in_positive_prelogos
+
+-- §2.218
+#print axioms Freyd.capitalization_lemma_regular_positive
+#print axioms Freyd.capitalization_lemma_regular_positive_strong

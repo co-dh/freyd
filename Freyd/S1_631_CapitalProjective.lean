@@ -16,15 +16,17 @@
   For §1.633, `Q := 1`, projective by `capital_one_projective` (§1.525).
 -/
 
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_57
-import Freyd.S1_58
-import Freyd.S1_60
-import Freyd.S1_61
-import Freyd.S1_62
-import Freyd.S1_658_Complement
+module
+
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_57
+public import Freyd.S1_58
+public import Freyd.S1_60
+public import Freyd.S1_61
+public import Freyd.S1_62
+public import Freyd.S1_658_Complement
 
 open Freyd
 
@@ -56,7 +58,7 @@ variable [DisjointBinaryCoproduct 𝒞]
     satisfies `w ≫ k = inl` (cancel the iso `ψ`), and `w` lands in the `A`-summand because
     its `inr`-inverse-image is empty (disjointness, `invImage_inl_inrSub_le_any`); the
     factor `t : U.dom → A` is the section of `f`. -/
-theorem complementedSub_of_projective {Q : 𝒞} (U U₂ : Subobject 𝒞 Q)
+public theorem complementedSub_of_projective {Q : 𝒞} (U U₂ : Subobject 𝒞 Q)
     (hdisj : Subobject.le (Subobject.inter U U₂) (PreLogos.bottom Q))
     (hentire : Subobject.le (Subobject.entire Q) (HasSubobjectUnions.union U U₂))
     (hQ : Projective Q) :
@@ -210,7 +212,7 @@ theorem complementedSub_of_projective {Q : 𝒞} (U U₂ : Subobject 𝒞 Q)
 /-- **§1.631** packaged form: a subobject `U` that is `IsComplementedSub` (the inter-based
     complement predicate, §1.62) of a PROJECTIVE object is projective.  Unpacks the complement
     `U₂` and the two clauses and applies `complementedSub_of_projective`. -/
-theorem complementedSub_of_projective' {Q : 𝒞} (U : Subobject 𝒞 Q)
+public theorem complementedSub_of_projective' {Q : 𝒞} (U : Subobject 𝒞 Q)
     (hU : IsComplementedSub U) (hQ : Projective Q) : Projective U.dom := by
   obtain ⟨U₂, hdisj, hentire⟩ := hU
   exact complementedSub_of_projective U U₂ hdisj hentire hQ
@@ -219,7 +221,7 @@ theorem complementedSub_of_projective' {Q : 𝒞} (U : Subobject 𝒞 Q)
 
 /-- `1` is projective in a CAPITAL pre-regular category: every cover `e : A ↠ 1` splits
     (`capital_one_projective`, §1.525), which is exactly `Projective (one : 𝒞)`. -/
-theorem capital_one_Projective (hcap : Capital (𝒞 := 𝒞)) : Projective (one : 𝒞) := by
+public theorem capital_one_Projective (hcap : Capital (𝒞 := 𝒞)) : Projective (one : 𝒞) := by
   intro A e he
   exact capital_one_projective hcap he
 
@@ -229,7 +231,7 @@ theorem capital_one_Projective (hcap : Capital (𝒞 := 𝒞)) : Projective (one
     PROOF (Freyd §1.633).  `1` is projective by `capital_one_projective` (§1.525); a
     complemented subobject of a projective object is projective (`§1.631`,
     `complementedSub_of_projective`).  Instantiate `Q := 1`. -/
-theorem capital_complementedSub_projective (hcap : Capital (𝒞 := 𝒞))
+public theorem capital_complementedSub_projective (hcap : Capital (𝒞 := 𝒞))
     (U : Subobject 𝒞 (one : 𝒞)) (hU : IsComplementedSub U) : Projective U.dom :=
   complementedSub_of_projective' U hU (capital_one_Projective hcap)
 

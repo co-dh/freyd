@@ -1,6 +1,8 @@
-import Freyd.S1_572b_NotEffective
-import Freyd.S2_111_RelCat
-import Freyd.S2_16c
+module
+
+public import Freyd.S1_572b_NotEffective
+public import Freyd.S2_111_RelCat
+public import Freyd.S2_16c
 
 /-!
 # §2.16(13) for the recursive category R: its effective reflection is NOT AC

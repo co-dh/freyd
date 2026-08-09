@@ -10,9 +10,11 @@
   Category theory is hand-built on this repo's `Cat`; no mathlib here.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_543_DirectedColimit
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_543_DirectedColimit
 
 open Freyd
 
@@ -25,7 +27,7 @@ variable {ι : Type u} {D : Directed ι}
 /-- A directed system of categories over `(ι, D)`: each `A i` is a category
     (`catA i`); for `i ≤ j` a functor `F hij : A i → A j` (`functF hij`), with
     `F` respecting identity and composition on objects. -/
-structure CatSystem (ι : Type u) (D : Directed ι) where
+public structure CatSystem (ι : Type u) (D : Directed ι) where
   A : ι → Type w
   catA : ∀ i, Cat.{w} (A i)
   F : ∀ {i j}, D.le i j → A i → A j
@@ -47,7 +49,7 @@ attribute [instance] CatSystem.catA
     object action `F` and the morphism action `Fmap`.  (The object action `F` stays a
     field of its own because the colimit needs the *strict* object coherences
     `F_refl`/`F_trans`, which a bundled functor does not record.) -/
-def CatSystem.functF (C : CatSystem ι D) {i j} (hij : D.le i j) : Functor (C.A i) (C.A j) where
+@[expose] public def CatSystem.functF (C : CatSystem ι D) {i j} (hij : D.le i j) : Functor (C.A i) (C.A j) where
   obj := C.F hij
   map := C.Fmap hij
   map_id := C.Fmap_id hij
@@ -58,7 +60,7 @@ def CatSystem.functF (C : CatSystem ι D) {i j} (hij : D.le i j) : Functor (C.A 
     (up to the object-equalities `F_refl`/`F_trans`, hence stated with `HEq`).
     Together with the object coherence this makes `C` a genuine functor
     `(ι, ≤) → Cat`. -/
-structure CatSystem.Coherent (C : CatSystem ι D) : Prop where
+public structure CatSystem.Coherent (C : CatSystem ι D) : Prop where
   refl_map : ∀ {i : ι} {x x' : C.A i} (g : x ⟶ x'),
     HEq (C.Fmap (D.refl i) g) g
   trans_map : ∀ {i j k : ι} (hij : D.le i j) (hjk : D.le j k) {x x' : C.A i} (g : x ⟶ x'),
@@ -66,7 +68,7 @@ structure CatSystem.Coherent (C : CatSystem ι D) : Prop where
 
 /-- The underlying directed system of OBJECT types of a `CatSystem` (forget the
     morphisms): exactly a Milestone-1 `System`. -/
-def CatSystem.objSystem (C : CatSystem ι D) : System ι D where
+@[expose] public def CatSystem.objSystem (C : CatSystem ι D) : System ι D where
   X := C.A
   tr := C.F
   tr_refl := C.F_refl
@@ -74,14 +76,14 @@ def CatSystem.objSystem (C : CatSystem ι D) : System ι D where
 
 /-- The OBJECTS of the colimit category: the type-level directed colimit of the
     object families. -/
-def CatSystem.Obj (C : CatSystem ι D) : Type _ := Colimit C.objSystem
+@[expose] public def CatSystem.Obj (C : CatSystem ι D) : Type _ := Colimit C.objSystem
 
 /-- The canonical inclusion of stage-`i` objects into the colimit's objects. -/
-def CatSystem.objIncl (C : CatSystem ι D) (i : ι) (x : C.A i) : C.Obj :=
+@[expose] public def CatSystem.objIncl (C : CatSystem ι D) (i : ι) (x : C.A i) : C.Obj :=
   incl C.objSystem i x
 
 /-- Inclusions of objects are compatible with the transition functors. -/
-theorem CatSystem.objIncl_compat (C : CatSystem ι D) {i j : ι} (hij : D.le i j) (x : C.A i) :
+public theorem CatSystem.objIncl_compat (C : CatSystem ι D) {i j : ι} (hij : D.le i j) (x : C.A i) :
     C.objIncl j (C.F hij x) = C.objIncl i x :=
   incl_compat C.objSystem hij x
 
@@ -92,11 +94,11 @@ theorem CatSystem.objIncl_compat (C : CatSystem ι D) {i j : ι} (hij : D.le i j
   The first ingredient is that those upper bounds form a directed set. -/
 
 /-- The common upper bounds of `i` and `j` in a directed preorder. -/
-def UpperBound (D : Directed ι) (i j : ι) : Type u := {k : ι // D.le i k ∧ D.le j k}
+@[expose] public def UpperBound (D : Directed ι) (i j : ι) : Type u := {k : ι // D.le i k ∧ D.le j k}
 
 /-- The common upper bounds of `i, j` are themselves a directed preorder (order
     inherited from `D`); this is the index set of the hom-colimit. -/
-def upperDirected (D : Directed ι) (i j : ι) : Directed (UpperBound D i j) where
+@[expose] public def upperDirected (D : Directed ι) (i j : ι) : Directed (UpperBound D i j) where
   le a b := D.le a.1 b.1
   refl a := D.refl a.1
   trans hab hbc := D.trans hab hbc
@@ -112,33 +114,33 @@ def upperDirected (D : Directed ι) (i j : ι) : Directed (UpperBound D i j) whe
   which is exactly what the colimit laws need to cancel the casts. -/
 
 /-- Transport a morphism `m : X ⟶ Y` to `X' ⟶ Y'` along object equalities. -/
-def castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜} (hX : X = X') (hY : Y = Y')
+@[expose] public def castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜} (hX : X = X') (hY : Y = Y')
     (m : X ⟶ Y) : X' ⟶ Y' := hX ▸ hY ▸ m
 
-@[simp] theorem castHom_rfl {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} (m : X ⟶ Y) :
+@[simp] public theorem castHom_rfl {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} (m : X ⟶ Y) :
     castHom rfl rfl m = m := rfl
 
 /-- A morphism heterogeneously equal to `g` transports (along the matching object
     equalities) exactly to `g`. -/
-theorem castHom_of_heq {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
+public theorem castHom_of_heq {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     (hX : X = X') (hY : Y = Y') {m : X ⟶ Y} {g : X' ⟶ Y'} (h : HEq m g) :
     castHom hX hY m = g := by
   subst hX; subst hY; simpa [castHom] using h
 
 /-- Transports compose. -/
-theorem castHom_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' X'' Y'' : 𝒜}
+public theorem castHom_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' X'' Y'' : 𝒜}
     (h1X : X = X') (h1Y : Y = Y') (h2X : X' = X'') (h2Y : Y' = Y'') (m : X ⟶ Y) :
     castHom h2X h2Y (castHom h1X h1Y m) = castHom (h1X.trans h2X) (h1Y.trans h2Y) m := by
   subst h1X; subst h1Y; subst h2X; subst h2Y; rfl
 
 /-- Transport distributes over composition. -/
-theorem castHom_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z X' Y' Z' : 𝒜}
+public theorem castHom_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y Z X' Y' Z' : 𝒜}
     (hX : X = X') (hY : Y = Y') (hZ : Z = Z') (m : X ⟶ Y) (n : Y ⟶ Z) :
     castHom hX hY m ≫ castHom hY hZ n = castHom hX hZ (m ≫ n) := by
   subst hX; subst hY; subst hZ; rfl
 
 /-- Transport preserves identity. -/
-theorem castHom_id {𝒜 : Type w} [Cat.{w} 𝒜] {X X' : 𝒜} (hX : X = X') :
+public theorem castHom_id {𝒜 : Type w} [Cat.{w} 𝒜] {X X' : 𝒜} (hX : X = X') :
     castHom hX hX (Cat.id X) = Cat.id X' := by subst hX; rfl
 
 /-- A functor commutes with transport: mapping a transported morphism equals
@@ -151,20 +153,20 @@ theorem map_castHom {𝒜 𝒝 : Type w} [Cat.{w} 𝒜] [Cat.{w} 𝒝] (T : Func
 /-- `map_castHom` specialised to a `CatSystem`'s morphism action `Fmap` (whose result
     type is stated directly over the object action `F`, so its images are syntactically
     `F`-shaped — this is what the downstream `rw [F_trans]` casts need). -/
-theorem CatSystem.Fmap_castHom (C : CatSystem ι D) {i j} (hij : D.le i j)
+public theorem CatSystem.Fmap_castHom (C : CatSystem ι D) {i j} (hij : D.le i j)
     {X Y X' Y' : C.A i} (hX : X = X') (hY : Y = Y') (m : X ⟶ Y) :
     C.Fmap hij (castHom hX hY m)
       = castHom (congrArg (C.F hij) hX) (congrArg (C.F hij) hY) (C.Fmap hij m) := by
   subst hX; subst hY; rfl
 
 /-- A transport is heterogeneously equal to the morphism it transports. -/
-theorem heq_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜} (hX : X = X') (hY : Y = Y')
+public theorem heq_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜} (hX : X = X') (hY : Y = Y')
     (m : X ⟶ Y) : HEq (castHom hX hY m) m := by
   subst hX; subst hY; exact HEq.rfl
 
 /-- Two transports of heterogeneously-equal morphisms onto the *same* objects are
     equal.  This is the cancellation the hom-colimit's `tr_trans` needs. -/
-theorem castHom_heq_congr {𝒜 : Type w} [Cat.{w} 𝒜] {X1 Y1 X2 Y2 X' Y' : 𝒜}
+public theorem castHom_heq_congr {𝒜 : Type w} [Cat.{w} 𝒜] {X1 Y1 X2 Y2 X' Y' : 𝒜}
     (h1X : X1 = X') (h1Y : Y1 = Y') (h2X : X2 = X') (h2Y : Y2 = Y')
     {m1 : X1 ⟶ Y1} {m2 : X2 ⟶ Y2} (h : HEq m1 m2) :
     castHom h1X h1Y m1 = castHom h2X h2Y m2 :=
@@ -179,17 +181,17 @@ theorem castHom_heq_congr {𝒜 : Type w} [Cat.{w} 𝒜] {X1 Y1 X2 Y2 X' Y' : �
 
 /-- Transition of the hom-colimit: push a morphism `F x ⟶ F y` (at upper bound `a`)
     to upper bound `b` by applying `F hab` and re-typing along `F_trans`. -/
-def homTr (C : CatSystem ι D) {i j : ι} (x : C.A i) (y : C.A j) (a b : UpperBound D i j)
+@[expose] public def homTr (C : CatSystem ι D) {i j : ι} (x : C.A i) (y : C.A j) (a b : UpperBound D i j)
     (hab : D.le a.1 b.1) (g : C.F a.2.1 x ⟶ C.F a.2.2 y) : C.F b.2.1 x ⟶ C.F b.2.2 y :=
   castHom (C.F_trans a.2.1 hab x).symm (C.F_trans a.2.2 hab y).symm (C.Fmap hab g)
 
-theorem homTr_refl (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
+public theorem homTr_refl (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
     (a : UpperBound D i j) (g : C.F a.2.1 x ⟶ C.F a.2.2 y) :
     homTr C x y a a (D.refl a.1) g = g := by
   unfold homTr
   exact castHom_of_heq _ _ (hC.refl_map g)
 
-theorem homTr_trans (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
+public theorem homTr_trans (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
     (a b c : UpperBound D i j) (hab : D.le a.1 b.1) (hbc : D.le b.1 c.1)
     (g : C.F a.2.1 x ⟶ C.F a.2.2 y) :
     homTr C x y a c (D.trans hab hbc) g = homTr C x y b c hbc (homTr C x y a b hab g) := by
@@ -198,7 +200,7 @@ theorem homTr_trans (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i
   exact castHom_heq_congr _ _ _ _ (hC.trans_map hab hbc g)
 
 /-- The hom-colimit system for fixed representatives `x : C.A i`, `y : C.A j`. -/
-def homSystem (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j) :
+@[expose] public def homSystem (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j) :
     System (UpperBound D i j) (upperDirected D i j) where
   X a := C.F a.2.1 x ⟶ C.F a.2.2 y
   tr {a b} hab g := homTr C x y a b hab g
@@ -208,22 +210,22 @@ def homSystem (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y :
 /-- Morphisms `[⟨i,x⟩] → [⟨j,y⟩]` in the colimit category (for these
     representatives): the directed colimit of `Hom_{A k}(F x, F y)` over the common
     upper bounds `k`. -/
-def HomColim (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j) : Type _ :=
+@[expose] public def HomColim (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j) : Type _ :=
   Colimit (homSystem C hC x y)
 
 /-- Include a stage-`a` morphism into the hom-colimit. -/
-def homIncl (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
+@[expose] public def homIncl (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
     (a : UpperBound D i j) (g : C.F a.2.1 x ⟶ C.F a.2.2 y) : HomColim C hC x y :=
   incl (homSystem C hC x y) a g
 
 /-- The identity germ at `x : C.A i`: `id` included at the trivial upper bound. -/
-def homClassId (C : CatSystem ι D) (hC : C.Coherent) {i : ι} (x : C.A i) : HomColim C hC x x :=
+@[expose] public def homClassId (C : CatSystem ι D) (hC : C.Coherent) {i : ι} (x : C.A i) : HomColim C hC x x :=
   homIncl C hC x x ⟨i, D.refl i, D.refl i⟩ (Cat.id (C.F (D.refl i) x))
 
 /-- Including a germ pushed to a higher level equals including it at the lower
     level: the hom-colimit absorbs the transition (`incl_compat` for `homSystem`).
     A building block for composition's well-definedness. -/
-theorem homIncl_compat (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
+public theorem homIncl_compat (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.A i) (y : C.A j)
     {a b : UpperBound D i j} (hab : D.le a.1 b.1) (g : C.F a.2.1 x ⟶ C.F a.2.2 y) :
     homIncl C hC x y b (homTr C x y a b hab g) = homIncl C hC x y a g :=
   incl_compat (homSystem C hC x y) hab g
@@ -237,32 +239,32 @@ theorem homIncl_compat (C : CatSystem ι D) (hC : C.Coherent) {i j : ι} (x : C.
 
 /-- A chosen representative `⟨i, x⟩` of a colimit object (via `Quotient.exists_rep`
     + choice; core Lean has no `Quotient.out`). -/
-noncomputable def colimOut (C : CatSystem ι D) (p : C.Obj) : Σ i, C.A i :=
+@[expose] public noncomputable def colimOut (C : CatSystem ι D) (p : C.Obj) : Σ i, C.A i :=
   Classical.choose (Quotient.exists_rep p)
 
 /-- The chosen representative includes back to the object. -/
-theorem colimOut_spec (C : CatSystem ι D) (p : C.Obj) :
+public theorem colimOut_spec (C : CatSystem ι D) (p : C.Obj) :
     C.objIncl (colimOut C p).1 (colimOut C p).2 = p :=
   Classical.choose_spec (Quotient.exists_rep p)
 
 /-- A morphism of the colimit category: the hom-colimit between the chosen
     representatives of the two objects. -/
-noncomputable def colimHom (C : CatSystem ι D) (hC : C.Coherent) (p q : C.Obj) : Type _ :=
+@[expose] public noncomputable def colimHom (C : CatSystem ι D) (hC : C.Coherent) (p q : C.Obj) : Type _ :=
   HomColim C hC (colimOut C p).2 (colimOut C q).2
 
 /-- The identity morphism of the colimit category. -/
-noncomputable def colimId (C : CatSystem ι D) (hC : C.Coherent) (p : C.Obj) : colimHom C hC p p :=
+@[expose] public noncomputable def colimId (C : CatSystem ι D) (hC : C.Coherent) (p : C.Obj) : colimHom C hC p p :=
   homClassId C hC (colimOut C p).2
 
 /-- C.F is proof-irrelevant in the ordering proof: two proofs of `D.le i j` give
     the same object (since `D.le` is a `Prop`). -/
-theorem CatSystem.F_proof_irrel (C : CatSystem ι D) {i j : ι} (h h' : D.le i j) (a : C.A i) :
+public theorem CatSystem.F_proof_irrel (C : CatSystem ι D) {i j : ι} (h h' : D.le i j) (a : C.A i) :
     C.F h a = C.F h' a := by congr 1
 
 /-- Raw composition of germs: push representatives `f` (level `a`) and `g` (level
     `b`) to a common level `c`, compose in `A c`, and include.  The middle objects
     match (both `F·xq` over a proof `iq ≤ c`, identified by proof-irrelevance). -/
-noncomputable def homCompRaw (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+@[expose] public noncomputable def homCompRaw (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr) : HomColim C hC xp xr :=
@@ -283,7 +285,7 @@ noncomputable def homCompRaw (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : 
 /-- Pushing a composite to a higher level = composing the pushed pieces.  The
     transition `F hcd` is a functor (`map_comp`), and transport distributes over
     composition (`castHom_comp`). -/
-theorem homTr_comp (C : CatSystem ι D) {ip iq ir : ι}
+public theorem homTr_comp (C : CatSystem ι D) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir) {c d : ι}
     (hpc : D.le ip c) (hqc : D.le iq c) (hrc : D.le ir c) (hcd : D.le c d)
     (f : C.F hpc xp ⟶ C.F hqc xq) (g : C.F hqc xq ⟶ C.F hrc xr) :
@@ -296,7 +298,7 @@ theorem homTr_comp (C : CatSystem ι D) {ip iq ir : ι}
 
 /-- Pushing an identity germ up gives an identity (the transition is a functor:
     `map_id`, then `castHom_id`). -/
-theorem homTr_id (C : CatSystem ι D) {i : ι} (x : C.A i)
+public theorem homTr_id (C : CatSystem ι D) {i : ι} (x : C.A i)
     (a b : UpperBound D i i) (hab : D.le a.1 b.1) :
     homTr C x x a b hab (Cat.id (C.F a.2.1 x)) = Cat.id (C.F b.2.1 x) := by
   unfold homTr
@@ -306,7 +308,7 @@ theorem homTr_id (C : CatSystem ι D) {i : ι} (x : C.A i)
 /-- Compose germs `f` (level `a`) and `g` (level `b`) at an explicit common bound
     `e`: push both to `e` and compose there.  `homCompRaw` is this at the chosen
     bound. -/
-noncomputable def compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+@[expose] public noncomputable def compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr)
@@ -317,7 +319,7 @@ noncomputable def compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
 
 /-- Composing at level `e` equals composing at any higher level `d`: push the
     whole composite up (`homTr_comp` + `homTr_trans`), then `homIncl_compat`. -/
-theorem compAt_mono (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem compAt_mono (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr)
@@ -339,7 +341,7 @@ theorem compAt_mono (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
 
 /-- Composition is independent of the chosen common bound: any two bounds agree
     (route both through a common upper bound via `compAt_mono`). -/
-theorem compAt_indep (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem compAt_indep (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr)
@@ -352,7 +354,7 @@ theorem compAt_indep (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
 
 /-- `homCompRaw` is `compAt` at any common bound (it uses the chosen bound; all
     bounds agree by `compAt_indep`). -/
-theorem homCompRaw_eq_compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_eq_compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr)
@@ -373,7 +375,7 @@ theorem homCompRaw_eq_compAt (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : 
     calculus applies.  The `homTr` target bounds in `hstage` are exactly the ones
     `compAt` produces, so the proof is `homCompRaw_eq_compAt` → `hstage` →
     `homIncl_compat`. -/
-theorem homCompRaw_eq_of_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_eq_of_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (ub_h : UpperBound D ip iq) (rM : C.F ub_h.2.1 xp ⟶ C.F ub_h.2.2 xq)
     (ub_g : UpperBound D iq ir) (gK : C.F ub_g.2.1 xq ⟶ C.F ub_g.2.2 xr)
@@ -390,7 +392,7 @@ theorem homCompRaw_eq_of_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir 
   exact homIncl_compat C hC xp xr hoM fOrig
 
 /-- Pushing the left germ's representative up doesn't change the composite. -/
-theorem homCompRaw_push_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_push_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a a₂ : UpperBound D ip iq) (h : D.le a.1 a₂.1) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr) :
@@ -404,7 +406,7 @@ theorem homCompRaw_push_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : 
         ⟨M, D.trans a.2.1 (D.trans h ha₂M), D.trans a.2.2 (D.trans h ha₂M)⟩ h ha₂M f]
 
 /-- Pushing the right germ's representative up doesn't change the composite. -/
-theorem homCompRaw_push_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_push_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b b₂ : UpperBound D iq ir) (h : D.le b.1 b₂.1) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xr) :
@@ -420,7 +422,7 @@ theorem homCompRaw_push_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir :
 /-- Raw composition respects the germ equivalence on both arguments: push each
     representative up to its germ-witness level (`push_left`/`push_right`), where
     the representatives agree. -/
-theorem homCompRaw_wd (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_wd (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (a' : UpperBound D ip iq) (f' : C.F a'.2.1 xp ⟶ C.F a'.2.2 xq)
@@ -440,7 +442,7 @@ theorem homCompRaw_wd (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
 
 /-- Composition in the colimit category: lift `homCompRaw` over the two
     hom-colimit quotients (well-defined by `homCompRaw_wd`). -/
-noncomputable def colimComp (C : CatSystem ι D) (hC : C.Coherent) {p q r : C.Obj}
+@[expose] public noncomputable def colimComp (C : CatSystem ι D) (hC : C.Coherent) {p q r : C.Obj}
     (m : colimHom C hC p q) (n : colimHom C hC q r) : colimHom C hC p r :=
   Quotient.lift₂
     (fun rm rn => homCompRaw C hC (colimOut C p).2 (colimOut C q).2 (colimOut C r).2
@@ -452,7 +454,7 @@ noncomputable def colimComp (C : CatSystem ι D) (hC : C.Coherent) {p q r : C.Ob
 
 /-! ## Milestone 2b — identity laws for composition -/
 
-theorem homCompRaw_id_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
+public theorem homCompRaw_id_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
     (xp : C.A ip) (xq : C.A iq) (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq) :
     homCompRaw C hC xp xp xq ⟨ip, D.refl ip, D.refl ip⟩ (Cat.id (C.F (D.refl ip) xp)) a f
       = homIncl C hC xp xq a f := by
@@ -476,7 +478,7 @@ theorem homCompRaw_id_left (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
   unfold homTr
   exact castHom_of_heq _ _ (hC.refl_map f)
 
-theorem homCompRaw_id_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
+public theorem homCompRaw_id_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
     (xp : C.A ip) (xq : C.A iq) (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq) :
     homCompRaw C hC xp xq xq a f ⟨iq, D.refl iq, D.refl iq⟩ (Cat.id (C.F (D.refl iq) xq))
       = homIncl C hC xp xq a f := by
@@ -500,14 +502,14 @@ theorem homCompRaw_id_right (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
   unfold homTr
   exact castHom_of_heq _ _ (hC.refl_map f)
 
-theorem colimComp_id_left (C : CatSystem ι D) (hC : C.Coherent) {p q : C.Obj}
+public theorem colimComp_id_left (C : CatSystem ι D) (hC : C.Coherent) {p q : C.Obj}
     (m : colimHom C hC p q) : colimComp C hC (colimId C hC p) m = m := by
   induction m using Quotient.ind with
   | _ rm =>
     obtain ⟨a, f⟩ := rm
     exact homCompRaw_id_left C hC (colimOut C p).2 (colimOut C q).2 a f
 
-theorem colimComp_id_right (C : CatSystem ι D) (hC : C.Coherent) {p q : C.Obj}
+public theorem colimComp_id_right (C : CatSystem ι D) (hC : C.Coherent) {p q : C.Obj}
     (m : colimHom C hC p q) : colimComp C hC m (colimId C hC q) = m := by
   induction m using Quotient.ind with
   | _ rm => obtain ⟨a, f⟩ := rm
@@ -515,7 +517,7 @@ theorem colimComp_id_right (C : CatSystem ι D) (hC : C.Coherent) {p q : C.Obj}
 
 /-! ## Milestone 2b — associativity of composition in the colimit category -/
 
-theorem colimComp_assoc (C : CatSystem ι D) (hC : C.Coherent) {p q r s : C.Obj}
+public theorem colimComp_assoc (C : CatSystem ι D) (hC : C.Coherent) {p q r s : C.Obj}
     (m : colimHom C hC p q) (n : colimHom C hC q r) (k : colimHom C hC r s) :
     colimComp C hC (colimComp C hC m n) k = colimComp C hC m (colimComp C hC n k) := by
   refine Quotient.inductionOn m (fun rm => ?_)
@@ -591,7 +593,7 @@ theorem colimComp_assoc (C : CatSystem ι D) (hC : C.Coherent) {p q r s : C.Obj}
     _ = colimComp C hC (Quotient.mk _ ⟨a, f⟩) (compAt C hC xq xr xs b g c h M hbM hcM) := by rw [h_outerR]
     _ = colimComp C hC (Quotient.mk _ ⟨a, f⟩) (colimComp C hC (Quotient.mk _ ⟨b, g⟩) (Quotient.mk _ ⟨c, h⟩)) := by rw [h_innerR]
 
-noncomputable instance colimitCat (C : CatSystem ι D) (hC : C.Coherent) : Cat (C.Obj) where
+@[expose] public noncomputable instance colimitCat (C : CatSystem ι D) (hC : C.Coherent) : Cat (C.Obj) where
   Hom p q := colimHom C hC p q
   id p := colimId C hC p
   comp m n := colimComp C hC m n

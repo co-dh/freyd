@@ -40,14 +40,16 @@
   `least_peano_subobject` keeps its original conclusion verbatim.
 -/
 
-import Freyd.S1_51
+module
+
+public import Freyd.S1_51
 -- NOTE: `Topos` lives in S1_9 (S1_51 does not transitively import it).  We used to
 -- reach it via `import Freyd.S1_94`, but that created the cycle
 -- S1_94 → InternalForall → InternalForallTopos → S1_94, which blocked S1_94 from
 -- importing the (Sorry-free) topos-regularity infrastructure in InternalForallTopos.
 -- InternalForall uses NO symbol declared in S1_94 (only `Topos`/`Allows`/`Subobject`),
 -- so we import S1_9 directly and break the cycle.
-import Freyd.S1_90
+public import Freyd.S1_90
 
 universe v u
 
@@ -59,7 +61,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     (`a` factors through `S`) and is STABLE under `t : A → A` (there is a restriction
     `tS : S.dom → S.dom` with `tS ≫ S.arr = S.arr ≫ t`).  This is Freyd's "allows `a`
     and `t`" condition of §1.987. -/
-def IsClosedSub {A : 𝒞} (S : Subobject 𝒞 A) (a : one ⟶ A) (t : A ⟶ A) : Prop :=
+@[expose] public def IsClosedSub {A : 𝒞} (S : Subobject 𝒞 A) (a : one ⟶ A) (t : A ⟶ A) : Prop :=
   Allows S a ∧ ∃ tS : S.dom ⟶ S.dom, tS ≫ S.arr = S.arr ≫ t
 
 /-- **§1.94 / §1.987 — the internal-∀ family-glb primitive.**
@@ -75,7 +77,7 @@ def IsClosedSub {A : 𝒞} (S : Subobject 𝒞 A) (a : one ⟶ A) (t : A ⟶ A) 
     power-object exponential adjunction (concrete β/η, not directly given by the abstract
     `HasExponentials` interface); see the file header.  It does NOT weaken §1.987 —
     `least_le` is the true leastness, not the false "all closed subobjects share one name." -/
-class HasLeastClosedSubobject (𝒞 : Type u) [Cat.{v} 𝒞] [Topos 𝒞] where
+public class HasLeastClosedSubobject (𝒞 : Type u) [Cat.{v} 𝒞] [Topos 𝒞] where
   least : ∀ {A : 𝒞} (_a : one ⟶ A) (_t : A ⟶ A), Subobject 𝒞 A
   least_isClosed : ∀ {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A), IsClosedSub (least a t) a t
   least_le : ∀ {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) (B : Subobject 𝒞 A),

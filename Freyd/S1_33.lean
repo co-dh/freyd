@@ -4,11 +4,13 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_41
-import Freyd.S1_81
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_41
+public import Freyd.S1_81
 
 
 open Freyd
@@ -22,11 +24,11 @@ namespace Freyd
 /-! ## §1.33 Faithful functors -/
 
 /-- F is FAITHFUL if it is an embedding and reflects isomorphisms. -/
-def Faithful (F : Functor 𝒞 𝒟) : Prop :=
+@[expose] public def Faithful (F : Functor 𝒞 𝒟) : Prop :=
   Embedding F ∧ (∀ {A B : 𝒞} (f : A ⟶ B), IsIso (F.map f) → IsIso f)
 
 /-- Full embeddings are faithful. -/
-theorem full_embedding_faithful (F : Functor 𝒞 𝒟)
+public theorem full_embedding_faithful (F : Functor 𝒞 𝒟)
     (hEmb : Embedding F) (hFull : Full F) : Faithful F := by
   refine ⟨hEmb, ?_⟩
   intro A B f hiso
@@ -233,13 +235,13 @@ theorem combined_reflects_leftInv {𝒞 : Type u} [Cat.{v} 𝒞] {A B : 𝒞} (x
 /-! ## §1.333 Functors between posets -/
 
 /-- A PREORDER structure (reflexive, transitive relation). -/
-class ProsetCat (α : Type u) : Type u where
+public class ProsetCat (α : Type u) : Type u where
   le : α → α → Prop
   refl : ∀ a, le a a
   trans : ∀ {a b c}, le a b → le b c → le a c
 
 /-- Turn a `ProsetCat` into a `Cat` instance.  Hom-sets are proof-irrelevant (thin). -/
-instance prosetToCat {α : Type u} [P : ProsetCat α] : Cat.{0} α where
+@[expose] public instance prosetToCat {α : Type u} [P : ProsetCat α] : Cat.{0} α where
   Hom a b := PLift (P.le a b)
   id a := ⟨P.refl a⟩
   comp h k := ⟨P.trans h.down k.down⟩

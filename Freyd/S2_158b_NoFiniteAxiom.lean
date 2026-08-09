@@ -43,7 +43,9 @@
   diagram order (`comp a b` = "first `a`, then `b`"), matching the core.
 -/
 
-import Freyd.S2_158_GraphAllegory
+module
+
+public import Freyd.S2_158_GraphAllegory
 
 namespace Freyd.S2_158
 
@@ -148,7 +150,7 @@ theorem holdsInRel_iff_hom (E₁ E₂ : Term L) :
   term for each variable.  `subst σ E` replaces each label `A` in `E` by `σ A`. -/
 
 /-- Substitute a term `σ A` for each label `A` in a term. -/
-def subst (σ : L → Term L) : Term L → Term L
+@[expose] public def subst (σ : L → Term L) : Term L → Term L
   | .var A => σ A
   | .one => .one
   | .recip e => .recip (subst σ e)
@@ -382,46 +384,46 @@ theorem ladder_holds : ∀ n : Nat, HoldsInRel (ladderL n) (ladderR n) := by
   two-rhombus example. -/
 
 /-- Top-in label of the `i`-th rhombus (edge `vᵢ → pᵢ`; the book's `R₂ᵢ₊₁`). -/
-def aL (i : Nat) : Nat := 4 * i
+@[expose] public def aL (i : Nat) : Nat := 4 * i
 /-- Top-out label of the `i`-th rhombus (edge `pᵢ → vᵢ₊₁`; the book's `R₂ᵢ₊₂`). -/
-def bL (i : Nat) : Nat := 4 * i + 1
+@[expose] public def bL (i : Nat) : Nat := 4 * i + 1
 /-- Bottom-in label of the `i`-th rhombus (edge `vᵢ → qᵢ`; the book's `S₂ᵢ₊₁`). -/
-def cL (i : Nat) : Nat := 4 * i + 2
+@[expose] public def cL (i : Nat) : Nat := 4 * i + 2
 /-- Bottom-out label of the `i`-th rhombus (edge `qᵢ → vᵢ₊₁`; the book's `S₂ᵢ₊₂`). -/
-def dL (i : Nat) : Nat := 4 * i + 3
+@[expose] public def dL (i : Nat) : Nat := 4 * i + 3
 
 /-- Arithmetic injectivity shared by the four stride-four label families. -/
-def strideFour_injective (r : Nat) : Function.Injective (fun i => 4 * i + r) := by
+@[expose] public def strideFour_injective (r : Nat) : Function.Injective (fun i => 4 * i + r) := by
   intro i j h
   change 4 * i + r = 4 * j + r at h
   omega
 /-- The `i`-th rhombus as a term: the lens `aᵢbᵢ ∩ cᵢdᵢ`. -/
-def lens (i : Nat) : Term Nat :=
+@[expose] public def lens (i : Nat) : Term Nat :=
   .meet (.comp (.var (aL i)) (.var (bL i))) (.comp (.var (cL i)) (.var (dL i)))
 
 /-- `lens 0 ; lens 1 ; ⋯ ; lens k` — the `(k+1)`-rhombus chain `G₁` as a term. -/
-def chainT : Nat → Term Nat
+@[expose] public def chainT : Nat → Term Nat
   | 0 => lens 0
   | k+1 => .comp (chainT k) (lens (k+1))
 
 /-- Right side of the `n`-th entangled containment: the `(n+2)`-rhombus chain. -/
-def entR (n : Nat) : Term Nat := chainT (n+1)
+@[expose] public def entR (n : Nat) : Term Nat := chainT (n+1)
 
 /-- The `j`-th interior branch of the collapse `G₂`: the two-step path
     `P → v_{j+1} → Q` bundling the four chain edges at the interior vertex
     `v_{j+1}`, i.e. `(b_j ∩ a_{j+1}°)(d_j° ∩ c_{j+1})`. -/
-def branch (j : Nat) : Term Nat :=
+@[expose] public def branch (j : Nat) : Term Nat :=
   .comp (.meet (.var (bL j)) (.recip (.var (aL (j+1)))))
         (.meet (.recip (.var (dL j))) (.var (cL (j+1))))
 
 /-- `branch 0 ∩ ⋯ ∩ branch k` — the book's big `⋂` of interior branches. -/
-def mids : Nat → Term Nat
+@[expose] public def mids : Nat → Term Nat
   | 0 => branch 0
   | k+1 => .meet (mids k) (branch (k+1))
 
 /-- Left side of the `n`-th entangled containment: the collapse `G₂` of the
     `(n+2)`-rhombus chain, `1 ∩ (a₀ ∩ b_{n+1}°) ; mids n ; (c₀° ∩ d_{n+1})`. -/
-def entL (n : Nat) : Term Nat :=
+@[expose] public def entL (n : Nat) : Term Nat :=
   .meet .one
     (.comp (.meet (.var (aL 0)) (.recip (.var (bL (n+1)))))
       (.comp (mids n)
@@ -514,7 +516,7 @@ theorem ent_holds (n : Nat) : HoldsInRel (entL n) (entR n) := by
     of allegories: `∩`-semilattice laws, `;`-monoid laws, `°`-computation laws,
     Freyd's recast separated semidistributive law, and the modular law with its
     mirror form.  Graphically each member identifies at most one vertex pair. -/
-def allegoryAxioms : List (Term Nat × Term Nat) :=
+@[expose] public def allegoryAxioms : List (Term Nat × Term Nat) :=
   [ (.meet (.var 0) (.var 1), .var 0),                                      -- ∩-elim-l
     (.meet (.var 0) (.var 1), .var 1),                                      -- ∩-elim-r
     (.meet (.var 0) (.var 1), .meet (.var 1) (.var 0)),                     -- ∩-comm
@@ -725,7 +727,7 @@ theorem ent0_derivable : Derives allegoryAxioms (entL 0) (entR 0) := by
   `[Fᵢ₊₁] → [Fᵢ]`. -/
 
 /-- One-hole contexts over `Term L`. -/
-inductive Ctx (L : Type) where
+public inductive Ctx (L : Type) where
   | hole : Ctx L
   | recip : Ctx L → Ctx L
   | meetL : Ctx L → Term L → Ctx L
@@ -734,7 +736,7 @@ inductive Ctx (L : Type) where
   | compR : Term L → Ctx L → Ctx L
 
 /-- Plug a term into the hole. -/
-def Ctx.fill : Ctx L → Term L → Term L
+@[expose] public def Ctx.fill : Ctx L → Term L → Term L
   | .hole, E => E
   | .recip C, E => .recip (C.fill E)
   | .meetL C T, E => .meet (C.fill E) T
@@ -765,7 +767,7 @@ theorem Ctx.fill_plug (C D : Ctx L) (E : Term L) :
 /-- A SINGLE REWRITE: one substitution instance of one axiom of `Ax`, in one
     one-hole context — Freyd's "direct instance of one of the defining
     containments". -/
-inductive Step (Ax : List (Term L × Term L)) : Term L → Term L → Prop
+public inductive Step (Ax : List (Term L × Term L)) : Term L → Term L → Prop
   | mk {A B : Term L} (C : Ctx L) (σ : L → Term L) :
       (A, B) ∈ Ax → Step Ax (C.fill (subst σ A)) (C.fill (subst σ B))
 

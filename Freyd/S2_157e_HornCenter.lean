@@ -26,7 +26,9 @@
   The driver `hornCenter_famB_of` records the residue split; the two leaf
   obligations are the genuine-Desargues instance and the ⊤-column degeneracy.
 -/
-import Freyd.S2_157c_Converse
+module
+
+public import Freyd.S2_157c_Converse
 
 universe v u
 
@@ -50,7 +52,7 @@ variable {P : ProjectivePlane.{u}}
     `⊥`/`pt` are excluded by the residue, `ln D` feeds `hDesLeaf`, `⊤` feeds
     `hTop`; when `z` already lies under a c-entry the easy half
     (`horn_center_under`) fires. -/
-theorem hornCenter_famB_of
+public theorem hornCenter_famB_of
     (hDesLeaf : ∀ (a₁ a₂ b₁ b₂ : PElem P) (d₁ d₂ z : P.Point),
         (a₁.join a₂).meet (b₁.join b₂) = pt z →
         d₁ ≠ d₂ → z ≠ d₁ → z ≠ d₂ → P.incid z (P.lineThrough d₁ d₂) →
@@ -133,7 +135,7 @@ open ProjectivePlane in
     conditions, satisfy the Horn conclusion — precisely
     `desarguesND_implies_horn_points`, with the Horn hypothesis `pt z ⩽ ln(d₁d₂)`
     supplied from `z ∈ d₁d₂`. -/
-theorem hornConc_center_desargues (hDes : P.DesarguesND)
+public theorem hornConc_center_desargues (hDes : P.DesarguesND)
     {x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point}
     (hx : x₁ ≠ x₂) (hy : y₁ ≠ y₂) (hd12 : d₁ ≠ d₂)
     (hab₁ : x₁ ≠ y₁) (hac₁ : x₁ ≠ d₁) (hcb₁ : d₁ ≠ y₁)
@@ -169,7 +171,7 @@ theorem hornConc_center_desargues (hDes : P.DesarguesND)
 
 
 /-- Mirror of `join_ln_top_of_not_le` with the line on the left. -/
-theorem join_ln_left_top_of_not_le {x : PElem P} {A : P.Line}
+public theorem join_ln_left_top_of_not_le {x : PElem P} {A : P.Line}
     (h : ¬ x.le (ln A)) : (ln A).join x = top := by
   rw [join_comm]; exact join_ln_top_of_not_le h
 
@@ -179,7 +181,7 @@ theorem join_ln_left_top_of_not_le {x : PElem P} {A : P.Line}
     summand; or `p ⋠ B` — then `p ⊔ B = ⊤` (a line overflows), so the first
     summand is already `m ⊒ m ⊓ (p⊔q)`.  This one fact drives every degenerate
     ⊤-column leaf. -/
-theorem geomShear (m : PElem P) (B : P.Line) (p q : PElem P) :
+public theorem geomShear (m : PElem P) (B : P.Line) (p q : PElem P) :
     (m.meet (p.join q)).le
       ((m.meet (p.join (ln B))).join (m.meet (q.join (ln B)))) := by
   by_cases hp : p.le (ln B)
@@ -196,7 +198,7 @@ theorem geomShear (m : PElem P) (B : P.Line) (p q : PElem P) :
     has `rᵢ ⊔ pt d = · ⊔ pt d` (since `ln B ⊔ pt d = ⊤`), so
     `p⊔q ⩽ (r₁⊔r₂) ⊔ pt d`; and `ln B ⊓ ((r₁⊔r₂) ⊔ pt d) = r₁⊔r₂` because
     `ln B ⊓ pt d = ⊥` (`d ∉ B`) and `r₁⊔r₂ ⩽ ln B` (modular law, `b ⩽ a`). -/
-theorem geomShearPt {d : P.Point} {B : P.Line} (hd : ¬ P.incid d B) (p q : PElem P) :
+public theorem geomShearPt {d : P.Point} {B : P.Line} (hd : ¬ P.incid d B) (p q : PElem P) :
     ((ln B).meet (p.join q)).le
       (((ln B).meet (p.join (pt d))).join ((ln B).meet (q.join (pt d)))) := by
   -- abbreviations (spelled out; `set` is unavailable mathlib-free)
@@ -234,7 +236,7 @@ theorem geomShearPt {d : P.Point} {B : P.Line} (hd : ¬ P.incid d B) (p q : PEle
     conclusion is unconditional here).  Three structural cases: `a₁,b₁ ⩽ A`
     (`geomShear` on the second row), `a₂,b₂ ⩽ B` (`geomShear` on the first row),
     else one conclusion meet dominates a full line making the join `⊤`. -/
-theorem hornConc_ln_ln (a₁ a₂ b₁ b₂ : PElem P) {A B : P.Line} (hAB : A ≠ B) :
+public theorem hornConc_ln_ln (a₁ a₂ b₁ b₂ : PElem P) {A B : P.Line} (hAB : A ≠ B) :
     HornConc a₁ a₂ b₁ b₂ (ln A) (ln B) := by
   show ((a₁.join b₁).meet (a₂.join b₂)).le
     (((a₁.join (ln A)).meet (a₂.join (ln B))).join
@@ -292,7 +294,7 @@ theorem hornConc_ln_ln (a₁ a₂ b₁ b₂ : PElem P) {A B : P.Line} (hAB : A �
     `ln B` and `geomShearPt` closes it; otherwise `d ∉ B` makes `Mᵢ ⊔ pt d`
     absorb (`M₁ ⊔ pt d = a₁ ⊔ pt d`, `M₂ ⊔ pt d = b₁ ⊔ pt d`, by one modular
     shear each), so `M₁ ⊔ M₂ ⊒ a₁ ⊔ b₁ ⊒` the conclusion LHS. -/
-theorem hornConc_pt_ln (a₁ a₂ b₁ b₂ : PElem P) {d : P.Point} {B : P.Line}
+public theorem hornConc_pt_ln (a₁ a₂ b₁ b₂ : PElem P) {d : P.Point} {B : P.Line}
     (hd : ¬ P.incid d B) : HornConc a₁ a₂ b₁ b₂ (pt d) (ln B) := by
   have hbd : (ln B).join (pt d) = top := join_ln_pt_not hd
   -- unconditional absorptions Mᵢ ⊔ pt d = (a₁/b₁) ⊔ pt d
@@ -340,7 +342,7 @@ theorem hornConc_pt_ln (a₁ a₂ b₁ b₂ : PElem P) {d : P.Point} {B : P.Line
     the Horn hypothesis is vacuous; the conclusion holds by `join_top_cases`:
     a `⊤` entry is the ⊤-prunings of `S2_157b_Desargues`, and the three genuine
     shapes are the two degenerate leaves (`(ln,pt)` via the row symmetry). -/
-theorem hornConc_top_col (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (hc : c₁.join c₂ = top) :
+public theorem hornConc_top_col (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (hc : c₁.join c₂ = top) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   rcases join_top_cases hc with (h | h) | ⟨v, C, rfl, rfl, hvC⟩ |
     ⟨C, w, rfl, rfl, hwC⟩ | ⟨A, B, rfl, rfl, hAB⟩
@@ -362,7 +364,7 @@ theorem hornConc_top_col (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (hc : c₁.jo
 /-- **C3 SHEAR** (pure modularity): `(d₁⊔d₂⊔b₁) ⊓ b₂ ⩽ M₂ ⊔ pt d₂`, where
     `M₂ = (d₁⊔b₁) ⊓ (d₂⊔b₂)` is the second conclusion meet.  One modular shear
     factoring `pt d₂` out of the `(d₂⊔b₂)` side. -/
-theorem c3shear (b₁ b₂ : PElem P) (d₁ d₂ : P.Point) :
+public theorem c3shear (b₁ b₂ : PElem P) (d₁ d₂ : P.Point) :
     ((((pt d₁).join (pt d₂)).join b₁).meet b₂).le
       ((((pt d₁).join b₁).meet ((pt d₂).join b₂)).join (pt d₂)) := by
   have h1 : ((((pt d₁).join (pt d₂)).join b₁).meet b₂).le
@@ -382,7 +384,7 @@ theorem c3shear (b₁ b₂ : PElem P) (d₁ d₂ : P.Point) :
     `V' = (pt z ⊔ b₁) ⊓ b₂` sits under `M₁ ⊔ M₂`.  The `pt d₂`-excess produced by
     `c3shear` is absorbed by `M₁`, since `a₁ ⊔ pt d₁ ⊒ pt z ⊔ pt d₁ = ln(d₁d₂)`
     already contains `d₂`. -/
-theorem cruxDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
+public theorem cruxDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
     (hza1 : (pt z : PElem P).le a₁)
     (hzD : (pt z : PElem P).le ((pt d₁).join (pt d₂)))
     (hzd1 : z ≠ d₁) (hd12 : d₁ ≠ d₂) :
@@ -410,7 +412,7 @@ theorem cruxDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
     from `cruxDesLeaf`.  `W` splits as `V ⊔ a₂` (modular); `a₂ ⩽ M₁`; and the
     tight meet `a₁ ⊓ (b₁⊔b₂) = pt z` shears `V` down to `V' = (pt z⊔b₁)⊓b₂`,
     closed by `cruxDesLeaf`. -/
-theorem chainDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
+public theorem chainDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
     (hchain : a₂.le a₁)
     (hmeet : a₁.meet (b₁.join b₂) = pt z)
     (hzD : (pt z : PElem P).le ((pt d₁).join (pt d₂)))
@@ -440,7 +442,7 @@ theorem chainDesLeaf (a₁ a₂ b₁ b₂ : PElem P) (z d₁ d₂ : P.Point)
     discharged by `hornConc_top_col`; the whole perspective-centre family thus
     depends only on the genuine-Desargues instance `hDesLeaf`
     (`c = (pt d₁, pt d₂)` with the centre `z` on `d₁d₂`, off both). -/
-theorem hornCenter_famB_of_desLeaf
+public theorem hornCenter_famB_of_desLeaf
     (hDesLeaf : ∀ (a₁ a₂ b₁ b₂ : PElem P) (d₁ d₂ z : P.Point),
         (a₁.join a₂).meet (b₁.join b₂) = pt z →
         d₁ ≠ d₂ → z ≠ d₁ → z ≠ d₂ → P.incid z (P.lineThrough d₁ d₂) →
@@ -468,7 +470,7 @@ theorem hornCenter_famB_of_desLeaf
   `c2` assembles them; `hDesLeaf` maps the residue split's point-pair leaf here. -/
 
 /-- Two distinct points join in a line symmetric in its endpoints (axiom 3). -/
-theorem lineThrough_comm {x y : P.Point} (h : x ≠ y) :
+public theorem lineThrough_comm {x y : P.Point} (h : x ≠ y) :
     P.lineThrough x y = P.lineThrough y x :=
   (ProjectivePlane.lineThrough_eq h (P.lineThrough_incid_right y x)
     (P.lineThrough_incid_left y x)).symm
@@ -476,7 +478,7 @@ theorem lineThrough_comm {x y : P.Point} (h : x ≠ y) :
 /-- **Degeneracy `x₁ = y₁`** (a collapsed corresponding side).  The centre is
     pinned to `x₁ = y₁` (axiom 3 on the two perspective lines), and lies off
     `x₂y₂`, so the conclusion LHS `W` is `⊥`. -/
-theorem c2_xy_eq (x₂ y₂ w d₁ d₂ z : P.Point)
+public theorem c2_xy_eq (x₂ y₂ w d₁ d₂ z : P.Point)
     (hx : w ≠ x₂) (hy : w ≠ y₂)
     (hAB : P.lineThrough w x₂ ≠ P.lineThrough w y₂)
     (hzA : P.incid z (P.lineThrough w x₂)) (hzB : P.incid z (P.lineThrough w y₂)) :
@@ -505,7 +507,7 @@ theorem c2_xy_eq (x₂ y₂ w d₁ d₂ z : P.Point)
 /-- **Degeneracy `x₁ = d₁`** (a collapsed vertex).  The centre `z` on `x₁x₂` and
     on `d₁d₂` forces `x₂ ∈ d₁d₂`; then the conclusion meets `w` (`= W`) and `v`
     (`= M₂`) both lie on `d₁y₁`, so the excess `pt d₁` is absorbed by `M₁`. -/
-theorem c2_xd_eq (x₂ y₁ y₂ d₁ d₂ z : P.Point)
+public theorem c2_xd_eq (x₂ y₁ y₂ d₁ d₂ z : P.Point)
     (_hx : d₁ ≠ x₂)
     (_hAB : P.lineThrough d₁ x₂ ≠ P.lineThrough y₁ y₂)
     (hzA : P.incid z (P.lineThrough d₁ x₂))
@@ -547,7 +549,7 @@ theorem c2_xd_eq (x₂ y₁ y₂ d₁ d₂ z : P.Point)
 /-- Flat-triangle shear core (flat line `ℓ` explicit).  `d₂ ∉ ℓ` is the genuine
     point-split shear (`geomShearPt`); `d₂ ∈ ℓ` forces `x₂ ∈ ℓ` or `y₂ ∈ ℓ`,
     collapsing one conclusion meet to the whole line `ln ℓ`. -/
-theorem flat_core (ℓ : P.Line) (x₂ y₂ d₂ : P.Point) (hxd2 : x₂ ≠ d₂) (hdy2 : d₂ ≠ y₂)
+public theorem flat_core (ℓ : P.Line) (x₂ y₂ d₂ : P.Point) (hxd2 : x₂ ≠ d₂) (hdy2 : d₂ ≠ y₂)
     (hd2imp : P.incid d₂ ℓ → P.incid x₂ ℓ ∨ P.incid y₂ ℓ) :
     ((ln ℓ).meet ((pt x₂).join (pt y₂))).le
       (((ln ℓ).meet ((pt x₂).join (pt d₂))).join ((ln ℓ).meet ((pt d₂).join (pt y₂)))) := by
@@ -563,7 +565,7 @@ theorem flat_core (ℓ : P.Line) (x₂ y₂ d₂ : P.Point) (hxd2 : x₂ ≠ d�
 /-- **Degeneracy `x₁d₁ = d₁y₁`** (a flat triangle: `x₁, d₁, y₁` colinear on `ℓ`).
     `W`, `M₁`, `M₂` all meet with `ln ℓ`; `flat_core` closes it, with `x₂ ∈ ℓ ∨
     y₂ ∈ ℓ` (when `d₂ ∈ ℓ`) supplied by the centre `z ∈ ℓ`. -/
-theorem c2_flat1 (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
+public theorem c2_flat1 (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
     (hzA : P.incid z (P.lineThrough x₁ x₂)) (hzB : P.incid z (P.lineThrough y₁ y₂))
     (hd12 : d₁ ≠ d₂) (hzD : P.incid z (P.lineThrough d₁ d₂))
     (hac₁ : x₁ ≠ d₁) (hac₂ : x₂ ≠ d₂) (hcb₁ : d₁ ≠ y₁) (hcb₂ : d₂ ≠ y₂)
@@ -600,7 +602,7 @@ theorem c2_flat1 (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
 /-- **Degeneracy `x₁d₁ = x₂d₂`** (coincident corresponding sides).  Then all of
     `x₁,x₂,d₁,d₂` lie on one line `L` and `M₁ = ln L`.  If `y₂ ∈ L` (or `y₁ ∈ L`)
     the LHS `W ⩽ ln L = M₁`; else the second meet `v ∉ L`, so `M₁ ⊔ M₂ = ⊤`. -/
-theorem c2_Sac (x₁ x₂ y₁ y₂ d₁ d₂ : P.Point)
+public theorem c2_Sac (x₁ x₂ y₁ y₂ d₁ d₂ : P.Point)
     (hd12 : d₁ ≠ d₂)
     (hac₁ : x₁ ≠ d₁) (hac₂ : x₂ ≠ d₂) (hcb₁ : d₁ ≠ y₁) (hcb₂ : d₂ ≠ y₂)
     (hab₁ : x₁ ≠ y₁) (hab₂ : x₂ ≠ y₂)
@@ -648,7 +650,7 @@ theorem c2_Sac (x₁ x₂ y₁ y₂ d₁ d₂ : P.Point)
 
 /-- Corresponding `x-y` sides are distinct (the derived `hSab`): else all four
     of `x₁,x₂,y₁,y₂` lie on `line x₁y₁`, forcing `x₁x₂ = y₁y₂` (contra `hAB`). -/
-theorem c2_Sab (x₁ x₂ y₁ y₂ : P.Point) (hx : x₁ ≠ x₂) (hy : y₁ ≠ y₂)
+public theorem c2_Sab (x₁ x₂ y₁ y₂ : P.Point) (hx : x₁ ≠ x₂) (hy : y₁ ≠ y₂)
     (_hab₁ : x₁ ≠ y₁) (_hab₂ : x₂ ≠ y₂)
     (hAB : P.lineThrough x₁ x₂ ≠ P.lineThrough y₁ y₂) :
     P.lineThrough x₁ y₁ ≠ P.lineThrough x₂ y₂ := by
@@ -669,7 +671,7 @@ theorem c2_Sab (x₁ x₂ y₁ y₂ : P.Point) (hx : x₁ ≠ x₂) (hy : y₁ �
     `hornConc_center_desargues` (the sole consumer of `DesarguesND`); the eleven
     degeneracies reduce, by the sentence's two symmetries, to the four chases
     above (with the both-sides-coincident case excluded by `hAB`). -/
-theorem c2 (hDes : P.DesarguesND) (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
+public theorem c2 (hDes : P.DesarguesND) (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
     (hx : x₁ ≠ x₂) (hy : y₁ ≠ y₂)
     (hAB : P.lineThrough x₁ x₂ ≠ P.lineThrough y₁ y₂)
     (hzA : P.incid z (P.lineThrough x₁ x₂)) (hzB : P.incid z (P.lineThrough y₁ y₂))
@@ -752,7 +754,7 @@ theorem c2 (hDes : P.DesarguesND) (x₁ x₂ y₁ y₂ d₁ d₂ z : P.Point)
     is a single centre `z` on the line `d₁d₂` (distinct from both `d₁, d₂`), the
     Horn conclusion at `c = (pt d₁, pt d₂)` holds: chain columns via `chainDesLeaf`
     (Desargues-free), the both-point-pair core via `c2` (Desargues). -/
-theorem hDesLeaf (hDes : P.DesarguesND) :
+public theorem hDesLeaf (hDes : P.DesarguesND) :
     ∀ (a₁ a₂ b₁ b₂ : PElem P) (d₁ d₂ z : P.Point),
       (a₁.join a₂).meet (b₁.join b₂) = pt z →
       d₁ ≠ d₂ → z ≠ d₁ → z ≠ d₂ → P.incid z (P.lineThrough d₁ d₂) →
@@ -809,7 +811,7 @@ theorem hDesLeaf (hDes : P.DesarguesND) :
     hypothesis meet a single point `z`, the Horn sentence holds at every c-column;
     the sole Desargues consumption is the point-pair leaf.  This type is exactly
     `famB` of `latticeHorn_of_families` (`S2_157c_Converse`). -/
-theorem hornCenter_famB (hDes : P.DesarguesND) :
+public theorem hornCenter_famB (hDes : P.DesarguesND) :
     ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (z : P.Point),
       (a₁.join a₂).meet (b₁.join b₂) = pt z →
       HornHyp a₁ a₂ b₁ b₂ c₁ c₂ → HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=

@@ -1,6 +1,8 @@
-import Freyd.S2_30
-import Freyd.S2_50
-import Freyd.S2_51
+module
+
+public import Freyd.S2_30
+public import Freyd.S2_50
+public import Freyd.S2_51
 
 universe v u
 

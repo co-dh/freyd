@@ -1,8 +1,10 @@
-import Freyd.S1_543_CatColimitRegular
-import Freyd.S1_61
-import Freyd.S1_543_UnionFromCoproduct
-import Freyd.S1_421_Initial
-import Freyd.S1_63_ColimitInvImageUnion
+module
+
+public import Freyd.S1_543_CatColimitRegular
+public import Freyd.S1_61
+public import Freyd.S1_543_UnionFromCoproduct
+public import Freyd.S1_421_Initial
+public import Freyd.S1_63_ColimitInvImageUnion
 
 /-!
   # The directed colimit of pre-logoi is a pre-logos
@@ -47,7 +49,7 @@ variable {ι : Type u} {D : Directed ι}
 /-- Transfer `IsIso` across a heterogeneous equality of morphisms whose domains and codomains
     are (propositionally) equal objects.  Used to lift `IsIso (homInclObj …)` to `IsIso g` along
     the `colimHom_as_homInclObj` alignment. -/
-theorem isIso_of_heq {𝒞 : Type u} [Cat.{v} 𝒞] {P Q X Y : 𝒞} {m : P ⟶ Q} {g : X ⟶ Y}
+public theorem isIso_of_heq {𝒞 : Type u} [Cat.{v} 𝒞] {P Q X Y : 𝒞} {m : P ⟶ Q} {g : X ⟶ Y}
     (hP : P = X) (hQ : Q = Y) (h : HEq m g) (hm : IsIso m) : IsIso g := by
   subst hP; subst hQ; rw [eq_of_heq h] at hm; exact hm
 
@@ -59,7 +61,7 @@ theorem homInclObj_castHom_cod_heq (C : CatSystem ι D) (hC : C.Coherent) {i : �
   subst e; rfl
 
 /-- The chosen strict initial object of stage `i` (the minimal subobject of `1`, §1.61). -/
-noncomputable def stageZero (C : CatSystem ι D) (hbot : ∀ i, PreLogos (C.A i)) (i : ι) : C.A i :=
+@[expose] public noncomputable def stageZero (C : CatSystem ι D) (hbot : ∀ i, PreLogos (C.A i)) (i : ι) : C.A i :=
   (minimal_subobject_of_one_is_coterminator (hbot i)).zero
 
 /-- **The new colimit-zero brick.**  The `objIncl`-image of one stage's strict initial `0_{i₀}` is
@@ -76,7 +78,7 @@ noncomputable def stageZero (C : CatSystem ι D) (hbot : ∀ i, PreLogos (C.A i)
     stage `M'`, `F_{N→M'} xZ = F_{i₀→M'} 0_{i₀}` (`objIncl_eq_commonStage`), which is a STRICT
     COTERMINATOR (`hinitpres`); so the pushed germ `fN'` — a map INTO it — is iso directly.
     `homInclObj_isIso_of_stage` lifts this to the colimit and the `HEq` chain transports `IsIso` to `g`. -/
-theorem colimitStrictInitial (C : CatSystem ι D) (hC : C.Coherent) [Nonempty ι]
+public theorem colimitStrictInitial (C : CatSystem ι D) (hC : C.Coherent) [Nonempty ι]
     (hbot : ∀ i, PreLogos (C.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (C.A j) (C.catA j) (C.F hij (stageZero C hbot i)))
@@ -129,7 +131,7 @@ theorem strictCoterminator_of_eq (C : CatSystem ι D) (hbot : ∀ i, PreLogos (C
 /-- A map out of a strict initial object is monic.  Given `u v : W ⟶ Z` with `u ≫ m = v ≫ m`:
     `u` is iso (strictness, inverse `ui`), and `ui ≫ v = ui ≫ u` (both maps OUT of the initial
     `Z`), whence `v = u ≫ (ui ≫ v) = u ≫ (ui ≫ u) = u`. -/
-theorem mono_of_strict_initial {𝒞 : Type u} [Cat.{v} 𝒞] {Z A : 𝒞}
+public theorem mono_of_strict_initial {𝒞 : Type u} [Cat.{v} 𝒞] {Z A : 𝒞}
     (hInit : IsInitial Z) (hStrict : StrictCoterminator Z) (m : Z ⟶ A) : Monic m := by
   intro W u v huv
   obtain ⟨ui, hu1, hu2⟩ := hStrict u
@@ -153,7 +155,7 @@ theorem mono_of_strict_initial {𝒞 : Type u} [Cat.{v} 𝒞] {Z A : 𝒞}
   coherent-stability law `invImage_preserves_union` is discharged by germ-transport
   (`colimit_invImage_union_le`, §1.63 union condition) from the per-stage finite-limit / image /
   coproduct bundles (the same ones the §2.218 regular tower already supplies). -/
-noncomputable def colimitPreLogos (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [Nonempty ι]
+@[expose] public noncomputable def colimitPreLogos (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [Nonempty ι]
     (hbot : ∀ i, PreLogos (C.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (C.A j) (C.catA j) (C.F hij (stageZero C hbot i)))

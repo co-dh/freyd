@@ -37,7 +37,9 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_158b_NoFiniteAxiom
+module
+
+public import Freyd.S2_158b_NoFiniteAxiom
 
 namespace Freyd.S2_158
 
@@ -50,7 +52,7 @@ variable {L : Type}
   analysis every layer of the towers below peels off. -/
 
 /-- Invert an edge of a glued graph into its two component cases. -/
-theorem glued_edge_elim {G₁ G₂ : LGraph L}
+public theorem glued_edge_elim {G₁ G₂ : LGraph L}
     {r : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop} {sv tv : G₁.V ⊕ G₂.V}
     {c d : (glued G₁ G₂ r sv tv).V} {A : L}
     (h : (glued G₁ G₂ r sv tv).edge c d A) :
@@ -68,19 +70,19 @@ theorem glued_edge_elim {G₁ G₂ : LGraph L}
 /-! ### The mark identifications of the two gluings, as reusable equations -/
 
 /-- In a `meet`, the second factor's `s`-mark is the `s`-mark. -/
-theorem meet_inr_s (G₁ G₂ : LGraph L) :
+public theorem meet_inr_s (G₁ G₂ : LGraph L) :
     (Quot.mk (meetRel G₁ G₂) (Sum.inr G₂.s) : (meet G₁ G₂).V) = (meet G₁ G₂).s :=
   (Quot.sound (r := meetRel G₁ G₂) (a := Sum.inl G₁.s) (b := Sum.inr G₂.s)
     (Or.inl ⟨rfl, rfl⟩)).symm
 
 /-- In a `meet`, the second factor's `t`-mark is the `t`-mark. -/
-theorem meet_inr_t (G₁ G₂ : LGraph L) :
+public theorem meet_inr_t (G₁ G₂ : LGraph L) :
     (Quot.mk (meetRel G₁ G₂) (Sum.inr G₂.t) : (meet G₁ G₂).V) = (meet G₁ G₂).t :=
   (Quot.sound (r := meetRel G₁ G₂) (a := Sum.inl G₁.t) (b := Sum.inr G₂.t)
     (Or.inr ⟨rfl, rfl⟩)).symm
 
 /-- In a `gcomp`, the first factor's `t`-mark is glued to the second's `s`-mark. -/
-theorem gcomp_glue (G₁ G₂ : LGraph L) :
+public theorem gcomp_glue (G₁ G₂ : LGraph L) :
     (Quot.mk (compRel G₁ G₂) (Sum.inl G₁.t) : (gcomp G₁ G₂).V)
       = Quot.mk (compRel G₁ G₂) (Sum.inr G₂.s) :=
   Quot.sound (r := compRel G₁ G₂) (a := Sum.inl G₁.t) (b := Sum.inr G₂.s) ⟨rfl, rfl⟩
@@ -93,7 +95,7 @@ theorem gcomp_glue (G₁ G₂ : LGraph L) :
 
 /-- Edges of `x ∩ y°` (shape of `entL`'s first border factor and of the first
     factor of every `branch`): the `x`-edge runs `s → t`, the `y`-edge `t → s`. -/
-theorem meet_arrow_recip_edge {x y A : Nat}
+public theorem meet_arrow_recip_edge {x y A : Nat}
     {c d : (meet (arrow x) (recip (arrow y))).V}
     (h : (meet (arrow x) (recip (arrow y))).edge c d A) :
     (A = x ∧ c = (meet (arrow x) (recip (arrow y))).s
@@ -110,7 +112,7 @@ theorem meet_arrow_recip_edge {x y A : Nat}
 
 /-- Edges of `y° ∩ x` (shape of `entL`'s last border factor and of the second
     factor of every `branch`): the `y`-edge runs `t → s`, the `x`-edge `s → t`. -/
-theorem meet_recip_arrow_edge {x y A : Nat}
+public theorem meet_recip_arrow_edge {x y A : Nat}
     {c d : (meet (recip (arrow y)) (arrow x)).V}
     (h : (meet (recip (arrow y)) (arrow x)).edge c d A) :
     (A = y ∧ c = (meet (recip (arrow y)) (arrow x)).t
@@ -130,11 +132,11 @@ theorem meet_recip_arrow_edge {x y A : Nat}
   The four label families `aL, bL, cL, dL` live in disjoint residue classes
   mod 4, so a label can belong to at most one family. -/
 
-theorem aL_ne_bL {i j : Nat} : aL i ≠ bL j := by simp only [aL, bL]; omega
-theorem aL_ne_cL {i j : Nat} : aL i ≠ cL j := by simp only [aL, cL]; omega
-theorem aL_ne_dL {i j : Nat} : aL i ≠ dL j := by simp only [aL, dL]; omega
-theorem cL_ne_bL {i j : Nat} : cL i ≠ bL j := by simp only [cL, bL]; omega
-theorem cL_ne_dL {i j : Nat} : cL i ≠ dL j := by simp only [cL, dL]; omega
+public theorem aL_ne_bL {i j : Nat} : aL i ≠ bL j := by simp only [aL, bL]; omega
+public theorem aL_ne_cL {i j : Nat} : aL i ≠ cL j := by simp only [aL, cL]; omega
+public theorem aL_ne_dL {i j : Nat} : aL i ≠ dL j := by simp only [aL, dL]; omega
+public theorem cL_ne_bL {i j : Nat} : cL i ≠ bL j := by simp only [cL, bL]; omega
+public theorem cL_ne_dL {i j : Nat} : cL i ≠ dL j := by simp only [cL, dL]; omega
 
 /-! ## Edge-uniqueness in the collapsed tower `[entL n]`
 
@@ -147,22 +149,22 @@ theorem cL_ne_dL {i j : Nat} : cL i ≠ dL j := by simp only [cL, dL]; omega
 
 /-- The collapsed top vertex `P` of `[entL n]`: the class of the `s`-mark of
     the `mids` tower under the two gluing layers of `entL`. -/
-def Pv (n : Nat) : (toGraph (entL n)).V :=
+@[expose] public def Pv (n : Nat) : (toGraph (entL n)).V :=
   Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inl (toGraph (mids n)).s)))))
 
 /-- The collapsed bottom vertex `Q` of `[entL n]`: the class of the `t`-mark
     of the `mids` tower. -/
-def Qv (n : Nat) : (toGraph (entL n)).V :=
+@[expose] public def Qv (n : Nat) : (toGraph (entL n)).V :=
   Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inl (toGraph (mids n)).t)))))
 
 /-- The middle vertex of branch `j` (the collapse image of corner `v_{j+1}`):
     the joint of the branch's two factors. -/
-def branchMid (j : Nat) : (toGraph (branch j)).V :=
+@[expose] public def branchMid (j : Nat) : (toGraph (branch j)).V :=
   Quot.mk _ (Sum.inl (toGraph (.meet (.var (bL j)) (.recip (.var (aL (j+1)))))).t)
 
 /-- In a branch, the only `aL`-labelled edge is `aL (j+1)`, from the branch's
     middle vertex to the `s`-mark (the collapsed `P`). -/
-theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
+public theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (aL i)) :
     i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).s := by
   rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
@@ -176,7 +178,7 @@ theorem branch_edge_aL_full {j i : Nat} {c d : (toGraph (branch j)).V}
 
 /-- In a branch, the only `cL`-labelled edge is `cL (j+1)`, from the branch's
     middle vertex to the `t`-mark (the collapsed `Q`). -/
-theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
+public theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (cL i)) :
     i = j + 1 ∧ c = branchMid j ∧ d = (toGraph (branch j)).t := by
   rcases glued_edge_elim h with ⟨u, v, hu, hv, he⟩ | ⟨u, v, hu, hv, he⟩
@@ -191,18 +193,18 @@ theorem branch_edge_cL_full {j i : Nat} {c d : (toGraph (branch j)).V}
       exact (gcomp_glue _ _).symm
 /-- In a branch, every `aL`-labelled edge ends at the `s`-mark (the collapsed
     top vertex `P`). -/
-theorem branch_edge_aL {j i : Nat} {c d : (toGraph (branch j)).V}
+public theorem branch_edge_aL {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (aL i)) : d = (toGraph (branch j)).s := by
   exact (branch_edge_aL_full h).2.2
 
 /-- In a branch, every `cL`-labelled edge ends at the `t`-mark (the collapsed
     bottom vertex `Q`). -/
-theorem branch_edge_cL {j i : Nat} {c d : (toGraph (branch j)).V}
+public theorem branch_edge_cL {j i : Nat} {c d : (toGraph (branch j)).V}
     (h : (toGraph (branch j)).edge c d (cL i)) : d = (toGraph (branch j)).t := by
   exact (branch_edge_cL_full h).2.2
 
 /-- In the `mids` tower, every `aL`-labelled edge ends at the `s`-mark. -/
-theorem mids_edge_aL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
+public theorem mids_edge_aL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
     (toGraph (mids k)).edge c d (aL i) → d = (toGraph (mids k)).s := by
   intro k
   induction k with
@@ -215,7 +217,7 @@ theorem mids_edge_aL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
       exact meet_inr_s (toGraph (mids m)) (toGraph (branch (m+1)))
 
 /-- In the `mids` tower, every `cL`-labelled edge ends at the `t`-mark. -/
-theorem mids_edge_cL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
+public theorem mids_edge_cL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
     (toGraph (mids k)).edge c d (cL i) → d = (toGraph (mids k)).t := by
   intro k
   induction k with
@@ -229,7 +231,7 @@ theorem mids_edge_cL : ∀ {k i : Nat} {c d : (toGraph (mids k)).V},
 
 /-- **Edge-uniqueness, top row.**  Every `aL`-labelled edge of the collapsed
     graph `[entL n]` ends at the collapsed top vertex `Pv n`. -/
-theorem entL_edge_aL {n i : Nat} {c d : (toGraph (entL n)).V}
+public theorem entL_edge_aL {n i : Nat} {c d : (toGraph (entL n)).V}
     (h : (toGraph (entL n)).edge c d (aL i)) : d = Pv n := by
   rcases glued_edge_elim h with ⟨u, v, _, hv, he⟩ | ⟨u, v, _, hv, he⟩
   · exact he.elim
@@ -254,7 +256,7 @@ theorem entL_edge_aL {n i : Nat} {c d : (toGraph (entL n)).V}
 
 /-- **Edge-uniqueness, bottom row.**  Every `cL`-labelled edge of the collapsed
     graph `[entL n]` ends at the collapsed bottom vertex `Qv n`. -/
-theorem entL_edge_cL {n i : Nat} {c d : (toGraph (entL n)).V}
+public theorem entL_edge_cL {n i : Nat} {c d : (toGraph (entL n)).V}
     (h : (toGraph (entL n)).edge c d (cL i)) : d = Qv n := by
   rcases glued_edge_elim h with ⟨u, v, _, hv, he⟩ | ⟨u, v, _, hv, he⟩
   · exact he.elim
@@ -279,7 +281,7 @@ theorem entL_edge_cL {n i : Nat} {c d : (toGraph (entL n)).V}
         · exact absurd hlab cL_ne_dL
 
 /-- The `1 ∩ ·` layer of `entL` glues the two marks of `[entL n]`. -/
-theorem entL_s_eq_t (n : Nat) : (toGraph (entL n)).s = (toGraph (entL n)).t := rfl
+public theorem entL_s_eq_t (n : Nat) : (toGraph (entL n)).s = (toGraph (entL n)).t := rfl
 
 /-! ## The designated vertices of the chain tower `[entR n]`
 
@@ -291,21 +293,21 @@ theorem entL_s_eq_t (n : Nat) : (toGraph (entL n)).s = (toGraph (entL n)).t := r
 
 /-- Top midpoint of a single lens graph: the class gluing the head of the
     `aL i`-arrow to the tail of the `bL i`-arrow. -/
-def lensP (i : Nat) : (toGraph (lens i)).V :=
+@[expose] public def lensP (i : Nat) : (toGraph (lens i)).V :=
   Quot.mk _ (Sum.inl (Quot.mk _ (Sum.inl true)))
 
 /-- Bottom midpoint of a single lens graph. -/
-def lensQ (i : Nat) : (toGraph (lens i)).V :=
+@[expose] public def lensQ (i : Nat) : (toGraph (lens i)).V :=
   Quot.mk _ (Sum.inr (Quot.mk _ (Sum.inl true)))
 
 /-- The lens's `aL i`-edge enters its top midpoint from the `s`-mark. -/
-theorem lensP_edge (i : Nat) :
+public theorem lensP_edge (i : Nat) :
     (toGraph (lens i)).edge (toGraph (lens i)).s (lensP i) (aL i) :=
   ⟨Sum.inl (Quot.mk _ (Sum.inl false)), Sum.inl (Quot.mk _ (Sum.inl true)),
     rfl, rfl, ⟨Sum.inl false, Sum.inl true, rfl, rfl, ⟨rfl, rfl, rfl⟩⟩⟩
 
 /-- The lens's `cL i`-edge enters its bottom midpoint from the `s`-mark. -/
-theorem lensQ_edge (i : Nat) :
+public theorem lensQ_edge (i : Nat) :
     (toGraph (lens i)).edge (toGraph (lens i)).s (lensQ i) (cL i) :=
   ⟨Sum.inr (Quot.mk _ (Sum.inl false)), Sum.inr (Quot.mk _ (Sum.inl true)),
     meet_inr_s _ _, rfl,
@@ -313,21 +315,21 @@ theorem lensQ_edge (i : Nat) :
 
 /-- The designated top midpoints of the chain tower: `pVert k i` is the top
     midpoint of lens `i` inside `[chainT k]` (meaningful for `i ≤ k`). -/
-def pVert : (k : Nat) → Nat → (toGraph (chainT k)).V
+@[expose] public def pVert : (k : Nat) → Nat → (toGraph (chainT k)).V
   | 0, _ => lensP 0
   | k+1, i =>
       if i ≤ k then Quot.mk _ (Sum.inl (pVert k i))
       else Quot.mk _ (Sum.inr (lensP (k+1)))
 
 /-- The designated bottom midpoints of the chain tower. -/
-def qVert : (k : Nat) → Nat → (toGraph (chainT k)).V
+@[expose] public def qVert : (k : Nat) → Nat → (toGraph (chainT k)).V
   | 0, _ => lensQ 0
   | k+1, i =>
       if i ≤ k then Quot.mk _ (Sum.inl (qVert k i))
       else Quot.mk _ (Sum.inr (lensQ (k+1)))
 
 /-- Each designated top midpoint has an incoming `aL i`-labelled edge. -/
-theorem pVert_edge : ∀ k i, i ≤ k →
+public theorem pVert_edge : ∀ k i, i ≤ k →
     ∃ u, (toGraph (chainT k)).edge u (pVert k i) (aL i) := by
   intro k
   induction k with
@@ -354,7 +356,7 @@ theorem pVert_edge : ∀ k i, i ≤ k →
       exact ⟨Sum.inl u, Sum.inl (pVert m i), rfl, rfl, hu⟩
 
 /-- Each designated bottom midpoint has an incoming `cL i`-labelled edge. -/
-theorem qVert_edge : ∀ k i, i ≤ k →
+public theorem qVert_edge : ∀ k i, i ≤ k →
     ∃ u, (toGraph (chainT k)).edge u (qVert k i) (cL i) := by
   intro k
   induction k with
@@ -388,7 +390,7 @@ theorem qVert_edge : ∀ k i, i ≤ k →
     (`pVert_edge`), and in `[entL n]` every `aL`-labelled edge ends at `Pv n`
     (`entL_edge_aL`); likewise for `qVert`/`Qv`; the marks merge because
     `[entL n]`'s two marks coincide (`entL_s_eq_t`). -/
-theorem rigidity (n : Nat) (f : Hom (toGraph (entR n)) (toGraph (entL n))) :
+public theorem rigidity (n : Nat) (f : Hom (toGraph (entR n)) (toGraph (entL n))) :
     (∀ i, i ≤ n + 1 → f.toEHom.onV (pVert (n+1) i) = Pv n) ∧
     (∀ i, i ≤ n + 1 → f.toEHom.onV (qVert (n+1) i) = Qv n) ∧
     f.toEHom.onV (toGraph (entR n)).s = f.toEHom.onV (toGraph (entR n)).t := by
@@ -422,7 +424,7 @@ theorem rigidity_pairs (n : Nat) (f : Hom (toGraph (entR n)) (toGraph (entL n)))
 
 /-- Vertex positions of the chain tower: the corner vertices `v₀ … v_{k+1}`,
     the top midpoints `p_i`, the bottom midpoints `q_i`. -/
-inductive CPos where
+public inductive CPos where
   | corner : Nat → CPos
   | top : Nat → CPos
   | bot : Nat → CPos
@@ -629,7 +631,7 @@ theorem qVert_ne_t {k i : Nat} (hi : i ≤ k) :
 
 /-- Generic `Quot`-exactness against any equivalence-closed relation
     containing the generator. -/
-theorem quot_mk_eq_elim {α : Type} {r : α → α → Prop} (R : α → α → Prop)
+public theorem quot_mk_eq_elim {α : Type} {r : α → α → Prop} (R : α → α → Prop)
     (hrefl : ∀ p, R p p) (hsymm : ∀ {p q}, R p q → R q p)
     (htrans : ∀ {p q s}, R p q → R q s → R p s)
     (hgen : ∀ {p q}, r p q → R p q) {p q : α}
@@ -643,19 +645,19 @@ theorem quot_mk_eq_elim {α : Type} {r : α → α → Prop} (R : α → α → 
 
 /-- The equivalence closure of the single `gcomp` gluing pair: two raw
     vertices are identified iff equal or both in `{inl t₁, inr s₂}`. -/
-def compClose (G₁ G₂ : LGraph L) (p q : G₁.V ⊕ G₂.V) : Prop :=
+@[expose] public def compClose (G₁ G₂ : LGraph L) (p q : G₁.V ⊕ G₂.V) : Prop :=
   p = q ∨ ((p = Sum.inl G₁.t ∨ p = Sum.inr G₂.s) ∧ (q = Sum.inl G₁.t ∨ q = Sum.inr G₂.s))
 
-theorem compClose_refl {G₁ G₂ : LGraph L} (p : G₁.V ⊕ G₂.V) : compClose G₁ G₂ p p :=
+public theorem compClose_refl {G₁ G₂ : LGraph L} (p : G₁.V ⊕ G₂.V) : compClose G₁ G₂ p p :=
   Or.inl rfl
 
-theorem compClose_symm {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem compClose_symm {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : compClose G₁ G₂ p q) : compClose G₁ G₂ q p := by
   rcases h with rfl | ⟨hp, hq⟩
   · exact Or.inl rfl
   · exact Or.inr ⟨hq, hp⟩
 
-theorem compClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
+public theorem compClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
     (h₁ : compClose G₁ G₂ p q) (h₂ : compClose G₁ G₂ q s) : compClose G₁ G₂ p s := by
   rcases h₁ with rfl | ⟨hp, hq⟩
   · exact h₂
@@ -663,7 +665,7 @@ theorem compClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
     · exact Or.inr ⟨hp, hq⟩
     · exact Or.inr ⟨hp, hs⟩
 
-theorem compRel_le_compClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem compRel_le_compClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : compRel G₁ G₂ p q) : compClose G₁ G₂ p q := by
   cases p with
   | inl a => cases q with
@@ -676,32 +678,32 @@ theorem compRel_le_compClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     | inr b => exact h.elim
 
 /-- `Quot.mk`-equality in a `gcomp` gluing, inverted. -/
-theorem gcomp_mk_eq {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem gcomp_mk_eq {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : Quot.mk (compRel G₁ G₂) p = Quot.mk (compRel G₁ G₂) q) :
     compClose G₁ G₂ p q :=
   quot_mk_eq_elim _ compClose_refl compClose_symm compClose_trans
     compRel_le_compClose h
 
 /-- The `s`-cluster of the `meet` gluing. -/
-def sClu (G₁ G₂ : LGraph L) (p : G₁.V ⊕ G₂.V) : Prop :=
+@[expose] public def sClu (G₁ G₂ : LGraph L) (p : G₁.V ⊕ G₂.V) : Prop :=
   p = Sum.inl G₁.s ∨ p = Sum.inr G₂.s
 
 /-- The `t`-cluster of the `meet` gluing. -/
-def tClu (G₁ G₂ : LGraph L) (p : G₁.V ⊕ G₂.V) : Prop :=
+@[expose] public def tClu (G₁ G₂ : LGraph L) (p : G₁.V ⊕ G₂.V) : Prop :=
   p = Sum.inl G₁.t ∨ p = Sum.inr G₂.t
 
 /-- The equivalence closure of the two `meet` gluing pairs: equality, the two
     clusters, and — when a factor's marks coincide, which chains the clusters
     together — the union of both clusters. -/
-def meetClose (G₁ G₂ : LGraph L) (p q : G₁.V ⊕ G₂.V) : Prop :=
+@[expose] public def meetClose (G₁ G₂ : LGraph L) (p q : G₁.V ⊕ G₂.V) : Prop :=
   p = q ∨ (sClu G₁ G₂ p ∧ sClu G₁ G₂ q) ∨ (tClu G₁ G₂ p ∧ tClu G₁ G₂ q) ∨
     ((G₁.s = G₁.t ∨ G₂.s = G₂.t) ∧
       (sClu G₁ G₂ p ∨ tClu G₁ G₂ p) ∧ (sClu G₁ G₂ q ∨ tClu G₁ G₂ q))
 
-theorem meetClose_refl {G₁ G₂ : LGraph L} (p : G₁.V ⊕ G₂.V) : meetClose G₁ G₂ p p :=
+public theorem meetClose_refl {G₁ G₂ : LGraph L} (p : G₁.V ⊕ G₂.V) : meetClose G₁ G₂ p p :=
   Or.inl rfl
 
-theorem meetClose_symm {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem meetClose_symm {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : meetClose G₁ G₂ p q) : meetClose G₁ G₂ q p := by
   rcases h with rfl | ⟨hp, hq⟩ | ⟨hp, hq⟩ | ⟨hco, hp, hq⟩
   · exact Or.inl rfl
@@ -710,7 +712,7 @@ theorem meetClose_symm {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
   · exact Or.inr (Or.inr (Or.inr ⟨hco, hq, hp⟩))
 
 /-- A vertex in both clusters witnesses a mark coincidence. -/
-theorem clu_cross {G₁ G₂ : LGraph L} {q : G₁.V ⊕ G₂.V}
+public theorem clu_cross {G₁ G₂ : LGraph L} {q : G₁.V ⊕ G₂.V}
     (hs : sClu G₁ G₂ q) (ht : tClu G₁ G₂ q) : G₁.s = G₁.t ∨ G₂.s = G₂.t := by
   rcases hs with rfl | rfl
   · rcases ht with h | h
@@ -720,7 +722,7 @@ theorem clu_cross {G₁ G₂ : LGraph L} {q : G₁.V ⊕ G₂.V}
     · nomatch h
     · exact Or.inr (Sum.inr.inj h)
 
-theorem meetClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
+public theorem meetClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
     (h₁ : meetClose G₁ G₂ p q) (h₂ : meetClose G₁ G₂ q s) : meetClose G₁ G₂ p s := by
   rcases h₁ with rfl | ⟨hp, hq⟩ | ⟨hp, hq⟩ | ⟨hco, hp, hq⟩
   · exact h₂
@@ -740,7 +742,7 @@ theorem meetClose_trans {G₁ G₂ : LGraph L} {p q s : G₁.V ⊕ G₂.V}
     · exact Or.inr (Or.inr (Or.inr ⟨hco, hp, Or.inr hs⟩))
     · exact Or.inr (Or.inr (Or.inr ⟨hco, hp, hs⟩))
 
-theorem meetRel_le_meetClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem meetRel_le_meetClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : meetRel G₁ G₂ p q) : meetClose G₁ G₂ p q := by
   cases p with
   | inl a => cases q with
@@ -754,7 +756,7 @@ theorem meetRel_le_meetClose {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     | inr b => exact h.elim
 
 /-- `Quot.mk`-equality in a `meet` gluing, inverted. -/
-theorem meet_mk_eq {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
+public theorem meet_mk_eq {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
     (h : Quot.mk (meetRel G₁ G₂) p = Quot.mk (meetRel G₁ G₂) q) :
     meetClose G₁ G₂ p q :=
   quot_mk_eq_elim _ meetClose_refl meetClose_symm meetClose_trans
@@ -768,19 +770,19 @@ theorem meet_mk_eq {G₁ G₂ : LGraph L} {p q : G₁.V ⊕ G₂.V}
   rewrite: identity outside the redex, the given map inside. -/
 
 /-- Left injection into a gluing, as an edge-homomorphism. -/
-def gluedInl {G₁ G₂ : LGraph L} (r : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
+@[expose] public def gluedInl {G₁ G₂ : LGraph L} (r : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
     (sv tv : G₁.V ⊕ G₂.V) : EHom G₁ (glued G₁ G₂ r sv tv) where
   onV u := Quot.mk r (Sum.inl u)
   map_edge {u v _} h := ⟨Sum.inl u, Sum.inl v, rfl, rfl, h⟩
 
 /-- Right injection into a gluing, as an edge-homomorphism. -/
-def gluedInr {G₁ G₂ : LGraph L} (r : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
+@[expose] public def gluedInr {G₁ G₂ : LGraph L} (r : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
     (sv tv : G₁.V ⊕ G₂.V) : EHom G₂ (glued G₁ G₂ r sv tv) where
   onV u := Quot.mk r (Sum.inr u)
   map_edge {u v _} h := ⟨Sum.inr u, Sum.inr v, rfl, rfl, h⟩
 
 /-- `meet` is functorial in its left argument (identity on the right). -/
-def meetHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
+@[expose] public def meetHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     Hom (meet G T) (meet G' T) where
   toEHom := gluedOut (f.toEHom.comp (gluedInl _ _ _)) (gluedInr _ _ _) (by
     intro p p' hpp'
@@ -808,7 +810,7 @@ def meetHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     rw [f.map_t]; rfl
 
 /-- `meet` is functorial in its right argument (identity on the left). -/
-def meetHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
+@[expose] public def meetHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     Hom (meet T G) (meet T G') where
   toEHom := gluedOut (gluedInl _ _ _) (f.toEHom.comp (gluedInr _ _ _)) (by
     intro p p' hpp'
@@ -832,7 +834,7 @@ def meetHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
   map_t := rfl
 
 /-- `gcomp` is functorial in its left argument (identity on the right). -/
-def gcompHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
+@[expose] public def gcompHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     Hom (gcomp G T) (gcomp G' T) where
   toEHom := gluedOut (f.toEHom.comp (gluedInl _ _ _)) (gluedInr _ _ _) (by
     intro p p' hpp'
@@ -855,7 +857,7 @@ def gcompHomL (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
   map_t := rfl
 
 /-- `gcomp` is functorial in its right argument (identity on the left). -/
-def gcompHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
+@[expose] public def gcompHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     Hom (gcomp T G) (gcomp T G') where
   toEHom := gluedOut (gluedInl _ _ _) (f.toEHom.comp (gluedInr _ _ _)) (by
     intro p p' hpp'
@@ -878,7 +880,7 @@ def gcompHomR (T : LGraph L) {G G' : LGraph L} (f : Hom G G') :
     rw [f.map_t]; rfl
 
 /-- `recip` is functorial: same vertex map, marks swapped. -/
-def recipHom {G G' : LGraph L} (f : Hom G G') : Hom (recip G) (recip G') where
+@[expose] public def recipHom {G G' : LGraph L} (f : Hom G G') : Hom (recip G) (recip G') where
   toEHom := ⟨f.toEHom.onV, f.toEHom.map_edge⟩
   map_s := f.map_t
   map_t := f.map_s
@@ -886,7 +888,7 @@ def recipHom {G G' : LGraph L} (f : Hom G G') : Hom (recip G) (recip G') where
 /-- **The canonical filled map** — context-functoriality of `toGraph`.  A
     graph map on the redex extends through any one-hole context: identity
     outside, the given map inside. -/
-def fillHom : (C : Ctx Nat) → {E F : Term Nat} →
+@[expose] public def fillHom : (C : Ctx Nat) → {E F : Term Nat} →
     Hom (toGraph E) (toGraph F) → Hom (toGraph (C.fill E)) (toGraph (C.fill F))
   | .hole, _, _, f => f
   | .recip C, _, _, f => recipHom (fillHom C f)
@@ -916,16 +918,16 @@ def fillHom : (C : Ctx Nat) → {E F : Term Nat} →
   bound, independent of the context. -/
 
 /-- `l` covers the fibre of `f` over `y`. -/
-def FibCover {X Y : Type} (f : X → Y) (y : Y) (l : List X) : Prop :=
+@[expose] public def FibCover {X Y : Type} (f : X → Y) (y : Y) (l : List X) : Prop :=
   ∀ x, f x = y → x ∈ l
 
 /-- A cover stays a cover under consing. -/
-theorem FibCover.cons {X Y : Type} {f : X → Y} {y : Y} {l : List X}
+public theorem FibCover.cons {X Y : Type} {f : X → Y} {y : Y} {l : List X}
     (h : FibCover f y l) (a : X) : FibCover f y (a :: l) :=
   fun x hx => List.mem_cons_of_mem a (h x hx)
 
 /-- The mark-aware fibre-bound invariant (see the section header). -/
-structure Tame {G H : LGraph L} (f : Hom G H) (M : Nat) : Prop where
+public structure Tame {G H : LGraph L} (f : Hom G H) (M : Nat) : Prop where
   interior : ∀ y, y ≠ H.s → y ≠ H.t →
     ∃ l, FibCover f.toEHom.onV y l ∧ l.length ≤ M
   marks_eq : H.s = H.t →
@@ -936,7 +938,7 @@ structure Tame {G H : LGraph L} (f : Hom G H) (M : Nat) : Prop where
       ls.length + lt.length + 2 ≤ M + 1
 
 /-- Any hom whose every fibre is covered by ≤ N vertices is `Tame (2N + 1)`. -/
-theorem tame_of_fibBound {G H : LGraph L} (f : Hom G H) (N : Nat)
+public theorem tame_of_fibBound {G H : LGraph L} (f : Hom G H) (N : Nat)
     (hb : ∀ y, ∃ l, FibCover f.toEHom.onV y l ∧ l.length ≤ N) :
     Tame f (2 * N + 1) where
   interior y _ _ := by
@@ -952,7 +954,7 @@ theorem tame_of_fibBound {G H : LGraph L} (f : Hom G H) (N : Nat)
 
 /-- **Uniform fibre bound**: every fibre of a `Tame f M` map is covered by a
     list of length ≤ M. -/
-theorem Tame.fib {G H : LGraph L} {f : Hom G H} {M : Nat} (hf : Tame f M)
+public theorem Tame.fib {G H : LGraph L} {f : Hom G H} {M : Nat} (hf : Tame f M)
     (y : H.V) : ∃ l, FibCover f.toEHom.onV y l ∧ l.length ≤ M := by
   by_cases hys : y = H.s
   · by_cases hst : H.s = H.t
@@ -974,7 +976,7 @@ private def ml (G T : LGraph L) (u : G.V) : (meet G T).V :=
     This is the heart of context-invariance: the ctx factor `T` contributes
     only singleton fibres, mark coincidences merge at most the two mark
     covers whose heads collapse to one class, and nothing grows with `T`. -/
-theorem tame_meetL (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
+public theorem tame_meetL (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
     (hM : 1 ≤ M) (hf : Tame f M) : Tame (meetHomL T f) M := by
   refine ⟨?_, ?_, ?_⟩
   · -- INTERIOR: non-mark classes have redex-only (or singleton ctx) fibres
@@ -1339,7 +1341,7 @@ private def mr (T G : LGraph L) (u : G.V) : (meet T G).V :=
   Quot.mk (meetRel T G) (Sum.inr u)
 
 /-- `Tame` is preserved by the `meet`-right layer (mirror of `tame_meetL`). -/
-theorem tame_meetR (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
+public theorem tame_meetR (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
     (hM : 1 ≤ M) (hf : Tame f M) : Tame (meetHomR T f) M := by
   refine ⟨?_, ?_, ?_⟩
   · -- INTERIOR
@@ -1709,7 +1711,7 @@ private def gl (G T : LGraph L) (u : G.V) : (gcomp G T).V :=
 /-- `Tame` is preserved by the `gcomp`-left layer.  The old `t`-mark RETIRES
     into the interior carrying its own cover; the fresh ctx `t`-mark has a
     singleton fibre — so the joint mark budget is restored, not grown. -/
-theorem tame_gcompL (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
+public theorem tame_gcompL (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
     (hM : 1 ≤ M) (hf : Tame f M) : Tame (gcompHomL T f) M := by
   refine ⟨?_, ?_, ?_⟩
   · -- INTERIOR (including the retired `t`-mark class)
@@ -2050,7 +2052,7 @@ private def gr (T G : LGraph L) (u : G.V) : (gcomp T G).V :=
 
 /-- `Tame` is preserved by the `gcomp`-right layer (mirror of `tame_gcompL`:
     here the redex's `s`-mark retires). -/
-theorem tame_gcompR (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
+public theorem tame_gcompR (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
     (hM : 1 ≤ M) (hf : Tame f M) : Tame (gcompHomR T f) M := by
   refine ⟨?_, ?_, ?_⟩
   · -- INTERIOR (including the retired `s`-mark class)
@@ -2396,7 +2398,7 @@ theorem tame_gcompR (T : LGraph L) {G G' : LGraph L} {f : Hom G G'} {M : Nat}
         exact hlen
 
 /-- `Tame` transports through `recip` (marks swap; heads swap with them). -/
-theorem tame_recip {G G' : LGraph L} {f : Hom G G'} {M : Nat} (hf : Tame f M) :
+public theorem tame_recip {G G' : LGraph L} {f : Hom G G'} {M : Nat} (hf : Tame f M) :
     Tame (recipHom f) M where
   interior y hys hyt := hf.interior y hyt hys
   marks_eq h := by
@@ -2414,7 +2416,7 @@ theorem tame_recip {G G' : LGraph L} {f : Hom G G'} {M : Nat} (hf : Tame f M) :
     `Tame` redex map through ANY one-hole context preserves the bound.  The
     canonical filled map is the identity outside the redex, so no matter how
     large the context, no fibre ever exceeds the redex map's own bound. -/
-theorem fillTame (C : Ctx Nat) {E F : Term Nat} (f : Hom (toGraph E) (toGraph F))
+public theorem fillTame (C : Ctx Nat) {E F : Term Nat} (f : Hom (toGraph E) (toGraph F))
     {M : Nat} (hM : 1 ≤ M) (hf : Tame f M) : Tame (fillHom C f) M := by
   induction C with
   | hole => exact hf
@@ -2425,7 +2427,7 @@ theorem fillTame (C : Ctx Nat) {E F : Term Nat} (f : Hom (toGraph E) (toGraph F)
   | compR T C ih => exact tame_gcompR (toGraph T) hM ih
 
 /-- List pigeonhole: pairwise-distinct members of `l` number ≤ `l.length`. -/
-theorem pairwise_ne_length_le {α : Type} :
+public theorem pairwise_ne_length_le {α : Type} :
     ∀ (vs l : List α), vs.Pairwise (· ≠ ·) → (∀ x ∈ vs, x ∈ l) →
       vs.length ≤ l.length := by
   intro vs
@@ -2452,7 +2454,7 @@ theorem pairwise_ne_length_le {α : Type} :
     the σ-blow-up ingredient of the OPEN note — the fibres of the blow-up of
     a fixed `[B] → [A]` are bounded by the size of `B`, independently of σ —
     isolated here as the one still-open hypothesis of (b). -/
-def InstanceBound (Ax : List (Term Nat × Term Nat)) (N : Nat) : Prop :=
+@[expose] public def InstanceBound (Ax : List (Term Nat × Term Nat)) (N : Nat) : Prop :=
   ∀ p ∈ Ax, ∀ σ : Nat → Term Nat,
     ∃ h : Hom (toGraph (subst σ p.2)) (toGraph (subst σ p.1)),
       ∀ y, ∃ l, FibCover h.toEHom.onV y l ∧ l.length ≤ N
@@ -2462,7 +2464,7 @@ def InstanceBound (Ax : List (Term Nat × Term Nat)) (N : Nat) : Prop :=
     instance map, identity outside the redex — ALL of whose fibres are
     covered by ≤ 2N+1 vertices, independent of the substitution and of the
     one-hole context. -/
-theorem step_hom_tame {Ax : List (Term Nat × Term Nat)} {N : Nat}
+public theorem step_hom_tame {Ax : List (Term Nat × Term Nat)} {N : Nat}
     (hb : InstanceBound Ax N) {E F : Term Nat} (st : Step Ax E F) :
     ∃ c : Hom (toGraph F) (toGraph E),
       ∀ y, ∃ l, FibCover c.toEHom.onV y l ∧ l.length ≤ 2 * N + 1 := by
@@ -2477,7 +2479,7 @@ theorem step_hom_tame {Ax : List (Term Nat × Term Nat)} {N : Nat}
     merge more than `2N + 1` pairwise-distinct vertices into one point — in
     particular a jump step cannot merge all `2n + 3` designated pairs of the
     entangled family once `n` exceeds the bound read off `Ax`. -/
-theorem step_merge_bound {Ax : List (Term Nat × Term Nat)} {N : Nat}
+public theorem step_merge_bound {Ax : List (Term Nat × Term Nat)} {N : Nat}
     (hb : InstanceBound Ax N) {E F : Term Nat} (st : Step Ax E F) :
     ∃ c : Hom (toGraph F) (toGraph E),
       ∀ vs : List (toGraph F).V, vs.Pairwise (· ≠ ·) →

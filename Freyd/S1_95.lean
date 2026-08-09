@@ -15,27 +15,29 @@
   §1.969  Lawvere and Tierney definitions of Grothendieck topos.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_90
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_58
-import Freyd.S1_59
-import Freyd.S1_60
-import Freyd.S1_62
-import Freyd.S1_64
-import Freyd.S1_77
-import Freyd.S1_82
-import Freyd.S1_84
-import Freyd.S1_85
-import Freyd.S1_91
-import Freyd.S1_92
-import Freyd.S1_94
-import Freyd.S1_967_ToposExists
-import Freyd.S1_75
-import Freyd.S1_97_ToposDistributive
-import Freyd.S1_943_ToposRTC
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_90
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_58
+public import Freyd.S1_59
+public import Freyd.S1_60
+public import Freyd.S1_62
+public import Freyd.S1_64
+public import Freyd.S1_77
+public import Freyd.S1_82
+public import Freyd.S1_84
+public import Freyd.S1_85
+public import Freyd.S1_91
+public import Freyd.S1_92
+public import Freyd.S1_94
+public import Freyd.S1_967_ToposExists
+public import Freyd.S1_75
+public import Freyd.S1_97_ToposDistributive
+public import Freyd.S1_943_ToposRTC
 
 
 universe v u
@@ -57,7 +59,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasIma
     available: it packages `E ≅ level x ≅ (graph x) ⊚ (graph x)°` using the two
     bridges above, producing the `IsEffective` data (`Q`, `x`, `Cover x`, and the
     mutual relational containments with `(graph x) ⊚ (graph x)°`).  No `Sorry`. -/
-theorem effective_of_quotient_cover {A Q : 𝒞} (E : BinRel 𝒞 A A)
+public theorem effective_of_quotient_cover {A Q : 𝒞} (E : BinRel 𝒞 A A)
     (hE : EquivalenceRelation E) (x : A ⟶ Q) (hx : Cover x)
     (hElx : RelLe E (kernelPairRel x)) (hlxE : RelLe (kernelPairRel x) E) :
     IsEffective E :=
@@ -72,7 +74,7 @@ theorem effective_of_quotient_cover {A Q : 𝒞} (E : BinRel 𝒞 A A)
     This is the bridge from `kernelPairRel (image.lift Λ)` (the quotient cover) to
     `kernelPairRel Λ` (the classifying map), since `Λ = image.lift Λ ≫ (image Λ).arr`
     with `(image Λ).arr` monic. -/
-theorem kernelPairRel_postmono {A C D : 𝒞} (q : A ⟶ C) (m : C ⟶ D) (hm : Monic m) :
+public theorem kernelPairRel_postmono {A C D : 𝒞} (q : A ⟶ C) (m : C ⟶ D) (hm : Monic m) :
     RelLe (kernelPairRel q) (kernelPairRel (q ≫ m)) ∧
     RelLe (kernelPairRel (q ≫ m)) (kernelPairRel q) := by
   -- `kp₁(q) ≫ q = kp₂(q) ≫ q` ⟹ `kp₁(q) ≫ (q≫m) = kp₂(q) ≫ (q≫m)`.
@@ -198,7 +200,7 @@ private theorem relPullback_iso_of_classify_eq [Topos 𝒞] [HasPullbacks 𝒞]
   rw [ea] at h1; rw [ea', ← heq] at h2
   exact relHom_trans h1 h2
 
-theorem kernelPairRel_powerClassify_iso [Topos 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public theorem kernelPairRel_powerClassify_iso [Topos 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     [∀ C : 𝒞, HasPowerObject C]
     {A : 𝒞} (E : BinRel 𝒞 A A) (hE : EquivalenceRelation E) :
     RelLe E (kernelPairRel (powerClassify E)) ∧
@@ -297,7 +299,7 @@ theorem kernelPairRel_powerClassify_iso [Topos 𝒞] [HasPullbacks 𝒞] [HasIma
     (`kernelPairRel_powerClassify_iso`: classifying map of an equivalence relation has
     kernel pair = the relation, via reflexivity for one direction and
     symmetry+transitivity for the other).  Then `effective_of_quotient_cover` finishes. -/
-noncomputable instance topos_is_effective [Topos 𝒞] : EffectiveRegular 𝒞 := by
+@[expose] public noncomputable instance topos_is_effective [Topos 𝒞] : EffectiveRegular 𝒞 := by
   classical
   -- Build `RegularCategory` directly from the ambient topos instances (`toposHasImages`,
   -- `SlicePi.toposPullbacksTransferCovers`, …) rather than `Classical.choice (topos_is_regular)`,
@@ -353,7 +355,7 @@ noncomputable instance topos_is_effective [Topos 𝒞] : EffectiveRegular 𝒞 :
     `case_uniq := coprod_jointly_epi`, assembling
     `toposHasBinaryCoproducts : HasBinaryCoproducts 𝒞`, after which this becomes
     `exact toposHasBinaryCoproducts`. -/
-noncomputable instance topos_is_positive [Topos 𝒞] : HasBinaryCoproducts 𝒞 :=
+@[expose] public noncomputable instance topos_is_positive [Topos 𝒞] : HasBinaryCoproducts 𝒞 :=
   toposHasBinaryCoproducts
 
 /-! ## §1.954  A topos has coequalizers -/
@@ -377,7 +379,7 @@ end Coequalizers
     builds coequalizers via the *effective-regular* route — the minimal equivalence
     `S` containing `R = «f,g»` is the level of a cover `q : B ↠ C` (effectiveness,
     §1.951), and `q` is the coequalizer of `f, g`.  No `Sorry`. -/
-noncomputable def preTopos_rtc_has_coequalizers [inst : PreTopos 𝒞]
+@[expose] public noncomputable def preTopos_rtc_has_coequalizers [inst : PreTopos 𝒞]
     [hRtc : @HasReflTransClosure 𝒞 _ PreTopos.toPositivePreLogos.toHasBinaryProducts
       PreTopos.toPositivePreLogos.toHasPullbacks PreTopos.toPositivePreLogos.toHasImages] :
     HasCoequalizers 𝒞 :=
@@ -425,7 +427,7 @@ noncomputable def preTopos_rtc_has_coequalizers [inst : PreTopos 𝒞]
     With a `HasReflTransClosure 𝒞` instance, this is literally
     `preTopos_rtc_has_coequalizers`.  The effectiveness half of the §1.951↔§1.954 bridge
     is no longer the gap. -/
-noncomputable instance topos_has_coequalizers [Topos 𝒞] : HasCoequalizers 𝒞 := by
+@[expose] public noncomputable instance topos_has_coequalizers [Topos 𝒞] : HasCoequalizers 𝒞 := by
   -- Assemble `PreTopos 𝒞` from the (now all Sorry-free) topos exactness instances, then
   -- apply `preTopos_rtc_has_coequalizers` with the `toposHasReflTransClosure` instance
   -- (Freyd.ToposRTC) supplying the reflexive-transitive closures.
@@ -447,7 +449,7 @@ noncomputable instance topos_has_coequalizers [Topos 𝒞] : HasCoequalizers �
     `HasCoequalizers 𝒞` (`topos_has_coequalizers` above), itself blocked only on the
     `HasReflTransClosure 𝒞` glb-existence instance (§1.54).  Once that lands, this is
     `{ (inferInstance : CartesianCategory 𝒞), … with }`. -/
-noncomputable instance topos_is_bicartesian [Topos 𝒞] : BicartesianCategory 𝒞 := by
+@[expose] public noncomputable instance topos_is_bicartesian [Topos 𝒞] : BicartesianCategory 𝒞 := by
   letI hCot : HasCoterminator 𝒞 := Classical.choice topos_has_coterminator
   letI hEq : HasEqualizers 𝒞 := products_pullbacks_implies_equalizers
   letI hCart : CartesianCategory 𝒞 := { }
@@ -460,7 +462,7 @@ noncomputable instance topos_is_bicartesian [Topos 𝒞] : BicartesianCategory �
 /-- **§1.961**: An object E is INJECTIVE if the functor (-, E) carries monics to epics.
     Elementary version (in a pre-topos, pushouts of monics are monic):
     E is injective iff every monic E ↣ A has a right-inverse. -/
-def IsInjective [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] (E : 𝒞) : Prop :=
+@[expose] public def IsInjective [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] (E : 𝒞) : Prop :=
   ∀ {A B : 𝒞} (f : A ⟶ B), Monic f →
     ∀ (g : A ⟶ E), ∃ (h : B ⟶ E), f ≫ h = g
 
@@ -476,7 +478,7 @@ private theorem mono_comp {X Y Z : 𝒞} {m : X ⟶ Y} {n : Y ⟶ Z}
     pullback of the subobject `m ≫ f` along `f` is `m` itself, so `f ≫ h` classifies
     `m`; by uniqueness of characteristic maps `f ≫ h = g`.  (This is the elementary
     form of "Ω is injective": maps into Ω extend along monics via `classify`.) -/
-theorem omega_is_injective [Topos 𝒞] :
+public theorem omega_is_injective [Topos 𝒞] :
     IsInjective (𝒞 := 𝒞) (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := by
   intro A B f hf g
   -- m : S ↣ A is the subobject named by g (pullback of `true` along g).
@@ -525,13 +527,13 @@ theorem omega_is_injective [Topos 𝒞] :
     exact huniq v (by rw [← Cat.assoc, hv₁]) (term_uniq _ _)
 
 /-- The map f × 1_Z : A × Z → B × Z for f : A → B (mapping the left factor). -/
-def prodMapLeft [HasBinaryProducts 𝒞] {A B : 𝒞} (Z : 𝒞) (f : A ⟶ B) : prod A Z ⟶ prod B Z :=
+@[expose] public def prodMapLeft [HasBinaryProducts 𝒞] {A B : 𝒞} (Z : 𝒞) (f : A ⟶ B) : prod A Z ⟶ prod B Z :=
   pair (fst ≫ f) snd
 
 /-- The contravariant exponential map E^f : E^^B → E^^A induced by f : A → B
     (§1.853).  Defined by curry(e_B ∘ (f × 1_{E^^B})), where
     e_B : B × E^^B → E is evaluation and (f × 1) : A × E^^B → B × E^^B. -/
-def expMap [HasExponentials 𝒞] {A B : 𝒞} (E : 𝒞) (f : A ⟶ B) : E ^^ B ⟶ E ^^ A :=
+@[expose] public def expMap [HasExponentials 𝒞] {A B : 𝒞} (E : 𝒞) (f : A ⟶ B) : E ^^ B ⟶ E ^^ A :=
   -- (f × 1_{E^^B}) : prod A (E^^B) → prod B (E^^B)  (left-factor map)
   -- eval_exp B E   : prod B (E^^B) → E
   curry (prodMapLeft (E ^^ B) f ≫ eval_exp B E)
@@ -557,7 +559,7 @@ theorem expMap_omega_eq_omegaPow [Topos 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     pullbacks: `relPullback g R ≅ relPullback g S` (both directions).  This is the
     reusable form of the inline span-lift that appears in `univClassify_natural`
     (S1_92): a witness `w : R.src → S.src` lifts the pullback cone `(π₁, π₂ ≫ w)`. -/
-theorem relPullback_relHom [HasPullbacks 𝒞] {P C X : 𝒞} (g : X ⟶ P)
+public theorem relPullback_relHom [HasPullbacks 𝒞] {P C X : 𝒞} (g : X ⟶ P)
     {R S : BinRel 𝒞 P C} (h : RelHom R S ∧ RelHom S R) :
     RelHom (relPullback g R) (relPullback g S) ∧
     RelHom (relPullback g S) (relPullback g R) := by
@@ -616,7 +618,7 @@ noncomputable def directImageOmega {A B : 𝒞} (f : A ⟶ B) :
     Both directions of `RelHom`.  Membership: `classRel χ = {(S,a) | eval(f a, S) = ⊤}`
     and `evalRel B ⊚ (graph f)° = {(S,a) | ∃ b, b ∈ S ∧ f a = b}`; the existential over `b`
     is forced to `b = f a`, so the two relations coincide. -/
-theorem classRel_eq_recip_graph {A B : 𝒞} (f : A ⟶ B) :
+public theorem classRel_eq_recip_graph {A B : 𝒞} (f : A ⟶ B) :
     RelHom (classRel (prodMapLeft (exp B (HasSubobjectClassifier.omega (𝒞 := 𝒞))) f
               ≫ eval_exp B (HasSubobjectClassifier.omega (𝒞 := 𝒞))))
            (evalRel B ⊚ (graph f)°) ∧
@@ -884,7 +886,7 @@ private theorem prodMap_mono [HasBinaryProducts 𝒞] (A : 𝒞) {X Y : 𝒞} {f
     `ĝ : A×X → E`; the map `A×f : A×X ↣ A×Y` is monic, so by injectivity of E it
     extends to `k : A×Y → E` with `(A×f) ≫ k = ĝ`; then `h = curry k` satisfies
     `f ≫ h = g` by transpose naturality. -/
-theorem exp_of_injective_is_injective [HasExponentials 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public theorem exp_of_injective_is_injective [HasExponentials 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {E : 𝒞} (hE : IsInjective E) (A : 𝒞) : IsInjective (E ^^ A) := by
   intro X Y f hf g
   -- ĝ : A × X → E is the uncurried g; by construction g = curry ĝ.
@@ -979,7 +981,7 @@ theorem omega_cogenerates_in_value_based_topos [Topos 𝒞] (hVB : IsValueBased 
 /-- **§1.965**: An object C in an exponential category INTERNALLY COGENERATES if
     the functor C^(−) is a contravariant embedding: the maps C^f for varying f
     together distinguish morphisms.  Formally: for f ≠ g : A → B, C^f ≠ C^g. -/
-def InternallyCogenerates [HasExponentials 𝒞] (C : 𝒞) : Prop :=
+@[expose] public def InternallyCogenerates [HasExponentials 𝒞] (C : 𝒞) : Prop :=
   ∀ {A B : 𝒞} (f g : A ⟶ B), expMap C f = expMap C g → f = g
 
 /-- **§1.965**: A cogenerator internally cogenerates.
@@ -1043,7 +1045,7 @@ theorem cogenerator_internally_cogenerates [HasExponentials 𝒞] [HasTerminal �
     `expMap Ω f = curry χ` (`χ = (f×1) ≫ eval_B`) gives `classRel χ ≅ evalRel B ⊚ (graph f)°`
     (`evalRel_pull_*` + `classRel_eq_recip_graph`).  This is the `exp`-level "inverse image
     detects membership of `f a`" identity, both `RelHom` directions. -/
-theorem relPullback_expMap_eq_recip_graph [Topos 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+public theorem relPullback_expMap_eq_recip_graph [Topos 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     RelHom (relPullback (expMap (HasSubobjectClassifier.omega (𝒞 := 𝒞)) f) (evalRel A))
            (evalRel B ⊚ (graph f)°) ∧
     RelHom (evalRel B ⊚ (graph f)°)
@@ -1062,7 +1064,7 @@ theorem relPullback_expMap_eq_recip_graph [Topos 𝒞] {A B : 𝒞} (f : A ⟶ B
     universal membership `evalRel B` (on `Ω^B`) back along the singleton `Δ₁ = singletonMapCat B`
     gives the diagonal `graph(1_B)`: `{(b,b') | b' ∈ {b}} = {(b,b') | b' = b}`.  This is the
     `hLHS` content of `singletonMapCat_eq_powExp`, isolated as a reusable lemma. -/
-theorem relPullback_singleton_evalRel [Topos 𝒞] (B : 𝒞) :
+public theorem relPullback_singleton_evalRel [Topos 𝒞] (B : 𝒞) :
     RelHom (graph (Cat.id B)) (relPullback (singletonMapCat B) (evalRel B)) ∧
     RelHom (relPullback (singletonMapCat B) (evalRel B)) (graph (Cat.id B)) := by
   let χΔ := HasSubobjectClassifier.classify (diag B) (diag_mono B)
@@ -1090,7 +1092,7 @@ theorem relPullback_singleton_evalRel [Topos 𝒞] (B : 𝒞) :
     Now `Ω^f = Ω^g ⟹ φ_f = φ_g ⟹ relPullback φ_f (evalRel A) = relPullback φ_g (evalRel A)`
     (`congrArg`), so `(graph f)° ≅ (graph g)°`; a `RelHom (graph f)° → (graph g)°` gives a
     witness `w` with `w ≫ id = id` and `w ≫ g = f`, hence `w = id` and `f = g`. -/
-theorem omega_internally_cogenerates [Topos 𝒞] : InternallyCogenerates (𝒞 := 𝒞) (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := by
+public theorem omega_internally_cogenerates [Topos 𝒞] : InternallyCogenerates (𝒞 := 𝒞) (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := by
   classical
   letI : RegularCategory 𝒞 := Classical.choice (topos_is_regular_real (𝒞 := 𝒞))
   intro A B f g heq
@@ -1142,7 +1144,7 @@ theorem omega_internally_cogenerates [Topos 𝒞] : InternallyCogenerates (𝒞 
 /-- **§1.966**: An object G is a PROGENITOR if its subobjects form a generating set:
     for any monic m : A' ↣ A that is not an iso, there exists a subobject G' ≤ G
     and a map G' → A that does not factor through A'. -/
-def IsProgenitor (G : 𝒞) : Prop :=
+@[expose] public def IsProgenitor (G : 𝒞) : Prop :=
   IsGeneratingSet (𝒞 := 𝒞) (fun X => ∃ (m : X ⟶ G), Monic m)
 
 /-- **§1.966**: A topos is value-based iff its terminator 1 is a progenitor.
@@ -1235,7 +1237,7 @@ private theorem swapTranspose_natural [Topos 𝒞] {G A B : 𝒞}
     `k̄ ≫ Ω^f ≠ k̄ ≫ Ω^g` (precomposition by `m` can't equalise them).  Finally
     `h := swapTranspose k̄ : B → Ω^G`; naturality `f ≫ h = swapTranspose (k̄ ≫ Ω^f)`
     and injectivity of `swapTranspose` give `f ≫ h ≠ g ≫ h`. -/
-theorem progenitor_omega_exp_cogenerates [Topos 𝒞] (G : 𝒞) (hG : IsProgenitor G) :
+public theorem progenitor_omega_exp_cogenerates [Topos 𝒞] (G : 𝒞) (hG : IsProgenitor G) :
     ∀ {A B : 𝒞} (f g : A ⟶ B), f ≠ g →
       ∃ (h : B ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) ^^ G), f ≫ h ≠ g ≫ h := by
   intro A B f g hfg
@@ -1269,7 +1271,7 @@ theorem progenitor_omega_exp_cogenerates [Topos 𝒞] (G : 𝒞) (hG : IsProgeni
     In a topos this is A^(Ω^I) but here we mean the indexed product ∏_{i:I} A.
     Formally: for every type I : Type v and object A, an indexed product of the
     constant family (fun _ : I => A) exists. -/
-class HasArbitraryPowers (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] where
+public class HasArbitraryPowers (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] where
   /-- For each index type I and object A, the I-fold power of A. -/
   pow : (I : Type v) → 𝒞 → 𝒞
   /-- Projection from the power to A. -/
@@ -1301,7 +1303,7 @@ variable (hpow : HasArbitraryPowers (𝒞 := 𝒞))
     members' characteristic maps, and the constant `⟨⊤⟩ᵢ`.  A point `a : A` factors through
     the equalizer exactly when, in every coordinate `i`, `χ(Bᵢ)(a) = ⊤`, i.e. `a ∈ Bᵢ` for all
     `i`.  Needs `HasArbitraryPowers` (for `∏ᵢ Ω`) plus the topos's own equalizers. -/
-noncomputable def familyMeet {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) :
+@[expose] public noncomputable def familyMeet {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) :
     Subobject 𝒞 A :=
   let chi  : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := hpow.tupling (fun i => subChar (B i))
   let chiT : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
@@ -1311,7 +1313,7 @@ noncomputable def familyMeet {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A
 /-- **LOWER bound** — `⋂ᵢ Bᵢ ≤ Bⱼ` for every `j`.  The equalizer arrow equalises the two
     tuples; projecting at `j` gives `(⋂B).arr ≫ χ(Bⱼ) = (⋂B).arr ≫ ⊤ = term ≫ true`, i.e. the
     inclusion lands in `Bⱼ` (`le_iff_classify`). -/
-theorem familyMeet_le {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) (i : I) :
+public theorem familyMeet_le {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) (i : I) :
     (familyMeet hpow B).le (B i) := by
   rw [familyMeet, le_iff_classify]
   show eqMap _ _ ≫ subChar (B i) = _
@@ -1327,7 +1329,7 @@ theorem familyMeet_le {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) (i : 
 /-- **GREATEST lower bound** — if `U ≤ Bᵢ` for every `i`, then `U ≤ ⋂ᵢ Bᵢ`.  `U.arr` equalises
     the two tuples (componentwise: `U ≤ Bᵢ` gives `U.arr ≫ χ(Bᵢ) = term ≫ true = U.arr ≫ ⊤`),
     so it factors through the equalizer by the equalizer UMP. -/
-theorem familyMeet_greatest {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) (U : Subobject 𝒞 A)
+public theorem familyMeet_greatest {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A) (U : Subobject 𝒞 A)
     (hU : ∀ i, U.le (B i)) : U.le (familyMeet hpow B) := by
   rw [familyMeet]
   let chi  : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) := hpow.tupling (fun i => subChar (B i))
@@ -1354,7 +1356,7 @@ theorem familyMeet_greatest {A : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A)
     the intersection.)  `familyMeet` is the equalizer of `⟨χ(Bᵢ)⟩ᵢ` and `⟨⊤⟩ᵢ`; `t` factors
     through each `Bᵢ.arr`, so in every coordinate `t ≫ χ(Bᵢ) = term ≫ true` (`allows_iff_classify`),
     i.e. `t` equalises the two tuples and `eqLift` produces the factorization. -/
-theorem familyMeet_lift {A X : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A)
+public theorem familyMeet_lift {A X : 𝒞} {I : Type v} (B : I → Subobject 𝒞 A)
     (t : X ⟶ A) (ht : ∀ i, ∃ l, l ≫ (B i).arr = t) :
     ∃ tup : X ⟶ (familyMeet hpow B).dom, tup ≫ (familyMeet hpow B).arr = t := by
   let chi  : A ⟶ hpow.pow I (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
@@ -1381,7 +1383,7 @@ end FamilyMeet
     enumeration `enum : idx A → Sub A` that hits every subobject up to `≤` in both directions.
     This is the one primitive an elementary topos does NOT supply; in a *locally small* topos
     (`|Hom(A,Ω)| = |Sub A|` is a set, §1.967) it holds.  Given it, all arbitrary joins exist. -/
-structure WellPoweredSub (𝒞 : Type u) [Cat.{v} 𝒞] where
+public structure WellPoweredSub (𝒞 : Type u) [Cat.{v} 𝒞] where
   idx  : (A : 𝒞) → Type v
   enum : {A : 𝒞} → idx A → Subobject 𝒞 A
   surj : ∀ {A : 𝒞} (S : Subobject 𝒞 A), ∃ j : idx A, S.le (enum j) ∧ (enum j).le S
@@ -1393,13 +1395,13 @@ variable (hpow : HasArbitraryPowers (𝒞 := 𝒞)) (wp : WellPoweredSub.{v} �
     of S }`, with the upper bounds taken among the enumerated subobjects (`wp`).  The meet is
     the `familyMeet` over the `Type v` subtype of indices whose enumerated subobject is an
     upper bound of every member of `S`. -/
-noncomputable def extJoin {A : 𝒞} (S : Subobject 𝒞 A → Prop) : Subobject 𝒞 A :=
+@[expose] public noncomputable def extJoin {A : 𝒞} (S : Subobject 𝒞 A → Prop) : Subobject 𝒞 A :=
   familyMeet hpow (I := {j : wp.idx A // ∀ s, S s → s.le (wp.enum j)})
     (fun j => wp.enum j.val)
 
 /-- `s ≤ sup S` for every member `S s`: `s` is below every common upper bound (definitionally),
     so below their meet (`familyMeet_greatest`). -/
-theorem extJoin_upper {A : 𝒞} (S : Subobject 𝒞 A → Prop) (s : Subobject 𝒞 A) (hs : S s) :
+public theorem extJoin_upper {A : 𝒞} (S : Subobject 𝒞 A → Prop) (s : Subobject 𝒞 A) (hs : S s) :
     s.le (extJoin hpow wp S) := by
   rw [extJoin]
   apply familyMeet_greatest
@@ -1408,7 +1410,7 @@ theorem extJoin_upper {A : 𝒞} (S : Subobject 𝒞 A → Prop) (s : Subobject 
 
 /-- `sup S ≤ U` whenever `U` bounds every member: enumerate `U` as `enum j` (`wp.surj`); then
     `j` indexes a common upper bound, so `familyMeet_le` gives `⋂ ≤ enum j ≤ U`. -/
-theorem extJoin_least {A : 𝒞} (S : Subobject 𝒞 A → Prop) (U : Subobject 𝒞 A)
+public theorem extJoin_least {A : 𝒞} (S : Subobject 𝒞 A → Prop) (U : Subobject 𝒞 A)
     (hU : ∀ s, S s → s.le U) : (extJoin hpow wp S).le U := by
   rw [extJoin]
   obtain ⟨j, hUj, hjU⟩ := wp.surj U
@@ -1433,7 +1435,7 @@ noncomputable def locallyComplete_of_powers_wellPowered : LocallyComplete 𝒞 w
 
     Holds in a topos because `f#` (inverse image) is a LEFT-adjoint-having functor on
     subobjects: `f# ⊣ ∀_f` (`ForallAlong.forallAlong_adjunction`). -/
-theorem extJoin_invImage_le {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B → Prop) :
+public theorem extJoin_invImage_le {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B → Prop) :
     (InverseImage f (extJoin hpow wp S)).le
       (extJoin hpow wp (fun A' => ∃ B', S B' ∧ A' = InverseImage f B')) := by
   rw [show InverseImage f (extJoin hpow wp S)
@@ -1464,7 +1466,7 @@ end IndexedJoinsEngine
 
 /-- **§1.967**: A category has arbitrary COPOWERS if for every object A and index set I,
     the I-fold coproduct of A with itself exists (the copower I ⊗ A = ∐_{i:I} A). -/
-class HasArbitraryCopowers (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] where
+public class HasArbitraryCopowers (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] where
   /-- For each index type I and object A, the I-fold copower of A. -/
   copow : (I : Type v) → 𝒞 → 𝒞
   /-- Injection into the copower. -/
@@ -1487,7 +1489,7 @@ class HasArbitraryCopowers (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryCoproducts �
     `HasArbitraryPowers` into arbitrary subobject joins (`familyMeet`/`extJoin` above) and hence
     local completeness.  This faithful enrichment is parallel to bundling power objects into
     `Topos` and is what closes `topos_powers_implies_locally_complete`. -/
-class LocallySmallTopos (𝒞 : Type u) [Cat.{v} 𝒞] extends Topos 𝒞 where
+public class LocallySmallTopos (𝒞 : Type u) [Cat.{v} 𝒞] extends Topos 𝒞 where
   /-- Well-poweredness: a `Type v` enumeration of `Sub(A)` for every `A` (§1.96). -/
   wellPowered : WellPoweredSub.{v} 𝒞
 
@@ -1542,7 +1544,7 @@ private theorem powProj_precomp {I : Type v} (P : CopowerOfOne I 𝒞) {A X : �
 
 /-- **§1.967 (c)→(a)**: a `Type v`-indexed family of copowers-of-1 yields arbitrary powers
     (built over the topos's own products; transported to a caller's products instance below). -/
-noncomputable def powersOfCopowersOfOne
+public noncomputable def powersOfCopowersOfOne
     (P : (I : Type v) → CopowerOfOne I 𝒞) : HasArbitraryPowers (𝒞 := 𝒞) where
   pow I A := A ^^ (P I).obj
   proj {I A} i := powProj (P I) A i
@@ -1595,7 +1597,7 @@ end PowersOfCopowersOfOne
       from `HasArbitraryCopowers.{cotupling, inj_cotupling, cotupling_uniq}`.
     * `(c)→(b)`: `prod_distrib_copow` turns each `CopowerOfOne I 𝒞` into a `CopowerOf I A` on
       `A × cI`, transferring cotupling AND uniqueness across the distributivity iso. -/
-theorem topos_copowers_equiv_copowers_of_one [LocallySmallTopos 𝒞]
+public theorem topos_copowers_equiv_copowers_of_one [LocallySmallTopos 𝒞]
     [HasBinaryProducts 𝒞] [HasBinaryCoproducts 𝒞] :
     (Nonempty (HasArbitraryCopowers (𝒞 := 𝒞))) ↔
     (∀ (I : Type v), Nonempty (CopowerOfOne I 𝒞)) := by

@@ -17,11 +17,13 @@
              small colimits.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_90
-import Freyd.S1_72
-import Freyd.S1_84
-import Freyd.S1_97
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_90
+public import Freyd.S1_72
+public import Freyd.S1_84
+public import Freyd.S1_97
 
 universe v u
 

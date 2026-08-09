@@ -87,7 +87,9 @@
 
   MATHLIB-FREE.  Composition in DIAGRAM ORDER.
 -/
-import Freyd.S2_153b_RecursiveModulus
+module
+
+public import Freyd.S2_153b_RecursiveModulus
 
 open Freyd Freyd.Alg
 
@@ -111,7 +113,7 @@ namespace Freyd.Alg
     `Freyd.RecEff.reflection_not_ac` (whose witness is `ERel_not_effective`).  The parity
     witness of `S2_153f` (`asm_not_effective_of_projBounded`) is this lemma applied to
     `parityRel`. -/
-theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u} K}
+public theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u} K}
     (E : BinRel (Assembly.{u} K) A A)
     (hequiv : EquivalenceRelation E) (hne : ¬ IsEffective E) :
     ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),

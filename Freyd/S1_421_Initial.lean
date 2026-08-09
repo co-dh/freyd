@@ -23,11 +23,13 @@
       (via the existing §1.58¶2 proof, hence the binary-products hypothesis).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_58
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_58
 
 open Freyd
 
@@ -45,14 +47,14 @@ namespace Freyd
 
 /-- The INITIAL predicate in `𝒞`: every object receives a unique map from `o`
     (dual of `IsTerminalObj`). -/
-def IsInitial (o : 𝒞) : Prop := ∀ Y : 𝒞, ∃ f : o ⟶ Y, ∀ g : o ⟶ Y, g = f
+@[expose] public def IsInitial (o : 𝒞) : Prop := ∀ Y : 𝒞, ∃ f : o ⟶ Y, ∀ g : o ⟶ Y, g = f
 
 /-- The canonical map out of an initial object (dual of `term`). -/
-noncomputable def IsInitial.out {o : 𝒞} (ho : IsInitial o) (Y : 𝒞) : o ⟶ Y :=
+@[expose] public noncomputable def IsInitial.out {o : 𝒞} (ho : IsInitial o) (Y : 𝒞) : o ⟶ Y :=
   (ho Y).choose
 
 /-- Any two maps out of an initial object are equal (dual of `term_uniq`). -/
-theorem IsInitial.hom_uniq {o : 𝒞} (ho : IsInitial o) {Y : 𝒞} (f g : o ⟶ Y) : f = g :=
+public theorem IsInitial.hom_uniq {o : 𝒞} (ho : IsInitial o) {Y : 𝒞} (f g : o ⟶ Y) : f = g :=
   (ho Y).choose_spec f |>.trans ((ho Y).choose_spec g).symm
 
 /-! ### §1.421 (dual) Initial object unique up to unique iso
@@ -73,7 +75,7 @@ theorem IsInitial.iso {o₁ o₂ : 𝒞} (h₁ : IsInitial o₁) (h₂ : IsIniti
   be built from `IsInitial` (mirroring how `HasTerminal` packages `IsTerminalObj`). -/
 
 /-- The coterminator object of a `HasCoterminator` instance is initial. -/
-theorem HasCoterminator.coterm_isInitial [HasCoterminator 𝒞] : IsInitial (coterm : 𝒞) :=
+public theorem HasCoterminator.coterm_isInitial [HasCoterminator 𝒞] : IsInitial (coterm : 𝒞) :=
   fun Y => ⟨zeroMap Y, fun g => HasCoterminator.init_uniq g (zeroMap Y)⟩
 
 /-- An object satisfying `IsInitial` packages into a `HasCoterminator` instance
@@ -106,7 +108,7 @@ theorem IsStrictInitial.strict {o : 𝒞} (h : IsStrictInitial o) : StrictCoterm
     initial.  The map out is `fst⁻¹ ≫ snd : Z → A` (with `fst : Z×A → Z` an iso since
     targeted at `Z`), and `strictCoterminator_hom_unique` forces it to be unique.
     `noncomputable`: extracting the iso-inverse needs choice, as in §1.58. -/
-theorem StrictCoterminator.isInitial [HasBinaryProducts 𝒞] {Z : 𝒞}
+public theorem StrictCoterminator.isInitial [HasBinaryProducts 𝒞] {Z : 𝒞}
     (hZ : StrictCoterminator Z) : IsInitial Z :=
   fun A => ⟨(hZ (fst : prod Z A ⟶ Z)).choose ≫ snd,
             fun g => strictCoterminator_hom_unique hZ g _⟩

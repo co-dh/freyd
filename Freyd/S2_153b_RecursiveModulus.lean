@@ -26,8 +26,10 @@
 
   MATHLIB-FREE.  Composition in DIAGRAM ORDER.
 -/
-import Freyd.S2_153_NonEffective
-import Freyd.S1_572b_NotEffective
+module
+
+public import Freyd.S2_153_NonEffective
+public import Freyd.S1_572b_NotEffective
 
 namespace Freyd
 
@@ -41,11 +43,11 @@ open Rcat
   single-valued (`Eval.det`) this is automatically functional, matching `ModFun`. -/
 
 /-- The `mem` predicate of the partial-recursive modulus system. -/
-def PartRec (φ : ModFun) : Prop :=
+@[expose] public def PartRec (φ : ModFun) : Prop :=
   ∃ c : RecCode 1, ∀ n m, φ.graph n m ↔ Eval c (fun _ => n) m
 
 /-- A `Vec 1` is the constant vector at its single entry. -/
-theorem vec1_eta (w : Vec 1) : w = fun _ => w 0 := by
+public theorem vec1_eta (w : Vec 1) : w = fun _ => w 0 := by
   funext i
   rcases i with ⟨v, hv⟩
   have : v = 0 := by omega
@@ -53,7 +55,7 @@ theorem vec1_eta (w : Vec 1) : w = fun _ => w 0 := by
   rfl
 
 /-- Every TOTAL recursive function's `ofFun` graph is partial recursive. -/
-theorem partRec_ofFun {f : Nat → Nat} (hf : Recursive1 f) : PartRec (ModFun.ofFun f) := by
+public theorem partRec_ofFun {f : Nat → Nat} (hf : Recursive1 f) : PartRec (ModFun.ofFun f) := by
   obtain ⟨c, hc⟩ := hf
   refine ⟨c, fun n m => ?_⟩
   have hcn : Eval c (fun _ => n) (f n) := hc (fun _ => n)
@@ -62,7 +64,7 @@ theorem partRec_ofFun {f : Nat → Nat} (hf : Recursive1 f) : PartRec (ModFun.of
   · intro h; exact (Eval.det hcn h).symm
 
 /-- The identity graph is partial recursive (book (i)). -/
-theorem partRec_ident : PartRec ModFun.ident := by
+public theorem partRec_ident : PartRec ModFun.ident := by
   refine ⟨.proj 0, fun n m => ?_⟩
   have h0 : Eval (.proj (0 : Fin 1)) (fun _ => n) n := Eval.proj 0
   constructor
@@ -73,7 +75,7 @@ theorem partRec_ident : PartRec ModFun.ident := by
     `(φ.comp ψ)(n) = ψ(φ(n))`; the code is `comp cψ [cφ]` — run `cφ` on `[n]`, feed the
     result to `cψ`.  Partiality is handled by `Eval`'s `comp` clause (no dovetailing:
     the two runs are sequential). -/
-theorem partRec_comp {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
+public theorem partRec_comp {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
     PartRec (φ.comp ψ) := by
   obtain ⟨cφ, hcφ⟩ := hφ
   obtain ⟨cψ, hcψ⟩ := hψ
@@ -96,23 +98,23 @@ theorem partRec_comp {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
   total recursive, hence partial recursive via `partRec_ofFun`. -/
 
 /-- `cfst` as a partial-recursive graph (ℓ). -/
-theorem partRec_cfst : PartRec (ModFun.ofFun cfst) := partRec_ofFun Recursive1.cfst
+public theorem partRec_cfst : PartRec (ModFun.ofFun cfst) := partRec_ofFun Recursive1.cfst
 /-- `csnd` as a partial-recursive graph (ϰ). -/
-theorem partRec_csnd : PartRec (ModFun.ofFun csnd) := partRec_ofFun Recursive1.csnd
+public theorem partRec_csnd : PartRec (ModFun.ofFun csnd) := partRec_ofFun Recursive1.csnd
 
 /-- The left tag `2·` is total recursive. -/
-theorem rec_inL : Recursive1 fun k => 2 * k :=
+public theorem rec_inL : Recursive1 fun k => 2 * k :=
   Recursive1.mul (Recursive1.const 2) (show Recursive1 fun n => n from RecursiveV.proj 0)
 /-- The right tag `2·+1` is total recursive. -/
-theorem rec_inR : Recursive1 fun k => 2 * k + 1 :=
+public theorem rec_inR : Recursive1 fun k => 2 * k + 1 :=
   Recursive1.add rec_inL (Recursive1.const 1)
 
-theorem partRec_inL : PartRec (ModFun.ofFun fun k => 2 * k) := partRec_ofFun rec_inL
-theorem partRec_inR : PartRec (ModFun.ofFun fun k => 2 * k + 1) := partRec_ofFun rec_inR
+public theorem partRec_inL : PartRec (ModFun.ofFun fun k => 2 * k) := partRec_ofFun rec_inL
+public theorem partRec_inR : PartRec (ModFun.ofFun fun k => 2 * k + 1) := partRec_ofFun rec_inR
 
 /-- **PAIRING** `pairC cp φ ψ`: `n ↦ cp (φ n) (ψ n)`, defined on the common domain.
     The code runs `cφ` and `cψ` on `[n]` and Cantor-pairs the outputs. -/
-theorem partRec_pairC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
+public theorem partRec_pairC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
     PartRec (ModFun.pairC cp φ ψ) := by
   obtain ⟨cφ, hcφ⟩ := hφ
   obtain ⟨cψ, hcψ⟩ := hψ
@@ -154,7 +156,7 @@ theorem partRec_pairC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ) :
     exactly the values of `c` on `[r]`: it μ-searches `acceptOn` for a checked
     derivation and extracts its output.  (Correctness needs `cfst er` to be a genuine
     code number — always the case in the `casesC` application below.) -/
-theorem universal_genuine : ∃ cU : RecCode 1, ∀ (c : RecCode 1) (r m : Nat),
+public theorem universal_genuine : ∃ cU : RecCode 1, ∀ (c : RecCode 1) (r m : Nat),
     (Eval cU (fun _ => cp (encCode c) r) m ↔ Eval c (fun _ => r) m) := by
   -- inner μ-test: 0 exactly at accepting witnesses
   have innerRec : Recursive2 (fun wit er => 1 - eqInd (acceptOn er wit) 1) :=
@@ -228,19 +230,19 @@ theorem universal_genuine : ∃ cU : RecCode 1, ∀ (c : RecCode 1) (r m : Nat),
   applies. -/
 
 /-- The Gödel number of the code selected by the parity bit `s`. -/
-noncomputable def branchNum (Nf Ng s : Nat) : Nat := if s = 0 then Nf else Ng
+@[expose] public noncomputable def branchNum (Nf Ng s : Nat) : Nat := if s = 0 then Nf else Ng
 
-theorem branchNum_zero (Nf Ng : Nat) : branchNum Nf Ng 0 = Nf := if_pos rfl
+public theorem branchNum_zero (Nf Ng : Nat) : branchNum Nf Ng 0 = Nf := if_pos rfl
 
-theorem rec_branchNum (Nf Ng : Nat) : Recursive1 (branchNum Nf Ng) :=
+public theorem rec_branchNum (Nf Ng : Nat) : Recursive1 (branchNum Nf Ng) :=
   (Recursive1.ifEqConst 0 Nf (Recursive1.const Ng)).congr fun _n => rfl
 
 /-- The universal-input preprocessing: pack the selected code number with the recoded
     argument `cp (cfst n) (csnd n / 2)`. -/
-noncomputable def preIdx (Nf Ng n : Nat) : Nat :=
+@[expose] public noncomputable def preIdx (Nf Ng n : Nat) : Nat :=
   cp (branchNum Nf Ng (csnd n % 2)) (cp (cfst n) (csnd n / 2))
 
-theorem rec_preIdx (Nf Ng : Nat) : Recursive1 (preIdx Nf Ng) := by
+public theorem rec_preIdx (Nf Ng : Nat) : Recursive1 (preIdx Nf Ng) := by
   unfold preIdx
   exact Recursive1.comp2 Recursive2.cp
     (Recursive1.comp (Recursive1.comp Recursive1.csnd (Recursive1.modConst 1))
@@ -248,12 +250,12 @@ theorem rec_preIdx (Nf Ng : Nat) : Recursive1 (preIdx Nf Ng) := by
     (Recursive1.comp2 Recursive2.cp Recursive1.cfst
       (Recursive1.comp Recursive1.csnd (Recursive1.divConst 1)))
 
-theorem preIdx_left {Nf Ng n y : Nat} (h : csnd n = 2 * y) :
+public theorem preIdx_left {Nf Ng n y : Nat} (h : csnd n = 2 * y) :
     preIdx Nf Ng n = cp Nf (cp (cfst n) y) := by
   unfold preIdx
   rw [show csnd n % 2 = 0 from by omega, show csnd n / 2 = y from by omega, branchNum_zero]
 
-theorem preIdx_right {Nf Ng n y : Nat} (h : csnd n = 2 * y + 1) :
+public theorem preIdx_right {Nf Ng n y : Nat} (h : csnd n = 2 * y + 1) :
     preIdx Nf Ng n = cp Ng (cp (cfst n) y) := by
   unfold preIdx
   rw [show csnd n % 2 = 1 from by omega, show csnd n / 2 = y from by omega,
@@ -261,7 +263,7 @@ theorem preIdx_right {Nf Ng n y : Nat} (h : csnd n = 2 * y + 1) :
 
 /-- **The `casesC` closure.**  Definition-by-cases on the tag between two
     partial-recursive graphs is partial recursive (via the universal machine). -/
-theorem partRec_casesC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ)
+public theorem partRec_casesC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ)
     (hL : ∀ {a b : Nat}, 2 * a = 2 * b → a = b)
     (hR : ∀ {a b : Nat}, 2 * a + 1 = 2 * b + 1 → a = b)
     (hLR : ∀ a b, 2 * a ≠ 2 * b + 1) :
@@ -310,7 +312,7 @@ theorem partRec_casesC {φ ψ : ModFun} (hφ : PartRec φ) (hψ : PartRec ψ)
   closure proved above with no holes.  This is the concrete recursive `K` the book names in
   the §2.153 bracket ("K may be the collection of all partial recursive functions"), over
   which the halting obstruction is real (unlike `allPartial`). -/
-noncomputable def Krec : ModulusSystem where
+@[expose] public noncomputable def Krec : ModulusSystem where
   mem := PartRec
   id_mem := partRec_ident
   comp_mem := partRec_comp

@@ -37,9 +37,11 @@
     law with composition as join.
 -/
 
-import Freyd.S2_11
-import Freyd.S2_147_MapCat
-import Freyd.S2_51
+module
+
+public import Freyd.S2_11
+public import Freyd.S2_147_MapCat
+public import Freyd.S2_51
 
 universe v u v₁ v₂ u₁ u₂
 
@@ -53,7 +55,7 @@ namespace Freyd.Alg
 
 /-- A MODULAR LATTICE with bottom (§2.156): lattice `(⊓, ⊔, 0)` satisfying the
     modular law `c ⩽ a → a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ c`, order `a ⩽ b :⇔ a ⊓ b = a`. -/
-class ModularLattice (L : Type u) where
+public class ModularLattice (L : Type u) where
   /-- Lattice meet. -/
   meet : L → L → L
   /-- Lattice join. -/
@@ -80,7 +82,7 @@ variable {L : Type u} [ModularLattice L]
 /-  Order facts, all phrased equationally (`a ⩽ b` is `meet a b = a`) so they
     plug straight into the `LOCMonoid` fields. -/
 
-theorem le_trans {a b c : L} (hab : meet a b = a) (hbc : meet b c = b) :
+public theorem le_trans {a b c : L} (hab : meet a b = a) (hbc : meet b c = b) :
     meet a c = a := by
   calc meet a c = meet (meet a b) c := by rw [hab]
     _ = meet a (meet b c) := (meet_assoc a b c).symm
@@ -88,43 +90,43 @@ theorem le_trans {a b c : L} (hab : meet a b = a) (hbc : meet b c = b) :
     _ = a := hab
 
 /-- `a ⊓ b ⩽ a`. -/
-theorem meet_lb_left (a b : L) : meet (meet a b) a = meet a b := by
+public theorem meet_lb_left (a b : L) : meet (meet a b) a = meet a b := by
   rw [meet_comm (meet a b) a, meet_assoc, meet_idem]
 
 /-- `a ⊓ b ⩽ b`. -/
-theorem meet_lb_right (a b : L) : meet (meet a b) b = meet a b := by
+public theorem meet_lb_right (a b : L) : meet (meet a b) b = meet a b := by
   rw [← meet_assoc, meet_idem]
 
 /-- `x ⩽ a → x ⩽ b → x ⩽ a ⊓ b` (the meet is the glb). -/
-theorem le_meet {x a b : L} (h1 : meet x a = x) (h2 : meet x b = x) :
+public theorem le_meet {x a b : L} (h1 : meet x a = x) (h2 : meet x b = x) :
     meet x (meet a b) = x := by rw [meet_assoc, h1, h2]
 
 -- `a ⩽ a ⊔ b` IS the absorption law `meet_absorb`, read in the order `x ⩽ y :⇔ x ⊓ y = x`.
 
 /-- `b ⩽ a ⊔ b`. -/
-theorem le_join_right (a b : L) : meet b (join a b) = b := by
+public theorem le_join_right (a b : L) : meet b (join a b) = b := by
   rw [join_comm]; exact meet_absorb b a
 
 /-- Order in join form: `a ⩽ b → a ⊔ b = b`. -/
-theorem join_eq_of_le {a b : L} (h : meet a b = a) : join a b = b := by
+public theorem join_eq_of_le {a b : L} (h : meet a b = a) : join a b = b := by
   have h2 : join (meet a b) b = b := by
     rw [meet_comm, join_comm]; exact join_absorb b a
   rw [h] at h2
   exact h2
 
 /-- Order from join form: `a ⊔ b = b → a ⩽ b`. -/
-theorem le_of_join_eq {a b : L} (h : join a b = b) : meet a b = a := by
+public theorem le_of_join_eq {a b : L} (h : join a b = b) : meet a b = a := by
   rw [← h]; exact meet_absorb a b
 
 /-- `a ⩽ c → b ⩽ c → a ⊔ b ⩽ c` (the join is the lub). -/
-theorem join_le {a b c : L} (ha : meet a c = a) (hb : meet b c = b) :
+public theorem join_le {a b c : L} (ha : meet a c = a) (hb : meet b c = b) :
     meet (join a b) c = join a b := by
   apply le_of_join_eq
   rw [← join_assoc, join_eq_of_le hb]
   exact join_eq_of_le ha
 
 /-- The join is MONOTONE: `a ⩽ b → a ⊔ c ⩽ b ⊔ c` — the `mul_mono` field. -/
-theorem join_mono {a b : L} (h : meet a b = a) (c : L) :
+public theorem join_mono {a b : L} (h : meet a b = a) (c : L) :
     meet (join a c) (join b c) = join a c :=
   join_le (le_trans h (meet_absorb b c)) (le_join_right b c)
 
@@ -135,7 +137,7 @@ theorem bot_le (a : L) : meet bot a = bot := le_of_join_eq (bot_join a)
 /-- The l-monoid modular law `(R ⊔ S) ⊓ T ⩽ (R ⊓ (T ⊔ S)) ⊔ S` (recip = id, so
     `T S° = T ⊔ S`), derived from lattice modularity applied at `S ⩽ T ⊔ S`:
     `(R⊔S) ⊓ T ⩽ (T⊔S) ⊓ (R⊔S) = ((T⊔S) ⊓ R) ⊔ S`. -/
-theorem lmon_modular (R S T : L) :
+public theorem lmon_modular (R S T : L) :
     meet (join R S) T
       = meet (meet (join R S) T) (join (meet R (join T S)) S) := by
   have hX : meet (meet (join R S) T) (meet (join T S) (join R S))
@@ -150,7 +152,7 @@ theorem lmon_modular (R S T : L) :
 /-- **The §2.156 bridge**: a modular lattice with `mult := ⊔`, `unit := 0` is a
     modular lattice-ordered commutative monoid (§2.113), hence `LMonObj L` is a
     one-object allegory — "𝓛 viewed as an allegory". -/
-instance toModularLOCMonoid : ModularLOCMonoid L where
+@[expose] public instance toModularLOCMonoid : ModularLOCMonoid L where
   mul := join
   one := bot
   meet := meet

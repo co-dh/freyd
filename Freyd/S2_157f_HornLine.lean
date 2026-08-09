@@ -30,7 +30,9 @@
   sides of the conclusion, so neither `HornConc.mono_c` nor the peeling route
   applies directly; that shape is a separate incidence case-bash.
 -/
-import Freyd.S2_157c_Converse
+module
+
+public import Freyd.S2_157c_Converse
 
 universe v u
 
@@ -44,7 +46,7 @@ variable {P : ProjectivePlane.{u}}
 
 /-- If `x ⊓ y = ln A` then `(x, y)` is `(ln A, ln A)`, `(ln A, ⊤)` or
     `(⊤, ln A)` — the only meet-table entries producing a line. -/
-theorem meet_eq_ln_cases {x y : PElem P} {A : P.Line} (h : x.meet y = ln A) :
+public theorem meet_eq_ln_cases {x y : PElem P} {A : P.Line} (h : x.meet y = ln A) :
     (x = ln A ∧ y = ln A) ∨ (x = ln A ∧ y = top) ∨ (x = top ∧ y = ln A) := by
   cases x with
   | bot => exact absurd h (by simp [meet])
@@ -72,7 +74,7 @@ theorem meet_eq_ln_cases {x y : PElem P} {A : P.Line} (h : x.meet y = ln A) :
   `ln A`, so the corresponding conclusion meets dominate the second column. -/
 
 /-- `c₁ = ln A`: the conclusion holds provided `a₂, b₂ ⩽ ln A`. -/
-theorem hornConc_c₁_ln {a₁ a₂ b₁ b₂ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_c₁_ln {a₁ a₂ b₁ b₂ c₂ : PElem P} {A : P.Line}
     (ha₂ : a₂.le (ln A)) (hb₂ : b₂.le (ln A)) :
     HornConc a₁ a₂ b₁ b₂ (ln A) c₂ :=
   le_trans (meet_le_right _ _)
@@ -85,7 +87,7 @@ theorem hornConc_c₁_ln {a₁ a₂ b₁ b₂ c₂ : PElem P} {A : P.Line}
         (le_join_right _ _)))
 
 /-- `c₂ = ln A`, by the row symmetry. -/
-theorem hornConc_c₂_ln {a₁ a₂ b₁ b₂ c₁ : PElem P} {A : P.Line}
+public theorem hornConc_c₂_ln {a₁ a₂ b₁ b₂ c₁ : PElem P} {A : P.Line}
     (ha₁ : a₁.le (ln A)) (hb₁ : b₁.le (ln A)) :
     HornConc a₁ a₂ b₁ b₂ c₁ (ln A) :=
   HornConc.of_swap_idx (hornConc_c₁_ln ha₁ hb₁)
@@ -93,7 +95,7 @@ theorem hornConc_c₂_ln {a₁ a₂ b₁ b₂ c₁ : PElem P} {A : P.Line}
 /-- MODULAR IDENTITY (given `c₁ ⊔ c₂ = ln A`): `((c₁⊔b₁) ⊓ (c₂⊔b₂)) ⊔ c₂ =
     c₂ ⊔ b₂`.  One shear absorbs `c₂` into the meet's first factor via
     `c₁ ⊔ c₂ = ln A`. -/
-theorem mcb_join_c₂ {b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem mcb_join_c₂ {b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hc : c₁.join c₂ = ln A) (hb₁ : b₁.le (ln A)) (hc₂ : c₂.le (ln A))
     (hb₂ : b₂.le (ln A)) :
     ((c₁.join b₁).meet (c₂.join b₂)).join c₂ = c₂.join b₂ := by
@@ -116,7 +118,7 @@ theorem mcb_join_c₂ {b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     conclusion holds.  `M_ac` collapses to `a₂ ⊔ c₂ ⊒ a₂, c₂`; the identity
     `mcb_join_c₂` lifts `c₂ ⊔ M_cb` to `c₂ ⊔ b₂ ⊒ b₂`, so the collapsed LHS
     `a₂ ⊔ b₂` sits under the conclusion. -/
-theorem hornConc_a₁_ln {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_a₁_ln {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hb₁ : b₁.le (ln A)) (hb₂ : b₂.le (ln A)) (ha₂ : a₂.le (ln A))
     (hc₂ : c₂.le (ln A)) (hc : c₁.join c₂ = ln A) :
     HornConc (ln A) a₂ b₁ b₂ c₁ c₂ := by
@@ -137,7 +139,7 @@ theorem hornConc_a₁_ln {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (join_le (le_join_right _ _) (le_trans hc_ac (le_join_left _ _)))
 
 /-- `a₂ = ln A`, by the row symmetry. -/
-theorem hornConc_a₂_ln {a₁ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_a₂_ln {a₁ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hb₁ : b₁.le (ln A)) (hb₂ : b₂.le (ln A)) (ha₁ : a₁.le (ln A))
     (hc₁ : c₁.le (ln A)) (hc : c₁.join c₂ = ln A) :
     HornConc a₁ (ln A) b₁ b₂ c₁ c₂ :=
@@ -145,14 +147,14 @@ theorem hornConc_a₂_ln {a₁ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hornConc_a₁_ln hb₂ hb₁ ha₁ hc₁ (by rw [join_comm c₂ c₁]; exact hc))
 
 /-- `b₁ = ln A`, by the column symmetry. -/
-theorem hornConc_b₁_ln {a₁ a₂ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_b₁_ln {a₁ a₂ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (ha₁ : a₁.le (ln A)) (ha₂ : a₂.le (ln A)) (hb₂ : b₂.le (ln A))
     (hc₂ : c₂.le (ln A)) (hc : c₁.join c₂ = ln A) :
     HornConc a₁ a₂ (ln A) b₂ c₁ c₂ :=
   HornConc.of_swap_ab (hornConc_a₁_ln ha₁ ha₂ hb₂ hc₂ hc)
 
 /-- `b₂ = ln A`, by both symmetries. -/
-theorem hornConc_b₂_ln {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_b₂_ln {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
     (ha₁ : a₁.le (ln A)) (ha₂ : a₂.le (ln A)) (hb₁ : b₁.le (ln A))
     (hc₁ : c₁.le (ln A)) (hc : c₁.join c₂ = ln A) :
     HornConc a₁ a₂ b₁ (ln A) c₁ c₂ :=
@@ -170,7 +172,7 @@ theorem hornConc_b₂_ln {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
 /-- The residual `M_κ` shape (`c₁ = b₁`, `c₂ = a₂`): a four-cell equality split
     on `(a₁ =? b₁, a₂ =? b₂)`.  The `c`-spread hypothesis `b₁ ≠ a₂` closes the
     top cell. -/
-theorem horn_atoms_case3 {a₁ a₂ b₁ b₂ : P.Point} {A : P.Line}
+public theorem horn_atoms_case3 {a₁ a₂ b₁ b₂ : P.Point} {A : P.Line}
     (ha₁ : P.incid a₁ A) (ha₂ : P.incid a₂ A) (hb₁ : P.incid b₁ A)
     (hb₂ : P.incid b₂ A) (hne_a : a₁ ≠ a₂) (hb₁a₂ : b₁ ≠ a₂) :
     HornConc (pt a₁) (pt a₂) (pt b₁) (pt b₂) (pt b₁) (pt a₂) := by
@@ -197,7 +199,7 @@ theorem horn_atoms_case3 {a₁ a₂ b₁ b₂ : P.Point} {A : P.Line}
     `hornConc_of_left`/`_right`; the `c = a` and `c = b` shapes are `le_cb`/
     `le_ac`; the two crossed shapes are `horn_atoms_case3` (and its `swap_idx`
     mirror). -/
-theorem horn_atoms {a₁ a₂ b₁ b₂ c₁ c₂ : P.Point} {A : P.Line}
+public theorem horn_atoms {a₁ a₂ b₁ b₂ c₁ c₂ : P.Point} {A : P.Line}
     (ha₁ : P.incid a₁ A) (ha₂ : P.incid a₂ A) (hb₁ : P.incid b₁ A)
     (hb₂ : P.incid b₂ A) (hc₁ : P.incid c₁ A) (hc₂ : P.incid c₂ A)
     (hne_a : a₁ ≠ a₂) (hne_c : c₁ ≠ c₂) :
@@ -231,7 +233,7 @@ theorem horn_atoms {a₁ a₂ b₁ b₂ c₁ c₂ : P.Point} {A : P.Line}
           subst hcb; exact hornConc_of_le_ac (le_refl _)
 
 /-- Below `ln A` and neither `⊥` nor `ln A`: a point incident to `A`. -/
-theorem pt_of_le_ln_ne {x : PElem P} {A : P.Line} (hx : x.le (ln A))
+public theorem pt_of_le_ln_ne {x : PElem P} {A : P.Line} (hx : x.le (ln A))
     (hbot : x ≠ bot) (hln : x ≠ ln A) : ∃ y, x = pt y ∧ P.incid y A := by
   rcases le_ln_cases hx with h | h | h
   · exact absurd h hbot
@@ -245,7 +247,7 @@ theorem pt_of_le_ln_ne {x : PElem P} {A : P.Line} (hx : x.le (ln A))
 
 /-- SUB-CORE `KA = KB = KC = ln A`: reduce to `horn_atoms` after peeling off any
     entry that is itself `ln A` via the `hornConc_*_ln` sufficiency lemmas. -/
-theorem horn_shape_lll {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem horn_shape_lll {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hKA : a₁.join a₂ = ln A) (hKB : b₁.join b₂ = ln A)
     (hKC : c₁.join c₂ = ln A) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
@@ -294,7 +296,7 @@ theorem horn_shape_lll {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
   evaluation, and the `ln A`-entry sufficiency lemmas for the top case. -/
 
 /-- ABSORPTION (`c₁⊔c₂ = ⊤`, pure modular): `((c₁⊔x)⊓(c₂⊔y)) ⊔ c₂ = c₂⊔y`. -/
-theorem topjoin_absorb {x y c₁ c₂ : PElem P} (hc : c₁.join c₂ = top) :
+public theorem topjoin_absorb {x y c₁ c₂ : PElem P} (hc : c₁.join c₂ = top) :
     ((c₁.join x).meet (c₂.join y)).join c₂ = c₂.join y := by
   have hbig : (c₁.join x).join c₂ = top := by
     apply le_antisymm (le_top _)
@@ -315,7 +317,7 @@ theorem topjoin_absorb' {x y c₁ c₂ : PElem P} (hc : c₁.join c₂ = top) :
 
 /-- A point-or-line `x ⩽ ln A` joins a FOREIGN line `ln B` (`A ≠ B`) to `⊤`
     unless it already lies on `B`. -/
-theorem join_ln_top_of_le {x : PElem P} {A B : P.Line} (hx : x.le (ln A))
+public theorem join_ln_top_of_le {x : PElem P} {A B : P.Line} (hx : x.le (ln A))
     (hAB : A ≠ B) (hxB : ¬ x.le (ln B)) : x.join (ln B) = top := by
   rcases le_ln_cases hx with h | ⟨y, hy, _⟩ | h
   · subst h; exact absurd (bot_le (ln B)) hxB
@@ -325,7 +327,7 @@ theorem join_ln_top_of_le {x : PElem P} {A B : P.Line} (hx : x.le (ln A))
 /-- `a₁ = ln A` sufficiency in the top case: if `ln A ⊔ c₁ = ⊤` and
     `c₁ ⊔ c₂ = ⊤`, the conclusion holds (`M_ac` collapses to `a₂⊔c₂`, and
     `topjoin_absorb` lifts `c₂ ⊔ M_cb` to `c₂⊔b₂ ⊒ b₂`). -/
-theorem hornConc_a₁_topc {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_a₁_topc {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hac₁ : ((ln A : PElem P)).join c₁ = top) (hc : c₁.join c₂ = top) :
     HornConc (ln A) a₂ b₁ b₂ c₁ c₂ := by
   have ha_ac : a₂.le ((((ln A) : PElem P).join c₁).meet (a₂.join c₂)) :=
@@ -340,19 +342,19 @@ theorem hornConc_a₁_topc {a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (join_le (le_join_right _ _) (le_trans hc_ac (le_join_left _ _)))
 
 /-- `a₂ = ln A` sufficiency (top case), by the row symmetry. -/
-theorem hornConc_a₂_topc {a₁ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_a₂_topc {a₁ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hac₂ : ((ln A : PElem P)).join c₂ = top) (hc : c₁.join c₂ = top) :
     HornConc a₁ (ln A) b₁ b₂ c₁ c₂ :=
   HornConc.of_swap_idx (hornConc_a₁_topc hac₂ (by rw [join_comm c₂ c₁]; exact hc))
 
 /-- `b₁ = ln A` sufficiency (top case), by the column symmetry. -/
-theorem hornConc_b₁_topc {a₁ a₂ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_b₁_topc {a₁ a₂ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hac₁ : ((ln A : PElem P)).join c₁ = top) (hc : c₁.join c₂ = top) :
     HornConc a₁ a₂ (ln A) b₂ c₁ c₂ :=
   HornConc.of_swap_ab (hornConc_a₁_topc hac₁ hc)
 
 /-- `b₂ = ln A` sufficiency (top case), by both symmetries. -/
-theorem hornConc_b₂_topc {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
+public theorem hornConc_b₂_topc {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
     (hac₂ : ((ln A : PElem P)).join c₂ = top) (hc : c₁.join c₂ = top) :
     HornConc a₁ a₂ b₁ (ln A) c₁ c₂ :=
   HornConc.of_swap_ab (hornConc_a₂_topc hac₂ hc)
@@ -362,7 +364,7 @@ theorem hornConc_b₂_topc {a₁ a₂ b₁ c₁ c₂ : PElem P} {A : P.Line}
     `pa₁∈B, pa₂∈B', pb₁∈B, pb₂∈B'`, the sufficiency lemmas
     `hornConc_of_le_cb/_ac/_right/_left` cover 14 of 16 combos; the two residual
     combos both give `M_ac ⊔ M_cb = ⊤`. -/
-theorem horn_lines_bb' {pa₁ pa₂ pb₁ pb₂ : P.Point} {A B B' : P.Line}
+public theorem horn_lines_bb' {pa₁ pa₂ pb₁ pb₂ : P.Point} {A B B' : P.Line}
     (ia₁ : P.incid pa₁ A) (ia₂ : P.incid pa₂ A) (ib₁ : P.incid pb₁ A)
     (ib₂ : P.incid pb₂ A) (hAB : A ≠ B) (hAB' : A ≠ B') (hBB : B ≠ B') :
     HornConc (pt pa₁) (pt pa₂) (pt pb₁) (pt pb₂) (ln B) (ln B') := by
@@ -419,7 +421,7 @@ theorem horn_lines_bb' {pa₁ pa₂ pb₁ pb₂ : P.Point} {A B B' : P.Line}
 
 /-- ABSORPTION, `M_ac` orientation (`c₁⊔c₂ = ⊤`): `((a₁⊔c₁)⊓(a₂⊔c₂)) ⊔ c₂ =
     a₂⊔c₂`. -/
-theorem mac_join_c₂ {a₁ a₂ c₁ c₂ : PElem P} (hc : c₁.join c₂ = top) :
+public theorem mac_join_c₂ {a₁ a₂ c₁ c₂ : PElem P} (hc : c₁.join c₂ = top) :
     ((a₁.join c₁).meet (a₂.join c₂)).join c₂ = a₂.join c₂ := by
   have hbig : (a₁.join c₁).join c₂ = top := by
     apply le_antisymm (le_top _)
@@ -437,7 +439,7 @@ theorem mac_join_c₂ {a₁ a₂ c₁ c₂ : PElem P} (hc : c₁.join c₂ = top
     both off `B` → `hornConc_of_right`; exactly one on `B` → an absorption
     argument (`mac_join_c₂`/`topjoin_absorb`); both on `B` (so `a₁ = b₁ = A∩B`
     by axiom 3) → the modular shear `LHS ⩽ ln B ⊓ (RHS ⊔ pt w) = RHS`. -/
-theorem horn_line_ptw {pa₁ pa₂ pb₁ pb₂ w : P.Point} {A B : P.Line}
+public theorem horn_line_ptw {pa₁ pa₂ pb₁ pb₂ w : P.Point} {A B : P.Line}
     (ia₁ : P.incid pa₁ A) (_ia₂ : P.incid pa₂ A) (ib₁ : P.incid pb₁ A)
     (_ib₂ : P.incid pb₂ A) (hAB : A ≠ B) (hwB : ¬ P.incid w B) :
     HornConc (pt pa₁) (pt pa₂) (pt pb₁) (pt pb₂) (ln B) (pt w) := by
@@ -544,7 +546,7 @@ theorem horn_line_ptw {pa₁ pa₂ pb₁ pb₂ w : P.Point} {A B : P.Line}
   smaller `c`-column `(A∩B, w)` (whose join is `ln A`). -/
 
 /-- `c = (ln B, ln B')` with `B ≠ B'` and `a,b` columns spanning `ln A`. -/
-theorem bigshape_lnln {a₁ a₂ b₁ b₂ : PElem P} {A B B' : P.Line}
+public theorem bigshape_lnln {a₁ a₂ b₁ b₂ : PElem P} {A B B' : P.Line}
     (hKA : a₁.join a₂ = ln A) (hKB : b₁.join b₂ = ln A) (hBB : B ≠ B') :
     HornConc a₁ a₂ b₁ b₂ (ln B) (ln B') := by
   have ha₁ : a₁.le (ln A) := hKA ▸ le_join_left a₁ a₂
@@ -577,7 +579,7 @@ theorem bigshape_lnln {a₁ a₂ b₁ b₂ : PElem P} {A B B' : P.Line}
   exact horn_lines_bb' ia₁ ia₂ ib₁ ib₂ hAB hAB' hBB
 
 /-- `c = (ln B, pt w)` with `w ∉ B` and `a,b` columns spanning `ln A`. -/
-theorem bigshape_lnpt {a₁ a₂ b₁ b₂ : PElem P} {A B : P.Line} {w : P.Point}
+public theorem bigshape_lnpt {a₁ a₂ b₁ b₂ : PElem P} {A B : P.Line} {w : P.Point}
     (hKA : a₁.join a₂ = ln A) (hKB : b₁.join b₂ = ln A) (hwB : ¬ P.incid w B) :
     HornConc a₁ a₂ b₁ b₂ (ln B) (pt w) := by
   have ha₁ : a₁.le (ln A) := hKA ▸ le_join_left a₁ a₂
@@ -619,7 +621,7 @@ theorem bigshape_lnpt {a₁ a₂ b₁ b₂ : PElem P} {A B : P.Line} {w : P.Poin
 /-- **SHAPE `KA = KB = ln A`, `KC = ⊤`**: split the `⊤`-column by
     `join_top_cases`, closing a single `⊤` entry by the prunings and the three
     big shapes by the wrappers above. -/
-theorem horn_shape_llt {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem horn_shape_llt {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
     (hKA : a₁.join a₂ = ln A) (hKB : b₁.join b₂ = ln A) (hKC : c₁.join c₂ = top) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   rcases join_top_cases hKC with (h | h) | ⟨v, B, ec₁, ec₂, hvB⟩ |
@@ -645,7 +647,7 @@ theorem horn_shape_llt {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {A : P.Line}
 
 /-- ABSORPTION (`M_ac`, `c₂`-side), needing only `a₁, a₂ ⩽ c₁ ⊔ c₂`:
     `((a₁ ⊔ c₁) ⊓ (a₂ ⊔ c₂)) ⊔ c₂ = a₂ ⊔ c₂`. -/
-theorem mac_join_c₂' {a₁ a₂ c₁ c₂ : PElem P}
+public theorem mac_join_c₂' {a₁ a₂ c₁ c₂ : PElem P}
     (ha₁ : a₁.le (c₁.join c₂)) (ha₂ : a₂.le (c₁.join c₂)) :
     ((a₁.join c₁).meet (a₂.join c₂)).join c₂ = a₂.join c₂ := by
   have hbig : (a₁.join c₁).join c₂ = c₁.join c₂ := by
@@ -660,7 +662,7 @@ theorem mac_join_c₂' {a₁ a₂ c₁ c₂ : PElem P}
     _ = a₂.join c₂ := (le_iff_meet_eq.mp (join_le ha₂ (le_join_right c₁ c₂))).symm ▸ rfl
 
 /-- ABSORPTION (`M_ac`, `c₁`-side), the mirror of `mac_join_c₂'`. -/
-theorem mac_join_c₁' {a₁ a₂ c₁ c₂ : PElem P}
+public theorem mac_join_c₁' {a₁ a₂ c₁ c₂ : PElem P}
     (ha₁ : a₁.le (c₁.join c₂)) (ha₂ : a₂.le (c₁.join c₂)) :
     ((a₁.join c₁).meet (a₂.join c₂)).join c₁ = a₁.join c₁ := by
   rw [meet_comm]
@@ -670,7 +672,7 @@ theorem mac_join_c₁' {a₁ a₂ c₁ c₂ : PElem P}
 
 /-- If `c₂ ⩽ ln B` but `a₂ ⋠ ln B` (and `a₁, a₂ ⩽ c₁ ⊔ c₂`), then
     `M_ac ⊔ ln B = ⊤` (the `M_ac`-`c₂` absorption lifts `a₂ ⊔ c₂` to `⊤`). -/
-theorem mac_join_ln_top_2 {a₁ a₂ c₁ c₂ : PElem P} {B : P.Line}
+public theorem mac_join_ln_top_2 {a₁ a₂ c₁ c₂ : PElem P} {B : P.Line}
     (ha₁ : a₁.le (c₁.join c₂)) (ha₂ : a₂.le (c₁.join c₂))
     (hc2 : c₂.le (ln B)) (hA2 : ¬ a₂.le (ln B)) :
     ((a₁.join c₁).meet (a₂.join c₂)).join (ln B) = top := by
@@ -682,7 +684,7 @@ theorem mac_join_ln_top_2 {a₁ a₂ c₁ c₂ : PElem P} {B : P.Line}
   exact join_le step1 (le_join_right _ _)
 
 /-- The `c₁`/`ln A` mirror of `mac_join_ln_top_2`. -/
-theorem mac_join_ln_top_1 {a₁ a₂ c₁ c₂ : PElem P} {A : P.Line}
+public theorem mac_join_ln_top_1 {a₁ a₂ c₁ c₂ : PElem P} {A : P.Line}
     (ha₁ : a₁.le (c₁.join c₂)) (ha₂ : a₂.le (c₁.join c₂))
     (hc1 : c₁.le (ln A)) (hA1 : ¬ a₁.le (ln A)) :
     ((a₁.join c₁).meet (a₂.join c₂)).join (ln A) = top := by
@@ -694,7 +696,7 @@ theorem mac_join_ln_top_1 {a₁ a₂ c₁ c₂ : PElem P} {A : P.Line}
   exact join_le step1 (le_join_right _ _)
 
 /-- `x = y → x ⩽ y` (mathlib-free). -/
-theorem le_of_eq' {x y : PElem P} (h : x = y) : x.le y := h ▸ le_refl x
+public theorem le_of_eq' {x y : PElem P} (h : x = y) : x.le y := h ▸ le_refl x
 
 /-- **Incidence core of the `(ln A, ln B)` shape**: `c₁ ⩽ ln A ∧ c₂ ⩽ ln B`, so
     `M_cb = ln A ⊓ ln B = A∩B`.  A `le_ln_cases` bash on `(c₁, c₂)`: the pure-`ln`
@@ -702,7 +704,7 @@ theorem le_of_eq' {x y : PElem P} (h : x = y) : x.le y := h ▸ le_refl x
     `A∩B` out through modularity); the two-point combo splits on `p ∈ B`, `q ∈ A`
     (`p = A∩B`, `q = A∩B` collapse the join to a line), the generic sub-case
     (`p ∉ B`, `q ∉ A`) closing by `shear_of_disjoint` since then `A∩B ∉ p⊔q`. -/
-theorem hkb_lnln_TT {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ B)
+public theorem hkb_lnln_TT {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ B)
     (ha1 : a₁.le (c₁.join c₂)) (ha2 : a₂.le (c₁.join c₂))
     (hc1 : c₁.le (ln A)) (hc2 : c₂.le (ln B)) :
     ((a₁.join (ln A)).meet (a₂.join (ln B))).le
@@ -852,7 +854,7 @@ theorem hkb_lnln_TT {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ 
     `c₁ ⩽ ln A`, `c₂ ⩽ ln B`.  Three configs close by the modular core; the
     fourth (`c₁ ⩽ ln A ∧ c₂ ⩽ ln B`, so `M_cb = A∩B`) is the incidence core
     `hkb_lnln_TT`. -/
-theorem hkb_lnln {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ B)
+public theorem hkb_lnln {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ B)
     (ha : (a₁.join a₂).le (c₁.join c₂)) :
     HornConc a₁ a₂ (ln A) (ln B) c₁ c₂ := by
   have ha1 : a₁.le (c₁.join c₂) := le_trans (le_join_left a₁ a₂) ha
@@ -882,7 +884,7 @@ theorem hkb_lnln {a₁ a₂ c₁ c₂ : PElem P} {A B : P.Line} (hAB : A ≠ B)
 
 /-- ATOM ABSORPTION: an atom `pt w` below a join `a ⊔ (pt w) ⊔ c` but with `a ⋠ c`
     is already below `a ⊔ c` (the `⊥` alternative forces `a ⩽ c`). -/
-theorem atom_absorb {a c : PElem P} {w : P.Point} (h : a.le ((pt w).join c))
+public theorem atom_absorb {a c : PElem P} {w : P.Point} (h : a.le ((pt w).join c))
     (hac : ¬ a.le c) : (pt w : PElem P).le (a.join c) := by
   rcases le_pt_cases (meet_le_left (pt w) (a.join c)) with hbot | hpt
   · exfalso
@@ -900,7 +902,7 @@ theorem atom_absorb {a c : PElem P} {w : P.Point} (h : a.le ((pt w).join c))
     absorption (`pt w ⩽ M_ac`); `ln C` with `v ∈ C` reduces to `hkb_lnln`, since
     there `ln C ⊔ pt v = ln C` makes `M_cb` and the RHS coincide with the two-line
     shape while the LHS only shrinks. -/
-theorem hkb_ptln_c2 {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
+public theorem hkb_ptln_c2 {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
     (ha1 : a₁.le (c₁.join c₂)) (ha2 : a₂.le (c₁.join c₂))
     (hc2 : c₂.le (ln B)) (hA2 : ¬ a₂.le (ln B)) :
     ((a₁.join (pt v)).meet (a₂.join (ln B))).le
@@ -948,7 +950,7 @@ theorem hkb_ptln_c2 {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
     config drops `M_cb` to `c₁ ⊔ pt v` (closed by the `M_ac`-`c₁` absorption); the
     positive config with `a₂ ⩽ ln B` closes by a coatom shear (`M_ac, M_cb ⩽ ln B`,
     `pt v ⊓ ln B = ⊥`), and with `a₂ ⋠ ln B` by the incidence core `hkb_ptln_c2`. -/
-theorem hkb_ptln {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
+public theorem hkb_ptln {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
     (hvB : ¬ P.incid v B) (ha : (a₁.join a₂).le (c₁.join c₂)) :
     HornConc a₁ a₂ (pt v) (ln B) c₁ c₂ := by
   have hbv : ((ln B : PElem P)).meet (pt v) = bot := meet_ln_pt_not hvB
@@ -998,7 +1000,7 @@ theorem hkb_ptln {a₁ a₂ c₁ c₂ : PElem P} {v : P.Point} {B : P.Line}
 
 /-- **The `KB = ⊤` shape** (`b₁ ⊔ b₂ = ⊤`, `a₁ ⊔ a₂ ⩽ c₁ ⊔ c₂`).  Split the
     `⊤` `b`-column by `join_top_cases`. -/
-theorem horn_KB_top {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} (hb : b₁.join b₂ = top)
+public theorem horn_KB_top {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} (hb : b₁.join b₂ = top)
     (ha : (a₁.join a₂).le (c₁.join c₂)) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   have hHyp : HornHyp a₁ a₂ b₁ b₂ c₁ c₂ := by
@@ -1018,7 +1020,7 @@ theorem horn_KB_top {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} (hb : b₁.join b�
 
 /-- **§2.157 `famC`**: the line-degeneracy of the converse Horn sentence — the
     obligation of `latticeHorn_of_families`. -/
-theorem hornLine_famC : ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (A : P.Line),
+public theorem hornLine_famC : ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (A : P.Line),
     (a₁.join a₂).meet (b₁.join b₂) = ln A →
     HornHyp a₁ a₂ b₁ b₂ c₁ c₂ → HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   intro a₁ a₂ b₁ b₂ c₁ c₂ A hH hHyp

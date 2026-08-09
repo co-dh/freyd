@@ -1,4 +1,6 @@
-import Freyd.S2_30
+module
+
+public import Freyd.S2_30
 
 universe u v
 
@@ -40,7 +42,7 @@ namespace Freyd
   needed to (i) bundle `Cor(a)` and (ii) build the one-object allegory. -/
 
 /-- A Heyting algebra on a bare `Type` (order-theoretic, no completeness). -/
-class HeytAlg (H : Type u) where
+public class HeytAlg (H : Type u) where
   le : H → H → Prop
   le_refl    : ∀ a, le a a
   le_trans   : ∀ {a b c}, le a b → le b c → le a c
@@ -77,66 +79,66 @@ local infixr:60 " ⇨ "  => HeytAlg.himp
 
 /-! ### Derived lattice facts -/
 
-theorem meet_comm (a b : H) : a ⊓ b = b ⊓ a :=
+public theorem meet_comm (a b : H) : a ⊓ b = b ⊓ a :=
   le_antisymm (le_meet (meet_le_right a b) (meet_le_left a b))
               (le_meet (meet_le_right b a) (meet_le_left b a))
 
-theorem meet_assoc (a b c : H) : (a ⊓ b) ⊓ c = a ⊓ (b ⊓ c) :=
+public theorem meet_assoc (a b c : H) : (a ⊓ b) ⊓ c = a ⊓ (b ⊓ c) :=
   le_antisymm
     (le_meet (le_trans (meet_le_left _ _) (meet_le_left _ _))
       (le_meet (le_trans (meet_le_left _ _) (meet_le_right _ _)) (meet_le_right _ _)))
     (le_meet (le_meet (meet_le_left _ _) (le_trans (meet_le_right _ _) (meet_le_left _ _)))
       (le_trans (meet_le_right _ _) (meet_le_right _ _)))
 
-theorem meet_idem (a : H) : a ⊓ a = a :=
+public theorem meet_idem (a : H) : a ⊓ a = a :=
   le_antisymm (meet_le_left a a) (le_meet (le_refl a) (le_refl a))
 
-theorem meet_le_meet {a b c d : H} (h1 : a ≼ c) (h2 : b ≼ d) : a ⊓ b ≼ c ⊓ d :=
+public theorem meet_le_meet {a b c d : H} (h1 : a ≼ c) (h2 : b ≼ d) : a ⊓ b ≼ c ⊓ d :=
   le_meet (le_trans (meet_le_left _ _) h1) (le_trans (meet_le_right _ _) h2)
 
-theorem join_comm (a b : H) : a ⊔ b = b ⊔ a :=
+public theorem join_comm (a b : H) : a ⊔ b = b ⊔ a :=
   le_antisymm (join_le (le_join_right b a) (le_join_left b a))
               (join_le (le_join_right a b) (le_join_left a b))
 
-theorem join_assoc (a b c : H) : (a ⊔ b) ⊔ c = a ⊔ (b ⊔ c) :=
+public theorem join_assoc (a b c : H) : (a ⊔ b) ⊔ c = a ⊔ (b ⊔ c) :=
   le_antisymm
     (join_le (join_le (le_join_left _ _) (le_trans (le_join_left _ _) (le_join_right _ _)))
       (le_trans (le_join_right _ _) (le_join_right _ _)))
     (join_le (le_trans (le_join_left _ _) (le_join_left _ _))
       (join_le (le_trans (le_join_right _ _) (le_join_left _ _)) (le_join_right _ _)))
 
-theorem join_idem (a : H) : a ⊔ a = a :=
+public theorem join_idem (a : H) : a ⊔ a = a :=
   le_antisymm (join_le (le_refl a) (le_refl a)) (le_join_left a a)
 
 /-- `a ⊓ b = a ↔ a ≤ b` (the order is recoverable from meet). -/
-theorem meet_eq_left_iff_le {a b : H} : a ⊓ b = a ↔ a ≼ b := by
+public theorem meet_eq_left_iff_le {a b : H} : a ⊓ b = a ↔ a ≼ b := by
   constructor
   · intro h; exact h ▸ meet_le_right a b
   · intro h; exact le_antisymm (meet_le_left a b) (le_meet (le_refl a) h)
 
-theorem meet_top (a : H) : a ⊓ top = a :=
+public theorem meet_top (a : H) : a ⊓ top = a :=
   le_antisymm (meet_le_left _ _) (le_meet (le_refl _) (le_top _))
 
-theorem top_meet (a : H) : top ⊓ a = a := by rw [meet_comm]; exact meet_top a
+public theorem top_meet (a : H) : top ⊓ a = a := by rw [meet_comm]; exact meet_top a
 
-theorem meet_bot (a : H) : a ⊓ bot = bot :=
+public theorem meet_bot (a : H) : a ⊓ bot = bot :=
   le_antisymm (meet_le_right _ _) (bot_le _)
 
-theorem bot_meet (a : H) : bot ⊓ a = bot := by rw [meet_comm]; exact meet_bot a
+public theorem bot_meet (a : H) : bot ⊓ a = bot := by rw [meet_comm]; exact meet_bot a
 
-theorem bot_join (a : H) : bot ⊔ a = a :=
+public theorem bot_join (a : H) : bot ⊔ a = a :=
   le_antisymm (join_le (bot_le _) (le_refl _)) (le_join_right _ _)
 
 /-- absorption `R ∪ (S ∩ R) = R`. -/
-theorem join_meet_absorb (a b : H) : a ⊔ (b ⊓ a) = a :=
+public theorem join_meet_absorb (a b : H) : a ⊔ (b ⊓ a) = a :=
   le_antisymm (join_le (le_refl _) (meet_le_right _ _)) (le_join_left _ _)
 
 /-- absorption `(R ∪ S) ∩ R = R`. -/
-theorem meet_join_absorb (a b : H) : (a ⊔ b) ⊓ a = a :=
+public theorem meet_join_absorb (a b : H) : (a ⊔ b) ⊓ a = a :=
   le_antisymm (meet_le_right _ _) (le_meet (le_join_left _ _) (le_refl _))
 
 /-- Heyting ⟹ distributive: `a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c)` (uses `⇨`). -/
-theorem meet_join_distrib (a b c : H) : a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c) := by
+public theorem meet_join_distrib (a b c : H) : a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c) := by
   apply le_antisymm
   · -- key: `b ⊔ c ≤ a ⇨ d`, then transpose by the adjunction.
     have hb : b ≼ a ⇨ ((a ⊓ b) ⊔ (a ⊓ c)) :=
@@ -154,7 +156,7 @@ theorem meet_join_distrib (a b c : H) : a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ (a ⊓ c
   semidistributive law and the modular law become identities of nested meets. -/
 
 /-- `R(S∩T) = (RS ∩ R(S∩T)) ∩ RT`, with composition and intersection = meet. -/
-theorem semidistrib_eq (R S T : H) :
+public theorem semidistrib_eq (R S T : H) :
     R ⊓ (S ⊓ T) = ((R ⊓ S) ⊓ (R ⊓ (S ⊓ T))) ⊓ (R ⊓ T) := by
   apply le_antisymm
   · refine le_meet (le_meet (le_meet (meet_le_left _ _) ?_) (le_refl _))
@@ -165,7 +167,7 @@ theorem semidistrib_eq (R S T : H) :
 
 /-- `(RS ∩ T) = (RS ∩ T) ∩ ((R ∩ TS°)S)`, with composition/intersection = meet
     and reciprocation = identity (`TS° = T ⊓ S`). -/
-theorem modular_eq (R S T : H) :
+public theorem modular_eq (R S T : H) :
     (R ⊓ S) ⊓ T = ((R ⊓ S) ⊓ T) ⊓ ((R ⊓ (T ⊓ S)) ⊓ S) := by
   apply le_antisymm
   · refine le_meet (le_refl _) (le_meet (le_meet ?_ ?_) ?_)
@@ -184,7 +186,7 @@ open Freyd.Alg
 /-- The single object of the one-object allegory built from `H`.  The `H`
     parameter makes `OneObj H` carry the algebra, so instance resolution can
     recover it. -/
-inductive OneObj (H : Type u) : Type u
+public inductive OneObj (H : Type u) : Type u
   | pt
 
 namespace OneObj
@@ -192,7 +194,7 @@ namespace OneObj
 variable {H : Type u} [HeytAlg H]
 
 /-- Hom-set is `H`; identity = `⊤`; composition = meet `⊓`. -/
-instance instCat : Cat.{u} (OneObj H) where
+@[expose] public instance instCat : Cat.{u} (OneObj H) where
   Hom _ _ := H
   id _ := HeytAlg.top
   comp f g := HeytAlg.meet f g
@@ -201,7 +203,7 @@ instance instCat : Cat.{u} (OneObj H) where
   assoc f g h := HeytAlg.meet_assoc f g h
 
 /-- §2.316: reciprocation = identity, intersection = meet. -/
-instance instAllegory : Allegory.{u} (OneObj H) where
+@[expose] public instance instAllegory : Allegory.{u} (OneObj H) where
   recip f := f
   inter f g := HeytAlg.meet f g
   recip_recip _ := rfl
@@ -214,7 +216,7 @@ instance instAllegory : Allegory.{u} (OneObj H) where
   modular := HeytAlg.modular_eq
 
 /-- §2.316: zero = `⊥`, union = join `⊔`; distributivity is Heyting. -/
-instance instDistributiveAllegory : DistributiveAllegory (OneObj H) :=
+@[expose] public instance instDistributiveAllegory : DistributiveAllegory (OneObj H) :=
   { instAllegory with
     zero := HeytAlg.bot
     union := HeytAlg.join
@@ -231,7 +233,7 @@ instance instDistributiveAllegory : DistributiveAllegory (OneObj H) :=
 
 /-- §2.316: right division `R / S := S ⇨ R` (Heyting implication).
     The division adjunction `T ⊑ R/S ↔ T≫S ⊑ R` is exactly `himp_adj`. -/
-instance instDivisionAllegory : DivisionAllegory (OneObj H) :=
+@[expose] public instance instDivisionAllegory : DivisionAllegory (OneObj H) :=
   { instDistributiveAllegory with
     div := fun R S => HeytAlg.himp S R
     div_comp_le := fun R S =>
@@ -252,7 +254,7 @@ end OneObj
   meet/join/top/bot = `∩`/`∪`/`1`/`𝟘` and implication `1 ∩ B/A` (`heytingImpl`). -/
 
 /-- The coreflexives (subidentities) on `a`: `{R : a ⟶ a // R ⊑ 1}`. -/
-def Cor {𝒜 : Type u} [DivisionAllegory 𝒜] (a : 𝒜) : Type v :=
+@[expose] public def Cor {𝒜 : Type u} [DivisionAllegory 𝒜] (a : 𝒜) : Type v :=
   {R : a ⟶ a // Coreflexive R}
 
 namespace Cor
@@ -261,7 +263,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜}
 
 /-- §2.316: `Cor(a)` is a Heyting algebra.  Order = allegory order `⊑`;
     meet/join = `∩`/`∪`; top/bot = `1`/`𝟘`; implication = `heytingImpl`. -/
-instance instHeytAlg : HeytAlg (Cor a) where
+@[expose] public instance instHeytAlg : HeytAlg (Cor a) where
   le A B := A.1 ⊑ B.1
   le_refl A := Freyd.Alg.le_refl A.1
   le_trans h1 h2 := Freyd.Alg.le_trans h1 h2

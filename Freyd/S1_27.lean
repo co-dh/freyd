@@ -16,9 +16,11 @@
   §1.274 Natural equivalence = natural transformation with iso components (§1.274).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_41
 
 
 universe v u
@@ -32,7 +34,7 @@ namespace Freyd
 /-- A natural transformation α : F → G between parallel functors F, G : 𝒞 → 𝒟 (§1.27).
     For each X : 𝒞 a component α_X : F X → G X; for every f : X → Y,
     F(f) ≫ α_Y = α_X ≫ G(f) (naturality). -/
-structure NaturalTransformation (F G : Functor 𝒞 𝒟) where
+public structure NaturalTransformation (F G : Functor 𝒞 𝒟) where
   app : (X : 𝒞) → (F.obj X ⟶ G.obj X)
   naturality : ∀ {X Y : 𝒞} (f : X ⟶ Y), F.map f ≫ app Y = app X ≫ G.map f
 
@@ -56,7 +58,7 @@ variable {A B : 𝒞}
     C is one-to-one on morphisms because y = A (id_A) belongs to C(A) and A f = f.
     In the object-centric setting this translates to: if post-composition by f and g
     agree on all maps into A then f = g.  The witness is h = id_A : A → A. -/
-theorem cayley_faithful (f g : A ⟶ B)
+public theorem cayley_faithful (f g : A ⟶ B)
     (h : ∀ {X : 𝒞} (hX : X ⟶ A), hX ≫ f = hX ≫ g) : f = g := by
   have := h (Cat.id A)
   rwa [Cat.id_comp, Cat.id_comp] at this
@@ -76,13 +78,13 @@ end Cayley
 
 /-- The hom-type of the functor category: natural transformations from F to G.
     Objects of the functor category 𝒟^𝒜 (§1.27) are the bundled functors `Functor 𝒜 𝒟`. -/
-abbrev FunctorHom {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
+@[expose] public abbrev FunctorHom {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
     (F G : Functor 𝒜 𝒟) : Type (max v u) :=
   NaturalTransformation F G
 
 /-- Extensionality for `NaturalTransformation`: two NTs with the same components
     are equal. -/
-theorem NaturalTransformation.ext' {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
+public theorem NaturalTransformation.ext' {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
     {F G : Functor 𝒜 𝒟}
     {α β : NaturalTransformation F G}
     (h : ∀ X, α.app X = β.app X) : α = β := by
@@ -90,7 +92,7 @@ theorem NaturalTransformation.ext' {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 
 
 /-- Identity natural transformation on F: component at each X is id_{F X}.
     Naturality: F(f) ≫ id = id ≫ F(f) by comp_id / id_comp. -/
-def natTrans_id {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
+@[expose] public def natTrans_id {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
     (F : Functor 𝒜 𝒟) : FunctorHom F F where
   app X := Cat.id (F.obj X)
   naturality f := by simp [Cat.comp_id, Cat.id_comp]
@@ -98,7 +100,7 @@ def natTrans_id {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
 /-- Vertical composition of natural transformations α : F ⟹ G and β : G ⟹ H.
     Component: (α;β)_X = α_X ≫ β_X.  Naturality square commutes by
     α-naturality and β-naturality and associativity. -/
-def natTrans_comp {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
+@[expose] public def natTrans_comp {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
     {F G H : Functor 𝒜 𝒟}
     (α : FunctorHom F G) (β : FunctorHom G H) : FunctorHom F H where
   app X := α.app X ≫ β.app X
@@ -111,7 +113,7 @@ def natTrans_comp {𝒜 𝒟 : Type u} [Cat.{v} 𝒜] [Cat.{v} 𝒟]
 /-- The FUNCTOR CATEGORY 𝒟^𝒜 (§1.27): objects are bundled functors `Functor 𝒜 𝒟`,
     morphisms are natural transformations, identity and composition as above.
     The three category laws hold pointwise by the laws of 𝒟. -/
-instance functorCat (𝒜 𝒟 : Type u) [Cat.{v} 𝒜] [Cat.{v} 𝒟] :
+@[expose] public instance functorCat (𝒜 𝒟 : Type u) [Cat.{v} 𝒜] [Cat.{v} 𝒟] :
     Cat.{max v u} (Functor 𝒜 𝒟) where
   Hom   := FunctorHom
   id    := natTrans_id

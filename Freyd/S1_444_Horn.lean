@@ -24,10 +24,12 @@
   exactly along Freyd's lines (collective faithfulness + per-predicate preservation).
 -/
 
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_47
-import Freyd.S1_241
+module
+
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_47
+public import Freyd.S1_241
 
 open Freyd
 
@@ -46,10 +48,10 @@ namespace Freyd.Horn
   `terminator`, `product`, `equalizer`.  A Horn sentence is `(⋀ hyps) ⊃ concl`. -/
 
 /-- An OBJECT variable. -/
-abbrev ObjVar (nObj : Nat) := Fin nObj
+@[expose] public abbrev ObjVar (nObj : Nat) := Fin nObj
 
 /-- A MORPHISM variable, typed by its source and target object-variables. -/
-structure MorVar (nObj : Nat) where
+public structure MorVar (nObj : Nat) where
   src : ObjVar nObj
   tgt : ObjVar nObj
   /-- the index distinguishing parallel morphism variables -/
@@ -92,28 +94,28 @@ section Semantics
 variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
 /-- An environment interpreting the variables of an `nObj`-sentence in `𝒞`. -/
-structure Env (𝒞 : Type u) [Cat.{v} 𝒞] (nObj : Nat) where
+public structure Env (𝒞 : Type u) [Cat.{v} 𝒞] (nObj : Nat) where
   obj : ObjVar nObj → 𝒞
   mor : (m : MorVar nObj) → (obj m.src ⟶ obj m.tgt)
 
 /-- `Hom`-cast of a morphism variable along the propositional source/target equations.
     `morAs ρ m hs ht : ρ.obj s ⟶ ρ.obj t` is `ρ.mor m` retyped using `m.src = s`,
     `m.tgt = t`. -/
-def morAs {nObj : Nat} (ρ : Env 𝒞 nObj) (m : MorVar nObj) {s t : ObjVar nObj}
+@[expose] public def morAs {nObj : Nat} (ρ : Env 𝒞 nObj) (m : MorVar nObj) {s t : ObjVar nObj}
     (hs : m.src = s) (ht : m.tgt = t) : ρ.obj s ⟶ ρ.obj t :=
   hs ▸ ht ▸ ρ.mor m
 
 /-- The TERMINATOR predicate in `𝒞`: every object has a unique map to `o`. -/
-def IsTerminalObj (o : 𝒞) : Prop := ∀ X : 𝒞, ∃ f : X ⟶ o, ∀ g : X ⟶ o, g = f
+@[expose] public def IsTerminalObj (o : 𝒞) : Prop := ∀ X : 𝒞, ∃ f : X ⟶ o, ∀ g : X ⟶ o, g = f
 
 /-- The PRODUCT predicate (universal property) for `(p, pf, ps)` over `a`, `b`. -/
-def IsProductObj {a b p : 𝒞} (pf : p ⟶ a) (ps : p ⟶ b) : Prop :=
+@[expose] public def IsProductObj {a b p : 𝒞} (pf : p ⟶ a) (ps : p ⟶ b) : Prop :=
   ∀ (X : 𝒞) (u : X ⟶ a) (v : X ⟶ b),
     ∃ h : X ⟶ p, h ≫ pf = u ∧ h ≫ ps = v ∧
       ∀ k : X ⟶ p, k ≫ pf = u → k ≫ ps = v → k = h
 
 /-- The EQUALIZER predicate (universal property) for `em : e→a` over `f g : a→bb`. -/
-def IsEqualizerObj {e a bb : 𝒞} (em : e ⟶ a) (f g : a ⟶ bb) : Prop :=
+@[expose] public def IsEqualizerObj {e a bb : 𝒞} (em : e ⟶ a) (f g : a ⟶ bb) : Prop :=
   em ≫ f = em ≫ g ∧
   ∀ (X : 𝒞) (h : X ⟶ a), h ≫ f = h ≫ g →
     ∃ k : X ⟶ e, k ≫ em = h ∧ ∀ m : X ⟶ e, m ≫ em = h → m = k
@@ -162,7 +164,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
 /-- `Hom(i,-)` preserves TERMINATORS: if `o` is terminal in `𝒞` then `Hom(i,o) = (i⟶o)`
     is terminal in `Type v` (a one-element set). -/
-theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj o) :
+public theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj o) :
     IsTerminalObj (Freyd.representable i o) := by
   -- `Hom(i,o) = (i⟶o)` is a one-element set: the unique global map to `o`, constantly.
   obtain ⟨t, ht⟩ := ho i
@@ -172,7 +174,7 @@ theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTerminalObj 
 /-- `Hom(i,-)` preserves PRODUCTS: a product `(p, pf, ps)` in `𝒞` is sent to the product
     `(i⟶p, (·≫pf), (·≫ps))` in `Type v`.  The Set-product UP is solved by the unique
     `𝒞`-lift of the pair of legs. -/
-theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
+public theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (hp : IsProductObj pf ps) :
     IsProductObj (𝒞 := Type v)
       ((homFunctor i).map pf) ((homFunctor i).map ps) := by
@@ -187,7 +189,7 @@ theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {p
 
 /-- `Hom(i,-)` preserves EQUALIZERS: an equalizer `em : e→a` of `f,g : a→bb` in `𝒞` is
     sent to the equalizer `(i⟶e, (·≫em))` of `(·≫f), (·≫g)` in `Type v`. -/
-theorem homFunctor_preserves_equalizer (i : 𝒞) {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
+public theorem homFunctor_preserves_equalizer (i : 𝒞) {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (he : IsEqualizerObj em f g) :
     IsEqualizerObj (𝒞 := Type v)
       ((homFunctor i).map em)
@@ -263,7 +265,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {nObj : Nat}
 /-- **REFLECTION of TERMINATOR**: if `Hom(i, o)` is terminal in `Type v` for every `i`,
     then `o` is terminal in `𝒞`.  A global map `X → o` is witnessed at `i := X`;
     uniqueness is `cayley_faithful`. -/
-theorem reflect_terminal {o : 𝒞}
+public theorem reflect_terminal {o : 𝒞}
     (h : ∀ i : 𝒞, IsTerminalObj (Freyd.representable i o)) : IsTerminalObj o := by
   intro X
   -- existence: probe the terminal Set `Hom(X,o)` at the type `(X⟶X)`, evaluate at `id_X`.
@@ -282,7 +284,7 @@ theorem reflect_terminal {o : 𝒞}
 /-- **REFLECTION of PRODUCT**: if `(Hom(i,p), (·≫pf), (·≫ps))` is a Set-product for every
     `i`, then `(p, pf, ps)` is a product in `𝒞`.  Existence of the lift is read off at
     `i := X`; uniqueness is `cayley_faithful`. -/
-theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
+public theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (h : ∀ i : 𝒞, IsProductObj (𝒞 := Type v)
       ((homFunctor i).map pf) ((homFunctor i).map ps)) :
     IsProductObj pf ps := by
@@ -316,7 +318,7 @@ theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
 
 /-- **REFLECTION of EQUALIZER**: if `(Hom(i,e), (·≫em))` is a Set-equalizer of
     `(·≫f), (·≫g)` for every `i`, then `em` is an equalizer of `f, g` in `𝒞`. -/
-theorem reflect_equalizer {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
+public theorem reflect_equalizer {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (h : ∀ i : 𝒞, IsEqualizerObj (𝒞 := Type v)
       ((homFunctor i).map em)
       ((homFunctor i).map f) ((homFunctor i).map g)) :

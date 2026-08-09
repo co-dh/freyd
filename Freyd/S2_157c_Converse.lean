@@ -26,7 +26,9 @@
   The all-points general-position tuples (`desarguesND_implies_horn_points`)
   are the single place where `DesarguesND` itself enters.
 -/
-import Freyd.S2_157b_Desargues
+module
+
+public import Freyd.S2_157b_Desargues
 
 universe v u
 
@@ -39,11 +41,11 @@ variable {P : ProjectivePlane.{u}}
 /-! ## Order helpers: inversion and monotonicity -/
 
 /-- Nothing is below `⊥` but `⊥`. -/
-theorem eq_bot_of_le_bot {x : PElem P} (h : x.le bot) : x = bot := by
+public theorem eq_bot_of_le_bot {x : PElem P} (h : x.le bot) : x = bot := by
   cases x <;> simp_all [le]
 
 /-- Below a point: `⊥` or the point itself. -/
-theorem le_pt_cases {x : PElem P} {z : P.Point} (h : x.le (pt z)) :
+public theorem le_pt_cases {x : PElem P} {z : P.Point} (h : x.le (pt z)) :
     x = bot ∨ x = pt z := by
   cases x with
   | bot => exact Or.inl rfl
@@ -52,7 +54,7 @@ theorem le_pt_cases {x : PElem P} {z : P.Point} (h : x.le (pt z)) :
   | top => exact absurd h (by simp [le])
 
 /-- Below a line: `⊥`, an incident point, or the line itself. -/
-theorem le_ln_cases {x : PElem P} {A : P.Line} (h : x.le (ln A)) :
+public theorem le_ln_cases {x : PElem P} {A : P.Line} (h : x.le (ln A)) :
     x = bot ∨ (∃ y, x = pt y ∧ P.incid y A) ∨ x = ln A := by
   cases x with
   | bot => exact Or.inl rfl
@@ -61,25 +63,25 @@ theorem le_ln_cases {x : PElem P} {A : P.Line} (h : x.le (ln A)) :
   | top => exact absurd h (by simp [le])
 
 /-- Join is monotone in both arguments. -/
-theorem join_mono {x y x' y' : PElem P} (hx : x.le x') (hy : y.le y') :
+public theorem join_mono {x y x' y' : PElem P} (hx : x.le x') (hy : y.le y') :
     (x.join y).le (x'.join y') :=
   join_le (le_trans hx (le_join_left _ _)) (le_trans hy (le_join_right _ _))
 
 /-- Meet is monotone in both arguments. -/
-theorem meet_mono {x y x' y' : PElem P} (hx : x.le x') (hy : y.le y') :
+public theorem meet_mono {x y x' y' : PElem P} (hx : x.le x') (hy : y.le y') :
     (x.meet y).le (x'.meet y') :=
   le_meet (le_trans (meet_le_left _ _) hx) (le_trans (meet_le_right _ _) hy)
 
 /-! ## HornConc sufficiency and monotonicity -/
 
 /-- SUFFICIENCY: the conclusion LHS under the first conclusion meet. -/
-theorem hornConc_of_le_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem hornConc_of_le_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (h : ((a₁.join b₁).meet (a₂.join b₂)).le ((a₁.join c₁).meet (a₂.join c₂))) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=
   le_trans h (le_join_left _ _)
 
 /-- SUFFICIENCY: the conclusion LHS under the second conclusion meet. -/
-theorem hornConc_of_le_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem hornConc_of_le_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (h : ((a₁.join b₁).meet (a₂.join b₂)).le ((c₁.join b₁).meet (c₂.join b₂))) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=
   le_trans h (le_join_right _ _)
@@ -87,7 +89,7 @@ theorem hornConc_of_le_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
 /-- The Horn CONCLUSION is monotone in the c-column (c appears only on the
     right).  Shrinking c strengthens the conclusion, so families may be proved
     at the smallest c making the hypothesis tight. -/
-theorem HornConc.mono_c {a₁ a₂ b₁ b₂ c₁ c₂ c₁' c₂' : PElem P}
+public theorem HornConc.mono_c {a₁ a₂ b₁ b₂ c₁ c₂ c₁' c₂' : PElem P}
     (h₁ : c₁.le c₁') (h₂ : c₂.le c₂')
     (h : HornConc a₁ a₂ b₁ b₂ c₁ c₂) : HornConc a₁ a₂ b₁ b₂ c₁' c₂' :=
   le_trans h (join_mono
@@ -103,7 +105,7 @@ theorem HornConc.mono_c {a₁ a₂ b₁ b₂ c₁ c₂ c₁' c₂' : PElem P}
 
 /-- SHEAR (pure modularity): if `x` is disjoint from `y ⊔ z` then
     `(x⊔y) ⊓ (x⊔z) ⩽ x ⊔ (y⊓z)`. -/
-theorem shear_of_disjoint {x y z : PElem P} (h : x.meet (y.join z) = bot) :
+public theorem shear_of_disjoint {x y z : PElem P} (h : x.meet (y.join z) = bot) :
     ((x.join y).meet (x.join z)).le (x.join (y.meet z)) := by
   -- first shear: (x⊔y) ⊓ (z⊔x) = ((x⊔y) ⊓ z) ⊔ x
   have h1 : (x.join y).meet (x.join z) = ((x.join y).meet z).join x := by
@@ -122,7 +124,7 @@ theorem shear_of_disjoint {x y z : PElem P} (h : x.meet (y.join z) = bot) :
 
 /-- CHAIN STEP (pure modularity): a comparable a-column disjoint from the
     b-join forces the conclusion-LHS under `a₁⊓a₂ ⊔ b₁⊓b₂`. -/
-theorem chain_disjoint_le {a₁ a₂ b₁ b₂ : PElem P} (hc : a₂.le a₁)
+public theorem chain_disjoint_le {a₁ a₂ b₁ b₂ : PElem P} (hc : a₂.le a₁)
     (h : a₁.meet (b₁.join b₂) = bot) :
     ((a₁.join b₁).meet (a₂.join b₂)).le (a₂.join (b₁.meet b₂)) := by
   have hL1 : ((a₁.join b₁).meet (a₂.join b₂)).le (a₁.join (b₁.meet b₂)) :=
@@ -143,7 +145,7 @@ theorem chain_disjoint_le {a₁ a₂ b₁ b₂ : PElem P} (hc : a₂.le a₁)
 
 /-- TRICHOTOMY of joins in 𝓛(P): two elements are comparable, or their join is
     a line or `⊤`.  (What makes `H = ⊥` collapse a column to a chain.) -/
-theorem join_chain_or_big (x y : PElem P) :
+public theorem join_chain_or_big (x y : PElem P) :
     x.le y ∨ y.le x ∨ (∃ A, x.join y = ln A) ∨ x.join y = top := by
   cases x with
   | bot => exact Or.inl (bot_le y)
@@ -175,7 +177,7 @@ theorem join_chain_or_big (x y : PElem P) :
 
 /-- In 𝓛(P) a line and a line-or-top always share a point: their meet is
     never `⊥` (axiom 2 through the meet table). -/
-theorem meet_ne_bot_of_big {x y : PElem P}
+public theorem meet_ne_bot_of_big {x y : PElem P}
     (hx : (∃ A, x = ln A) ∨ x = top) (hy : (∃ B, y = ln B) ∨ y = top) :
     x.meet y ≠ bot := by
   rcases hx with ⟨A, rfl⟩ | rfl <;> rcases hy with ⟨B, rfl⟩ | rfl
@@ -191,7 +193,7 @@ theorem meet_ne_bot_of_big {x y : PElem P}
     trichotomy one column is a chain (both joins big would meet nontrivially,
     axiom 2); the chain step then bounds the LHS by `(a₁⊓a₂) ⊔ (b₁⊓b₂)`, which
     sits under both conclusion meets. -/
-theorem horn_core_disjoint {a₁ a₂ b₁ b₂ : PElem P} (c₁ c₂ : PElem P)
+public theorem horn_core_disjoint {a₁ a₂ b₁ b₂ : PElem P} (c₁ c₂ : PElem P)
     (h : (a₁.join a₂).meet (b₁.join b₂) = bot) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   -- it suffices to land under (a₁⊓a₂) ⊔ (b₁⊓b₂)
@@ -261,15 +263,15 @@ theorem horn_c_bot {a₁ a₂ b₁ b₂ : PElem P}
   small column element off the LHS by one modular shear, bound the remainder by
   the hypothesis with a second shear. -/
 
-theorem join_eq_of_le_left {x y : PElem P} (h : y.le x) : x.join y = x :=
+public theorem join_eq_of_le_left {x y : PElem P} (h : y.le x) : x.join y = x :=
   le_antisymm (join_le (le_refl x) h) (le_join_left x y)
 
-theorem join_eq_of_le_right {x y : PElem P} (h : x.le y) : x.join y = y :=
+public theorem join_eq_of_le_right {x y : PElem P} (h : x.le y) : x.join y = y :=
   le_antisymm (join_le h (le_refl y)) (le_join_right x y)
 
 /-- CHAIN STEP, descending a-column (`a₂ ⩽ a₁`): if moreover `c₂ ⩽ a₁` and
     `a₁ ⊓ (b₁⊔b₂) ⩽ c₂`, the Horn conclusion at `c₁ = ⊥` holds. -/
-theorem center_chain_step {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₂.le a₁)
+public theorem center_chain_step {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₂.le a₁)
     (hca : c₂.le a₁) (hup : (a₁.meet (b₁.join b₂)).le c₂) :
     HornConc a₁ a₂ b₁ b₂ bot c₂ := by
   show ((a₁.join b₁).meet (a₂.join b₂)).le
@@ -300,7 +302,7 @@ theorem center_chain_step {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₂.le a�
 
 /-- CHAIN STEP, ascending a-column (`a₁ ⩽ a₂`): if `a₂ ⊓ (b₁⊔b₂) ⩽ c₂`, the
     Horn conclusion at `c₁ = ⊥` holds — no constraint on `c₂` at all. -/
-theorem center_chain_step' {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₁.le a₂)
+public theorem center_chain_step' {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₁.le a₂)
     (hup : (a₂.meet (b₁.join b₂)).le c₂) :
     HornConc a₁ a₂ b₁ b₂ bot c₂ := by
   show ((a₁.join b₁).meet (a₂.join b₂)).le
@@ -334,7 +336,7 @@ theorem center_chain_step' {a₁ a₂ b₁ b₂ c₂ : PElem P} (hc : a₁.le a�
 open ProjectivePlane in
 /-- Centre core: `(x₁⊔y₁) ⊓ (x₂⊔y₂) ⩽ (x₁ ⊓ (x₂⊔z)) ⊔ (y₁ ⊓ (z⊔y₂))` for
     distinct-point columns spanning distinct lines through `z`. -/
-theorem horn_center_ptpt {x₁ x₂ y₁ y₂ z : P.Point}
+public theorem horn_center_ptpt {x₁ x₂ y₁ y₂ z : P.Point}
     (hx : x₁ ≠ x₂) (hy : y₁ ≠ y₂)
     (hXY : P.lineThrough x₁ x₂ ≠ P.lineThrough y₁ y₂)
     (hzX : P.incid z (P.lineThrough x₁ x₂))
@@ -428,7 +430,7 @@ theorem horn_center_ptpt {x₁ x₂ y₁ y₂ z : P.Point}
 
 /-- INVERSION: an incomparable pair joins to a line only as two distinct
     points spanning it. -/
-theorem join_ln_cases {x y : PElem P} {A : P.Line} (h : x.join y = ln A) :
+public theorem join_ln_cases {x y : PElem P} {A : P.Line} (h : x.join y = ln A) :
     (x.le y ∨ y.le x) ∨
     (∃ v w, x = pt v ∧ y = pt w ∧ v ≠ w ∧ A = P.lineThrough v w) := by
   cases x with
@@ -464,7 +466,7 @@ theorem join_ln_cases {x y : PElem P} {A : P.Line} (h : x.join y = ln A) :
     Horn conclusion at `(⊥, pt z)` holds.  Chain columns go to the chain steps;
     the residual shape (two distinct-point columns spanning two distinct lines
     through `z`) is the geometric core. -/
-theorem horn_center {a₁ a₂ b₁ b₂ : PElem P} {z : P.Point}
+public theorem horn_center {a₁ a₂ b₁ b₂ : PElem P} {z : P.Point}
     (h : (a₁.join a₂).meet (b₁.join b₂) = pt z) :
     HornConc a₁ a₂ b₁ b₂ bot (pt z) := by
   have hup : ((a₁.join a₂).meet (b₁.join b₂)).le (pt z) := by
@@ -552,7 +554,7 @@ theorem horn_c_pt_pt_eq {a₁ a₂ b₁ b₂ : PElem P} {z : P.Point}
 /-! ## Line-hypothesis infrastructure -/
 
 /-- Above a line: the line itself or `⊤`. -/
-theorem ge_ln_cases {K : PElem P} {C : P.Line} (h : (ln C).le K) :
+public theorem ge_ln_cases {K : PElem P} {C : P.Line} (h : (ln C).le K) :
     K = ln C ∨ K = top := by
   cases K with
   | bot => exact absurd h (by simp [le])
@@ -562,7 +564,7 @@ theorem ge_ln_cases {K : PElem P} {C : P.Line} (h : (ln C).le K) :
 
 /-- INVERSION: an incomparable pair joins to `⊤` only in the three genuinely
     big shapes (non-incident point/line, either order, or distinct lines). -/
-theorem join_top_cases {x y : PElem P} (h : x.join y = top) :
+public theorem join_top_cases {x y : PElem P} (h : x.join y = top) :
     (x.le y ∨ y.le x) ∨
     (∃ v B, x = pt v ∧ y = ln B ∧ ¬ P.incid v B) ∨
     (∃ A w, x = ln A ∧ y = pt w ∧ ¬ P.incid w A) ∨
@@ -596,7 +598,7 @@ theorem join_top_cases {x y : PElem P} (h : x.join y = top) :
       · exact Or.inr (Or.inr (Or.inr ⟨A, B, rfl, rfl, hAB⟩))
 
 /-- Two distinct points of a line `C` join to `ln C` (axiom 3). -/
-theorem join_pt_pt_line {x y : P.Point} {C : P.Line} (hxy : x ≠ y)
+public theorem join_pt_pt_line {x y : P.Point} {C : P.Line} (hxy : x ≠ y)
     (hx : P.incid x C) (hy : P.incid y C) : (pt x).join (pt y) = ln C := by
   rw [join_pt_pt_ne hxy, ← ProjectivePlane.lineThrough_eq hxy hx hy]
 
@@ -613,14 +615,14 @@ theorem meet_ln_ln_pt {A B : P.Line} {x : P.Point} (hAB : A ≠ B)
   the free entry up to the actual `cᵢ`. -/
 
 /-- Mirror of `horn_center`: the Horn conclusion at `(pt z, ⊥)`. -/
-theorem horn_center_c₁ {a₁ a₂ b₁ b₂ : PElem P} {z : P.Point}
+public theorem horn_center_c₁ {a₁ a₂ b₁ b₂ : PElem P} {z : P.Point}
     (h : (a₁.join a₂).meet (b₁.join b₂) = pt z) :
     HornConc a₁ a₂ b₁ b₂ (pt z) bot :=
   HornConc.of_swap_idx (horn_center (by rw [join_comm a₂ a₁, join_comm b₂ b₁]; exact h))
 
 /-- **`H = pt z`, easy half**: if the centre `z` lies under `c₁` or under `c₂`,
     the family reduces to `horn_center` by c-monotonicity. -/
-theorem horn_center_under {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {z : P.Point}
+public theorem horn_center_under {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {z : P.Point}
     (hH : (a₁.join a₂).meet (b₁.join b₂) = pt z)
     (hz : (pt z : PElem P).le c₁ ∨ (pt z : PElem P).le c₂) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
@@ -649,7 +651,7 @@ theorem horn_center_under {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P} {z : P.Point
 /-- **The remaining-gap reduction (exhaustive).**  Given the three residual
     shape families, the lattice Horn sentence holds at every 6-tuple: split on
     the shape of the hypothesis meet and dispatch. -/
-theorem latticeHorn_of_families
+public theorem latticeHorn_of_families
     (famB : ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P) (z : P.Point),
         (a₁.join a₂).meet (b₁.join b₂) = pt z →
         HornHyp a₁ a₂ b₁ b₂ c₁ c₂ → HornConc a₁ a₂ b₁ b₂ c₁ c₂)
@@ -670,7 +672,7 @@ theorem latticeHorn_of_families
 /-- COATOM: anything not below a line joins that line to `⊤` (the three shapes
     `x ∈ {pt off A, line ≠ A, ⊤}` all overflow).  Hoisted to this shared ancestor of
     `S2_157e`/`S2_157f` so the two identical copies collapse to one. -/
-theorem join_ln_top_of_not_le {x : PElem P} {A : P.Line} (h : ¬ x.le (ln A)) :
+public theorem join_ln_top_of_not_le {x : PElem P} {A : P.Line} (h : ¬ x.le (ln A)) :
     x.join (ln A) = top := by
   cases x with
   | bot => exact absurd (bot_le (ln A)) h

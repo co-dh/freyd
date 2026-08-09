@@ -12,11 +12,13 @@
   Per-step input: there is NO `CapStep.stepCoprods` field, so the per-rung coproduct preservation is
   threaded EXTERNALLY from the committed `uniformStep_preservesBinaryCoproducts`
   (`Freyd/UniformStepCoproduct.lean`), specialised to the cofinal successor `uniformStepFun`. -/
-import Freyd.S2_218_CapDataPositive
-import Freyd.S1_547_UniformStepCoproduct
-import Freyd.S1_543_CapDataRegular
-import Freyd.S1_621_ColimitPositive
-import Freyd.S2_218_ObjInclRegular
+module
+
+public import Freyd.S2_218_CapDataPositive
+public import Freyd.S1_547_UniformStepCoproduct
+public import Freyd.S1_543_CapDataRegular
+public import Freyd.S1_621_ColimitPositive
+public import Freyd.S2_218_ObjInclRegular
 
 open Freyd
 open Freyd.Colim
@@ -46,7 +48,7 @@ variable {S : Type u} [Cat.{u} S] [PreRegularCategory S] [DecidableEq S] [Nonemp
     on the underlying iso), and every base-change transition out of `W.base` preserves it
     (`baseChange_strictCoterminator`), so `laxColimStrictCot` makes its `objIncl` a strict
     coterminator of the lax colimit.  This is the per-rung input to the tower `hinitpres`. -/
-theorem uniformStep_preservesStrictCot (W : WSCover S) {Z : S} (hZ : StrictCoterminator Z) :
+public theorem uniformStep_preservesStrictCot (W : WSCover S) {Z : S} (hZ : StrictCoterminator Z) :
     @StrictCoterminator (uniformTargetTy W) (uniformTargetCat W) (uniformStepObj W Z) := by
   -- the slice object `⟨Z, !⟩` is a strict coterminator (its underlying arrow is iso since `Z` is).
   have hslice : StrictCoterminator (terminalSliceObj W Z) :=
@@ -69,7 +71,7 @@ variable {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
 /-- **The coproduct injections `inl, inr` are jointly epic.**  Two maps out of `coprod A B` agreeing
     after precomposition with `inl` and `inr` are equal (each is the copairing of its `inl`/`inr`
     legs, by `case_uniq`). -/
-theorem coprod_jointEpi [HasBinaryCoproducts 𝒜] {A B w : 𝒜}
+public theorem coprod_jointEpi [HasBinaryCoproducts 𝒜] {A B w : 𝒜}
     (m n : HasBinaryCoproducts.coprod A B ⟶ w)
     (h1 : HasBinaryCoproducts.inl ≫ m = HasBinaryCoproducts.inl ≫ n)
     (h2 : HasBinaryCoproducts.inr ≫ m = HasBinaryCoproducts.inr ≫ n) : m = n := by
@@ -83,7 +85,7 @@ theorem coprod_jointEpi [HasBinaryCoproducts 𝒜] {A B w : 𝒜}
     `preservesBinaryProducts_jointly_monic`).  The comparison `φ = case (F inl) (F inr)` is iso,
     hence epic; and `inl ≫ φ = F inl`, `inr ≫ φ = F inr`, so two maps out of `F(A+B)` agreeing after
     `F inl` and `F inr` agree after `φ`, hence are equal.  This is the `hcoppres` content. -/
-theorem preservesBinaryCoproducts_jointEpi [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
+public theorem preservesBinaryCoproducts_jointEpi [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
     (F : Functor 𝒜 ℬ) (hpc : PreservesBinaryCoproducts F) {A B : 𝒜} {z : ℬ}
     (u v : F.obj (HasBinaryCoproducts.coprod A B) ⟶ z)
     (hl : F.map (HasBinaryCoproducts.inl (A := A) (B := B)) ≫ u
@@ -115,7 +117,7 @@ theorem preservesBinaryCoproducts_jointEpi [HasBinaryCoproducts 𝒜] [HasBinary
     `preservesBinaryProducts_pair`).  The comparison `φ = case (F inl) (F inr)` being iso lets any
     `p : F A ⟶ z`, `q : F B ⟶ z` factor through `F(A+B)`: take `r := φ⁻¹ ≫ case p q`, using
     `F inl ≫ φ⁻¹ = inl`.  This is the `hcoppres_case` content. -/
-theorem preservesBinaryCoproducts_case [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
+public theorem preservesBinaryCoproducts_case [HasBinaryCoproducts 𝒜] [HasBinaryCoproducts ℬ]
     (F : Functor 𝒜 ℬ) (hpc : PreservesBinaryCoproducts F) {A B : 𝒜} {z : ℬ}
     (p : F.obj A ⟶ z) (q : F.obj B ⟶ z) :
     ∃ r : F.obj (HasBinaryCoproducts.coprod A B) ⟶ z,
@@ -148,7 +150,7 @@ universe u
     applies on the nose (its `[DisjointBinaryCoproduct]`-derived `PreRegularCategory` then equals
     `dbcPreReg dC`).  The successor's coproducts are exactly `(succ_component …).1.toHasBinaryCoproducts`
     — the lax target of `uniformStep_preservesBinaryCoproducts`. -/
-theorem rungPresCoprod {C : Type u} (ct : Cat.{u} C) (pr : @PreRegularCategory C ct)
+public theorem rungPresCoprod {C : Type u} (ct : Cat.{u} C) (pr : @PreRegularCategory C ct)
     (dC : @DisjointBinaryCoproduct C ct) (e : dbcPreReg dC = pr) :
     @PreservesBinaryCoproducts C (uniformStepFun ⟨C, ct, pr⟩).T ct
       (uniformStepFun ⟨C, ct, pr⟩).catT
@@ -167,7 +169,7 @@ theorem rungPresCoprod {C : Type u} (ct : Cat.{u} C) (pr : @PreRegularCategory C
     committed `uniformStep_preservesBinaryCoproducts`), composed `d` times via
     `preservesBinaryCoproducts_comp`.  Per-stage coproducts are the disjoint coproducts
     `(stageDisjoint …).toHasBinaryCoproducts`. -/
-theorem transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
+public theorem transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre) (n d : Nat) :
     @PreservesBinaryCoproducts _ _ (stageBundle uniformStepFun b n).cat
       (stageBundle uniformStepFun b (n+d)).cat
@@ -211,7 +213,7 @@ theorem transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
     target stage equality `h : m + d = n`).  `subst h` collapses both `stageCast` and `stageCastHom`,
     reducing to `transN_preservesBinaryCoproducts`.  Coproduct mirror of
     `stageCast_transN_preservesBinaryProducts`. -/
-theorem stageCast_transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
+public theorem stageCast_transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     (m d n : Nat) (h : m + d = n) :
     @PreservesBinaryCoproducts _ _ (stageBundle uniformStepFun b m).cat
@@ -230,7 +232,7 @@ theorem stageCast_transN_preservesBinaryCoproducts (b : PreRegBundle.{u})
 /-- **`towerF hij` preserves binary coproducts.**  `towerF`/`towerFunctF` ARE the `stageCast`-transport
     of `transN`/`transNFun`, so apply the generic transport.  Coproduct mirror of
     `towerF_preservesBinaryProducts`. -/
-theorem towerF_preservesBinaryCoproducts (b : PreRegBundle.{u})
+public theorem towerF_preservesBinaryCoproducts (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j) :
     @PreservesBinaryCoproducts _ _ (stageBundle uniformStepFun b i.down).cat
@@ -244,14 +246,14 @@ theorem towerF_preservesBinaryCoproducts (b : PreRegBundle.{u})
 /-! ### The destructured tower coproduct-preservation package (mirror of `towerHp`/`towerHppres`/…) -/
 
 /-- The tower's per-stage binary coproducts (the disjoint coproducts). -/
-noncomputable def towerHcop (b : PreRegBundle.{u})
+@[expose] public noncomputable def towerHcop (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     (i : ULift.{u} Nat) :
     @HasBinaryCoproducts ((towerSystem b uniformStepFun).A i) ((towerSystem b uniformStepFun).catA i) :=
   (stageDisjoint b hb0 hpb0 i.down).toHasBinaryCoproducts
 
 /-- **`hcoppres`** (joint epi-ness of `(F inl, F inr)`) from `towerF_preservesBinaryCoproducts`. -/
-theorem towerHcoppres (b : PreRegBundle.{u})
+public theorem towerHcoppres (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     (a c : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
@@ -267,7 +269,7 @@ theorem towerHcoppres (b : PreRegBundle.{u})
     (towerF_preservesBinaryCoproducts b hb0 hpb0 hij) a c z u v hl hr
 
 /-- **`hcoppres_case`** (copairing through `(F inl, F inr)`) from `towerF_preservesBinaryCoproducts`. -/
-theorem towerHcoppresCase (b : PreRegBundle.{u})
+public theorem towerHcoppresCase (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     (a c : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
@@ -286,7 +288,7 @@ theorem towerHcoppresCase (b : PreRegBundle.{u})
 /-- **`transN n d` preserves strict coterminators.**  Fold the per-rung
     `uniformStep_preservesStrictCot` over the `d` rungs.  (No coproduct instance is involved, so this
     threads through the bundled `(stage k).pre` with no instance diamond.) -/
-theorem transN_preservesStrictCot (b : PreRegBundle.{u}) (n d : Nat)
+public theorem transN_preservesStrictCot (b : PreRegBundle.{u}) (n d : Nat)
     (Z : (stageBundle uniformStepFun b n).carrier)
     (hZ : @StrictCoterminator _ (stageBundle uniformStepFun b n).cat Z) :
     @StrictCoterminator _ (stageBundle uniformStepFun b (n+d)).cat (transN uniformStepFun b n d Z) := by
@@ -303,14 +305,14 @@ theorem transN_preservesStrictCot (b : PreRegBundle.{u}) (n d : Nat)
       (wsCover (stageBundle uniformStepFun b (n+d))) ih f
 
 /-- **The `stageCast` preserves strict coterminators** (it is `Eq.rec`, an iso). -/
-theorem stageCast_preservesStrictCot (b : PreRegBundle.{u}) {m n : Nat} (h : m = n)
+public theorem stageCast_preservesStrictCot (b : PreRegBundle.{u}) {m n : Nat} (h : m = n)
     (Z : (stageBundle uniformStepFun b m).carrier)
     (hZ : @StrictCoterminator _ (stageBundle uniformStepFun b m).cat Z) :
     @StrictCoterminator _ (stageBundle uniformStepFun b n).cat (stageCast b uniformStepFun h Z) := by
   subst h; exact hZ
 
 /-- **`towerF hij` preserves strict coterminators.**  `towerF` is `stageCast ∘ transN`. -/
-theorem towerF_preservesStrictCot (b : PreRegBundle.{u}) {i j : ULift.{u} Nat}
+public theorem towerF_preservesStrictCot (b : PreRegBundle.{u}) {i j : ULift.{u} Nat}
     (hij : uliftNatDirected.le i j) (Z : (stageBundle uniformStepFun b i.down).carrier)
     (hZ : @StrictCoterminator _ (stageBundle uniformStepFun b i.down).cat Z) :
     @StrictCoterminator _ (stageBundle uniformStepFun b j.down).cat (towerF b uniformStepFun hij Z) :=
@@ -400,7 +402,7 @@ theorem capitalization_of_capData_positive {A : Type u} [Cat.{u} A] [PreRegularC
     `DisjointBinaryCoproduct` threads `hReg` verbatim through `colimitPreLogos`); the source products
     `cd.hp ⟨0⟩` are `A`'s positivity-derived products on the nose.  Iso-reflection is
     `objIncl_reflectsIso` fed the tower's conservativity `cd.hcons`. -/
-theorem capitalization_lemma_regular_positive_strong (A : Type u) [Cat.{u} A]
+public theorem capitalization_lemma_regular_positive_strong (A : Type u) [Cat.{u} A]
     [DisjointBinaryCoproduct A] :
     ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hD : @DisjointBinaryCoproduct Ā hC),
       @Capital.{u, u} Ā hC (hD.toPositivePreLogos.toPreLogos.toRegularCategory.toHasTerminal) ∧
@@ -520,7 +522,7 @@ theorem capitalization_lemma_regular_positive_strong (A : Type u) [Cat.{u} A]
     (a `DisjointBinaryCoproduct`) faithfully embeds into a CAPITAL, POSITIVE pre-logos `Ā`.  This is
     `capitalization_lemma_regular_positive_strong` with the extra `RegularFunctor` and iso-reflection
     conjuncts forgotten. -/
-theorem capitalization_lemma_regular_positive (A : Type u) [Cat.{u} A] [DisjointBinaryCoproduct A] :
+public theorem capitalization_lemma_regular_positive (A : Type u) [Cat.{u} A] [DisjointBinaryCoproduct A] :
     ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hD : @DisjointBinaryCoproduct Ā hC),
       @Capital.{u, u} Ā hC (hD.toPositivePreLogos.toPreLogos.toRegularCategory.toHasTerminal) ∧
       ∃ F : @Functor A Ā _ hC, @Faithful.{u, u} A _ Ā hC F := by
@@ -529,5 +531,3 @@ theorem capitalization_lemma_regular_positive (A : Type u) [Cat.{u} A] [Disjoint
 
 end Freyd
 
-#print axioms Freyd.capitalization_lemma_regular_positive
-#print axioms Freyd.capitalization_lemma_regular_positive_strong

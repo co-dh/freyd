@@ -28,7 +28,9 @@
   brings in `Over`/`baseChangeMap`/`Cover`/`PreRegularCategory`/`sigma_preserves_mono`).
 -/
 
-import Freyd.S1_53_SliceRegular
+module
+
+public import Freyd.S1_53_SliceRegular
 
 universe v u
 
@@ -44,12 +46,12 @@ namespace Freyd
   is a pullback over `(g, f)` with legs `(π₂, π₁)`) and apply the class field. -/
 
 /-- A cone over `(f, g)` swapped into a cone over `(g, f)`. -/
-def Cone.swap {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g) : Cone g f :=
+@[expose] public def Cone.swap {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g) : Cone g f :=
   ⟨c.pt, c.π₂, c.π₁, c.w.symm⟩
 
 /-- The swapped cone is a pullback when the original is (the universal property is
     symmetric in the two legs). -/
-theorem Cone.swap_isPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c : Cone f g}
+public theorem Cone.swap_isPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c : Cone f g}
     (hc : c.IsPullback) : (Cone.swap c).IsPullback := by
   intro d
   -- `d : Cone g f` is a `Cone f g` after swapping back.
@@ -58,7 +60,7 @@ theorem Cone.swap_isPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c : Con
 
 /-- **`fst`-oriented transfer.**  In a pullback over the cospan `(f, g)`, if `g` is a
     cover then the *first* projection `π₁` is a cover. -/
-theorem coverProj_of_cover [PullbacksTransferCovers 𝒞] {A B C : 𝒞} {f : A ⟶ C}
+public theorem coverProj_of_cover [PullbacksTransferCovers 𝒞] {A B C : 𝒞} {f : A ⟶ C}
     {g : B ⟶ C} {c : Cone f g} (hc : c.IsPullback) (hg : Cover g) : Cover c.π₁ :=
   PullbacksTransferCovers.pullbacks_transfer_covers (Cone.swap c) (Cone.swap_isPullback hc) hg
 
@@ -72,7 +74,7 @@ theorem coverProj_of_cover [PullbacksTransferCovers 𝒞] {A B C : 𝒞} {f : A 
 
   (Subobject form: a subobject `m : S ↣ Y` whose pullback along the cover
   `g : C ↠ Y.dom` is iso is itself iso.) -/
-theorem isIso_of_baseChange_isIso_of_cover {C D : 𝒞} [HasPullbacks 𝒞]
+public theorem isIso_of_baseChange_isIso_of_cover {C D : 𝒞} [HasPullbacks 𝒞]
     [PullbacksTransferCovers 𝒞] (g : C ⟶ D) (hg : Cover g)
     {X Y : Over D} (m : OverHom X Y) (hm : OverMono m)
     (hbc : OverIso (baseChangeMap g m)) : OverIso m := by

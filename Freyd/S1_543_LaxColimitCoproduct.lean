@@ -19,8 +19,10 @@
 
   Mathlib-free; built on the repo's own `Cat` + `Freyd.LaxColim`.
 -/
-import Freyd.S1_543_LaxColimitPreReg
-import Freyd.S1_58
+module
+
+public import Freyd.S1_543_LaxColimitPreReg
+public import Freyd.S1_58
 
 open Freyd
 open Freyd.Colim
@@ -46,7 +48,7 @@ variable (L : LaxCatSystem.{u, w} ι D)
 /-- The inverse of the product's unit conjugator `prUnit` decomposes as `map (isoInv reflApp) ≫
     isoInv transApp` — the reversed composite of the two coherence isos.  Proven by uniqueness of
     two-sided inverses (`prUnit ≫ (that) = id`). -/
-theorem isoInv_prUnit {k m : ι} (p : L.A k) (hkm : D.le k m) :
+public theorem isoInv_prUnit {k m : ι} (p : L.A k) (hkm : D.le k m) :
     isoInv (prUnit_isIso L p hkm)
       = (L.functF hkm).map (isoInv (reflApp_isIso L p))
         ≫ isoInv (transApp_isIso L (D.refl k) hkm p) := by
@@ -76,7 +78,7 @@ theorem isoInv_prUnit {k m : ι} (p : L.A k) (hkm : D.le k m) :
     equals `transApp ≫ (functF hkm).map inj ≫ isoInv (prUnit_isIso L p hkm)`.  The exact dual of
     `pushHom_proj`: where the projection's push has `prUnit` LEADING, the injection's push has its
     inverse TRAILING. -/
-theorem pushHom_inj {i k m : ι} (x : L.A i) (p : L.A k) (hik : D.le i k) (hkm : D.le k m)
+public theorem pushHom_inj {i k m : ι} (x : L.A i) (p : L.A k) (hik : D.le i k) (hkm : D.le k m)
     (inj : L.F hik x ⟶ p) :
     pushHom L x p hik (D.refl k) hkm (inj ≫ isoInv (reflApp_isIso L p))
       = transApp L hik hkm x ≫ (L.functF hkm).map inj ≫ isoInv (prUnit_isIso L p hkm) := by
@@ -93,7 +95,7 @@ end CoprGeneric
   is copairing preservation under a transition.  TRUE for base-change (`g*` is a right adjoint, so it
   preserves all finite *limits*; coproducts in each slice `Over (listProd U)` are computed in the
   base and `g*` preserves THEM via the comparison — discharged downstream). -/
-structure LaxCoproductData (L : LaxCatSystem.{u, w} ι D) where
+public structure LaxCoproductData (L : LaxCatSystem.{u, w} ι D) where
   hcop : ∀ i, HasBinaryCoproducts (L.A i)
   pres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
       (u v : L.F hij ((hcop i).coprod a b) ⟶ z),
@@ -110,18 +112,18 @@ section LaxCoproduct
 variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) (data : LaxCoproductData L)
 
 /-- The coproduct object `⟨k, (hcop k).coprod (F x) (F y)⟩` in `Obj L`. -/
-noncomputable def coprObj {i j : ι} (x : L.A i) (y : L.A j) : Obj L :=
+@[expose] public noncomputable def coprObj {i j : ι} (x : L.A i) (y : L.A j) : Obj L :=
   ⟨prK D i j, (data.hcop (prK D i j)).coprod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y)⟩
 
 /-- The `inl` injection germ `inl ≫ isoInv reflApp` at bound `⟨k, hik, refl k⟩` (dual of `prFst`). -/
-noncomputable def coprInl {i j : ι} (x : L.A i) (y : L.A j) :
+@[expose] public noncomputable def coprInl {i j : ι} (x : L.A i) (y : L.A j) :
     homL L hL ⟨i, x⟩ (coprObj L data x y) :=
   homInclL L hL x ((data.hcop (prK D i j)).coprod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y))
     ⟨prK D i j, (prK_le D i j).1, D.refl (prK D i j)⟩
     ((data.hcop (prK D i j)).inl ≫ isoInv (reflApp_isIso L _))
 
 /-- The `inr` injection germ (dual of `prSnd`). -/
-noncomputable def coprInr {i j : ι} (x : L.A i) (y : L.A j) :
+@[expose] public noncomputable def coprInr {i j : ι} (x : L.A i) (y : L.A j) :
     homL L hL ⟨j, y⟩ (coprObj L data x y) :=
   homInclL L hL y ((data.hcop (prK D i j)).coprod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y))
     ⟨prK D i j, (prK_le D i j).2, D.refl (prK D i j)⟩
@@ -129,7 +131,7 @@ noncomputable def coprInr {i j : ι} (x : L.A i) (y : L.A j) :
 
 /-- The single-germ representative `Ψ` produced by `coprCompProj`: the injection germ folded back by
     `pushHom_inj`, as TWO `pushHom`s (dual of `prPsi`).  Here the injection germ is the LEFT factor. -/
-noncomputable def coprPsi {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
+@[expose] public noncomputable def coprPsi {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
     (hik : D.le i k) (inj : L.F hik x ⟶ p)
     (aw : UpperBound D k l) (m : L.F aw.2.1 p ⟶ L.F aw.2.2 z)
     (v : ι) (hkv : D.le k v) (hawv : D.le aw.1 v) :
@@ -139,7 +141,7 @@ noncomputable def coprPsi {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l
 
 /-- Composing the injection germ (at `⟨k, hik, refl k⟩`, LEFT) with a stage-germ `⟨a₁, m₁⟩` reduces to
     a single germ `coprPsi` at the common bound `e` (dual of `prCompProj`). -/
-theorem coprCompProj {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
+public theorem coprCompProj {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
     (hik : D.le i k) (inj : L.F hik x ⟶ p)
     (a₁ : UpperBound D k l) (m₁ : L.F a₁.2.1 p ⟶ L.F a₁.2.2 z)
     (e : ι) (hke : D.le k e) (ha₁e : D.le a₁.1 e) :
@@ -155,7 +157,7 @@ theorem coprCompProj {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
 
 /-- **Level-push coherence of `coprPsi`** (dual of `prPsi_push`): pushing from `v` to `n` recomputes
     the rep at `n`; both `pushHom`s merge by `push_trans`. -/
-theorem coprPsi_push (hL : Coherent L) {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
+public theorem coprPsi_push (hL : Coherent L) {i k : ι} {l : ι} (x : L.A i) (p : L.A k) (z : L.A l)
     (hik : D.le i k) (inj : L.F hik x ⟶ p)
     (aw : UpperBound D k l) (m : L.F aw.2.1 p ⟶ L.F aw.2.2 z)
     (v n : ι) (hkv : D.le k v) (hawv : D.le aw.1 v) (hvn : D.le v n) :
@@ -173,7 +175,7 @@ theorem coprPsi_push (hL : Coherent L) {i k : ι} {l : ι} (x : L.A i) (p : L.A 
     `f : ⟨i,x⟩ ⟶ ⟨l,z⟩`, `g : ⟨j,y⟩ ⟶ ⟨l,z⟩`, push both to a common stage `m ≥ k`, convert their
     SOURCES to `F hkm (F hik x)`/`F hkm (F hjk y)` by `isoInv transApp`, apply `presCase`, and bake
     `prUnit` into the resulting germ so the injection's `isoInv prUnit` factor cancels. -/
-theorem coprCaseExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
+public theorem coprCaseExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
     (f : @Quotient _ (setoid (homSystemL L hL x z)))
     (g : @Quotient _ (setoid (homSystemL L hL y z))) :
     ∃ h : homL L hL (coprObj L data x y) ⟨l, z⟩,
@@ -234,7 +236,7 @@ theorem coprCaseExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
 
 /-- **Joint epimorphy of the two injections** (dual of `prJointMono`).  Two germs `⟨k,p⟩ ⟶ ⟨l,z⟩`
     that agree after `coprInl` and after `coprInr` are equal. -/
-theorem coprJointEpi {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
+public theorem coprJointEpi {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
     (h₁ h₂ : homL L hL (coprObj L data x y) ⟨l, z⟩)
     (hf : compL L hL (coprInl L hL data x y) h₁ = compL L hL (coprInl L hL data x y) h₂)
     (hs : compL L hL (coprInr L hL data x y) h₁ = compL L hL (coprInr L hL data x y) h₂) :
@@ -310,7 +312,7 @@ theorem coprJointEpi {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
     `⟨j,y⟩` is `coprObj = ⟨k, (hcop k).coprod (F x) (F y)⟩` at a common bound `k`; injections are
     `coprInl`/`coprInr`; `case` is the mediator from `coprCaseExists`; the laws are its spec plus
     `coprJointEpi`. -/
-noncomputable def laxColimHasBinaryCoproducts :
+@[expose] public noncomputable def laxColimHasBinaryCoproducts :
     @HasBinaryCoproducts (Obj L) (laxColimCat L hL) := by
   letI : Cat (Obj L) := laxColimCat L hL
   refine @HasBinaryCoproducts.mk (Obj L) (laxColimCat L hL)

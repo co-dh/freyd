@@ -37,8 +37,10 @@
   `𝒮^I → 𝒮`.  This file stops, as instructed, at the finite case.
 -/
 
-import Freyd.S1_55
-import Freyd.S1_47
+module
+
+public import Freyd.S1_55
+public import Freyd.S1_47
 
 
 open Freyd
@@ -57,7 +59,7 @@ namespace Freyd
     (which is just `(· ≫ m)`) upgrades it to a left inverse (`m ≫ r = id_{A'}`,
     since `(m ≫ r) ≫ m = m = id_{A'} ≫ m`).  Constructive — the inverse data is the
     given power-category inverse, no choice. -/
-theorem homRep_reflects_iso (𝒞 : Type u) [Cat.{u} 𝒞]
+public theorem homRep_reflects_iso (𝒞 : Type u) [Cat.{u} 𝒞]
     {A' A : 𝒞} (m : A' ⟶ A) (hiso : IsIso ((homRepFunctor 𝒞).map m)) : IsIso m := by
   obtain ⟨ginv, h1, h2⟩ := hiso
   -- `r := ginv A (id_A)` is a right inverse of `m`.

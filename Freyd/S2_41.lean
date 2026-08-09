@@ -27,9 +27,11 @@
   HasPullbacks instance diamond — exactly as `Baseable923` deliberately does.
 -/
 
-import Freyd.S2_111_RelCat
-import Freyd.S2_40
-import Freyd.S1_923_Baseable
+module
+
+public import Freyd.S2_111_RelCat
+public import Freyd.S2_40
+public import Freyd.S1_923_Baseable
 
 universe v u
 

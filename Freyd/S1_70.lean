@@ -12,13 +12,15 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_60
-import Freyd.S1_61
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_60
+public import Freyd.S1_61
 
 
 open Freyd
@@ -80,7 +82,7 @@ theorem compl_le_compl_iff [HasImages 𝒞] [HasSubobjectUnions 𝒞]
 
 /-- Direct image f_! : Sub(A) → Sub(B) via the image of the composite.
     (= the upstream `S1_60.existsAlong`; one canonical `image (arr ≫ f)`.) -/
-noncomputable def DirectImage [HasImages 𝒞] {A B : 𝒞} (f : A ⟶ B)
+@[expose] public noncomputable def DirectImage [HasImages 𝒞] {A B : 𝒞} (f : A ⟶ B)
     (S : Subobject 𝒞 A) : Subobject 𝒞 B :=
   existsAlong f S
 
@@ -98,7 +100,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasIma
 
 /-- f##(A') is the right adjoint of f#: the maximal B' ⊆ B such that
     f#(B') ⊆ A'.  Satisfies: f#(B') ⊆ A' ⇔ B' ⊆ f##(A'). -/
-class HasRightAdjointImage (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞, HasPullbacks 𝒞 where
+public class HasRightAdjointImage (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞, HasPullbacks 𝒞 where
   rightAdj : ∀ {A B : 𝒞} (_ : A ⟶ B), Subobject 𝒞 A → Subobject 𝒞 B
   /-- The adjunction `f# ⊣ f##`, stated as the generic `Freyd.GaloisConnection`
       (Freyd/S1_51_Order): the inverse image `f#` is left adjoint to `rightAdj f`, between the
@@ -116,7 +118,7 @@ class HasRightAdjointImage (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞
     Sub(A) in addition to the binary joins of `HasSubobjectUnions`.  These bottom
     fields mirror the pre-logos lattice bottom; §1.711 (`logos_implies_preLogos`)
     *derives* that f# preserves it, because f# is a left adjoint. -/
-class Logos (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class Logos (𝒞 : Type u) [Cat.{v} 𝒞] extends
     RegularCategory 𝒞, HasSubobjectUnions 𝒞, HasRightAdjointImage 𝒞 where
   bottom : ∀ (A : 𝒞), Subobject 𝒞 A
   bottom_min : ∀ {A : 𝒞} (S : Subobject 𝒞 A), (bottom A).le S
@@ -215,7 +217,7 @@ variable [L : Logos 𝒞]
 
 -- InverseImage and HasSubobjectUnions now use L's internal instances.
 
-private theorem logos_invImage_pres_union {A B : 𝒞} (f : A ⟶ B)
+public theorem logos_invImage_pres_union {A B : 𝒞} (f : A ⟶ B)
     (S T : Subobject 𝒞 B) :
     (InverseImage f (HasSubobjectUnions.union S T)).le
         (HasSubobjectUnions.union (InverseImage f S) (InverseImage f T))
@@ -257,7 +259,7 @@ private theorem logos_invImage_pres_union {A B : 𝒞} (f : A ⟶ B)
     `⊥_B ≤ rightAdj f A'` always (bottom_min), so via the adjunction
     `f#(⊥_B) ≤ A'`.  Taking A' = ⊥_A gives `f#(⊥_B) ≤ ⊥_A`; the reverse is
     `bottom_min` again, and antisymmetry yields the domain iso. -/
-private theorem logos_invImage_pres_bottom {A B : 𝒞} (f : A ⟶ B) :
+public theorem logos_invImage_pres_bottom {A B : 𝒞} (f : A ⟶ B) :
     Isomorphic (InverseImage f (Logos.bottom B)).dom (Logos.bottom A).dom := by
   have adj : ∀ (B' : Subobject 𝒞 B) (A' : Subobject 𝒞 A),
       (InverseImage f B').le A' ↔ B'.le (HasRightAdjointImage.rightAdj f A') :=
@@ -275,7 +277,7 @@ section LogosFacts
 
 variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
 
-def logos_implies_preLogos [L : Logos 𝒞] : PreLogos 𝒞 where
+@[expose] public def logos_implies_preLogos [L : Logos 𝒞] : PreLogos 𝒞 where
   toRegularCategory    := L.toRegularCategory
   toHasSubobjectUnions := L.toHasSubobjectUnions
   invImage_preserves_union {_ _} f S T := logos_invImage_pres_union f S T
@@ -292,7 +294,7 @@ def logos_implies_preLogos [L : Logos 𝒞] : PreLogos 𝒞 where
   a complete lattice (all meets/joins exist). -/
 
 /-- Subobjects of A form a complete lattice (all meets and joins exist). -/
-class LocallyComplete (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞 where
+public class LocallyComplete (𝒞 : Type u) [Cat.{v} 𝒞] extends HasImages 𝒞 where
   sup : ∀ {A : 𝒞}, ((Subobject 𝒞 A) → Prop) → Subobject 𝒞 A
   /-- `sup S` is the least upper bound of the family `S` in `Sub(A)` — the generic
       `Freyd.IsSup` (Freyd/S1_51_Order).  `(sup_isSup S).upper`/`.least` are the old

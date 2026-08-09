@@ -4,10 +4,12 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_41
 
 
 open Freyd
@@ -21,19 +23,19 @@ namespace Freyd
 /-! ## §1.34 Isomorphic objects -/
 
 /-- Objects A and B are ISOMORPHIC (A ≅ B) if there exists an iso A → B. -/
-def Isomorphic (A B : 𝒞) : Prop := ∃ (f : A ⟶ B), IsIso f
+@[expose] public def Isomorphic (A B : 𝒞) : Prop := ∃ (f : A ⟶ B), IsIso f
 
 /-- Isomorphic is reflexive. -/
-theorem isomorphic_refl (A : 𝒞) : Isomorphic A A :=
+public theorem isomorphic_refl (A : 𝒞) : Isomorphic A A :=
   ⟨Cat.id A, ⟨Cat.id A, Cat.id_comp _, Cat.id_comp _⟩⟩
 
 /-- Isomorphic is symmetric. -/
-theorem isomorphic_symm {A B : 𝒞} (h : Isomorphic A B) : Isomorphic B A := by
+public theorem isomorphic_symm {A B : 𝒞} (h : Isomorphic A B) : Isomorphic B A := by
   rcases h with ⟨f, g, hfg, hgf⟩
   exact ⟨g, f, hgf, hfg⟩
 
 /-- Isomorphic is transitive. -/
-theorem isomorphic_trans {A B C : 𝒞} (hAB : Isomorphic A B) (hBC : Isomorphic B C) : Isomorphic A C := by
+public theorem isomorphic_trans {A B C : 𝒞} (hAB : Isomorphic A B) (hBC : Isomorphic B C) : Isomorphic A C := by
   obtain ⟨f, hf⟩ := hAB; obtain ⟨g, hg⟩ := hBC
   exact ⟨f ≫ g, isIso_comp hf hg⟩
 

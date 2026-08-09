@@ -23,8 +23,10 @@
   · `desarguesHorn_relObjPower` / `VW_not_representable_in_power` — the same for any
     power `Rel(Set^I)`, the target of the §2.218 representation theorems.
 -/
-import Freyd.S2_157h_VeblenWedderburn
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_157h_VeblenWedderburn
+public import Freyd.S2_111_RelCat
 
 universe v u u₁ u₂ v₁ v₂
 

@@ -1,4 +1,6 @@
-import Freyd.S1_92
+module
+
+public import Freyd.S1_92
 
 /-! # §1.934  Lawful per-codomain Partial Map Classifier (PMC)
 
@@ -63,7 +65,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
 /-- A PARTIAL MAP `A ⇀ B`: a span `A ←m— D —f→ B` with monic left leg `m`
     (the domain of definition).  `dom = D`, `incl = m : D ↪ A`, `val = f : D → B`. -/
-structure PartialMap (𝒞 : Type u) [Cat.{v} 𝒞] (A B : 𝒞) where
+public structure PartialMap (𝒞 : Type u) [Cat.{v} 𝒞] (A B : 𝒞) where
   /-- Domain of definition `D`. -/
   dom    : 𝒞
   /-- The monic inclusion `m : D ↪ A` carving out where the map is defined. -/
@@ -95,7 +97,7 @@ theorem isPullback_congr {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C}
 /-- The classifying cone of a partial map `P` against a candidate
     `(carrier, η)` and total map `χ : A ⟶ carrier`, *given* the commuting square
     `P.incl ≫ χ = P.val ≫ η`.  Apex `D`, legs `incl : D → A`, `val : D → B`. -/
-def pmcCone {A B carrier : 𝒞} (P : PartialMap 𝒞 A B)
+@[expose] public def pmcCone {A B carrier : 𝒞} (P : PartialMap 𝒞 A B)
     (η : B ⟶ carrier) (χ : A ⟶ carrier)
     (hsq : P.incl ≫ χ = P.val ≫ η) :
     Cone χ η :=
@@ -105,7 +107,7 @@ def pmcCone {A B carrier : 𝒞} (P : PartialMap 𝒞 A B)
     §1.934).  Carries the value object `B̃ = carrier`, the generic mono
     `η : B ↪ B̃`, and the full universal property: every partial map `A ⇀ B`
     has a unique classifying `χ : A → B̃` whose square is a pullback. -/
-structure LawfulPMC (𝒞 : Type u) [Cat.{v} 𝒞] (B : 𝒞) where
+public structure LawfulPMC (𝒞 : Type u) [Cat.{v} 𝒞] (B : 𝒞) where
   /-- The value object `B̃`. -/
   carrier      : 𝒞
   /-- The generic mono `η_B : B ↪ B̃` ("defined" point). -/

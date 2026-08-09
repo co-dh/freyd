@@ -8,12 +8,14 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
 
 
 open Freyd
@@ -30,16 +32,16 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasIma
 
 /-- **§1.57**: C is CHOICE if every entire relation R : A → C contains a map f : A → C.
     (The map condition: 1_A ≤ R°R and there is a section.) -/
-def Choice (C : 𝒞) : Prop :=
+@[expose] public def Choice (C : 𝒞) : Prop :=
   ∀ {A : 𝒞} (R : BinRel 𝒞 A C), Entire R →
     ∃ (f : A ⟶ C), ∃ (h : A ⟶ R.src), h ≫ R.colA = Cat.id A ∧ h ≫ R.colB = f
 
 /-- C is PROJECTIVE if every cover f : A ↠ C splits (∃ s: C→A with s≫f = id). -/
-def Projective (C : 𝒞) : Prop :=
+@[expose] public def Projective (C : 𝒞) : Prop :=
   ∀ {A : 𝒞} (f : A ⟶ C), Cover f → ∃ (s : C ⟶ A), s ≫ f = Cat.id C
 
 /-- Every object is choice iff every object is projective (§1.57). -/
-theorem choice_iff_projective : (∀ C : 𝒞, Choice C) ↔ (∀ C : 𝒞, Projective C) := by
+public theorem choice_iff_projective : (∀ C : 𝒞, Choice C) ↔ (∀ C : 𝒞, Projective C) := by
   constructor
   · intro h C A f hcov
     -- f: A → C is a cover.  (graph f)°: C → A has left leg = f which is a cover,
@@ -66,7 +68,7 @@ theorem choice_iff_projective : (∀ C : 𝒞, Choice C) ↔ (∀ C : 𝒞, Proj
     refine ⟨s ≫ R.colB, s, hs, rfl⟩
 
 /-- AC REGULAR CATEGORY: all objects are choice. -/
-class ACRegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class ACRegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasPullbacks 𝒞, HasImages 𝒞 where
   all_choice : ∀ C : 𝒞, Choice C
 
@@ -158,7 +160,7 @@ variable [CartesianCategory 𝒞]
 
 omit [HasPullbacks 𝒞] [HasImages 𝒞] in
 /-- Equalizer maps are monic. -/
-theorem eqMap_mono {A B : 𝒞} (f g : A ⟶ B) : Monic (eqMap f g) := eqMap_monic f g
+public theorem eqMap_mono {A B : 𝒞} (f g : A ⟶ B) : Monic (eqMap f g) := eqMap_monic f g
 
 omit [HasImages 𝒞] in  -- §1.572 instantiates this to CONSTRUCT images; no images assumed
 /-- **§1.571**: In a Cartesian category, if every morphism admits an idempotent
@@ -180,7 +182,7 @@ omit [HasImages 𝒞] in  -- §1.572 instantiates this to CONSTRUCT images; no i
     that `e`'s fixed-point subobject `C ↣ A` is no bigger than the image of `x`, which
     is what makes the second leg `n = m;x` monic.  With `e = id` we get `C = A`,
     `n = x`, and the factorization degenerates to `x = id;x` with `n` non-monic. -/
-theorem ac_factorization_via_idempotent
+public theorem ac_factorization_via_idempotent
     (h_exists : ∀ {A B : 𝒞} (x : A ⟶ B), ∃ (e : A ⟶ A),
       e ≫ e = e ∧ e ≫ x = x ∧
       (kernelPairRel e) ⊂ (kernelPairRel x) ∧ (kernelPairRel x) ⊂ (kernelPairRel e))

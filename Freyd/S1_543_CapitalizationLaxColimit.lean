@@ -65,12 +65,14 @@
   Mathlib-free; built on the repo's own `Cat`, `Functor`, `NaturalTransformation`, `NatIso`,
   `IsIso`, and `Freyd.Colim` (`DirectedColimit.lean`).
 -/
-import Freyd.S1_31
-import Freyd.S1_36
-import Freyd.S1_41
-import Freyd.S1_543_DirectedColimit
-import Freyd.S1_543_CatColimit
-import Freyd.S1_53_SliceRegular
+module
+
+public import Freyd.S1_31
+public import Freyd.S1_36
+public import Freyd.S1_41
+public import Freyd.S1_543_DirectedColimit
+public import Freyd.S1_543_CatColimit
+public import Freyd.S1_53_SliceRegular
 
 open Freyd
 open Freyd.Colim
@@ -90,7 +92,7 @@ variable {ι : Type u} {D : Directed ι}
     the object map `F` and morphism map `Fmap` of each transition, with the two functor laws.
     Split out from `LaxCatSystem` so the bundled transition functor `functF` can be defined
     before the pseudofunctor coherence isos that mention it. -/
-structure LaxCatSystemData (ι : Type u) (D : Directed ι) where
+public structure LaxCatSystemData (ι : Type u) (D : Directed ι) where
   /-- the stage categories' carriers -/
   A : ι → Type w
   /-- each stage is a category -/
@@ -111,7 +113,7 @@ attribute [instance] LaxCatSystemData.catA
 
 /-- The transition functor `A i → A j` as a bundled `Functor` (object action `F`, morphism
     action `Fmap`); the pseudofunctor coherence isos below are stated over it. -/
-def LaxCatSystemData.functF (S : LaxCatSystemData ι D) {i j} (hij : D.le i j) :
+@[expose] public def LaxCatSystemData.functF (S : LaxCatSystemData ι D) {i j} (hij : D.le i j) :
     Functor (S.A i) (S.A j) where
   obj := S.F hij
   map := S.Fmap hij
@@ -122,7 +124,7 @@ def LaxCatSystemData.functF (S : LaxCatSystemData ι D) {i j} (hij : D.le i j) :
     data as `Colim.CatSystem`, but the two coherence fields are natural ISOMORPHISMS instead of
     strict equalities.  `functF hij` makes each transition a genuine functor; `F_refl_iso`/
     `F_trans_iso` are the pseudofunctor coherences. -/
-structure LaxCatSystem (ι : Type u) (D : Directed ι) extends LaxCatSystemData ι D where
+public structure LaxCatSystem (ι : Type u) (D : Directed ι) extends LaxCatSystemData ι D where
   /-- pseudo-identity: the reflexive transition is naturally isomorphic to the identity functor -/
   F_refl_iso : ∀ {i}, NatIso (toLaxCatSystemData.functF (D.refl i)) (@idFunctor (A i) (catA i))
   /-- pseudo-composition: a composite transition is naturally isomorphic to the composite of the
@@ -141,10 +143,10 @@ structure LaxCatSystem (ι : Type u) (D : Directed ι) extends LaxCatSystemData 
   `F_trans` are only isos.  Contrast the STRICT `Colim.CatSystem.Obj`, a quotient of `Σ i, A i` by
   germ equivalence, whose well-definedness uses the strict `F_refl`/`F_trans` (`DirectedColimit`'s
   `System.tr_refl`/`tr_trans`) — exactly the laws base-change lacks. -/
-abbrev Obj (S : LaxCatSystem.{u, w} ι D) : Type _ := Σ i, S.A i
+@[expose] public abbrev Obj (S : LaxCatSystem.{u, w} ι D) : Type _ := Σ i, S.A i
 
 /-- The cocone inclusion `A i → Σ i, A i` is the bare injection. -/
-def objIncl (S : LaxCatSystem ι D) (i : ι) (x : S.A i) : Obj S := ⟨i, x⟩
+@[expose] public def objIncl (S : LaxCatSystem ι D) (i : ι) (x : S.A i) : Obj S := ⟨i, x⟩
 
 /-! ## A natural iso from a pointwise object-equality of two functors
 
@@ -236,7 +238,7 @@ variable {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
     (`Cat.id` on `refl`, composite on `trans`).  This abstracts §1.547's `ListProjFamily` over
     `listDirected`; the projections ARE constructible (the only obstruction to a concrete instance
     is `DecidableEq 𝒞` for positional matching, orthogonal to the colimit construction here). -/
-structure ProjSystem (ι : Type u) (D : Directed ι) (𝒞 : Type w) [Cat.{w} 𝒞] where
+public structure ProjSystem (ι : Type u) (D : Directed ι) (𝒞 : Type w) [Cat.{w} 𝒞] where
   /-- the stage product object `∏(stage i)` -/
   pr : ι → 𝒞
   /-- the projection `∏j ⟶ ∏i` for `i ≤ j` -/
@@ -250,15 +252,15 @@ structure ProjSystem (ι : Type u) (D : Directed ι) (𝒞 : Type w) [Cat.{w} �
 variable {ι : Type u} {D : Directed ι}
 
 /-- Stage `i` of the base-change system: the slice `A/(pr i) = Over (pr i)`. -/
-abbrev pcObj (P : ProjSystem ι D 𝒞) (i : ι) : Type w := Over (P.pr i)
+@[expose] public abbrev pcObj (P : ProjSystem ι D 𝒞) (i : ι) : Type w := Over (P.pr i)
 
 /-- The base-change transition object map `A/(pr i) → A/(pr j)` along the projection `proj : pr j
     ⟶ pr i` (for `i ≤ j`): `X ↦ X ×_{pr i} pr j`.  Sorry-free (`baseChangeObj`). -/
-def pcF (P : ProjSystem ι D 𝒞) {i j} (h : D.le i j) : pcObj P i → pcObj P j :=
+@[expose] public def pcF (P : ProjSystem ι D 𝒞) {i j} (h : D.le i j) : pcObj P i → pcObj P j :=
   baseChangeObj (P.proj h)
 
 /-- The base-change transition is a functor (Sorry-free, `baseChangeFunctor`). -/
-def pcFunctF (P : ProjSystem ι D 𝒞) {i j} (h : D.le i j) :
+@[expose] public def pcFunctF (P : ProjSystem ι D 𝒞) {i j} (h : D.le i j) :
     @Functor (pcObj P i) (pcObj P j) (overCat (P.pr i)) (overCat (P.pr j)) :=
   baseChangeFunctor (P.proj h)
 
@@ -273,7 +275,7 @@ section BaseChangeIdIso
 
 variable {C : 𝒞}
 
-private def _idPB (X : Over C) : HasPullback X.hom (Cat.id C) := HasPullbacks.has X.hom (Cat.id C)
+@[expose] public def _idPB (X : Over C) : HasPullback X.hom (Cat.id C) := HasPullbacks.has X.hom (Cat.id C)
 
 /-- The cone `⟨X.dom, id, X.hom⟩` over the cospan `(X.hom, id_C)`. -/
 private def _idCone (X : Over C) : Cone X.hom (Cat.id C) :=
@@ -286,14 +288,14 @@ private def _idFwd (X : Over C) : OverHom X (baseChangeObj (Cat.id C) X) :=
 
 /-- The backward arrow `baseChangeObj (id) X ⟶ X`: the first projection `π₁`.  Its over-`C` triangle
     is `π₁ ≫ X.hom = π₂` from the pullback square `w` (since the other leg is `id_C`). -/
-def _idBwd (X : Over C) : OverHom (baseChangeObj (Cat.id C) X) X :=
+@[expose] public def _idBwd (X : Over C) : OverHom (baseChangeObj (Cat.id C) X) X :=
   ⟨(_idPB X).cone.π₁, by
     show (_idPB X).cone.π₁ ≫ X.hom = (_idPB X).cone.π₂
     have := (_idPB X).cone.w; rw [Cat.comp_id] at this; exact this⟩
 
 /-- `_idBwd` is an iso, with inverse `_idFwd`: back-then-forward is `id` by `lift_fst`; forward-
     then-back is `id` by pullback uniqueness (`lift_uniq`, the identity cone's lift is `id`). -/
-private theorem _idBwd_isIso (X : Over C) : @IsIso (Over C) _ _ _ (_idBwd X) := by
+public theorem _idBwd_isIso (X : Over C) : @IsIso (Over C) _ _ _ (_idBwd X) := by
   refine ⟨_idFwd X, ?_, ?_⟩
   · -- `_idBwd ⊚ _idFwd = id_{baseChangeObj}` ⟺ `π₁ ≫ lift = id_pt`, by `lift_uniq`.
     apply OverHom.ext
@@ -320,7 +322,7 @@ private theorem _idBwd_isIso (X : Over C) : @IsIso (Over C) _ _ _ (_idBwd X) := 
     `_idBwd_isIso`); naturality is the pullback square `w` (`π₁` commutes with the base-change map's
     `π₁`-leg, which is `lift_fst`).  This proves `PseudoBaseChange.refl_iso` is genuinely
     inhabitable — the reflexive coherence iso is NOT a hidden wall. -/
-def baseChangeIdNatIso : NatIso (baseChangeFunctor (Cat.id C)) (@idFunctor (Over C) _) where
+@[expose] public def baseChangeIdNatIso : NatIso (baseChangeFunctor (Cat.id C)) (@idFunctor (Over C) _) where
   nat :=
     { app := _idBwd
       naturality {X Y} m := by
@@ -348,7 +350,7 @@ variable {D C E : 𝒞} (g : C ⟶ D) (g' : E ⟶ C)
     square (cone `c2` over `(c1.π₂, g')`) is a pullback, then the composite cone
     `⟨c2.pt, c2.π₁ ≫ c1.π₁, c2.π₂⟩` over `(h, g' ≫ g)` is a pullback.  The classic two-pullback
     pasting lemma (left + right square pullbacks ⇒ outer rectangle pullback). -/
-theorem pasteCone_isPullback {X : 𝒞} {h : X ⟶ D}
+public theorem pasteCone_isPullback {X : 𝒞} {h : X ⟶ D}
     {c1 : Cone h g} (hc1 : c1.IsPullback)
     {c2 : Cone c1.π₂ g'} (hc2 : c2.IsPullback) :
     (Cone.mk (f := h) (g := g' ≫ g) c2.pt (c2.π₁ ≫ c1.π₁) c2.π₂
@@ -384,7 +386,7 @@ theorem pasteCone_isPullback {X : 𝒞} {h : X ⟶ D}
   (by `pasteCone_isPullback`), so they are canonically iso (`isIso_of_two_pullbacks`). -/
 
 /-- The chosen pullback of `X.hom` along a base map, matching `baseChangeObj`'s internal choice. -/
-def _pb (g : C ⟶ D) (X : Over D) : HasPullback X.hom g := HasPullbacks.has X.hom g
+@[expose] public def _pb (g : C ⟶ D) (X : Over D) : HasPullback X.hom g := HasPullbacks.has X.hom g
 
 /-- The pasted RHS cone `baseChangeObj g' (baseChangeObj g X)`, viewed as a cone over the composite
     cospan `(X.hom, g' ≫ g)`, is a pullback. -/
@@ -542,7 +544,7 @@ private theorem _transFwd_natf {X Y : Over D} (m : OverHom X Y) :
     `baseChangeObj (g' ≫ g) ≅ baseChangeObj g' ∘ baseChangeObj g` as a `NatIso` (natural in `X`):
     the iterated-pullback / pullback-pasting isomorphism.  Components are `_transFwd` (iso by
     `_transFwd_isIso`); naturality is `_transFwd_natf` (pullback-lift uniqueness). -/
-def baseChangeTransNatIso :
+public def baseChangeTransNatIso :
     NatIso (baseChangeFunctor (g' ≫ g))
       (compFunctor (baseChangeFunctor g) (baseChangeFunctor g')) where
   nat :=
@@ -571,7 +573,7 @@ theorem baseChangeTransNatIso_app_f_π₂ (X : Over D) :
 /-- **`π₁ ≫ π₁`-leg of the composite coherence comparison.**  The comparison sends the deep
     (content) projection of the pasted RHS pullback — outer `π₁` then inner `π₁` — to the LHS
     content projection. -/
-theorem baseChangeTransNatIso_app_f_π₁ (X : Over D) :
+public theorem baseChangeTransNatIso_app_f_π₁ (X : Over D) :
     ((baseChangeTransNatIso g g').nat.app X).f
         ≫ ((HasPullbacks.has (baseChangeObj g X).hom g').cone.π₁
             ≫ (HasPullbacks.has X.hom g).cone.π₁)
@@ -602,7 +604,7 @@ end BaseChangeTransIso
     `baseChangeTransNatIso`, the pullback-pasting iso `pasteCone_isPullback` + `isIso_of_two_pullbacks`).
     So `PseudoBaseChange` is inhabited UNCONDITIONALLY (`pseudoBaseChange`), and `laxOfProjSystem'`
     builds the §1.543 inner base-change `LaxCatSystem` outright (no hypothesis to discharge). -/
-structure PseudoBaseChange (P : ProjSystem ι D 𝒞) where
+public structure PseudoBaseChange (P : ProjSystem ι D 𝒞) where
   trans_iso : ∀ {i j k : ι} (hij : D.le i j) (hjk : D.le j k),
     NatIso (pcFunctF P (D.trans hij hjk))
       (compFunctor (pcFunctF P hij) (pcFunctF P hjk))
@@ -611,7 +613,7 @@ structure PseudoBaseChange (P : ProjSystem ι D 𝒞) where
     `baseChangeIdNatIso` along `P.proj_refl i : P.proj (D.refl i) = Cat.id (pr i)` discharges the
     `refl_iso` field for every `ProjSystem` — Sorry-free.  So `PseudoBaseChange` reduces to its
     `trans_iso` field alone: the reflexive half is NOT a blocker. -/
-def projReflIso (P : ProjSystem ι D 𝒞) (i : ι) :
+@[expose] public def projReflIso (P : ProjSystem ι D 𝒞) (i : ι) :
     NatIso (pcFunctF P (D.refl i)) (@idFunctor (pcObj P i) (overCat (P.pr i))) := by
   -- `pcF P (D.refl i) = baseChangeObj (P.proj (D.refl i))`; rewrite the projection to `id`.
   show NatIso (baseChangeFunctor (P.proj (D.refl i))) (@idFunctor (Over (P.pr i)) _)
@@ -623,7 +625,7 @@ def projReflIso (P : ProjSystem ι D 𝒞) (i : ι) :
     P.proj hij` discharges the `trans_iso` field for every `ProjSystem` — Sorry-free.  This is the
     pullback-pasting natural iso, instantiated at the projection composite.  So `PseudoBaseChange` is
     inhabited UNCONDITIONALLY (`pseudoBaseChange`): neither coherence half is a blocker. -/
-def projTransIso (P : ProjSystem ι D 𝒞) {i j k : ι} (hij : D.le i j) (hjk : D.le j k) :
+@[expose] public def projTransIso (P : ProjSystem ι D 𝒞) {i j k : ι} (hij : D.le i j) (hjk : D.le j k) :
     NatIso (pcFunctF P (D.trans hij hjk))
       (compFunctor (pcFunctF P hij) (pcFunctF P hjk)) := by
   -- `pcF P (D.trans hij hjk) = baseChangeObj (P.proj (D.trans hij hjk))`; rewrite the projection to
@@ -637,7 +639,7 @@ def projTransIso (P : ProjSystem ι D 𝒞) {i j k : ι} (hij : D.le i j) (hjk :
     isos (`projReflIso`, `projTransIso`) are the canonical pullback isos, which genuinely exist.
     This turns `laxOfProjSystem` into an UNCONDITIONAL construction — the §1.543 inner base-change
     slice system is a `LaxCatSystem` with no hypothesis to discharge. -/
-def pseudoBaseChange (P : ProjSystem ι D 𝒞) : PseudoBaseChange P where
+@[expose] public def pseudoBaseChange (P : ProjSystem ι D 𝒞) : PseudoBaseChange P where
   trans_iso := fun hij hjk => projTransIso P hij hjk
 
 /-- **The §1.547 base-change slice system as a `LaxCatSystem`.**  Given the directed projection
@@ -645,7 +647,7 @@ def pseudoBaseChange (P : ProjSystem ι D 𝒞) : PseudoBaseChange P where
     base-change transitions form a `LaxCatSystem` — Sorry-free.  This is the lax analogue of
     `Freyd.innerCatSystem`, but WITHOUT the false `StrictBaseChange` input: the coherence is carried
     by genuine isos.  THIS is the construction the strict `Colim.CatSystem` could not host. -/
-def laxOfProjSystem (P : ProjSystem ι D 𝒞) (H : PseudoBaseChange P) : LaxCatSystem.{u, w} ι D where
+@[expose] public def laxOfProjSystem (P : ProjSystem ι D 𝒞) (H : PseudoBaseChange P) : LaxCatSystem.{u, w} ι D where
   A := pcObj P
   catA := fun i => overCat (P.pr i)
   F := fun h => pcF P h
@@ -660,7 +662,7 @@ def laxOfProjSystem (P : ProjSystem ι D 𝒞) (H : PseudoBaseChange P) : LaxCat
     are real pullback isos), no `PseudoBaseChange` hypothesis is needed: every `ProjSystem` yields a
     `LaxCatSystem` outright.  This closes the §1.543 wall for the base-change inner system — the
     documented blocker (`PseudoBaseChange.trans_iso`, the pullback-pasting iso) is discharged. -/
-def laxOfProjSystem' (P : ProjSystem ι D 𝒞) : LaxCatSystem.{u, w} ι D :=
+@[expose] public def laxOfProjSystem' (P : ProjSystem ι D 𝒞) : LaxCatSystem.{u, w} ι D :=
   laxOfProjSystem P (pseudoBaseChange P)
 
 end BaseChangeLax
@@ -684,22 +686,22 @@ variable (L : LaxCatSystem.{u, w} ι D)
 /-- The chosen inverse of an iso (the `NatIso`/`IsIso` field is a `Prop`-existential, so extracting
     the inverse arrow as data is necessarily noncomputable — this is an interface limitation of the
     `IsIso := ∃ g, …` encoding, not a use of choice on mathematical content). -/
-noncomputable def isoInv {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) : Y ⟶ X :=
+@[expose] public noncomputable def isoInv {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) : Y ⟶ X :=
   Classical.choose h
 
-theorem isoInv_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) :
+public theorem isoInv_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) :
     f ≫ isoInv h = Cat.id X := (Classical.choose_spec h).1
 
-theorem inv_isoInv_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) :
+public theorem inv_isoInv_comp {𝒜 : Type w} [Cat.{w} 𝒜] {X Y : 𝒜} {f : X ⟶ Y} (h : IsIso f) :
     isoInv h ≫ f = Cat.id Y := (Classical.choose_spec h).2
 
 /-- The forward component of the `trans` coherence iso at an object, `F (trans hik hkm) x ⟶
     F hkm (F hik x)`: the "source coercion" that the pushed morphism's domain needs. -/
-def transApp {i k m : ι} (hik : D.le i k) (hkm : D.le k m) (x : L.A i) :
+@[expose] public def transApp {i k m : ι} (hik : D.le i k) (hkm : D.le k m) (x : L.A i) :
     L.F (D.trans hik hkm) x ⟶ L.F hkm (L.F hik x) :=
   (L.F_trans_iso hik hkm).nat.app x
 
-theorem transApp_isIso {i k m : ι} (hik : D.le i k) (hkm : D.le k m) (x : L.A i) :
+public theorem transApp_isIso {i k m : ι} (hik : D.le i k) (hkm : D.le k m) (x : L.A i) :
     IsIso (transApp L hik hkm x) :=
   (L.F_trans_iso hik hkm).isIso x
 
@@ -708,7 +710,7 @@ theorem transApp_isIso {i k m : ι} (hik : D.le i k) (hkm : D.le k m) (x : L.A i
     composite transition `F (trans hkm hmn)` with the iterated `F hmn ∘ F hkm`.  (Stated in the
     abstract section so all `Functor`/`compFunctor` instances are supplied explicitly — avoids the
     `compFunctor` instance-head synthesis trap inside the base-change namespace.) -/
-theorem transApp_natural {k m n : ι} (hkm : D.le k m) (hmn : D.le m n)
+public theorem transApp_natural {k m n : ι} (hkm : D.le k m) (hmn : D.le m n)
     {X Y : L.A k} (f : X ⟶ Y) :
     (L.functF (D.trans hkm hmn)).map f ≫ transApp L hkm hmn Y
     = transApp L hkm hmn X
@@ -719,7 +721,7 @@ theorem transApp_natural {k m n : ι} (hkm : D.le k m) (hmn : D.le m n)
     morphism `g : F hik x ⟶ F hjk y` and `hkm : k ≤ m`, push it to a morphism
     `F (trans hik hkm) x ⟶ F (trans hjk hkm) y` at level `m`, by mapping along `F hkm` and
     CONJUGATING by the two `trans` coherence isos (forward on the source, inverse on the target). -/
-noncomputable def pushHom {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
+@[expose] public noncomputable def pushHom {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
     (hik : D.le i k) (hjk : D.le j k) (hkm : D.le k m)
     (g : L.F hik x ⟶ L.F hjk y) :
     L.F (D.trans hik hkm) x ⟶ L.F (D.trans hjk hkm) y :=
@@ -730,7 +732,7 @@ noncomputable def pushHom {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
 /-- `pushHom` distributes over composition — the iso-conjugation analogue of `homTr_comp`.  The
     middle coherence iso `inv (transApp y) ≫ transApp y = id` cancels, and `map (f ≫ g) = map f ≫
     map g`.  PROVEN from the bare structure — needs NO pseudofunctor coherence. -/
-theorem pushHom_comp {i j l : ι} (x : L.A i) (y : L.A j) (z : L.A l) {k m : ι}
+public theorem pushHom_comp {i j l : ι} (x : L.A i) (y : L.A j) (z : L.A l) {k m : ι}
     (hik : D.le i k) (hjk : D.le j k) (hlk : D.le l k) (hkm : D.le k m)
     (f : L.F hik x ⟶ L.F hjk y) (g : L.F hjk y ⟶ L.F hlk z) :
     pushHom L x z hik hlk hkm (f ≫ g)
@@ -747,7 +749,7 @@ theorem pushHom_comp {i j l : ι} (x : L.A i) (y : L.A j) (z : L.A l) {k m : ι}
     clean equation that lets one COMPUTE `(pushHom g)` (and hence its `.f` underlying arrow) WITHOUT
     unfolding `isoInv`: the two collapse isos `transApp x`, `transApp y` are the concrete pullback
     comparison isos, whose `.f` legs are characterised by the `transApp_f_*` lemmas. -/
-theorem pushHom_transApp {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
+public theorem pushHom_transApp {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
     (hik : D.le i k) (hjk : D.le j k) (hkm : D.le k m)
     (g : L.F hik x ⟶ L.F hjk y) :
     pushHom L x y hik hjk hkm g ≫ transApp L hjk hkm y
@@ -758,7 +760,7 @@ theorem pushHom_transApp {i j : ι} (x : L.A i) (y : L.A j) {k m : ι}
 
 /-- `pushHom` preserves identities — the analogue of `homTr_id`.  `map id = id`, then `transApp x ≫
     inv (transApp x) = id`.  PROVEN from the bare structure — needs NO pseudofunctor coherence. -/
-theorem pushHom_id {i : ι} (x : L.A i) {k m : ι} (hik : D.le i k) (hkm : D.le k m) :
+public theorem pushHom_id {i : ι} (x : L.A i) {k m : ι} (hik : D.le i k) (hkm : D.le k m) :
     pushHom L x x hik hik hkm (Cat.id (L.F hik x)) = Cat.id (L.F (D.trans hik hkm) x) := by
   unfold pushHom
   rw [(L.functF hkm).map_id]
@@ -780,7 +782,7 @@ theorem pushHom_id {i : ι} (x : L.A i) {k m : ι} (hik : D.le i k) (hkm : D.le 
   them here as a hypothesis (`Coherent`); the whole hom-colimit `Cat` is built relative to it.
   `Coherent` for `laxOfProjSystem'` (base-change) — the pullback pentagon — is now DISCHARGED
   Sorry-free as `coherentProj` (below), so §1.543 is proven and nothing here is deferred. -/
-structure Coherent (L : LaxCatSystem.{u, w} ι D) : Prop where
+public structure Coherent (L : LaxCatSystem.{u, w} ι D) : Prop where
   /-- UNIT: pushing a stage-`k` morphism along the reflexive bound `k ≤ k` is the identity.
       (Type-correct because `D.trans hik (D.refl k) = hik` by proof irrelevance of `D.le`.) -/
   push_refl : ∀ {i j : ι} (x : L.A i) (y : L.A j) {k : ι}
@@ -805,13 +807,13 @@ structure Coherent (L : LaxCatSystem.{u, w} ι D) : Prop where
 
 /-- The three-fold object collapse iso `F (trans (trans hib hbc) hcd) x ⟶ F hcd (F hbc (F hib x))`,
     built by collapsing the outer `trans` (`transApp`) then mapping the inner collapse along `F hcd`. -/
-noncomputable def nestApp3 {i b c d : ι}
+@[expose] public noncomputable def nestApp3 {i b c d : ι}
     (hib : D.le i b) (hbc : D.le b c) (hcd : D.le c d) (x : L.A i) :
     L.F (D.trans (D.trans hib hbc) hcd) x ⟶ L.F hcd (L.F hbc (L.F hib x)) :=
   transApp L (D.trans hib hbc) hcd x
     ≫ (L.functF hcd).map (transApp L hib hbc x)
 
-theorem nestApp3_isIso {i b c d : ι}
+public theorem nestApp3_isIso {i b c d : ι}
     (hib : D.le i b) (hbc : D.le b c) (hcd : D.le c d) (x : L.A i) :
     IsIso (nestApp3 L hib hbc hcd x) :=
   isIso_comp (transApp_isIso L (D.trans hib hbc) hcd x)
@@ -835,7 +837,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
 /-- The hom-colimit `Colim.System` for fixed representatives `x : A i`, `y : A j`: at each upper
     bound `k` the hom-set `Hom_{A k}(F x, F y)`, with transition the lax `pushHom`.  Its `tr_refl`/
     `tr_trans` are exactly `Coherent.push_refl`/`push_trans`. -/
-noncomputable def homSystemL {i j : ι} (x : L.A i) (y : L.A j) :
+@[expose] public noncomputable def homSystemL {i j : ι} (x : L.A i) (y : L.A j) :
     System (UpperBound D i j) (upperDirected D i j) where
   X a := L.F a.2.1 x ⟶ L.F a.2.2 y
   tr {a _} hab g := pushHom L x y a.2.1 a.2.2 hab g
@@ -844,17 +846,17 @@ noncomputable def homSystemL {i j : ι} (x : L.A i) (y : L.A j) :
 
 /-- Morphisms `⟨i,x⟩ → ⟨j,y⟩` in `LaxColim L`: the directed colimit of `Hom_{A k}(F x, F y)` over
     the common upper bounds `k` (germs of stage morphisms under the lax transition). -/
-noncomputable def HomColimL {i j : ι} (x : L.A i) (y : L.A j) : Type _ :=
+@[expose] public noncomputable def HomColimL {i j : ι} (x : L.A i) (y : L.A j) : Type _ :=
   Colimit (homSystemL L hL x y)
 
 /-- Include a stage-`a` morphism into the lax hom-colimit. -/
-noncomputable def homInclL {i j : ι} (x : L.A i) (y : L.A j)
+@[expose] public noncomputable def homInclL {i j : ι} (x : L.A i) (y : L.A j)
     (a : UpperBound D i j) (g : L.F a.2.1 x ⟶ L.F a.2.2 y) : HomColimL L hL x y :=
   incl (homSystemL L hL x y) a g
 
 /-- Pushing a germ to a higher bound and including equals including at the lower bound (the colimit
     absorbs the transition — `incl_compat` for `homSystemL`). -/
-theorem homInclL_compat {i j : ι} (x : L.A i) (y : L.A j)
+public theorem homInclL_compat {i j : ι} (x : L.A i) (y : L.A j)
     {a b : UpperBound D i j} (hab : (upperDirected D i j).le a b)
     (g : L.F a.2.1 x ⟶ L.F a.2.2 y) :
     homInclL L hL x y b (pushHom L x y a.2.1 a.2.2 hab g) = homInclL L hL x y a g :=
@@ -862,7 +864,7 @@ theorem homInclL_compat {i j : ι} (x : L.A i) (y : L.A j)
 
 /-- The identity germ at `⟨i,x⟩`: the germ of `𝟙 (F (refl i) x)` at the trivial upper bound
     `⟨i, refl i, refl i⟩`. -/
-noncomputable def homIdL {i : ι} (x : L.A i) : HomColimL L hL x x :=
+@[expose] public noncomputable def homIdL {i : ι} (x : L.A i) : HomColimL L hL x x :=
   homInclL L hL x x ⟨i, D.refl i, D.refl i⟩ (Cat.id (L.F (D.refl i) x))
 
 /-! ### Composition at an explicit common bound, and bound-independence -/
@@ -871,7 +873,7 @@ noncomputable def homIdL {i : ι} (x : L.A i) : HomColimL L hL x x :=
     `e` (`pushHom`) and compose in `A e`.  The middle objects `F(trans a.2.2 hae) xq` and
     `F(trans b.2.1 hbe) xq` are defeq (proof irrelevance of `D.le iq e`), so the composite
     typechecks without re-typing. -/
-noncomputable def compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+@[expose] public noncomputable def compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     (e : ι) (hae : D.le a.1 e) (hbe : D.le b.1 e) : HomColimL L hL xp xr :=
@@ -880,7 +882,7 @@ noncomputable def compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A 
 
 /-- Composing at level `e` equals composing at any higher level `d` (`e ≤ d`): push each pushed
     piece further by `push_trans`, merge by `pushHom_comp`, absorb by `homInclL_compat`. -/
-theorem compAtL_mono {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem compAtL_mono {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     {e d : ι} (hae : D.le a.1 e) (hbe : D.le b.1 e) (hed : D.le e d) :
@@ -900,7 +902,7 @@ theorem compAtL_mono {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
 
 /-- Composition is independent of the chosen common bound: route any two bounds through a higher
     one (`D.bound`) and apply `compAtL_mono`. -/
-theorem compAtL_indep {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem compAtL_indep {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     {e₁ e₂ : ι} (hae₁ : D.le a.1 e₁) (hbe₁ : D.le b.1 e₁)
@@ -913,14 +915,14 @@ theorem compAtL_indep {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
 /-! ### Raw composition of germ representatives, and its well-definedness -/
 
 /-- Raw composition of germ representatives: compose at the CHOSEN common bound `D.bound a.1 b.1`. -/
-noncomputable def homCompRawL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+@[expose] public noncomputable def homCompRawL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr) : HomColimL L hL xp xr :=
   compAtL L hL xp xq xr a f b g (Classical.choose (D.bound a.1 b.1))
     (Classical.choose_spec (D.bound a.1 b.1)).1 (Classical.choose_spec (D.bound a.1 b.1)).2
 
 /-- `homCompRawL` equals `compAtL` at ANY common bound (all bounds agree, `compAtL_indep`). -/
-theorem homCompRawL_eq_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem homCompRawL_eq_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr)
     (e : ι) (hae : D.le a.1 e) (hbe : D.le b.1 e) :
@@ -928,7 +930,7 @@ theorem homCompRawL_eq_compAtL {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr :
   compAtL_indep L hL xp xq xr a f b g _ _ hae hbe
 
 /-- Pushing the LEFT germ's representative up to a higher bound doesn't change the composite. -/
-theorem homCompRawL_push_left {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem homCompRawL_push_left {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a a₂ : UpperBound D ip iq) (h : D.le a.1 a₂.1) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b : UpperBound D iq ir) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr) :
     homCompRawL L hL xp xq xr a₂ (pushHom L xp xq a.2.1 a.2.2 h f) b g
@@ -940,7 +942,7 @@ theorem homCompRawL_push_left {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : 
   rw [hL.push_trans xp xq a.2.1 a.2.2 h ha₂M f]
 
 /-- Pushing the RIGHT germ's representative up to a higher bound doesn't change the composite. -/
-theorem homCompRawL_push_right {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem homCompRawL_push_right {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (b b₂ : UpperBound D iq ir) (h : D.le b.1 b₂.1) (g : L.F b.2.1 xq ⟶ L.F b.2.2 xr) :
     homCompRawL L hL xp xq xr a f b₂ (pushHom L xq xr b.2.1 b.2.2 h g)
@@ -953,7 +955,7 @@ theorem homCompRawL_push_right {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr :
 
 /-- Raw composition respects germ equivalence on BOTH arguments (well-definedness): push each
     representative up to its germ-witness level (`push_left`/`push_right`), where they agree. -/
-theorem homCompRawL_wd {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
+public theorem homCompRawL_wd {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq)
     (a' : UpperBound D ip iq) (f' : L.F a'.2.1 xp ⟶ L.F a'.2.2 xq)
     (hP : Rel (homSystemL L hL xp xq) ⟨a, f⟩ ⟨a', f'⟩)
@@ -978,14 +980,14 @@ theorem homCompRawL_wd {ip iq ir : ι} (xp : L.A ip) (xq : L.A iq) (xr : L.A ir)
   (`homCompRawL_wd`). -/
 
 /-- The hom-type `⟨i,x⟩ ⟶ ⟨j,y⟩` of `LaxColim L`: the germ colimit of the fibre representatives. -/
-noncomputable def homL (p q : Obj L) : Type _ := HomColimL L hL p.2 q.2
+@[expose] public noncomputable def homL (p q : Obj L) : Type _ := HomColimL L hL p.2 q.2
 
 /-- Identity of `⟨i,x⟩`: the identity germ `homIdL`. -/
-noncomputable def idL (p : Obj L) : homL L hL p p := homIdL L hL p.2
+@[expose] public noncomputable def idL (p : Obj L) : homL L hL p p := homIdL L hL p.2
 
 /-- Composition of germs, lifted from `homCompRawL` over the two quotients (well-defined by
     `homCompRawL_wd`). -/
-noncomputable def compL {p q r : Obj L} (m : homL L hL p q) (n : homL L hL q r) : homL L hL p r :=
+@[expose] public noncomputable def compL {p q r : Obj L} (m : homL L hL p q) (n : homL L hL q r) : homL L hL p r :=
   Quotient.lift₂
     (fun rm rn => homCompRawL L hL p.2 q.2 r.2 rm.1 rm.2 rn.1 rn.2)
     (fun _ _ _ _ hP hQ => homCompRawL_wd L hL p.2 q.2 r.2 _ _ _ _ hP _ _ _ _ hQ)
@@ -994,7 +996,7 @@ noncomputable def compL {p q r : Obj L} (m : homL L hL p q) (n : homL L hL q r) 
 /-! ### Category axioms (identity laws and associativity) -/
 
 /-- Left identity at the raw level: `id ∘ f = f` (composing the identity germ with `f`). -/
-theorem homCompRawL_id_left {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
+public theorem homCompRawL_id_left {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq) :
     homCompRawL L hL xp xp xq ⟨ip, D.refl ip, D.refl ip⟩ (Cat.id (L.F (D.refl ip) xp)) a f
       = homInclL L hL xp xq a f := by
@@ -1007,7 +1009,7 @@ theorem homCompRawL_id_left {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
   rfl
 
 /-- Right identity at the raw level: `f ∘ id = f`. -/
-theorem homCompRawL_id_right {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
+public theorem homCompRawL_id_right {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
     (a : UpperBound D ip iq) (f : L.F a.2.1 xp ⟶ L.F a.2.2 xq) :
     homCompRawL L hL xp xq xq a f ⟨iq, D.refl iq, D.refl iq⟩ (Cat.id (L.F (D.refl iq) xq))
       = homInclL L hL xp xq a f := by
@@ -1018,12 +1020,12 @@ theorem homCompRawL_id_right {ip iq : ι} (xp : L.A ip) (xq : L.A iq)
   rfl
 
 /-- Left identity in `LaxColim L`: `idL ∘ m = m`. -/
-theorem compL_id_left {p q : Obj L} (m : homL L hL p q) : compL L hL (idL L hL p) m = m := by
+public theorem compL_id_left {p q : Obj L} (m : homL L hL p q) : compL L hL (idL L hL p) m = m := by
   induction m using Quotient.ind with
   | _ rm => obtain ⟨a, f⟩ := rm; exact homCompRawL_id_left L hL p.2 q.2 a f
 
 /-- Right identity in `LaxColim L`: `m ∘ idL = m`. -/
-theorem compL_id_right {p q : Obj L} (m : homL L hL p q) : compL L hL m (idL L hL q) = m := by
+public theorem compL_id_right {p q : Obj L} (m : homL L hL p q) : compL L hL m (idL L hL q) = m := by
   induction m using Quotient.ind with
   | _ rm => obtain ⟨a, f⟩ := rm; exact homCompRawL_id_right L hL p.2 q.2 a f
 
@@ -1031,7 +1033,7 @@ theorem compL_id_right {p q : Obj L} (m : homL L hL p q) : compL L hL m (idL L h
     representatives to a single common bound `M`, where both bracketings reduce to one stage
     composite `(F_M ≫ G_M) ≫ H_M` resp. `F_M ≫ (G_M ≫ H_M)`, equal by `Cat.assoc`.  The strict
     `homTr_refl`/`homTr_comp` become `push_refl`/`pushHom_comp`. -/
-theorem compL_assoc {p q r s : Obj L}
+public theorem compL_assoc {p q r s : Obj L}
     (m : homL L hL p q) (n : homL L hL q r) (k : homL L hL r s) :
     compL L hL (compL L hL m n) k = compL L hL m (compL L hL n k) := by
   refine Quotient.inductionOn m (fun rm => ?_)
@@ -1100,7 +1102,7 @@ theorem compL_assoc {p q r s : Obj L}
     category axioms are `compL_id_left`/`compL_id_right`/`compL_assoc`.  Built relative to the
     pseudofunctor coherence `Coherent L` (the lax analogue of `CatSystem.Coherent` — TRUE for
     base-change, unlike the strict `StrictBaseChange`). -/
-noncomputable def laxColimCat : Cat (Obj L) where
+@[expose] public noncomputable def laxColimCat : Cat (Obj L) where
   Hom p q := homL L hL p q
   id p := idL L hL p
   comp m n := compL L hL m n
@@ -1125,7 +1127,7 @@ variable {ι : Type u} {D : Directed ι}
 /-- The `.nat.app` underlying arrow of a base-map-transport of a `NatIso` of base-change functors:
     transporting `baseChangeObj b ≅ G` along `e : a = b` conjugates the component by the `eqToHom`
     of the pullback objects.  (The pullbacks coincide after `subst e`, so it is the identity.) -/
-theorem mpr_natiso_app {C E : 𝒞} {a b : E ⟶ C} (e : a = b)
+public theorem mpr_natiso_app {C E : 𝒞} {a b : E ⟶ C} (e : a = b)
     {G : Functor (Over C) (Over E)}
     (N : NatIso (baseChangeFunctor b) G) (X : Over C) :
     ((Eq.mpr (congrArg (fun z => NatIso (baseChangeFunctor z) G) e) N).nat.app
@@ -1152,7 +1154,7 @@ private theorem projTransIso_app (P : ProjSystem ι D 𝒞) {i j k : ι}
 
 /-- `eqToHom` between two base-change objects over equal base maps, post-composed with the chosen
     pullback's `π₂`, is the source `π₂` (the transport is the identity on pullbacks). -/
-theorem eqToHom_bc_π₂ {C E : 𝒞} {a b : E ⟶ C} (e : a = b) (X : Over C) :
+public theorem eqToHom_bc_π₂ {C E : 𝒞} {a b : E ⟶ C} (e : a = b) (X : Over C) :
     (eqToHom (congrArg (fun z => baseChangeObj z X) e)).f ≫ (_pb b X).cone.π₂
       = (_pb a X).cone.π₂ := by
   subst e
@@ -1161,7 +1163,7 @@ theorem eqToHom_bc_π₂ {C E : 𝒞} {a b : E ⟶ C} (e : a = b) (X : Over C) :
   exact Cat.id_comp _
 
 /-- Same, post-composed with the chosen pullback's `π₁`. -/
-theorem eqToHom_bc_π₁ {C E : 𝒞} {a b : E ⟶ C} (e : a = b) (X : Over C) :
+public theorem eqToHom_bc_π₁ {C E : 𝒞} {a b : E ⟶ C} (e : a = b) (X : Over C) :
     (eqToHom (congrArg (fun z => baseChangeObj z X) e)).f ≫ (_pb b X).cone.π₁
       = (_pb a X).cone.π₁ := by
   subst e
@@ -1175,7 +1177,7 @@ private theorem baseChangeMap_f_π₂ {C E : 𝒞} (g : E ⟶ C) {X Y : Over C} 
   (_pb g Y).lift_snd (baseChangeCone g m)
 
 /-- `baseChangeMap`'s underlying arrow against the codomain pullback's `π₁` is `π₁ ≫ m.f`. -/
-theorem baseChangeMap_f_π₁ {C E : 𝒞} (g : E ⟶ C) {X Y : Over C} (m : OverHom X Y) :
+public theorem baseChangeMap_f_π₁ {C E : 𝒞} (g : E ⟶ C) {X Y : Over C} (m : OverHom X Y) :
     (baseChangeMap g m).f ≫ (_pb g Y).cone.π₁ = (_pb g X).cone.π₁ ≫ m.f :=
   (_pb g Y).lift_fst (baseChangeCone g m)
 
@@ -1240,7 +1242,7 @@ private theorem proj_push_refl_key (P : ProjSystem ι D 𝒞)
     exact (g.w).symm
 
 /-- `push_refl` for the base-change system. -/
-theorem proj_push_refl (P : ProjSystem ι D 𝒞)
+public theorem proj_push_refl (P : ProjSystem ι D 𝒞)
     {i j : ι} (x : (laxOfProjSystem' P).A i) (y : (laxOfProjSystem' P).A j) {k : ι}
     (hik : D.le i k) (hjk : D.le j k)
     (g : (laxOfProjSystem' P).F hik x ⟶ (laxOfProjSystem' P).F hjk y) :
@@ -1286,7 +1288,7 @@ private theorem transApp_f_π₂ (P : ProjSystem ι D 𝒞) {i k m : ι} (hik : 
 
 /-- The deep `π₁ ≫ π₁`-leg of `transApp`'s underlying arrow projects to the composite pullback's
     `π₁` (down to `x.dom`).  `reassoc` form. -/
-theorem transApp_f_π₁π₁ (P : ProjSystem ι D 𝒞) {i k m : ι}
+public theorem transApp_f_π₁π₁ (P : ProjSystem ι D 𝒞) {i k m : ι}
     (hik : D.le i k) (hkm : D.le k m) (x : pcObj P i) {W : 𝒞} (z : x.dom ⟶ W) :
     (transApp (laxOfProjSystem' P) hik hkm x).f
         ≫ (_pb (P.proj hkm) (baseChangeObj (P.proj hik) x)).cone.π₁
@@ -1399,7 +1401,7 @@ private theorem transApp_cocycle (P : ProjSystem ι D 𝒞) {i : ι} {k m n : ι
         transApp_f_π₂₀ P (D.trans hik hkm) hmn x]
 
 /-- `push_trans` for the base-change system. -/
-theorem proj_push_trans (P : ProjSystem ι D 𝒞)
+public theorem proj_push_trans (P : ProjSystem ι D 𝒞)
     {i j : ι} (x : (laxOfProjSystem' P).A i) (y : (laxOfProjSystem' P).A j) {k m n : ι}
     (hik : D.le i k) (hjk : D.le j k) (hkm : D.le k m) (hmn : D.le m n)
     (g : (laxOfProjSystem' P).F hik x ⟶ (laxOfProjSystem' P).F hjk y) :
@@ -1530,7 +1532,7 @@ theorem proj_pushHom_f_π₂ (P : ProjSystem ι D 𝒞)
     on-the-nose statement that base-change `pushHom` is "`g.f` on the fibre over the `y.dom` factor",
     the content the §1.546 escape extracts.  Proven by post-composing `pushHom_transApp` (`.f`) with
     the `π₁∘π₁`-path of the target collapse iso (`transApp_f_π₁π₁`) and `baseChangeMap_f_π₁`. -/
-theorem proj_pushHom_f_π₁ (P : ProjSystem ι D 𝒞)
+public theorem proj_pushHom_f_π₁ (P : ProjSystem ι D 𝒞)
     {i j : ι} (x : (laxOfProjSystem' P).A i) (y : (laxOfProjSystem' P).A j) {k m : ι}
     (hik : D.le i k) (hjk : D.le j k) (hkm : D.le k m)
     (g : (laxOfProjSystem' P).F hik x ⟶ (laxOfProjSystem' P).F hjk y) :
@@ -1553,13 +1555,13 @@ theorem proj_pushHom_f_π₁ (P : ProjSystem ι D 𝒞)
   exact h₂
 
 /-- **`Coherent (laxOfProjSystem' P)`** — the §1.547 base-change system is pseudofunctor-coherent. -/
-def coherentProj (P : ProjSystem ι D 𝒞) : Coherent (laxOfProjSystem' P) where
+@[expose] public def coherentProj (P : ProjSystem ι D 𝒞) : Coherent (laxOfProjSystem' P) where
   push_refl := proj_push_refl P
   push_trans := proj_push_trans P
 
 /-- **The §1.547 relative-capitalization category `A*`** — the lax hom-colimit of the base-change
     slice system, as a concrete `Cat` instance (no `Coherent` hypothesis to supply). -/
-noncomputable def ratCapCat (P : ProjSystem ι D 𝒞) : Cat (Obj (laxOfProjSystem' P)) :=
+@[expose] public noncomputable def ratCapCat (P : ProjSystem ι D 𝒞) : Cat (Obj (laxOfProjSystem' P)) :=
   laxColimCat (laxOfProjSystem' P) (coherentProj P)
 
 end BaseChangeCoherent

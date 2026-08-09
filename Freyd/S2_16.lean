@@ -1,6 +1,8 @@
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_216_MatrixAllegory
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_216_MatrixAllegory
 
 universe v u
 
@@ -44,7 +46,7 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- `R` is a SYMMETRIC IDEMPOTENT (§2.12): `R° = R` and `RR = R`.  Such a morphism
     is a "partial equivalence relation".  Both coreflexives and equivalence
     relations are symmetric idempotents (§2.163). -/
-structure SymIdem (a : 𝒜) where
+public structure SymIdem (a : 𝒜) where
   /-- The underlying endomorphism `e : a ⟶ a`. -/
   e : a ⟶ a
   /-- SYMMETRIC: `e° = e`. -/
@@ -71,7 +73,7 @@ end SymIdem
   `e` itself. -/
 
 /-- An object of the splitting completion: a symmetric idempotent of `𝒜`. -/
-structure SplObj (𝒜 : Type u) [Allegory 𝒜] where
+public structure SplObj (𝒜 : Type u) [Allegory 𝒜] where
   /-- The carrier object of `𝒜`. -/
   carrier : 𝒜
   /-- The symmetric idempotent that this object *is*. -/
@@ -79,7 +81,7 @@ structure SplObj (𝒜 : Type u) [Allegory 𝒜] where
 
 /-- A morphism `e ⟶ f` of the splitting completion: a morphism `R` of `𝒜` that is
     fixed by pre/post-composition with the two idempotents, `e ≫ R ≫ f = R`. -/
-structure SplHom (E F : SplObj 𝒜) where
+public structure SplHom (E F : SplObj 𝒜) where
   /-- The underlying morphism of `𝒜`. -/
   R : E.carrier ⟶ F.carrier
   /-- The split-typing condition `e ≫ R ≫ f = R` (the book's `eRf = R`). -/
@@ -90,11 +92,11 @@ namespace SplHom
 variable {E F G : SplObj 𝒜}
 
 /-- Two split-homs are equal iff their underlying morphisms are equal. -/
-@[ext] theorem ext {R S : SplHom E F} (h : R.R = S.R) : R = S := by
+@[ext] public theorem ext {R S : SplHom E F} (h : R.R = S.R) : R = S := by
   cases R; cases S; cases h; rfl
 
 /-- One-sided absorption on the left: `e ≫ R = R`. -/
-theorem fixed_left (R : SplHom E F) : E.idem.e ≫ R.R = R.R := by
+public theorem fixed_left (R : SplHom E F) : E.idem.e ≫ R.R = R.R := by
   calc E.idem.e ≫ R.R
       = E.idem.e ≫ (E.idem.e ≫ R.R ≫ F.idem.e) := by rw [R.fixed]
     _ = (E.idem.e ≫ E.idem.e) ≫ (R.R ≫ F.idem.e) := by rw [← Cat.assoc]
@@ -102,7 +104,7 @@ theorem fixed_left (R : SplHom E F) : E.idem.e ≫ R.R = R.R := by
     _ = R.R := R.fixed
 
 /-- One-sided absorption on the right: `R ≫ f = R`. -/
-theorem fixed_right (R : SplHom E F) : R.R ≫ F.idem.e = R.R := by
+public theorem fixed_right (R : SplHom E F) : R.R ≫ F.idem.e = R.R := by
   calc R.R ≫ F.idem.e
       = (E.idem.e ≫ (R.R ≫ F.idem.e)) ≫ F.idem.e := by rw [R.fixed]
     _ = E.idem.e ≫ (R.R ≫ (F.idem.e ≫ F.idem.e)) := by rw [Cat.assoc, Cat.assoc]
@@ -114,13 +116,13 @@ end SplHom
 /-! ### The category structure -/
 
 /-- Identity split-hom on `e`: the idempotent `e` itself (`e ≫ e ≫ e = e`). -/
-def splId (E : SplObj 𝒜) : SplHom E E :=
+@[expose] public def splId (E : SplObj 𝒜) : SplHom E E :=
   ⟨E.idem.e, by rw [E.idem.idem, E.idem.idem]⟩
 
 /-- Composition of split-homs is the underlying `≫`; the fixed condition is
     preserved because `e (RS) g = (eR)(Sg) = RS` (left-absorption of `R`,
     right-absorption of `S`). -/
-def splComp {E F G : SplObj 𝒜} (R : SplHom E F) (S : SplHom F G) : SplHom E G :=
+@[expose] public def splComp {E F G : SplObj 𝒜} (R : SplHom E F) (S : SplHom F G) : SplHom E G :=
   ⟨R.R ≫ S.R, by
     calc E.idem.e ≫ (R.R ≫ S.R) ≫ G.idem.e
         = (E.idem.e ≫ R.R) ≫ (S.R ≫ G.idem.e) := by rw [Cat.assoc, Cat.assoc]
@@ -128,7 +130,7 @@ def splComp {E F G : SplObj 𝒜} (R : SplHom E F) (S : SplHom F G) : SplHom E G
 
 /-- The splitting completion is a category: identity `splId`, composition
     `splComp`; the three category laws hold on underlying morphisms. -/
-instance instCatSpl : Cat.{v} (SplObj 𝒜) where
+@[expose] public instance instCatSpl : Cat.{v} (SplObj 𝒜) where
   Hom E F := SplHom E F
   id E := splId E
   comp R S := splComp R S
@@ -146,7 +148,7 @@ instance instCatSpl : Cat.{v} (SplObj 𝒜) where
 
 /-- Reciprocation of a split-hom: `R° : f ⟶ e`.  The fixed condition transports by
     `f R° e = (e R f)° = R°` using symmetry of `e` and `f`. -/
-def splRecip {E F : SplObj 𝒜} (R : SplHom E F) : SplHom F E :=
+@[expose] public def splRecip {E F : SplObj 𝒜} (R : SplHom E F) : SplHom F E :=
   ⟨R.R°, by
     calc F.idem.e ≫ R.R° ≫ E.idem.e
         = (E.idem.e ≫ R.R ≫ F.idem.e)° := by
@@ -155,7 +157,7 @@ def splRecip {E F : SplObj 𝒜} (R : SplHom E F) : SplHom F E :=
 
 /-- Intersection of two parallel split-homs: `R ∩ S : e ⟶ f`.  The fixed condition
     is preserved: `e (R∩S) f = (eRf) ∩ (eSf) = R ∩ S`. -/
-def splInter {E F : SplObj 𝒜} (R S : SplHom E F) : SplHom E F :=
+@[expose] public def splInter {E F : SplObj 𝒜} (R S : SplHom E F) : SplHom E F :=
   ⟨R.R ∩ S.R, by
     -- `e (R∩S) f = R ∩ S`.  We show both `⊑` directions.
     apply le_antisymm
@@ -208,7 +210,7 @@ def splInter {E F : SplObj 𝒜} (R S : SplHom E F) : SplHom E F :=
 
 /-! ### `Spl 𝒜` is an allegory -/
 
-instance instAllegorySpl : Allegory.{v} (SplObj 𝒜) where
+@[expose] public instance instAllegorySpl : Allegory.{v} (SplObj 𝒜) where
   recip R := splRecip R
   inter R S := splInter R S
   recip_recip R := by
@@ -243,45 +245,45 @@ instance instAllegorySpl : Allegory.{v} (SplObj 𝒜) where
   split-hom between embedded objects comes from a unique `R`). -/
 
 /-- The identity `1_a` is a symmetric idempotent. -/
-def idSymIdem (a : 𝒜) : SymIdem a :=
+@[expose] public def idSymIdem (a : 𝒜) : SymIdem a :=
   ⟨Cat.id a, recip_id, Cat.id_comp _⟩
 
 /-- The embedding on objects: `a ↦ (a, 1_a)`. -/
-def embObj (a : 𝒜) : SplObj 𝒜 := ⟨a, idSymIdem a⟩
+@[expose] public def embObj (a : 𝒜) : SplObj 𝒜 := ⟨a, idSymIdem a⟩
 
 /-- The embedding on morphisms: `R ↦ R`, with witness `1 ≫ R ≫ 1 = R`. -/
-def embHom {a b : 𝒜} (R : a ⟶ b) : SplHom (embObj a) (embObj b) :=
+@[expose] public def embHom {a b : 𝒜} (R : a ⟶ b) : SplHom (embObj a) (embObj b) :=
   ⟨R, by show Cat.id a ≫ R ≫ Cat.id b = R; rw [Cat.comp_id, Cat.id_comp]⟩
 
-@[simp] theorem embHom_R {a b : 𝒜} (R : a ⟶ b) : (embHom R).R = R := rfl
+@[simp] public theorem embHom_R {a b : 𝒜} (R : a ⟶ b) : (embHom R).R = R := rfl
 
 /-- The embedding is FAITHFUL: injective on hom-sets. -/
-theorem embHom_injective {a b : 𝒜} {R S : a ⟶ b} (h : embHom R = embHom S) : R = S :=
+public theorem embHom_injective {a b : 𝒜} {R S : a ⟶ b} (h : embHom R = embHom S) : R = S :=
   congrArg SplHom.R h
 
 /-- The embedding is FULL: every split-hom between embedded objects is `embHom R`
     for a unique `R` (namely its underlying morphism). -/
-theorem embHom_full {a b : 𝒜} (φ : SplHom (embObj a) (embObj b)) :
+public theorem embHom_full {a b : 𝒜} (φ : SplHom (embObj a) (embObj b)) :
     embHom φ.R = φ := by
   apply SplHom.ext; rfl
 
 /-- The embedding preserves identities: `embHom 1_a = 1_{(a,1)}`. -/
-theorem embHom_id (a : 𝒜) : embHom (Cat.id a) = Cat.id (embObj a) := by
+public theorem embHom_id (a : 𝒜) : embHom (Cat.id a) = Cat.id (embObj a) := by
   apply SplHom.ext; rfl
 
 /-- The embedding preserves composition. -/
-theorem embHom_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem embHom_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     (embHom (R ≫ S) : embObj a ⟶ embObj c)
       = splComp (embHom R) (embHom S) := by
   apply SplHom.ext; rfl
 
 /-- The embedding preserves reciprocation. -/
-theorem embHom_recip {a b : 𝒜} (R : a ⟶ b) :
+public theorem embHom_recip {a b : 𝒜} (R : a ⟶ b) :
     (embHom (R°) : embObj b ⟶ embObj a) = splRecip (embHom R) := by
   apply SplHom.ext; rfl
 
 /-- The embedding preserves intersection. -/
-theorem embHom_inter {a b : 𝒜} (R S : a ⟶ b) :
+public theorem embHom_inter {a b : 𝒜} (R S : a ⟶ b) :
     (embHom (R ∩ S) : embObj a ⟶ embObj b) = splInter (embHom R) (embHom S) := by
   apply SplHom.ext; rfl
 
@@ -293,21 +295,21 @@ theorem embHom_inter {a b : 𝒜} (R S : a ⟶ b) :
   in `Spl 𝒜` through the new object `(a, E)`. -/
 
 /-- The "down" leg `(a,1) ⟶ (a,E)` of the splitting: underlying `E.e`. -/
-def splDown {a : 𝒜} (E : SymIdem a) : SplHom (embObj a) ⟨a, E⟩ :=
+@[expose] public def splDown {a : 𝒜} (E : SymIdem a) : SplHom (embObj a) ⟨a, E⟩ :=
   ⟨E.e, by show Cat.id a ≫ E.e ≫ E.e = E.e; rw [Cat.id_comp, E.idem]⟩
 
 /-- The "up" leg `(a,E) ⟶ (a,1)` of the splitting: underlying `E.e`. -/
-def splUp {a : 𝒜} (E : SymIdem a) : SplHom (⟨a, E⟩ : SplObj 𝒜) (embObj a) :=
+@[expose] public def splUp {a : 𝒜} (E : SymIdem a) : SplHom (⟨a, E⟩ : SplObj 𝒜) (embObj a) :=
   ⟨E.e, by show E.e ≫ E.e ≫ Cat.id a = E.e; rw [Cat.comp_id, E.idem]⟩
 
 /-- `(splDown E, splUp E)` SPLITS the embedded idempotent: `down ≫ up = embHom E.e`. -/
-theorem splDown_up {a : 𝒜} (E : SymIdem a) :
+public theorem splDown_up {a : 𝒜} (E : SymIdem a) :
     splComp (splDown E) (splUp E) = embHom E.e := by
   apply SplHom.ext; show E.e ≫ E.e = E.e; exact E.idem
 
 /-- `(splDown E, splUp E)` SPLITS: `up ≫ down = 1_{(a,E)}` (the identity on `(a,E)`,
     whose underlying morphism is `E.e`). -/
-theorem splUp_down {a : 𝒜} (E : SymIdem a) :
+public theorem splUp_down {a : 𝒜} (E : SymIdem a) :
     splComp (splUp E) (splDown E) = splId (⟨a, E⟩ : SplObj 𝒜) := by
   apply SplHom.ext; show E.e ≫ E.e = E.e; exact E.idem
 

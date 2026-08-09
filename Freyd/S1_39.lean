@@ -5,16 +5,18 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_28
-import Freyd.S1_31
-import Freyd.S1_34
-import Freyd.S1_38b
-import Freyd.S1_41
-import Freyd.S1_43
-import Freyd.S1_51
-import Freyd.S1_59
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_28
+public import Freyd.S1_31
+public import Freyd.S1_34
+public import Freyd.S1_38b
+public import Freyd.S1_41
+public import Freyd.S1_43
+public import Freyd.S1_51
+public import Freyd.S1_59
 
 universe v u
 

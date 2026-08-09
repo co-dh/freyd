@@ -10,11 +10,13 @@
   §2.442 LAW OF METONYMY
 -/
 
-import Freyd.S1_10
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_30
-import Freyd.S2_22
+module
+
+public import Freyd.S1_10
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_30
+public import Freyd.S2_22
 
 
 universe v u
@@ -24,7 +26,7 @@ namespace Freyd.Alg
 /-- The codomain box `R□ = 1_b ∩ R°R` (§2.122): the coreflexive on the target.
     (Defined here, ahead of `PowerAllegory`, because the box-guarded `eps_thick`
     field of §2.41 refers to it — faithful to Freyd's box-indexed membership `∋_R`.) -/
-abbrev codBox {𝒜 : Type u} {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) : b ⟶ b := dom (R°)
+@[expose] public abbrev codBox {𝒜 : Type u} {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) : b ⟶ b := dom (R°)
 
 /-! ## §2.41  Power allegory
 
@@ -38,7 +40,7 @@ abbrev codBox {𝒜 : Type u} {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) : b ⟶
 
 /-- A POWER ALLEGORY (§2.41): division allegory with power objects and
     epsilon morphisms ∋_B : [B] → B satisfying straightness and thickness. -/
-class PowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
+public class PowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
   /-- The POWER-OBJECT [b] of b. -/
   powerObj (b : 𝒜) : 𝒜
   /-- The epsilon morphism ∋_b : [b] → b. -/
@@ -71,7 +73,7 @@ notation "∋" => PowerAllegory.eps
 /-! ### Derived operations -/
 
 /-- A(R) = R /ₛ ∋: the unique map such that A(R)∋ = R (§2.41). -/
-def A {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : a ⟶ PowerAllegory.powerObj b :=
+@[expose] public def A {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : a ⟶ PowerAllegory.powerObj b :=
   R /ₛ PowerAllegory.eps b
 
 /-- The thickness witness f for R is contained in A(R) (§2.412/§2.413).
@@ -90,7 +92,7 @@ private theorem thick_witness_le_A {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ 
     needed).  Entire branch (§2.412/§2.413): the box-matched thickness witness f (a map,
     f∋ = R) has f ⊑ A R, so 1 ⊑ ff° ⊑ (A R)(A R)°, whence dom(A R) = 1.
     The `codBox R = codBox (∋ b)` hypothesis is Freyd's box-index on `∋_R`. -/
-theorem A_is_map {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
+public theorem A_is_map {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
     (hbox : codBox R = codBox (∋ b)) : Map (A R) := by
   constructor
   · -- Entire (§2.412/§2.413) via the box-matched thickness witness f ⊑ A R.
@@ -108,13 +110,13 @@ theorem A_is_map {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
 
 /-- A(R) is SIMPLE for EVERY R (no box needed): `A R = R/ₛ∋` and ∋ straight ⟹ simple [§2.356].
     The entireness (hence map-ness) of A(R) is the box-guarded part (`A_is_map`). -/
-theorem A_simple {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : Simple (A R) :=
+public theorem A_simple {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : Simple (A R) :=
   straight_symmDiv_simple (PowerAllegory.eps_straight b) R
 
 /-- A(R)∋ = R (§2.41), for R in ∋'s box (Freyd's `∋_R□ = R□`).
     ⊑: A(R) ⊑ R/∋ (left component of symmDiv), so A(R)∋ ⊑ (R/∋)∋ ⊑ R (no box needed).
     ⊒: box-matched thickness gives a map f ⊑ A(R) with f∋ = R, so R = f∋ ⊑ (A R)∋ [§2.413]. -/
-theorem A_eps_eq {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
+public theorem A_eps_eq {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
     (hbox : codBox R = codBox (∋ b)) : A R ≫ ∋ b = R := by
   apply le_antisymm
   · -- A(R) ≫ ∋ ⊑ R: first component of le_symmDiv_iff
@@ -136,12 +138,12 @@ theorem A_eps_eq {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
     relation (Freyd §2.412/§2.413, the form `∀ R, ∃ map f, f ∋ = R`), not only the
     box-matched ones (§2.431).  Strictly stronger than `PowerAllegory`; satisfied by the
     genuine power allegories (toposes' `Rel(C)`, the §2.434 global completion). -/
-class UnguardedPowerAllegory (𝒜 : Type u) extends PowerAllegory 𝒜 where
+public class UnguardedPowerAllegory (𝒜 : Type u) extends PowerAllegory 𝒜 where
   /-- `∋` classifies EVERY `R : c → b`: there is a map `f` with `f ≫ ∋ = R` (§2.412/§2.413). -/
   eps_thick_all {b c : 𝒜} (R : c ⟶ b) : ∃ (f : c ⟶ powerObj b), Map f ∧ f ≫ eps b = R
 
 /-- In an unguarded power allegory `A(R)` is a MAP for EVERY `R` (no box hypothesis). -/
-theorem A_is_map' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : Map (A R) := by
+public theorem A_is_map' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : Map (A R) := by
   constructor
   · obtain ⟨f, hf, hfeq⟩ := UnguardedPowerAllegory.eps_thick_all (b := b) R
     have hf_le : f ⊑ A R := thick_witness_le_A R hf hfeq
@@ -154,7 +156,7 @@ theorem A_is_map' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : Map
   · exact straight_symmDiv_simple (PowerAllegory.eps_straight b) R
 
 /-- In an unguarded power allegory `A(R)∋ = R` for EVERY `R` (no box hypothesis). -/
-theorem A_eps_eq' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : A R ≫ ∋ b = R := by
+public theorem A_eps_eq' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : A R ≫ ∋ b = R := by
   apply le_antisymm
   · exact ((le_symmDiv_iff _ R _).mp (le_refl _)).1
   · obtain ⟨f, hf, hfeq⟩ := UnguardedPowerAllegory.eps_thick_all (b := b) R
@@ -164,12 +166,12 @@ theorem A_eps_eq' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : A R
 /-! ## §2.415  Power object and singleton map -/
 
 /-- The SINGLETON MAP of a is A(1_a) : a → [a] (§2.415). -/
-def singletonMap {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ PowerAllegory.powerObj a :=
+@[expose] public def singletonMap {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ PowerAllegory.powerObj a :=
   A (Cat.id a)
 
 /-- Singleton map is monic (§2.415): A(1_a)A(1_a)° ⊑ 1.
     Proof: A(1)A°(1) ⊑ (1/∋)(∋/1) = (1/∋)∋ ⊑ 1. -/
-theorem singletonMap_monic {a : 𝒜} [PowerAllegory 𝒜] :
+public theorem singletonMap_monic {a : 𝒜} [PowerAllegory 𝒜] :
     singletonMap (a := a) ≫ singletonMap° ⊑ Cat.id a := by
   -- singletonMap = A(1_a) = 1/ₛ∋ ⊑ 1/∋.
   -- singletonMap° ⊑ ∋/1 = ∋ (reciprocal of second component of symmDiv).
@@ -250,7 +252,7 @@ theorem semiSimple_comp_simple {𝒜 : Type u} [Allegory 𝒜] {a b d : 𝒜}
 /-- A(R) is the UNIQUE map F with F∋ = R (§2.412).
     Uniqueness: if F is a map and F∋ = R then F = A(R).
     This follows from straightness of ∋: ∋ /ₛ ∋ ⊑ 1 forces A(R) uniqueness. -/
-theorem A_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a ⟶ PowerAllegory.powerObj b)
+public theorem A_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a ⟶ PowerAllegory.powerObj b)
     (hF : Map F) (hFeq : F ≫ ∋ b = R) : F = A R := by
   -- Step 1: F ⊑ A R = R /ₛ ∋ via le_symmDiv_iff
   have hF_le : F ⊑ A R := by
@@ -334,7 +336,7 @@ theorem simple_le_A_eps {a b : 𝒜} [PowerAllegory 𝒜] (F : a ⟶ PowerAllego
 /-- §2.421: in a power allegory, the symmetric division R /ₛ S equals A(R) ≫ (A S)°,
     for R in ∋'s box (Freyd's `∋_R□ = R□`; `A R` must be a map).  The `S`-leg needs no
     box: only `A R` entire is used. -/
-theorem symm_div_eq_A_comp {a b c : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ c) (S : b ⟶ c)
+public theorem symm_div_eq_A_comp {a b c : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ c) (S : b ⟶ c)
     (hboxR : codBox R = codBox (∋ c)) :
     R /ₛ S = A R ≫ (A S)° := by
   apply le_antisymm
@@ -425,7 +427,7 @@ theorem symm_div_eq_A_comp {a b c : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ c) (S 
     entireness condition, stated for a general T rather than just ∋).
     The `codBox R = codBox T` guard is the domain on which Freyd's `R/T` is defined
     and is necessary for §2.431 to be a biconditional (see the note above). -/
-def Thick {a b : 𝒜} [DivisionAllegory 𝒜] (T : a ⟶ b) : Prop :=
+@[expose] public def Thick {a b : 𝒜} [DivisionAllegory 𝒜] (T : a ⟶ b) : Prop :=
   ∀ (c : 𝒜) (R : c ⟶ b), codBox R = codBox T → Entire (R /ₛ T)
 
 /-- `Entire R ↔ 1 ⊑ RR°` (§2.122): since `dom R = 1 ∩ RR°` and `1 ∩ RR° ⊑ 1` always,
@@ -451,7 +453,7 @@ private theorem entire_iff_one_le {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) :
     Forward: take `R̃ = R/ₛT`, entire by `Thick T` (consuming the box hypothesis);
     the last two containments are the defining property of `/ₛ`.
     Reverse: `R̃ ⊑ R/ₛT` and `R̃` entire force `R/ₛT` entire. -/
-theorem thick_iff_existential {a b : 𝒜} [DivisionAllegory 𝒜] (T : a ⟶ b) :
+public theorem thick_iff_existential {a b : 𝒜} [DivisionAllegory 𝒜] (T : a ⟶ b) :
     Thick T ↔ ∀ (c : 𝒜) (R : c ⟶ b), codBox R = codBox T → ∃ (R' : c ⟶ a),
         Entire R' ∧ R' ≫ T ⊑ R ∧ R'° ≫ R ⊑ T := by
   constructor
@@ -473,7 +475,7 @@ theorem thick_iff_existential {a b : 𝒜} [DivisionAllegory 𝒜] (T : a ⟶ b)
 
 /-- A PRE-POWER ALLEGORY (§2.43): division allegory where each object
     is the target of some thick morphism. -/
-class PrePowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
+public class PrePowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
   /-- For each object a, there exists a thick morphism with target a. -/
   thick_target (a : 𝒜) : ∃ (x : 𝒜) (S : x ⟶ a), Thick S
 
@@ -488,7 +490,7 @@ class PrePowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
     are available) and an `EffectiveAllegory` (so symmetric idempotents split).  The two
     parents share their `Allegory`, so the `≫`/`°`/`∩`/`/ₛ` of the division side and the
     splitting of the effective side refer to the *same* operations (no instance diamond). -/
-class EffectiveDivisionAllegory (𝒜 : Type u)
+public class EffectiveDivisionAllegory (𝒜 : Type u)
     extends DivisionAllegory 𝒜, EffectiveAllegory 𝒜
 
 /-- A SEMI-SIMPLE DIVISION ALLEGORY: simultaneously a `DivisionAllegory` and a
@@ -496,7 +498,7 @@ class EffectiveDivisionAllegory (𝒜 : Type u)
     forces Lean to unify the two parents' shared `Cat`/`Allegory` fields into one,
     eliminating the instance diamond that arises from carrying `[DivisionAllegory 𝒜]`
     and `[SemiSimpleAllegory 𝒜]` as separate context hypotheses. -/
-class SemiSimpleDivisionAllegory (𝒜 : Type u)
+public class SemiSimpleDivisionAllegory (𝒜 : Type u)
     extends DivisionAllegory 𝒜, SemiSimpleAllegory 𝒜
 
 /-- `EqSplits 𝒜`: every equivalence relation (reflexive symmetric idempotent) splits with a
@@ -506,7 +508,7 @@ class SemiSimpleDivisionAllegory (𝒜 : Type u)
     touch tabularity), so parametrising by it lets NON-tabular effective allegories reach
     `PowerAllegory` too — e.g. `Spl(Eq 𝒜)` (§2.433), whose tabulation apexes are coreflexive
     (they live in `Spl(Cor)`, not `Spl(Eq)`) so it is effective-by-splitting yet not tabular. -/
-def EqSplits (𝒜 : Type u) [Allegory 𝒜] : Prop :=
+@[expose] public def EqSplits (𝒜 : Type u) [Allegory 𝒜] : Prop :=
   ∀ {a : 𝒜} (E : a ⟶ a), Reflexive E → Symmetric E → E ≫ E = E →
     ∃ (c : 𝒜) (f : a ⟶ c), Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id c
 
@@ -518,7 +520,7 @@ def EqSplits (𝒜 : Type u) [Allegory 𝒜] : Prop :=
     `Straight S`: for the symmetric `U = S/ₛS` with `US ⊑ S`, the symmetric `hUh°`
     satisfies `(hUh°)T ⊑ T`, hence `hUh° ⊑ T/ₛT = E = hh°`; conjugating by `h°h = 1`
     gives `U = h°(hUh°)h ⊑ h°(hh°)h = (h°h)(h°h) = 1`. -/
-theorem straight_factorization_of_split {𝒜 : Type u} [DivisionAllegory 𝒜] (hsplit : EqSplits 𝒜)
+public theorem straight_factorization_of_split {𝒜 : Type u} [DivisionAllegory 𝒜] (hsplit : EqSplits 𝒜)
     {x a : 𝒜} (T : x ⟶ a) :
     ∃ (c : 𝒜) (h : x ⟶ c), Map h ∧ h° ≫ h = Cat.id c ∧
       Straight (h° ≫ T) ∧ T = h ≫ (h° ≫ T) := by
@@ -584,11 +586,11 @@ theorem straight_factorization_of_split {𝒜 : Type u} [DivisionAllegory 𝒜] 
     rw [← Cat.assoc, hhh, hET]
 
 /-- `EqSplits` from an `EffectiveAllegory` (its `split_symmetric_idempotent` field). -/
-theorem effectiveEqSplits {𝒜 : Type u} [EffectiveAllegory 𝒜] : EqSplits 𝒜 :=
+public theorem effectiveEqSplits {𝒜 : Type u} [EffectiveAllegory 𝒜] : EqSplits 𝒜 :=
   fun E => EffectiveAllegory.split_symmetric_idempotent E
 
 /-- §2.354: `straight_factorization_of_split` specialised to an `EffectiveDivisionAllegory`. -/
-theorem straight_factorization {𝒜 : Type u} [EffectiveDivisionAllegory 𝒜]
+public theorem straight_factorization {𝒜 : Type u} [EffectiveDivisionAllegory 𝒜]
     {x a : 𝒜} (T : x ⟶ a) :
     ∃ (c : 𝒜) (h : x ⟶ c), Map h ∧ h° ≫ h = Cat.id c ∧
       Straight (h° ≫ T) ∧ T = h ≫ (h° ≫ T) :=
@@ -596,7 +598,7 @@ theorem straight_factorization {𝒜 : Type u} [EffectiveDivisionAllegory 𝒜]
 
 /-- If `T = h ≫ S` with `h° ≫ h = 1`, then `S` and `T` have the same codomain box
     `codBox = dom(·°) = 1 ∩ (·)°(·)`.  Indeed `T°T = (hS)°(hS) = S°(h°h)S = S°S`. -/
-theorem codBox_eq_of_split {𝒜 : Type u} [Allegory 𝒜] {x c a : 𝒜}
+public theorem codBox_eq_of_split {𝒜 : Type u} [Allegory 𝒜] {x c a : 𝒜}
     {h : x ⟶ c} {S : c ⟶ a} {T : x ⟶ a}
     (hch : h° ≫ h = Cat.id c) (hT : T = h ≫ S) : codBox S = codBox T := by
   -- codBox R = dom (R°) = 1 ∩ R° ≫ R°° = 1 ∩ R° ≫ R.  So we equate S° ≫ S with T° ≫ T.
@@ -609,7 +611,7 @@ theorem codBox_eq_of_split {𝒜 : Type u} [Allegory 𝒜] {x c a : 𝒜}
     then `S = h° ≫ T`-style factor `S` is again thick.  (We pass `S` directly with the
     splitting data.)  Book §2.432: for `R□ = S□ = T□`, the witness `R̃ = (R/ₛT) ≫ h` is
     entire (thickness of `T` plus `h` entire), with `R̃S ⊑ R` and `R̃°R ⊑ S`. -/
-theorem straight_descent_thick {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a : 𝒜}
+public theorem straight_descent_thick {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a : 𝒜}
     {h : x ⟶ c} {S : c ⟶ a} {T : x ⟶ a}
     (hMap : Map h) (hch : h° ≫ h = Cat.id c) (hT : T = h ≫ S) (hThickT : Thick T) :
     Thick S := by
@@ -652,7 +654,7 @@ theorem straight_descent_thick {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a : 
     splitting over ONE shared `Allegory`) in which each object is the target of a thick
     morphism (the §2.43 pre-power condition, carried as a field to avoid an instance diamond
     with a separately-assumed `PrePowerAllegory`). -/
-class EffectivePrePowerAllegory (𝒜 : Type u) extends EffectiveDivisionAllegory 𝒜 where
+public class EffectivePrePowerAllegory (𝒜 : Type u) extends EffectiveDivisionAllegory 𝒜 where
   /-- For each object a, there exists a thick morphism with target a (§2.43). -/
   thick_target (a : 𝒜) : ∃ (x : 𝒜) (S : x ⟶ a), Thick S
 
@@ -661,7 +663,7 @@ class EffectivePrePowerAllegory (𝒜 : Type u) extends EffectiveDivisionAllegor
     factors it `T = h ≫ S` with `h` a map, `h°h = 1`, `S = h° ≫ T` straight;
     `straight_descent_thick` shows `S` stays thick.  This is a `Prop`, so it may be `choose`n
     into the (data) `powerObj`/`eps` fields below via `Classical`. -/
-theorem exists_straight_thick_target_of_split {𝒜 : Type u} [DivisionAllegory 𝒜]
+public theorem exists_straight_thick_target_of_split {𝒜 : Type u} [DivisionAllegory 𝒜]
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (S : x ⟶ a), Thick S) (b : 𝒜) :
     ∃ (p : 𝒜) (S : p ⟶ b), Straight S ∧ Thick S := by
   obtain ⟨x, T, hThickT⟩ := hthick b
@@ -678,7 +680,7 @@ theorem exists_straight_thick_target {𝒜 : Type u} [EffectivePrePowerAllegory 
     `hh° ⊑ h/ₛh ⊑ 1` because `h` is straight.  (This is exactly the half of §2.416's
     maximality step that needs NO progenitor; the converse `1 ⊑ h°h` is the half that
     does — see `effective_pre_power_is_power`.) -/
-theorem straight_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {a b : 𝒜} {h : a ⟶ b}
+public theorem straight_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {a b : 𝒜} {h : a ⟶ b}
     (hMap : Map h) (hStr : Straight h) : h ≫ h° ⊑ Cat.id a := by
   have hsimp : h° ≫ h ⊑ Cat.id b := hMap.2
   -- (hh°)h ⊑ h and (hh°)°h = (hh°)h ⊑ h, so hh° ⊑ h/ₛh ⊑ 1.
@@ -764,7 +766,7 @@ theorem straight_factor_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a
     the book's hypotheses.  Precise missing primitive: a progenitor `y : 𝒜` (§1.966) with
     its copower `coprod (powerObj b) p` (`PositiveAllegory.has_coproduct`).  That route is
     moot here: the field is now the faithful box-guarded membership, discharged below. -/
-noncomputable def power_of_split_thick {𝒜 : Type u} [DivisionAllegory 𝒜]
+public noncomputable def power_of_split_thick {𝒜 : Type u} [DivisionAllegory 𝒜]
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (S : x ⟶ a), Thick S) :
     PowerAllegory 𝒜 :=
   { powerObj := fun b => (exists_straight_thick_target_of_split hsplit hthick b).choose
@@ -807,7 +809,7 @@ noncomputable def power_of_split_thick {𝒜 : Type u} [DivisionAllegory 𝒜]
 /-- §2.432 (HEADLINE): an EFFECTIVE PRE-POWER ALLEGORY is a POWER ALLEGORY.
     (Thin wrapper over `power_of_split_thick` — the route needs only division + eq-splitting
     + thick targets, no tabularity.) -/
-noncomputable def effective_pre_power_is_power {𝒜 : Type u} [EffectivePrePowerAllegory 𝒜] :
+@[expose] public noncomputable def effective_pre_power_is_power {𝒜 : Type u} [EffectivePrePowerAllegory 𝒜] :
     PowerAllegory 𝒜 :=
   power_of_split_thick effectiveEqSplits EffectivePrePowerAllegory.thick_target
 
@@ -899,7 +901,7 @@ theorem pre_positive_to_well_joined {𝒜 : Type u} [PrePositiveAllegory 𝒜] :
 /-- The partial order morphism on [a]: 2 = ∋/∋ : [a] → [a] (§2.442).
     ∋ : [a] → a, so ∋/∋ : [a] → [a] (right division, reflexive transitive closure).
     Equivalently: X 2 Y iff X∋ ⊑ Y∋ (X is a subset of Y). -/
-def powerOrder {a : 𝒜} [PowerAllegory 𝒜] :
+@[expose] public def powerOrder {a : 𝒜} [PowerAllegory 𝒜] :
     PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
   ∋ a / ∋ a
 
@@ -918,7 +920,7 @@ theorem eps_singleton_le_powerOrder {a : 𝒜} [PowerAllegory 𝒜]
     Book: `A(S)A°(S) ⊑ (S/∋)(∋/S) ⊑ S/ₛS ⊑ 1`.  Concretely `A(S)A°(S) ⊑ S/ₛS`
     via `le_symmDiv_iff`: `(A(S)A°(S))S = A(S)((A S)°S) ⊑ A(S)∋ ⊑ S` (and the
     reciprocal leg is identical since `A(S)A°(S)` is symmetric), then `Straight S`. -/
-theorem A_monic_of_straight {a b : 𝒜} [PowerAllegory 𝒜] {S : a ⟶ b} (hS : Straight S) :
+public theorem A_monic_of_straight {a b : 𝒜} [PowerAllegory 𝒜] {S : a ⟶ b} (hS : Straight S) :
     A S ≫ (A S)° ⊑ Cat.id a := by
   have e1 : (A S)° ≫ S ⊑ ∋ b := ((le_symmDiv_iff _ S _).mp (le_refl _)).2
   have e2 : A S ≫ ∋ b ⊑ S := ((le_symmDiv_iff _ S _).mp (le_refl (A S))).1
@@ -961,7 +963,7 @@ theorem straight_semiSimple_of_eps_semiSimple {a b : 𝒜} [PowerAllegory 𝒜]
 /-- The big-UNION map ⊔ : [[a]] → [a] (§2.442/§2.443).
     ⊔ = A(∋' ≫ ∋) where ∋' = ∋_{[a]} : [[a]] → [a] and ∋ = ∋_a : [a] → a.
     Semantically `F (∋'∋) x ↔ ∃ A∈F, x∈A`, so `A(∋'∋) : F ↦ ⋃F` (Freyd §2.443). -/
-def bigUnion {a : 𝒜} [PowerAllegory 𝒜] :
+@[expose] public def bigUnion {a : 𝒜} [PowerAllegory 𝒜] :
     PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj a :=
   A (∋ (PowerAllegory.powerObj a) ≫ ∋ a)
 
@@ -1414,14 +1416,14 @@ theorem pre_positive_semi_simple_iff_metonymic {𝒜 : Type u} [PrePositivePower
     for some map f.  Book: "E = E/E" (division allegory) + power allegory ⟹ E = ff°
     via `symm_div_eq_A_comp`: E = A(E) ≫ (A E)° with A(E) a map. -/
 /-- **§2.422**: In any division allegory, every equivalence relation satisfies `E ≫ E = E`. -/
-theorem equivRel_idem {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} {E : a ⟶ a}
+public theorem equivRel_idem {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} {E : a ⟶ a}
     (hE : EquivalenceRel E) : E ≫ E = E :=
   symmetric_transitive_idempotent hE.2.1 hE.2.2
 
 /-- **§2.422**: In a power allegory, every equivalence relation `E` has the form `f ≫ f°`
     for a map `f = A(E)`.  Proof: `E = E /ₛ E` (div-allegory idempotence) then
     `symm_div_eq_A_comp` gives `E /ₛ E = A(E) ≫ (A E)°`. -/
-theorem equivRel_eq_map_comp_recip {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} (E : a ⟶ a)
+public theorem equivRel_eq_map_comp_recip {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} (E : a ⟶ a)
     (hE : EquivalenceRel E) (hbox : codBox E = codBox (∋ a)) :
     ∃ (f : a ⟶ PowerAllegory.powerObj a), Map f ∧ E = f ≫ f° := by
   refine ⟨A E, A_is_map E hbox, ?_⟩

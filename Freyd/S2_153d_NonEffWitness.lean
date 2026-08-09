@@ -58,7 +58,9 @@
 
   MATHLIB-FREE.  Composition in DIAGRAM ORDER.
 -/
-import Freyd.S2_153c_ConcreteNonEffective
+module
+
+public import Freyd.S2_153c_ConcreteNonEffective
 
 open Freyd Freyd.Alg
 

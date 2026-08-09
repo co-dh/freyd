@@ -29,12 +29,14 @@
     image_lift_cover, cover_pullback                                  (S1_52/S1_56)
 -/
 
-import Freyd.S1_51
-import Freyd.S1_60
-import Freyd.S1_61
-import Freyd.S1_62
-import Freyd.S1_64
-import Freyd.S1_70
+module
+
+public import Freyd.S1_51
+public import Freyd.S1_60
+public import Freyd.S1_61
+public import Freyd.S1_62
+public import Freyd.S1_64
+public import Freyd.S1_70
 
 open Freyd
 
@@ -98,7 +100,7 @@ def Atomless [PreLogos 𝒞] : Prop :=
     `invImage_preserves_sup`.  `sup`/`sup_upper`/`sup_least` are the `LocallyComplete`
     complete-lattice fields; `invImage_preserves_sup` is the infinite distributive law
     (`PullbacksPreserveArbitraryUnions`, §1.84), which a bare `PreLogos` does not supply. -/
-class HasIndexedSubobjectJoins (𝒞 : Type u) [Cat.{v} 𝒞] [PreLogos 𝒞] where
+public class HasIndexedSubobjectJoins (𝒞 : Type u) [Cat.{v} 𝒞] [PreLogos 𝒞] where
   sup : ∀ {A : 𝒞}, ((Subobject 𝒞 A) → Prop) → Subobject 𝒞 A
   sup_upper : ∀ {A : 𝒞} (S : (Subobject 𝒞 A) → Prop) (s : Subobject 𝒞 A),
     S s → Subobject.le s (sup S)
@@ -117,7 +119,7 @@ class HasIndexedSubobjectJoins (𝒞 : Type u) [Cat.{v} 𝒞] [PreLogos 𝒞] wh
     `LocallyComplete` the single canonical arbitrary-join primitive (the frame-law class derives
     it); the ambient `HasImages` from `[PreLogos 𝒞]` is reused, so no new image structure is
     introduced. -/
-instance (priority := 100) [PreLogos 𝒞] [HasIndexedSubobjectJoins 𝒞] : LocallyComplete 𝒞 where
+@[expose] public instance (priority := 100) [PreLogos 𝒞] [HasIndexedSubobjectJoins 𝒞] : LocallyComplete 𝒞 where
   toHasImages := inferInstance
   sup := HasIndexedSubobjectJoins.sup
   sup_isSup := fun S =>

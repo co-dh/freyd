@@ -21,9 +21,11 @@
   from the base classifier + slice transport; NO new axioms, NO allegory axioms.
 -/
 
-import Freyd.S1_90
-import Freyd.S1_44
-import Freyd.S1_53_SliceRegular
+module
+
+public import Freyd.S1_90
+public import Freyd.S1_44
+public import Freyd.S1_53_SliceRegular
 
 universe v u
 
@@ -41,13 +43,13 @@ open HasSubobjectClassifier
 variable [HasSubobjectClassifier 𝒞] [HasBinaryProducts 𝒞]
 
 /-- The slice classifier object `Δ(Ω) = ⟨Ω × B, snd⟩ : Over B`. -/
-def sliceOmega (B : 𝒞) : Over B := ⟨prod omega B, snd⟩
+@[expose] public def sliceOmega (B : 𝒞) : Over B := ⟨prod omega B, snd⟩
 
 /-- The slice universal subobject `true_B = Δ(true) : 1_{Over B} ⟶ Δ(Ω)`.
 
   Underlying base arrow: `B = (overTerm B).dom ⟶ Ω × B` is `⟨B→1→Ω , id_B⟩`.
   It respects the slice structure because its second component is `id_B`. -/
-def sliceTrue (B : 𝒞) : OverHom (overTerm B) (sliceOmega B) :=
+@[expose] public def sliceTrue (B : 𝒞) : OverHom (overTerm B) (sliceOmega B) :=
   ⟨pair (term B ≫ HasSubobjectClassifier.true) (Cat.id B), by
     -- (overTerm B).hom = id B; need  pair (..) (id B) ≫ snd = id B
     simp [sliceOmega, overTerm, snd_pair]⟩
@@ -69,7 +71,7 @@ variable [HasPullbacks 𝒞]
     Companion to S1_53's `sliceForget_preserves_isPullback` (preservation) and
     strengthening of `sliceForget_reflects_isPullback_terminal` (which is restricted
     to `Over 1`).  This is the only new transport lemma the slice classifier needs. -/
-theorem sliceForget_reflects_isPullback {B : 𝒞} {X Y Z : Over B}
+public theorem sliceForget_reflects_isPullback {B : 𝒞} {X Y Z : Over B}
     {f : X ⟶ Z} {g : Y ⟶ Z} (c : Cone f g)
     (h : (sliceConeForget c).IsPullback) : c.IsPullback := by
   intro d
@@ -88,18 +90,18 @@ theorem sliceForget_reflects_isPullback {B : 𝒞} {X Y Z : Over B}
 /-! ## §1.93  The slice characteristic map and the classifier fields -/
 
 /-- Base characteristic map of a slice mono `m`, viewing `m.f` as a base mono. -/
-noncomputable def baseClassify {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
+@[expose] public noncomputable def baseClassify {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
     A.dom ⟶ omega :=
   HasSubobjectClassifier.classify m.f (sigma_preserves_mono m hm)
 
 /-- The slice characteristic map `χ_m : A ⟶ Δ(Ω)`, with underlying base arrow
     `⟨χ_base , A.hom⟩ : A.dom ⟶ Ω × B`. -/
-noncomputable def sliceClassify {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
+@[expose] public noncomputable def sliceClassify {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
     OverHom A (sliceOmega B) :=
   ⟨pair (baseClassify m hm) A.hom, by simp [sliceOmega, snd_pair]⟩
 
 /-- The slice classifying square commutes (Δ-level): `m ⊚ χ_m = term A' ⊚ true_B`. -/
-theorem sliceClassify_sq {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
+public theorem sliceClassify_sq {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
     m ⊚ sliceClassify m hm = term A' ⊚ sliceTrue B := by
   apply OverHom.ext
   -- on base arrows: m.f ≫ pair χ A.hom = (term A').f ≫ pair (term B ≫ true) (id B)
@@ -126,7 +128,7 @@ theorem sliceClassify_sq {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : Ove
 
 /-- **classify_pullback**: the slice classifying square is a pullback in `Over B`.
     Transported from the base pullback (`classify_pullback`) via Σ-reflection. -/
-theorem sliceClassify_pullback {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
+public theorem sliceClassify_pullback {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m) :
     (⟨A', m, term A', sliceClassify_sq m hm⟩ :
         Cone (sliceClassify m hm) (sliceTrue B)).IsPullback := by
   apply sliceForget_reflects_isPullback
@@ -169,7 +171,7 @@ theorem sliceClassify_pullback {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm
 
 /-- **classify_unique**: `χ_m` is the unique slice map making `m` a pullback of
     `true_B`. -/
-theorem sliceClassify_unique {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m)
+public theorem sliceClassify_unique {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm : OverMono m)
     (χ : OverHom A (sliceOmega B)) (hsq : m ⊚ χ = term A' ⊚ sliceTrue B)
     (hpb : (⟨A', m, term A', hsq⟩ : Cone χ (sliceTrue B)).IsPullback) :
     χ = sliceClassify m hm := by
@@ -235,7 +237,7 @@ theorem sliceClassify_unique {B : 𝒞} {A A' : Over B} (m : OverHom A' A) (hm :
   show pair χb A.hom = pair (baseClassify m hm) A.hom
   rw [hχbeq]; rfl
 
-noncomputable instance overHasSubobjectClassifier (B : 𝒞) :
+@[expose] public noncomputable instance overHasSubobjectClassifier (B : 𝒞) :
     HasSubobjectClassifier (Over B) where
   toHasTerminal := overHasTerminal B
   toHasPullbacks := overHasPullbacks B

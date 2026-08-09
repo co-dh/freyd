@@ -11,15 +11,17 @@
   §1.926 Exponential structure restricts to Heyting algebra on Sub(1)
 -/
 
-import Freyd.S1_10
-import Freyd.S1_90
-import Freyd.S1_85
-import Freyd.S1_81
-import Freyd.S1_51
-import Freyd.S1_58
-import Freyd.S1_42
-import Freyd.S1_91
-import Freyd.S1_923_Baseable
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_90
+public import Freyd.S1_85
+public import Freyd.S1_81
+public import Freyd.S1_51
+public import Freyd.S1_58
+public import Freyd.S1_42
+public import Freyd.S1_91
+public import Freyd.S1_923_Baseable
 
 
 universe v u
@@ -34,7 +36,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     pullbacks (the latter from the subobject classifier's `HasPullbacks` base), and
     §1.434 (`products_pullbacks_implies_equalizers`) builds the equalizer of `f, g`
     as the pullback of `⟨1,f⟩, ⟨1,g⟩ : A ⇉ A×B`.  So a topos has all equalizers. -/
-instance topos_has_equalizers : HasEqualizers 𝒞 :=
+@[expose] public instance topos_has_equalizers : HasEqualizers 𝒞 :=
   products_pullbacks_implies_equalizers
 
 /-- **§1.92 bridge — representability assembles exponentials.**  If EVERY object of
@@ -45,7 +47,7 @@ instance topos_has_equalizers : HasEqualizers 𝒞 :=
     exactly the existence/uniqueness clauses of `Baseable`); choice only enters in
     *selecting* the representing object, which is unavoidable here (the bare existential
     `Baseable` gives no canonical `E`). -/
-noncomputable def exponentials_of_all_baseable
+@[expose] public noncomputable def exponentials_of_all_baseable
     (hb : ∀ B : 𝒞, Baseable B) : HasExponentials 𝒞 where
   -- Reuse the topos product instance to avoid a `HasBinaryProducts` diamond with `Topos`.
   toHasBinaryProducts := Topos.toHasBinaryProducts
@@ -78,7 +80,7 @@ noncomputable def exponentials_of_all_baseable
 -- defs fail the IR check.  We deprioritise it here AND, in the direct-image section below,
 -- locally make the genuine `Topos.toHasBinaryProducts` win outright (see the
 -- `attribute [local instance]` there) so the §1.92 power maps stay computably-typed.
-noncomputable instance (priority := 50) topos_has_exponentials : HasExponentials 𝒞 :=
+@[expose] public noncomputable instance (priority := 50) topos_has_exponentials : HasExponentials 𝒞 :=
   exponentials_of_all_baseable all_baseable
 
 -- `topos_has_exponentials` is now genuinely proved (hence `noncomputable`, depending on
@@ -104,7 +106,7 @@ attribute [local instance 10000] Topos.toHasBinaryProducts
   Equivalently, Ω^g = curry(pair (fst ≫ g) snd ≫ eval). -/
 
 /-- **§1.922**: The power-object functor Ω^(−) is CONTRAVARIANT. -/
-noncomputable instance omegaPowContra :
+@[expose] public noncomputable instance omegaPowContra :
     ContraFunctor (fun B : 𝒞 => exp B (HasSubobjectClassifier.omega (𝒞 := 𝒞))) where
   map {B₁ B₂} g :=
     -- Ω^g : exp B₂ Ω → exp B₁ Ω
@@ -162,7 +164,7 @@ noncomputable instance omegaPowContra :
     [B] = Ω^B = exp B Ω is the power object.
     Δ₁ B = curry(χ_Δ) where χ_Δ : B×B → Ω is the characteristic map of the
     diagonal subobject diag B : B ↪ B×B. -/
-noncomputable def singletonMapCat (B : 𝒞) :
+@[expose] public noncomputable def singletonMapCat (B : 𝒞) :
     B ⟶ exp B (HasSubobjectClassifier.omega (𝒞 := 𝒞)) :=
   curry (HasSubobjectClassifier.classify (diag B) (diag_mono B))
 
@@ -249,7 +251,7 @@ private theorem graph_classifies {B X' : 𝒞} (h : X' ⟶ B) :
     `γ_h`, `γ_k` are both pullbacks of `true` along the *same* map; the pullback
     lift `u` satisfies `u ≫ γ_h = γ_k`, hence (projecting to X') `u = 1` and
     `γ_h = γ_k`, whence `h = k`. -/
-theorem singletonMapCat_monic (B : 𝒞) :
+public theorem singletonMapCat_monic (B : 𝒞) :
     Monic (singletonMapCat (𝒞 := 𝒞) B) := by
   intro X' h k hΔ
   -- From h ≫ curry(χ_Δ) = k ≫ curry(χ_Δ): the precomposed char maps agree.
@@ -310,7 +312,7 @@ theorem singletonMapCat_monic (B : 𝒞) :
   universality of `mem`. -/
 
 /-- `RelHom` is transitive: `R ≤ S ≤ T ⟹ R ≤ T` (compose the witness maps). -/
-theorem RelHom_trans {A B : 𝒞} {R S T : BinRel 𝒞 A B}
+public theorem RelHom_trans {A B : 𝒞} {R S T : BinRel 𝒞 A B}
     (hRS : RelHom R S) (hST : RelHom S T) : RelHom R T :=
   relHom_trans hRS hST
 
@@ -410,7 +412,7 @@ theorem compose_graph_id {A B : 𝒞} (R : BinRel 𝒞 A B) :
 /-- Pulling a relation `U : BinRel P C` back along the IDENTITY `1_P` leaves it
     unchanged up to relation-isomorphism: `relPullback (1_P) U ≅ U`.  (The pullback
     of `1_P` and `U.colA` is `U.src`, since one leg is an identity.)  Both directions. -/
-theorem relPullback_id {P C : 𝒞} (U : BinRel 𝒞 P C) :
+public theorem relPullback_id {P C : 𝒞} (U : BinRel 𝒞 P C) :
     RelHom (relPullback (Cat.id P) U) U ∧ RelHom U (relPullback (Cat.id P) U) := by
   -- `relPullback (1_P) U` has src = pullback of `1_P` and `U.colA`, legs
   --   colA = pb.π₁ : pb.pt → P,   colB = pb.π₂ ≫ U.colB.
@@ -482,12 +484,12 @@ variable {C : 𝒞} [HasPullbacks 𝒞]
 
 /-- The classifying map `Λ_V(R) : A → Q` of `R : BinRel A C` along a universal
     relation `V : BinRel Q C` (the `classify_exists` witness). -/
-noncomputable def univClassify {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
+@[expose] public noncomputable def univClassify {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
     {A : 𝒞} (R : BinRel 𝒞 A C) : A ⟶ Q :=
   univClassify923 hV R
 
 /-- `R ≅ relPullback (Λ_V R) V` (forward+backward), the defining property of `Λ_V`. -/
-theorem univClassify_spec {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
+public theorem univClassify_spec {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
     {A : 𝒞} (R : BinRel 𝒞 A C) :
     RelHom R (relPullback (univClassify hV R) V) ∧
     RelHom (relPullback (univClassify hV R) V) R :=
@@ -497,7 +499,7 @@ theorem univClassify_spec {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel 
     `g : X → A`, classifying the pullback `relPullback g R` along `V` factors:
     `Λ_V(relPullback g R) = g ≫ Λ_V(R)`.  (Both classify `relPullback g R`, so
     `classify_unique` forces them equal.) -/
-theorem univClassify_natural {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
+public theorem univClassify_natural {Q : 𝒞} {V : BinRel 𝒞 Q C} (hV : IsUniversalRel V)
     {A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶ A) :
     univClassify hV (relPullback g R) = g ≫ univClassify hV R := by
   -- `relPullback g R ≅ relPullback (g ≫ Λ_V R) V`, via
@@ -620,7 +622,7 @@ variable [HasExponentials 𝒞]
     `χ : prod A Y → Ω`, with columns swapped to `(Y, A)`.  Its source is the
     pullback of `(χ, true)`; the product-monic is exactly `pb.π₁`, so `χ` classifies
     it (`classRel_classify`). -/
-noncomputable def classRel {A Y : 𝒞} (χ : prod A Y ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
+@[expose] public noncomputable def classRel {A Y : 𝒞} (χ : prod A Y ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
     BinRel 𝒞 Y A :=
   let pb := HasPullbacks.has χ HasSubobjectClassifier.true
   { src  := pb.cone.pt
@@ -679,21 +681,21 @@ attribute [local instance 10000] Topos.toHasBinaryProducts
 /-- The universal MEMBERSHIP relation on `exp A Ω = Ω^A`, targeted at `A`.  It is the
     subobject `{(S, a) | eval(a, S) = ⊤}` of `(exp A Ω) × A` cut out by `eval` and
     classified by the subobject classifier (columns swapped to `(Ω^A, A)`). -/
-noncomputable def evalRel (A : 𝒞) :
+@[expose] public noncomputable def evalRel (A : 𝒞) :
     BinRel 𝒞 (exp A (HasSubobjectClassifier.omega (𝒞 := 𝒞))) A :=
   classRel (eval_exp A (HasSubobjectClassifier.omega (𝒞 := 𝒞)))
 
 /-- The product-monic `⟨colB, colA⟩ : R.src ↪ A × X` of a relation `R : BinRel X A`
     (the subobject of `A × X` it names). -/
-noncomputable def relMonic {X A : 𝒞} (R : BinRel 𝒞 X A) : R.src ⟶ prod A X :=
+@[expose] public noncomputable def relMonic {X A : 𝒞} (R : BinRel 𝒞 X A) : R.src ⟶ prod A X :=
   pair R.colB R.colA
 
-theorem relMonic_mono {X A : 𝒞} (R : BinRel 𝒞 X A) : Monic (relMonic R) :=
+public theorem relMonic_mono {X A : 𝒞} (R : BinRel 𝒞 X A) : Monic (relMonic R) :=
   monic_pair_of_monicPair R.colB R.colA (fun f g h1 h2 => R.isMonicPair f g h2 h1)
 
 /-- Round-trip: any `R : BinRel X A` is the relation cut out by the classifier of its
     own product-monic, i.e. `R ≅ classRel (χ_R)` with `χ_R = classify ⟨R.colB, R.colA⟩`. -/
-theorem classRel_roundtrip {X A : 𝒞} (R : BinRel 𝒞 X A) :
+public theorem classRel_roundtrip {X A : 𝒞} (R : BinRel 𝒞 X A) :
     RelHom R (classRel (HasSubobjectClassifier.classify (relMonic R) (relMonic_mono R))) ∧
     RelHom (classRel (HasSubobjectClassifier.classify (relMonic R) (relMonic_mono R))) R := by
   have hmono : Monic (relMonic R) := relMonic_mono R
@@ -727,7 +729,7 @@ theorem classRel_roundtrip {X A : 𝒞} (R : BinRel 𝒞 X A) :
 
 /-- β-law bridge (forward): the relation cut out by `χ` is the pullback of the universal
     `evalRel A` along `curry χ`.  Uses the exponential β-law `prodMap(curry χ) ≫ eval = χ`. -/
-theorem evalRel_pull_fwd {A X : 𝒞}
+public theorem evalRel_pull_fwd {A X : 𝒞}
     (χ : prod A X ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
     RelHom (classRel χ) (relPullback (curry χ) (evalRel A)) := by
   let Ω := HasSubobjectClassifier.omega (𝒞 := 𝒞)
@@ -763,7 +765,7 @@ theorem evalRel_pull_fwd {A X : 𝒞}
 
 /-- β-law bridge (backward): the pullback of the universal `evalRel A` along `curry χ`
     is the relation cut out by `χ`. -/
-theorem evalRel_pull_bwd {A X : 𝒞}
+public theorem evalRel_pull_bwd {A X : 𝒞}
     (χ : prod A X ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
     RelHom (relPullback (curry χ) (evalRel A)) (classRel χ) := by
   let Ω := HasSubobjectClassifier.omega (𝒞 := 𝒞)
@@ -803,7 +805,7 @@ theorem evalRel_pull_bwd {A X : 𝒞}
     rw [← Cat.assoc, hnl, hnfst]; rfl
 
 /-- Iso relations name the same subobject: equal classifier of their product-monics. -/
-theorem classify_relMonic_eq {X A : 𝒞} {R S : BinRel 𝒞 X A}
+public theorem classify_relMonic_eq {X A : 𝒞} {R S : BinRel 𝒞 X A}
     (h : RelHom R S ∧ RelHom S R) :
     HasSubobjectClassifier.classify (relMonic R) (relMonic_mono R)
       = HasSubobjectClassifier.classify (relMonic S) (relMonic_mono S) := by
@@ -834,7 +836,7 @@ theorem classify_relMonic_eq {X A : 𝒞} {R S : BinRel 𝒞 X A}
     rw [hy1, Cat.assoc, hvm]; exact hℓ1.symm
 
 /-- The classifier of `classRel χ`'s product-monic recovers `χ`. -/
-theorem classify_relMonic_classRel {A X : 𝒞}
+public theorem classify_relMonic_classRel {A X : 𝒞}
     (χ : prod A X ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
     HasSubobjectClassifier.classify (relMonic (classRel χ)) (relMonic_mono (classRel χ)) = χ := by
   let pbχ := HasPullbacks.has χ HasSubobjectClassifier.true
@@ -856,7 +858,7 @@ theorem classify_relMonic_classRel {A X : 𝒞}
     `evalRel A` along a classifying map `curry(χ_R) : X → Ω^A`.  This is the curry/eval
     transpose of the subobject-classifier bijection `Sub(A × X) ≅ Hom(A × X, Ω)`, NO internal
     `∃` (image factorization) required — it is the contravariant/representing half. -/
-theorem evalRel_universal (A : 𝒞) : IsUniversalRel (evalRel A) := by
+public theorem evalRel_universal (A : 𝒞) : IsUniversalRel (evalRel A) := by
   constructor
   · intro X R
     refine ⟨curry (HasSubobjectClassifier.classify (relMonic R) (relMonic_mono R)), ?_, ?_⟩

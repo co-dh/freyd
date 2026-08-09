@@ -22,7 +22,9 @@
   · a per-incidence `meetPoint`/`lineThrough` chase exhibiting the common line
     on which the two conclusion points already lie.
 -/
-import Freyd.S2_157c_Converse
+module
+
+public import Freyd.S2_157c_Converse
 
 universe v u
 
@@ -37,7 +39,7 @@ variable {P : ProjectivePlane.{u}}
 /-- A pair joining to `⊤`, with neither entry `⊤`, is one of the three genuine
     "big" shapes: a point off a line (either order) or two distinct lines.  The
     comparable alternatives of `join_top_cases` would force an entry to `⊤`. -/
-theorem bigPair_cases {x y : PElem P} (hxy : x.join y = top)
+public theorem bigPair_cases {x y : PElem P} (hxy : x.join y = top)
     (hx : x ≠ top) (hy : y ≠ top) :
     (∃ v B, x = pt v ∧ y = ln B ∧ ¬ P.incid v B) ∨
     (∃ A w, x = ln A ∧ y = pt w ∧ ¬ P.incid w A) ∨
@@ -52,7 +54,7 @@ theorem bigPair_cases {x y : PElem P} (hxy : x.join y = top)
 /-- DOMINATION (a,c side): if each `bᵢ` sits under `aᵢ ⊔ cᵢ` then the LHS sits
     under the first conclusion meet `(a₁⊔c₁) ⊓ (a₂⊔c₂)`.  Trivial whenever a
     corner join `aᵢ ⊔ cᵢ` is `⊤`. -/
-theorem topA_S_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem topA_S_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (hb1 : b₁.le (a₁.join c₁)) (hb2 : b₂.le (a₂.join c₂)) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=
   hornConc_of_le_ac
@@ -60,7 +62,7 @@ theorem topA_S_ac {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
 
 /-- DOMINATION (c,b side): if each `aᵢ` sits under `cᵢ ⊔ bᵢ` then the LHS sits
     under the second conclusion meet `(c₁⊔b₁) ⊓ (c₂⊔b₂)`. -/
-theorem topA_S_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem topA_S_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (ha1 : a₁.le (c₁.join b₁)) (ha2 : a₂.le (c₂.join b₂)) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ :=
   HornConc.of_swap_ab (topA_S_ac (by rw [join_comm]; exact ha1) (by rw [join_comm]; exact ha2))
@@ -68,7 +70,7 @@ theorem topA_S_cb {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
 /-- DOMINATION (column-2): if `c₁` joins to `⊤` with BOTH `a₁` and `b₁`, then
     both conclusion meets collapse onto their row-2 factors, whose join already
     dominates `a₂⊔b₂ ⊒ LHS`.  (No geometry: `⊤⊓x = x`.) -/
-theorem topA_S_col2 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem topA_S_col2 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (hac1 : a₁.join c₁ = top) (hcb1 : c₁.join b₁ = top) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   show ((a₁.join b₁).meet (a₂.join b₂)).le
@@ -81,7 +83,7 @@ theorem topA_S_col2 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
 /-- DOMINATION (row-1), the row-symmetric partner of `topA_S_col2`: if `c₂`
     joins to `⊤` with both `a₂` and `b₂`, the conclusion meets collapse onto
     their row-1 factors, dominating `a₁⊔b₁ ⊒ LHS`. -/
-theorem topA_S_row1 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
+public theorem topA_S_row1 {a₁ a₂ b₁ b₂ c₁ c₂ : PElem P}
     (hac2 : a₂.join c₂ = top) (hcb2 : c₂.join b₂ = top) :
     HornConc a₁ a₂ b₁ b₂ c₁ c₂ := HornConc.of_swap_idx (topA_S_col2 hac2 hcb2)
 
@@ -97,7 +99,7 @@ theorem pt_le_join_line {u v m : P.Point} {L : P.Line} (huv : u ≠ v)
 /-- Two lines `X ≠ Y` sharing a point `z ∉ L` meet `L` in DISTINCT points: a
     common point `u = v` of `X ∩ L` and `Y ∩ L` would be a second common point
     of `X, Y` besides `z` (axiom 3), forcing `z ∈ L`. -/
-theorem meetL_ne {X Y L : P.Line} {z u v : P.Point} (hXY : X ≠ Y)
+public theorem meetL_ne {X Y L : P.Line} {z u v : P.Point} (hXY : X ≠ Y)
     (hzX : P.incid z X) (hzY : P.incid z Y) (hzL : ¬ P.incid z L)
     (huX : P.incid u X) (huL : P.incid u L) (hvY : P.incid v Y) (_hvL : P.incid v L) :
     u ≠ v := by
@@ -118,7 +120,7 @@ variable {cv : P.Point} {cB : P.Line}
 /-- cP leaf `(aLL, bLL)`.  Split on `p : cv∈aA`, `q : cv∈bA`, `r : aB=cB`,
     `s : cB=bB`; the four corner-`⊤` regions dominate, five double-incidence
     leaves need a point chase. -/
-theorem cP_LLLL {aA aB bA bB : P.Line} (hc : ¬ P.incid cv cB)
+public theorem cP_LLLL {aA aB bA bB : P.Line} (hc : ¬ P.incid cv cB)
     (haAB : aA ≠ aB) (hbAB : bA ≠ bB) :
     HornConc (ln aA) (ln aB) (ln bA) (ln bB) (pt cv) (ln cB) := by
   by_cases p : P.incid cv aA
@@ -220,7 +222,7 @@ theorem cP_LLLL {aA aB bA bB : P.Line} (hc : ¬ P.incid cv cB)
     `av, bv, cv` (i.e. `pt bv ⩽ av⊔cv` or `pt av ⩽ cv⊔bv`) dominates through
     `topA_S_ac`/`topA_S_cb`; the non-collinear residues with a repeated row-2
     line close by projecting the three points onto that line. -/
-theorem cP_PLPL {av bv : P.Point} {aB bB : P.Line} (hc : ¬ P.incid cv cB)
+public theorem cP_PLPL {av bv : P.Point} {aB bB : P.Line} (hc : ¬ P.incid cv cB)
     (hav : ¬ P.incid av aB) (hbv : ¬ P.incid bv bB) :
     HornConc (pt av) (ln aB) (pt bv) (ln bB) (pt cv) (ln cB) := by
   by_cases r : aB = cB
@@ -357,7 +359,7 @@ theorem cP_PLPL {av bv : P.Point} {aB bB : P.Line} (hc : ¬ P.incid cv cB)
     · exact topA_S_row1 (join_ln_ln_ne r) (join_ln_ln_ne s)
 
 /-- cP leaf `(aLP, bLP)`. -/
-theorem cP_LPLP {aw bw : P.Point} {aA bA : P.Line} (hc : ¬ P.incid cv cB)
+public theorem cP_LPLP {aw bw : P.Point} {aA bA : P.Line} (hc : ¬ P.incid cv cB)
     (_haw : ¬ P.incid aw aA) (hbw : ¬ P.incid bw bA) :
     HornConc (ln aA) (pt aw) (ln bA) (pt bw) (pt cv) (ln cB) := by
   by_cases hab : aA = bA
@@ -472,7 +474,7 @@ theorem cP_LPLP {aw bw : P.Point} {aA bA : P.Line} (hc : ¬ P.incid cv cB)
 /-- cP leaf `(aLL, bPL)`.  `M_cb` carries the point-point join `pt cv ⊔ pt bv`;
     the residual leaves are closed either by regrouping the three collinear
     points `aA∩aB, cv, bv` onto `aA`, or by a `⊤`-join off `lineThrough cv bv`. -/
-theorem cP_LLPL {aA aB bB : P.Line} {bv : P.Point} (hc : ¬ P.incid cv cB)
+public theorem cP_LLPL {aA aB bB : P.Line} {bv : P.Point} (hc : ¬ P.incid cv cB)
     (haAB : aA ≠ aB) (hbv : ¬ P.incid bv bB) :
     HornConc (ln aA) (ln aB) (pt bv) (ln bB) (pt cv) (ln cB) := by
   by_cases hcvA : P.incid cv aA
@@ -583,7 +585,7 @@ theorem cP_LLPL {aA aB bB : P.Line} {bv : P.Point} (hc : ¬ P.incid cv cB)
 
 /-- cP leaf `(aLL, bLP)`.  Same case tree as `cP_LLLL` with `s : bw∈cB` in the
     role of `cB=bB`. -/
-theorem cP_LLLP {aA aB bA : P.Line} {bw : P.Point} (hc : ¬ P.incid cv cB)
+public theorem cP_LLLP {aA aB bA : P.Line} {bw : P.Point} (hc : ¬ P.incid cv cB)
     (haAB : aA ≠ aB) (hbw : ¬ P.incid bw bA) :
     HornConc (ln aA) (ln aB) (ln bA) (pt bw) (pt cv) (ln cB) := by
   by_cases p : P.incid cv aA
@@ -682,7 +684,7 @@ theorem cP_LLLP {aA aB bA : P.Line} {bw : P.Point} (hc : ¬ P.incid cv cB)
 /-- cP leaf `(aPL, bLP)`.  `M_ac` carries `pt av ⊔ pt cv`; `topA_S_cb`
     dominates through the line-based `M_cb` except where `cv` and `av` split on
     `bA` / `bw` on `cB`. -/
-theorem cP_PLLP {av bw : P.Point} {aB bA : P.Line} (hc : ¬ P.incid cv cB)
+public theorem cP_PLLP {av bw : P.Point} {aB bA : P.Line} (hc : ¬ P.incid cv cB)
     (hav : ¬ P.incid av aB) (_hbw : ¬ P.incid bw bA) :
     HornConc (pt av) (ln aB) (ln bA) (pt bw) (pt cv) (ln cB) := by
   by_cases q : P.incid cv bA
@@ -792,7 +794,7 @@ theorem cP_PLLP {av bw : P.Point} {aB bA : P.Line} (hc : ¬ P.incid cv cB)
 /-- Dispatcher: the `famA` conclusion for a c-column `(pt cv, ln cB)` and
     arbitrary big a-, b-columns.  Folds the nine shape leaves onto the six
     canonical ones by the a↔b symmetry. -/
-theorem htA_cP (a₁ a₂ b₁ b₂ : PElem P) (hc : ¬ P.incid cv cB)
+public theorem htA_cP (a₁ a₂ b₁ b₂ : PElem P) (hc : ¬ P.incid cv cB)
     (ha1 : a₁ ≠ top) (ha2 : a₂ ≠ top) (hb1 : b₁ ≠ top) (hb2 : b₂ ≠ top)
     (hKA : a₁.join a₂ = top) (hKB : b₁.join b₂ = top) :
     HornConc a₁ a₂ b₁ b₂ (pt cv) (ln cB) := by
@@ -819,7 +821,7 @@ variable {cA cB : P.Line}
 
 /-- cL leaf `(aLL, bLL)`.  Shortcuts: `c=a` (resp. `c=b`) makes `M_cb` (resp.
     `M_ac`) EQUAL the LHS.  Only two residual combos need a `⊤`-join. -/
-theorem cL_LLLL {aA aB bA bB : P.Line} (hcAB : cA ≠ cB)
+public theorem cL_LLLL {aA aB bA bB : P.Line} (hcAB : cA ≠ cB)
     (_haAB : aA ≠ aB) (hbAB : bA ≠ bB) :
     HornConc (ln aA) (ln aB) (ln bA) (ln bB) (ln cA) (ln cB) := by
   by_cases hpr : aA = cA ∧ aB = cB
@@ -863,7 +865,7 @@ theorem cL_LLLL {aA aB bA bB : P.Line} (hcAB : cA ≠ cB)
 /-- cL leaf `(aPL, bPL)`.  The point-point join lives only in the LHS; `M_ac`
     and `M_cb` are line-based, so all 14 non-residual combos dominate through
     `join_mono` against `incid`-as-`le`.  Two residual combos join to `⊤`. -/
-theorem cL_PLPL {av bv : P.Point} {aB bB : P.Line} (hcAB : cA ≠ cB)
+public theorem cL_PLPL {av bv : P.Point} {aB bB : P.Line} (hcAB : cA ≠ cB)
     (_hav : ¬ P.incid av aB) (_hbv : ¬ P.incid bv bB) :
     HornConc (pt av) (ln aB) (pt bv) (ln bB) (ln cA) (ln cB) := by
   by_cases p : P.incid av cA <;> by_cases q : P.incid bv cA <;>
@@ -895,7 +897,7 @@ theorem cL_PLPL {av bv : P.Point} {aB bB : P.Line} (hcAB : cA ≠ cB)
 
 /-- cL leaf `(aLP, bLP)`.  Mirror of `cL_PLPL` with the point-point join in
     row 2. -/
-theorem cL_LPLP {aw bw : P.Point} {aA bA : P.Line} (hcAB : cA ≠ cB)
+public theorem cL_LPLP {aw bw : P.Point} {aA bA : P.Line} (hcAB : cA ≠ cB)
     (_haw : ¬ P.incid aw aA) (_hbw : ¬ P.incid bw bA) :
     HornConc (ln aA) (pt aw) (ln bA) (pt bw) (ln cA) (ln cB) := by
   by_cases p : aA = cA <;> by_cases q : cA = bA <;>
@@ -926,7 +928,7 @@ theorem cL_LPLP {aw bw : P.Point} {aA bA : P.Line} (hcAB : cA ≠ cB)
        rw [hMac, hMcb, join_ln_ln_ne (fun h => hcAB h.symm)]; exact le_top _)
 
 /-- cL leaf `(aLL, bPL)`. -/
-theorem cL_LLPL {aA aB bB : P.Line} {bv : P.Point} (hcAB : cA ≠ cB)
+public theorem cL_LLPL {aA aB bB : P.Line} {bv : P.Point} (hcAB : cA ≠ cB)
     (_haAB : aA ≠ aB) (hbv : ¬ P.incid bv bB) :
     HornConc (ln aA) (ln aB) (pt bv) (ln bB) (ln cA) (ln cB) := by
   by_cases hpr : aA = cA ∧ aB = cB
@@ -974,7 +976,7 @@ theorem cL_LLPL {aA aB bB : P.Line} {bv : P.Point} (hcAB : cA ≠ cB)
     · exact topA_S_col2 (join_ln_ln_ne p) (join_ln_pt_not q)
 
 /-- cL leaf `(aLL, bLP)`. -/
-theorem cL_LLLP {aA aB bA : P.Line} {bw : P.Point} (hcAB : cA ≠ cB)
+public theorem cL_LLLP {aA aB bA : P.Line} {bw : P.Point} (hcAB : cA ≠ cB)
     (_haAB : aA ≠ aB) (hbw : ¬ P.incid bw bA) :
     HornConc (ln aA) (ln aB) (ln bA) (pt bw) (ln cA) (ln cB) := by
   by_cases hpr : aA = cA ∧ aB = cB
@@ -1023,7 +1025,7 @@ theorem cL_LLLP {aA aB bA : P.Line} {bw : P.Point} (hcAB : cA ≠ cB)
 
 /-- cL leaf `(aPL, bLP)`.  No point-point joins, so all meets are meetPoints;
     the point entries are handled by `join_mono` against `incid`-as-`le`. -/
-theorem cL_PLLP {av bw : P.Point} {aB bA : P.Line} (hcAB : cA ≠ cB)
+public theorem cL_PLLP {av bw : P.Point} {aB bA : P.Line} (hcAB : cA ≠ cB)
     (_hav : ¬ P.incid av aB) (hbw : ¬ P.incid bw bA) :
     HornConc (pt av) (ln aB) (ln bA) (pt bw) (ln cA) (ln cB) := by
   by_cases p : P.incid av cA
@@ -1083,7 +1085,7 @@ theorem cL_PLLP {av bw : P.Point} {aB bA : P.Line} (hcAB : cA ≠ cB)
     · exact topA_S_col2 (join_pt_ln_not p) (join_ln_ln_ne q)
 
 /-- Dispatcher for a c-column `(ln cA, ln cB)` (`cA ≠ cB`). -/
-theorem htA_cL (a₁ a₂ b₁ b₂ : PElem P) (hcAB : cA ≠ cB)
+public theorem htA_cL (a₁ a₂ b₁ b₂ : PElem P) (hcAB : cA ≠ cB)
     (ha1 : a₁ ≠ top) (ha2 : a₂ ≠ top) (hb1 : b₁ ≠ top) (hb2 : b₂ ≠ top)
     (hKA : a₁.join a₂ = top) (hKB : b₁.join b₂ = top) :
     HornConc a₁ a₂ b₁ b₂ (ln cA) (ln cB) := by
@@ -1109,7 +1111,7 @@ end cL
     sentence.  The hypothesis meet `⊤` forces both column joins — and, through
     the Horn hypothesis, the c-column join — to `⊤`.  After pruning `⊤`-entries
     with the §2.157b pruning lemmas, dispatch on the c-column shape. -/
-theorem hornTop_famA : ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P),
+public theorem hornTop_famA : ∀ (a₁ a₂ b₁ b₂ c₁ c₂ : PElem P),
     (a₁.join a₂).meet (b₁.join b₂) = top →
     HornHyp a₁ a₂ b₁ b₂ c₁ c₂ → HornConc a₁ a₂ b₁ b₂ c₁ c₂ := by
   intro a₁ a₂ b₁ b₂ c₁ c₂ hH hHyp

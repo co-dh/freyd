@@ -1,3 +1,5 @@
+module
+
 universe u
 
 /-
@@ -200,7 +202,7 @@ def piAssign {m : Nat} (A : Fin m → Type u) (ρ : ∀ j, V → Rel (A j)) : V 
     `Classical.choice`): the finitely many witnesses are assembled one coordinate at a
     time by `∃`-elimination.  Needed for the composition case of `UTerm.eval_pi`, where an
     intermediate point must be chosen PER COORDINATE. -/
-theorem finChoice : ∀ {m : Nat} {A : Fin m → Type u} {P : ∀ j, A j → Prop},
+public theorem finChoice : ∀ {m : Nat} {A : Fin m → Type u} {P : ∀ j, A j → Prop},
     (∀ j, ∃ b, P j b) → ∃ f : ∀ j, A j, ∀ j, P j (f j)
   | 0, _, _, _ => ⟨fun j => j.elim0, fun j => j.elim0⟩
   | _ + 1, _, _, h => by

@@ -19,7 +19,9 @@
   Mathlib-free; built on the repo's own `Cat` + `SliceRegular` + `CapitalizationLaxColimit` +
   `LaxColimitPreReg`.
 -/
-import Freyd.S1_543_LaxColimitPreReg
+module
+
+public import Freyd.S1_543_LaxColimitPreReg
 
 open Freyd
 open Freyd.Colim
@@ -47,11 +49,11 @@ variable {C D : 𝒞} (g : C ⟶ D)
 
 /-- The base pullback `W ×_D C` of `W.hom` along `g`.  `abbrev` so `(bcPB g W).cone.pt` is
     definitionally `(baseChangeObj g W).dom` (both unfold to `HasPullbacks.has W.hom g`). -/
-abbrev bcPB (W : Over D) : HasPullback W.hom g := HasPullbacks.has W.hom g
+@[expose] public abbrev bcPB (W : Over D) : HasPullback W.hom g := HasPullbacks.has W.hom g
 
 /-- **Transpose (right→left): `(z ⟶ g* W) → (reindexObj g z ⟶ W)`.**  Post-compose with `π₁`.  The
     over-`D` law is the pullback square: `(u.f ≫ π₁) ≫ W.hom = u.f ≫ (π₂ ≫ g) = z.hom ≫ g`. -/
-def bcTranspose {z : Over C} {W : Over D} (u : z ⟶ baseChangeObj g W) :
+@[expose] public def bcTranspose {z : Over C} {W : Over D} (u : z ⟶ baseChangeObj g W) :
     reindexObj g z ⟶ W :=
   ⟨u.f ≫ (bcPB g W).cone.π₁, by
     show (u.f ≫ (bcPB g W).cone.π₁) ≫ W.hom = z.hom ≫ g
@@ -62,7 +64,7 @@ def bcTranspose {z : Over C} {W : Over D} (u : z ⟶ baseChangeObj g W) :
 /-- **Transpose (left→right): `(reindexObj g z ⟶ W) → (z ⟶ g* W)`.**  Lift the cone `(a.f, z.hom)`
     into the pullback `W ×_D C`; the cone commutes because `a.f ≫ W.hom = z.hom ≫ g` (the over-`D`
     law).  The lift's `π₂`-leg is `z.hom`, the over-`C` law. -/
-def bcLift {z : Over C} {W : Over D} (a : reindexObj g z ⟶ W) :
+@[expose] public def bcLift {z : Over C} {W : Over D} (a : reindexObj g z ⟶ W) :
     z ⟶ baseChangeObj g W :=
   ⟨(bcPB g W).lift ⟨z.dom, a.f, z.hom, by
       show a.f ≫ W.hom = z.hom ≫ g; exact a.w⟩,
@@ -73,20 +75,20 @@ def bcLift {z : Over C} {W : Over D} (a : reindexObj g z ⟶ W) :
 
 /-- `bcLift ∘ bcTranspose = id` (over `C`): both arrows lift the same pullback cone, by
     `lift_uniq`. -/
-theorem bcLift_bcTranspose {z : Over C} {W : Over D} (u : z ⟶ baseChangeObj g W) :
+public theorem bcLift_bcTranspose {z : Over C} {W : Over D} (u : z ⟶ baseChangeObj g W) :
     bcLift g (bcTranspose g u) = u :=
   OverHom.ext ((bcPB g W).lift_uniq
     ⟨z.dom, (bcTranspose g u).f, z.hom, (bcTranspose g u).w⟩ u.f rfl u.w).symm
 
 /-- `bcTranspose ∘ bcLift = id` (over `D`): the lift's `π₁`-leg is `a.f`, by `lift_fst`. -/
-theorem bcTranspose_bcLift {z : Over C} {W : Over D} (a : reindexObj g z ⟶ W) :
+public theorem bcTranspose_bcLift {z : Over C} {W : Over D} (a : reindexObj g z ⟶ W) :
     bcTranspose g (bcLift g a) = a :=
   OverHom.ext ((bcPB g W).lift_fst _)
 
 /-- **Naturality of the transpose.**  Post-composing in `Over D` with `m : W ⟶ W'` corresponds to
     post-composing in `Over C` with `baseChangeMap g m`: `bcTranspose (u ⊚ g*m) = bcTranspose u ⊚ m`.
     (Both underlying arrows are `u.f ≫ π₁ˣ ≫ ...`; the base-change map's `π₁`-leg is `lift_fst`.) -/
-theorem bcTranspose_natural {z : Over C} {W W' : Over D} (u : z ⟶ baseChangeObj g W)
+public theorem bcTranspose_natural {z : Over C} {W W' : Over D} (u : z ⟶ baseChangeObj g W)
     (m : W ⟶ W') :
     bcTranspose g (u ⊚ baseChangeMap g m) = bcTranspose g u ⊚ m := by
   apply OverHom.ext
@@ -100,7 +102,7 @@ theorem bcTranspose_natural {z : Over C} {W W' : Over D} (u : z ⟶ baseChangeOb
 
 /-- **Base-change reflects equality of maps into `g* W`.**  If two maps `u v : z ⟶ g* W` have equal
     transposes, they are equal (the transpose is injective, being one half of a bijection). -/
-theorem bcTranspose_inj {z : Over C} {W : Over D} {u v : z ⟶ baseChangeObj g W}
+public theorem bcTranspose_inj {z : Over C} {W : Over D} {u v : z ⟶ baseChangeObj g W}
     (h : bcTranspose g u = bcTranspose g v) : u = v := by
   rw [← bcLift_bcTranspose g u, ← bcLift_bcTranspose g v, h]
 
@@ -117,7 +119,7 @@ section Bundles
 variable (P : ProjSystem ι D 𝒞)
 
 /-- The base map of the `i ≤ j` transition: the projection `P.proj hij : P.pr j ⟶ P.pr i`. -/
-private abbrev pj {i j : ι} (hij : D.le i j) : P.pr j ⟶ P.pr i := P.proj hij
+@[expose] public abbrev pj {i j : ι} (hij : D.le i j) : P.pr j ⟶ P.pr i := P.proj hij
 
 /-- `(laxOfProjSystem' P).functF hij` acts on arrows as `baseChangeMap (P.proj hij)`. -/
 private theorem functF_map {i j : ι} (hij : D.le i j) {X Y : Over (P.pr i)} (m : X ⟶ Y) :
@@ -129,7 +131,7 @@ private theorem functF_map {i j : ι} (hij : D.le i j) {X Y : Over (P.pr i)} (m 
 /-- **`LaxTerminalData (laxOfProjSystem' P)`.**  Per-fibre terminal is `overHasTerminal (P.pr i)`.
     The pushed terminal `g*(overTerm)` receives `bcLift g (term …)` from any `X`; uniqueness is the
     fibre terminal's `term_uniq` transported across the transpose bijection. -/
-noncomputable def ratLaxTerminalData : LaxTerminalData (laxOfProjSystem' P) where
+@[expose] public noncomputable def ratLaxTerminalData : LaxTerminalData (laxOfProjSystem' P) where
   ht i := overHasTerminal (P.pr i)
   pushTrm {i j} hij X :=
     letI : HasTerminal (Over (P.pr i)) := overHasTerminal (P.pr i)
@@ -147,7 +149,7 @@ noncomputable def ratLaxTerminalData : LaxTerminalData (laxOfProjSystem' P) wher
 
 /-- Joint-monicity of a fibre binary product (from `pair_uniq`): two maps equal after `fst` and
     after `snd` are equal. -/
-private theorem fibreProd_jointMono {i : ι} (a b : Over (P.pr i)) (z : Over (P.pr i))
+public theorem fibreProd_jointMono {i : ι} (a b : Over (P.pr i)) (z : Over (P.pr i))
     (s t : z ⟶ (overHasBinaryProducts (P.pr i)).prod a b)
     (hf : s ≫ (overHasBinaryProducts (P.pr i)).fst = t ≫ (overHasBinaryProducts (P.pr i)).fst)
     (hs : s ≫ (overHasBinaryProducts (P.pr i)).snd = t ≫ (overHasBinaryProducts (P.pr i)).snd) :
@@ -161,7 +163,7 @@ private theorem fibreProd_jointMono {i : ι} (a b : Over (P.pr i)) (z : Over (P.
 
 /-- **`LaxProductData (laxOfProjSystem' P)`.**  Per-fibre products `overHasBinaryProducts`; `pres`
     (joint-monic preservation) and `presPair` (pairing preservation) via the adjunction transpose. -/
-noncomputable def ratLaxProductData : LaxProductData (laxOfProjSystem' P) where
+@[expose] public noncomputable def ratLaxProductData : LaxProductData (laxOfProjSystem' P) where
   hp i := overHasBinaryProducts (P.pr i)
   pres {i j} hij a b z u v hf hs := by
     letI : HasBinaryProducts (Over (P.pr i)) := overHasBinaryProducts (P.pr i)
@@ -198,7 +200,7 @@ variable [HasEqualizers 𝒞]
 
 /-- The fibre equalizer map is monic: two maps `s t` into `eqObj f g` equal after `eqMap` are equal
     (both are the unique lift of the same equalizing cone, by `HasEqualizer.uniq`). -/
-private theorem fibreEq_mono {i : ι} {A B : Over (P.pr i)} (f g : A ⟶ B) (z : Over (P.pr i))
+public theorem fibreEq_mono {i : ι} {A B : Over (P.pr i)} (f g : A ⟶ B) (z : Over (P.pr i))
     (s t : z ⟶ @eqObj _ _ (overHasEqualizers (P.pr i)) _ _ f g)
     (h : s ≫ @eqMap _ _ (overHasEqualizers (P.pr i)) _ _ f g
        = t ≫ @eqMap _ _ (overHasEqualizers (P.pr i)) _ _ f g) :
@@ -215,7 +217,7 @@ private theorem fibreEq_mono {i : ι} {A B : Over (P.pr i)} (f g : A ⟶ B) (z :
 
 /-- **`LaxEqualizerData (laxOfProjSystem' P)`.**  Per-fibre equalizers `overHasEqualizers`; `pres`
     (monicity preservation) and `presLift` (lift preservation) via the adjunction transpose. -/
-noncomputable def ratLaxEqualizerData : LaxEqualizerData (laxOfProjSystem' P) where
+@[expose] public noncomputable def ratLaxEqualizerData : LaxEqualizerData (laxOfProjSystem' P) where
   he i := overHasEqualizers (P.pr i)
   pres {i j} hij A B f g z u v huv := by
     letI : HasEqualizers (Over (P.pr i)) := overHasEqualizers (P.pr i)
@@ -251,14 +253,14 @@ noncomputable def ratLaxEqualizerData : LaxEqualizerData (laxOfProjSystem' P) wh
     `S1_543_CapitalizationLaxColimit.lean` — same definition, kept `abbrev` under this file's
     name since many downstream files (`RatCapImages`/`RatCapStagePTC`/`UniformCapStep`/
     `RatCapPositive`) use the unqualified `ratCat`.) -/
-noncomputable abbrev ratCat (P : ProjSystem ι D 𝒞) : Cat (Obj (laxOfProjSystem' P)) :=
+@[expose] public noncomputable abbrev ratCat (P : ProjSystem ι D 𝒞) : Cat (Obj (laxOfProjSystem' P)) :=
   ratCapCat P
 
 /-- **`PreRegularCategory (ratCapCat P)` from the canonical-pullback cover-transfer `hcanon`.**  The
     three finite-limit bundles are the concrete `ratLax*Data` (base-change preserves slice
     terminal/products/equalizers, proved via the adjunction transpose); the only residual is
     `hcanon`, identical in shape to the strict `colimitPreRegular`'s `hcanon`. -/
-noncomputable def ratCapPreRegular [Nonempty ι] [HasEqualizers 𝒞] (P : ProjSystem ι D 𝒞)
+@[expose] public noncomputable def ratCapPreRegular [Nonempty ι] [HasEqualizers 𝒞] (P : ProjSystem ι D 𝒞)
     (hcanon : letI : Cat (Obj (laxOfProjSystem' P)) := ratCat P
         letI : HasPullbacks (Obj (laxOfProjSystem' P)) :=
           laxColimHasPullbacks (laxOfProjSystem' P) (coherentProj P)

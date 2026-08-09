@@ -40,7 +40,9 @@
   MISSING, not stubbed.
 -/
 
-import Freyd.S1_18
+module
+
+public import Freyd.S1_18
 
 universe v u₁ u₂ u₃
 

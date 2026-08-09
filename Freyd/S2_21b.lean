@@ -1,8 +1,10 @@
-import Freyd.S2_218_CapDataPositiveTower
-import Freyd.S1_635_StalkRepr
-import Freyd.S2_147_MapCat
-import Freyd.S2_216_MatrixAllegory
-import Freyd.S2_217_PositiveRepr
+module
+
+public import Freyd.S2_218_CapDataPositiveTower
+public import Freyd.S1_635_StalkRepr
+public import Freyd.S2_147_MapCat
+public import Freyd.S2_216_MatrixAllegory
+public import Freyd.S2_217_PositiveRepr
 
 universe u u₁ u₂ u₃ v
 
@@ -55,7 +57,7 @@ open Cat RelFunctor PreLogosHorn.Stalk
     is what makes `Map 𝒜` a positive pre-logos (`mapDisjointBinaryCoproduct`), so the capital target
     `Ā` is positive and Freyd's §1.635 ultra-filter STALK family `Tstar : Ā → Set^I` applies — the
     stalk route needs `[DisjointBinaryCoproduct Ā]`. -/
-theorem tabular_repr_in_power_of_sets {𝒜 : Type u}
+public theorem tabular_repr_in_power_of_sets {𝒜 : Type u}
     [Alg.TabularUnitaryPositiveAllegory.{u, u} 𝒜] :
     ∃ (I : Type u) (rep : Alg.AllegoryFunctor 𝒜 (RelObj (I → Type u))), rep.Faithful := by
   -- (1) `Map 𝒜` is a small positive pre-logos; pin its `Cat`/`RegularCategory` to the `map*` ones.
@@ -100,7 +102,7 @@ open Alg Alg.Mat in
     bundled as in `RelCat.matRelTabularUnitaryPositiveAllegory`; the §2.342 `Tabular`/`Unitary`
     hypothesis classes come from the §2.212 parents), so `tabular_repr_in_power_of_sets` applies to
     `Mat 𝒜`; composing with the faithful `matEmbed : 𝒜 ↪ Mat 𝒜` gives the representation of `𝒜`. -/
-theorem tabular_repr_in_power_of_sets_distributive {𝒜 : Type u}
+public theorem tabular_repr_in_power_of_sets_distributive {𝒜 : Type u}
     [Alg.TabularUnitaryDistributiveAllegory.{u, u} 𝒜] :
     ∃ (I : Type u) (rep : Alg.AllegoryFunctor 𝒜 (RelObj (I → Type u))), rep.Faithful := by
   -- `Mat 𝒜` is tabular unitary POSITIVE (`matTabularUnitaryPositive`, S2_217_PositiveRepr).
@@ -111,5 +113,3 @@ theorem tabular_repr_in_power_of_sets_distributive {𝒜 : Type u}
 
 end Freyd
 
-#print axioms Freyd.tabular_repr_in_power_of_sets
-#print axioms Freyd.tabular_repr_in_power_of_sets_distributive

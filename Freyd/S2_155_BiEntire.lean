@@ -24,7 +24,9 @@
   upward closed, so any nonzero lower bound in B already forces the guard.
 -/
 
-import Freyd.S2_10
+module
+
+public import Freyd.S2_10
 
 universe u
 
@@ -38,11 +40,11 @@ namespace Freyd.Alg
 /-- `R` and `R°` are both ENTIRE (§2.155): every `a` is related to some `b`
     and every `b` to some `a`.  (Named `BiEntire` to avoid clashing with the
     allegory-level `Entire` of §2.13.) -/
-@[reducible] def BiEntire {A B : Type u} (R : A → B → Prop) : Prop :=
+@[reducible, expose] public def BiEntire {A B : Type u} (R : A → B → Prop) : Prop :=
   (∀ a, ∃ b, R a b) ∧ (∀ b, ∃ a, R a b)
 
 /-- Membership in B (§2.155): `R = ∅` or `R` is bi-entire. -/
-@[reducible] def IsB {A B : Type u} (R : A → B → Prop) : Prop :=
+@[reducible, expose] public def IsB {A B : Type u} (R : A → B → Prop) : Prop :=
   (∀ a b, ¬ R a b) ∨ BiEntire R
 
 /-- Pointwise intersection — the intersection of Rel(S), which B is NOT
@@ -52,7 +54,7 @@ namespace Freyd.Alg
 
 /-- Diagram-order relational composition: `bComp R S a c` iff some `b` has
     `R a b` and `S b c` (first `R`, then `S`). -/
-@[reducible] def bComp {A B C : Type u} (R : A → B → Prop) (S : B → C → Prop) :
+@[reducible, expose] public def bComp {A B C : Type u} (R : A → B → Prop) (S : B → C → Prop) :
     A → C → Prop :=
   fun a c => ∃ b, R a b ∧ S b c
 
@@ -74,11 +76,11 @@ theorem biEntire_mono {A B : Type u} {R S : A → B → Prop}
    fun b => (h.2 b).elim fun a ha => ⟨a, hsub a b ha⟩⟩
 
 /-- The identity relation is bi-entire. -/
-theorem biEntire_eq {A : Type u} : BiEntire (Eq : A → A → Prop) :=
+public theorem biEntire_eq {A : Type u} : BiEntire (Eq : A → A → Prop) :=
   ⟨fun a => ⟨a, rfl⟩, fun a => ⟨a, rfl⟩⟩
 
 /-- Bi-entire relations compose to bi-entire relations. -/
-theorem biEntire_comp {A B C : Type u} {R : A → B → Prop} {S : B → C → Prop}
+public theorem biEntire_comp {A B C : Type u} {R : A → B → Prop} {S : B → C → Prop}
     (hR : BiEntire R) (hS : BiEntire S) : BiEntire (bComp R S) :=
   ⟨fun a => (hR.1 a).elim fun b hb => (hS.1 b).elim fun c hc => ⟨c, b, hb, hc⟩,
    fun c => (hS.2 c).elim fun b hb => (hR.2 b).elim fun a ha => ⟨a, b, ha, hb⟩⟩
@@ -93,7 +95,7 @@ theorem biEntire_recip {A B : Type u} {R : A → B → Prop} (h : BiEntire R) :
 
 /-- B is closed under composition: bi-entire ∘ bi-entire is bi-entire, and
     anything composed with `∅` is `∅`. -/
-theorem isB_comp {A B C : Type u} {R : A → B → Prop} {S : B → C → Prop}
+public theorem isB_comp {A B C : Type u} {R : A → B → Prop} {S : B → C → Prop}
     (hR : IsB R) (hS : IsB S) : IsB (bComp R S) := by
   rcases hR with hR | hR
   · exact Or.inl fun a c h => h.elim fun b hb => hR a b hb.1
@@ -144,16 +146,16 @@ theorem interB_eq_left {A B : Type u} {X Y : A → B → Prop} (hX : IsB X)
 /-! ## §2.155 (ii)  The category B -/
 
 /-- Objects of B: the objects of Rel(S), i.e. sets. -/
-def BObj : Type (u + 1) := Type u
+@[expose] public def BObj : Type (u + 1) := Type u
 
 /-- View a set as an object of B. -/
 abbrev BObj.of (A : Type u) : BObj.{u} := A
 
 /-- Hom-sets of B (§2.155): relations that are `∅` or bi-entire. -/
-def BHom (A B : Type u) : Type u := { R : A → B → Prop // IsB R }
+@[expose] public def BHom (A B : Type u) : Type u := { R : A → B → Prop // IsB R }
 
 /-- Hom extensionality: B-morphisms are equal iff pointwise equivalent. -/
-theorem BHom.ext {A B : Type u} {R S : BHom A B} (h : ∀ a b, R.val a b ↔ S.val a b) :
+public theorem BHom.ext {A B : Type u} {R S : BHom A B} (h : ∀ a b, R.val a b ↔ S.val a b) :
     R = S :=
   Subtype.ext (funext fun a => funext fun b => propext (h a b))
 
@@ -162,24 +164,24 @@ theorem BHom.congr {A B : Type u} {R S : BHom A B} (h : R = S) (a : A) (b : B) :
     R.val a b ↔ S.val a b := by rw [h]
 
 /-- Identity of B: the identity relation. -/
-@[reducible] def BHom.id (A : Type u) : BHom A A := ⟨Eq, Or.inr biEntire_eq⟩
+@[reducible, expose] public def BHom.id (A : Type u) : BHom A A := ⟨Eq, Or.inr biEntire_eq⟩
 
 /-- Composition of B (diagram order). -/
-@[reducible] def BHom.comp {A B C : Type u} (R : BHom A B) (S : BHom B C) : BHom A C :=
+@[reducible, expose] public def BHom.comp {A B C : Type u} (R : BHom A B) (S : BHom B C) : BHom A C :=
   ⟨bComp R.val S.val, isB_comp R.property S.property⟩
 
 /-- `1 ≫ R = R` at the relation level. -/
-theorem bComp_eq_left {A B : Type u} (R : A → B → Prop) (a : A) (b : B) :
+public theorem bComp_eq_left {A B : Type u} (R : A → B → Prop) (a : A) (b : B) :
     bComp Eq R a b ↔ R a b :=
   ⟨fun h => by obtain ⟨x, rfl, hx⟩ := h; exact hx, fun h => ⟨a, rfl, h⟩⟩
 
 /-- `R ≫ 1 = R` at the relation level. -/
-theorem bComp_eq_right {A B : Type u} (R : A → B → Prop) (a : A) (b : B) :
+public theorem bComp_eq_right {A B : Type u} (R : A → B → Prop) (a : A) (b : B) :
     bComp R Eq a b ↔ R a b :=
   ⟨fun h => by obtain ⟨x, hx, rfl⟩ := h; exact hx, fun h => ⟨b, h, rfl⟩⟩
 
 /-- Associativity of relational composition. -/
-theorem bComp_assoc {A B C D : Type u} (R : A → B → Prop) (S : B → C → Prop)
+public theorem bComp_assoc {A B C D : Type u} (R : A → B → Prop) (S : B → C → Prop)
     (T : C → D → Prop) (a : A) (d : D) :
     bComp (bComp R S) T a d ↔ bComp R (bComp S T) a d :=
   ⟨fun ⟨c, ⟨b, hab, hbc⟩, hcd⟩ => ⟨b, hab, c, hbc, hcd⟩,
@@ -187,7 +189,7 @@ theorem bComp_assoc {A B C D : Type u} (R : A → B → Prop) (S : B → C → P
 
 /-- §2.155: B is a category ("the subcategory of Rel(S) defined by
     (A →R B) ∈ B iff either R = ∅ or both R and R° are entire"). -/
-instance instCatB : Cat.{u, u + 1} BObj.{u} where
+@[expose] public instance instCatB : Cat.{u, u + 1} BObj.{u} where
   Hom A B := BHom A B
   id A := BHom.id A
   comp R S := BHom.comp R S

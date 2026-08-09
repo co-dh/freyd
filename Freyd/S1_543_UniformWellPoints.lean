@@ -36,8 +36,10 @@
   (it defines and reduces to the density Prop, proven downstream); no `axiom`, no `:True`, no
   statement-weakening.
 -/
-import Freyd.S1_547_UniformCapStep
-import Freyd.S1_543_SliceEquivalence
+module
+
+public import Freyd.S1_547_UniformCapStep
+public import Freyd.S1_543_SliceEquivalence
 
 open Freyd
 open Freyd.Colim
@@ -65,7 +67,7 @@ variable {𝒜 : Type u} [Cat.{u} 𝒜]
     of `cod s` that `s` does not factor (`¬∃ y', y' ≫ s = x'`), then `x' ≫ j` is a point of `cod m`
     that `m` does not factor.  (Post-compose a hypothetical factor by `j⁻¹` to factor `x'` through
     `s` — contradiction.)  This lifts a missing slice/stage point to a missing colimit point. -/
-theorem point_transport_unconj {one E T E' T' : 𝒜} {m : E ⟶ T} {i : E ⟶ E'} {s : E' ⟶ T'}
+public theorem point_transport_unconj {one E T E' T' : 𝒜} {m : E ⟶ T} {i : E ⟶ E'} {s : E' ⟶ T'}
     {j : T' ⟶ T} (hfac : m = i ≫ s ≫ j) (hj : IsIso j)
     (x' : one ⟶ T') (hx' : ¬ ∃ y' : one ⟶ E', y' ≫ s = x') :
     ¬ ∃ y : one ⟶ E, y ≫ m = x' ≫ j := by
@@ -82,7 +84,7 @@ theorem point_transport_unconj {one E T E' T' : 𝒜} {m : E ⟶ T} {i : E ⟶ E
   exact h2
 
 /-- `Monic` is reflected across pre-composition with an iso: `Monic (e ≫ s)` with `e` iso ⟹ `Monic s`. -/
-theorem mono_of_iso_comp_mono {X Y Z : 𝒜} {e : X ⟶ Y} {s : Y ⟶ Z}
+public theorem mono_of_iso_comp_mono {X Y Z : 𝒜} {e : X ⟶ Y} {s : Y ⟶ Z}
     (he : IsIso e) (h : Monic (e ≫ s)) : Monic s := by
   obtain ⟨einv, he1, he2⟩ := he
   intro W u v huv
@@ -96,14 +98,14 @@ theorem mono_of_iso_comp_mono {X Y Z : 𝒜} {e : X ⟶ Y} {s : Y ⟶ Z}
   simpa only [Cat.assoc, he2, Cat.comp_id] using this
 
 /-- `Monic` is reflected across post-composition with an iso: `Monic (s ≫ e)` with `e` iso ⟹ `Monic s`. -/
-theorem mono_of_mono_comp_iso {X Y Z : 𝒜} {s : X ⟶ Y} {e : Y ⟶ Z}
+public theorem mono_of_mono_comp_iso {X Y Z : 𝒜} {s : X ⟶ Y} {e : Y ⟶ Z}
     (_he : IsIso e) (h : Monic (s ≫ e)) : Monic s := by
   intro W u v huv
   apply h
   rw [← Cat.assoc, ← Cat.assoc, huv]
 
 /-- `Monic` is reflected across iso conjugation: `Monic (i ≫ s ≫ j)` with `i, j` iso ⟹ `Monic s`. -/
-theorem mono_unconj {W X Y Z : 𝒜} {i : W ⟶ X} {s : X ⟶ Y} {j : Y ⟶ Z}
+public theorem mono_unconj {W X Y Z : 𝒜} {i : W ⟶ X} {s : X ⟶ Y} {j : Y ⟶ Z}
     (hi : IsIso i) (hj : IsIso j) (h : Monic (i ≫ s ≫ j)) : Monic s :=
   mono_of_mono_comp_iso hj (mono_of_iso_comp_mono hi h)
 
@@ -148,14 +150,14 @@ private def prodCone (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
 
 /-- The underlying `S`-arrow `A × ∏(chain U) ⟶ pushforward.dom`: the comparison `pair fst snd` from
     the product cone into the chosen base-change pullback. -/
-noncomputable def pushTerminalSlice_cmp (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
+public noncomputable def pushTerminalSlice_cmp (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
     prod A (listProd (𝒞 := S) (i.1.map Prod.snd)) ⟶
       ((laxOfProjSystem' (cofinalProjSystem (S := S))).F h (terminalSliceObj W A)).dom :=
   (HasPullbacks.has (terminalSliceObj W A).hom ((cofinalProjSystem (S := S)).proj h)).lift (prodCone W A h)
 
 /-- `pushTerminalSlice_cmp` is iso (`isIso_of_two_pullbacks`: the product cone and the chosen
     base-change pullback are both pullbacks of the same cospan). -/
-theorem pushTerminalSlice_cmp_isIso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
+public theorem pushTerminalSlice_cmp_isIso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
     IsIso (pushTerminalSlice_cmp W A h) :=
   isIso_of_two_pullbacks (prod_isPullback_of_terminalBase W A h) (baseChange_isPullback W A h) _
     ((HasPullbacks.has (terminalSliceObj W A).hom ((cofinalProjSystem (S := S)).proj h)).lift_fst (prodCone W A h))
@@ -163,7 +165,7 @@ theorem pushTerminalSlice_cmp_isIso (A : S) {i : WSList S} (h : (wsDirected S).l
 
 /-- The comparison commutes with the slice structure maps: `cmp ≫ pushforward.hom = snd`
     (`lift_snd`, since `pushforward.hom = π₂` and `(prodCone).π₂ = snd`). -/
-theorem pushTerminalSlice_cmp_hom (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
+public theorem pushTerminalSlice_cmp_hom (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
     pushTerminalSlice_cmp W A h ≫ ((laxOfProjSystem' (cofinalProjSystem (S := S))).F h (terminalSliceObj W A)).hom
       = (sliceEmbedObj (listProd (𝒞 := S) (i.1.map Prod.snd)) A).hom :=
   (HasPullbacks.has (terminalSliceObj W A).hom ((cofinalProjSystem (S := S)).proj h)).lift_snd (prodCone W A h)
@@ -171,12 +173,12 @@ theorem pushTerminalSlice_cmp_hom (A : S) {i : WSList S} (h : (wsDirected S).le 
 /-- **Phase 1 result.**  The pushforward of `terminalSliceObj A` to stage `U` is iso, in
     `Over (∏(chain U))`, to `sliceEmbedObj (∏(chain U)) A`.  Underlying arrow `pushTerminalSlice_cmp`
     (iso, commuting with the `snd` structure map). -/
-noncomputable def pushTerminalSlice_iso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
+@[expose] public noncomputable def pushTerminalSlice_iso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
     OverHom (sliceEmbedObj (listProd (𝒞 := S) (i.1.map Prod.snd)) A)
       ((laxOfProjSystem' (cofinalProjSystem (S := S))).F h (terminalSliceObj W A)) :=
   ⟨pushTerminalSlice_cmp W A h, pushTerminalSlice_cmp_hom W A h⟩
 
-theorem pushTerminalSlice_iso_isIso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
+public theorem pushTerminalSlice_iso_isIso (A : S) {i : WSList S} (h : (wsDirected S).le W.base i) :
     @IsIso (Over (listProd (𝒞 := S) (i.1.map Prod.snd))) _ _ _ (pushTerminalSlice_iso W A h) :=
   overIso_of_underlying _ (pushTerminalSlice_cmp_isIso W A h)
 
@@ -208,7 +210,7 @@ private theorem projCons :
 
 /-- The stage-`i` inclusion functor of the §1.547 lax colimit is faithful (`Embedding` + reflects
     iso), via `stageInclFunctorL_faithful` with `projFaithful`/`projCons`. -/
-theorem stageInclFaithful (i : WSList S) :
+public theorem stageInclFaithful (i : WSList S) :
     @Faithful ((laxOfProjSystem' (cofinalProjSystem (S := S))).A i) _ (uniformTargetTy W) (uniformTargetCat W)
       (stageInclFunctorL _ (coherentProj (cofinalProjSystem (S := S))) i) :=
   stageInclFunctorL_faithful (laxOfProjSystem' (cofinalProjSystem (S := S))) (coherentProj (cofinalProjSystem (S := S)))
@@ -219,7 +221,7 @@ theorem stageInclFaithful (i : WSList S) :
     object `xE'`, and a fibre map `g'' : xE' ⟶ L.F (base≤U) (terminalSliceObj A)` that is a PROPER
     mono in `Over (∏(chain U))`.  (`homInclL_factor` strips `m` to a stage inclusion flanked by the
     iso realignments; conjugation + the faithful embedding reflect `Monic`/`¬IsIso`.) -/
-theorem colimitMono_reflects_to_fibre (A : S)
+public theorem colimitMono_reflects_to_fibre (A : S)
     {iE : WSList S} {xE : (laxOfProjSystem' (cofinalProjSystem (S := S))).A iE}
     (m : @Cat.Hom _ (uniformTargetCat W) ⟨iE, xE⟩ ⟨W.base, terminalSliceObj W A⟩)
     (hm : @Monic _ (uniformTargetCat W) _ _ m) (hniso : ¬ @IsIso _ (uniformTargetCat W) _ _ m) :
@@ -319,7 +321,7 @@ theorem colimitMono_reflects_to_fibre (A : S)
     here as a single named Prop and PROVEN in `FibreDensityProof.lean`.  Stated against the book's
     `WellPointed` shape — no
     weakening: the conclusion is "∃ point, ¬∃ y factoring it through the colimit mono". -/
-def StageDensity (W : WSCover S) : Prop :=
+@[expose] public def StageDensity (W : WSCover S) : Prop :=
   letI : Cat (uniformTargetTy W) := uniformTargetCat W
   ∀ (A : S), WellSupported A →
     ∀ {E : uniformTargetTy W} (m : @Cat.Hom _ (uniformTargetCat W) E ⟨W.base, terminalSliceObj W A⟩),
@@ -342,7 +344,7 @@ def StageDensity (W : WSCover S) : Prop :=
     the slice g-point.  Strictly sharper than `StageDensity` (no realignment bookkeeping — the point
     lives at the SAME object as the reflected mono).  `StageDensity` follows from it Sorry-free via
     Phase 2's factorization + `point_transport_unconj`. -/
-def FibreDensity (W : WSCover S) : Prop :=
+@[expose] public def FibreDensity (W : WSCover S) : Prop :=
   letI : Cat (uniformTargetTy W) := uniformTargetCat W
   ∀ (A : S), WellSupported A →
     ∀ (U : WSList S) (hbU : (wsDirected S).le W.base U)
@@ -363,7 +365,7 @@ def FibreDensity (W : WSCover S) : Prop :=
     reflects (Phase 2) to a proper fibre mono `g''` with `m = i ≫ (stageInclL g'') ≫ j`, `i, j` iso;
     `FibreDensity` supplies a point `x'` of the fibre-mono codomain missing `stageInclL g''`, and
     `point_transport_unconj` carries `x' ≫ j` to a colimit point missing `m`. -/
-theorem stageDensity_of_fibreDensity (W : WSCover S) (hfd : FibreDensity W) : StageDensity W := by
+public theorem stageDensity_of_fibreDensity (W : WSCover S) (hfd : FibreDensity W) : StageDensity W := by
   intro A hA E m hm hniso
   obtain ⟨U, hbU, xE', g'', i, j, hg''mono, hg''niso, hi_iso, hj_iso, hfac⟩ :=
     colimitMono_reflects_to_fibre W A m hm hniso
@@ -375,7 +377,7 @@ theorem stageDensity_of_fibreDensity (W : WSCover S) (hfd : FibreDensity W) : St
     well-pointedness of every `uniformStep.step A = ⟨base, terminalSliceObj A⟩`, the book's
     `WellPointed`.  SORRY-FREE: `StageDensity` is exactly the unfolded `WellPointed` conclusion for
     the embedded objects (every proper colimit mono is missed by a colimit point). -/
-theorem stepWellPoints_of_density (W : WSCover S) (hdens : StageDensity W) :
+public theorem stepWellPoints_of_density (W : WSCover S) (hdens : StageDensity W) :
     StepWellPoints (uniformStep W) := by
   intro A hA
   show @WellPointed (uniformTargetTy W) (uniformTargetCat W)
@@ -386,7 +388,7 @@ theorem stepWellPoints_of_density (W : WSCover S) (hdens : StageDensity W) :
 /-- **`StepWellPoints (uniformStep W)` from the sharper stage-local `FibreDensity`** (SORRY-FREE
     composite).  This is the cleanest interface: the whole §1.543 `wellPoints` field reduces to the
     genuine §1.546 stage-local density `FibreDensity W`. -/
-theorem stepWellPoints_of_fibreDensity (W : WSCover S) (hfd : FibreDensity W) :
+public theorem stepWellPoints_of_fibreDensity (W : WSCover S) (hfd : FibreDensity W) :
     StepWellPoints (uniformStep W) :=
   stepWellPoints_of_density W (stageDensity_of_fibreDensity W hfd)
 

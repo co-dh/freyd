@@ -50,7 +50,9 @@
   Everything here is Sorry-free and depends on NO axioms (`#print axioms` below); the
   honest reduction is committed, and the obstruction is pinned to the exact fact.
 -/
-import Freyd.S1_48_RationalCapitalization
+module
+
+public import Freyd.S1_48_RationalCapitalization
 
 namespace Freyd
 
@@ -70,7 +72,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [Pullba
 /-- If the underlying arrow `m.f` of a slice mono `m` is a COVER, then `m` is a slice-iso.
     `m.f` is mono (the slice mono reflects to its underlying arrow, `sigma_reflects_mono`)
     and a cover, so iso (`monic_cover_iso`); then `m` is iso (`overIso_of_underlying`). -/
-theorem cover_imp_slice_iso {P A : 𝒞} {D : Over P}
+public theorem cover_imp_slice_iso {P A : 𝒞} {D : Over P}
     (m : OverHom D (sliceEmbedObj P A)) (hm : OverMono m) (hcov : Cover m.f) :
     OverIso m :=
   overIso_of_underlying m (monic_cover_iso m.f hcov (sigma_preserves_mono m hm))
@@ -93,7 +95,7 @@ theorem cover_imp_slice_iso {P A : 𝒞} {D : Over P}
 /-- `pair m t` is mono whenever its FIRST leg `m` is mono (the `snd`-leg `t` is arbitrary).
     Dual of `monic_pair_of_monic` (which needs the `snd`-leg mono); the `fst`-leg version is
     what the `P = 1` slice point needs (`t = term D` is not mono in general). -/
-theorem mono_pair_of_mono_fst {T A B : 𝒞} (m : T ⟶ A) (t : T ⟶ B) (hm : Monic m) :
+public theorem mono_pair_of_mono_fst {T A B : 𝒞} (m : T ⟶ A) (t : T ⟶ B) (hm : Monic m) :
     Monic (pair m t) :=
   (monicPair_iff_monic_pair m t).mp (fun f g hx _ => hm f g hx)
 
@@ -103,7 +105,7 @@ theorem mono_pair_of_mono_fst {T A B : 𝒞} (m : T ⟶ A) (t : T ⟶ B) (hm : M
     `WellSupported A` alone (that would make every well-supported object well-pointed, i.e.
     force `𝒞` `Capital`); the residual is genuinely Capital-level, NOT well-supportedness.
     This is the precise pin on what the cover hypothesis of `cover_imp_slice_iso` costs. -/
-theorem factorWP_imp_wp (A : 𝒞)
+public theorem factorWP_imp_wp (A : 𝒞)
     (hwp : @WellPointed (Over (one : 𝒞)) _ (overHasTerminal one) (sliceEmbedObj one A)) :
     WellPointed A := by
   intro D m hm hm_not_iso
@@ -142,6 +144,3 @@ end SliceWellPointed
 
 end Freyd
 
-#print axioms Freyd.cover_imp_slice_iso
-#print axioms Freyd.mono_pair_of_mono_fst
-#print axioms Freyd.factorWP_imp_wp

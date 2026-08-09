@@ -46,7 +46,9 @@
     `desarguesHorn_implies_desargues_nondeg`: the Horn sentence in the associated
     allegory forces Desargues for nondegenerate configurations.
 -/
-import Freyd.S2_156_PartitionRep
+module
+
+public import Freyd.S2_156_PartitionRep
 
 universe v u
 
@@ -57,7 +59,7 @@ namespace Freyd.Alg
 /-- A PROJECTIVE PLANE (§2.157): a model of the two-sorted theory whose sorts are
     points and lines, whose unique predicate is incidence `x ∈ A`, with the three
     displayed axioms. -/
-structure ProjectivePlane : Type (u + 1) where
+public structure ProjectivePlane : Type (u + 1) where
   /-- The sort of POINTS (lower-case italics in the book). -/
   Point : Type u
   /-- The sort of LINES (upper-case in the book). -/
@@ -79,7 +81,7 @@ variable (P : ProjectivePlane.{u})
 /-- An INTERESTING projective plane (§2.157): each point is incident to at least
     three lines and each line is incident to at least three points ("at least
     three" = a pairwise-distinct triple). -/
-def Interesting : Prop :=
+@[expose] public def Interesting : Prop :=
   (∀ x : P.Point, ∃ A B C : P.Line, A ≠ B ∧ A ≠ C ∧ B ≠ C ∧
       P.incid x A ∧ P.incid x B ∧ P.incid x C) ∧
   (∀ A : P.Line, ∃ x y z : P.Point, x ≠ y ∧ x ≠ z ∧ y ≠ z ∧
@@ -108,40 +110,40 @@ variable (P)
 
 /-- A chosen common line of two points (axiom 1 via choice); for `x ≠ y` it is THE
     line through them (`lineThrough_eq`). -/
-noncomputable def lineThrough (x y : P.Point) : P.Line :=
+@[expose] public noncomputable def lineThrough (x y : P.Point) : P.Line :=
   Classical.choose (P.join_exists x y)
 
-theorem lineThrough_incid_left (x y : P.Point) :
+public theorem lineThrough_incid_left (x y : P.Point) :
     P.incid x (P.lineThrough x y) :=
   (Classical.choose_spec (P.join_exists x y)).1
 
-theorem lineThrough_incid_right (x y : P.Point) :
+public theorem lineThrough_incid_right (x y : P.Point) :
     P.incid y (P.lineThrough x y) :=
   (Classical.choose_spec (P.join_exists x y)).2
 
 /-- A chosen common point of two lines (axiom 2 via choice); for `A ≠ B` it is THE
     meet point (`meetPoint_eq`). -/
-noncomputable def meetPoint (A B : P.Line) : P.Point :=
+@[expose] public noncomputable def meetPoint (A B : P.Line) : P.Point :=
   Classical.choose (P.meet_exists A B)
 
-theorem meetPoint_incid_left (A B : P.Line) :
+public theorem meetPoint_incid_left (A B : P.Line) :
     P.incid (P.meetPoint A B) A :=
   (Classical.choose_spec (P.meet_exists A B)).1
 
-theorem meetPoint_incid_right (A B : P.Line) :
+public theorem meetPoint_incid_right (A B : P.Line) :
     P.incid (P.meetPoint A B) B :=
   (Classical.choose_spec (P.meet_exists A B)).2
 
 variable {P}
 
 /-- Any line through two DISTINCT points is `lineThrough` (uniqueness, axiom 3). -/
-theorem lineThrough_eq {x y : P.Point} (hxy : x ≠ y) {A : P.Line}
+public theorem lineThrough_eq {x y : P.Point} (hxy : x ≠ y) {A : P.Line}
     (hx : P.incid x A) (hy : P.incid y A) : A = P.lineThrough x y :=
   (P.unique hx (P.lineThrough_incid_left x y) hy
     (P.lineThrough_incid_right x y)).resolve_left hxy
 
 /-- Any common point of two DISTINCT lines is `meetPoint` (uniqueness, axiom 3). -/
-theorem meetPoint_eq {A B : P.Line} (hAB : A ≠ B) {x : P.Point}
+public theorem meetPoint_eq {A B : P.Line} (hAB : A ≠ B) {x : P.Point}
     (hA : P.incid x A) (hB : P.incid x B) : x = P.meetPoint A B :=
   (P.unique hA hB (P.meetPoint_incid_left A B)
     (P.meetPoint_incid_right A B)).resolve_right hAB
@@ -155,7 +157,7 @@ end ProjectivePlane
    1 as the maximum and using the incidence relation in between." -/
 
 /-- 𝓛: disjoint union of points and lines plus `0` (`bot`) and `1` (`top`). -/
-inductive PElem (P : ProjectivePlane.{u}) : Type u where
+public inductive PElem (P : ProjectivePlane.{u}) : Type u where
   | bot : PElem P
   | pt (x : P.Point) : PElem P
   | ln (A : P.Line) : PElem P
@@ -167,7 +169,7 @@ variable {P : ProjectivePlane.{u}}
 
 /-- The partial order on 𝓛: `0` minimum, `1` maximum, incidence in between
     (points and lines are otherwise incomparable; each rank is discrete). -/
-def le : PElem P → PElem P → Prop
+@[expose] public def le : PElem P → PElem P → Prop
   | bot, _ => True
   | pt _, bot => False
   | pt x, pt y => x = y
@@ -182,27 +184,27 @@ def le : PElem P → PElem P → Prop
   | top, ln _ => False
   | top, top => True
 
-theorem le_refl : ∀ a : PElem P, a.le a
+public theorem le_refl : ∀ a : PElem P, a.le a
   | bot => trivial
   | pt _ => rfl
   | ln _ => rfl
   | top => trivial
 
-theorem le_trans {a b c : PElem P} (hab : a.le b) (hbc : b.le c) : a.le c := by
+public theorem le_trans {a b c : PElem P} (hab : a.le b) (hbc : b.le c) : a.le c := by
   cases a <;> cases b <;> cases c <;> simp_all [le]
 
-theorem le_antisymm {a b : PElem P} (hab : a.le b) (hba : b.le a) : a = b := by
+public theorem le_antisymm {a b : PElem P} (hab : a.le b) (hba : b.le a) : a = b := by
   cases a <;> cases b <;> simp_all [le]
 
-theorem bot_le (a : PElem P) : (bot : PElem P).le a := trivial
+public theorem bot_le (a : PElem P) : (bot : PElem P).le a := trivial
 
-theorem le_top : ∀ a : PElem P, a.le top
+public theorem le_top : ∀ a : PElem P, a.le top
   | bot => trivial
   | pt _ => trivial
   | ln _ => trivial
   | top => trivial
 
-theorem eq_top_of_top_le {a : PElem P} (h : (top : PElem P).le a) : a = top := by
+public theorem eq_top_of_top_le {a : PElem P} (h : (top : PElem P).le a) : a = top := by
   cases a <;> simp_all [le]
 
 /-! ### Meet and join
@@ -215,7 +217,7 @@ open Classical in
 /-- Lattice JOIN on 𝓛.  Cases: `⊥` is a unit and `⊤` absorbs; two points join to
     the line through them (or the point itself, if equal); a point and a line join
     to the line when incident, else to `⊤`; two distinct lines join to `⊤`. -/
-noncomputable def join : PElem P → PElem P → PElem P
+@[expose] public noncomputable def join : PElem P → PElem P → PElem P
   | bot, b => b
   | pt x, bot => pt x
   | pt x, pt y => if x = y then pt x else ln (P.lineThrough x y)
@@ -231,7 +233,7 @@ open Classical in
 /-- Lattice MEET on 𝓛, dual to `join`: two distinct points meet in `⊥`; a point
     and a line meet in the point when incident, else `⊥`; two distinct lines meet
     in their common point (axiom 2). -/
-noncomputable def meet : PElem P → PElem P → PElem P
+@[expose] public noncomputable def meet : PElem P → PElem P → PElem P
   | bot, _ => bot
   | pt _, bot => bot
   | pt x, pt y => if x = y then pt x else bot
@@ -245,84 +247,84 @@ noncomputable def meet : PElem P → PElem P → PElem P
 
 /-! ### Evaluation lemmas (one per `if`-case; the constructor cases are `rfl`) -/
 
-theorem join_bot_right : ∀ a : PElem P, a.join bot = a
+public theorem join_bot_right : ∀ a : PElem P, a.join bot = a
   | bot => rfl
   | pt _ => rfl
   | ln _ => rfl
   | top => rfl
 
-theorem join_top_left (b : PElem P) : (top : PElem P).join b = top := rfl
+public theorem join_top_left (b : PElem P) : (top : PElem P).join b = top := rfl
 
-theorem join_top_right : ∀ a : PElem P, a.join top = top
+public theorem join_top_right : ∀ a : PElem P, a.join top = top
   | bot => rfl
   | pt _ => rfl
   | ln _ => rfl
   | top => rfl
 
-theorem join_pt_pt_self (x : P.Point) : (pt x).join (pt x) = pt x := by
+public theorem join_pt_pt_self (x : P.Point) : (pt x).join (pt x) = pt x := by
   simp [join]
 
-theorem join_pt_pt_ne {x y : P.Point} (h : x ≠ y) :
+public theorem join_pt_pt_ne {x y : P.Point} (h : x ≠ y) :
     (pt x).join (pt y) = ln (P.lineThrough x y) := by
   simp [join, h]
 
-theorem join_pt_ln_incid {x : P.Point} {A : P.Line} (h : P.incid x A) :
+public theorem join_pt_ln_incid {x : P.Point} {A : P.Line} (h : P.incid x A) :
     (pt x).join (ln A) = ln A := by
   simp [join, h]
 
-theorem join_pt_ln_not {x : P.Point} {A : P.Line} (h : ¬P.incid x A) :
+public theorem join_pt_ln_not {x : P.Point} {A : P.Line} (h : ¬P.incid x A) :
     (pt x).join (ln A) = top := by
   simp [join, h]
 
-theorem join_ln_pt_incid {A : P.Line} {y : P.Point} (h : P.incid y A) :
+public theorem join_ln_pt_incid {A : P.Line} {y : P.Point} (h : P.incid y A) :
     (ln A).join (pt y) = ln A := by
   simp [join, h]
 
-theorem join_ln_pt_not {A : P.Line} {y : P.Point} (h : ¬P.incid y A) :
+public theorem join_ln_pt_not {A : P.Line} {y : P.Point} (h : ¬P.incid y A) :
     (ln A).join (pt y) = top := by
   simp [join, h]
 
-theorem join_ln_ln_self (A : P.Line) : (ln A).join (ln A) = ln A := by
+public theorem join_ln_ln_self (A : P.Line) : (ln A).join (ln A) = ln A := by
   simp [join]
 
-theorem join_ln_ln_ne {A B : P.Line} (h : A ≠ B) : (ln A).join (ln B) = top := by
+public theorem join_ln_ln_ne {A B : P.Line} (h : A ≠ B) : (ln A).join (ln B) = top := by
   simp [join, h]
 
-theorem meet_top_left (b : PElem P) : (top : PElem P).meet b = b := rfl
+public theorem meet_top_left (b : PElem P) : (top : PElem P).meet b = b := rfl
 
-theorem meet_top_right : ∀ a : PElem P, a.meet top = a
+public theorem meet_top_right : ∀ a : PElem P, a.meet top = a
   | bot => rfl
   | pt _ => rfl
   | ln _ => rfl
   | top => rfl
 
-theorem meet_pt_pt_self (x : P.Point) : (pt x).meet (pt x) = pt x := by
+public theorem meet_pt_pt_self (x : P.Point) : (pt x).meet (pt x) = pt x := by
   simp [meet]
 
-theorem meet_pt_pt_ne {x y : P.Point} (h : x ≠ y) :
+public theorem meet_pt_pt_ne {x y : P.Point} (h : x ≠ y) :
     (pt x).meet (pt y) = bot := by
   simp [meet, h]
 
-theorem meet_pt_ln_incid {x : P.Point} {A : P.Line} (h : P.incid x A) :
+public theorem meet_pt_ln_incid {x : P.Point} {A : P.Line} (h : P.incid x A) :
     (pt x).meet (ln A) = pt x := by
   simp [meet, h]
 
-theorem meet_pt_ln_not {x : P.Point} {A : P.Line} (h : ¬P.incid x A) :
+public theorem meet_pt_ln_not {x : P.Point} {A : P.Line} (h : ¬P.incid x A) :
     (pt x).meet (ln A) = bot := by
   simp [meet, h]
 
-theorem meet_ln_pt_incid {A : P.Line} {y : P.Point} (h : P.incid y A) :
+public theorem meet_ln_pt_incid {A : P.Line} {y : P.Point} (h : P.incid y A) :
     (ln A).meet (pt y) = pt y := by
   simp [meet, h]
 
-theorem meet_ln_pt_not {A : P.Line} {y : P.Point} (h : ¬P.incid y A) :
+public theorem meet_ln_pt_not {A : P.Line} {y : P.Point} (h : ¬P.incid y A) :
     (ln A).meet (pt y) = bot := by
   simp [meet, h]
 
-theorem meet_ln_ln_self (A : P.Line) : (ln A).meet (ln A) = ln A := by
+public theorem meet_ln_ln_self (A : P.Line) : (ln A).meet (ln A) = ln A := by
   simp [meet]
 
-theorem meet_ln_ln_ne {A B : P.Line} (h : A ≠ B) :
+public theorem meet_ln_ln_ne {A B : P.Line} (h : A ≠ B) :
     (ln A).meet (ln B) = pt (P.meetPoint A B) := by
   simp [meet, h]
 
@@ -333,7 +335,7 @@ theorem meet_ln_ln_ne {A B : P.Line} (h : A ≠ B) :
   the geometric cases work. -/
 
 /-- `a ⊔ b ⩽ c ↔ a ⩽ c ∧ b ⩽ c`: `join` is the least upper bound. -/
-theorem join_le_iff {a b c : PElem P} : (a.join b).le c ↔ a.le c ∧ b.le c := by
+public theorem join_le_iff {a b c : PElem P} : (a.join b).le c ↔ a.le c ∧ b.le c := by
   cases a with
   | bot => simp [le, join]
   | top =>
@@ -410,7 +412,7 @@ theorem join_le_iff {a b c : PElem P} : (a.join b).le c ↔ a.le c ∧ b.le c :=
           exact ⟨False.elim, fun ⟨h1, h2⟩ => hAB (h1.trans h2.symm)⟩
 
 /-- `c ⩽ a ⊓ b ↔ c ⩽ a ∧ c ⩽ b`: `meet` is the greatest lower bound. -/
-theorem le_meet_iff {a b c : PElem P} : c.le (a.meet b) ↔ c.le a ∧ c.le b := by
+public theorem le_meet_iff {a b c : PElem P} : c.le (a.meet b) ↔ c.le a ∧ c.le b := by
   cases a with
   | bot => cases c <;> simp [le, meet]
   | top => cases c <;> simp [le, meet]
@@ -488,39 +490,39 @@ theorem le_meet_iff {a b c : PElem P} : c.le (a.meet b) ↔ c.le a ∧ c.le b :=
 
 /-! ### Derived lub/glb API (from the two characterisations, generically) -/
 
-theorem le_join_left (a b : PElem P) : a.le (a.join b) :=
+public theorem le_join_left (a b : PElem P) : a.le (a.join b) :=
   (join_le_iff.mp (le_refl _)).1
 
-theorem le_join_right (a b : PElem P) : b.le (a.join b) :=
+public theorem le_join_right (a b : PElem P) : b.le (a.join b) :=
   (join_le_iff.mp (le_refl _)).2
 
-theorem join_le {a b c : PElem P} (h1 : a.le c) (h2 : b.le c) : (a.join b).le c :=
+public theorem join_le {a b c : PElem P} (h1 : a.le c) (h2 : b.le c) : (a.join b).le c :=
   join_le_iff.mpr ⟨h1, h2⟩
 
-theorem meet_le_left (a b : PElem P) : (a.meet b).le a :=
+public theorem meet_le_left (a b : PElem P) : (a.meet b).le a :=
   (le_meet_iff.mp (le_refl _)).1
 
-theorem meet_le_right (a b : PElem P) : (a.meet b).le b :=
+public theorem meet_le_right (a b : PElem P) : (a.meet b).le b :=
   (le_meet_iff.mp (le_refl _)).2
 
-theorem le_meet {a b c : PElem P} (h1 : c.le a) (h2 : c.le b) : c.le (a.meet b) :=
+public theorem le_meet {a b c : PElem P} (h1 : c.le a) (h2 : c.le b) : c.le (a.meet b) :=
   le_meet_iff.mpr ⟨h1, h2⟩
 
 /-- The `ModularLattice` order (`a ⊓ b = a`) coincides with `le`. -/
-theorem le_iff_meet_eq {a b : PElem P} : a.le b ↔ a.meet b = a :=
+public theorem le_iff_meet_eq {a b : PElem P} : a.le b ↔ a.meet b = a :=
   ⟨fun h => le_antisymm (meet_le_left a b) (le_meet (le_refl a) h),
    fun h => h ▸ meet_le_right a b⟩
 
 /-! ### The equational lattice laws (each once, from lub/glb + antisymmetry) -/
 
-theorem meet_idem (a : PElem P) : a.meet a = a :=
+public theorem meet_idem (a : PElem P) : a.meet a = a :=
   le_antisymm (meet_le_left a a) (le_meet (le_refl a) (le_refl a))
 
-theorem meet_comm (a b : PElem P) : a.meet b = b.meet a :=
+public theorem meet_comm (a b : PElem P) : a.meet b = b.meet a :=
   le_antisymm (le_meet (meet_le_right a b) (meet_le_left a b))
     (le_meet (meet_le_right b a) (meet_le_left b a))
 
-theorem meet_assoc (a b c : PElem P) : a.meet (b.meet c) = (a.meet b).meet c :=
+public theorem meet_assoc (a b c : PElem P) : a.meet (b.meet c) = (a.meet b).meet c :=
   le_antisymm
     (le_meet
       (le_meet (meet_le_left a _) (le_trans (meet_le_right a _) (meet_le_left b c)))
@@ -528,14 +530,14 @@ theorem meet_assoc (a b c : PElem P) : a.meet (b.meet c) = (a.meet b).meet c :=
     (le_meet (le_trans (meet_le_left _ c) (meet_le_left a b))
       (le_meet (le_trans (meet_le_left _ c) (meet_le_right a b)) (meet_le_right _ c)))
 
-theorem join_idem (a : PElem P) : a.join a = a :=
+public theorem join_idem (a : PElem P) : a.join a = a :=
   le_antisymm (join_le (le_refl a) (le_refl a)) (le_join_left a a)
 
-theorem join_comm (a b : PElem P) : a.join b = b.join a :=
+public theorem join_comm (a b : PElem P) : a.join b = b.join a :=
   le_antisymm (join_le (le_join_right b a) (le_join_left b a))
     (join_le (le_join_right a b) (le_join_left a b))
 
-theorem join_assoc (a b c : PElem P) : a.join (b.join c) = (a.join b).join c :=
+public theorem join_assoc (a b c : PElem P) : a.join (b.join c) = (a.join b).join c :=
   le_antisymm
     (join_le (le_trans (le_join_left a b) (le_join_left _ c))
       (join_le (le_trans (le_join_right a b) (le_join_left _ c)) (le_join_right _ c)))
@@ -543,13 +545,13 @@ theorem join_assoc (a b c : PElem P) : a.join (b.join c) = (a.join b).join c :=
       (join_le (le_join_left a _) (le_trans (le_join_left b c) (le_join_right a _)))
       (le_trans (le_join_right b c) (le_join_right a _)))
 
-theorem meet_absorb (a b : PElem P) : a.meet (a.join b) = a :=
+public theorem meet_absorb (a b : PElem P) : a.meet (a.join b) = a :=
   le_antisymm (meet_le_left _ _) (le_meet (le_refl a) (le_join_left a b))
 
-theorem join_absorb (a b : PElem P) : a.join (a.meet b) = a :=
+public theorem join_absorb (a b : PElem P) : a.join (a.meet b) = a :=
   le_antisymm (join_le (le_refl a) (meet_le_left a b)) (le_join_left _ _)
 
-theorem bot_join (a : PElem P) : (bot : PElem P).join a = a := rfl
+public theorem bot_join (a : PElem P) : (bot : PElem P).join a = a := rfl
 
 /-! ### MODULARITY (§2.157 headline)
 
@@ -566,11 +568,11 @@ theorem bot_join (a : PElem P) : (bot : PElem P).join a = a := rfl
   Interestingness is NOT needed: EVERY projective plane's lattice is modular. -/
 
 /-- The trivial `c = a` instance of the modular inequality. -/
-theorem modular_self (a b : PElem P) : (a.meet (b.join a)).le ((a.meet b).join a) :=
+public theorem modular_self (a b : PElem P) : (a.meet (b.join a)).le ((a.meet b).join a) :=
   le_trans (meet_le_left _ _) (le_join_right _ _)
 
 /-- The hard modular inequality `c ⩽ a → a ⊓ (b ⊔ c) ⩽ (a ⊓ b) ⊔ c`. -/
-theorem modular_hard {a b c : PElem P} (hca : c.le a) :
+public theorem modular_hard {a b c : PElem P} (hca : c.le a) :
     (a.meet (b.join c)).le ((a.meet b).join c) := by
   cases c with
   | bot => rw [join_bot_right]; exact le_join_left _ _
@@ -632,7 +634,7 @@ theorem modular_hard {a b c : PElem P} (hca : c.le a) :
       exact modular_self _ _
 
 /-- **𝓛(P) is modular** (§2.157): `c ⩽ a → a ⊓ (b ⊔ c) = (a ⊓ b) ⊔ c`. -/
-theorem modular_eq {a b c : PElem P} (hca : c.le a) :
+public theorem modular_eq {a b c : PElem P} (hca : c.le a) :
     a.meet (b.join c) = (a.meet b).join c :=
   le_antisymm (modular_hard hca)
     (le_meet (join_le (meet_le_left a b) hca)
@@ -642,7 +644,7 @@ end PElem
 
 /-- **§2.157, "for every projective plane there is an associated modular
     lattice"** — the `ModularLattice` (§2.156) instance on 𝓛(P). -/
-noncomputable instance instModularLatticePElem (P : ProjectivePlane.{u}) :
+@[expose] public noncomputable instance instModularLatticePElem (P : ProjectivePlane.{u}) :
     ModularLattice (PElem P) where
   meet := PElem.meet
   join := PElem.join
@@ -673,7 +675,7 @@ noncomputable example (P : ProjectivePlane.{u}) :
     in diagram order): `A₁ : p ⟶ a`, `A₂ : a ⟶ q`, `B₁ : p ⟶ b`, `B₂ : b ⟶ q`,
     `C₁ : p ⟶ c`, `C₂ : c ⟶ q`; the hypothesis lives in `p ⟶ q`, the conclusion
     in `a ⟶ b`, composed through `c`. -/
-def DesarguesHorn (𝒜 : Type u) [Allegory.{v} 𝒜] : Prop :=
+@[expose] public def DesarguesHorn (𝒜 : Type u) [Allegory.{v} 𝒜] : Prop :=
   ∀ (p q a b c : 𝒜) (A₁ : p ⟶ a) (A₂ : a ⟶ q) (B₁ : p ⟶ b) (B₂ : b ⟶ q)
     (C₁ : p ⟶ c) (C₂ : c ⟶ q),
     (A₁ ≫ A₂) ∩ (B₁ ≫ B₂) ⊑ C₁ ≫ C₂ →
@@ -691,7 +693,7 @@ def DesarguesHorn (𝒜 : Type u) [Allegory.{v} 𝒜] : Prop :=
     yields `z : c` with `u C₁ z` and `z C₂ v`.  This single `z` witnesses all
     four factors of the conclusion: `x (A₁°C₁) z` through `u`; `x (A₂C₂°) z`
     through `v`; `z (C₁°B₁) y` through `u`; `z (C₂B₂°) y` through `v`. -/
-theorem desarguesHorn_binRel {p q a b c : Type u}
+public theorem desarguesHorn_binRel {p q a b c : Type u}
     (A₁ : p → a → Prop) (A₂ : a → q → Prop) (B₁ : p → b → Prop)
     (B₂ : b → q → Prop) (C₁ : p → c → Prop) (C₂ : c → q → Prop)
     (hyp : ∀ (u : p) (v : q),
@@ -863,14 +865,14 @@ def BotLattice.toModularLattice {L : Type u} [BotLattice L]
    then their corresponding sides meet on a line." -/
 
 /-- Three points are COLINEAR: some line is incident to all three. -/
-def ProjectivePlane.Colinear (P : ProjectivePlane.{u}) (x y z : P.Point) : Prop :=
+@[expose] public def ProjectivePlane.Colinear (P : ProjectivePlane.{u}) (x y z : P.Point) : Prop :=
   ∃ L : P.Line, P.incid x L ∧ P.incid y L ∧ P.incid z L
 
 /-- THE THEOREM OF DESARGUES, the book's ten-point formulation: given p, a₁,
     a₂, b₁, b₂, c₁, c₂, u, v, w such that the triples ⟨p,a₁,a₂⟩, ⟨p,b₁,b₂⟩,
     ⟨p,c₁,c₂⟩, ⟨a₁,c₁,u⟩, ⟨a₂,c₂,u⟩, ⟨b₁,c₁,v⟩, ⟨b₂,c₂,v⟩, ⟨a₁,b₁,w⟩,
     ⟨a₂,b₂,w⟩ are colinear, then ⟨u,v,w⟩ is colinear. -/
-def ProjectivePlane.Desargues (P : ProjectivePlane.{u}) : Prop :=
+@[expose] public def ProjectivePlane.Desargues (P : ProjectivePlane.{u}) : Prop :=
   ∀ p a₁ a₂ b₁ b₂ c₁ c₂ u v w : P.Point,
     P.Colinear p a₁ a₂ → P.Colinear p b₁ b₂ → P.Colinear p c₁ c₂ →
     P.Colinear a₁ c₁ u → P.Colinear a₂ c₂ u →
@@ -880,7 +882,7 @@ def ProjectivePlane.Desargues (P : ProjectivePlane.{u}) : Prop :=
 
 /-- Anything on a common line of two DISTINCT points is on THE line through
     them (axiom 3 transport). -/
-theorem ProjectivePlane.incid_lineThrough_of_mem {P : ProjectivePlane.{u}}
+public theorem ProjectivePlane.incid_lineThrough_of_mem {P : ProjectivePlane.{u}}
     {x y z : P.Point} {L : P.Line} (hxy : x ≠ y)
     (hx : P.incid x L) (hy : P.incid y L) (hz : P.incid z L) :
     P.incid z (P.lineThrough x y) := by
@@ -891,7 +893,7 @@ theorem ProjectivePlane.incid_lineThrough_of_mem {P : ProjectivePlane.{u}}
     associated allegory of 𝓛(P), unfolded to lattice form (composition IS `⊔`,
     reciprocation is the identity, `∩` is `⊓`, `⊑` is the lattice order — all
     definitional through §2.156/§2.113). -/
-theorem desarguesHorn_toLattice {P : ProjectivePlane.{u}}
+public theorem desarguesHorn_toLattice {P : ProjectivePlane.{u}}
     (h : DesarguesHorn (LMonObj (PElem P))) :
     ∀ a₁ a₂ b₁ b₂ c₁ c₂ : PElem P,
       ((a₁.join a₂).meet (b₁.join b₂)).le (c₁.join c₂) →
@@ -914,7 +916,7 @@ open PElem in
     true since `⟨p,c₁,c₂⟩` is colinear; the Horn conclusion evaluates to
     `side a₁b₁ ⊓ side a₂b₂ ⩽ (pt u) ⊔ (pt v) = line uv`, and `pt w` is below
     the left side, so `w` is on the line through `u` and `v`. -/
-theorem desargues_nondeg_of_hornPoints {P : ProjectivePlane.{u}}
+public theorem desargues_nondeg_of_hornPoints {P : ProjectivePlane.{u}}
     (p a₁ a₂ b₁ b₂ c₁ c₂ u v w : P.Point)
     (horn : (((pt a₁).join (pt a₂)).meet ((pt b₁).join (pt b₂))).le
         ((pt c₁).join (pt c₂)) →

@@ -28,11 +28,13 @@
   sensitive to.  Mathlib-free.  Single universe `{w, w}` (forced by the equalizer-derived pullback
   germ of `laxColim_invImage_union_le` and the lax disjointness).
 -/
-import Freyd.S1_63_LaxInvImageUnion
-import Freyd.S1_61_LaxStrictInitial
-import Freyd.S1_621_LaxDisjoint
-import Freyd.S2_218_ColimitPreLogos
-import Freyd.S1_621_ColimitPositive
+module
+
+public import Freyd.S1_63_LaxInvImageUnion
+public import Freyd.S1_61_LaxStrictInitial
+public import Freyd.S1_621_LaxDisjoint
+public import Freyd.S2_218_ColimitPreLogos
+public import Freyd.S1_621_ColimitPositive
 
 open Freyd
 open Freyd.Colim
@@ -56,7 +58,7 @@ variable {ι : Type w} {D : Directed ι}
   The four bottom fields rest on the single brick `laxColimStrictInitial`; the substantive
   coherent-stability law `invImage_preserves_union` is `laxColim_invImage_union_le` for the hard
   direction and `inverseImage_mono` + `union_min` for the reverse (monotonicity of inverse image). -/
-noncomputable def laxColimPreLogos (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L) [Nonempty ι]
+@[expose] public noncomputable def laxColimPreLogos (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L) [Nonempty ι]
     (hbot : ∀ i, PreLogos (L.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (L.A j) (L.catA j) (L.F hij (stageZero L hbot i)))
@@ -102,7 +104,7 @@ noncomputable def laxColimPreLogos (L : LaxCatSystem.{w, w} ι D) (hL : Coherent
     `Colim.colimitPositive`.  All hypotheses are the per-stage / lax coherence bundles the §2.218
     capitalization tower already supplies; the colimit's `RegularCategory`/`HasSubobjectUnions` come
     from the §2.218 tower. -/
-noncomputable def laxColimPositive (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L) [Nonempty ι]
+@[expose] public noncomputable def laxColimPositive (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L) [Nonempty ι]
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i)) (hmono : TransMonoL L)
     (hbot : ∀ i, PreLogos (L.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),

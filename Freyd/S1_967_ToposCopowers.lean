@@ -30,10 +30,12 @@
   Reusable lemmas banked here: `existsAlong_extJoin_le` (∃ preserves joins), `compose_extJoin_right`
   (composition distributes over arbitrary joins), `binRelSub` (subobject-as-relation).
 -/
-import Freyd.S1_95
-import Freyd.S1_967_ToposExists
-import Freyd.S1_97_ToposDistributive
-import Freyd.S1_967_ToposIndexedJoins
+module
+
+public import Freyd.S1_95
+public import Freyd.S1_967_ToposExists
+public import Freyd.S1_97_ToposDistributive
+public import Freyd.S1_967_ToposIndexedJoins
 
 universe u v w
 

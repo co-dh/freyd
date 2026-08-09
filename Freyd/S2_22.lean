@@ -1,6 +1,8 @@
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_30
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_30
 
 universe v u
 
@@ -58,7 +60,7 @@ variable {𝒜 : Type u}
     It carries the full distributive-lattice/zero structure on each hom-set
     together with composition-over-union distribution, but omits the
     intersection-over-union distributive law of §2.21. -/
-class UnionAllegory (𝒜 : Type u) extends Allegory 𝒜 where
+public class UnionAllegory (𝒜 : Type u) extends Allegory 𝒜 where
   /-- Zero morphism 0 : a → b for each pair of objects. -/
   zero {a b : 𝒜} : a ⟶ b
   /-- Union (join) R ∪ S : a → b when R, S : a → b. -/
@@ -101,7 +103,7 @@ infixl:65 " ∪ᵤ " => UnionAllegory.union
 
 /-- Every distributive allegory (§2.21) is in particular a union allegory:
     it has all the §2.228 data and laws (and more). -/
-instance distributiveAllegory_isUnionAllegory [DistributiveAllegory 𝒜] : UnionAllegory 𝒜 where
+@[expose] public instance distributiveAllegory_isUnionAllegory [DistributiveAllegory 𝒜] : UnionAllegory 𝒜 where
   zero := DistributiveAllegory.zero
   union := DistributiveAllegory.union
   zero_comp := DistributiveAllegory.zero_comp
@@ -357,7 +359,7 @@ theorem psi_unionU [UnionAllegory 𝒜] {a p c : 𝒜} (f : a ⟶ c) (g : p ⟶ 
 
 /-- The **left modular law** in order form: `(R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T)`.
     The reciprocal companion of `modular_le`; both are pure modular-law facts. -/
-theorem modular_le_left [Allegory 𝒜] {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem modular_le_left [Allegory 𝒜] {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
   have h := modular_le S° R° T°
   rw [Allegory.recip_recip] at h
@@ -484,7 +486,7 @@ theorem interUnionU_distrib_of_transport [UnionAllegory 𝒜] {a p c : 𝒜}
 
 /-- **Left-handed modular law**: `S ∩ R≫T ⊑ R ≫ (R°≫S ∩ T)`.  The reciprocal
     companion of `modular_le`; obtained by reciprocating `modular_le` on `T°,R°,S°`. -/
-theorem left_modular_le {a b d : 𝒜} [Allegory 𝒜] (R : a ⟶ b) (S : a ⟶ d) (T : b ⟶ d) :
+public theorem left_modular_le {a b d : 𝒜} [Allegory 𝒜] (R : a ⟶ b) (S : a ⟶ d) (T : b ⟶ d) :
     S ∩ R ≫ T ⊑ R ≫ (R° ≫ S ∩ T) := by
   have hgoal : (S ∩ R ≫ T)° ⊑ (R ≫ (R° ≫ S ∩ T))° := by
     rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_inter,
@@ -699,7 +701,7 @@ theorem interUnionU_distrib_of_srcTabulation [UnionAllegory 𝒜] {a p c : 𝒜}
 --  in scope via S2_3; the local copy `self_le_comp_recip_comp` was deduped.)
 
 /-- **§2.12**: a symmetric transitive morphism is idempotent (`E ≫ E = E`). -/
-theorem symmetric_transitive_idempotent [Allegory 𝒜] {a : 𝒜} {E : a ⟶ a}
+public theorem symmetric_transitive_idempotent [Allegory 𝒜] {a : 𝒜} {E : a ⟶ a}
     (hsym : Symmetric E) (htrans : Transitive E) : E ≫ E = E := by
   apply le_antisymm htrans
   have heq : E° = E := symmetric_eq hsym
@@ -709,7 +711,7 @@ theorem symmetric_transitive_idempotent [Allegory 𝒜] {a : 𝒜} {E : a ⟶ a}
 
 /-- **§2.16(10)**: for simple `F₀, G₀`, the meet `F₀F₀° ∩ G₀G₀°` is a symmetric
     idempotent (symmetric, and transitive since `F₀° F₀ ⊑ 1`, `G₀° G₀ ⊑ 1`). -/
-theorem capE_symm_idem [Allegory 𝒜] {a p c0 : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
+public theorem capE_symm_idem [Allegory 𝒜] {a p c0 : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
     (hF0 : Simple F0) (hG0 : Simple G0) :
     Symmetric (F0 ≫ F0° ∩ G0 ≫ G0°) ∧
       (F0 ≫ F0° ∩ G0 ≫ G0°) ≫ (F0 ≫ F0° ∩ G0 ≫ G0°) = (F0 ≫ F0° ∩ G0 ≫ G0°) := by
@@ -737,7 +739,7 @@ theorem capE_symm_idem [Allegory 𝒜] {a p c0 : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 
 /-- The leg `f° ≫ F₀` of the §2.16(10) split is a MAP, given `f° f = 1_c`,
     `f f° ⊑ F₀F₀°` and `F₀` simple.  (Entire from `1_c = f°(ff°)f ⊑ F F°`;
     simple from `F° F = F₀°(ff°)F₀ ⊑ (F₀°F₀)(F₀°F₀) ⊑ 1`.) -/
-theorem srcTab_leg_map [Allegory 𝒜] {a c0 c : 𝒜} {F0 : c0 ⟶ a} {f : c0 ⟶ c}
+public theorem srcTab_leg_map [Allegory 𝒜] {a c0 c : 𝒜} {F0 : c0 ⟶ a} {f : c0 ⟶ c}
     (hf1 : f° ≫ f = Cat.id c) (hEleF : f ≫ f° ⊑ F0 ≫ F0°) (hF0 : Simple F0) :
     Map (f° ≫ F0) := by
   refine ⟨?_, ?_⟩
@@ -766,7 +768,7 @@ theorem srcTab_leg_map [Allegory 𝒜] {a c0 c : 𝒜} {F0 : c0 ⟶ a} {f : c0 �
     (false-in-general) conjugation-meet identity: conjugate `M := FF° ∩ GG°` by
     `f, f°` to land below `f f°` (`f M f° ⊑ F₀F₀° ∩ G₀G₀° = f f°` via the
     transitive "sandwich" `E X E ⊑ X`), then `M = f°(f M f°)f ⊑ f°(ff°)f = 1`. -/
-theorem srcTab_monic [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
+public theorem srcTab_monic [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
     {f : c0 ⟶ c} (hf1 : f° ≫ f = Cat.id c) (hffE : f ≫ f° = F0 ≫ F0° ∩ G0 ≫ G0°)
     (hF0 : Simple F0) (hG0 : Simple G0) :
     (f° ≫ F0) ≫ (f° ≫ F0)° ∩ (f° ≫ G0) ≫ (f° ≫ G0)° = Cat.id c := by
@@ -830,7 +832,7 @@ theorem srcTab_monic [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 
     the split `f f° = F₀F₀° ∩ G₀G₀°` does not change `U`.  The hard `⊑` half is the
     Dedekind identity `F₀° G₀ ⊑ F₀° (F₀F₀° ∩ G₀G₀°) G₀` (modular law, no simplicity);
     the easy `⊒` half uses `F₀° F₀ ⊑ 1`. -/
-theorem srcTab_Ueq [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
+public theorem srcTab_Ueq [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 ⟶ p}
     {f : c0 ⟶ c} (hffE : f ≫ f° = F0 ≫ F0° ∩ G0 ≫ G0°) (hF0 : Simple F0) :
     F0° ≫ G0 = (f° ≫ F0)° ≫ (f° ≫ G0) := by
   have heq : (f° ≫ F0)° ≫ (f° ≫ G0) = F0° ≫ (f ≫ f°) ≫ G0 := by
@@ -868,7 +870,7 @@ theorem srcTab_Ueq [Allegory 𝒜] {a p c0 c : 𝒜} {F0 : c0 ⟶ a} {G0 : c0 �
     a coreflexive/general idempotent's leg is only a partial map.  The §2.16(10)
     source-apex assembly (`srcTabulation_of_semiSimple_split`) consumes only `f° f =
     1_c` and `f f° = E`, never the entirety of `f`. -/
-def SplitsSymmIdem (𝒜 : Type u) [Allegory 𝒜] : Prop :=
+@[expose] public def SplitsSymmIdem (𝒜 : Type u) [Allegory 𝒜] : Prop :=
   ∀ {a : 𝒜} (E : a ⟶ a), Symmetric E → E ≫ E = E →
     ∃ (c : 𝒜) (f : a ⟶ c), f ≫ f° = E ∧ f° ≫ f = Cat.id c
 
@@ -876,7 +878,7 @@ def SplitsSymmIdem (𝒜 : Type u) [Allegory 𝒜] : Prop :=
     SEMI-SIMPLE morphism `U` of a union allegory has a SOURCE-APEX jointly-monic
     map span.  Split `E := F₀F₀° ∩ G₀G₀°` of a semi-simple factorisation
     `U = F₀° G₀`; the legs `f° F₀`, `f° G₀` are the span. -/
-theorem srcTabulation_of_semiSimple_split [Allegory 𝒜]
+public theorem srcTabulation_of_semiSimple_split [Allegory 𝒜]
     (hsplit : SplitsSymmIdem 𝒜) {a p : 𝒜} (U : a ⟶ p) (hU : SemiSimple U) :
     ∃ (c : 𝒜) (F : c ⟶ a) (G : c ⟶ p),
       Map F ∧ Map G ∧ U = F° ≫ G ∧ F ≫ F° ∩ G ≫ G° = Cat.id c := by
@@ -1037,14 +1039,14 @@ def UnionOfSemiSimpleUA [UnionAllegory 𝒜] {a b : 𝒜} (R : a ⟶ b) : Prop :
   discharged by `decide`.  The single object is modelled by `Unit`. -/
 
 /-- Hom-set of the §2.228(c) counterexample: `ℤ/3 ∪ {𝟎, M}`. -/
-inductive Q3 where
+public inductive Q3 where
   | zero | e | a | a2 | top
   deriving DecidableEq, Repr
 
 namespace Q3
 
 /-- Lattice meet: `𝟎` bottom, `top` top, distinct group elements meet to `𝟎`. -/
-def meet : Q3 → Q3 → Q3
+@[expose] public def meet : Q3 → Q3 → Q3
   | zero, _ => zero
   | _, zero => zero
   | top, y => y
@@ -1053,7 +1055,7 @@ def meet : Q3 → Q3 → Q3
   | _, _ => zero
 
 /-- Lattice join (dual of `meet`): `top` top, distinct group elements join to `top`. -/
-def join : Q3 → Q3 → Q3
+@[expose] public def join : Q3 → Q3 → Q3
   | zero, y => y
   | x, zero => x
   | top, _ => top
@@ -1062,7 +1064,7 @@ def join : Q3 → Q3 → Q3
   | _, _ => top
 
 /-- Composition: group multiplication on `G`, `𝟎` absorbing, `M` maximal. -/
-def comp : Q3 → Q3 → Q3
+@[expose] public def comp : Q3 → Q3 → Q3
   | zero, _ => zero
   | _, zero => zero
   -- e is the group identity
@@ -1078,13 +1080,13 @@ def comp : Q3 → Q3 → Q3
   | a2, a2 => a
 
 /-- Reciprocation: group inverse (`a° = a²`), `𝟎` and `M` symmetric. -/
-def recip : Q3 → Q3
+@[expose] public def recip : Q3 → Q3
   | zero => zero | e => e | a => a2 | a2 => a | top => top
 
 end Q3
 
 /-- The one-object category of the §2.228(c) counterexample. -/
-instance : Cat.{0} Unit where
+@[expose] public instance : Cat.{0} Unit where
   Hom _ _ := Q3
   id _ := Q3.e
   comp R S := Q3.comp R S
@@ -1093,7 +1095,7 @@ instance : Cat.{0} Unit where
   assoc := by intro W X Y Z f g h; cases f <;> cases g <;> cases h <;> rfl
 
 /-- The §2.228(c) allegory structure on `Unit` (hom-set `Q3`). -/
-instance counterAllegory : Allegory.{0} Unit where
+@[expose] public instance counterAllegory : Allegory.{0} Unit where
   recip R := Q3.recip R
   inter R S := Q3.meet R S
   recip_recip := by intro a b R; cases R <;> rfl
@@ -1107,7 +1109,7 @@ instance counterAllegory : Allegory.{0} Unit where
 
 /-- The §2.228(c) union-allegory structure: `𝟎 = Q3.zero`, `∪ = Q3.join`,
     composition distributing over union, but NOT intersection. -/
-instance counterUnionAllegory : UnionAllegory.{0} Unit where
+@[expose] public instance counterUnionAllegory : UnionAllegory.{0} Unit where
   zero := Q3.zero
   union R S := Q3.join R S
   zero_comp := by intro a b c R; cases R <;> rfl
@@ -1237,14 +1239,14 @@ section LCDAGeneral
 variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-- `Sup` depends only on the predicate up to logical equivalence. -/
-theorem Sup_congr {a b : 𝒜} {P Q : (a ⟶ b) → Prop} (h : ∀ T, P T ↔ Q T) :
+public theorem Sup_congr {a b : 𝒜} {P Q : (a ⟶ b) → Prop} (h : ∀ T, P T ↔ Q T) :
     Sup P = Sup Q := by
   have hPQ : P = Q := funext fun T => propext (h T)
   rw [hPQ]
 
 
 /-- `R = S` follows from `R° = S°` (reciprocation is injective). -/
-theorem recip_injective {a b : 𝒜} {R S : a ⟶ b} (h : R° = S°) : R = S := by
+public theorem recip_injective {a b : 𝒜} {R S : a ⟶ b} (h : R° = S°) : R = S := by
   have h2 : R°° = S°° := by rw [h]
   rwa [Allegory.recip_recip, Allegory.recip_recip] at h2
 
@@ -1261,7 +1263,7 @@ theorem recip_injective {a b : 𝒜} {R S : a ⟶ b} (h : R° = S°) : R = S := 
 
 /-- A §2.223 DISJOINT UNION datum: injections `Uᵢ : αᵢ → β` with the three indexed
     coproduct equations. -/
-structure IndexedDisjointUnion {I : Type u} (α : I → 𝒜) (β : 𝒜) where
+public structure IndexedDisjointUnion {I : Type u} (α : I → 𝒜) (β : 𝒜) where
   /-- The injections. -/
   U : (i : I) → α i ⟶ β
   /-- `UᵢUᵢ° = 1`. -/
@@ -1276,7 +1278,7 @@ variable {I : Type u} {α : I → 𝒜} {β : 𝒜}
 /-- **§2.223 (mediator law).**  For a disjoint union and a family `{Rᵢ : αᵢ → c}`, the
     morphism `M = ⋃ᵢ Uᵢ°Rᵢ` satisfies `Uⱼ ≫ M = Rⱼ`.  (The cross terms `UⱼUᵢ° = 0`
     vanish; the diagonal `UⱼUⱼ° = 1` survives.) -/
-theorem IndexedDisjointUnion.inject_mediator (du : IndexedDisjointUnion α β)
+public theorem IndexedDisjointUnion.inject_mediator (du : IndexedDisjointUnion α β)
     {c : 𝒜} (R : (i : I) → α i ⟶ c) (j : I) :
     du.U j ≫ Sup (fun T => ∃ i, T = (du.U i)° ≫ R i) = R j := by
   rw [comp_Sup_distrib]
@@ -1295,7 +1297,7 @@ theorem IndexedDisjointUnion.inject_mediator (du : IndexedDisjointUnion α β)
 
 /-- The indexed COPRODUCT universal property for injections `U : ∀ i, αᵢ → β`: every
     family `{Rᵢ : αᵢ → c}` factors uniquely through the injections (§2.223). -/
-def IsIndexedCoproduct (U : (i : I) → α i ⟶ β) : Prop :=
+@[expose] public def IsIndexedCoproduct (U : (i : I) → α i ⟶ β) : Prop :=
   ∀ (c : 𝒜) (R : (i : I) → α i ⟶ c),
     ∃ M : β ⟶ c, (∀ i, U i ≫ M = R i) ∧
       (∀ M' : β ⟶ c, (∀ i, U i ≫ M' = R i) → M' = M)
@@ -1303,7 +1305,7 @@ def IsIndexedCoproduct (U : (i : I) → α i ⟶ β) : Prop :=
 /-- **§2.223.**  A disjoint union is an (indexed) coproduct: its injections enjoy the
     universal mapping property, with mediator `M = ⋃ᵢ Uᵢ°Rᵢ`.  Existence is the
     mediator law; uniqueness reciprocates and uses completeness `⋃ᵢ Uᵢ°Uᵢ = 1`. -/
-theorem IndexedDisjointUnion.isCoproduct (du : IndexedDisjointUnion α β) :
+public theorem IndexedDisjointUnion.isCoproduct (du : IndexedDisjointUnion α β) :
     IsIndexedCoproduct du.U := by
   intro c R
   refine ⟨Sup (fun T => ∃ i, T = (du.U i)° ≫ R i), fun j => du.inject_mediator R j, ?_⟩
@@ -1451,12 +1453,12 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 /-! ## Generic `Sup` helpers (in the base allegory `𝒜`) -/
 
 /-- If every member of `P` is below `𝟘`, the supremum is `𝟘`. -/
-theorem gcSup_eq_zero {a b : 𝒜} {P : (a ⟶ b) → Prop}
+public theorem gcSup_eq_zero {a b : 𝒜} {P : (a ⟶ b) → Prop}
     (h : ∀ T, P T → T ⊑ (𝟘 : a ⟶ b)) : Sup P = (𝟘 : a ⟶ b) :=
   le_antisymm (Sup_le h) (zero_le _)
 
 /-- `Sup P = c` when `c` is a member and an upper bound. -/
-theorem gcSup_eq {a b : 𝒜} {P : (a ⟶ b) → Prop} {c : a ⟶ b}
+public theorem gcSup_eq {a b : 𝒜} {P : (a ⟶ b) → Prop} {c : a ⟶ b}
     (hc : P c) (hmax : ∀ T, P T → T ⊑ c) : Sup P = c :=
   le_antisymm (Sup_le hmax) (le_Sup hc)
 
@@ -1465,15 +1467,15 @@ theorem gcSup_eq {a b : 𝒜} {P : (a ⟶ b) → Prop} {c : a ⟶ b}
 /-- The IDENTITY MATRIX on an indexed family `A`: the diagonal, using a
     propositional `i = j` (no `DecidableEq`) and `HEq` to express that the
     on-diagonal entry is the identity. -/
-def globalId (A : GlobalObj 𝒜) : GlobalMorphism A A :=
+@[expose] public def globalId (A : GlobalObj 𝒜) : GlobalMorphism A A :=
   fun i j => Sup (fun U : A.obj i ⟶ A.obj j => ∃ (_ : i = j), HEq U (Cat.id (A.obj i)))
 
-theorem globalId_apply (A : GlobalObj 𝒜) (i j : A.idx) :
+public theorem globalId_apply (A : GlobalObj 𝒜) (i j : A.idx) :
     globalId A i j
       = Sup (fun U : A.obj i ⟶ A.obj j => ∃ (_ : i = j), HEq U (Cat.id (A.obj i))) := rfl
 
 /-- The diagonal entry of the identity matrix is the object identity. -/
-theorem globalId_diag (A : GlobalObj 𝒜) (i : A.idx) :
+public theorem globalId_diag (A : GlobalObj 𝒜) (i : A.idx) :
     globalId A i i = Cat.id (A.obj i) := by
   rw [globalId_apply]
   apply le_antisymm
@@ -1482,12 +1484,12 @@ theorem globalId_diag (A : GlobalObj 𝒜) (i : A.idx) :
     rw [eq_of_heq hU]; exact le_refl _
   · exact le_Sup ⟨rfl, HEq.refl _⟩
 
-theorem globalComp_apply {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B)
+public theorem globalComp_apply {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B)
     (S : GlobalMorphism B C) (i : A.idx) (k : C.idx) :
     GlobalMorphism.comp R S i k = Sup (fun T => ∃ j, T = R i j ≫ S j k) := rfl
 
 /-- `1 ≫ R = R` (left identity). -/
-theorem globalComp_id_left {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalComp_id_left {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     GlobalMorphism.comp (globalId A) R = R := by
   funext i k
   rw [globalComp_apply]
@@ -1502,7 +1504,7 @@ theorem globalComp_id_left {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
   · exact le_Sup ⟨i, by rw [globalId_diag, Cat.id_comp]⟩
 
 /-- `R ≫ 1 = R` (right identity). -/
-theorem globalComp_id_right {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalComp_id_right {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     GlobalMorphism.comp R (globalId B) = R := by
   funext i k
   rw [globalComp_apply]
@@ -1517,7 +1519,7 @@ theorem globalComp_id_right {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
   · exact le_Sup ⟨k, by rw [globalId_diag, Cat.comp_id]⟩
 
 /-- Associativity = the `Sup`-interchange (Fubini) for matrix multiplication. -/
-theorem globalComp_assoc {A B C D : GlobalObj 𝒜}
+public theorem globalComp_assoc {A B C D : GlobalObj 𝒜}
     (R : GlobalMorphism A B) (S : GlobalMorphism B C) (T : GlobalMorphism C D) :
     GlobalMorphism.comp (GlobalMorphism.comp R S) T
       = GlobalMorphism.comp R (GlobalMorphism.comp S T) := by
@@ -1546,7 +1548,7 @@ theorem globalComp_assoc {A B C D : GlobalObj 𝒜}
     exact le_Sup ⟨j, rfl⟩
 
 /-- §2.224 (1) The global completion is a category. -/
-instance globalCat : Cat (GlobalObj 𝒜) where
+@[expose] public instance globalCat : Cat (GlobalObj 𝒜) where
   Hom := GlobalMorphism
   id := globalId
   comp := GlobalMorphism.comp
@@ -1557,22 +1559,22 @@ instance globalCat : Cat (GlobalObj 𝒜) where
 /-! ## §2.224  Reciprocation and intersection -/
 
 /-- Pointwise intersection of two matrices. -/
-def globalInter {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) : GlobalMorphism A B :=
+@[expose] public def globalInter {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) : GlobalMorphism A B :=
   fun i j => R i j ∩ S i j
 
-theorem globalInter_apply {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) (i : A.idx) (j : B.idx) :
+public theorem globalInter_apply {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) (i : A.idx) (j : B.idx) :
     globalInter R S i j = R i j ∩ S i j := rfl
 
-theorem globalRecip_apply {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) (j : B.idx) (i : A.idx) :
+public theorem globalRecip_apply {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) (j : B.idx) (i : A.idx) :
     GlobalMorphism.recip R j i = (R i j)° := rfl
 
-theorem globalRecip_recip {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalRecip_recip {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     GlobalMorphism.recip (GlobalMorphism.recip R) = R := by
   funext i j
   rw [globalRecip_apply, globalRecip_apply, Allegory.recip_recip]
 
 /-- `(R ≫ S)° = S° ≫ R°` : reciprocal flips and transposes, using `recip_Sup`. -/
-theorem globalRecip_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : GlobalMorphism B C) :
+public theorem globalRecip_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : GlobalMorphism B C) :
     GlobalMorphism.recip (GlobalMorphism.comp R S)
       = GlobalMorphism.comp (GlobalMorphism.recip S) (GlobalMorphism.recip R) := by
   funext k i
@@ -1587,28 +1589,28 @@ theorem globalRecip_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : 
   · rintro ⟨j, rfl⟩
     exact ⟨R i j ≫ S j k, ⟨j, rfl⟩, by rw [Allegory.recip_comp]⟩
 
-theorem globalRecip_inter {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
+public theorem globalRecip_inter {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
     GlobalMorphism.recip (globalInter R S)
       = globalInter (GlobalMorphism.recip R) (GlobalMorphism.recip S) := by
   funext j i
   simp only [globalRecip_apply, globalInter_apply]
   rw [Allegory.recip_inter]
 
-theorem globalInter_idem {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalInter_idem {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     globalInter R R = R := by
   funext i j; rw [globalInter_apply, Allegory.inter_idem]
 
-theorem globalInter_comm {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
+public theorem globalInter_comm {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
     globalInter R S = globalInter S R := by
   funext i j; rw [globalInter_apply, globalInter_apply, Allegory.inter_comm]
 
-theorem globalInter_assoc {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
+public theorem globalInter_assoc {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
     globalInter R (globalInter S T) = globalInter (globalInter R S) T := by
   funext i j; simp only [globalInter_apply]; rw [Allegory.inter_assoc]
 
 /-- Semi-distributivity reduces, at each entry, to base semi-distributivity via
     `R(S∩T) ⊑ RS` and `R(S∩T) ⊑ RT` (the base `comp_mono_left`/`inter_lb`). -/
-theorem globalSemidistrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S T : GlobalMorphism B C) :
+public theorem globalSemidistrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S T : GlobalMorphism B C) :
     GlobalMorphism.comp R (globalInter S T)
       = globalInter (globalInter (GlobalMorphism.comp R S)
             (GlobalMorphism.comp R (globalInter S T))) (GlobalMorphism.comp R T) := by
@@ -1634,7 +1636,7 @@ theorem globalSemidistrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S T
 
 /-- The modular law reduces, at each entry, to base `modular_le` plus reindexing
     the inner `Sup` defining `(T ≫ S°)`. -/
-theorem globalModular {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : GlobalMorphism B C)
+public theorem globalModular {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : GlobalMorphism B C)
     (T : GlobalMorphism A C) :
     globalInter (GlobalMorphism.comp R S) T
       = globalInter (globalInter (GlobalMorphism.comp R S) T)
@@ -1659,7 +1661,7 @@ theorem globalModular {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : Glo
   rw [globalRecip_apply]
 
 /-- §2.224 (2) The global completion is an allegory. -/
-instance globalAllegory : Allegory (GlobalObj 𝒜) where
+@[expose] public instance globalAllegory : Allegory (GlobalObj 𝒜) where
   toCat := globalCat
   recip := GlobalMorphism.recip
   inter := globalInter
@@ -1674,12 +1676,12 @@ instance globalAllegory : Allegory (GlobalObj 𝒜) where
 
 /-! ### Global order ↔ entry-wise base order -/
 
-theorem global_le_entry {A B : GlobalObj 𝒜} {R T : A ⟶ B}
+public theorem global_le_entry {A B : GlobalObj 𝒜} {R T : A ⟶ B}
     (h : R ⊑ T) (i : A.idx) (j : B.idx) : R i j ⊑ T i j := by
   have h2 : globalInter R T = R := h
   exact congrFun (congrFun h2 i) j
 
-theorem global_le_of_entry {A B : GlobalObj 𝒜} {R T : A ⟶ B}
+public theorem global_le_of_entry {A B : GlobalObj 𝒜} {R T : A ⟶ B}
     (h : ∀ i j, R i j ⊑ T i j) : R ⊑ T := by
   show globalInter R T = R
   funext i j
@@ -1687,18 +1689,18 @@ theorem global_le_of_entry {A B : GlobalObj 𝒜} {R T : A ⟶ B}
 
 /-! ## §2.224  Distributive structure (union and zero) -/
 
-def globalUnion {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) : GlobalMorphism A B :=
+@[expose] public def globalUnion {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) : GlobalMorphism A B :=
   fun i j => R i j ∪ S i j
 
-def globalZero {A B : GlobalObj 𝒜} : GlobalMorphism A B := fun _ _ => 𝟘
+@[expose] public def globalZero {A B : GlobalObj 𝒜} : GlobalMorphism A B := fun _ _ => 𝟘
 
-theorem globalUnion_apply {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) (i : A.idx) (j : B.idx) :
+public theorem globalUnion_apply {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) (i : A.idx) (j : B.idx) :
     globalUnion R S i j = R i j ∪ S i j := rfl
 
-theorem globalZero_apply {A B : GlobalObj 𝒜} (i : A.idx) (j : B.idx) :
+public theorem globalZero_apply {A B : GlobalObj 𝒜} (i : A.idx) (j : B.idx) :
     (globalZero : GlobalMorphism A B) i j = (𝟘 : A.obj i ⟶ B.obj j) := rfl
 
-theorem globalZero_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism B C) :
+public theorem globalZero_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism B C) :
     GlobalMorphism.comp (globalZero : GlobalMorphism A B) R = globalZero := by
   funext i k
   rw [globalComp_apply, globalZero_apply]
@@ -1706,7 +1708,7 @@ theorem globalZero_comp {A B C : GlobalObj 𝒜} (R : GlobalMorphism B C) :
   rintro X ⟨j, rfl⟩
   rw [globalZero_apply, DistributiveAllegory.zero_comp]; exact le_refl _
 
-theorem globalComp_zero {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalComp_zero {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     GlobalMorphism.comp R (globalZero : GlobalMorphism B C) = globalZero := by
   funext i k
   rw [globalComp_apply, globalZero_apply]
@@ -1714,31 +1716,31 @@ theorem globalComp_zero {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) :
   rintro X ⟨j, rfl⟩
   rw [globalZero_apply, DistributiveAllegory.comp_zero]; exact le_refl _
 
-theorem globalUnion_idem {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalUnion_idem {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     globalUnion R R = R := by
   funext i j; rw [globalUnion_apply, DistributiveAllegory.union_idem]
 
-theorem globalUnion_comm {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
+public theorem globalUnion_comm {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
     globalUnion R S = globalUnion S R := by
   funext i j; rw [globalUnion_apply, globalUnion_apply, DistributiveAllegory.union_comm]
 
-theorem globalUnion_assoc {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
+public theorem globalUnion_assoc {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
     globalUnion R (globalUnion S T) = globalUnion (globalUnion R S) T := by
   funext i j; simp only [globalUnion_apply]; rw [DistributiveAllegory.union_assoc]
 
-theorem globalUnion_inter_absorb {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
+public theorem globalUnion_inter_absorb {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
     globalUnion R (globalInter S R) = R := by
   funext i j; rw [globalUnion_apply, globalInter_apply, DistributiveAllegory.union_inter_absorb]
 
-theorem globalInter_union_absorb {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
+public theorem globalInter_union_absorb {A B : GlobalObj 𝒜} (R S : GlobalMorphism A B) :
     globalInter (globalUnion R S) R = R := by
   funext i j; rw [globalInter_apply, globalUnion_apply, DistributiveAllegory.inter_union_absorb]
 
-theorem globalZero_union {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
+public theorem globalZero_union {A B : GlobalObj 𝒜} (R : GlobalMorphism A B) :
     globalUnion globalZero R = R := by
   funext i j; rw [globalUnion_apply, globalZero_apply, DistributiveAllegory.zero_union]
 
-theorem globalInter_union_distrib {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
+public theorem globalInter_union_distrib {A B : GlobalObj 𝒜} (R S T : GlobalMorphism A B) :
     globalInter R (globalUnion S T)
       = globalUnion (globalInter R S) (globalInter R T) := by
   funext i j
@@ -1747,7 +1749,7 @@ theorem globalInter_union_distrib {A B : GlobalObj 𝒜} (R S T : GlobalMorphism
 
 /-- Composition distributes over union: the matrix `Sup` of an entry-wise union
     is the union of the two `Sup`s. -/
-theorem globalComp_union_distrib {A B C : GlobalObj 𝒜}
+public theorem globalComp_union_distrib {A B C : GlobalObj 𝒜}
     (R : GlobalMorphism A B) (S T : GlobalMorphism B C) :
     GlobalMorphism.comp R (globalUnion S T)
       = globalUnion (GlobalMorphism.comp R S) (GlobalMorphism.comp R T) := by
@@ -1773,7 +1775,7 @@ theorem globalComp_union_distrib {A B C : GlobalObj 𝒜}
       exact le_union_right _ _
 
 /-- §2.224 (3) The global completion is a distributive allegory. -/
-instance globalDistributiveAllegory : DistributiveAllegory (GlobalObj 𝒜) where
+@[expose] public instance globalDistributiveAllegory : DistributiveAllegory (GlobalObj 𝒜) where
   toAllegory := globalAllegory
   zero := globalZero
   union := globalUnion
@@ -1791,14 +1793,14 @@ instance globalDistributiveAllegory : DistributiveAllegory (GlobalObj 𝒜) wher
 /-! ## §2.224  Local completeness (pointwise `Sup`) -/
 
 /-- The supremum of a family of matrices is taken pointwise. -/
-def globalSup {A B : GlobalObj 𝒜} (P : GlobalMorphism A B → Prop) : GlobalMorphism A B :=
+@[expose] public def globalSup {A B : GlobalObj 𝒜} (P : GlobalMorphism A B → Prop) : GlobalMorphism A B :=
   fun i j => Sup (fun T => ∃ R, P R ∧ T = R i j)
 
-theorem globalSup_apply {A B : GlobalObj 𝒜} (P : GlobalMorphism A B → Prop) (i : A.idx) (j : B.idx) :
+public theorem globalSup_apply {A B : GlobalObj 𝒜} (P : GlobalMorphism A B → Prop) (i : A.idx) (j : B.idx) :
     globalSup P i j = Sup (fun T => ∃ R, P R ∧ T = R i j) := rfl
 
 /-- Composition distributes over the pointwise `Sup` (a `Sup`-interchange). -/
-theorem globalComp_Sup_distrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B)
+public theorem globalComp_Sup_distrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B)
     (P : GlobalMorphism B C → Prop) :
     GlobalMorphism.comp R (globalSup P)
       = globalSup (fun T => ∃ S, P S ∧ T = GlobalMorphism.comp R S) := by
@@ -1824,7 +1826,7 @@ theorem globalComp_Sup_distrib {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B)
     exact le_Sup ⟨S, hS, rfl⟩
 
 /-- Intersection distributes over the pointwise `Sup` (no interchange needed). -/
-theorem globalInter_Sup_distrib {A B : GlobalObj 𝒜} (R : GlobalMorphism A B)
+public theorem globalInter_Sup_distrib {A B : GlobalObj 𝒜} (R : GlobalMorphism A B)
     (P : GlobalMorphism A B → Prop) :
     globalInter R (globalSup P)
       = globalSup (fun T => ∃ S, P S ∧ T = globalInter R S) := by
@@ -1839,7 +1841,7 @@ theorem globalInter_Sup_distrib {A B : GlobalObj 𝒜} (R : GlobalMorphism A B)
     exact ⟨S i j, ⟨S, hS, rfl⟩, rfl⟩
 
 /-- §2.224 (4) The global completion is a locally complete distributive allegory. -/
-instance globalLCDA : LocallyCompleteDistributiveAllegory (GlobalObj 𝒜) where
+@[expose] public instance globalLCDA : LocallyCompleteDistributiveAllegory (GlobalObj 𝒜) where
   toDistributiveAllegory := globalDistributiveAllegory
   Sup := globalSup
   le_Sup := by

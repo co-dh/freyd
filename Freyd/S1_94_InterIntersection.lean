@@ -24,9 +24,11 @@
   originals — this is a pure mechanical move, no statement or proof changed.
 -/
 
-import Freyd.S1_90
-import Freyd.S1_92
-import Freyd.S1_60
+module
+
+public import Freyd.S1_90
+public import Freyd.S1_92
+public import Freyd.S1_60
 
 universe v u
 
@@ -42,7 +44,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
   A subobject A' ↣ A is NAMED BY F ⊆ [A] if its name 'A'' ≤ F (§1.942). -/
 
 /-- The POWER OBJECT [A] = Ω^A (§1.92). -/
-noncomputable abbrev powObj (A : 𝒞) : 𝒞 := omega (𝒞 := 𝒞) ^^ A
+@[expose] public noncomputable abbrev powObj (A : 𝒞) : 𝒞 := omega (𝒞 := 𝒞) ^^ A
 
 /-! ## §1.942  Name of a subobject
 
@@ -52,7 +54,7 @@ noncomputable abbrev powObj (A : 𝒞) : 𝒞 := omega (𝒞 := 𝒞) ^^ A
 
 /-- The NAME 'A'' : 1 → [A] of the monic m : A' → A (§1.942).
     curry(fst ≫ χ_m) : one → Ω^A, where fst : prod A one → A. -/
-noncomputable def nameOf {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) : one ⟶ powObj A :=
+@[expose] public noncomputable def nameOf {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) : one ⟶ powObj A :=
   curry (fst ≫ classify m hm)
 
 /-- A' is NAMED BY F ⊆ [A] if 'A'' ∈ F, i.e. 'A'' factors through F (§1.942). -/
@@ -73,7 +75,7 @@ def NamedBy {A : 𝒞} (A' : Subobject 𝒞 A) (F : Subobject 𝒞 (powObj A)) :
 
 /-- The membership test A → Ω for a global element F_name : 1 → [A].
     Evaluates F_name at each a : A via `eval ∘ ⟨id_A, term_A ≫ F_name⟩`. -/
-noncomputable def membershipMap {A : 𝒞} (F_name : one ⟶ powObj A) : A ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def membershipMap {A : 𝒞} (F_name : one ⟶ powObj A) : A ⟶ omega (𝒞 := 𝒞) :=
   pair (Cat.id A) (term A ≫ F_name) ≫ eval_exp A (omega (𝒞 := 𝒞))
 
 /-- **§1.94**: INTERNALLY DEFINED INTERSECTION ∩F for a global element F_name : 1 → [A].
@@ -90,7 +92,7 @@ noncomputable def interIntersection {A : 𝒞} (F_name : one ⟶ powObj A) : Sub
     Proof: `nameOf m hm = curry(fst ≫ χ_m)`; the membership map factors as
     `pair id (term) ≫ prodMap (curry …) ≫ eval`, and `curry_eval` collapses the
     `prodMap … ≫ eval` to `fst ≫ χ_m`, then `fst (pair id term) = id`. -/
-theorem membershipMap_nameOf {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) :
+public theorem membershipMap_nameOf {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) :
     membershipMap (nameOf m hm) = HasSubobjectClassifier.classify m hm := by
   show pair (Cat.id A) (term A ≫ nameOf m hm) ≫ eval_exp A (omega (𝒞 := 𝒞))
       = HasSubobjectClassifier.classify m hm
@@ -140,7 +142,7 @@ theorem inter_le_named {A : 𝒞} (F_name : one ⟶ powObj A)
 
     Proof: `fst ≫ membershipMap G = pair fst (snd ≫ G) ≫ eval = prodMap A one [A] G ≫ eval`
     (using `fst ≫ term A = snd` by terminal-uniqueness), so `curry_unique_eq` gives `= G`. -/
-theorem curry_fst_membershipMap {A : 𝒞} (G : one ⟶ powObj A) :
+public theorem curry_fst_membershipMap {A : 𝒞} (G : one ⟶ powObj A) :
     curry (fst (A := A) (B := one) ≫ membershipMap G) = G := by
   symm
   apply curry_unique_eq
@@ -220,11 +222,11 @@ theorem inter_le_singleton_named {A : 𝒞} (F : Subobject 𝒞 (powObj A))
 /-- **§1.94(10)**: The SINGLETON MAP A1 : A → [A] = Ω^A sends a : A to its name
     'a'' = {a}.  It is `curry(χ_{Δ_A})`, the curried classifier of the diagonal —
     exactly the §1.92 `singletonMapCat`, reused here (DRY). -/
-noncomputable def singletonMap (A : 𝒞) : A ⟶ powObj A :=
+@[expose] public noncomputable def singletonMap (A : 𝒞) : A ⟶ powObj A :=
   singletonMapCat (𝒞 := 𝒞) A
 
 /-- **§1.94(10)**: the singleton map is monic (§1.92, reuse of `singletonMapCat_monic`). -/
-theorem singletonMap_monic (A : 𝒞) : Monic (singletonMap A) :=
+public theorem singletonMap_monic (A : 𝒞) : Monic (singletonMap A) :=
   singletonMapCat_monic (𝒞 := 𝒞) A
 
 end Freyd

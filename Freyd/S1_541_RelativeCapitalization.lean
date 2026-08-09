@@ -99,16 +99,18 @@
   No mathlib (the category theory stays on this repo's own `Cat`).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_26
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_54
-import Freyd.S1_56
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_543_Capitalization
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_26
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_54
+public import Freyd.S1_56
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_543_Capitalization
 
 open Freyd
 open Freyd.Colim
@@ -130,7 +132,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
   `slice_embedding_separates`. -/
 
 /-- The object part of the slice embedding `A → A/B`: `C ↦ (C×B ──snd──▶ B)`. -/
-def sliceEmbedObj (B : 𝒞) (C : 𝒞) : Over B := ⟨prod C B, snd⟩
+@[expose] public def sliceEmbedObj (B : 𝒞) (C : 𝒞) : Over B := ⟨prod C B, snd⟩
 
 /-- The morphism part of the slice embedding: `f : C → D` becomes the over-hom whose
     underlying arrow is `f×B = pair (fst≫f) snd : C×B → D×B`.  It commutes with the
@@ -181,7 +183,7 @@ theorem sliceEmbed_embedding (B : 𝒞) [PullbacksTransferCovers 𝒞] (hws : We
 
 /-- **Cover right-factor.**  If `g ≫ f` is a cover then `f` is a cover.  (Any monic `m`
     that `f` factors through, `g ≫ f` also factors through; `g ≫ f` a cover forces `m` iso.) -/
-theorem cover_of_comp_cover {X Y Z : 𝒞} (g : X ⟶ Y) (f : Y ⟶ Z) (hgf : Cover (g ≫ f)) :
+public theorem cover_of_comp_cover {X Y Z : 𝒞} (g : X ⟶ Y) (f : Y ⟶ Z) (hgf : Cover (g ≫ f)) :
     Cover f := by
   intro C m h hm hfac
   refine hgf m (g ≫ h) hm ?_
@@ -274,7 +276,7 @@ theorem sliceAcquiresPoint (B : 𝒞) :
     `pair g (id_P) : P → B × P`.  It is an `OverHom` because its second projection is `id_P`
     (`snd_pair`).  Taking `g = fst : B × B' → B` points the factor `B` of `B × B'`; taking
     `P = B`, `g = id_B` recovers `sliceGenericPoint B` (the diagonal). -/
-def sliceFactorPoint {P : 𝒞} (B : 𝒞) (g : P ⟶ B) :
+@[expose] public def sliceFactorPoint {P : 𝒞} (B : 𝒞) (g : P ⟶ B) :
     OverHom (overTerm P) (sliceEmbedObj P B) :=
   ⟨pair g (Cat.id P), by show pair g (Cat.id P) ≫ snd = Cat.id P; exact snd_pair g (Cat.id P)⟩
 
@@ -307,7 +309,7 @@ theorem sliceAcquiresFactorPoint {P : 𝒞} (B : 𝒞) (g : P ⟶ B) :
     the data: head index projects by `fst`; a successor index projects by `snd` then recurses.
     This is the map `g : ∏U → U.get k` along which the slice `A/(∏U)` acquires a point of that
     factor (`sliceFactorPoint`/`sliceAcquiresFactorPoint`). -/
-def listProdProj : ∀ (U : List 𝒞) (k : Fin U.length), (listProd U ⟶ U.get k)
+@[expose] public def listProdProj : ∀ (U : List 𝒞) (k : Fin U.length), (listProd U ⟶ U.get k)
   | C :: U, ⟨0,     _⟩ => (fst : prod C (listProd U) ⟶ C)
   | C :: U, ⟨k + 1, hk⟩ =>
       (snd : prod C (listProd U) ⟶ listProd U) ≫ listProdProj U ⟨k, Nat.lt_of_succ_lt_succ hk⟩
@@ -374,7 +376,7 @@ theorem listProdSliceAcquiresEveryFactor (U : List 𝒞) (k : Fin U.length) :
     being monic (`m` mono), `m.f` is then iso, so `m` is a slice-iso — contradicting properness.
 
     This is the precise point-free directed-union escape; no fractions saturation is used. -/
-theorem baseChange_freshFactor_missed {P A : 𝒞} {D : Over P}
+public theorem baseChange_freshFactor_missed {P A : 𝒞} {D : Over P}
     (m : OverHom D (sliceEmbedObj P A)) (hmono : OverMono m) (hproper : ¬ OverIso m)
     (cnD : Cone D.hom (snd : prod A P ⟶ P)) (_hcnD : cnD.IsPullback)
     (mf' : cnD.pt ⟶ prod A (prod A P))
@@ -431,7 +433,7 @@ theorem baseChange_freshFactor_missed {P A : 𝒞} {D : Over P}
     This is the reusable consumer of a POINT factorization (an `OverHom` equation), the shape a
     slice-point density argument actually produces, rather than the raw cone arrows; the section
     extraction is internal here. -/
-theorem freshSlicePoint_factors_imp_false {P A : 𝒞} {D : Over P}
+public theorem freshSlicePoint_factors_imp_false {P A : 𝒞} {D : Over P}
     (m : OverHom D (sliceEmbedObj P A)) (hmono : OverMono m) (hproper : ¬ OverIso m)
     (cnD : Cone D.hom (snd : prod A P ⟶ P)) (hcnD : cnD.IsPullback)
     -- the base-changed mono `m̄ : ⟨cnD.pt, cnD.π₂⟩ ↪ sliceEmbedObj (A×P) A`, underlying `mf'`.
@@ -466,7 +468,7 @@ theorem freshSlicePoint_factors_imp_false {P A : 𝒞} {D : Over P}
     standalone, small-context lemma; the genuine §1.546 content (producing the section `s` itself,
     transported from the stage-`N` colimit factor through the descent iso and the `ψ`-reindex) is the
     remaining core. -/
-theorem freshSection_of_descentSection {PN A : 𝒞} (Dbar : Over PN)
+public theorem freshSection_of_descentSection {PN A : 𝒞} (Dbar : Over PN)
     (mC : OverHom Dbar (sliceEmbedObj PN A))
     (cnDN : Cone Dbar.hom (snd : prod A PN ⟶ PN)) (_hcnDN : cnDN.IsPullback)
     (s : prod A PN ⟶ cnDN.pt) (hs₂ : s ≫ cnDN.π₂ = Cat.id (prod A PN))
@@ -539,9 +541,9 @@ structure ListProjFamily where
 
 /-- **The inner finite-product-slice object map.**  Stage `U` of the inner system is the slice
     `A/(∏U) = Over (listProd U)`.  This is residual-(A)/(B)-free (it is just the object family). -/
-def innerObj (U : List 𝒞) : Type u := Over (listProd U)
+@[expose] public def innerObj (U : List 𝒞) : Type u := Over (listProd U)
 
-instance innerCat (U : List 𝒞) : Cat.{u} (innerObj (𝒞 := 𝒞) U) := overCat (listProd U)
+@[expose] public instance innerCat (U : List 𝒞) : Cat.{u} (innerObj (𝒞 := 𝒞) U) := overCat (listProd U)
 
 /-- **The inner transition functor**, *given* a projection family `P` (residual (A)): for `V ⊆ U`,
     base-change `A/(∏V) → A/(∏U)` along `P.proj : ∏U → ∏V`.  The OBJECT map is `baseChangeObj`,
@@ -726,7 +728,7 @@ variable [PullbacksTransferCovers 𝒞]
   `nextStepOfEnum`/`exists_wellSupported_enum`/`nextStep` itself now live UPSTREAM in
   `Freyd.Capitalization` (after `CapStep`, before `capData_exists`), so `capData_exists`/`hwall_step`
   can NAME the §1.546/§1.547 successor in place.  They are still in scope HERE via the `Capitalization`
-  import (`open Freyd`).  Pure relocation; no semantics changed. -/
+public   import (`open Freyd`).  Pure relocation; no semantics changed. -/
 
 section BaseSliceCartesian
 variable [HasEqualizers 𝒞]

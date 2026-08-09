@@ -19,10 +19,12 @@
   field, not a theorem, so it cannot be derived. Both left as-is.
 -/
 
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_41
-import Freyd.S1_43
+module
+
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_41
+public import Freyd.S1_43
 
 open Freyd
 

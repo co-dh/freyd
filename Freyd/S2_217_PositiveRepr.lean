@@ -49,7 +49,9 @@
   `tabular_repr_in_power_of_sets` to remove positivity from §2.218
   (`tabular_repr_in_power_of_sets_distributive`).
 -/
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_111_RelCat
 
 universe v u
 
@@ -74,7 +76,7 @@ variable {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜]
     `(Dom S) ∩ (Dom T) ⊂ (Dom S)(Dom T) ⊂ SS°TT°`.  The first link is §2.121
     (`coreflexive_comp_eq_inter`, an equality for coreflexives); the second is
     `dom R ⊑ R ≫ R°` in each factor. -/
-theorem dom_inter_dom_le {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
+public theorem dom_inter_dom_le {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     dom S ∩ dom T ⊑ (S ≫ S°) ≫ (T ≫ T°) := by
   rw [← coreflexive_comp_eq_inter (dom_coreflexive S) (dom_coreflexive T)]
   exact le_trans (comp_mono_right (inter_lb_right _ _) (dom T))
@@ -84,7 +86,7 @@ theorem dom_inter_dom_le {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     `S°T ⊂ S°(Dom S)(Dom T)T ⊂ S°[Dom(S) ∩ Dom(T)]T`.  The first link is
     `R ⊑ dom R ≫ R` (§2.122) on both factors (reciprocated on the left); the second is
     §2.121 collapsing `(Dom S)(Dom T)` to the meet. -/
-theorem recip_comp_le_through_doms {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
+public theorem recip_comp_le_through_doms {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     S° ≫ T ⊑ S° ≫ (dom S ∩ dom T) ≫ T := by
   -- `S° ⊑ S° ≫ dom S`: reciprocate `S ⊑ dom S ≫ S` and use `(dom S)° = dom S`.
   have hS : S° ⊑ S° ≫ dom S := by
@@ -100,7 +102,7 @@ theorem recip_comp_le_through_doms {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
 /-- **Freyd §2.217 (parenthetical recast): `S°T = 0` iff `Dom S` and `Dom T` are disjoint.**
     Forward: chain 1 sandwiches the meet of the domains under `S(S°T)T° = S𝟘T° = 𝟘`.
     Reverse: chain 2 sandwiches `S°T` under `S°𝟘T = 𝟘`. -/
-theorem recip_comp_eq_zero_iff_dom_disjoint {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
+public theorem recip_comp_eq_zero_iff_dom_disjoint {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     S° ≫ T = 𝟘 ↔ dom S ∩ dom T = 𝟘 := by
   constructor
   · intro h
@@ -135,7 +137,7 @@ variable {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜]
 
 /-- **§2.217: a matrix is ENTIRE iff each row's polarizations join above the identity** —
     "R is entire iff for each i, `1 ⊂ ∪_j R_ij R_ij°`". -/
-theorem mat_entire_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
+public theorem mat_entire_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     Entire (𝒜 := MatObj 𝒜) M ↔
       ∀ i : Fin X.n, Cat.id (X.objs i) ⊑ finJoin (fun j => M i j ≫ (M i j)°) := by
   constructor
@@ -157,7 +159,7 @@ theorem mat_entire_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
 /-- **§2.217: entire = the row domains JOIN TO 1** (the "partition of 1" join half for maps):
     `M` is entire iff on each row the domains of the entries join to the identity.
     (`1 ∩ ∪_j M_ij M_ij° = ∪_j (1 ∩ M_ij M_ij°) = ∪_j dom M_ij` by distributivity.) -/
-theorem mat_entire_iff_dom_partition {X Y : MatObj 𝒜} (M : X ⟶ Y) :
+public theorem mat_entire_iff_dom_partition {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     Entire (𝒜 := MatObj 𝒜) M ↔
       ∀ i : Fin X.n, finJoin (fun j => dom (M i j)) = Cat.id (X.objs i) := by
   rw [mat_entire_iff]
@@ -172,7 +174,7 @@ theorem mat_entire_iff_dom_partition {X Y : MatObj 𝒜} (M : X ⟶ Y) :
 
 /-- **§2.217: a matrix is SIMPLE iff each entry is simple and same-row cross terms vanish** —
     "R is simple iff `R_ij` is simple for each i, j and `R_ij° R_ij' = 0` for j ≠ j'". -/
-theorem mat_simple_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
+public theorem mat_simple_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     Simple (𝒜 := MatObj 𝒜) M ↔
       (∀ (i : Fin X.n) (j : Fin Y.n), Simple (M i j)) ∧
       (∀ (i : Fin X.n) (j j' : Fin Y.n), j ≠ j' → (M i j)° ≫ M i j' = 𝟘) := by
@@ -205,7 +207,7 @@ theorem mat_simple_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
 /-- **§2.217: "Hence a matrix is simple iff each entry is simple and the domains of any two
     entries in the same row are disjoint."**  `mat_simple_iff` with the cross-term condition
     recast through `recip_comp_eq_zero_iff_dom_disjoint`. -/
-theorem mat_simple_iff_dom_disjoint {X Y : MatObj 𝒜} (M : X ⟶ Y) :
+public theorem mat_simple_iff_dom_disjoint {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     Simple (𝒜 := MatObj 𝒜) M ↔
       (∀ (i : Fin X.n) (j : Fin Y.n), Simple (M i j)) ∧
       (∀ (i : Fin X.n) (j j' : Fin Y.n), j ≠ j' → dom (M i j) ∩ dom (M i j') = 𝟘) := by
@@ -218,7 +220,7 @@ theorem mat_simple_iff_dom_disjoint {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     form a partition of 1."**  ("Partition": the row domains join to `1`
     (`mat_entire_iff_dom_partition`) and are pairwise disjoint
     (`mat_simple_iff_dom_disjoint`).) -/
-theorem mat_map_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
+public theorem mat_map_iff {X Y : MatObj 𝒜} (M : X ⟶ Y) :
     Map (𝒜 := MatObj 𝒜) M ↔
       (∀ (i : Fin X.n) (j : Fin Y.n), Simple (M i j)) ∧
       (∀ i : Fin X.n, finJoin (fun j => dom (M i j)) = Cat.id (X.objs i)) ∧
@@ -252,7 +254,7 @@ section MatEmbedRep
 /-- **§2.216 — the singleton embedding `𝒜 ↪ Mat 𝒜` as an allegory functor** (`α ↦ ⟨α⟩`,
     `R ↦ embed1 R`), over a bare `[DistributiveAllegory 𝒜]`.  Hom laws are the `embed1_*`
     homomorphism lemmas (`Cat.id (unitObj a)` is `matId (unitObj a)` definitionally). -/
-def matEmbed (𝒜 : Type u) [DistributiveAllegory.{u, v} 𝒜] :
+@[expose] public def matEmbed (𝒜 : Type u) [DistributiveAllegory.{u, v} 𝒜] :
     AllegoryFunctor 𝒜 (MatObj 𝒜) where
   obj := unitObj
   map := embed1
@@ -262,7 +264,7 @@ def matEmbed (𝒜 : Type u) [DistributiveAllegory.{u, v} 𝒜] :
   map_inter R S := embed1_inter R S
 
 /-- `matEmbed` is FAITHFUL — `embed1` is injective (`embed1_injective`). -/
-theorem matEmbed_faithful {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜] :
+public theorem matEmbed_faithful {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜] :
     (matEmbed 𝒜).Faithful :=
   fun _ _ h => embed1_injective h
 
@@ -286,7 +288,7 @@ theorem matEmbed_unitObj {𝒜 : Type u} [UnitaryDistributiveAllegory.{u, v} �
 /-- **§2.215/§2.216 bundled for the §2.218 pipeline**: `Mat 𝒜` of a tabular unitary
     DISTRIBUTIVE allegory is a tabular unitary POSITIVE allegory — exactly the hypothesis
     class consumed by `tabular_repr_in_power_of_sets` (`Freyd/S2_21b.lean`). -/
-noncomputable def matTabularUnitaryPositive (𝒜 : Type u)
+@[expose] public noncomputable def matTabularUnitaryPositive (𝒜 : Type u)
     [Alg.TabularUnitaryDistributiveAllegory.{u, u} 𝒜] :
     Alg.TabularUnitaryPositiveAllegory (MatObj 𝒜) :=
   -- the two §2.342 hypothesis classes of the matrix construction (single shared `Allegory`).
@@ -313,7 +315,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [PreLogos 𝒞]
 
 /-- `embed217` preserves identities: both sides have `val = matId (unitObj ⟨a⟩)` (through
     `embedRel_id` and `embed1_id`), and `Map`-witnesses are proof-irrelevant. -/
-theorem embed217_id (a : 𝒞) :
+public theorem embed217_id (a : 𝒞) :
     embed217 (Cat.id a)
       = @Cat.id (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞)))
           (embed217Obj a) := by
@@ -326,7 +328,7 @@ theorem embed217_id (a : 𝒞) :
 
 /-- `embed217` preserves composition: on `val` this is `embedRel_comp` (graph composition in
     `Map(Rel C)`) followed by `embed1_comp` (1×1 matrix composition). -/
-theorem embed217_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
+public theorem embed217_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
     embed217 (f ≫ g)
       = @Cat.comp (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞)))
           (embed217Obj a) (embed217Obj b) (embed217Obj c) (embed217 f) (embed217 g) := by
@@ -345,7 +347,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
 
 /-- **§2.217 — the representation `C → Map(Mat(Rel C))` as a `Functor`** (small case, the one
     the §2.218 pipeline uses: all hom universes coincide).  Its `map` is `embed217`. -/
-noncomputable def embed217Functor :
+@[expose] public noncomputable def embed217Functor :
     @Functor 𝒞 (MapObj (MatObj (RelObj 𝒞))) _ (mapCat (𝒜 := MatObj (RelObj 𝒞))) :=
   -- explicit `@Functor.mk`, not `where`: structure-instance notation re-synthesizes the target
   -- `Cat` argument, and — `MapObj A` being an abbrev for `A` — lands on `instCatMatObj`
@@ -358,7 +360,7 @@ noncomputable def embed217Functor :
     the target `D = Map(Mat(Rel C))` — the category of maps of the positive reflection
     `Mat(Rel C)` of the allegory of relations — is a positive pre-logos (`s217PreLogos`),
     and the graph-of-1×1-matrices FUNCTOR `embed217Functor : C → D` is faithful. -/
-theorem prelogos_repr_in_positive_prelogos :
+public theorem prelogos_repr_in_positive_prelogos :
     Nonempty (@PositivePreLogos (MapObj (MatObj (RelObj 𝒞)))
         (mapCat (𝒜 := MatObj (RelObj 𝒞)))) ∧
     ∀ {a b : 𝒞} {f g : a ⟶ b},
@@ -372,9 +374,3 @@ end S217HeadlineSmall
 
 end Freyd
 
-#print axioms Freyd.Alg.recip_comp_eq_zero_iff_dom_disjoint
-#print axioms Freyd.Alg.Mat.mat_entire_iff
-#print axioms Freyd.Alg.Mat.mat_simple_iff_dom_disjoint
-#print axioms Freyd.Alg.Mat.mat_map_iff
-#print axioms Freyd.matEmbed_faithful
-#print axioms Freyd.prelogos_repr_in_positive_prelogos

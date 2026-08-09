@@ -10,14 +10,16 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
 
 
 open Freyd
@@ -34,7 +36,7 @@ namespace Freyd
   has finite limits and colimits. -/
 
 /-- Has coterminator (initial object): dual to HasTerminal. -/
-class HasCoterminator (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasCoterminator (𝒞 : Type u) [Cat.{v} 𝒞] where
   zero  : 𝒞
   init  : (X : 𝒞) → zero ⟶ X
   init_uniq  : ∀ {X : 𝒞} (f g : zero ⟶ X), f = g
@@ -52,14 +54,14 @@ class HasCoterminator (𝒞 : Type u) [Cat.{v} 𝒞] where
 
 /-- An object `Z` is a STRICT COTERMINATOR when every morphism targeted at `Z`
     is an isomorphism. -/
-def StrictCoterminator (Z : 𝒞) : Prop := ∀ {X : 𝒞} (f : X ⟶ Z), IsIso f
+@[expose] public def StrictCoterminator (Z : 𝒞) : Prop := ∀ {X : 𝒞} (f : X ⟶ Z), IsIso f
 
 /-- **§1.58 ¶2** (uniqueness half, choice-free).  A strict coterminator admits at
     most one map to any `A`.  Let `inv : Z → Z×A` invert the projection
     `fst : Z×A → Z` (an iso, since it is targeted at `Z`).  Every `h : Z → A` is
     forced to equal `inv ≫ snd`, because `pair 1_Z h` is a section of `fst` and so
     must be its inverse `inv` — independent of `h`. -/
-theorem strictCoterminator_hom_unique [HasBinaryProducts 𝒞] {Z : 𝒞}
+public theorem strictCoterminator_hom_unique [HasBinaryProducts 𝒞] {Z : 𝒞}
     (hZ : StrictCoterminator Z) {A : 𝒞} (f g : Z ⟶ A) : f = g := by
   obtain ⟨inv, hfi, _hif⟩ := hZ (fst : prod Z A ⟶ Z)
   -- hfi : fst ≫ inv = 1_{Z×A}.  Show every `h` collapses to `inv ≫ snd`.
@@ -80,7 +82,7 @@ theorem strictCoterminator_hom_unique [HasBinaryProducts 𝒞] {Z : 𝒞}
     `strictCoterminator_hom_unique` forces it to be the only one.  (`noncomputable`
     because extracting the iso-inverse from `IsIso = ∃ …` needs `Classical.choice`,
     exactly as for `Φinv`; the uniqueness fact above stays choice-free.) -/
-noncomputable def HasCoterminator.ofStrict [HasBinaryProducts 𝒞] {Z : 𝒞}
+@[expose] public noncomputable def HasCoterminator.ofStrict [HasBinaryProducts 𝒞] {Z : 𝒞}
     (hZ : StrictCoterminator Z) : HasCoterminator 𝒞 where
   zero := Z
   init A := (hZ (fst : prod Z A ⟶ Z)).choose ≫ snd
@@ -102,11 +104,11 @@ theorem strictCoterminator_equalizer_entire {Z B : 𝒞} (hZ : StrictCoterminato
 
 variable [HasCoterminator 𝒞]
 
-def coterm : 𝒞 := HasCoterminator.zero
-def zeroMap (X : 𝒞) : coterm ⟶ X := HasCoterminator.init X
+@[expose] public def coterm : 𝒞 := HasCoterminator.zero
+@[expose] public def zeroMap (X : 𝒞) : coterm ⟶ X := HasCoterminator.init X
 
 /-- Has binary coproducts: dual to HasBinaryProducts. -/
-class HasBinaryCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasBinaryCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
   coprod : 𝒞 → 𝒞 → 𝒞
   inl    : {A B : 𝒞} → A ⟶ coprod A B
   inr    : {A B : 𝒞} → B ⟶ coprod A B
@@ -117,7 +119,7 @@ class HasBinaryCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
     inl ≫ h = f → inr ≫ h = g → h = case f g
 
 /-- A single coequalizer: dual to HasEqualizer. -/
-class HasCoequalizer {A B : 𝒞} (f g : A ⟶ B) where
+public class HasCoequalizer {A B : 𝒞} (f g : A ⟶ B) where
   obj   : 𝒞
   map   : B ⟶ obj
   eq    : f ≫ map = g ≫ map
@@ -127,11 +129,11 @@ class HasCoequalizer {A B : 𝒞} (f g : A ⟶ B) where
     map ≫ m = h → m = desc h h_eq
 
 /-- Has coequalizers: dual to HasEqualizers. -/
-class HasCoequalizers (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasCoequalizers (𝒞 : Type u) [Cat.{v} 𝒞] where
   coeq : ∀ {A B : 𝒞} (f g : A ⟶ B), HasCoequalizer f g
 
 /-- A BICARTESIAN CATEGORY: Cartesian + coCartesian (§1.58). -/
-class BicartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class BicartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     CartesianCategory 𝒞, HasCoterminator 𝒞, HasBinaryCoproducts 𝒞, HasCoequalizers 𝒞
 
 /-! ## Coequalizer maps are covers
@@ -146,7 +148,7 @@ class BicartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     then the universal property of q gives k : C → D with q ≫ k = h;
     then q ≫ (k ≫ m) = q forces k ≫ m = id by uniqueness; and
     (m ≫ k) ≫ m = m with m mono forces m ≫ k = id. -/
-theorem coeq_map_is_cover {𝒟 : Type u} [Cat.{v} 𝒟] {A B : 𝒟} {f g : A ⟶ B}
+public theorem coeq_map_is_cover {𝒟 : Type u} [Cat.{v} 𝒟] {A B : 𝒟} {f g : A ⟶ B}
     (hcoeq : HasCoequalizer f g) : Cover hcoeq.map := by
   intro D m h hm hfac
   -- From h ≫ m = q and f ≫ q = g ≫ q, deduce f ≫ h = g ≫ h (via m monic).

@@ -31,12 +31,14 @@
   No `Sorry`, no new axiom.
 -/
 
-import Freyd.S1_594_AbAbelian
-import Freyd.S1_31
-import Freyd.S1_33
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
+module
+
+public import Freyd.S1_594_AbAbelian
+public import Freyd.S1_31
+public import Freyd.S1_33
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
 
 open Freyd
 
@@ -53,11 +55,11 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
   `ab_comp_val` from `AbCategory`). -/
 
 /-- The forgetful object map `Ab(𝒞) → 𝒞`. -/
-def U (A : AbelianGroupObject 𝒞) : 𝒞 := A.carrier
+@[expose] public def U (A : AbelianGroupObject 𝒞) : 𝒞 := A.carrier
 
 /-- §1.595: the forgetful functor is a functor.  `map f = f.val`; both functor laws
     hold definitionally because `Ab(𝒞)`-id/comp ARE 𝒞-id/comp on carriers. -/
-def instFunctorU : Functor (AbelianGroupObject 𝒞) 𝒞 where
+@[expose] public def instFunctorU : Functor (AbelianGroupObject 𝒞) 𝒞 where
   obj := U (𝒞 := 𝒞)
   map {_ _} f := f.val
   map_id _ := rfl
@@ -87,7 +89,7 @@ theorem U_separatesMaps : SeparatesMaps (instFunctorU (𝒞 := 𝒞)) := by
     The inverse hom property of `inv = m.val⁻¹` follows by post-composing with the monic
     `m.val`: `B.add ≫ inv ≫ m.val = B.add` (LHS) equals `pair (fst≫inv) (snd≫inv) ≫ M.add ≫ m.val`
     (RHS, via `m.property` + `inv ≫ m.val = id`), so monicity of `m.val` gives the hom square. -/
-theorem isHom_of_carrier_iso {M B : AbelianGroupObject 𝒞} (m : M ⟶ B)
+public theorem isHom_of_carrier_iso {M B : AbelianGroupObject 𝒞} (m : M ⟶ B)
     (hiso : IsIso m.val) : IsIso m := by
   obtain ⟨inv, hinv_l, hinv_r⟩ := hiso
   -- m.val is monic (it has a retraction inv with m.val ≫ inv = id).
@@ -120,7 +122,7 @@ theorem isHom_of_carrier_iso {M B : AbelianGroupObject 𝒞} (m : M ⟶ B)
 /-- §1.595: `U` REFLECTS monos.  If the carrier `f.val` is monic in `𝒞`, then `f` is
     monic in `Ab(𝒞)`: any two homs `p q : W → A` with `p ≫ f = q ≫ f` have equal carriers
     (`p.val ≫ f.val = q.val ≫ f.val`), so `p.val = q.val`, so `p = q`. -/
-theorem U_reflectsMono : ReflectsMono (instFunctorU (𝒞 := 𝒞)) := by
+public theorem U_reflectsMono : ReflectsMono (instFunctorU (𝒞 := 𝒞)) := by
   intro A B f hf W p q hpq
   -- `hpq : p ≫ f = q ≫ f` in Ab(𝒞); take carriers.
   have hval : p.val ≫ f.val = q.val ≫ f.val := congrArg Subtype.val hpq
@@ -178,7 +180,7 @@ theorem U_preserves_prod_snd (A B : AbelianGroupObject 𝒞)
 /-- For a homomorphism `h : P → X` and any `u : T → P.carrier`,
     `(u ≫ P.neg) ≫ h = (u ≫ h) ≫ X.neg`.  Both are the additive inverse of `u ≫ h`
     in `X` (uniqueness of inverses, `GElt.neg_unique`). -/
-theorem hom_preserves_neg {T : 𝒞} {P X : AbelianGroupObject 𝒞}
+public theorem hom_preserves_neg {T : 𝒞} {P X : AbelianGroupObject 𝒞}
     {h : P.carrier ⟶ X.carrier} (hh : IsHomAbelianGroupObject P X h)
     (u : T ⟶ P.carrier) :
     (u ≫ P.neg) ≫ h = (u ≫ h) ≫ X.neg := by
@@ -208,30 +210,30 @@ namespace AbPullback
 variable {A B C : AbelianGroupObject 𝒞} (f : A ⟶ C) (g : B ⟶ C)
 
 /-- The chosen 𝒞-pullback cone of the carrier maps `f.val, g.val`. -/
-private noncomputable def pb : HasPullback f.val g.val := HasPullbacks.has f.val g.val
+@[expose] public noncomputable def pb : HasPullback f.val g.val := HasPullbacks.has f.val g.val
 
 /-- Carrier of the pullback group object: the 𝒞-pullback point. -/
-private noncomputable def pbPt : 𝒞 := (pb f g).cone.pt
-private noncomputable def p₁ : pbPt f g ⟶ A.carrier := (pb f g).cone.π₁
-private noncomputable def p₂ : pbPt f g ⟶ B.carrier := (pb f g).cone.π₂
+@[expose] public noncomputable def pbPt : 𝒞 := (pb f g).cone.pt
+@[expose] public noncomputable def p₁ : pbPt f g ⟶ A.carrier := (pb f g).cone.π₁
+@[expose] public noncomputable def p₂ : pbPt f g ⟶ B.carrier := (pb f g).cone.π₂
 
-private theorem pb_w : p₁ f g ≫ f.val = p₂ f g ≫ g.val := (pb f g).cone.w
+public theorem pb_w : p₁ f g ≫ f.val = p₂ f g ≫ g.val := (pb f g).cone.w
 
 /-- The lift of a compatible pair `(a, b)` into the pullback. -/
-private noncomputable def pbLift {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
+@[expose] public noncomputable def pbLift {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
     (h : a ≫ f.val = b ≫ g.val) : T ⟶ pbPt f g :=
   (pb f g).lift ⟨T, a, b, h⟩
 
-@[simp] private theorem pbLift_p₁ {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
+@[simp] public theorem pbLift_p₁ {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
     (h : a ≫ f.val = b ≫ g.val) : pbLift f g a b h ≫ p₁ f g = a :=
   (pb f g).lift_fst ⟨T, a, b, h⟩
 
-@[simp] private theorem pbLift_p₂ {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
+@[simp] public theorem pbLift_p₂ {T : 𝒞} (a : T ⟶ A.carrier) (b : T ⟶ B.carrier)
     (h : a ≫ f.val = b ≫ g.val) : pbLift f g a b h ≫ p₂ f g = b :=
   (pb f g).lift_snd ⟨T, a, b, h⟩
 
 /-- The pullback projections are jointly monic (pullback lift-uniqueness). -/
-private theorem pb_jointly_monic {T : 𝒞} (u v : T ⟶ pbPt f g)
+public theorem pb_jointly_monic {T : 𝒞} (u v : T ⟶ pbPt f g)
     (h₁ : u ≫ p₁ f g = v ≫ p₁ f g) (h₂ : u ≫ p₂ f g = v ≫ p₂ f g) : u = v := by
   let c : Cone f.val g.val := ⟨T, v ≫ p₁ f g, v ≫ p₂ f g, by rw [Cat.assoc, Cat.assoc, pb_w]⟩
   have hu : u = (pb f g).lift c := (pb f g).lift_uniq c u h₁ h₂
@@ -241,18 +243,18 @@ private theorem pb_jointly_monic {T : 𝒞} (u v : T ⟶ pbPt f g)
 /-! The three group operations on `pbPt`, each induced by the pullback. -/
 
 /-- Zero of the pullback group object: lift of `(A.zero, B.zero)`. -/
-private noncomputable def pbZero : (one : 𝒞) ⟶ pbPt f g :=
+@[expose] public noncomputable def pbZero : (one : 𝒞) ⟶ pbPt f g :=
   pbLift f g (term one ≫ A.zero) (term one ≫ B.zero) (by
     -- both equal `term ≫ C.zero`, since `f, g` preserve zero.
     rw [hom_preserves_zero f.property (term one), hom_preserves_zero g.property (term one)])
 
 /-- Negation of the pullback group object: lift of `(p₁ ≫ A.neg, p₂ ≫ B.neg)`. -/
-private noncomputable def pbNeg : pbPt f g ⟶ pbPt f g :=
+@[expose] public noncomputable def pbNeg : pbPt f g ⟶ pbPt f g :=
   pbLift f g (p₁ f g ≫ A.neg) (p₂ f g ≫ B.neg) (by
     rw [hom_preserves_neg f.property (p₁ f g), hom_preserves_neg g.property (p₂ f g), pb_w])
 
 /-- Addition of the pullback group object: lift of the componentwise sums. -/
-private noncomputable def pbAdd : prod (pbPt f g) (pbPt f g) ⟶ pbPt f g :=
+@[expose] public noncomputable def pbAdd : prod (pbPt f g) (pbPt f g) ⟶ pbPt f g :=
   pbLift f g
     (pair (fst ≫ p₁ f g) (snd ≫ p₁ f g) ≫ A.add)
     (pair (fst ≫ p₂ f g) (snd ≫ p₂ f g) ≫ B.add) (by
@@ -266,29 +268,29 @@ private noncomputable def pbAdd : prod (pbPt f g) (pbPt f g) ⟶ pbPt f g :=
   Each operation projects (via `p₁`/`p₂`) to the corresponding operation of `A`/`C`.
   These reduce every `pbPt` axiom to the axioms of `A` and `C` by `pb_jointly_monic`. -/
 
-@[simp] private theorem pbZero_p₁ : pbZero f g ≫ p₁ f g = term one ≫ A.zero :=
+@[simp] public theorem pbZero_p₁ : pbZero f g ≫ p₁ f g = term one ≫ A.zero :=
   pbLift_p₁ f g _ _ _
-@[simp] private theorem pbZero_p₂ : pbZero f g ≫ p₂ f g = term one ≫ B.zero :=
+@[simp] public theorem pbZero_p₂ : pbZero f g ≫ p₂ f g = term one ≫ B.zero :=
   pbLift_p₂ f g _ _ _
-@[simp] private theorem pbNeg_p₁ : pbNeg f g ≫ p₁ f g = p₁ f g ≫ A.neg :=
+@[simp] public theorem pbNeg_p₁ : pbNeg f g ≫ p₁ f g = p₁ f g ≫ A.neg :=
   pbLift_p₁ f g _ _ _
-@[simp] private theorem pbNeg_p₂ : pbNeg f g ≫ p₂ f g = p₂ f g ≫ B.neg :=
+@[simp] public theorem pbNeg_p₂ : pbNeg f g ≫ p₂ f g = p₂ f g ≫ B.neg :=
   pbLift_p₂ f g _ _ _
-@[simp] private theorem pbAdd_p₁ :
+@[simp] public theorem pbAdd_p₁ :
     pbAdd f g ≫ p₁ f g = pair (fst ≫ p₁ f g) (snd ≫ p₁ f g) ≫ A.add :=
   pbLift_p₁ f g _ _ _
-@[simp] private theorem pbAdd_p₂ :
+@[simp] public theorem pbAdd_p₂ :
     pbAdd f g ≫ p₂ f g = pair (fst ≫ p₂ f g) (snd ≫ p₂ f g) ≫ B.add :=
   pbLift_p₂ f g _ _ _
 
 /-- **Component lemma** for the pullback sum: for any `u w : S → pbPt`,
     `(⟨u,w⟩ ≫ pbAdd) ≫ p₁ = ⟨u≫p₁, w≫p₁⟩ ≫ A.add` (and likewise `p₂`/`B`). -/
-private theorem pbAdd_proj_p₁ {S : 𝒞} (u w : S ⟶ pbPt f g) :
+public theorem pbAdd_proj_p₁ {S : 𝒞} (u w : S ⟶ pbPt f g) :
     (pair u w ≫ pbAdd f g) ≫ p₁ f g = pair (u ≫ p₁ f g) (w ≫ p₁ f g) ≫ A.add := by
   rw [Cat.assoc, pbAdd_p₁, ← Cat.assoc, pair_precomp, ← Cat.assoc, ← Cat.assoc,
       fst_pair, snd_pair]
 
-private theorem pbAdd_proj_p₂ {S : 𝒞} (u w : S ⟶ pbPt f g) :
+public theorem pbAdd_proj_p₂ {S : 𝒞} (u w : S ⟶ pbPt f g) :
     (pair u w ≫ pbAdd f g) ≫ p₂ f g = pair (u ≫ p₂ f g) (w ≫ p₂ f g) ≫ B.add := by
   rw [Cat.assoc, pbAdd_p₂, ← Cat.assoc, pair_precomp, ← Cat.assoc, ← Cat.assoc,
       fst_pair, snd_pair]
@@ -296,7 +298,7 @@ private theorem pbAdd_proj_p₂ {S : 𝒞} (u w : S ⟶ pbPt f g) :
 /-- The pullback group object: carrier the 𝒞-pullback point, operations induced by
     the pullback universal property; each axiom proved componentwise via `pb_jointly_monic`
     from the corresponding axiom of `A` resp. `B`. -/
-noncomputable def pullbackGObj : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def pullbackGObj : AbelianGroupObject 𝒞 where
   carrier := pbPt f g
   zero := pbZero f g
   neg := pbNeg f g
@@ -344,16 +346,16 @@ noncomputable def pullbackGObj : AbelianGroupObject 𝒞 where
     (pullbackGObj f g).carrier = pbPt f g := rfl
 
 /-- `p₁ : pullbackGObj → A` is a homomorphism (its hom square is `pbAdd_p₁`). -/
-theorem isHom_p₁ : IsHomAbelianGroupObject (pullbackGObj f g) A (p₁ f g) :=
+public theorem isHom_p₁ : IsHomAbelianGroupObject (pullbackGObj f g) A (p₁ f g) :=
   pbAdd_p₁ f g
 /-- `p₂ : pullbackGObj → B` is a homomorphism (its hom square is `pbAdd_p₂`). -/
-theorem isHom_p₂ : IsHomAbelianGroupObject (pullbackGObj f g) B (p₂ f g) :=
+public theorem isHom_p₂ : IsHomAbelianGroupObject (pullbackGObj f g) B (p₂ f g) :=
   pbAdd_p₂ f g
 
 /-- The lift of a compatible pair of homs `a : D → A`, `b : D → B` (with `a≫f = b≫g`) is a
     homomorphism `D → pullbackGObj`.  Proved by joint monicity of `(p₁, p₂)`: project the
     hom square and reduce to the hom squares of `a` and `b`. -/
-theorem isHom_pbLift {D : AbelianGroupObject 𝒞} {a : D.carrier ⟶ A.carrier}
+public theorem isHom_pbLift {D : AbelianGroupObject 𝒞} {a : D.carrier ⟶ A.carrier}
     {b : D.carrier ⟶ B.carrier} (ha : IsHomAbelianGroupObject D A a)
     (hb : IsHomAbelianGroupObject D B b) (h : a ≫ f.val = b ≫ g.val) :
     IsHomAbelianGroupObject D (pullbackGObj f g) (pbLift f g a b h) := by
@@ -365,18 +367,18 @@ theorem isHom_pbLift {D : AbelianGroupObject 𝒞} {a : D.carrier ⟶ A.carrier}
     simp only [Cat.assoc, pbLift_p₂]
 
 /-- `p₁ ≫ f = p₂ ≫ g` as `Ab(𝒞)`-morphisms (carrier-level `pb_w`). -/
-theorem pbCone_w :
+public theorem pbCone_w :
     (⟨p₁ f g, isHom_p₁ f g⟩ : pullbackGObj f g ⟶ A) ≫ f
       = (⟨p₂ f g, isHom_p₂ f g⟩ : pullbackGObj f g ⟶ B) ≫ g :=
   Subtype.ext (pb_w f g)
 
 /-- The pullback cone of `f, g` in `Ab(𝒞)`. -/
-noncomputable def pbCone : Cone f g :=
+@[expose] public noncomputable def pbCone : Cone f g :=
   ⟨pullbackGObj f g, ⟨p₁ f g, isHom_p₁ f g⟩, ⟨p₂ f g, isHom_p₂ f g⟩, pbCone_w f g⟩
 
 /-- §1.594: `Ab(𝒞)` has the pullback of `f, g`: the cone `pbCone`, with lift induced from
     the carrier pullback (a homomorphism by `isHom_pbLift`), unique by `pb_jointly_monic`. -/
-noncomputable def hasPullbackAb : HasPullback f g where
+@[expose] public noncomputable def hasPullbackAb : HasPullback f g where
   cone := pbCone f g
   lift c := ⟨pbLift f g c.π₁.val c.π₂.val (congrArg Subtype.val c.w),
     isHom_pbLift f g c.π₁.property c.π₂.property (congrArg Subtype.val c.w)⟩
@@ -390,7 +392,7 @@ end AbPullback
 
 open AbPullback in
 /-- §1.594: `Ab(𝒞)` has all pullbacks (lifted from `[HasPullbacks 𝒞]`, computed on carriers). -/
-noncomputable instance instHasPullbacksAb : HasPullbacks (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasPullbacksAb : HasPullbacks (AbelianGroupObject 𝒞) where
   has f g := hasPullbackAb f g
 
 end Pullback
@@ -413,15 +415,15 @@ namespace AbEqualizer
 
 variable {A B : AbelianGroupObject 𝒞} (f g : A ⟶ B)
 
-private noncomputable def em : eqObj f.val g.val ⟶ A.carrier := eqMap f.val g.val
+@[expose] public noncomputable def em : eqObj f.val g.val ⟶ A.carrier := eqMap f.val g.val
 
 /-- The equalizer map is monic in 𝒞.  Kept (not inlined): the statement keeps `em` FOLDED, which the
     downstream `rw [eqAdd_proj, eqZero_em, …]` (stated in terms of `em`) needs — a bare
     `apply (eqMap_monic … : Monic (em f g))` re-unfolds the goal to `eqMap`, breaking those rewrites. -/
-private theorem em_mono : Monic (em f g) := eqMap_monic f.val g.val
+public theorem em_mono : Monic (em f g) := eqMap_monic f.val g.val
 
 /-- The equalizer lift. -/
-private noncomputable def eLift {X : 𝒞} (k : X ⟶ A.carrier) (h : k ≫ f.val = k ≫ g.val) :
+@[expose] public noncomputable def eLift {X : 𝒞} (k : X ⟶ A.carrier) (h : k ≫ f.val = k ≫ g.val) :
     X ⟶ eqObj f.val g.val :=
   eqLift f.val g.val k h
 
@@ -430,18 +432,18 @@ private noncomputable def eLift {X : 𝒞} (k : X ⟶ A.carrier) (h : k ≫ f.va
     group homs. -/
 
 /-- Zero of the equalizer group object: lift of `term one ≫ A.zero`. -/
-private noncomputable def eqZero : (one : 𝒞) ⟶ eqObj f.val g.val :=
+@[expose] public noncomputable def eqZero : (one : 𝒞) ⟶ eqObj f.val g.val :=
   eLift f g (term one ≫ A.zero) (by
     rw [hom_preserves_zero f.property (term one), hom_preserves_zero g.property (term one)])
 
 /-- Negation of the equalizer group object: lift of `eqMap ≫ A.neg`. -/
-private noncomputable def eqNeg : eqObj f.val g.val ⟶ eqObj f.val g.val :=
+@[expose] public noncomputable def eqNeg : eqObj f.val g.val ⟶ eqObj f.val g.val :=
   eLift f g (em f g ≫ A.neg) (by
     rw [hom_preserves_neg f.property (em f g), hom_preserves_neg g.property (em f g),
       show em f g ≫ f.val = em f g ≫ g.val from eqMap_eq f.val g.val])
 
 /-- Addition of the equalizer group object: lift of componentwise sum. -/
-private noncomputable def eqAdd :
+@[expose] public noncomputable def eqAdd :
     prod (eqObj f.val g.val) (eqObj f.val g.val) ⟶ eqObj f.val g.val :=
   eLift f g (pair (fst ≫ em f g) (snd ≫ em f g) ≫ A.add) (by
     rw [hom_preserves_add f.property (fst ≫ em f g) (snd ≫ em f g),
@@ -454,25 +456,25 @@ private noncomputable def eqAdd :
 
 /-! Projection lemmas: each operation composes with `eqMap` to give the corresponding `A`-op. -/
 
-@[simp] private theorem eqZero_em : eqZero f g ≫ em f g = term one ≫ A.zero :=
+@[simp] public theorem eqZero_em : eqZero f g ≫ em f g = term one ≫ A.zero :=
   eqLift_fac f.val g.val _ _
 
-@[simp] private theorem eqNeg_em : eqNeg f g ≫ em f g = em f g ≫ A.neg :=
+@[simp] public theorem eqNeg_em : eqNeg f g ≫ em f g = em f g ≫ A.neg :=
   eqLift_fac f.val g.val _ _
 
-@[simp] private theorem eqAdd_em :
+@[simp] public theorem eqAdd_em :
     eqAdd f g ≫ em f g = pair (fst ≫ em f g) (snd ≫ em f g) ≫ A.add :=
   eqLift_fac f.val g.val _ _
 
 /-- Component lemma for the sum: `⟨u,w⟩ ≫ eqAdd ≫ eqMap = ⟨u≫eqMap, w≫eqMap⟩ ≫ A.add`. -/
-private theorem eqAdd_proj {S : 𝒞} (u w : S ⟶ eqObj f.val g.val) :
+public theorem eqAdd_proj {S : 𝒞} (u w : S ⟶ eqObj f.val g.val) :
     (pair u w ≫ eqAdd f g) ≫ em f g = pair (u ≫ em f g) (w ≫ em f g) ≫ A.add := by
   rw [Cat.assoc, eqAdd_em, ← Cat.assoc, pair_precomp, ← Cat.assoc, ← Cat.assoc,
       fst_pair, snd_pair]
 
 /-- The equalizer group object: carrier `eqObj f.val g.val`, operations induced above.
     Each group axiom is proved by monicity of `eqMap` from the corresponding axiom of `A`. -/
-noncomputable def eqGObj : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def eqGObj : AbelianGroupObject 𝒞 where
   carrier := eqObj f.val g.val
   zero := eqZero f g
   neg := eqNeg f g
@@ -505,11 +507,11 @@ noncomputable def eqGObj : AbelianGroupObject 𝒞 where
 @[simp] private theorem eqGObj_carrier : (eqGObj f g).carrier = eqObj f.val g.val := rfl
 
 /-- The equalizer inclusion `eqMap : eqGObj → A` is a homomorphism. -/
-theorem isHom_em : IsHomAbelianGroupObject (eqGObj f g) A (em f g) :=
+public theorem isHom_em : IsHomAbelianGroupObject (eqGObj f g) A (em f g) :=
   eqAdd_em f g
 
 /-- The lift of a group hom `k : D → A` (with `k ≫ f = k ≫ g`) into `eqGObj` is a hom. -/
-theorem isHom_eLift {D : AbelianGroupObject 𝒞} {k : D.carrier ⟶ A.carrier}
+public theorem isHom_eLift {D : AbelianGroupObject 𝒞} {k : D.carrier ⟶ A.carrier}
     (hk : IsHomAbelianGroupObject D A k) (h : k ≫ f.val = k ≫ g.val) :
     IsHomAbelianGroupObject D (eqGObj f g) (eLift f g k h) := by
   -- Goal: D.add ≫ eLift k h = pair (fst ≫ eLift k h) (snd ≫ eLift k h) ≫ (eqGObj f g).add
@@ -536,18 +538,18 @@ theorem isHom_eLift {D : AbelianGroupObject 𝒞} {k : D.carrier ⟶ A.carrier}
   rw [lhs, rhs]
 
 /-- `eqMap ≫ f = eqMap ≫ g` as Ab-morphisms. -/
-theorem eqGObj_w :
+public theorem eqGObj_w :
     (⟨em f g, isHom_em f g⟩ : eqGObj f g ⟶ A) ≫ f
       = (⟨em f g, isHom_em f g⟩ : eqGObj f g ⟶ A) ≫ g :=
   Subtype.ext (eqMap_eq f.val g.val)
 
 /-- The equalizer cone of `f, g` in `Ab(𝒞)`. -/
-noncomputable def eqCone : EqualizerCone f g :=
+@[expose] public noncomputable def eqCone : EqualizerCone f g :=
   ⟨eqGObj f g, ⟨em f g, isHom_em f g⟩, eqGObj_w f g⟩
 
 /-- §1.594: `Ab(𝒞)` has the equalizer of `f, g`: the cone `eqCone`, with lift induced from
     the carrier equalizer (a homomorphism by `isHom_eLift`), unique by monicity of `eqMap`. -/
-noncomputable def hasEqualizerAb : HasEqualizer f g where
+@[expose] public noncomputable def hasEqualizerAb : HasEqualizer f g where
   cone := eqCone f g
   lift c := ⟨eLift f g c.map.val (congrArg Subtype.val c.eq),
     isHom_eLift f g c.map.property (congrArg Subtype.val c.eq)⟩
@@ -559,7 +561,7 @@ end AbEqualizer
 
 open AbEqualizer in
 /-- §1.594: `Ab(𝒞)` has all equalizers (lifted from `[HasEqualizers 𝒞]`, computed on carriers). -/
-noncomputable instance instHasEqualizersAb : HasEqualizers (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasEqualizersAb : HasEqualizers (AbelianGroupObject 𝒞) where
   eq _ _ f g := hasEqualizerAb f g
 
 end Equalizer
@@ -620,7 +622,7 @@ section Covers
 
     The full `Cover f.val → Cover f` also needs `U` to preserve monics (see
     `ab_monic_carrier_monic`); once that is available, the proof is immediate. -/
-theorem carrier_cover_to_ab_cover_aux {A B M : AbelianGroupObject 𝒞} {f : A ⟶ B}
+public theorem carrier_cover_to_ab_cover_aux {A B M : AbelianGroupObject 𝒞} {f : A ⟶ B}
     (hfval : Cover f.val) (m : M ⟶ B)
     (hm_carrier : Monic m.val) (g : A ⟶ M) (hgm : g ≫ m = f) : IsIso m :=
   isHom_of_carrier_iso m (hfval m.val g.val hm_carrier (congrArg Subtype.val hgm))
@@ -643,7 +645,7 @@ variable [HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞] [HasImages 𝒞]
 /-- `pair (fst ≫ e) snd : A×X ⟶ I×X` is a cover when `e : A ⟶ I` is (it is the base change
     of `e` along `fst : I×X ⟶ I`).  The cone `(pair (fst≫e) snd, snd)` is a pullback of the
     cospan `(e, fst)`, so `cover_pullback` transfers the cover `e`. -/
-theorem coverProdLeft {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
+public theorem coverProdLeft {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
     Cover (pair (fst ≫ e) (snd : prod A X ⟶ X)) := by
   -- Pullback of cospan `(e : A → I, fst : I×X → I)`: apex `A×X`, π₁ = fst, π₂ = pair (fst≫e) snd.
   have hpb : (⟨prod A X, fst, pair (fst ≫ e) snd,
@@ -665,7 +667,7 @@ theorem coverProdLeft {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
 
 /-- `pair fst (snd ≫ e) : X×A ⟶ X×I` is a cover when `e : A ⟶ I` is (base change of `e`
     along `snd : X×I ⟶ I`). -/
-theorem coverProdRight {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
+public theorem coverProdRight {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
     Cover (pair (fst : prod X A ⟶ X) (snd ≫ e)) := by
   have hpb : (⟨prod X A, snd, pair fst (snd ≫ e),
       (snd_pair fst (snd ≫ e)).symm⟩ : Cone e (snd (A := X) (B := I))).IsPullback := by
@@ -685,7 +687,7 @@ theorem coverProdRight {A I X : 𝒞} {e : A ⟶ I} (he : Cover e) :
 
 /-- `pair (fst ≫ e) (snd ≫ e) : A×A ⟶ I×I` is a cover when `e : A ⟶ I` is.  Factor as
     `pair (fst≫e) snd ≫ pair fst (snd≫e)` (change left factor, then right). -/
-theorem coverProdBoth {A I : 𝒞} {e : A ⟶ I} (he : Cover e) :
+public theorem coverProdBoth {A I : 𝒞} {e : A ⟶ I} (he : Cover e) :
     Cover (pair (fst ≫ e) (snd ≫ e) : prod A A ⟶ prod I I) := by
   have hfac : (pair (fst ≫ e) (snd : prod A A ⟶ A)) ≫ pair (fst : prod I A ⟶ I) (snd ≫ e)
       = pair (fst ≫ e) (snd ≫ e) := by
@@ -726,25 +728,25 @@ namespace AbImage
 variable {A B : AbelianGroupObject 𝒞} (f : A ⟶ B)
 
 /-- The image carrier of `f.val`. -/
-def imI : 𝒞 := (image f.val).dom
+@[expose] public def imI : 𝒞 := (image f.val).dom
 /-- The image inclusion `imI ⟶ B.carrier` (monic). -/
-def imArr : imI f ⟶ B.carrier := (image f.val).arr
+@[expose] public def imArr : imI f ⟶ B.carrier := (image f.val).arr
 /-- The image cover `A.carrier ⟶ imI` (`= image.lift f.val`). -/
-noncomputable def imE : A.carrier ⟶ imI f := image.lift f.val
+@[expose] public noncomputable def imE : A.carrier ⟶ imI f := image.lift f.val
 
-theorem imArr_monic : Monic (imArr f) := (image f.val).monic
+public theorem imArr_monic : Monic (imArr f) := (image f.val).monic
 
 /-- Zero of the image group object: `A.zero ≫ e`. -/
-noncomputable def imZero : (one : 𝒞) ⟶ imI f := A.zero ≫ imE f
+@[expose] public noncomputable def imZero : (one : 𝒞) ⟶ imI f := A.zero ≫ imE f
 
-@[simp] theorem imZero_imArr : imZero f ≫ imArr f = term one ≫ B.zero := by
+@[simp] public theorem imZero_imArr : imZero f ≫ imArr f = term one ≫ B.zero := by
   rw [imZero, Cat.assoc, show imE f ≫ imArr f = f.val from image.lift_fac f.val]
   have h1 : A.zero = term one ≫ A.zero := by rw [term_uniq (term one) (Cat.id one), Cat.id_comp]
   rw [h1]
   exact hom_preserves_zero f.property (term one)
 
 /-- The descent equation for negation: `A.neg ≫ e` equalizes the kernel pair of `e`. -/
-theorem neg_descends :
+public theorem neg_descends :
     kp₁ (f := imE f) ≫ (A.neg ≫ imE f) = kp₂ (f := imE f) ≫ (A.neg ≫ imE f) := by
   apply imArr_monic f
   -- post-compose with the monic `m`; use `A.neg ≫ f.val = f.val ≫ B.neg` and `kp_sq`.
@@ -761,15 +763,15 @@ theorem neg_descends :
   rw [key, key, kp_sq]
 
 /-- Negation of the image group object: the descent of `A.neg ≫ e` along the cover `e`. -/
-noncomputable def imNeg : imI f ⟶ imI f :=
+@[expose] public noncomputable def imNeg : imI f ⟶ imI f :=
   (cover_is_coequalizer_of_level (imE f) (image_lift_cover f.val) (A.neg ≫ imE f)
     (neg_descends f)).choose
 
-theorem imE_imNeg : imE f ≫ imNeg f = A.neg ≫ imE f :=
+public theorem imE_imNeg : imE f ≫ imNeg f = A.neg ≫ imE f :=
   (cover_is_coequalizer_of_level (imE f) (image_lift_cover f.val) (A.neg ≫ imE f)
     (neg_descends f)).choose_spec.1
 
-@[simp] theorem imNeg_imArr : imNeg f ≫ imArr f = imArr f ≫ B.neg := by
+@[simp] public theorem imNeg_imArr : imNeg f ≫ imArr f = imArr f ≫ B.neg := by
   -- `show` refolds imE so the goal is phrased with `imE f` and `rw [imE_imNeg]` matches
   apply cover_epi (show Cover (imE f) from image_lift_cover f.val)
   rw [← Cat.assoc, imE_imNeg, Cat.assoc,
@@ -780,21 +782,21 @@ theorem imE_imNeg : imE f ≫ imNeg f = A.neg ≫ imE f :=
   rwa [Cat.id_comp, Cat.id_comp] at this
 
 /-- The product cover `ee := pair (fst≫e) (snd≫e) : A×A ⟶ I×I`. -/
-noncomputable def imEE : prod A.carrier A.carrier ⟶ prod (imI f) (imI f) :=
+@[expose] public noncomputable def imEE : prod A.carrier A.carrier ⟶ prod (imI f) (imI f) :=
   pair (fst ≫ imE f) (snd ≫ imE f)
 
-theorem imEE_cover : Cover (imEE f) := coverProdBoth (image_lift_cover f.val)
+public theorem imEE_cover : Cover (imEE f) := coverProdBoth (image_lift_cover f.val)
 
-@[simp] theorem imEE_fst : imEE f ≫ fst = fst ≫ imE f := by rw [imEE, fst_pair]
-@[simp] theorem imEE_snd : imEE f ≫ snd = snd ≫ imE f := by rw [imEE, snd_pair]
+@[simp] public theorem imEE_fst : imEE f ≫ fst = fst ≫ imE f := by rw [imEE, fst_pair]
+@[simp] public theorem imEE_snd : imEE f ≫ snd = snd ≫ imE f := by rw [imEE, snd_pair]
 
-theorem imEE_fst_imArr : imEE f ≫ fst ≫ imArr f = fst ≫ f.val := by
+public theorem imEE_fst_imArr : imEE f ≫ fst ≫ imArr f = fst ≫ f.val := by
   rw [← Cat.assoc, imEE_fst, Cat.assoc, show imE f ≫ imArr f = f.val from image.lift_fac f.val]
-theorem imEE_snd_imArr : imEE f ≫ snd ≫ imArr f = snd ≫ f.val := by
+public theorem imEE_snd_imArr : imEE f ≫ snd ≫ imArr f = snd ≫ f.val := by
   rw [← Cat.assoc, imEE_snd, Cat.assoc, show imE f ≫ imArr f = f.val from image.lift_fac f.val]
 
 /-- The descent equation for addition: `A.add ≫ e` equalizes the kernel pair of `ee`. -/
-theorem add_descends :
+public theorem add_descends :
     kp₁ (f := imEE f) ≫ (A.add ≫ imE f) = kp₂ (f := imEE f) ≫ (A.add ≫ imE f) := by
   apply imArr_monic f
   -- post-compose `m`: both kp-projections, after `m`, become `(kp_i ≫ ee) ≫ (B-sum of m's)`;
@@ -818,16 +820,16 @@ theorem add_descends :
   rw [key, key, kp_sq]
 
 /-- Addition of the image group object: the descent of `A.add ≫ e` along the cover `ee`. -/
-noncomputable def imAdd : prod (imI f) (imI f) ⟶ imI f :=
+@[expose] public noncomputable def imAdd : prod (imI f) (imI f) ⟶ imI f :=
   (cover_is_coequalizer_of_level (imEE f) (imEE_cover f) (A.add ≫ imE f)
     (add_descends f)).choose
 
-theorem imEE_imAdd : imEE f ≫ imAdd f = A.add ≫ imE f :=
+public theorem imEE_imAdd : imEE f ≫ imAdd f = A.add ≫ imE f :=
   (cover_is_coequalizer_of_level (imEE f) (imEE_cover f) (A.add ≫ imE f)
     (add_descends f)).choose_spec.1
 
 /-- The addition projects through `m` to the componentwise `B`-sum. -/
-@[simp] theorem imAdd_imArr :
+@[simp] public theorem imAdd_imArr :
     imAdd f ≫ imArr f = pair (fst ≫ imArr f) (snd ≫ imArr f) ≫ B.add := by
   apply cover_epi (imEE_cover f)
   rw [← Cat.assoc, imEE_imAdd, Cat.assoc, show imE f ≫ imArr f = f.val from image.lift_fac f.val,
@@ -839,7 +841,7 @@ theorem imEE_imAdd : imEE f ≫ imAdd f = A.add ≫ imE f :=
   · rw [imEE_snd_imArr]
 
 /-- **Component lemma** for the image sum: `(⟨u,w⟩ ≫ imAdd) ≫ m = ⟨u≫m, w≫m⟩ ≫ B.add`. -/
-theorem imAdd_proj {S : 𝒞} (u w : S ⟶ imI f) :
+public theorem imAdd_proj {S : 𝒞} (u w : S ⟶ imI f) :
     (pair u w ≫ imAdd f) ≫ imArr f = pair (u ≫ imArr f) (w ≫ imArr f) ≫ B.add := by
   rw [Cat.assoc, imAdd_imArr, ← Cat.assoc, pair_precomp, ← Cat.assoc, ← Cat.assoc,
       fst_pair, snd_pair]
@@ -848,7 +850,7 @@ theorem imAdd_proj {S : 𝒞} (u w : S ⟶ imI f) :
     using that `m` intertwines the image operations with `B`'s (`imAdd_proj`). -/
 
 /-- The image group object: carrier `(image f.val).dom`, operations descended above. -/
-noncomputable def imageGObj : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def imageGObj : AbelianGroupObject 𝒞 where
   carrier := imI f
   zero := imZero f
   neg := imNeg f
@@ -876,28 +878,28 @@ noncomputable def imageGObj : AbelianGroupObject 𝒞 where
     exact GElt.add_comm B (snd ≫ imArr f) (fst ≫ imArr f)
 
 @[simp] theorem imageGObj_carrier : (imageGObj f).carrier = imI f := rfl
-@[simp] theorem imageGObj_add : (imageGObj f).add = imAdd f := rfl
+@[simp] public theorem imageGObj_add : (imageGObj f).add = imAdd f := rfl
 
 /-- `e = image.lift f.val : A → imageGObj` is a homomorphism: post-compose the monic `m`;
     `(A.add ≫ e) ≫ m = pair (fst≫e) (snd≫e) ≫ imAdd ≫ m`, both `= A.add ≫ f.val`. -/
-theorem isHom_imE : IsHomAbelianGroupObject A (imageGObj f) (imE f) := by
+public theorem isHom_imE : IsHomAbelianGroupObject A (imageGObj f) (imE f) := by
   show A.add ≫ imE f = pair (fst ≫ imE f) (snd ≫ imE f) ≫ (imageGObj f).add
   rw [imageGObj_add, ← imEE, imEE_imAdd]
 
 /-- The `Ab(𝒞)` morphism carried by `m`. -/
-def imArrHom : imageGObj f ⟶ B := ⟨imArr f, imAdd_imArr f⟩
+@[expose] public def imArrHom : imageGObj f ⟶ B := ⟨imArr f, imAdd_imArr f⟩
 /-- The `Ab(𝒞)` morphism carried by `e` (the image cover). -/
-noncomputable def imEHom : A ⟶ imageGObj f := ⟨imE f, isHom_imE f⟩
+@[expose] public noncomputable def imEHom : A ⟶ imageGObj f := ⟨imE f, isHom_imE f⟩
 
 theorem imArrHom_val : (imArrHom f).val = imArr f := rfl
 theorem imEHom_val : (imEHom f).val = imE f := rfl
 
 /-- `imArrHom` is monic in `Ab(𝒞)` (carrier monic + `U` reflects monos). -/
-theorem imArrHom_monic : Monic (imArrHom f) :=
+public theorem imArrHom_monic : Monic (imArrHom f) :=
   U_reflectsMono (f := imArrHom f) (imArr_monic f)
 
 /-- `e ≫ m = f` in `Ab(𝒞)`: the image factorization. -/
-theorem image_factorization : imEHom f ≫ imArrHom f = f :=
+public theorem image_factorization : imEHom f ≫ imArrHom f = f :=
   Subtype.ext (image.lift_fac f.val)
 
 end AbImage
@@ -923,7 +925,7 @@ open AbPullback in
 /-- §1.595: an `Ab(𝒞)`-monic `m₀` has a monic carrier.  Kernel-pair route: the carrier
     kernel pair is an internal group object, its projections are homs equalised by `m₀`, so
     Ab-monicity collapses them, forcing `m₀.val` monic. -/
-theorem ab_monic_carrier_monic {M B : AbelianGroupObject 𝒞} {m₀ : M ⟶ B}
+public theorem ab_monic_carrier_monic {M B : AbelianGroupObject 𝒞} {m₀ : M ⟶ B}
     (hm₀ : Monic m₀) : Monic m₀.val := by
   have hkp_w : (⟨kp₁ (f := m₀.val), isHom_p₁ m₀ m₀⟩ : pullbackGObj m₀ m₀ ⟶ M) ≫ m₀
              = (⟨kp₂ (f := m₀.val), isHom_p₂ m₀ m₀⟩ : pullbackGObj m₀ m₀ ⟶ M) ≫ m₀ :=
@@ -956,16 +958,16 @@ open AbImage
 
 /-- The image of `f` as an `Ab(𝒞)`-subobject of `B`.  (Named `abImageSub` to avoid the
     §1.59 `imageSub` for general categories, which carries different hypotheses.) -/
-noncomputable def abImageSub {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) :
+@[expose] public noncomputable def abImageSub {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) :
     Subobject (AbelianGroupObject 𝒞) B :=
   ⟨imageGObj f, imArrHom f, imArrHom_monic f⟩
 
 /-- `abImageSub` allows `f` (via `imEHom`). -/
-theorem abImageSub_allows {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) : Allows (abImageSub f) f :=
+public theorem abImageSub_allows {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) : Allows (abImageSub f) f :=
   ⟨imEHom f, image_factorization f⟩
 
 /-- **Minimality** of the Ab-image: any Ab-subobject `S` of `B` allowing `f` dominates it. -/
-theorem abImageSub_min {A B : AbelianGroupObject 𝒞} (f : A ⟶ B)
+public theorem abImageSub_min {A B : AbelianGroupObject 𝒞} (f : A ⟶ B)
     (S : Subobject (AbelianGroupObject 𝒞) B) (hAllow : Allows S f) : (abImageSub f).le S := by
   obtain ⟨g, hg⟩ := hAllow
   have hSmono : Monic S.arr.val := ab_monic_carrier_monic S.monic
@@ -985,12 +987,12 @@ theorem abImageSub_min {A B : AbelianGroupObject 𝒞} (f : A ⟶ B)
   exact ⟨⟨t, ht_hom⟩, Subtype.ext ht⟩
 
 /-- §1.595: `abImageSub f` IS the image of `f` in `Ab(𝒞)`. -/
-theorem isImage_abImageSub {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) :
+public theorem isImage_abImageSub {A B : AbelianGroupObject 𝒞} (f : A ⟶ B) :
     IsImage f (abImageSub f) :=
   ⟨abImageSub_allows f, abImageSub_min f⟩
 
 /-- §1.595: **`Ab(𝒞)` has images** (the 𝒞-image with a descended group structure). -/
-noncomputable instance instHasImagesAb : HasImages (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasImagesAb : HasImages (AbelianGroupObject 𝒞) where
   image f := abImageSub f
   isImage f := isImage_abImageSub f
 
@@ -1003,7 +1005,7 @@ noncomputable instance instHasImagesAb : HasImages (AbelianGroupObject 𝒞) whe
 /-- §1.595: a HomAb whose carrier is a 𝒞-cover is an `Ab(𝒞)`-cover.  Test an Ab-monic `n`
     factoring `φ`; its carrier `n.val` is 𝒞-monic (`ab_monic_carrier_monic`), so the 𝒞-cover
     `φ.val` forces `n.val` iso, hence `n` Ab-iso (`isHom_of_carrier_iso`). -/
-theorem ab_cover_of_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
+public theorem ab_cover_of_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
     (hφ : Cover φ.val) : Cover φ := by
   intro N n k hn hkn
   exact carrier_cover_to_ab_cover_aux hφ n (ab_monic_carrier_monic hn) k hkn
@@ -1011,7 +1013,7 @@ theorem ab_cover_of_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
 /-- §1.595: an `Ab(𝒞)`-cover has a 𝒞-cover carrier.  Factor `φ = e ≫ i` (image in `Ab(𝒞)`):
     `e = imEHom` (carrier a 𝒞-cover), `i = imArrHom` (Ab-monic).  `φ` Ab-cover and `i` Ab-monic
     ⟹ `i` Ab-iso ⟹ `i.val` 𝒞-iso ⟹ `φ.val = e.val ≫ i.val` is a 𝒞-cover. -/
-theorem ab_cover_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
+public theorem ab_cover_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
     (hφ : Cover φ) : Cover φ.val := by
   -- `φ` factors through the Ab-monic image inclusion `imArrHom φ`; cover forces it iso.
   have hi_iso : IsIso (AbImage.imArrHom φ) :=
@@ -1030,7 +1032,7 @@ theorem ab_cover_carrier_cover {X Y : AbelianGroupObject 𝒞} {φ : X ⟶ Y}
     carriers (`instHasPullbacksAb`), so the comparison to the canonical cone is an Ab-iso; the
     canonical projection's carrier is the 𝒞-pullback projection, a 𝒞-cover by `[PullbacksTransferCovers 𝒞]`
     applied to the 𝒞-cover `φ.val` (`ab_cover_carrier_cover`); reflect back with `ab_cover_of_carrier_cover`. -/
-theorem ab_pullbacks_transfer_covers {A B C : AbelianGroupObject 𝒞} {f : A ⟶ B} {g : C ⟶ B}
+public theorem ab_pullbacks_transfer_covers {A B C : AbelianGroupObject 𝒞} {f : A ⟶ B} {g : C ⟶ B}
     (c : Cone f g) (hc : c.IsPullback) (hf : Cover f) : Cover c.π₂ := by
   -- carrier cover of `f`
   have hfval : Cover f.val := ab_cover_carrier_cover hf
@@ -1060,14 +1062,14 @@ theorem ab_pullbacks_transfer_covers {A B C : AbelianGroupObject 𝒞} {f : A �
   exact cover_precomp_iso ⟨ψ, hφψ, hψφ⟩ hcanon m k hm hkm
 
 /-- §1.595: **`Ab(𝒞)` transfers covers across pullbacks** (instance form). -/
-instance instPullbacksTransferCoversAb : PullbacksTransferCovers (AbelianGroupObject 𝒞) where
+@[expose] public instance instPullbacksTransferCoversAb : PullbacksTransferCovers (AbelianGroupObject 𝒞) where
   pullbacks_transfer_covers c hc hf := ab_pullbacks_transfer_covers c hc hf
 
 /-- §1.595 (Freyd, the headline of the section): **`Ab(𝒞)` is a regular category** whenever
     `𝒞` is effective regular.  Assembles `HasTerminal`/`HasBinaryProducts` (`AbAbelian`),
     `HasPullbacks` (`instHasPullbacksAb`), `HasImages` (`instHasImagesAb`), and
     `PullbacksTransferCovers` (`instPullbacksTransferCoversAb`). -/
-noncomputable instance instRegularCategoryAb : RegularCategory (AbelianGroupObject 𝒞) :=
+@[expose] public noncomputable instance instRegularCategoryAb : RegularCategory (AbelianGroupObject 𝒞) :=
   @RegularCategory.mk (AbelianGroupObject 𝒞) instCatAb
     instHasTerminalAb instHasBinaryProductsAb instHasPullbacksAb
     instHasImagesAb instPullbacksTransferCoversAb
@@ -1127,7 +1129,7 @@ variable [EffectiveRegular 𝒞]
 /-- The carrier relation of an `Ab(𝒞)`-relation: legs are the `.val` of `E`'s legs.  Jointly
     monic because the Ab joint-monic pair `⟨colA,colB⟩` has a monic carrier
     (`ab_monic_carrier_monic`). -/
-noncomputable def carRelGen {A B : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupObject 𝒞) A B) :
+@[expose] public noncomputable def carRelGen {A B : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupObject 𝒞) A B) :
     BinRel 𝒞 A.carrier B.carrier where
   src := (E.src).carrier
   colA := E.colA.val
@@ -1147,7 +1149,7 @@ noncomputable def carRelGen {A B : AbelianGroupObject 𝒞} (E : BinRel (Abelian
     (carRelGen E).src = E.src.carrier := rfl
 
 /-- `carRelGen` is monotone: an Ab `RelHom R ⊂ S` descends (take `.val` of the witness). -/
-theorem carRel_mono {A B : AbelianGroupObject 𝒞} {R S : BinRel (AbelianGroupObject 𝒞) A B}
+public theorem carRel_mono {A B : AbelianGroupObject 𝒞} {R S : BinRel (AbelianGroupObject 𝒞) A B}
     (h : R ⊂ S) : carRelGen R ⊂ carRelGen S := by
   obtain ⟨k, hkA, hkB⟩ := h
   exact ⟨⟨k.val, congrArg Subtype.val hkA, congrArg Subtype.val hkB⟩⟩
@@ -1157,7 +1159,7 @@ theorem carRel_mono {A B : AbelianGroupObject 𝒞} {R S : BinRel (AbelianGroupO
     pullback (the Ab pullback/product/image are all computed on carriers); the Ab-image cover
     `imE` and the carrier-image cover `image.lift` agree on legs, so `relLe_of_cover_factor`
     bridges them.  This is the `U`-preserves-`⊚` half of the relation-calculus diamond. -/
-theorem carRel_comp_le {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGroupObject 𝒞) A B)
+public theorem carRel_comp_le {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGroupObject 𝒞) A B)
     (S : BinRel (AbelianGroupObject 𝒞) B C) :
     (carRelGen R ⊚ carRelGen S) ⊂ carRelGen (R ⊚ S) := by
   let pb := HasPullbacks.has R.colB.val S.colA.val
@@ -1194,7 +1196,7 @@ theorem carRel_comp_le {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGro
 
 /-- The reverse direction of `carRel_comp_le`: `carRelGen (R ⊚ S) ⊂ carRelGen R ⊚ carRelGen S`.
     Same image-of-the-same-carrier-span bridge, with the cover and comparison map swapped. -/
-theorem carRel_comp_ge {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGroupObject 𝒞) A B)
+public theorem carRel_comp_ge {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGroupObject 𝒞) A B)
     (S : BinRel (AbelianGroupObject 𝒞) B C) :
     carRelGen (R ⊚ S) ⊂ (carRelGen R ⊚ carRelGen S) := by
   let pb := HasPullbacks.has R.colB.val S.colA.val
@@ -1232,7 +1234,7 @@ theorem carRel_comp_ge {A B C : AbelianGroupObject 𝒞} (R : BinRel (AbelianGro
 /-- §1.595: an `Ab(𝒞)`-equivalence-relation descends to a carrier equivalence relation.
     Reflexivity (the section's `.val`), symmetry (`carRelGen E° = (carRelGen E)°` definitionally),
     transitivity (`carRel_comp_le` + monotonicity of the Ab transitivity witness). -/
-theorem carRel_equivalence {A : AbelianGroupObject 𝒞} {E : BinRel (AbelianGroupObject 𝒞) A A}
+public theorem carRel_equivalence {A : AbelianGroupObject 𝒞} {E : BinRel (AbelianGroupObject 𝒞) A A}
     (hE : EquivalenceRelation E) : EquivalenceRelation (carRelGen E) := by
   obtain ⟨⟨hsec, hsA, hsB⟩, hsymm, htrans⟩ := hE
   refine ⟨⟨hsec.val, congrArg Subtype.val hsA, congrArg Subtype.val hsB⟩, ?_, ?_⟩
@@ -1243,7 +1245,7 @@ theorem carRel_equivalence {A : AbelianGroupObject 𝒞} {E : BinRel (AbelianGro
     `carRelGen E ⊂ carRelGen S` lifts to an `Ab(𝒞)` RelHom `E ⊂ S`.  The carrier witness `w` is an
     `Ab(𝒞)`-homomorphism `E.src → S.src` because both tables are Ab-relations (their legs are homs)
     and `w`'s hom square is forced by the carrier joint-monicity of `S`'s legs. -/
-theorem carRel_reflect {A B : AbelianGroupObject 𝒞} {E S : BinRel (AbelianGroupObject 𝒞) A B}
+public theorem carRel_reflect {A B : AbelianGroupObject 𝒞} {E S : BinRel (AbelianGroupObject 𝒞) A B}
     (h : carRelGen E ⊂ carRelGen S) : E ⊂ S := by
   obtain ⟨w, hwA, hwB⟩ := h
   have hwA' : w ≫ S.colA.val = E.colA.val := hwA
@@ -1278,7 +1280,7 @@ theorem carRel_reflect {A B : AbelianGroupObject 𝒞} {E S : BinRel (AbelianGro
     brackets `carRelGen E` from both sides.  Applies `EffectiveRegular.effective` to the carrier
     relation; the products diamond between the ambient `HasBinaryProducts` and `EffectiveRegular`'s
     is bridged by `compose_prods_indep` (mirroring `effective_regular_additive_is_abelian`). -/
-theorem carRel_effective_cover {A : AbelianGroupObject 𝒞}
+public theorem carRel_effective_cover {A : AbelianGroupObject 𝒞}
     (E : BinRel (AbelianGroupObject 𝒞) A A) (hE : EquivalenceRelation E) :
     ∃ (Q : 𝒞) (q : A.carrier ⟶ Q), Cover q ∧
       carRelGen E ⊂ (graph q ⊚ (graph q)°) ∧ (graph q ⊚ (graph q)°) ⊂ carRelGen E := by
@@ -1310,7 +1312,7 @@ variable {A : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupObject 𝒞) A A
   (hbracket : (graph q ⊚ (graph q)°) ⊂ carRelGen E)
 
 /-- The two legs of `E` (carrier) agree after `≫ q` (`level_legs_comp` along `carRelGen E ⊂ qq°`). -/
-theorem legs_agree (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
+public theorem legs_agree (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
     E.colA.val ≫ q = E.colB.val ≫ q := by
   obtain ⟨he, heA, heB⟩ := hEqq
   have key : he ≫ ((graph q ⊚ (graph q)°).colA ≫ q) = he ≫ ((graph q ⊚ (graph q)°).colB ≫ q) := by
@@ -1326,7 +1328,7 @@ theorem legs_agree (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
 include hbracket in
 /-- Any `q`-equal pair `u, v` factors through `E`'s table.  (`kernelPairRel q ⊂ level(q) ⊂
     carRelGen E`; lift `(u,v)` into the kernel pair and follow the `RelHom`.) -/
-theorem kfac {T : 𝒞} (u v : T ⟶ A.carrier) (huv : u ≫ q = v ≫ q) :
+public theorem kfac {T : 𝒞} (u v : T ⟶ A.carrier) (huv : u ≫ q = v ≫ q) :
     ∃ e : T ⟶ E.src.carrier, e ≫ E.colA.val = u ∧ e ≫ E.colB.val = v := by
   obtain ⟨κ, hκA, hκB⟩ := rel_le_trans (kernelPairRel_le_level q) hbracket
   have hκA' : κ ≫ E.colA.val = kp₁ (f := q) := hκA
@@ -1340,7 +1342,7 @@ include hbracket in
 /-- The negation descends: `A.neg ≫ q` coequalizes the kernel pair of `q`.  (The `q`-equal pair
     `kp₁,kp₂` factors through `E` via `kfac`; `E.src.neg` is the diagonal witness and `E.colA/colB`
     preserve negation, so the negated legs still agree after `q`.) -/
-theorem neg_descends (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
+public theorem neg_descends (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
     kp₁ (f := q) ≫ (A.neg ≫ q) = kp₂ (f := q) ≫ (A.neg ≫ q) := by
   have hlegs := legs_agree E q hEqq
   obtain ⟨e, heA, heB⟩ := kfac E q hbracket (kp₁ (f:=q)) (kp₂ (f:=q)) kp_sq
@@ -1367,7 +1369,7 @@ include hbracket in
 /-- Addition congruence: a pair `u,w` that is `q`-equal in each coordinate stays `q`-equal after
     `A.add`.  Each coordinate factors through `E` (`kfac`); `E.src.add` is the diagonal witness and
     `E.colA/colB` preserve addition (`hom_preserves_add`). -/
-theorem add_cong (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°))
+public theorem add_cong (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°))
     {T : 𝒞} (u w : T ⟶ prod A.carrier A.carrier)
     (h1 : u ≫ (fst ≫ q) = w ≫ (fst ≫ q)) (h2 : u ≫ (snd ≫ q) = w ≫ (snd ≫ q)) :
     (u ≫ A.add) ≫ q = (w ≫ A.add) ≫ q := by
@@ -1393,7 +1395,7 @@ theorem add_cong (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°))
 
 include hbracket in
 /-- The product cover `qq := ⟨fst≫q, snd≫q⟩ : A.car×A.car ↠ Q×Q` (`coverProdBoth`). -/
-theorem add_descends (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
+public theorem add_descends (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
     kp₁ (f := pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q)) ≫ (A.add ≫ q)
       = kp₂ (f := pair (fst ≫ q) (snd ≫ q)) ≫ (A.add ≫ q) := by
   have hsq : kp₁ (f := pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q)) ≫ pair (fst ≫ q) (snd ≫ q)
@@ -1414,27 +1416,27 @@ theorem add_descends (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°)) :
 variable (hEqq : carRelGen E ⊂ (graph q ⊚ (graph q)°))
 
 /-- Zero of the quotient: `A.zero ≫ q`. -/
-noncomputable def Qzero : (one : 𝒞) ⟶ Q := A.zero ≫ q
+@[expose] public noncomputable def Qzero : (one : 𝒞) ⟶ Q := A.zero ≫ q
 
 /-- Negation of the quotient: descent of `A.neg ≫ q` along the cover `q`. -/
-noncomputable def Qneg : Q ⟶ Q :=
+@[expose] public noncomputable def Qneg : Q ⟶ Q :=
   (cover_is_coequalizer_of_level q hqcov (A.neg ≫ q) (neg_descends E q hbracket hEqq)).choose
 
-theorem q_Qneg : q ≫ Qneg E q hqcov hbracket hEqq = A.neg ≫ q :=
+public theorem q_Qneg : q ≫ Qneg E q hqcov hbracket hEqq = A.neg ≫ q :=
   (cover_is_coequalizer_of_level q hqcov (A.neg ≫ q) (neg_descends E q hbracket hEqq)).choose_spec.1
 
 /-- Addition of the quotient: descent of `A.add ≫ q` along the product cover `⟨fst≫q,snd≫q⟩`. -/
-noncomputable def Qadd : prod Q Q ⟶ Q :=
+@[expose] public noncomputable def Qadd : prod Q Q ⟶ Q :=
   (cover_is_coequalizer_of_level (pair (fst ≫ q) (snd ≫ q)) (coverProdBoth hqcov)
     (A.add ≫ q) (add_descends E q hbracket hEqq)).choose
 
-theorem qq_Qadd : pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q) ≫ Qadd E q hqcov hbracket hEqq
+public theorem qq_Qadd : pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q) ≫ Qadd E q hqcov hbracket hEqq
     = A.add ≫ q :=
   (cover_is_coequalizer_of_level (pair (fst ≫ q) (snd ≫ q)) (coverProdBoth hqcov)
     (A.add ≫ q) (add_descends E q hbracket hEqq)).choose_spec.1
 
 /-- The descended sum projects: `⟨s≫q, t≫q⟩ ≫ Qadd = (⟨s,t⟩ ≫ A.add) ≫ q`. -/
-theorem qq_Qadd_proj {S : 𝒞} (s t : S ⟶ A.carrier) :
+public theorem qq_Qadd_proj {S : 𝒞} (s t : S ⟶ A.carrier) :
     pair (s ≫ q) (t ≫ q) ≫ Qadd E q hqcov hbracket hEqq = (pair s t ≫ A.add) ≫ q := by
   have hrw : pair (s ≫ q) (t ≫ q) = pair s t ≫ pair (fst ≫ q) (snd ≫ q) := by
     rw [pair_precomp]; congr 1
@@ -1444,7 +1446,7 @@ theorem qq_Qadd_proj {S : 𝒞} (s t : S ⟶ A.carrier) :
 
 /-- The triple cover `⟨fst≫⟨fst≫q,snd≫q⟩, snd≫q⟩ : (A.car×A.car)×A.car ↠ (Q×Q)×Q`.  Built from
     `coverProdLeft`/`coverProdRight`/`cover_comp`; needed for the `add_assoc` axiom cancellation. -/
-theorem tripleCover (hq : Cover q) :
+public theorem tripleCover (hq : Cover q) :
     Cover (pair (fst ≫ pair (fst ≫ q) (snd ≫ q))
                 (snd ≫ q : prod (prod A.carrier A.carrier) A.carrier ⟶ Q)) := by
   have hfac : (pair (fst ≫ pair (fst ≫ q) (snd ≫ q))
@@ -1461,7 +1463,7 @@ theorem tripleCover (hq : Cover q) :
 
 /-- §1.595: associativity of any descended `Qadd` (the `q`-image of `A.add`).  Cancel the triple
     cover, reduce both bracketings to `A`-coordinates via `qq_Qadd_proj`, apply `A.add_assoc`. -/
-theorem quotAddAssoc (Qadd : prod Q Q ⟶ Q)
+public theorem quotAddAssoc (Qadd : prod Q Q ⟶ Q)
     (hadd : pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q) ≫ Qadd = A.add ≫ q)
     (hq : Cover q) :
     pair (fst (A := prod Q Q) (B := Q) ≫ Qadd) snd ≫ Qadd
@@ -1510,7 +1512,7 @@ theorem quotAddAssoc (Qadd : prod Q Q ⟶ Q)
       hffsnd, A.add_assoc]
 
 /-- §1.595: commutativity of any descended `Qadd`.  Cancel `coverProdBoth`, then `A.add_comm`. -/
-theorem quotAddComm (Qadd : prod Q Q ⟶ Q)
+public theorem quotAddComm (Qadd : prod Q Q ⟶ Q)
     (hadd : pair (fst ≫ q) (snd ≫ q : prod A.carrier A.carrier ⟶ Q) ≫ Qadd = A.add ≫ q)
     (hq : Cover q) :
     pair (snd : prod Q Q ⟶ Q) fst ≫ Qadd = Qadd := by
@@ -1531,7 +1533,7 @@ theorem quotAddComm (Qadd : prod Q Q ⟶ Q)
 /-- §1.595: the quotient group object `Q` carrying the descended `zero/neg/add`.  Each axiom is
     cancelled by `cover_epi q` and reduced to the corresponding axiom of `A` via `qq_Qadd_proj`
     and the descent equations (`Qzero = A.zero≫q`, `q≫Qneg = A.neg≫q`). -/
-noncomputable def quotGObj : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def quotGObj : AbelianGroupObject 𝒞 where
   carrier := Q
   zero := Qzero q
   neg := Qneg E q hqcov hbracket hEqq
@@ -1565,13 +1567,13 @@ noncomputable def quotGObj : AbelianGroupObject 𝒞 where
     quotAddComm q (Qadd E q hqcov hbracket hEqq) (qq_Qadd E q hqcov hbracket hEqq) hqcov
 
 /-- The `Ab(𝒞)`-morphism carried by the quotient cover `q`. -/
-noncomputable def qHom : A ⟶ quotGObj E q hqcov hbracket hEqq :=
+@[expose] public noncomputable def qHom : A ⟶ quotGObj E q hqcov hbracket hEqq :=
   ⟨q, (qq_Qadd E q hqcov hbracket hEqq).symm⟩
 
 theorem qHom_val : (qHom E q hqcov hbracket hEqq).val = q := rfl
 
 /-- `qHom` is an `Ab(𝒞)`-cover (its carrier `q` is a 𝒞-cover; `ab_cover_of_carrier_cover`). -/
-theorem qHom_cover : Cover (qHom E q hqcov hbracket hEqq) :=
+public theorem qHom_cover : Cover (qHom E q hqcov hbracket hEqq) :=
   ab_cover_of_carrier_cover (φ := qHom E q hqcov hbracket hEqq) hqcov
 
 /-- The carrier relation of the `Ab(𝒞)`-graph of an Ab-hom `f` is the carrier graph of `f.val`
@@ -1582,7 +1584,7 @@ theorem carRelGen_graph {X Y : AbelianGroupObject 𝒞} (f : X ⟶ Y) :
 /-- The carrier level of `qHom` equals the carrier level of `q` (up to `⊂` both ways), bridging
     the `Ab(𝒞)` composite `graph qHom ⊚ (graph qHom)°` to the 𝒞 composite `graph q ⊚ (graph q)°`
     via `carRel_comp_le`/`carRel_comp_ge` and `carRelGen_graph`. -/
-theorem carRel_level_le :
+public theorem carRel_level_le :
     carRelGen (graph (qHom E q hqcov hbracket hEqq) ⊚ (graph (qHom E q hqcov hbracket hEqq))°)
       ⊂ (graph q ⊚ (graph q)°) := by
   refine rel_le_trans (carRel_comp_ge (graph (qHom E q hqcov hbracket hEqq))
@@ -1590,7 +1592,7 @@ theorem carRel_level_le :
   -- carRelGen (graph qHom) ⊚ carRelGen (graph qHom°) = graph q ⊚ graph q° (defeq via qHom_val)
   exact ⟨⟨Cat.id _, Cat.id_comp _, Cat.id_comp _⟩⟩
 
-theorem carRel_level_ge :
+public theorem carRel_level_ge :
     (graph q ⊚ (graph q)°)
       ⊂ carRelGen (graph (qHom E q hqcov hbracket hEqq) ⊚ (graph (qHom E q hqcov hbracket hEqq))°) := by
   refine rel_le_trans ?_ (carRel_comp_le (graph (qHom E q hqcov hbracket hEqq))
@@ -1600,13 +1602,13 @@ theorem carRel_level_ge :
 /-- §1.595: `E ⊂ graph qHom ⊚ (graph qHom)°` in `Ab(𝒞)`.  Reflect (`carRel_reflect`) the carrier
     containment `carRelGen E ⊂ carRelGen (level qHom)`, obtained from `hEqq` (`carRelGen E ⊂ level q`)
     composed through `carRel_level_ge`. -/
-theorem E_le_qHom_level :
+public theorem E_le_qHom_level :
     E ⊂ (graph (qHom E q hqcov hbracket hEqq) ⊚ (graph (qHom E q hqcov hbracket hEqq))°) := by
   apply carRel_reflect
   exact rel_le_trans hEqq (carRel_level_ge E q hqcov hbracket hEqq)
 
 /-- §1.595: `graph qHom ⊚ (graph qHom)° ⊂ E` in `Ab(𝒞)` (the reverse containment). -/
-theorem qHom_level_le_E :
+public theorem qHom_level_le_E :
     (graph (qHom E q hqcov hbracket hEqq) ⊚ (graph (qHom E q hqcov hbracket hEqq))°) ⊂ E := by
   apply carRel_reflect
   exact rel_le_trans (carRel_level_le E q hqcov hbracket hEqq) hbracket
@@ -1616,7 +1618,7 @@ end AbQuot
 /-- §1.595: every `Ab(𝒞)`-equivalence-relation `E` is EFFECTIVE.  Descend to the carrier
     equivalence relation, take the carrier effective quotient cover `q`, descend a group structure
     onto `Q` (`AbQuot.quotGObj`), and lift `q` to the `Ab(𝒞)`-cover `qHom` whose level brackets `E`. -/
-theorem ab_isEffective {A : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupObject 𝒞) A A)
+public theorem ab_isEffective {A : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupObject 𝒞) A A)
     (hE : EquivalenceRelation E) : IsEffective E := by
   obtain ⟨Q, q, hqcov, hEqq, hbracket⟩ := carRel_effective_cover E hE
   exact ⟨hE, AbQuot.quotGObj E q hqcov hbracket hEqq, AbQuot.qHom E q hqcov hbracket hEqq,
@@ -1626,7 +1628,7 @@ theorem ab_isEffective {A : AbelianGroupObject 𝒞} (E : BinRel (AbelianGroupOb
 
 /-- §1.595: **`Ab(𝒞)` is EFFECTIVE regular** whenever `𝒞` is.  Every equivalence relation in
     `Ab(𝒞)` is the kernel pair of an `Ab(𝒞)`-cover (its quotient group object). -/
-noncomputable instance instEffectiveRegularAb : EffectiveRegular (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instEffectiveRegularAb : EffectiveRegular (AbelianGroupObject 𝒞) where
   effective E hE := ab_isEffective E hE
 
 end EffReg
@@ -1639,14 +1641,14 @@ variable [EffectiveRegular 𝒞] [HasEqualizers 𝒞]
 
 /-- §1.595: **`Ab(𝒞)` has coequalizers** (an effective regular additive category with a zero object
     and equalizers has coequalizers — `S1_59.additive_has_coequalizers`). -/
-noncomputable instance instHasCoequalizersAb : HasCoequalizers (AbelianGroupObject 𝒞) :=
+@[expose] public noncomputable instance instHasCoequalizersAb : HasCoequalizers (AbelianGroupObject 𝒞) :=
   additive_has_coequalizers (AbelianGroupObject 𝒞)
 
 /-- §1.595: every `Ab(𝒞)`-monic is a normal subobject (a kernel) — the `all_normal` field of
     `AbelianCategory`.  This is `S1_59.effective_regular_additive_is_abelian` applied to `Ab(𝒞)`,
     which is effective-regular (`instEffectiveRegularAb`), additive (`instAdditiveAb`), has a zero
     object (`instHasZeroObjectAb`) and equalizers (`instHasEqualizersAb`). -/
-theorem ab_all_normal {A B : AbelianGroupObject 𝒞} (m : A ⟶ B) (hm : Monic m) :
+public theorem ab_all_normal {A B : AbelianGroupObject 𝒞} (m : A ⟶ B) (hm : Monic m) :
     IsNormalSubobject m :=
   effective_regular_additive_is_abelian (AbelianGroupObject 𝒞) m hm
 
@@ -1654,7 +1656,7 @@ theorem ab_all_normal {A B : AbelianGroupObject 𝒞} (m : A ⟶ B) (hm : Monic 
     is effective regular.  Assembles `RegularCategory`/`AdditiveCategory`/`HasZeroObject`/
     `HasEqualizers` (earlier stages) with the new `HasCoequalizers` (`instHasCoequalizersAb`) and
     `all_normal` (`ab_all_normal`, via the §1.594 Mal'cev effective-quotient argument). -/
-noncomputable instance instAbelianCategoryAb : AbelianCategory (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instAbelianCategoryAb : AbelianCategory (AbelianGroupObject 𝒞) where
   all_normal m hm := ab_all_normal m hm
 
 end Abelian

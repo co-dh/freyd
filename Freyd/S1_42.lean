@@ -9,8 +9,10 @@
   `fst`, `snd`, `pair` do NOT require `HasTerminal` (§1.85 needs this).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
 
 
 universe v u
@@ -21,7 +23,7 @@ namespace Freyd
 
 /-! ### HasTerminal class and definitions -/
 
-class HasTerminal (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasTerminal (𝒞 : Type u) [Cat.{v} 𝒞] where
   one   : 𝒞
   trm   : (X : 𝒞) → X ⟶ one
   uniq  : ∀ {X : 𝒞} (f g : X ⟶ one), f = g
@@ -30,13 +32,13 @@ section Terminal
 
 variable [ht : HasTerminal 𝒞]
 
-def one : 𝒞 := ht.one
-def term (X : 𝒞) : X ⟶ one := ht.trm X
+@[expose] public def one : 𝒞 := ht.one
+@[expose] public def term (X : 𝒞) : X ⟶ one := ht.trm X
 
-theorem term_uniq {X : 𝒞} (f g : X ⟶ one) : f = g := ht.uniq f g
+public theorem term_uniq {X : 𝒞} (f g : X ⟶ one) : f = g := ht.uniq f g
 
 /-- A SUBTERMINATOR is an object T such that T→1 is monic (§1.412). -/
-def Subterminator (T : 𝒞) : Prop := Monic (term T)
+@[expose] public def Subterminator (T : 𝒞) : Prop := Monic (term T)
 
 /-- A VALUE is a subterminator (§1.412). -/
 def Value : 𝒞 → Prop := Subterminator
@@ -58,7 +60,7 @@ end Terminal
 
 /-! ### HasBinaryProducts class and definitions -/
 
-class HasBinaryProducts (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasBinaryProducts (𝒞 : Type u) [Cat.{v} 𝒞] where
   prod  : 𝒞 → 𝒞 → 𝒞
   fst   : {A B : 𝒞} → prod A B ⟶ A
   snd   : {A B : 𝒞} → prod A B ⟶ B
@@ -79,19 +81,19 @@ export HasBinaryProducts (prod fst snd pair fst_pair snd_pair pair_uniq)
 
 attribute [simp] HasBinaryProducts.fst_pair HasBinaryProducts.snd_pair
 
-def diag (A : 𝒞) : A ⟶ prod A A := pair (Cat.id A) (Cat.id A)
+@[expose] public def diag (A : 𝒞) : A ⟶ prod A A := pair (Cat.id A) (Cat.id A)
 
-theorem diag_mono (A : 𝒞) : Monic (diag A) :=
+public theorem diag_mono (A : 𝒞) : Monic (diag A) :=
   mono_of_retraction (diag A) fst (fst_pair _ _)
 
 /-! ### §1.423 Product corollaries -/
 
 /-- The pair of projections on A×B is the identity. -/
-theorem pair_fst_snd {A B : 𝒞} : pair (fst (A := A) (B := B)) snd = Cat.id (prod A B) :=
+public theorem pair_fst_snd {A B : 𝒞} : pair (fst (A := A) (B := B)) snd = Cat.id (prod A B) :=
   (pair_uniq fst snd (Cat.id _) (Cat.id_comp _) (Cat.id_comp _)).symm
 
 /-- Projections fst and snd are jointly monic (§1.423): the product is a table on A, B. -/
-theorem fst_snd_jointly_monic {A B : 𝒞} : MonicPair (fst (A := A) (B := B)) snd := by
+public theorem fst_snd_jointly_monic {A B : 𝒞} : MonicPair (fst (A := A) (B := B)) snd := by
   intro W f g hf hs
   have hfe : f = pair (f ≫ fst) (f ≫ snd) := pair_uniq _ _ f rfl rfl
   have hge : g = pair (g ≫ fst) (g ≫ snd) := pair_uniq _ _ g rfl rfl
@@ -124,7 +126,7 @@ theorem product_unique_iso {A B : 𝒞} [hp2 : HasBinaryProducts 𝒞]
 
 /-- §1.426: `x : T → A`, `y : T → B` is a monic pair iff `⟨x,y⟩ : T → A×B` is monic.
     This is the correspondence underlying `Rel(A,B) ≅ Sub(A×B)`. -/
-theorem monicPair_iff_monic_pair {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) :
+public theorem monicPair_iff_monic_pair {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) :
     MonicPair x y ↔ Monic (pair x y) := by
   -- `by` switches to tactic mode: we manipulate the goal step by step instead of
   -- writing the proof term directly. The goal is the `↔` (iff).
@@ -175,7 +177,7 @@ theorem monicPair_iff_monic_pair {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) :
 
 /-- If `y` is monic then `⟨x,y⟩ : T → A×B` is monic — the clean special case of §1.426
     (a single monic column already makes the pair monic). Used downstream in §1.64. -/
-theorem monic_pair_of_monic {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) (hy : Monic y) :
+public theorem monic_pair_of_monic {T A B : 𝒞} (x : T ⟶ A) (y : T ⟶ B) (hy : Monic y) :
     Monic (pair x y) :=
   (monicPair_iff_monic_pair x y).mp (fun f g _ hyy => hy f g hyy)
 
@@ -190,10 +192,10 @@ theorem monic_id_pair_of_monic {A B : 𝒞} (b : A ⟶ B) (hb : Monic b) :
 /-! ### Product commutativity (§1.42)  A×B ≅ B×A -/
 
 /-- The swap map `A×B → B×A`, `⟨snd, fst⟩`. -/
-def prodSwap (A B : 𝒞) : prod A B ⟶ prod B A := pair snd fst
+@[expose] public def prodSwap (A B : 𝒞) : prod A B ⟶ prod B A := pair snd fst
 
 /-- The swap is its own inverse: `(A×B → B×A → A×B)` is the identity. -/
-theorem prodSwap_prodSwap {A B : 𝒞} : prodSwap A B ≫ prodSwap B A = Cat.id (prod A B) := by
+public theorem prodSwap_prodSwap {A B : 𝒞} : prodSwap A B ≫ prodSwap B A = Cat.id (prod A B) := by
   calc prodSwap A B ≫ prodSwap B A
       = pair ((prodSwap A B ≫ prodSwap B A) ≫ fst) ((prodSwap A B ≫ prodSwap B A) ≫ snd) :=
         pair_uniq _ _ _ rfl rfl
@@ -206,7 +208,7 @@ theorem prodSwap_prodSwap {A B : 𝒞} : prodSwap A B ≫ prodSwap B A = Cat.id 
 
 /-- Product commutativity (§1.42): `A×B ≅ B×A`, witnessed by `prodSwap = ⟨snd, fst⟩`,
     which is its own inverse. -/
-theorem prod_comm_iso {A B : 𝒞} : IsIso (prodSwap A B) :=
+public theorem prod_comm_iso {A B : 𝒞} : IsIso (prodSwap A B) :=
   ⟨prodSwap B A, prodSwap_prodSwap, prodSwap_prodSwap⟩
 
 end Products
@@ -218,11 +220,11 @@ section Unitors
 variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
 
 /-- Left unitor map `B → 1×B`, `⟨term B, id B⟩`. -/
-def prodOneLeftInv (B : 𝒞) : B ⟶ prod one B := pair (term B) (Cat.id B)
+@[expose] public def prodOneLeftInv (B : 𝒞) : B ⟶ prod one B := pair (term B) (Cat.id B)
 
 /-- Round-trip on `1×B`: `(1×B → B → 1×B)` is the identity.
     The `fst` component collapses by `term_uniq` (any two maps into `1` agree). -/
-theorem snd_prodOneLeftInv {B : 𝒞} :
+public theorem snd_prodOneLeftInv {B : 𝒞} :
     (snd : prod one B ⟶ B) ≫ prodOneLeftInv B = Cat.id (prod one B) := by
   have h1 : (snd ≫ prodOneLeftInv B) ≫ fst = fst (A := one) (B := B) := term_uniq _ _
   have h2 : (snd ≫ prodOneLeftInv B) ≫ snd = snd (A := one) (B := B) := by
@@ -230,15 +232,15 @@ theorem snd_prodOneLeftInv {B : 𝒞} :
   exact (pair_uniq fst snd _ h1 h2).trans pair_fst_snd
 
 /-- Left unit law (§1.42): `1×B ≅ B`, witnessed by `snd : 1×B → B`. -/
-theorem prod_one_iso_left {B : 𝒞} : IsIso (snd : prod one B ⟶ B) :=
+public theorem prod_one_iso_left {B : 𝒞} : IsIso (snd : prod one B ⟶ B) :=
   ⟨prodOneLeftInv B, snd_prodOneLeftInv, snd_pair _ _⟩
 
 /-- Right unitor map `B → B×1`, `⟨id B, term B⟩`. -/
-def prodOneRightInv (B : 𝒞) : B ⟶ prod B one := pair (Cat.id B) (term B)
+@[expose] public def prodOneRightInv (B : 𝒞) : B ⟶ prod B one := pair (Cat.id B) (term B)
 
 /-- Round-trip on `B×1`: `(B×1 → B → B×1)` is the identity.
     The `snd` component collapses by `term_uniq`. -/
-theorem fst_prodOneRightInv {B : 𝒞} :
+public theorem fst_prodOneRightInv {B : 𝒞} :
     (fst : prod B one ⟶ B) ≫ prodOneRightInv B = Cat.id (prod B one) := by
   have h1 : (fst ≫ prodOneRightInv B) ≫ fst = fst (A := B) (B := one) := by
     rw [Cat.assoc, show prodOneRightInv B ≫ fst = Cat.id B from fst_pair _ _, Cat.comp_id]
@@ -246,7 +248,7 @@ theorem fst_prodOneRightInv {B : 𝒞} :
   exact (pair_uniq fst snd _ h1 h2).trans pair_fst_snd
 
 /-- Right unit law (§1.42): `B×1 ≅ B`, witnessed by `fst : B×1 → B`. -/
-theorem prod_one_iso_right {B : 𝒞} : IsIso (fst : prod B one ⟶ B) :=
+public theorem prod_one_iso_right {B : 𝒞} : IsIso (fst : prod B one ⟶ B) :=
   ⟨prodOneRightInv B, fst_prodOneRightInv, fst_pair _ _⟩
 
 end Unitors
@@ -256,7 +258,7 @@ end Unitors
 /-- An indexed product of a family `{Aᵢ}ᵢ∈I` (§1.425):
     an object `P` with projections `pᵢ : P → Aᵢ` such that for any `X` and family
     `{xᵢ : X → Aᵢ}` there exists a unique `z : X → P` with `z ≫ pᵢ = xᵢ` for all i. -/
-structure HasIndexedProduct.{w} {I : Type w} (family : I → 𝒞) where
+public structure HasIndexedProduct.{w} {I : Type w} (family : I → 𝒞) where
   prod    : 𝒞
   proj    : (i : I) → prod ⟶ family i
   lift    : {X : 𝒞} → ((i : I) → X ⟶ family i) → (X ⟶ prod)
@@ -277,7 +279,7 @@ def emptyProduct_is_terminator (ep : HasIndexedProduct (𝒞 := 𝒞) (fun i : E
     Any Fin n -indexed product can be built from HasTerminal + HasBinaryProducts.
     Base case n=0: the terminator is the empty product.
     Inductive step: prod(sub.prod, A_last) with proj i = snd (i=last) or fst≫sub.proj i (i<n). -/
-def finiteProduct_from_term_binary [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
+@[expose] public def finiteProduct_from_term_binary [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     {n : Nat} (family : Fin n → 𝒞) : HasIndexedProduct family := by
   induction n with
   | zero =>
@@ -318,7 +320,7 @@ def finiteProduct_from_term_binary [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     }
 
 /-- Precomposition distributes over pairing. -/
-theorem pair_precomp {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
+public theorem pair_precomp {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
     {X Y A B : 𝒞} (g : X ⟶ Y) (a : Y ⟶ A) (b : Y ⟶ B) :
     g ≫ pair a b = pair (g ≫ a) (g ≫ b) :=
   pair_uniq (g ≫ a) (g ≫ b) (g ≫ pair a b)

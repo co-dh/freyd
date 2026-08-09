@@ -5,10 +5,12 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_27
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_27
+public import Freyd.S1_41
 
 
 open Freyd
@@ -21,24 +23,24 @@ namespace Freyd
 
 /-! ## §1.31 Embedding, Full, Representative Image, Equivalence Functor -/
 
-def Embedding (F : Functor 𝒞 𝒟) : Prop :=
+@[expose] public def Embedding (F : Functor 𝒞 𝒟) : Prop :=
   ∀ {A B : 𝒞} (f g : A ⟶ B), F.map f = F.map g → f = g
 
 /-- The cross-universe form of `Embedding`: `T` SEPARATES MAPS if it is injective
     on each hom-set.  Same notion as `Embedding`, but with source and target in
     possibly different object universes — needed for representations `𝒞 → 𝒮^I`
     whose target lives one universe up (§1.55 Henkin-Lubkin). -/
-def SeparatesMaps {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
+@[expose] public def SeparatesMaps {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (T : Functor C D) : Prop :=
   ∀ {A B : C} (f g : A ⟶ B), T.map f = T.map g → f = g
 
-def Full (F : Functor 𝒞 𝒟) : Prop :=
+@[expose] public def Full (F : Functor 𝒞 𝒟) : Prop :=
   ∀ {A B : 𝒞} (h : F.obj A ⟶ F.obj B), ∃ f : A ⟶ B, F.map f = h
 
-def HasRepresentativeImage (F : Functor 𝒞 𝒟) : Prop :=
+@[expose] public def HasRepresentativeImage (F : Functor 𝒞 𝒟) : Prop :=
   ∀ B : 𝒟, ∃ A : 𝒞, ∃ (h : F.obj A ⟶ B), IsIso h
 
-def EquivalenceFunctor (F : Functor 𝒞 𝒟) : Prop :=
+@[expose] public def EquivalenceFunctor (F : Functor 𝒞 𝒟) : Prop :=
   Embedding F ∧ Full F ∧ HasRepresentativeImage F
 
 /-! ## §1.32 Composition and cancellation
@@ -49,7 +51,7 @@ def EquivalenceFunctor (F : Functor 𝒞 𝒟) : Prop :=
 section Composition
 variable {F : Functor 𝒞 𝒟} {ℰ : Type u} [Cat.{v} ℰ] {G : Functor 𝒟 ℰ}
 
-theorem embedding_comp (embF : Embedding F) (embG : Embedding G) :
+public theorem embedding_comp (embF : Embedding F) (embG : Embedding G) :
     Embedding (compFunctor F G) := by
   intro A B f g h
   -- h : (compFunctor F G).map f = (compFunctor F G).map g
@@ -124,11 +126,11 @@ end CancellationAndComp
 
 /-! ## Strong equivalence (§1.32) -/
 
-structure NatIso (F G : Functor 𝒞 𝒟) where
+public structure NatIso (F G : Functor 𝒞 𝒟) where
   nat : NaturalTransformation F G
   isIso : ∀ X : 𝒞, IsIso (nat.app X)
 
-structure StrongEquivalence (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
+public structure StrongEquivalence (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
   unit : Nonempty (NatIso (compFunctor F G) idFunctor)
   counit : Nonempty (NatIso (compFunctor G F) idFunctor)
 
@@ -145,7 +147,7 @@ section Conjugation
 variable {F G : Functor 𝒞 𝒟}
 
 /-- If F is an embedding and α : NatIso F G, then G is an embedding (§1.32 conjugation). -/
-theorem embedding_of_natIso (α : NatIso F G) (emb : Embedding F) : Embedding G := by
+public theorem embedding_of_natIso (α : NatIso F G) (emb : Embedding F) : Embedding G := by
   intro A B f g hfg
   obtain ⟨αB_inv, hαB1, _⟩ := α.isIso B
   have natF := α.nat.naturality f
@@ -166,7 +168,7 @@ theorem embedding_of_natIso (α : NatIso F G) (emb : Embedding F) : Embedding G 
   exact emb f g h3
 
 /-- If F is full and α : NatIso F G, then G is full (§1.32 conjugation). -/
-theorem full_of_natIso (α : NatIso F G) (full : Full F) : Full G := by
+public theorem full_of_natIso (α : NatIso F G) (full : Full F) : Full G := by
   intro A B h
   obtain ⟨αB_inv, hαB1, hαB2⟩ := α.isIso B
   obtain ⟨αA_inv, hαA1, hαA2⟩ := α.isIso A

@@ -8,9 +8,11 @@
   §1.815 CLOSURE OPERATION (poset case: idempotent, inflationary, order-preserving)
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_51_Order  -- §1.51 IsClosureOp (poset closure operations, §1.815)
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_51_Order  -- §1.51 IsClosureOp (poset closure operations, §1.815)
 
 
 universe v u u₁ u₂
@@ -27,7 +29,7 @@ variable {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Cat.{v} 𝒟]
 
 /-- An adjoint pair F ⊣ G: a bijection (F A ⟶ B) ≃ (A ⟶ G B)
     natural in A (contravariant) and B (covariant) (§1.81). -/
-structure Adjunction (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
+public structure Adjunction (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
   φ {A B} (f : F.obj A ⟶ B) : (A ⟶ G.obj B)
   ψ {A B} (f : A ⟶ G.obj B) : (F.obj A ⟶ B)
   φψ {A B} (f : A ⟶ G.obj B) : φ (ψ f) = f
@@ -38,17 +40,17 @@ structure Adjunction (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
 infix:25 " ⊣ " => Adjunction
 
 /-- F is a LEFT-ADJOINT of G. -/
-class LeftAdjoint (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
+public class LeftAdjoint (F : Functor 𝒞 𝒟) (G : Functor 𝒟 𝒞) where
   adj : F ⊣ G
 
 /-- G is a RIGHT-ADJOINT of F. -/
-class RightAdjoint (G : Functor 𝒟 𝒞) (F : Functor 𝒞 𝒟) where
+public class RightAdjoint (G : Functor 𝒟 𝒞) (F : Functor 𝒞 𝒟) where
   adj : F ⊣ G
 
 section AdjunctionProperties
 variable {F : Functor 𝒞 𝒟} {G : Functor 𝒟 𝒞} (adj : F ⊣ G)
 
-theorem φ_inj {A B} {f₁ f₂ : F.obj A ⟶ B} (h : adj.φ f₁ = adj.φ f₂) : f₁ = f₂ := by
+public theorem φ_inj {A B} {f₁ f₂ : F.obj A ⟶ B} (h : adj.φ f₁ = adj.φ f₂) : f₁ = f₂ := by
   calc
     f₁ = adj.ψ (adj.φ f₁) := by rw [adj.ψφ]
     _ = adj.ψ (adj.φ f₂) := by rw [h]
@@ -56,12 +58,12 @@ theorem φ_inj {A B} {f₁ f₂ : F.obj A ⟶ B} (h : adj.φ f₁ = adj.φ f₂)
 
 /-! ### Derived naturality for ψ (= φ⁻¹) -/
 
-theorem ψ_nat_left {A' A B} (a : A' ⟶ A) (g : A ⟶ G.obj B) :
+public theorem ψ_nat_left {A' A B} (a : A' ⟶ A) (g : A ⟶ G.obj B) :
     adj.ψ (a ≫ g) = F.map a ≫ adj.ψ g :=
   φ_inj adj <| by
     rw [adj.φ_nat_left, adj.φψ, adj.φψ]
 
-theorem ψ_nat_right {A B B'} (g : A ⟶ G.obj B) (b : B ⟶ B') :
+public theorem ψ_nat_right {A B B'} (g : A ⟶ G.obj B) (b : B ⟶ B') :
     adj.ψ (g ≫ G.map b) = adj.ψ g ≫ b :=
   φ_inj adj <| by
     rw [adj.φ_nat_right, adj.φψ, adj.φψ]
@@ -69,13 +71,13 @@ theorem ψ_nat_right {A B B'} (g : A ⟶ G.obj B) (b : B ⟶ B') :
 /-! ### Unit and counit -/
 
 /-- The UNIT η_A : A → G(F A) is the adjoint of id_{F A} (§1.81). -/
-def unit (A : 𝒞) : A ⟶ G.obj (F.obj A) := adj.φ (Cat.id (F.obj A))
+@[expose] public def unit (A : 𝒞) : A ⟶ G.obj (F.obj A) := adj.φ (Cat.id (F.obj A))
 
 /-- The COUNIT ε_B : F(G B) → B is the adjoint of id_{G B} (§1.81). -/
-def counit (B : 𝒟) : F.obj (G.obj B) ⟶ B := adj.ψ (Cat.id (G.obj B))
+@[expose] public def counit (B : 𝒟) : F.obj (G.obj B) ⟶ B := adj.ψ (Cat.id (G.obj B))
 
 /-- Unit naturality: f ≫ η_B = η_A ≫ G(F f). -/
-theorem unit_naturality {A B : 𝒞} (f : A ⟶ B) :
+public theorem unit_naturality {A B : 𝒞} (f : A ⟶ B) :
     f ≫ unit adj B = unit adj A ≫ G.map (F.map f) := by
   dsimp [unit]
   calc
@@ -98,7 +100,7 @@ theorem counit_naturality {A B : 𝒟} (f : A ⟶ B) :
     _ = adj.ψ (Cat.id (G.obj A)) ≫ f := by rw [ψ_nat_right adj (Cat.id (G.obj A)) f]
 
 /-- Triangle identity I: F(η_A) ≫ ε_{F A} = id_{F A}. -/
-theorem triangle_one (A : 𝒞) : F.map (unit adj A) ≫ counit adj (F.obj A) = Cat.id (F.obj A) := by
+public theorem triangle_one (A : 𝒞) : F.map (unit adj A) ≫ counit adj (F.obj A) = Cat.id (F.obj A) := by
   dsimp [unit, counit]
   calc
     F.map (adj.φ (Cat.id (F.obj A))) ≫ adj.ψ (Cat.id (G.obj (F.obj A))) =
@@ -108,7 +110,7 @@ theorem triangle_one (A : 𝒞) : F.map (unit adj A) ≫ counit adj (F.obj A) = 
     _ = Cat.id (F.obj A) := by rw [adj.ψφ]
 
 /-- Triangle identity II: η_{G B} ≫ G(ε_B) = id_{G B}. -/
-theorem triangle_two (B : 𝒟) : unit adj (G.obj B) ≫ G.map (counit adj B) = Cat.id (G.obj B) := by
+public theorem triangle_two (B : 𝒟) : unit adj (G.obj B) ≫ G.map (counit adj B) = Cat.id (G.obj B) := by
   dsimp [unit, counit]
   calc
     adj.φ (Cat.id (F.obj (G.obj B))) ≫ G.map (adj.ψ (Cat.id (G.obj B))) =
@@ -117,14 +119,14 @@ theorem triangle_two (B : 𝒟) : unit adj (G.obj B) ≫ G.map (counit adj B) = 
     _ = Cat.id (G.obj B) := by rw [adj.φψ]
 
 /-- φ(h) = η_A ≫ G(h) — reconstruct φ from the unit. -/
-theorem φ_eq (h : F.obj A ⟶ B) : adj.φ h = unit adj A ≫ G.map h := by
+public theorem φ_eq (h : F.obj A ⟶ B) : adj.φ h = unit adj A ≫ G.map h := by
   dsimp [unit]
   calc
     adj.φ h = adj.φ (Cat.id (F.obj A) ≫ h) := by rw [Cat.id_comp]
     _ = adj.φ (Cat.id (F.obj A)) ≫ G.map h := by rw [adj.φ_nat_right]
 
 /-- ψ(g) = F(g) ≫ ε_B — reconstruct ψ from the counit. -/
-theorem ψ_eq (g : A ⟶ G.obj B) : adj.ψ g = F.map g ≫ counit adj B := by
+public theorem ψ_eq (g : A ⟶ G.obj B) : adj.ψ g = F.map g ≫ counit adj B := by
   dsimp [counit]
   calc
     adj.ψ g = adj.ψ (g ≫ Cat.id (G.obj B)) := by rw [Cat.comp_id]
@@ -136,12 +138,12 @@ end AdjunctionProperties
 
 /-- A subcategory via inclusion I : 𝒜' → 𝒞 is REFLECTIVE
     if I has a left adjoint (§1.813). The left adjoint is the REFLECTION. -/
-class ReflectiveSubcategory {𝒜' : Type u₁} [Cat.{v} 𝒜'] (I : Functor 𝒜' 𝒞) where
+public class ReflectiveSubcategory {𝒜' : Type u₁} [Cat.{v} 𝒜'] (I : Functor 𝒜' 𝒞) where
   reflection : Functor 𝒞 𝒜'
   adj : LeftAdjoint reflection I
 
 /-- §1.816: A subcategory is COREFLECTIVE if the inclusion has a right adjoint. -/
-class CoreflectiveSubcategory {𝒜' : Type u₁} [Cat.{v} 𝒜'] (I : Functor 𝒜' 𝒞) where
+public class CoreflectiveSubcategory {𝒜' : Type u₁} [Cat.{v} 𝒜'] (I : Functor 𝒜' 𝒞) where
   coreflection : Functor 𝒞 𝒜'
   adj : RightAdjoint coreflection I
 
@@ -170,7 +172,7 @@ structure ClosureOperation (𝒞 : Type u) [Cat.{v} 𝒞] where
 
 /-- Minimal partial-order typeclass used for the poset case of §1.815.
     (The repo avoids mathlib; this bundles LE with the three order axioms.) -/
-class PosetOrder (P : Type u) extends LE P where
+public class PosetOrder (P : Type u) extends LE P where
   le_refl  : ∀ (x : P), x ≤ x
   le_trans : ∀ {x y z : P}, x ≤ y → y ≤ z → x ≤ z
   le_antisymm : ∀ {x y : P}, x ≤ y → y ≤ x → x = y
@@ -182,7 +184,7 @@ class PosetOrder (P : Type u) extends LE P where
       (i)  x ≤ y  →  op x ≤ op y      (`isClosureOp.monotone`)
       (ii) x ≤ op x                   (`isClosureOp.inflationary`)
       (iii) op (op x) ≤ op x          (`isClosureOp.idempotent`; equivalently `op (op x) = op x`) -/
-structure ClosureOpPoset (P : Type u) [PosetOrder P] where
+public structure ClosureOpPoset (P : Type u) [PosetOrder P] where
   /-- The closure operation -/
   op : P → P
   /-- `op` is a closure operation for the poset order `≤` (§1.815). -/
@@ -219,7 +221,7 @@ theorem ClosureOpPoset.reflection_universal {P : Type u} [po : PosetOrder P]
 
 /-- (A, G(-)) is REPRESENTABLE BY an object R ∈ 𝒟: a bijection
     (A ⟶ G B) ≃ (R ⟶ B), natural in B (§1.817). -/
-structure RepresentedBy {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Cat.{v} 𝒟]
+public structure RepresentedBy {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Cat.{v} 𝒟]
     (G : Functor 𝒟 𝒞) (A : 𝒞) (R : 𝒟) where
   φ {B : 𝒟} : (A ⟶ G.obj B) → (R ⟶ B)
   ψ {B : 𝒟} : (R ⟶ B) → (A ⟶ G.obj B)
@@ -231,7 +233,7 @@ structure RepresentedBy {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Ca
     φ (g ≫ G.map b) = φ g ≫ b
 
 /-- §1.817 (→): if F ⊣ G then (A, G(-)) is represented by F A. -/
-def repr_of_adj {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Cat.{v} 𝒟]
+@[expose] public def repr_of_adj {𝒞 : Type u₁} [Cat.{v} 𝒞] {𝒟 : Type u₂} [Cat.{v} 𝒟]
     {F : Functor 𝒞 𝒟} {G : Functor 𝒟 𝒞}
     (adj : F ⊣ G) (A : 𝒞) : RepresentedBy G A (F.obj A) where
   φ g  := adj.ψ g

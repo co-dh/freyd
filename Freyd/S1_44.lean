@@ -9,14 +9,16 @@
          and equalizers.  Σ is faithful.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_26
-import Freyd.S1_42
-import Freyd.S1_45
-import Freyd.S1_27
-import Freyd.S1_444_Horn
-import Freyd.S1_422_FunctorCategory
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_26
+public import Freyd.S1_42
+public import Freyd.S1_45
+public import Freyd.S1_27
+public import Freyd.S1_444_Horn
+public import Freyd.S1_422_FunctorCategory
 
 
 universe v u
@@ -29,15 +31,15 @@ namespace Freyd
 
 /-- The forgetful functor Σ : A/B → A (§1.44).  Sends ⟨X, h:X→B⟩ to X,
     and a slice morphism to its underlying arrow (`.f`). -/
-def SliceForget (B : 𝒞) : Over B → 𝒞 := λ X => X.dom
+@[expose] public def SliceForget (B : 𝒞) : Over B → 𝒞 := λ X => X.dom
 
 /-! ### Distinguished terminator in A/B -/
 
 /-- **§1.44**: The identity `id_B : B → B` is the distinguished terminator in A/B.
     For any Over object X = ⟨X, h:X→B⟩, the unique map to ⟨B, id_B⟩ is h itself. -/
-def overTerm (B : 𝒞) : Over B := ⟨B, Cat.id B⟩
+@[expose] public def overTerm (B : 𝒞) : Over B := ⟨B, Cat.id B⟩
 
-instance overHasTerminal (B : 𝒞) : HasTerminal (Over B) where
+@[expose] public instance overHasTerminal (B : 𝒞) : HasTerminal (Over B) where
   one := overTerm B
   trm X := ⟨X.hom, by simpa [overTerm] using (Cat.comp_id X.hom)⟩
   uniq {X} f g := OverHom.ext (by
@@ -58,52 +60,52 @@ section overPullback
 variable {B : 𝒞} {X Y Z : Over B} (m : OverHom X Z) (n : OverHom Y Z)
 
 /-- The underlying pullback in A of `m.f` and `n.f`. -/
-private def _pb : HasPullback m.f n.f := hpull.has m.f n.f
+@[expose] public def _overPB : HasPullback m.f n.f := hpull.has m.f n.f
 
-private theorem _pb_hom_eq :
-    (_pb m n).cone.π₂ ≫ Y.hom = (_pb m n).cone.π₁ ≫ X.hom := by
+public theorem _overPB_hom_eq :
+    (_overPB m n).cone.π₂ ≫ Y.hom = (_overPB m n).cone.π₁ ≫ X.hom := by
   calc
-    (_pb m n).cone.π₂ ≫ Y.hom   = (_pb m n).cone.π₂ ≫ (n.f ≫ Z.hom) := by rw [← n.w]
-    _ = ((_pb m n).cone.π₂ ≫ n.f) ≫ Z.hom := by rw [Cat.assoc]
-    _ = ((_pb m n).cone.π₁ ≫ m.f) ≫ Z.hom := by rw [(_pb m n).cone.w]
-    _ = (_pb m n).cone.π₁ ≫ (m.f ≫ Z.hom) := by rw [← Cat.assoc]
-    _ = (_pb m n).cone.π₁ ≫ X.hom         := by rw [m.w]
+    (_overPB m n).cone.π₂ ≫ Y.hom   = (_overPB m n).cone.π₂ ≫ (n.f ≫ Z.hom) := by rw [← n.w]
+    _ = ((_overPB m n).cone.π₂ ≫ n.f) ≫ Z.hom := by rw [Cat.assoc]
+    _ = ((_overPB m n).cone.π₁ ≫ m.f) ≫ Z.hom := by rw [(_overPB m n).cone.w]
+    _ = (_overPB m n).cone.π₁ ≫ (m.f ≫ Z.hom) := by rw [← Cat.assoc]
+    _ = (_overPB m n).cone.π₁ ≫ X.hom         := by rw [m.w]
 
 /-- **§1.441**: The pullback object in A/B.  The point is the pullback point in A,
     with structure map `π₁ ≫ X.hom` (= `π₂ ≫ Y.hom`). -/
-def overPullbackPt : Over B :=
-  ⟨(_pb m n).cone.pt, (_pb m n).cone.π₁ ≫ X.hom⟩
+@[expose] public def overPullbackPt : Over B :=
+  ⟨(_overPB m n).cone.pt, (_overPB m n).cone.π₁ ≫ X.hom⟩
 
 /-- First projection of the overPullback. -/
-def overPullbackπ₁ : OverHom (overPullbackPt m n) X :=
-  ⟨(_pb m n).cone.π₁, rfl⟩
+@[expose] public def overPullbackπ₁ : OverHom (overPullbackPt m n) X :=
+  ⟨(_overPB m n).cone.π₁, rfl⟩
 
 /-- Second projection of the overPullback. -/
-def overPullbackπ₂ : OverHom (overPullbackPt m n) Y :=
-  ⟨(_pb m n).cone.π₂, _pb_hom_eq m n⟩
+@[expose] public def overPullbackπ₂ : OverHom (overPullbackPt m n) Y :=
+  ⟨(_overPB m n).cone.π₂, _overPB_hom_eq m n⟩
 
 /-- The pullback square commutes in A/B. -/
-theorem overPullback_sq : overPullbackπ₁ m n ⊚ m = overPullbackπ₂ m n ⊚ n :=
-  OverHom.ext ((_pb m n).cone.w)
+public theorem overPullback_sq : overPullbackπ₁ m n ⊚ m = overPullbackπ₂ m n ⊚ n :=
+  OverHom.ext ((_overPB m n).cone.w)
 
 /-- The universal lift for the overPullback.  Given a cone in A/B, the lift
     in A also respects the Over structure. -/
-def overPullbackLift {W : Over B} (a : OverHom W X) (b : OverHom W Y) (h : a ⊚ m = b ⊚ n) :
+@[expose] public def overPullbackLift {W : Over B} (a : OverHom W X) (b : OverHom W Y) (h : a ⊚ m = b ⊚ n) :
     OverHom W (overPullbackPt m n) :=
   let h_base := congrArg OverHom.f h
   let c : Cone m.f n.f := ⟨W.dom, a.f, b.f, h_base⟩
-  let u := (_pb m n).lift c
+  let u := (_overPB m n).lift c
   ⟨u, by
     dsimp [overPullbackPt, u]
-    calc u ≫ ((_pb m n).cone.π₁ ≫ X.hom) = (u ≫ (_pb m n).cone.π₁) ≫ X.hom := by rw [Cat.assoc]
-      _ = a.f ≫ X.hom := by rw [(_pb m n).lift_fst c]
+    calc u ≫ ((_overPB m n).cone.π₁ ≫ X.hom) = (u ≫ (_overPB m n).cone.π₁) ≫ X.hom := by rw [Cat.assoc]
+      _ = a.f ≫ X.hom := by rw [(_overPB m n).lift_fst c]
       _ = W.hom      := a.w⟩
 
-theorem overPullbackLift_uniq {W : Over B} (a : OverHom W X) (b : OverHom W Y) (h : a ⊚ m = b ⊚ n)
+public theorem overPullbackLift_uniq {W : Over B} (a : OverHom W X) (b : OverHom W Y) (h : a ⊚ m = b ⊚ n)
     (u : OverHom W (overPullbackPt m n))
     (hu₁ : u ⊚ overPullbackπ₁ m n = a) (hu₂ : u ⊚ overPullbackπ₂ m n = b) :
     u = overPullbackLift m n a b h :=
-  OverHom.ext ((_pb m n).lift_uniq ⟨W.dom, a.f, b.f, congrArg OverHom.f h⟩ u.f
+  OverHom.ext ((_overPB m n).lift_uniq ⟨W.dom, a.f, b.f, congrArg OverHom.f h⟩ u.f
     (congrArg OverHom.f hu₁) (congrArg OverHom.f hu₂))
 
 end overPullback
@@ -113,15 +115,15 @@ end overPullback
 /-- **§1.441**: Σ preserves pullbacks.  Applying Σ to the pullback in A/B
     recovers the pullback in A. -/
 theorem sigma_preserves_pullback_pt {B : 𝒞} {X Y Z : Over B} (m : OverHom X Z) (n : OverHom Y Z) :
-    SliceForget B (overPullbackPt m n) = (_pb m n).cone.pt := rfl
+    SliceForget B (overPullbackPt m n) = (_overPB m n).cone.pt := rfl
 
 /-- **§1.441**: Σ preserves pullbacks — first projection. -/
 theorem sigma_preserves_pullback_π₁ {B : 𝒞} {X Y Z : Over B} (m : OverHom X Z) (n : OverHom Y Z) :
-    (overPullbackπ₁ m n).f = (_pb m n).cone.π₁ := rfl
+    (overPullbackπ₁ m n).f = (_overPB m n).cone.π₁ := rfl
 
 /-- **§1.441**: Σ preserves pullbacks — second projection. -/
 theorem sigma_preserves_pullback_π₂ {B : 𝒞} {X Y Z : Over B} (m : OverHom X Z) (n : OverHom Y Z) :
-    (overPullbackπ₂ m n).f = (_pb m n).cone.π₂ := rfl
+    (overPullbackπ₂ m n).f = (_overPB m n).cone.π₂ := rfl
 
 /-! ## Σ is faithful (§1.442) -/
 
@@ -286,13 +288,13 @@ variable {𝒞 : Type (w+1)} [inst : Cat.{w} 𝒞]
     `Y ⟶ X`) sends `h : X ⟶ B` to `f ≫ h : Y ⟶ B`.  Stated with explicit `@`-comp
     in `𝒞` because `OppCat 𝒞` and `𝒞` are the *same* type, so the `≫` notation cannot
     pick the intended instance on its own. -/
-def preComp (B : 𝒞) {X Y : OppCat 𝒞} (f : X ⟶ Y) (h : @Cat.Hom 𝒞 inst X B) :
+@[expose] public def preComp (B : 𝒞) {X Y : OppCat 𝒞} (f : X ⟶ Y) (h : @Cat.Hom 𝒞 inst X B) :
     @Cat.Hom 𝒞 inst Y B :=
   @Cat.comp 𝒞 inst Y X B f h
 
 /-- §1.464: The presheaf `H_B : (OppCat 𝒞) → Type w`, `X ↦ (X ⟶ B)`.
     The contravariant hom-functor `(-, B)`: morphisms act by precomposition. -/
-def yonedaObj (B : 𝒞) : Functor (OppCat 𝒞) (Type w) where
+@[expose] public def yonedaObj (B : 𝒞) : Functor (OppCat 𝒞) (Type w) where
   obj X := @Cat.Hom 𝒞 inst X B
   map := fun {X Y} f => preComp B f
   map_id := fun X => by funext h; exact @Cat.id_comp 𝒞 inst X B h
@@ -338,7 +340,7 @@ theorem yoneda_reflects_mono {B C : 𝒞} (m : B ⟶ C)
 /-- §1.464: `H` PRESERVES TERMINATORS.  When `𝒞` has a terminator `1`, the presheaf
     `H_1 = (-, 1)` is terminal in `𝒮^(A°)`: every hom-set `X ⟶ 1` is a singleton, so
     there is a unique NT into `H_1` (`app X := fun _ => term X`) and any two agree. -/
-instance yoneda_preserves_term [hT : HasTerminal 𝒞] :
+@[expose] public instance yoneda_preserves_term [hT : HasTerminal 𝒞] :
     HasTerminal (Functor (OppCat 𝒞) (Type w)) where
   one := yonedaObj one
   trm _ :=
@@ -450,7 +452,7 @@ end Yoneda464
   single-universe `Preserves`/`Reflects`. -/
 
 /-- Σ : A/B → A is a functor; its action on arrows is the underlying arrow `.f`. -/
-def sliceForgetFunctor (B : 𝒞) : Functor (Over B) 𝒞 where
+@[expose] public def sliceForgetFunctor (B : 𝒞) : Functor (Over B) 𝒞 where
   obj := SliceForget B
   map f := f.f
   map_id _ := rfl
@@ -458,7 +460,7 @@ def sliceForgetFunctor (B : 𝒞) : Functor (Over B) 𝒞 where
 
 /-- **§1.531**: Σ preserves monos.  If `m` is mono in A/B then `m.f` (= Σ m) is mono in A.
     This is the non-trivial direction of the Slice Lemma. -/
-theorem sigma_preserves_mono {B : 𝒞} {Z Y : Over B} (m : OverHom Z Y)
+public theorem sigma_preserves_mono {B : 𝒞} {Z Y : Over B} (m : OverHom Z Y)
     (hm : OverMono m) : Monic m.f := by
   intro D p q hpq
   have wq : q ≫ Z.hom = p ≫ Z.hom := by
@@ -471,7 +473,7 @@ theorem sigma_preserves_mono {B : 𝒞} {Z Y : Over B} (m : OverHom Z Y)
 
 /-- **§1.531**: Σ reflects monos.  If `m.f` is mono in A then `m` is mono in A/B.
     This direction follows from the definition. -/
-theorem sigma_reflects_mono {B : 𝒞} {Z Y : Over B} (m : OverHom Z Y)
+public theorem sigma_reflects_mono {B : 𝒞} {Z Y : Over B} (m : OverHom Z Y)
     (hmMono : Monic m.f) : OverMono m := by
   intro W g h h_eq
   apply OverHom.ext

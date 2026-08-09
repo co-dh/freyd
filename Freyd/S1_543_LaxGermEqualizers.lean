@@ -25,7 +25,9 @@
   the lax `pushHom`/coherence-iso bookkeeping is already discharged inside `stageInclL_equalizer_up`,
   the lax counterpart of the strict `castHom`/object-equality assembly.  Mathlib-free.
 -/
-import Freyd.S1_543_RatCapHcanon
+module
+
+public import Freyd.S1_543_RatCapHcanon
 
 open Freyd
 open Freyd.Colim

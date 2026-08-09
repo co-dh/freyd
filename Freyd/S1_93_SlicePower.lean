@@ -34,11 +34,13 @@
   idempotent-split (equalizers); NO new axioms, NO Chapter-2 allegory axioms.
 -/
 
-import Freyd.S1_90
-import Freyd.S1_44
-import Freyd.S1_92
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_93_SliceTopos
+module
+
+public import Freyd.S1_90
+public import Freyd.S1_44
+public import Freyd.S1_92
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_93_SliceTopos
 
 universe v u
 
@@ -51,7 +53,7 @@ open HasSubobjectClassifier
 /-- **Generic `RelHom` transitivity** over ANY category `𝒟` (no `Topos`/products
     needed).  Used for `Over B` relations while building `Topos (Over B)` (the library
     `RelHom_trans` bakes in `[Topos 𝒞]`, which would be circular here). -/
-theorem relHom_trans_gen {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟} {R S T : BinRel 𝒟 X Y}
+public theorem relHom_trans_gen {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟} {R S T : BinRel 𝒟 X Y}
     (h₁ : RelHom R S) (h₂ : RelHom S T) : RelHom R T := by
   obtain ⟨a, haA, haB⟩ := h₁
   obtain ⟨b, hbA, hbB⟩ := h₂
@@ -83,7 +85,7 @@ theorem sigma_preserves_monicPair {B : 𝒞} {T X Y : Over B}
   exact congrArg OverHom.f (h pO qO hAO hBO)
 
 /-- **Σ-transport of a slice relation** to a base relation on the underlying objects. -/
-def sigmaRel {B : 𝒞} {Z C : Over B} (R : BinRel (Over B) Z C) :
+@[expose] public def sigmaRel {B : 𝒞} {Z C : Over B} (R : BinRel (Over B) Z C) :
     BinRel 𝒞 Z.dom C.dom :=
   R.forgetSlice
 
@@ -100,36 +102,36 @@ def sigmaRel {B : 𝒞} {Z C : Over B} (R : BinRel (Over B) Z C) :
 variable [Topos 𝒞]
 
 /-- The base power object of the underlying object of `C : Over B`. -/
-noncomputable def slicePowBase (B : 𝒞) (C : Over B) : 𝒞 :=
+@[expose] public noncomputable def slicePowBase (B : 𝒞) (C : Over B) : 𝒞 :=
   HasPowerObject.powerObj (C := C.dom)
 
 /-- The slice power object `Δ([Σ C]) = ⟨[Σ C] × B, snd⟩ : Over B`. -/
-noncomputable def slicePowObj (B : 𝒞) (C : Over B) : Over B :=
+@[expose] public noncomputable def slicePowObj (B : 𝒞) (C : Over B) : Over B :=
   ⟨prod (slicePowBase B C) B, snd⟩
 
 /-- The base membership relation of `[Σ C]`. -/
-noncomputable def baseMem (B : 𝒞) (C : Over B) : BinRel 𝒞 (slicePowBase B C) C.dom :=
+@[expose] public noncomputable def baseMem (B : 𝒞) (C : Over B) : BinRel 𝒞 (slicePowBase B C) C.dom :=
   HasPowerObject.mem (C := C.dom)
 
 /-- The source slice object of the slice membership relation: the base `mem`-source,
     equipped with structure map `mem.colB ≫ C.hom : mem.src → B`. -/
-noncomputable def sliceMemSrc (B : 𝒞) (C : Over B) : Over B :=
+@[expose] public noncomputable def sliceMemSrc (B : 𝒞) (C : Over B) : Over B :=
   ⟨(baseMem B C).src, (baseMem B C).colB ≫ C.hom⟩
 
 /-- `Δ[Σ C]`-column of the slice membership relation. -/
-noncomputable def sliceMemColA (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def sliceMemColA (B : 𝒞) (C : Over B) :
     OverHom (sliceMemSrc B C) (slicePowObj B C) :=
   ⟨pair (baseMem B C).colA ((baseMem B C).colB ≫ C.hom), by
     show pair (baseMem B C).colA ((baseMem B C).colB ≫ C.hom) ≫ snd = (baseMem B C).colB ≫ C.hom
     rw [snd_pair]⟩
 
 /-- `C`-column of the slice membership relation. -/
-noncomputable def sliceMemColB (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def sliceMemColB (B : 𝒞) (C : Over B) :
     OverHom (sliceMemSrc B C) C :=
   ⟨(baseMem B C).colB, rfl⟩
 
 /-- The slice membership relation `∈_C^{Over B} : BinRel (Over B) (Δ[Σ C]) C`. -/
-noncomputable def sliceMem (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def sliceMem (B : 𝒞) (C : Over B) :
     BinRel (Over B) (slicePowObj B C) C where
   src := sliceMemSrc B C
   colA := sliceMemColA B C
@@ -171,13 +173,13 @@ noncomputable def deSigmaClassify {B : 𝒞} {A C : Over B}
     relation `U` along `f` gives the base pullback of `Σ U` along `Σ f = f.f`.
     Both sides are the same base relation on the nose (Σ preserves the chosen
     pullback, `sigma_preserves_pullback_*`). -/
-theorem sigmaRel_relPullback {B : 𝒞} {P C A : Over B}
+public theorem sigmaRel_relPullback {B : 𝒞} {P C A : Over B}
     (f : A ⟶ P) (U : BinRel (Over B) P C) :
     sigmaRel (relPullback f U) = relPullback f.f (sigmaRel U) := rfl
 
 /-- **Σ on RelHoms (covariant).**  A slice `RelHom R S` yields a base
     `RelHom (sigmaRel R) (sigmaRel S)` by taking the witness's underlying arrow. -/
-theorem sigmaRel_relHom {B : 𝒞} {Z C : Over B} {R S : BinRel (Over B) Z C}
+public theorem sigmaRel_relHom {B : 𝒞} {Z C : Over B} {R S : BinRel (Over B) Z C}
     (h : RelHom R S) : RelHom (sigmaRel R) (sigmaRel S) := by
   obtain ⟨k, hA, hB⟩ := h
   exact ⟨k.f, congrArg OverHom.f hA, congrArg OverHom.f hB⟩
@@ -197,7 +199,7 @@ theorem sigmaRel_sliceMem_colB (B : 𝒞) (C : Over B) :
     the looser base-membership constraint (`fst` of the `pair`-cospan).  Hence any
     base `RelHom S (sigmaRel (relPullback f (sliceMem)))` composes into a base
     `RelHom S (relPullback (f.f ≫ fst) (baseMem))`. -/
-theorem relHom_baseMem_of_sigmaRel_sliceMem {B : 𝒞} {A C : Over B}
+public theorem relHom_baseMem_of_sigmaRel_sliceMem {B : 𝒞} {A C : Over B}
     (f : OverHom A (slicePowObj B C)) :
     RelHom (sigmaRel (relPullback f (sliceMem B C)))
       (relPullback (f.f ≫ fst) (baseMem B C)) := by
@@ -232,7 +234,7 @@ theorem relHom_baseMem_of_sigmaRel_sliceMem {B : 𝒞} {A C : Over B}
     (`R.colA.w`, `R.colB.w` both equal `R.src.hom`).  This is what makes
     `relPullback g (baseMem)` and the Σ-image of the slice pullback agree on the
     image of `R`, i.e. supplies the §1.93 second isomorphism on the relevant subobject. -/
-theorem sigmaRel_struct {B : 𝒞} {A C : Over B} (R : BinRel (Over B) A C) :
+public theorem sigmaRel_struct {B : 𝒞} {A C : Over B} (R : BinRel (Over B) A C) :
     R.colA.f ≫ A.hom = R.colB.f ≫ C.hom := by
   rw [R.colA.w, R.colB.w]
 
@@ -241,7 +243,7 @@ theorem sigmaRel_struct {B : 𝒞} {A C : Over B} (R : BinRel (Over B) A C) :
     slice `RelHom S R`: its witness `w` is automatically a slice over-hom because
     `w ≫ R.src.hom = w ≫ R.colA.f ≫ A.hom = S.colA.f ≫ A.hom = S.src.hom`
     (over-hom laws `R.colA.w`, `S.colA.w`). -/
-theorem sliceRelHom_of_sigmaRel {B : 𝒞} {A C : Over B} {S R : BinRel (Over B) A C}
+public theorem sliceRelHom_of_sigmaRel {B : 𝒞} {A C : Over B} {S R : BinRel (Over B) A C}
     (j : RelHom (sigmaRel S) (sigmaRel R)) : RelHom S R := by
   obtain ⟨w, hA, hB⟩ := j
   have hA' : w ≫ R.colA.f = S.colA.f := hA
@@ -250,13 +252,13 @@ theorem sliceRelHom_of_sigmaRel {B : 𝒞} {A C : Over B} {S R : BinRel (Over B)
   exact ⟨⟨w, hw⟩, OverHom.ext hA, OverHom.ext hB⟩
 
 /-- The slice classifier built from a base map `g : A.dom ⟶ [Σ C]`. -/
-noncomputable def sliceClassifyOf {B : 𝒞} (A C : Over B) (g : A.dom ⟶ slicePowBase B C) :
+@[expose] public noncomputable def sliceClassifyOf {B : 𝒞} (A C : Over B) (g : A.dom ⟶ slicePowBase B C) :
     OverHom A (slicePowObj B C) :=
   ⟨pair g A.hom, by
     show pair g A.hom ≫ snd = A.hom
     rw [snd_pair]⟩
 
-@[simp] theorem sliceClassifyOf_fst {B : 𝒞} (A C : Over B) (g : A.dom ⟶ slicePowBase B C) :
+@[simp] public theorem sliceClassifyOf_fst {B : 𝒞} (A C : Over B) (g : A.dom ⟶ slicePowBase B C) :
     (sliceClassifyOf A C g).f ≫ fst = g := by
   show pair g A.hom ≫ fst = g; rw [fst_pair]
 
@@ -272,7 +274,7 @@ noncomputable def sliceClassifyOf {B : 𝒞} (A C : Over B) (g : A.dom ⟶ slice
   source's underlying object is the base pullback of `pair g A.hom` and
   `pair mem.colA (mem.colB ≫ C.hom)`; the cone legs are `R.colA.f` and `j ≫ π₂`, whose
   B-leg agreement is `sigmaRel_struct R`. -/
-theorem sliceRelHom_of_baseRelHom {B : 𝒞} {A C : Over B}
+public theorem sliceRelHom_of_baseRelHom {B : 𝒞} {A C : Over B}
     (R : BinRel (Over B) A C) (g : A.dom ⟶ slicePowBase B C)
     (j : RelHom (sigmaRel R) (relPullback g (baseMem B C))) :
     RelHom R (relPullback (sliceClassifyOf A C g) (sliceMem B C)) := by
@@ -338,7 +340,7 @@ theorem sliceRelHom_of_baseRelHom {B : 𝒞} {A C : Over B}
     `g : A.dom ⟶ [ΣC]` whose membership-pullback `relPullback g (baseMem)`
     re-presents `sigmaRel R`, the slice classifier `sliceClassifyOf A C g`
     presents `R` against the weak slice membership `sliceMem`. -/
-theorem sliceMem_classify_of {B : 𝒞} {A C : Over B} (R : BinRel (Over B) A C)
+public theorem sliceMem_classify_of {B : 𝒞} {A C : Over B} (R : BinRel (Over B) A C)
     (g : A.dom ⟶ slicePowBase B C)
     (hgf : RelHom (sigmaRel R) (relPullback g (baseMem B C)))
     (hgr : RelHom (relPullback g (baseMem B C)) (sigmaRel R)) :
@@ -356,14 +358,14 @@ variable {B : 𝒞}
 
 /-- The "membership" base relation `fst*(∈_{ΣC}) : ([ΣC]×B) → C.dom`:
     `((P,b),c)` with `(P,c) ∈ ∈_{ΣC}` (ignoring `b`). -/
-noncomputable def baseMemPB (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def baseMemPB (B : 𝒞) (C : Over B) :
     BinRel 𝒞 (prod (slicePowBase B C) B) C.dom :=
   relPullback (fst : prod (slicePowBase B C) B ⟶ slicePowBase B C) (baseMem B C)
 
 /-- The "same-fibre" base relation `R_fib : ([ΣC]×B) → C.dom`: `((P,b),c)` with
     `b = C.hom c`.  Tabulated by the pullback of `snd` and `C.hom`; its projection
     legs are jointly monic (pullback uniqueness). -/
-noncomputable def baseFib (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def baseFib (B : 𝒞) (C : Over B) :
     BinRel 𝒞 (prod (slicePowBase B C) B) C.dom where
   src  := (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).cone.pt
   colA := (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).cone.π₁
@@ -381,33 +383,33 @@ noncomputable def baseFib (B : 𝒞) (C : Over B) :
 
 /-- Base-level "restricted membership": `((P,b),c)` with `(P,c) ∈ ∈_{ΣC}` AND
     `b = C.hom c` (same B-fibre).  `= fst*(∈_{ΣC}) ⊓ R_fib`. -/
-noncomputable def baseRestrict (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def baseRestrict (B : 𝒞) (C : Over B) :
     BinRel 𝒞 (prod (slicePowBase B C) B) C.dom :=
   baseMemPB B C ⊓ baseFib B C
 
 /-- Base universality of `∈_{ΣC}`. -/
-noncomputable def hbase (B : 𝒞) (C : Over B) : IsUniversalRel (baseMem B C) :=
+@[expose] public noncomputable def hbase (B : 𝒞) (C : Over B) : IsUniversalRel (baseMem B C) :=
   HasPowerObject.is_universal (C := C.dom)
 
 /-- The fibre-restriction map `ρ : [ΣC]×B → [ΣC]`: classifies `baseRestrict`. -/
-noncomputable def baseRho (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def baseRho (B : 𝒞) (C : Over B) :
     prod (slicePowBase B C) B ⟶ slicePowBase B C :=
   univClassify (hbase B C) (baseRestrict B C)
 
 /-- The base idempotent `ē = pair ρ snd : [ΣC]×B → [ΣC]×B`. -/
-noncomputable def baseIdem (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def baseIdem (B : 𝒞) (C : Over B) :
     prod (slicePowBase B C) B ⟶ prod (slicePowBase B C) B :=
   pair (baseRho B C) snd
 
 /-- `baseRestrict ≅ relPullback ρ (baseMem)` (the defining universal property of ρ). -/
-theorem baseRestrict_iso_pullback (B : 𝒞) (C : Over B) :
+public theorem baseRestrict_iso_pullback (B : 𝒞) (C : Over B) :
     RelHom (baseRestrict B C) (relPullback (baseRho B C) (baseMem B C)) ∧
     RelHom (relPullback (baseRho B C) (baseMem B C)) (baseRestrict B C) :=
   univClassify_spec (hbase B C) (baseRestrict B C)
 
 /-- Universal property of `relPullback` over `⊓`: if `T` lands in both `f*R` and
     `f*S` then it lands in `f*(R ⊓ S)`. -/
-theorem le_relPullback_intersect {X A C : 𝒞} (f : X ⟶ A) {R S : BinRel 𝒞 A C}
+public theorem le_relPullback_intersect {X A C : 𝒞} (f : X ⟶ A) {R S : BinRel 𝒞 A C}
     {T : BinRel 𝒞 X C}
     (hR : RelHom T (relPullback f R)) (hS : RelHom T (relPullback f S)) :
     RelHom T (relPullback f (R ⊓ S)) := by
@@ -464,7 +466,7 @@ theorem le_relPullback_intersect {X A C : 𝒞} (f : X ⟶ A) {R S : BinRel 𝒞
 
 /-- `relPullback ē (fst*∈) ≅ baseRestrict` (both directions): pulling membership back
     along `ē = pair ρ snd` re-classifies it as `relPullback ρ ∈ ≅ baseRestrict`. -/
-theorem relPullback_idem_memPB (B : 𝒞) (C : Over B) :
+public theorem relPullback_idem_memPB (B : 𝒞) (C : Over B) :
     RelHom (relPullback (baseIdem B C) (baseMemPB B C)) (baseRestrict B C) ∧
     RelHom (baseRestrict B C) (relPullback (baseIdem B C) (baseMemPB B C)) := by
   -- relPullback ē (relPullback fst baseMem) ≅ relPullback (ē ≫ fst) baseMem.
@@ -476,30 +478,30 @@ theorem relPullback_idem_memPB (B : 𝒞) (C : Over B) :
   exact ⟨RelHom_trans hc1 hs2, RelHom_trans hs1 hc2⟩
 
 /-- The fibre square of `R_fib`: `colA ≫ snd = colB ≫ C.hom`. -/
-theorem baseFib_sq (B : 𝒞) (C : Over B) :
+public theorem baseFib_sq (B : 𝒞) (C : Over B) :
     (baseFib B C).colA ≫ snd = (baseFib B C).colB ≫ C.hom :=
   (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).cone.w
 
 /-- Lift any cone `(a : T → [ΣC]×B, b : T → C.dom)` with `a ≫ snd = b ≫ C.hom`
     into `R_fib.src`. -/
-noncomputable def baseFibLift {B : 𝒞} {C : Over B} {T : 𝒞}
+@[expose] public noncomputable def baseFibLift {B : 𝒞} {C : Over B} {T : 𝒞}
     (a : T ⟶ prod (slicePowBase B C) B) (b : T ⟶ C.dom) (h : a ≫ snd = b ≫ C.hom) :
     T ⟶ (baseFib B C).src :=
   (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).lift ⟨T, a, b, h⟩
 
-theorem baseFibLift_A {B : 𝒞} {C : Over B} {T : 𝒞}
+public theorem baseFibLift_A {B : 𝒞} {C : Over B} {T : 𝒞}
     (a : T ⟶ prod (slicePowBase B C) B) (b : T ⟶ C.dom) (h : a ≫ snd = b ≫ C.hom) :
     baseFibLift a b h ≫ (baseFib B C).colA = a :=
   (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).lift_fst _
 
-theorem baseFibLift_B {B : 𝒞} {C : Over B} {T : 𝒞}
+public theorem baseFibLift_B {B : 𝒞} {C : Over B} {T : 𝒞}
     (a : T ⟶ prod (slicePowBase B C) B) (b : T ⟶ C.dom) (h : a ≫ snd = b ≫ C.hom) :
     baseFibLift a b h ≫ (baseFib B C).colB = b :=
   (HasPullbacks.has (snd : prod (slicePowBase B C) B ⟶ B) C.hom).lift_snd _
 
 /-- `baseRestrict ⊂ relPullback ē (R_fib)`: the fibre constraint survives pullback
     along `ē` because `ē ≫ snd = snd` keeps the B-coordinate. -/
-theorem baseRestrict_le_idem_fib (B : 𝒞) (C : Over B) :
+public theorem baseRestrict_le_idem_fib (B : 𝒞) (C : Over B) :
     RelHom (baseRestrict B C) (relPullback (baseIdem B C) (baseFib B C)) := by
   -- baseRestrict ⊂ baseFib gives k with k≫colA = colA_R, k≫colB = colB_R.
   obtain ⟨⟨k, hkA, hkB⟩⟩ := intersect_le_right (baseMemPB B C) (baseFib B C)
@@ -527,7 +529,7 @@ theorem baseRestrict_le_idem_fib (B : 𝒞) (C : Over B) :
   rw [← Cat.assoc, P.lift_snd, hkfibB]
 
 /-- **§1.93 idempotence**: `relPullback ē (baseRestrict) ≅ baseRestrict`. -/
-theorem baseRestrict_idem_iso (B : 𝒞) (C : Over B) :
+public theorem baseRestrict_idem_iso (B : 𝒞) (C : Over B) :
     RelHom (relPullback (baseIdem B C) (baseRestrict B C)) (baseRestrict B C) ∧
     RelHom (baseRestrict B C) (relPullback (baseIdem B C) (baseRestrict B C)) := by
   constructor
@@ -542,7 +544,7 @@ theorem baseRestrict_idem_iso (B : 𝒞) (C : Over B) :
       (relPullback_idem_memPB B C).2 (baseRestrict_le_idem_fib B C)
 
 /-- The base idempotent is idempotent: `ē ≫ ē = ē` (equivalently `ē ≫ ρ = ρ`). -/
-theorem baseIdem_idem (B : 𝒞) (C : Over B) :
+public theorem baseIdem_idem (B : 𝒞) (C : Over B) :
     baseIdem B C ≫ baseIdem B C = baseIdem B C := by
   -- ē ≫ ē = pair (ē ≫ ρ) (ē ≫ snd) = pair (ē ≫ ρ) snd; need ē ≫ ρ = ρ.
   have hρ : baseIdem B C ≫ baseRho B C = baseRho B C := by
@@ -566,11 +568,11 @@ theorem baseIdem_idem (B : 𝒞) (C : Over B) :
 
 /-- The slice idempotent `e = ⟨ē, …⟩ : slicePowObj ⟶ slicePowObj` in `Over B`
     (`ē` preserves the structure map `snd`). -/
-noncomputable def sliceIdem (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable def sliceIdem (B : 𝒞) (C : Over B) :
     slicePowObj B C ⟶ slicePowObj B C :=
   ⟨baseIdem B C, by show baseIdem B C ≫ snd = snd; exact snd_pair _ _⟩
 
-theorem sliceIdem_idem (B : 𝒞) (C : Over B) :
+public theorem sliceIdem_idem (B : 𝒞) (C : Over B) :
     sliceIdem B C ≫ sliceIdem B C = sliceIdem B C :=
   OverHom.ext (baseIdem_idem B C)
 
@@ -578,33 +580,33 @@ theorem sliceIdem_idem (B : 𝒞) (C : Over B) :
 
 /-- The genuine slice power object `[C]`: the equalizer of `e` and `id` in `Over B`
     (the split image of the idempotent `e`). -/
-noncomputable def slicePowObj' (B : 𝒞) (C : Over B) : Over B :=
+@[expose] public noncomputable def slicePowObj' (B : 𝒞) (C : Over B) : Over B :=
   eqObj (sliceIdem B C) (Cat.id (slicePowObj B C))
 
 /-- The mono `ι : [C] ⟶ Δ[ΣC]` (the equalizer map / idempotent section). -/
-noncomputable def sliceIota (B : 𝒞) (C : Over B) : slicePowObj' B C ⟶ slicePowObj B C :=
+@[expose] public noncomputable def sliceIota (B : 𝒞) (C : Over B) : slicePowObj' B C ⟶ slicePowObj B C :=
   eqMap (sliceIdem B C) (Cat.id (slicePowObj B C))
 
 /-- `ι ≫ e = ι` (the equalizer equation, since `ι` equalizes `e` and `id`). -/
-theorem sliceIota_idem (B : 𝒞) (C : Over B) :
+public theorem sliceIota_idem (B : 𝒞) (C : Over B) :
     sliceIota B C ≫ sliceIdem B C = sliceIota B C := by
   have h : sliceIota B C ≫ sliceIdem B C = sliceIota B C ≫ Cat.id (slicePowObj B C) :=
     eqMap_eq (sliceIdem B C) (Cat.id (slicePowObj B C))
   rw [h, Cat.comp_id]
 
 /-- The retraction `r : Δ[ΣC] ⟶ [C]` (the idempotent factorization). -/
-noncomputable def sliceRetr (B : 𝒞) (C : Over B) : slicePowObj B C ⟶ slicePowObj' B C :=
+@[expose] public noncomputable def sliceRetr (B : 𝒞) (C : Over B) : slicePowObj B C ⟶ slicePowObj' B C :=
   eqLift (sliceIdem B C) (Cat.id (slicePowObj B C)) (sliceIdem B C)
     (by rw [Cat.comp_id]; exact sliceIdem_idem B C)
 
 /-- `r ≫ ι = e`. -/
-theorem sliceRetr_iota (B : 𝒞) (C : Over B) :
+public theorem sliceRetr_iota (B : 𝒞) (C : Over B) :
     sliceRetr B C ≫ sliceIota B C = sliceIdem B C :=
   eqLift_fac (sliceIdem B C) (Cat.id (slicePowObj B C)) (sliceIdem B C)
     (by rw [Cat.comp_id]; exact sliceIdem_idem B C)
 
 /-- `ι ≫ r = id_{[C]}` (the split: `ι` is a section of `r`). -/
-theorem sliceIota_retr (B : 𝒞) (C : Over B) :
+public theorem sliceIota_retr (B : 𝒞) (C : Over B) :
     sliceIota B C ≫ sliceRetr B C = Cat.id (slicePowObj' B C) := by
   -- both (ι≫r) and id satisfy `? ≫ ι = ι`, by equalizer uniqueness.
   have hy : sliceIota B C ≫ sliceIdem B C = sliceIota B C ≫ Cat.id (slicePowObj B C) :=
@@ -621,7 +623,7 @@ theorem sliceIota_retr (B : 𝒞) (C : Over B) :
   rw [h1, ← h2]
 
 /-- The genuine slice membership relation `∈_C^{[C]} = ι*(sliceMem) : BinRel [C] C`. -/
-noncomputable def sliceMem' (B : 𝒞) (C : Over B) : BinRel (Over B) (slicePowObj' B C) C :=
+@[expose] public noncomputable def sliceMem' (B : 𝒞) (C : Over B) : BinRel (Over B) (slicePowObj' B C) C :=
   relPullback (sliceIota B C) (sliceMem B C)
 
 /-! ## §1.93  e-fixedness of tight classifiers (the key to existence against `[C]`) -/
@@ -629,7 +631,7 @@ noncomputable def sliceMem' (B : 𝒞) (C : Over B) : BinRel (Over B) (slicePowO
 /-- `sigmaRel R ⊂ relPullback (pair g A.hom) (R_fib)` for any `g`: a fibre-compatible
     base relation `sigmaRel R` lands in the fibre constraint at structure map `A.hom`,
     because `R.colA.f ≫ A.hom = R.colB.f ≫ C.hom` (`sigmaRel_struct`). -/
-theorem sigmaRel_le_pullback_fib {A C : Over B} (R : BinRel (Over B) A C)
+public theorem sigmaRel_le_pullback_fib {A C : Over B} (R : BinRel (Over B) A C)
     (g : A.dom ⟶ slicePowBase B C) :
     RelHom (sigmaRel R) (relPullback (pair g A.hom) (baseFib B C)) := by
   let P := HasPullbacks.has (pair g A.hom) (baseFib B C).colA
@@ -649,7 +651,7 @@ theorem sigmaRel_le_pullback_fib {A C : Over B} (R : BinRel (Over B) A C)
 
 /-- `relPullback (pair g h) (fst*∈) ≅ relPullback g (∈)`: the `B`-coordinate `h` is
     irrelevant to membership, which only reads the `[ΣC]`-coordinate `g`. -/
-theorem relPullback_pair_memPB (C : Over B) {A : 𝒞} (g : A ⟶ slicePowBase B C) (h : A ⟶ B) :
+public theorem relPullback_pair_memPB (C : Over B) {A : 𝒞} (g : A ⟶ slicePowBase B C) (h : A ⟶ B) :
     RelHom (relPullback (pair g h) (baseMemPB B C)) (relPullback g (baseMem B C)) ∧
     RelHom (relPullback g (baseMem B C)) (relPullback (pair g h) (baseMemPB B C)) := by
   obtain ⟨hc1, hc2⟩ := relPullback_comp (pair g h)
@@ -661,7 +663,7 @@ theorem relPullback_pair_memPB (C : Over B) {A : 𝒞} (g : A ⟶ slicePowBase B
     `pair g A.hom ≫ ē = pair g A.hom`, i.e. the slice classifier of a tight relation
     already lands in `[C]`.  (Restricting a fibre-compatible name to its own fibre
     is a no-op.) -/
-theorem baseRho_fixes_tight {A C : Over B} (R : BinRel (Over B) A C) :
+public theorem baseRho_fixes_tight {A C : Over B} (R : BinRel (Over B) A C) :
     pair (univClassify (hbase B C) (sigmaRel R)) A.hom ≫ baseIdem B C
       = pair (univClassify (hbase B C) (sigmaRel R)) A.hom := by
   let g := univClassify (hbase B C) (sigmaRel R)
@@ -701,7 +703,7 @@ theorem baseRho_fixes_tight {A C : Over B} (R : BinRel (Over B) A C) :
     (the name `k` is fixed by the fibre-restriction), then `relPullback k (∈_{ΣC})`
     coincides with `relPullback (pair k A.hom) (baseRestrict)`: an e-fixed name has no
     cross-fibre slack, so its membership IS its fibre-restricted membership. -/
-theorem efixed_restrict_iso {A : 𝒞} (C : Over B) (k : A ⟶ slicePowBase B C) (h : A ⟶ B)
+public theorem efixed_restrict_iso {A : 𝒞} (C : Over B) (k : A ⟶ slicePowBase B C) (h : A ⟶ B)
     (hk : pair k h ≫ baseRho B C = k) :
     RelHom (relPullback (pair k h) (baseRestrict B C)) (relPullback k (baseMem B C)) ∧
     RelHom (relPullback k (baseMem B C)) (relPullback (pair k h) (baseRestrict B C)) := by
@@ -717,14 +719,14 @@ theorem efixed_restrict_iso {A : 𝒞} (C : Over B) (k : A ⟶ slicePowBase B C)
 /-! ## §1.93 universality of `sliceMem'` -/
 
 /-- e-fixedness of any slice map factoring through `[C]`: `(f' ≫ ι) ≫ e = f' ≫ ι`. -/
-theorem comp_iota_efixed {A : Over B} {C : Over B} (f' : A ⟶ slicePowObj' B C) :
+public theorem comp_iota_efixed {A : Over B} {C : Over B} (f' : A ⟶ slicePowObj' B C) :
     (f' ≫ sliceIota B C) ≫ sliceIdem B C = f' ≫ sliceIota B C := by
   rw [Cat.assoc, sliceIota_idem]
 
 /-- **Existence for `[C]`.**  `Λ'(R) := Λ(R) ≫ r` classifies `R` against
     `sliceMem' = ι*(sliceMem)`.  Uses `f ≫ e = f` (`baseRho_fixes_tight`) so that
     `(f ≫ r) ≫ ι = f ≫ e = f`. -/
-theorem sliceMem'_classify_exists {A C : Over B} (R : BinRel (Over B) A C) :
+public theorem sliceMem'_classify_exists {A C : Over B} (R : BinRel (Over B) A C) :
     ∃ f' : A ⟶ slicePowObj' B C,
       RelHom R (relPullback f' (sliceMem' B C)) ∧ RelHom (relPullback f' (sliceMem' B C)) R := by
   -- weak classifier f against sliceMem.
@@ -749,7 +751,7 @@ theorem sliceMem'_classify_exists {A C : Over B} (R : BinRel (Over B) A C) :
 
 /-- `sigmaRel (sliceMem) ≅ baseRestrict`: the Σ-image of the slice membership IS the
     fibre-restricted base membership (both tabulate `{((P,b),c) : (P,c)∈∈, b=C.hom c}`). -/
-theorem sigmaRel_sliceMem_iso_baseRestrict (C : Over B) :
+public theorem sigmaRel_sliceMem_iso_baseRestrict (C : Over B) :
     RelHom (sigmaRel (sliceMem B C)) (baseRestrict B C) ∧
     RelHom (baseRestrict B C) (sigmaRel (sliceMem B C)) := by
   -- abbreviations for the two source pullbacks.
@@ -811,7 +813,7 @@ theorem sigmaRel_sliceMem_iso_baseRestrict (C : Over B) :
 /-- **Base bridge for e-fixed slice classifiers.**  If `h : A ⟶ Δ[ΣC]` is e-fixed
     (`h ≫ e = h`) and `relPullback h sliceMem ≅ R`, then the base name `h.f ≫ fst`
     classifies `sigmaRel R`: `relPullback (h.f ≫ fst) baseMem ≅ sigmaRel R`. -/
-theorem efixed_base_classifies {A C : Over B} (R : BinRel (Over B) A C)
+public theorem efixed_base_classifies {A C : Over B} (R : BinRel (Over B) A C)
     (h : A ⟶ slicePowObj B C) (hfix : h ≫ sliceIdem B C = h)
     (hhR : RelHom R (relPullback h (sliceMem B C)))
     (hRh : RelHom (relPullback h (sliceMem B C)) R) :
@@ -862,7 +864,7 @@ theorem efixed_base_classifies {A C : Over B} (R : BinRel (Over B) A C)
 
 /-- **§1.93 universality of `[C]`.**  The genuine slice membership `sliceMem' B C` on
     the idempotent-split sub-object `[C]` is universal targeted at `C`. -/
-theorem is_universal_sliceMem' (B : 𝒞) (C : Over B) :
+public theorem is_universal_sliceMem' (B : 𝒞) (C : Over B) :
     IsUniversalRel (sliceMem' B C) := by
   constructor
   · exact fun A R => sliceMem'_classify_exists R
@@ -908,7 +910,7 @@ theorem is_universal_sliceMem' (B : 𝒞) (C : Over B) :
     rw [Cat.assoc, Cat.assoc, sliceIota_retr, Cat.comp_id, Cat.comp_id] at this
     exact this
 
-noncomputable instance overHasPowerObject (B : 𝒞) (C : Over B) :
+@[expose] public noncomputable instance overHasPowerObject (B : 𝒞) (C : Over B) :
     HasPowerObject C where
   powerObj := slicePowObj' B C
   mem := sliceMem' B C
@@ -916,7 +918,7 @@ noncomputable instance overHasPowerObject (B : 𝒞) (C : Over B) :
 
 /-! ## §1.93  `Topos (Over B)` -/
 
-noncomputable instance overTopos (B : 𝒞) : Topos (Over B) where
+@[expose] public noncomputable instance overTopos (B : 𝒞) : Topos (Over B) where
   toHasSubobjectClassifier := overHasSubobjectClassifier B
   toHasBinaryProducts := overHasBinaryProducts B
   has_pow C := overHasPowerObject B C

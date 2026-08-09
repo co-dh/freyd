@@ -12,7 +12,9 @@
   family is jointly faithful (`familyAllegoryHom_faithful`).  The stalk-family instance then needs only
   the joint faithfulness, which is the §1.635 collective-faithfulness statement — NOT single-stalk
   iso-reflection. -/
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_111_RelCat
 
 namespace Freyd.Alg
 

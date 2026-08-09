@@ -31,7 +31,9 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_158c_StepRigidity
+module
+
+public import Freyd.S2_158c_StepRigidity
 
 namespace Freyd.S2_158
 

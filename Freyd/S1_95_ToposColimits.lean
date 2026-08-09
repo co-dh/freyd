@@ -30,12 +30,14 @@
                `⋂∅` = `false`).
 -/
 
-import Freyd.S1_91
-import Freyd.S1_92
-import Freyd.S1_60
-import Freyd.S1_94_InterIntersection
-import Freyd.S1_94_InternalForallTopos
-import Freyd.S1_934_PartialMapClassifier
+module
+
+public import Freyd.S1_91
+public import Freyd.S1_92
+public import Freyd.S1_60
+public import Freyd.S1_94_InterIntersection
+public import Freyd.S1_94_InternalForallTopos
+public import Freyd.S1_934_PartialMapClassifier
 
 universe v u
 
@@ -71,7 +73,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     predicate tests that `S` and `T` are both contained in it.  Concretely this is the
     conjunction (S1_91 `omegaMeet`) of the two inclusion characteristic maps, each of which is
     the §1.914 internal `⊆` on `[A]` (the curried `Sub.imp`/membership comparison). -/
-noncomputable def upperBoundPred {A : 𝒞} (S T : Subobject 𝒞 A) :
+@[expose] public noncomputable def upperBoundPred {A : 𝒞} (S T : Subobject 𝒞 A) :
     powObj A ⟶ omega (𝒞 := 𝒞) :=
   -- (S ⊆ σ) ∧ (T ⊆ σ) : pair the two inclusion-tests, then internal meet (S1_91 `omegaMeet`).
   -- The single inclusion test `σ ↦ (S ⊆ σ)` is the §1.945 fibered-∀ `predF S.arr`, i.e.
@@ -79,18 +81,18 @@ noncomputable def upperBoundPred {A : 𝒞} (S T : Subobject 𝒞 A) :
   pair (predF S.arr) (predF T.arr) ≫ omegaMeet
 
 /-- The family NAME `1 → [[A]]` of the common-upper-bound family `{σ | S ⊆ σ ∧ T ⊆ σ}`. -/
-noncomputable def unionFamilyName {A : 𝒞} (S T : Subobject 𝒞 A) :
+@[expose] public noncomputable def unionFamilyName {A : 𝒞} (S T : Subobject 𝒞 A) :
     one ⟶ powObj (powObj A) :=
   curry (fst ≫ upperBoundPred S T)
 
 /-- **§1.952(U)** — binary subobject union as the upper-bound family-glb. -/
-noncomputable def subUnion {A : 𝒞} (S T : Subobject 𝒞 A) : Subobject 𝒞 A :=
+@[expose] public noncomputable def subUnion {A : 𝒞} (S T : Subobject 𝒞 A) : Subobject 𝒞 A :=
   bigInter (unionFamilyName S T)
 
 /-- A subobject `σ ⊆ A` is a COMMON UPPER BOUND of `S, T` iff its name satisfies the
     upper-bound predicate, i.e. iff its name is a member of the union family.  This is the
     membership characterization bridging `bigInter_glb` to the lattice laws. -/
-theorem name_mem_unionFamily_iff {A : 𝒞} (S T σ : Subobject 𝒞 A) :
+public theorem name_mem_unionFamily_iff {A : 𝒞} (S T σ : Subobject 𝒞 A) :
     (nameOf σ.arr σ.monic ≫ membershipMap (unionFamilyName S T)
         = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
       ↔ (S.le σ ∧ T.le σ) := by
@@ -151,7 +153,7 @@ private theorem predF_carrier_in_mem {A Df K : 𝒞} (f : Df ⟶ A) (k : K ⟶ p
     is in `Fname` (`k ≫ fst ≫ membershipMap Fname = ⊤`) satisfies `f(k≫snd) ∈ (k≫fst)`.
     This is the §1.91 `imp_adjunction` greatest-lower-bound reduction, family-generic in the
     carrier-in-membership hypothesis. -/
-theorem allows_bigInter_of_carrier {A Df : 𝒞} (f : Df ⟶ A)
+public theorem allows_bigInter_of_carrier {A Df : 𝒞} (f : Df ⟶ A)
     (Fname : one ⟶ powObj (powObj A))
     (hci : ∀ {K : 𝒞} (k : K ⟶ prod (powObj A) Df),
       k ≫ (fst ≫ membershipMap Fname) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) →
@@ -224,7 +226,7 @@ theorem allows_bigInter_of_carrier {A Df : 𝒞} (f : Df ⟶ A)
     GREATEST direction (generalized upper bound `allows_bigInter_of_carrier`), `S ≤ ⋂{common
     upper bounds}`.  The carrier-in-mem hypothesis: if `σ ∈ unionFamily` then `σ ∈ predF S.arr`
     (the `S`-conjunct, via `meet_true_iff_and`), whence `S.arr(a) ∈ σ` (`predF_carrier_in_mem`). -/
-theorem subUnion_left {A : 𝒞} (S T : Subobject 𝒞 A) : S.le (subUnion S T) := by
+public theorem subUnion_left {A : 𝒞} (S T : Subobject 𝒞 A) : S.le (subUnion S T) := by
   show Allows (subUnion S T) S.arr
   rw [subUnion]
   apply allows_bigInter_of_carrier S.arr (unionFamilyName S T)
@@ -236,7 +238,7 @@ theorem subUnion_left {A : 𝒞} (S T : Subobject 𝒞 A) : S.le (subUnion S T) 
   exact predF_carrier_in_mem S.arr k (by rw [← Cat.assoc]; exact hS)
 
 /-- `union_right`: `T ≤ S ∪ T` (symmetric to `subUnion_left`; uses the `T`-conjunct). -/
-theorem subUnion_right {A : 𝒞} (S T : Subobject 𝒞 A) : T.le (subUnion S T) := by
+public theorem subUnion_right {A : 𝒞} (S T : Subobject 𝒞 A) : T.le (subUnion S T) := by
   show Allows (subUnion S T) T.arr
   rw [subUnion]
   apply allows_bigInter_of_carrier T.arr (unionFamilyName S T)
@@ -248,7 +250,7 @@ theorem subUnion_right {A : 𝒞} (S T : Subobject 𝒞 A) : T.le (subUnion S T)
 /-- `union_min`: `S ∪ T` is the LEAST common upper bound.  If `S ≤ U` and `T ≤ U` then `U`
     is a common upper bound, so it is named by the family, so the LOWER direction of
     `bigInter_glb` gives `⋂{common upper bounds} ≤ U`. -/
-theorem subUnion_min {A : 𝒞} (S T U : Subobject 𝒞 A)
+public theorem subUnion_min {A : 𝒞} (S T U : Subobject 𝒞 A)
     (hS : S.le U) (hT : T.le U) : (subUnion S T).le U := by
   -- U is a common upper bound: (name_mem_unionFamily_iff).2 ⟨hS, hT⟩; then bigInter_le_named.
   exact (bigInter_glb (unionFamilyName S T)).1 U
@@ -256,7 +258,7 @@ theorem subUnion_min {A : 𝒞} (S T U : Subobject 𝒞 A)
 
 /-- **§1.952(U)** — a topos HAS SUBOBJECT UNIONS.  The binary union is the family-glb of the
     common upper bounds (`subUnion`); the three lattice laws are `subUnion_left/right/min`. -/
-noncomputable instance toposHasSubobjectUnions : HasSubobjectUnions 𝒞 where
+@[expose] public noncomputable instance toposHasSubobjectUnions : HasSubobjectUnions 𝒞 where
   union S T := subUnion S T
   union_left := subUnion_left
   union_right := subUnion_right
@@ -276,13 +278,13 @@ noncomputable instance toposHasSubobjectUnions : HasSubobjectUnions 𝒞 where
   build the subobject and its defining `≤`-law (the substantive family-glb content). -/
 
 /-- **§1.95** — the EMPTY/BOTTOM subobject `∅_A ↪ A` as `⋂{all σ ⊆ A}`. -/
-noncomputable def bottomSub (A : 𝒞) : Subobject 𝒞 A :=
+@[expose] public noncomputable def bottomSub (A : 𝒞) : Subobject 𝒞 A :=
   bigInter (topName (powObj A))
 
 /-- **§1.95** — `∅_A` is the LEAST subobject: `∅_A ≤ B` for every `B ⊆ A`.  Every `B` is named
     by the top family `topName [A]` (its membership predicate is constantly `⊤` =
     `χ_{entire [A]}`), so the LOWER direction of `bigInter_glb` gives `⋂ ≤ B`. -/
-theorem bottomSub_le {A : 𝒞} (B : Subobject 𝒞 A) : (bottomSub A).le B := by
+public theorem bottomSub_le {A : 𝒞} (B : Subobject 𝒞 A) : (bottomSub A).le B := by
   apply (bigInter_glb (topName (powObj A))).1 B
   -- name(B) ≫ membershipMap (topName [A]) = ⊤∘! : membershipMap (topName [A]) = χ_{entire} = term ≫ true.
   rw [membershipMap_topName, classify_entire, ← Cat.assoc,

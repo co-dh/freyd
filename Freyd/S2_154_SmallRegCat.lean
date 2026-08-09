@@ -5,7 +5,9 @@
   book-defined object importable by the earlier capitalization machinery without importing the
   later allegory construction back into Chapter 1.
 -/
-import Freyd.S1_52
+module
+
+public import Freyd.S1_52
 
 namespace Freyd.S2_154
 
@@ -14,7 +16,7 @@ universe u
 
 
 /-- **§2.154**: a SMALL REGULAR CATEGORY (bundled). -/
-structure SmallRegCat : Type (u + 1) where
+public structure SmallRegCat : Type (u + 1) where
   carrier : Type u
   [cat : Cat.{u} carrier]
   [reg : RegularCategory carrier]

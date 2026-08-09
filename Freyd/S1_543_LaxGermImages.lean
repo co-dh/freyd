@@ -32,8 +32,10 @@
   (which builds the SAME image factorization inline for an arbitrary germ), specialised to the
   single-fibre `stageInclL` case so it is reusable downstream (the lax mirror of the role
   `objIncl_preserves_images` plays in the §1.543/§2.218 strict tower).  Mathlib-free. -/
-import Freyd.S1_543_RatCapHcanon
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S1_543_RatCapHcanon
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim
@@ -58,7 +60,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
 /-! ## `objIncl i` preserves images
 
   Mirrors `Colim.objIncl_preserves_images`. -/
-theorem objInclL_preserves_images
+public theorem objInclL_preserves_images
     (hi : ∀ i, @HasImages (L.A i) (L.catA i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         L.Fmap hij p = L.Fmap hij q → p = q)

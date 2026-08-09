@@ -9,9 +9,11 @@
   §1.1(10) ISOMORPHISM OF CATEGORIES (functor with a two-sided inverse functor).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_18
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_18
 
 namespace Freyd
 
@@ -140,7 +142,7 @@ def group'ToGroupoid (G : Type u) [gr : Group' G] : Groupoid.{u, 0} PUnit where
 
 /-- §1.182  A CONTRAVARIANT FUNCTOR `F : C → D` reverses direction and swaps
     composition.  Freyd §1.182: `F(xy) = (Fy)(Fx)`. -/
-class ContraFunctor {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D] (F : C → D) where
+public class ContraFunctor {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D] (F : C → D) where
   map      : {X Y : C} → (X ⟶ Y) → (F Y ⟶ F X)
   map_id   : ∀ (X : C), map (Cat.id X) = Cat.id (F X)
   map_comp : ∀ {X Y Z : C} (f : X ⟶ Y) (g : Y ⟶ Z),

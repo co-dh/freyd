@@ -27,7 +27,9 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_158c_StepRigidity
+module
+
+public import Freyd.S2_158c_StepRigidity
 
 namespace Freyd.S2_158
 
@@ -461,7 +463,7 @@ theorem chain_edge_b : ∀ k i, i ≤ k →
 
 theorem bL_ne_dL {i j : Nat} : bL i ≠ dL j := by simp only [bL, dL]; omega
 /-- The middle vertex of branch `j` inside the `mids` tower (for `j ≤ k`). -/
-def midsMid : (k : Nat) → Nat → (toGraph (mids k)).V
+@[expose] public def midsMid : (k : Nat) → Nat → (toGraph (mids k)).V
   | 0, _ => branchMid 0
   | k+1, j =>
       if j ≤ k then Quot.mk _ (Sum.inl (midsMid k j))
@@ -470,7 +472,7 @@ def midsMid : (k : Nat) → Nat → (toGraph (mids k)).V
 /-- The `j`-th corner vertex of the collapsed tower: `0` and everything past
     `n+1` is the merged mark `x`; `1 ≤ j ≤ n+1` is the interior corner
     `w_j`, the middle vertex of branch `j-1`. -/
-def eCorn (n : Nat) : Nat → (toGraph (entL n)).V
+@[expose] public def eCorn (n : Nat) : Nat → (toGraph (entL n)).V
   | 0 => (toGraph (entL n)).s
   | j+1 =>
       if j ≤ n then

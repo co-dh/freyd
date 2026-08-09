@@ -15,15 +15,17 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_34
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_58
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_34
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_58
 
 
 open Freyd
@@ -66,7 +68,7 @@ def IsZeroObject [ht : HasTerminal 𝒞] [hc : HasCoterminator 𝒞] : Prop :=
     (`add_eq_addL`, `add_eq_addR`).  From these the middle-two interchange,
     commutativity and associativity follow by Freyd's Eckmann–Hilton argument —
     none of it is postulated (see `middle_two_interchange` below). -/
-class HalfAdditiveCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class HalfAdditiveCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasCoterminator 𝒞, HasBinaryCoproducts 𝒞 where
   /-- Zero morphism A → 0 → B through the zero object (0 ≅ 1). -/
   zeroHom : ∀ (A B : 𝒞), A ⟶ B
@@ -119,7 +121,7 @@ private theorem add_addR {A B : 𝒞} (x y : A ⟶ B) :
 
 /-- Pre-composition collapses a `pair`: `w ≫ pair x y = pair (w≫x) (w≫y)`
     (product functoriality). -/
-private theorem comp_pair {W X A B : 𝒞} (w : W ⟶ X) (x : X ⟶ A) (y : X ⟶ B) :
+public theorem comp_pair {W X A B : 𝒞} (w : W ⟶ X) (x : X ⟶ A) (y : X ⟶ B) :
     w ≫ pair x y = pair (w ≫ x) (w ≫ y) :=
   pair_uniq (w ≫ x) (w ≫ y) (w ≫ pair x y)
     (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
@@ -152,7 +154,7 @@ private theorem Φ_Φinv_comp {A B X : 𝒞}
   rw [← Cat.assoc, Φ_Φinv, Cat.id_comp]
 
 /-- Right unit `add f 0 = f` (eq. 1.1'): the second pair-slot is killed by `Φ⁻¹`. -/
-theorem add_zero {A B : 𝒞} (f : A ⟶ B) : inst.add f (inst.zeroHom A B) = f := by
+public theorem add_zero {A B : 𝒞} (f : A ⟶ B) : inst.add f (inst.zeroHom A B) = f := by
   rw [add_addR]
   -- pair f 0 = f ≫ inl ≫ Φ : factor through inl, whose Φ-image is pair id 0.
   have h1 : pair f (inst.zeroHom A B)
@@ -164,7 +166,7 @@ theorem add_zero {A B : 𝒞} (f : A ⟶ B) : inst.add f (inst.zeroHom A B) = f 
   rw [Φ_Φinv_comp, HasBinaryCoproducts.case_inl, Cat.comp_id]
 
 /-- Left unit `add 0 f = f` (eq. 1.1'), dual to `add_zero`. -/
-theorem zero_add {A B : 𝒞} (f : A ⟶ B) : inst.add (inst.zeroHom A B) f = f := by
+public theorem zero_add {A B : 𝒞} (f : A ⟶ B) : inst.add (inst.zeroHom A B) f = f := by
   rw [add_addR]
   have h1 : pair (inst.zeroHom A B) f
       = f ≫ HasBinaryCoproducts.inr ≫ HasBinaryCoproducts.case
@@ -186,7 +188,7 @@ theorem zero_add {A B : 𝒞} (f : A ⟶ B) : inst.add (inst.zeroHom A B) f = f 
     where `M` is the δ-matrix.  The only place the two argument orders differ is in
     `M`, and `case_pair_swap` shows the two matrices are equal — that is the whole
     content.  Commutativity (`u=y=0`) and associativity (`u=0`) of `+` follow. -/
-theorem middle_two_interchange {A B : 𝒞} (u v x y : A ⟶ B) :
+public theorem middle_two_interchange {A B : 𝒞} (u v x y : A ⟶ B) :
     inst.add (inst.add u v) (inst.add x y) =
     inst.add (inst.add u x) (inst.add v y) := by
   -- The common δ-matrix composite both sides reduce to.
@@ -217,25 +219,25 @@ theorem middle_two_interchange {A B : 𝒞} (u v x y : A ⟶ B) :
   rw [hLHS, hRHS]
 
 /-- Commutativity of `add` (Eckmann–Hilton, `u=y=0` in middle-two interchange). -/
-theorem add_comm {A B : 𝒞} (x y : A ⟶ B) : inst.add x y = inst.add y x := by
+public theorem add_comm {A B : 𝒞} (x y : A ⟶ B) : inst.add x y = inst.add y x := by
   have h := middle_two_interchange (inst.zeroHom A B) x y (inst.zeroHom A B)
   rwa [zero_add, add_zero, zero_add, add_zero] at h
 
 /-- Associativity of `add` (Eckmann–Hilton, `v=0` in middle-two interchange). -/
-theorem add_assoc {A B : 𝒞} (u x y : A ⟶ B) :
+public theorem add_assoc {A B : 𝒞} (u x y : A ⟶ B) :
     inst.add u (inst.add x y) = inst.add (inst.add u x) y := by
   have h := middle_two_interchange u (inst.zeroHom A B) x y
   rwa [add_zero, zero_add] at h
 
 /-- Left distributivity `h ≫ (x + y) = (h≫x) + (h≫y)` (pre-composition is additive).
     From `add` in product form (eq. 1.1') and `comp_pair`. -/
-theorem comp_add {W A B : 𝒞} (h : W ⟶ A) (x y : A ⟶ B) :
+public theorem comp_add {W A B : 𝒞} (h : W ⟶ A) (x y : A ⟶ B) :
     h ≫ inst.add x y = inst.add (h ≫ x) (h ≫ y) := by
   rw [add_addR, add_addR, ← Cat.assoc, ← Cat.assoc, comp_pair, Cat.assoc]
 
 /-- Right distributivity `(x + y) ≫ k = (x≫k) + (y≫k)` (post-composition is additive).
     From `add` in coproduct form (eq. 1.1) and post-composition collapsing `case`. -/
-theorem add_comp {A B C : 𝒞} (x y : A ⟶ B) (k : B ⟶ C) :
+public theorem add_comp {A B C : 𝒞} (x y : A ⟶ B) (k : B ⟶ C) :
     inst.add x y ≫ k = inst.add (x ≫ k) (y ≫ k) := by
   have hcc2 : HasBinaryCoproducts.case x y ≫ k = HasBinaryCoproducts.case (x ≫ k) (y ≫ k) :=
     HasBinaryCoproducts.case_uniq _ _ _
@@ -249,12 +251,12 @@ theorem add_comp {A B C : 𝒞} (x y : A ⟶ B) (k : B ⟶ C) :
     first input (top row `(1 0)`), the second is `x·(first input) + (second input)`
     (bottom row `(x 1)`).  Additivity of the category is equivalent to every shear
     being an isomorphism; the inverse is the shear by the additive inverse `−x`. -/
-def shear {A B : 𝒞} (x : A ⟶ B) : prod A B ⟶ prod A B :=
+@[expose] public def shear {A B : 𝒞} (x : A ⟶ B) : prod A B ⟶ prod A B :=
   pair fst (inst.add (fst ≫ x) snd)
 
 /-- Composing shears adds parameters: `shear x ≫ shear y = shear (x + y)`.
     The shears form a one-parameter additive subgroup of `Aut(A×B)`. -/
-theorem shear_comp {A B : 𝒞} (x y : A ⟶ B) :
+public theorem shear_comp {A B : 𝒞} (x y : A ⟶ B) :
     shear x ≫ shear y = shear (inst.add x y) := by
   refine (pair_uniq _ _ _ ?_ ?_).trans
     (pair_uniq _ _ (shear (inst.add x y)) rfl rfl).symm
@@ -268,7 +270,7 @@ theorem shear_comp {A B : 𝒞} (x y : A ⟶ B) :
         show shear (inst.add x y) ≫ snd = inst.add (fst ≫ inst.add x y) snd from snd_pair _ _]
 
 /-- `shear 0 = id`: the trivial shear is the identity. -/
-theorem shear_zero {A B : 𝒞} : shear (inst.zeroHom A B) = Cat.id (prod A B) := by
+public theorem shear_zero {A B : 𝒞} : shear (inst.zeroHom A B) = Cat.id (prod A B) := by
   rw [shear, inst.zeroHom_comp_left, zero_add, pair_fst_snd]
 
 end HalfAdditiveCategory
@@ -276,7 +278,7 @@ end HalfAdditiveCategory
 /-- ADDITIVE CATEGORY (§1.591): half-additive with additive inverses.
     Every hom-set (A,B) is an abelian group: each f : A → B has a (unique)
     additive inverse g : A → B satisfying f + g = 0_{A,B}. -/
-class AdditiveCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends HalfAdditiveCategory 𝒞 where
+public class AdditiveCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends HalfAdditiveCategory 𝒞 where
   /-- Additive inverses exist: every f : A → B has a g with f + g = zeroHom A B. -/
   addInv : ∀ {A B : 𝒞} (f : A ⟶ B), ∃ g : A ⟶ B, add f g = zeroHom A B
 
@@ -295,7 +297,7 @@ variable [inst : HalfAdditiveCategory 𝒞]
 /-- **Forward direction.** If every hom has an additive inverse, every shear is an
     isomorphism: the inverse of `shear x` is `shear g` where `g = −x`
     (`add x g = 0`), since `shear x ≫ shear g = shear (x + g) = shear 0 = id`. -/
-theorem shear_isIso_of_addInv
+public theorem shear_isIso_of_addInv
     (hinv : ∀ {A B : 𝒞} (f : A ⟶ B), ∃ g : A ⟶ B, inst.add f g = inst.zeroHom A B)
     {A B : 𝒞} (x : A ⟶ B) : IsIso (shear x) := by
   obtain ⟨g, hg⟩ := hinv x
@@ -307,7 +309,7 @@ theorem shear_isIso_of_addInv
     (`inv ≫ shear x = id`).  Feeding the first injection `j₁ = ⟨1, 0⟩` gives
     `w = j₁ ≫ inv` with `w ≫ fst = 1` (Freyd's "`y = 1`") and `x + (w ≫ snd) = 0`
     (Freyd's "`u + x = 0`").  Thus `w ≫ snd` is the additive inverse `−x`. -/
-theorem shear_inv_extract {A B : 𝒞} (x : A ⟶ B)
+public theorem shear_inv_extract {A B : 𝒞} (x : A ⟶ B)
     (inv : prod A B ⟶ prod A B) (h : inv ≫ shear x = Cat.id (prod A B)) :
     (pair (Cat.id A) (inst.zeroHom A B) ≫ inv) ≫ fst = Cat.id A ∧
     inst.add x ((pair (Cat.id A) (inst.zeroHom A B) ≫ inv) ≫ snd) = inst.zeroHom A B := by
@@ -328,7 +330,7 @@ theorem shear_inv_extract {A B : 𝒞} (x : A ⟶ B)
 
 /-- **Backward direction.** If every shear is an isomorphism, every hom has an
     additive inverse: extract it from the shear's inverse via `shear_inv_extract`. -/
-theorem addInv_of_shear_isIso
+public theorem addInv_of_shear_isIso
     (hiso : ∀ {A B : 𝒞} (x : A ⟶ B), IsIso (shear x))
     {A B : 𝒞} (f : A ⟶ B) : ∃ g : A ⟶ B, inst.add f g = inst.zeroHom A B := by
   obtain ⟨inv, _, h2⟩ := hiso f
@@ -350,16 +352,16 @@ end HalfAdditiveCategory
   A → 0 → B.  Zero morphisms form a two-sided ideal. -/
 
 /-- A ZERO OBJECT: terminal = coterminal (§1.591). -/
-class HasZeroObject (𝒞 : Type u) [Cat.{v} 𝒞] extends HasTerminal 𝒞, HasCoterminator 𝒞 where
+public class HasZeroObject (𝒞 : Type u) [Cat.{v} 𝒞] extends HasTerminal 𝒞, HasCoterminator 𝒞 where
   zero_eq_one : (one : 𝒞) = coterm
 
 /-- The zero morphism A → B factors through the zero object. -/
-def zeroMorphism [HasZeroObject 𝒞] (A B : 𝒞) : A ⟶ B :=
+@[expose] public def zeroMorphism [HasZeroObject 𝒞] (A B : 𝒞) : A ⟶ B :=
   let h := (HasZeroObject.zero_eq_one (𝒞 := 𝒞)).symm
   term A ≫ (cast (congrArg (λ X : 𝒞 => X ⟶ B) h) (zeroMap B))
 
 /-- Zero morphisms are a two-sided ideal: f≫0 = 0, 0≫f = 0. -/
-theorem zero_morphism_comp [HasZeroObject 𝒞] {A B C : 𝒞} (f : A ⟶ B) :
+public theorem zero_morphism_comp [HasZeroObject 𝒞] {A B C : 𝒞} (f : A ⟶ B) :
     f ≫ zeroMorphism B C = zeroMorphism A C := by
   dsimp [zeroMorphism]
   rw [← Cat.assoc]
@@ -367,7 +369,7 @@ theorem zero_morphism_comp [HasZeroObject 𝒞] {A B C : 𝒞} (f : A ⟶ B) :
 
 /-- Left-ideal half of §1.591: `0 ≫ g = 0`.  Maps out of the zero object are unique
   (coterminality), so the `one → C` tail of the zero morphism is absorbed by `g`. -/
-theorem zeroMorphism_comp_left [HasZeroObject 𝒞] {A B C : 𝒞} (g : B ⟶ C) :
+public theorem zeroMorphism_comp_left [HasZeroObject 𝒞] {A B C : 𝒞} (g : B ⟶ C) :
     zeroMorphism A B ≫ g = zeroMorphism A C := by
   dsimp [zeroMorphism]
   rw [Cat.assoc]
@@ -384,22 +386,22 @@ theorem zeroMorphism_comp_left [HasZeroObject 𝒞] {A B C : 𝒞} (g : B ⟶ C)
   KERNEL of x: equalizer of (x, 0).  COKERNEL: coequalizer of (x, 0). -/
 
 /-- Kernel of x: the equalizer of x and the zero morphism (§1.592). -/
-def Kernel [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) : 𝒞 :=
+@[expose] public def Kernel [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) : 𝒞 :=
   eqObj x (zeroMorphism A B)
 
-def kernelMap [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
+@[expose] public def kernelMap [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
     Kernel x ⟶ A :=
   eqMap x (zeroMorphism A B)
 
-theorem kernelMap_eq [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
+public theorem kernelMap_eq [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
     kernelMap x ≫ x = kernelMap x ≫ zeroMorphism A B :=
   eqMap_eq x (zeroMorphism A B)
 
 /-- Cokernel of x: the coequalizer of x and the zero morphism (§1.592). -/
-def Cokernel [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (x : A ⟶ B) : 𝒞 :=
+@[expose] public def Cokernel [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (x : A ⟶ B) : 𝒞 :=
   (HasCoequalizers.coeq x (zeroMorphism A B)).obj
 
-def cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
+@[expose] public def cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (x : A ⟶ B) :
     B ⟶ Cokernel x :=
   (HasCoequalizers.coeq x (zeroMorphism A B)).map
 
@@ -417,7 +419,7 @@ def cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (x : A 
 
 /-! A subobject m : A ↣ B is NORMAL (§1.593) if m is the kernel of some f : B → C,
   i.e. there is a morphism h : A → Kernel f that is an iso with h ≫ kernelMap f = m. -/
-def IsNormalSubobject [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞}
+@[expose] public def IsNormalSubobject [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞}
     (m : A ⟶ B) : Prop :=
   ∃ (C : 𝒞) (f : B ⟶ C) (h : A ⟶ Kernel f), IsIso h ∧ h ≫ kernelMap f = m
 
@@ -431,7 +433,7 @@ def IsNormalSubobject [HasZeroObject 𝒞] [HasEqualizers 𝒞] {A B : 𝒞}
   pointed sets form a half-additive non-additive category violating them).  We
   therefore extend `AdditiveCategory` (= `HalfAdditiveCategory` + `addInv`), so
   every `f : A ⟶ B` has a `g` with `add f g = zeroHom A B`. -/
-class AbelianCategory (𝒞 : Type u) [Cat.{v} 𝒞]
+public class AbelianCategory (𝒞 : Type u) [Cat.{v} 𝒞]
     extends RegularCategory 𝒞, AdditiveCategory 𝒞, HasZeroObject 𝒞,
             HasEqualizers 𝒞, HasCoequalizers 𝒞 where
   all_normal : ∀ {A B : 𝒞} (m : A ⟶ B) (_ : Monic m), IsNormalSubobject m
@@ -502,7 +504,7 @@ theorem cokernelMap_cover [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : �
   coeq_map_is_cover (HasCoequalizers.coeq f (zeroMorphism A B))
 
 /-- The cokernel kills its own morphism: `f ≫ cokernelMap f = 0`. -/
-theorem comp_cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+public theorem comp_cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     f ≫ cokernelMap f = zeroMorphism A (Cokernel f) := by
   have hco := (HasCoequalizers.coeq f (zeroMorphism A B)).eq
   calc f ≫ cokernelMap f
@@ -511,7 +513,7 @@ theorem comp_cokernelMap [HasZeroObject 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞
 
 /-- Additive cancellation against a common summand: `X₁ + Y = 0` and `X₂ + Y = 0`
     force `X₁ = X₂`. -/
-theorem add_cancel_common [HalfAdditiveCategory 𝒞] {A B : 𝒞} (X1 X2 Y : A ⟶ B)
+public theorem add_cancel_common [HalfAdditiveCategory 𝒞] {A B : 𝒞} (X1 X2 Y : A ⟶ B)
     (h1 : HalfAdditiveCategory.add X1 Y = HalfAdditiveCategory.zeroHom A B)
     (h2 : HalfAdditiveCategory.add X2 Y = HalfAdditiveCategory.zeroHom A B) : X1 = X2 := by
   have hYX2 : HalfAdditiveCategory.add Y X2 = HalfAdditiveCategory.zeroHom A B := by
@@ -528,7 +530,7 @@ theorem add_cancel_common [HalfAdditiveCategory 𝒞] {A B : 𝒞} (X1 X2 Y : A 
     zero object): both are the unique map factoring through `0`.  This is the
     `[ExactCategory]`-free version of the fact (both are the unique map factoring through
     `0`), needed in the forward direction of §1.593 where no exact structure is yet available. -/
-theorem zeroHom_eq_zeroMorphism' [HalfAdditiveCategory 𝒞] [HasZeroObject 𝒞] (X Y : 𝒞) :
+public theorem zeroHom_eq_zeroMorphism' [HalfAdditiveCategory 𝒞] [HasZeroObject 𝒞] (X Y : 𝒞) :
     (HalfAdditiveCategory.zeroHom X Y : X ⟶ Y) = zeroMorphism X Y := by
   have h1 : (HalfAdditiveCategory.zeroHom X Y : X ⟶ Y)
       = term X ≫ HalfAdditiveCategory.zeroHom HasTerminal.one Y :=
@@ -812,7 +814,7 @@ theorem abelian_iff_regular_additive_all_normal
     (i.e., is the level/kernel-pair of some cover/quotient).  This is the
     effective-quotients axiom (§1.568): the content that distinguishes an
     effective regular category from a plain regular one. -/
-class EffectiveRegular (𝒞 : Type u) [Cat.{v} 𝒞] extends RegularCategory 𝒞 where
+public class EffectiveRegular (𝒞 : Type u) [Cat.{v} 𝒞] extends RegularCategory 𝒞 where
   effective : ∀ {A : 𝒞} (E : BinRel 𝒞 A A), EquivalenceRelation E → IsEffective E
 
 /-! ### §1.594 additive helper layer: negation and subtraction
@@ -824,21 +826,21 @@ class EffectiveRegular (𝒞 : Type u) [Cat.{v} 𝒞] extends RegularCategory �
 
 open HalfAdditiveCategory in
 /-- The additive inverse `neg f = −f` (chosen via `addInv`). -/
-noncomputable def neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) : A ⟶ B :=
+@[expose] public noncomputable def neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) : A ⟶ B :=
   (AdditiveCategory.addInv f).choose
 
 open HalfAdditiveCategory in
-theorem add_neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+public theorem add_neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     add f (neg f) = zeroHom A B :=
   (AdditiveCategory.addInv f).choose_spec
 
 open HalfAdditiveCategory in
-theorem neg_add [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+public theorem neg_add [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     add (neg f) f = zeroHom A B := by rw [add_comm]; exact add_neg f
 
 open HalfAdditiveCategory in
 /-- Additive inverses are unique: if `add f g = 0` then `g = neg f`. -/
-theorem neg_unique [AdditiveCategory 𝒞] {A B : 𝒞} {f g : A ⟶ B}
+public theorem neg_unique [AdditiveCategory 𝒞] {A B : 𝒞} {f g : A ⟶ B}
     (h : add f g = zeroHom A B) : g = neg f := by
   -- g = 0 + g = (neg f + f) + g = neg f + (f + g) = neg f + 0 = neg f
   calc g = add (zeroHom A B) g := (zero_add g).symm
@@ -849,31 +851,31 @@ theorem neg_unique [AdditiveCategory 𝒞] {A B : 𝒞} {f g : A ⟶ B}
 
 open HalfAdditiveCategory in
 /-- `g ≫ neg f = neg (g ≫ f)`: negation commutes with precomposition. -/
-theorem comp_neg [AdditiveCategory 𝒞] {W A B : 𝒞} (g : W ⟶ A) (f : A ⟶ B) :
+public theorem comp_neg [AdditiveCategory 𝒞] {W A B : 𝒞} (g : W ⟶ A) (f : A ⟶ B) :
     g ≫ neg f = neg (g ≫ f) :=
   neg_unique (by rw [← comp_add, add_neg, zeroHom_comp_left])
 
 open HalfAdditiveCategory in
 /-- `(neg g) ≫ f = neg (g ≫ f)`: negation commutes with postcomposition. -/
-theorem neg_comp [AdditiveCategory 𝒞] {W A B : 𝒞} (g : W ⟶ A) (f : A ⟶ B) :
+public theorem neg_comp [AdditiveCategory 𝒞] {W A B : 𝒞} (g : W ⟶ A) (f : A ⟶ B) :
     (neg g) ≫ f = neg (g ≫ f) := by
   apply neg_unique
   rw [← add_comp g (neg g) f, add_neg, zeroHom_comp_right]
 
 open HalfAdditiveCategory in
 /-- Double negation: `neg (neg f) = f`. -/
-theorem neg_neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) : neg (neg f) = f :=
+public theorem neg_neg [AdditiveCategory 𝒞] {A B : 𝒞} (f : A ⟶ B) : neg (neg f) = f :=
   (neg_unique (neg_add f)).symm
 
 open HalfAdditiveCategory in
 /-- `neg 0 = 0`. -/
-theorem neg_zero [AdditiveCategory 𝒞] (A B : 𝒞) :
+public theorem neg_zero [AdditiveCategory 𝒞] (A B : 𝒞) :
     neg (zeroHom A B) = zeroHom A B :=
   (neg_unique (add_zero (zeroHom A B))).symm
 
 open HalfAdditiveCategory in
 /-- Right cancellation in the hom-group: `add X Y = add Z Y → X = Z`. -/
-theorem add_right_cancel [AdditiveCategory 𝒞] {A B : 𝒞} {X Z Y : A ⟶ B}
+public theorem add_right_cancel [AdditiveCategory 𝒞] {A B : 𝒞} {X Z Y : A ⟶ B}
     (h : add X Y = add Z Y) : X = Z := by
   calc X = add X (zeroHom A B) := (add_zero X).symm
     _ = add X (add Y (neg Y)) := by rw [add_neg]
@@ -886,7 +888,7 @@ theorem add_right_cancel [AdditiveCategory 𝒞] {A B : 𝒞} {X Z Y : A ⟶ B}
 open HalfAdditiveCategory in
 /-- `neg` is monic when `f` is: `g ≫ neg f = h ≫ neg f` forces the additive
     inverses of `g ≫ f` and `h ≫ f` to agree, hence `g ≫ f = h ≫ f`. -/
-theorem neg_mono [AdditiveCategory 𝒞] {A B : 𝒞} {f : A ⟶ B} (hf : Monic f) :
+public theorem neg_mono [AdditiveCategory 𝒞] {A B : 𝒞} {f : A ⟶ B} (hf : Monic f) :
     Monic (neg f) := by
   intro W g h hgh
   apply hf
@@ -904,7 +906,7 @@ open HalfAdditiveCategory in
     `prod A B`; left leg `snd` (= `0·a + b = b`), right leg `(fst≫neg m) + snd`
     (= `−m·a + b`).  So it relates `b ~ b'` iff `b − b' ∈ im m`.  The pair is
     jointly monic because `neg m` is monic (`neg_mono`). -/
-noncomputable def malRel [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
+@[expose] public noncomputable def malRel [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m) : BinRel 𝒞 B B where
   src := prod A B
   colA := snd
@@ -932,7 +934,7 @@ noncomputable def malRel [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞
 open HalfAdditiveCategory in
 /-- **§1.594 Mal'cev step (reflexivity).** `1 ⊂ malRel m`: the diagonal `b ~ b`
     is witnessed by `a = 0`. Witness map `⟨0, id⟩ : B → A⊕B`. -/
-theorem malRel_refl [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
+public theorem malRel_refl [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m) :
     ∃ (h : B ⟶ (malRel m hm).src),
       h ≫ (malRel m hm).colA = Cat.id B ∧ h ≫ (malRel m hm).colB = Cat.id B := by
@@ -946,7 +948,7 @@ open HalfAdditiveCategory in
 /-- **§1.594 Mal'cev step (symmetry).** `malRel m ⊂ (malRel m)°`.  If `b ~ b'` via
     `a` (so `b' = −m·a + b`) then `b' ~ b` via `−a`: the witness map negates the
     `A`-coordinate, `s = ⟨−fst, colB⟩`. This is the Mal'cev term at work. -/
-theorem malRel_symm [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
+public theorem malRel_symm [AdditiveCategory 𝒞] [HasPullbacks 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m) :
     RelLe (malRel m hm) (reciprocal (malRel m hm)) := by
   refine ⟨⟨pair (neg (fst : prod A B ⟶ A)) (add (fst ≫ neg m) snd), ?_, ?_⟩⟩
@@ -965,7 +967,7 @@ open HalfAdditiveCategory in
     If `b−b' ∈ im m` and `b'−b'' ∈ im m` then `b−b'' = (b−b') + (b'−b'') ∈ im m`
     — pure additivity.  The witness `A`-coordinate is the SUM of the two witnessing
     elements; `image_min` turns the lift into the required `RelHom`. -/
-theorem malRel_trans [AdditiveCategory 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] {A B : 𝒞}
+public theorem malRel_trans [AdditiveCategory 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m) :
     RelLe (malRel m hm ⊚ malRel m hm) (malRel m hm) := by
   let E := malRel m hm
@@ -1063,7 +1065,7 @@ theorem malRel_equivalence [AdditiveCategory 𝒞] [HasPullbacks 𝒞]
     target `prod A C` differs.  Mapping each image-cover `image.lift span_i` across via
     `relLe_of_cover_factor` (the span-legs agree) yields `R ⊚₁ S ⊂ R ⊚₂ S`.  This bridges
     the `AdditiveCategory`↔`RegularCategory` products diamond in §1.594. -/
-theorem compose_prods_indep {A B C : 𝒞}
+public theorem compose_prods_indep {A B C : 𝒞}
     (hp₁ hp₂ : HasBinaryProducts 𝒞) [HasPullbacks 𝒞] [HasImages 𝒞]
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
     RelLe (@compose 𝒞 _ hp₁ _ _ A B C R S) (@compose 𝒞 _ hp₂ _ _ A B C R S) := by
@@ -1089,7 +1091,7 @@ theorem compose_prods_indep {A B C : 𝒞}
 -- (right before `reciprocal_comp_self_le_one`) so both this file and `RelCat` can use it.
 
 open HalfAdditiveCategory in
-theorem effective_regular_additive_is_abelian
+public theorem effective_regular_additive_is_abelian
     (𝒞 : Type u) [Cat.{v} 𝒞]
     [EffectiveRegular 𝒞] [AdditiveCategory 𝒞] [HasZeroObject 𝒞] [HasEqualizers 𝒞] :
     ∀ {A B : 𝒞} (m : A ⟶ B) (_ : Monic m), IsNormalSubobject m := by
@@ -1248,7 +1250,7 @@ theorem effective_regular_additive_is_abelian
 
 /-- The kernel-pair relation of `q` is contained in its level relation `graph q ⊚ (graph q)°`.
     (`kp(q)` lifts into the level pullback then the level image, matching legs.) -/
-theorem kernelPairRel_le_level [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public theorem kernelPairRel_le_level [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     [HasImages 𝒞] {A Q : 𝒞} (q : A ⟶ Q) :
     kernelPairRel q ⊂ (graph q ⊚ (graph q)°) := by
   let pb := HasPullbacks.has (graph q).colB ((graph q)°).colA
@@ -1281,7 +1283,7 @@ theorem kernelPairRel_le_level [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasP
 open HalfAdditiveCategory in
 /-- The two legs of `malRel m` agree after `≫ k` for any `k` killing `m` (`m ≫ k = 0`).  The
     columns differ by `fst ≫ neg m`, which `k` sends to `0` (`neg (m≫k) = neg 0 = 0`). -/
-theorem malRel_legs_comp [EffectiveRegular 𝒞] [AdditiveCategory 𝒞] [HasZeroObject 𝒞]
+public theorem malRel_legs_comp [EffectiveRegular 𝒞] [AdditiveCategory 𝒞] [HasZeroObject 𝒞]
     [HasEqualizers 𝒞] {A B : 𝒞} (m : A ⟶ B) (hm : Monic m)
     {X : 𝒞} (k : B ⟶ X) (hmk : m ≫ k = zeroMorphism A X) :
     (malRel m hm).colA ≫ k = (malRel m hm).colB ≫ k := by
@@ -1297,7 +1299,7 @@ open HalfAdditiveCategory in
     STEP-3 algebra of `effective_regular_additive_is_abelian`), so `f ≫ q = g ≫ q`; and the cover
     UMP (`cover_is_coequalizer_of_level`) supplies `desc/fac/uniq`, every `k` equalizing `f, g`
     killing `m` hence equalizing the kernel pair of `q` (via `malRel_legs_comp`). -/
-noncomputable def additive_has_coequalizers
+@[expose] public noncomputable def additive_has_coequalizers
     (𝒞 : Type u) [Cat.{v} 𝒞]
     [EffectiveRegular 𝒞] [AdditiveCategory 𝒞] [HasZeroObject 𝒞] [HasEqualizers 𝒞] :
     HasCoequalizers 𝒞 := by
@@ -1423,7 +1425,7 @@ noncomputable def additive_has_coequalizers
 
 /-- An ABELIAN GROUP OBJECT in a category with finite products (§1.595).
   Fields: carrier object, identity/inverse/addition morphisms, four axioms. -/
-structure AbelianGroupObject (𝒞 : Type u) [Cat.{v} 𝒞]
+public structure AbelianGroupObject (𝒞 : Type u) [Cat.{v} 𝒞]
     [HasTerminal 𝒞] [HasBinaryProducts 𝒞] where
   /-- The underlying object. -/
   carrier : 𝒞
@@ -1453,13 +1455,13 @@ structure AbelianGroupObject (𝒞 : Type u) [Cat.{v} 𝒞]
 -- Homomorphism condition: the square addA ≫ x = (x×x) ≫ addB commutes.
 -- Both sides have source prod A.carrier A.carrier.
 -- (x×x) is spelled out as pair (fst ≫ x) (snd ≫ x).
-def IsHomAbelianGroupObject {𝒞 : Type u} [Cat.{v} 𝒞]
+@[expose] public def IsHomAbelianGroupObject {𝒞 : Type u} [Cat.{v} 𝒞]
     [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     (A B : AbelianGroupObject 𝒞) (x : A.carrier ⟶ B.carrier) : Prop :=
   A.add ≫ x = pair (fst ≫ x) (snd ≫ x) ≫ B.add
 
 /-- Hom-set in Ab(A): morphisms that are homomorphisms. -/
-def HomAb {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
+@[expose] public def HomAb {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     (A B : AbelianGroupObject 𝒞) : Type v :=
   { x : A.carrier ⟶ B.carrier // IsHomAbelianGroupObject A B x }
 
@@ -1511,7 +1513,7 @@ def HomAb {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
   satisfies `kernelMap x ≫ cokernelMap(kernelMap x) = 0` (the cokernel map kills
   the kernel), so it factors through ker(coker x) ↣ B via the universal property
   of the kernel.  θ is this factorization morphism. -/
-class ExactCategory (𝒞 : Type u) [Cat.{v} 𝒞]
+public class ExactCategory (𝒞 : Type u) [Cat.{v} 𝒞]
     extends HasZeroObject 𝒞, HasEqualizers 𝒞, HasCoequalizers 𝒞 where
   /-- The canonical coimage-to-image map θ : coker(ker x) → ker(coker x) is an iso,
     AND it is the canonical factorization: it makes
@@ -1524,7 +1526,7 @@ class ExactCategory (𝒞 : Type u) [Cat.{v} 𝒞]
 
 /-! §1.597 key lemma: if A ↣ B is monic and q : B → Q is its cokernel, then A is
   the kernel of q.  (Follows from the exact factorization.) -/
-theorem monic_kernel_of_cokernel {𝒞 : Type u} [Cat.{v} 𝒞] [ExactCategory 𝒞] {A B : 𝒞}
+public theorem monic_kernel_of_cokernel {𝒞 : Type u} [Cat.{v} 𝒞] [ExactCategory 𝒞] {A B : 𝒞}
     (x : A ⟶ B) (hx : Monic x) :
     let _ := Cokernel x
     let q := cokernelMap x
@@ -1585,13 +1587,13 @@ theorem monic_kernel_of_cokernel {𝒞 : Type u} [Cat.{v} 𝒞] [ExactCategory �
   propext, Classical.choice). -/
 
 /-- The normal-image subobject of `f`: `ker (coker f)`. -/
-def imageSub [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞}
+@[expose] public def imageSub [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞] {A B : 𝒞}
     (f : A ⟶ B) : Subobject 𝒞 B :=
   ⟨Kernel (cokernelMap f), kernelMap (cokernelMap f),
     eqMap_monic (cokernelMap f) (zeroMorphism B (Cokernel f))⟩
 
 /-- `f` factors through its normal image (lifts through `ker(coker f)`). -/
-theorem imageSub_allows [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞]
+public theorem imageSub_allows [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalizers 𝒞]
     {A B : 𝒞} (f : A ⟶ B) : Allows (imageSub f) f := by
   have heq : f ≫ cokernelMap f = f ≫ zeroMorphism B (Cokernel f) := by
     rw [comp_cokernelMap f, zero_morphism_comp f]
@@ -1600,7 +1602,7 @@ theorem imageSub_allows [HasZeroObject 𝒞] [HasEqualizers 𝒞] [HasCoequalize
 
 /-- **Minimality of the normal image** (uses the exact structure).  Any subobject `S`
     through which `f` factors contains `ker(coker f)`; via `monic_kernel_of_cokernel`. -/
-theorem imageSub_min [ExactCategory 𝒞] {A B : 𝒞} (f : A ⟶ B)
+public theorem imageSub_min [ExactCategory 𝒞] {A B : 𝒞} (f : A ⟶ B)
     (S : Subobject 𝒞 B) (hS : Allows S f) : (imageSub f).le S := by
   obtain ⟨g, hg⟩ := hS
   have hf_killed : f ≫ cokernelMap S.arr = zeroMorphism A (Cokernel S.arr) := by
@@ -1644,12 +1646,12 @@ theorem imageSub_min [ExactCategory 𝒞] {A B : 𝒞} (f : A ⟶ B)
     _ = kernelMap (cokernelMap f) := hlift_k
 
 /-- **`HasImages` from the exact structure** (normal image). -/
-noncomputable instance exactImages [ExactCategory 𝒞] : HasImages 𝒞 where
+@[expose] public noncomputable instance exactImages [ExactCategory 𝒞] : HasImages 𝒞 where
   image f := imageSub f
   isImage f := ⟨imageSub_allows f, fun S hS => imageSub_min f S hS⟩
 
 /-- **`HasPullbacks` from products + equalizers.** -/
-instance exactPullbacks [HasBinaryProducts 𝒞] [HasEqualizers 𝒞] : HasPullbacks 𝒞 where
+@[expose] public instance exactPullbacks [HasBinaryProducts 𝒞] [HasEqualizers 𝒞] : HasPullbacks 𝒞 where
   has f g := products_equalizers_implies_pullbacks f g
 
 /-- The kernel of a zero morphism is the whole domain (an iso). -/

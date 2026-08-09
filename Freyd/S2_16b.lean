@@ -22,9 +22,11 @@
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
 
-import Freyd.S2_20
-import Freyd.S2_16
-import Freyd.S2_22  -- le_comp_recip_comp (A4_1, via S2_22), symmetric_transitive_idempotent (§2.12)
+module
+
+public import Freyd.S2_20
+public import Freyd.S2_16
+public import Freyd.S2_22  -- le_comp_recip_comp (A4_1, via S2_22), symmetric_transitive_idempotent (§2.12)
 
 universe v u
 
@@ -43,7 +45,7 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- `f : a ⟶ c` splits the endomorphism `E : a ⟶ a` *as a map* (§2.163): `f` is a map,
     `f ≫ f° = E`, and `f° ≫ f = 1_c`.  For a coreflexive this is §2.145 tabularity; for
     an equivalence relation this is §2.169 effectiveness. -/
-def SplitsAsMap {a c : 𝒜} (f : a ⟶ c) (E : a ⟶ a) : Prop :=
+@[expose] public def SplitsAsMap {a c : 𝒜} (f : a ⟶ c) (E : a ⟶ a) : Prop :=
   Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id c
 
 /-- A symmetric idempotent `E` of `𝒜` that splits as a map is symmetric and idempotent —
@@ -67,18 +69,18 @@ theorem SplitsAsMap.symm {a c : 𝒜} {f : a ⟶ c} {E : a ⟶ a} (h : SplitsAsM
 
 /-- Given a symmetric idempotent `Φ : E ⟶ E` of `Spl 𝒜` (so `Φ.R° = Φ.R`,
     `Φ.R ≫ Φ.R = Φ.R`), its underlying morphism is a symmetric idempotent of `𝒜`. -/
-def SplHom.toSymIdem {E : SplObj 𝒜} (Φ : SplHom E E)
+@[expose] public def SplHom.toSymIdem {E : SplObj 𝒜} (Φ : SplHom E E)
     (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) : SymIdem E.carrier :=
   ⟨Φ.R, hsym, hidem⟩
 
 /-- The splitting object `(a, Φ)` for a symmetric idempotent `Φ : E ⟶ E` of `Spl 𝒜`. -/
-def SplHom.splitObj {E : SplObj 𝒜} (Φ : SplHom E E)
+@[expose] public def SplHom.splitObj {E : SplObj 𝒜} (Φ : SplHom E E)
     (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) : SplObj 𝒜 :=
   ⟨E.carrier, Φ.toSymIdem hsym hidem⟩
 
 /-- The splitting leg `E ⟶ (a, Φ)` of a symmetric idempotent `Φ : E ⟶ E`: underlying
     morphism `Φ.R`.  Fixed condition `e ≫ Φ.R ≫ Φ.R = Φ.R`. -/
-def SplHom.splitLeg {E : SplObj 𝒜} (Φ : SplHom E E)
+@[expose] public def SplHom.splitLeg {E : SplObj 𝒜} (Φ : SplHom E E)
     (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) :
     SplHom E (Φ.splitObj hsym hidem) :=
   ⟨Φ.R, by
@@ -97,7 +99,7 @@ def SplHom.splitLeg' {E : SplObj 𝒜} (Φ : SplHom E E)
     `splitLeg` is a map (entire + simple) of `Spl 𝒜` with `leg ≫ leg° = Φ` and
     `leg° ≫ leg = 1_{(a,Φ)}`.  Compare `EffectiveAllegory.split_symmetric_idempotent`:
     here the split leg is `Φ.R` regarded as a map `E ⟶ (a, Φ)`. -/
-theorem SplHom.split_symmetric_idempotent {E : SplObj 𝒜} (Φ : SplHom E E)
+public theorem SplHom.split_symmetric_idempotent {E : SplObj 𝒜} (Φ : SplHom E E)
     (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) :
     let leg := Φ.splitLeg hsym hidem
     splComp leg (splRecip leg) = Φ ∧
@@ -252,7 +254,7 @@ theorem tabular_of_split_apex {a b c d : 𝒜}
   equivalence relation is a symmetric idempotent, `Spl 𝒜` is effective. -/
 
 /-- An EQUIVALENCE relation `E : a ⟶ a` (§2.12): reflexive, symmetric, transitive. -/
-structure EquivRel (a : 𝒜) where
+public structure EquivRel (a : 𝒜) where
   /-- The underlying endomorphism. -/
   E : a ⟶ a
   /-- REFLEXIVE: `1_a ⊑ E`. -/
@@ -267,12 +269,12 @@ namespace EquivRel
 variable {a : 𝒜}
 
 /-- An equivalence relation is symmetric in the strong sense `E° = E`. -/
-theorem recip_eq (E : EquivRel a) : E.E° = E.E :=
+public theorem recip_eq (E : EquivRel a) : E.E° = E.E :=
   le_antisymm E.sym (by have := recip_mono E.sym; rwa [Allegory.recip_recip] at this)
 
 /-- An equivalence relation is idempotent `E ≫ E = E`: `⊑` by transitivity, `⊒` since
     `E = 1 ≫ E ⊑ E ≫ E` using reflexivity. -/
-theorem idem (E : EquivRel a) : E.E ≫ E.E = E.E := by
+public theorem idem (E : EquivRel a) : E.E ≫ E.E = E.E := by
   refine le_antisymm E.trans ?_
   calc E.E = Cat.id a ≫ E.E := by rw [Cat.id_comp]
     _ ⊑ E.E ≫ E.E := comp_mono_right E.refl E.E
@@ -291,7 +293,7 @@ end EquivRel
 
     We state it for any `Φ` already known to be a symmetric idempotent (`hsym`,
     `hidem`) — which equivalence relations are — giving the splitting legs explicitly. -/
-theorem spl_equivalence_splits {E : SplObj 𝒜} (Φ : SplHom E E)
+public theorem spl_equivalence_splits {E : SplObj 𝒜} (Φ : SplHom E E)
     (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) :
     ∃ (G : SplObj 𝒜) (leg : SplHom E G),
       splComp leg (splRecip leg) = Φ ∧ splComp (splRecip leg) leg = splId G :=
@@ -311,7 +313,7 @@ theorem spl_equivalence_splits {E : SplObj 𝒜} (Φ : SplHom E E)
     equivalence relation: `E.idem.e ⊑ Φ.R`, `Φ.R° = Φ.R`, `Φ.R ≫ Φ.R = Φ.R`) splits
     with a MAP leg, matching `EffectiveAllegory.split_symmetric_idempotent`:
     there is `G` and a `Map`-leg `f : E ⟶ G` with `f ≫ f° = Φ` and `f° ≫ f = 1_G`. -/
-theorem spl_equivalence_splits_map {E : SplObj 𝒜} (Φ : SplHom E E)
+public theorem spl_equivalence_splits_map {E : SplObj 𝒜} (Φ : SplHom E E)
     (hrefl : E.idem.e ⊑ Φ.R) (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) :
     ∃ (G : SplObj 𝒜) (f : E ⟶ G),
       Map f ∧ f ≫ f° = Φ ∧ f° ≫ f = Cat.id G := by

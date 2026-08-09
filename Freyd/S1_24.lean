@@ -12,11 +12,13 @@
   §1.284  PREFUNCTOR: preserves composition, not necessarily identities.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_26
-import Freyd.S1_41
-import Freyd.S1_55
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_26
+public import Freyd.S1_41
+public import Freyd.S1_55
 
 open Freyd
 
@@ -28,7 +30,7 @@ namespace Freyd
 
 /-- A group structure (over a carrier type): multiplication, inverse, unit,
     with the usual axioms.  We avoid clashing with Lean's built-in `Group`. -/
-structure GroupObj where
+public structure GroupObj where
   carrier  : Type u
   mul      : carrier → carrier → carrier
   one      : carrier
@@ -39,29 +41,29 @@ structure GroupObj where
   mul_inv  : ∀ a : carrier, mul (inv a) a = one
 
 /-- A group homomorphism between two `GroupObj`s. -/
-structure GroupHom (G H : GroupObj) where
+public structure GroupHom (G H : GroupObj) where
   toFun    : G.carrier → H.carrier
   map_mul  : ∀ a b : G.carrier, toFun (G.mul a b) = H.mul (toFun a) (toFun b)
   map_one  : toFun G.one = H.one
 
 /-- Composition of group homomorphisms. -/
-def GroupHom.comp {G H K : GroupObj} (f : GroupHom G H) (g : GroupHom H K) : GroupHom G K where
+@[expose] public def GroupHom.comp {G H K : GroupObj} (f : GroupHom G H) (g : GroupHom H K) : GroupHom G K where
   toFun a := g.toFun (f.toFun a)
   map_mul a b := by rw [f.map_mul, g.map_mul]
   map_one := by rw [f.map_one, g.map_one]
 
 /-- Identity group homomorphism. -/
-def GroupHom.id (G : GroupObj) : GroupHom G G where
+@[expose] public def GroupHom.id (G : GroupObj) : GroupHom G G where
   toFun := fun a => a
   map_mul _ _ := rfl
   map_one := rfl
 
 @[ext]
-theorem GroupHom.ext {G H : GroupObj} {f g : GroupHom G H} (h : f.toFun = g.toFun) : f = g := by
+public theorem GroupHom.ext {G H : GroupObj} {f g : GroupHom G H} (h : f.toFun = g.toFun) : f = g := by
   cases f; cases g; simp at h; subst h; rfl
 
 /-- **§1.242** The CATEGORY OF GROUPS: objects = `GroupObj`, morphisms = `GroupHom`. -/
-instance groupCat : Cat.{u} GroupObj where
+@[expose] public instance groupCat : Cat.{u} GroupObj where
   Hom G H := GroupHom G H
   id G := GroupHom.id G
   comp f g := f.comp g
@@ -72,7 +74,7 @@ instance groupCat : Cat.{u} GroupObj where
 /-! ## §1.245  Pre-ordered set as a category -/
 
 /-- A pre-ordering on a type: reflexive and transitive relation. -/
-structure PreOrd where
+public structure PreOrd where
   carrier  : Type u
   le       : carrier → carrier → Prop
   le_refl  : ∀ a : carrier, le a a
@@ -82,7 +84,7 @@ structure PreOrd where
 def PreOrdHom (P : PreOrd) (x y : P.carrier) : Type := PLift (P.le x y)
 
 /-- **§1.245** The pre-ordered set P as a category: one morphism x→y iff x ≤ y. -/
-instance preOrderCat (P : PreOrd) : Cat.{0} P.carrier where
+@[expose] public instance preOrderCat (P : PreOrd) : Cat.{0} P.carrier where
   Hom x y := PLift (P.le x y)
   id x := ⟨P.le_refl x⟩
   comp h k := ⟨P.le_trans h.down k.down⟩
@@ -104,21 +106,21 @@ def orderPreservingFunctor (P Q : PreOrd) (f : P.carrier → Q.carrier)
 /-- A pointed set: a set together with a distinguished element (the "base point").
     This is the counter-slice 1/𝒮: an object of 1/𝒮 is a function 1 → S, i.e., a choice of
     base point in S. (§1.263) -/
-structure PointedSet where
+public structure PointedSet where
   carrier   : Type u
   basePoint : carrier
 
 /-- A morphism of pointed sets: a function preserving the base point. -/
-structure PointedHom (X Y : PointedSet) where
+public structure PointedHom (X Y : PointedSet) where
   toFun     : X.carrier → Y.carrier
   map_point : toFun X.basePoint = Y.basePoint
 
 @[ext]
-theorem PointedHom.ext {X Y : PointedSet} {f g : PointedHom X Y} (h : f.toFun = g.toFun) : f = g := by
+public theorem PointedHom.ext {X Y : PointedSet} {f g : PointedHom X Y} (h : f.toFun = g.toFun) : f = g := by
   cases f; cases g; simp at h; subst h; rfl
 
 /-- **§1.263** The category of POINTED SETS (= counter-slice 1/𝒮). -/
-instance pointedSetCat : Cat.{u} PointedSet where
+@[expose] public instance pointedSetCat : Cat.{u} PointedSet where
   Hom X Y := PointedHom X Y
   id X := ⟨fun a => a, rfl⟩
   comp f g := ⟨fun a => g.toFun (f.toFun a), by simp [f.map_point, g.map_point]⟩
