@@ -6,6 +6,12 @@
 #let accent = colors.at(6)
 #let dimc = luma(100)
 
+// The sheet has two contents from one source: the default Rel-focused build, and the full
+// chapter-1 build selected by `--input full=1` (see Makefile). Entries only the full build
+// wants are spread through `fullonly`, which yields nothing in the default build.
+#let full = sys.inputs.at("full", default: "0") != "0"
+#let fullonly(..items) = if full { items.pos() } else { () }
+
 // One body, two shapes. `cols: 1` is the phone sheet — a screen-shaped page, one column,
 // type big enough to read at that width; `cols: 2` is the desktop sheet — A4 in two
 // columns, whose measure comes out slightly wider than the phone's, so the diagrams that

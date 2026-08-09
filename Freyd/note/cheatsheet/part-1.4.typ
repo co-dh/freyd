@@ -7,6 +7,9 @@
 //       1.436 (16-row table of finitely-presented counterexamples); 1.461 (LH: the whole item
 //       is the cartesian structure of LH and Sh(Y)); 1.475 (Z-set counterexample);
 //       1.49-1.4(12) (tau-category apparatus and its metatheorem — proof machinery).
+// full-only: 1.48 1.481 (the rational category A[D^-1] — a localization built to invert dense
+//       monics, machinery for the metatheorems and never a Rel construction, so the
+//       Rel-focused build drops them and only `--input full=1` keeps them).
 // Diagrams are Freyd's own figures, in his diagrammatic language; the abbreviating
 // "we denote it thusly" figures are not reproduced.
 #import "style.typ": *
@@ -290,7 +293,9 @@
 
   ("1.471–4", [#Th[A special cartesian category has at most two values.] If every finite sequence of morphisms is preserved-and-reflected by some $T: bold(A) -> cal(S)$, then $bold(A)$ is special. One-valued $bold(A)$: special iff every $B times -$ is faithful. Two-valued $bold(A)$, with $0$ the proper subobject of $1$: special iff $B times -$ is faithful for every $B tilde.eq.not 0$.]),
 
-  ("1.48", [a class $cal(D)$ of monics in a cartesian $bold(A)$ is #D("dense") if it holds the isomorphisms and is closed under composition and pullback. The #D("rational category") $bold(A)[cal(D)^(-1)]$, with $T_cal(D)$, inverts every dense monic and is universal among functors that do.]),
+  ..fullonly(
+    ("1.48", [a class $cal(D)$ of monics in a cartesian $bold(A)$ is #D("dense") if it holds the isomorphisms and is closed under composition and pullback. The #D("rational category") $bold(A)[cal(D)^(-1)]$, with $T_cal(D)$, inverts every dense monic and is universal among functors that do.]),
 
-  ("1.481", [#Th[$bold(A)[cal(D)^(-1)]$ is cartesian and $T_cal(D)$ is a representation of cartesian categories.]]),
+    ("1.481", [#Th[$bold(A)[cal(D)^(-1)]$ is cartesian and $T_cal(D)$ is a representation of cartesian categories.]]),
+  ),
 )

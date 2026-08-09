@@ -10,6 +10,10 @@
 //       discrete); 1.656 (diversion: the abelian analogue and its failure); 1.659 (LH:
 //       decidable sheaves, germs of continuous functions); the topological-basis sentence
 //       of 1.632 and the Diaconescu / G-set remarks closing 1.662 (example, diversion).
+// full-only: 1.644 1.645 1.646 1.647 1.648 (the ultra-filter block — ultra-product and
+//       ultra-power functors, Ker/prop, complete and atomic measures: model-theoretic
+//       machinery for the special-category metatheorems, nothing Rel is built from, so the
+//       Rel-focused build drops them and only `--input full=1` keeps them).
 #import "style.typ": *
 
 = 1.6 Pre-logoi
@@ -146,15 +150,17 @@
       ..pb((0, 0), (1, 0), (0, 1))),
   )]),
   ("1.641", [#Th[A representation of pre-logoi between boolean pre-logoi preserves the boolean structure automatically]: each $Sub(A) -> Sub(T A)$ preserves complements and is a map of boolean algebras.]),
-  ("1.644", [Any power of $cal(S)$ is a boolean capital positive pre-logos; confuse $Val_(cal(S)^I)$ with the power set of $I$.]),
-  ("", [For an ultra-filter $cal(F) subset Val_(cal(S)^I)$, $T_cal(F)$ is an #D("ultra-product functor") and the composite an #D("ultra-power functor"). Both are representations of boolean pre-logoi: $cal(S) arrow.long^Delta cal(S)^I arrow.long^(T_cal(F)) cal(S)$.]),
-  ("1.645", [For $T: bold(A) -> bold(B)$ a representation of boolean pre-logoi: $cal("Ker")(T) = \{U subset 1 | T(U) = 0\}$, the values killed by $T$; $cal("prop")(A' subset A)$, the #emph[properness], is the support of the complement of $A'$.]),
-  ("", [$A' subset A$ is proper iff $cal("prop")(A' subset A) != 0$; $T A' subset T A$ is proper iff $cal("prop")(A' subset A) subset.not cal("Ker")(T)$; $T$ is faithful iff $cal("Ker")(T) = 0$.]),
-  ("", [$1 in cal("Ker")(T)$ iff $bold(B)$ is degenerate, so $bold(A)$ two-valued and $bold(B)$ non-degenerate forces $T$ faithful — every ultra-power functor is faithful. $cal("Ker")(T_cal(F))$ is the complement of $cal(F)$ in $Val_bold(A)$.]),
-  ("1.646", [Two propositions with the same proof: #Th[every small special cartesian category, and every small special positive pre-logos, is faithfully representable in the category of sets.]]),
-  ("1.647", [For proper $A_i subset B_i$ with complement $A'_i$ $(i = 1, 2)$, the complement of $(A_1 times B_2) union (B_1 times A_2)$ in $B_1 times B_2$ is $A'_1 times A'_2$. Hence, by [1.637], #Th[a boolean pre-logos is special iff it is two-valued.]]),
-  ("1.648", [If an ultra-power functor preserves coequalizers — one built from $NN, 0, s$ [1.587] suffices — then $cal(F)$ meets every countable partitioning of $I$: such an ultra-filter is a #D("complete measure").]),
-  ("", [The #D("atomic measures") are those of the form $\{j | i <= j\}$; for $cal(F)$ atomic, $T_cal(F)$ is conjugate to a projection and the ultra-power functor to the identity functor.]),
+  ..fullonly(
+    ("1.644", [Any power of $cal(S)$ is a boolean capital positive pre-logos; confuse $Val_(cal(S)^I)$ with the power set of $I$.]),
+    ("", [For an ultra-filter $cal(F) subset Val_(cal(S)^I)$, $T_cal(F)$ is an #D("ultra-product functor") and the composite an #D("ultra-power functor"). Both are representations of boolean pre-logoi: $cal(S) arrow.long^Delta cal(S)^I arrow.long^(T_cal(F)) cal(S)$.]),
+    ("1.645", [For $T: bold(A) -> bold(B)$ a representation of boolean pre-logoi: $cal("Ker")(T) = \{U subset 1 | T(U) = 0\}$, the values killed by $T$; $cal("prop")(A' subset A)$, the #emph[properness], is the support of the complement of $A'$.]),
+    ("", [$A' subset A$ is proper iff $cal("prop")(A' subset A) != 0$; $T A' subset T A$ is proper iff $cal("prop")(A' subset A) subset.not cal("Ker")(T)$; $T$ is faithful iff $cal("Ker")(T) = 0$.]),
+    ("", [$1 in cal("Ker")(T)$ iff $bold(B)$ is degenerate, so $bold(A)$ two-valued and $bold(B)$ non-degenerate forces $T$ faithful — every ultra-power functor is faithful. $cal("Ker")(T_cal(F))$ is the complement of $cal(F)$ in $Val_bold(A)$.]),
+    ("1.646", [Two propositions with the same proof: #Th[every small special cartesian category, and every small special positive pre-logos, is faithfully representable in the category of sets.]]),
+    ("1.647", [For proper $A_i subset B_i$ with complement $A'_i$ $(i = 1, 2)$, the complement of $(A_1 times B_2) union (B_1 times A_2)$ in $B_1 times B_2$ is $A'_1 times A'_2$. Hence, by [1.637], #Th[a boolean pre-logos is special iff it is two-valued.]]),
+    ("1.648", [If an ultra-power functor preserves coequalizers — one built from $NN, 0, s$ [1.587] suffices — then $cal(F)$ meets every countable partitioning of $I$: such an ultra-filter is a #D("complete measure").]),
+    ("", [The #D("atomic measures") are those of the form $\{j | i <= j\}$; for $cal(F)$ atomic, $T_cal(F)$ is conjugate to a projection and the ultra-power functor to the identity functor.]),
+  ),
 )
 
 #dt(
