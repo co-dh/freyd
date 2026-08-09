@@ -10,7 +10,9 @@
   properties (reflexivity, symmetry, transitivity) that the derivations use.  Built on the cons-list
   engine `AOP.A6_ConsList` (`list A = ConsList Unit A`).
 -/
-import AOP.A6_ConsList
+module
+
+public import AOP.A6_ConsList
 
 namespace Freyd.Alg.RelSet.ListRel
 
@@ -19,12 +21,12 @@ open Freyd Freyd.Alg.RelSet.CL
 variable {A : Type}
 
 /-- `list A = ConsList Unit A` (`nil = wrap ()`, `cons a x`). -/
-abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
+@[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
 /-! ## Membership `inlist : A ← list A` -/
 
 /-- `a ∈ x`. -/
-def inlistP : ConsList Unit A → A → Prop
+@[expose] public def inlistP : ConsList Unit A → A → Prop
   | ConsList.wrap _, _ => False
   | ConsList.cons b x, a => a = b ∨ inlistP x a
 
@@ -35,25 +37,25 @@ def inlist : dList A ⟶ dE A := inlistP
 
 /-- The permutation relation, inductively (equivalent to B&dM's `⦇[nil, perm·cons]⦈`): `y` is a
     rearrangement of `x`. -/
-inductive Perm : ConsList Unit A → ConsList Unit A → Prop
+public inductive Perm : ConsList Unit A → ConsList Unit A → Prop
   | nil : Perm (ConsList.wrap ()) (ConsList.wrap ())
   | cons (a : A) {x y : ConsList Unit A} : Perm x y → Perm (ConsList.cons a x) (ConsList.cons a y)
   | swap (a b : A) (x : ConsList Unit A) :
       Perm (ConsList.cons a (ConsList.cons b x)) (ConsList.cons b (ConsList.cons a x))
   | trans {x y z : ConsList Unit A} : Perm x y → Perm y z → Perm x z
 
-theorem Perm.refl : ∀ x : ConsList Unit A, Perm x x
+public theorem Perm.refl : ∀ x : ConsList Unit A, Perm x x
   | ConsList.wrap () => Perm.nil
   | ConsList.cons a x => Perm.cons a (Perm.refl x)
 
-theorem Perm.symm : ∀ {x y : ConsList Unit A}, Perm x y → Perm y x
+public theorem Perm.symm : ∀ {x y : ConsList Unit A}, Perm x y → Perm y x
   | _, _, Perm.nil => Perm.nil
   | _, _, Perm.cons a h => Perm.cons a h.symm
   | _, _, Perm.swap a b x => Perm.swap b a x
   | _, _, Perm.trans h1 h2 => Perm.trans h2.symm h1.symm
 
 /-- The permutation relation `perm : list A ⟶ list A`. -/
-def perm : dList A ⟶ dList A := Perm
+@[expose] public def perm : dList A ⟶ dList A := Perm
 
 /-- **`perm` is transitive**: `perm ≫ perm ⊑ perm`. -/
 theorem perm_transitive : (perm : dList A ⟶ dList A) ≫ perm ⊑ perm :=
@@ -122,12 +124,12 @@ variable (R : A → A → Prop)
 
 /-- `x` is sorted under `R`: each element is `R`-below every later element (matches B&dM's `ok`
     coreflexive, `ok(a,x)` iff `∀ b ∈ x, aRb`, threaded through the list). -/
-def orderedP : ConsList Unit A → Prop
+@[expose] public def orderedP : ConsList Unit A → Prop
   | ConsList.wrap _ => True
   | ConsList.cons a x => (∀ b, inlistP x b → R a b) ∧ orderedP x
 
 /-- The sortedness coreflexive `ordered : list A ⟶ list A`. -/
-def ordered : dList A ⟶ dList A := fun x y => x = y ∧ orderedP R x
+@[expose] public def ordered : dList A ⟶ dList A := fun x y => x = y ∧ orderedP R x
 
 /-- **`ordered` is coreflexive** (`ordered ⊑ id`) — discharges the `hord` hypothesis of §6.6's
     `selection_sort_correct` for the concrete sortedness relation. -/
@@ -137,7 +139,7 @@ theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.id (dLis
 /-! ## Partition `partition : list (list⁺ A) ← list A` (B&dM p.128, `partition = concat°`) -/
 
 /-- List append. -/
-def cappend : ConsList Unit A → ConsList Unit A → ConsList Unit A
+@[expose] public def cappend : ConsList Unit A → ConsList Unit A → ConsList Unit A
   | ConsList.wrap _, ys => ys
   | ConsList.cons a x, ys => ConsList.cons a (cappend x ys)
 

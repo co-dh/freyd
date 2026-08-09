@@ -7,7 +7,9 @@
   recursion on the tail).  `list A` of the book is `ConsList Unit A` (`wrap () = nil`,
   `cons a x`).  Same construction as `A6_SnocList`, product swapped so folds run head-first.
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 
@@ -18,7 +20,7 @@ open Freyd
 variable {L E : Type}
 
 /-- The cons-list datatype: a leaf `wrap l`, extended by `cons`-ing elements on the front. -/
-inductive ConsList (L E : Type) where
+public inductive ConsList (L E : Type) where
   | wrap : L → ConsList L E
   | cons : E → ConsList L E → ConsList L E
 
@@ -26,28 +28,28 @@ inductive ConsList (L E : Type) where
     (`[] ↦ wrap ()`, `x :: xs ↦ cons x (ofList xs)`).  The book's `list A` is `ConsList Unit A`,
     so this is the canonical bridge for deriving folds over raw input lists; use it instead of
     re-declaring a per-file copy. -/
-def ofList : List E → ConsList Unit E
+@[expose] public def ofList : List E → ConsList Unit E
   | []      => ConsList.wrap ()
   | x :: xs => ConsList.cons x (ofList xs)
 
 @[simp] theorem ofList_nil : (ofList [] : ConsList Unit E) = ConsList.wrap () := rfl
-@[simp] theorem ofList_cons (x : E) (xs : List E) :
+@[simp] public theorem ofList_cons (x : E) (xs : List E) :
     ofList (x :: xs) = ConsList.cons x (ofList xs) := rfl
 
 /-- The object carrying `ConsList L E`. -/
-abbrev dCL (L E : Type) : RelSet.{0} := ⟨ConsList L E⟩
+@[expose] public abbrev dCL (L E : Type) : RelSet.{0} := ⟨ConsList L E⟩
 /-- The object carrying the leaf type `L`. -/
-abbrev dL (L : Type) : RelSet.{0} := ⟨L⟩
+@[expose] public abbrev dL (L : Type) : RelSet.{0} := ⟨L⟩
 /-- The object carrying the element type `E`. -/
-abbrev dE (E : Type) : RelSet.{0} := ⟨E⟩
+@[expose] public abbrev dE (E : Type) : RelSet.{0} := ⟨E⟩
 
 /-! ## The functor `F X = L + (E × X)` -/
 
 /-- Carrier of `F X`. -/
-def Fobj (L E : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × c.carrier)⟩
+@[expose] public def Fobj (L E : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × c.carrier)⟩
 
 /-- Action of `F` on a relation: identity on the `L` summand, `id × R` on `E × X`. -/
-def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L E c' :=
+@[expose] public def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L E c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => p.1 = q.1 ∧ R p.2 q.2
@@ -63,7 +65,7 @@ def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L
     Fmap L E R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
-def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
+@[expose] public def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj L E
   map R := Fmap L E R
   map_id c := hom_ext fun u v => by
@@ -97,7 +99,7 @@ def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
       first | exact id | exact fun hh => ⟨hh.1, le_iff.mp h _ _ hh.2⟩ | exact False.elim
 
 /-- `F` preserves converse. -/
-theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
+public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
   intro c c' R
   apply hom_ext; intro u v
   cases u <;> cases v <;> simp only [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
@@ -109,22 +111,22 @@ theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
 /-! ## `ConsList L E` is the initial algebra of `F` -/
 
 /-- The constructor map `[wrap, cons] : F (ConsList L E) → ConsList L E`. -/
-def con : (Fobj L E (dCL L E)).carrier → ConsList L E
+@[expose] public def con : (Fobj L E (dCL L E)).carrier → ConsList L E
   | Sum.inl d => ConsList.wrap d
   | Sum.inr p => ConsList.cons p.1 p.2
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : ConsList L E → c.carrier → Prop
+@[expose] public def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : ConsList L E → c.carrier → Prop
   | ConsList.wrap d => fun r => f (Sum.inl d) r
   | ConsList.cons dig dec => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (dig, r')) r
 
-@[simp] theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (d : L) (r : c.carrier) :
+@[simp] public theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (d : L) (r : c.carrier) :
     cataFold f (ConsList.wrap d) r = f (Sum.inl d) r := rfl
-@[simp] theorem cataFold_cons {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (dig : E) (dec : ConsList L E)
+@[simp] public theorem cataFold_cons {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (dig : E) (dec : ConsList L E)
     (r : c.carrier) :
     cataFold f (ConsList.cons dig dec) r = ∃ r', cataFold f dec r' ∧ f (Sum.inr (dig, r')) r := rfl
 
-theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     ∀ dec : ConsList L E, ∃ r, cataFold f dec r
   | ConsList.wrap d => entire_total hf.1 (Sum.inl d)
   | ConsList.cons dig dec => by
@@ -132,7 +134,7 @@ theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     obtain ⟨r, hr⟩ := entire_total hf.1 (Sum.inr (dig, r'))
     exact ⟨r, r', hr', hr⟩
 
-theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     ∀ (dec : ConsList L E) (r r' : c.carrier), cataFold f dec r → cataFold f dec r' → r = r'
   | ConsList.wrap d, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | ConsList.cons dig dec, r, r', h1, h2 => by
@@ -142,7 +144,7 @@ theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
     subst hss
     exact simple_uniq hf.2 hfs hfs'
 
-theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     Map (a := dCL L E) (b := c) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = Cat.id (dCL L E)
@@ -156,7 +158,7 @@ theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     exact cataFold_functional f hf dec r r' h1 h2
 
 /-- The initial `F`-algebra structure on `ConsList L E`. -/
-def initial (L E : Type) : InitialAlgebra (F L E) where
+@[expose] public def initial (L E : Type) : InitialAlgebra (F L E) where
   t := dCL L E
   α := graph con
   α_map := graph_map con
@@ -234,7 +236,7 @@ def initial (L E : Type) : InitialAlgebra (F L E) where
 /-! ## The recursive equation for the converse of a catamorphism -/
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dCL L E ⟶ c`. -/
-def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dCL L E ⟶ c := cataFold φ
+@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dCL L E ⟶ c := cataFold φ
 
 /-- The book's banana brackets for the catamorphism — one global overload per datatype engine,
     disambiguated by the algebra's type. -/
@@ -242,7 +244,7 @@ notation:max "⦇" φ "⦈" => cataR φ
 
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataFold φ = F(cataFold φ) ≫ φ`.  (The structural proof never uses `Map φ`.) -/
-theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     graph con ≫ cataFold φ = (F L E).map (cataFold φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -274,24 +276,24 @@ theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
 /-- The structural fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright, via
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, …) apply to `cataR`. -/
-theorem cataR_eq_relCata {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     cataR φ = relCata (initial L E) φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 
 /-- The `wrap`-component of an algebra `φ = [g, h]`. -/
-def algWrap {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dL L ⟶ c := fun d r => φ (Sum.inl d) r
+@[expose] public def algWrap {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dL L ⟶ c := fun d r => φ (Sum.inl d) r
 /-- The `cons`-component of an algebra `φ = [g, h]`. -/
-def algCons {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c :=
+@[expose] public def algCons {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c :=
   fun p r => φ (Sum.inr p) r
 
 /-- The constructor `wrap` (`nil`) as a relation. -/
-def wrapR : dL L ⟶ dCL L E := graph ConsList.wrap
+@[expose] public def wrapR : dL L ⟶ dCL L E := graph ConsList.wrap
 /-- The constructor `cons` as a relation. -/
-def consR : (⟨E × ConsList L E⟩ : RelSet.{0}) ⟶ dCL L E := graph (fun p => ConsList.cons p.1 p.2)
+@[expose] public def consR : (⟨E × ConsList L E⟩ : RelSet.{0}) ⟶ dCL L E := graph (fun p => ConsList.cons p.1 p.2)
 
 /-- The recursive equation for the converse of a cons-list catamorphism:
     `val° = (wrap·g°) ∪ (cons·(id×val°)·h°)` (mirrored), for any algebra `φ = [g, h]`. -/
-theorem cata_converse_eq {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cata_converse_eq {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     (cataR φ)° = (algWrap φ)° ≫ wrapR
       ∪ (algCons φ)° ≫ rprodMap (Cat.id (dE E)) (cataR φ)° ≫ consR := by
   apply hom_ext; intro r dec

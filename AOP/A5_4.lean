@@ -14,10 +14,12 @@
   the natural attempt needs `R` a map to shunt, which it is not in general.
 -/
 
-import Freyd.S2_40
-import AOP.A4_6
-import AOP.A4_2
-import Freyd.S2_41b
+module
+
+public import Freyd.S2_40
+public import AOP.A4_6
+public import AOP.A4_2
+public import Freyd.S2_41b
 
 universe u
 
@@ -41,25 +43,25 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
     Universal properties used to verify the definition (`le_leftDiv_iff`/`le_div_iff`):
     `X ⊑ ((∋a)° \ (R≫(∋b)°)) ↔ (∋a)°≫X ⊑ R≫(∋b)°` (term₁) and
     `X ⊑ (∋a≫R)/∋b ↔ X≫∋b ⊑ ∋a≫R` (term₂). -/
-def powerRel {a b : 𝒜} (R : a ⟶ b) :
+@[expose] public def powerRel {a b : 𝒜} (R : a ⟶ b) :
     PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj b :=
   ((∋ a)° \ (R ≫ (∋ b)°)) ∩ ((∋ a ≫ R) / ∋ b)
 
 /-- Term₂ cancellation (the "output-reachable" half): `powerRel R ≫ ∋ b ⊑ ∋ a ≫ R`.
     This is B&dM p.133's example that `∈` is LAX NATURAL along the power relator
     (used again, unnamed, in `AOP.A5_7`). -/
-theorem powerRel_eps_lax {a b : 𝒜} (R : a ⟶ b) : powerRel R ≫ ∋ b ⊑ ∋ a ≫ R :=
+public theorem powerRel_eps_lax {a b : 𝒜} (R : a ⟶ b) : powerRel R ≫ ∋ b ⊑ ∋ a ≫ R :=
   le_trans (comp_mono_right (inter_lb_right _ _) _) (DivisionAllegory.div_comp_le _ _)
 
 /-- Term₁ cancellation (the "input-reaches" half): `(∋ a)° ≫ powerRel R ⊑ R ≫ (∋ b)°`. -/
-theorem powerRel_term1_cancel {a b : 𝒜} (R : a ⟶ b) :
+public theorem powerRel_term1_cancel {a b : 𝒜} (R : a ⟶ b) :
     (∋ a)° ≫ powerRel R ⊑ R ≫ (∋ b)° :=
   (le_leftDiv_iff _ _ _).mp (inter_lb_left _ _)
 
 /-- **B&dM §5.4** (`powerRel` is monotone): `R ⊑ S → powerRel R ⊑ powerRel S`.  Both
     divisions are monotone in the numerator position (`div_mono_left`/`leftDiv_mono_right`),
     applied after composing `h` with the fixed `∋`-factors. -/
-theorem powerRel_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : powerRel R ⊑ powerRel S :=
+public theorem powerRel_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : powerRel R ⊑ powerRel S :=
   le_inter
     (le_trans (inter_lb_left _ _) (leftDiv_mono_right _ (comp_mono_right h _)))
     (le_trans (inter_lb_right _ _) (div_mono_left (comp_mono_left _ h) _))

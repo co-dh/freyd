@@ -17,7 +17,9 @@
   Reuses the whole `A6_SnocList` engine (`cataFold`, `cataR`, `cataFold_wrap`, `cataFold_snoc`)
   with ZERO new engine code.  Mathlib-free.
 -/
-import AOP.A6_SnocList
+module
+
+public import AOP.A6_SnocList
 
 set_option linter.unusedVariables false
 
@@ -29,13 +31,13 @@ open Freyd
     `SnocList Unit Unit` is the initial algebra of `1 + X`, i.e. `ℕ`, so this is the isomorphism
     onto `ℕ` that lets a `ℕ`-recurrence be run as a snoc-list catamorphism.  Shared by every
     `ℕ`-over-`SnocList` derivation (`L70_derived`, `L1137_derived`). -/
-def natOf : SnocList Unit Unit → Nat
+@[expose] public def natOf : SnocList Unit Unit → Nat
   | SnocList.wrap _    => 0
   | SnocList.snoc xs _ => natOf xs + 1
 
 /-- The `ℕ`-to-`SnocList Unit Unit` encoding (inverse of `natOf`): `n` ↦ `n` `snoc`s over
     `wrap ()`.  Used to feed concrete numerals to the emergent folds for cross-checking. -/
-def snocs : Nat → SnocList Unit Unit
+@[expose] public def snocs : Nat → SnocList Unit Unit
   | 0     => SnocList.wrap ()
   | n + 1 => SnocList.snoc (snocs n) ()
 
@@ -47,7 +49,7 @@ theorem natOf_snocs (n : Nat) : natOf (snocs n) = n := by
 /-- Emergent product-algebra from base `g : L → C₁×C₂` and step `step : C₁×C₂ → E → C₁×C₂`.
     This is the algebra `[g, step] : F(C₁×C₂) → C₁×C₂` whose catamorphism the tupling law
     identifies with the lockstep recursion; it is the graph of the case split, hence a `Map`. -/
-def pairAlg {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂) :
+@[expose] public def pairAlg {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂) :
     Fobj L E (⟨C₁ × C₂⟩ : RelSet.{0}) ⟶ (⟨C₁ × C₂⟩ : RelSet.{0}) :=
   graph (fun u => match u with
     | Sum.inl l      => g l
@@ -61,7 +63,7 @@ theorem pairAlg_map {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁
     `h (wrap l) = g l`, `h (snoc xs e) = step (h xs) e` IS the catamorphism of `pairAlg g step`.
     Proof: catamorphism uniqueness — `graph h` and `cataR (pairAlg g step)` satisfy the SAME
     structural recursion, so a single induction on the datatype identifies them. -/
-theorem tupling {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂)
+public theorem tupling {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂)
     (h : SnocList L E → C₁ × C₂)
     (hwrap : ∀ l, h (SnocList.wrap l) = g l)
     (hsnoc : ∀ xs e, h (SnocList.snoc xs e) = step (h xs) e) :
@@ -85,7 +87,7 @@ theorem tupling {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × 
 /-- **First-component projection.**  Composing the tupling law with `graph Prod.fst` extracts the
     scalar answer: the graph of `d ↦ (h d).1` is the catamorphism of `pairAlg g step` followed by
     the first projection.  This is where the scalar Fibonacci / Tribonacci number comes out. -/
-theorem tupling_fst {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂)
+public theorem tupling_fst {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁ × C₂ → E → C₁ × C₂)
     (h : SnocList L E → C₁ × C₂)
     (hwrap : ∀ l, h (SnocList.wrap l) = g l)
     (hsnoc : ∀ xs e, h (SnocList.snoc xs e) = step (h xs) e) :
@@ -107,7 +109,7 @@ theorem tupling_fst {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step : C₁
   is required — banana-split alone cannot linearize a genuine second-order recurrence. -/
 
 /-- A scalar algebra `[g, st] : F C → C` over a bare carrier `C` (the graph of the case split). -/
-def scalarAlg {L E C : Type} (g : L → C) (st : C → E → C) :
+@[expose] public def scalarAlg {L E C : Type} (g : L → C) (st : C → E → C) :
     Fobj L E (⟨C⟩ : RelSet.{0}) ⟶ (⟨C⟩ : RelSet.{0}) :=
   graph (fun u => match u with
     | Sum.inl l      => g l

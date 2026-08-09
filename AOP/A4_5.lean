@@ -11,7 +11,9 @@
   §5  Subtraction (Ex 4.30).
 -/
 
-import AOP.A4_4
+module
+
+public import AOP.A4_4
 
 universe v u
 
@@ -26,7 +28,7 @@ open LocallyCompleteDistributiveAllegory
 variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-- `R ⊑ 0 ↔ R = 0` — zero is the bottom of every hom-set. -/
-theorem le_zero_iff_eq_zero {a b : 𝒜} (R : a ⟶ b) : R ⊑ (𝟘 : a ⟶ b) ↔ R = 𝟘 :=
+public theorem le_zero_iff_eq_zero {a b : 𝒜} (R : a ⟶ b) : R ⊑ (𝟘 : a ⟶ b) ↔ R = 𝟘 :=
   ⟨fun h => le_antisymm h (zero_le _), fun h => h ▸ le_refl _⟩
 
 /-- `A∪B = 0 ↔ A = 0 ∧ B = 0`. -/
@@ -41,21 +43,21 @@ theorem union_eq_zero_iff {a b : 𝒜} (A B : a ⟶ b) :
     exact DistributiveAllegory.union_idem 𝟘
 
 /-- Negation `∼R := R ⇨ 0`. -/
-def neg {a b : 𝒜} (R : a ⟶ b) : a ⟶ b := R ⇨ (𝟘 : a ⟶ b)
+@[expose] public def neg {a b : 𝒜} (R : a ⟶ b) : a ⟶ b := R ⇨ (𝟘 : a ⟶ b)
 
 /-- Negation notation `∼R`. -/
 prefix:max (name := negNotation) "∼" => neg
 
 /-- The universal property of negation: `X ⊑ ∼R ↔ X∩R = 0`. -/
-theorem le_neg_iff {a b : 𝒜} (X R : a ⟶ b) : X ⊑ ∼R ↔ X ∩ R = 𝟘 := by
+public theorem le_neg_iff {a b : 𝒜} (X R : a ⟶ b) : X ⊑ ∼R ↔ X ∩ R = 𝟘 := by
   rw [neg, le_impl_iff, le_zero_iff_eq_zero]
 
-theorem inter_neg_zero {a b : 𝒜} (R : a ⟶ b) : R ∩ (∼R) = 𝟘 := by
+public theorem inter_neg_zero {a b : 𝒜} (R : a ⟶ b) : R ∩ (∼R) = 𝟘 := by
   rw [Allegory.inter_comm]
   exact (le_neg_iff (∼R) R).mp (le_refl _)
 
 /-- De Morgan: `∼(R∪S) = ∼R ∩ ∼S`. -/
-theorem neg_union {a b : 𝒜} (R S : a ⟶ b) : ∼(R ∪ S) = (∼R) ∩ (∼S) := by
+public theorem neg_union {a b : 𝒜} (R S : a ⟶ b) : ∼(R ∪ S) = (∼R) ∩ (∼S) := by
   apply le_antisymm
   · exact le_inter (impl_antitone_left (le_union_left R S)) (impl_antitone_left (le_union_right R S))
   · apply (le_neg_iff _ _).mpr
@@ -72,17 +74,17 @@ theorem neg_union {a b : 𝒜} (R S : a ⟶ b) : ∼(R ∪ S) = (∼R) ∩ (∼S
     exact DistributiveAllegory.union_idem 𝟘
 
 /-- **Ex 4.41**: `∼0 = ⊤`. -/
-theorem neg_zero {a b : 𝒜} : (∼(𝟘 : a ⟶ b)) = topHom a b := by
+public theorem neg_zero {a b : 𝒜} : (∼(𝟘 : a ⟶ b)) = topHom a b := by
   apply le_antisymm (le_Sup trivial)
   apply (le_neg_iff _ _).mpr
   exact le_antisymm (inter_lb_right _ _) (zero_le _)
 
 /-- **Ex 4.41**: `∼⊤ = 0`. -/
-theorem neg_topHom {a b : 𝒜} : (∼(topHom a b)) = (𝟘 : a ⟶ b) := by
+public theorem neg_topHom {a b : 𝒜} : (∼(topHom a b)) = (𝟘 : a ⟶ b) := by
   have h := (le_neg_iff (∼(topHom a b)) (topHom a b)).mp (le_refl _)
   rwa [inter_eq_left (show (∼(topHom a b) : a ⟶ b) ⊑ topHom a b from le_Sup trivial)] at h
 
-theorem le_neg_neg {a b : 𝒜} (R : a ⟶ b) : R ⊑ ∼∼R :=
+public theorem le_neg_neg {a b : 𝒜} (R : a ⟶ b) : R ⊑ ∼∼R :=
   (le_neg_iff R (∼R)).mpr (inter_neg_zero R)
 
 /-- **Ex 4.41**: `∼R = ∼∼∼R`. -/
@@ -90,7 +92,7 @@ theorem neg_neg_neg {a b : 𝒜} (R : a ⟶ b) : (∼R) = ∼∼∼R :=
   le_antisymm (le_neg_neg (∼R)) (impl_antitone_left (le_neg_neg R))
 
 /-- **Ex 4.41**: `∼∼(R∪∼R) = ⊤`. -/
-theorem neg_neg_union_neg {a b : 𝒜} (R : a ⟶ b) : ∼∼(R ∪ ∼R) = topHom a b := by
+public theorem neg_neg_union_neg {a b : 𝒜} (R : a ⟶ b) : ∼∼(R ∪ ∼R) = topHom a b := by
   have h : ∼(R ∪ ∼R) = (𝟘 : a ⟶ b) := by
     rw [neg_union]; exact inter_neg_zero (∼R)
   rw [h, neg_zero]
@@ -120,7 +122,7 @@ end LCDANeg
 
 /-- A **BOOLEAN ALLEGORY** (B&dM p.102): a locally complete distributive allegory in which
     negation is involutive.  `Rel` is Boolean. -/
-class BooleanAllegory (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜 where
+public class BooleanAllegory (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜 where
   neg_neg : ∀ {a b : 𝒜} (R : a ⟶ b), Freyd.Alg.neg (Freyd.Alg.neg R) = R
 
 section Boolean
@@ -136,7 +138,7 @@ theorem neg_inter {a b : 𝒜} (R S : a ⟶ b) : (∼(R ∩ S)) = (∼R) ∪ (�
   exact h2.symm
 
 /-- **Ex 4.42**, forward instance: `R ∪ ∼R = ⊤` (excluded middle) in a Boolean allegory. -/
-theorem union_neg_eq_top {a b : 𝒜} (R : a ⟶ b) : R ∪ (∼R) = topHom a b := by
+public theorem union_neg_eq_top {a b : 𝒜} (R : a ⟶ b) : R ∪ (∼R) = topHom a b := by
   rw [← BooleanAllegory.neg_neg (R ∪ ∼R)]
   exact neg_neg_union_neg R
 
@@ -194,7 +196,7 @@ theorem schroeder_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c)
 /-! ### §5  Subtraction (Ex 4.30) -/
 
 /-- Subtraction `R − S := R ∩ ∼S`. -/
-def sub {a b : 𝒜} (R S : a ⟶ b) : a ⟶ b := R ∩ (∼S)
+@[expose] public def sub {a b : 𝒜} (R S : a ⟶ b) : a ⟶ b := R ∩ (∼S)
 
 /-- The universal property of subtraction: `R−S ⊑ X ↔ R ⊑ S∪X`. -/
 theorem sub_le_iff {a b : 𝒜} (R S X : a ⟶ b) : sub R S ⊑ X ↔ R ⊑ S ∪ X := by
@@ -213,12 +215,12 @@ theorem sub_le_iff {a b : 𝒜} (R S X : a ⟶ b) : sub R S ⊑ X ↔ R ⊑ S �
     rw [h2, DistributiveAllegory.zero_union] at h1
     exact le_trans h1 (inter_lb_right (∼S) X)
 
-theorem sub_zero {a b : 𝒜} (R : a ⟶ b) : sub R 𝟘 = R := by
+public theorem sub_zero {a b : 𝒜} (R : a ⟶ b) : sub R 𝟘 = R := by
   show R ∩ (∼(𝟘 : a ⟶ b)) = R
   rw [neg_zero]
   exact inter_eq_left (LocallyCompleteDistributiveAllegory.le_Sup trivial)
 
-theorem union_sub_absorb {a b : 𝒜} (R S : a ⟶ b) : R ∪ (sub S R) = R ∪ S := by
+public theorem union_sub_absorb {a b : 𝒜} (R S : a ⟶ b) : R ∪ (sub S R) = R ∪ S := by
   apply le_antisymm
   · apply union_lub (le_union_left R S)
     exact le_trans (inter_lb_left S (∼R)) (le_union_right R S)
@@ -231,17 +233,17 @@ theorem union_sub_absorb {a b : 𝒜} (R S : a ⟶ b) : R ∪ (sub S R) = R ∪ 
         (le_union_right R (sub S R))
     rwa [← heq] at hu
 
-theorem sub_union {a b : 𝒜} (R S T : a ⟶ b) : sub R (S ∪ T) = sub (sub R S) T := by
+public theorem sub_union {a b : 𝒜} (R S T : a ⟶ b) : sub R (S ∪ T) = sub (sub R S) T := by
   show R ∩ (∼(S ∪ T)) = (R ∩ (∼S)) ∩ (∼T)
   rw [neg_union, Allegory.inter_assoc]
 
-theorem union_sub_distrib {a b : 𝒜} (R S T : a ⟶ b) : sub (R ∪ S) T = sub R T ∪ sub S T := by
+public theorem union_sub_distrib {a b : 𝒜} (R S T : a ⟶ b) : sub (R ∪ S) T = sub R T ∪ sub S T := by
   show (R ∪ S) ∩ (∼T) = (R ∩ (∼T)) ∪ (S ∩ (∼T))
   rw [Allegory.inter_comm (R ∪ S) (∼T), DistributiveAllegory.inter_union_distrib,
     Allegory.inter_comm (∼T) R, Allegory.inter_comm (∼T) S]
 
 /-- `sub` is monotonic in its numerator. -/
-theorem sub_mono_left {a b : 𝒜} {R R' : a ⟶ b} (h : R ⊑ R') (S : a ⟶ b) :
+public theorem sub_mono_left {a b : 𝒜} {R R' : a ⟶ b} (h : R ⊑ R') (S : a ⟶ b) :
     sub R S ⊑ sub R' S :=
   inter_mono h (le_refl (∼S))
 
@@ -257,14 +259,14 @@ end Boolean
 
 /-- A `LocallyCompleteDistributiveAllegory` that is ALSO given as a `DivisionAllegory`
     (diamond-safe merge). -/
-class DivisionLCDA (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜, DivisionAllegory 𝒜
+public class DivisionLCDA (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜, DivisionAllegory 𝒜
 
 /-- A `BooleanAllegory` that is ALSO given as a `DivisionAllegory` (diamond-safe merge). -/
-class DivisionBooleanAllegory (𝒜 : Type u) extends BooleanAllegory 𝒜, DivisionAllegory 𝒜
+public class DivisionBooleanAllegory (𝒜 : Type u) extends BooleanAllegory 𝒜, DivisionAllegory 𝒜
 
 /-- The Boolean merge is in particular a `DivisionLCDA` (all fields come from the ONE
     `DivisionBooleanAllegory` instance, so the bridge is diamond-safe). -/
-instance (priority := 100) DivisionBooleanAllegory.toDivisionLCDA {𝒜 : Type u}
+@[expose] public instance (priority := 100) DivisionBooleanAllegory.toDivisionLCDA {𝒜 : Type u}
     [inst : DivisionBooleanAllegory 𝒜] : DivisionLCDA 𝒜 := { inst with }
 
 section DivNeg
@@ -272,7 +274,7 @@ section DivNeg
 variable {𝒜 : Type u} [DivisionLCDA 𝒜]
 
 /-- **B&dM 4.22**: `∼R / Y = ∼(R≫Y°)` — valid in ANY locally complete distributive allegory. -/
-theorem neg_div {a b c : 𝒜} (R : a ⟶ c) (Y : b ⟶ c) : (∼R) / Y = ∼(R ≫ Y°) := by
+public theorem neg_div {a b c : 𝒜} (R : a ⟶ c) (Y : b ⟶ c) : (∼R) / Y = ∼(R ≫ Y°) := by
   apply antisymm_of_le_iff
   intro X
   calc X ⊑ (∼R) / Y ↔ X ≫ Y ⊑ ∼R := le_div_iff _ _ _
@@ -290,7 +292,7 @@ variable {𝒜 : Type u} [DivisionBooleanAllegory 𝒜]
     `neg_div` derivation and use `BooleanAllegory.neg_neg`; proved directly rather than via
     `neg_div` since the two division-merge classes, `DivisionLCDA` and
     `DivisionBooleanAllegory`, are not related by `extends`). -/
-theorem div_eq_neg_comp {a b c : 𝒜} (R : a ⟶ c) (Y : b ⟶ c) : R / Y = ∼((∼R) ≫ Y°) := by
+public theorem div_eq_neg_comp {a b c : 𝒜} (R : a ⟶ c) (Y : b ⟶ c) : R / Y = ∼((∼R) ≫ Y°) := by
   apply antisymm_of_le_iff
   intro X
   calc X ⊑ R / Y ↔ X ≫ Y ⊑ R := le_div_iff _ _ _

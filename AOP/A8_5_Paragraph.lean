@@ -9,7 +9,9 @@
   instantiated; `partition` is `AOP.A5_6_ListCombinators.partition`, the concrete `within w`/`fmt`
   and the monotonicity proof are the problem-specific detail.
 -/
-import AOP.A8_1
+module
+
+public import AOP.A8_1
 
 universe u
 

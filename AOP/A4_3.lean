@@ -13,8 +13,10 @@
   own version is tracked (unproved) as §2.148/§2.154 in S2_1.lean.
 -/
 
-import Freyd.S2_10
-import AOP.A4_2  -- entire_id_le
+module
+
+public import Freyd.S2_10
+public import AOP.A4_2  -- entire_id_le
 
 universe v u
 

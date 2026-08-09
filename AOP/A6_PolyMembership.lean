@@ -11,7 +11,9 @@
   drives the FUNCTIONAL generic hylomorphism (`Data.Generic.Hylo`); see `A6_PolyHylo.lean`.
   Composition is diagram order (`X ○ Y ↦ Y ≫ X`).
 -/
-import AOP.A6_Poly
+module
+
+public import AOP.A6_Poly
 
 set_option linter.unusedVariables false
 

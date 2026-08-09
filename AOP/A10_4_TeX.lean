@@ -10,7 +10,9 @@
   recursion.  A direct instance of `A10_1.greedy_dp`; the concrete word/line datatype and the badness
   cost `val` are the problem-specific detail.
 -/
-import AOP.A10_1
+module
+
+public import AOP.A10_1
 
 universe u
 

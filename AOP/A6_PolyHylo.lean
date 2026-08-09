@@ -19,7 +19,9 @@
   machinery exists in this mathlib-free repo (only `Freyd.WellOrdering`, for a different purpose), so
   those items are precise infrastructure gaps, not proof difficulties.  Composition is diagram order.
 -/
-import AOP.A6_PolyFold
+module
+
+public import AOP.A6_PolyFold
 
 set_option linter.unusedVariables false
 

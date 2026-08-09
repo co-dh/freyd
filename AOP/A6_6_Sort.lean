@@ -11,7 +11,9 @@
   `select` (via `base`/`step`, p.153) to satisfy `perm·cons·ok ⊇ select°·(id×perm)`; given that
   fusion condition, sortedness and permutation-symmetry, selection sort refines the spec.
 -/
-import AOP.A6_ConsList
+module
+
+public import AOP.A6_ConsList
 
 namespace Freyd.Alg.RelSet.Sort
 
@@ -20,23 +22,23 @@ open Freyd Freyd.Alg.RelSet.CL
 variable {A : Type}
 
 /-- `list A = ConsList Unit A` (`nil = wrap ()`). -/
-abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
+@[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
 /-- Coreflexives in `Rel(Set)` are symmetric: `R ⊑ id ⟹ R° = R`. -/
-theorem coref_recip {a : RelSet.{0}} {R : a ⟶ a} (h : R ⊑ Cat.id a) : R° = R :=
+public theorem coref_recip {a : RelSet.{0}} {R : a ⟶ a} (h : R ⊑ Cat.id a) : R° = R :=
   symmetric_eq (coreflexive_symmetric_idempotent h).1
 
 variable (select : dList A ⟶ (⟨A × ConsList Unit A⟩ : RelSet.{0}))
 
 /-- The selection-sort algebra `[nil, select°]`: `nil ↦ []`, and `select°` on the cons-summand. -/
-def sortAlg : Fobj Unit A (dList A) ⟶ dList A :=
+@[expose] public def sortAlg : Fobj Unit A (dList A) ⟶ dList A :=
   fun u y => match u with
     | Sum.inl _ => y = ConsList.wrap ()
     | Sum.inr p => select y p
 
 /-- **Selection sort (B&dM p.153)**: `sort = ⦇[nil, select°]⦈°`, the algorithm expressed as the
     CONVERSE OF A CATAMORPHISM. -/
-def sort : dList A ⟶ dList A := (cataR (sortAlg select))°
+@[expose] public def sort : dList A ⟶ dList A := (cataR (sortAlg select))°
 
 /-- **§6.6 (B&dM p.153)**: the selection-sort recursion — `sort x = [] if x=[]`, else
     `[a] ++ sort y where (a, y) = select x`.  A direct instance of `cata_converse_eq`:
@@ -51,7 +53,7 @@ theorem sort_recursion :
     fusion condition B&dM construct it for (`hfus`, packaging `perm·cons·ok ⊇ select°·(id×perm)`),
     `perm` is symmetric (`hperm`), and `ordered = ⦇[nil, cons·ok]⦈` is coreflexive (`hord`).  By
     the fusion law (6.4) `relCata_le_comp` and reciprocation. -/
-theorem selection_sort_correct (oalg : Fobj Unit A (dList A) ⟶ dList A)
+public theorem selection_sort_correct (oalg : Fobj Unit A (dList A) ⟶ dList A)
     (perm : dList A ⟶ dList A) (hperm : perm° = perm) (hord : cataR oalg ⊑ Cat.id (dList A))
     (hfus : (F Unit A).map perm ≫ sortAlg select ⊑ oalg ≫ perm) :
     sort select ⊑ perm ≫ cataR oalg := by

@@ -21,9 +21,11 @@
   The tupling laws are then the `C = C₁ × C₂` instances of these — kept as separate named laws only
   because the product-projection API (`tupling_fst`, banana-split) is convenient there.  Mathlib-free.
 -/
-import AOP.A6_8_Tupling
-import AOP.A6_9_TreeTupling
-import AOP.A6_ConsList
+module
+
+public import AOP.A6_8_Tupling
+public import AOP.A6_9_TreeTupling
+public import AOP.A6_ConsList
 
 set_option linter.unusedVariables false
 
@@ -34,7 +36,7 @@ open Freyd
 /-- **General snoc-list fold-uniqueness.**  A function `h : SnocList L E → C` obeying the
     first-order recursion `h (wrap l) = g l`, `h (snoc xs e) = st (h xs) e` IS the catamorphism of
     the scalar algebra `[g, st]`, for ANY carrier `C`.  (`tupling` is the `C = C₁ × C₂` case.) -/
-theorem snocFold_unique {L E C : Type} (g : L → C) (st : C → E → C)
+public theorem snocFold_unique {L E C : Type} (g : L → C) (st : C → E → C)
     (h : SnocList L E → C)
     (hwrap : ∀ l, h (SnocList.wrap l) = g l)
     (hsnoc : ∀ xs e, h (SnocList.snoc xs e) = st (h xs) e) :
@@ -64,7 +66,7 @@ open Freyd
 /-- A scalar tree algebra `[g, step] : F C → C` over a bare carrier `C` (`F X = 1 + X×A×X`); the
     graph of the two-way case split.  Tree analogue of `SL.scalarAlg`; `treePairAlg` is its
     `C = C₁ × C₂` instance. -/
-def treeScalarAlg {A C : Type} (g : C) (step : C → A → C → C) :
+@[expose] public def treeScalarAlg {A C : Type} (g : C) (step : C → A → C → C) :
     TFobj A (⟨C⟩ : RelSet.{0}) ⟶ (⟨C⟩ : RelSet.{0}) :=
   graph (fun u => match u with
     | Sum.inl _           => g
@@ -78,7 +80,7 @@ theorem treeScalarAlg_map {A C : Type} (g : C) (step : C → A → C → C) :
     recursion `h nil = g`, `h (node l a r) = step (h l) a (h r)` IS the catamorphism of
     `treeScalarAlg g step`, for ANY carrier `C`.  (`treeTupling` is the `C = C₁ × C₂` case; taking
     `C := Tree B → D` gives a lockstep fold over a second tree.) -/
-theorem treeFold_unique {A C : Type} (g : C) (step : C → A → C → C)
+public theorem treeFold_unique {A C : Type} (g : C) (step : C → A → C → C)
     (h : Tree A → C)
     (hnil : h Tree.nil = g)
     (hnode : ∀ l a r, h (Tree.node l a r) = step (h l) a (h r)) :
@@ -109,7 +111,7 @@ open Freyd
 /-- A scalar cons-list algebra `[g, st] : F C → C` over a bare carrier `C` (`F X = L + E×X`); the
     graph of the case split.  Cons-list analogue of `SL.scalarAlg`; note the step `st : E → C → C`
     takes the head element FIRST, then the folded tail (the `ConsList.cons e xs` order). -/
-def consScalarAlg {L E C : Type} (g : L → C) (st : E → C → C) :
+@[expose] public def consScalarAlg {L E C : Type} (g : L → C) (st : E → C → C) :
     Fobj L E (⟨C⟩ : RelSet.{0}) ⟶ (⟨C⟩ : RelSet.{0}) :=
   graph (fun u => match u with
     | Sum.inl d      => g d
@@ -123,7 +125,7 @@ theorem consScalarAlg_map {L E C : Type} (g : L → C) (st : E → C → C) :
     recursion `h (wrap d) = g d`, `h (cons e xs) = st e (h xs)` IS the catamorphism of
     `consScalarAlg g st`, for ANY carrier `C`.  The reshaping law: a front-to-back single-list DP
     (carrier `C := List D` a growing row, e.g. `L1143`'s `col`) is emitted by this law. -/
-theorem consFold_unique {L E C : Type} (g : L → C) (st : E → C → C)
+public theorem consFold_unique {L E C : Type} (g : L → C) (st : E → C → C)
     (h : ConsList L E → C)
     (hwrap : ∀ d, h (ConsList.wrap d) = g d)
     (hcons : ∀ e xs, h (ConsList.cons e xs) = st e (h xs)) :

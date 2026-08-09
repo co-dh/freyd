@@ -30,8 +30,10 @@
   Parameters mirror AoPA's `DecTotalOrder`: an order `R` with a Boolean test `leb` sound for it
   (`hleb`), totality (`htotal`, AoPA `≰-elim`+`<-relax`) and transitivity (`htrans`, `≤-trans`).
 -/
-import AOP.A6_GenFold
-import AOP.A6_6b_SortConcrete
+module
+
+public import AOP.A6_GenFold
+public import AOP.A6_6b_SortConcrete
 
 set_option linter.unusedVariables false
 

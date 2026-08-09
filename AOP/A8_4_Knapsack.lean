@@ -11,7 +11,9 @@
   and — the cons-list base functor being linear — the thinning theorem applies, giving the
   binary-thinning program.  The refinement is exactly the thinning theorem (`A8_1.thinning_min`).
 -/
-import AOP.A8_1
+module
+
+public import AOP.A8_1
 
 universe u
 

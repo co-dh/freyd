@@ -31,8 +31,10 @@
   inherited from `relCata`'s universal property via `A6_SnocList.cataR_eq_relCata` (the same
   cost `A6_6_Sort` pays), and is the honest price of genuinely applying the catamorphism theory.
 -/
-import AOP.A6_SnocList
-import AOP.A7_2
+module
+
+public import AOP.A6_SnocList
+public import AOP.A7_2
 
 set_option linter.unusedVariables false
 
@@ -47,7 +49,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 
 /-- The universal property of (7.5) in `max` form (`maxRel R = minRel R°`):
     `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_A_comp_minRel_iff` at `R°`. -/
-theorem le_A_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
+public theorem le_A_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
     X ⊑ A S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_A_comp_minRel_iff
 
 /-- **Max form of `A7_2.greedy_of_refinement`.**  A deterministic algebra `f` (a map),
@@ -55,7 +57,7 @@ theorem le_A_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
     catamorphism inside `max R·Λ⦇S⦈` — the Pareto frontier of the plain non-deterministic
     catamorphism `⦇S⦈`.  Mirror of `greedy_of_refinement` through `R°` (`maxRel R = minRel R°`),
     flipping monotonicity with `monotonicAlg_recip_iff` (needs `f` a map). -/
-theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
+public theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
     (href : f ⊑ A S ≫ maxRel R) : relCata I f ⊑ A (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
@@ -71,12 +73,12 @@ namespace RelSet
 
 /-- In Rel(Set) the transpose `A` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
     both are maps whose composition with `∋` is `R`, and that map is unique. -/
-theorem A_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : A R = classifier R :=
+public theorem A_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : A R = classifier R :=
   ((A_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
 
 /-- Pointwise form of `maxRel` in Rel(Set): `w` is a `maxRel R`-choice of the set `P` iff
     `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
-theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
+public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
     (P : (PowerAllegory.powerObj a).carrier) (w : a.carrier) :
     (maxRel R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
 
@@ -93,7 +95,7 @@ theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
     order `D` is antisymmetric, then `graph solveFn = A spec ≫ maxRel D` — the program is exactly
     `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
     for a `≤`-minimum take `D w z := w ≤ z` (`maxRel` of the reversed order is `minRel`). -/
-theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
+public theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
     (hanti : ∀ x y : V, D x y → D y x → x = y)
     (solveFn : d.carrier → V) (spec : d ⟶ (⟨V⟩ : RelSet.{0}))
     (hsound : ∀ xs, spec xs (solveFn xs))
@@ -134,7 +136,7 @@ open Freyd
     spec (achievability) and dominates every spec value (domination).  Both are read off the
     single greedy conclusion `greedy_max_of_refinement` (membership + maximality of the Pareto
     optimum); the `gen_spec`/`spec_gen` characterisation only says "program = spec". -/
-theorem horner_correct {L E A1 : Type}
+public theorem horner_correct {L E A1 : Type}
     (S alg : Fobj L E (⟨A1 × Int⟩ : RelSet.{0}) ⟶ (⟨A1 × Int⟩ : RelSet.{0}))
     (R : (⟨A1 × Int⟩ : RelSet.{0}) ⟶ ⟨A1 × Int⟩)
     (foldFn : SnocList L E → A1 × Int)

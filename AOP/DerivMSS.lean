@@ -41,7 +41,9 @@
 
   Mathlib-free.  `#print axioms` at the end of the module.
 -/
-import AOP.Deriv1
+module
+
+public import AOP.Deriv1
 
 set_option linter.unusedVariables false
 

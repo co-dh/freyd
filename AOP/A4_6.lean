@@ -16,8 +16,10 @@
   copies were deduped at collection.
 -/
 
-import Freyd.S2_40
-import AOP.A4_4  -- map_comp_div (and, via A4_2, the shunting rules)
+module
+
+public import Freyd.S2_40
+public import AOP.A4_4  -- map_comp_div (and, via A4_2, the shunting rules)
 
 universe u
 
@@ -56,7 +58,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- B&dM p.103 universal property of `Λ` (here `A`): for a map `f`,
     `f = A R ↔ f ≫ ∋ b = R`. -/
-theorem A_UP {a b : 𝒜} (R : a ⟶ b) {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) :
+public theorem A_UP {a b : 𝒜} (R : a ⟶ b) {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) :
     f = A R ↔ f ≫ ∋ b = R := by
   constructor
   · intro h; rw [h]; exact A_eps_eq' R
@@ -67,14 +69,14 @@ theorem A_injective {a b : 𝒜} {R S : a ⟶ b} (h : A R = A S) : R = S := by
   rw [← A_eps_eq' R, ← A_eps_eq' S, h]
 
 /-- B&dM p.104 fusion law: for a map `f : c ⟶ a`, `A (f ≫ R) = f ≫ A R`. -/
-theorem A_fusion {c a : 𝒜} {f : c ⟶ a} (hf : Map f) {b : 𝒜} (R : a ⟶ b) :
+public theorem A_fusion {c a : 𝒜} {f : c ⟶ a} (hf : Map f) {b : 𝒜} (R : a ⟶ b) :
     A (f ≫ R) = f ≫ A R := by
   have hmap : Map (f ≫ A R) := map_comp hf (A_is_map' R)
   have heq : (f ≫ A R) ≫ ∋ b = f ≫ R := by rw [Cat.assoc, A_eps_eq']
   exact (A_unique _ _ hmap heq).symm
 
 /-- B&dM p.104 reflection law: `A (∋ b) = 1_{[b]}` (`Λ∈ = id`). -/
-theorem A_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.powerObj b) := by
+public theorem A_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.powerObj b) := by
   have heq : Cat.id (PowerAllegory.powerObj b) ≫ ∋ b = ∋ b := Cat.id_comp _
   exact (A_unique _ _ (id_is_map_local _) heq).symm
 
@@ -85,11 +87,11 @@ theorem A_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.powerObj
     embeds `Map(𝒜)` in `𝒜`. -/
 
 /-- The existential-image map `E R : [a] ⟶ [b]` for `R : a ⟶ b` (B&dM p.104-105). -/
-def existsImage {a b : 𝒜} (R : a ⟶ b) : PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj b :=
+@[expose] public def existsImage {a b : 𝒜} (R : a ⟶ b) : PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj b :=
   A (∋ a ≫ R)
 
 /-- `∈` is an (exactly) natural transformation (B&dM p.105): `E R ≫ ∋ b = ∋ a ≫ R`. -/
-theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := A_eps_eq' _
+public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := A_eps_eq' _
 
 /-- `A S ≫ E R = A (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
 theorem A_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :

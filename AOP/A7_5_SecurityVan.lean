@@ -10,7 +10,9 @@
   `A7_2.greedy`; `partition` is `AOP.A5_6_ListCombinators.partition`, and the concrete `secure`
   coreflexive + the (7.14) monotonicity are the problem-specific detail (deferred, see atodo).
 -/
-import AOP.A7_2
+module
+
+public import AOP.A7_2
 
 universe u
 

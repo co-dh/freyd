@@ -17,10 +17,12 @@
   canonical home is `A5_1.lean` (added by a parallel wave); a private copy is proved here
   from `recip_of_comp_id` (A4_2) so this file does not block on that landing.
 -/
-import Freyd.S2_40
-import AOP.A4_6
-import AOP.A4_2
-import AOP.A5_1
+module
+
+public import Freyd.S2_40
+public import AOP.A4_6
+public import AOP.A4_2
+public import AOP.A5_1
 
 universe u
 
@@ -34,7 +36,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
     `α` is a map, and for every MAP algebra `f : F c ⟶ c` there is a unique map
     `cata f hf : t ⟶ c` with `α ≫ cata f hf = F.map (cata f hf) ≫ f`
     (B&dM `cata f hf · α = f · F(cata f hf)`, mirrored). -/
-structure InitialAlgebra (F : Relator 𝒜 𝒜) where
+public structure InitialAlgebra (F : Relator 𝒜 𝒜) where
   t : 𝒜
   α : F.obj t ⟶ t
   α_map : Map α
@@ -49,17 +51,17 @@ variable {F}
 /-- **B&dM p.121**: the RELATIONAL catamorphism `(|R|) = ∈·(|Λ(R·F∈)|)` (mirrored):
     transpose the algebra `R : F c ⟶ c` to the map algebra `Λ(R·F∈) : F[c] ⟶ [c]`, take
     its (map) catamorphism, and compose back down with `∈`. -/
-def relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) : I.t ⟶ c :=
+@[expose] public def relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) : I.t ⟶ c :=
   I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) ≫ ∋ c
 
-theorem relCata_unfold (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem relCata_unfold (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     relCata I R = I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) ≫ ∋ c := rfl
 
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
     of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ c`
     (not just maps). -/
-theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) (X : I.t ⟶ c) :
+public theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) (X : I.t ⟶ c) :
     (I.α ≫ X = F.map X ≫ R) ↔ X = relCata I R := by
   constructor
   · intro h
@@ -93,7 +95,7 @@ theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) (X : I.
       _ = F.map (u ≫ ∋ c) ≫ R := by rw [F.map_comp]
 
 /-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
-theorem relCata_cancel (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem relCata_cancel (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     I.α ≫ relCata I R = F.map (relCata I R) ≫ R :=
   (relCata_UP I R (relCata I R)).mpr rfl
 

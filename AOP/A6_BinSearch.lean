@@ -1,3 +1,5 @@
+module
+
 /-
   Verified binary search (`lowerBound`) on a sorted `Array Int`.
 
@@ -17,19 +19,19 @@ namespace Freyd.BinSearch
 /-- `Sorted a`: non-strictly increasing.  `a[i] ≤ a[j]` for `i < j`.  This is the exact
     monotonicity the `lowerBound` lemmas reason with (a strictly-increasing array is `Sorted`
     too, via `StrictSorted.sorted`). -/
-def Sorted (a : Array Int) : Prop :=
+@[expose] public def Sorted (a : Array Int) : Prop :=
   ∀ i j (hij : i < j) (hj : j < a.size), a[i]'(Nat.lt_trans hij hj) ≤ a[j]
 
 /-- `StrictSorted a`: strictly increasing.  `a[i] < a[j]` for `i < j`.  This is what the
     patience-LIS tails satisfy, and what `insertOrReplace` preserves. -/
-def StrictSorted (a : Array Int) : Prop :=
+@[expose] public def StrictSorted (a : Array Int) : Prop :=
   ∀ i j (hij : i < j) (hj : j < a.size), a[i]'(Nat.lt_trans hij hj) < a[j]
 
-theorem StrictSorted.sorted {a : Array Int} (hs : StrictSorted a) : Sorted a :=
+public theorem StrictSorted.sorted {a : Array Int} (hs : StrictSorted a) : Sorted a :=
   fun i j hij hj => by have := hs i j hij hj; omega
 
 /-- Monotonicity of a `Sorted` array at `≤` (both the strict and the equal case). -/
-theorem Sorted.le_of_le {a : Array Int} (hs : Sorted a) {i j} (hij : i ≤ j)
+public theorem Sorted.le_of_le {a : Array Int} (hs : Sorted a) {i j} (hij : i ≤ j)
     (hj : j < a.size) : a[i]'(Nat.lt_of_le_of_lt hij hj) ≤ a[j] := by
   rcases Nat.lt_or_eq_of_le hij with h | h
   · exact hs i j h hj
@@ -38,7 +40,7 @@ theorem Sorted.le_of_le {a : Array Int} (hs : Sorted a) {i j} (hij : i ≤ j)
 /-- The halving loop.  `hhi : hi ≤ a.size` keeps the midpoint in range; the invariant that a
     caller supplies is that everything below `lo` is `< x` and `a[hi] ≥ x` when `hi < a.size`
     (see `go_spec`).  Terminates because `hi - lo` strictly decreases. -/
-def go (a : Array Int) (x : Int) (lo hi : Nat) (hhi : hi ≤ a.size) : Nat :=
+@[expose] public def go (a : Array Int) (x : Int) (lo hi : Nat) (hhi : hi ≤ a.size) : Nat :=
   if h : lo < hi then
     if a[(lo + hi) / 2]'(by omega) < x then go a x ((lo + hi) / 2 + 1) hi hhi
     else go a x lo ((lo + hi) / 2) (by omega)
@@ -47,7 +49,7 @@ termination_by hi - lo
 decreasing_by all_goals omega
 
 /-- The loop never leaves the interval on the right — no sortedness needed. -/
-theorem go_le_hi (a : Array Int) (x : Int) :
+public theorem go_le_hi (a : Array Int) (x : Int) :
     ∀ (lo hi : Nat) (hhi : hi ≤ a.size), lo ≤ hi → go a x lo hi hhi ≤ hi := by
   intro lo hi hhi
   refine go.induct a x (motive := fun lo hi hhi => lo ≤ hi → go a x lo hi hhi ≤ hi)
@@ -63,7 +65,7 @@ theorem go_le_hi (a : Array Int) (x : Int) :
     two loop invariants (`hI1`: everything below `lo` is `< x`; `hI2`: `a[hi] ≥ x` when in range).
     The `refine go.induct a x (motive := …)` form pins the fixed parameter `x`, which does not
     occur among the induction targets `lo hi hhi`. -/
-theorem go_spec (a : Array Int) (x : Int) (hs : Sorted a) :
+public theorem go_spec (a : Array Int) (x : Int) (hs : Sorted a) :
     ∀ (lo hi : Nat) (hhi : hi ≤ a.size), lo ≤ hi →
       (∀ j, j < lo → (hj : j < a.size) → a[j] < x) →
       (∀ hh : hi < a.size, x ≤ a[hi]) →
@@ -101,11 +103,11 @@ theorem go_spec (a : Array Int) (x : Int) (hs : Sorted a) :
     exact ⟨hle, hI1, fun hr => he ▸ hI2 (he ▸ hr)⟩
 
 /-- `lowerBound a x` = least index `i ≤ a.size` with `x ≤ a[i]`; `a.size` if `x` exceeds all. -/
-def lowerBound (a : Array Int) (x : Int) : Nat := go a x 0 a.size (Nat.le_refl _)
+@[expose] public def lowerBound (a : Array Int) (x : Int) : Nat := go a x 0 a.size (Nat.le_refl _)
 
 /-- The bundled spec of `lowerBound`, obtained from `go_spec` at `lo = 0, hi = a.size` (both loop
     invariants hold vacuously at entry).  The three public lemmas below are its projections. -/
-theorem lowerBound_spec (a : Array Int) (x : Int) (hs : Sorted a) :
+public theorem lowerBound_spec (a : Array Int) (x : Int) (hs : Sorted a) :
     (∀ j, j < lowerBound a x → (hj : j < a.size) → a[j] < x) ∧
     (∀ hr : lowerBound a x < a.size, x ≤ a[lowerBound a x]) := by
   have h := go_spec a x hs 0 a.size (Nat.le_refl _) (Nat.zero_le _)
@@ -114,21 +116,21 @@ theorem lowerBound_spec (a : Array Int) (x : Int) (hs : Sorted a) :
   exact ⟨h.2.1, h.2.2⟩
 
 /-- `lowerBound a x ≤ a.size` — always in range (no sortedness needed). -/
-theorem lowerBound_le_size (a : Array Int) (x : Int) : lowerBound a x ≤ a.size :=
+public theorem lowerBound_le_size (a : Array Int) (x : Int) : lowerBound a x ≤ a.size :=
   go_le_hi a x 0 a.size (Nat.le_refl _) (Nat.zero_le _)
 
 /-- Everything strictly to the left of the result is `< x`. -/
-theorem lt_of_lt_lowerBound {a : Array Int} {x : Int} (hs : Sorted a) :
+public theorem lt_of_lt_lowerBound {a : Array Int} {x : Int} (hs : Sorted a) :
     ∀ j, j < lowerBound a x → (h : j < a.size) → a[j] < x :=
   (lowerBound_spec a x hs).1
 
 /-- When the result is in range, the element there is `≥ x`. -/
-theorem le_of_lowerBound_le {a : Array Int} {x : Int} (hs : Sorted a)
+public theorem le_of_lowerBound_le {a : Array Int} {x : Int} (hs : Sorted a)
     (h : lowerBound a x < a.size) : x ≤ a[lowerBound a x] :=
   (lowerBound_spec a x hs).2 h
 
 /-- `lowerBound a x = a.size` exactly when `x` is above every element. -/
-theorem lowerBound_eq_size_iff {a : Array Int} {x : Int} (hs : Sorted a) :
+public theorem lowerBound_eq_size_iff {a : Array Int} {x : Int} (hs : Sorted a) :
     lowerBound a x = a.size ↔ ∀ j (hj : j < a.size), a[j] < x := by
   constructor
   · intro he j hj
@@ -170,7 +172,7 @@ theorem contains_iff {a : Array Int} {x : Int} (hs : Sorted a) :
 
 /-- Patience-LIS tails update: overwrite the first tail `≥ x` with `x`, or append `x` when it
     exceeds every tail.  This is exactly the step `L300` performs. -/
-def insertOrReplace (a : Array Int) (x : Int) : Array Int :=
+@[expose] public def insertOrReplace (a : Array Int) (x : Int) : Array Int :=
   if h : lowerBound a x < a.size then a.set (lowerBound a x) x h else a.push x
 
 /-- The tails grow by at most one (replace keeps the size, append adds one). -/
@@ -180,13 +182,13 @@ theorem insertOrReplace_size_le (a : Array Int) (x : Int) :
   split <;> simp only [Array.size_set, Array.size_push] <;> omega
 
 /-- The tails never shrink. -/
-theorem le_insertOrReplace_size (a : Array Int) (x : Int) :
+public theorem le_insertOrReplace_size (a : Array Int) (x : Int) :
     a.size ≤ (insertOrReplace a x).size := by
   unfold insertOrReplace
   split <;> simp only [Array.size_set, Array.size_push] <;> omega
 
 /-- `insertOrReplace` keeps the tails strictly increasing — the invariant patience sorting needs. -/
-theorem insertOrReplace_strictSorted {a : Array Int} {x : Int} (hs : StrictSorted a) :
+public theorem insertOrReplace_strictSorted {a : Array Int} {x : Int} (hs : StrictSorted a) :
     StrictSorted (insertOrReplace a x) := by
   have hsort := hs.sorted
   unfold insertOrReplace

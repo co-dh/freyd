@@ -29,7 +29,9 @@
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7-9.
 -/
-import AOP.A9_1
+module
+
+public import AOP.A9_1
 
 universe u
 
@@ -45,7 +47,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q` handled directly by
     `inter_lb_left` (member) and `recip_eps_comp_minRel_le` (lower bound). -/
-theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
+public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
@@ -130,7 +132,7 @@ theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
     (`h` monotonic on transitive `R`, plus the compatibility bound `hQ`).  By Knaster-Tarski
     (`Sup_le`'s lower-bound half) via `greedy_dp_prefixed`.  (Distinct from `AOP.A7_2`'s `greedy`,
     the Theorem 7.2 greedy theorem `⦇min R·ΛS⦈ ⊆ min R·Λ⦇S⦈`.) -/
-theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h

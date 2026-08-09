@@ -9,7 +9,9 @@
   The refinement is the thinning theorem `A8_1.thinning_min` instantiated; the concrete
   layer datatype and the monotonicity proof are the section's problem-specific detail.
 -/
-import AOP.A8_1
+module
+
+public import AOP.A8_1
 
 universe u
 

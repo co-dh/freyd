@@ -35,8 +35,10 @@
 
   Mathlib-free.
 -/
-import AOP.A7_6_Shrink
-import AOP.A7_4_Horner
+module
+
+public import AOP.A7_6_Shrink
+public import AOP.A7_4_Horner
 
 set_option linter.unusedVariables false
 

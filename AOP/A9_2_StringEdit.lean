@@ -10,7 +10,9 @@
   Proposition 9.1, dropped from A9_1; here we give the underlying DP result.)  A direct instance of
   `A9_1.dynamic_programming`; the concrete two-list coalgebra and cost are the problem-specific detail.
 -/
-import AOP.A9_1
+module
+
+public import AOP.A9_1
 
 universe u
 

@@ -35,7 +35,9 @@
   Mathlib-free.  Axioms ⊆ {propext, Classical.choice, Quot.sound}; `Classical.choice` is
   inherited from `relCata`'s universal property (the same honest price A6_6/A7_4 pay).
 -/
-import AOP.A6_SnocList
+module
+
+public import AOP.A6_SnocList
 
 set_option linter.unusedVariables false
 
@@ -130,7 +132,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
     itself the catamorphism of `ψ`: `cata φ ≫ h = cata ψ`.  Derived from `relCata_cancel`
     (the catamorphism's own defining equation) and functoriality (`F.map_comp`), each `calc`
     line justified by exactly ONE law; then closed by the universal property `relCata_UP`. -/
-theorem cata_fusion (I : InitialAlgebra F) {c d : 𝒜}
+public theorem cata_fusion (I : InitialAlgebra F) {c d : 𝒜}
     (φ : F.obj c ⟶ c) (h : c ⟶ d) (ψ : F.obj d ⟶ d)
     (hcond : φ ≫ h = F.map h ≫ ψ) :
     relCata I φ ≫ h = relCata I ψ :=
@@ -147,7 +149,7 @@ end Fusion
 
 /-- Fold fusion specialised to SnocLists over `Unit`/`Int` and to the structural fold `cataR`
     (via `cataR_eq_relCata`), ready for the concrete Part-3 calculation. -/
-theorem cataR_fusion {c d : RelSet.{0}} (φ : Fobj Unit Int c ⟶ c) (h : c ⟶ d)
+public theorem cataR_fusion {c d : RelSet.{0}} (φ : Fobj Unit Int c ⟶ c) (h : c ⟶ d)
     (ψ : Fobj Unit Int d ⟶ d) (hcond : φ ≫ h = (F Unit Int).map h ≫ ψ) :
     cataR φ ≫ h = cataR ψ := by
   rw [cataR_eq_relCata, cataR_eq_relCata]

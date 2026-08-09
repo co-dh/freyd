@@ -13,7 +13,9 @@
 
   Mathlib-free; axioms ⊆ {} (no propext/Quot.sound needed — pure `Acc` recursion).
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 universe u
 

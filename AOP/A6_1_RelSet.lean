@@ -15,8 +15,10 @@
   (catamorphisms, `min`/`thin`, dynamic programming, greedy) can be instantiated on real
   datatypes.  Everything here is mathlib-free: pure `Prop`, `∧`, `∨`, `∃`, `∀`, `=`.
 -/
-import AOP.A6_2
-import AOP.A5_5
+module
+
+public import AOP.A6_2
+public import AOP.A5_5
 
 -- The pointwise instance proofs name the relation/element they quantify (documenting each law)
 -- even where the term-mode witness does not reference the binder; silence that lint file-wide.
@@ -30,12 +32,12 @@ open Freyd
 
 /-- An object of the allegory `Rel(Set)`: a bundled Lean type.  Bundled (not a bare `Type u`)
     so these instances attach here and do NOT collide with the ambient category on `Type u`. -/
-structure RelSet : Type (u + 1) where
+public structure RelSet : Type (u + 1) where
   carrier : Type u
 
 namespace RelSet
 
-instance : Cat RelSet.{u} where
+@[expose] public instance : Cat RelSet.{u} where
   Hom a b := a.carrier → b.carrier → Prop
   id _ := fun x y => x = y
   comp R S := fun x z => ∃ y, R x y ∧ S y z
@@ -46,16 +48,16 @@ instance : Cat RelSet.{u} where
   assoc R S T := funext fun x => funext fun w => propext
     ⟨fun ⟨y, ⟨z, hR, hS⟩, hT⟩ => ⟨z, hR, y, hS, hT⟩, fun ⟨z, hR, y, hS, hT⟩ => ⟨y, ⟨z, hR, hS⟩, hT⟩⟩
 
-@[simp] theorem comp_apply {a b c : RelSet.{u}} (R : a ⟶ b) (S : b ⟶ c) (x : a.carrier)
+@[simp] public theorem comp_apply {a b c : RelSet.{u}} (R : a ⟶ b) (S : b ⟶ c) (x : a.carrier)
     (z : c.carrier) : (R ≫ S) x z = ∃ y, R x y ∧ S y z := rfl
 
-@[simp] theorem id_apply {a : RelSet.{u}} (x y : a.carrier) : (Cat.id a) x y = (x = y) := rfl
+@[simp] public theorem id_apply {a : RelSet.{u}} (x y : a.carrier) : (Cat.id a) x y = (x = y) := rfl
 
 /-- Extensionality for `Rel(Set)` morphisms: relations are equal iff pointwise equivalent. -/
-theorem hom_ext {a b : RelSet.{u}} {R S : a ⟶ b} (h : ∀ x y, R x y ↔ S x y) : R = S :=
+public theorem hom_ext {a b : RelSet.{u}} {R S : a ⟶ b} (h : ∀ x y, R x y ↔ S x y) : R = S :=
   funext fun x => funext fun y => propext (h x y)
 
-instance : Allegory RelSet.{u} where
+@[expose] public instance : Allegory RelSet.{u} where
   recip R := fun y x => R x y
   inter R S := fun x y => R x y ∧ S x y
   recip_recip _ := rfl
@@ -72,7 +74,7 @@ instance : Allegory RelSet.{u} where
      fun ⟨⟨hRS, hT⟩, _⟩ => ⟨hRS, hT⟩⟩
 
 /-- The allegory order is exactly relational inclusion. -/
-theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y → S x y := by
+public theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y → S x y := by
   constructor
   · intro h x y hR
     have e : (R x y ∧ S x y) = R x y := congrFun (congrFun h x) y
@@ -88,7 +90,7 @@ theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y �
   obligation in one place. -/
 
 /-- The graph relation `y = f x` of an ordinary function `f`. -/
-def graph {a b : RelSet.{u}} (f : a.carrier → b.carrier) : a ⟶ b := fun x y => y = f x
+@[expose] public def graph {a b : RelSet.{u}} (f : a.carrier → b.carrier) : a ⟶ b := fun x y => y = f x
 
 theorem graph_apply {a b : RelSet.{u}} (f : a.carrier → b.carrier) (x : a.carrier)
     (y : b.carrier) : graph f x y = (y = f x) := rfl
@@ -96,27 +98,27 @@ theorem graph_apply {a b : RelSet.{u}} (f : a.carrier → b.carrier) (x : a.carr
 theorem recip_apply {a b : RelSet.{u}} (R : a ⟶ b) (y : b.carrier) (x : a.carrier) :
     R° y x = R x y := rfl
 
-theorem graph_simple {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Simple (graph f) := by
+public theorem graph_simple {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Simple (graph f) := by
   show (graph f)° ≫ graph f ⊑ Cat.id b
   rw [le_iff]; intro y y' h
   obtain ⟨x, hy, hy'⟩ := h
   exact hy.trans hy'.symm
 
-theorem graph_entire {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Entire (graph f) := by
+public theorem graph_entire {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Entire (graph f) := by
   show dom (graph f) = Cat.id a
   apply hom_ext; intro x x'
   exact ⟨fun h => h.1, fun h => ⟨h, f x, rfl, congrArg f h⟩⟩
 
-theorem graph_map {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Map (graph f) :=
+public theorem graph_map {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Map (graph f) :=
   ⟨graph_entire f, graph_simple f⟩
 
 /-- Diagram-order composition of two graphs is the graph of the composite function. -/
-theorem graph_comp {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (g : b.carrier → c.carrier) :
+public theorem graph_comp {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (g : b.carrier → c.carrier) :
     graph f ≫ graph g = graph (fun x => g (f x)) :=
   hom_ext fun x z => ⟨fun ⟨y, hy, hz⟩ => hz.trans (congrArg g hy), fun hz => ⟨f x, rfl, hz⟩⟩
 
 /-- Precomposing an ARBITRARY relation with a graph just renames the source point. -/
-theorem graph_comp_left {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (S : b ⟶ c) :
+public theorem graph_comp_left {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (S : b ⟶ c) :
     graph f ≫ S = fun x z => S (f x) z :=
   hom_ext fun x z => ⟨fun ⟨y, hy, hS⟩ => hy ▸ hS, fun h => ⟨f x, rfl, h⟩⟩
 
@@ -127,7 +129,7 @@ theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
 
 /-! ### Distributive structure: `𝟘` = empty relation, `∪` = union -/
 
-instance : DistributiveAllegory RelSet.{u} :=
+@[expose] public instance : DistributiveAllegory RelSet.{u} :=
   { (inferInstance : Allegory RelSet) with
     zero := fun _ _ => False
     union := fun R S => fun x y => R x y ∨ S x y
@@ -152,7 +154,7 @@ instance : DistributiveAllegory RelSet.{u} :=
 
 /-! ### Division: `R / S` = the right residual `∀ z, S y z → R x z` -/
 
-instance : DivisionAllegory RelSet.{u} :=
+@[expose] public instance : DivisionAllegory RelSet.{u} :=
   { (inferInstance : DistributiveAllegory RelSet) with
     div := fun R S => fun x y => ∀ z, S y z → R x z
     div_comp_le := fun R S => le_iff.mpr fun x z h => by
@@ -161,7 +163,7 @@ instance : DivisionAllegory RelSet.{u} :=
 
 /-! ### Local completeness: arbitrary joins are existentials -/
 
-instance : LocallyCompleteDistributiveAllegory RelSet.{u} :=
+@[expose] public instance : LocallyCompleteDistributiveAllegory RelSet.{u} :=
   { (inferInstance : DistributiveAllegory RelSet) with
     Sup := fun P => fun x y => ∃ R, P R ∧ R x y
     le_Sup := fun h => le_iff.mpr fun x y hR => ⟨_, h, hR⟩
@@ -179,20 +181,20 @@ instance : LocallyCompleteDistributiveAllegory RelSet.{u} :=
 /-! ### Power objects: `[b]` = the powerset `b → Prop`, `∋` = membership -/
 
 /-- The power object of `b`: its carrier is the powerset `b.carrier → Prop`. -/
-def pow (b : RelSet.{u}) : RelSet.{u} := ⟨b.carrier → Prop⟩
+@[expose] public def pow (b : RelSet.{u}) : RelSet.{u} := ⟨b.carrier → Prop⟩
 
 /-- Membership `∋_b : [b] ⟶ b` in `Rel(Set)`: `P ∋ y` iff `y ∈ P`. -/
-def epsRel (b : RelSet.{u}) : pow b ⟶ b := fun P y => P y
+@[expose] public def epsRel (b : RelSet.{u}) : pow b ⟶ b := fun P y => P y
 
 /-- The classifier of a relation `R : c ⟶ b` — the graph of `x ↦ {y | R x y}`; this is the
     transpose `ΛR`, and it witnesses that `∋` classifies EVERY relation. -/
-def classifier {b c : RelSet.{u}} (R : c ⟶ b) : c ⟶ pow b := graph fun x => fun y => R x y
+@[expose] public def classifier {b c : RelSet.{u}} (R : c ⟶ b) : c ⟶ pow b := graph fun x => fun y => R x y
 
-theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier R ≫ epsRel b = R := by
+public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier R ≫ epsRel b = R := by
   apply hom_ext; intro x y
   exact ⟨fun ⟨P, hP, hPy⟩ => by rw [hP] at hPy; exact hPy, fun hR => ⟨fun y => R x y, rfl, hR⟩⟩
 
-instance : PowerAllegory RelSet.{u} :=
+@[expose] public instance : PowerAllegory RelSet.{u} :=
   { (inferInstance : DivisionAllegory RelSet) with
     powerObj := pow
     eps := epsRel
@@ -203,17 +205,17 @@ instance : PowerAllegory RelSet.{u} :=
       funext y; exact propext ⟨h2 y, h1 y⟩
     eps_thick := fun R _ => ⟨classifier R, graph_map _, classifier_comp_eps R⟩ }
 
-instance : UnguardedPowerAllegory RelSet.{u} :=
+@[expose] public instance : UnguardedPowerAllegory RelSet.{u} :=
   { (inferInstance : PowerAllegory RelSet) with
     eps_thick_all := fun R => ⟨classifier R, graph_map _, classifier_comp_eps R⟩ }
 
-instance : UnguardedPowerLCDA RelSet.{u} :=
+@[expose] public instance : UnguardedPowerLCDA RelSet.{u} :=
   { (inferInstance : LocallyCompleteDistributiveAllegory RelSet),
     (inferInstance : UnguardedPowerAllegory RelSet) with }
 
 /-! ### Tabularity: every relation is the joint image of its graph-as-a-set -/
 
-instance : TabularAllegory RelSet.{u} :=
+@[expose] public instance : TabularAllegory RelSet.{u} :=
   { (inferInstance : Allegory RelSet) with
     tabular := fun {a b} R =>
       ⟨⟨{ p : a.carrier × b.carrier // R p.1 p.2 }⟩, graph (fun p => p.1.1), graph (fun p => p.1.2),
@@ -232,7 +234,7 @@ instance : TabularAllegory RelSet.{u} :=
 
 /-! ### A unit: `PUnit` is a partial unit and every object maps entirely onto it -/
 
-instance : UnitaryAllegory RelSet.{u} :=
+@[expose] public instance : UnitaryAllegory RelSet.{u} :=
   { (inferInstance : Allegory RelSet) with
     unit_obj := ⟨PUnit⟩
     unit_prop :=
@@ -242,7 +244,7 @@ instance : UnitaryAllegory RelSet.{u} :=
         apply hom_ext; intro x x'
         exact ⟨fun h => h.1, fun h => ⟨h, PUnit.unit, trivial, trivial⟩⟩⟩⟩ }
 
-instance : Freyd.Alg.TabularUnitaryDivisionAllegory RelSet.{u} :=
+@[expose] public instance : Freyd.Alg.TabularUnitaryDivisionAllegory RelSet.{u} :=
   { (inferInstance : TabularAllegory RelSet),
     (inferInstance : UnitaryAllegory RelSet),
     (inferInstance : DivisionAllegory RelSet) with }
@@ -253,7 +255,7 @@ instance : Freyd.Alg.TabularUnitaryDivisionAllegory RelSet.{u} :=
   `A6_1_Digits`; hoisted here (the base each engine imports) so a single copy serves all three. -/
 
 /-- An entire relation relates every point to something. -/
-theorem entire_total {a b : RelSet.{u}} {R : a ⟶ b} (h : Entire R) (x : a.carrier) :
+public theorem entire_total {a b : RelSet.{u}} {R : a ⟶ b} (h : Entire R) (x : a.carrier) :
     ∃ y, R x y := by
   have hd : (dom R) x x := by
     have e : (dom R) x x = (Cat.id a) x x := congrFun (congrFun h x) x
@@ -262,12 +264,12 @@ theorem entire_total {a b : RelSet.{u}} {R : a ⟶ b} (h : Entire R) (x : a.carr
   exact ⟨y, hy⟩
 
 /-- A simple relation is single-valued. -/
-theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : a.carrier}
+public theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : a.carrier}
     {y y' : b.carrier} (hy : R x y) (hy' : R x y') : y = y' :=
   le_iff.mp h y y' ⟨x, hy, hy'⟩
 
 /-- The product action `R × S` in `Rel(Set)`: `(x,y) ~ (x',y')` iff `R x x'` and `S y y'`. -/
-def rprodMap {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+@[expose] public def rprodMap {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     (⟨a.carrier × b.carrier⟩ : RelSet.{u}) ⟶ ⟨a'.carrier × b'.carrier⟩ :=
   fun p q => R p.1 q.1 ∧ S p.2 q.2
 
@@ -276,7 +278,7 @@ theorem rprodMap_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
     rprodMap R S p q = (R p.1 q.1 ∧ S p.2 q.2) := rfl
 
 /-- Converse acts componentwise on the product action: `(R × S)° = R° × S°`. -/
-theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+public theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     (rprodMap R S)° = rprodMap R° S° := rfl
 
 /-- The product action on two graphs is the graph of the product function — the fact that makes
@@ -292,7 +294,7 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
 
 /-- The sum type `a ⊕ b` with the injection graphs satisfies the five coproduct equations of
     §2.214 — Rel(Set)'s concrete coproducts, feeding the `junc`/`sumMap` calculus of `A5_3`. -/
-def sumCop (a b : RelSet.{u}) : Coproduct (⟨a.carrier ⊕ b.carrier⟩ : RelSet.{u}) a b where
+@[expose] public def sumCop (a b : RelSet.{u}) : Coproduct (⟨a.carrier ⊕ b.carrier⟩ : RelSet.{u}) a b where
   u₁ := graph Sum.inl
   u₂ := graph Sum.inr
   u₁_self_comp_recip := hom_ext fun x x' =>

@@ -12,10 +12,12 @@
   `topMor`, genuine division-allegory data, not just distributivity) — collapses the
   `Allegory` diamond to a single instance.
 -/
-import AOP.A5_2
-import Freyd.S2_40
-import AOP.A4_6
-import Freyd.S2_41b
+module
+
+public import AOP.A5_2
+public import Freyd.S2_40
+public import AOP.A4_6
+public import Freyd.S2_41b
 
 universe u
 

@@ -9,7 +9,9 @@
   A direct instance of `A9_1.dynamic_programming`; the concrete segment/code datatype and the length
   cost are the problem-specific detail.
 -/
-import AOP.A9_1
+module
+
+public import AOP.A9_1
 
 universe u
 

@@ -16,7 +16,9 @@
   uses to certify itself against its relational specification.  Mathlib-free (Lean core WF recursion
   on the `Nat` measure `μ`, `WellFounded.fix` / `measure`); constructive, no `Classical.choice`.
 -/
-import AOP.A6_GenFold
+module
+
+public import AOP.A6_GenFold
 
 set_option linter.unusedVariables false
 
@@ -32,7 +34,7 @@ variable {L E S C : Type}
     any state whose measure is strictly smaller, so the `Sum.inr` branch may use it).  The `hcs :`
     binder keeps the coalgebra equation `c s = Sum.inr (e, s')` in scope so `hdec` can discharge the
     measure decrease that `rec` demands. -/
-def hyloStep (c : S → Sum L (E × S)) (μ : S → Nat)
+@[expose] public def hyloStep (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C)
     (s : S) (rec : (s' : S) → μ s' < μ s → C → Prop) (r : C) : Prop :=
   match hcs : c s with
@@ -43,20 +45,20 @@ def hyloStep (c : S → Sum L (E × S)) (μ : S → Nat)
     relates `s` to `r` iff re-folding the finite call tree that `c` unfolds from `s` with the
     algebra `[g, st]` yields `r`.  Defined by `WellFounded.fix` on the measure `μ` (fully
     constructive core recursion). -/
-def hyloFold (c : S → Sum L (E × S)) (μ : S → Nat)
+@[expose] public def hyloFold (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C) :
     S → C → Prop :=
   WellFounded.fix (measure μ).wf (hyloStep c μ hdec g st)
 
 /-- The one-step unfolding of `hyloFold` (from `WellFounded.fix_eq`). -/
-theorem hyloFold_unfold (c : S → Sum L (E × S)) (μ : S → Nat)
+public theorem hyloFold_unfold (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C) (s : S) :
     hyloFold c μ hdec g st s
       = hyloStep c μ hdec g st s (fun s' _ => hyloFold c μ hdec g st s') :=
   WellFounded.fix_eq (measure μ).wf (hyloStep c μ hdec g st) s
 
 /-- Reduction on a `Sum.inl` leaf: the hylomorphism just returns the algebra's base `g l`. -/
-theorem hyloFold_inl (c : S → Sum L (E × S)) (μ : S → Nat)
+public theorem hyloFold_inl (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C)
     {s : S} {l : L} {r : C} (hc : c s = Sum.inl l) :
     hyloFold c μ hdec g st s r ↔ r = g l := by
@@ -69,7 +71,7 @@ theorem hyloFold_inl (c : S → Sum L (E × S)) (μ : S → Nat)
     rw [hc] at heq; nomatch heq
 
 /-- Reduction on a `Sum.inr` node: the hylomorphism recurses on `s'` then applies the step `st e`. -/
-theorem hyloFold_inr (c : S → Sum L (E × S)) (μ : S → Nat)
+public theorem hyloFold_inr (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C)
     {s : S} {e : E} {s' : S} {r : C} (hc : c s = Sum.inr (e, s')) :
     hyloFold c μ hdec g st s r ↔ ∃ r', hyloFold c μ hdec g st s' r' ∧ r = st e r' := by
@@ -83,7 +85,7 @@ theorem hyloFold_inr (c : S → Sum L (E × S)) (μ : S → Nat)
     injection h1 with h2 h3; subst h2; subst h3; exact Iff.rfl
 
 /-- The hylomorphism packaged as a `Rel(Set)` morphism `⟨S⟩ ⟶ ⟨C⟩`. -/
-def hyloR (c : S → Sum L (E × S)) (μ : S → Nat)
+@[expose] public def hyloR (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C) :
     (⟨S⟩ : RelSet.{0}) ⟶ ⟨C⟩ :=
   hyloFold c μ hdec g st
@@ -92,7 +94,7 @@ def hyloR (c : S → Sum L (E × S)) (μ : S → Nat)
     `h : S → C` obeying the recursion `h s = match c s with | inl l => g l | inr (e, s') => st e (h s')`
     IS the hylomorphism of the measured coalgebra `c` with algebra `[g, st]`.  Proved by strong
     induction on the measure `μ s`. -/
-theorem hyloFold_unique (c : S → Sum L (E × S)) (μ : S → Nat)
+public theorem hyloFold_unique (c : S → Sum L (E × S)) (μ : S → Nat)
     (hdec : ∀ s e s', c s = Sum.inr (e, s') → μ s' < μ s) (g : L → C) (st : E → C → C) (h : S → C)
     (hstep : ∀ s, h s = match c s with
       | Sum.inl l => g l

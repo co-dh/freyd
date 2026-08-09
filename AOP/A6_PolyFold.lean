@@ -16,7 +16,9 @@
   `A6_GenFold`/`A6_ConsList` fold-uniqueness laws (`consFold_unique` etc.); `A6_Poly_List.lean`
   makes the correspondence formal.  Composition is diagram order (`X ○ Y ↦ Y ≫ X`).
 -/
-import AOP.A6_Poly
+module
+
+public import AOP.A6_Poly
 
 set_option linter.unusedVariables false
 
@@ -28,10 +30,10 @@ open Freyd Freyd.Alg.RelSet
 
 mutual
 /-- aopa `fold`. -/
-def fold (F : PolyF) {A B : Type} (f : sem F A B → B) : Mu F A → B
+@[expose] public def fold (F : PolyF) {A B : Type} (f : sem F A B → B) : Mu F A → B
   | .In body => f (mapFoldBody F F f body)
 /-- aopa `mapFold` (defined on `Body`, where the recursive occurrence is structural). -/
-def mapFoldBody (F G : PolyF) {A B : Type} (f : sem F A B → B) : Body F A G → sem G A B
+@[expose] public def mapFoldBody (F G : PolyF) {A B : Type} (f : sem F A B → B) : Body F A G → sem G A B
   | .unit      => PUnit.unit
   | .fst a     => a
   | .snd x     => fold F f x
@@ -41,7 +43,7 @@ def mapFoldBody (F G : PolyF) {A B : Type} (f : sem F A B → B) : Body F A G �
 end
 
 /-- `mapFold F G f = bimap G id (fold F f)` (the content aopa folds into `mapFold`'s definition). -/
-theorem mapFoldBody_eq (F G : PolyF) {A B : Type} (f : sem F A B → B) :
+public theorem mapFoldBody_eq (F G : PolyF) {A B : Type} (f : sem F A B → B) :
     ∀ body : Body F A G, mapFoldBody F G f body = bimap G id (fold F f) (toSem G body)
   | .unit      => rfl
   | .fst a     => rfl
@@ -51,7 +53,7 @@ theorem mapFoldBody_eq (F G : PolyF) {A B : Type} (f : sem F A B → B) :
   | .pair x y  => Prod.ext (mapFoldBody_eq F _ f x) (mapFoldBody_eq F _ f y)
 
 /-- aopa `fold-computation`: `fold F f (In s) = f (⟦F⟧ id (fold F f) s)`. -/
-theorem fold_computation (F : PolyF) {A B : Type} (f : sem F A B → B) (s : sem F A (Mu F A)) :
+public theorem fold_computation (F : PolyF) {A B : Type} (f : sem F A B → B) (s : sem F A (Mu F A)) :
     fold F f (In s) = f (bimap F id (fold F f) s) := by
   show f (mapFoldBody F F f (ofSem F s)) = f (bimap F id (fold F f) s)
   rw [mapFoldBody_eq, toSem_ofSem]
@@ -61,11 +63,11 @@ theorem fold_computation (F : PolyF) {A B : Type} (f : sem F A B → B) (s : sem
 mutual
 /-- aopa `foldR`.  `foldRel F R (In s) y` iff some `⟦F⟧`-structure `ys` of child-results folds to
     `y` under the algebra `R` (`R ys y`). -/
-def foldRel (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+@[expose] public def foldRel (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩
   | .In body, y => ∃ ys : sem F A B, mapFoldRelBody F F R body ys ∧ R ys y
 /-- aopa `mapFoldR`, over `Body` (structural recursive occurrence). -/
-def mapFoldRelBody (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+@[expose] public def mapFoldRelBody (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     Body F A G → sem G A B → Prop
   | .unit,     _         => True
   | .fst a,    a'        => a = a'
@@ -78,12 +80,12 @@ def mapFoldRelBody (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨
 end
 
 /-- aopa `mapFoldR` presented over `⟦G⟧`, via the `Body ≅ ⟦G⟧` iso. -/
-def mapFoldRel (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+@[expose] public def mapFoldRel (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     Fo G ⟨A⟩ ⟨Mu F A⟩ ⟶ Fo G ⟨A⟩ ⟨B⟩ :=
   fun s y => mapFoldRelBody F G R (ofSem G s) y
 
 /-- aopa `mapFold-bimap`: `mapFoldR F G R = ⟦G⟧ ⦇R⦈`. -/
-theorem mapFold_bimap (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+public theorem mapFold_bimap (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     mapFoldRel F G R = fmapR G (foldRel F R) := by
   induction G with
   | zer => apply hom_ext; intro s; exact (s : Empty).elim
@@ -108,7 +110,7 @@ theorem mapFold_bimap (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (
 /-! ### The `In` isomorphism -/
 
 /-- `In` is an isomorphism: `In° ≫ In = 𝟙` on `μ F A`. -/
-theorem In_iso (F : PolyF) {A : Type} :
+public theorem In_iso (F : PolyF) {A : Type} :
     (inGraph F A)° ≫ inGraph F A = Cat.id (⟨Mu F A⟩ : RelSet.{0}) := by
   apply hom_ext; intro m m'
   constructor
@@ -124,7 +126,7 @@ theorem In_iso (F : PolyF) {A : Type} :
 /-! ### Computation rules -/
 
 /-- aopa `foldR-computation`: `In ≫ ⦇R⦈ = ⟦F⟧⦇R⦈ ≫ R`. -/
-theorem foldR_computation (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+public theorem foldR_computation (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     inGraph F A ≫ foldRel F R = fmapR F (foldRel F R) ≫ R := by
   rw [show inGraph F A = graph In from rfl, graph_comp_left]
   apply hom_ext; intro s y
@@ -141,7 +143,7 @@ theorem foldR_computation_ge (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ 
     fmapR F (foldRel F R) ≫ R ⊑ inGraph F A ≫ foldRel F R := Freyd.Alg.le_of_eq (foldR_computation F R).symm
 
 /-- aopa `foldR-computation'`: `⦇R⦈ = In° ≫ ⟦F⟧⦇R⦈ ≫ R`. -/
-theorem foldR_computation' (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
+public theorem foldR_computation' (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0})) :
     foldRel F R = (inGraph F A)° ≫ fmapR F (foldRel F R) ≫ R := by
   rw [← foldR_computation, ← Cat.assoc, In_iso, Cat.id_comp]
 
@@ -149,7 +151,7 @@ theorem foldR_computation' (F : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B⟩ �
 
 mutual
 /-- The `⊑` half of `foldR-universal-⇐`, over `Mu`. -/
-theorem foldR_universal_le_go (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
+public theorem foldR_universal_le_go (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (hom : inGraph F A ≫ S ⊑ fmapR F S ≫ R) : ∀ (m : Mu F A) (y : B), S m y → foldRel F R m y
   | .In body, y, hSmy => by
@@ -175,14 +177,14 @@ theorem mapFoldR_univ_le_go (F G : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelS
 end
 
 /-- aopa `foldR-universal-⇐-⊑`: `In ≫ S ⊑ ⟦F⟧S ≫ R → S ⊑ ⦇R⦈`. -/
-theorem foldR_universal_le (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
+public theorem foldR_universal_le (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (hom : inGraph F A ≫ S ⊑ fmapR F S ≫ R) : S ⊑ foldRel F R :=
   le_iff.mpr (foldR_universal_le_go F S R hom)
 
 mutual
 /-- The `⊒` half of `foldR-universal-⇐`, over `Mu`. -/
-theorem foldR_universal_ge_go (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
+public theorem foldR_universal_ge_go (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (hom : fmapR F S ≫ R ⊑ inGraph F A ≫ S) : ∀ (m : Mu F A) (y : B), foldRel F R m y → S m y
   | .In body, y, hfold => by
@@ -210,7 +212,7 @@ theorem mapFoldR_univ_ge_go (F G : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelS
 end
 
 /-- aopa `foldR-universal-⇐-⊒`: `⟦F⟧S ≫ R ⊑ In ≫ S → ⦇R⦈ ⊑ S`. -/
-theorem foldR_universal_ge (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
+public theorem foldR_universal_ge (F : PolyF) {A B : Type} (S : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩)
     (R : Fo F ⟨A⟩ ⟨B⟩ ⟶ (⟨B⟩ : RelSet.{0}))
     (hom : fmapR F S ≫ R ⊑ inGraph F A ≫ S) : foldRel F R ⊑ S :=
   le_iff.mpr (foldR_universal_ge_go F S R hom)
@@ -298,7 +300,7 @@ theorem foldR_fusion (F : PolyF) {A B C : Type} (S : (⟨B⟩ : RelSet.{0}) ⟶ 
 
 mutual
 /-- The `⇐` half of `fold-universal`, over `Mu`. -/
-theorem fold_univ_le_go (F : PolyF) {A B : Type} (h : Mu F A → B) (f : sem F A B → B)
+public theorem fold_univ_le_go (F : PolyF) {A B : Type} (h : Mu F A → B) (f : sem F A B → B)
     (hom : ∀ s, h (In s) = f (bimap F id h s)) : ∀ m, h m = fold F f m
   | .In body => by
       have e1 : In (toSem F body) = Mu.In body := by
@@ -320,7 +322,7 @@ theorem mapFold_univ_le_go (F G : PolyF) {A B : Type} (h : Mu F A → B) (f : se
 end
 
 /-- aopa `fold-universal-⇐`: `h ∘ In ≐ f ∘ ⟦F⟧id h → h ≐ fold F f`. -/
-theorem fold_universal_le (F : PolyF) {A B : Type} (h : Mu F A → B) (f : sem F A B → B)
+public theorem fold_universal_le (F : PolyF) {A B : Type} (h : Mu F A → B) (f : sem F A B → B)
     (hom : ∀ s, h (In s) = f (bimap F id h s)) : h = fold F f :=
   funext (fold_univ_le_go F h f hom)
 
@@ -342,7 +344,7 @@ theorem fold_fusion (F : PolyF) {A B C : Type} (h : B → C) (f : sem F A B → 
 
 /-- aopa `foldR-fun`: `graph (fold F f) = ⦇graph f⦈`.  (aopa leaves this a `postulate`; it is a
     genuine theorem here — a `≐`/`≑` bookkeeping issue only.) -/
-theorem foldR_fun (F : PolyF) {A B : Type} (f : sem F A B → B) :
+public theorem foldR_fun (F : PolyF) {A B : Type} (f : sem F A B → B) :
     (graph (fold F f) : (⟨Mu F A⟩ : RelSet.{0}) ⟶ ⟨B⟩) = foldRel F (graph f) := by
   have hom_eq : inGraph F A ≫ graph (fold F f) = fmapR F (graph (fold F f)) ≫ graph f := by
     rw [← fmap_fmapR, show inGraph F A = graph In from rfl, graph_comp_left, graph_comp_left]

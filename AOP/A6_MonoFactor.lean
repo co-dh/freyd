@@ -8,7 +8,9 @@
 
   Mathlib-free; axioms ⊆ {propext} (via `le_iff`/`hom_ext`).
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 universe u
 
