@@ -26,3 +26,6 @@
 #include "ch5/body.typ"
 #include "ch6/body.typ"
 #include "ch7/body.typ"
+#include "ch8/body.typ"
+#include "ch9/body.typ"
+#include "ch10/body.typ"
