@@ -497,40 +497,42 @@ a separate theorem, not proved here.
 // Its own page: the ten rows are one table and the long-division figure heads them, so a break
 // inside would separate the metaphor from the laws it explains.
 #pagebreak(weak: true)
-= Division is WHAT!
+= `/` is all of
 
 #definition[
-#align(center, `m (R/S) d  ⟺  ∀i. d S i → m R i`)
-#align(center, `m's image contains d's pre image.`)
+#align(center, `x (R/S) y  ⟺  ∀p. y S p → x R p`)
+#align(center, `x's image contains y's pre image.`)
 ]
 
-`R/S` relates a producer to a consumer when the producer supplies #emph[WHAT]
-the consumer asks for. m' fills no dish, even it has everything the guest wants.
+`R/S` relates one person to another when the first relates, via `R`, to #emph[all of] what the
+second relates to via `S` — the reading `/` gets its name from in this note. Below, `Xena` relates
+via `R` to everyone `Zane` relates to via `W` too — but that alone will not make the composed path
+hold.
 
 == `(R/S)(S/W) ⊑ R/W`
 
-// ONE picture for the whole law.  A quotient is drawn as SUPPLY, an ingredient column, DEMAND, every
-// arrow pointing at the ingredient it names; the reader then answers by eye — is every arrow into an
-// ingredient from the demand side matched by one from the supply side? — and the answer is the arc.
-// The three quotients share their columns: a dish demands from the market on its left and supplies
-// the guest on its right, so the ingredient column is repeated, once per quotient.  Above the
-// columns the two legs `R/S`, `S/W` meet over the dish that carries the composite; below them `R/W`
-// spans the whole width in its own colour, and that it starts at BOTH markets while the path starts
-// only at `m` is the strictness of the law, drawn.
+// ONE picture for the whole law.  A quotient is drawn as KNOWS, a shared people column, SISTER-OF,
+// every arrow pointing at the person it names; the reader then answers by eye — is every arrow into
+// a person from the S/W side matched by one from the R/S side? — and the answer is the arc.
+// The three quotients share their columns: `y` relates via `S` to the pool on its left and again to
+// the pool on its right, so the shared-pool column is repeated, once per quotient.  Above the
+// columns the two legs `R/S`, `S/W` meet over the `y` that carries the composite; below them `R/W`
+// spans the whole width in its own colour, and that it starts at BOTH `x`s while the path starts
+// only at `Xavier` is the strictness of the law, drawn.
 // Colour marks WHICH node, not which column — the columns are already told apart by position, so
-// spending a hue on them would leave nothing to tell `m` from `m'`.  First in a column blue, second
-// pink, in every column.
+// spending a hue on them would leave nothing to tell `Xavier` from `Xena`.  First in a column blue,
+// second pink, in every column.
 #let PAL = (rgb("#1a5fb4"), rgb("#c2247f"))
 #let ARC = rgb("#7d3c98")
 #let RW = rgb("#26734d")
-#let IY = (spice: 2.4, chicken: 0.8, peanut: -0.8, oil: -2.4)
+#let IY = (ada: 2.4, bea: 0.8, cleo: -0.8, dot: -2.4)
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box
 // cover the stub — every edge then ends the same distance from its label, whatever its width.
 #let node(x, y, c, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
-// A column of nodes at x; a row is (y, label, the ingredients it names).
+// A column of nodes at x; a row is (y, label, the people it names).
 #let nodes(x, rows) = for (k, row) in rows.enumerate() { node(x, row.at(0), PAL.at(k), row.at(1)) }
 #let ings(x) = for (it, y) in IY { node(x, y, black, [#it]) }
-// Every arrow from column x into the ingredient column xi, stopping on the side it comes from.
+// Every arrow from column x into the shared-pool column xi, stopping on the side it comes from.
 #let edges(x, xi, rows) = {
   let dir = if x < xi { -1 } else { 1 }
   for (k, row) in rows.enumerate() { for it in row.at(2) {
@@ -540,7 +542,7 @@ the consumer asks for. m' fills no dish, even it has everything the guest wants.
 // `h` is where the control points sit; the label goes on the curve's own midpoint, which is where
 // the cubic actually is (`0.75h` from the axis, not `h`) — a label placed at `h` floats off a deep
 // arc.  `cx` shortens the horizontal reach of those controls: the smaller it is, the sooner the
-// curve dives, which is how the bottom arcs clear the ingredient columns without going twice as deep.
+// curve dives, which is how the bottom arcs clear the shared-pool columns without going twice as deep.
 #let arc(a, b, up, lab, col: ARC, h: 3.8, cx: 4) = {
   let (x0, y0) = (a.at(0), a.at(1) + 0.45 * up)
   let (x1, y1) = (b.at(0), b.at(1) + 0.45 * up)
@@ -551,34 +553,35 @@ the consumer asks for. m' fills no dish, even it has everything the guest wants.
     box(inset: 3pt, fill: white)[#text(9.5pt, col)[#lab]])
 }
 #let head(x, lab) = d.content((x, 3.9), text(9.5pt, luma(60))[#lab])
-#let MKT = ((1.6, [market `m`], ("spice", "chicken", "peanut")),
-            (-1.6, [market `m'`], ("spice", "chicken")))
-#let DISH = ((1.6, [kung pao], ("spice", "chicken", "peanut")),
-             (-1.6, [chilli chicken], ("spice", "chicken", "oil")))
-#let GUEST = ((0, [guest `g`], ("spice", "chicken")),)
+#let KNOWS = ((1.6, [Xavier `x`], ("ada", "bea", "cleo")),
+              (-1.6, [Xena `x'`], ("ada", "bea")))
+#let SIBS = ((1.6, [Yara], ("ada", "bea", "cleo")),
+             (-1.6, [Yusuf], ("ada", "bea", "dot")))
+#let ASKED = ((0, [Zane `z`], ("ada", "bea")),)
 
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  edges(-9.6, -4.8, MKT); edges(0, -4.8, DISH); edges(0, 4.8, DISH); edges(9.6, 4.8, GUEST)
-  arc((-9.6, 1.6), (-0.8, 1.6), 1, [`R/S` fills])
-  arc((0.8, 1.6), (9.6, 0), 1, [`S/W` satisfies])
-  arc((-9.6, 1.6), (9.6, 0), -1, [`R/W` feeds], col: RW, h: 5.4, cx: 8)
-  arc((-9.6, -1.6), (9.6, 0), -1, [`R/W` feeds], col: RW, h: 7.0, cx: 8)
-  nodes(-9.6, MKT); ings(-4.8); nodes(0, DISH); ings(4.8); nodes(9.6, GUEST)
-  head(-9.6, [`R` retails — supply]); head(0, [`S` specifies — demand, then supply])
-  head(9.6, [`W` takes — demand])
+  edges(-9.6, -4.8, KNOWS); edges(0, -4.8, SIBS); edges(0, 4.8, SIBS); edges(9.6, 4.8, ASKED)
+  arc((-9.6, 1.6), (-0.8, 1.6), 1, [`R/S` knows all])
+  arc((0.8, 1.6), (9.6, 0), 1, [`S/W` covers])
+  arc((-9.6, 1.6), (9.6, 0), -1, [`R/W` knows all], col: RW, h: 5.4, cx: 8)
+  arc((-9.6, -1.6), (9.6, 0), -1, [`R/W` knows all], col: RW, h: 7.0, cx: 8)
+  nodes(-9.6, KNOWS); ings(-4.8); nodes(0, SIBS); ings(4.8); nodes(9.6, ASKED)
+  head(-9.6, [`R` knows — `x`'s acquaintances]); head(0, [`S` sister-of `y`])
+  head(9.6, [`W` sister-of `z`])
 })))
 
 // The whole of each quotient in one line of English, laid out as the law reads: the two legs of the
 // path first, the arrow they are contained in last.
 #align(center, block(inset: (top: 2pt), text(10.5pt)[
-  `R/S` — market retails #emph[what] dish specifies #h(1.2cm)
-  `S/W` — dish specifies #emph[what] guest takes \
-  `R/W` — market retails #emph[what] guest takes
+  `R/S` — `x` knows #emph[all of] `y`'s sisters #h(1.2cm)
+  `S/W` — `y`'s sisters cover #emph[all of] `z`'s sisters \
+  `R/W` — `x` knows #emph[all of] `z`'s sisters
 ]))
 
-`(R/S)(S/W)` is a path: `m` → kung pao → `g`, and that is all of it. `R/W` also holds of `m'`,
-which retails everything `g` wants — but `m'` fills no dish, so nothing composes to it. The missing
-path is exactly the strictness of `(R/S)(S/W) ⊑ R/W`.
+`(R/S)(S/W)` is a path: `Xavier` → `Yara` → `Zane`, and that is all of it. `R/W` also holds of
+`Xena`, who knows everyone `Zane` calls a sister — but `Xena` does not know #emph[all] of anybody's
+sisters, so nothing composes to it. The missing path is exactly the strictness of
+`(R/S)(S/W) ⊑ R/W`.
 
 // Two columns like every other table, one law per row.  The pictures here are the widest in the
 // note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
@@ -589,52 +592,55 @@ path is exactly the strictness of `(R/S)(S/W) ⊑ R/W`.
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`X ⊑ R/S ⟺ X S ⊑ R` \ #src[`X` is any market-to-dish pairing; one that only pairs a market with
-   dishes it fills lies inside `R/S`, and `R/S` is the largest such.]],
+  [`X ⊑ R/S ⟺ X S ⊑ R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y` whose
+   sisters `x` fully knows lies inside `R/S`, and `R/S` is the largest such.]],
   P(p-le-div),
 
-  [`X ⊑ S\R ⟺ S X ⊑ R` \ #src[The mirror — divide on the left when the market comes first.]],
+  [`X ⊑ S\R ⟺ S X ⊑ R` \ #src[The mirror — divide on the left when `x` comes first.]],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R` \ #src[There is a dish `m` fills that specifies `i` — then `m` retails `i` too. Strict at
-   `S = ∅`: `R/S` is everything, `(R/S) S = ∅`.]],
+  [`(R/S) S ⊑ R` \ #src[There is a `y` whose sisters `x` fully knows, and `p` is one of `y`'s sisters
+   — then `x` knows `p` too. Strict at `S = ∅`: `R/S` is everyone, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
   [`S (S\R) ⊑ R` \ #src[The mirror.]],
   P(p-ldiv-cancel),
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[A dish of dishes: divide by the far end first.]],
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[*A friend's sister* is two hops: divide by the far end
+   first.]],
   P(p-div-assoc),
 
   [`(S₁ S₂)\R = S₂\(S₁\R)` \ #src[The mirror.]],
   P(p-ldiv-assoc),
 
-  [*maps:* `f (R/S) = (f R)/S` \ #src[Rename the market before or after dividing — the licence to write
+  [*maps:* `f (R/S) = (f R)/S` \ #src[Rename `x` before or after dividing — the licence to write
    `f R / S`.]],
   P(p-map-div),
 
-  [`R/(f S) = (R/S) f°` \ #src[Rename the dish: a map leaves a denominator as `f°` outside the box.]],
+  [`R/(f S) = (R/S) f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.]],
   P(p-div-map),
 
-  [`(R/S)(S/W) ⊑ R/W` \ #src[A market that fills a dish that satisfies a guest feeds that guest.]],
+  [`(R/S)(S/W) ⊑ R/W` \ #src[Someone who knows all of a sister-set that already covers someone
+   else's sisters knows that someone's sisters too.]],
   P(p-div-comp),
 
-  [`𝟙 ⊑ R/R` \ #src[`R/R` runs market to market: each fills its own list. Strict: two markets
-   retailing only spice fill each other's and stay two markets.]],
+  [`𝟙 ⊑ R/R` \ #src[`R/R` runs knower to knower: each knows their own contacts. Strict: two people
+   who each know only `ada` and `bea` know each other's contacts too, and still stay two people.]],
   P(p-one-div),
 
-  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *retails at least as much as*, and a preorder is
+  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *knows at least as much as*, and a preorder is
    idempotent. Freyd writes `⊑`; with `𝟙 ⊑ R/R` above it is an equality.]],
   P(p-div-self-idem),
 
-  [`(R/R) R = R` \ #src[Reaching `i` through a market whose list `m` fills is reaching it
-   directly, since `m` fills its own.]],
+  [`(R/R) R = R` \ #src[Reaching `p` through someone whose contacts `x` fully knows is reaching `p`
+   directly, since `x` knows their own contacts.]],
   P(p-div-self),
 
-  [`R/𝟙 = R` \ #src[Filling the dish that specifies exactly `i` is retailing `i`.]],
+  [`R/𝟙 = R` \ #src[Knowing the one person whose sister-list is exactly `{p}` — namely `p` — is
+   knowing `p`.]],
   P(p-div-one),
 
-  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Filling a dish made of two is filling each of them.]],
+  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Knowing a combined sister-list is knowing each list in full.]],
   P(p-div-union),
 
   [`S\(R/W) = (S\R)/W` \ #src[Which is why `S\R/W` needs no bracket.]],
