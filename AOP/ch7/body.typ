@@ -21,9 +21,9 @@
 //   Nothing is dropped for being false in Rel.
 #import "/AOP/bdm.typ": *
 
-#conventions
+= 7 Optimisation Problems
 
-= 7.1 Minimum and maximum
+== 7.1 Minimum and maximum
 
 #dt(
   ("7.1", [$min R eq.delta eps inter (eps^degree backslash R) : [alpha] -> alpha$ — $a$ is a
@@ -125,7 +125,7 @@
     $union.big ("mnl" R) = (E("mnl" R))("mnl" R)$.]),
 )
 
-= 7.2 Monotonic algebras
+== 7.2 Monotonic algebras
 
 #dt(
   ("7.2 ✓", [An $F$-algebra $S : F alpha -> alpha$ is #D("monotonic on") $R : alpha -> alpha$ if
@@ -141,6 +141,9 @@
   ("T 7.1 ✓", [#Th[A map $f$ is monotonic over $R$ $<==>$ it distributes over $R$.]]),
 )
 
+// dvdtyp's theorem box sets `breakable` on its own block, so style.typ's `set block` inside the
+// figure loses; an unbreakable wrapper is what actually keeps the box in one column.
+#block(breakable: false)[
 #theorem("Theorem 7.2 — the greedy theorem  ✓", numbering: none)[
   $S$ monotonic on the preorder $R^degree$:
   $ ⦇Lambda(S)(min R)⦈ thin subset thin Lambda(⦇S⦈)(min R). $
@@ -149,6 +152,7 @@
   prefixed point of the associated recursion, and transitivity of $R$ discharges it.  For $max$
   the condition is monotonicity on $R$, not $R^degree$; and context can always be brought in, so
   monotonicity on $R^degree inter (⦇S⦈^degree ⦇S⦈)$ suffices.
+]
 ]
 
 #dt(
@@ -173,7 +177,7 @@
     $("ok" -> "cons", pi')$ with $"ok"(a,x)$ iff $x = []$ or $a >= "head" x$.]),
 )
 
-= 7.3 Planning a company party
+== 7.3 Planning a company party
 
 #dt(
   ("7.3 ✓", [A company is a $"tree" alpha ::= "node"(alpha, "list"("tree" alpha))$; each employee
@@ -213,7 +217,7 @@
     problem posed as an exercise in dynamic programming.]),
 )
 
-= 7.4 Shortest paths on a cylinder
+== 7.4 Shortest paths on a cylinder
 
 #dt(
   ("7.4 ✓", [An $n times m$ array of positive integers rolled into a cylinder, the top and bottom
@@ -259,7 +263,7 @@
     standard function — a single left-to-right sweep, one column at a time.]),
 )
 
-= 7.5 The security van problem
+== 7.5 The security van problem
 
 #dt(
   ("7.5 ✓", [A bank's cash must stay between $0$ and $N$; a security van tops it up or takes a

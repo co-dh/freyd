@@ -30,9 +30,9 @@
 //   Nothing is dropped for being false in Rel.
 #import "/AOP/bdm.typ": *
 
-#conventions
+= 6 Recursive Programs
 
-= 6.1 Digits of a number
+== 6.1 Digits of a number
 
 Convert a positive natural to its decimal digits.  The pattern of the whole chapter in one
 example: specify a function as a refinement of some relation, discover that the relation solves a
@@ -79,7 +79,7 @@ recursion equation, then read the recursion off as a program.
     $f(m "div" 10, [m "mod" 10] cc x)$ — linear, and correct at $0$.]),
 )
 
-= 6.2 Least fixed points
+== 6.2 Least fixed points
 
 #dt(
   ("T 6.1 ✓", [#D("Knaster–Tarski") #Th[$phi$ a monotonic mapping on the arrows $alpha -> beta$
@@ -108,7 +108,7 @@ recursion equation, then read the recursion off as a program.
     $R$ is a least fixed point.]),
 )
 
-= 6.3 Hylomorphisms
+== 6.3 Hylomorphisms
 
 #dt(
   ("6.3", [A #D("hylomorphism") is a catamorphism after the converse of one, $⦇S⦈^degree ⦇R⦈$ for
@@ -123,14 +123,14 @@ recursion equation, then read the recursion off as a program.
     $⦇S⦈^degree ⦇R⦈ subset X <==> ⦇R⦈ subset X slash ⦇S⦈^degree$, which is the standard move for
     least fixed points.]),
   ("C 6.1 ✓", [$F X = G X + H X$, so an $F$-algebra is a pair:
-    $ ⦇S_1,S_2⦈^degree ⦇R_1,R_2⦈ = (mu X : (S_1^degree (G X) R_1) union (S_2^degree (H X) R_2)). $]),
+    $⦇S_1,S_2⦈^degree ⦇R_1,R_2⦈ = (mu X : (S_1^degree (G X) R_1) union (S_2^degree (H X) R_2))$.]),
   ("", [$sans("in")$ is an isomorphism and $⦇sans("in")⦈ = 1$, so every catamorphism and every
     converse of one is already a hylomorphism.]),
   ("Ex 6.10 ✓", [Hylomorphisms preserve simplicity: $R$ and $S$ simple $==> ⦇S⦈^degree ⦇R⦈$
     simple.]),
 )
 
-= 6.4 Fast exponentiation and modulus
+== 6.4 Fast exponentiation and modulus
 
 #dt(
   ("6.4", [$"exp" a = ⦇"one", "mult" a⦈ : "Nat" -> "Nat"$ encodes $a^0 = 1$ and
@@ -164,7 +164,7 @@ recursion equation, then read the recursion off as a program.
     $"op" b ("mod" b (a "div" 2), 1)$ if $a$ odd — $O(log a)$.]),
 )
 
-= 6.5 Unique fixed points
+== 6.5 Unique fixed points
 
 A hylomorphism is the #emph[least] fixed point of its recursion, not necessarily the only one.
 
@@ -247,7 +247,7 @@ A hylomorphism is the #emph[least] fixed point of its recursion, not necessarily
   ("Ex 6.21", [In a Boolean allegory, $"mem"(F)$ is entire $<==> F nothing = nothing$.]),
 )
 
-= 6.6 Sorting by selection
+== 6.6 Sorting by selection
 
 #dt(
   ("(6.6) ✓", [$"sort" subset "perm" ("ordered")$, for $R$ a #emph[connected] preorder
@@ -351,7 +351,7 @@ A hylomorphism is the #emph[least] fixed point of its recursion, not necessarily
     sort.]),
 )
 
-= 6.7 Closure
+== 6.7 Closure
 
 #dt(
   ("6.7 ✓", [$R^*$, the #D("reflexive transitive closure"), is the smallest preorder containing
@@ -403,8 +403,8 @@ A hylomorphism is the #emph[least] fixed point of its recursion, not necessarily
     terminates only if $S R^*$ is finite; then $P$ grows at every step.]),
   ("", [Relations as data are awkward, so apply $Lambda$ throughout: with $p = Lambda P$,
     $q = Lambda Q$, $s = Lambda S$ and $Lambda(S R^*) = (Lambda S)(E R^*)$,
-    $ "close"(p,q) = cases(p & "if " q = nothing,
-        "close"(p union q, thin (E R) q minus p minus q) & "otherwise,") $
+    $ "close"(p, nothing) = p, $
+    $ "close"(p,q) = "close"(p union q, thin (E R) q minus p minus q), $
     now with set union and set difference.  This is how $E(R^*)$ is computed whenever the answer
     is known to be finite — reachability in a graph.]),
 )

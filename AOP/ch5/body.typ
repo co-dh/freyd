@@ -27,9 +27,9 @@
 // chapter sheet and live in AOP/bdm.typ.
 #import "/AOP/bdm.typ": *
 
-#conventions
+= 5 Datatypes in Allegories
 
-= 5.1 Relators
+== 5.1 Relators
 
 #dt(
   ("5.1 ✓", [#D("relator") $F : cal(A) -> cal(B)$ between tabular allegories $eq.delta$ a
@@ -49,7 +49,7 @@
     give $F("two" thin "one"^degree) = 1$, while preservation of converse forces $nothing$.]),
 )
 
-= 5.2 Relational products
+== 5.2 Relational products
 
 $(pi, pi')$ tabulates $Pi$, so $chevron.l f,g chevron.r = (f pi^degree) inter (g pi'^degree)$
 for maps; (5.1) reads that same formula for arbitrary relations.
@@ -83,10 +83,12 @@ for maps; (5.1) reads that same formula for arbitrary relations.
     $F(R times S) thin "unzip"(F) = "unzip"(F) thin (F R times F S)$.]),
 )
 
-= 5.3 Relational coproducts
+== 5.3 Relational coproducts
 
+#block(breakable: false)[
 A coproduct of $alpha, beta$ in $sans("Fun")(cal(A))$ is a coproduct in the whole power
 allegory $cal(A)$: $ iota T = R and iota' T = S <==> T = [Lambda R, Lambda S] eps. $
+]
 
 #dia(
   spacing: (21mm, 12mm),
@@ -116,7 +118,7 @@ allegory $cal(A)$: $ iota T = R and iota' T = S <==> T = [Lambda R, Lambda S] ep
     = (R inter P U^degree) + (S inter Q V^degree)$.]),
 )
 
-= 5.4 The power relator
+== 5.4 The power relator
 
 #dt(
   ("5.4 ✓", [On maps $P f = ((eps f) slash eps) inter (eps^degree backslash (f eps^degree))$;
@@ -138,7 +140,7 @@ allegory $cal(A)$: $ iota T = R and iota' T = S <==> T = [Lambda R, Lambda S] ep
   ("Ex 5.16", [$P("dom" R)(E R) subset P R$.]),
 )
 
-= 5.5 Relational catamorphisms
+== 5.5 Relational catamorphisms
 
 Let $F$ have initial algebra $sans("in") : F T -> T$ #emph[in the subcategory of maps].  It
 is then initial for relational algebras as well.
@@ -178,7 +180,7 @@ is then initial for relational algebras as well.
   edge((0,2), (1,2), $R$, "->"),
 )
 
-= 5.6 Combinatorial functions
+== 5.6 Combinatorial functions
 
 Lists mean cons-lists, and $"list"$ is their type functor,
 $"list" R = ⦇"nil", (R times 1) "cons"⦈$.  Each relation below is specified as a
@@ -310,7 +312,7 @@ catamorphism, transposed by Eilenberg–Wright, then implemented on lists.
     catamorphism.]),
 )
 
-= 5.7 Lax natural transformations
+== 5.7 Lax natural transformations
 
 Some equalities of the functional world become inequalities in the relational one.
 

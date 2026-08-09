@@ -41,12 +41,21 @@
     // pagebreak inside `columns`, so the two-column shape breaks the column instead — and a
     // bare column break read as no separation at all, the new section landing level with the
     // tail of the old one, so it also takes a fixed (non-collapsing) gap above the rule.
+    // Only the TOP level breaks. Breaking at a subsection too left every column a third
+    // empty, so a subsection flows where it falls: a weak gap, which collapses to nothing at
+    // the top of a column, a thinner rule, and `sticky` so the title cannot be the last thing
+    // in a column with its rows in the next one.
     show heading: it => {
-      if phone { pagebreak(weak: true) } else { colbreak(weak: true); v(1.8em) }
-      block(width: 100%, above: 0em, below: if phone { 1.1em } else { 1.4em }, {
-        line(length: 100%, stroke: 1.2pt + accent)
+      let top = it.level <= 1
+      if top {
+        if phone { pagebreak(weak: true) } else { colbreak(weak: true); v(1.8em) }
+      } else { v(1.1em, weak: true) }
+      block(width: 100%, above: 0em, sticky: not top,
+            below: if top { if phone { 1.1em } else { 1.4em } } else { 0.7em }, {
+        line(length: 100%, stroke: (if top { 1.2pt } else { 0.6pt }) + accent)
         v(0.5em, weak: true)
-        text(font: "New Computer Modern Sans", size: 13pt, weight: 700, fill: accent, it.body)
+        text(font: "New Computer Modern Sans", size: if top { 13pt } else { 11pt },
+             weight: 700, fill: accent, it.body)
       })
     }
     // The title stays full width; only the entries below it are set in columns.
