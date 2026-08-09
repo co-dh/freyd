@@ -1064,6 +1064,111 @@ boxes are what makes the branches disjoint.
   [`[U,V]° [R,S] = U° R ∪ V° S`],
 ))
 
+// B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: the derivation that a coproduct of
+// MAPS is already a coproduct of every arrow, and the diagram the book prints beside it.  The
+// paragraph opening this subsection asserts that; here is the argument, and it is why the first row
+// holds with equality where the pairing's triangles above only hold up to `Dom`.
+The first row is not free: `ιₗ, ιᵣ` were only ever asked to be a coproduct of *maps*. They stay one
+once every arrow is allowed because `Λ` sends an arrow `A ⟶ C` to a map `A ⟶ [C]` reversibly, so the
+map coproduct can be applied underneath it. For any `T : A + B ⟶ C`,
+
+// B&dM's own layout for a calculation: the line, then the step's justification indented under a `⟺`,
+// then the next line.  Stroke-less, so it reads as one argument and not as another law table.
+#align(center, table(
+  columns: 2, stroke: none, inset: (x: 10pt, y: 3pt), align: (right + horizon, left + horizon),
+  [], [`ιₗ T = R` and `ιᵣ T = S`],
+  [`⟺`], [#src[`Λ` is injective — `Λ(X) ∋ = X` gives `X` back]],
+  [], [`Λ(ιₗ T) = Λ(R)` and `Λ(ιᵣ T) = Λ(S)`],
+  [`⟺`], [#src[`Λ` fusion, `Λ(f X) = f Λ(X)` for `f` a map]],
+  [], [`ιₗ Λ(T) = Λ(R)` and `ιᵣ Λ(T) = Λ(S)`],
+  [`⟺`], [#src[the coproduct of maps, at the map `Λ(T)`]],
+  [], [`Λ(T) = [Λ(R), Λ(S)]`],
+  [`⟺`], [#src[`Λ(X)` is the only map with `Λ(X) ∋ = X`]],
+  [], [`T = [Λ(R), Λ(S)] ∋`],
+))
+
+// The lead-in and the figure in ONE unbreakable block: left to itself the sentence ends a page and
+// the picture opens the next, so the reader turns the page between "drawn" and the drawing.
+#block(breakable: false)[
+Every step is an `⟺`, so `[Λ(R), Λ(S)] ∋` is the *only* arrow satisfying the two equations — which is
+what `[R,S]` was claimed to be. Drawn:
+
+// The book's figure, turned a quarter turn: source at the left, like every other picture here.  `A`
+// fans out to the three points of the spine, so nothing crosses a node — except `R` and `S`, whose
+// straight lines would run over `[C]`, so they arc outside instead.  Blue and dashed is the induced
+// arrow, as in the squares below.
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (AB, PC, C) = ((-6.4, 0), (0.4, 0), (4.6, 0))
+  let (A, B) = ((-3.4, 2.4), (-3.4, -2.4))
+  ar(A, AB, black, s0: 0.5, s1: 0.9)
+  ar(B, AB, black, s0: 0.5, s1: 0.9)
+  ar(AB, PC, PAL.at(0), dash: "dashed", s0: 0.9, s1: 0.6)
+  ar(PC, C, black, s0: 0.6, s1: 0.5)
+  ar(A, PC, RW, s0: 0.5, s1: 0.6)
+  ar(B, PC, ARC, s0: 0.5, s1: 0.6)
+  arc(A, C, 1, [`R`], col: RW, h: 4.0, cx: 3)
+  arc(B, C, -1, [`S`], col: ARC, h: 4.0, cx: 3)
+  lab(-5.18, 1.55, black)[`ιₗ`]; lab(-5.18, -1.55, black)[`ιᵣ`]
+  lab(-1.23, 1.62, RW)[`Λ(R)`]; lab(-1.23, -1.62, ARC)[`Λ(S)`]
+  lab(-3.0, 0.5, PAL.at(0))[`[Λ(R), Λ(S)]`]
+  lab(2.5, 0.45, black)[`∋`]
+  node(A.at(0), A.at(1), RW, $A$); node(B.at(0), B.at(1), ARC, $B$)
+  node(AB.at(0), AB.at(1), black, $A + B$)
+  node(PC.at(0), PC.at(1), PAL.at(0), $[C]$)
+  node(C.at(0), C.at(1), black, $C$)
+})))
+]
+
+Nothing here holds only up to `⊑`: every triangle commutes on the nose, which is the difference from
+the pairing above. The border spells `[R,S] = [Λ(R), Λ(S)] ∋`, and pushing `∋` into the union that
+`[·,·]` on maps already is turns that back into the definition,
+`(ιₗ° Λ(R) ∪ ιᵣ° Λ(S)) ∋ = ιₗ° R ∪ ιᵣ° S`.
+
+// B&dM §5.4, p. 119.  The heading gets its own page: the definition, the paragraph that explains its
+// shape, and the table are one argument, and the coproduct figure above ends a page mid-way.
+#pagebreak(weak: true)
+== The power relator `P R`
+
+#definition[
+For `R : A ⟶ B`, #h(4pt) `P R ≜ ((∋R)/∋) ∩ ((∋R°)/∋)° : [A] ⟶ [B]`.
+]
+
+`∋R : [A] ⟶ B` is what a list of markets retails between them. So `x (P R) y` when every ingredient
+on `y` is retailed by some market on `x`, and every market on `x` retails something on `y`: the
+ingredient list is covered, and no market on the list is idle.
+
+// The question this subsection exists to answer: the definition IS two divisions and a converse, the
+// shape of a symmetric division, and the reader who has just read §10 will try to fold it into one.
+*Not* a symmetric division. $frac(∋R, ∋)$ is `Λ(∋R)`, the map sending a list of markets to the list
+of everything they retail — an equality, where `P R` asks only for cover each way. Nor can it be
+repaired: in that fraction's second half $(∋ slash (∋R))^circle.small$ the `R` sits in a denominator,
+so the operation is antitone there, and a relator has to be monotone. `P R` keeps the first half and
+takes the second half at `R°`, which puts `R` back in a numerator. The fraction returns exactly where
+the two halves agree — at `𝟙`, and at a map.
+
+#table(
+  columns: (7.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*law*], [*the market reading*]),
+
+  [`X ⊑ P R ⟺ X ∋ ⊑ ∋ R` and `X° ∋ ⊑ ∋ R°`],
+  [One containment, and the same one at `R°` — which is the definition read off the two divisions.
+   Hence `P(R°) = (P R)°`, and `R ⊑ S ⟹ P R ⊑ P S`.],
+
+  [`P 𝟙 =` $frac(∋, ∋)$ `= 𝟙`],
+  [The straightness axiom verbatim: extensionality *is* `P`'s unit law.],
+
+  [`P f = Λ(∋f)` `=` $frac(∋f, ∋)$, for `f` a map],
+  [Send every entry of the list to its `f`-image. The half at `f°` says every entry of `x` reaches
+   `y`; a map gives that entry one image, so it says `y` holds every `f`-image of `x` — which is
+   the fraction's second half. For a map the two definitions coincide.],
+
+  [`P(R S) = (P R)(P S)`],
+  [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
+   calculation: it needs a tabulation of `P(R S)`.],
+)
+
 // Its own page: the heading otherwise lands as the last line under §12's table, an orphan a page away
 // from the definition it names, and the two squares below then straddle the break.
 #pagebreak(weak: true)
