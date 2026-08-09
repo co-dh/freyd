@@ -16,9 +16,11 @@
   §G  Galois connections (Ex 4.36–4.40).
 -/
 
-import Freyd.S2_30
-import Freyd.S2_147_MapCat
-import AOP.A4_2  -- modular_sym/modular_le_right (via A4_1), map_shunt_left/right, entire_id_le
+module
+
+public import Freyd.S2_30
+public import Freyd.S2_147_MapCat
+public import AOP.A4_2  -- modular_sym/modular_le_right (via A4_1), map_shunt_left/right, entire_id_le
 
 universe v u
 
@@ -36,14 +38,14 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- `∩` is monotone in both arguments (a basic `Allegory` fact missing from `S2_1`, used
     throughout this file). -/
-theorem inter_mono {a b : 𝒜} {R R' S S' : a ⟶ b} (hR : R ⊑ R') (hS : S ⊑ S') :
+public theorem inter_mono {a b : 𝒜} {R R' S S' : a ⟶ b} (hR : R ⊑ R') (hS : S ⊑ S') :
     R ∩ S ⊑ R' ∩ S' :=
   le_inter (le_trans (inter_lb_left R S) hR) (le_trans (inter_lb_right R S) hS)
 
 /-- Poset extensionality via principal down-sets: if `X ⊑ A ↔ X ⊑ B` for every `X`, then
     `A = B`.  The standard technique for proving equalities of `Sup`-defined operators without
     chasing elements of the `Sup` directly. -/
-theorem antisymm_of_le_iff {a b : 𝒜} {A B : a ⟶ b} (h : ∀ X, X ⊑ A ↔ X ⊑ B) : A = B :=
+public theorem antisymm_of_le_iff {a b : 𝒜} {A B : a ⟶ b} (h : ∀ X, X ⊑ A ↔ X ⊑ B) : A = B :=
   le_antisymm ((h A).mp (le_refl A)) ((h B).mpr (le_refl B))
 
 -- (`modular_le_right`, `modular_sym`, `entire_id_le`, `map_shunt_right`, `map_shunt_left`
@@ -76,9 +78,9 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 /-! ### §A  Meets as joins (B&dM Ex 4.28) -/
 
 /-- Meets as joins: `Inf P := ⊔ { S | S is a lower bound of every R with P R }`. -/
-def Inf {a b : 𝒜} (P : (a ⟶ b) → Prop) : a ⟶ b := Sup (fun S => ∀ R, P R → S ⊑ R)
+@[expose] public def Inf {a b : 𝒜} (P : (a ⟶ b) → Prop) : a ⟶ b := Sup (fun S => ∀ R, P R → S ⊑ R)
 
-theorem le_Inf {a b : 𝒜} {P : (a ⟶ b) → Prop} {T : a ⟶ b} (h : ∀ R, P R → T ⊑ R) : T ⊑ Inf P :=
+public theorem le_Inf {a b : 𝒜} {P : (a ⟶ b) → Prop} {T : a ⟶ b} (h : ∀ R, P R → T ⊑ R) : T ⊑ Inf P :=
   le_Sup h
 
 /-! ### §B  The top of a hom-set (B&dM p.97)
@@ -87,9 +89,9 @@ theorem le_Inf {a b : 𝒜} {P : (a ⟶ b) → Prop} {T : a ⟶ b} (h : ∀ R, P
   join of everything. -/
 
 /-- The top of the hom-set `(a,b)`. -/
-def topHom (a b : 𝒜) : a ⟶ b := Sup (fun _ => True)
+@[expose] public def topHom (a b : 𝒜) : a ⟶ b := Sup (fun _ => True)
 
-theorem recip_topHom {a b : 𝒜} : (topHom a b)° = topHom b a := by
+public theorem recip_topHom {a b : 𝒜} : (topHom a b)° = topHom b a := by
   apply le_antisymm
   · exact le_Sup trivial
   · exact recip_le_iff.mp (le_Sup trivial)
@@ -97,13 +99,13 @@ theorem recip_topHom {a b : 𝒜} : (topHom a b)° = topHom b a := by
 /-! ### §C  Implication (B&dM §4.4 p.97, Ex 4.32/4.33) -/
 
 /-- Implication `R ⇨ S := ⊔ { X | X∩R ⊑ S }`, the right adjoint to `_ ∩ R`. -/
-def impl {a b : 𝒜} (R S : a ⟶ b) : a ⟶ b := Sup (fun X => X ∩ R ⊑ S)
+@[expose] public def impl {a b : 𝒜} (R S : a ⟶ b) : a ⟶ b := Sup (fun X => X ∩ R ⊑ S)
 
 /-- Implication notation `R ⇨ S` (B&dM §4.4 p.97). -/
 infixr:58 (name := implNotation) " ⇨ " => impl
 
 /-- The universal property of implication: `X ⊑ R⇨S ↔ X∩R ⊑ S`. -/
-theorem le_impl_iff {a b : 𝒜} (X R S : a ⟶ b) : (X ⊑ R ⇨ S) ↔ (X ∩ R ⊑ S) := by
+public theorem le_impl_iff {a b : 𝒜} (X R S : a ⟶ b) : (X ⊑ R ⇨ S) ↔ (X ∩ R ⊑ S) := by
   constructor
   · intro h
     have h1 : X ∩ R ⊑ (R ⇨ S) ∩ R := inter_mono h (le_refl R)
@@ -126,7 +128,7 @@ theorem impl_mono_right {a b : 𝒜} {R S S' : a ⟶ b} (h : S ⊑ S') : (R ⇨ 
   intro X hX
   exact le_Sup (le_trans hX h)
 
-theorem impl_antitone_left {a b : 𝒜} {R R' S : a ⟶ b} (h : R ⊑ R') : (R' ⇨ S) ⊑ (R ⇨ S) := by
+public theorem impl_antitone_left {a b : 𝒜} {R R' S : a ⟶ b} (h : R ⊑ R') : (R' ⇨ S) ⊑ (R ⇨ S) := by
   dsimp only [impl]
   apply Sup_le
   intro X hX
@@ -246,7 +248,7 @@ theorem eq_zero_iff_dom_zero {a b : 𝒜} (R : a ⟶ b) : R = (𝟘 : a ⟶ b) �
       _ = 𝟘 := DistributiveAllegory.zero_comp R
 
 /-- `(R≫S)∩T = 0 ↔ R∩(T≫S°) = 0` (Ex 4.31). -/
-theorem comp_inter_zero_iff {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem comp_inter_zero_iff {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     ((R ≫ S) ∩ T = (𝟘 : a ⟶ c)) ↔ (R ∩ (T ≫ S°) = (𝟘 : a ⟶ b)) := by
   constructor
   · intro h
@@ -266,7 +268,7 @@ theorem comp_inter_zero_iff {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a �
   `(fst-projected leq) ⨾ (snd-projected leq)`. -/
 
 /-- `R ⨾ S := R ∩ (R°⇨S)` — B&dM's `R;S`: compare by `R`, break ties by `S`. -/
-def thenRel {a : 𝒜} (R S : a ⟶ a) : a ⟶ a := R ∩ (R° ⇨ S)
+@[expose] public def thenRel {a : 𝒜} (R S : a ⟶ a) : a ⟶ a := R ∩ (R° ⇨ S)
 
 /-- Lexicographic-composition notation `R ⨾ S`. -/
 infixl:62 (name := thenRelNotation) " ⨾ " => thenRel
@@ -363,7 +365,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-! ### §F  Division map-laws (B&dM Ex 4.35) -/
 
-theorem map_comp_div {a b c d : 𝒜} {f : d ⟶ a} (hf : Map f) (R : a ⟶ c) (S : b ⟶ c) :
+public theorem map_comp_div {a b c d : 𝒜} {f : d ⟶ a} (hf : Map f) (R : a ⟶ c) (S : b ⟶ c) :
     f ≫ (R / S) = (f ≫ R) / S := by
   apply antisymm_of_le_iff
   intro X

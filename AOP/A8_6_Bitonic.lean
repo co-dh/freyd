@@ -8,7 +8,9 @@
   the thinning theorem yields an efficient program.  The refinement is `A8_1.thinning_min`
   instantiated; the concrete point/tour datatype and the monotonicity proof are problem-specific.
 -/
-import AOP.A8_1
+module
+
+public import AOP.A8_1
 
 universe u
 

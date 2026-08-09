@@ -48,7 +48,9 @@
   `Y ≫ X`).  The instantiation re-deriving `leet.L322`'s `coinSpec` correctness from this
   theorem is `leet.L322_dp`.
 -/
-import AOP.A9_1
+module
+
+public import AOP.A9_1
 
 universe u
 
@@ -61,7 +63,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
     `τ`, whenever the fallback is an `R`-lower bound of the candidates (which, `τ` being
     top-valued, happens exactly when every candidate is itself a fallback value; in
     particular when the candidate set is empty, i.e. on a dead branch). -/
-def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.obj a ⟶ a) (R : a ⟶ a)
+@[expose] public def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.obj a ⟶ a) (R : a ⟶ a)
     (τ : b ⟶ a) (X : b ⟶ a) : b ⟶ a :=
   (A (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R)
     ∪ (τ ∩ (A (T°) ≫ powerRel (F.map X ≫ h) ≫ leftDiv ((∋ a)°) R))
@@ -69,7 +71,7 @@ def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.obj a ⟶ a) (R
 /-- The ∞-DP body is monotonic in the recursion variable — so `μ(dpBodyInf)` is an honest
     least FIXED point (`mu_fixed`), which the executable-side bridge of an instantiation
     consumes (`leet.L322_dp`). -/
-theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.obj a ⟶ a)
+public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.obj a ⟶ a)
     (R : a ⟶ a) (τ : b ⟶ a) : Monotonic (dpBodyInf F T h R τ) := by
   intro X Y hXY
   have hp : powerRel (F.map X ≫ h) ⊑ powerRel (F.map Y ≫ h) :=
@@ -84,7 +86,7 @@ theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (h : F.o
     `dp_prefixed` (`AOP.A9_1`): the two obligations are the components of `min`'s universal
     property `le_A_comp_minRel_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R` (`hτ`) in the lower-bound half. -/
-theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.obj a ⟶ a}
+public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.obj a ⟶ a}
     {T : F.obj b ⟶ b} {R : a ⟶ a} {τ : b ⟶ a} {H : b ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hHfix : T° ≫ F.map H ≫ h = H)
@@ -214,7 +216,7 @@ theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.
     algebra `h` is STRICT at the adjoined top (`osucc ∞ = ∞` in `leet.L322`).  By
     Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_inf_prefixed` and the hylomorphism
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
-theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip)
+public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip)
     (I : InitialAlgebra F) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {τ : b ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hstrict : T° ≫ F.map (((relCata I T)° ≫ relCata I h) ∪ τ) ≫ h

@@ -1,3 +1,5 @@
+module
+
 /-
   A mathlib-free purely functional min-priority-queue (leftist heap) over `Int`.
 
@@ -35,27 +37,27 @@ open List  -- activates the `~` (List.Perm) notation and unqualifies the core Pe
 
 /-- A leftist heap: `empty`, or a `node` carrying its `rank` (right-spine length, for `merge`),
     a value, and two child heaps. -/
-inductive LHeap where
+public inductive LHeap where
   | empty : LHeap
   | node (rank : Nat) (v : Int) (l r : LHeap) : LHeap
 
 /-- The empty heap — the starting point for building a heap with `insert`. -/
-def empty : LHeap := .empty
+@[expose] public def empty : LHeap := .empty
 
 /-- The stored rank (`0` for `empty`); the length of the right spine in a genuine leftist heap. -/
-def rank : LHeap → Nat
+@[expose] public def rank : LHeap → Nat
   | .empty => 0
   | .node k _ _ _ => k
 
 /-- Assemble a node from a value and two children, putting the higher-rank child on the left and
     recording the new rank.  This is the O(1) step that keeps the tree leftist. -/
-def makeNode (v : Int) (a b : LHeap) : LHeap :=
+@[expose] public def makeNode (v : Int) (a b : LHeap) : LHeap :=
   if rank a ≥ rank b then .node (rank b + 1) v a b else .node (rank a + 1) v b a
 
 /-- Merge two heaps by walking down the right spines, always keeping the smaller root on top.
     Non-structural (recurses on the right child of one side), so it needs well-founded recursion on
     the total node count. -/
-def merge : LHeap → LHeap → LHeap
+@[expose] public def merge : LHeap → LHeap → LHeap
   | .empty, h => h
   | h, .empty => h
   | .node k₁ v₁ l₁ r₁, .node k₂ v₂ l₂ r₂ =>
@@ -64,37 +66,37 @@ def merge : LHeap → LHeap → LHeap
 termination_by a b => sizeOf a + sizeOf b
 
 /-- A one-element heap. -/
-def singleton (v : Int) : LHeap := .node 1 v .empty .empty
+@[expose] public def singleton (v : Int) : LHeap := .node 1 v .empty .empty
 
 /-- Insert a value: merge in a singleton. -/
-def insert (v : Int) (h : LHeap) : LHeap := merge (singleton v) h
+@[expose] public def insert (v : Int) (h : LHeap) : LHeap := merge (singleton v) h
 
 /-- Remove the minimum: `empty ↦ none`; a node yields its root (the minimum, once `IsHeap` holds)
     and the merge of its two children. -/
-def popMin? : LHeap → Option (Int × LHeap)
+@[expose] public def popMin? : LHeap → Option (Int × LHeap)
   | .empty => none
   | .node _ v l r => some (v, merge l r)
 
 /-! ## Elements and the min-heap invariant -/
 
 /-- All elements of the heap, as a list (a pre-order traversal). -/
-def toList : LHeap → List Int
+@[expose] public def toList : LHeap → List Int
   | .empty => []
   | .node _ v l r => v :: (toList l ++ toList r)
 
 /-- `rootLe v h`: the value `v` is ≤ every element of `h`. -/
-def rootLe (v : Int) (h : LHeap) : Prop := ∀ x ∈ toList h, v ≤ x
+@[expose] public def rootLe (v : Int) (h : LHeap) : Prop := ∀ x ∈ toList h, v ≤ x
 
 /-- The min-heap order: every node's value is ≤ all values in its two subtrees, recursively. -/
-def IsHeap : LHeap → Prop
+@[expose] public def IsHeap : LHeap → Prop
   | .empty => True
   | .node _ v l r => rootLe v l ∧ rootLe v r ∧ IsHeap l ∧ IsHeap r
 
 /-- `v ≤ everything` holds vacuously for the empty heap. -/
-theorem rootLe_empty (v : Int) : rootLe v .empty := fun _ h => nomatch h
+public theorem rootLe_empty (v : Int) : rootLe v .empty := fun _ h => nomatch h
 
 /-- If `v` is ≤ the root of a heap, then (given the heap order) `v` is ≤ every element. -/
-theorem rootLe_of_le_root {v w : Int} {k : Nat} {l r : LHeap}
+public theorem rootLe_of_le_root {v w : Int} {k : Nat} {l r : LHeap}
     (hvw : v ≤ w) (hh : IsHeap (.node k w l r)) : rootLe v (.node k w l r) := by
   obtain ⟨hl, hr, _, _⟩ := hh
   intro x hx
@@ -108,7 +110,7 @@ theorem rootLe_of_le_root {v w : Int} {k : Nat} {l r : LHeap}
 
 /-- `makeNode` reorders its two children but keeps the same multiset: its element list is a
     permutation of `v :: (elements of a ++ elements of b)`. -/
-theorem makeNode_toList_perm (v : Int) (a b : LHeap) :
+public theorem makeNode_toList_perm (v : Int) (a b : LHeap) :
     toList (makeNode v a b) ~ v :: (toList a ++ toList b) := by
   unfold makeNode
   split
@@ -116,7 +118,7 @@ theorem makeNode_toList_perm (v : Int) (a b : LHeap) :
   · exact Perm.cons v perm_append_comm
 
 /-- `makeNode` preserves the heap order, given `v` bounds both children below. -/
-theorem makeNode_isHeap {v : Int} {a b : LHeap}
+public theorem makeNode_isHeap {v : Int} {a b : LHeap}
     (ha : rootLe v a) (hb : rootLe v b) (hia : IsHeap a) (hib : IsHeap b) :
     IsHeap (makeNode v a b) := by
   unfold makeNode
@@ -127,7 +129,7 @@ theorem makeNode_isHeap {v : Int} {a b : LHeap}
 /-! ## `merge` preserves the multiset -/
 
 /-- A pure-list reassociation used for the `else` branch of `merge`. -/
-theorem perm_reassoc {α} (x : α) (A l r : List α) :
+public theorem perm_reassoc {α} (x : α) (A l r : List α) :
     x :: (l ++ (A ++ r)) ~ A ++ (x :: (l ++ r)) := by
   have inner : l ++ (A ++ r) ~ A ++ (l ++ r) := by
     rw [← List.append_assoc, ← List.append_assoc]
@@ -136,7 +138,7 @@ theorem perm_reassoc {α} (x : α) (A l r : List α) :
 
 /-- `merge` preserves the multiset of elements: `toList (merge a b)` is a permutation of
     `toList a ++ toList b`.  Proved by well-founded induction following `merge`'s own recursion. -/
-theorem merge_toList_perm (a b : LHeap) : toList (merge a b) ~ toList a ++ toList b := by
+public theorem merge_toList_perm (a b : LHeap) : toList (merge a b) ~ toList a ++ toList b := by
   fun_induction merge a b with
   | case1 h => exact Perm.of_eq (by simp only [toList, List.nil_append])
   | case2 h => exact Perm.of_eq (by simp only [toList, List.append_nil])
@@ -151,7 +153,7 @@ theorem merge_toList_perm (a b : LHeap) : toList (merge a b) ~ toList a ++ toLis
 
 /-! ## `merge` preserves the heap order -/
 
-theorem merge_isHeap (a b : LHeap) : IsHeap a → IsHeap b → IsHeap (merge a b) := by
+public theorem merge_isHeap (a b : LHeap) : IsHeap a → IsHeap b → IsHeap (merge a b) := by
   fun_induction merge a b with
   | case1 h => intro _ hb; exact hb
   | case2 h => intro ha _; exact ha
@@ -176,25 +178,25 @@ theorem merge_isHeap (a b : LHeap) : IsHeap a → IsHeap b → IsHeap (merge a b
 /-! ## The public API lemmas -/
 
 /-- A singleton heap is a heap. -/
-theorem singleton_isHeap (x : Int) : IsHeap (singleton x) :=
+public theorem singleton_isHeap (x : Int) : IsHeap (singleton x) :=
   ⟨rootLe_empty x, rootLe_empty x, trivial, trivial⟩
 
 /-- The empty heap is a heap. -/
-theorem empty_isHeap : IsHeap empty := trivial
+public theorem empty_isHeap : IsHeap empty := trivial
 
 /-- `insert` preserves the heap order. -/
-theorem insert_isHeap {x : Int} {h : LHeap} (hh : IsHeap h) : IsHeap (insert x h) :=
+public theorem insert_isHeap {x : Int} {h : LHeap} (hh : IsHeap h) : IsHeap (insert x h) :=
   merge_isHeap (singleton x) h (singleton_isHeap x) hh
 
 /-- `insert` adds exactly one element: `toList (insert x h)` is a permutation of `x :: toList h`. -/
-theorem insert_perm (x : Int) (h : LHeap) : toList (insert x h) ~ x :: toList h := by
+public theorem insert_perm (x : Int) (h : LHeap) : toList (insert x h) ~ x :: toList h := by
   refine (merge_toList_perm (singleton x) h).trans ?_
   exact Perm.of_eq (by simp only [singleton, toList, List.append_nil, List.nil_append,
     List.cons_append])
 
 /-- `popMin?` removes exactly the returned element:
     if `popMin? h = some (m, h')` then `toList h` is a permutation of `m :: toList h'`. -/
-theorem popMin?_perm {h : LHeap} {m : Int} {h' : LHeap}
+public theorem popMin?_perm {h : LHeap} {m : Int} {h' : LHeap}
     (hp : popMin? h = some (m, h')) : toList h ~ m :: toList h' := by
   cases h with
   | empty => simp [popMin?] at hp
@@ -204,7 +206,7 @@ theorem popMin?_perm {h : LHeap} {m : Int} {h' : LHeap}
       exact Perm.cons v (merge_toList_perm l r).symm
 
 /-- `popMin?` preserves the heap order on the remainder. -/
-theorem popMin?_isHeap {h : LHeap} {m : Int} {h' : LHeap}
+public theorem popMin?_isHeap {h : LHeap} {m : Int} {h' : LHeap}
     (hh : IsHeap h) (hp : popMin? h = some (m, h')) : IsHeap h' := by
   cases h with
   | empty => simp [popMin?] at hp
@@ -215,7 +217,7 @@ theorem popMin?_isHeap {h : LHeap} {m : Int} {h' : LHeap}
       exact merge_isHeap l r hil hir
 
 /-- In a heap, the popped element is the minimum of the whole heap. -/
-theorem popMin?_is_min {h : LHeap} {m : Int} {h' : LHeap}
+public theorem popMin?_is_min {h : LHeap} {m : Int} {h' : LHeap}
     (hh : IsHeap h) (hp : popMin? h = some (m, h')) : ∀ x ∈ toList h, m ≤ x := by
   cases h with
   | empty => simp [popMin?] at hp
@@ -237,10 +239,10 @@ which does not reduce definitionally, so `decide` on any `merge` result gets stu
 the compiler (`#eval`) instead, which runs the extracted code.  The outputs should be sorted. -/
 
 /-- Build a heap from a list by repeated `insert`. -/
-def ofList (xs : List Int) : LHeap := xs.foldr insert empty
+@[expose] public def ofList (xs : List Int) : LHeap := xs.foldr insert empty
 
 /-- Pop `n` minima (fuel-bounded so it is structurally recursive). -/
-def popN : Nat → LHeap → List Int
+@[expose] public def popN : Nat → LHeap → List Int
   | 0, _ => []
   | n + 1, h =>
       match popMin? h with

@@ -8,7 +8,9 @@
   a map), and Exercises 4.14/4.15/4.19.
 -/
 
-import AOP.A4_1
+module
+
+public import AOP.A4_1
 
 universe v u
 
@@ -26,7 +28,7 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 def IsPreorder {a : 𝒜} (R : a ⟶ a) : Prop := Reflexive R ∧ Transitive R
 
 /-- ANTISYMMETRIC: `R ∩ R° ⊑ id` (B&dM p.86). -/
-def AntiSymmetric {a : 𝒜} (R : a ⟶ a) : Prop := R ∩ R° ⊑ Cat.id a
+@[expose] public def AntiSymmetric {a : 𝒜} (R : a ⟶ a) : Prop := R ∩ R° ⊑ Cat.id a
 
 /-- A PARTIAL ORDER on `a`: a preorder that is also antisymmetric (B&dM p.86). -/
 def IsPartialOrder {a : 𝒜} (R : a ⟶ a) : Prop := IsPreorder R ∧ AntiSymmetric R
@@ -144,7 +146,7 @@ theorem coreflexive_shunt_left {a : 𝒜} {C : a ⟶ a} (hC : Coreflexive C) (X 
   book's modular-law chain: `dom R ⊑ dom(X≫R) ⊑ dom X ⊑ X`. -/
 
 /-- **B&dM 4.11** (mirrored to `dom`): for coreflexive `X : a ⟶ a`, `dom R ⊑ X ↔ R ⊑ X≫R`. -/
-theorem dom_UP {a b : 𝒜} {R : a ⟶ b} {X : a ⟶ a} (hX : Coreflexive X) :
+public theorem dom_UP {a b : 𝒜} {R : a ⟶ b} {X : a ⟶ a} (hX : Coreflexive X) :
     dom R ⊑ X ↔ R ⊑ X ≫ R := by
   constructor
   · intro h
@@ -194,7 +196,7 @@ theorem entire_inter_iff {a b : 𝒜} (R S : a ⟶ b) :
 
 /-- **B&dM 4.16**: `Simple S → (R∩T≫S°)≫S = (R≫S)∩T`.
     `⊒` is `modular_le`; `⊑` uses `inter_comp_le` (A4_1) plus `Simple S`. -/
-theorem simple_modular_eq {a b c : 𝒜} {S : b ⟶ c} (hS : Simple S) (R : a ⟶ b) (T : a ⟶ c) :
+public theorem simple_modular_eq {a b c : 𝒜} {S : b ⟶ c} (hS : Simple S) (R : a ⟶ b) (T : a ⟶ c) :
     (R ∩ T ≫ S°) ≫ S = (R ≫ S) ∩ T := by
   apply le_antisymm
   · have h1 : (R ∩ T ≫ S°) ≫ S ⊑ (R ≫ S) ∩ ((T ≫ S°) ≫ S) := inter_comp_le R (T ≫ S°) S
@@ -206,7 +208,7 @@ theorem simple_modular_eq {a b c : 𝒜} {S : b ⟶ c} (hS : Simple S) (R : a �
 
 /-- Mirror of S2_1's `simple_dist_inter` for postcomposition with the converse of a simple
     arrow: `(X ∩ Y) ≫ g° = (X ≫ g°) ∩ (Y ≫ g°)` (B&dM 4.17 mirrored via reciprocation). -/
-theorem simple_dist_inter_recip {a b c : 𝒜} {g : c ⟶ b} (hg : Simple g) (X Y : a ⟶ b) :
+public theorem simple_dist_inter_recip {a b c : 𝒜} {g : c ⟶ b} (hg : Simple g) (X Y : a ⟶ b) :
     (X ∩ Y) ≫ g° = (X ≫ g°) ∩ (Y ≫ g°) := by
   have hr := congrArg Allegory.recip (simple_dist_inter hg (X°) (Y°))
   simp only [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_recip] at hr
@@ -218,7 +220,7 @@ theorem simple_dist_inter_recip {a b c : 𝒜} {g : c ⟶ b} (hg : Simple g) (X 
   one side of an inequality is equivalent to composing with its converse on the other. -/
 
 /-- **B&dM 4.19**: for a map `f`, `R≫f ⊑ S ↔ R ⊑ S≫f°`. -/
-theorem map_shunt_right {a b c : 𝒜} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S : a ⟶ c) :
+public theorem map_shunt_right {a b c : 𝒜} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) (S : a ⟶ c) :
     R ≫ f ⊑ S ↔ R ⊑ S ≫ f° := by
   constructor
   · intro h
@@ -236,7 +238,7 @@ theorem map_shunt_right {a b c : 𝒜} {f : b ⟶ c} (hf : Map f) (R : a ⟶ b) 
     exact le_trans h1 h2
 
 /-- **B&dM 4.20**: for a map `f`, `f°≫R ⊑ S ↔ R ⊑ f≫S`. -/
-theorem map_shunt_left {a b c : 𝒜} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : a ⟶ c) :
+public theorem map_shunt_left {a b c : 𝒜} {f : b ⟶ a} (hf : Map f) (R : b ⟶ c) (S : a ⟶ c) :
     f° ≫ R ⊑ S ↔ R ⊑ f ≫ S := by
   constructor
   · intro h
@@ -286,7 +288,7 @@ private theorem shunt_recip_le {p q : 𝒜} {R : p ⟶ q} {S : q ⟶ p}
   exact le_trans step1 step2
 
 /-- **Prop 4.1**: if `id_a ⊑ R≫S` and `S≫R ⊑ id_b` then `S = R°` and `R` is a map. -/
-theorem recip_of_comp_id {a b : 𝒜} {R : a ⟶ b} {S : b ⟶ a}
+public theorem recip_of_comp_id {a b : 𝒜} {R : a ⟶ b} {S : b ⟶ a}
     (h1 : Cat.id a ⊑ R ≫ S) (h2 : S ≫ R ⊑ Cat.id b) : S = R° ∧ Map R := by
   have hSR : S ⊑ R° := shunt_recip_le h1 h2
   have h1'' : Cat.id a ⊑ S° ≫ R° := by

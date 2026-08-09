@@ -27,10 +27,12 @@
 
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
-import AOP.A7_6_Shrink
-import AOP.A7_4_Horner
-import AOP.A6_ConsList
-import AOP.A6_GenFold
+module
+
+public import AOP.A7_6_Shrink
+public import AOP.A7_4_Horner
+public import AOP.A6_ConsList
+public import AOP.A6_GenFold
 
 set_option linter.unusedVariables false
 

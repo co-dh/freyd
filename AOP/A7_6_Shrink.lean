@@ -21,8 +21,10 @@
 
   Mathlib-free; the pure shrink calculus lives at the `DivisionAllegory` level.
 -/
-import AOP.A7_1
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A7_1
+public import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 
@@ -38,7 +40,7 @@ variable [DivisionAllegory 𝒜] {a b c : 𝒜}
 
 /-- AoPA `_↾_`: `S ↾ R = S ⊓ (R / S˘)`, mirrored to `S ∩ (S° \ R)`.  The `R`-optimal part of
     `S`: an `S`-image kept only if it `R`-dominates every other `S`-image of the same point. -/
-def shrink (S : b ⟶ a) (R : a ⟶ a) : b ⟶ a := S ∩ (S° \ R)
+@[expose] public def shrink (S : b ⟶ a) (R : a ⟶ a) : b ⟶ a := S ∩ (S° \ R)
 
 @[inherit_doc] scoped infixl:65 " ↾ " => shrink
 
@@ -119,7 +121,7 @@ variable [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
     definition `S ↾ R = S ∩ (S° \ R)`.  So a shrink headline `X = S ↾ R` and an optimization
     headline `X = A S ≫ minRel R` are literally the same statement, and (since
     `maxRel R = minRel R°`) `S ↾ R° = A S ≫ maxRel R`. -/
-theorem shrink_eq_A_comp_minRel (S : b ⟶ a) (R : a ⟶ a) : S ↾ R = A S ≫ minRel R :=
+public theorem shrink_eq_A_comp_minRel (S : b ⟶ a) (R : a ⟶ a) : S ↾ R = A S ≫ minRel R :=
   (A_comp_minRel S R).symm
 
 end Power

@@ -10,7 +10,9 @@
   `A9_1.dynamic_programming`; the concrete binary-tree datatype, Proposition 9.1 (coproduct split,
   dropped from A9_1), `inits⁺`/`tails⁺`/`splits`, and the tabulation scheme are deferred (see atodo).
 -/
-import AOP.A9_1
+module
+
+public import AOP.A9_1
 
 universe u
 

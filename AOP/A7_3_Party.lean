@@ -16,8 +16,10 @@
   tree `tree A`, the algebra `⟨include, exclude⟩`, and its monotonicity are the section's remaining
   detail (rose-tree datatype not yet built — see atodo).
 -/
-import AOP.A7_2
-import AOP.A5_2
+module
+
+public import AOP.A7_2
+public import AOP.A5_2
 
 universe u
 

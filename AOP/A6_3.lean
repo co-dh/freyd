@@ -18,8 +18,10 @@
   * Corollary 6.1 (`hylo_body_coprod_decompose`, `hylo_eq_mu_coprod`): the hylo body over a
     coproduct-decomposed relator splits into two independent branch bodies joined by `∪`.
 -/
-import AOP.A6_2
-import AOP.A5_3
+module
+
+public import AOP.A6_2
+public import AOP.A5_3
 
 namespace Freyd.Alg
 
@@ -35,7 +37,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
   §6.3's fixed-point reasoning. -/
 
 /-- **B&dM p.142**: `⦇α⦈ = id`. -/
-theorem relCata_alpha (I : InitialAlgebra F) : relCata I I.α = Cat.id I.t := by
+public theorem relCata_alpha (I : InitialAlgebra F) : relCata I I.α = Cat.id I.t := by
   have h : I.α ≫ Cat.id I.t = F.map (Cat.id I.t) ≫ I.α := by
     rw [Cat.comp_id, F.map_id, Cat.id_comp]
   exact ((relCata_UP I I.α (Cat.id I.t)).mp h).symm
@@ -49,14 +51,14 @@ section Hylo
 
 /-- The hylomorphism recursion body `φX = S·FX·R` (mirrored: `S° ≫ F.map X ≫ R`) is
     monotonic (B&dM p.142), by the same argument as `cataBody_monotonic` (`AOP.A6_2`). -/
-theorem hyloBody_monotonic {a b : 𝒜} (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
+public theorem hyloBody_monotonic {a b : 𝒜} (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
     Monotonic (fun X : b ⟶ a => S° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
 /-- **Step B of Theorem 6.2**: the hylomorphism `[[R,S]]` refines any prefixed point `X` of the
     body `S° ≫ F.map X ≫ R` — proved DIRECTLY (not via `hylo_eq_mu`, which uses this as its
     leastness half). -/
-theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
+public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     {R : F.obj a ⟶ a} {S : F.obj b ⟶ b} {X : b ⟶ a} (h : S° ≫ F.map X ≫ R ⊑ X) :
     (relCata I S)° ≫ relCata I R ⊑ X := by
   apply (le_leftDiv_iff (relCata I R) ((relCata I S)°) X).mp
@@ -76,7 +78,7 @@ theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b
 
 /-- **Theorem 6.2 (hylomorphism theorem, B&dM p.142)**: the hylomorphism `[[R,S]]` (mirrored:
     `(|S|)° ≫ (|R|)`) equals the least fixed point of the body `S° ≫ F.map X ≫ R`. -/
-theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
+public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
     (relCata I S)° ≫ relCata I R = mu (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := by
   have hφ_mono : Monotonic (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := hyloBody_monotonic R S
@@ -97,7 +99,7 @@ theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
 /-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored), extracted from
     Theorem 6.2 via `mu_fixed` — the form in which ch. 9's dynamic-programming theorems consume
     the hylomorphism theorem (B&dM p.220, "definition of `H` and hylomorphism theorem"). -/
-theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
+public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
     S° ≫ F.map ((relCata I S)° ≫ relCata I R) ≫ R = (relCata I S)° ≫ relCata I R := by
   rw [hylo_eq_mu hFr I R S]

@@ -9,8 +9,10 @@
   cons·ok]`, using the concrete `perm`/`inlist` of `AOP.A5_6_ListCombinators`.  The result
   (`selection_sort_correct_concrete`) holds for ANY relation `R : A → A → Prop` — no hypotheses.
 -/
-import AOP.A6_6_Sort
-import AOP.A5_6_ListCombinators
+module
+
+public import AOP.A6_6_Sort
+public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Sort
 
@@ -19,7 +21,7 @@ open Freyd Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 variable {A : Type} (R : A → A → Prop)
 
 /-- Permutation preserves membership: `Perm x x' → (a ∈ x → a ∈ x')`. -/
-theorem perm_mem : ∀ {x x' : ConsList Unit A}, Perm x x' → ∀ {b : A}, inlistP x b → inlistP x' b
+public theorem perm_mem : ∀ {x x' : ConsList Unit A}, Perm x x' → ∀ {b : A}, inlistP x b → inlistP x' b
   | _, _, Perm.nil, _, h => h
   | _, _, Perm.cons a hp, b, h => by
     cases h with

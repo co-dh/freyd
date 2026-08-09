@@ -22,8 +22,10 @@
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), plus `AOP.A6_3`'s hylomorphism theorem
   (`hylo_le_of_prefixed`) and `AOP.A7_1`'s `minRel`/`maxRel` core.
 -/
-import AOP.A7_1
-import AOP.A6_3
+module
+
+public import AOP.A7_1
+public import AOP.A6_3
 
 universe u
 
@@ -40,10 +42,10 @@ variable {R : a ⟶ a} {S f : F.obj a ⟶ a}
 /-- **B&dM p.172**: `S` is MONOTONIC on `R` when `S·FR ⊆ R·S`, mirrored `F.map R ≫ S ⊑ S ≫ R`.
     (An algebra `S` "does not care" whether `R`-related recursive results are computed before
     or after applying `S`.) -/
-def MonotonicAlg (S : F.obj a ⟶ a) (R : a ⟶ a) : Prop := F.map R ≫ S ⊑ S ≫ R
+@[expose] public def MonotonicAlg (S : F.obj a ⟶ a) (R : a ⟶ a) : Prop := F.map R ≫ S ⊑ S ≫ R
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
-theorem monotonicAlg_iff_conj (hf : Map f) : MonotonicAlg f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
+public theorem monotonicAlg_iff_conj (hf : Map f) : MonotonicAlg f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
   (map_shunt_left hf (F.map R ≫ f) R).symm
 
 /-- Function form (sandwich), for `f` a MAP: `FR ⊆ f°·R·f`, mirrored. -/
@@ -53,7 +55,7 @@ theorem monotonicAlg_iff_sandwich (hf : Map f) : MonotonicAlg f R ↔ F.map R �
 
 /-- `f` is monotonic on `R` iff it is monotonic on `R°` — conjugation is preserved by converse,
     using `hFr` to push `F.map` through `°`. -/
-theorem monotonicAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
+public theorem monotonicAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
     MonotonicAlg f R ↔ MonotonicAlg f R° := by
   rw [monotonicAlg_iff_conj hf, monotonicAlg_iff_conj hf]
   have hconj : ∀ T : a ⟶ a, (f° ≫ F.map T ≫ f)° = f° ≫ F.map T° ≫ f := fun T => by
@@ -157,7 +159,7 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
 
 /-- **Theorem 7.2 (THE GREEDY THEOREM, B&dM p.173)**: `⦇min R·ΛS⦈ ⊆ min R·Λ⦇S⦈` if `S` is
     monotonic on the preorder `R°`, mirrored. -/
-theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
+public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
     relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R := by
   apply le_A_comp_minRel_iff.mpr
@@ -188,7 +190,7 @@ theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S 
 /-- Max-form corollary: `greedy` at `R°` (`maxRel R = minRel R°`), with `S` now assumed
     monotonic on `R` directly.  Transitivity of `R°` and the needed `MonotonicAlg S (R°)°`
     both reduce to the given hypotheses via `recip_mono`/`Allegory.recip_recip`. -/
-theorem greedy_max (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
+public theorem greedy_max (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
     relCata I (A S ≫ maxRel R) ⊑ A (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
@@ -221,7 +223,7 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
     candidate `A S ≫ minRel R`, its catamorphism already lands inside `min R·Λ⦇S⦈` — a
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
     form `A S ≫ minRel R` up to equality. -/
-theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
+public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
     (href : f ⊑ A S ≫ minRel R) : relCata I f ⊑ A (relCata I S) ≫ minRel R := by
   obtain ⟨hfS, hSf⟩ := le_A_comp_minRel_iff.mp href

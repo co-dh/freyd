@@ -30,8 +30,10 @@
 
   Parameters as in `A6_6c_ISort`: an order `R` with a sound Boolean test `leb`, totality, transitivity.
 -/
-import AOP.A6_GenFold
-import AOP.A6_6b_SortConcrete
+module
+
+public import AOP.A6_GenFold
+public import AOP.A6_6b_SortConcrete
 
 set_option linter.unusedVariables false
 

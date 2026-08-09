@@ -15,7 +15,9 @@
 
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 namespace Freyd.Alg
 namespace RelSet

@@ -10,7 +10,9 @@
   (Theorem 7.2); the concrete n-tuple/set machinery (`generate` as a lax natural transformation,
   `trans`/`zip`/`cp`) is the heavy problem-specific detail, deferred (see atodo).
 -/
-import AOP.A7_2
+module
+
+public import AOP.A7_2
 
 universe u
 

@@ -13,7 +13,9 @@
   `X·R` (first `R`, then `X`) becomes `R ≫ X`.  Dually (6.8) `R* = (μX : id ∪ R·X)` mirrors to
   `mu (fun X => Cat.id a ∪ (X ≫ R))`.
 -/
-import AOP.A6_2
+module
+
+public import AOP.A6_2
 
 universe u
 

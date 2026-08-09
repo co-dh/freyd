@@ -14,8 +14,10 @@
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`) — the chapter-6/7 ambient class giving the
   power operations, division, and complete hom-lattices in one diamond-safe bundle.
 -/
-import AOP.A6_2
-import AOP.A5_4
+module
+
+public import AOP.A6_2
+public import AOP.A5_4
 
 universe u
 
@@ -30,15 +32,15 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 
 /-- **B&dM p.166**: `min R = ∈ ∩ (R/∋)`, mirrored: a minimum of `x` under `R` is a member
     of `x` that is an `R`-lower bound of `x`. -/
-def minRel (R : a ⟶ a) : PowerAllegory.powerObj a ⟶ a :=
+@[expose] public def minRel (R : a ⟶ a) : PowerAllegory.powerObj a ⟶ a :=
   ∋ a ∩ (((∋ a)°) \ R)
 
 /-- **B&dM p.166**: `max R = min R°`. -/
-def maxRel (R : a ⟶ a) : PowerAllegory.powerObj a ⟶ a := minRel R°
+@[expose] public def maxRel (R : a ⟶ a) : PowerAllegory.powerObj a ⟶ a := minRel R°
 
 /-- The universal property of `min` (book p.166): `X ⊑ min R ⟺ X ⊑ ∈ ∧ X·∋ ⊑ R`,
     mirrored (`X·∋` becomes `(∋ a)° ≫ X`). -/
-theorem le_minRel_iff {R : a ⟶ a} {X : PowerAllegory.powerObj a ⟶ a} :
+public theorem le_minRel_iff {R : a ⟶ a} {X : PowerAllegory.powerObj a ⟶ a} :
     X ⊑ minRel R ↔ X ⊑ ∋ a ∧ (∋ a)° ≫ X ⊑ R := by
   constructor
   · intro h
@@ -52,7 +54,7 @@ theorem le_minRel_iff {R : a ⟶ a} {X : PowerAllegory.powerObj a ⟶ a} :
     the minimum of a set is `R`-below every member.  Just the second half of `min`'s universal
     property applied to `min R` itself; companion to `AOP.A8_1`'s `recip_eps_comp_thinRel_le`
     for `thin`. -/
-theorem recip_eps_comp_minRel_le (R : a ⟶ a) : (∋ a)° ≫ minRel R ⊑ R :=
+public theorem recip_eps_comp_minRel_le (R : a ⟶ a) : (∋ a)° ≫ minRel R ⊑ R :=
   (le_minRel_iff.mp (le_refl (minRel R))).2
 
 /-! ## (7.5) and its universal property
@@ -63,7 +65,7 @@ theorem recip_eps_comp_minRel_le (R : a ⟶ a) : (∋ a)° ≫ minRel R ⊑ R :=
 /-- `ΛS·(R/∋) = R/S°` mirrored: `A S ≫ ((∋ a)° \ R) = (S° \ R)` (B&dM (7.2)).
     Stated for a numerator of ARBITRARY target type `c` — §7.1 uses it at `c := a`
     (`R` an order on `a`), §8.1's thinning at `c := powerObj a`. -/
-theorem A_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
+public theorem A_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
     A S ≫ (((∋ a)°) \ R) = (S° \ R) := by
   have hS' : (∋ a)° ≫ (A S)° = S° := by rw [← Allegory.recip_comp, A_eps_eq']
   apply le_antisymm
@@ -86,14 +88,14 @@ theorem A_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
     exact leftDiv_comp_le _ _
 
 /-- **(7.5)**: `min R·ΛS = S ∩ (R/S°)`, mirrored: `A S ≫ minRel R = S ∩ (S° \ R)`. -/
-theorem A_comp_minRel (S : b ⟶ a) (R : a ⟶ a) :
+public theorem A_comp_minRel (S : b ⟶ a) (R : a ⟶ a) :
     A S ≫ minRel R = S ∩ (S° \ R) := by
   show A S ≫ (∋ a ∩ (((∋ a)°) \ R)) = S ∩ (S° \ R)
   rw [simple_dist_inter (A_is_map' S).2, A_eps_eq', A_comp_lb]
 
 /-- The universal property of (7.5), B&dM's "universal property of min":
     `X ⊑ min R·ΛS ⟺ X ⊑ S ∧ X·S° ⊑ R`, mirrored (`X·S°` becomes `S° ≫ X`). -/
-theorem le_A_comp_minRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
+public theorem le_A_comp_minRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
     X ⊑ A S ≫ minRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R := by
   rw [A_comp_minRel]
   constructor
@@ -133,7 +135,7 @@ theorem bigUnion_comp_lb (R : a ⟶ a) :
     `A S ≫ minRel (R ∩ (S°≫S)) = A S ≫ minRel R`.  Via (7.5) on both sides, reducing to
     `S ∩ ((S° \ R) ∩ (S° \ (S°≫S))) = S ∩ (S° \ R)`, which holds because
     `S ⊑ (S° \ (S°≫S))` (the numerator `S°≫S` trivially contains `S°≫S`). -/
-theorem A_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
+public theorem A_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
     A S ≫ minRel (R ∩ (S° ≫ S)) = A S ≫ minRel R := by
   have hstep : S ⊑ ((S°) \ (S° ≫ S)) := (le_leftDiv_iff S (S°) (S° ≫ S)).mpr (le_refl _)
   rw [A_comp_minRel, A_comp_minRel, leftDiv_inter, Allegory.inter_assoc]
@@ -273,15 +275,15 @@ theorem minRel_simple_of_antisymmetric {R : a ⟶ a} (h : AntiSymmetric R) : Sim
 /-- **B&dM p.169**: `subset = ∈\∈`, mirrored `(∋ a) / (∋ a)` — which is LITERALLY Freyd's
     `powerOrder` (§2.442, `Freyd.S2_4`); `subsetRel` is the B&dM-facing alias for it, kept
     definitional so every lemma transfers both ways for free. -/
-def subsetRel (a : 𝒜) : PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a := powerOrder
+@[expose] public def subsetRel (a : 𝒜) : PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a := powerOrder
 
-theorem id_le_subsetRel : Cat.id (PowerAllegory.powerObj a) ⊑ subsetRel a := by
+public theorem id_le_subsetRel : Cat.id (PowerAllegory.powerObj a) ⊑ subsetRel a := by
   show Cat.id (PowerAllegory.powerObj a) ⊑ (∋ a) / (∋ a)
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
 
-theorem subsetRel_comp_eps_le : subsetRel a ≫ ∋ a ⊑ ∋ a := by
+public theorem subsetRel_comp_eps_le : subsetRel a ≫ ∋ a ⊑ ∋ a := by
   show ((∋ a) / (∋ a)) ≫ ∋ a ⊑ ∋ a
   exact div_self_comp_le (∋ a)
 
@@ -355,7 +357,7 @@ theorem existsImage_comp_subsetRel (R : a ⟶ b) :
     `powerRel_eps_lax`).  (ii) `(∋b)°≫(powerRel S≫minRel R) = ((∋b)°≫powerRel S)≫minRel R ⊑
     (S≫(∋a)°)≫minRel R = S≫((∋a)°≫minRel R) ⊑ S≫R` (`powerRel_term1_cancel`, then
     `(∋a)°≫minRel R ⊑ R` from `inter_lb_right`+`leftDiv_comp_le`). -/
-theorem powerRel_comp_minRel_le (S : b ⟶ a) (R : a ⟶ a) :
+public theorem powerRel_comp_minRel_le (S : b ⟶ a) (R : a ⟶ a) :
     powerRel S ≫ minRel R ⊑ (∋ b ≫ S) ∩ (((∋ b)°) \ (S ≫ R)) := by
   have haR : (∋ a)° ≫ minRel R ⊑ R :=
     le_trans (comp_mono_left _ (show minRel R ⊑ (((∋ a)°) \ R) from inter_lb_right _ _))

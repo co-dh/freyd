@@ -10,7 +10,9 @@
   equation for the converse of a catamorphism.  Mirrors the ad-hoc §6.1 construction
   (`AOP.A6_1_Digits`), parameterised over `L`, `E`.
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 
@@ -21,24 +23,24 @@ open Freyd
 variable {L E : Type}
 
 /-- The snoc-list datatype: a leaf `wrap l`, extended by `snoc`-ing elements. -/
-inductive SnocList (L E : Type) where
+public inductive SnocList (L E : Type) where
   | wrap : L → SnocList L E
   | snoc : SnocList L E → E → SnocList L E
 
 /-- The object carrying `SnocList L E`. -/
-abbrev dSL (L E : Type) : RelSet.{0} := ⟨SnocList L E⟩
+@[expose] public abbrev dSL (L E : Type) : RelSet.{0} := ⟨SnocList L E⟩
 /-- The object carrying the leaf type `L`. -/
-abbrev dL (L : Type) : RelSet.{0} := ⟨L⟩
+@[expose] public abbrev dL (L : Type) : RelSet.{0} := ⟨L⟩
 /-- The object carrying the element type `E`. -/
 abbrev dE (E : Type) : RelSet.{0} := ⟨E⟩
 
 /-! ## The functor `F X = L + (X × E)` -/
 
 /-- Carrier of `F X`. -/
-def Fobj (L E : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (c.carrier × E)⟩
+@[expose] public def Fobj (L E : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (c.carrier × E)⟩
 
 /-- Action of `F` on a relation: identity on the `L` summand, `R × id` on `X × E`. -/
-def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L E c' :=
+@[expose] public def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L E c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ p.2 = q.2
@@ -54,7 +56,7 @@ def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L
     Fmap L E R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
-def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
+@[expose] public def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj L E
   map R := Fmap L E R
   map_id c := hom_ext fun u v => by
@@ -86,7 +88,7 @@ def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
       first | exact id | exact fun hh => ⟨le_iff.mp h _ _ hh.1, hh.2⟩ | exact False.elim
 
 /-- `F` preserves converse. -/
-theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
+public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
   intro c c' R
   apply hom_ext; intro u v
   cases u <;> cases v <;> simp only [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
@@ -98,22 +100,22 @@ theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
 /-! ## `SnocList L E` is the initial algebra of `F` -/
 
 /-- The constructor map `[wrap, snoc] : F (SnocList L E) → SnocList L E`. -/
-def con : (Fobj L E (dSL L E)).carrier → SnocList L E
+@[expose] public def con : (Fobj L E (dSL L E)).carrier → SnocList L E
   | Sum.inl d => SnocList.wrap d
   | Sum.inr p => SnocList.snoc p.1 p.2
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : SnocList L E → c.carrier → Prop
+@[expose] public def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : SnocList L E → c.carrier → Prop
   | SnocList.wrap d => fun r => f (Sum.inl d) r
   | SnocList.snoc dec dig => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r
 
-@[simp] theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (d : L)
+@[simp] public theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (d : L)
     (r : c.carrier) : cataFold f (SnocList.wrap d) r = f (Sum.inl d) r := rfl
-@[simp] theorem cataFold_snoc {c : RelSet.{0}} (f : Fobj L E c ⟶ c)
+@[simp] public theorem cataFold_snoc {c : RelSet.{0}} (f : Fobj L E c ⟶ c)
     (dec : SnocList L E) (dig : E) (r : c.carrier) :
     cataFold f (SnocList.snoc dec dig) r = ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r := rfl
 
-theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     ∀ dec : SnocList L E, ∃ r, cataFold f dec r
   | SnocList.wrap d => entire_total hf.1 (Sum.inl d)
   | SnocList.snoc dec dig => by
@@ -121,7 +123,7 @@ theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     obtain ⟨r, hr⟩ := entire_total hf.1 (Sum.inr (r', dig))
     exact ⟨r, r', hr', hr⟩
 
-theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     ∀ (dec : SnocList L E) (r r' : c.carrier), cataFold f dec r → cataFold f dec r' → r = r'
   | SnocList.wrap d, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | SnocList.snoc dec dig, r, r', h1, h2 => by
@@ -131,7 +133,7 @@ theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
     subst hss
     exact simple_uniq hf.2 hfs hfs'
 
-theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     Map (a := dSL L E) (b := c) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = Cat.id (dSL L E)
@@ -145,7 +147,7 @@ theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
     exact cataFold_functional f hf dec r r' h1 h2
 
 /-- The initial `F`-algebra structure on `SnocList L E`. -/
-def initial (L E : Type) : InitialAlgebra (F L E) where
+@[expose] public def initial (L E : Type) : InitialAlgebra (F L E) where
   t := dSL L E
   α := graph con
   α_map := graph_map con
@@ -225,7 +227,7 @@ def initial (L E : Type) : InitialAlgebra (F L E) where
 /-! ## The recursive equation for the converse of a catamorphism (the §6.1/§6.4 derivation) -/
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dSL L E ⟶ c`. -/
-def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dSL L E ⟶ c := cataFold φ
+@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dSL L E ⟶ c := cataFold φ
 
 /-- The book's banana brackets for the catamorphism — one global overload per datatype engine,
     disambiguated by the algebra's type. -/
@@ -234,7 +236,7 @@ notation:max "⦇" φ "⦈" => cataR φ
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataFold φ = F(cataFold φ) ≫ φ`.  (The structural proof never uses `Map φ` — it is the
     `Map`-free form of `initial`'s own `cata_comm` field.) -/
-theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     graph con ≫ cataFold φ = (F L E).map (cataFold φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -268,7 +270,7 @@ theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, greedy, …) apply to `cataR` over snoc-lists.  ConsList has the same bridge
     (`A6_ConsList.cataR_eq_relCata`); this is the missing SnocList counterpart. -/
-theorem cataR_eq_relCata {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
     cataR φ = relCata (initial L E) φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 

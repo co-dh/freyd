@@ -18,15 +18,17 @@
   for the precise blocker (transporting `m`'s simplicity across a not-yet-known-monotone map
   is circular).  Nothing else in this file, or so far outside it, needs that direction.
 -/
-import Freyd.S2_10
-import AOP.A4_2
+module
+
+public import Freyd.S2_10
+public import AOP.A4_2
 
 universe v₁ v₂ v₃ u₁ u₂ u₃ u
 
 namespace Freyd.Alg
 
 /-- A RELATOR (B&dM §5.1 p. 111): a monotonic functor between allegories. -/
-structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] where
+public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] where
   /-- Object map. -/
   obj : 𝒜 → ℬ
   /-- Hom map. -/
@@ -38,12 +40,12 @@ structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [A
 
 /-- A relator PRESERVES CONVERSE when `F(R°) = (FR)°`.  Automatic over a tabular source
     (Theorem 5.1); carried as a hypothesis where tabularity is not otherwise needed. -/
-def Relator.PreservesRecip {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+@[expose] public def Relator.PreservesRecip {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     (F : Relator 𝒜 ℬ) : Prop :=
   ∀ {a b : 𝒜} (R : a ⟶ b), F.map R° = (F.map R)°
 
 /-- The identity relator. -/
-def Relator.idRelator (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Relator 𝒜 𝒜 where
+@[expose] public def Relator.idRelator (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Relator 𝒜 𝒜 where
   obj := id
   map := id
   map_id _ := rfl
@@ -51,7 +53,7 @@ def Relator.idRelator (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Relator 𝒜 �
   map_mono h := h
 
 /-- Composition of relators (diagram order: first `F`, then `G`). -/
-def Relator.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
+@[expose] public def Relator.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] [Allegory.{v₃} 𝒞]
     (F : Relator 𝒜 ℬ) (G : Relator ℬ 𝒞) : Relator 𝒜 𝒞 where
   obj := G.obj ∘ F.obj
@@ -88,13 +90,13 @@ private theorem relator_map_recip_map_aux {𝒜 : Type u₁} {ℬ : Type u₂}
 
 /-- **Lemma 5.1**, first half (B&dM p. 112): a relator sends the converse of a map to the
     converse of its image. -/
-theorem Relator.map_recip_map {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem Relator.map_recip_map {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
     F.map f° = (F.map f)° :=
   (relator_map_recip_map_aux F.obj F.map F.map_id F.map_comp F.map_mono hf).1
 
 /-- **Lemma 5.1**, second half (B&dM p. 112): a relator sends a map to a map. -/
-theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
     Map (F.map f) :=
   (relator_map_recip_map_aux F.obj F.map F.map_id F.map_comp F.map_mono hf).2

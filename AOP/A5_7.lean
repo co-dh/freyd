@@ -8,8 +8,10 @@
   (`Relator.map_is_map` / `Relator.map_recip_map`).
 -/
 
-import AOP.A5_1
-import AOP.A5_4
+module
+
+public import AOP.A5_1
+public import AOP.A5_4
 
 universe v₁ v₂ u₁ u₂
 
@@ -18,7 +20,7 @@ namespace Freyd.Alg
 /-- **B&dM 5.13** (LAX NATURAL TRANSFORMATION, mirrored to diagram order): `φ : G ⟶ F`,
     a family `φ a : G.obj a ⟶ F.obj a`, is LAX NATURAL when `G.map R ≫ φ b ⊑ φ a ≫ F.map R`
     for every `R : a ⟶ b`. -/
-def LaxNatural {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+@[expose] public def LaxNatural {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
   ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b ⊑ φ a ≫ F.map R
 

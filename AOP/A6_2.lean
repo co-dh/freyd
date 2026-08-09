@@ -19,9 +19,11 @@
   for the whole fixed-point calculus of chapter 6: `Sup`/`Inf` for `μ`/`ν`, division for
   the hylomorphism arguments (§6.3), and `A`/`∋` for `relCata` (`AOP.A5_5`).
 -/
-import AOP.A4_4
-import AOP.A4_5
-import AOP.A5_5
+module
+
+public import AOP.A4_4
+public import AOP.A4_5
+public import AOP.A5_5
 
 universe u
 
@@ -42,51 +44,51 @@ section KnasterTarski
 variable [LocallyCompleteDistributiveAllegory 𝒜] {a b : 𝒜}
 
 /-- A MONOTONIC mapping on a hom-set (B&dM Theorem 6.1: "not necessarily a functor"). -/
-def Monotonic (φ : (a ⟶ b) → (a ⟶ b)) : Prop :=
+@[expose] public def Monotonic (φ : (a ⟶ b) → (a ⟶ b)) : Prop :=
   ∀ {X Y : a ⟶ b}, X ⊑ Y → φ X ⊑ φ Y
 
 /-- `(μX : φX)`: the LEAST fixed point of `φ`, as the `Inf` of the prefixed points. -/
-def mu (φ : (a ⟶ b) → (a ⟶ b)) : a ⟶ b := Inf (fun X => φ X ⊑ X)
+@[expose] public def mu (φ : (a ⟶ b) → (a ⟶ b)) : a ⟶ b := Inf (fun X => φ X ⊑ X)
 
 /-- `(νX : φX)`: the GREATEST fixed point of `φ`, as the `Sup` of the postfixed points. -/
-def nu (φ : (a ⟶ b) → (a ⟶ b)) : a ⟶ b := Sup (fun X => X ⊑ φ X)
+@[expose] public def nu (φ : (a ⟶ b) → (a ⟶ b)) : a ⟶ b := Sup (fun X => X ⊑ φ X)
 
 /-- **Theorem 6.1, first half**: `μφ` is itself a prefixed point. -/
-theorem mu_prefixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (mu φ) ⊑ mu φ :=
+public theorem mu_prefixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (mu φ) ⊑ mu φ :=
   le_Inf (fun _T hT =>
     le_trans (hφ (show mu φ ⊑ _T from Sup_le (fun _S hS => hS _ hT))) hT)
 
-theorem mu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : mu φ ⊑ φ (mu φ) :=
+public theorem mu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : mu φ ⊑ φ (mu φ) :=
   Sup_le (fun _S hS => hS _ (hφ (mu_prefixed hφ)))
 
 /-- **Theorem 6.1 (Knaster-Tarski)**: `μφ` is a fixed point — with the `Sup_le`-based lower
     bound (hence `mu_le_of_fixed`), the least solution of `φX ⊑ X` and of `φX = X` coincide. -/
-theorem mu_fixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (mu φ) = mu φ :=
+public theorem mu_fixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (mu φ) = mu φ :=
   le_antisymm (mu_prefixed hφ) (mu_postfixed hφ)
 
-theorem mu_le_of_fixed {φ : (a ⟶ b) → (a ⟶ b)} {T : a ⟶ b} (h : φ T = T) : mu φ ⊑ T :=
+public theorem mu_le_of_fixed {φ : (a ⟶ b) → (a ⟶ b)} {T : a ⟶ b} (h : φ T = T) : mu φ ⊑ T :=
   Sup_le (fun _S hS => hS T (show φ T ⊑ T by rw [h]; exact le_refl T))
 
-theorem nu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : nu φ ⊑ φ (nu φ) :=
+public theorem nu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : nu φ ⊑ φ (nu φ) :=
   Sup_le (fun _T hT => le_trans hT (hφ (le_Sup hT)))
 
-theorem nu_prefixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (nu φ) ⊑ nu φ :=
+public theorem nu_prefixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (nu φ) ⊑ nu φ :=
   le_Sup (hφ (nu_postfixed hφ))
 
 /-- **Theorem 6.1, dual half**: `νφ` is a fixed point — the greatest solution of
     `X ⊑ φX` and of `φX = X` coincide. -/
-theorem nu_fixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (nu φ) = nu φ :=
+public theorem nu_fixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (nu φ) = nu φ :=
   le_antisymm (nu_prefixed hφ) (nu_postfixed hφ)
 
 theorem le_nu_of_fixed {φ : (a ⟶ b) → (a ⟶ b)} {T : a ⟶ b} (h : φ T = T) : T ⊑ nu φ :=
   le_Sup (by rw [h]; exact le_refl T)
 
 /-- `μ` is monotonic in the mapping: a pointwise-smaller body has a smaller `μ`. -/
-theorem mu_le_mu {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X ⊑ ψ X) : mu φ ⊑ mu ψ :=
+public theorem mu_le_mu {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X ⊑ ψ X) : mu φ ⊑ mu ψ :=
   le_Inf (fun T hT => show mu φ ⊑ T from Sup_le (fun _S hS => hS _ (le_trans (h T) hT)))
 
 /-- `μ` depends only on the body's graph. -/
-theorem mu_congr {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X = ψ X) : mu φ = mu ψ :=
+public theorem mu_congr {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X = ψ X) : mu φ = mu ψ :=
   le_antisymm (mu_le_mu fun X => by rw [h]; exact le_refl _)
     (mu_le_mu fun X => by rw [h]; exact le_refl _)
 
@@ -101,12 +103,12 @@ end KnasterTarski
 
 /-- A locally complete distributive allegory that is ALSO given as an unguarded power
     allegory (diamond-safe merge over one `Allegory` base, as `AOP.A4_5.DivisionLCDA`). -/
-class UnguardedPowerLCDA (𝒜 : Type u) extends
+public class UnguardedPowerLCDA (𝒜 : Type u) extends
     LocallyCompleteDistributiveAllegory 𝒜, UnguardedPowerAllegory 𝒜
 
 /-- The power side carries division, so the merge is in particular a `DivisionLCDA` —
     lets `AOP.A4_5`'s division/LCDA lemmas fire in the chapter-6 setting. -/
-instance (priority := 100) UnguardedPowerLCDA.toDivisionLCDA [inst : UnguardedPowerLCDA 𝒜] :
+@[expose] public instance (priority := 100) UnguardedPowerLCDA.toDivisionLCDA [inst : UnguardedPowerLCDA 𝒜] :
     DivisionLCDA 𝒜 := { inst with }
 
 /-! ## Lambek's lemma for `InitialAlgebra` (B&dM Ex 6.5's subject)
@@ -120,11 +122,11 @@ section Lambek
 variable [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- Lambek inverse: `cata (F.map α)`. -/
-def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
+@[expose] public def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
   I.cata (F.map I.α) (F.map_is_map I.α_map)
 
 /-- **Lambek**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
-theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
+public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
     I.alphaInv ≫ I.α = Cat.id I.t := by
   have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
   have hmap : Map (I.alphaInv ≫ I.α) := map_comp (I.cata_map _ _) I.α_map
@@ -137,23 +139,23 @@ theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
   rw [h1, ← h2]
 
 /-- **Lambek**: `α ≫ alphaInv = id`. -/
-theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
+public theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
     I.α ≫ I.alphaInv = Cat.id (F.obj I.t) := by
   have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
   rw [hk, ← F.map_comp, I.alphaInv_alpha, F.map_id]
 
 /-- The Lambek inverse IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
-theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
+public theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
   (recip_of_comp_id (by rw [I.alpha_alphaInv]; exact le_refl _)
     (by rw [I.alphaInv_alpha]; exact le_refl _)).1
 
 /-- `α° ≫ α = id`: the initial algebra is a split (in fact two-sided) iso of maps. -/
-theorem InitialAlgebra.recip_alpha_alpha (I : InitialAlgebra F) :
+public theorem InitialAlgebra.recip_alpha_alpha (I : InitialAlgebra F) :
     I.α° ≫ I.α = Cat.id I.t := by
   rw [← I.alphaInv_eq_recip]; exact I.alphaInv_alpha
 
 /-- `α ≫ α° = id`. -/
-theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
+public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
     I.α ≫ I.α° = Cat.id (F.obj I.t) := by
   rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
 
@@ -171,12 +173,12 @@ section CataFix
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- The recursion body `φX = R·FX·α°` (mirrored: `α° ≫ F.map X ≫ R`) is monotonic. -/
-theorem cataBody_monotonic (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem cataBody_monotonic (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     Monotonic (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
 /-- The catamorphism UP (5.12), fixed-point form: `X = α° ≫ F.map X ≫ R ↔ X = ⦇R⦈`. -/
-theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c)
+public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c)
     (X : I.t ⟶ c) : X = I.α° ≫ F.map X ≫ R ↔ X = relCata I R := by
   rw [← relCata_UP]
   constructor
@@ -187,24 +189,24 @@ theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ 
     rw [← h, ← Cat.assoc, I.recip_alpha_alpha, Cat.id_comp]
 
 /-- `⦇R⦈ = (μX : R·FX·α°)`, mirrored. -/
-theorem relCata_eq_mu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem relCata_eq_mu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     relCata I R = mu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
   have hfix := mu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- `⦇R⦈ = (νX : R·FX·α°)`, mirrored. -/
-theorem relCata_eq_nu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem relCata_eq_nu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     relCata I R = nu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
   have hfix := nu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- **(6.2)**: `⦇R⦈ ⊑ X ⟸ R·FX·α° ⊑ X`, mirrored. -/
-theorem relCata_le_of_prefixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
+public theorem relCata_le_of_prefixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
     {X : I.t ⟶ c} (h : I.α° ≫ F.map X ≫ R ⊑ X) : relCata I R ⊑ X := by
   rw [relCata_eq_mu]; exact Sup_le (fun _S hS => hS _ h)
 
 /-- **(6.3)**: `X ⊑ ⦇R⦈ ⟸ X ⊑ R·FX·α°`, mirrored. -/
-theorem le_relCata_of_postfixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
+public theorem le_relCata_of_postfixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
     {X : I.t ⟶ c} (h : X ⊑ I.α° ≫ F.map X ≫ R) : X ⊑ relCata I R := by
   rw [relCata_eq_nu]; exact le_Sup h
 
@@ -220,7 +222,7 @@ section Fusion
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion. -/
-theorem relCata_le_comp (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
+public theorem relCata_le_comp (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
     {S : c ⟶ d} (h : F.map S ≫ T ⊑ R ≫ S) : relCata I T ⊑ relCata I R ≫ S := by
   apply relCata_le_of_prefixed
   have e1 : I.α° ≫ F.map (relCata I R ≫ S) ≫ T
@@ -235,7 +237,7 @@ theorem relCata_le_comp (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} 
     _ = relCata I R ≫ S := e2
 
 /-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion. -/
-theorem comp_le_relCata (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
+public theorem comp_le_relCata (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
     {S : c ⟶ d} (h : R ≫ S ⊑ F.map S ≫ T) : relCata I R ≫ S ⊑ relCata I T := by
   apply le_relCata_of_postfixed
   have e1 : relCata I R ≫ S = I.α° ≫ F.map (relCata I R) ≫ R ≫ S := by
@@ -250,7 +252,7 @@ theorem comp_le_relCata (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} 
     _ = I.α° ≫ F.map (relCata I R ≫ S) ≫ T := e2
 
 /-- **Ex 6.7**: `⦇R⦈ ⊑ ⦇S⦈` when the recursion bodies agree at `⦇S⦈` in the ⊑ direction. -/
-theorem relCata_le_relCata (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c}
+public theorem relCata_le_relCata (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c}
     (h : F.map (relCata I S) ≫ R ⊑ F.map (relCata I S) ≫ S) : relCata I R ⊑ relCata I S := by
   apply relCata_le_of_prefixed
   calc I.α° ≫ F.map (relCata I S) ≫ R
@@ -260,7 +262,7 @@ theorem relCata_le_relCata (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ 
           Cat.id_comp]
 
 /-- **Corollary of Ex 6.7**: `⦇·⦈` is monotonic in the algebra. -/
-theorem relCata_mono (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c} (h : R ⊑ S) :
+public theorem relCata_mono (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c} (h : R ⊑ S) :
     relCata I R ⊑ relCata I S :=
   relCata_le_relCata I (comp_mono_left _ h)
 
@@ -358,11 +360,11 @@ variable [LocallyCompleteDistributiveAllegory 𝒜] {a b : 𝒜}
 
 /-- Monotonicity for a map between (possibly different) hom-sets.  `Monotonic φ` is
     definitionally `MonotonicHom φ` when the hom-sets coincide. -/
-def MonotonicHom {c d : 𝒜} (φ : (a ⟶ b) → (c ⟶ d)) : Prop :=
+@[expose] public def MonotonicHom {c d : 𝒜} (φ : (a ⟶ b) → (c ⟶ d)) : Prop :=
   ∀ {X Y : a ⟶ b}, X ⊑ Y → φ X ⊑ φ Y
 
 /-- **Rolling rule** (B&dM Ex 6.35): `μ(φ∘ψ) = φ(μ(ψ∘φ))`. -/
-theorem mu_rolling {c d : 𝒜} {φ : (a ⟶ b) → (c ⟶ d)} {ψ : (c ⟶ d) → (a ⟶ b)}
+public theorem mu_rolling {c d : 𝒜} {φ : (a ⟶ b) → (c ⟶ d)} {ψ : (c ⟶ d) → (a ⟶ b)}
     (hφ : MonotonicHom φ) (hψ : MonotonicHom ψ) :
     mu (fun X => φ (ψ X)) = φ (mu (fun Y => ψ (φ Y))) := by
   have hφψ : Monotonic (fun X => φ (ψ X)) := fun h => hφ (hψ h)

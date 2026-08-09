@@ -19,7 +19,9 @@
   Reuses the whole `A6_TreeBin` engine (`cataR`, `cataTreeFold`, `cataTreeFold_nil`,
   `cataTreeFold_node`) with ZERO new engine code.  Mathlib-free.
 -/
-import AOP.A6_TreeBin
+module
+
+public import AOP.A6_TreeBin
 
 set_option linter.unusedVariables false
 
@@ -32,7 +34,7 @@ open Freyd
     with the lockstep recursion; it is the graph of the case split, hence a `Map`.  The `Sum.inl`
     (`nil`) summand carries no label, so it maps to the fixed base `g`; the `Sum.inr` (`node`) summand
     carries `(pl, a, pr)` — the two subtree results and the node label — and maps by `step`. -/
-def treePairAlg {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂) :
+@[expose] public def treePairAlg {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂) :
     TFobj A (⟨C₁ × C₂⟩ : RelSet.{0}) ⟶ (⟨C₁ × C₂⟩ : RelSet.{0}) :=
   graph (fun u => match u with
     | Sum.inl _        => g
@@ -48,7 +50,7 @@ theorem treePairAlg_map {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × 
     structural recursion, so a single induction on `Tree A` identifies them.  The `node` case now has
     TWO recursive children, hence TWO induction hypotheses `ihl`/`ihr`, mirroring `SL.tupling`'s
     single-IH `snoc` case but pinning BOTH subtree results from the two IHs. -/
-theorem treeTupling {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂)
+public theorem treeTupling {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂)
     (h : Tree A → C₁ × C₂)
     (hnil : h Tree.nil = g)
     (hnode : ∀ l a r, h (Tree.node l a r) = step (h l) a (h r)) :
@@ -75,7 +77,7 @@ theorem treeTupling {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂
     `treePairAlg g step` followed by the first projection.  (The Diameter/Balanced derivations read
     off the SECOND slot instead, done inline there; this is the symmetric convenience lemma for the
     first, matching `SL.tupling_fst`.) -/
-theorem treeTupling_fst {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂)
+public theorem treeTupling_fst {A C₁ C₂ : Type} (g : C₁ × C₂) (step : C₁ × C₂ → A → C₁ × C₂ → C₁ × C₂)
     (h : Tree A → C₁ × C₂)
     (hnil : h Tree.nil = g)
     (hnode : ∀ l a r, h (Tree.node l a r) = step (h l) a (h r)) :

@@ -10,7 +10,9 @@
   instance of `A10_1.greedy_dp`; the concrete job/schedule datatype and the tardiness cost are the
   problem-specific detail.
 -/
-import AOP.A10_1
+module
+
+public import AOP.A10_1
 
 universe u
 

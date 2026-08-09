@@ -19,7 +19,9 @@
   `idR ↦ 𝟙`, `R ⊑ S` unchanged, `R ≑ S ↦ R = S` (the hom order is antisymmetric).  aopa's `A ← B`
   (output-first) becomes `B ⟶ A` here, so pointwise relations read input-first.
 -/
-import AOP.A6_1_RelSet
+module
+
+public import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 
@@ -30,7 +32,7 @@ open Freyd Freyd.Alg.RelSet
 /-! ## Codes and their action on types (`PolyF`, `⟦F⟧` = `sem`) -/
 
 /-- Codes for polynomial bifunctors (aopa `PolyF`). -/
-inductive PolyF where
+public inductive PolyF where
   | zer                              -- constant `0`
   | one                              -- constant `1`
   | arg₁                             -- first argument
@@ -39,7 +41,7 @@ inductive PolyF where
   | otimes : PolyF → PolyF → PolyF   -- aopa `_⊗_`
 
 /-- Action on types, aopa `⟦_⟧`.  `reducible` so the `Body`/`sem` round-trip stays transparent. -/
-@[reducible] def sem : PolyF → Type → Type → Type
+@[reducible, expose] public def sem : PolyF → Type → Type → Type
   | .zer,       _, _ => Empty
   | .one,       _, _ => PUnit
   | .arg₁,      a, _ => a
@@ -48,7 +50,7 @@ inductive PolyF where
   | .otimes l r, a, x => sem l a x × sem r a x
 
 /-- The bundled `Rel(Set)` object `⟨⟦F⟧ A X⟩`. -/
-@[reducible] def Fo (F : PolyF) (a x : RelSet.{0}) : RelSet.{0} := ⟨sem F a.carrier x.carrier⟩
+@[reducible, expose] public def Fo (F : PolyF) (a x : RelSet.{0}) : RelSet.{0} := ⟨sem F a.carrier x.carrier⟩
 
 /-! ## The initial algebra `μ F A`
 
@@ -59,11 +61,11 @@ inductive PolyF where
 
 mutual
 /-- The initial algebra `μ F A` (aopa `μ`). -/
-inductive Mu (F : PolyF) (A : Type) : Type where
+public inductive Mu (F : PolyF) (A : Type) : Type where
   | In : Body F A F → Mu F A
 /-- `Body F A G ≅ ⟦G⟧ A (Mu F A)`: the functor value spelled out constructor-by-constructor so the
     recursive occurrence `Mu F A` (at `arg₂`) is manifestly strictly positive. -/
-inductive Body (F : PolyF) (A : Type) : PolyF → Type where
+public inductive Body (F : PolyF) (A : Type) : PolyF → Type where
   | unit : Body F A .one
   | fst  : A → Body F A .arg₁
   | snd  : Mu F A → Body F A .arg₂
@@ -73,7 +75,7 @@ inductive Body (F : PolyF) (A : Type) : PolyF → Type where
 end
 
 /-- `Body F A G → ⟦G⟧ A (Mu F A)`. -/
-def toSem {F A} : (G : PolyF) → Body F A G → sem G A (Mu F A)
+@[expose] public def toSem {F A} : (G : PolyF) → Body F A G → sem G A (Mu F A)
   | .one,        .unit     => PUnit.unit
   | .arg₁,       .fst a    => a
   | .arg₂,       .snd m    => m
@@ -82,7 +84,7 @@ def toSem {F A} : (G : PolyF) → Body F A G → sem G A (Mu F A)
   | .otimes _ _, .pair x y => (toSem _ x, toSem _ y)
 
 /-- `⟦G⟧ A (Mu F A) → Body F A G`. -/
-def ofSem {F A} : (G : PolyF) → sem G A (Mu F A) → Body F A G
+@[expose] public def ofSem {F A} : (G : PolyF) → sem G A (Mu F A) → Body F A G
   | .zer,        e           => e.elim
   | .one,        _           => .unit
   | .arg₁,       a           => .fst a
@@ -91,7 +93,7 @@ def ofSem {F A} : (G : PolyF) → sem G A (Mu F A) → Body F A G
   | .oplus _ _,  Sum.inr x   => .inr (ofSem _ x)
   | .otimes _ _, (x, y)      => .pair (ofSem _ x) (ofSem _ y)
 
-theorem ofSem_toSem {F A} : (G : PolyF) → (b : Body F A G) → ofSem G (toSem G b) = b
+public theorem ofSem_toSem {F A} : (G : PolyF) → (b : Body F A G) → ofSem G (toSem G b) = b
   | .one,        .unit     => rfl
   | .arg₁,       .fst _    => rfl
   | .arg₂,       .snd _    => rfl
@@ -99,7 +101,7 @@ theorem ofSem_toSem {F A} : (G : PolyF) → (b : Body F A G) → ofSem G (toSem 
   | .oplus _ _,  .inr b    => congrArg Body.inr (ofSem_toSem _ b)
   | .otimes _ _, .pair x y => by rw [toSem, ofSem, ofSem_toSem _ x, ofSem_toSem _ y]
 
-theorem toSem_ofSem {F A} : (G : PolyF) → (s : sem G A (Mu F A)) → toSem G (ofSem G s) = s
+public theorem toSem_ofSem {F A} : (G : PolyF) → (s : sem G A (Mu F A)) → toSem G (ofSem G s) = s
   | .zer,        e         => e.elim
   | .one,        _         => rfl
   | .arg₁,       _         => rfl
@@ -109,17 +111,17 @@ theorem toSem_ofSem {F A} : (G : PolyF) → (s : sem G A (Mu F A)) → toSem G (
   | .otimes _ _, (x, y)    => by rw [ofSem, toSem, toSem_ofSem _ x, toSem_ofSem _ y]
 
 /-- The public initial-algebra map `In : ⟦F⟧ A (μ F A) → μ F A` (aopa `In`). -/
-def In {F A} (s : sem F A (Mu F A)) : Mu F A := Mu.In (ofSem F s)
+@[expose] public def In {F A} (s : sem F A (Mu F A)) : Mu F A := Mu.In (ofSem F s)
 
 /-- Its inverse `out : μ F A → ⟦F⟧ A (μ F A)`. -/
-def out {F A} : Mu F A → sem F A (Mu F A) | Mu.In b => toSem F b
+@[expose] public def out {F A} : Mu F A → sem F A (Mu F A) | Mu.In b => toSem F b
 
 theorem out_In {F A} (s : sem F A (Mu F A)) : out (In s) = s := toSem_ofSem F s
-theorem In_out {F A} (m : Mu F A) : In (out m) = m := by
+public theorem In_out {F A} (m : Mu F A) : In (out m) = m := by
   cases m with | In b => show Mu.In (ofSem F (toSem F b)) = Mu.In b; rw [ofSem_toSem]
 
 /-- `graph In`, with its `Rel(Set)` object types pinned at level `0`. -/
-def inGraph (F : PolyF) (A : Type) : Fo F ⟨A⟩ ⟨Mu F A⟩ ⟶ (⟨Mu F A⟩ : RelSet.{0}) := graph In
+@[expose] public def inGraph (F : PolyF) (A : Type) : Fo F ⟨A⟩ ⟨Mu F A⟩ ⟶ (⟨Mu F A⟩ : RelSet.{0}) := graph In
 
 /-- `In` is surjective (aopa `In-surjective`): `𝟙 ⊑ In° ≫ In` (as a `Mu ⟶ Mu` relation). -/
 theorem In_surjective {F} {A : Type} :
@@ -143,7 +145,7 @@ theorem In_injective {F} {A : Type} :
 /-! ## Action on functions (`bimap`, `fmap`) -/
 
 /-- aopa `bimap`. -/
-def bimap : (F : PolyF) → {A₁ A₂ B₁ B₂ : Type} → (A₁ → A₂) → (B₁ → B₂) →
+@[expose] public def bimap : (F : PolyF) → {A₁ A₂ B₁ B₂ : Type} → (A₁ → A₂) → (B₁ → B₂) →
     sem F A₁ B₁ → sem F A₂ B₂
   | .zer,        _, _, _, _, _, _ => fun e => e.elim
   | .one,        _, _, _, _, _, _ => fun _ => PUnit.unit
@@ -155,10 +157,10 @@ def bimap : (F : PolyF) → {A₁ A₂ B₁ B₂ : Type} → (A₁ → A₂) →
   | .otimes l r, _, _, _, _, f, g => fun u => (bimap l f g u.1, bimap r f g u.2)
 
 /-- aopa `fmap F = bimap F id`. -/
-def fmap (F : PolyF) {A B₁ B₂ : Type} (g : B₁ → B₂) : sem F A B₁ → sem F A B₂ := bimap F id g
+@[expose] public def fmap (F : PolyF) {A B₁ B₂ : Type} (g : B₁ → B₂) : sem F A B₁ → sem F A B₂ := bimap F id g
 
 /-- aopa `bimap-comp`: `bimap (f∘h) (g∘k) = bimap f g ∘ bimap h k`. -/
-theorem bimap_comp (F : PolyF) {A₁ A₂ A₃ B₁ B₂ B₃ : Type}
+public theorem bimap_comp (F : PolyF) {A₁ A₂ A₃ B₁ B₂ B₃ : Type}
     (f : A₂ → A₃) (g : B₂ → B₃) (h : A₁ → A₂) (k : B₁ → B₂) :
     ∀ x, bimap F (f ∘ h) (g ∘ k) x = bimap F f g (bimap F h k x) := by
   induction F with
@@ -176,7 +178,7 @@ theorem bimap_comp (F : PolyF) {A₁ A₂ A₃ B₁ B₂ B₃ : Type}
 /-! ## Predicate lifting (`bimapP`, `fmapP`) and coreflexives -/
 
 /-- aopa `bimapP`. -/
-def bimapP : (F : PolyF) → {A B : Type} → (A → Prop) → (B → Prop) → sem F A B → Prop
+@[expose] public def bimapP : (F : PolyF) → {A B : Type} → (A → Prop) → (B → Prop) → sem F A B → Prop
   | .zer,        _, _, _, _ => fun e => e.elim
   | .one,        _, _, _, _ => fun _ => True
   | .arg₁,       _, _, P, _ => fun a => P a
@@ -187,7 +189,7 @@ def bimapP : (F : PolyF) → {A B : Type} → (A → Prop) → (B → Prop) → 
   | .otimes l r, _, _, P, Q => fun u => bimapP l P Q u.1 ∧ bimapP r P Q u.2
 
 /-- aopa `fmapP F P = bimapP F (const ⊤) P`. -/
-def fmapP (F : PolyF) {A B : Type} (Q : B → Prop) : sem F A B → Prop :=
+@[expose] public def fmapP (F : PolyF) {A B : Type} (Q : B → Prop) : sem F A B → Prop :=
   bimapP F (fun _ => True) Q
 
 /-- The coreflexive (partial identity) `P¿` of a predicate `P` (aopa `_¿`). -/
@@ -196,7 +198,7 @@ def corefl {b : RelSet.{0}} (P : b.carrier → Prop) : b ⟶ b := fun x y => x =
 /-! ## Action on relations — the relator (`bimapR`, `fmapR`) -/
 
 /-- aopa `bimapR`: the polynomial functor's action on `Rel(Set)` morphisms. -/
-def bimapR : (F : PolyF) → {a₁ a₂ b₁ b₂ : RelSet.{0}} → (a₁ ⟶ a₂) → (b₁ ⟶ b₂) →
+@[expose] public def bimapR : (F : PolyF) → {a₁ a₂ b₁ b₂ : RelSet.{0}} → (a₁ ⟶ a₂) → (b₁ ⟶ b₂) →
     (Fo F a₁ b₁ ⟶ Fo F a₂ b₂)
   | .zer,        _, _, _, _, _, _ => fun e _ => e.elim
   | .one,        _, _, _, _, _, _ => fun _ _ => True
@@ -209,11 +211,11 @@ def bimapR : (F : PolyF) → {a₁ a₂ b₁ b₂ : RelSet.{0}} → (a₁ ⟶ a�
   | .otimes l r, _, _, _, _, R, S => fun u v => bimapR l R S u.1 v.1 ∧ bimapR r R S u.2 v.2
 
 /-- aopa `fmapR F R = bimapR F idR R`. -/
-def fmapR (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) : Fo F a b₁ ⟶ Fo F a b₂ :=
+@[expose] public def fmapR (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) : Fo F a b₁ ⟶ Fo F a b₂ :=
   bimapR F (Cat.id a) R
 
 /-- aopa `bimapR-functor-⊑`: `⟦F⟧R ≫ ⟦F⟧R' ⊑ ⟦F⟧(R≫R')`. -/
-theorem bimapR_functor_le (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
+public theorem bimapR_functor_le (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
     (R : a₁ ⟶ a₂) (R' : a₂ ⟶ a₃) (S : b₁ ⟶ b₂) (S' : b₂ ⟶ b₃) :
     bimapR F R S ≫ bimapR F R' S' ⊑ bimapR F (R ≫ R') (S ≫ S') := by
   induction F with
@@ -239,7 +241,7 @@ theorem bimapR_functor_le (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0
       exact ⟨le_iff.mp ihl u.1 w.1 ⟨v.1, h1.1, h2.1⟩, le_iff.mp ihr u.2 w.2 ⟨v.2, h1.2, h2.2⟩⟩
 
 /-- aopa `bimapR-functor-⊒`: `⟦F⟧(R≫R') ⊑ ⟦F⟧R ≫ ⟦F⟧R'`. -/
-theorem bimapR_functor_ge (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
+public theorem bimapR_functor_ge (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
     (R : a₁ ⟶ a₂) (R' : a₂ ⟶ a₃) (S : b₁ ⟶ b₂) (S' : b₂ ⟶ b₃) :
     bimapR F (R ≫ R') (S ≫ S') ⊑ bimapR F R S ≫ bimapR F R' S' := by
   induction F with
@@ -263,7 +265,7 @@ theorem bimapR_functor_ge (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0
       exact ⟨(y1, y2), ⟨hxy1, hxy2⟩, ⟨hyz1, hyz2⟩⟩
 
 /-- aopa `bimapR-functor`: `⟦F⟧R ≫ ⟦F⟧R' = ⟦F⟧(R≫R')`. -/
-theorem bimapR_functor (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
+public theorem bimapR_functor (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
     (R : a₁ ⟶ a₂) (R' : a₂ ⟶ a₃) (S : b₁ ⟶ b₂) (S' : b₂ ⟶ b₃) :
     bimapR F R S ≫ bimapR F R' S' = bimapR F (R ≫ R') (S ≫ S') :=
   le_antisymm (bimapR_functor_le F R R' S S') (bimapR_functor_ge F R R' S S')
@@ -293,10 +295,10 @@ theorem bimapR_cong (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} {R S : a₁ �
     (hRS : R = S) (hTU : T = U) : bimapR F R T = bimapR F S U := by rw [hRS, hTU]
 
 /-- `(𝟙)° = 𝟙` in `Rel(Set)`. -/
-theorem recip_id {a : RelSet.{0}} : (Cat.id a)° = Cat.id a := hom_ext fun x y => eq_comm
+public theorem recip_id {a : RelSet.{0}} : (Cat.id a)° = Cat.id a := hom_ext fun x y => eq_comm
 
 /-- aopa `fmapR-functor`: `⟦F⟧R ≫ ⟦F⟧S = ⟦F⟧(R≫S)`. -/
-theorem fmapR_functor (F : PolyF) (a : RelSet.{0}) {b₁ b₂ b₃ : RelSet.{0}}
+public theorem fmapR_functor (F : PolyF) (a : RelSet.{0}) {b₁ b₂ b₃ : RelSet.{0}}
     (R : b₁ ⟶ b₂) (S : b₂ ⟶ b₃) :
     (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂) ≫ fmapR F S = fmapR F (R ≫ S) := by
   show bimapR F (Cat.id a) R ≫ bimapR F (Cat.id a) S = bimapR F (Cat.id a) (R ≫ S)
@@ -312,7 +314,7 @@ theorem fmapR_cong (F : PolyF) {a b₁ b₂ : RelSet.{0}} {R S : b₁ ⟶ b₂} 
     (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂) = fmapR F S := by rw [h]
 
 /-- aopa `bimapR-˘-preservation`: `(⟦F⟧R S)° = ⟦F⟧R° S°`. -/
-theorem bimapR_recip (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂) :
+public theorem bimapR_recip (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂) :
     (bimapR F R S)° = bimapR F R° S° := by
   induction F with
   | zer => apply hom_ext; intro u v; exact (u : Empty).elim
@@ -335,13 +337,13 @@ theorem bimapR_recip (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} (R : a₁ �
       exact ⟨fun h => ⟨el.mp h.1, er.mp h.2⟩, fun h => ⟨el.mpr h.1, er.mpr h.2⟩⟩
 
 /-- aopa `fmapR-˘-preservation`: `(⟦F⟧R)° = ⟦F⟧R°`. -/
-theorem fmapR_recip (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) :
+public theorem fmapR_recip (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) :
     (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂)° = fmapR F R° := by
   show (bimapR F (Cat.id a) R)° = bimapR F (Cat.id a) R°
   rw [bimapR_recip, recip_id]
 
 /-- aopa `bimap-bimapR`: `graph (bimap F f g) = ⟦F⟧ (graph f) (graph g)`. -/
-theorem bimap_bimapR (F : PolyF) {A₁ A₂ B₁ B₂ : Type} (f : A₁ → A₂) (g : B₁ → B₂) :
+public theorem bimap_bimapR (F : PolyF) {A₁ A₂ B₁ B₂ : Type} (f : A₁ → A₂) (g : B₁ → B₂) :
     (graph (bimap F f g) : Fo F ⟨A₁⟩ ⟨B₁⟩ ⟶ Fo F ⟨A₂⟩ ⟨B₂⟩)
       = bimapR F (graph f) (graph g) := by
   induction F with
@@ -383,7 +385,7 @@ theorem bimap_bimapR (F : PolyF) {A₁ A₂ B₁ B₂ : Type} (f : A₁ → A₂
         rw [← h1, ← h2]
 
 /-- aopa `fmap-fmapR`: `graph (fmap F g) = ⟦F⟧ (graph g)`. -/
-theorem fmap_fmapR (F : PolyF) {A B₁ B₂ : Type} (g : B₁ → B₂) :
+public theorem fmap_fmapR (F : PolyF) {A B₁ B₂ : Type} (g : B₁ → B₂) :
     (graph (fmap F g) : Fo F ⟨A⟩ ⟨B₁⟩ ⟶ Fo F ⟨A⟩ ⟨B₂⟩) = fmapR F (graph g) := by
   have h := bimap_bimapR F (id : A → A) g
   show (graph (bimap F id g) : Fo F ⟨A⟩ ⟨B₁⟩ ⟶ Fo F ⟨A⟩ ⟨B₂⟩) = bimapR F (Cat.id ⟨A⟩) (graph g)

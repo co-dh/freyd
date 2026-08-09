@@ -1,3 +1,5 @@
+module
+
 /-
   A mathlib-free hash map / hash set on `Int` keys, backed by an `Array` of collision
   buckets (each bucket a `List (Int × V)`).  Pure Lean 4 core (`Array`, `Int`, `List`);
@@ -21,21 +23,21 @@ namespace Freyd.HashMap
 
 /-- An `Array`-of-buckets hash map with `Int` keys.  `hpos` fixes `size ≥ 1` so the hash
     index is always in range (no mod-by-zero, no resize). -/
-structure AHashMap (V : Type) where
+public structure AHashMap (V : Type) where
   buckets : Array (List (Int × V))
   hpos : 0 < buckets.size
 
 variable {V : Type}
 
 /-- Empty map with `n+1` buckets (the `+1` guarantees `size ≥ 1`). -/
-def mkHashMap (V : Type) (n : Nat) : AHashMap V :=
+@[expose] public def mkHashMap (V : Type) (n : Nat) : AHashMap V :=
   ⟨Array.replicate (n + 1) [], by rw [Array.size_replicate]; exact Nat.succ_pos n⟩
 
 /-- Bucket index of a key: `k mod size`, nonneg because `Int.emod` is nonneg for a positive
     modulus and `size ≥ 1`. -/
-def hash (m : AHashMap V) (k : Int) : Nat := (k.emod (m.buckets.size : Int)).toNat
+@[expose] public def hash (m : AHashMap V) (k : Int) : Nat := (k.emod (m.buckets.size : Int)).toNat
 
-theorem hash_lt (m : AHashMap V) (k : Int) : hash m k < m.buckets.size := by
+public theorem hash_lt (m : AHashMap V) (k : Int) : hash m k < m.buckets.size := by
   have hpos : (0 : Int) < (m.buckets.size : Int) := by have := m.hpos; omega
   have hne : (m.buckets.size : Int) ≠ 0 := by have := m.hpos; omega
   have h1 : 0 ≤ k.emod (m.buckets.size : Int) := Int.emod_nonneg k hne
@@ -45,38 +47,38 @@ theorem hash_lt (m : AHashMap V) (k : Int) : hash m k < m.buckets.size := by
 
 /-- Look up `k`: scan its bucket front-to-back for the first `(k, _)` pair (newest wins,
     since `insert` prepends). -/
-def find? (m : AHashMap V) (k : Int) : Option V :=
+@[expose] public def find? (m : AHashMap V) (k : Int) : Option V :=
   ((m.buckets[hash m k]?).getD []).find? (fun p => p.1 == k) |>.map (fun p => p.2)
 
 /-- Insert `(k, v)`: prepend it to `k`'s bucket (last-write-wins; older `(k, _)` entries are
     shadowed, never scanned). -/
-def insert (m : AHashMap V) (k : Int) (v : V) : AHashMap V :=
+@[expose] public def insert (m : AHashMap V) (k : Int) (v : V) : AHashMap V :=
   ⟨m.buckets.set (hash m k) ((k, v) :: (m.buckets[hash m k]?).getD []) (hash_lt m k),
    by rw [Array.size_set]; exact m.hpos⟩
 
-def contains (m : AHashMap V) (k : Int) : Bool := (find? m k).isSome
+@[expose] public def contains (m : AHashMap V) (k : Int) : Bool := (find? m k).isSome
 
 /-! ### Behaviour lemmas -/
 
 /-- `insert` keeps the bucket count, hence keeps every hash index. -/
-theorem hash_insert (m : AHashMap V) (k : Int) (v : V) (k' : Int) :
+public theorem hash_insert (m : AHashMap V) (k : Int) (v : V) (k' : Int) :
     hash (insert m k v) k' = hash m k' := by
   unfold hash insert
   rw [Array.size_set]
 
 /-- `(insert m k v).buckets` is `m.buckets` with `k`'s bucket replaced by the prepended list.
     Definitional; stated so it can be used as a rewrite. -/
-theorem insert_buckets (m : AHashMap V) (k : Int) (v : V) :
+public theorem insert_buckets (m : AHashMap V) (k : Int) (v : V) :
     (insert m k v).buckets
       = m.buckets.set (hash m k) ((k, v) :: (m.buckets[hash m k]?).getD []) (hash_lt m k) :=
   rfl
 
-theorem find?_mkHashMap (n : Nat) (k : Int) : find? (mkHashMap V n) k = none := by
+public theorem find?_mkHashMap (n : Nat) (k : Int) : find? (mkHashMap V n) k = none := by
   unfold find?
   rw [Array.getElem?_eq_getElem (hash_lt (mkHashMap V n) k)]
   simp [mkHashMap, Array.getElem_replicate]
 
-theorem find?_insert_self (m : AHashMap V) (k : Int) (v : V) :
+public theorem find?_insert_self (m : AHashMap V) (k : Int) (v : V) :
     find? (insert m k v) k = some v := by
   unfold find?
   -- `beq_iff_eq` (not `beq_self_eq_true`): the latter's `ReflBEq Int` instance drags in
@@ -85,7 +87,7 @@ theorem find?_insert_self (m : AHashMap V) (k : Int) (v : V) :
       List.find?_cons, show ((k, v).fst == k) = true from beq_iff_eq.mpr rfl]
   rfl
 
-theorem find?_insert_other (m : AHashMap V) (k : Int) (v : V) (k' : Int) (h : k' ≠ k) :
+public theorem find?_insert_other (m : AHashMap V) (k : Int) (v : V) (k' : Int) (h : k' ≠ k) :
     find? (insert m k v) k' = find? m k' := by
   unfold find?
   rw [hash_insert, insert_buckets, Array.getElem?_set (hash_lt m k)]
@@ -102,23 +104,23 @@ theorem contains_iff (m : AHashMap V) (k : Int) :
 
 /-! ### Hash set (chaining map with trivial values) -/
 
-abbrev AHashSet := AHashMap Unit
+@[expose] public abbrev AHashSet := AHashMap Unit
 
-def insert' (m : AHashSet) (k : Int) : AHashSet := insert m k ()
+@[expose] public def insert' (m : AHashSet) (k : Int) : AHashSet := insert m k ()
 
-def mem (m : AHashSet) (k : Int) : Bool := contains m k
+@[expose] public def mem (m : AHashSet) (k : Int) : Bool := contains m k
 
-theorem mem_mk (n : Nat) (k : Int) : mem (mkHashMap Unit n) k = false := by
+public theorem mem_mk (n : Nat) (k : Int) : mem (mkHashMap Unit n) k = false := by
   unfold mem contains
   rw [find?_mkHashMap]
   rfl
 
-theorem mem_insert_self (m : AHashSet) (k : Int) : mem (insert' m k) k = true := by
+public theorem mem_insert_self (m : AHashSet) (k : Int) : mem (insert' m k) k = true := by
   unfold mem insert' contains
   rw [find?_insert_self]
   rfl
 
-theorem mem_insert_other (m : AHashSet) (k k' : Int) (h : k' ≠ k) :
+public theorem mem_insert_other (m : AHashSet) (k k' : Int) (h : k' ≠ k) :
     mem (insert' m k) k' = mem m k' := by
   unfold mem insert' contains
   rw [find?_insert_other _ _ _ _ h]

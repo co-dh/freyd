@@ -20,9 +20,11 @@
   §4  Ex 5.12.
   §5  Guards and conditionals (Ex 5.17).
 -/
-import Freyd.S2_20
-import AOP.A4_5
-import AOP.A5_1
+module
+
+public import Freyd.S2_20
+public import AOP.A4_5
+public import AOP.A5_1
 
 universe v u
 
@@ -39,18 +41,18 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 /-- **B&dM 5.9**: the junc (case) morphism `[R,S] : s ⟶ c` induced by a coproduct
     `C : Coproduct s a₁ a₂` together with `R : a₁ ⟶ c`, `S : a₂ ⟶ c`, in Freyd's diagram order:
     `[R,S] = (u₁°≫R) ∪ (u₂°≫S)`. -/
-def junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) : s ⟶ c :=
+@[expose] public def junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) : s ⟶ c :=
   (C.u₁° ≫ R) ∪ (C.u₂° ≫ S)
 
 /-- **B&dM 5.9** (UP, first injection): `u₁ ≫ [R,S] = R`. -/
-theorem u₁_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
+public theorem u₁_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
     C.u₁ ≫ junc C R S = R := by
   show C.u₁ ≫ ((C.u₁° ≫ R) ∪ (C.u₂° ≫ S)) = R
   rw [DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
     C.u₁_self_comp_recip, C.u₁_u₂_recip, Cat.id_comp, DistributiveAllegory.zero_comp, union_zero]
 
 /-- **B&dM 5.9** (UP, second injection): `u₂ ≫ [R,S] = S`. -/
-theorem u₂_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
+public theorem u₂_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
     C.u₂ ≫ junc C R S = S := by
   show C.u₂ ≫ ((C.u₁° ≫ R) ∪ (C.u₂° ≫ S)) = S
   rw [DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
@@ -77,13 +79,13 @@ theorem junc_mono {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R R' : a�
 /-- Fusion: post-composing a junc with any `Z` distributes into the branches, an immediate
     consequence of (5.9) via `comp_union_distrib`.  Used for `sumMap`'s functor laws and the
     guard/conditional laws (Ex 5.17) without re-expanding `junc` by hand each time. -/
-theorem junc_comp {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) (Z : c ⟶ d) :
+public theorem junc_comp {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) (Z : c ⟶ d) :
     junc C R S ≫ Z = junc C (R ≫ Z) (S ≫ Z) := by
   show ((C.u₁° ≫ R) ∪ (C.u₂° ≫ S)) ≫ Z = (C.u₁° ≫ (R ≫ Z)) ∪ (C.u₂° ≫ (S ≫ Z))
   rw [union_comp_distrib, Cat.assoc, Cat.assoc]
 
 /-- `[R,S]° = (R°≫u₁) ∪ (S°≫u₂)`. -/
-theorem junc_recip {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
+public theorem junc_recip {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
     (junc C R S)° = (R° ≫ C.u₁) ∪ (S° ≫ C.u₂) := by
   show ((C.u₁° ≫ R) ∪ (C.u₂° ≫ S))° = (R° ≫ C.u₁) ∪ (S° ≫ C.u₂)
   rw [recip_union, Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip,
@@ -93,7 +95,7 @@ theorem junc_recip {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ 
 /-! ## §2  (5.11) cancellation -/
 
 /-- **B&dM (5.11)**: `[U,V]° ≫ [R,S] = (U°≫R) ∪ (V°≫S)`. -/
-theorem junc_recip_junc {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂)
+public theorem junc_recip_junc {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂)
     {U : a₁ ⟶ d} {V : a₂ ⟶ d} {R : a₁ ⟶ c} {S : a₂ ⟶ c} :
     (junc C U V)° ≫ junc C R S = (U° ≫ R) ∪ (V° ≫ S) := by
   rw [junc_recip, union_comp_distrib, Cat.assoc, Cat.assoc, u₁_junc, u₂_junc]
@@ -108,7 +110,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- **B&dM 5.10**: the sum (coproduct) of two morphisms `R : a₁⟶b₁`, `S : a₂⟶b₂` across
     coproducts `C : Coproduct s a₁ a₂`, `D : Coproduct t b₁ b₂`. -/
-def sumMap {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+@[expose] public def sumMap {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
     (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) : s ⟶ t :=
   junc C (R ≫ D.u₁) (S ≫ D.u₂)
 
@@ -139,14 +141,14 @@ theorem sumMap_comp {s a₁ a₂ t b₁ b₂ w c₁ c₂ : 𝒜} (C : Coproduct 
 
 /-- **B&dM p.42** (coproduct fusion, lifted to relations): `[P,Q] · (R+S) = [P·R, Q·S]`,
     mirrored to `(R+S) ≫ [P,Q] = [R≫P, S≫Q]`. -/
-theorem sumMap_junc {s a₁ a₂ t b₁ b₂ c : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+public theorem sumMap_junc {s a₁ a₂ t b₁ b₂ c : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
     (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) (P : b₁ ⟶ c) (Q : b₂ ⟶ c) :
     sumMap C D R S ≫ junc D P Q = junc C (R ≫ P) (S ≫ Q) := by
   show junc C (R ≫ D.u₁) (S ≫ D.u₂) ≫ junc D P Q = junc C (R ≫ P) (S ≫ Q)
   rw [junc_comp, Cat.assoc, Cat.assoc, u₁_junc, u₂_junc]
 
 /-- **B&dM 5.10**, functor law: `sumMap` commutes with converse (with the coproducts swapped). -/
-theorem sumMap_recip {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+public theorem sumMap_recip {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
     (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) : (sumMap C D R S)° = sumMap D C R° S° := by
   show (junc C (R ≫ D.u₁) (S ≫ D.u₂))° = junc D (R° ≫ C.u₁) (S° ≫ C.u₂)
   rw [junc_recip, Allegory.recip_comp, Allegory.recip_comp, Cat.assoc, Cat.assoc]

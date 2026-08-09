@@ -8,7 +8,9 @@
   throughout the thinning case studies is MONOTONICITY: a coarser thinning preorder thins to a
   coarser relation.  The concrete `thinlist` list fold is the section's implementation detail.
 -/
-import AOP.A8_1
+module
+
+public import AOP.A8_1
 
 universe u
 

@@ -1,3 +1,5 @@
+module
+
 /-
   Port of AoPA `FixedPoint.agda`: lower bounds, least elements, and least (pre)fixed-point
   lemmas.  This is point-level order theory over a carrier type `A` with an equivalence `≈`

@@ -22,9 +22,11 @@
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7 and 8.
 -/
-import AOP.A7_2
-import AOP.A8_1
-import AOP.A5_2
+module
+
+public import AOP.A7_2
+public import AOP.A8_1
+public import AOP.A5_2
 
 universe u
 
@@ -39,7 +41,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     `H = h·FH·T°` (mirrored `T° ≫ F.map H ≫ h = H`) — Theorems 9.1/9.2 and the exercise
     variants all instantiate `H := ⦇h⦈·⦇T⦈°`.  The two inclusions (9.2) and (9.3) of the book's
     proof are exactly the components of `min`'s universal property (`le_A_comp_minRel_iff`). -/
-theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
+public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H) :
     A (T°) ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R ⊑ A H ≫ minRel R := by
@@ -127,7 +129,7 @@ theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b �
     (`ΛT°`), solving subproblems recursively (`P(h·FX)`) and keeping an optimum of the partial
     results (`min R`) refines "generate everything, then pick a global optimum".
     By Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_prefixed`. -/
-theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R) :
     mu (fun X : b ⟶ a => A (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R)
@@ -487,7 +489,7 @@ end Prop9_3
 /-- A **BIRELATOR** (B&dM p.223's implicit bifunctor setting): a relator in each argument
     jointly, bundled as one two-argument action — the minimal bifunctor structure needed to
     state Proposition 9.4. -/
-structure Birelator (𝒜 : Type u) [Allegory 𝒜] where
+public structure Birelator (𝒜 : Type u) [Allegory 𝒜] where
   obj : 𝒜 → 𝒜 → 𝒜
   map : ∀ {a b c d : 𝒜}, (a ⟶ b) → (c ⟶ d) → (obj a c ⟶ obj b d)
   map_id : ∀ (a c : 𝒜), map (Cat.id a) (Cat.id c) = Cat.id (obj a c)
@@ -496,7 +498,7 @@ structure Birelator (𝒜 : Type u) [Allegory 𝒜] where
   map_mono : ∀ {a b c d : 𝒜} {R R' : a ⟶ b} {S S' : c ⟶ d}, R ⊑ R' → S ⊑ S' → map R S ⊑ map R' S'
 
 /-- A birelator PRESERVES CONVERSE when `G(R°, S°) = (G(R,S))°`. -/
-def Birelator.PreservesRecip (G : Birelator 𝒜) : Prop :=
+@[expose] public def Birelator.PreservesRecip (G : Birelator 𝒜) : Prop :=
   ∀ {a b c d : 𝒜} (R : a ⟶ b) (S : c ⟶ d), G.map R° S° = (G.map R S)°
 
 /-- "Fix the left argument at `e`": `G.fixLeft e` is the RELATOR `A ↦ G(e, A)`, `R ↦ G(id_e,
@@ -506,7 +508,7 @@ def Birelator.PreservesRecip (G : Birelator 𝒜) : Prop :=
     `birelator_thin_condition` below, at `Q := G.map U V` — so a monotonicity witness `hU` for
     `G` (plus a reciprocal bound `hV` for the thinning case) suffices to run
     `dynamic_programming`/`dynamic_programming_thin` on `G.fixLeft e`. -/
-def Birelator.fixLeft (G : Birelator 𝒜) (e : 𝒜) : Relator 𝒜 𝒜 where
+@[expose] public def Birelator.fixLeft (G : Birelator 𝒜) (e : 𝒜) : Relator 𝒜 𝒜 where
   obj := G.obj e
   map := G.map (Cat.id e)
   map_id a := G.map_id e a
@@ -518,7 +520,7 @@ def Birelator.fixLeft (G : Birelator 𝒜) (e : 𝒜) : Relator 𝒜 𝒜 where
 /-- **Proposition 9.4(i) (B&dM p.223)**, monotonicity: if `h` is monotonic for `G` at some `U`
     refined from below by `id_e` (`hUrefl`), then `h` is monotonic (in the ordinary
     `MonotonicAlg` sense) for the fixed-left relator `G.fixLeft e`. -/
-theorem birelator_fixLeft_mono {G : Birelator 𝒜} {e : 𝒜} {h : G.obj e a ⟶ a} {R : a ⟶ a}
+public theorem birelator_fixLeft_mono {G : Birelator 𝒜} {e : 𝒜} {h : G.obj e a ⟶ a} {R : a ⟶ a}
     {U : e ⟶ e} (hUrefl : Cat.id e ⊑ U) (hU : G.map U R ≫ h ⊑ h ≫ R) :
     G.map (Cat.id e) R ≫ h ⊑ h ≫ R :=
   le_trans (comp_mono_right (G.map_mono hUrefl (le_refl R)) h) hU
@@ -527,7 +529,7 @@ theorem birelator_fixLeft_mono {G : Birelator 𝒜} {e : 𝒜} {h : G.obj e a �
     monotonicity witness `hU` and a reciprocal bound `hV : V°·H ⊑ H·R°`, the thinning
     relation `Q := G(U,V)` discharges `dynamic_programming_thin`'s hypothesis `hQ` for the
     fixed-left relator `G.fixLeft e`. -/
-theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e w : 𝒜}
+public theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e w : 𝒜}
     {h : G.obj e a ⟶ a} {H : w ⟶ a} {R : a ⟶ a} {U : e ⟶ e} {V : w ⟶ w}
     (hh : Map h) (hU : G.map U R ≫ h ⊑ h ≫ R) (hV : V° ≫ H ⊑ H ≫ R°) :
     (G.map U V)° ≫ G.map (Cat.id e) H ≫ h ⊑ G.map (Cat.id e) H ≫ h ≫ R° := by
