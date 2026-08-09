@@ -41,10 +41,12 @@
   `disjoint_pullback_initial` — are IMPORTED from `Freyd.ColimitPositive` (they mention no colimit).
   Mathlib-free; single universe `{w,w}` (forced by the pullback germ `stageInclFunctorL_preservesPullbacks`).
 -/
-import Freyd.S1_621_ColimitPositive
-import Freyd.S1_543_LaxColimitCoproduct
-import Freyd.S1_543_LaxGermImages
-import Freyd.S1_61_LaxStrictInitial
+module
+
+public import Freyd.S1_621_ColimitPositive
+public import Freyd.S1_543_LaxColimitCoproduct
+public import Freyd.S1_543_LaxGermImages
+public import Freyd.S1_61_LaxStrictInitial
 
 open Freyd
 open Freyd.Colim
@@ -62,14 +64,14 @@ variable (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L)
 /-- The canonical inclusion germ of `x : L.A i` into its push `F hik x : L.A k`: the germ of
     `isoInv reflApp : F hik x ⟶ F (refl k) (F hik x)` at the bound `⟨k, hik, refl k⟩`.  (It is the
     `inl`-side dual of the stage inclusion; an iso by `coprStageIncl_isIso`.) -/
-noncomputable def coprStageIncl {i k : ι} (x : L.A i) (hik : D.le i k) :
+@[expose] public noncomputable def coprStageIncl {i k : ι} (x : L.A i) (hik : D.le i k) :
     letI : Cat (Obj L) := laxColimCat L hL
     (⟨i, x⟩ : Obj L) ⟶ (⟨k, L.F hik x⟩ : Obj L) :=
   homInclL L hL x (L.F hik x) ⟨k, hik, D.refl k⟩ (isoInv (reflApp_isIso L (L.F hik x)))
 
 /-- `coprStageIncl` is an isomorphism in `laxColimCat L hL`: its germ `isoInv reflApp` has the stage
     two-sided inverse `reflApp`, lifted by `homInclL_isIso_of_rep`. -/
-theorem coprStageIncl_isIso {i k : ι} (x : L.A i) (hik : D.le i k) :
+public theorem coprStageIncl_isIso {i k : ι} (x : L.A i) (hik : D.le i k) :
     @IsIso (Obj L) (laxColimCat L hL) _ _ (coprStageIncl L hL x hik) := by
   unfold coprStageIncl
   exact homInclL_isIso_of_rep L hL x (L.F hik x) ⟨k, hik, D.refl k⟩
@@ -82,7 +84,7 @@ theorem coprStageIncl_isIso {i k : ι} (x : L.A i) (hik : D.le i k) :
     `stageInclL g`.  PROOF: compose the two `homInclL` legs at the common bound `k`
     (`compL_homInclL_compAtL`); both pushes are along `refl k` (identity, `push_refl`); the middle
     `isoInv reflApp ≫ reflApp = id` cancels, leaving `g ≫ isoInv reflApp` at a defeq bound. -/
-theorem homInclL_refl_factor {i k : ι} (x : L.A i) (y : L.A k) (hik : D.le i k)
+public theorem homInclL_refl_factor {i k : ι} (x : L.A i) (y : L.A k) (hik : D.le i k)
     (g : L.F hik x ⟶ y) :
     letI : Cat (Obj L) := laxColimCat L hL
     homInclL L hL x y ⟨k, hik, D.refl k⟩ (g ≫ isoInv (reflApp_isIso L y))
@@ -103,7 +105,7 @@ theorem homInclL_refl_factor {i k : ι} (x : L.A i) (y : L.A k) (hik : D.le i k)
       inv_isoInv_comp (reflApp_isIso L (L.F hik x)), Cat.id_comp]
 
 /-- (★) for the LEFT injection: `coprInl L hL data xA xB = ν_A ≫ stageInclL (hcop k).inl`. -/
-theorem coprInl_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (xB : L.A iB) :
+public theorem coprInl_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (xB : L.A iB) :
     letI : Cat (Obj L) := laxColimCat L hL
     coprInl L hL data xA xB
       = (coprStageIncl L hL xA (prK_le D iA iB).1)
@@ -115,7 +117,7 @@ theorem coprInl_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (x
     ((data.hcop (prK D iA iB)).inl (A := L.F (prK_le D iA iB).1 xA) (B := L.F (prK_le D iA iB).2 xB))
 
 /-- (★) for the RIGHT injection: `coprInr L hL data xA xB = ν_B ≫ stageInclL (hcop k).inr`. -/
-theorem coprInr_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (xB : L.A iB) :
+public theorem coprInr_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (xB : L.A iB) :
     letI : Cat (Obj L) := laxColimCat L hL
     coprInr L hL data xA xB
       = (coprStageIncl L hL xB (prK_le D iA iB).2)
@@ -132,7 +134,7 @@ theorem coprInr_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A iA) (x
     coproducts: `hcop i := (hdisj i).toHasBinaryCoproducts`, with the transition joint-epic
     preservation (`hcoppres`) and copairing preservation (`hcoppres_case`) supplied by the tower.
     Lax mirror of `Colim.colimitCoprodOfDisjoint`'s `fun i => (hdisj i).toHasBinaryCoproducts`. -/
-noncomputable def laxCoprodDataOfDisjoint
+@[expose] public noncomputable def laxCoprodDataOfDisjoint
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
         (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
@@ -152,7 +154,7 @@ noncomputable def laxCoprodDataOfDisjoint
 
 /-- The lax colimit's binary coproducts, sourced from the per-stage DISJOINT coproducts.  Lax mirror
     of `Colim.colimitCoprodOfDisjoint`. -/
-noncomputable def laxColimCoprodOfDisjoint
+@[expose] public noncomputable def laxColimCoprodOfDisjoint
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
         (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
@@ -174,7 +176,7 @@ noncomputable def laxColimCoprodOfDisjoint
     injection `inl` is `coprInl`, which by (★) factors as `coprStageIncl ≫ stageInclL (hcop k).inl`;
     `coprStageIncl` is iso and `stageInclL (hcop k).inl` is monic (per-stage `(hdisj k).inl_monic`),
     so the composite is monic.  Lax port of `Colim.colimit_inl_monic`. -/
-theorem laxColim_inl_monic
+public theorem laxColim_inl_monic
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
@@ -203,7 +205,7 @@ theorem laxColim_inl_monic
     (stageInclL_mono_of_stage L hL hmono _ ((hdisj (prK D iA iB)).inl_monic))
 
 /-- **The lax colimit's right injection is monic** (dual of `laxColim_inl_monic`). -/
-theorem laxColim_inr_monic
+public theorem laxColim_inr_monic
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
@@ -244,7 +246,7 @@ theorem laxColim_inr_monic
     disjointness), so `m₁ ≫ stageInclL (pdqₖ.pt → 0_k)` lands `pbC.pt` in the strict-initial
     `objIncl k 0_k` (`laxColimStrictInitial`); hence `pbC.pt` is initial.  Lax port of
     `Colim.colimit_inl_inter_inr`. -/
-theorem laxColim_inl_inter_inr [Nonempty ι]
+public theorem laxColim_inl_inter_inr [Nonempty ι]
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (_hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))

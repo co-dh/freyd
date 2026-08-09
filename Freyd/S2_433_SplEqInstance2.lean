@@ -12,8 +12,10 @@
   Conventions: diagram-order composition `R ≫ S`, reciprocation `R°`, intersection
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
-import Freyd.S2_43
-import Freyd.S2_40
+module
+
+public import Freyd.S2_43
+public import Freyd.S2_40
 
 universe v u
 
@@ -26,7 +28,7 @@ open Cat
     the EQUIVALENCE RELATIONS of `𝒜`.  This is Freyd's `Spl(Eq 𝒜)` (§2.433): split only
     the reflexive symmetric idempotents (equivalence relations).  The reflexive dual of
     `SplCorObj 𝒜` (§2.34), which splits only the coreflexives. -/
-def SplEqObj (𝒜 : Type u) [Allegory 𝒜] : Type u :=
+@[expose] public def SplEqObj (𝒜 : Type u) [Allegory 𝒜] : Type u :=
   { E : SplObj 𝒜 // Cat.id E.carrier ⊑ E.idem.e }
 
 namespace SplEqObj
@@ -34,7 +36,7 @@ namespace SplEqObj
 variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- Category structure on `SplEqObj 𝒜`: homs and composition inherited from `SplObj 𝒜`. -/
-instance instCatSplEq : Cat (SplEqObj 𝒜) where
+@[expose] public instance instCatSplEq : Cat (SplEqObj 𝒜) where
   Hom E F     := SplHom E.1 F.1
   id E        := splId E.1
   comp R S    := splComp R S
@@ -44,7 +46,7 @@ instance instCatSplEq : Cat (SplEqObj 𝒜) where
 
 /-- Allegory structure on `SplEqObj 𝒜`: reciprocation and intersection inherited
     from `SplObj 𝒜`; all axioms reduce to the underlying `𝒜` axioms via `SplHom.ext`. -/
-instance instAllegorySplEq : Allegory (SplEqObj 𝒜) where
+@[expose] public instance instAllegorySplEq : Allegory (SplEqObj 𝒜) where
   recip R             := splRecip R
   inter R S           := splInter R S
   recip_recip _R       := SplHom.ext (Allegory.recip_recip _)
@@ -60,14 +62,14 @@ end SplEqObj
 
 /-- Order on `SplEqObj 𝒜` is read off the underlying `𝒜`-morphisms (the reflexive analogue
     of `splCorLe_iff`): `Φ ⊑ Ψ ↔ Φ.R ⊑ Ψ.R`. -/
-theorem splEqLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplEqObj 𝒜} (Φ Ψ : E ⟶ F) :
+public theorem splEqLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplEqObj 𝒜} (Φ Ψ : E ⟶ F) :
     Φ ⊑ Ψ ↔ Φ.R ⊑ Ψ.R := by
   show splInter Φ Ψ = Φ ↔ Φ.R ∩ Ψ.R = Φ.R
   exact ⟨fun h => congrArg SplHom.R h, fun h => SplHom.ext h⟩
 
 /-- **§2.21 (reflexive)**: if `𝒜` is distributive then so is `Spl(Eq 𝒜)`, with union and
     zero taken pointwise (`splUnion`, `splZero`).  Each law descends via `SplHom.ext`. -/
-instance instDistributiveSplEq {𝒜 : Type u} [DistributiveAllegory 𝒜] :
+@[expose] public instance instDistributiveSplEq {𝒜 : Type u} [DistributiveAllegory 𝒜] :
     DistributiveAllegory (SplEqObj 𝒜) :=
   { SplEqObj.instAllegorySplEq with
     zero := splZero
@@ -101,7 +103,7 @@ instance instDistributiveSplEq {𝒜 : Type u} [DistributiveAllegory 𝒜] :
 /-- **§2.34 (reflexive)**: if `𝒜` is a DIVISION allegory then so is `Spl(Eq 𝒜)`, with right
     division taken pointwise (`splDiv`).  Both §2.31 laws reduce to the base `div_comp_le` /
     `le_div`, exactly as for the full `SplObj 𝒜` (`instDivisionSpl`). -/
-noncomputable instance instDivisionSplEq {𝒜 : Type u} [DivisionAllegory 𝒜] :
+@[expose] public noncomputable instance instDivisionSplEq {𝒜 : Type u} [DivisionAllegory 𝒜] :
     DivisionAllegory (SplEqObj 𝒜) :=
   { instDistributiveSplEq with
     div := fun Φ Ψ => splDiv Φ Ψ
@@ -149,7 +151,7 @@ theorem thick_splObj_to_splEq [DivisionAllegory 𝒜] {P E : SplEqObj 𝒜} (S :
     is `Φ.splitObj` (idempotent `Φ.R`), REFLEXIVE because `1 ⊑ E.1.idem.e ⊑ Φ.R`, so it lands
     in `Spl(Eq)`.  The three conclusions are the `SplObj`-splitting of `Φ` (`splitLeg` a map,
     `f ≫ f° = Φ`, `f° ≫ f = 1`), transferred to `Spl(Eq)` definitionally. -/
-theorem splEq_hsplit [Allegory 𝒜] : EqSplits (SplEqObj 𝒜) := by
+public theorem splEq_hsplit [Allegory 𝒜] : EqSplits (SplEqObj 𝒜) := by
   intro E Φ hrefl hsym hidem
   -- Translate the `Spl(Eq)` hypotheses to the underlying `SplObj`/`𝒜` facts.
   have hrefl2 : E.1.idem.e ⊑ Φ.R := (splEqLe_iff (Cat.id E) Φ).mp hrefl

@@ -35,10 +35,12 @@
   marker at the end of the file.
 -/
 
-import Freyd.S1_723_Locale
-import Freyd.S2_21
-import Freyd.S2_147_MapCat
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S1_723_Locale
+public import Freyd.S2_21
+public import Freyd.S2_147_MapCat
+public import Freyd.S2_111_RelCat
 
 universe u
 

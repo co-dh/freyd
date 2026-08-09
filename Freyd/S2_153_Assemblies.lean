@@ -87,7 +87,9 @@
   * `∇ : Type u → Assembly K` functor + preservation lemmas.                            [M8]
 -/
 
-import Freyd.S1_62
+module
+
+public import Freyd.S1_62
 
 universe u u₁ v₁
 
@@ -99,28 +101,28 @@ namespace Freyd
     `graph n m` means "defined at `n` with value `m`".  The relational encoding keeps
     composition and definition-by-cases proof-term-free (no `Classical.choice` to build
     values from domain proofs). -/
-structure ModFun where
+public structure ModFun where
   graph : Nat → Nat → Prop
   functional : ∀ {n m₁ m₂}, graph n m₁ → graph n m₂ → m₁ = m₂
 
 namespace ModFun
 
 /-- The identity endofunction (book (i)). -/
-def ident : ModFun := ⟨fun n m => m = n, fun h₁ h₂ => h₁.trans h₂.symm⟩
+@[expose] public def ident : ModFun := ⟨fun n m => m = n, fun h₁ h₂ => h₁.trans h₂.symm⟩
 
 /-- A total function as a `ModFun` (e.g. the book's total ℓ and ϰ). -/
-def ofFun (f : Nat → Nat) : ModFun := ⟨fun n m => m = f n, fun h₁ h₂ => h₁.trans h₂.symm⟩
+@[expose] public def ofFun (f : Nat → Nat) : ModFun := ⟨fun n m => m = f n, fun h₁ h₂ => h₁.trans h₂.symm⟩
 
 /-- Composition in DIAGRAM ORDER: `(φ.comp ψ)(n) = ψ(φ(n))` — first φ, then ψ.
     Matches the book's juxtaposition `θℓ` = "θ then ℓ". -/
-def comp (φ ψ : ModFun) : ModFun where
+@[expose] public def comp (φ ψ : ModFun) : ModFun where
   graph n m := ∃ j, φ.graph n j ∧ ψ.graph j m
   functional := fun ⟨j₁, hφ₁, hψ₁⟩ ⟨j₂, hφ₂, hψ₂⟩ => by
     cases φ.functional hφ₁ hφ₂; exact ψ.functional hψ₁ hψ₂
 
 /-- The coded pair `θ = (φ,ψ)` from the book's bracketed remark: `n ↦ code (φ n) (ψ n)`,
     defined exactly on the common domain of φ and ψ. -/
-def pairC (code : Nat → Nat → Nat) (φ ψ : ModFun) : ModFun where
+@[expose] public def pairC (code : Nat → Nat → Nat) (φ ψ : ModFun) : ModFun where
   graph n m := ∃ a b, φ.graph n a ∧ ψ.graph n b ∧ m = code a b
   functional := fun ⟨a₁, b₁, ha₁, hb₁, he₁⟩ ⟨a₂, b₂, ha₂, hb₂, he₂⟩ => by
     cases φ.functional ha₁ ha₂; cases ψ.functional hb₁ hb₂; exact he₁.trans he₂.symm
@@ -131,7 +133,7 @@ def pairC (code : Nat → Nat → Nat) (φ ψ : ModFun) : ModFun where
     the tags (not of `code`).  This is the K-closure that the book's "disjoint unions left
     to the reader" implicitly requires; the parameter slot `x` is what lets tagged indices
     survive inside pair-coded pullback indices. -/
-def casesC (proj₁ proj₂ : Nat → Nat) (code : Nat → Nat → Nat) (inL inR : Nat → Nat)
+@[expose] public def casesC (proj₁ proj₂ : Nat → Nat) (code : Nat → Nat → Nat) (inL inR : Nat → Nat)
     (hL : ∀ {a b : Nat}, inL a = inL b → a = b) (hR : ∀ {a b : Nat}, inR a = inR b → a = b)
     (hLR : ∀ a b, inL a ≠ inR b) (φ ψ : ModFun) : ModFun where
   graph n m :=
@@ -148,17 +150,17 @@ def casesC (proj₁ proj₂ : Nat → Nat) (code : Nat → Nat → Nat) (inL inR
     combinator term over `ident`/`ofFun`, and its graph values are computed by chaining
     these four intro rules, then normalizing indices with `code_proj₁/₂`. -/
 
-theorem ident_graph (n : Nat) : ident.graph n n := rfl
+public theorem ident_graph (n : Nat) : ident.graph n n := rfl
 
-theorem ofFun_graph (f : Nat → Nat) (n : Nat) : (ofFun f).graph n (f n) := rfl
+public theorem ofFun_graph (f : Nat → Nat) (n : Nat) : (ofFun f).graph n (f n) := rfl
 
-@[simp] theorem ofFun_graph_iff {f : Nat → Nat} {n m : Nat} :
+@[simp] public theorem ofFun_graph_iff {f : Nat → Nat} {n m : Nat} :
     (ofFun f).graph n m ↔ m = f n := Iff.rfl
 
-theorem comp_graph {φ ψ : ModFun} {n j m : Nat} (h₁ : φ.graph n j) (h₂ : ψ.graph j m) :
+public theorem comp_graph {φ ψ : ModFun} {n j m : Nat} (h₁ : φ.graph n j) (h₂ : ψ.graph j m) :
     (φ.comp ψ).graph n m := ⟨j, h₁, h₂⟩
 
-theorem pairC_graph {code : Nat → Nat → Nat} {φ ψ : ModFun} {n a b : Nat}
+public theorem pairC_graph {code : Nat → Nat → Nat} {φ ψ : ModFun} {n a b : Nat}
     (h₁ : φ.graph n a) (h₂ : ψ.graph n b) : (pairC code φ ψ).graph n (code a b) :=
   ⟨a, b, h₁, h₂, rfl⟩
 
@@ -174,7 +176,7 @@ end ModFun
     `cases_mem` are the closure that the book's "construction of disjoint unions"
     (left to the reader) needs; see the module docstring for why (i)(ii)(iii) alone
     provably do not suffice. -/
-structure ModulusSystem where
+public structure ModulusSystem where
   /-- Membership: which partial endofunctions belong to K. -/
   mem : ModFun → Prop
   /-- (i) K contains the identity. -/
@@ -213,16 +215,16 @@ namespace ModulusSystem
 variable (K : ModulusSystem)
 
 /-- The coded pair θ = (φ,ψ) over K's coding. -/
-abbrev pairF (φ ψ : ModFun) : ModFun := ModFun.pairC K.code φ ψ
+@[expose] public abbrev pairF (φ ψ : ModFun) : ModFun := ModFun.pairC K.code φ ψ
 
 /-- Definition-by-cases with parameter over K's tags. -/
-abbrev casesF (φ ψ : ModFun) : ModFun :=
+@[expose] public abbrev casesF (φ ψ : ModFun) : ModFun :=
   ModFun.casesC K.proj₁ K.proj₂ K.code K.inL K.inR K.inL_inj K.inR_inj K.inLR_ne φ ψ
 
 /-- ℓ as a `ModFun`. -/
-abbrev projF₁ : ModFun := ModFun.ofFun K.proj₁
+@[expose] public abbrev projF₁ : ModFun := ModFun.ofFun K.proj₁
 /-- ϰ as a `ModFun`. -/
-abbrev projF₂ : ModFun := ModFun.ofFun K.proj₂
+@[expose] public abbrev projF₂ : ModFun := ModFun.ofFun K.proj₂
 
 /-- The coding is jointly surjective onto pairs — Freyd's "(n,k)ℓ = n, (n,k)ϰ = k for ALL
     n, k".  This is the pairing strength that bare (iii) lacks (module docstring). -/
@@ -264,7 +266,7 @@ end ModulusSystem
     `caucus n ⊆ X`.  Following the book, morphisms are functions on the carrier
     ⋃ₙ caucus n; we require `X` to BE the carrier (`carrier_mem`) — no generality is
     lost and every construction is spared a subtype carrier (module docstring). -/
-structure Assembly (K : ModulusSystem) : Type (u + 1) where
+public structure Assembly (K : ModulusSystem) : Type (u + 1) where
   X : Type u
   caucus : Nat → X → Prop
   carrier_mem : ∀ x, ∃ n, caucus n x
@@ -273,23 +275,23 @@ variable {K : ModulusSystem}
 
 /-- `φ` is a MODULUS (tracker) for the function `f` between the underlying sets of two
     assemblies: if `x ∈ A|ₙ` then `φ(n)` is defined and `f(x) ∈ B|φ(n)`. -/
-def Tracks (φ : ModFun) (A B : Assembly.{u} K) (f : A.X → B.X) : Prop :=
+@[expose] public def Tracks (φ : ModFun) (A B : Assembly.{u} K) (f : A.X → B.X) : Prop :=
   ∀ n x, A.caucus n x → ∃ m, φ.graph n m ∧ B.caucus m (f x)
 
 /-- A morphism of assemblies: an ordinary function admitting a modulus in K.
     The modulus is PROPERTY, not structure — two morphisms are equal iff their
     underlying functions are (`AsmHom.ext`). -/
-structure AsmHom (A B : Assembly.{u} K) : Type u where
+public structure AsmHom (A B : Assembly.{u} K) : Type u where
   toFun : A.X → B.X
   tracked : ∃ φ, K.mem φ ∧ Tracks φ A B toFun
 
-@[ext] theorem AsmHom.ext {A B : Assembly.{u} K} {f g : AsmHom A B}
+@[ext] public theorem AsmHom.ext {A B : Assembly.{u} K} {f g : AsmHom A B}
     (h : f.toFun = g.toFun) : f = g := by
   cases f; cases g; cases h; rfl
 
 /-- The category **A** of assemblies (§2.153): identity has the identity modulus (i),
     composition composes moduli (ii). -/
-instance asmCat : Cat.{u, u + 1} (Assembly.{u} K) where
+@[expose] public instance asmCat : Cat.{u, u + 1} (Assembly.{u} K) where
   Hom := AsmHom
   id A := ⟨fun x => x, ModFun.ident, K.id_mem, fun n _ hx => ⟨n, rfl, hx⟩⟩
   comp {A B C} f g :=
@@ -316,24 +318,24 @@ instance asmCat : Cat.{u, u + 1} (Assembly.{u} K) where
   odd-part decoding as ϰ; tags `inL = 2·`, `inR = 2·+1`. -/
 
 /-- 2-adic valuation: the exponent of 2 in `n` (0 at 0). -/
-def val2 (n : Nat) : Nat :=
+@[expose] public def val2 (n : Nat) : Nat :=
   if h : n % 2 = 0 ∧ n ≠ 0 then val2 (n / 2) + 1 else 0
   termination_by n
   decreasing_by exact Nat.div_lt_self (Nat.pos_of_ne_zero h.2) (by omega)
 
-theorem val2_odd {n : Nat} (h : n % 2 = 1) : val2 n = 0 := by
+public theorem val2_odd {n : Nat} (h : n % 2 = 1) : val2 n = 0 := by
   rw [val2]; simp [show ¬(n % 2 = 0 ∧ n ≠ 0) by omega]
 
-theorem val2_two_mul {n : Nat} (h : n ≠ 0) : val2 (2 * n) = val2 n + 1 := by
+public theorem val2_two_mul {n : Nat} (h : n ≠ 0) : val2 (2 * n) = val2 n + 1 := by
   rw [val2]
   simp [show 2 * n % 2 = 0 by omega, show ¬(2 * n = 0) by omega, show 2 * n / 2 = n by omega]
 
-theorem two_pow_pos (a : Nat) : 0 < 2 ^ a := by
+public theorem two_pow_pos (a : Nat) : 0 < 2 ^ a := by
   induction a with
   | zero => simp
   | succ a ih => rw [Nat.pow_succ]; omega
 
-theorem val2_code (a b : Nat) : val2 (2 ^ a * (2 * b + 1)) = a := by
+public theorem val2_code (a b : Nat) : val2 (2 ^ a * (2 * b + 1)) = a := by
   induction a with
   | zero => rw [Nat.pow_zero, Nat.one_mul]; exact val2_odd (by omega)
   | succ a ih =>
@@ -345,7 +347,7 @@ theorem val2_code (a b : Nat) : val2 (2 ^ a * (2 * b + 1)) = a := by
 /-- The collection of ALL partial endofunctions of N is a modulus system — the
     non-vacuity witness required by the book's "for example, K may be the collection of
     all partial recursive functions" (any closure conditions hold a fortiori). -/
-def ModulusSystem.allPartial : ModulusSystem where
+@[expose] public def ModulusSystem.allPartial : ModulusSystem where
   mem _ := True
   id_mem := trivial
   comp_mem _ _ := trivial
@@ -375,19 +377,19 @@ def ModulusSystem.allPartial : ModulusSystem where
   "The empty set is a coterminator." -/
 
 /-- The one-element assembly `1` with `1|ₙ = 1` for all n. -/
-def oneAsm : Assembly.{u} K := ⟨PUnit, fun _ _ => True, fun _ => ⟨0, trivial⟩⟩
+@[expose] public def oneAsm : Assembly.{u} K := ⟨PUnit, fun _ _ => True, fun _ => ⟨0, trivial⟩⟩
 
 /-- §2.153: `1|ₙ = 1` is a terminator; the unique map has the identity modulus. -/
-instance asmHasTerminal : HasTerminal (Assembly.{u} K) where
+@[expose] public instance asmHasTerminal : HasTerminal (Assembly.{u} K) where
   one := oneAsm
   trm _ := ⟨fun _ => PUnit.unit, ModFun.ident, K.id_mem, fun n _ _ => ⟨n, rfl, trivial⟩⟩
   uniq _ _ := AsmHom.ext (funext fun _ => rfl)
 
 /-- The empty assembly (no elements, all caucuses empty). -/
-def zeroAsm : Assembly.{u} K := ⟨PEmpty, fun _ _ => False, fun x => x.elim⟩
+@[expose] public def zeroAsm : Assembly.{u} K := ⟨PEmpty, fun _ _ => False, fun x => x.elim⟩
 
 /-- §2.153: "The empty set is a coterminator."  All modulus obligations are vacuous. -/
-instance asmHasCoterminator : HasCoterminator (Assembly.{u} K) where
+@[expose] public instance asmHasCoterminator : HasCoterminator (Assembly.{u} K) where
   zero := zeroAsm
   init _ := ⟨fun x => x.elim, ModFun.ident, K.id_mem, fun _ _ h => h.elim⟩
   init_uniq _ _ := AsmHom.ext (funext fun x => x.elim)
@@ -403,7 +405,7 @@ instance asmHasCoterminator : HasCoterminator (Assembly.{u} K) where
   ordinary intersection of |E| and A|ₙ." -/
 
 /-- Binary product of assemblies: `(A×B)|ₙ = A|ₙℓ × B|ₙϰ`. -/
-def prodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
+@[expose] public def prodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
   X := A.X × B.X
   caucus n p := A.caucus (K.proj₁ n) p.1 ∧ B.caucus (K.proj₂ n) p.2
   carrier_mem p := by
@@ -412,7 +414,7 @@ def prodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
     exact ⟨K.code j k, by rw [K.code_proj₁]; exact hj, by rw [K.code_proj₂]; exact hk⟩
 
 /-- §2.153 binary products: `fst`/`snd` tracked by ℓ/ϰ, `pair` tracked by θ = (φ,ψ). -/
-instance asmHasBinaryProducts : HasBinaryProducts (Assembly.{u} K) where
+@[expose] public instance asmHasBinaryProducts : HasBinaryProducts (Assembly.{u} K) where
   prod := prodAsm
   fst := ⟨Prod.fst, K.projF₁, K.proj₁_mem, fun n _ hp => ⟨K.proj₁ n, rfl, hp.1⟩⟩
   snd := ⟨Prod.snd, K.projF₂, K.proj₂_mem, fun n _ hp => ⟨K.proj₂ n, rfl, hp.2⟩⟩
@@ -431,7 +433,7 @@ instance asmHasBinaryProducts : HasBinaryProducts (Assembly.{u} K) where
     Prod.ext (congrArg (fun k => AsmHom.toFun k x) h₁) (congrArg (fun k => AsmHom.toFun k x) h₂))
 
 /-- Equalizer assembly: the Set equalizer with the induced caucuses `E|ₙ = |E| ∩ A|ₙ`. -/
-def eqAsm {A B : Assembly.{u} K} (f g : A ⟶ B) : Assembly.{u} K where
+@[expose] public def eqAsm {A B : Assembly.{u} K} (f g : A ⟶ B) : Assembly.{u} K where
   X := {x : A.X // f.toFun x = g.toFun x}
   caucus n x := A.caucus n x.val
   carrier_mem x := A.carrier_mem x.val
@@ -439,7 +441,7 @@ def eqAsm {A B : Assembly.{u} K} (f g : A ⟶ B) : Assembly.{u} K where
 /-- §2.153 equalizers: the inclusion and the induced factorization both have the identity
     modulus (a map into the equalizer is tracked by any modulus of its composite with the
     inclusion, since the caucuses are induced). -/
-instance asmHasEqualizers : HasEqualizers (Assembly.{u} K) where
+@[expose] public instance asmHasEqualizers : HasEqualizers (Assembly.{u} K) where
   eq _ _ f g :=
     { cone :=
         { dom := eqAsm f g
@@ -454,7 +456,7 @@ instance asmHasEqualizers : HasEqualizers (Assembly.{u} K) where
         Subtype.ext (congrArg (fun k => AsmHom.toFun k y) hm)) }
 
 /-- The category of assemblies is Cartesian (terminator + products + equalizers). -/
-instance asmCartesian : CartesianCategory (Assembly.{u} K) where
+@[expose] public instance asmCartesian : CartesianCategory (Assembly.{u} K) where
   toHasTerminal := inferInstance
   toHasBinaryProducts := inferInstance
   toHasEqualizers := inferInstance
@@ -466,7 +468,7 @@ instance asmCartesian : CartesianCategory (Assembly.{u} K) where
   agree, with the product's ℓ/ϰ-coded caucuses restricted. -/
 
 /-- §2.153 pullbacks, via §1.432 (products + equalizers ⇒ pullbacks). -/
-instance asmHasPullbacks : HasPullbacks (Assembly.{u} K) where
+@[expose] public instance asmHasPullbacks : HasPullbacks (Assembly.{u} K) where
   has f g := products_equalizers_implies_pullbacks f g
 
 /-! ## M5: monics, images, covers — the regular structure
@@ -485,7 +487,7 @@ instance asmHasPullbacks : HasPullbacks (Assembly.{u} K) where
 
 /-- A morphism whose underlying function is injective is monic (the underlying-set functor
     is faithful). -/
-theorem asmMonic_of_injective {A B : Assembly.{u} K} (m : A ⟶ B)
+public theorem asmMonic_of_injective {A B : Assembly.{u} K} (m : A ⟶ B)
     (hinj : Function.Injective m.toFun) : Monic m := fun _ _ huv =>
   AsmHom.ext (funext fun x => hinj (congrArg (fun k => AsmHom.toFun k x) huv))
 
@@ -495,7 +497,7 @@ theorem asmMonic_of_injective {A B : Assembly.{u} K} (m : A ⟶ B)
     (hence `s₁`, `s₂`) to coincide.  This is FALSE for a modulus system with bare
     (i)(ii)(iii) — see the module docstring — and is exactly what the book's coding of
     pairs provides. -/
-theorem asmInjective_of_monic {A B : Assembly.{u} K} (m : A ⟶ B) (hm : Monic m) :
+public theorem asmInjective_of_monic {A B : Assembly.{u} K} (m : A ⟶ B) (hm : Monic m) :
     Function.Injective m.toFun := by
   intro s₁ s₂ hs
   obtain ⟨a, ha⟩ := A.carrier_mem s₁
@@ -509,7 +511,7 @@ theorem asmInjective_of_monic {A B : Assembly.{u} K} (m : A ⟶ B) (hm : Monic m
   exact congrArg (fun k => AsmHom.toFun k PUnit.unit) huv
 
 /-- The image assembly: `|B′|` = the ordinary image of `f`, `B′|ₙ = f(A|ₙ)`. -/
-def imgAsm {A B : Assembly.{u} K} (f : A ⟶ B) : Assembly.{u} K where
+@[expose] public def imgAsm {A B : Assembly.{u} K} (f : A ⟶ B) : Assembly.{u} K where
   X := {y : B.X // ∃ x, f.toFun x = y}
   caucus n y := ∃ x, A.caucus n x ∧ f.toFun x = y.val
   carrier_mem y := by
@@ -518,7 +520,7 @@ def imgAsm {A B : Assembly.{u} K} (f : A ⟶ B) : Assembly.{u} K where
     exact ⟨n, x, hn, hx⟩
 
 /-- The image as a subobject: "named by inclusion using the same modulus as f". -/
-def imgSub {A B : Assembly.{u} K} (f : A ⟶ B) : Subobject (Assembly.{u} K) B where
+@[expose] public def imgSub {A B : Assembly.{u} K} (f : A ⟶ B) : Subobject (Assembly.{u} K) B where
   dom := imgAsm f
   arr := ⟨Subtype.val, by
     obtain ⟨φ, hφ, hf⟩ := f.tracked
@@ -533,7 +535,7 @@ def imgSub {A B : Assembly.{u} K} (f : A ⟶ B) : Subobject (Assembly.{u} K) B w
     send `y = f(x)` to `g(x)` — well-defined since `S.arr` is monic hence injective; a
     modulus of g is a modulus of the factorization because the image caucus at n consists
     exactly of `f`-values of points of `A|ₙ`. -/
-theorem asm_isImage {A B : Assembly.{u} K} (f : A ⟶ B) : IsImage f (imgSub f) := by
+public theorem asm_isImage {A B : Assembly.{u} K} (f : A ⟶ B) : IsImage f (imgSub f) := by
   constructor
   · exact ⟨⟨fun x => ⟨f.toFun x, x, rfl⟩, ModFun.ident, K.id_mem,
       fun n x hx => ⟨n, rfl, x, hx, rfl⟩⟩, AsmHom.ext rfl⟩
@@ -557,7 +559,7 @@ theorem asm_isImage {A B : Assembly.{u} K} (f : A ⟶ B) : IsImage f (imgSub f) 
     · exact AsmHom.ext (funext fun y => (hg' _).trans y.property.choose_spec)
 
 /-- §1.51: assemblies have images. -/
-instance asmHasImages : HasImages (Assembly.{u} K) where
+@[expose] public instance asmHasImages : HasImages (Assembly.{u} K) where
   image := imgSub
   isImage := asm_isImage
 
@@ -569,7 +571,7 @@ instance asmHasImages : HasImages (Assembly.{u} K) where
 
 /-- The concrete cover condition: some ψ ∈ K maps each caucus of B into the f-image of a
     caucus of A. -/
-def AsmCover {A B : Assembly.{u} K} (f : A ⟶ B) : Prop :=
+@[expose] public def AsmCover {A B : Assembly.{u} K} (f : A ⟶ B) : Prop :=
   ∃ ψ, K.mem ψ ∧ ∀ n y, B.caucus n y →
     ∃ m, ψ.graph n m ∧ ∃ x, A.caucus m x ∧ f.toFun x = y
 
@@ -582,7 +584,7 @@ theorem AsmCover.surjective {A B : Assembly.{u} K} {f : A ⟶ B} (hc : AsmCover 
   exact ⟨x, hfx⟩
 
 /-- `Cover = AsmCover` in assemblies. -/
-theorem asmCover_iff {A B : Assembly.{u} K} (f : A ⟶ B) : Cover f ↔ AsmCover f := by
+public theorem asmCover_iff {A B : Assembly.{u} K} (f : A ⟶ B) : Cover f ↔ AsmCover f := by
   constructor
   · -- f factors through its image inclusion; a cover makes the inclusion iso, and the
     -- iso-inverse's modulus is the required ψ.
@@ -624,7 +626,7 @@ theorem asmCover_iff {A B : Assembly.{u} K} (f : A ⟶ B) : Cover f ↔ AsmCover
 /-- The canonical pullback of a cover is a cover: for `c₀ ∈ C|ₙ`, track `g(c₀)` into a
     caucus of B (modulus γ), pull back along the cover condition of f (modulus ψ), and
     pair the resulting A-index with n — modulus `(γψ, id)`. -/
-theorem asmCover_pullback_canonical {A B C : Assembly.{u} K} (f : A ⟶ B) (g : C ⟶ B)
+public theorem asmCover_pullback_canonical {A B C : Assembly.{u} K} (f : A ⟶ B) (g : C ⟶ B)
     (hf : AsmCover f) : AsmCover (asmHasPullbacks.has f g).cone.π₂ := by
   obtain ⟨ψ, hψ, hdom⟩ := hf
   obtain ⟨γ, hγ, hgtr⟩ := g.tracked
@@ -641,7 +643,7 @@ theorem asmCover_pullback_canonical {A B C : Assembly.{u} K} (f : A ⟶ B) (g : 
     second projection is a cover then so is that of any pullback cone (the comparison map
     is an iso; `cover_precomp_iso` transports).  Generic in the category — a candidate for
     S1_45, kept local to avoid touching shared files. -/
-theorem cover_pi2_of_isPullback {𝒟 : Type u₁} [Cat.{v₁} 𝒟] {A B C : 𝒟} {f : A ⟶ B}
+public theorem cover_pi2_of_isPullback {𝒟 : Type u₁} [Cat.{v₁} 𝒟] {A B C : 𝒟} {f : A ⟶ B}
     {g : C ⟶ B} (pb : HasPullback f g) (c : Cone f g) (hpb : c.IsPullback)
     (hcov : Cover pb.cone.π₂) : Cover c.π₂ := by
   obtain ⟨v, ⟨hv₁, hv₂⟩, _⟩ := hpb pb.cone
@@ -661,13 +663,13 @@ theorem cover_pi2_of_isPullback {𝒟 : Type u₁} [Cat.{v₁} 𝒟] {A B C : �
 
 /-- §1.52: pullbacks transfer covers.  An arbitrary pullback cone is compared (iso) with
     the canonical one, where the transfer is `asmCover_pullback_canonical`. -/
-instance asmPullbacksTransferCovers : PullbacksTransferCovers (Assembly.{u} K) where
+@[expose] public instance asmPullbacksTransferCovers : PullbacksTransferCovers (Assembly.{u} K) where
   pullbacks_transfer_covers {_A _B _C f g} c hpb hf :=
     cover_pi2_of_isPullback (asmHasPullbacks.has f g) c hpb
       ((asmCover_iff _).2 (asmCover_pullback_canonical f g ((asmCover_iff f).1 hf)))
 
 /-- **§2.153, regular part**: the category of assemblies is a regular category. -/
-instance asmRegular : RegularCategory (Assembly.{u} K) where
+@[expose] public instance asmRegular : RegularCategory (Assembly.{u} K) where
   toHasTerminal := inferInstance
   toHasBinaryProducts := inferInstance
   toHasPullbacks := inferInstance
@@ -690,7 +692,7 @@ section Unions
 variable {B : Assembly.{u} K}
 
 /-- The union assembly of two subobjects of B (carrier and tagged caucuses). -/
-def unionAsm (S T : Subobject (Assembly.{u} K) B) : Assembly.{u} K where
+@[expose] public def unionAsm (S T : Subobject (Assembly.{u} K) B) : Assembly.{u} K where
   X := {y : B.X // (∃ s, S.arr.toFun s = y) ∨ (∃ t, T.arr.toFun t = y)}
   caucus n y :=
     (∃ p k, n = K.code p (K.inL k) ∧ ∃ s, S.dom.caucus k s ∧ S.arr.toFun s = y.val) ∨
@@ -703,7 +705,7 @@ def unionAsm (S T : Subobject (Assembly.{u} K) B) : Assembly.{u} K where
       exact ⟨K.code k (K.inR k), Or.inr ⟨k, k, rfl, t, hk, ht⟩⟩
 
 /-- The union subobject: the inclusion of `unionAsm`, tracked by cases on the tag. -/
-def unionSub (S T : Subobject (Assembly.{u} K) B) : Subobject (Assembly.{u} K) B where
+@[expose] public def unionSub (S T : Subobject (Assembly.{u} K) B) : Subobject (Assembly.{u} K) B where
   dom := unionAsm S T
   arr := ⟨Subtype.val, by
     obtain ⟨ρS, hρS, htrS⟩ := S.arr.tracked
@@ -723,7 +725,7 @@ def unionSub (S T : Subobject (Assembly.{u} K) B) : Subobject (Assembly.{u} K) B
   monic := asmMonic_of_injective _ fun _ _ h => Subtype.ext h
 
 /-- `S ≤ S ∪ T`, tracked by `k ↦ code k (inL k)`. -/
-theorem unionSub_left (S T : Subobject (Assembly.{u} K) B) : S.le (unionSub S T) := by
+public theorem unionSub_left (S T : Subobject (Assembly.{u} K) B) : S.le (unionSub S T) := by
   refine ⟨⟨fun s => ⟨S.arr.toFun s, Or.inl ⟨s, rfl⟩⟩,
     K.pairF ModFun.ident (ModFun.ofFun K.inL), K.pair_mem K.id_mem K.inL_mem,
     fun k s hks => ?_⟩, AsmHom.ext rfl⟩
@@ -732,7 +734,7 @@ theorem unionSub_left (S T : Subobject (Assembly.{u} K) B) : S.le (unionSub S T)
     Or.inl ⟨k, k, rfl, s, hks, rfl⟩⟩
 
 /-- `T ≤ S ∪ T`, tracked by `k ↦ code k (inR k)`. -/
-theorem unionSub_right (S T : Subobject (Assembly.{u} K) B) : T.le (unionSub S T) := by
+public theorem unionSub_right (S T : Subobject (Assembly.{u} K) B) : T.le (unionSub S T) := by
   refine ⟨⟨fun t => ⟨T.arr.toFun t, Or.inr ⟨t, rfl⟩⟩,
     K.pairF ModFun.ident (ModFun.ofFun K.inR), K.pair_mem K.id_mem K.inR_mem,
     fun k t hkt => ?_⟩, AsmHom.ext rfl⟩
@@ -742,7 +744,7 @@ theorem unionSub_right (S T : Subobject (Assembly.{u} K) B) : T.le (unionSub S T
 
 /-- Minimality of the union: factorizations of S and T through U are dispatched by cases
     on the tag (well-defined because `U.arr` is monic hence injective). -/
-theorem unionSub_min (S T U : Subobject (Assembly.{u} K) B)
+public theorem unionSub_min (S T U : Subobject (Assembly.{u} K) B)
     (hS : S.le U) (hT : T.le U) : (unionSub S T).le U := by
   obtain ⟨hs, hhs⟩ := hS
   obtain ⟨ht, hht⟩ := hT
@@ -782,19 +784,19 @@ theorem unionSub_min (S T U : Subobject (Assembly.{u} K) B)
 end Unions
 
 /-- §1.6: assemblies have subobject unions. -/
-instance asmHasSubobjectUnions : HasSubobjectUnions (Assembly.{u} K) where
+@[expose] public instance asmHasSubobjectUnions : HasSubobjectUnions (Assembly.{u} K) where
   union := unionSub
   union_left := unionSub_left
   union_right := unionSub_right
   union_min := unionSub_min
 
 /-- The bottom subobject: the empty assembly, included vacuously. -/
-def botSub (A : Assembly.{u} K) : Subobject (Assembly.{u} K) A where
+@[expose] public def botSub (A : Assembly.{u} K) : Subobject (Assembly.{u} K) A where
   dom := zeroAsm
   arr := ⟨fun x => x.elim, ModFun.ident, K.id_mem, fun _ x => x.elim⟩
   monic := fun g _ _ => AsmHom.ext (funext fun w => (g.toFun w).elim)
 
-theorem botSub_min {A : Assembly.{u} K} (S : Subobject (Assembly.{u} K) A) :
+public theorem botSub_min {A : Assembly.{u} K} (S : Subobject (Assembly.{u} K) A) :
     (botSub A).le S :=
   ⟨⟨fun (x : PEmpty) => x.elim, ModFun.ident, K.id_mem, fun _ x => x.elim⟩,
     AsmHom.ext (funext fun (x : PEmpty) => x.elim)⟩
@@ -813,7 +815,7 @@ variable {A B : Assembly.{u} K}
 /-- `f#(S∪T) ≤ f#S ∪ f#T`.  Underlying function: `(a, u) ↦ a`.  Modulus: reassociate
     `n ↦ code (code n (ℓn)) (ϰϰn)`, then dispatch on the tag of `ϰϰn` with the pair
     `(n, ℓn)` as parameter, producing `code n (inL (code (ℓn) k))`. -/
-theorem invImage_union_le (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
+public theorem invImage_union_le (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
     (InverseImage f (unionSub S T)).le
       (unionSub (InverseImage f S) (InverseImage f T)) := by
   have hmem : ∀ w : (InverseImage f (unionSub S T)).dom.X,
@@ -894,7 +896,7 @@ theorem invImage_union_le (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
 /-- `f#S ∪ f#T ≤ f#(S∪T)`.  Underlying function: `a ↦ (a, f a)`.  Modulus: on a tagged
     index `code p (inL k)` produce `code (ℓk) (code k (inL (ϰk)))` — the pullback pairing
     of the A-part of k with the retagged S-part. -/
-theorem le_invImage_union (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
+public theorem le_invImage_union (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
     (unionSub (InverseImage f S) (InverseImage f T)).le
       (InverseImage f (unionSub S T)) := by
   have hmem : ∀ y : (unionAsm (InverseImage f S) (InverseImage f T)).X,
@@ -962,7 +964,7 @@ theorem le_invImage_union (f : A ⟶ B) (S T : Subobject (Assembly.{u} K) B) :
         hq'.symm.trans (congrArg f.toFun hqa)⟩
 
 /-- `f#(⊥) ≅ ⊥`: the pullback against the empty subobject is empty. -/
-theorem invImage_bot_iso (f : A ⟶ B) :
+public theorem invImage_bot_iso (f : A ⟶ B) :
     Isomorphic (InverseImage f (botSub B)).dom (botSub A).dom := by
   refine ⟨⟨fun w => (w.val.2 : PEmpty).elim, ModFun.ident, K.id_mem,
       fun _ _ hw => (hw.2 : False).elim⟩,
@@ -973,7 +975,7 @@ theorem invImage_bot_iso (f : A ⟶ B) :
 end InvImageUnion
 
 /-- **§2.153, pre-logos part**: the category of assemblies is a pre-logos. -/
-instance asmPreLogos : PreLogos (Assembly.{u} K) where
+@[expose] public instance asmPreLogos : PreLogos (Assembly.{u} K) where
   toRegularCategory := inferInstance
   toHasSubobjectUnions := inferInstance
   bottom := botSub
@@ -1003,7 +1005,7 @@ instance asmPreLogos : PreLogos (Assembly.{u} K) where
   `A+B ≤ inl ∪ inr`. -/
 
 /-- The coproduct assembly: disjoint sum with tag-shaped caucuses. -/
-def coprodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
+@[expose] public def coprodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
   X := A.X ⊕ B.X
   caucus n z :=
     (∃ p k, n = K.code p (K.inL k) ∧ ∃ a, A.caucus k a ∧ Sum.inl a = z) ∨
@@ -1017,7 +1019,7 @@ def coprodAsm (A B : Assembly.{u} K) : Assembly.{u} K where
 
 /-- §2.153 coproducts: injections tracked by `k ↦ code k (in• k)`, case map by
     definition-by-cases on the tag. -/
-instance asmHasBinaryCoproducts : HasBinaryCoproducts (Assembly.{u} K) where
+@[expose] public instance asmHasBinaryCoproducts : HasBinaryCoproducts (Assembly.{u} K) where
   coprod := coprodAsm
   inl := ⟨Sum.inl, K.pairF ModFun.ident (ModFun.ofFun K.inL),
     K.pair_mem K.id_mem K.inL_mem, fun k a hk =>
@@ -1053,7 +1055,7 @@ instance asmHasBinaryCoproducts : HasBinaryCoproducts (Assembly.{u} K) where
     · exact congrArg (fun j => AsmHom.toFun j b) h₂)
 
 /-- **§2.153 HEADLINE: the category of assemblies is a POSITIVE PRE-LOGOS.** -/
-instance asmPositivePreLogos : PositivePreLogos (Assembly.{u} K) where
+@[expose] public instance asmPositivePreLogos : PositivePreLogos (Assembly.{u} K) where
   toPreLogos := inferInstance
   toHasBinaryCoproducts := inferInstance
 
@@ -1061,7 +1063,7 @@ instance asmPositivePreLogos : PositivePreLogos (Assembly.{u} K) where
     monic, their intersection is bottom (the fibre product of `inl`, `inr` is empty), and
     their union is everything (identity modulus, since the coproduct caucuses ARE the
     union's caucuses). -/
-instance asmDisjointBinaryCoproduct : DisjointBinaryCoproduct (Assembly.{u} K) where
+@[expose] public instance asmDisjointBinaryCoproduct : DisjointBinaryCoproduct (Assembly.{u} K) where
   toPositivePreLogos := inferInstance
   inl_monic {A B} := asmMonic_of_injective (HasBinaryCoproducts.inl (A := A) (B := B))
     fun _ _ h => Sum.inl.inj h
@@ -1100,7 +1102,7 @@ instance asmDisjointBinaryCoproduct : DisjointBinaryCoproduct (Assembly.{u} K) w
   no uniform counterexample to formalize here; left as this remark (as in the book). -/
 
 /-- The assembly ∇X: all caucuses equal to the whole of X. -/
-def nablaAsm (X : Type u) : Assembly.{u} K := ⟨X, fun _ _ => True, fun _ => ⟨0, trivial⟩⟩
+@[expose] public def nablaAsm (X : Type u) : Assembly.{u} K := ⟨X, fun _ _ => True, fun _ => ⟨0, trivial⟩⟩
 
 /-- ∇ on morphisms: `f` with the identity modulus. -/
 def nablaMap {X Y : Type u} (f : X → Y) : nablaAsm (K := K) X ⟶ nablaAsm Y :=

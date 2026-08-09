@@ -16,7 +16,9 @@
   "computed by a code that converges on every input".
 -/
 
-import Freyd.S1_57
+module
+
+public import Freyd.S1_57
 
 open Freyd
 
@@ -25,27 +27,27 @@ namespace Freyd.Rcat
 /-! ## Part 1: μ-recursive codes and their semantics -/
 
 /-- Input vectors: `k`-tuples of naturals. -/
-abbrev Vec (k : Nat) := Fin k → Nat
+@[expose] public abbrev Vec (k : Nat) := Fin k → Nat
 
 /-- Prepend a value to an input vector. -/
-def vcons {k : Nat} (a : Nat) (v : Vec k) : Vec (k + 1) := fun i =>
+@[expose] public def vcons {k : Nat} (a : Nat) (v : Vec k) : Vec (k + 1) := fun i =>
   match i with
   | ⟨0, _⟩ => a
   | ⟨j+1, h⟩ => v ⟨j, Nat.lt_of_succ_lt_succ h⟩
 
 /-- Drop the first entry of an input vector. -/
-def vtail {k : Nat} (v : Vec (k + 1)) : Vec k := fun i => v i.succ
+@[expose] public def vtail {k : Nat} (v : Vec (k + 1)) : Vec k := fun i => v i.succ
 
-@[simp] theorem vcons_zero {k : Nat} (a : Nat) (v : Vec k) : vcons a v 0 = a := rfl
+@[simp] public theorem vcons_zero {k : Nat} (a : Nat) (v : Vec k) : vcons a v 0 = a := rfl
 
-@[simp] theorem vcons_one {k : Nat} (a : Nat) (v : Vec (k + 1)) : vcons a v 1 = v 0 := rfl
+@[simp] public theorem vcons_one {k : Nat} (a : Nat) (v : Vec (k + 1)) : vcons a v 1 = v 0 := rfl
 
 @[simp] theorem vcons_succ {k : Nat} (a : Nat) (v : Vec k) (i : Fin k) :
     vcons a v i.succ = v i := rfl
 
-@[simp] theorem vtail_vcons {k : Nat} (a : Nat) (v : Vec k) : vtail (vcons a v) = v := rfl
+@[simp] public theorem vtail_vcons {k : Nat} (a : Nat) (v : Vec k) : vtail (vcons a v) = v := rfl
 
-theorem vcons_head_tail {k : Nat} (v : Vec (k + 1)) : vcons (v 0) (vtail v) = v := by
+public theorem vcons_head_tail {k : Nat} (v : Vec (k + 1)) : vcons (v 0) (vtail v) = v := by
   funext i
   rcases i with ⟨(_ | j), h⟩
   · rfl
@@ -55,7 +57,7 @@ theorem vcons_head_tail {k : Nat} (v : Vec (k + 1)) : vcons (v 0) (vtail v) = v 
     constantly-0 function), `succ` is unary successor, `proj i` the i-th projection,
     `comp` composition, `prec` primitive recursion on the FIRST argument, `mu`
     unbounded minimization on a new first argument. -/
-inductive RecCode : Nat → Type where
+public inductive RecCode : Nat → Type where
   | zero {k : Nat} : RecCode k
   | succ : RecCode 1
   | proj {k : Nat} (i : Fin k) : RecCode k
@@ -67,7 +69,7 @@ inductive RecCode : Nat → Type where
     `prec g h`: value at `0::v` is `g v`; at `(n+1)::v` it is `h (n :: r :: v)` where `r`
     is the value at `n::v`.  `mu f`: the least `y` with `f (y::v) = 0`, all smaller
     arguments converging to a nonzero value (witnessed by `r · + 1`). -/
-inductive Eval : {k : Nat} → RecCode k → Vec k → Nat → Prop where
+public inductive Eval : {k : Nat} → RecCode k → Vec k → Nat → Prop where
   | zero {k : Nat} {v : Vec k} : Eval .zero v 0
   | succ {v : Vec 1} : Eval .succ v (v 0 + 1)
   | proj {k : Nat} (i : Fin k) {v : Vec k} : Eval (.proj i) v (v i)
@@ -84,7 +86,7 @@ inductive Eval : {k : Nat} → RecCode k → Vec k → Nat → Prop where
       Eval (.mu f) v y
 
 /-- `Eval` is single-valued (functionality). -/
-theorem Eval.det {k : Nat} {c : RecCode k} {v : Vec k} {y₁ : Nat}
+public theorem Eval.det {k : Nat} {c : RecCode k} {v : Vec k} {y₁ : Nat}
     (h₁ : Eval c v y₁) : ∀ {y₂ : Nat}, Eval c v y₂ → y₁ = y₂ := by
   induction h₁ with
   | zero => intro y₂ h₂; cases h₂; rfl
@@ -126,64 +128,64 @@ theorem Eval.det {k : Nat} {c : RecCode k} {v : Vec k} {y₁ : Nat}
 /-! ### Recursive functions -/
 
 /-- A `k`-ary function is RECURSIVE if some code converges to its value on every input. -/
-def RecursiveV {k : Nat} (f : Vec k → Nat) : Prop := ∃ c : RecCode k, ∀ v, Eval c v (f v)
+@[expose] public def RecursiveV {k : Nat} (f : Vec k → Nat) : Prop := ∃ c : RecCode k, ∀ v, Eval c v (f v)
 
 /-- Unary recursive functions ℕ → ℕ. -/
-def Recursive1 (f : Nat → Nat) : Prop := RecursiveV fun v : Vec 1 => f (v 0)
+@[expose] public def Recursive1 (f : Nat → Nat) : Prop := RecursiveV fun v : Vec 1 => f (v 0)
 
 /-- Binary recursive functions ℕ → ℕ → ℕ. -/
-def Recursive2 (f : Nat → Nat → Nat) : Prop := RecursiveV fun v : Vec 2 => f (v 0) (v 1)
+@[expose] public def Recursive2 (f : Nat → Nat → Nat) : Prop := RecursiveV fun v : Vec 2 => f (v 0) (v 1)
 
-theorem RecursiveV.congr {k : Nat} {f g : Vec k → Nat} (hf : RecursiveV f)
+public theorem RecursiveV.congr {k : Nat} {f g : Vec k → Nat} (hf : RecursiveV f)
     (h : ∀ v, f v = g v) : RecursiveV g := by
   obtain ⟨c, hc⟩ := hf
   exact ⟨c, fun v => h v ▸ hc v⟩
 
-theorem Recursive1.congr {f g : Nat → Nat} (hf : Recursive1 f) (h : ∀ n, f n = g n) :
+public theorem Recursive1.congr {f g : Nat → Nat} (hf : Recursive1 f) (h : ∀ n, f n = g n) :
     Recursive1 g := RecursiveV.congr hf fun v => h (v 0)
 
-theorem Recursive2.congr {f g : Nat → Nat → Nat} (hf : Recursive2 f)
+public theorem Recursive2.congr {f g : Nat → Nat → Nat} (hf : Recursive2 f)
     (h : ∀ a b, f a b = g a b) : Recursive2 g := RecursiveV.congr hf fun v => h (v 0) (v 1)
 
-theorem RecursiveV.proj {k : Nat} (i : Fin k) : RecursiveV (fun v : Vec k => v i) :=
+public theorem RecursiveV.proj {k : Nat} (i : Fin k) : RecursiveV (fun v : Vec k => v i) :=
   ⟨.proj i, fun _ => .proj i⟩
 
 /-- Code for the constant function `c`. -/
-def constCode (k c : Nat) : RecCode k :=
+@[expose] public def constCode (k c : Nat) : RecCode k :=
   match c with
   | 0 => .zero
   | c + 1 => .comp .succ fun _ => constCode k c
 
-theorem evalConst (k c : Nat) (v : Vec k) : Eval (constCode k c) v c := by
+public theorem evalConst (k c : Nat) (v : Vec k) : Eval (constCode k c) v c := by
   induction c with
   | zero => exact .zero
   | succ c ih => exact .comp (fun _ => c) (fun _ => ih) .succ
 
-theorem RecursiveV.const (k c : Nat) : RecursiveV (fun _ : Vec k => c) :=
+public theorem RecursiveV.const (k c : Nat) : RecursiveV (fun _ : Vec k => c) :=
   ⟨constCode k c, fun v => evalConst k c v⟩
 
-theorem Recursive1.const (c : Nat) : Recursive1 fun _ => c := RecursiveV.const 1 c
+public theorem Recursive1.const (c : Nat) : Recursive1 fun _ => c := RecursiveV.const 1 c
 
 /-- Closure under composition (general form). -/
-theorem RecursiveV.comp {k m : Nat} {f : Vec m → Nat} {gs : Fin m → Vec k → Nat}
+public theorem RecursiveV.comp {k m : Nat} {f : Vec m → Nat} {gs : Fin m → Vec k → Nat}
     (hf : RecursiveV f) (hgs : ∀ j, RecursiveV (gs j)) :
     RecursiveV (fun v => f fun j => gs j v) := by
   obtain ⟨cf, hcf⟩ := hf
   exact ⟨.comp cf (fun j => Classical.choose (hgs j)),
     fun v => .comp (fun j => gs j v) (fun j => Classical.choose_spec (hgs j) v) (hcf _)⟩
 
-theorem Recursive1.comp {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
+public theorem Recursive1.comp {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
     Recursive1 fun n => g (f n) :=
   RecursiveV.comp (f := fun w : Vec 1 => g (w 0)) (gs := fun _ v => f (v 0)) hg fun _ => hf
 
 /-- Unary post-composition at any arity. -/
-theorem RecursiveV.comp1 {k : Nat} {F : Nat → Nat} {f : Vec k → Nat}
+public theorem RecursiveV.comp1 {k : Nat} {F : Nat → Nat} {f : Vec k → Nat}
     (hF : Recursive1 F) (hf : RecursiveV f) : RecursiveV (fun v => F (f v)) :=
   RecursiveV.comp (f := fun w : Vec 1 => F (w 0)) (gs := fun _ v => f v) hF fun _ => hf
 
 /-- Binary combination at any arity: from a recursive binary `H` and recursive
     arguments, `v ↦ H (f v) (g v)` is recursive. -/
-theorem RecursiveV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Nat}
+public theorem RecursiveV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Nat}
     (hH : Recursive2 H) (hf : RecursiveV f) (hg : RecursiveV g) :
     RecursiveV (fun v => H (f v) (g v)) := by
   obtain ⟨cH, hcH⟩ := hH
@@ -197,65 +199,65 @@ theorem RecursiveV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Na
     | 1, _ => exact hcg v
   · exact hcH (vcons (f v) fun _ => g v)
 
-theorem Recursive1.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat}
+public theorem Recursive1.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat}
     (hH : Recursive2 H) (hf : Recursive1 f) (hg : Recursive1 g) :
     Recursive1 fun n => H (f n) (g n) :=
   RecursiveV.comp2 (f := fun v : Vec 1 => f (v 0)) (g := fun v : Vec 1 => g (v 0)) hH hf hg
 
-theorem Recursive2.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat → Nat}
+public theorem Recursive2.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat → Nat}
     (hH : Recursive2 H) (hf : Recursive2 f) (hg : Recursive2 g) :
     Recursive2 fun a b => H (f a b) (g a b) :=
   RecursiveV.comp2 (f := fun v : Vec 2 => f (v 0) (v 1)) (g := fun v : Vec 2 => g (v 0) (v 1))
     hH hf hg
 
-theorem Recursive2.swap {f : Nat → Nat → Nat} (hf : Recursive2 f) :
+public theorem Recursive2.swap {f : Nat → Nat → Nat} (hf : Recursive2 f) :
     Recursive2 fun a b => f b a :=
   Recursive2.comp2 hf (show Recursive2 fun _ b => b from RecursiveV.proj 1) (show Recursive2 fun a _ => a from RecursiveV.proj 0)
 
-theorem Recursive2.ofFst {f : Nat → Nat} (hf : Recursive1 f) : Recursive2 fun a _ => f a :=
+public theorem Recursive2.ofFst {f : Nat → Nat} (hf : Recursive1 f) : Recursive2 fun a _ => f a :=
   RecursiveV.comp1 (f := fun v : Vec 2 => v 0) hf (RecursiveV.proj 0)
 
-theorem Recursive2.ofSnd {f : Nat → Nat} (hf : Recursive1 f) : Recursive2 fun _ b => f b :=
+public theorem Recursive2.ofSnd {f : Nat → Nat} (hf : Recursive1 f) : Recursive2 fun _ b => f b :=
   RecursiveV.comp1 (f := fun v : Vec 2 => v 1) hf (RecursiveV.proj 1)
 
 /-! ### Arithmetic base: addition, predecessor, truncated subtraction, multiplication -/
 
 /-- Addition code: recursion on the first argument, `add (n+1) b = add n b + 1`. -/
-def addCode : RecCode 2 := .prec (.proj 0) (.comp .succ fun _ => .proj 1)
+@[expose] public def addCode : RecCode 2 := .prec (.proj 0) (.comp .succ fun _ => .proj 1)
 
-theorem evalAdd_aux : ∀ (n : Nat) (w : Vec 1), Eval addCode (vcons n w) (w 0 + n) := by
+public theorem evalAdd_aux : ∀ (n : Nat) (w : Vec 1), Eval addCode (vcons n w) (w 0 + n) := by
   intro n w
   induction n with
   | zero => exact .prec_zero rfl (.proj 0)
   | succ n ih =>
     exact .prec_succ rfl ih (.comp (fun _ => w 0 + n) (fun _ => .proj 1) .succ)
 
-theorem evalAdd (v : Vec 2) : Eval addCode v (v 1 + v 0) := by
+public theorem evalAdd (v : Vec 2) : Eval addCode v (v 1 + v 0) := by
   have := evalAdd_aux (v 0) (vtail v)
   rwa [vcons_head_tail v] at this
 
-theorem Recursive2.add : Recursive2 fun a b => a + b := by
+public theorem Recursive2.add : Recursive2 fun a b => a + b := by
   refine RecursiveV.congr (g := fun v : Vec 2 => v 0 + v 1) ⟨addCode, fun v => evalAdd v⟩ ?_
   intro v
   exact Nat.add_comm (v 1) (v 0)
 
 /-- Predecessor code (unary): `pred 0 = 0`, `pred (n+1) = n`. -/
-def predCode : RecCode 1 := .prec .zero (.proj 0)
+@[expose] public def predCode : RecCode 1 := .prec .zero (.proj 0)
 
-theorem evalPred_aux : ∀ (n : Nat) (w : Vec 0), Eval predCode (vcons n w) (n - 1) := by
+public theorem evalPred_aux : ∀ (n : Nat) (w : Vec 0), Eval predCode (vcons n w) (n - 1) := by
   intro n w
   cases n with
   | zero => exact .prec_zero rfl .zero
   | succ n => exact .prec_succ rfl (evalPred_aux n w) (.proj 0)
 
-theorem evalPred (v : Vec 1) : Eval predCode v (v 0 - 1) := by
+public theorem evalPred (v : Vec 1) : Eval predCode v (v 0 - 1) := by
   have := evalPred_aux (v 0) (vtail v)
   rwa [vcons_head_tail v] at this
 
 /-- Truncated subtraction, recursion on the FIRST argument: `rsub n a = a - n`. -/
-def rsubCode : RecCode 2 := .prec (.proj 0) (.comp predCode fun _ => .proj 1)
+@[expose] public def rsubCode : RecCode 2 := .prec (.proj 0) (.comp predCode fun _ => .proj 1)
 
-theorem evalRsub_aux : ∀ (n : Nat) (w : Vec 1), Eval rsubCode (vcons n w) (w 0 - n) := by
+public theorem evalRsub_aux : ∀ (n : Nat) (w : Vec 1), Eval rsubCode (vcons n w) (w 0 - n) := by
   intro n w
   induction n with
   | zero => exact .prec_zero rfl (.proj 0)
@@ -267,7 +269,7 @@ theorem evalRsub_aux : ∀ (n : Nat) (w : Vec 1), Eval rsubCode (vcons n w) (w 0
       exact .comp (fun _ => w 0 - n) (fun _ => .proj (1 : Fin 3)) (evalPred _)
     exact .prec_succ rfl ih hstep
 
-theorem Recursive2.sub : Recursive2 fun a b => a - b := by
+public theorem Recursive2.sub : Recursive2 fun a b => a - b := by
   have h : Recursive2 fun a b => b - a :=
     ⟨rsubCode, fun v => by
       have := evalRsub_aux (v 0) (vtail v)
@@ -275,10 +277,10 @@ theorem Recursive2.sub : Recursive2 fun a b => a - b := by
   exact Recursive2.swap h
 
 /-- Multiplication code: `mul 0 b = 0`, `mul (n+1) b = mul n b + b`. -/
-def mulCode : RecCode 2 :=
+@[expose] public def mulCode : RecCode 2 :=
   .prec .zero (.comp addCode fun j => if j.val = 0 then .proj 1 else .proj 2)
 
-theorem evalMul_aux : ∀ (n : Nat) (w : Vec 1), Eval mulCode (vcons n w) (n * w 0) := by
+public theorem evalMul_aux : ∀ (n : Nat) (w : Vec 1), Eval mulCode (vcons n w) (n * w 0) := by
   intro n w
   induction n with
   | zero =>
@@ -298,39 +300,39 @@ theorem evalMul_aux : ∀ (n : Nat) (w : Vec 1), Eval mulCode (vcons n w) (n * w
         exact evalAdd _
     exact .prec_succ rfl ih hstep
 
-theorem Recursive2.mul : Recursive2 fun a b => a * b :=
+public theorem Recursive2.mul : Recursive2 fun a b => a * b :=
   ⟨mulCode, fun v => by
     have := evalMul_aux (v 0) (vtail v)
     rwa [vcons_head_tail v] at this⟩
 
 /-! ### Derived pointwise combinators (unary level) -/
 
-theorem Recursive1.add {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
+public theorem Recursive1.add {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
     Recursive1 fun n => f n + g n := Recursive1.comp2 Recursive2.add hf hg
 
-theorem Recursive1.mul {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
+public theorem Recursive1.mul {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
     Recursive1 fun n => f n * g n := Recursive1.comp2 Recursive2.mul hf hg
 
-theorem Recursive1.sub {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
+public theorem Recursive1.sub {f g : Nat → Nat} (hf : Recursive1 f) (hg : Recursive1 g) :
     Recursive1 fun n => f n - g n := Recursive1.comp2 Recursive2.sub hf hg
 
 /-- The equality indicator `1` if `a = b` else `0`, arithmetically:
     `1 - ((a-b)+(b-a))`. -/
-def eqInd (a b : Nat) : Nat := 1 - ((a - b) + (b - a))
+@[expose] public def eqInd (a b : Nat) : Nat := 1 - ((a - b) + (b - a))
 
-theorem eqInd_eq {a b : Nat} (h : a = b) : eqInd a b = 1 := by simp [eqInd, h]
+public theorem eqInd_eq {a b : Nat} (h : a = b) : eqInd a b = 1 := by simp [eqInd, h]
 
-theorem eqInd_ne {a b : Nat} (h : a ≠ b) : eqInd a b = 0 := by
+public theorem eqInd_ne {a b : Nat} (h : a ≠ b) : eqInd a b = 0 := by
   unfold eqInd; omega
 
-theorem Recursive2.eqInd : Recursive2 Rcat.eqInd :=
+public theorem Recursive2.eqInd : Recursive2 Rcat.eqInd :=
   Recursive2.comp2 (H := fun a b => a - b) Recursive2.sub
     (Recursive2.comp2 (H := fun _ _ => (1 : Nat)) (Recursive2.ofFst (Recursive1.const 1))
       (show Recursive2 fun a _ => a from RecursiveV.proj 0) (show Recursive2 fun _ b => b from RecursiveV.proj 1))
     (Recursive2.comp2 Recursive2.add Recursive2.sub (Recursive2.swap Recursive2.sub))
 
 /-- `if n = c then a else w n` is recursive when `w` is (constant-case update). -/
-theorem Recursive1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : Recursive1 w) :
+public theorem Recursive1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : Recursive1 w) :
     Recursive1 fun n => if n = c then a else w n := by
   have hind : Recursive1 fun n => eqInd n c :=
     Recursive1.comp2 Recursive2.eqInd (show Recursive1 fun n => n from RecursiveV.proj 0) (Recursive1.const c)
@@ -344,7 +346,7 @@ theorem Recursive1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : Recursive1 w) :
 
 /-- Finite tables belong to any unary function class containing zero and closed
     under extensional equality and replacement at one argument. -/
-theorem finTable_of {P : (Nat → Nat) → Prop}
+public theorem finTable_of {P : (Nat → Nat) → Prop}
     (zero : P fun _ => 0)
     (congr : ∀ {f g}, P f → (∀ n, f n = g n) → P g)
     (replace : ∀ c a {w}, P w → P fun n => if n = c then a else w n)
@@ -370,14 +372,14 @@ theorem finTable_of {P : (Nat → Nat) → Prop}
 /-- Any finite lookup table (0 outside its domain) is recursive.  This is the
     formal content of the book's "any function from a finite natural number is
     understood to be recursive". -/
-theorem Recursive1.finTable (m : Nat) (t : Fin m → Nat) :
+public theorem Recursive1.finTable (m : Nat) (t : Fin m → Nat) :
     Recursive1 fun j => if h : j < m then t ⟨j, h⟩ else 0 :=
   finTable_of (Recursive1.const 0) (fun h e => h.congr e) Recursive1.ifEqConst m t
 
 /-- Closure under total minimization: if `t` is a recursive binary test and `f n`
     is the least `i` with `t i n = 0` (which always exists), then `f` is recursive.
     This is the only place unbounded search enters. -/
-theorem Recursive1.mu {t : Nat → Nat → Nat} (ht : Recursive2 t) {f : Nat → Nat}
+public theorem Recursive1.mu {t : Nat → Nat → Nat} (ht : Recursive2 t) {f : Nat → Nat}
     (hzero : ∀ n, t (f n) n = 0) (hpos : ∀ n i, i < f n → t i n ≠ 0) : Recursive1 f := by
   obtain ⟨ct, hct⟩ := ht
   refine ⟨.mu ct, fun v => ?_⟩
@@ -394,7 +396,7 @@ theorem Recursive1.mu {t : Nat → Nat → Nat} (ht : Recursive2 t) {f : Nat →
 /-! ## Part 2: least elements, primitive recursion helper, Cantor pairing, div/mod -/
 
 /-- Every inhabited predicate on ℕ has a least witness (classical, no decidability). -/
-theorem exists_least {P : Nat → Prop} (h : ∃ n, P n) :
+public theorem exists_least {P : Nat → Prop} (h : ∃ n, P n) :
     ∃ n, P n ∧ ∀ i, i < n → ¬P i := by
   obtain ⟨n, hn⟩ := h
   have aux : ∀ b, (∃ i, i ≤ b ∧ P i) → ∃ m, P m ∧ ∀ i, i < m → ¬P i := by
@@ -418,28 +420,28 @@ theorem exists_least {P : Nat → Prop} (h : ∃ n, P n) :
   exact aux n ⟨n, Nat.le_refl n, hn⟩
 
 /-- The least witness of an inhabited predicate. -/
-noncomputable def theLeast (P : Nat → Prop) (h : ∃ n, P n) : Nat :=
+@[expose] public noncomputable def theLeast (P : Nat → Prop) (h : ∃ n, P n) : Nat :=
   Classical.choose (exists_least h)
 
 /-- Defining spec of `theLeast` (first half of `Classical.choose_spec`): the least witness
     satisfies `P`.  Kept — it is the specification of the `theLeast` choice-def, not an alias. -/
-theorem theLeast_mem (P : Nat → Prop) (h : ∃ n, P n) : P (theLeast P h) :=
+public theorem theLeast_mem (P : Nat → Prop) (h : ∃ n, P n) : P (theLeast P h) :=
   (Classical.choose_spec (exists_least h)).1
 
 /-- Defining spec of `theLeast` (second half of `Classical.choose_spec`): nothing below it
     satisfies `P`.  Kept — specification of the choice-def, not an alias. -/
-theorem theLeast_min (P : Nat → Prop) (h : ∃ n, P n) :
+public theorem theLeast_min (P : Nat → Prop) (h : ∃ n, P n) :
     ∀ i, i < theLeast P h → ¬P i :=
   (Classical.choose_spec (exists_least h)).2
 
-theorem theLeast_le (P : Nat → Prop) (h : ∃ n, P n) {n : Nat} (hn : P n) :
+public theorem theLeast_le (P : Nat → Prop) (h : ∃ n, P n) {n : Nat} (hn : P n) :
     theLeast P h ≤ n := by
   rcases Nat.lt_or_ge n (theLeast P h) with h' | h'
   · exact absurd hn (theLeast_min P h n h')
   · exact h'
 
 /-- The least witness is unique: anything satisfying the least-characterization is it. -/
-theorem theLeast_unique (P : Nat → Prop) (h : ∃ n, P n) {n : Nat}
+public theorem theLeast_unique (P : Nat → Prop) (h : ∃ n, P n) {n : Nat}
     (hn : P n) (hmin : ∀ i, i < n → ¬P i) : theLeast P h = n := by
   have h₁ := theLeast_le P h hn
   rcases Nat.lt_or_ge (theLeast P h) n with h' | h'
@@ -449,11 +451,11 @@ theorem theLeast_unique (P : Nat → Prop) (h : ∃ n, P n) {n : Nat}
 /-! ### Unary primitive recursion -/
 
 /-- Unary primitive recursion: `natIter g0 H 0 = g0`, `natIter g0 H (n+1) = H n (natIter g0 H n)`. -/
-def natIter (g0 : Nat) (H : Nat → Nat → Nat) : Nat → Nat
+@[expose] public def natIter (g0 : Nat) (H : Nat → Nat → Nat) : Nat → Nat
   | 0 => g0
   | n + 1 => H n (natIter g0 H n)
 
-theorem Recursive1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : Recursive2 H) :
+public theorem Recursive1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : Recursive2 H) :
     Recursive1 (Rcat.natIter g0 H) := by
   obtain ⟨cH, hcH⟩ := hH
   refine ⟨.prec (constCode 0 g0) cH, fun v => ?_⟩
@@ -471,23 +473,23 @@ theorem Recursive1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : Recursive2
 /-! ### Cantor pairing -/
 
 /-- Triangular numbers: `tri s = 0 + 1 + ⋯ + s`. -/
-def tri : Nat → Nat := natIter 0 fun s r => r + (s + 1)
+@[expose] public def tri : Nat → Nat := natIter 0 fun s r => r + (s + 1)
 
-@[simp] theorem tri_zero : tri 0 = 0 := rfl
+@[simp] public theorem tri_zero : tri 0 = 0 := rfl
 
-@[simp] theorem tri_succ (s : Nat) : tri (s + 1) = tri s + (s + 1) := rfl
+@[simp] public theorem tri_succ (s : Nat) : tri (s + 1) = tri s + (s + 1) := rfl
 
-theorem Recursive1.tri : Recursive1 Rcat.tri :=
+public theorem Recursive1.tri : Recursive1 Rcat.tri :=
   Recursive1.natIter 0 (Recursive2.comp2 Recursive2.add (show Recursive2 fun _ b => b from RecursiveV.proj 1)
     (Recursive2.comp2 Recursive2.add (show Recursive2 fun a _ => a from RecursiveV.proj 0)
       (Recursive2.ofFst (Recursive1.const 1))))
 
-theorem le_tri (s : Nat) : s ≤ tri s := by
+public theorem le_tri (s : Nat) : s ≤ tri s := by
   cases s with
   | zero => exact Nat.le_refl 0
   | succ s => rw [tri_succ]; omega
 
-theorem tri_mono {s t : Nat} (h : s ≤ t) : tri s ≤ tri t := by
+public theorem tri_mono {s t : Nat} (h : s ≤ t) : tri s ≤ tri t := by
   induction t with
   | zero =>
     have : s = 0 := by omega
@@ -500,9 +502,9 @@ theorem tri_mono {s t : Nat} (h : s ≤ t) : tri s ≤ tri t := by
       subst this; exact Nat.le_refl _
 
 /-- Cantor pairing: `cp a b = tri (a+b) + b`, a bijection ℕ×ℕ → ℕ. -/
-def cp (a b : Nat) : Nat := tri (a + b) + b
+@[expose] public def cp (a b : Nat) : Nat := tri (a + b) + b
 
-theorem Recursive2.cp : Recursive2 Rcat.cp := by
+public theorem Recursive2.cp : Recursive2 Rcat.cp := by
   have h : Recursive2 fun a b => Rcat.tri (a + b) + b :=
     Recursive2.comp2 Recursive2.add
       (Recursive2.comp2 (Recursive2.ofSnd Recursive1.tri) (show Recursive2 fun a _ => a from RecursiveV.proj 0) Recursive2.add)
@@ -510,13 +512,13 @@ theorem Recursive2.cp : Recursive2 Rcat.cp := by
   exact h.congr fun _ _ => rfl
 
 /-- The "weight" of a code: the least `s` with `c < tri (s+1)`; equals `a+b` for `c = cp a b`. -/
-noncomputable def cw (c : Nat) : Nat :=
+@[expose] public noncomputable def cw (c : Nat) : Nat :=
   theLeast (fun s => c < tri (s + 1)) ⟨c, by have := le_tri (c + 1); omega⟩
 
-theorem cw_lt (c : Nat) : c < tri (cw c + 1) :=
+public theorem cw_lt (c : Nat) : c < tri (cw c + 1) :=
   theLeast_mem (fun s => c < tri (s + 1)) _
 
-theorem tri_cw_le (c : Nat) : tri (cw c) ≤ c := by
+public theorem tri_cw_le (c : Nat) : tri (cw c) ≤ c := by
   cases hcw : cw c with
   | zero => rw [tri_zero]; omega
   | succ s =>
@@ -525,7 +527,7 @@ theorem tri_cw_le (c : Nat) : tri (cw c) ≤ c := by
         (show s < cw c by omega)
     omega
 
-theorem cw_cp (a b : Nat) : cw (cp a b) = a + b := by
+public theorem cw_cp (a b : Nat) : cw (cp a b) = a + b := by
   refine theLeast_unique _ _ ?_ ?_
   · show cp a b < tri (a + b + 1)
     rw [tri_succ]
@@ -538,30 +540,30 @@ theorem cw_cp (a b : Nat) : cw (cp a b) = a + b := by
     omega
 
 /-- Second Cantor projection. -/
-noncomputable def csnd (c : Nat) : Nat := c - tri (cw c)
+@[expose] public noncomputable def csnd (c : Nat) : Nat := c - tri (cw c)
 
 /-- First Cantor projection. -/
-noncomputable def cfst (c : Nat) : Nat := cw c - csnd c
+@[expose] public noncomputable def cfst (c : Nat) : Nat := cw c - csnd c
 
-theorem csnd_cp (a b : Nat) : csnd (cp a b) = b := by
+public theorem csnd_cp (a b : Nat) : csnd (cp a b) = b := by
   unfold csnd
   rw [cw_cp]
   unfold cp
   omega
 
-theorem cfst_cp (a b : Nat) : cfst (cp a b) = a := by
+public theorem cfst_cp (a b : Nat) : cfst (cp a b) = a := by
   unfold cfst
   rw [csnd_cp, cw_cp]
   omega
 
-theorem csnd_le_cw (c : Nat) : csnd c ≤ cw c := by
+public theorem csnd_le_cw (c : Nat) : csnd c ≤ cw c := by
   have h1 := cw_lt c
   have h2 := tri_cw_le c
   rw [tri_succ] at h1
   unfold csnd
   omega
 
-theorem cp_surj (c : Nat) : cp (cfst c) (csnd c) = c := by
+public theorem cp_surj (c : Nat) : cp (cfst c) (csnd c) = c := by
   have h1 := tri_cw_le c
   have h2 := csnd_le_cw c
   unfold cp cfst
@@ -570,7 +572,7 @@ theorem cp_surj (c : Nat) : cp (cfst c) (csnd c) = c := by
   unfold csnd
   omega
 
-theorem Recursive1.cw : Recursive1 Rcat.cw := by
+public theorem Recursive1.cw : Recursive1 Rcat.cw := by
   refine Recursive1.mu (t := fun s c => (c + 1) - Rcat.tri (s + 1)) ?_ ?_ ?_
   · exact Recursive2.comp2 Recursive2.sub
       (Recursive2.comp2 Recursive2.add (show Recursive2 fun _ b => b from RecursiveV.proj 1) (Recursive2.ofFst (Recursive1.const 1)))
@@ -586,16 +588,16 @@ theorem Recursive1.cw : Recursive1 Rcat.cw := by
       theLeast_min (fun s => c < Rcat.tri (s + 1)) ⟨c, by have := le_tri (c + 1); omega⟩ s hs
     omega
 
-theorem Recursive1.csnd : Recursive1 Rcat.csnd :=
+public theorem Recursive1.csnd : Recursive1 Rcat.csnd :=
   (Recursive1.sub (show Recursive1 fun n => n from RecursiveV.proj 0) (Recursive1.comp Recursive1.cw Recursive1.tri)).congr
     fun _ => rfl
 
-theorem Recursive1.cfst : Recursive1 Rcat.cfst :=
+public theorem Recursive1.cfst : Recursive1 Rcat.cfst :=
   (Recursive1.sub Recursive1.cw Recursive1.csnd).congr fun _ => rfl
 
 /-! ### Division and remainder by a positive constant -/
 
-theorem Recursive1.divConst (m : Nat) : Recursive1 fun c => c / (m + 1) := by
+public theorem Recursive1.divConst (m : Nat) : Recursive1 fun c => c / (m + 1) := by
   refine Recursive1.mu (t := fun q c => (c + 1) - (m + 1) * (q + 1)) ?_ ?_ ?_
   · exact Recursive2.comp2 Recursive2.sub
       (Recursive2.comp2 Recursive2.add (show Recursive2 fun _ b => b from RecursiveV.proj 1) (Recursive2.ofFst (Recursive1.const 1)))
@@ -617,7 +619,7 @@ theorem Recursive1.divConst (m : Nat) : Recursive1 fun c => c / (m + 1) := by
     have h3 : (m + 1) * (q + 1) = (q + 1) * (m + 1) := Nat.mul_comm _ _
     omega
 
-theorem Recursive1.modConst (m : Nat) : Recursive1 fun c => c % (m + 1) := by
+public theorem Recursive1.modConst (m : Nat) : Recursive1 fun c => c % (m + 1) := by
   have h : Recursive1 fun c => c - (c / (m + 1)) * (m + 1) :=
     Recursive1.sub (show Recursive1 fun n => n from RecursiveV.proj 0)
       (Recursive1.mul (Recursive1.divConst m) (Recursive1.const (m + 1)))
@@ -634,54 +636,54 @@ theorem Recursive1.modConst (m : Nat) : Recursive1 fun c => c % (m + 1) := by
   as recursive, so the condition only bites on domain ω. -/
 
 /-- The extended natural numbers 0, 1, 2, …, ω — the objects of R. -/
-def ExtNat : Type := Option Nat
+@[expose] public def ExtNat : Type := Option Nat
 
 /-- The finite ordinal ω-object.  Book notation: ω. -/
-def omega : ExtNat := none
+@[expose] public def omega : ExtNat := none
 
 /-- The finite ordinal object `n = {0, …, n-1}` (von Neumann). -/
 def fin (n : Nat) : ExtNat := some n
 
 /-- Carrier of an extended natural: `El (some n) = Fin n`, `El ω = ℕ`.
     (`@[reducible]` so that arithmetic on `El none` elaborates as on `Nat`.) -/
-@[reducible] def El : ExtNat → Type := fun α =>
+@[reducible, expose] public def El : ExtNat → Type := fun α =>
   match α with
   | some n => Fin n
   | none => Nat
 
 /-- Uniform embedding of every carrier into ℕ. -/
-def toNat : {α : ExtNat} → El α → Nat := fun {α} =>
+@[expose] public def toNat : {α : ExtNat} → El α → Nat := fun {α} =>
   match α with
   | some _ => Fin.val
   | none => id
 
-theorem toNat_inj : ∀ {α : ExtNat} {a b : El α}, toNat a = toNat b → a = b := by
+public theorem toNat_inj : ∀ {α : ExtNat} {a b : El α}, toNat a = toNat b → a = b := by
   intro α
   match α with
   | some n => intro a b h; exact Fin.ext h
   | none => intro a b h; exact h
 
-theorem toNat_lt {n : Nat} (a : El (some n)) : toNat a < n := a.isLt
+public theorem toNat_lt {n : Nat} (a : El (some n)) : toNat a < n := a.isLt
 
 /-- The morphism condition: from ω the induced ℕ→ℕ function must be recursive;
     from a finite natural everything is a morphism (book convention). -/
-def IsMor : (α β : ExtNat) → (El α → El β) → Prop := fun α _ f =>
+@[expose] public def IsMor : (α β : ExtNat) → (El α → El β) → Prop := fun α _ f =>
   match α, f with
   | some _, _ => True
   | none, f => Recursive1 fun k => toNat (f k)
 
 /-- Morphisms of R: recursive functions between the carriers. -/
-def Mor (α β : ExtNat) : Type := {f : El α → El β // IsMor α β f}
+@[expose] public def Mor (α β : ExtNat) : Type := {f : El α → El β // IsMor α β f}
 
-theorem Mor.ext {α β : ExtNat} {f g : Mor α β} (h : ∀ a, f.1 a = g.1 a) : f = g :=
+public theorem Mor.ext {α β : ExtNat} {f g : Mor α β} (h : ∀ a, f.1 a = g.1 a) : f = g :=
   Subtype.ext (funext h)
 
-theorem isMor_finite {n : Nat} {β : ExtNat} (f : El (some n) → El β) : IsMor (some n) β f :=
+public theorem isMor_finite {n : Nat} {β : ExtNat} (f : El (some n) → El β) : IsMor (some n) β f :=
   trivial
 
 /-- Any function ω → Fin m whose values are recursive composed with any table is a
     morphism-composite: the workhorse for composing through a finite object. -/
-theorem recursive1_finComp {m : Nat} {f : Nat → Fin m} (hf : Recursive1 fun k => (f k).val)
+public theorem recursive1_finComp {m : Nat} {f : Nat → Fin m} (hf : Recursive1 fun k => (f k).val)
     (t : Fin m → Nat) : Recursive1 fun k => t (f k) := by
   have htab := Recursive1.finTable m t
   have hcomp := Recursive1.comp (f := fun k => (f k).val)
@@ -691,7 +693,7 @@ theorem recursive1_finComp {m : Nat} {f : Nat → Fin m} (hf : Recursive1 fun k 
   rw [dif_pos (f k).isLt]
 
 /-- Composites of morphisms are morphisms. -/
-theorem isMor_comp {α β γ : ExtNat} (f : Mor α β) (g : Mor β γ) :
+public theorem isMor_comp {α β γ : ExtNat} (f : Mor α β) (g : Mor β γ) :
     IsMor α γ fun a => g.1 (f.1 a) := by
   match α with
   | some n => exact trivial
@@ -702,7 +704,7 @@ theorem isMor_comp {α β γ : ExtNat} (f : Mor α β) (g : Mor β γ) :
     | some m =>
       exact recursive1_finComp (f := fun k => f.1 k) f.2 fun j => toNat (g.1 j)
 
-instance : Cat ExtNat where
+@[expose] public instance : Cat ExtNat where
   Hom := Mor
   id α := ⟨fun a => a, by
     match α with
@@ -714,13 +716,13 @@ instance : Cat ExtNat where
   assoc f g h := Mor.ext fun _ => rfl
 
 /-- Pointwise evaluation of a composite. -/
-theorem comp_fn {α β γ : ExtNat} (f : α ⟶ β) (g : β ⟶ γ) (a : El α) :
+public theorem comp_fn {α β γ : ExtNat} (f : α ⟶ β) (g : β ⟶ γ) (a : El α) :
     (f ≫ g).1 a = g.1 (f.1 a) := rfl
 
 theorem id_fn {α : ExtNat} (a : El α) : (Cat.id α).1 a = a := rfl
 
 /-- Pointwise consequence of a morphism equation. -/
-theorem Mor.congr {α β : ExtNat} {f g : α ⟶ β} (h : f = g) (a : El α) : f.1 a = g.1 a := by
+public theorem Mor.congr {α β : ExtNat} {f g : α ⟶ β} (h : f = g) (a : El α) : f.1 a = g.1 a := by
   rw [h]
 
 /-! ## Part 4: R is cartesian — terminator and binary products
@@ -729,7 +731,7 @@ theorem Mor.congr {α β : ExtNat} {f g : α ⟶ β} (h : f = g) (a : El α) : f
   again be an extended natural: `n×m = n*m`, `ω×ω ≅ ω` by Cantor pairing,
   `(n+1)×ω ≅ ω ≅ ω×(m+1)` by division with remainder, and `0×α = 0 = α×0`. -/
 
-instance : HasTerminal ExtNat where
+@[expose] public instance : HasTerminal ExtNat where
   one := some 1
   trm X := ⟨fun _ => ⟨0, Nat.one_pos⟩, by
     match X with
@@ -744,7 +746,7 @@ instance : HasTerminal ExtNat where
 /-- Product data for a pair of extended naturals: a product object together with a
     recursive pairing bijection.  `encN` is the pairing seen through `toNat`; its
     recursiveness makes the universal `pair` map a morphism. -/
-structure ProdData (α β : ExtNat) where
+public structure ProdData (α β : ExtNat) where
   obj : ExtNat
   enc : El α → El β → El obj
   dec₁ : El obj → El α
@@ -759,7 +761,7 @@ structure ProdData (α β : ExtNat) where
   encN_spec : ∀ a b, toNat (enc a b) = encN (toNat a) (toNat b)
 
 /-- `n × m = n*m` (finite × finite): `(i,j) ↦ i*m + j`. -/
-def prodFinFin (n m : Nat) : ProdData (some n) (some m) where
+@[expose] public def prodFinFin (n m : Nat) : ProdData (some n) (some m) where
   obj := some (n * m)
   enc i j := ⟨i.val * m + j.val, by
     have h1 : i.val * m + j.val < (i.val + 1) * m := by
@@ -810,7 +812,7 @@ def prodFinFin (n m : Nat) : ProdData (some n) (some m) where
   encN_spec _ _ := rfl
 
 /-- `0 × ω = 0`. -/
-def prodZeroOmega (n : Nat) (h : n = 0) : ProdData (some n) none where
+@[expose] public def prodZeroOmega (n : Nat) (h : n = 0) : ProdData (some n) none where
   obj := some 0
   enc a _ := h ▸ a
   dec₁ c := c.elim0
@@ -825,23 +827,23 @@ def prodZeroOmega (n : Nat) (h : n = 0) : ProdData (some n) none where
   encN_spec a _ := (h ▸ a).elim0
 
 /-- Helper (plain-Nat, so `omega` applies): quotient of `k*(d+1) + v` by `d+1`. -/
-theorem mulAdd_div (d k v : Nat) (hv : v < d + 1) : (k * (d + 1) + v) / (d + 1) = k := by
+public theorem mulAdd_div (d k v : Nat) (hv : v < d + 1) : (k * (d + 1) + v) / (d + 1) = k := by
   rw [Nat.mul_comm k (d + 1), Nat.mul_add_div (Nat.succ_pos d), Nat.div_eq_of_lt hv]
   omega
 
 /-- Helper (plain-Nat): remainder of `k*(d+1) + v` by `d+1`. -/
-theorem mulAdd_mod (d k v : Nat) (hv : v < d + 1) : (k * (d + 1) + v) % (d + 1) = v := by
+public theorem mulAdd_mod (d k v : Nat) (hv : v < d + 1) : (k * (d + 1) + v) % (d + 1) = v := by
   rw [Nat.mul_comm k (d + 1), Nat.mul_add_mod]
   exact Nat.mod_eq_of_lt hv
 
 /-- Helper (plain-Nat): division with remainder reassembles. -/
-theorem div_mul_add_mod (d c : Nat) : (c / (d + 1)) * (d + 1) + c % (d + 1) = c := by
+public theorem div_mul_add_mod (d c : Nat) : (c / (d + 1)) * (d + 1) + c % (d + 1) = c := by
   have h1 := Nat.div_add_mod c (d + 1)
   have h2 : (d + 1) * (c / (d + 1)) = (c / (d + 1)) * (d + 1) := Nat.mul_comm _ _
   omega
 
 /-- `(n+1) × ω = ω`: `(i,k) ↦ k*(n+1) + i` (division with remainder by `n+1`). -/
-noncomputable def prodFinOmega (n : Nat) : ProdData (some (n + 1)) none where
+@[expose] public noncomputable def prodFinOmega (n : Nat) : ProdData (some (n + 1)) none where
   obj := none
   enc i k := k * (n + 1) + i.val
   dec₁ c := ⟨c % (n + 1), Nat.mod_lt _ (Nat.succ_pos n)⟩
@@ -858,7 +860,7 @@ noncomputable def prodFinOmega (n : Nat) : ProdData (some (n + 1)) none where
   encN_spec _ _ := rfl
 
 /-- `ω × 0 = 0`. -/
-def prodOmegaZero (m : Nat) (h : m = 0) : ProdData none (some m) where
+@[expose] public def prodOmegaZero (m : Nat) (h : m = 0) : ProdData none (some m) where
   obj := some 0
   enc _ b := h ▸ b
   dec₁ c := c.elim0
@@ -873,7 +875,7 @@ def prodOmegaZero (m : Nat) (h : m = 0) : ProdData none (some m) where
   encN_spec _ b := (h ▸ b).elim0
 
 /-- `ω × (m+1) = ω`: `(k,j) ↦ k*(m+1) + j`. -/
-noncomputable def prodOmegaFin (m : Nat) : ProdData none (some (m + 1)) where
+@[expose] public noncomputable def prodOmegaFin (m : Nat) : ProdData none (some (m + 1)) where
   obj := none
   enc k j := k * (m + 1) + j.val
   dec₁ c := c / (m + 1)
@@ -890,7 +892,7 @@ noncomputable def prodOmegaFin (m : Nat) : ProdData none (some (m + 1)) where
   encN_spec _ _ := rfl
 
 /-- `ω × ω = ω` by the Cantor pairing (recursive in both directions). -/
-noncomputable def prodOmegaOmega : ProdData none none where
+@[expose] public noncomputable def prodOmegaOmega : ProdData none none where
   obj := none
   enc := cp
   dec₁ := cfst
@@ -905,7 +907,7 @@ noncomputable def prodOmegaOmega : ProdData none none where
   encN_spec _ _ := rfl
 
 /-- The product of any two extended naturals. -/
-noncomputable def prodData : (α β : ExtNat) → ProdData α β
+@[expose] public noncomputable def prodData : (α β : ExtNat) → ProdData α β
   | some n, some m => prodFinFin n m
   | some 0, none => prodZeroOmega 0 rfl
   | some (n + 1), none => prodFinOmega n
@@ -914,7 +916,7 @@ noncomputable def prodData : (α β : ExtNat) → ProdData α β
   | none, none => prodOmegaOmega
 
 /-- The universal pairing map is a morphism (via `encN`). -/
-theorem pair_isMor {X α β : ExtNat} (pd : ProdData α β) (f : X ⟶ α) (g : X ⟶ β) :
+public theorem pair_isMor {X α β : ExtNat} (pd : ProdData α β) (f : X ⟶ α) (g : X ⟶ β) :
     IsMor X pd.obj fun w => pd.enc (f.1 w) (g.1 w) := by
   match X with
   | some n => exact trivial
@@ -923,7 +925,7 @@ theorem pair_isMor {X α β : ExtNat} (pd : ProdData α β) (f : X ⟶ α) (g : 
       Recursive1.comp2 pd.encN_rec f.2 g.2
     exact h.congr fun k => (pd.encN_spec _ _).symm
 
-noncomputable instance : HasBinaryProducts ExtNat where
+@[expose] public noncomputable instance : HasBinaryProducts ExtNat where
   prod α β := (prodData α β).obj
   fst {α β} := ⟨(prodData α β).dec₁, (prodData α β).dec₁_mor⟩
   snd {α β} := ⟨(prodData α β).dec₂, (prodData α β).dec₂_mor⟩
@@ -947,44 +949,44 @@ noncomputable instance : HasBinaryProducts ExtNat where
   below), recursive by primitive recursion. -/
 
 /-- Support test: is `u` the code of an element of the carrier of `α`? -/
-def suppChi : ExtNat → Nat → Bool
+@[expose] public def suppChi : ExtNat → Nat → Bool
   | some n, u => decide (u < n)
   | none, _ => true
 
-@[simp] theorem suppChi_some (n u : Nat) : suppChi (some n) u = decide (u < n) := rfl
+@[simp] public theorem suppChi_some (n u : Nat) : suppChi (some n) u = decide (u < n) := rfl
 
 @[simp] theorem suppChi_none (u : Nat) : suppChi none u = true := rfl
 
 /-- The element of `El α` coded by `u` (given the support test). -/
-def elOf : {α : ExtNat} → (u : Nat) → suppChi α u = true → El α := fun {α} =>
+@[expose] public def elOf : {α : ExtNat} → (u : Nat) → suppChi α u = true → El α := fun {α} =>
   match α with
   | some _ => fun u h => ⟨u, of_decide_eq_true h⟩
   | none => fun u _ => u
 
-theorem toNat_elOf : ∀ {α : ExtNat} (u : Nat) (h : suppChi α u = true), toNat (elOf u h) = u := by
+public theorem toNat_elOf : ∀ {α : ExtNat} (u : Nat) (h : suppChi α u = true), toNat (elOf u h) = u := by
   intro α
   match α with
   | some n => intro u h; rfl
   | none => intro u h; rfl
 
-theorem suppChi_toNat : ∀ {α : ExtNat} (a : El α), suppChi α (toNat a) = true := by
+public theorem suppChi_toNat : ∀ {α : ExtNat} (a : El α), suppChi α (toNat a) = true := by
   intro α
   match α with
   | some n => intro a; exact decide_eq_true a.isLt
   | none => intro a; rfl
 
 /-- A morphism as a ℕ→ℕ function (0 outside the support). -/
-def morN : {α β : ExtNat} → Mor α β → Nat → Nat := fun {α _} =>
+@[expose] public def morN : {α β : ExtNat} → Mor α β → Nat → Nat := fun {α _} =>
   match α with
   | some n => fun x u => if h : u < n then toNat (x.1 ⟨u, h⟩) else 0
   | none => fun x u => toNat (x.1 u)
 
-theorem morN_rec {α β : ExtNat} (x : Mor α β) : Recursive1 (morN x) := by
+public theorem morN_rec {α β : ExtNat} (x : Mor α β) : Recursive1 (morN x) := by
   match α with
   | some n => exact Recursive1.finTable n fun i => toNat (x.1 i)
   | none => exact x.2
 
-theorem morN_spec : ∀ {α β : ExtNat} (x : Mor α β) (a : El α), morN x (toNat a) = toNat (x.1 a) := by
+public theorem morN_spec : ∀ {α β : ExtNat} (x : Mor α β) (a : El α), morN x (toNat a) = toNat (x.1 a) := by
   intro α
   match α with
   | some n =>
@@ -994,14 +996,14 @@ theorem morN_spec : ∀ {α β : ExtNat} (x : Mor α β) (a : El α), morN x (to
   | none => intro β x a; rfl
 
 /-- The agreement set of `x, y : α → β` as a Boolean predicate on codes. -/
-def agreeChi {α β : ExtNat} (x y : Mor α β) : Nat → Bool := fun u =>
+@[expose] public def agreeChi {α β : ExtNat} (x y : Mor α β) : Nat → Bool := fun u =>
   suppChi α u && (morN x u == morN y u)
 
-theorem agreeChi_supp {α β : ExtNat} {x y : Mor α β} {u : Nat}
+public theorem agreeChi_supp {α β : ExtNat} {x y : Mor α β} {u : Nat}
     (h : agreeChi x y u = true) : suppChi α u = true :=
   (Bool.and_eq_true_iff.mp h).1
 
-theorem agreeChi_toNat {α β : ExtNat} (x y : Mor α β) (a : El α) :
+public theorem agreeChi_toNat {α β : ExtNat} (x y : Mor α β) (a : El α) :
     agreeChi x y (toNat a) = true ↔ x.1 a = y.1 a := by
   unfold agreeChi
   rw [suppChi_toNat a, Bool.true_and, morN_spec x a, morN_spec y a]
@@ -1012,7 +1014,7 @@ theorem agreeChi_toNat {α β : ExtNat} (x y : Mor α β) (a : El α) :
     rw [h]
     exact beq_self_eq_true _
 
-theorem agreeChi_elOf {α β : ExtNat} (x y : Mor α β) {u : Nat}
+public theorem agreeChi_elOf {α β : ExtNat} (x y : Mor α β) {u : Nat}
     (h : agreeChi x y u = true) :
     x.1 (elOf u (agreeChi_supp h)) = y.1 (elOf u (agreeChi_supp h)) := by
   have := (agreeChi_toNat x y (elOf u (agreeChi_supp h)))
@@ -1020,7 +1022,7 @@ theorem agreeChi_elOf {α β : ExtNat} (x y : Mor α β) {u : Nat}
   exact this.mp h
 
 /-- The numeric characteristic function of the agreement set is recursive. -/
-theorem agreeChi_rec {α β : ExtNat} (x y : Mor α β) :
+public theorem agreeChi_rec {α β : ExtNat} (x y : Mor α β) :
     Recursive1 fun u => if agreeChi x y u then 1 else 0 := by
   have hsupp : Recursive1 fun u => if suppChi α u then 1 else 0 := by
     match α with
@@ -1053,18 +1055,18 @@ theorem agreeChi_rec {α β : ExtNat} (x y : Mor α β) :
 /-! ### Rank and enumeration of a Boolean subset of ℕ -/
 
 /-- `rankOf χ v` = number of members of `{i | χ i}` below `v`. -/
-def rankOf (χ : Nat → Bool) : Nat → Nat := natIter 0 fun v r => r + (if χ v then 1 else 0)
+@[expose] public def rankOf (χ : Nat → Bool) : Nat → Nat := natIter 0 fun v r => r + (if χ v then 1 else 0)
 
-@[simp] theorem rankOf_zero (χ : Nat → Bool) : rankOf χ 0 = 0 := rfl
+@[simp] public theorem rankOf_zero (χ : Nat → Bool) : rankOf χ 0 = 0 := rfl
 
-theorem rankOf_succ (χ : Nat → Bool) (v : Nat) :
+public theorem rankOf_succ (χ : Nat → Bool) (v : Nat) :
     rankOf χ (v + 1) = rankOf χ v + (if χ v then 1 else 0) := rfl
 
-theorem rankOf_rec {χ : Nat → Bool} (h : Recursive1 fun v => if χ v then 1 else 0) :
+public theorem rankOf_rec {χ : Nat → Bool} (h : Recursive1 fun v => if χ v then 1 else 0) :
     Recursive1 (rankOf χ) :=
   Recursive1.natIter 0 (Recursive2.comp2 Recursive2.add (show Recursive2 fun _ b => b from RecursiveV.proj 1) (Recursive2.ofFst h))
 
-theorem rankOf_mono (χ : Nat → Bool) {v w : Nat} (h : v ≤ w) : rankOf χ v ≤ rankOf χ w := by
+public theorem rankOf_mono (χ : Nat → Bool) {v w : Nat} (h : v ≤ w) : rankOf χ v ≤ rankOf χ w := by
   induction w with
   | zero =>
     have : v = 0 := by omega
@@ -1077,21 +1079,21 @@ theorem rankOf_mono (χ : Nat → Bool) {v w : Nat} (h : v ≤ w) : rankOf χ v 
     · have : v = w + 1 := by omega
       subst this; exact Nat.le_refl _
 
-theorem rankOf_lt_of_mem (χ : Nat → Bool) {v w : Nat} (hv : χ v = true) (hvw : v < w) :
+public theorem rankOf_lt_of_mem (χ : Nat → Bool) {v w : Nat} (hv : χ v = true) (hvw : v < w) :
     rankOf χ v < rankOf χ w := by
   have h1 : rankOf χ (v + 1) = rankOf χ v + 1 := by
     rw [rankOf_succ, if_pos hv]
   have h2 : rankOf χ (v + 1) ≤ rankOf χ w := rankOf_mono χ (by omega)
   omega
 
-theorem rankOf_inj_mem (χ : Nat → Bool) {v w : Nat} (hv : χ v = true) (hw : χ w = true)
+public theorem rankOf_inj_mem (χ : Nat → Bool) {v w : Nat} (hv : χ v = true) (hw : χ w = true)
     (h : rankOf χ v = rankOf χ w) : v = w := by
   rcases Nat.lt_trichotomy v w with h' | h' | h'
   · exact absurd h (by have := rankOf_lt_of_mem χ hv h'; omega)
   · exact h'
   · exact absurd h (by have := rankOf_lt_of_mem χ hw h'; omega)
 
-theorem rankOf_surj (χ : Nat → Bool) {k b : Nat} (hk : k < rankOf χ b) :
+public theorem rankOf_surj (χ : Nat → Bool) {k b : Nat} (hk : k < rankOf χ b) :
     ∃ v, v < b ∧ χ v = true ∧ rankOf χ v = k := by
   induction b with
   | zero => rw [rankOf_zero] at hk; omega
@@ -1108,7 +1110,7 @@ theorem rankOf_surj (χ : Nat → Bool) {k b : Nat} (hk : k < rankOf χ b) :
       obtain ⟨v, h1, h2, h3⟩ := ih (by omega)
       exact ⟨v, by omega, h2, h3⟩
 
-theorem rankOf_unbounded (χ : Nat → Bool) (hunb : ∀ b, ∃ v, b ≤ v ∧ χ v = true) :
+public theorem rankOf_unbounded (χ : Nat → Bool) (hunb : ∀ b, ∃ v, b ≤ v ∧ χ v = true) :
     ∀ k, ∃ v, χ v = true ∧ rankOf χ v = k := by
   have grow : ∀ k, ∃ b, k < rankOf χ b := by
     intro k
@@ -1129,18 +1131,18 @@ theorem rankOf_unbounded (χ : Nat → Bool) (hunb : ∀ b, ∃ v, b ≤ v ∧ �
   exact ⟨v, h2, h3⟩
 
 /-- The `k`-th member (in increasing order) of the subset `{i | χ i}`. -/
-noncomputable def enumOf (χ : Nat → Bool) (k : Nat)
+@[expose] public noncomputable def enumOf (χ : Nat → Bool) (k : Nat)
     (h : ∃ v, χ v = true ∧ rankOf χ v = k) : Nat :=
   theLeast _ h
 
 /-- The enumeration inverts the rank on members. -/
-theorem enumOf_of_mem (χ : Nat → Bool) {u : Nat} (hu : χ u = true)
+public theorem enumOf_of_mem (χ : Nat → Bool) {u : Nat} (hu : χ u = true)
     (h : ∃ v, χ v = true ∧ rankOf χ v = rankOf χ u) : enumOf χ (rankOf χ u) h = u :=
   rankOf_inj_mem χ (theLeast_mem _ h).1 hu (theLeast_mem _ h).2
 
 /-- The enumeration of an (everywhere-inhabited-rank) recursive subset is recursive —
     genuine unbounded μ-search. -/
-theorem enumOf_recursive {χ : Nat → Bool} (ht : Recursive1 fun v => if χ v then 1 else 0)
+public theorem enumOf_recursive {χ : Nat → Bool} (ht : Recursive1 fun v => if χ v then 1 else 0)
     (hex : ∀ k, ∃ v, χ v = true ∧ rankOf χ v = k) :
     Recursive1 fun k => enumOf χ k (hex k) := by
   refine Recursive1.mu
@@ -1179,15 +1181,15 @@ section Equalizer
 variable {α β : ExtNat} (x y : α ⟶ β)
 
 /-- The `k`-th member of the agreement set, as an element of `El α`. -/
-noncomputable def eqEnum (k : Nat)
+@[expose] public noncomputable def eqEnum (k : Nat)
     (h : ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k) : El α :=
   elOf (enumOf (agreeChi x y) k h) (agreeChi_supp (theLeast_mem _ h).1)
 
-theorem eqEnum_agree (k : Nat) (h : ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k) :
+public theorem eqEnum_agree (k : Nat) (h : ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k) :
     x.1 (eqEnum x y k h) = y.1 (eqEnum x y k h) :=
   agreeChi_elOf x y (theLeast_mem _ h).1
 
-theorem eqEnum_inj {k k' : Nat}
+public theorem eqEnum_inj {k k' : Nat}
     (h : ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k)
     (h' : ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k')
     (heq : eqEnum x y k h = eqEnum x y k' h') : k = k' := by
@@ -1198,7 +1200,7 @@ theorem eqEnum_inj {k k' : Nat}
     ← show rankOf (agreeChi x y) (enumOf (agreeChi x y) k' h') = k' from (theLeast_mem _ h').2, h1]
 
 /-- Enumerating the rank of an agreeing element recovers it. -/
-theorem eqEnum_rank {a : El α} (ha : agreeChi x y (toNat a) = true)
+public theorem eqEnum_rank {a : El α} (ha : agreeChi x y (toNat a) = true)
     (h : ∃ v, agreeChi x y v = true ∧
       rankOf (agreeChi x y) v = rankOf (agreeChi x y) (toNat a)) :
     eqEnum x y (rankOf (agreeChi x y) (toNat a)) h = a := by
@@ -1208,7 +1210,7 @@ theorem eqEnum_rank {a : El α} (ha : agreeChi x y (toNat a) = true)
   exact enumOf_of_mem _ ha _
 
 /-- The lift function (the rank of the code) is a morphism from any cone domain. -/
-theorem eqLift_isMor {X γ : ExtNat} (q : X ⟶ α) (g : El X → El γ)
+public theorem eqLift_isMor {X γ : ExtNat} (q : X ⟶ α) (g : El X → El γ)
     (hg : ∀ w, toNat (g w) = rankOf (agreeChi x y) (toNat (q.1 w))) :
     IsMor X γ g := by
   match X, q, g, hg with
@@ -1219,14 +1221,14 @@ theorem eqLift_isMor {X γ : ExtNat} (q : X ⟶ α) (g : El X → El γ)
     exact h.congr fun w => (hg w).symm
 
 /-- Cone codes agree. -/
-theorem cone_agree (c : EqualizerCone x y) (w : El c.dom) :
+public theorem cone_agree (c : EqualizerCone x y) (w : El c.dom) :
     agreeChi x y (toNat (c.map.1 w)) = true :=
   (agreeChi_toNat x y (c.map.1 w)).mpr (Mor.congr c.eq w)
 
 /-- Bounded (finite) case: the agreement set lies below `b`; the equalizer object
     is the finite ordinal `rankOf χ b`, with the increasing enumeration as the
     (automatically recursive: finite domain) equalizer map. -/
-noncomputable def eqFinite (b : Nat) (hb : ∀ v, agreeChi x y v = true → v < b) :
+@[expose] public noncomputable def eqFinite (b : Nat) (hb : ∀ v, agreeChi x y v = true → v < b) :
     HasEqualizer x y :=
   have hexF : ∀ k : Fin (rankOf (agreeChi x y) b),
       ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k.val := fun k =>
@@ -1252,7 +1254,7 @@ noncomputable def eqFinite (b : Nat) (hb : ∀ v, agreeChi x y v = true → v < 
 
 /-- Unbounded (infinite) case: the equalizer object is ω; the increasing
     enumeration is recursive by unbounded μ-search. -/
-noncomputable def eqInfinite (hunb : ∀ b, ∃ v, b ≤ v ∧ agreeChi x y v = true) :
+@[expose] public noncomputable def eqInfinite (hunb : ∀ b, ∃ v, b ≤ v ∧ agreeChi x y v = true) :
     HasEqualizer x y :=
   have hex : ∀ k, ∃ v, agreeChi x y v = true ∧ rankOf (agreeChi x y) v = k :=
     rankOf_unbounded _ hunb
@@ -1276,7 +1278,7 @@ noncomputable def eqInfinite (hunb : ∀ b, ∃ v, b ≤ v ∧ agreeChi x y v = 
 open Classical in
 /-- The equalizer of `x, y`: finite or ω according to whether the agreement set
     is bounded (a classically-decided case split; `Classical.choice` is in budget). -/
-noncomputable def eqOf : HasEqualizer x y :=
+@[expose] public noncomputable def eqOf : HasEqualizer x y :=
   if h : ∃ b, ∀ v, agreeChi x y v = true → v < b then
     eqFinite x y h.choose h.choose_spec
   else
@@ -1290,10 +1292,10 @@ noncomputable def eqOf : HasEqualizer x y :=
 
 end Equalizer
 
-noncomputable instance : HasEqualizers ExtNat := ⟨fun _ _ x y => eqOf x y⟩
+@[expose] public noncomputable instance : HasEqualizers ExtNat := ⟨fun _ _ x y => eqOf x y⟩
 
 /-- **R is cartesian** (first half of §1.572's claim). -/
-noncomputable instance : CartesianCategory ExtNat := {}
+@[expose] public noncomputable instance : CartesianCategory ExtNat := {}
 
 /-! ## Part 6: R is AC regular (§1.572)
 
@@ -1306,13 +1308,13 @@ noncomputable instance : CartesianCategory ExtNat := {}
 
 /-- The least index with the same `F`-value as `k` (exists: `k` itself qualifies).
     Since the witness `k` bounds it, this is the book's `min{ i ≤ n | x(i) = x(n) }`. -/
-noncomputable def leastAgree (F : Nat → Nat) (k : Nat) : Nat :=
+@[expose] public noncomputable def leastAgree (F : Nat → Nat) (k : Nat) : Nat :=
   theLeast (fun i => F i = F k) ⟨k, rfl⟩
 
-theorem leastAgree_agree (F : Nat → Nat) (k : Nat) : F (leastAgree F k) = F k :=
+public theorem leastAgree_agree (F : Nat → Nat) (k : Nat) : F (leastAgree F k) = F k :=
   theLeast_mem (fun i => F i = F k) ⟨k, rfl⟩
 
-theorem leastAgree_congr (F : Nat → Nat) {j k : Nat} (h : F j = F k) :
+public theorem leastAgree_congr (F : Nat → Nat) {j k : Nat} (h : F j = F k) :
     leastAgree F j = leastAgree F k := by
   refine theLeast_unique _ _ ?_ ?_
   · show F (leastAgree F k) = F j
@@ -1322,12 +1324,12 @@ theorem leastAgree_congr (F : Nat → Nat) {j k : Nat} (h : F j = F k) :
     rw [h]
     exact theLeast_min (fun i => F i = F k) ⟨k, rfl⟩ i hi
 
-theorem leastAgree_idem (F : Nat → Nat) (k : Nat) :
+public theorem leastAgree_idem (F : Nat → Nat) (k : Nat) :
     leastAgree F (leastAgree F k) = leastAgree F k :=
   leastAgree_congr F (leastAgree_agree F k)
 
 /-- Support is downward closed. -/
-theorem suppChi_of_le : ∀ {α : ExtNat} {u v : Nat}, u ≤ v → suppChi α v = true →
+public theorem suppChi_of_le : ∀ {α : ExtNat} {u v : Nat}, u ≤ v → suppChi α v = true →
     suppChi α u = true := by
   intro α
   match α with
@@ -1337,12 +1339,12 @@ theorem suppChi_of_le : ∀ {α : ExtNat} {u v : Nat}, u ≤ v → suppChi α v 
   | none => intro u v _ _; rfl
 
 /-- §1.572's idempotent: `e(a) = min{ i ≤ a | x(i) = x(a) }` (through the code of `a`). -/
-noncomputable def idemFn {α β : ExtNat} (x : Mor α β) : El α → El α := fun a =>
+@[expose] public noncomputable def idemFn {α β : ExtNat} (x : Mor α β) : El α → El α := fun a =>
   elOf (leastAgree (morN x) (toNat a))
     (suppChi_of_le (theLeast_le _ _ rfl) (suppChi_toNat a))
 
 /-- `ex = x` pointwise. -/
-theorem idemFn_absorb {α β : ExtNat} (x : Mor α β) (a : El α) :
+public theorem idemFn_absorb {α β : ExtNat} (x : Mor α β) (a : El α) :
     x.1 (idemFn x a) = x.1 a := by
   apply toNat_inj
   rw [← morN_spec x (idemFn x a), ← morN_spec x a,
@@ -1350,7 +1352,7 @@ theorem idemFn_absorb {α β : ExtNat} (x : Mor α β) (a : El α) :
   exact leastAgree_agree (morN x) (toNat a)
 
 /-- `e² = e` pointwise. -/
-theorem idemFn_idem {α β : ExtNat} (x : Mor α β) (a : El α) :
+public theorem idemFn_idem {α β : ExtNat} (x : Mor α β) (a : El α) :
     idemFn x (idemFn x a) = idemFn x a := by
   apply toNat_inj
   rw [show toNat (idemFn x (idemFn x a)) = leastAgree (morN x) (toNat (idemFn x a)) from
@@ -1359,7 +1361,7 @@ theorem idemFn_idem {α β : ExtNat} (x : Mor α β) (a : El α) :
   exact leastAgree_idem _ _
 
 /-- `e` merges exactly as much as `x` does. -/
-theorem idemFn_congr {α β : ExtNat} (x : Mor α β) {a b : El α} (h : x.1 a = x.1 b) :
+public theorem idemFn_congr {α β : ExtNat} (x : Mor α β) {a b : El α} (h : x.1 a = x.1 b) :
     idemFn x a = idemFn x b := by
   apply toNat_inj
   rw [show toNat (idemFn x a) = leastAgree (morN x) (toNat a) from toNat_elOf _ _,
@@ -1368,7 +1370,7 @@ theorem idemFn_congr {α β : ExtNat} (x : Mor α β) {a b : El α} (h : x.1 a =
 
 /-- `e` is recursive: unbounded μ-search for the least agreeing index
     (it terminates because the input itself agrees). -/
-theorem idemFn_isMor {α β : ExtNat} (x : Mor α β) : IsMor α α (idemFn x) := by
+public theorem idemFn_isMor {α β : ExtNat} (x : Mor α β) : IsMor α α (idemFn x) := by
   match α, x with
   | some n, x => exact trivial
   | none, x =>
@@ -1393,22 +1395,22 @@ theorem idemFn_isMor {α β : ExtNat} (x : Mor α β) : IsMor α α (idemFn x) :
     exact h.congr fun k => (toNat_elOf _ _ : toNat (idemFn x k) = _).symm
 
 /-- §1.572's idempotent as a morphism of R. -/
-noncomputable def eMor {α β : ExtNat} (x : α ⟶ β) : α ⟶ α := ⟨idemFn x, idemFn_isMor x⟩
+@[expose] public noncomputable def eMor {α β : ExtNat} (x : α ⟶ β) : α ⟶ α := ⟨idemFn x, idemFn_isMor x⟩
 
 /-- Generic (any category with pullbacks): if `kp₁(u) ≫ w = kp₂(u) ≫ w` then
     `level(u) ⊂ level(w)` — the kernel-pair comparison is a pullback lift. -/
-theorem kernelPairRel_le_of_comm {𝒟 : Type u} [Cat.{v} 𝒟] [HasTerminal 𝒟]
+public theorem kernelPairRel_le_of_comm {𝒟 : Type u} [Cat.{v} 𝒟] [HasTerminal 𝒟]
     [HasBinaryProducts 𝒟] [HasPullbacks 𝒟] {A B C : 𝒟} (u : A ⟶ B) (w : A ⟶ C)
     (h : kp₁ (f := u) ≫ w = kp₂ (f := u) ≫ w) :
     (kernelPairRel u) ⊂ (kernelPairRel w) :=
   ⟨⟨(HasPullbacks.has w w).lift ⟨_, kp₁ (f := u), kp₂ (f := u), h⟩,
     kp_lift_p₁ _ _ h, kp_lift_p₂ _ _ h⟩⟩
 
-noncomputable instance : HasPullbacks ExtNat :=
+@[expose] public noncomputable instance : HasPullbacks ExtNat :=
   ⟨fun f g => products_equalizers_implies_pullbacks f g⟩
 
 /-- `e` and `x` have the same level (§1.572; the two `⊂` of §1.571's hypothesis). -/
-theorem eMor_same_level {α β : ExtNat} (x : α ⟶ β) :
+public theorem eMor_same_level {α β : ExtNat} (x : α ⟶ β) :
     (kernelPairRel (eMor x)) ⊂ (kernelPairRel x) ∧
     (kernelPairRel x) ⊂ (kernelPairRel (eMor x)) := by
   constructor
@@ -1428,7 +1430,7 @@ theorem eMor_same_level {α β : ExtNat} (x : α ⟶ β) :
 
 /-- **§1.572, the factorization**: every morphism of R factors as a left-invertible
     followed by a monic — §1.571 instantiated with `e(n) = min{ i ≤ n | x(i) = x(n) }`. -/
-theorem rFactorization {α β : ExtNat} (x : α ⟶ β) :
+public theorem rFactorization {α β : ExtNat} (x : α ⟶ β) :
     ∃ (C : ExtNat) (p : α ⟶ C) (n : C ⟶ β),
       (∃ s : C ⟶ α, s ≫ p = Cat.id C) ∧ Monic n ∧ p ≫ n = x :=
   ac_factorization_via_idempotent
@@ -1436,7 +1438,7 @@ theorem rFactorization {α β : ExtNat} (x : α ⟶ β) :
       (eMor_same_level x).1, (eMor_same_level x).2⟩) x
 
 /-- The factorization data, extracted by choice. -/
-noncomputable def facData {α β : ExtNat} (x : α ⟶ β) :
+@[expose] public noncomputable def facData {α β : ExtNat} (x : α ⟶ β) :
     Σ' (C : ExtNat) (p : α ⟶ C) (n : C ⟶ β) (s : C ⟶ α),
       s ≫ p = Cat.id C ∧ Monic n ∧ p ≫ n = x :=
   Classical.choice <| by
@@ -1445,7 +1447,7 @@ noncomputable def facData {α β : ExtNat} (x : α ⟶ β) :
 
 /-- Images, CONSTRUCTED from the factorization: the image of `x` is the monic
     leg `n`; minimality holds because the split `s` retracts any competitor. -/
-noncomputable instance : HasImages ExtNat where
+@[expose] public noncomputable instance : HasImages ExtNat where
   image {α β} x := ⟨(facData x).1, (facData x).2.2.1, (facData x).2.2.2.2.2.1⟩
   isImage {α β} x := by
     obtain ⟨C, p, n, s, hs, hn, hfac⟩ := facData x
@@ -1462,7 +1464,7 @@ noncomputable instance : HasImages ExtNat where
         _ = n := Cat.id_comp n
 
 /-- **AC**: every cover of R splits (covers are exactly the split epis). -/
-theorem cover_split {α β : ExtNat} (f : α ⟶ β) (hc : Cover f) :
+public theorem cover_split {α β : ExtNat} (f : α ⟶ β) (hc : Cover f) :
     ∃ s : β ⟶ α, s ≫ f = Cat.id β := by
   obtain ⟨C, p, n, s, hs, hn, hfac⟩ := facData f
   have hiso : IsIso n := hc n p hn hfac
@@ -1478,7 +1480,7 @@ theorem cover_split {α β : ExtNat} (f : α ⟶ β) (hc : Cover f) :
 /-- Pullbacks transfer covers: covers split, and split epis transfer along any
     pullback square (Freyd §1.57: "left-invertibles are always covers and are
     always transferred by pullbacks"). -/
-instance : PullbacksTransferCovers ExtNat where
+@[expose] public instance : PullbacksTransferCovers ExtNat where
   pullbacks_transfer_covers {A B C} {f g} c hpb hf := by
     obtain ⟨s, hs⟩ := cover_split f hf
     have hw : (g ≫ s) ≫ f = Cat.id C ≫ g := by
@@ -1488,12 +1490,12 @@ instance : PullbacksTransferCovers ExtNat where
     exact cover_of_section c.π₂ u hu2 m g' hm hgm
 
 /-- **§1.572 headline (positive part)**: R is a regular category. -/
-noncomputable instance : RegularCategory ExtNat := {}
+@[expose] public noncomputable instance : RegularCategory ExtNat := {}
 
-theorem all_choice : ∀ C : ExtNat, Choice C :=
+public theorem all_choice : ∀ C : ExtNat, Choice C :=
   choice_iff_projective.mpr (fun _ _ f hcov => cover_split f hcov)
 
 /-- **§1.572 headline**: R is an AC regular category. -/
-noncomputable instance : ACRegularCategory ExtNat := { all_choice := all_choice }
+@[expose] public noncomputable instance : ACRegularCategory ExtNat := { all_choice := all_choice }
 
 end Freyd.Rcat

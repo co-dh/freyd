@@ -1,7 +1,9 @@
-import Freyd.S1_48_RationalCapitalization
-import Freyd.S1_546_SliceWellPointed
-import Freyd.S1_47
-import Freyd.S1_36
+module
+
+public import Freyd.S1_48_RationalCapitalization
+public import Freyd.S1_546_SliceWellPointed
+public import Freyd.S1_47
+public import Freyd.S1_36
 
 /-! # §1.543 C — the §1.547 slice equivalence interface, and the precise well-pointedness gap
 
@@ -83,7 +85,7 @@ theorem bridge_roundtrip_g {X Y : PairObj 𝒞} (m : PairHom X Y) :
     map `φ` over `∏Y°` from the reindexed `pairSliceObj X` to `pairSliceObj Y`, `pairHomToSlice` of
     `pairHomOfSlice hsub φ` has the SAME underlying `.f = φ.f`.  (Equality as `OverHom`s then follows
     from `OverHom.ext`, the slice-hom extensionality.) -/
-theorem bridge_roundtrip_f {X Y : PairObj 𝒞} (hsub : ∀ T ∈ Y.targets, T ∈ X.targets)
+public theorem bridge_roundtrip_f {X Y : PairObj 𝒞} (hsub : ∀ T ∈ Y.targets, T ∈ X.targets)
     (φ : OverHom (reindexObj (listProdRestrict X.targets Y.targets hsub) (pairSliceObj X))
                  (pairSliceObj Y)) :
     (pairHomToSlice (pairHomOfSlice hsub φ)).f = φ.f := rfl
@@ -106,7 +108,7 @@ variable [PullbacksTransferCovers 𝒞]
     reduction — "every subobject of `AB` is of the form `AB'`" — which is NOT elementary in the plain
     slice (`graph_satisfies_hyps` refutes the naive form; the genuine reduction lives in the
     localization layer).  Naming it makes the well-pointedness payoff machine-checkable. -/
-def ProperMonoIsProductForm (P A : 𝒞) : Prop :=
+@[expose] public def ProperMonoIsProductForm (P A : 𝒞) : Prop :=
   ∀ {D : Over P} (m : D ⟶ sliceEmbedObj P A), OverMono m → ¬ OverIso m →
     ∃ (B' : 𝒞) (i : B' ⟶ P) (_ : Monic i) (_ : ¬ IsIso i)
       (e : D ⟶ (⟨prod A B', snd ≫ i⟩ : Over P)),
@@ -119,7 +121,7 @@ def ProperMonoIsProductForm (P A : 𝒞) : Prop :=
     `i : B' ↪ P` proper; `prodFormMono_misses_slicePoint` gives a g-point missed by `prodFormMono i`;
     any factorization through `m` would, post-composed with `e⁻¹`, factor through `prodFormMono i`,
     contradiction.  This is the Sorry-free half — the only open input is `hpf`. -/
-theorem wellPointed_of_productForm {P A : 𝒞} (g : P ⟶ A) (hpf : ProperMonoIsProductForm P A) :
+public theorem wellPointed_of_productForm {P A : 𝒞} (g : P ⟶ A) (hpf : ProperMonoIsProductForm P A) :
     @WellPointed (Over P) _ (overHasTerminal P) (sliceEmbedObj P A) := by
   intro D m hm hniso
   obtain ⟨B', i, hi_mono, hi_proper, e, he_iso, hfac⟩ := hpf m hm hniso
@@ -137,7 +139,7 @@ theorem wellPointed_of_productForm {P A : 𝒞} (g : P ⟶ A) (hpf : ProperMonoI
     (`RationalCapitalization.lean`) — byte-for-byte the book's `WellPointed` — with its lone `Sorry`
     replaced by the honest named hypothesis.  The g-point witness is the projection
     `listProdProj U k : ∏U → U.get k`. -/
-theorem sliceEmbed_factor_wellPointed_of_productForm (U : List 𝒞) (k : Fin U.length)
+public theorem sliceEmbed_factor_wellPointed_of_productForm (U : List 𝒞) (k : Fin U.length)
     (hpf : ProperMonoIsProductForm (listProd U) (U.get k)) :
     @WellPointed (Over (listProd U)) _ (overHasTerminal (listProd U))
       (sliceEmbedObj (listProd U) (U.get k)) :=
@@ -178,7 +180,7 @@ theorem sliceEmbed_factor_wellPointed_of_productForm (U : List 𝒞) (k : Fin U.
     factor `U.get k` not isomorphic to `1`, refuting the hypothesis.  (A product-form decomposition
     `e ⊚ prodFormMono i = m` with `e` iso would give `e.f ≫ snd` a section of `i`, forcing the proper
     base mono `i` to be iso — the contradiction inside the proof.) -/
-theorem properMono_forces_graph_iso (U : List 𝒞) (k : Fin U.length)
+public theorem properMono_forces_graph_iso (U : List 𝒞) (k : Fin U.length)
     (hpf : ProperMonoIsProductForm (listProd U) (U.get k)) :
     IsIso (pair (listProdProj U k) (Cat.id (listProd U))) := by
   obtain ⟨m, hmf, hmono, _hsec⟩ := graph_satisfies_hyps U k
@@ -211,7 +213,7 @@ theorem properMono_forces_graph_iso (U : List 𝒞) (k : Fin U.length)
     hypothesis cannot hold for a generic well-supported `A` — it presupposes capitalization.  This
     pins `ProperMonoIsProductForm` as the WRONG statement (over-strong), exactly as Freyd's §1.546
     (which uses only *downstairs* subobjects) avoids. -/
-theorem properMono_one_forces_wellPointed (A : 𝒞) (g : (one : 𝒞) ⟶ A)
+public theorem properMono_one_forces_wellPointed (A : 𝒞) (g : (one : 𝒞) ⟶ A)
     (hpf : ProperMonoIsProductForm (one : 𝒞) A) : WellPointed A :=
   factorWP_imp_wp A (wellPointed_of_productForm g hpf)
 
@@ -229,7 +231,7 @@ section ProductForm
     `CartesianCategory` instance-coherence clash of `IsSpecial`): the right-hand product `m × id_B`
     of a proper mono `m` with witnessing proper base subobject is again proper.  `IsSpecial 𝒞`
     (`S1_47.lean`) supplies exactly this when the ambient products are the `CartesianCategory` ones. -/
-def SpecialHere : Prop :=
+@[expose] public def SpecialHere : Prop :=
   ∀ {A' A B' B : 𝒞} (m : A' ⟶ A) (n : B' ⟶ B), ProperMono m → ProperMono n →
     ProperMono (pair (fst (A := A') (B := B) ≫ m) (snd (A := A') (B := B)))
 
@@ -240,7 +242,7 @@ def SpecialHere : Prop :=
     properness is exactly the specialness instance at `(i, j)`.  NOTE properness here is NOT free —
     without specialness it FAILS (§1.475 Z-sets, `prodEndo_faithful_of_embedding`); specialness + a
     proper subobject of `A` is the genuine hypothesis. -/
-theorem prodFormMono_proper (hSp : SpecialHere (𝒞 := 𝒞)) {A P B' : 𝒞} (i : B' ⟶ P)
+public theorem prodFormMono_proper (hSp : SpecialHere (𝒞 := 𝒞)) {A P B' : 𝒞} (i : B' ⟶ P)
     (hi : ProperMono i) {A'' : 𝒞} (j : A'' ⟶ A) (hj : ProperMono j) :
     ¬ OverIso (prodFormMono (A := A) i) := by
   intro hiso
@@ -261,7 +263,7 @@ variable [PullbacksTransferCovers 𝒞]
     `sliceFactorPoint A g` for EVERY `g : P → A` (`prodFormMono_misses_slicePoint`).  This is exactly
     the content Freyd's §1.545 relative-capitalization step consumes (downstairs subobjects only) —
     the honest replacement for the false `ProperMonoIsProductForm`. -/
-theorem prodFormMono_wellPointed (hSp : SpecialHere (𝒞 := 𝒞)) {A P B' : 𝒞} (i : B' ⟶ P)
+public theorem prodFormMono_wellPointed (hSp : SpecialHere (𝒞 := 𝒞)) {A P B' : 𝒞} (i : B' ⟶ P)
     (hi : ProperMono i)
     {A'' : 𝒞} (j : A'' ⟶ A) (hj : ProperMono j) (g : P ⟶ A) :
     OverMono (prodFormMono (A := A) i) ∧ ¬ OverIso (prodFormMono (A := A) i) ∧
@@ -306,12 +308,12 @@ variable (U : List 𝒞)
     object bundles a `PairObj` together with a proof that its target list is exactly `U` (in order),
     so it sits over the common base `∏U`.  Morphisms are inherited from `pairsCat` (the subcategory
     is FULL: a `PairOnU`-map is just a `PairHom` of the underlying objects). -/
-structure PairOnU where
+public structure PairOnU where
   obj : PairObj 𝒞
   htgt : obj.targets = U
 
 /-- Homs of `PairOnU U` are the `PairHom`s of underlying objects (full subcategory). -/
-instance : Cat.{u} (PairOnU U) where
+@[expose] public instance : Cat.{u} (PairOnU U) where
   Hom X Y := PairHom X.obj Y.obj
   id X := PairHom.id X.obj
   comp f g := f.comp g
@@ -322,7 +324,7 @@ instance : Cat.{u} (PairOnU U) where
 /-- **The object map `A*|U → A/(∏U)`.**  `X = ⟨(A,F), F° = U⟩ ↦ ⟨A, factorMap : A → ∏U⟩`.  This is
     `pairSliceObj` of the underlying object, whose base `∏(F°)` is rewritten to `∏U` along `X.htgt`.
     Concretely `⟨X.obj.A, X.htgt ▸ pairFactorMap X.obj⟩ : Over (listProd U)`. -/
-def pairOnUSlice {U : List 𝒞} (X : PairOnU U) : Over (listProd U) :=
+@[expose] public def pairOnUSlice {U : List 𝒞} (X : PairOnU U) : Over (listProd U) :=
   ⟨X.obj.A, pairFactorMap X.obj ≫ eqToHom (congrArg listProd X.htgt)⟩
 
 @[simp] theorem pairOnUSlice_hom {U : List 𝒞} (X : PairOnU U) :
@@ -339,7 +341,7 @@ def pairOnUSlice {U : List 𝒞} (X : PairOnU U) : Over (listProd U) :=
     equal.  (This is exactly why `listProdRestrict U U` acts as the identity on factor maps even when
     `U` has repeated targets — the decidable search may pick a different coordinate, but distinctness
     makes all coordinates of a given target carry the same arrow.) -/
-theorem pairFactorMap_restrict_self [HasPullbacks 𝒞] (X : PairObj 𝒞)
+public theorem pairFactorMap_restrict_self [HasPullbacks 𝒞] (X : PairObj 𝒞)
     (h : ∀ T ∈ X.targets, T ∈ X.targets) :
     pairFactorMap X ≫ listProdRestrict X.targets X.targets h = pairFactorMap X := by
   apply listProd_hom_ext X.targets
@@ -373,7 +375,7 @@ theorem pairFactorMap_restrict_self [HasPullbacks 𝒞] (X : PairObj 𝒞)
 /-- **Self base-restriction as `eqToHom`, under the factor map.**  When the target list `l` equals
     `Xo.targets`, `pairFactorMap Xo ≫ listProdRestrict Xo.targets l h` is `pairFactorMap Xo ≫
     eqToHom`.  `l` is a free variable, so `cases e` reduces this to `pairFactorMap_restrict_self`. -/
-theorem pairFactorMap_restrict_eqToHom [HasPullbacks 𝒞] (Xo : PairObj 𝒞) (l : List 𝒞)
+public theorem pairFactorMap_restrict_eqToHom [HasPullbacks 𝒞] (Xo : PairObj 𝒞) (l : List 𝒞)
     (h : ∀ T ∈ l, T ∈ Xo.targets) (e : Xo.targets = l) :
     pairFactorMap Xo ≫ listProdRestrict Xo.targets l h
       = pairFactorMap Xo ≫ eqToHom (congrArg listProd e) := by
@@ -384,7 +386,7 @@ theorem pairFactorMap_restrict_eqToHom [HasPullbacks 𝒞] (Xo : PairObj 𝒞) (
     `m.g ≫ (pairOnUSlice Y).hom = (pairOnUSlice X).hom`.  After `subst`ing both `htgt` proofs, this
     is `pairHom_commutes_restrict` plus `pairFactorMap_restrict_self` (both targets are `U`, so the
     base restriction is the identity on factor maps). -/
-def pairOnUSliceMap [HasPullbacks 𝒞] {U : List 𝒞} {X Y : PairOnU U} (m : PairHom X.obj Y.obj) :
+@[expose] public def pairOnUSliceMap [HasPullbacks 𝒞] {U : List 𝒞} {X Y : PairOnU U} (m : PairHom X.obj Y.obj) :
     OverHom (pairOnUSlice X) (pairOnUSlice Y) :=
   ⟨m.g, by
     simp only [pairOnUSlice_hom]
@@ -405,7 +407,7 @@ def pairOnUSliceMap [HasPullbacks 𝒞] {U : List 𝒞} {X Y : PairOnU U} (m : P
     the common base `∏U`); morphisms `↦ pairOnUSliceMap` (the underlying arrow `m.g`, the slice
     triangle from the bridge).  Functoriality is `OverHom.ext` on underlying arrows (`id ↦ id`,
     `m.g₁ ≫ m.g₂ ↦ (m₁ ≫ m₂).g`). -/
-def pairOnUToSlice [HasPullbacks 𝒞] {U : List 𝒞} :
+@[expose] public def pairOnUToSlice [HasPullbacks 𝒞] {U : List 𝒞} :
     Functor (PairOnU U) (Over (listProd U)) where
   obj X := pairOnUSlice X
   map (m : PairHom _ _) := pairOnUSliceMap m
@@ -427,13 +429,13 @@ def pairOnUToSlice [HasPullbacks 𝒞] {U : List 𝒞} :
 /-- **`Φ : A*|U → A/(∏U)` is an `Embedding`** (injective on homs).  A `PairOnU`-hom is determined by
     its underlying `𝒞`-arrow `m.g`, which is `Φ.map`'s `.f`; equality of `.f` gives equality of `m`
     by `PairHom.ext`. -/
-theorem pairOnUToSlice_embedding [HasPullbacks 𝒞] (U : List 𝒞) :
+public theorem pairOnUToSlice_embedding [HasPullbacks 𝒞] (U : List 𝒞) :
     Embedding (pairOnUToSlice (U := U)) := by
   intro X Y m₁ m₂ h
   exact PairHom.ext (congrArg OverHom.f h)
 
 /-- For `X Y : PairOnU U`, `Y°` is a subset of `X°` (both equal `U`).  The bridge's `hsub`. -/
-theorem pairOnU_targets_sub {U : List 𝒞} (X Y : PairOnU U) :
+public theorem pairOnU_targets_sub {U : List 𝒞} (X Y : PairOnU U) :
     ∀ T ∈ Y.obj.targets, T ∈ X.obj.targets := by
   intro T hT; rw [X.htgt]; rw [Y.htgt] at hT; exact hT
 
@@ -443,7 +445,7 @@ theorem pairOnU_targets_sub {U : List 𝒞} (X Y : PairOnU U) :
     square `φ.f ≫ pairFactorMap Y.obj = pairFactorMap X.obj ≫ listProdRestrict X° Y° hsub`.  Proof:
     cancel the (iso) `eqToHom hY` on the right, fuse `eqToHom hX ≫ eqToHom hY⁻¹ = eqToHom (X°=Y°)`,
     and apply `pairFactorMap_restrict_eqToHom` to turn that into the base restriction. -/
-theorem pairOnUSlice_triangle_to_bridge [HasPullbacks 𝒞] {U : List 𝒞} {X Y : PairOnU U}
+public theorem pairOnUSlice_triangle_to_bridge [HasPullbacks 𝒞] {U : List 𝒞} {X Y : PairOnU U}
     (φ : OverHom (pairOnUSlice X) (pairOnUSlice Y)) :
     φ.f ≫ pairFactorMap Y.obj
       = pairFactorMap X.obj
@@ -465,7 +467,7 @@ theorem pairOnUSlice_triangle_to_bridge [HasPullbacks 𝒞] {U : List 𝒞} {X Y
     of a `PairHom`.  The bridge fullness `pairHomOfSlice` builds that `PairHom` from the reindexed
     square `pairOnUSlice_triangle_to_bridge`; its underlying `.g` is `φ.f`, so `Φ.map` of it is `φ`
     (`OverHom.ext`). -/
-theorem pairOnUToSlice_full [HasPullbacks 𝒞] (U : List 𝒞) :
+public theorem pairOnUToSlice_full [HasPullbacks 𝒞] (U : List 𝒞) :
     Full (pairOnUToSlice (U := U)) := by
   intro X Y φ
   refine ⟨pairHomOfSlice (pairOnU_targets_sub X Y) ⟨φ.f, ?_⟩, OverHom.ext rfl⟩
@@ -488,13 +490,13 @@ theorem pairOnUToSlice_full [HasPullbacks 𝒞] (U : List 𝒞) :
 
 /-- The padding factor list of `h : A → ∏U`: the components `h ≫ projₖ`, one per coordinate of
     `∏U`, recursing through `∏(T::U) = T × ∏U`.  `targets = U` definitionally; `factorTuple = h`. -/
-def padFactors : ∀ (U : List 𝒞) {A : 𝒞}, (A ⟶ listProd U) → List (Σ T : 𝒞, A ⟶ T)
+@[expose] public def padFactors : ∀ (U : List 𝒞) {A : 𝒞}, (A ⟶ listProd U) → List (Σ T : 𝒞, A ⟶ T)
   | [],     _, _ => []
   | T :: U, _, h => ⟨T, h ≫ (fst : prod T (listProd U) ⟶ T)⟩
                       :: padFactors U (h ≫ (snd : prod T (listProd U) ⟶ listProd U))
 
 /-- The padding factor list's targets are exactly `U`. -/
-theorem padFactors_targets : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listProd U),
+public theorem padFactors_targets : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listProd U),
     (padFactors U h).map (·.1) = U
   | [],     _, _ => rfl
   | T :: U, _, h =>
@@ -503,7 +505,7 @@ theorem padFactors_targets : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listProd 
 /-- `eqToHom` along a `listProd` of a `T :: ·` congruence splits as `pair fst (snd ≫ eqToHom)`.
     Proof: `cases` the list equality `e₀` (its LHS `l` is free), then both sides are `id` /
     `pair fst snd`. -/
-theorem eqToHom_listProd_cons {T : 𝒞} {l : List 𝒞} {U : List 𝒞} (e₀ : l = U) :
+public theorem eqToHom_listProd_cons {T : 𝒞} {l : List 𝒞} {U : List 𝒞} (e₀ : l = U) :
     eqToHom (congrArg listProd (congrArg (T :: ·) e₀))
       = pair (fst : prod T (listProd l) ⟶ T) (snd ≫ eqToHom (congrArg listProd e₀)) := by
   cases e₀; simp only [eqToHom_refl, Cat.comp_id]; exact pair_fst_snd.symm
@@ -511,7 +513,7 @@ theorem eqToHom_listProd_cons {T : 𝒞} {l : List 𝒞} {U : List 𝒞} (e₀ :
 /-- The padding factor list reconstructs `h`: composing `factorTuple (padFactors U h)` with the
     `eqToHom` re-typing its codomain `∏((padFactors U h)°)` to `∏U` recovers `h`.  By the product
     eta law: each step is `pair (h≫fst) (h≫snd) = h`. -/
-theorem padFactors_factorTuple : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listProd U),
+public theorem padFactors_factorTuple : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listProd U),
     factorTuple (padFactors U h) ≫ eqToHom (congrArg listProd (padFactors_targets U h)) = h
   | [],     _, h => by
       simp only [padFactors, factorTuple_nil]
@@ -542,7 +544,7 @@ theorem padFactors_factorTuple : ∀ (U : List 𝒞) {A : 𝒞} (h : A ⟶ listP
         hfst, hsnd, ← pair_uniq _ _ h rfl rfl]
 
 /-- A member of `padFactors U h` has its target IN `U` (its factors record `U`'s coordinates). -/
-theorem padFactors_mem_target {U : List 𝒞} {A : 𝒞} (h : A ⟶ listProd U)
+public theorem padFactors_mem_target {U : List 𝒞} {A : 𝒞} (h : A ⟶ listProd U)
     {r : Σ T : 𝒞, A ⟶ T} (hr : r ∈ padFactors U h) : r.1 ∈ U := by
   have : r.1 ∈ (padFactors U h).map (·.1) := List.mem_map.2 ⟨r, hr, rfl⟩
   rwa [padFactors_targets] at this
@@ -550,7 +552,7 @@ theorem padFactors_mem_target {U : List 𝒞} {A : 𝒞} (h : A ⟶ listProd U)
 /-- **The padding factor list is `distinct`** (under `U.Nodup`): two factors of the same target are
     equal.  By induction on `U`: a head factor `⟨T, h≫fst⟩` and a tail factor (target `∈ U`) cannot
     share a target (`T ∉ U` by `Nodup`); two tail factors are handled by the IH. -/
-theorem padFactors_distinct : ∀ (U : List 𝒞), U.Nodup → ∀ {A : 𝒞} (h : A ⟶ listProd U)
+public theorem padFactors_distinct : ∀ (U : List 𝒞), U.Nodup → ∀ {A : 𝒞} (h : A ⟶ listProd U)
     (r : Σ T : 𝒞, A ⟶ T), r ∈ padFactors U h → ∀ (r' : Σ T : 𝒞, A ⟶ T), r' ∈ padFactors U h →
     ∀ (heq : r.1 = r'.1), heq ▸ r.2 = r'.2
   | [], _, _, _, _, hr, _, _, _ => absurd hr (by simp [padFactors])
@@ -570,7 +572,7 @@ theorem padFactors_distinct : ∀ (U : List 𝒞), U.Nodup → ∀ {A : 𝒞} (h
         exact padFactors_distinct U hnd.2 (h ≫ snd) r hr r' hr' heq
 
 /-- **The padded `PairObj` over the base `∏U`** (needs each `T ∈ U` well-supported and `U.Nodup`). -/
-def padPairObj (U : List 𝒞) (hws : ∀ T ∈ U, WellSupported T) (hnd : U.Nodup)
+@[expose] public def padPairObj (U : List 𝒞) (hws : ∀ T ∈ U, WellSupported T) (hnd : U.Nodup)
     {A : 𝒞} (h : A ⟶ listProd U) : PairOnU U where
   obj :=
     { A := A
@@ -582,7 +584,7 @@ def padPairObj (U : List 𝒞) (hws : ∀ T ∈ U, WellSupported T) (hnd : U.Nod
 /-- **The padded pair recovers the slice object on the nose.**  `pairOnUSlice (padPairObj U _ _ h)`
     is literally `⟨A, h⟩`: its structure map is `factorTuple (padFactors U h) ≫ eqToHom = h`
     (`padFactors_factorTuple`).  So no nontrivial iso is needed — the representative is exact. -/
-theorem pairOnUSlice_padPairObj [HasPullbacks 𝒞] (U : List 𝒞) (hws : ∀ T ∈ U, WellSupported T)
+public theorem pairOnUSlice_padPairObj [HasPullbacks 𝒞] (U : List 𝒞) (hws : ∀ T ∈ U, WellSupported T)
     (hnd : U.Nodup) {A : 𝒞} (h : A ⟶ listProd U) :
     pairOnUSlice (padPairObj U hws hnd h) = (⟨A, h⟩ : Over (listProd U)) := by
   show (⟨A, factorTuple (padFactors U h) ≫ eqToHom (congrArg listProd (padFactors_targets U h))⟩
@@ -593,7 +595,7 @@ theorem pairOnUSlice_padPairObj [HasPullbacks 𝒞] (U : List 𝒞) (hws : ∀ T
     SET `U` of well-supported objects (`U.Nodup`, each `T ∈ U` well-supported), every slice object
     `Z : Over (∏U)` is `Φ` of a `PairOnU`-object (the padded `padPairObj` of `Z.hom`), and in fact
     EQUAL to it (`pairOnUSlice_padPairObj`), so the witnessing iso is the identity. -/
-theorem pairOnUToSlice_representativeImage [HasPullbacks 𝒞] (U : List 𝒞)
+public theorem pairOnUToSlice_representativeImage [HasPullbacks 𝒞] (U : List 𝒞)
     (hws : ∀ T ∈ U, WellSupported T) (hnd : U.Nodup) :
     HasRepresentativeImage (pairOnUToSlice (U := U)) := by
   intro Z
@@ -607,7 +609,7 @@ theorem pairOnUToSlice_representativeImage [HasPullbacks 𝒞] (U : List 𝒞)
     `EquivalenceFunctor` (an embedding, full, with representative image — i.e. fully faithful and
     essentially surjective).  This is Freyd §1.547 (lines 4958-4961) at a FIXED base, packaging the
     Sorry-free bridge `pairHomToSlice`/`pairHomOfSlice` plus the padding `padPairObj`. -/
-theorem pairOnUToSlice_equivalence [HasPullbacks 𝒞] (U : List 𝒞)
+public theorem pairOnUToSlice_equivalence [HasPullbacks 𝒞] (U : List 𝒞)
     (hws : ∀ T ∈ U, WellSupported T) (hnd : U.Nodup) :
     EquivalenceFunctor (pairOnUToSlice (U := U)) :=
   ⟨pairOnUToSlice_embedding U, pairOnUToSlice_full U,
@@ -617,14 +619,3 @@ end FixedU
 
 end Freyd
 
-#print axioms Freyd.bridge_roundtrip_f
-#print axioms Freyd.wellPointed_of_productForm
-#print axioms Freyd.sliceEmbed_factor_wellPointed_of_productForm
-#print axioms Freyd.pairOnUToSlice_full
-#print axioms Freyd.padFactors_factorTuple
-#print axioms Freyd.pairOnUToSlice_representativeImage
-#print axioms Freyd.pairOnUToSlice_equivalence
-#print axioms Freyd.properMono_forces_graph_iso
-#print axioms Freyd.properMono_one_forces_wellPointed
-#print axioms Freyd.prodFormMono_proper
-#print axioms Freyd.prodFormMono_wellPointed

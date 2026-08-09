@@ -11,16 +11,18 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_34
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_58
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_34
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_58
 
 
 open Freyd
@@ -39,7 +41,7 @@ namespace Freyd
   finite covers (§1.6). -/
 
 /-- Subobjects have binary unions (join). -/
-class HasSubobjectUnions (𝒞 : Type u) [Cat.{v} 𝒞] [HasImages 𝒞] where
+public class HasSubobjectUnions (𝒞 : Type u) [Cat.{v} 𝒞] [HasImages 𝒞] where
   union : ∀ {B : 𝒞} (_ _ : Subobject 𝒞 B), Subobject 𝒞 B
   union_left  : ∀ {B} (S T : Subobject 𝒞 B), S.le (union S T)
   union_right : ∀ {B} (S T : Subobject 𝒞 B), T.le (union S T)
@@ -48,7 +50,7 @@ class HasSubobjectUnions (𝒞 : Type u) [Cat.{v} 𝒞] [HasImages 𝒞] where
 /-- Inverse image f#: 𝒫(B) → 𝒫(A).  For subobject B'↣B, f#(B')
     is the pullback of B'.arr along f.  The pullback of a monic is
     monic (standard; proof deferred). -/
-def InverseImage (f : A ⟶ B) (B' : Subobject 𝒞 B) [HasPullbacks 𝒞] : Subobject 𝒞 A :=
+@[expose] public def InverseImage (f : A ⟶ B) (B' : Subobject 𝒞 B) [HasPullbacks 𝒞] : Subobject 𝒞 A :=
   let pb := HasPullbacks.has f B'.arr
   { dom := pb.cone.pt
     arr := pb.cone.π₁
@@ -65,7 +67,7 @@ def InverseImage (f : A ⟶ B) (B' : Subobject 𝒞 B) [HasPullbacks 𝒞] : Sub
       rw [pb.lift_uniq c u rfl rfl, pb.lift_uniq c v huv.symm hπ₂.symm] }
 
 /-- Inverse image is order-preserving (§1.451): `S ≤ T` implies `f#S ≤ f#T`. -/
-theorem inverseImage_mono [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B)
+public theorem inverseImage_mono [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B)
     {S T : Subobject 𝒞 B} (h : S.le T) :
     (InverseImage f S).le (InverseImage f T) := by
   obtain ⟨k, hk⟩ := h
@@ -78,7 +80,7 @@ theorem inverseImage_mono [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B)
 
 /-- The inverse image of the entire subobject contains the entire subobject:
     `1_A ≤ f#(1_B)`. -/
-theorem entire_le_inverseImage_entire [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) :
+public theorem entire_le_inverseImage_entire [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) :
     (Subobject.entire A).le (InverseImage f (Subobject.entire B)) := by
   let pb := HasPullbacks.has f (Subobject.entire B).arr
   let c : Cone f (Subobject.entire B).arr :=
@@ -93,7 +95,7 @@ theorem entire_le_inverseImage_entire [HasPullbacks 𝒞] {A B : 𝒞} (f : A �
     `Isomorphic` of the domains: the mediating maps commute with the
     monics into A, so they can serve as the factorizing maps that
     `Subobject.le` (and hence the §1.62 relational lattice) requires. -/
-def inverseImage_preserves_unions [HasImages 𝒞] [HasSubobjectUnions 𝒞] {A B : 𝒞} (f : A ⟶ B) [HasPullbacks 𝒞] : Prop :=
+@[expose] public def inverseImage_preserves_unions [HasImages 𝒞] [HasSubobjectUnions 𝒞] {A B : 𝒞} (f : A ⟶ B) [HasPullbacks 𝒞] : Prop :=
   ∀ (S T : Subobject 𝒞 B),
     (InverseImage f (HasSubobjectUnions.union S T)).le
         (HasSubobjectUnions.union (InverseImage f S) (InverseImage f T))
@@ -102,7 +104,7 @@ def inverseImage_preserves_unions [HasImages 𝒞] [HasSubobjectUnions 𝒞] {A 
 
 /-- A PRE-LOGOS (§1.6): regular + subobject lattices + inverse image
     preserves finite unions (including empty joins). -/
-class PreLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class PreLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends
     RegularCategory 𝒞, HasSubobjectUnions 𝒞 where
   -- empty join (bottom) of each subobject lattice
   bottom : ∀ (A : 𝒞), Subobject 𝒞 A
@@ -173,11 +175,11 @@ section BinRelSub
 variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
 /-- The subobject of `A×B` represented by a relation `R : A → B`: its monic pairing. -/
-def relSub {A B : 𝒞} (R : BinRel 𝒞 A B) : Subobject 𝒞 (prod A B) :=
+@[expose] public def relSub {A B : 𝒞} (R : BinRel 𝒞 A B) : Subobject 𝒞 (prod A B) :=
   ⟨R.src, pair R.colA R.colB, monic_pair_of_monicPair R.colA R.colB R.isMonicPair⟩
 
 /-- A subobject of `A×B` read back as a relation `A → B` (inverse of `relSub`). -/
-def subRel {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) : BinRel 𝒞 A B where
+@[expose] public def subRel {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) : BinRel 𝒞 A B where
   src := S.dom
   colA := S.arr ≫ fst
   colB := S.arr ≫ snd
@@ -189,7 +191,7 @@ def subRel {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) : BinRel 𝒞 A B where
     · rw [Cat.assoc, Cat.assoc]; exact hB
 
 /-- `relSub (subRel S) = S` up to the identification `pair (S.arr≫fst) (S.arr≫snd) = S.arr`. -/
-theorem relSub_subRel_arr {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) :
+public theorem relSub_subRel_arr {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) :
     (relSub (subRel S)).arr = S.arr := by
   show pair (S.arr ≫ fst) (S.arr ≫ snd) = S.arr
   exact (pair_uniq _ _ _ rfl rfl).symm
@@ -197,7 +199,7 @@ theorem relSub_subRel_arr {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) :
 /-- `RelLe R S` is exactly `Subobject.le (relSub R) (relSub S)`: a relation homomorphism
     `h` (commuting with both legs) is the same data as a subobject factorization
     `h ≫ pair S.colA S.colB = pair R.colA R.colB`. -/
-theorem relLe_iff_subLe {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relLe_iff_subLe {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     RelLe R S ↔ (relSub R).le (relSub S) := by
   constructor
   · rintro ⟨⟨h, hA, hB⟩⟩
@@ -214,7 +216,7 @@ theorem relLe_iff_subLe {A B : 𝒞} (R S : BinRel 𝒞 A B) :
         congrArg (· ≫ snd) hh
       rwa [Cat.assoc, snd_pair, snd_pair] at h2
 
-theorem subLe_of_relLe {A B : 𝒞} {R S : BinRel 𝒞 A B}
+public theorem subLe_of_relLe {A B : 𝒞} {R S : BinRel 𝒞 A B}
     (h : RelLe R S) : (relSub R).le (relSub S) := (relLe_iff_subLe R S).1 h
 
 end BinRelSub
@@ -229,7 +231,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasSubob
 
 /-- Union of two relations R, S : A → B (§1.616), COPRODUCT-FREE.
     Read back the subobject-union of the two relation tables `relSub R`, `relSub S`. -/
-def relUnion {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B :=
+@[expose] public def relUnion {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B :=
   subRel (HasSubobjectUnions.union (relSub R) (relSub S))
 
 /-- Notation ∪ for relUnion. -/
@@ -238,32 +240,32 @@ infixl:65 (name := relUnionNotation) " ∪ᵣ " => relUnion
 /-- `relSub (R ∪ᵣ S) = union (relSub R) (relSub S)` — both directions.  `R ∪ᵣ S` is by
     definition `subRel (union …)`, so `relSub (R ∪ᵣ S)` has the same arrow as `union …`
     (`relSub_subRel_arr`), witnessed by the identity. -/
-theorem relSub_union_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relSub_union_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     (relSub (R ∪ᵣ S)).le (HasSubobjectUnions.union (relSub R) (relSub S)) :=
   ⟨Cat.id _, by rw [Cat.id_comp]; exact (relSub_subRel_arr _).symm⟩
 
-theorem relSub_union_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relSub_union_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     (HasSubobjectUnions.union (relSub R) (relSub S)).le (relSub (R ∪ᵣ S)) :=
   ⟨Cat.id _, by rw [Cat.id_comp]; exact relSub_subRel_arr _⟩
 
 /-- R ≤ R ∪ S (left inclusion). -/
-theorem relUnion_le_left {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe R (R ∪ᵣ S) :=
+public theorem relUnion_le_left {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe R (R ∪ᵣ S) :=
   (relLe_iff_subLe R (R ∪ᵣ S)).2 (Subobject.le_trans
     (HasSubobjectUnions.union_left (relSub R) (relSub S)) (relSub_union_ge R S))
 
 /-- S ≤ R ∪ S (right inclusion). -/
-theorem relUnion_le_right {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe S (R ∪ᵣ S) :=
+public theorem relUnion_le_right {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe S (R ∪ᵣ S) :=
   (relLe_iff_subLe S (R ∪ᵣ S)).2 (Subobject.le_trans
     (HasSubobjectUnions.union_right (relSub R) (relSub S)) (relSub_union_ge R S))
 
 /-- Universal property of relUnion: R ≤ U → S ≤ U → R ∪ S ≤ U. -/
-theorem le_relUnion {A B : 𝒞} {R S U : BinRel 𝒞 A B}
+public theorem le_relUnion {A B : 𝒞} {R S U : BinRel 𝒞 A B}
     (hRU : RelLe R U) (hSU : RelLe S U) : RelLe (R ∪ᵣ S) U :=
   (relLe_iff_subLe (R ∪ᵣ S) U).2 (Subobject.le_trans (relSub_union_le R S)
     (HasSubobjectUnions.union_min _ _ _ (subLe_of_relLe hRU) (subLe_of_relLe hSU)))
 
 /-- §1.616: (R ∩ S) ∪ (R ∩ T) ≤ R ∩ (S ∪ T) — the reverse always holds. -/
-theorem rel_union_inter_le {A B : 𝒞} (R S T : BinRel 𝒞 A B) :
+public theorem rel_union_inter_le {A B : 𝒞} (R S T : BinRel 𝒞 A B) :
     RelLe ((R ⊓ S) ∪ᵣ (R ⊓ T)) (R ⊓ (S ∪ᵣ T)) := by
   apply le_relUnion
   · exact le_intersect (intersect_le_left R S) (rel_le_trans (intersect_le_right R S) (relUnion_le_left S T))
@@ -435,7 +437,7 @@ private theorem pushSwap_union_le {A B : 𝒞} (P Q : Subobject 𝒞 (prod A B))
 /-- §1.616: Reciprocation distributes over union: (R ∪ᵣ S)° ≤ S° ∪ᵣ R°.  COPRODUCT-FREE:
     `relSub((R∪ᵣS)°) = swap(union(relSub R)(relSub S))`, and the swap of each piece lands below
     `relSub S°` / `relSub R°` (`relSub_reciprocal`), so `union_min` packages the bound. -/
-theorem relUnion_le_reciprocal {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relUnion_le_reciprocal {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     RelLe (R ∪ᵣ S)° (S° ∪ᵣ R°) := by
   apply (relLe_iff_subLe _ _).2
   -- relSub((R∪ᵣS)°) ≤ pushSwap(relSub(R∪ᵣS)) ≤ pushSwap(union(relSub R)(relSub S))
@@ -451,7 +453,7 @@ theorem relUnion_le_reciprocal {A B : 𝒞} (R S : BinRel 𝒞 A B) :
 
 /-- §1.616: S° ∪ᵣ R° ≤ (R ∪ᵣ S)° (reverse direction).  Apply `relUnion_le_reciprocal` to the
     reciprocals and use involutivity `(·°)° = ·`. -/
-theorem relUnion_reciprocal_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relUnion_reciprocal_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     RelLe (S° ∪ᵣ R°) (R ∪ᵣ S)° := by
   -- relUnion_le_reciprocal (S°) (R°) : (S° ∪ᵣ R°)° ≤ R°° ∪ᵣ S°° = R ∪ᵣ S.
   have h := relUnion_le_reciprocal S° R°
@@ -481,19 +483,19 @@ variable [PreLogos 𝒞]
 
 /-- Post-composition with a fixed mono `m : Z ↣ W` carries `Sub Z` into `Sub W`
     order-preservingly: `push m P := ⟨P.dom, P.arr ≫ m⟩`. -/
-def pushMono {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) (P : Subobject 𝒞 Z) : Subobject 𝒞 W :=
+@[expose] public def pushMono {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) (P : Subobject 𝒞 Z) : Subobject 𝒞 W :=
   ⟨P.dom, P.arr ≫ m, by
     intro X u v huv
     refine P.monic u v (hm _ _ ?_)
     rw [Cat.assoc, Cat.assoc]; exact huv⟩
 
-theorem pushMono_mono {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) {P Q : Subobject 𝒞 Z}
+public theorem pushMono_mono {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) {P Q : Subobject 𝒞 Z}
     (hle : P.le Q) : (pushMono m hm P).le (pushMono m hm Q) := by
   obtain ⟨f, hf⟩ := hle
   exact ⟨f, by show f ≫ (Q.arr ≫ m) = P.arr ≫ m; rw [← Cat.assoc, hf]⟩
 
 /-- `pushMono` reflects `≤`: a factorization through `m` descends because `m` is monic. -/
-theorem pushMono_reflects {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) {P Q : Subobject 𝒞 Z}
+public theorem pushMono_reflects {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) {P Q : Subobject 𝒞 Z}
     (hle : (pushMono m hm P).le (pushMono m hm Q)) : P.le Q := by
   obtain ⟨f, hf⟩ := hle
   exact ⟨f, hm _ _ (by show (f ≫ Q.arr) ≫ m = P.arr ≫ m; rw [Cat.assoc]; exact hf)⟩
@@ -502,7 +504,7 @@ theorem pushMono_reflects {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) {P Q : Subob
     pushed pieces factors through `m` (both pieces do, so `union_min`), giving a subobject `Pre`
     of `Z` with `pushMono Pre = union(push P)(push Q)`; `P,Q ≤ Pre` (by `pushMono_reflects`), so
     `union P Q ≤ Pre` (`union_min`), and `pushMono` is monotone. -/
-theorem pushMono_union_le {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) (P Q : Subobject 𝒞 Z) :
+public theorem pushMono_union_le {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) (P Q : Subobject 𝒞 Z) :
     (pushMono m hm (HasSubobjectUnions.union P Q)).le
       (HasSubobjectUnions.union (pushMono m hm P) (pushMono m hm Q)) := by
   let UP := HasSubobjectUnions.union (pushMono m hm P) (pushMono m hm Q)
@@ -538,7 +540,7 @@ theorem pushMono_union_le {Z W : 𝒞} (m : Z ⟶ W) (hm : Monic m) (P Q : Subob
     `intersect` reads off `pb.π₁ ≫ R.colA` and `pb.π₁ ≫ R.colB`, which pair up to `pb.π₁ ≫ pairR`;
     `InverseImage pairR (relSub S)` has arr `pb.π₁` (same pullback `pb`), whose pushforward along
     `pairR` is exactly that.  We record the identity-witnessed `≤` both ways. -/
-theorem relSub_inter_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relSub_inter_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     (relSub (R ⊓ S)).le
       (pushMono (pair R.colA R.colB) (monic_pair_of_monicPair R.colA R.colB R.isMonicPair)
         (InverseImage (pair R.colA R.colB) (relSub S))) := by
@@ -549,7 +551,7 @@ theorem relSub_inter_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
         = pair (R ⊓ S).colA (R ⊓ S).colB
   exact pair_uniq _ _ _ (by rw [Cat.assoc, fst_pair]; rfl) (by rw [Cat.assoc, snd_pair]; rfl)
 
-theorem relSub_inter_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem relSub_inter_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     (pushMono (pair R.colA R.colB) (monic_pair_of_monicPair R.colA R.colB R.isMonicPair)
         (InverseImage (pair R.colA R.colB) (relSub S))).le (relSub (R ⊓ S)) := by
   refine ⟨Cat.id _, ?_⟩
@@ -562,7 +564,7 @@ theorem relSub_inter_ge {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     `R ⊓ (S ∪ T) ≤ (R ⊓ S) ∪ (R ⊓ T)`.  Transported across `relSub` from the pre-logos fact
     that inverse images preserve unions (`PreLogos.invImage_preserves_union`) plus monotonicity
     of `pushMono`/`InverseImage` and the union laws. -/
-theorem rel_inter_union_le {A B : 𝒞} (R S T : BinRel 𝒞 A B) :
+public theorem rel_inter_union_le {A B : 𝒞} (R S T : BinRel 𝒞 A B) :
     RelLe (R ⊓ (S ∪ᵣ T)) ((R ⊓ S) ∪ᵣ (R ⊓ T)) := by
   apply (relLe_iff_subLe _ _).2
   let pR := pair R.colA R.colB
@@ -618,7 +620,7 @@ omit [PreLogos 𝒞] in
 /-- Direct image (∃) of a subobject `U ↣ X` along `g : X ⟶ Y`: the image of `U.arr ≫ g`.
     Needs only `[HasImages]` (ambient `[PreLogos]` dropped so the minimal-hypothesis
     `S1_70.DirectImage` / `S1_967.directImage` can forward to this canonical copy). -/
-def existsAlong [HasImages 𝒞] {X Y : 𝒞} (g : X ⟶ Y) (U : Subobject 𝒞 X) : Subobject 𝒞 Y :=
+@[expose] public def existsAlong [HasImages 𝒞] {X Y : 𝒞} (g : X ⟶ Y) (U : Subobject 𝒞 X) : Subobject 𝒞 Y :=
   image (U.arr ≫ g)
 
 omit [PreLogos 𝒞] in
@@ -630,7 +632,7 @@ omit [PreLogos 𝒞] in
     `P.arr ≫ g` and `image_min` finishes.  Pure regular-category fact (no pre-logos needed) —
     hence `omit`s `PreLogos` so this is the canonical `∃_f ⊣ f#` even in a bare regular
     (e.g. abelian) category; S1_59_10 reuses it directly (no local re-proof). -/
-theorem existsAlong_adj [HasImages 𝒞] [HasPullbacks 𝒞] {X Y : 𝒞} (g : X ⟶ Y) :
+public theorem existsAlong_adj [HasImages 𝒞] [HasPullbacks 𝒞] {X Y : 𝒞} (g : X ⟶ Y) :
     GaloisConnection (Subobject.le (𝒞 := 𝒞) (B := X)) (Subobject.le (𝒞 := 𝒞) (B := Y))
       (existsAlong g) (fun V => InverseImage g V) := by
   intro P V
@@ -650,7 +652,7 @@ theorem existsAlong_adj [HasImages 𝒞] [HasPullbacks 𝒞] {X Y : 𝒞} (g : X
     -- (k ≫ π₂) ≫ V.arr = k ≫ π₁ ≫ g = P.arr ≫ g  using the pullback square π₁≫g = π₂≫V.arr.
     rw [Cat.assoc, ← pb.cone.w, ← Cat.assoc, hk']
 
-theorem existsAlong_mono {X Y : 𝒞} (g : X ⟶ Y) {P Q : Subobject 𝒞 X} (hle : P.le Q) :
+public theorem existsAlong_mono {X Y : 𝒞} (g : X ⟶ Y) {P Q : Subobject 𝒞 X} (hle : P.le Q) :
     (existsAlong g P).le (existsAlong g Q) := by
   obtain ⟨f, hf⟩ := hle
   refine image_min (P.arr ≫ g) (existsAlong g Q) ⟨f ≫ image.lift (Q.arr ≫ g), ?_⟩
@@ -662,7 +664,7 @@ theorem existsAlong_mono {X Y : 𝒞} (g : X ⟶ Y) {P Q : Subobject 𝒞 X} (hl
     Via the `∃_g ⊣ g#` adjunction: the RHS-bound `V` satisfies `existsAlong g P ≤ V` and
     `existsAlong g Q ≤ V` (union inclusions), hence `P ≤ g#V` and `Q ≤ g#V`, hence `union P Q ≤ g#V`
     by `union_min`, hence `existsAlong g (union P Q) ≤ V` by the adjunction. -/
-theorem existsAlong_union_le {X Y : 𝒞} (g : X ⟶ Y) (P Q : Subobject 𝒞 X) :
+public theorem existsAlong_union_le {X Y : 𝒞} (g : X ⟶ Y) (P Q : Subobject 𝒞 X) :
     (existsAlong g (HasSubobjectUnions.union P Q)).le
       (HasSubobjectUnions.union (existsAlong g P) (existsAlong g Q)) := by
   let V := HasSubobjectUnions.union (existsAlong g P) (existsAlong g Q)
@@ -693,11 +695,11 @@ theorem existsAlong_union_le {X Y : 𝒞} (g : X ⟶ Y) (P Q : Subobject 𝒞 X)
   extensivity, no new hypothesis. -/
 
 /-- The "B-side reindexing" `θ_R := pair (fst ≫ R.colB) snd : R.src × C ⟶ B × C`. -/
-def thetaR {A B : 𝒞} (R : BinRel 𝒞 A B) (C : 𝒞) : prod R.src C ⟶ prod B C :=
+@[expose] public def thetaR {A B : 𝒞} (R : BinRel 𝒞 A B) (C : 𝒞) : prod R.src C ⟶ prod B C :=
   pair (fst ≫ R.colB) snd
 
 /-- The "A-side reindexing" `ω_R := pair (fst ≫ R.colA) snd : R.src × C ⟶ A × C`. -/
-def omegaR {A B : 𝒞} (R : BinRel 𝒞 A B) (C : 𝒞) : prod R.src C ⟶ prod A C :=
+@[expose] public def omegaR {A B : 𝒞} (R : BinRel 𝒞 A B) (C : 𝒞) : prod R.src C ⟶ prod A C :=
   pair (fst ≫ R.colA) snd
 
 /-- **Geometric identity (coproduct-free)** §1.616: `relSub (R ⊚ X) = ∃_{ω_R}(θ_R# (relSub X))`.
@@ -707,7 +709,7 @@ def omegaR {A B : 𝒞} (R : BinRel 𝒞 A B) (C : 𝒞) : prod R.src C ⟶ prod
     objects map to each other (`α : pbX → pbI`, `β : pbI → pbX`) compatibly with the spans
     (`s = α ≫ (pbI.π₁ ≫ ω_R)` and `pbI.π₁ ≫ ω_R = β ≫ s`), so the two images coincide.  We return
     both `Subobject.le` directions. -/
-theorem relSub_compose_eq {A B C : 𝒞} (R : BinRel 𝒞 A B) (X : BinRel 𝒞 B C) :
+public theorem relSub_compose_eq {A B C : 𝒞} (R : BinRel 𝒞 A B) (X : BinRel 𝒞 B C) :
     (relSub (R ⊚ X)).le (existsAlong (omegaR R C) (InverseImage (thetaR R C) (relSub X)))
     ∧ (existsAlong (omegaR R C) (InverseImage (thetaR R C) (relSub X))).le (relSub (R ⊚ X)) := by
   let pbX := HasPullbacks.has R.colB X.colA
@@ -803,7 +805,7 @@ theorem relSub_compose_eq {A B C : 𝒞} (R : BinRel 𝒞 A B) (X : BinRel 𝒞 
     `relSub(R⊚X) = ∃_{ω_R}(θ_R# (relSub X))` (`relSub_compose_eq`): both `θ_R#`
     (`PreLogos.invImage_preserves_union`) and `∃_{ω_R}` (`existsAlong_union_le`) preserve unions,
     so the join descends with no extensivity. -/
-theorem compose_union_right {A B C : 𝒞} (R : BinRel 𝒞 A B) (S T : BinRel 𝒞 B C) :
+public theorem compose_union_right {A B C : 𝒞} (R : BinRel 𝒞 A B) (S T : BinRel 𝒞 B C) :
     RelLe (R ⊚ (S ∪ᵣ T)) ((R ⊚ S) ∪ᵣ (R ⊚ T)) := by
   apply (relLe_iff_subLe _ _).2
   -- LHS  =  ∃_ω (θ# relSub(S∪T)).

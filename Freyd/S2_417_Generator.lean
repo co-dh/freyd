@@ -41,7 +41,9 @@
   MATHLIB-FREE.  Axioms ⊆ {propext, Classical.choice, Quot.sound}.
 -/
 
-import Freyd.S1_10
+module
+
+public import Freyd.S1_10
 
 namespace Freyd.S2_417
 open Freyd
@@ -53,27 +55,27 @@ variable {L : Type}
 
 /-- An object of `C` (§2.417): a carrier `S`, an endomap `s`, a subset `A ⊆ L` of active
     labels, and operations `f a : S → S`.  `f a` is read only for `a ∈ A`; off `A` it is junk. -/
-structure Obj (L : Type) where
+public structure Obj (L : Type) where
   S : Type
   s : S → S
   A : L → Prop
   f : L → S → S
 
 /-- The exponent `xᵃ`: `f a x` when the label `a` is active (`a ∈ A`), else the default `s x`. -/
-noncomputable def exp (X : Obj L) (x : X.S) (a : L) : X.S :=
+@[expose] public noncomputable def exp (X : Obj L) (x : X.S) (a : L) : X.S :=
   if X.A a then X.f a x else X.s x
 
 /-- A map of `C`: a carrier function commuting with every exponent
     (`g (xᵃ) = (g x)ᵃ` for all labels `a ∈ L`; see the header on the quantifier). -/
-structure CHom (X Y : Obj L) where
+public structure CHom (X Y : Obj L) where
   g : X.S → Y.S
   equiv : ∀ (a : L) (x : X.S), g (exp X x a) = exp Y (g x) a
 
-@[ext] theorem CHom.ext {X Y : Obj L} {φ ψ : CHom X Y} (h : φ.g = ψ.g) : φ = ψ := by
+@[ext] public theorem CHom.ext {X Y : Obj L} {φ ψ : CHom X Y} (h : φ.g = ψ.g) : φ = ψ := by
   cases φ; cases ψ; cases h; rfl
 
 /-- **§2.417 (target 1).**  `C` is a category. -/
-instance catC : Cat (Obj L) where
+@[expose] public instance catC : Cat (Obj L) where
   Hom X Y := CHom X Y
   id X := ⟨fun x => x, fun _ _ => rfl⟩
   comp := fun {X _ _} φ ψ => ⟨fun x => ψ.g (φ.g x), fun a x => by
@@ -88,7 +90,7 @@ instance catC : Cat (Obj L) where
 /-- A morphism `X → Y` of `Rel(C)`: an equivariant relation, i.e. a subobject of the product
     `X × Y` in `C`.  Concretely a relation on the carriers closed under the joint action
     `(x,y) ↦ (xᵃ, yᵃ)`. -/
-structure CRel (X Y : Obj L) where
+public structure CRel (X Y : Obj L) where
   rel   : X.S → Y.S → Prop
   equiv : ∀ (a : L) (x : X.S) (y : Y.S), rel x y → rel (exp X x a) (exp Y y a)
 

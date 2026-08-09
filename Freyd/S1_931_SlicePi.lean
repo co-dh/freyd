@@ -20,9 +20,11 @@
   This file builds `Π_f` and the adjunction hom-iso at the right altitude (a real
   `Adjunction (baseChangeObj f) Π_f`), reusing `Over B`'s `HasExponentials`.
 -/
-import Freyd.S1_93_SlicePower
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_913_ToposCoversEpis
+module
+
+public import Freyd.S1_93_SlicePower
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_913_ToposCoversEpis
 
 open Freyd
 
@@ -37,7 +39,7 @@ variable {A B : 𝒞} (f : A ⟶ B)
 
 /-- `f̂ = ⟨A, f⟩ : Over B`, the object of `Over B` "named" by `f`.  Slicing `Over B`
     over `f̂` reproduces `Over A` on the nose (see `Phi`/`Psi`). -/
-def fHat : Over B := ⟨A, f⟩
+@[expose] public def fHat : Over B := ⟨A, f⟩
 
 /-- **`Φ : Over A → (Over B)/f̂`** on objects.  An object `X = ⟨E, x : E ⟶ A⟩` of
     `Over A` becomes the `(Over B)`-object `⟨E, x ≫ f⟩` sliced over `f̂` by the
@@ -103,12 +105,12 @@ end SliceOfSliceHom
 section ExpTranspose
 variable [HasExponentials 𝒞]
 
-theorem transp_inj {A E Y : 𝒞} {c₁ c₂ : Y ⟶ E ^^ A} (h : transp c₁ = transp c₂) : c₁ = c₂ := by
+public theorem transp_inj {A E Y : 𝒞} {c₁ c₂ : Y ⟶ E ^^ A} (h : transp c₁ = transp c₂) : c₁ = c₂ := by
   rw [← (show curry (transp c₁) = c₁ from (curry_unique_eq rfl).symm),
       ← (show curry (transp c₂) = c₂ from (curry_unique_eq rfl).symm), h]
 
 /-- `transp` turns post-composition with `expCovMap p` into post-composition with `p`. -/
-theorem transp_expCovMap {A E E' Y : 𝒞} (c : Y ⟶ E ^^ A) (p : E ⟶ E') :
+public theorem transp_expCovMap {A E E' Y : 𝒞} (c : Y ⟶ E ^^ A) (p : E ⟶ E') :
     transp (c ≫ expCovMap A p) = transp c ≫ p := by
   dsimp [transp]
   rw [prodMap_comp, Cat.assoc, expCovMap_eval, ← Cat.assoc]
@@ -135,42 +137,42 @@ noncomputable section PiForall
 variable {A B : 𝒞} (f : A ⟶ B) [Topos 𝒞]
 
 /-- The structural arrow `px : f*(X) ⟶ f̂`, underlying `X.hom`. -/
-def pxHom (X : Over A) : (reindexObj f X : Over B) ⟶ fHat f := ⟨X.hom, rfl⟩
+@[expose] public def pxHom (X : Over A) : (reindexObj f X : Over B) ⟶ fHat f := ⟨X.hom, rfl⟩
 
 /-- The exponential `f*(X) ^^ f̂` in `Over B`. -/
-abbrev expPb (X : Over A) : Over B := exp (fHat f) (reindexObj f X)
+@[expose] public abbrev expPb (X : Over A) : Over B := exp (fHat f) (reindexObj f X)
 
 /-- The exponential `f̂ ^^ f̂` in `Over B`. -/
-abbrev expHatHat : Over B := exp (fHat f) (fHat f)
+@[expose] public abbrev expHatHat : Over B := exp (fHat f) (fHat f)
 
 /-- `α := expCovMap px : Pb^^f̂ ⟶ f̂^^f̂` (post-compose with `px`). -/
-def piAlpha (X : Over A) : OverHom (expPb f X) (expHatHat f) :=
+@[expose] public def piAlpha (X : Over A) : OverHom (expPb f X) (expHatHat f) :=
   expCovMap (fHat f) (pxHom f X)
 
 /-- `⌜id_{f̂}⌝ : one ⟶ f̂^^f̂`, the name of the identity on `f̂`.
     `prod f̂ one ≅ f̂` via `fst`, so the identity is `curry fst`. -/
-def nameId : OverHom (one : Over B) (expHatHat f) :=
+@[expose] public def nameId : OverHom (one : Over B) (expHatHat f) :=
   curry (fst : prod (fHat f) (one : Over B) ⟶ fHat f)
 
 /-- `β := ! ≫ ⌜id⌝ : Pb^^f̂ ⟶ f̂^^f̂`, the constant map at the name of `id_{f̂}`. -/
-def piBeta (X : Over A) : OverHom (expPb f X) (expHatHat f) :=
+@[expose] public def piBeta (X : Over A) : OverHom (expPb f X) (expHatHat f) :=
   term (expPb f X) ⊚ nameId f
 
 /-- **`Π_f X`**: the dependent product of `X` along `f`, as the equalizer in `Over B`
     of `α` and `β`.  (`@[reducible]` so equalizer lemmas unify against it.) -/
-@[reducible] def piForallObj (X : Over A) : Over B := eqObj (piAlpha f X) (piBeta f X)
+@[reducible, expose] public def piForallObj (X : Over A) : Over B := eqObj (piAlpha f X) (piBeta f X)
 
 /-- `reindexObj` on morphisms: `m : X ⟶ X'` in `Over A` gives `m.f : f*(X) ⟶ f*(X')` in `Over B`
     (the same underlying arrow; it commutes since `m.f ≫ X'.hom = X.hom`). -/
-def PbMap {X X' : Over A} (m : X ⟶ X') : (reindexObj f X : Over B) ⟶ reindexObj f X' :=
+@[expose] public def PbMap {X X' : Over A} (m : X ⟶ X') : (reindexObj f X : Over B) ⟶ reindexObj f X' :=
   ⟨m.f, by show m.f ≫ (X'.hom ≫ f) = X.hom ≫ f; rw [← Cat.assoc, m.w]⟩
 
-@[simp] theorem PbMap_px {X X' : Over A} (m : X ⟶ X') :
+@[simp] public theorem PbMap_px {X X' : Over A} (m : X ⟶ X') :
     PbMap f m ≫ pxHom f X' = pxHom f X := OverHom.ext (by show m.f ≫ X'.hom = X.hom; exact m.w)
 
-theorem PbMap_id (X : Over A) : PbMap f (Cat.id X) = Cat.id (reindexObj f X) := OverHom.ext rfl
+public theorem PbMap_id (X : Over A) : PbMap f (Cat.id X) = Cat.id (reindexObj f X) := OverHom.ext rfl
 
-theorem PbMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
+public theorem PbMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
     PbMap f (m ≫ n) = PbMap f m ≫ PbMap f n := OverHom.ext rfl
 
 /-! ### The equalizer-membership characterization
@@ -179,12 +181,12 @@ theorem PbMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
   `transp c : f̂ × Y ⟶ Pb` is a section of `px`, i.e. `transp c ⊚ px = fst`. -/
 
 /-- `transp (c ≫ α) = transp c ≫ px`. -/
-theorem transp_piAlpha {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
+public theorem transp_piAlpha {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
     transp (c ≫ piAlpha f X) = transp c ≫ pxHom f X :=
   transp_expCovMap c (pxHom f X)
 
 /-- `transp (c ≫ β) = fst`. -/
-theorem transp_piBeta {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
+public theorem transp_piBeta {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
     transp (c ≫ piBeta f X) = (fst : prod (fHat f) Y ⟶ fHat f) := by
   show transp (c ≫ (term (expPb f X) ≫ nameId f)) = _
   -- c ≫ term = term Y  (term is terminal in Over B).
@@ -194,7 +196,7 @@ theorem transp_piBeta {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
     curry_eval_eq _, prodMap_fst]
 
 /-- The defining equivalence: `c` equalizes `α,β` iff `transp c ≫ px = fst`. -/
-theorem equalizes_iff {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
+public theorem equalizes_iff {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
     c ≫ piAlpha f X = c ≫ piBeta f X ↔ transp c ≫ pxHom f X = fst := by
   constructor
   · intro h
@@ -212,16 +214,16 @@ theorem equalizes_iff {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) :
   We give the canonical iso `Pdom ≅ Bdom` exchanging the legs. -/
 
 /-- The chosen pullback behind `prod (f̂) Y`: cospan `f, Y.hom`. -/
-private def _PB (Y : Over B) : HasPullback (fHat f).hom Y.hom := HasPullbacks.has (fHat f).hom Y.hom
+@[expose] public def _PB (Y : Over B) : HasPullback (fHat f).hom Y.hom := HasPullbacks.has (fHat f).hom Y.hom
 /-- The chosen pullback behind `baseChangeObj f Y`: cospan `Y.hom, f`. -/
-private def _BC (Y : Over B) : HasPullback Y.hom f := HasPullbacks.has Y.hom f
+@[expose] public def _BC (Y : Over B) : HasPullback Y.hom f := HasPullbacks.has Y.hom f
 
 /-- `Pdom ⟶ Bdom`: lift the swapped cone `(q₂, q₁)` into the base-change pullback. -/
-def prodToBc (Y : Over B) : (_PB f Y).cone.pt ⟶ (_BC f Y).cone.pt :=
+@[expose] public def prodToBc (Y : Over B) : (_PB f Y).cone.pt ⟶ (_BC f Y).cone.pt :=
   (_BC f Y).lift ⟨(_PB f Y).cone.pt, (_PB f Y).cone.π₂, (_PB f Y).cone.π₁, ((_PB f Y).cone.w).symm⟩
 
 /-- `Bdom ⟶ Pdom`: lift the swapped cone `(p₂, p₁)` into the product pullback. -/
-def bcToProd (Y : Over B) : (_BC f Y).cone.pt ⟶ (_PB f Y).cone.pt :=
+@[expose] public def bcToProd (Y : Over B) : (_BC f Y).cone.pt ⟶ (_PB f Y).cone.pt :=
   (_PB f Y).lift ⟨(_BC f Y).cone.pt, (_BC f Y).cone.π₂, (_BC f Y).cone.π₁, ((_BC f Y).cone.w).symm⟩
 
 /-- Pullback self-map uniqueness for the product pullback: a map agreeing with `id`
@@ -239,7 +241,7 @@ private theorem _BC_self_id (Y : Over B) (u : (_BC f Y).cone.pt ⟶ (_BC f Y).co
   rw [e u h₁ h₂, ← e (Cat.id _) (by rw [Cat.id_comp]) (by rw [Cat.id_comp])]
 
 /-- `bcToProd ≫ prodToBc = id` on the base-change pullback. -/
-theorem bcToProd_prodToBc (Y : Over B) : bcToProd f Y ≫ prodToBc f Y = Cat.id _ := by
+public theorem bcToProd_prodToBc (Y : Over B) : bcToProd f Y ≫ prodToBc f Y = Cat.id _ := by
   apply _BC_self_id
   · rw [Cat.assoc,
       show prodToBc f Y ≫ (_BC f Y).cone.π₁ = (_PB f Y).cone.π₂ from (_BC f Y).lift_fst _,
@@ -249,7 +251,7 @@ theorem bcToProd_prodToBc (Y : Over B) : bcToProd f Y ≫ prodToBc f Y = Cat.id 
       show bcToProd f Y ≫ (_PB f Y).cone.π₁ = (_BC f Y).cone.π₂ from (_PB f Y).lift_fst _]
 
 /-- `prodToBc ≫ bcToProd = id` on the product pullback. -/
-theorem prodToBc_bcToProd (Y : Over B) : prodToBc f Y ≫ bcToProd f Y = Cat.id _ := by
+public theorem prodToBc_bcToProd (Y : Over B) : prodToBc f Y ≫ bcToProd f Y = Cat.id _ := by
   apply _PB_self_id
   · rw [Cat.assoc,
       show bcToProd f Y ≫ (_PB f Y).cone.π₁ = (_BC f Y).cone.π₂ from (_PB f Y).lift_fst _,
@@ -263,15 +265,15 @@ theorem prodToBc_bcToProd (Y : Over B) : prodToBc f Y ≫ bcToProd f Y = Cat.id 
   `OverHom (f* Y) X  ≅  OverHom Y (Π_f X)`, the data of `f* ⊣ Π_f`. -/
 
 /-- `eqMap`-projection out of `Π_f X`: the equalizer arrow `Π_f X ⟶ Pb^^f̂`. -/
-def piEqMap (X : Over A) : eqObj (piAlpha f X) (piBeta f X) ⟶ expPb f X :=
+@[expose] public def piEqMap (X : Over A) : eqObj (piAlpha f X) (piBeta f X) ⟶ expPb f X :=
   @eqMap (Over B) _ _ (expPb f X) (expHatHat f) (piAlpha f X) (piBeta f X)
 
 /-- From a section `c : Y ⟶ Pb^^f̂` (`transp c ≫ px = fst`) we get a map into the equalizer. -/
-def piLift {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) (h : transp c ≫ pxHom f X = fst) :
+@[expose] public def piLift {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X) (h : transp c ≫ pxHom f X = fst) :
     Y ⟶ piForallObj f X :=
   eqLift (piAlpha f X) (piBeta f X) c ((equalizes_iff f c).mpr h)
 
-@[simp] theorem piLift_eqMap {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X)
+@[simp] public theorem piLift_eqMap {X : Over A} {Y : Over B} (c : Y ⟶ expPb f X)
     (h : transp c ≫ pxHom f X = fst) : piLift f c h ≫ piEqMap f X = c := by
   show piLift f c h ≫ @eqMap (Over B) _ _ (expPb f X) (expHatHat f) (piAlpha f X) (piBeta f X) = c
   exact eqLift_fac (piAlpha f X) (piBeta f X) c ((equalizes_iff f c).mpr h)
@@ -284,21 +286,21 @@ private theorem _piPhi_hk {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj 
   rw [this, show prodToBc f Y ≫ (_BC f Y).cone.π₂ = (_PB f Y).cone.π₁ from (_BC f Y).lift_snd _]
 
 /-- The transpose `k : prod f̂ Y ⟶ f*(X)` underlying `piPhi g`. -/
-def piPhiK {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) :
+public def piPhiK {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) :
     prod (fHat f) Y ⟶ reindexObj f X :=
   ⟨prodToBc f Y ≫ g.f, by
     show (prodToBc f Y ≫ g.f) ≫ (X.hom ≫ f) = (_PB f Y).cone.π₁ ≫ f
     rw [← Cat.assoc, _piPhi_hk]⟩
 
 /-- **`φ`**: `OverHom (f* Y) X → OverHom Y (Π_f X)`. -/
-def piPhi {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) : Y ⟶ piForallObj f X :=
+public def piPhi {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) : Y ⟶ piForallObj f X :=
   piLift f (curry (piPhiK f g)) (by
     rw [show transp (curry (piPhiK f g)) = piPhiK f g from curry_eval_eq _]
     exact OverHom.ext (_piPhi_hk f g))
 
 /-- **`ψ`**: `OverHom Y (Π_f X) → OverHom (f* Y) X`.  Uses `transp (d ≫ eqMap)` and the
     section condition forced by the equalizer. -/
-def piPsi {X : Over A} {Y : Over B} (d : Y ⟶ piForallObj f X) : OverHom (baseChangeObj f Y) X :=
+@[expose] public def piPsi {X : Over A} {Y : Over B} (d : Y ⟶ piForallObj f X) : OverHom (baseChangeObj f Y) X :=
   let c := d ≫ piEqMap f X
   have hsec : transp c ≫ pxHom f X = fst :=
     (equalizes_iff f c).mp (by
@@ -326,7 +328,7 @@ private theorem _piPhi_transp {X : Over A} {Y : Over B} (g : OverHom (baseChange
   rw [piLift_eqMap, show transp (curry (piPhiK f g)) = piPhiK f g from curry_eval_eq _]
 
 /-- **`φψ`** round-trip: `piPsi (piPhi g) = g`. -/
-theorem piPsi_piPhi {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) :
+public theorem piPsi_piPhi {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X) :
     piPsi f (piPhi f g) = g := by
   apply OverHom.ext
   rw [_piPsi_f, _piPhi_transp]
@@ -334,7 +336,7 @@ theorem piPsi_piPhi {X : Over A} {Y : Over B} (g : OverHom (baseChangeObj f Y) X
   rw [← Cat.assoc, bcToProd_prodToBc, Cat.id_comp]
 
 /-- **`ψφ`** round-trip: `piPhi (piPsi d) = d`. -/
-theorem piPhi_piPsi {X : Over A} {Y : Over B} (d : Y ⟶ piForallObj f X) :
+public theorem piPhi_piPsi {X : Over A} {Y : Over B} (d : Y ⟶ piForallObj f X) :
     piPhi f (piPsi f d) = d := by
   -- both `piPhi (piPsi d)` and `d` satisfy `· ≫ eqMap = d ≫ eqMap`; conclude by eqLift_uniq.
   have hc : piPhi f (piPsi f d) ≫ piEqMap f X = d ≫ piEqMap f X := by
@@ -355,7 +357,7 @@ theorem piPhi_piPsi {X : Over A} {Y : Over B} (d : Y ⟶ piForallObj f X) :
   exact (huniq (piPhi f (piPsi f d)) hc).trans (huniq d rfl).symm
 
 /-- The equalizer arrow `piEqMap` is itself a section: `transp (piEqMap) ≫ px = fst`. -/
-theorem piEqMap_section (X : Over A) : transp (piEqMap f X) ≫ pxHom f X = fst :=
+public theorem piEqMap_section (X : Over A) : transp (piEqMap f X) ≫ pxHom f X = fst :=
   (equalizes_iff f (piEqMap f X)).mp
     (by
       show piEqMap f X ≫ piAlpha f X = piEqMap f X ≫ piBeta f X
@@ -371,11 +373,11 @@ private theorem _piForallMap_sec {X X' : Over A} (m : X ⟶ X') :
   rw [transp_expCovMap, Cat.assoc, PbMap_px, piEqMap_section]
 
 /-- `Π_f` on morphisms: `m : X ⟶ X'` in `Over A` post-composes the transpose with `Pb m`. -/
-def piForallMap {X X' : Over A} (m : X ⟶ X') : piForallObj f X ⟶ piForallObj f X' :=
+public def piForallMap {X X' : Over A} (m : X ⟶ X') : piForallObj f X ⟶ piForallObj f X' :=
   piLift f (piEqMap f X ≫ expCovMap (fHat f) (PbMap f m)) (_piForallMap_sec f m)
 
 /-- `Π_f` preserves identities. -/
-theorem piForallMap_id (X : Over A) :
+public theorem piForallMap_id (X : Over A) :
     piForallMap f (Cat.id X) = Cat.id (piForallObj f X) := by
   apply (show Monic (piEqMap f X) from eqMap_monic _ _)
   rw [show piForallMap f (Cat.id X) ≫ piEqMap f X =
@@ -383,7 +385,7 @@ theorem piForallMap_id (X : Over A) :
       PbMap_id, expCovMap_id, Cat.comp_id, Cat.id_comp]
 
 /-- `Π_f` preserves composition. -/
-theorem piForallMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
+public theorem piForallMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
     piForallMap f (m ≫ n) = piForallMap f m ≫ piForallMap f n := by
   apply (show Monic (piEqMap f X'') from eqMap_monic _ _)
   rw [Cat.assoc]
@@ -397,7 +399,7 @@ theorem piForallMap_comp {X X' X'' : Over A} (m : X ⟶ X') (n : X' ⟶ X'') :
       Cat.assoc]
 
 /-- **`Π_f` is a functor `Over A → Over B`.** -/
-def piForallFunctor : Functor (Over A) (Over B) where
+@[expose] public def piForallFunctor : Functor (Over A) (Over B) where
   obj := piForallObj f
   map m := piForallMap f m
   map_id X := piForallMap_id f X
@@ -410,7 +412,7 @@ def piForallFunctor : Functor (Over A) (Over B) where
   bijection, to underlying-arrow identities about the pullback-swap maps. -/
 
 /-- **`φ_nat_right`**: `piPhi (g ≫ b) = piPhi g ≫ Π_f b`. -/
-theorem piPhi_nat_right {Y : Over B} {X X' : Over A}
+public theorem piPhi_nat_right {Y : Over B} {X X' : Over A}
     (g : OverHom (baseChangeObj f Y) X) (b : X ⟶ X') :
     piPhi f (g ≫ b) = piPhi f g ≫ piForallMap f b := by
   apply (show Monic (piEqMap f X') from eqMap_monic _ _)
@@ -459,7 +461,7 @@ private theorem _BC_hom_ext {Y : Over B} {W : 𝒞} {u v : W ⟶ (_BC f Y).cone.
 
 /-- **Bridge naturality**: the pullback-swap `prodToBc` intertwines `baseChangeMap` (the
     action of `f*`) and `prodMap` (the action of `prod f̂ −`). -/
-theorem prodToBc_baseChangeMap {Y' Y : Over B} (a : Y' ⟶ Y) :
+public theorem prodToBc_baseChangeMap {Y' Y : Over B} (a : Y' ⟶ Y) :
     prodToBc f Y' ≫ (baseChangeMap f a).f = (prodMap (fHat f) Y' Y a).f ≫ prodToBc f Y := by
   apply _BC_hom_ext
   · -- ≫ π₁_BC(Y):  both sides = π₂_PB(Y') ≫ a.f
@@ -476,7 +478,7 @@ theorem prodToBc_baseChangeMap {Y' Y : Over B} (a : Y' ⟶ Y) :
       _prodMap_fst_f]
 
 /-- **`φ_nat_left`**: `piPhi (f* a ≫ g) = a ≫ piPhi g`, for `a : Y' ⟶ Y`. -/
-theorem piPhi_nat_left {Y' Y : Over B} {X : Over A}
+public theorem piPhi_nat_left {Y' Y : Over B} {X : Over A}
     (a : Y' ⟶ Y) (g : OverHom (baseChangeObj f Y) X) :
     piPhi f ((baseChangeFunctor f).map a ≫ g) = a ≫ piPhi f g := by
   apply (show Monic (piEqMap f X) from eqMap_monic _ _)
@@ -494,7 +496,7 @@ theorem piPhi_nat_left {Y' Y : Over B} {X : Over A}
     ADJOINT to the dependent-product functor `Π_f = piForallObj f : Over A → Over B`.
     The hom-bijection `OverHom (f* Y) X ≅ OverHom Y (Π_f X)` is `piPsi`/`piPhi`, carved
     out of the slice-topos exponential adjunction by the equalizer `Π_f X`. -/
-def sliceForallAdj : Adjunction (baseChangeFunctor f) (piForallFunctor f) where
+@[expose] public def sliceForallAdj : Adjunction (baseChangeFunctor f) (piForallFunctor f) where
   φ g := piPhi f g
   ψ c := piPsi f c
   φψ c := piPhi_piPsi f c
@@ -516,7 +518,7 @@ end PiForall
 /-- **A LEFT adjoint preserves epimorphisms.**  If `F ⊣ G` and `e` is epic, then `F e`
     is epic.  Proof: `F e ≫ a = F e ≫ b` transposes (via `φ_nat_left`) to
     `e ≫ φ a = e ≫ φ b`; cancel the epi `e` to get `φ a = φ b`, then `φ` injective. -/
-theorem leftAdjoint_preserves_epi {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem leftAdjoint_preserves_epi {𝒟 : Type u} [Cat.{v} 𝒟]
     {F : Functor 𝒞 𝒟} {G : Functor 𝒟 𝒞} (adj : F ⊣ G)
     {X Y : 𝒞} {e : X ⟶ Y} (he : ∀ {Z : 𝒞} (a b : Y ⟶ Z), e ≫ a = e ≫ b → a = b)
     {W : 𝒟} (a b : F.obj Y ⟶ W) (hab : F.map e ≫ a = F.map e ≫ b) : a = b := by
@@ -530,7 +532,7 @@ variable {A B : 𝒞} (f : A ⟶ B) [Topos 𝒞]
 /-- **The pullback functor `f*` preserves epis** — instance of `leftAdjoint_preserves_epi`
     applied to `f* ⊣ Π_f` (`sliceForallAdj`).  `f* Y = baseChangeObj f Y`, the pullback of
     `Y` along `f` in the slice. -/
-theorem baseChange_preserves_epi {X Y : Over B} {e : X ⟶ Y}
+public theorem baseChange_preserves_epi {X Y : Over B} {e : X ⟶ Y}
     (he : ∀ {Z : Over B} (a b : Y ⟶ Z), e ≫ a = e ≫ b → a = b)
     {W : Over A} (a b : baseChangeObj f Y ⟶ W)
     (hab : (baseChangeFunctor f).map e ≫ a = (baseChangeFunctor f).map e ≫ b) :
@@ -541,7 +543,7 @@ theorem baseChange_preserves_epi {X Y : Over B} {e : X ⟶ Y}
     `Over B`/`Over A` coincides with epic (`cover_iff_epi`, both are toposes via `overTopos`),
     and `f*` preserves epis (`baseChange_preserves_epi`).  This is the slice form of
     pullback-stability of covers. -/
-theorem baseChange_preserves_cover {X Y : Over B} {e : X ⟶ Y} (he : Cover e) :
+public theorem baseChange_preserves_cover {X Y : Over B} {e : X ⟶ Y} (he : Cover e) :
     Cover ((baseChangeFunctor f).map e) := by
   -- Over B and Over A are toposes; use cover ⟺ epic on both sides.
   have heEpi : ∀ {Z : Over B} (a b : Y ⟶ Z), e ≫ a = e ≫ b → a = b :=
@@ -573,15 +575,15 @@ variable [Topos 𝒞]
 
 /-- The terminal-shaped object `⟨B, id_B⟩ : Over B`.  (Used only as the codomain of the
     structure-map-as-slice-arrow.) -/
-private def _idB (B : 𝒞) : Over B := ⟨B, Cat.id B⟩
+@[expose] public def _idB (B : 𝒞) : Over B := ⟨B, Cat.id B⟩
 
 /-- The slice terminal map `f̂ = ⟨A,f⟩ ⟶ ⟨B, id_B⟩`, underlying `f`. -/
-private def _mfTerm {A B : 𝒞} (f : A ⟶ B) : OverHom (fHat f) (_idB B) :=
+@[expose] public def _mfTerm {A B : 𝒞} (f : A ⟶ B) : OverHom (fHat f) (_idB B) :=
   ⟨f, by show f ≫ Cat.id B = f; exact Cat.comp_id f⟩
 
 /-- The structure map of `g*(⟨B,id_B⟩)` — projection `π₂` of the pullback of `id_B`
     along `g` — is an iso.  Its inverse is the lift of the cone `(g, id_C)`. -/
-private theorem _bcIdB_hom_iso {B C : 𝒞} (g : C ⟶ B) :
+public theorem _bcIdB_hom_iso {B C : 𝒞} (g : C ⟶ B) :
     IsIso (baseChangeObj g (_idB B)).hom := by
   -- `(baseChangeObj g (_idB B)).hom = (HasPullbacks.has (id_B) g).cone.π₂`.
   let pb := HasPullbacks.has (_idB B).hom g
@@ -608,7 +610,7 @@ private theorem _bcIdB_hom_iso {B C : 𝒞} (g : C ⟶ B) :
 /-- **The chosen pullback `π₂` of a cover is a cover.**  In `Over B`, `f̂ ⟶ ⟨B,id⟩` is a
     slice cover (underlying map `f`); `g*` preserves covers; its underlying base map is a
     cover, and the slice over-hom law identifies it as `π₂ ≫ (iso)`. -/
-private theorem _chosenPi2_cover {A B C : 𝒞} (f : A ⟶ B) (g : C ⟶ B) (hf : Cover f) :
+public theorem _chosenPi2_cover {A B C : 𝒞} (f : A ⟶ B) (g : C ⟶ B) (hf : Cover f) :
     Cover (HasPullbacks.has f g).cone.π₂ := by
   -- mf is a slice cover; g* preserves it; its underlying base map is a cover.
   have hmf : Cover (𝒞 := Over B) (_mfTerm f) := cover_of_cover_f (_mfTerm f) hf
@@ -633,7 +635,7 @@ private theorem _chosenPi2_cover {A B C : 𝒞} (f : A ⟶ B) (g : C ⟶ B) (hf 
     right-adjoint `Π_f` (`baseChange_preserves_cover`), not from any assumed base
     `PullbacksTransferCovers 𝒞`.  An arbitrary pullback cone `c` of `(f,g)` is iso to the chosen
     pullback; `cover_precomp_iso` transports `Cover (chosen π₂)` to `Cover c.π₂`. -/
-instance toposPullbacksTransferCovers : PullbacksTransferCovers 𝒞 where
+@[expose] public instance toposPullbacksTransferCovers : PullbacksTransferCovers 𝒞 where
   pullbacks_transfer_covers {A₁ B₁ C₁} f g c hc hf := by
     -- The chosen pullback π₂ is a cover.
     have hchosen : Cover (HasPullbacks.has f g).cone.π₂ := _chosenPi2_cover f g hf

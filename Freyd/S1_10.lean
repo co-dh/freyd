@@ -1,3 +1,5 @@
+module
+
 /-
   Freyd & Scedrov, *Categories and Allegories* §1.1  Basic definitions.
 
@@ -6,7 +8,7 @@
 -/
 
 
-class Cat.{w, z} (𝒞 : Type z) : Type (max z (w + 1)) where
+public class Cat.{w, z} (𝒞 : Type z) : Type (max z (w + 1)) where
   Hom     : 𝒞 → 𝒞 → Type w
   id      : (X : 𝒞) → Hom X X
   comp    : {X Y Z : 𝒞} → Hom X Y → Hom Y Z → Hom X Z

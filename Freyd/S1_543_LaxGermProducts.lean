@@ -34,8 +34,10 @@
   Mirrors the strict assembly line-by-line, replacing `castHom`/object-equalities with the lax
   `pushHom`/coherence-iso conjugations.  Mathlib-free.
 -/
-import Freyd.S1_543_RatCapHcanon
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S1_543_RatCapHcanon
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim

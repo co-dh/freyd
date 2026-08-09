@@ -15,18 +15,20 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_33
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_44
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_53
-import Freyd.S1_543_Capitalization
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_33
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_44
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_53
+public import Freyd.S1_543_Capitalization
 
 
 open Freyd
@@ -48,9 +50,9 @@ variable [ht : HasTerminal 𝒞] [hp : HasBinaryProducts 𝒞] [hpull : HasPullb
 /-- The "product with B" functor `(-)×B : 𝒞 → 𝒞`.  This is the object part of
     the book's embedding `A → A/B`, `C ↦ (C×B → B)`; on morphisms it sends
     `f` to `pair (fst ≫ f) snd`. -/
-def prodRight (B : 𝒞) : 𝒞 → 𝒞 := fun C => prod C B
+@[expose] public def prodRight (B : 𝒞) : 𝒞 → 𝒞 := fun C => prod C B
 
-def prodRightFunctor (B : 𝒞) : Functor 𝒞 𝒞 where
+@[expose] public def prodRightFunctor (B : 𝒞) : Functor 𝒞 𝒞 where
   obj := prodRight B
   map {C D} f := pair (fst ≫ f) snd
   map_id C := by
@@ -69,7 +71,7 @@ def prodRightFunctor (B : 𝒞) : Functor 𝒞 𝒞 where
     `B` is well-supported, separates morphisms").  If `f×B = g×B`, projecting
     along `fst` gives `fst ≫ f = fst ≫ g`; and `fst : C×B → C` is a cover
     (`prod_fst_cover`), hence epic (`cover_epi`), so `f = g`. -/
-theorem slice_embedding_separates [PullbacksTransferCovers 𝒞] (B : 𝒞) (hws : WellSupported B) :
+public theorem slice_embedding_separates [PullbacksTransferCovers 𝒞] (B : 𝒞) (hws : WellSupported B) :
     Embedding (prodRightFunctor B) := by
   intro C D f g h
   have e1 : (prodRightFunctor B).map f ≫ (fst : prod D B ⟶ D) = (fst : prod C B ⟶ C) ≫ f :=

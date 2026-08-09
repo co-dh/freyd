@@ -14,10 +14,12 @@
   §1.787  In a logos, R̄ = R* (closure via quotient equals transitive-reflexive closure).
 -/
 
-import Freyd.S1_56
-import Freyd.S1_60
-import Freyd.S1_70
-import Freyd.S1_85
+module
+
+public import Freyd.S1_56
+public import Freyd.S1_60
+public import Freyd.S1_70
+public import Freyd.S1_85
 
 open Freyd
 
@@ -30,12 +32,12 @@ namespace Freyd
 /-! ## §1.77 Transitive and transitive-reflexive closures -/
 
 /-- An endo-relation R on A is TRANSITIVE if R ⊚ R ⊑ R (§1.77). -/
-def IsTransitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+@[expose] public def IsTransitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
   RelLe (R ⊚ R) R
 
 /-- An endo-relation R on A is REFLEXIVE if 1_A ⊑ R (§1.77). -/
-def IsReflexive {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
+@[expose] public def IsReflexive {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
   RelLe (graph (Cat.id A)) R
 
 /-- TRANSITIVE CLOSURE R^t (§1.77): minimum transitive relation containing R.
@@ -48,7 +50,7 @@ structure TransClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞
   minimal : ∀ (T : BinRel 𝒞 A A), RelLe R T → IsTransitive T → RelLe clos T
 
 /-- TRANSITIVE-REFLEXIVE CLOSURE R* (§1.77): minimum reflexive-transitive relation ⊇ R. -/
-structure TransRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public structure TransRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) where
   clos    : BinRel 𝒞 A A
   le      : RelLe R clos
@@ -190,16 +192,16 @@ class OmegaTransitivePreLogos (𝒞 : Type u) [Cat.{v} 𝒞]
 /-! ## §1.775 Equivalence closure R^E and E-standard pre-logos -/
 
 /-- R is SYMMETRIC if R° ⊑ R. -/
-def IsSymmetric {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
+@[expose] public def IsSymmetric {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
   RelLe (R°) R
 
 /-- R is an EQUIVALENCE RELATION: reflexive, symmetric, transitive. -/
-def IsEquivRel [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+@[expose] public def IsEquivRel [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) : Prop :=
   IsReflexive R ∧ IsSymmetric R ∧ IsTransitive R
 
 /-- EQUIVALENCE CLOSURE R^E (§1.775): minimum equivalence relation containing R. -/
-structure EquivClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public structure EquivClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) where
   clos    : BinRel 𝒞 A A
   le      : RelLe R clos
@@ -209,7 +211,7 @@ structure EquivClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞
 
 /-- The reciprocal of the diagonal is the diagonal: graph(id) ⊑ (graph(id))°.
     Both have colA = colB = id, so the identity RelHom witnesses the containment. -/
-theorem graph_id_le_reciprocal {A : 𝒞} :
+public theorem graph_id_le_reciprocal {A : 𝒞} :
     RelLe (graph (Cat.id A)) ((graph (Cat.id A))°) :=
   ⟨⟨Cat.id _, by simp [graph, reciprocal, Cat.id_comp], by simp [graph, reciprocal, Cat.id_comp]⟩⟩
 
@@ -218,7 +220,7 @@ theorem graph_id_le_reciprocal {A : 𝒞} :
     and Rsym is symmetric, any TransRefClos of Rsym gives an EquivClos of R.
     `hJoin` records that Rsym is the JOIN of R, R° and 1 (its universal property as the
     symmetrisation), which is what makes the equivalence-closure minimality go through. -/
-def equivClos_from_symm_transRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+@[expose] public def equivClos_from_symm_transRefClos [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A)
     (Rsym : BinRel 𝒞 A A)
     (hR   : RelLe R Rsym)
@@ -287,7 +289,7 @@ class EStandardPreLogos (𝒞 : Type u) [Cat.{v} 𝒞]
 /-- RELATIONAL QUOTIENT R/S (§1.78): given R : A → C and S : B → C,
     R/S is the maximum T : A → B with T ⊚ S ⊑ R.
     Universal property: T ⊑ R/S ↔ T ⊚ S ⊑ R. -/
-structure RelQuot [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public structure RelQuot [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A B C : 𝒞} (R : BinRel 𝒞 A C) (S : BinRel 𝒞 B C) where
   quot    : BinRel 𝒞 A B
   le      : RelLe (quot ⊚ S) R
@@ -295,7 +297,7 @@ structure RelQuot [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
 
 
 /-- §1.78 universal property: T ⊑ R/S ↔ T ⊚ S ⊑ R. -/
-theorem relQuot_iff [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+public theorem relQuot_iff [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A B C : 𝒞} {R : BinRel 𝒞 A C} {S : BinRel 𝒞 B C}
     (q : RelQuot R S) (T : BinRel 𝒞 A B) :
     RelLe T q.quot ↔ RelLe (T ⊚ S) R := by
@@ -314,7 +316,7 @@ theorem relQuot_iff [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞
 /-- §1.782: R/(graph f) is represented by R ⊚ (graph f)°.
     Proof: Tf ⊑ R ↔ T ⊑ Rf°, using simplicity (f°f ⊑ 1) and entireness (1 ⊑ ff°) of graph f.
     Requires composition associativity (regular category). -/
-def relQuotByMap [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+@[expose] public def relQuotByMap [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     [PullbacksTransferCovers 𝒞]
     {A B C : 𝒞} (R : BinRel 𝒞 A C) (f : B ⟶ C) : RelQuot R (graph f) where
   quot    := R ⊚ (graph f)°
@@ -370,7 +372,7 @@ theorem relQuot_map_iff [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 
     represented by the relation `T ⊚ (graph f)°` is exactly the inverse image of `relSub T`
     along `prodMap A B C f : A × B → A × C` (mutual containment).
     This is the geometric content of `T ⊚ f° = (1 × f)#(T)`. -/
-theorem relSub_compRecip_eq_invImage [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
+public theorem relSub_compRecip_eq_invImage [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
     {A B C : 𝒞} (f : B ⟶ C) (T : BinRel 𝒞 A C) :
     (relSub (T ⊚ (graph f)°)).le (InverseImage (prodMap A B C f) (relSub T)) ∧
     (InverseImage (prodMap A B C f) (relSub T)).le (relSub (T ⊚ (graph f)°)) := by
@@ -441,7 +443,7 @@ theorem relSub_compRecip_eq_invImage [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
 
 /-- The relation `A → C` underlying `R/(graph f)°` (§1.784): the right-adjoint image
     `Q = (prodMap A B C f)##(relSub R)`, read back through the projections of `A × C`. -/
-noncomputable def quotRecipRel [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
+@[expose] public noncomputable def quotRecipRel [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
     {A B C : 𝒞} (R : BinRel 𝒞 A B) (f : B ⟶ C) : BinRel 𝒞 A C :=
   let Q := HasRightAdjointImage.rightAdj (prodMap A B C f) (relSub R)
   { src := Q.dom
@@ -454,7 +456,7 @@ noncomputable def quotRecipRel [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
 
 /-- `relSub (quotRecipRel R f)` is the subobject `Q = (prodMap A B C f)##(relSub R)`:
     its representing arrow is `pair (Q.arr ≫ fst) (Q.arr ≫ snd) = Q.arr` (the eta law). -/
-theorem relSub_quotRecipRel_arr [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
+public theorem relSub_quotRecipRel_arr [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
     {A B C : 𝒞} (R : BinRel 𝒞 A B) (f : B ⟶ C) :
     (relSub (quotRecipRel R f)).arr
       = (HasRightAdjointImage.rightAdj (prodMap A B C f) (relSub R)).arr := by
@@ -466,7 +468,7 @@ theorem relSub_quotRecipRel_arr [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
 /-- §1.784: in a logos (here: a pre-logos with the right-adjoint image `f##`), the relational
     quotient `R/(graph f)°` exists, for any relation `R : A → B` and map `f : B → C`.
     It is `(prodMap A B C f)##(relSub R)`, read back as a relation `A → C`. -/
-noncomputable def relQuotByMapRecip [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
+@[expose] public noncomputable def relQuotByMapRecip [PreLogos 𝒞] [HasRightAdjointImage 𝒞]
     {A B C : 𝒞} (R : BinRel 𝒞 A B) (f : B ⟶ C) :
     RelQuot R ((graph f)°) where
   quot := quotRecipRel R f
@@ -717,27 +719,27 @@ def transRefClos_of_glb_preclosed [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [
   a category that has all transitive closures has all reflexive-transitive closures.  This class
   records the latter directly, as the natural hypothesis for `topos_has_rtc` (§1.947) and the
   Rel-coequalizer descent (§1.84): every endo-relation has a reflexive-transitive closure. -/
-class HasReflTransClosure (𝒞 : Type u) [Cat.{v} 𝒞]
+public class HasReflTransClosure (𝒞 : Type u) [Cat.{v} 𝒞]
     [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] where
   transRefClos : ∀ {A : 𝒞} (R : BinRel 𝒞 A A), TransRefClos R
 
 /-- `rtc R` — the reflexive-transitive closure relation, in a category that `HasReflTransClosure`. -/
-def rtc [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
+@[expose] public def rtc [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) : BinRel 𝒞 A A :=
   (HasReflTransClosure.transRefClos R).clos
 
 /-- `R ⊑ rtc R`. -/
-theorem le_rtc [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
+public theorem le_rtc [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) : RelLe R (rtc R) :=
   (HasReflTransClosure.transRefClos R).le
 
 /-- `rtc R` is transitive:  rtc R ⊚ rtc R ⊑ rtc R. -/
-theorem rtc_transitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
+public theorem rtc_transitive [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) : IsTransitive (rtc R) :=
   (HasReflTransClosure.transRefClos R).trans
 
 /-- Minimality:  rtc R is below every reflexive-transitive relation containing R. -/
-theorem rtc_minimal [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
+public theorem rtc_minimal [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [HasReflTransClosure 𝒞]
     {A : 𝒞} (R : BinRel 𝒞 A A) (T : BinRel 𝒞 A A)
     (hRT : RelLe R T) (hReflT : IsReflexive T) (hTransT : IsTransitive T) :
     RelLe (rtc R) T :=

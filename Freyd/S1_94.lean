@@ -17,34 +17,36 @@
   S1_70 (imported below).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_70
-import Freyd.S1_90
-import Freyd.S1_85
-import Freyd.S1_92
-import Freyd.S1_52
-import Freyd.S1_58
-import Freyd.S1_60
-import Freyd.S1_77
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_70
+public import Freyd.S1_90
+public import Freyd.S1_85
+public import Freyd.S1_92
+public import Freyd.S1_52
+public import Freyd.S1_58
+public import Freyd.S1_60
+public import Freyd.S1_77
 -- §1.94 power-object name / `interIntersection` cluster (relocated upstream to break the
 -- import cycle S1_94 → InternalForall → InternalForallTopos → S1_94).  Re-exported here so
 -- S1_94's public surface (`powObj`, `nameOf`, `interIntersection`, …) is unchanged for its
 -- own downstream users.
-import Freyd.S1_94_InterIntersection
+public import Freyd.S1_94_InterIntersection
 -- §1.945 topos-regularity infrastructure.  The cycle that used to block this import
 -- (S1_94 → InternalForall → InternalForallTopos → S1_94) was removed by pointing
 -- InternalForall at S1_9 directly instead of S1_94.  InternalForallTopos provides the
 -- Sorry-free `toposHasImages` instance, the `SlicePi.toposPullbacksTransferCovers`
 -- instance, and `topos_is_regular_real : Nonempty (RegularCategory 𝒞)`.
-import Freyd.S1_94_InternalForallTopos
+public import Freyd.S1_94_InternalForallTopos
 -- §1.946 right adjoint f## to inverse image (the `HasRightAdjointImage` keystone): the
 -- subobject-level internal-∀ `radjImage`/`radjImage_adjunction`, built Sorry-free via the
 -- internal-∀ family-glb machinery.  Plus §1.95 `bottomSub` for the strict coterminator.
-import Freyd.S1_946_RightAdjointImage
-import Freyd.S1_95_ToposColimits
+public import Freyd.S1_946_RightAdjointImage
+public import Freyd.S1_95_ToposColimits
 -- §1.944 strict coterminator: `topos_has_coterminator` (built Sorry-free modulo the single
 -- `bottomSub_dom_iso` seed = `0 × A ≅ 0`; see `Freyd/ToposStrictZero.lean`).
-import Freyd.S1_944_ToposStrictZero
+public import Freyd.S1_944_ToposStrictZero
 
 universe v u
 
@@ -66,7 +68,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     Both are built Sorry-free in `Freyd.RightAdjointImage` via the internal-∀ family-glb machinery
     (NO §1.54 transfinite capitalization).  This is the load-bearing instance that turns
     `topos_is_logos` from a `Sorry` into an assembly. -/
-noncomputable instance toposHasRightAdjointImage : HasRightAdjointImage 𝒞 where
+@[expose] public noncomputable instance toposHasRightAdjointImage : HasRightAdjointImage 𝒞 where
   rightAdj f A' := radjImage f A'
   adjunction f B' A' := radjImage_adjunction f B' A'
 

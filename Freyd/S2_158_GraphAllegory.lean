@@ -31,7 +31,9 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_10
+module
+
+public import Freyd.S2_10
 
 namespace Freyd.S2_158
 
@@ -45,7 +47,7 @@ namespace Freyd.S2_158
 
 /-- A directed edge-labelled graph with two distinguished vertices `s`, `t`.
     `edge u v A` says there is an `A`-labelled edge from `u` to `v`. -/
-structure LGraph (L : Type) where
+public structure LGraph (L : Type) where
   V : Type
   edge : V → V → L → Prop
   s : V
@@ -56,25 +58,25 @@ variable {L : Type}
 /-- An EDGE homomorphism ignores the marks: it maps vertices to vertices and
     preserves every labelled directed edge.  This is the notion used for the
     representation `T` (where the target's marks are not looked at). -/
-structure EHom (G H : LGraph L) where
+public structure EHom (G H : LGraph L) where
   onV : G.V → H.V
   map_edge : ∀ {u v : G.V} {A : L}, G.edge u v A → H.edge (onV u) (onV v) A
 
 /-- Identity edge-homomorphism. -/
-def EHom.id (G : LGraph L) : EHom G G := ⟨fun x => x, fun h => h⟩
+@[expose] public def EHom.id (G : LGraph L) : EHom G G := ⟨fun x => x, fun h => h⟩
 
 /-- Composition of edge-homomorphisms (diagram order: first `f`, then `g`). -/
-def EHom.comp {G H K : LGraph L} (f : EHom G H) (g : EHom H K) : EHom G K :=
+@[expose] public def EHom.comp {G H K : LGraph L} (f : EHom G H) (g : EHom H K) : EHom G K :=
   ⟨fun x => g.onV (f.onV x), fun h => g.map_edge (f.map_edge h)⟩
 
 /-- **The representation relation.**  Reading `H` as the labelled graph `T_s`
     (its marks ignored), `Trel G H x y` is `x (T G) y`: there is a graph map
     `G → H` carrying the mark `s` to `x` and the mark `t` to `y`. -/
-def Trel (G H : LGraph L) (x y : H.V) : Prop :=
+@[expose] public def Trel (G H : LGraph L) (x y : H.V) : Prop :=
   ∃ f : EHom G H, f.onV G.s = x ∧ f.onV G.t = y
 
 /-- A map in **G**: an edge-homomorphism that also preserves the two marks. -/
-structure Hom (G H : LGraph L) where
+public structure Hom (G H : LGraph L) where
   toEHom : EHom G H
   map_s : toEHom.onV G.s = H.s
   map_t : toEHom.onV G.t = H.t
@@ -98,7 +100,7 @@ theorem nonempty_hom_iff_trel_marks (G H : LGraph L) :
     Forward: precompose a map into any model with `G₂ → G₁`.  Backward: apply
     the hypothesis to the tautological model `H := G₁` pointed by the identity,
     which forces a map `G₂ → G₁`. -/
-theorem graph_yoneda (G₁ G₂ : LGraph L) :
+public theorem graph_yoneda (G₁ G₂ : LGraph L) :
     Nonempty (Hom G₂ G₁) ↔
       ∀ (H : LGraph L) (x y : H.V), Trel G₁ H x y → Trel G₂ H x y := by
   constructor
@@ -119,7 +121,7 @@ theorem graph_yoneda (G₁ G₂ : LGraph L) :
 
 /-- The disjoint-union edge relation: an `inl-inl` edge is a `G₁`-edge, an
     `inr-inr` edge a `G₂`-edge, and there are no edges across the two copies. -/
-def rawEdge (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → L → Prop :=
+@[expose] public def rawEdge (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → L → Prop :=
   fun p q A => match p, q with
     | Sum.inl a, Sum.inl b => G₁.edge a b A
     | Sum.inr a, Sum.inr b => G₂.edge a b A
@@ -128,7 +130,7 @@ def rawEdge (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V)
 /-- Glue `G₁ ⊔ G₂` along `glueRel`, with marks named by `sv`, `tv`.  The edge
     relation is stated over representatives, so it respects the quotient with no
     congruence obligation. -/
-def glued (G₁ G₂ : LGraph L) (glueRel : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
+@[expose] public def glued (G₁ G₂ : LGraph L) (glueRel : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop)
     (sv tv : G₁.V ⊕ G₂.V) : LGraph L where
   V := Quot glueRel
   edge c d A := ∃ p q, Quot.mk glueRel p = c ∧ Quot.mk glueRel q = d ∧ rawEdge G₁ G₂ p q A
@@ -137,7 +139,7 @@ def glued (G₁ G₂ : LGraph L) (glueRel : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ 
 
 /-- A map OUT of a glued graph is a pair of component maps that agree along the
     identifications.  This is the `←` half of every gluing's universal property. -/
-def gluedOut {G₁ G₂ : LGraph L} {glueRel : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop}
+@[expose] public def gluedOut {G₁ G₂ : LGraph L} {glueRel : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop}
     {sv tv : G₁.V ⊕ G₂.V} {H : LGraph L}
     (g₁ : EHom G₁ H) (g₂ : EHom G₂ H)
     (hagree : ∀ p p', glueRel p p' →
@@ -158,47 +160,47 @@ def gluedOut {G₁ G₂ : LGraph L} {glueRel : (G₁.V ⊕ G₂.V) → (G₁.V �
 
 /-- The identity object `1`: one vertex, no edges, `s = t`.  Represents the
     identity relation. -/
-def one : LGraph L := ⟨Unit, fun _ _ _ => False, (), ()⟩
+@[expose] public def one : LGraph L := ⟨Unit, fun _ _ _ => False, (), ()⟩
 
 /-- Reciprocal: transpose the marks `s` and `t`, keeping edge directions. -/
-def recip (G : LGraph L) : LGraph L := ⟨G.V, G.edge, G.t, G.s⟩
+@[expose] public def recip (G : LGraph L) : LGraph L := ⟨G.V, G.edge, G.t, G.s⟩
 
 /-- Intersection object (`coproduct` in **G**): glue the two `s`'s and the two
     `t`'s. -/
-def meetRel (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop :=
+@[expose] public def meetRel (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop :=
   fun p q => match p, q with
     | Sum.inl a, Sum.inr b => (a = G₁.s ∧ b = G₂.s) ∨ (a = G₁.t ∧ b = G₂.t)
     | _, _ => False
 
-def meet (G₁ G₂ : LGraph L) : LGraph L :=
+@[expose] public def meet (G₁ G₂ : LGraph L) : LGraph L :=
   glued G₁ G₂ (meetRel G₁ G₂) (Sum.inl G₁.s) (Sum.inl G₁.t)
 
 /-- Composition object (diagram order): glue `t` of `G₁` to `s` of `G₂`. -/
-def compRel (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop :=
+@[expose] public def compRel (G₁ G₂ : LGraph L) : (G₁.V ⊕ G₂.V) → (G₁.V ⊕ G₂.V) → Prop :=
   fun p q => match p, q with
     | Sum.inl a, Sum.inr b => a = G₁.t ∧ b = G₂.s
     | _, _ => False
 
-def gcomp (G₁ G₂ : LGraph L) : LGraph L :=
+@[expose] public def gcomp (G₁ G₂ : LGraph L) : LGraph L :=
   glued G₁ G₂ (compRel G₁ G₂) (Sum.inl G₁.s) (Sum.inr G₂.t)
 
 /-! ### `T` preserves the operations -/
 
 /-- `T 1 = 1`: the identity object represents equality. -/
-theorem Trel_one (H : LGraph L) (x y : H.V) : Trel one H x y ↔ x = y := by
+public theorem Trel_one (H : LGraph L) (x y : H.V) : Trel one H x y ↔ x = y := by
   constructor
   · rintro ⟨f, hs, ht⟩; exact hs.symm.trans ht
   · rintro rfl; exact ⟨⟨fun _ => x, fun h => h.elim⟩, rfl, rfl⟩
 
 /-- `T (G°) = (T G)°`: reciprocation of graphs becomes reciprocation of relations. -/
-theorem Trel_recip (G H : LGraph L) (x y : H.V) :
+public theorem Trel_recip (G H : LGraph L) (x y : H.V) :
     Trel (recip G) H x y ↔ Trel G H y x := by
   constructor
   · rintro ⟨f, hs, ht⟩; exact ⟨⟨f.onV, f.map_edge⟩, ht, hs⟩
   · rintro ⟨f, hs, ht⟩; exact ⟨⟨f.onV, f.map_edge⟩, ht, hs⟩
 
 /-- `T (G₁ ∩ G₂) = T G₁ ∩ T G₂`. -/
-theorem Trel_meet (G₁ G₂ H : LGraph L) (x y : H.V) :
+public theorem Trel_meet (G₁ G₂ H : LGraph L) (x y : H.V) :
     Trel (meet G₁ G₂) H x y ↔ Trel G₁ H x y ∧ Trel G₂ H x y := by
   constructor
   · rintro ⟨f, hfs, hft⟩
@@ -228,7 +230,7 @@ theorem Trel_meet (G₁ G₂ H : LGraph L) (x y : H.V) :
     · show Sum.elim g₁.onV g₂.onV (Sum.inl G₁.t) = y; exact hg1t
 
 /-- `T (G₁ ; G₂) = T G₁ ∘ T G₂` (relational composition, diagram order). -/
-theorem Trel_gcomp (G₁ G₂ H : LGraph L) (x y : H.V) :
+public theorem Trel_gcomp (G₁ G₂ H : LGraph L) (x y : H.V) :
     Trel (gcomp G₁ G₂) H x y ↔ ∃ z, Trel G₁ H x z ∧ Trel G₂ H z y := by
   constructor
   · rintro ⟨f, hfs, hft⟩
@@ -263,19 +265,19 @@ theorem Trel_gcomp (G₁ G₂ H : LGraph L) (x y : H.V) :
 
 /-- The arrow graph `[A]`: two vertices `false = s`, `true = t`, one
     `A`-labelled edge `s → t`. -/
-def arrow (A : L) : LGraph L where
+@[expose] public def arrow (A : L) : LGraph L where
   V := Bool
   edge p q B := p = false ∧ q = true ∧ B = A
   s := false
   t := true
 
 /-- The defining edge `s → t` of the arrow graph. -/
-theorem arrow_edge (A : L) : (arrow A).edge (arrow A).s (arrow A).t A :=
+public theorem arrow_edge (A : L) : (arrow A).edge (arrow A).s (arrow A).t A :=
   ⟨rfl, rfl, rfl⟩
 
 /-- `T [A] = A`: the represented relation of the arrow graph is the label's
     relation in the model. -/
-theorem Trel_arrow (A : L) (H : LGraph L) (x y : H.V) :
+public theorem Trel_arrow (A : L) (H : LGraph L) (x y : H.V) :
     Trel (arrow A) H x y ↔ H.edge x y A := by
   constructor
   · rintro ⟨f, hs, ht⟩
@@ -286,7 +288,7 @@ theorem Trel_arrow (A : L) (H : LGraph L) (x y : H.V) :
     rintro p q B ⟨rfl, rfl, rfl⟩; exact h
 
 /-- Allegorical terms over the labels `L`. -/
-inductive Term (L : Type) where
+public inductive Term (L : Type) where
   | var : L → Term L
   | one : Term L
   | recip : Term L → Term L
@@ -295,7 +297,7 @@ inductive Term (L : Type) where
 
 /-- `[E]`: the graph of a term, built from the arrow graphs and the graph
     operations. -/
-def toGraph : Term L → LGraph L
+@[expose] public def toGraph : Term L → LGraph L
   | .var A => arrow A
   | .one => one
   | .recip e => recip (toGraph e)
@@ -303,7 +305,7 @@ def toGraph : Term L → LGraph L
   | .comp a b => gcomp (toGraph a) (toGraph b)
 
 /-- `⟦E⟧`: the relation of a term in the model `H` (labels ↦ `H`-edges). -/
-def toRel (H : LGraph L) : Term L → H.V → H.V → Prop
+@[expose] public def toRel (H : LGraph L) : Term L → H.V → H.V → Prop
   | .var A, x, y => H.edge x y A
   | .one, x, y => x = y
   | .recip e, x, y => toRel H e y x
@@ -314,7 +316,7 @@ def toRel (H : LGraph L) : Term L → H.V → H.V → Prop
     relation a term denotes in `H` is exactly the represented relation of its
     graph.  Proof: induction on the term, discharging each step by the matching
     `T`-preservation lemma. -/
-theorem toRel_eq_Trel (H : LGraph L) (e : Term L) (x y : H.V) :
+public theorem toRel_eq_Trel (H : LGraph L) (e : Term L) (x y : H.V) :
     toRel H e x y ↔ Trel (toGraph e) H x y := by
   induction e generalizing x y with
   | var A => exact (Trel_arrow A H x y).symm
@@ -360,29 +362,29 @@ theorem decision (E₁ E₂ : Term L) :
 
 /-- `grel G₁ G₂`: `G₁` and `G₂` represent the same relation in every model.  By
     `graph_yoneda` this is exactly mutual `≤` in `Ĝ`. -/
-def grel (G₁ G₂ : LGraph L) : Prop :=
+@[expose] public def grel (G₁ G₂ : LGraph L) : Prop :=
   ∀ (H : LGraph L) (x y : H.V), Trel G₁ H x y ↔ Trel G₂ H x y
 
-theorem grel_refl (G : LGraph L) : grel G G := fun _ _ _ => Iff.rfl
-theorem grel_symm {G₁ G₂ : LGraph L} (h : grel G₁ G₂) : grel G₂ G₁ :=
+public theorem grel_refl (G : LGraph L) : grel G G := fun _ _ _ => Iff.rfl
+public theorem grel_symm {G₁ G₂ : LGraph L} (h : grel G₁ G₂) : grel G₂ G₁ :=
   fun H x y => (h H x y).symm
-theorem grel_trans {G₁ G₂ G₃ : LGraph L} (h₁ : grel G₁ G₂) (h₂ : grel G₂ G₃) :
+public theorem grel_trans {G₁ G₂ G₃ : LGraph L} (h₁ : grel G₁ G₂) (h₂ : grel G₂ G₃) :
     grel G₁ G₃ := fun H x y => (h₁ H x y).trans (h₂ H x y)
 
 /-! ### Congruence of the operations for `grel` -/
 
-theorem recip_congr {G₁ G₂ : LGraph L} (h : grel G₁ G₂) :
+public theorem recip_congr {G₁ G₂ : LGraph L} (h : grel G₁ G₂) :
     grel (recip G₁) (recip G₂) := by
   intro H x y; simp only [Trel_recip]; exact h H y x
 
-theorem meet_congr {G₁ G₁' G₂ G₂' : LGraph L} (h₁ : grel G₁ G₁') (h₂ : grel G₂ G₂') :
+public theorem meet_congr {G₁ G₁' G₂ G₂' : LGraph L} (h₁ : grel G₁ G₁') (h₂ : grel G₂ G₂') :
     grel (meet G₁ G₂) (meet G₁' G₂') := by
   intro H x y; simp only [Trel_meet]
   constructor
   · rintro ⟨ha, hb⟩; exact ⟨(h₁ H x y).mp ha, (h₂ H x y).mp hb⟩
   · rintro ⟨ha, hb⟩; exact ⟨(h₁ H x y).mpr ha, (h₂ H x y).mpr hb⟩
 
-theorem gcomp_congr {G₁ G₁' G₂ G₂' : LGraph L} (h₁ : grel G₁ G₁') (h₂ : grel G₂ G₂') :
+public theorem gcomp_congr {G₁ G₁' G₂ G₂' : LGraph L} (h₁ : grel G₁ G₁') (h₂ : grel G₂ G₂') :
     grel (gcomp G₁ G₂) (gcomp G₁' G₂') := by
   intro H x y; simp only [Trel_gcomp]
   constructor
@@ -391,48 +393,48 @@ theorem gcomp_congr {G₁ G₁' G₂ G₂' : LGraph L} (h₁ : grel G₁ G₁') 
 
 /-! ### The allegory laws as `grel`-identities -/
 
-theorem recip_recip_law (G : LGraph L) : grel (recip (recip G)) G := by
+public theorem recip_recip_law (G : LGraph L) : grel (recip (recip G)) G := by
   intro H x y; simp only [Trel_recip]
 
-theorem recip_gcomp_law (G₁ G₂ : LGraph L) :
+public theorem recip_gcomp_law (G₁ G₂ : LGraph L) :
     grel (recip (gcomp G₁ G₂)) (gcomp (recip G₂) (recip G₁)) := by
   intro H x y; simp only [Trel_recip, Trel_gcomp]
   constructor <;> rintro ⟨z, h1, h2⟩ <;> exact ⟨z, h2, h1⟩
 
-theorem recip_meet_law (G₁ G₂ : LGraph L) :
+public theorem recip_meet_law (G₁ G₂ : LGraph L) :
     grel (recip (meet G₁ G₂)) (meet (recip G₁) (recip G₂)) := by
   intro H x y; simp only [Trel_recip, Trel_meet]
 
-theorem meet_idem_law (G : LGraph L) : grel (meet G G) G := by
+public theorem meet_idem_law (G : LGraph L) : grel (meet G G) G := by
   intro H x y; simp only [Trel_meet, and_self]
 
-theorem meet_comm_law (G₁ G₂ : LGraph L) : grel (meet G₁ G₂) (meet G₂ G₁) := by
+public theorem meet_comm_law (G₁ G₂ : LGraph L) : grel (meet G₁ G₂) (meet G₂ G₁) := by
   intro H x y; simp only [Trel_meet]; exact and_comm
 
-theorem meet_assoc_law (G₁ G₂ G₃ : LGraph L) :
+public theorem meet_assoc_law (G₁ G₂ G₃ : LGraph L) :
     grel (meet G₁ (meet G₂ G₃)) (meet (meet G₁ G₂) G₃) := by
   intro H x y; simp only [Trel_meet]; exact and_assoc.symm
 
-theorem one_gcomp_law (G : LGraph L) : grel (gcomp one G) G := by
+public theorem one_gcomp_law (G : LGraph L) : grel (gcomp one G) G := by
   intro H x y; simp only [Trel_gcomp, Trel_one]
   constructor
   · rintro ⟨z, rfl, h⟩; exact h
   · intro h; exact ⟨x, rfl, h⟩
 
-theorem gcomp_one_law (G : LGraph L) : grel (gcomp G one) G := by
+public theorem gcomp_one_law (G : LGraph L) : grel (gcomp G one) G := by
   intro H x y; simp only [Trel_gcomp, Trel_one]
   constructor
   · rintro ⟨z, h, rfl⟩; exact h
   · intro h; exact ⟨y, h, rfl⟩
 
-theorem gcomp_assoc_law (G₁ G₂ G₃ : LGraph L) :
+public theorem gcomp_assoc_law (G₁ G₂ G₃ : LGraph L) :
     grel (gcomp (gcomp G₁ G₂) G₃) (gcomp G₁ (gcomp G₂ G₃)) := by
   intro H x y; simp only [Trel_gcomp]
   constructor
   · rintro ⟨z, ⟨w, h1, h2⟩, h3⟩; exact ⟨w, h1, z, h2, h3⟩
   · rintro ⟨w, h1, z, h2, h3⟩; exact ⟨z, ⟨w, h1, h2⟩, h3⟩
 
-theorem semidistrib_law (R S T : LGraph L) :
+public theorem semidistrib_law (R S T : LGraph L) :
     grel (gcomp R (meet S T))
       (meet (meet (gcomp R S) (gcomp R (meet S T))) (gcomp R T)) := by
   intro H x y; simp only [Trel_meet, Trel_gcomp]
@@ -441,7 +443,7 @@ theorem semidistrib_law (R S T : LGraph L) :
     exact ⟨⟨⟨z, hr, hs⟩, ⟨z, hr, hs, ht⟩⟩, ⟨z, hr, ht⟩⟩
   · intro hR; exact hR.1.2
 
-theorem modular_law (R S T : LGraph L) :
+public theorem modular_law (R S T : LGraph L) :
     grel (meet (gcomp R S) T)
       (meet (meet (gcomp R S) T) (gcomp (meet R (gcomp T (recip S))) S)) := by
   intro H x y; simp only [Trel_meet, Trel_gcomp, Trel_recip]
@@ -457,37 +459,37 @@ open Freyd.Alg (Allegory)
 
 /-- The setoid on graphs: identify `G₁, G₂` when they represent equal relations
     (equivalently, mutual `≤` — Freyd's `Ĝ = poset of G°`). -/
-instance graphSetoid : Setoid (LGraph L) := ⟨grel, ⟨grel_refl, grel_symm, grel_trans⟩⟩
+@[expose] public instance graphSetoid : Setoid (LGraph L) := ⟨grel, ⟨grel_refl, grel_symm, grel_trans⟩⟩
 
 /-- `Ĝ`: graphs modulo `grel`.  Carries the one-object allegory of §2.158.
     `abbrev` (reducible) so the `Quotient` recursors see through it.  Lives in
     `Type 1` since `LGraph L` carries a `Type`-valued vertex field. -/
-abbrev GHat (L : Type) := Quotient (graphSetoid : Setoid (LGraph L))
+@[expose] public abbrev GHat (L : Type) := Quotient (graphSetoid : Setoid (LGraph L))
 
 /-- The class of a graph in `Ĝ`. -/
-def ghat (G : LGraph L) : GHat L := Quotient.mk graphSetoid G
+@[expose] public def ghat (G : LGraph L) : GHat L := Quotient.mk graphSetoid G
 
 /-- Reciprocation descends to `Ĝ`. -/
-def ghatRecip : GHat L → GHat L :=
+@[expose] public def ghatRecip : GHat L → GHat L :=
   Quotient.lift (fun G => ghat (recip G)) (fun _ _ h => Quotient.sound (recip_congr h))
 
 /-- Intersection descends to `Ĝ`. -/
-def ghatMeet : GHat L → GHat L → GHat L :=
+@[expose] public def ghatMeet : GHat L → GHat L → GHat L :=
   Quotient.lift₂ (fun G₁ G₂ => ghat (meet G₁ G₂))
     (fun _ _ _ _ h₁ h₂ => Quotient.sound (meet_congr h₁ h₂))
 
 /-- Composition descends to `Ĝ`. -/
-def ghatComp : GHat L → GHat L → GHat L :=
+@[expose] public def ghatComp : GHat L → GHat L → GHat L :=
   Quotient.lift₂ (fun G₁ G₂ => ghat (gcomp G₁ G₂))
     (fun _ _ _ _ h₁ h₂ => Quotient.sound (gcomp_congr h₁ h₂))
 
 /-- The single object `*` of the one-object allegory `Ĝ`. -/
-inductive GStar (L : Type) where
+public inductive GStar (L : Type) where
   | star
 
 /-- **§2.158**: `Ĝ` is a category — the single object `*` with hom-set `GHat L`,
     composition the descended graph-composition, identity the one-vertex graph. -/
-instance ghatCat : Cat (GStar L) where
+@[expose] public instance ghatCat : Cat (GStar L) where
   Hom _ _ := GHat L
   id _ := ghat one
   comp R S := ghatComp R S
@@ -503,28 +505,28 @@ instance ghatCat : Cat (GStar L) where
     recursors unfold cleanly.  (Inside the `Allegory` instance the hom-set is the
     inherited `Cat.Hom`, whose unfolding to `GHat L` is unreliable.) -/
 
-theorem ghat_recip_recip (R : GHat L) : ghatRecip (ghatRecip R) = R := by
+public theorem ghat_recip_recip (R : GHat L) : ghatRecip (ghatRecip R) = R := by
   refine Quotient.inductionOn R (fun G => ?_); exact Quotient.sound (recip_recip_law G)
 
-theorem ghat_recip_comp (R S : GHat L) :
+public theorem ghat_recip_comp (R S : GHat L) :
     ghatRecip (ghatComp R S) = ghatComp (ghatRecip S) (ghatRecip R) := by
   refine Quotient.inductionOn₂ R S (fun G₁ G₂ => ?_)
   exact Quotient.sound (recip_gcomp_law G₁ G₂)
 
-theorem ghat_recip_inter (R S : GHat L) :
+public theorem ghat_recip_inter (R S : GHat L) :
     ghatRecip (ghatMeet R S) = ghatMeet (ghatRecip R) (ghatRecip S) := by
   refine Quotient.inductionOn₂ R S (fun G₁ G₂ => ?_)
   exact Quotient.sound (recip_meet_law G₁ G₂)
 
-theorem ghat_inter_idem (R : GHat L) : ghatMeet R R = R := by
+public theorem ghat_inter_idem (R : GHat L) : ghatMeet R R = R := by
   refine Quotient.inductionOn R (fun G => ?_); exact Quotient.sound (meet_idem_law G)
 
-theorem ghat_inter_comm (R S : GHat L) : ghatMeet R S = ghatMeet S R := by
+public theorem ghat_inter_comm (R S : GHat L) : ghatMeet R S = ghatMeet S R := by
   refine Quotient.inductionOn₂ R S (fun G₁ G₂ => ?_)
   exact Quotient.sound (meet_comm_law G₁ G₂)
 
 /-- Associativity of `∩` on `Ĝ`. -/
-theorem ghat_inter_assoc (R S T : GHat L) :
+public theorem ghat_inter_assoc (R S T : GHat L) :
     ghatMeet R (ghatMeet S T) = ghatMeet (ghatMeet R S) T := by
   obtain ⟨G₁, rfl⟩ := Quotient.exists_rep R
   obtain ⟨G₂, rfl⟩ := Quotient.exists_rep S
@@ -532,7 +534,7 @@ theorem ghat_inter_assoc (R S T : GHat L) :
   exact Quotient.sound (meet_assoc_law G₁ G₂ G₃)
 
 /-- Semi-distributivity on `Ĝ`. -/
-theorem ghat_semidistrib (R S T : GHat L) :
+public theorem ghat_semidistrib (R S T : GHat L) :
     ghatComp R (ghatMeet S T)
       = ghatMeet (ghatMeet (ghatComp R S) (ghatComp R (ghatMeet S T))) (ghatComp R T) := by
   obtain ⟨G₁, rfl⟩ := Quotient.exists_rep R
@@ -541,7 +543,7 @@ theorem ghat_semidistrib (R S T : GHat L) :
   exact Quotient.sound (semidistrib_law G₁ G₂ G₃)
 
 /-- The modular law on `Ĝ`. -/
-theorem ghat_modular (R S T : GHat L) :
+public theorem ghat_modular (R S T : GHat L) :
     ghatMeet (ghatComp R S) T
       = ghatMeet (ghatMeet (ghatComp R S) T)
           (ghatComp (ghatMeet R (ghatComp T (ghatRecip S))) S) := by
@@ -552,7 +554,7 @@ theorem ghat_modular (R S T : GHat L) :
 
 /-- **§2.158 (Target 2)**: `Ĝ` is a genuine one-object `Allegory` (repo class,
     §2.11).  Every axiom is transported from `Rel(S)` through the `grel`-laws. -/
-instance ghatAllegory : Allegory (GStar L) where
+@[expose] public instance ghatAllegory : Allegory (GStar L) where
   toCat := ghatCat
   recip R := ghatRecip R
   inter R S := ghatMeet R S
@@ -578,7 +580,7 @@ instance ghatAllegory : Allegory (GStar L) where
 
 /-- The represented-relation order: `G₁ ⊆ G₂` in every model.  By `graph_yoneda`
     this is exactly `∃ map G₂ → G₁`, i.e. `G₁ ≤ G₂` in `Ĝ`. -/
-def Gle (G₁ G₂ : LGraph L) : Prop :=
+@[expose] public def Gle (G₁ G₂ : LGraph L) : Prop :=
   ∀ (H : LGraph L) (x y : H.V), Trel G₁ H x y → Trel G₂ H x y
 
 /-- Recast specific axiom `A ⊆ A ∩ A` (the one non-separated containment left,

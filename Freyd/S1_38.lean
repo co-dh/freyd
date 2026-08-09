@@ -16,11 +16,13 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_41
-import Freyd.S1_81
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_41
+public import Freyd.S1_81
 
 
 open Freyd
@@ -322,7 +324,7 @@ theorem equiv_reflects_sat (Q : QSequence) {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [C
   We first give the product category structure, then prove closure. -/
 
 /-- The PRODUCT CATEGORY `𝒞 × 𝒟`: objects are pairs, morphisms are pairs of morphisms. -/
-instance prodCat (𝒞 𝒟 : Type u) [Cat.{v} 𝒞] [Cat.{v} 𝒟] : Cat.{v} (𝒞 × 𝒟) where
+@[expose] public instance prodCat (𝒞 𝒟 : Type u) [Cat.{v} 𝒞] [Cat.{v} 𝒟] : Cat.{v} (𝒞 × 𝒟) where
   Hom p q        := (p.1 ⟶ q.1) × (p.2 ⟶ q.2)
   id p           := (Cat.id p.1, Cat.id p.2)
   comp f g       := (f.1 ≫ g.1, f.2 ≫ g.2)

@@ -11,14 +11,16 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_33
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_33
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
 
 
 open Freyd
@@ -36,7 +38,7 @@ namespace Freyd
   representatives. -/
 
 /-- A binary relation: jointly-monic pair a: T→A, b: T→B. -/
-structure BinRel (𝒞 : Type u) [Cat.{v} 𝒞] (A B : 𝒞) where
+public structure BinRel (𝒞 : Type u) [Cat.{v} 𝒞] (A B : 𝒞) where
   src  : 𝒞
   colA : src ⟶ A
   colB : src ⟶ B
@@ -44,11 +46,11 @@ structure BinRel (𝒞 : Type u) [Cat.{v} 𝒞] (A B : 𝒞) where
 
 /-- Two relations are considered equal if they are isomorphic as tables.
     (We don't quotient; containment gives the preorder.) -/
-def RelHom {A B : 𝒞} (R S : BinRel 𝒞 A B) : Prop :=
+@[expose] public def RelHom {A B : 𝒞} (R S : BinRel 𝒞 A B) : Prop :=
   ∃ (h : R.src ⟶ S.src), h ≫ S.colA = R.colA ∧ h ≫ S.colB = R.colB
 
 /-- R ≤ S as relations (containment order, §1.413).  Notation `R ⊂ S` follows the book. -/
-def RelLe (R S : BinRel 𝒞 A B) : Prop := Nonempty (RelHom R S)
+@[expose] public def RelLe (R S : BinRel 𝒞 A B) : Prop := Nonempty (RelHom R S)
 
 /-- Infix `⊂` for relation containment (the book's notation). -/
 infix:50 " ⊂ " => RelLe
@@ -86,7 +88,7 @@ theorem RelHom_monic {A B : 𝒞} {R S : BinRel 𝒞 A B}
 
 /-! ## §1.564 Graph of a morphism -/
 
-def graph {A B : 𝒞} (x : A ⟶ B) : BinRel 𝒞 A B where
+@[expose] public def graph {A B : 𝒞} (x : A ⟶ B) : BinRel 𝒞 A B where
   src  := A
   colA := Cat.id A
   colB := x
@@ -97,11 +99,11 @@ def graph {A B : 𝒞} (x : A ⟶ B) : BinRel 𝒞 A B where
 /-- A map *is* a relation (Freyd): a morphism `x : A ⟶ B` silently embeds into the
     relational calculus as its graph `↑x = graph x`.  This lets §1.62 read in book
     notation — `x° ⊚ f` for `(graph x)° ⊚ (graph f)`. -/
-instance graphCoe {A B : 𝒞} : Coe (A ⟶ B) (BinRel 𝒞 A B) := ⟨graph⟩
+@[expose] public instance graphCoe {A B : 𝒞} : Coe (A ⟶ B) (BinRel 𝒞 A B) := ⟨graph⟩
 
 /-! ## §1.561 Reciprocal -/
 
-def reciprocal {A B : 𝒞} (R : BinRel 𝒞 A B) : BinRel 𝒞 B A where
+@[expose] public def reciprocal {A B : 𝒞} (R : BinRel 𝒞 A B) : BinRel 𝒞 B A where
   src  := R.src
   colA := R.colB
   colB := R.colA
@@ -110,7 +112,7 @@ def reciprocal {A B : 𝒞} (R : BinRel 𝒞 A B) : BinRel 𝒞 B A where
 /-- The reciprocal R°: swap columns (§1.561).  Postfix notation `_°`. -/
 postfix:max (name := relRecip) "°" => reciprocal
 
-theorem reciprocal_invol {A B : 𝒞} (R : BinRel 𝒞 A B) : reciprocal (reciprocal R) = R := by
+public theorem reciprocal_invol {A B : 𝒞} (R : BinRel 𝒞 A B) : reciprocal (reciprocal R) = R := by
   unfold reciprocal; rfl
 
 /-! ## §1.562 Semi-lattice of relations
@@ -125,7 +127,7 @@ section
 variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
 /-- A monic into the product gives a jointly-monic pair (via fst, snd). -/
-theorem monicPair_of_monic_pair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
+public theorem monicPair_of_monic_pair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
     (h : Monic (pair a b)) : MonicPair a b := by
   intro W f g ha hb
   apply h f g
@@ -140,7 +142,7 @@ theorem monicPair_of_monic_pair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
   rw [hf, hg]
 
 /-- A jointly-monic pair gives a monic into the product. -/
-theorem monic_pair_of_monicPair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b) :
+public theorem monic_pair_of_monicPair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b) :
     Monic (pair a b) := by
   intro W f g h
   apply hp f g
@@ -153,7 +155,7 @@ theorem monic_pair_of_monicPair {T A B : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp :
 
 /-- Intersection (meet) of two relations R, S : A → B.
     §1.562: Pullback of the subobject embeddings `pair colA colB` into A×B. -/
-def intersect {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B :=
+@[expose] public def intersect {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B :=
   let pb := HasPullbacks.has (pair R.colA R.colB) (pair S.colA S.colB)
   { src := pb.cone.pt
     colA := pb.cone.π₁ ≫ R.colA
@@ -198,11 +200,11 @@ infixl:70 " ⊓ " => intersect
 
 /-- Reflexivity of relational containment. -/
 @[refl]
-theorem rel_le_refl {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R R :=
+public theorem rel_le_refl {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R R :=
   ⟨⟨Cat.id R.src, Cat.id_comp _, Cat.id_comp _⟩⟩
 
 /-- Transitivity of relational containment. -/
-theorem rel_le_trans {A B : 𝒞} {R S T : BinRel 𝒞 A B} (hRS : RelLe R S) (hST : RelLe S T) :
+public theorem rel_le_trans {A B : 𝒞} {R S T : BinRel 𝒞 A B} (hRS : RelLe R S) (hST : RelLe S T) :
     RelLe R T := by
   rcases hRS with ⟨⟨f, hfA, hfB⟩⟩
   rcases hST with ⟨⟨g, hgA, hgB⟩⟩
@@ -217,17 +219,17 @@ theorem rel_le_trans {A B : 𝒞} {R S T : BinRel 𝒞 A B} (hRS : RelLe R S) (h
 /-- `Trans` instance for relational containment `⊂`, so the book's pointfree proofs can
     be written as `calc R ⊂ … ⊂ … ⊂ S` chains (Freyd's calculus-of-relations style)
     instead of nested `rel_le_trans`.  Pure Ch1 — no allegory axiom. -/
-instance relLeTrans {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟] [HasPullbacks 𝒟] {A B : 𝒟} :
+@[expose] public instance relLeTrans {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟] [HasPullbacks 𝒟] {A B : 𝒟} :
     Trans (@RelLe 𝒟 _ A B) (@RelLe 𝒟 _ A B) (@RelLe 𝒟 _ A B) :=
   ⟨rel_le_trans⟩
 
 /-- R ⊓ S ≤ R (projection via π₁). -/
-theorem intersect_le_left {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe (R ⊓ S) R := by
+public theorem intersect_le_left {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe (R ⊓ S) R := by
   let pb := HasPullbacks.has (pair R.colA R.colB) (pair S.colA S.colB)
   refine ⟨⟨pb.cone.π₁, rfl, rfl⟩⟩
 
 /-- R ⊓ S ≤ S (via π₂ and the pullback square). -/
-theorem intersect_le_right {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe (R ⊓ S) S := by
+public theorem intersect_le_right {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe (R ⊓ S) S := by
   let pb := HasPullbacks.has (pair R.colA R.colB) (pair S.colA S.colB)
   have h_sq := pb.cone.w
   have h_colA : pb.cone.π₂ ≫ S.colA = (R ⊓ S).colA := by
@@ -251,7 +253,7 @@ theorem intersect_le_right {A B : 𝒞} (R S : BinRel 𝒞 A B) : RelLe (R ⊓ S
   exact ⟨⟨pb.cone.π₂, h_colA, h_colB⟩⟩
 
 /-- Universal property: T ≤ R ∧ T ≤ S → T ≤ R ⊓ S. -/
-theorem le_intersect {A B : 𝒞} {T R S : BinRel 𝒞 A B} (hTR : RelLe T R) (hTS : RelLe T S) :
+public theorem le_intersect {A B : 𝒞} {T R S : BinRel 𝒞 A B} (hTR : RelLe T R) (hTS : RelLe T S) :
     RelLe T (R ⊓ S) := by
   rcases hTR with ⟨⟨f, hfA, hfB⟩⟩
   rcases hTS with ⟨⟨g, hgA, hgB⟩⟩
@@ -311,7 +313,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     1. Pull back R.colB and S.colA over B → object P
     2. Map P→A via P→R.src→A, P→C via P→S.src→C
     3. Take the image of the span P→A×C → this is the composed relation. -/
-def compose {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) : BinRel 𝒞 A C :=
+@[expose] public def compose {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) : BinRel 𝒞 A C :=
   -- Step 1: pullback of R.colB and S.colA over B
   let pb := HasPullbacks.has R.colB S.colA
   -- Step 2: span P→A and P→C
@@ -359,21 +361,21 @@ infixr:80 (name := relCompose) " ⊚ " => compose
 
 /-- **§1.564**: R : A → B is ENTIRE if 1_A ≤ RR° — the identity relation
     on A is contained in R ⊚ R° : A → A. -/
-def Entire {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
+@[expose] public def Entire {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
   RelLe (graph (Cat.id A)) (R ⊚ R°)
 
 /-- **§1.564**: R is SIMPLE if R°R ≤ 1_B — R° ⊚ R : B → B
     is contained in the identity on B. -/
-def Simple {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
+@[expose] public def Simple {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
   RelLe (R° ⊚ R) (graph (Cat.id B))
 
 /-- R is a MAP if it is entire and simple.  Maps are exactly graphs (§1.564). -/
-def Map {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
+@[expose] public def Map {A B : 𝒞} (R : BinRel 𝒞 A B) : Prop :=
   Entire R ∧ Simple R
 
 /-- `pair x x = x ≫ diag _` — a morphism followed by the diagonal equals
     the pair of itself.  Used throughout the entire/simple proofs. -/
-theorem pair_diag_eq {X B : 𝒞} (x : X ⟶ B) : pair x x = x ≫ diag B :=
+public theorem pair_diag_eq {X B : 𝒞} (x : X ⟶ B) : pair x x = x ≫ diag B :=
   (pair_uniq x x (x ≫ diag B)
     (by rw [Cat.assoc, show diag B ≫ fst = Cat.id B from fst_pair _ _, Cat.comp_id])
     (by rw [Cat.assoc, show diag B ≫ snd = Cat.id B from snd_pair _ _, Cat.comp_id])).symm
@@ -386,7 +388,7 @@ theorem pair_diag_eq {X B : 𝒞} (x : X ⟶ B) : pair x x = x ≫ diag B :=
     Entire ⇒ cover: if `x` factors through a monic `m`, the span `sp` factors through the
     monic `mm = m × m`, so by minimality of the image, `1 = h ≫ (i ≫ fst)` factors
     through `m`: `m` is a split epi, and a monic split epi is an iso. -/
-theorem tabulated_is_entire_iff_left_cover {A B T : 𝒞} (x : T ⟶ A) (y : T ⟶ B)
+public theorem tabulated_is_entire_iff_left_cover {A B T : 𝒞} (x : T ⟶ A) (y : T ⟶ B)
     (hp : MonicPair x y) : Entire (BinRel.mk T x y hp) ↔ Cover x := by
   /- Shared setup — the data of R ⊚ R° (left panel of the SVG):
 
@@ -546,7 +548,7 @@ theorem tabulated_is_entire_iff_left_cover {A B T : 𝒞} (x : T ⟶ A) (y : T �
 
 /-- A SPLIT EPI is a cover: if `s ≫ k = 1`, then any monic `m` with `k = g ≫ m`
     is a split epi (`(s ≫ g) ≫ m = 1`), hence — being monic — an iso. -/
-theorem split_epi_cover {X Y : 𝒞} {k : X ⟶ Y} {s : Y ⟶ X} (hsk : s ≫ k = Cat.id Y) :
+public theorem split_epi_cover {X Y : 𝒞} {k : X ⟶ Y} {s : Y ⟶ X} (hsk : s ≫ k = Cat.id Y) :
     Cover k := by
   intro C m g hm hgm
   -- `s ≫ g` is a right inverse of `m`: (s≫g)≫m = s≫(g≫m) = s≫k = id_Y
@@ -562,14 +564,14 @@ theorem split_epi_cover {X Y : 𝒞} {k : X ⟶ Y} {s : Y ⟶ X} (hsk : s ≫ k 
   exact ⟨s ≫ g, hleft, hright⟩
 
 /-- An isomorphism is a cover (§1.512). -/
-theorem iso_cover {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) : Cover f := by
+public theorem iso_cover {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) : Cover f := by
   obtain ⟨finv, -, hfinv_f⟩ := hf
   exact split_epi_cover hfinv_f
 
 /-- **§1.564**: A relation ⟨T; a, b⟩ is SIMPLE iff its left leg `a` is monic.
     With `tabulated_is_entire_iff_left_cover`, this yields: a tabulated relation
     is a MAP iff its left leg is an isomorphism. -/
-theorem tabulated_is_simple_iff_left_monic {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
+public theorem tabulated_is_simple_iff_left_monic {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
     (hp : MonicPair a b) : Simple (BinRel.mk T a b hp) ↔ Monic a := by
   -- shared pullback data for both directions
   let pbA := HasPullbacks.has a a
@@ -651,7 +653,7 @@ theorem tabulated_is_simple_iff_left_monic {A B T : 𝒞} (a : T ⟶ A) (b : T �
 /-- **§1.564**: A relation ⟨T; a:T→A, b:T→B⟩ tabulated by a monic pair is a
     MAP (entire + simple) iff `a` is an isomorphism.  Maps are exactly the
     graphs of morphisms: if `R` is a map then `R = graph(a⁻¹ ≫ b)`. -/
-theorem tabulated_is_map_iff_left_iso {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b) :
+public theorem tabulated_is_map_iff_left_iso {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b) :
     Map (BinRel.mk T a b hp) ↔ IsIso a := by
   rw [Map, tabulated_is_entire_iff_left_cover a b hp,
     tabulated_is_simple_iff_left_monic a b hp]
@@ -664,7 +666,7 @@ theorem tabulated_is_map_iff_left_iso {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B)
 /-- **§1.564**: When the left leg `a` is iso, the tabulated relation equals the graph
     of `a⁻¹ ≫ b` (mutual `⊂`).  Together with `tabulated_is_map_iff_left_iso`,
     every map IS the graph of a morphism. -/
-theorem tabulated_left_iso_eq_graph {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b)
+public theorem tabulated_left_iso_eq_graph {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (hp : MonicPair a b)
     (ainv : A ⟶ T) (ha_ainv : a ≫ ainv = Cat.id T) (hainv_a : ainv ≫ a = Cat.id A) :
     RelLe (BinRel.mk T a b hp) (graph (ainv ≫ b)) ∧ RelLe (graph (ainv ≫ b)) (BinRel.mk T a b hp) := by
   let R := BinRel.mk T a b hp
@@ -684,7 +686,7 @@ theorem tabulated_left_iso_eq_graph {A B T : 𝒞} (a : T ⟶ A) (b : T ⟶ B) (
 /-- **§1.564**: The graph of any morphism `g : A → B` is a map (entire + simple).
     Follows from: graph(g) is tabulated by ⟨A; id_A, g⟩, and id_A is both cover
     and monic.  This is the key fact that lets us reflect maps back to morphisms. -/
-theorem graph_is_map {A B : 𝒞} [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] (g : A ⟶ B) :
+public theorem graph_is_map {A B : 𝒞} [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] (g : A ⟶ B) :
     Map (graph g) := by
   have hp : MonicPair (Cat.id A : A ⟶ A) g := by
     intro W f g' h _hg
@@ -890,13 +892,13 @@ theorem horn_sentence_reflected_from_Set (A : Type u) [Cat.{v} A] [RegularCatego
   A PUSHOUT is a pullback in the opposite category: given f: C→A, g: C→B,
   a pushout is P with maps A→P, B→P universal among cocones. -/
 
-structure PushoutCocone {A B C : 𝒞} (f : C ⟶ A) (g : C ⟶ B) where
+public structure PushoutCocone {A B C : 𝒞} (f : C ⟶ A) (g : C ⟶ B) where
   pt : 𝒞
   ι₁ : A ⟶ pt
   ι₂ : B ⟶ pt
   w  : f ≫ ι₁ = g ≫ ι₂
 
-class HasPushout {A B C : 𝒞} (f : C ⟶ A) (g : C ⟶ B) where
+public class HasPushout {A B C : 𝒞} (f : C ⟶ A) (g : C ⟶ B) where
   cocone : PushoutCocone f g
   desc  : ∀ (c : PushoutCocone f g), cocone.pt ⟶ c.pt
   fac₁  : ∀ (c : PushoutCocone f g), cocone.ι₁ ≫ desc c = c.ι₁
@@ -993,7 +995,7 @@ theorem pullback_of_surjective_is_pushout_Set {A B C P : Type u}
     the subobject with arr = `m ≫ (image f).arr` allows `f`; image-minimality forces `m`
     to be a split monic, hence iso.  (Identical to the proof in S1_57, reproduced here
     to avoid a circular import: S1_57 imports S1_56.) -/
-theorem image_lift_cover {A B : 𝒞} (f : A ⟶ B) [HasImages 𝒞] : Cover (image.lift f) := by
+public theorem image_lift_cover {A B : 𝒞} (f : A ⟶ B) [HasImages 𝒞] : Cover (image.lift f) := by
   intro D m g hm hfac
   -- hfac: g ≫ m = image.lift f, so f = g ≫ (m ≫ (image f).arr)
   have hmono_comp : Monic (m ≫ (image f).arr) := by
@@ -1036,7 +1038,7 @@ theorem image_lift_cover {A B : 𝒞} (f : A ⟶ B) [HasImages 𝒞] : Cover (im
     under pullback, §1.565), isolated below.  Granting it, `x = image.lift ≫ p`
     exhibits the cover `x` factoring through the monic `p`, so `p` is iso, and
     `h := p⁻¹ ≫ (I.arr ≫ snd)` is the factorization — unique since `x` is epic. -/
-theorem cover_is_coequalizer_of_level {A B : 𝒞} (x : A ⟶ B) [RegularCategory 𝒞]
+public theorem cover_is_coequalizer_of_level {A B : 𝒞} (x : A ⟶ B) [RegularCategory 𝒞]
     (hx : Cover x) {C : 𝒞} (g : A ⟶ C) (hg : kp₁ (f := x) ≫ g = kp₂ (f := x) ≫ g) :
     ∃ h : B ⟶ C, x ≫ h = g ∧ ∀ h' : B ⟶ C, x ≫ h' = g → h' = h := by
   let xg := pair x g
@@ -1118,7 +1120,7 @@ theorem cover_is_coequalizer_of_level {A B : 𝒞} (x : A ⟶ B) [RegularCategor
     then there is a (unique) iso `φ` with `x ≫ φ = y`.  Immediate from §1.566:
     each is the coequalizer of its kernel pair, so they factor through each other,
     and the comparison maps are mutually inverse because covers are epic. -/
-theorem covers_same_kernelPair_iso {A B B' : 𝒞} [RegularCategory 𝒞]
+public theorem covers_same_kernelPair_iso {A B B' : 𝒞} [RegularCategory 𝒞]
     (x : A ⟶ B) (hx : Cover x) (y : A ⟶ B') (hy : Cover y)
     (hxy : kp₁ (f := x) ≫ y = kp₂ (f := x) ≫ y)
     (hyx : kp₁ (f := y) ≫ x = kp₂ (f := y) ≫ x) :
@@ -1236,7 +1238,7 @@ noncomputable def pullback_of_covers_is_pushout {A B C P : 𝒞} (x : A ⟶ B) (
   E : A → A is an EQUIVALENCE RELATION if 1 ≤ E, E° ≤ E, EE ≤ E.
   The level (kernel pair) of any morphism is an equivalence relation. -/
 
-def EquivalenceRelation [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
+@[expose] public def EquivalenceRelation [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} (E : BinRel 𝒞 A A) : Prop :=
   (∃ (h : A ⟶ E.src), h ≫ E.colA = Cat.id A ∧ h ≫ E.colB = Cat.id A) ∧
   Nonempty (RelHom E (reciprocal E)) ∧
@@ -1244,7 +1246,7 @@ def EquivalenceRelation [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 
 
 /-- The LEVEL (kernel pair) of `x`, packaged as a binary relation on `A`:
     columns `(kp₁, kp₂)`, jointly monic as the legs of a pullback. -/
-def kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+@[expose] public def kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     {A B : 𝒞} (x : A ⟶ B) : BinRel 𝒞 A A where
   src := kernelPair x
   colA := kp₁ (f := x)
@@ -1260,7 +1262,7 @@ def kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞
     A composite point `(a,c)` comes from a pullback point matching `a~b`, `b~c`,
     so `a≫x = b≫x = c≫x`; that lifts into the kernel pair, and image-minimality
     (`image_min`) turns the lift into the required `RelHom`. -/
-theorem kernelPair_transitive [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public theorem kernelPair_transitive [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     [HasImages 𝒞] {A B : 𝒞} (x : A ⟶ B) :
     RelLe (kernelPairRel x ⊚ kernelPairRel x) (kernelPairRel x) := by
   let pb := HasPullbacks.has (kp₂ (f := x)) (kp₁ (f := x))
@@ -1293,7 +1295,7 @@ theorem kernelPair_transitive [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPu
 /-- **§1.567**: The level (kernel pair) of any morphism is an equivalence
     relation — reflexive (the diagonal `kp_diag`), symmetric (the pullback
     swap of the two legs), transitive (`kernelPair_transitive`). -/
-theorem level_is_equivalence_relation [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public theorem level_is_equivalence_relation [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     [HasImages 𝒞] {A B : 𝒞} (x : A ⟶ B) : EquivalenceRelation (kernelPairRel x) := by
   refine ⟨⟨kp_diag (f := x), (HasPullbacks.has x x).lift_fst (diagCone (f := x)),
       (HasPullbacks.has x x).lift_snd (diagCone (f := x))⟩, ⟨⟨?_, ?_, ?_⟩⟩,
@@ -1305,7 +1307,7 @@ theorem level_is_equivalence_relation [HasTerminal 𝒞] [HasBinaryProducts 𝒞
 /-- **§1.568**: An equivalence relation E on A is EFFECTIVE if it is the level
     (kernel pair) of a cover (quotient-object) x : A → Q.  Equivalently,
     E ≅ x ⊚ x° = level(x) in the relation containment order. -/
-def IsEffective {A : 𝒞} (E : BinRel 𝒞 A A) [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] : Prop :=
+@[expose] public def IsEffective {A : 𝒞} (E : BinRel 𝒞 A A) [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] : Prop :=
   EquivalenceRelation E ∧ ∃ (Q : 𝒞) (x : A ⟶ Q), Cover x ∧
     RelLe E ((graph x) ⊚ (graph x)°) ∧ RelLe ((graph x) ⊚ (graph x)°) E
 
@@ -1328,7 +1330,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     propagates the equality to the two image legs.  This lets a `RelHom` into the
     level relation transport `R.colA ≫ q = R.colB ≫ q` (Mal'cev step 2; §2.14 joint
     monicity of a tabulating pair). -/
-theorem level_legs_comp {B Q : 𝒞} (q : B ⟶ Q) :
+public theorem level_legs_comp {B Q : 𝒞} (q : B ⟶ Q) :
     (graph q ⊚ (graph q)°).colA ≫ q = (graph q ⊚ (graph q)°).colB ≫ q := by
   -- Unfold the composite's data: pullback of `(graph q).colB = q` over `(graph q)°.colA = q`.
   let pb := HasPullbacks.has (graph q).colB ((graph q)°).colA
@@ -1362,7 +1364,7 @@ theorem level_legs_comp {B Q : 𝒞} (q : B ⟶ Q) :
     contained in the identity on B — i.e., `x°x ≤ 1_B` for any morphism x.
     The proof: the span `⟨x, x⟩ = x ≫ diag B` factors through the diagonal,
     so its image has equal fst/snd legs. -/
-theorem reciprocal_comp_self_le_one {A B : 𝒞} (x : A ⟶ B) :
+public theorem reciprocal_comp_self_le_one {A B : 𝒞} (x : A ⟶ B) :
     RelLe ((graph x)° ⊚ (graph x)) (graph (Cat.id B)) := by
   -- The kernel pair span, unpacked from the compose definition
   let pb := HasPullbacks.has ((graph x)°).colB (graph x).colA
@@ -1399,7 +1401,7 @@ theorem reciprocal_comp_self_le_one {A B : 𝒞} (x : A ⟶ B) :
     `x : A → B` is a cover iff `1_B ≤ (graph x)° ⊚ (graph x)` — the identity on B
     is contained in the reciprocal-then-graph composition.  In the book's notation:
     x is a cover iff `1_B ⊂ x°x`. -/
-theorem cover_iff_one_le_reciprocal_comp_self {A B : 𝒞} (x : A ⟶ B) :
+public theorem cover_iff_one_le_reciprocal_comp_self {A B : 𝒞} (x : A ⟶ B) :
     Cover x ↔ RelLe (graph (Cat.id B)) ((graph x)° ⊚ (graph x)) := by
   have hp : MonicPair (x : A ⟶ B) (Cat.id A : A ⟶ A) := by
     intro W f g _ hid
@@ -1416,7 +1418,7 @@ theorem cover_iff_one_le_reciprocal_comp_self {A B : 𝒞} (x : A ⟶ B) :
 /-- **§1.569**: `x : A → B` is a cover iff `x°x = 1_B` — the reciprocal-then-graph
     composition equals the identity relation on B.  Combine the always-true
     `x°x ≤ 1_B` with the equivalence `1_B ≤ x°x ↔ Cover x`. -/
-theorem cover_iff_reciprocal_comp_self_eq_one {A B : 𝒞} (x : A ⟶ B) :
+public theorem cover_iff_reciprocal_comp_self_eq_one {A B : 𝒞} (x : A ⟶ B) :
     Cover x ↔ (RelLe ((graph x)° ⊚ (graph x)) (graph (Cat.id B)) ∧
                RelLe (graph (Cat.id B)) ((graph x)° ⊚ (graph x))) := by
   constructor
@@ -1464,7 +1466,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
 /-- **§1.56**: `graph(id_A)` is a left identity for `⊚`.  The pullback of
     id_A and R.colA is trivial, and the span equals R.colA, R.colB composed
     with the right projection.  Image minimality yields the RelHom. -/
-theorem graph_id_comp {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe ((graph (Cat.id A)) ⊚ R) R := by
+public theorem graph_id_comp {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe ((graph (Cat.id A)) ⊚ R) R := by
   let T := R.src; let a := R.colA; let b := R.colB
   have h_monic : Monic (pair a b) := monic_pair_of_monicPair a b R.isMonicPair
   -- Pullback of id_A and a over A
@@ -1500,7 +1502,7 @@ theorem graph_id_comp {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe ((graph (Cat.id
 
 /-- **§1.56**: `graph(id_A)` is a left identity for `⊚` (reverse containment).
     Lift through the pullback of id_A and R.colA via the cone ⟨R.colA, id⟩. -/
-theorem comp_graph_id_left {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R ((graph (Cat.id A)) ⊚ R) := by
+public theorem comp_graph_id_left {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R ((graph (Cat.id A)) ⊚ R) := by
   let T := R.src; let a := R.colA; let b := R.colB
   -- Pullback of id_A and a over A; lift from cone ⟨a, id_T⟩
   let pb := HasPullbacks.has (Cat.id A) a
@@ -1527,7 +1529,7 @@ theorem comp_graph_id_left {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R ((graph 
 
 /-- **§1.56**: `graph(id_B)` is a right identity for `⊚`.  Dual to `graph_id_comp`:
     pullback of R.colB and id_B is trivial; image minimality yields the RelHom. -/
-theorem comp_graph_id {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe (R ⊚ (graph (Cat.id B))) R := by
+public theorem comp_graph_id {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe (R ⊚ (graph (Cat.id B))) R := by
   let T := R.src; let a := R.colA; let b := R.colB
   have h_monic : Monic (pair a b) := monic_pair_of_monicPair a b R.isMonicPair
   -- Pullback of R.colB and id_B over B
@@ -1560,7 +1562,7 @@ theorem comp_graph_id {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe (R ⊚ (graph (
 
 /-- **§1.56**: `graph(id_B)` is a right identity for `⊚` (reverse containment).
     Dual to `comp_graph_id_left`: lift via cone ⟨id_T, R.colB⟩. -/
-theorem comp_graph_id_right {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R (R ⊚ (graph (Cat.id B))) := by
+public theorem comp_graph_id_right {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R (R ⊚ (graph (Cat.id B))) := by
   let T := R.src; let a := R.colA; let b := R.colB
   -- Pullback of R.colB and id_B over B; lift from cone ⟨id_T, R.colB⟩
   let pb := HasPullbacks.has b (Cat.id B)
@@ -1586,7 +1588,7 @@ theorem comp_graph_id_right {A B : 𝒞} (R : BinRel 𝒞 A B) : RelLe R (R ⊚ 
 
 /-- Pullback of a mono is a mono: in `pb = pullback(f, m)` with `m` monic,
     the leg `π₁` (the pullback of `m` along `f`) is monic. -/
-theorem pullback_fst_mono {B I D : 𝒞} (f : B ⟶ D) (m : I ⟶ D) (hm : Monic m) :
+public theorem pullback_fst_mono {B I D : 𝒞} (f : B ⟶ D) (m : I ⟶ D) (hm : Monic m) :
     Monic (HasPullbacks.has f m).cone.π₁ := by
   intro W p q hpq
   let pb := HasPullbacks.has f m
@@ -1610,7 +1612,7 @@ theorem pullback_fst_mono {B I D : 𝒞} (f : B ⟶ D) (m : I ⟶ D) (hm : Monic
     `c ≫ g = d` and `g ≫ m = f`.  Pull `m` back along `f`; the cover `c` then
     factors through the monic pullback-leg `π₁`, forcing `π₁` to be iso
     (`Cover`), and the diagonal is `π₁⁻¹ ≫ π₂`. -/
-theorem cover_mono_diagonal {A B I D : 𝒞} {c : A ⟶ B} {f : B ⟶ D} {m : I ⟶ D} {d : A ⟶ I}
+public theorem cover_mono_diagonal {A B I D : 𝒞} {c : A ⟶ B} {f : B ⟶ D} {m : I ⟶ D} {d : A ⟶ I}
     (hc : Cover c) (hm : Monic m) (hsq : c ≫ f = d ≫ m) :
     ∃ g : B ⟶ I, c ≫ g = d ∧ g ≫ m = f := by
   let pb := HasPullbacks.has f m
@@ -1627,7 +1629,7 @@ theorem cover_mono_diagonal {A B I D : 𝒞} {c : A ⟶ B} {f : B ⟶ D} {m : I 
 /-- Composition of covers is a cover.  `f ≫ g` factors through a mono `m`;
     cover⊥mono descends the square to factor `g` through `m`, and `g` being a
     cover forces `m` iso. -/
-theorem cover_comp {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (hg : Cover g) :
+public theorem cover_comp {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (hg : Cover g) :
     Cover (f ≫ g) := by
   intro C m h hm hfac
   obtain ⟨g', _, hg'm⟩ := cover_mono_diagonal hf hm hfac.symm
@@ -1637,7 +1639,7 @@ theorem cover_comp {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (hg
     `image f` contain one another.  `≤`-forward is automatic (`c ≫ f` factors
     through `image f`); `≤`-backward uses cover⊥mono to factor `f` itself
     through the monic `image (c ≫ f)`. -/
-theorem image_cover_comp {A B D : 𝒞} (c : A ⟶ B) (f : B ⟶ D) (hc : Cover c) :
+public theorem image_cover_comp {A B D : 𝒞} (c : A ⟶ B) (f : B ⟶ D) (hc : Cover c) :
     (image (c ≫ f)).le (image f) ∧ (image f).le (image (c ≫ f)) := by
   refine ⟨image_min _ _ ?_, image_min _ _ ?_⟩
   · obtain ⟨g, hg⟩ := image_allows f
@@ -1651,7 +1653,7 @@ theorem image_cover_comp {A B D : 𝒞} (c : A ⟶ B) (f : B ⟶ D) (hc : Cover 
     witnesses `hr, hs` assemble into a cone over `(R'.colB, S'.colA)`, whose
     pullback lift `w` carries the `R⊚S`-span onto the `R'⊚S'`-span; image
     minimality (`image_min`) then descends to the required `RelHom`. -/
-theorem compose_le {A B C : 𝒞} {R R' : BinRel 𝒞 A B} {S S' : BinRel 𝒞 B C}
+public theorem compose_le {A B C : 𝒞} {R R' : BinRel 𝒞 A B} {S S' : BinRel 𝒞 B C}
     (hR : R ⊂ R') (hS : S ⊂ S') : (R ⊚ S) ⊂ (R' ⊚ S') := by
   obtain ⟨hr, hrA, hrB⟩ := hR
   obtain ⟨hs, hsA, hsB⟩ := hS
@@ -1687,7 +1689,7 @@ theorem compose_le {A B C : 𝒞} {R R' : BinRel 𝒞 A B} {S S' : BinRel 𝒞 B
     has a monic right edge, so cover⊥mono (`cover_mono_diagonal`) descends `φ`
     through `c` to the required `RelHom X Y`.  This is the workhorse for the
     regular-category relation calculus (associativity, the allegory laws). -/
-theorem relLe_of_cover_factor {A B : 𝒞} {X Y : BinRel 𝒞 A B} {P : 𝒞}
+public theorem relLe_of_cover_factor {A B : 𝒞} {X Y : BinRel 𝒞 A B} {P : 𝒞}
     (c : P ⟶ X.src) (hc : Cover c) (φ : P ⟶ Y.src)
     (hA : φ ≫ Y.colA = c ≫ X.colA) (hB : φ ≫ Y.colB = c ≫ X.colB) : X ⊂ Y := by
   have hmY : Monic (pair Y.colA Y.colB) := monic_pair_of_monicPair Y.colA Y.colB Y.isMonicPair
@@ -1713,7 +1715,7 @@ theorem relLe_of_cover_factor {A B : 𝒞} {X Y : BinRel 𝒞 A B} {P : 𝒞}
     (`cover_pullback`), obtaining a common cover `P1` carrying coherent
     `R`-, `S`-, `T`-data.  On `P1` we assemble the map into `R⊚(S⊚T)`; the
     descent `relLe_of_cover_factor` (cover⊥mono) turns it into the `RelHom`. -/
-theorem compose_assoc [PullbacksTransferCovers 𝒞] {A B C D : 𝒞}
+public theorem compose_assoc [PullbacksTransferCovers 𝒞] {A B C D : 𝒞}
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) (T : BinRel 𝒞 C D) :
     RelLe ((R ⊚ S) ⊚ T) (R ⊚ (S ⊚ T)) := by
   -- the four image-factorisations underlying the two triple composites
@@ -1831,7 +1833,7 @@ theorem compose_assoc [PullbacksTransferCovers 𝒞] {A B C D : 𝒞}
     The mirror of `compose_assoc`: now `R⊚(S⊚T)` pulls `R` back along the image
     leg `(S⊚T).colA`, so we pull the image-cover `eST : P_ST ↠ (S⊚T).src` back
     along that leg to get the common cover, then descend. -/
-theorem compose_assoc' [PullbacksTransferCovers 𝒞] {A B C D : 𝒞}
+public theorem compose_assoc' [PullbacksTransferCovers 𝒞] {A B C D : 𝒞}
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) (T : BinRel 𝒞 C D) :
     RelLe (R ⊚ (S ⊚ T)) ((R ⊚ S) ⊚ T) := by
   let pbRS := HasPullbacks.has R.colB S.colA
@@ -2063,7 +2065,7 @@ theorem regular_of_compose_assoc
     Here `R : A→B`, `S : B→C`, `T : A→C`.  Proof: standard tabular-allegory
     descent (pull the image-cover of `R⊚S` back along the meet witness, reassemble,
     descend with `relLe_of_cover_factor`).  Freyd states it for regular categories. -/
-theorem modular_identity [PullbacksTransferCovers 𝒞] {A B C : 𝒞}
+public theorem modular_identity [PullbacksTransferCovers 𝒞] {A B C : 𝒞}
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) (T : BinRel 𝒞 A C) :
     RelLe ((R ⊚ S) ⊓ T) ((R ⊓ (T ⊚ S°)) ⊚ S) := by
   -- abbreviations for the two sides
@@ -2193,13 +2195,13 @@ theorem modular_identity [PullbacksTransferCovers 𝒞] {A B C : 𝒞}
       _ = c ≫ M.colB := hSC
 
 /-- **§1.569**: in a regular category `⊚` is associative (both containments). -/
-theorem compose_assoc_of_regular [RegularCategory 𝒞] {A B C D : 𝒞}
+public theorem compose_assoc_of_regular [RegularCategory 𝒞] {A B C D : 𝒞}
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) (T : BinRel 𝒞 C D) :
     RelLe ((R ⊚ S) ⊚ T) (R ⊚ (S ⊚ T)) ∧ RelLe (R ⊚ (S ⊚ T)) ((R ⊚ S) ⊚ T) :=
   ⟨compose_assoc R S T, compose_assoc' R S T⟩
 
 /-- **§1.564**: `graph` preserves composition: `graph(f ≫ g) ≅ graph(f) ⊚ graph(g)`. -/
-theorem graph_comp {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph (f ≫ g)) (graph f ⊚ graph g) := by
+public theorem graph_comp {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph (f ≫ g)) (graph f ⊚ graph g) := by
   let pb := HasPullbacks.has f (Cat.id B)
   have h_cone_w : (Cat.id A) ≫ f = f ≫ (Cat.id B) := by rw [Cat.id_comp, Cat.comp_id]
   let c : Cone f (Cat.id B) := ⟨A, Cat.id A, f, h_cone_w⟩
@@ -2230,7 +2232,7 @@ theorem graph_comp {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph (f 
   exact ⟨⟨h, h_colA, h_colB⟩⟩
 
 /-- **§1.564**: `graph` preserves composition (reverse containment). -/
-theorem comp_graph {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph f ⊚ graph g) (graph (f ≫ g)) := by
+public theorem comp_graph {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph f ⊚ graph g) (graph (f ≫ g)) := by
   let pb := HasPullbacks.has f (Cat.id B)
   let span := pair (pb.cone.π₁ ≫ (Cat.id A)) (pb.cone.π₂ ≫ g)
   let I := image span
@@ -2264,7 +2266,7 @@ theorem comp_graph {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) : RelLe (graph f �
 /-- **§1.564**: `graph` is faithful: `graph(f) ≤ graph(g)` implies `f = g`.
     (The reverse containment also implies `f = g`, so graph is an embedding
     of the hom-set into the preorder of relations.) -/
-theorem graph_faithful {A B : 𝒞} {f g : A ⟶ B}
+public theorem graph_faithful {A B : 𝒞} {f g : A ⟶ B}
     (h : RelLe (graph f) (graph g)) : f = g := by
   rcases h with ⟨⟨h, hA, hB⟩⟩
   dsimp [graph] at hA hB
@@ -2285,7 +2287,7 @@ end
 
 /-- **§1.561**: reciprocation is monotone: R ≤ S → R° ≤ S°.
     The same witness works; it just swaps the two leg-conditions. -/
-theorem reciprocal_mono {A B : 𝒞} {R S : BinRel 𝒞 A B} (h : RelLe R S) :
+public theorem reciprocal_mono {A B : 𝒞} {R S : BinRel 𝒞 A B} (h : RelLe R S) :
     RelLe (R°) (S°) := by
   rcases h with ⟨⟨h, hA, hB⟩⟩; exact ⟨⟨h, hB, hA⟩⟩
 
@@ -2307,7 +2309,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     (swapping legs) satisfies `φ ≫ sp' = sp ≫ prodSwap`, so `image sp` post-composed
     with `prodSwap⁻¹` is a subobject of `A×C` allowing `sp`; image-minimality yields
     the witness. -/
-theorem reciprocal_comp_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
+public theorem reciprocal_comp_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
     RelLe ((R ⊚ S)°) (S° ⊚ R°) := by
   -- pullback + span for R ⊚ S
   let pb  := HasPullbacks.has R.colB S.colA
@@ -2385,7 +2387,7 @@ theorem reciprocal_comp_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞
 /-- **§1.561**: S° ⊚ R° ≤ (R ⊚ S)°.
     Derived from `reciprocal_comp_le` applied to `S°, R°`, plus involutivity
     and monotonicity of reciprocation. -/
-theorem comp_reciprocal_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
+public theorem comp_reciprocal_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
     RelLe (S° ⊚ R°) ((R ⊚ S)°) := by
   -- (S° ⊚ R°)° ≤ (R°)° ⊚ (S°)° = R ⊚ S
   have h := reciprocal_comp_le (S°) (R°)
@@ -2395,7 +2397,7 @@ theorem comp_reciprocal_le {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞
   rwa [reciprocal_invol] at h2
 
 /-- **§1.561**: (R ⊚ S)° and S° ⊚ R° are mutually contained. -/
-theorem reciprocal_comp {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
+public theorem reciprocal_comp {A B C : 𝒞} (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
     RelLe ((R ⊚ S)°) (S° ⊚ R°) ∧ RelLe (S° ⊚ R°) ((R ⊚ S)°) :=
   ⟨reciprocal_comp_le R S, comp_reciprocal_le R S⟩
 
@@ -2416,7 +2418,7 @@ theorem reciprocal_intersect_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
 
 /-- **§1.562**: S° ⊓ R° ≤ (R ⊓ S)°.
     The (S°⊓R°)-pullback gives a cone for the (R⊓S)-pullback via swapped legs. -/
-theorem intersect_reciprocal_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
+public theorem intersect_reciprocal_le {A B : 𝒞} (R S : BinRel 𝒞 A B) :
     RelLe (S° ⊓ R°) ((R ⊓ S)°) := by
   let pb_RS := HasPullbacks.has (pair R.colA R.colB) (pair S.colA S.colB)
   let pb_SR := HasPullbacks.has (pair S.colB S.colA) (pair R.colB R.colA)
@@ -2448,7 +2450,7 @@ theorem reciprocal_intersect {A B : 𝒞} (R S : BinRel 𝒞 A B) :
   ⟨reciprocal_intersect_le R S, intersect_reciprocal_le R S⟩
 
 /-- Monotonicity of ⊚ in the first argument: R ≤ R' → R ⊚ T ≤ R' ⊚ T. -/
-theorem compose_le_left {A B C : 𝒞} {R R' : BinRel 𝒞 A B} (hRR' : RelLe R R') (T : BinRel 𝒞 B C) :
+public theorem compose_le_left {A B C : 𝒞} {R R' : BinRel 𝒞 A B} (hRR' : RelLe R R') (T : BinRel 𝒞 B C) :
     RelLe (R ⊚ T) (R' ⊚ T) := by
   rcases hRR' with ⟨⟨h, hA, hB⟩⟩
   let pb  := HasPullbacks.has R.colB T.colA
@@ -2562,7 +2564,7 @@ end
 /-- §1.9: The pullback of a relation `U : BinRel 𝒞 P C` along a map `f : A → P`
     gives a relation from A to C (when pullbacks exist).  Its source is the
     pullback of `f : A → P` and `U.colA : U.src → P`.  -/
-noncomputable def relPullback [HasPullbacks 𝒞] {P C A : 𝒞}
+@[expose] public noncomputable def relPullback [HasPullbacks 𝒞] {P C A : 𝒞}
     (f : A ⟶ P) (U : BinRel 𝒞 P C) : BinRel 𝒞 A C :=
   let pb := HasPullbacks.has f U.colA   -- HasPullback f U.colA
   { src  := pb.cone.pt
@@ -2596,7 +2598,7 @@ noncomputable def relPullback [HasPullbacks 𝒞] {P C A : 𝒞}
     `(f, (relPullback g R).colA)` — is a pullback square for `(f ≫ g, R.colA)`.
     Each direction is a `HasPullback.lift` of the cone induced by the other
     side, with the colB legs matching by associativity. -/
-theorem relPullback_comp [HasPullbacks 𝒞] {A A' A'' B : 𝒞}
+public theorem relPullback_comp [HasPullbacks 𝒞] {A A' A'' B : 𝒞}
     (f : A'' ⟶ A') (g : A' ⟶ A) (R : BinRel 𝒞 A B) :
     RelHom (relPullback f (relPullback g R)) (relPullback (f ≫ g) R) ∧
     RelHom (relPullback (f ≫ g) R) (relPullback f (relPullback g R)) := by
@@ -2653,7 +2655,7 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞] [Pullback
     descent: pull the relevant image-cover (`image.lift`) back along the appropriate
     `relPullback`/composite leg (`cover_pullback`, needing `PullbacksTransferCovers`),
     obtaining a common cover on which the coherent `(relPullback g R)`/`S` data assembles. -/
-theorem relPullback_compose_dist {X A B C : 𝒞} (g : X ⟶ A)
+public theorem relPullback_compose_dist {X A B C : 𝒞} (g : X ⟶ A)
     (R : BinRel 𝒞 A B) (S : BinRel 𝒞 B C) :
     RelHom (relPullback g (R ⊚ S)) ((relPullback g R) ⊚ S) ∧
     RelHom ((relPullback g R) ⊚ S) (relPullback g (R ⊚ S)) := by

@@ -33,12 +33,14 @@
   The allegory equivalence `RelMap 𝒜 ≅ 𝒜` is packaged below (`relMap_allegoryEquiv`).
 -/
 
-import Freyd.S2_10
-import Freyd.S2_30
-import Freyd.S2_16b
-import Freyd.S1_60
-import Freyd.S1_62
-import Freyd.S1_64
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_30
+public import Freyd.S2_16b
+public import Freyd.S1_60
+public import Freyd.S1_62
+public import Freyd.S1_64
 
 universe v u
 
@@ -53,14 +55,14 @@ namespace Freyd.Alg
     An `abbrev` alias (not `def`) so Lean transparently unfolds it when
     constructing the Cat instance; a `def` would cause typeclass look-ups to
     fail when Lean's unifier encounters `MapObj 𝒜` vs `𝒜`. -/
-abbrev MapObj (𝒜 : Type u) : Type u := 𝒜
+@[expose] public abbrev MapObj (𝒜 : Type u) : Type u := 𝒜
 
 variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-! ### Helper order lemmas -/
 
 /-- dom(f ∩ g) ≫ f = f ∩ g  for any Map f. -/
-theorem dom_inter_comp {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) : dom (f ∩ g) ≫ f = f ∩ g := by
+public theorem dom_inter_comp {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) : dom (f ∩ g) ≫ f = f ∩ g := by
   apply le_antisymm
   · have hf_le : dom (f ∩ g) ≫ f ⊑ f := by
       have := comp_mono_right (dom_coreflexive (f ∩ g)) f; rwa [Cat.id_comp] at this
@@ -73,7 +75,7 @@ theorem dom_inter_comp {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) : dom (f ∩ g)
   · exact le_trans (le_dom_comp (f ∩ g)) (comp_mono_left _ (inter_lb_left f g))
 
 /-- dom(f ∩ g) ≫ g = f ∩ g  for any Map g.  By symmetry. -/
-theorem dom_inter_comp_right {a b : 𝒜} {f g : a ⟶ b} (hg : Map g) : dom (f ∩ g) ≫ g = f ∩ g := by
+public theorem dom_inter_comp_right {a b : 𝒜} {f g : a ⟶ b} (hg : Map g) : dom (f ∩ g) ≫ g = f ∩ g := by
   have h : dom (g ∩ f) ≫ g = g ∩ f := dom_inter_comp hg
   have hdom : dom (f ∩ g) = dom (g ∩ f) := by congr 1; exact Allegory.inter_comm f g
   calc dom (f ∩ g) ≫ g = dom (g ∩ f) ≫ g := by rw [hdom]
@@ -83,7 +85,7 @@ theorem dom_inter_comp_right {a b : 𝒜} {f g : a ⟶ b} (hg : Map g) : dom (f 
 /-! ### Identity and composition in Map(𝒜) -/
 
 /-- **§2.14**: Map(𝒜) is a category. -/
-instance (priority := 0) mapCat : Cat.{v} (MapObj 𝒜) where
+@[expose] public instance (priority := 0) mapCat : Cat.{v} (MapObj 𝒜) where
   Hom   a b := { R : a ⟶ b // Map R }
   id    a   := ⟨Cat.id a, id_is_map_local a⟩
   comp  f g := ⟨f.val ≫ g.val, map_comp f.property g.property⟩
@@ -102,14 +104,14 @@ section TabularLimits
 variable [TabularAllegory 𝒜]
 
 /-- id_c ⊑ g ≫ g° for second tabulation leg (the joint-monic equation). -/
-theorem tab_gog {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+public theorem tab_gog {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
     (ht : Tabulates f g R) : Cat.id c ⊑ g ≫ g° :=
   ht.2.2.2 ▸ inter_lb_right _ _
 
 /-- **§2.147 first-leg coreflexive**: for a tabulation `(f,g)` of `R` (source-apex), the
     coreflexive `f° ≫ f` equals `dom R`.  (In Rel(Set): `f°≫f` is the diagonal on the domain
     of `R`.)  Used to compute the coreflexive of a Map(𝒜) pullback/inverse-image projection. -/
-theorem tab_leg_dom {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+public theorem tab_leg_dom {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
     (ht : Tabulates f g R) : f° ≫ f = dom R := by
   have hf : Map f := ht.1
   have hR : f° ≫ g = R := ht.2.2.1.symm
@@ -165,7 +167,7 @@ theorem tab_pullback_cone {a b c p : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
     This version derives the cone equation directly from the tabulation, using ONLY the
     joint-monic fact via the entirety of π₂≫g / π₁≫f — it does NOT need each leg to be a
     retraction (`π₁≫π₁° = id`). -/
-theorem tab_pullback_cone' {a b c p : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
+public theorem tab_pullback_cone' {a b c p : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
     (hf : Map f) (hg : Map g)
     {π₁ : p ⟶ a} {π₂ : p ⟶ b}
     (ht : Tabulates π₁ π₂ (f ≫ g°)) :
@@ -210,7 +212,7 @@ theorem tab_pullback_cone' {a b c p : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
 /-! ### §2.147  Cover characterization -/
 
 /-- **§2.147**: g : a → b is a cover iff Entire(g°). -/
-theorem cover_iff_recip_entire {a b : 𝒜} (g : a ⟶ b) :
+public theorem cover_iff_recip_entire {a b : 𝒜} (g : a ⟶ b) :
     Cat.id b ⊑ g° ≫ g ↔ Entire g° := by
   simp only [Entire, dom, Allegory.recip_recip]
   constructor
@@ -228,7 +230,7 @@ theorem cover_iff_recip_entire {a b : 𝒜} (g : a ⟶ b) :
 /-- **§2.147 pullback UMP**: the tabulation of fg° gives the pullback of f and g in Map(𝒜).
     Given maps x : q→a, y : q→b with x≫f = y≫g, there is a unique h : q→p in Map(𝒜)
     with h≫π₁=x and h≫π₂=y. -/
-theorem tab_pullback_UMP {a b c p q : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
+public theorem tab_pullback_UMP {a b c p q : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
  (hg : Map g)
     {π₁ : p ⟶ a} {π₂ : p ⟶ b}
     (ht : Tabulates π₁ π₂ (f ≫ g°))
@@ -262,7 +264,7 @@ theorem tab_pullback_UMP {a b c p q : 𝒜} {f : a ⟶ c} {g : b ⟶ c}
   The cone is `e ≫ f = e ≫ g`; the UMP factors any map killing the parallel pair. -/
 
 /-- **§2.147 equalizer cone**: if e°≫e = dom(f∩g) and e≫e° = id_p then e ≫ f = e ≫ g. -/
-theorem tab_equalizer_cone {a b p : 𝒜} {f g : a ⟶ b} {e : p ⟶ a}
+public theorem tab_equalizer_cone {a b p : 𝒜} {f g : a ⟶ b} {e : p ⟶ a}
     (hf : Map f) (hg : Map g)
     (hee : e° ≫ e = dom (f ∩ g))
     (he1 : e ≫ e° = Cat.id p) :
@@ -284,7 +286,7 @@ theorem tab_equalizer_cone {a b p : 𝒜} {f g : a ⟶ b} {e : p ⟶ a}
 
 /-- **§2.147 equalizer UMP**: given the splitting e of dom(f∩g) and a map h with h≫f=h≫g,
     there is a unique map k with k≫e=h. -/
-theorem tab_equalizer_UMP {a b p q : 𝒜} {f g : a ⟶ b}
+public theorem tab_equalizer_UMP {a b p q : 𝒜} {f g : a ⟶ b}
     (hf : Map f)
     {e : p ⟶ a}
     (he : Map e) (hee : e° ≫ e = dom (f ∩ g)) (he1 : e ≫ e° = Cat.id p)
@@ -394,7 +396,7 @@ theorem tab_iso_unique_exists {a b c c' : 𝒜}
   uniform way.  We record this and build the comparison functors. -/
 
 /-- Tabularity is closed under reciprocation: if (f,g) tabulates R then (g,f) tabulates R°. -/
-theorem tabular_recip {a b : 𝒜} {R : a ⟶ b} (hR : Tabular R) : Tabular R° := by
+public theorem tabular_recip {a b : 𝒜} {R : a ⟶ b} (hR : Tabular R) : Tabular R° := by
   obtain ⟨c, f, g, hf, hg, hR_eq, hjoint⟩ := hR
   refine ⟨c, g, f, hg, hf, ?_, by rw [Allegory.inter_comm]; exact hjoint⟩
   -- Goal: R° = g° ≫ f, from R = f° ≫ g.
@@ -403,12 +405,12 @@ theorem tabular_recip {a b : 𝒜} {R : a ⟶ b} (hR : Tabular R) : Tabular R° 
 
 /-- Tabularity is closed under composition: both R and S tabular ⟹ R ≫ S tabular.
     In a `TabularAllegory` this is immediate from the axiom. -/
-theorem tabular_comp {a b c : 𝒜} {R : a ⟶ b} {S : b ⟶ c}
+public theorem tabular_comp {a b c : 𝒜} {R : a ⟶ b} {S : b ⟶ c}
     (_hR : Tabular R) (_hS : Tabular S) : Tabular (R ≫ S) :=
   TabularAllegory.tabular _
 
 /-- Tabularity is closed under intersection. -/
-theorem tabular_inter {a b : 𝒜} {R S : a ⟶ b}
+public theorem tabular_inter {a b : 𝒜} {R S : a ⟶ b}
     (_hR : Tabular R) (_hS : Tabular S) : Tabular (R ∩ S) :=
   TabularAllegory.tabular _
 
@@ -424,14 +426,14 @@ theorem tabular_inter {a b : 𝒜} {R S : a ⟶ b}
 
 /-- A wrapper newtype for the objects of `RelMap 𝒜`, avoiding instance collisions
     with the ambient `TabularAllegory 𝒜`. -/
-structure RelMapObj (𝒜 : Type u) where
+public structure RelMapObj (𝒜 : Type u) where
   /-- The underlying object. -/
   obj : 𝒜
 
 /-- **§2.148 allegory instance**: `RelMap 𝒜` is an allegory.
     Objects = `RelMapObj 𝒜` (a wrapper for objects of 𝒜); morphisms from `⟨a⟩` to `⟨b⟩`
     are tabular morphisms `{R : a ⟶ b // Tabular R}`.  Operations pointwise from 𝒜. -/
-instance relMapAllegory : Allegory.{v} (RelMapObj 𝒜) where
+@[expose] public instance relMapAllegory : Allegory.{v} (RelMapObj 𝒜) where
   Hom A B := { R : A.obj ⟶ B.obj // Tabular R }
   id  A   := ⟨Cat.id A.obj, TabularAllegory.tabular _⟩
   comp f g := ⟨f.val ≫ g.val, tabular_comp f.2 g.2⟩
@@ -493,7 +495,7 @@ end Rel148
 section AllegoryFunctorDef
 
 /-- A functor between allegories preserving `≫`, `id`, `°`, `∩`. -/
-structure AllegoryFunctor (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] where
+public structure AllegoryFunctor (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] where
   /-- Object map. -/
   obj  : 𝒜 → ℬ
   /-- Hom map. -/
@@ -518,7 +520,7 @@ structure AllegoryEquiv (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
     HEq (toFun.map (invFun.map S)) S
 
 /-- Composition of allegory functors: `obj`/`map` compose, every law follows. -/
-def AllegoryFunctor.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
+@[expose] public def AllegoryFunctor.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] [Allegory.{v₃} 𝒞]
     (F : AllegoryFunctor 𝒜 ℬ) (G : AllegoryFunctor ℬ 𝒞) : AllegoryFunctor 𝒜 𝒞 where
   obj a := G.obj (F.obj a)
@@ -529,12 +531,12 @@ def AllegoryFunctor.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
   map_inter R S := by rw [F.map_inter, G.map_inter]
 
 /-- An allegory functor is FAITHFUL if it is injective on hom-sets. -/
-def AllegoryFunctor.Faithful {𝒜 : Type u₁} {ℬ : Type u₂}
+@[expose] public def AllegoryFunctor.Faithful {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : AllegoryFunctor 𝒜 ℬ) : Prop :=
   ∀ {a b : 𝒜} (R S : a ⟶ b), F.map R = F.map S → R = S
 
 /-- Faithfulness composes. -/
-theorem AllegoryFunctor.Faithful.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
+public theorem AllegoryFunctor.Faithful.comp {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] [Allegory.{v₃} 𝒞]
     {F : AllegoryFunctor 𝒜 ℬ} {G : AllegoryFunctor ℬ 𝒞}
     (hF : F.Faithful) (hG : G.Faithful) : (F.comp G).Faithful :=
@@ -658,7 +660,7 @@ end RelMapEquiv
     simultaneously creates two `Allegory A` instances (one from each parent), making
     expressions like `f.val ≫ g.val°` fail with "instance not definitionally equal".
     A single `TabularUnitaryAllegory` provides exactly one `Allegory A`. -/
-class TabularUnitaryAllegory (𝒜 : Type u) extends TabularAllegory 𝒜, UnitaryAllegory 𝒜
+public class TabularUnitaryAllegory (𝒜 : Type u) extends TabularAllegory 𝒜, UnitaryAllegory 𝒜
 
 /-- A **TABULAR UNITARY DISTRIBUTIVE ALLEGORY** (§2.212): combines `TabularUnitaryAllegory`
     (= `TabularAllegory` + `UnitaryAllegory`) with `DistributiveAllegory` in a SINGLE class so
@@ -670,7 +672,7 @@ class TabularUnitaryAllegory (𝒜 : Type u) extends TabularAllegory 𝒜, Unita
     `TabularUnitaryAllegory.toTabularAllegory.toAllegory = DistributiveAllegory.toAllegory` is
     `rfl` here.)  Every lemma needing `[TabularUnitaryAllegory A]`/`[DistributiveAllegory A]` is
     served automatically from this class via the projection instances. -/
-class TabularUnitaryDistributiveAllegory (𝒜 : Type u) extends
+public class TabularUnitaryDistributiveAllegory (𝒜 : Type u) extends
     TabularUnitaryAllegory 𝒜, DistributiveAllegory 𝒜
 
 /-- A TABULAR UNITARY POSITIVE allegory: a `TabularUnitaryDistributiveAllegory` that is also
@@ -679,7 +681,7 @@ class TabularUnitaryDistributiveAllegory (𝒜 : Type u) extends
     as `TabularUnitaryDistributiveAllegory` — so `≫`/`°`/`∩`/`∪`/`𝟘` and the coproduct injections
     all live on ONE `Allegory 𝒜`.  This is the hypothesis under which `Map(𝒜)` is a POSITIVE
     pre-logos with disjoint binary coproducts (§2.214 dual). -/
-class TabularUnitaryPositiveAllegory (𝒜 : Type u) extends
+public class TabularUnitaryPositiveAllegory (𝒜 : Type u) extends
     TabularUnitaryDistributiveAllegory 𝒜, PositiveAllegory 𝒜
 
 /-! ### §2.212  Domain algebra: `dom` distributes over union
@@ -694,7 +696,7 @@ variable {𝒜 : Type u}
 /-- `id ∩ R ⊑ dom R` for any endo `R`.  The coreflexive `C := id ∩ R` is symmetric idempotent
     (`C = C ≫ C°`) and `C ⊑ R`, `C° ⊑ R°`, whence `C = C≫C° ⊑ R≫R°`; with `C ⊑ id` this gives
     `C ⊑ id ∩ R≫R° = dom R`. -/
-theorem id_inter_le_dom [Allegory 𝒜] {a : 𝒜} (R : a ⟶ a) :
+public theorem id_inter_le_dom [Allegory 𝒜] {a : 𝒜} (R : a ⟶ a) :
     Cat.id a ∩ R ⊑ dom R := by
   have hcor : Coreflexive (Cat.id a ∩ R) := inter_lb_left _ _
   have hidem : (Cat.id a ∩ R) ≫ (Cat.id a ∩ R)° = Cat.id a ∩ R := by
@@ -710,7 +712,7 @@ theorem id_inter_le_dom [Allegory 𝒜] {a : 𝒜} (R : a ⟶ a) :
 /-- `dom (P ∪ Q) = dom P ∪ dom Q` in a distributive allegory.  The `⊒` direction is
     monotonicity; for `⊑`, expand `(P∪Q)(P∪Q)° = PP° ∪ PQ° ∪ QP° ∪ QQ°`, distribute `id ∩ ·`,
     and absorb the cross terms via `id ∩ PQ° ⊑ dom(PQ°) ⊑ dom P` (`id_inter_le_dom` + `dom_comp_le`). -/
-theorem dom_union [DistributiveAllegory 𝒜] {a b : 𝒜} (P Q : a ⟶ b) :
+public theorem dom_union [DistributiveAllegory 𝒜] {a b : 𝒜} (P Q : a ⟶ b) :
     dom (P ∪ Q) = dom P ∪ dom Q := by
   apply le_antisymm
   · -- ⊑ : expand and distribute id ∩ (·) over the four-fold union, absorb cross terms.
@@ -732,12 +734,12 @@ theorem dom_union [DistributiveAllegory 𝒜] {a b : 𝒜} (P Q : a ⟶ b) :
 
 /-- `dom R = dom (R ≫ R°)` for any `R`.  `⊑`: `dom R = id ∩ RR° ⊑ dom(RR°)` (`id_inter_le_dom`);
     `⊒`: `dom(RR°) ⊑ dom R` (`dom_comp_le`). -/
-theorem dom_eq_dom_comp_recip [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+public theorem dom_eq_dom_comp_recip [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     dom R = dom (R ≫ R°) :=
   le_antisymm (id_inter_le_dom (R ≫ R°)) (dom_comp_le R R°)
 
 /-- `dom 𝟘 = 𝟘`: `dom 𝟘 = id ∩ 𝟘≫𝟘° = id ∩ 𝟘 = 𝟘`. -/
-theorem dom_zero [DistributiveAllegory 𝒜] {a b : 𝒜} : dom (𝟘 : a ⟶ b) = (𝟘 : a ⟶ a) := by
+public theorem dom_zero [DistributiveAllegory 𝒜] {a b : 𝒜} : dom (𝟘 : a ⟶ b) = (𝟘 : a ⟶ a) := by
   dsimp [dom]; rw [recip_zero, DistributiveAllegory.comp_zero]
   exact le_antisymm (inter_lb_right _ _) (zero_le _)
 
@@ -756,12 +758,12 @@ variable {A : Type u} [TabularUnitaryAllegory A]
 -- All mapCat hom usage must be annotated with @Cat.Hom _ (mapCat ..) or @HasPullback.mk etc.
 
 -- Subtype equality helper for mapCat homs
-private theorem mapHom_ext {a b : MapObj A}
+public theorem mapHom_ext {a b : MapObj A}
     {f g : @Cat.Hom _ (mapCat (𝒜 := A)) a b}
     (h : f.val = g.val) : f = g := Subtype.ext h
 
 /-- Any two maps from a to unit_obj agree (allegory-level). -/
-private theorem map_to_unit_unique_alg {a : A}
+public theorem map_to_unit_unique_alg {a : A}
     {f g : a ⟶ UnitaryAllegory.unit_obj (𝒜 := A)}
     (hf : Map f) (hg : Map g) : f = g := by
   apply map_order_discrete hf hg
@@ -777,7 +779,7 @@ private theorem map_to_unit_unique_alg {a : A}
   exact le_trans h1 (h2 ▸ h3)
 
 /-- §2.152: The unit object of 𝒜 is terminal in Map(𝒜). -/
-noncomputable def mapHasTerminal : @HasTerminal (MapObj A) (mapCat (𝒜 := A)) :=
+@[expose] public noncomputable def mapHasTerminal : @HasTerminal (MapObj A) (mapCat (𝒜 := A)) :=
   @HasTerminal.mk (MapObj A) (mapCat (𝒜 := A))
     UnitaryAllegory.unit_obj
     (fun a =>
@@ -800,7 +802,7 @@ private theorem map_entire_le {A : Type u} [Allegory A] {p b : A} {e : p ⟶ b}
 /-- A map `u` with a map retraction (`w ≫ u = id`, `w` a map) is RELATIONALLY a split mono:
     `u° ≫ u = id`.  Proof: `w ⊑ u°` (since `u` entire: `w ⊑ w(uu°) = (wu)u° = u°`), so
     `id = wu ⊑ u°u`; combined with `u°u ⊑ id` (`u` simple). -/
-theorem map_retr_leg {A : Type u} [Allegory A] {p q : A} {u : p ⟶ q} {w : q ⟶ p}
+public theorem map_retr_leg {A : Type u} [Allegory A] {p q : A} {u : p ⟶ q} {w : q ⟶ p}
     (hu : Map u) (hwu : w ≫ u = Cat.id q) : u° ≫ u = Cat.id q := by
   apply le_antisymm hu.2
   -- w ⊑ u°  ⟹  id = w≫u ⊑ u°≫u.
@@ -813,7 +815,7 @@ theorem map_retr_leg {A : Type u} [Allegory A] {p q : A} {u : p ⟶ q} {w : q �
 
 /-- Helper for mapHasPullback: extract the mediating map data via Classical.choice,
     taking cone fields as plain allegory homs to avoid Cat synthesis issues. -/
-private noncomputable def mapLiftData {a b c p : A}
+@[expose] public noncomputable def mapLiftData {a b c p : A}
     {f : a ⟶ c} {g : b ⟶ c} {π₁ : p ⟶ a} {π₂ : p ⟶ b}
     (_ : Map f) (hg : Map g) (ht : Tabulates π₁ π₂ (f ≫ g°))
     (q : A) (x : q ⟶ a) (y : q ⟶ b)
@@ -842,7 +844,7 @@ private noncomputable def mapEqLiftData {a b p q : A} {f g : a ⟶ b} {e : p ⟶
     exact ⟨⟨⟨k, hk⟩, hke⟩⟩)
 
 /-- §2.212 pullback: tabulation of f≫g° gives the pullback of f,g in Map(𝒜). -/
-noncomputable def mapHasPullback
+@[expose] public noncomputable def mapHasPullback
     {a b c : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a c)
     (g : @Cat.Hom _ (mapCat (𝒜 := A)) b c) :
     @HasPullback (MapObj A) (mapCat (𝒜 := A)) a b c f g := by
@@ -934,7 +936,7 @@ noncomputable def mapHasPullback
            exact mapHom_ext (hdL ▸ uniq u.val u.property hU1 hU2)))
 
 /-- §2.212: Map(𝒜) has all pullbacks. -/
-noncomputable instance mapHasPullbacks :
+@[expose] public noncomputable instance mapHasPullbacks :
     @HasPullbacks (MapObj A) (mapCat (𝒜 := A)) :=
   @HasPullbacks.mk (MapObj A) (mapCat (𝒜 := A)) (fun {_ _ _} f g => mapHasPullback f g)
 
@@ -947,7 +949,7 @@ noncomputable instance mapHasPullbacks :
     bridge it to the canonical tabulation `(π₁,π₂)` of `f g°` via the pullback-UNIQUENESS
     comparison iso `v : pb.pt → p` (`v ≫ π₁ = pb.π₁`, with map inverse `u`), then transport
     `tab_leg_dom` across it using `map_retr_leg` (`v°≫v = id`). -/
-theorem mapPullback_leg_corOf {a b c : MapObj A}
+public theorem mapPullback_leg_corOf {a b c : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a c) (g : @Cat.Hom _ (mapCat (𝒜 := A)) b c)
     (pb : @HasPullback (MapObj A) (mapCat (𝒜 := A)) a b c f g) :
     (@Cone.π₁ _ (mapCat (𝒜 := A)) a b c f g
@@ -1005,7 +1007,7 @@ theorem mapPullback_leg_corOf {a b c : MapObj A}
 
     Same comparison-iso transport as `mapPullback_leg_corOf`, but reads off the cross term
     (`π₁°≫π₂ = f g°` is the very tabulation equation) rather than the first-leg coreflexive. -/
-theorem mapPullback_cross {a b c : MapObj A}
+public theorem mapPullback_cross {a b c : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a c) (g : @Cat.Hom _ (mapCat (𝒜 := A)) b c)
     (pb : @HasPullback (MapObj A) (mapCat (𝒜 := A)) a b c f g) :
     (@Cone.π₁ _ (mapCat (𝒜 := A)) a b c f g
@@ -1054,7 +1056,7 @@ theorem mapPullback_cross {a b c : MapObj A}
 
   Product a×b = pullback over the terminal (unit). -/
 
-noncomputable instance mapHasBinaryProducts :
+@[expose] public noncomputable instance mapHasBinaryProducts :
     @HasBinaryProducts (MapObj A) (mapCat (𝒜 := A)) :=
   -- Use term-mode let bindings with fully explicit types to avoid Cat synthesis issues.
   let trm := @HasTerminal.one _ (mapCat (𝒜 := A)) mapHasTerminal
@@ -1087,7 +1089,7 @@ noncomputable instance mapHasBinaryProducts :
 
   Equalizer of f,g : a→b = splitting of dom(f∩g). -/
 
-noncomputable def mapHasEqualizer
+public noncomputable def mapHasEqualizer
     {a b : MapObj A} (f g : @Cat.Hom _ (mapCat (𝒜 := A)) a b) :
     @HasEqualizer (MapObj A) (mapCat (𝒜 := A)) a b f g :=
   -- Extract splitting data using Classical.choice (Prop ∃ → Type data)
@@ -1131,7 +1133,7 @@ noncomputable def mapHasEqualizer
   @HasEqualizer.mk (MapObj A) (mapCat (𝒜 := A)) a b f g eqCone liftFn facFn uniqFn
 
 /-- §2.212: Map(𝒜) has all equalizers. -/
-noncomputable instance mapHasEqualizers :
+@[expose] public noncomputable instance mapHasEqualizers :
     @HasEqualizers (MapObj A) (mapCat (𝒜 := A)) :=
   @HasEqualizers.mk (MapObj A) (mapCat (𝒜 := A))
     (fun _ _ f g => mapHasEqualizer f g)
@@ -1167,7 +1169,7 @@ private theorem map_monic_retract {q : A} {a : MapObj A}
     span `(s, t)`; by `tab_pullback_cone'` it is the kernel pair of `m` (`s ≫ m = t ≫ m`),
     so mapCat-monicity of `m` forces `s = t`, whence `m ≫ m° = s° ≫ t = s° ≫ s ⊑ 1_C`
     (`s` simple).  No retraction or `Map (m≫m°)` assumption is needed (breaks the old circle). -/
-theorem mapMonic_inj {C : A} {a : MapObj A}
+public theorem mapMonic_inj {C : A} {a : MapObj A}
     {m : C ⟶ a} (hm : Map m)
     (hm_monic : @Monic (MapObj A) (mapCat (𝒜 := A)) C a ⟨m, hm⟩) :
     m ≫ m° ⊑ Cat.id C := by
@@ -1187,7 +1189,7 @@ theorem mapMonic_inj {C : A} {a : MapObj A}
     _ = s° ≫ s := by rw [hst]
     _ ⊑ Cat.id C := hs.2
 
-theorem map_retract_monic {a : MapObj A} {p : A}
+public theorem map_retract_monic {a : MapObj A} {p : A}
     {e : p ⟶ a} (he_map : Map e) (hee_r : e ≫ e° = Cat.id p) :
     @Monic (MapObj A) (mapCat (𝒜 := A)) p a ⟨e, he_map⟩ := by
   intro W u v huv
@@ -1208,14 +1210,14 @@ private noncomputable def mapImageData {a b : A} (f : {R : a ⟶ b // Map R}) :
     exact ⟨⟨p, e, he, hl, hr⟩⟩)
 
 -- The image subobject of f in mapCat: splitting of dom(f°) is a monic in Map(𝒜).
-private noncomputable def mapImage {a b : MapObj A}
+public noncomputable def mapImage {a b : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) : @Subobject (MapObj A) (mapCat (𝒜 := A)) b :=
   let d := mapImageData f
   @Subobject.mk (MapObj A) (mapCat (𝒜 := A)) b d.1 ⟨d.2.1, d.2.2.1⟩
     (map_retract_monic d.2.2.1 d.2.2.2.2)
 
 -- Helper for mapIsImage minimality: given S allows f, produce (mapImage f) ≤ S in allegory-land.
-theorem mapIsImage_min_aux {a b : MapObj A} {p : A} {e : p ⟶ b}
+public theorem mapIsImage_min_aux {a b : MapObj A} {p : A} {e : p ⟶ b}
     (he_map : Map e) (hee_r : e ≫ e° = Cat.id p)
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b)
     (hee_le_f : e° ≫ e ⊑ f.val° ≫ f.val)  -- e°e ⊑ f°f (image below f)
@@ -1355,7 +1357,7 @@ theorem mapIsImage_min_aux {a b : MapObj A} {p : A} {e : p ⟶ b}
   exact ⟨⟨h_alg, ⟨hh_entire, hh_simple⟩⟩, mapHom_ext hh_eq⟩
 
 -- The image is an image: f allows through it, and it is minimal.
-private theorem mapIsImage {a b : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) :
+public theorem mapIsImage {a b : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) :
     @IsImage (MapObj A) (mapCat (𝒜 := A)) a b f (mapImage f) := by
   let d      := mapImageData f
   let p      : A := d.1
@@ -1375,7 +1377,7 @@ private theorem mapIsImage {a b : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A))
   obtain ⟨k_S, hk_S_eq⟩ := hS
   exact mapIsImage_min_aux he_map hee_r f hee_le_f S k_S hk_S_eq
 
-noncomputable instance mapHasImages :
+@[expose] public noncomputable instance mapHasImages :
     @HasImages (MapObj A) (mapCat (𝒜 := A)) :=
   @HasImages.mk (MapObj A) (mapCat (𝒜 := A))
     (fun {_ _} f => mapImage f) (fun {_ _} f => mapIsImage f)
@@ -1397,7 +1399,7 @@ noncomputable instance mapHasImages :
   map u. We show u is iso (using the UMP in both directions), then use cover_precomp_iso. -/
 
 -- Extract id_c ⊑ f°≫f from Cover f in Map(𝒜)
-theorem mapCover_entire {a c : MapObj A}
+public theorem mapCover_entire {a c : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a c)
     (hcov : @Cover (MapObj A) (mapCat (𝒜 := A)) a c f) :
     Cat.id c ⊑ f.val° ≫ f.val := by
@@ -1435,7 +1437,7 @@ theorem mapCover_entire {a c : MapObj A}
     `id_c ⊑ x°≫x ⊑ m°≫m ⊑ id_c`, so `m°≫m = id_c`; `m` monic+Entire forces `m≫m° = id`,
     making `m` iso with inverse `m°`.  (Reused by `mapPullbacksTransferCovers` and the
     §2.217(2) effectiveness bridge.) -/
-theorem mapEntire_cover {a c : MapObj A}
+public theorem mapEntire_cover {a c : MapObj A}
     (x : @Cat.Hom _ (mapCat (𝒜 := A)) a c) (hx : Cat.id c ⊑ x.val° ≫ x.val) :
     @Cover (MapObj A) (mapCat (𝒜 := A)) a c x := by
   intro C m k hm_monic hkm
@@ -1462,7 +1464,7 @@ theorem mapEntire_cover {a c : MapObj A}
   exact ⟨⟨m°, hmo_map⟩, mapHom_ext hmm'_id, mapHom_ext hmm_id⟩
 
 /-- §2.212: PullbacksTransferCovers for Map(𝒜). -/
-noncomputable instance mapPullbacksTransferCovers :
+@[expose] public noncomputable instance mapPullbacksTransferCovers :
     @PullbacksTransferCovers (MapObj A) (mapCat (𝒜 := A)) :=
   @PullbacksTransferCovers.mk (MapObj A) (mapCat (𝒜 := A)) (by
     intro a b c f g cone hpb hcov_f
@@ -1585,7 +1587,7 @@ noncomputable instance mapPullbacksTransferCovers :
     rw [hπ₂_eq']; exact hcov)
 
 /-- §2.212: Map(𝒜) is a RegularCategory. -/
-noncomputable instance mapRegularCategory :
+@[expose] public noncomputable instance mapRegularCategory :
     @RegularCategory (MapObj A) (mapCat (𝒜 := A)) :=
   @RegularCategory.mk (MapObj A) (mapCat (𝒜 := A))
     mapHasTerminal mapHasBinaryProducts mapHasPullbacks mapHasImages mapPullbacksTransferCovers
@@ -1613,7 +1615,7 @@ noncomputable instance mapRegularCategory :
     workaround, cf. `SplitsSymmIdem` in S2_22).  This packages the effective splitting of an
     allegory-level equivalence relation into the cover/quotient datum the category-level
     `IsEffective` needs. -/
-theorem mapEffectivenessSplit {a Q : A} (x : @Cat.Hom (MapObj A) (mapCat (𝒜 := A)) a Q)
+public theorem mapEffectivenessSplit {a Q : A} (x : @Cat.Hom (MapObj A) (mapCat (𝒜 := A)) a Q)
     (hxxId : x.val° ≫ x.val = Cat.id Q) :
     @Cover (MapObj A) (mapCat (𝒜 := A)) a Q x :=
   -- Cover: `mapEntire_cover` needs `id_Q ⊑ x°≫x`; here `x°≫x = id_Q` exactly.
@@ -1647,27 +1649,27 @@ theorem mapEffectivenessSplit {a Q : A} (x : @Cat.Hom (MapObj A) (mapCat (𝒜 :
   `Rel(Map A) ≅ A` to the CATEGORY level and yield `mapIsEffective_of_split`/`mapEffectiveRegular`. -/
 
 /-- Underlying allegory leg `colA.val : E.src → a` of a Map(A) relation (instance pinned). -/
-@[reducible] def relColA {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
+@[reducible, expose] public def relColA {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     @Cat.Hom A Allegory.toCat (@BinRel.src (MapObj A) (mapCat (𝒜 := A)) a b E) a :=
   (@BinRel.colA (MapObj A) (mapCat (𝒜 := A)) a b E).val
 
 /-- Underlying allegory leg `colB.val : E.src → b` of a Map(A) relation (instance pinned). -/
-@[reducible] def relColB {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
+@[reducible, expose] public def relColB {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     @Cat.Hom A Allegory.toCat (@BinRel.src (MapObj A) (mapCat (𝒜 := A)) a b E) b :=
   (@BinRel.colB (MapObj A) (mapCat (𝒜 := A)) a b E).val
 
 /-- `relColA E` is a map of `A`. -/
-def relColA_map {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) : Map (relColA E) :=
+@[expose] public def relColA_map {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) : Map (relColA E) :=
   (@BinRel.colA (MapObj A) (mapCat (𝒜 := A)) a b E).property
 
 /-- `relColB E` is a map of `A`. -/
-def relColB_map {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) : Map (relColB E) :=
+@[expose] public def relColB_map {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) : Map (relColB E) :=
   (@BinRel.colB (MapObj A) (mapCat (𝒜 := A)) a b E).property
 
 /-- The underlying allegory morphism of a category-level relation `E : BinRel (MapObj A) a b`:
     `relOf E = E.colA° ≫ E.colB : a → b` in the allegory `A`.  (`relOf (graph x) = x`, and
     `relOf (E°) = (relOf E)°`.) -/
-def relOf {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
+@[expose] public def relOf {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     @Cat.Hom A Allegory.toCat a b :=
   Allegory.recip (relColA E) ≫ relColB E
 
@@ -1676,7 +1678,7 @@ def relOf {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     `h≫F.colA = E.colA`, `h≫F.colB = E.colB`) gives
     `relOf E = (h F.colA)°(h F.colB) = F.colA°(h°h)F.colB ⊑ F.colA° F.colB = relOf F`
     (`h` simple: `h°≫h ⊑ id`). -/
-theorem relOf_le_of_relLe {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b}
+public theorem relOf_le_of_relLe {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b}
     (h : @RelLe (MapObj A) (mapCat (𝒜 := A)) a b E F) : relOf E ⊑ relOf F := by
   obtain ⟨⟨hh, hhA, hhB⟩⟩ := h
   have hhA' : hh.val ≫ relColA F = relColA E := congrArg Subtype.val hhA
@@ -1691,21 +1693,21 @@ theorem relOf_le_of_relLe {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A
     _ ⊑ Allegory.recip (relColA F) ≫ relColB F := comp_mono_left _ hmid
 
 /-- `relOf (E°) = (relOf E)°`: the reciprocal swaps the columns. -/
-theorem relOf_reciprocal {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
+public theorem relOf_reciprocal {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     relOf (@reciprocal (MapObj A) (mapCat (𝒜 := A)) a b E) = Allegory.recip (relOf E) := by
   show Allegory.recip (relColB E) ≫ relColA E
       = Allegory.recip (Allegory.recip (relColA E) ≫ relColB E)
   rw [Allegory.recip_comp, Allegory.recip_recip]
 
 /-- `relOf (graph x) = x.val` for a Map(A) endo-map `x : a → a`. -/
-theorem relOf_graph {a b : A} (x : @Cat.Hom (MapObj A) (mapCat (𝒜 := A)) a b) :
+public theorem relOf_graph {a b : A} (x : @Cat.Hom (MapObj A) (mapCat (𝒜 := A)) a b) :
     relOf (@graph (MapObj A) (mapCat (𝒜 := A)) a b x) = x.val := by
   show Allegory.recip (Cat.id a) ≫ x.val = x.val
   rw [recip_id, Cat.id_comp]
 
 /-- **§2.217(2) dictionary**: `relOf E` is REFLEXIVE given `E`'s diagonal map (the reflexivity
     component of `EquivalenceRelation`, fed through `relColA`/`relColB`). -/
-theorem relOf_reflexive {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
+public theorem relOf_reflexive {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
     {d : @Cat.Hom (MapObj A) (mapCat (𝒜 := A)) a
           (@BinRel.src (MapObj A) (mapCat (𝒜 := A)) a a E)}
     (hdA' : d.val ≫ relColA E = Cat.id a) (hdB' : d.val ≫ relColB E = Cat.id a) :
@@ -1723,7 +1725,7 @@ theorem relOf_reflexive {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a
 /-- **§2.217(2) dictionary**: `relOf E` is SYMMETRIC given `E ⊂ E°` (the symmetry component of
     `EquivalenceRelation`).  `relOf E ⊑ (relOf E)°` by the forward dictionary + `relOf_reciprocal`;
     reciprocate. -/
-theorem relOf_symmetric {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
+public theorem relOf_symmetric {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
     (hsym : @RelLe (MapObj A) (mapCat (𝒜 := A)) a a E
               (@reciprocal (MapObj A) (mapCat (𝒜 := A)) a a E)) :
     Symmetric (relOf E) := by
@@ -1742,7 +1744,7 @@ private theorem map_id_le_ffo {x y : A} {f : x ⟶ y} (hf : Map f) : Cat.id x �
     `m := colA≫colA° ∩ colB≫colB°` by maps `(u,v)`; from `m ⊑ colA≫colA°`, `m ⊑ colB≫colB°` and
     simplicity of `colA`, `colB` one gets `u≫colX = v≫colX` (X∈{A,B}), so `u = v` by joint-monicity,
     whence `m = u°≫v = u°≫u ⊑ id`. -/
-theorem monicPair_tab_identity {a b s : A} {colA : s ⟶ a} {colB : s ⟶ b}
+public theorem monicPair_tab_identity {a b s : A} {colA : s ⟶ a} {colB : s ⟶ b}
     (hA : Map colA) (hB : Map colB)
     (hmono : @MonicPair (MapObj A) (mapCat (𝒜 := A)) s a b ⟨colA, hA⟩ ⟨colB, hB⟩) :
     colA ≫ colA° ∩ colB ≫ colB° = Cat.id s := by
@@ -1798,7 +1800,7 @@ theorem monicPair_tab_identity {a b s : A} {colA : s ⟶ a} {colB : s ⟶ b}
     is the `monicPair_tab_identity` translation of the categorical joint-monicity (`isMonicPair`)
     that every `BinRel` carries; hence in `Map(A)` over a tabular allegory a category-level
     relation is exactly a §2.14 tabulation. -/
-theorem relOf_tabulates {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
+public theorem relOf_tabulates {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     Tabulates (relColA E) (relColB E) (relOf E) := by
   refine ⟨relColA_map E, relColB_map E, rfl, ?_⟩
   exact monicPair_tab_identity (relColA_map E) (relColB_map E)
@@ -1808,7 +1810,7 @@ theorem relOf_tabulates {a b : A} (E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a
     underlying relations descends to `Map(A)`-containment, `relOf E ⊑ relOf F ⟹ E ⊂ F`.
     Since `F` tabulates `relOf F` (`relOf_tabulates`), the §2.143 universal property
     (`tabulation_UP_forward`) factors `E`'s columns through `F`'s — exactly a `RelHom E F`. -/
-theorem relLe_of_relOf_le {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b}
+public theorem relLe_of_relOf_le {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b}
     (hle : relOf E ⊑ relOf F) : @RelLe (MapObj A) (mapCat (𝒜 := A)) a b E F := by
   obtain ⟨h, hmap, hA, hB⟩ :=
     tabulation_UP_forward (relOf_tabulates F) (relColA_map E) (relColB_map E) hle
@@ -1822,7 +1824,7 @@ theorem relLe_of_relOf_le {a b : A} {E F : @BinRel (MapObj A) (mapCat (𝒜 := A
       `relOf R ≫ relOf S = R.colA°≫(R.colB≫S.colA°)≫S.colB = (π₁≫R.colA)°≫(π₂≫S.colB)`
                         `= (e≫(R⊚S).colA)°≫(e≫(R⊚S).colB) = (R⊚S).colA°≫(e°≫e)≫(R⊚S).colB`
                         `= relOf (R ⊚ S)`. -/
-theorem relOf_compose {a b c : A}
+public theorem relOf_compose {a b c : A}
     (R : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b)
     (S : @BinRel (MapObj A) (mapCat (𝒜 := A)) b c) :
     relOf (@compose (MapObj A) (mapCat (𝒜 := A))
@@ -1909,7 +1911,7 @@ theorem relOf_compose {a b c : A}
 /-- A tabulating pair `(u, v)` of maps (`u≫u° ∩ v≫v° = id`) is a `MonicPair` in `Map(A)`.
     Bridges the `.val`-level §2.141 joint-monicity (`tabulates_monic_pair`) to the subtype
     `MonicPair` that a `BinRel (MapObj A)` carries. -/
-theorem mapMonicPair_of_tab {a b s : A} {u : s ⟶ a} {v : s ⟶ b}
+public theorem mapMonicPair_of_tab {a b s : A} {u : s ⟶ a} {v : s ⟶ b}
     (hu : Map u) (hv : Map v) (htab : u ≫ u° ∩ v ≫ v° = Cat.id s) :
     @MonicPair (MapObj A) (mapCat (𝒜 := A)) s a b ⟨u, hu⟩ ⟨v, hv⟩ := by
   intro W f g hfA hfB
@@ -1929,7 +1931,7 @@ theorem mapMonicPair_of_tab {a b s : A} {u : s ⟶ a} {v : s ⟶ b}
     From `m ⊑ relOf R`, `m ⊑ relOf S` the reverse dictionary `relLe_of_relOf_le` gives
     `M ⊂ R`, `M ⊂ S`, hence `M ⊂ R ⊓ S` (`le_intersect`); the forward dictionary lowers this to
     `m = relOf M ⊑ relOf (R⊓S)`. -/
-theorem relOf_inter {a b : A}
+public theorem relOf_inter {a b : A}
     (R S : @BinRel (MapObj A) (mapCat (𝒜 := A)) a b) :
     relOf (@intersect (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryProducts mapHasPullbacks a b R S)
       = relOf R ∩ relOf S := by
@@ -1968,7 +1970,7 @@ theorem relOf_inter {a b : A}
     an idempotent `relOf E`.  `E⊚E ⊂ E` (transitivity) gives `relOf (E⊚E) ⊑ relOf E`; by the
     composition bridge `relOf (E⊚E) = relOf E ≫ relOf E`, so `relOf E ≫ relOf E ⊑ relOf E`.  And
     reflexivity (`id ⊑ relOf E`) gives `relOf E = id ≫ relOf E ⊑ relOf E ≫ relOf E`. -/
-theorem relOf_idempotent {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
+public theorem relOf_idempotent {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
     (hrefl : Reflexive (relOf E))
     (htrans : @RelLe (MapObj A) (mapCat (𝒜 := A)) a a
                 (@compose (MapObj A) (mapCat (𝒜 := A))
@@ -1994,7 +1996,7 @@ theorem relOf_idempotent {a : A} {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a 
     (`relOf_idempotent`) ⟹ `split` gives a map `x` with `x≫x° = relOf E`, `x°≫x = id` ⟹ `x` is a
     COVER (`mapEffectivenessSplit`).  Finally `relOf (graph x ⊚ graph x°) = x≫x° = relOf E` (bridge
     C + `relOf_graph`/`relOf_reciprocal`), so `E ⊂ graph x⊚graph x°` and back by bridge D. -/
-theorem mapIsEffective_of_split {a : A}
+public theorem mapIsEffective_of_split {a : A}
     (split : ∀ {c : A} (R : c ⟶ c), Reflexive R → Symmetric R → R ≫ R = R →
       ∃ (d : A) (f : c ⟶ d), Map f ∧ f ≫ f° = R ∧ f° ≫ f = Cat.id d)
     {E : @BinRel (MapObj A) (mapCat (𝒜 := A)) a a}
@@ -2049,12 +2051,12 @@ variable {A : Type u} [TabularUnitaryDistributiveAllegory A]
 
 /-- The COREFLEXIVE on `B` associated to a subobject `S` of `B` in Map(𝒜): `s° ≫ s` where
     `s = S.arr.val` is the underlying monic map.  Coreflexive because `s` is simple. -/
-private def corOf {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) : B ⟶ B :=
+@[expose] public def corOf {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) : B ⟶ B :=
   (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B S).val° ≫
     (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B S).val
 
 /-- The underlying arrow of a subobject is a Map. -/
-private theorem subArr_map {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
+public theorem subArr_map {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
     Map (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B S).val :=
   (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B S).property
 
@@ -2110,7 +2112,7 @@ private theorem corOf_le_of_le {B : MapObj A}
     _ = t° ≫ t := by rw [Cat.id_comp]
 
 /-- `S ≤ T  ↔  corOf S ⊑ corOf T`. -/
-private theorem le_iff_corOf_le {B : MapObj A}
+public theorem le_iff_corOf_le {B : MapObj A}
     {S T : @Subobject (MapObj A) (mapCat (𝒜 := A)) B} :
     @Subobject.le (MapObj A) (mapCat (𝒜 := A)) B S T ↔ corOf S ⊑ corOf T :=
   ⟨corOf_le_of_le, le_of_corOf_le⟩
@@ -2155,7 +2157,7 @@ private theorem corOf_eq_dom_iso {B : MapObj A}
     coreflexive is `dom (f.val ≫ T.arr.val°)` (`mapPullback_leg_corOf`).  Writing
     `R := f.val ≫ T.arr.val°`, `f.val ≫ corOf T ≫ f.val° = R ≫ R°` and `dom R = dom (R ≫ R°)`
     (`dom_eq_dom_comp_recip`), giving the stated form. -/
-private theorem corOf_invImage {B C : MapObj A}
+public theorem corOf_invImage {B C : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) B C)
     (T : @Subobject (MapObj A) (mapCat (𝒜 := A)) C) :
     corOf (@InverseImage (MapObj A) (mapCat (𝒜 := A)) B C f T mapHasPullbacks)
@@ -2184,25 +2186,25 @@ private noncomputable def corSplitData {B : A} {R : B ⟶ B} (hcor : Coreflexive
 
 /-- Build a subobject of `B` from a coreflexive `R` on `B` by splitting it: the splitting map
     `e : u → B` is monic in Map(𝒜) (a retraction), and `corOf (splitSub R) = R`. -/
-private noncomputable def splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
+public noncomputable def splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
     @Subobject (MapObj A) (mapCat (𝒜 := A)) B :=
   let d := corSplitData hcor
   @Subobject.mk (MapObj A) (mapCat (𝒜 := A)) B d.1 ⟨d.2.1, d.2.2.1⟩
     (map_retract_monic d.2.2.1 d.2.2.2.2)
 
 /-- The coreflexive recovered from `splitSub` is the original `R`. -/
-private theorem corOf_splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
+public theorem corOf_splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
     corOf (splitSub hcor) = R :=
   (corSplitData hcor).2.2.2.1
 
 /-- **§2.212 union of subobjects**: split the coreflexive `corOf S ∪ corOf T`. -/
-private noncomputable def mapSubUnion {B : MapObj A}
+@[expose] public noncomputable def mapSubUnion {B : MapObj A}
     (S T : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
     @Subobject (MapObj A) (mapCat (𝒜 := A)) B :=
   splitSub (R := corOf S ∪ corOf T)
     (union_lub (subArr_map S).2 (subArr_map T).2)
 
-private theorem corOf_mapSubUnion {B : MapObj A}
+public theorem corOf_mapSubUnion {B : MapObj A}
     (S T : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
     corOf (mapSubUnion S T) = corOf S ∪ corOf T :=
   corOf_splitSub _
@@ -2231,7 +2233,7 @@ private theorem corOf_inter {B : MapObj A}
   rw [← Cat.assoc _ _ (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B S).val, hleg]
 
 /-- **§2.212**: subobjects of Map(𝒜) have binary unions. -/
-noncomputable instance mapHasSubobjectUnions :
+@[expose] public noncomputable instance mapHasSubobjectUnions :
     @HasSubobjectUnions (MapObj A) (mapCat (𝒜 := A)) mapHasImages :=
   @HasSubobjectUnions.mk (MapObj A) (mapCat (𝒜 := A)) mapHasImages
     (fun {_B} S T => mapSubUnion S T)
@@ -2250,12 +2252,12 @@ noncomputable instance mapHasSubobjectUnions :
   these (over different objects) have isomorphic domains via `corOf_eq_dom_iso`. -/
 
 /-- The empty-join (minimal) subobject of `B` in Map(𝒜): the split of `𝟘 : B → B`. -/
-private noncomputable def mapBottom (B : MapObj A) :
+@[expose] public noncomputable def mapBottom (B : MapObj A) :
     @Subobject (MapObj A) (mapCat (𝒜 := A)) B :=
   splitSub (R := (𝟘 : B ⟶ B)) (zero_le _)
 
 /-- `mapBottom B` is the least subobject of `B`. -/
-private theorem mapBottom_min {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
+public theorem mapBottom_min {B : MapObj A} (S : @Subobject (MapObj A) (mapCat (𝒜 := A)) B) :
     @Subobject.le (MapObj A) (mapCat (𝒜 := A)) B (mapBottom B) S :=
   le_iff_corOf_le.mpr (by
     rw [show corOf (mapBottom B) = (𝟘 : B ⟶ B) from corOf_splitSub _]
@@ -2297,7 +2299,7 @@ private theorem zero_is_map_on_bottom {B C : MapObj A}
 /-- The minimal subobjects over any two objects have isomorphic domains (both split `𝟘`).
     The apexes have `id = 𝟘` (`mapBottom_id_zero`); the zero map between them is a map
     (`zero_is_map_on_bottom`) and is its own two-sided inverse (`𝟘≫𝟘 = 𝟘 = id`). -/
-private theorem mapBottom_dom_iso (B C : MapObj A) :
+public theorem mapBottom_dom_iso (B C : MapObj A) :
     @Isomorphic (MapObj A) (mapCat (𝒜 := A))
       (@Subobject.dom (MapObj A) (mapCat (𝒜 := A)) B (mapBottom B))
       (@Subobject.dom (MapObj A) (mapCat (𝒜 := A)) C (mapBottom C)) := by
@@ -2335,7 +2337,7 @@ private theorem corOf_invImage_union {B C : MapObj A}
 
 /-- **§2.212**: `f#` preserves binary unions in Map(𝒜).  Both inclusions follow from the
     `corOf`-equality `corOf_invImage_union` through `le_iff_corOf_le`. -/
-theorem mapInvImage_preserves_union {B C : MapObj A}
+public theorem mapInvImage_preserves_union {B C : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) B C) :
     @inverseImage_preserves_unions (MapObj A) (mapCat (𝒜 := A)) mapHasImages
       mapHasSubobjectUnions B C f mapHasPullbacks := by
@@ -2345,7 +2347,7 @@ theorem mapInvImage_preserves_union {B C : MapObj A}
 
 /-- **§2.212**: `f#` preserves the bottom (empty join) in Map(𝒜): `corOf (f# ⊥) = 𝟘 = corOf ⊥`,
     whence isomorphic domains via `corOf_eq_dom_iso`. -/
-theorem mapInvImage_preserves_bottom {B C : MapObj A}
+public theorem mapInvImage_preserves_bottom {B C : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) B C) :
     @Isomorphic (MapObj A) (mapCat (𝒜 := A))
       (@Subobject.dom (MapObj A) (mapCat (𝒜 := A)) B
@@ -2367,7 +2369,7 @@ end MapPreLogosUnions
     the bottom apparatus (`mapBottom`/`mapBottom_min`/`mapBottom_dom_iso`), and the
     inverse-image-preservation laws (`mapInvImage_preserves_union`/`_bottom`) built on the
     bridge (†) (`corOf_invImage`). -/
-noncomputable instance mapPreLogos {A : Type u} [TabularUnitaryDistributiveAllegory A] :
+@[expose] public noncomputable instance mapPreLogos {A : Type u} [TabularUnitaryDistributiveAllegory A] :
     @PreLogos (MapObj A) (mapCat (𝒜 := A)) :=
   @PreLogos.mk (MapObj A) (mapCat (𝒜 := A)) mapRegularCategory mapHasSubobjectUnions
     mapBottom (fun {_B} S => mapBottom_min S) mapBottom_dom_iso
@@ -2379,7 +2381,7 @@ noncomputable instance mapPreLogos {A : Type u} [TabularUnitaryDistributiveAlleg
     `mapIsEffective_of_split` fed the supplied splitting `split`.  Taken as a `def` over the
     SPLIT DATA (not an `[EffectiveAllegory A]` instance) to keep the single `Allegory A` from
     `[TabularUnitaryDistributiveAllegory A]` — the standard diamond dodge, cf. `s217_2_*`. -/
-noncomputable def mapEffectiveRegular {A : Type u} [TabularUnitaryDistributiveAllegory A]
+@[expose] public noncomputable def mapEffectiveRegular {A : Type u} [TabularUnitaryDistributiveAllegory A]
     (split : ∀ {c : A} (R : c ⟶ c), Freyd.Alg.Reflexive R → Freyd.Alg.Symmetric R → R ≫ R = R →
       ∃ (d : A) (f : c ⟶ d), Freyd.Alg.Map f ∧ f ≫ f° = R ∧ f° ≫ f = Cat.id d) :
     @EffectiveRegular (MapObj A) (mapCat (𝒜 := A)) :=
@@ -2422,24 +2424,24 @@ variable {A : Type u} [TabularUnitaryDivisionAllegory A]
 
 /-- A `TabularUnitaryDivisionAllegory` is a `TabularUnitaryDistributiveAllegory`
     (forgetting right division).  Same `Allegory` base — no diamond. -/
-instance mapTUDA_of_TUDiv : TabularUnitaryDistributiveAllegory A :=
+@[expose] public instance mapTUDA_of_TUDiv : TabularUnitaryDistributiveAllegory A :=
   { (inferInstance : TabularAllegory A), (inferInstance : UnitaryAllegory A),
     (inferInstance : DistributiveAllegory A) with }
 
 /-- The coreflexive right adjoint `1_b ∩ f \ (oneHeyting A) / f°` for a map `f : a → b`
     and a coreflexive `A` on `a`. -/
-private noncomputable def rightAdjCor {a b : MapObj A}
+@[expose] public noncomputable def rightAdjCor {a b : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) (A' : a ⟶ a) : b ⟶ b :=
   Cat.id b ∩ (f.val \ (DivisionAllegory.div (oneHeyting A') f.val°))
 
-private theorem rightAdjCor_coref {a b : MapObj A}
+public theorem rightAdjCor_coref {a b : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) (A' : a ⟶ a) : Coreflexive (rightAdjCor f A') :=
   inter_lb_left _ _
 
 /-- **§2.32 adjunction (coreflexive form)**: for a map `f : a → b`, coreflexive `A` on `a`
     and coreflexive `c` on `b`,
         `(1 ∩ f c f°) ⊑ A   ↔   c ⊑ rightAdjCor f A`. -/
-private theorem rightAdjCor_adj {a b : MapObj A}
+public theorem rightAdjCor_adj {a b : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) {A' : a ⟶ a} {c : b ⟶ b}
     (hc : Coreflexive c) :
     (Cat.id a ∩ (f.val ≫ c ≫ f.val°)) ⊑ A' ↔ c ⊑ rightAdjCor f A' := by
@@ -2455,7 +2457,7 @@ private theorem rightAdjCor_adj {a b : MapObj A}
 
 /-- **§2.32 backward — `HasRightAdjointImage (MapObj A)`**.  `rightAdj f A' := splitSub (rightAdjCor)`;
     the adjunction is `rightAdjCor_adj` read through the `corOf`/`splitSub` bridge. -/
-noncomputable instance mapHasRightAdjointImage :
+@[expose] public noncomputable instance mapHasRightAdjointImage :
     @HasRightAdjointImage (MapObj A) (mapCat (𝒜 := A)) :=
   @HasRightAdjointImage.mk (MapObj A) (mapCat (𝒜 := A)) mapHasImages mapHasPullbacks
     (fun {a b} f A' => splitSub (R := rightAdjCor f (corOf A')) (rightAdjCor_coref f (corOf A')))
@@ -2471,7 +2473,7 @@ noncomputable instance mapHasRightAdjointImage :
     pre-logos `mapPreLogos` (regular + subobject lattice) with the right adjoint
     `mapHasRightAdjointImage` to `f#`.  This is Freyd §2.32 (backward direction): `Mσn(A)` is a
     logos. -/
-noncomputable instance mapLogos : @Logos (MapObj A) (mapCat (𝒜 := A)) :=
+@[expose] public noncomputable instance mapLogos : @Logos (MapObj A) (mapCat (𝒜 := A)) :=
   @Logos.mk (MapObj A) (mapCat (𝒜 := A))
     mapRegularCategory mapHasSubobjectUnions
     (@HasRightAdjointImage.rightAdj (MapObj A) (mapCat (𝒜 := A)) mapHasRightAdjointImage)
@@ -2500,13 +2502,13 @@ section MapCoproduct
 variable {A : Type u} [TabularUnitaryPositiveAllegory A]
 
 /-- The chosen allegory coproduct diagram `(a ⊕ b, u₁, u₂)` for `a, b : MapObj A`. -/
-private def mapCoprodDiagram (a b : MapObj A) :
+@[expose] public def mapCoprodDiagram (a b : MapObj A) :
     Coproduct (PositiveAllegory.coprod a b) a b :=
   PositiveAllegory.has_coproduct a b
 
 /-- The left injection `u₁ : a → a⊕b` is a MAP (entire from `u₁u₁°=1`; simple from
     `u₁°u₁ ⊑ u₁°u₁ ∪ u₂°u₂ = 1`). -/
-private theorem mapCoprod_u₁_map (a b : MapObj A) : Map (mapCoprodDiagram a b).u₁ := by
+public theorem mapCoprod_u₁_map (a b : MapObj A) : Map (mapCoprodDiagram a b).u₁ := by
   refine ⟨?_, ?_⟩
   · -- Entire: id_a ⊑ u₁ ≫ u₁° (in fact = id_a).
     rw [Entire, dom]
@@ -2519,7 +2521,7 @@ private theorem mapCoprod_u₁_map (a b : MapObj A) : Map (mapCoprodDiagram a b)
     exact h
 
 /-- The right injection `u₂ : b → a⊕b` is a MAP. -/
-private theorem mapCoprod_u₂_map (a b : MapObj A) : Map (mapCoprodDiagram a b).u₂ := by
+public theorem mapCoprod_u₂_map (a b : MapObj A) : Map (mapCoprodDiagram a b).u₂ := by
   refine ⟨?_, ?_⟩
   · rw [Entire, dom]
     exact le_antisymm (inter_lb_left _ _)
@@ -2530,14 +2532,14 @@ private theorem mapCoprod_u₂_map (a b : MapObj A) : Map (mapCoprodDiagram a b)
     exact h
 
 /-- The copairing relation `u₁°f ∪ u₂°g : a⊕b → x` of two maps `f : a → x`, `g : b → x`. -/
-private def mapCase {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
+@[expose] public def mapCase {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
     PositiveAllegory.coprod a b ⟶ x :=
   (mapCoprodDiagram a b).u₁° ≫ f ∪ (mapCoprodDiagram a b).u₂° ≫ g
 
 /-- The copairing `u₁°f ∪ u₂°g` of two MAPS is a MAP.
     Entire: `id = u₁°u₁ ∪ u₂°u₂ ⊑ u₁°(ff°)u₁ ∪ u₂°(gg°)u₂ ⊑ case ≫ case°`.
     Simple: cross terms vanish by `u₁u₂° = u₂u₁° = 0`, leaving `f°f ∪ g°g ⊑ id`. -/
-private theorem mapCase_map {a b x : MapObj A} {f : a ⟶ x} {g : b ⟶ x}
+public theorem mapCase_map {a b x : MapObj A} {f : a ⟶ x} {g : b ⟶ x}
     (hf : Map f) (hg : Map g) : Map (mapCase f g) := by
   -- `cp` is a `let`-alias for `mapCoprodDiagram a b` (the expression `mapCase` unfolds to), so
   -- `hunfold` is `rfl` and after `rw [hunfold]` the goal is in `cp.uᵢ` terms — matching the
@@ -2611,7 +2613,7 @@ private theorem mapCase_map {a b x : MapObj A} {f : a ⟶ x} {g : b ⟶ x}
       simp only [Cat.assoc]; rw [he]; exact hg.2
 
 /-- `u₁ ≫ case = f` (allegory level): `u₁(u₁°f ∪ u₂°g) = (u₁u₁°)f ∪ (u₁u₂°)g = f ∪ 0 = f`. -/
-private theorem mapCase_u₁ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
+public theorem mapCase_u₁ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
     (mapCoprodDiagram a b).u₁ ≫ mapCase f g = f := by
   let cp := mapCoprodDiagram a b
   show cp.u₁ ≫ (cp.u₁° ≫ f ∪ cp.u₂° ≫ g) = f
@@ -2620,7 +2622,7 @@ private theorem mapCase_u₁ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
       DistributiveAllegory.zero_comp, union_zero]
 
 /-- `u₂ ≫ case = g` (allegory level). -/
-private theorem mapCase_u₂ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
+public theorem mapCase_u₂ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
     (mapCoprodDiagram a b).u₂ ≫ mapCase f g = g := by
   let cp := mapCoprodDiagram a b
   show cp.u₂ ≫ (cp.u₁° ≫ f ∪ cp.u₂° ≫ g) = g
@@ -2630,7 +2632,7 @@ private theorem mapCase_u₂ {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x) :
 
 /-- Uniqueness of the copairing (allegory level): any `h` with `u₁≫h = f`, `u₂≫h = g` equals
     `mapCase f g`.  This is Freyd's mediator-uniqueness, `1 = u₁°u₁ ∪ u₂°u₂` applied to `h`. -/
-private theorem mapCase_uniq {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x)
+public theorem mapCase_uniq {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x)
     (h : PositiveAllegory.coprod a b ⟶ x)
     (h₁ : (mapCoprodDiagram a b).u₁ ≫ h = f) (h₂ : (mapCoprodDiagram a b).u₂ ≫ h = g) :
     h = mapCase f g := by
@@ -2645,7 +2647,7 @@ private theorem mapCase_uniq {a b x : MapObj A} (f : a ⟶ x) (g : b ⟶ x)
 /-- **§2.214 (dual)**: `Map(𝒜)` has binary coproducts for a positive allegory `𝒜`.
     Object `a ⊕ b`, injections the allegory injections `u₁, u₂` (which are maps),
     copairing `case f g = u₁°f ∪ u₂°g`. -/
-noncomputable instance mapHasBinaryCoproducts :
+@[expose] public noncomputable instance mapHasBinaryCoproducts :
     @HasBinaryCoproducts (MapObj A) (mapCat (𝒜 := A)) :=
   @HasBinaryCoproducts.mk (MapObj A) (mapCat (𝒜 := A))
     (fun a b => PositiveAllegory.coprod a b)
@@ -2667,12 +2669,12 @@ noncomputable instance mapHasBinaryCoproducts :
 
 /-- The coproduct object `a ⊕ b`, named through the `HasBinaryCoproducts` projection so that
     `inlSub`/`Subobject.inter`/`mapBottom` annotations match `inl`/`inr`'s codomain syntactically. -/
-private noncomputable abbrev mapCoprodObj (a b : MapObj A) : MapObj A :=
+@[expose] public noncomputable abbrev mapCoprodObj (a b : MapObj A) : MapObj A :=
   @HasBinaryCoproducts.coprod (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryCoproducts a b
 
 /-- `inl = u₁` is monic in `Map(𝒜)` (retraction `u₁ ≫ u₁° = id`).  `HasBinaryCoproducts.inl`
     is definitionally `⟨u₁, _⟩`; `change` exposes that so `map_retract_monic` applies. -/
-private theorem mapInl_monic (a b : MapObj A) :
+public theorem mapInl_monic (a b : MapObj A) :
     @Monic (MapObj A) (mapCat (𝒜 := A)) a (mapCoprodObj a b)
       (@HasBinaryCoproducts.inl (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryCoproducts a b) := by
   change @Monic (MapObj A) (mapCat (𝒜 := A)) a _
@@ -2681,7 +2683,7 @@ private theorem mapInl_monic (a b : MapObj A) :
   exact map_retract_monic (mapCoprod_u₁_map a b) (mapCoprodDiagram a b).u₁_self_comp_recip
 
 /-- `inr = u₂` is monic in `Map(𝒜)`. -/
-private theorem mapInr_monic (a b : MapObj A) :
+public theorem mapInr_monic (a b : MapObj A) :
     @Monic (MapObj A) (mapCat (𝒜 := A)) b (mapCoprodObj a b)
       (@HasBinaryCoproducts.inr (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryCoproducts a b) := by
   change @Monic (MapObj A) (mapCat (𝒜 := A)) b _
@@ -2714,7 +2716,7 @@ private theorem mapInr_val (a b : MapObj A) :
 /-- **§2.214 (dual) DISJOINTNESS**: `inl ∩ inr ≤ 0`.  By `corOf_inter` the intersection's
     coreflexive is `inl° ≫ dom(inl ≫ inr°) ≫ inl = u₁° ≫ dom(u₁ ≫ u₂°) ≫ u₁ = u₁° ≫ dom 𝟘 ≫ u₁
     = 𝟘` (via `u₁u₂° = 0`), so it is `≤ mapBottom` (whose coreflexive is `𝟘`). -/
-private theorem mapInl_inter_inr (a b : MapObj A) :
+public theorem mapInl_inter_inr (a b : MapObj A) :
     @Subobject.le (MapObj A) (mapCat (𝒜 := A)) (mapCoprodObj a b)
       (@Subobject.inter (MapObj A) (mapCat (𝒜 := A)) mapHasPullbacks (mapCoprodObj a b)
         (@inlSub (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryCoproducts a b (mapInl_monic a b))
@@ -2732,7 +2734,7 @@ private theorem mapInl_inter_inr (a b : MapObj A) :
 
 /-- **§2.214 (dual) COVERING**: `a⊕b ≤ inl ∪ inr`.  Via the `corOf`-correspondence this is
     `id = corOf(entire) ⊑ corOf(union) = u₁°u₁ ∪ u₂°u₂ = id` (the fifth allegory equation). -/
-private theorem mapInl_union_inr (a b : MapObj A) :
+public theorem mapInl_union_inr (a b : MapObj A) :
     @Subobject.le (MapObj A) (mapCat (𝒜 := A)) (mapCoprodObj a b)
       (@Subobject.entire (MapObj A) (mapCat (𝒜 := A)) (mapCoprodObj a b))
       (@HasSubobjectUnions.union (MapObj A) (mapCat (𝒜 := A)) mapHasImages mapHasSubobjectUnions
@@ -2752,14 +2754,14 @@ private theorem mapInl_union_inr (a b : MapObj A) :
   exact le_refl _
 
 /-- **§2.214 (dual)**: `Map(𝒜)` is a POSITIVE pre-logos for a positive allegory `𝒜`. -/
-noncomputable instance mapPositivePreLogos :
+@[expose] public noncomputable instance mapPositivePreLogos :
     @PositivePreLogos (MapObj A) (mapCat (𝒜 := A)) :=
   @PositivePreLogos.mk (MapObj A) (mapCat (𝒜 := A)) mapPreLogos mapHasBinaryCoproducts
 
 /-- **§2.214 (dual) — the missing brick for §2.217(1)**: `Map(𝒜)` has DISJOINT binary
     coproducts for a tabular unitary positive allegory `𝒜`.  All four disjointness fields are
     discharged from the five allegory coproduct equations through the `corOf` correspondence. -/
-noncomputable instance mapDisjointBinaryCoproduct :
+@[expose] public noncomputable instance mapDisjointBinaryCoproduct :
     @DisjointBinaryCoproduct (MapObj A) (mapCat (𝒜 := A)) :=
   @DisjointBinaryCoproduct.mk (MapObj A) (mapCat (𝒜 := A)) mapPositivePreLogos
     (fun {a b} => mapInl_monic a b)

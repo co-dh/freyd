@@ -12,15 +12,17 @@
   §1.859 BASEABLE objects, inclusion preserves equalizers
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_31
-import Freyd.S1_34
-import Freyd.S1_43
-import Freyd.S1_80
-import Freyd.S1_44
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_31
+public import Freyd.S1_34
+public import Freyd.S1_43
+public import Freyd.S1_80
+public import Freyd.S1_44
 
 
 universe v u
@@ -38,21 +40,21 @@ section ProductFunctor
 variable [hp' : HasBinaryProducts 𝒞]
 
 /-- A × f : A × X → A × Y, with (A×f)≫fst = fst, (A×f)≫snd = snd≫f. -/
-def prodMap (A X Y : 𝒞) (f : X ⟶ Y) : prod A X ⟶ prod A Y :=
+@[expose] public def prodMap (A X Y : 𝒞) (f : X ⟶ Y) : prod A X ⟶ prod A Y :=
   pair (X := prod A X) (A := A) (B := Y) fst (snd ≫ f)
 
-theorem prodMap_fst (A X Y : 𝒞) (f : X ⟶ Y) : prodMap A X Y f ≫ fst (A := A) (B := Y) = fst := by
+public theorem prodMap_fst (A X Y : 𝒞) (f : X ⟶ Y) : prodMap A X Y f ≫ fst (A := A) (B := Y) = fst := by
   dsimp [prodMap]; rw [fst_pair]
 
-theorem prodMap_snd (A X Y : 𝒞) (f : X ⟶ Y) : prodMap A X Y f ≫ snd = snd ≫ f := by
+public theorem prodMap_snd (A X Y : 𝒞) (f : X ⟶ Y) : prodMap A X Y f ≫ snd = snd ≫ f := by
   dsimp [prodMap]; rw [snd_pair]
 
 -- (pair_fst_snd is defined canonically in S1_42 §1.423; reused here via import.)
 
-theorem prodMap_id (A X : 𝒞) : prodMap A X X (Cat.id X) = Cat.id (prod A X) := by
+public theorem prodMap_id (A X : 𝒞) : prodMap A X X (Cat.id X) = Cat.id (prod A X) := by
   dsimp [prodMap]; rw [Cat.comp_id, pair_fst_snd]
 
-theorem prodMap_comp (A X Y Z : 𝒞) (f : X ⟶ Y) (g : Y ⟶ Z) :
+public theorem prodMap_comp (A X Y Z : 𝒞) (f : X ⟶ Y) (g : Y ⟶ Z) :
     prodMap A X Z (f ≫ g) = prodMap A X Y f ≫ prodMap A Y Z g := by
   dsimp [prodMap]
   let RHS := pair (X := prod A X) (A := A) (B := Y) fst (snd ≫ f) ≫
@@ -79,7 +81,7 @@ end ProductFunctor
   A × - has a right adjoint.  The counit is the EVALUATION MAP e,
   the adjoint transpose is CARRYING (curry). -/
 
-class HasExponentials (𝒞 : Type u) [Cat.{v} 𝒞] extends HasBinaryProducts 𝒞 where
+public class HasExponentials (𝒞 : Type u) [Cat.{v} 𝒞] extends HasBinaryProducts 𝒞 where
   exp_obj : 𝒞 → 𝒞 → 𝒞
   eval_map {A B : 𝒞} : prod A (exp_obj A B) ⟶ B
   curry_map {A B X : 𝒞} (f : prod A X ⟶ B) : X ⟶ exp_obj A B
@@ -91,33 +93,33 @@ class HasExponentials (𝒞 : Type u) [Cat.{v} 𝒞] extends HasBinaryProducts �
 variable [HasExponentials 𝒞]
 
 /-- The exponential object B^A (§1.85). -/
-def exp (A B : 𝒞) : 𝒞 := HasExponentials.exp_obj A B
+@[expose] public def exp (A B : 𝒞) : 𝒞 := HasExponentials.exp_obj A B
 
 notation:30 B " ^^ " A:30 => exp A B
 
 /-- The EVALUATION MAP e : A × B^A → B (§1.85). -/
-def eval_exp (A B : 𝒞) : prod A (B ^^ A) ⟶ B := HasExponentials.eval_map (A := A) (B := B)
+@[expose] public def eval_exp (A B : 𝒞) : prod A (B ^^ A) ⟶ B := HasExponentials.eval_map (A := A) (B := B)
 
 /-- The EXPONENTIAL TRANSPOSE (curry): f : A × X → B gives Λf : X → B^A. -/
-def curry {A B X : 𝒞} (f : prod A X ⟶ B) : X ⟶ B ^^ A := HasExponentials.curry_map f
+@[expose] public def curry {A B X : 𝒞} (f : prod A X ⟶ B) : X ⟶ B ^^ A := HasExponentials.curry_map f
 
 /-- The characteristic equation: (A × curry f) ≫ eval = f. -/
-@[simp] theorem curry_eval_eq {A B X : 𝒞} (f : prod A X ⟶ B) :
+@[simp] public theorem curry_eval_eq {A B X : 𝒞} (f : prod A X ⟶ B) :
     prodMap A X (B ^^ A) (curry f) ≫ eval_exp A B = f :=
   HasExponentials.curry_eval f
 
 /-- curry is unique: if (A × g) ≫ eval = f then g = curry f. -/
-theorem curry_unique_eq {A B X : 𝒞} {f : prod A X ⟶ B} {g : X ⟶ B ^^ A}
+public theorem curry_unique_eq {A B X : 𝒞} {f : prod A X ⟶ B} {g : X ⟶ B ^^ A}
     (h : prodMap A X (B ^^ A) g ≫ eval_exp A B = f) : g = curry f :=
   HasExponentials.curry_unique h
 
 /-- curry is injective. -/
-theorem curry_inj {A B X : 𝒞} {f₁ f₂ : prod A X ⟶ B}
+public theorem curry_inj {A B X : 𝒞} {f₁ f₂ : prod A X ⟶ B}
     (h : curry f₁ = curry f₂) : f₁ = f₂ := by
   rw [← curry_eval_eq f₁, ← curry_eval_eq f₂, h]
 
 /-- `curry` commutes with precomposition in the parameter variable. -/
-theorem curry_precomp {A B X Y : 𝒞} (u : X ⟶ Y) (g : prod A Y ⟶ B) :
+public theorem curry_precomp {A B X Y : 𝒞} (u : X ⟶ Y) (g : prod A Y ⟶ B) :
     u ≫ curry g = curry (prodMap A X Y u ≫ g) := by
   apply curry_unique_eq
   rw [prodMap_comp, Cat.assoc, curry_eval_eq]
@@ -142,21 +144,21 @@ section ExpBifunctor
 /-- Covariant exponential map: given f : B → C, the map f^A : B^A → C^A is
     the unique map with (A × f^A) ≫ eval_C = eval_B ≫ f  (§1.853).
     Concretely: curry(eval_B ≫ f). -/
-def expCovMap (A : 𝒞) {B C : 𝒞} (f : B ⟶ C) : B ^^ A ⟶ C ^^ A :=
+@[expose] public def expCovMap (A : 𝒞) {B C : 𝒞} (f : B ⟶ C) : B ^^ A ⟶ C ^^ A :=
   curry (eval_exp A B ≫ f)
 
 /-- Defining equation: (A × expCovMap f) ≫ eval = eval ≫ f. -/
-theorem expCovMap_eval (A : 𝒞) {B C : 𝒞} (f : B ⟶ C) :
+public theorem expCovMap_eval (A : 𝒞) {B C : 𝒞} (f : B ⟶ C) :
     prodMap A (B ^^ A) (C ^^ A) (expCovMap A f) ≫ eval_exp A C = eval_exp A B ≫ f :=
   curry_eval_eq (eval_exp A B ≫ f)
 
 /-- expCovMap preserves identity: id^A = id. -/
-theorem expCovMap_id (A B : 𝒞) : expCovMap A (Cat.id B) = Cat.id (B ^^ A) := by
+public theorem expCovMap_id (A B : 𝒞) : expCovMap A (Cat.id B) = Cat.id (B ^^ A) := by
   symm; apply curry_unique_eq
   rw [Cat.comp_id, prodMap_id, Cat.id_comp]
 
 /-- expCovMap preserves composition: (f ≫ g)^A = f^A ≫ g^A. -/
-theorem expCovMap_comp (A : 𝒞) {B C D : 𝒞} (f : B ⟶ C) (g : C ⟶ D) :
+public theorem expCovMap_comp (A : 𝒞) {B C D : 𝒞} (f : B ⟶ C) (g : C ⟶ D) :
     expCovMap A (f ≫ g) = expCovMap A f ≫ expCovMap A g := by
   symm; apply curry_unique_eq
   rw [prodMap_comp, Cat.assoc, expCovMap_eval, ← Cat.assoc, expCovMap_eval, Cat.assoc]
@@ -184,7 +186,7 @@ end ExpBifunctor
 
 /-- A POSET (or preorder) viewed as a thin category:
     objects are elements, at most one morphism between any two. -/
-class ThinCategory (P : Type u) [Cat.{v} P] : Prop where
+public class ThinCategory (P : Type u) [Cat.{v} P] : Prop where
   thin : ∀ {A B : P} (f g : A ⟶ B), f = g
 
 /-- The HEYTING ARROW a → b in a thin category with binary meets.
@@ -244,10 +246,10 @@ theorem poset_exponential_iff_meets_heytingArrow
 section SigmaDeltaAdj
 
 /-- The DIAGONAL functor Δ : 𝒞 → Over B.  Sends Y ↦ ⟨Y × B, snd⟩ (§1.854). -/
-def deltaObj (B Y : 𝒞) : Over B := ⟨prod Y B, snd⟩
+@[expose] public def deltaObj (B Y : 𝒞) : Over B := ⟨prod Y B, snd⟩
 
 /-- Δ on morphisms: given f : Y → Z, Δ(f) = pair (fst ≫ f) snd : Y×B → Z×B. -/
-def deltaMap (B : 𝒞) {Y Z : 𝒞} (f : Y ⟶ Z) : OverHom (deltaObj B Y) (deltaObj B Z) :=
+@[expose] public def deltaMap (B : 𝒞) {Y Z : 𝒞} (f : Y ⟶ Z) : OverHom (deltaObj B Y) (deltaObj B Z) :=
   ⟨pair (fst ≫ f) snd, snd_pair _ _⟩
 
 /-- The DIAGONAL FUNCTOR Δ B : 𝒞 → Over B. -/
@@ -588,7 +590,7 @@ variable {𝒜' : Type u} [Cat.{v} 𝒜']
     (so `r ≫ g = id_Y`, no choice).  The other unit equation `g ≫ r = id_X`
     follows from injectivity at `T = X`:
       `(g ≫ r) ≫ g = g ≫ (r ≫ g) = g = id_X ≫ g`. -/
-theorem iso_of_natural_hom_bijection {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟}
+public theorem iso_of_natural_hom_bijection {𝒟 : Type u} [Cat.{v} 𝒟] {X Y : 𝒟}
     (g : X ⟶ Y)
     (hsurj : ∀ {T : 𝒟} (k : T ⟶ Y), ∃ h : T ⟶ X, h ≫ g = k)
     (hinj : ∀ {T : 𝒟} {h₁ h₂ : T ⟶ X}, h₁ ≫ g = h₂ ≫ g → h₁ = h₂) :
@@ -1230,7 +1232,7 @@ section ClosureOnLattice
 /-- A lattice L with meets and order, as a type with operations.
     We use a raw-type presentation to stay independent of the
     subobject-based HeytingAlgebra in §1.72. -/
-structure MeetLattice where
+public structure MeetLattice where
   carrier   : Type u
   le        : carrier → carrier → Prop
   le_refl   : ∀ x, le x x
@@ -1243,7 +1245,7 @@ structure MeetLattice where
 
 /-- Every `MeetLattice` satisfies `PosetOrder` — unifies the poset-based closure
     operators (§1.815) with the lattice-based ones (§1.858). -/
-instance MeetLattice.toPosetOrder (L : MeetLattice) : PosetOrder L.carrier where
+@[expose] public instance MeetLattice.toPosetOrder (L : MeetLattice) : PosetOrder L.carrier where
   le := L.le
   le_refl := L.le_refl
   le_trans := @L.le_trans
@@ -1257,7 +1259,7 @@ instance MeetLattice.toPosetOrder (L : MeetLattice) : PosetOrder L.carrier where
     a real poset where the lattice `=`-laws hold. Cf. `HeytingAlgebra` (S1_72) on the
     subobject preorder `Sub(A)` and `HasHeytingArrow` (above) on thin-category homs —
     both preorders with NO antisymmetry, so their laws are stated as mutual `.le`. -/
-structure HeytingLattice extends MeetLattice where
+public structure HeytingLattice extends MeetLattice where
   imp       : carrier → carrier → carrier
   imp_adj   : ∀ {x a b}, le (meet a x) b ↔ le x (imp a b)
   top       : carrier
@@ -1395,16 +1397,16 @@ variable {𝒜 : Type u} [Cat.{v} 𝒜] [HasBinaryProducts 𝒜]
 
 /-- B ∈ |𝒜| is BASEABLE if for every A ∈ |𝒜|, the functor (A × -, B)
     is representable (i.e. B^A exists) (§1.859). -/
-def Baseable (B : 𝒜) : Prop :=
+@[expose] public def Baseable (B : 𝒜) : Prop :=
   ∀ (A : 𝒜), ∃ (E : 𝒜) (ev : prod A E ⟶ B),
     ∀ (X : 𝒜) (f : prod A X ⟶ B),
       ∃ (g : X ⟶ E), prodMap A X E g ≫ ev = f ∧
         ∀ (g' : X ⟶ E), prodMap A X E g' ≫ ev = f → g' = g
 
 /-- The full subcategory of BASEABLE objects of 𝒜 (§1.859). -/
-def BaseableSubcat (𝒜 : Type u) [Cat.{v} 𝒜] [HasBinaryProducts 𝒜] : Type u := { B : 𝒜 // Baseable B }
+@[expose] public def BaseableSubcat (𝒜 : Type u) [Cat.{v} 𝒜] [HasBinaryProducts 𝒜] : Type u := { B : 𝒜 // Baseable B }
 
-instance : Cat.{v} (BaseableSubcat 𝒜) where
+@[expose] public instance : Cat.{v} (BaseableSubcat 𝒜) where
   Hom B₁ B₂ := B₁.1 ⟶ B₂.1
   id B := Cat.id B.1
   comp f g := f ≫ g
@@ -1435,7 +1437,7 @@ def baseableInclFunctor : Functor (BaseableSubcat 𝒜) 𝒜 where
     its cone/lift hypotheses, and merely returned the ambient equalizer (asserting nothing
     about baseability). The substantive content is exactly this baseable-CLOSURE statement,
     which is what §1.92 `topos_has_exponentials` requires. -/
-theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
+public theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
     {B₂ B₃ : 𝒜} (hB₂ : Baseable B₂) (hB₃ : Baseable B₃) (f g : B₂ ⟶ B₃) :
     Baseable (eqObj f g) := by
   -- E := eqObj f g, with q₀ := eqMap f g : E → B₂ monic, q₀≫f = q₀≫g.
@@ -1489,11 +1491,11 @@ theorem baseable_equalizer_is_baseable [HasEqualizers 𝒜]
             ← Cat.assoc, hh'])]
 
 /-- The evaluation transpose of `c : Y ⟶ E^^A`. -/
-def transp {A E Y : 𝒞} (c : Y ⟶ E ^^ A) : prod A Y ⟶ E :=
+@[expose] public def transp {A E Y : 𝒞} (c : Y ⟶ E ^^ A) : prod A Y ⟶ E :=
   prodMap A Y (E ^^ A) c ≫ eval_exp A E
 
 /-- `transp` turns precomposition with `u : Y' ⟶ Y` into precomposition with `(A × u)`. -/
-theorem transp_precomp {A E Y Y' : 𝒞} (u : Y' ⟶ Y) (c : Y ⟶ E ^^ A) :
+public theorem transp_precomp {A E Y Y' : 𝒞} (u : Y' ⟶ Y) (c : Y ⟶ E ^^ A) :
     transp (u ≫ c) = prodMap A Y' Y u ≫ transp c := by
   dsimp [transp]; rw [prodMap_comp, Cat.assoc]
 

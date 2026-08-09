@@ -682,7 +682,7 @@ instance : HasTerminal PhatObj where
   uniq f g := PhatHom.ext (HasTerminal.uniq f.1 g.1)
 
 /-- Post-composition into a pair (products are natural in the source). -/
-private theorem comp_pair {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] {X Y A B : 𝒞}
+theorem comp_pair {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] {X Y A B : 𝒞}
     (h : X ⟶ Y) (f : Y ⟶ A) (g : Y ⟶ B) : h ≫ pair f g = pair (h ≫ f) (h ≫ g) :=
   Freyd.pair_uniq _ _ _ (by rw [Cat.assoc, Freyd.fst_pair]) (by rw [Cat.assoc, Freyd.snd_pair])
 

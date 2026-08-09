@@ -6,13 +6,15 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_28
-import Freyd.S1_31
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_45
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_28
+public import Freyd.S1_31
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_45
 
 
 open Freyd
@@ -25,42 +27,42 @@ namespace Freyd
 
 /-! ## Equalizers -/
 
-structure EqualizerCone {A B : 𝒞} (f g : A ⟶ B) where
+public structure EqualizerCone {A B : 𝒞} (f g : A ⟶ B) where
   dom : 𝒞
   map : dom ⟶ A
   eq  : map ≫ f = map ≫ g
 
-class HasEqualizer {A B : 𝒞} (f g : A ⟶ B) where
+public class HasEqualizer {A B : 𝒞} (f g : A ⟶ B) where
   cone : EqualizerCone f g
   lift : ∀ (c : EqualizerCone f g), c.dom ⟶ cone.dom
   fac  : ∀ (c : EqualizerCone f g), lift c ≫ cone.map = c.map
   uniq : ∀ (c : EqualizerCone f g) (m : c.dom ⟶ cone.dom), m ≫ cone.map = c.map → m = lift c
 
-class HasEqualizers (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasEqualizers (𝒞 : Type u) [Cat.{v} 𝒞] where
   eq (A B : 𝒞) (f g : A ⟶ B) : HasEqualizer f g
 
 section EqualizerAPI
 variable [HasEqualizers 𝒞]
 
-def eqObj {A B : 𝒞} (f g : A ⟶ B) : 𝒞 := (HasEqualizers.eq A B f g).cone.dom
-def eqMap {A B : 𝒞} (f g : A ⟶ B) : eqObj f g ⟶ A := (HasEqualizers.eq A B f g).cone.map
-theorem eqMap_eq {A B : 𝒞} (f g : A ⟶ B) : eqMap f g ≫ f = eqMap f g ≫ g :=
+@[expose] public def eqObj {A B : 𝒞} (f g : A ⟶ B) : 𝒞 := (HasEqualizers.eq A B f g).cone.dom
+@[expose] public def eqMap {A B : 𝒞} (f g : A ⟶ B) : eqObj f g ⟶ A := (HasEqualizers.eq A B f g).cone.map
+public theorem eqMap_eq {A B : 𝒞} (f g : A ⟶ B) : eqMap f g ≫ f = eqMap f g ≫ g :=
   (HasEqualizers.eq A B f g).cone.eq
 
-def eqLift {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g) : X ⟶ eqObj f g :=
+@[expose] public def eqLift {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g) : X ⟶ eqObj f g :=
   (HasEqualizers.eq A B f g).lift ⟨X, k, h⟩
 
-theorem eqLift_fac {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g) :
+public theorem eqLift_fac {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g) :
     eqLift f g k h ≫ eqMap f g = k := (HasEqualizers.eq A B f g).fac ⟨X, k, h⟩
 
-theorem eqLift_uniq {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g)
+public theorem eqLift_uniq {A B X : 𝒞} (f g : A ⟶ B) (k : X ⟶ A) (h : k ≫ f = k ≫ g)
     (m : X ⟶ eqObj f g) (hm : m ≫ eqMap f g = k) : m = eqLift f g k h :=
   (HasEqualizers.eq A B f g).uniq ⟨X, k, h⟩ m hm
 end EqualizerAPI
 
 /-! ## Cartesian category (§1.43) -/
 
-class CartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class CartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasEqualizers 𝒞
 
 /-! ## §1.432 Products + equalizers → pullbacks -/
@@ -68,7 +70,7 @@ class CartesianCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
 section PB_from_ProdEq
 variable [ht : HasTerminal 𝒞] [hp : HasBinaryProducts 𝒞] [heq : HasEqualizers 𝒞]
 
-def products_equalizers_implies_pullbacks {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) : HasPullback f g :=
+@[expose] public def products_equalizers_implies_pullbacks {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) : HasPullback f g :=
   let pbObj := eqObj (fst ≫ f) (snd ≫ g)
   let pbMap : pbObj ⟶ prod A B := eqMap (fst ≫ f) (snd ≫ g)
   have h_sq : (pbMap ≫ fst) ≫ f = (pbMap ≫ snd) ≫ g :=
@@ -133,7 +135,7 @@ end Prod_from_PB_Term
 section Eq_from_ProdPB
 variable [ht : HasTerminal 𝒞] [hp : HasBinaryProducts 𝒞] [hpull : HasPullbacks 𝒞]
 
-def products_pullbacks_implies_equalizers : HasEqualizers 𝒞 where
+@[expose] public def products_pullbacks_implies_equalizers : HasEqualizers 𝒞 where
   eq A B f g :=
     let u : A ⟶ prod A B := pair (Cat.id A) f
     let v : A ⟶ prod A B := pair (Cat.id A) g
@@ -270,7 +272,7 @@ end S1_439
     The single per-family witness is the §1.42 `HasIndexedProduct`; the former cone-packaged
     copies `FinProdCone`/`HasFinProd` were a redundant repackaging (DRY) and were deleted in
     favour of `HasIndexedProduct` (`Fin n : Type`, so no universe change is needed). -/
-class HasFiniteProducts (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasFiniteProducts (𝒞 : Type u) [Cat.{v} 𝒞] where
   fin_prod : ∀ {n : Nat} (A : Fin n → 𝒞), HasIndexedProduct A
 
 section FinProdAPI
@@ -296,7 +298,7 @@ section FinProd_equiv
 private def fin2 (A B : 𝒞) : Fin 2 → 𝒞 := Fin.cases A (Fin.cases B (fun i => i.elim0))
 
 /-- **§1.425** (→): `HasFiniteProducts` gives a terminator (empty product). -/
-def finiteProducts_implies_terminal (hfp : HasFiniteProducts 𝒞) : HasTerminal 𝒞 where
+@[expose] public def finiteProducts_implies_terminal (hfp : HasFiniteProducts 𝒞) : HasTerminal 𝒞 where
   one  := (hfp.fin_prod (n := 0) Fin.elim0).prod
   trm  := fun X => (hfp.fin_prod (n := 0) Fin.elim0).lift (fun i => i.elim0)
   uniq := fun {X} f g => by
@@ -307,7 +309,7 @@ def finiteProducts_implies_terminal (hfp : HasFiniteProducts 𝒞) : HasTerminal
     rw [hf, hg]
 
 /-- **§1.425** (→): `HasFiniteProducts` gives binary products. -/
-def finiteProducts_implies_binary (hfp : HasFiniteProducts 𝒞) : HasBinaryProducts 𝒞 where
+public def finiteProducts_implies_binary (hfp : HasFiniteProducts 𝒞) : HasBinaryProducts 𝒞 where
   prod  := fun A B => (hfp.fin_prod (n := 2) (fin2 A B)).prod
   fst   := fun {A B} => (hfp.fin_prod (fin2 A B)).proj 0
   snd   := fun {A B} => (hfp.fin_prod (fin2 A B)).proj 1
@@ -324,7 +326,7 @@ def finiteProducts_implies_binary (hfp : HasFiniteProducts 𝒞) : HasBinaryProd
 /-- **§1.425** (←): Terminal + binary products give all finite products.  Each `Fin n`-family's
     product is the §1.42 `HasIndexedProduct` built directly by `finiteProduct_from_term_binary`
     (no cone-repackaging step — `HasFinProd`/`toHasFinProd` were removed as DRY duplicates). -/
-def terminal_binary_implies_finiteProducts [HasTerminal 𝒞] [HasBinaryProducts 𝒞] :
+@[expose] public def terminal_binary_implies_finiteProducts [HasTerminal 𝒞] [HasBinaryProducts 𝒞] :
     HasFiniteProducts 𝒞 where
   fin_prod A := finiteProduct_from_term_binary A
 
@@ -387,7 +389,7 @@ section S1_437
 /-- A functor `F : 𝒞 → 𝒟` PRESERVES EQUALIZERS if for each equalizer
     `y : E → A` of `f, g : A → B` in `𝒞`, the image `F(y) : F E → F A`
     is an equalizer of `F f, F g` in `𝒟`. -/
-def PreservesEqualizers {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+@[expose] public def PreservesEqualizers {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     (F : Functor 𝒞 𝒟) [HasEqualizers 𝒞] [HasEqualizers 𝒟] : Prop :=
   ∀ {A B : 𝒞} (f g : A ⟶ B),
     -- the canonical comparison map F(eqObj f g) → eqObj (Ff) (Fg) is iso
@@ -397,13 +399,13 @@ def PreservesEqualizers {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
               eq  := by rw [← F.map_comp, ← F.map_comp, eqMap_eq] })
 
 /-- A functor `F : 𝒞 → 𝒟` PRESERVES TERMINAL if `F(1_𝒞)` is terminal in `𝒟`. -/
-def PreservesTerminal {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+@[expose] public def PreservesTerminal {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     (F : Functor 𝒞 𝒟) [HasTerminal 𝒞] [HasTerminal 𝒟] : Prop :=
   ∀ (X : 𝒟) (f g : X ⟶ F.obj one), f = g
 
 /-- A functor `F : 𝒞 → 𝒟` PRESERVES BINARY PRODUCTS if the canonical map
     `F(A × B) → F A × F B` (given by `⟨F fst, F snd⟩`) is an isomorphism. -/
-def PreservesBinaryProducts {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+@[expose] public def PreservesBinaryProducts {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     (F : Functor 𝒞 𝒟) [HasBinaryProducts 𝒞] [HasBinaryProducts 𝒟] : Prop :=
   ∀ {A B : 𝒞},
     IsIso (pair (F.map (fst (A := A) (B := B))) (F.map (snd (A := A) (B := B))) :
@@ -412,7 +414,7 @@ def PreservesBinaryProducts {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞]
 /-- **§1.437** A REPRESENTATION OF CARTESIAN CATEGORIES: a functor between
     Cartesian categories preserving finite products (= terminal + binary products)
     and equalizers. -/
-structure CartesianFunctor {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+public structure CartesianFunctor {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     [CartesianCategory 𝒞] [CartesianCategory 𝒟]
     (F : Functor 𝒞 𝒟) : Prop where
   pres_terminal  : PreservesTerminal F
@@ -433,12 +435,12 @@ theorem cartesianFunctor_preserves_pullbacks {𝒞 𝒟 : Type u} [Cat.{v} 𝒞]
 
 /-- An `EqualizerCone` is an EQUALIZER if every cone over the same parallel
     pair factors uniquely through it (universal-property form, choice-free). -/
-def EqualizerCone.IsEqualizer {A B : 𝒞} {f g : A ⟶ B} (c : EqualizerCone f g) : Prop :=
+@[expose] public def EqualizerCone.IsEqualizer {A B : 𝒞} {f g : A ⟶ B} (c : EqualizerCone f g) : Prop :=
   ∀ d : EqualizerCone f g, ∃ u : d.dom ⟶ c.dom,
     u ≫ c.map = d.map ∧ ∀ v : d.dom ⟶ c.dom, v ≫ c.map = d.map → v = u
 
 /-- The chosen equalizer of a parallel pair satisfies the universal property. -/
-theorem chosenEqualizer_isEqualizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasEqualizers 𝒟]
+public theorem chosenEqualizer_isEqualizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasEqualizers 𝒟]
     {A B : 𝒟} (f g : A ⟶ B) :
     (EqualizerCone.mk (eqObj f g) (eqMap f g) (eqMap_eq f g)).IsEqualizer := by
   intro d
@@ -447,7 +449,7 @@ theorem chosenEqualizer_isEqualizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasEqualizer
 
 /-- Two equalizer cones over the same parallel pair: the comparison map (any
     `m` with `m ≫ c.map = d.map`) between their domains is an isomorphism. -/
-theorem isIso_of_two_equalizers {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem isIso_of_two_equalizers {𝒟 : Type u} [Cat.{v} 𝒟]
     {A B : 𝒟} {f g : A ⟶ B} {c d : EqualizerCone f g}
     (hc : c.IsEqualizer) (hd : d.IsEqualizer)
     (m : c.dom ⟶ d.dom) (hm : m ≫ d.map = c.map) :
@@ -466,7 +468,7 @@ theorem isIso_of_two_equalizers {𝒟 : Type u} [Cat.{v} 𝒟]
     square `(E, m, m)` is a pullback of `u := ⟨id, f⟩` and `v := ⟨id, g⟩`
     over `A × B`.  Here we record the two implications as a single equivalence
     at the level of the universal properties. -/
-theorem isEqualizer_iff_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
+public theorem isEqualizer_iff_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
     {A B E : 𝒟} {f g : A ⟶ B} (m : E ⟶ A) (hm : m ≫ f = m ≫ g) :
     (EqualizerCone.mk E m hm).IsEqualizer ↔
       (Cone.mk (f := pair (Cat.id A) f) (g := pair (Cat.id A) g) E m m
@@ -517,7 +519,7 @@ theorem isEqualizer_iff_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProd
 
 /-- The equalizer of two EQUAL maps is trivial: `eqMap f g` is an isomorphism
     (its inverse is the lift of the identity). -/
-theorem eqMap_iso_of_eq {𝒟 : Type u} [Cat.{v} 𝒟] [HasEqualizers 𝒟]
+public theorem eqMap_iso_of_eq {𝒟 : Type u} [Cat.{v} 𝒟] [HasEqualizers 𝒟]
     {A B : 𝒟} {f g : A ⟶ B} (h : f = g) : IsIso (eqMap f g) := by
   have hcond : Cat.id A ≫ f = Cat.id A ≫ g := by rw [Cat.id_comp, Cat.id_comp, h]
   let eL := eqLift f g (Cat.id A) hcond
@@ -566,7 +568,7 @@ theorem isIso_of_isEqualizer_id {𝒟 : Type u} [Cat.{v} 𝒟]
 
 /-- Two pullback cones over the same cospan have a canonical comparison map
     that is an isomorphism (pullbacks are unique up to iso). -/
-theorem isIso_of_two_pullbacks {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem isIso_of_two_pullbacks {𝒟 : Type u} [Cat.{v} 𝒟]
     {A B C : 𝒟} {f : A ⟶ C} {g : B ⟶ C} {c d : Cone f g}
     (hc : c.IsPullback) (hd : d.IsPullback)
     (u : c.pt ⟶ d.pt) (hu₁ : u ≫ d.π₁ = c.π₁) (hu₂ : u ≫ d.π₂ = c.π₂) :
@@ -587,7 +589,7 @@ theorem isIso_of_two_pullbacks {𝒟 : Type u} [Cat.{v} 𝒟]
 /-- A `Cone.IsPullback` can be transported along an isomorphism of its apex:
     if `c` is a pullback and `i : p ≅ c.pt` (with inverse `j`), then the cone
     with apex `p` and projections `i ≫ c.π₁`, `i ≫ c.π₂` is a pullback. -/
-theorem isPullback_of_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem isPullback_of_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟]
     {A B C : 𝒟} {f : A ⟶ C} {g : B ⟶ C} {c : Cone f g} (hc : c.IsPullback)
     {p : 𝒟} (i : p ⟶ c.pt) (j : c.pt ⟶ p)
     (hij : i ≫ j = Cat.id p) (hji : j ≫ i = Cat.id c.pt)
@@ -617,7 +619,7 @@ theorem isPullback_of_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟]
     is weakly terminal (`hT : ∀ X (p q : X → T), p = q`).  This subsumes the
     product-as-pullback-over-the-terminal-object fact, and also works for a
     cospan into `F.obj one` when `F` preserves the terminal. -/
-theorem prodCone_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
+public theorem prodCone_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
     {A B T : 𝒟} (t₁ : A ⟶ T) (t₂ : B ⟶ T) (hT : ∀ (X : 𝒟) (p q : X ⟶ T), p = q) :
     (Cone.mk (prod A B) fst snd (hT _ (fst ≫ t₁) (snd ≫ t₂))).IsPullback := by
   intro d
@@ -631,7 +633,7 @@ theorem prodCone_isPullback {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts �
     `(f' ≫ φ, g' ≫ φ)` — the cospan maps are post-composed by the iso.
     (Post-composing a cospan by a mono — here an iso — does not change the
     pullback.) -/
-theorem isPullback_of_iso_cospan {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem isPullback_of_iso_cospan {𝒟 : Type u} [Cat.{v} 𝒟]
     {A B C' C'' : 𝒟} {f' : A ⟶ C'} {g' : B ⟶ C'} {c : Cone f' g'}
     (hc : c.IsPullback) (φ : C' ⟶ C'') (ψ : C'' ⟶ C') (hφψ : φ ≫ ψ = Cat.id C')
     (w : c.π₁ ≫ (f' ≫ φ) = c.π₂ ≫ (g' ≫ φ)) :
@@ -656,16 +658,20 @@ theorem isPullback_of_iso_cospan {𝒟 : Type u} [Cat.{v} 𝒟]
 
   PROOF: §1.433 gives binary products (pullback over terminator);
   §1.434 gives equalizers (pullback of ⟨id,f⟩ vs ⟨id,g⟩). -/
-theorem pullbacks_terminal_implies_cartesianFunctor {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+public theorem pullbacks_terminal_implies_cartesianFunctor {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     [CartesianCategory 𝒞] [CartesianCategory 𝒟]
     {F : Functor 𝒞 𝒟}
     (hpull : ∀ {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C),
+      -- The cone is ascribed: `w` is the only field naming the two legs, so without the ascription
+      -- they are left to the tactic, which cannot solve them once this statement is elaborated in
+      -- the public scope and the tactic runs before its goal is instantiated.
       Cone.IsPullback
-        { pt := F.obj (products_equalizers_implies_pullbacks f g).cone.pt
-          π₁ := F.map (products_equalizers_implies_pullbacks f g).cone.π₁
-          π₂ := F.map (products_equalizers_implies_pullbacks f g).cone.π₂
-          w  := by rw [← F.map_comp, ← F.map_comp,
-                       (products_equalizers_implies_pullbacks f g).cone.w] })
+        ({ pt := F.obj (products_equalizers_implies_pullbacks f g).cone.pt
+           π₁ := F.map (products_equalizers_implies_pullbacks f g).cone.π₁
+           π₂ := F.map (products_equalizers_implies_pullbacks f g).cone.π₂
+           w  := by rw [← F.map_comp, ← F.map_comp,
+                        (products_equalizers_implies_pullbacks f g).cone.w] } :
+          Cone (F.map f) (F.map g)))
     (hterm : PreservesTerminal F) : CartesianFunctor F := by
   -- `F.obj one` is weakly terminal in 𝒟 (PreservesTerminal: any two maps into it agree).
   have hweakT : ∀ (X : 𝒟) (p q : X ⟶ F.obj one), p = q := hterm

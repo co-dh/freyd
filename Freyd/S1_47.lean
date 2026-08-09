@@ -5,15 +5,17 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_241
-import Freyd.S1_18
-import Freyd.S1_27
-import Freyd.S1_31
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_241
+public import Freyd.S1_18
+public import Freyd.S1_27
+public import Freyd.S1_31
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
 
 
 open Freyd
@@ -117,7 +119,7 @@ theorem representables_collectively_faithful [CartesianCategory 𝒞]
   Equivalently: B × - is faithful for every B with a proper subobject. -/
 
 /-- A monic `m : A' → A` is PROPER if it is not an isomorphism (§1.472). -/
-def ProperMono {A' A : 𝒞} (m : A' ⟶ A) : Prop := Monic m ∧ ¬ IsIso m
+@[expose] public def ProperMono {A' A : 𝒞} (m : A' ⟶ A) : Prop := Monic m ∧ ¬ IsIso m
 
 /-- **§1.47 SPECIAL CARTESIAN CATEGORY** (faithful definition via §1.472).
 
@@ -265,9 +267,9 @@ theorem special_atMostTwoValues [SpecialCartesianCategory 𝒞]
   (c) For every B that has a proper subobject, the functor B×- : A → A is faithful. -/
 
 /-- The product functor `B × -` sending `f : X → Y` to `id_B × f : B×X → B×Y`. -/
-def prodEndo [HasBinaryProducts 𝒞] (B : 𝒞) : 𝒞 → 𝒞 := fun X => prod B X
+@[expose] public def prodEndo [HasBinaryProducts 𝒞] (B : 𝒞) : 𝒞 → 𝒞 := fun X => prod B X
 
-def prodEndoIsFunctor [HasBinaryProducts 𝒞] (B : 𝒞) : Functor 𝒞 𝒞 where
+@[expose] public def prodEndoIsFunctor [HasBinaryProducts 𝒞] (B : 𝒞) : Functor 𝒞 𝒞 where
   obj := prodEndo B
   map {X Y} f := pair (fst ≫ Cat.id B) (snd ≫ f)
   map_id X := by
@@ -286,7 +288,7 @@ def prodEndoIsFunctor [HasBinaryProducts 𝒞] (B : 𝒞) : Functor 𝒞 𝒞 wh
 
 /-- The action of `prodEndo B` on an arrow `f : X → Y` is `pair (fst ≫ id_B) (snd ≫ f)`.
     Definitional unfolding of `prodEndoIsFunctor.map`. -/
-theorem prodEndo_map [HasBinaryProducts 𝒞] (B : 𝒞) {X Y : 𝒞} (f : X ⟶ Y) :
+public theorem prodEndo_map [HasBinaryProducts 𝒞] (B : 𝒞) {X Y : 𝒞} (f : X ⟶ Y) :
     (prodEndoIsFunctor B).map f = pair (fst (A := B) (B := X) ≫ Cat.id B) (snd ≫ f) := rfl
 
 /-- **Clean reformulation of §1.472 faithfulness.**  `prodEndo B = (B × -)` is an
@@ -316,7 +318,7 @@ theorem prodEndo_embedding_iff_snd_epi [HasBinaryProducts 𝒞] (B : 𝒞) :
     `(m × id_B) ≫ snd = snd` (so the `snd`-component is already equal); the two projections
     are jointly monic.  This is exactly why §1.472's substantive condition is *properness*
     (non-iso) of `m × id_B`, not mere monicity. -/
-theorem product_mono_of_mono [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A)
+public theorem product_mono_of_mono [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A)
     (hm : Monic m) : Monic (pair (fst (A := A') (B := B) ≫ m) (snd (A := A') (B := B))) := by
   intro W u v huv
   have h1 : (u ≫ fst) ≫ m = (v ≫ fst) ≫ m := by
@@ -340,7 +342,7 @@ theorem product_mono_of_mono [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (
     `id_B × m = (prodEndoIsFunctor B).map m = pair (fst ≫ id_B) (snd ≫ m) : B×A' → B×A`,
     `m × id_B = pair (fst ≫ m) snd : A'×B → A×B`; conjugating by the two self-inverse
     swaps `A'×B ≅ B×A'` and `B×A ≅ A×B` turns one into the other. -/
-theorem prod_mono_swap_conj [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A) :
+public theorem prod_mono_swap_conj [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A) :
     pair (fst (A := A') (B := B) ≫ m) (snd (A := A') (B := B)) =
     prodSwap A' B ≫ (prodEndoIsFunctor B).map m ≫ prodSwap B A := by
   symm; apply pair_uniq
@@ -356,7 +358,7 @@ theorem prod_mono_swap_conj [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m
 
 /-- The two product directions are simultaneously iso: `IsIso (m × id_B) ↔ IsIso (id_B × m)`.
     Immediate from `prod_mono_swap_conj` since both swaps are isos (§1.42 `prod_comm_iso`). -/
-theorem isIso_prod_mono_iff [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A) :
+public theorem isIso_prod_mono_iff [HasBinaryProducts 𝒞] (B : 𝒞) {A' A : 𝒞} (m : A' ⟶ A) :
     IsIso (pair (fst (A := A') (B := B) ≫ m) (snd (A := A') (B := B))) ↔
     IsIso ((prodEndoIsFunctor B).map m) := by
   -- `map m` is the conjugate of `m × id_B` by the swaps; check both projections.
@@ -564,7 +566,7 @@ theorem special_iff_prodEndo_faithful [CartesianCategory 𝒞] :
 
 /-- A Cartesian category is ONE-VALUED if the unique map `1 → 1` generates all values:
     i.e. the terminal object has no proper subobject (every subterminator is iso to 1). -/
-def OneValued [CartesianCategory 𝒞] : Prop :=
+@[expose] public def OneValued [CartesianCategory 𝒞] : Prop :=
   ∀ (V : 𝒞), Subterminator V → IsIso (term V)
 
 /-- **§1.473 (⇐)**: If B×- is faithful for all B then A is special.
@@ -767,7 +769,7 @@ theorem oneValued_special_iff [CartesianCategory 𝒞] (h1v : OneValued (𝒞 :=
     §1.474 `0`.  It is stated inline (`∀ {X} (f : X ⟶ zeroObj), IsIso f`) rather than via
     `Freyd.Initial.StrictCoterminator` only to avoid an import cycle (`Initial`/`S1_58` sit
     downstream of §1.47); it is definitionally that predicate. -/
-structure TwoValued [CartesianCategory 𝒞] where
+public structure TwoValued [CartesianCategory 𝒞] where
   zeroObj    : 𝒞
   zero_proper : ProperMono (term zeroObj)
   zero_uniq  : ∀ (V : 𝒞), ProperMono (term V) → ∃ (e : V ⟶ zeroObj), IsIso e
@@ -892,7 +894,7 @@ theorem twoValued_special_iff [CartesianCategory 𝒞] (h2v : TwoValued (𝒞 :=
   The universal functor T_G : A → A[G⁻¹] is initial among functors inverting G. -/
 
 /-- **§1.48 DENSE CLASS OF MONICS**: a predicate G on arrows satisfying (i)-(iii). -/
-structure DenseClass (𝒞 : Type u) [Cat.{v} 𝒞] [HasPullbacks 𝒞] where
+public structure DenseClass (𝒞 : Type u) [Cat.{v} 𝒞] [HasPullbacks 𝒞] where
   mem    : ∀ {A B : 𝒞}, (A ⟶ B) → Prop
   -- (i) all isomorphisms are in G
   iso_mem    : ∀ {A B : 𝒞} (f : A ⟶ B), IsIso f → mem f
@@ -909,7 +911,7 @@ def DenseMonic [HasPullbacks 𝒞] {A B : 𝒞} (f : A ⟶ B) (_hm : Monic f)
 /-! ### Fraction spans: the morphisms of A[G⁻¹] -/
 
 /-- A FRACTION A → B (§1.48): a span `apex —[denom ∈ G]→ A` and `apex → B`. -/
-structure Fraction [HasPullbacks 𝒞] (G : DenseClass 𝒞) (A B : 𝒞) where
+public structure Fraction [HasPullbacks 𝒞] (G : DenseClass 𝒞) (A B : 𝒞) where
   apex  : 𝒞
   denom : apex ⟶ A
   num   : apex ⟶ B
@@ -917,7 +919,7 @@ structure Fraction [HasPullbacks 𝒞] (G : DenseClass 𝒞) (A B : 𝒞) where
 
 /-- Two fractions name the SAME morphism (§1.48) if they admit a common G-monic roof
     making both squares commute. -/
-def FractionEquiv [HasPullbacks 𝒞] {G : DenseClass 𝒞} {A B : 𝒞}
+@[expose] public def FractionEquiv [HasPullbacks 𝒞] {G : DenseClass 𝒞} {A B : 𝒞}
     (f₁ f₂ : Fraction G A B) : Prop :=
   ∃ (R : 𝒞) (r₁ : R ⟶ f₁.apex) (r₂ : R ⟶ f₂.apex),
     G.mem (r₁ ≫ f₁.denom) ∧
@@ -1010,11 +1012,11 @@ theorem loc_is_cartesianFunctor [CartesianCategory 𝒞] [HasPullbacks 𝒞] {G 
 /-- The `i`-th covariant representable `H_i = Hom(i, -)` (sections 1.463, 1.465), as
     an object map.  This is one representable, not the section 1.464 Yoneda representation,
     which is the full embedding `𝒞 → (𝒞 → Type v)`. -/
-def representable (i : 𝒞) : 𝒞 → Type v := fun X => i ⟶ X
+@[expose] public def representable (i : 𝒞) : 𝒞 → Type v := fun X => i ⟶ X
 
 /-- The covariant hom-functor `Hom(i, -) : 𝒞 → 𝒮`, `f ↦ (h ↦ h ≫ f)`
     (sections 1.463, 1.465). -/
-def homFunctor {𝒞 : Type u} [Cat.{v} 𝒞] (i : 𝒞) : Functor 𝒞 (Type v) where
+@[expose] public def homFunctor {𝒞 : Type u} [Cat.{v} 𝒞] (i : 𝒞) : Functor 𝒞 (Type v) where
   obj := representable i
   map f := fun h => h ≫ f
   map_id A := by funext h; exact Cat.comp_id h

@@ -14,7 +14,9 @@
      `Δ : A ↣ A×A` along a classifying map, transferring decidability of `Δ` to `S`.
 -/
 
-import Freyd.S1_62
+module
+
+public import Freyd.S1_62
 
 
 open Freyd
@@ -43,7 +45,7 @@ variable [PreLogos 𝒞]
     `Z.dom → (⊥ B).dom` it provides is the unique map out of an initial object, and
     composing with `(⊥ B).arr` necessarily lands back on `Z.arr` (also a map out of the
     same initial domain), giving the factorization `Z ≤ ⊥ B`. -/
-theorem le_bottom_of_dom_iso {B : 𝒞} (Z : Subobject 𝒞 B)
+public theorem le_bottom_of_dom_iso {B : 𝒞} (Z : Subobject 𝒞 B)
     (hiso : Isomorphic Z.dom (PreLogos.bottom B).dom) : Z.le (PreLogos.bottom B) := by
   letI hCot := minimal_subobject_of_one_is_coterminator (𝒞 := 𝒞) ‹PreLogos 𝒞›
   -- (⊥ B).dom ≅ zeroObj (initial); so Z.dom ≅ zeroObj.
@@ -83,7 +85,7 @@ theorem le_bottom_of_dom_iso {B : 𝒞} (Z : Subobject 𝒞 B)
 /-- Reverse inclusion of inverse-image / intersection interchange:
     `f#S ∩ f#T ≤ f#(S ∩ T)`.  This is the half used for the disjointness clause of a
     complement (the forward half follows from monotonicity, but only this half is needed). -/
-theorem inter_invImage_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B) :
+public theorem inter_invImage_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B) :
     (Subobject.inter (InverseImage f S) (InverseImage f T)).le
       (InverseImage f (Subobject.inter S T)) :=
   (invImg_preserves_inter f S T
@@ -106,7 +108,7 @@ theorem inter_invImage_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B) :
       `⊤ B ≤ f#(⊤ C)` (`entire_le_inverseImage_entire`)
       `≤ f#(K ∪ K₂)` (`inverseImage_mono`, since `⊤ C ≤ K ∪ K₂`)
       `≤ f#K ∪ f#K₂` (`PreLogos.invImage_preserves_union`, forward half). -/
-theorem invImage_complementedSub {B C : 𝒞} (f : B ⟶ C) {K : Subobject 𝒞 C}
+public theorem invImage_complementedSub {B C : 𝒞} (f : B ⟶ C) {K : Subobject 𝒞 C}
     (hK : IsComplementedSub K) : IsComplementedSub (InverseImage f K) := by
   obtain ⟨K₂, hdisj, hcover⟩ := hK
   refine ⟨InverseImage f K₂, ?_, ?_⟩
@@ -192,16 +194,16 @@ theorem Subobject.Dom_graphSub {A B : 𝒞} (g : A ⟶ B) :
   every subobject `S ⊆ B` exhibited as such an inverse image `c# (Δ A)` is complemented. -/
 
 /-- The diagonal subobject `Δ A = ⟨diag A⟩ : A ↣ A×A`. -/
-def diagSub (A : 𝒞) : Subobject 𝒞 (prod A A) :=
+@[expose] public def diagSub (A : 𝒞) : Subobject 𝒞 (prod A A) :=
   ⟨A, diag A, diag_mono A⟩
 
 /-- `A` is decidable (inter-based form): its diagonal subobject is `IsComplementedSub`. -/
-def DecidableObjectSub (A : 𝒞) : Prop := IsComplementedSub (diagSub A)
+@[expose] public def DecidableObjectSub (A : 𝒞) : Prop := IsComplementedSub (diagSub A)
 
 /-- **§1.658 diagonal-classifies**: if `A` is decidable and `c : B → A×A` is a classifying
     map, then the inverse image `c# (Δ A) ⊆ B` is complemented.  This transfers decidability
     of the diagonal to any subobject realized as an inverse image of it. -/
-theorem invImage_diagSub_complementedSub {A B : 𝒞} (hA : DecidableObjectSub A)
+public theorem invImage_diagSub_complementedSub {A B : 𝒞} (hA : DecidableObjectSub A)
     (c : B ⟶ prod A A) : IsComplementedSub (InverseImage c (diagSub A)) :=
   invImage_complementedSub c hA
 
@@ -209,7 +211,7 @@ theorem invImage_diagSub_complementedSub {A B : 𝒞} (hA : DecidableObjectSub A
     (mutual `≤`) with the inverse image of the decidable diagonal along some classifying map
     `c : B → A×A` is itself complemented.  This is the exact shape `S1_64`'s boolean (⇐)
     consumes: produce `c` with `S = c# (Δ A)`, then read off complementedness of `S`. -/
-theorem diagonal_classifies {A B : 𝒞} (hA : DecidableObjectSub A)
+public theorem diagonal_classifies {A B : 𝒞} (hA : DecidableObjectSub A)
     {S : Subobject 𝒞 B} (c : B ⟶ prod A A)
     (hS₁ : S.le (InverseImage c (diagSub A)))
     (hS₂ : (InverseImage c (diagSub A)).le S) :
@@ -217,10 +219,10 @@ theorem diagonal_classifies {A B : 𝒞} (hA : DecidableObjectSub A)
   complementedSub_congr hS₁ hS₂ (invImage_diagSub_complementedSub hA c)
 
 /-- The product map `φ × φ : X×X → Y×Y` for `φ : X → Y`, as `pair (fst≫φ) (snd≫φ)`. -/
-def prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) : prod X X ⟶ prod Y Y := pair (fst ≫ φ) (snd ≫ φ)
+@[expose] public def prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) : prod X X ⟶ prod Y Y := pair (fst ≫ φ) (snd ≫ φ)
 
 /-- `diag X ≫ (φ × φ) = φ ≫ diag Y`: the diagonal is natural in `φ`. -/
-theorem diag_prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) :
+public theorem diag_prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) :
     diag X ≫ prodSelfMap φ = φ ≫ diag Y := by
   apply fst_snd_jointly_monic
   · rw [Cat.assoc, show prodSelfMap φ ≫ fst = fst ≫ φ from fst_pair _ _, ← Cat.assoc,
@@ -234,7 +236,7 @@ theorem diag_prodSelfMap {X Y : 𝒞} (φ : X ⟶ Y) :
     and `Y` is decidable, so is `X`.  The diagonal `Δ_X` coincides with `(φ×φ)# Δ_Y`
     (`φ` mono ⟹ `φ(x₁)=φ(x₂) ↔ x₁=x₂`), and inverse images of complemented subobjects are
     complemented (`diagonal_classifies`). -/
-theorem decidableSub_of_mono {X Y : 𝒞} (φ : X ⟶ Y) (hφ : Monic φ)
+public theorem decidableSub_of_mono {X Y : 𝒞} (φ : X ⟶ Y) (hφ : Monic φ)
     (hY : DecidableObjectSub Y) : DecidableObjectSub X := by
   let pbeq := HasPullbacks.has (prodSelfMap φ) (diagSub Y).arr
   refine diagonal_classifies hY (prodSelfMap φ) ?_ ?_

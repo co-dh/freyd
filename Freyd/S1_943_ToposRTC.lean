@@ -21,10 +21,12 @@
   downstream `topos_has_coequalizers`/`topos_is_bicartesian`) would be a false close.
 -/
 
-import Freyd.S1_60
-import Freyd.S1_77
-import Freyd.S1_987_LeastClosedTopos
-import Freyd.S1_967_ToposExists
+module
+
+public import Freyd.S1_60
+public import Freyd.S1_77
+public import Freyd.S1_987_LeastClosedTopos
+public import Freyd.S1_967_ToposExists
 
 universe v u
 
@@ -41,10 +43,10 @@ variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
     This is exactly the converter the family-glb RTC construction needs to turn the
     `bigInter : Subobject (prod A A)` back into a `BinRel A A`. -/
-noncomputable def subToRel {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) : BinRel 𝒞 A B := subRel S
+@[expose] public noncomputable def subToRel {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) : BinRel 𝒞 A B := subRel S
 
 /-- `(subToRel S).arr`-pairing is `S.arr`: `pair (S.arr≫fst) (S.arr≫snd) = S.arr`. -/
-theorem relSub_subToRel_arr {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) :
+public theorem relSub_subToRel_arr {A B : 𝒞} (S : Subobject 𝒞 (prod A B)) :
     pair (subToRel S).colA (subToRel S).colB = S.arr :=
   relSub_subRel_arr S
 
@@ -55,7 +57,7 @@ variable [PreLogos 𝒞]
 
 /-- **Round-trip `subToRel (relSub R) = R`.**  `relSub R` has arrow `pair R.colA R.colB`,
     whose two projections are `R.colA`, `R.colB` again. -/
-theorem subToRel_relSub {A B : 𝒞} (R : BinRel 𝒞 A B) : subToRel (relSub R) = R := by
+public theorem subToRel_relSub {A B : 𝒞} (R : BinRel 𝒞 A B) : subToRel (relSub R) = R := by
   -- `subToRel (relSub R)` is `BinRel.mk R.src (pair R.colA R.colB ≫ fst) (… ≫ snd) …`;
   -- the two cols recover `R.colA`, `R.colB` by the fst/snd β-laws; `src` is `R.src`
   -- definitionally and `isMonicPair` is a `Prop` (proof-irrelevant).  Field-wise congruence.
@@ -64,7 +66,7 @@ theorem subToRel_relSub {A B : 𝒞} (R : BinRel 𝒞 A B) : subToRel (relSub R)
 /-- **Order correspondence through `subToRel`.**  `RelLe (subToRel S) (subToRel T)`
     is exactly `S.le T` for subobjects `S, T` of `A×B`.  (Via `relLe_iff_subLe` and the
     `relSub_subToRel_arr` η-law: `relSub (subToRel S)` has the same arrow as `S`.) -/
-theorem relLe_subToRel_iff_subLe {A B : 𝒞} (S T : Subobject 𝒞 (prod A B)) :
+public theorem relLe_subToRel_iff_subLe {A B : 𝒞} (S T : Subobject 𝒞 (prod A B)) :
     RelLe (subToRel S) (subToRel T) ↔ S.le T := by
   rw [relLe_iff_subLe]
   -- `(relSub (subToRel S)).arr = pair (subToRel S).colA (subToRel S).colB = S.arr`
@@ -107,25 +109,25 @@ variable [Topos 𝒞]
 
 /-- Internal membership lookup `(coords) ∈ s` for a generalized point `coords : X → A×A`
     of the relation domain and `s : X → [A×A]`: `⟨coords, s⟩ ≫ eval`. -/
-private noncomputable abbrev memLk {A X : 𝒞} (coords : X ⟶ prod A A) (s : X ⟶ powObj (prod A A)) :
+@[expose] public noncomputable abbrev memLk {A X : 𝒞} (coords : X ⟶ prod A A) (s : X ⟶ powObj (prod A A)) :
     X ⟶ omega (𝒞 := 𝒞) :=
   pair coords s ≫ eval_exp (prod A A) (omega (𝒞 := 𝒞))
 
 /-! ### The reflexivity predicate `reflChar : [A×A] → Ω`, `s ↦ ∀a. (a,a)∈s`. -/
 
 /-- The diagonal body `prod A [A×A] → Ω`, `(a,s) ↦ (a,a)∈s`. -/
-noncomputable def reflBody {A : 𝒞} : prod A (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def reflBody {A : 𝒞} : prod A (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞) :=
   pair (pair fst fst) snd ≫ eval_exp (prod A A) (omega (𝒞 := 𝒞))
 
 /-- `reflChar : [A×A] → Ω`, `s ↦ ∀a:A. (a,a)∈s`.  Fibered-∀ over `a : A`. -/
-noncomputable def reflChar {A : 𝒞} : powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def reflChar {A : 𝒞} : powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
   curry (reflBody (A := A)) ≫ forallC A
 
 /-! ### The containment predicate `containsRChar R : [A×A] → Ω`, `s ↦ ∀p. p∈R ⇒ p∈s`. -/
 
 /-- The contains-`R` body `prod (A×A) [A×A] → Ω`, `(p,s) ↦ (p∈R) ⇒ (p∈s)`, where
     `p∈R = ⟨fst, term≫rName⟩ ≫ eval` and `p∈s = ⟨fst, snd⟩ ≫ eval`. -/
-noncomputable def containsRBody {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
+@[expose] public noncomputable def containsRBody {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
     prod (prod A A) (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞) :=
   pair
     (pair fst (term (prod (prod A A) (powObj (prod A A))) ≫ rName)
@@ -134,7 +136,7 @@ noncomputable def containsRBody {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
   ≫ impΩ
 
 /-- `containsRChar R : [A×A] → Ω`, `s ↦ ∀p:A×A. (p∈R) ⇒ (p∈s)`.  Fibered-∀ over `p`. -/
-noncomputable def containsRChar {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
+@[expose] public noncomputable def containsRChar {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
     powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
   curry (containsRBody rName) ≫ forallC (prod A A)
 
@@ -143,7 +145,7 @@ noncomputable def containsRChar {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
 
 /-- The transitivity body `prod (A×(A×A)) [A×A] → Ω`.  With `w = fst` the bound triple
     `(a,b,c)` and `s = snd`, it is `((a,b)∈s ∧ (b,c)∈s) ⇒ (a,c)∈s`. -/
-noncomputable def transBody {A : 𝒞} :
+@[expose] public noncomputable def transBody {A : 𝒞} :
     prod (prod A (prod A A)) (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞) :=
   pair
     (pair
@@ -155,25 +157,25 @@ noncomputable def transBody {A : 𝒞} :
 
 /-- `transChar : [A×A] → Ω`, `s ↦ ∀(a,b,c). ((a,b)∈s ∧ (b,c)∈s) ⇒ (a,c)∈s`.  Fibered-∀
     over the triple `(a,b,c) : A × (A × A)`. -/
-noncomputable def transChar {A : 𝒞} : powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def transChar {A : 𝒞} : powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
   curry (transBody (A := A)) ≫ forallC (prod A (prod A A))
 
 /-! ### The full family predicate and its name. -/
 
 /-- The RTC family predicate `rtcChar R : [A×A] → Ω`, the 3-way meet
     `reflChar ∧ containsRChar R ∧ transChar`. -/
-noncomputable def rtcChar {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
+@[expose] public noncomputable def rtcChar {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
     powObj (prod A A) ⟶ omega (𝒞 := 𝒞) :=
   pair (pair (reflChar (A := A)) (containsRChar rName) ≫ omegaMeet) (transChar (A := A))
     ≫ omegaMeet
 
 /-- The family name `rtcFamily R : 1 → [[A×A]]` of `{ s : [A×A] | rtcChar R }`. -/
-noncomputable def rtcFamily {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
+@[expose] public noncomputable def rtcFamily {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
     one ⟶ powObj (powObj (prod A A)) :=
   curry (fst ≫ rtcChar rName)
 
 /-- **KEY — `membershipMap (rtcFamily R) = rtcChar R`.**  Via `membershipMap_curry_fst`. -/
-theorem membershipMap_rtcFamily {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
+public theorem membershipMap_rtcFamily {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
     membershipMap (rtcFamily rName) = rtcChar rName := by
   rw [rtcFamily, membershipMap_curry_fst]
 
@@ -182,7 +184,7 @@ theorem membershipMap_rtcFamily {A : 𝒞} (rName : one ⟶ powObj (prod A A)) :
 /-- **Lookup at a name (generalized point).**  For a subobject `T0 ↣ A×A`, a generalized
     point `coords : X → A×A` and the constant name `g = term X ≫ 'T0'`, the membership
     lookup `memLk coords g = coords ≫ classify T0.arr`.  (`p ∈ T0` as an Ω-test.) -/
-theorem memLk_at_name {A X : 𝒞} (T0 : Subobject 𝒞 (prod A A)) (coords : X ⟶ prod A A) :
+public theorem memLk_at_name {A X : 𝒞} (T0 : Subobject 𝒞 (prod A A)) (coords : X ⟶ prod A A) :
     memLk coords (term X ≫ nameOf T0.arr T0.monic)
       = coords ≫ HasSubobjectClassifier.classify T0.arr T0.monic := by
   rw [memLk, ← membershipMap_nameOf T0.arr T0.monic, membershipMap, ← Cat.assoc]
@@ -199,7 +201,7 @@ theorem memLk_at_name {A X : 𝒞} (T0 : Subobject 𝒞 (prod A A)) (coords : X 
 /-- **∀-elimination at a generalized point (generic body).**  If `g : X → [A×A]` passes the
     fibered-∀ `curry body ≫ forallC C` (`g ≫ … = ⊤`), then for EVERY generalized point
     `τ : X → C` the body holds at `(τ, g)`: `pair τ g ≫ body = ⊤`.  Mirrors `tStable_gen`. -/
-theorem forallName_elim {A C X : 𝒞} (body : prod C (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞))
+public theorem forallName_elim {A C X : 𝒞} (body : prod C (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞))
     (g : X ⟶ powObj (prod A A))
     (hg : g ≫ (curry body ≫ forallC C) = term X ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (τ : X ⟶ C) :
@@ -214,7 +216,7 @@ theorem forallName_elim {A C X : 𝒞} (body : prod C (powObj (prod A A)) ⟶ om
     `g = term X ≫ 'T0'` passes the fibered-∀, it suffices that the body, with its `[A×A]`-slot
     fixed at `'T0'`, is entire over `prod C X`.  Concretely: build `S_F ≤ S_In`-style from
     `prodMap C [A×A] … 'T0'`-fixed body = ⊤.  (Used via the conjunct lemmas below.) -/
-theorem forallName_intro {A C : 𝒞} (body : prod C (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞))
+public theorem forallName_intro {A C : 𝒞} (body : prod C (powObj (prod A A)) ⟶ omega (𝒞 := 𝒞))
     (T0 : Subobject 𝒞 (prod A A))
     (hbody : pair (Cat.id C) (term C ≫ nameOf T0.arr T0.monic) ≫ body
       = term C ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -239,12 +241,12 @@ theorem forallName_intro {A C : 𝒞} (body : prod C (powObj (prod A A)) ⟶ ome
 /-! ## §1.943  the three conjuncts at a subobject-name -/
 
 /-- The name of `R : BinRel A A` as a subobject of `A×A`. -/
-noncomputable def rName {A : 𝒞} (R : BinRel 𝒞 A A) : one ⟶ powObj (prod A A) :=
+@[expose] public noncomputable def rName {A : 𝒞} (R : BinRel 𝒞 A A) : one ⟶ powObj (prod A A) :=
   nameOf (relSub R).arr (relSub R).monic
 
 /-- **`containsRChar` intro.**  If `R ⊑ T` (subobjects of `A×A`), the name `'T'` passes the
     contains-`R` test: `'T' ≫ containsRChar 'R' = ⊤`. -/
-theorem containsRChar_name_of_le {A : 𝒞} (Rs T : Subobject 𝒞 (prod A A)) (hle : Rs.le T) :
+public theorem containsRChar_name_of_le {A : 𝒞} (Rs T : Subobject 𝒞 (prod A A)) (hle : Rs.le T) :
     nameOf T.arr T.monic ≫ containsRChar (nameOf Rs.arr Rs.monic)
       = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   rw [containsRChar]
@@ -286,7 +288,7 @@ theorem containsRChar_name_of_le {A : 𝒞} (Rs T : Subobject 𝒞 (prod A A)) (
 
 /-- **`reflChar` intro.**  If the diagonal subobject `Δ = relSub (graph id)` lies below `T`,
     the name `'T'` passes the reflexivity test: `'T' ≫ reflChar = ⊤`. -/
-theorem reflChar_name_of_diag_le {A : 𝒞} (T : Subobject 𝒞 (prod A A))
+public theorem reflChar_name_of_diag_le {A : 𝒞} (T : Subobject 𝒞 (prod A A))
     (hdiag : (relSub (graph (Cat.id A))).le T) :
     nameOf T.arr T.monic ≫ reflChar (A := A)
       = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
@@ -322,7 +324,7 @@ theorem reflChar_name_of_diag_le {A : 𝒞} (T : Subobject 𝒞 (prod A A))
     transitivity test (`g ≫ transChar = ⊤`) and three points satisfy `(a,b)∈g`, `(b,c)∈g`, then
     `(a,c)∈g`.  ∀-elimination of `transBody` at the triple `(a,b,c)` + modus ponens
     (`impΩ_forward`).  No internal `∃`/composition — `b` is the bound middle variable. -/
-theorem transChar_gen {A K : 𝒞} (g : K ⟶ powObj (prod A A)) (a b c : K ⟶ A)
+public theorem transChar_gen {A K : 𝒞} (g : K ⟶ powObj (prod A A)) (a b c : K ⟶ A)
     (hg : g ≫ transChar (A := A) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hab : memLk (pair a b) g = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hbc : memLk (pair b c) g = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -393,7 +395,7 @@ theorem transChar_gen {A K : 𝒞} (g : K ⟶ powObj (prod A A)) (a b c : K ⟶ 
 /-! ## §1.943  conjunct extraction + generalized eliminations -/
 
 /-- The three conjuncts of `rtcChar` at a generalized member `s : K → [A×A]`. -/
-theorem rtcChar_conjuncts {A K : 𝒞} (rName' : one ⟶ powObj (prod A A)) (s : K ⟶ powObj (prod A A))
+public theorem rtcChar_conjuncts {A K : 𝒞} (rName' : one ⟶ powObj (prod A A)) (s : K ⟶ powObj (prod A A))
     (hs : s ≫ rtcChar rName' = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
     s ≫ reflChar (A := A) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
     ∧ s ≫ containsRChar rName' = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
@@ -405,7 +407,7 @@ theorem rtcChar_conjuncts {A K : 𝒞} (rName' : one ⟶ powObj (prod A A)) (s :
 
 /-- **`reflChar` ∀-elimination.**  If `s : K → [A×A]` passes `reflChar` (`s ≫ reflChar = ⊤`),
     then every diagonal point lies in `s`: for `a : K → A`, `memLk (pair a a) s = ⊤`. -/
-theorem reflChar_gen {A K : 𝒞} (s : K ⟶ powObj (prod A A)) (a : K ⟶ A)
+public theorem reflChar_gen {A K : 𝒞} (s : K ⟶ powObj (prod A A)) (a : K ⟶ A)
     (hs : s ≫ reflChar (A := A) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
     memLk (pair a a) s = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   rw [reflChar] at hs
@@ -424,7 +426,7 @@ theorem reflChar_gen {A K : 𝒞} (s : K ⟶ powObj (prod A A)) (a : K ⟶ A)
 /-- **`containsRChar` ∀-elimination.**  If `s : K → [A×A]` passes `containsRChar R`
     (`s ≫ containsRChar 'R' = ⊤`) and a generalized point `p : K → A×A` lies in `R`
     (`memLk p (term K ≫ 'R') = ⊤`), then `p` lies in `s` (`memLk p s = ⊤`). -/
-theorem containsRChar_gen {A K : 𝒞} (Rs : Subobject 𝒞 (prod A A)) (s : K ⟶ powObj (prod A A))
+public theorem containsRChar_gen {A K : 𝒞} (Rs : Subobject 𝒞 (prod A A)) (s : K ⟶ powObj (prod A A))
     (p : K ⟶ prod A A)
     (hs : s ≫ containsRChar (nameOf Rs.arr Rs.monic) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hp : memLk p (term K ≫ nameOf Rs.arr Rs.monic) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -460,16 +462,16 @@ theorem containsRChar_gen {A K : 𝒞} (Rs : Subobject 𝒞 (prod A A)) (s : K �
 /-! ## §1.943  the reflexive-transitive closure and the five `TransRefClos` fields -/
 
 /-- The RTC closure subobject `⋂F_R ↣ A×A` of `R : BinRel A A`. -/
-noncomputable def rtcSub {A : 𝒞} (R : BinRel 𝒞 A A) : Subobject 𝒞 (prod A A) :=
+@[expose] public noncomputable def rtcSub {A : 𝒞} (R : BinRel 𝒞 A A) : Subobject 𝒞 (prod A A) :=
   bigInter (rtcFamily (rName R))
 
 /-- The RTC closure relation `R* : BinRel A A`. -/
-noncomputable def rtcClos {A : 𝒞} (R : BinRel 𝒞 A A) : BinRel 𝒞 A A :=
+@[expose] public noncomputable def rtcClos {A : 𝒞} (R : BinRel 𝒞 A A) : BinRel 𝒞 A A :=
   subToRel (rtcSub R)
 
 /-- **`le` field — `R ⊑ R*`.**  Greatest-lower-bound: `R` is below every member of `F_R`
     (each member passes `containsRChar`, i.e. `R ⊑ member`), hence below `⋂F_R`. -/
-theorem rtcClos_le {A : 𝒞} (R : BinRel 𝒞 A A) : RelLe R (rtcClos R) := by
+public theorem rtcClos_le {A : 𝒞} (R : BinRel 𝒞 A A) : RelLe R (rtcClos R) := by
   rw [rtcClos, show R = subToRel (relSub R) from (subToRel_relSub R).symm,
     relLe_subToRel_iff_subLe, subToRel_relSub]
   -- (relSub R).le (⋂F_R)  via  Allows (⋂F_R) (relSub R).arr.
@@ -498,7 +500,7 @@ theorem rtcClos_le {A : 𝒞} (R : BinRel 𝒞 A A) : RelLe R (rtcClos R) := by
 
 /-- **`refl` field — `R*` is reflexive.**  Greatest-lower-bound: the diagonal `Δ` is below
     every member (each passes `reflChar`, i.e. `Δ ⊑ member`), hence below `⋂F_R`. -/
-theorem rtcClos_refl {A : 𝒞} (R : BinRel 𝒞 A A) : IsReflexive (rtcClos R) := by
+public theorem rtcClos_refl {A : 𝒞} (R : BinRel 𝒞 A A) : IsReflexive (rtcClos R) := by
   rw [IsReflexive, rtcClos]
   rw [show graph (Cat.id A) = subToRel (relSub (graph (Cat.id A))) from
       (subToRel_relSub (graph (Cat.id A))).symm]
@@ -531,7 +533,7 @@ theorem rtcClos_refl {A : 𝒞} (R : BinRel 𝒞 A A) : IsReflexive (rtcClos R) 
     factors through the composite `relSub (S ⊚ S)`.  This is the elementary pullback+image
     content of `⊚`: `(u,v)` with matching middle leg `b` lift into the pullback, and the
     span maps onto `pair a c`, whose image is `(S⊚S).src`. -/
-theorem mem_compose_of_legs {A K : 𝒞} (S : BinRel 𝒞 A A) (a b c : K ⟶ A)
+public theorem mem_compose_of_legs {A K : 𝒞} (S : BinRel 𝒞 A A) (a b c : K ⟶ A)
     (hab : Allows (relSub S) (pair a b)) (hbc : Allows (relSub S) (pair b c)) :
     Allows (relSub (S ⊚ S)) (pair a c) := by
   obtain ⟨u, hu⟩ := hab
@@ -574,7 +576,7 @@ theorem mem_compose_of_legs {A K : 𝒞} (S : BinRel 𝒞 A A) (a b c : K ⟶ A)
     triple domain `W = A×(A×A)`; the body fixed at `'T0'` is the Heyting implication
     `(antecedent ⇒ consequent)`, entire because `antecedent ≤ consequent` POINTWISE — on the
     carrier of the antecedent both `(a,b)∈T0` and `(b,c)∈T0` hold, so `(a,c) ∈ T0⊚T0 ⊑ T0`. -/
-theorem transChar_name_of_transitive {A : 𝒞} (T0 : Subobject 𝒞 (prod A A))
+public theorem transChar_name_of_transitive {A : 𝒞} (T0 : Subobject 𝒞 (prod A A))
     (htr : IsTransitive (subToRel T0)) :
     nameOf T0.arr T0.monic ≫ transChar (A := A)
       = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
@@ -708,7 +710,7 @@ theorem transChar_name_of_transitive {A : 𝒞} (T0 : Subobject 𝒞 (prod A A))
 /-- **`minimal` field — `R*` is the LEAST reflexive-transitive relation containing `R`.**
     Any reflexive-transitive `T ⊇ R` has its name `'relSub T'` passing all three conjuncts
     of `rtcChar`, so it is a member of `F_R`; `bigInter_le_named` gives `⋂F_R ⊑ T`. -/
-theorem rtcClos_minimal {A : 𝒞} (R : BinRel 𝒞 A A) (T : BinRel 𝒞 A A)
+public theorem rtcClos_minimal {A : 𝒞} (R : BinRel 𝒞 A A) (T : BinRel 𝒞 A A)
     (hRT : RelLe R T) (hrefl : IsReflexive T) (htr : IsTransitive T) :
     RelLe (rtcClos R) T := by
   rw [rtcClos]
@@ -736,7 +738,7 @@ theorem rtcClos_minimal {A : 𝒞} (R : BinRel 𝒞 A A) (T : BinRel 𝒞 A A)
 /-- **A point of `⋂F` lies in any member (membership-map form).**  For `p : K → A×A` in
     `⋂F` (`p ≫ bigInterChar F = ⊤`) and `σ : K → [A×A]` a member (`σ ≫ membershipMap F = ⊤`),
     `memLk p σ = ⊤`.  Adapts `bigInter_point_in_member` (which produces the swapped form). -/
-theorem mem_member_of_mem_bigInter {A K : 𝒞} (Fname : one ⟶ powObj (powObj (prod A A)))
+public theorem mem_member_of_mem_bigInter {A K : 𝒞} (Fname : one ⟶ powObj (powObj (prod A A)))
     (p : K ⟶ prod A A) (σ : K ⟶ powObj (prod A A))
     (hp : p ≫ bigInterChar Fname = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hmem : σ ≫ membershipMap Fname = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -754,7 +756,7 @@ theorem mem_member_of_mem_bigInter {A K : 𝒞} (Fname : one ⟶ powObj (powObj 
     composition span: on the pullback `pb` (with explicit middle `b`), the composite point
     `(a,c)` lies in `⋂F_R` because for EVERY member `σ` we have `(a,b),(b,c) ∈ σ`
     (`mem_member_of_mem_bigInter`) and `σ` is transitive (`transChar_gen`), so `(a,c) ∈ σ`. -/
-theorem rtcClos_trans {A : 𝒞} (R : BinRel 𝒞 A A) : IsTransitive (rtcClos R) := by
+public theorem rtcClos_trans {A : 𝒞} (R : BinRel 𝒞 A A) : IsTransitive (rtcClos R) := by
   rw [IsTransitive]
   -- The composition pullback and span (matching `compose`'s definition).
   let clos := rtcClos R
@@ -853,7 +855,7 @@ theorem rtcClos_trans {A : 𝒞} (R : BinRel 𝒞 A A) : IsTransitive (rtcClos R
     simpa [Cat.assoc, snd_pair] using this
 
 /-- **§1.943 — the reflexive-transitive closure `R*` of `R`**, packaged. -/
-noncomputable def rtcTransRefClos {A : 𝒞} (R : BinRel 𝒞 A A) : TransRefClos R where
+@[expose] public noncomputable def rtcTransRefClos {A : 𝒞} (R : BinRel 𝒞 A A) : TransRefClos R where
   clos    := rtcClos R
   le      := rtcClos_le R
   refl    := rtcClos_refl R
@@ -866,7 +868,7 @@ noncomputable def rtcTransRefClos {A : 𝒞} (R : BinRel 𝒞 A A) : TransRefClo
     capitalization).  The transitivity predicate is the fibered-∀ `∀a b c. aSb∧bSc ⇒ aSc`
     (no internal `∃`/relational composition).  This discharges the `HasReflTransClosure 𝒞`
     hypothesis for a bare topos, unblocking `topos_has_coequalizers`/`topos_is_bicartesian`. -/
-noncomputable instance toposHasReflTransClosure : HasReflTransClosure 𝒞 where
+@[expose] public noncomputable instance toposHasReflTransClosure : HasReflTransClosure 𝒞 where
   transRefClos R := rtcTransRefClos R
 
 end

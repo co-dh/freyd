@@ -1,8 +1,10 @@
-import Freyd.S2_111_RelCat
-import Freyd.S1_625_StalkRegular
-import Freyd.S1_637_FiniteSeparation
-import Freyd.S1_543_Capitalization
-import Freyd.S1_631_CapitalProjective
+module
+
+public import Freyd.S2_111_RelCat
+public import Freyd.S1_625_StalkRegular
+public import Freyd.S1_637_FiniteSeparation
+public import Freyd.S1_543_Capitalization
+public import Freyd.S1_631_CapitalProjective
 
 universe u w
 
@@ -39,7 +41,7 @@ open Cat RelFunctor
 
 /-- Every cover in the power category `𝒞 → Type u` splits: a cover is fibrewise surjective
     (`power_cover_iff`), and each fibre surjection has a section (choice). -/
-theorem power_cover_splits {𝒞 : Type u} {X Y : 𝒞 → Type u} (e : X ⟶ Y) (he : Cover e) :
+public theorem power_cover_splits {𝒞 : Type u} {X Y : 𝒞 → Type u} (e : X ⟶ Y) (he : Cover e) :
     ∃ s : Y ⟶ X, s ≫ e = Cat.id Y := by
   have hsurj : ∀ i, Function.Surjective (e i) := (SetRegular.power_cover_iff e).1 he
   exact ⟨fun i b => (hsurj i b).choose, by funext i b; exact (hsurj i b).choose_spec⟩
@@ -48,7 +50,7 @@ theorem power_cover_splits {𝒞 : Type u} {X Y : 𝒞 → Type u} (e : X ⟶ Y)
     Needs `𝒞` regular (images), capital (`hproj` — every cover splits, the §1.543 case).
     Combines BRICK 2c (`homRep_regularFunctor`), `homRep_reflects_iso`, and the §2.218 (2b′)
     image-reflection faithfulness (R1). -/
-theorem relHomRep_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [RegularCategory 𝒞]
+public theorem relHomRep_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [RegularCategory 𝒞]
     (hproj : ∀ C : 𝒞, ∀ {P : 𝒞} (e : P ⟶ C), Cover e → ∃ s : C ⟶ P, s ≫ e = Cat.id C) :
     (homRep_regularFunctor hproj).relAllegoryHom.Faithful :=
   (homRep_regularFunctor hproj).relAllegoryHom_faithful_of_reflects
@@ -77,7 +79,7 @@ theorem relHomRep_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [RegularCategory 𝒞]
     composite of the three faithfulnesses (`AllegoryFunctor.Faithful.comp`), the last of which is
     the §2.218 wall `relHomRep_faithful` (R1 + BRICK 2c).  ALL bricks are built; the two `bridge`/
     `cap`+`Ā` hypotheses are the precisely-isolated residuals (R2 / R3). -/
-theorem repr_in_power_of_sets
+public theorem repr_in_power_of_sets
     {𝒜 : Type u} [Alg.Allegory 𝒜]
     {MapA : Type u} [Cat.{w} MapA] [RegularCategory MapA]
     (bridge : Alg.AllegoryFunctor 𝒜 (RelObj MapA)) (hbridge : bridge.Faithful)
@@ -97,7 +99,7 @@ theorem repr_in_power_of_sets
     Only the §1.543 CAPITAL-TARGET data (R3) remains as hypotheses: a regular capital `Ā`
     (`[RegularCategory Ā]` + `hproj`) with a faithful regular allegory morphism
     `cap : Rel(Map 𝒜) ⟶ Rel(Ā)`.  See the §2.218 marker in `S2_21.lean` for R3's status. -/
-theorem repr_in_power_of_sets_of_tabular
+public theorem repr_in_power_of_sets_of_tabular
     {𝒜 : Type u} [Alg.TabularUnitaryDistributiveAllegory 𝒜]
     {Ā : Type u} [Cat.{u} Ā] [RegularCategory Ā]
     (hproj : ∀ C : Ā, ∀ {P : Ā} (e : P ⟶ C), Cover e → ∃ s : C ⟶ P, s ≫ e = Cat.id C)
@@ -135,7 +137,7 @@ theorem repr_in_power_of_sets_of_tabular
   Covers in `Set` split (choice, `set_cover_splits`), so the third ingredient is free. -/
 
 /-- Every cover in `Set = Type u` splits (fibrewise surjection has a section). -/
-theorem set_cover_splits {X Y : Type u} (e : X ⟶ Y) (he : Cover e) :
+public theorem set_cover_splits {X Y : Type u} (e : X ⟶ Y) (he : Cover e) :
     ∃ s : Y ⟶ X, s ≫ e = Cat.id Y := by
   have hsurj : Function.Surjective e := (SetRegular.set_cover_iff_surjective e).1 he
   exact ⟨fun b => (hsurj b).choose, by funext b; exact (hsurj b).choose_spec⟩
@@ -147,7 +149,7 @@ open PreLogosHorn.Stalk in
 
     This is the stalk-route analogue of `relHomRep_faithful`; it shows the stalk does not bypass
     either §2.218 residual (projectivity + conservativity) but packages them cleanly via K1. -/
-theorem relStalk_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
+public theorem relStalk_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
     (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ)
     (hproj : ∀ U : Subobject 𝒞 one, ℱ U → Projective U.dom)
     (hrefl : ∀ {X Y : 𝒞} (f : X ⟶ Y), IsIso ((TF_functor ℱ).map f) → IsIso f) :
@@ -167,7 +169,7 @@ theorem relStalk_faithful {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
 /-- **§1.633 ⟹ stalk projectivity.**  In a CAPITAL positive pre-logos, if every member of the
     pre-filter `ℱ` is a complemented subterminator, then every member's domain is projective —
     discharging the `hproj` residual of the stalk route. -/
-theorem capital_filter_projective {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
+public theorem capital_filter_projective {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
     (hcap : Capital (𝒞 := 𝒞)) (ℱ : Subobject 𝒞 one → Prop)
     (hcompl : ∀ U : Subobject 𝒞 one, ℱ U → IsComplementedSub U) :
     ∀ U : Subobject 𝒞 one, ℱ U → Projective U.dom :=

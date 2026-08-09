@@ -14,11 +14,13 @@
   adjoint (here `f#`) preserves joins, which yields the frame law `≤` direction directly.
 -/
 
-import Freyd.S1_94_InternalForallTopos
-import Freyd.S1_946_RightAdjointImage
-import Freyd.S1_45
-import Freyd.S1_60
-import Freyd.S1_95_ToposColimits
+module
+
+public import Freyd.S1_94_InternalForallTopos
+public import Freyd.S1_946_RightAdjointImage
+public import Freyd.S1_45
+public import Freyd.S1_60
+public import Freyd.S1_95_ToposColimits
 
 universe v u
 
@@ -31,7 +33,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
 /-! ## The book-facing `∀_f` notation for the right-adjoint image. -/
 
 /-- **`∀_f S` — the internal universal image of `S` along `f`.** -/
-noncomputable def forallAlong {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) : Subobject 𝒞 B :=
+@[expose] public noncomputable def forallAlong {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) : Subobject 𝒞 B :=
   radjImage f S
 
 /-! ## The adjunction `f# ⊣ ∀_f`.
@@ -39,7 +41,7 @@ noncomputable def forallAlong {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) 
   This is the already proved right-adjoint-image adjunction, transported between two
   chosen pullbacks by `invImg_compare`. -/
 
-theorem forallAlong_adjunction {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) (T : Subobject 𝒞 B)
+public theorem forallAlong_adjunction {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A) (T : Subobject 𝒞 B)
     (hp : HasPullback f T.arr) :
     (invImg f T hp).le S ↔ T.le (forallAlong f S) :=
   ⟨fun h => (radjImage_adjunction f T S).1
@@ -51,7 +53,7 @@ theorem forallAlong_adjunction {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 A)
 
 /-- **Frame law** (forward direction): `f#(S ∪ T) ≤ f#S ∪ f#T`.  `f#` is a left adjoint
     (to `∀_f`), so it preserves the join `∪`. -/
-theorem invImage_preserves_union {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
+public theorem invImage_preserves_union {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
     (hpU : HasPullback f (HasSubobjectUnions.union S T).arr)
     (hpS : HasPullback f S.arr) (hpT : HasPullback f T.arr) :
     (invImg f (HasSubobjectUnions.union S T) hpU).le

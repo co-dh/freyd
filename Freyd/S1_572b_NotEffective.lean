@@ -1,4 +1,6 @@
-import Freyd.S1_572_Recursive
+module
+
+public import Freyd.S1_572_Recursive
 
 /-!
 # §1.572 (second half): R is NOT an effective regular category
@@ -37,77 +39,77 @@ namespace Freyd.Rcat
   keeps `consN` injective and nonzero, so a list is nonempty iff it is nonzero). -/
 
 /-- Cons for number-coded lists. -/
-noncomputable def consN (a l : Nat) : Nat := cp a l + 1
+@[expose] public noncomputable def consN (a l : Nat) : Nat := cp a l + 1
 
 /-- Head of a number-coded list (0 on nil). -/
-noncomputable def headN (l : Nat) : Nat := cfst (l - 1)
+@[expose] public noncomputable def headN (l : Nat) : Nat := cfst (l - 1)
 
 /-- Tail of a number-coded list (0 on nil). -/
-noncomputable def tailN (l : Nat) : Nat := csnd (l - 1)
+@[expose] public noncomputable def tailN (l : Nat) : Nat := csnd (l - 1)
 
-@[simp] theorem headN_consN (a l : Nat) : headN (consN a l) = a := by
+@[simp] public theorem headN_consN (a l : Nat) : headN (consN a l) = a := by
   simp [headN, consN, cfst_cp]
 
-@[simp] theorem tailN_consN (a l : Nat) : tailN (consN a l) = l := by
+@[simp] public theorem tailN_consN (a l : Nat) : tailN (consN a l) = l := by
   simp [tailN, consN, csnd_cp]
 
-theorem consN_ne_zero (a l : Nat) : consN a l ≠ 0 := Nat.succ_ne_zero _
+public theorem consN_ne_zero (a l : Nat) : consN a l ≠ 0 := Nat.succ_ne_zero _
 
 /-- A nonzero code is a cons of its head and tail. -/
-theorem consN_eta {l : Nat} (h : l ≠ 0) : consN (headN l) (tailN l) = l := by
+public theorem consN_eta {l : Nat} (h : l ≠ 0) : consN (headN l) (tailN l) = l := by
   show cp (cfst (l - 1)) (csnd (l - 1)) + 1 = l
   rw [cp_surj (l - 1)]
   omega
 
 /-- Drop `j` entries: `dropN 0 l = l`, `dropN (j+1) l = tailN (dropN j l)`. -/
-noncomputable def dropN : Nat → Nat → Nat
+@[expose] public noncomputable def dropN : Nat → Nat → Nat
   | 0, l => l
   | j + 1, l => tailN (dropN j l)
 
 /-- The `j`-th entry of a number-coded list (0 out of range). -/
-noncomputable def nthN (j l : Nat) : Nat := headN (dropN j l)
+@[expose] public noncomputable def nthN (j l : Nat) : Nat := headN (dropN j l)
 
 @[simp] theorem dropN_zero (l : Nat) : dropN 0 l = l := rfl
 
 @[simp] theorem dropN_succ (j l : Nat) : dropN (j + 1) l = tailN (dropN j l) := rfl
 
-theorem dropN_tailN (j l : Nat) : dropN j (tailN l) = dropN (j + 1) l := by
+public theorem dropN_tailN (j l : Nat) : dropN j (tailN l) = dropN (j + 1) l := by
   induction j with
   | zero => rfl
   | succ j ih => show tailN (dropN j (tailN l)) = _; rw [ih]; rfl
 
 @[simp] theorem nthN_zero (l : Nat) : nthN 0 l = headN l := rfl
 
-theorem nthN_succ_consN (j a l : Nat) : nthN (j + 1) (consN a l) = nthN j l := by
+public theorem nthN_succ_consN (j a l : Nat) : nthN (j + 1) (consN a l) = nthN j l := by
   show headN (dropN (j + 1) (consN a l)) = headN (dropN j l)
   rw [← dropN_tailN, tailN_consN]
 
-@[simp] theorem nthN_consN_zero (a l : Nat) : nthN 0 (consN a l) = a := by
+@[simp] public theorem nthN_consN_zero (a l : Nat) : nthN 0 (consN a l) = a := by
   simp [nthN]
 
 /-! ## Stage 1b: input vectors and code trees as numbers -/
 
 /-- A `Vec k` as a number-coded list. -/
-noncomputable def encVec : {k : Nat} → Vec k → Nat
+@[expose] public noncomputable def encVec : {k : Nat} → Vec k → Nat
   | 0, _ => 0
   | _ + 1, v => consN (v 0) (encVec (vtail v))
 
 @[simp] theorem encVec_zero (v : Vec 0) : encVec v = 0 := rfl
 
-theorem encVec_vcons {k : Nat} (a : Nat) (v : Vec k) :
+public theorem encVec_vcons {k : Nat} (a : Nat) (v : Vec k) :
     encVec (vcons a v) = consN a (encVec v) := by
   show consN (vcons a v 0) (encVec (vtail (vcons a v))) = consN a (encVec v)
   rw [vcons_zero, vtail_vcons]
 
-theorem headN_encVec {k : Nat} (v : Vec (k + 1)) : headN (encVec v) = v 0 := by
+public theorem headN_encVec {k : Nat} (v : Vec (k + 1)) : headN (encVec v) = v 0 := by
   show headN (consN (v 0) (encVec (vtail v))) = v 0
   rw [headN_consN]
 
-theorem tailN_encVec {k : Nat} (v : Vec (k + 1)) : tailN (encVec v) = encVec (vtail v) := by
+public theorem tailN_encVec {k : Nat} (v : Vec (k + 1)) : tailN (encVec v) = encVec (vtail v) := by
   show tailN (consN (v 0) (encVec (vtail v))) = encVec (vtail v)
   rw [tailN_consN]
 
-theorem nthN_encVec : ∀ {k : Nat} (v : Vec k) (i : Fin k), nthN i.val (encVec v) = v i := by
+public theorem nthN_encVec : ∀ {k : Nat} (v : Vec k) (i : Fin k), nthN i.val (encVec v) = v i := by
   intro k
   induction k with
   | zero => intro _ i; exact absurd i.isLt (Nat.not_lt_zero _)
@@ -120,7 +122,7 @@ theorem nthN_encVec : ∀ {k : Nat} (v : Vec k) (i : Fin k), nthN i.val (encVec 
       rw [nthN_succ_consN, ih (vtail v) ⟨j, Nat.lt_of_succ_lt_succ hi⟩]
       rfl
 
-theorem dropN_encVec_len : ∀ {k : Nat} (v : Vec k), dropN k (encVec v) = 0 := by
+public theorem dropN_encVec_len : ∀ {k : Nat} (v : Vec k), dropN k (encVec v) = 0 := by
   intro k
   induction k with
   | zero => intro _; rfl
@@ -130,7 +132,7 @@ theorem dropN_encVec_len : ∀ {k : Nat} (v : Vec k), dropN k (encVec v) = 0 := 
     rw [← vcons_head_tail v, encVec_vcons, ← dropN_tailN, tailN_consN]
     exact ih (vtail v)
 
-theorem dropN_encVec_ne : ∀ {k : Nat} (v : Vec k) (j : Nat), j < k →
+public theorem dropN_encVec_ne : ∀ {k : Nat} (v : Vec k) (j : Nat), j < k →
     dropN j (encVec v) ≠ 0 := by
   intro k
   induction k with
@@ -146,7 +148,7 @@ theorem dropN_encVec_ne : ∀ {k : Nat} (v : Vec k) (j : Nat), j < k →
 
 /-- A number-coded list with exactly `k` entries (nonempty at each stage below `k`,
     empty at `k`) IS the encoding of the vector of its entries. -/
-theorem encVec_of_checks : ∀ {k : Nat} (l : Nat), (∀ j, j < k → dropN j l ≠ 0) →
+public theorem encVec_of_checks : ∀ {k : Nat} (l : Nat), (∀ j, j < k → dropN j l ≠ 0) →
     dropN k l = 0 → encVec (fun i : Fin k => nthN i.val l) = l := by
   intro k
   induction k with
@@ -171,7 +173,7 @@ theorem encVec_of_checks : ∀ {k : Nat} (l : Nat), (∀ j, j < k → dropN j l 
 /-- Gödel number of a Kleene code.  Tags: 0 zero, 1 succ, 2 proj, 3 comp, 4 prec,
     5 mu.  `comp` records the middle arity `m` explicitly so the checker can
     recover it. -/
-noncomputable def encCode : {k : Nat} → RecCode k → Nat
+@[expose] public noncomputable def encCode : {k : Nat} → RecCode k → Nat
   | _, .zero => cp 0 0
   | _, .succ => cp 1 0
   | _, .proj i => cp 2 i.val
@@ -184,7 +186,7 @@ noncomputable def encCode : {k : Nat} → RecCode k → Nat
 
   All checking is done with 0/1-valued arithmetic built from `eqInd`. -/
 
-theorem eqInd_one_iff {a b : Nat} : eqInd a b = 1 ↔ a = b := by
+public theorem eqInd_one_iff {a b : Nat} : eqInd a b = 1 ↔ a = b := by
   constructor
   · intro h
     by_cases hab : a = b
@@ -199,13 +201,13 @@ theorem eqInd_zero_iff {a b : Nat} : eqInd a b = 0 ↔ a ≠ b := by
   · exact eqInd_ne
 
 /-- Strict-order indicator: `ltInd a b = 1` iff `a < b`, else 0. -/
-noncomputable def ltInd (a b : Nat) : Nat := eqInd (a + 1 - b) 0
+@[expose] public noncomputable def ltInd (a b : Nat) : Nat := eqInd (a + 1 - b) 0
 
-theorem ltInd_of_lt {a b : Nat} (h : a < b) : ltInd a b = 1 := eqInd_eq (by omega)
+public theorem ltInd_of_lt {a b : Nat} (h : a < b) : ltInd a b = 1 := eqInd_eq (by omega)
 
-theorem ltInd_of_ge {a b : Nat} (h : ¬ a < b) : ltInd a b = 0 := eqInd_ne (by omega)
+public theorem ltInd_of_ge {a b : Nat} (h : ¬ a < b) : ltInd a b = 0 := eqInd_ne (by omega)
 
-theorem ltInd_one_iff {a b : Nat} : ltInd a b = 1 ↔ a < b := by
+public theorem ltInd_one_iff {a b : Nat} : ltInd a b = 1 ↔ a < b := by
   constructor
   · intro h
     by_cases hab : a < b
@@ -214,19 +216,19 @@ theorem ltInd_one_iff {a b : Nat} : ltInd a b = 1 ↔ a < b := by
   · exact ltInd_of_lt
 
 /-- Disequality indicator. -/
-noncomputable def neInd (a b : Nat) : Nat := 1 - eqInd a b
+@[expose] public noncomputable def neInd (a b : Nat) : Nat := 1 - eqInd a b
 
-theorem neInd_of_ne {a b : Nat} (h : a ≠ b) : neInd a b = 1 := by
+public theorem neInd_of_ne {a b : Nat} (h : a ≠ b) : neInd a b = 1 := by
   rw [neInd, eqInd_ne h]
 
-theorem neInd_one_iff {a b : Nat} : neInd a b = 1 ↔ a ≠ b := by
+public theorem neInd_one_iff {a b : Nat} : neInd a b = 1 ↔ a ≠ b := by
   constructor
   · intro h hab
     rw [neInd, eqInd_eq hab] at h; omega
   · exact neInd_of_ne
 
 /-- In ℕ, a product is 1 exactly when both factors are. -/
-theorem mul_eq_one_iff {a b : Nat} : a * b = 1 ↔ a = 1 ∧ b = 1 := by
+public theorem mul_eq_one_iff {a b : Nat} : a * b = 1 ↔ a = 1 ∧ b = 1 := by
   constructor
   · intro h
     match a, b with
@@ -242,11 +244,11 @@ theorem mul_eq_one_iff {a b : Nat} : a * b = 1 ↔ a = 1 ∧ b = 1 := by
   · rintro ⟨ha, hb⟩; rw [ha, hb]
 
 /-- Bounded conjunction: product of `F 0 * ⋯ * F (m-1)`. -/
-def bAllN (F : Nat → Nat) : Nat → Nat
+@[expose] public def bAllN (F : Nat → Nat) : Nat → Nat
   | 0 => 1
   | m + 1 => bAllN F m * F m
 
-theorem bAllN_eq_one {F : Nat → Nat} : ∀ {m : Nat}, (∀ j, j < m → F j = 1) →
+public theorem bAllN_eq_one {F : Nat → Nat} : ∀ {m : Nat}, (∀ j, j < m → F j = 1) →
     bAllN F m = 1 := by
   intro m
   induction m with
@@ -257,7 +259,7 @@ theorem bAllN_eq_one {F : Nat → Nat} : ∀ {m : Nat}, (∀ j, j < m → F j = 
     rw [ih (fun j hj => h j (Nat.lt_succ_of_lt hj)), h m (Nat.lt_succ_self m),
       Nat.mul_one]
 
-theorem of_bAllN_eq_one {F : Nat → Nat} : ∀ {m : Nat}, bAllN F m = 1 →
+public theorem of_bAllN_eq_one {F : Nat → Nat} : ∀ {m : Nat}, bAllN F m = 1 →
     ∀ j, j < m → F j = 1 := by
   intro m
   induction m with
@@ -291,33 +293,33 @@ theorem bAllN_congr {F G : Nat → Nat} : ∀ {m : Nat}, (∀ j, j < m → F j =
   checked prefixes under appending new nodes. -/
 
 /-- Node constructor: claimed code, input list, output, child pointers. -/
-noncomputable def mkNode (c ins y kids : Nat) : Nat := cp c (cp ins (cp y kids))
+@[expose] public noncomputable def mkNode (c ins y kids : Nat) : Nat := cp c (cp ins (cp y kids))
 
 /-- Claimed code of a node. -/
-noncomputable def codeOf (nd : Nat) : Nat := cfst nd
+@[expose] public noncomputable def codeOf (nd : Nat) : Nat := cfst nd
 /-- Claimed input list of a node. -/
-noncomputable def insOf (nd : Nat) : Nat := cfst (csnd nd)
+@[expose] public noncomputable def insOf (nd : Nat) : Nat := cfst (csnd nd)
 /-- Claimed output of a node. -/
-noncomputable def outOf (nd : Nat) : Nat := cfst (csnd (csnd nd))
+@[expose] public noncomputable def outOf (nd : Nat) : Nat := cfst (csnd (csnd nd))
 /-- Child pointers of a node. -/
-noncomputable def kidsOf (nd : Nat) : Nat := csnd (csnd (csnd nd))
+@[expose] public noncomputable def kidsOf (nd : Nat) : Nat := csnd (csnd (csnd nd))
 
-@[simp] theorem codeOf_mkNode (c ins y kids : Nat) : codeOf (mkNode c ins y kids) = c := by
+@[simp] public theorem codeOf_mkNode (c ins y kids : Nat) : codeOf (mkNode c ins y kids) = c := by
   simp [codeOf, mkNode, cfst_cp]
-@[simp] theorem insOf_mkNode (c ins y kids : Nat) : insOf (mkNode c ins y kids) = ins := by
+@[simp] public theorem insOf_mkNode (c ins y kids : Nat) : insOf (mkNode c ins y kids) = ins := by
   simp [insOf, mkNode, cfst_cp, csnd_cp]
-@[simp] theorem outOf_mkNode (c ins y kids : Nat) : outOf (mkNode c ins y kids) = y := by
+@[simp] public theorem outOf_mkNode (c ins y kids : Nat) : outOf (mkNode c ins y kids) = y := by
   simp [outOf, mkNode, cfst_cp, csnd_cp]
-@[simp] theorem kidsOf_mkNode (c ins y kids : Nat) : kidsOf (mkNode c ins y kids) = kids := by
+@[simp] public theorem kidsOf_mkNode (c ins y kids : Nat) : kidsOf (mkNode c ins y kids) = kids := by
   simp [kidsOf, mkNode, csnd_cp]
 
 /-- Guarded node read: node `idx` of `W`, or 0 unless `idx < i`. -/
-noncomputable def rdN (i idx W : Nat) : Nat := ltInd idx i * nthN idx W
+@[expose] public noncomputable def rdN (i idx W : Nat) : Nat := ltInd idx i * nthN idx W
 
-theorem rdN_of_lt {i idx : Nat} (h : idx < i) (W : Nat) : rdN i idx W = nthN idx W := by
+public theorem rdN_of_lt {i idx : Nat} (h : idx < i) (W : Nat) : rdN i idx W = nthN idx W := by
   rw [rdN, ltInd_of_lt h, Nat.one_mul]
 
-theorem rdN_congr {i W W' : Nat} (h : ∀ idx, idx < i → nthN idx W = nthN idx W')
+public theorem rdN_congr {i W W' : Nat} (h : ∀ idx, idx < i → nthN idx W = nthN idx W')
     (idx : Nat) : rdN i idx W = rdN i idx W' := by
   by_cases hlt : idx < i
   · rw [rdN, rdN, h idx hlt]
@@ -327,15 +329,15 @@ theorem rdN_congr {i W W' : Nat} (h : ∀ idx, idx < i → nthN idx W = nthN idx
     are specification-level functions, never run.) -/
 
 /-- Constructor tag of node `i`'s claimed code. -/
-noncomputable def tagAt (i W : Nat) : Nat := cfst (codeOf (nthN i W))
+@[expose] public noncomputable def tagAt (i W : Nat) : Nat := cfst (codeOf (nthN i W))
 /-- Payload of node `i`'s claimed code. -/
-noncomputable def plAt (i W : Nat) : Nat := csnd (codeOf (nthN i W))
+@[expose] public noncomputable def plAt (i W : Nat) : Nat := csnd (codeOf (nthN i W))
 /-- Input list of node `i`. -/
-noncomputable def insAt (i W : Nat) : Nat := insOf (nthN i W)
+@[expose] public noncomputable def insAt (i W : Nat) : Nat := insOf (nthN i W)
 /-- Output of node `i`. -/
-noncomputable def outAt (i W : Nat) : Nat := outOf (nthN i W)
+@[expose] public noncomputable def outAt (i W : Nat) : Nat := outOf (nthN i W)
 /-- Child pointers of node `i`. -/
-noncomputable def kidsAt (i W : Nat) : Nat := kidsOf (nthN i W)
+@[expose] public noncomputable def kidsAt (i W : Nat) : Nat := kidsOf (nthN i W)
 
 /-! ### `comp` nodes — tag 3
 
@@ -344,22 +346,22 @@ noncomputable def kidsAt (i W : Nat) : Nat := kidsOf (nthN i W)
   the list of gs-outputs, giving this node's output. -/
 
 /-- Middle arity of a comp node. -/
-noncomputable def cmpM (i W : Nat) : Nat := cfst (plAt i W)
+@[expose] public noncomputable def cmpM (i W : Nat) : Nat := cfst (plAt i W)
 /-- Outer code of a comp node. -/
-noncomputable def cmpF (i W : Nat) : Nat := cfst (csnd (plAt i W))
+@[expose] public noncomputable def cmpF (i W : Nat) : Nat := cfst (csnd (plAt i W))
 /-- List of inner codes of a comp node. -/
-noncomputable def cmpGs (i W : Nat) : Nat := csnd (csnd (plAt i W))
+@[expose] public noncomputable def cmpGs (i W : Nat) : Nat := csnd (csnd (plAt i W))
 /-- Pointer to the f-child. -/
-noncomputable def cmpFIdx (i W : Nat) : Nat := cfst (kidsAt i W)
+@[expose] public noncomputable def cmpFIdx (i W : Nat) : Nat := cfst (kidsAt i W)
 /-- Pointers to the gs-children. -/
-noncomputable def cmpGIdx (i W : Nat) : Nat := csnd (kidsAt i W)
+@[expose] public noncomputable def cmpGIdx (i W : Nat) : Nat := csnd (kidsAt i W)
 /-- The f-child node (guarded read). -/
-noncomputable def cmpFnd (i W : Nat) : Nat := rdN i (cmpFIdx i W) W
+@[expose] public noncomputable def cmpFnd (i W : Nat) : Nat := rdN i (cmpFIdx i W) W
 /-- The f-child's input list (= the claimed middle values). -/
-noncomputable def cmpFIns (i W : Nat) : Nat := insOf (cmpFnd i W)
+@[expose] public noncomputable def cmpFIns (i W : Nat) : Nat := insOf (cmpFnd i W)
 
 /-- Check of the `j`-th gs-child of a comp node. -/
-noncomputable def gOK (j i W : Nat) : Nat :=
+@[expose] public noncomputable def gOK (j i W : Nat) : Nat :=
   ltInd (nthN j (cmpGIdx i W)) i
   * eqInd (codeOf (rdN i (nthN j (cmpGIdx i W)) W)) (nthN j (cmpGs i W))
   * eqInd (insOf (rdN i (nthN j (cmpGIdx i W)) W)) (insAt i W)
@@ -367,7 +369,7 @@ noncomputable def gOK (j i W : Nat) : Nat :=
   * neInd (dropN j (cmpFIns i W)) 0
 
 /-- Local check of a comp node. -/
-noncomputable def compOK (i W : Nat) : Nat :=
+@[expose] public noncomputable def compOK (i W : Nat) : Nat :=
   ltInd (cmpFIdx i W) i
   * eqInd (codeOf (cmpFnd i W)) (cmpF i W)
   * eqInd (outOf (cmpFnd i W)) (outAt i W)
@@ -382,12 +384,12 @@ noncomputable def compOK (i W : Nat) : Nat :=
   `n :: rA :: tail` (child B). -/
 
 /-- Base child node of a prec node. -/
-noncomputable def prNd0 (i W : Nat) : Nat := rdN i (cfst (kidsAt i W)) W
+@[expose] public noncomputable def prNd0 (i W : Nat) : Nat := rdN i (cfst (kidsAt i W)) W
 /-- Step child B (the h-evaluation). -/
-noncomputable def prNdB (i W : Nat) : Nat := rdN i (csnd (kidsAt i W)) W
+@[expose] public noncomputable def prNdB (i W : Nat) : Nat := rdN i (csnd (kidsAt i W)) W
 
 /-- Local check of a prec node. -/
-noncomputable def precOK (i W : Nat) : Nat :=
+@[expose] public noncomputable def precOK (i W : Nat) : Nat :=
   eqInd (headN (insAt i W)) 0 *
     (ltInd (cfst (kidsAt i W)) i
      * eqInd (codeOf (prNd0 i W)) (cfst (plAt i W))
@@ -409,17 +411,17 @@ noncomputable def precOK (i W : Nat) : Nat :=
   child `t` evaluates `f` on `t :: ins`, nonzero for `t < y`, zero at `t = y`. -/
 
 /-- The `t`-th child of a mu node. -/
-noncomputable def muNd (t i W : Nat) : Nat := rdN i (nthN t (kidsAt i W)) W
+@[expose] public noncomputable def muNd (t i W : Nat) : Nat := rdN i (nthN t (kidsAt i W)) W
 
 /-- Check of the `t`-th (strict, nonzero-output) child of a mu node. -/
-noncomputable def muStepOK (t i W : Nat) : Nat :=
+@[expose] public noncomputable def muStepOK (t i W : Nat) : Nat :=
   ltInd (nthN t (kidsAt i W)) i
   * eqInd (codeOf (muNd t i W)) (plAt i W)
   * eqInd (insOf (muNd t i W)) (consN t (insAt i W))
   * neInd (outOf (muNd t i W)) 0
 
 /-- Local check of a mu node. -/
-noncomputable def muOK (i W : Nat) : Nat :=
+@[expose] public noncomputable def muOK (i W : Nat) : Nat :=
   bAllN (fun t => muStepOK t i W) (outAt i W)
   * (ltInd (nthN (outAt i W) (kidsAt i W)) i
      * eqInd (codeOf (muNd (outAt i W) i W)) (plAt i W)
@@ -429,7 +431,7 @@ noncomputable def muOK (i W : Nat) : Nat :=
 /-- THE LOCAL CHECKER: node `i` of witness list `W` makes a locally valid claim.
     Exactly one tag indicator fires, so `nodeOK i W = 1` iff the branch for the
     claimed code's constructor checks out. -/
-noncomputable def nodeOK (i W : Nat) : Nat :=
+@[expose] public noncomputable def nodeOK (i W : Nat) : Nat :=
   eqInd (tagAt i W) 0 * eqInd (outAt i W) 0
   + eqInd (tagAt i W) 1 * eqInd (outAt i W) (headN (insAt i W) + 1)
   + eqInd (tagAt i W) 2 * eqInd (outAt i W) (nthN (plAt i W) (insAt i W))
@@ -445,7 +447,7 @@ noncomputable def nodeOK (i W : Nat) : Nat :=
 section Branches
 
 /-- Collapse the six-branch guarded sum to the branch selected by the tag. -/
-theorem sum6_0 {t : Nat} (ht : t = 0) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_0 {t : Nat} (ht : t = 0) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B0 := by
   subst ht
@@ -454,7 +456,7 @@ theorem sum6_0 {t : Nat} (ht : t = 0) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd_ne (by omega : (0:Nat) ≠ 5)]
   omega
 
-theorem sum6_1 {t : Nat} (ht : t = 1) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_1 {t : Nat} (ht : t = 1) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B1 := by
   subst ht
@@ -463,7 +465,7 @@ theorem sum6_1 {t : Nat} (ht : t = 1) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd_ne (by omega : (1:Nat) ≠ 5)]
   omega
 
-theorem sum6_2 {t : Nat} (ht : t = 2) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_2 {t : Nat} (ht : t = 2) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B2 := by
   subst ht
@@ -472,7 +474,7 @@ theorem sum6_2 {t : Nat} (ht : t = 2) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd_ne (by omega : (2:Nat) ≠ 5)]
   omega
 
-theorem sum6_3 {t : Nat} (ht : t = 3) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_3 {t : Nat} (ht : t = 3) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B3 := by
   subst ht
@@ -481,7 +483,7 @@ theorem sum6_3 {t : Nat} (ht : t = 3) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd_ne (by omega : (3:Nat) ≠ 5)]
   omega
 
-theorem sum6_4 {t : Nat} (ht : t = 4) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_4 {t : Nat} (ht : t = 4) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B4 := by
   subst ht
@@ -490,7 +492,7 @@ theorem sum6_4 {t : Nat} (ht : t = 4) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd_ne (by omega : (4:Nat) ≠ 5)]
   omega
 
-theorem sum6_5 {t : Nat} (ht : t = 5) (B0 B1 B2 B3 B4 B5 : Nat) :
+public theorem sum6_5 {t : Nat} (ht : t = 5) (B0 B1 B2 B3 B4 B5 : Nat) :
     eqInd t 0 * B0 + eqInd t 1 * B1 + eqInd t 2 * B2 + eqInd t 3 * B3
       + eqInd t 4 * B4 + eqInd t 5 * B5 = B5 := by
   subst ht
@@ -501,66 +503,66 @@ theorem sum6_5 {t : Nat} (ht : t = 5) (B0 B1 B2 B3 B4 B5 : Nat) :
 
 variable {i W : Nat}
 
-theorem zeroOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 0) :
+public theorem zeroOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 0) :
     outAt i W = 0 := by
   unfold nodeOK at h
   rw [sum6_0 ht] at h
   exact eqInd_one_iff.mp h
 
-theorem succOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 1) :
+public theorem succOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 1) :
     outAt i W = headN (insAt i W) + 1 := by
   unfold nodeOK at h
   rw [sum6_1 ht] at h
   exact eqInd_one_iff.mp h
 
-theorem projOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 2) :
+public theorem projOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 2) :
     outAt i W = nthN (plAt i W) (insAt i W) := by
   unfold nodeOK at h
   rw [sum6_2 ht] at h
   exact eqInd_one_iff.mp h
 
-theorem compOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 3) :
+public theorem compOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 3) :
     compOK i W = 1 := by
   unfold nodeOK at h
   rwa [sum6_3 ht] at h
 
-theorem precOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 4) :
+public theorem precOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 4) :
     precOK i W = 1 := by
   unfold nodeOK at h
   rwa [sum6_4 ht] at h
 
-theorem muOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 5) :
+public theorem muOK_of_nodeOK (h : nodeOK i W = 1) (ht : tagAt i W = 5) :
     muOK i W = 1 := by
   unfold nodeOK at h
   rwa [sum6_5 ht] at h
 
-theorem nodeOK_of_tag0 (ht : tagAt i W = 0) (hy : outAt i W = 0) : nodeOK i W = 1 := by
+public theorem nodeOK_of_tag0 (ht : tagAt i W = 0) (hy : outAt i W = 0) : nodeOK i W = 1 := by
   unfold nodeOK; rw [sum6_0 ht]; exact eqInd_eq hy
 
-theorem nodeOK_of_tag1 (ht : tagAt i W = 1) (hy : outAt i W = headN (insAt i W) + 1) :
+public theorem nodeOK_of_tag1 (ht : tagAt i W = 1) (hy : outAt i W = headN (insAt i W) + 1) :
     nodeOK i W = 1 := by
   unfold nodeOK; rw [sum6_1 ht]; exact eqInd_eq hy
 
-theorem nodeOK_of_tag2 (ht : tagAt i W = 2) (hy : outAt i W = nthN (plAt i W) (insAt i W)) :
+public theorem nodeOK_of_tag2 (ht : tagAt i W = 2) (hy : outAt i W = nthN (plAt i W) (insAt i W)) :
     nodeOK i W = 1 := by
   unfold nodeOK; rw [sum6_2 ht]; exact eqInd_eq hy
 
-theorem nodeOK_of_tag3 (ht : tagAt i W = 3) (hb : compOK i W = 1) : nodeOK i W = 1 := by
+public theorem nodeOK_of_tag3 (ht : tagAt i W = 3) (hb : compOK i W = 1) : nodeOK i W = 1 := by
   unfold nodeOK; rwa [sum6_3 ht]
 
-theorem nodeOK_of_tag4 (ht : tagAt i W = 4) (hb : precOK i W = 1) : nodeOK i W = 1 := by
+public theorem nodeOK_of_tag4 (ht : tagAt i W = 4) (hb : precOK i W = 1) : nodeOK i W = 1 := by
   unfold nodeOK; rwa [sum6_4 ht]
 
-theorem nodeOK_of_tag5 (ht : tagAt i W = 5) (hb : muOK i W = 1) : nodeOK i W = 1 := by
+public theorem nodeOK_of_tag5 (ht : tagAt i W = 5) (hb : muOK i W = 1) : nodeOK i W = 1 := by
   unfold nodeOK; rwa [sum6_5 ht]
 
 /-- Collapse the two-branch base/step sum of `precOK` (base selected). -/
-theorem guard2_zero {n base step : Nat} (hn : n = 0) :
+public theorem guard2_zero {n base step : Nat} (hn : n = 0) :
     eqInd n 0 * base + neInd n 0 * step = base := by
   subst hn; rw [eqInd_eq rfl, neInd, eqInd_eq rfl]; omega
 
 /-- Collapse the two-branch base/step sum of `precOK` (step selected). -/
-theorem guard2_succ {n base step : Nat} (hn : n ≠ 0) :
+public theorem guard2_succ {n base step : Nat} (hn : n ≠ 0) :
     eqInd n 0 * base + neInd n 0 * step = step := by
   rw [eqInd_ne hn, neInd, eqInd_ne hn]; omega
 
@@ -569,17 +571,17 @@ end Branches
 /-! Equation lemmas for `encCode` (the nested recursion may compile
     non-definitionally, so we register them explicitly). -/
 
-@[simp] theorem encCode_zero {k : Nat} : encCode (.zero : RecCode k) = cp 0 0 := by
+@[simp] public theorem encCode_zero {k : Nat} : encCode (.zero : RecCode k) = cp 0 0 := by
   simp [encCode]
-@[simp] theorem encCode_succ : encCode .succ = cp 1 0 := by simp [encCode]
-@[simp] theorem encCode_proj {k : Nat} (i : Fin k) : encCode (.proj i) = cp 2 i.val := by
+@[simp] public theorem encCode_succ : encCode .succ = cp 1 0 := by simp [encCode]
+@[simp] public theorem encCode_proj {k : Nat} (i : Fin k) : encCode (.proj i) = cp 2 i.val := by
   simp [encCode]
-@[simp] theorem encCode_comp {k m : Nat} (f : RecCode m) (gs : Fin m → RecCode k) :
+@[simp] public theorem encCode_comp {k m : Nat} (f : RecCode m) (gs : Fin m → RecCode k) :
     encCode (.comp f gs) = cp 3 (cp m (cp (encCode f) (encVec fun j => encCode (gs j)))) := by
   simp [encCode]
-@[simp] theorem encCode_prec {k : Nat} (g : RecCode k) (h : RecCode (k + 2)) :
+@[simp] public theorem encCode_prec {k : Nat} (g : RecCode k) (h : RecCode (k + 2)) :
     encCode (.prec g h) = cp 4 (cp (encCode g) (encCode h)) := by simp [encCode]
-@[simp] theorem encCode_mu {k : Nat} (f : RecCode (k + 1)) :
+@[simp] public theorem encCode_mu {k : Nat} (f : RecCode (k + 1)) :
     encCode (.mu f) = cp 5 (encCode f) := by simp [encCode]
 
 /-! ## Stage 1e: SOUNDNESS — an accepted claim really evaluates
@@ -588,7 +590,7 @@ end Branches
   bound `B`): every locally valid node whose claimed code and input list are the
   encodings of a REAL code and input vector correctly claims a value of `Eval`. -/
 
-theorem checkSound : ∀ (B W : Nat), (∀ j, j < B → nodeOK j W = 1) →
+public theorem checkSound : ∀ (B W : Nat), (∀ j, j < B → nodeOK j W = 1) →
     ∀ i, i < B → ∀ {k : Nat} (c : RecCode k) (v : Vec k),
       codeOf (nthN i W) = encCode c → insOf (nthN i W) = encVec v →
       Eval c v (outOf (nthN i W)) := by
@@ -825,11 +827,11 @@ theorem checkSound : ∀ (B W : Nat), (∀ j, j < B → nodeOK j W = 1) →
   when the list grows — `nodeOK_congr` below is the only stability fact needed. -/
 
 /-- Encode a `List Nat` as a number-coded list. -/
-noncomputable def encListN : List Nat → Nat
+@[expose] public noncomputable def encListN : List Nat → Nat
   | [] => 0
   | a :: L => consN a (encListN L)
 
-theorem nthN_encListN_prefix : ∀ (L : List Nat) (L' : List Nat) (j : Nat), j < L.length →
+public theorem nthN_encListN_prefix : ∀ (L : List Nat) (L' : List Nat) (j : Nat), j < L.length →
     nthN j (encListN (L ++ L')) = nthN j (encListN L) := by
   intro L
   induction L with
@@ -845,7 +847,7 @@ theorem nthN_encListN_prefix : ∀ (L : List Nat) (L' : List Nat) (j : Nat), j <
       rw [nthN_succ_consN, nthN_succ_consN]
       exact ih L' j (Nat.lt_of_succ_lt_succ hj)
 
-theorem nthN_encListN_at : ∀ (L : List Nat) (nd : Nat) (L' : List Nat),
+public theorem nthN_encListN_at : ∀ (L : List Nat) (nd : Nat) (L' : List Nat),
     nthN L.length (encListN (L ++ nd :: L')) = nd := by
   intro L
   induction L with
@@ -859,7 +861,7 @@ theorem nthN_encListN_at : ∀ (L : List Nat) (nd : Nat) (L' : List Nat),
 /-- STABILITY: `nodeOK i` only reads the witness at indices `≤ i` (its own node
     directly, children through the guarded `rdN`), so it is invariant under any
     change beyond `i`. -/
-theorem nodeOK_congr {i W W' : Nat} (hle : ∀ idx, idx ≤ i → nthN idx W = nthN idx W') :
+public theorem nodeOK_congr {i W W' : Nat} (hle : ∀ idx, idx ≤ i → nthN idx W = nthN idx W') :
     nodeOK i W = nodeOK i W' := by
   have hown : nthN i W = nthN i W' := hle i (Nat.le_refl i)
   have hrd : ∀ idx, rdN i idx W = rdN i idx W' :=
@@ -872,13 +874,13 @@ theorem nodeOK_congr {i W W' : Nat} (hle : ∀ idx, idx ≤ i → nthN idx W = n
   simp only [hown, hrd, hfnd]
 
 /-- All nodes of a witness list check out. -/
-def allValidL (L : List Nat) : Prop := ∀ j, j < L.length → nodeOK j (encListN L) = 1
+@[expose] public def allValidL (L : List Nat) : Prop := ∀ j, j < L.length → nodeOK j (encListN L) = 1
 
-theorem allValidL_nil : allValidL [] := fun _ hj => absurd hj (Nat.not_lt_zero _)
+public theorem allValidL_nil : allValidL [] := fun _ hj => absurd hj (Nat.not_lt_zero _)
 
 /-- Append one node to a valid list: old nodes stay valid by stability, so only the
     new node needs a check. -/
-theorem appendNode {M : List Nat} (nd : Nat) (hM : allValidL M)
+public theorem appendNode {M : List Nat} (nd : Nat) (hM : allValidL M)
     (hnew : nodeOK M.length (encListN (M ++ [nd])) = 1) :
     allValidL (M ++ [nd]) ∧ M.length < (M ++ [nd]).length ∧
       nthN M.length (encListN (M ++ [nd])) = nd := by
@@ -896,7 +898,7 @@ theorem appendNode {M : List Nat} (nd : Nat) (hM : allValidL M)
 
 /-- The builder property: a claim triple (code number, input list, output) can be
     installed — with a full sub-derivation — on top of any valid witness list. -/
-def Builds (cnum insnum outnum : Nat) : Prop :=
+@[expose] public def Builds (cnum insnum outnum : Nat) : Prop :=
   ∀ L : List Nat, allValidL L → ∃ L' : List Nat, allValidL (L ++ L') ∧
     ∃ idx, idx < (L ++ L').length ∧
       codeOf (nthN idx (encListN (L ++ L'))) = cnum ∧
@@ -905,7 +907,7 @@ def Builds (cnum insnum outnum : Nat) : Prop :=
 
 /-- Build a whole finite family of claims (used for the `comp` children and the
     `mu` search column). -/
-theorem buildsFamily {m : Nat} (T : Fin m → Nat × Nat × Nat)
+public theorem buildsFamily {m : Nat} (T : Fin m → Nat × Nat × Nat)
     (hT : ∀ j, Builds (T j).1 (T j).2.1 (T j).2.2) :
     ∀ L, allValidL L → ∃ L', allValidL (L ++ L') ∧
       ∃ idx : Fin m → Nat, ∀ j, idx j < (L ++ L').length ∧
@@ -946,7 +948,7 @@ theorem buildsFamily {m : Nat} (T : Fin m → Nat × Nat × Nat)
     of `checkComplete`. -/
 
 /-- A comp node checks out. -/
-theorem nodeOK_comp_build {i W m fidx y' insN fcode gcodes gidxs wN : Nat}
+public theorem nodeOK_comp_build {i W m fidx y' insN fcode gcodes gidxs wN : Nat}
     (hcode : codeOf (nthN i W) = cp 3 (cp m (cp fcode gcodes)))
     (hins : insOf (nthN i W) = insN)
     (hout : outOf (nthN i W) = y')
@@ -987,7 +989,7 @@ theorem nodeOK_comp_build {i W m fidx y' insN fcode gcodes gidxs wN : Nat}
     eqInd_eq rfl, eqInd_eq rfl, eqInd_eq rfl, bAllN_eq_one hgOK]
 
 /-- A prec node with recursion argument 0 checks out. -/
-theorem nodeOK_prec_base {i W gcode hcode' insN y' idx0 kB : Nat}
+public theorem nodeOK_prec_base {i W gcode hcode' insN y' idx0 kB : Nat}
     (hcode : codeOf (nthN i W) = cp 4 (cp gcode hcode'))
     (hins : insOf (nthN i W) = insN)
     (hhd : headN insN = 0)
@@ -1010,7 +1012,7 @@ theorem nodeOK_prec_base {i W gcode hcode' insN y' idx0 kB : Nat}
     houtAt, ltInd_of_lt hidx, eqInd_eq rfl, eqInd_eq rfl, eqInd_eq rfl]
 
 /-- A prec node with positive recursion argument checks out. -/
-theorem nodeOK_prec_step {i W gcode hcode' insN n y' rA iA iB : Nat}
+public theorem nodeOK_prec_step {i W gcode hcode' insN n y' rA iA iB : Nat}
     (hcode : codeOf (nthN i W) = cp 4 (cp gcode hcode'))
     (hins : insOf (nthN i W) = insN)
     (hhd : headN insN = n + 1)
@@ -1042,7 +1044,7 @@ theorem nodeOK_prec_step {i W gcode hcode' insN n y' rA iA iB : Nat}
     eqInd_eq rfl, eqInd_eq rfl]
 
 /-- A mu node checks out. -/
-theorem nodeOK_mu_build {i W fcode insN y kidsN : Nat}
+public theorem nodeOK_mu_build {i W fcode insN y kidsN : Nat}
     (hcode : codeOf (nthN i W) = cp 5 fcode)
     (hins : insOf (nthN i W) = insN)
     (hout : outOf (nthN i W) = y)
@@ -1076,7 +1078,7 @@ theorem nodeOK_mu_build {i W fcode insN y kidsN : Nat}
 
 /-- COMPLETENESS: every `Eval`-derivation yields an accepted witness for its
     encoded claim, on top of any valid prefix. -/
-theorem checkComplete : ∀ {k : Nat} {c : RecCode k} {v : Vec k} {y : Nat},
+public theorem checkComplete : ∀ {k : Nat} {c : RecCode k} {v : Vec k} {y : Nat},
     Eval c v y → Builds (encCode c) (encVec v) y := by
   intro k c v y h
   induction h with
@@ -1325,23 +1327,23 @@ theorem checkComplete : ∀ {k : Nat} {c : RecCode k} {v : Vec k} {y : Nat},
   is the Σ₁ set searched over `wit`. -/
 
 /-- Universal accept predicate: `er = cp e r` packs the code number `e` and input `r`. -/
-noncomputable def acceptOn (er wit : Nat) : Nat :=
+@[expose] public noncomputable def acceptOn (er wit : Nat) : Nat :=
   bAllN (fun j => nodeOK j (cfst wit)) (csnd wit + 1)
   * eqInd (codeOf (nthN (csnd wit) (cfst wit))) (cfst er)
   * eqInd (insOf (nthN (csnd wit) (cfst wit))) (consN (csnd er) 0)
 /-- The claimed output of an accepting witness (depends only on `wit`). -/
-noncomputable def uOut (_er wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
+@[expose] public noncomputable def uOut (_er wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
 
 /-- The output extractor as a UNARY recursive function of `wit` alone. -/
-noncomputable def uOutW (wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
+@[expose] public noncomputable def uOutW (wit : Nat) : Nat := outOf (nthN (csnd wit) (cfst wit))
 
-theorem uOut_eq (er wit : Nat) : uOut er wit = uOutW wit := rfl
+public theorem uOut_eq (er wit : Nat) : uOut er wit = uOutW wit := rfl
 
-theorem encVec_one (e : Nat) : encVec (fun _ : Fin 1 => e) = consN e 0 := rfl
+public theorem encVec_one (e : Nat) : encVec (fun _ : Fin 1 => e) = consN e 0 := rfl
 
 /-- SOUNDNESS: an accepted witness for a REAL unary code `c` numbered `cfst er`
     certifies a real evaluation of `c` on input `[csnd er]`, with value `uOut er wit`. -/
-theorem acceptOn_sound {er wit : Nat} (h : acceptOn er wit = 1)
+public theorem acceptOn_sound {er wit : Nat} (h : acceptOn er wit = 1)
     {c : RecCode 1} (hc : cfst er = encCode c) :
     Eval c (fun _ => csnd er) (uOut er wit) := by
   unfold acceptOn at h
@@ -1357,7 +1359,7 @@ theorem acceptOn_sound {er wit : Nat} (h : acceptOn er wit = 1)
 
 /-- COMPLETENESS: a real evaluation `Eval c [r] y` is certified by some witness for
     the packed input `cp (encCode c) r`, with claimed output exactly `y`. -/
-theorem acceptOn_complete {c : RecCode 1} {r y : Nat} (h : Eval c (fun _ => r) y) :
+public theorem acceptOn_complete {c : RecCode 1} {r y : Nat} (h : Eval c (fun _ => r) y) :
     ∃ wit, acceptOn (cp (encCode c) r) wit = 1 ∧ uOut (cp (encCode c) r) wit = y := by
   obtain ⟨L', hval, i, hlen, hcode, hins, hout⟩ := checkComplete h [] allValidL_nil
   rw [List.nil_append] at hval hlen hcode hins hout
@@ -1369,18 +1371,18 @@ theorem acceptOn_complete {c : RecCode 1} {r y : Nat} (h : Eval c (fun _ => r) y
   · unfold uOut
     rw [cfst_cp, csnd_cp, hout]
 /-- The accept predicate (0/1-valued arithmetic in `(e, wit)`). -/
-noncomputable def acceptN (e wit : Nat) : Nat :=
+@[expose] public noncomputable def acceptN (e wit : Nat) : Nat :=
   acceptOn (cp e e) wit
 
 /-- The diagonal halting checker is the universal checker run on `(e,e)`. -/
-theorem acceptN_eq_acceptOn (e wit : Nat) : acceptN e wit = acceptOn (cp e e) wit := rfl
+public theorem acceptN_eq_acceptOn (e wit : Nat) : acceptN e wit = acceptOn (cp e e) wit := rfl
 
 /-- The halting set: some witness certifies that code number `e` halts on `e`. -/
-def Kc (e : Nat) : Prop := ∃ wit, acceptN e wit = 1
+@[expose] public def Kc (e : Nat) : Prop := ∃ wit, acceptN e wit = 1
 
 /-- Accepted witnesses are sound: if `Kc e` and `c` is a real unary code numbered
     `e`, then `c` really halts on input `e`. -/
-theorem Kc_sound {e : Nat} (h : Kc e) (c : RecCode 1) (hc : encCode c = e) :
+public theorem Kc_sound {e : Nat} (h : Kc e) (c : RecCode 1) (hc : encCode c = e) :
     ∃ y, Eval c (fun _ => e) y := by
   obtain ⟨wit, hwit⟩ := h
   refine ⟨uOut (cp e e) wit, ?_⟩
@@ -1391,7 +1393,7 @@ theorem Kc_sound {e : Nat} (h : Kc e) (c : RecCode 1) (hc : encCode c = e) :
 
 /-- Halting is certified: if the unary code `c` halts on its own code number, its
     code number is in `Kc`. -/
-theorem Kc_complete {c : RecCode 1} {y : Nat} (h : Eval c (fun _ => encCode c) y) :
+public theorem Kc_complete {c : RecCode 1} {y : Nat} (h : Eval c (fun _ => encCode c) y) :
     Kc (encCode c) := by
   obtain ⟨wit, hAccept, _⟩ := acceptOn_complete h
   exact ⟨wit, by rwa [acceptN_eq_acceptOn]⟩
@@ -1404,7 +1406,7 @@ theorem Kc_complete {c : RecCode 1} {y : Nat} (h : Eval c (fun _ => encCode c) y
   number `e₀ = encCode d` gives `Kc e₀ ↔ ¬ Kc e₀`.  Uses only `Eval.det`, the
   `mu` constructor, and Stage 1's `Kc_sound`/`Kc_complete`. -/
 
-theorem K_not_recursive : ¬ ∃ χ : Nat → Nat, Recursive1 χ ∧ ∀ e, (Kc e ↔ χ e = 1) := by
+public theorem K_not_recursive : ¬ ∃ χ : Nat → Nat, Recursive1 χ ∧ ∀ e, (Kc e ↔ χ e = 1) := by
   rintro ⟨χ, hχrec, hχ⟩
   -- normalize the characteristic function to be 0/1-valued
   have hχ₂rec : Recursive1 fun e => eqInd (χ e) 1 :=
@@ -1450,12 +1452,12 @@ theorem K_not_recursive : ¬ ∃ χ : Nat → Nat, Recursive1 χ ∧ ∀ e, (Kc 
   and the bounded product `bAllN`. -/
 
 /-- Primitive recursion with parameters (the semantics of the `prec` code). -/
-def precNat {k : Nat} (g : Vec k → Nat) (h : Vec (k + 2) → Nat) : Nat → Vec k → Nat
+@[expose] public def precNat {k : Nat} (g : Vec k → Nat) (h : Vec (k + 2) → Nat) : Nat → Vec k → Nat
   | 0, w => g w
   | n + 1, w => h (vcons n (vcons (precNat g h n w) w))
 
 /-- Closure under primitive recursion with parameters. -/
-theorem RecursiveV.precNat {k : Nat} {g : Vec k → Nat} {h : Vec (k + 2) → Nat}
+public theorem RecursiveV.precNat {k : Nat} {g : Vec k → Nat} {h : Vec (k + 2) → Nat}
     (hg : RecursiveV g) (hh : RecursiveV h) :
     RecursiveV fun v : Vec (k + 1) => precNat g h (v 0) (vtail v) := by
   obtain ⟨cg, hcg⟩ := hg
@@ -1471,19 +1473,19 @@ theorem RecursiveV.precNat {k : Nat} {g : Vec k → Nat} {h : Vec (k + 2) → Na
   have := key (v 0) (vtail v)
   rwa [vcons_head_tail v] at this
 
-theorem Recursive2.const (c : Nat) : Recursive2 fun _ _ => c := RecursiveV.const 2 c
+public theorem Recursive2.const (c : Nat) : Recursive2 fun _ _ => c := RecursiveV.const 2 c
 
-theorem Recursive1.tailN : Recursive1 tailN := by
+public theorem Recursive1.tailN : Recursive1 tailN := by
   show Recursive1 fun l => Rcat.csnd (l - 1)
   have h1 : Recursive1 fun l => l - 1 := Recursive1.sub (show Recursive1 fun n => n from RecursiveV.proj 0) (Recursive1.const 1)
   exact Recursive1.comp h1 Recursive1.csnd
 
-theorem Recursive1.headN : Recursive1 headN := by
+public theorem Recursive1.headN : Recursive1 headN := by
   show Recursive1 fun l => Rcat.cfst (l - 1)
   have h1 : Recursive1 fun l => l - 1 := Recursive1.sub (show Recursive1 fun n => n from RecursiveV.proj 0) (Recursive1.const 1)
   exact Recursive1.comp h1 Recursive1.cfst
 
-theorem Recursive2.dropN : Recursive2 dropN := by
+public theorem Recursive2.dropN : Recursive2 dropN := by
   have base := RecursiveV.precNat (k := 1) (g := fun w => w 0)
     (h := fun u : Vec 3 => tailN (u 1))
     (RecursiveV.proj 0) (RecursiveV.comp1 Recursive1.tailN (RecursiveV.proj 1))
@@ -1497,10 +1499,10 @@ theorem Recursive2.dropN : Recursive2 dropN := by
     | succ n ih => exact congrArg tailN ih
   exact aux (v 0) (vtail v)
 
-theorem Recursive2.nthN : Recursive2 nthN :=
+public theorem Recursive2.nthN : Recursive2 nthN :=
   RecursiveV.comp1 Recursive1.headN Recursive2.dropN
 
-theorem Recursive2.ltInd : Recursive2 ltInd := by
+public theorem Recursive2.ltInd : Recursive2 ltInd := by
   show Recursive2 fun a b => Rcat.eqInd (a + 1 - b) 0
   have h1 : Recursive2 fun a b => a + 1 :=
     Recursive2.comp2 Recursive2.add (show Recursive2 fun a _ => a from RecursiveV.proj 0) (Recursive2.const 1)
@@ -1508,27 +1510,27 @@ theorem Recursive2.ltInd : Recursive2 ltInd := by
     Recursive2.comp2 Recursive2.sub h1 (show Recursive2 fun _ b => b from RecursiveV.proj 1)
   exact Recursive2.comp2 Recursive2.eqInd h2 (Recursive2.const 0)
 
-theorem Recursive2.neInd : Recursive2 neInd := by
+public theorem Recursive2.neInd : Recursive2 neInd := by
   show Recursive2 fun a b => 1 - Rcat.eqInd a b
   exact Recursive2.comp2 Recursive2.sub (Recursive2.const 1) Recursive2.eqInd
 
-theorem Recursive2.consN : Recursive2 consN := by
+public theorem Recursive2.consN : Recursive2 consN := by
   show Recursive2 fun a l => Rcat.cp a l + 1
   exact Recursive2.comp2 Recursive2.add Recursive2.cp (Recursive2.const 1)
 
-theorem Recursive1.codeOf : Recursive1 codeOf := Recursive1.cfst
+public theorem Recursive1.codeOf : Recursive1 codeOf := Recursive1.cfst
 
-theorem Recursive1.insOf : Recursive1 insOf := by
+public theorem Recursive1.insOf : Recursive1 insOf := by
   show Recursive1 fun nd => Rcat.cfst (Rcat.csnd nd)
   exact Recursive1.comp Recursive1.csnd Recursive1.cfst
 
-theorem Recursive1.outOf : Recursive1 outOf := by
+public theorem Recursive1.outOf : Recursive1 outOf := by
   show Recursive1 fun nd => Rcat.cfst (Rcat.csnd (Rcat.csnd nd))
   have h1 : Recursive1 fun nd => Rcat.csnd (Rcat.csnd nd) :=
     Recursive1.comp Recursive1.csnd Recursive1.csnd
   exact Recursive1.comp h1 Recursive1.cfst
 
-theorem Recursive1.kidsOf : Recursive1 kidsOf := by
+public theorem Recursive1.kidsOf : Recursive1 kidsOf := by
   show Recursive1 fun nd => Rcat.csnd (Rcat.csnd (Rcat.csnd nd))
   have h1 : Recursive1 fun nd => Rcat.csnd (Rcat.csnd nd) :=
     Recursive1.comp Recursive1.csnd Recursive1.csnd
@@ -1536,7 +1538,7 @@ theorem Recursive1.kidsOf : Recursive1 kidsOf := by
 
 /-- Closure under bounded products: if `F` is recursive so is
     `v ↦ Π_{j < v 0} F (j :: tail v)`. -/
-theorem RecursiveV.bAll {k : Nat} {F : Vec (k + 1) → Nat} (hF : RecursiveV F) :
+public theorem RecursiveV.bAll {k : Nat} {F : Vec (k + 1) → Nat} (hF : RecursiveV F) :
     RecursiveV fun v : Vec (k + 1) => bAllN (fun j => F (vcons j (vtail v))) (v 0) := by
   have hh : RecursiveV fun u : Vec (k + 2) => u 1 * F (vcons (u 0) (vtail (vtail u))) := by
     refine RecursiveV.comp2 Recursive2.mul (RecursiveV.proj 1) ?_
@@ -1559,7 +1561,7 @@ theorem RecursiveV.bAll {k : Nat} {F : Vec (k + 1) → Nat} (hF : RecursiveV F) 
   exact aux (v 0) (vtail v)
 
 /-- Bounded product with a recursive bound, at the same arity. -/
-theorem RecursiveV.bAllComp {k : Nat} {F : Vec (k + 1) → Nat} {b : Vec k → Nat}
+public theorem RecursiveV.bAllComp {k : Nat} {F : Vec (k + 1) → Nat} {b : Vec k → Nat}
     (hF : RecursiveV F) (hb : RecursiveV b) :
     RecursiveV fun v : Vec k => bAllN (fun j => F (vcons j v)) (b v) := by
   refine RecursiveV.comp
@@ -1573,22 +1575,22 @@ theorem RecursiveV.bAllComp {k : Nat} {F : Vec (k + 1) → Nat} {b : Vec k → N
 /-! Ternary recursiveness and lifting combinators, for the per-child checks. -/
 
 /-- Ternary recursive functions. -/
-def Recursive3 (f : Nat → Nat → Nat → Nat) : Prop :=
+@[expose] public def Recursive3 (f : Nat → Nat → Nat → Nat) : Prop :=
   RecursiveV fun v : Vec 3 => f (v 0) (v 1) (v 2)
 
-theorem Recursive3.comp1 {F : Nat → Nat} (hF : Recursive1 F) {f : Nat → Nat → Nat → Nat}
+public theorem Recursive3.comp1 {F : Nat → Nat} (hF : Recursive1 F) {f : Nat → Nat → Nat → Nat}
     (hf : Recursive3 f) : Recursive3 fun a b c => F (f a b c) :=
   RecursiveV.comp1 hF hf
 
-theorem Recursive3.comp2 {H : Nat → Nat → Nat} (hH : Recursive2 H)
+public theorem Recursive3.comp2 {H : Nat → Nat → Nat} (hH : Recursive2 H)
     {f g : Nat → Nat → Nat → Nat} (hf : Recursive3 f) (hg : Recursive3 g) :
     Recursive3 fun a b c => H (f a b c) (g a b c) :=
   RecursiveV.comp2 hH hf hg
 
-theorem Recursive3.const (c : Nat) : Recursive3 fun _ _ _ => c := RecursiveV.const 3 c
+public theorem Recursive3.const (c : Nat) : Recursive3 fun _ _ _ => c := RecursiveV.const 3 c
 
 /-- Lift a binary recursive function to the last two of three arguments. -/
-theorem Recursive3.lift23 {f : Nat → Nat → Nat} (hf : Recursive2 f) :
+public theorem Recursive3.lift23 {f : Nat → Nat → Nat} (hf : Recursive2 f) :
     Recursive3 fun _ b c => f b c :=
   RecursiveV.comp (f := fun w : Vec 2 => f (w 0) (w 1))
     (gs := fun i (v : Vec 3) => v i.succ) hf (fun i => RecursiveV.proj i.succ)
@@ -1600,63 +1602,63 @@ theorem Recursive3.lift23 {f : Nat → Nat → Nat} (hf : Recursive2 f) :
   intermediate gets an explicit `Recursive2 fun i W => …` type so the final
   `exact` is a pure definitional check. -/
 
-theorem Recursive2.tagAt : Recursive2 tagAt := by
+public theorem Recursive2.tagAt : Recursive2 tagAt := by
   have h1 : Recursive1 fun x => Rcat.cfst (Rcat.cfst x) :=
     Recursive1.comp Recursive1.cfst Recursive1.cfst
   have h2 : Recursive2 fun i W => Rcat.cfst (Rcat.cfst (Rcat.nthN i W)) :=
     RecursiveV.comp1 (F := fun x => Rcat.cfst (Rcat.cfst x)) h1 Recursive2.nthN
   exact h2
 
-theorem Recursive2.plAt : Recursive2 plAt := by
+public theorem Recursive2.plAt : Recursive2 plAt := by
   have h1 : Recursive1 fun x => Rcat.csnd (Rcat.cfst x) :=
     Recursive1.comp Recursive1.cfst Recursive1.csnd
   have h2 : Recursive2 fun i W => Rcat.csnd (Rcat.cfst (Rcat.nthN i W)) :=
     RecursiveV.comp1 (F := fun x => Rcat.csnd (Rcat.cfst x)) h1 Recursive2.nthN
   exact h2
 
-theorem Recursive2.insAt : Recursive2 insAt := by
+public theorem Recursive2.insAt : Recursive2 insAt := by
   have h2 : Recursive2 fun i W => Rcat.insOf (Rcat.nthN i W) :=
     RecursiveV.comp1 (F := Rcat.insOf) Recursive1.insOf Recursive2.nthN
   exact h2
 
-theorem Recursive2.outAt : Recursive2 outAt := by
+public theorem Recursive2.outAt : Recursive2 outAt := by
   have h2 : Recursive2 fun i W => Rcat.outOf (Rcat.nthN i W) :=
     RecursiveV.comp1 (F := Rcat.outOf) Recursive1.outOf Recursive2.nthN
   exact h2
 
-theorem Recursive2.kidsAt : Recursive2 kidsAt := by
+public theorem Recursive2.kidsAt : Recursive2 kidsAt := by
   have h2 : Recursive2 fun i W => Rcat.kidsOf (Rcat.nthN i W) :=
     RecursiveV.comp1 (F := Rcat.kidsOf) Recursive1.kidsOf Recursive2.nthN
   exact h2
 
-theorem Recursive2.cmpM : Recursive2 cmpM := by
+public theorem Recursive2.cmpM : Recursive2 cmpM := by
   have h2 : Recursive2 fun i W => Rcat.cfst (Rcat.plAt i W) :=
     RecursiveV.comp1 (F := Rcat.cfst) Recursive1.cfst Recursive2.plAt
   exact h2
 
-theorem Recursive2.cmpF : Recursive2 cmpF := by
+public theorem Recursive2.cmpF : Recursive2 cmpF := by
   have h2 : Recursive2 fun i W => Rcat.insOf (Rcat.plAt i W) :=
     RecursiveV.comp1 (F := Rcat.insOf) Recursive1.insOf Recursive2.plAt
   exact h2
 
-theorem Recursive2.cmpGs : Recursive2 cmpGs := by
+public theorem Recursive2.cmpGs : Recursive2 cmpGs := by
   have h1 : Recursive1 fun x => Rcat.csnd (Rcat.csnd x) :=
     Recursive1.comp Recursive1.csnd Recursive1.csnd
   have h2 : Recursive2 fun i W => Rcat.csnd (Rcat.csnd (Rcat.plAt i W)) :=
     RecursiveV.comp1 (F := fun x => Rcat.csnd (Rcat.csnd x)) h1 Recursive2.plAt
   exact h2
 
-theorem Recursive2.cmpFIdx : Recursive2 cmpFIdx := by
+public theorem Recursive2.cmpFIdx : Recursive2 cmpFIdx := by
   have h2 : Recursive2 fun i W => Rcat.cfst (Rcat.kidsAt i W) :=
     RecursiveV.comp1 (F := Rcat.cfst) Recursive1.cfst Recursive2.kidsAt
   exact h2
 
-theorem Recursive2.cmpGIdx : Recursive2 cmpGIdx := by
+public theorem Recursive2.cmpGIdx : Recursive2 cmpGIdx := by
   have h2 : Recursive2 fun i W => Rcat.csnd (Rcat.kidsAt i W) :=
     RecursiveV.comp1 (F := Rcat.csnd) Recursive1.csnd Recursive2.kidsAt
   exact h2
 
-theorem Recursive2.cmpFnd : Recursive2 cmpFnd := by
+public theorem Recursive2.cmpFnd : Recursive2 cmpFnd := by
   have ha : Recursive2 fun i W => Rcat.ltInd (Rcat.cmpFIdx i W) i :=
     Recursive2.comp2 Recursive2.ltInd Recursive2.cmpFIdx (show Recursive2 fun a _ => a from RecursiveV.proj 0)
   have hb : Recursive2 fun i W => Rcat.nthN (Rcat.cmpFIdx i W) W :=
@@ -1666,12 +1668,12 @@ theorem Recursive2.cmpFnd : Recursive2 cmpFnd := by
     Recursive2.comp2 Recursive2.mul ha hb
   exact h2
 
-theorem Recursive2.cmpFIns : Recursive2 cmpFIns := by
+public theorem Recursive2.cmpFIns : Recursive2 cmpFIns := by
   have h2 : Recursive2 fun i W => Rcat.insOf (Rcat.cmpFnd i W) :=
     RecursiveV.comp1 (F := Rcat.insOf) Recursive1.insOf Recursive2.cmpFnd
   exact h2
 
-theorem Recursive3.gOK : Recursive3 gOK := by
+public theorem Recursive3.gOK : Recursive3 gOK := by
   have hgidx : Recursive3 fun _ i W => Rcat.cmpGIdx i W :=
     Recursive3.lift23 Recursive2.cmpGIdx
   have hidx : Recursive3 fun j i W => Rcat.nthN j (Rcat.cmpGIdx i W) :=
@@ -1720,7 +1722,7 @@ theorem Recursive3.gOK : Recursive3 gOK := by
       (Recursive3.comp2 Recursive2.mul (Recursive3.comp2 Recursive2.mul f1 f2) f3) f4) f5
   exact h2
 
-theorem Recursive2.compOK : Recursive2 compOK := by
+public theorem Recursive2.compOK : Recursive2 compOK := by
   have b1 : Recursive2 fun i W => Rcat.ltInd (Rcat.cmpFIdx i W) i :=
     Recursive2.comp2 Recursive2.ltInd Recursive2.cmpFIdx (show Recursive2 fun a _ => a from RecursiveV.proj 0)
   have b2 : Recursive2 fun i W =>
@@ -1752,7 +1754,7 @@ theorem Recursive2.compOK : Recursive2 compOK := by
       (Recursive2.comp2 Recursive2.mul (Recursive2.comp2 Recursive2.mul b1 b2) b3) b4) b5'
   exact h2
 
-theorem Recursive2.precOK : Recursive2 precOK := by
+public theorem Recursive2.precOK : Recursive2 precOK := by
   have hHd : Recursive2 fun i W => Rcat.headN (Rcat.insAt i W) :=
     RecursiveV.comp1 (F := Rcat.headN) Recursive1.headN Recursive2.insAt
   have hTl : Recursive2 fun i W => Rcat.tailN (Rcat.insAt i W) :=
@@ -1844,7 +1846,7 @@ theorem Recursive2.precOK : Recursive2 precOK := by
   have h2 := Recursive2.comp2 Recursive2.add base step
   exact h2
 
-theorem Recursive3.muStepOK : Recursive3 muStepOK := by
+public theorem Recursive3.muStepOK : Recursive3 muStepOK := by
   have hidx : Recursive3 fun t i W => Rcat.nthN t (Rcat.kidsAt i W) :=
     Recursive3.comp2 Recursive2.nthN (show Recursive3 fun a _ _ => a from RecursiveV.proj 0) (Recursive3.lift23 Recursive2.kidsAt)
   have hnd : Recursive3 fun t i W =>
@@ -1886,7 +1888,7 @@ theorem Recursive3.muStepOK : Recursive3 muStepOK := by
       (Recursive3.comp2 Recursive2.mul m1 m2) m3) m4
   exact h2
 
-theorem Recursive2.muOK : Recursive2 muOK := by
+public theorem Recursive2.muOK : Recursive2 muOK := by
   have hball : RecursiveV fun v : Vec 2 =>
       bAllN (fun t => Rcat.muStepOK t (v 0) (v 1)) (Rcat.outAt (v 0) (v 1)) :=
     RecursiveV.bAllComp Recursive3.muStepOK Recursive2.outAt
@@ -1934,7 +1936,7 @@ theorem Recursive2.muOK : Recursive2 muOK := by
       (Recursive2.comp2 Recursive2.mul (Recursive2.comp2 Recursive2.mul e1 e2) e3) e4)
   exact h2
 
-theorem Recursive2.nodeOK : Recursive2 nodeOK := by
+public theorem Recursive2.nodeOK : Recursive2 nodeOK := by
   have hHd : Recursive2 fun i W => Rcat.headN (Rcat.insAt i W) :=
     RecursiveV.comp1 (F := Rcat.headN) Recursive1.headN Recursive2.insAt
   have t0 : Recursive2 fun i W =>
@@ -1983,7 +1985,7 @@ theorem Recursive2.nodeOK : Recursive2 nodeOK := by
   exact h2
 
 /-- The universal accept predicate is a recursive function of R. -/
-theorem Recursive2_acceptOn : Recursive2 acceptOn := by
+public theorem Recursive2_acceptOn : Recursive2 acceptOn := by
   unfold acceptOn
   have hF : Recursive3 fun j _ wit => nodeOK j (cfst wit) :=
     Recursive3.comp2 Recursive2.nodeOK (show Recursive3 fun a _ _ => a from RecursiveV.proj 0)
@@ -2008,7 +2010,7 @@ theorem Recursive2_acceptOn : Recursive2 acceptOn := by
       (Recursive2.comp2 Recursive2.consN (Recursive2.ofFst Recursive1.csnd) (Recursive2.const 0))
   exact Recursive2.comp2 Recursive2.mul (Recursive2.comp2 Recursive2.mul hball' a2) a3
 
-theorem Recursive1_uOutW : Recursive1 uOutW :=
+public theorem Recursive1_uOutW : Recursive1 uOutW :=
   Recursive1.comp (f := fun wit => nthN (csnd wit) (cfst wit))
     (Recursive1.comp2 Recursive2.nthN Recursive1.csnd Recursive1.cfst) Recursive1.outOf
 
@@ -2021,7 +2023,7 @@ theorem Recursive2_uOut : Recursive2 uOut := by
 /-- STAGE 3a HEADLINE: the diagonal accept predicate is recursive by specialization
     of the universal checker — the machine that semi-decides the halting set is
     itself a machine of R. -/
-theorem Recursive2.acceptN : Recursive2 acceptN := by
+public theorem Recursive2.acceptN : Recursive2 acceptN := by
   have hUniversal : Recursive2 fun e wit => Rcat.acceptOn (Rcat.cp e e) wit :=
     Recursive2.comp2 Rcat.Recursive2_acceptOn
       (Recursive2.comp2 Recursive2.cp
@@ -2041,74 +2043,74 @@ theorem Recursive2.acceptN : Recursive2 acceptN := by
   for `e`, and the (already covered) pair `(0,0)` otherwise. -/
 
 /-- 0/1 test: is `w = cp e wit` an accepted halting witness for `e`? -/
-noncomputable def accOne (w : Nat) : Nat := eqInd (acceptN (cfst w) (csnd w)) 1
+@[expose] public noncomputable def accOne (w : Nat) : Nat := eqInd (acceptN (cfst w) (csnd w)) 1
 
-theorem accOne_cases (w : Nat) : accOne w = 1 ∨ accOne w = 0 := by
+public theorem accOne_cases (w : Nat) : accOne w = 1 ∨ accOne w = 0 := by
   by_cases h : acceptN (cfst w) (csnd w) = 1
   · exact Or.inl (eqInd_eq h)
   · exact Or.inr (eqInd_ne h)
 
 /-- Left column of the enumeration of E. -/
-noncomputable def l0 (n : Nat) : Nat :=
+@[expose] public noncomputable def l0 (n : Nat) : Nat :=
   eqInd (n % 4) 0 * (n / 4)
   + eqInd (n % 4) 1 * (accOne (n / 4) * (2 * cfst (n / 4)))
   + eqInd (n % 4) 2 * (accOne (n / 4) * (2 * cfst (n / 4) + 1))
 
 /-- Right column of the enumeration of E. -/
-noncomputable def r0 (n : Nat) : Nat :=
+@[expose] public noncomputable def r0 (n : Nat) : Nat :=
   eqInd (n % 4) 0 * (n / 4)
   + eqInd (n % 4) 1 * (accOne (n / 4) * (2 * cfst (n / 4) + 1))
   + eqInd (n % 4) 2 * (accOne (n / 4) * (2 * cfst (n / 4)))
 
-theorem l0_val0 {n : Nat} (h : n % 4 = 0) : l0 n = n / 4 := by
+public theorem l0_val0 {n : Nat} (h : n % 4 = 0) : l0 n = n / 4 := by
   unfold l0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (0:Nat) ≠ 1), eqInd_ne (by omega : (0:Nat) ≠ 2)]
   omega
 
-theorem r0_val0 {n : Nat} (h : n % 4 = 0) : r0 n = n / 4 := by
+public theorem r0_val0 {n : Nat} (h : n % 4 = 0) : r0 n = n / 4 := by
   unfold r0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (0:Nat) ≠ 1), eqInd_ne (by omega : (0:Nat) ≠ 2)]
   omega
 
-theorem l0_val1 {n : Nat} (h : n % 4 = 1) : l0 n = accOne (n / 4) * (2 * cfst (n / 4)) := by
+public theorem l0_val1 {n : Nat} (h : n % 4 = 1) : l0 n = accOne (n / 4) * (2 * cfst (n / 4)) := by
   unfold l0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (1:Nat) ≠ 0), eqInd_ne (by omega : (1:Nat) ≠ 2)]
   omega
 
-theorem r0_val1 {n : Nat} (h : n % 4 = 1) :
+public theorem r0_val1 {n : Nat} (h : n % 4 = 1) :
     r0 n = accOne (n / 4) * (2 * cfst (n / 4) + 1) := by
   unfold r0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (1:Nat) ≠ 0), eqInd_ne (by omega : (1:Nat) ≠ 2)]
   omega
 
-theorem l0_val2 {n : Nat} (h : n % 4 = 2) :
+public theorem l0_val2 {n : Nat} (h : n % 4 = 2) :
     l0 n = accOne (n / 4) * (2 * cfst (n / 4) + 1) := by
   unfold l0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (2:Nat) ≠ 0), eqInd_ne (by omega : (2:Nat) ≠ 1)]
   omega
 
-theorem r0_val2 {n : Nat} (h : n % 4 = 2) : r0 n = accOne (n / 4) * (2 * cfst (n / 4)) := by
+public theorem r0_val2 {n : Nat} (h : n % 4 = 2) : r0 n = accOne (n / 4) * (2 * cfst (n / 4)) := by
   unfold r0
   rw [h, eqInd_eq rfl, eqInd_ne (by omega : (2:Nat) ≠ 0), eqInd_ne (by omega : (2:Nat) ≠ 1)]
   omega
 
-theorem l0_val3 {n : Nat} (h : n % 4 = 3) : l0 n = 0 := by
+public theorem l0_val3 {n : Nat} (h : n % 4 = 3) : l0 n = 0 := by
   unfold l0
   rw [h, eqInd_ne (by omega : (3:Nat) ≠ 0), eqInd_ne (by omega : (3:Nat) ≠ 1),
     eqInd_ne (by omega : (3:Nat) ≠ 2)]
   omega
 
-theorem r0_val3 {n : Nat} (h : n % 4 = 3) : r0 n = 0 := by
+public theorem r0_val3 {n : Nat} (h : n % 4 = 3) : r0 n = 0 := by
   unfold r0
   rw [h, eqInd_ne (by omega : (3:Nat) ≠ 0), eqInd_ne (by omega : (3:Nat) ≠ 1),
     eqInd_ne (by omega : (3:Nat) ≠ 2)]
   omega
 
 /-- The set enumerated by `(l0, r0)`. -/
-def ESet (a b : Nat) : Prop := ∃ n, l0 n = a ∧ r0 n = b
+@[expose] public def ESet (a b : Nat) : Prop := ∃ n, l0 n = a ∧ r0 n = b
 
 /-- E is: the diagonal, plus the glued pair `{2e, 2e+1}` for each halting `e`. -/
-theorem ESet_iff {a b : Nat} :
+public theorem ESet_iff {a b : Nat} :
     ESet a b ↔ a = b ∨ (a / 2 = b / 2 ∧ a ≠ b ∧ Kc (a / 2)) := by
   constructor
   · rintro ⟨n, ha, hb⟩
@@ -2163,14 +2165,14 @@ theorem ESet_iff {a b : Nat} :
             from by omega, haccw, cfst_cp, Nat.one_mul]
           omega
 
-theorem ESet_refl (a : Nat) : ESet a a := ESet_iff.mpr (Or.inl rfl)
+public theorem ESet_refl (a : Nat) : ESet a a := ESet_iff.mpr (Or.inl rfl)
 
-theorem ESet_symm {a b : Nat} (h : ESet a b) : ESet b a := by
+public theorem ESet_symm {a b : Nat} (h : ESet a b) : ESet b a := by
   rcases ESet_iff.mp h with rfl | ⟨h1, h2, h3⟩
   · exact ESet_refl a
   · exact ESet_iff.mpr (Or.inr ⟨by omega, by omega, by rw [← h1]; exact h3⟩)
 
-theorem ESet_trans {a b c : Nat} (hab : ESet a b) (hbc : ESet b c) : ESet a c := by
+public theorem ESet_trans {a b c : Nat} (hab : ESet a b) (hbc : ESet b c) : ESet a c := by
   rcases ESet_iff.mp hab with rfl | ⟨h1, h2, h3⟩
   · exact hbc
   · rcases ESet_iff.mp hbc with rfl | ⟨h1', h2', h3'⟩
@@ -2181,14 +2183,14 @@ theorem ESet_trans {a b c : Nat} (hab : ESet a b) (hbc : ESet b c) : ESet a c :=
 
 /-! Recursiveness of the two columns. -/
 
-theorem accOne_rec : Recursive1 accOne := by
+public theorem accOne_rec : Recursive1 accOne := by
   have h1 : Recursive1 fun w => Rcat.acceptN (Rcat.cfst w) (Rcat.csnd w) :=
     Recursive1.comp2 Recursive2.acceptN Recursive1.cfst Recursive1.csnd
   have h2 : Recursive1 fun w => Rcat.eqInd (Rcat.acceptN (Rcat.cfst w) (Rcat.csnd w)) 1 :=
     Recursive1.comp2 Recursive2.eqInd h1 (Recursive1.const 1)
   exact h2
 
-theorem l0_rec : Recursive1 l0 := by
+public theorem l0_rec : Recursive1 l0 := by
   have hmod : Recursive1 fun n => n % 4 := Recursive1.modConst 3
   have hdiv : Recursive1 fun n => n / 4 := Recursive1.divConst 3
   have hcf : Recursive1 fun n => Rcat.cfst (n / 4) := Recursive1.comp hdiv Recursive1.cfst
@@ -2212,7 +2214,7 @@ theorem l0_rec : Recursive1 l0 := by
     Recursive1.add (Recursive1.add t0 t1) t2
   exact h2
 
-theorem r0_rec : Recursive1 r0 := by
+public theorem r0_rec : Recursive1 r0 := by
   have hmod : Recursive1 fun n => n % 4 := Recursive1.modConst 3
   have hdiv : Recursive1 fun n => n / 4 := Recursive1.divConst 3
   have hcf : Recursive1 fun n => Rcat.cfst (n / 4) := Recursive1.comp hdiv Recursive1.cfst
@@ -2239,18 +2241,18 @@ theorem r0_rec : Recursive1 r0 := by
 /-! The enumeration as morphisms of R, and E as a binary relation. -/
 
 /-- The left column as a morphism ω ⟶ ω of R. -/
-noncomputable def lMor : (omega : ExtNat) ⟶ omega := ⟨l0, l0_rec⟩
+@[expose] public noncomputable def lMor : (omega : ExtNat) ⟶ omega := ⟨l0, l0_rec⟩
 
 /-- The right column as a morphism ω ⟶ ω of R. -/
-noncomputable def rMor : (omega : ExtNat) ⟶ omega := ⟨r0, r0_rec⟩
+@[expose] public noncomputable def rMor : (omega : ExtNat) ⟶ omega := ⟨r0, r0_rec⟩
 
 /-- The joint enumeration ω ⟶ ω×ω. -/
-noncomputable def FE : (omega : ExtNat) ⟶ prod omega omega := pair lMor rMor
+@[expose] public noncomputable def FE : (omega : ExtNat) ⟶ prod omega omega := pair lMor rMor
 
 /-- E as a binary relation on ω in R: the IMAGE of the enumeration `FE`,
     with its two projections as columns.  (The image absorbs the repetitions of
     the sloppy enumeration; joint monicity is monicity of the image.) -/
-noncomputable def ERel : BinRel ExtNat omega omega where
+@[expose] public noncomputable def ERel : BinRel ExtNat omega omega where
   src := (image FE).dom
   colA := (image FE).arr ≫ fst
   colB := (image FE).arr ≫ snd
@@ -2269,12 +2271,12 @@ noncomputable def ERel : BinRel ExtNat omega omega where
     `ESet`.  Both directions go through the split cover `image.lift FE`. -/
 
 /-- Covers of R are pointwise surjective (they split). -/
-theorem cover_surj {α β : ExtNat} {f : α ⟶ β} (hc : Cover f) (b : El β) :
+public theorem cover_surj {α β : ExtNat} {f : α ⟶ β} (hc : Cover f) (b : El β) :
     ∃ a : El α, f.1 a = b := by
   obtain ⟨s, hs⟩ := cover_split f hc
   exact ⟨s.1 b, Mor.congr hs b⟩
 
-theorem ERel_mem (p : El ERel.src) : ESet (ERel.colA.1 p) (ERel.colB.1 p) := by
+public theorem ERel_mem (p : El ERel.src) : ESet (ERel.colA.1 p) (ERel.colB.1 p) := by
   obtain ⟨n, hn⟩ := cover_surj (image_lift_cover FE) p
   have harr : (image FE).arr.1 p = FE.1 n := by
     rw [← hn]
@@ -2291,7 +2293,7 @@ theorem ERel_mem (p : El ERel.src) : ESet (ERel.colA.1 p) (ERel.colB.1 p) := by
     rw [hcB]
     exact (Mor.congr (snd_pair lMor rMor) n).symm
 
-theorem ERel_lift (n : Nat) :
+public theorem ERel_lift (n : Nat) :
     ERel.colA.1 ((image.lift FE).1 n) = l0 n ∧ ERel.colB.1 ((image.lift FE).1 n) = r0 n := by
   refine ⟨?_, ?_⟩
   · have hcA : ERel.colA.1 ((image.lift FE).1 n) = (FE ≫ fst).1 n := by
@@ -2313,7 +2315,7 @@ theorem ERel_lift (n : Nat) :
   morphism into ω) is again a morphism of R — this is where the book's
   "a left-inverse chooses representatives" gets its computational content. -/
 
-theorem eqInd_le_one (a b : Nat) : eqInd a b ≤ 1 := by
+public theorem eqInd_le_one (a b : Nat) : eqInd a b ≤ 1 := by
   by_cases h : a = b
   · rw [eqInd_eq h]
     exact Nat.le_refl 1
@@ -2321,10 +2323,10 @@ theorem eqInd_le_one (a b : Nat) : eqInd a b ≤ 1 := by
     omega
 
 /-- Search test: does index `m` enumerate exactly the pair coded by `w`? -/
-noncomputable def pairTest (m w : Nat) : Nat :=
+@[expose] public noncomputable def pairTest (m w : Nat) : Nat :=
   1 - eqInd (l0 m) (cfst w) * eqInd (r0 m) (csnd w)
 
-theorem pairTest_rec : Recursive2 pairTest := by
+public theorem pairTest_rec : Recursive2 pairTest := by
   have h1 : Recursive2 fun m w => Rcat.eqInd (l0 m) (Rcat.cfst w) :=
     Recursive2.comp2 Recursive2.eqInd (Recursive2.ofFst l0_rec)
       (Recursive2.ofSnd Recursive1.cfst)
@@ -2337,7 +2339,7 @@ theorem pairTest_rec : Recursive2 pairTest := by
       (Recursive2.comp2 Recursive2.mul h1 h2)
   exact h3
 
-theorem pairTest_zero_iff {m a b : Nat} :
+public theorem pairTest_zero_iff {m a b : Nat} :
     pairTest m (cp a b) = 0 ↔ (l0 m = a ∧ r0 m = b) := by
   unfold pairTest
   rw [cfst_cp, csnd_cp]
@@ -2352,7 +2354,7 @@ theorem pairTest_zero_iff {m a b : Nat} :
     rw [eqInd_eq hx, eqInd_eq hy]
 
 /-- Pair two ω-valued morphisms through the Cantor pairing. -/
-noncomputable def cpMor {α : ExtNat} (x y : α ⟶ (omega : ExtNat)) :
+@[expose] public noncomputable def cpMor {α : ExtNat} (x y : α ⟶ (omega : ExtNat)) :
     α ⟶ (omega : ExtNat) :=
   ⟨fun a => cp (x.1 a) (y.1 a), by
     match α with
@@ -2365,7 +2367,7 @@ noncomputable def cpMor {α : ExtNat} (x y : α ⟶ (omega : ExtNat)) :
 
 /-- Total μ-search along a morphism: the least-zero point of a recursive test,
     preprocessed by `g`, is a morphism `α ⟶ ω`. -/
-theorem searchMor {α : ExtNat} (t : Nat → Nat → Nat) (ht : Recursive2 t)
+public theorem searchMor {α : ExtNat} (t : Nat → Nat → Nat) (ht : Recursive2 t)
     (g : α ⟶ (omega : ExtNat)) (htot : ∀ a : El α, ∃ m, t m (g.1 a) = 0) :
     ∃ h : α ⟶ (omega : ExtNat), ∀ a : El α,
       t (h.1 a) (g.1 a) = 0 ∧ ∀ i, i < toNat (h.1 a) → t i (g.1 a) ≠ 0 := by
@@ -2384,7 +2386,7 @@ theorem searchMor {α : ExtNat} (t : Nat → Nat → Nat) (ht : Recursive2 t)
 
 /-- KEY CONSTRUCTION: any pair of morphisms into ω that pointwise lands in `ESet`
     factors through E's table — search the enumeration index, then lift. -/
-theorem searchIntoE {α : ExtNat} (x y : α ⟶ (omega : ExtNat))
+public theorem searchIntoE {α : ExtNat} (x y : α ⟶ (omega : ExtNat))
     (htot : ∀ a : El α, ESet (x.1 a) (y.1 a)) :
     ∃ h : α ⟶ ERel.src, h ≫ ERel.colA = x ∧ h ≫ ERel.colB = y := by
   have htot' : ∀ a : El α, ∃ m, pairTest m ((cpMor x y).1 a) = 0 := by
@@ -2408,7 +2410,7 @@ theorem searchIntoE {α : ExtNat} (x y : α ⟶ (omega : ExtNat))
 
 /-- Composite membership: the elements of `(E ⊚ E).src` present pairs of the
     transitive closure — which is `ESet` itself. -/
-theorem EE_mem (q : El (ERel ⊚ ERel).src) :
+public theorem EE_mem (q : El (ERel ⊚ ERel).src) :
     ESet ((ERel ⊚ ERel).colA.1 q) ((ERel ⊚ ERel).colB.1 q) := by
   -- unfold the composite: pullback of the B-leg over the A-leg, then image
   obtain ⟨u, hu⟩ := cover_surj (image_lift_cover
@@ -2444,7 +2446,7 @@ theorem EE_mem (q : El (ERel ⊚ ERel).src) :
 /-- **E is an equivalence relation in R** — reflexive (a diagonal-index morphism),
     symmetric (μ-search for the swapped pair's index), transitive (μ-search for
     the composed pair's index; `ESet` is transitive as a set). -/
-theorem ERel_equivalence : EquivalenceRelation ERel := by
+public theorem ERel_equivalence : EquivalenceRelation ERel := by
   refine ⟨?_, ?_, ?_⟩
   · -- reflexive
     obtain ⟨h, hA, hB⟩ := searchIntoE (Cat.id (omega : ExtNat)) (Cat.id omega)
@@ -2468,15 +2470,15 @@ theorem ERel_equivalence : EquivalenceRelation ERel := by
   forcing E to be not just recursively enumerable, but recursive". -/
 
 /-- The canonical element of the terminator of R. -/
-noncomputable def pt1 : El (one : ExtNat) := ⟨0, Nat.one_pos⟩
+@[expose] public noncomputable def pt1 : El (one : ExtNat) := ⟨0, Nat.one_pos⟩
 
 /-- The point of R at an element. -/
-noncomputable def elPt {γ : ExtNat} (c : El γ) : (one : ExtNat) ⟶ γ :=
+@[expose] public noncomputable def elPt {γ : ExtNat} (c : El γ) : (one : ExtNat) ⟶ γ :=
   ⟨fun _ => c, isMor_finite _⟩
 
 /-- `x`-equal elements are presented by the level relation `x ⊚ x°`: the witness
     is a point of the pullback of `x` over itself, pushed into the image. -/
-theorem levelSet_of_eq {Q : ExtNat} (x : (omega : ExtNat) ⟶ Q) {a b : Nat}
+public theorem levelSet_of_eq {Q : ExtNat} (x : (omega : ExtNat) ⟶ Q) {a b : Nat}
     (hab : x.1 a = x.1 b) :
     ∃ w : El (graph x ⊚ (graph x)°).src,
       (graph x ⊚ (graph x)°).colA.1 w = a ∧ (graph x ⊚ (graph x)°).colB.1 w = b := by
@@ -2549,7 +2551,7 @@ theorem levelSet_of_eq {Q : ExtNat} (x : (omega : ExtNat) ⟶ Q) {a b : Nat}
       ⟨one, elPt a, elPt b, hw⟩) pt1
 
 /-- **E is not effective**: it is not the level of any cover of R. -/
-theorem ERel_not_effective : ¬ IsEffective ERel := by
+public theorem ERel_not_effective : ¬ IsEffective ERel := by
   rintro ⟨_, Q, x, hcov, hEle, hlevE⟩
   obtain ⟨⟨h₁, h₁A, h₁B⟩⟩ := hEle
   obtain ⟨⟨h₂, h₂A, h₂B⟩⟩ := hlevE

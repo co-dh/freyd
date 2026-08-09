@@ -22,6 +22,8 @@
   the names are in `namespace Freyd` and resolve from `S1_95`.
 -/
 
-import Freyd.S1_95
+module
+
+public import Freyd.S1_95
 
 open Freyd

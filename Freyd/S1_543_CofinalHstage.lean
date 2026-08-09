@@ -1,6 +1,8 @@
-import Freyd.S1_543_CapitalizationTransfinite
-import Freyd.S1_51
-import Freyd.S1_41
+module
+
+public import Freyd.S1_543_CapitalizationTransfinite
+public import Freyd.S1_51
+public import Freyd.S1_41
 
 /-! # §1.543 — the `hstage` bridge: `StepWellPoints` ⟹ `StageRelCap`
 
@@ -39,7 +41,7 @@ universe u
 
 /-- `WellSupported` does not depend on which terminal is chosen (terminals are uniquely isomorphic,
     and `term A` to either one differs by that iso, which cover-composition absorbs). -/
-theorem wellSupported_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 : HasTerminal 𝒞) {A : 𝒞}
+public theorem wellSupported_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 : HasTerminal 𝒞) {A : 𝒞}
     (hws : @WellSupported _ _ h1 A) : @WellSupported _ _ h2 A := by
   have hterm : h2.trm A = h1.trm A ≫ h2.trm h1.one := h2.uniq _ _
   show Cover (h2.trm A); rw [hterm]
@@ -61,7 +63,7 @@ theorem wellSupported_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 :
 
 /-- `WellPointed` does not depend on which terminal is chosen: a point at `h2.one` transports to a
     point at `h1.one` by pre-composing with the terminal iso, and a factorization back. -/
-theorem wellPointed_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 : HasTerminal 𝒞) {A : 𝒞}
+public theorem wellPointed_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 : HasTerminal 𝒞) {A : 𝒞}
     (hwp : @WellPointed _ _ h1 A) : @WellPointed _ _ h2 A := by
   intro Dd m hm hniso
   obtain ⟨x, hx⟩ := hwp m hm hniso
@@ -78,7 +80,7 @@ theorem wellPointed_terminal_invariant {𝒞 : Type u} [Cat.{u} 𝒞] (h1 h2 : H
 /-- **A `CapStep` preserves well-supportedness.**  `term (step A) : step A ⟶ 1_T`.  `step (term A)`
     is a cover (`stepCover`, since `term A` is one); `step 1` is terminal in `T` (`stepTerminal` +
     `stepTerminalArrow`), so `term (step A) = step (term A) ≫ iso` and cover ∘ iso is a cover. -/
-theorem wellSupported_step {S : Type u} [Cat.{u} S] [PreRegularCategory S]
+public theorem wellSupported_step {S : Type u} [Cat.{u} S] [PreRegularCategory S]
     (st : CapStep S) {A : S} (hws : WellSupported A) :
     letI : Cat st.T := st.catT
     letI : PreRegularCategory st.T := st.preT
@@ -95,7 +97,7 @@ theorem wellSupported_step {S : Type u} [Cat.{u} S] [PreRegularCategory S]
 
 /-- Well-supportedness survives the difference recursion `transN n d` (a composite of `d` rungs,
     each preserving it by `wellSupported_step`).  Stated against each stage's bundled terminal. -/
-theorem wellSupported_transN (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (n : Nat) :
+public theorem wellSupported_transN (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (n : Nat) :
     ∀ (d : Nat) (A : (stageBundle ccs.step b n).carrier)
       (_hws : @WellSupported _ (stageBundle ccs.step b n).cat
         (stageBundle ccs.step b n).pre.toHasTerminal A),
@@ -108,7 +110,7 @@ theorem wellSupported_transN (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (
 
 /-- Well-supportedness transports across the stage-carrier cast `stageCast` (carriers are literally
     equal once `m = n`). -/
-theorem wellSupported_stageCast (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) {m n : Nat}
+public theorem wellSupported_stageCast (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) {m n : Nat}
     (h : m = n) (A : (stageBundle ccs.step b m).carrier)
     (hws : @WellSupported _ (stageBundle ccs.step b m).cat
       (stageBundle ccs.step b m).pre.toHasTerminal A) :
@@ -119,7 +121,7 @@ theorem wellSupported_stageCast (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}
 /-- **The tower pushforward `C.F hij A₀` is well-supported** (each stage's bundled terminal), from
     `A₀` well-supported at stage `i`.  `C.F hij` is `stageCast` of `transN`, so combine
     `wellSupported_transN` and `wellSupported_stageCast`. -/
-theorem wellSupported_pushforward (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
+public theorem wellSupported_pushforward (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j) (A₀ : (towerSystem b ccs.step).A i)
     (hws : @WellSupported _ (stageBundle ccs.step b i.down).cat
       (stageBundle ccs.step b i.down).pre.toHasTerminal A₀) :
@@ -140,7 +142,7 @@ theorem wellSupported_pushforward (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{
     `objIncl n (ht n).one` (a genuine colimit terminal by `objIncl_terminal_eq`).  Used so the
     colimit `term` of `objIncl n A₀` is, by uniqueness, the inclusion `homInclObj (term A₀)`, whose
     cover reflects to a stage cover. -/
-noncomputable def colimTerminalAtStage {ι : Type u} {D : Colim.Directed ι}
+@[expose] public noncomputable def colimTerminalAtStage {ι : Type u} {D : Colim.Directed ι}
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one) (n : ι) :
@@ -160,7 +162,7 @@ noncomputable def colimTerminalAtStage {ι : Type u} {D : Colim.Directed ι}
     which is `objIncl n (ht n).one` by `colimTerminalAtStage`); its cover reflects to a stage cover
     of `term A₀` (`homInclObj_cover_reflects`, transitions conservative `hcons` / mono-preserving
     `hmono`). -/
-theorem wellSupported_stage_of_colim {ι : Type u} {D : Colim.Directed ι}
+public theorem wellSupported_stage_of_colim {ι : Type u} {D : Colim.Directed ι}
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
@@ -188,7 +190,7 @@ theorem wellSupported_stage_of_colim {ι : Type u} {D : Colim.Directed ι}
 
 /-- The tower transition at a successor `j → j+1` is, on objects, the rung `stageStep j = ccs.step`
     (modulo the difference cast `j.down + (j+1-j) = j+1`, dropped via `eq_of_heq`). -/
-theorem towerF_succ_eq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (j : Nat)
+public theorem towerF_succ_eq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (j : Nat)
     (z : (towerSystem b ccs.step).A ⟨j⟩) :
     (towerSystem b ccs.step).F
         (show uliftNatDirected.le (⟨j⟩ : ULift Nat) ⟨j+1⟩ from Nat.le_succ j) z
@@ -207,7 +209,7 @@ theorem towerF_succ_eq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (j : Na
 
 /-- The tower transition at a successor `j → j+1` is, on morphisms, the rung `ccs.step.stepFun.map`
     (HEq, since endpoints differ by `towerF_succ_eq`). -/
-theorem towerFunctF_succ_map_heq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (j : Nat)
+public theorem towerFunctF_succ_map_heq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u}) (j : Nat)
     {x y : (towerSystem b ccs.step).A ⟨j⟩} (g : x ⟶ y) :
     HEq ((towerSystem b ccs.step).Fmap
           (show uliftNatDirected.le (⟨j⟩ : ULift Nat) ⟨j+1⟩ from Nat.le_succ j) g)
@@ -227,7 +229,7 @@ theorem towerFunctF_succ_map_heq (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u
     mono `m' : E' ⟶ Z`: push `m'` to stage `j+1` (`stepMono`; properness reflected by
     `stepFaithful`'s reflects-iso half), apply `WellPointed` to get a missing point, and transport it
     (terminal-invariance + `towerF_succ_eq`/`towerFunctF_succ_map_heq` casts) into the goal shape. -/
-theorem stageRelCap_succ_of_wellPointed (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
+public theorem stageRelCap_succ_of_wellPointed (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
     (ht : ∀ i, HasTerminal ((towerSystem b ccs.step).A i)) (j : Nat)
     (Z : (towerSystem b ccs.step).A ⟨j⟩)
     (hwp : @WellPointed _ (ccs.step (stageBundle ccs.step b j)).catT
@@ -284,7 +286,7 @@ theorem stageRelCap_succ_of_wellPointed (b : PreRegBundle.{u}) (ccs : CofinalCap
 
     The hypothesis block is byte-for-byte the `hstage` premise at
     `CapitalizationTransfinite.tower_capital_of_cofinal` (lines 439-446); this lemma discharges it. -/
-theorem hstage_of_cofinal (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
+public theorem hstage_of_cofinal (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u})
     (ht : ∀ i, HasTerminal ((towerSystem b ccs.step).A i))
     (htpres : ∀ {i j} (hij : uliftNatDirected.le i j),
       (towerSystem b ccs.step).F hij (ht i).one = (ht j).one)

@@ -1,11 +1,13 @@
-import Freyd.S1_10
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_30
-import Freyd.S2_40
-import Freyd.S2_165_Spl
-import Freyd.S2_22
-import Freyd.S2_42
+module
+
+public import Freyd.S1_10
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_30
+public import Freyd.S2_40
+public import Freyd.S2_165_Spl
+public import Freyd.S2_22
+public import Freyd.S2_42
 
 universe v u
 
@@ -306,7 +308,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] {x a b : 𝒜}
 
 /-- A morphism fixed on the left by an idempotent is absorbed by it: if
     `E' ≫ R ≫ E = R` and `E'` is idempotent then `E' ≫ R = R`. -/
-theorem fix_absorb_left (E' : b ⟶ b) (E : a ⟶ a) (R : b ⟶ a)
+public theorem fix_absorb_left (E' : b ⟶ b) (E : a ⟶ a) (R : b ⟶ a)
     (hE'_idem : E' ≫ E' = E') (hfix : E' ≫ R ≫ E = R) : E' ≫ R = R := by
   calc E' ≫ R = E' ≫ (E' ≫ R ≫ E) := by rw [hfix]
     _ = (E' ≫ E') ≫ R ≫ E := by simp only [Cat.assoc]
@@ -322,7 +324,7 @@ theorem equiv_entire (E : b ⟶ b)
 
 /-- **§2.433 (chain 1).**  `R̂ ≫ (T ≫ E) ⊑ R`, where `R̂ = E' ≫ (R /ₛ T)`.
     `E'(R/ₛT)TE ⊑ E'RE = R`, using `(R/ₛT)≫T ⊑ R` and the fixing `E'RE = R`. -/
-theorem splEq_chain1 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
+public theorem splEq_chain1 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
     (hfix : E' ≫ R ≫ E = R) :
     (E' ≫ (R /ₛ T)) ≫ (T ≫ E) ⊑ R := by
   have h1 : (R /ₛ T) ≫ T ⊑ R := ((le_symmDiv_iff (R /ₛ T) R T).mp (le_refl _)).1
@@ -334,7 +336,7 @@ theorem splEq_chain1 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
 /-- **§2.433 (chain 2).**  `R̂° ≫ R ⊑ T ≫ E`.  `R̂° = (R/ₛT)° ≫ E'`, so
     `R̂°R = (R/ₛT)° ≫ E' ≫ R = (R/ₛT)° ≫ R ⊑ T ⊑ T ≫ E`, using `(R/ₛT)°≫R ⊑ T`
     (second `le_symmDiv_iff` component), `E'R = R`, and `E` reflexive. -/
-theorem splEq_chain2 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
+public theorem splEq_chain2 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
     (hErefl : Cat.id a ⊑ E) (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
     (hfix : E' ≫ R ≫ E = R) :
     (E' ≫ (R /ₛ T))° ≫ R ⊑ T ≫ E := by
@@ -418,7 +420,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
     base thick `T : x → E.carrier` of `𝒜`, the split-hom `embObj x ⟶ E` with underlying
     morphism `T ≫ E.idem.e` (fixed because `embObj x` carries the identity idempotent on
     the source and `E.idem.e` is idempotent on the target). -/
-def splEqTarget (E : SplObj 𝒜) {x : 𝒜} (T : x ⟶ E.carrier) :
+@[expose] public def splEqTarget (E : SplObj 𝒜) {x : 𝒜} (T : x ⟶ E.carrier) :
     embObj x ⟶ E :=
   ⟨T ≫ E.idem.e, by
     show Cat.id x ≫ (T ≫ E.idem.e) ≫ E.idem.e = T ≫ E.idem.e
@@ -434,7 +436,7 @@ def splEqTarget (E : SplObj 𝒜) {x : 𝒜} (T : x ⟶ E.carrier) :
     `codBox R.R = codBox T` (the domain on which `𝒜`-thickness of `T` is defined).  It is
     codBox bookkeeping; it does NOT assume thickness, and it is discharged automatically for
     the embedded objects (`splEq_embObj_thick`). -/
-def SplEqBoxNaming (E : SplObj 𝒜) : Prop :=
+@[expose] public def SplEqBoxNaming (E : SplObj 𝒜) : Prop :=
   ∀ {x : 𝒜} (T : x ⟶ E.carrier) {Q : SplObj 𝒜} (R : Q ⟶ E),
     codBox R = codBox (splEqTarget E T) → codBox R.R = codBox T
 
@@ -451,7 +453,7 @@ def SplEqBoxNaming (E : SplObj 𝒜) : Prop :=
     box-match `codBox R = codBox S` descends to the exact `𝒜` box-match
     `codBox R.R = codBox T` on which `𝒜`-thickness of `T` is defined.  It is codBox
     bookkeeping, not a thickness assumption. -/
-theorem splEqTarget_thick (E : SplObj 𝒜) (hErefl : Cat.id E.carrier ⊑ E.idem.e)
+public theorem splEqTarget_thick (E : SplObj 𝒜) (hErefl : Cat.id E.carrier ⊑ E.idem.e)
     {x : 𝒜} (T : x ⟶ E.carrier) (hThickT : Thick T) (hbox : SplEqBoxNaming E) :
     Thick (splEqTarget E T) := by
   rw [thick_iff_existential]
@@ -602,13 +604,13 @@ attribute [local instance] Classical.propDecidable
 /-- The single object of the one-object l.c.d. allegory carved out of `𝒜₀` at
     `pt`.  Carries `𝒜₀` and `pt` as parameters so instance resolution recovers
     them (cf. `S2_316.OneObj`). -/
-inductive Sc (𝒜₀ : Type u) (pt : 𝒜₀) : Type u
+public inductive Sc (𝒜₀ : Type u) (pt : 𝒜₀) : Type u
   | star
 
 variable {𝒜₀ : Type u} [LocallyCompleteDistributiveAllegory.{u, u} 𝒜₀] {pt : 𝒜₀}
 
 /-- Hom-set is the scalars `pt ⟶ pt`; identity/composition inherited from `𝒜₀`. -/
-instance scCat : Cat.{u} (Sc 𝒜₀ pt) where
+@[expose] public instance scCat : Cat.{u} (Sc 𝒜₀ pt) where
   Hom _ _ := pt ⟶ pt
   id _ := Cat.id pt
   comp f g := f ≫ g
@@ -617,7 +619,7 @@ instance scCat : Cat.{u} (Sc 𝒜₀ pt) where
   assoc f g h := Cat.assoc f g h
 
 /-- Reciprocation/intersection inherited from `𝒜₀`. -/
-instance scAllegory : Allegory (Sc 𝒜₀ pt) where
+@[expose] public instance scAllegory : Allegory (Sc 𝒜₀ pt) where
   toCat := scCat
   recip R := R°
   inter R S := R ∩ S
@@ -631,7 +633,7 @@ instance scAllegory : Allegory (Sc 𝒜₀ pt) where
   modular R S T := Allegory.modular R S T
 
 /-- Zero/union inherited from `𝒜₀`. -/
-instance scDist : DistributiveAllegory (Sc 𝒜₀ pt) where
+@[expose] public instance scDist : DistributiveAllegory (Sc 𝒜₀ pt) where
   toAllegory := scAllegory
   zero := fun {_ _} => (𝟘 : pt ⟶ pt)
   union R S := R ∪ S
@@ -647,7 +649,7 @@ instance scDist : DistributiveAllegory (Sc 𝒜₀ pt) where
   zero_union R := DistributiveAllegory.zero_union R
 
 /-- Arbitrary `Sup` inherited from `𝒜₀`. -/
-instance scLCDA : LocallyCompleteDistributiveAllegory (Sc 𝒜₀ pt) where
+@[expose] public instance scLCDA : LocallyCompleteDistributiveAllegory (Sc 𝒜₀ pt) where
   toDistributiveAllegory := scDist
   Sup P := LocallyCompleteDistributiveAllegory.Sup P
   le_Sup h := LocallyCompleteDistributiveAllegory.le_Sup h

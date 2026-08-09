@@ -19,8 +19,10 @@
 
   Mathlib-free; built on `Freyd.LaxColimitPreReg` + the §1.61 strict-initial API.
 -/
-import Freyd.S1_543_LaxColimitPreReg
-import Freyd.S1_61
+module
+
+public import Freyd.S1_543_LaxColimitPreReg
+public import Freyd.S1_61
 
 open Freyd
 open Freyd.Colim
@@ -40,7 +42,7 @@ private theorem isIso_of_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : �
 
 /-- The chosen strict initial object of stage `i` (the minimal subobject of `1`, §1.61).  Lax
     analogue of `Colim.stageZero`. -/
-noncomputable def stageZero (L : LaxCatSystem ι D) (hbot : ∀ i, PreLogos (L.A i)) (i : ι) : L.A i :=
+@[expose] public noncomputable def stageZero (L : LaxCatSystem ι D) (hbot : ∀ i, PreLogos (L.A i)) (i : ι) : L.A i :=
   (minimal_subobject_of_one_is_coterminator (hbot i)).zero
 
 /-- **General lax-colimit strict coterminator.**  If every transition sends a fibre object `Y` to a
@@ -48,7 +50,7 @@ noncomputable def stageZero (L : LaxCatSystem ι D) (hbot : ∀ i, PreLogos (L.A
     `objIncl i₀ Y` is a germ `homInclL xX Y a f₀`; its
     codomain `L.F a.2.2 Y` is a strict coterminator (`htrans a.2.2`), so `f₀` (a map into it) is iso,
     lifted to the colimit by `homInclL_isIso_of_rep`. -/
-theorem laxColimStrictCot {ι : Type u} {D : Directed ι} (L : LaxCatSystem.{u, w} ι D)
+public theorem laxColimStrictCot {ι : Type u} {D : Directed ι} (L : LaxCatSystem.{u, w} ι D)
     (hL : Coherent L) {i₀ : ι} (Y : L.A i₀)
     (htrans : ∀ {j : ι} (hij : D.le i₀ j), @StrictCoterminator (L.A j) (L.catA j) (L.F hij Y)) :
     letI : Cat (Obj L) := laxColimCat L hL
@@ -77,7 +79,7 @@ theorem laxColimStrictCot {ι : Type u} {D : Directed ι} (L : LaxCatSystem.{u, 
     `L.F a.2.2 0_{i₀}` is a STRICT COTERMINATOR of stage `a.1` (`hinitstrict a.2.2`), so `f₀` — a map
     INTO a strict coterminator — is iso directly.  Its inverse-and-equations feed
     `homInclL_isIso_of_rep` to lift the stage iso to the colimit. -/
-theorem laxColimStrictInitial (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) [Nonempty ι]
+public theorem laxColimStrictInitial (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) [Nonempty ι]
     (hbot : ∀ i, PreLogos (L.A i))
     (hinitstrict : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (L.A j) (L.catA j) (L.F hij (stageZero L hbot i)))

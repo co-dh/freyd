@@ -33,9 +33,11 @@
   `by`          — enters **tactic mode** for a proof block.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_17
-import Freyd.S1_41
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_17
+public import Freyd.S1_41
 
 
 open Freyd
@@ -58,7 +60,7 @@ namespace Freyd
     routinely share an object map — e.g. functors between one-object
     categories are monoid homomorphisms — so the morphism action cannot
     be recovered by instance search.) -/
-structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v} C] [Cat.{v} D] where
+public structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v} C] [Cat.{v} D] where
   obj  : C → D
   map  : {X Y : C} → (X ⟶ Y) → (obj X ⟶ obj Y)
   map_id : ∀ (X : C), map (Cat.id X) = Cat.id (obj X)
@@ -68,7 +70,7 @@ structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v} C] [Cat.{v} D] where
     Reducible so that `idFunctor.obj X`/`idFunctor.map f` compute to `X`/`f` at reducible
     transparency — the bundled replacement for the old raw `λ X => X` object map, which
     β-reduced on its own in identity/naturality laws. -/
-@[reducible] def idFunctor : Functor 𝒞 𝒞 where
+@[reducible, expose] public def idFunctor : Functor 𝒞 𝒞 where
   obj X := X
   map f := f
   map_id _ := rfl
@@ -77,7 +79,7 @@ structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v} C] [Cat.{v} D] where
 /-- Composition of two functors, in diagram order: first `F`, then `G`.
     Fully universe-polymorphic (source, middle, target may live in different object
     universes) so it also serves the cross-universe compositions §1.1(10) needs. -/
-def compFunctor {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D] {E : Type u₃} [Cat.{v} E]
+@[expose] public def compFunctor {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D] {E : Type u₃} [Cat.{v} E]
     (F : Functor C D) (G : Functor D E) : Functor C E where
   obj X := G.obj (F.obj X)
   map f := G.map (F.map f)
@@ -95,7 +97,7 @@ def compFunctor {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D] {E : Typ
 
 @[simp] theorem idFunctor_map {X Y : 𝒞} (f : X ⟶ Y) : (idFunctor : Functor 𝒞 𝒞).map f = f := rfl
 
-@[simp] theorem compFunctor_obj {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
+@[simp] public theorem compFunctor_obj {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     {E : Type u₃} [Cat.{v} E] (F : Functor C D) (G : Functor D E)
     (X : C) : (compFunctor F G).obj X = G.obj (F.obj X) := rfl
 
@@ -128,12 +130,12 @@ def Reflects {ℰ ℱ : Type u} [Cat.{v} ℰ] [Cat.{v} ℱ] (F : Functor ℰ ℱ
   different universes. -/
 
 /-- `F` PRESERVES monos: it carries monos to monos. -/
-def PreservesMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
+@[expose] public def PreservesMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (F : Functor C D) : Prop :=
   ∀ {X Y : C} {f : X ⟶ Y}, Monic f → Monic (F.map f)
 
 /-- `F` REFLECTS monos: a mono image forces a mono. -/
-def ReflectsMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
+@[expose] public def ReflectsMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (F : Functor C D) : Prop :=
   ∀ {X Y : C} {f : X ⟶ Y}, Monic (F.map f) → Monic f
 
@@ -143,7 +145,7 @@ def ReflectsMono {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     Stated across two object universes, unlike `preserves_iso` below, which cannot be: `Preserves`
     quantifies over a single `MorphProp.{v,u}` and so forces `𝒞` and `𝒟` into one universe.  The
     cross-universe form is what the §2.218 stalk composite `Map 𝒜 → Set^I` needs. -/
-theorem functor_preserves_iso {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+public theorem functor_preserves_iso {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     {F : Functor 𝒞 𝒟} {X Y : 𝒞} (f : X ⟶ Y) (hf : IsIso f) : IsIso (F.map f) := by
   obtain ⟨g, hfg, hgf⟩ := hf
   exact ⟨F.map g,
@@ -196,9 +198,9 @@ end FunctorProperties
 /-- **§1.182**: The OPPOSITE CATEGORY `OppCat 𝒞` has the same objects as `𝒞`
     but reversed morphisms: `X ⟶ Y` in `OppCat 𝒞` means `Y ⟶ X` in `𝒞`,
     and composition is reversed (`x ∘ y` becomes `y ∘ x`). -/
-def OppCat (C : Type u) := C
+@[expose] public def OppCat (C : Type u) := C
 
-instance oppCatInst (C : Type u) [cat : Cat.{v} C] : Cat.{v} (OppCat C) where
+@[expose] public instance oppCatInst (C : Type u) [cat : Cat.{v} C] : Cat.{v} (OppCat C) where
   Hom X Y := cat.Hom Y X
   id X    := cat.id X
   comp f g := cat.comp g f

@@ -8,7 +8,9 @@
   toolchain — this adds NO external package (no `require`, no lake-manifest change), so the
   self-contained, mathlib-free build is preserved.
 -/
-import Lean
+module
+
+public import Lean
 
 open Lean Elab Tactic in
 /-- `exacts [e₁, …, eₙ]` closes the first `n` goals with `e₁, …, eₙ` respectively. -/

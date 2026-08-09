@@ -5,18 +5,20 @@
   colimit category `C.Obj` has a terminal object.
 -/
 
-import Freyd.S1_543_CatColimit
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_58
+module
+
+public import Freyd.S1_543_CatColimit
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_58
 open Freyd
 namespace Freyd.Colim
 universe u w u₁ u₂ u₃ v
 variable {ι : Type u} {D : Directed ι}
 
-noncomputable def colimitHasTerminal (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
+@[expose] public noncomputable def colimitHasTerminal (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (hpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one) :
     @HasTerminal C.Obj (colimitCat C hC) := by
@@ -102,7 +104,7 @@ noncomputable def colimitHasTerminal (C : CatSystem ι D) (hC : C.Coherent) [hne
   colimit category `C.Obj` has binary products.
 -/
 
-noncomputable def colimitHasBinaryProducts (C : CatSystem ι D) (hC : C.Coherent)
+@[expose] public noncomputable def colimitHasBinaryProducts (C : CatSystem ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
     (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
@@ -424,7 +426,7 @@ noncomputable def colimitHasBinaryProducts (C : CatSystem ι D) (hC : C.Coherent
   coproduct germ, and `case` goes *out* of it.
 -/
 
-noncomputable def colimitHasBinaryCoproducts (C : CatSystem ι D) (hC : C.Coherent)
+@[expose] public noncomputable def colimitHasBinaryCoproducts (C : CatSystem ι D) (hC : C.Coherent)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : C.F hij ((hcop i).coprod a b) ⟶ z),
@@ -749,7 +751,7 @@ noncomputable def colimitHasBinaryCoproducts (C : CatSystem ι D) (hC : C.Cohere
   factorisation.  Mirrors `colimitHasBinaryProducts`.
 -/
 
-noncomputable def colimitHasEqualizers (C : CatSystem ι D) (hC : C.Coherent)
+@[expose] public noncomputable def colimitHasEqualizers (C : CatSystem ι D) (hC : C.Coherent)
     (he : ∀ i, HasEqualizers (C.A i))
     (hpres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
         (u v : z ⟶ C.F hij (eqObj f g)),
@@ -1001,7 +1003,7 @@ noncomputable def colimitHasEqualizers (C : CatSystem ι D) (hC : C.Coherent)
 
 /-- **Iso preservation:** a colimit morphism whose stage representative `f₀` is an
     isomorphism (witnessed by `g₀`) is itself an isomorphism in `colimitCat`. -/
-theorem colimHom_isIso_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
+public theorem colimHom_isIso_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
     (a : UpperBound D (colimOut C A).1 (colimOut C B).1)
     (f₀ : C.F a.2.1 (colimOut C A).2 ⟶ C.F a.2.2 (colimOut C B).2)
     (g₀ : C.F a.2.2 (colimOut C B).2 ⟶ C.F a.2.1 (colimOut C A).2)
@@ -1033,7 +1035,7 @@ theorem colimHom_isIso_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Ob
     to a stage.  `Quotient.exact` gives a common bound where the `homTr`-pushes
     agree; `homTr` is `castHom ∘ functF.map`, so cast-invertibility + faithfulness
     of `functF` strip back to `g = g'`. -/
-theorem homIncl_injective (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homIncl_injective (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     {i j : ι} (x : C.A i) (y : C.A j) (a : UpperBound D i j)
@@ -1050,7 +1052,7 @@ theorem homIncl_injective (C : CatSystem ι D) (hC : C.Coherent)
     `colimitCat` provided `f₀` stays left-cancellable under all transitions
     (`hcancel`).  Reflect `p ≫ f = q ≫ f` to a common stage `L`, where it becomes
     `· ≫ (functF haL).map f₀ = · ≫ (functF haL).map f₀`; `hcancel` then cancels. -/
-theorem colimHom_mono_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
+public theorem colimHom_mono_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
     (a : UpperBound D (colimOut C A).1 (colimOut C B).1)
     (f₀ : C.F a.2.1 (colimOut C A).2 ⟶ C.F a.2.2 (colimOut C B).2)
     (hcancel : ∀ {j : ι} (hjk : D.le a.1 j) (z : C.A j)
@@ -1111,7 +1113,7 @@ theorem colimHom_mono_of_rep (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj
   exact hu2
 
 /-- `castHom` is injective (it's a transport along object equalities). -/
-theorem castHom_injective {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
+public theorem castHom_injective {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     (hX : X = X') (hY : Y = Y') {a b : X ⟶ Y}
     (h : castHom hX hY a = castHom hX hY b) : a = b := by
   subst hX; subst hY; exact h
@@ -1125,7 +1127,7 @@ theorem castHom_injective {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     + `castHom_comp` + `map_comp` — to `functF.map (u ≫ functF.map f₀)`, so the
     colimit mono forces the two inclusions equal, and `homIncl_injective` +
     `castHom_injective` + faithfulness strip back to `u = v`. -/
-theorem colimHom_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimHom_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     {A B : C.Obj}
@@ -1189,7 +1191,7 @@ theorem colimHom_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
     *constructed* stage `L` (the hom-colimit is indexed by `UpperBound`s, not bare
     stages, so its bounds aren't explicit constructors that `homTr_comp`/`homTr_trans`
     can match) where the equation becomes a plain stage equation. -/
-theorem homCompRaw_eq_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
+public theorem homCompRaw_eq_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : ι}
     (xp : C.A ip) (xq : C.A iq) (xr : C.A ir)
     (uf : UpperBound D ip iq) (f : C.F uf.2.1 xp ⟶ C.F uf.2.2 xq)
     (ug : UpperBound D iq ir) (g : C.F ug.2.1 xq ⟶ C.F ug.2.2 xr)
@@ -1212,7 +1214,7 @@ theorem homCompRaw_eq_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq ir : �
 
 /-- **Stage equation from a colimit composite equal to the identity** — the `homIncl …
     id` special case of `homCompRaw_eq_stage`, finished by `homTr_id`. -/
-theorem homCompRaw_eq_id_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
+public theorem homCompRaw_eq_id_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq : ι}
     (xp : C.A ip) (xq : C.A iq)
     (a : UpperBound D ip iq) (f : C.F a.2.1 xp ⟶ C.F a.2.2 xq)
     (b : UpperBound D iq ip) (g : C.F b.2.1 xq ⟶ C.F b.2.2 xp)
@@ -1228,7 +1230,7 @@ theorem homCompRaw_eq_id_stage (C : CatSystem ι D) (hC : C.Coherent) {ip iq : �
   exact ⟨N, haN, hbN, key⟩
 
 /-- `castHom` reflects isomorphisms (it's a transport along object equalities). -/
-theorem isIso_of_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
+public theorem isIso_of_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     (hX : X = X') (hY : Y = Y') (m : X ⟶ Y) (h : IsIso (castHom hX hY m)) : IsIso m := by
   subst hX; subst hY; exact h
 
@@ -1239,7 +1241,7 @@ theorem isIso_of_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     identities at stages `N1, N2`; bound them to a common `L` and transport both, so
     `homTr f₀` and `homTr g₀` are mutually inverse at `L`; `isIso_of_castHom` strips the
     `homTr` cast to leave `IsIso (functF.map f₀)`. -/
-theorem colimHom_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
+public theorem colimHom_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent) {A B : C.Obj}
     (a : UpperBound D (colimOut C A).1 (colimOut C B).1)
     (f₀ : C.F a.2.1 (colimOut C A).2 ⟶ C.F a.2.2 (colimOut C B).2)
     (hiso : @IsIso C.Obj (colimitCat C hC) A B
@@ -1286,12 +1288,12 @@ theorem colimHom_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent) {A B : C.
     (C.Fmap haL f₀) hisoL⟩
 
 /-- `castHom` carries monos to monos (transport along object equalities). -/
-theorem mono_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
+public theorem mono_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     (hX : X = X') (hY : Y = Y') (m : X ⟶ Y) (h : Monic m) : Monic (castHom hX hY m) := by
   subst hX; subst hY; exact h
 
 /-- `castHom` carries covers to covers (transport along object equalities). -/
-theorem cover_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
+public theorem cover_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     (hX : X = X') (hY : Y = Y') (m : X ⟶ Y) (h : Cover m) : Cover (castHom hX hY m) := by
   subst hX; subst hY; exact h
 
@@ -1302,7 +1304,7 @@ theorem cover_castHom {𝒜 : Type w} [Cat.{w} 𝒜] {X Y X' Y' : 𝒜}
     stage `N`; mono reflection makes `m₀` monic at `N`, and the stage cover `f₀` (via
     `hcov`) forces `m₀` to be a stage iso (`monic_cover_iso`); iso preservation
     (`colimHom_isIso_of_rep`) + `homIncl_compat` lift that back to `IsIso m`. -/
-theorem colimHom_cover_of_rep (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimHom_cover_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     {A B : C.Obj}
@@ -1341,7 +1343,7 @@ theorem colimHom_cover_of_rep (C : CatSystem ι D) (hC : C.Coherent)
 /-- A witness that the `colimOut` representatives of `objIncl i x` and `objIncl i y`
     both agree with `x`, `y` at a common stage `K` — the data needed to transport a
     stage morphism `x ⟶ y` into a `colimitCat` morphism. -/
-structure HioWitness (C : CatSystem ι D) {i : ι} (x y : C.A i) where
+public structure HioWitness (C : CatSystem ι D) {i : ι} (x y : C.A i) where
   K : ι
   hpx : D.le (colimOut C (C.objIncl i x)).1 K
   hpy : D.le (colimOut C (C.objIncl i y)).1 K
@@ -1351,13 +1353,13 @@ structure HioWitness (C : CatSystem ι D) {i : ι} (x y : C.A i) where
 
 /-- The transport of a stage morphism `g : x ⟶ y` into a germ
     `colimOut(objIncl i x) ⟶ colimOut(objIncl i y)` at the witness stage. -/
-def HioWitness.germ {C : CatSystem ι D} {i : ι} {x y : C.A i} (w : HioWitness C x y)
+@[expose] public def HioWitness.germ {C : CatSystem ι D} {i : ι} {x y : C.A i} (w : HioWitness C x y)
     (g : x ⟶ y) :
     C.F w.hpx (colimOut C (C.objIncl i x)).2 ⟶ C.F w.hpy (colimOut C (C.objIncl i y)).2 :=
   castHom w.hgx.symm w.hgy.symm (C.Fmap w.hix g)
 
 /-- A chosen witness, materialized from the `colimOut` `Rel`s by `Classical.choose`. -/
-noncomputable def hioWitness (C : CatSystem ι D) (_hC : C.Coherent) {i : ι} (x y : C.A i) :
+@[expose] public noncomputable def hioWitness (C : CatSystem ι D) (_hC : C.Coherent) {i : ι} (x y : C.A i) :
     HioWitness C x y := by
   classical
   let hxrel : Rel C.objSystem
@@ -1390,7 +1392,7 @@ noncomputable def hioWitness (C : CatSystem ι D) (_hC : C.Coherent) {i : ι} (x
             rw [show D.trans hi_kx hkxK = D.trans hi_ky hkyK from Subsingleton.elim _ _,
                 C.F_trans hi_ky hkyK y]
 
-noncomputable def homInclObj (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
+@[expose] public noncomputable def homInclObj (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
     (g : x ⟶ y) :
     HomColim C hC (colimOut C (C.objIncl i x)).2 (colimOut C (C.objIncl i y)).2 :=
   homIncl C hC (colimOut C (C.objIncl i x)).2 (colimOut C (C.objIncl i y)).2
@@ -1400,7 +1402,7 @@ noncomputable def homInclObj (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x 
 /-- Pushing a witness germ to a higher stage `L` equals the canonical
     `functF`-map germ at `L` (transported by the rep equalities).  Mirrors the
     `hpush_gm`/`hpush_f` pattern. -/
-theorem homInclObj_germ_push (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
+public theorem homInclObj_germ_push (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
     (g : x ⟶ y) (w : HioWitness C x y) (L : ι) (hwL : D.le w.K L)
     (Hcx : C.F (D.trans w.hix hwL) x = C.F (D.trans w.hpx hwL) (colimOut C (C.objIncl i x)).2)
     (Hcy : C.F (D.trans w.hix hwL) y = C.F (D.trans w.hpy hwL) (colimOut C (C.objIncl i y)).2) :
@@ -1415,7 +1417,7 @@ theorem homInclObj_germ_push (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x 
     *any* witness `w` (not just the chosen one), since both reduce — via the push
     lemma + `homIncl_compat` — to the same canonical `functF`-map germ at a common
     stage (the proofs differ only proof-irrelevantly). -/
-theorem homInclObj_eq (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
+public theorem homInclObj_eq (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A i}
     (g : x ⟶ y) (w : HioWitness C x y) :
     homInclObj C hC g
       = homIncl C hC (colimOut C (C.objIncl i x)).2 (colimOut C (C.objIncl i y)).2
@@ -1443,7 +1445,7 @@ theorem homInclObj_eq (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y : C.A
     Build a common stage `L` where all three `colimOut` reps agree with `x,y,z`,
     apply `homInclObj_eq` to compute the three inclusions at shared witnesses there,
     reduce `colimComp` to `homCompRaw` at `L`, and match germs via `castHom_comp`+`map_comp`. -/
-theorem homInclObj_comp (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y z : C.A i}
+public theorem homInclObj_comp (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y z : C.A i}
     (g : x ⟶ y) (g' : y ⟶ z) :
     homInclObj C hC (g ≫ g') = colimComp C hC (homInclObj C hC g) (homInclObj C hC g') := by
   obtain ⟨sx, hpxsx, hisx, hxeq⟩ := Quotient.exact (colimOut_spec C (C.objIncl i x))
@@ -1484,7 +1486,7 @@ theorem homInclObj_comp (C : CatSystem ι D) (hC : C.Coherent) {i : ι} {x y z :
 /-- **The stage-inclusion `homInclObj` is injective** (faithful) when transitions
     are faithful: it shares the same `colimOut`-transport bound for `g`, `g'`, so
     `homIncl_injective` + cast-invertibility + `hfaith` strip back to `g = g'`. -/
-theorem homInclObj_injective (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_injective (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     {i : ι} {x y : C.A i} (g g' : x ⟶ y)
@@ -1498,7 +1500,7 @@ theorem homInclObj_injective (C : CatSystem ι D) (hC : C.Coherent)
     `colimitCat`.  Apply `colimHom_mono_of_rep` to the chosen-witness germ; the germ is
     `castHom ∘ functF.map g`, so cast-slides (`cR`/`cT`) reduce its cancellation back to
     `hcancel` on `g`. -/
-theorem homInclObj_mono_of_stage (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_mono_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     {i : ι} {x y : C.A i} (g : x ⟶ y)
     (hcancel : ∀ {j : ι} (hij : D.le i j) (z : C.A j) (u v : z ⟶ C.F hij x),
         u ≫ C.Fmap hij g = v ≫ C.Fmap hij g → u = v) :
@@ -1542,7 +1544,7 @@ theorem homInclObj_mono_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     is its inverse (functoriality of `functF` + `castHom_comp` collapse both composites
     to `castHom ∘ functF.map (g ≫ g') = castHom ∘ functF.map id = id`), so
     `colimHom_isIso_of_rep` yields the colimit iso.  Dual to `homInclObj_isIso_reflects`. -/
-theorem homInclObj_isIso_of_stage (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_isIso_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     {i : ι} {x y : C.A i} (g : x ⟶ y) (g' : y ⟶ x)
     (h1 : g ≫ g' = Cat.id x) (h2 : g' ≫ g = Cat.id y) :
     @IsIso C.Obj (colimitCat C hC) (C.objIncl i x) (C.objIncl i y) (homInclObj C hC g) := by
@@ -1566,7 +1568,7 @@ theorem homInclObj_isIso_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     so `cover_castHom` reduces the per-stage cover obligation to `hcov`.  Dual to
     `homInclObj_cover_reflects`; with per-stage cover-stability this lifts a stage cover
     to the colimit (item (2) in the `hcanon` residual). -/
-theorem homInclObj_cover_of_stage (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_cover_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     {i : ι} {x y : C.A i} (g : x ⟶ y)
@@ -1600,7 +1602,7 @@ theorem homInclObj_cover_of_stage (C : CatSystem ι D) (hC : C.Coherent)
     `colimHom_isIso_reflects` gives a stage `L` where `functF.map` of the witness germ is
     iso; the germ is `castHom ∘ functF.map g`, so `isIso_of_castHom` leaves
     `IsIso (functF.map g)`, which `hcons` reflects to `IsIso g`. -/
-theorem homInclObj_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent)
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
         IsIso (C.Fmap hij φ) → IsIso φ)
     {i : ι} {x y : C.A i} (g : x ⟶ y)
@@ -1628,7 +1630,7 @@ theorem homInclObj_isIso_reflects (C : CatSystem ι D) (hC : C.Coherent)
     `colimitCat` mono `homInclObj m'` (preservation, via `hmono`) factoring `homInclObj g`
     (functoriality `homInclObj_comp`); the colimit cover forces it iso, and iso reflection
     (`homInclObj_isIso_reflects`, via `hcons`) brings the iso back to the stage. -/
-theorem homInclObj_cover_reflects (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_cover_reflects (C : CatSystem ι D) (hC : C.Coherent)
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
         IsIso (C.Fmap hij φ) → IsIso φ)
     (hmono : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
@@ -1751,7 +1753,7 @@ theorem colimHom_cover_reflects (C : CatSystem ι D) (hC : C.Coherent)
     `pair p₁ p₂ : P ⟶ A × B` is an isomorphism.  Purely formal: the inverse is the
     mediator of `(fst, snd)`; the two round-trips collapse by `pair_uniq` (on the
     `A × B` side) and the UP uniqueness (on the `P` side). -/
-theorem isIso_of_product_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryProducts 𝒞]
+public theorem isIso_of_product_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryProducts 𝒞]
     {A B P : 𝒞} (p₁ : P ⟶ A) (p₂ : P ⟶ B)
     (hup : ∀ {Z : 𝒞} (f : Z ⟶ A) (g : Z ⟶ B),
       ∃ u : Z ⟶ P, (u ≫ p₁ = f ∧ u ≫ p₂ = g) ∧
@@ -1774,7 +1776,7 @@ theorem isIso_of_product_up {𝒞 : Type w} [Cat.{w} 𝒞] [HasBinaryProducts �
     then `(homIncl f₀, homIncl f₁)` is jointly left-cancellable.  Push the two
     competitors `s, t` to a common stage, where both leg-equations become stage
     equations, and apply `hcancel`. -/
-theorem colimHom_monicPair_of_rep (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimHom_monicPair_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     {P A B : C.Obj} {L : ι}
     (hpd : D.le (colimOut C P).1 L) (hca : D.le (colimOut C A).1 L) (hcb : D.le (colimOut C B).1 L)
     (f₀ : C.F hpd (colimOut C P).2 ⟶ C.F hca (colimOut C A).2)
@@ -1872,7 +1874,7 @@ theorem colimHom_monicPair_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     mediator germ `r`, and `homInclObj_eq` + `homCompRaw_eq_of_stage` reduce each
     projection-composite to `r ≫ functF.map fst = pL` (resp. snd).  Uniqueness is
     `colimHom_monicPair_of_rep` with `hpres` as the joint stage-cancellation. -/
-theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
+public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
     (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
@@ -2056,7 +2058,7 @@ theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
     the mediator germ `r`, and `homInclObj_eq` + `homCompRaw_eq_of_stage` reduce the
     factorisation `u ≫ homInclObj (eqMap f g) = d.map` to `r ≫ functF.map (eqMap) =
     germ`.  Uniqueness is `homInclObj_mono_of_stage` with `hepres`. -/
-theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coherent)
+public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coherent)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
         (u v : z ⟶ C.F hij (eqObj f g)),
@@ -2236,7 +2238,7 @@ theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coherent)
   (`cover_mono_diagonal`): any subobject `S` allowing `f` (`g ≫ S.arr = f = e ≫ m`) admits a
   diagonal `d : · ⟶ S.dom` filling the cover⊥mono square, giving `⟨·,m⟩ ≤ S` via `d`.  This is
   the colimit-level image construction: each colimit map factors at a stage as cover-then-mono. -/
-theorem coverMono_isImage {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
+public theorem coverMono_isImage {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
     {A I B : 𝒞} {f : A ⟶ B} {e : A ⟶ I} {m : I ⟶ B} (hm : Monic m)
     (he : Cover e) (hfac : e ≫ m = f) :
     IsImage f (Subobject.mk I m hm) := by
@@ -2271,7 +2273,7 @@ theorem coverMono_isImage {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞]
   the image of `F f` is `F (image f)` (by `himg`), so `F (image.lift f)` is *a* lift of `F f`
   through its image's mono `F (image f).arr`; that mono being monic and `image.lift (F f)` also
   factoring `F f`, the two lifts agree, hence `F (image.lift f)` is a cover. -/
-theorem preservesImage_lift_cover {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} ℬ] [HasImages 𝒜]
+public theorem preservesImage_lift_cover {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} ℬ] [HasImages 𝒜]
     (F : Functor 𝒜 ℬ) (hpm : PreservesMono F) {A B : 𝒜} (f : A ⟶ B)
     (himg : IsImage (F.map f) (Subobject.map F hpm (image f))) :
     Cover (F.map (image.lift f)) := by
@@ -2319,7 +2321,7 @@ theorem preservesImage_lift_cover {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} �
     primitive axiom: it is derived from `F` preserving covers (`hcov`), preserving monos (`hpm`),
     and the target having pullbacks.  This is what turns the §1.543 tower (whose transitions
     already preserve covers/monos/finite limits) into an *image*-preserving tower. -/
-theorem transitions_preserve_images {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} ℬ]
+public theorem transitions_preserve_images {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} ℬ]
     [HasImages 𝒜] [HasPullbacks ℬ] (F : Functor 𝒜 ℬ) (hpm : PreservesMono F)
     (hcov : PreservesCovers F) {A B : 𝒜} (f : A ⟶ B) :
     IsImage (F.map f) (Subobject.map F hpm (image f)) := by
@@ -2342,7 +2344,7 @@ theorem transitions_preserve_images {𝒜 ℬ : Type w} [Cat.{w} 𝒜] [Cat.{w} 
     is a colimit MONO (`homInclObj_mono_of_stage`; transitions preserve it by `hmono`).  Their
     composite is `homInclObj f` (`homInclObj_comp` + `image.lift_fac`).  A cover-then-mono
     factorization is an image (`coverMono_isImage`, needs only `HasPullbacks C.Obj`). -/
-theorem objIncl_preserves_images (C : CatSystem ι D) (hC : C.Coherent)
+public theorem objIncl_preserves_images (C : CatSystem ι D) (hC : C.Coherent)
     (hi : ∀ i, HasImages (C.A i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
@@ -2387,7 +2389,7 @@ theorem objIncl_preserves_images (C : CatSystem ι D) (hC : C.Coherent)
     to its `colimOut` rep, include the two legs: `E` is a colimit COVER (`colimHom_cover_of_rep` +
     `preservesImage_lift_cover`) and `M` a colimit MONO (`colimHom_mono_of_rep` + `hmono`), with
     `E ≫ M = F`.  A cover-then-mono factorization is an image (`coverMono_isImage`). -/
-noncomputable def colimitHasImages (C : CatSystem ι D) (hC : C.Coherent)
+@[expose] public noncomputable def colimitHasImages (C : CatSystem ι D) (hC : C.Coherent)
     (hi : ∀ i, HasImages (C.A i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
@@ -2527,7 +2529,7 @@ noncomputable def colimitHasImages (C : CatSystem ι D) (hC : C.Coherent)
     Constructive universal-property version of the §1.432 construction for an
     *arbitrary* equalizer cone (not just the chosen one): if `(E, m)` equalizes
     `fst≫f` and `snd≫g`, then `(E, m≫fst, m≫snd)` is a pullback of `(f, g)`. -/
-theorem pullback_of_equalizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
+public theorem pullback_of_equalizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 𝒟]
     {A B C E : 𝒟} {f : A ⟶ C} {g : B ⟶ C} {m : E ⟶ prod A B}
     (hmeq : m ≫ (fst ≫ f) = m ≫ (snd ≫ g))
     (heq : (EqualizerCone.mk E m hmeq).IsEqualizer) :
@@ -2556,7 +2558,7 @@ theorem pullback_of_equalizer {𝒟 : Type u} [Cat.{v} 𝒟] [HasBinaryProducts 
     equalizer of `(p, q)`.  Used to slide the `F`-image equalizer of `(F(fst≫f),F(snd≫g))`
     onto the cospan `(fst≫Ff, snd≫Fg)` over `prod (F A) (F B)` (the two pairs differ by the
     product-comparison iso `φ = pair (F fst) (F snd)`). -/
-theorem isEqualizer_comp_iso {𝒟 : Type u} [Cat.{v} 𝒟]
+public theorem isEqualizer_comp_iso {𝒟 : Type u} [Cat.{v} 𝒟]
     {X Y Z E : 𝒟} {p q : Y ⟶ Z} {φ : X ⟶ Y} (hφ : IsIso φ) {e : E ⟶ X}
     (hew : e ≫ (φ ≫ p) = e ≫ (φ ≫ q))
     (heq : (EqualizerCone.mk (f := φ ≫ p) (g := φ ≫ q) E e hew).IsEqualizer) :
@@ -2588,7 +2590,7 @@ theorem isEqualizer_comp_iso {𝒟 : Type u} [Cat.{v} 𝒟]
     `(f, g)` and `i : E' ⟶ E`, `j : E ⟶ E'` are mutually inverse, then `(E', i ≫ e)` is also
     the equalizer of `(f, g)`.  Used to move the chosen equalizer (which `PreservesEqualizers`
     relates by an iso `k`) onto the `F`-image apex `F (eqObj …)`. -/
-theorem isEqualizer_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟] {A B E E' : 𝒟} {f g : A ⟶ B}
+public theorem isEqualizer_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟] {A B E E' : 𝒟} {f g : A ⟶ B}
     {e : E ⟶ A} {hfe : e ≫ f = e ≫ g} (heq : (EqualizerCone.mk E e hfe).IsEqualizer)
     (i : E' ⟶ E) (j : E ⟶ E') (hij : i ≫ j = Cat.id E') (hji : j ≫ i = Cat.id E) :
     (EqualizerCone.mk (f := f) (g := g) E' (i ≫ e)
@@ -2615,7 +2617,7 @@ theorem isEqualizer_iso_apex {𝒟 : Type u} [Cat.{v} 𝒟] {A B E E' : 𝒟} {f
     the equalizer of `(F(fst≫f), F(snd≫g))`, which equals `(fst≫Ff, snd≫Fg)` precomposed by the
     product-comparison iso `φ` (`isEqualizer_comp_iso`); `pullback_of_equalizer` then turns this
     equalizer over `prod (F A)(F B)` into the desired pullback. -/
-theorem image_chosenPullback_isPullback {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+public theorem image_chosenPullback_isPullback {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasEqualizers 𝒞]
     [HasTerminal 𝒟] [HasBinaryProducts 𝒟] [HasEqualizers 𝒟]
     (F : Functor 𝒞 𝒟)
@@ -2712,7 +2714,7 @@ theorem image_chosenPullback_isPullback {𝒞 𝒟 : Type u} [Cat.{v} 𝒞] [Cat
   `products_equalizers_implies_pullbacks`.  DRY: we do not rebuild the
   representative-transport machinery; we reuse the three finite-limit
   constructors and the stage-level §1.432 derivation. -/
-noncomputable def colimitHasPullbacks (C : CatSystem ι D) (hC : C.Coherent) [_hne : Nonempty ι]
+@[expose] public noncomputable def colimitHasPullbacks (C : CatSystem ι D) (hC : C.Coherent) [_hne : Nonempty ι]
     -- terminal data
     (ht : ∀ i, HasTerminal (C.A i))
     -- `_htpres` feeds a `HasTerminal` instance that the products+equalizers pullback route below does
@@ -2753,7 +2755,7 @@ noncomputable def colimitHasPullbacks (C : CatSystem ι D) (hC : C.Coherent) [_h
     (`colimitHasBinaryProducts`/`colimitHasEqualizers`), which runs away even at multi-M heartbeats.
     Downstream cover bridges (`colimitCanonicalCover`) `rw` this equation instead of re-forcing the
     cascade — the §1.543 elaboration-performance fix. -/
-theorem colimitHasPullbacks_has (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem colimitHasPullbacks_has (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
@@ -2787,7 +2789,7 @@ theorem colimitHasPullbacks_has (C : CatSystem ι D) (hC : C.Coherent) [hne : No
     `φ : c.pt ⟶ c'.pt` compatible with the projections is an isomorphism: its
     inverse is the reverse comparison `ψ : c'.pt ⟶ c.pt`, and `φψ`, `ψφ` both
     satisfy the projection equations that the identity uniquely satisfies. -/
-theorem pullback_comparison_iso {𝒞 : Type u} [Cat.{v} 𝒞] {A B Z : 𝒞}
+public theorem pullback_comparison_iso {𝒞 : Type u} [Cat.{v} 𝒞] {A B Z : 𝒞}
     {f : A ⟶ Z} {g : B ⟶ Z} {c c' : Cone f g}
     (hc : c.IsPullback) (hc' : c'.IsPullback) :
     ∃ φ : c.pt ⟶ c'.pt, IsIso φ ∧ φ ≫ c'.π₁ = c.π₁ ∧ φ ≫ c'.π₂ = c.π₂ := by
@@ -2813,7 +2815,7 @@ theorem pullback_comparison_iso {𝒞 : Type u} [Cat.{v} 𝒞] {A B Z : 𝒞}
     `colimitPullbacksTransferCovers`: it turns the opaque "canonical `π₂` is a cover"
     obligation into the concrete "*some* pullback cone of `(f, g)` has `π₂` a cover".
     Reusable in any `[Cat] [HasPullbacks]`, so DRY for both colimit assemblies. -/
-theorem hasPullback_cover_of_witness {𝒞 : Type u} [Cat.{v} 𝒞]
+public theorem hasPullback_cover_of_witness {𝒞 : Type u} [Cat.{v} 𝒞]
     {A B Z : 𝒞} {f : A ⟶ Z} {g : B ⟶ Z} (hpb : HasPullback f g)
     {c : Cone f g} (hc : c.IsPullback) (hcov : Cover c.π₂) :
     Cover hpb.cone.π₂ := by
@@ -2837,7 +2839,7 @@ theorem canonicalPullback_cover_of_witness {𝒞 : Type u} [Cat.{v} 𝒞] [HasPu
     `a`-stage germ of `g` transported across the rep equalities `hxA, hxZ` of `colimOut A`/`colimOut Z`.
     `subst eA eZ` makes the two `HomColim` types definitionally equal; both sides then reduce, via
     `homInclObj_eq` at a shared witness and `homIncl_compat`, to the same canonical `functF`-germ. -/
-theorem homInclObj_heq_homIncl (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_heq_homIncl (C : CatSystem ι D) (hC : C.Coherent)
     {i : ι} {x x' : C.A i} (g : x ⟶ x') {A Z : C.Obj}
     (eA : C.objIncl i x = A) (eZ : C.objIncl i x' = Z)
     (a : UpperBound D (colimOut C A).1 (colimOut C Z).1) (hiA : D.le i a.1)
@@ -2861,7 +2863,7 @@ theorem homInclObj_heq_homIncl (C : CatSystem ι D) (hC : C.Coherent)
     (`objIncl_compat`+`colimOut_spec`).  `homInclObj_heq_homIncl` (at the reflexive bound `i = a.1`,
     where the rep equalities are `F_refl`) gives the `HEq` to `f`, the refl germ collapsing by
     `refl_map`.  This is the per-hom half of the two-arbitrary-hom alignment. -/
-theorem colimHom_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A Z : C.Obj}
+public theorem colimHom_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A Z : C.Obj}
     (f : HomColim C hC (colimOut C A).2 (colimOut C Z).2) :
     ∃ (N : ι) (xA xZ : C.A N) (fN : xA ⟶ xZ),
       C.objIncl N xA = A ∧ C.objIncl N xZ = Z ∧
@@ -2884,7 +2886,7 @@ theorem colimHom_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A Z : C.O
     Packages an upper bound `K` of the chosen reps of `objIncl N xA`, `objIncl N xZ` that also lies
     above `M`, with the rep-agreement equalities at `K`.  Built from the two `colimOut_spec` `Rel`s
     (via `Quotient.exact`) and `D.bound`.  Reused to align two separately-aligned homs onto one stage. -/
-theorem objIncl_pair_commonBound (C : CatSystem ι D)
+public theorem objIncl_pair_commonBound (C : CatSystem ι D)
     {N M : ι} (hNM : D.le N M) (xA xZ : C.A N) :
     ∃ (K : ι) (hMK : D.le M K)
       (hpA : D.le (colimOut C (C.objIncl N xA)).1 K) (hpZ : D.le (colimOut C (C.objIncl N xZ)).1 K),
@@ -2915,7 +2917,7 @@ theorem objIncl_pair_commonBound (C : CatSystem ι D)
     common bound `objIncl_pair_commonBound`, to the same canonical-germ rep inclusion: the two germs
     `functF (N→K).map fN` and `functF (M→K).map (functF (N→M).map fN)` agree by `trans_map`.  Brings
     two separately-aligned homs onto a common codomain stage. -/
-theorem homInclObj_push_heq (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_push_heq (C : CatSystem ι D) (hC : C.Coherent)
     {N M : ι} (hNM : D.le N M) {xA xZ : C.A N} (fN : xA ⟶ xZ) :
     HEq (homInclObj C hC (C.Fmap hNM fN)) (homInclObj C hC fN) := by
   obtain ⟨K, hMK, hpA, hpZ, hxA, hxZ⟩ := objIncl_pair_commonBound C hNM xA xZ
@@ -2939,7 +2941,7 @@ theorem homInclObj_push_heq (C : CatSystem ι D) (hC : C.Coherent)
     `objIncl N c₁ = objIncl N c₂` then there is `M ≥ N` with `F (N→M) c₁ = F (N→M) c₂`.  Direct
     `Quotient.exact` of the object equality plus proof-irrelevance of the two transitions into the
     witnessing stage. -/
-theorem objIncl_eq_commonStage (C : CatSystem ι D) {N : ι} (c₁ c₂ : C.A N)
+public theorem objIncl_eq_commonStage (C : CatSystem ι D) {N : ι} (c₁ c₂ : C.A N)
     (h : C.objIncl N c₁ = C.objIncl N c₂) :
     ∃ (M : ι) (hNM : D.le N M), C.F hNM c₁ = C.F hNM c₂ := by
   obtain ⟨M, h1, h2, heq⟩ := Quotient.exact h
@@ -2953,7 +2955,7 @@ theorem objIncl_eq_commonStage (C : CatSystem ι D) {N : ι} (c₁ c₂ : C.A N)
     push both to a common stage `N₀` above both (`homInclObj_push_heq`), then equalize the two reps of
     `Z` at a further stage (`objIncl_eq_commonStage`) and push once more, casting `gN`'s codomain onto
     `xZ` (`castHom`, an iso, so `homInclObj` is unaffected up to the codomain identification). -/
-theorem colimHom_cospan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A B Z : C.Obj}
+public theorem colimHom_cospan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A B Z : C.Obj}
     (f : HomColim C hC (colimOut C A).2 (colimOut C Z).2)
     (g : HomColim C hC (colimOut C B).2 (colimOut C Z).2) :
     ∃ (N : ι) (xA xB xZ : C.A N) (fN : xA ⟶ xZ) (gN : xB ⟶ xZ),
@@ -2998,7 +3000,7 @@ theorem colimHom_cospan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent) {A 
   `cover_precomp_iso` it suffices that `pb.cone.π₂` is a cover.  That last fact is
   exactly `hcanon` — the canonical-pullback transfer, the only part requiring the
   representative-level argument. -/
-noncomputable def colimitPullbacksTransferCovers (C : CatSystem ι D) (hC : C.Coherent)
+@[expose] public noncomputable def colimitPullbacksTransferCovers (C : CatSystem ι D) (hC : C.Coherent)
     (hpull : @HasPullbacks C.Obj (colimitCat C hC))
     (hcanon : letI : Cat C.Obj := colimitCat C hC
       ∀ {A B Z : C.Obj} (f : A ⟶ Z) (g : B ⟶ Z),
@@ -3058,7 +3060,7 @@ noncomputable def colimitPullbacksTransferCovers (C : CatSystem ι D) (hC : C.Co
   comparable in size to `colimitHasBinaryProducts`/`colimitHasEqualizers` (reusing
   `homInclObj_eq`, `castHom`, the germ lemmas).  Until those two isos land, both assemblies
   still pass `hcanon` through as a hypothesis. -/
-noncomputable def colimitPreRegular (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
+@[expose] public noncomputable def colimitPreRegular (C : CatSystem ι D) (hC : C.Coherent) [hne : Nonempty ι]
     -- terminal
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
@@ -3117,7 +3119,7 @@ variable {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
 
 /-- Transport `IsEqualizer` across a propositional equality of the cone map (same apex).  Avoids
     a `rw`-in-motive on the dependent `EqualizerCone.map` field. -/
-theorem isEqualizer_map_congr {A B : ℬ} {f g : A ⟶ B} {E : ℬ} {e e' : E ⟶ A}
+public theorem isEqualizer_map_congr {A B : ℬ} {f g : A ⟶ B} {E : ℬ} {e e' : E ⟶ A}
     {he : e ≫ f = e ≫ g} {he' : e' ≫ f = e' ≫ g} (hee : e = e')
     (h : (EqualizerCone.mk E e he).IsEqualizer) : (EqualizerCone.mk E e' he').IsEqualizer := by
   subst hee; exact h
@@ -3133,7 +3135,7 @@ theorem htpres_of_eq [HasTerminal 𝒜] [HasTerminal ℬ] (F : Functor 𝒜 ℬ)
     comparison `pair (F fst) (F snd) : F(A×B) → F.obj A × F.obj B` is an iso, then `(F fst, F snd)` is a
     monic pair: two maps into `F(A×B)` agreeing after `F fst` and `F snd` agree.  This is the
     `hppres` content (`u ≫ F fst = v ≫ F fst → u ≫ F snd = v ≫ F snd → u = v`). -/
-theorem preservesBinaryProducts_jointly_monic [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ]
+public theorem preservesBinaryProducts_jointly_monic [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ]
     (F : Functor 𝒜 ℬ) (hpp : PreservesBinaryProducts F) {A B : 𝒜} :
     MonicPair (F.map (fst (A := A) (B := B))) (F.map snd) := by
   -- the comparison `φ = pair (F fst) (F snd)` is iso, hence mono; and `φ ≫ fst = F fst`,
@@ -3152,7 +3154,7 @@ theorem preservesBinaryProducts_jointly_monic [HasBinaryProducts 𝒜] [HasBinar
     iso lets any pair of legs `p : Z ⟶ F.obj A`, `q : Z ⟶ F.obj B` factor through `F(A×B)`: take
     `r := pair p q ≫ φ⁻¹`, then `r ≫ F fst = p` and `r ≫ F snd = q`.  This is the `hppres_pair`
     content. -/
-theorem preservesBinaryProducts_pair [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ]
+public theorem preservesBinaryProducts_pair [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ]
     (F : Functor 𝒜 ℬ) (hpp : PreservesBinaryProducts F) {A B : 𝒜} {Z : ℬ}
     (p : Z ⟶ F.obj A) (q : Z ⟶ F.obj B) :
     ∃ r : Z ⟶ F.obj (prod A B),
@@ -3170,7 +3172,7 @@ theorem preservesBinaryProducts_pair [HasBinaryProducts 𝒜] [HasBinaryProducts
     equalizer of `f, g`, then `F.obj (eqMap f g)` is monic (an equalizer map is monic, and its
     `F`-image is again an equalizer map up to the comparison iso).  This is the `hepres` content
     (`u ≫ F.obj (eqMap f g) = v ≫ F.obj (eqMap f g) → u = v`). -/
-theorem preservesEqualizers_mono [HasEqualizers 𝒜] [HasEqualizers ℬ]
+public theorem preservesEqualizers_mono [HasEqualizers 𝒜] [HasEqualizers ℬ]
     (F : Functor 𝒜 ℬ) (hpe : PreservesEqualizers F) {A B : 𝒜} (f g : A ⟶ B) :
     Monic (F.map (eqMap f g)) := by
   -- comparison `k : F(eqObj f g) → eqObj (Ff)(Fg)` is iso; `eqMap (Ff)(Fg)` is monic; and
@@ -3197,7 +3199,7 @@ theorem preservesEqualizers_mono [HasEqualizers 𝒜] [HasEqualizers ℬ]
 /-- **Lifting through `F.obj (eqMap f g)` from `PreservesEqualizers`.**  If a map `kk : Z ⟶ F.obj A`
     equalizes `F f, F g`, it factors through `F.obj (eqObj f g)` via `F.obj (eqMap f g)`.  This is the
     `hepres_lift` content. -/
-theorem preservesEqualizers_lift [HasEqualizers 𝒜] [HasEqualizers ℬ]
+public theorem preservesEqualizers_lift [HasEqualizers 𝒜] [HasEqualizers ℬ]
     (F : Functor 𝒜 ℬ) (hpe : PreservesEqualizers F) {A B : 𝒜} (f g : A ⟶ B)
     {Z : ℬ} (kk : Z ⟶ F.obj A) (hk : kk ≫ F.map f = kk ≫ F.map g) :
     ∃ r : Z ⟶ F.obj (eqObj f g), r ≫ F.map (eqMap f g) = kk := by
@@ -3235,7 +3237,7 @@ theorem preservesTerminal_comp [HasTerminal 𝒜] [HasTerminal ℬ] [HasTerminal
 /-- **Binary-product preservation composes.**  If `F` and `G` each make their product comparison an
     iso, so does `G ∘ F`: the composite comparison factors as `G(φF) ≫ φG` (`φF`, `φG` the rung
     comparisons), a composite of isos (`φF` iso ⟹ `G φF` iso by `functor_preserves_iso`). -/
-theorem preservesBinaryProducts_comp {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ : Type u₃}
+public theorem preservesBinaryProducts_comp {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ : Type u₃}
     [Cat.{v} 𝒜] [Cat.{v} ℬ] [Cat.{v} ℰ]
     [HasBinaryProducts 𝒜] [HasBinaryProducts ℬ] [HasBinaryProducts ℰ]
     (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
@@ -3264,7 +3266,7 @@ theorem preservesBinaryProducts_comp {𝒜 : Type u₁} {ℬ : Type u₂} {ℰ :
     `(Ff, Fg)`.  PROOF: `c` is iso to the chosen equalizer (`isIso_of_two_equalizers`), `F` of that
     iso is iso, and the chosen image `(F(eqObj), F(eqMap))` is an equalizer (`PreservesEqualizers`
     transported by `isEqualizer_iso_apex`); chain the two apex-transports. -/
-theorem preservesEqualizers_isEqualizer [HasEqualizers 𝒜] [HasEqualizers ℬ]
+public theorem preservesEqualizers_isEqualizer [HasEqualizers 𝒜] [HasEqualizers ℬ]
     (F : Functor 𝒜 ℬ) (hpe : PreservesEqualizers F) {A B : 𝒜} {f g : A ⟶ B}
     {c : EqualizerCone f g} (hc : c.IsEqualizer) :
     (EqualizerCone.mk (f := F.map f) (g := F.map g) (F.obj c.dom) (F.map c.map)
@@ -3303,7 +3305,7 @@ theorem preservesEqualizers_isEqualizer [HasEqualizers 𝒜] [HasEqualizers ℬ]
     (`preservesEqualizers_isEqualizer` on the chosen `F`-equalizer), `G` sends it to an equalizer
     of `(GFf, GFg)` (again `preservesEqualizers_isEqualizer`), and the chosen-equalizer comparison
     for `G ∘ F` is then iso (two equalizers ⟹ comparison iso). -/
-theorem preservesEqualizers_comp [HasEqualizers 𝒜] [HasEqualizers ℬ] [HasEqualizers ℰ]
+public theorem preservesEqualizers_comp [HasEqualizers 𝒜] [HasEqualizers ℬ] [HasEqualizers ℰ]
     (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
     (hpeF : PreservesEqualizers F) (hpeG : PreservesEqualizers G) :
     PreservesEqualizers (compFunctor F G) := by
@@ -3334,7 +3336,7 @@ namespace Freyd
     ω-tower (the colimit machinery requires `ι : Type u`).  Relocated here (from `Capitalization`)
     so it sits UPSTREAM of `Capitalization`: both `Capitalization` (the outer tower) and
     `Freyd.Inflation` (the inner chain-slice `CatSystem`) index over it. -/
-def uliftNatDirected : Colim.Directed (ULift.{u} Nat) where
+@[expose] public def uliftNatDirected : Colim.Directed (ULift.{u} Nat) where
   le a b := a.down ≤ b.down
   refl a := Nat.le_refl a.down
   trans h h' := Nat.le_trans h h'

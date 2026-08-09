@@ -8,13 +8,15 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_513_CoveringFamily
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_513_CoveringFamily
 
 
 universe v u
@@ -32,17 +34,17 @@ namespace Freyd
     regular and pre-regular categories.  In a pullback square the map opposite
     a cover is a cover; the square must be a pullback, not just commutative
     (in **Set** an empty corner over a commutative square defeats transfer). -/
-class PullbacksTransferCovers (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class PullbacksTransferCovers (𝒞 : Type u) [Cat.{v} 𝒞] where
   pullbacks_transfer_covers : ∀ {A B C : 𝒞} {f : A ⟶ B} {g : C ⟶ B}
     (c : Cone f g), c.IsPullback → Cover f → Cover c.π₂
 
 /-- A regular category: Cartesian, has images, pullbacks transfer covers (§1.52). -/
-class RegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class RegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasPullbacks 𝒞, HasImages 𝒞,
     PullbacksTransferCovers 𝒞
 
 /-- A pre-regular category: Cartesian, pullbacks transfer covers (§1.52). -/
-class PreRegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class PreRegularCategory (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasTerminal 𝒞, HasBinaryProducts 𝒞, HasPullbacks 𝒞,
     PullbacksTransferCovers 𝒞
 
@@ -52,11 +54,11 @@ namespace PreRegularCategory
     representative of the `PreRegularCategory`/derived-exactness instance diamond.  Opening the
     `PreRegularCategory` scope is local to the importing file or section; ordinary instance search is
     unchanged elsewhere. -/
-scoped instance (priority := 10000) pinnedEqualizers
+@[expose] public scoped instance (priority := 10000) pinnedEqualizers
     {𝒞 : Type u} [Cat.{v} 𝒞] [PreRegularCategory 𝒞] : HasEqualizers 𝒞 :=
   products_pullbacks_implies_equalizers
 
-scoped instance (priority := 10000) pinnedPullbacks
+@[expose] public scoped instance (priority := 10000) pinnedPullbacks
     {𝒞 : Type u} [Cat.{v} 𝒞] [PreRegularCategory 𝒞] : HasPullbacks 𝒞 :=
   PreRegularCategory.toHasPullbacks
 
@@ -66,7 +68,7 @@ end PreRegularCategory
     (`HasTerminal`/`HasBinaryProducts`/`HasPullbacks`/`PullbacksTransferCovers`) are projected
     directly, so this introduces no new data and merges cleanly with any other `PreRegularCategory`
     instance built from the same parents. -/
-instance (priority := 100) RegularCategory.toPreRegularCategory
+@[expose] public instance (priority := 100) RegularCategory.toPreRegularCategory
     {𝒞 : Type u} [Cat.{v} 𝒞] [RegularCategory 𝒞] : PreRegularCategory 𝒞 where
   toHasTerminal := inferInstance
   toHasBinaryProducts := inferInstance
@@ -74,7 +76,7 @@ instance (priority := 100) RegularCategory.toPreRegularCategory
   toPullbacksTransferCovers := inferInstance
 
 /-- The chosen pullback of a cover along any map is a cover. -/
-theorem cover_pullback [hpull : HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞]
+public theorem cover_pullback [hpull : HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞]
     {A B C : 𝒞} {f : A ⟶ B} (g : C ⟶ B) (hf : Cover f) :
     Cover (hpull.has f g).cone.π₂ :=
   PullbacksTransferCovers.pullbacks_transfer_covers _ (hpull.has f g).cone_isPullback hf
@@ -88,7 +90,7 @@ theorem cover_pullback [hpull : HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞
     finite products + pullbacks by `products_pullbacks_implies_equalizers` — given
     locally (it is a `def`, not a global instance, to avoid a `HasEqualizers` diamond
     against `CartesianCategory`). -/
-theorem cover_epi [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public theorem cover_epi [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     {X Y : 𝒞} {f : X ⟶ Y} (hf : Cover f) {Z : 𝒞} {a b : Y ⟶ Z}
     (hab : f ≫ a = f ≫ b) : a = b :=
   letI : HasEqualizers 𝒞 := products_pullbacks_implies_equalizers
@@ -97,13 +99,13 @@ theorem cover_epi [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 variable [HasTerminal 𝒞]
 
 /-- A is WELL-SUPPORTED if A → 1 is a cover (§1.522). -/
-def WellSupported (A : 𝒞) : Prop := Cover (term A)
+@[expose] public def WellSupported (A : 𝒞) : Prop := Cover (term A)
 
 /-- When `B` is well-supported, the projection `fst : C×B → C` is a cover.
     `C×B` with `(snd, fst)` is the pullback of `term B : B → 1` along
     `term C : C → 1` (a product is a pullback over the terminal), and pullbacks
     transfer the cover `term B` to the opposite leg `fst`. -/
-theorem prod_fst_cover [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞]
+public theorem prod_fst_cover [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [PullbacksTransferCovers 𝒞]
     {C B : 𝒞} (hws : WellSupported B) : Cover (fst : prod C B ⟶ C) := by
   have hpb : (⟨prod C B, snd, fst, term_uniq _ _⟩ : Cone (term B) (term C)).IsPullback := by
     intro d
@@ -114,20 +116,20 @@ theorem prod_fst_cover [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [PullbacksTr
   exact PullbacksTransferCovers.pullbacks_transfer_covers _ hpb hws m g hm hgm
 
 /-- The SUPPORT of A is the image of A → 1 (§1.522, requires HasImages). -/
-def Support [HasImages 𝒞] (A : 𝒞) : Subobject 𝒞 one := image (term A)
+@[expose] public def Support [HasImages 𝒞] (A : 𝒞) : Subobject 𝒞 one := image (term A)
 
 /-- With images, A is well-supported iff its support is entire. -/
-theorem wellSupported_iff_support_entire [HasImages 𝒞] (A : 𝒞) :
+public theorem wellSupported_iff_support_entire [HasImages 𝒞] (A : 𝒞) :
     WellSupported A ↔ Subobject.IsEntire (Support A) :=
   cover_iff_image_entire (term A)
 
 /-- A is WELL-POINTED (§1.523): the collection 1 → A jointly covers A.
     Every proper monic into A misses some point 1 → A. -/
-def WellPointed (A : 𝒞) : Prop :=
+@[expose] public def WellPointed (A : 𝒞) : Prop :=
   ∀ {D : 𝒞} (m : D ⟶ A), Monic m → ¬ IsIso m → ∃ (x : one ⟶ A), ¬ ∃ (y : one ⟶ D), y ≫ m = x
 
 /-- Capital (§1.525): every well-supported object is well-pointed. -/
-def Capital : Prop := ∀ (A : 𝒞), WellSupported A → WellPointed A
+@[expose] public def Capital : Prop := ∀ (A : 𝒞), WellSupported A → WellPointed A
 
 /-! ## Kernel-pair lemmas (requires products and pullbacks too) -/
 
@@ -138,20 +140,20 @@ variable (S : 𝒞)
 
 private def _pb : HasPullback (term S) (term S) := hpull.has (term S) (term S)
 
-def _kpCone : Cone (term S) (term S) := ⟨_, kp₁ (f:=term S), kp₂ (f:=term S), kp_sq⟩
-def _prodCone : Cone (term S) (term S) := ⟨_, fst, snd, term_uniq _ _⟩
+@[expose] public def _kpCone : Cone (term S) (term S) := ⟨_, kp₁ (f:=term S), kp₂ (f:=term S), kp_sq⟩
+@[expose] public def _prodCone : Cone (term S) (term S) := ⟨_, fst, snd, term_uniq _ _⟩
 
 /-- kpProdIso : kernelPair(term S) → S×S via product universal property;
     kpProdInv in the other direction via pullback lift. -/
-def kpProdIso : kernelPair (term S) ⟶ prod S S :=
+@[expose] public def kpProdIso : kernelPair (term S) ⟶ prod S S :=
   pair (kp₁ (f:=term S)) (kp₂ (f:=term S))
 
-def kpProdInv : prod S S ⟶ kernelPair (term S) := (_pb S).lift (_prodCone S)
+public def kpProdInv : prod S S ⟶ kernelPair (term S) := (_pb S).lift (_prodCone S)
 
-@[simp] theorem kpProdInv_fst : kpProdInv S ≫ kp₁ (f:=term S) = fst := (_pb S).lift_fst (_prodCone S)
-@[simp] theorem kpProdInv_snd : kpProdInv S ≫ kp₂ (f:=term S) = snd := (_pb S).lift_snd (_prodCone S)
+@[simp] public theorem kpProdInv_fst : kpProdInv S ≫ kp₁ (f:=term S) = fst := (_pb S).lift_fst (_prodCone S)
+@[simp] public theorem kpProdInv_snd : kpProdInv S ≫ kp₂ (f:=term S) = snd := (_pb S).lift_snd (_prodCone S)
 
-theorem kpProdIso_inv : kpProdIso S ≫ kpProdInv S = Cat.id (kernelPair (term S)) := by
+public theorem kpProdIso_inv : kpProdIso S ≫ kpProdInv S = Cat.id (kernelPair (term S)) := by
   let u := kpProdIso S ≫ kpProdInv S
   have hu_fst : u ≫ kp₁ (f:=term S) = kp₁ (f:=term S) := by
     dsimp [u]; rw [Cat.assoc, kpProdInv_fst, show kpProdIso S ≫ fst = kp₁ (f:=term S) from fst_pair _ _]
@@ -165,7 +167,7 @@ theorem kpProdIso_inv : kpProdIso S ≫ kpProdInv S = Cat.id (kernelPair (term S
       (_pb S).lift_uniq (_kpCone S) u hu_fst hu_snd
     _ = Cat.id (kernelPair (term S)) := h_id_lift
 
-theorem kpProdInv_iso : kpProdInv S ≫ kpProdIso S = Cat.id (prod S S) := by
+public theorem kpProdInv_iso : kpProdInv S ≫ kpProdIso S = Cat.id (prod S S) := by
   have h := pair_uniq fst snd (kpProdInv S ≫ kpProdIso S)
     (by rw [Cat.assoc, show kpProdIso S ≫ fst = kp₁ (f:=term S) from fst_pair _ _, kpProdInv_fst])
     (by rw [Cat.assoc, show kpProdIso S ≫ snd = kp₂ (f:=term S) from snd_pair _ _, kpProdInv_snd])
@@ -176,10 +178,10 @@ theorem kpProdInv_iso : kpProdInv S ≫ kpProdIso S = Cat.id (prod S S) := by
 theorem kpProdIso_isIso : IsIso (kpProdIso S) :=
   ⟨kpProdInv S, kpProdIso_inv S, kpProdInv_iso S⟩
 
-theorem kpProdInv_isIso : IsIso (kpProdInv S) :=
+public theorem kpProdInv_isIso : IsIso (kpProdInv S) :=
   ⟨kpProdIso S, kpProdInv_iso S, kpProdIso_inv S⟩
 
-theorem kp_diag_prod : kp_diag (f:=term S) ≫ kpProdIso S = diag S := by
+public theorem kp_diag_prod : kp_diag (f:=term S) ≫ kpProdIso S = diag S := by
   let h := kp_diag (f:=term S) ≫ kpProdIso S
   have hfst : h ≫ fst = Cat.id S := by
     dsimp [h]
@@ -194,7 +196,7 @@ theorem kp_diag_prod : kp_diag (f:=term S) ≫ kpProdIso S = diag S := by
   have h_eq := pair_uniq (Cat.id S) (Cat.id S) h hfst hsnd
   simpa [h, diag] using h_eq
 
-theorem wellSupported_prod_self (S : 𝒞) (hws : WellSupported S) : WellSupported (prod S S) := by
+public theorem wellSupported_prod_self (S : 𝒞) (hws : WellSupported S) : WellSupported (prod S S) := by
   intro C m g hm hgm
   have h_diag_term : diag S ≫ term (prod S S) = term S := term_uniq _ _
   have h_factor : (diag S ≫ g) ≫ m = term S := by
@@ -205,7 +207,7 @@ end
 
 /-- §1.525: in a capital category the terminator is projective.
     Every well-supported A has a point 1 → A. -/
-theorem capital_implies_one_projective
+public theorem capital_implies_one_projective
     (hcap : Capital (𝒞 := 𝒞)) (A : 𝒞) (hws : WellSupported A) :
     Nonempty (one ⟶ A) := by
   -- 1. If A → 1 is iso, use the inverse.
@@ -247,7 +249,7 @@ theorem capital_implies_one_projective
 /-- §1.524 + §1.525: in a capital pre-regular category the terminator 1 is projective
     — every cover `e : A ↠ 1` has a section.  Proof: `capital_implies_one_projective`
     gives `1 → A`; the equation holds by `term_uniq` since everything maps to 1 uniquely. -/
-theorem capital_one_projective
+public theorem capital_one_projective
     [hp : HasBinaryProducts 𝒞] [hpull : HasPullbacks 𝒞]
     (hcap : Capital (𝒞 := 𝒞))
     {A : 𝒞} {e : A ⟶ one} (he : Cover e) :
@@ -326,7 +328,7 @@ theorem section_unique_up_to_iso_over_base
   finite products (terminal + binary products), equalizers, and covers (§1.52). -/
 
 /-- A functor `F : 𝒞 → 𝒟` PRESERVES COVERS if it carries every cover to a cover. -/
-def PreservesCovers {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
+@[expose] public def PreservesCovers {𝒞 : Type u₁} {𝒟 : Type u₂} [Cat.{v} 𝒞] [Cat.{v} 𝒟]
     (F : Functor 𝒞 𝒟) : Prop :=
   ∀ {A B : 𝒞} (f : A ⟶ B), Cover f → Cover (F.map f)
 
@@ -367,7 +369,7 @@ theorem pts_prod_iso_right [hp : HasBinaryProducts 𝒞] {A B : 𝒞}
     covers — if `f : X ↠ Y` is a cover then every point `y : 1 → Y` lifts to a
     point `x : 1 → X` with `x ≫ f = y`.  This is precisely that 1 is projective,
     which follows from capital (§1.525). -/
-theorem pts_covers_of_capital
+public theorem pts_covers_of_capital
     [PullbacksTransferCovers 𝒞]
     (hcap : Capital (𝒞 := 𝒞))
     {X Y : 𝒞} {f : X ⟶ Y} (hf : Cover f) (y : one ⟶ Y) :

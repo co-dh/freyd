@@ -37,9 +37,11 @@
   (pair/fst/snd → case/inl/inr; isIso_of_product_up → isIso_of_coproduct_up; monicPair/joint-mono →
   epiCase/joint-epi; mediator OUT of coproduct via `presCase`).  Mathlib-free.
 -/
-import Freyd.S1_543_RatCapHcanon
-import Freyd.S1_543_LaxColimitCoproduct
-import Freyd.S1_543_ColimitCoproductGerm
+module
+
+public import Freyd.S1_543_RatCapHcanon
+public import Freyd.S1_543_LaxColimitCoproduct
+public import Freyd.S1_543_ColimitCoproductGerm
 
 open Freyd
 open Freyd.Colim
@@ -66,7 +68,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) (data : LaxCoproductDa
   representatives; cancel `isoInv prUnit` to obtain the germ witness.  This is `coprJointEpi`'s
   argument with the per-fibre `data.pres` abstracted to the hypothesis `hcancel` and the coproduct
   object left generic. -/
-theorem homInclL_epiCase_of_stage
+public theorem homInclL_epiCase_of_stage
     {k0 ia ib : ι} (xP : L.A k0) (xa : L.A ia) (xb : L.A ib)
     (hia : D.le ia k0) (hib : D.le ib k0)
     (injA : L.F hia xa ⟶ xP) (injB : L.F hib xb ⟶ xP)
@@ -149,7 +151,7 @@ theorem homInclL_epiCase_of_stage
 /-! ## `objIncl i` preserves the stage coproduct `(hcop i).coprod a b`
 
   Mirrors `Colim.objIncl_preserves_coproducts`; the coproduct dual of `objInclL_preserves_products`. -/
-theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
+public theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
     @IsIso (Obj L) (laxColimCat L hL) _ _
       (@HasBinaryCoproducts.case (Obj L) (laxColimCat L hL) (laxColimHasBinaryCoproducts L hL data)
         (objIncl L i ((data.hcop i).coprod a b)) (objIncl L i a) (objIncl L i b)

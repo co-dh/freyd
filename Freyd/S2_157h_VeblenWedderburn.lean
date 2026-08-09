@@ -26,7 +26,9 @@
     associated one-object allegory `LMonObj (PElem VW)` violates the Desargues
     Horn sentence.
 -/
-import Freyd.S2_157g_ConverseHeadline
+module
+
+public import Freyd.S2_157g_ConverseHeadline
 
 namespace Freyd.Alg
 
@@ -40,15 +42,15 @@ namespace VW
   indices `{1, 2, 3, 6}`; the Frobenius `x ↦ x³` is conjugation `a + bi ↦ a - bi`. -/
 
 /-- `J₉`, the carrier: `Fin 9`. -/
-abbrev J9 := Fin 9
+@[expose] public abbrev J9 := Fin 9
 
 /-- Table row: a function `J9 → J9` from nine literals. -/
-def row (a0 a1 a2 a3 a4 a5 a6 a7 a8 : J9) : J9 → J9
+@[expose] public def row (a0 a1 a2 a3 a4 a5 a6 a7 a8 : J9) : J9 → J9
   | 0 => a0 | 1 => a1 | 2 => a2 | 3 => a3 | 4 => a4
   | 5 => a5 | 6 => a6 | 7 => a7 | 8 => a8
 
 /-- ADDITION: `GF(9)` addition, componentwise mod 3 in the coding `a + 3b ↔ a + b·i`. -/
-def add : J9 → J9 → J9
+@[expose] public def add : J9 → J9 → J9
   | 0 => row 0 1 2 3 4 5 6 7 8
   | 1 => row 1 2 0 4 5 3 7 8 6
   | 2 => row 2 0 1 5 3 4 8 6 7
@@ -60,16 +62,16 @@ def add : J9 → J9 → J9
   | 8 => row 8 6 7 2 0 1 5 3 4
 
 /-- Additive INVERSE: `-(a + bi) = (3-a) + (3-b)i`. -/
-def neg : J9 → J9 := row 0 2 1 6 8 7 3 5 4
+@[expose] public def neg : J9 → J9 := row 0 2 1 6 8 7 3 5 4
 
 /-- Subtraction, as `x + (-y)`. -/
-def sub (x y : J9) : J9 := add x (neg y)
+@[expose] public def sub (x y : J9) : J9 := add x (neg y)
 
 /-- MULTIPLICATION `x ∘ y`, the Dickson twist of `GF(9)` multiplication:
     `x·y` when `y` is a square in `GF(9)` (indices `{0,1,2,3,6}`), `x³·y` when not
     (`x³` = conjugation).  Tabulated directly; e.g. row 4 (`x = 1+i`):
     `(1+i)∘(1+i) = (1-i)(1+i) = 2` (twisted), `(1+i)∘i = (1+i)i = -1+i = 2+i = 5`. -/
-def mul : J9 → J9 → J9
+@[expose] public def mul : J9 → J9 → J9
   | 0 => row 0 0 0 0 0 0 0 0 0
   | 1 => row 0 1 2 3 4 5 6 7 8
   | 2 => row 0 2 1 6 8 7 3 5 4
@@ -144,28 +146,28 @@ theorem not_left_distrib : ¬ ∀ a b c : J9, mul a (add b c) = add (mul a b) (m
     verticals `x = c` (carrying `∞`); the line at infinity (all ideal points). -/
 
 /-- Points: affine `(x, y)` ⊕ slope `m` ⊕ `∞`. -/
-abbrev Point9 : Type := (J9 × J9) ⊕ (J9 ⊕ Unit)
+@[expose] public abbrev Point9 : Type := (J9 × J9) ⊕ (J9 ⊕ Unit)
 
 /-- Lines: `y = x∘m + b` coded `(m, b)` ⊕ vertical `x = c` ⊕ the line at infinity. -/
-abbrev Line9 : Type := (J9 × J9) ⊕ (J9 ⊕ Unit)
+@[expose] public abbrev Line9 : Type := (J9 × J9) ⊕ (J9 ⊕ Unit)
 
 /-- The affine point `(x, y)`. -/
-abbrev aff (x y : J9) : Point9 := Sum.inl (x, y)
+@[expose] public abbrev aff (x y : J9) : Point9 := Sum.inl (x, y)
 /-- The ideal point of slope `m`. -/
-abbrev slopePt (m : J9) : Point9 := Sum.inr (Sum.inl m)
+@[expose] public abbrev slopePt (m : J9) : Point9 := Sum.inr (Sum.inl m)
 /-- The ideal point `∞` of the vertical direction. -/
-abbrev infPt : Point9 := Sum.inr (Sum.inr ())
+@[expose] public abbrev infPt : Point9 := Sum.inr (Sum.inr ())
 /-- The line `y = x∘m + b`. -/
-abbrev lineMB (m b : J9) : Line9 := Sum.inl (m, b)
+@[expose] public abbrev lineMB (m b : J9) : Line9 := Sum.inl (m, b)
 /-- The vertical line `x = c`. -/
-abbrev vert (c : J9) : Line9 := Sum.inr (Sum.inl c)
+@[expose] public abbrev vert (c : J9) : Line9 := Sum.inr (Sum.inl c)
 /-- The line at infinity. -/
-abbrev infLine : Line9 := Sum.inr (Sum.inr ())
+@[expose] public abbrev infLine : Line9 := Sum.inr (Sum.inr ())
 
 /-- INCIDENCE.  Affine `(x,y) ∈ (m,b)` iff `y = x∘m + b`; `(x,y) ∈ [x = c]` iff
     `x = c`; the ideal point `m` lies on every line of slope `m` and on the line
     at infinity; `∞` lies on the verticals and the line at infinity. -/
-def incid : Point9 → Line9 → Prop
+@[expose] public def incid : Point9 → Line9 → Prop
   | .inl (x, y), .inl (m, b) => y = add (mul x m) b
   | .inl (x, _), .inr (.inl c) => x = c
   | .inl _,      .inr (.inr _) => False
@@ -176,7 +178,7 @@ def incid : Point9 → Line9 → Prop
   | .inr (.inr _), .inr (.inl _) => True
   | .inr (.inr _), .inr (.inr _) => True
 
-instance : ∀ (p : Point9) (l : Line9), Decidable (incid p l)
+@[expose] public instance : ∀ (p : Point9) (l : Line9), Decidable (incid p l)
   | .inl (_, _), .inl (_, _) => inferInstanceAs (Decidable (_ = _))
   | .inl (_, _), .inr (.inl _) => inferInstanceAs (Decidable (_ = _))
   | .inl _,      .inr (.inr _) => inferInstanceAs (Decidable False)
@@ -199,27 +201,27 @@ instance : ∀ (p : Point9) (l : Line9), Decidable (incid p l)
     solve `x∘m₁ - x∘m₂ = b₂ - b₁`. -/
 
 /-- `v + (u - v) = u` — the additive rearrangement used to check incidences. -/
-theorem sub_add_cancel : ∀ u v : J9, add v (sub u v) = u := by decide
+public theorem sub_add_cancel : ∀ u v : J9, add v (sub u v) = u := by decide
 
 /-- JOIN solvability, packaged in incidence shape: for `x₁ ≠ x₂` there is a slope
     `m` putting `(x₂,y₂)` on the line through `(x₁,y₁)` of slope `m`. -/
-theorem join_slope_exists : ∀ x₁ y₁ x₂ y₂ : J9, x₁ ≠ x₂ →
+public theorem join_slope_exists : ∀ x₁ y₁ x₂ y₂ : J9, x₁ ≠ x₂ →
     ∃ m, y₂ = add (mul x₂ m) (sub y₁ (mul x₁ m)) := by decide
 
 /-- MEET solvability: two line codes of distinct slopes agree at some abscissa. -/
-theorem meet_mb_exists : ∀ m₁ b₁ m₂ b₂ : J9, m₁ ≠ m₂ →
+public theorem meet_mb_exists : ∀ m₁ b₁ m₂ b₂ : J9, m₁ ≠ m₂ →
     ∃ x, add (mul x m₁) b₁ = add (mul x m₂) b₂ := by decide
 
 /-- Additive cancellation, for uniqueness of the `b`-code. -/
-theorem add_left_cancel : ∀ v b₁ b₂ : J9, add v b₁ = add v b₂ → b₁ = b₂ := by decide
+public theorem add_left_cancel : ∀ v b₁ b₂ : J9, add v b₁ = add v b₂ → b₁ = b₂ := by decide
 
 /-- Cross-subtraction: `X₁ + b₁ = X₂ + b₂ → X₁ - X₂ = b₂ - b₁`. -/
-theorem cross_sub : ∀ X₁ b₁ X₂ b₂ : J9, add X₁ b₁ = add X₂ b₂ →
+public theorem cross_sub : ∀ X₁ b₁ X₂ b₂ : J9, add X₁ b₁ = add X₂ b₂ →
     sub X₁ X₂ = sub b₂ b₁ := by decide
 
 /-- For `m₁ ≠ m₂` the map `x ↦ x∘m₁ - x∘m₂` is INJECTIVE — two lines of distinct
     slopes meet in at most one affine point. -/
-theorem slope_inj : ∀ m₁ m₂ x x' : J9, m₁ ≠ m₂ →
+public theorem slope_inj : ∀ m₁ m₂ x x' : J9, m₁ ≠ m₂ →
     sub (mul x m₁) (mul x m₂) = sub (mul x' m₁) (mul x' m₂) → x = x' := by decide
 
 /-! ### The three projective-plane axioms -/
@@ -227,7 +229,7 @@ theorem slope_inj : ∀ m₁ m₂ x x' : J9, m₁ ≠ m₂ →
 /-- AXIOM 1: any two points lie on a common line.  Affine–affine splits on
     `x₁ = x₂` (vertical) vs. `x₁ ≠ x₂` (`join_slope_exists`); a slope point rides
     every line of its slope; ideal points join along the line at infinity. -/
-theorem join_exists9 : ∀ x y : Point9, ∃ A : Line9, incid x A ∧ incid y A := by
+public theorem join_exists9 : ∀ x y : Point9, ∃ A : Line9, incid x A ∧ incid y A := by
   rintro (⟨x₁, y₁⟩ | s₁ | ⟨⟩) (⟨x₂, y₂⟩ | s₂ | ⟨⟩)
   · by_cases h : x₁ = x₂
     · exact ⟨vert x₁, rfl, h.symm⟩
@@ -245,7 +247,7 @@ theorem join_exists9 : ∀ x y : Point9, ∃ A : Line9, incid x A ∧ incid y A 
 /-- AXIOM 2: any two lines meet.  Same slope meets at the slope's ideal point;
     distinct slopes meet affinely (`meet_mb_exists`); a slope line meets a vertical
     at the obvious affine point; verticals and the line at infinity share `∞`. -/
-theorem meet_exists9 : ∀ A B : Line9, ∃ x : Point9, incid x A ∧ incid x B := by
+public theorem meet_exists9 : ∀ A B : Line9, ∃ x : Point9, incid x A ∧ incid x B := by
   rintro (⟨m₁, b₁⟩ | c₁ | ⟨⟩) (⟨m₂, b₂⟩ | c₂ | ⟨⟩)
   · by_cases h : m₁ = m₂
     · exact ⟨slopePt m₁, rfl, h⟩
@@ -265,7 +267,7 @@ theorem meet_exists9 : ∀ A B : Line9, ∃ x : Point9, incid x A ∧ incid x B 
     close by transitivity; the one substantive case — two affine points on two
     slope-coded lines — is `slope_inj` (distinct slopes meet in ≤ 1 affine point)
     plus `add_left_cancel` (same slope forces the same `b`-code). -/
-theorem unique9 : ∀ {x y : Point9} {A B : Line9},
+public theorem unique9 : ∀ {x y : Point9} {A B : Line9},
     incid x A → incid x B → incid y A → incid y B → x = y ∨ A = B := by
   rintro (⟨x₁, y₁⟩ | s₁ | ⟨⟩) (⟨x₂, y₂⟩ | s₂ | ⟨⟩) (⟨m₁, b₁⟩ | c₁ | ⟨⟩)
     (⟨m₂, b₂⟩ | c₂ | ⟨⟩) hxA hxB hyA hyB <;>
@@ -339,7 +341,7 @@ end VW
     — the Hall plane of order 9.  91 points, 91 lines, 10 points a line.
     (`@[reducible]` so that `VW.Point`/`VW.incid` stay transparent to typeclass
     search — `decide` needs the `Decidable` instances through the projections.) -/
-@[reducible] def VW : ProjectivePlane.{0} where
+@[reducible, expose] public def VW : ProjectivePlane.{0} where
   Point := VW.Point9
   Line := VW.Line9
   incid := VW.incid
@@ -396,7 +398,7 @@ theorem VW_interesting : VW.Interesting := by
 /-- The meets `u = (0,6)`, `v = (1,0)`, `w = (5,0)` of corresponding sides are NOT
     colinear: slope-coded lines force `b = 6`, `m = 3` from `u`, `v`, but then `w`
     misses; the abscissae `0, 1` rule out verticals; affine points miss infinity. -/
-theorem VW_uvw_not_colinear :
+public theorem VW_uvw_not_colinear :
     ¬ VW.Colinear (VW.aff 0 6) (VW.aff 1 0) (VW.aff 5 0) := by
   rintro ⟨(⟨m, b⟩ | c | ⟨⟩), hu, hv, hw⟩
   · exact absurd ⟨hu, hv, hw⟩
@@ -410,7 +412,7 @@ theorem VW_uvw_not_colinear :
     the concrete configuration above satisfies all nine colinearity premises and all
     nine side conditions of the honest ten-point statement `DesarguesND`, but its
     side-meets `u`, `v`, `w` are not colinear. -/
-theorem VW_not_desargues : ¬ VW.DesarguesND := by
+public theorem VW_not_desargues : ¬ VW.DesarguesND := by
   intro h
   -- the six side-lines ARE the `lineThrough`s of the corresponding vertex pairs
   have e_ab1 : VW.lineMB 6 8 = VW.lineThrough (VW.slopePt 6) (VW.aff 7 4) :=
@@ -461,7 +463,7 @@ theorem VW_not_desargues : ¬ VW.DesarguesND := by
 /-- **§2.157 payoff: the allegory of the Veblen–Wedderburn plane violates the
     Desargues Horn sentence** — immediately from the §2.157g equivalence
     `desarguesND_iff_desarguesHorn` and `VW_not_desargues`. -/
-theorem VW_not_desarguesHorn : ¬ DesarguesHorn (LMonObj (PElem VW)) :=
+public theorem VW_not_desarguesHorn : ¬ DesarguesHorn (LMonObj (PElem VW)) :=
   fun h => VW_not_desargues (desarguesND_iff_desarguesHorn.mpr h)
 
 /-! ### The non-representability corollary (DONE — see `S2_157i_NotRepresentable`)

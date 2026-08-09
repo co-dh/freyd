@@ -30,16 +30,18 @@
   facts are NEVER proved from allegory axioms — only the reverse.
 -/
 
-import Freyd.S1_56
-import Freyd.S1_59
-import Freyd.S1_60
-import Freyd.S1_61
-import Freyd.S1_62
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_147_MapCat
-import Freyd.S2_216_MatrixAllegory
-import Freyd.S2_165_Spl
+module
+
+public import Freyd.S1_56
+public import Freyd.S1_59
+public import Freyd.S1_60
+public import Freyd.S1_61
+public import Freyd.S1_62
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_147_MapCat
+public import Freyd.S2_216_MatrixAllegory
+public import Freyd.S2_165_Spl
 
 open Freyd
 open Freyd.Alg
@@ -54,7 +56,7 @@ namespace Freyd
   distinct `Cat` instance that does not clash with C's own `Cat`/`RegularCategory`). -/
 
 /-- Objects of `Rel(C)`: a wrapper around objects of `C`. -/
-structure RelObj (𝒞 : Type u) where
+public structure RelObj (𝒞 : Type u) where
   /-- The underlying object of `C`. -/
   carrier : 𝒞
 
@@ -69,7 +71,7 @@ section Equiv
 variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
 /-- The setoid on `BinRel C a b`: `R ≈ S` iff `R ⊂ S` and `S ⊂ R`. -/
-def relSetoid (a b : 𝒞) : Setoid (BinRel 𝒞 a b) where
+@[expose] public def relSetoid (a b : 𝒞) : Setoid (BinRel 𝒞 a b) where
   r R S := RelLe R S ∧ RelLe S R
   iseqv :=
     { refl  := fun R => ⟨rel_le_refl R, rel_le_refl R⟩
@@ -88,20 +90,20 @@ section Quot
 variable [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
 /-- A morphism `a ⟶ b` in `Rel(C)`: an `RelLe`-equivalence class of relations. -/
-def BinRelQuot (a b : 𝒞) : Type _ := Quotient (relSetoid (𝒞 := 𝒞) a b)
+@[expose] public def BinRelQuot (a b : 𝒞) : Type _ := Quotient (relSetoid (𝒞 := 𝒞) a b)
 
 /-- The canonical class of a relation. -/
-def relClass {a b : 𝒞} (R : BinRel 𝒞 a b) : BinRelQuot a b := Quotient.mk _ R
+@[expose] public def relClass {a b : 𝒞} (R : BinRel 𝒞 a b) : BinRelQuot a b := Quotient.mk _ R
 
 /-- Containment descends to the quotient (well-defined: monotone in both slots). -/
-def quotLe {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : Prop :=
+@[expose] public def quotLe {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : Prop :=
   Quotient.liftOn₂ x y (fun R S => RelLe R S)
     (fun _ _ _ _ hR hS => propext
       ⟨fun h => rel_le_trans (rel_le_trans hR.2 h) hS.1,
        fun h => rel_le_trans (rel_le_trans hR.1 h) hS.2⟩)
 
 /-- `relClass` is monotone: `R ⊂ S → relClass R ≤ relClass S`. -/
-theorem relClass_mono {a b : 𝒞} {R S : BinRel 𝒞 a b} (h : RelLe R S) :
+public theorem relClass_mono {a b : 𝒞} {R S : BinRel 𝒞 a b} (h : RelLe R S) :
     quotLe (relClass R) (relClass S) := h
 
 end Quot
@@ -117,20 +119,20 @@ section RelCat
 variable [RegularCategory 𝒞]
 
 /-- Composition on the quotient: `[R] ⊚ [S] = [R ⊚ S]`, well-defined by `compose_le`. -/
-def qComp {a b c : 𝒞} (x : BinRelQuot (𝒞 := 𝒞) a b) (y : BinRelQuot (𝒞 := 𝒞) b c) :
+@[expose] public def qComp {a b c : 𝒞} (x : BinRelQuot (𝒞 := 𝒞) a b) (y : BinRelQuot (𝒞 := 𝒞) b c) :
     BinRelQuot (𝒞 := 𝒞) a c :=
   Quotient.liftOn₂ x y (fun R S => relClass (R ⊚ S))
     (fun _ _ _ _ hR hS => Quotient.sound
       ⟨compose_le hR.1 hS.1, compose_le hR.2 hS.2⟩)
 
-@[simp] theorem qComp_mk {a b c : 𝒞} (R : BinRel 𝒞 a b) (S : BinRel 𝒞 b c) :
+@[simp] public theorem qComp_mk {a b c : 𝒞} (R : BinRel 𝒞 a b) (S : BinRel 𝒞 b c) :
     qComp (relClass R) (relClass S) = relClass (R ⊚ S) := rfl
 
 /-- The identity relation `[graph id]`. -/
-def relId (a : 𝒞) : BinRelQuot (𝒞 := 𝒞) a a := relClass (graph (Cat.id a))
+@[expose] public def relId (a : 𝒞) : BinRelQuot (𝒞 := 𝒞) a a := relClass (graph (Cat.id a))
 
 /-- **§2.111**: `Rel(C)` is a category.  Objects `RelObj C`; homs the `RelLe`-classes. -/
-instance (priority := 0) relCat : Cat.{max u v} (RelObj 𝒞) where
+@[expose] public instance (priority := 0) relCat : Cat.{max u v} (RelObj 𝒞) where
   Hom A B := BinRelQuot (𝒞 := 𝒞) A.carrier B.carrier
   id  A   := relId A.carrier
   comp x y := qComp x y
@@ -159,15 +161,15 @@ section RelAllegory
 variable [RegularCategory 𝒞]
 
 /-- Reciprocal on the quotient: `[R]° = [R°]`, well-defined by `reciprocal_mono`. -/
-def qRecip {a b : 𝒞} (x : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) b a :=
+@[expose] public def qRecip {a b : 𝒞} (x : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) b a :=
   Quotient.liftOn x (fun R => relClass R°)
     (fun _ _ h => Quotient.sound ⟨reciprocal_mono h.1, reciprocal_mono h.2⟩)
 
-@[simp] theorem qRecip_mk {a b : 𝒞} (R : BinRel 𝒞 a b) :
+@[simp] public theorem qRecip_mk {a b : 𝒞} (R : BinRel 𝒞 a b) :
     qRecip (relClass R) = relClass R° := rfl
 
 /-- Intersection on the quotient: `[R] ∩ [S] = [R ⊓ S]`, well-defined by the meet UMP. -/
-def qInter {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) a b :=
+@[expose] public def qInter {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) a b :=
   Quotient.liftOn₂ x y (fun R S => relClass (R ⊓ S))
     (fun _ _ _ _ hR hS => Quotient.sound
       ⟨le_intersect (rel_le_trans (intersect_le_left _ _) hR.1)
@@ -175,11 +177,11 @@ def qInter {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞
        le_intersect (rel_le_trans (intersect_le_left _ _) hR.2)
           (rel_le_trans (intersect_le_right _ _) hS.2)⟩)
 
-@[simp] theorem qInter_mk {a b : 𝒞} (R S : BinRel 𝒞 a b) :
+@[simp] public theorem qInter_mk {a b : 𝒞} (R S : BinRel 𝒞 a b) :
     qInter (relClass R) (relClass S) = relClass (R ⊓ S) := rfl
 
 /-- **§2.111**: `Rel(C)` is an allegory. -/
-instance (priority := 0) relAllegory : Allegory.{max u v} (RelObj 𝒞) where
+@[expose] public instance (priority := 0) relAllegory : Allegory.{max u v} (RelObj 𝒞) where
   recip {a b} x := qRecip x
   inter {a b} x y := qInter x y
   -- (R°)° = R  —  a genuine equality from `reciprocal_invol`.
@@ -244,7 +246,7 @@ instance (priority := 0) relAllegory : Allegory.{max u v} (RelObj 𝒞) where
 /-- The lattice order `⊑` on `Rel(C)` is exactly the relation containment `quotLe`
     (`= RelLe` on representatives).  `x ⊑ y` unfolds to `x ∩ y = x`, i.e. `[R⊓S] = [R]`,
     i.e. `R⊓S ≈ R`; the nontrivial half is `R ⊑ R⊓S ↔ R ⊑ S` (meet UMP). -/
-theorem quotLe_iff_algLe {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) :
+public theorem quotLe_iff_algLe {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) :
     quotLe x y ↔ Freyd.Alg.le (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) x y := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
   show RelLe R S ↔ qInter (relClass R) (relClass S) = relClass R
@@ -282,15 +284,15 @@ section RelDistributive
 variable [PreLogos 𝒞]
 
 /-- The coterminator `0` (initial object) of a pre-logos (§1.61). -/
-private noncomputable def zeroObj : 𝒞 := (minimal_subobject_of_one_is_coterminator (inferInstance)).zero
+@[expose] public noncomputable def zeroObj : 𝒞 := (minimal_subobject_of_one_is_coterminator (inferInstance)).zero
 
 /-- The EMPTY relation `a → b`: the bottom subobject of `a × b` read as a relation. -/
-def emptyRel (a b : 𝒞) : BinRel 𝒞 a b := subRel (PreLogos.bottom (prod a b))
+@[expose] public def emptyRel (a b : 𝒞) : BinRel 𝒞 a b := subRel (PreLogos.bottom (prod a b))
 
 /-- **Strict-initial key**: a subobject `S` whose domain admits a map into the
     coterminator `0` is `≤` every subobject.  (Such an `S.dom` is iso to `0`, hence
     initial, so any two maps out of it — in particular `h ≫ T.arr` and `S.arr` — agree.) -/
-theorem subobject_le_of_dom_to_zero {B : 𝒞} {S : Subobject 𝒞 B}
+public theorem subobject_le_of_dom_to_zero {B : 𝒞} {S : Subobject 𝒞 B}
     (m : S.dom ⟶ zeroObj (𝒞 := 𝒞)) (T : Subobject 𝒞 B) : S.le T := by
   -- m is iso (strict initial, §1.61); let minv be its inverse.
   obtain ⟨minv, _hmm, _hmm'⟩ := any_map_to_zero_is_iso (inferInstance) m
@@ -314,7 +316,7 @@ private noncomputable def bottomToZero (B : 𝒞) : (PreLogos.bottom B).dom ⟶ 
   (PreLogos.bottom_dom_iso (𝒞 := 𝒞) B (Freyd.one)).choose
 
 /-- The empty relation is the global minimum: `emptyRel a b ⊂ R` for every `R`. -/
-theorem emptyRel_le {a b : 𝒞} (R : BinRel 𝒞 a b) : RelLe (emptyRel a b) R := by
+public theorem emptyRel_le {a b : 𝒞} (R : BinRel 𝒞 a b) : RelLe (emptyRel a b) R := by
   apply (relLe_iff_subLe _ _).2
   -- relSub(emptyRel) ≤ relSub R via subobject_le_of_dom_to_zero (its dom maps to 0).
   have hm : (relSub (emptyRel a b)).dom ⟶ zeroObj (𝒞 := 𝒞) := by
@@ -341,7 +343,7 @@ private theorem hom_uniq_of_to_zero {X Y : 𝒞} (m : X ⟶ zeroObj (𝒞 := �
     Then `bottom (a×c)` allows the span (any two maps out of an initial object agree), and
     image-minimality gives `relSub(R⊚emptyRel) = image span ≤ bottom = relSub(emptyRel)`.
     (`emptyRel` minimal gives the reverse, so this is the equation `R ⊚ 0 = 0`.) -/
-theorem comp_emptyRel_le {a b c : 𝒞} (R : BinRel 𝒞 a b) :
+public theorem comp_emptyRel_le {a b c : 𝒞} (R : BinRel 𝒞 a b) :
     RelLe (R ⊚ emptyRel b c) (emptyRel a c) := by
   apply (relLe_iff_subLe _ _).2
   let pb := HasPullbacks.has R.colB (emptyRel b c).colA
@@ -376,7 +378,7 @@ theorem comp_emptyRel_le {a b c : 𝒞} (R : BinRel 𝒞 a b) :
 
 /-- **§2.21 absorbing (left)**: `emptyRel ⊚ R ⊂ emptyRel`.  Symmetric to `comp_emptyRel_le`:
     now the pullback's `π₁`-leg lands in `emptyRel.src ≅ 0`. -/
-theorem emptyRel_comp_le {a b c : 𝒞} (R : BinRel 𝒞 b c) :
+public theorem emptyRel_comp_le {a b c : 𝒞} (R : BinRel 𝒞 b c) :
     RelLe (emptyRel a b ⊚ R) (emptyRel a c) := by
   apply (relLe_iff_subLe _ _).2
   let pb := HasPullbacks.has (emptyRel a b).colB R.colA
@@ -406,7 +408,7 @@ theorem emptyRel_comp_le {a b c : 𝒞} (R : BinRel 𝒞 b c) :
   coproduct-of-tables).  All distributivity laws are reused from S1_60. -/
 
 /-- Union on the quotient: `[R] ∪ [S] = [R ∪ᵣ S]`, well-defined by the union UMP. -/
-def qUnion {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) a b :=
+@[expose] public def qUnion {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞 := 𝒞) a b :=
   Quotient.liftOn₂ x y (fun R S => relClass (R ∪ᵣ S))
     (fun _ _ _ _ hR hS => Quotient.sound
       ⟨le_relUnion (rel_le_trans hR.1 (relUnion_le_left _ _))
@@ -419,7 +421,7 @@ def qUnion {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) : BinRelQuot (𝒞
 
 /-- **§2.21**: `Rel(C)` is a distributive allegory (for a positive pre-logos C).
     `0` = the empty relation, `∪` = the §1.616 relational union `∪ᵣ`. -/
-instance (priority := 0) relDistributiveAllegory : DistributiveAllegory (RelObj 𝒞) :=
+@[expose] public instance (priority := 0) relDistributiveAllegory : DistributiveAllegory (RelObj 𝒞) :=
   { relAllegory with
     zero  := fun {A B} => relClass (emptyRel A.carrier B.carrier)
     union := fun x y => qUnion x y
@@ -507,13 +509,13 @@ section Coproduct214
 variable [DisjointBinaryCoproduct 𝒞]
 
 /-- The graph injection `[graph f]` as a `Rel(C)`-morphism (an element of `BinRelQuot a b`). -/
-def relGraph {a b : 𝒞} (f : a ⟶ b) : BinRelQuot (𝒞 := 𝒞) a b := relClass (graph f)
+@[expose] public def relGraph {a b : 𝒞} (f : a ⟶ b) : BinRelQuot (𝒞 := 𝒞) a b := relClass (graph f)
 
 /-- **§2.214 eq (1)/(4) — the monic injection equation.**  For a MONIC `f : a → b`, the
     graph satisfies `[graph f] ≫ [graph f]° = 1` in `Rel(C)`.  (`⊆` from
     `graph_comp_recip_le_one_of_mono`; `⊇` from `graph` ENTIRE.)  This is the §2.214
     `u₁u₁° = 1` / `u₂u₂° = 1` equation. -/
-theorem relGraph_comp_recip_of_monic {a b : 𝒞} (f : a ⟶ b) (hf : Monic f) :
+public theorem relGraph_comp_recip_of_monic {a b : 𝒞} (f : a ⟶ b) (hf : Monic f) :
     qComp (relGraph f) (qRecip (relGraph f)) = relId a := by
   show relClass (graph f ⊚ (graph f)°) = relClass (graph (Cat.id a))
   exact Quotient.sound ⟨graph_comp_recip_le_one_of_mono f hf, (graph_is_map f).1⟩
@@ -604,7 +606,7 @@ theorem relGraph_inr_comp_recip_inl {A B : 𝒞} :
 
 /-- **`graph` respects composition on the quotient** (§1.564): `[graph (f ≫ g)] =
     [graph f] ⊚ [graph g]`.  Both containments are Ch1 (`graph_comp` / `comp_graph`). -/
-theorem relGraph_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
+public theorem relGraph_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
     relGraph (f ≫ g) = qComp (relGraph f) (relGraph g) :=
   Quotient.sound ⟨graph_comp f g, comp_graph f g⟩
 
@@ -737,7 +739,7 @@ variable [RegularCategory 𝒞]
     pullback is `pullback(id, id)` over `R.src`, on which `π₁ = π₂`, so its span is
     `π₁ ≫ pair R.colA R.colB`, which `Allows` the subobject `⟨R.src; pair colA colB⟩`;
     image-minimality gives the `RelHom`. -/
-theorem reconstitute_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
+public theorem reconstitute_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
     RelLe ((graph R.colA)° ⊚ graph R.colB) R := by
   let pb := HasPullbacks.has ((graph R.colA)°).colB (graph R.colB).colA
   -- both pullback maps are id_{R.src}, so π₁ = π₂.
@@ -768,7 +770,7 @@ theorem reconstitute_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
 /-- **Span reconstitution (⊇)**: `R ⊂ (graph R.colA)° ⊚ graph R.colB`.  Lift `R.src` into
     the trivial pullback via the cone `⟨id, id⟩`, then `R.src → I.dom` through the image
     lift; its legs are `R.colA`, `R.colB`. -/
-theorem le_reconstitute {a b : 𝒞} (R : BinRel 𝒞 a b) :
+public theorem le_reconstitute {a b : 𝒞} (R : BinRel 𝒞 a b) :
     RelLe R ((graph R.colA)° ⊚ graph R.colB) := by
   let pb := HasPullbacks.has ((graph R.colA)°).colB (graph R.colB).colA
   -- cone ⟨R.src; id, id⟩ over (id, id).
@@ -800,7 +802,7 @@ theorem le_reconstitute {a b : 𝒞} (R : BinRel 𝒞 a b) :
     and under `colB` (the pullback identifies `π₁≫P.legs` with `π₂≫Q.legs`, then
     `level_legs_comp` for colB), so `R.isMonicPair` collapses them — giving
     `graph colA ⊚ (graph colA)° ∩ graph colB ⊚ (graph colB)° ⊂ graph (id R.src)`. -/
-private theorem jointMonic_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
+public theorem jointMonic_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
     RelLe ((graph R.colA ⊚ (graph R.colA)°) ⊓ (graph R.colB ⊚ (graph R.colB)°))
           (graph (Cat.id R.src)) := by
   let P := graph R.colA ⊚ (graph R.colA)°
@@ -890,7 +892,7 @@ private theorem map_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
   and_congr (entire_relClass R) (simple_relClass R)
 
 /-- A graph's class is a `Map` in `Rel(C)` (from `graph_is_map`). -/
-theorem relClass_graph_map {a b : 𝒞} (f : a ⟶ b) :
+public theorem relClass_graph_map {a b : 𝒞} (f : a ⟶ b) :
     Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass (graph f)) :=
   (map_relClass (graph f)).mpr (graph_is_map f)
 
@@ -901,7 +903,7 @@ theorem relClass_graph_map {a b : 𝒞} (f : a ⟶ b) :
     The four conjuncts are: both graphs are maps (`relClass_graph_map`); `[R] = f° ≫ g`
     (`reconstitute_le`/`le_reconstitute`); `f f° ∩ g g° = 1` (`jointMonic_le` for `⊆`,
     `relGraph_entire`-style entirety for `⊇`). -/
-instance (priority := 0) relTabularAllegory : TabularAllegory (RelObj 𝒞) :=
+@[expose] public instance (priority := 0) relTabularAllegory : TabularAllegory (RelObj 𝒞) :=
   { relAllegory with
     tabular := fun {A B} x => by
       refine Quotient.inductionOn x (fun R => ?_)
@@ -923,7 +925,7 @@ instance (priority := 0) relTabularAllegory : TabularAllegory (RelObj 𝒞) :=
 
 /-- Every relation over the terminator `T → T` (`T = ⟨1⟩`) is `⊑ 1`: both legs of any
     table over `1` are the unique map to `1`, so the table is `⊂ graph (id 1)`. -/
-private theorem partialUnit_one : PartialUnit (𝒜 := RelObj 𝒞) ⟨Freyd.one (𝒞 := 𝒞)⟩ := by
+public theorem partialUnit_one : PartialUnit (𝒜 := RelObj 𝒞) ⟨Freyd.one (𝒞 := 𝒞)⟩ := by
   intro x
   refine Quotient.inductionOn x (fun R => ?_)
   rw [← quotLe_iff_algLe]
@@ -935,7 +937,7 @@ private theorem partialUnit_one : PartialUnit (𝒜 := RelObj 𝒞) ⟨Freyd.one
     rw [Cat.comp_id]; exact Freyd.term_uniq R.colA R.colB
 
 /-- The graph of the terminal map `a → 1` is an entire relation `⟨a⟩ → ⟨1⟩`. -/
-private theorem entire_to_one (a : 𝒞) :
+public theorem entire_to_one (a : 𝒞) :
     Freyd.Alg.Entire (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨Freyd.one (𝒞 := 𝒞)⟩)
       (relClass (graph (Freyd.term a))) :=
   (entire_relClass (graph (Freyd.term a))).mpr (graph_is_map (Freyd.term a)).1
@@ -943,7 +945,7 @@ private theorem entire_to_one (a : 𝒞) :
 /-- **§2.15**: `Rel(C)` is a UNITARY allegory with unit object `⟨1⟩` (`C`'s terminator).
     Partial-unit: `partialUnit_one`.  Entirety: each object `⟨a⟩` has the entire relation
     `[graph (a → 1)]` (`entire_to_one`). -/
-instance (priority := 0) relUnitaryAllegory : UnitaryAllegory (RelObj 𝒞) :=
+@[expose] public instance (priority := 0) relUnitaryAllegory : UnitaryAllegory (RelObj 𝒞) :=
   { relAllegory with
     unit_obj := ⟨Freyd.one (𝒞 := 𝒞)⟩
     unit_prop := ⟨partialUnit_one,
@@ -980,7 +982,7 @@ attribute [local instance] logos_implies_preLogos
 /-- **§1.784 general relational quotient.**  For `R : a → c` and `S : b → c` in a logos, the
     quotient `R/S : a → b` (maximal `T` with `T⊚S ⊑ R`), built as `(R/graph(S.colB))/(graph S.colA)°`
     via the span factorisation `S ≈ (graph S.colA)° ⊚ graph S.colB`. -/
-noncomputable def relQuotGen {a b c : 𝒞} (R : BinRel 𝒞 a c) (S : BinRel 𝒞 b c) :
+@[expose] public noncomputable def relQuotGen {a b c : 𝒞} (R : BinRel 𝒞 a c) (S : BinRel 𝒞 b c) :
     RelQuot R S where
   quot := (relQuotByMapRecip (relQuotByMap R S.colB).quot S.colA).quot
   le := by
@@ -1020,7 +1022,7 @@ noncomputable def relQuotGen {a b c : 𝒞} (R : BinRel 𝒞 a c) (S : BinRel �
 /-- The quotient `R/S` is MONOTONE in `R` and ANTITONE in `S`: from `R ⊂ R'` and `S' ⊂ S`,
     `relQuotGen R S ⊂ relQuotGen R' S'`.  (Pure consequence of the universal property
     `relQuot_iff`; used to descend `R/S` to the `RelLe`-quotient.) -/
-private theorem relQuotGen_mono {a b c : 𝒞}
+public theorem relQuotGen_mono {a b c : 𝒞}
     {R R' : BinRel 𝒞 a c} {S S' : BinRel 𝒞 b c}
     (hR : RelLe R R') (hS : RelLe S' S) :
     RelLe (relQuotGen R S).quot (relQuotGen R' S').quot := by
@@ -1031,21 +1033,21 @@ private theorem relQuotGen_mono {a b c : 𝒞}
 
 /-- Division on the `RelLe`-quotient: `[R] / [S] = [relQuotGen R S]`, well-defined by
     `relQuotGen_mono` (antisymmetry of the two monotonicity directions). -/
-noncomputable def qDiv {a b c : 𝒞}
+@[expose] public noncomputable def qDiv {a b c : 𝒞}
     (x : BinRelQuot (𝒞 := 𝒞) a c) (y : BinRelQuot (𝒞 := 𝒞) b c) :
     BinRelQuot (𝒞 := 𝒞) a b :=
   Quotient.liftOn₂ x y (fun R S => relClass (relQuotGen R S).quot)
     (fun _ _ _ _ hR hS => Quotient.sound
       ⟨relQuotGen_mono hR.1 hS.2, relQuotGen_mono hR.2 hS.1⟩)
 
-@[simp] theorem qDiv_mk {a b c : 𝒞} (R : BinRel 𝒞 a c) (S : BinRel 𝒞 b c) :
+@[simp] public theorem qDiv_mk {a b c : 𝒞} (R : BinRel 𝒞 a c) (S : BinRel 𝒞 b c) :
     qDiv (relClass R) (relClass S) = relClass (relQuotGen R S).quot := rfl
 
 /-- **§1.784 / §2.32 (forward)**: `Rel(C)` is a DIVISION ALLEGORY for a logos `C`.
     `div = qDiv` (the §1.784 general quotient); the two adjunction laws are exactly the
     `le`/`maximal` of `relQuotGen`, transported across the `quotLe ↔ ⊑` bridge
     (`quotLe_iff_algLe`).  This is the last brick for §2.343. -/
-noncomputable instance relDivisionAllegory : DivisionAllegory (RelObj 𝒞) :=
+@[expose] public noncomputable instance relDivisionAllegory : DivisionAllegory (RelObj 𝒞) :=
   { DisjointGluing.relDistributiveAllegory with
     div := fun {a b c} R S => qDiv R S
     div_comp_le := fun {a b c} R S => by
@@ -1086,14 +1088,14 @@ variable [PreLogos 𝒞]
     All three parents (`relTabularAllegory`, `relUnitaryAllegory`,
     `DisjointGluing.relDistributiveAllegory`) are built `{ relAllegory with … }`, so their shared
     `toAllegory` grandparent is the SAME `relAllegory` — the diamond merges cleanly. -/
-instance (priority := 0) relTabularUnitaryDistributiveAllegory :
+@[expose] public instance (priority := 0) relTabularUnitaryDistributiveAllegory :
     TabularUnitaryDistributiveAllegory (RelObj 𝒞) :=
   { relTabularAllegory, relUnitaryAllegory, DisjointGluing.relDistributiveAllegory with }
 
 /-- **§2.217**: `Map(Rel C)` is a pre-logos for a positive pre-logos `C` — immediate from
     `MapCat.mapPreLogos` applied to `relTabularUnitaryDistributiveAllegory`.  Stated explicitly so
     typeclass resolution finds it (the `MapObj (RelObj C)` instance head). -/
-noncomputable instance relMapPreLogos :
+@[expose] public noncomputable instance relMapPreLogos :
     @PreLogos (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) :=
   Freyd.Alg.mapPreLogos (A := RelObj 𝒞)
 
@@ -1114,7 +1116,7 @@ variable [RegularCategory 𝒞]
     i.e. a `RelHom` — a map `h : A ⟶ A` with `h ≫ (graph g).colA = (graph f).colA` and
     `h ≫ (graph g).colB = (graph f).colB`.  Since `(graph _).colA = id A` and `(graph _).colB = _`,
     the first equation forces `h = id A` and the second then reads `g = id ≫ g = h ≫ g = f`. -/
-theorem relClass_graph_inj {a b : 𝒞} {f g : a ⟶ b}
+public theorem relClass_graph_inj {a b : 𝒞} {f g : a ⟶ b}
     (h : relClass (graph f) = relClass (graph g)) : f = g := by
   -- [graph f] = [graph g] ⇒ graph f ≈ graph g (mutual RelLe); take the ⊂ direction.
   have hle : RelLe (graph f) (graph g) := (Quotient.exact h).1
@@ -1132,13 +1134,13 @@ theorem relClass_graph_inj {a b : 𝒞} {f g : a ⟶ b}
 /-- **§2.217**: the graph of `f` is a `Map` in `Rel(C)`, packaged as a `Map(Rel C)` morphism
     `⟨a⟩ ⟶ ⟨b⟩` (a `mapCat` hom = subtype `{ R // Map R }`).  This is the morphism part of the
     embedding `C → Map(Rel C)`. -/
-noncomputable def embedRel {a b : 𝒞} (f : a ⟶ b) :
+@[expose] public noncomputable def embedRel {a b : 𝒞} (f : a ⟶ b) :
     @Cat.Hom (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩ ⟨b⟩ :=
   ⟨relClass (graph f), relClass_graph_map f⟩
 
 /-- **§2.217**: the graph embedding `C → Map(Rel C)` is FAITHFUL — distinct morphisms have
     distinct graph-maps.  Reduces (via `Subtype.ext_iff`) to `relClass_graph_inj`. -/
-theorem embedRel_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embedRel f = embedRel g) : f = g :=
+public theorem embedRel_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embedRel f = embedRel g) : f = g :=
   relClass_graph_inj (a := a) (b := b) (Subtype.ext_iff.mp h)
 
 /-- **§2.148-dual (fullness)**: every `Map` in `Rel(C)` is the graph of a unique `C`-morphism.
@@ -1152,7 +1154,7 @@ theorem embedRel_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embedRel f = embedRe
     `tabulated_left_iso_eq_graph` (§1.564) gives `R ≈ graph f` (mutual `⊂`), collapsed to a Lean
     equality by `Quotient.sound`.  (`R` and `BinRel.mk R.src R.colA R.colB R.isMonicPair` are
     defeq by η.) -/
-theorem embedRel_full {a b : 𝒞} (R : BinRel 𝒞 a b)
+public theorem embedRel_full {a b : 𝒞} (R : BinRel 𝒞 a b)
     (M : Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R)) :
     ∃ f : a ⟶ b, relClass R = relClass (graph f) := by
   have hmapR : Map R := (map_relClass R).mp M
@@ -1174,7 +1176,7 @@ theorem embedRel_full {a b : 𝒞} (R : BinRel 𝒞 a b)
 /-- `embedRel` preserves identities: `embedRel (id a) = id ⟨a⟩` in `Map(Rel C)`.  Both sides have
     `val = relClass (graph (id a)) = relId a` (the `relCat` identity), and `Map`-witnesses are
     proof-irrelevant, so `Subtype.ext` closes it. -/
-theorem embedRel_id (a : 𝒞) :
+public theorem embedRel_id (a : 𝒞) :
     embedRel (Cat.id a) = @Cat.id (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩ :=
   Subtype.ext rfl
 
@@ -1182,7 +1184,7 @@ theorem embedRel_id (a : 𝒞) :
     this is `relClass (graph (f ≫ g)) = qComp (relClass (graph f)) (relClass (graph g))`, the
     mutual-`⊂` graph-composition law (`graph_comp` / `comp_graph`) collapsed to a Lean equality
     by `Quotient.sound`. -/
-theorem embedRel_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
+public theorem embedRel_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
     embedRel (f ≫ g)
       = @Cat.comp (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩ ⟨b⟩ ⟨c⟩
           (embedRel f) (embedRel g) :=
@@ -1194,7 +1196,7 @@ theorem embedRel_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
     Packaged as the conjunction of the bijection-on-homs facts; downstream transport of structure
     (limits, coproducts) along this iso uses fullness to lift a `Map`-morphism back to a
     `C`-morphism. -/
-theorem embedRel_cat_iso :
+public theorem embedRel_cat_iso :
     (∀ {a b : 𝒞} {f g : a ⟶ b}, embedRel f = embedRel g → f = g) ∧
     (∀ {a b : 𝒞} (m : @Cat.Hom (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩ ⟨b⟩),
         ∃ f : a ⟶ b, m = embedRel f) :=
@@ -1214,7 +1216,7 @@ theorem embedRel_cat_iso :
     functoriality (`embedRel_comp`) sends `g ≫ f = h ≫ f` to `embedRel g ≫ embedRel f =
     embedRel h ≫ embedRel f`, monicity of `embedRel f` gives `embedRel g = embedRel h`, and
     faithfulness (`embedRel_faithful`) returns `g = h`. -/
-theorem embedRel_reflects_monic {a b : 𝒞} {f : a ⟶ b}
+public theorem embedRel_reflects_monic {a b : 𝒞} {f : a ⟶ b}
     (hm : @Monic (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩ ⟨b⟩ (embedRel f)) :
     Monic f := by
   intro W g h hgh
@@ -1251,20 +1253,20 @@ variable [PreLogos 𝒞]
 /-- **§2.217(1) step 1**: `Rel(C)` is a tabular *distributive* allegory — the §2.342 hypothesis
     class of the matrix construction.  Parents share the SAME `relAllegory` grandparent, so the
     diamond merges. -/
-instance relTabularDistributiveAllegory :
+@[expose] public instance relTabularDistributiveAllegory :
     Freyd.Alg.Mat.TabularDistributiveAllegory (RelObj 𝒞) :=
   { relTabularAllegory, DisjointGluing.relDistributiveAllegory with }
 
 /-- **§2.217(1) step 1**: `Rel(C)` is a unitary *distributive* allegory — the other §2.342
     matrix hypothesis class. -/
-instance relUnitaryDistributiveAllegory :
+@[expose] public instance relUnitaryDistributiveAllegory :
     Freyd.Alg.Mat.UnitaryDistributiveAllegory (RelObj 𝒞) :=
   { relUnitaryAllegory, DisjointGluing.relDistributiveAllegory with }
 
 /-- **§2.217(1) step 2**: `Mat(Rel C)` is a tabular-unitary-POSITIVE allegory.  Combines the four
     matrix instances (`instTabularAllegoryMat`, `instUnitaryAllegoryMat`,
     `instDistributiveAllegoryMat`, `instPositiveAllegoryMat`), all now resolvable from step 1. -/
-noncomputable instance matRelTabularUnitaryPositiveAllegory :
+@[expose] public noncomputable instance matRelTabularUnitaryPositiveAllegory :
     Freyd.Alg.TabularUnitaryPositiveAllegory (MatObj (RelObj 𝒞)) :=
   { (instTabularAllegoryMat : TabularAllegory (MatObj (RelObj 𝒞))),
     (instUnitaryAllegoryMat  : UnitaryAllegory  (MatObj (RelObj 𝒞))),
@@ -1274,7 +1276,7 @@ noncomputable instance matRelTabularUnitaryPositiveAllegory :
     embedding.  Immediate from `MapCat.mapPositivePreLogos` over the
     `TabularUnitaryPositiveAllegory (MatObj (RelObj C))` of step 2.  Stated explicitly so
     typeclass resolution finds the `MapObj (MatObj (RelObj C))` instance head. -/
-noncomputable instance s217PreLogos :
+@[expose] public noncomputable instance s217PreLogos :
     @PositivePreLogos (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞))) :=
   Freyd.Alg.mapPositivePreLogos (A := MatObj (RelObj 𝒞))
 
@@ -1295,7 +1297,7 @@ open Freyd.Alg.Mat
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- `embed1` sends the identity to the matrix identity (1×1 case: `matId` of `unitObj a`). -/
-theorem embed1_id {a : 𝒜} : embed1 (Cat.id a) = matId (unitObj a) := by
+public theorem embed1_id {a : 𝒜} : embed1 (Cat.id a) = matId (unitObj a) := by
   funext i j
   have hi : i = ⟨0, Nat.zero_lt_one⟩ := Fin.fin_one_eq_zero i
   have hj : j = ⟨0, Nat.zero_lt_one⟩ := Fin.fin_one_eq_zero j
@@ -1304,10 +1306,10 @@ theorem embed1_id {a : 𝒜} : embed1 (Cat.id a) = matId (unitObj a) := by
 
 /-- `embed1 R`, retyped as a category morphism `unitObj a ⟶ unitObj b` (defeq to its `MatHom`
     type, but `⟶`-headed so the allegory operations `⊑`/`°`/`≫`/`dom` elaborate). -/
-def embed1' {a b : 𝒜} (R : a ⟶ b) : (unitObj a) ⟶ (unitObj b) := embed1 R
+@[expose] public def embed1' {a b : 𝒜} (R : a ⟶ b) : (unitObj a) ⟶ (unitObj b) := embed1 R
 
 /-- `embed1` reflects/preserves the allegory order (1×1 entrywise). -/
-theorem embed1_le_iff {a b : 𝒜} {R S : a ⟶ b} :
+public theorem embed1_le_iff {a b : 𝒜} {R S : a ⟶ b} :
     (embed1' R ⊑ embed1' S) ↔ (R ⊑ S) := by
   -- `X ⊑ Y` unfolds to `X ∩ Y = X`; `embed1` preserves `∩` and is injective, so the two
   -- equations `embed1 (R∩S) = embed1 R` and `R∩S = R` are interchangeable.
@@ -1316,7 +1318,7 @@ theorem embed1_le_iff {a b : 𝒜} {R S : a ⟶ b} :
   exact ⟨fun h => embed1_injective h, fun h => congrArg embed1' h⟩
 
 /-- `embed1` commutes with `dom` (`dom = id ∩ R ≫ R°`; all preserved by `embed1`). -/
-theorem embed1_dom {a b : 𝒜} (R : a ⟶ b) : dom (embed1' R) = embed1' (dom R) := by
+public theorem embed1_dom {a b : 𝒜} (R : a ⟶ b) : dom (embed1' R) = embed1' (dom R) := by
   show Allegory.inter (Cat.id (unitObj a)) (matComp (embed1 R) (matRecip (embed1 R)))
       = embed1 (Cat.id a ∩ R ≫ R°)
   -- Expand the RHS through `embed1`'s homomorphism laws to match the LHS (all `mat*` primitives).
@@ -1326,7 +1328,7 @@ theorem embed1_dom {a b : 𝒜} (R : a ⟶ b) : dom (embed1' R) = embed1' (dom R
 /-- **§2.217(1) step 4 (preservation)**: `embed1` carries a `Map` of `𝒜` to a `Map` of
     `Mat 𝒜`.  `Entire`: `dom (embed1 R) = embed1 (dom R) = embed1 id = matId`.
     `Simple`: `(embed1 R)° ≫ embed1 R = embed1 (R° ≫ R) ⊑ embed1 id = matId`. -/
-theorem embed1_map {a b : 𝒜} {R : a ⟶ b} (hR : Freyd.Alg.Map R) :
+public theorem embed1_map {a b : 𝒜} {R : a ⟶ b} (hR : Freyd.Alg.Map R) :
     Freyd.Alg.Map (𝒜 := MatObj 𝒜) (embed1' R) := by
   obtain ⟨hEnt, hSim⟩ := hR
   refine ⟨?_, ?_⟩
@@ -1355,18 +1357,18 @@ variable [PreLogos 𝒞]
 
 /-- **§2.217(1)**: the object part `C → Map(Mat(Rel C))`: `a ↦ unitObj ⟨a⟩` (the 1×1 matrix on
     the relation-object `⟨a⟩`). -/
-def embed217Obj (a : 𝒞) : MapObj (MatObj (RelObj 𝒞)) := unitObj (⟨a⟩ : RelObj 𝒞)
+@[expose] public def embed217Obj (a : 𝒞) : MapObj (MatObj (RelObj 𝒞)) := unitObj (⟨a⟩ : RelObj 𝒞)
 
 /-- **§2.217(1)**: the morphism part `f ↦ embed1 (embedRel f)` — the 1×1 matrix whose single
     entry is the graph-map `[graph f]` of `Rel(C)`, packaged as a Map of `Mat(Rel C)`. -/
-noncomputable def embed217 {a b : 𝒞} (f : a ⟶ b) :
+@[expose] public noncomputable def embed217 {a b : 𝒞} (f : a ⟶ b) :
     @Cat.Hom (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞)))
       (embed217Obj a) (embed217Obj b) :=
   ⟨embed1' (embedRel f).val, embed1_map (embedRel f).property⟩
 
 /-- **§2.217(1)**: the embedding `C ↪ Map(Mat(Rel C))` is FAITHFUL.  Peel the 1×1 matrix
     (`embed1_injective`) to recover `embedRel f = embedRel g`, then `embedRel_faithful`. -/
-theorem embed217_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embed217 f = embed217 g) : f = g := by
+public theorem embed217_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embed217 f = embed217 g) : f = g := by
   have hval : embed1' (embedRel f).val = embed1' (embedRel g).val := congrArg Subtype.val h
   exact embedRel_faithful (Subtype.ext (embed1_injective hval))
 
@@ -1457,7 +1459,7 @@ variable [PreLogos 𝒞]
     Bundles the splitting-completion instances over the tabular-unitary-positive `Mat(Rel C)`
     (`splObj_tabular_of_semiSimple` via `semiSimpleAllegory_of_tabular`, `instUnitarySpl`,
     `instPositiveSpl` — which also yields `instDistributiveSpl`). -/
-noncomputable instance splMatRelTUP :
+@[expose] public noncomputable instance splMatRelTUP :
     Freyd.Alg.TabularUnitaryPositiveAllegory (SplObj (MatObj (RelObj 𝒞))) :=
   letI : SemiSimpleAllegory (MatObj (RelObj 𝒞)) :=
     Freyd.Alg.semiSimpleAllegory_of_tabular (ℬ := MatObj (RelObj 𝒞))
@@ -1467,7 +1469,7 @@ noncomputable instance splMatRelTUP :
 
 /-- **§2.217(2) ingredient (i)**: `D = Map(SplObj(Mat(Rel C)))` is a POSITIVE PRE-LOGOS.
     Immediate from `mapPositivePreLogos` over `splMatRelTUP`. -/
-noncomputable instance s217_2_target_positivePreLogos :
+@[expose] public noncomputable instance s217_2_target_positivePreLogos :
     @PositivePreLogos (MapObj (SplObj (MatObj (RelObj 𝒞))))
       (mapCat (𝒜 := SplObj (MatObj (RelObj 𝒞)))) :=
   Freyd.Alg.mapPositivePreLogos (A := SplObj (MatObj (RelObj 𝒞)))
@@ -1710,7 +1712,7 @@ attribute [local instance] logos_implies_preLogos
     (`relDivisionAllegory`), so `Mat(Rel C)` is (`instDivisionAllegoryMat`), so `SplObj` of it
     is (`instDivisionSpl`); tabular+unitary are the same legs that build `splMatRelTUP`.  All
     parents share the ONE `Allegory (SplObj (Mat (Rel C)))` — the diamond merges. -/
-noncomputable instance splMatRelTUDiv :
+@[expose] public noncomputable instance splMatRelTUDiv :
     TabularUnitaryDivisionAllegory (SplObj (MatObj (RelObj 𝒞))) :=
   letI : SemiSimpleAllegory (MatObj (RelObj 𝒞)) :=
     Freyd.Alg.semiSimpleAllegory_of_tabular (ℬ := MatObj (RelObj 𝒞))
@@ -2135,7 +2137,7 @@ variable {D : Type u} [Cat.{v} D]
 
 /-- Post-compose a subobject's arrow by an isomorphism `e`, giving a subobject of the target.
     (`m ≫ e` is monic because `e` is iso.) -/
-noncomputable def Subobject.postIso {X Y : D} (S : Subobject D X) {e : X ⟶ Y} (he : IsIso e) :
+@[expose] public noncomputable def Subobject.postIso {X Y : D} (S : Subobject D X) {e : X ⟶ Y} (he : IsIso e) :
     Subobject D Y where
   dom := S.dom
   arr := S.arr ≫ e
@@ -2151,7 +2153,7 @@ noncomputable def Subobject.postIso {X Y : D} (S : Subobject D X) {e : X ⟶ Y} 
 
 /-- An iso post-composition preserves `IsImage`: if `I` is the image of `m`, then `I.postIso e`
     is the image of `m ≫ e`.  (Allowing/minimality both transport across the iso `e`.) -/
-theorem isImage_postIso {W' X Y : D} {m : W' ⟶ X} {I : Subobject D X} (hI : IsImage m I)
+public theorem isImage_postIso {W' X Y : D} {m : W' ⟶ X} {I : Subobject D X} (hI : IsImage m I)
     {e : X ⟶ Y} (he : IsIso e) : IsImage (m ≫ e) (I.postIso he) := by
   obtain ⟨e', he1, he2⟩ := he
   refine ⟨?_, ?_⟩
@@ -2191,7 +2193,7 @@ variable {C : Type u₁} {D : Type u₂} [Cat.{v} C] [Cat.{v} D]
     `exactPullbacks`/`RegularCategory.toHasPullbacks` instance diamond that `CartesianCategory`
     would introduce.  (Equalizer-preservation, needed only for the unused finite-limit packaging,
     is recovered from `pres_prod` + pullbacks where required.) -/
-structure RegularFunctor (F : Functor C D)
+public structure RegularFunctor (F : Functor C D)
     [RegularCategory C] [RegularCategory D] : Prop where
   /-- preserves binary products: the canonical `F(A×B) → FA×FB` is iso. -/
   pres_prod  : PreservesBinaryProducts F
@@ -2210,7 +2212,7 @@ variable {F : Functor C D}
 /-- The image-relation of a span through `F`: take `F` of the columns, pair them into
     `F.obj A × F.obj B`, and form the `BinRel` from the image subobject (its arrow is monic, hence
     a jointly-monic pair via `monicPair_of_monic_pair`). -/
-noncomputable def relImageObj (_hreg : RegularFunctor F) {A B : C}
+@[expose] public noncomputable def relImageObj (_hreg : RegularFunctor F) {A B : C}
     (R : BinRel C A B) : BinRel D (F.obj A) (F.obj B) :=
   let I := image (pair (F.map R.colA) (F.map R.colB))
   { src  := I.dom
@@ -2235,7 +2237,7 @@ noncomputable def relImageObj (_hreg : RegularFunctor F) {A B : C}
     `F.obj R.src` onto `(relImageObj hreg R).src`, and its legs are exactly the `F`-images of `R`'s
     legs.  This is the key bridge: it presents `relImageObj hreg R` as the relation "generated by
     the span `(F.obj R.colA, F.obj R.colB)`", so `relLe_of_cover_factor` applies directly. -/
-theorem relImageObj_cover (hreg : RegularFunctor F) {A B : C} (R : BinRel C A B) :
+public theorem relImageObj_cover (hreg : RegularFunctor F) {A B : C} (R : BinRel C A B) :
     ∃ e : F.obj R.src ⟶ (relImageObj hreg R).src,
       Cover e ∧ e ≫ (relImageObj hreg R).colA = F.map R.colA
         ∧ e ≫ (relImageObj hreg R).colB = F.map R.colB := by
@@ -2248,7 +2250,7 @@ theorem relImageObj_cover (hreg : RegularFunctor F) {A B : C} (R : BinRel C A B)
 /-- `relImageObj` is monotone for `RelLe`: a containment of spans upstairs gives a containment
     of their `F`-images downstairs (images are monotone, and `F` preserves the witnessing
     factorization).  This is what makes the hom action descend to `RelLe`-classes. -/
-theorem relImageObj_mono (hreg : RegularFunctor F) {A B : C}
+public theorem relImageObj_mono (hreg : RegularFunctor F) {A B : C}
     {R S : BinRel C A B} (h : RelLe R S) :
     RelLe (relImageObj hreg R) (relImageObj hreg S) := by
   -- From `R ⊂ S` get the witness `z : R.src → S.src` with `z ≫ S.colA = R.colA` etc.
@@ -2284,13 +2286,13 @@ theorem relImageObj_mono (hreg : RegularFunctor F) {A B : C}
     rw [← Cat.assoc, hk]
 
 /-- The hom action of `Rel(F)` on a single representative span, as a `RelLe`-class. -/
-noncomputable def relMapRep (hreg : RegularFunctor F) {A B : C}
+@[expose] public noncomputable def relMapRep (hreg : RegularFunctor F) {A B : C}
     (R : BinRel C A B) : BinRelQuot (𝒞 := D) (F.obj A) (F.obj B) :=
   relClass (relImageObj hreg R)
 
 /-- The hom action `Rel(F) : BinRelQuot C A B → BinRelQuot D (F.obj A) (F.obj B)`, descended to
     `RelLe`-classes via `relImageObj_mono`. -/
-noncomputable def RegularFunctor.relMap (hreg : RegularFunctor F) {A B : C}
+@[expose] public noncomputable def RegularFunctor.relMap (hreg : RegularFunctor F) {A B : C}
     (x : BinRelQuot (𝒞 := C) A B) : BinRelQuot (𝒞 := D) (F.obj A) (F.obj B) :=
   Quotient.liftOn x (relMapRep hreg) (by
     intro R S ⟨hRS, hSR⟩
@@ -2301,7 +2303,7 @@ noncomputable def RegularFunctor.relMap (hreg : RegularFunctor F) {A B : C}
     hreg.relMap (relClass R) = relClass (relImageObj hreg R) := rfl
 
 /-- The swapped span `pair (F.obj R.colB) (F.obj R.colA)` equals `pair (F.obj R.colA) (F.obj R.colB) ≫ σ`. -/
-theorem pair_swap_eq {A B : C} (R : BinRel C A B) :
+public theorem pair_swap_eq {A B : C} (R : BinRel C A B) :
     pair (F.map R.colB) (F.map R.colA)
       = pair (F.map R.colA) (F.map R.colB) ≫ prodSwap (F.obj A) (F.obj B) := by
   refine (pair_uniq (F.map R.colB) (F.map R.colA)
@@ -2311,7 +2313,7 @@ theorem pair_swap_eq {A B : C} (R : BinRel C A B) :
 
 /-- The swapped image subobject of `pair (F.obj R.colA) (F.obj R.colB)` is an image of the column-swapped
     span `pair (F.obj R.colB) (F.obj R.colA)`.  Technical heart of reciprocation-preservation. -/
-theorem swapImage_isImage {A B : C} (R : BinRel C A B) :
+public theorem swapImage_isImage {A B : C} (R : BinRel C A B) :
     IsImage (pair (F.map R.colB) (F.map R.colA))
       ((image (pair (F.map R.colA) (F.map R.colB))).postIso
         (prod_comm_iso (A := F.obj A) (B := F.obj B))) := by
@@ -2320,7 +2322,7 @@ theorem swapImage_isImage {A B : C} (R : BinRel C A B) :
 
 /-- **`Rel(F)` preserves reciprocation.**  `relImageObj (R°)` is the image of the swapped span,
     which equals the reciprocal (column-swap) of `relImageObj R` up to the image-uniqueness iso. -/
-theorem RegularFunctor.relMap_recip (hreg : RegularFunctor F) {A B : C}
+public theorem RegularFunctor.relMap_recip (hreg : RegularFunctor F) {A B : C}
     (x : BinRelQuot (𝒞 := C) A B) :
     hreg.relMap (qRecip x) = qRecip (hreg.relMap x) := by
   refine Quotient.inductionOn x (fun R => ?_)
@@ -2376,7 +2378,7 @@ variable {Cobj : C}
     pullback `pbRS` of `R.colB, S.colA` through `F`; `F.obj pbRS.π₁/π₂` give a cone over the downstairs
     pullback `qb` (its square is the `F`-image of `pbRS.cone.w`), lift to `qb.pt`, then the image
     of the composite span supplies `φ`.  The cover is `F.obj (image.lift spanRS) ≫ (image-cover of R⊚S)`. -/
-theorem relImageObj_compose_le (hreg : RegularFunctor F) {A B : C}
+public theorem relImageObj_compose_le (hreg : RegularFunctor F) {A B : C}
     (R : BinRel C A B) (S : BinRel C B Cobj) :
     RelLe (relImageObj hreg (R ⊚ S)) (relImageObj hreg R ⊚ relImageObj hreg S) := by
   -- image-covers of R and S downstairs
@@ -2436,7 +2438,7 @@ theorem relImageObj_compose_le (hreg : RegularFunctor F) {A B : C}
     `qb`-projections (`cover_pullback`) to a common stage `P2 ↠ qb.pt` carrying honest maps into
     `F.obj R.src`, `F.obj S.src` that agree on `F.obj B`; since `F` preserves the §1.56 pullback `pbRS`
     (`pres_pullback`), lift to `F.obj pbRS.pt`, then push through `F eRS ≫ eRSd` into `relImageObj (R⊚S)`. -/
-theorem relImageObj_le_compose (hreg : RegularFunctor F) {A B : C}
+public theorem relImageObj_le_compose (hreg : RegularFunctor F) {A B : C}
     (R : BinRel C A B) (S : BinRel C B Cobj) :
     RelLe (relImageObj hreg R ⊚ relImageObj hreg S) (relImageObj hreg (R ⊚ S)) := by
   obtain ⟨eR, heRcov, heRA, heRB⟩ := relImageObj_cover hreg R
@@ -2550,7 +2552,7 @@ theorem relImageObj_le_compose (hreg : RegularFunctor F) {A B : C}
     rw [hlhs, hrhs]
 
 /-- **(2a) — `Rel(F)` preserves composition** on the quotient: `Rel(F)(x ⊚ y) = Rel(F)(x) ⊚ Rel(F)(y)`. -/
-theorem RegularFunctor.relMap_comp (hreg : RegularFunctor F) {A B : C}
+public theorem RegularFunctor.relMap_comp (hreg : RegularFunctor F) {A B : C}
     (x : BinRelQuot (𝒞 := C) A B) (y : BinRelQuot (𝒞 := C) B Cobj) :
     hreg.relMap (qComp x y) = qComp (hreg.relMap x) (hreg.relMap y) := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
@@ -2566,7 +2568,7 @@ theorem RegularFunctor.relMap_comp (hreg : RegularFunctor F) {A B : C}
 
 /-- `F` preserving binary products makes `(F fst, F snd) : F(prod A B) ⇉ FA, FB` jointly monic:
     two maps into `F(prod A B)` agreeing after `F fst` and `F snd` are equal. -/
-theorem map_prod_jointly_monic (hreg : RegularFunctor F) {A B : C} {P : D}
+public theorem map_prod_jointly_monic (hreg : RegularFunctor F) {A B : C} {P : D}
     {u v : P ⟶ F.obj (prod A B)}
     (hfst : u ≫ F.map fst = v ≫ F.map fst) (hsnd : u ≫ F.map snd = v ≫ F.map snd) :
     u = v := by
@@ -2584,7 +2586,7 @@ theorem map_prod_jointly_monic (hreg : RegularFunctor F) {A B : C} {P : D}
 
 /-- Cone-condition builder for the downstairs meet pullback `pq`: a stage `P` with `colA/colB`
     legs that match assembles into the pair-square `pq` needs.  Splits columns to avoid `F(pair …)`. -/
-theorem inter_cone_w (hreg : RegularFunctor F) {A B : C} (R S : BinRel C A B)
+public theorem inter_cone_w (hreg : RegularFunctor F) {A B : C} (R S : BinRel C A B)
     {P : D} {g₁ : P ⟶ (relImageObj hreg R).src} {g₂ : P ⟶ (relImageObj hreg S).src}
     (hA : g₁ ≫ (relImageObj hreg R).colA = g₂ ≫ (relImageObj hreg S).colA)
     (hB : g₁ ≫ (relImageObj hreg R).colB = g₂ ≫ (relImageObj hreg S).colB) :
@@ -2599,7 +2601,7 @@ theorem inter_cone_w (hreg : RegularFunctor F) {A B : C} (R S : BinRel C A B)
   rw [h1, h2]
 
 /-- **(2a)∩ — forward**: `relImageObj (R ⊓ S) ⊂ relImageObj R ⊓ relImageObj S`. -/
-theorem relImageObj_inter_le (hreg : RegularFunctor F) {A B : C}
+public theorem relImageObj_inter_le (hreg : RegularFunctor F) {A B : C}
     (R S : BinRel C A B) :
     RelLe (relImageObj hreg (R ⊓ S)) (relImageObj hreg R ⊓ relImageObj hreg S) := by
   obtain ⟨eR, _, heRA, heRB⟩ := relImageObj_cover hreg R
@@ -2637,7 +2639,7 @@ theorem relImageObj_inter_le (hreg : RegularFunctor F) {A B : C}
     rfl
 
 /-- **(2a)∩ — reverse**: `relImageObj R ⊓ relImageObj S ⊂ relImageObj (R ⊓ S)`. -/
-theorem relImageObj_le_inter (hreg : RegularFunctor F) {A B : C}
+public theorem relImageObj_le_inter (hreg : RegularFunctor F) {A B : C}
     (R S : BinRel C A B) :
     RelLe (relImageObj hreg R ⊓ relImageObj hreg S) (relImageObj hreg (R ⊓ S)) := by
   obtain ⟨eR, heRcov, heRA, heRB⟩ := relImageObj_cover hreg R
@@ -2747,7 +2749,7 @@ theorem relImageObj_le_inter (hreg : RegularFunctor F) {A B : C}
     rw [lhs, rhs]
 
 /-- **(2a) — `Rel(F)` preserves intersection** on the quotient. -/
-theorem RegularFunctor.relMap_inter (hreg : RegularFunctor F) {A B : C}
+public theorem RegularFunctor.relMap_inter (hreg : RegularFunctor F) {A B : C}
     (x y : BinRelQuot (𝒞 := C) A B) :
     hreg.relMap (qInter x y) = qInter (hreg.relMap x) (hreg.relMap y) := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
@@ -2757,7 +2759,7 @@ theorem RegularFunctor.relMap_inter (hreg : RegularFunctor F) {A B : C}
 
 /-- **(2a) — `Rel(F)` preserves the identity**: `Rel(F)(relId A) = relId (F.obj A)`.  `relImageObj` of
     `graph (id)` is the image of the diagonal, RelLe-equivalent to `graph (id (F.obj A))`. -/
-theorem RegularFunctor.relMap_id (hreg : RegularFunctor F) (A : C) :
+public theorem RegularFunctor.relMap_id (hreg : RegularFunctor F) (A : C) :
     hreg.relMap (relId A) = relId (F.obj A) := by
   show relClass (relImageObj hreg (graph (Cat.id A))) = relClass (graph (Cat.id (F.obj A)))
   obtain ⟨e, hecov, heA, heB⟩ := relImageObj_cover hreg (graph (Cat.id A))
@@ -2789,7 +2791,7 @@ theorem RegularFunctor.relMap_id (hreg : RegularFunctor F) (A : C) :
 /-- **§2.218 (2a) — `Rel(F)` as an allegory functor `Rel(C) → Rel(D)`.**  Objects: `A ↦ F.obj A`;
     homs: `hreg.relMap`.  The four `AllegoryFunctor` laws are `relMap_id`/`relMap_comp`/
     `relMap_recip`/`relMap_inter`. -/
-noncomputable def RegularFunctor.relAllegoryHom (hreg : RegularFunctor F) :
+@[expose] public noncomputable def RegularFunctor.relAllegoryHom (hreg : RegularFunctor F) :
     AllegoryFunctor (RelObj C) (RelObj D) where
   obj A := ⟨F.obj A.carrier⟩
   map {_a _b} x := hreg.relMap x
@@ -2883,7 +2885,7 @@ end SameUniverseFaithful
     factorization `h : M → N` with `h ≫ n = m`.  Pullback of `m` along the mono `n` gives a monic
     projection `π₁ : P → M`; the downstairs cone `(F.obj M, id, g)` factors through `F.obj P`, exhibiting a
     section of `F π₁`, so `F π₁` (monic) is iso; reflecting the iso makes `π₁` iso upstairs. -/
-theorem monoFactor_reflect (hreg : RegularFunctor F)
+public theorem monoFactor_reflect (hreg : RegularFunctor F)
     (hreflIso : ∀ {X Y : C} (f : X ⟶ Y), IsIso (F.map f) → IsIso f)
     {M N X : C} {m : M ⟶ X} {n : N ⟶ X} (hn : Monic n)
     (g : F.obj M ⟶ F.obj N) (hg : g ≫ F.map n = F.map m) :
@@ -2911,7 +2913,7 @@ theorem monoFactor_reflect (hreg : RegularFunctor F)
 /-- The §1.56 product-pair `pair (F a) (F b)` factors the `F`-image of the upstairs pair through
     the product-comparison iso: `F.obj (pair a b) ≫ φ = pair (F a) (F b)`, where
     `φ = pair (F fst) (F snd) : F.obj (A×B) → F.obj A × F.obj B`. -/
-theorem map_pair_comp_comparison {A B Z : C} (a : Z ⟶ A) (b : Z ⟶ B) :
+public theorem map_pair_comp_comparison {A B Z : C} (a : Z ⟶ A) (b : Z ⟶ B) :
     F.map (pair a b) ≫ pair (F.map (fst (A := A) (B := B))) (F.map (snd (A := A) (B := B)))
       = pair (F.map a) (F.map b) := by
   refine pair_uniq (F.map a) (F.map b)
@@ -2924,7 +2926,7 @@ theorem map_pair_comp_comparison {A B Z : C} (a : Z ⟶ A) (b : Z ⟶ B) :
     `RelLe` upstairs, using only that `F` preserves pullbacks/monos/products and reflects isos — no
     fullness.  The leg-map produced by the cover-split chase is converted (via `monoFactor_reflect`
     on the jointly-monic span `pair S.colA S.colB`) into the required `RelHom R S`. -/
-theorem relImageObj_reflect_le_of_reflects (hreg : RegularFunctor F)
+public theorem relImageObj_reflect_le_of_reflects (hreg : RegularFunctor F)
     (hreflIso : ∀ {X Y : C} (f : X ⟶ Y), IsIso (F.map f) → IsIso f)
     (hsplit : ∀ {X Y : D} (e : X ⟶ Y), Cover e → ∃ s : Y ⟶ X, s ≫ e = Cat.id Y)
     {A B : C} {R S : BinRel C A B}
@@ -2979,7 +2981,7 @@ theorem relImageObj_reflect_le_of_reflects (hreg : RegularFunctor F)
 /-- **§2.218 (2b′) — `Rel(F)` is faithful for a NON-FULL `F`** that preserves the regular
     structure, reflects isos, and has split covers downstairs (the `homRep ‾Map A` case).
     `hreg.relMap x = hreg.relMap y ⟹ x = y`. -/
-theorem RegularFunctor.relMap_faithful_of_reflects (hreg : RegularFunctor F)
+public theorem RegularFunctor.relMap_faithful_of_reflects (hreg : RegularFunctor F)
     (hreflIso : ∀ {X Y : C} (f : X ⟶ Y), IsIso (F.map f) → IsIso f)
     (hsplit : ∀ {X Y : D} (e : X ⟶ Y), Cover e → ∃ s : Y ⟶ X, s ≫ e = Cat.id Y)
     {A B : C} (x y : BinRelQuot (𝒞 := C) A B)
@@ -2995,7 +2997,7 @@ theorem RegularFunctor.relMap_faithful_of_reflects (hreg : RegularFunctor F)
     reflects isos and whose covers split downstairs (NOT necessarily full), the allegory morphism
     `Rel(F) = relAllegoryHom` is `AllegoryFunctor.Faithful`.  This is the form consumed by the
     §2.218 assembly (`F = homRep ‾Map A`). -/
-theorem RegularFunctor.relAllegoryHom_faithful_of_reflects (hreg : RegularFunctor F)
+public theorem RegularFunctor.relAllegoryHom_faithful_of_reflects (hreg : RegularFunctor F)
     (hreflIso : ∀ {X Y : C} (f : X ⟶ Y), IsIso (F.map f) → IsIso f)
     (hsplit : ∀ {X Y : D} (e : X ⟶ Y), Cover e → ∃ s : Y ⟶ X, s ≫ e = Cat.id Y) :
     hreg.relAllegoryHom.Faithful :=
@@ -3019,16 +3021,16 @@ end RelFunctor
 namespace PowerAllegory
 
 /-- The carrier of the power allegory `𝒜^I`: an `I`-indexed family of objects of `𝒜`. -/
-def PowerObj (I : Type w) (𝒜 : Type u) : Type (max w u) := I → 𝒜
+@[expose] public def PowerObj (I : Type w) (𝒜 : Type u) : Type (max w u) := I → 𝒜
 
 variable {I : Type w} {𝒜 : Type u}
 
 /-- A morphism of `𝒜^I` is a pointwise family of `𝒜`-morphisms. -/
-def PowerHom [Cat.{v} 𝒜] (X Y : PowerObj I 𝒜) : Type (max w v) := ∀ i, X i ⟶ Y i
+@[expose] public def PowerHom [Cat.{v} 𝒜] (X Y : PowerObj I 𝒜) : Type (max w v) := ∀ i, X i ⟶ Y i
 
 /-- **§2.218 BRICK 3 — the power category `𝒜^I`.**  Objects `I → 𝒜`, homs pointwise families,
     composition/identity pointwise.  All four category laws are pointwise (`funext`). -/
-instance powerCatAlg [Cat.{v} 𝒜] : Cat.{max w v} (PowerObj I 𝒜) where
+@[expose] public instance powerCatAlg [Cat.{v} 𝒜] : Cat.{max w v} (PowerObj I 𝒜) where
   Hom X Y := PowerHom X Y
   id X := fun i => Cat.id (X i)
   comp R S := fun i => R i ≫ S i
@@ -3044,7 +3046,7 @@ instance powerCatAlg [Cat.{v} 𝒜] : Cat.{max w v} (PowerObj I 𝒜) where
 
 /-- **§2.218 BRICK 3 — the power allegory `𝒜^I`.**  Reciprocation and intersection pointwise;
     every allegory equation lifts from the fibre by `funext`. -/
-instance powerAllegory [Allegory.{v} 𝒜] : Allegory.{max w v} (PowerObj I 𝒜) where
+@[expose] public instance powerAllegory [Allegory.{v} 𝒜] : Allegory.{max w v} (PowerObj I 𝒜) where
   recip {_a _b} R := fun i => (R i)°
   inter {_a _b} R S := fun i => R i ∩ S i
   recip_recip R := funext fun i => Allegory.recip_recip (R i)
@@ -3073,7 +3075,7 @@ end PowerAllegory
 
 /-- **§2.218 (2c).**  When every cover in the regular category `𝒞` splits (`𝒞` capital, the
     §1.543 case), the Henkin–Lubkin representation `homRep 𝒞 : 𝒞 → Set^|𝒞|` is a regular functor. -/
-theorem homRep_regularFunctor {𝒞 : Type u} [Cat.{u} 𝒞] [RegularCategory 𝒞]
+public theorem homRep_regularFunctor {𝒞 : Type u} [Cat.{u} 𝒞] [RegularCategory 𝒞]
     (hproj : ∀ C : 𝒞, ∀ {P : 𝒞} (e : P ⟶ C), Cover e → ∃ s : C ⟶ P, s ≫ e = Cat.id C) :
     RelFunctor.RegularFunctor (homRepFunctor 𝒞) where
   pres_prod := HomRepRegular.homRep_preserves_prod
@@ -3104,7 +3106,7 @@ variable (𝒜 : Type u) [Freyd.Alg.TabularUnitaryAllegory 𝒜]
 /-- The §2.218 carrier `Rel(Map 𝒜)`, with all instances pinned to `mapCat` (avoiding the
     `MapObj 𝒜 = 𝒜` `Cat`-diamond: the canonical `Cat` on objects of `Map 𝒜` is `mapCat`, not the
     allegory's `toCat`).  `RM 𝒜 := RelObj (MapObj 𝒜)`. -/
-abbrev RM : Type u := RelObj (MapObj 𝒜)
+@[expose] public abbrev RM : Type u := RelObj (MapObj 𝒜)
 
 -- We must NOT register a `local instance : Cat (MapObj 𝒜)`: since `MapObj 𝒜 = 𝒜` (abbrev), that
 -- would hijack the SOURCE allegory homs `a ⟶ b` (`tabSpan`'s `R`, `bridgeFunctor.map`'s `R`) and
@@ -3113,7 +3115,7 @@ abbrev RM : Type u := RelObj (MapObj 𝒜)
 -- (the `MapObj 𝒜 = 𝒜` `Cat`-diamond fix from MapCat's convention note).  Everywhere a
 -- `BinRel`/`BinRelQuot`/`relClass`/`RelLe` of `MapObj 𝒜` appears below, we `@`-pin `mapCat`
 -- (and `mapHasBinaryProducts`/`mapHasPullbacks`) the same way §2.217 in MapCat does.
-noncomputable instance instAllegRM : Freyd.Alg.Allegory.{max u v} (RM 𝒜) :=
+@[expose] public noncomputable instance instAllegRM : Freyd.Alg.Allegory.{max u v} (RM 𝒜) :=
   @relAllegory (MapObj 𝒜) (Freyd.Alg.mapCat (𝒜 := 𝒜)) (Freyd.Alg.mapRegularCategory (A := 𝒜))
 
 /-- `relOf` is constant on a mutual-containment class (`relOf_le_of_relLe` both ways). -/
@@ -3139,7 +3141,7 @@ private noncomputable def relOfQuot {a b : MapObj 𝒜}
 
 /-- The tabulating span of an allegory morphism `R : a ⟶ b`: the `BinRel (Map 𝒜)` table
     `⟨c; f, g⟩` of a tabulation `R = f°≫g` (`TabularAllegory.tabular`), joint-monic by §2.141. -/
-noncomputable def tabSpan {a b : 𝒜} (R : a ⟶ b) :
+@[expose] public noncomputable def tabSpan {a b : 𝒜} (R : a ⟶ b) :
     @BinRel (MapObj 𝒜) (Freyd.Alg.mapCat (𝒜 := 𝒜)) a b :=
   let t := TabularAllegory.tabular (𝒜 := 𝒜) R
   @BinRel.mk (MapObj 𝒜) (Freyd.Alg.mapCat (𝒜 := 𝒜)) a b t.choose
@@ -3148,7 +3150,7 @@ noncomputable def tabSpan {a b : 𝒜} (R : a ⟶ b) :
     (Freyd.Alg.mapMonicPair_of_tab _ _ t.choose_spec.choose_spec.choose_spec.2.2.2)
 
 /-- `relOf (tabSpan R) = R`: the span tabulates `R`, so its underlying morphism is `R`. -/
-theorem relOf_tabSpan {a b : 𝒜} (R : a ⟶ b) :
+public theorem relOf_tabSpan {a b : 𝒜} (R : a ⟶ b) :
     Freyd.Alg.relOf (tabSpan 𝒜 R) = R :=
   (TabularAllegory.tabular (𝒜 := 𝒜) R).choose_spec.choose_spec.choose_spec.2.2.1.symm
 
@@ -3157,7 +3159,7 @@ theorem relOf_tabSpan {a b : 𝒜} (R : a ⟶ b) :
     by `relOf_tabSpan` + the dictionary (`relOf_graph`/`_compose`/`_reciprocal`/`_inter`), so the
     classes are equal (`relLe_of_relOf_le` lifts the morphism equality back to mutual
     containment). -/
-noncomputable def bridgeFunctor :
+@[expose] public noncomputable def bridgeFunctor :
     Freyd.Alg.AllegoryFunctor 𝒜 (RM 𝒜) where
   obj a := ⟨a⟩
   map {a b} R := @relClass (MapObj 𝒜) (Freyd.Alg.mapCat (𝒜 := 𝒜))
@@ -3184,7 +3186,7 @@ noncomputable def bridgeFunctor :
 /-- **§2.218 R2 — the carrier bridge is FAITHFUL.**  `relOf (bridgeFunctor.map R) = R`
     (`relOf_tabSpan`), so `bridgeFunctor.map R = bridgeFunctor.map S` ⟹
     `R = relOf (…R) = relOf (…S) = S`. -/
-theorem bridgeFunctor_faithful :
+public theorem bridgeFunctor_faithful :
     (bridgeFunctor 𝒜).Faithful := by
   intro a b R S h
   have hR : relOfQuot 𝒜 ((bridgeFunctor 𝒜).map R) = R := relOf_tabSpan 𝒜 R

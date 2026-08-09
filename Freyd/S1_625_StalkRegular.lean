@@ -23,7 +23,9 @@
   imports `S1_62`), so K1 cannot live in `S1_62` (cycle).
 -/
 
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_111_RelCat
 
 universe u
 
@@ -42,14 +44,14 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
 
 /-- The restriction of a name `p = (U,g)` to a refinement `W ≤ U` (witnessed by `c≫U.arr=W.arr`)
     is `PrefRel`-equal to `p`. -/
-theorem prefRel_restrict (ℱ : Subobject 𝒞 one → Prop) {A : 𝒞} (p : PrefilterMap ℱ A)
+public theorem prefRel_restrict (ℱ : Subobject 𝒞 one → Prop) {A : 𝒞} (p : PrefilterMap ℱ A)
     {W : Subobject 𝒞 one} (hW : ℱ W) (c : W.dom ⟶ p.U.dom) (hc : c ≫ p.U.arr = W.arr) :
     PrefRel ℱ (⟨W, hW, c ≫ p.map⟩ : PrefilterMap ℱ A) p :=
   ⟨W, hW, Cat.id _, c, Cat.id_comp _, hc, by rw [Cat.id_comp]⟩
 
 /-- A bijection of types is an `IsIso` in `Type u`: assemble the two-sided inverse from
     `Function.surjective`/`injective`. -/
-theorem isIso_of_bijective {X Y : Type u} (f : X ⟶ Y)
+public theorem isIso_of_bijective {X Y : Type u} (f : X ⟶ Y)
     (hinj : Function.Injective f) (hsurj : Function.Surjective f) : IsIso f := by
   refine ⟨fun y => (hsurj y).choose, ?_, ?_⟩
   · funext x
@@ -67,7 +69,7 @@ theorem isIso_of_bijective {X Y : Type u} (f : X ⟶ Y)
 /-- INJECTIVITY core.  Two names `p, q : PrefilterMap ℱ (A×B)` whose `fst`-restrictions are
     `PrefRel` and whose `snd`-restrictions are `PrefRel` are themselves `PrefRel`.  Merge the two
     refinements over a common ↓-refinement `W`, then cancel the jointly-monic pair `(fst,snd)`. -/
-theorem prefRel_of_legs {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
+public theorem prefRel_of_legs {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
     {A B : 𝒞} {p q : PrefilterMap ℱ (prod A B)}
     (hf : PrefRel ℱ (⟨p.U, p.hU, p.map ≫ fst⟩ : PrefilterMap ℱ A) ⟨q.U, q.hU, q.map ≫ fst⟩)
     (hs : PrefRel ℱ (⟨p.U, p.hU, p.map ≫ snd⟩ : PrefilterMap ℱ B) ⟨q.U, q.hU, q.map ≫ snd⟩) :
@@ -116,7 +118,7 @@ theorem prefRel_of_legs {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter 
 
 /-! ### `T_F̂` preserves binary products. -/
 
-theorem TF_preserves_binaryProducts (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
+public theorem TF_preserves_binaryProducts (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
     PreservesBinaryProducts (TF_functor ℱ) := by
   intro A B
   apply isIso_of_bijective
@@ -146,7 +148,7 @@ theorem TF_preserves_binaryProducts (ℱ : Subobject 𝒞 one → Prop) (hℱ : 
       rw [this]; exact prefRel_restrict ℱ q hW c₂ hc₂
 
 /-- The legs of a pullback cone are jointly monic. -/
-theorem pullback_monicPair {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g)
+public theorem pullback_monicPair {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g)
     (hc : c.IsPullback) : MonicPair c.π₁ c.π₂ := by
   intro W p q hp hq
   have hw : (p ≫ c.π₁) ≫ f = (p ≫ c.π₂) ≫ g := by
@@ -157,7 +159,7 @@ theorem pullback_monicPair {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone 
 /-- `T_F̂` carries a jointly-monic pair `(m,n)` in `𝒞` to a jointly-monic pair in `Set`: two
     classes agreeing after `≫m` and after `≫n` are equal.  Merge the two refinements over a common
     ↓-refinement and cancel `(m,n)`. -/
-theorem TF_jointly_monic {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
+public theorem TF_jointly_monic {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
     {Z A B : 𝒞} {m : Z ⟶ A} {n : Z ⟶ B} (hjm : MonicPair m n)
     (x y : TF ℱ Z) (hA : TF.map ℱ m x = TF.map ℱ m y) (hB : TF.map ℱ n x = TF.map ℱ n y) :
     x = y := by
@@ -215,7 +217,7 @@ theorem TF_jointly_monic {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter
 
 /-- Per-element cone data: if `TF.map f x = TF.map g y` then there is a common refinement `W ∈ ℱ`
     and maps `a : W→A`, `b : W→B` representing `x, y` with `a≫f = b≫g` (a `𝒞`-cone from `W.dom`). -/
-theorem cone_data_of_eq {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
+public theorem cone_data_of_eq {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter ℱ)
     {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) (x : TF ℱ A) (y : TF ℱ B)
     (hxy : TF.map ℱ f x = TF.map ℱ g y) :
     ∃ (W : Subobject 𝒞 one) (hW : ℱ W), ∃ (a : W.dom ⟶ A) (b : W.dom ⟶ B),
@@ -236,7 +238,7 @@ theorem cone_data_of_eq {ℱ : Subobject 𝒞 one → Prop} (hℱ : IsPreFilter 
   · exact Quot.sound (prefRel_restrict ℱ p hW wa hwa)
   · exact Quot.sound (prefRel_restrict ℱ q hW wb hwb)
 
-theorem TF_preserves_pullbacks (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
+public theorem TF_preserves_pullbacks (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
     PreservesPullbacks (TF_functor ℱ) := by
   intro A B C f g c hc d
   -- For each δ : d.pt, get a representing `𝒞`-cone over `(f,g)`, lift through `c`.
@@ -307,7 +309,7 @@ theorem TF_preserves_pullbacks (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPre
   exactly met after capitalizing.  It is NOT a free consequence of filteredness: covers are not a
   finite-limit notion. -/
 
-theorem TF_preserves_covers_of_projective (ℱ : Subobject 𝒞 one → Prop)
+public theorem TF_preserves_covers_of_projective (ℱ : Subobject 𝒞 one → Prop)
     (hproj : ∀ U : Subobject 𝒞 one, ℱ U → Projective U.dom) :
     PreservesCovers (TF_functor ℱ) := by
   intro A B e he
@@ -336,7 +338,7 @@ theorem TF_preserves_covers_of_projective (ℱ : Subobject 𝒞 one → Prop)
   exact ⟨p.U, p.hU, Cat.id _, Cat.id _, Cat.id_comp _, Cat.id_comp _, by
     rw [Cat.id_comp, Cat.id_comp]; exact hsq⟩
 
-theorem TF_preserves_mono (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
+public theorem TF_preserves_mono (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ) :
     PreservesMono (TF_functor ℱ) := by
   intro X Y m hm
   -- `TF.map m` injective ⟹ monic in `Type u` (`set_monic_iff_injective`)
@@ -352,7 +354,7 @@ theorem TF_preserves_mono (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilte
   with the lift a cover; `T_F̂` preserves the cover (projectivity) and the mono, and a cover-then-mono
   factorization in `Set` is an image.  Minimality uses surjectivity of `T_F̂(ℓ)` + fibre choice. -/
 
-theorem TF_preserves_images (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ)
+public theorem TF_preserves_images (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ)
     (hproj : ∀ U : Subobject 𝒞 one, ℱ U → Projective U.dom) :
     PreservesImages (TF_functor ℱ) (TF_preserves_mono ℱ hℱ) := by
   intro A B f I hI
@@ -405,7 +407,7 @@ theorem TF_preserves_images (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFil
   (automatic in a CAPITAL positive pre-logos, §1.633).  The structure lives in `RelCat`, so this
   packaging is the natural home (downstream of both `S1_62` and `RelCat`). -/
 
-theorem TF_regularFunctor (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ)
+public theorem TF_regularFunctor (ℱ : Subobject 𝒞 one → Prop) (hℱ : IsPreFilter ℱ)
     (hproj : ∀ U : Subobject 𝒞 one, ℱ U → Projective U.dom) :
     RelFunctor.RegularFunctor (TF_functor ℱ) where
   pres_prod := TF_preserves_binaryProducts ℱ hℱ

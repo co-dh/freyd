@@ -39,7 +39,9 @@
 
   Mathlib-free; built on the repo's own `Cat` + `Freyd.LaxColim` (`CapitalizationLaxColimit.lean`).
 -/
-import Freyd.S1_543_CapitalizationLaxColimit
+module
+
+public import Freyd.S1_543_CapitalizationLaxColimit
 
 open Freyd
 open Freyd.Colim
@@ -70,7 +72,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
     `L.F hij (ht i).one` is again terminal in the target fibre `L.A j` (an isomorph of `(ht j).one`).
     For base-change this holds: `g*` carries the slice terminal `⟨pr i, id⟩` to `⟨pr j, id⟩` up to
     iso, and any isomorph of a terminal is terminal. -/
-structure LaxTerminalData where
+public structure LaxTerminalData where
   /-- each fibre has a terminal -/
   ht : ∀ i, HasTerminal (L.A i)
   /-- the unique map of any object to the pushed terminal -/
@@ -83,7 +85,7 @@ structure LaxTerminalData where
     chosen stage `i₀`.  The unique map from `⟨jX, xX⟩` pushes both to a common bound `k`, mapping
     `xX` to the pushed terminal via `pushTrm`; uniqueness is `pushUniq` after pushing two germ
     representatives to a common bound (and absorbing the level shift by `pushHom`/germ equivalence). -/
-noncomputable def laxColimHasTerminal [hne : Nonempty ι] (T : LaxTerminalData L) :
+@[expose] public noncomputable def laxColimHasTerminal [hne : Nonempty ι] (T : LaxTerminalData L) :
     @HasTerminal (Obj L) (laxColimCat L hL) := by
   letI : Cat (Obj L) := laxColimCat L hL
   let i₀ : ι := Classical.choice hne
@@ -129,11 +131,11 @@ variable (L : LaxCatSystem.{u, w} ι D)
 
 /-- The forward component of the reflexive coherence iso `F_refl_iso` at an object `x : L.A i`:
     the canonical iso `L.F (D.refl i) x ⟶ x`. -/
-def reflApp {i : ι} (x : L.A i) : L.F (D.refl i) x ⟶ x :=
+@[expose] public def reflApp {i : ι} (x : L.A i) : L.F (D.refl i) x ⟶ x :=
   L.F_refl_iso.nat.app x
 
 /-- `reflApp` is an isomorphism (it is a component of the natural iso `F_refl_iso`). -/
-theorem reflApp_isIso {i : ι} (x : L.A i) : IsIso (reflApp L x) :=
+public theorem reflApp_isIso {i : ι} (x : L.A i) : IsIso (reflApp L x) :=
   L.F_refl_iso.isIso x
 
 /-- **Naturality of `reflApp`.**  `reflApp` is the component of the natural iso `F_refl_iso`, so for
@@ -149,7 +151,7 @@ theorem reflApp_natural {i : ι} {x y : L.A i} (f : x ⟶ y) :
     `.nat.app` of `projReflIso`, which is `baseChangeIdNatIso` (component `_idBwd = π₁`) transported
     along `P.proj_refl i : P.proj (D.refl i) = Cat.id`; the transport `eqToHom` collapses against the
     chosen pullback's `π₁` by `eqToHom_bc_π₁`, leaving the reflexive pullback's first projection. -/
-theorem reflApp_f_π₁ {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞] {ι : Type u} {D : Directed ι}
+public theorem reflApp_f_π₁ {𝒞 : Type w} [Cat.{w} 𝒞] [HasPullbacks 𝒞] {ι : Type u} {D : Directed ι}
     (P : ProjSystem ι D 𝒞) {i : ι} (x : pcObj P i) :
     (reflApp (laxOfProjSystem' P) x).f = (_pb (P.proj (D.refl i)) x).cone.π₁ := by
   show ((projReflIso P i).nat.app x).f = _
@@ -168,7 +170,7 @@ end ReflApp
   via `homCompRawL_eq_compAtL` + `push_refl` + `pushHom_id` — to the included stage identity, which
   is the colimit identity by `homInclL_compat`.  Mirrors the strict `colimHom_isIso_of_rep`, but the
   bare-sigma objects remove all `colimOut` transport. -/
-theorem homInclL_isIso_of_rep (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
+public theorem homInclL_isIso_of_rep (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
     {i j : ι} (x : L.A i) (y : L.A j) (a : UpperBound D i j)
     (f₀ : L.F a.2.1 x ⟶ L.F a.2.2 y) (g₀ : L.F a.2.2 y ⟶ L.F a.2.1 x)
     (h1 : f₀ ≫ g₀ = Cat.id (L.F a.2.1 x)) (h2 : g₀ ≫ f₀ = Cat.id (L.F a.2.2 y)) :
@@ -212,7 +214,7 @@ theorem homInclL_isIso_of_rep (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L)
 /-- LAX binary-product preservation bundle (mirrors `colimitHasBinaryProducts`'s `hp`/`hpres`/
     `hpres_pair`).  `hp` gives per-fibre products; `pres` is joint-monic preservation under a
     transition; `presPair` is pairing preservation under a transition. -/
-structure LaxProductData (L : LaxCatSystem.{u, w} ι D) where
+public structure LaxProductData (L : LaxCatSystem.{u, w} ι D) where
   hp : ∀ i, HasBinaryProducts (L.A i)
   pres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
       (u v : z ⟶ L.F hij ((hp i).prod a b)),
@@ -224,7 +226,7 @@ structure LaxProductData (L : LaxCatSystem.{u, w} ι D) where
         r ≫ (L.functF hij).map (hp i).fst = p ∧ r ≫ (L.functF hij).map (hp i).snd = q
 
 /-- LAX equalizer-preservation bundle (mirrors `colimitHasEqualizers`'s `he`/`hepres`/`hepres_lift`). -/
-structure LaxEqualizerData (L : LaxCatSystem.{u, w} ι D) where
+public structure LaxEqualizerData (L : LaxCatSystem.{u, w} ι D) where
   he : ∀ i, HasEqualizers (L.A i)
   pres : ∀ {i j} (hij : D.le i j) {A B : L.A i} (f g : A ⟶ B) (z : L.A j)
       (u v : z ⟶ L.F hij (eqObj f g)),
@@ -246,23 +248,23 @@ section LaxProduct
 variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) (data : LaxProductData L)
 
 /-- Common product bound of `i,j`. -/
-noncomputable def prK (D : Directed ι) (i j : ι) : ι := Classical.choose (D.bound i j)
-theorem prK_le (D : Directed ι) (i j : ι) : D.le i (prK D i j) ∧ D.le j (prK D i j) :=
+@[expose] public noncomputable def prK (D : Directed ι) (i j : ι) : ι := Classical.choose (D.bound i j)
+public theorem prK_le (D : Directed ι) (i j : ι) : D.le i (prK D i j) ∧ D.le j (prK D i j) :=
   Classical.choose_spec (D.bound i j)
 
 /-- The product object `⟨k, (hp k).prod (F x) (F y)⟩` in `Obj L`. -/
-noncomputable def prObj {i j : ι} (x : L.A i) (y : L.A j) : Obj L :=
+@[expose] public noncomputable def prObj {i j : ι} (x : L.A i) (y : L.A j) : Obj L :=
   ⟨prK D i j, (data.hp (prK D i j)).prod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y)⟩
 
 /-- The `fst` projection germ: `reflApp ≫ (hp k).fst` at bound `⟨k, refl k, hik⟩`. -/
-noncomputable def prFst {i j : ι} (x : L.A i) (y : L.A j) :
+@[expose] public noncomputable def prFst {i j : ι} (x : L.A i) (y : L.A j) :
     homL L hL (prObj L data x y) ⟨i, x⟩ :=
   homInclL L hL ((data.hp (prK D i j)).prod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y)) x
     ⟨prK D i j, D.refl (prK D i j), (prK_le D i j).1⟩
     (reflApp L _ ≫ (data.hp (prK D i j)).fst)
 
 /-- The `snd` projection germ. -/
-noncomputable def prSnd {i j : ι} (x : L.A i) (y : L.A j) :
+@[expose] public noncomputable def prSnd {i j : ι} (x : L.A i) (y : L.A j) :
     homL L hL (prObj L data x y) ⟨j, y⟩ :=
   homInclL L hL ((data.hp (prK D i j)).prod (L.F (prK_le D i j).1 x) (L.F (prK_le D i j).2 y)) y
     ⟨prK D i j, D.refl (prK D i j), (prK_le D i j).2⟩
@@ -276,11 +278,11 @@ noncomputable def prSnd {i j : ι} (x : L.A i) (y : L.A j) :
   triangle is assumed in `Coherent`), so we keep it abstract and CANCEL it by building the pair
   germ's representative with `isoInv U` baked in.  Both projections share the same `U` (same
   `reflApp p` source side), so one inverse serves both legs. -/
-noncomputable def prUnit {k m : ι} (p : L.A k) (hkm : D.le k m) :
+@[expose] public noncomputable def prUnit {k m : ι} (p : L.A k) (hkm : D.le k m) :
     L.F (D.trans (D.refl k) hkm) p ⟶ L.F hkm p :=
   transApp L (D.refl k) hkm p ≫ (L.functF hkm).map (reflApp L p)
 
-theorem prUnit_isIso {k m : ι} (p : L.A k) (hkm : D.le k m) :
+public theorem prUnit_isIso {k m : ι} (p : L.A k) (hkm : D.le k m) :
     IsIso (prUnit L p hkm) :=
   isIso_comp (transApp_isIso L (D.refl k) hkm p)
     (functor_preserves_iso (F := L.functF hkm) (reflApp L p) (reflApp_isIso L p))
@@ -288,7 +290,7 @@ theorem prUnit_isIso {k m : ι} (p : L.A k) (hkm : D.le k m) :
 /-- Pushing a single-stage projection germ `reflApp p ≫ proj` from `k` to `m` (along `hkm`) equals
     `prUnit ≫ (functF hkm).map proj ≫ isoInv (transApp hik hkm tgt)`.  Unfold `pushHom`, distribute
     `map` over the composite, and fold the `transApp ≫ map reflApp` prefactor into `prUnit`. -/
-theorem pushHom_proj {i k m : ι} (x : L.A i) (p : L.A k)
+public theorem pushHom_proj {i k m : ι} (x : L.A i) (p : L.A k)
     (hik : D.le i k) (hkm : D.le k m) (proj : p ⟶ L.F hik x) :
     pushHom L p x (D.refl k) hik hkm (reflApp L p ≫ proj)
       = prUnit L p hkm
@@ -302,7 +304,7 @@ theorem pushHom_proj {i k m : ι} (x : L.A i) (p : L.A k)
     `g : ⟨l,z⟩ ⟶ ⟨j,y⟩`, push both to a common stage `m ≥ k`, convert their targets to
     `F hkm (F hik x)`/`F hkm (F hjk y)` by `transApp`, apply `presPair`, and bake `isoInv prUnit`
     into the resulting germ so the projection's `prUnit` prefactor cancels. -/
-theorem prPairExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
+public theorem prPairExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
     (f : @Quotient _ (setoid (homSystemL L hL z x))) (g : @Quotient _ (setoid (homSystemL L hL z y))) :
     ∃ h : homL L hL ⟨l, z⟩ (prObj L data x y),
       compL L hL h (prFst L hL data x y) = f ∧ compL L hL h (prSnd L hL data x y) = g := by
@@ -364,7 +366,7 @@ theorem prPairExists {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
 /-- The single-germ representative `Ψ` produced by `prCompProj`, as a TWO `pushHom`s (the projection
     germ folded back by `pushHom_proj`): `pushHom m (aw→v) ≫ pushHom (reflApp p ≫ proj) (k→v)`.
     This form makes the level-push coherence `prPsi_push` a pair of `push_trans` applications. -/
-noncomputable def prPsi {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
+@[expose] public noncomputable def prPsi {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
     (hi'k : D.le i' k) (proj : p ⟶ L.F hi'k w)
     (aw : UpperBound D l k) (m : L.F aw.2.1 z ⟶ L.F aw.2.2 p)
     (v : ι) (hawv : D.le aw.1 v) (hkv : D.le k v) :
@@ -372,7 +374,7 @@ noncomputable def prPsi {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i'
   pushHom L z p aw.2.1 aw.2.2 hawv m
     ≫ pushHom L p w (D.refl k) hi'k hkv (reflApp L p ≫ proj)
 
-theorem prCompProj {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
+public theorem prCompProj {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
     (hi'k : D.le i' k) (proj : p ⟶ L.F hi'k w)
     (a₁ : UpperBound D l k) (m₁ : L.F a₁.2.1 z ⟶ L.F a₁.2.2 p)
     (e : ι) (ha₁e : D.le a₁.1 e) (hke : D.le k e) :
@@ -386,7 +388,7 @@ theorem prCompProj {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
 
 /-- **Level-push coherence of `prPsi`.**  Pushing the single-germ rep from `v` to `n` (along `hvn`)
     recomputes the rep at `n`: both `pushHom`s merge by `push_trans` (associativity). -/
-theorem prPsi_push (hL : Coherent L) {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
+public theorem prPsi_push (hL : Coherent L) {i' k : ι} {l : ι} (z : L.A l) (p : L.A k) (w : L.A i')
     (hi'k : D.le i' k) (proj : p ⟶ L.F hi'k w)
     (aw : UpperBound D l k) (m : L.F aw.2.1 z ⟶ L.F aw.2.2 p)
     (v n : ι) (hawv : D.le aw.1 v) (hkv : D.le k v) (hvn : D.le v n) :
@@ -405,7 +407,7 @@ theorem prPsi_push (hL : Coherent L) {i' k : ι} {l : ι} (z : L.A l) (p : L.A k
     projection-composites to single germs (`prCompProj`), extract a common bound from the germ
     equalities, strip the trailing `isoInv (transApp)` isos, and apply `data.pres` (the fibre's
     joint-monic preservation) to the `prUnit`-conjugated representatives. -/
-theorem prJointMono {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
+public theorem prJointMono {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
     (h₁ h₂ : homL L hL ⟨l, z⟩ (prObj L data x y))
     (hf : compL L hL h₁ (prFst L hL data x y) = compL L hL h₂ (prFst L hL data x y))
     (hs : compL L hL h₁ (prSnd L hL data x y) = compL L hL h₂ (prSnd L hL data x y)) :
@@ -480,7 +482,7 @@ theorem prJointMono {i j : ι} (x : L.A i) (y : L.A j) {l : ι} (z : L.A l)
 /-- **§M3b (lax): the lax colimit category has binary products.**  The product of `⟨i,x⟩`, `⟨j,y⟩` is
     `prObj = ⟨k, (hp k).prod (F x) (F y)⟩` at a common bound `k`; projections are `prFst`/`prSnd`;
     `pair` is the mediator from `prPairExists`; the laws are its spec plus `prJointMono`. -/
-noncomputable def laxColimHasBinaryProducts :
+@[expose] public noncomputable def laxColimHasBinaryProducts :
     @HasBinaryProducts (Obj L) (laxColimCat L hL) := by
   letI : Cat (Obj L) := laxColimCat L hL
   refine @HasBinaryProducts.mk (Obj L) (laxColimCat L hL)
@@ -513,7 +515,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) (eqData : LaxEqualizer
     `⟨lW,w⟩ ⟶ ⟨M,Eobj⟩` equal after `m = reflApp ≫ eqMap fM gM` are equal — `prCompProj`/`prPsi_push`
     reduce both to single germs, and `eqData.pres` (the fibre's `eqMap` joint-monic preservation)
     cancels the `prUnit`-conjugated reps. -/
-theorem eqMono (eqData : LaxEqualizerData L) {i j M : ι} (x : L.A i) (y : L.A j)
+public theorem eqMono (eqData : LaxEqualizerData L) {i j M : ι} (x : L.A i) (y : L.A j)
     {lW : ι} (w : L.A lW) (hiM : D.le i M) (hjM : D.le j M)
     (fM gM : L.F hiM x ⟶ L.F hjM y)
     (h₁ h₂ : homL L hL ⟨lW, w⟩ ⟨M, @eqObj _ _ (eqData.he M) _ _ fM gM⟩)
@@ -566,7 +568,7 @@ theorem eqMono (eqData : LaxEqualizerData L) {i j M : ι} (x : L.A i) (y : L.A j
     existence `Prop` (`hEdata`) packages the equalizer object/map and its universal property so
     `Quotient.inductionOn` can eliminate `F`, `G`, and cone legs alike; the `HasEqualizer` is then
     extracted by choice.  `eqData.pres` (mono) gives uniqueness, `eqData.presLift` the factorisation. -/
-noncomputable def laxColimHasEqualizers :
+@[expose] public noncomputable def laxColimHasEqualizers :
     @HasEqualizers (Obj L) (laxColimCat L hL) := by
   letI : Cat (Obj L) := laxColimCat L hL
   have hEdata : ∀ (X Y : Obj L) (F G : X ⟶ Y),
@@ -721,7 +723,7 @@ variable (L : LaxCatSystem.{u, w} ι D) (hL : Coherent L) [hne : Nonempty ι]
 
 /-- **§M3d (lax): the lax colimit category has pullbacks**, via terminal + products + equalizers and
     the §1.432 construction `products_equalizers_implies_pullbacks`.  Mirrors `colimitHasPullbacks`. -/
-noncomputable def laxColimHasPullbacks
+@[expose] public noncomputable def laxColimHasPullbacks
     -- `_tData` feeds a `HasTerminal` instance the products+equalizers pullback route does not consume,
     -- so the elaborated term drops it (linter flags it); kept for the finite-limit bundle's symmetry.
     (_tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L) :
@@ -752,7 +754,7 @@ private theorem pullbackComparisonIso {𝒜 : Type w} [Cat.{w} 𝒜] {A B Z : �
 
 /-- **§M3d (lax): pullbacks transfer covers**, given the canonical-pullback cover-transfer `hcanon`.
     Mirrors `colimitPullbacksTransferCovers` (generic `pullbackComparisonIso`/`cover_precomp_iso`). -/
-noncomputable def laxColimPullbacksTransferCovers
+public noncomputable def laxColimPullbacksTransferCovers
     (hpull : @HasPullbacks (Obj L) (laxColimCat L hL))
     (hcanon : letI : Cat (Obj L) := laxColimCat L hL
       ∀ {A B Z : Obj L} (f : A ⟶ Z) (g : B ⟶ Z),
@@ -773,7 +775,7 @@ noncomputable def laxColimPullbacksTransferCovers
     `PreRegularCategory`.  Mirrors `Colim.colimitPreRegular`.  The `hcanon` hypothesis (canonical
     pullback's `π₂` is a cover when `f` is) is the lax analogue of the strict `hcanon`; TRUE for
     base-change (each fibre `Over (listProd U)` is `overPreRegular`), discharged downstream. -/
-noncomputable def laxColimPreRegular
+@[expose] public noncomputable def laxColimPreRegular
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
     (hcanon : letI : Cat (Obj L) := laxColimCat L hL
         letI : HasPullbacks (Obj L) := laxColimHasPullbacks L hL tData pData eqData

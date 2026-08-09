@@ -36,9 +36,11 @@
 -- (it imports `InternalForallTopos` to obtain the regularity instances), so importing it
 -- here would create a cycle.  This file only ever used the `interIntersection` cluster
 -- from `S1_94`, which now lives in `InterIntersection`.
-import Freyd.S1_94_InterIntersection
-import Freyd.S1_94_InternalForall
-import Freyd.S1_931_SlicePi
+module
+
+public import Freyd.S1_94_InterIntersection
+public import Freyd.S1_94_InternalForall
+public import Freyd.S1_931_SlicePi
 
 universe v u
 
@@ -52,11 +54,11 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
 
 /-- The NAME of the entire subobject `(entire C) : 1 → [C]`, the internal "top element"
     `⊤_C` of the power object.  `topName C = nameOf id_C`. -/
-noncomputable def topName (C : 𝒞) : one ⟶ powObj C :=
+@[expose] public noncomputable def topName (C : 𝒞) : one ⟶ powObj C :=
   nameOf (Subobject.entire C).arr (Subobject.entire C).monic
 
 /-- The membership test of `topName C` is `χ_{entire C}`: every point lies in `⊤_C`. -/
-theorem membershipMap_topName (C : 𝒞) :
+public theorem membershipMap_topName (C : 𝒞) :
     membershipMap (topName C)
       = HasSubobjectClassifier.classify (Subobject.entire C).arr (Subobject.entire C).monic := by
   rw [topName, membershipMap_nameOf]
@@ -66,7 +68,7 @@ theorem membershipMap_topName (C : 𝒞) :
 /-- The NAME `1 → [[C]]` of the singleton subobject `{σ}` of `[C]`, for a global element
     `σ : 1 → [C]`.  It is `σ ≫ singletonMap [C]`, where `singletonMap [C] : [C] → [[C]]`
     is the §1.92 singleton map (curry of the diagonal classifier). -/
-noncomputable def singletonName (C : 𝒞) (σ : one ⟶ powObj C) : one ⟶ powObj (powObj C) :=
+@[expose] public noncomputable def singletonName (C : 𝒞) (σ : one ⟶ powObj C) : one ⟶ powObj (powObj C) :=
   σ ≫ singletonMap (powObj C)
 
 /-- **Singleton membership computation.**  The membership test of the singleton-subobject
@@ -76,7 +78,7 @@ noncomputable def singletonName (C : 𝒞) (σ : one ⟶ powObj C) : one ⟶ pow
     Proof mirrors `membershipMap_nameOf`: `σ ≫ singletonMap E = curry(prodMap σ ≫ χ_Δ)`
     by `curry_precomp`; then `curry_eval_eq` collapses the `prodMap … ≫ eval`, and a
     `pair_uniq` recombines `⟨id, term⟩ ≫ prodMap σ = ⟨id, term ≫ σ⟩`. -/
-theorem membershipMap_singletonMap (E : 𝒞) (σ : one ⟶ E) :
+public theorem membershipMap_singletonMap (E : 𝒞) (σ : one ⟶ E) :
     membershipMap (σ ≫ singletonMap E)
       = pair (Cat.id E) (term E ≫ σ) ≫ HasSubobjectClassifier.classify (diag E) (diag_mono E) := by
   show pair (Cat.id E) (term E ≫ σ ≫ singletonMap E) ≫ eval_exp E (omega (𝒞 := 𝒞)) = _
@@ -99,7 +101,7 @@ theorem membershipMap_singletonMap (E : 𝒞) (σ : one ⟶ E) :
 /-- **Diagonal classifier as internal equality.**  `⟨a,b⟩ ≫ χ_Δ = ⊤∘!` iff `a = b`.
     Forward: the classifier pullback of `Δ` lifts `⟨a,b⟩` through `Δ`, forcing `a = b`
     via the two projections.  Backward: `a = b` makes `⟨a,a⟩ = a ≫ Δ`, and `Δ ≫ χ_Δ = ⊤∘!`. -/
-theorem diag_classify_iff {E X : 𝒞} (a b : X ⟶ E) :
+public theorem diag_classify_iff {E X : 𝒞} (a b : X ⟶ E) :
     pair a b ≫ HasSubobjectClassifier.classify (diag E) (diag_mono E)
         = term X ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) ↔ a = b := by
   constructor
@@ -129,19 +131,19 @@ theorem diag_classify_iff {E X : 𝒞} (a b : X ⟶ E) :
     singleton subobject `{topName C}` of `[C]`.  On a global element `σ : 1 → [C]`,
     `σ ≫ forallC` is `true` iff `σ = topName C`, i.e. iff the subobject named by `σ`
     is the entire one (`∀ c. c ∈ σ`). -/
-noncomputable def forallC (C : 𝒞) : powObj C ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def forallC (C : 𝒞) : powObj C ⟶ omega (𝒞 := 𝒞) :=
   membershipMap (singletonName C (topName C))
 
 /-- `forallC C` unfolds (via `membershipMap_singletonMap`) to `⟨id, term ≫ topName C⟩ ≫ χ_Δ`
     on `[C]`. -/
-theorem forallC_eq (C : 𝒞) :
+public theorem forallC_eq (C : 𝒞) :
     forallC C = pair (Cat.id (powObj C)) (term (powObj C) ≫ topName C)
       ≫ HasSubobjectClassifier.classify (diag (powObj C)) (diag_mono (powObj C)) := by
   rw [forallC, singletonName, membershipMap_singletonMap]
 
 /-- Evaluating `forallC` at a generalized point `σ : X → [C]` gives
     `⟨σ, term X ≫ topName C⟩ ≫ χ_Δ`. -/
-theorem comp_forallC {X : 𝒞} (C : 𝒞) (σ : X ⟶ powObj C) :
+public theorem comp_forallC {X : 𝒞} (C : 𝒞) (σ : X ⟶ powObj C) :
     σ ≫ forallC C = pair σ (term X ≫ topName C)
       ≫ HasSubobjectClassifier.classify (diag (powObj C)) (diag_mono (powObj C)) := by
   rw [forallC_eq, ← Cat.assoc]
@@ -153,13 +155,13 @@ theorem comp_forallC {X : 𝒞} (C : 𝒞) (σ : X ⟶ powObj C) :
 /-- **§1.94 — β-law of the internal-∀ (generalized points).**  For `σ : X → [C]`,
     `σ ≫ forallC C = ⊤∘!_X` iff `σ = term X ≫ topName C`, i.e. iff the `X`-indexed
     subobject named by `σ` is constantly the entire one (`∀ c : C, c ∈ σ`). -/
-theorem forall_beta {X : 𝒞} (C : 𝒞) (σ : X ⟶ powObj C) :
+public theorem forall_beta {X : 𝒞} (C : 𝒞) (σ : X ⟶ powObj C) :
     σ ≫ forallC C = term X ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
       ↔ σ = term X ≫ topName C := by
   rw [comp_forallC]; exact diag_classify_iff σ (term X ≫ topName C)
 
 /-- The classifier of the entire subobject (`arr = id`) is `⊤∘!`.  From `classify_sq id`. -/
-theorem classify_entire (C : 𝒞) :
+public theorem classify_entire (C : 𝒞) :
     HasSubobjectClassifier.classify (Subobject.entire C).arr (Subobject.entire C).monic
       = term C ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   have h := HasSubobjectClassifier.classify_sq (Subobject.entire C).arr (Subobject.entire C).monic
@@ -170,7 +172,7 @@ theorem classify_entire (C : 𝒞) :
     (`g = term X ≫ topName C`, the conclusion of `forall_beta`), then EVERY generalized
     point `τ : X → C` lies in `g`: `⟨τ, g⟩ ≫ eval = ⊤∘!_X`.  (The entire subobject
     contains every point.) -/
-theorem forall_elim {X C : 𝒞} (g : X ⟶ powObj C) (hg : g = term X ≫ topName C)
+public theorem forall_elim {X C : 𝒞} (g : X ⟶ powObj C) (hg : g = term X ≫ topName C)
     (τ : X ⟶ C) :
     pair τ g ≫ eval_exp C (omega (𝒞 := 𝒞)) = term X ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   -- ⟨τ, term X ≫ topName C⟩ ≫ eval = τ ≫ membershipMap (topName C) = τ ≫ (term C ≫ ⊤) = ⊤∘!.
@@ -201,11 +203,11 @@ theorem forall_elim {X C : 𝒞} (g : X ⟶ powObj C) (hg : g = term X ≫ topNa
 
 /-- The implication map on `Ω`, `impΩ = ⟨π₁, π₁ ∧ π₂⟩ ≫ ⇔` (Freyd's `x⇒y := x ⇔ (x∧y)`,
     the §1.91 `impChar` recipe at the level of `Ω×Ω`). -/
-noncomputable def impΩ : prod (omega (𝒞 := 𝒞)) (omega (𝒞 := 𝒞)) ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def impΩ : prod (omega (𝒞 := 𝒞)) (omega (𝒞 := 𝒞)) ⟶ omega (𝒞 := 𝒞) :=
   pair fst (pair fst snd ≫ omegaMeet) ≫ heytingDoubleArrow
 
 /-- `⟨χ₁,χ₂⟩ ≫ impΩ = ⟨χ₁, χ₁∧χ₂⟩ ≫ ⇔` — the `impΩ` recipe spelled out (matches `impChar`). -/
-theorem pair_impΩ {X : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) :
+public theorem pair_impΩ {X : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) :
     pair χ₁ χ₂ ≫ impΩ
       = pair χ₁ (pair χ₁ χ₂ ≫ omegaMeet) ≫ heytingDoubleArrow := by
   rw [impΩ, ← Cat.assoc]
@@ -217,7 +219,7 @@ theorem pair_impΩ {X : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) :
 /-- **impΩ forward (modus ponens).**  If `⟨χ₁,χ₂⟩ ≫ impΩ` is true along `k` and `χ₁`
     is true along `k`, then `χ₂` is true along `k`.  (Only the forward/MP half of `⇒`
     is a clean pointwise fact; the converse needs Ω-extensionality.) -/
-theorem impΩ_forward {X W : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) (k : W ⟶ X)
+public theorem impΩ_forward {X W : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) (k : W ⟶ X)
     (himp : k ≫ (pair χ₁ χ₂ ≫ impΩ) = term W ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (h1 : k ≫ χ₁ = term W ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
     k ≫ χ₂ = term W ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
@@ -232,20 +234,20 @@ theorem impΩ_forward {X W : 𝒞} (χ₁ χ₂ : X ⟶ omega (𝒞 := 𝒞)) (k
 
 /-- The big-intersection body `[A]×A → Ω`: `(σ∈F) ⇒ (a∈σ)`.  `σ∈F` is
     `fst ≫ membershipMap Fname`; `a∈σ` is `⟨a,σ⟩ ≫ eval = ⟨snd,fst⟩ ≫ eval`. -/
-noncomputable def bigInterBody {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
+@[expose] public noncomputable def bigInterBody {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
     prod (powObj A) A ⟶ omega (𝒞 := 𝒞) :=
   pair (fst ≫ membershipMap Fname) (pair snd fst ≫ eval_exp A (omega (𝒞 := 𝒞))) ≫ impΩ
 
 /-- The characteristic map `A → Ω` of `⋂F`: curry the body in the `[A]`-slot, then
     universally quantify with `forallC [A]`. -/
-noncomputable def bigInterChar {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
+@[expose] public noncomputable def bigInterChar {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
     A ⟶ omega (𝒞 := 𝒞) :=
   curry (bigInterBody Fname) ≫ forallC (powObj A)
 
 /-- **Uncurry-at-a-point bridge.**  For `h : prod E A → Ω`, `τ : K → E`, `c : K → A`,
     `⟨τ, c ≫ curry h⟩ ≫ eval = ⟨τ, c⟩ ≫ h`.  (Evaluating the curried `h` at the point
     `c` and pairing with `τ` reconstructs `h(τ,c)`.) -/
-theorem eval_curry_point {E A K : 𝒞} (h : prod E A ⟶ omega (𝒞 := 𝒞))
+public theorem eval_curry_point {E A K : 𝒞} (h : prod E A ⟶ omega (𝒞 := 𝒞))
     (τ : K ⟶ E) (c : K ⟶ A) :
     pair τ (c ≫ curry h) ≫ eval_exp E (omega (𝒞 := 𝒞)) = pair τ c ≫ h := by
   have hpm : pair τ (c ≫ curry h)
@@ -258,13 +260,13 @@ theorem eval_curry_point {E A K : 𝒞} (h : prod E A ⟶ omega (𝒞 := 𝒞))
 
 /-- **§1.94 — the internal family big-intersection `⋂F`** for a family `F ↣ [A]` named
     by `Fname : 1 → [[A]]`.  It is the pullback of `true` along `bigInterChar Fname`. -/
-noncomputable def bigInter {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) : Subobject 𝒞 A :=
+@[expose] public noncomputable def bigInter {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) : Subobject 𝒞 A :=
   InverseImage (bigInterChar Fname) ⟨one, true (𝒞 := 𝒞), HasSubobjectClassifier.true_monic⟩
 
 /-- **`InverseImage χ {true}` is classified by `χ`.**  General form of
     `classify_interIntersection`: the pullback of `true` along any `χ : A → Ω` has `χ`
     as its characteristic map. -/
-theorem classify_invImage_true {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
+public theorem classify_invImage_true {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
     HasSubobjectClassifier.classify
         (InverseImage χ ⟨one, true (𝒞 := 𝒞), HasSubobjectClassifier.true_monic⟩).arr
         (InverseImage χ ⟨one, true (𝒞 := 𝒞), HasSubobjectClassifier.true_monic⟩).monic = χ := by
@@ -282,7 +284,7 @@ theorem classify_invImage_true {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
 
 /-- `Allows (bigInter F) a ↔ a ≫ bigInterChar F = ⊤∘!`.  (`bigInter` is the pullback of
     `true` along `bigInterChar`, classified by it; then `allows_iff_classify`.) -/
-theorem allows_bigInter_iff {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A) :
+public theorem allows_bigInter_iff {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A) :
     Allows (bigInter Fname) a
       ↔ a ≫ bigInterChar Fname = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   rw [allows_iff_classify (bigInter Fname) a]
@@ -290,7 +292,7 @@ theorem allows_bigInter_iff {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : 
         = bigInterChar Fname from classify_invImage_true (bigInterChar Fname)]
 
 /-- The carrier of `⋂F` satisfies its characteristic map: `(⋂F).arr ≫ bigInterChar F = ⊤∘!`. -/
-theorem bigInter_carrier_true {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
+public theorem bigInter_carrier_true {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
     (bigInter Fname).arr ≫ bigInterChar Fname
       = term (bigInter Fname).dom ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   show (HasPullbacks.has (bigInterChar Fname) (HasSubobjectClassifier.true (𝒞 := 𝒞))).cone.π₁
@@ -302,7 +304,7 @@ theorem bigInter_carrier_true {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
 /-- **Body-at-a-point.**  The membership map of the name `a ≫ curry h` (the `[A]`-indexed
     subobject `{σ | h(σ,a)}`) is `⟨id, term ≫ a⟩ ≫ h`, i.e. `h` with its `A`-slot fixed to `a`.
     Infrastructure for the (still-open) `bigInter` UPPER bound via `imp_adjunction`. -/
-theorem membershipMap_curry_point {A : 𝒞} (h : prod (powObj A) A ⟶ omega (𝒞 := 𝒞))
+public theorem membershipMap_curry_point {A : 𝒞} (h : prod (powObj A) A ⟶ omega (𝒞 := 𝒞))
     (a : one ⟶ A) :
     membershipMap (a ≫ curry h)
       = pair (Cat.id (powObj A)) (term (powObj A) ≫ a) ≫ h := by
@@ -321,7 +323,7 @@ theorem membershipMap_curry_point {A : 𝒞} (h : prod (powObj A) A ⟶ omega (�
     the constant point `τ = term ≫ 'B'` makes `body(τ,c) = ⊤` (i.e. `(τ∈F)⇒(c∈τ)` true);
     modus ponens (`impΩ_forward`) with `τ∈F = ⊤` (hypothesis) yields `c ∈ 'B' = ⊤`, which
     is exactly `c` factoring through `B` (`'B' = nameOf B.arr`, β-law `membershipMap_nameOf`). -/
-theorem bigInter_le_named {A : 𝒞} (Fname : one ⟶ powObj (powObj A))
+public theorem bigInter_le_named {A : 𝒞} (Fname : one ⟶ powObj (powObj A))
     (B : Subobject 𝒞 A)
     (hB : nameOf B.arr B.monic ≫ membershipMap Fname
         = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -394,13 +396,13 @@ theorem bigInter_le_named {A : 𝒞} (Fname : one ⟶ powObj (powObj A))
 /-! ## §1.94  `⋂F` is the GREATEST lower bound — the upper-bound half via `imp_adjunction` -/
 
 /-- The "membership at a point" map `[A] → Ω`, `σ ↦ a ∈ σ`, for a point `a : 1 → A`. -/
-noncomputable def memAtPoint {A : 𝒞} (a : one ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def memAtPoint {A : 𝒞} (a : one ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
   pair (term (powObj A) ≫ a) (Cat.id (powObj A)) ≫ eval_exp A (omega (𝒞 := 𝒞))
 
 /-- **The body of `⋂F` at a point `a` is the Heyting implication `(membershipMap Fname) ⇒ memAtPoint a`.**
     `⟨id,term≫a⟩ ≫ body = ⟨χ_F, a∈σ⟩ ≫ impΩ`, where `χ_F = membershipMap Fname` and
     `a∈σ = memAtPoint a`. -/
-theorem bigInterBody_at_point {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A) :
+public theorem bigInterBody_at_point {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A) :
     pair (Cat.id (powObj A)) (term (powObj A) ≫ a) ≫ bigInterBody Fname
       = pair (membershipMap Fname) (memAtPoint a) ≫ impΩ := by
   rw [bigInterBody, ← Cat.assoc]
@@ -425,7 +427,7 @@ theorem bigInterBody_at_point {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a 
     Ω-extensionality by routing the internal `∀σ. (σ∈F)⇒(a∈σ)` through the §1.91 Heyting
     `imp_adjunction`: the comprehension `{σ | (σ∈F)⇒(a∈σ)} = Sub.imp F0 Ga`, which is entire
     iff `entire ≤ (F0 ⇒ Ga)` iff `F0 ∩ entire ≤ Ga` iff `F0 ≤ Ga`. -/
-theorem bigInter_ge {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A)
+public theorem bigInter_ge {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ A)
     (F0 Ga : Subobject 𝒞 (powObj A))
     (hF0 : subChar F0 = membershipMap Fname)
     (hGa : subChar Ga = memAtPoint a)
@@ -477,7 +479,7 @@ theorem bigInter_ge {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) (a : one ⟶ 
     exactly when every member of `F` contains `a` (upper bound / greatest).
 
     This bundles `bigInter_le_named` (LOWER) and `bigInter_ge` (UPPER, via `imp_adjunction`). -/
-theorem bigInter_glb {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
+public theorem bigInter_glb {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
     -- LOWER BOUND: ⋂F ≤ every F-named subobject.
     (∀ B : Subobject 𝒞 A,
       nameOf B.arr B.monic ≫ membershipMap Fname
@@ -506,7 +508,7 @@ theorem bigInter_glb {A : 𝒞} (Fname : one ⟶ powObj (powObj A)) :
 /-- **General membership computation for `curry(fst ≫ χ)`.**  `membershipMap (curry (fst ≫ χ)) = χ`
     for any `χ : A → Ω`.  This is `membershipMap_nameOf` with the classifier `χ_m` replaced by an
     arbitrary `χ` (the proof never uses that `χ` is a classifier). -/
-theorem membershipMap_curry_fst {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
+public theorem membershipMap_curry_fst {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
     membershipMap (curry (fst (A := A) (B := one) ≫ χ)) = χ := by
   show pair (Cat.id A) (term A ≫ curry (fst (A := A) (B := one) ≫ χ))
       ≫ eval_exp A (omega (𝒞 := 𝒞)) = χ
@@ -521,16 +523,16 @@ theorem membershipMap_curry_fst {A : 𝒞} (χ : A ⟶ omega (𝒞 := 𝒞)) :
 /-- The predicate `predF f : [B] → Ω`, `σ ↦ ∀a:A. f(a) ∈ σ`.  Built with the fibered-∀
     trick: `bodyf : prod A [B] → Ω` sends `(a,σ) ↦ f(a) ∈ σ = ⟨f∘fst, snd⟩ ≫ eval`; then
     `predF f := curry bodyf ≫ forallC A` quantifies over `a : A`. -/
-noncomputable def predF {A B : 𝒞} (f : A ⟶ B) : powObj B ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def predF {A B : 𝒞} (f : A ⟶ B) : powObj B ⟶ omega (𝒞 := 𝒞) :=
   curry (pair (fst ≫ f) snd ≫ eval_exp B (omega (𝒞 := 𝒞))) ≫ forallC A
 
 /-- The family name `imageFamily f : 1 → [[B]]` of `F_f = {σ : [B] | ∀a:A. f(a) ∈ σ}`. -/
-noncomputable def imageFamily {A B : 𝒞} (f : A ⟶ B) : one ⟶ powObj (powObj B) :=
+@[expose] public noncomputable def imageFamily {A B : 𝒞} (f : A ⟶ B) : one ⟶ powObj (powObj B) :=
   curry (fst ≫ predF f)
 
 /-- **§1.945 STEP 1 — KEY LEMMA.**  `membershipMap (imageFamily f) = predF f`.  Mirrors
     `curry_fst_membershipMap`, via the general `membershipMap_curry_fst`. -/
-theorem membershipMap_imageFamily {A B : 𝒞} (f : A ⟶ B) :
+public theorem membershipMap_imageFamily {A B : 𝒞} (f : A ⟶ B) :
     membershipMap (imageFamily f) = predF f := by
   rw [imageFamily, membershipMap_curry_fst]
 
@@ -578,7 +580,7 @@ private theorem membLHS_eq {A B : 𝒞} (f : A ⟶ B) (B' : Subobject 𝒞 B) :
 
 /-- **§1.945 STEP 2 — membership characterization.**  `'B'' ∈ F_f ↔ Allows B' f`, i.e. the name
     of `B' ↣ B` is a member of the image family iff `f` factors through `B'`.  Both directions. -/
-theorem name_mem_imageFamily_iff {A B : 𝒞} (f : A ⟶ B) (B' : Subobject 𝒞 B) :
+public theorem name_mem_imageFamily_iff {A B : 𝒞} (f : A ⟶ B) (B' : Subobject 𝒞 B) :
     nameOf B'.arr B'.monic ≫ membershipMap (imageFamily f)
         = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
       ↔ Allows B' f := by
@@ -608,13 +610,13 @@ theorem name_mem_imageFamily_iff {A B : 𝒞} (f : A ⟶ B) (B' : Subobject 𝒞
     exact (allows_iff_classify B' f).1 hAllows
 
 /-- **§1.945 STEP 3 — the image of `f`** as the family big-intersection `⋂F_f`. -/
-noncomputable def imageF {A B : 𝒞} (f : A ⟶ B) : Subobject 𝒞 B :=
+@[expose] public noncomputable def imageF {A B : 𝒞} (f : A ⟶ B) : Subobject 𝒞 B :=
   bigInter (imageFamily f)
 
 /-- **§1.945 STEP 3a — MINIMALITY.**  Any subobject `S ↣ B` that allows `f` lies above the
     image `⋂F_f`.  From the membership characterization (Step 2, `Allows S f ⟹ 'S' ∈ F_f`) plus
     `bigInter_le_named`. -/
-theorem imageF_le_of_allows {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B) (hS : Allows S f) :
+public theorem imageF_le_of_allows {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B) (hS : Allows S f) :
     (imageF f).le S :=
   bigInter_le_named (imageFamily f) S ((name_mem_imageFamily_iff f S).2 hS)
 
@@ -660,7 +662,7 @@ private theorem imageF_carrier_in_mem {A B K : 𝒞} (f : A ⟶ B) (k : K ⟶ pr
     `prodMap [B] A B f ≫ bigInterBody (imageFamily f) = ⊤∘!`, i.e. the §1.91 Heyting implication
     `S_F ⇒ S_∈` (over `prod [B] A`) is entire — which by `imp_adjunction` is `S_F ≤ S_∈`, proved
     pointwise on the carrier of `S_F` via `forall_beta`/`forall_elim` at the generalized point. -/
-theorem allows_imageF {A B : 𝒞} (f : A ⟶ B) : Allows (imageF f) f := by
+public theorem allows_imageF {A B : 𝒞} (f : A ⟶ B) : Allows (imageF f) f := by
   rw [imageF, allows_iff_classify]
   rw [show HasSubobjectClassifier.classify (bigInter (imageFamily f)).arr
         (bigInter (imageFamily f)).monic = bigInterChar (imageFamily f) from
@@ -736,14 +738,14 @@ theorem allows_imageF {A B : 𝒞} (f : A ⟶ B) : Allows (imageF f) f := by
 
 /-- **§1.945 STEP 3 — `imageF f` IS the image of `f`.**  Bundles `allows_imageF` (it allows `f`)
     and `imageF_le_of_allows` (it is the least such). -/
-theorem isImage_imageF {A B : 𝒞} (f : A ⟶ B) : IsImage f (imageF f) :=
+public theorem isImage_imageF {A B : 𝒞} (f : A ⟶ B) : IsImage f (imageF f) :=
   ⟨allows_imageF f, fun S hS => imageF_le_of_allows f S hS⟩
 
 /-- **§1.945 — a topos HAS IMAGES.**  Every `f : A → B` has an image, namely the family
     big-intersection `⋂{B' | f factors through B'}` (`imageF f`).  This is the §1.945 statement
     that `S1_94`/`S1_95` flagged as blocked on the §1.543 capitalization lemma — here closed
     directly via the internal-∀ family-glb (`bigInter`), no transfinite capitalization. -/
-noncomputable instance toposHasImages : HasImages 𝒞 where
+@[expose] public noncomputable instance toposHasImages : HasImages 𝒞 where
   image f := imageF f
   isImage f := isImage_imageF f
 
@@ -757,7 +759,7 @@ noncomputable instance toposHasImages : HasImages 𝒞 where
     Since `g# S` is, by definition, the pullback of `S.arr` along `g`, pasting that pullback square
     onto `S`'s defining pullback (`classify_pullback`) exhibits `g# S` as the pullback of `true`
     along `g ≫ χ_S`; `classify_unique` then identifies the classifier. -/
-theorem classify_InverseImage {A B : 𝒞} (g : A ⟶ B) (S : Subobject 𝒞 B) :
+public theorem classify_InverseImage {A B : 𝒞} (g : A ⟶ B) (S : Subobject 𝒞 B) :
     HasSubobjectClassifier.classify (InverseImage g S).arr (InverseImage g S).monic
       = g ≫ HasSubobjectClassifier.classify S.arr S.monic := by
   symm
@@ -795,7 +797,7 @@ theorem classify_InverseImage {A B : 𝒞} (g : A ⟶ B) (S : Subobject 𝒞 B) 
     This isolates the genuine remaining topos-exactness content: `PullbacksTransferCovers` is the
     `topos_is_effective`-flavoured fact (cf. `topos_is_effective` in S1_95, now closed) and
     is NOT derivable from the internal-∀ machinery built here.  With it, regularity is immediate. -/
-theorem topos_is_regular_of_transfer [PullbacksTransferCovers 𝒞] :
+public theorem topos_is_regular_of_transfer [PullbacksTransferCovers 𝒞] :
     Nonempty (RegularCategory 𝒞) :=
   ⟨{ }⟩
 
@@ -804,7 +806,7 @@ theorem topos_is_regular_of_transfer [PullbacksTransferCovers 𝒞] :
     (pullback-of-cover-is-cover) is now an INSTANCE — `SlicePi.toposPullbacksTransferCovers`,
     proved non-circularly from the §1.931 dependent-product right adjoint `Π_f` (which preserves
     epics, hence covers are pullback-stable).  So regularity is immediate with no residual. -/
-theorem topos_is_regular_real : Nonempty (RegularCategory 𝒞) :=
+public theorem topos_is_regular_real : Nonempty (RegularCategory 𝒞) :=
   topos_is_regular_of_transfer
 
 end Freyd

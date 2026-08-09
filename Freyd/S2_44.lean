@@ -1,4 +1,6 @@
-import Freyd.S2_40
+module
+
+public import Freyd.S2_40
 
 universe u
 
@@ -48,7 +50,7 @@ variable {𝒜 : Type u}
 
 /-- (1) PRE-POSITIVE (§2.441): every pair embeds into a common object via monic maps with
     disjoint images. -/
-def PrePositiveCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
+@[expose] public def PrePositiveCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
   ∀ (a b : 𝒜), ∃ (γ : 𝒜) (f : a ⟶ γ) (g : b ⟶ γ),
     Map f ∧ Map g ∧
     f ≫ f° = Cat.id a ∧ g ≫ g° = Cat.id b ∧ f ≫ g° = (𝟘 : a ⟶ b)
@@ -56,13 +58,13 @@ def PrePositiveCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
 /-- (2) WELL-JOINED (§2.441, the figure's retract form): every pair of objects are both
     retracts of a common object, i.e. there are maps `f : a → γ`, `g : b → γ` each having a
     right inverse (`f ≫ f' = 1`, `g ≫ g' = 1`). -/
-def WellJoinedCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
+@[expose] public def WellJoinedCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
   ∀ (a b : 𝒜), ∃ (γ : 𝒜) (f : a ⟶ γ) (g : b ⟶ γ),
     Map f ∧ Map g ∧
     (∃ f' : γ ⟶ a, f ≫ f' = Cat.id a) ∧ (∃ g' : γ ⟶ b, g ≫ g' = Cat.id b)
 
 /-- (3) STRAIGHT-JOIN (§2.441): every pair has a common target reached by straight morphisms. -/
-def StraightJoinCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
+@[expose] public def StraightJoinCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
   ∀ (a b : 𝒜), ∃ (γ : 𝒜) (S₁ : a ⟶ γ) (S₂ : b ⟶ γ), Straight S₁ ∧ Straight S₂
 
 /-- (4) CONNECTED-SIMPLE-FACTOR (§2.441): the allegory is connected (every pair of objects
@@ -76,14 +78,14 @@ variable [DivisionAllegory 𝒜]
 
 /-- §2.441 (1)⟹(2): pre-positive implies well-joined.  The monic equation `f ≫ f° = 1`
     exhibits `f°` as a right inverse of `f`, so each object is a retract of the common `γ`. -/
-theorem prePositive_to_wellJoined (hPP : PrePositiveCond 𝒜) : WellJoinedCond 𝒜 := by
+public theorem prePositive_to_wellJoined (hPP : PrePositiveCond 𝒜) : WellJoinedCond 𝒜 := by
   intro a b
   obtain ⟨γ, f, g, hf, hg, hff, hgg, _⟩ := hPP a b
   exact ⟨γ, f, g, hf, hg, ⟨f°, hff⟩, ⟨g°, hgg⟩⟩
 
 /-- §2.441 (2)⟹(3): well-joined implies straight-join.  A right-invertible morphism is
     straight [§2.355 `rightInvertible_straight`], so the retraction maps `f`, `g` are straight. -/
-theorem wellJoined_to_straightJoin (hWJ : WellJoinedCond 𝒜) : StraightJoinCond 𝒜 := by
+public theorem wellJoined_to_straightJoin (hWJ : WellJoinedCond 𝒜) : StraightJoinCond 𝒜 := by
   intro a b
   obtain ⟨γ, f, g, _hf, _hg, ⟨f', hf'⟩, ⟨g', hg'⟩⟩ := hWJ a b
   exact ⟨γ, f, g, rightInvertible_straight hf', rightInvertible_straight hg'⟩
@@ -126,7 +128,7 @@ theorem prePositive_to_connectedSimpleFactor (hPP : PrePositiveCond 𝒜) :
 
     The forward arrows `(1)⟹(2)⟹(3)` are proven unconditionally above; only the single
     reverse hypothesis `hSJtoPP` is assumed, exactly as Freyd's proof closes the cycle. -/
-theorem prePositive_wellJoined_straightJoin_tfae
+public theorem prePositive_wellJoined_straightJoin_tfae
     (hSJtoPP : StraightJoinCond 𝒜 → PrePositiveCond 𝒜) :
     (PrePositiveCond 𝒜 ↔ WellJoinedCond 𝒜) ∧
     (WellJoinedCond 𝒜 ↔ StraightJoinCond 𝒜) :=
@@ -294,7 +296,7 @@ variable {ℬ : Type u} [PowerAllegory ℬ] {a : ℬ}
 
 /-- If `W ⊑ Λ(0)` and `W ⊑ Λ(1)` then `W = 0`.  `WW° ⊑ Λ(0)Λ(1)° ⊑ (0/∋)∋ ⊑ 0`
     (`Λ(0) ⊑ 0/∋`, `Λ(1)° ⊑ ∋/1 = ∋`), so `dom W ⊑ 0` and `W ⊑ (dom W)W ⊑ 0`. -/
-theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
+public theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
     (h0 : W ⊑ A (𝟘 : a ⟶ a)) (h1 : W ⊑ A (Cat.id a)) :
     W = (𝟘 : a ⟶ PowerAllegory.powerObj a) := by
   apply le_antisymm _ (zero_le _)
@@ -317,7 +319,7 @@ theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
 
 /-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`A 𝟘 ∩ A 1 = 𝟘`).  The empty-transpose
     and the singleton-transpose are disjoint — the heart of (3)⟹(1)'s `ℓϰ° = 0`. -/
-theorem A_zero_inter_A_one :
+public theorem A_zero_inter_A_one :
     A (𝟘 : a ⟶ a) ∩ A (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
   le_zero_of_le_A_zero_A_one _ (inter_lb_left _ _) (inter_lb_right _ _)
 

@@ -25,8 +25,10 @@
   closing the `HasRightAdjointImage` field (S1_70) that `S1_94` needs.
 -/
 
-import Freyd.S1_94_InternalForallTopos
-import Freyd.S1_987_LeastClosedTopos
+module
+
+public import Freyd.S1_94_InternalForallTopos
+public import Freyd.S1_987_LeastClosedTopos
 
 universe v u
 
@@ -41,28 +43,28 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
 /-- The equality predicate `eqPred f : prod A B → Ω`, `(a,b) ↦ (f(a) = b)`.  It is the
     diagonal classifier of `B` precomposed with `⟨fst≫f, snd⟩`; `diag_classify_iff` makes
     it `⊤` at `⟨a,b⟩` exactly when `f(a) = b`. -/
-noncomputable def eqPred {A B : 𝒞} (f : A ⟶ B) : prod A B ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def eqPred {A B : 𝒞} (f : A ⟶ B) : prod A B ⟶ omega (𝒞 := 𝒞) :=
   pair (fst ≫ f) snd ≫ HasSubobjectClassifier.classify (diag B) (diag_mono B)
 
 /-- The right-adjoint body `prod A B → Ω`: `(a,b) ↦ (f(a)=b) ⇒ (a∈A')`.  `f(a)=b` is
     `eqPred f`; `a∈A'` is `fst ≫ subChar A'`; combined with `impΩ`. -/
-noncomputable def radjBody {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
+@[expose] public noncomputable def radjBody {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
     prod A B ⟶ omega (𝒞 := 𝒞) :=
   pair (eqPred f) (fst ≫ subChar A') ≫ impΩ
 
 /-- The characteristic map `radjChar f A' : B → Ω` of `f## A'`: curry the body in the
     `A`-slot, then universally quantify over `a : A` with `forallC A`. -/
-noncomputable def radjChar {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
+@[expose] public noncomputable def radjChar {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
     B ⟶ omega (𝒞 := 𝒞) :=
   curry (radjBody f A') ≫ forallC A
 
 /-- **§1.946 — the right adjoint `f## A'`** to inverse image, as the subobject of `B`
     classified by `radjChar f A'` (the pullback of `true` along it). -/
-noncomputable def radjImage {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) : Subobject 𝒞 B :=
+@[expose] public noncomputable def radjImage {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) : Subobject 𝒞 B :=
   InverseImage (radjChar f A') ⟨one, true (𝒞 := 𝒞), HasSubobjectClassifier.true_monic⟩
 
 /-- `radjImage f A'` is classified by `radjChar f A'`. -/
-theorem classify_radjImage {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
+public theorem classify_radjImage {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
     HasSubobjectClassifier.classify (radjImage f A').arr (radjImage f A').monic
       = radjChar f A' :=
   classify_invImage_true (radjChar f A')
@@ -71,7 +73,7 @@ theorem classify_radjImage {A B : 𝒞} (f : A ⟶ B) (A' : Subobject 𝒞 A) :
 
 /-- **`eqPred` at a generalized point.**  `k ≫ eqPred f = ⊤∘!` iff `(k≫fst)≫f = k≫snd`,
     i.e. the `A`-component maps to the `B`-component under `f`.  From `diag_classify_iff`. -/
-theorem eqPred_true_iff {A B K : 𝒞} (f : A ⟶ B) (k : K ⟶ prod A B) :
+public theorem eqPred_true_iff {A B K : 𝒞} (f : A ⟶ B) (k : K ⟶ prod A B) :
     k ≫ eqPred f = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
       ↔ (k ≫ fst) ≫ f = k ≫ snd := by
   rw [eqPred, ← Cat.assoc]
@@ -88,7 +90,7 @@ theorem eqPred_true_iff {A B K : 𝒞} (f : A ⟶ B) (k : K ⟶ prod A B) :
     `prod A B'.dom`, i.e. the §1.91 Heyting implication `S_eq ⇒ S_∈A'` is entire, which by
     `impΩ_entire_of_le` is `S_eq ≤ S_∈A'`.  On the carrier of `S_eq`, `f(a) = B'.arr(d)` is
     in `B'`, so `f(a) ∈ B'` ⟹ (hypothesis `f* B' ≤ A'`) `a ∈ A'`. -/
-theorem radjImage_adjunction_forward {A B : 𝒞} (f : A ⟶ B)
+public theorem radjImage_adjunction_forward {A B : 𝒞} (f : A ⟶ B)
     (B' : Subobject 𝒞 B) (A' : Subobject 𝒞 A)
     (hle : (InverseImage f B').le A') : B'.le (radjImage f A') := by
   apply (le_iff_classify B' (radjImage f A')).2
@@ -189,7 +191,7 @@ theorem radjImage_adjunction_forward {A B : 𝒞} (f : A ⟶ B)
     `forall_beta`, `b ≫ curry(radjBody) = topName A`; `forall_elim` at `a = π₁` makes
     `radjBody(π₁,b) = (f(π₁)=b) ⇒ (π₁∈A')` true.  Since `f(π₁) = π₂≫B'.arr = b`, the antecedent
     `eqPred` is true; modus ponens (`impΩ_forward`) gives `π₁ ∈ A'`, i.e. `(f*B').arr ≫ χ_{A'} = ⊤`. -/
-theorem radjImage_adjunction_backward {A B : 𝒞} (f : A ⟶ B)
+public theorem radjImage_adjunction_backward {A B : 𝒞} (f : A ⟶ B)
     (B' : Subobject 𝒞 B) (A' : Subobject 𝒞 A)
     (hle : B'.le (radjImage f A')) : (InverseImage f B').le A' := by
   apply (le_iff_classify (InverseImage f B') A').2
@@ -246,7 +248,7 @@ theorem radjImage_adjunction_backward {A B : 𝒞} (f : A ⟶ B)
 
     This is exactly the `adjunction` field of `HasRightAdjointImage` (S1_70), closing
     the §1.946 right-adjoint construction Sorry-free via the internal-∀ family-glb machinery. -/
-theorem radjImage_adjunction {A B : 𝒞} (f : A ⟶ B)
+public theorem radjImage_adjunction {A B : 𝒞} (f : A ⟶ B)
     (B' : Subobject 𝒞 B) (A' : Subobject 𝒞 A) :
     (InverseImage f B').le A' ↔ B'.le (radjImage f A') :=
   ⟨radjImage_adjunction_forward f B' A', radjImage_adjunction_backward f B' A'⟩

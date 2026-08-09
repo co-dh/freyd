@@ -22,8 +22,10 @@
   Axioms (post-build): propext, Classical.choice, Quot.sound only.
 -/
 
-import Freyd.S1_72
-import Freyd.S2_10
+module
+
+public import Freyd.S1_72
+public import Freyd.S2_10
 
 open Freyd
 
@@ -41,7 +43,7 @@ namespace Freyd
 /-- A FRAME: complete lattice in which `a ⊓ (⨆ S) = ⨆ {a ⊓ s | s ∈ S}`.
     Extends `MeetLattice` (§1.85) — the carrier, order, and meet fields are
     inherited rather than duplicated. -/
-structure Frame extends MeetLattice where
+public structure Frame extends MeetLattice where
   /-- Top element. -/
   top   : carrier
   le_top : ∀ a, le a top
@@ -63,7 +65,7 @@ variable (F : Frame.{u})
 /-! ### Basic order facts -/
 
 /-- Equals are comparable. -/
-theorem le_of_eq {F : Frame.{u}} {a b : F.carrier} (h : a = b) : F.le a b := h ▸ F.le_refl a
+public theorem le_of_eq {F : Frame.{u}} {a b : F.carrier} (h : a = b) : F.le a b := h ▸ F.le_refl a
 
 /-- `sSup ∅ = bot` (join of empty family = bottom). -/
 theorem sSup_empty : F.sSup (fun _ => False) = F.bot :=
@@ -102,17 +104,17 @@ theorem meet_bot (a : F.carrier) : F.meet a F.bot = F.bot :=
   F.le_antisymm (F.meet_le_right a F.bot) (F.bot_le _)
 
 /-- Meet is idempotent: `a ⊓ a = a`. -/
-theorem meet_idem (a : F.carrier) : F.meet a a = a :=
+public theorem meet_idem (a : F.carrier) : F.meet a a = a :=
   F.le_antisymm (F.meet_le_left a a) (F.le_meet (F.le_refl a) (F.le_refl a))
 
 /-- Meet is commutative. -/
-theorem meet_comm (a b : F.carrier) : F.meet a b = F.meet b a :=
+public theorem meet_comm (a b : F.carrier) : F.meet a b = F.meet b a :=
   F.le_antisymm
     (F.le_meet (F.meet_le_right a b) (F.meet_le_left a b))
     (F.le_meet (F.meet_le_right b a) (F.meet_le_left b a))
 
 /-- Meet is associative. -/
-theorem meet_assoc (a b c : F.carrier) : F.meet (F.meet a b) c = F.meet a (F.meet b c) :=
+public theorem meet_assoc (a b c : F.carrier) : F.meet (F.meet a b) c = F.meet a (F.meet b c) :=
   F.le_antisymm
     (F.le_meet (F.le_trans (F.meet_le_left _ c) (F.meet_le_left a b))
       (F.le_meet (F.le_trans (F.meet_le_left _ c) (F.meet_le_right a b)) (F.meet_le_right _ c)))
@@ -209,7 +211,7 @@ end Frame
   These are the morphisms of the category of frames / locales. -/
 
 /-- A FRAME HOMOMORPHISM between two frames. -/
-structure FrameHom (F G : Frame.{u}) where
+public structure FrameHom (F G : Frame.{u}) where
   map : F.carrier → G.carrier
   /-- Preserves top. -/
   map_top : map F.top = G.top
@@ -224,7 +226,7 @@ namespace FrameHom
 variable {F G H : Frame.{u}}
 
 /-- A frame hom is order-preserving. -/
-theorem map_mono (f : FrameHom F G) {a b : F.carrier} (h : F.le a b) :
+public theorem map_mono (f : FrameHom F G) {a b : F.carrier} (h : F.le a b) :
     G.le (f.map a) (f.map b) := by
   -- a ≤ b iff a = a ⊓ b (in the frame order)
   -- f(a) = f(a⊓b) = f(a)⊓f(b) ≤ f(b)
@@ -515,7 +517,7 @@ def Topology.principalPoint {X : Type u} (τ : Topology X) (x : X) :
 
 /-- An **F-valued set** (Freyd §2.16(12)): a carrier `I` with an `F`-valued
     "equality" `E` that is symmetric and transitive. -/
-structure OValuedSet (F : Frame.{u}) where
+public structure OValuedSet (F : Frame.{u}) where
   /-- Carrier (index) set. -/
   carrier : Type u
   /-- F-valued equality: `E i j` = "extent to which i and j are equal". -/
@@ -530,7 +532,7 @@ namespace OValuedSet
 variable {F : Frame.{u}}
 
 /-- The **extent** of `i`: `E i i`.  (Like Dom in an allegory.) -/
-def extent (A : OValuedSet F) (i : A.carrier) : F.carrier := A.E i i
+@[expose] public def extent (A : OValuedSet F) (i : A.carrier) : F.carrier := A.E i i
 
 /-- Reflexivity of E: `E i i` is greatest lower bound of `E i j` and `E j i`. -/
 theorem extent_le_self (A : OValuedSet F) (i j : A.carrier) :
@@ -546,7 +548,7 @@ theorem extent_le_self (A : OValuedSet F) (i j : A.carrier) :
   exact h
 
 /-- `E i j ≤ E i i` (domain bound): the extent of i bounds E i j. -/
-theorem E_le_extent_left (A : OValuedSet F) (i j : A.carrier) :
+public theorem E_le_extent_left (A : OValuedSet F) (i j : A.carrier) :
     F.le (A.E i j) (A.extent i) := by
   -- E i j ≤ E i j ∧ E j i ≤ E i i (since E j i ≤ top trivially... need another route)
   -- Better: E i j = E j i (by symm), so E i j ∧ E j j ≤ E i j by meet_le_left,
@@ -566,7 +568,7 @@ theorem E_le_extent_left (A : OValuedSet F) (i j : A.carrier) :
   exact htrans
 
 /-- `E i j ≤ E j j` (codomain bound). -/
-theorem E_le_extent_right (A : OValuedSet F) (i j : A.carrier) :
+public theorem E_le_extent_right (A : OValuedSet F) (i j : A.carrier) :
     F.le (A.E i j) (A.extent j) := by
   have := A.E_le_extent_left j i
   rw [A.symm j i] at this
@@ -579,7 +581,7 @@ end OValuedSet
     (i)  `T i j ≤ E i i ∧ S j j`  (bounded by extents),
     (ii) `E i i' ∧ S j j' ∧ T i j ≤ T i' j'`  (naturality / equivariance). -/
 @[ext]
-structure OSetHom {F : Frame.{u}} (A B : OValuedSet F) where
+public structure OSetHom {F : Frame.{u}} (A B : OValuedSet F) where
   /-- The underlying F-valued relation. -/
   rel : A.carrier → B.carrier → F.carrier
   /-- Domain bound: `T i j ≤ E i i`. -/
@@ -604,7 +606,7 @@ theorem bound (f : OSetHom A B) (i : A.carrier) (j : B.carrier) :
     Codomain bound: `E i j ≤ E j j` (by E_le_extent_right).
     Naturality: `E i i' ∧ E j j' ∧ E i j ≤ E i' j'`
     — via transitivity twice (i—i'—j' and i—j—j'). -/
-def id (A : OValuedSet F) : OSetHom A A where
+@[expose] public def id (A : OValuedSet F) : OSetHom A A where
   rel    := A.E
   dom_bound := A.E_le_extent_left
   cod_bound := A.E_le_extent_right
@@ -648,7 +650,7 @@ def id (A : OValuedSet F) : OSetHom A A where
     exact hstep2_app
 
 /-- **Composition** of OSetHom: `(f ⊚ g) i k = ⨆ { f i j ∧ g j k | j : B }`. -/
-def comp (f : OSetHom A B) (g : OSetHom B C) : OSetHom A C where
+@[expose] public def comp (f : OSetHom A B) (g : OSetHom B C) : OSetHom A C where
   rel i k := F.sSup (fun v => ∃ j : B.carrier, v = F.meet (f.rel i j) (g.rel j k))
   dom_bound i k := by
     apply F.sSup_le
@@ -720,7 +722,7 @@ def comp (f : OSetHom A B) (g : OSetHom B C) : OSetHom A C where
 
 /-- **Reciprocal** `f° : B ⟶ A` of `f : A ⟶ B`: `f° j i = f i j`.  Bounds/naturality follow by
     swapping `i ↔ j` and using `E`-symmetry. -/
-def recip (f : OSetHom A B) : OSetHom B A where
+@[expose] public def recip (f : OSetHom A B) : OSetHom B A where
   rel j i := f.rel i j
   dom_bound j i := f.cod_bound i j
   cod_bound j i := f.dom_bound i j
@@ -738,7 +740,7 @@ def recip (f : OSetHom A B) : OSetHom B A where
 
 /-- **Intersection** `f ∩ g : A ⟶ B`: `(f ∩ g) i j = f i j ∧ g i j`.  Bounds/naturality follow
     from those of `f` (taking the left meet projection). -/
-def inter (f g : OSetHom A B) : OSetHom A B where
+@[expose] public def inter (f g : OSetHom A B) : OSetHom A B where
   rel i j := F.meet (f.rel i j) (g.rel i j)
   dom_bound i j := F.le_trans (F.meet_le_left _ _) (f.dom_bound i j)
   cod_bound i j := F.le_trans (F.meet_le_left _ _) (f.cod_bound i j)
@@ -754,10 +756,10 @@ def inter (f g : OSetHom A B) : OSetHom A B where
         (F.le_trans (F.meet_le_right _ _) (F.meet_le_right _ _))
 
 /-- `(f°)° = f`. -/
-theorem recip_recip (f : OSetHom A B) : recip (recip f) = f := by ext i j; rfl
+public theorem recip_recip (f : OSetHom A B) : recip (recip f) = f := by ext i j; rfl
 
 /-- `(f ⊚ g)° = g° ⊚ f°`:  swapping indices in the colimit and using frame-meet commutativity. -/
-theorem recip_comp (f : OSetHom A B) (g : OSetHom B C) :
+public theorem recip_comp (f : OSetHom A B) (g : OSetHom B C) :
     recip (comp f g) = comp (recip g) (recip f) := by
   ext k i
   show F.sSup (fun v => ∃ j, v = F.meet (f.rel i j) (g.rel j k))
@@ -768,19 +770,19 @@ theorem recip_comp (f : OSetHom A B) (g : OSetHom B C) :
   · exact F.le_trans (Frame.le_of_eq (F.meet_comm _ _)) (F.le_sSup _ _ ⟨j, rfl⟩)
 
 /-- `(f ∩ g)° = f° ∩ g°`. -/
-theorem recip_inter (f g : OSetHom A B) : recip (inter f g) = inter (recip f) (recip g) := by
+public theorem recip_inter (f g : OSetHom A B) : recip (inter f g) = inter (recip f) (recip g) := by
   ext j i; rfl
 
 /-- `f ∩ f = f`. -/
-theorem inter_idem (f : OSetHom A B) : inter f f = f := by
+public theorem inter_idem (f : OSetHom A B) : inter f f = f := by
   ext i j; exact F.meet_idem (f.rel i j)
 
 /-- `f ∩ g = g ∩ f`. -/
-theorem inter_comm (f g : OSetHom A B) : inter f g = inter g f := by
+public theorem inter_comm (f g : OSetHom A B) : inter f g = inter g f := by
   ext i j; exact F.meet_comm (f.rel i j) (g.rel i j)
 
 /-- `f ∩ (g ∩ h) = (f ∩ g) ∩ h`. -/
-theorem inter_assoc (f g h : OSetHom A B) :
+public theorem inter_assoc (f g h : OSetHom A B) :
     inter f (inter g h) = inter (inter f g) h := by
   ext i j; exact (F.meet_assoc (f.rel i j) (g.rel i j) (h.rel i j)).symm
 
@@ -794,15 +796,15 @@ end OSetHom
   ⨆ of a ⨆ over j equals ⨆ over the combined index. -/
 
 /-- OSet(F) identity morphism. -/
-def oset_id {F : Frame.{u}} (A : OValuedSet F) : OSetHom A A := OSetHom.id A
+@[expose] public def oset_id {F : Frame.{u}} (A : OValuedSet F) : OSetHom A A := OSetHom.id A
 
 /-- OSet(F) composition. -/
-def oset_comp {F : Frame.{u}} {A B C : OValuedSet F}
+@[expose] public def oset_comp {F : Frame.{u}} {A B C : OValuedSet F}
     (f : OSetHom A B) (g : OSetHom B C) : OSetHom A C := OSetHom.comp f g
 
 /-- Identity is left unit: `id ⊚ f = f`.
     Proof: `(id ⊚ f) i k = ⨆ { E i j ∧ f j k | j } = f i k`. -/
-theorem oset_id_comp {F : Frame.{u}} {A B : OValuedSet F} (f : OSetHom A B) :
+public theorem oset_id_comp {F : Frame.{u}} {A B : OValuedSet F} (f : OSetHom A B) :
     oset_comp (oset_id A) f = f := by
   ext i k  -- structural equality on OSetHom is via rel
   simp only [oset_comp, oset_id, OSetHom.comp, OSetHom.id]
@@ -830,7 +832,7 @@ theorem oset_id_comp {F : Frame.{u}} {A B : OValuedSet F} (f : OSetHom A B) :
     exact F.le_meet (f.dom_bound i k) (F.le_refl _)
 
 /-- Identity is right unit: `f ⊚ id = f`. -/
-theorem oset_comp_id {F : Frame.{u}} {A B : OValuedSet F} (f : OSetHom A B) :
+public theorem oset_comp_id {F : Frame.{u}} {A B : OValuedSet F} (f : OSetHom A B) :
     oset_comp f (oset_id B) = f := by
   ext i k
   simp only [oset_comp, oset_id, OSetHom.comp, OSetHom.id]
@@ -878,7 +880,7 @@ private theorem Frame.sSup_meet_distrib {F : Frame.{u}} (S : F.carrier → Prop)
 
 /-- Composition is associative: `(f ⊚ g) ⊚ h = f ⊚ (g ⊚ h)`.
     Both sides equal `⨆_{j,k} { f i j ∧ g j k ∧ h k l }`. -/
-theorem oset_comp_assoc {F : Frame.{u}} {A B C D : OValuedSet F}
+public theorem oset_comp_assoc {F : Frame.{u}} {A B C D : OValuedSet F}
     (f : OSetHom A B) (g : OSetHom B C) (h : OSetHom C D) :
     oset_comp (oset_comp f g) h = oset_comp f (oset_comp g h) := by
   ext i l
@@ -919,7 +921,7 @@ theorem oset_comp_assoc {F : Frame.{u}} {A B C D : OValuedSet F}
   so that `OValuedSet F` becomes a first-class category in the repo's `Cat`
   typeclass. -/
 
-instance osetCat (F : Frame.{u}) : Cat.{u} (OValuedSet F) where
+@[expose] public instance osetCat (F : Frame.{u}) : Cat.{u} (OValuedSet F) where
   Hom    := OSetHom
   id     := OSetHom.id
   comp   := OSetHom.comp
@@ -959,7 +961,7 @@ variable {F : Frame.{u}} {A B C : OValuedSet F}
 
 /-- Extensional order on OSetHom: `inter f g = f` iff `f.rel i j ≤ g.rel i j` pointwise.
     (This is exactly the `Allegory.le` order once the instance exists.) -/
-theorem inter_eq_left_iff (f g : OSetHom A B) :
+public theorem inter_eq_left_iff (f g : OSetHom A B) :
     inter f g = f ↔ ∀ i j, F.le (f.rel i j) (g.rel i j) := by
   constructor
   · intro h i j
@@ -989,7 +991,7 @@ private theorem comp_rel_meet (f : OSetHom A B) (g : OSetHom B C)
 
 /-- **SEMI-DISTRIBUTIVITY** (§2.11 field form): the colimit composition distributes through
     `inter` on the right as the nested intersection. -/
-theorem osetAlleg_semidistrib (R : OSetHom A B) (S T : OSetHom B C) :
+public theorem osetAlleg_semidistrib (R : OSetHom A B) (S T : OSetHom B C) :
     comp R (inter S T) = inter (inter (comp R S) (comp R (inter S T))) (comp R T) := by
   -- Reverse direction is free (RHS ⊑ comp R (inter S T) by the inter projections); equality
   -- follows once we show comp R (inter S T) ⊑ comp R S and ⊑ comp R T pointwise.
@@ -1017,7 +1019,7 @@ theorem osetAlleg_semidistrib (R : OSetHom A B) (S T : OSetHom B C) :
   rw [e1, e2]
 
 /-- **MODULAR LAW** (§2.11 field form) for OSet(F). -/
-theorem osetAlleg_modular (R : OSetHom A B) (S : OSetHom B C) (T : OSetHom A C) :
+public theorem osetAlleg_modular (R : OSetHom A B) (S : OSetHom B C) (T : OSetHom A C) :
     inter (comp R S) T
       = inter (inter (comp R S) T) (comp (inter R (comp T (recip S))) S) := by
   -- Equivalent to  (comp R S) ∩ T  ⊑  comp (R ∩ T S°) S  pointwise.
@@ -1055,7 +1057,7 @@ end OSetHom
 /-- **OSet(F) is an Allegory** (§2.16(12)/§2.227).  Objects = `OValuedSet F`; composition is the
     `⨆`-colimit; reciprocation/intersection are pointwise; all eight `Allegory` fields hold.
     This is the abstract target of the §2.331 representation theorems (`S2_33.lean`). -/
-instance instOSetAllegory (F : Frame.{u}) : Freyd.Alg.Allegory.{u} (OValuedSet F) where
+@[expose] public instance instOSetAllegory (F : Frame.{u}) : Freyd.Alg.Allegory.{u} (OValuedSet F) where
   toCat       := osetCat F
   recip       := OSetHom.recip
   inter       := OSetHom.inter
@@ -1083,7 +1085,7 @@ variable {F G : Frame.{u}} (f : FrameHom F G)
 
 /-- Object map: relabel the `F`-valued equality of `A` by `f`.  Same carrier; symmetry from
     `A.symm`, transitivity from `f.map_meet` + `f.map_mono`. -/
-def obj (A : OValuedSet F) : OValuedSet G where
+@[expose] public def obj (A : OValuedSet F) : OValuedSet G where
   carrier := A.carrier
   E i j := f.map (A.E i j)
   symm i j := by rw [A.symm]
@@ -1092,7 +1094,7 @@ def obj (A : OValuedSet F) : OValuedSet G where
 
 /-- Hom map: relabel the `F`-valued relation by `f`.  Bounds from `f.map_mono`; naturality from
     `f.map_meet` (twice) + `f.map_mono`. -/
-def map {A B : OValuedSet F} (R : OSetHom A B) : OSetHom (obj f A) (obj f B) where
+@[expose] public def map {A B : OValuedSet F} (R : OSetHom A B) : OSetHom (obj f A) (obj f B) where
   rel i j := f.map (R.rel i j)
   dom_bound i j := f.map_mono (R.dom_bound i j)
   cod_bound i j := f.map_mono (R.cod_bound i j)
@@ -1103,7 +1105,7 @@ def map {A B : OValuedSet F} (R : OSetHom A B) : OSetHom (obj f A) (obj f B) whe
 
 /-- `map f` sends a `⨆`-composition to the `⨆`-composition of the images: the genuine content,
     using `f.map_sSup` and `f.map_meet`. -/
-theorem map_comp {A B C : OValuedSet F} (R : OSetHom A B) (S : OSetHom B C) :
+public theorem map_comp {A B C : OValuedSet F} (R : OSetHom A B) (S : OSetHom B C) :
     map f (OSetHom.comp R S) = OSetHom.comp (map f R) (map f S) := by
   ext i k
   show f.map (F.sSup (fun v => ∃ j, v = F.meet (R.rel i j) (S.rel j k)))
@@ -1122,13 +1124,13 @@ theorem map_comp {A B C : OValuedSet F} (R : OSetHom A B) (S : OSetHom B C) :
 -- `S2_3` and so cannot be imported here without a cycle.  The genuine content (`map_comp`) is the
 -- theorem above; `map_id`/`map_recip`/`map_inter` are then immediate.
 
-theorem map_id (A : OValuedSet F) : map f (OSetHom.id A) = OSetHom.id (obj f A) := by
+public theorem map_id (A : OValuedSet F) : map f (OSetHom.id A) = OSetHom.id (obj f A) := by
   ext i j; show f.map (A.E i j) = f.map (A.E i j); rfl
 
-theorem map_recip {A B : OValuedSet F} (R : OSetHom A B) :
+public theorem map_recip {A B : OValuedSet F} (R : OSetHom A B) :
     map f (OSetHom.recip R) = OSetHom.recip (map f R) := by ext j i; rfl
 
-theorem map_inter {A B : OValuedSet F} (R S : OSetHom A B) :
+public theorem map_inter {A B : OValuedSet F} (R S : OSetHom A B) :
     map f (OSetHom.inter R S) = OSetHom.inter (map f R) (map f S) := by
   ext i j; show f.map (F.meet (R.rel i j) (S.rel i j)) = _; rw [f.map_meet]; rfl
 

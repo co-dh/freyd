@@ -37,8 +37,10 @@
 
   MATHLIB-FREE.  Composition in DIAGRAM ORDER (`R ≫ S` = first `R` then `S`).
 -/
-import Freyd.S2_153b_RecursiveModulus
-import Freyd.S2_31
+module
+
+public import Freyd.S2_153b_RecursiveModulus
+public import Freyd.S2_31
 
 namespace Freyd.REAlleg
 
@@ -48,22 +50,22 @@ open Freyd.Rcat Freyd.Alg
 
 /-- The raw relational operations on ℕ (identity, composition in diagram order,
     converse, intersection, empty, union). -/
-def relId (a b : Nat) : Prop := a = b
-def relComp (R S : Nat → Nat → Prop) (a c : Nat) : Prop := ∃ b, R a b ∧ S b c
-def relConv (R : Nat → Nat → Prop) (a b : Nat) : Prop := R b a
-def relInter (R S : Nat → Nat → Prop) (a b : Nat) : Prop := R a b ∧ S a b
-def relZero (_ _ : Nat) : Prop := False
-def relUnion (R S : Nat → Nat → Prop) (a b : Nat) : Prop := R a b ∨ S a b
+@[expose] public def relId (a b : Nat) : Prop := a = b
+@[expose] public def relComp (R S : Nat → Nat → Prop) (a c : Nat) : Prop := ∃ b, R a b ∧ S b c
+@[expose] public def relConv (R : Nat → Nat → Prop) (a b : Nat) : Prop := R b a
+@[expose] public def relInter (R S : Nat → Nat → Prop) (a b : Nat) : Prop := R a b ∧ S a b
+@[expose] public def relZero (_ _ : Nat) : Prop := False
+@[expose] public def relUnion (R S : Nat → Nat → Prop) (a b : Nat) : Prop := R a b ∨ S a b
 
 /-- A relation on ℕ is RECURSIVELY ENUMERABLE when its graph, seen through the
     Cantor pairing, is the domain of a total-recursive semi-test. -/
-def IsRE (R : Nat → Nat → Prop) : Prop :=
+@[expose] public def IsRE (R : Nat → Nat → Prop) : Prop :=
   ∃ t : Nat → Nat → Nat, Recursive2 t ∧ ∀ a b, R a b ↔ ∃ y, t y (cp a b) = 0
 
 /-! ### Elementary packing lemmas for the `∃`-projections -/
 
 /-- A single existential splits along the Cantor pairing. -/
-theorem exists_split2 {P Q : Nat → Prop} :
+public theorem exists_split2 {P Q : Nat → Prop} :
     (∃ z, P (cfst z) ∧ Q (csnd z)) ↔ (∃ x, P x) ∧ (∃ y, Q y) := by
   constructor
   · rintro ⟨z, hp, hq⟩; exact ⟨⟨_, hp⟩, ⟨_, hq⟩⟩
@@ -71,7 +73,7 @@ theorem exists_split2 {P Q : Nat → Prop} :
     exact ⟨cp x y, by rw [cfst_cp]; exact hx, by rw [csnd_cp]; exact hy⟩
 
 /-- A single existential splits into a triple along nested Cantor pairing. -/
-theorem exists_split3 {P : Nat → Nat → Nat → Prop} :
+public theorem exists_split3 {P : Nat → Nat → Nat → Prop} :
     (∃ z, P (cfst z) (cfst (csnd z)) (csnd (csnd z))) ↔ (∃ a b c, P a b c) := by
   constructor
   · rintro ⟨z, h⟩; exact ⟨_, _, _, h⟩
@@ -79,7 +81,7 @@ theorem exists_split3 {P : Nat → Nat → Nat → Prop} :
     exact ⟨cp a (cp b c), by simp only [cfst_cp, csnd_cp]; exact h⟩
 
 /-- A disjunctive existential splits along the Cantor pairing. -/
-theorem exists_split2_or {P Q : Nat → Prop} :
+public theorem exists_split2_or {P Q : Nat → Prop} :
     (∃ z, P (cfst z) ∨ Q (csnd z)) ↔ (∃ x, P x) ∨ (∃ y, Q y) := by
   constructor
   · rintro ⟨z, hp | hq⟩
@@ -90,12 +92,12 @@ theorem exists_split2_or {P Q : Nat → Prop} :
     · exact ⟨cp 0 y, Or.inr (by rw [csnd_cp]; exact hy)⟩
 
 /-- Sum of two naturals is 0 iff both are. -/
-theorem add_eq_zero {x y : Nat} : x + y = 0 ↔ x = 0 ∧ y = 0 := by omega
+public theorem add_eq_zero {x y : Nat} : x + y = 0 ↔ x = 0 ∧ y = 0 := by omega
 
 /-! ### Closure of `IsRE` -/
 
 /-- The diagonal is r.e. -/
-theorem isRE_id : IsRE relId := by
+public theorem isRE_id : IsRE relId := by
   refine ⟨fun _ n => (cfst n - csnd n) + (csnd n - cfst n),
     Recursive2.ofSnd (Recursive1.add (Recursive1.sub Recursive1.cfst Recursive1.csnd)
       (Recursive1.sub Recursive1.csnd Recursive1.cfst)), ?_⟩
@@ -106,7 +108,7 @@ theorem isRE_id : IsRE relId := by
   · rintro ⟨_, hy⟩; omega
 
 /-- Converse of an r.e. relation is r.e. -/
-theorem isRE_conv {R : Nat → Nat → Prop} (hR : IsRE R) : IsRE (relConv R) := by
+public theorem isRE_conv {R : Nat → Nat → Prop} (hR : IsRE R) : IsRE (relConv R) := by
   obtain ⟨tR, hRc, hRs⟩ := hR
   refine ⟨fun y n => tR y (cp (csnd n) (cfst n)),
     Recursive2.comp2 hRc (show Recursive2 fun a _ => a from RecursiveV.proj 0)
@@ -117,7 +119,7 @@ theorem isRE_conv {R : Nat → Nat → Prop} (hR : IsRE R) : IsRE (relConv R) :=
   exact hRs b a
 
 /-- Intersection of two r.e. relations is r.e. -/
-theorem isRE_inter {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
+public theorem isRE_inter {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
     IsRE (relInter R S) := by
   obtain ⟨tR, hRc, hRs⟩ := hR
   obtain ⟨tS, hSc, hSs⟩ := hS
@@ -132,7 +134,7 @@ theorem isRE_inter {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
   exact exists_split2.symm
 
 /-- Composition (diagram order) of two r.e. relations is r.e. -/
-theorem isRE_comp {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
+public theorem isRE_comp {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
     IsRE (relComp R S) := by
   obtain ⟨tR, hRc, hRs⟩ := hR
   obtain ⟨tS, hSc, hSs⟩ := hS
@@ -159,7 +161,7 @@ theorem isRE_comp {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
     exact ⟨b, (hRs a b).mpr ⟨y1, h1⟩, (hSs b c).mpr ⟨y2, h2⟩⟩
 
 /-- The empty relation is r.e. -/
-theorem isRE_zero : IsRE relZero := by
+public theorem isRE_zero : IsRE relZero := by
   refine ⟨fun _ _ => 1, Recursive2.ofFst (Recursive1.const 1), ?_⟩
   intro a b
   simp only [relZero]
@@ -168,7 +170,7 @@ theorem isRE_zero : IsRE relZero := by
   · rintro ⟨_, hy⟩; exact absurd hy (by omega)
 
 /-- Union of two r.e. relations is r.e. -/
-theorem isRE_union {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
+public theorem isRE_union {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
     IsRE (relUnion R S) := by
   obtain ⟨tR, hRc, hRs⟩ := hR
   obtain ⟨tS, hSc, hSs⟩ := hS
@@ -185,25 +187,25 @@ theorem isRE_union {R S : Nat → Nat → Prop} (hR : IsRE R) (hS : IsRE S) :
 /-! ## Layer 1b: the one-object allegory `A` of r.e. relations -/
 
 /-- A morphism of `A`: an r.e. relation on ℕ. -/
-def RERel : Type := {R : Nat → Nat → Prop // IsRE R}
+@[expose] public def RERel : Type := {R : Nat → Nat → Prop // IsRE R}
 
 /-- The single object `*` of the allegory. -/
-inductive REObj : Type where
+public inductive REObj : Type where
   | star : REObj
 
 /-- Extensionality for `RERel`: pointwise iff determines the morphism. -/
-theorem rerel_ext {R S : RERel} (h : ∀ a b, R.1 a b ↔ S.1 a b) : R = S :=
+public theorem rerel_ext {R S : RERel} (h : ∀ a b, R.1 a b ↔ S.1 a b) : R = S :=
   Subtype.ext (funext fun a => funext fun b => propext (h a b))
 
 /-- Bundled operations. -/
-def reId : RERel := ⟨relId, isRE_id⟩
-def reComp (R S : RERel) : RERel := ⟨relComp R.1 S.1, isRE_comp R.2 S.2⟩
-def reConv (R : RERel) : RERel := ⟨relConv R.1, isRE_conv R.2⟩
-def reInter (R S : RERel) : RERel := ⟨relInter R.1 S.1, isRE_inter R.2 S.2⟩
+@[expose] public def reId : RERel := ⟨relId, isRE_id⟩
+@[expose] public def reComp (R S : RERel) : RERel := ⟨relComp R.1 S.1, isRE_comp R.2 S.2⟩
+@[expose] public def reConv (R : RERel) : RERel := ⟨relConv R.1, isRE_conv R.2⟩
+@[expose] public def reInter (R S : RERel) : RERel := ⟨relInter R.1 S.1, isRE_inter R.2 S.2⟩
 
 /-- The single object carries `RERel` as its endo-hom-set; composition is relational
     composition in diagram order, identity is the diagonal.  A genuine `Cat`. -/
-instance instCat : Cat REObj where
+@[expose] public instance instCat : Cat REObj where
   Hom _ _ := RERel
   id _ := reId
   comp R S := reComp R S
@@ -221,7 +223,7 @@ instance instCat : Cat REObj where
 
 /-- The one-object `Allegory` of r.e. relations (§2.437).  Reciprocation is converse,
     intersection is relational meet; every axiom is a `Rel`-identity. -/
-instance instAllegory : Allegory REObj where
+@[expose] public instance instAllegory : Allegory REObj where
   recip R := reConv R
   inter R S := reInter R S
   recip_recip R := rerel_ext fun a b => by simp only [reConv, relConv]
@@ -251,15 +253,15 @@ example : Allegory REObj := inferInstance
   of `c` on `[r]`.  Its graph, sliced by a recipe number `n`, is Freyd's `T`. -/
 
 /-- The fixed universal machine. -/
-noncomputable def cU : RecCode 1 := Classical.choose universal_genuine
+@[expose] public noncomputable def cU : RecCode 1 := Classical.choose universal_genuine
 
 /-- The universal relation: `n T m` iff the universal machine halts on `cp n m`. -/
-noncomputable def relT (n m : Nat) : Prop := ∃ w, Eval cU (fun _ => cp n m) w
+@[expose] public noncomputable def relT (n m : Nat) : Prop := ∃ w, Eval cU (fun _ => cp n m) w
 
 /-- BRIDGE: a unary code halts on `[r]` iff the arithmetized checker accepts some
     witness — this converts the `Eval`-halting form of r.e. into the recursive-test
     form of `IsRE`.  (`acceptOn`, `acceptOn_sound/complete` from §2.153b.) -/
-theorem evalHalt_iff_acceptOn (c : RecCode 1) (r : Nat) :
+public theorem evalHalt_iff_acceptOn (c : RecCode 1) (r : Nat) :
     (∃ w, Eval c (fun _ => r) w) ↔ ∃ wit, acceptOn (cp (encCode c) r) wit = 1 := by
   constructor
   · rintro ⟨w, hw⟩
@@ -272,7 +274,7 @@ theorem evalHalt_iff_acceptOn (c : RecCode 1) (r : Nat) :
     exact ⟨_, hev⟩
 
 /-- `T` is a genuine r.e. relation. -/
-theorem isRE_relT : IsRE relT := by
+public theorem isRE_relT : IsRE relT := by
   refine ⟨fun wit n => 1 - eqInd (acceptOn (cp (encCode cU) n) wit) 1,
     Recursive2.comp2 Recursive2.sub (Recursive2.ofFst (Recursive1.const 1))
       (Recursive2.comp2 Recursive2.eqInd
@@ -293,7 +295,7 @@ theorem isRE_relT : IsRE relT := by
     · rw [eqInd_ne hx] at h; omega
 
 /-- The universal morphism `T` of `A`. -/
-noncomputable def reT : RERel := ⟨relT, isRE_relT⟩
+@[expose] public noncomputable def reT : RERel := ⟨relT, isRE_relT⟩
 
 /-! ### Universality of `T` on r.e. sets -/
 

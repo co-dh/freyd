@@ -12,9 +12,11 @@
   the cover∘mono argument (mirroring `homRep_preserves_images`, using only `objIncl_preservesCover`),
   and (c) package the five `RegularFunctor` fields.
 -/
-import Freyd.S2_111_RelCat
-import Freyd.S1_543_Capitalization
-import Freyd.S1_543_CatColimitRegular
+module
+
+public import Freyd.S2_111_RelCat
+public import Freyd.S1_543_Capitalization
+public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim
@@ -37,7 +39,7 @@ theorem Subobject.map_comp {C D E : Type u} [Cat.{u} C] [Cat.{u} D] [Cat.{u} E]
 /-! ## `RegularFunctor` is closed under identity and composition -/
 
 /-- The identity functor is regular. -/
-theorem regularFunctor_id {C : Type u} [Cat.{u} C] [RegularCategory C] :
+public theorem regularFunctor_id {C : Type u} [Cat.{u} C] [RegularCategory C] :
     RegularFunctor (idFunctor : Functor C C) where
   pres_prod := by
     intro A B
@@ -53,7 +55,7 @@ theorem regularFunctor_id {C : Type u} [Cat.{u} C] [RegularCategory C] :
 
 /-- `RegularFunctor` composes: `pres_prod` via `preservesBinaryProducts_comp`; the other four fields
     compose directly (they are instance-free `∀`-statements), `pres_image` using `Subobject.map_comp`. -/
-theorem regularFunctor_comp {C : Type u₁} {D : Type u₂} {E : Type u₃}
+public theorem regularFunctor_comp {C : Type u₁} {D : Type u₂} {E : Type u₃}
     [Cat.{v} C] [Cat.{v} D] [Cat.{v} E]
     [RegularCategory C] [RegularCategory D] [RegularCategory E]
     {F : Functor C D} {G : Functor D E}
@@ -77,7 +79,7 @@ theorem regularFunctor_comp {C : Type u₁} {D : Type u₂} {E : Type u₃}
 /-- **(D) The stage inclusion reflects isos.**  Reformulates `homInclObj_isIso_reflects`
     against `stageInclFunctor` (whose `.map` is `homInclObj`), given conservative transitions
     `hcons`. -/
-theorem objIncl_reflectsIso {ι : Type u} {D : Directed ι}
+public theorem objIncl_reflectsIso {ι : Type u} {D : Directed ι}
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
         IsIso ((C.functF hij).map φ) → IsIso φ)
@@ -94,7 +96,7 @@ theorem objIncl_reflectsIso {ι : Type u} {D : Directed ι}
     `ℓ` onto an image `I` is a cover by the elementary minimality argument (`S = ⟨·, m ≫ I.arr⟩`
     allows `f`, so `I ≤ S` retracts the mono `m`) — needing no per-stage `HasImages`/products,
     only `HasPullbacks C.Obj` (for `coverMono_isImage`). -/
-theorem objIncl_preservesImages_generic {ι : Type u} {D : Directed ι}
+public theorem objIncl_preservesImages_generic {ι : Type u} {D : Directed ι}
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         (C.functF hij).map p = (C.functF hij).map q → p = q)
@@ -135,7 +137,7 @@ theorem objIncl_preservesImages_generic {ι : Type u} {D : Directed ι}
     `image_chosenPullback_isPullback`) is upgraded to ALL pullback cones by the DRY hub
     `preservesPullbacks_of_chosenPullback` (arbitrary cone → §1.432 chosen via
     `isIso_of_two_pullbacks`, then `isPullback_of_iso_apex`). -/
-theorem objIncl_preservesPullbacks_generic {ι : Type u} {D : Directed ι}
+public theorem objIncl_preservesPullbacks_generic {ι : Type u} {D : Directed ι}
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)

@@ -1,3 +1,5 @@
+module
+
 /-
   Directed (filtered) colimits of types — mathlib-free.
 
@@ -19,7 +21,7 @@ universe u w t
 /-- A directed preorder on `ι`: reflexive, transitive, and any two elements have a
     common upper bound.  (`le` is a `Prop`, so proof irrelevance identifies the
     different routes to a bound — essential for the colimit to be well-defined.) -/
-structure Directed (ι : Type u) where
+public structure Directed (ι : Type u) where
   le : ι → ι → Prop
   refl : ∀ i, le i i
   trans : ∀ {i j k}, le i j → le j k → le i k
@@ -27,7 +29,7 @@ structure Directed (ι : Type u) where
 
 /-- A directed system of types over `(ι, D)`: a family `X` with transition maps
     `tr` respecting identity and composition. -/
-structure System (ι : Type u) (D : Directed ι) where
+public structure System (ι : Type u) (D : Directed ι) where
   X : ι → Type w
   tr : ∀ {i j}, D.le i j → X i → X j
   tr_refl : ∀ {i} (x : X i), tr (D.refl i) x = x
@@ -38,14 +40,14 @@ variable {ι : Type u} {D : Directed ι}
 
 /-- Germ equivalence: `⟨i,x⟩ ~ ⟨j,y⟩` iff they become equal at some common upper
     bound `k`. -/
-def Rel (S : System ι D) : (Σ i, S.X i) → (Σ i, S.X i) → Prop :=
+@[expose] public def Rel (S : System ι D) : (Σ i, S.X i) → (Σ i, S.X i) → Prop :=
   fun p q => ∃ (k : ι) (hik : D.le p.1 k) (hjk : D.le q.1 k), S.tr hik p.2 = S.tr hjk q.2
 
-theorem rel_symm (S : System ι D) {p q : Σ i, S.X i} (h : Rel S p q) : Rel S q p := by
+public theorem rel_symm (S : System ι D) {p q : Σ i, S.X i} (h : Rel S p q) : Rel S q p := by
   obtain ⟨k, hik, hjk, e⟩ := h
   exact ⟨k, hjk, hik, e.symm⟩
 
-theorem rel_trans (S : System ι D) {p q r : Σ i, S.X i}
+public theorem rel_trans (S : System ι D) {p q r : Σ i, S.X i}
     (hpq : Rel S p q) (hqr : Rel S q r) : Rel S p r := by
   obtain ⟨k₁, h1, h2, e1⟩ := hpq
   obtain ⟨k₂, h3, h4, e2⟩ := hqr
@@ -60,24 +62,24 @@ theorem rel_trans (S : System ι D) {p q r : Σ i, S.X i}
   rw [lhs, rhs]; exact mid
 
 /-- The colimit setoid. -/
-def setoid (S : System ι D) : Setoid (Σ i, S.X i) where
+@[expose] public def setoid (S : System ι D) : Setoid (Σ i, S.X i) where
   r := Rel S
   iseqv := ⟨fun p => ⟨p.1, D.refl p.1, D.refl p.1, rfl⟩, rel_symm S, rel_trans S⟩
 
 /-- The directed colimit `colim X` of a system of types. -/
-def Colimit (S : System ι D) : Type _ := Quotient (setoid S)
+@[expose] public def Colimit (S : System ι D) : Type _ := Quotient (setoid S)
 
 /-- The canonical inclusion `X i → colim X`. -/
-def incl (S : System ι D) (i : ι) (x : S.X i) : Colimit S := Quotient.mk (setoid S) ⟨i, x⟩
+@[expose] public def incl (S : System ι D) (i : ι) (x : S.X i) : Colimit S := Quotient.mk (setoid S) ⟨i, x⟩
 
 /-- Inclusions are compatible with the transition maps: pushing along `tr` then
     including equals including directly. -/
-theorem incl_compat (S : System ι D) {i j : ι} (hij : D.le i j) (x : S.X i) :
+public theorem incl_compat (S : System ι D) {i j : ι} (hij : D.le i j) (x : S.X i) :
     incl S j (S.tr hij x) = incl S i x :=
   Quotient.sound ⟨j, D.refl j, hij, by rw [S.tr_refl]⟩
 
 /-- Every element of the colimit is `incl S i x` for some stage `i` and `x`. -/
-theorem incl_surjective (S : System ι D) (c : Colimit S) :
+public theorem incl_surjective (S : System ι D) (c : Colimit S) :
     ∃ (i : ι) (x : S.X i), incl S i x = c := by
   refine Quotient.inductionOn c (fun p => ⟨p.1, p.2, rfl⟩)
 

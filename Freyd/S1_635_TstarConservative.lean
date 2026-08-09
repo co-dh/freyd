@@ -12,7 +12,9 @@
     * `Tstar_reflects_cover` — the family REFLECTS COVERS: a map surjective on every stalk is a cover.
 
   No single stalk does either (that needs full well-pointedness); the whole family does. -/
-import Freyd.S1_635_StalkDetect
+module
+
+public import Freyd.S1_635_StalkDetect
 namespace Freyd
 open PreLogosHorn.Stalk
 
@@ -27,7 +29,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
     `F ∋ U` whose stalk class `T_F(x')` escapes the image of `T_F(e)`.  But equality of stalk maps
     `T_F(g) = T_F(h)` forces a refinement `W' ∈ F` on which `x'` DOES equalize, hence factors through
     `e`; that factorization is exactly a preimage of `T_F(x')` under `T_F(e)` — contradiction. -/
-theorem Tstar_separates (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (g h : X ⟶ Y)
+public theorem Tstar_separates (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (g h : X ⟶ Y)
     (heq : ∀ F : StalkIndex 𝒞, TF.map F.val g = TF.map F.val h) : g = h := by
   refine Classical.byContradiction (fun hne_gh => ?_)
   -- Pre-logos = products + pullbacks ⟹ equalizers; the equalizer `e : E ↣ X` of `g, h`.
@@ -89,7 +91,7 @@ theorem Tstar_separates (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (g h : X �
     gives a probe `x' : U.dom ⟶ Y` not factoring through `m`, and `stalk_detects_proper_mono` makes
     `T_F(m)` non-surjective for some `F`.  But `T_F(f) = T_F(m) ∘ T_F(g')` is surjective (hypothesis),
     forcing the last factor `T_F(m)` surjective — contradiction.  So `m` is iso, i.e. `f` is a cover. -/
-theorem Tstar_reflects_cover (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (f : X ⟶ Y)
+public theorem Tstar_reflects_cover (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (f : X ⟶ Y)
     (hsurj : ∀ F : StalkIndex 𝒞, Function.Surjective (TF.map F.val f)) : Cover f := by
   intro C m g' hm hgm                  -- monic `m : C ⟶ Y`, `g' : X ⟶ C`, `g' ≫ m = f`
   refine Classical.byContradiction (fun hmiso => ?_)

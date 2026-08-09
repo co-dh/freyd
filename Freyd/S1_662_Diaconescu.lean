@@ -14,7 +14,9 @@
   `mono_of_retraction`, `forgetSlice_isComplemented`.  Only the two final theorems land here, in a file
   that IMPORTS `SlicePreTopos` (rather than living inside it) for clean separation.
 -/
-import Freyd.S1_65_SlicePreTopos
+module
+
+public import Freyd.S1_65_SlicePreTopos
 
 universe v u
 

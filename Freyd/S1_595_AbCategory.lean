@@ -27,7 +27,9 @@
   structure.  See the residual note at the bottom.
 -/
 
-import Freyd.S1_59
+module
+
+public import Freyd.S1_59
 
 open Freyd
 
@@ -64,14 +66,14 @@ private theorem abSq_comp {A B C D E F : 𝒞}
   All three category laws are inherited from `𝒞` via `Subtype.ext` on the carrier. -/
 
 /-- The identity carrier map is a group-object homomorphism. -/
-theorem isHom_id (A : AbelianGroupObject 𝒞) :
+public theorem isHom_id (A : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject A A (Cat.id A.carrier) := by
   unfold IsHomAbelianGroupObject
   -- A.add ≫ id = A.add ;  ⟨fst ≫ id, snd ≫ id⟩ ≫ A.add = ⟨fst, snd⟩ ≫ A.add = id ≫ A.add = A.add
   rw [Cat.comp_id, Cat.comp_id, Cat.comp_id, pair_fst_snd, Cat.id_comp]
 
 /-- A composite of group-object homomorphisms is a group-object homomorphism. -/
-theorem isHom_comp {A B C : AbelianGroupObject 𝒞}
+public theorem isHom_comp {A B C : AbelianGroupObject 𝒞}
     {x : A.carrier ⟶ B.carrier} {y : B.carrier ⟶ C.carrier}
     (hx : IsHomAbelianGroupObject A B x) (hy : IsHomAbelianGroupObject B C y) :
     IsHomAbelianGroupObject A C (x ≫ y) := by
@@ -90,7 +92,7 @@ theorem isHom_comp {A B C : AbelianGroupObject 𝒞}
 
 /-- §1.595: `Ab(𝒞)` is a category.  Hom-sets are the group-homomorphism subtypes;
     identity and composition are those of `𝒞`, restricted to homomorphisms. -/
-instance instCatAb : Cat.{v} (AbelianGroupObject 𝒞) where
+@[expose] public instance instCatAb : Cat.{v} (AbelianGroupObject 𝒞) where
   Hom A B := HomAb A B
   id A := ⟨Cat.id A.carrier, isHom_id A⟩
   comp f g := ⟨f.val ≫ g.val, isHom_comp f.property g.property⟩
@@ -123,15 +125,15 @@ variable {A B C : AbelianGroupObject 𝒞}
 def car (x : HomAb A B) : A.carrier ⟶ B.carrier := x.val
 
 /-- Pointwise addition `⟨x, y⟩ ≫ B.add` at the carrier level. -/
-def addCar (x y : HomAb A B) : A.carrier ⟶ B.carrier :=
+@[expose] public def addCar (x y : HomAb A B) : A.carrier ⟶ B.carrier :=
   pair x.val y.val ≫ B.add
 
 /-- Pointwise zero `! ≫ B.zero` at the carrier level. -/
-def zeroCar (A B : AbelianGroupObject 𝒞) : A.carrier ⟶ B.carrier :=
+@[expose] public def zeroCar (A B : AbelianGroupObject 𝒞) : A.carrier ⟶ B.carrier :=
   term A.carrier ≫ B.zero
 
 /-- Pointwise negation `x ≫ B.neg` at the carrier level. -/
-def negCar (x : HomAb A B) : A.carrier ⟶ B.carrier :=
+@[expose] public def negCar (x : HomAb A B) : A.carrier ⟶ B.carrier :=
   x.val ≫ B.neg
 
 end HomAb
@@ -149,7 +151,7 @@ namespace GElt
 variable {T : 𝒞} (B : AbelianGroupObject 𝒞)
 
 /-- `O ⊕ f = f` (zero is a left unit), from `B.add_zero` precomposed with `f`. -/
-theorem zero_add (f : T ⟶ B.carrier) :
+public theorem zero_add (f : T ⟶ B.carrier) :
     pair (term T ≫ B.zero) f ≫ B.add = f := by
   have h := congrArg (fun m => f ≫ m) B.add_zero
   simp only at h
@@ -158,7 +160,7 @@ theorem zero_add (f : T ⟶ B.carrier) :
   rwa [Cat.comp_id, ← Cat.assoc, term_uniq (f ≫ term B.carrier) (term T)] at h
 
 /-- Commutativity `f ⊕ g = g ⊕ f`, from `B.add_comm` (`⟨snd,fst⟩ ≫ add = add`). -/
-theorem add_comm (f g : T ⟶ B.carrier) :
+public theorem add_comm (f g : T ⟶ B.carrier) :
     pair f g ≫ B.add = pair g f ≫ B.add := by
   have h := congrArg (fun m => pair f g ≫ m) B.add_comm
   simp only at h
@@ -166,12 +168,12 @@ theorem add_comm (f g : T ⟶ B.carrier) :
   exact h.symm
 
 /-- `f ⊕ O = f` (zero is a right unit), by commutativity + left unit. -/
-theorem add_zero (f : T ⟶ B.carrier) :
+public theorem add_zero (f : T ⟶ B.carrier) :
     pair f (term T ≫ B.zero) ≫ B.add = f := by
   rw [add_comm, zero_add]
 
 /-- `(⊖f) ⊕ f = O` (left inverse), from `B.add_neg` precomposed with `f`. -/
-theorem neg_add (f : T ⟶ B.carrier) :
+public theorem neg_add (f : T ⟶ B.carrier) :
     pair (f ≫ B.neg) f ≫ B.add = term T ≫ B.zero := by
   have h := congrArg (fun m => f ≫ m) B.add_neg
   simp only at h
@@ -180,13 +182,13 @@ theorem neg_add (f : T ⟶ B.carrier) :
   exact h
 
 /-- `f ⊕ (⊖f) = O` (right inverse), by commutativity. -/
-theorem add_neg (f : T ⟶ B.carrier) :
+public theorem add_neg (f : T ⟶ B.carrier) :
     pair f (f ≫ B.neg) ≫ B.add = term T ≫ B.zero := by
   rw [add_comm, neg_add]
 
 /-- Associativity in generalized-element form:
     `(f ⊕ g) ⊕ h = f ⊕ (g ⊕ h)`, from `B.add_assoc`. -/
-theorem add_assoc (f g h : T ⟶ B.carrier) :
+public theorem add_assoc (f g h : T ⟶ B.carrier) :
     pair (pair f g ≫ B.add) h ≫ B.add = pair f (pair g h ≫ B.add) ≫ B.add := by
   -- precompose B.add_assoc (a map (B×B)×B → B) with ⟨⟨f,g⟩, h⟩ : T → (B×B)×B.
   have h0 := congrArg (fun m => pair (pair f g) h ≫ m) B.add_assoc
@@ -204,7 +206,7 @@ theorem comp_add {S : 𝒞} (k : S ⟶ T) (f g : T ⟶ B.carrier) :
 /-- **Middle-two interchange** `(p ⊕ q) ⊕ (r ⊕ s) = (p ⊕ r) ⊕ (q ⊕ s)`,
     from associativity + commutativity.  This is the Eckmann–Hilton step that makes
     `B`-addition of homs a homomorphism. -/
-theorem middle_two (p q r s : T ⟶ B.carrier) :
+public theorem middle_two (p q r s : T ⟶ B.carrier) :
     pair (pair p q ≫ B.add) (pair r s ≫ B.add) ≫ B.add
       = pair (pair p r ≫ B.add) (pair q s ≫ B.add) ≫ B.add :=
   calc pair (pair p q ≫ B.add) (pair r s ≫ B.add) ≫ B.add
@@ -215,13 +217,13 @@ theorem middle_two (p q r s : T ⟶ B.carrier) :
     _ = pair (pair p r ≫ B.add) (pair q s ≫ B.add) ≫ B.add := (add_assoc B p r _).symm
 
 /-- `O ⊕ O = O`: the zero element is idempotent under `⊕` (special case of right unit). -/
-theorem zero_add_zero :
+public theorem zero_add_zero :
     pair (term T ≫ B.zero) (term T ≫ B.zero) ≫ B.add = term T ≫ B.zero :=
   add_zero B (term T ≫ B.zero)
 
 /-- **Inverse uniqueness**: if `f ⊕ g = O` then `g = ⊖f`.  Standard group argument:
     `g = O ⊕ g = (⊖f ⊕ f) ⊕ g = ⊖f ⊕ (f ⊕ g) = ⊖f ⊕ O = ⊖f`. -/
-theorem neg_unique {f g : T ⟶ B.carrier}
+public theorem neg_unique {f g : T ⟶ B.carrier}
     (h : pair f g ≫ B.add = term T ≫ B.zero) : g = f ≫ B.neg :=
   calc g = pair (term T ≫ B.zero) g ≫ B.add := (zero_add B g).symm
     _ = pair (pair (f ≫ B.neg) f ≫ B.add) g ≫ B.add := by rw [neg_add B f]
@@ -231,7 +233,7 @@ theorem neg_unique {f g : T ⟶ B.carrier}
 
 /-- `⊖` distributes over `⊕` (true because `B` is *abelian*): `⊖(f ⊕ g) = (⊖f) ⊕ (⊖g)`.
     Both are the additive inverse of `f ⊕ g`, so they agree by `neg_unique`.  -/
-theorem neg_add_distrib (f g : T ⟶ B.carrier) :
+public theorem neg_add_distrib (f g : T ⟶ B.carrier) :
     pair (f ≫ B.neg) (g ≫ B.neg) ≫ B.add = (pair f g ≫ B.add) ≫ B.neg := by
   apply neg_unique B
   -- (f⊕g) ⊕ (⊖f ⊕ ⊖g) = (f ⊕ ⊖f) ⊕ (g ⊕ ⊖g) = O ⊕ O = O
@@ -249,7 +251,7 @@ namespace HomAb
 variable {A B C : AbelianGroupObject 𝒞}
 
 /-- The pointwise sum of two homomorphisms is a homomorphism (middle-two interchange of `B`). -/
-theorem isHom_addCar (x y : HomAb A B) :
+public theorem isHom_addCar (x y : HomAb A B) :
     IsHomAbelianGroupObject A B (addCar x y) := by
   unfold IsHomAbelianGroupObject addCar
   -- LHS: A.add ≫ ⟨x,y⟩ ≫ B.add = ⟨A.add≫x, A.add≫y⟩ ≫ B.add
@@ -265,7 +267,7 @@ theorem isHom_addCar (x y : HomAb A B) :
   exact GElt.middle_two B (fst ≫ x.val) (snd ≫ x.val) (fst ≫ y.val) (snd ≫ y.val)
 
 /-- The pointwise zero `! ≫ B.zero` is a homomorphism (`O ⊕ O = O`). -/
-theorem isHom_zeroCar (A B : AbelianGroupObject 𝒞) :
+public theorem isHom_zeroCar (A B : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject A B (zeroCar A B) := by
   unfold IsHomAbelianGroupObject zeroCar
   -- LHS: A.add ≫ (term ≫ zero) = term_{A×A} ≫ zero  (term collapses).
@@ -276,7 +278,7 @@ theorem isHom_zeroCar (A B : AbelianGroupObject 𝒞) :
   exact (GElt.zero_add_zero B).symm
 
 /-- The pointwise negation `x ≫ B.neg` is a homomorphism (`⊖` distributes, `B` abelian). -/
-theorem isHom_negCar (x : HomAb A B) :
+public theorem isHom_negCar (x : HomAb A B) :
     IsHomAbelianGroupObject A B (negCar x) := by
   unfold IsHomAbelianGroupObject negCar
   -- LHS: A.add ≫ x ≫ neg = (A.add ≫ x) ≫ neg = (⟨fst≫x,snd≫x⟩≫B.add) ≫ neg
@@ -292,13 +294,13 @@ theorem isHom_negCar (x : HomAb A B) :
   representation requires of `Ab(𝒞)`. -/
 
 /-- Sum of homomorphisms, as a hom-set element. -/
-def add (x y : HomAb A B) : HomAb A B := ⟨addCar x y, isHom_addCar x y⟩
+@[expose] public def add (x y : HomAb A B) : HomAb A B := ⟨addCar x y, isHom_addCar x y⟩
 
 /-- Zero homomorphism, as a hom-set element. -/
-def zero (A B : AbelianGroupObject 𝒞) : HomAb A B := ⟨zeroCar A B, isHom_zeroCar A B⟩
+@[expose] public def zero (A B : AbelianGroupObject 𝒞) : HomAb A B := ⟨zeroCar A B, isHom_zeroCar A B⟩
 
 /-- Negation of a homomorphism, as a hom-set element. -/
-def neg (x : HomAb A B) : HomAb A B := ⟨negCar x, isHom_negCar x⟩
+@[expose] public def neg (x : HomAb A B) : HomAb A B := ⟨negCar x, isHom_negCar x⟩
 
 @[simp] theorem add_val (x y : HomAb A B) : (add x y).val = pair x.val y.val ≫ B.add := rfl
 @[simp] theorem zero_val : (zero A B).val = term A.carrier ≫ B.zero := rfl
@@ -319,7 +321,7 @@ theorem add_zero (x : HomAb A B) : add x (zero A B) = x :=
 theorem neg_add (x : HomAb A B) : add (neg x) x = zero A B :=
   Subtype.ext (GElt.neg_add B x.val)
 
-theorem add_neg (x : HomAb A B) : add x (neg x) = zero A B :=
+public theorem add_neg (x : HomAb A B) : add x (neg x) = zero A B :=
   Subtype.ext (GElt.add_neg B x.val)
 
 /-! The six theorems above (`add_assoc`, `add_comm`, `zero_add`, `add_zero`, `neg_add`,

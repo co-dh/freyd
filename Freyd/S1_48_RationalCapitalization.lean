@@ -263,11 +263,13 @@
   mathlib-free; built on this repo's hand-built `Cat`.
 -/
 
-import Freyd.S1_45
-import Freyd.S1_47
-import Freyd.S1_52
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_541_RelativeCapitalization
+module
+
+public import Freyd.S1_45
+public import Freyd.S1_47
+public import Freyd.S1_52
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_541_RelativeCapitalization
 
 namespace Freyd
 
@@ -291,7 +293,7 @@ section DenseAllMonos
 variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
 
 /-- A monic is preserved by composition (both legs monic ⇒ composite monic). -/
-theorem mono_comp' {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) (hf : Monic f) (hg : Monic g) :
+public theorem mono_comp' {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) (hf : Monic f) (hg : Monic g) :
     Monic (f ≫ g) := by
   intro W u v huv
   apply hf; apply hg
@@ -299,7 +301,7 @@ theorem mono_comp' {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) (hf : Monic f) (hg
   exact huv
 
 /-- An isomorphism is monic (it is a split mono / retraction: `f ≫ inv = id`). -/
-theorem mono_of_isIso {A B : 𝒞} {f : A ⟶ B} (hf : IsIso f) : Monic f := by
+public theorem mono_of_isIso {A B : 𝒞} {f : A ⟶ B} (hf : IsIso f) : Monic f := by
   obtain ⟨inv, hinv₁, _⟩ := hf
   exact mono_of_retraction f inv hinv₁
 
@@ -314,7 +316,7 @@ theorem mono_of_comp_mono {A B C : 𝒞} {g : A ⟶ B} {f : B ⟶ C} (h : Monic 
     (`mono_of_isIso`); (ii) monics compose (`mono_comp'`); (iii) the pullback `π₁` of a
     monic is monic (`mono_pullback`).  This is the working dense class for the rational
     category `A[𝒟⁻¹]` below.  Sorry-free. -/
-def denseMonos (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
+@[expose] public def denseMonos (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     [HasPullbacks 𝒞] : DenseClass 𝒞 where
   mem f := Monic f
   iso_mem _ hf := mono_of_isIso hf
@@ -337,7 +339,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (G : De
 
 /-- Reflexivity of `FractionEquiv`: a fraction is equivalent to itself via the identity
     roof (its own denominator is dense, and both squares commute trivially). -/
-theorem fractionEquiv_refl {A B : 𝒞} (f : Fraction G A B) : FractionEquiv f f :=
+public theorem fractionEquiv_refl {A B : 𝒞} (f : Fraction G A B) : FractionEquiv f f :=
   ⟨f.apex, Cat.id f.apex, Cat.id f.apex,
     by rw [Cat.id_comp]; exact f.denom_dense,
     by rw [Cat.id_comp],
@@ -345,7 +347,7 @@ theorem fractionEquiv_refl {A B : 𝒞} (f : Fraction G A B) : FractionEquiv f f
 
 /-- Symmetry of `FractionEquiv`: swap the two roof legs.  The shared-denominator
     density is symmetric because `r₁ ≫ f₁.denom = r₂ ≫ f₂.denom`. -/
-theorem fractionEquiv_symm {A B : 𝒞} {f₁ f₂ : Fraction G A B}
+public theorem fractionEquiv_symm {A B : 𝒞} {f₁ f₂ : Fraction G A B}
     (h : FractionEquiv f₁ f₂) : FractionEquiv f₂ f₁ := by
   obtain ⟨R, r₁, r₂, hd, hden, hnum⟩ := h
   exact ⟨R, r₂, r₁, hden ▸ hd, hden.symm, hnum.symm⟩
@@ -390,12 +392,12 @@ end Equiv
 /-- A dense class whose members are EXACTLY the monics — the §1.48 "dense monic" hypothesis, the one
     extra fact (beyond the `DenseClass` record) the calculus-of-fractions skeleton needs.  `denseMonos`
     is the canonical instance. -/
-structure MonicDense [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (𝒟 : DenseClass 𝒞) :
+public structure MonicDense [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (𝒟 : DenseClass 𝒞) :
     Prop where
   mem_iff_mono : ∀ {A B : 𝒞} (f : A ⟶ B), 𝒟.mem f ↔ Monic f
 
 /-- `denseMonos` is a monic dense class (`mem` is `Monic` definitionally). -/
-theorem denseMonos_monic [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] :
+public theorem denseMonos_monic [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] :
     MonicDense (denseMonos 𝒞) := ⟨fun _ => Iff.rfl⟩
 
 /-- A dense roof leg `r` (one with `𝒟.mem (r ≫ d)`) is monic, in a monic dense class. -/
@@ -420,13 +422,13 @@ theorem MonicDense.leg_mono [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPull
   members being monic.  This is STRICTLY WEAKER than `MonicDense` (no `Monic → mem`), and holds for
   `pairDenseClass` (`pairDense_denseRoof`).  No saturation/Ore condition beyond the `DenseClass`
   record is needed — the standard left-calculus-of-fractions. -/
-structure DenseRoof [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (𝒟 : DenseClass 𝒞) :
+public structure DenseRoof [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (𝒟 : DenseClass 𝒞) :
     Prop where
   /-- members are monic (`pairDenseClass_mem_mono` for the pairs class) -/
   mem_mono : ∀ {A B : 𝒞} (f : A ⟶ B), 𝒟.mem f → Monic f
 
 /-- A `MonicDense` class is `DenseRoof`: `mem_mono` is the forward biconditional. -/
-theorem MonicDense.toDenseRoof [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public theorem MonicDense.toDenseRoof [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     {𝒟 : DenseClass 𝒞} (hD : MonicDense 𝒟) : DenseRoof 𝒟 where
   mem_mono _ h := (hD.mem_iff_mono _).1 h
 
@@ -445,7 +447,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     declared-dense leg `(P.π₁ ≫ r₁) ≫ f₁.denom` is monic (`r₁`/`s₂` monic as dense roof legs,
     `P.π₁` the pullback of monic `s₂`, `f₁.denom` monic) and repackaged as dense via `mem_iff_mono`.
     Sorry-free for any `MonicDense 𝒟`; instantiated at `denseMonos`/`denseMonos_monic` below. -/
-theorem fractionEquiv_trans {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B : 𝒞}
+public theorem fractionEquiv_trans {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B : 𝒞}
     {f₁ f₂ f₃ : Fraction 𝒟 A B}
     (h₁₂ : FractionEquiv f₁ f₂) (h₂₃ : FractionEquiv f₂ f₃) : FractionEquiv f₁ f₃ := by
   obtain ⟨R, r₁, r₂, hRd, hRden, hRnum⟩ := h₁₂
@@ -485,21 +487,21 @@ theorem fractionEquiv_trans {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B 
       _ = (P.π₂ ≫ s₃) ≫ f₃.num := by rw [Cat.assoc]
 
 /-- The setoid on fraction spans `A → B`: `FractionEquiv` with its three laws. -/
-def fractionSetoid {A B : 𝒞} : Setoid (Fraction (denseMonos 𝒞) A B) where
+@[expose] public def fractionSetoid {A B : 𝒞} : Setoid (Fraction (denseMonos 𝒞) A B) where
   r := FractionEquiv
   iseqv := ⟨fractionEquiv_refl (denseMonos 𝒞), fractionEquiv_symm (denseMonos 𝒞),
     fractionEquiv_trans denseMonos_monic.toDenseRoof⟩
 
 /-- **§1.48 — the hom-set `A[𝒟⁻¹](A,B)`**: equivalence classes of fraction spans
     (for the all-monics dense class `denseMonos 𝒞`).  Sorry-free `Quotient`. -/
-def RatHom (A B : 𝒞) : Type u := Quotient (fractionSetoid (𝒞 := 𝒞) (A := A) (B := B))
+@[expose] public def RatHom (A B : 𝒞) : Type u := Quotient (fractionSetoid (𝒞 := 𝒞) (A := A) (B := B))
 
 /-- The IDENTITY span `A → A`: `A ←[id]— A —id→ A` (denominator the identity, dense). -/
-def idFraction (G : DenseClass 𝒞) (A : 𝒞) : Fraction G A A :=
+@[expose] public def idFraction (G : DenseClass 𝒞) (A : 𝒞) : Fraction G A A :=
   ⟨A, Cat.id A, Cat.id A, G.iso_mem (Cat.id A) ⟨Cat.id A, Cat.id_comp _, Cat.id_comp _⟩⟩
 
 /-- The identity morphism of `A[𝒟⁻¹]` at `A`. -/
-def ratId (A : 𝒞) : RatHom (𝒞 := 𝒞) A A :=
+@[expose] public def ratId (A : 𝒞) : RatHom (𝒞 := 𝒞) A A :=
   Quotient.mk _ (idFraction (denseMonos 𝒞) A)
 
 /-- The localisation on objects is the identity-on-objects map. -/
@@ -534,7 +536,7 @@ section Comp
 variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] (G : DenseClass 𝒞)
 
 /-- The composite span of two fraction spans, by pullback of `(num₁, denom₂)`. -/
-def compFraction {A B C : 𝒞} (f : Fraction G A B) (g : Fraction G B C) : Fraction G A C :=
+@[expose] public def compFraction {A B C : 𝒞} (f : Fraction G A B) (g : Fraction G B C) : Fraction G A C :=
   let Q := (HasPullbacks.has f.num g.denom).cone
   { apex := Q.pt
     denom := Q.π₁ ≫ f.denom
@@ -564,7 +566,7 @@ def compFraction {A B C : 𝒞} (f : Fraction G A B) (g : Fraction G B C) : Frac
 /-- **RIGHT congruence**: replacing the second span by an equivalent one yields an equivalent
     composite.  Roof = pullback of `compFraction f g`'s `Q.π₂` against the `g ≈ g'` roof leg
     `s : S → g.apex`; the leg into `Q' := pb(f.num, g'.denom)` is built by `Q'`'s lift. -/
-theorem compFraction_congr_right {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B C : 𝒞}
+public theorem compFraction_congr_right {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B C : 𝒞}
     (f : Fraction 𝒟 A B)
     {g g' : Fraction 𝒟 B C} (hg : FractionEquiv g g') :
     FractionEquiv (compFraction 𝒟 f g) (compFraction 𝒟 f g') := by
@@ -617,7 +619,7 @@ theorem compFraction_congr_right {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) 
 /-- **LEFT congruence**: replacing the first span by an equivalent one yields an equivalent
     composite.  Roof = pullback of `compFraction f g`'s `Q.π₁` against the `f ≈ f'` roof leg
     `t : T → f.apex`; the leg into `Q' := pb(f'.num, g.denom)` is built by `Q'`'s lift. -/
-theorem compFraction_congr_left {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B C : 𝒞}
+public theorem compFraction_congr_left {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {A B C : 𝒞}
     {f f' : Fraction 𝒟 A B}
     (g : Fraction 𝒟 B C) (hf : FractionEquiv f f') :
     FractionEquiv (compFraction 𝒟 f g) (compFraction 𝒟 f' g) := by
@@ -673,7 +675,7 @@ theorem compFraction_congr_left {𝒟 : DenseClass 𝒞} (hD : DenseRoof 𝒟) {
     (`compFraction_congr_left`/`_right`) via transitivity — Freyd's "the named morphism is
     independent of the choice of names for `A → B` and `B → C`, and of the choice of
     pullback" (§1.48).  Sorry-free over `denseMonos 𝒞`. -/
-def ratComp {A B C : 𝒞} (m : RatHom (𝒞 := 𝒞) A B)
+@[expose] public def ratComp {A B C : 𝒞} (m : RatHom (𝒞 := 𝒞) A B)
     (n : RatHom (𝒞 := 𝒞) B C) : RatHom (𝒞 := 𝒞) A C :=
   Quotient.lift₂ (fun f g => Quotient.mk _ (compFraction (denseMonos 𝒞) f g))
     (by
@@ -693,7 +695,7 @@ def ratComp {A B C : 𝒞} (m : RatHom (𝒞 := 𝒞) A B)
 
 /-- LEFT UNIT: `[idFraction A] ∘ f ≈ f`.  Composite apex `Q = pb(id_A, f.denom)`; the roof
     `(id, Q.π₂)` to `f` works because `Q.π₁ = Q.π₂ ≫ f.denom` (the square with `id_A`). -/
-theorem compFraction_idFraction_left {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f : Fraction 𝒟 A B) :
+public theorem compFraction_idFraction_left {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f : Fraction 𝒟 A B) :
     FractionEquiv (compFraction 𝒟 (idFraction 𝒟 A) f) f := by
   let Q := (HasPullbacks.has (idFraction 𝒟 A).num f.denom).cone
   -- `idFraction A`.num = id_A, .denom = id_A, .apex = A; square: `Q.π₁ ≫ id_A = Q.π₂ ≫ f.denom`
@@ -713,7 +715,7 @@ theorem compFraction_idFraction_left {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f : 
 
 /-- RIGHT UNIT: `f ∘ [idFraction B] ≈ f`.  Composite apex `Q = pb(f.num, id_B)`; roof
     `(id, Q.π₁)` to `f` works because `Q.π₂ = Q.π₁ ≫ f.num` (the square with `id_B`). -/
-theorem compFraction_idFraction_right {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f : Fraction 𝒟 A B) :
+public theorem compFraction_idFraction_right {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f : Fraction 𝒟 A B) :
     FractionEquiv (compFraction 𝒟 f (idFraction 𝒟 B)) f := by
   let Q := (HasPullbacks.has f.num (idFraction 𝒟 B).denom).cone
   have hw : Q.π₁ ≫ f.num = Q.π₂ := by
@@ -732,7 +734,7 @@ theorem compFraction_idFraction_right {𝒟 : DenseClass 𝒞} {A B : 𝒞} (f :
     apex `Q₂.pt` as the roof, `r₁ := id`, and build the comparison `r₂ : Q₂.pt → P₂.pt`
     (`P₂.pt` = the RIGHT composite's apex) by the universal property of the inner pullback
     `P₁ := pb(g.num, h.denom)` then the outer `P₂ := pb(f.num, P₁.π₁ ≫ g.denom)`. -/
-theorem compFraction_assoc {𝒟 : DenseClass 𝒞} {A B C D : 𝒞} (f : Fraction 𝒟 A B)
+public theorem compFraction_assoc {𝒟 : DenseClass 𝒞} {A B C D : 𝒞} (f : Fraction 𝒟 A B)
     (g : Fraction 𝒟 B C) (h : Fraction 𝒟 C D) :
     FractionEquiv
       (compFraction 𝒟 (compFraction 𝒟 f g) h)
@@ -796,21 +798,21 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     `𝒞`'s objects.  A genuine new type (not a `def` alias) so that `Cat (Rat 𝒞)` instance
     resolution does NOT collapse onto `𝒞`'s own `Cat` instance (a bare `def` alias whnf-reduces
     to `𝒞`, so `⟶` between `Rat 𝒞` objects would silently pick `𝒞`'s hom). -/
-structure Rat (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
+public structure Rat (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     where mk :: (obj : 𝒞)
 
 /-- LEFT UNIT on `RatHom`: `ratId ∘ m = m`. -/
-theorem ratComp_id_left {A B : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) : ratComp (ratId A) m = m := by
+public theorem ratComp_id_left {A B : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) : ratComp (ratId A) m = m := by
   refine Quotient.inductionOn m (fun f => ?_)
   exact Quotient.sound (compFraction_idFraction_left f)
 
 /-- RIGHT UNIT on `RatHom`: `m ∘ ratId = m`. -/
-theorem ratComp_id_right {A B : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) : ratComp m (ratId B) = m := by
+public theorem ratComp_id_right {A B : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) : ratComp m (ratId B) = m := by
   refine Quotient.inductionOn m (fun f => ?_)
   exact Quotient.sound (compFraction_idFraction_right f)
 
 /-- ASSOCIATIVITY on `RatHom`. -/
-theorem ratComp_assoc {A B C D : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) (n : RatHom (𝒞 := 𝒞) B C)
+public theorem ratComp_assoc {A B C D : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) (n : RatHom (𝒞 := 𝒞) B C)
     (p : RatHom (𝒞 := 𝒞) C D) : ratComp (ratComp m n) p = ratComp m (ratComp n p) := by
   refine Quotient.inductionOn₃ m n p (fun f g h => ?_)
   exact Quotient.sound (compFraction_assoc f g h)
@@ -818,7 +820,7 @@ theorem ratComp_assoc {A B C D : 𝒞} (m : RatHom (𝒞 := 𝒞) A B) (n : RatH
 /-- **§1.48 — the rational category `A[denseMonos⁻¹]` is a category.**  Objects = objects of
     `𝒞`; homs = `RatHom` (fraction quotients); composition = `ratComp`; identity = `ratId`.
     The three laws are the lifted `compFraction` unit/associativity laws.  Sorry-free. -/
-instance ratCat : Cat.{u} (Rat 𝒞) where
+@[expose] public instance ratCat : Cat.{u} (Rat 𝒞) where
   Hom A B := RatHom (𝒞 := 𝒞) A.obj B.obj
   id := fun A => ratId A.obj
   comp := fun m n => ratComp m n
@@ -1021,37 +1023,37 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞]
     (not a separate standing class) so that the §1.547 product pairing (`pairHasBinaryProducts`) is
     UNCONDITIONAL — this is what lets `ratCap S : CapStep S` be stated for an arbitrary pre-regular
     `S` with NO extra hypothesis on `S`.  See `pairHasBinaryProducts`/the DISTINCTNESS-GATE note. -/
-structure PairObj (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] where
+public structure PairObj (𝒞 : Type u) [Cat.{u} 𝒞] [HasTerminal 𝒞] where
   A : 𝒞
   F : List (Σ T : 𝒞, A ⟶ T)
   wsupp : ∀ p ∈ F, WellSupported p.1
   distinct : ∀ r ∈ F, ∀ r' ∈ F, ∀ h : r.1 = r'.1, h ▸ r.2 = r'.2
 
 /-- `F°` — the list of TARGETS of the factors of an object of `Â`. -/
-def PairObj.targets (X : PairObj 𝒞) : List 𝒞 := X.F.map (·.1)
+@[expose] public def PairObj.targets (X : PairObj 𝒞) : List 𝒞 := X.F.map (·.1)
 
 /-- **§1.547 morphism of `Â`** — `(A₁,F₁) → (A₂,F₂)`: a `𝒞`-arrow `g : A₁ → A₂` such that
     every factor of `F₂` pulls back through `g` to a factor of `F₁` to the SAME target
     (`F₂° ⊆ F₁°` with the compatibility square `g ≫ f = f'`). -/
-structure PairHom (X Y : PairObj 𝒞) where
+public structure PairHom (X Y : PairObj 𝒞) where
   g : X.A ⟶ Y.A
   compat : ∀ p ∈ Y.F, ∃ q ∈ X.F, ∃ h : q.1 = p.1, g ≫ p.2 = h ▸ q.2
 
 /-- A `PairHom` is DETERMINED by its underlying `𝒞`-arrow `g` (the compatibility is a `Prop`).
     This is what makes the forgetful functor `Â → A` faithful. -/
 @[ext]
-theorem PairHom.ext {X Y : PairObj 𝒞} {a b : PairHom X Y} (h : a.g = b.g) : a = b := by
+public theorem PairHom.ext {X Y : PairObj 𝒞} {a b : PairHom X Y} (h : a.g = b.g) : a = b := by
   obtain ⟨ag, _⟩ := a; obtain ⟨bg, _⟩ := b; cases h; rfl
 
 /-- Identity `PairHom`: underlying `id`, compatibility is `id ≫ f = f`. -/
-def PairHom.id (X : PairObj 𝒞) : PairHom X X :=
+@[expose] public def PairHom.id (X : PairObj 𝒞) : PairHom X X :=
   ⟨Cat.id X.A, fun p hp => ⟨p, hp, rfl, Cat.id_comp p.2⟩⟩
 
 /-- Composition of `PairHom`s (diagram order): underlying `g₁ ≫ g₂`; compatibility chains
     the two factorisations through the shared middle factor.  For `p ∈ Z.F`, `b` gives
     `q ∈ Y.F` with `g₂ ≫ p = q` (same target), and `a` gives `r ∈ X.F` with `g₁ ≫ q = r`;
     then `(g₁ ≫ g₂) ≫ p = g₁ ≫ q = r`. -/
-def PairHom.comp {X Y Z : PairObj 𝒞} (a : PairHom X Y) (b : PairHom Y Z) : PairHom X Z where
+@[expose] public def PairHom.comp {X Y Z : PairObj 𝒞} (a : PairHom X Y) (b : PairHom Y Z) : PairHom X Z where
   g := a.g ≫ b.g
   compat p hp := by
     obtain ⟨q, hq, hqt, hqe⟩ := b.compat p hp
@@ -1066,7 +1068,7 @@ def PairHom.comp {X Y Z : PairObj 𝒞} (a : PairHom X Y) (b : PairHom Y Z) : Pa
 /-- **§1.547 — `Â` is a category.**  Objects `PairObj`; homs `PairHom` (determined by the
     underlying `𝒞`-arrow); composition/identity inherited from `𝒞`.  All laws follow from
     `PairHom.ext` + the corresponding `Cat` laws of `𝒞` on the underlying arrows. -/
-instance pairsCat : Cat.{u} (PairObj 𝒞) where
+@[expose] public instance pairsCat : Cat.{u} (PairObj 𝒞) where
   Hom := PairHom
   id := PairHom.id
   comp a b := a.comp b
@@ -1099,7 +1101,7 @@ def pairEmbed : Functor 𝒞 (PairObj 𝒞) where
 
 /-- A `PairHom`'s codomain targets are a SUBSET of its domain targets (`Y° ⊆ X°`).  Immediate from
     compat: every `p ∈ Y.F` has a matching `q ∈ X.F` of the SAME target, so `p.1 = q.1 ∈ X°`. -/
-theorem pairHom_targets_subset {X Y : PairObj 𝒞} (m : PairHom X Y) :
+public theorem pairHom_targets_subset {X Y : PairObj 𝒞} (m : PairHom X Y) :
     ∀ T ∈ Y.targets, T ∈ X.targets := by
   intro T hT
   obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hT
@@ -1242,7 +1244,7 @@ theorem wellSupported_one' : WellSupported (HasTerminal.one : 𝒞) := by
     after every factor projection `listProdProj U k`.  Iterated joint monicity: the head projection
     is `fst`, the tail projections are `snd ≫ listProdProj U k`, so agreement on all of them forces
     agreement after `fst` and (by induction) after `snd`. -/
-theorem listProd_hom_ext {Z : 𝒞} : ∀ (U : List 𝒞) (u v : Z ⟶ listProd U),
+public theorem listProd_hom_ext {Z : 𝒞} : ∀ (U : List 𝒞) (u v : Z ⟶ listProd U),
     (∀ k : Fin U.length, u ≫ listProdProj U k = v ≫ listProdProj U k) → u = v
   | [], u, v, _ => HasTerminal.uniq u v
   | C :: U, u, v, h => by
@@ -1266,7 +1268,7 @@ def listProdAppendHom : ∀ (l₁ l₂ : List 𝒞),
            (snd ≫ listProdAppendHom l₁ l₂ ≫ snd)
 
 /-- Inverse of `listProdAppendHom`: `prod (listProd l₁) (listProd l₂) ⟶ listProd (l₁ ++ l₂)`. -/
-def listProdAppendInv : ∀ (l₁ l₂ : List 𝒞),
+@[expose] public def listProdAppendInv : ∀ (l₁ l₂ : List 𝒞),
     prod (listProd l₁) (listProd l₂) ⟶ listProd (l₁ ++ l₂)
   | [],      _  => (snd : prod (listProd ([] : List 𝒞)) _ ⟶ _)
   | C :: l₁, l₂ =>
@@ -1519,7 +1521,7 @@ theorem listProdPartition_inv_hom (p : 𝒞 → Bool) : ∀ (l : List 𝒞),
 /-- `listProdAppendInv` then a projection into the FIRST block `l₁` is `fst ≫ (l₁'s projection)`.
     The codomain `(l₁++l₂).get ⟨k,_⟩` equals `l₁.get k` (prefix index), carried by `h`; in each
     pattern case the cast `h ▸` is trivially eliminated. -/
-theorem listProdAppendInv_projL :
+public theorem listProdAppendInv_projL :
     ∀ (l₁ l₂ : List 𝒞) (k : Fin l₁.length) (hk : k.1 < (l₁ ++ l₂).length)
       (h : (l₁ ++ l₂).get ⟨k.1, hk⟩ = l₁.get k),
       listProdAppendInv l₁ l₂ ≫ (h ▸ listProdProj (l₁ ++ l₂) ⟨k.1, hk⟩)
@@ -1575,7 +1577,7 @@ private theorem listProdProj_heq_nat (l : List 𝒞) {n m : Nat}
 /-- `listProdAppendInv` then a projection into the SECOND block `l₂` is `snd ≫ (l₂'s projection)`.
     The offset index `l₁.length + k.1` into `l₁++l₂` lands in the `l₂` part; `h` carries the
     equality, and the cast is eliminated by the same `cast_comp_hom` technique as `projL`. -/
-theorem listProdAppendInv_projR :
+public theorem listProdAppendInv_projR :
     ∀ (l₁ l₂ : List 𝒞) (k : Fin l₂.length) (hk : l₁.length + k.1 < (l₁ ++ l₂).length)
       (h : (l₁ ++ l₂).get ⟨l₁.length + k.1, hk⟩ = l₂.get k),
       listProdAppendInv l₁ l₂ ≫ (h ▸ listProdProj (l₁ ++ l₂) ⟨l₁.length + k.1, hk⟩)
@@ -2395,7 +2397,7 @@ theorem pairLocalisation_faithful_criterion [PullbacksTransferCovers 𝒞] {R X 
 /-- A `WideEq` of a list `L` of parallel pairs over `X`: the maximal subobject equalizing all of
     them.  `dom`/`map` is the subobject `w : D ↪ X`; `eq` says `w` equalizes every listed pair;
     `mono` that `w` is monic; `lift`/`fac`/`uniq` the universal property. -/
-structure WideEq (X : 𝒞) (L : List (Σ B : 𝒞, (X ⟶ B) × (X ⟶ B))) where
+public structure WideEq (X : 𝒞) (L : List (Σ B : 𝒞, (X ⟶ B) × (X ⟶ B))) where
   dom  : 𝒞
   map  : dom ⟶ X
   mono : Monic map
@@ -2406,7 +2408,7 @@ structure WideEq (X : 𝒞) (L : List (Σ B : 𝒞, (X ⟶ B) × (X ⟶ B))) whe
            m ≫ map = k → m = lift k h
 
 /-- The empty wide equalizer: `D = X`, `w = id` (no pairs to equalize). -/
-def wideEqNil (X : 𝒞) : WideEq X [] where
+@[expose] public def wideEqNil (X : 𝒞) : WideEq X [] where
   dom := X
   map := Cat.id X
   mono := by intro W a b hab; rw [← Cat.comp_id a, ← Cat.comp_id b]; exact hab
@@ -2417,7 +2419,7 @@ def wideEqNil (X : 𝒞) : WideEq X [] where
 
 /-- The cons step: equalize the head pair, then wide-equalize the tail composed with that
     equalizer's map.  `D = wideEq(tail ∘ e)`, `w = e' ≫ e` with `e = eqMap u v`. -/
-def wideEqCons [HasEqualizers 𝒞] (X B : 𝒞) (u v : X ⟶ B)
+@[expose] public def wideEqCons [HasEqualizers 𝒞] (X B : 𝒞) (u v : X ⟶ B)
     (L : List (Σ B : 𝒞, (X ⟶ B) × (X ⟶ B)))
     (tail : WideEq (eqObj u v) (L.map (fun p => ⟨p.1, eqMap u v ≫ p.2.1, eqMap u v ≫ p.2.2⟩))) :
     WideEq X (⟨B, u, v⟩ :: L) where
@@ -2456,7 +2458,7 @@ def wideEqCons [HasEqualizers 𝒞] (X B : 𝒞) (u v : X ⟶ B)
 /-- The wide equalizer of an arbitrary finite list, by recursion on the list length (the
     recursive call is on the tail `L`, whose mapped form has length `L.length < (hd::L).length`,
     even though its ambient object changes from `X` to `eqObj u v`). -/
-def wideEq [HasEqualizers 𝒞] (X : 𝒞) :
+@[expose] public def wideEq [HasEqualizers 𝒞] (X : 𝒞) :
     (L : List (Σ B : 𝒞, (X ⟶ B) × (X ⟶ B))) → WideEq X L
   | [] => wideEqNil X
   | ⟨B, u, v⟩ :: L => wideEqCons X B u v L (wideEq (eqObj u v) _)
@@ -2475,20 +2477,20 @@ def wideEq [HasEqualizers 𝒞] (X : 𝒞) :
   unique because `term` is unique in `A`. -/
 
 /-- **§1.547 — the terminal object of `Â`** is `(1, ∅)`: the terminator of `A` with no factors. -/
-def pairTerminal : PairObj 𝒞 where
+@[expose] public def pairTerminal : PairObj 𝒞 where
   A := HasTerminal.one
   F := []
   wsupp := by intro p hp; exact absurd hp (List.not_mem_nil)
   distinct := by intro r hr; exact absurd hr (List.not_mem_nil)
 
 /-- The unique `Â`-morphism `X → (1,∅)`: underlying `term`, compatibility vacuous (`F = ∅`). -/
-def pairToTerminal (X : PairObj 𝒞) : PairHom X pairTerminal where
+@[expose] public def pairToTerminal (X : PairObj 𝒞) : PairHom X pairTerminal where
   g := term X.A
   compat _ hp := absurd hp (List.not_mem_nil)
 
 /-- **§1.547 — `Â` has a terminal object** `(1,∅)`.  Uniqueness of `X → (1,∅)` is uniqueness of
     `X.A → 1` in `A` (`term_uniq`) lifted through `PairHom.ext` (a `PairHom` is its `.g`). -/
-instance pairHasTerminal : HasTerminal (PairObj 𝒞) where
+@[expose] public instance pairHasTerminal : HasTerminal (PairObj 𝒞) where
   one := pairTerminal
   trm X := pairToTerminal X
   uniq f g := PairHom.ext (term_uniq f.g g.g)
@@ -2512,7 +2514,7 @@ variable [HasEqualizers 𝒞] [DecidableEq 𝒞]
 /-- The CROSS constraint list for `(A₁,F₁)×(A₂,F₂)`: pairs `(fst≫f, snd≫f')` over `A₁×A₂` for
     `f∈F₁`, `f'∈F₂` whose targets agree (`f.1 = f'.1`), packaged for `wideEq`.  Built by a double
     `filterMap`, the target match decided by `DecidableEq 𝒞`. -/
-def crossConstraints (X Y : PairObj 𝒞) :
+@[expose] public def crossConstraints (X Y : PairObj 𝒞) :
     List (Σ B : 𝒞, (prod X.A Y.A ⟶ B) × (prod X.A Y.A ⟶ B)) :=
   X.F.flatMap (fun f => Y.F.filterMap (fun f' =>
     if h : f.1 = f'.1 then
@@ -2521,20 +2523,20 @@ def crossConstraints (X Y : PairObj 𝒞) :
 
 /-- The product OBJECT `D` of the §1.547 formula: the wide-equalizer of the cross constraints
     inside `A₁×A₂`. -/
-def pairProdD (X Y : PairObj 𝒞) : 𝒞 := (wideEq (prod X.A Y.A) (crossConstraints X Y)).dom
+@[expose] public def pairProdD (X Y : PairObj 𝒞) : 𝒞 := (wideEq (prod X.A Y.A) (crossConstraints X Y)).dom
 
 /-- The subobject `w : D ↪ A₁×A₂`. -/
-def pairProdW (X Y : PairObj 𝒞) : pairProdD X Y ⟶ prod X.A Y.A :=
+@[expose] public def pairProdW (X Y : PairObj 𝒞) : pairProdD X Y ⟶ prod X.A Y.A :=
   (wideEq (prod X.A Y.A) (crossConstraints X Y)).map
 
 /-- `w` is monic. -/
-theorem pairProdW_mono (X Y : PairObj 𝒞) : Monic (pairProdW X Y) :=
+public theorem pairProdW_mono (X Y : PairObj 𝒞) : Monic (pairProdW X Y) :=
   (wideEq (prod X.A Y.A) (crossConstraints X Y)).mono
 
 /-- `w` EQUALIZES every matched cross constraint: for `f∈F₁`, `f'∈F₂` with `f° = f'°` (`hff`),
     `w ≫ fst ≫ f.2 = w ≫ snd ≫ (hff ▸ f'.2)`.  The matched pair is in `crossConstraints` by the
     `dif_pos` branch, and `wideEq.eq` equalizes it. -/
-theorem pairProdW_cross (X Y : PairObj 𝒞) {f : Σ T : 𝒞, X.A ⟶ T} (hf : f ∈ X.F)
+public theorem pairProdW_cross (X Y : PairObj 𝒞) {f : Σ T : 𝒞, X.A ⟶ T} (hf : f ∈ X.F)
     {f' : Σ T : 𝒞, Y.A ⟶ T} (hf' : f' ∈ Y.F) (hff : f.1 = f'.1) :
     pairProdW X Y ≫ fst ≫ f.2 = pairProdW X Y ≫ snd ≫ (hff ▸ f'.2) := by
   have hmem : (⟨f.1, (fst ≫ f.2, snd ≫ (hff ▸ f'.2))⟩ :
@@ -2545,12 +2547,12 @@ theorem pairProdW_cross (X Y : PairObj 𝒞) {f : Σ T : 𝒞, X.A ⟶ T} (hf : 
 
 /-- The factor list `K = {w≫h | h∈H}` of the product object: `w≫fst≫f` for `f∈F₁`, `w≫snd≫f'`
     for `f'∈F₂`. -/
-def pairProdK (X Y : PairObj 𝒞) : List (Σ T : 𝒞, pairProdD X Y ⟶ T) :=
+@[expose] public def pairProdK (X Y : PairObj 𝒞) : List (Σ T : 𝒞, pairProdD X Y ⟶ T) :=
   X.F.map (fun f => ⟨f.1, pairProdW X Y ≫ fst ≫ f.2⟩) ++
   Y.F.map (fun f' => ⟨f'.1, pairProdW X Y ≫ snd ≫ f'.2⟩)
 
 /-- The targets in `K` are well-supported (they are targets of `F₁` or `F₂`). -/
-theorem pairProdK_wsupp (X Y : PairObj 𝒞) : ∀ p ∈ pairProdK X Y, WellSupported p.1 := by
+public theorem pairProdK_wsupp (X Y : PairObj 𝒞) : ∀ p ∈ pairProdK X Y, WellSupported p.1 := by
   intro p hp
   rcases List.mem_append.1 hp with h | h
   · rcases List.mem_map.1 h with ⟨f, hf, he⟩; rw [← he]; exact X.wsupp f hf
@@ -2560,7 +2562,7 @@ theorem pairProdK_wsupp (X Y : PairObj 𝒞) : ∀ p ∈ pairProdK X Y, WellSupp
     factors of `K` with equal target are equal: both in the `F₁`-half (`X.distinct`), both in the
     `F₂`-half (`Y.distinct`), or one of each — the CROSS case, equal because `w` equalizes the cross
     constraint (`pairProdW_cross`).  `w≫fst≫(-)`/`w≫snd≫(-)` transport the factor equalities. -/
-theorem pairProdK_distinct (X Y : PairObj 𝒞) :
+public theorem pairProdK_distinct (X Y : PairObj 𝒞) :
     ∀ r ∈ pairProdK X Y, ∀ r' ∈ pairProdK X Y, ∀ h : r.1 = r'.1, h ▸ r.2 = r'.2 := by
   -- helper: `w≫fst≫(-)` of equal-after-transport factors of `X.F` are equal-after-transport
   have congT : ∀ {B B' : 𝒞} (m : pairProdD X Y ⟶ prod X.A Y.A) (p : X.A ⟶ B) (q : X.A ⟶ B')
@@ -2596,7 +2598,7 @@ theorem pairProdK_distinct (X Y : PairObj 𝒞) :
     exact congT' (pairProdW X Y) f.2 f'.2 h (Y.distinct f hf f' hf' h)
 
 /-- **§1.547 — the product object `(D,K)`** of `(A₁,F₁)` and `(A₂,F₂)` in `Â`. -/
-def pairProdObj (X Y : PairObj 𝒞) : PairObj 𝒞 where
+@[expose] public def pairProdObj (X Y : PairObj 𝒞) : PairObj 𝒞 where
   A := pairProdD X Y
   F := pairProdK X Y
   wsupp := pairProdK_wsupp X Y
@@ -2604,14 +2606,14 @@ def pairProdObj (X Y : PairObj 𝒞) : PairObj 𝒞 where
 
 /-- **§1.547 — first projection** `(D,K) → (A₁,F₁)`, underlying `w≫fst`.  Compatibility: each
     `f∈F₁` has `w≫fst≫f ∈ K` (the `F₁`-half of `K`), with `(w≫fst)≫f = w≫fst≫f`. -/
-def pairProjFst (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) X where
+@[expose] public def pairProjFst (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) X where
   g := pairProdW X Y ≫ fst
   compat p hp := by
     refine ⟨⟨p.1, pairProdW X Y ≫ fst ≫ p.2⟩, ?_, rfl, by rw [Cat.assoc]⟩
     exact List.mem_append.2 (Or.inl (List.mem_map.2 ⟨p, hp, rfl⟩))
 
 /-- **§1.547 — second projection** `(D,K) → (A₂,F₂)`, underlying `w≫snd`. -/
-def pairProjSnd (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) Y where
+@[expose] public def pairProjSnd (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) Y where
   g := pairProdW X Y ≫ snd
   compat p hp := by
     refine ⟨⟨p.1, pairProdW X Y ≫ snd ≫ p.2⟩, ?_, rfl, by rw [Cat.assoc]⟩
@@ -2621,7 +2623,7 @@ def pairProjSnd (X Y : PairObj 𝒞) : PairHom (pairProdObj X Y) Y where
     agreeing after both projections are equal: underlying `α≫(w≫fst) = β≫(w≫fst)` and the `snd`
     analogue give `(α≫w)≫fst = (β≫w)≫fst` and `≫snd`, so `α≫w = β≫w` by joint monicity, then
     `α = β` (`w` monic, `pairProdW_mono`), then `PairHom.ext`. -/
-theorem pairProd_hom_ext {Z X Y : PairObj 𝒞} (a b : PairHom Z (pairProdObj X Y))
+public theorem pairProd_hom_ext {Z X Y : PairObj 𝒞} (a b : PairHom Z (pairProdObj X Y))
     (h₁ : a.comp (pairProjFst X Y) = b.comp (pairProjFst X Y))
     (h₂ : a.comp (pairProjSnd X Y) = b.comp (pairProjSnd X Y)) : a = b := by
   apply PairHom.ext
@@ -2649,12 +2651,12 @@ theorem pairProd_hom_ext {Z X Y : PairObj 𝒞} (a b : PairHom Z (pairProdObj X 
     equal (after transport).  Book §1.547 requires it of every object of `Â`; it is now a FIELD of
     `PairObj` (`PairObj.distinct`), so it always holds — this def is its abbreviation, and the
     §1.547 product pairing below is therefore UNCONDITIONAL. -/
-def PairObj.DistinctTargets (Z : PairObj 𝒞) : Prop :=
+@[expose] public def PairObj.DistinctTargets (Z : PairObj 𝒞) : Prop :=
   ∀ r ∈ Z.F, ∀ r' ∈ Z.F, ∀ h : r.1 = r'.1, h ▸ r.2 = r'.2
 
 /-- The underlying lift `pair a.g b.g` equalizes every cross constraint (matched factors of `X`,`Y`
     pull back to factors of `Z` of equal target, equal by `Hdistinct`). -/
-theorem pairPair_equ {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+public theorem pairPair_equ {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) :
     ∀ q ∈ crossConstraints X Y, pair a.g b.g ≫ q.2.1 = pair a.g b.g ≫ q.2.2 := by
   intro q hq
@@ -2676,11 +2678,11 @@ theorem pairPair_equ {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
   · rw [dif_neg hff] at hq3; exact absurd hq3 (by simp)
 
 /-- The lift map `d : Z.A → D` of `pair a.g b.g` through the subobject `w`. -/
-def pairPairMap {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+@[expose] public def pairPairMap {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) : Z.A ⟶ pairProdD X Y :=
   (wideEq (prod X.A Y.A) (crossConstraints X Y)).lift (pair a.g b.g) (pairPair_equ Hdistinct a b)
 
-theorem pairPairMap_w {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+public theorem pairPairMap_w {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) :
     pairPairMap Hdistinct a b ≫ pairProdW X Y = pair a.g b.g :=
   (wideEq (prod X.A Y.A) (crossConstraints X Y)).fac (pair a.g b.g) (pairPair_equ Hdistinct a b)
@@ -2688,7 +2690,7 @@ theorem pairPairMap_w {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
 /-- **§1.547 — the product PAIRING** `⟨a,b⟩ : Z → (D,K)` (data, choice-free), under the book's
     target-distinctness of `Z`.  Underlying `pair a.g b.g` factored through `w`; the compatibility
     is the two half-compatibilities of `a`,`b`. -/
-def pairPair {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+@[expose] public def pairPair {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) : PairHom Z (pairProdObj X Y) where
   g := pairPairMap Hdistinct a b
   compat := by
@@ -2710,14 +2712,14 @@ def pairPair {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
         rw [← Cat.assoc _ (pairProdW X Y), hd, ← Cat.assoc, snd_pair]
       rw [this, hre']
 
-theorem pairPair_fst {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+public theorem pairPair_fst {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) :
     (pairPair Hdistinct a b).comp (pairProjFst X Y) = a :=
   PairHom.ext (by
     show (pairPairMap Hdistinct a b ≫ pairProdW X Y ≫ fst) = a.g
     rw [← Cat.assoc, pairPairMap_w, fst_pair])
 
-theorem pairPair_snd {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
+public theorem pairPair_snd {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     (a : PairHom Z X) (b : PairHom Z Y) :
     (pairPair Hdistinct a b).comp (pairProjSnd X Y) = b :=
   PairHom.ext (by
@@ -2744,7 +2746,7 @@ theorem pairProd_lift {Z X Y : PairObj 𝒞} (Hdistinct : Z.DistinctTargets)
     formula (`pairProdObj`/`pairProj…`); `pair` is the lift `pairPair` fed the object's own
     `distinct` field; `pair_uniq` is `pairProd_hom_ext`.  No extra typeclass — distinctness rides on
     every `PairObj`. -/
-instance pairHasBinaryProducts [HasEqualizers 𝒞] [DecidableEq 𝒞] :
+@[expose] public instance pairHasBinaryProducts [HasEqualizers 𝒞] [DecidableEq 𝒞] :
     HasBinaryProducts (PairObj 𝒞) where
   prod := pairProdObj
   fst {X Y} := pairProjFst X Y
@@ -2774,14 +2776,14 @@ variable [HasEqualizers 𝒞]
 
 /-- The factor set of the §1.547 equalizer object: `F` pulled back along the underlying equalizer
     `e = eqMap a.g b.g`.  `{⟨f°, e≫f⟩ | f ∈ X.F}`. -/
-def pairEqK {X Y : PairObj 𝒞} (a b : PairHom X Y) : List (Σ T : 𝒞, eqObj a.g b.g ⟶ T) :=
+@[expose] public def pairEqK {X Y : PairObj 𝒞} (a b : PairHom X Y) : List (Σ T : 𝒞, eqObj a.g b.g ⟶ T) :=
   X.F.map (fun f => ⟨f.1, eqMap a.g b.g ≫ f.2⟩)
 
-theorem pairEqK_wsupp {X Y : PairObj 𝒞} (a b : PairHom X Y) :
+public theorem pairEqK_wsupp {X Y : PairObj 𝒞} (a b : PairHom X Y) :
     ∀ p ∈ pairEqK a b, WellSupported p.1 := by
   intro p hp; rcases List.mem_map.1 hp with ⟨f, hf, he⟩; rw [← he]; exact X.wsupp f hf
 
-theorem pairEqK_distinct {X Y : PairObj 𝒞} (a b : PairHom X Y) :
+public theorem pairEqK_distinct {X Y : PairObj 𝒞} (a b : PairHom X Y) :
     ∀ r ∈ pairEqK a b, ∀ r' ∈ pairEqK a b, ∀ h : r.1 = r'.1, h ▸ r.2 = r'.2 := by
   have congE : ∀ {B B' : 𝒞} (p : X.A ⟶ B) (q : X.A ⟶ B') (h : B = B'), h ▸ p = q →
       (h ▸ (eqMap a.g b.g ≫ p) : eqObj a.g b.g ⟶ B') = eqMap a.g b.g ≫ q := by
@@ -2792,7 +2794,7 @@ theorem pairEqK_distinct {X Y : PairObj 𝒞} (a b : PairHom X Y) :
   exact congE f.2 f'.2 h (X.distinct f hf f' hf' h)
 
 /-- The §1.547 equalizer OBJECT `(E, e^*F)` of `a, b : X → Y`. -/
-def pairEqObj {X Y : PairObj 𝒞} (a b : PairHom X Y) : PairObj 𝒞 where
+@[expose] public def pairEqObj {X Y : PairObj 𝒞} (a b : PairHom X Y) : PairObj 𝒞 where
   A := eqObj a.g b.g
   F := pairEqK a b
   wsupp := pairEqK_wsupp a b
@@ -2800,25 +2802,25 @@ def pairEqObj {X Y : PairObj 𝒞} (a b : PairHom X Y) : PairObj 𝒞 where
 
 /-- The equalizer `PairHom` `(E,e^*F) → X`, underlying `e = eqMap a.g b.g`.  Compat: `f ∈ X.F` maps
     to `⟨f°, e≫f⟩ ∈ e^*F`. -/
-def pairEqMap {X Y : PairObj 𝒞} (a b : PairHom X Y) : PairHom (pairEqObj a b) X where
+@[expose] public def pairEqMap {X Y : PairObj 𝒞} (a b : PairHom X Y) : PairHom (pairEqObj a b) X where
   g := eqMap a.g b.g
   compat p hp := ⟨⟨p.1, eqMap a.g b.g ≫ p.2⟩, List.mem_map.2 ⟨p, hp, rfl⟩, rfl, rfl⟩
 
 /-- The equalizer `PairHom` equalizes `a, b` (its underlying `e` does, `eqMap_eq`). -/
-theorem pairEqMap_eq {X Y : PairObj 𝒞} (a b : PairHom X Y) :
+public theorem pairEqMap_eq {X Y : PairObj 𝒞} (a b : PairHom X Y) :
     (pairEqMap a b).comp a = (pairEqMap a b).comp b :=
   PairHom.ext (by show eqMap a.g b.g ≫ a.g = eqMap a.g b.g ≫ b.g; exact eqMap_eq a.g b.g)
 
 /-- The underlying equalizer condition of a `Â`-cone `k : Z → X` (`k.comp a = k.comp b` gives
     `k.g ≫ a.g = k.g ≫ b.g`). -/
-theorem pairEqLift_hyp {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} {k : PairHom Z X}
+public theorem pairEqLift_hyp {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} {k : PairHom Z X}
     (hk : k.comp a = k.comp b) : k.g ≫ a.g = k.g ≫ b.g := by
   have := congrArg PairHom.g hk; simpa [PairHom.comp] using this
 
 /-- The lift of a cone `(k : Z → X` with `k.comp a = k.comp b)` through the §1.547 equalizer.
     Underlying `eqLift` of `k.g`; compat lifted from `k`'s compat (a factor `⟨f°,e≫f⟩ ∈ e^*F` is hit
     by `k`'s factor for `f`, since `(eqLift k.g)≫e≫f = k.g≫f`). -/
-def pairEqLift {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
+@[expose] public def pairEqLift {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
     (hk : k.comp a = k.comp b) : PairHom Z (pairEqObj a b) where
   g := eqLift a.g b.g k.g (pairEqLift_hyp a b hk)
   compat p hp := by
@@ -2833,13 +2835,13 @@ def pairEqLift {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : 
       rw [← Cat.assoc, hfac]
     rw [this, hqe]
 
-theorem pairEqLift_fac {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
+public theorem pairEqLift_fac {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
     (hk : k.comp a = k.comp b) : (pairEqLift a b k hk).comp (pairEqMap a b) = k :=
   PairHom.ext (by
     show eqLift a.g b.g k.g (pairEqLift_hyp a b hk) ≫ eqMap a.g b.g = k.g
     exact eqLift_fac a.g b.g k.g (pairEqLift_hyp a b hk))
 
-theorem pairEqLift_uniq {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
+public theorem pairEqLift_uniq {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj 𝒞} (k : PairHom Z X)
     (hk : k.comp a = k.comp b) (m : PairHom Z (pairEqObj a b))
     (hm : m.comp (pairEqMap a b) = k) : m = pairEqLift a b k hk :=
   PairHom.ext (by
@@ -2848,7 +2850,7 @@ theorem pairEqLift_uniq {X Y : PairObj 𝒞} (a b : PairHom X Y) {Z : PairObj �
 
 /-- **§1.547 — `Â` HAS EQUALIZERS** (forgetful functor creates them).  The equalizer cone is
     `(E,e^*F)` with map `pairEqMap`; universal property from the underlying equalizer in `A`. -/
-instance pairHasEqualizers : HasEqualizers (PairObj 𝒞) where
+@[expose] public instance pairHasEqualizers : HasEqualizers (PairObj 𝒞) where
   eq _ _ a b :=
     { cone := ⟨pairEqObj a b, pairEqMap a b, pairEqMap_eq a b⟩
       lift := fun c => pairEqLift a b c.map c.eq
@@ -2858,7 +2860,7 @@ instance pairHasEqualizers : HasEqualizers (PairObj 𝒞) where
 /-- **§1.547 — `Â` HAS PULLBACKS** (§1.432: terminal + products + equalizers ⟹ pullbacks).  The
     pullback of `f, g` is the equalizer of `fst≫f`, `snd≫g` on the product — built once and for all
     by `products_equalizers_implies_pullbacks` on the `Â`-level finite limits. -/
-instance pairHasPullbacks [DecidableEq 𝒞] : HasPullbacks (PairObj 𝒞) where
+@[expose] public instance pairHasPullbacks [DecidableEq 𝒞] : HasPullbacks (PairObj 𝒞) where
   has f g := products_equalizers_implies_pullbacks f g
 
 /-! ### §1.547  Covers in `Â` and the pre-regular structure
@@ -4042,11 +4044,11 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     `f.2 : A → f.1` of `F` into the product of their targets `F.map (·.1)`.  Empty list ↦ the
     unique map to `∏[] = 1`; `p :: F ↦ pair p.2 (rec F)`.  This is the underlying arrow of the
     slice object an object of `Â` determines over the product of its factor targets. -/
-def factorTuple {A : 𝒞} : ∀ (F : List (Σ T : 𝒞, A ⟶ T)), A ⟶ listProd (F.map (·.1))
+@[expose] public def factorTuple {A : 𝒞} : ∀ (F : List (Σ T : 𝒞, A ⟶ T)), A ⟶ listProd (F.map (·.1))
   | [] => term A
   | p :: F => pair p.2 (factorTuple F)
 
-@[simp] theorem factorTuple_nil {A : 𝒞} :
+@[simp] public theorem factorTuple_nil {A : 𝒞} :
     factorTuple ([] : List (Σ T : 𝒞, A ⟶ T)) = term A := rfl
 
 @[simp] theorem factorTuple_cons {A : 𝒞} (p : Σ T : 𝒞, A ⟶ T)
@@ -4058,7 +4060,7 @@ def factorTuple {A : 𝒞} : ∀ (F : List (Σ T : 𝒞, A ⟶ T)), A ⟶ listPr
     recorded factor's arrow at the SAME position, transported across the target identity
     `h : (F.map (·.1)).get k = (F.get k').1` (with `k'` the matching index into `F`).  This is the
     DEFINING property of the factor map: it packages every factor as a coordinate of `∏(F°)`. -/
-theorem factorTuple_proj {A : 𝒞} :
+public theorem factorTuple_proj {A : 𝒞} :
     ∀ (F : List (Σ T : 𝒞, A ⟶ T)) (n : Nat)
       (hk : n < (F.map (·.1)).length) (hk' : n < F.length)
       (h : (F.map (·.1)).get ⟨n, hk⟩ = (F.get ⟨n, hk'⟩).1),
@@ -4076,17 +4078,17 @@ theorem factorTuple_proj {A : 𝒞} :
 /-- **§1.547 — the factor map of an object of `Â`.**  The `factorTuple` of `X.F`, into the product
     of `X.targets = X.F.map (·.1)`.  This is the underlying `𝒞`-arrow of the slice object `X`
     determines over `∏(X.targets)`. -/
-def pairFactorMap (X : PairObj 𝒞) : X.A ⟶ listProd X.targets := factorTuple X.F
+@[expose] public def pairFactorMap (X : PairObj 𝒞) : X.A ⟶ listProd X.targets := factorTuple X.F
 
 /-- **§1.547 — the SLICE OBJECT an object of `Â` determines.**  `(A, F) ↦ ⟨A, A → ∏(F°)⟩`, an
     object of the product-slice `A/(∏ X.targets)`.  This is the OBJECT part of the §1.547 bridge
     `Â → Σ U, A/(∏U)`: an object of `Â` is exactly a slice object over the product of its factor
     targets, the factor map tupling all recorded factors. -/
-def pairSliceObj (X : PairObj 𝒞) : Over (listProd X.targets) :=
+@[expose] public def pairSliceObj (X : PairObj 𝒞) : Over (listProd X.targets) :=
   ⟨X.A, pairFactorMap X⟩
 
 @[simp] theorem pairSliceObj_dom (X : PairObj 𝒞) : (pairSliceObj X).dom = X.A := rfl
-@[simp] theorem pairSliceObj_hom (X : PairObj 𝒞) :
+@[simp] public theorem pairSliceObj_hom (X : PairObj 𝒞) :
     (pairSliceObj X).hom = pairFactorMap X := rfl
 
 /-- **§1.547 — the factor map of `X` recovers every factor of `X` by projection.**  Specialisation
@@ -4094,7 +4096,7 @@ def pairSliceObj (X : PairObj 𝒞) : Over (listProd X.targets) :=
     projection of `∏(X.targets)` recovers the `k`-th factor's arrow `(X.F.get k').2` (transported
     across the target identity).  This is what makes `pairSliceObj X` a faithful record of `X`: its
     structure map encodes ALL of `X`'s factors. -/
-theorem pairFactorMap_proj (X : PairObj 𝒞) (n : Nat)
+public theorem pairFactorMap_proj (X : PairObj 𝒞) (n : Nat)
     (hk : n < X.targets.length) (hk' : n < X.F.length)
     (h : X.targets.get ⟨n, hk⟩ = (X.F.get ⟨n, hk'⟩).1) :
     pairFactorMap X ≫ listProdProj X.targets ⟨n, hk⟩ = h ▸ (X.F.get ⟨n, hk'⟩).2 :=
@@ -4117,7 +4119,7 @@ variable [DecidableEq 𝒞]
     `∏l → T` (the §1.547 base-restriction coordinate).  Decidable analogue of `findArrow`
     (which searches a FACTOR list for an arrow); here we search a list of *objects* and return
     the projection `listProdProj l k` at the found position. -/
-def findProj (T : 𝒞) :
+@[expose] public def findProj (T : 𝒞) :
     ∀ (l : List 𝒞), (∃ S ∈ l, S = T) → (listProd l ⟶ T)
   | [], hex => absurd hex (by simp)
   | S :: l, hex => by
@@ -4133,7 +4135,7 @@ def findProj (T : 𝒞) :
     Each `l₂`-coordinate is the `findProj` of that target into `l₁`.  This is the product projection
     the §1.547 directed transition `A/(∏V) → A/(∏U)` base-changes along (for `V = l₂ ⊆ l₁ = U`),
     built constructively by decidable target search instead of by choice over the subset `Prop`. -/
-def listProdRestrict : ∀ (l₁ l₂ : List 𝒞), (∀ T ∈ l₂, T ∈ l₁) → (listProd l₁ ⟶ listProd l₂)
+@[expose] public def listProdRestrict : ∀ (l₁ l₂ : List 𝒞), (∀ T ∈ l₂, T ∈ l₁) → (listProd l₁ ⟶ listProd l₂)
   | _, [], _ => term _
   | l₁, T :: l₂, h =>
       pair (findProj T l₁ ⟨T, h T (List.mem_cons_self), rfl⟩)
@@ -4143,7 +4145,7 @@ def listProdRestrict : ∀ (l₁ l₂ : List 𝒞), (∀ T ∈ l₂, T ∈ l₁)
     `listProdRestrict l₁ l₂ h ≫ listProdProj l₂ k = findProj (l₂.get k) l₁ _`: the restriction
     really does project `∏l₁` onto each `l₂`-coordinate via the searched-for `l₁`-coordinate.
     Structural induction on `l₂`/`k` (parallel to `collReconstruct_proj`). -/
-theorem listProdRestrict_proj :
+public theorem listProdRestrict_proj :
     ∀ (l₁ l₂ : List 𝒞) (h : ∀ T ∈ l₂, T ∈ l₁) (k : Fin l₂.length),
       listProdRestrict l₁ l₂ h ≫ listProdProj l₂ k
         = findProj (l₂.get k) l₁ ⟨l₂.get k, h (l₂.get k) (l₂.get_mem k), rfl⟩
@@ -4163,7 +4165,7 @@ theorem listProdRestrict_proj :
     `PairObj.distinct` all `F`-factors of a fixed target agree, so this pins the value.  This is the
     KEY morphism-half computation: it lets a `PairHom` (whose compat matches Y-factors to X-factors of
     the same target) commute with the base restriction `listProdRestrict X° Y°`. -/
-theorem factorTuple_findProj {A : 𝒞} (T : 𝒞) :
+public theorem factorTuple_findProj {A : 𝒞} (T : 𝒞) :
     ∀ (F : List (Σ S : 𝒞, A ⟶ S)) (hex : ∃ S ∈ F.map (·.1), S = T),
       ∃ f ∈ F, ∃ h : f.1 = T, factorTuple F ≫ findProj T (F.map (·.1)) hex = h ▸ f.2
   | [], hex => absurd hex (by simp)
@@ -4203,7 +4205,7 @@ theorem factorTuple_findProj {A : 𝒞} (T : 𝒞) :
     (`factorTuple_proj`) and the RHS is the searched `X`-factor of the same target
     (`listProdRestrict_proj` + `factorTuple_findProj`); compat matches them, and `X.distinct` pins the
     searched factor to compat's.  This is the choice-free morphism half of `Â → Σ U, A/(∏U)`. -/
-theorem pairHom_commutes_restrict [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : PairHom X Y) :
+public theorem pairHom_commutes_restrict [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : PairHom X Y) :
     m.g ≫ pairFactorMap Y
       = pairFactorMap X ≫ listProdRestrict X.targets Y.targets (pairHom_targets_subset m) := by
   apply listProd_hom_ext Y.targets
@@ -4253,7 +4255,7 @@ theorem pairHom_commutes_restrict [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : 
     transition (here the strict reindexing `reindexObj`, whose `r = listProdRestrict X° Y°` is the
     base projection `∏X° → ∏Y°` built by decidable search).  It packages the full bridge object+map
     over the common base `∏Y.targets`. -/
-def pairHomToSlice [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : PairHom X Y) :
+@[expose] public def pairHomToSlice [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : PairHom X Y) :
     OverHom (reindexObj (listProdRestrict X.targets Y.targets (pairHom_targets_subset m))
               (pairSliceObj X)) (pairSliceObj Y) :=
   ⟨m.g, by
@@ -4269,7 +4271,7 @@ def pairHomToSlice [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (m : PairHom X Y) :
     `PairHom.compat` obligation.  Proof: project the commuting square at each `Y°`-coordinate; the LHS
     is `φ.f ≫ (Y-factor)` (`factorTuple_proj`), the RHS is the searched `X`-factor of the SAME target
     (`listProdRestrict_proj` + `factorTuple_findProj`), giving the matched `q ∈ X.F`. -/
-def pairHomOfSlice [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (hsub : ∀ T ∈ Y.targets, T ∈ X.targets)
+@[expose] public def pairHomOfSlice [HasPullbacks 𝒞] {X Y : PairObj 𝒞} (hsub : ∀ T ∈ Y.targets, T ∈ X.targets)
     (φ : OverHom (reindexObj (listProdRestrict X.targets Y.targets hsub) (pairSliceObj X))
                  (pairSliceObj Y)) : PairHom X Y where
   g := φ.f
@@ -4442,7 +4444,7 @@ variable [HasTerminal 𝒞] [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [Pullba
     pair g id ≫ snd = id`, using `m.w` and `(sliceEmbedObj P A).hom = snd`.)  Sorry-free —
     this is the bookkeeping that turns the slice well-pointedness goal into the genuine
     downstairs §1.546 statement. -/
-theorem sliceFactorPoint_lift_iff {P A : 𝒞} {D : Over P}
+public theorem sliceFactorPoint_lift_iff {P A : 𝒞} {D : Over P}
     (m : D ⟶ sliceEmbedObj P A) (g : P ⟶ A) :
     (∃ y : overTerm P ⟶ D, y ≫ m = sliceFactorPoint A g)
       ↔ ∃ s : P ⟶ D.dom, s ≫ m.f = pair g (Cat.id P) := by
@@ -4474,7 +4476,7 @@ theorem sliceFactorPoint_lift_iff {P A : 𝒞} {D : Over P}
     is `snd ≫ i = (the domain structure map)`.  Monic in the slice because its underlying arrow is
     monic (`i` monic ⟹ `snd ≫ i`… in fact `pair fst (snd ≫ i)` is split-monic via `pair fst (snd ≫
     i) ≫ pair fst snd`-style retract; we record monicity directly from joint-monicity of fst/snd). -/
-def prodFormMono {A P B' : 𝒞} (i : B' ⟶ P) :
+@[expose] public def prodFormMono {A P B' : 𝒞} (i : B' ⟶ P) :
     OverHom (⟨prod A B', snd ≫ i⟩ : Over P) (sliceEmbedObj P A) :=
   ⟨pair fst (snd ≫ i), by
     show pair (fst : prod A B' ⟶ A) (snd ≫ i) ≫ snd = snd ≫ i
@@ -4486,7 +4488,7 @@ def prodFormMono {A P B' : 𝒞} (i : B' ⟶ P) :
     `s ≫ snd : P → B'` a section of `i` (`(s ≫ snd) ≫ i = id_P`), making `i` a split epi; being
     monic, `i` would be iso (`monic_cover_iso` via `split_epi_cover`) — contradicting properness.
     This is the core of "AB' ↪ AB does not allow the generic point" (§1.546). -/
-theorem prodFormMono_misses_point {A P B' : 𝒞} (i : B' ⟶ P)
+public theorem prodFormMono_misses_point {A P B' : 𝒞} (i : B' ⟶ P)
     (hi_mono : Monic i) (hi_proper : ¬ IsIso i) (g : P ⟶ A) :
     ¬ ∃ s : P ⟶ prod A B', s ≫ (prodFormMono (A := A) i).f = pair g (Cat.id P) := by
   rintro ⟨s, hs⟩
@@ -4507,7 +4509,7 @@ theorem prodFormMono_misses_point {A P B' : 𝒞} (i : B' ⟶ P)
     proper base monic `i : B' ↪ P`) misses the slice point `sliceFactorPoint A g` in `Over P`, for
     every `g : P → A`.  This is `prodFormMono_misses_point` lifted through `sliceFactorPoint_lift_iff`
     — the slice-level "AB' ↪ AB does not allow the generic point". -/
-theorem prodFormMono_misses_slicePoint {A P B' : 𝒞} (i : B' ⟶ P)
+public theorem prodFormMono_misses_slicePoint {A P B' : 𝒞} (i : B' ⟶ P)
     (hi_mono : Monic i) (hi_proper : ¬ IsIso i) (g : P ⟶ A) :
     ¬ ∃ y : overTerm P ⟶ (⟨prod A B', snd ≫ i⟩ : Over P),
         y ≫ prodFormMono (A := A) i = sliceFactorPoint A g := by
@@ -4519,7 +4521,7 @@ theorem prodFormMono_misses_slicePoint {A P B' : 𝒞} (i : B' ⟶ P)
     jointly monic and `i` is monic (`snd ≫ i` cancels through `i`); slice monicity then follows by
     `sigma_reflects_mono`.  (Properness of `id_A × i` would need `A` well-supported and is not
     needed below: the escape `prodFormMono_misses_point` already holds for any `g`.) -/
-theorem prodFormMono_mono {A P B' : 𝒞} (i : B' ⟶ P) (hi_mono : Monic i) :
+public theorem prodFormMono_mono {A P B' : 𝒞} (i : B' ⟶ P) (hi_mono : Monic i) :
     OverMono (prodFormMono (A := A) i) := by
   have hf_mono : Monic (pair (fst : prod A B' ⟶ A) (snd ≫ i)) := by
     intro W u v huv
@@ -4615,7 +4617,7 @@ theorem sliceEmbed_factor_wellPointed (U : List 𝒞)
     universally-quantified "no proper monic allows the generic point" is refuted: Freyd's §1.546
     claim is specifically about subobjects of the FORM `AB' ↪ AB` (product monics `id_A × (B'↪B)`),
     NOT arbitrary slice monics.  See the note on `genericPoint_escapes_proper`. -/
-theorem graph_satisfies_hyps (U : List 𝒞) (k : Fin U.length) :
+public theorem graph_satisfies_hyps (U : List 𝒞) (k : Fin U.length) :
     ∃ (m : (⟨listProd U, Cat.id (listProd U)⟩ : Over (listProd U))
             ⟶ sliceEmbedObj (listProd U) (U.get k)),
         m.f = pair (listProdProj U k) (Cat.id (listProd U)) ∧ Monic m ∧
@@ -4637,5 +4639,3 @@ end WellPointed
 
 end Freyd
 
-#print axioms Freyd.listProdAppendInv_projL
-#print axioms Freyd.listProdAppendInv_projR

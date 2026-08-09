@@ -1,9 +1,11 @@
-import Freyd.S1_10
-import Freyd.S2_10
-import Freyd.S2_20
-import Freyd.S2_30
-import Freyd.S2_40
-import Freyd.S2_147_MapCat
+module
+
+public import Freyd.S1_10
+public import Freyd.S2_10
+public import Freyd.S2_20
+public import Freyd.S2_30
+public import Freyd.S2_40
+public import Freyd.S2_147_MapCat
 
 universe v u
 
@@ -30,7 +32,7 @@ namespace Freyd.Alg
   Different identity morphisms are never identified. -/
 
 /-- A CONGRUENCE on an allegory (§2.5). -/
-structure Congruence (𝒜 : Type u) [Allegory 𝒜] where
+public structure Congruence (𝒜 : Type u) [Allegory 𝒜] where
   rel {a b : 𝒜} (R S : a ⟶ b) : Prop
   refl {a b : 𝒜} (R : a ⟶ b) : rel R R
   symm {a b : 𝒜} {R S : a ⟶ b} (h : rel R S) : rel S R
@@ -64,7 +66,7 @@ section ClosedQuotient
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- The CLOSED QUOTIENT relation with respect to U : T → T (§2.522). -/
-def closedQuotientRel {a b T : 𝒜} (U : T ⟶ T) (p_a : a ⟶ T) (p_b : b ⟶ T) (R S : a ⟶ b) : Prop :=
+@[expose] public def closedQuotientRel {a b T : 𝒜} (U : T ⟶ T) (p_a : a ⟶ T) (p_b : b ⟶ T) (R S : a ⟶ b) : Prop :=
   R ∪ (p_a ≫ U ≫ p_b°) = S ∪ (p_a ≫ U ≫ p_b°)
 
 end ClosedQuotient
@@ -79,7 +81,7 @@ section Amenable
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- An AMENABLE CONGRUENCE (§2.53). -/
-structure AmenableCongruence (𝒜 : Type u) [DistributiveAllegory 𝒜] where
+public structure AmenableCongruence (𝒜 : Type u) [DistributiveAllegory 𝒜] where
   cong : Congruence 𝒜
   union_congr {a b : 𝒜} {R S R' S' : a ⟶ b} (hR : cong.rel R R') (hS : cong.rel S S') :
     cong.rel (R ∪ S) (R' ∪ S')
@@ -89,11 +91,11 @@ structure AmenableCongruence (𝒜 : Type u) [DistributiveAllegory 𝒜] where
 
 /-- Every morphism is below the largest element of its class: `X ⊑ X⁺` (reflexivity into
     `largest_max`). -/
-theorem self_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (X : a ⟶ b) :
+public theorem self_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (X : a ⟶ b) :
     X ⊑ amen.largest X := amen.largest_max (amen.cong.refl X)
 
 /-- §2.531: If R ⊑ S, then R⁺ ⊑ S⁺. -/
-theorem amenable_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
+public theorem amenable_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
     amen.largest R ⊑ amen.largest S := by
   -- R ⊑ S implies R ∪ S = S
   have h_union : R ∪ S = S := (le_iff_union_eq_left R S).mp h
@@ -113,7 +115,7 @@ theorem amenable_le_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} {R S :
   exact le_trans h_le_union hX
 
 /-- §2.532: (R ∩ S)⁺ = R⁺ ∩ S⁺. -/
-theorem amenable_inter_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
+public theorem amenable_inter_largest (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
     amen.largest (R ∩ S) = (amen.largest R) ∩ (amen.largest S) := by
   apply le_antisymm
   · -- largest(R∩S) ⊑ largest R ∩ largest S
@@ -147,7 +149,7 @@ theorem amenable_union_largest_le (amen : AmenableCongruence 𝒜) {a b : 𝒜} 
 
 /-- The largest-in-class operator ⁺ depends only on the congruence class:
     if R ≡ S then R⁺ = S⁺.  (Used implicitly throughout §2.533–2.535.) -/
-theorem amenable_largest_class_invariant (amen : AmenableCongruence 𝒜) {a b : 𝒜}
+public theorem amenable_largest_class_invariant (amen : AmenableCongruence 𝒜) {a b : 𝒜}
     {R S : a ⟶ b} (h : amen.cong.rel R S) : amen.largest R = amen.largest S := by
   apply le_antisymm
   · -- Goal: R⁺ ⊑ S⁺.  S ≡ R and R ≡ R⁺, so S ≡ R⁺; largest_max gives R⁺ ⊑ S⁺.
@@ -172,7 +174,7 @@ section QuotientConstruction
 variable {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜)
 
 /-- The setoid on hom-sets induced by a congruence (§2.5). -/
-def congSetoid {a b : 𝒜} : Setoid (a ⟶ b) where
+@[expose] public def congSetoid {a b : 𝒜} : Setoid (a ⟶ b) where
   r := C.rel
   iseqv := ⟨C.refl, C.symm, C.trans⟩
 
@@ -311,7 +313,7 @@ end BooleanCong
 
 /-- Dual distributivity `(R ∩ S) ∪ K = (R ∪ K) ∩ (S ∪ K)`, derived from
     `inter_union_distrib` and absorption (standard distributive-lattice fact). -/
-private theorem union_inter_distrib {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜}
+public theorem union_inter_distrib {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜}
     (R S K : a ⟶ b) : (R ∩ S) ∪ K = (R ∪ K) ∩ (S ∪ K) := by
   -- Work from the RHS: (R∪K)∩(S∪K) = ((R∪K)∩S) ∪ ((R∪K)∩K).
   rw [DistributiveAllegory.inter_union_distrib (R ∪ K) S K]
@@ -343,7 +345,7 @@ private theorem union_inter_distrib {𝒜 : Type u} [DistributiveAllegory 𝒜] 
     which in the unitary context follows from the maximality of the unit projections
     `R ≫ p b ⊑ p a` together with `U ≫ U ⊑ U`. They are the genuine content of the
     book's `K = R⁺` claim, stated here as the precise proof obligations. -/
-def closedQuotientRel_is_congruence {𝒜 : Type u} [DistributiveAllegory 𝒜]
+@[expose] public def closedQuotientRel_is_congruence {𝒜 : Type u} [DistributiveAllegory 𝒜]
     {T : 𝒜} (U : T ⟶ T) (p : ∀ (a : 𝒜), a ⟶ T) (hU : U° = U)
     (hL : ∀ {a b c : 𝒜} (R : a ⟶ b),
       R ≫ (p b ≫ U ≫ (p c)°) ⊑ p a ≫ U ≫ (p c)°)
@@ -445,7 +447,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- §2.534: T⁺S⁺ ⊑ (TS)⁺.
     Proof: T ≡ T⁺ and S ≡ S⁺, so T⁺S⁺ ≡ TS by comp_congr; then largest_max. -/
-theorem largest_comp_le (amen : AmenableCongruence 𝒜) {a b c : 𝒜} (T : a ⟶ b) (S : b ⟶ c) :
+public theorem largest_comp_le (amen : AmenableCongruence 𝒜) {a b c : 𝒜} (T : a ⟶ b) (S : b ⟶ c) :
     amen.largest T ≫ amen.largest S ⊑ amen.largest (T ≫ S) := by
   -- largest_rel T : cong.rel T (largest T), and similarly for S
   -- comp_congr gives: cong.rel (T ≫ S) (largest T ≫ largest S)
@@ -456,7 +458,7 @@ theorem largest_comp_le (amen : AmenableCongruence 𝒜) {a b c : 𝒜} (T : a �
 
 /-- §2.534: (S⁺)° ⊑ (S°)⁺.
     Proof: S ≡ S⁺ ⟹ S° ≡ (S⁺)°; apply largest_max. -/
-theorem largest_recip_le (amen : AmenableCongruence 𝒜) {a b : 𝒜} (S : a ⟶ b) :
+public theorem largest_recip_le (amen : AmenableCongruence 𝒜) {a b : 𝒜} (S : a ⟶ b) :
     (amen.largest S)° ⊑ amen.largest (S°) := by
   -- largest_rel S : cong.rel S (largest S)
   -- recip_congr gives: cong.rel (S°) ((largest S)°)
@@ -742,13 +744,13 @@ namespace Freyd.Alg
 /-- §2.5  The QUOTIENT ALLEGORY `𝒜/C`: same objects as `𝒜`, homs = congruence
     classes.  (Body ignores `_C`; the parameter is carried only to key the
     instances below.) -/
-def QuotAllegory (𝒜 : Type u) [Allegory 𝒜] (_C : Congruence 𝒜) : Type u := 𝒜
+@[expose] public def QuotAllegory (𝒜 : Type u) [Allegory 𝒜] (_C : Congruence 𝒜) : Type u := 𝒜
 
 /-! ## §2.5  Category structure: hom-classes under congruence -/
 
 /-- §2.5  `Cat (𝒜/C)`: `Hom a b = Quotient (congSetoid C)`, identity `[1]`,
     composition the lift of `≫` (well-defined by `C.comp_congr`). -/
-instance QuotAllegory.instCat {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
+@[expose] public instance QuotAllegory.instCat {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
     Cat (QuotAllegory 𝒜 C) where
   Hom a b := Quotient (congSetoid C (a := a) (b := b))
   id a := Quotient.mk (congSetoid C) (@Cat.id 𝒜 _ a)
@@ -773,7 +775,7 @@ instance QuotAllegory.instCat {𝒜 : Type u} [Allegory 𝒜] (C : Congruence �
 /-- §2.5  `Allegory (𝒜/C)`: `[R]° = [R°]`, `[R] ∩ [S] = [R ∩ S]` (well-defined
     by `C.recip_congr` / `C.inter_congr`).  Every allegory axiom is the lift of
     `𝒜`'s — proved by inducting on the class representatives down to `𝒜`'s law. -/
-instance QuotAllegory.instAllegory {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
+@[expose] public instance QuotAllegory.instAllegory {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
     Allegory (QuotAllegory 𝒜 C) where
   recip {a b} := Quotient.lift
     (fun R => Quotient.mk (congSetoid C) (R°))
@@ -819,7 +821,7 @@ instance QuotAllegory.instAllegory {𝒜 : Type u} [Allegory 𝒜] (C : Congruen
 /-- §2.5  The ASSIGNMENT OF EQUIVALENCE CLASSES `R ↦ [R]` as a REPRESENTATION of
     allegories: an `AllegoryFunctor 𝒜 → 𝒜/C`, identity on objects.  All four
     functor laws hold definitionally (`[1] = 1`, `[R≫S] = [R]≫[S]`, etc.). -/
-def quotRep {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
+@[expose] public def quotRep {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
     AllegoryFunctor 𝒜 (QuotAllegory 𝒜 C) where
   obj a := a
   map {_a _b} R := Quotient.mk (congSetoid C) R
@@ -831,7 +833,7 @@ def quotRep {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) :
 /-- `quotRep` is faithful exactly when `C` is the discrete congruence; in
     general it is the canonical quotient map.  `[R]` of `R` unfolds to the
     class. -/
-theorem quotRep_map {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜} (R : a ⟶ b) :
+public theorem quotRep_map {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜} (R : a ⟶ b) :
     (quotRep C).map R = Quotient.mk (congSetoid C) R := rfl
 
 /-! ## §2.52  Distributive quotient
@@ -847,7 +849,7 @@ theorem quotRep_map {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b :
     Zero `= [𝟘]` (a constant: descends with no hypothesis — "any congruence on a
     distributive allegory respects zero"); union `= [R ∪ S]`, well-defined by
     `hunion`.  Every distributive-lattice/zero axiom is the lift of `𝒜`'s. -/
-def QuotAllegory.instDistributiveAllegory {𝒜 : Type u} [DistributiveAllegory 𝒜]
+@[expose] public def QuotAllegory.instDistributiveAllegory {𝒜 : Type u} [DistributiveAllegory 𝒜]
     (C : Congruence 𝒜)
     (hunion : ∀ {a b : 𝒜} {R S R' S' : a ⟶ b},
       C.rel R R' → C.rel S S' → C.rel (R ∪ S) (R' ∪ S')) :
@@ -919,7 +921,7 @@ theorem quotRep_map_zero {𝒜 : Type u} [DistributiveAllegory 𝒜] (C : Congru
 /-! ## Shared helpers (used across §2.51/§2.536/§2.537/§2.541/§2.55) -/
 
 /-- §2.533: in the quotient allegory, `[R] ⊑ [S]` iff `R⁺ ⊑ S⁺`. -/
-theorem quotient_le_iff_largest {𝒜 : Type u} [DistributiveAllegory 𝒜]
+public theorem quotient_le_iff_largest {𝒜 : Type u} [DistributiveAllegory 𝒜]
     (amen : AmenableCongruence 𝒜) {a b : 𝒜} (R S : a ⟶ b) :
     (quotRep amen.cong).map R ⊑ (quotRep amen.cong).map S ↔ amen.largest R ⊑ amen.largest S := by
   show Quotient.mk (congSetoid amen.cong) (R ∩ S) = Quotient.mk (congSetoid amen.cong) R ↔ _
@@ -937,7 +939,7 @@ theorem quotient_le_iff_largest {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- An allegory functor is monotone for the allegory order: `R ⊑ S`
     maps to `F R ⊑ F S` because allegory functors preserve intersection. -/
-theorem AllegoryFunctor.mono {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem AllegoryFunctor.mono {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : AllegoryFunctor 𝒜 ℬ)
     {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : F.map R ⊑ F.map S := by
   have h' : R ∩ S = R := h
@@ -946,12 +948,12 @@ theorem AllegoryFunctor.mono {𝒜 : Type u₁} {ℬ : Type u₂}
 
 /-- `quotRep` is monotone: `R ⊑ S → [R] ⊑ [S]`.  (`⊑` is `R = R ∩ S`, and `quotRep`
     preserves `∩`.) -/
-theorem quotRep_mono {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜}
+public theorem quotRep_mono {𝒜 : Type u} [Allegory 𝒜] (C : Congruence 𝒜) {a b : 𝒜}
     {R S : a ⟶ b} (h : R ⊑ S) : (quotRep C).map R ⊑ (quotRep C).map S := (quotRep C).mono h
 
 /-- The largest-element operator is idempotent: `R⁺⁺ = R⁺` (the book's "largest
     idempotent").  The single canonical version of this fact. -/
-theorem largest_idem {𝒜 : Type u} [DistributiveAllegory 𝒜] (amen : AmenableCongruence 𝒜)
+public theorem largest_idem {𝒜 : Type u} [DistributiveAllegory 𝒜] (amen : AmenableCongruence 𝒜)
     {a b : 𝒜} (R : a ⟶ b) : amen.largest (amen.largest R) = amen.largest R :=
   (amenable_largest_class_invariant amen (amen.largest_rel R)).symm
 

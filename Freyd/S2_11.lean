@@ -1,5 +1,7 @@
-import Freyd.S2_10
-import Freyd.S2_30
+module
+
+public import Freyd.S2_10
+public import Freyd.S2_30
 
 universe v u
 
@@ -42,7 +44,7 @@ namespace Freyd.Alg
 /-- A **LATTICE-ORDERED COMMUTATIVE MONOID** (Freyd §2.113): a commutative
     monoid `(M, ·, 1)` together with a lattice `(⊓, ⊔)`, in which the order
     `a ⩽ b :⇔ a ⊓ b = a` makes multiplication monotone.  No modular law. -/
-class LOCMonoid (M : Type u) where
+public class LOCMonoid (M : Type u) where
   /-- Monoid multiplication. -/
   mul  : M → M → M
   /-- Monoid identity. -/
@@ -74,7 +76,7 @@ class LOCMonoid (M : Type u) where
     addition satisfies the allegory modular identity (`x° = x`, so `T S° = T S`):
     `(R S) ⊓ T = ((R S) ⊓ T) ⊓ (R ⊓ (T S))·S`.  This single extra equation is
     the ONLY thing a general l-monoid lacks (book §2.113). -/
-class ModularLOCMonoid (M : Type u) extends LOCMonoid M where
+public class ModularLOCMonoid (M : Type u) extends LOCMonoid M where
   modular : ∀ R S T : M,
     LOCMonoid.meet (LOCMonoid.mul R S) T
       = LOCMonoid.meet (LOCMonoid.meet (LOCMonoid.mul R S) T)
@@ -82,7 +84,7 @@ class ModularLOCMonoid (M : Type u) extends LOCMonoid M where
 
 /-- The single object `*` of the one-object allegory built on `M`.  Keeping `M`
     as a parameter lets the `Cat`/`Allegory` instances recover the hom-set. -/
-inductive LMonObj (M : Type u) : Type u where
+public inductive LMonObj (M : Type u) : Type u where
   | star : LMonObj M
 
 section LMonObjLOCMonoid
@@ -94,7 +96,7 @@ local infixl:70 " ⊓ "  => LOCMonoid.meet
 
 /-- The single object carries `M` as its endo-hom-set; composition is the monoid
     multiplication and the identity is `1`.  A genuine `Cat` (§1.1). -/
-instance instCatLMonObj : Cat (LMonObj M) where
+@[expose] public instance instCatLMonObj : Cat (LMonObj M) where
   Hom _ _ := M
   id _    := LOCMonoid.one
   comp f g := f ⊙ g
@@ -103,11 +105,11 @@ instance instCatLMonObj : Cat (LMonObj M) where
   assoc f g h := LOCMonoid.mul_assoc f g h
 
 /-- `a ⊓ b ⩽ a`: the meet is a lower bound (left). -/
-theorem meet_le_left (a b : M) : (a ⊓ b) ⊓ a = a ⊓ b := by
+public theorem meet_le_left (a b : M) : (a ⊓ b) ⊓ a = a ⊓ b := by
   rw [LOCMonoid.meet_comm (a ⊓ b) a, LOCMonoid.meet_assoc, LOCMonoid.meet_idem]
 
 /-- `a ⊓ b ⩽ b`: the meet is a lower bound (right). -/
-theorem meet_le_right (a b : M) : (a ⊓ b) ⊓ b = a ⊓ b := by
+public theorem meet_le_right (a b : M) : (a ⊓ b) ⊓ b = a ⊓ b := by
   rw [← LOCMonoid.meet_assoc, LOCMonoid.meet_idem]
 
 /-- **Semi-distributivity** for the one-object l-monoid allegory, in the exact
@@ -115,7 +117,7 @@ theorem meet_le_right (a b : M) : (a ⊓ b) ⊓ b = a ⊓ b := by
     `R·(S ⊓ T) = ((R·S) ⊓ (R·(S ⊓ T))) ⊓ (R·T)`.
     It holds because multiplication is monotone, so `R·(S⊓T)` lies below both
     `R·S` and `R·T`. -/
-theorem lmonObj_semidistrib (R S T : M) :
+public theorem lmonObj_semidistrib (R S T : M) :
     R ⊙ (S ⊓ T) = ((R ⊙ S) ⊓ (R ⊙ (S ⊓ T))) ⊓ (R ⊙ T) := by
   -- `R·(S⊓T) ⩽ R·S`
   have m1 : (R ⊙ (S ⊓ T)) ⊓ (R ⊙ S) = R ⊙ (S ⊓ T) := by
@@ -136,7 +138,7 @@ end LMonObjLOCMonoid
   semi-lattice laws, `mul_comm`).  Adding the modular identity completes a
   genuine allegory. -/
 
-instance instAllegoryLMonObj {M : Type u} [ModularLOCMonoid M] : Allegory (LMonObj M) where
+@[expose] public instance instAllegoryLMonObj {M : Type u} [ModularLOCMonoid M] : Allegory (LMonObj M) where
   toCat := instCatLMonObj
   recip R := R
   inter R S := LOCMonoid.meet R S
@@ -155,7 +157,7 @@ instance instAllegoryLMonObj {M : Type u} [ModularLOCMonoid M] : Allegory (LMonO
   modular) lattice-ordered commutative monoid, so `LMonObj Bool` is a genuine
   one-object allegory.  Shows the construction is not vacuous. -/
 
-instance : ModularLOCMonoid Bool where
+@[expose] public instance : ModularLOCMonoid Bool where
   mul := Bool.and
   one := true
   meet := Bool.and

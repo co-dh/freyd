@@ -49,11 +49,13 @@
   the projection cover, both supplied here).  The COFINALITY field (`WSCover.cofinal`) is the new input
   `FibreDensity` consumes: every well-supported `B` is reached at the singleton index `{B}`.
 -/
-import Freyd.S1_541_RelativeCapitalization
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_543_Capitalization
-import Freyd.S1_543_CapitalizationLaxColimit
-import Freyd.S1_543_WellOrdering
+module
+
+public import Freyd.S1_541_RelativeCapitalization
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_543_Capitalization
+public import Freyd.S1_543_CapitalizationLaxColimit
+public import Freyd.S1_543_WellOrdering
 
 open Freyd
 open Freyd.Colim
@@ -78,11 +80,11 @@ universe u
 variable {𝒞 : Type u} [DecidableEq 𝒞]
 
 /-- Remove duplicate occurrences (keep the first).  Mathlib-free. -/
-def dedup : List 𝒞 → List 𝒞
+@[expose] public def dedup : List 𝒞 → List 𝒞
   | [] => []
   | a :: l => if a ∈ dedup l then dedup l else a :: dedup l
 
-theorem mem_dedup {l : List 𝒞} {a : 𝒞} : a ∈ dedup l ↔ a ∈ l := by
+public theorem mem_dedup {l : List 𝒞} {a : 𝒞} : a ∈ dedup l ↔ a ∈ l := by
   induction l with
   | nil => simp [dedup]
   | cons b l ih =>
@@ -92,7 +94,7 @@ theorem mem_dedup {l : List 𝒞} {a : 𝒞} : a ∈ dedup l ↔ a ∈ l := by
       exact ⟨fun ha => Or.inr ha, fun hh => hh.elim (fun e => ih.1 (e ▸ h)) id⟩
     · rw [if_neg h, List.mem_cons, ih]
 
-theorem dedup_nodup (l : List 𝒞) : (dedup l).Nodup := by
+public theorem dedup_nodup (l : List 𝒞) : (dedup l).Nodup := by
   induction l with
   | nil => exact List.nodup_nil
   | cons a l ih =>
@@ -223,7 +225,7 @@ section Cover
 variable [Cat.{u} 𝒞] [PreRegularCategory 𝒞] [HasEqualizers 𝒞]
 
 /-- `snd : C×A ⟶ A` is a cover when `C` is well-supported (`prod_fst_cover` through `prodSwap`). -/
-theorem prod_snd_cover {C A : 𝒞} (hC : WellSupported C) :
+public theorem prod_snd_cover {C A : 𝒞} (hC : WellSupported C) :
     Cover (snd : prod C A ⟶ A) := by
   have h : (snd : prod C A ⟶ A) = prodSwap C A ≫ (fst : prod A C ⟶ A) := by
     rw [show prodSwap C A ≫ fst = snd (A := C) (B := A) from fst_pair _ _]
@@ -411,7 +413,7 @@ variable [DecidableEq τ] (f : τ → 𝒟)
 /-- The token factor projection `listProd (l.map f) ⟶ f t` at the first occurrence of token `t` in
     `l` (head ⟹ `fst`; otherwise `snd` then recurse).  Keyed by the TOKEN `t`, not the object `f t`,
     so distinct tokens over the same object are reachable independently. -/
-noncomputable def tFactorProj : ∀ (l : List τ) (t : τ), t ∈ l →
+@[expose] public noncomputable def tFactorProj : ∀ (l : List τ) (t : τ), t ∈ l →
     (listProd (𝒞 := 𝒟) (l.map f) ⟶ f t)
   | c :: l', t, h =>
     if hct : c = t then
@@ -421,19 +423,19 @@ noncomputable def tFactorProj : ∀ (l : List τ) (t : τ), t ∈ l →
   | [], _, h => absurd h (by simp)
 
 /-- `tFactorProj` at a head match is `fst`. -/
-theorem tFactorProj_cons_head {c : τ} {l' : List τ} (ht : c ∈ c :: l') :
+public theorem tFactorProj_cons_head {c : τ} {l' : List τ} (ht : c ∈ c :: l') :
     tFactorProj f (c :: l') c ht = (fst : prod (f c) (listProd (l'.map f)) ⟶ f c) := by
   rw [tFactorProj]; simp
 
 /-- `tFactorProj` past a non-matching head is `snd` then recurse. -/
-theorem tFactorProj_cons_ne {c t : τ} {l' : List τ} (ht : t ∈ c :: l') (hne : c ≠ t)
+public theorem tFactorProj_cons_ne {c t : τ} {l' : List τ} (ht : t ∈ c :: l') (hne : c ≠ t)
     (ht' : t ∈ l') :
     tFactorProj f (c :: l') t ht
       = (snd : prod (f c) (listProd (l'.map f)) ⟶ listProd (l'.map f)) ≫ tFactorProj f l' t ht' := by
   rw [tFactorProj]; simp only [hne, dif_neg, not_false_iff]
 
 /-- **`listProd (l.map f)` is jointly monic in its token factor projections** (NODUP token list). -/
-theorem tListProd_hom_ext : ∀ {l : List τ}, l.Nodup → ∀ {X : 𝒟}
+public theorem tListProd_hom_ext : ∀ {l : List τ}, l.Nodup → ∀ {X : 𝒟}
     (p q : X ⟶ listProd (𝒞 := 𝒟) (l.map f))
     (_ : ∀ (t : τ) (ht : t ∈ l), p ≫ tFactorProj f l t ht = q ≫ tFactorProj f l t ht), p = q
   | [], _, _, p, q, _ => term_uniq p q
@@ -448,7 +450,7 @@ theorem tListProd_hom_ext : ∀ {l : List τ}, l.Nodup → ∀ {X : 𝒟}
       exact hh
 
 /-- The token assembled projection `listProd (l.map f) ⟶ listProd (m.map f)` for `m ⊆ l`. -/
-noncomputable def tSelectProj (l : List τ) : ∀ (m : List τ), (∀ t ∈ m, t ∈ l) →
+@[expose] public noncomputable def tSelectProj (l : List τ) : ∀ (m : List τ), (∀ t ∈ m, t ∈ l) →
     (listProd (𝒞 := 𝒟) (l.map f) ⟶ listProd (𝒞 := 𝒟) (m.map f))
   | [], _ => (term (listProd (𝒞 := 𝒟) (l.map f)) :
       _ ⟶ listProd (𝒞 := 𝒟) (List.map f ([] : List τ)))
@@ -457,7 +459,7 @@ noncomputable def tSelectProj (l : List τ) : ∀ (m : List τ), (∀ t ∈ m, t
          (tSelectProj l m' (fun t ht => h t (List.mem_cons.2 (Or.inr ht))))
 
 /-- **Recovery — token `tSelectProj` followed by a factor projection IS the factor projection.** -/
-theorem tSelectProj_factor (l : List τ) :
+public theorem tSelectProj_factor (l : List τ) :
     ∀ (m : List τ) (h : ∀ t ∈ m, t ∈ l) (t : τ) (ht : t ∈ m),
       tSelectProj f l m h ≫ tFactorProj f m t ht = tFactorProj f l t (h t ht)
   | [], _, _, ht => absurd ht (by simp)
@@ -470,14 +472,14 @@ theorem tSelectProj_factor (l : List τ) :
       exact tSelectProj_factor l m' _ t ht'
 
 /-- **STRICT unit** — token `tSelectProj` over the reflexive inclusion is the identity. -/
-theorem tSelectProj_refl {l : List τ} (hnd : l.Nodup) (h : ∀ t ∈ l, t ∈ l) :
+public theorem tSelectProj_refl {l : List τ} (hnd : l.Nodup) (h : ∀ t ∈ l, t ∈ l) :
     tSelectProj f l l h = Cat.id (listProd (𝒞 := 𝒟) (l.map f)) := by
   apply tListProd_hom_ext f hnd
   intro t ht
   rw [tSelectProj_factor f l l h t ht, Cat.id_comp]
 
 /-- **STRICT composition** (contravariant) for the token engine. -/
-theorem tSelectProj_trans {m l w : List τ} (hmnd : m.Nodup)
+public theorem tSelectProj_trans {m l w : List τ} (hmnd : m.Nodup)
     (hml : ∀ t ∈ m, t ∈ l) (hlw : ∀ t ∈ l, t ∈ w) (hmw : ∀ t ∈ m, t ∈ w) :
     tSelectProj f w m hmw = tSelectProj f w l hlw ≫ tSelectProj f l m hml := by
   apply tListProd_hom_ext f hmnd
@@ -486,7 +488,7 @@ theorem tSelectProj_trans {m l w : List τ} (hmnd : m.Nodup)
       tSelectProj_factor f w l hlw t (hml t ht)]
 
 /-- **Reordering iso** for the token engine. -/
-theorem tSelectProj_reorder_iso {m m' : List τ} (hm : m.Nodup) (hm' : m'.Nodup)
+public theorem tSelectProj_reorder_iso {m m' : List τ} (hm : m.Nodup) (hm' : m'.Nodup)
     (hmm' : ∀ t ∈ m, t ∈ m') (hm'm : ∀ t ∈ m', t ∈ m) :
     IsIso (tSelectProj f m m' hm'm) := by
   refine ⟨tSelectProj f m' m hmm', ?_, ?_⟩
@@ -500,7 +502,7 @@ theorem tSelectProj_reorder_iso {m m' : List τ} (hm : m.Nodup) (hm' : m'.Nodup)
         Cat.id_comp]
 
 /-- When the head token `c` of `l` is NOT in `m`, `tSelectProj (c::l') m` strips `c` via `snd`. -/
-theorem tSelectProj_head_notin (c : τ) (l' : List τ) :
+public theorem tSelectProj_head_notin (c : τ) (l' : List τ) :
     ∀ (m : List τ) (h : ∀ t ∈ m, t ∈ c :: l') (_hc : c ∉ m) (h' : ∀ t ∈ m, t ∈ l'),
       tSelectProj f (c :: l') m h
         = (snd : prod (f c) (listProd (l'.map f)) ⟶ listProd (l'.map f)) ≫ tSelectProj f l' m h'
@@ -561,7 +563,7 @@ private theorem tfrontList_mem_right {c : τ} {m : List τ} (hc : c ∈ m) :
 
 /-- **`tSelectProj l m h` is a COVER when `m` is nodup and every `f t` (for `t ∈ l`) is
     well-supported.**  Token version of `selectProj_cover` (induction on `l`). -/
-theorem tSelectProj_cover : ∀ (l m : List τ), m.Nodup → ∀ (h : ∀ t ∈ m, t ∈ l)
+public theorem tSelectProj_cover : ∀ (l m : List τ), m.Nodup → ∀ (h : ∀ t ∈ m, t ∈ l)
     (_hws : ∀ t ∈ l, WellSupported (f t)), Cover (tSelectProj f l m h)
   | [], m, _, h, _ => by
     have hm : m = [] := List.eq_nil_iff_forall_not_mem.2 (fun x hx => by simpa using h x hx)
@@ -601,7 +603,7 @@ variable [DecidableEq τ] (f : τ → 𝒟)
     `ψ := tSelectProj f l (t₀ :: l.erase t₀)` is an ISO `listProd (l.map f) ≅ f t₀ × listProd
     ((l.erase t₀).map f)` with `ψ ≫ fst = tFactorProj f l t₀` and `ψ ≫ snd = tSelectProj` onto the
     residual.  Token version of `listProd_pull_factor`. -/
-theorem tListProd_pull_factor (l : List τ) (t₀ : τ) (hnd : l.Nodup) (ht₀ : t₀ ∈ l) :
+public theorem tListProd_pull_factor (l : List τ) (t₀ : τ) (hnd : l.Nodup) (ht₀ : t₀ ∈ l) :
     let l' := l.erase t₀
     let hsub : ∀ t ∈ t₀ :: l', t ∈ l := fun _ ht =>
       (List.mem_cons.1 ht).elim (· ▸ ht₀) List.mem_of_mem_erase
@@ -632,7 +634,7 @@ theorem tListProd_pull_factor (l : List τ) (t₀ : τ) (hnd : l.Nodup) (ht₀ :
 
 /-- **Routing a richer token projection through the fresh token coordinate.**  Token version of
     `selectProj_pull_head`. -/
-theorem tSelectProj_pull_head (l : List τ) (t₀ : τ) (m : List τ)
+public theorem tSelectProj_pull_head (l : List τ) (t₀ : τ) (m : List τ)
     (hnd : l.Nodup) (hndm : (t₀ :: m).Nodup) (ht₀ : t₀ ∈ l)
     (hme : ∀ t ∈ m, t ∈ l.erase t₀)
     (hml : ∀ t ∈ t₀ :: m, t ∈ l) :
@@ -672,31 +674,31 @@ variable {S : Type u} [Cat.{u} S] [PreRegularCategory S] [DecidableEq S]
 /-- A **token** is a `Nat`-tagged object.  The `Nat`-tag lets a FRESH copy of an object that already
     appears be added (distinct tag ⟹ nodup preserved), which the object-keyed index could not do.
     The object carried by a token is `Prod.snd`. -/
-abbrev Tok (S : Type u) := Nat × S
+@[expose] public abbrev Tok (S : Type u) := Nat × S
 
 /-- Token equality is decidable from object equality (`Nat`'s is decidable). -/
-instance instDecidableEqTok [DecidableEq S] : DecidableEq (Tok S) :=
+@[expose] public instance instDecidableEqTok [DecidableEq S] : DecidableEq (Tok S) :=
   inferInstanceAs (DecidableEq (Nat × S))
 
 /-- The canonical `BEq (Tok S)` is the `DecidableEq`-derived one (matching the token engine's
     `List.erase`/`List.filter`), given HIGH priority so it is preferred over the generic `Prod` BEq
     (the two are defeq, but `List.erase`/membership unify syntactically only when one is chosen). -/
-instance (priority := 2000) instBEqTok [DecidableEq S] : BEq (Tok S) :=
+@[expose] public instance (priority := 2000) instBEqTok [DecidableEq S] : BEq (Tok S) :=
   instBEqOfDecidableEq
 
 /-- The index: finite NODUP lists of TOKENS, every token's object WELL-SUPPORTED.  Nodup is on the
     whole token `ℕ × S` (so two tokens over the same object are distinct iff their tags differ);
     well-supportedness is required of each token's object (`Prod.snd`). -/
-def WSList (S : Type u) [Cat.{u} S] [PreRegularCategory S] :=
+@[expose] public def WSList (S : Type u) [Cat.{u} S] [PreRegularCategory S] :=
   {U : List (Tok S) // U.Nodup ∧ ∀ t ∈ U, WellSupported t.2}
 
 /-- The subset relation on the index. -/
-def WSList.le (U V : WSList S) : Prop := ∀ t ∈ U.1, t ∈ V.1
+@[expose] public def WSList.le (U V : WSList S) : Prop := ∀ t ∈ U.1, t ∈ V.1
 
 /-- **The cofinal directed SUBSET index.**  `le = ⊆`; reflexive/transitive by the subset order;
     `bound = dedup (U ++ V)` (nodup, ws, contains both).  Unlike the prefix index, this is cofinal
     over the FULL object set (no countability ceiling). -/
-def wsDirected (S : Type u) [Cat.{u} S] [PreRegularCategory S] [DecidableEq S] :
+@[expose] public def wsDirected (S : Type u) [Cat.{u} S] [PreRegularCategory S] [DecidableEq S] :
     Directed (WSList S) where
   le := WSList.le
   refl _ _ h := h
@@ -713,7 +715,7 @@ def wsDirected (S : Type u) [Cat.{u} S] [PreRegularCategory S] [DecidableEq S] :
     `proj h = tSelectProj Prod.snd j.1 i.1 h` (the bigger product onto the smaller).
     `proj_refl`/`proj_trans` are STRICT (on-the-nose) — the keystone, discharged by
     `tSelectProj_refl`/`tSelectProj_trans`. -/
-noncomputable def cofinalProjSystem : ProjSystem (WSList S) (wsDirected S) S where
+@[expose] public noncomputable def cofinalProjSystem : ProjSystem (WSList S) (wsDirected S) S where
   pr i := listProd (𝒞 := S) (i.1.map Prod.snd)
   proj {i j} h := tSelectProj (Prod.snd) j.1 i.1 h
   proj_refl i := tSelectProj_refl _ i.2.1 _
@@ -722,7 +724,7 @@ noncomputable def cofinalProjSystem : ProjSystem (WSList S) (wsDirected S) S whe
 /-- **Every projection of `cofinalProjSystem` is a cover.**  The bigger index `j` lists only
     well-supported objects (`j.2.2`) and is nodup (`i.2.1`), so `tSelectProj_cover` applies.  This is
     the `hpc` premise of `ratCapPreRegular_of_projCover` (and `projStage_faithful`, etc.). -/
-theorem cofinalProjSystem_cover {i j : WSList S} (h : (wsDirected S).le i j) :
+public theorem cofinalProjSystem_cover {i j : WSList S} (h : (wsDirected S).le i j) :
     Cover ((cofinalProjSystem (S := S)).proj h) := by
   letI : HasEqualizers S := products_pullbacks_implies_equalizers
   show Cover (tSelectProj (Prod.snd) j.1 i.1 h)
@@ -748,7 +750,7 @@ variable (S : Type u) [Cat.{u} S] [PreRegularCategory S]
     the COFINALITY field, that every well-supported `B` is an element of some index list (hence is
     pointed by the corresponding rung).  Well-supportedness of every indexed factor is BUILT INTO the
     index `WSList` (its `.2.2` field), so the projection-cover holds unconditionally. -/
-structure WSCover where
+public structure WSCover where
   /-- object equality, used for positional selection (`Classical.decEq` in the inhabitant). -/
   dec : DecidableEq S
   /-- **cofinality** — every well-supported object is the object of SOME token in SOME index (its
@@ -768,10 +770,10 @@ noncomputable def WSCover.projSystem (W : WSCover S) :
 
 /-- The base index of a `WSCover`: the empty set `⟨[], …⟩`, whose stage product is the terminal
     (`∏[] = 1`), so the base fibre is `S/1`. -/
-def WSCover.base (_ : WSCover S) : @WSList S _ _ :=
+@[expose] public def WSCover.base (_ : WSCover S) : @WSList S _ _ :=
   ⟨[], List.nodup_nil, fun _ h => absurd h (by simp)⟩
 
-theorem WSCover.base_chain (W : WSCover S) : (W.base).1 = ([] : List (Tok S)) := rfl
+public theorem WSCover.base_chain (W : WSCover S) : (W.base).1 = ([] : List (Tok S)) := rfl
 
 end Cover2
 
@@ -781,7 +783,7 @@ end Cover2
     ranges over ws-object lists, the projection-cover is unconditional.  THIS is what makes the §1.547
     successor UNCONDITIONAL/COFINAL — pointing EVERY well-supported object, not just a countable
     suffix. -/
-noncomputable def wsCover (S : PreRegBundle.{u}) : WSCover S.carrier :=
+@[expose] public noncomputable def wsCover (S : PreRegBundle.{u}) : WSCover S.carrier :=
   letI := S.cat
   letI := S.pre
   letI dec : DecidableEq S.carrier := Classical.typeDecidableEq S.carrier

@@ -22,9 +22,11 @@
 
   Mathlib-free.  Single universe (forced by `laxColimPositive`).
 -/
-import Freyd.S1_543_RatCapImages
-import Freyd.S1_63_LaxColimitPositive
-import Freyd.S1_543_UnionFromCoproduct
+module
+
+public import Freyd.S1_543_RatCapImages
+public import Freyd.S1_63_LaxColimitPositive
+public import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
 open Freyd.Colim
@@ -48,7 +50,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
 
 /-- The first pullback leg of the base-change map: `(g*m).f ≫ π₁ = π₁ ≫ m.f` (the `π₁`-leg of
     `baseChangeCone`).  `π₂`-leg is `(g*m).w`. -/
-theorem bcMap_fst {C D : 𝒞} (g : C ⟶ D) {X Y : Over D} (m : OverHom X Y) :
+public theorem bcMap_fst {C D : 𝒞} (g : C ⟶ D) {X Y : Over D} (m : OverHom X Y) :
     (baseChangeMap g m).f ≫ (HasPullbacks.has Y.hom g).cone.π₁
       = (HasPullbacks.has X.hom g).cone.π₁ ≫ m.f :=
   (HasPullbacks.has Y.hom g).lift_fst (baseChangeCone g m)
@@ -56,7 +58,7 @@ theorem bcMap_fst {C D : 𝒞} (g : C ⟶ D) {X Y : Over D} (m : OverHom X Y) :
 /-- The composite of two two-sided inverses is a two-sided inverse: if `a ⊣⊢ a'` and `b ⊣⊢ b'`,
     then `a ≫ b ⊣⊢ b' ≫ a'`.  Fully abstract (no `let`-bound types), so `Cat.id_comp` rewrites
     cleanly when consumed with defeq-but-not-syntactic concrete arguments. -/
-theorem comp_iso_inv {X Y Z : 𝒞} {a : X ⟶ Y} {a' : Y ⟶ X} {b : Y ⟶ Z} {b' : Z ⟶ Y}
+public theorem comp_iso_inv {X Y Z : 𝒞} {a : X ⟶ Y} {a' : Y ⟶ X} {b : Y ⟶ Z} {b' : Z ⟶ Y}
     (ha : a ≫ a' = Cat.id X) (ha' : a' ≫ a = Cat.id Y)
     (hb : b ≫ b' = Cat.id Y) (hb' : b' ≫ b = Cat.id Z) :
     (a ≫ b) ≫ (b' ≫ a') = Cat.id X ∧ (b' ≫ a') ≫ (a ≫ b) = Cat.id Z := by
@@ -74,7 +76,7 @@ theorem comp_iso_inv {X Y Z : 𝒞} {a : X ⟶ Y} {a' : Y ⟶ X} {b : Y ⟶ Z} {
     inclusion to the base-change map `m` (the underlying arrow of `g*` applied to the slice
     injection).  This is the pasting of the two pullback squares `(X ×_D C)` and `(π₁# ⟨X,j⟩)`,
     done by hand with explicit pullback lifts so the leg `θ ≫ arr = m` is on the nose. -/
-theorem bcSummandIso {C D K X : 𝒞} (g : C ⟶ D) (kh : K ⟶ D) {j : X ⟶ K} (hj : Monic j)
+public theorem bcSummandIso {C D K X : 𝒞} (g : C ⟶ D) (kh : K ⟶ D) {j : X ⟶ K} (hj : Monic j)
     (xh : X ⟶ D) (hjk : j ≫ kh = xh)
     (m : (HasPullbacks.has xh g).cone.pt ⟶ (HasPullbacks.has kh g).cone.pt)
     (hm1 : m ≫ (HasPullbacks.has kh g).cone.π₁ = (HasPullbacks.has xh g).cone.π₁ ≫ j)
@@ -136,7 +138,7 @@ variable {C D : 𝒞} (g : C ⟶ D) (a b : Over D)
     `Φ : (g*a).dom + (g*b).dom ≅ (g*(a+b)).dom` whose legs are the base-change injections
     `(g* inl).f`, `(g* inr).f`.  The two summands are identified via `bcSummandIso`; the apex
     decomposition is the §1.62 complemented-pair iso `complementedSub_legs_iso`. -/
-theorem baseChange_coprod_iso :
+public theorem baseChange_coprod_iso :
     ∃ (Φ : HasBinaryCoproducts.coprod (baseChangeObj g a).dom (baseChangeObj g b).dom
             ⟶ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).dom)
       (Φinv : (baseChangeObj g (HasBinaryCoproducts.coprod a b)).dom
@@ -242,7 +244,7 @@ theorem baseChange_coprod_iso :
 
 /-- **Base change preserves binary coproducts — JOINT-EPI (slice).**  Two slice maps out of
     `g*(a+b)` agreeing after `g* inl` and after `g* inr` are equal. -/
-theorem baseChange_coprod_jointEpi (z : Over C)
+public theorem baseChange_coprod_jointEpi (z : Over C)
     (u v : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod a b)) z)
     (hl : baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ u
         = baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ v)
@@ -277,7 +279,7 @@ theorem baseChange_coprod_jointEpi (z : Over C)
 
 /-- **Base change preserves binary coproducts — COPAIRING (slice).**  Given slice maps
     `p : g*a ⟶ z`, `q : g*b ⟶ z`, there is a copairing `r : g*(a+b) ⟶ z` restricting to `p`/`q`. -/
-theorem baseChange_coprod_copair (z : Over C)
+public theorem baseChange_coprod_copair (z : Over C)
     (p : OverHom (baseChangeObj g a) z) (q : OverHom (baseChangeObj g b) z) :
     ∃ r : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod a b)) z,
       baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ r = p ∧
@@ -337,7 +339,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [HasPullbacks 𝒞]
 
 /-- **Base change preserves strict coterminators.**  `g*` of a strict initial of `Over D` is a strict
     initial of `Over C`. -/
-theorem baseChange_strictCoterminator {C D : 𝒞} (g : C ⟶ D) {Z : Over D}
+public theorem baseChange_strictCoterminator {C D : 𝒞} (g : C ⟶ D) {Z : Over D}
     (hZ : StrictCoterminator Z) : StrictCoterminator (baseChangeObj g Z) := by
   have hZdom : StrictCoterminator Z.dom :=
     fun {Y} h => overIso_underlying (hZ (X := ⟨Y, h ≫ Z.hom⟩) ⟨h, rfl⟩)
@@ -374,7 +376,7 @@ variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [Disjoin
 /-- **§2.218 / §1.621: `ratCapCat P` is a disjoint binary coproduct (positive) when the base `𝒞` is.**
     Single entry point: instantiates `laxColimPositive` with the slice fibre data and the base-change
     transition-preservation bundles (PIECE 1–3). -/
-noncomputable def ratCapDisjointBinaryCoproduct [Nonempty ι] (P : ProjSystem ι D 𝒞)
+@[expose] public noncomputable def ratCapDisjointBinaryCoproduct [Nonempty ι] (P : ProjSystem ι D 𝒞)
     (hpc : ∀ {i j : ι} (h : D.le i j), Cover (P.proj h)) :
     @DisjointBinaryCoproduct (Obj (laxOfProjSystem' P)) (ratCapCat P) := by
   letI iCat : Cat (Obj (laxOfProjSystem' P)) := ratCat P

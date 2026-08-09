@@ -26,8 +26,10 @@
   Composition is diagram order: `x ≫ y` is first `x` then `y`.
 -/
 
-import Freyd.S1_70
-import Freyd.S1_658_Complement
+module
+
+public import Freyd.S1_70
+public import Freyd.S1_658_Complement
 
 open Freyd
 

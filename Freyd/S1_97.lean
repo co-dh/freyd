@@ -17,23 +17,25 @@
   §1.98(14) Existence of free A-action from NNO.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_90
-import Freyd.S1_42
-import Freyd.S1_47
-import Freyd.S1_51
-import Freyd.S1_57
-import Freyd.S1_58
-import Freyd.S1_64
-import Freyd.S1_85
-import Freyd.S1_92
-import Freyd.S1_94
-import Freyd.S1_94_InternalForall
-import Freyd.S1_934_PartialMapClassifier
-import Freyd.S1_987_LeastClosedTopos
-import Freyd.S1_658_Complement
-import Freyd.S1_967_ToposExists
-import Freyd.S1_97_ToposDistributive
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_90
+public import Freyd.S1_42
+public import Freyd.S1_47
+public import Freyd.S1_51
+public import Freyd.S1_57
+public import Freyd.S1_58
+public import Freyd.S1_64
+public import Freyd.S1_85
+public import Freyd.S1_92
+public import Freyd.S1_94
+public import Freyd.S1_94_InternalForall
+public import Freyd.S1_934_PartialMapClassifier
+public import Freyd.S1_987_LeastClosedTopos
+public import Freyd.S1_658_Complement
+public import Freyd.S1_967_ToposExists
+public import Freyd.S1_97_ToposDistributive
 
 
 universe v u
@@ -47,7 +49,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
     (no new product/terminal structure), so `term`/`prod`/`eq` agree definitionally with the
     Topos ones.  Low priority so it never pre-empts a locally-supplied cartesian structure.
     Needed to state `TwoValued (𝒞 := 𝒞)` (§1.989 single-valuedness, S1_47). -/
-noncomputable instance (priority := 100) Topos.toCartesianCategory : CartesianCategory 𝒞 :=
+@[expose] public noncomputable instance (priority := 100) Topos.toCartesianCategory : CartesianCategory 𝒞 :=
   { toHasTerminal := inferInstance
     toHasBinaryProducts := inferInstance
     toHasEqualizers := inferInstance }

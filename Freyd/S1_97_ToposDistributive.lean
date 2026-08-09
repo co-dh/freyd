@@ -20,9 +20,11 @@
   by a concrete topos (`topos_has_exponentials`).
 -/
 
-import Freyd.S1_42
-import Freyd.S1_58
-import Freyd.S1_85
+module
+
+public import Freyd.S1_42
+public import Freyd.S1_58
+public import Freyd.S1_85
 
 universe w v u
 
@@ -48,12 +50,12 @@ variable [HasExponentials 𝒞]
 -- lemmas below are stated about `transp` and keep their names.
 
 /-- `curry` then `transp` is the identity (β-rule, restated). -/
-@[simp] theorem uncurry_curry {A Y X : 𝒞} (f : prod A X ⟶ Y) :
+@[simp] public theorem uncurry_curry {A Y X : 𝒞} (f : prod A X ⟶ Y) :
     transp (curry f) = f := by
   unfold transp; exact curry_eval_eq f
 
 /-- `transp` then `curry` is the identity (uniqueness). -/
-@[simp] theorem curry_uncurry {A Y X : 𝒞} (k : X ⟶ Y ^^ A) :
+@[simp] public theorem curry_uncurry {A Y X : 𝒞} (k : X ⟶ Y ^^ A) :
     curry (transp k) = k :=
   (curry_unique_eq (f := transp k) (g := k) rfl).symm
 
@@ -74,30 +76,30 @@ section BinaryDistrib
 variable [HasExponentials 𝒞] [HasBinaryCoproducts 𝒞]
 
 /-- The left injection of the distributed coproduct: `A × inl : A×B → A×(B+C)`. -/
-def distInl (A B C : 𝒞) : prod A B ⟶ prod A (coprod B C) :=
+@[expose] public def distInl (A B C : 𝒞) : prod A B ⟶ prod A (coprod B C) :=
   prodMap A B (coprod B C) inl
 
 /-- The right injection: `A × inr : A×C → A×(B+C)`. -/
-def distInr (A B C : 𝒞) : prod A C ⟶ prod A (coprod B C) :=
+@[expose] public def distInr (A B C : 𝒞) : prod A C ⟶ prod A (coprod B C) :=
   prodMap A C (coprod B C) inr
 
 /-- The copairing out of `A×(B+C)`: given `f : A×B ⟶ X` and `g : A×C ⟶ X`,
     transpose to `B ⟶ X^A`, `C ⟶ X^A`, copair, then transpose back. -/
-def distCase {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
+@[expose] public def distCase {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     prod A (coprod B C) ⟶ X :=
   transp (case (curry f) (curry g))
 
-theorem distCase_inl {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
+public theorem distCase_inl {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     distInl A B C ≫ distCase f g = f := by
   unfold distInl distCase
   rw [← transp_precomp, case_inl, uncurry_curry]
 
-theorem distCase_inr {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
+public theorem distCase_inr {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X) :
     distInr A B C ≫ distCase f g = g := by
   unfold distInr distCase
   rw [← transp_precomp, case_inr, uncurry_curry]
 
-theorem distCase_uniq {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X)
+public theorem distCase_uniq {A B C X : 𝒞} (f : prod A B ⟶ X) (g : prod A C ⟶ X)
     (h : prod A (coprod B C) ⟶ X)
     (h₁ : distInl A B C ≫ h = f) (h₂ : distInr A B C ≫ h = g) :
     h = distCase f g := by
@@ -181,7 +183,7 @@ variable [HasExponentials 𝒞] [HasTerminal 𝒞]
 
 /-- A genuine `I`-fold copower of the terminal object `1`: object `obj`, injections
     `inj i : 1 ⟶ obj`, cotupling for every target, and uniqueness of cotupling. -/
-structure CopowerOfOne (I : Type w) (𝒞 : Type u) [Cat.{v} 𝒞] [HasTerminal 𝒞] where
+public structure CopowerOfOne (I : Type w) (𝒞 : Type u) [Cat.{v} 𝒞] [HasTerminal 𝒞] where
   obj : 𝒞
   inj : I → (one ⟶ obj)
   cotup : {X : 𝒞} → (I → one ⟶ X) → (obj ⟶ X)
@@ -190,7 +192,7 @@ structure CopowerOfOne (I : Type w) (𝒞 : Type u) [Cat.{v} 𝒞] [HasTerminal 
     (∀ i, inj i ≫ h = f i) → h = cotup f
 
 /-- A genuine `I`-fold copower of an object `A`. -/
-structure CopowerOf (I : Type w) (A : 𝒞) where
+public structure CopowerOf (I : Type w) (A : 𝒞) where
   obj : 𝒞
   inj : I → (A ⟶ obj)
   cotup : {X : 𝒞} → (I → A ⟶ X) → (obj ⟶ X)
@@ -200,11 +202,11 @@ structure CopowerOf (I : Type w) (A : 𝒞) where
 
 /-- The copower-of-`A` injection built from a copower-of-`1`:
     `⟨id_A, term_A ≫ u i⟩ : A ⟶ A × cI`. -/
-def copInj {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) : A ⟶ prod A P.obj :=
+@[expose] public def copInj {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) : A ⟶ prod A P.obj :=
   pair (Cat.id A) (term A ≫ P.inj i)
 
 /-- `copInj` factors as `prodOneRightInv ≫ (A × inj i)` — the bridge to `transp_precomp`. -/
-theorem copInj_factor {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) :
+public theorem copInj_factor {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) :
     copInj P A i = prodOneRightInv A ≫ prodMap A one P.obj (P.inj i) := by
   unfold copInj
   refine (pair_uniq (Cat.id A) (term A ≫ P.inj i) _ ?_ ?_).symm
@@ -218,7 +220,7 @@ theorem copInj_factor {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) (i : I) 
 /-- **Infinitary distributivity**: `A × cI` is a genuine `I`-fold copower of `A`,
     where `cI` is a genuine `I`-fold copower of `1`.  This is `A × ∐_I 1 ≅ ∐_I A`,
     i.e. `A × −` preserves the copower. -/
-noncomputable def prod_distrib_copow {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) :
+@[expose] public noncomputable def prod_distrib_copow {I : Type w} (P : CopowerOfOne I 𝒞) (A : 𝒞) :
     CopowerOf I A where
   obj := prod A P.obj
   inj i := copInj P A i

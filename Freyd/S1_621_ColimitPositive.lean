@@ -1,7 +1,9 @@
-import Freyd.S1_543_CatColimitRegular
-import Freyd.S1_62
-import Freyd.S1_543_UnionFromCoproduct
-import Freyd.S2_218_ColimitPreLogos
+module
+
+public import Freyd.S1_543_CatColimitRegular
+public import Freyd.S1_62
+public import Freyd.S1_543_UnionFromCoproduct
+public import Freyd.S2_218_ColimitPreLogos
 
 /-!
   # Disjoint binary coproducts for the directed colimit of categories
@@ -44,7 +46,7 @@ universe u v
     factors through `union.arr` (the copairing of the two union inclusions), so the image lies below
     the union (`image_min`); and `entire` factors through the image via `image.lift`.  Chaining,
     `entire ≤ union`. -/
-def disjointBinaryCoproduct_of_disjoint {𝒞 : Type u} [Cat.{v} 𝒞]
+@[expose] public def disjointBinaryCoproduct_of_disjoint {𝒞 : Type u} [Cat.{v} 𝒞]
     [hPL : PreLogos 𝒞] [hCop : HasBinaryCoproducts 𝒞]
     (hl : ∀ {A B : 𝒞}, Monic (HasBinaryCoproducts.inl (A := A) (B := B)))
     (hr : ∀ {A B : 𝒞}, Monic (HasBinaryCoproducts.inr (A := A) (B := B)))
@@ -97,7 +99,7 @@ def disjointBinaryCoproduct_of_disjoint {𝒞 : Type u} [Cat.{v} 𝒞]
 /-- **`inl` is monic whenever there is ANY monic `j₁ : A ⟶ P` and any `j₂ : B ⟶ P`.**  The
     copairing `case j₁ j₂` satisfies `inl ≫ case j₁ j₂ = j₁` (`case_inl`), so `inl` is a left
     factor of the monic `j₁`. -/
-theorem monic_inl_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] {A B P : 𝒞}
+public theorem monic_inl_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] {A B P : 𝒞}
     (j₁ : A ⟶ P) (j₂ : B ⟶ P) (hj₁ : Monic j₁) :
     Monic (HasBinaryCoproducts.inl (A := A) (B := B)) := by
   have h : Monic (HasBinaryCoproducts.inl (A := A) (B := B) ≫ HasBinaryCoproducts.case j₁ j₂) := by
@@ -108,7 +110,7 @@ theorem monic_inl_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 
 
 /-- Dual of `monic_inl_of_factor`: `inr` is monic whenever there is any `j₁ : A ⟶ P` and a monic
     `j₂ : B ⟶ P`. -/
-theorem monic_inr_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] {A B P : 𝒞}
+public theorem monic_inr_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 𝒞] {A B P : 𝒞}
     (j₁ : A ⟶ P) (j₂ : B ⟶ P) (hj₂ : Monic j₂) :
     Monic (HasBinaryCoproducts.inr (A := A) (B := B)) := by
   have h : Monic (HasBinaryCoproducts.inr (A := A) (B := B) ≫ HasBinaryCoproducts.case j₁ j₂) := by
@@ -118,13 +120,13 @@ theorem monic_inr_of_factor {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryCoproducts 
   exact h u v (by rw [← Cat.assoc, ← Cat.assoc, huv])
 
 /-- A subobject with an INITIAL domain lies below every subobject of the same object. -/
-theorem subobject_le_of_initial_dom {𝒞 : Type u} [Cat.{v} 𝒞] {B : 𝒞} {S T : Subobject 𝒞 B}
+public theorem subobject_le_of_initial_dom {𝒞 : Type u} [Cat.{v} 𝒞] {B : 𝒞} {S T : Subobject 𝒞 B}
     (h : IsInitial S.dom) : S.le T :=
   ⟨h.out T.dom, h.hom_uniq _ _⟩
 
 /-- Initiality transports backwards along an iso: if `m : X ⟶ Z` is iso and `Z` is initial then
     `X` is initial. -/
-theorem isInitial_of_iso {𝒞 : Type u} [Cat.{v} 𝒞] {X Z : 𝒞} (m : X ⟶ Z) (hm : IsIso m)
+public theorem isInitial_of_iso {𝒞 : Type u} [Cat.{v} 𝒞] {X Z : 𝒞} (m : X ⟶ Z) (hm : IsIso m)
     (hZ : IsInitial Z) : IsInitial X := by
   obtain ⟨mi, h1, _⟩ := hm
   intro Y
@@ -136,7 +138,7 @@ theorem isInitial_of_iso {𝒞 : Type u} [Cat.{v} 𝒞] {X Z : 𝒞} (m : X ⟶ 
     _ = m ≫ hZ.out Y := by rw [h1, Cat.id_comp]
 
 /-- In a `PreLogos`, the bottom subobject's domain is INITIAL. -/
-theorem prelogos_bottom_initial {𝒞 : Type u} [Cat.{v} 𝒞] (h : PreLogos 𝒞) (B : 𝒞) :
+public theorem prelogos_bottom_initial {𝒞 : Type u} [Cat.{v} 𝒞] (h : PreLogos 𝒞) (B : 𝒞) :
     IsInitial (h.bottom B).dom := by
   obtain ⟨e, ei, hei1, hei2⟩ := h.bottom_dom_iso B h.toHasTerminal.one
   letI : HasCoterminator 𝒞 := minimal_subobject_of_one_is_coterminator h
@@ -147,7 +149,7 @@ theorem prelogos_bottom_initial {𝒞 : Type u} [Cat.{v} 𝒞] (h : PreLogos �
     bottom, so the pullback is iso to it, hence initial.  The pullback used is the
     `products_equalizers_implies_pullbacks` one (the choice `objIncl_preserves_pullbacks` uses); it
     is bridged to the ambient `HasPullbacks` pullback of §1.621 by pullback uniqueness. -/
-theorem disjoint_pullback_initial {𝒞 : Type u} [Cat.{v} 𝒞] (hD : DisjointBinaryCoproduct 𝒞)
+public theorem disjoint_pullback_initial {𝒞 : Type u} [Cat.{v} 𝒞] (hD : DisjointBinaryCoproduct 𝒞)
     (hpp : HasBinaryProducts 𝒞) (hee : HasEqualizers 𝒞) {A B : 𝒞} :
     letI := hpp; letI := hee
     IsInitial (@products_equalizers_implies_pullbacks 𝒞 _ hpp hee _ _ _
@@ -189,7 +191,7 @@ variable {ι : Type u} {D : Directed ι}
     `colimitHasBinaryCoproducts` fed `hcop i := (hdisj i).toHasBinaryCoproducts`, so the coproduct
     object/injections of the colimit are built from the per-stage positive coproducts.  `hcoppres`/
     `hcoppres_case` are the (joint-monic + copairing) preservation premises of the brick. -/
-noncomputable def colimitCoprodOfDisjoint
+@[expose] public noncomputable def colimitCoprodOfDisjoint
     (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
@@ -209,7 +211,7 @@ noncomputable def colimitCoprodOfDisjoint
 /-- **Two colimit objects live at one stage.**  Push the `colimOut` representatives of `A` and `B`
     to a common bound `k`; `objIncl_compat` + `colimOut_spec` make their `objIncl k`-images equal to
     `A`, `B`.  (The fresh `k, xA', xB'` let the caller `subst` `A, B` to `objIncl`-objects.) -/
-theorem objIncl_pair_commonStage (C : CatSystem ι D) (A B : C.Obj) :
+public theorem objIncl_pair_commonStage (C : CatSystem ι D) (A B : C.Obj) :
     ∃ (k : ι) (xA' xB' : C.A k), C.objIncl k xA' = A ∧ C.objIncl k xB' = B := by
   obtain ⟨k, hAk, hBk⟩ := D.bound (colimOut C A).1 (colimOut C B).1
   exact ⟨k, C.F hAk (colimOut C A).2, C.F hBk (colimOut C B).2,
@@ -220,7 +222,7 @@ theorem objIncl_pair_commonStage (C : CatSystem ι D) (A B : C.Obj) :
     per-stage germ injection `homInclObj inl` is monic (`homInclObj_mono_of_stage`, since transitions
     preserve the stage mono `(hdisj k).inl_monic`), and the colimit `inl` is a left factor of it via
     `case (homInclObj inl) (homInclObj inr)` (`monic_inl_of_factor`). -/
-theorem colimit_inl_monic (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimit_inl_monic (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
@@ -248,7 +250,7 @@ theorem colimit_inl_monic (C : CatSystem ι D) (hC : C.Coherent)
     (fun {j} hij z u v huv => hmono hij (hdisj k).inl_monic u v huv)
 
 /-- **The colimit's right injection is monic** (dual of `colimit_inl_monic`). -/
-theorem colimit_inr_monic (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimit_inr_monic (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
@@ -285,7 +287,7 @@ theorem colimit_inr_monic (C : CatSystem ι D) (hC : C.Coherent)
     per-stage §1.621 disjointness), so it maps to the strict-initial `Zₖ = objIncl k 0ₖ`
     (`colimitStrictInitial`).  Therefore the intersection's domain maps to the colimit strict initial,
     is itself initial, and lies below `⊥`. -/
-theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (_hmono : TransMono C)
     (hbot : ∀ i, PreLogos (C.A i))
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
@@ -392,7 +394,7 @@ theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne
     finite-limit / mono / initial bundles (`hmono`, `ht`/`htpres`, `hp`/`hpres`/`hpres_pair`,
     `he`/`hepres`/`hepres_lift`, `hbot`/`hinitpres`) are exactly the ones the §2.218 regular tower
     already supplies. -/
-noncomputable def colimitDisjointBinaryCoproduct
+@[expose] public noncomputable def colimitDisjointBinaryCoproduct
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [Nonempty ι]
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
     (hbot : ∀ i, PreLogos (C.A i))
@@ -452,7 +454,7 @@ noncomputable def colimitDisjointBinaryCoproduct
     hypotheses are the per-stage finite-limit / image / coproduct coherence bundles the §2.218
     capitalization tower already supplies; the colimit's `RegularCategory`/`HasSubobjectUnions` come
     from `colimitPreRegular` + `colimitHasImages` + `hasSubobjectUnions_of_coproducts_images`. -/
-noncomputable def colimitPositive
+@[expose] public noncomputable def colimitPositive
     (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [Nonempty ι]
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
     (hbot : ∀ i, PreLogos (C.A i))

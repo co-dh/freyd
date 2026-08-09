@@ -9,7 +9,9 @@
   applied explicitly where a category has coproducts+images but no bespoke unions — in particular the
   §1.543 capitalization colimit (`colimitHasBinaryCoproducts` + `colimitHasImages`), the
   union-closure step of §1.63 (capital POSITIVE pre-logos). -/
-import Freyd.S1_61
+module
+
+public import Freyd.S1_61
 
 namespace Freyd
 
@@ -18,7 +20,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [HasImages 𝒞] [HasBinaryCoproducts �
 /-- **Unions from coproducts + images.**  `S ∪ T := image (case S.arr T.arr)`.  `union_left`/
     `union_right` factor `S.arr`/`T.arr` through the image via `inl`/`inr`; `union_min` copairs the
     two `≤ U` witnesses and applies `image_min`. -/
-def hasSubobjectUnions_of_coproducts_images : HasSubobjectUnions 𝒞 where
+@[expose] public def hasSubobjectUnions_of_coproducts_images : HasSubobjectUnions 𝒞 where
   union {_} S T := image (HasBinaryCoproducts.case S.arr T.arr)
   union_left {_} S T :=
     ⟨HasBinaryCoproducts.inl ≫ image.lift (HasBinaryCoproducts.case S.arr T.arr), by

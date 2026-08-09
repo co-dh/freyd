@@ -33,11 +33,13 @@
   IMPORTED from `Freyd/ColimitInvImageUnion.lean` — they are pure category theory and apply to the lax
   colimit unchanged.  Mathlib-free.  Single universe `{w, w}` (the equalizer-derived pullback germ).
 -/
-import Freyd.S1_63_ColimitInvImageUnion
-import Freyd.S1_543_LaxGermCoproduct
-import Freyd.S1_543_LaxGermImages
-import Freyd.S1_543_LaxColimitImages
-import Freyd.S1_543_UnionFromCoproduct
+module
+
+public import Freyd.S1_63_ColimitInvImageUnion
+public import Freyd.S1_543_LaxGermCoproduct
+public import Freyd.S1_543_LaxGermImages
+public import Freyd.S1_543_LaxColimitImages
+public import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
 open Freyd.Colim
@@ -57,14 +59,14 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
 /-- Transport a subobject `S ⊆ B` along an iso `e : B → B'` (post-compose the arrow).  "mono ≫ iso is
     mono" is `LaxColim.mono_postcomp_iso'` (RatCapHcanon, general hom universe). -/
-def subConj {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) : Subobject 𝒞 B' :=
+@[expose] public def subConj {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) : Subobject 𝒞 B' :=
   Subobject.mk S.dom (S.arr ≫ e) (LaxColim.mono_postcomp_iso' S.monic he)
 
 theorem subConj_arr {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) (S : Subobject 𝒞 B) :
     (subConj e he S).arr = S.arr ≫ e := rfl
 
 /-- `subConj` is monotone for `Subobject.le`. -/
-theorem subConj_le {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) {S T : Subobject 𝒞 B}
+public theorem subConj_le {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) {S T : Subobject 𝒞 B}
     (h : S.le T) : (subConj e he S).le (subConj e he T) := by
   obtain ⟨k, hk⟩ := h
   exact ⟨k, by
@@ -72,7 +74,7 @@ theorem subConj_le {B B' : 𝒞} (e : B ⟶ B') (he : IsIso e) {S T : Subobject 
     rw [← Cat.assoc, hk]⟩
 
 /-- Conjugating by `e` then its inverse `e'` returns the original subobject (up to `≈`). -/
-theorem subConj_cancel {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
+public theorem subConj_cancel {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
     (he : IsIso e) (he' : IsIso e') (h2 : e' ≫ e = Cat.id B')
     (U : Subobject 𝒞 B') : (subConj e he (subConj e' he' U)).Equiv U := by
   refine ⟨⟨Cat.id U.dom, ?_⟩, ⟨Cat.id U.dom, ?_⟩⟩
@@ -84,7 +86,7 @@ theorem subConj_cancel {B B' : 𝒞} (e : B ⟶ B') (e' : B' ⟶ B)
 /-- **Inverse image commutes with codomain conjugation.**  `f#(X)` over `A` equals (up to `≈`) the
     inverse image of the conjugated subobject `subConj e he X ⊆ B'` along `f ≫ e`.  The chosen
     pullback of `(f, X.arr)` is, by `isPullback_of_iso_cospan`, also a pullback of `(f≫e, X.arr≫e)`. -/
-theorem invImage_subConj_equiv [HasPullbacks 𝒞] {A B B' : 𝒞} (f : A ⟶ B)
+public theorem invImage_subConj_equiv [HasPullbacks 𝒞] {A B B' : 𝒞} (f : A ⟶ B)
     (e : B ⟶ B') (he : IsIso e) (X : Subobject 𝒞 B) :
     (InverseImage f X).Equiv (InverseImage (f ≫ e) (subConj e he X)) := by
   have hecopy := he
@@ -103,7 +105,7 @@ theorem invImage_subConj_equiv [HasPullbacks 𝒞] {A B B' : 𝒞} (f : A ⟶ B)
 /-- **Inverse image commutes with domain conjugation.**  Pre-composing `g : A'' → B` with an iso
     `d : A → A''` (inverse `e' : A'' → A`) pulls the inverse image back across `e'`:
     `(d ≫ g)#(Y) ≈ subConj e' (g#(Y))`.  Hand-built pullback (pullback pasting through the iso). -/
-theorem invImage_iso_precomp_equiv [HasPullbacks 𝒞] {A A'' B : 𝒞}
+public theorem invImage_iso_precomp_equiv [HasPullbacks 𝒞] {A A'' B : 𝒞}
     (d : A ⟶ A'') (e' : A'' ⟶ A) (h1 : d ≫ e' = Cat.id A) (h2 : e' ≫ d = Cat.id A'')
     (g : A'' ⟶ B) (Y : Subobject 𝒞 B) :
     (InverseImage (d ≫ g) Y).Equiv (subConj e' ⟨d, h2, h1⟩ (InverseImage g Y)) := by
@@ -132,7 +134,7 @@ theorem invImage_iso_precomp_equiv [HasPullbacks 𝒞] {A A'' B : 𝒞}
 /-- **Conjugation commutes with binary union.**  `subConj e (S ∪ T) ≈ (subConj e S) ∪ (subConj e T)`:
     each side is the join of the two conjugated subobjects (joins are preserved by the order-iso
     `subConj e` / `subConj e'`). -/
-theorem subConj_union_equiv [HasImages 𝒞] [HasSubobjectUnions 𝒞] {B B' : 𝒞}
+public theorem subConj_union_equiv [HasImages 𝒞] [HasSubobjectUnions 𝒞] {B B' : 𝒞}
     (e : B ⟶ B') (e' : B' ⟶ B) (he : IsIso e) (h1 : e ≫ e' = Cat.id B) (h2 : e' ≫ e = Cat.id B')
     (P Q : Subobject 𝒞 B) :
     (subConj e he (HasSubobjectUnions.union P Q)).Equiv
@@ -170,14 +172,14 @@ universe w
 variable {ι : Type w} {D : Directed ι} (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L)
 
 /-- The lax mono-preservation bundle (shared shape of the germ keystones), abbreviated. -/
-abbrev TransMonoL : Prop :=
+@[expose] public abbrev TransMonoL : Prop :=
   ∀ {i j : ι} (hij : D.le i j),
     @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij)
 
 /-- The colimit subobject GERM of a stage subobject `X ⊆ y` (of `L.A N`): `⟨N, X.dom⟩ ↣ ⟨N, y⟩` via
     `stageInclL X.arr`, monic since transitions preserve `X.arr`'s mono.  Lax mirror of
     `Colim.germSub`; exactly the form produced by `objInclL_preserves_images`. -/
-noncomputable def germSubL (hmono : TransMonoL L) {N : ι} {y : L.A N} (X : Subobject (L.A N) y) :
+@[expose] public noncomputable def germSubL (hmono : TransMonoL L) {N : ι} {y : L.A N} (X : Subobject (L.A N) y) :
     letI : Cat (Obj L) := laxColimCat L hL
     Subobject (Obj L) (objIncl L N y) :=
   letI : Cat (Obj L) := laxColimCat L hL
@@ -189,7 +191,7 @@ theorem germSubL_arr (hmono : TransMonoL L) {N : ι} {y : L.A N} (X : Subobject 
     (germSubL L hL hmono X).arr = stageInclL L hL X.arr := rfl
 
 /-- The germ functor is monotone: a stage `X ≤ Y` gives a colimit `germSubL X ≤ germSubL Y`. -/
-theorem germSubL_le (hmono : TransMonoL L) {N : ι} {y : L.A N} {X Y : Subobject (L.A N) y}
+public theorem germSubL_le (hmono : TransMonoL L) {N : ι} {y : L.A N} {X Y : Subobject (L.A N) y}
     (h : X.le Y) :
     letI : Cat (Obj L) := laxColimCat L hL
     (germSubL L hL hmono X).le (germSubL L hL hmono Y) := by
@@ -211,7 +213,7 @@ set_option maxHeartbeats 1000000 in
 /-- **Lax `invImage_germ_equiv`.**  The colimit inverse image of a germ is the germ of the stage
     inverse image (a pullback): `(stageInclL f_N)#(germSubL X_N) ≈ germSubL (pbSub f_N X_N)`, via
     `stageInclFunctorL_preservesPullbacks` + `pullback_subobject_le` (in both directions). -/
-theorem invImage_germ_equivL (hmono : TransMonoL L) [Nonempty ι]
+public theorem invImage_germ_equivL (hmono : TransMonoL L) [Nonempty ι]
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
     [hpull : @HasPullbacks (Obj L) (laxColimCat L hL)]
     (N : ι) {xA xB : L.A N} (f_N : xA ⟶ xB) (X_N : Subobject (L.A N) xB) :
@@ -241,7 +243,7 @@ set_option maxHeartbeats 1000000 in
 /-- **Lax `union_germ_equiv`.**  The colimit union of two germs is the germ of the stage union (image
     of a copairing): `(germSubL S_N) ∪ (germSubL T_N) ≈ germSubL (unionImg S_N T_N)`, via
     `objInclL_preserves_coproducts` + `objInclL_preserves_images` + `union_equiv_image_case`. -/
-theorem union_germ_equivL (hmono : TransMonoL L) (coprData : LaxCoproductData L)
+public theorem union_germ_equivL (hmono : TransMonoL L) (coprData : LaxCoproductData L)
     (hi : ∀ i, @HasImages (L.A i) (L.catA i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : L.A i} (p q : x ⟶ y),
         L.Fmap hij p = L.Fmap hij q → p = q)
@@ -319,11 +321,11 @@ theorem union_germ_equivL (hmono : TransMonoL L) (coprData : LaxCoproductData L)
   stage object. -/
 
 /-- The canonical stage-advance iso `⟨i, x⟩ → ⟨N, L.F hiN x⟩` (germ of `(reflApp)⁻¹` at bound `N`). -/
-noncomputable def advIso {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N) :
+@[expose] public noncomputable def advIso {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N) :
     @homL _ _ L hL ⟨i, x⟩ ⟨N, L.F hiN x⟩ :=
   homInclL L hL x (L.F hiN x) ⟨N, hiN, D.refl N⟩ (isoInv (reflApp_isIso L (L.F hiN x)))
 
-theorem advIso_isIso {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N) :
+public theorem advIso_isIso {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N) :
     @IsIso (Obj L) (laxColimCat L hL) _ _ (advIso L hL x hiN) :=
   homInclL_isIso_of_rep L hL x (L.F hiN x) ⟨N, hiN, D.refl N⟩
     (isoInv (reflApp_isIso L (L.F hiN x))) (reflApp L (L.F hiN x))
@@ -332,7 +334,7 @@ theorem advIso_isIso {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N) :
 set_option maxHeartbeats 1000000 in
 /-- **The stage-advance bridge identity.**  `advIso x ⊚ stageInclL g = (homInclL x y ⟨N,hiN,hjN⟩ g) ⊚ advIso y`
     — both reduce to `homInclL x (F y) ⟨N,hiN,refl⟩ (g ≫ (reflApp)⁻¹)` at the common bound `N`. -/
-theorem advIso_stageInclL_eq {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N)
+public theorem advIso_stageInclL_eq {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N)
     {j : ι} (y : L.A j) (hjN : D.le j N) (g : L.F hiN x ⟶ L.F hjN y) :
     @compL _ _ L hL ⟨i, x⟩ ⟨N, L.F hiN x⟩ ⟨N, L.F hjN y⟩
         (advIso L hL x hiN) (stageInclL L hL g)
@@ -359,7 +361,7 @@ theorem advIso_stageInclL_eq {i : ι} (x : L.A i) {N : ι} (hiN : D.le i N)
   per-stage hard direction `stage_invImage_union_le`, and transport the resulting `≤` up by
   `germSubL_le` + `subConj_le`.  Lax mirror of `Colim.colimit_invImage_union_le`. -/
 set_option maxHeartbeats 4000000 in
-theorem laxColim_invImage_union_le [Nonempty ι]
+public theorem laxColim_invImage_union_le [Nonempty ι]
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
     (coprData : LaxCoproductData L)
     (hi : ∀ i, @HasImages (L.A i) (L.catA i))

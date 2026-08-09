@@ -27,7 +27,9 @@
   Hand-built category theory only (no `Mathlib.CategoryTheory.*`).
 -/
 
-import Freyd.S1_31
+module
+
+public import Freyd.S1_31
 
 open Freyd
 
@@ -40,11 +42,11 @@ namespace Freyd
 /-! ## §1.395 Quantifiers and Q-sequences -/
 
 /-- A quantifier attached to a Q-sequence step: `all` = ∀, `ex` = ∃. -/
-inductive Quant | all | ex
+public inductive Quant | all | ex
 deriving DecidableEq
 
 /-- Transpose a quantifier (∀↔∃); the engine of the complementary Q-sequence. -/
-def Quant.flip : Quant → Quant
+@[expose] public def Quant.flip : Quant → Quant
   | .all => .ex
   | .ex  => .all
 
@@ -55,7 +57,7 @@ def Quant.flip : Quant → Quant
 /-- A Q-SEQUENCE rooted at `A` in the ambient category `𝒟`: a finite telescope of
     quantifier-tagged arrows.  `nil A q` is the empty telescope carrying the trailing
     quantifier `q = Q₀` (book §1.395: ∀ is customarily omitted at the end). -/
-inductive QSeq (𝒟 : Type u) [Cat.{v} 𝒟] : 𝒟 → Type (max u v)
+public inductive QSeq (𝒟 : Type u) [Cat.{v} 𝒟] : 𝒟 → Type (max u v)
   | nil  (A : 𝒟) (q : Quant) : QSeq 𝒟 A
   | cons {A A' : 𝒟} (q : Quant) (α : A ⟶ A') (rest : QSeq 𝒟 A') : QSeq 𝒟 A
 
@@ -64,29 +66,29 @@ inductive QSeq (𝒟 : Type u) [Cat.{v} 𝒟] : 𝒟 → Type (max u v)
     Empty telescope (§1.395 boundary): `nil A q` is satisfied iff `q = .all` ("A₀→B
     satisfies iff Q₀ = ∀").  Each step extends the witness over the next arrow `α`,
     the triangle `α ≫ g = f` asserting that `g : A' ⟶ B` agrees with `f` over `A`. -/
-def Satisfies : {A : 𝒟} → QSeq 𝒟 A → {B : 𝒟} → (A ⟶ B) → Prop
+@[expose] public def Satisfies : {A : 𝒟} → QSeq 𝒟 A → {B : 𝒟} → (A ⟶ B) → Prop
   | _, .nil _ q,          _, _ => q = .all
   | _, .cons .all α rest, _, f => ∀ g, α ≫ g = f → Satisfies rest g
   | _, .cons .ex  α rest, _, f => ∃ g, α ≫ g = f ∧ Satisfies rest g
 
-@[simp] theorem satisfies_nil_all {A B : 𝒟} (f : A ⟶ B) : Satisfies (.nil A .all) f :=
+@[simp] public theorem satisfies_nil_all {A B : 𝒟} (f : A ⟶ B) : Satisfies (.nil A .all) f :=
   rfl
 
-@[simp] theorem not_satisfies_nil_ex {A B : 𝒟} (f : A ⟶ B) : ¬ Satisfies (.nil A .ex) f := by
+@[simp] public theorem not_satisfies_nil_ex {A B : 𝒟} (f : A ⟶ B) : ¬ Satisfies (.nil A .ex) f := by
   intro h; exact Quant.noConfusion h
 
-@[simp] theorem satisfies_cons_all {A A' B : 𝒟} (α : A ⟶ A') (rest : QSeq 𝒟 A')
+@[simp] public theorem satisfies_cons_all {A A' B : 𝒟} (α : A ⟶ A') (rest : QSeq 𝒟 A')
     (f : A ⟶ B) : Satisfies (.cons .all α rest) f ↔ ∀ g, α ≫ g = f → Satisfies rest g :=
   Iff.rfl
 
-@[simp] theorem satisfies_cons_ex {A A' B : 𝒟} (α : A ⟶ A') (rest : QSeq 𝒟 A')
+@[simp] public theorem satisfies_cons_ex {A A' B : 𝒟} (α : A ⟶ A') (rest : QSeq 𝒟 A')
     (f : A ⟶ B) : Satisfies (.cons .ex α rest) f ↔ ∃ g, α ≫ g = f ∧ Satisfies rest g :=
   Iff.rfl
 
 /-- The COMPLEMENTARY Q-SEQUENCE (§1.395): transpose every quantifier ∀↔∃ (including
     the trailing Q₀), keeping the arrows.  (Contrast §1.392's op-dual presentation,
     which reverses arrows instead.) -/
-def QSeq.complement : {A : 𝒟} → QSeq 𝒟 A → QSeq 𝒟 A
+@[expose] public def QSeq.complement : {A : 𝒟} → QSeq 𝒟 A → QSeq 𝒟 A
   | _, .nil A q       => .nil A q.flip
   | _, .cons q α rest => .cons q.flip α rest.complement
 
@@ -124,7 +126,7 @@ private theorem satisfies_postcomp
 
 /-- THEOREM 1 (§1.395). Post-composing by an isomorphism `e : B ⟶ B'` preserves
     satisfaction: `Satisfies s f ↔ Satisfies s (f ≫ e)`.  Constructive, axiom-free. -/
-theorem satisfies_iff_postcomp_iso {A B B' : 𝒟} (s : QSeq 𝒟 A) (f : A ⟶ B)
+public theorem satisfies_iff_postcomp_iso {A B B' : 𝒟} (s : QSeq 𝒟 A) (f : A ⟶ B)
     {e : B ⟶ B'} (he : IsIso e) : Satisfies s f ↔ Satisfies s (f ≫ e) := by
   obtain ⟨e', h1, h2⟩ := he
   refine ⟨satisfies_postcomp e e' h1 h2 s f, fun h => ?_⟩
@@ -148,7 +150,7 @@ theorem satisfies_iff_postcomp_iso {A B B' : 𝒟} (s : QSeq 𝒟 A) (f : A ⟶ 
 /-- CONSTRUCTIVE HALF of Thm 2: satisfying the complement entails NOT satisfying the
     original.  Axiom-free.  Induction on `s`; each quantifier becomes the De Morgan
     "easy" direction. -/
-theorem satisfies_complement_imp_not :
+public theorem satisfies_complement_imp_not :
     ∀ {A : 𝒟} (s : QSeq 𝒟 A) {B : 𝒟} (f : A ⟶ B),
       Satisfies s.complement f → ¬ Satisfies s f
   | _, .nil _ q,          _, f, hcomp, hsat => by
@@ -167,7 +169,7 @@ theorem satisfies_complement_imp_not :
 /-- THEOREM 2 (§1.395), full `↔`. The complementary Q-sequence is satisfied exactly
     when the original is not.  Uses `Classical` for the De Morgan converse (¬∀ ⇒ ∃¬).
     The forward implication is the axiom-free `satisfies_complement_imp_not`. -/
-theorem satisfies_complement_iff_not :
+public theorem satisfies_complement_iff_not :
     ∀ {A : 𝒟} (s : QSeq 𝒟 A) {B : 𝒟} (f : A ⟶ B),
       Satisfies s.complement f ↔ ¬ Satisfies s f
   | _, .nil _ q,          _, f =>
@@ -285,7 +287,7 @@ theorem iso_reflects_satisfies {A B B' : 𝒟} (s : QSeq 𝒟 A) (f : A ⟶ B)
 /-- Re-index a Q-sequence along a functor `T : 𝒞 → 𝒟`: push every object and arrow of
     the telescope through `T`, keeping the quantifiers.  This is the cross-category
     transport that lets §1.397 STATE "T preserves satisfaction". -/
-def QSeq.map {𝒞 : Type u} [Cat.{v} 𝒞] (T : Functor 𝒞 𝒟) :
+@[expose] public def QSeq.map {𝒞 : Type u} [Cat.{v} 𝒞] (T : Functor 𝒞 𝒟) :
     {A : 𝒞} → QSeq 𝒞 A → QSeq 𝒟 (T.obj A)
   | _, .nil _ q       => .nil (T.obj _) q
   | _, .cons q α rest => .cons q (T.map α) (rest.map T)

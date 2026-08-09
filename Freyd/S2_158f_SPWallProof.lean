@@ -21,7 +21,9 @@
   STRICTLY MATHLIB-FREE.  Only Lean 4 core + `Freyd.*`.
 -/
 
-import Freyd.S2_158d_SPWall
+module
+
+public import Freyd.S2_158d_SPWall
 
 namespace Freyd.S2_158
 

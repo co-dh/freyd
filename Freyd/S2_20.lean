@@ -7,8 +7,10 @@
   §2.223 GLOBALLY COMPLETE
 -/
 
-import Freyd.S1_10
-import Freyd.S2_10
+module
+
+public import Freyd.S1_10
+public import Freyd.S2_10
 
 
 universe v u
@@ -22,7 +24,7 @@ namespace Freyd.Alg
 
 /-- A DISTRIBUTIVE ALLEGORY (§2.21): allegory with zero, union,
     and distributivity. -/
-class DistributiveAllegory (𝒜 : Type u) extends Allegory 𝒜 where
+public class DistributiveAllegory (𝒜 : Type u) extends Allegory 𝒜 where
   /-- Zero morphism 0 : a → b for each pair of objects. -/
   zero {a b : 𝒜} : a ⟶ b
   /-- Union (join) R ∪ S : a → b when R, S : a → b. -/
@@ -73,7 +75,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
   In a distributive allegory, R ⊑ S (i.e., R = R ∩ S) iff R ∪ S = S.
   This is the standard lattice duality. -/
 
-theorem le_iff_union_eq_left {a b : 𝒜} (R S : a ⟶ b) : (R ⊑ S) ↔ R ∪ S = S := by
+public theorem le_iff_union_eq_left {a b : 𝒜} (R S : a ⟶ b) : (R ⊑ S) ↔ R ∪ S = S := by
   constructor
   · intro h
     dsimp [le] at h
@@ -94,7 +96,7 @@ theorem le_iff_union_eq_left {a b : 𝒜} (R S : a ⟶ b) : (R ⊑ S) ↔ R ∪ 
 /-! ### Helper: union is least upper bound -/
 
 /-- If A ⊑ C and B ⊑ C then A ∪ B ⊑ C. -/
-theorem union_lub {a b : 𝒜} {A B C : a ⟶ b} (hA : A ⊑ C) (hB : B ⊑ C) : A ∪ B ⊑ C := by
+public theorem union_lub {a b : 𝒜} {A B C : a ⟶ b} (hA : A ⊑ C) (hB : B ⊑ C) : A ∪ B ⊑ C := by
   rw [le_iff_union_eq_left] at hA hB ⊢
   -- hA: A ∪ C = C,  hB: B ∪ C = C.  Goal: (A ∪ B) ∪ C = C
   calc
@@ -103,23 +105,23 @@ theorem union_lub {a b : 𝒜} {A B C : a ⟶ b} (hA : A ⊑ C) (hB : B ⊑ C) :
     _ = C := hA
 
 /-- Union is an upper bound: R ⊑ R ∪ S. -/
-theorem le_union_left {a b : 𝒜} (R S : a ⟶ b) : R ⊑ R ∪ S := by
+public theorem le_union_left {a b : 𝒜} (R S : a ⟶ b) : R ⊑ R ∪ S := by
   dsimp [le]
   rw [Allegory.inter_comm, DistributiveAllegory.inter_union_absorb]
 
 /-- Union is an upper bound: S ⊑ R ∪ S. -/
-theorem le_union_right {a b : 𝒜} (R S : a ⟶ b) : S ⊑ R ∪ S := by
+public theorem le_union_right {a b : 𝒜} (R S : a ⟶ b) : S ⊑ R ∪ S := by
   rw [DistributiveAllegory.union_comm]; exact le_union_left S R
 
 /-- Union is monotone in both arguments. -/
-theorem union_mono {a b : 𝒜} {A B A' B' : a ⟶ b} (hA : A ⊑ A') (hB : B ⊑ B') :
+public theorem union_mono {a b : 𝒜} {A B A' B' : a ⟶ b} (hA : A ⊑ A') (hB : B ⊑ B') :
     A ∪ B ⊑ A' ∪ B' :=
   union_lub (le_trans hA (le_union_left A' B')) (le_trans hB (le_union_right A' B'))
 
 /-! ### Derived properties -/
 
 /-- (R ∪ S)° = S° ∪ R° (§2.211). -/
-theorem recip_union {a b : 𝒜} (R S : a ⟶ b) : (R ∪ S)° = S° ∪ R° := by
+public theorem recip_union {a b : 𝒜} (R S : a ⟶ b) : (R ∪ S)° = S° ∪ R° := by
   apply le_antisymm
   · -- (R ∪ S)° ⊑ S° ∪ R°
     have hR' : R ⊑ (S° ∪ R°)° := recip_le_iff.mp (le_union_right S° R°)
@@ -139,7 +141,7 @@ theorem recip_union {a b : 𝒜} (R S : a ⟶ b) : (R ∪ S)° = S° ∪ R° := 
 /-- (S ∪ T) ≫ R = SR ∪ TR (§2.211).
     Proof via reciprocation: ((S∪T)R)° = R°(S∪T)° = R°(T°∪S°) = R°T° ∪ R°S° = (TR)° ∪ (SR)°.
     Then take ° of both sides. -/
-theorem union_comp_distrib {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
+public theorem union_comp_distrib {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
     (S ∪ T) ≫ R = (S ≫ R) ∪ (T ≫ R) := by
   -- First show equality of the reciprocals, then take °
   -- Chain: ((S∪T)R)° = R°(S∪T)° = R°(T°∪S°) = R°T° ∪ R°S° = (TR)° ∪ (SR)°
@@ -157,15 +159,15 @@ theorem union_comp_distrib {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
     _ = (S ≫ R) ∪ (T ≫ R) := by rw [Allegory.recip_recip]
 
 /-- `R ∪ 𝟘 = R` (§2.211). Follows from `zero_union` and `union_comm`. -/
-theorem union_zero {a b : 𝒜} (R : a ⟶ b) : R ∪ (𝟘 : a ⟶ b) = R := by
+public theorem union_zero {a b : 𝒜} (R : a ⟶ b) : R ∪ (𝟘 : a ⟶ b) = R := by
   rw [DistributiveAllegory.union_comm, DistributiveAllegory.zero_union R]
 
 /-- `𝟘 ⊑ R` for all `R` — zero is the minimum morphism (§2.211). -/
-theorem zero_le {a b : 𝒜} (R : a ⟶ b) : (𝟘 : a ⟶ b) ⊑ R := by
+public theorem zero_le {a b : 𝒜} (R : a ⟶ b) : (𝟘 : a ⟶ b) ⊑ R := by
   rw [le_iff_union_eq_left, DistributiveAllegory.zero_union R]
 
 /-- 0° = 0 (§2.211). -/
-theorem recip_zero {a b : 𝒜} : (𝟘 : a ⟶ b)° = (𝟘 : b ⟶ a) := by
+public theorem recip_zero {a b : 𝒜} : (𝟘 : a ⟶ b)° = (𝟘 : b ⟶ a) := by
   apply le_antisymm
   · -- 0_ab° ⊑ 0_ba   ↔  0_ab ⊑ 0_ba°  by recip_le_iff.mpr
     -- 0_ab ⊑ 0_ba° holds by zero_le (0 is minimum in a→b)
@@ -180,7 +182,7 @@ theorem recip_zero {a b : 𝒜} : (𝟘 : a ⟶ b)° = (𝟘 : b ⟶ a) := by
 
 /-- Coproduct diagram (§2.214). `u₁ : a₁ → a`, `u₂ : a₂ → a` with:
     u₁u₁° = 1, u₁u₂° = 0, u₂u₁° = 0, u₂u₂° = 1, u₁°u₁ ∪ u₂°u₂ = 1. -/
-structure Coproduct (a a₁ a₂ : 𝒜) where
+public structure Coproduct (a a₁ a₂ : 𝒜) where
   u₁ : a₁ ⟶ a
   u₂ : a₂ ⟶ a
   u₁_self_comp_recip : u₁ ≫ u₁° = Cat.id a₁
@@ -199,7 +201,7 @@ structure Coproduct (a a₁ a₂ : 𝒜) where
 /-- The universal coproduct property for (a, u₁, u₂) (§2.214):
     for any c and morphisms R₁ : a₁ → c, R₂ : a₂ → c there exists a unique
     R : a → c with u₁ ≫ R = R₁ and u₂ ≫ R = R₂ (where u_i : a_i → a are the injections). -/
-def IsCoproduct {𝒜 : Type u} [DistributiveAllegory 𝒜] {a a₁ a₂ : 𝒜}
+@[expose] public def IsCoproduct {𝒜 : Type u} [DistributiveAllegory 𝒜] {a a₁ a₂ : 𝒜}
     (u₁ : a₁ ⟶ a) (u₂ : a₂ ⟶ a) : Prop :=
   ∀ (c : 𝒜) (R₁ : a₁ ⟶ c) (R₂ : a₂ ⟶ c),
     ∃ R : a ⟶ c,
@@ -208,7 +210,7 @@ def IsCoproduct {𝒜 : Type u} [DistributiveAllegory 𝒜] {a a₁ a₂ : 𝒜}
 
 /-- (§2.214) The five `Coproduct` equations imply the universal property.
     The mediating morphism is u₁° ≫ R₁ ∪ u₂° ≫ R₂. -/
-theorem coproduct_five_eqs_to_universal {𝒜 : Type u} [DistributiveAllegory 𝒜]
+public theorem coproduct_five_eqs_to_universal {𝒜 : Type u} [DistributiveAllegory 𝒜]
     {a a₁ a₂ : 𝒜} (cp : Coproduct a a₁ a₂) : IsCoproduct cp.u₁ cp.u₂ := by
   -- IsCoproduct: ∀ c R₁ R₂, ∃ R, u₁≫R=R₁ ∧ u₂≫R=R₂ ∧ uniqueness
   intro c R₁ R₂
@@ -241,7 +243,7 @@ theorem coproduct_five_eqs_to_universal {𝒜 : Type u} [DistributiveAllegory �
 
 /-- A retraction that is also a partial section is the reciprocal: if `f ≫ g = 1`
     and `g ≫ f ⊑ 1` then `g ⊑ f°`.  Pure modular-law fact (used in §2.214). -/
-theorem le_recip_of_section {𝒜 : Type u} [DistributiveAllegory 𝒜] {x y : 𝒜}
+public theorem le_recip_of_section {𝒜 : Type u} [DistributiveAllegory 𝒜] {x y : 𝒜}
     (f : x ⟶ y) (g : y ⟶ x) (h1 : f ≫ g = Cat.id x) (h2 : g ≫ f ⊑ Cat.id y) :
     g ⊑ f° := by
   -- modular_le g f (1_y):  (g≫f) ∩ 1 ⊑ (g ∩ 1≫f°)≫f = (g ∩ f°)≫f.
@@ -256,7 +258,7 @@ theorem le_recip_of_section {𝒜 : Type u} [DistributiveAllegory 𝒜] {x y : �
 
 /-- A section that is also a partial retraction equals the reciprocal: if
     `f ≫ g = 1` and `g ≫ f ⊑ 1` then `g = f°` (§2.214). -/
-theorem eq_recip_of_section {𝒜 : Type u} [DistributiveAllegory 𝒜] {x y : 𝒜}
+public theorem eq_recip_of_section {𝒜 : Type u} [DistributiveAllegory 𝒜] {x y : 𝒜}
     (f : x ⟶ y) (g : y ⟶ x) (h1 : f ≫ g = Cat.id x) (h2 : g ≫ f ⊑ Cat.id y) :
     g = f° := by
   apply le_antisymm (le_recip_of_section f g h1 h2)
@@ -377,7 +379,7 @@ def Coproduct.ofAlgProduct {a a₁ a₂ : 𝒜} (pr : AlgProduct a a₁ a₂) :
 /-! ## §2.215  Positive allegory -/
 
 /-- A POSITIVE ALLEGORY (§2.215): distributive allegory with finite coproducts. -/
-class PositiveAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
+public class PositiveAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
   coterm : 𝒜
   coprod (a b : 𝒜) : 𝒜
   has_coproduct (a b : 𝒜) : Coproduct (coprod a b) a b
@@ -394,7 +396,7 @@ class PositiveAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
     Book §2.22: each hom-set is a complete lattice AND composition and finite
     intersection distribute over arbitrary unions, i.e. `R(∪Sᵢ) = ∪ RSᵢ`
     (with the empty-`I` case `R0 = 0`). -/
-class LocallyCompleteDistributiveAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
+public class LocallyCompleteDistributiveAllegory (𝒜 : Type u) extends DistributiveAllegory 𝒜 where
   /-- Supremum of a predicate P on the hom-set. -/
   Sup {a b : 𝒜} (P : (a ⟶ b) → Prop) : a ⟶ b
   /-- Sup is an upper bound: if P(R), then R ⊑ Sup P. -/
@@ -415,7 +417,7 @@ class LocallyCompleteDistributiveAllegory (𝒜 : Type u) extends DistributiveAl
 
 /-- A GLOBALLY COMPLETE allegory has disjoint unions of indexed
     families of objects (§2.223). -/
-class GloballyCompleteAllegory (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜 where
+public class GloballyCompleteAllegory (𝒜 : Type u) extends LocallyCompleteDistributiveAllegory 𝒜 where
   disjointUnion {I : Type u} (a : I → 𝒜) : 𝒜
   inject {I : Type u} {a : I → 𝒜} (i : I) : a i ⟶ disjointUnion a
   inject_self_comp_recip {I : Type u} {a : I → 𝒜} (i : I) :
@@ -486,15 +488,15 @@ theorem positiveReflectionEmbed_injective {𝒜 : Type u} [DistributiveAllegory 
   objects are those of A and whose hom-sets are downdeals. -/
 
 /-- A DOWNDEAL in (a, b): closed downward under ⊑ (§2.221). -/
-def IsDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (D : (a ⟶ b) → Prop) : Prop :=
+@[expose] public def IsDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (D : (a ⟶ b) → Prop) : Prop :=
   ∀ (R : a ⟶ b), D R → ∀ (S : a ⟶ b), S ⊑ R → D S
 
 /-- The PRINCIPAL DOWNDEAL ↓R = { S | S ⊑ R } (§2.221). -/
-def principalDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+@[expose] public def principalDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     (a ⟶ b) → Prop :=
   fun S => S ⊑ R
 
-theorem principalDowndeal_isDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+public theorem principalDowndeal_isDowndeal {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     IsDowndeal (principalDowndeal R) :=
   fun _T hT _S hS => le_trans hS hT
 
@@ -510,14 +512,14 @@ theorem principalDowndeal_injective {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜}
 /-! ## §2.222  Ideal completion (distributive allegory case) -/
 
 /-- An IDEAL in a hom-set: a downdeal closed under finite union (§2.222). -/
-def IsIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (D : (a ⟶ b) → Prop) : Prop :=
+@[expose] public def IsIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (D : (a ⟶ b) → Prop) : Prop :=
   IsDowndeal D ∧ D (𝟘 : a ⟶ b) ∧ ∀ (R S : a ⟶ b), D R → D S → D (R ∪ S)
 
 /-- The principal ideal ↓R (same underlying set as ↓R for downdeals). -/
-def principalIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+@[expose] public def principalIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     (a ⟶ b) → Prop := fun S => S ⊑ R
 
-theorem principalIdeal_isIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+public theorem principalIdeal_isIdeal {𝒜 : Type u} [DistributiveAllegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     IsIdeal (principalIdeal R) :=
   ⟨principalDowndeal_isDowndeal R, zero_le R, fun _S _T hS hT => union_lub hS hT⟩
 
@@ -546,10 +548,10 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 /-- The objects of the LOCAL COMPLETION `Â` — a copy of `𝒜`'s objects so the downdeal
     `Cat`/`Allegory` instances live on a type distinct from the base (avoiding a
     diamond with `𝒜`'s own structure). -/
-def Downdeal (𝒜 : Type u) : Type u := 𝒜
+@[expose] public def Downdeal (𝒜 : Type u) : Type u := 𝒜
 
 /-- The DOWNWARD CLOSURE of a predicate: `↓P = { T | ∃ R, P R ∧ T ⊑ R }`. -/
-def downClosure {a b : 𝒜} (P : (a ⟶ b) → Prop) : (a ⟶ b) → Prop :=
+@[expose] public def downClosure {a b : 𝒜} (P : (a ⟶ b) → Prop) : (a ⟶ b) → Prop :=
   fun T => ∃ R, P R ∧ T ⊑ R
 
 /-- `↓` is monotone in the predicate (pointwise implication). -/
@@ -578,31 +580,31 @@ theorem downClosure_le_iff {a b : 𝒜} {P : (a ⟶ b) → Prop} {D : (a ⟶ b) 
     contains `𝟘` and is closed under finite union (§2.222).  Ideals (not bare downdeals)
     are the right object: only ideals form a distributive lattice under the operations
     `↓{R∪S}` / `↓{R∩S}`, and every principal `↓R` is an ideal (it contains `𝟘`). -/
-structure DowndealHom (a b : 𝒜) where
+public structure DowndealHom (a b : 𝒜) where
   /-- The underlying predicate (set of `A`-homs). -/
   carrier : (a ⟶ b) → Prop
   /-- It is an ideal: downward closed, contains `𝟘`, closed under binary union. -/
   is_ideal : IsIdeal carrier
 
 /-- Membership in a downdeal hom. -/
-instance {a b : 𝒜} : CoeFun (DowndealHom a b) (fun _ => (a ⟶ b) → Prop) :=
+@[expose] public instance {a b : 𝒜} : CoeFun (DowndealHom a b) (fun _ => (a ⟶ b) → Prop) :=
   ⟨DowndealHom.carrier⟩
 
 /-- The downdeal part of the ideal. -/
-theorem DowndealHom.is_downdeal {a b : 𝒜} (D : DowndealHom a b) : IsDowndeal D.carrier :=
+public theorem DowndealHom.is_downdeal {a b : 𝒜} (D : DowndealHom a b) : IsDowndeal D.carrier :=
   D.is_ideal.1
 
 /-- An ideal contains `𝟘`. -/
-theorem DowndealHom.mem_zero' {a b : 𝒜} (D : DowndealHom a b) : D (𝟘 : a ⟶ b) :=
+public theorem DowndealHom.mem_zero' {a b : 𝒜} (D : DowndealHom a b) : D (𝟘 : a ⟶ b) :=
   D.is_ideal.2.1
 
 /-- An ideal is closed under binary union. -/
-theorem DowndealHom.union_closed {a b : 𝒜} (D : DowndealHom a b) {R S : a ⟶ b}
+public theorem DowndealHom.union_closed {a b : 𝒜} (D : DowndealHom a b) {R S : a ⟶ b}
     (hR : D R) (hS : D S) : D (R ∪ S) :=
   D.is_ideal.2.2 R S hR hS
 
 /-- Two downdeal homs are equal iff their carriers are. -/
-@[ext] theorem DowndealHom.ext {a b : 𝒜} {D₁ D₂ : DowndealHom a b}
+@[ext] public theorem DowndealHom.ext {a b : 𝒜} {D₁ D₂ : DowndealHom a b}
     (h : ∀ R, D₁ R ↔ D₂ R) : D₁ = D₂ := by
   cases D₁; cases D₂
   congr 1; funext R; exact propext (h R)
@@ -611,7 +613,7 @@ theorem DowndealHom.union_closed {a b : 𝒜} (D : DowndealHom a b) {R S : a ⟶
     closure is already union-closed (each pair of `P`-elements is dominated by a `P`-element)
     and `P` is inhabited.  Used to package every operation, whose generating set is
     `join-directed` because the base operations preserve `∪`. -/
-def DowndealHom.close {a b : 𝒜} (P : (a ⟶ b) → Prop)
+@[expose] public def DowndealHom.close {a b : 𝒜} (P : (a ⟶ b) → Prop)
     (hdir : ∀ x y, P x → P y → ∃ z, P z ∧ x ∪ y ⊑ z)
     (hne : ∃ x, P x) : DowndealHom a b :=
   ⟨downClosure P, fun _T ⟨R, hR, hTR⟩ _S hST => ⟨R, hR, le_trans hST hTR⟩,
@@ -624,13 +626,13 @@ def DowndealHom.close {a b : 𝒜} (P : (a ⟶ b) → Prop)
         (le_trans hSy (le_union_right x y))) hxyz⟩⟩
 
 /-- The principal downdeal hom `↓R` (an ideal: it contains `𝟘` and is `∪`-closed). -/
-def DowndealHom.prin {a b : 𝒜} (R : a ⟶ b) : DowndealHom a b :=
+@[expose] public def DowndealHom.prin {a b : 𝒜} (R : a ⟶ b) : DowndealHom a b :=
   ⟨principalIdeal R, principalIdeal_isIdeal R⟩
 
 /-! ### §2.315(b) — `Cat` structure on `Â` -/
 
 /-- Composition in `Â`: `↓{ R ≫ S | R ∈ D₁, S ∈ D₂ }`. -/
-def DowndealHom.comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) :
+@[expose] public def DowndealHom.comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) :
     DowndealHom a c :=
   DowndealHom.close (fun T => ∃ R S, D₁ R ∧ D₂ S ∧ T = R ≫ S)
     (by
@@ -646,9 +648,9 @@ def DowndealHom.comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom
     ⟨𝟘, 𝟘, 𝟘, D₁.mem_zero', D₂.mem_zero', (DistributiveAllegory.zero_comp 𝟘).symm⟩
 
 /-- Identity in `Â`: the principal downdeal `↓(1_a)`. -/
-def DowndealHom.id (a : 𝒜) : DowndealHom a a := DowndealHom.prin (Cat.id a)
+@[expose] public def DowndealHom.id (a : 𝒜) : DowndealHom a a := DowndealHom.prin (Cat.id a)
 
-theorem DowndealHom.id_comp {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.id_comp {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.comp (DowndealHom.id a) D = D := by
   ext T
   constructor
@@ -662,7 +664,7 @@ theorem DowndealHom.id_comp {a b : 𝒜} (D : DowndealHom a b) :
     -- T = 1 ≫ T with 1 ∈ id, T ∈ D.
     exact ⟨Cat.id a ≫ T, ⟨Cat.id a, T, le_refl _, hT, rfl⟩, by rw [Cat.id_comp]; exact le_refl T⟩
 
-theorem DowndealHom.comp_id {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.comp_id {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.comp D (DowndealHom.id b) = D := by
   ext T
   constructor
@@ -674,7 +676,7 @@ theorem DowndealHom.comp_id {a b : 𝒜} (D : DowndealHom a b) :
   · intro hT
     exact ⟨T ≫ Cat.id b, ⟨T, Cat.id b, hT, le_refl _, rfl⟩, by rw [Cat.comp_id]; exact le_refl T⟩
 
-theorem DowndealHom.assoc {a b c d : 𝒜}
+public theorem DowndealHom.assoc {a b c d : 𝒜}
     (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) (D₃ : DowndealHom c d) :
     DowndealHom.comp (DowndealHom.comp D₁ D₂) D₃
       = DowndealHom.comp D₁ (DowndealHom.comp D₂ D₃) := by
@@ -694,9 +696,9 @@ theorem DowndealHom.assoc {a b c d : 𝒜}
       _ = (R ≫ S) ≫ W := (Cat.assoc R S W).symm
 
 /-- Reinterpret a completion object as a base object (the underlying `def`-equality). -/
-def Downdeal.out (a : Downdeal 𝒜) : 𝒜 := a
+@[expose] public def Downdeal.out (a : Downdeal 𝒜) : 𝒜 := a
 
-instance instCatDowndealHom : Cat.{u} (Downdeal 𝒜) where
+@[expose] public instance instCatDowndealHom : Cat.{u} (Downdeal 𝒜) where
   Hom a b := DowndealHom (𝒜 := 𝒜) a.out b.out
   id a := DowndealHom.id a.out
   comp D₁ D₂ := DowndealHom.comp D₁ D₂
@@ -712,7 +714,7 @@ instance instCatDowndealHom : Cat.{u} (Downdeal 𝒜) where
   using `is_downdeal` to absorb the `⊑` of the closure. -/
 
 /-- Reciprocation in `Â`: `↓{ R° | R ∈ D }`. -/
-def DowndealHom.recip {a b : 𝒜} (D : DowndealHom a b) : DowndealHom b a :=
+@[expose] public def DowndealHom.recip {a b : 𝒜} (D : DowndealHom a b) : DowndealHom b a :=
   DowndealHom.close (fun T => ∃ R, D R ∧ T = R°)
     (by
       -- R₁° ∪ R₂° = (R₂ ∪ R₁)°, a member.
@@ -722,7 +724,7 @@ def DowndealHom.recip {a b : 𝒜} (D : DowndealHom a b) : DowndealHom b a :=
     ⟨𝟘, 𝟘, D.mem_zero', recip_zero.symm⟩
 
 /-- Intersection in `Â`: `↓{ R ∩ S | R ∈ D₁, S ∈ D₂ }`. -/
-def DowndealHom.inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a b :=
+@[expose] public def DowndealHom.inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a b :=
   DowndealHom.close (fun T => ∃ R S, D₁ R ∧ D₂ S ∧ T = R ∩ S)
     (by
       -- (R₁∩S₁) ∪ (R₂∩S₂) ⊑ (R₁∪R₂) ∩ (S₁∪S₂), a member.
@@ -737,7 +739,7 @@ def DowndealHom.inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a
     ⟨𝟘, 𝟘, 𝟘, D₁.mem_zero', D₂.mem_zero', (Allegory.inter_idem 𝟘).symm⟩
 
 /-- Membership in `D°` is exactly `D (T°)` (the closure adds nothing for a downdeal). -/
-theorem DowndealHom.mem_recip {a b : 𝒜} (D : DowndealHom a b) (T : b ⟶ a) :
+public theorem DowndealHom.mem_recip {a b : 𝒜} (D : DowndealHom a b) (T : b ⟶ a) :
     (DowndealHom.recip D) T ↔ D (T°) := by
   constructor
   · rintro ⟨U, ⟨R, hR, rfl⟩, hTU⟩
@@ -749,25 +751,25 @@ theorem DowndealHom.mem_recip {a b : 𝒜} (D : DowndealHom a b) (T : b ⟶ a) :
     exact ⟨T°°, ⟨T°, hT, rfl⟩, by rw [Allegory.recip_recip]; exact le_refl T⟩
 
 /-- Membership in `D₁ ∩ D₂` is `∃ R S, D₁ R ∧ D₂ S ∧ T ⊑ R ∩ S`. -/
-theorem DowndealHom.mem_inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) (T : a ⟶ b) :
+public theorem DowndealHom.mem_inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) (T : a ⟶ b) :
     (DowndealHom.inter D₁ D₂) T ↔ ∃ R S, D₁ R ∧ D₂ S ∧ T ⊑ R ∩ S := by
   constructor
   · rintro ⟨U, ⟨R, S, hR, hS, rfl⟩, hTU⟩; exact ⟨R, S, hR, hS, hTU⟩
   · rintro ⟨R, S, hR, hS, hT⟩; exact ⟨R ∩ S, ⟨R, S, hR, hS, rfl⟩, hT⟩
 
 /-- Membership in `D₁ ≫ D₂` is `∃ R S, D₁ R ∧ D₂ S ∧ T ⊑ R ≫ S`. -/
-theorem DowndealHom.mem_comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) (T : a ⟶ c) :
+public theorem DowndealHom.mem_comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) (T : a ⟶ c) :
     (DowndealHom.comp D₁ D₂) T ↔ ∃ R S, D₁ R ∧ D₂ S ∧ T ⊑ R ≫ S := by
   constructor
   · rintro ⟨U, ⟨R, S, hR, hS, rfl⟩, hTU⟩; exact ⟨R, S, hR, hS, hTU⟩
   · rintro ⟨R, S, hR, hS, hT⟩; exact ⟨R ≫ S, ⟨R, S, hR, hS, rfl⟩, hT⟩
 
-theorem DowndealHom.recip_recip {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.recip_recip {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.recip (DowndealHom.recip D) = D := by
   ext T
   rw [DowndealHom.mem_recip, DowndealHom.mem_recip, Allegory.recip_recip]
 
-theorem DowndealHom.recip_comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) :
+public theorem DowndealHom.recip_comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : DowndealHom b c) :
     DowndealHom.recip (DowndealHom.comp D₁ D₂)
       = DowndealHom.comp (DowndealHom.recip D₂) (DowndealHom.recip D₁) := by
   ext T
@@ -786,7 +788,7 @@ theorem DowndealHom.recip_comp {a b c : 𝒜} (D₁ : DowndealHom a b) (D₂ : D
     have h1 : T° ⊑ (R ≫ S)° := recip_mono hTU
     rw [Allegory.recip_comp] at h1; exact h1
 
-theorem DowndealHom.recip_inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.recip_inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.recip (DowndealHom.inter D₁ D₂)
       = DowndealHom.inter (DowndealHom.recip D₁) (DowndealHom.recip D₂) := by
   ext T
@@ -803,7 +805,7 @@ theorem DowndealHom.recip_inter {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     have h1 : T° ⊑ (R ∩ S)° := recip_mono hTU
     rw [Allegory.recip_inter] at h1; exact h1
 
-theorem DowndealHom.inter_idem {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.inter_idem {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.inter D D = D := by
   ext T
   rw [DowndealHom.mem_inter]
@@ -813,7 +815,7 @@ theorem DowndealHom.inter_idem {a b : 𝒜} (D : DowndealHom a b) :
   · intro hT
     exact ⟨T, T, hT, hT, by rw [Allegory.inter_idem]; exact le_refl T⟩
 
-theorem DowndealHom.inter_comm {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.inter_comm {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.inter D₁ D₂ = DowndealHom.inter D₂ D₁ := by
   ext T
   rw [DowndealHom.mem_inter, DowndealHom.mem_inter]
@@ -823,7 +825,7 @@ theorem DowndealHom.inter_comm {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
   · rintro ⟨R, S, hR, hS, hTU⟩
     exact ⟨S, R, hS, hR, by rw [Allegory.inter_comm]; exact hTU⟩
 
-theorem DowndealHom.inter_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) :
+public theorem DowndealHom.inter_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) :
     DowndealHom.inter D₁ (DowndealHom.inter D₂ D₃)
       = DowndealHom.inter (DowndealHom.inter D₁ D₂) D₃ := by
   ext T
@@ -849,17 +851,17 @@ theorem DowndealHom.inter_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) 
 /-! ### §2.315(b) — carrier inclusion `⊆`, monotonicity, and the meet/modular laws -/
 
 /-- Carrier inclusion of downdeal homs (this will coincide with the `Â`-order `⊑`). -/
-def DowndealHom.Sub {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : Prop := ∀ R, D₁ R → D₂ R
+@[expose] public def DowndealHom.Sub {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : Prop := ∀ R, D₁ R → D₂ R
 
-theorem DowndealHom.Sub.refl {a b : 𝒜} (D : DowndealHom a b) : DowndealHom.Sub D D :=
+public theorem DowndealHom.Sub.refl {a b : 𝒜} (D : DowndealHom a b) : DowndealHom.Sub D D :=
   fun _ h => h
 
-theorem DowndealHom.Sub.antisymm {a b : 𝒜} {D₁ D₂ : DowndealHom a b}
+public theorem DowndealHom.Sub.antisymm {a b : 𝒜} {D₁ D₂ : DowndealHom a b}
     (h₁ : DowndealHom.Sub D₁ D₂) (h₂ : DowndealHom.Sub D₂ D₁) : D₁ = D₂ :=
   DowndealHom.ext (fun R => ⟨h₁ R, h₂ R⟩)
 
 /-- `D₁ ∩ D₂ ⊆ D₁`. -/
-theorem DowndealHom.inter_sub_left {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.inter_sub_left {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.Sub (DowndealHom.inter D₁ D₂) D₁ := by
   intro T hT
   rw [DowndealHom.mem_inter] at hT
@@ -867,7 +869,7 @@ theorem DowndealHom.inter_sub_left {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
   exact D₁.is_downdeal R hR T (le_trans hTRS (inter_lb_left R S))
 
 /-- `D₁ ∩ D₂ ⊆ D₂`. -/
-theorem DowndealHom.inter_sub_right {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.inter_sub_right {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.Sub (DowndealHom.inter D₁ D₂) D₂ := by
   intro T hT
   rw [DowndealHom.mem_inter] at hT
@@ -875,7 +877,7 @@ theorem DowndealHom.inter_sub_right {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
   exact D₂.is_downdeal S hS T (le_trans hTRS (inter_lb_right R S))
 
 /-- `∩` is the greatest lower bound for `⊆`. -/
-theorem DowndealHom.sub_inter {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
+public theorem DowndealHom.sub_inter {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
     (h₁ : DowndealHom.Sub D D₁) (h₂ : DowndealHom.Sub D D₂) :
     DowndealHom.Sub D (DowndealHom.inter D₁ D₂) := by
   intro T hT
@@ -883,7 +885,7 @@ theorem DowndealHom.sub_inter {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
   exact ⟨T, T, h₁ T hT, h₂ T hT, by rw [Allegory.inter_idem]; exact le_refl T⟩
 
 /-- Composition is monotone in the second argument (for `⊆`). -/
-theorem DowndealHom.comp_sub_left {a b c : 𝒜} (D : DowndealHom a b) {E₁ E₂ : DowndealHom b c}
+public theorem DowndealHom.comp_sub_left {a b c : 𝒜} (D : DowndealHom a b) {E₁ E₂ : DowndealHom b c}
     (h : DowndealHom.Sub E₁ E₂) : DowndealHom.Sub (DowndealHom.comp D E₁) (DowndealHom.comp D E₂) := by
   intro T hT
   rw [DowndealHom.mem_comp] at hT ⊢
@@ -902,7 +904,7 @@ theorem DowndealHom.comp_sub_right {a b c : 𝒜} {D₁ D₂ : DowndealHom a b}
 /-- (§2.11) Semi-distributivity, equational form, on `Â`.  Both sides equal `D ≫ (E₁ ∩ E₂)`:
     the RHS is `(X ∩ X) ∩ Y` with `X = D≫(E₁∩E₂) ⊆ D≫E₁` (mono) and `⊆ D≫E₂`, collapsing
     to `X` by glb/antisymmetry. -/
-theorem DowndealHom.semidistrib {a b c : 𝒜} (D : DowndealHom a b) (E₁ E₂ : DowndealHom b c) :
+public theorem DowndealHom.semidistrib {a b c : 𝒜} (D : DowndealHom a b) (E₁ E₂ : DowndealHom b c) :
     DowndealHom.comp D (DowndealHom.inter E₁ E₂)
       = DowndealHom.inter
           (DowndealHom.inter (DowndealHom.comp D E₁) (DowndealHom.comp D (DowndealHom.inter E₁ E₂)))
@@ -922,7 +924,7 @@ theorem DowndealHom.semidistrib {a b c : 𝒜} (D : DowndealHom a b) (E₁ E₂ 
 
 /-- (§2.11) The MODULAR LAW, equational form, on `Â`.  Reduces to the `⊆`-order form
     `(D≫E) ∩ F ⊆ (D ∩ F≫E°) ≫ E`, lifted pointwise from the base modular law. -/
-theorem DowndealHom.modular {a b c : 𝒜} (D : DowndealHom a b) (E : DowndealHom b c)
+public theorem DowndealHom.modular {a b c : 𝒜} (D : DowndealHom a b) (E : DowndealHom b c)
     (F : DowndealHom a c) :
     DowndealHom.inter (DowndealHom.comp D E) F
       = DowndealHom.inter (DowndealHom.inter (DowndealHom.comp D E) F)
@@ -952,7 +954,7 @@ theorem DowndealHom.modular {a b c : 𝒜} (D : DowndealHom a b) (E : DowndealHo
   · -- ((DE∩F) ∩ X) ⊆ (DE ∩ F).
     exact fun T hT => DowndealHom.inter_sub_left _ _ T hT
 
-instance instAllegoryDowndealHom : Allegory.{u} (Downdeal 𝒜) where
+@[expose] public instance instAllegoryDowndealHom : Allegory.{u} (Downdeal 𝒜) where
   recip D := DowndealHom.recip D
   inter D₁ D₂ := DowndealHom.inter D₁ D₂
   recip_recip := DowndealHom.recip_recip
@@ -967,10 +969,10 @@ instance instAllegoryDowndealHom : Allegory.{u} (Downdeal 𝒜) where
 /-! ### §2.315(b) — `DistributiveAllegory` structure on `Â` -/
 
 /-- Zero in `Â`: the principal ideal `↓𝟘` (the smallest ideal). -/
-def DowndealHom.zero {a b : 𝒜} : DowndealHom a b := DowndealHom.prin (𝟘 : a ⟶ b)
+@[expose] public def DowndealHom.zero {a b : 𝒜} : DowndealHom a b := DowndealHom.prin (𝟘 : a ⟶ b)
 
 /-- Union in `Â`: `↓{ R ∪ S | R ∈ D₁, S ∈ D₂ }`. -/
-def DowndealHom.union {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a b :=
+@[expose] public def DowndealHom.union {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a b :=
   DowndealHom.close (fun T => ∃ R S, D₁ R ∧ D₂ S ∧ T = R ∪ S)
     (by
       -- (R₁∪S₁) ∪ (R₂∪S₂) = (R₁∪R₂) ∪ (S₁∪S₂), a member.
@@ -984,31 +986,31 @@ def DowndealHom.union {a b : 𝒜} (D₁ D₂ : DowndealHom a b) : DowndealHom a
           (le_trans (le_union_right S₁ S₂) (le_union_right _ _)))
     ⟨𝟘, 𝟘, 𝟘, D₁.mem_zero', D₂.mem_zero', (DistributiveAllegory.union_idem 𝟘).symm⟩
 
-theorem DowndealHom.mem_union {a b : 𝒜} (D₁ D₂ : DowndealHom a b) (T : a ⟶ b) :
+public theorem DowndealHom.mem_union {a b : 𝒜} (D₁ D₂ : DowndealHom a b) (T : a ⟶ b) :
     (DowndealHom.union D₁ D₂) T ↔ ∃ R S, D₁ R ∧ D₂ S ∧ T ⊑ R ∪ S := by
   constructor
   · rintro ⟨U, ⟨R, S, hR, hS, rfl⟩, hTU⟩; exact ⟨R, S, hR, hS, hTU⟩
   · rintro ⟨R, S, hR, hS, hT⟩; exact ⟨R ∪ S, ⟨R, S, hR, hS, rfl⟩, hT⟩
 
-theorem DowndealHom.mem_zero {a b : 𝒜} (T : a ⟶ b) :
+public theorem DowndealHom.mem_zero {a b : 𝒜} (T : a ⟶ b) :
     (DowndealHom.zero : DowndealHom a b) T ↔ T ⊑ (𝟘 : a ⟶ b) := Iff.rfl
 
 /-- `D₁ ⊆ D₁ ∪ D₂` (using that `𝟘 ∈ D₂` for ideals: `R = R ∪ 𝟘`). -/
-theorem DowndealHom.sub_union_left {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.sub_union_left {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.Sub D₁ (DowndealHom.union D₁ D₂) := by
   intro T hT
   rw [DowndealHom.mem_union]
   exact ⟨T, 𝟘, hT, D₂.mem_zero', by rw [union_zero]; exact le_refl T⟩
 
 /-- `D₂ ⊆ D₁ ∪ D₂`. -/
-theorem DowndealHom.sub_union_right {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.sub_union_right {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.Sub D₂ (DowndealHom.union D₁ D₂) := by
   intro T hT
   rw [DowndealHom.mem_union]
   exact ⟨𝟘, T, D₁.mem_zero', hT, by rw [DistributiveAllegory.zero_union]; exact le_refl T⟩
 
 /-- `∪` is the least upper bound for `⊆`. -/
-theorem DowndealHom.union_sub {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
+public theorem DowndealHom.union_sub {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
     (h₁ : DowndealHom.Sub D₁ D) (h₂ : DowndealHom.Sub D₂ D) :
     DowndealHom.Sub (DowndealHom.union D₁ D₂) D := by
   intro T hT
@@ -1017,13 +1019,13 @@ theorem DowndealHom.union_sub {a b : 𝒜} {D D₁ D₂ : DowndealHom a b}
   exact D.is_downdeal (R ∪ S) (D.union_closed (h₁ R hR) (h₂ S hS)) T hTRS
 
 /-- `↓𝟘 ⊆ D` for every ideal `D` (the zero ideal is least). -/
-theorem DowndealHom.zero_sub {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.zero_sub {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.Sub (DowndealHom.zero : DowndealHom a b) D := by
   intro T hT
   rw [DowndealHom.mem_zero] at hT
   exact D.is_downdeal 𝟘 D.mem_zero' T hT
 
-theorem DowndealHom.zero_comp {a b c : 𝒜} (E : DowndealHom b c) :
+public theorem DowndealHom.zero_comp {a b c : 𝒜} (E : DowndealHom b c) :
     DowndealHom.comp (DowndealHom.zero : DowndealHom a b) E = DowndealHom.zero := by
   apply DowndealHom.Sub.antisymm _ (DowndealHom.zero_sub _)
   intro T hT
@@ -1035,7 +1037,7 @@ theorem DowndealHom.zero_comp {a b c : 𝒜} (E : DowndealHom b c) :
   calc R ≫ S ⊑ (𝟘 : a ⟶ b) ≫ S := Freyd.Alg.comp_mono_right hR S
     _ = 𝟘 := DistributiveAllegory.zero_comp S
 
-theorem DowndealHom.comp_zero {a b c : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.comp_zero {a b c : 𝒜} (D : DowndealHom a b) :
     DowndealHom.comp D (DowndealHom.zero : DowndealHom b c) = DowndealHom.zero := by
   apply DowndealHom.Sub.antisymm _ (DowndealHom.zero_sub _)
   intro T hT
@@ -1046,18 +1048,18 @@ theorem DowndealHom.comp_zero {a b c : 𝒜} (D : DowndealHom a b) :
   calc R ≫ S ⊑ R ≫ (𝟘 : b ⟶ c) := comp_mono_left R hS
     _ = 𝟘 := DistributiveAllegory.comp_zero R
 
-theorem DowndealHom.union_idem {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.union_idem {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.union D D = D :=
   DowndealHom.Sub.antisymm (DowndealHom.union_sub (DowndealHom.Sub.refl _) (DowndealHom.Sub.refl _))
     (DowndealHom.sub_union_left D D)
 
-theorem DowndealHom.union_comm {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.union_comm {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.union D₁ D₂ = DowndealHom.union D₂ D₁ :=
   DowndealHom.Sub.antisymm
     (DowndealHom.union_sub (DowndealHom.sub_union_right D₂ D₁) (DowndealHom.sub_union_left D₂ D₁))
     (DowndealHom.union_sub (DowndealHom.sub_union_right D₁ D₂) (DowndealHom.sub_union_left D₁ D₂))
 
-theorem DowndealHom.union_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) :
+public theorem DowndealHom.union_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) :
     DowndealHom.union D₁ (DowndealHom.union D₂ D₃)
       = DowndealHom.union (DowndealHom.union D₁ D₂) D₃ := by
   apply DowndealHom.Sub.antisymm
@@ -1072,26 +1074,26 @@ theorem DowndealHom.union_assoc {a b : 𝒜} (D₁ D₂ D₃ : DowndealHom a b) 
       · exact fun T h => DowndealHom.sub_union_right _ _ T (DowndealHom.sub_union_left D₂ D₃ T h)
     · exact fun T h => DowndealHom.sub_union_right _ _ T (DowndealHom.sub_union_right D₂ D₃ T h)
 
-theorem DowndealHom.union_inter_absorb {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.union_inter_absorb {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.union D₁ (DowndealHom.inter D₂ D₁) = D₁ :=
   DowndealHom.Sub.antisymm
     (DowndealHom.union_sub (DowndealHom.Sub.refl _) (DowndealHom.inter_sub_right D₂ D₁))
     (DowndealHom.sub_union_left D₁ (DowndealHom.inter D₂ D₁))
 
-theorem DowndealHom.inter_union_absorb {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
+public theorem DowndealHom.inter_union_absorb {a b : 𝒜} (D₁ D₂ : DowndealHom a b) :
     DowndealHom.inter (DowndealHom.union D₁ D₂) D₁ = D₁ :=
   DowndealHom.Sub.antisymm
     (DowndealHom.inter_sub_right _ _)
     (DowndealHom.sub_inter (DowndealHom.sub_union_left D₁ D₂) (DowndealHom.Sub.refl _))
 
-theorem DowndealHom.zero_union {a b : 𝒜} (D : DowndealHom a b) :
+public theorem DowndealHom.zero_union {a b : 𝒜} (D : DowndealHom a b) :
     DowndealHom.union DowndealHom.zero D = D :=
   DowndealHom.Sub.antisymm
     (DowndealHom.union_sub (DowndealHom.zero_sub D) (DowndealHom.Sub.refl _))
     (DowndealHom.sub_union_right DowndealHom.zero D)
 
 /-- `D ≫ (E₁ ∪ E₂) = D≫E₁ ∪ D≫E₂` (§2.21). -/
-theorem DowndealHom.comp_union_distrib {a b c : 𝒜} (D : DowndealHom a b) (E₁ E₂ : DowndealHom b c) :
+public theorem DowndealHom.comp_union_distrib {a b c : 𝒜} (D : DowndealHom a b) (E₁ E₂ : DowndealHom b c) :
     DowndealHom.comp D (DowndealHom.union E₁ E₂)
       = DowndealHom.union (DowndealHom.comp D E₁) (DowndealHom.comp D E₂) := by
   apply DowndealHom.Sub.antisymm
@@ -1114,7 +1116,7 @@ theorem DowndealHom.comp_union_distrib {a b c : 𝒜} (D : DowndealHom a b) (E�
     · exact DowndealHom.comp_sub_left D (DowndealHom.sub_union_right E₁ E₂)
 
 /-- `D ∩ (E₁ ∪ E₂) = (D∩E₁) ∪ (D∩E₂)` (§2.21). -/
-theorem DowndealHom.inter_union_distrib {a b : 𝒜} (D E₁ E₂ : DowndealHom a b) :
+public theorem DowndealHom.inter_union_distrib {a b : 𝒜} (D E₁ E₂ : DowndealHom a b) :
     DowndealHom.inter D (DowndealHom.union E₁ E₂)
       = DowndealHom.union (DowndealHom.inter D E₁) (DowndealHom.inter D E₂) := by
   apply DowndealHom.Sub.antisymm
@@ -1135,7 +1137,7 @@ theorem DowndealHom.inter_union_distrib {a b : 𝒜} (D E₁ E₂ : DowndealHom 
     · exact DowndealHom.sub_inter (DowndealHom.inter_sub_left D E₂)
         (fun T h => DowndealHom.sub_union_right E₁ E₂ T (DowndealHom.inter_sub_right D E₂ T h))
 
-instance instDistributiveAllegoryDowndealHom : DistributiveAllegory.{u} (Downdeal 𝒜) :=
+@[expose] public instance instDistributiveAllegoryDowndealHom : DistributiveAllegory.{u} (Downdeal 𝒜) :=
   { instAllegoryDowndealHom with
     zero := DowndealHom.zero
     union := DowndealHom.union
@@ -1157,18 +1159,18 @@ instance instDistributiveAllegoryDowndealHom : DistributiveAllegory.{u} (Downdea
   encode finite joins as a `List`. -/
 
 /-- The finite join of a list of base homs (`[] ↦ 𝟘`, `x :: xs ↦ x ∪ join xs`). -/
-def listJoinD {a b : 𝒜} : List (a ⟶ b) → a ⟶ b
+@[expose] public def listJoinD {a b : 𝒜} : List (a ⟶ b) → a ⟶ b
   | [] => 𝟘
   | x :: xs => x ∪ listJoinD xs
 
-theorem listJoinD_le {a b : 𝒜} {ℓ : List (a ⟶ b)} {T : a ⟶ b}
+public theorem listJoinD_le {a b : 𝒜} {ℓ : List (a ⟶ b)} {T : a ⟶ b}
     (h : ∀ x ∈ ℓ, x ⊑ T) : listJoinD ℓ ⊑ T := by
   induction ℓ with
   | nil => exact zero_le T
   | cons x xs ih =>
     exact union_lub (h x (List.mem_cons_self)) (ih (fun y hy => h y (List.mem_cons_of_mem x hy)))
 
-theorem le_listJoinD {a b : 𝒜} {ℓ : List (a ⟶ b)} {x : a ⟶ b} (h : x ∈ ℓ) :
+public theorem le_listJoinD {a b : 𝒜} {ℓ : List (a ⟶ b)} {x : a ⟶ b} (h : x ∈ ℓ) :
     x ⊑ listJoinD ℓ := by
   induction ℓ with
   | nil => exact absurd h (List.not_mem_nil)
@@ -1178,11 +1180,11 @@ theorem le_listJoinD {a b : 𝒜} {ℓ : List (a ⟶ b)} {x : a ⟶ b} (h : x �
     · exact le_trans (ih h') (le_union_right y (listJoinD ys))
 
 /-- The carrier of `Sup P`: dominated by a finite join of `(⋃ P)`-elements. -/
-def supCarrier {a b : 𝒜} (P : DowndealHom a b → Prop) : (a ⟶ b) → Prop :=
+@[expose] public def supCarrier {a b : 𝒜} (P : DowndealHom a b → Prop) : (a ⟶ b) → Prop :=
   fun T => ∃ ℓ : List (a ⟶ b), (∀ x ∈ ℓ, ∃ D, P D ∧ D x) ∧ T ⊑ listJoinD ℓ
 
 /-- The supremum of a family of ideals (§2.22): the ideal they generate. -/
-def DowndealHom.Sup {a b : 𝒜} (P : DowndealHom a b → Prop) : DowndealHom a b where
+@[expose] public def DowndealHom.Sup {a b : 𝒜} (P : DowndealHom a b → Prop) : DowndealHom a b where
   carrier := supCarrier P
   is_ideal := by
     refine ⟨?_, ?_, ?_⟩
@@ -1202,7 +1204,7 @@ def DowndealHom.Sup {a b : 𝒜} (P : DowndealHom a b → Prop) : DowndealHom a 
         · exact le_trans hR (listJoinD_le (fun x hx => le_listJoinD (List.mem_append.mpr (Or.inl hx))))
         · exact le_trans hS (listJoinD_le (fun x hx => le_listJoinD (List.mem_append.mpr (Or.inr hx))))
 
-theorem DowndealHom.le_Sup {a b : 𝒜} {P : DowndealHom a b → Prop} {D : DowndealHom a b}
+public theorem DowndealHom.le_Sup {a b : 𝒜} {P : DowndealHom a b → Prop} {D : DowndealHom a b}
     (h : P D) : DowndealHom.Sub D (DowndealHom.Sup P) := by
   intro T hT
   -- T ∈ D, so T ⊑ join [T] = T ∪ 𝟘.
@@ -1210,7 +1212,7 @@ theorem DowndealHom.le_Sup {a b : 𝒜} {P : DowndealHom a b → Prop} {D : Down
   show T ⊑ T ∪ 𝟘
   rw [union_zero]; exact le_refl T
 
-theorem DowndealHom.Sup_le {a b : 𝒜} {P : DowndealHom a b → Prop} {E : DowndealHom a b}
+public theorem DowndealHom.Sup_le {a b : 𝒜} {P : DowndealHom a b → Prop} {E : DowndealHom a b}
     (h : ∀ D, P D → DowndealHom.Sub D E) : DowndealHom.Sub (DowndealHom.Sup P) E := by
   rintro T ⟨ℓ, hℓ, hTℓ⟩
   -- Each element of ℓ is in some member D ⊆ E, so in E; E is ∪-closed, so join ℓ ∈ E.
@@ -1225,7 +1227,7 @@ theorem DowndealHom.Sup_le {a b : 𝒜} {P : DowndealHom a b → Prop} {E : Down
   exact E.is_downdeal (listJoinD ℓ) (hjoin ℓ hℓ) T hTℓ
 
 /-- `R ≫ listJoinD ℓ = listJoinD (ℓ.map (R ≫ ·))` (composition distributes over a finite join). -/
-theorem comp_listJoinD {a b c : 𝒜} (R : a ⟶ b) (ℓ : List (b ⟶ c)) :
+public theorem comp_listJoinD {a b c : 𝒜} (R : a ⟶ b) (ℓ : List (b ⟶ c)) :
     R ≫ listJoinD ℓ = listJoinD (ℓ.map (fun S => R ≫ S)) := by
   induction ℓ with
   | nil => simp [listJoinD, DistributiveAllegory.comp_zero]
@@ -1241,7 +1243,7 @@ theorem listJoinD_comp {a b c : 𝒜} (ℓ : List (a ⟶ b)) (R : b ⟶ c) :
     simp only [listJoinD, List.map_cons, union_comp_distrib, ih]
 
 /-- `R ∩ listJoinD ℓ = listJoinD (ℓ.map (R ∩ ·))`. -/
-theorem inter_listJoinD {a b : 𝒜} (R : a ⟶ b) (ℓ : List (a ⟶ b)) :
+public theorem inter_listJoinD {a b : 𝒜} (R : a ⟶ b) (ℓ : List (a ⟶ b)) :
     R ∩ listJoinD ℓ = listJoinD (ℓ.map (fun S => R ∩ S)) := by
   induction ℓ with
   | nil =>
@@ -1251,7 +1253,7 @@ theorem inter_listJoinD {a b : 𝒜} (R : a ⟶ b) (ℓ : List (a ⟶ b)) :
     simp only [listJoinD, List.map_cons, DistributiveAllegory.inter_union_distrib, ih]
 
 /-- (§2.22) Composition distributes over `Sup` on the right, on `Â`. -/
-theorem DowndealHom.comp_Sup_distrib {a b c : 𝒜} (D : DowndealHom a b)
+public theorem DowndealHom.comp_Sup_distrib {a b c : 𝒜} (D : DowndealHom a b)
     (P : DowndealHom b c → Prop) :
     DowndealHom.comp D (DowndealHom.Sup P)
       = DowndealHom.Sup (fun U => ∃ S, P S ∧ U = DowndealHom.comp D S) := by
@@ -1276,7 +1278,7 @@ theorem DowndealHom.comp_Sup_distrib {a b c : 𝒜} (D : DowndealHom a b)
     exact DowndealHom.comp_sub_left D (DowndealHom.le_Sup hS)
 
 /-- (§2.22) Finite intersection distributes over `Sup`, on `Â`. -/
-theorem DowndealHom.inter_Sup_distrib {a b : 𝒜} (D : DowndealHom a b)
+public theorem DowndealHom.inter_Sup_distrib {a b : 𝒜} (D : DowndealHom a b)
     (P : DowndealHom a b → Prop) :
     DowndealHom.inter D (DowndealHom.Sup P)
       = DowndealHom.Sup (fun U => ∃ S, P S ∧ U = DowndealHom.inter D S) := by
@@ -1302,7 +1304,7 @@ theorem DowndealHom.inter_Sup_distrib {a b : 𝒜} (D : DowndealHom a b)
       (fun T h => DowndealHom.le_Sup hS T (DowndealHom.inter_sub_right D S T h))
 
 /-- Carrier inclusion `Sub` coincides with the allegory order `⊑` on `Â`. -/
-theorem DowndealHom.sub_iff_le {a b : Downdeal 𝒜} (D₁ D₂ : a ⟶ b) :
+public theorem DowndealHom.sub_iff_le {a b : Downdeal 𝒜} (D₁ D₂ : a ⟶ b) :
     DowndealHom.Sub D₁ D₂ ↔ (D₁ ⊑ D₂) := by
   constructor
   · intro h
@@ -1316,7 +1318,7 @@ theorem DowndealHom.sub_iff_le {a b : Downdeal 𝒜} (D₁ D₂ : a ⟶ b) :
     have : DowndealHom.Sub D₁ (DowndealHom.inter D₁ D₂) := by rw [h']; exact DowndealHom.Sub.refl _
     exact DowndealHom.inter_sub_right D₁ D₂ R (this R hR)
 
-instance instLocallyCompleteDistributiveAllegoryDowndealHom :
+@[expose] public instance instLocallyCompleteDistributiveAllegoryDowndealHom :
     LocallyCompleteDistributiveAllegory.{u} (Downdeal 𝒜) :=
   { instDistributiveAllegoryDowndealHom with
     Sup := fun P => DowndealHom.Sup P
@@ -1331,18 +1333,18 @@ instance instLocallyCompleteDistributiveAllegoryDowndealHom :
 
   The principal-ideal map preserves every operation and is injective (faithful). -/
 
-theorem DowndealHom.mem_prin {a b : 𝒜} (R T : a ⟶ b) :
+public theorem DowndealHom.mem_prin {a b : 𝒜} (R T : a ⟶ b) :
     (DowndealHom.prin R) T ↔ T ⊑ R := Iff.rfl
 
 /-- The embedding is faithful: `↓R = ↓S ⟹ R = S`. -/
-theorem DowndealHom.prin_injective {a b : 𝒜} {R S : a ⟶ b}
+public theorem DowndealHom.prin_injective {a b : 𝒜} {R S : a ⟶ b}
     (h : DowndealHom.prin R = DowndealHom.prin S) : R = S := by
   have hRS : R ⊑ S := by have := (DowndealHom.mem_prin R R).mpr (le_refl R); rw [h] at this; exact this
   have hSR : S ⊑ R := by have := (DowndealHom.mem_prin S S).mpr (le_refl S); rw [← h] at this; exact this
   exact le_antisymm hRS hSR
 
 /-- The embedding preserves composition: `↓(R ≫ S) = ↓R ≫ ↓S`. -/
-theorem DowndealHom.prin_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem DowndealHom.prin_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     DowndealHom.prin (R ≫ S) = DowndealHom.comp (DowndealHom.prin R) (DowndealHom.prin S) := by
   ext T
   rw [DowndealHom.mem_prin, DowndealHom.mem_comp]
@@ -1352,7 +1354,7 @@ theorem DowndealHom.prin_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     exact le_trans hTRS (le_trans (comp_mono_right hR' S') (comp_mono_left R hS'))
 
 /-- The embedding preserves reciprocation: `↓(R°) = (↓R)°`. -/
-theorem DowndealHom.prin_recip {a b : 𝒜} (R : a ⟶ b) :
+public theorem DowndealHom.prin_recip {a b : 𝒜} (R : a ⟶ b) :
     DowndealHom.prin (R°) = DowndealHom.recip (DowndealHom.prin R) := by
   ext T
   rw [DowndealHom.mem_prin, DowndealHom.mem_recip, DowndealHom.mem_prin]
@@ -1361,7 +1363,7 @@ theorem DowndealHom.prin_recip {a b : 𝒜} (R : a ⟶ b) :
   · intro hT; have := recip_mono hT; rwa [Allegory.recip_recip] at this
 
 /-- The embedding preserves intersection: `↓(R ∩ S) = ↓R ∩ ↓S`. -/
-theorem DowndealHom.prin_inter {a b : 𝒜} (R S : a ⟶ b) :
+public theorem DowndealHom.prin_inter {a b : 𝒜} (R S : a ⟶ b) :
     DowndealHom.prin (R ∩ S) = DowndealHom.inter (DowndealHom.prin R) (DowndealHom.prin S) := by
   ext T
   rw [DowndealHom.mem_prin, DowndealHom.mem_inter]
@@ -1372,7 +1374,7 @@ theorem DowndealHom.prin_inter {a b : 𝒜} (R S : a ⟶ b) :
       (le_trans (inter_lb_right R' S') hS'))
 
 /-- The embedding preserves union: `↓(R ∪ S) = ↓R ∪ ↓S`. -/
-theorem DowndealHom.prin_union {a b : 𝒜} (R S : a ⟶ b) :
+public theorem DowndealHom.prin_union {a b : 𝒜} (R S : a ⟶ b) :
     DowndealHom.prin (R ∪ S) = DowndealHom.union (DowndealHom.prin R) (DowndealHom.prin S) := by
   ext T
   rw [DowndealHom.mem_prin, DowndealHom.mem_union]
@@ -1395,27 +1397,27 @@ end Downdeal
 
 /-- Objects of the global completion: an index type I together with an I-indexed
     family of A-objects (§2.224). -/
-structure GlobalObj (𝒜 : Type u) where
+public structure GlobalObj (𝒜 : Type u) where
   idx : Type u
   obj : idx → 𝒜
 
 /-- Morphisms of the global completion: an infinite matrix R_{ij} : a_i → b_j (§2.224). -/
-def GlobalMorphism {𝒜 : Type u} [Allegory 𝒜] (A B : GlobalObj 𝒜) : Type u :=
+@[expose] public def GlobalMorphism {𝒜 : Type u} [Allegory 𝒜] (A B : GlobalObj 𝒜) : Type u :=
   (i : A.idx) → (j : B.idx) → A.obj i ⟶ B.obj j
 
 /-- Global completion composition: (RS)_{ik} = Sup_j { R_{ij} ≫ S_{jk} } (§2.224). -/
-def GlobalMorphism.comp {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
+@[expose] public def GlobalMorphism.comp {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
     {A B C : GlobalObj 𝒜} (R : GlobalMorphism A B) (S : GlobalMorphism B C) :
     GlobalMorphism A C :=
   fun i k => LocallyCompleteDistributiveAllegory.Sup (fun T => ∃ j, T = R i j ≫ S j k)
 
 /-- Global completion reciprocation: (R°)_{ji} = (R_{ij})° (§2.224). -/
-def GlobalMorphism.recip {𝒜 : Type u} [Allegory 𝒜] {A B : GlobalObj 𝒜}
+@[expose] public def GlobalMorphism.recip {𝒜 : Type u} [Allegory 𝒜] {A B : GlobalObj 𝒜}
     (R : GlobalMorphism A B) : GlobalMorphism B A :=
   fun j i => (R i j)°
 
 /-- The embedding A → A' sending R : a → b to the 1×1 matrix (R) (§2.224). -/
-def globalCompletionEmbed {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+@[expose] public def globalCompletionEmbed {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     GlobalMorphism (𝒜 := 𝒜) ⟨PUnit.{u+1}, fun _ => a⟩ ⟨PUnit.{u+1}, fun _ => b⟩ :=
   fun _i _j => R
 
@@ -1474,7 +1476,7 @@ theorem systemic_completion_tabular_effective
   `map_order_discrete`. -/
 
 /-- **§2.145**: the two legs of a (source-apex) tabulation of a coreflexive coincide. -/
-theorem tabulation_coreflexive_legs_eq {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
+public theorem tabulation_coreflexive_legs_eq {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ a} {A : a ⟶ a} (hf : Map f) (hg : Map g) (hA : A = f° ≫ g)
     (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : Coreflexive A) : f = g := by
   have hcoref1 : A ⊑ Cat.id a := hcor
@@ -1490,7 +1492,7 @@ theorem tabulation_coreflexive_legs_eq {𝒜 : Type u} [Allegory 𝒜] {a c : �
 /-- **§2.145 / §2.163**: a tabular coreflexive splits.  From a tabulation `(f,g)`
     of coreflexive `A` the legs agree (`f = g`) and `f` is a map with
     `f° ≫ f = A` and `f ≫ f° = 1_c` — i.e. `f` *splits* `A` (`h°h = A`, `hh° = 1`). -/
-theorem coreflexive_split_of_tabulation {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
+public theorem coreflexive_split_of_tabulation {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ a} {A : a ⟶ a} (hf : Map f) (hg : Map g) (hA : A = f° ≫ g)
     (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : Coreflexive A) :
     Map f ∧ f° ≫ f = A ∧ f ≫ f° = Cat.id c := by
@@ -1503,7 +1505,7 @@ theorem coreflexive_split_of_tabulation {𝒜 : Type u} [Allegory 𝒜] {a c : �
 /-- In a `TabularAllegory` every coreflexive `A : a → a` splits: there is a map
     `g : c → a` with `g° ≫ g = A`, `g ≫ g° = 1_c` (§2.163).  (The splitting map
     points FROM the apex: in `Rel(Set)` it is the inclusion of the support subset.) -/
-theorem coreflexive_splits {𝒜 : Type u} [TabularAllegory 𝒜] {a : 𝒜} {A : a ⟶ a}
+public theorem coreflexive_splits {𝒜 : Type u} [TabularAllegory 𝒜] {a : 𝒜} {A : a ⟶ a}
     (hcor : Coreflexive A) :
     ∃ (c : 𝒜) (g : c ⟶ a), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id c := by
   obtain ⟨c, f, g, hf, hg, hA, htab⟩ := TabularAllegory.tabular A

@@ -12,9 +12,11 @@
 
   This is the `hi : ∀ i, HasImages (stage i)` ingredient that upgrades the cofinal `ratCapCat` tower
   from pre-regular to REGULAR, hence makes §2.218 R3 (`RegularCategory Ā`) reachable. -/
-import Freyd.S1_543_LaxColimitImages
-import Freyd.S1_543_RatCapStagePTC
-import Freyd.S1_65_SlicePreTopos
+module
+
+public import Freyd.S1_543_LaxColimitImages
+public import Freyd.S1_543_RatCapStagePTC
+public import Freyd.S1_65_SlicePreTopos
 
 open Freyd
 open Freyd.Colim
@@ -30,7 +32,7 @@ variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [PreRegu
 -- Keep every elaboration of `laxOfProjSystem' P` on the shared finite-limit representatives.
 /-- **`ratCapCat P` has images**, given cover-projections.  The §1.547 lax-colimit successor target,
     pre-regular by `ratCapPreRegular_of_projCover`, is in fact REGULAR. -/
-noncomputable def ratCapHasImages [Nonempty ι] (P : ProjSystem ι D 𝒞)
+@[expose] public noncomputable def ratCapHasImages [Nonempty ι] (P : ProjSystem ι D 𝒞)
     (hpc : ∀ {i j : ι} (h : D.le i j), Cover (P.proj h)) :
     @HasImages (Obj (laxOfProjSystem' P)) (ratCapCat P) := by
   -- transition mono- and cover-preservation (as `Preserves…` props), shared by `himgpres`.

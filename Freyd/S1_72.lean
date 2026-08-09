@@ -15,16 +15,18 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_57
-import Freyd.S1_60
-import Freyd.S1_64
-import Freyd.S1_70
-import Freyd.S1_85
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_57
+public import Freyd.S1_60
+public import Freyd.S1_64
+public import Freyd.S1_70
+public import Freyd.S1_85
 
 
 open Freyd
@@ -553,14 +555,14 @@ class FocalLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends Logos 𝒞 where
     preorder is antisymmetric (skeletal) produces a `HeytingLattice`. -/
 
 /-- The thin category structure on a Heyting lattice: `Hom a b = PLift (le a b)`. -/
-instance heytingLatticeCat (L : HeytingLattice) : Cat.{0} L.carrier where
+@[expose] public instance heytingLatticeCat (L : HeytingLattice) : Cat.{0} L.carrier where
   Hom x y  := PLift (L.le x y)
   id x     := ⟨L.le_refl x⟩
   comp h k := ⟨L.le_trans h.down k.down⟩
   id_comp _ := rfl; comp_id _ := rfl; assoc _ _ _ := rfl
 
 /-- All parallel morphisms are equal in a Heyting-lattice thin category. -/
-theorem hl_thin (L : HeytingLattice) {a b : L.carrier} (f g : a ⟶ b) : f = g := by
+public theorem hl_thin (L : HeytingLattice) {a b : L.carrier} (f g : a ⟶ b) : f = g := by
   cases f; cases g; rfl
 
 /-- In a Heyting-lattice thin category, covers = isos. -/
@@ -575,7 +577,7 @@ theorem hl_cover_iff_iso (L : HeytingLattice) {a b : L.carrier} (f : a ⟶ b) :
          IsIso f ↔ L.le b a).mp hiso) h.down⟩
 
 /-- Pullbacks in the Heyting-lattice thin category are binary meets. -/
-instance hl_hasPullbacks (L : HeytingLattice) : HasPullbacks L.carrier where
+@[expose] public instance hl_hasPullbacks (L : HeytingLattice) : HasPullbacks L.carrier where
   has := fun {a b _c} _f _g =>
     { cone :=
         { pt := L.meet a b
@@ -589,7 +591,7 @@ instance hl_hasPullbacks (L : HeytingLattice) : HasPullbacks L.carrier where
 
 /-- Images in the Heyting-lattice thin category: image of `f : a → b` is `a` itself
     (the domain, viewed as a subobject of `b` via `f`). -/
-instance hl_hasImages (L : HeytingLattice) : HasImages L.carrier where
+@[expose] public instance hl_hasImages (L : HeytingLattice) : HasImages L.carrier where
   image := fun {a _b} f => { dom := a, arr := f, monic := fun p q _ => hl_thin L p q }
   isImage := fun f => ⟨⟨Cat.id _, Cat.id_comp f⟩, fun _S ⟨g, hg⟩ => ⟨g, hg⟩⟩
 

@@ -19,10 +19,12 @@
   through `∅_A`, yielding `∅_A.dom ≅ K ≅ Z₁`.  Axioms: `[propext, Classical.choice]`.
 -/
 
-import Freyd.S1_946_RightAdjointImage
-import Freyd.S1_95_ToposColimits
-import Freyd.S1_58
-import Freyd.S1_61
+module
+
+public import Freyd.S1_946_RightAdjointImage
+public import Freyd.S1_95_ToposColimits
+public import Freyd.S1_58
+public import Freyd.S1_61
 
 open Freyd HasSubobjectClassifier
 
@@ -34,7 +36,7 @@ namespace Freyd
 /-- **§1.946 emptiness.** Inverse image carries the bottom subobject to (below) the
     bottom subobject: `g*(∅_B) ≤ ∅_A`.  This is the backward direction of the
     `f* ⊣ f##` adjunction applied to `∅_B ≤ f##(∅_A)` (= `bottomSub_le`, ⊥ ≤ anything). -/
-theorem invImage_bottomSub_le {A B : 𝒞} (g : A ⟶ B) :
+public theorem invImage_bottomSub_le {A B : 𝒞} (g : A ⟶ B) :
     (InverseImage g (bottomSub B)).le (bottomSub A) :=
   (radjImage_adjunction g (bottomSub B) (bottomSub A)).2
     (bottomSub_le (radjImage g (bottomSub A)))
@@ -42,7 +44,7 @@ theorem invImage_bottomSub_le {A B : 𝒞} (g : A ⟶ B) :
 /-- Two subobjects of a common base that are mutually `≤` have isomorphic domains:
     the factoring maps `h : S.dom → T.dom`, `k : T.dom → S.dom` are mutual inverses
     (by left-cancelling the monics `S.arr`, `T.arr`). -/
-theorem le_le_dom_iso {A : 𝒞} (S T : Subobject 𝒞 A) (hST : S.le T) (hTS : T.le S) :
+public theorem le_le_dom_iso {A : 𝒞} (S T : Subobject 𝒞 A) (hST : S.le T) (hTS : T.le S) :
     Isomorphic S.dom T.dom := by
   obtain ⟨h, hh⟩ := hST
   obtain ⟨k, hk⟩ := hTS
@@ -52,7 +54,7 @@ theorem le_le_dom_iso {A : 𝒞} (S T : Subobject 𝒞 A) (hST : S.le T) (hTS : 
 
 /-- The inverse image `g*(∅_B)` of the bottom has the SAME domain (up to iso) as
     `∅_A`: `≤` holds both ways (emptiness lemma + `bottomSub_le`). -/
-theorem invImage_bottomSub_dom_iso {A B : 𝒞} (g : A ⟶ B) :
+public theorem invImage_bottomSub_dom_iso {A B : 𝒞} (g : A ⟶ B) :
     Isomorphic (InverseImage g (bottomSub B)).dom (bottomSub A).dom :=
   le_le_dom_iso _ _ (invImage_bottomSub_le g) (bottomSub_le _)
 
@@ -79,7 +81,7 @@ theorem invImage_bottomSub_dom_iso {A B : 𝒞} (g : A ⟶ B) :
 /-- `a ∈ {a} = ⊤`: the singleton of a (generalized) point contains that point.  The membership
     test `⟨a, a ≫ {·}⟩ ≫ eval` of `a` in `{a} = a ≫ singletonMap A` is `⊤∘!`, since
     `singletonMap A = curry χ_Δ` and `χ_Δ ⟨a,a⟩ = ⊤` (`diag_classify_iff`, reflexivity). -/
-theorem mem_singleton_self {X A : 𝒞} (a : X ⟶ A) :
+public theorem mem_singleton_self {X A : 𝒞} (a : X ⟶ A) :
     pair a (a ≫ singletonMap A) ≫ eval_exp A (omega (𝒞 := 𝒞))
       = term X ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   -- singletonMap A = curry χ_Δ;  ⟨a, a ≫ curry χ_Δ⟩ = ⟨a,a⟩ ≫ ⟨fst, snd ≫ curry χ_Δ⟩
@@ -99,7 +101,7 @@ theorem mem_singleton_self {X A : 𝒞} (a : X ⟶ A) :
 
 /-- **Cross-base bottom-domain iso** (§1.944) — CLOSED.  `∅_A.dom ≅ ∅_B.dom` for all `A B`,
     via `bottomSub_dom_iso_one` and `isomorphic_symm`/`isomorphic_trans`. -/
-theorem bottomSub_dom_iso_one (A : 𝒞) :
+public theorem bottomSub_dom_iso_one (A : 𝒞) :
     Isomorphic (bottomSub A).dom (bottomSub (one : 𝒞)).dom := by
   -- u : 1 → [A] is the name of the empty subobject ∅_A.  membershipMap u = χ_{∅_A}.
   let u : one ⟶ powObj A := nameOf (bottomSub A).arr (bottomSub A).monic
@@ -177,7 +179,7 @@ theorem bottomSub_dom_iso_one (A : 𝒞) :
   exact isomorphic_trans hiso_AK hiso_KZ
 
 /-- **Cross-base bottom-domain iso** (§1.944) — CLOSED.  `∅_A.dom ≅ ∅_B.dom` for all `A B`. -/
-theorem bottomSub_dom_iso (A B : 𝒞) :
+public theorem bottomSub_dom_iso (A B : 𝒞) :
     Isomorphic (bottomSub A).dom (bottomSub B).dom :=
   isomorphic_trans (bottomSub_dom_iso_one A) (isomorphic_symm (bottomSub_dom_iso_one B))
 
@@ -185,7 +187,7 @@ theorem bottomSub_dom_iso (A B : 𝒞) :
     Mirror of `any_map_to_zero_is_iso` (S1_61), with `bottomSub` for `PreLogos.bottom`,
     `invImage_bottomSub_dom_iso` for `invImage_preserves_bottom`, and
     `bottomSub_dom_iso` for `bottom_dom_iso`. -/
-theorem strict_coterminator_bottomSub_one :
+public theorem strict_coterminator_bottomSub_one :
     StrictCoterminator (bottomSub (one : 𝒞)).dom := by
   intro X f
   have hzeroMonic_mono : Monic (bottomSub (one : 𝒞)).arr := (bottomSub one).monic
@@ -234,7 +236,7 @@ theorem strict_coterminator_bottomSub_one :
     the strict-coterminator witness via `HasCoterminator.ofStrict` (S1_58), using the
     `[Topos 𝒞]`-supplied `HasBinaryProducts`.  Fully Sorry-free: the former seed
     `bottomSub_dom_iso` is now closed by the empty-singleton argument above. -/
-theorem topos_has_coterminator : Nonempty (HasCoterminator 𝒞) :=
+public theorem topos_has_coterminator : Nonempty (HasCoterminator 𝒞) :=
   ⟨HasCoterminator.ofStrict strict_coterminator_bottomSub_one⟩
 
 end Freyd

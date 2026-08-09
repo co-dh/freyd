@@ -9,11 +9,13 @@
   §1.913 All subobjects are equalizers; covers = epics.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_45
-import Freyd.S1_56
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_45
+public import Freyd.S1_56
 
 
 universe v u
@@ -39,7 +41,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 /-- §1.9: A relation U : BinRel 𝒞 P C is UNIVERSAL targeted at C if every
     relation R : BinRel 𝒞 A C is uniquely isomorphic to `relPullback f U` for
     some f : A → P. -/
-structure IsUniversalRel [HasPullbacks 𝒞] {P C : 𝒞} (U : BinRel 𝒞 P C) : Prop where
+public structure IsUniversalRel [HasPullbacks 𝒞] {P C : 𝒞} (U : BinRel 𝒞 P C) : Prop where
   /-- For each A and R : BinRel A C there is a unique Λ(R) : A → P such that
       R is isomorphic (as relations) to the pullback of U along Λ(R). -/
   classify_exists : ∀ (A : 𝒞) (R : BinRel 𝒞 A C), ∃ f : A ⟶ P,
@@ -52,7 +54,7 @@ structure IsUniversalRel [HasPullbacks 𝒞] {P C : 𝒞} (U : BinRel 𝒞 P C) 
 /-- §1.9: A POWER-OBJECT for C: an object [C] with a universal relation ∈_C.
     In the book's notation, [C] appears as the source of ∈_C ⊆ [C] × C;
     Λ(R) : A → [C] is the unique classifying map for R : BinRel A C. -/
-class HasPowerObject [HasPullbacks 𝒞] (C : 𝒞) where
+public class HasPowerObject [HasPullbacks 𝒞] (C : 𝒞) where
   /-- The power-object [C] (written in the book as [C]). -/
   powerObj : 𝒞
   /-- The universal relation ∈_C : BinRel 𝒞 [C] C. -/
@@ -62,7 +64,7 @@ class HasPowerObject [HasPullbacks 𝒞] (C : 𝒞) where
 
 /-- §1.9: The classifying map Λ(R) : A → [C] for a relation R : BinRel A C.
     Written A_R in the book.  Extracted from the universality witness. -/
-noncomputable def powerClassify [HasPullbacks 𝒞] {C : 𝒞} [HasPowerObject C]
+@[expose] public noncomputable def powerClassify [HasPullbacks 𝒞] {C : 𝒞} [HasPowerObject C]
     {A : 𝒞} (R : BinRel 𝒞 A C) : A ⟶ HasPowerObject.powerObj (C := C) :=
   (HasPowerObject.is_universal.classify_exists A R).choose
 
@@ -93,7 +95,7 @@ noncomputable def powerClassify [HasPullbacks 𝒞] {C : 𝒞} [HasPowerObject C
     - `classify_sq`       : m ≫ χ_m = term A' ≫ true  (square commutes)
     - `classify_pullback` : the cone is a pullback
     - `classify_unique`   : χ_m is the unique such map -/
-class HasSubobjectClassifier (𝒞 : Type u) [Cat.{v} 𝒞] extends HasTerminal 𝒞, HasPullbacks 𝒞 where
+public class HasSubobjectClassifier (𝒞 : Type u) [Cat.{v} 𝒞] extends HasTerminal 𝒞, HasPullbacks 𝒞 where
   omega      : 𝒞
   true       : one ⟶ omega
   /-- The characteristic map of a monic m : A' → A. -/
@@ -111,7 +113,7 @@ class HasSubobjectClassifier (𝒞 : Type u) [Cat.{v} 𝒞] extends HasTerminal 
 /-- §1.912: `true : 1 → Ω` is monic — it is a SPLIT mono, retracted by the terminal map
     `Ω → 1` (terminal uniqueness gives `true ≫ (Ω→1) = 1₁`).  Derived here rather than
     postulated as a class field, so instances need not supply it. -/
-theorem HasSubobjectClassifier.true_monic [HasSubobjectClassifier 𝒞] :
+public theorem HasSubobjectClassifier.true_monic [HasSubobjectClassifier 𝒞] :
     Monic (HasSubobjectClassifier.true (𝒞 := 𝒞)) :=
   mono_of_retraction _ (term HasSubobjectClassifier.omega) (term_uniq _ _)
 
@@ -125,7 +127,7 @@ theorem HasSubobjectClassifier.true_monic [HasSubobjectClassifier 𝒞] :
     Bundling `has_pow` is faithful to the book definition and supplies the
     `∀ C, HasPowerObject C` that §1.92's exponentials (`topos_has_exponentials`,
     §1.923) and §1.95's quotient covers rest on. -/
-class Topos (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class Topos (𝒞 : Type u) [Cat.{v} 𝒞] extends
     HasBinaryProducts 𝒞, HasSubobjectClassifier 𝒞 where
   /-- §1.9: every object `C` has a power-object `[C]` with universal `∈_C`. -/
   has_pow : ∀ C : 𝒞, HasPowerObject C
@@ -134,7 +136,7 @@ class Topos (𝒞 : Type u) [Cat.{v} 𝒞] extends
     `[∀ C, HasPowerObject C]` hypotheses (S1_91/S1_92) are auto-satisfied under
     `[Topos 𝒞]`.  Low priority to avoid pre-empting any locally-supplied power
     object. -/
-instance (priority := 100) Topos.hasPowerObject {𝒞 : Type u} [Cat.{v} 𝒞]
+@[expose] public instance (priority := 100) Topos.hasPowerObject {𝒞 : Type u} [Cat.{v} 𝒞]
     [Topos 𝒞] (C : 𝒞) : HasPowerObject C := Topos.has_pow C
 
 /-! ## §1.912  Derived facts -/

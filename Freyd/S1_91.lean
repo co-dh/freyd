@@ -10,13 +10,15 @@
             classifier, no terminator needed if non-empty).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_90
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_43
-import Freyd.S1_45
-import Freyd.S1_52
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_90
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_43
+public import Freyd.S1_45
+public import Freyd.S1_52
 
 
 universe v u
@@ -57,7 +59,7 @@ variable [Topos 𝒞]
     uniquely through `m`.  Both parts come from the classifier pullback square
     (`classify_pullback`): `m` is the pullback of `t : 1 → Ω` along `χ_m`, and a
     pullback of `t` is exactly an equalizer of `χ_m` and `A → 1 → Ω`. -/
-theorem monic_is_equalizer {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) :
+public theorem monic_is_equalizer {A A' : 𝒞} (m : A' ⟶ A) (hm : Monic m) :
     m ≫ HasSubobjectClassifier.classify m hm
         = m ≫ (term A ≫ HasSubobjectClassifier.true)
     ∧ ∀ {E : 𝒞} (e : E ⟶ A),
@@ -95,7 +97,7 @@ omit [Topos 𝒞] in
     `m ≫ χ_m = m ≫ (term Y ≫ true)`; `m` epic cancels it to `χ_m = term Y ≫ true`.  Then
     `id_Y` together with `term Y` is a cone over `(χ_m, true)`, so the pullback UMP yields a
     section `r : Y → C` with `r ≫ m = id_Y`.  `m` monic upgrades this to a two-sided inverse. -/
-theorem epi_mono_is_iso [HasSubobjectClassifier 𝒞] {C Y : 𝒞} (m : C ⟶ Y) (hm : Monic m)
+public theorem epi_mono_is_iso [HasSubobjectClassifier 𝒞] {C Y : 𝒞} (m : C ⟶ Y) (hm : Monic m)
     (hepi : ∀ {Z : 𝒞} (a b : Y ⟶ Z), m ≫ a = m ≫ b → a = b) : IsIso m := by
   -- classifier data: χ_m and the pullback square `m ≫ χ_m = term C ≫ true`.
   let χ : Y ⟶ omega (𝒞 := 𝒞) := classify m hm
@@ -120,7 +122,7 @@ omit [Topos 𝒞] in
     epimorphism is a cover.  If `f` factors `g ≫ m = f` through a monic `m`, then `m` is epic
     (right-cancel `f` epic), hence iso by `epi_mono_is_iso`; so every monic `f` factors through
     is iso, i.e. `f` is a cover. -/
-theorem cover_of_epi [HasSubobjectClassifier 𝒞] {X Y : 𝒞} {f : X ⟶ Y}
+public theorem cover_of_epi [HasSubobjectClassifier 𝒞] {X Y : 𝒞} {f : X ⟶ Y}
     (hf : ∀ {Z : 𝒞} (a b : Y ⟶ Z), f ≫ a = f ≫ b → a = b) : Cover f := by
   intro C m g hm hgm
   -- `m` is epic: from `g ≫ m = f` and `f` epic, `m ≫ a = m ≫ b ⟹ a = b`.
@@ -135,7 +137,7 @@ theorem cover_of_epi [HasSubobjectClassifier 𝒞] {X Y : 𝒞} {f : X ⟶ Y}
 omit [Topos 𝒞] in
 /-- **§1.913 (covers = epics)**: in a cartesian category with a subobject classifier, a map is
     a cover iff it is epic.  Forward is `cover_epi` (S1_52); backward is `cover_of_epi`. -/
-theorem cover_iff_epi [HasSubobjectClassifier 𝒞] [HasBinaryProducts 𝒞] {X Y : 𝒞} (f : X ⟶ Y) :
+public theorem cover_iff_epi [HasSubobjectClassifier 𝒞] [HasBinaryProducts 𝒞] {X Y : 𝒞} (f : X ⟶ Y) :
     Cover f ↔ (∀ {Z : 𝒞} (a b : Y ⟶ Z), f ≫ a = f ≫ b → a = b) := by
   constructor
   · intro hc Z a b hab; exact cover_epi hc hab
@@ -164,7 +166,7 @@ theorem covers_coincide_with_epis [HasImages 𝒞] {A B : 𝒞} (f : A ⟶ B) :
 /-- The internal meet (conjunction) on Ω: the classifying map of the monic
     (t,t) : 1 → Ω×Ω (§1.914).  The induced operation on subobjects is
     g(A₁,A₂) = A₁ ∩ A₂. -/
-noncomputable def omegaMeet : prod (HasSubobjectClassifier.omega (𝒞 := 𝒞))
+@[expose] public noncomputable def omegaMeet : prod (HasSubobjectClassifier.omega (𝒞 := 𝒞))
     (HasSubobjectClassifier.omega (𝒞 := 𝒞)) ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) :=
   HasSubobjectClassifier.classify
     (pair HasSubobjectClassifier.true HasSubobjectClassifier.true)
@@ -174,7 +176,7 @@ noncomputable def omegaMeet : prod (HasSubobjectClassifier.omega (𝒞 := 𝒞))
 /-- The Heyting double-arrow on Ω: the classifying map of the diagonal
     (1,1) : Ω → Ω×Ω (§1.914).  The induced operation on subobjects A₁,A₂ ⊆ A
     is the Heyting double-arrow: A' ⊆ g(A₁,A₂) iff A₁∩A' = A₂∩A'. -/
-noncomputable def heytingDoubleArrow : prod (HasSubobjectClassifier.omega (𝒞 := 𝒞))
+@[expose] public noncomputable def heytingDoubleArrow : prod (HasSubobjectClassifier.omega (𝒞 := 𝒞))
     (HasSubobjectClassifier.omega (𝒞 := 𝒞)) ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) :=
   HasSubobjectClassifier.classify
     (diag (HasSubobjectClassifier.omega (𝒞 := 𝒞)))
@@ -223,7 +225,7 @@ theorem classify_true_eq_id :
     (`mono_pullback`), the cone square gives `π₁ ≫ χ = π₂ ≫ t = term P ≫ t`
     (using `term_uniq` to replace `π₂ : P → 1` by `term P`), and that very square
     is a pullback of `t` along `χ`, so `classify_unique` forces `χ = classify π₁`. -/
-theorem classify_surjective {A : 𝒞}
+public theorem classify_surjective {A : 𝒞}
     (χ : A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) :
     ∃ (P : 𝒞) (m : P ⟶ A) (hm : Monic m), HasSubobjectClassifier.classify m hm = χ := by
   -- P = pullback of (χ, t); π₁ : P → A is the monic subobject classified by χ.
@@ -250,7 +252,7 @@ theorem classify_surjective {A : 𝒞}
     Proof by pullback pasting against `classify_unique`.  The pasted square (the
     `f`-pullback square of `S.arr` stacked on the classifier square of `S`) is a
     pullback of `t` along `f ≫ χ_S`, whose left leg is `(f# S).arr = π₁`. -/
-theorem classify_invImg {A B : 𝒞} (f : B ⟶ A) (S : Subobject 𝒞 A)
+public theorem classify_invImg {A B : 𝒞} (f : B ⟶ A) (S : Subobject 𝒞 A)
     (hp : HasPullback f S.arr) :
     HasSubobjectClassifier.classify (invImg f S hp).arr (invImg f S hp).monic
       = f ≫ HasSubobjectClassifier.classify S.arr S.monic := by
@@ -312,7 +314,7 @@ theorem classify_invImg {A B : 𝒞} (f : B ⟶ A) (S : Subobject 𝒞 A)
     via the classifier pullbacks of `χ₁`/`χ₂`, factors `d.π₁` through `m₁`/`m₂`;
     the pullback `hp` of `m₁,m₂` then yields the unique factorization through
     `inter.dom`. -/
-theorem omegaMeet_classifies_inter {A : 𝒞} (S₁ S₂ : Subobject 𝒞 A)
+public theorem omegaMeet_classifies_inter {A : 𝒞} (S₁ S₂ : Subobject 𝒞 A)
     (hp : HasPullback S₁.arr S₂.arr) :
     pair (HasSubobjectClassifier.classify S₁.arr S₁.monic)
          (HasSubobjectClassifier.classify S₂.arr S₂.monic) ≫ omegaMeet
@@ -513,7 +515,7 @@ theorem heytingDoubleArrow_classifies_eq {A E : 𝒞} (χ₁ χ₂ : A ⟶ HasSu
     constantly-true along `k` exactly where `χ₁` and `χ₂` agree along `k`.  This is
     the membership form of `heytingDoubleArrow_classifies_eq` (it avoids naming an
     equalizer subobject); it is the order-form UMP feeding the Heyting laws below. -/
-theorem heyting_true_iff_eq {A W : 𝒞}
+public theorem heyting_true_iff_eq {A W : 𝒞}
     (χ₁ χ₂ : A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) (k : W ⟶ A) :
     k ≫ (pair χ₁ χ₂ ≫ heytingDoubleArrow) = term W ≫ HasSubobjectClassifier.true
       ↔ k ≫ χ₁ = k ≫ χ₂ := by
@@ -573,7 +575,7 @@ theorem heyting_true_iff_eq {A W : 𝒞}
     true along `k` exactly where BOTH `χ₁` and `χ₂` are.  Membership form of
     `omegaMeet_classifies_inter`, proved directly from the `(t,t)` classifier
     pullback (so it needs no `HasPullback S.arr T.arr` hypothesis). -/
-theorem meet_true_iff_and {A W : 𝒞}
+public theorem meet_true_iff_and {A W : 𝒞}
     (χ₁ χ₂ : A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞)) (k : W ⟶ A) :
     k ≫ (pair χ₁ χ₂ ≫ omegaMeet) = term W ≫ HasSubobjectClassifier.true
       ↔ k ≫ χ₁ = term W ≫ HasSubobjectClassifier.true
@@ -630,7 +632,7 @@ theorem meet_true_iff_and {A W : 𝒞}
 /-- **Membership bridge**: a map `k : W → A` factors through the subobject `S`
     (`Allows S k`) iff its composite with the classifier `χ_S` is constantly true.
     This is the pointwise form of `Sub(−) ≅ Hom(−,Ω)`. -/
-theorem allows_iff_classify {A W : 𝒞} (S : Subobject 𝒞 A) (k : W ⟶ A) :
+public theorem allows_iff_classify {A W : 𝒞} (S : Subobject 𝒞 A) (k : W ⟶ A) :
     Allows S k ↔ k ≫ HasSubobjectClassifier.classify S.arr S.monic
       = term W ≫ HasSubobjectClassifier.true := by
   constructor
@@ -653,7 +655,7 @@ theorem allows_iff_classify {A W : 𝒞} (S : Subobject 𝒞 A) (k : W ⟶ A) :
 /-- **Order bridge**: `S ≤ T` in `Sub(A)` iff the inclusion `S.arr` lands in `T`,
     iff `S.arr ≫ χ_T = term ≫ true`.  (Specializes `allows_iff_classify` at
     `k = S.arr`, since `Allows T S.arr` is exactly `S.le T`.) -/
-theorem le_iff_classify {A : 𝒞} (S T : Subobject 𝒞 A) :
+public theorem le_iff_classify {A : 𝒞} (S T : Subobject 𝒞 A) :
     S.le T ↔ S.arr ≫ HasSubobjectClassifier.classify T.arr T.monic
       = term S.dom ≫ HasSubobjectClassifier.true :=
   allows_iff_classify T S.arr
@@ -661,25 +663,25 @@ theorem le_iff_classify {A : 𝒞} (S T : Subobject 𝒞 A) :
 /-! ### §1.914  Heyting implication on `Sub(A)` and its adjunction -/
 
 /-- The characteristic map `χ_S : A → Ω` of a subobject `S ⊆ A`. -/
-noncomputable abbrev subChar {A : 𝒞} (S : Subobject 𝒞 A) :
+@[expose] public noncomputable abbrev subChar {A : 𝒞} (S : Subobject 𝒞 A) :
     A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) :=
   HasSubobjectClassifier.classify S.arr S.monic
 
 /-- The characteristic map of the Heyting implication `S ⇒ T`, à la Freyd
     (`S ⇒ T := S ⇔ (S ∧ T)`): `⟨χ_S, ⟨χ_S,χ_T⟩ ≫ ∧⟩ ≫ ⇔`. -/
-noncomputable def impChar {A : 𝒞} (S T : Subobject 𝒞 A) :
+@[expose] public noncomputable def impChar {A : 𝒞} (S T : Subobject 𝒞 A) :
     A ⟶ HasSubobjectClassifier.omega (𝒞 := 𝒞) :=
   pair (subChar S) (pair (subChar S) (subChar T) ≫ omegaMeet) ≫ heytingDoubleArrow
 
 /-- The Heyting implication `S ⇒ T` as a subobject of `A`: the monic classified by
     `impChar S T` (existence via `classify_surjective`). -/
-noncomputable def Sub.imp {A : 𝒞} (S T : Subobject 𝒞 A) : Subobject 𝒞 A :=
+@[expose] public noncomputable def Sub.imp {A : 𝒞} (S T : Subobject 𝒞 A) : Subobject 𝒞 A :=
   ⟨(classify_surjective (impChar S T)).choose,
    (classify_surjective (impChar S T)).choose_spec.choose,
    (classify_surjective (impChar S T)).choose_spec.choose_spec.choose⟩
 
 /-- `χ_{S⇒T} = impChar S T`: the implication subobject is classified by `impChar`. -/
-theorem classify_imp {A : 𝒞} (S T : Subobject 𝒞 A) :
+public theorem classify_imp {A : 𝒞} (S T : Subobject 𝒞 A) :
     subChar (Sub.imp S T) = impChar S T :=
   (classify_surjective (impChar S T)).choose_spec.choose_spec.choose_spec
 
@@ -687,7 +689,7 @@ theorem classify_imp {A : 𝒞} (S T : Subobject 𝒞 A) :
     `k` lands in `S ⇒ T` iff `k ≫ χ_S = k ≫ (⟨χ_S,χ_T⟩ ≫ ∧)`, i.e. along `k` the
     truth of `S` coincides with the truth of `S ∧ T`.  Immediate from `classify_imp`
     and the pointwise double-arrow UMP `heyting_true_iff_eq`. -/
-theorem mem_imp_iff {A W : 𝒞} (S T : Subobject 𝒞 A) (k : W ⟶ A) :
+public theorem mem_imp_iff {A W : 𝒞} (S T : Subobject 𝒞 A) (k : W ⟶ A) :
     k ≫ subChar (Sub.imp S T) = term W ≫ HasSubobjectClassifier.true
       ↔ k ≫ subChar S = k ≫ (pair (subChar S) (subChar T) ≫ omegaMeet) := by
   rw [classify_imp, impChar]
@@ -695,7 +697,7 @@ theorem mem_imp_iff {A W : 𝒞} (S T : Subobject 𝒞 A) (k : W ⟶ A) :
 
 /-- **Membership is monotone**: if `S ≤ T` and `k` lands in `S`, then `k` lands in
     `T`.  (`Allows` composed with `Subobject.le`.) -/
-theorem allows_mono {A W : 𝒞} {S T : Subobject 𝒞 A} (hle : S.le T) {k : W ⟶ A}
+public theorem allows_mono {A W : 𝒞} {S T : Subobject 𝒞 A} (hle : S.le T) {k : W ⟶ A}
     (hk : Allows S k) : Allows T k := by
   obtain ⟨h, hh⟩ := hle; obtain ⟨u, hu⟩ := hk
   exact ⟨u ≫ h, by rw [Cat.assoc, hh, hu]⟩
@@ -705,7 +707,7 @@ theorem allows_mono {A W : 𝒞} {S T : Subobject 𝒞 A} (hle : S.le T) {k : W 
     isomorphism classes.)  Proof: the comparison `h : S.dom → T.dom` (`h ≫ T.arr =
     S.arr`) transports `T`'s classifier pullback to a classifier pullback for `S`,
     so `classify_unique` forces `χ_T = χ_S`. -/
-theorem classify_eq_of_le_le {A : 𝒞} {S T : Subobject 𝒞 A}
+public theorem classify_eq_of_le_le {A : 𝒞} {S T : Subobject 𝒞 A}
     (hST : S.le T) (hTS : T.le S) : subChar S = subChar T := by
   obtain ⟨h, hh⟩ := hST       -- h ≫ T.arr = S.arr
   obtain ⟨k, hk⟩ := hTS       -- k ≫ S.arr = T.arr
@@ -755,7 +757,7 @@ theorem classify_eq_of_le_le {A : 𝒞} {S T : Subobject 𝒞 A}
     agreement along the inclusion `S ∩ X → A`; backward classifies the two sides
     over `X.dom` as `X#S` and `X#S ∩ X#T` and uses that `S∩X ≤ T` makes the
     canonical point of `X#S` land in `T` (hence in `X#T`). -/
-theorem imp_adjunction {A : 𝒞} (S T X : Subobject 𝒞 A)
+public theorem imp_adjunction {A : 𝒞} (S T X : Subobject 𝒞 A)
     (hp : HasPullback S.arr X.arr) :
     X.le (Sub.imp S T) ↔ (Sub.inter S X hp).le T := by
   -- Abbreviations (mathlib-free: plain `let` + `rfl` equalities).
@@ -1616,14 +1618,14 @@ noncomputable def fullClassify (A B : 𝒞) : A ⟶ HasPowerObject.powerObj (C :
   powerClassify (fullRel A B)
 
 /-- Transitivity of `RelHom` (local copy; the S1_92 version depends on S1_91). -/
-theorem relHom_trans {A C : 𝒞} {R S T : BinRel 𝒞 A C}
+public theorem relHom_trans {A C : 𝒞} {R S T : BinRel 𝒞 A C}
     (h₁ : RelHom R S) (h₂ : RelHom S T) : RelHom R T := by
   obtain ⟨h, hA, hB⟩ := h₁; obtain ⟨k, kA, kB⟩ := h₂
   exact ⟨h ≫ k, by rw [Cat.assoc, kA, hA], by rw [Cat.assoc, kB, hB]⟩
 
 /-- `RelHom` is preserved by pulling back along a fixed `g`, obtained by lifting
     one table into the pullback of the other. -/
-theorem relHom_pullback {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
+public theorem relHom_pullback {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
     (h : RelHom R S) : RelHom (relPullback g R) (relPullback g S) := by
   obtain ⟨w, hwA, hwB⟩ := h
   let P  := HasPullbacks.has g R.colA
@@ -1647,7 +1649,7 @@ theorem relHom_pullback {A C X : 𝒞} (g : X ⟶ A) {R S : BinRel 𝒞 A C}
     Both classify `relPullback g R` (via `relPullback_comp`), so universality's
     `classify_unique` forces them equal.  (Local; S1_92's `univClassify_natural`
     depends on S1_91.) -/
-theorem powerClassify_natural {C A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶ A) :
+public theorem powerClassify_natural {C A X : 𝒞} (R : BinRel 𝒞 A C) (g : X ⟶ A) :
     powerClassify (relPullback g R) = g ≫ powerClassify R := by
   have hR := (HasPowerObject.is_universal.classify_exists A R).choose_spec
   obtain ⟨hc1, hc2⟩ := relPullback_comp g (powerClassify R) HasPowerObject.mem

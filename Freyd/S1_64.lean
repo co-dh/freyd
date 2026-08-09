@@ -14,21 +14,23 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_58
-import Freyd.S1_59
-import Freyd.S1_60
-import Freyd.S1_57
-import Freyd.S1_47
-import Freyd.S1_62
-import Freyd.S1_77
-import Freyd.S1_658_Complement
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_58
+public import Freyd.S1_59
+public import Freyd.S1_60
+public import Freyd.S1_57
+public import Freyd.S1_47
+public import Freyd.S1_62
+public import Freyd.S1_77
+public import Freyd.S1_658_Complement
 
 
 open Freyd
@@ -82,7 +84,7 @@ namespace Freyd
     NB: the earlier form wrote `→ False` instead of `→ S≤⊥`; that is UNSATISFIABLE (take
     `S := bottom`, which is `≤` everything), so it held for no subobject and made
     `BooleanPreLogos` uninhabitable — a stale placeholder, now corrected. -/
-def IsComplemented [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞 A) : Prop :=
+@[expose] public def IsComplemented [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞 A) : Prop :=
   ∃ (A₂ : Subobject 𝒞 A),
     (∀ (S : Subobject 𝒞 A), Subobject.le S A₁ → Subobject.le S A₂ → Subobject.le S (PreLogos.bottom A))
     -- A₁∩A₂ ≤ 0 (meet is bottom — instance-free phrasing of `inter A₁ A₂ ≤ bottom`)
@@ -94,7 +96,7 @@ def IsComplemented [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞 A) : Prop :
     Same witness `A₂`; the union clauses are literally identical, and the two disjointness
     clauses are equivalent because `Subobject.inter A₁ A₂` is the meet (greatest common lower
     bound): `inter A₁ A₂ ≤ ⊥` iff every common lower bound `S` of `A₁`, `A₂` is `≤ ⊥`. -/
-theorem isComplemented_iff_sub [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞 A) :
+public theorem isComplemented_iff_sub [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞 A) :
     IsComplemented A₁ ↔ IsComplementedSub A₁ := by
   constructor
   · rintro ⟨A₂, hdisj, hcover⟩
@@ -113,7 +115,7 @@ theorem isComplemented_iff_sub [PreLogos 𝒞] {A : 𝒞} (A₁ : Subobject 𝒞
   A BOOLEAN PRE-LOGOS is a pre-logos where every subobject lattice
   is Boolean (every subobject has a complement). -/
 
-class BooleanPreLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends PreLogos 𝒞 where
+public class BooleanPreLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends PreLogos 𝒞 where
   hasComplement : ∀ {A : 𝒞} (S : Subobject 𝒞 A), IsComplemented S
 
 /-! ## §1.645 𝒦𝓮𝓇(T) — values killed by a representation
@@ -250,7 +252,7 @@ theorem isSpecialPreLogos_implies_properMono [PreLogos 𝒞]
   A PRE-TOPOS is an effective positive pre-logos:
   effective regular + positive pre-logos. -/
 
-class PreTopos (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class PreTopos (𝒞 : Type u) [Cat.{v} 𝒞] extends
     EffectiveRegular 𝒞, PositivePreLogos 𝒞
 
 /-! ## §1.621/§1.623 Disjointness of positive coproducts — RELOCATED to S1_62
@@ -270,7 +272,7 @@ variable (𝒞)
     §1.621 disjointness conditions hold.  Recorded as the class field bundle that
     downstream pre-topos proofs consume; concrete `PreTopos` instances must supply it
     exactly as Freyd builds it. -/
-class PreToposDisjoint (𝒞 : Type u) [Cat.{v} 𝒞] extends
+public class PreToposDisjoint (𝒞 : Type u) [Cat.{v} 𝒞] extends
     PreTopos 𝒞, DisjointBinaryCoproduct 𝒞
 
 variable {𝒞}
@@ -290,7 +292,7 @@ variable {𝒞}
     some cover z: A→B; then z is a coequalizer of x and y. -/
 
 /-- Every endo-relation on every object has a minimal equivalence relation containing it. -/
-def HasMinEquivContaining (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
+@[expose] public def HasMinEquivContaining (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryProducts 𝒞]
     [HasPullbacks 𝒞] [HasImages 𝒞] : Prop :=
   ∀ (A : 𝒞) (R : BinRel 𝒞 A A),
     ∃ (E : BinRel 𝒞 A A), EquivalenceRelation E
@@ -301,7 +303,7 @@ def HasMinEquivContaining (𝒞 : Type u) [Cat.{v} 𝒞] [HasBinaryProducts 𝒞
     level (kernel pair) of `g`: a composed point `(a, c)` satisfies `a ≫ g = c ≫ g`
     (the pullback square forces it), so its span lifts into `kernelPair g`, and
     image-minimality (`image_min`) turns that into the required `RelHom`. -/
-theorem graphComp_le_kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
+public theorem graphComp_le_kernelPairRel [HasTerminal 𝒞] [HasBinaryProducts 𝒞]
     [HasPullbacks 𝒞] [HasImages 𝒞] {A Q : 𝒞} (g : A ⟶ Q) :
     RelLe ((graph g) ⊚ (graph g)°) (kernelPairRel g) := by
   let pb := HasPullbacks.has (graph g).colB ((graph g)°).colA
@@ -379,7 +381,7 @@ theorem preTopos_cocartesian_to_minEquiv {𝒞 : Type u} [Cat.{v} 𝒞] [PreTopo
   `h≫colA = h≫colB = id` for reflexivity, `Nonempty (RelHom E E°)` for symmetry, `Nonempty
   (RelHom (E⊚E) E)` for transitivity).  The §1.775 equivalence closure produces the `IsEquivRel`
   form (`graph(id) ⊑ E`, `E° ⊑ E`, `E⊚E ⊑ E`).  The two are interderivable. -/
-theorem equivalenceRelation_of_isEquivRel {𝒞 : Type u} [Cat.{v} 𝒞]
+public theorem equivalenceRelation_of_isEquivRel {𝒞 : Type u} [Cat.{v} 𝒞]
     [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} {E : BinRel 𝒞 A A} (h : IsEquivRel E) : EquivalenceRelation E := by
   obtain ⟨hRefl, hSym, hTrans⟩ := h
@@ -392,7 +394,7 @@ theorem equivalenceRelation_of_isEquivRel {𝒞 : Type u} [Cat.{v} 𝒞]
     rwa [reciprocal_invol] at h2
 
 /-- Reverse bridge: §1.567 `EquivalenceRelation` ⟹ §1.775 `IsEquivRel`. -/
-theorem isEquivRel_of_equivalenceRelation {𝒞 : Type u} [Cat.{v} 𝒞]
+public theorem isEquivRel_of_equivalenceRelation {𝒞 : Type u} [Cat.{v} 𝒞]
     [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {A : 𝒞} {E : BinRel 𝒞 A A} (h : EquivalenceRelation E) : IsEquivRel E := by
   obtain ⟨⟨hsec, hsA, hsB⟩, ⟨hsym⟩, htrans⟩ := h
@@ -413,7 +415,7 @@ theorem isEquivRel_of_equivalenceRelation {𝒞 : Type u} [Cat.{v} 𝒞]
 
     This is the constructive replacement for `preTopos_cocartesian_to_minEquiv` (which built the
     minimal equivalence from coequalizers + effectiveness): here it is built from R* directly. -/
-theorem minEquiv_of_rtc {𝒞 : Type u} [Cat.{v} 𝒞]
+public theorem minEquiv_of_rtc {𝒞 : Type u} [Cat.{v} 𝒞]
     [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     [HasSubobjectUnions 𝒞] [HasReflTransClosure 𝒞] :
     HasMinEquivContaining 𝒞 := by
@@ -1015,7 +1017,7 @@ set_option maxHeartbeats 1000000 in
     `R₀ ≤ (m≫inl)° ⊚ (n≫inr)`, and the two monic injections cancel to `m° ⊚ n`.  So the
     point factors through `relSub(m° ⊚ n) = image(pair m n)`, giving `a : pt → A` with
     `a≫m = b`, `a≫n = c`; uniqueness from `m` monic. -/
-theorem amalgamation_is_pullback [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
+public theorem amalgamation_is_pullback [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
     {A B C : 𝒞} (m : A ⟶ B) (hm : Monic m) (n : A ⟶ C) (hn : Monic n) :
     ∃ (D : 𝒞) (u : B ⟶ D) (v : C ⟶ D) (hsq : m ≫ u = n ≫ v),
       (Cone.mk (f := u) (g := v) A m n hsq).IsPullback ∧
@@ -1362,7 +1364,7 @@ theorem amalgamation_is_pushout [PreToposDisjoint 𝒞] [HasReflTransClosure �
     `(f≫w, g≫w)` is, after cancelling the monic `w`, a cone over `(f, g)`.  (Pasting a
     pullback square with a trivial monic square.)  Used to descend the §1.651 pullback over
     the union legs to a pullback over the original monic cospan. -/
-theorem isPullback_postcomp_mono {A B C' D : 𝒞} {f : A ⟶ C'} {g : B ⟶ C'}
+public theorem isPullback_postcomp_mono {A B C' D : 𝒞} {f : A ⟶ C'} {g : B ⟶ C'}
     {c : Cone f g} (hc : c.IsPullback) {w : C' ⟶ D} (hw : Monic w) :
     (Cone.mk (f := f ≫ w) (g := g ≫ w) c.pt c.π₁ c.π₂
       (by rw [← Cat.assoc, ← Cat.assoc, c.w])).IsPullback := by
@@ -1378,7 +1380,7 @@ theorem isPullback_postcomp_mono {A B C' D : 𝒞} {f : A ⟶ C'} {g : B ⟶ C'}
     `θ` (split monic) composed with the monic `w` is monic.  This is how the §1.651 amalgamation
     `D` (a pushout) is identified with the §1.62 union `W ↪ AA` (monic), making the descent
     `δ : D → AA` monic — the missing leg of `preTopos_functor_preserves_monic_pullbacks`. -/
-theorem pushout_descent_mono {A B C D W AA : 𝒞} {f : A ⟶ B} {g : A ⟶ C}
+public theorem pushout_descent_mono {A B C D W AA : 𝒞} {f : A ⟶ B} {g : A ⟶ C}
     {u : B ⟶ D} {v : C ⟶ D} (hsqD : f ≫ u = g ≫ v)
     (hUMPD : ∀ (Q : 𝒞) (uQ : B ⟶ Q) (vQ : C ⟶ Q), f ≫ uQ = g ≫ vQ →
         ∃ dd : D ⟶ Q, u ≫ dd = uQ ∧ v ≫ dd = vQ ∧
@@ -1414,7 +1416,7 @@ theorem pushout_descent_mono {A B C D W AA : 𝒞} {f : A ⟶ B} {g : A ⟶ C}
   In a pre-topos, covers coincide with epimorphisms, and monics
   coincide with coequalizers (cocovers). -/
 
-theorem preTopos_minEquiv_to_cocartesian {𝒞 : Type u} [Cat.{v} 𝒞] [PreTopos 𝒞]
+public theorem preTopos_minEquiv_to_cocartesian {𝒞 : Type u} [Cat.{v} 𝒞] [PreTopos 𝒞]
     (h : HasMinEquivContaining 𝒞) : Nonempty (HasCoequalizers 𝒞) := by
   -- Build coequalizers from the minimal-equivalence hypothesis (§1.657 backward direction).
   -- Key: all Prop reasoning is packaged into hcoeProp via obtain; Classical.choose
@@ -1574,7 +1576,7 @@ theorem cokernelPair_m_factors_eq [PreTopos 𝒞] [HasCoequalizers 𝒞] [HasEqu
     Chaining: `1_B ≤ m° ⊚ m`, which is exactly the relational cover criterion §1.569
     (`cover_iff_one_le_reciprocal_comp_self`).  No path-length / `relPow` induction is needed: the
     cross-vanishing is the same `relSub_*_le_bottom` positivity used for leg-monicity. -/
-theorem monic_epic_is_cover [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
+public theorem monic_epic_is_cover [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m)
     (hepi : ∀ {C : 𝒞} (g h : B ⟶ C), m ≫ g = m ≫ h → g = h) : Cover m := by
   -- ===== Reconstruct the amalgamation relational scaffold for x = y = m (DRY with §1.651). =====
@@ -1763,12 +1765,12 @@ theorem monic_epic_is_cover [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {
 /-- **§1.652 (crux): a pre-topos is BALANCED** — a map that is both monic and epic is an
     isomorphism.  Now Sorry-free: monic + epic ⟹ cover (`monic_epic_is_cover`, the reverse
     F-analysis), and monic + cover ⟹ iso (`monic_cover_iso`). -/
-theorem pretopos_balanced [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
+public theorem pretopos_balanced [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
     (m : A ⟶ B) (hm : Monic m)
     (hepi : ∀ {C : 𝒞} (g h : B ⟶ C), m ≫ g = m ≫ h → g = h) : IsIso m :=
   monic_cover_iso m (monic_epic_is_cover m hm hepi) hm
 
-theorem cover_eq_epic_preTopos [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
+public theorem cover_eq_epic_preTopos [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] {A B : 𝒞}
     (f : A ⟶ B) :
     Cover f ↔ (∀ {C : 𝒞} (g h : B ⟶ C), f ≫ g = f ≫ h → g = h) := by
   constructor
@@ -2200,7 +2202,7 @@ theorem pushout_monic_in_pretopos [PreToposDisjoint 𝒞] [HasReflTransClosure �
 /-- **§1.658**: A in a pre-logos is DECIDABLE if the diagonal `diag A : A → A×A`
     has a complement in `Subobject 𝒞 (prod A A)`.
     Lean note: `diag A` is monic (§1.42: `diag_mono`); the subobject is `{ dom := A, arr := diag A, monic := diag_mono A }`. -/
-def DecidableObject [PreLogos 𝒞] [HasBinaryProducts 𝒞] (A : 𝒞) : Prop :=
+@[expose] public def DecidableObject [PreLogos 𝒞] [HasBinaryProducts 𝒞] (A : 𝒞) : Prop :=
   IsComplemented ({ dom := A, arr := diag A, monic := diag_mono A } : Subobject 𝒞 (prod A A))
 
 /-- **§1.658 (engine, sharpened)**: a subobject `S ⊆ B` is complemented as soon as ITS OWN
@@ -2209,7 +2211,7 @@ def DecidableObject [PreLogos 𝒞] [HasBinaryProducts 𝒞] (A : 𝒞) : Prop :
     `∀ A, DecidableObject A`.  This is the form needed inside a slice where only `1_𝒮+1_𝒮` (and
     thence the specific amalgam) is known decidable.  The classifier `c := pair u v` makes
     `S = c#(Δ D)` (`hS₁`/`hS₂`), and `diagonal_classifies hD` + the bridge finish. -/
-theorem subobject_complemented_of_amalg_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
+public theorem subobject_complemented_of_amalg_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
     {B : 𝒞} (S : Subobject 𝒞 B) {D : 𝒞} {u v : B ⟶ D} (hsq : S.arr ≫ u = S.arr ≫ v)
     (hpb : (Cone.mk (f := u) (g := v) S.dom S.arr S.arr hsq).IsPullback)
     (hD : DecidableObjectSub D) :
@@ -2261,7 +2263,7 @@ theorem subobject_complemented_of_amalg_decidable [PreToposDisjoint 𝒞] [HasRe
 /-- **§1.658 (engine)**: every subobject `S ⊆ B` is the inverse image of a DECIDABLE diagonal,
     hence complemented.  Thin caller of `subobject_complemented_of_amalg_decidable`: build the
     amalgamation `D := B +_S B` (`amalgamation_is_pullback`), decidable from the global `h`. -/
-theorem subobject_complemented_of_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
+public theorem subobject_complemented_of_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞]
     (h : ∀ (A : 𝒞), DecidableObject A) {B : 𝒞} (S : Subobject 𝒞 B) :
     IsComplemented S := by
   obtain ⟨D, u, v, hsq, hpb, _hpush, _hcov⟩ :=
@@ -2273,7 +2275,7 @@ theorem subobject_complemented_of_decidable [PreToposDisjoint 𝒞] [HasReflTran
     The harder direction (all decidable → boolean) follows because pullbacks of
     complemented subobjects are complemented, and every subobject U ⊆ 1 can be
     pulled back to any slice, where it coincides with the diagonal. -/
-theorem preTopos_boolean_iff_all_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] :
+public theorem preTopos_boolean_iff_all_decidable [PreToposDisjoint 𝒞] [HasReflTransClosure 𝒞] :
     (Nonempty (BooleanPreLogos 𝒞)) ↔ ∀ (A : 𝒞), DecidableObject A := by
   refine ⟨fun ⟨hbool⟩ A => ?_, fun h => ?_⟩
   · -- (⇒) BooleanPreLogos → every diagonal subobject is complemented = DecidableObject A.
@@ -2722,7 +2724,7 @@ theorem prod_choice_is_choice [PullbacksTransferCovers 𝒞] {B₁ B₂ : 𝒞}
     already pairs the forced `snd`-coordinate into a full section.  This is exactly the
     coordinate at which `prod_choice_is_choice` used a second `Choice C` extraction; pinning
     replaces it. -/
-theorem choice_prod_pinned [PullbacksTransferCovers 𝒞] {T C X : 𝒞}
+public theorem choice_prod_pinned [PullbacksTransferCovers 𝒞] {T C X : 𝒞}
     (hT : Choice T) (R : BinRel 𝒞 X (prod T C)) (hent : Entire R)
     (p : X ⟶ C) (hpin : R.colB ≫ snd = R.colA ≫ p) :
     ∃ (f : X ⟶ prod T C) (w : X ⟶ R.src),
@@ -2782,7 +2784,7 @@ theorem coprod_choice_to_one_one_choice
     `ψ : U.dom + U₂.dom ≅ A` with `inl ≫ ψ = U.arr` and `inr ≫ ψ = U₂.arr`.  This is
     `complementedSub_iso_coproduct` refined to expose the legs (needed so a copairing
     `case s₁ s₂` post-composed with `ψ⁻¹` restricts each section to its half of `A`). -/
-theorem complemented_legs_iso [HasBinaryProducts 𝒞] {A : 𝒞} (U U₂ : Subobject 𝒞 A)
+public theorem complemented_legs_iso [HasBinaryProducts 𝒞] {A : 𝒞} (U U₂ : Subobject 𝒞 A)
     (hdisj : Subobject.le (Subobject.inter U U₂) (PreLogos.bottom A))
     (hentire : Subobject.le (Subobject.entire A) (HasSubobjectUnions.union U U₂)) :
     ∃ (ψ : HasBinaryCoproducts.coprod U.dom U₂.dom ⟶ A)

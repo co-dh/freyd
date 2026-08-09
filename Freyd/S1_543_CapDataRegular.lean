@@ -8,8 +8,10 @@
                                     `HasImages` of stage n.
   By induction every tower stage has images (`stageHasImages`), so the colimit `Ā` is `RegularCategory`.
   This discharges the `[RegularCategory Ā]` hypothesis of §2.218 `repr_in_power_of_sets`. -/
-import Freyd.S1_543_CapDataWiring
-import Freyd.S1_543_RatCapImages
+module
+
+public import Freyd.S1_543_CapDataWiring
+public import Freyd.S1_543_RatCapImages
 
 open Freyd
 open Freyd.Colim
@@ -24,13 +26,13 @@ universe u
 
 /-- The §1.547 uniform cofinal successor as a step function — definitionally `capData_exists`'s
     `ccs.step` (`uniformStep (wsCover S)`, with `S`'s structure + the `Classical.decEq` exception). -/
-noncomputable def uniformStepFun (S : PreRegBundle.{u}) : CapStep S.carrier :=
+@[expose] public noncomputable def uniformStepFun (S : PreRegBundle.{u}) : CapStep S.carrier :=
   letI := S.cat; letI := S.pre; letI := (wsCover S).dec
   uniformStep (wsCover S)
 
 /-- **Every stage of the cofinal ω-tower has images.**  Stage 0 = `A` (the supplied `hb0`); stage
     `n+1 = ratCapCat (cofinalProjSystem stage_n)` has images by `ratCapHasImages`, inductively. -/
-noncomputable def stageHasImages (b : PreRegBundle.{u}) (hb0 : @HasImages b.carrier b.cat) :
+@[expose] public noncomputable def stageHasImages (b : PreRegBundle.{u}) (hb0 : @HasImages b.carrier b.cat) :
     ∀ n, @HasImages (stageBundle uniformStepFun b n).carrier (stageBundle uniformStepFun b n).cat
   | 0 => hb0
   | (n + 1) => by

@@ -8,14 +8,16 @@
   §1.532  The pullback square for B×A₁ → B×A₂ over A₁→A₂.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_26
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_44
-import Freyd.S1_45
-import Freyd.S1_51
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_26
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_44
+public import Freyd.S1_45
+public import Freyd.S1_51
 
 
 universe v u

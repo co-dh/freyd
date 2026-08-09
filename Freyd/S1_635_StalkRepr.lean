@@ -9,8 +9,10 @@
   `relAllegoryHom_faithful_of_reflects` (with split power-covers, `power_cover_splits`) gives a
   FAITHFUL allegory representation `Rel(𝒞) → Rel(Set)^StalkIndex` — Freyd's §1.635, the heart of
   §2.218, with NO single-stalk-reflects-isos assumption (the family is COLLECTIVELY faithful). -/
-import Freyd.S1_634_TstarRegular
-import Freyd.S1_635_TstarConservative
+module
+
+public import Freyd.S1_634_TstarRegular
+public import Freyd.S1_635_TstarConservative
 
 namespace Freyd
 open PreLogosHorn.Stalk
@@ -21,7 +23,7 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
     (its power-inverse restricts to a two-sided inverse of each `T_F̂(f)`); the surjectivity gives
     `f` a cover (`Tstar_reflects_cover`) and the injectivity gives `f` a mono (`Tstar_separates`),
     so `f` is an iso by `monic_cover_iso`.  NO single stalk reflects isos — the family does. -/
-theorem Tstar_reflects_iso (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (f : X ⟶ Y)
+public theorem Tstar_reflects_iso (hcap : Capital (𝒞 := 𝒞)) {X Y : 𝒞} (f : X ⟶ Y)
     (hiso : IsIso (TstarFunctor.map f)) : IsIso f := by
   -- A power-iso is fibrewise an iso of sets (`power_isIso_iff`).
   have hfib : ∀ F : StalkIndex 𝒞,

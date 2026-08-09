@@ -23,7 +23,9 @@
   and the copairing realising the coproduct UMP is the hom-set addition.
 -/
 
-import Freyd.S1_595_AbCategory
+module
+
+public import Freyd.S1_595_AbCategory
 
 open Freyd
 
@@ -41,7 +43,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [HasTerminal 𝒞] [HasBinaryProducts �
 
 /-- Carrier-level `add` of the product group object:
     `(A.c×B.c)×(A.c×B.c) → A.c×B.c`, adding the two factors componentwise. -/
-private def prodAddCar (A B : AbelianGroupObject 𝒞) :
+@[expose] public def prodAddCar (A B : AbelianGroupObject 𝒞) :
     prod (prod A.carrier B.carrier) (prod A.carrier B.carrier) ⟶ prod A.carrier B.carrier :=
   pair (pair (fst ≫ fst) (snd ≫ fst) ≫ A.add)
        (pair (fst ≫ snd) (snd ≫ snd) ≫ B.add)
@@ -50,14 +52,14 @@ private def prodAddCar (A B : AbelianGroupObject 𝒞) :
     `⟨u,w⟩ ≫ prodAddCar` projects componentwise to the sums of `A` and `B`:
         `(u ⊞ w) ≫ π₁ = ⟨u≫π₁, w≫π₁⟩ ≫ A.add`,  similarly for `π₂`.
     Every `prodGObj` axiom is reduced to `A`/`B`'s axioms by joint monicity + this. -/
-private theorem prodAdd_proj_fst {S : 𝒞} {A B : AbelianGroupObject 𝒞}
+public theorem prodAdd_proj_fst {S : 𝒞} {A B : AbelianGroupObject 𝒞}
     (u w : S ⟶ prod A.carrier B.carrier) :
     (pair u w ≫ prodAddCar A B) ≫ fst = pair (u ≫ fst) (w ≫ fst) ≫ A.add := by
   rw [Cat.assoc, show prodAddCar A B ≫ fst = pair (fst ≫ fst) (snd ≫ fst) ≫ A.add from
         fst_pair _ _,
       ← Cat.assoc, pair_precomp, ← Cat.assoc, ← Cat.assoc, fst_pair, snd_pair]
 
-private theorem prodAdd_proj_snd {S : 𝒞} {A B : AbelianGroupObject 𝒞}
+public theorem prodAdd_proj_snd {S : 𝒞} {A B : AbelianGroupObject 𝒞}
     (u w : S ⟶ prod A.carrier B.carrier) :
     (pair u w ≫ prodAddCar A B) ≫ snd = pair (u ≫ snd) (w ≫ snd) ≫ B.add := by
   rw [Cat.assoc, show prodAddCar A B ≫ snd = pair (fst ≫ snd) (snd ≫ snd) ≫ B.add from
@@ -82,7 +84,7 @@ private theorem prodAdd_eq {S : 𝒞} {A B : AbelianGroupObject 𝒞}
     `zero = ⟨A.zero, B.zero⟩`, `neg = ⟨π₁≫A.neg, π₂≫B.neg⟩`, and
     `add` is `prodAddCar`.  Each axiom is verified componentwise (project by `fst`/`snd`,
     reduce to the corresponding axiom of `A` resp. `B`). -/
-noncomputable def prodGObj (A B : AbelianGroupObject 𝒞) : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def prodGObj (A B : AbelianGroupObject 𝒞) : AbelianGroupObject 𝒞 where
   carrier := prod A.carrier B.carrier
   zero := pair A.zero B.zero
   neg := pair (fst ≫ A.neg) (snd ≫ B.neg)
@@ -131,7 +133,7 @@ noncomputable def prodGObj (A B : AbelianGroupObject 𝒞) : AbelianGroupObject 
 
 /-- An idempotent generalized element is zero: if `e ⊕ e = e` then `e = O`.
     (Cancel `e`: `e = e ⊕ O = e ⊕ (e ⊕ ⊖e) = (e ⊕ e) ⊕ ⊖e = e ⊕ ⊖e = O`.) -/
-theorem GElt.idem_zero {T : 𝒞} (P : AbelianGroupObject 𝒞) {e : T ⟶ P.carrier}
+public theorem GElt.idem_zero {T : 𝒞} (P : AbelianGroupObject 𝒞) {e : T ⟶ P.carrier}
     (he : pair e e ≫ P.add = e) : e = term T ≫ P.zero :=
   calc e = pair e (term T ≫ P.zero) ≫ P.add := (GElt.add_zero P e).symm
     _ = pair e (pair e (e ≫ P.neg) ≫ P.add) ≫ P.add := by rw [GElt.add_neg P e]
@@ -145,7 +147,7 @@ theorem GElt.idem_zero {T : 𝒞} (P : AbelianGroupObject 𝒞) {e : T ⟶ P.car
   It is simultaneously terminal and coterminal in `Ab(𝒞)` (`0 ≅ 1`). -/
 
 /-- The zero group object: carrier `1`, all operations the unique maps to `1`. -/
-noncomputable def zeroGObj : AbelianGroupObject 𝒞 where
+@[expose] public noncomputable def zeroGObj : AbelianGroupObject 𝒞 where
   carrier := one
   zero := Cat.id one
   neg := Cat.id one
@@ -156,13 +158,13 @@ noncomputable def zeroGObj : AbelianGroupObject 𝒞 where
   add_comm := term_uniq _ _
 
 /-- `Ab(𝒞)` has a terminal object: the zero group object, with `term` as the unique map. -/
-noncomputable instance instHasTerminalAb : HasTerminal (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasTerminalAb : HasTerminal (AbelianGroupObject 𝒞) where
   one := zeroGObj
   trm A := ⟨term A.carrier, term_uniq _ _⟩
   uniq f g := Subtype.ext (term_uniq f.val g.val)
 
 /-- `A.zero : 1 → A` is a homomorphism `zeroGObj → A` (`O ⊕ O = O`). -/
-theorem isHom_fromZero (A : AbelianGroupObject 𝒞) :
+public theorem isHom_fromZero (A : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject (zeroGObj) A A.zero := by
   show (zeroGObj : AbelianGroupObject 𝒞).add ≫ A.zero
         = pair (fst ≫ A.zero) (snd ≫ A.zero) ≫ A.add
@@ -177,7 +179,7 @@ theorem isHom_fromZero (A : AbelianGroupObject 𝒞) :
 
 /-- Uniqueness of homs out of `zeroGObj`: any hom `x : 1 → A` is `A.zero`.
     The hom condition pulled back along the diagonal forces `x = x ⊕ x`, so `x = O`. -/
-theorem hom_fromZero_unique {A : AbelianGroupObject 𝒞} {x : (one : 𝒞) ⟶ A.carrier}
+public theorem hom_fromZero_unique {A : AbelianGroupObject 𝒞} {x : (one : 𝒞) ⟶ A.carrier}
     (hx : IsHomAbelianGroupObject (zeroGObj) A x) : x = A.zero := by
   -- hx : term(1×1) ≫ x = ⟨fst≫x, snd≫x⟩ ≫ A.add.  Precompose with `diag one : 1 → 1×1`.
   have key := congrArg (fun m => diag (one : 𝒞) ≫ m) hx
@@ -196,7 +198,7 @@ theorem hom_fromZero_unique {A : AbelianGroupObject 𝒞} {x : (one : 𝒞) ⟶ 
   rwa [term_uniq (term (one : 𝒞)) (Cat.id one), Cat.id_comp] at hidem
 
 /-- `Ab(𝒞)` has a coterminator: the zero group object `zeroGObj` (so `0 ≅ 1`). -/
-noncomputable instance instHasCoterminatorAb : HasCoterminator (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasCoterminatorAb : HasCoterminator (AbelianGroupObject 𝒞) where
   zero := zeroGObj
   init A := ⟨A.zero, isHom_fromZero A⟩
   init_uniq f g := Subtype.ext ((hom_fromZero_unique f.property).trans
@@ -205,7 +207,7 @@ noncomputable instance instHasCoterminatorAb : HasCoterminator (AbelianGroupObje
 /-- §1.595: **`Ab(𝒞)` has a zero object** — the zero group object `zeroGObj` is at once terminal
     (`instHasTerminalAb`) and coterminal (`instHasCoterminatorAb`), with `one = coterm` on the
     nose, so `0 ≅ 1`. -/
-noncomputable instance instHasZeroObjectAb : HasZeroObject (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasZeroObjectAb : HasZeroObject (AbelianGroupObject 𝒞) where
   zero_eq_one := rfl
 
 /-! ### Products in `Ab(𝒞)`
@@ -222,16 +224,16 @@ noncomputable instance instHasZeroObjectAb : HasZeroObject (AbelianGroupObject �
 
 /-- The first projection `π₁ : prodGObj A B → A` is a homomorphism (it is exactly the
     statement `prodAddCar≫fst = ⟨π₁fst,π₂fst⟩≫A.add`). -/
-theorem isHom_prodFst (A B : AbelianGroupObject 𝒞) :
+public theorem isHom_prodFst (A B : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject (prodGObj A B) A fst :=
   fst_pair _ _
 
-theorem isHom_prodSnd (A B : AbelianGroupObject 𝒞) :
+public theorem isHom_prodSnd (A B : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject (prodGObj A B) B snd :=
   snd_pair _ _
 
 /-- The pairing `⟨f,g⟩` of two homomorphisms is a homomorphism into `prodGObj A B`. -/
-theorem isHom_prodPair {X A B : AbelianGroupObject 𝒞}
+public theorem isHom_prodPair {X A B : AbelianGroupObject 𝒞}
     {f : X.carrier ⟶ A.carrier} {g : X.carrier ⟶ B.carrier}
     (hf : IsHomAbelianGroupObject X A f) (hg : IsHomAbelianGroupObject X B g) :
     IsHomAbelianGroupObject X (prodGObj A B) (pair f g) := by
@@ -245,7 +247,7 @@ theorem isHom_prodPair {X A B : AbelianGroupObject 𝒞}
 
 /-- §1.595: `Ab(𝒞)` has binary products — the product is the product group object,
     with the underlying-`𝒞` projections and pairing (all homomorphisms). -/
-noncomputable instance instHasBinaryProductsAb : HasBinaryProducts (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasBinaryProductsAb : HasBinaryProducts (AbelianGroupObject 𝒞) where
   prod A B := prodGObj A B
   fst := ⟨fst, isHom_prodFst _ _⟩
   snd := ⟨snd, isHom_prodSnd _ _⟩
@@ -263,7 +265,7 @@ noncomputable instance instHasBinaryProductsAb : HasBinaryProducts (AbelianGroup
 /-- For a homomorphism `h : P → X` and any `u w : T → P.carrier`,
     `(⟨u,w⟩ ≫ P.add) ≫ h = ⟨u≫h, w≫h⟩ ≫ X.add`.  (Precompose the hom square `P.add≫h =
     (h×h)≫X.add` with `⟨u,w⟩` and distribute.) -/
-theorem hom_preserves_add {T : 𝒞} {P X : AbelianGroupObject 𝒞}
+public theorem hom_preserves_add {T : 𝒞} {P X : AbelianGroupObject 𝒞}
     {h : P.carrier ⟶ X.carrier} (hh : IsHomAbelianGroupObject P X h)
     (u w : T ⟶ P.carrier) :
     (pair u w ≫ P.add) ≫ h = pair (u ≫ h) (w ≫ h) ≫ X.add := by
@@ -272,7 +274,7 @@ theorem hom_preserves_add {T : 𝒞} {P X : AbelianGroupObject 𝒞}
 
 /-- A homomorphism preserves zero: `(t ≫ P.zero) ≫ h = t ≫ X.zero` for any `t : T → 1`.
     (`P.zero≫h` is idempotent because `O ⊕ O = O` and `h` preserves `⊕`, so it is `O_X`.) -/
-theorem hom_preserves_zero {T : 𝒞} {P X : AbelianGroupObject 𝒞}
+public theorem hom_preserves_zero {T : 𝒞} {P X : AbelianGroupObject 𝒞}
     {h : P.carrier ⟶ X.carrier} (hh : IsHomAbelianGroupObject P X h) (t : T ⟶ one) :
     (t ≫ P.zero) ≫ h = t ≫ X.zero := by
   rw [term_uniq t (term T)]
@@ -286,23 +288,23 @@ namespace AbCoprod
 variable {A B X : AbelianGroupObject 𝒞}
 
 /-- Carrier-level copairing `[f,g] = (π₁≫f) + (π₂≫g) : prodGObj A B → X`. -/
-private def caseCar (f : A.carrier ⟶ X.carrier) (g : B.carrier ⟶ X.carrier) :
+@[expose] public def caseCar (f : A.carrier ⟶ X.carrier) (g : B.carrier ⟶ X.carrier) :
     prod A.carrier B.carrier ⟶ X.carrier :=
   pair (fst ≫ f) (snd ≫ g) ≫ X.add
 
 /-- Coproduct injection `inl = ⟨id, 0⟩ : A → prodGObj A B` (a homomorphism). -/
-theorem isHom_inl (A B : AbelianGroupObject 𝒞) :
+public theorem isHom_inl (A B : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject A (prodGObj A B) (pair (Cat.id A.carrier) (HomAb.zeroCar A B)) :=
   isHom_prodPair (isHom_id A) (HomAb.isHom_zeroCar A B)
 
 /-- Coproduct injection `inr = ⟨0, id⟩ : B → prodGObj A B` (a homomorphism). -/
-theorem isHom_inr (A B : AbelianGroupObject 𝒞) :
+public theorem isHom_inr (A B : AbelianGroupObject 𝒞) :
     IsHomAbelianGroupObject B (prodGObj A B) (pair (HomAb.zeroCar B A) (Cat.id B.carrier)) :=
   isHom_prodPair (HomAb.isHom_zeroCar B A) (isHom_id B)
 
 /-- The copairing `[f,g]` is a homomorphism: it is the hom-set sum of the two homs
     `π₁≫f` and `π₂≫g`. -/
-theorem isHom_caseCar {f : A.carrier ⟶ X.carrier} {g : B.carrier ⟶ X.carrier}
+public theorem isHom_caseCar {f : A.carrier ⟶ X.carrier} {g : B.carrier ⟶ X.carrier}
     (hf : IsHomAbelianGroupObject A X f) (hg : IsHomAbelianGroupObject B X g) :
     IsHomAbelianGroupObject (prodGObj A B) X (caseCar f g) := by
   -- caseCar f g = addCar ⟨π₁≫f⟩ ⟨π₂≫g⟩ where π₁,π₂ are homs prodGObj→A, prodGObj→B.
@@ -313,7 +315,7 @@ theorem isHom_caseCar {f : A.carrier ⟶ X.carrier} {g : B.carrier ⟶ X.carrier
   exact HomAb.isHom_addCar (A := prodGObj A B) (B := X) ⟨fst ≫ f, h1⟩ ⟨snd ≫ g, h2⟩
 
 /-- `inl ≫ [f,g] = f`, for a homomorphism `g` (`g` sends `0` to `0`).  `f` arbitrary. -/
-theorem caseCar_inl (f : A.carrier ⟶ X.carrier) {g : B.carrier ⟶ X.carrier}
+public theorem caseCar_inl (f : A.carrier ⟶ X.carrier) {g : B.carrier ⟶ X.carrier}
     (hg : IsHomAbelianGroupObject B X g) :
     pair (Cat.id A.carrier) (HomAb.zeroCar A B) ≫ caseCar f g = f := by
   unfold caseCar HomAb.zeroCar
@@ -324,7 +326,7 @@ theorem caseCar_inl (f : A.carrier ⟶ X.carrier) {g : B.carrier ⟶ X.carrier}
   exact GElt.add_zero X f
 
 /-- `inr ≫ [f,g] = g`, for a homomorphism `f`.  `g` arbitrary. -/
-theorem caseCar_inr {f : A.carrier ⟶ X.carrier} (g : B.carrier ⟶ X.carrier)
+public theorem caseCar_inr {f : A.carrier ⟶ X.carrier} (g : B.carrier ⟶ X.carrier)
     (hf : IsHomAbelianGroupObject A X f) :
     pair (HomAb.zeroCar B A) (Cat.id B.carrier) ≫ caseCar f g = g := by
   unfold caseCar HomAb.zeroCar
@@ -337,7 +339,7 @@ theorem caseCar_inr {f : A.carrier ⟶ X.carrier} (g : B.carrier ⟶ X.carrier)
     `id = (π₁≫inl) ⊕ (π₂≫inr)` where `inl=⟨id,0⟩`, `inr=⟨0,id⟩`.  This is the algebraic
     fact behind the product/coproduct coincidence: every element splits as its `inl`-part
     plus its `inr`-part. -/
-theorem splitId (A B : AbelianGroupObject 𝒞) :
+public theorem splitId (A B : AbelianGroupObject 𝒞) :
     pair (fst ≫ pair (Cat.id A.carrier) (HomAb.zeroCar A B))
          (snd ≫ pair (HomAb.zeroCar B A) (Cat.id B.carrier)) ≫ (prodGObj A B).add
       = Cat.id (prod A.carrier B.carrier) := by
@@ -358,7 +360,7 @@ theorem splitId (A B : AbelianGroupObject 𝒞) :
 /-- **Coproduct universal property (uniqueness).**  Any homomorphism `h : prodGObj A B → X`
     with `inl≫h = f`, `inr≫h = g` equals the copairing `[f,g]`.  Split `id` via `splitId`,
     push `h` through with `hom_preserves_add`, and substitute `inl≫h=f`, `inr≫h=g`. -/
-theorem caseCar_uniq {f : A.carrier ⟶ X.carrier} {g : B.carrier ⟶ X.carrier}
+public theorem caseCar_uniq {f : A.carrier ⟶ X.carrier} {g : B.carrier ⟶ X.carrier}
     {h : prod A.carrier B.carrier ⟶ X.carrier}
     (hh : IsHomAbelianGroupObject (prodGObj A B) X h)
     (h₁ : pair (Cat.id A.carrier) (HomAb.zeroCar A B) ≫ h = f)
@@ -386,7 +388,7 @@ end AbCoprod
 open AbCoprod in
 /-- §1.595: `Ab(𝒞)` has binary coproducts, carried by the *product* group object.
     This is half of the product/coproduct coincidence. -/
-noncomputable instance instHasBinaryCoproductsAb : HasBinaryCoproducts (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHasBinaryCoproductsAb : HasBinaryCoproducts (AbelianGroupObject 𝒞) where
   coprod A B := prodGObj A B
   inl := ⟨pair (Cat.id _) (HomAb.zeroCar _ _), isHom_inl _ _⟩
   inr := ⟨pair (HomAb.zeroCar _ _) (Cat.id _), isHom_inr _ _⟩
@@ -404,22 +406,22 @@ noncomputable instance instHasBinaryCoproductsAb : HasBinaryCoproducts (AbelianG
   isomorphism, and the half-additive `add` is the pointwise hom-set sum. -/
 
 /-- The Ab-level zero morphism `A → 0 → B` is the pointwise zero hom `HomAb.zero A B`. -/
-noncomputable def abZeroHom (A B : AbelianGroupObject 𝒞) : A ⟶ B := HomAb.zero A B
+@[expose] public noncomputable def abZeroHom (A B : AbelianGroupObject 𝒞) : A ⟶ B := HomAb.zero A B
 
 /-- The canonical injections `pair ⟨id,0⟩` resp. `pair ⟨0,id⟩` of the product structure are
     exactly the coproduct injections `inl`, `inr`. -/
-theorem ab_pairIdZero_eq_inl (A B : AbelianGroupObject 𝒞) :
+public theorem ab_pairIdZero_eq_inl (A B : AbelianGroupObject 𝒞) :
     pair (Cat.id A) (abZeroHom A B) = (HasBinaryCoproducts.inl : A ⟶ HasBinaryCoproducts.coprod A B) :=
   rfl
 
-theorem ab_pairZeroId_eq_inr (A B : AbelianGroupObject 𝒞) :
+public theorem ab_pairZeroId_eq_inr (A B : AbelianGroupObject 𝒞) :
     pair (abZeroHom B A) (Cat.id B) = (HasBinaryCoproducts.inr : B ⟶ HasBinaryCoproducts.coprod A B) :=
   rfl
 
 /-- **§1.595 coincidence.**  The matrix map `case ⟨id,0⟩ ⟨0,id⟩ : A⊕B → A×B` equals the
     identity of the shared carrier `prodGObj A B` — it is the copairing `case inl inr`, which
     the coproduct UMP forces to be `id`. -/
-theorem ab_coincidence_eq_id (A B : AbelianGroupObject 𝒞) :
+public theorem ab_coincidence_eq_id (A B : AbelianGroupObject 𝒞) :
     (HasBinaryCoproducts.case (pair (Cat.id A) (abZeroHom A B)) (pair (abZeroHom B A) (Cat.id B)) :
         HasBinaryCoproducts.coprod A B ⟶ prod A B)
       = Cat.id (HasBinaryCoproducts.coprod A B) := by
@@ -429,7 +431,7 @@ theorem ab_coincidence_eq_id (A B : AbelianGroupObject 𝒞) :
     (Cat.id _) (Cat.comp_id _) (Cat.comp_id _)).symm
 
 /-- The coincidence map is an isomorphism (it is the identity). -/
-theorem ab_coincidence_isIso (A B : AbelianGroupObject 𝒞) :
+public theorem ab_coincidence_isIso (A B : AbelianGroupObject 𝒞) :
     IsIso (HasBinaryCoproducts.case (pair (Cat.id A) (abZeroHom A B)) (pair (abZeroHom B A) (Cat.id B)) :
         HasBinaryCoproducts.coprod A B ⟶ prod A B) := by
   rw [ab_coincidence_eq_id]
@@ -446,12 +448,12 @@ private theorem choose_eq_id_of_eq_id {X : 𝒞} {m : X ⟶ X} (hiso : IsIso m)
     rw [hm, Cat.id_comp] at hc; exact hc
   exact gen hiso.choose hiso.choose_spec.1
 
-theorem ab_choose_eq_id (A B : AbelianGroupObject 𝒞) :
+public theorem ab_choose_eq_id (A B : AbelianGroupObject 𝒞) :
     (ab_coincidence_isIso A B).choose = Cat.id (HasBinaryCoproducts.coprod A B) :=
   choose_eq_id_of_eq_id (ab_coincidence_isIso A B) (ab_coincidence_eq_id A B)
 
 /-- `HomAb.add x y` is the codiagonal route `diag ≫ case x y` (eq. 1.1 with `Φ⁻¹ = id`). -/
-theorem ab_add_eq_diag_case {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
+public theorem ab_add_eq_diag_case {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
     HomAb.add x y = diag A ≫ HasBinaryCoproducts.case x y := by
   apply Subtype.ext
   -- carrier: ⟨x,y⟩ ≫ B.add  =  diag.val ≫ caseCar x.val y.val.
@@ -463,7 +465,7 @@ theorem ab_add_eq_diag_case {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
 
 /-- `HomAb.add x y` is the diagonal route `pair x y ≫ ∇` (eq. 1.1' with `Φ⁻¹ = id`),
     where `∇ = case id id`. -/
-theorem ab_add_eq_pair_codiag {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
+public theorem ab_add_eq_pair_codiag {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
     HomAb.add x y = pair x y ≫ HasBinaryCoproducts.case (Cat.id B) (Cat.id B) := by
   apply Subtype.ext
   show pair x.val y.val ≫ B.add
@@ -477,7 +479,7 @@ theorem ab_add_eq_pair_codiag {A B : AbelianGroupObject 𝒞} (x y : A ⟶ B) :
     abelian-group sum `HomAb.add`.  All fields are genuine — `prod_coprod_coincide` is the
     identity-iso `ab_coincidence_isIso`, and `add_eq_addL/addR` hold because the coincidence
     inverse `Φ⁻¹` is the identity (`ab_choose_eq_id`). -/
-noncomputable instance instHalfAdditiveAb : HalfAdditiveCategory (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instHalfAdditiveAb : HalfAdditiveCategory (AbelianGroupObject 𝒞) where
   zeroHom := abZeroHom
   zeroHom_comp_left f := Subtype.ext (by
     show f.val ≫ (term _ ≫ _) = term _ ≫ _
@@ -500,7 +502,7 @@ noncomputable instance instHalfAdditiveAb : HalfAdditiveCategory (AbelianGroupOb
     `HomAb.add f (HomAb.neg f) = HomAb.zero = abZeroHom` is exactly `HomAb.add_neg`.
     (`HalfAdditiveCategory.add` of `instHalfAdditiveAb` IS `HomAb.add`, and its `zeroHom`
     IS `abZeroHom = HomAb.zero`, so the field reduces definitionally.) -/
-noncomputable instance instAdditiveAb : AdditiveCategory (AbelianGroupObject 𝒞) where
+@[expose] public noncomputable instance instAdditiveAb : AdditiveCategory (AbelianGroupObject 𝒞) where
   addInv f := ⟨HomAb.neg f, HomAb.add_neg f⟩
 
 end Freyd

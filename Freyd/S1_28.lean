@@ -3,7 +3,9 @@
   Idempotent, Splits, Split idempotent.
 -/
 
-import Freyd.S1_10
+module
+
+public import Freyd.S1_10
 
 open Freyd
 
@@ -17,16 +19,16 @@ namespace Freyd
 
 /-- IDEMPOTENT (§1.28): a morphism `e : A ⟶ A` such that `e² = e`.
     The book's "necessarily `□e = e□`" is forced by the type `A ⟶ A`. -/
-def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
+@[expose] public def Idempotent {A : 𝒞} (e : A ⟶ A) : Prop := e ≫ e = e
 
 /-! ## §1.281 Split idempotent -/
 
 /-- SPLITS (§1.281): the pair `⟨x : A ⟶ B, y : B ⟶ A⟩` SPLITS the idempotent `e : A ⟶ A`
     if `x ≫ y = e` and `y ≫ x = 𝟙 B`. -/
-def Splits {A B : 𝒞} (x : A ⟶ B) (y : B ⟶ A) (e : A ⟶ A) : Prop := x ≫ y = e ∧ y ≫ x = 𝟙 B
+@[expose] public def Splits {A B : 𝒞} (x : A ⟶ B) (y : B ⟶ A) (e : A ⟶ A) : Prop := x ≫ y = e ∧ y ≫ x = 𝟙 B
 
 /-- SPLIT IDEMPOTENT (§1.281): there exist `B`, `x : A ⟶ B`, `y : B ⟶ A` that split `e`. -/
-def SplitIdempotent {A : 𝒞} (e : A ⟶ A) : Prop :=
+@[expose] public def SplitIdempotent {A : 𝒞} (e : A ⟶ A) : Prop :=
   ∃ (B : 𝒞) (x : A ⟶ B) (y : B ⟶ A), Splits x y e
 
 /-- Idempotency is a consequence of splitting, not a side condition:

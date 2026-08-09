@@ -16,15 +16,17 @@
   Composition in diagram order throughout: `f ≫ g` = first f, then g.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_27
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_27
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
 
 open Freyd
 
@@ -37,20 +39,20 @@ namespace Freyd
 /-! ## §1.422  Pointwise terminator in `𝒮^A` -/
 
 /-- §1.422: The constant functor `A ↦ one` with every arrow mapping to `id_{one}`. -/
-private def constOneFunctor [HasTerminal 𝒮] : Functor 𝒜 𝒮 where
+@[expose] public def constOneFunctor [HasTerminal 𝒮] : Functor 𝒜 𝒮 where
   obj       := fun _ => one
   map      := fun _ => Cat.id one
   map_id   := fun _ => rfl
   map_comp := fun _ _ => (Cat.id_comp _).symm
 
 /-- §1.422: Unique NT from F to `constOneFunctor`; component is `term (F.obj A)`. -/
-private def toConstOne [HasTerminal 𝒮] (F : Functor 𝒜 𝒮) :
+@[expose] public def toConstOne [HasTerminal 𝒮] (F : Functor 𝒜 𝒮) :
     FunctorHom F constOneFunctor where
   app        := fun A => term (F.obj A)
   naturality := fun {_ _} _ => term_uniq _ _
 
 /-- §1.422: `𝒮^A` has a terminator: the constant functor at `one`. -/
-instance functorCat_hasTerminal [HasTerminal 𝒮] : HasTerminal (Functor 𝒜 𝒮) where
+@[expose] public instance functorCat_hasTerminal [HasTerminal 𝒮] : HasTerminal (Functor 𝒜 𝒮) where
   one  := constOneFunctor
   trm  := toConstOne
   uniq := fun {_} α β => NaturalTransformation.ext' fun A => term_uniq (α.app A) (β.app A)
@@ -58,12 +60,12 @@ instance functorCat_hasTerminal [HasTerminal 𝒮] : HasTerminal (Functor 𝒜 �
 /-! ## §1.424  Pointwise binary products in `𝒮^A` -/
 
 /-- Helper: equality of two maps into a product from their projections. -/
-private theorem prod_ext [HasBinaryProducts 𝒮] {X A B : 𝒮} {a b : X ⟶ prod A B}
+public theorem prod_ext [HasBinaryProducts 𝒮] {X A B : 𝒮} {a b : X ⟶ prod A B}
     (hf : a ≫ fst = b ≫ fst) (hs : a ≫ snd = b ≫ snd) : a = b :=
   (pair_uniq _ _ _ rfl rfl).trans (by rw [hf, hs]; exact (pair_uniq _ _ _ rfl rfl).symm)
 
 /-- §1.424: Objectwise product functor: (F × G)(A) = F(A) × G(A). -/
-private def functorProd [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) : Functor 𝒜 𝒮 where
+@[expose] public def functorProd [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) : Functor 𝒜 𝒮 where
   obj       := fun A => prod (F.obj A) (G.obj A)
   map      := fun {X Y} f => pair (fst ≫ F.map f) (snd ≫ G.map f)
   map_id   := fun _ => by
@@ -76,7 +78,7 @@ private def functorProd [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) : Fun
       · rw [Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, Cat.assoc]
 
 /-- §1.424: First projection NT: (fst_{F,G})_A = fst. -/
-private def fstNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
+@[expose] public def fstNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
     FunctorHom (functorProd F G) F where
   app        := fun _ => fst
   naturality := fun {A B} f => by
@@ -84,7 +86,7 @@ private def fstNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
     simp only [functorProd]; rw [fst_pair]
 
 /-- §1.424: Second projection NT: (snd_{F,G})_A = snd. -/
-private def sndNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
+@[expose] public def sndNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
     FunctorHom (functorProd F G) G where
   app        := fun _ => snd
   naturality := fun {A B} f => by
@@ -92,7 +94,7 @@ private def sndNT [HasBinaryProducts 𝒮] (F G : Functor 𝒜 𝒮) :
     simp only [functorProd]; rw [snd_pair]
 
 /-- §1.424: Pairing NT: (pairNT α β)_A = pair (α_A) (β_A). -/
-private def pairNT [HasBinaryProducts 𝒮] {X F G : Functor 𝒜 𝒮}
+@[expose] public def pairNT [HasBinaryProducts 𝒮] {X F G : Functor 𝒜 𝒮}
     (α : FunctorHom X F) (β : FunctorHom X G) : FunctorHom X (functorProd F G) where
   app        := fun A => pair (α.app A) (β.app A)
   naturality := fun {A B} f => by
@@ -104,7 +106,7 @@ private def pairNT [HasBinaryProducts 𝒮] {X F G : Functor 𝒜 𝒮}
     · rw [Cat.assoc, snd_pair, Cat.assoc, snd_pair, ← Cat.assoc, snd_pair, ← β.naturality]
 
 /-- §1.424: `𝒮^A` has binary products, computed objectwise. -/
-instance functorCat_hasProducts [HasBinaryProducts 𝒮] : HasBinaryProducts (Functor 𝒜 𝒮) where
+@[expose] public instance functorCat_hasProducts [HasBinaryProducts 𝒮] : HasBinaryProducts (Functor 𝒜 𝒮) where
   prod      := functorProd
   fst       := fstNT _ _
   snd       := sndNT _ _
@@ -121,7 +123,7 @@ instance functorCat_hasProducts [HasBinaryProducts 𝒮] : HasBinaryProducts (Fu
 /-- §1.462 (easy direction): components monic → NT monic in `𝒮^A`.
     If β ≫ α = γ ≫ α in `𝒮^A` then for every A, β_A ≫ α_A = γ_A ≫ α_A,
     so β_A = γ_A by the component hypothesis, hence β = γ. -/
-theorem natTrans_monic_of_components_monic {F G : Functor 𝒜 𝒮}
+public theorem natTrans_monic_of_components_monic {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) (h : ∀ A, Monic (α.app A)) : Monic (𝒞 := Functor 𝒜 𝒮) α :=
   fun {_} β γ hβγ => NaturalTransformation.ext' fun A =>
     h A (β.app A) (γ.app A) (congrFun (congrArg NaturalTransformation.app hβγ) A)
@@ -133,7 +135,7 @@ theorem natTrans_monic_of_components_monic {F G : Functor 𝒜 𝒮}
 /-! ## §1.521  Pointwise pullbacks in `𝒮^A` -/
 
 -- Auxiliary: two maps to a pullback equal iff they agree on both projections.
-private theorem pb_ext [HasPullbacks 𝒮] {A B C : 𝒮} {f : A ⟶ C} {g : B ⟶ C}
+public theorem pb_ext [HasPullbacks 𝒮] {A B C : 𝒮} {f : A ⟶ C} {g : B ⟶ C}
     (pb : HasPullback f g) {W : 𝒮} {u v : W ⟶ pb.cone.pt}
     (h₁ : u ≫ pb.cone.π₁ = v ≫ pb.cone.π₁) (h₂ : u ≫ pb.cone.π₂ = v ≫ pb.cone.π₂) : u = v :=
   let c : Cone f g := ⟨W, u ≫ pb.cone.π₁, u ≫ pb.cone.π₂, by rw [Cat.assoc, pb.cone.w, ← Cat.assoc]⟩
@@ -149,26 +151,26 @@ private def pbCone [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
          rw [Cat.assoc, α.naturality, ← Cat.assoc, pbX.cone.w, Cat.assoc, ← β.naturality, ← Cat.assoc]⟩
 
 -- Transition map between pointwise pullback objects.
-private def pbLiftMap [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+public def pbLiftMap [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H) {X Y : 𝒜} (f : X ⟶ Y) :
     (HasPullbacks.has (α.app X) (β.app X)).cone.pt ⟶
     (HasPullbacks.has (α.app Y) (β.app Y)).cone.pt :=
   (HasPullbacks.has (α.app Y) (β.app Y)).lift (pbCone α β f)
 
-private theorem pbLift_fst [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+public theorem pbLift_fst [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H) {X Y : 𝒜} (f : X ⟶ Y) :
     pbLiftMap α β f ≫ (HasPullbacks.has (α.app Y) (β.app Y)).cone.π₁ =
     (HasPullbacks.has (α.app X) (β.app X)).cone.π₁ ≫ F.map f :=
   (HasPullbacks.has (α.app Y) (β.app Y)).lift_fst _
 
-private theorem pbLift_snd [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+public theorem pbLift_snd [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H) {X Y : 𝒜} (f : X ⟶ Y) :
     pbLiftMap α β f ≫ (HasPullbacks.has (α.app Y) (β.app Y)).cone.π₂ =
     (HasPullbacks.has (α.app X) (β.app X)).cone.π₂ ≫ G.map f :=
   (HasPullbacks.has (α.app Y) (β.app Y)).lift_snd _
 
 /-- §1.521: Pointwise pullback functor object in `𝒮^A`. -/
-private def pbFunObj [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+@[expose] public def pbFunObj [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H) : Functor 𝒜 𝒮 where
   obj       := fun A => (HasPullbacks.has (α.app A) (β.app A)).cone.pt
   map      := pbLiftMap α β
@@ -189,19 +191,19 @@ private def pbFunObj [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
       exact pb_ext pbZ (hf1.trans hf2.symm) (hs1.trans hs2.symm)
 
 -- pbFunObj.map = pbLiftMap by rfl, needed for naturality rewrites.
-private theorem pbFunObj_map [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+public theorem pbFunObj_map [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H) {X Y : 𝒜} (f : X ⟶ Y) :
     (pbFunObj α β).map f = pbLiftMap α β f := rfl
 
 -- Lift of a cone into the pointwise pullback; component at A is the pointwise lift.
-private def liftApp [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+@[expose] public def liftApp [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H)
     (c : Cone (𝒞 := Functor 𝒜 𝒮) α β) (A : 𝒜) :
     c.pt.obj A ⟶ (HasPullbacks.has (α.app A) (β.app A)).cone.pt :=
   (HasPullbacks.has (α.app A) (β.app A)).lift
     ⟨c.pt.obj A, c.π₁.app A, c.π₂.app A, congrFun (congrArg NaturalTransformation.app c.w) A⟩
 
-private def pbNTLift [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
+@[expose] public def pbNTLift [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
     (α : FunctorHom F H) (β : FunctorHom G H)
     (c : Cone (𝒞 := Functor 𝒜 𝒮) α β) : FunctorHom c.pt (pbFunObj α β) where
   app        := liftApp α β c
@@ -224,7 +226,7 @@ private def pbNTLift [HasPullbacks 𝒮] {F G H : Functor 𝒜 𝒮}
           ← c.π₂.naturality]
 
 /-- §1.521: `𝒮^A` has pullbacks, computed pointwise. -/
-instance functorCat_hasPullbacks [HasPullbacks 𝒮] : HasPullbacks (Functor 𝒜 𝒮) where
+@[expose] public instance functorCat_hasPullbacks [HasPullbacks 𝒮] : HasPullbacks (Functor 𝒜 𝒮) where
   has α β := {
     cone := {
       pt := pbFunObj α β
@@ -318,7 +320,7 @@ private noncomputable def imgTransπ₁inv [RegularCategory 𝒮] {F G : Functor
 /-- The transition map: π₁⁻¹ ≫ π₂ : (image α_X).dom ⟶ (image α_Y).dom.
     π₁⁻¹ : (image α_X).dom → (imgTransPB α f).cone.pt  (inverse of π₁ : P → (image α_X).dom)
     π₂   : (imgTransPB α f).cone.pt → (image α_Y).dom. -/
-noncomputable def imgTransMap [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public noncomputable def imgTransMap [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) {X Y : 𝒜} (f : X ⟶ Y) :
     (image (α.app X)).dom ⟶ (image (α.app Y)).dom :=
   imgTransπ₁inv α f ≫ (imgTransPB α f).cone.π₂
@@ -326,7 +328,7 @@ noncomputable def imgTransMap [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
 /-- Key equation: imgTransMap f ≫ (image α_Y).arr = (image α_X).arr ≫ G.map f.
     Proof: unfold imgTransMap = π₁⁻¹ ≫ π₂; use π₂ ≫ arr_Y = π₁ ≫ (arr_X ≫ G.map f) from
     cone.w; then π₁⁻¹ ≫ π₁ = id gives the result. -/
-theorem imgTrans_comm [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imgTrans_comm [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) {X Y : 𝒜} (f : X ⟶ Y) :
     imgTransMap α f ≫ (image (α.app Y)).arr =
     (image (α.app X)).arr ≫ G.map f := by
@@ -339,13 +341,13 @@ theorem imgTrans_comm [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
         (Classical.choose_spec (imgTransPB_π₁_iso α f)).2,
       Cat.id_comp]
 
-private theorem imgTransMap_id [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imgTransMap_id [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) (X : 𝒜) :
     imgTransMap α (Cat.id X) = Cat.id (image (α.app X)).dom := by
   apply (image (α.app X)).monic
   rw [imgTrans_comm, G.map_id, Cat.comp_id, Cat.id_comp]
 
-private theorem imgTransMap_comp [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imgTransMap_comp [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) {X Y Z : 𝒜} (f : X ⟶ Y) (g : Y ⟶ Z) :
     imgTransMap α (f ≫ g) = imgTransMap α f ≫ imgTransMap α g := by
   apply (image (α.app Z)).monic
@@ -369,7 +371,7 @@ private theorem imgTransMap_comp [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮
   rw [h1, ← h2]
 
 /-- §1.521: Functor A ↦ (image (α_A)).dom with transition maps imgTransMap. -/
-noncomputable def imageFunObj [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+@[expose] public noncomputable def imageFunObj [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) : Functor 𝒜 𝒮 where
   obj       := fun A => (image (α.app A)).dom
   map      := imgTransMap α
@@ -377,19 +379,19 @@ noncomputable def imageFunObj [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
   map_comp := fun f g => imgTransMap_comp α f g
 
 /-- §1.521: NT arr : imageFunObj α ⟶ G, components (image (α_A)).arr, natural by imgTrans_comm. -/
-noncomputable def imgArrNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+@[expose] public noncomputable def imgArrNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) : FunctorHom (imageFunObj α) G where
   app        := fun A => (image (α.app A)).arr
   naturality := fun {_ _} f => imgTrans_comm α f
 
 /-- §1.521: imgArrNT α is monic in 𝒮^A (componentwise monic → NT monic, §1.462 easy). -/
-theorem imgArrNT_monic [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imgArrNT_monic [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) : Monic (𝒞 := Functor 𝒜 𝒮) (imgArrNT α) :=
   natTrans_monic_of_components_monic (imgArrNT α) (fun A => (image (α.app A)).monic)
 
 /-- §1.521: Lift NT imageLiftNT : F ⟶ imageFunObj α, components image.lift (α_A).
     Naturality: both sides ≫ image(α_B).arr agree, using imgTrans_comm + α.naturality. -/
-noncomputable def imageLiftNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+@[expose] public noncomputable def imageLiftNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) : FunctorHom F (imageFunObj α) where
   app        := fun A => image.lift (α.app A)
   naturality := fun {X Y} f => by
@@ -411,7 +413,7 @@ noncomputable def imageLiftNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
             (Cat.assoc _ _ _).symm
 
 /-- §1.521: imageLiftNT ≫ imgArrNT = α (the pointwise image factorization). -/
-theorem imageLiftNT_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imageLiftNT_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) :
     natTrans_comp (imageLiftNT α) (imgArrNT α) = α :=
   NaturalTransformation.ext' fun A => image.lift_fac (α.app A)
@@ -423,7 +425,7 @@ theorem imageLiftNT_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
 def evFunctor (A : 𝒜) : Functor 𝒜 𝒮 → 𝒮 := fun T => T.obj A
 
 /-- A component of an iso NT is iso: if `α` is iso in `Functor 𝒜 𝒮`, then `α.app A` is iso. -/
-theorem natTrans_iso_component {F G : Functor 𝒜 𝒮} {α : FunctorHom F G}
+public theorem natTrans_iso_component {F G : Functor 𝒜 𝒮} {α : FunctorHom F G}
     (hiso : IsIso (𝒞 := Functor 𝒜 𝒮) α) (A : 𝒜) : IsIso (α.app A) := by
   obtain ⟨β, h₁, h₂⟩ := hiso
   exact ⟨β.app A,
@@ -454,7 +456,7 @@ private theorem kp_diag_app_eq [HasTerminal 𝒮] [HasBinaryProducts 𝒮] [hpul
 
 /-- §1.462 (hard direction): NT monic in `𝒮^𝒜` ⟹ each component monic in `𝒮`.
     Via §1.453 kernel pairs: α monic ↔ kp_diag iso; kp_diag is pointwise; component of iso is iso. -/
-theorem natTrans_monic_components [HasTerminal 𝒮] [HasBinaryProducts 𝒮] [hpull : HasPullbacks 𝒮]
+public theorem natTrans_monic_components [HasTerminal 𝒮] [HasBinaryProducts 𝒮] [hpull : HasPullbacks 𝒮]
     {F G : Functor 𝒜 𝒮} (α : FunctorHom F G)
     (hm : Monic (𝒞 := Functor 𝒜 𝒮) α) (A : 𝒜) : Monic (α.app A) := by
   -- α monic → kp_diag(α) iso in 𝒮^𝒜 (using 𝒮^𝒜 has Terminal, Products, Pullbacks)
@@ -503,7 +505,7 @@ private theorem imageMinComp_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮
     build `h : imageFunObj α ⟶ S.dom` with `h ≫ S.arr = imgArrNT α`.
     Component at A: `imageMinComp α S hallow A` (via image minimality in 𝒮 at each point).
     Naturality: cancel by the monic `S.arr.app B`, use `imgTrans_comm` + `imageMinComp_fac`. -/
-private noncomputable def imageMinNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public noncomputable def imageMinNT [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) (S : Subobject (Functor 𝒜 𝒮) G)
     (hallow : Allows S α) : FunctorHom (imageFunObj α) S.dom where
   app      := imageMinComp α S hallow
@@ -527,13 +529,13 @@ private noncomputable def imageMinNT [RegularCategory 𝒮] {F G : Functor 𝒜 
         imgTrans_comm, Cat.assoc, S.arr.naturality, ← Cat.assoc, imageMinComp_fac]
 
 /-- imageMinNT satisfies: `natTrans_comp (imageMinNT α S hallow) S.arr = imgArrNT α`. -/
-private theorem imageMinNT_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem imageMinNT_fac [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) (S : Subobject (Functor 𝒜 𝒮) G) (hallow : Allows S α) :
     natTrans_comp (imageMinNT α S hallow) S.arr = imgArrNT α :=
   NaturalTransformation.ext' fun A => imageMinComp_fac α S hallow A
 
 /-- §1.521: `𝒮^𝒜` has images, computed pointwise (given `[RegularCategory 𝒮]`). -/
-noncomputable instance functorCat_hasImages [RegularCategory 𝒮] :
+@[expose] public noncomputable instance functorCat_hasImages [RegularCategory 𝒮] :
     HasImages (Functor 𝒜 𝒮) where
   image   := fun {_ _} α => ⟨imageFunObj α, imgArrNT α, imgArrNT_monic α⟩
   isImage := fun {_ _} α => ⟨
@@ -544,7 +546,7 @@ noncomputable instance functorCat_hasImages [RegularCategory 𝒮] :
 
 /-- Cover in `𝒮^𝒜` iff every component is a cover in `𝒮`.
     Forward via §1.462 hard + image entirety; backward by building the inverse NT. -/
-theorem cover_functorCat_iff [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
+public theorem cover_functorCat_iff [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
     (α : FunctorHom F G) :
     Cover (𝒞 := Functor 𝒜 𝒮) α ↔ ∀ A : 𝒜, Cover (α.app A) := by
   constructor
@@ -605,7 +607,7 @@ theorem cover_functorCat_iff [RegularCategory 𝒮] {F G : Functor 𝒜 𝒮}
 
 /-- A pullback cone in `𝒮^𝒜` gives a pullback in `𝒮` at each component.
     Proof: use the canonical pointwise pullback as an isomorphic intermediary. -/
-private theorem functorCat_pb_component [HasPullbacks 𝒮]
+public theorem functorCat_pb_component [HasPullbacks 𝒮]
     {F G H : Functor 𝒜 𝒮} {α : FunctorHom F H} {β : FunctorHom G H}
     (c : Cone (𝒞 := Functor 𝒜 𝒮) α β) (hpb : c.IsPullback) (A : 𝒜) :
     (⟨c.pt.obj A, c.π₁.app A, c.π₂.app A,
@@ -701,7 +703,7 @@ private theorem functorCat_pb_component [HasPullbacks 𝒮]
 /-- §1.521: `PullbacksTransferCovers (𝒮^𝒜)` given `[RegularCategory 𝒮]`.
     Proof: use `cover_functorCat_iff` to reduce to pointwise, then apply 𝒮-PTC on the
     pointwise pullback (which is a pullback by `functorCat_pb_component`). -/
-noncomputable instance functorCat_pullbacksTransferCovers [RegularCategory 𝒮] :
+@[expose] public noncomputable instance functorCat_pullbacksTransferCovers [RegularCategory 𝒮] :
     PullbacksTransferCovers (Functor 𝒜 𝒮) where
   pullbacks_transfer_covers := fun {_ _ _} {α β} c hpb hcov => by
     -- Need: Cover c.π₂ in 𝒮^𝒜.  Use cover_functorCat_iff: suffices each (c.π₂).app A is a cover.
@@ -720,7 +722,7 @@ noncomputable instance functorCat_pullbacksTransferCovers [RegularCategory 𝒮]
     exact PullbacksTransferCovers.pullbacks_transfer_covers cA hpbA hcovA m g hm hfac
 
 /-- §1.521: `RegularCategory (Functor 𝒜 𝒮)` given `[RegularCategory 𝒮]`. -/
-noncomputable instance functorCat_regularCategory [RegularCategory 𝒮] :
+@[expose] public noncomputable instance functorCat_regularCategory [RegularCategory 𝒮] :
     RegularCategory (Functor 𝒜 𝒮) :=
   @RegularCategory.mk (Functor 𝒜 𝒮) _
     (functorCat_hasTerminal (𝒜 := 𝒜) (𝒮 := 𝒮))

@@ -32,7 +32,9 @@
   into an additive category".
 -/
 
-import Freyd.S1_59
+module
+
+public import Freyd.S1_59
 
 open Freyd
 

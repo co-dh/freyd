@@ -27,7 +27,9 @@
 -/
 
 
-import Freyd.S1_64
+module
+
+public import Freyd.S1_64
 
 open Freyd
 

@@ -11,21 +11,23 @@
   The §1.712 class `LocallyComplete` is the canonical one from S1_70 (imported below).
 -/
 
-import Freyd.S1_10
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_45
-import Freyd.S1_51
-import Freyd.S1_52
-import Freyd.S1_56
-import Freyd.S1_58
-import Freyd.S1_59
-import Freyd.S1_60
-import Freyd.S1_62
-import Freyd.S1_64
-import Freyd.S1_70
-import Freyd.S1_77
-import Freyd.S1_82
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_45
+public import Freyd.S1_51
+public import Freyd.S1_52
+public import Freyd.S1_56
+public import Freyd.S1_58
+public import Freyd.S1_59
+public import Freyd.S1_60
+public import Freyd.S1_62
+public import Freyd.S1_64
+public import Freyd.S1_70
+public import Freyd.S1_77
+public import Freyd.S1_82
 
 open Freyd
 
@@ -38,7 +40,7 @@ variable {E : Type u} [Cat.{v} E]
 /-! ## Local infrastructure ------------------------------------------------- -/
 
 /-- Arbitrary-indexed coproduct: ΣAᵢ with injections uᵢ : Aᵢ → ΣAᵢ. -/
-structure Coproduct {𝒞 : Type u} [Cat.{v} 𝒞] {I : Type v} (A : I → 𝒞) where
+public structure Coproduct {𝒞 : Type u} [Cat.{v} 𝒞] {I : Type v} (A : I → 𝒞) where
   obj  : 𝒞
   inj  : ∀ i, A i ⟶ obj
   desc : ∀ {X : 𝒞} (_f : ∀ i, A i ⟶ X), obj ⟶ X
@@ -47,7 +49,7 @@ structure Coproduct {𝒞 : Type u} [Cat.{v} 𝒞] {I : Type v} (A : I → 𝒞)
            (∀ i, inj i ≫ h = f i) → h = desc f
 
 /-- A category has all small coproducts indexed by types in universe v. -/
-class HasAllCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasAllCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
   coprod : ∀ {I : Type v} (A : I → 𝒞), Coproduct A
 
 -- COCOMPLETE (§1.823) is defined canonically in S1_82.  For the Giraud bundle
@@ -64,7 +66,7 @@ class HasAllCoproducts (𝒞 : Type u) [Cat.{v} 𝒞] where
     the intersection A i ×_{S} A j is the zero subobject for i ≠ j.
 
     Book formulation: uᵢ uᵢ° = 1, uᵢ° uⱼ = 0 (i ≠ j), ⋃ uᵢ° uᵢ = 1. -/
-structure DisjointCoproduct {𝒞 : Type u} [Cat.{v} 𝒞]
+public structure DisjointCoproduct {𝒞 : Type u} [Cat.{v} 𝒞]
     [HasBinaryProducts 𝒞] [HasPullbacks 𝒞] [HasImages 𝒞]
     {I : Type v} {A : I → 𝒞} (cp : Coproduct A) : Prop where
   /-- Each injection is monic (expresses uᵢ uᵢ° = 1 as a map). -/
@@ -88,7 +90,7 @@ structure DisjointCoproduct {𝒞 : Type u} [Cat.{v} 𝒞]
 
     We express "supremum = all of A" as: for any monic m : X → A, if every
     f#(Bₛ) ≤ X then m is an iso (i.e., X = A up to iso). -/
-def PullbacksPreserveArbitraryUnions (𝒞 : Type u) [Cat.{v} 𝒞]
+@[expose] public def PullbacksPreserveArbitraryUnions (𝒞 : Type u) [Cat.{v} 𝒞]
     [HasPullbacks 𝒞] [HasImages 𝒞] : Prop :=
   ∀ {A B : 𝒞} (f : A ⟶ B) (S : (Subobject 𝒞 B) → Prop),
     -- hypothesis: the family S covers B (its upper bound is B)
@@ -102,7 +104,7 @@ def PullbacksPreserveArbitraryUnions (𝒞 : Type u) [Cat.{v} 𝒞]
     A GROTHENDIECK TOPOS is a locally small, cocomplete, effective regular
     category with a generating set, disjoint coproducts, and pullbacks
     that preserve arbitrary unions. -/
-class GrothendieckTopos (E : Type u) [Cat.{v} E] extends
+public class GrothendieckTopos (E : Type u) [Cat.{v} E] extends
     EffectiveRegular E, HasAllCoproducts E, HasCoequalizers E, LocallyComplete E where
   /-- A SMALL generating set (§1.84, §1.632), presented as a `Type v`-indexed
       family `gen_obj : gen_idx → E`.  Smallness (an index in universe `v`) is
@@ -151,7 +153,7 @@ theorem GrothendieckTopos.has_gen_set (E : Type u) [Cat.{v} E] [GrothendieckTopo
 /-- Antisymmetry of the subobject order: `S ≤ T` and `T ≤ S` give an iso of
     subobjects.  The factoring map of `S ≤ T` is the iso (its two-sided inverse
     is the factoring map of `T ≤ S`, by monicity of the representing arrows). -/
-theorem subobjectIso_of_le_le {B : E} {S T : Subobject E B}
+public theorem subobjectIso_of_le_le {B : E} {S T : Subobject E B}
     (hST : Subobject.le S T) (hTS : Subobject.le T S) : SubobjectIso S T :=
   Subobject.le_antisymm_iso hST hTS
 
@@ -159,7 +161,7 @@ theorem subobjectIso_of_le_le {B : E} {S T : Subobject E B}
     and generalized elements `x : gen i ⟶ B`, recording whether `x` factors
     through `S` (i.e. `Allows S x`).  This is the embedding `Sub(B) ↪ Π_{G∈ℱ} 𝒫(Hom(G,B))`
     of the §1.843 argument; it lives in `Type v` because the generating set is small. -/
-def subTrace [GrothendieckTopos E] {B : E} (S : Subobject E B) :
+@[expose] public def subTrace [GrothendieckTopos E] {B : E} (S : Subobject E B) :
     (i : GrothendieckTopos.gen_idx (E := E)) → (GrothendieckTopos.gen_obj i ⟶ B) → Prop :=
   fun _i x => Allows S x
 
@@ -169,7 +171,7 @@ def subTrace [GrothendieckTopos E] {B : E} (S : Subobject E B) :
     of `S.dom` the basis would supply a generator element of `S.dom` not factoring
     through `P`, i.e. an `x ≫ S.arr` that allows `S` but not `T` — contradiction.
     Hence `P ≅ S.dom` and `S` factors through `T`. -/
-theorem le_of_subTrace_le [GrothendieckTopos E] {B : E} {S T : Subobject E B}
+public theorem le_of_subTrace_le [GrothendieckTopos E] {B : E} {S T : Subobject E B}
     (h : ∀ i x, subTrace S i x → subTrace T i x) : Subobject.le S T := by
   -- Pullback of S.arr and T.arr; π₁ : P → S.dom is monic (pullback of monic T.arr).
   let pb := HasPullbacks.has S.arr T.arr
@@ -209,7 +211,7 @@ theorem le_of_subTrace_le [GrothendieckTopos E] {B : E} {S T : Subobject E B}
     `Π_{i} (gen i ⟶ B) → Prop`; pick a representative subobject for each trace
     (where one exists).  `le_of_subTrace_le` (both directions) shows equal traces
     force a subobject iso, so every subobject is iso to its representative. -/
-noncomputable instance grothendieck_topos_well_powered [GrothendieckTopos E] :
+@[expose] public noncomputable instance grothendieck_topos_well_powered [GrothendieckTopos E] :
     WellPowered E where
   small := by
     classical
@@ -233,13 +235,13 @@ noncomputable instance grothendieck_topos_well_powered [GrothendieckTopos E] :
     exact subobjectIso_of_le_le hST hTS
 
 /-- Two covers A ↠ P and A ↠ Q are ISOMORPHIC if there is a commuting iso P ≅ Q. -/
-def CoverIso {𝒞 : Type u} [Cat.{v} 𝒞] {A : 𝒞} {P Q : 𝒞}
+@[expose] public def CoverIso {𝒞 : Type u} [Cat.{v} 𝒞] {A : 𝒞} {P Q : 𝒞}
     (p : A ⟶ P) (q : A ⟶ Q) : Prop :=
   ∃ (i : P ⟶ Q), IsIso i ∧ p ≫ i = q
 
 /-- WELL-COPOWERED: for each A, the class of covers A ↠ Q (up to isomorphism)
     is bounded by a type in universe v. -/
-class WellCopowered (𝒞 : Type u) [Cat.{v} 𝒞] : Prop where
+public class WellCopowered (𝒞 : Type u) [Cat.{v} 𝒞] : Prop where
   small : ∀ (A : 𝒞), ∃ (I : Type v) (codom : I → 𝒞) (cov : ∀ i, A ⟶ codom i)
             (_hcov : ∀ i, Cover (cov i)),
             ∀ (Q : 𝒞) (q : A ⟶ Q) (_ : Cover q),
@@ -248,7 +250,7 @@ class WellCopowered (𝒞 : Type u) [Cat.{v} 𝒞] : Prop where
 /-- The KERNEL-PAIR SUBOBJECT of a map `q : A ⟶ Q`: the level `(kp₁,kp₂)` of `q`
     packaged as a subobject of `A × A`.  Two covers determine the same kernel-pair
     subobject (up to iso) exactly when they are isomorphic as quotients (§1.566). -/
-def kpSub [GrothendieckTopos E] {A Q : E} (q : A ⟶ Q) : Subobject E (prod A A) :=
+@[expose] public def kpSub [GrothendieckTopos E] {A Q : E} (q : A ⟶ Q) : Subobject E (prod A A) :=
   ⟨kernelPair q, pair (kp₁ (f := q)) (kp₂ (f := q)),
    monic_pair_of_monicPair _ _ (kernelPairRel q).isMonicPair⟩
 
@@ -257,7 +259,7 @@ def kpSub [GrothendieckTopos E] {A Q : E} (q : A ⟶ Q) : Subobject E (prod A A)
     `i ≫ kp₂' = kp₂` (post-compose with `fst`,`snd`); the kernel-pair square
     `kp_sq` then makes each cover equalize the other's kernel pair, so
     `covers_same_kernelPair_iso` yields the `CoverIso`. -/
-theorem coverIso_of_kpSub_iso [GrothendieckTopos E] {A Q Q' : E}
+public theorem coverIso_of_kpSub_iso [GrothendieckTopos E] {A Q Q' : E}
     {q : A ⟶ Q} {q' : A ⟶ Q'} (hq : Cover q) (hq' : Cover q')
     (hiso : SubobjectIso (kpSub q) (kpSub q')) : CoverIso q q' := by
   obtain ⟨i, ⟨iinv, hi1, hi2⟩, hi⟩ := hiso   -- i ≫ pair(kp₁',kp₂') = pair(kp₁,kp₂)
@@ -290,7 +292,7 @@ theorem coverIso_of_kpSub_iso [GrothendieckTopos E] {A Q Q' : E}
     representative cover for each subobject that arises as a kernel pair.  The
     bridge `coverIso_of_kpSub_iso` shows any cover is `CoverIso` to the
     representative chosen at its own kernel-pair subobject. -/
-noncomputable instance grothendieck_topos_well_copowered [GrothendieckTopos E] :
+@[expose] public noncomputable instance grothendieck_topos_well_copowered [GrothendieckTopos E] :
     WellCopowered E where
   small := by
     classical
@@ -344,7 +346,7 @@ noncomputable instance grothendieck_topos_well_copowered [GrothendieckTopos E] :
     induced map.  The image of u is the supremum ⋃Aᵢ.  Since pullbacks
     preserve arbitrary unions, the inverse-image functor f# also commutes
     with arbitrary suprema, establishing local completeness. -/
-instance grothendieck_topos_locally_complete [GrothendieckTopos E] :
+@[expose] public instance grothendieck_topos_locally_complete [GrothendieckTopos E] :
     LocallyComplete E := inferInstance
 
 /-! ## §1.845 Coproducts in E remain coproducts in Rel(E) ------------------- -/

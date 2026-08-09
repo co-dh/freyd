@@ -70,9 +70,11 @@
   Mathlib-free.
 -/
 
-import Freyd.S2_16
-import Freyd.S2_16b
-import Freyd.S2_40
+module
+
+public import Freyd.S2_16
+public import Freyd.S2_16b
+public import Freyd.S2_40
 
 universe v u
 
@@ -94,7 +96,7 @@ open Cat
 
 /-- **§2.169** (re-export): every reflexive symmetric idempotent of `SplObj 𝒜` splits
     as a map (= every equivalence relation splits). Re-export from `S2_16b`. -/
-theorem spl_effective {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (Φ : E ⟶ E)
+public theorem spl_effective {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (Φ : E ⟶ E)
     (hrefl : E.idem.e ⊑ Φ.R) (hsym : Φ.R° = Φ.R) (hidem : Φ.R ≫ Φ.R = Φ.R) :
     ∃ (G : SplObj 𝒜) (f : E ⟶ G), Map f ∧ f ≫ f° = Φ ∧ f° ≫ f = Cat.id G :=
   spl_equivalence_splits_map Φ hrefl hsym hidem
@@ -126,7 +128,7 @@ theorem spl_effective {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (Φ : E 
     splits (the weak idempotent-split, no entireness) is tabular.  Freyd §2.16(10):
     `srcTabulation_of_semiSimple_split` yields a source-apex jointly-monic *map* span
     `(f° F₀, f° G₀)` of any morphism, which is exactly a `Tabulates`. -/
-theorem tabular_of_semiSimple_splits {ℬ : Type u} [Allegory ℬ]
+public theorem tabular_of_semiSimple_splits {ℬ : Type u} [Allegory ℬ]
     (hss : ∀ {a b : ℬ} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem ℬ)
     {a b : ℬ} (R : a ⟶ b) : Tabular R :=
   let ⟨c, F, G, hF, hG, hU, hm⟩ := srcTabulation_of_semiSimple_split hsplit R (hss R)
@@ -136,7 +138,7 @@ theorem tabular_of_semiSimple_splits {ℬ : Type u} [Allegory ℬ]
 
 /-- In `SplObj 𝒜`, the allegory order, reciprocation and composition are read off the
     underlying `𝒜`-morphisms (`splInter`/`splRecip`/`splComp` are `𝒜`-fixed). -/
-theorem splLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplObj 𝒜} (Φ Ψ : E ⟶ F) :
+public theorem splLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplObj 𝒜} (Φ Ψ : E ⟶ F) :
     Φ ⊑ Ψ ↔ Φ.R ⊑ Ψ.R := by
   -- `Φ ⊑ Ψ` is `Φ ∩ Ψ = Φ`, i.e. `splInter Φ Ψ = Φ`; underlying `(splInter Φ Ψ).R = Φ.R ∩ Ψ.R`.
   show splInter Φ Ψ = Φ ↔ Φ.R ∩ Ψ.R = Φ.R
@@ -147,7 +149,7 @@ theorem splLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplObj 𝒜} (Φ Ψ : E
 /-- **§2.16(10) ingredient 1**: `SplObj 𝒜` splits every symmetric idempotent (no
     entireness on the leg — a general object idempotent is not reflexive).  This is
     exactly `spl_equivalence_splits` repackaged into the weak `SplitsSymmIdem` form. -/
-theorem splObj_splitsSymmIdem {𝒜 : Type u} [Allegory 𝒜] : SplitsSymmIdem (SplObj 𝒜) := by
+public theorem splObj_splitsSymmIdem {𝒜 : Type u} [Allegory 𝒜] : SplitsSymmIdem (SplObj 𝒜) := by
   intro E Φ hΦsym hΦidem
   -- Φ.R is a symmetric idempotent of 𝒜 (the SplObj symmetry/idempotency descend).
   have hRsym : Φ.R° = Φ.R := by
@@ -172,7 +174,7 @@ theorem splObj_splitsSymmIdem {𝒜 : Type u} [Allegory 𝒜] : SplitsSymmIdem (
       identity *is* `E.e`: `(F₀ E.e)° (F₀ E.e) = E.e F₀° F₀ E.e ⊑ E.e 1 E.e = E.e`
       (`F₀` simple).  This is exactly why the trivial apex suffices: simplicity is
       measured against the codomain idempotent `E.e`, not against `1_a`. -/
-theorem splObj_semiSimple {𝒜 : Type u} [SemiSimpleAllegory 𝒜] {E F : SplObj 𝒜}
+public theorem splObj_semiSimple {𝒜 : Type u} [SemiSimpleAllegory 𝒜] {E F : SplObj 𝒜}
     (Ψ : E ⟶ F) : SemiSimple Ψ := by
   obtain ⟨c0, F0, G0, hF0, hG0, hUfac⟩ := SemiSimpleAllegory.semi_simple Ψ.R
   have hEsym : E.idem.e° = E.idem.e := E.idem.sym
@@ -226,7 +228,7 @@ theorem splObj_semiSimple {𝒜 : Type u} [SemiSimpleAllegory 𝒜] {E F : SplOb
     Assembled from the two ingredients via `tabular_of_semiSimple_splits`:
     `splObj_semiSimple` (every morphism semi-simple) and `splObj_splitsSymmIdem`
     (every symmetric idempotent splits, weak leg). -/
-instance splObj_tabular_of_semiSimple {𝒜 : Type u} [SemiSimpleAllegory 𝒜] :
+@[expose] public instance splObj_tabular_of_semiSimple {𝒜 : Type u} [SemiSimpleAllegory 𝒜] :
     TabularAllegory (SplObj 𝒜) :=
   { instAllegorySpl with
     tabular := fun {_E _F} Ψ =>
@@ -297,18 +299,18 @@ def semiSimpleAllegory_of_splObj_tabular {𝒜 : Type u} [Allegory 𝒜]
 
 /-- Pointwise union of two parallel split-homs: underlying `Φ.R ∪ Ψ.R`, fixed because
     `E.e ≫ (Φ.R∪Ψ.R) ≫ F.e` distributes into `(E.e≫Φ.R≫F.e) ∪ (E.e≫Ψ.R≫F.e) = Φ.R ∪ Ψ.R`. -/
-def splUnion {𝒜 : Type u} [DistributiveAllegory 𝒜] {E F : SplObj 𝒜} (Φ Ψ : E ⟶ F) : E ⟶ F :=
+@[expose] public def splUnion {𝒜 : Type u} [DistributiveAllegory 𝒜] {E F : SplObj 𝒜} (Φ Ψ : E ⟶ F) : E ⟶ F :=
   ⟨Φ.R ∪ Ψ.R, by
     rw [union_comp_distrib, DistributiveAllegory.comp_union_distrib, Φ.fixed, Ψ.fixed]⟩
 
 /-- The zero split-hom `E ⟶ F`: underlying `𝟘`, fixed because `E.e ≫ 𝟘 ≫ F.e = 𝟘`. -/
-def splZero {𝒜 : Type u} [DistributiveAllegory 𝒜] {E F : SplObj 𝒜} : E ⟶ F :=
+@[expose] public def splZero {𝒜 : Type u} [DistributiveAllegory 𝒜] {E F : SplObj 𝒜} : E ⟶ F :=
   ⟨𝟘, by rw [DistributiveAllegory.zero_comp, DistributiveAllegory.comp_zero]⟩
 
 /-- **§2.21**: if `𝒜` is a DISTRIBUTIVE allegory then so is `SplObj 𝒜`, with union and
     zero taken pointwise on the underlying `𝒜`-morphisms (`splUnion`, `splZero`).  Every
     distributive law reduces to the base `[DistributiveAllegory 𝒜]` law via `SplHom.ext`. -/
-instance instDistributiveSpl {𝒜 : Type u} [DistributiveAllegory 𝒜] :
+@[expose] public instance instDistributiveSpl {𝒜 : Type u} [DistributiveAllegory 𝒜] :
     DistributiveAllegory (SplObj 𝒜) :=
   { instAllegorySpl with
     zero := splZero
@@ -351,12 +353,12 @@ instance instDistributiveSpl {𝒜 : Type u} [DistributiveAllegory 𝒜] :
       which holds because base-entire `p` gives `1_a ⊑ p≫p°`, hence `e ⊑ e≫(p≫p°)≫e`. -/
 
 /-- The unit object of `SplObj 𝒜`: the embedded base unit `⟨λ, 1_λ⟩`. -/
-def splUnitObj (𝒜 : Type u) [UnitaryAllegory 𝒜] : SplObj 𝒜 :=
+@[expose] public def splUnitObj (𝒜 : Type u) [UnitaryAllegory 𝒜] : SplObj 𝒜 :=
   embObj (UnitaryAllegory.unit_obj (𝒜 := 𝒜))
 
 /-- `⟨λ,1⟩` is a partial unit of `SplObj 𝒜`: every endomorphism is `⊑ id`, because its
     underlying `λ⟶λ` morphism is `⊑ 1_λ` by the base `PartialUnit λ`. -/
-theorem splUnit_partialUnit {𝒜 : Type u} [UnitaryAllegory 𝒜] :
+public theorem splUnit_partialUnit {𝒜 : Type u} [UnitaryAllegory 𝒜] :
     PartialUnit (splUnitObj 𝒜) := by
   intro Φ
   have hPU : PartialUnit (UnitaryAllegory.unit_obj (𝒜 := 𝒜)) := UnitaryAllegory.unit_prop.1
@@ -366,7 +368,7 @@ theorem splUnit_partialUnit {𝒜 : Type u} [UnitaryAllegory 𝒜] :
 /-- Every object `E = ⟨a,e⟩` of `SplObj 𝒜` is the source of an ENTIRE split-hom to the
     unit `⟨λ,1⟩` (entire against the OBJECT idempotent `e = id_E`, not `1_a`).
     Take the base entire `p : a ⟶ λ` and absorb the object idempotent: `legP = e ≫ p`. -/
-theorem splUnit_entire {𝒜 : Type u} [UnitaryAllegory 𝒜] (E : SplObj 𝒜) :
+public theorem splUnit_entire {𝒜 : Type u} [UnitaryAllegory 𝒜] (E : SplObj 𝒜) :
     ∃ (P : E ⟶ splUnitObj 𝒜), Entire P := by
   obtain ⟨p, hpEntire⟩ :=
     UnitaryAllegory.unit_prop.2 E.carrier
@@ -394,7 +396,7 @@ theorem splUnit_entire {𝒜 : Type u} [UnitaryAllegory 𝒜] (E : SplObj 𝒜) 
 
 /-- **§2.15**: if `𝒜` is a UNITARY allegory then so is `SplObj 𝒜`, with unit object the
     embedded base unit `⟨λ, 1_λ⟩` (`splUnitObj`). -/
-noncomputable instance instUnitarySpl {𝒜 : Type u} [UnitaryAllegory 𝒜] :
+@[expose] public noncomputable instance instUnitarySpl {𝒜 : Type u} [UnitaryAllegory 𝒜] :
     UnitaryAllegory (SplObj 𝒜) :=
   { instAllegorySpl with
     unit_obj := splUnitObj 𝒜
@@ -416,7 +418,7 @@ noncomputable instance instUnitarySpl {𝒜 : Type u} [UnitaryAllegory 𝒜] :
 
 /-- The block-diagonal symmetric idempotent `D = u₁°eu₁ ∪ u₂°fu₂` on `coprod a b`, the
     apex carrier of the `SplObj 𝒜` coproduct of `E = ⟨a,e⟩` and `F = ⟨b,f⟩`. -/
-def splCoprodIdem {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
+@[expose] public def splCoprodIdem {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
     SymIdem (PositiveAllegory.coprod E.carrier F.carrier) :=
   let cp := PositiveAllegory.has_coproduct E.carrier F.carrier
   { e := (cp.u₁° ≫ E.idem.e ≫ cp.u₁) ∪ (cp.u₂° ≫ F.idem.e ≫ cp.u₂)
@@ -468,7 +470,7 @@ def splCoprodIdem {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
 /-- The `SplObj 𝒜` coproduct diagram of `E, F`: apex `⟨coprod a b, D⟩` with the block-diagonal
     idempotent `D`, injections `U₁ = e≫u₁`, `U₂ = f≫u₂`.  The five §2.214 equations lift from
     the base coproduct equations. -/
-def splCoproduct {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
+@[expose] public def splCoproduct {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
     Coproduct (𝒜 := SplObj 𝒜) ⟨PositiveAllegory.coprod E.carrier F.carrier, splCoprodIdem E F⟩ E F :=
   let cp := PositiveAllegory.has_coproduct E.carrier F.carrier
   let C : SplObj 𝒜 := ⟨PositiveAllegory.coprod E.carrier F.carrier, splCoprodIdem E F⟩
@@ -547,7 +549,7 @@ def splCoproduct {𝒜 : Type u} [PositiveAllegory 𝒜] (E F : SplObj 𝒜) :
     `E = ⟨a,e⟩, F = ⟨b,f⟩` is the apex `⟨coprod a b, D⟩` with the block-diagonal symmetric
     idempotent `D = u₁°eu₁ ∪ u₂°fu₂` and injections `U₁ = e≫u₁`, `U₂ = f≫u₂` (`splCoproduct`).
     The coterminal object is the embedded base `coterm`. -/
-noncomputable instance instPositiveSpl {𝒜 : Type u} [PositiveAllegory 𝒜] :
+@[expose] public noncomputable instance instPositiveSpl {𝒜 : Type u} [PositiveAllegory 𝒜] :
     PositiveAllegory (SplObj 𝒜) :=
   { instDistributiveSpl with
     coterm := embObj PositiveAllegory.coterm
@@ -568,7 +570,7 @@ noncomputable instance instPositiveSpl {𝒜 : Type u} [PositiveAllegory 𝒜] :
     category-level `Reflexive Φ` (`id_E ⊑ Φ`, where `id_E` underlies as `E.idem.e`),
     `Symmetric Φ` (`Φ° ⊑ Φ`, giving `Φ.R° = Φ.R`) and idempotency `Φ≫Φ=Φ` (giving
     `Φ.R≫Φ.R=Φ.R`) into the hypotheses of `spl_effective`. -/
-theorem splObj_split_equivalence {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (Φ : E ⟶ E)
+public theorem splObj_split_equivalence {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (Φ : E ⟶ E)
     (hrefl : Reflexive Φ) (hsym : Symmetric Φ) (hidem : Φ ≫ Φ = Φ) :
     ∃ (G : SplObj 𝒜) (f : E ⟶ G), Map f ∧ f ≫ f° = Φ ∧ f° ≫ f = Cat.id G := by
   -- Reflexive Φ : id_E ⊑ Φ, i.e. (splId E) ⊑ Φ; via splLe_iff this is E.idem.e ⊑ Φ.R.
@@ -586,7 +588,7 @@ theorem splObj_split_equivalence {𝒜 : Type u} [Allegory 𝒜] {E : SplObj �
 /-- **§2.169**: `SplObj 𝒜` is an EFFECTIVE allegory whenever `𝒜` is SEMI-SIMPLE — it is
     tabular (`splObj_tabular_of_semiSimple`) and every equivalence relation splits as a map
     (`splObj_split_equivalence`).  This is the §2.217(2) ingredient for the pre-topos target. -/
-instance instEffectiveSpl {𝒜 : Type u} [SemiSimpleAllegory 𝒜] :
+@[expose] public instance instEffectiveSpl {𝒜 : Type u} [SemiSimpleAllegory 𝒜] :
     EffectiveAllegory (SplObj 𝒜) :=
   { splObj_tabular_of_semiSimple with
     split_symmetric_idempotent := fun E hrefl hsym hidem =>
@@ -594,7 +596,7 @@ instance instEffectiveSpl {𝒜 : Type u} [SemiSimpleAllegory 𝒜] :
 
 /-- **§2.169 (corollary)**: `SplObj 𝒜` is an EFFECTIVE allegory whenever `𝒜` is TABULAR
     (a tabular allegory is semi-simple, `semiSimpleAllegory_of_tabular`). -/
-def splObj_effective_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜] :
+@[expose] public def splObj_effective_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜] :
     EffectiveAllegory (SplObj 𝒜) :=
   letI := semiSimpleAllegory_of_tabular (ℬ := 𝒜)
   instEffectiveSpl
@@ -612,7 +614,7 @@ def splObj_effective_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜] :
 
 /-- Pointwise right division of split-homs: underlying `E.e ≫ (Φ.R / Ψ.R) ≫ F.e`, the base
     quotient re-fixed by the source/target idempotents (so the result is a genuine split-hom). -/
-def splDiv {𝒜 : Type u} [DivisionAllegory 𝒜] {E F G : SplObj 𝒜} (Φ : E ⟶ G) (Ψ : F ⟶ G) :
+@[expose] public def splDiv {𝒜 : Type u} [DivisionAllegory 𝒜] {E F G : SplObj 𝒜} (Φ : E ⟶ G) (Ψ : F ⟶ G) :
     E ⟶ F :=
   ⟨E.idem.e ≫ (Φ.R / Ψ.R) ≫ F.idem.e, by
     show E.idem.e ≫ (E.idem.e ≫ (Φ.R / Ψ.R) ≫ F.idem.e) ≫ F.idem.e
@@ -622,7 +624,7 @@ def splDiv {𝒜 : Type u} [DivisionAllegory 𝒜] {E F G : SplObj 𝒜} (Φ : E
 
 /-- **§2.31**: if `𝒜` is a DIVISION allegory then so is `SplObj 𝒜`, with right division taken
     pointwise (`splDiv`).  Both §2.31 laws reduce to the base `div_comp_le` / `le_div`. -/
-noncomputable instance instDivisionSpl {𝒜 : Type u} [DivisionAllegory 𝒜] :
+@[expose] public noncomputable instance instDivisionSpl {𝒜 : Type u} [DivisionAllegory 𝒜] :
     DivisionAllegory (SplObj 𝒜) :=
   { instDistributiveSpl with
     div := splDiv
@@ -647,7 +649,7 @@ noncomputable instance instDivisionSpl {𝒜 : Type u} [DivisionAllegory 𝒜] :
     `embHom (R/S) = splDiv (embHom R) (embHom S)` — so it is a faithful representation OF DIVISION
     ALLEGORIES (it already preserves `≫`/`°`/`∩`/`∪`).  On `embObj a` the idempotent is the identity
     (`idSymIdem`, `.e = 1`), so `splDiv`'s `E.e ≫ (R/S) ≫ F.e` collapses to `R/S`. -/
-theorem embHom_div {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
+public theorem embHom_div {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     (embHom (R / S) : embObj a ⟶ embObj b) = splDiv (embHom R) (embHom S) := by
   apply SplHom.ext
   show R / S = (embObj a).idem.e ≫ ((embHom R).R / (embHom S).R) ≫ (embObj b).idem.e
@@ -667,7 +669,9 @@ theorem embHom_div {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜} (R : a
     EFFECTIVE DIVISION ALLEGORY.  The proof inlines `instDivisionSpl` for the division structure
     and rebuilds the `EffectiveAllegory` side from `SemiSimpleDivisionAllegory.semi_simple` (which
     operates on the SAME `Allegory` as the division side), avoiding any instance diamond. -/
-private theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAllegory 𝒜]
+-- Not `private`: `instEffectiveDivisionSpl` is depended on from outside this file, so it is public,
+-- and a public instance publishes the body that names this theorem.
+public theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAllegory 𝒜]
     {E F : SplObj 𝒜} (Ψ : E ⟶ F) : SemiSimple Ψ := by
   obtain ⟨c0, F0, G0, hF0, hG0, hUfac⟩ := SemiSimpleDivisionAllegory.semi_simple Ψ.R
   have hEsym : E.idem.e° = E.idem.e := E.idem.sym
@@ -705,7 +709,7 @@ private theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAlle
       _ = E.idem.e ≫ (F0° ≫ G0) ≫ F.idem.e := by rw [hUfac]
       _ = (E.idem.e ≫ F0°) ≫ (G0 ≫ F.idem.e) := by simp only [Cat.assoc]
 
-noncomputable instance instEffectiveDivisionSpl {𝒜 : Type u}
+@[expose] public noncomputable instance instEffectiveDivisionSpl {𝒜 : Type u}
     [SemiSimpleDivisionAllegory 𝒜] :
     EffectiveDivisionAllegory (SplObj 𝒜) :=
   { instDivisionSpl,
@@ -818,7 +822,7 @@ noncomputable instance instEffectiveDivisionSpl {𝒜 : Type u}
 /-- The COREFLEXIVE splitting completion of `𝒜`: restrict `SplObj 𝒜` to objects whose
     symmetric idempotent `E.idem.e` is coreflexive (`E.idem.e ⊑ Cat.id E.carrier`).
     This is Freyd's `ℬℳ(𝒞𝑜𝓇ℯ𝒻𝓁 𝒜)` (§2.167): split only the coreflexive SymIdem. -/
-def SplCorObj (𝒜 : Type u) [Allegory 𝒜] : Type u :=
+@[expose] public def SplCorObj (𝒜 : Type u) [Allegory 𝒜] : Type u :=
   { E : SplObj 𝒜 // Coreflexive E.idem.e }
 
 namespace SplCorObj
@@ -826,7 +830,7 @@ namespace SplCorObj
 variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- Category structure on `SplCorObj 𝒜`: homs and composition inherited from `SplObj 𝒜`. -/
-instance instCatSplCor : Cat (SplCorObj 𝒜) where
+@[expose] public instance instCatSplCor : Cat (SplCorObj 𝒜) where
   Hom E F     := SplHom E.1 F.1
   id E        := splId E.1
   comp R S    := splComp R S
@@ -836,7 +840,7 @@ instance instCatSplCor : Cat (SplCorObj 𝒜) where
 
 /-- Allegory structure on `SplCorObj 𝒜`: reciprocation and intersection inherited
     from `SplObj 𝒜`; all axioms reduce to the underlying `𝒜` axioms via `SplHom.ext`. -/
-instance instAllegorySplCor : Allegory (SplCorObj 𝒜) where
+@[expose] public instance instAllegorySplCor : Allegory (SplCorObj 𝒜) where
   recip R             := splRecip R
   inter R S           := splInter R S
   recip_recip _R       := SplHom.ext (Allegory.recip_recip _)
@@ -857,7 +861,7 @@ end SplCorObj
 
 -- §2.136 dual: for a SYMMETRIC SIMPLE `A`, `(R ∩ S) ≫ A = R≫A ∩ S≫A`.
 -- (Reciprocate `simple_dist_inter` applied to `A°` and use `A° = A`.)
-private theorem splCor_dist_inter_right {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {A : b ⟶ b}
+public theorem splCor_dist_inter_right {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {A : b ⟶ b}
     (hAsym : A° = A) (hsimpleA : Simple A) (R S : a ⟶ b) :
     (R ∩ S) ≫ A = (R ≫ A) ∩ (S ≫ A) := by
   -- ((R∩S)≫A)° = A≫(R∩S)° = A≫(R°∩S°) = A≫R° ∩ A≫S° = (R≫A)° ∩ (S≫A)°
@@ -879,7 +883,7 @@ private theorem le_dom_comp' {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a
   exact h
 
 -- `cod` factoring (dual): `R ⊑ R ≫ (1 ∩ R°≫R)`.
-private theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+public theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
     R ⊑ R ≫ (Cat.id b ∩ R° ≫ R) := by
   have h := recip_mono (le_dom_comp' R°)
   -- le_dom_comp' R° : R° ⊑ (1 ∩ R°≫R°°)≫R°;  reciprocate.
@@ -890,7 +894,7 @@ private theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a 
 -- §2.166 factoring: `p°≫q` factors through the coreflexive `1 ∩ p≫p° ∩ q≫q°`.
 -- (Insert `cod p° = 1∩p≫p°` after `p°`, then `dom q = 1∩q≫q°` before `q`; the two coreflexives
 --  compose to their intersection by `coreflexive_comp_eq_inter`.)
-private theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p : c ⟶ x) (q : c ⟶ y) :
+public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p : c ⟶ x) (q : c ⟶ y) :
     p° ≫ q ⊑ p° ≫ (Cat.id c ∩ p ≫ p° ∩ q ≫ q°) ≫ q := by
   have hcodp : p° ⊑ p° ≫ (Cat.id c ∩ p ≫ p°) := by
     have := le_comp_cod p°
@@ -919,7 +923,7 @@ private theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p 
 -- (in Rel: the diagonal restricted to `{s ∈ Ee : (s,s) ∈ X}` lies inside `Ee`).
 -- Used in §2.166 (pre-tabular) to show the source-apex leg `A≫f` already absorbs `E.e`
 -- on the right (`A≫f≫E.e = A≫f`), so the absorbed legs reduce to Freyd's bare legs.
-private theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
+public theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
     {Ee : a ⟶ a} (hsym : Ee° = Ee) (hidem : Ee ≫ Ee = Ee) (X : a ⟶ a) :
     Cat.id a ∩ Ee ≫ X ⊑ Ee := by
   have hDcor : Coreflexive (Cat.id a ∩ Ee ≫ X) := inter_lb_left _ _
@@ -941,7 +945,7 @@ private theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
     _ = Ee := hidem
 
 -- Dual modular law (reciprocal of `modular_le`):  `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`.
-private theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
+public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
     (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) : (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
   have hr := recip_mono (modular_le S° R° T°)
   rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
@@ -960,7 +964,7 @@ private theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
     The three tabulation laws are Freyd's two displayed computations:
     `f°≫A≫g = Ψ.R` (sandwich, since `Ψ.R = f°≫g`) and
     `legA≫legA° ∩ legB≫legB° = A≫(f≫f° ∩ g≫g°)≫A = A≫A = A = id_C`. -/
-instance SplCorObj.instTabularAllegorySplCor {𝒜 : Type u} [TabularAllegory 𝒜] :
+@[expose] public instance SplCorObj.instTabularAllegorySplCor {𝒜 : Type u} [TabularAllegory 𝒜] :
     TabularAllegory (SplCorObj 𝒜) :=
   { SplCorObj.instAllegorySplCor with
     tabular := fun {E F} Ψ => by
@@ -1166,7 +1170,7 @@ instance SplCorObj.instTabularAllegorySplCor {𝒜 : Type u} [TabularAllegory �
     (`(hf)°(hg) ⊑ f°fΨg°g ⊑ Ψ`  and  `Ψ ⊑ f°g∩Ψ ⊑ f°(1∩fΨg°)g = (hf)°(hg)`), both using
     only `Ψ.R ⊑ f°≫g` and the modular law; the joint law is
     `A≫(f≫f° ∩ g≫g°)≫A = A≫A = A = id_C`. -/
-instance SplCorObj.tabular_of_preTabular {𝒜 : Type u} [PreTabularAllegory 𝒜] :
+@[expose] public instance SplCorObj.tabular_of_preTabular {𝒜 : Type u} [PreTabularAllegory 𝒜] :
     TabularAllegory (SplCorObj 𝒜) :=
   { SplCorObj.instAllegorySplCor with
     tabular := fun {E F} Ψ => by
@@ -1382,7 +1386,7 @@ instance SplCorObj.tabular_of_preTabular {𝒜 : Type u} [PreTabularAllegory �
 
 /-- **§2.165**: If `𝒜` is a tabular allegory then `SplCorObj 𝒜` is pre-tabular.
     (Every morphism is already tabular, witnessed by `instTabularAllegorySplCor`.) -/
-instance SplCorObj.instPreTabularAllegorySplCor {𝒜 : Type u} [TabularAllegory 𝒜] :
+@[expose] public instance SplCorObj.instPreTabularAllegorySplCor {𝒜 : Type u} [TabularAllegory 𝒜] :
     PreTabularAllegory (SplCorObj 𝒜) :=
   { SplCorObj.instAllegorySplCor with
     pre_tabular := fun {E F} R =>

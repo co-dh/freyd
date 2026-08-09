@@ -1,4 +1,6 @@
-import Freyd.S2_44
+module
+
+public import Freyd.S2_44
 
 universe u
 

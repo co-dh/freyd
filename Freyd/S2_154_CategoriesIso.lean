@@ -38,11 +38,13 @@
 
   Axioms (headline): `[propext, Classical.choice, Quot.sound]`.
 -/
-import Freyd.S2_154_SmallRegCat
-import Freyd.S2_111_RelCat
-import Freyd.S2_218_ObjInclRegular
-import Freyd.S2_51
-import Freyd.S1_31
+module
+
+public import Freyd.S2_154_SmallRegCat
+public import Freyd.S2_111_RelCat
+public import Freyd.S2_218_ObjInclRegular
+public import Freyd.S2_51
+public import Freyd.S1_31
 
 universe v u v₁ v₂ u₁ u₂
 
@@ -51,7 +53,7 @@ open Freyd Freyd.Alg
 namespace Freyd.S2_154
 
 /-- `calc`-chaining for the allegory order `⊑` (`Freyd.Alg.le` has no `Trans` instance). -/
-instance {𝒜 : Type u} [Allegory.{v} 𝒜] {a b : 𝒜} :
+@[expose] public instance {𝒜 : Type u} [Allegory.{v} 𝒜] {a b : 𝒜} :
     Trans (α := a ⟶ b) (β := a ⟶ b) (γ := a ⟶ b) Alg.le Alg.le Alg.le :=
   ⟨Alg.le_trans⟩
 
@@ -63,7 +65,7 @@ variable {𝒜 : Type u} [Allegory.{v} 𝒜]
 
 /-- §2.15: an ENTIRE morphism into a PARTIAL UNIT is a map (simplicity is free:
     `R°≫R : u → u ⊑ 1_u`). -/
-theorem map_of_entire_to_partialUnit {u a : 𝒜} (hu : PartialUnit u)
+public theorem map_of_entire_to_partialUnit {u a : 𝒜} (hu : PartialUnit u)
     {R : a ⟶ u} (hR : Alg.Entire R) : Alg.Map R := ⟨hR, hu _⟩
 
 /-- §2.15: any two MAPS into a partial unit agree (generalizes `Alg.Map(𝒜)`-terminality of
@@ -100,7 +102,7 @@ theorem le_span_of_partialUnit {u x y : 𝒜} (hu : PartialUnit u)
 
 /-- §2.15: units are unique up to a map-isomorphism.  Given partial units `u, v` and entire
     morphisms both ways, the forward one `R` is a map with `R≫R° = 1_u`, `R°≫R = 1_v`. -/
-theorem partialUnit_iso {u v : 𝒜} (hu : PartialUnit u) (hv : PartialUnit v)
+public theorem partialUnit_iso {u v : 𝒜} (hu : PartialUnit u) (hv : PartialUnit v)
     {R : u ⟶ v} {S : v ⟶ u} (hR : Alg.Entire R) (hS : Alg.Entire S) :
     Alg.Map R ∧ R ≫ R° = Cat.id u ∧ R° ≫ R = Cat.id v := by
   have hRmap : Alg.Map R := map_of_entire_to_partialUnit hv hR
@@ -123,7 +125,7 @@ theorem partialUnit_iso {u v : 𝒜} (hu : PartialUnit u) (hv : PartialUnit v)
   exact ⟨hRmap, hRRo, by rw [← hSRo]; exact hSR⟩
 
 /-- §2.15: `IsUnit` transfers along a map-isomorphism `k : x → w` (`k≫k° = 1`, `k°≫k = 1`). -/
-theorem isUnit_transfer {w x : 𝒜} (hw : IsUnit w) {k : x ⟶ w} (_hk : Alg.Map k)
+public theorem isUnit_transfer {w x : 𝒜} (hw : IsUnit w) {k : x ⟶ w} (_hk : Alg.Map k)
     (hkk : k ≫ k° = Cat.id x) (hkok : k° ≫ k = Cat.id w) : IsUnit x := by
   obtain ⟨hPU, hEnt⟩ := hw
   constructor
@@ -146,7 +148,7 @@ theorem isUnit_transfer {w x : 𝒜} (hw : IsUnit w) {k : x ⟶ w} (_hk : Alg.Ma
 /-- **§2.154 (units clause)**: an allegory functor sending SOME unit to a unit sends EVERY
     unit to a unit.  (Units are unique up to map-iso — `partialUnit_iso` — and allegory
     functors preserve map-isos.)  This is what makes "unitary representation" composable. -/
-theorem pres_isUnit_of_isUnit {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+public theorem pres_isUnit_of_isUnit {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     (F : AllegoryFunctor 𝒜 ℬ) {u₀ : 𝒜} (hu₀ : IsUnit u₀) (hFu₀ : IsUnit (F.obj u₀))
     {v : 𝒜} (hv : IsUnit v) : IsUnit (F.obj v) := by
   obtain ⟨R, hR⟩ := hv.2 u₀   -- entire R : u₀ ⟶ v
@@ -724,7 +726,7 @@ theorem allegFunctor_ext {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} �
   rfl
 
 /-- Terminality is preserved along an isomorphism. -/
-theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
+public theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
     (e : X ⟶ Y) (he : IsIso e) : @Freyd.Horn.IsTerminalObj D _ Y := by
   intro W
   obtain ⟨f, hf⟩ := hX W
@@ -736,7 +738,7 @@ theorem isTerm_transfer {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.
     _ = f ≫ e := by rw [hf (g ≫ e')]
 
 /-- Any two terminators are isomorphic. -/
-theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
+public theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTerminalObj D _ X)
     (hY : @Freyd.Horn.IsTerminalObj D _ Y) : ∃ e : X ⟶ Y, IsIso e := by
   obtain ⟨u, _⟩ := hY X
   obtain ⟨v, _⟩ := hX Y
@@ -747,12 +749,12 @@ theorem isTerm_iso {D : Type u₁} [Cat.{v} D] {X Y : D} (hX : @Freyd.Horn.IsTer
     rw [hw (v ≫ u), hw (Cat.id Y)]
 
 /-- The chosen terminator satisfies `Horn.IsTerminalObj`. -/
-theorem isTerm_one {D : Type u₁} [Cat.{v} D] [HasTerminal D] :
+public theorem isTerm_one {D : Type u₁} [Cat.{v} D] [HasTerminal D] :
     @Freyd.Horn.IsTerminalObj D _ (Freyd.one (𝒞 := D)) :=
   fun Y => ⟨Freyd.term Y, fun g => Freyd.term_uniq g (Freyd.term Y)⟩
 
 /-- **§2.154**: a SMALL UNITARY TABULAR ALLEGORY (bundled). -/
-structure SmallTabAlleg : Type (u + 1) where
+public structure SmallTabAlleg : Type (u + 1) where
   carrier : Type u
   [alleg : TabularUnitaryAllegory.{u, u} carrier]
 
@@ -761,7 +763,7 @@ attribute [instance] SmallTabAlleg.alleg
 /-- **§2.154**: a REPRESENTATION OF REGULAR CATEGORIES — a functor preserving finite
     limits (products, pullbacks, terminator) and images/covers; bundled as the repo's
     `RegularFunctor` + terminator preservation. -/
-structure RegRep (C D : SmallRegCat.{u}) : Type u where
+public structure RegRep (C D : SmallRegCat.{u}) : Type u where
   obj : C.carrier → D.carrier
   map : {X Y : C.carrier} → (X ⟶ Y) → (obj X ⟶ obj Y)
   map_id : ∀ X : C.carrier, map (Cat.id X) = Cat.id (obj X)
@@ -773,7 +775,7 @@ structure RegRep (C D : SmallRegCat.{u}) : Type u where
   term : @Freyd.Horn.IsTerminalObj D.carrier D.cat (obj (Freyd.one (𝒞 := C.carrier)))
 
 /-- The bundled functor of a `RegRep`. -/
-def RegRep.functor {C D : SmallRegCat.{u}} (F : RegRep C D) :
+@[expose] public def RegRep.functor {C D : SmallRegCat.{u}} (F : RegRep C D) :
     @Functor C.carrier D.carrier C.cat D.cat :=
   { obj := F.obj, map := @RegRep.map _ _ F, map_id := F.map_id,
     map_comp := @RegRep.map_comp _ _ F }
@@ -795,7 +797,7 @@ theorem RegRep.ext {C D : SmallRegCat.{u}} {F G : RegRep C D} (hobj : F.obj = G.
     allegories: an `AllegoryFunctor` sending the unit to a unit.  (By
     `pres_isUnit_of_isUnit` it then sends EVERY unit to a unit, which is what makes these
     compose.) -/
-structure UnitaryRep (𝒜 ℬ : SmallTabAlleg.{u}) : Type u where
+public structure UnitaryRep (𝒜 ℬ : SmallTabAlleg.{u}) : Type u where
   toFun : AllegoryFunctor 𝒜.carrier ℬ.carrier
   unit : IsUnit (toFun.obj (UnitaryAllegory.unit_obj (𝒜 := 𝒜.carrier)))
 
@@ -804,7 +806,7 @@ theorem UnitaryRep.ext {𝒜 ℬ : SmallTabAlleg.{u}} {F G : UnitaryRep 𝒜 ℬ
   cases F; cases G; cases h; rfl
 
 /-- The identity representation of allegories. -/
-def allegIdFun (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : AllegoryFunctor 𝒜 𝒜 where
+@[expose] public def allegIdFun (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : AllegoryFunctor 𝒜 𝒜 where
   obj a := a
   map R := R
   map_id _ := rfl
@@ -814,7 +816,7 @@ def allegIdFun (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : AllegoryFunctor 𝒜 
 
 /-- **§2.154**: the category of small regular categories (objects `SmallRegCat`,
     morphisms `RegRep`). -/
-instance : Cat.{u} SmallRegCat.{u} where
+@[expose] public instance : Cat.{u} SmallRegCat.{u} where
   Hom := RegRep
   id C :=
     { obj := fun X => X
@@ -841,7 +843,7 @@ instance : Cat.{u} SmallRegCat.{u} where
 
 /-- **§2.154**: the category of small unitary tabular allegories (objects
     `SmallTabAlleg`, morphisms `UnitaryRep`). -/
-instance : Cat.{u} SmallTabAlleg.{u} where
+@[expose] public instance : Cat.{u} SmallTabAlleg.{u} where
   Hom := UnitaryRep
   id 𝒜 := ⟨allegIdFun 𝒜.carrier, UnitaryAllegory.unit_prop⟩
   comp {_𝒜 _ℬ _𝒞} F G :=
@@ -853,7 +855,7 @@ instance : Cat.{u} SmallTabAlleg.{u} where
 
 /-- `Rel C` of a small regular category is a small tabular unitary allegory (§2.14/§2.15
     merged into the single diamond-free class). -/
-instance relTUA (𝒞 : Type u) [Cat.{u} 𝒞] [RegularCategory 𝒞] :
+@[expose] public instance relTUA (𝒞 : Type u) [Cat.{u} 𝒞] [RegularCategory 𝒞] :
     TabularUnitaryAllegory.{u, u} (RelObj 𝒞) :=
   { relTabularAllegory, relUnitaryAllegory with }
 

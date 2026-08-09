@@ -21,12 +21,14 @@
   (`isImage_equiv`, `union_via_coproduct_image`).  The stage hard direction is the per-stage
   `PreLogos.invImage_preserves_union`.
 -/
-import Freyd.S1_543_CatColimitRegular
-import Freyd.S1_543_ColimitCoproductGerm
-import Freyd.S1_543_Capitalization
-import Freyd.S1_61
-import Freyd.S1_62
-import Freyd.S1_543_UnionFromCoproduct
+module
+
+public import Freyd.S1_543_CatColimitRegular
+public import Freyd.S1_543_ColimitCoproductGerm
+public import Freyd.S1_543_Capitalization
+public import Freyd.S1_61
+public import Freyd.S1_62
+public import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
 
@@ -43,9 +45,9 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 
 theorem Subobject.Equiv.refl {B : 𝒞} (S : Subobject 𝒞 B) : S.Equiv S := ⟨S.le_refl, S.le_refl⟩
 
-theorem Subobject.Equiv.symm {B : 𝒞} {S T : Subobject 𝒞 B} (h : S.Equiv T) : T.Equiv S := ⟨h.2, h.1⟩
+public theorem Subobject.Equiv.symm {B : 𝒞} {S T : Subobject 𝒞 B} (h : S.Equiv T) : T.Equiv S := ⟨h.2, h.1⟩
 
-theorem Subobject.Equiv.trans {B : 𝒞} {S T U : Subobject 𝒞 B}
+public theorem Subobject.Equiv.trans {B : 𝒞} {S T U : Subobject 𝒞 B}
     (h₁ : S.Equiv T) (h₂ : T.Equiv U) : S.Equiv U :=
   ⟨Subobject.le_trans h₁.1 h₂.1, Subobject.le_trans h₂.2 h₁.2⟩
 
@@ -59,7 +61,7 @@ theorem Subobject.map_le {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : F
     rw [← T.map_comp, hk]⟩
 
 /-- The chosen image of `f` is equivalent to any image of `f`. -/
-theorem image_equiv_isImage [HasImages 𝒞] {A B : 𝒞} {f : A ⟶ B} {I : Subobject 𝒞 B}
+public theorem image_equiv_isImage [HasImages 𝒞] {A B : 𝒞} {f : A ⟶ B} {I : Subobject 𝒞 B}
     (hI : IsImage f I) : (image f).Equiv I :=
   ⟨(HasImages.isImage f).2 I hI.1, hI.2 (image f) (HasImages.isImage f).1⟩
 
@@ -69,7 +71,7 @@ theorem image_monic_equiv [HasImages 𝒞] {M B : 𝒞} (m : M ⟶ B) (hm : Moni
   image_equiv_isImage (monic_isImage m hm)
 
 /-- Precomposing a morphism with an isomorphism does not change its image. -/
-theorem isImage_precomp_iso {X A B : 𝒞} {i : X ⟶ A} {g : A ⟶ B} (hi : IsIso i)
+public theorem isImage_precomp_iso {X A B : 𝒞} {i : X ⟶ A} {g : A ⟶ B} (hi : IsIso i)
     {I : Subobject 𝒞 B} (hg : IsImage g I) : IsImage (i ≫ g) I := by
   obtain ⟨inv, hinv1, hinv2⟩ := hi
   refine ⟨?_, ?_⟩
@@ -82,7 +84,7 @@ theorem isImage_precomp_iso {X A B : 𝒞} {i : X ⟶ A} {g : A ⟶ B} (hi : IsI
 
 /-- **Two pullback cones over one cospan give equivalent π₁-subobjects.**  The pullback UMP of `c'`
     on the cone `c` yields a mediator commuting with `π₁`, i.e. the `Subobject.le` factorization. -/
-theorem pullback_subobject_le {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c c' : Cone f g}
+public theorem pullback_subobject_le {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c c' : Cone f g}
     (hc' : c'.IsPullback) (h1 : Monic c.π₁) (h1' : Monic c'.π₁) :
     (Subobject.mk c.pt c.π₁ h1).le (Subobject.mk c'.pt c'.π₁ h1') := by
   obtain ⟨u, ⟨hu1, _⟩, _⟩ := hc' c
@@ -91,14 +93,14 @@ theorem pullback_subobject_le {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c c' :
 /-- Two pullback cones over one cospan give EQUIVALENT π₁-subobjects.  Kept (not inlined): the two
     `IsPullback` arguments pin BOTH cones `{c c'}`, which the two-sided `⟨le, le⟩` needs — inlining
     forces `mk c.pt c.π₁`-inversion that Lean can't solve for an un-pinned source cone. -/
-theorem pullback_subobject_equiv {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c c' : Cone f g}
+public theorem pullback_subobject_equiv {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c c' : Cone f g}
     (hc : c.IsPullback) (hc' : c'.IsPullback) (h1 : Monic c.π₁) (h1' : Monic c'.π₁) :
     (Subobject.mk c.pt c.π₁ h1).Equiv (Subobject.mk c'.pt c'.π₁ h1') :=
   ⟨pullback_subobject_le hc' h1 h1', pullback_subobject_le hc h1' h1⟩
 
 /-- The first projection of a pullback of `(f, g)` is monic when `g` is.  (The InverseImage-monic
     argument, stated for an abstract pullback cone via its UMP.) -/
-theorem Cone.IsPullback.pi1_monic {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c : Cone f g}
+public theorem Cone.IsPullback.pi1_monic {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c : Cone f g}
     (hc : c.IsPullback) (hg : Monic g) : Monic c.π₁ := by
   intro W u v huv
   have hπ₂ : u ≫ c.π₂ = v ≫ c.π₂ := by
@@ -110,7 +112,7 @@ theorem Cone.IsPullback.pi1_monic {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} {c 
 
 /-- Two subobjects with equal domains and `HEq` arrows are mutually `≤`.  Domains are passed as
     free variables so the equality can be `subst`-ed (subobject projections cannot). -/
-theorem subobject_le_of_heq_arr {B Sd Gd : 𝒞} (sa : Sd ⟶ B) (ga : Gd ⟶ B)
+public theorem subobject_le_of_heq_arr {B Sd Gd : 𝒞} (sa : Sd ⟶ B) (ga : Gd ⟶ B)
     (hsm : Monic sa) (hgm : Monic ga) (edom : Gd = Sd) (harr : HEq ga sa) :
     (Subobject.mk Sd sa hsm).le (Subobject.mk Gd ga hgm) := by
   subst edom
@@ -124,19 +126,19 @@ theorem subobject_le_of_heq_arr {B Sd Gd : 𝒞} (sa : Sd ⟶ B) (ga : Gd ⟶ B)
   `HasSubobjectUnions` needed.  Hence ANY chosen union is equivalent to it (`union_equiv_image_case`),
   which is how the colimit and the per-stage unions are matched without an instance diamond. -/
 
-theorem image_case_le_left [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T : Subobject 𝒞 B) :
+public theorem image_case_le_left [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T : Subobject 𝒞 B) :
     S.le (image (HasBinaryCoproducts.case S.arr T.arr)) := by
   refine ⟨HasBinaryCoproducts.inl ≫ image.lift (HasBinaryCoproducts.case S.arr T.arr), ?_⟩
   rw [Cat.assoc, image.lift_fac]
   exact HasBinaryCoproducts.case_inl S.arr T.arr
 
-theorem image_case_le_right [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T : Subobject 𝒞 B) :
+public theorem image_case_le_right [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T : Subobject 𝒞 B) :
     T.le (image (HasBinaryCoproducts.case S.arr T.arr)) := by
   refine ⟨HasBinaryCoproducts.inr ≫ image.lift (HasBinaryCoproducts.case S.arr T.arr), ?_⟩
   rw [Cat.assoc, image.lift_fac]
   exact HasBinaryCoproducts.case_inr S.arr T.arr
 
-theorem image_case_min [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T U : Subobject 𝒞 B)
+public theorem image_case_min [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S T U : Subobject 𝒞 B)
     (hSU : S.le U) (hTU : T.le U) : (image (HasBinaryCoproducts.case S.arr T.arr)).le U := by
   obtain ⟨s, hs⟩ := hSU
   obtain ⟨t, ht⟩ := hTU
@@ -146,7 +148,7 @@ theorem image_case_min [HasImages 𝒞] [HasBinaryCoproducts 𝒞] {B : 𝒞} (S
   · rw [← Cat.assoc, HasBinaryCoproducts.case_inr]; exact ht
 
 /-- Any chosen union equals the image of the copairing (both are the join of `(S, T)`). -/
-theorem union_equiv_image_case [HasImages 𝒞] [HasSubobjectUnions 𝒞] [HasBinaryCoproducts 𝒞]
+public theorem union_equiv_image_case [HasImages 𝒞] [HasSubobjectUnions 𝒞] [HasBinaryCoproducts 𝒞]
     {B : 𝒞} (S T : Subobject 𝒞 B) :
     (HasSubobjectUnions.union S T).Equiv (image (HasBinaryCoproducts.case S.arr T.arr)) :=
   ⟨HasSubobjectUnions.union_min S T _ (image_case_le_left S T) (image_case_le_right S T),
@@ -154,7 +156,7 @@ theorem union_equiv_image_case [HasImages 𝒞] [HasSubobjectUnions 𝒞] [HasBi
 
 /-- The §1.432 stage pullback subobject of `(f, X.arr)` (inverse image via products+equalizers).
     Instances passed explicitly so callers can pin exactly the §1.432 choice. -/
-noncomputable def pbSub (ht : HasTerminal 𝒞) (hp : HasBinaryProducts 𝒞) (he : HasEqualizers 𝒞)
+@[expose] public noncomputable def pbSub (ht : HasTerminal 𝒞) (hp : HasBinaryProducts 𝒞) (he : HasEqualizers 𝒞)
     {A B : 𝒞} (f : A ⟶ B) (X : Subobject 𝒞 B) : Subobject 𝒞 A :=
   letI := ht; letI := hp; letI := he
   Subobject.mk (products_equalizers_implies_pullbacks f X.arr).cone.pt
@@ -162,20 +164,20 @@ noncomputable def pbSub (ht : HasTerminal 𝒞) (hp : HasBinaryProducts 𝒞) (h
     ((HasPullback.cone_isPullback (products_equalizers_implies_pullbacks f X.arr)).pi1_monic X.monic)
 
 /-- The image-of-copairing union subobject. -/
-noncomputable def unionImg (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
+@[expose] public noncomputable def unionImg (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     {B : 𝒞} (S T : Subobject 𝒞 B) : Subobject 𝒞 B :=
   letI := hi; letI := hcop
   image (HasBinaryCoproducts.case S.arr T.arr)
 
-theorem unionImg_le_left (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
+public theorem unionImg_le_left (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     {B : 𝒞} (S T : Subobject 𝒞 B) : S.le (unionImg hi hcop S T) := by
   letI := hi; letI := hcop; exact image_case_le_left S T
 
-theorem unionImg_le_right (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
+public theorem unionImg_le_right (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     {B : 𝒞} (S T : Subobject 𝒞 B) : T.le (unionImg hi hcop S T) := by
   letI := hi; letI := hcop; exact image_case_le_right S T
 
-theorem unionImg_min (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
+public theorem unionImg_min (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     {B : 𝒞} (S T U : Subobject 𝒞 B) (hSU : S.le U) (hTU : T.le U) :
     (unionImg hi hcop S T).le U := by
   letI := hi; letI := hcop; exact image_case_min S T U hSU hTU
@@ -183,7 +185,7 @@ theorem unionImg_min (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
 /-- `unionImg` (any `HasImages`) equals the chosen `HasSubobjectUnions.union` (any instance): both are
     the join.  This is the bridge that dissolves the `HasImages` diamond between the colimit image
     bundle and the per-stage `PreLogos` images. -/
-theorem unionImg_equiv_union (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
+public theorem unionImg_equiv_union (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     [HasImages 𝒞] [HasSubobjectUnions 𝒞] {B : 𝒞} (S T : Subobject 𝒞 B) :
     (unionImg hi hcop S T).Equiv (HasSubobjectUnions.union S T) :=
   ⟨unionImg_min hi hcop S T _ (HasSubobjectUnions.union_left S T) (HasSubobjectUnions.union_right S T),
@@ -191,7 +193,7 @@ theorem unionImg_equiv_union (hi : HasImages 𝒞) (hcop : HasBinaryCoproducts �
 
 /-- Transfer `Monic` across a heterogeneous equality of morphisms with equal (object) domains and
     codomains. -/
-theorem monic_of_heq {P Q X Y : 𝒞} {m : P ⟶ Q} {g : X ⟶ Y}
+public theorem monic_of_heq {P Q X Y : 𝒞} {m : P ⟶ Q} {g : X ⟶ Y}
     (hP : P = X) (hQ : Q = Y) (h : HEq m g) (hm : Monic m) : Monic g := by
   subst hP; subst hQ; rw [eq_of_heq h] at hm; exact hm
 
@@ -199,7 +201,7 @@ theorem monic_of_heq {P Q X Y : 𝒞} {m : P ⟶ Q} {g : X ⟶ Y}
     `f#(S∪T) ≤ f#S ∪ f#T`, re-expressed for the §1.432 pullback (`pbSub`) and the copairing-image
     union (`unionImg`).  The bridge to the `PreLogos`'s own pullback/union is by `≈`-uniqueness, so
     the §1.432/`PreLogos` instance diamond never has to be resolved. -/
-theorem stage_invImage_union_le [hPL : PreLogos 𝒞]
+public theorem stage_invImage_union_le [hPL : PreLogos 𝒞]
     (ht : HasTerminal 𝒞) (hp : HasBinaryProducts 𝒞) (he : HasEqualizers 𝒞)
     (hii : HasImages 𝒞) (hcop : HasBinaryCoproducts 𝒞)
     {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B) :
@@ -238,13 +240,13 @@ variable {ι : Type u} {D : Directed ι}
 
 /-- The transition-mono-preservation bundle (the `objIncl_preserves_images` shape), abbreviated for
     the many hypotheses below. -/
-abbrev TransMono (C : CatSystem ι D) : Prop :=
+@[expose] public abbrev TransMono (C : CatSystem ι D) : Prop :=
   ∀ {i j : ι} (hij : D.le i j), @PreservesMono _ (C.catA i) _ (C.catA j) (C.functF hij)
 
 /-- The colimit subobject GERM of a stage subobject `X ⊆ y`: `objIncl N X.dom ↣ objIncl N y` via
     `homInclObj X.arr`, monic since transitions preserve `X.arr`'s mono (`hmono`).  This is exactly
     the form produced by `objIncl_preserves_images`. -/
-noncomputable def germSub (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
+@[expose] public noncomputable def germSub (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
     {N : ι} {y : C.A N} (X : Subobject (C.A N) y) :
     letI : Cat C.Obj := colimitCat C hC
     Subobject C.Obj (C.objIncl N y) :=
@@ -263,7 +265,7 @@ theorem germSub_arr (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
     (germSub C hC hmono X).arr = homInclObj C hC X.arr := rfl
 
 /-- The germ functor is monotone: a stage `X ≤ Y` gives a colimit `germ X ≤ germ Y`. -/
-theorem germSub_le (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
+public theorem germSub_le (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
     {N : ι} {y : C.A N} {X Y : Subobject (C.A N) y} (h : X.le Y) :
     letI : Cat C.Obj := colimitCat C hC
     (germSub C hC hmono X).le (germSub C hC hmono Y) := by
@@ -281,7 +283,7 @@ theorem germSub_equiv (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono 
 
 /-- **Monic reflection for `homInclObj`** (faithful functor reflects monos).  If `homInclObj g` is
     monic in the colimit and transitions are faithful, the stage germ `g` is monic. -/
-theorem homInclObj_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
+public theorem homInclObj_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         (C.functF hij).map p = (C.functF hij).map q → p = q)
     {i : ι} {x y : C.A i} (g : x ⟶ y)
@@ -304,7 +306,7 @@ theorem homInclObj_mono_reflects (C : CatSystem ι D) (hC : C.Coherent)
   directions), so this connects to any per-stage `InverseImage` downstream. -/
 
 set_option maxHeartbeats 1000000 in
-theorem invImage_germ_equiv (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem invImage_germ_equiv (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (hmono : TransMono C)
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
@@ -354,7 +356,7 @@ theorem invImage_germ_equiv (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne :
   of the stage copairing; `objIncl_preserves_images` then carries the image across. -/
 
 set_option maxHeartbeats 1000000 in
-theorem union_germ_equiv (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
+public theorem union_germ_equiv (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
     (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : C.F hij ((hcop i).coprod a b) ⟶ z),
@@ -427,7 +429,7 @@ theorem union_germ_equiv (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMo
 
   The three-legged extension of `colimHom_cospan_as_homInclObj`: a fan `f : A → B`, `s : Sd → B`,
   `t : Td → B` is, up to `HEq`, the stage inclusion of a genuine stage fan into ONE shared `xB`. -/
-theorem colimHom_trifan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent)
+public theorem colimHom_trifan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent)
     {A Sd Td B : C.Obj}
     (f : HomColim C hC (colimOut C A).2 (colimOut C B).2)
     (s : HomColim C hC (colimOut C Sd).2 (colimOut C B).2)
@@ -487,7 +489,7 @@ theorem colimHom_trifan_as_homInclObj (C : CatSystem ι D) (hC : C.Coherent)
   LHS/RHS as germs of the stage `pbSub`/`unionImg` (transports D, E), apply the per-stage hard
   direction (`stage_invImage_union_le`), and transport the resulting `≤` up by `germSub_le`. -/
 set_option maxHeartbeats 1000000 in
-theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (hmono : TransMono C)
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)

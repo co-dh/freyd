@@ -59,16 +59,18 @@
   big reference block comment below (around the `RELOCATED` marker), and is dead code.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_33
-import Freyd.S1_52
-import Freyd.S1_53_SliceRegular
-import Freyd.S1_543_CatColimit
-import Freyd.S2_154_SmallRegCat
-import Freyd.S1_543_CatColimitRegular
-import Freyd.S1_544_Inflation
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_33
+public import Freyd.S1_52
+public import Freyd.S1_53_SliceRegular
+public import Freyd.S1_543_CatColimit
+public import Freyd.S2_154_SmallRegCat
+public import Freyd.S1_543_CatColimitRegular
+public import Freyd.S1_544_Inflation
 
 open Freyd
 open Freyd.Colim
@@ -88,7 +90,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] {𝒟 : Type u} [Cat.{v} 𝒟] {ℰ : Ty
 
 /-- Faithful functors compose.  `embedding_comp` (§1.31) gives the embedding half;
     iso-reflection composes directly (`G` reflects iso, then `F` reflects iso). -/
-theorem faithful_comp {F : Functor 𝒞 𝒟} {G : Functor 𝒟 ℰ}
+public theorem faithful_comp {F : Functor 𝒞 𝒟} {G : Functor 𝒟 ℰ}
     (fF : Faithful F) (fG : Faithful G) : Faithful (compFunctor F G) := by
   refine ⟨embedding_comp fF.1 fG.1, ?_⟩
   intro A B f hiso
@@ -127,7 +129,7 @@ abbrev stageInclObj (C : CatSystem ι D) (i : ι) : C.A i → C.Obj := C.objIncl
     `homInclObj (Cat.id x)` at the canonical witness via `homInclObj_eq`; the germ is
     a `castHom` of `functF.map (Cat.id x) = Cat.id (...)`, which is the identity germ
     `colimId` of `objIncl i x` after absorbing the cast and transition. -/
-theorem homInclObj_id (C : CatSystem ι D) (hC : C.Coherent) {i : ι} (x : C.A i) :
+public theorem homInclObj_id (C : CatSystem ι D) (hC : C.Coherent) {i : ι} (x : C.A i) :
     homInclObj C hC (Cat.id x) = colimId C hC (C.objIncl i x) := by
   let w := hioWitness C hC x x
   -- compute `homInclObj (id)` at the witness `w`; its germ is the identity at stage `w.K`.
@@ -153,7 +155,7 @@ theorem homInclObj_id (C : CatSystem ι D) (hC : C.Coherent) {i : ι} (x : C.A i
 /-- **The stage inclusion `A i → Ā` is an honest `Functor`.**  Object part `objIncl i`,
     morphism part `homInclObj`, identity by `homInclObj_id`, composition by
     `homInclObj_comp`.  (The `colimitCat` instance on `C.Obj` is supplied via `letI`.) -/
-noncomputable def stageInclFunctor (C : CatSystem ι D) (hC : C.Coherent) (i : ι) :
+@[expose] public noncomputable def stageInclFunctor (C : CatSystem ι D) (hC : C.Coherent) (i : ι) :
     letI : Cat C.Obj := colimitCat C hC
     Functor (C.A i) C.Obj :=
   letI : Cat C.Obj := colimitCat C hC
@@ -167,7 +169,7 @@ noncomputable def stageInclFunctor (C : CatSystem ι D) (hC : C.Coherent) (i : �
     `homInclObj_isIso_reflects` (needs transitions conservative, `hcons`).  This is the
     fact that the colimit injection of a stage is faithful — directly usable for the
     composite `A = A₀ → Ā`. -/
-theorem stageInclFaithful (C : CatSystem ι D) (hC : C.Coherent)
+public theorem stageInclFaithful (C : CatSystem ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
     (hcons : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
@@ -185,7 +187,7 @@ theorem stageInclFaithful (C : CatSystem ι D) (hC : C.Coherent)
 /-- **The stage terminal is the colimit terminal.**  For any two stages `i j`,
     `objIncl i (ht i).one = objIncl j (ht j).one`.  Both are carried to `objIncl k (ht k).one`
     at a common bound `k` (via `objIncl_compat` + the on-the-nose `htpres`). -/
-theorem objIncl_terminal_eq (C : CatSystem.{u, u} ι D) (_hC : C.Coherent)
+public theorem objIncl_terminal_eq (C : CatSystem.{u, u} ι D) (_hC : C.Coherent)
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one) (i j : ι) :
     C.objIncl i (ht i).one = C.objIncl j (ht j).one := by
@@ -226,7 +228,7 @@ theorem objIncl_preservesTerminal (C : CatSystem.{u, u} ι D) (hC : C.Coherent) 
 /-- **`objIncl i` preserves binary products, as `PreservesBinaryProducts`.**  Repackage
     `objIncl_preserves_products` (the `IsIso (pair …)` fact) under the `stageInclFunctor`
     `Functor` instance so the §1.43/§1.437 machinery applies. -/
-theorem objIncl_preservesBinaryProducts (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
+public theorem objIncl_preservesBinaryProducts (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
     (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
         (u v : z ⟶ C.F hij ((hp i).prod a b)),
@@ -247,7 +249,7 @@ theorem objIncl_preservesBinaryProducts (C : CatSystem.{u, u} ι D) (hC : C.Cohe
     `EqualizerCone.IsEqualizer` form (`objIncl_preserves_equalizers`) to the comparison-map
     iso form `PreservesEqualizers` wants, via `isIso_of_two_equalizers` against the chosen
     equalizer of `(homInclObj f, homInclObj g)`. -/
-theorem objIncl_preservesEqualizers (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
+public theorem objIncl_preservesEqualizers (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
         (u v : z ⟶ C.F hij (eqObj f g)),
@@ -279,7 +281,7 @@ theorem objIncl_preservesEqualizers (C : CatSystem.{u, u} ι D) (hC : C.Coherent
     `objIncl_preserves_equalizers` (repackaged as `PreservesBinaryProducts` /
     `PreservesEqualizers` of `stageInclFunctor i`) through the generic
     `image_chosenPullback_isPullback`. -/
-theorem objIncl_preserves_pullbacks (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem objIncl_preserves_pullbacks (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
@@ -354,7 +356,7 @@ set_option maxHeartbeats 4000000 in
 
   The witness route uses only the `Cone.IsPullback` INTERFACE, never forcing `whnf` of the giant
   `colimitHasPullbacks` instance — that is the §1.543 elaboration-performance fix. -/
-theorem colimitCanonicalCover (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
+public theorem colimitCanonicalCover (C : CatSystem.{u, u} ι D) (hC : C.Coherent) [hne : Nonempty ι]
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
@@ -582,7 +584,7 @@ noncomputable def chainSlicePreRegularWS {𝒞 : Type u} [Cat.{u} 𝒞] [PreRegu
 /-- The data the §1.543 transfinite construction produces: a directed system of pre-regular
     categories, faithful in its transitions, whose colimit is capital, with a faithful base
     embedding of `A`.  See the module docstring for the field-by-field meaning. -/
-structure CapData (A : Type u) [Cat.{u} A] [PreRegularCategory A] where
+public structure CapData (A : Type u) [Cat.{u} A] [PreRegularCategory A] where
   /-- directed index of the tower -/
   ι : Type u
   D : Directed ι
@@ -636,7 +638,7 @@ structure CapData (A : Type u) [Cat.{u} A] [PreRegularCategory A] where
 
 /-- **§1.543 reduction.**  From the capitalization data, assemble the capital pre-regular
     target `Ā = C.Obj` and the faithful representation `A → Ā = objIncl i₀ ∘ base`. -/
-theorem capitalization_of_capData {A : Type u} [Cat.{u} A] [PreRegularCategory A]
+public theorem capitalization_of_capData {A : Type u} [Cat.{u} A] [PreRegularCategory A]
     (cd : CapData.{u} A) :
     ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hP : PreRegularCategory Ā),
       @Capital.{u, u} Ā hC (hP.toHasTerminal) ∧
@@ -661,7 +663,7 @@ theorem capitalization_of_capData {A : Type u} [Cat.{u} A] [PreRegularCategory A
     makes §2.218 R3(a) discharge once the §1.543 tower is shown to be image-preserving (the slice
     successors are regular, hence the rungs preserve images).  Returns a genuine `RegularCategory Ā`
     (capital, with the faithful `A → Ā`). -/
-theorem capitalization_of_capData_regular {A : Type u} [Cat.{u} A] [PreRegularCategory A]
+public theorem capitalization_of_capData_regular {A : Type u} [Cat.{u} A] [PreRegularCategory A]
     (cd : CapData.{u} A)
     (hi : ∀ i, HasImages (cd.C.A i))
     (hmono : ∀ {i j : cd.ι} (hij : cd.D.le i j),
@@ -697,7 +699,7 @@ theorem capitalization_of_capData_regular {A : Type u} [Cat.{u} A] [PreRegularCa
     pre-regular, structure of the slice successors) and the `PreservesMono`/`PreservesCovers` forms.
     The per-stage target pullbacks `coverMono_isImage` needs are built from `cd.hp`/`cd.he`
     (`products_equalizers_implies_pullbacks`). -/
-theorem capitalization_of_capData_regular_of_covers {A : Type u} [Cat.{u} A] [PreRegularCategory A]
+public theorem capitalization_of_capData_regular_of_covers {A : Type u} [Cat.{u} A] [PreRegularCategory A]
     (cd : CapData.{u} A)
     (hi : ∀ i, HasImages (cd.C.A i))
     (hmono : ∀ {i j : cd.ι} (hij : cd.D.le i j),
@@ -759,7 +761,7 @@ end Colim
   Producing the `step` from `S` is the parallel obligation that needs `PreRegularCategory (Over B)`
   for the slice successor; here `CapStep` is the *interface*, so the construction below is
   decoupled from that open sub-step. -/
-structure CapStep (S : Type u) [Cat.{u} S] [PreRegularCategory S] where
+public structure CapStep (S : Type u) [Cat.{u} S] [PreRegularCategory S] where
   /-- the next stage `T = S*` -/
   T : Type u
   catT : Cat.{u} T
@@ -823,7 +825,7 @@ structure CapStep (S : Type u) [Cat.{u} S] [PreRegularCategory S] where
 
 /-- A bundled small pre-regular category: carrier, `Cat` instance, `PreRegularCategory` instance.
     Used to carry the dependent stages of the ω-tower through `Nat.rec`. -/
-structure PreRegBundle where
+public structure PreRegBundle where
   carrier : Type u
   cat : Cat.{u} carrier
   pre : @PreRegularCategory carrier cat
@@ -838,7 +840,7 @@ variable {A : Type u} [Cat.{u} A] [PreRegularCategory A]
 
 /-- The `n`-th stage of the ω-tower, as a bundle.  `stage 0 = A`; `stage (n+1)` is the
     successor `(stage n)*` chosen by `nextStep`. -/
-def stageBundle (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+@[expose] public def stageBundle (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     PreRegBundle.{u} → Nat → PreRegBundle.{u}
   | b, 0 => b
   | b, (n+1) =>
@@ -846,19 +848,19 @@ def stageBundle (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     ⟨s.T, s.catT, s.preT⟩
 
 /-- The single-step functor from stage `n` to stage `n+1`. -/
-def stageStep (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (b : PreRegBundle.{u})
+@[expose] public def stageStep (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (b : PreRegBundle.{u})
     (n : Nat) : (stageBundle nextStep b n).carrier → (stageBundle nextStep b (n+1)).carrier :=
   let s := nextStep (stageBundle nextStep b n)
   @Functor.obj _ _ _ s.catT s.stepFun
 
 /-- One rung `stageStep n` as a bundled functor. -/
-def stageStepFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def stageStepFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n : Nat) :
     @Functor _ _ (stageBundle nextStep b n).cat (stageBundle nextStep b (n+1)).cat :=
   (nextStep (stageBundle nextStep b n)).stepFun
 
 /-- The bundled iterated transition, defined before its object-map projection. -/
-def rawTransNFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def rawTransNFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n : Nat) :
     ∀ d, @Functor _ _ (stageBundle nextStep b n).cat (stageBundle nextStep b (n+d)).cat
   | 0 => idFunctor
@@ -869,7 +871,7 @@ def rawTransNFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     compose `d` consecutive `stageStep`s.  This is the object map of the tower's transition
     functor; expressing transitions by *difference* (rather than by a `≤`-proof) keeps the
     recursion mathlib-free (`Nat.leRec` is not in core). -/
-def transN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (b : PreRegBundle.{u}) (n : Nat) :
+@[expose] public def transN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (b : PreRegBundle.{u}) (n : Nat) :
     ∀ d : Nat, (stageBundle nextStep b n).carrier → (stageBundle nextStep b (n+d)).carrier
   | d => (rawTransNFun nextStep b n d).obj
 
@@ -877,12 +879,12 @@ def transN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (b : PreRe
     (b : PreRegBundle.{u}) (n : Nat) (x : (stageBundle nextStep b n).carrier) :
     transN nextStep b n 0 x = x := rfl
 
-@[simp] theorem transN_succ (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[simp] public theorem transN_succ (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n d : Nat) (x : (stageBundle nextStep b n).carrier) :
     transN nextStep b n (d+1) x = stageStep nextStep b (n+d) (transN nextStep b n d x) := rfl
 
 /-- One rung `stageStep n` is faithful (§1.544). -/
-theorem stageStepFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem stageStepFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n : Nat) :
     @Faithful _ (stageBundle nextStep b n).cat _ (stageBundle nextStep b (n+1)).cat
       (stageStepFun nextStep b n) :=
@@ -890,7 +892,7 @@ theorem stageStepFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carr
 
 /-- The rung functor `stageStep`'s `.map` respects heterogeneous equality of arguments at
     carrier-equal stages.  (Both objects and morphisms transport along the stage equality `m = n`.) -/
-theorem stageStepFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageStepFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (hmn : m = n) {x y : (stageBundle nextStep b m).carrier} {x' y' : (stageBundle nextStep b n).carrier}
     (hx : HEq x x') (hy : HEq y y') {g : x ⟶ y} {g' : x' ⟶ y'} (hg : HEq g g') :
     HEq ((stageStepFun nextStep b m).map g) ((stageStepFun nextStep b n).map g') := by
@@ -899,13 +901,13 @@ theorem stageStepFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapSt
   cases eq_of_heq hx; cases eq_of_heq hy; cases eq_of_heq hg; rfl
 
 /-- The iterated transition `transN n d` is a functor: a composite of the `d` rung functors. -/
-def transNFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def transNFun (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n : Nat) :
     ∀ d, @Functor _ _ (stageBundle nextStep b n).cat (stageBundle nextStep b (n+d)).cat
   | d => rawTransNFun nextStep b n d
 
 /-- The iterated transition `transN n d` is faithful: a composite of faithful rungs. -/
-theorem transNFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem transNFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (n : Nat) :
     ∀ d, @Faithful _ (stageBundle nextStep b n).cat _ (stageBundle nextStep b (n+d)).cat
       (transNFun nextStep b n d)
@@ -935,13 +937,13 @@ theorem transNFaithful (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier
 variable (b : PreRegBundle.{u})
 
 /-- The object family of the ω-tower `CatSystem`: stage `i` is `(stageBundle b i.down).carrier`. -/
-def towerObj (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (i : ULift.{u} Nat) :
+@[expose] public def towerObj (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (i : ULift.{u} Nat) :
     Type u := (stageBundle nextStep b i.down).carrier
 
 /-- The `≤`-indexed transition `towerObj i → towerObj j` for `i ≤ j`: run the difference
     recursion `transN i.down (j.down - i.down)` and cast its codomain `stage (i.down+(j.down-i.down))`
     to `stage j.down` along `i.down + (j.down - i.down) = j.down` (from `i.down ≤ j.down`). -/
-def towerF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def towerF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : i.down ≤ j.down) :
     towerObj b nextStep i → towerObj b nextStep j :=
   fun x => (Nat.add_sub_cancel' hij ▸ transN nextStep b i.down (j.down - i.down) x :
@@ -962,42 +964,42 @@ def towerF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
   All `Coherent` content reduces to these plus `transNFun`'s functoriality (already proven). -/
 
 /-- Transport an object across the stage-carrier equality induced by `m = n : Nat`. -/
-def stageCast (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat} (h : m = n)
+@[expose] public def stageCast (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat} (h : m = n)
     (x : (stageBundle nextStep b m).carrier) : (stageBundle nextStep b n).carrier := h ▸ x
 
 @[simp] theorem stageCast_rfl (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m : Nat}
     (x : (stageBundle nextStep b m).carrier) : stageCast b nextStep (rfl : m = m) x = x := rfl
 
 /-- The object transport is heterogeneously the original object. -/
-theorem stageCast_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCast_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) (x : (stageBundle nextStep b m).carrier) :
     HEq (stageCast b nextStep h x) x := by subst h; rfl
 
 /-- Transport a *morphism* across the stage-carrier equality induced by `m = n : Nat`. -/
-def stageCastHom (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat} (h : m = n)
+@[expose] public def stageCastHom (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat} (h : m = n)
     {x y : (stageBundle nextStep b m).carrier} (g : x ⟶ y) :
     stageCast b nextStep h x ⟶ stageCast b nextStep h y := by
   subst h; exact g
 
 /-- The morphism transport is heterogeneously the original morphism. -/
-theorem stageCastHom_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCastHom_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) {x y : (stageBundle nextStep b m).carrier} (g : x ⟶ y) :
     HEq (stageCastHom b nextStep h g) g := by subst h; rfl
 
 /-- The morphism transport preserves identities. -/
-theorem stageCastHom_id (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCastHom_id (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) (x : (stageBundle nextStep b m).carrier) :
     stageCastHom b nextStep h (Cat.id x) = Cat.id (stageCast b nextStep h x) := by subst h; rfl
 
 /-- The morphism transport distributes over composition. -/
-theorem stageCastHom_comp (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCastHom_comp (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) {x y z : (stageBundle nextStep b m).carrier} (f : x ⟶ y) (g : y ⟶ z) :
     stageCastHom b nextStep h (f ≫ g) =
       stageCastHom b nextStep h f ≫ stageCastHom b nextStep h g := by subst h; rfl
 
 /-- `stageStep` commutes with the stage-cast: applying the successor rung after a cast equals
     casting after the successor rung (the carriers `stage m`, `stage n` agree once `m = n`). -/
-theorem stageStep_stageCast (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageStep_stageCast (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) (x : (stageBundle nextStep b m).carrier) :
     stageStep nextStep b n (stageCast b nextStep h x) =
       stageCast b nextStep (by omega : m + 1 = n + 1) (stageStep nextStep b m x) := by
@@ -1006,7 +1008,7 @@ theorem stageStep_stageCast (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.ca
 /-- The iterated transition splits additively (object level).  `transN n (d+e)` first runs
     `transN n d` to stage `n+d`, then `transN (n+d) e` to stage `(n+d)+e`, which is `stage (n+(d+e))`
     after the carrier identification `(n+d)+e = n+(d+e)`. -/
-theorem transN_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d : Nat) :
+public theorem transN_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d : Nat) :
     ∀ (e : Nat) (x : (stageBundle nextStep b n).carrier),
       transN nextStep b n (d + e) x =
         stageCast b nextStep (by omega)
@@ -1027,21 +1029,21 @@ theorem transN_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n
 
 /-- Object additivity of the difference recursion, HEq form (drops the `stageCast` from
     `transN_add`). -/
-theorem transN_add_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d e : Nat)
+public theorem transN_add_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d e : Nat)
     (x : (stageBundle nextStep b n).carrier) :
     HEq (transN nextStep b n (d + e) x)
       (transN nextStep b (n + d) e (transN nextStep b n d x)) := by
   rw [transN_add b nextStep n d e x]; exact stageCast_heq b nextStep _ _
 
 /-- `transN _ d` respects heterogeneous equality of base objects at carrier-equal stages. -/
-theorem transN_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem transN_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (hmn : m = n) (d : Nat) {x : (stageBundle nextStep b m).carrier}
     {y : (stageBundle nextStep b n).carrier} (hxy : HEq x y) :
     HEq (transN nextStep b m d x) (transN nextStep b n d y) := by subst hmn; rw [eq_of_heq hxy]
 
 /-- `transNFun _ d`'s `.map` respects heterogeneous equality of base morphisms at carrier-equal
     stages (endpoints HEq, morphism HEq). -/
-theorem transNFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem transNFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (hmn : m = n) {x y : (stageBundle nextStep b m).carrier}
     {x' y' : (stageBundle nextStep b n).carrier} (hx : HEq x x') (hy : HEq y y')
     {d : Nat} {g : x ⟶ y} {g' : x' ⟶ y'} (hg : HEq g g') :
@@ -1050,7 +1052,7 @@ theorem transNFun_map_congr_heq (nextStep : ∀ (S : PreRegBundle.{u}), CapStep 
 
 /-- The morphism map of the `≤`-indexed transition `towerF hij`: map `g` by the difference
     functor `transNFun i.down (j.down-i.down)`, then transport along the carrier equality. -/
-def towerFmap (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def towerFmap (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : i.down ≤ j.down)
     {x y : towerObj b nextStep i} (g : @Cat.Hom _ (stageBundle nextStep b i.down).cat x y) :
     @Cat.Hom _ (stageBundle nextStep b j.down).cat (towerF b nextStep hij x) (towerF b nextStep hij y) :=
@@ -1060,7 +1062,7 @@ def towerFmap (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
 /-- `towerF hij` is a functor (object map `towerF`, morphism map `towerFmap`): a stage-cast of the
     difference functor `transNFun`, which is itself a functor; the cast `stageCastHom` is
     functorial (`subst` reduces it to identity). -/
-def towerFunctF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public def towerFunctF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : i.down ≤ j.down) :
     @Functor _ _ ((stageBundle nextStep b i.down).cat) ((stageBundle nextStep b j.down).cat) where
   obj := towerF b nextStep hij
@@ -1076,7 +1078,7 @@ def towerFunctF (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
 /-- **The ω-tower as a `CatSystem`** over `ULift.{u} Nat`.  Objects `towerObj`, transitions
     `towerF`/`towerFunctF`; the object coherence `F_refl`/`F_trans` is exactly the difference-cast
     bookkeeping (`transN_zero`/`transN_add`). -/
-def towerSystem (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+@[expose] public def towerSystem (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     CatSystem.{u, u} (ULift.{u} Nat) uliftNatDirected where
   A i := towerObj b nextStep i
   catA i := (stageBundle nextStep b i.down).cat
@@ -1115,7 +1117,7 @@ def towerSystem (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
 /-- Morphism-level additivity of the difference functor, HEq form.  `(transNFun n (d+e)).map g`
     equals `(transNFun (n+d) e).map ((transNFun n d).map g)` heterogeneously (carriers agree once
     `(n+d)+e = n+(d+e)`).  Proven by induction on `e` from `transN_add`/functoriality. -/
-theorem transNFun_map_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d : Nat) :
+public theorem transNFun_map_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n d : Nat) :
     ∀ (e : Nat) {x y : (stageBundle nextStep b n).carrier} (g : x ⟶ y),
       HEq ((transNFun nextStep b n (d + e)).map g)
         ((transNFun nextStep b (n + d) e).map ((transNFun nextStep b n d).map g))
@@ -1141,7 +1143,7 @@ theorem transNFun_map_add (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carr
 /-- The ω-tower system is `Coherent`: identity transition acts as identity on morphisms,
     composite transitions compose — both via the `stageCastHom`-is-`HEq`-the-original principle
     and the functoriality `transNFun`/`transN_add`. -/
-theorem towerCoherent (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+public theorem towerCoherent (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     (towerSystem b nextStep).Coherent where
   refl_map {i x x'} g := by
     -- `(functF (refl)).map g = towerFmap (refl) g = stageCastHom (transNFun (i-i)).map g`; with
@@ -1179,20 +1181,20 @@ theorem towerCoherent (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     · exact (stageCastHom_heq b nextStep _ _).symm
 
 /-- The morphism transport `stageCastHom h` is injective (it is `Eq.rec`, hence an isomorphism). -/
-theorem stageCastHom_injective (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCastHom_injective (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) {x y : (stageBundle nextStep b m).carrier} (g g' : x ⟶ y)
     (heq : stageCastHom b nextStep h g = stageCastHom b nextStep h g') : g = g' := by
   subst h; exact heq
 
 /-- The morphism transport `stageCastHom h` reflects isos (it is itself an iso). -/
-theorem stageCastHom_isIso_reflects (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
+public theorem stageCastHom_isIso_reflects (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) {m n : Nat}
     (h : m = n) {x y : (stageBundle nextStep b m).carrier} (g : x ⟶ y)
     (hiso : @IsIso _ (stageBundle nextStep b n).cat _ _ (stageCastHom b nextStep h g)) :
     @IsIso _ (stageBundle nextStep b m).cat _ _ g := by subst h; exact hiso
 
 /-- The tower transition `towerFunctF hij` is faithful on morphisms: drop the cast
     (`stageCastHom_injective`), then the iterated functor is faithful (`transNFaithful`). -/
-theorem towerHfaith (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHfaith (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {x y : (towerSystem b nextStep).A i} (p q : x ⟶ y)
     (h : (towerSystem b nextStep).Fmap hij p = (towerSystem b nextStep).Fmap hij q) :
@@ -1202,7 +1204,7 @@ theorem towerHfaith (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
 
 /-- The tower transition `towerFunctF hij` is conservative: drop the cast, then the iterated
     functor reflects isos (`transNFaithful`). -/
-theorem towerHcons (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHcons (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {x y : (towerSystem b nextStep).A i} (φ : x ⟶ y)
     (hiso : @IsIso _ ((towerSystem b nextStep).catA j) _ _ ((towerSystem b nextStep).Fmap hij φ)) :
@@ -1223,7 +1225,7 @@ theorem towerHcons (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (uniqueness) and `s.stepTerminalArrow` (existence) — stated about the *bundled* terminal — plus
     the unique iso between any terminal `htS.one` and the bundled `one`, transported through the
     functor `s.stepFun`. -/
-noncomputable def capStepHasTerminal {S : Type u} [Cat.{u} S] [PreRegularCategory S]
+@[expose] public noncomputable def capStepHasTerminal {S : Type u} [Cat.{u} S] [PreRegularCategory S]
     (s : CapStep S) (htS : HasTerminal S) :
     @HasTerminal s.T s.catT := by
   letI : Cat s.T := s.catT
@@ -1254,26 +1256,26 @@ noncomputable def capStepHasTerminal {S : Type u} [Cat.{u} S] [PreRegularCategor
 
 /-- **The tower's strict per-stage terminal (raw `Nat` form).**  `ht 0 = b.pre.toHasTerminal`;
     `ht (n+1) = capStepHasTerminal (nextStep stage_n) (ht n)`, whose `.one` is `step (ht n).one`. -/
-noncomputable def towerHasTerminalN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+@[expose] public noncomputable def towerHasTerminalN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     ∀ n : Nat, @HasTerminal _ (stageBundle nextStep b n).cat
   | 0 => (stageBundle nextStep b 0).pre.toHasTerminal
   | (n+1) =>
     capStepHasTerminal (nextStep (stageBundle nextStep b n)) (towerHasTerminalN nextStep n)
 
 /-- The successor stage terminal is, on the nose, the `stageStep`-image of the previous one. -/
-theorem towerHasTerminalN_succ_one (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
+public theorem towerHasTerminalN_succ_one (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
     (towerHasTerminalN b nextStep (n+1)).one
       = stageStep nextStep b n (towerHasTerminalN b nextStep n).one := rfl
 
 /-- **The tower's strict per-stage terminal**, packaged over the `ULift Nat` index. -/
-noncomputable def towerHasTerminal (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+@[expose] public noncomputable def towerHasTerminal (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     ∀ i : ULift.{u} Nat, HasTerminal ((towerSystem b nextStep).A i) :=
   fun i => towerHasTerminalN b nextStep i.down
 
 /-- **The tower's on-the-nose terminal preservation** `F hij (ht i).one = (ht j).one`, by induction
     on the difference `d = j.down - i.down`.  `F hij` is `stageCast ∘ transN i.down d`; we prove the
     HEq form `transN i.down d (ht i).one ≈ (ht (i.down+d)).one` and discharge the cast. -/
-theorem towerHtpresN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
+public theorem towerHtpresN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
     ∀ d : Nat, HEq (transN nextStep b n d (towerHasTerminalN b nextStep n).one)
       (towerHasTerminalN b nextStep (n+d)).one
   | 0 => by show HEq (towerHasTerminalN b nextStep n).one _; rfl
@@ -1291,7 +1293,7 @@ theorem towerHtpresN (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) 
     exact hcong.trans (by rw [towerHasTerminalN_succ_one]; show HEq _ _; rfl)
 
 /-- **`towerHtpres`** in the `CatSystem.F`-indexed form `colimitHasTerminal` consumes. -/
-theorem towerHtpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHtpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j) :
     (towerSystem b nextStep).F hij (towerHasTerminal b nextStep i).one
       = (towerHasTerminal b nextStep j).one := by
@@ -1318,7 +1320,7 @@ theorem towerHtpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
   `PreRegularCategory` (`(stageBundle …).pre`). -/
 
 /-- Each stage of the tower has equalizers (from products + pullbacks of the bundled pre-regular). -/
-noncomputable instance stageHasEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public noncomputable instance stageHasEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (n : Nat) : @HasEqualizers _ (stageBundle nextStep b n).cat :=
   @products_pullbacks_implies_equalizers _ (stageBundle nextStep b n).cat
     (stageBundle nextStep b n).pre.toHasBinaryProducts
@@ -1326,7 +1328,7 @@ noncomputable instance stageHasEqualizers (nextStep : ∀ (S : PreRegBundle.{u})
 
 /-- **The iterated transition `transN n d` preserves binary products.**  Composite of `d` rungs,
     each preserving products (`CapStep.stepProds`), via `preservesBinaryProducts_comp`. -/
-theorem transN_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem transN_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (n d : Nat) :
     @PreservesBinaryProducts _ _ (stageBundle nextStep b n).cat (stageBundle nextStep b (n+d)).cat
       (transNFun nextStep b n d)
@@ -1357,7 +1359,7 @@ theorem transN_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), C
 
 /-- **The iterated transition `transN n d` preserves equalizers.**  Composite of `d` rungs, each
     preserving equalizers (`CapStep.stepEqs`), via `preservesEqualizers_comp`. -/
-theorem transN_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem transN_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (n d : Nat) :
     @PreservesEqualizers _ _ (stageBundle nextStep b n).cat (stageBundle nextStep b (n+d)).cat
       (transNFun nextStep b n d)
@@ -1389,7 +1391,7 @@ theorem transN_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapSt
 
 /-- **The iterated transition `transN n d` preserves monos.**  Composite of `d` mono-preserving
     rungs (`CapStep.stepMono`). -/
-theorem transN_preservesMono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
+public theorem transN_preservesMono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
     ∀ (d : Nat) {x y : (stageBundle nextStep b n).carrier} (φ : x ⟶ y),
       @Monic _ (stageBundle nextStep b n).cat _ _ φ →
       @Monic _ (stageBundle nextStep b (n+d)).cat _ _ ((transNFun nextStep b n d).map φ)
@@ -1400,7 +1402,7 @@ theorem transN_preservesMono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.c
 
 /-- **The iterated transition `transN n d` preserves covers.**  Composite of `d` cover-preserving
     rungs (`CapStep.stepCover`). -/
-theorem transN_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
+public theorem transN_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (n : Nat) :
     ∀ (d : Nat) {x y : (stageBundle nextStep b n).carrier} (φ : x ⟶ y),
       @Cover _ (stageBundle nextStep b n).cat _ _ φ →
       @Cover _ (stageBundle nextStep b (n+d)).cat _ _ ((transNFun nextStep b n d).map φ)
@@ -1420,7 +1422,7 @@ theorem transN_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.
 /-- **The `stageCast`-transported difference functor preserves binary products** (generic over the
     target stage equality `h : m + d = n`).  `subst h` collapses both `stageCast` and `stageCastHom`
     (they are `Eq.rec`), reducing to `transN_preservesBinaryProducts`. -/
-theorem stageCast_transN_preservesBinaryProducts
+public theorem stageCast_transN_preservesBinaryProducts
     (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (m d n : Nat) (h : m + d = n) :
     @PreservesBinaryProducts _ _ (stageBundle nextStep b m).cat (stageBundle nextStep b n).cat
       { obj := fun x => stageCast b nextStep h (transN nextStep b m d x)
@@ -1438,7 +1440,7 @@ theorem stageCast_transN_preservesBinaryProducts
 
 /-- **`towerF hij` preserves binary products.**  `towerF`/`towerFunctF` ARE the `stageCast`-transport
     of `transN`/`transNFun` (definitionally), so apply the generic transport. -/
-theorem towerF_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerF_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j) :
     @PreservesBinaryProducts _ _ (stageBundle nextStep b i.down).cat
       (stageBundle nextStep b j.down).cat (towerFunctF b nextStep hij)
@@ -1448,7 +1450,7 @@ theorem towerF_preservesBinaryProducts (nextStep : ∀ (S : PreRegBundle.{u}), C
     (Nat.add_sub_cancel' hij)
 
 /-- **The `stageCast`-transported difference functor preserves equalizers** (generic). -/
-theorem stageCast_transN_preservesEqualizers
+public theorem stageCast_transN_preservesEqualizers
     (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) (m d n : Nat) (h : m + d = n) :
     @PreservesEqualizers _ _ (stageBundle nextStep b m).cat (stageBundle nextStep b n).cat
       { obj := fun x => stageCast b nextStep h (transN nextStep b m d x)
@@ -1463,7 +1465,7 @@ theorem stageCast_transN_preservesEqualizers
   exact transN_preservesEqualizers b nextStep m d
 
 /-- **`towerF hij` preserves equalizers.**  Apply the generic transport. -/
-theorem towerF_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerF_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j) :
     @PreservesEqualizers _ _ (stageBundle nextStep b i.down).cat
       (stageBundle nextStep b j.down).cat (towerFunctF b nextStep hij)
@@ -1479,17 +1481,17 @@ theorem towerF_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u}), CapSt
   bridge (`hmono`/`hcovpres`). -/
 
 /-- The tower's per-stage binary products (the bundled pre-regular's). -/
-noncomputable def towerHp (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public noncomputable def towerHp (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (i : ULift.{u} Nat) : HasBinaryProducts ((towerSystem b nextStep).A i) :=
   (stageBundle nextStep b i.down).pre.toHasBinaryProducts
 
 /-- The tower's per-stage equalizers. -/
-noncomputable def towerHe (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+@[expose] public noncomputable def towerHe (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (i : ULift.{u} Nat) : HasEqualizers ((towerSystem b nextStep).A i) :=
   stageHasEqualizers b nextStep i.down
 
 /-- **`hppres`** (joint monicity of `(F fst, F snd)`) from `towerF_preservesBinaryProducts`. -/
-theorem towerHppres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHppres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     (a c : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
     (uu vv : z ⟶ (towerSystem b nextStep).F hij ((towerHp b nextStep i).prod a c))
@@ -1503,7 +1505,7 @@ theorem towerHppres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (towerF_preservesBinaryProducts b nextStep hij) a c) uu vv hf hs
 
 /-- **`hppres_pair`** (pairing through `(F fst, F snd)`) from `towerF_preservesBinaryProducts`. -/
-theorem towerHppresPair (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHppresPair (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     (a c : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
     (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij c) :
@@ -1516,7 +1518,7 @@ theorem towerHppresPair (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrie
     (towerF_preservesBinaryProducts b nextStep hij) a c z p q
 
 /-- **`hepres`** (joint monicity of `F (eqMap)`) from `towerF_preservesEqualizers`. -/
-theorem towerHepres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHepres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {X Y : (towerSystem b nextStep).A i} (f g : X ⟶ Y) (z : (towerSystem b nextStep).A j)
     (uu vv : z ⟶ (towerSystem b nextStep).F hij
@@ -1532,7 +1534,7 @@ theorem towerHepres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (towerF_preservesEqualizers b nextStep hij) X Y f g) uu vv h
 
 /-- **`hepres_lift`** (lifting through `F (eqMap)`) from `towerF_preservesEqualizers`. -/
-theorem towerHepresLift (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHepresLift (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {X Y : (towerSystem b nextStep).A i} (f g : X ⟶ Y) (z : (towerSystem b nextStep).A j)
     (k : z ⟶ (towerSystem b nextStep).F hij X)
@@ -1548,14 +1550,14 @@ theorem towerHepresLift (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrie
     (towerF_preservesEqualizers b nextStep hij) X Y f g z k hk
 
 /-- The cast `stageCastHom h` preserves monos (it is `Eq.rec`, an iso). -/
-theorem stageCastHom_preservesMono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem stageCastHom_preservesMono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {m n : Nat} (h : m = n) {x y : (stageBundle nextStep b m).carrier} (φ : x ⟶ y)
     (hφ : @Monic _ (stageBundle nextStep b m).cat _ _ φ) :
     @Monic _ (stageBundle nextStep b n).cat _ _ (stageCastHom b nextStep h φ) := by
   subst h; exact hφ
 
 /-- The cast `stageCastHom h` preserves covers. -/
-theorem stageCastHom_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem stageCastHom_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {m n : Nat} (h : m = n) {x y : (stageBundle nextStep b m).carrier} (φ : x ⟶ y)
     (hφ : @Cover _ (stageBundle nextStep b m).cat _ _ φ) :
     @Cover _ (stageBundle nextStep b n).cat _ _ (stageCastHom b nextStep h φ) := by
@@ -1563,7 +1565,7 @@ theorem stageCastHom_preservesCover (nextStep : ∀ (S : PreRegBundle.{u}), CapS
 
 /-- **`hmono`** (the tower transition preserves monos): `towerFunctF.map φ = stageCastHom
     ((transNFun).map φ)`; `transN_preservesMono` gives the inner mono, `stageCastHom` preserves it. -/
-theorem towerHmono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHmono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {x y : (towerSystem b nextStep).A i} (φ : x ⟶ y)
     (hφ : @Monic _ ((towerSystem b nextStep).catA i) _ _ φ) :
@@ -1573,7 +1575,7 @@ theorem towerHmono (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (transN_preservesMono b nextStep i.down (j.down - i.down) φ hφ)
 
 /-- **`hcovpres`** (the tower transition preserves covers). -/
-theorem towerHcovpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
+public theorem towerHcovpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
     {x y : (towerSystem b nextStep).A i} (φ : x ⟶ y)
     (hφ : @Cover _ ((towerSystem b nextStep).catA i) _ _ φ) :
@@ -1586,7 +1588,7 @@ theorem towerHcovpres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     terminal/products/equalizers preservation (above), cover-reflection `towerHfaith`/`towerHcons`,
     mono-preservation `towerHmono`, per-stage `PullbacksTransferCovers` (the bundled pre-regular's),
     and cover-preservation `towerHcovpres`. -/
-theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
+public theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     letI : Cat (towerSystem b nextStep).Obj := colimitCat _ (towerCoherent b nextStep)
     letI : HasPullbacks (towerSystem b nextStep).Obj :=
       colimitHasPullbacks _ (towerCoherent b nextStep) (towerHasTerminal b nextStep)
@@ -1623,7 +1625,7 @@ theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier) :
     closure `hcap` — as the *only* inputs; everything categorical (cast-coherence, faithfulness,
     colimit pre-regularity) is discharged here, and both inputs are themselves now supplied
     Sorry-free in `Freyd/CapDataWiring.lean`, so §1.543 is proven. -/
-noncomputable def capData_of_tower (A : Type u) [Cat.{u} A] [PreRegularCategory A]
+@[expose] public noncomputable def capData_of_tower (A : Type u) [Cat.{u} A] [PreRegularCategory A]
     (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (hb : b = ⟨A, inferInstance, inferInstance⟩)
     (ht : ∀ i, HasTerminal ((towerSystem b nextStep).A i))
@@ -1699,7 +1701,7 @@ noncomputable def capData_of_tower (A : Type u) [Cat.{u} A] [PreRegularCategory 
     the slices regular when `S` is), so its `HasImages` is itself a `colimitHasImages` of the inner
     slice system — derivable but requiring `CapStep`/`PreRegBundle` to *carry* the per-stage regular
     structure (an instance-level extension of those structures, deliberately not done here). -/
-theorem capData_of_tower_regular (A : Type u) [Cat.{u} A] [PreRegularCategory A]
+public theorem capData_of_tower_regular (A : Type u) [Cat.{u} A] [PreRegularCategory A]
     (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     (b : PreRegBundle.{u}) (hb : b = ⟨A, inferInstance, inferInstance⟩)
     (ht : ∀ i, HasTerminal ((towerSystem b nextStep).A i))
@@ -1774,7 +1776,7 @@ variable [PullbacksTransferCovers 𝒞]
 /-- `∏[] = 1` is well-supported: `term 1 = id 1`, and the identity is a cover (a monic it
     factors through is split epi + mono = iso).  Inlined (`iso_cover` lives in the `HasImages`
     section of `S1_56`, unavailable here). -/
-theorem wellSupported_one : WellSupported (𝒞 := 𝒞) (listProd ([] : List 𝒞)) := by
+public theorem wellSupported_one : WellSupported (𝒞 := 𝒞) (listProd ([] : List 𝒞)) := by
   show Cover (term (HasTerminal.one : 𝒞))
   rw [show term (HasTerminal.one : 𝒞) = Cat.id HasTerminal.one from term_uniq _ _]
   intro C m g hm hgm
@@ -1790,7 +1792,7 @@ omit [PullbacksTransferCovers 𝒞] in
     fill `f ≫ k = h`, and `g` a cover forces `m` iso.  (`omit`s the ambient `PullbacksTransferCovers`
     — genuinely unused; dropping it lets `S1_48_RationalCapitalization`'s `cover_comp''` forward
     to this lemma instead of re-proving it verbatim.) -/
-theorem cover_comp' {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (hg : Cover g) :
+public theorem cover_comp' {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (hg : Cover g) :
     Cover (f ≫ g) := by
   intro C m h hm hfac
   -- diagonal fill: `f ≫ g = h ≫ m`, pullback of `g, m`, `π₁` mono (pullback of mono `m`).
@@ -1815,7 +1817,7 @@ theorem cover_comp' {X Y Z : 𝒞} {f : X ⟶ Y} {g : Y ⟶ Z} (hf : Cover f) (h
 /-- **The product of two well-supported objects is well-supported.**  `term (B×D)` factors as
     `fst ≫ term B`; `fst : B×D → B` is a cover (`prod_fst_cover`, needs `D` well-supported) and
     `term B` is a cover (`B` well-supported), so the composite is a cover. -/
-theorem wellSupported_prod {B D : 𝒞} (hB : WellSupported B) (hD : WellSupported D) :
+public theorem wellSupported_prod {B D : 𝒞} (hB : WellSupported B) (hD : WellSupported D) :
     WellSupported (prod B D) := by
   show Cover (term (prod B D))
   rw [show term (prod B D) = (fst : prod B D ⟶ B) ≫ term B from term_uniq _ _]
@@ -1945,13 +1947,13 @@ variable [HasEqualizers 𝒞]
 
 /-- `innerSliceObj [] = Over []` is Cartesian (terminal/products/equalizers from the `over*`
     instances, given `[HasEqualizers 𝒞]`). -/
-instance innerSliceCartesianNilLoc : CartesianCategory (innerSliceObj (𝒞 := 𝒞) ([] : List 𝒞)) where
+@[expose] public instance innerSliceCartesianNilLoc : CartesianCategory (innerSliceObj (𝒞 := 𝒞) ([] : List 𝒞)) where
   toHasTerminal := overHasTerminal _
   toHasBinaryProducts := overHasBinaryProducts _
   toHasEqualizers := overHasEqualizers _
 
 /-- `𝒞` is Cartesian (terminal + binary products + equalizers, all in scope this section). -/
-instance baseCartesianSelfLoc : CartesianCategory 𝒞 where
+@[expose] public instance baseCartesianSelfLoc : CartesianCategory 𝒞 where
   toHasTerminal := inferInstance
   toHasBinaryProducts := inferInstance
   toHasEqualizers := inferInstance
@@ -2023,7 +2025,7 @@ end BaseSliceCartesian
     is (`isIso_of_two_equalizers` against the shared cone `(F (eqObj f g), F (eqMap f g))`).  Lets the
     `objIncl`/comp equalizer-preservation (stated for `colimitHasEqualizers`) feed a field whose
     target equalizers are the `products_pullbacks_implies_equalizers` instance. -/
-theorem preservesEqualizers_target_irrel {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
+public theorem preservesEqualizers_target_irrel {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
     (F : Functor 𝒜 ℬ) [heS : HasEqualizers 𝒜]
     (e₁ e₂ : HasEqualizers ℬ)
     (h : @PreservesEqualizers 𝒜 ℬ _ _ F heS e₁) :
@@ -2056,7 +2058,7 @@ theorem preservesEqualizers_target_irrel {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat
     `G (F one_𝒜)` agree after the mono `G (term …)`, hence agree.  `preservesTerminal_comp` (in
     `CatColimitRegular`) is the on-the-nose form; this is the uniqueness form the `CapStep` field needs
     for the composite `objIncl i0 ∘ baseSliceObj`. -/
-theorem preservesTerminal_uniq_comp {𝒜 ℬ ℰ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ] [Cat.{u} ℰ]
+public theorem preservesTerminal_uniq_comp {𝒜 ℬ ℰ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ] [Cat.{u} ℰ]
     (F : Functor 𝒜 ℬ) (G : Functor ℬ ℰ)
     [HasTerminal 𝒜] [HasTerminal ℬ] [HasTerminal ℰ]
     (hpF : PreservesTerminal F) (hpG : PreservesTerminal G) (hGmono : PreservesMono G) :
@@ -2073,7 +2075,7 @@ theorem preservesTerminal_uniq_comp {𝒜 ℬ ℰ : Type u} [Cat.{u} 𝒜] [Cat.
 /-- **`objIncl i` preserves monos**, given the transition mono-preservation `hmono`.  A stage mono
     `φ` stays left-cancellable under every later transition (`hmono` makes `(functF hij).map φ`
     monic), which is exactly the `hcancel` hypothesis of `homInclObj_mono_of_stage`. -/
-theorem objIncl_preservesMono {ι : Type u} {D : Colim.Directed ι}
+public theorem objIncl_preservesMono {ι : Type u} {D : Colim.Directed ι}
     (C : Colim.CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hmono : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (φ : x ⟶ y),
         Monic φ → Monic (C.Fmap hij φ))
@@ -2090,7 +2092,7 @@ theorem objIncl_preservesMono {ι : Type u} {D : Colim.Directed ι}
 /-- **`objIncl i` preserves covers**, given the transition cover-preservation `hcovpres` and
     faithfulness `hfaith`.  A stage cover stays a cover under every later transition (`hcovpres`),
     which is the `hcov` hypothesis of `homInclObj_cover_of_stage`. -/
-theorem objIncl_preservesCover {ι : Type u} {D : Colim.Directed ι}
+public theorem objIncl_preservesCover {ι : Type u} {D : Colim.Directed ι}
     (C : Colim.CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
         C.Fmap hij p = C.Fmap hij q → p = q)
@@ -2119,10 +2121,12 @@ theorem preservesPullbacks_preservesMono {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat
   exact (mono_iff_level_diag_iso (L.map T hpb)).2 hTδ p q hpq
 
 /-- Transport `Cone.IsPullback` across propositional equalities of the two legs (same apex). -/
-theorem isPullback_legs_congr {𝒟 : Type u} [Cat.{u} 𝒟] {A B C : 𝒟} {f : A ⟶ C} {g : B ⟶ C}
+public theorem isPullback_legs_congr {𝒟 : Type u} [Cat.{u} 𝒟] {A B C : 𝒟} {f : A ⟶ C} {g : B ⟶ C}
     {p : 𝒟} {π₁ π₁' : p ⟶ A} {π₂ π₂' : p ⟶ B} (h₁ : π₁ = π₁') (h₂ : π₂ = π₂')
     {w : π₁ ≫ f = π₂ ≫ g} (hc : (Cone.mk p π₁ π₂ w).IsPullback) :
-    (Cone.mk p π₁' π₂' (by rw [← h₁, ← h₂]; exact w)).IsPullback := by
+    -- The cospan is named: a public statement elaborates in the public scope, where this `by` runs
+    -- before `Cone.mk`'s implicits are solved and the goal still reads `π₁' ≫ ?f = π₂' ≫ ?g`.
+    (Cone.mk (f := f) (g := g) p π₁' π₂' (by rw [← h₁, ← h₂]; exact w)).IsPullback := by
   subst h₁; subst h₂; exact hc
 
 /-- **Chosen-pullback preservation upgrades to all-pullback preservation.**  If a functor `F`
@@ -2133,7 +2137,7 @@ theorem isPullback_legs_congr {𝒟 : Type u} [Cat.{u} 𝒟] {A B C : 𝒟} {f :
     `isPullback_legs_congr` rewrites the transported legs `F m ≫ F P.πᵢ` to `F c.πᵢ`.  DRY hub for
     `baseSlice_preservesPullbacks` and (via `objIncl_preserves_pullbacks`)
     `objIncl_preservesPullbacks_generic`. -/
-theorem preservesPullbacks_of_chosenPullback {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
+public theorem preservesPullbacks_of_chosenPullback {𝒜 ℬ : Type u} [Cat.{u} 𝒜] [Cat.{u} ℬ]
     [HasBinaryProducts 𝒜] [HasEqualizers 𝒜] (F : Functor 𝒜 ℬ)
     (hchosen : ∀ {A B C : 𝒜} (f : A ⟶ C) (g : B ⟶ C),
       (Cone.mk (f := F.map f) (g := F.map g)

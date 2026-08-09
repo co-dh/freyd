@@ -37,9 +37,11 @@
   Conventions: diagram-order composition `R ≫ S`, reciprocation `R°`, intersection
   `R ∩ S`, order `R ⊑ S`.  Mathlib-free.
 -/
-import Freyd.S2_16c
-import Freyd.S2_153_Assemblies
-import Freyd.S2_111_RelCat
+module
+
+public import Freyd.S2_16c
+public import Freyd.S2_153_Assemblies
+public import Freyd.S2_111_RelCat
 
 universe v u
 
@@ -93,25 +95,25 @@ variable (K : ModulusSystem)
 
 /-- **§2.16(14)**: `Rel(A)` — the allegory of relations of the category of
     assemblies over `K` (regular by §2.153, so §2.111 applies). -/
-abbrev AsmRel : Type (u + 1) := RelObj (Assembly.{u} K)
+@[expose] public abbrev AsmRel : Type (u + 1) := RelObj (Assembly.{u} K)
 
 /-- **§2.16(14)**: the effective reflection `E` of `Rel(A)`: the reflexive splitting
     completion `Spl(Eq (Rel A))` (§2.433).  Objects are pairs `⟨A, I⟩` — written `A/I`
     to suggest the formal quotient — of an assembly `A` and an equivalence relation
     `I : A → A` in `Rel(A)`. -/
-abbrev AsmEffReflection : Type (u + 1) := SplEqObj (AsmRel K)
+@[expose] public abbrev AsmEffReflection : Type (u + 1) := SplEqObj (AsmRel K)
 
 /-- **§2.16(14)**: the object `⟨A, I⟩ = A/I` of `E`, from an assembly `A` and an
     equivalence relation `I` on it in `Rel(A)` (reflexive, symmetric, transitive —
     packaged into the reflexive symmetric idempotent that `Spl(Eq)` splits). -/
-def asmQuot (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩)
+@[expose] public def asmQuot (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩)
     (hrefl : Reflexive I) (hsym : Symmetric I) (htrans : Transitive I) :
     AsmEffReflection K :=
   eqRelObj I hrefl (symmetric_eq hsym) (reflexive_transitive_idempotent hrefl htrans)
 
 /-- The objects of `E` are EXACTLY the book's pairs `⟨A, I⟩`: every object of the
     reflection is `asmQuot` of an assembly and an equivalence relation on it. -/
-theorem asmEffReflection_obj_form (E : AsmEffReflection K) :
+public theorem asmEffReflection_obj_form (E : AsmEffReflection K) :
     ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩) (hrefl : Reflexive I)
       (hsym : Symmetric I) (htrans : Transitive I),
       E = asmQuot K A I hrefl hsym htrans := by

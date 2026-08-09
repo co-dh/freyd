@@ -14,8 +14,10 @@
   (`Σ` cannot be a Lean identifier — it is the reserved `Σ`-type binder — hence `sliceForget`;
   `Δ` is a legal identifier, so the book names are kept on the `Δ` side.)
 -/
-import Freyd.S1_85
-import Freyd.S1_53_SliceRegular
+module
+
+public import Freyd.S1_85
+public import Freyd.S1_53_SliceRegular
 
 universe v u
 

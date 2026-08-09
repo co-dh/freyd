@@ -12,13 +12,15 @@
   pullback_faithful_iff_preserves_properness: §1.453 Lemma.
 -/
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_31
-import Freyd.S1_33
-import Freyd.S1_41
-import Freyd.S1_42
-import Freyd.S1_51
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_31
+public import Freyd.S1_33
+public import Freyd.S1_41
+public import Freyd.S1_42
+public import Freyd.S1_51
 
 
 universe v u
@@ -28,7 +30,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞]
 namespace Freyd
 
 /-- A cone over the cospan `A —f→ C ←g— B` (§1.454). -/
-structure Cone {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
+public structure Cone {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
   pt : 𝒞
   π₁ : pt ⟶ A
   π₂ : pt ⟶ B
@@ -36,7 +38,7 @@ structure Cone {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
 
 /-- A pullback of the cospan `A —f→ C ←g— B`: a distinguished `cone` and
     universal lift.  §1.454 -/
-class HasPullback {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
+public class HasPullback {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
   cone : Cone f g
   lift      (c : Cone f g) : c.pt ⟶ cone.pt
   lift_fst  (c : Cone f g) : lift c ≫ cone.π₁ = c.π₁
@@ -45,57 +47,57 @@ class HasPullback {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) where
     (h₁ : u ≫ cone.π₁ = c.π₁) (h₂ : u ≫ cone.π₂ = c.π₂) : u = lift c
 
 /-- The category has all pullbacks. -/
-class HasPullbacks (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasPullbacks (𝒞 : Type u) [Cat.{v} 𝒞] where
   has {A B C : 𝒞} (f : A ⟶ C) (g : B ⟶ C) : HasPullback f g
 
 /-- A cone is a PULLBACK if every cone over the same cospan factors uniquely
     through it (§1.454).  Predicate form, for stating that a given square is a
     pullback without fixing a choice of pullbacks. -/
-def Cone.IsPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g) : Prop :=
+@[expose] public def Cone.IsPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g) : Prop :=
   ∀ d : Cone f g, ∃ u : d.pt ⟶ c.pt, (u ≫ c.π₁ = d.π₁ ∧ u ≫ c.π₂ = d.π₂) ∧
     ∀ v : d.pt ⟶ c.pt, v ≫ c.π₁ = d.π₁ → v ≫ c.π₂ = d.π₂ → v = u
 
 /-- The chosen cone of a pullback is a pullback. -/
-theorem HasPullback.cone_isPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C}
+public theorem HasPullback.cone_isPullback {A B C : 𝒞} {f : A ⟶ C} {g : B ⟶ C}
     (hp : HasPullback f g) : hp.cone.IsPullback := λ d =>
   ⟨hp.lift d, ⟨⟨hp.lift_fst d, hp.lift_snd d⟩, λ v h₁ h₂ => hp.lift_uniq d v h₁ h₂⟩⟩
 
 variable [ht : HasTerminal 𝒞] [hp : HasBinaryProducts 𝒞] [hpull : HasPullbacks 𝒞]
 
 /-- The kernel pair of `f` : pullback of `f` along itself.  §1.454 -/
-def kernelPair {A B : 𝒞} (f : A ⟶ B) : 𝒞 := (hpull.has f f).cone.pt
+@[expose] public def kernelPair {A B : 𝒞} (f : A ⟶ B) : 𝒞 := (hpull.has f f).cone.pt
 
 section
 variable {A B X : 𝒞} {f : A ⟶ B}
 
-def kp₁ : kernelPair f ⟶ A := (hpull.has f f).cone.π₁
-def kp₂ : kernelPair f ⟶ A := (hpull.has f f).cone.π₂
+@[expose] public def kp₁ : kernelPair f ⟶ A := (hpull.has f f).cone.π₁
+@[expose] public def kp₂ : kernelPair f ⟶ A := (hpull.has f f).cone.π₂
 
-theorem kp_sq : kp₁ (f:=f) ≫ f = kp₂ (f:=f) ≫ f := (hpull.has f f).cone.w
+public theorem kp_sq : kp₁ (f:=f) ≫ f = kp₂ (f:=f) ≫ f := (hpull.has f f).cone.w
 
 /-- The diagonal cone `(A, 1_A, 1_A)` over the cospan `(f, f)`. -/
-def diagCone : Cone f f := ⟨A, Cat.id A, Cat.id A, rfl⟩
+@[expose] public def diagCone : Cone f f := ⟨A, Cat.id A, Cat.id A, rfl⟩
 
-def kp_diag : A ⟶ kernelPair f := (hpull.has f f).lift diagCone
+@[expose] public def kp_diag : A ⟶ kernelPair f := (hpull.has f f).lift diagCone
 
 /-- Spec of `kp_diag` (kept, not inlined): the stated type `= Cat.id A` pins `diagCone`'s cospan,
     which a bare `(hpull.has f f).lift_fst diagCone` inline cannot recover in the functor-category
     instance (`diagCone (f := α)` elaborates to `Cone ?m ?m`). -/
-theorem kp_diag_p₁ : kp_diag (f:=f) ≫ kp₁ (f:=f) = Cat.id A := (hpull.has f f).lift_fst diagCone
-theorem kp_diag_p₂ : kp_diag (f:=f) ≫ kp₂ (f:=f) = Cat.id A := (hpull.has f f).lift_snd diagCone
+public theorem kp_diag_p₁ : kp_diag (f:=f) ≫ kp₁ (f:=f) = Cat.id A := (hpull.has f f).lift_fst diagCone
+public theorem kp_diag_p₂ : kp_diag (f:=f) ≫ kp₂ (f:=f) = Cat.id A := (hpull.has f f).lift_snd diagCone
 
-theorem kp_lift_p₁ (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f) :
+public theorem kp_lift_p₁ (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f) :
     (hpull.has f f).lift ⟨_, x₁, x₂, h⟩ ≫ kp₁ (f:=f) = x₁ := (hpull.has f f).lift_fst _
 
-theorem kp_lift_p₂ (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f) :
+public theorem kp_lift_p₂ (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f) :
     (hpull.has f f).lift ⟨_, x₁, x₂, h⟩ ≫ kp₂ (f:=f) = x₂ := (hpull.has f f).lift_snd _
 
-theorem kp_lift_uniq (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f)
+public theorem kp_lift_uniq (x₁ x₂ : X ⟶ A) (h : x₁ ≫ f = x₂ ≫ f)
     (g : X ⟶ kernelPair f) (h₁ : g ≫ kp₁ (f:=f) = x₁) (h₂ : g ≫ kp₂ (f:=f) = x₂) :
     g = (hpull.has f f).lift ⟨_, x₁, x₂, h⟩ := (hpull.has f f).lift_uniq ⟨_, x₁, x₂, h⟩ g h₁ h₂
 
 /-- Lemma from §1.453: f is monic iff the diagonal into its kernel pair is iso. -/
-theorem monic_iff_kp_diag_iso : Monic f ↔ IsIso (kp_diag (f:=f)) := by
+public theorem monic_iff_kp_diag_iso : Monic f ↔ IsIso (kp_diag (f:=f)) := by
   constructor
   · intro hm
     have h_eq : kp₁ (f:=f) = kp₂ (f:=f) := hm _ _ kp_sq
@@ -142,7 +144,7 @@ end
 /-- §1.45: The pullback of a monic along any map is monic.
     Given the cospan `A —f→ C ←m— B` with `m` monic and `hp : HasPullback f m`,
     the first projection `hp.cone.π₁ : hp.cone.pt → A` is monic. -/
-theorem mono_pullback {A B C : 𝒞} (f : A ⟶ C) (m : B ⟶ C) (hm : Monic m)
+public theorem mono_pullback {A B C : 𝒞} (f : A ⟶ C) (m : B ⟶ C) (hm : Monic m)
     (hp : HasPullback f m) : Monic hp.cone.π₁ := by
   intro W g h heq
   -- Derive g ≫ π₂ = h ≫ π₂ using m monic and the cone square π₁ ≫ f = π₂ ≫ m
@@ -171,20 +173,20 @@ theorem mono_pullback {A B C : 𝒞} (f : A ⟶ C) (m : B ⟶ C) (hm : Monic m)
 
 /-- The inverse image of a subobject `S` of `B` along `f : A → B`,
     defined as the pullback of `S.arr` along `f`.  (Freyd §1.451, f#) -/
-noncomputable def invImg {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
+@[expose] public noncomputable def invImg {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
     (hp : HasPullback f S.arr) : Subobject 𝒞 A where
   dom   := hp.cone.pt
   arr   := hp.cone.π₁
   monic := mono_pullback f S.arr S.monic hp
 
 /-- Any two chosen pullbacks defining the same inverse image represent the same subobject. -/
-theorem invImg_compare {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
+public theorem invImg_compare {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B)
     (hp hq : HasPullback f S.arr) : (invImg f S hp).le (invImg f S hq) :=
   ⟨hq.lift hp.cone, hq.lift_fst hp.cone⟩
 
 /-- §1.451: inverse image is order-preserving: if `S ≤ T` in `Sub(B)`, then
     `f# S ≤ f# T` in `Sub(A)`. -/
-theorem invImg_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
+public theorem invImg_le {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
     (hS : HasPullback f S.arr) (hT : HasPullback f T.arr)
     (hle : S.le T) : (invImg f S hS).le (invImg f T hT) := by
   obtain ⟨k, hk⟩ := hle
@@ -359,7 +361,7 @@ theorem pullback_cancel
 
 /-- The intersection of two subobjects of `A` via the pullback of their monics.
     §1.452: the resulting subobject is the glb of `S` and `T` in `Sub(A)`. -/
-noncomputable def Sub.inter {A : 𝒞} (S T : Subobject 𝒞 A)
+@[expose] public noncomputable def Sub.inter {A : 𝒞} (S T : Subobject 𝒞 A)
     (hp : HasPullback S.arr T.arr) : Subobject 𝒞 A where
   dom   := hp.cone.pt
   arr   := hp.cone.π₁ ≫ S.arr
@@ -387,18 +389,18 @@ noncomputable def Sub.inter {A : 𝒞} (S T : Subobject 𝒞 A)
     rw [hlg, hlh]
 
 /-- §1.452: the intersection is a lower bound: `S ∩ T ≤ S`. -/
-theorem Sub.inter_le_left {A : 𝒞} (S T : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr) :
+public theorem Sub.inter_le_left {A : 𝒞} (S T : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr) :
     (Sub.inter S T hp).le S :=
   ⟨hp.cone.π₁, rfl⟩
 
 /-- §1.452: the intersection is a lower bound: `S ∩ T ≤ T`. -/
-theorem Sub.inter_le_right {A : 𝒞} (S T : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr) :
+public theorem Sub.inter_le_right {A : 𝒞} (S T : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr) :
     (Sub.inter S T hp).le T :=
   ⟨hp.cone.π₂, hp.cone.w.symm⟩
 
 /-- §1.452: the intersection is the greatest lower bound: any common lower bound
     factors through it. -/
-theorem Sub.inter_glb {A : 𝒞} (S T U : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr)
+public theorem Sub.inter_glb {A : 𝒞} (S T U : Subobject 𝒞 A) (hp : HasPullback S.arr T.arr)
     (hS : U.le S) (hT : U.le T) : U.le (Sub.inter S T hp) := by
   obtain ⟨ks, hks⟩ := hS
   obtain ⟨kt, hkt⟩ := hT
@@ -410,7 +412,7 @@ theorem Sub.inter_glb {A : 𝒞} (S T U : Subobject 𝒞 A) (hp : HasPullback S.
   rw [← Cat.assoc, hp.lift_fst _, hks]
 
 /-- §1.452: inverse image `f#` preserves intersections: `f#(S ∩ T) ≅ f#S ∩ f#T`. -/
-theorem invImg_preserves_inter {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
+public theorem invImg_preserves_inter {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 B)
     (hST   : HasPullback S.arr T.arr)
     (hfST  : HasPullback f (Sub.inter S T hST).arr)
     (hfS   : HasPullback f S.arr)
@@ -504,7 +506,7 @@ theorem invImg_preserves_inter {A B : 𝒞} (f : A ⟶ B) (S T : Subobject 𝒞 
 -- such dependency; the `omit … in` guards the theorems.)
 /-- A "level" of `f`: a pullback cone over the cospan `(f, f)` together with a
     diagonal `δ` (the comparison `A → c.pt` induced by `(1_A, 1_A)`). -/
-structure Level {A B : 𝒞} (f : A ⟶ B) where
+public structure Level {A B : 𝒞} (f : A ⟶ B) where
   c : Cone f f
   hpb : c.IsPullback
   δ : A ⟶ c.pt
@@ -515,7 +517,7 @@ omit ht hp hpull in
 /-- §1.453 / §1.454: `f` is monic iff its diagonal `δ : A → L` into a level `L`
     is an isomorphism.  Abstracted away from `HasPullbacks` so it can be reused
     in any target category for the image of a level. -/
-theorem mono_iff_level_diag_iso {A B : 𝒞} {f : A ⟶ B} (L : Level f) :
+public theorem mono_iff_level_diag_iso {A B : 𝒞} {f : A ⟶ B} (L : Level f) :
     Monic f ↔ IsIso L.δ := by
   obtain ⟨c, hpb, δ, δ₁, δ₂⟩ := L
   constructor
@@ -556,15 +558,18 @@ theorem mono_iff_level_diag_iso {A B : 𝒞} {f : A ⟶ B} (L : Level f) :
 
 /-- T PRESERVES PULLBACKS: for every pullback cone in `𝒜`, the image cone in `ℬ`
     is also a pullback. -/
-def PreservesPullbacks {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ]
+@[expose] public def PreservesPullbacks {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     (T : Functor 𝒜 ℬ) : Prop :=
   ∀ {A B C : 𝒜} (f : A ⟶ C) (g : B ⟶ C) (c : Cone f g),
     c.IsPullback →
-    (Cone.mk (T.obj c.pt) (T.map c.π₁) (T.map c.π₂)
+    -- `f` and `g` are named: the only field that mentions them is `w`, so leaving them to be
+    -- inferred leaves the tactic to solve them, which it cannot once this definition is `@[expose]`d
+    -- and the tactic runs before its goal is instantiated.
+    (Cone.mk (f := T.map f) (g := T.map g) (T.obj c.pt) (T.map c.π₁) (T.map c.π₂)
       (by rw [← T.map_comp, ← T.map_comp, c.w])).IsPullback
 
 /-- T PRESERVES PROPERNESS: a non-iso monic maps to a non-iso monic (§1.453). -/
-def PreservesProperness {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
+@[expose] public def PreservesProperness {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     (T : Functor 𝒜 ℬ) : Prop :=
   ∀ {A' A : 𝒜} (m : A' ⟶ A), Monic m → ¬IsIso m → ¬IsIso (T.map m)
 
@@ -577,12 +582,12 @@ def PreservesProperness {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     iso and hence requires `HasBinaryProducts ℬ`).  `PreservesPullbacks` alone does
     NOT supply this — `(T fst, T snd)` need not stay jointly monic — which is the
     genuine gap in the `Faithful` direction; adding it makes §1.453 true as stated. -/
-def PreservesProductMonic {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
+@[expose] public def PreservesProductMonic {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     [HasBinaryProducts 𝒜] (T : Functor 𝒜 ℬ) : Prop :=
   ∀ {A B : 𝒜}, MonicPair (T.map (fst (A := A) (B := B))) (T.map snd)
 
 /-- The canonical level of `f`, built from the chosen kernel pair. -/
-noncomputable def canonicalLevel {A B : 𝒞} (f : A ⟶ B) : Level f where
+@[expose] public noncomputable def canonicalLevel {A B : 𝒞} (f : A ⟶ B) : Level f where
   c := (hpull.has f f).cone
   hpb := (hpull.has f f).cone_isPullback
   δ := kp_diag (f := f)
@@ -591,7 +596,7 @@ noncomputable def canonicalLevel {A B : 𝒞} (f : A ⟶ B) : Level f where
 
 omit ht hp hpull in
 /-- The diagonal of a level is a split mono (`δ ≫ π₁ = id`), hence monic. -/
-theorem Level.diag_mono {A B : 𝒞} {f : A ⟶ B} (L : Level f) : Monic L.δ := by
+public theorem Level.diag_mono {A B : 𝒞} {f : A ⟶ B} (L : Level f) : Monic L.δ := by
   intro W g h heq
   have heq2 : g ≫ Cat.id A = h ≫ Cat.id A := by
     rw [← L.δ₁, ← Cat.assoc, ← Cat.assoc, heq]
@@ -600,7 +605,7 @@ theorem Level.diag_mono {A B : 𝒞} {f : A ⟶ B} (L : Level f) : Monic L.δ :=
 
 /-- The `T`-image of a level of `f` is a level of `T f` (T preserves the level
     pullback; the diagonal equations are functorial). -/
-noncomputable def Level.map {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
+@[expose] public noncomputable def Level.map {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     (T : Functor 𝒜 ℬ) (hpb : PreservesPullbacks T)
     {A B : 𝒜} {f : A ⟶ B} (L : Level f) : Level (T.map f) where
   c := Cone.mk (T.obj L.c.pt) (T.map L.c.π₁) (T.map L.c.π₂)
@@ -616,7 +621,7 @@ noncomputable def Level.map {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     This is the explicit content of Freyd's argument: `f` monic ⟺ its diagonal is
     iso; properness (contrapositive, classically) propagates non-iso of the
     diagonal through `T`; so `T f` monic forces `f` monic. -/
-theorem reflectsMono {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
+public theorem reflectsMono {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     [HasTerminal 𝒜] [HasBinaryProducts 𝒜] [HasPullbacks 𝒜]
     (T : Functor 𝒜 ℬ) (hpb : PreservesPullbacks T)
     (hprop : PreservesProperness T) {A B : 𝒜} (f : A ⟶ B) (hm : Monic (T.map f)) :
@@ -649,7 +654,7 @@ theorem reflectsMono {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     alone leaves `(T fst, T snd)` possibly non–jointly-monic, so it cannot force
     `T⟨1,f⟩ = T⟨1,g⟩` from `T f = T g`.  We therefore take `PreservesProductMonic T`
     as a hypothesis, making the statement true as written. -/
-theorem pullback_faithful_iff_preserves_properness
+public theorem pullback_faithful_iff_preserves_properness
     {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ]
     [HasTerminal 𝒜] [HasBinaryProducts 𝒜] [HasPullbacks 𝒜]
     (T : Functor 𝒜 ℬ)

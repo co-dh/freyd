@@ -21,4 +21,6 @@
   mathlib-free and adds no second implementation.
 -/
 
-import Freyd.S1_91
+module
+
+public import Freyd.S1_91

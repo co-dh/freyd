@@ -15,9 +15,11 @@
   `Capital`.  The members of an ultra-filter are complemented subterminators (the 2nd component of
   `IsUltraFilter`), and §1.633 turns that into projectivity.
 -/
-import Freyd.S1_625_StalkRegular
-import Freyd.S2_21
-import Freyd.S1_635_StalkDetect
+module
+
+public import Freyd.S1_625_StalkRegular
+public import Freyd.S2_21
+public import Freyd.S1_635_StalkDetect
 
 universe u v w
 
@@ -32,7 +34,7 @@ open PreLogosHorn.Stalk SetRegular
   let us reduce each `Preserves*` for `Tstar` to the per-fibre `TF_*` lemma. -/
 
 /-- A power morphism is an iso iff it is fibrewise an iso. -/
-theorem power_isIso_iff {I : Type w} {X Y : I → Type w} (f : X ⟶ Y) :
+public theorem power_isIso_iff {I : Type w} {X Y : I → Type w} (f : X ⟶ Y) :
     IsIso f ↔ ∀ i, @IsIso (Type w) _ (X i) (Y i) (f i) := by
   constructor
   · rintro ⟨g, h1, h2⟩ i
@@ -43,7 +45,7 @@ theorem power_isIso_iff {I : Type w} {X Y : I → Type w} (f : X ⟶ Y) :
     · funext i x; exact congrFun (h i).choose_spec.2 x
 
 /-- A power cone is a pullback as soon as it is a pullback in every fibre. -/
-theorem power_isPullback_of_fibrewise {I : Type w} {A B C : I → Type w}
+public theorem power_isPullback_of_fibrewise {I : Type w} {A B C : I → Type w}
     {f : A ⟶ C} {g : B ⟶ C} (c : Cone f g)
     (h : ∀ i, (Cone.mk (c.pt i) (c.π₁ i) (c.π₂ i) (congrFun c.w i)).IsPullback) :
     c.IsPullback := by
@@ -59,7 +61,7 @@ theorem power_isPullback_of_fibrewise {I : Type w} {A B C : I → Type w}
 
 /-- A subobject of a power object is the image of `f` as soon as it is, fibrewise, the image of
     `f i`.  The fibre subobject of `J` at `i` is `⟨J.dom i, J.arr i, …⟩`. -/
-theorem power_isImage_of_fibrewise {I : Type w} {A B : I → Type w} (f : A ⟶ B)
+public theorem power_isImage_of_fibrewise {I : Type w} {A B : I → Type w} (f : A ⟶ B)
     (J : Subobject (I → Type w) B)
     (h : ∀ i, IsImage (f i)
       ⟨J.dom i, J.arr i, (set_monic_iff_injective _).mpr ((power_monic_iff J.arr).mp J.monic i)⟩) :
@@ -81,7 +83,7 @@ theorem power_isImage_of_fibrewise {I : Type w} {A B : I → Type w} (f : A ⟶ 
 variable {𝒞 : Type u} [Cat.{u} 𝒞] [DisjointBinaryCoproduct 𝒞]
 
 /-- `T⋆` preserves binary products: fibrewise this is `TF_preserves_binaryProducts`. -/
-theorem Tstar_preservesBinaryProducts :
+public theorem Tstar_preservesBinaryProducts :
     PreservesBinaryProducts (TstarFunctor (𝒞 := 𝒞)) := by
   intro A B
   rw [power_isIso_iff]
@@ -89,7 +91,7 @@ theorem Tstar_preservesBinaryProducts :
   exact TF_preserves_binaryProducts F.val F.property.1.1
 
 /-- `T⋆` preserves pullbacks: fibrewise this is `TF_preserves_pullbacks`. -/
-theorem Tstar_preservesPullbacks :
+public theorem Tstar_preservesPullbacks :
     PreservesPullbacks (TstarFunctor (𝒞 := 𝒞)) := by
   intro A B C f g c hc
   apply power_isPullback_of_fibrewise
@@ -97,7 +99,7 @@ theorem Tstar_preservesPullbacks :
   exact TF_preserves_pullbacks F.val F.property.1.1 f g c hc
 
 /-- `T⋆` preserves monos: fibrewise this is `TF_preserves_mono`. -/
-theorem Tstar_preservesMono :
+public theorem Tstar_preservesMono :
     PreservesMono (TstarFunctor (𝒞 := 𝒞)) := by
   intro X Y f hf
   rw [power_monic_iff]
@@ -107,7 +109,7 @@ theorem Tstar_preservesMono :
 /-- `T⋆` preserves covers.  Each ultra-filter member is a complemented subterminator
     (`F.property.2.1`), hence projective in a capital pre-logos (`capital_filter_projective`,
     §1.633), so the per-fibre `TF_preserves_covers_of_projective` applies. -/
-theorem Tstar_preservesCovers (hcap : Capital (𝒞 := 𝒞)) :
+public theorem Tstar_preservesCovers (hcap : Capital (𝒞 := 𝒞)) :
     PreservesCovers (TstarFunctor (𝒞 := 𝒞)) := by
   intro A B f hf
   rw [power_cover_iff]
@@ -117,7 +119,7 @@ theorem Tstar_preservesCovers (hcap : Capital (𝒞 := 𝒞)) :
     (TF_preserves_covers_of_projective F.val hproj f hf)
 
 /-- `T⋆` preserves images, fibrewise from `TF_preserves_images` (projectivity via §1.633). -/
-theorem Tstar_preservesImages (hcap : Capital (𝒞 := 𝒞)) :
+public theorem Tstar_preservesImages (hcap : Capital (𝒞 := 𝒞)) :
     PreservesImages (TstarFunctor (𝒞 := 𝒞)) Tstar_preservesMono := by
   intro A B f I hI
   apply power_isImage_of_fibrewise
@@ -131,7 +133,7 @@ theorem Tstar_preservesImages (hcap : Capital (𝒞 := 𝒞)) :
   `Tstar A = (F̂ ↦ T_F̂ A)` preserves binary products, pullbacks, covers, monos, and images — each
   field lifting fibrewise from the per-fibre `TF_regularFunctor` (`StalkRegular`), with cover/image
   projectivity supplied by §1.633 (`capital_filter_projective`). -/
-theorem Tstar_regularFunctor (hcap : Capital (𝒞 := 𝒞)) :
+public theorem Tstar_regularFunctor (hcap : Capital (𝒞 := 𝒞)) :
     RelFunctor.RegularFunctor (TstarFunctor (𝒞 := 𝒞)) where
   pres_prod := Tstar_preservesBinaryProducts
   pres_pullback := Tstar_preservesPullbacks

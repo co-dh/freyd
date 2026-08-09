@@ -5,11 +5,13 @@
 -/
 
 
-import Freyd.S1_10
-import Freyd.S1_18
-import Freyd.S1_33
-import Freyd.S1_41
-import Freyd.S1_51_Order  -- §1.51 preorder-level order theory (GaloisConnection, IsSup, IsClosureOp)
+module
+
+public import Freyd.S1_10
+public import Freyd.S1_18
+public import Freyd.S1_33
+public import Freyd.S1_41
+public import Freyd.S1_51_Order  -- §1.51 preorder-level order theory (GaloisConnection, IsSup, IsClosureOp)
 
 
 open Freyd
@@ -23,29 +25,29 @@ namespace Freyd
 /-! ## §1.51 Subobjects -/
 
 /-- A subobject of B: a domain and a monic morphism into B. -/
-structure Subobject (𝒞 : Type u) [Cat.{v} 𝒞] (B : 𝒞) where
+public structure Subobject (𝒞 : Type u) [Cat.{v} 𝒞] (B : 𝒞) where
   dom   : 𝒞
   arr   : dom ⟶ B
   monic : Monic arr
 
 /-- Order on subobjects: S ≤ T if S factors through T. -/
-def Subobject.le {B : 𝒞} (S T : Subobject 𝒞 B) : Prop :=
+@[expose] public def Subobject.le {B : 𝒞} (S T : Subobject 𝒞 B) : Prop :=
   ∃ h : S.dom ⟶ T.dom, h ≫ T.arr = S.arr
 
-@[refl] theorem Subobject.le_refl {B : 𝒞} (S : Subobject 𝒞 B) : S.le S :=
+@[refl] public theorem Subobject.le_refl {B : 𝒞} (S : Subobject 𝒞 B) : S.le S :=
   ⟨Cat.id S.dom, Cat.id_comp S.arr⟩
 
-theorem Subobject.le_trans {B : 𝒞} {X Y Z : Subobject 𝒞 B}
+public theorem Subobject.le_trans {B : 𝒞} {X Y Z : Subobject 𝒞 B}
     (h₁ : X.le Y) (h₂ : Y.le Z) : X.le Z :=
   let ⟨f, hf⟩ := h₁; let ⟨g, hg⟩ := h₂
   ⟨f ≫ g, by rw [Cat.assoc, hg, hf]⟩
 
-instance {B : 𝒞} : Trans (@Subobject.le 𝒞 _ B) (@Subobject.le 𝒞 _ B) (@Subobject.le 𝒞 _ B) :=
+@[expose] public instance {B : 𝒞} : Trans (@Subobject.le 𝒞 _ B) (@Subobject.le 𝒞 _ B) (@Subobject.le 𝒞 _ B) :=
   ⟨Subobject.le_trans⟩
 
 /-- Mutual ≤ gives an iso witness on domains (antisymmetry up to iso).
     Both `f ≫ g` and `g ≫ f` are identities by monic cancellation. -/
-theorem Subobject.le_antisymm_iso {B : 𝒞} {S T : Subobject 𝒞 B}
+public theorem Subobject.le_antisymm_iso {B : 𝒞} {S T : Subobject 𝒞 B}
     (hST : S.le T) (hTS : T.le S) :
     ∃ e : S.dom ⟶ T.dom, IsIso e ∧ e ≫ T.arr = S.arr := by
   obtain ⟨f, hf⟩ := hST; obtain ⟨g, hg⟩ := hTS
@@ -56,18 +58,18 @@ theorem Subobject.le_antisymm_iso {B : 𝒞} {S T : Subobject 𝒞 B}
   exact ⟨f, ⟨g, hfg, hgf⟩, hf⟩
 
 /-- The entire (maximal) subobject: represented by id_B. -/
-def Subobject.entire (B : 𝒞) : Subobject 𝒞 B :=
+@[expose] public def Subobject.entire (B : 𝒞) : Subobject 𝒞 B :=
   ⟨B, Cat.id B, by
     intro X f g h; simpa [Cat.id_comp, Cat.comp_id] using h⟩
 
 /-- S is ENTIRE iff its representing mono is an isomorphism. -/
-def Subobject.IsEntire {B : 𝒞} (S : Subobject 𝒞 B) : Prop := IsIso S.arr
+@[expose] public def Subobject.IsEntire {B : 𝒞} (S : Subobject 𝒞 B) : Prop := IsIso S.arr
 
 /-! ## §1.51 Allows
 
   A subobject B' → B ALLOWS f : A → B if f factors through B'. -/
 
-def Allows {A B : 𝒞} (B' : Subobject 𝒞 B) (f : A ⟶ B) : Prop :=
+@[expose] public def Allows {A B : 𝒞} (B' : Subobject 𝒞 B) (f : A ⟶ B) : Prop :=
   ∃ g : A ⟶ B'.dom, g ≫ B'.arr = f
 
 /-! ## §1.51 Image
@@ -75,16 +77,16 @@ def Allows {A B : 𝒞} (B' : Subobject 𝒞 B) (f : A ⟶ B) : Prop :=
   The IMAGE of f is the smallest subobject of B that allows f.
   A category HAS IMAGES if every morphism has an image. -/
 
-def IsImage {A B : 𝒞} (f : A ⟶ B) (I : Subobject 𝒞 B) : Prop :=
+@[expose] public def IsImage {A B : 𝒞} (f : A ⟶ B) (I : Subobject 𝒞 B) : Prop :=
   Allows I f ∧ ∀ S : Subobject 𝒞 B, Allows S f → I.le S
 
-class HasImages (𝒞 : Type u) [Cat.{v} 𝒞] where
+public class HasImages (𝒞 : Type u) [Cat.{v} 𝒞] where
   image   : ∀ {A B : 𝒞}, (A ⟶ B) → Subobject 𝒞 B
   isImage : ∀ {A B : 𝒞} (f : A ⟶ B), IsImage f (image f)
 
 /-- A monic `m : M → B` is its OWN image: the subobject `⟨M, m, hm⟩` is the image of `m`.
     (`m` allows itself by `id`; minimality factors any allowing subobject through `m` using `hm`.) -/
-theorem monic_isImage {M B : 𝒞} (m : M ⟶ B) (hm : Monic m) :
+public theorem monic_isImage {M B : 𝒞} (m : M ⟶ B) (hm : Monic m) :
     IsImage m (Subobject.mk M m hm) := by
   refine ⟨⟨Cat.id M, Cat.id_comp m⟩, ?_⟩
   intro S hS
@@ -98,15 +100,15 @@ theorem monic_isImage {M B : 𝒞} (m : M ⟶ B) (hm : Monic m) :
   Defined directly — no images needed.  With images, equivalent to
   "its image is entire" (proved below). -/
 
-def Cover {X Y : 𝒞} (f : X ⟶ Y) : Prop :=
+@[expose] public def Cover {X Y : 𝒞} (f : X ⟶ Y) : Prop :=
   ∀ {C : 𝒞} (m : C ⟶ Y) (g : X ⟶ C), Monic m → g ≫ m = f → IsIso m
 
-theorem monic_cover_iso {X Y : 𝒞} (f : X ⟶ Y) (hc : Cover f) (hm : Monic f) : IsIso f :=
+public theorem monic_cover_iso {X Y : 𝒞} (f : X ⟶ Y) (hc : Cover f) (hm : Monic f) : IsIso f :=
   hc f (Cat.id X) hm (Cat.id_comp f)
 
 /-- A map with a section is a cover: if `s ≫ e = id` then any monic `m` that `e` factors
     through is split (by `s ≫ g`) and hence iso. -/
-theorem cover_of_section {X Y : 𝒞} (e : X ⟶ Y) (s : Y ⟶ X) (hs : s ≫ e = Cat.id Y) :
+public theorem cover_of_section {X Y : 𝒞} (e : X ⟶ Y) (s : Y ⟶ X) (hs : s ≫ e = Cat.id Y) :
     Cover e := by
   intro C m g hm hgm
   have hsplit : (s ≫ g) ≫ m = Cat.id Y := by rw [Cat.assoc, hgm, hs]
@@ -118,7 +120,7 @@ theorem cover_of_section {X Y : 𝒞} (e : X ⟶ Y) (s : Y ⟶ X) (hs : s ≫ e 
     that `i ≫ h` factors through, `h` also factors through (via `i⁻¹ ≫ g`), so
     `h` being a cover forces `m` iso.  Lets us reduce a pullback-square cover to a
     canonical-pullback cover (the two projections differ by the comparison iso). -/
-theorem cover_precomp_iso {X X' Y : 𝒞} {i : X ⟶ X'} (hi : IsIso i) {h : X' ⟶ Y}
+public theorem cover_precomp_iso {X X' Y : 𝒞} {i : X ⟶ X'} (hi : IsIso i) {h : X' ⟶ Y}
     (hc : Cover h) : Cover (i ≫ h) := by
   obtain ⟨i', _, hi2⟩ := hi
   intro C m g hm hgm
@@ -134,7 +136,7 @@ theorem cover_precomp_iso {X X' Y : 𝒞} {i : X ⟶ X'} (hi : IsIso i) {h : X' 
     images of `g`, and `c : P.dom → Q.dom` satisfies `c ≫ Q.arr = P.arr`, then `c`
     is an isomorphism.  This packages the up-to-unique-iso uniqueness of images and
     is the key lemma for §1.511. -/
-theorem image_comparison_iso {A B : 𝒞} {g : A ⟶ B} {P Q : Subobject 𝒞 B}
+public theorem image_comparison_iso {A B : 𝒞} {g : A ⟶ B} {P Q : Subobject 𝒞 B}
     (hP : IsImage g P) (hQ : IsImage g Q) (c : P.dom ⟶ Q.dom) (hc : c ≫ Q.arr = P.arr) :
     IsIso c := by
   -- `Q` is minimal and `P` allows `g`, so `Q ≤ P`: get the reverse comparison `d`.
@@ -147,23 +149,23 @@ theorem image_comparison_iso {A B : 𝒞} {g : A ⟶ B} {P Q : Subobject 𝒞 B}
 
 variable [HasImages 𝒞]
 
-def image {A B : 𝒞} (f : A ⟶ B) : Subobject 𝒞 B := HasImages.image f
+@[expose] public def image {A B : 𝒞} (f : A ⟶ B) : Subobject 𝒞 B := HasImages.image f
 
-theorem image_allows {A B : 𝒞} (f : A ⟶ B) : Allows (image f) f :=
+public theorem image_allows {A B : 𝒞} (f : A ⟶ B) : Allows (image f) f :=
   (HasImages.isImage f).1
 
-noncomputable def image.lift {A B : 𝒞} (f : A ⟶ B) : A ⟶ (image f).dom :=
+@[expose] public noncomputable def image.lift {A B : 𝒞} (f : A ⟶ B) : A ⟶ (image f).dom :=
   (image_allows f).choose
 
-theorem image.lift_fac {A B : 𝒞} (f : A ⟶ B) : image.lift f ≫ (image f).arr = f :=
+public theorem image.lift_fac {A B : 𝒞} (f : A ⟶ B) : image.lift f ≫ (image f).arr = f :=
   (image_allows f).choose_spec
 
-theorem image_min {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B) (h : Allows S f) :
+public theorem image_min {A B : 𝒞} (f : A ⟶ B) (S : Subobject 𝒞 B) (h : Allows S f) :
     (image f).le S :=
   (HasImages.isImage f).2 S h
 
 /-- With images, f is a cover iff its image is entire (§1.512). -/
-theorem cover_iff_image_entire {X Y : 𝒞} (f : X ⟶ Y) : Cover f ↔ Subobject.IsEntire (image f) := by
+public theorem cover_iff_image_entire {X Y : 𝒞} (f : X ⟶ Y) : Cover f ↔ Subobject.IsEntire (image f) := by
   constructor
   · intro hc; exact hc (image f).arr (image.lift f) (image f).monic (image.lift_fac f)
   · intro hIso
@@ -196,7 +198,7 @@ theorem cover_iff_image_entire {X Y : 𝒞} (f : X ⟶ Y) : Cover f ↔ Subobjec
 
 /-- Push a subobject of `B` forward along a mono-preserving functor `T`, landing as
     a subobject of `T B`. -/
-def Subobject.map {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : Functor 𝒜 ℬ)
+@[expose] public def Subobject.map {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : Functor 𝒜 ℬ)
     (hpm : PreservesMono T) {B : 𝒜} (S : Subobject 𝒜 B) : Subobject ℬ (T.obj B) where
   dom   := T.obj S.dom
   arr   := T.map S.arr
@@ -204,7 +206,7 @@ def Subobject.map {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} �
 
 /-- `T` PRESERVES IMAGES: it carries every image factorization in `𝒜` to an image
     factorization in `ℬ`. -/
-def PreservesImages {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : Functor 𝒜 ℬ)
+@[expose] public def PreservesImages {𝒜 : Type u₁} {ℬ : Type u₂} [Cat.{v} 𝒜] [Cat.{v} ℬ] (T : Functor 𝒜 ℬ)
     (hpm : PreservesMono T) : Prop :=
   ∀ {A B : 𝒜} (f : A ⟶ B) (I : Subobject 𝒜 B), IsImage f I → IsImage (T.map f) (Subobject.map T hpm I)
 
@@ -287,7 +289,7 @@ def Epic {n : Nat} (x : Fin n → Σ A : 𝒞, A ⟶ B) : Prop :=
     `Cover`-definition argument, since `cover_comp` from S1_56 carries an images hypothesis).  This
     is the general `[Cat 𝒞]` fact at an arbitrary hom universe — the single home for "cover ≫ iso is
     a cover"; downstream sections (e.g. §1.62 under `[PreLogos]`) apply it directly. -/
-theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{v} 𝒞] {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z}
+public theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{v} 𝒞] {X Y Z : 𝒞} {f : X ⟶ Y} {e : Y ⟶ Z}
     (hf : Cover f) (he : IsIso e) : Cover (f ≫ e) := by
   obtain ⟨einv, hee, heinv⟩ := he
   intro C m g hm hgm
@@ -309,6 +311,6 @@ theorem cover_comp_iso_cat {𝒞 : Type u} [Cat.{v} 𝒞] {X Y Z : 𝒞} {f : X 
   rw [hmeq]; exact isIso_comp hmiso ⟨einv, hee, heinv⟩
 
 /-- Two subobjects are EQUIVALENT (`≈`) when each is `≤` the other (antisymmetry up to iso). -/
-def Subobject.Equiv {B : 𝒞} (S T : Subobject 𝒞 B) : Prop := S.le T ∧ T.le S
+@[expose] public def Subobject.Equiv {B : 𝒞} (S T : Subobject 𝒞 B) : Prop := S.le T ∧ T.le S
 
 end Freyd

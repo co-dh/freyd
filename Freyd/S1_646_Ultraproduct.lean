@@ -29,7 +29,9 @@
   * `Ultraproduct.map_not_surjective` — `f i` proper (non-surjective) on a `U`-large set ⟹ `map f U`
     not surjective.  This is the properness-survival the §1.646 representation turns on.
 -/
-import Freyd.S1_646_Ultrafilter
+module
+
+public import Freyd.S1_646_Ultrafilter
 
 namespace Freyd.UF
 
@@ -46,37 +48,37 @@ symmetry uses symmetry of `=`; transitivity intersects the two agreement sets (`
 up-closes along `{i | x i = z i} ⊇ {x = y} ∩ {y = z}`. -/
 
 /-- The agreement set `{i | x i = y i}` of two sections. -/
-def agree {X : I → Type w} (x y : ∀ i, X i) : Sub I := fun i => x i = y i
+@[expose] public def agree {X : I → Type w} (x y : ∀ i, X i) : Sub I := fun i => x i = y i
 
-theorem agree_refl {X : I → Type w} (x : ∀ i, X i) : agree x x = univ :=
+public theorem agree_refl {X : I → Type w} (x : ∀ i, X i) : agree x x = univ :=
   Sub.ext fun _ => ⟨fun _ => trivial, fun _ => rfl⟩
 
 /-- The ultra-product relation on sections: agreement on a `U`-large set. -/
-def UEq {X : I → Type w} (U : Ultrafilter I) (x y : ∀ i, X i) : Prop :=
+@[expose] public def UEq {X : I → Type w} (U : Ultrafilter I) (x y : ∀ i, X i) : Prop :=
   U.toFilter.sets (agree x y)
 
-theorem UEq.refl {X : I → Type w} (U : Ultrafilter I) (x : ∀ i, X i) : UEq U x x := by
+public theorem UEq.refl {X : I → Type w} (U : Ultrafilter I) (x : ∀ i, X i) : UEq U x x := by
   have := U.toFilter.univ_mem
   rwa [← agree_refl x] at this
 
-theorem UEq.symm {X : I → Type w} {U : Ultrafilter I} {x y : ∀ i, X i}
+public theorem UEq.symm {X : I → Type w} {U : Ultrafilter I} {x y : ∀ i, X i}
     (h : UEq U x y) : UEq U y x := by
   have he : agree x y = agree y x := Sub.ext fun _ => ⟨Eq.symm, Eq.symm⟩
   unfold UEq at h ⊢; rwa [he] at h
 
-theorem UEq.trans {X : I → Type w} {U : Ultrafilter I} {x y z : ∀ i, X i}
+public theorem UEq.trans {X : I → Type w} {U : Ultrafilter I} {x y z : ∀ i, X i}
     (hxy : UEq U x y) (hyz : UEq U y z) : UEq U x z := by
   -- {x = y} ∩ {y = z} ⊆ {x = z}, and the intersection is in U.
   have hcap : U.toFilter.sets (agree x y ∩ᵤ agree y z) := U.toFilter.inter_mem hxy hyz
   exact U.toFilter.up_closed hcap (fun i ⟨h1, h2⟩ => h1.trans h2)
 
 /-- The ultra-product setoid on `∀ i, X i`. -/
-def ultraSetoid {X : I → Type w} (U : Ultrafilter I) : Setoid (∀ i, X i) where
+@[expose] public def ultraSetoid {X : I → Type w} (U : Ultrafilter I) : Setoid (∀ i, X i) where
   r := UEq U
   iseqv := ⟨UEq.refl U, UEq.symm, UEq.trans⟩
 
 /-- **The ultra-product** of a family `X : I → Type w` modulo an ultrafilter `U`. -/
-def Ultraproduct (X : I → Type w) (U : Ultrafilter I) : Type (max u w) :=
+@[expose] public def Ultraproduct (X : I → Type w) (U : Ultrafilter I) : Type (max u w) :=
   Quotient (ultraSetoid (X := X) U)
 
 namespace Ultraproduct
@@ -84,12 +86,12 @@ namespace Ultraproduct
 variable {X : I → Type w} {Y : I → Type w} {Z : I → Type w} {U : Ultrafilter I}
 
 /-- The class of a section `x : ∀ i, X i`. -/
-def mk (U : Ultrafilter I) (x : ∀ i, X i) : Ultraproduct X U := Quotient.mk (ultraSetoid U) x
+@[expose] public def mk (U : Ultrafilter I) (x : ∀ i, X i) : Ultraproduct X U := Quotient.mk (ultraSetoid U) x
 
 @[simp] theorem mk_eq (x : ∀ i, X i) : Quotient.mk (ultraSetoid (X := X) U) x = mk U x := rfl
 
 /-- Agreement on a `U`-large set implies equal classes (`Quot.sound`). -/
-theorem sound {x y : ∀ i, X i} (h : U.toFilter.sets (agree x y)) : mk U x = mk U y :=
+public theorem sound {x y : ∀ i, X i} (h : U.toFilter.sets (agree x y)) : mk U x = mk U y :=
   Quotient.sound h
 
 /-- Equal classes give agreement on a `U`-large set (`Quotient.exact`). -/
@@ -98,7 +100,7 @@ theorem exact {x y : ∀ i, X i} (h : mk U x = mk U y) : U.toFilter.sets (agree 
 
 /-- Eliminator: every element of the ultra-product is the class of some section. -/
 @[elab_as_elim]
-theorem ind {motive : Ultraproduct X U → Prop} (h : ∀ x, motive (mk U x)) :
+public theorem ind {motive : Ultraproduct X U → Prop} (h : ∀ x, motive (mk U x)) :
     ∀ q, motive q := Quotient.ind h
 
 /-! ## Functoriality
@@ -108,25 +110,25 @@ A family of maps `f : ∀ i, X i → Y i` acts coordinatewise and descends to cl
 of their `f`-images. -/
 
 /-- The coordinatewise action of a family of maps on sections. -/
-def liftSection (f : ∀ i, X i → Y i) (x : ∀ i, X i) : ∀ i, Y i := fun i => f i (x i)
+@[expose] public def liftSection (f : ∀ i, X i → Y i) (x : ∀ i, X i) : ∀ i, Y i := fun i => f i (x i)
 
 /-- **Functoriality.**  A family `f : ∀ i, X i → Y i` induces a map on ultra-products. -/
-def map (f : ∀ i, X i → Y i) (U : Ultrafilter I) : Ultraproduct X U → Ultraproduct Y U :=
+@[expose] public def map (f : ∀ i, X i → Y i) (U : Ultrafilter I) : Ultraproduct X U → Ultraproduct Y U :=
   Quotient.lift (fun x => mk U (liftSection f x)) <| by
     intro x y h
     -- {x = y} ⊆ {f∘x = f∘y}, so the image classes agree.
     refine sound (U.toFilter.up_closed h (fun i hi => ?_))
     simp only [agree, liftSection] at hi ⊢; rw [hi]
 
-@[simp] theorem map_mk (f : ∀ i, X i → Y i) (x : ∀ i, X i) :
+@[simp] public theorem map_mk (f : ∀ i, X i → Y i) (x : ∀ i, X i) :
     map f U (mk U x) = mk U (liftSection f x) := rfl
 
 /-- `map` of the identity family is the identity. -/
-@[simp] theorem map_id : map (fun _ => id) U = (id : Ultraproduct X U → _) := by
+@[simp] public theorem map_id : map (fun _ => id) U = (id : Ultraproduct X U → _) := by
   funext q; induction q using ind with | _ x => rfl
 
 /-- `map` is functorial in the family (composition). -/
-theorem map_comp (f : ∀ i, X i → Y i) (g : ∀ i, Y i → Z i) :
+public theorem map_comp (f : ∀ i, X i → Y i) (g : ∀ i, Y i → Z i) :
     map g U ∘ map f U = map (fun i => g i ∘ f i) U := by
   funext q; induction q using ind with | _ x => rfl
 
@@ -307,7 +309,7 @@ stays proper — its complement element survives in the ultra-product, so `%e(U)
 
 /-- **Injectivity transfer.**  If `f i` is injective for a `U`-large set of `i`, then `map f U` is
     injective.  (`{f x = f y} ∩ {f i injective} ⊆ {x = y}`, and both are in `U`.) -/
-theorem map_injective (f : ∀ i, X i → Y i) (U : Ultrafilter I)
+public theorem map_injective (f : ∀ i, X i → Y i) (U : Ultrafilter I)
     (hinj : U.toFilter.sets (fun i => Function.Injective (f i))) :
     Function.Injective (map f U) := by
   refine fun q r h => ?_
@@ -329,7 +331,7 @@ theorem map_injective (f : ∀ i, X i → Y i) (U : Ultrafilter I)
     is NOT hit by `map f U`: the ultra-product map is not surjective.  This is the survival of a proper
     subobject — `b` is the "missing point" the ultra-product keeps because its support coideal is in
     `U`. -/
-theorem map_not_surjective (f : ∀ i, X i → Y i) (U : Ultrafilter I) (b : ∀ i, Y i)
+public theorem map_not_surjective (f : ∀ i, X i → Y i) (U : Ultrafilter I) (b : ∀ i, Y i)
     (hmiss : U.toFilter.sets (fun i => ∀ a, f i a ≠ b i)) :
     ¬ ∃ q, map f U q = mk U b := by
   rintro ⟨q, hq⟩

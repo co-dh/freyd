@@ -1,9 +1,11 @@
-import Freyd.S1_60 open Freyd
+module
+
+public import Freyd.S1_60 open Freyd
 universe v u variable {𝒞 : Type u} [Cat.{v} 𝒞]
 namespace Freyd
 
 /-- **§1.61**: 0 is a coterminator (initial object). -/
-noncomputable def minimal_subobject_of_one_is_coterminator (h : PreLogos 𝒞) : HasCoterminator 𝒞 :=
+@[expose] public noncomputable def minimal_subobject_of_one_is_coterminator (h : PreLogos 𝒞) : HasCoterminator 𝒞 :=
   let one : 𝒞 := h.toHasTerminal.one
   let zeroSub : Subobject 𝒞 one := h.bottom one
   let zeroObj : 𝒞 := zeroSub.dom
@@ -72,7 +74,7 @@ noncomputable def minimal_subobject_of_one_is_coterminator (h : PreLogos 𝒞) :
     init_uniq := uniq }
 
 /-- **§1.61**: Any morphism to 0 is an isomorphism. -/
-theorem any_map_to_zero_is_iso (h : PreLogos 𝒞) {A : 𝒞} (f : A ⟶ (minimal_subobject_of_one_is_coterminator h).zero) :
+public theorem any_map_to_zero_is_iso (h : PreLogos 𝒞) {A : 𝒞} (f : A ⟶ (minimal_subobject_of_one_is_coterminator h).zero) :
     IsIso f := by
   let zeroObj := (minimal_subobject_of_one_is_coterminator h).zero
   let one : 𝒞 := h.toHasTerminal.one
@@ -129,7 +131,7 @@ theorem any_map_to_zero_is_iso (h : PreLogos 𝒞) {A : 𝒞} (f : A ⟶ (minima
   rw [← hu₂]; exact isIso_comp hu_iso hπ₂_iso
 
 /-- In a pre-logos, the bottom subobject's domain is a strict coterminator (§1.61). -/
-theorem prelogos_bottom_strict (h : PreLogos 𝒞) (B : 𝒞) :
+public theorem prelogos_bottom_strict (h : PreLogos 𝒞) (B : 𝒞) :
     StrictCoterminator (h.bottom B).dom := by
   intro X f
   obtain ⟨e, ei, hei1, hei2⟩ := h.bottom_dom_iso B h.toHasTerminal.one
@@ -378,7 +380,7 @@ def distributive_poset_is_prelogos [hReg : RegularCategory 𝒞] [HasSubobjectUn
 /-- **§1.615**: In a bicartesian category with images, given x₁ : A₁ → A and
     x₂ : A₂ → A, their union (image of x₁ joined with image of x₂) equals the image of
     the coproduct map [x₁, x₂] = case x₁ x₂ : A₁ + A₂ → A. -/
-theorem union_via_coproduct_image [HasImages 𝒞] [HasSubobjectUnions 𝒞] [HasBinaryCoproducts 𝒞]
+public theorem union_via_coproduct_image [HasImages 𝒞] [HasSubobjectUnions 𝒞] [HasBinaryCoproducts 𝒞]
     {A₁ A₂ A : 𝒞} (x₁ : A₁ ⟶ A) (x₂ : A₂ ⟶ A) :
     IsImage (HasBinaryCoproducts.case x₁ x₂) (HasSubobjectUnions.union (image x₁) (image x₂)) := by
   -- inclusions of the two image-pieces into the union
@@ -442,7 +444,7 @@ variable [PreLogos 𝒞]
 /-- Any MAP relation is the graph of a morphism (mutual containment).  Extract the
     morphism via `tabulated_is_map_iff_left_iso` (left leg is iso) and
     `tabulated_left_iso_eq_graph`. -/
-theorem map_to_graph {A B : 𝒞} (R : BinRel 𝒞 A B) (hR : Map R) :
+public theorem map_to_graph {A B : 𝒞} (R : BinRel 𝒞 A B) (hR : Map R) :
     ∃ q : A ⟶ B, RelLe R (graph q) ∧ RelLe (graph q) R := by
   have heq : R = BinRel.mk R.src R.colA R.colB R.isMonicPair := rfl
   rw [heq] at hR
@@ -456,7 +458,7 @@ theorem map_to_graph {A B : 𝒞} (R : BinRel 𝒞 A B) (hR : Map R) :
 
 /-- `pair x x` factors through the relation `x° ⊚ x` — the witness used to push the
     joint cover `j° ⊚ j` down into `x° ⊚ x ∪ y° ⊚ y`. -/
-theorem pairxx_factor {C₁ U : 𝒞} (x : C₁ ⟶ U) :
+public theorem pairxx_factor {C₁ U : 𝒞} (x : C₁ ⟶ U) :
     ∃ α : C₁ ⟶ ((graph x)° ⊚ (graph x)).src,
       α ≫ ((graph x)° ⊚ (graph x)).colA = x ∧ α ≫ ((graph x)° ⊚ (graph x)).colB = x := by
   let pbx := HasPullbacks.has ((graph x)°).colB ((graph x)).colA
@@ -482,7 +484,7 @@ theorem pairxx_factor {C₁ U : 𝒞} (x : C₁ ⟶ U) :
 
 /-- `graph x ⊚ (graph x)° ⊆ 1` when `x` is monic — the reciprocal self-composite of a
     monic graph is contained in the identity (`Simple` of `(graph x)°`). -/
-theorem graph_comp_recip_le_one_of_mono {A B : 𝒞} (x : A ⟶ B) (hx : Monic x) :
+public theorem graph_comp_recip_le_one_of_mono {A B : 𝒞} (x : A ⟶ B) (hx : Monic x) :
     RelLe (graph x ⊚ (graph x)°) (graph (Cat.id A)) := by
   have hp : MonicPair (x : A ⟶ B) (Cat.id A) := by
     intro W f g _ hid; simpa [Cat.comp_id] using hid
@@ -497,7 +499,7 @@ theorem graph_comp_recip_le_one_of_mono {A B : 𝒞} (x : A ⟶ B) (hx : Monic x
 /-- The intersection relation: `graph x ⊚ (graph y)° ⊆ π₁° ⊚ π₂`, where `(π₁, π₂)` is the
     pullback of `(a1, a2)` and `x, y` factor `a1, a2` through a common `uarr`.  Pointwise:
     two points sit over the same union point exactly when they come from the intersection. -/
-theorem inter_lemma {A₁ A₂ U A : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (uarr : U ⟶ A)
+public theorem inter_lemma {A₁ A₂ U A : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (uarr : U ⟶ A)
     (a1 : A₁ ⟶ A) (a2 : A₂ ⟶ A)
     (hx : x ≫ uarr = a1) (hy : y ≫ uarr = a2) :
     RelLe (graph x ⊚ (graph y)°)
@@ -561,7 +563,7 @@ theorem inter_lemma {A₁ A₂ U A : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (ua
 
 /-- Compatibility consequence: `(graph x ⊚ (graph y)°) ⊚ graph g ⊆ graph f`, using the
     intersection relation and the cocone equation `π₁ ≫ f = π₂ ≫ g`. -/
-theorem hxyg_lemma {A₁ A₂ Q I : 𝒞} (f : A₁ ⟶ Q) (g : A₂ ⟶ Q)
+public theorem hxyg_lemma {A₁ A₂ Q I : 𝒞} (f : A₁ ⟶ Q) (g : A₂ ⟶ Q)
     (π₁ : I ⟶ A₁) (π₂ : I ⟶ A₂) (xrel : BinRel 𝒞 A₁ A₂)
     (hinter : RelLe xrel ((graph π₁)° ⊚ graph π₂))
     (hcocone : π₁ ≫ f = π₂ ≫ g) :
@@ -584,7 +586,7 @@ theorem hxyg_lemma {A₁ A₂ Q I : 𝒞} (f : A₁ ⟶ Q) (g : A₂ ⟶ Q)
     _ ⊂ fr := graph_id_comp fr
 
 /-- Diagonal term: `P° ⊚ P ⊆ 1_Q` where `P = (graph x)° ⊚ graph f` and `x` is monic. -/
-theorem diag_le_one {A₁ U Q : 𝒞} (x : A₁ ⟶ U) (f : A₁ ⟶ Q) (hx : Monic x) :
+public theorem diag_le_one {A₁ U Q : 𝒞} (x : A₁ ⟶ U) (f : A₁ ⟶ Q) (hx : Monic x) :
     RelLe (((graph x)° ⊚ graph f)° ⊚ ((graph x)° ⊚ graph f)) (graph (Cat.id Q)) := by
   -- Book §1.62 (maps as relations via `↑`):  P°P = (x°f)°(x°f) ⊆ f°x·x°f
   --   = f°(xx°)f ⊆ f°·1·f = f°f ⊆ 1, the middle step using x monic (xx° ⊆ 1).
@@ -606,7 +608,7 @@ theorem diag_le_one {A₁ U Q : 𝒞} (x : A₁ ⟶ U) (f : A₁ ⟶ Q) (hx : Mo
 
 /-- Cross term: `P° ⊚ Q ⊆ 1_Q` for `P = (graph x)° ⊚ graph f`, `Q = (graph y)° ⊚ graph g`,
     given the compatibility consequence `hxyg`. -/
-theorem cross_le_one {A₁ A₂ U Q : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (f : A₁ ⟶ Q) (g : A₂ ⟶ Q)
+public theorem cross_le_one {A₁ A₂ U Q : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (f : A₁ ⟶ Q) (g : A₂ ⟶ Q)
     (hxyg : RelLe ((graph x ⊚ (graph y)°) ⊚ graph g) (graph f)) :
     RelLe (((graph x)° ⊚ graph f)° ⊚ ((graph y)° ⊚ graph g)) (graph (Cat.id Q)) := by
   -- Book §1.62 (maps as relations via `↑`):  P°Q = (x°f)°(y°g) ⊆ f°x·y°g
@@ -628,7 +630,7 @@ theorem cross_le_one {A₁ A₂ U Q : 𝒞} (x : A₁ ⟶ U) (y : A₂ ⟶ U) (f
     _ ⊂ graph (Cat.id Q) := reciprocal_comp_self_le_one f
 
 /-- Entirety ingredient: `x° ⊚ x ⊆ R ⊚ R°` when `P = (graph x)° ⊚ graph f ⊆ R`. -/
-theorem xx_le_RRrecip {A₁ U Q : 𝒞} (x : A₁ ⟶ U) (f : A₁ ⟶ Q)
+public theorem xx_le_RRrecip {A₁ U Q : 𝒞} (x : A₁ ⟶ U) (f : A₁ ⟶ Q)
     (R : BinRel 𝒞 U Q) (hPR : RelLe ((graph x)° ⊚ graph f) R) :
     RelLe ((graph x)° ⊚ graph x) (R ⊚ R°) := by
   -- Book §1.62 entire step (maps as relations via `↑`):  x°x ⊆ x°(ff°)x = (x°f)(f°x)
@@ -663,16 +665,16 @@ variable [PreLogos 𝒞]
 -- forwarding lemmas so the §1.621 descent proofs below read unchanged.
 
 /-- COPRODUCT-FREE relational union — now an alias of the unified `relUnion` (S1_60 §1.616). -/
-abbrev relUnionSub {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B := relUnion R S
+@[expose] public abbrev relUnionSub {A B : 𝒞} (R S : BinRel 𝒞 A B) : BinRel 𝒞 A B := relUnion R S
 
 /-- Universal property: `R ≤ U → S ≤ U → relUnionSub R S ≤ U`. -/
-theorem le_relUnionSub {A B : 𝒞} {R S U : BinRel 𝒞 A B}
+public theorem le_relUnionSub {A B : 𝒞} {R S U : BinRel 𝒞 A B}
     (hR : RelLe R U) (hS : RelLe S U) : RelLe (relUnionSub R S) U :=
   le_relUnion hR hS
 
 /-- Simplicity of the descent relation `R = relUnionSub P Q` from the four atomic bounds
     (coproduct-free port of `S1_62.simple_R`). -/
-theorem simple_relUnionSub {U Q : 𝒞} (P Qr : BinRel 𝒞 U Q)
+public theorem simple_relUnionSub {U Q : 𝒞} (P Qr : BinRel 𝒞 U Q)
     (hPP : RelLe (P° ⊚ P) (graph (Cat.id Q)))
     (hQQ : RelLe (Qr° ⊚ Qr) (graph (Cat.id Q)))
     (hPQ : RelLe (P° ⊚ Qr) (graph (Cat.id Q)))
@@ -701,7 +703,7 @@ theorem simple_relUnionSub {U Q : 𝒞} (P Qr : BinRel 𝒞 U Q)
 
 /-- For a subobject `S ↣ A`, the diagonal push `⟨S.dom, S.arr ≫ diag A⟩` factors through
     `relSub (S.arr° ⊚ S.arr)`.  Coproduct-free witness via `pairxx_factor`. -/
-theorem diagSub_le_relSub_xx {A : 𝒞} (S : Subobject 𝒞 A) :
+public theorem diagSub_le_relSub_xx {A : 𝒞} (S : Subobject 𝒞 A) :
     (pushMono (diag A) (diag_mono A) S).le (relSub ((graph S.arr)° ⊚ graph S.arr)) := by
   obtain ⟨α, hα1, hα2⟩ := pairxx_factor S.arr
   refine ⟨α, ?_⟩
@@ -715,7 +717,7 @@ theorem diagSub_le_relSub_xx {A : 𝒞} (S : Subobject 𝒞 A) :
     Proof: the diagonal `Δ_A` is the push of `union A₁ A₂` (entire, so `≅ A`) along `diag A`;
     `pushMono_union_le` splits it into the two diagonal pieces, each below `relSub (Aᵢ.arr°Aᵢ.arr)`
     via `diagSub_le_relSub_xx`. -/
-theorem union_joint_cover_sub {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
+public theorem union_joint_cover_sub {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
     (hCover : (HasSubobjectUnions.union A₁ A₂).IsEntire) :
     RelLe (graph (Cat.id A))
       (relUnionSub ((graph A₁.arr)° ⊚ graph A₁.arr) ((graph A₂.arr)° ⊚ graph A₂.arr)) := by
@@ -747,7 +749,7 @@ theorem union_joint_cover_sub {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
 /-- **Joint epi** (coproduct-free): when `A₁ ∪ A₂` is entire, the inclusions `A₁.arr, A₂.arr`
     are jointly epimorphic on `A`.  Mirrors `union_inclusions_cover`, replacing the generic monic
     by the equalizer of the two competing composites. -/
-theorem jointly_epi {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
+public theorem jointly_epi {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
     (hCover : (HasSubobjectUnions.union A₁ A₂).IsEntire)
     {Z : 𝒞} {p q : A ⟶ Z}
     (h1 : A₁.arr ≫ p = A₁.arr ≫ q) (h2 : A₂.arr ≫ p = A₂.arr ≫ q) : p = q := by
@@ -821,7 +823,7 @@ open DisjointGluing
     then A is the binary coproduct of A₁.dom and A₂.dom via the inclusions A₁.arr, A₂.arr.
     Here A₁ ∩ A₂ is the subobject represented by the pullback of A₁.arr along A₂.arr;
     A₁ ∩ A₂ = 0 means its domain is isomorphic to (PreLogos.bottom A).dom. -/
-theorem disjoint_cover_is_coproduct [PreLogos 𝒞]
+public theorem disjoint_cover_is_coproduct [PreLogos 𝒞]
     {A : 𝒞} (A₁ A₂ : Subobject 𝒞 A)
     -- A₁ ∩ A₂ = 0: the pullback I of A₁.arr and A₂.arr has I.dom ≅ (⊥ A).dom
     (hDisjoint : Isomorphic (HasPullbacks.has A₁.arr A₂.arr).cone.pt (PreLogos.bottom A).dom)

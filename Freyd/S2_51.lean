@@ -1,4 +1,6 @@
-import Freyd.S2_50
+module
+
+public import Freyd.S2_50
 
 universe v₁ v₂ u₁ u₂
 
@@ -40,7 +42,7 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
 /-- §2.51  The equivalence class (image under any allegory functor) of an ENTIRE
     morphism is entire.  `Entire R : dom R = 1`, i.e. `1 ∩ R≫R° = 1`; apply `F`
     and push it through `map_inter`/`map_comp`/`map_recip`/`map_id`. -/
-theorem AllegoryFunctor.preserves_entire (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
+public theorem AllegoryFunctor.preserves_entire (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
     {R : a ⟶ b} (h : Entire R) : Entire (F.map R) := by
   have h' : Cat.id a ∩ R ≫ R° = Cat.id a := h
   show Cat.id (F.obj a) ∩ F.map R ≫ (F.map R)° = Cat.id (F.obj a)
@@ -48,20 +50,20 @@ theorem AllegoryFunctor.preserves_entire (F : AllegoryFunctor 𝒜 ℬ) {a b : �
 
 /-- §2.51  The image of a SIMPLE morphism is simple.  `Simple R : R°≫R ⊑ 1`;
     apply `F.mono` and rewrite `map_comp`/`map_recip`/`map_id`. -/
-theorem AllegoryFunctor.preserves_simple (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
+public theorem AllegoryFunctor.preserves_simple (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
     {R : a ⟶ b} (h : Simple R) : Simple (F.map R) := by
   have hmono := F.mono h
   rwa [F.map_comp, F.map_recip, F.map_id] at hmono
 
 /-- §2.51  The image of a MAP (entire ∧ simple) is a map. -/
-theorem AllegoryFunctor.preserves_map (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
+public theorem AllegoryFunctor.preserves_map (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
     {R : a ⟶ b} (h : Map R) : Map (F.map R) :=
   ⟨F.preserves_entire h.1, F.preserves_simple h.2⟩
 
 /-- §2.51  A tabulating pair pushes through `F`: if `(f, g)` tabulates `R` then
     `(F f, F g)` tabulates `F R` — the legs stay maps (`preserves_map`) and the
     two tabulation equations are preserved by `map_comp`/`map_recip`/`map_inter`. -/
-theorem AllegoryFunctor.preserves_tabulates (F : AllegoryFunctor 𝒜 ℬ)
+public theorem AllegoryFunctor.preserves_tabulates (F : AllegoryFunctor 𝒜 ℬ)
     {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b} (h : Tabulates f g R) :
     Tabulates (F.map f) (F.map g) (F.map R) := by
   obtain ⟨hf, hg, hR, hcanc⟩ := h
@@ -73,7 +75,7 @@ theorem AllegoryFunctor.preserves_tabulates (F : AllegoryFunctor 𝒜 ℬ)
     rwa [F.map_inter, F.map_comp, F.map_comp, F.map_recip, F.map_recip, F.map_id] at hc
 
 /-- §2.51  The image of a TABULAR morphism is tabular. -/
-theorem AllegoryFunctor.preserves_tabular (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
+public theorem AllegoryFunctor.preserves_tabular (F : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜}
     {R : a ⟶ b} (h : Tabular R) : Tabular (F.map R) := by
   obtain ⟨c, f, g, ht⟩ := h
   exact ⟨F.obj c, F.map f, F.map g, F.preserves_tabulates ht⟩
@@ -85,7 +87,7 @@ theorem AllegoryFunctor.preserves_tabular (F : AllegoryFunctor 𝒜 ℬ) {a b : 
 variable {𝒜' : Type u₁} [Allegory.{v₁} 𝒜'] (C : Congruence 𝒜')
 
 /-- §2.51  The equivalence class of an ENTIRE morphism is entire. -/
-theorem quotRep_preserves_entire {a b : 𝒜'} {R : a ⟶ b} (h : Entire R) :
+public theorem quotRep_preserves_entire {a b : 𝒜'} {R : a ⟶ b} (h : Entire R) :
     Entire ((quotRep C).map R) := (quotRep C).preserves_entire h
 
 /-- §2.51  The equivalence class of a SIMPLE morphism is simple. -/
@@ -93,11 +95,11 @@ theorem quotRep_preserves_simple {a b : 𝒜'} {R : a ⟶ b} (h : Simple R) :
     Simple ((quotRep C).map R) := (quotRep C).preserves_simple h
 
 /-- §2.51  The equivalence class of a MAP is a map. -/
-theorem quotRep_preserves_map {a b : 𝒜'} {R : a ⟶ b} (h : Map R) :
+public theorem quotRep_preserves_map {a b : 𝒜'} {R : a ⟶ b} (h : Map R) :
     Map ((quotRep C).map R) := (quotRep C).preserves_map h
 
 /-- §2.51  The equivalence class of a TABULAR morphism is tabular. -/
-theorem quotRep_preserves_tabular {a b : 𝒜'} {R : a ⟶ b} (h : Tabular R) :
+public theorem quotRep_preserves_tabular {a b : 𝒜'} {R : a ⟶ b} (h : Tabular R) :
     Tabular ((quotRep C).map R) := (quotRep C).preserves_tabular h
 
 /-! ## §2.51  (Partial) units

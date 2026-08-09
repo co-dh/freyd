@@ -16,7 +16,9 @@
   to the hypothesis class; it is now DISCHARGED for every topos, unblocking S1_97.
 -/
 
-import Freyd.S1_94_InternalForallTopos
+module
+
+public import Freyd.S1_94_InternalForallTopos
 
 universe v u
 
@@ -30,7 +32,7 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [Topos 𝒞]
 
 /-- The `t`-stability body `prod A [A] → Ω`, `(x,σ) ↦ (x∈σ) ⇒ (t(x)∈σ)`.  `x∈σ` is
     `⟨fst,snd⟩ ≫ eval`; `t(x)∈σ` is `⟨fst≫t, snd⟩ ≫ eval`. -/
-noncomputable def tStableBody {A : 𝒞} (t : A ⟶ A) : prod A (powObj A) ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def tStableBody {A : 𝒞} (t : A ⟶ A) : prod A (powObj A) ⟶ omega (𝒞 := 𝒞) :=
   pair
     (pair fst snd ≫ eval_exp A (omega (𝒞 := 𝒞)))
     (pair (fst ≫ t) snd ≫ eval_exp A (omega (𝒞 := 𝒞)))
@@ -39,21 +41,21 @@ noncomputable def tStableBody {A : 𝒞} (t : A ⟶ A) : prod A (powObj A) ⟶ o
 /-- The internal `t`-stability test `tStable t : [A] → Ω`, `σ ↦ ∀x:A. x∈σ ⇒ t(x)∈σ`.
     Built with the fibered-∀ trick: curry `tStableBody t` in the `x`-slot, then quantify
     over `x : A` with `forallC A` (same recipe as `predF`/`bigInterChar`). -/
-noncomputable def tStable {A : 𝒞} (t : A ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def tStable {A : 𝒞} (t : A ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
   curry (tStableBody t) ≫ forallC A
 
 /-- The closedness characteristic map `closedChar a t : [A] → Ω`,
     `σ ↦ (a ∈ σ) ∧ (∀x. x∈σ ⇒ t(x)∈σ)`: the meet of `memAtPoint a` and `tStable t`. -/
-noncomputable def closedChar {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def closedChar {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) : powObj A ⟶ omega (𝒞 := 𝒞) :=
   pair (memAtPoint a) (tStable t) ≫ omegaMeet
 
 /-- The family name `closedFamily a t : 1 → [[A]]` of `F = {σ : [A] | closedChar a t}`. -/
-noncomputable def closedFamily {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) : one ⟶ powObj (powObj A) :=
+@[expose] public noncomputable def closedFamily {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) : one ⟶ powObj (powObj A) :=
   curry (fst ≫ closedChar a t)
 
 /-- **KEY LEMMA — `membershipMap (closedFamily a t) = closedChar a t`.**  Mirrors
     `membershipMap_imageFamily`, via the general `membershipMap_curry_fst`. -/
-theorem membershipMap_closedFamily {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
+public theorem membershipMap_closedFamily {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
     membershipMap (closedFamily a t) = closedChar a t := by
   rw [closedFamily, membershipMap_curry_fst]
 
@@ -61,7 +63,7 @@ theorem membershipMap_closedFamily {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
 
 /-- **`memAtPoint` at a name.**  For `σ : 1 → [A]`, `σ ≫ memAtPoint a = a ≫ membershipMap σ`,
     i.e. `a ∈ (named σ)`.  Both sides are `⟨a, σ⟩ ≫ eval` after the terminal collapses. -/
-theorem memAtPoint_at_name {A : 𝒞} (a : one ⟶ A) (σ : one ⟶ powObj A) :
+public theorem memAtPoint_at_name {A : 𝒞} (a : one ⟶ A) (σ : one ⟶ powObj A) :
     σ ≫ memAtPoint a = a ≫ membershipMap σ := by
   rw [memAtPoint, membershipMap, ← Cat.assoc, ← Cat.assoc]
   congr 1
@@ -78,7 +80,7 @@ theorem memAtPoint_at_name {A : 𝒞} (a : one ⟶ A) (σ : one ⟶ powObj A) :
 /-- **`tStable` at a name (membership-map form).**  For `σ : 1 → [A]`, the membership map of
     the `A`-indexed name `σ ≫ curry (tStableBody t)` is the Heyting implication
     `(membershipMap σ) ⇒ (t ≫ membershipMap σ)` on `A` — i.e. `x ↦ (x∈σ) ⇒ (t(x)∈σ)`. -/
-theorem membershipMap_tStable_name {A : 𝒞} (t : A ⟶ A) (σ : one ⟶ powObj A) :
+public theorem membershipMap_tStable_name {A : 𝒞} (t : A ⟶ A) (σ : one ⟶ powObj A) :
     membershipMap (σ ≫ curry (tStableBody t))
       = pair (membershipMap σ) (t ≫ membershipMap σ) ≫ impΩ := by
   -- membershipMap G = ⟨id, term ≫ G⟩ ≫ eval; eval_curry_point collapses curry at point σ.
@@ -114,7 +116,7 @@ theorem membershipMap_tStable_name {A : 𝒞} (t : A ⟶ A) (σ : one ⟶ powObj
     characteristic maps of subobjects `S, T` with `S ≤ T`, then `⟨χS, χT⟩ ≫ impΩ = ⊤∘!`,
     i.e. the comprehension `{x | χS(x) ⇒ χT(x)}` is the entire subobject.  Routes through
     `imp_adjunction` exactly like `bigInter_ge`/`allows_imageF`. -/
-theorem impΩ_entire_of_le {A : 𝒞} (S T : Subobject 𝒞 A) (hle : S.le T) :
+public theorem impΩ_entire_of_le {A : 𝒞} (S T : Subobject 𝒞 A) (hle : S.le T) :
     pair (subChar S) (subChar T) ≫ impΩ
       = term A ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   rw [pair_impΩ]
@@ -136,7 +138,7 @@ theorem impΩ_entire_of_le {A : 𝒞} (S T : Subobject 𝒞 A) (hle : S.le T) :
 /-- **`t`-stability of a subobject `B`, internalized.**  If `B ↣ A` is `t`-stable
     (`tS ≫ B.arr = B.arr ≫ t` for some `tS`), then `'B' ≫ tStable t = ⊤∘!`: the name
     of `B` passes the internal `t`-stability test `∀x. x∈B ⇒ t(x)∈B`. -/
-theorem tStable_name_true {A : 𝒞} (t : A ⟶ A) (B : Subobject 𝒞 A)
+public theorem tStable_name_true {A : 𝒞} (t : A ⟶ A) (B : Subobject 𝒞 A)
     (tS : B.dom ⟶ B.dom) (htS : tS ≫ B.arr = B.arr ≫ t) :
     nameOf B.arr B.monic ≫ tStable t = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
   rw [tStable, ← Cat.assoc]
@@ -163,7 +165,7 @@ theorem tStable_name_true {A : 𝒞} (t : A ⟶ A) (B : Subobject 𝒞 A)
 
 /-- **`memAtPoint` at a name is true iff the point is allowed.**  `'B' ≫ memAtPoint a = ⊤∘!`
     exactly when `Allows B a` (i.e. `a` factors through `B`). -/
-theorem memAtPoint_name_true_iff {A : 𝒞} (a : one ⟶ A) (B : Subobject 𝒞 A) :
+public theorem memAtPoint_name_true_iff {A : 𝒞} (a : one ⟶ A) (B : Subobject 𝒞 A) :
     nameOf B.arr B.monic ≫ memAtPoint a = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)
       ↔ Allows B a := by
   rw [memAtPoint_at_name, membershipMap_nameOf]
@@ -172,7 +174,7 @@ theorem memAtPoint_name_true_iff {A : 𝒞} (a : one ⟶ A) (B : Subobject 𝒞 
 /-- **§1.987 — `least_le`.**  For every `(a,t)`-closed `B`, the family-glb
     `bigInter (closedFamily a t)` lies below `B`.  The name `'B'` is a member of the
     closedness family (`closedChar` true at `'B'`), so `bigInter_le_named` applies. -/
-theorem least_le_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) (B : Subobject 𝒞 A)
+public theorem least_le_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) (B : Subobject 𝒞 A)
     (hB : IsClosedSub B a t) : (bigInter (closedFamily a t)).le B := by
   obtain ⟨hAllows, tS, htS⟩ := hB
   refine bigInter_le_named (closedFamily a t) B ?_
@@ -186,7 +188,7 @@ theorem least_le_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) (B : Subobject 
 /-- **§1.987 — the family-glb ALLOWS `a`.**  `Allows (bigInter (closedFamily a t)) a`.
     Via `bigInter_ge`: the closedness family `F0 = {σ | closedChar}` lies below
     `Ga = {σ | a∈σ}` (since `closedChar`'s first conjunct IS `memAtPoint a`), so `a ∈ ⋂F`. -/
-theorem least_allows {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
+public theorem least_allows {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
     Allows (bigInter (closedFamily a t)) a := by
   -- realize closedChar and memAtPoint a as subobjects F0, Ga of [A].
   obtain ⟨_, mF, hmF, hSF⟩ := classify_surjective (closedChar a t)
@@ -215,7 +217,7 @@ theorem least_allows {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
 
     This is ∀-elimination of `tStableBody` at `x` plus modus ponens (`impΩ_forward`),
     mirroring `imageF_carrier_in_mem`. -/
-theorem tStable_gen {A K : 𝒞} (t : A ⟶ A) (k : K ⟶ powObj A) (x : K ⟶ A)
+public theorem tStable_gen {A K : 𝒞} (t : A ⟶ A) (k : K ⟶ powObj A) (x : K ⟶ A)
     (hk : k ≫ tStable t = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hx : pair x k ≫ eval_exp A (omega (𝒞 := 𝒞)) = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
     pair (x ≫ t) k ≫ eval_exp A (omega (𝒞 := 𝒞))
@@ -259,7 +261,7 @@ theorem tStable_gen {A K : 𝒞} (t : A ⟶ A) (k : K ⟶ powObj A) (x : K ⟶ A
 
     ∀-elimination of `bigInterBody` at the member `σ` (from `p ∈ ⋂F`) plus modus ponens; the
     lower-bound argument of `bigInter_le_named` at a generalized point. -/
-theorem bigInter_point_in_member {A K : 𝒞} (Fname : one ⟶ powObj (powObj A))
+public theorem bigInter_point_in_member {A K : 𝒞} (Fname : one ⟶ powObj (powObj A))
     (p : K ⟶ A) (σ : K ⟶ powObj A)
     (hp : p ≫ bigInterChar Fname = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hmem : σ ≫ membershipMap Fname = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -293,7 +295,7 @@ theorem bigInter_point_in_member {A K : 𝒞} (Fname : one ⟶ powObj (powObj A)
     `t`-stable (`tStable_gen`), so `t(c) ∈ σ` for every member σ; hence `t(c) ∈ ⋂F`.  The proof
     mirrors `allows_imageF`: reduce `Allows (⋂F) (c≫t)` to a prod-body equation over `prod [A] D`
     and discharge it by `imp_adjunction` (`impΩ_entire_of_le`-style) from `S_F ≤ S_In`. -/
-theorem least_tStable {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
+public theorem least_tStable {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
     ∃ tS : (bigInter (closedFamily a t)).dom ⟶ (bigInter (closedFamily a t)).dom,
       tS ≫ (bigInter (closedFamily a t)).arr = (bigInter (closedFamily a t)).arr ≫ t := by
   -- It suffices to show Allows (⋂F) (c ≫ t).
@@ -423,7 +425,7 @@ theorem least_tStable {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
 
 /-- **§1.987 — the family-glb is `(a,t)`-closed.**  Bundles `least_allows` (allows `a`) and
     `least_tStable` (`t`-stable). -/
-theorem least_isClosed_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
+public theorem least_isClosed_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
     IsClosedSub (bigInter (closedFamily a t)) a t :=
   ⟨least_allows a t, least_tStable a t⟩
 
@@ -432,7 +434,7 @@ theorem least_isClosed_closed {A : 𝒞} (a : one ⟶ A) (t : A ⟶ A) :
     `{σ : [A] | (a∈σ) ∧ (∀x. x∈σ ⇒ t(x)∈σ)}`.  This discharges, for every topos, the
     `HasLeastClosedSubobject` hypothesis that `Freyd/InternalForall.lean` relocated — unblocking
     S1_97's `least_peano_subobject`. -/
-noncomputable instance toposHasLeastClosedSubobject : HasLeastClosedSubobject 𝒞 where
+@[expose] public noncomputable instance toposHasLeastClosedSubobject : HasLeastClosedSubobject 𝒞 where
   least a t := bigInter (closedFamily a t)
   least_isClosed a t := least_isClosed_closed a t
   least_le a t B hB := least_le_closed a t B hB
@@ -449,7 +451,7 @@ noncomputable instance toposHasLeastClosedSubobject : HasLeastClosedSubobject �
   the ALLOWS half and `least_le`/`bigInter_*` are object-only and reused verbatim. -/
 
 /-- Generalised stability body `prod P [M] → Ω`, `(p,σ) ↦ (proj(p)∈σ) ⇒ (r(p)∈σ)`. -/
-noncomputable def genStableBody {M P : 𝒞} (r proj : P ⟶ M) :
+@[expose] public noncomputable def genStableBody {M P : 𝒞} (r proj : P ⟶ M) :
     prod P (powObj M) ⟶ omega (𝒞 := 𝒞) :=
   pair
     (pair (fst ≫ proj) snd ≫ eval_exp M (omega (𝒞 := 𝒞)))
@@ -458,11 +460,11 @@ noncomputable def genStableBody {M P : 𝒞} (r proj : P ⟶ M) :
 
 /-- Generalised stability test `genStable r proj : [M] → Ω`,
     `σ ↦ ∀p:P. proj(p)∈σ ⇒ r(p)∈σ`. -/
-noncomputable def genStable {M P : 𝒞} (r proj : P ⟶ M) : powObj M ⟶ omega (𝒞 := 𝒞) :=
+@[expose] public noncomputable def genStable {M P : 𝒞} (r proj : P ⟶ M) : powObj M ⟶ omega (𝒞 := 𝒞) :=
   curry (genStableBody r proj) ≫ forallC P
 
 /-- Membership-map of a `genStable` name (mirrors `membershipMap_tStable_name`). -/
-theorem membershipMap_genStable_name {M P : 𝒞} (r proj : P ⟶ M) (σ : one ⟶ powObj M) :
+public theorem membershipMap_genStable_name {M P : 𝒞} (r proj : P ⟶ M) (σ : one ⟶ powObj M) :
     membershipMap (σ ≫ curry (genStableBody r proj))
       = pair (proj ≫ membershipMap σ) (r ≫ membershipMap σ) ≫ impΩ := by
   show pair (Cat.id P) (term P ≫ (σ ≫ curry (genStableBody r proj)))
@@ -503,7 +505,7 @@ theorem membershipMap_genStable_name {M P : 𝒞} (r proj : P ⟶ M) (σ : one �
     when its `proj`-preimage lies in its `r`-preimage (`proj(p)∈B ⟹ r(p)∈B`); then
     `'B' ≫ genStable r proj = ⊤`.  Mirrors `tStable_name_true` (the endo case `proj=id,r=t`,
     where `B ≤ InverseImage t B` is exactly that). -/
-theorem genStable_name_true {M P : 𝒞} (r proj : P ⟶ M) (B : Subobject 𝒞 M)
+public theorem genStable_name_true {M P : 𝒞} (r proj : P ⟶ M) (B : Subobject 𝒞 M)
     (hstab : (InverseImage proj B).le (InverseImage r B)) :
     nameOf B.arr B.monic ≫ genStable r proj
       = term one ≫ HasSubobjectClassifier.true (𝒞 := 𝒞) := by
@@ -526,7 +528,7 @@ theorem genStable_name_true {M P : 𝒞} (r proj : P ⟶ M) (B : Subobject 𝒞 
 /-- Generalised `genStable_gen` (∀-elimination + MP).  If `k : K → [M]` passes `genStable r proj`
     and a generalised point `proj(p) : K → M` lies in `k` (via `p : K → P`), then `r(p)` lies in
     `k` too.  Mirrors `tStable_gen`. -/
-theorem genStable_gen {M P K : 𝒞} (r proj : P ⟶ M) (k : K ⟶ powObj M) (p : K ⟶ P)
+public theorem genStable_gen {M P K : 𝒞} (r proj : P ⟶ M) (k : K ⟶ powObj M) (p : K ⟶ P)
     (hk : k ≫ genStable r proj = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞))
     (hx : pair (p ≫ proj) k ≫ eval_exp M (omega (𝒞 := 𝒞))
         = term K ≫ HasSubobjectClassifier.true (𝒞 := 𝒞)) :
@@ -564,25 +566,25 @@ theorem genStable_gen {M P K : 𝒞} (r proj : P ⟶ M) (k : K ⟶ powObj M) (p 
 
 /-- Parametrised closedness characteristic `actClosedChar a r proj : [M] → Ω`,
     `σ ↦ (a∈σ) ∧ ∀p:P. proj(p)∈σ ⇒ r(p)∈σ`. -/
-noncomputable def actClosedChar {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
+@[expose] public noncomputable def actClosedChar {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     powObj M ⟶ omega (𝒞 := 𝒞) :=
   pair (memAtPoint a) (genStable r proj) ≫ omegaMeet
 
 /-- Family name of `{σ : [M] | actClosedChar a r proj}`. -/
-noncomputable def actClosedFamily {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
+@[expose] public noncomputable def actClosedFamily {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     one ⟶ powObj (powObj M) :=
   curry (fst ≫ actClosedChar a r proj)
 
-theorem membershipMap_actClosedFamily {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
+public theorem membershipMap_actClosedFamily {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     membershipMap (actClosedFamily a r proj) = actClosedChar a r proj := by
   rw [actClosedFamily, membershipMap_curry_fst]
 
 /-- The parametrised least `(a, r, proj)`-closed subobject `actLeast a r proj ⊆ M`. -/
-noncomputable def actLeast {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) : Subobject 𝒞 M :=
+@[expose] public noncomputable def actLeast {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) : Subobject 𝒞 M :=
   bigInter (actClosedFamily a r proj)
 
 /-- **ALLOWS `a`** (mirrors `least_allows`). -/
-theorem actLeast_allows {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
+public theorem actLeast_allows {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     Allows (actLeast a r proj) a := by
   obtain ⟨_, mF, hmF, hSF⟩ := classify_surjective (actClosedChar a r proj)
   obtain ⟨_, mG, hmG, hSG⟩ := classify_surjective (memAtPoint a)
@@ -602,7 +604,7 @@ theorem actLeast_allows {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     exact ((meet_true_iff_and (memAtPoint a) (genStable r proj) F0.arr).1 hcar).1
 
 /-- **`actLeast ≤ B`** for every `(a, r, proj)`-closed `B` (mirrors `least_le_closed`). -/
-theorem actLeast_le {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) (B : Subobject 𝒞 M)
+public theorem actLeast_le {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) (B : Subobject 𝒞 M)
     (hAllows : Allows B a) (hstab : (InverseImage proj B).le (InverseImage r B)) :
     (actLeast a r proj).le B := by
   refine bigInter_le_named (actClosedFamily a r proj) B ?_
@@ -612,7 +614,7 @@ theorem actLeast_le {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) (B : Subobje
 
 /-- **`actLeast` is `(r,proj)`-STABLE** (mirrors `least_tStable`).  Its `proj`-preimage lies in its
     `r`-preimage: `proj(p) ∈ actLeast ⟹ r(p) ∈ actLeast`. -/
-theorem actLeast_stable {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
+public theorem actLeast_stable {M P : 𝒞} (a : one ⟶ M) (r proj : P ⟶ M) :
     (InverseImage proj (actLeast a r proj)).le (InverseImage r (actLeast a r proj)) := by
   let Fname : one ⟶ powObj (powObj M) := actClosedFamily a r proj
   show (InverseImage proj (bigInter Fname)).le (InverseImage r (bigInter Fname))

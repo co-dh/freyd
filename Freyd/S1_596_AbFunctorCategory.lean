@@ -33,8 +33,10 @@
   of `𝒮^𝒜` (§1.422).
 -/
 
-import Freyd.S1_422_FunctorCategory
-import Freyd.S1_595_AbRegular
+module
+
+public import Freyd.S1_422_FunctorCategory
+public import Freyd.S1_595_AbRegular
 
 open Freyd
 

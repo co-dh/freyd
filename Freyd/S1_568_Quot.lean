@@ -17,7 +17,9 @@
 -/
 
 
-import Freyd.S1_56
+module
+
+public import Freyd.S1_56
 
 
 open Freyd
@@ -32,7 +34,7 @@ namespace Freyd
 
 /-- A candidate QUOTIENT-OBJECT of `A`: a cover with source `A`
     (codomain `cod`, cover `arr : A ⟶ cod`).  The dual side to `Subobject`. -/
-structure QuotObj (𝒞 : Type u) [Cat.{v} 𝒞] (A : 𝒞) where
+public structure QuotObj (𝒞 : Type u) [Cat.{v} 𝒞] (A : 𝒞) where
   cod   : 𝒞
   arr   : A ⟶ cod
   cover : Cover arr
@@ -40,20 +42,20 @@ structure QuotObj (𝒞 : Type u) [Cat.{v} 𝒞] (A : 𝒞) where
 /-- §1.568 order on covers: `f ≤ g` iff `f` FACTORS THROUGH `g`, i.e. there is
     `h : g.cod ⟶ f.cod` with `g.arr ≫ h = f.arr` (diagram order).  Note the
     factoring is on the codomain side — the mirror image of `Subobject.le`. -/
-def QuotObj.le {A : 𝒞} (f g : QuotObj 𝒞 A) : Prop :=
+@[expose] public def QuotObj.le {A : 𝒞} (f g : QuotObj 𝒞 A) : Prop :=
   ∃ h : g.cod ⟶ f.cod, g.arr ≫ h = f.arr
 
 @[refl] theorem QuotObj.le_refl {A : 𝒞} (f : QuotObj 𝒞 A) : f.le f :=
   ⟨Cat.id f.cod, Cat.comp_id f.arr⟩
 
-theorem QuotObj.le_trans {A : 𝒞} {X Y Z : QuotObj 𝒞 A}
+public theorem QuotObj.le_trans {A : 𝒞} {X Y Z : QuotObj 𝒞 A}
     (h₁ : X.le Y) (h₂ : Y.le Z) : X.le Z :=
   let ⟨f, hf⟩ := h₁; let ⟨g, hg⟩ := h₂
   -- X factors through Y (`Y.arr ≫ f = X.arr`), Y through Z (`Z.arr ≫ g = Y.arr`),
   -- so X factors through Z via `g ≫ f`.
   ⟨g ≫ f, by rw [← Cat.assoc, hg, hf]⟩
 
-instance {A : 𝒞} : Trans (@QuotObj.le 𝒞 _ A) (@QuotObj.le 𝒞 _ A) (@QuotObj.le 𝒞 _ A) :=
+@[expose] public instance {A : 𝒞} : Trans (@QuotObj.le 𝒞 _ A) (@QuotObj.le 𝒞 _ A) (@QuotObj.le 𝒞 _ A) :=
   ⟨QuotObj.le_trans⟩
 
 /-- §1.246/§1.568  ANTISYMMETRY up to iso: two mutually-`≤` covers with source `A`
