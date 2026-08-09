@@ -1130,27 +1130,122 @@ the pairing above. The border spells `[R,S] = [Λ(R), Λ(S)] ∋`, and pushing `
 == The power relator `P R`
 
 #definition[
-For `R : A ⟶ B`, #h(4pt) `P R ≜ ((∋R)/∋) ∩ ((∋R°)/∋)° : [A] ⟶ [B]`.
+For `R : A ⟶ B`, #h(4pt) `P R ≜ ((∋ R)/∋) ∩ ((∋ R°)/∋)° : [A] ⟶ [B]`.
 ]
 
-`∋R : [A] ⟶ B` is what a list of markets retails between them. So `x (P R) y` when every ingredient
-on `y` is retailed by some market on `x`, and every market on `x` retails something on `y`: the
-ingredient list is covered, and no market on the list is idle.
+`∋ R` is a *composition* — `∋ : [A] ⟶ A` followed by `R` — and not Freyd's subscripted $#e[R]$,
+which is the `∋` at `R`'s *target*: §11 writes one `∋` per object and drops the subscript. Piece by
+piece, on one instance, with `x, y` lists and `a, b` their elements.
+
+// §10's picture — a column per type, every arrow pointing at the dot it names — drawn THREE times on
+// ONE instance, a row of the table above per picture.  The `∋` fans point INWARD at the element
+// columns and `R` runs between them, so no fan ever shares a horizontal band with `R`.  The lists
+// keep their coordinates across the three, so the reader compares them by looking at the same place
+// twice; and the two lists `P R` accepts are the top and the bottom one, which is what lets both of
+// its arcs sweep clear of every other node.
+#let LX = (-8.6, 0)
+#let AD = (a1: (-4.6, 1.6), a2: (-4.6, -1.6))
+#let BD = (b1: (0.6, 2.2), b2: (0.6, 0), b3: (0.6, -2.2))
+#let LY = (y1: (5.6, 3.3), y2: (5.6, 1.1), y3: (5.6, -1.1), y4: (5.6, -3.3))
+
+// `x`, its `∋` fan, `R`, and the elements — everything all three pictures share.  `body` is drawn
+// between the shared part and `x`'s own box, so an arc drawn there has its tail tucked under that
+// box and its head under the list box it lands on, the way §10 hides an arc's ends.
+#let skel(body) = {
+  for a in (AD.a1, AD.a2) { syqedge(LX, a, PAL.at(0), 1.1) }
+  ar(AD.a1, BD.b1, RW, s0: 0.3, s1: 0.3); ar(AD.a1, BD.b3, RW, s0: 0.3, s1: 0.3)
+  ar(AD.a2, BD.b3, RW, s0: 0.3, s1: 0.3)
+  for p in (AD.a1, AD.a2) { d.circle(p, radius: 0.17, fill: black, stroke: black) }
+  // Filled = reached from `x`, hollow = not.  That colouring IS `∋ R`, and the next two pictures do
+  // nothing but read lists off these three dots.
+  for p in (BD.b1, BD.b3) { d.circle(p, radius: 0.17, fill: ARC, stroke: ARC) }
+  d.circle(BD.b2, radius: 0.17, fill: white, stroke: 0.9pt + black)
+  lab(-4.6, 2.35, black)[`a₁`]; lab(-4.6, -2.35, black)[`a₂`]
+  // `b₁`'s label goes to its RIGHT: above the dot it lands on the head of the first picture's arc.
+  lab(1.5, 2.7, black)[`b₁`]; lab(0.6, 0.75, black)[`b₂`]; lab(0.6, -1.45, black)[`b₃`]
+  lab(-6.6, 0, PAL.at(0))[`∋`]; lab(-2.0, 2.6, RW)[`R`]
+  body
+  syqnode(LX, ARC, rgb("#f2e9f8"), `x = {a₁,a₂}`, ring: 0.7pt + ARC)
+}
+// A list over `B`: its `∋` fan and its box, washed out when the picture rejects it.
+#let ylist(p, es, w, on: true) = {
+  let (col, wt) = if on { (PAL.at(1), 1.1) } else { (PAL.at(1).lighten(60%), 0.7) }
+  for b in es { syqedge(p, b, col, wt) }
+  if on { syqnode(p, ARC, rgb("#f2e9f8"), w, ring: 0.7pt + ARC) } else { syqnode(p, black, white, w) }
+}
+
+`x = {a₁,a₂}`, and `R` sends `a₁` to `b₁` and `b₃`, `a₂` to `b₃` alone. Nothing on `x` reaches `b₂`,
+so `b₂` is drawn hollow.
+
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
+  arc(LX, BD.b1, 1, [`∋ R`], h: 4.2, cx: 5)
+  arc(LX, BD.b3, -1, [`∋ R`], h: 4.2, cx: 5)
+}))))
+// The arrow and its `Rel` reading go UNDER the picture that draws them, one pair per picture: read
+// against the drawing they were just given, where a table of all three read against nothing.
+#align(center, block(inset: (y: 6pt))[
+  `∋ R : [A] ⟶ B` #h(1.4cm) `x (∋ R) b ⟺ ∃a ∈ x. a R b`
+])
+#align(center, src[one arc per element of `B` that `x` reaches, and `b₂` gets none])
+
+Dividing by `∋` turns that into a relation between *lists*: every element of `y` must be one of the
+filled dots.
+
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
+  arc(LX, LY.y1, 1, [`(∋ R)/∋`], h: 5.6, cx: 6)
+  lab(3.2, 3.4, PAL.at(1))[`∋`]
+  ylist(LY.y1, (BD.b1, BD.b3), `y₁ = {b₁,b₃}`)
+  ylist(LY.y3, (BD.b2, BD.b3), `y₃ = {b₂,b₃}`, on: false)
+}))))
+#align(center, block(inset: (y: 6pt))[
+  `(∋ R)/∋ : [A] ⟶ [B]` #h(1.4cm) `x ((∋ R)/∋) y ⟺ ∀b ∈ y. ∃a ∈ x. a R b`
+])
+#align(center, src[`y₃` is rejected: it names `b₂`, which `x` does not reach])
+
+// Lead-in, picture and readings in ONE unbreakable block: left to itself the sentence ends page 17
+// and the picture opens page 18, so the reader turns the page between "them" and them.
+#block(breakable: false)[
+The other half of the meet is that clause with the lists swapped and `R` turned round: every element
+of `x` must reach `y`. Both together, and two more lists to separate them:
+
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
+  arc(LX, LY.y1, 1, [`P R`], h: 5.6, cx: 6)
+  arc(LX, LY.y4, -1, [`P R`], h: 5.6, cx: 6)
+  lab(3.2, 3.4, PAL.at(1))[`∋`]
+  ylist(LY.y1, (BD.b1, BD.b3), `y₁ = {b₁,b₃}`)
+  ylist(LY.y2, (BD.b1,), `y₂ = {b₁}`, on: false)
+  ylist(LY.y3, (BD.b2, BD.b3), `y₃ = {b₂,b₃}`, on: false)
+  ylist(LY.y4, (BD.b3,), `y₄ = {b₃}`)
+}))))
+#align(center, block(inset: (y: 6pt))[
+  `((∋ R°)/∋)° : [A] ⟶ [B]` #h(1.4cm) `x ((∋ R°)/∋)° y ⟺ ∀a ∈ x. ∃b ∈ y. a R b`
+])
+#align(center, src[`y₂` is rejected too: `a₂`'s only image is `b₃`, which `y₂` does not name])
+]
+
+In words, if `x (P R) y` then every element of `x` is related by `R` to some element of `y`, and
+conversely — the two clauses of `∩`, one per direction.
+
+Neither `∋` nor `P R` is a map. `∋` sends a list to *each* of its elements; `P R` sends `x` to
+*every* `y` meeting the two clauses, `y₁` and `y₄` both. Nor is it entire: an `a ∈ x` with no image
+at all leaves `x` with no partner whatever. Turning a relation into a map is `Λ`'s job (§11), and on
+lists that map is `Λ(∋ R)` — of the four it accepts `y₁` only.
 
 // The question this subsection exists to answer: the definition IS two divisions and a converse, the
 // shape of a symmetric division, and the reader who has just read §10 will try to fold it into one.
-*Not* a symmetric division. $frac(∋R, ∋)$ is `Λ(∋R)`, the map sending a list of markets to the list
-of everything they retail — an equality, where `P R` asks only for cover each way. Nor can it be
-repaired: in that fraction's second half $(∋ slash (∋R))^circle.small$ the `R` sits in a denominator,
-so the operation is antitone there, and a relator has to be monotone. `P R` keeps the first half and
-takes the second half at `R°`, which puts `R` back in a numerator. The fraction returns exactly where
-the two halves agree — at `𝟙`, and at a map.
+*Not* a symmetric division. $frac(∋ R, ∋)$ is `Λ(∋ R)`, and in `Rel` it reads
+`x Λ(∋ R) y ⟺ y = {b | ∃a ∈ x. a R b}`: in words, `y` is *exactly* what `x` reaches, where `P R`
+asks only that each side cover the other. Nor can it be repaired: in that fraction's second half
+$(∋ slash (∋ R))^circle.small$ the `R` sits in a denominator, so the operation is antitone there, and
+a relator has to be monotone. `P R` keeps the first half and takes the second half at `R°`, which
+puts `R` back in a numerator. The fraction returns exactly where the two halves agree — at `𝟙`, and
+at a map.
 
 #table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the market reading*]),
+  table.header([*law*], [*the reading*]),
 
   [`X ⊑ P R ⟺ X ∋ ⊑ ∋ R` and `X° ∋ ⊑ ∋ R°`],
   [One containment, and the same one at `R°` — which is the definition read off the two divisions.
@@ -1159,10 +1254,10 @@ the two halves agree — at `𝟙`, and at a map.
   [`P 𝟙 =` $frac(∋, ∋)$ `= 𝟙`],
   [The straightness axiom verbatim: extensionality *is* `P`'s unit law.],
 
-  [`P f = Λ(∋f)` `=` $frac(∋f, ∋)$, for `f` a map],
-  [Send every entry of the list to its `f`-image. The half at `f°` says every entry of `x` reaches
-   `y`; a map gives that entry one image, so it says `y` holds every `f`-image of `x` — which is
-   the fraction's second half. For a map the two definitions coincide.],
+  [`P f = Λ(∋ f)` `=` $frac(∋ f, ∋)$, for `f` a map],
+  [In `Rel`, `x (P f) y ⟺ y = {f a | a ∈ x}`. The half at `f°` says every `a ∈ x` has its `f a` on
+   `y`; `f` has just the one image per `a`, so that already says `y` contains everything `x`
+   reaches, which is the fraction's second half. For a map the two definitions coincide.],
 
   [`P(R S) = (P R)(P S)`],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
