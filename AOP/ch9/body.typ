@@ -82,7 +82,7 @@ that is chapter 10.
     #emph[only] one when $"mem"(F) T^degree$ is inductive; and if $Lambda(T^degree)$ returns
     finite non-empty sets and $R$ is a connected preorder, that solution is entire. Refining
     $min R$ and $Lambda(T^degree)("thin" Q)$ then gives a recursive function.]),
-  ("P 9.1", [$F alpha$ is usually a coproduct, so the recursion usually splits. If $V_1, V_2$ have
+  ("P 9.1 ✓", [$F alpha$ is usually a coproduct, so the recursion usually splits. If $V_1, V_2$ have
     disjoint ranges, $V_1 V_2^degree = nothing$, then
     $ Lambda([V_1,V_2]^degree)("thin"(Q_1 + Q_2)) thin P([U_1,U_2]) thin (min R) \
       ("ran" V_1 -> W_1, W_2), $
@@ -93,7 +93,7 @@ that is chapter 10.
 #sub[Checking monotonicity]
 
 #dt(
-  ("P 9.2", [A cost function discharges it. If $R = "cost" "leq" "cost"^degree$,
+  ("P 9.2 ✓", [A cost function discharges it. If $R = "cost" "leq" "cost"^degree$,
     $h thin "cost" = (F "cost") k$ and $(F "leq") k subset k thin "leq"$, then
     $(F R) h subset h R$.]),
 )
@@ -109,13 +109,13 @@ that is chapter 10.
 )
 
 #dt(
-  ("P 9.3", [#D("monotonicity in context") the same with the answer carried alongside the cost: if
+  ("P 9.3 ✓", [#D("monotonicity in context") the same with the answer carried alongside the cost: if
     $R = "cost" "leq" "cost"^degree$, $h thin "cost" = F chevron.l "cost", H^degree chevron.r thin k$,
     $F("leq" times 1) k subset k thin "leq"$ and $H^degree$ is simple, then
     $F(R inter (H^degree H)) h subset h R$. Same chain as 9.2 with
     $chevron.l "cost", H^degree chevron.r$ for $"cost"$; simplicity of $H^degree$ is what lets the
     pair be cancelled.]),
-  ("P 9.4", [#D("both conditions at once") take $F$ a bifunctor, written $F(1, X)$. If $U, V$ are
+  ("P 9.4 ✓", [#D("both conditions at once") take $F$ a bifunctor, written $F(1, X)$. If $U, V$ are
     preorders with $F(U, R) h subset h R$ and $V^degree H subset H R^degree$, then Theorem 9.2
     holds with $Q = F(U,V)$. Monotonicity is $U$ reflexive; the rest:]),
 )
@@ -162,7 +162,7 @@ that is chapter 10.
     $Q^degree F(1, "edit"^degree) sans("in") subset F(1,"edit"^degree) sans("in") thin R^degree$,
     and Proposition 9.4 reduces it to two:
     $ F(Pi, R) sans("in") subset sans("in") R quad "and" quad "edit" V subset R thin "edit". $]),
-  ("Ex 9.6 ✓", [The first always holds, so $U = Pi$: $(Pi times R)"cons" subset "cons" R$.]),
+  ("Ex 9.6", [The first always holds, so $U = Pi$: $(Pi times R)"cons" subset "cons" R$.]),
   ("", [For the second take $V = "suffix" times "suffix"$. Since $"suffix" = "tail"^*$ and
     $A B subset C B$ gives $A^* B subset C^* B$, it is enough to have
     $"edit"(1 times "tail") subset R thin "edit"$ and $"edit"("tail" times 1) subset R thin "edit"$.

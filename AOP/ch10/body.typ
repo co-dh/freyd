@@ -45,7 +45,7 @@ The theory is chapter 9's; the chapter is its applications.
     strong condition for the refinement to a program: $Q$ must be a #emph[connected] preorder on
     the sets $Lambda(T^degree)$ returns. Distinct from Theorem 7.2, which greedily folds a
     catamorphism.]),
-  ("P 10.1", [$F alpha$ is usually a coproduct. If $V_1 V_2^degree = nothing$ then
+  ("P 10.1 ✓", [$F alpha$ is usually a coproduct. If $V_1 V_2^degree = nothing$ then
     $ Lambda([V_1,V_2]^degree)(min(Q_1+Q_2))[U_1,U_2] \
       = ("ran" V_1 -> W_1, W_2), $
     $ W_i = Lambda(V_i^degree)(min Q_i) U_i. $
@@ -92,7 +92,7 @@ The theory is chapter 9's; the chapter is its applications.
     $F(U,V) = 1 + (V times U)$. Proposition 9.4 asks for
     $ F(U,R) sans("in") subset sans("in") R quad "and" quad "detab" V subset R thin "detab", $
     and, on top, $Lambda(["nil","expand"]^degree)(min Q)$ must be entire.]),
-  ("Ex 10.3 ✓", [The first holds for #emph[every] preorder $U$ on characters, since
+  ("Ex 10.3", [The first holds for #emph[every] preorder $U$ on characters, since
     $F(Pi, R) sans("in") subset sans("in") R$. Taking $U = 1 union (Pi thin "TB")$ — everything
     above the tab — prefers tabs to blanks.]),
   ("", [$V = "prefix"$ #emph[fails]. #rel[at $n = 8$,
@@ -135,7 +135,7 @@ The theory is chapter 9's; the chapter is its applications.
         x cc [a] & "else,") $
     writing $"stop"$ for the test that the new column is a tab stop,
     $"col"(x cc [a]) mod n = 0$, equivalently $(c+1) mod n = 0$ for $c$ the column count.]),
-  ("(10.1) ✓", [$"entab" x = "entab"("unfill" x) cc "blanks"("tbc" x)$, with $"tbc"$ the count of
+  ("(10.1)", [$"entab" x = "entab"("unfill" x) cc "blanks"("tbc" x)$, with $"tbc"$ the count of
     trailing blanks. This is what turns $"entab"$ into a snoc-list catamorphism:
     $ "tbc" [] = 0, $
     $ "tbc"(x cc [a]) = cases(
@@ -194,20 +194,20 @@ The theory is chapter 9's; the chapter is its applications.
     #emph[prefix] of the input too, and #rel[for $[1,2,3]$ the best schedule of the prefix $[1,2]$
     is $[1,2]$, at cost zero, which extends to neither $[2,3,1]$ nor $[3,2,1]$.] Context has to be
     brought into both conditions:]),
-  ("(10.2) ✓", [$F(R inter ("bagify" "bagify"^degree)) sans("in") subset sans("in") R$, with
+  ("(10.2)", [$F(R inter ("bagify" "bagify"^degree)) sans("in") subset sans("in") R$, with
     $sans("in") = ["nil","snoc"]$ and $F X = 1 + (X times "Job")$.]),
-  ("(10.3) ✓", [$(Q^degree inter (beta beta^degree)) F("bagify"^degree) sans("in") subset
+  ("(10.3)", [$(Q^degree inter (beta beta^degree)) F("bagify"^degree) sans("in") subset
     F("bagify"^degree) sans("in") R^degree$, with $beta = ["nil","snag"]$.]),
   ("", [For (10.2), $"penalty"(x,j)$ depends only on the jobs of $x$, not their order, so
     $"cost"(x cc [j]) = "bmax"("cost" x, "penalty"("perm" x, j))$ and Proposition 9.3 applies with
     $ sans("in") "cost" = F chevron.l "cost", "bagify" chevron.r thin k, $
     $ k = ["zero", "assocr" thin (1 times (("bagify"^degree times 1)"penalty")) thin "bmax"]. $]),
-  ("(10.4) ✓", [$sans("in") "cost" = chevron.l g, h chevron.r "bmax"$, the original $"cost"$
+  ("(10.4)", [$sans("in") "cost" = chevron.l g, h chevron.r "bmax"$, the original $"cost"$
     resplit,]),
-  ("(10.5) ✓", [$g = ["zero", "penalty"]$,]),
-  ("(10.6) ✓", [$h = ["zero", pi thin "cost"]$.]),
-  ("(10.7) ✓", [$"add" subset pi thin R^degree$ — adding a job can only raise the cost.]),
-  ("(10.8) ✓", [$beta thin "bagify"^degree = F("bagify"^degree)["nil","add"]$ —
+  ("(10.5)", [$g = ["zero", "penalty"]$,]),
+  ("(10.6)", [$h = ["zero", pi thin "cost"]$.]),
+  ("(10.7)", [$"add" subset pi thin R^degree$ — adding a job can only raise the cost.]),
+  ("(10.8)", [$beta thin "bagify"^degree = F("bagify"^degree)["nil","add"]$ —
     $"bagify"^degree$ is a catamorphism on bags.]),
 )
 
@@ -266,7 +266,7 @@ The theory is chapter 9's; the chapter is its applications.
     $"add" = (mu X : "snoc" union (("snoc"^degree times 1)"exch"(X times 1)"snoc"))$, with
     $"exch" : (A times B) times C -> (A times C) times B$. Fixed-point induction plus
     $("add" times 1)"penalty" subset (pi times 1) "penalty" thin "geq"$ then proves (10.7).]),
-  ("Ex 10.8 ✓", [$"perm" = "bagify" "bagify"^degree = ⦇"nil","add"⦈$ proves (10.8).]),
+  ("Ex 10.8", [$"perm" = "bagify" "bagify"^degree = ⦇"nil","add"⦈$ proves (10.8).]),
 )
 
 == 10.4 The TeX problem – part two
@@ -290,7 +290,7 @@ The theory is chapter 9's; the chapter is its applications.
     are $"zero" thin "inrange"^degree = "arb"$ and
     $"shift" thin "inrange"^degree = (1 times "inrange"^degree)"step"$, and the second unfolds
     pointwise to $"step"(d,(a',b')) = ((d+a') slash 10, (d+b') slash 10)$.]),
-  ("(10.9) ✓", [Every interval reached satisfies $0 < b < 1$ and $a < b$ — true of
+  ("(10.9)", [Every interval reached satisfies $0 < b < 1$ and $a < b$ — true of
     $"interval" n$ for $0 <= n < 2^16$, preserved by $"step"$, and imposable on $"arb"$. So
     $["arb","step"] : 1 + ("Digit" times "Interval") -> "Interval"$, and the derivation lives
     inside that type.]),
