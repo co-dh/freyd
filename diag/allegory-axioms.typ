@@ -140,6 +140,143 @@ a closed loop, which the idempotency of `∩` uses below.
   [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[`R⊸ ≤ ⊸`]],
 )
 
+== The four generators one dimension up
+
+// `lab` lives here, ahead of every picture this note draws by hand, because the fork below is the
+// first of them and a Typst binding exists only from its definition on.
+// `rot` turns a cell's `⊑` to point from the SMALLER path to the larger one.  Unrotated it reads
+// left to right, which in a triangle or a square is the wrong axis: in the pairing section's left
+// triangle the small side is the path over the top and the large one is `R` at the lower left, so
+// the symbol has to point southwest.  Typst rotates clockwise, so southwest is 135°, southeast 45°,
+// northwest −135°, northeast −45°.
+#let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
+// The 2-cell helpers, shared with the Marsden section far below, which draws the same cup, cap and
+// snake with `i`, `P` for `◁`, `▷` — one definition apiece, placed at the earlier of the two users.
+// The two fills mean nothing on their own: they are one hue apiece to tell two regions apart, here
+// `A` and `A ⊗ A`, there `Map(𝒜)` and `𝒜`.
+#let fb-MAPC = rgb("#e6f3e4")
+#let fb-ALLC = rgb("#e9e7f7")
+// A 2-cell: a dot on the wire, named beside it.  `wiredot` is the note's own solid dot, at the same
+// radius every generator uses, so a 2-cell here and a generator in a string diagram look alike on
+// purpose — both are a node on a wire.
+#let fb-dot(p, t, dx: 0.34, dy: 0) = {
+  wiredot(p)
+  lab(p.at(0) + dx, p.at(1) + dy, black)[#t]
+}
+// A hairline parting two independent pictures that share one canvas.
+#let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
+
+Nothing about `◁` changes; what changes is which dimension carries what. Read the same fork in the
+two calculi — (a) left to right, as every other string diagram here, (b) bottom to top:
+
+// ONE canvas parted by a hairline, not two figures: it is the same `◁` twice, and only side by side
+// does it show that the fork has flattened to a straight wire.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  // (a) `◁` is a NODE: its source and target are the wires, and one in two out is why it forks.
+  wire((-4.6, 0), (-3.7, 0)); lab(-4.9, 0, black)[$A$]
+  wiredot((-3.7, 0))
+  bend((-3.7, 0), (-2.7, 0.42)); bend((-3.7, 0), (-2.7, -0.42))
+  wire((-2.7, 0.42), (-2.2, 0.42)); wire((-2.7, -0.42), (-2.2, -0.42))
+  lab(-1.95, 0.42, black)[$A$]; lab(-1.95, -0.42, black)[$A$]
+  lab(-3.7, -0.95, black)[(a) `◁` is a node]
+
+  fb-rule(-1.0, -1.2, 1.1)
+
+  // (b) `◁` is a 1-cell, so it is the WIRE, and its source and target are the regions either side of
+  // it — target `A ⊗ A` on the left, source `A` on the right.
+  d.rect((0.2, -1), (2.8, 1), fill: fb-MAPC, stroke: none)
+  d.rect((0.2, -1), (1.5, 1), fill: fb-ALLC, stroke: none)
+  d.line((1.5, -1), (1.5, 1), stroke: 1.1pt)
+  lab(1.5, 1.3, black)[`◁`]
+  lab(0.82, -0.75, luma(80))[$A ⊗ A$]; lab(2.2, -0.75, luma(80))[$A$]
+  lab(1.5, -1.45, black)[(b) `◁` is a wire]
+})))
+
+#align(center, table(
+  columns: 3, inset: 8pt, stroke: 0.4pt + luma(190),
+  align: (left + horizon, left + horizon, left + horizon),
+  table.header([], [*(a) monoidal*], [*(b) 2-cell*]),
+
+  [region], [only one, undrawn], [a set: `A`, `A ⊗ A`],
+  [wire], [a set], [a relation: `◁`, `▷`],
+  [node], [a relation: `◁`, `▷`, `⊸`, `⟜`], [an inclusion `⊑`],
+))
+
+Everything moves up one dimension, so the fork flattens: its three wires were the sets `A`, `A`, `A`,
+and in (b) sets are regions — the two prongs are no longer drawn at all, they are the name of the
+region on the left. What (b) gains is the room to draw the inclusions, and with them the adjunction
+this section opened with:
+
+// The two 2-cells, then the snake they make.  FILL AND STROKE ARE SEPARATE PATHS on the cup and the
+// cap: one `merge-path(close: true)` carrying both would stroke the closing segment too, drawing a
+// line across the top of the cup that joins the `◁` and `▷` legs — and there is no such line, it is
+// one wire that bends, its two legs running free to the frame edge.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  // The unit `𝟙 ⊑ ◁▷` lives in `A`, so `A` is the inside of the cup.  All four panels of the row are
+  // the same 1.2 half-height, and a named 2-cell sits 0.45 clear of its own bend: these two names
+  // are whole containments, far wider and taller than the `{·}` and `∋` of the Marsden section
+  // below, and at that section's 0.3 they are drawn through by the curve they name.
+  d.rect((-1.0, -1.2), (1.0, 1.2), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+    d.line((-0.4, 1.2), (-0.4, 0.1))
+    d.bezier((-0.4, 0.1), (0.4, 0.1), (-0.4, -0.55), (0.4, -0.55))
+    d.line((0.4, 0.1), (0.4, 1.2))
+  })
+  d.line((-0.4, 1.2), (-0.4, 0.1), stroke: 1.1pt)
+  d.bezier((-0.4, 0.1), (0.4, 0.1), (-0.4, -0.55), (0.4, -0.55), stroke: 1.1pt)
+  d.line((0.4, 0.1), (0.4, 1.2), stroke: 1.1pt)
+  fb-dot((0, -0.31), `𝟙 ⊑ ◁▷`, dx: 0, dy: -0.45)
+  lab(-0.4, 1.48, black)[`◁`]; lab(0.4, 1.48, black)[`▷`]
+
+  fb-rule(1.8, -1.5, 1.5)
+
+  // The counit `▷◁ ⊑ 𝟙` lives in `A ⊗ A`, so the cap is the mirror of the cup in both colours.
+  d.rect((2.6, -1.2), (4.6, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((3.2, -1.2), (3.2, -0.1))
+    d.bezier((3.2, -0.1), (4.0, -0.1), (3.2, 0.55), (4.0, 0.55))
+    d.line((4.0, -0.1), (4.0, -1.2))
+  })
+  d.line((3.2, -1.2), (3.2, -0.1), stroke: 1.1pt)
+  d.bezier((3.2, -0.1), (4.0, -0.1), (3.2, 0.55), (4.0, 0.55), stroke: 1.1pt)
+  d.line((4.0, -0.1), (4.0, -1.2), stroke: 1.1pt)
+  fb-dot((3.6, 0.31), `▷◁ ⊑ 𝟙`, dx: 0, dy: 0.45)
+  lab(3.2, -1.48, black)[`▷`]; lab(4.0, -1.48, black)[`◁`]
+
+  fb-rule(5.4, -1.5, 1.5)
+
+  // The snake: the cup and the cap on one wire, so the merge-path is the region LEFT of the zigzag,
+  // which for `◁` is its target `A ⊗ A`, and the ground is its source `A` to the right.
+  d.rect((6.2, -1.2), (9.8, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((6.2, 1.2), (7.2, 1.2)); d.line((7.2, 1.2), (7.2, -0.2))
+    d.bezier((7.2, -0.2), (8.1, -0.2), (7.2, -0.85), (8.1, -0.85))
+    d.line((8.1, -0.2), (8.1, 0.2))
+    d.bezier((8.1, 0.2), (9.0, 0.2), (8.1, 0.85), (9.0, 0.85))
+    d.line((9.0, 0.2), (9.0, -1.2)); d.line((9.0, -1.2), (6.2, -1.2))
+  })
+  d.line((7.2, 1.2), (7.2, -0.2), stroke: 1.1pt)
+  d.bezier((7.2, -0.2), (8.1, -0.2), (7.2, -0.85), (8.1, -0.85), stroke: 1.1pt)
+  d.line((8.1, -0.2), (8.1, 0.2), stroke: 1.1pt)
+  d.bezier((8.1, 0.2), (9.0, 0.2), (8.1, 0.85), (9.0, 0.85), stroke: 1.1pt)
+  d.line((9.0, 0.2), (9.0, -1.2), stroke: 1.1pt)
+  // The two dots are the unit and the counit of the panels to the left, unlabelled here: naming them
+  // again would say only what the two panels have just said.
+  wiredot((7.65, -0.68)); wiredot((8.55, 0.68))
+  lab(7.2, 1.48, black)[`◁`]; lab(9.0, -1.48, black)[`◁`]
+
+  lab(10.3, 0, black)[$=$]
+
+  d.rect((11.0, -1.2), (13.0, 1.2), fill: fb-MAPC, stroke: none)
+  d.rect((11.0, -1.2), (11.9, 1.2), fill: fb-ALLC, stroke: none)
+  d.line((11.9, -1.2), (11.9, 1.2), stroke: 1.1pt)
+  lab(11.9, 1.48, black)[`◁`]; lab(11.9, -1.48, black)[`◁`]
+})))
+
+#align(center, src[Green is `A`, purple `A ⊗ A`, and a wire carries its target on the left and its
+source on the right. The unit lives in `A`, so `A` is the inside of the cup; the counit lives in
+`A ⊗ A`. The snake is the adjunction this section opened with, pulled straight.])
+
 // Its definition box was straddling the break, which reads as two half-boxes.
 #pagebreak(weak: true)
 = ° : 𝒞ᵒᵖ ⟶ 𝒞 is a 2 functor 
@@ -364,14 +501,6 @@ admire `b` throughout.
    zero for composition, as `⊤` is not.],
 )
 
-// `lab` lives here, ahead of every note that draws by hand, because the domain picture just below is
-// the first of them.
-// `rot` turns a cell's `⊑` to point from the SMALLER path to the larger one.  Unrotated it reads
-// left to right, which in a triangle or a square is the wrong axis: in the left triangle below the
-// small side is the path over the top and the large one is `R` at the lower left, so the symbol has
-// to point southwest.  Typst rotates clockwise, so southwest is 135°, southeast 45°, northwest
-// −135°, northeast −45°.
-#let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
 // The COLLAPSED domain: `R` ends in a `⊸`, so nothing `R` computes can leave, and what the upper
 // strand carries out is the input itself — the coreflexive on the values `R` accepts.  Bound rather
 // than drawn in place: it is the right-hand step of both chains below.  `rel` draws the chain's
@@ -867,8 +996,6 @@ people `x` admires.
 // `{·}`, the unit.  `chamfer: false` is this note's mark for a map, and being a map is the whole
 // reason `{·}` may be moved past another box while `∋` may not.
 #let fb-sing(p) = gbox(p, `{·}`, chamfer: false, w: 1.0)
-// A hairline parting two independent pictures that share one canvas.
-#let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
 
 One convention: a `[B]`-wire is drawn double, because it is a `B`-wire one level down — inside the
 box. The box is the power relator `P`, which the relator section below defines: a box holding
@@ -1028,16 +1155,6 @@ Other language, other level. Here a *wire* is a functor, a *dot* is a natural tr
 Def 3.1). `R` itself cannot appear — it is an arrow, not a 2-cell — which is exactly the trade: this
 language draws the adjunction, the section above draws the arrows inside it.
 
-#let fb-MAPC = rgb("#e6f3e4")
-#let fb-ALLC = rgb("#e9e7f7")
-// A 2-cell: a dot on the wire, named beside it.  `wiredot` is the note's own solid dot, at the same
-// radius every generator uses, so a 2-cell here and a generator in a string diagram look alike on
-// purpose — both are a node on a wire.
-#let fb-dot(p, t, dx: 0.34, dy: 0) = {
-  wiredot(p)
-  lab(p.at(0) + dx, p.at(1) + dy, black)[#t]
-}
-
 // The two functors and the two 2-cells, side by side.  Each functor panel is split UNEVENLY: the
 // half that has to hold `Map(𝒜)` gets the room, the half holding `𝒜` does not.  The names are kept
 // so the colour rule can be checked by reading rather than by counting.
@@ -1151,7 +1268,8 @@ language draws the adjunction, the section above draws the arrows inside it.
 })))
 
 #align(center, src[left: `{·} ∋ = 𝟙` on `i` — the triangle identity the section above only names. \
-right: `Λ(∋) = 𝟙` on `P` — the straightness of the section above. Both are one wire pulled straight.])
+right: `Λ(∋) = 𝟙` on `P` — the straightness of the section above. Both are one wire pulled straight, \
+the same shape as the snake in the cartesian-bicategory section with `i`, `P` for `◁`, `▷`.])
 
 These two snakes are this note's own snake one bicategory down. `𝟙° = 𝟙` and *The slide*, in the
 converse section near the top, pull the same wire straight — there the two bends are `⟜◁` and `▷⊸`
