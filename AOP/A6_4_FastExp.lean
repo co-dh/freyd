@@ -14,17 +14,19 @@
   `[zero, op b]`, `op b (r,d) = (n ≥ b → n-b, n)`, `n = 2r+d`.  This section demonstrates that a
   divide-and-conquer scheme is introduced by folding through a suitable intermediate datatype.
 -/
-import AOP.A6_SnocList
-import AOP.A6_3
+module
+
+public import AOP.A6_SnocList
+public import AOP.A6_3
 
 namespace Freyd.Alg.RelSet.FastExp
 
 open Freyd Freyd.Alg.RelSet.SL
 
 /-- A binary digit `{0,1}`. -/
-abbrev Bit : Type := Fin 2
+@[expose] public abbrev Bit : Type := Fin 2
 /-- The natural numbers as an object. -/
-abbrev dNat : RelSet.{0} := ⟨Nat⟩
+@[expose] public abbrev dNat : RelSet.{0} := ⟨Nat⟩
 
 /-- `Bin`, the binary-number datatype `1 + Bin × Bit`, is `SnocList Unit Bit`. -/
 abbrev dBin : RelSet.{0} := dSL Unit Bit

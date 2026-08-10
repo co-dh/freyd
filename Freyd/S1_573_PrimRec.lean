@@ -29,11 +29,13 @@
     here, only its cartesian structure (§1.573) and the faithfulness of `P̂(ω̂, −)`.
 -/
 
-import Freyd.S1_572_Recursive
-import Freyd.S1_28
-import Freyd.S1_39
-import Freyd.S1_55
-import Freyd.S2_21c
+module
+
+public import Freyd.S1_572_Recursive
+public import Freyd.S1_28
+public import Freyd.S1_39
+public import Freyd.S1_55
+public import Freyd.S2_21c
 
 open Freyd Freyd.Rcat
 
@@ -44,7 +46,7 @@ namespace Freyd.Pcat
 /-- Mu-freeness: `IsPrim c` iff the code `c` contains no `mu`.  A `Prop`-valued
     predicate over §1.572's `RecCode` (rather than a separate inductive) so that every
     evaluation lemma about explicit codes (`evalAdd`, `evalConst`, …) transfers as-is. -/
-def IsPrim : {k : Nat} → RecCode k → Prop
+@[expose] public def IsPrim : {k : Nat} → RecCode k → Prop
   | _, .zero      => True
   | _, .succ      => True
   | _, .proj _    => True
@@ -87,50 +89,50 @@ theorem IsPrim.total : ∀ {k : Nat} (c : RecCode k), IsPrim c → ∀ v, ∃ y,
 
 /-- A `k`-ary function is PRIMITIVE RECURSIVE if some mu-free code converges to its
     value on every input (§1.572's `RecursiveV` with the code constrained to `IsPrim`). -/
-def PrimRecV {k : Nat} (f : Vec k → Nat) : Prop :=
+@[expose] public def PrimRecV {k : Nat} (f : Vec k → Nat) : Prop :=
   ∃ c : RecCode k, IsPrim c ∧ ∀ v, Eval c v (f v)
 
 /-- Unary primitive recursive functions ℕ → ℕ. -/
-def PrimRec1 (f : Nat → Nat) : Prop := PrimRecV fun v : Vec 1 => f (v 0)
+@[expose] public def PrimRec1 (f : Nat → Nat) : Prop := PrimRecV fun v : Vec 1 => f (v 0)
 
 /-- Binary primitive recursive functions ℕ → ℕ → ℕ. -/
-def PrimRec2 (f : Nat → Nat → Nat) : Prop := PrimRecV fun v : Vec 2 => f (v 0) (v 1)
+@[expose] public def PrimRec2 (f : Nat → Nat → Nat) : Prop := PrimRecV fun v : Vec 2 => f (v 0) (v 1)
 
 /-- Primitive recursive functions are recursive. -/
 theorem PrimRecV.recursiveV {k : Nat} {f : Vec k → Nat} : PrimRecV f → RecursiveV f
   | ⟨c, _, hc⟩ => ⟨c, hc⟩
 
-theorem PrimRecV.congr {k : Nat} {f g : Vec k → Nat} (hf : PrimRecV f)
+public theorem PrimRecV.congr {k : Nat} {f g : Vec k → Nat} (hf : PrimRecV f)
     (h : ∀ v, f v = g v) : PrimRecV g := by
   obtain ⟨c, hp, hc⟩ := hf
   exact ⟨c, hp, fun v => h v ▸ hc v⟩
 
-theorem PrimRec1.congr {f g : Nat → Nat} (hf : PrimRec1 f) (h : ∀ n, f n = g n) :
+public theorem PrimRec1.congr {f g : Nat → Nat} (hf : PrimRec1 f) (h : ∀ n, f n = g n) :
     PrimRec1 g := PrimRecV.congr hf fun v => h (v 0)
 
-theorem PrimRec2.congr {f g : Nat → Nat → Nat} (hf : PrimRec2 f)
+public theorem PrimRec2.congr {f g : Nat → Nat → Nat} (hf : PrimRec2 f)
     (h : ∀ a b, f a b = g a b) : PrimRec2 g := PrimRecV.congr hf fun v => h (v 0) (v 1)
 
-theorem PrimRecV.proj {k : Nat} (i : Fin k) : PrimRecV (fun v : Vec k => v i) :=
+public theorem PrimRecV.proj {k : Nat} (i : Fin k) : PrimRecV (fun v : Vec k => v i) :=
   ⟨.proj i, trivial, fun _ => .proj i⟩
 
-theorem PrimRec1.id : PrimRec1 fun n => n := PrimRecV.proj 0
+public theorem PrimRec1.id : PrimRec1 fun n => n := PrimRecV.proj 0
 
-theorem isPrim_constCode (k c : Nat) : IsPrim (constCode k c) := by
+public theorem isPrim_constCode (k c : Nat) : IsPrim (constCode k c) := by
   induction c with
   | zero => trivial
   | succ c ih => exact ⟨trivial, fun _ => ih⟩
 
-theorem PrimRecV.const (k c : Nat) : PrimRecV (fun _ : Vec k => c) :=
+public theorem PrimRecV.const (k c : Nat) : PrimRecV (fun _ : Vec k => c) :=
   ⟨constCode k c, isPrim_constCode k c, fun v => evalConst k c v⟩
 
-theorem PrimRec1.const (c : Nat) : PrimRec1 fun _ => c := PrimRecV.const 1 c
+public theorem PrimRec1.const (c : Nat) : PrimRec1 fun _ => c := PrimRecV.const 1 c
 
 /-! ### Closure under composition.  Unlike §1.572's `RecursiveV.comp` (which chooses an
     arbitrary finite family of codes by `Classical.choose`), we only ever compose through
     explicit one- and two-code families, keeping the closure lemmas choice-free. -/
 
-theorem PrimRec1.comp {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
+public theorem PrimRec1.comp {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
     PrimRec1 fun n => g (f n) := by
   obtain ⟨cf, pf, hcf⟩ := hf
   obtain ⟨cg, pg, hcg⟩ := hg
@@ -138,7 +140,7 @@ theorem PrimRec1.comp {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
     fun v => .comp (fun _ => f (v 0)) (fun _ => hcf v) (hcg _)⟩
 
 /-- Unary post-composition at any arity. -/
-theorem PrimRecV.comp1 {k : Nat} {F : Nat → Nat} {f : Vec k → Nat}
+public theorem PrimRecV.comp1 {k : Nat} {F : Nat → Nat} {f : Vec k → Nat}
     (hF : PrimRec1 F) (hf : PrimRecV f) : PrimRecV (fun v => F (f v)) := by
   obtain ⟨cF, pF, hcF⟩ := hF
   obtain ⟨cf, pf, hcf⟩ := hf
@@ -147,7 +149,7 @@ theorem PrimRecV.comp1 {k : Nat} {F : Nat → Nat} {f : Vec k → Nat}
 
 /-- Binary combination at any arity: from a primitive recursive binary `H` and
     primitive recursive arguments, `v ↦ H (f v) (g v)` is primitive recursive. -/
-theorem PrimRecV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Nat}
+public theorem PrimRecV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Nat}
     (hH : PrimRec2 H) (hf : PrimRecV f) (hg : PrimRecV g) :
     PrimRecV (fun v => H (f v) (g v)) := by
   obtain ⟨cH, pH, hcH⟩ := hH
@@ -162,68 +164,68 @@ theorem PrimRecV.comp2 {k : Nat} {H : Nat → Nat → Nat} {f g : Vec k → Nat}
     | 1, _ => exact hcg v
   · exact hcH (vcons (f v) fun _ => g v)
 
-theorem PrimRec1.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat}
+public theorem PrimRec1.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat}
     (hH : PrimRec2 H) (hf : PrimRec1 f) (hg : PrimRec1 g) :
     PrimRec1 fun n => H (f n) (g n) :=
   PrimRecV.comp2 (f := fun v : Vec 1 => f (v 0)) (g := fun v : Vec 1 => g (v 0)) hH hf hg
 
-theorem PrimRec2.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat → Nat}
+public theorem PrimRec2.comp2 {H : Nat → Nat → Nat} {f g : Nat → Nat → Nat}
     (hH : PrimRec2 H) (hf : PrimRec2 f) (hg : PrimRec2 g) :
     PrimRec2 fun a b => H (f a b) (g a b) :=
   PrimRecV.comp2 (f := fun v : Vec 2 => f (v 0) (v 1)) (g := fun v : Vec 2 => g (v 0) (v 1))
     hH hf hg
 
-theorem PrimRec2.swap {f : Nat → Nat → Nat} (hf : PrimRec2 f) :
+public theorem PrimRec2.swap {f : Nat → Nat → Nat} (hf : PrimRec2 f) :
     PrimRec2 fun a b => f b a :=
   PrimRec2.comp2 hf (show PrimRec2 fun _ b => b from PrimRecV.proj 1) (show PrimRec2 fun a _ => a from PrimRecV.proj 0)
 
-theorem PrimRec2.ofFst {f : Nat → Nat} (hf : PrimRec1 f) : PrimRec2 fun a _ => f a :=
+public theorem PrimRec2.ofFst {f : Nat → Nat} (hf : PrimRec1 f) : PrimRec2 fun a _ => f a :=
   PrimRecV.comp1 (f := fun v : Vec 2 => v 0) hf (PrimRecV.proj 0)
 
-theorem PrimRec2.ofSnd {f : Nat → Nat} (hf : PrimRec1 f) : PrimRec2 fun _ b => f b :=
+public theorem PrimRec2.ofSnd {f : Nat → Nat} (hf : PrimRec1 f) : PrimRec2 fun _ b => f b :=
   PrimRecV.comp1 (f := fun v : Vec 2 => v 1) hf (PrimRecV.proj 1)
 
 /-! ### Arithmetic base (the §1.572 codes are all mu-free) -/
 
-theorem isPrim_addCode : IsPrim addCode := ⟨trivial, trivial, fun _ => trivial⟩
+public theorem isPrim_addCode : IsPrim addCode := ⟨trivial, trivial, fun _ => trivial⟩
 
-theorem PrimRec2.add : PrimRec2 fun a b => a + b := by
+public theorem PrimRec2.add : PrimRec2 fun a b => a + b := by
   refine PrimRecV.congr (g := fun v : Vec 2 => v 0 + v 1)
     ⟨addCode, isPrim_addCode, fun v => evalAdd v⟩ ?_
   intro v
   exact Nat.add_comm (v 1) (v 0)
 
-theorem isPrim_predCode : IsPrim predCode := ⟨trivial, trivial⟩
+public theorem isPrim_predCode : IsPrim predCode := ⟨trivial, trivial⟩
 
-theorem PrimRec2.sub : PrimRec2 fun a b => a - b := by
+public theorem PrimRec2.sub : PrimRec2 fun a b => a - b := by
   have h : PrimRec2 fun a b => b - a :=
     ⟨rsubCode, ⟨trivial, isPrim_predCode, fun _ => trivial⟩, fun v => by
       have := evalRsub_aux (v 0) (vtail v)
       rwa [vcons_head_tail v] at this⟩
   exact h.swap
 
-theorem PrimRec2.mul : PrimRec2 fun a b => a * b :=
+public theorem PrimRec2.mul : PrimRec2 fun a b => a * b :=
   ⟨mulCode, ⟨trivial, isPrim_addCode, fun j => by dsimp only; split <;> trivial⟩, fun v => by
     have := evalMul_aux (v 0) (vtail v)
     rwa [vcons_head_tail v] at this⟩
 
-theorem PrimRec1.add {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
+public theorem PrimRec1.add {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
     PrimRec1 fun n => f n + g n := PrimRec1.comp2 PrimRec2.add hf hg
 
-theorem PrimRec1.mul {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
+public theorem PrimRec1.mul {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
     PrimRec1 fun n => f n * g n := PrimRec1.comp2 PrimRec2.mul hf hg
 
-theorem PrimRec1.sub {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
+public theorem PrimRec1.sub {f g : Nat → Nat} (hf : PrimRec1 f) (hg : PrimRec1 g) :
     PrimRec1 fun n => f n - g n := PrimRec1.comp2 PrimRec2.sub hf hg
 
-theorem PrimRec2.eqInd : PrimRec2 Rcat.eqInd :=
+public theorem PrimRec2.eqInd : PrimRec2 Rcat.eqInd :=
   PrimRec2.comp2 (H := fun a b => a - b) PrimRec2.sub
     (PrimRec2.comp2 (H := fun _ _ => (1 : Nat)) (PrimRec2.ofFst (PrimRec1.const 1))
       (show PrimRec2 fun a _ => a from PrimRecV.proj 0) (show PrimRec2 fun _ b => b from PrimRecV.proj 1))
     (PrimRec2.comp2 PrimRec2.add PrimRec2.sub (PrimRec2.swap PrimRec2.sub))
 
 /-- `if n = c then a else w n` is primitive recursive when `w` is. -/
-theorem PrimRec1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : PrimRec1 w) :
+public theorem PrimRec1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : PrimRec1 w) :
     PrimRec1 fun n => if n = c then a else w n := by
   have hind : PrimRec1 fun n => eqInd n c :=
     PrimRec1.comp2 PrimRec2.eqInd PrimRec1.id (PrimRec1.const c)
@@ -237,13 +239,13 @@ theorem PrimRec1.ifEqConst (c a : Nat) {w : Nat → Nat} (hw : PrimRec1 w) :
 
 /-- Any finite lookup table (0 outside its domain) is primitive recursive — the book's
     "any function from a finite natural number" convention, in P. -/
-theorem PrimRec1.finTable (m : Nat) (t : Fin m → Nat) :
+public theorem PrimRec1.finTable (m : Nat) (t : Fin m → Nat) :
     PrimRec1 fun j => if h : j < m then t ⟨j, h⟩ else 0 :=
   finTable_of (PrimRec1.const 0) (fun h e => h.congr e) PrimRec1.ifEqConst m t
 
 /-- Unary primitive recursion (`natIter`) preserves primitive recursiveness —
     §1.572's `Recursive1.natIter` restricted to mu-free codes. -/
-theorem PrimRec1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : PrimRec2 H) :
+public theorem PrimRec1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : PrimRec2 H) :
     PrimRec1 (Rcat.natIter g0 H) := by
   obtain ⟨cH, pH, hcH⟩ := hH
   refine ⟨.prec (constCode 0 g0) cH, ⟨isPrim_constCode 0 g0, pH⟩, fun v => ?_⟩
@@ -258,7 +260,7 @@ theorem PrimRec1.natIter (g0 : Nat) {H : Nat → Nat → Nat} (hH : PrimRec2 H) 
   have := key (v 0) (vtail v)
   rwa [vcons_head_tail v] at this
 
-theorem PrimRec1.tri : PrimRec1 Rcat.tri :=
+public theorem PrimRec1.tri : PrimRec1 Rcat.tri :=
   PrimRec1.natIter 0 (PrimRec2.comp2 PrimRec2.add (show PrimRec2 fun _ b => b from PrimRecV.proj 1)
     (PrimRec2.comp2 PrimRec2.add (show PrimRec2 fun a _ => a from PrimRecV.proj 0) (PrimRec2.ofFst (PrimRec1.const 1))))
 
@@ -270,13 +272,13 @@ theorem PrimRec1.tri : PrimRec1 Rcat.tri :=
 
 /-- Mu-free Cantor weight: the diagonal index of `c`, by unary primitive recursion —
     it increments exactly when `c+1` reaches the next triangular number. -/
-def cwP : Nat → Nat := natIter 0 fun c r => r + eqInd (c + 1) (tri (r + 1))
+@[expose] public def cwP : Nat → Nat := natIter 0 fun c r => r + eqInd (c + 1) (tri (r + 1))
 
-theorem cwP_zero : cwP 0 = 0 := rfl
+public theorem cwP_zero : cwP 0 = 0 := rfl
 
-theorem cwP_succ (c : Nat) : cwP (c + 1) = cwP c + eqInd (c + 1) (tri (cwP c + 1)) := rfl
+public theorem cwP_succ (c : Nat) : cwP (c + 1) = cwP c + eqInd (c + 1) (tri (cwP c + 1)) := rfl
 
-theorem PrimRec1.cwP : PrimRec1 Pcat.cwP :=
+public theorem PrimRec1.cwP : PrimRec1 Pcat.cwP :=
   PrimRec1.natIter 0 (PrimRec2.comp2 PrimRec2.add (show PrimRec2 fun _ b => b from PrimRecV.proj 1)
     (PrimRec2.comp2 PrimRec2.eqInd
       (PrimRec2.ofFst (PrimRec1.add PrimRec1.id (PrimRec1.const 1)))
@@ -284,7 +286,7 @@ theorem PrimRec1.cwP : PrimRec1 Pcat.cwP :=
         (PrimRec1.add PrimRec1.id (PrimRec1.const 1)) PrimRec1.tri))))
 
 /-- `cwP` sandwiches `c` between consecutive triangular numbers. -/
-theorem cwP_spec (c : Nat) : tri (cwP c) ≤ c ∧ c < tri (cwP c + 1) := by
+public theorem cwP_spec (c : Nat) : tri (cwP c) ≤ c ∧ c < tri (cwP c + 1) := by
   induction c with
   | zero =>
     rw [cwP_zero]
@@ -301,7 +303,7 @@ theorem cwP_spec (c : Nat) : tri (cwP c) ≤ c ∧ c < tri (cwP c + 1) := by
     · rw [eqInd_ne h, Nat.add_zero]
       exact ⟨by omega, by omega⟩
 
-theorem cwP_eq_cw (c : Nat) : cwP c = cw c := by
+public theorem cwP_eq_cw (c : Nat) : cwP c = cw c := by
   refine (theLeast_unique (fun s => c < tri (s + 1))
     ⟨c, by have := le_tri (c + 1); omega⟩ (cwP_spec c).2 fun i hi => ?_).symm
   show ¬c < tri (i + 1)
@@ -309,16 +311,16 @@ theorem cwP_eq_cw (c : Nat) : cwP c = cw c := by
   have h2 := (cwP_spec c).1
   omega
 
-theorem PrimRec1.cw : PrimRec1 Rcat.cw := PrimRec1.cwP.congr cwP_eq_cw
+public theorem PrimRec1.cw : PrimRec1 Rcat.cw := PrimRec1.cwP.congr cwP_eq_cw
 
-theorem PrimRec1.csnd : PrimRec1 Rcat.csnd :=
+public theorem PrimRec1.csnd : PrimRec1 Rcat.csnd :=
   (PrimRec1.sub PrimRec1.id (PrimRec1.comp PrimRec1.cw PrimRec1.tri)).congr
     fun _ => rfl
 
-theorem PrimRec1.cfst : PrimRec1 Rcat.cfst :=
+public theorem PrimRec1.cfst : PrimRec1 Rcat.cfst :=
   (PrimRec1.sub PrimRec1.cw PrimRec1.csnd).congr fun _ => rfl
 
-theorem PrimRec2.cp : PrimRec2 Rcat.cp := by
+public theorem PrimRec2.cp : PrimRec2 Rcat.cp := by
   have h : PrimRec2 fun a b => Rcat.tri (a + b) + b :=
     PrimRec2.comp2 PrimRec2.add
       (PrimRec2.comp2 (PrimRec2.ofSnd PrimRec1.tri) (show PrimRec2 fun a _ => a from PrimRecV.proj 0) PrimRec2.add)
@@ -328,20 +330,20 @@ theorem PrimRec2.cp : PrimRec2 Rcat.cp := by
 /-! ### Division and remainder by a positive constant, mu-free -/
 
 /-- Mu-free remainder mod `m+1`: unary recursion cycling through `0, 1, …, m, 0, …`. -/
-def modP (m : Nat) : Nat → Nat :=
+@[expose] public def modP (m : Nat) : Nat → Nat :=
   natIter 0 fun _ r => (r + 1) * (1 - eqInd (r + 1) (m + 1))
 
-theorem modP_succ (m c : Nat) :
+public theorem modP_succ (m c : Nat) :
     modP m (c + 1) = (modP m c + 1) * (1 - eqInd (modP m c + 1) (m + 1)) := rfl
 
-theorem PrimRec1.modP (m : Nat) : PrimRec1 (Pcat.modP m) := by
+public theorem PrimRec1.modP (m : Nat) : PrimRec1 (Pcat.modP m) := by
   have hA : PrimRec2 fun (_ r : Nat) => r + 1 :=
     PrimRec2.comp2 PrimRec2.add (show PrimRec2 fun _ b => b from PrimRecV.proj 1) (PrimRec2.ofFst (PrimRec1.const 1))
   exact PrimRec1.natIter 0 (PrimRec2.comp2 PrimRec2.mul hA
     (PrimRec2.comp2 PrimRec2.sub (PrimRec2.ofFst (PrimRec1.const 1))
       (PrimRec2.comp2 PrimRec2.eqInd hA (PrimRec2.ofFst (PrimRec1.const (m + 1))))))
 
-theorem modP_eq (m c : Nat) : Pcat.modP m c = c % (m + 1) := by
+public theorem modP_eq (m c : Nat) : Pcat.modP m c = c % (m + 1) := by
   induction c with
   | zero => rfl
   | succ c ih =>
@@ -361,20 +363,20 @@ theorem modP_eq (m c : Nat) : Pcat.modP m c = c % (m + 1) := by
       rw [hc1, mulAdd_mod m _ _ (by omega)]
       simp
 
-theorem PrimRec1.modConst (m : Nat) : PrimRec1 fun c => c % (m + 1) :=
+public theorem PrimRec1.modConst (m : Nat) : PrimRec1 fun c => c % (m + 1) :=
   (PrimRec1.modP m).congr (modP_eq m)
 
 /-- Mu-free quotient by `m+1`: increments exactly when the remainder wraps around. -/
-def divP (m : Nat) : Nat → Nat := natIter 0 fun c r => r + eqInd (modP m c) m
+@[expose] public def divP (m : Nat) : Nat → Nat := natIter 0 fun c r => r + eqInd (modP m c) m
 
-theorem divP_succ (m c : Nat) : divP m (c + 1) = divP m c + eqInd (modP m c) m := rfl
+public theorem divP_succ (m c : Nat) : divP m (c + 1) = divP m c + eqInd (modP m c) m := rfl
 
-theorem PrimRec1.divP (m : Nat) : PrimRec1 (Pcat.divP m) :=
+public theorem PrimRec1.divP (m : Nat) : PrimRec1 (Pcat.divP m) :=
   PrimRec1.natIter 0 (PrimRec2.comp2 PrimRec2.add (show PrimRec2 fun _ b => b from PrimRecV.proj 1)
     (PrimRec2.ofFst (PrimRec1.comp2 PrimRec2.eqInd (PrimRec1.modP m)
       (PrimRec1.const m))))
 
-theorem divP_eq (m c : Nat) : Pcat.divP m c = c / (m + 1) := by
+public theorem divP_eq (m c : Nat) : Pcat.divP m c = c / (m + 1) := by
   induction c with
   | zero => rw [Nat.zero_div]; rfl
   | succ c ih =>
@@ -392,7 +394,7 @@ theorem divP_eq (m c : Nat) : Pcat.divP m c = c / (m + 1) := by
       have hc1 : c + 1 = (c / (m + 1)) * (m + 1) + (c % (m + 1) + 1) := by omega
       rw [hc1, mulAdd_div m _ _ (by omega)]
 
-theorem PrimRec1.divConst (m : Nat) : PrimRec1 fun c => c / (m + 1) :=
+public theorem PrimRec1.divConst (m : Nat) : PrimRec1 fun c => c / (m + 1) :=
   (PrimRec1.divP m).congr (divP_eq m)
 
 /-! ## Part 3: the category P (§1.573)
@@ -402,11 +404,11 @@ theorem PrimRec1.divConst (m : Nat) : PrimRec1 fun c => c / (m + 1) :=
   `Cat` instance cannot collide with R's. -/
 
 /-- Objects of P: the extended naturals 0, 1, 2, …, ω. -/
-def PObj : Type := ExtNat
+@[expose] public def PObj : Type := ExtNat
 
 /-- Morphism condition of P: from ω the induced ℕ→ℕ function must be primitive
     recursive; from a finite ordinal everything is a morphism (book convention). -/
-def IsPMor : (α β : ExtNat) → (El α → El β) → Prop := fun α _ f =>
+@[expose] public def IsPMor : (α β : ExtNat) → (El α → El β) → Prop := fun α _ f =>
   match α, f with
   | some _, _ => True
   | none, f => PrimRec1 fun k => toNat (f k)
@@ -419,16 +421,16 @@ theorem IsPMor.isMor : ∀ {α β : ExtNat} {f : El α → El β}, IsPMor α β 
   | none => intro β f h; exact PrimRecV.recursiveV h
 
 /-- Morphisms of P: primitive recursive functions between the carriers. -/
-def PMor (α β : ExtNat) : Type := {f : El α → El β // IsPMor α β f}
+@[expose] public def PMor (α β : ExtNat) : Type := {f : El α → El β // IsPMor α β f}
 
-theorem PMor.ext {α β : ExtNat} {f g : PMor α β} (h : ∀ a, f.1 a = g.1 a) : f = g :=
+public theorem PMor.ext {α β : ExtNat} {f g : PMor α β} (h : ∀ a, f.1 a = g.1 a) : f = g :=
   Subtype.ext (funext h)
 
-theorem isPMor_finite {n : Nat} {β : ExtNat} (f : El (some n) → El β) :
+public theorem isPMor_finite {n : Nat} {β : ExtNat} (f : El (some n) → El β) :
     IsPMor (some n) β f := trivial
 
 /-- Composing through a finite object stays primitive recursive (finite tables). -/
-theorem primrec1_finComp {m : Nat} {f : Nat → Fin m} (hf : PrimRec1 fun k => (f k).val)
+public theorem primrec1_finComp {m : Nat} {f : Nat → Fin m} (hf : PrimRec1 fun k => (f k).val)
     (t : Fin m → Nat) : PrimRec1 fun k => t (f k) := by
   have htab := PrimRec1.finTable m t
   have hcomp := PrimRec1.comp (f := fun k => (f k).val)
@@ -438,7 +440,7 @@ theorem primrec1_finComp {m : Nat} {f : Nat → Fin m} (hf : PrimRec1 fun k => (
   rw [dif_pos (f k).isLt]
 
 /-- Composites of P-morphisms are P-morphisms. -/
-theorem isPMor_comp {α β γ : ExtNat} (f : PMor α β) (g : PMor β γ) :
+public theorem isPMor_comp {α β γ : ExtNat} (f : PMor α β) (g : PMor β γ) :
     IsPMor α γ fun a => g.1 (f.1 a) := by
   match α with
   | some n => exact trivial
@@ -449,7 +451,7 @@ theorem isPMor_comp {α β γ : ExtNat} (f : PMor α β) (g : PMor β γ) :
     | some m =>
       exact primrec1_finComp (f := fun k => f.1 k) f.2 fun j => toNat (g.1 j)
 
-instance : Cat PObj where
+@[expose] public instance : Cat PObj where
   Hom := PMor
   id α := ⟨fun a => a, by
     match α with
@@ -467,14 +469,14 @@ theorem pcomp_fn {α β γ : PObj} (f : α ⟶ β) (g : β ⟶ γ) (a : El α) :
 theorem pid_fn {α : PObj} (a : El α) : (Cat.id α).1 a = a := rfl
 
 /-- Pointwise consequence of a P-morphism equation. -/
-theorem PMor.congr {α β : ExtNat} {f g : PMor α β} (h : f = g) (a : El α) :
+public theorem PMor.congr {α β : ExtNat} {f g : PMor α β} (h : f = g) (a : El α) :
     f.1 a = g.1 a := by rw [h]
 
 /-! ### P has a terminator and binary products (§1.573: products are NOT the problem;
     only equalizers fail).  R's `ProdData` bijections transfer: their decodings and
     numeric pairings are primitive recursive in every case. -/
 
-instance : HasTerminal PObj where
+@[expose] public instance : HasTerminal PObj where
   one := (some 1 : ExtNat)
   trm X := ⟨fun _ => ⟨0, Nat.one_pos⟩, by
     match X with
@@ -488,14 +490,14 @@ instance : HasTerminal PObj where
 
 /-- §1.572's `ProdData` bijection together with primitive recursiveness of its
     projections and its numeric pairing: product data for P. -/
-structure PProdData (α β : ExtNat) where
+public structure PProdData (α β : ExtNat) where
   pd : ProdData α β
   dec₁_pmor : IsPMor pd.obj α pd.dec₁
   dec₂_pmor : IsPMor pd.obj β pd.dec₂
   encN_prim : PrimRec2 pd.encN
 
 /-- All six §1.572 product bijections are primitive recursive. -/
-noncomputable def pprodData : (α β : ExtNat) → PProdData α β
+@[expose] public noncomputable def pprodData : (α β : ExtNat) → PProdData α β
   | some n, some m =>
     ⟨prodFinFin n m, trivial, trivial,
       (PrimRec2.comp2 PrimRec2.add
@@ -516,7 +518,7 @@ noncomputable def pprodData : (α β : ExtNat) → PProdData α β
   | none, none => ⟨prodOmegaOmega, PrimRec1.cfst, PrimRec1.csnd, PrimRec2.cp⟩
 
 /-- The universal pairing map is a P-morphism (via the primitive recursive `encN`). -/
-theorem pair_isPMor {X α β : ExtNat} (ppd : PProdData α β) (f : PMor X α) (g : PMor X β) :
+public theorem pair_isPMor {X α β : ExtNat} (ppd : PProdData α β) (f : PMor X α) (g : PMor X β) :
     IsPMor X ppd.pd.obj fun w => ppd.pd.enc (f.1 w) (g.1 w) := by
   match X with
   | some n => exact trivial
@@ -525,7 +527,7 @@ theorem pair_isPMor {X α β : ExtNat} (ppd : PProdData α β) (f : PMor X α) (
       PrimRec1.comp2 ppd.encN_prim f.2 g.2
     exact h.congr fun k => (ppd.pd.encN_spec _ _).symm
 
-noncomputable instance : HasBinaryProducts PObj where
+@[expose] public noncomputable instance : HasBinaryProducts PObj where
   prod α β := (pprodData α β).pd.obj
   fst {α β} := ⟨(pprodData α β).pd.dec₁, (pprodData α β).dec₁_pmor⟩
   snd {α β} := ⟨(pprodData α β).pd.dec₂, (pprodData α β).dec₂_pmor⟩
@@ -549,7 +551,7 @@ noncomputable instance : HasBinaryProducts PObj where
   then 0 is the equalizer of `x, y` (already in P). -/
 
 /-- ω as an object of P. -/
-def omegaP : PObj := (none : ExtNat)
+@[expose] public def omegaP : PObj := (none : ExtNat)
 
 section EqIdem
 
@@ -605,7 +607,7 @@ theorem eqIdem_univ {β : PObj} (z : β ⟶ omegaP) (hz : z ≫ x = z ≫ y) (n 
 
 /-- Any function into the empty carrier is (vacuously) a P-morphism: its very
     existence from ω is contradictory. -/
-theorem isPMor_ofEmpty {γ : ExtNat} (f : El γ → El (some 0)) : IsPMor γ (some 0) f := by
+public theorem isPMor_ofEmpty {γ : ExtNat} (f : El γ → El (some 0)) : IsPMor γ (some 0) f := by
   match γ with
   | some d => exact trivial
   | none => exact (f 0).elim0
@@ -628,19 +630,19 @@ end EqIdem
   and faithfully via `α ↦ (α, 1)`, and every idempotent of P̂ splits. -/
 
 /-- Objects of P̂: a P-object with a primitive recursive idempotent on it. -/
-structure PhatObj where
+public structure PhatObj where
   carrier : PObj
   e : carrier ⟶ carrier
   idem : e ≫ e = e
 
 /-- Morphisms `(α,e) → (β,f)` of P̂: P-morphisms `φ` with `e ≫ φ = φ = φ ≫ f`. -/
-def PhatHom (E F : PhatObj) : Type :=
+@[expose] public def PhatHom (E F : PhatObj) : Type :=
   {φ : E.carrier ⟶ F.carrier // E.e ≫ φ = φ ∧ φ ≫ F.e = φ}
 
-theorem PhatHom.ext {E F : PhatObj} {φ ψ : PhatHom E F} (h : φ.1 = ψ.1) : φ = ψ :=
+public theorem PhatHom.ext {E F : PhatObj} {φ ψ : PhatHom E F} (h : φ.1 = ψ.1) : φ = ψ :=
   Subtype.ext h
 
-instance : Cat PhatObj where
+@[expose] public instance : Cat PhatObj where
   Hom := PhatHom
   id E := ⟨E.e, E.idem, E.idem⟩
   comp {E F G} φ ψ := ⟨φ.1 ≫ ψ.1,
@@ -650,7 +652,7 @@ instance : Cat PhatObj where
   assoc φ ψ χ := PhatHom.ext (Cat.assoc _ _ _)
 
 /-- The embedding P → P̂ on objects: identity idempotents. -/
-def embP (α : PObj) : PhatObj := ⟨α, Cat.id α, Cat.id_comp _⟩
+@[expose] public def embP (α : PObj) : PhatObj := ⟨α, Cat.id α, Cat.id_comp _⟩
 
 def embPFunctor : Functor PObj PhatObj where
   obj := embP
@@ -676,41 +678,41 @@ theorem phat_idem_split {E : PhatObj} (Φ : E ⟶ E) (h : Idempotent Φ) :
 
 /-! ### P̂ has a terminator and binary products (they lift from P) -/
 
-instance : HasTerminal PhatObj where
+@[expose] public instance : HasTerminal PhatObj where
   one := embP one
   trm E := ⟨HasTerminal.trm E.carrier, HasTerminal.uniq _ _, Cat.comp_id _⟩
   uniq f g := PhatHom.ext (HasTerminal.uniq f.1 g.1)
 
 /-- Post-composition into a pair (products are natural in the source). -/
-theorem comp_pair {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] {X Y A B : 𝒞}
+public theorem comp_pair {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts 𝒞] {X Y A B : 𝒞}
     (h : X ⟶ Y) (f : Y ⟶ A) (g : Y ⟶ B) : h ≫ pair f g = pair (h ≫ f) (h ≫ g) :=
   Freyd.pair_uniq _ _ _ (by rw [Cat.assoc, Freyd.fst_pair]) (by rw [Cat.assoc, Freyd.snd_pair])
 
 /-- The product idempotent `e×f` on the carrier product. -/
-noncomputable def eProd (E F : PhatObj) :
+@[expose] public noncomputable def eProd (E F : PhatObj) :
     prod E.carrier F.carrier ⟶ prod E.carrier F.carrier :=
   pair (Freyd.fst ≫ E.e) (Freyd.snd ≫ F.e)
 
-theorem eProd_absorb_fst (E F : PhatObj) :
+public theorem eProd_absorb_fst (E F : PhatObj) :
     eProd E F ≫ (Freyd.fst ≫ E.e) = Freyd.fst ≫ E.e := by
   rw [← Cat.assoc, show eProd E F ≫ Freyd.fst = Freyd.fst ≫ E.e from Freyd.fst_pair _ _,
     Cat.assoc, E.idem]
 
-theorem eProd_absorb_snd (E F : PhatObj) :
+public theorem eProd_absorb_snd (E F : PhatObj) :
     eProd E F ≫ (Freyd.snd ≫ F.e) = Freyd.snd ≫ F.e := by
   rw [← Cat.assoc, show eProd E F ≫ Freyd.snd = Freyd.snd ≫ F.e from Freyd.snd_pair _ _,
     Cat.assoc, F.idem]
 
-theorem eProd_idem (E F : PhatObj) : eProd E F ≫ eProd E F = eProd E F := by
+public theorem eProd_idem (E F : PhatObj) : eProd E F ≫ eProd E F = eProd E F := by
   show eProd E F ≫ pair (Freyd.fst ≫ E.e) (Freyd.snd ≫ F.e) = eProd E F
   rw [comp_pair, eProd_absorb_fst, eProd_absorb_snd]
   rfl
 
 /-- The product of P̂: carrier product with the product idempotent. -/
-noncomputable def phatProd (E F : PhatObj) : PhatObj :=
+@[expose] public noncomputable def phatProd (E F : PhatObj) : PhatObj :=
   ⟨prod E.carrier F.carrier, eProd E F, eProd_idem E F⟩
 
-noncomputable instance : HasBinaryProducts PhatObj where
+@[expose] public noncomputable instance : HasBinaryProducts PhatObj where
   prod := phatProd
   fst {E F} := ⟨Freyd.fst ≫ E.e, eProd_absorb_fst E F, by rw [Cat.assoc, E.idem]⟩
   snd {E F} := ⟨Freyd.snd ≫ F.e, eProd_absorb_snd E F, by rw [Cat.assoc, F.idem]⟩
@@ -761,11 +763,11 @@ variable {γ β : ExtNat} (d : PMor γ γ) (u v : PMor γ β)
 
 /-- The §1.573 idempotent, generalized: fix the `d`-fixed points where `u, v` agree,
     send everything else to the witness `a₀`. -/
-def spltFn (a₀ : El γ) : El γ → El γ := fun a =>
+@[expose] public def spltFn (a₀ : El γ) : El γ → El γ := fun a =>
   if toNat (d.1 a) = toNat a ∧ toNat (u.1 a) = toNat (v.1 a) then a else a₀
 
 /-- Values of `spltFn` lie in the agreement set (given that the witness does). -/
-theorem spltFn_mem (a₀ : El γ) (h₀d : d.1 a₀ = a₀) (h₀uv : u.1 a₀ = v.1 a₀) (a : El γ) :
+public theorem spltFn_mem (a₀ : El γ) (h₀d : d.1 a₀ = a₀) (h₀uv : u.1 a₀ = v.1 a₀) (a : El γ) :
     d.1 (spltFn d u v a₀ a) = spltFn d u v a₀ a ∧
       u.1 (spltFn d u v a₀ a) = v.1 (spltFn d u v a₀ a) := by
   by_cases h : toNat (d.1 a) = toNat a ∧ toNat (u.1 a) = toNat (v.1 a)
@@ -776,13 +778,13 @@ theorem spltFn_mem (a₀ : El γ) (h₀d : d.1 a₀ = a₀) (h₀uv : u.1 a₀ =
     rw [show spltFn d u v a₀ a = a₀ from if_neg h]
     exact ⟨h₀d, h₀uv⟩
 
-theorem spltFn_idem (a₀ : El γ) (h₀d : d.1 a₀ = a₀) (h₀uv : u.1 a₀ = v.1 a₀) (a : El γ) :
+public theorem spltFn_idem (a₀ : El γ) (h₀d : d.1 a₀ = a₀) (h₀uv : u.1 a₀ = v.1 a₀) (a : El γ) :
     spltFn d u v a₀ (spltFn d u v a₀ a) = spltFn d u v a₀ a :=
   if_pos ⟨congrArg toNat (spltFn_mem d u v a₀ h₀d h₀uv a).1,
     congrArg toNat (spltFn_mem d u v a₀ h₀d h₀uv a).2⟩
 
 /-- `spltFn` is a P-morphism (arithmetization of the definition-by-cases). -/
-theorem spltFn_pmor (a₀ : El γ) : IsPMor γ γ (spltFn d u v a₀) := by
+public theorem spltFn_pmor (a₀ : El γ) : IsPMor γ γ (spltFn d u v a₀) := by
   match γ, d, u, v, a₀ with
   | some n, _, _, _, _ => exact trivial
   | none, d, u, v, a₀ =>
@@ -823,7 +825,7 @@ section PhatEqualizer
 variable {E F : PhatObj} (x y : E ⟶ F)
 
 /-- Values of cone maps into `(γ,d)` are `d`-fixed and `x,y`-agreeing. -/
-theorem cone_mem (c : EqualizerCone x y) (w : El c.dom.carrier) :
+public theorem cone_mem (c : EqualizerCone x y) (w : El c.dom.carrier) :
     E.e.1 (c.map.1.1 w) = c.map.1.1 w ∧
       x.1.1 (c.map.1.1 w) = y.1.1 (c.map.1.1 w) :=
   ⟨PMor.congr c.map.2.2 w, PMor.congr (congrArg Subtype.val c.eq) w⟩
@@ -831,25 +833,25 @@ theorem cone_mem (c : EqualizerCone x y) (w : El c.dom.carrier) :
 variable (a₀ : El E.carrier)
 
 /-- The generalized §1.573 idempotent as a P-morphism on the carrier. -/
-def phatEqIdemP : E.carrier ⟶ E.carrier :=
+@[expose] public def phatEqIdemP : E.carrier ⟶ E.carrier :=
   ⟨spltFn E.e x.1 y.1 a₀, spltFn_pmor E.e x.1 y.1 a₀⟩
 
 variable (h₀d : E.e.1 a₀ = a₀) (h₀uv : x.1.1 a₀ = y.1.1 a₀)
 
 /-- The equalizer object of P̂: the carrier of `E` with the §1.573 idempotent. -/
-def phatEqObj : PhatObj :=
+@[expose] public def phatEqObj : PhatObj :=
   ⟨E.carrier, phatEqIdemP x y a₀,
     PMor.ext (spltFn_idem E.e x.1 y.1 a₀ h₀d h₀uv)⟩
 
 /-- The equalizing map `(carrier, e′) → E` of P̂ (underlying function `e′`). -/
-def phatEqMap : phatEqObj x y a₀ h₀d h₀uv ⟶ E := by
+@[expose] public def phatEqMap : phatEqObj x y a₀ h₀d h₀uv ⟶ E := by
   refine ⟨phatEqIdemP (E := E) (F := F) x y a₀, PMor.ext ?_, PMor.ext ?_⟩
   · exact spltFn_idem E.e x.1 y.1 a₀ h₀d h₀uv
   · exact fun a => (spltFn_mem E.e x.1 y.1 a₀ h₀d h₀uv a).1
 
 /-- §1.573 executed in P̂: with an agreement witness `a₀`, `(carrier, e′)`
     equalizes `x, y`. -/
-def phatEqWitness : HasEqualizer x y where
+@[expose] public def phatEqWitness : HasEqualizer x y where
   cone :=
     ⟨phatEqObj x y a₀ h₀d h₀uv, phatEqMap x y a₀ h₀d h₀uv,
       PhatHom.ext (PMor.ext fun a => (spltFn_mem E.e x.1 y.1 a₀ h₀d h₀uv a).2)⟩
@@ -864,7 +866,7 @@ def phatEqWitness : HasEqualizer x y where
       _ = c.map.1.1 w := PMor.congr (congrArg Subtype.val hm) w)
 
 /-- No agreement anywhere: the empty object `(0, 1)` equalizes `x, y` in P̂. -/
-def phatEqEmpty (hno : ∀ a : El E.carrier, ¬(E.e.1 a = a ∧ x.1.1 a = y.1.1 a)) :
+@[expose] public def phatEqEmpty (hno : ∀ a : El E.carrier, ¬(E.e.1 a = a ∧ x.1.1 a = y.1.1 a)) :
     HasEqualizer x y where
   cone :=
     ⟨embP (some 0 : ExtNat),
@@ -882,7 +884,7 @@ open Classical in
 /-- Equalizers in P̂ — §1.573: splitting all idempotents repairs the equalizers.
     (The case split on inhabitation of the agreement set is classical, exactly as
     for R's equalizers in §1.572.) -/
-noncomputable def phatEqOf : HasEqualizer x y :=
+@[expose] public noncomputable def phatEqOf : HasEqualizer x y :=
   if h : ∃ a : El E.carrier, E.e.1 a = a ∧ x.1.1 a = y.1.1 a then
     phatEqWitness x y h.choose h.choose_spec.1 h.choose_spec.2
   else
@@ -890,10 +892,10 @@ noncomputable def phatEqOf : HasEqualizer x y :=
 
 end PhatEqualizer
 
-noncomputable instance : HasEqualizers PhatObj := ⟨fun _ _ x y => phatEqOf x y⟩
+@[expose] public noncomputable instance : HasEqualizers PhatObj := ⟨fun _ _ x y => phatEqOf x y⟩
 
 /-- **§1.573 headline**: P̂ = Spl(P) is a cartesian category. -/
-noncomputable instance phatCartesian : CartesianCategory PhatObj := {}
+@[expose] public noncomputable instance phatCartesian : CartesianCategory PhatObj := {}
 
 /-- §1.573 as stated in the book: a parallel pair from ω in P acquires an equalizer
     once the idempotents are split. -/
@@ -909,10 +911,10 @@ noncomputable example {α : PObj} (x y : omegaP ⟶ α) :
   Ackermann-style growth argument and are not formalized; see the header.) -/
 
 /-- ω̂: the image of ω in P̂. -/
-def omegaPhat : PhatObj := embP omegaP
+@[expose] public def omegaPhat : PhatObj := embP omegaP
 
 /-- The set-valued functor `P̂(ω̂, −)` represented by ω̂. -/
-def phatPoints (E : PhatObj) : Type := omegaPhat ⟶ E
+@[expose] public def phatPoints (E : PhatObj) : Type := omegaPhat ⟶ E
 
 def phatPointsFunctor : Functor PhatObj Type where
   obj := phatPoints
