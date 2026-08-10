@@ -9,7 +9,9 @@
   catamorphism concretely (over `SnocList Unit Char` from `AOP.A6_SnocList`) and give its loop
   recursion; `detab` is the first component.
 -/
-import AOP.A6_SnocList
+module
+
+public import AOP.A6_SnocList
 
 namespace Freyd.Alg.RelSet.Detab
 
@@ -19,7 +21,7 @@ open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.SL
 variable (n : Nat) (tb nl blank : Char)
 
 /-- The accumulator: `(output so far, current column)`. -/
-abbrev St : RelSet.{0} := ⟨List Char × Nat⟩
+@[expose] public abbrev St : RelSet.{0} := ⟨List Char × Nat⟩
 
 /-- The tupled algebra `[base, step]` (B&dM p.247): `base = ([], 0)`, and `step` appends a
     character, resetting the column on a newline, padding with blanks to the next tab stop on a

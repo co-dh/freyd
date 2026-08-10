@@ -17,7 +17,9 @@
   carriers there are separate inductive types, so the correspondence is a definitional remark plus this
   concrete instance, not a transport of `Mu LF A ≅ ConsList Unit A` (which would need a type iso).
 -/
-import AOP.A6_PolyFold
+module
+
+public import AOP.A6_PolyFold
 
 set_option linter.unusedVariables false
 
@@ -26,7 +28,7 @@ namespace Freyd.Alg.RelSet.Poly.ListF
 open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.Poly
 
 /-- The list functor code `one ⊕ (arg₁ ⊗ arg₂)`. -/
-def LF : PolyF := .oplus .one (.otimes .arg₁ .arg₂)
+@[expose] public def LF : PolyF := .oplus .one (.otimes .arg₁ .arg₂)
 
 /-- `⟦LF⟧ A X = 1 + A × X`. -/
 example (A X : Type) : sem LF A X = (PUnit ⊕ A × X) := rfl

@@ -18,8 +18,10 @@
   {coproduct (5.11)} — over the `junc`/`sumMap` calculus of `AOP.A5_3`, not by pointwise cases.
   Everything is constructive (the fold is defined FROM the algebra-relation, no choice).
 -/
-import AOP.A6_1_RelSet
-import AOP.A5_3
+module
+
+public import AOP.A6_1_RelSet
+public import AOP.A5_3
 
 namespace Freyd.Alg.RelSet.Digits
 
@@ -31,12 +33,12 @@ local infixr:70 " × " => rprodMap
 
 /-- The canonical coproduct action of two relations in `Rel(Set)`.  It hides the chosen
     `Sum` coproducts so calculations can use Bird and de Moor's `R + S` notation. -/
-def rsumMap {a a' b b' : RelSet.{0}} (R : a ⟶ a') (S : b ⟶ b') :
+@[expose] public def rsumMap {a a' b b' : RelSet.{0}} (R : a ⟶ a') (S : b ⟶ b') :
     (⟨a.carrier ⊕ b.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩ :=
   sumMap (sumCop a b) (sumCop a' b') R S
 
 /-- Bird and de Moor's coproduct-bifunctor `+` on relations. -/
-instance {a a' b b' : RelSet.{0}} :
+@[expose] public instance {a a' b b' : RelSet.{0}} :
     HAdd (a ⟶ a') (b ⟶ b')
       ((⟨a.carrier ⊕ b.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩) where
   hAdd := rsumMap
@@ -44,31 +46,31 @@ instance {a a' b b' : RelSet.{0}} :
 /-! ## Datatypes and their objects in `Rel(Set)` (universe 0) -/
 
 /-- The ten decimal digits `{0,…,9}`. -/
-def Digit : Type := Fin 10
+@[expose] public def Digit : Type := Fin 10
 /-- The nine nonzero digits `{1,…,9}`. -/
-def DigitP : Type := { d : Fin 10 // d.val ≠ 0 }
+@[expose] public def DigitP : Type := { d : Fin 10 // d.val ≠ 0 }
 
 /-- Decimal representations: `wrap` a leading nonzero digit, then `snoc` further digits. -/
-inductive Decimal where
+public inductive Decimal where
   | wrap : DigitP → Decimal
   | snoc : Decimal → Digit → Decimal
 
 /-- Object of `Rel(Set)` carrying `Digit`.  `abbrev` so `.carrier` reduces to `Digit`. -/
 abbrev dDigit : RelSet.{0} := ⟨Digit⟩
 /-- Object of `Rel(Set)` carrying `Digit⁺`. -/
-abbrev dDigitP : RelSet.{0} := ⟨DigitP⟩
+@[expose] public abbrev dDigitP : RelSet.{0} := ⟨DigitP⟩
 /-- Object of `Rel(Set)` carrying `Decimal`. -/
-abbrev dDec : RelSet.{0} := ⟨Decimal⟩
+@[expose] public abbrev dDec : RelSet.{0} := ⟨Decimal⟩
 
 /-! ## The functor `F A = Digit⁺ + (A × Digit)` -/
 
 /-- Carrier of `F A`.  The first summand is spelled `dDigitP.carrier` (not `DigitP`) so that
     unifying an `⁅g, h⁆`-hole against `Fobj c` solves the coproduct object to the CONSTANT
     `dDigitP` — the same spelling standalone `⁅g, h⁆` gets — keeping `rw` steps syntactic. -/
-def Fobj (c : RelSet.{0}) : RelSet.{0} := ⟨dDigitP.carrier ⊕ (c.carrier × Digit)⟩
+@[expose] public def Fobj (c : RelSet.{0}) : RelSet.{0} := ⟨dDigitP.carrier ⊕ (c.carrier × Digit)⟩
 
 /-- Action of `F` on a relation: identity on the `Digit⁺` summand, `R × id` on `A × Digit`. -/
-def Fmap {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj c ⟶ Fobj c' :=
+@[expose] public def Fmap {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj c ⟶ Fobj c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ p.2 = q.2
@@ -85,7 +87,7 @@ def Fmap {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj c ⟶ Fobj c' :=
     Fmap R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
-def F : Relator RelSet.{0} RelSet.{0} where
+@[expose] public def F : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj
   map := Fmap
   -- constructive case split (no `grind` — it is classical and would put `Classical.choice`
@@ -134,7 +136,7 @@ def con : (Fobj dDec).carrier → Decimal
 
 /-- The structural fold of a decimal through an algebra `f`, defined DIRECTLY from the
     algebra-RELATION `f` (so no choice is needed to turn `f` into a function). -/
-def cataFold {c : RelSet.{0}} (f : Fobj c ⟶ c) : Decimal → c.carrier → Prop
+@[expose] public def cataFold {c : RelSet.{0}} (f : Fobj c ⟶ c) : Decimal → c.carrier → Prop
   | Decimal.wrap d => fun r => f (Sum.inl d) r
   | Decimal.snoc dec dig => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r
 
@@ -178,7 +180,7 @@ theorem cataFold_map {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
     exact cataFold_functional f hf dec r r' h1 h2
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dDec ⟶ c`. -/
-def cataR {c : RelSet.{0}} (φ : Fobj c ⟶ c) : dDec ⟶ c := cataFold φ
+@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj c ⟶ c) : dDec ⟶ c := cataFold φ
 
 /-- The book's banana brackets for the catamorphism.  Global (not scoped): each datatype engine
     declares the same notation for its own `cataR`; Lean overload resolution picks the one whose
@@ -410,7 +412,7 @@ theorem cata_converse_eq {c : RelSet.{0}} (g : dDigitP ⟶ c)
   positivity of the result is a side condition irrelevant to the recursion, so we land in `ℕ`.) -/
 
 /-- The codomain object: the natural numbers. -/
-abbrev dNat : RelSet.{0} := ⟨Nat⟩
+@[expose] public abbrev dNat : RelSet.{0} := ⟨Nat⟩
 
 /-- The book's `embed : Digit⁺ → ℕ` — include a nonzero digit as a number. -/
 def embed : dDigitP ⟶ dNat := graph fun d => d.1.val
