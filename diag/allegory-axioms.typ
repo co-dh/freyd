@@ -346,21 +346,21 @@ with linear adjoints, is in the division section below.]
 )
 
 The last of Freyd's §2.21 equations that have no picture here — a tape around nothing, or a tape
-around what is already inside it, is not worth drawing. `R` = shops with rice, `S` = shops with
-sugar throughout.
+around what is already inside it, is not worth drawing. `R` = people who admire `a`, `S` = people who
+admire `b` throughout.
 
 #table(
   columns: (9.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*equation*], [*the rice reading*]),
+  table.header([*equation*], [*the reading*]),
 
   [`R ∪ (S ∩ R) = R` #h(10pt) `(R ∪ S) ∩ R = R` #h(4pt) #src[absorption]],
-  [Shops with rice, or with both: still the shops with rice. Shops with rice or sugar, and with
-   rice: the same. The smaller side of each pair is already inside the larger.],
+  [People who admire `a`, or who admire both: still the people who admire `a`. People who admire `a`
+   or `b`, and who admire `a`: the same. The smaller side of each pair is already inside the larger.],
 
   [`R ⊥ = ⊥` #h(4pt) #src[`R 0_S = 0_{R S}` — and `⊥ R = ⊥` on the other side]],
-  [Going to a shop and then taking a road that leads nowhere gets you nowhere. `⊥` is a two-sided
+  [Admiring someone and then taking a step that leads nowhere gets you nowhere. `⊥` is a two-sided
    zero for composition, as `⊤` is not.],
 )
 
@@ -485,12 +485,12 @@ a separate theorem, not proved here.
   table.header([*law*], [*picture*]),
 
   [`F (R ∩ S) = F R ∩ F S` \ #v(2pt) #src[`F` single valued] \ #v(6pt)
-   #src[`F` = shops Ann may go to, `R` = has rice, `S` = has sugar. Single valued means one shop, so
-   the sides agree.]],
+   #src[`F` = people `x` may ask, `R` = admires `a`, `S` = admires `b`. Single valued means one person,
+   so the sides agree.]],
   grid(columns: 3, align: horizon, column-gutter: 10pt,
-    [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one shop with both])],
+    [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
     text(17pt)[=],
-    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[rice at A, sugar at B])],
+    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[`a` at A, `b` at B])],
   ),
 )
 
@@ -501,37 +501,38 @@ a separate theorem, not proved here.
 
 #definition[
 #align(center, `x (R/S) y  ⟺  ∀p. y S p → x R p`)
-#align(center, `x's image contains y's pre image.`)
+#align(center, `x (S\R) y  ⟺  ∀p. p S x → p R y`)
+#align(center, `/ compares images: S(y) ⊆ R(x).   \ compares preimages: S°(x) ⊆ R°(y).`)
+#align(center, `example: A admires, H hates, W works for`)
+#align(center, `x (A/H) y — x admires everyone y hates.`)
+#align(center, `x (H\A) y — everyone who hates x admires y.`)
 ]
 
-`R/S` relates one person to another when the first relates, via `R`, to #emph[all of] what the
-second relates to via `S` — the reading `/` gets its name from in this note. Below, `Xena` relates
-via `R` to everyone `Zane` relates to via `W` too — but that alone will not make the composed path
-hold.
 
 == `(R/S)(S/W) ⊑ R/W`
 
-// ONE picture for the whole law.  A quotient is drawn as KNOWS, a shared people column, SISTER-OF,
+// ONE picture for the whole law.  A quotient is drawn as its numerator column, a shared people
+// column, its denominator column (ADMIRES, people, HATES for `A/H`; HATES, people, WORKS for `H/W`),
 // every arrow pointing at the person it names; the reader then answers by eye — is every arrow into
-// a person from the S/W side matched by one from the R/S side? — and the answer is the arc.
-// The three quotients share their columns: `y` relates via `S` to the pool on its left and again to
+// a person from the H/W side matched by one from the A/H side? — and the answer is the arc.
+// The three quotients share their columns: `y` relates via `H` to the pool on its left and again to
 // the pool on its right, so the shared-pool column is repeated, once per quotient.  Above the
-// columns the two legs `R/S`, `S/W` meet over the `y` that carries the composite; below them `R/W`
+// columns the two legs `A/H`, `H/W` meet over the `y` that carries the composite; below them `A/W`
 // spans the whole width in its own colour, and that it starts at BOTH `x`s while the path starts
-// only at `Xavier` is the strictness of the law, drawn.
+// only at `x` is the strictness of the law, drawn.
 // Colour marks WHICH node, not which column — the columns are already told apart by position, so
-// spending a hue on them would leave nothing to tell `Xavier` from `Xena`.  First in a column blue,
+// spending a hue on them would leave nothing to tell `x` from `x'`.  First in a column blue,
 // second pink, in every column.
 #let PAL = (rgb("#1a5fb4"), rgb("#c2247f"))
 #let ARC = rgb("#7d3c98")
 #let RW = rgb("#26734d")
-#let IY = (ada: 2.4, bea: 0.8, cleo: -0.8, dot: -2.4)
+#let IY = (a: 2.4, b: 0.8, c: -0.8, d: -2.4)
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box
 // cover the stub — every edge then ends the same distance from its label, whatever its width.
 #let node(x, y, c, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
 // A column of nodes at x; a row is (y, label, the people it names).
 #let nodes(x, rows) = for (k, row) in rows.enumerate() { node(x, row.at(0), PAL.at(k), row.at(1)) }
-#let ings(x) = for (it, y) in IY { node(x, y, black, [#it]) }
+#let ings(x) = for (it, y) in IY { node(x, y, black, raw(it)) }
 // Every arrow from column x into the shared-pool column xi, stopping on the side it comes from.
 #let edges(x, xi, rows) = {
   let dir = if x < xi { -1 } else { 1 }
@@ -553,35 +554,36 @@ hold.
     box(inset: 3pt, fill: white)[#text(9.5pt, col)[#lab]])
 }
 #let head(x, lab) = d.content((x, 3.9), text(9.5pt, luma(60))[#lab])
-#let KNOWS = ((1.6, [Xavier `x`], ("ada", "bea", "cleo")),
-              (-1.6, [Xena `x'`], ("ada", "bea")))
-#let SIBS = ((1.6, [Yara], ("ada", "bea", "cleo")),
-             (-1.6, [Yusuf], ("ada", "bea", "dot")))
-#let ASKED = ((0, [Zane `z`], ("ada", "bea")),)
+#let ADMIRES = ((1.6, `x`, ("a", "b", "c")),
+              (-1.6, `x'`, ("a", "b")))
+#let HATES = ((1.6, `y`, ("a", "b", "c")),
+              (-1.6, `y'`, ("a", "b", "d")))
+#let WORKS = ((0, `z`, ("a", "b")),)
 
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  edges(-9.6, -4.8, KNOWS); edges(0, -4.8, SIBS); edges(0, 4.8, SIBS); edges(9.6, 4.8, ASKED)
-  arc((-9.6, 1.6), (-0.8, 1.6), 1, [`R/S` knows all])
-  arc((0.8, 1.6), (9.6, 0), 1, [`S/W` covers])
-  arc((-9.6, 1.6), (9.6, 0), -1, [`R/W` knows all], col: RW, h: 5.4, cx: 8)
-  arc((-9.6, -1.6), (9.6, 0), -1, [`R/W` knows all], col: RW, h: 7.0, cx: 8)
-  nodes(-9.6, KNOWS); ings(-4.8); nodes(0, SIBS); ings(4.8); nodes(9.6, ASKED)
-  head(-9.6, [`R` knows — `x`'s acquaintances]); head(0, [`S` sister-of `y`])
-  head(9.6, [`W` sister-of `z`])
+  edges(-9.6, -4.8, ADMIRES); edges(0, -4.8, HATES); edges(0, 4.8, HATES); edges(9.6, 4.8, WORKS)
+  arc((-9.6, 1.6), (-0.8, 1.6), 1, [`A/H` admires all])
+  arc((0.8, 1.6), (9.6, 0), 1, [`H/W` hates all])
+  arc((-9.6, 1.6), (9.6, 0), -1, [`A/W` admires all], col: RW, h: 5.4, cx: 8)
+  arc((-9.6, -1.6), (9.6, 0), -1, [`A/W` admires all], col: RW, h: 7.0, cx: 8)
+  nodes(-9.6, ADMIRES); ings(-4.8); nodes(0, HATES); ings(4.8); nodes(9.6, WORKS)
+  head(-9.6, [`A` — `x` admires]); head(0, [`H` — `y` hates])
+  head(9.6, [`W` — `z` works for])
 })))
 
 // The whole of each quotient in one line of English, laid out as the law reads: the two legs of the
 // path first, the arrow they are contained in last.
 #align(center, block(inset: (top: 2pt), text(10.5pt)[
-  `R/S` — `x` knows #emph[all of] `y`'s sisters #h(1.2cm)
-  `S/W` — `y`'s sisters cover #emph[all of] `z`'s sisters \
-  `R/W` — `x` knows #emph[all of] `z`'s sisters
+  `x (A/H) y` — `x` admires everyone `y` hates \
+  `y (H/W) z` — `y` hates everyone `z` works for \
+  `x (A/W) z` — `x` admires everyone `z` works for
 ]))
 
-`(R/S)(S/W)` is a path: `Xavier` → `Yara` → `Zane`, and that is all of it. `R/W` also holds of
-`Xena`, who knows everyone `Zane` calls a sister — but `Xena` does not know #emph[all] of anybody's
-sisters, so nothing composes to it. The missing path is exactly the strictness of
-`(R/S)(S/W) ⊑ R/W`.
+`(A/H)(H/W)` is a path: `x` → `y` → `z`, and that is all of it. `A/W` also holds of
+`x'`, who admires everyone `z` works for — but `x'` does not admire everyone anybody
+hates, so nothing composes to it. The missing path is exactly the strictness of
+// Boxed so the line breaker cannot split the law after a `/` — it lands at the end of the paragraph.
+#box[`(R/S)(S/W) ⊑ R/W`].
 
 // Two columns like every other table, one law per row.  The pictures here are the widest in the
 // note — `le_div_iff` is a `⟺` between two containments, four sub-pictures in a row, 10.9cm before
@@ -592,21 +594,21 @@ sisters, so nothing composes to it. The missing path is exactly the strictness o
   align: (left + horizon, center + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`X ⊑ R/S ⟺ X S ⊑ R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y` whose
-   sisters `x` fully knows lies inside `R/S`, and `R/S` is the largest such.]],
+  [`X ⊑ R/S ⟺ X S ⊑ R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y`
+   such that `x` admires everyone `y` hates lies inside `R/S`, and `R/S` is the largest such.]],
   P(p-le-div),
 
   [`X ⊑ S\R ⟺ S X ⊑ R` \ #src[The mirror — divide on the left when `x` comes first.]],
   P(p-le-ldiv),
 
-  [`(R/S) S ⊑ R` \ #src[There is a `y` whose sisters `x` fully knows, and `p` is one of `y`'s sisters
-   — then `x` knows `p` too. Strict at `S = ∅`: `R/S` is everyone, `(R/S) S = ∅`.]],
+  [`(R/S) S ⊑ R` \ #src[There is a `y` such that `x` admires everyone `y` hates, and `p` is one of
+   the people `y` hates — then `x` admires `p` too. Strict at `S = ∅`: `R/S` is everyone, `(R/S) S = ∅`.]],
   P(p-div-cancel),
 
   [`S (S\R) ⊑ R` \ #src[The mirror.]],
   P(p-ldiv-cancel),
 
-  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[*A friend's sister* is two hops: divide by the far end
+  [*associate:* `R/(S₁ S₂) = (R/S₂)/S₁` \ #src[*A friend's enemy* is two hops: divide by the far end
    first.]],
   P(p-div-assoc),
 
@@ -620,27 +622,26 @@ sisters, so nothing composes to it. The missing path is exactly the strictness o
   [`R/(f S) = (R/S) f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.]],
   P(p-div-map),
 
-  [`(R/S)(S/W) ⊑ R/W` \ #src[Someone who knows all of a sister-set that already covers someone
-   else's sisters knows that someone's sisters too.]],
+  [`(R/S)(S/W) ⊑ R/W` \ #src[Someone who admires all of a hate-list that already covers everyone
+   `z` works for admires those people too.]],
   P(p-div-comp),
 
-  [`𝟙 ⊑ R/R` \ #src[`R/R` runs knower to knower: each knows their own contacts. Strict: two people
-   who each know only `ada` and `bea` know each other's contacts too, and still stay two people.]],
+  [`𝟙 ⊑ R/R` \ #src[`R/R` runs admirer to admirer: each admires everyone they admire. Strict: two
+   people who each admire only `a` and `b` admire each other's idols too, and still stay two people.]],
   P(p-one-div),
 
-  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *knows at least as much as*, and a preorder is
+  [`(R/R)(R/R) = R/R` \ #src[`R/R` is the preorder *admires at least as much as*, and a preorder is
    idempotent. Freyd writes `⊑`; with `𝟙 ⊑ R/R` above it is an equality.]],
   P(p-div-self-idem),
 
-  [`(R/R) R = R` \ #src[Reaching `p` through someone whose contacts `x` fully knows is reaching `p`
-   directly, since `x` knows their own contacts.]],
+  [`(R/R) R = R` \ #src[Reaching `p` through someone whose idols `x` fully admires is reaching `p`
+   directly, since `x` admires their own idols.]],
   P(p-div-self),
 
-  [`R/𝟙 = R` \ #src[Knowing the one person whose sister-list is exactly `{p}` — namely `p` — is
-   knowing `p`.]],
+  [`R/𝟙 = R` \ #src[Dividing by `𝟙`: `p`'s list is just `{p}`, so admiring all of it is admiring `p`.]],
   P(p-div-one),
 
-  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Knowing a combined sister-list is knowing each list in full.]],
+  [`R/(S₁ ∪ S₂) = R/S₁ ∩ R/S₂` \ #src[Admiring a combined hate-list is admiring each list in full.]],
   P(p-div-union),
 
   [`S\(R/W) = (S\R)/W` \ #src[Which is why `S\R/W` needs no bracket.]],
@@ -651,56 +652,71 @@ Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°
 the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
 
 #pagebreak(weak: true)
-= Symmetric division
+= `x (Admires%Hates) y` is `x admires only all whom y hates`
 
 #definition[
-$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `m` and `d` has the same image:
-`∀i. (m R i ⟺ d S i)`
+$frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `x` and `y` has the same image:
+`∀p. (x R p ⟺ y S p)`
 ]
 
-// The same supply/ingredients/demand picture as the division section, with one column each side and
-// the ingredients between: matching is read by eye as "the two fans land on the same dots".
+// The meet read one factor at a time, in the vocabulary of the section above: `/` supplies ALL, the
+// converse of the mirror division supplies ONLY, and the meet is what names this section.
+#align(center, block(inset: (top: 2pt), text(10.5pt)[
+  `x (A/H) y` — `x` admires everyone `y` hates \
+  `x ((H/A)°) y` — `x` admires only people `y` hates \
+  `x ((A/H) ∩ (H/A)°) y` — `x` admires only and all whom `y` hates
+]))
+
+`x` admires exactly whom `y` hates: `/` is *all of*, $frac(R, S)$ is *only all of*.
+
+// The same admires / people / hates picture as the division section, with one column each side and
+// the people between: matching is read by eye as "the two fans land on the same dots".
 // Weight, not hue, carries the comparison — the heavy fans are the pair being compared, the washed
 // out ones the pairs that fail, so the reader sees WHICH two are claimed to match before reading
-// anything.  Colour stays with the family, blue for `R` and pink for `S`, as everywhere else here.
+// anything.  Colour stays with the family, blue for `A` and pink for `H`, as everywhere else here.
 #let syqnode(p, c, fill, w, ring: none) = d.content(p,
   box(inset: 4pt, fill: fill, radius: 3pt, stroke: ring)[#text(10pt, c)[#w]])
 // Every arrow stops short of the dot it names, on the side it comes from, so the two columns' heads
-// meet over the ingredient instead of piling onto it.
+// meet over the person instead of piling onto it.
 #let syqedge(from, to, col, w) = {
   let dir = if from.at(0) < to.at(0) { -1 } else { 1 }
   d.line(from, (to.at(0) + 0.42 * dir, to.at(1)),
     mark: (end: ">", scale: if w > 0.9 { 0.55 } else { 0.4 }), stroke: w * 1pt + col)
 }
-#let MK = (m1: (-5.2, 1.8), m2: (-5.2, -1.8))
-#let DI = (d1: (5.2, 1.8), d2: (5.2, -1.8))
-#let ING = (spice: (0, 2.4), peanut: (0, 0), oil: (0, -2.4))
+// The cast and the numbers are the division section's, read for equality instead of containment.
+#let ADMIRERS = (x1: (-5.2, 1.8), x2: (-5.2, -1.8))
+#let HATERS = (y1: (5.2, 1.8), y2: (5.2, -1.8))
+#let PEOPLE = (a: (0, 2.4), b: (0, 0.8), c: (0, -0.8), d: (0, -2.4))
 
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  // `R`: what each market stocks.  `S`: what each dish specifies.  `m₁` and `d₁` name the same two.
-  for i in ("peanut", "oil") { syqedge(MK.m1, ING.at(i), PAL.at(0), 1.1) }
-  for i in ("spice", "peanut", "oil") { syqedge(MK.m2, ING.at(i), PAL.at(0).lighten(60%), 0.7) }
-  for i in ("peanut", "oil") { syqedge(DI.d1, ING.at(i), PAL.at(1), 1.1) }
-  syqedge(DI.d2, ING.peanut, PAL.at(1).lighten(60%), 0.7)
+  // `A`: who each `x` admires.  `H`: who each `y` hates.  `x` and `y` name the same three.
+  for p in ("a", "b", "c") { syqedge(ADMIRERS.x1, PEOPLE.at(p), PAL.at(0), 1.1) }
+  for p in ("a", "b") { syqedge(ADMIRERS.x2, PEOPLE.at(p), PAL.at(0).lighten(60%), 0.7) }
+  for p in ("a", "b", "c") { syqedge(HATERS.y1, PEOPLE.at(p), PAL.at(1), 1.1) }
+  for p in ("a", "b", "d") { syqedge(HATERS.y2, PEOPLE.at(p), PAL.at(1).lighten(60%), 0.7) }
 
-  // The shared column, filled: exactly the ingredients both sides of the matched pair reach.
-  // `spice` stays hollow — `m₂` reaches it and no dish does.
-  for i in ("peanut", "oil") { d.circle(ING.at(i), radius: 0.17, fill: ARC, stroke: ARC) }
-  d.circle(ING.spice, radius: 0.17, fill: white, stroke: 0.9pt + black)
+  // The shared column, filled: exactly the people both sides of the matched pair reach.
+  // `d` stays hollow — `y'` reaches it and no admirer does.
+  for p in ("a", "b", "c") { d.circle(PEOPLE.at(p), radius: 0.17, fill: ARC, stroke: ARC) }
+  d.circle(PEOPLE.d, radius: 0.17, fill: white, stroke: 0.9pt + black)
+  // Named as in the division picture, and above the dot: beside it the name would land on a fan.
+  for (p, q) in PEOPLE { d.content((q.at(0), q.at(1) + 0.62), raw(p)) }
 
-  // The result: the one pair whose two sets agree.  It runs over the top from `m₁` to `d₁` — an arc
-  // slung underneath would start below `m₂` and read as the wrong pair.
-  d.bezier((MK.m1.at(0), 2.35), (DI.d1.at(0), 2.35), (-2.6, 4.4), (2.6, 4.4),
+  // The result: the one pair whose two sets agree.  It runs over the top from `x` to `y` — an
+  // arc slung underneath would start below `x'` and read as the wrong pair.
+  d.bezier((ADMIRERS.x1.at(0), 2.35), (HATERS.y1.at(0), 2.35), (-2.6, 4.4), (2.6, 4.4),
     mark: (end: ">", scale: 0.6), stroke: 1pt + ARC)
   // Clear of the curve's apex (y ≈ 3.9), because the fraction is two lines tall and its bar sitting
   // on the arc would read as part of it.
-  d.content((0, 4.4), box(inset: 3pt, fill: white)[#text(10pt, ARC)[$frac(R, S)$]])
+  d.content((0, 4.4), box(inset: 3pt, fill: white)[#text(10pt, ARC)[$frac(A, H)$]])
 
-  syqnode(MK.m1, ARC, rgb("#f2e9f8"), `m₁`, ring: 0.7pt + ARC); syqnode(MK.m2, black, white, `m₂`)
-  syqnode(DI.d1, ARC, rgb("#f2e9f8"), `d₁`, ring: 0.7pt + ARC); syqnode(DI.d2, black, white, `d₂`)
+  syqnode(ADMIRERS.x1, ARC, rgb("#f2e9f8"), `x`, ring: 0.7pt + ARC)
+  syqnode(ADMIRERS.x2, black, white, `x'`)
+  syqnode(HATERS.y1, ARC, rgb("#f2e9f8"), `y`, ring: 0.7pt + ARC)
+  syqnode(HATERS.y2, black, white, `y'`)
   // The family names sit outside the columns at mid-height: the top belongs to the arc, and beside
   // an arrow they would land on another arrow.
-  d.content((-6.5, 0), text(10pt, PAL.at(0))[`R`]); d.content((6.5, 0), text(10pt, PAL.at(1))[`S`])
+  d.content((-6.5, 0), text(10pt, PAL.at(0))[`A`]); d.content((6.5, 0), text(10pt, PAL.at(1))[`H`])
 })))
 
 A meet of two long divisions, the second turned round by the converse frame:
@@ -726,61 +742,62 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the market reading*]),
+  table.header([*law*], [*the reading*]),
 
   [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X° R ⊑ S`],
-  [`X` may pair `m` with `d` only when each fills the other. Both halves must typecheck, so the
-   operation is *partial*.],
+  [`X` may pair `x` with `y` only when `x` admires exactly whom `y` hates. Both halves must typecheck,
+   so the operation is *partial*.],
 
   [$frac(R, S) S ⊑ R$],
-  [ $frac(R, S) S = $ `Dom`($frac(R, S)) R$, which is `R` with the unmatched markets cut out.],
+  [$(∃ y. thin x (frac(R, S)) y ∧ y S p) → x R p$ \
+   `x only admires whom y hates` \
+   $frac(R, S) S = "Dom"(frac(R, S)) R$],
 
-  [$frac(R, R) R ⊑ R$],
-  [The same with `R` against itself, market to market.],
+  [$frac(R, R) R = R$],
+  [$(∃ y. thin x (frac(R, R)) y ∧ y R p) ⟺ x R p$ \
+   `x and y admire the same people` \
+   `y = x always qualifies (𝟙 ⊑ R%R below)`],
 
   [$𝟙 ⊑ frac(R, R)$],
-  [$m_1$ R {i1,i2} R° $m_2$ , 2 different market can have the same image and create extra pair than 𝟙],
+  [$x (frac(R, R)) y$ if `x` and `y` admires the same peoples.],
 
   [$(frac(R, R))^2 = frac(R, R)$],
-  [So *matches* is an equivalence relation. Freyd writes `⊑`; with the row above it is an
-   equality.],
+  [So the relation *admires the same people* is an equivalence relation.],
 
   [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`],
   [The largest symmetric arrow that leaves `R` alone.],
 
   [$frac(R, 𝟙)$ is the *simple part* of `R`],
-  [The markets retailing one ingredient and nothing else. It equals `R` only when `R` is simple, unlike
+  [The people who admire exactly one person and nobody else. It equals `R` only when `R` is simple, unlike
    `R/𝟙 = R`.],
 
   [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
   [Its domain is the *domain of simplicity* of `R`.],
 )
 
-// The heading otherwise lands as the last line of the page before, a page away from its own table.
-#pagebreak(weak: true)
 == Straight
 
 #definition[
-`S` is *straight* when $frac(S, S) = 𝟙$ — no two dishes specify the same ingredients.
+`S` is *straight* when $frac(S, S) = 𝟙$ — no two `y`s hate the same people.
 ]
 
 #table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the market reading*]),
+  table.header([*law*], [*the reading*]),
 
   [every symmetric `X` with `X S ⊑ S` is coreflexive],
   [Equivalently, `S` is straight.],
 
   [`f S = g S ⟹ f = g`],
-  [A straight `S` tells its dishes apart, so it cancels on the right.],
+  [A straight `S` tells its `y`s apart, so it cancels on the right.],
 
   [`S R` straight `⟹ S` straight],
   [If the longer chain tells them apart, the first step already does.],
 
   [`S` straight `⟺ R/S` simple for all `R`],
-  [If no two dishes agree, at most one market can match a given dish.],
+  [If no two `y`s agree, at most one `x` can match a given `y`.],
 
   [`R = h S`, `h` a cover, `S` straight],
   [In an effective division allegory every arrow factors that way.],
@@ -813,40 +830,120 @@ subscript.
 ]
 
 In `Rel` its source is the powerset of its target and `l ∋ i` iff `i ∈ l`, and `∋` reads a
-list `l` back into the ingredients on it. 
+list `l` back into the people on it.
+
+#definition[
+`Λ(R) ≜` $frac(R, ∋)$ ` : A ⟶ [B]`, for `R : A ⟶ B`. The list-of map: send `x` to the list of the
+people `x` admires.
+]
+
+// THE WALL IS THE PICTURE, and this is the key to the four drawn rows of the table below — hence its
+// place ahead of them.  `Λ` and `∋` are two graphical moves: seal a wire inside a box, open the box
+// and let what is inside come out.  Drawn left to right like every other string diagram in this
+// note, so `Λ(R) ∋` reads in the order it is written.
+#let fb-WALL = rgb("#2f6ea8")
+#let fb-FILL = rgb("#eaf2fb")
+// A `[B]`-wire: two thin strands, so a boxed wire is visibly not a plain one.  Each strand is
+// thinner than `strdiag`'s `lw` — at full weight the pair reads as two wires side by side rather
+// than as one wire one level down.
+#let fb-wire(a, b) = {
+  for o in (0.055, -0.055) {
+    d.line((a.at(0), a.at(1) + o), (b.at(0), b.at(1) + o), stroke: (thickness: 0.8pt))
+  }
+}
+// The box IS the power relator: what is drawn inside is one level down, `B` inside ⇒ `[B]` outside.
+// The parameter is `name`, not `lab`, because `lab` is this note's 10pt in-figure label and the body
+// below calls it — a parameter of that name would shadow it here.
+#let fb-region(a, b, name: [`P`]) = {
+  d.rect(a, b, radius: 0.2, fill: fb-FILL, stroke: (thickness: 1pt, paint: fb-WALL))
+  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.3, fb-WALL)[#name]
+}
+// A bare wall the wire crosses — the box opened, which is what `∋` does.  `side` and `up` push the
+// name clear of whichever end of the wall the wire runs into.
+#let fb-wall(x, y0, y1, name, side: 1, up: true) = {
+  d.line((x, y0), (x, y1), stroke: (thickness: 1pt, paint: fb-WALL))
+  lab(x + 0.42 * side, if up { y1 + 0.22 } else { y0 - 0.22 }, fb-WALL)[#name]
+}
+// `{·}`, the unit.  `chamfer: false` is this note's mark for a map, and being a map is the whole
+// reason `{·}` may be moved past another box while `∋` may not.
+#let fb-sing(p) = gbox(p, `{·}`, chamfer: false, w: 1.0)
+// A hairline parting two independent pictures that share one canvas.
+#let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
+
+One convention: a `[B]`-wire is drawn double, because it is a `B`-wire one level down — inside the
+box. The box is the power relator `P`, which the relator section below defines: a box holding
+`R : B ⟶ C` is `P R : [B] ⟶ [C]`. Inside the box lives the allegory, outside only maps, and
+`i : Map(𝒜) ↪ 𝒜` is the inclusion that forgets the difference. The adjunction `i ⊣ P`, that is
+`𝒜(A, B) ≅ Map(A, [B])`, has the two ends:
+
+// The two ends share one canvas, parted by a hairline, because neither is a picture on its own: the
+// point is that they face opposite ways, `[B]` in and `B` out against `A` in and `[A]` out.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  fb-wire((-3.9, 0), (-2.6, 0)); lab(-4.2, 0, black)[$[B]$]
+  fb-wall(-2.6, -0.5, 0.5, [`∋`])
+  wire((-2.6, 0), (-1.6, 0)); lab(-1.35, 0, black)[$B$]
+  lab(-2.6, -0.95, black)[counit: open the box]
+
+  fb-rule(0.2, -1.1, 1.0)
+
+  wire((1.6, 0), (2.6, 0)); lab(1.35, 0, black)[$A$]
+  fb-sing((2.6, 0))
+  fb-wire((3.6, 0), (4.9, 0)); lab(5.2, 0, black)[$[A]$]
+  lab(3.1, -0.95, black)[unit: the one-person list]
+})))
+
+#align(center, src[`Λ` is neither of them — it is the transpose the adjunction gives,
+`Λ(R) = {·} (P R)`: make the singleton, then push `R` through the box.])
 
 #table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the market reading*]),
+  table.header([*law*], [*the reading*]),
 
   [$#e[R] □ = R □$, #h(4pt) $#e[R] = #e[R □]$],
   [`∋` has the same target as `R`, and replacing `R` by the identity at that target leaves it
    unchanged: one `∋` per object, not per arrow.],
 
   [`∋` is *thick*],
-  [*Comprehension*: every market has a list of exactly what it retails. Equivalently every `R`
+  [*Comprehension*: every `x` has a list of exactly the people `x` admires. Equivalently every `R`
    factors as a map followed by `∋`.],
 
   [`∋` is *straight*, that is $frac(∋, ∋) ⊑ 𝟙$],
-  [*Extensionality*: two lists with the same ingredients are the same list.],
-
-  [`Λ(R) ≜` $frac(R, ∋)$ `: A ⟶ [B]`, for `R : A ⟶ B`],
-  [The list-of map: send a market to its list.],
+  [*Extensionality*: two lists with the same people are the same list.],
 
   [`Λ(R)` is simple],
-  [`∋` is straight, and dividing by a straight arrow is simple. At most one list per market.],
+  [`∋` is straight, and dividing by a straight arrow is simple. At most one list per `x`.],
 
   [`Λ(R)` is entire `⟺ ∋` thick],
-  [`Dom` $frac(R, ∋)$ `= 𝟙 ∩ (R/∋)(∋/R)`, the domain row above. At least one list per market, so
+  [`Dom` $frac(R, ∋)$ `= 𝟙 ∩ (R/∋)(∋/R)`, the domain row above. At least one list per `x`, so
    `Λ(R)` is a *map*.],
 
-  [`Λ(R) ∋ = R`],
-  [Look up a market's list, then read off its ingredients: what it retails.],
+  // FOUR ROWS ARE DRAWN, not read out: they are the four laws that are moves of the box calculus,
+  // and the move is what the picture shows.  Column one keeps the law and one line of gloss, column
+  // two the picture, exactly as the division section's table is laid out.  `P` centres and shrinks
+  // to the cell — 92%, its default, is what the fusion picture (the widest of the four) needs.
+  [`Λ(R) ∋ = R` \ #src[Everything left of the `∋` wall is `Λ(R)`; open the wall and what was inside
+   comes out unchanged. That is the β of this calculus.]],
+  P(cetz.canvas(length: 1cm, {
+    wire((-4.6, 0), (-3.8, 0)); lab(-4.85, 0, black)[$A$]
+    fb-sing((-3.8, 0))
+    fb-wire((-2.8, 0), (-2.4, 0))
+    fb-region((-2.4, -0.55), (-0.8, 0.55))
+    gbox((-2.15, 0), `R`)
+    fb-wire((-0.8, 0), (-0.2, 0))
+    fb-wall(-0.2, -0.55, 0.55, [`∋`])
+    wire((-0.2, 0), (0.6, 0)); lab(0.85, 0, black)[$B$]
+
+    lab(1.6, 0, black)[$=$]
+
+    wire((2.6, 0), (3.4, 0)); lab(2.35, 0, black)[$A$]
+    gbox((3.4, 0), `R`)
+    wire((4.32, 0), (5.1, 0)); lab(5.35, 0, black)[$B$]
+  })),
 
   [`Λ(R)` is the only map with `Λ(R) ∋ = R`],
-  [Two maps naming the same ingredients name the same list — extensionality again.],
+  [Two maps naming the same people name the same list — extensionality again.],
 
   [`F ⊑ Λ(F ∋)`, `F` simple],
   [A partial choice of lists is inside the total one.],
@@ -855,15 +952,220 @@ list `l` back into the ingredients on it.
   [Every list over `α`.],
 
   [`{·} ≜ Λ(𝟙)`, the *singleton map*, monic],
-  [The one-ingredient list. `Λ(𝟙)Λ°(𝟙) ⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
+  [The one-person list. `Λ(𝟙)Λ°(𝟙) ⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
+
+  // The `∋` wall stands INSIDE the box here, hence `up: false`: its name goes below, where the box's
+  // own `P` is not.
+  [`Λ(∋) = 𝟙` \ #src[Make the list of a list, then read it back one level down. Straightness itself,
+   and one of the two triangle identities of `i ⊣ P`; the other is `{·} ∋ = 𝟙`.]],
+  P(cetz.canvas(length: 1cm, {
+    fb-wire((-4.6, 0), (-3.8, 0)); lab(-4.9, 0, black)[$[B]$]
+    fb-sing((-3.8, 0))
+    fb-wire((-2.8, 0), (-2.4, 0))
+    fb-region((-2.4, -0.55), (-0.8, 0.55))
+    fb-wall(-1.6, -0.55, 0.55, [`∋`], up: false)
+    fb-wire((-0.8, 0), (0.0, 0)); lab(0.3, 0, black)[$[B]$]
+
+    lab(1.3, 0, black)[$=$]
+
+    fb-wire((2.3, 0), (4.6, 0)); lab(2.0, 0, black)[$[B]$]; lab(3.45, 0.32, black)[$𝟙$]
+  })),
+
+  [*fusion:* `Λ(f R) = f Λ(R)`, `f` a map \ #src[`f` is a plain rectangle — a map, so it may cross
+   the `{·}` node. That is naturality of the unit, `f {·} = {·} (P f)`, and it is the whole content
+   of fusion; a chamfered box is stuck on the side it is on.]],
+  P(cetz.canvas(length: 1cm, {
+    wire((-5.0, 0), (-4.2, 0)); lab(-5.25, 0, black)[$A'$]
+    fb-sing((-4.2, 0))
+    fb-wire((-3.2, 0), (-2.8, 0))
+    fb-region((-2.8, -0.55), (-0.5, 0.55))
+    gbox((-2.55, 0), `f`, chamfer: false)
+    wire((-1.63, 0), (-1.45, 0))
+    gbox((-1.45, 0), `R`)
+    fb-wire((-0.5, 0), (0.3, 0)); lab(0.6, 0, black)[$[B]$]
+
+    lab(1.4, 0, black)[$=$]
+
+    wire((2.4, 0), (3.1, 0)); lab(2.15, 0, black)[$A'$]
+    gbox((3.1, 0), `f`, chamfer: false)
+    wire((4.02, 0), (4.3, 0))
+    fb-sing((4.3, 0))
+    fb-wire((5.3, 0), (5.7, 0))
+    fb-region((5.7, -0.55), (7.1, 0.55))
+    gbox((5.95, 0), `R`)
+    fb-wire((7.1, 0), (7.9, 0)); lab(8.2, 0, black)[$[B]$]
+  })),
 
   [`Λ(f) = f {·}`, `f` a map],
-  [Rename first or take singletons first.],
+  [Rename first or take singletons first — the fusion row above at `R = 𝟙`.],
+
+  [$frac(R, S) = Λ(R) Λ^circle.small (S)$ \ #src[`x` and `y` match exactly when the two boxes hold
+   one and the same list — the `[B]`-wire joining them is the whole statement.]],
+  P(cetz.canvas(length: 1cm, {
+    wire((-5.0, 0), (-4.2, 0)); lab(-5.25, 0, black)[$x$]
+    fb-sing((-4.2, 0))
+    fb-wire((-3.2, 0), (-2.8, 0))
+    fb-region((-2.8, -0.55), (-1.4, 0.55))
+    gbox((-2.55, 0), `R`)
+    fb-wire((-1.4, 0), (1.4, 0)); lab(0, 0.45, fb-WALL)[one list]
+    fb-region((1.4, -0.55), (2.8, 0.55), name: [`P°`])
+    gbox((1.65, 0), `S`, flip: true)
+    fb-wire((2.8, 0), (3.2, 0))
+    gbox((3.2, 0), `{·}°`, chamfer: false, w: 1.0, flip: true)
+    wire((4.2, 0), (5.0, 0)); lab(5.25, 0, black)[$y$]
+  })),
 
   [`C` a topos `⟹ Rel(C)` a power allegory],
   [And back: a unitary tabular power allegory has `Map(A)` a topos. Extensionality and comprehension
    are all a topos adds.],
 )
+
+= The same adjunction in Marsden's 2-cell calculus
+
+Other language, other level. Here a *wire* is a functor, a *dot* is a natural transformation, a
+*region* is a category, and the picture is read bottom to top. Colour marks the category, and for
+`F : C ⟶ D` the wire carries the target `D` on its left and the source `C` on its right (Marsden
+Def 3.1). `R` itself cannot appear — it is an arrow, not a 2-cell — which is exactly the trade: this
+language draws the adjunction, the section above draws the arrows inside it.
+
+#let fb-MAPC = rgb("#e6f3e4")
+#let fb-ALLC = rgb("#e9e7f7")
+// A 2-cell: a dot on the wire, named beside it.  `wiredot` is the note's own solid dot, at the same
+// radius every generator uses, so a 2-cell here and a generator in a string diagram look alike on
+// purpose — both are a node on a wire.
+#let fb-dot(p, t, dx: 0.34, dy: 0) = {
+  wiredot(p)
+  lab(p.at(0) + dx, p.at(1) + dy, black)[#t]
+}
+
+// The two functors and the two 2-cells, side by side.  Each functor panel is split UNEVENLY: the
+// half that has to hold `Map(𝒜)` gets the room, the half holding `𝒜` does not.  The names are kept
+// so the colour rule can be checked by reading rather than by counting.
+// FILL AND STROKE ARE SEPARATE PATHS on the cup and the cap.  One `merge-path(close: true)` carrying
+// both would stroke the closing segment too, drawing a line across the top of the cup that joins the
+// `i` and `P` legs — and there is no such line: it is one wire that bends, its two legs running free
+// to the frame edge.  The snakes below are built the same way.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  // ---- i : Map(𝒜) ⟶ 𝒜        target `𝒜` on the left, source `Map(𝒜)` on the right
+  d.rect((-1.0, -1), (1.8, 1), fill: fb-MAPC, stroke: none)
+  d.rect((-1.0, -1), (0, 1), fill: fb-ALLC, stroke: none)
+  d.line((0, -1), (0, 1), stroke: 1.1pt)
+  lab(0, 1.28, black)[`i`]
+  lab(-0.5, -0.75, luma(80))[`𝒜`]; lab(0.9, -0.75, luma(80))[`Map(𝒜)`]
+
+  // ---- P : 𝒜 ⟶ Map(𝒜)        the mirror: target `Map(𝒜)` left, source `𝒜` right
+  d.rect((2.4, -1), (5.2, 1), fill: fb-ALLC, stroke: none)
+  d.rect((2.4, -1), (4.2, 1), fill: fb-MAPC, stroke: none)
+  d.line((4.2, -1), (4.2, 1), stroke: 1.1pt)
+  lab(4.2, 1.28, black)[`P`]
+  lab(3.3, -0.75, luma(80))[`Map(𝒜)`]; lab(4.7, -0.75, luma(80))[`𝒜`]
+
+  // ---- unit {·} : Id ⇒ P i    a cup, legs `i` (left) and `P` (right), so the inside of the U —
+  //      right of `i`, left of `P` — is `Map(𝒜)`, and the ground outside it is `𝒜`.
+  d.rect((5.8, -1), (7.8, 1), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+    d.line((6.4, 1), (6.4, 0.1))
+    d.bezier((6.4, 0.1), (7.2, 0.1), (6.4, -0.55), (7.2, -0.55))
+    d.line((7.2, 0.1), (7.2, 1))
+  })
+  d.line((6.4, 1), (6.4, 0.1), stroke: 1.1pt)
+  d.bezier((6.4, 0.1), (7.2, 0.1), (6.4, -0.55), (7.2, -0.55), stroke: 1.1pt)
+  d.line((7.2, 0.1), (7.2, 1), stroke: 1.1pt)
+  fb-dot((6.8, -0.31), `{·}`, dx: 0, dy: -0.32)
+  lab(6.4, 1.28, black)[`i`]; lab(7.2, 1.28, black)[`P`]
+
+  // ---- counit ∋ : i P ⇒ Id    a cap, legs `P` (left) and `i` (right), so the inside of the ∩ is `𝒜`
+  d.rect((8.4, -1), (10.4, 1), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((9.0, -1), (9.0, -0.1))
+    d.bezier((9.0, -0.1), (9.8, -0.1), (9.0, 0.55), (9.8, 0.55))
+    d.line((9.8, -0.1), (9.8, -1))
+  })
+  d.line((9.0, -1), (9.0, -0.1), stroke: 1.1pt)
+  d.bezier((9.0, -0.1), (9.8, -0.1), (9.0, 0.55), (9.8, 0.55), stroke: 1.1pt)
+  d.line((9.8, -0.1), (9.8, -1), stroke: 1.1pt)
+  fb-dot((9.4, 0.38), `∋`, dx: 0, dy: 0.32)
+  lab(9.0, -1.28, black)[`P`]; lab(9.8, -1.28, black)[`i`]
+})))
+
+#align(center, src[the two functors, then the unit `{·}` as a cup and the counit `∋` as a cap])
+
+// Two checks the colours have to pass, and they are why every fill above is stated twice — once as
+// a ground and once as the region the wire cuts out of it.  (1) Crossing a wire changes the colour,
+// so along any horizontal cut the two alternate at every crossing.  (2) The two sides of an `=` must
+// agree on their outermost regions: the plain wire on the right has one colour to its left and the
+// other to its right, and those are the far-left and far-right colours of the snake on the left.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  // ---- snake (5a):  {·} ∋ = 𝟙 on i
+  // The merge-path is the region LEFT of the zigzag, which for `i` is its target `𝒜`; the ground is
+  // the region to its right, the source `Map(𝒜)`.
+  d.rect((-1.0, -1.2), (2.6, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((-1.0, 1.2), (0, 1.2)); d.line((0, 1.2), (0, -0.2))
+    d.bezier((0, -0.2), (0.9, -0.2), (0, -0.85), (0.9, -0.85))
+    d.line((0.9, -0.2), (0.9, 0.2))
+    d.bezier((0.9, 0.2), (1.8, 0.2), (0.9, 0.85), (1.8, 0.85))
+    d.line((1.8, 0.2), (1.8, -1.2)); d.line((1.8, -1.2), (-1.0, -1.2))
+  })
+  d.line((0, 1.2), (0, -0.2), stroke: 1.1pt)
+  d.bezier((0, -0.2), (0.9, -0.2), (0, -0.85), (0.9, -0.85), stroke: 1.1pt)
+  d.line((0.9, -0.2), (0.9, 0.2), stroke: 1.1pt)
+  d.bezier((0.9, 0.2), (1.8, 0.2), (0.9, 0.85), (1.8, 0.85), stroke: 1.1pt)
+  d.line((1.8, 0.2), (1.8, -1.2), stroke: 1.1pt)
+  fb-dot((0.45, -0.68), `{·}`, dx: 0, dy: -0.3); fb-dot((1.35, 0.68), `∋`, dx: 0, dy: 0.3)
+  lab(0, 1.48, black)[`i`]; lab(1.8, -1.48, black)[`i`]
+
+  lab(3.3, 0, black)[$=$]
+
+  d.rect((4.0, -1.2), (6.0, 1.2), fill: fb-MAPC, stroke: none)
+  d.rect((4.0, -1.2), (4.9, 1.2), fill: fb-ALLC, stroke: none)
+  d.line((4.9, -1.2), (4.9, 1.2), stroke: 1.1pt)
+  lab(4.9, 1.48, black)[`i`]; lab(4.9, -1.48, black)[`i`]
+
+  fb-rule(7.0, -1.5, 1.5)
+
+  // ---- snake (5b):  Λ(∋) = 𝟙 on P — the mirror, so the merge-path is the region RIGHT of the
+  // zigzag, which for `P` is its source `𝒜`.
+  d.rect((7.8, -1.2), (11.4, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((11.4, 1.2), (10.4, 1.2)); d.line((10.4, 1.2), (10.4, -0.2))
+    d.bezier((10.4, -0.2), (9.5, -0.2), (10.4, -0.85), (9.5, -0.85))
+    d.line((9.5, -0.2), (9.5, 0.2))
+    d.bezier((9.5, 0.2), (8.6, 0.2), (9.5, 0.85), (8.6, 0.85))
+    d.line((8.6, 0.2), (8.6, -1.2)); d.line((8.6, -1.2), (11.4, -1.2))
+  })
+  d.line((10.4, 1.2), (10.4, -0.2), stroke: 1.1pt)
+  d.bezier((10.4, -0.2), (9.5, -0.2), (10.4, -0.85), (9.5, -0.85), stroke: 1.1pt)
+  d.line((9.5, -0.2), (9.5, 0.2), stroke: 1.1pt)
+  d.bezier((9.5, 0.2), (8.6, 0.2), (9.5, 0.85), (8.6, 0.85), stroke: 1.1pt)
+  d.line((8.6, 0.2), (8.6, -1.2), stroke: 1.1pt)
+  fb-dot((9.95, -0.68), `{·}`, dx: 0, dy: -0.3); fb-dot((9.05, 0.68), `∋`, dx: 0, dy: 0.3)
+  lab(10.4, 1.48, black)[`P`]; lab(8.6, -1.48, black)[`P`]
+
+  lab(12.1, 0, black)[$=$]
+
+  d.rect((12.8, -1.2), (14.8, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((12.8, -1.2), (13.7, 1.2), fill: fb-MAPC, stroke: none)
+  d.line((13.7, -1.2), (13.7, 1.2), stroke: 1.1pt)
+  lab(13.7, 1.48, black)[`P`]; lab(13.7, -1.48, black)[`P`]
+})))
+
+#align(center, src[left: `{·} ∋ = 𝟙` on `i` — the triangle identity the section above only names. \
+right: `Λ(∋) = 𝟙` on `P` — the straightness of the section above. Both are one wire pulled straight.])
+
+These two snakes are this note's own snake one bicategory down. `𝟙° = 𝟙` and *The slide*, in the
+converse section near the top, pull the same wire straight — there the two bends are `⟜◁` and `▷⊸`
+and the wire is an object of `𝒜`, here they are `{·}` and `∋` and the wire is a functor. The one real
+difference is how often the situation arises: in `Rel` every object is self-dual, so every arrow has
+its `°` and the snake costs nothing, while in `Cat` an adjoint is rare — `i ⊣ P` is something a power
+allegory asserts, not something every category has.
+
+What this buys and what it does not. The wall is genuine graphical structure — sealing, opening, and
+"only maps cross" are the three rules, and `Λ(R) ∋ = R`, `Λ(∋) = 𝟙`, `Λ(f R) = f Λ(R)` are those
+three rules and nothing more. What it does not buy: the wall is *not* built from `◁`, `⊸`, `▷`, `⟜`.
+Those four generate `∩`, `∪`, `°` and composition, and the power object is extra structure, posited
+the same way `/` is — which is why the fifteen `/`-pictures in the division section above show black
+boxes too.
 
 #pagebreak(weak: true)
 = Relator
@@ -1304,7 +1606,7 @@ The three *fusion* rows rewrite `⦇R⦈ S` through a second algebra `Q : F C �
 complete lattice — because they come from a least-fixed-point argument; the rest of the table needs
 only the initial algebra.
 
-// The law column is 7.4cm, the width the market tables use, so the widest row —
+// The law column is 7.4cm, the width the law tables use, so the widest row —
 // `⦇Q⦈ ⊑ ⦇R⦈ S ⟸ (F S) Q ⊑ R S` — stays on one line; the name column is wide enough for
 // `Eilenberg–Wright` unbroken, since a hyphenated name split across lines reads as two names.
 #align(center, table(
