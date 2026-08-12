@@ -133,6 +133,28 @@ diagram built from these four generators collapses to the spider on its own inpu
 this equation is what starts that collapse. A *bubble* is the other order, `◁ ▷`: copy then merge,
 a closed loop, which the idempotency of `∩` uses below.
 
+// No heading of its own: the word is defined where it is first used, which is the heading below, and
+// a two-paragraph definition that every later section leans on is not a section.
+// `R`, `S` for the two arrows rather than the usual `a`, `b` of a lax-functor statement: `a`, `b`, `c`
+// are this chapter's ELEMENTS, and the reading of the composite two lines down needs all three.
+A *functor* asks for `F(R) F(S) = F(R S)` and `𝟙 = F(𝟙)`. A *lax* one keeps only a 2-cell, always the
+same way round,
+
+#align(center, block(inset: (y: 4pt))[`F(R) F(S) ⇒ F(R S)` #h(1.4cm) `𝟙 ⇒ F(𝟙)`])
+
+with coherence conditions on top. The other direction is *oplax*, an invertible 2-cell *pseudo*, an
+identity one *strict*. In `Rel` a 2-cell is `⊑` and parallel 2-cells are unique, so the coherence
+conditions are automatic and a lax functor into `Rel` is exactly two inequalities,
+`F(R) F(S) ⊑ F(R S)` and `𝟙 ⊑ F(𝟙)`, with nothing else to check.
+
+Which way round is forced, not a convention to memorise: `a (F(R) F(S)) c ⟺ ∃b. a F(R) b ∧ b F(S) c`
+quantifies the mid-point `b` away, so a pair that gets through in two steps has to stop somewhere in
+between, and one that `F` lets through in one need not — *step by step `⊑` all at once*. Equality
+comes back exactly on maps: of the two laws just below, the first is an equality exactly when `R` is
+single valued, the second when `R` is entire, and both when `R` is a *map*, whose two halves those are — so
+*lax* or *strict* is the relation/map boundary under another name. The unit and counit above, the two
+homomorphism sections below and the polyad of the division chapter are all this one move.
+
 == Every arrow is a lax comonoid homomorphism
 
 #grid(columns: (1fr, 1fr), gutter: 6pt, align: center + bottom,
@@ -183,12 +205,13 @@ two calculi — (a) left to right, as every other string diagram here, (b) botto
   fb-rule(-1.0, -1.2, 1.1)
 
   // (b) `◁` is a 1-cell, so it is the WIRE, and its source and target are the regions either side of
-  // it — target `A ⊗ A` on the left, source `A` on the right.
-  d.rect((0.2, -1), (2.8, 1), fill: fb-MAPC, stroke: none)
-  d.rect((0.2, -1), (1.5, 1), fill: fb-ALLC, stroke: none)
+  // it — source `A` on the left, target `A ⊗ A` on the right, so that a composite reads left to
+  // right here exactly as it does in (a).
+  d.rect((0.2, -1), (2.8, 1), fill: fb-ALLC, stroke: none)
+  d.rect((0.2, -1), (1.5, 1), fill: fb-MAPC, stroke: none)
   d.line((1.5, -1), (1.5, 1), stroke: 1.1pt)
   lab(1.5, 1.3, black)[`◁`]
-  lab(0.82, -0.75, luma(80))[$A ⊗ A$]; lab(2.2, -0.75, luma(80))[$A$]
+  lab(0.82, -0.75, luma(80))[$A$]; lab(2.2, -0.75, luma(80))[$A ⊗ A$]
   lab(1.5, -1.45, black)[(b) `◁` is a wire]
 })))
 
@@ -204,7 +227,7 @@ two calculi — (a) left to right, as every other string diagram here, (b) botto
 
 Everything moves up one dimension, so the fork flattens: its three wires were the sets `A`, `A`, `A`,
 and in (b) sets are regions — the two prongs are no longer drawn at all, they are the name of the
-region on the left. What (b) gains is the room to draw the inclusions, and with them the adjunction
+region on the right. What (b) gains is the room to draw the inclusions, and with them the adjunction
 this section opened with:
 
 // The two 2-cells, then the snake they make.  FILL AND STROKE ARE SEPARATE PATHS on the cup and the
@@ -212,12 +235,14 @@ this section opened with:
 // line across the top of the cup that joins the `◁` and `▷` legs — and there is no such line, it is
 // one wire that bends, its two legs running free to the frame edge.
 #align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
-  // The unit `𝟙 ⊑ ◁▷` lives in `A`, so `A` is the inside of the cup.  All four panels of the row are
-  // the same 1.2 half-height, and a named 2-cell sits 0.45 clear of its own bend: these two names
+  // The unit `𝟙 ⊑ ◁▷` runs between two arrows `A ⟶ A`, so `A` is the ground the cup is cut out of,
+  // and the `A ⊗ A` between its legs is where the wire goes and comes back from.
+  // All four panels of the row are the same 1.2 half-height, and a named 2-cell sits 0.45 clear of
+  // its own bend: these two names
   // are whole containments, far wider and taller than the `{·}` and `∋` of the Marsden section
   // below, and at that section's 0.3 they are drawn through by the curve they name.
-  d.rect((-1.0, -1.2), (1.0, 1.2), fill: fb-ALLC, stroke: none)
-  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+  d.rect((-1.0, -1.2), (1.0, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
     d.line((-0.4, 1.2), (-0.4, 0.1))
     d.bezier((-0.4, 0.1), (0.4, 0.1), (-0.4, -0.55), (0.4, -0.55))
     d.line((0.4, 0.1), (0.4, 1.2))
@@ -230,9 +255,10 @@ this section opened with:
 
   fb-rule(1.8, -1.5, 1.5)
 
-  // The counit `▷◁ ⊑ 𝟙` lives in `A ⊗ A`, so the cap is the mirror of the cup in both colours.
-  d.rect((2.6, -1.2), (4.6, 1.2), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+  // The counit `▷◁ ⊑ 𝟙` runs between two arrows `A ⊗ A ⟶ A ⊗ A`, so the cap is the mirror of the
+  // cup in both colours: `A ⊗ A` is its ground and `A` is what sits between its legs.
+  d.rect((2.6, -1.2), (4.6, 1.2), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((3.2, -1.2), (3.2, -0.1))
     d.bezier((3.2, -0.1), (4.0, -0.1), (3.2, 0.55), (4.0, 0.55))
     d.line((4.0, -0.1), (4.0, -1.2))
@@ -246,9 +272,9 @@ this section opened with:
   fb-rule(5.4, -1.5, 1.5)
 
   // The snake: the cup and the cap on one wire, so the merge-path is the region LEFT of the zigzag,
-  // which for `◁` is its target `A ⊗ A`, and the ground is its source `A` to the right.
-  d.rect((6.2, -1.2), (9.8, 1.2), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+  // which for `◁` is its source `A`, and the ground is its target `A ⊗ A` to the right.
+  d.rect((6.2, -1.2), (9.8, 1.2), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((6.2, 1.2), (7.2, 1.2)); d.line((7.2, 1.2), (7.2, -0.2))
     d.bezier((7.2, -0.2), (8.1, -0.2), (7.2, -0.85), (8.1, -0.85))
     d.line((8.1, -0.2), (8.1, 0.2))
@@ -267,15 +293,16 @@ this section opened with:
 
   lab(10.3, 0, black)[$=$]
 
-  d.rect((11.0, -1.2), (13.0, 1.2), fill: fb-MAPC, stroke: none)
-  d.rect((11.0, -1.2), (11.9, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((11.0, -1.2), (13.0, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((11.0, -1.2), (11.9, 1.2), fill: fb-MAPC, stroke: none)
   d.line((11.9, -1.2), (11.9, 1.2), stroke: 1.1pt)
   lab(11.9, 1.48, black)[`◁`]; lab(11.9, -1.48, black)[`◁`]
 })))
 
-#align(center, src[Green is `A`, purple `A ⊗ A`, and a wire carries its target on the left and its
-source on the right. The unit lives in `A`, so `A` is the inside of the cup; the counit lives in
-`A ⊗ A`. The snake is the adjunction this section opened with, pulled straight.])
+#align(center, src[Green is `A`, purple `A ⊗ A`, and a wire carries its source on the left and its
+target on the right. The unit runs between two arrows `A ⟶ A`, so `A` is the ground the cup is cut
+out of; the counit runs between two arrows `A ⊗ A ⟶ A ⊗ A`, and that is the ground of the cap. The
+snake is the adjunction this section opened with, pulled straight.])
 
 // Its definition box was straddling the break, which reads as two half-boxes.
 #pagebreak(weak: true)
@@ -780,6 +807,116 @@ hates, so nothing composes to it. The missing path is exactly the strictness of
 Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what
 the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
 
+== `/` is a right adjoint
+
+// The unknown is `T` here and `X` in the table above: the two pictures below need the capitals `X`,
+// `Y`, `Z` for the objects the elements `x`, `y`, `z` live in, and one letter cannot be both.
+As a *picture*, "posited, with nothing to unfold" is exactly right. As a *law* it is not posited at
+all — one line generates the whole table above:
+
+#align(center, `T S ⊑ R   ⟺   T ⊑ R/S`)
+#align(center, src[dividing by `S` is right adjoint to composing with `S`])
+
+Both ends of the adjunction are that line read at an identity: `R/S ⊑ R/S` gives the *counit*
+`(R/S) S ⊑ R`, and `T S ⊑ T S` gives the *unit* `T ⊑ (T S)/S`. Every law in the table is one pass
+through the equivalence and back. Two of them in full:
+
+#align(center, block(inset: (y: 4pt))[
+  `T ⊑ R/(S₁ S₂)  ⟺  T (S₁ S₂) ⊑ R  ⟺  (T S₁) S₂ ⊑ R  ⟺  T S₁ ⊑ R/S₂  ⟺  T ⊑ (R/S₂)/S₁` \
+  #src[out and back twice; in between, only `T (S₁ S₂) = (T S₁) S₂`] \
+  #v(5pt)
+  `T ⊑ R/(f S)  ⟺  T (f S) ⊑ R  ⟺  (T f) S ⊑ R  ⟺  T f ⊑ R/S  ⟺  T ⊑ (R/S) f°` \
+  #src[same shape, and the last step is `f ⊣ f°` — being a map is all `f` is asked for]
+])
+
+The four generators with `∩`, `∪`, `°` and composition express exactly the regular fragment — `∃`,
+`∧`, `=` — while `x (R/S) y ⟺ ∀p. y S p → x R p` carries a `∀`. The opaque box is therefore forced,
+not lazy: drawing `/` needs a second composition beside `;`, which is what the calculus of
+neo-Peircean relations adds (Bonchi, Di Giorgio, Haydon and Sobociński, Calculus-neo-peircean.pdf),
+where `R/S = ¬(¬R ; S°)`.
+
+Dividing by a map is the case where the `∀` costs nothing: in `R/f` it ranges over the single output
+`f y`, so `∀p. y f p → x R p` collapses to `x R (f y)` — that is `R f°`, which is the map row of the
+table above at `S := 𝟙`.
+
+== `R/R` is a preorder, which is what a monad is here
+
+A *monad* in a locally posetal 2-category is a 1-cell `M` with `𝟙 ⊑ M` and `M M ⊑ M` — a unit and a
+multiplication, and with the hom-posets thin there is nothing else to give. In `Rel` that is a
+reflexive transitive relation: a preorder. The table above proves both halves at `M := R/R`, and
+names the preorder they define.
+
+`(R/R) R = R` is then the action that makes `R` a module over that monad — Hinze and Marsden's
+α : M ∘ A →̇ A (IntroString p. 83, laws (3.10a) and (3.10b)) at M := `R/R`, A := `R`. Their two
+coherence conditions are free here: parallel 2-cells are unique, so any two of them are equal.
+
+// Drawn by hand in the one-dimension-up language above — region an object, wire a relation, dot a
+// 2-cell — read bottom to top, and left to right in diagram order, so the bottom boundary is the
+// composite `(R/R) R` and the top boundary is what it lands in.
+// `R/R` is an endo-wire on `X`, so the SAME fill lies on both sides of it: that is what a monad
+// looks like here, not a colour left out.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  d.rect((-1.7, -1.2), (1.7, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((-1.7, -1.2), (0.5, 1.2), fill: fb-MAPC, stroke: none)
+  // `R` runs the full height: it is the wire the action lands ON, and landing on it changes nothing.
+  d.line((0.5, -1.2), (0.5, 1.2), stroke: 1.1pt)
+  d.bezier((-0.6, -1.2), (0.5, 0.15), (-0.6, -0.3), (0.0, 0.15), stroke: 1.1pt)
+  fb-dot((0.5, 0.15), `α`, dx: 0.32)
+  lab(-0.6, -1.48, black)[`R/R`]; lab(0.5, -1.48, black)[`R`]; lab(0.5, 1.48, black)[`R`]
+  lab(-1.3, 0.7, luma(80))[$X$]; lab(1.1, 0.7, luma(80))[$P$]
+})))
+
+#align(center, src[Green is `X`, where `x` lives; purple is `P`, where the `p` of the definition
+lives. `R/R : X ⟶ X` runs inside `X` and ends on `R : X ⟶ P` at the action `α`, which is
+`(R/R) R ⊑ R`.])
+
+== The whole family is one preorder
+
+// The same fork with three labels and three regions.  FILL AND STROKE ARE SEPARATE PATHS: the
+// closing segments of `Y` and `Z` run along the frame, they are not wires, and one
+// `merge-path(close: true)` carrying both would draw a floor under each region.
+// A third hue, because `X`, `Y`, `Z` are three different objects and two fills cannot tell them
+// apart — the two above are one hue per region, and this picture has one region more.
+#let fb-ZC = rgb("#faf0dc")
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
+  d.rect((-1.9, -1.2), (1.9, 1.2), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ZC, stroke: none, {
+    d.line((1.9, -1.2), (0.9, -1.2))
+    d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15))
+    d.line((0.0, 0.15), (0.0, 1.2)); d.line((0.0, 1.2), (1.9, 1.2))
+  })
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+    d.line((-0.9, -1.2), (0.9, -1.2))
+    d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15))
+    d.bezier((0.0, 0.15), (-0.9, -1.2), (-0.4, 0.15), (-0.9, -0.35))
+  })
+  d.bezier((-0.9, -1.2), (0.0, 0.15), (-0.9, -0.35), (-0.4, 0.15), stroke: 1.1pt)
+  d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15), stroke: 1.1pt)
+  d.line((0.0, 0.15), (0.0, 1.2), stroke: 1.1pt)
+  wiredot((0.0, 0.15))
+  lab(-0.9, -1.48, black)[`R/S`]; lab(0.9, -1.48, black)[`S/W`]; lab(0.0, 1.48, black)[`R/W`]
+  lab(-1.45, -0.5, luma(80))[$X$]; lab(0.0, -0.75, luma(80))[$Y$]; lab(1.45, -0.5, luma(80))[$Z$]
+})))
+
+#align(center, src[The same dot with one region more: `R/S : X ⟶ Y` and `S/W : Y ⟶ Z` come in,
+`R/W : X ⟶ Z` goes out. Green `X`, purple `Y`, amber `Z`.])
+
+Closing `Y` off is the mid-point `y` being quantified away; the `⊑` rather than `=` is the loss the
+figure for that law above already draws.
+
+Concretely in `Rel`, `𝟙 ⊑ R/R` and `(R/S)(S/W) ⊑ R/W` are one preorder on the disjoint union of
+`X`, `Y`, `Z`, …: reflexivity is `𝟙 ⊑ R/R` inside a block, transitivity is `(R/S)(S/W) ⊑ R/W` across
+blocks.
+
+Abstractly the same two are a *lax functor* out of the codiscrete category on `{R, S, W, …}` — one
+object per relation, exactly one arrow each way — sending `R` to `X`, the object its rows are indexed
+by, and the arrow `R → S` to `R/S : X ⟶ Y`. That is Bénabou's *polyad* (Bénabou 1967, Def. 5.5), of
+which a monad is the one-object case: the subsection above is this one at `R = S = W`.
+
+`R/S` is at the same time a bimodule between the two monads `R/R` and `S/S`: `(R/R)(R/S) ⊑ R/S` and
+`(R/S)(S/S) ⊑ R/S`, each the counit `(R/S) S ⊑ R` with one action whiskered on — `(R/R) R = R` on the
+left, `(S/S) S = S` on the right.
+
 #pagebreak(weak: true)
 = `x (Admires%Hates) y` is `x admires only all whom y hates`
 
@@ -1151,7 +1288,7 @@ box. The box is the power relator `P`, which the relator section below defines: 
 
 Other language, other level. Here a *wire* is a functor, a *dot* is a natural transformation, a
 *region* is a category, and the picture is read bottom to top. Colour marks the category, and for
-`F : C ⟶ D` the wire carries the target `D` on its left and the source `C` on its right (Marsden
+`F : C ⟶ D` the wire carries the source `C` on its left and the target `D` on its right (Marsden
 Def 3.1). `R` itself cannot appear — it is an arrow, not a 2-cell — which is exactly the trade: this
 language draws the adjunction, the section above draws the arrows inside it.
 
@@ -1163,24 +1300,25 @@ language draws the adjunction, the section above draws the arrows inside it.
 // `i` and `P` legs — and there is no such line: it is one wire that bends, its two legs running free
 // to the frame edge.  The snakes below are built the same way.
 #align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
-  // ---- i : Map(𝒜) ⟶ 𝒜        target `𝒜` on the left, source `Map(𝒜)` on the right
-  d.rect((-1.0, -1), (1.8, 1), fill: fb-MAPC, stroke: none)
-  d.rect((-1.0, -1), (0, 1), fill: fb-ALLC, stroke: none)
-  d.line((0, -1), (0, 1), stroke: 1.1pt)
-  lab(0, 1.28, black)[`i`]
-  lab(-0.5, -0.75, luma(80))[`𝒜`]; lab(0.9, -0.75, luma(80))[`Map(𝒜)`]
+  // ---- i : Map(𝒜) ⟶ 𝒜        source `Map(𝒜)` on the left, target `𝒜` on the right
+  d.rect((-1.0, -1), (1.8, 1), fill: fb-ALLC, stroke: none)
+  d.rect((-1.0, -1), (0.8, 1), fill: fb-MAPC, stroke: none)
+  d.line((0.8, -1), (0.8, 1), stroke: 1.1pt)
+  lab(0.8, 1.28, black)[`i`]
+  lab(-0.1, -0.75, luma(80))[`Map(𝒜)`]; lab(1.3, -0.75, luma(80))[`𝒜`]
 
-  // ---- P : 𝒜 ⟶ Map(𝒜)        the mirror: target `Map(𝒜)` left, source `𝒜` right
-  d.rect((2.4, -1), (5.2, 1), fill: fb-ALLC, stroke: none)
-  d.rect((2.4, -1), (4.2, 1), fill: fb-MAPC, stroke: none)
-  d.line((4.2, -1), (4.2, 1), stroke: 1.1pt)
-  lab(4.2, 1.28, black)[`P`]
-  lab(3.3, -0.75, luma(80))[`Map(𝒜)`]; lab(4.7, -0.75, luma(80))[`𝒜`]
+  // ---- P : 𝒜 ⟶ Map(𝒜)        the mirror: source `𝒜` left, target `Map(𝒜)` right
+  d.rect((2.4, -1), (5.2, 1), fill: fb-MAPC, stroke: none)
+  d.rect((2.4, -1), (3.4, 1), fill: fb-ALLC, stroke: none)
+  d.line((3.4, -1), (3.4, 1), stroke: 1.1pt)
+  lab(3.4, 1.28, black)[`P`]
+  lab(2.9, -0.75, luma(80))[`𝒜`]; lab(4.3, -0.75, luma(80))[`Map(𝒜)`]
 
-  // ---- unit {·} : Id ⇒ P i    a cup, legs `i` (left) and `P` (right), so the inside of the U —
-  //      right of `i`, left of `P` — is `Map(𝒜)`, and the ground outside it is `𝒜`.
-  d.rect((5.8, -1), (7.8, 1), fill: fb-ALLC, stroke: none)
-  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+  // ---- unit {·} : Id ⇒ i P    a cup, legs `i` (left) and `P` (right), so the inside of the U —
+  //      right of `i`, left of `P` — is `𝒜`, and the ground outside it is `Map(𝒜)`, the category
+  //      the unit's two arrows `Id` and `i P` both run in.
+  d.rect((5.8, -1), (7.8, 1), fill: fb-MAPC, stroke: none)
+  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
     d.line((6.4, 1), (6.4, 0.1))
     d.bezier((6.4, 0.1), (7.2, 0.1), (6.4, -0.55), (7.2, -0.55))
     d.line((7.2, 0.1), (7.2, 1))
@@ -1191,9 +1329,10 @@ language draws the adjunction, the section above draws the arrows inside it.
   fb-dot((6.8, -0.31), `{·}`, dx: 0, dy: -0.32)
   lab(6.4, 1.28, black)[`i`]; lab(7.2, 1.28, black)[`P`]
 
-  // ---- counit ∋ : i P ⇒ Id    a cap, legs `P` (left) and `i` (right), so the inside of the ∩ is `𝒜`
-  d.rect((8.4, -1), (10.4, 1), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+  // ---- counit ∋ : P i ⇒ Id    a cap, legs `P` (left) and `i` (right), so the inside of the ∩ is
+  //      `Map(𝒜)` and the ground is `𝒜`, where `P i` and `Id` both run
+  d.rect((8.4, -1), (10.4, 1), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((9.0, -1), (9.0, -0.1))
     d.bezier((9.0, -0.1), (9.8, -0.1), (9.0, 0.55), (9.8, 0.55))
     d.line((9.8, -0.1), (9.8, -1))
@@ -1214,10 +1353,10 @@ language draws the adjunction, the section above draws the arrows inside it.
 // other to its right, and those are the far-left and far-right colours of the snake on the left.
 #align(center, box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
   // ---- snake (5a):  {·} ∋ = 𝟙 on i
-  // The merge-path is the region LEFT of the zigzag, which for `i` is its target `𝒜`; the ground is
-  // the region to its right, the source `Map(𝒜)`.
-  d.rect((-1.0, -1.2), (2.6, 1.2), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+  // The merge-path is the region LEFT of the zigzag, which for `i` is its source `Map(𝒜)`; the
+  // ground is the region to its right, the target `𝒜`.
+  d.rect((-1.0, -1.2), (2.6, 1.2), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((-1.0, 1.2), (0, 1.2)); d.line((0, 1.2), (0, -0.2))
     d.bezier((0, -0.2), (0.9, -0.2), (0, -0.85), (0.9, -0.85))
     d.line((0.9, -0.2), (0.9, 0.2))
@@ -1234,17 +1373,17 @@ language draws the adjunction, the section above draws the arrows inside it.
 
   lab(3.3, 0, black)[$=$]
 
-  d.rect((4.0, -1.2), (6.0, 1.2), fill: fb-MAPC, stroke: none)
-  d.rect((4.0, -1.2), (4.9, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((4.0, -1.2), (6.0, 1.2), fill: fb-ALLC, stroke: none)
+  d.rect((4.0, -1.2), (4.9, 1.2), fill: fb-MAPC, stroke: none)
   d.line((4.9, -1.2), (4.9, 1.2), stroke: 1.1pt)
   lab(4.9, 1.48, black)[`i`]; lab(4.9, -1.48, black)[`i`]
 
   fb-rule(7.0, -1.5, 1.5)
 
   // ---- snake (5b):  Λ(∋) = 𝟙 on P — the mirror, so the merge-path is the region RIGHT of the
-  // zigzag, which for `P` is its source `𝒜`.
-  d.rect((7.8, -1.2), (11.4, 1.2), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+  // zigzag, which for `P` is its target `Map(𝒜)`.
+  d.rect((7.8, -1.2), (11.4, 1.2), fill: fb-ALLC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((11.4, 1.2), (10.4, 1.2)); d.line((10.4, 1.2), (10.4, -0.2))
     d.bezier((10.4, -0.2), (9.5, -0.2), (10.4, -0.85), (9.5, -0.85))
     d.line((9.5, -0.2), (9.5, 0.2))
@@ -1261,8 +1400,8 @@ language draws the adjunction, the section above draws the arrows inside it.
 
   lab(12.1, 0, black)[$=$]
 
-  d.rect((12.8, -1.2), (14.8, 1.2), fill: fb-ALLC, stroke: none)
-  d.rect((12.8, -1.2), (13.7, 1.2), fill: fb-MAPC, stroke: none)
+  d.rect((12.8, -1.2), (14.8, 1.2), fill: fb-MAPC, stroke: none)
+  d.rect((12.8, -1.2), (13.7, 1.2), fill: fb-ALLC, stroke: none)
   d.line((13.7, -1.2), (13.7, 1.2), stroke: 1.1pt)
   lab(13.7, 1.48, black)[`P`]; lab(13.7, -1.48, black)[`P`]
 })))
