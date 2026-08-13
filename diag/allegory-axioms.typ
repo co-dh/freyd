@@ -5,6 +5,11 @@
 // symbols of the same name.  See the header of strdiag.typ.
 // `dot` is renamed on the way in for the same reason: it is Typst's math `dot`.
 #import "strdiag.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
+// The zigzag box and its wires, for the `f ⊣ f°` section.  Renamed on the way in: `wire` above is
+// this file's, and `w`/`sq` are too short to leave unmarked in a file that has neither.  The
+// definitions stay in the note at the repository root, which is what `--root .` in the Makefile is
+// for; a copy here would be a second one to keep in step.
+#import "../notation_as_a_tool_of_thought_adjunction.typ": sq as zsq, w as zw
 
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN.  `./scripts/diag-export <decl>` walks the
 // Lean declaration's TYPE and writes diag/generated/<decl>.typ, which binds the cetz drawing to
@@ -528,6 +533,28 @@ admire `b` throughout.
    zero for composition, as `⊤` is not.],
 )
 
+== Where the list comes from
+
+Adjunctions on the hom-set. `Δ` is the diagonal of the hom-set `a ⟶ b`, `Δ R = (R, R)` #src[one
+level up from the copy `◁`, which is an arrow of the allegory itself], and the argument in every row
+is the same one: a left adjoint preserves joins.
+
+#table(
+  columns: (4.4cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*adjunction*], [*what it forces*]),
+
+  [`∪ ⊣ Δ ⊣ ∩`],
+  [`R ∪ S ⊑ T` iff `R ⊑ T` and `S ⊑ T`, and `T ⊑ R ∩ S` iff `T ⊑ R` and `T ⊑ S`. A left adjoint of
+   `Δ` *is* a binary join, so idempotency, commutativity, associativity and both absorption laws
+   arrive with it — and nothing else does. The chain says exactly that the hom-set is a lattice.],
+
+  [`⊥ ⊣ !`],
+  [The same at arity zero, the join of nothing: `⊥ ∪ R = R`.],
+
+)
+
 // The COLLAPSED domain: `R` ends in a `⊸`, so nothing `R` computes can leave, and what the upper
 // strand carries out is the input itself — the coreflexive on the values `R` accepts.  Bound rather
 // than drawn in place: it is the right-hand step of both chains below.  `rel` draws the chain's
@@ -649,6 +676,31 @@ a separate theorem, not proved here.
     [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[`a` at A, `b` at B])],
   ),
 )
+
+== Two adjunctions: `•f ⊣ •f°`, `f°• ⊣ f•`
+
+#src[A box is `⊑`, top row over bottom row; #zw("/") is `f` and #zw("\\") is `f°`. The notation is
+`notation_as_a_tool_of_thought_adjunction.typ`.]
+
+#table(
+  columns: (1fr, 1fr),
+  align: center + horizon,
+  inset: 10pt, stroke: 0.4pt + luma(190),
+
+  [#zsq("*", "/\\") #v(4pt) *unit* \ #src[`𝟙 ⊑ f f°` — `f` entire]],
+  [#zsq("\\/", "*") #v(4pt) *counit* \ #src[`f° f ⊑ 𝟙` — `f` single valued]],
+
+  [#zw("/\\/") #h(3pt) = #h(3pt) #zw("/") #v(4pt) *snake* \ #src[`f f° f = f`]],
+  [#zw("\\/\\") #h(3pt) = #h(3pt) #zw("\\") #v(4pt) *snake* \ #src[`f° f f° = f°`]],
+)
+
+#align(center, grid(columns: 2, column-gutter: 1.4cm, align: left,
+  [`X f ⊑ Y` iff `X ⊑ Y f°` #h(6pt) #src[right]],
+  [`f° Y ⊑ X` iff `Y ⊑ f X` #h(6pt) #src[left]],
+))
+
+#src[The right one IS `f ⊣ f°`: put `𝟙` in the dot and it hands back the unit and the counit. The
+left one comes out flipped because composing on the left reverses order, `(f g)• = f• ∘ g•`.]
 
 // Its own page: the ten rows are one table and the long-division figure heads them, so a break
 // inside would separate the metaphor from the laws it explains.
