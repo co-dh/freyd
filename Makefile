@@ -21,11 +21,12 @@ STAMP := diag/generated/.drawn
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
 # "nothing to be done" while the PDF still shows the old page is a worse trade than one second of
 # typst.  The expensive half — a Lean elaboration per picture — is what `$(STAMP)` protects.
-# `--root .`: allegory-axioms borrows the zigzag box and wires from
-# notation_as_a_tool_of_thought_adjunction.typ at the repository root, and typst's default root is
-# the input file's own directory, which would put that import out of bounds.
+# No `--root`: typst's default root is the input file's own directory, and every import the two
+# notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
+# box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
+# its own copy of those, so nothing reaches above diag/ any more.
 p: $(STAMP)
-	for t in $(TYP); do typst compile --root . $$t $${t%.typ}.pdf || exit 1; done
+	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file
@@ -38,7 +39,7 @@ NOTE ?= diag/allegory-axioms.typ
 w: p
 	@zathura $(NOTE:.typ=.pdf) & \
 	  v=$$!; trap "kill $$v 2>/dev/null" EXIT INT TERM; \
-	  typst watch --root . $(NOTE) $(NOTE:.typ=.pdf)
+	  typst watch $(NOTE) $(NOTE:.typ=.pdf)
 
 # The pictures are exported from the Lean STATEMENTS, so only the Lean makes them stale.  NOT the
 # note: `diag-regen` reads its list off the note's imports, but editing prose changes no picture,

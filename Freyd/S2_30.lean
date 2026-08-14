@@ -125,7 +125,7 @@ public theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ 
   exact comp_mono_left (R / S) (DivisionAllegory.div_comp_le S W)
 
 /-- R/(S₁∪S₂) = (R/S₁) ∩ (R/S₂) (§2.314). -/
-theorem div_union {a b c : 𝒜} (R : a ⟶ c) (S₁ S₂ : b ⟶ c) :
+public theorem div_union {a b c : 𝒜} (R : a ⟶ c) (S₁ S₂ : b ⟶ c) :
     R / (S₁ ∪ S₂) = (R / S₁) ∩ (R / S₂) := by
   apply le_antisymm
   · -- R/(S₁∪S₂) ⊑ R/S₁: by le_div_iff, (R/(S₁∪S₂))(S₁) ⊑ (R/(S₁∪S₂))(S₁∪S₂) ⊑ R
@@ -256,7 +256,7 @@ public theorem symmDiv_recip {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
 
 /-- Symmetric division is transitive: (R/ₛS)(S/ₛW) ⊑ R/ₛW (§2.35).
     `W` for the third relation, as in `div_comp`. -/
-theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+public theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
     (R /ₛ S) ≫ (S /ₛ W) ⊑ R /ₛ W := by
   rw [le_symmDiv_iff]
   have hRS := (le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)
@@ -286,7 +286,7 @@ theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) 
 @[expose] public def Straight {a b : 𝒜} (R : a ⟶ b) : Prop := R /ₛ R ⊑ Cat.id a
 
 /-- In a division allegory, (R/R)R = R (§2.314). -/
-theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := by
+public theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := by
   apply le_antisymm (DivisionAllegory.div_comp_le R R)
   -- R ⊑ (R/R)R: since 1 ⊑ R/R, we have R = 1R ⊑ (R/R)R
   have h : R ⊑ (R / R) ≫ R := by
@@ -358,7 +358,7 @@ public theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
     LHS: (S \ (R/W)) where R/W : a ⟶ c, so (S \ (R/W)) : b ⟶ c.
     RHS: (S \ R) / W where (S \ R) : b ⟶ d, W : c ⟶ d, so result : b ⟶ c. ✓
     -/
-theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (W : c ⟶ d) :
+public theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (W : c ⟶ d) :
     (S \ (R / W)) = (S \ R) / W := by
   apply le_antisymm
   · -- S\(R/W) ⊑ (S\R)/W: show S ≫ ((S \ (R/W)) ≫ W) ⊑ R
@@ -387,7 +387,7 @@ public theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) �
     `R/R` is a preorder — but the two together give the equality: reflexivity turns `R/R = 1(R/R)`
     into `⊑ (R/R)(R/R)`, which is the missing direction.  A preorder is idempotent under
     composition. -/
-theorem div_self_comp_self {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) = R / R := by
+public theorem div_self_comp_self {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) = R / R := by
   apply le_antisymm (div_self_idem R)
   calc R / R = (Cat.id a) ≫ (R / R) := by rw [Cat.id_comp]
     _ ⊑ (R / R) ≫ (R / R) := comp_mono_right (one_le_div_self R) (R / R)

@@ -69,7 +69,7 @@ public theorem monotone_l (h : GaloisConnection le₁ le₂ f g)
   (h x (f x')).mpr (trans₁ hx ((h x' (f x')).mp (refl₂ _)))
 
 /-- The UPPER (right) adjoint is monotone. -/
-theorem monotone_u (h : GaloisConnection le₁ le₂ f g)
+public theorem monotone_u (h : GaloisConnection le₁ le₂ f g)
     (refl₁ : ∀ a, le₁ a a) (trans₂ : ∀ {a b c : β}, le₂ a b → le₂ b c → le₂ a c)
     {y y' : β} (hy : le₂ y y') : le₁ (g y) (g y') :=
   (h (g y) y').mp (trans₂ ((h (g y) y).mpr (refl₁ _)) hy)

@@ -375,7 +375,7 @@ public theorem map_comp_div {a b c d : 𝒜} {f : d ⟶ a} (hf : Map f) (R : a �
     _ ↔ X ≫ S ⊑ f ≫ R := map_shunt_left hf (X ≫ S) R
     _ ↔ X ⊑ (f ≫ R) / S := (le_div_iff _ _ _).symm
 
-theorem div_comp_recip_map {a b c d : 𝒜} {f : d ⟶ b} (hf : Map f) (R : a ⟶ c) (S : b ⟶ c) :
+public theorem div_comp_recip_map {a b c d : 𝒜} {f : d ⟶ b} (hf : Map f) (R : a ⟶ c) (S : b ⟶ c) :
     R / (f ≫ S) = (R / S) ≫ f° := by
   apply antisymm_of_le_iff
   intro X
