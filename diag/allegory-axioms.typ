@@ -220,6 +220,14 @@ diagrams.
 // 1-cells of Rel, everything below is a monotone map between hom-posets, and only the type says so.
 // The cells wrap rather than the page turning: a landscape page for one table costs the reader more
 // than a few folded formulas do.
+//
+// The first column is written in sections, the standard notation, and NOT with a hole marker of
+// this note's own: an invented `•` for the gap reads as a composition dot the moment composition is
+// what fills it, which is most of the column.
+#src[Both halves of a row are written as sections — the operator stays and its missing argument is
+the gap: `·S` is `R ↦ R S`, `/S` is `T ↦ T/S`, `S\` is `Y ↦ S\Y`. Composition is juxtaposition, so
+the dot is written only in the rows where nothing else marks the gap.]
+
 #table(
   columns: 8, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
   table.header([*`F ⊣ G`*], [*`F`'s type*], [*`𝟙⊑FG`*], [*`GF⊑𝟙`*], [*`F` preserves `∪`*], [*`G` preserves `∩`*], [*`FGF=F`*], [*`GFG=G`*]),
@@ -236,25 +244,25 @@ diagrams.
 
   [`⊥ ⊣ !`], [`{*} ⟶` \ `(A⟶B)`], [—], [`⊥⊑R`], [—], [—], [—], [—],
 
-  [`•S ⊣ •/S`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`R⊑(RS)/S`], [`(T/S)S⊑T`], [`(R∪T)S=` \ `RS∪TS`], [`(R∩T)/S=` \ `R/S∩T/S`], [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
+  [`·S ⊣ /S`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`R⊑(RS)/S`], [`(T/S)S⊑T`], [`(R∪T)S=` \ `RS∪TS`], [`(R∩T)/S=` \ `R/S∩T/S`], [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
 
-  [`S• ⊣ S\•`], [`(B⟶C) ⟶` \ `(A⟶C)`], [`R⊑S\(SR)`], [`S(S\T)⊑T`], [`S(R∪T)=` \ `SR∪ST`], [`S\(R∩T)=` \ `S\R∩S\T`], [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
+  [`S· ⊣ S\`], [`(B⟶C) ⟶` \ `(A⟶C)`], [`R⊑S\(SR)`], [`S(S\T)⊑T`], [`S(R∪T)=` \ `SR∪ST`], [`S\(R∩T)=` \ `S\R∩S\T`], [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
 
-  [`R∩• ⊣ R⇒•`], [`(A⟶B) ⟶` \ `(A⟶B)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`], [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`], [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)`], [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
+  [`R∩ ⊣ R⇒`], [`(A⟶B) ⟶` \ `(A⟶B)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`], [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`], [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)`], [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
 
-  [`𝓓 ⊣ •⊤`], [`(A⟶B) ⟶` \ `Cor A`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
+  [`𝓓 ⊣ ·⊤`], [`(A⟶B) ⟶` \ `Cor A`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
 
-  [`𝓡 ⊣ ⊤•`], [`(A⟶B) ⟶` \ `Cor B`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
+  [`𝓡 ⊣ ⊤·`], [`(A⟶B) ⟶` \ `Cor B`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
 
-  [`•f ⊣ •f°`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`(R∪S)f=` \ `Rf∪Sf`], [`(R∩S)f°=` \ `Rf°∩Sf°`], [`ff°f=f`], [`f°ff°=f°`],
+  [`·f ⊣ ·f°`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`(R∪S)f=` \ `Rf∪Sf`], [`(R∩S)f°=` \ `Rf°∩Sf°`], [`ff°f=f`], [`f°ff°=f°`],
 
-  [`f°• ⊣ f•`], [`(A⟶C) ⟶` \ `(B⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
+  [`f°· ⊣ f·`], [`(A⟶C) ⟶` \ `(B⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
   [`i ⊣ P`], [`Map ↪ Rel`], [`{·}:A⟶P A`], [`∋:P B⟶B`], [—], [—], [`Λ(∋)=𝟙`], [`Λ(R)∋=R`],
 )
 
-#src[`S : B ⟶ C` in the `•S` row and `S : A ⟶ B` in the `S•` one; `f` is a map, `B ⟶ C` in the
-`•f` row and `A ⟶ B` in the `f°•` one. `Cor A` is the poset of coreflexives on `A`: the `A` and `B`
+#src[`S : B ⟶ C` in the `·S` row and `S : A ⟶ B` in the `S·` one; `f` is a map, `B ⟶ C` in the
+`·f` row and `A ⟶ B` in the `f°·` one. `Cor A` is the poset of coreflexives on `A`: the `A` and `B`
 of the `𝓓` row live in `Cor A`, those of the `𝓡` row in `Cor B` — coreflexives, not objects.]
 
 == Fixed points
@@ -268,13 +276,13 @@ of the `𝓓` row live in `Cor A`, those of the `𝓡` row in `Cor B` — corefl
   [`Δ ⊣ ∩`], [every `X`], [`Y₁=Y₂`],
   [`∪ ⊣ Δ`], [`X₁=X₂`], [every `Y`],
   [`⊥ ⊣ !`], [—], [`Y=⊥`],
-  [`•S ⊣ •/S`], [`(XS)/S=X`], [`(Y/S)S=Y`],
-  [`S• ⊣ S\•`], [`S\(SX)=X`], [`S(S\Y)=Y`],
-  [`R∩• ⊣ R⇒•`], [`R⇒(X∩R)=X`], [`R∩(R⇒Y)=Y`],
-  [`𝓓 ⊣ •⊤`], [`(𝓓X)⊤=X`], [`𝓓(A⊤)=A`],
-  [`𝓡 ⊣ ⊤•`], [`⊤(𝓡X)=X`], [`𝓡(⊤A)=A`],
-  [`•f ⊣ •f°`], [`Xff°=X`], [`Yf°f=Y`],
-  [`f°• ⊣ f•`], [`ff°X=X`], [`f°fY=Y`],
+  [`·S ⊣ /S`], [`(XS)/S=X`], [`(Y/S)S=Y`],
+  [`S· ⊣ S\`], [`S\(SX)=X`], [`S(S\Y)=Y`],
+  [`R∩ ⊣ R⇒`], [`R⇒(X∩R)=X`], [`R∩(R⇒Y)=Y`],
+  [`𝓓 ⊣ ·⊤`], [`(𝓓X)⊤=X`], [`𝓓(A⊤)=A`],
+  [`𝓡 ⊣ ⊤·`], [`⊤(𝓡X)=X`], [`𝓡(⊤A)=A`],
+  [`·f ⊣ ·f°`], [`Xff°=X`], [`Yf°f=Y`],
+  [`f°· ⊣ f·`], [`ff°X=X`], [`f°fY=Y`],
   [`i ⊣ P`], [—], [—],
 )
 
@@ -288,7 +296,7 @@ joins into meets, so that table's `F` preserves `∪` column would read the wron
 #table(
   columns: 4, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
   table.header([*`F ⊣ G`*], [*the law*], [*both units*], [*Lean*]),
-  [`R/• ⊣ •\R`], [`T⊑R/S` iff `S⊑T\R`], [`S⊑(R/S)\R`, `T⊑R/(T\R)`],
+  [`R/ ⊣ \R`], [`T⊑R/S` iff `S⊑T\R`], [`S⊑(R/S)\R`, `T⊑R/(T\R)`],
     [`le_div_iff` then `le_leftDiv_iff`],
 )
 
@@ -299,22 +307,22 @@ Everything below is a row of §1.1 read at a chosen argument, or two rows compos
   table.header([*what you get*], [*which move*], [*Lean*]),
 
   [`(R/S)(S/W)⊑R/W` #src[[2.314]]],
-    [counit of `•W ⊣ •/W` at `S`, then counit of `•S ⊣ •/S` at `R`], [`div_comp`],
-  [`𝟙⊑R/R` #src[[2.314]]], [unit of `•R ⊣ •/R` at `𝟙`], [`one_le_div_self`],
+    [counit of `·W ⊣ /W` at `S`, then counit of `·S ⊣ /S` at `R`], [`div_comp`],
+  [`𝟙⊑R/R` #src[[2.314]]], [unit of `·R ⊣ /R` at `𝟙`], [`one_le_div_self`],
   [`(R/R)(R/R)=R/R` #src[[2.314]]], [`⊑` is the first line at `S=W=R`, `⊒` the second],
     [`div_self_comp_self`],
   [`(R/R)R=R` #src[[2.314]]], [`⊑` is the counit at `R`, `⊒` is the second line composed with `R`],
     [`div_self_comp`],
-  [`R/𝟙=R` #src[[2.314]]], [`•𝟙 ⊣ •/𝟙` is the identity adjunction], [`div_one`],
+  [`R/𝟙=R` #src[[2.314]]], [`·𝟙 ⊣ /𝟙` is the identity adjunction], [`div_one`],
   [`R/(S∪T)=R/S∩R/T` #src[[2.314]]], [the antitone row above: a join in the divisor turns into a
     meet], [`div_union`],
 
-  [`R/(ST)=(R/T)/S`], [compose `•S ⊣ •/S` with `•T ⊣ •/T`, then uniqueness],
+  [`R/(ST)=(R/T)/S`], [compose `·S ⊣ /S` with `·T ⊣ /T`, then uniqueness],
     [`div_comp_assoc`, `postDiv_comp`],
-  [`R/(fS)=(R/S)f°`], [compose `•f ⊣ •f°` with `•S ⊣ •/S`, then uniqueness],
+  [`R/(fS)=(R/S)f°`], [compose `·f ⊣ ·f°` with `·S ⊣ /S`, then uniqueness],
     [`div_comp_recip_map`],
-  [`f(R/S)=(fR)/S`], [compose `f°• ⊣ f•` with `•S ⊣ •/S`, then uniqueness], [`map_comp_div`],
-  [`(fg)°=g°f°`], [compose `•f ⊣ •f°` with `•g ⊣ •g°`, then uniqueness], [`recip_comp`, an axiom],
+  [`f(R/S)=(fR)/S`], [compose `f°· ⊣ f·` with `·S ⊣ /S`, then uniqueness], [`map_comp_div`],
+  [`(fg)°=g°f°`], [compose `·f ⊣ ·f°` with `·g ⊣ ·g°`, then uniqueness], [`recip_comp`, an axiom],
   [`(R∩S)⇒X=R⇒(S⇒X)`], [compose the two Heyting rows, then uniqueness], [—],
 )
 
