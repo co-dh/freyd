@@ -300,7 +300,82 @@ joins into meets, so that table's `F` preserves `∪` column would read the wron
     [`le_div_iff` then `le_leftDiv_iff`],
 )
 
-Everything below is a row of §1.1 read at a chosen argument, or two rows composed.
+Two rows of §1.1 composed are a third adjunction, and its right adjoint read in the two orders is a
+law. Row first, column second; right adjoints compose the other way round, which is where every
+reversal in the table comes from.
+
+// A Lean name is one unbreakable monospace token, wider than a cell, so it ran into the next
+// column.  A zero-width space after every `_` gives the line breaker somewhere to go.
+#let lean(s) = src(raw(s.replace("_", "_\u{200B}")))
+
+// A cross table, not a list: the entry that matters is WHICH PAIRS give a law, and a list of the
+// ones that do hides how few of the pairs those are.  Rows carry `S`, `f`, `R`; columns `T`, `g`,
+// `T` — one letter set per factor, or a cell could not name the two apart.
+// `Δ` is a column and `∪`, `⊥` are rows, each on ONE side only: their other side would be an
+// all-empty line, since nothing else starts at a square or ends at the one-point poset.
+#table(
+  columns: 8, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
+  table.header([], [*`·T`*], [*`T·`*], [*`·g`*], [*`g°·`*], [*`T∩·`*], [*`°`*], [*`Δ`*]),
+
+  [*`·S`*], [`R/(ST)=` \ `(R/T)/S` \ #lean("div_comp_assoc")], [`T\(R/S)=` \ `(T\R)/S` \
+    #lean("leftDiv_div")], [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S` \ #lean("map_comp_div")],
+    [—], [`(Y/S)°=` \ `S°\(Y°)` \ #lean("leftDiv_div_recip")],
+    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S` \ #lean("div_inter_eq")],
+
+  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T` \ #lean("leftDiv_div")], [`(TS)\R=` \ `S\(T\R)` \
+    #lean("leftDiv_comp")], [`S\(Rg°)=` \ `(S\R)g°`], [`(g°S)\R=` \ `S\(gR)`], [—],
+    [`(S\Y)°=` \ `Y°/S°` \ #lean("leftDiv_div_recip")],
+    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂` \ #lean("leftDiv_inter")],
+
+  [*`·f`*], [`R/(fT)=` \ `(R/T)f°` \ #lean("div_comp_recip_map")], [`T\(Rf°)=` \ `(T\R)f°`],
+    [`(fg)°=g°f°` \ #lean("recip_comp")], [—], [—], [`(fY)°=Y°f°` \ #lean("recip_comp")],
+    [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°`],
+
+  [*`f°·`*], [`f(R/T)=` \ `(fR)/T` \ #lean("map_comp_div")], [`(Tf°)\R=` \ `f(T\R)`], [—],
+    [`(fg)°=g°f°` \ #lean("recip_comp")], [—], [`(fY)°=Y°f°` \ #lean("recip_comp")],
+    [`f(T₁∩T₂)=` \ `fT₁∩fT₂`],
+
+  [*`R∩·`*], [—], [—], [—], [—], [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)`], [`(R⇒Y)°=` \ `R°⇒(Y°)`],
+    [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)`],
+
+  [*`°`*], [`(Y/T)°=` \ `T°\(Y°)` \ #lean("leftDiv_div_recip")], [`(T\Y)°=` \ `Y°/T°` \
+    #lean("leftDiv_div_recip")], [`(gY)°=Y°g°` \ #lean("recip_comp")],
+    [`(gY)°=Y°g°` \ #lean("recip_comp")], [`(T⇒Y)°=` \ `T°⇒(Y°)`], [`Y°°=Y` \ #lean("recip_recip")],
+    [`(T₁∩T₂)°=` \ `T₁°∩T₂°` \ #lean("recip_inter")],
+
+  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` \ #lean("union_comp_distrib")], [`T(X₁∪X₂)=` \ `TX₁∪TX₂` \
+    #lean("comp_union_distrib")], [`(X₁∪X₂)g=` \ `X₁g∪X₂g` \ #lean("union_comp_distrib")],
+    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` \ #lean("comp_union_distrib")],
+    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)`], [`(X₁∪X₂)°=` \ `X₁°∪X₂°` \ #lean("recip_union")], [—],
+
+  [*`⊥`*], [`⊥T=⊥` \ #lean("zero_comp")], [`T⊥=⊥` \ #lean("comp_zero")], [`⊥g=⊥` \
+    #lean("zero_comp")], [`g°⊥=⊥` \ #lean("comp_zero")], [`T∩⊥=⊥`], [`⊥°=⊥`], [—],
+)
+
+#src[Every pair composes — the parameters can always be chosen so the hom-sets line up — so `—`
+never means a type clash: it means the equation the pair yields is associativity, or has no name.
+The table reads the same across the diagonal: a cell and its mirror are one composite read in the
+two orders, so they carry one law with the two parameters swapped. The `°` row and column are that
+law's own mirror, which is why they turn every `/` into a `\`.
+
+A cell names the Lean theorem that IS it, or the one it is an instance of: the four `°` division
+cells are `leftDiv_div_recip` at `S=𝟙` or `T=𝟙`, and the `recip_comp` cells are the allegory axiom
+itself, as is `recip_recip`. A cell with NO name is derived here from uniqueness of right adjoints
+and is not in the repository — the six map-and-`\` cells and both Heyting cells. `heytingImpl` in
+`Freyd/S2_30.lean` is not those: it is `A ⊃ B ≜ 𝟙 ∩ B/A` on `(a,a)` alone, while this row's `⇒`
+runs over a whole hom-set.
+
+`Δ ⊣ ∩` is a column and `∪ ⊣ Δ`, `⊥ ⊣ !` are rows, each on one side only: they run between a
+hom-poset and its square, or the one-point poset, and nothing else starts at a square or ends at the
+one-point poset, so the other side would be an empty line. What those three give back is §1.1's own
+columns. `Δ ⊣ ∩` after a row `F ⊣ G` composes to `X ↦ (F X, F X)`, which is also `Δ` followed by `F`
+on each coordinate; the two right adjoints must agree, and that is `G(T₁∩T₂) = G T₁ ∩ G T₂` — the
+`G` preserves `∩` column. `∪ ⊣ Δ` before a row makes the two right adjoints agree outright, so the
+LEFT ones do: `F(X₁∪X₂) = F X₁ ∪ F X₂`. `⊥ ⊣ !` is the same with no coordinates at all, giving
+`F⊥ = ⊥`, which §1.1 carries no column for. Their three mutual cells are `—` because there the law
+is componentwise and says nothing. Lean writes the bottom `0`, not `⊥`.]
+
+Everything below is a row of §1.1 read at a chosen argument.
 
 #table(
   columns: 3, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
@@ -316,19 +391,10 @@ Everything below is a row of §1.1 read at a chosen argument, or two rows compos
   [`R/𝟙=R` #src[[2.314]]], [`·𝟙 ⊣ /𝟙` is the identity adjunction], [`div_one`],
   [`R/(S∪T)=R/S∩R/T` #src[[2.314]]], [the antitone row above: a join in the divisor turns into a
     meet], [`div_union`],
-
-  [`R/(ST)=(R/T)/S`], [compose `·S ⊣ /S` with `·T ⊣ /T`, then uniqueness],
-    [`div_comp_assoc`, `postDiv_comp`],
-  [`R/(fS)=(R/S)f°`], [compose `·f ⊣ ·f°` with `·S ⊣ /S`, then uniqueness],
-    [`div_comp_recip_map`],
-  [`f(R/S)=(fR)/S`], [compose `f°· ⊣ f·` with `·S ⊣ /S`, then uniqueness], [`map_comp_div`],
-  [`(fg)°=g°f°`], [compose `·f ⊣ ·f°` with `·g ⊣ ·g°`, then uniqueness], [`recip_comp`, an axiom],
-  [`(R∩S)⇒X=R⇒(S⇒X)`], [compose the two Heyting rows, then uniqueness], [—],
 )
 
 #src[Composing is `Freyd.Adj.comp`, uniqueness is `Freyd.Adj.right_unique`, both in
-`Freyd/S2_313.lean`. Right adjoints compose the other way round, which is where the reversal in the
-first two composite lines comes from.]
+`Freyd/S2_313.lean`. `postDiv_comp` is the second name the cross table's `·S`/`·T` cell goes by.]
 
 #pagebreak(weak: true)
 = Relations
