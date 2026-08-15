@@ -295,6 +295,28 @@ public theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := b
       _ ⊑ (R / R) ≫ R := comp_mono_right (one_le_div_self R) R
   exact h
 
+/-- R/ₛR is reflexive: 1 ⊑ R/ₛR (§2.351). -/
+-- The `.mpr` term, not `rw [le_symmDiv_iff]`: rewriting by an Iff drags in `propext`,
+-- and this way the proof — and `symmDiv_self_comp` below — stays axiom-free.
+public theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R /ₛ R) :=
+  (le_symmDiv_iff (Cat.id a) R R).mpr
+    ⟨by rw [Cat.id_comp]; exact le_refl R,
+     by rw [recip_id, Cat.id_comp]; exact le_refl R⟩
+
+/-- In a division allegory, (R/ₛR)R = R (§2.314).
+    The book's list has only `(R/ₛR)R ⊑ R`; it is an equality because 1 ⊑ R/ₛR. -/
+theorem symmDiv_self_comp {a b : 𝒜} (R : a ⟶ b) : (R /ₛ R) ≫ R = R := by
+  apply le_antisymm
+  · -- (R/ₛR)R ⊑ (R/R)R = R, since R/ₛR is an intersection with R/R as its left factor
+    have h : (R /ₛ R) ≫ R ⊑ (R / R) ≫ R :=
+      comp_mono_right (show R /ₛ R ⊑ R / R from inter_lb_left _ _) R
+    rw [div_self_comp R] at h
+    exact h
+  · -- R ⊑ (R/ₛR)R: since 1 ⊑ R/ₛR, we have R = 1R ⊑ (R/ₛR)R
+    calc
+      R = (Cat.id a) ≫ R := by rw [Cat.id_comp]
+      _ ⊑ (R /ₛ R) ≫ R := comp_mono_right (symmDiv_self_reflexive R) R
+
 /-! ## §2.312  Left division
 
   S\R := (R°/S°)°, defined when codomain(S) = source(R).
@@ -433,13 +455,6 @@ public theorem symmDiv_self_symmetric {a b : 𝒜} (R : a ⟶ b) : Symmetric (R 
   rw [show Allegory.inter (R / R) (Allegory.recip (R / R)) =
         Allegory.inter (Allegory.recip (R / R)) (R / R) from Allegory.inter_comm _ _]
   apply Allegory.inter_idem
-
-/-- R/ₛR is reflexive: 1 ⊑ R/ₛR (§2.351). -/
-public theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R /ₛ R) := by
-  dsimp [Reflexive]
-  rw [le_symmDiv_iff (Cat.id a) R R]
-  exact ⟨by rw [Cat.id_comp]; exact le_refl R,
-         by rw [recip_id, Cat.id_comp]; exact le_refl R⟩
 
 /-- R/ₛR is transitive: (R/ₛR)(R/ₛR) ⊑ R/ₛR (§2.351). -/
 public theorem symmDiv_self_transitive {a b : 𝒜} (R : a ⟶ b) : Transitive (R /ₛ R) := by
