@@ -189,7 +189,6 @@ By define $X: * |-> x$, $Y: *|->y$ and use diagram order, application can be rep
 )
 
 #znamed("adj", zsq("X/", "Y"), $=$, zsq("X", "Y\\"))
-#znamed("ladj", zsq("\\X", "Y"), $=$, zsq("X", "/Y"))
 
 #zderiv(
   (zsq("X/", "X/"), zstep[adj], zsq("X", "X/\\"), zstep("rewrite", op: sym.eq),
@@ -212,10 +211,22 @@ By define $X: * |-> x$, $Y: *|->y$ and use diagram order, application can be rep
 now we have #zw("/\\/") $=$ #zw("/") and #zw("\\/\\") $=$ #zw("\\"), and you just discovered string
 diagrams.
 
+// A Lean name is one unbreakable monospace token, wider than a cell, so it ran into the next
+// column.  A zero-width space after every `_` gives the line breaker somewhere to go.  Used in the
+// prose, where there is room for it; a cell of the §1.3 cross table wears `pf` instead.
+#let lean(s) = src(raw(s.replace("_", "_\u{200B}")))
+
+/// The mark on a cross-table cell whose law is proved in the repository, keyed to the list under
+/// that table.  A NUMBER rather than one uniform dagger, and one number per DECLARATION rather than
+/// per cell: the four cells that carry the same number are visibly the same theorem, which a
+/// dagger would hide, and the reader still gets the name without the name being in the cell.
+#let pf(n) = super(src[#n])
+
 #pagebreak(weak: true)
 == Every adjunction in Rel
 
-// One column per law, after the two that say WHAT is adjoint: the pair, and the type of `F`.  The
+// One column per law, after the three that say WHAT is adjoint: the pair, the type of `F`, and the
+// composite `FG` the row's unit and counit make a monad of.  The
 // type column is what tells the reader which poset a row's `⊑` is read in — the first two rows are
 // 1-cells of Rel, everything below is a monotone map between hom-posets, and only the type says so.
 // The cells wrap rather than the page turning: a landscape page for one table costs the reader more
@@ -229,41 +240,85 @@ the gap: `·S` is `R ↦ R S`, `/S` is `T ↦ T/S`, `S\` is `Y ↦ S\Y`. Composi
 the dot is written only in the rows where nothing else marks the gap.]
 
 #table(
-  columns: 8, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
-  table.header([*`F ⊣ G`*], [*`F`'s type*], [*`𝟙⊑FG`*], [*`GF⊑𝟙`*], [*`F` preserves `∪`*], [*`G` preserves `∩`*], [*`FGF=F`*], [*`GFG=G`*]),
+  columns: 9, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
+  table.header([*`F ⊣ G`*], [*`F`'s type*], [*monad `FG`*], [*`𝟙⊑FG`*], [*`GF⊑𝟙`*], [*`F` preserves `∪`*], [*`G` preserves `∩`*], [*`FGF=F`*], [*`GFG=G`*]),
 
-  [`◁ ⊣ ▷`], [`A ⟶` \ `A⊗A`], [`𝟙⊑◁▷`], [`▷◁⊑𝟙`], [`(R∪S)◁=` \ `R◁∪S◁`], [`(R∩S)▷=` \ `R▷∩S▷`], [`◁▷◁=◁`], [`▷◁▷=▷`],
+  [`◁ ⊣ ▷`], [`A ⟶` \ `A⊗A`], [`◁▷=𝟙`], [`𝟙⊑◁▷`], [`▷◁⊑𝟙`], [`(R∪S)◁=` \ `R◁∪S◁`], [`(R∩S)▷=` \ `R▷∩S▷`], [`◁▷◁=◁`], [`▷◁▷=▷`],
 
-  [`⊸ ⊣ ⟜`], [`A ⟶ 𝕀`], [`𝟙⊑⊸⟜`], [`⟜⊸⊑𝟙`], [`(R∪S)⊸=` \ `R⊸∪S⊸`], [`(R∩S)⟜=` \ `R⟜∩S⟜`], [`⊸⟜⊸=⊸`], [`⟜⊸⟜=⟜`],
+  [`⊸ ⊣ ⟜`], [`A ⟶ 𝕀`], [`⊸⟜=⊤`], [`𝟙⊑⊸⟜`], [`⟜⊸⊑𝟙`], [`(R∪S)⊸=` \ `R⊸∪S⊸`], [`(R∩S)⟜=` \ `R⟜∩S⟜`], [`⊸⟜⊸=⊸`], [`⟜⊸⟜=⟜`],
 
-  [`° ⊣ °`], [`(A⟶B) ⟶` \ `(B⟶A)`], [`R=R°°`], [`R=R°°`], [`(R∪S)°=` \ `R°∪S°`], [`(R∩S)°=` \ `R°∩S°`], [`R°°°=R°`], [`R°°°=R°`],
+  [`° ⊣ °`], [`(A⟶B) ⟶` \ `(B⟶A)`], [`°°=𝟙`], [`R=R°°`], [`R=R°°`], [`(R∪S)°=` \ `R°∪S°`], [`(R∩S)°=` \ `R°∩S°`], [`R°°°=R°`], [`R°°°=R°`],
 
-  [`Δ ⊣ ∩`], [`(A⟶B) ⟶` \ `(A⟶B)²`], [`R⊑R∩R`], [`R∩S⊑R`], [—], [—], [`R∩R=R`], [`R∩R=R`],
+  [`⟜◁ ⊣ ▷⊸`], [`(X⊗A ⟶ Y) ⟶` \ `(X ⟶ Y⊗A)`], [`𝟙`], [`(⟜◁⊗𝟙)` \ `(𝟙⊗▷⊸)=𝟙`], [`(𝟙⊗⟜◁)` \
+    `(▷⊸⊗𝟙)=𝟙`], [`=`], [`=`], [`=`], [`=`],
 
-  [`∪ ⊣ Δ`], [`(A⟶B)² ⟶` \ `(A⟶B)`], [`R⊑R∪S`], [`R∪R⊑R`], [—], [—], [`R∪R=R`], [`R∪R=R`],
+  [`Δ ⊣ ∩`], [`(A⟶B) ⟶` \ `(A⟶B)²`], [`R↦R∩R=R`], [`R⊑R∩R`], [`R∩S⊑R`], [—], [—], [`R∩R=R`], [`R∩R=R`],
 
-  [`⊥ ⊣ !`], [`{*} ⟶` \ `(A⟶B)`], [—], [`⊥⊑R`], [—], [—], [—], [—],
+  [`∪ ⊣ Δ`], [`(A⟶B)² ⟶` \ `(A⟶B)`], [`(R,S)↦` \ `(R∪S,R∪S)`], [`R⊑R∪S`], [`R∪R⊑R`], [—], [—], [`R∪R=R`], [`R∪R=R`],
 
-  [`·S ⊣ /S`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`R⊑(RS)/S`], [`(T/S)S⊑T`], [`(R∪T)S=` \ `RS∪TS`], [`(R∩T)/S=` \ `R/S∩T/S`], [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
+  [`⊥ ⊣ !`], [`{*} ⟶` \ `(A⟶B)`], [—], [—], [`⊥⊑R`], [—], [—], [—], [—],
 
-  [`S· ⊣ S\`], [`(B⟶C) ⟶` \ `(A⟶C)`], [`R⊑S\(SR)`], [`S(S\T)⊑T`], [`S(R∪T)=` \ `SR∪ST`], [`S\(R∩T)=` \ `S\R∩S\T`], [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
+  [`·S ⊣ /S`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`S/S`], [`R⊑(RS)/S`], [`(T/S)S⊑T`], [`(R∪T)S=` \ `RS∪TS`], [`(R∩T)/S=` \ `R/S∩T/S`], [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
 
-  [`R∩ ⊣ R⇒`], [`(A⟶B) ⟶` \ `(A⟶B)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`], [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`], [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)`], [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
+  [`S· ⊣ S\`], [`(B⟶C) ⟶` \ `(A⟶C)`], [`S\S`], [`R⊑S\(SR)`], [`S(S\T)⊑T`], [`S(R∪T)=` \ `SR∪ST`], [`S\(R∩T)=` \ `S\R∩S\T`], [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
 
-  [`𝓓 ⊣ ·⊤`], [`(A⟶B) ⟶` \ `Cor A`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
+  [`R∩ ⊣ R⇒`], [`(A⟶B) ⟶` \ `(A⟶B)`], [`X↦R⇒(X∩R)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`], [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`], [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)`], [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
 
-  [`𝓡 ⊣ ⊤·`], [`(A⟶B) ⟶` \ `Cor B`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
+  [`𝓓 ⊣ ·⊤`], [`(A⟶B) ⟶` \ `Cor A`], [`R↦(𝓓R)⊤`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
 
-  [`·f ⊣ ·f°`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`(R∪S)f=` \ `Rf∪Sf`], [`(R∩S)f°=` \ `Rf°∩Sf°`], [`ff°f=f`], [`f°ff°=f°`],
+  [`𝓡 ⊣ ⊤·`], [`(A⟶B) ⟶` \ `Cor B`], [`R↦⊤(𝓡R)`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
 
-  [`f°· ⊣ f·`], [`(A⟶C) ⟶` \ `(B⟶C)`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
+  [`·f ⊣ ·f°`], [`(A⟶B) ⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`(R∪S)f=` \ `Rf∪Sf`], [`(R∩S)f°=` \ `Rf°∩Sf°`], [`ff°f=f`], [`f°ff°=f°`],
 
-  [`i ⊣ P`], [`Map ↪ Rel`], [`{·}:A⟶P A`], [`∋:P B⟶B`], [—], [—], [`Λ(∋)=𝟙`], [`Λ(R)∋=R`],
+  [`f°· ⊣ f·`], [`(A⟶C) ⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
+
+  [`i ⊣ P`], [`Map ↪ Rel`], [`P`], [`{·}:A⟶P A`], [`∋:P B⟶B`], [—], [—], [`Λ(∋)=𝟙`], [`Λ(R)∋=R`],
 )
 
-#src[`S : B ⟶ C` in the `·S` row and `S : A ⟶ B` in the `S·` one; `f` is a map, `B ⟶ C` in the
-`·f` row and `A ⟶ B` in the `f°·` one. `Cor A` is the poset of coreflexives on `A`: the `A` and `B`
-of the `𝓓` row live in `Cor A`, those of the `𝓡` row in `Cor B` — coreflexives, not objects.]
+// BULLETED, one topic per bullet with its subject in bold at the front, because as one block of
+// prose these five had to be read in order to find any one of them.  Every derivation is pulled out
+// of the sentences into a display with its justification beside it: the algebra is what the reader
+// came for, and inside a sentence it cannot be scanned.
+#src[
+- *parameters.* `S : B ⟶ C` in the `·S` row and `A ⟶ B` in the `S·` one; the map `f` likewise,
+  `B ⟶ C` in the `·f` row and `A ⟶ B` in the `f°·` one. `Cor A` is the poset of coreflexives on
+  `A`: the `A` and `B` of the `𝓓` and `𝓡` rows are coreflexives, not objects.
+
+- *the `⟜◁` row* bends one wire from the input side to the output side — §1.3 below names that
+  operator `R^` and draws it. It is Rel's compact closure, every object its own dual, and the reason
+  `⊗` gives no exponential: Rel's categorical product is `+`, not `⊗`. Both halves are
+  order-isomorphisms, so the last four columns are equalities with nothing to write in them;
+  `° ⊣ °` is the table's other row of that kind.
+
+- *the monad `FG`* is a 1-cell `M : A ⟶ A` with `𝟙 ⊑ M` and `MM ⊑ M`, in Rel a preorder on `A`,
+  equivalently `M = M/M` (#lean("reflexive_transitive_iff_div_self") `AOP/A4_6.lean:35`, B&dM
+  Ex 4.49(i)). `◁▷ = 𝟙` and `⊸⟜ = ⊤` are the discrete and the indiscrete extremes and every other
+  row lies between them: `ff°` is the kernel of `f`, `a (ff°) a' ⟺ f a = f a'`, and `S/S` is
+  `x (S/S) y ⟺ S[y] ⊆ S[x]`. Only `·S` and `S·` are inexact — the operator monad there is
+  `X ↦ (XS)/S`, and `X(S/S) ⊑ (XS)/S` with equality when `X` is a map
+  (#lean("map_comp_div") `AOP/A4_4.lean:368`).
+
+- *`𝟙⊑FG` is that monad's unit*, hidden because the row names the two factors rather than the
+  composite: in diagram order `FG` is what is usually written `G∘F`. The multiplication and the
+  comultiplication need no columns of their own, being whiskered out of the two that are there —
+
+  #block(inset: (y: 5pt), grid(columns: 2, column-gutter: 1.4em, row-gutter: 4pt,
+    [`FGFG ⊑ F𝟙G = FG`], [the counit `GF⊑𝟙`, whiskered by `F` and `G`],
+    [`GF = G𝟙F ⊑ G(FG)F`], [the unit `𝟙⊑FG`, whiskered by `G` and `F`]))
+
+  and neither do the coherence laws: hom-posets are thin, so every diagram commutes on its own.
+
+- *`⊸⟜ = ⊤`*, for any `R : A ⟶ B`:
+
+  #block(inset: (y: 5pt), grid(columns: 2, column-gutter: 1.4em, row-gutter: 4pt,
+    [`R = R 𝟙_B ⊑ R(⊸_B ⟜_B) = (R⊸_B) ⟜_B ⊑ ⊸_A ⟜_B`],
+    [the unit of `⊸ ⊣ ⟜`, then the laxness of `⊸`; both pictured below]))
+
+  Every arrow `A ⟶ B` therefore sits under `⊸_A⟜_B`, the `⊤` the `∩` section below takes as the
+  unit of the meet. In Rel `⊸` discards whatever it is handed and `⟜` creates anything, so the
+  composite relates every `a` to every `b`: as a subset, all of `A×B` — the cartesian product of the
+  underlying SETS, the ambient `Rel(A,B) = 2^(A×B)`, and not a categorical product in Rel.
+]
 
 == Fixed points
 
@@ -291,7 +346,11 @@ of the `𝓓` row live in `Cor A`, those of the `𝓡` row in `Cor B` — corefl
 == §2.314, and what composing rows gives
 
 One more adjunction first, which §1.1 cannot hold because it is ANTITONE — its left adjoint turns
-joins into meets, so that table's `F` preserves `∪` column would read the wrong way:
+joins into meets, so that table's `F` preserves `∪` column would read the wrong way; its type is
+contravariant, `F : (B⟶C)^op ⟶ (A⟶B)`, so the `F`'s type column cannot be written in §1.1's form
+either; and BOTH composites are inflationary, `𝟙⊑FG` and `𝟙⊑GF`, so the `GF⊑𝟙` column has no entry
+for it at all. That last is the signature of an antitone Galois connection — two closure operators
+rather than a closure and an interior — and the table's own *both units* cell is it:
 
 #table(
   columns: 4, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
@@ -304,9 +363,93 @@ Two rows of §1.1 composed are a third adjunction, and its right adjoint read in
 law. Row first, column second; right adjoints compose the other way round, which is where every
 reversal in the table comes from.
 
-// A Lean name is one unbreakable monospace token, wider than a cell, so it ran into the next
-// column.  A zero-width space after every `_` gives the line breaker somewhere to go.
-#let lean(s) = src(raw(s.replace("_", "_\u{200B}")))
+// `lab` lives here, ahead of every picture this note draws by hand: a Typst binding exists only
+// from its definition on.
+// `rot` turns a cell's `⊑` to point from the SMALLER path to the larger one.  Unrotated it reads
+// left to right, which in a triangle or a square is the wrong axis: in the pairing section's left
+// triangle the small side is the path over the top and the large one is `R` at the lower left, so
+// the symbol has to point southwest.  Typst rotates clockwise, so southwest is 135°, southeast 45°,
+// northwest −135°, northeast −45°.
+#let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
+
+The table's `⟜◁` row and column need a name for that row's left adjoint, and §1.1 gave it none:
+write `R^` for the operator listed there, `R ↦ (𝟙⊗⟜◁)(R⊗𝟙)`.
+
+#align(center, block(inset: (y: 6pt))[
+  `R : X⊗A ⟶ Y` #h(1.4cm) `R^ = (𝟙⊗⟜◁)(R⊗𝟙) : X ⟶ Y⊗A`
+])
+
+// HAND-DRAWN, and allowed to be: the file header's rule binds pictures OF A THEOREM, which
+// `./scripts/diag-export` writes from a Lean type.  `R^` is a definition and has no declaration to
+// export from, like the `°` and `∩` figures further down.
+//
+// ONE CANVAS, two panels on one y grid — not two canvases side by side, which would be centred on
+// their own bounding boxes and put the two `R` boxes at different heights, which is the one thing
+// the picture has to deny.
+//
+// The added strand is GLOWED, not tinted: `wire` and `bend` take no paint, and a TINT *fill* is
+// already spoken for in this note — it is what a converse box wears (`ιₗ`, `ιᵣ` in the coproduct
+// section) — while a pale rounded region is the tape layer's.  A wide pale stroke laid under the
+// black one is neither.  Both passes are the same function, so the highlight cannot drift from what
+// it highlights.
+#align(center, box(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
+  let GLOW = (thickness: 4.5pt, paint: TINT, cap: "round")
+  let bent(glow) = {
+    let seg(a, b) = if glow { d.line(a, b, stroke: GLOW) } else { wire(a, b) }
+    let arc(a, b) = {
+      let mx = a.at(0) + (b.at(0) - a.at(0)) * 0.6
+      if glow { d.bezier(a, b, (mx, a.at(1)), (mx, b.at(1)), stroke: GLOW) } else { bend(a, b) }
+    }
+    // `⟜` then `◁`, drawn split: the pair of `A`s is opened out of nothing and one of them is fed
+    // back into the box it came out beside.
+    seg((4.76, -0.76), (5.1, -0.76))
+    arc((5.1, -0.76), (5.7, -0.42)); seg((5.7, -0.42), (6.1, -0.42))
+    arc((5.1, -0.76), (5.7, -1.1)); seg((5.7, -1.1), (7.7, -1.1))
+    if not glow { wiredot((4.76, -0.76)); wiredot((5.1, -0.76)) }
+  }
+  // `R` itself: `X` and `A` in, `Y` out.
+  wire((0, 0.42), (0.9, 0.42)); wire((0, -0.42), (0.9, -0.42))
+  gbox((0.9, 0), [R], h: 1.5); wire((1.82, 0), (2.4, 0))
+  lab(-0.35, 0.42, black)[$X$]; lab(-0.35, -0.42, black)[$A$]; lab(2.75, 0, black)[$Y$]
+  // `R^`: the same box, the `A` wire bent round to the other side.  Glow first, then the black
+  // strand, then the box — each pass covers the round cap the pass before it left in the way.
+  bent(true); bent(false)
+  wire((4.6, 0.42), (6.1, 0.42))
+  gbox((6.1, 0), [R], h: 1.5); wire((7.02, 0), (7.7, 0))
+  lab(4.25, 0.42, black)[$X$]; lab(8.05, 0, black)[$Y$]; lab(8.05, -1.1, black)[$A$]
+})))
+#align(center, src[left `R`, right `R^`: the pale strand is everything the bend adds, and the box
+and the `X`, `Y` wires are where they were.])
+
+In `Rel` the two are one set of triples split two ways — the bend moves the `A` coordinate from the
+input side to the output side:
+
+#align(center, block(inset: (y: 6pt))[`x R^ (y,a) ⟺ (x,a) R y`])
+
+Read `Rel(I,J)` as an `I×J` boolean matrix — Freyd's §2.111, which defines reciprocation entrywise
+as `j R° i = i R j` — and `R^` is the smallest of three degrees of bending, all of the same
+`R : X⊗A ⟶ Y`:
+
+#table(
+  columns: 4, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
+  table.header([], [*what moves*], [*type*], [*as a matrix*]),
+  [`R^`], [one index, to the output side], [`X ⟶ Y⊗A`],
+    [rows re-indexed from `(x,a)` to `x`, columns from `y` to `(y,a)`],
+  [`R°`], [the input index goes out and the output index comes in
+    #src[drawn in the `°` section below]], [`Y ⟶ X⊗A`], [the transpose],
+  [`⌜R⌝`], [everything, to the output side — the *name* of `R`], [`𝕀 ⟶ Y⊗A⊗X`],
+    [the whole matrix flattened into one row],
+)
+
+All three carry the same entries; only the split of the indices into row and column changes. That is
+what a matrix transpose always was — moving an index from the domain side to the codomain side — and
+compact closure is the structure that permits the move: `Rel` is self-dual, `A* = A`, so there is no
+up/down index distinction to keep track of.
+
+#src[Of the three, only `^` is this note's own, the half bend having no settled symbol. `⌜R⌝` and
+its mirror the *coname* `⌞R⌟ : Y⊗A⊗X ⟶ 𝕀` are the literature's. Neither is the transpose `Λ` of
+B&dM, which is Freyd's §2.421 `R/S = Λ(R)Λ°(S)` as well: that one sends `R : X⊗A ⟶ Y` to a MAP
+`Λ R : X⊗A ⟶ P Y`, and needs a power allegory rather than compact closure.]
 
 // A cross table, not a list: the entry that matters is WHICH PAIRS give a law, and a list of the
 // ones that do hides how few of the pairs those are.  Rows carry `S`, `f`, `R`; columns `T`, `g`,
@@ -314,87 +457,138 @@ reversal in the table comes from.
 // `Δ` is a column and `∪`, `⊥` are rows, each on ONE side only: their other side would be an
 // all-empty line, since nothing else starts at a square or ends at the one-point poset.
 #table(
-  columns: 8, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
-  table.header([], [*`·T`*], [*`T·`*], [*`·g`*], [*`g°·`*], [*`T∩·`*], [*`°`*], [*`Δ`*]),
+  columns: 9, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
+  table.header([], [*`·T`*], [*`T·`*], [*`·g`*], [*`g°·`*], [*`T∩`*], [*`°`*], [*`⟜◁`*], [*`Δ`*]),
 
-  [*`·S`*], [`R/(ST)=` \ `(R/T)/S` \ #lean("div_comp_assoc")], [`T\(R/S)=` \ `(T\R)/S` \
-    #lean("leftDiv_div")], [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S` \ #lean("map_comp_div")],
-    [—], [`(Y/S)°=` \ `S°\(Y°)` \ #lean("leftDiv_div_recip")],
-    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S` \ #lean("div_inter_eq")],
+  [*`·S`*], [`R/(ST)=` \ `(R/T)/S`#pf(1)], [`T\(R/S)=` \ `(T\R)/S`#pf(2)],
+    [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S`#pf(3)],
+    [—], [`(Y/S)°=` \ `S°\(Y°)`#pf(4)], [`(RS)^=` \ `R^(S⊗𝟙)`],
+    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S`#pf(5)],
 
-  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T` \ #lean("leftDiv_div")], [`(TS)\R=` \ `S\(T\R)` \
-    #lean("leftDiv_comp")], [`S\(Rg°)=` \ `(S\R)g°`], [`(g°S)\R=` \ `S\(gR)`], [—],
-    [`(S\Y)°=` \ `Y°/S°` \ #lean("leftDiv_div_recip")],
-    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂` \ #lean("leftDiv_inter")],
+  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T`#pf(2)], [`(TS)\R=` \ `S\(T\R)`#pf(6)],
+    [`S\(Rg°)=` \ `(S\R)g°`], [`(g°S)\R=` \ `S\(gR)`], [—],
+    [`(S\Y)°=` \ `Y°/S°`#pf(4)], [`((S⊗𝟙)R)^=` \ `S R^`],
+    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂`#pf(7)],
 
-  [*`·f`*], [`R/(fT)=` \ `(R/T)f°` \ #lean("div_comp_recip_map")], [`T\(Rf°)=` \ `(T\R)f°`],
-    [`(fg)°=g°f°` \ #lean("recip_comp")], [—], [—], [`(fY)°=Y°f°` \ #lean("recip_comp")],
+  [*`·f`*], [`R/(fT)=` \ `(R/T)f°`#pf(8)], [`T\(Rf°)=` \ `(T\R)f°`],
+    [`(fg)°=g°f°`#pf(9)], [—], [—], [`(fY)°=Y°f°`#pf(9)], [—],
     [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°`],
 
-  [*`f°·`*], [`f(R/T)=` \ `(fR)/T` \ #lean("map_comp_div")], [`(Tf°)\R=` \ `f(T\R)`], [—],
-    [`(fg)°=g°f°` \ #lean("recip_comp")], [—], [`(fY)°=Y°f°` \ #lean("recip_comp")],
+  [*`f°·`*], [`f(R/T)=` \ `(fR)/T`#pf(3)], [`(Tf°)\R=` \ `f(T\R)`], [—],
+    [`(fg)°=g°f°`#pf(9)], [—], [`(fY)°=Y°f°`#pf(9)], [—],
     [`f(T₁∩T₂)=` \ `fT₁∩fT₂`],
 
-  [*`R∩·`*], [—], [—], [—], [—], [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)`], [`(R⇒Y)°=` \ `R°⇒(Y°)`],
+  [*`R∩`*], [—], [—], [—], [—], [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)`], [`(R⇒Y)°=` \ `R°⇒(Y°)`], [—],
     [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)`],
 
-  [*`°`*], [`(Y/T)°=` \ `T°\(Y°)` \ #lean("leftDiv_div_recip")], [`(T\Y)°=` \ `Y°/T°` \
-    #lean("leftDiv_div_recip")], [`(gY)°=Y°g°` \ #lean("recip_comp")],
-    [`(gY)°=Y°g°` \ #lean("recip_comp")], [`(T⇒Y)°=` \ `T°⇒(Y°)`], [`Y°°=Y` \ #lean("recip_recip")],
-    [`(T₁∩T₂)°=` \ `T₁°∩T₂°` \ #lean("recip_inter")],
+  [*`°`*], [`(Y/T)°=` \ `T°\(Y°)`#pf(4)], [`(T\Y)°=` \ `Y°/T°`#pf(4)],
+    [`(gY)°=Y°g°`#pf(9)],
+    [`(gY)°=Y°g°`#pf(9)], [`(T⇒Y)°=` \ `T°⇒(Y°)`], [`Y°°=Y`#pf(10)],
+    [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]],
+    [`(T₁∩T₂)°=` \ `T₁°∩T₂°`#pf(11)],
 
-  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` \ #lean("union_comp_distrib")], [`T(X₁∪X₂)=` \ `TX₁∪TX₂` \
-    #lean("comp_union_distrib")], [`(X₁∪X₂)g=` \ `X₁g∪X₂g` \ #lean("union_comp_distrib")],
-    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` \ #lean("comp_union_distrib")],
-    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)`], [`(X₁∪X₂)°=` \ `X₁°∪X₂°` \ #lean("recip_union")], [—],
+  [*`⟜◁`*], [`(RT)^=` \ `R^(T⊗𝟙)`], [`((T⊗𝟙)R)^=` \ `T R^`], [—], [—], [—],
+    [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]], [—], [—],
 
-  [*`⊥`*], [`⊥T=⊥` \ #lean("zero_comp")], [`T⊥=⊥` \ #lean("comp_zero")], [`⊥g=⊥` \
-    #lean("zero_comp")], [`g°⊥=⊥` \ #lean("comp_zero")], [`T∩⊥=⊥`], [`⊥°=⊥`], [—],
+  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T`#pf(12)], [`T(X₁∪X₂)=` \ `TX₁∪TX₂`#pf(13)],
+    [`(X₁∪X₂)g=` \ `X₁g∪X₂g`#pf(12)],
+    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂`#pf(13)],
+    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)`], [`(X₁∪X₂)°=` \ `X₁°∪X₂°`#pf(14)], [—], [—],
+
+  [*`⊥`*], [`⊥T=⊥`#pf(15)], [`T⊥=⊥`#pf(16)], [`⊥g=⊥`#pf(15)], [`g°⊥=⊥`#pf(16)],
+    [`T∩⊥=⊥`], [`⊥°=⊥`], [—], [—],
 )
 
-#src[Every pair composes — the parameters can always be chosen so the hom-sets line up — so `—`
-never means a type clash: it means the equation the pair yields is associativity, or has no name.
-The table reads the same across the diagonal: a cell and its mirror are one composite read in the
-two orders, so they carry one law with the two parameters swapped. The `°` row and column are that
-law's own mirror, which is why they turn every `/` into a `\`.
+#src[A superscript marks a law proved in the repository, one number per declaration:
+#pf(1) `div_comp_assoc`, #pf(2) `leftDiv_div`, #pf(3) `map_comp_div`, #pf(4) `leftDiv_div_recip`,
+#pf(5) `div_inter_eq`, #pf(6) `leftDiv_comp`, #pf(7) `leftDiv_inter`, #pf(8) `div_comp_recip_map`,
+#pf(9) `recip_comp`, #pf(10) `recip_recip`, #pf(11) `recip_inter`, #pf(12) `union_comp_distrib`,
+#pf(13) `comp_union_distrib`, #pf(14) `recip_union`, #pf(15) `zero_comp`, #pf(16) `comp_zero`.
+An unmarked cell is derived in this note only.]
 
-A cell names the Lean theorem that IS it, or the one it is an instance of: the four `°` division
-cells are `leftDiv_div_recip` at `S=𝟙` or `T=𝟙`, and the `recip_comp` cells are the allegory axiom
-itself, as is `recip_recip`. A cell with NO name is derived here from uniqueness of right adjoints
-and is not in the repository — the six map-and-`\` cells and both Heyting cells. `heytingImpl` in
-`Freyd/S2_30.lean` is not those: it is `A ⊃ B ≜ 𝟙 ∩ B/A` on `(a,a)` alone, while this row's `⇒`
-runs over a whole hom-set.
+== Mates
 
-`Δ ⊣ ∩` is a column and `∪ ⊣ Δ`, `⊥ ⊣ !` are rows, each on one side only: they run between a
-hom-poset and its square, or the one-point poset, and nothing else starts at a square or ends at the
-one-point poset, so the other side would be an empty line. What those three give back is §1.1's own
-columns. `Δ ⊣ ∩` after a row `F ⊣ G` composes to `X ↦ (F X, F X)`, which is also `Δ` followed by `F`
-on each coordinate; the two right adjoints must agree, and that is `G(T₁∩T₂) = G T₁ ∩ G T₂` — the
-`G` preserves `∩` column. `∪ ⊣ Δ` before a row makes the two right adjoints agree outright, so the
-LEFT ones do: `F(X₁∪X₂) = F X₁ ∪ F X₂`. `⊥ ⊣ !` is the same with no coordinates at all, giving
-`F⊥ = ⊥`, which §1.1 carries no column for. Their three mutual cells are `—` because there the law
-is componentwise and says nothing. Lean writes the bottom `0`, not `⊥`.]
+Two adjunctions with the same two ends, `L ⊣ R` and `L' ⊣ R'`, are related by a pair `σ : L' ⇒ L`
+and `τ : R ⇒ R'`; the two are *mates*, and either one determines the other
+#src[`IntroString.pdf` §4.4, p. 102, conditions (4.13a)–(4.13d)]. Watch which way each runs: `σ`
+leaves the primed left adjoint and `τ` arrives at the primed right one, because `L` sits on the
+contravariant side of `𝒟(L A, B) ≅ 𝒞(A, R B)`.
 
-Everything below is a row of §1.1 read at a chosen argument.
+Every hom-poset here is thin, so `σ` and `τ` carry no data of their own — they ARE the two
+inequalities, and "either determines the other" becomes an equivalence:
+
+#align(center, block(inset: (y: 6pt))[`L' ⊑ L` #h(1.2em) iff #h(1.2em) `R ⊑ R'`])
+
+Parallel adjunctions have their left adjoints ordered one way and their right adjoints the other.
+Only three of §1.1's rows carry a parameter to vary, so only three have a mate at all:
 
 #table(
   columns: 3, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
-  table.header([*what you get*], [*which move*], [*Lean*]),
-
-  [`(R/S)(S/W)⊑R/W` #src[[2.314]]],
-    [counit of `·W ⊣ /W` at `S`, then counit of `·S ⊣ /S` at `R`], [`div_comp`],
-  [`𝟙⊑R/R` #src[[2.314]]], [unit of `·R ⊣ /R` at `𝟙`], [`one_le_div_self`],
-  [`(R/R)(R/R)=R/R` #src[[2.314]]], [`⊑` is the first line at `S=W=R`, `⊒` the second],
-    [`div_self_comp_self`],
-  [`(R/R)R=R` #src[[2.314]]], [`⊑` is the counit at `R`, `⊒` is the second line composed with `R`],
-    [`div_self_comp`],
-  [`R/𝟙=R` #src[[2.314]]], [`·𝟙 ⊣ /𝟙` is the identity adjunction], [`div_one`],
-  [`R/(S∪T)=R/S∩R/T` #src[[2.314]]], [the antitone row above: a join in the divisor turns into a
-    meet], [`div_union`],
+  table.header([*the two rows*], [*`L' ⊑ L`*], [*its mate `R ⊑ R'`*]),
+  [`·S ⊣ /S` and `·T ⊣ /T`, #src[`S, T : B ⟶ C`]], [`S ⊑ T`], [`Y/T ⊑ Y/S`],
+  [`S· ⊣ S\` and `T· ⊣ T\`, #src[`S, T : A ⟶ B`]], [`S ⊑ T`], [`T\Y ⊑ S\Y`],
+  [`R∩ ⊣ R⇒` and `T∩ ⊣ T⇒`], [`R ⊑ T`], [`T⇒Y ⊑ R⇒Y`],
 )
 
-#src[Composing is `Freyd.Adj.comp`, uniqueness is `Freyd.Adj.right_unique`, both in
-`Freyd/S2_313.lean`. `postDiv_comp` is the second name the cross table's `·S`/`·T` cell goes by.]
+#src[Each says the right adjoint is ANTITONE in the parameter its left adjoint is monotone in: a
+bigger divisor divides into less. `°`, `𝓓`, `𝓡`, `Δ`, `∪`, `⊥` and `i` are alone at their type, so
+nothing is parallel to them; the antitone row `R/ ⊣ \R` is left out because both its halves move the
+same way with `R`, which is not the shape above.]
+
+`σ = 𝟙` is §1.3's tool: two adjunctions with the SAME left adjoint have equal right adjoints. The
+map rows are exactly that case. `·f` is `·S` at `S = f`, so `·f ⊣ ·f°` and `·f ⊣ /f` must agree —
+`Tf° = T/f` #src[`div_comp_recip_map` at `S = 𝟙`, then `div_one`.] — and `f°·` is `S·` at `S = f°`,
+so `fY = f°\Y`. That is why §1.1 lists the map rows separately: their right adjoint has a second,
+shorter name.
+
+== Adjoint triples
+
+Beyond `∪ ⊣ Δ ⊣ ∩`, which §1.1 already carries as two rows, the table holds one adjoint triple with
+content: `∃_f ⊣ f* ⊣ ∀_f` along a map `f`, once on each side of the composite.
+#src[`f : A ⟶ B` throughout this subsection.]
+
+#align(center, block(inset: (y: 6pt))[
+  `·f ⊣ ·f° ⊣ /f°` \
+  `f°· ⊣ f· ⊣ f\`
+])
+
+The first two links of each chain are the map shunting rules
+#src[#lean("map_shunt_right") `AOP/A4_2.lean:223` and #lean("map_shunt_left") `AOP/A4_2.lean:241`.]
+and the third is §1.1's division row read at a chosen divisor: `·S ⊣ /S` at `S := f°`, and
+`S· ⊣ S\` at `S := f`.
+
+The third link is not the first over again. The previous subsection collapsed `/f` to `·f°`, and
+being a map is exactly what that collapse spends
+#src[#lean("div_comp_recip_map") `AOP/A4_4.lean:378`: `R/(f S) = (R/S) f°`.] — `f°` is not a map, so
+`/f°` does not collapse in turn, and the three operators stay distinct. On `Rel(𝕀, A) = P A` they
+are the image triple:
+
+#table(
+  columns: 3, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
+  table.header([*operator*], [*acts by*], [*name*]),
+  [`·f`], [`S ↦ f[S]`], [direct image, `∃_f`],
+  [`·f°`], [`T ↦ f⁻¹[T]`], [inverse image, `f*`],
+  [`/f°`], [`S ↦ {b : f⁻¹(b) ⊆ S}`], [`∀_f`],
+)
+
+§1.1's `𝓓 ⊣ ·⊤` is this same chain along the projection `A⊗B ⟶ A`, read through
+`Rel(A, B) = P(A⊗B)`: `𝓓R = {(a,a) : ∃b. aRb}`, `A⊤` is the relation that ignores `b`
+altogether, and the third link is `R ↦ 𝟙 ∩ R/⊤ = {(a,a) : ∀b. aRb}`.
+
+#align(center, block(inset: (y: 6pt))[`𝓓 ⊣ ·⊤ ⊣ 𝟙∩·/⊤`])
+
+Three is where it stops, and one map breaks both ends. Take `A = {a₁,a₂}` and `B = {b}`:
+`f[{a₁}] ∩ f[{a₂}] = {b}` while `f[{a₁} ∩ {a₂}] = ∅`, so `·f` does not preserve meets and has no
+left adjoint, and the same two subsets give `∀_f({a₁} ∪ {a₂}) = {b}` against
+`∀_f{a₁} ∪ ∀_f{a₂} = ∅`, so `/f°` does not preserve joins and has no right adjoint. A monic `f`
+restores the binary case and no more — `⊤f` still reaches only `im f`, and `∀_f⊥ = B ∖ im f` is
+still not `⊥`. The chain extends only when `f°` is a map as well, and then `/f° = ·f°° = ·f` and it
+repeats forever. For an `S` with neither `S` nor `S°` a map there is no triple at all: `·S ⊣ /S` is
+two links and stops.
+
+#src[The rows that chain forever say nothing by it: `°` is an order-isomorphism of hom-posets, so it
+is adjoint to itself on both sides and `° ⊣ ° ⊣ °` has no end, and §1.1's other row of that kind,
+`⟜◁ ⊣ ▷⊸`, goes the same way.]
 
 #pagebreak(weak: true)
 = Relations
@@ -434,14 +628,6 @@ below the cut wire*. In `Rel` it reads `{(a, a)} ⊆ A × A` — cut a wire and 
 to agree, so cutting can only add pairs. It is the one weakening this calculus gives away for free.
 
 
-// `lab` lives here, ahead of every picture this note draws by hand: a Typst binding exists only
-// from its definition on.
-// `rot` turns a cell's `⊑` to point from the SMALLER path to the larger one.  Unrotated it reads
-// left to right, which in a triangle or a square is the wrong axis: in the pairing section's left
-// triangle the small side is the path over the top and the large one is `R` at the lower left, so
-// the symbol has to point southwest.  Typst rotates clockwise, so southwest is 135°, southeast 45°,
-// northwest −135°, northeast −45°.
-#let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
 // The 2-cell helpers, used by the Maps and Power-allegory sections below.  The two fills mean
 // nothing on their own: one hue apiece to tell the two regions `Map(𝒜)` and `𝒜` apart.
 #let fb-MAPC = rgb("#e6f3e4")
