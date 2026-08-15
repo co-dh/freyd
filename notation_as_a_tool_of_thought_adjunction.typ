@@ -20,7 +20,7 @@
 
 /// The colour of a numbered generator: `/1` is drawn in the first colour, `/2` in the second.  A
 /// bare `/` is 0 and stays black — most of the note has one `S` and nothing to tell apart.
-#let pal = (black, rgb("1565c0"), rgb("e65100"), rgb("2e7d32"))
+#let pal = (black, rgb("1565c0"), rgb("c62828"), rgb("2e7d32"))
 
 /// A run of generators as one polyline: `/` climbs a level, `\` falls one, and the run is drawn
 /// from the top of its own range downwards.  A word that alternates, `/\/`, zigzags between two
@@ -31,21 +31,23 @@
 #let wire(cs) = {
   let u = 0.44                                     // one generator's width, in em
   let ht = 0.72                                    // the distance between two levels
-  let gap = 0.10                                   // the break at a joint that does not bend
+  let gap = 0.26                                   // the break at a joint that does not bend
   let (x, l, xs, ls) = (0, 0, (0,), (0,))
-  for (d, col, sp) in cs { x += u * sp; l += d * sp; xs.push(x); ls.push(l) }
+  for (d, col, j) in cs { x += u; l += d; xs.push(x); ls.push(l) }
   let hi = calc.max(..ls)                          // `top` would shadow the alignment of that name
   let pt(i) = (xs.at(i), hi - ls.at(i))
   box(width: x * 1em, height: (hi - calc.min(..ls)) * 1em,
     cs.enumerate().map(((i, c)) => {
       let (p, q) = (pt(i), pt(i + 1))
-      // A bend is its own mark, but two strokes in a line are one straight stick unless the joint
-      // is opened: `R\\` has to be two arrows and not the single arrow `R/(S₁S₂)` divides by.
+      // A bend is its own mark; two strokes in a line need the joint OPENED, or `R\\` — divide by
+      // `S₂` then by `S₁` — is the same stick as `R\2\1+`, divide by the one arrow `S₁S₂`.
       let (dx, dy) = (q.at(0) - p.at(0), q.at(1) - p.at(1))
       let n = calc.sqrt(dx * dx + dy * dy)
       let (ux, uy) = (dx / n * gap / 2, dy / n * gap / 2)
-      if i > 0 and cs.at(i - 1).at(0) == c.at(0) { p = (p.at(0) + ux, p.at(1) + uy) }
-      if i + 1 < cs.len() and cs.at(i + 1).at(0) == c.at(0) { q = (q.at(0) - ux, q.at(1) - uy) }
+      if i > 0 and cs.at(i - 1).at(0) == c.at(0) and not c.at(2) { p = (p.at(0) + ux, p.at(1) + uy) }
+      if i + 1 < cs.len() and cs.at(i + 1).at(0) == c.at(0) and not cs.at(i + 1).at(2) {
+        q = (q.at(0) - ux, q.at(1) - uy)
+      }
       place(top + left, line(
         start: (p.at(0) * 1em, p.at(1) * 1em), end: (q.at(0) * 1em, q.at(1) * 1em),
         stroke: (paint: pal.at(c.at(1)), thickness: 0.07em, cap: "round")))
@@ -55,17 +57,17 @@
 /// A word of the calculus, e.g. `X/\`: the generators drawn as wires, everything else typeset.
 /// Consecutive generators go into ONE `wire` call — that is what connects them.  A digit right
 /// after a generator is not a letter of the word, it numbers that generator: `T/1/2` is `T S₁ S₂`.
-/// A `+` lengthens the generator by a level instead: `R\+` is `R` divided by ONE arrow that spans
-/// two, which is the same line as `R\\` and the reason the theorem below is worth stating.
+/// A `+` welds the generator to the one before it — same colours, no break, so `R\2\1+` is `R`
+/// divided by the ONE arrow `S₁S₂` while `R\2\1` is divided by `S₂` and then by `S₁`.
 #let w(s) = {
   let out = ()
   let run = ()
   for c in s.clusters() {
-    if c == "/" or c == "\\" { run.push((if c == "/" { 1 } else { -1 }, 0, 1)) }
+    if c == "/" or c == "\\" { run.push((if c == "/" { 1 } else { -1 }, 0, false)) }
     else if run.len() > 0 and c.match(regex("^[0-9]$")) != none {
       let s = run.pop(); run.push((s.at(0), int(c), s.at(2)))
     } else if run.len() > 0 and c == "+" {
-      let s = run.pop(); run.push((s.at(0), s.at(1), s.at(2) + 1))
+      let s = run.pop(); run.push((s.at(0), s.at(1), true))
     } else {
       if run.len() > 0 { out.push(wire(run)); run = () }
       // `∗` is drawn up at the math axis; alone in a row it needs pushing down to look centred.
@@ -167,7 +169,7 @@ diagrams.
 // second copy of the chain there would be a second chance to get it wrong.
 #let divchain = align(center, grid(
   columns: 7, align: center + horizon, column-gutter: 12pt, row-gutter: 7pt,
-  sq("T", "R\\+"), step("adj", op: sym.eq),
+  sq("T", "R\\2\\1+"), step("adj", op: sym.eq),
   sq("T/1/2", "R"), step("adj", op: sym.eq), sq("T/1", "R\\2"), step("adj", op: sym.eq),
   sq("T", "R\\2\\1"),
   hint[$T <= R\/(S_1 S_2)$], [], hint[$T S_1 S_2 <= R$], [], hint[$T S_1 <= R\/S_2$], [],
@@ -181,14 +183,16 @@ $R S <= T$ iff $R <= T\/S$ is the same law, with #w("/") $= • S$ and #w("\\") 
 
 == $R\/(S_1 S_2) = (R\/S_2)\/S_1$
 
-Take two, #w("/1") $= S_1$ and #w("/2") $= S_2$. Each one climbs a level — $T$, $T S_1$ and
-$T S_1 S_2$ are three different hom-sets — so the composite is one stick twice as long, and `adj`
-walks the two down one at a time:
+Take two, #w("/1") $= S_1$ and #w("/2") $= S_2$. A level is a hom-set: $T$, $T S_1$ and $T S_1 S_2$
+live in three of them, so each generator changes level and a division drops back one. That is why
+the two #w("\\") of $(R\/S_2)\/S_1$ run on down to the right instead of standing side by side: the
+second one starts from the hom-set the first one left off in.
 
 #divchain
 
-The left box is also $T <= R\/(S_1 S_2)$: one arrow or two, the wire is the same. So both right-hand
-sides hold of exactly the same $T$, and $R\/(S_1 S_2) = (R\/S_2)\/S_1$.
+Both ends are the same descent, red then blue: dividing by $S_1 S_2$ undoes $S_2$ first, and so does
+dividing by $S_2$ and then by $S_1$. The joint is the whole difference — one arrow or two — and the
+three `adj` moves are what say it does not matter.
 
 == $f (R\/S) = (f R)\/S$
 
