@@ -9,7 +9,7 @@
 
   B&dM's construction: `(|R|) = ∈ · (|Λ(R·F∈)|)`, i.e. transpose the relational algebra
   `R : F c ⟶ c` through the power object of `c` to the MAP algebra
-  `Λ(R·F∈) : F [c] ⟶ [c]` (Freyd: `A (F.map (∋ c) ≫ R) : F.obj (powerObj c) ⟶ powerObj c`),
+  `Λ(R·F∈) : F [c] ⟶ [c]` (Freyd: `Λ (F.map (∋ c) ≫ R) : F.obj (powerObj c) ⟶ powerObj c`),
   take the ordinary (map) catamorphism of that, and compose with `∈` to come back down
   to `c`.  All composition is diagram order (Freyd `≫`), mirroring B&dM's `·`.
 
@@ -65,11 +65,11 @@ public theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) 
     (I.α ≫ X = F.map X ≫ R) ↔ X = relCata I R := by
   constructor
   · intro h
-    -- `A X` is a map, so `X = A X ≫ ∋ c`; rewrite both sides of `h` through this map
-    -- and transport the equation to `A (F.map (∋ c) ≫ R)` via `A_fusion`.
+    -- `Λ X` is a map, so `X = Λ X ≫ ∋ c`; rewrite both sides of `h` through this map
+    -- and transport the equation to `Λ (F.map (∋ c) ≫ R)` via `Λ_fusion`.
     have hX_eps : Λ X ≫ ∋ c = X := Λ_eps_eq' X
     have hFX : F.map X = F.map (Λ X) ≫ F.map (∋ c) := by
-      -- rewrite the LARGER pattern `A X ≫ ∋ c` (not bare `X`) so the `A X` inside it
+      -- rewrite the LARGER pattern `Λ X ≫ ∋ c` (not bare `X`) so the `Λ X` inside it
       -- does not spuriously get rewritten too.
       have hcomp : F.map (Λ X ≫ ∋ c) = F.map (Λ X) ≫ F.map (∋ c) := F.map_comp _ _
       rwa [hX_eps] at hcomp

@@ -30,7 +30,7 @@
   Honest headline note: `LC11.maxArea_correct` is CONDITIONAL on `Nonneg h.toList` (heights `≥ 0`) and
   `2 ≤ h.toList.length` (a valid pair exists).  For `n < 2` the achievability relation `IsPairArea` is
   empty while `arrSolve` returns `0`, so the unconditional morphism-equation headline `graph solveFn =
-  A spec ≫ maxRel D` (`A7_4_Horner.eq_A_comp_maxRel`) does NOT hold here.  We therefore state the honest
+  Λ spec ≫ maxRel D` (`A7_4_Horner.eq_Λ_comp_maxRel`) does NOT hold here.  We therefore state the honest
   bundle: emergence (unconditional) ∧ the reused conditional correctness.
 
   Mathlib-free; headline axioms ⊆ {propext, Quot.sound} (fully constructive, no `Classical.choice`).

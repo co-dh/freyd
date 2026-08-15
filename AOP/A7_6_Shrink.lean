@@ -14,10 +14,10 @@
   `S ↾ R = S ⊓ (R / S˘)` becomes `S ∩ (S° \ R)`.
 
   COHERENCE with §7.  In an `UnguardedPowerLCDA` the shrink is exactly Bird & de Moor's
-  (7.5) `min R · Λ S`:  `S ↾ R = A S ≫ minRel R`  (`shrink_eq_A_comp_minRel`, from
-  `A7_1.A_comp_minRel`).  So the whole `min`/`Λ` machinery of `AOP.A7_1`/`A7_4` and the shrink
+  (7.5) `min R · Λ S`:  `S ↾ R = Λ S ≫ minRel R`  (`shrink_eq_Λ_comp_minRel`, from
+  `A7_1.Λ_comp_minRel`).  So the whole `min`/`Λ` machinery of `AOP.A7_1`/`A7_4` and the shrink
   calculus are one and the same operator — the AoPA universal property of `↾` is literally the
-  repo's `le_A_comp_minRel_iff`.
+  repo's `le_Λ_comp_minRel_iff`.
 
   Mathlib-free; the pure shrink calculus lives at the `DivisionAllegory` level.
 -/
@@ -116,11 +116,11 @@ end Division
 section Power
 variable [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 
-/-- **(7.5) as a coherence law.**  `S ↾ R = A S ≫ minRel R`.  The shrink operator is exactly
-    Bird & de Moor's `min R · Λ S`; this is `A7_1.A_comp_minRel` read backwards, unfolding the
+/-- **(7.5) as a coherence law.**  `S ↾ R = Λ S ≫ minRel R`.  The shrink operator is exactly
+    Bird & de Moor's `min R · Λ S`; this is `A7_1.Λ_comp_minRel` read backwards, unfolding the
     definition `S ↾ R = S ∩ (S° \ R)`.  So a shrink headline `X = S ↾ R` and an optimization
-    headline `X = A S ≫ minRel R` are literally the same statement, and (since
-    `maxRel R = minRel R°`) `S ↾ R° = A S ≫ maxRel R`. -/
+    headline `X = Λ S ≫ minRel R` are literally the same statement, and (since
+    `maxRel R = minRel R°`) `S ↾ R° = Λ S ≫ maxRel R`. -/
 public theorem shrink_eq_Λ_comp_minRel (S : b ⟶ a) (R : a ⟶ a) : S ↾ R = Λ S ≫ minRel R :=
   (Λ_comp_minRel S R).symm
 

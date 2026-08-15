@@ -52,8 +52,8 @@ open Freyd
 
 /-! ## Pointwise Rel(Set) readings: the transpose and `thinRel` -/
 
-/-- In Rel(Set) the transpose `A W` sends `u` to exactly its `W`-successor set (the pointwise
-    content of `A_eq_classifier`). -/
+/-- In Rel(Set) the transpose `Λ W` sends `u` to exactly its `W`-successor set (the pointwise
+    content of `Λ_eq_classifier`). -/
 theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow b).carrier) :
     Λ W u G ↔ G = fun y => W u y := by
   rw [Λ_eq_classifier]; exact Iff.rfl

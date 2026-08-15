@@ -206,7 +206,7 @@ theorem solve_correct (xs : SnocList Int Int) :
     | inl hv => have := (foldFn_dominates xs).1 v hv; omega
     | inr hv => have := (foldFn_dominates xs).2 v hv; omega
 
-/-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `A spec ≫ maxRel D`
+/-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for `D w z := w ≤ z` — `maxRel` of the reversed "smaller-is-better" order is the `≤`-MINIMUM
     (`minRel (≤)`) — not merely pointwise. Bridged from `solve_correct`. -/
 theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Int => w ≤ z) :=

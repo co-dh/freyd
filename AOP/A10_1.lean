@@ -16,8 +16,8 @@
   the `powerRel`/`leftDiv` detour.
 
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; conventions as in `AOP.A9_1`):
-  - B&dM `M = min R·ΛH` is `A H ≫ minRel R`; the greedy body `h·FX·min Q·ΛT°` is
-    `A (T°) ≫ minRel Q ≫ F.map X ≫ h`.
+  - B&dM `M = min R·ΛH` is `Λ H ≫ minRel R`; the greedy body `h·FX·min Q·ΛT°` is
+    `Λ (T°) ≫ minRel Q ≫ F.map X ≫ h`.
   - the hypothesis `Q` satisfies `h·FH·Q° ⊆ R°·h·FH` mirrors to
     `Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°` — identical to Theorem 9.2's `hQ`.
   - `min Q ⊆ ∈` is `AOP.A7_1`'s `inter_lb_left` (unfolding `minRel`); the lower bound
@@ -41,8 +41,8 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 
 /-! ## Theorem 10.1 (B&dM p.245) — the greedy theorem, as extreme dynamic programming -/
 
-/-- **Core of Theorem 10.1**: `M = min R·ΛH` (mirrored `A H ≫ minRel R`) is a PREFIXED point of
-    the GREEDY body `h·FX·min Q·ΛT°` (mirrored `A (T°) ≫ minRel Q ≫ F.map X ≫ h`), for any `H`
+/-- **Core of Theorem 10.1**: `M = min R·ΛH` (mirrored `Λ H ≫ minRel R`) is a PREFIXED point of
+    the GREEDY body `h·FX·min Q·ΛT°` (mirrored `Λ (T°) ≫ minRel Q ≫ F.map X ≫ h`), for any `H`
     satisfying the hylomorphism fixed-point equation `H = h·FH·T°` and any `Q` satisfying the
     thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q` handled directly by

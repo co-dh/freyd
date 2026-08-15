@@ -34,7 +34,7 @@
   **Correctness — headline shape 2 (extremum), reused.**  `L5.lean` proves BOTH achievability
   (`longestPalin_achievable`) and domination (`longestPalin_dominates`) of `longestPalinFn` against
   `IsPalinSubstr`; per the standing rule, the honest headline is the MORPHISM EQUATION
-  `derivedSolve = A IsPalinSubstr ≫ maxRel (≤)` via `RelSet.eq_A_comp_maxRel`
+  `derivedSolve = Λ IsPalinSubstr ≫ maxRel (≤)` via `RelSet.eq_Λ_comp_maxRel`
   (`AOP/A7_4_Horner.lean`), consuming those two reused halves plus antisymmetry of `≤` — no
   optimality is re-proved here.
 

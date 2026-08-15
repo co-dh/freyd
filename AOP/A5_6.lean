@@ -2,7 +2,7 @@
   Bird & de Moor, *Algebra of Programming* Ex 5.20 (book pp. 124, 126): power transposes
   of the relational-product relator, `cup` and `cap`, and the general "cp"-pattern.
 
-  Setting: `Λ` (Freyd's `A`, the power transpose) needs an `UnguardedPowerAllegory`
+  Setting: `Λ`, the power transpose, needs an `UnguardedPowerAllegory`
   (`Freyd.S2_4`/`AOP.A4_6`); the relational product `RelProd`/`topMor` (§5.2, `AOP.A5_2`)
   needs a `TabularUnitaryDivisionAllegory` (`Freyd.S2_3`).  Both classes already share
   `DivisionAllegory` as a common ancestor (`UnguardedPowerAllegory → PowerAllegory →
@@ -24,7 +24,7 @@ universe u
 namespace Freyd.Alg
 
 /-- Merge class for Ex 5.20: a tabular unitary DIVISION allegory (gives `topMor`/`RelProd`,
-    `AOP.A5_2`) whose power-object membership is additionally UNGUARDED (gives `A`/`∋`
+    `AOP.A5_2`) whose power-object membership is additionally UNGUARDED (gives `Λ`/`∋`
     unconditionally, `AOP.A4_6`'s calculus).  Diamond-safe by the same structure-inheritance
     merge as `Freyd.S2_41b.TabularUnitaryPowerAllegory`. -/
 class TabularUnitaryUnguardedDivisionPowerAllegory (𝒜 : Type u) extends
@@ -33,7 +33,7 @@ class TabularUnitaryUnguardedDivisionPowerAllegory (𝒜 : Type u) extends
 section
 variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 
-/-- Diamond check: `RelProd`/`topMor` (division-allegory side) and `A`/`∋`
+/-- Diamond check: `RelProd`/`topMor` (division-allegory side) and `Λ`/`∋`
     (unguarded-power side) resolve on the SAME `Allegory 𝒜`. -/
 noncomputable example (a b : 𝒜) : RelProd a b := relProd a b
 noncomputable example (a c : 𝒜) (R : c ⟶ a) : c ⟶ PowerAllegory.powerObj a := Λ R
@@ -47,14 +47,14 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 
   For a chosen relational product `P` of `[a]` with itself, `cup P : P.p ⟶ [a]` is the
   power transpose of `(outl≫∋) ∪ (outr≫∋)` — the relation "belongs to the first OR the
-  second set".  `A_union` shows this recovers `Λ(R∪S)` when fed the pair of transposes. -/
+  second set".  `Λ_union` shows this recovers `Λ(R∪S)` when fed the pair of transposes. -/
 
 /-- **Ex 5.20** (B&dM p.124): `cup P = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
 noncomputable def cup {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     P.p ⟶ PowerAllegory.powerObj a :=
   Λ ((P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a))
 
-/-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `A (R∪S) = pair(A R)(A S) ≫ cup P`. -/
+/-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∪S) = pair(Λ R)(Λ S) ≫ cup P`. -/
 theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     Λ (R ∪ S) = P.pair (Λ R) (Λ S) ≫ cup P := by
@@ -69,7 +69,7 @@ theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
 /-! ## Ex 5.20  `cap` (book p.126): the intersection relator, transposed
 
   Same skeleton as `cup`, with `∩` in place of `∪`.  The distribution step now needs
-  `P.pair (A R) (A S)` to be a MAP (`simple_dist_inter`), since plain intersection does not
+  `P.pair (Λ R) (Λ S)` to be a MAP (`simple_dist_inter`), since plain intersection does not
   distribute over composition in a general allegory the way union does. -/
 
 /-- **Ex 5.20**: `cap P = Λ((∈·outl) ∩ (∈·outr))`, mirrored. -/
@@ -77,7 +77,7 @@ noncomputable def cap {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerA
     P.p ⟶ PowerAllegory.powerObj a :=
   Λ ((P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a))
 
-/-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `A (R∩S) = pair(A R)(A S) ≫ cap P`. -/
+/-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∩S) = pair(Λ R)(Λ S) ≫ cap P`. -/
 theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     Λ (R ∩ S) = P.pair (Λ R) (Λ S) ≫ cap P := by
@@ -93,7 +93,7 @@ theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
 
   `cup`, `cap` and `cross` are all instances of transposing a RELATOR's action on `∈`
   along its own object map.  We record the general pattern and its one universal fact
-  (the transpose is always a map); the individual laws (`A_union`, `A_inter`) are proved
+  (the transpose is always a map); the individual laws (`Λ_union`, `Λ_inter`) are proved
   directly above rather than derived from this, since deriving them uniformly would need
   `Relator.PreservesRecip`/naturality hypotheses on `F` beyond what is needed here. -/
 

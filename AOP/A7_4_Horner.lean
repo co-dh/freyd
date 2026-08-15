@@ -13,8 +13,8 @@
   correctness statement:
 
   * `greedy_max_of_refinement` — the max-form of `A7_2.greedy_of_refinement`: a monotone
-    deterministic algebra `alg` that refines the greedy choice `A S ≫ maxRel R` has its
-    catamorphism land inside the Pareto frontier `A (relCata I S) ≫ maxRel R`.  This is the
+    deterministic algebra `alg` that refines the greedy choice `Λ S ≫ maxRel R` has its
+    catamorphism land inside the Pareto frontier `Λ (relCata I S) ≫ maxRel R`.  This is the
     genuine greedy-theorem content (it routes through `greedy_of_refinement` → the hylomorphism
     theorem `hylo_le_of_prefixed`).
 
@@ -48,12 +48,12 @@ section Abstract
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
 
 /-- The universal property of (7.5) in `max` form (`maxRel R = minRel R°`):
-    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_A_comp_minRel_iff` at `R°`. -/
+    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_Λ_comp_minRel_iff` at `R°`. -/
 public theorem le_Λ_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
     X ⊑ Λ S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_Λ_comp_minRel_iff
 
 /-- **Max form of `A7_2.greedy_of_refinement`.**  A deterministic algebra `f` (a map),
-    MONOTONIC on the order `R`, that REFINES the greedy choice `A S ≫ maxRel R`, already has its
+    MONOTONIC on the order `R`, that REFINES the greedy choice `Λ S ≫ maxRel R`, already has its
     catamorphism inside `max R·Λ⦇S⦈` — the Pareto frontier of the plain non-deterministic
     catamorphism `⦇S⦈`.  Mirror of `greedy_of_refinement` through `R°` (`maxRel R = minRel R°`),
     flipping monotonicity with `monotonicAlg_recip_iff` (needs `f` a map). -/
@@ -67,11 +67,11 @@ public theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlg
 
 end Abstract
 
-/-! ## Concrete Rel(Set) helpers: `A` is the classifier, and `maxRel` pointwise -/
+/-! ## Concrete Rel(Set) helpers: `Λ` is the classifier, and `maxRel` pointwise -/
 
 namespace RelSet
 
-/-- In Rel(Set) the transpose `A` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
+/-- In Rel(Set) the transpose `Λ` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
     both are maps whose composition with `∋` is `R`, and that map is unique. -/
 public theorem Λ_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : Λ R = classifier R :=
   ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
@@ -85,14 +85,14 @@ public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ maxRel D`
 
   This is the bridge that lets an optimization case study state its headline as the actual
-  morphism equation `solve = A spec ≫ maxRel D` (§7.5's `max D · Λ spec`), instead of only in
+  morphism equation `solve = Λ spec ≫ maxRel D` (§7.5's `max D · Λ spec`), instead of only in
   prose.  It consumes exactly the two halves the case study already proves — achievability
   (`hsound`) and domination (`hbest`) — plus antisymmetry of the preference order `D`, which
   pins the maximum uniquely so `solve` (a map) equals it. -/
 
 /-- **Morphism-equation headline for a maximization solver.**  If `solveFn` always produces a
     `spec`-value (`hsound`) that `D`-dominates every `spec`-value (`hbest`), and the preference
-    order `D` is antisymmetric, then `graph solveFn = A spec ≫ maxRel D` — the program is exactly
+    order `D` is antisymmetric, then `graph solveFn = Λ spec ≫ maxRel D` — the program is exactly
     `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
     for a `≤`-minimum take `D w z := w ≤ z` (`maxRel` of the reversed order is `minRel`). -/
 public theorem eq_Λ_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
@@ -158,7 +158,7 @@ public theorem horner_correct {L E A1 : Type}
   have hmem_fold : (cataR alg) xs (foldFn xs) := (hfold xs (foldFn xs)).mpr rfl
   obtain ⟨P, hAP, hmax⟩ := (le_iff.mp Hcore) xs (foldFn xs) hmem_fold
   rw [Λ_eq_classifier] at hAP
-  -- `A (⦇S⦈) xs P` pins `P` to the generatable set of `xs`.
+  -- `Λ (⦇S⦈) xs P` pins `P` to the generatable set of `xs`.
   have hPeq : P = fun w => (cataR S) xs w := hAP
   subst hPeq
   obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (foldFn xs)).mp hmax

@@ -725,7 +725,7 @@ public theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAlleg
 
   Freyd §2.42 (book, §2.422 corollary): *Let A be a power allegory.  Then `Spl(Corefl A)`
   is an effective power allegory.*  The completion is the COREFLEXIVE one `SplCorObj 𝒜`
-  (split only coreflexives), reached because §2.421/§2.422 give `E = E/E = A(E)A°(E) = ff°`
+  (split only coreflexives), reached because §2.421/§2.422 give `E = E/E = Λ(E)Λ°(E) = ff°`
   for every equivalence relation `E`, so splitting coreflexives makes every equivalence
   relation effective.  Crucially the book does NOT make the power allegory semi-simple —
   "free power allegories are not semi-simple" (book §2.42, near §2.441) — so the full
@@ -773,9 +773,9 @@ public theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAlleg
 
   Hence the two missing primitives (book-routine, neither reducible to an existing repo lemma):
     (1) the TRANSPORTED `eps_{SplObj}`/`powerObj_{SplObj}` (the §2.421 identity
-        `R/S = A(R)A°(S)`, carried across the splitting), giving `Thick (eps_{SplObj} b)`;
+        `R/S = Λ(R)Λ°(S)`, carried across the splitting), giving `Thick (eps_{SplObj} b)`;
     (2) for a GENERAL power allegory, effectiveness of the COREFLEXIVE completion
-        `SplCorObj 𝒜` via §2.422 (`E = E/E = A(E)A°(E) = ff°` + coreflexive split), since a
+        `SplCorObj 𝒜` via §2.422 (`E = E/E = Λ(E)Λ°(E) = ff°` + coreflexive split), since a
         general power allegory is NOT semi-simple so `instEffectiveSpl` does not fire;
         BLOCKED by (B1)+(B2) above.
 

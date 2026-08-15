@@ -2,7 +2,7 @@
   ∞-COMPLETED DYNAMIC PROGRAMMING — a new abstract theorem beyond Bird & de Moor §9.1.
 
   B&dM's Theorem 9.1 (`AOP.A9_1.dynamic_programming`) models dynamic programming with the
-  body `min R · P(h·FX) · ΛT°` (mirrored: `A (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R`).
+  body `min R · P(h·FX) · ΛT°` (mirrored: `Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R`).
   Its power relator is the EGLI–MILNER lifting (`AOP.A5_4`): term₁ demands EVERY element of
   the decomposition set `ΛT° v` be productive under `h·FX`.  For recursions that unfold a
   finite INPUT structure every branch is productive and the theorem is faithful; but for
@@ -58,7 +58,7 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 
-/-- The ∞-DP recursion body: decompose in all ways (`A (T°)`), solve subproblems and refold
+/-- The ∞-DP recursion body: decompose in all ways (`Λ (T°)`), solve subproblems and refold
     (`powerRel (F.map X ≫ h)`), then keep an `R`-minimum of the candidates — OR the fallback
     `τ`, whenever the fallback is an `R`-lower bound of the candidates (which, `τ` being
     top-valued, happens exactly when every candidate is itself a fallback value; in
@@ -84,7 +84,7 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj b ⟶ b) (
     for any `H` satisfying the hylomorphism fixed-point equation, any top-valued fallback
     `τ`, provided `H ∪ τ` absorbs one decompose-solve-fold step (`hstrict`).  Mirrors
     `dp_prefixed` (`AOP.A9_1`): the two obligations are the components of `min`'s universal
-    property `le_A_comp_minRel_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
+    property `le_Λ_comp_minRel_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R` (`hτ`) in the lower-bound half. -/
 public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.obj a ⟶ a}
     {T : F.obj b ⟶ b} {R : a ⟶ a} {τ : b ⟶ a} {H : b ⟶ a}

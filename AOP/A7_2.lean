@@ -3,7 +3,7 @@
   (book pp. 172-175).
 
   A DYNAMIC-PROGRAMMING / GREEDY-ALGORITHM problem is a hylomorphism `⦇min R⦈·ΛS` (mirrored
-  `relCata I (A S ≫ minRel R)`): unfold via a coalgebra `S`, then at every step keep only the
+  `relCata I (Λ S ≫ minRel R)`): unfold via a coalgebra `S`, then at every step keep only the
   `R`-minimal choices.  Theorem 7.2 (the GREEDY THEOREM) gives conditions under which this
   "keep minima at every step" strategy is safe to postpone to the very end: if `S` is
   MONOTONIC on the preorder `R°`, then greedily filtering at each unfold step refines the
@@ -15,9 +15,9 @@
   - B&dM `f·FR·f° ⊆ R` mirrors to `f° ≫ F.map R ≫ f ⊑ R`; B&dM `FR ⊆ f°·R·f` mirrors to
     `F.map R ⊑ f ≫ R ≫ f°`.
   - B&dM `f·F(min R) ⊆ min R·Λ(f·F∈)` (Distributes, `f` DISTRIBUTES over `min R`) mirrors to
-    `F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R`.
+    `F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R`.
   - B&dM `⦇min R·ΛS⦈ ⊆ min R·Λ⦇S⦈` (the Greedy Theorem) mirrors to
-    `relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R`.
+    `relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R`.
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), plus `AOP.A6_3`'s hylomorphism theorem
   (`hylo_le_of_prefixed`) and `AOP.A7_1`'s `minRel`/`maxRel` core.
@@ -220,9 +220,9 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
   rwa [← Cat.assoc I.α° I.α R, I.recip_alpha_alpha, Cat.id_comp] at h2
 
 /-- **Ex 7.37 variant**: if `f` (an arbitrary algebra, monotonic on `R`) REFINES a greedy
-    candidate `A S ≫ minRel R`, its catamorphism already lands inside `min R·Λ⦇S⦈` — a
+    candidate `Λ S ≫ minRel R`, its catamorphism already lands inside `min R·Λ⦇S⦈` — a
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
-    form `A S ≫ minRel R` up to equality. -/
+    form `Λ S ≫ minRel R` up to equality. -/
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
     (href : f ⊑ Λ S ≫ minRel R) : relCata I f ⊑ Λ (relCata I S) ≫ minRel R := by
@@ -236,15 +236,15 @@ public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra
   exact le_trans hA (le_trans hB htrans)
 
 /- **Ex 7.38** (`min R·ΛS·min(FR) ⊆ min R·ES` mirrored:
-   `minRel (F.map R) ≫ A S ≫ minRel R ⊑ existsImage S ≫ minRel R` for `MonotonicAlg S R°`):
+   `minRel (F.map R) ≫ Λ S ≫ minRel R ⊑ existsImage S ≫ minRel R` for `MonotonicAlg S R°`):
    DROPPED.  Unlike Ex 7.34/7.37, which reduce directly to `relCata_le_of_prefixed` /
    `hylo_le_of_prefixed` plus the algebra calculus already on hand, this inequality is about
    `minRel` commuting past the EXISTENTIAL IMAGE `existsImage` — a genuinely new absorption
-   law (`A W ≫ minRel R` vs. `existsImage S ≫ minRel R` with `W := ∋ (F.obj a) ≫ S`) not
-   derivable from `A_comp_minRel`/`le_A_comp_minRel_iff` alone: the left-hand side
-   `minRel (F.map R) ≫ A S ≫ minRel R` is not of the `A _ ≫ minRel R` shape the universal
+   law (`Λ W ≫ minRel R` vs. `existsImage S ≫ minRel R` with `W := ∋ (F.obj a) ≫ S`) not
+   derivable from `Λ_comp_minRel`/`le_Λ_comp_minRel_iff` alone: the left-hand side
+   `minRel (F.map R) ≫ Λ S ≫ minRel R` is not of the `Λ _ ≫ minRel R` shape the universal
    property needs, and no absorption lemma connecting `minRel` with `existsImage` (the B&dM
-   p.105 `A`/`E` calculus of `AOP.A4_6`) exists in this file's API.  Left as a documented
+   p.105 `Λ`/`E` calculus of `AOP.A4_6`) exists in this file's API.  Left as a documented
    gap; nothing downstream in this file depends on it. -/
 
 /- **Ex 7.33** (pointwise translation of the greedy theorem into a componentwise/relational

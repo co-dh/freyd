@@ -68,11 +68,11 @@ public theorem powerRel_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : powerR
 
 /-- **B&dM §5.4** (`powerRel` preserves identities): `powerRel 1_a = 1_{[a]}`.  B&dM's
     "`Pid = id` is the antisymmetry of subset" — here it is definitional via `symmDiv` plus
-    Freyd's `A_eps_reflection` (§2.412 reflection law `A(∋) = id`).  With `R = id_a` the
+    Freyd's `Λ_eps_reflection` (§2.412 reflection law `Λ(∋) = id`).  With `R = id_a` the
     definition collapses to `((∋a)° \ (∋a)°) ∩ (∋a/∋a)`; the first term equals
     `powerOrder°` on the nose (`(S \ R)` unfolds to `(R° / S°)°`, and `(∋a)°° = ∋a`), so the
     whole meet is `powerOrder° ∩ powerOrder = powerOrder ∩ powerOrder°`, which is exactly
-    the unfolding of `A (∋ a) = ∋a /ₛ ∋a`. -/
+    the unfolding of `Λ (∋ a) = ∋a /ₛ ∋a`. -/
 theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
   have hterm1 : ((∋ a)° \ (Cat.id a ≫ (∋ a)°)) = (powerOrder (a := a))° := by
     have e : Cat.id a ≫ (∋ a)° = (∋ a)° := Cat.id_comp _
@@ -173,11 +173,11 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
     and term₂-for-`z` obligations instantiate this ONE lemma — the latter after a `°`-flip).
 
     Setting: `W = (p ≫ ∋ a' ≫ bookRel) ∩ (q ≫ ∋ b'' ≫ bookRel')` (a meet of two "reachability"
-    relations through legs `p, q` of a tabulation), `h = A W` the classifying map of `W`.  Given
+    relations through legs `p, q` of a tabulation), `h = Λ W` the classifying map of `W`.  Given
     the CROSS fact `(∋a')°≫p°≫q ⊑ (bookRel≫bookRel'°)≫(∋b'')°` (extracted from the membership
     of the tabulated relation itself), we get `(∋a')°≫(p°≫h) ⊑ bookRel≫(∋d)°`.
 
-    Proof: shunt `h` (a map, `A_is_map'`) to reduce to `S' ⊑ bookRel ≫ W°` where
+    Proof: shunt `h` (a map, `Λ_is_map'`) to reduce to `S' ⊑ bookRel ≫ W°` where
     `S' := (∋a')°≫p°`; compute `W° = (bookRel°≫S') ∩ (bookRel'°≫S'')` with `S'' := (∋b'')°≫q°`;
     shunt `q` (a map) in the cross fact to get the "easy" bound `S' ⊑ bookRel≫(bookRel'°≫S'')`;
     combine with the trivial `S' ⊑ S'` via the (right) modular law `modular_le_right` to land
@@ -224,7 +224,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
 
 /-- **B&dM §5.4** (functoriality, THE HARD direction): `powerRel (R ≫ S) ⊑ powerRel R ≫ powerRel S`.
     Tabulate `powerRel (R≫S)` as `x°≫z` (a jointly-monic pair of maps `x : w⟶[a]`, `z : w⟶[c]`).
-    Set `W := (x≫∋a≫R) ∩ (z≫∋c≫S°)` and `h := A W : w⟶[b]`.  The two "cross facts"
+    Set `W := (x≫∋a≫R) ∩ (z≫∋c≫S°)` and `h := Λ W : w⟶[b]`.  The two "cross facts"
     `(∋a)°≫x°≫z ⊑ (R≫S)≫(∋c)°` (from term₁-membership of `powerRel(R≫S)` itself) and its
     `°`-flip `(∋c)°≫z°≫x ⊑ (S°≫R°)≫(∋a)°` (from term₂-membership) feed `powerRel_leg_bound`
     (applied to the `x`-leg and, after a flip, the `z`-leg) to give `x°≫h ⊑ powerRel R` and

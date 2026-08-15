@@ -265,7 +265,7 @@ theorem solve_correct (xs : SnocList Int Int) :
   rw [show solveFn xs = (trade.foldFn xs).2 from congrArg Prod.snd (foldFn_eq xs)]
   exact h
 
-/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `A spec ≫ maxRel D`
+/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise. Bridged from `solve_correct`. -/
 theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Int => z ≤ w) :=
   eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) solveFn spec

@@ -3,14 +3,14 @@
 
   B&dM's power allegory (universal property `f = ΛR ≡ ∈·f = R` for functions `f`) is exactly
   Freyd's `UnguardedPowerAllegory` (Freyd/S2_4.lean): power object `powerObj b`, membership
-  `∋ b : powerObj b ⟶ b` (from the power object TO `b`), power transpose `A R : a ⟶ powerObj b`
-  for `R : a ⟶ b` (`A R := R /ₛ ∋ b`), unconditionally a map with `A R ≫ ∋ b = R`
-  (`A_is_map'`, `A_eps_eq'`).  Composition throughout is diagram order (`≫`).
+  `∋ b : powerObj b ⟶ b` (from the power object TO `b`), power transpose `Λ R : a ⟶ powerObj b`
+  for `R : a ⟶ b` (`Λ R := R /ₛ ∋ b`), unconditionally a map with `Λ R ≫ ∋ b = R`
+  (`Λ_is_map'`, `Λ_eps_eq'`).  Composition throughout is diagram order (`≫`).
 
   Two of B&dM's book formulas are ALREADY Freyd's definitions/theorems and are not restated:
-  - p.107 `ΛR = (∈\R) ∩ (R\∈)°` is literally Freyd's `A R := R /ₛ ∋ b` (symmetric division
+  - p.107 `ΛR = (∈\R) ∩ (R\∈)°` is literally Freyd's `Λ R := R /ₛ ∋ b` (symmetric division
     unfolds to exactly this meet, §2.331/§2.41).
-  - Ex 4.48 `(ΛR)°·ΛS = (R\S) ∩ (S\R)°` is `symm_div_eq_A_comp` in `S2_4.lean`.
+  - Ex 4.48 `(ΛR)°·ΛS = (R\S) ∩ (S\R)°` is `symm_div_eq_Λ_comp` in `S2_4.lean`.
 
   `map_comp_div` (A4_4) and `map_shunt_left` (A4_2) are imported; the private wave-time
   copies were deduped at collection.
@@ -47,35 +47,35 @@ theorem reflexive_transitive_iff_div_self {a : 𝒜} (R : a ⟶ a) :
 
 end DivisionHelpers
 
-/-! ## Universal property of `A` and the resulting calculus
+/-! ## Universal property of `Λ` and the resulting calculus
 
-    From here on we work in an `UnguardedPowerAllegory`, where `A_is_map'`/`A_eps_eq'` hold
+    From here on we work in an `UnguardedPowerAllegory`, where `Λ_is_map'`/`Λ_eps_eq'` hold
     unconditionally (no box hypothesis), matching B&dM's power allegory exactly. -/
 
 section PowerCalculus
 
 variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
-/-- B&dM p.103 universal property of `Λ` (here `A`): for a map `f`,
-    `f = A R ↔ f ≫ ∋ b = R`. -/
+/-- B&dM p.103 universal property of `Λ`: for a map `f`,
+    `f = Λ R ↔ f ≫ ∋ b = R`. -/
 public theorem Λ_UP {a b : 𝒜} (R : a ⟶ b) {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) :
     f = Λ R ↔ f ≫ ∋ b = R := by
   constructor
   · intro h; rw [h]; exact Λ_eps_eq' R
   · intro h; exact Λ_unique R f hf h
 
-/-- `A` is injective: `A R = A S → R = S`. -/
+/-- `Λ` is injective: `Λ R = Λ S → R = S`. -/
 theorem Λ_injective {a b : 𝒜} {R S : a ⟶ b} (h : Λ R = Λ S) : R = S := by
   rw [← Λ_eps_eq' R, ← Λ_eps_eq' S, h]
 
-/-- B&dM p.104 fusion law: for a map `f : c ⟶ a`, `A (f ≫ R) = f ≫ A R`. -/
+/-- B&dM p.104 fusion law: for a map `f : c ⟶ a`, `Λ (f ≫ R) = f ≫ Λ R`. -/
 public theorem Λ_fusion {c a : 𝒜} {f : c ⟶ a} (hf : Map f) {b : 𝒜} (R : a ⟶ b) :
     Λ (f ≫ R) = f ≫ Λ R := by
   have hmap : Map (f ≫ Λ R) := map_comp hf (Λ_is_map' R)
   have heq : (f ≫ Λ R) ≫ ∋ b = f ≫ R := by rw [Cat.assoc, Λ_eps_eq']
   exact (Λ_unique _ _ hmap heq).symm
 
-/-- B&dM p.104 reflection law: `A (∋ b) = 1_{[b]}` (`Λ∈ = id`). -/
+/-- B&dM p.104 reflection law: `Λ (∋ b) = 1_{[b]}` (`Λ∈ = id`). -/
 public theorem Λ_eps_reflection {b : 𝒜} : Λ (∋ b) = Cat.id (PowerAllegory.powerObj b) := by
   have heq : Cat.id (PowerAllegory.powerObj b) ≫ ∋ b = ∋ b := Cat.id_comp _
   exact (Λ_unique _ _ (id_is_map_local _) heq).symm
@@ -93,7 +93,7 @@ public theorem Λ_eps_reflection {b : 𝒜} : Λ (∋ b) = Cat.id (PowerAllegory
 /-- `∈` is an (exactly) natural transformation (B&dM p.105): `E R ≫ ∋ b = ∋ a ≫ R`. -/
 public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := Λ_eps_eq' _
 
-/-- `A S ≫ E R = A (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
+/-- `Λ S ≫ E R = Λ (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
 theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
     Λ S ≫ existsImage R = Λ (S ≫ R) := by
   have hEMap : Map (existsImage R) := Λ_is_map' _
@@ -129,9 +129,9 @@ theorem singletonMap_natural {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
 
     `bigUnion` (Freyd's `⋃`) IS the powerset-monad multiplication `μ`; these are exactly the
     monad laws for the nondeterminism monad.  Kleisli arrows `a ⟶ [b]` are B&dM's set-valued
-    functions and `A` is the isomorphism between relations and Kleisli arrows. -/
+    functions and `Λ` is the isomorphism between relations and Kleisli arrows. -/
 
-/-- `bigUnion = E ∋` (definitional: both unfold to `A (∋' ≫ ∋)`). -/
+/-- `bigUnion = E ∋` (definitional: both unfold to `Λ (∋' ≫ ∋)`). -/
 theorem bigUnion_eq_existsImage_eps {a : 𝒜} :
     (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj a)
       = existsImage (∋ a) := rfl
@@ -234,14 +234,14 @@ theorem wlp_antitone_iff {a b : 𝒜} (R S : a ⟶ b) :
 
 /-! ## Ex 4.47 (B&dM p.106): singleton/existsImage/bigUnion identities -/
 
-/-- `A R = singletonMap ≫ E R`. -/
+/-- `Λ R = singletonMap ≫ E R`. -/
 theorem Λ_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
     Λ R = singletonMap ≫ existsImage R := by
   have h := Λ_absorption (Cat.id a) R
   rw [Cat.id_comp] at h
   exact h.symm
 
-/-- `E R = E (A R) ≫ bigUnion`. -/
+/-- `E R = E (Λ R) ≫ bigUnion`. -/
 theorem existsImage_eq_Λ_bigUnion {a b : 𝒜} (R : a ⟶ b) :
     existsImage R = existsImage (Λ R) ≫ bigUnion := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, Λ_eps_eq']

@@ -16,8 +16,8 @@
 
   The genuinely non-trivial power-object facts AoPA proves alongside these already live in the
   repo abstractly (for any `UnguardedPowerAllegory`, hence for `Rel(Set)`):
-    * `∈Λ-cancelation`  `Λ R ≫ ∋ = R`      →  `A_eps_eq'` (a.k.a. `RelSet.classifier_comp_eps`);
-    * `ℰΛ-absorption`   `Λ S ≫ ℰ R = Λ(S≫R)` →  `A_absorption`;
+    * `∈Λ-cancelation`  `Λ R ≫ ∋ = R`      →  `Λ_eps_eq'` (a.k.a. `RelSet.classifier_comp_eps`);
+    * `ℰΛ-absorption`   `Λ S ≫ ℰ R = Λ(S≫R)` →  `Λ_absorption`;
     * `ℰ-functor`       `ℰ(S≫R) = ℰ S ≫ ℰ R` →  `existsImage_comp`.
 
   Mathlib-free; axioms ⊆ {propext} (via `funext`/`propext`/`le_iff`).
@@ -88,7 +88,7 @@ theorem Lam_mem_cancel (r : SVF a b) : SVFLe (Lam (memAfter r)) r :=
   fun _ _ hr => hr
 
 /-- AoPA `∈Λ-cancelation` (set-valued-function form): `(∈ ₁∘ (Λ R)) ⊑ R`.
-    (As a morphism equation this is the repo's `classifier_comp_eps`/`A_eps_eq'`.) -/
+    (As a morphism equation this is the repo's `classifier_comp_eps`/`Λ_eps_eq'`.) -/
 theorem mem_Lam_cancel (R : a ⟶ b) : memAfter (Lam R) ⊑ R :=
   le_iff.mpr fun _ _ hr => hr
 

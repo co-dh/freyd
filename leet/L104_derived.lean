@@ -15,7 +15,7 @@
     lengths.
   * `alg` (= `L104.alg`, the deterministic depth fold) is shown to (a) be MONOTONE on the reverse-`≤`
     order `R x y := y ≤ x` (`alg_mono`, from `imax` monotone) and (b) REFINE the greedy choice
-    `A S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
+    `Λ S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
     `S° ≫ alg ⊑ R°` — the folded value dominates every generatable value; both from `imax_eq_or`
     and `imax_ge_left/right`).  These two facts FORCE the node step to be `1 + imax dl dr`: it is the
     only monotone map that both lands in `{dl+1, dr+1}` and dominates it.
@@ -129,7 +129,7 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
       have h3 := imax_ge_right rl rr
       show m ≤ 1 + imax rl rr; simp only [dNat] at *; omega
 
-/-- The depth fold `alg` REFINES the greedy choice `A S ≫ maxRel R`.  Via `le_A_comp_maxRel_iff` this
+/-- The depth fold `alg` REFINES the greedy choice `Λ S ≫ maxRel R`.  Via `le_Λ_comp_maxRel_iff` this
     is two facts: `alg ⊑ S` (the folded value `1 + imax rl rr` is one of `{rl+1, rr+1}`, by
     `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/

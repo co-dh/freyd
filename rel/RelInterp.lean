@@ -16,7 +16,7 @@
   2. **The term language `RE`** — a deep AST with primitive constructors
      atom / id / comp / conv / meet / join / bot / top / div / eps.
      Everything else in the Freyd/B&dM vocabulary is DERIVED syntax using the book definitions
-     verbatim: `leftDiv S R = (R°/S°)°` (§2.312), `A R = R /ₛ ∋ = (R/∋) ∩ (∋/R)°`
+     verbatim: `leftDiv S R = (R°/S°)°` (§2.312), `Λ R = R /ₛ ∋ = (R/∋) ∩ (∋/R)°`
      (§2.331/§2.41), `min R = ∋ ∩ (∋°\R)` and `max R = min R°` (B&dM §7.1, `AOP.A7_1`).
 
   3. **`eval`** — maps each constructor to the corresponding INSTANCE operation.  Soundness is
@@ -407,7 +407,7 @@ example {a : FinObj} : eval (.eps a) = ∋ a := rfl
 def leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) : RE b c :=
   .conv (.div (.conv R) (.conv S))
 
-/-- Power transpose `Λ`: `A R = R /ₛ ∋ = (R/∋) ∩ ((∋/R)°)` (§2.331 + §2.41 verbatim). -/
+/-- Power transpose `Λ`: `Λ R = R /ₛ ∋ = (R/∋) ∩ ((∋/R)°)` (§2.331 + §2.41 verbatim). -/
 def AE {a b : FinObj} (R : RE a b) : RE a (pow b) :=
   .meet (.div R (.eps b)) (.conv (.div (.eps b) R))
 
@@ -433,15 +433,15 @@ theorem eval_minRelE {a : FinObj} (R : RE a a) :
 
 /-! ### Pointwise semantics of the spec vocabulary — the general TRANSPORT layer
 
-  What `Λ`, `max`, and the whole extremum shape `A R ≫ max D` mean POINTWISE in `FinRel`.
+  What `Λ`, `max`, and the whole extremum shape `Λ R ≫ max D` mean POINTWISE in `FinRel`.
   These lemmas eliminate the `2^card` powerset-code quantifier (the witness subset is exactly
   the `encNat`-encoded image), so a run of a spec term is not just a number but a predicate:
-  `A R ≫ max D` accepts `v` iff `v` is `R`-achievable and `D`-dominates every `R`-achievable
+  `Λ R ≫ max D` accepts `v` iff `v` is `R`-achievable and `D`-dominates every `R`-achievable
   value.  A bounded encoding `R` of an abstract spec then transports along a per-problem
   `R x v ↔ abstract-spec (decode v)` lemma to a THEOREM about the evaluated term — see
   `rel.AutoDeriveSearch`, where LC 121's instance is chained to `L121.solve_correct`. -/
 
-/-- `Λ` pointwise: `A R` relates `x` to exactly the bit-code of its `R`-image. -/
+/-- `Λ` pointwise: `Λ R` relates `x` to exactly the bit-code of its `R`-image. -/
 theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).card) :
     Λ R x P = true ↔ ∀ v, epsB b P v = R x v := by
   show (allFin b.card (fun v => !(epsB b P v) || R x v)
@@ -501,15 +501,15 @@ theorem Λ_comp_maxRel_apply {a b : FinObj} (e : RE a b) (d : RE b b)
 
 /-! ## Demo 4 — the DERIVED PROGRAM run by STRUCTURAL FOLD (polynomial, NO powerset)
 
-  Verdict (c), CORRECTED.  The spec term `A spec ≫ max D` (Demo 3) is exponential ONLY because
-  `A spec` enumerates `2^|Val|` subset codes.  The DERIVED program is a CATAMORPHISM, and a
+  Verdict (c), CORRECTED.  The spec term `Λ spec ≫ max D` (Demo 3) is exponential ONLY because
+  `Λ spec` enumerates `2^|Val|` subset codes.  The DERIVED program is a CATAMORPHISM, and a
   catamorphism does not need a global matrix over the infinite initial algebra `SL ℤ` — a `cata`
   term is evaluated AT a concrete input by FOLDING the input structure: polynomial, no subset
   enumeration.
 
   So the model needs a SECOND, applicative evaluator (`evalP`) that runs a recursion-scheme term
   by structural recursion, alongside the matrix evaluator `eval`.  The two are bridged by the AoP
-  derivation `solve = A spec ≫ max D` (proven in `leet.L121`); here we RUN both on the same
+  derivation `solve = Λ spec ≫ max D` (proven in `leet.L121`); here we RUN both on the same
   small instance and check they agree — the derivation's correctness, now runnable on both sides. -/
 
 namespace ProgEval

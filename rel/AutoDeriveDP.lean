@@ -60,9 +60,9 @@ open Freyd
 
 /-! ## Pointwise (`Rel(Set)`) readings of the power-allegory operations
 
-  `powerRel`, `minRel`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `A` does
-  not (it is a symmetric division), so its content is extracted through `A_eps_eq'` +
-  `A_is_map'` instead.  (Shared home; previously private to `leet.L322_dp`.) -/
+  `powerRel`, `minRel`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `Λ` does
+  not (it is a symmetric division), so its content is extracted through `Λ_eps_eq'` +
+  `Λ_is_map'` instead.  (Shared home; previously private to `leet.L322_dp`.) -/
 
 theorem powerRel_pt {α β : RelSet.{0}} (g : α ⟶ β) (P : (pow α).carrier)
     (Q : (pow β).carrier) :
@@ -78,7 +78,7 @@ theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.c
     leftDiv ((∋ α)°) R P x ↔ ∀ z, P z → R z x :=
   Iff.rfl
 
-/-- The set a transpose `A S` points `x` at contains exactly the `S`-successors of `x`. -/
+/-- The set a transpose `Λ S` points `x` at contains exactly the `S`-successors of `x`. -/
 theorem Λ_pt {α β : RelSet.{0}} (S : α ⟶ β) {x : α.carrier} {P : (pow β).carrier}
     (hP : Λ S x P) (y : β.carrier) : P y ↔ S x y := by
   constructor

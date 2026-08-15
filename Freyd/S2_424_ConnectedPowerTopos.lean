@@ -139,7 +139,7 @@ theorem splThickTarget_general (E : SplObj 𝒜)
   with the current infrastructure) is the sole residual of `splTargetThick_general`.  It is
   needed ONLY to feed the box-matching guard of the base thickness `Thick T`.  When the base
   `T` is UNCONDITIONALLY thick (`∀ R, Entire (R /ₛ T)`, exactly what an UNGUARDED power
-  allegory's `∋` supplies via `A_is_map'`), that guard is vacuous and the box-naming
+  allegory's `∋` supplies via `Λ_is_map'`), that guard is vacuous and the box-naming
   requirement VANISHES — every object of `SplObj 𝒜` gets a thick target with NO side
   condition. -/
 
@@ -324,7 +324,7 @@ end GeneralThickTarget
 /-! ## §2.422: `Sid(Cor A)` has a thick target for EVERY object (unguarded base)
 
   Assembled over an UNGUARDED power allegory base `𝒜`: the base membership `∋ (E.carrier)` is
-  unconditionally thick (`A_is_map'`, S2_4), so `splTargetThick_unguarded` gives every object
+  unconditionally thick (`Λ_is_map'`, S2_4), so `splTargetThick_unguarded` gives every object
   `E` of `SplObj 𝒜` a thick target — with NO box-index side condition.  This is exactly the
   `EffectivePrePowerAllegory.thick_target` shape (Freyd §2.42/§2.422: `Sid(Cor A)` is a
   pre-power allegory). -/
@@ -333,7 +333,7 @@ section UnguardedThickTargets
 variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- The base membership `∋ b` is UNCONDITIONALLY thick in an unguarded power allegory:
-    `A(R) = R /ₛ ∋ b` is entire for every `R` (`A_is_map'`). -/
+    `Λ(R) = R /ₛ ∋ b` is entire for every `R` (`Λ_is_map'`). -/
 public theorem eps_unthick (b : 𝒜) {c : 𝒜} (R : c ⟶ b) : Entire (R /ₛ ∋ b) :=
   (Λ_is_map' R).1
 

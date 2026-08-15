@@ -60,9 +60,9 @@ public theorem recip_eps_comp_minRel_le (R : a ⟶ a) : (∋ a)° ≫ minRel R �
 /-! ## (7.5) and its universal property
 
   The workhorse: composing `min R` with the power transpose of `S` computes minima over
-  the `S`-image.  Key step: `A S` transports lower bounds, `A S ≫ (R/∋) = R/S°` mirrored. -/
+  the `S`-image.  Key step: `Λ S` transports lower bounds, `Λ S ≫ (R/∋) = R/S°` mirrored. -/
 
-/-- `ΛS·(R/∋) = R/S°` mirrored: `A S ≫ ((∋ a)° \ R) = (S° \ R)` (B&dM (7.2)).
+/-- `ΛS·(R/∋) = R/S°` mirrored: `Λ S ≫ ((∋ a)° \ R) = (S° \ R)` (B&dM (7.2)).
     Stated for a numerator of ARBITRARY target type `c` — §7.1 uses it at `c := a`
     (`R` an order on `a`), §8.1's thinning at `c := powerObj a`. -/
 public theorem Λ_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
@@ -87,7 +87,7 @@ public theorem Λ_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
     rw [h3]
     exact leftDiv_comp_le _ _
 
-/-- **(7.5)**: `min R·ΛS = S ∩ (R/S°)`, mirrored: `A S ≫ minRel R = S ∩ (S° \ R)`. -/
+/-- **(7.5)**: `min R·ΛS = S ∩ (R/S°)`, mirrored: `Λ S ≫ minRel R = S ∩ (S° \ R)`. -/
 public theorem Λ_comp_minRel (S : b ⟶ a) (R : a ⟶ a) :
     Λ S ≫ minRel R = S ∩ (S° \ R) := by
   show Λ S ≫ (∋ a ∩ (((∋ a)°) \ R)) = S ∩ (S° \ R)
@@ -120,7 +120,7 @@ theorem singletonMap_comp_lb (R : a ⟶ a) : singletonMap ≫ (((∋ a)°) \ R) 
   rw [Λ_comp_lb, recip_id, leftDiv_id]
 
 /-- **(7.3)**: `(R/∋)·union = (R/∋)/∋`, mirrored: `bigUnion ≫ ((∋a)° \ R) =
-    ((∋[a])° \ ((∋a)° \ R))`, via `bigUnion = A(∋[a]≫∋a)`, (7.2), and `leftDiv_comp`. -/
+    ((∋[a])° \ ((∋a)° \ R))`, via `bigUnion = Λ(∋[a]≫∋a)`, (7.2), and `leftDiv_comp`. -/
 theorem bigUnion_comp_lb (R : a ⟶ a) :
     bigUnion ≫ (((∋ a)°) \ R) =
       (((∋ (PowerAllegory.powerObj a))°) \ (((∋ a)°) \ R)) := by
@@ -132,7 +132,7 @@ theorem bigUnion_comp_lb (R : a ⟶ a) :
 
 /-- **(7.6)**, the context rule: minimizing `R` versus minimizing `R` restricted to the
     domain-of-definition of `S` (i.e. `R ∩ S°S`) agree once composed with `ΛS`, mirrored
-    `A S ≫ minRel (R ∩ (S°≫S)) = A S ≫ minRel R`.  Via (7.5) on both sides, reducing to
+    `Λ S ≫ minRel (R ∩ (S°≫S)) = Λ S ≫ minRel R`.  Via (7.5) on both sides, reducing to
     `S ∩ ((S° \ R) ∩ (S° \ (S°≫S))) = S ∩ (S° \ R)`, which holds because
     `S ⊑ (S° \ (S°≫S))` (the numerator `S°≫S` trivially contains `S°≫S`). -/
 public theorem Λ_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
@@ -144,7 +144,7 @@ public theorem Λ_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
 /-! ## Ex 7.7: the pairing principle (`(∋a)°≫∋a = topHom a a`) -/
 
 /-- **Ex 7.7**: `∋°·∋ = ⊤`, mirrored: `(∋ a)° ≫ ∋ a = topHom a a`.  The `⊑` half is
-    `le_Sup trivial` (any hom is `⊑` the top).  For `⊒`: with `f := A ⊤` (so `f ≫ ∋ a = ⊤` and
+    `le_Sup trivial` (any hom is `⊑` the top).  For `⊒`: with `f := Λ ⊤` (so `f ≫ ∋ a = ⊤` and
     `f` is a map), `⊤ ⊑
     ⊤≫⊤ = ⊤°≫⊤ = (f≫∋a)°≫(f≫∋a) = (∋a)°≫(f°≫f)≫∋a ⊑ (∋a)°≫∋a` (`f°≫f ⊑ id` by `Simple f`). -/
 theorem recip_eps_comp_eps (a : 𝒜) : (∋ a)° ≫ ∋ a = topHom a a := by
@@ -226,8 +226,8 @@ theorem minRel_inter (R S : a ⟶ a) : minRel (R ∩ S) = minRel R ∩ minRel S 
     · exact le_inter (le_trans (inter_lb_left _ _) (inter_lb_right _ _))
                       (le_trans (inter_lb_right _ _) (inter_lb_right _ _))
 
-/-- **Ex 7.14**: `max R·ΛR = R ∩ R°` for `R` a preorder, mirrored `A R ≫ maxRel R = R ∩ R°`.
-    Via (7.5), `A R ≫ minRel R° = R ∩ (R° \ R°)`, and `(R° \ R°) = R°` (`⊑`: `lD = id≫lD
+/-- **Ex 7.14**: `max R·ΛR = R ∩ R°` for `R` a preorder, mirrored `Λ R ≫ maxRel R = R ∩ R°`.
+    Via (7.5), `Λ R ≫ minRel R° = R ∩ (R° \ R°)`, and `(R° \ R°) = R°` (`⊑`: `lD = id≫lD
     ⊑ R°≫lD ⊑ R°`; `⊒`: `R°≫R° ⊑ R°` is the converse of `htrans`). -/
 theorem Λ_comp_maxRel_of_preorder {R : a ⟶ a} (htrans : R ≫ R ⊑ R) (hrefl : Cat.id a ⊑ R) :
     Λ R ≫ maxRel R = R ∩ R° := by
@@ -376,8 +376,8 @@ public theorem powerRel_comp_minRel_le (S : b ⟶ a) (R : a ⟶ a) :
     exact le_trans hstep1 hstep2
 
 /-- **(7.11)** mirrored (for a transitive `R`): `min R·P(min R) ⊆ min R·union`, mirrored
-    `powerRel (minRel R) ≫ minRel R ⊑ bigUnion ≫ minRel R`, via `bigUnion = A(∋[a]≫∋a)` and
-    `le_A_comp_minRel_iff`.  Component (i): `powerRel(min R)·min R ⊑ ∋[a]·∋a` chains
+    `powerRel (minRel R) ≫ minRel R ⊑ bigUnion ≫ minRel R`, via `bigUnion = Λ(∋[a]≫∋a)` and
+    `le_Λ_comp_minRel_iff`.  Component (i): `powerRel(min R)·min R ⊑ ∋[a]·∋a` chains
     `inter_lb_left` and `powerRel_eps_lax` at `min R`.  Component (ii):
     `(∋[a]·∋a)°·(powerRel(min R)·min R) ⊑ R` chains `powerRel_term1_cancel (minRel R)` with
     the `haR` bound twice and `htrans`. -/

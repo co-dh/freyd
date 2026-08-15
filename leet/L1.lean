@@ -27,7 +27,7 @@
      element) computes the same function (`hashTwoSum_eq`, a data-refinement simulation), so
      `thin_eq_hash`: spec → (Cor 8.1) → pruned fold → scan → `O(n)` hash program.
 
-  4. **Headline** (`solve_eq_A_maxRel`, the `leet/L53.lean` form): `solve = A tsSpec ≫ maxRel D`
+  4. **Headline** (`solve_eq_Λ_maxRel`, the `leet/L53.lean` form): `solve = Λ tsSpec ≫ maxRel D`
      in `Rel(Set)` — B&dM's `max D · Λ spec`, the function derived from the relational spec, as a
      morphism equation.  No uniqueness assumption on inputs.
 
@@ -882,9 +882,9 @@ theorem thin_eq_hash (nums : List Int) (target : Int) :
     thinTwoSum nums target = hashTwoSum nums target := by
   rw [thin_eq_scan, hashTwoSum_eq]
 
-/-! ## Headline: `solve = A spec ≫ maxRel D` (the `leet/L53.lean` form, for Two Sum) -/
+/-! ## Headline: `solve = Λ spec ≫ maxRel D` (the `leet/L53.lean` form, for Two Sum) -/
 
-/-- The DERIVED program as a morphism equation: `graph thinTwoSum = A tsSpec ≫ maxRel D` —
+/-- The DERIVED program as a morphism equation: `graph thinTwoSum = Λ tsSpec ≫ maxRel D` —
     B&dM's `max D · Λ spec`, both halves supplied by Corollary 8.1. -/
 theorem thin_eq_Λ_maxRel :
     (graph (fun p : List Int × Int => thinTwoSum p.1 p.2) : Input ⟶ Ans)
@@ -908,7 +908,7 @@ theorem thin_eq_Λ_maxRel :
         exact ((thinTwoSum_correct p.1 p.2).1 i' j' h).2 i j hts
 
 /-- **HEADLINE.**  LeetCode 1's allegory program (the scan = the `O(n)` hash program) IS the
-    function derived from its relational specification: `solve = A tsSpec ≫ maxRel D` in
+    function derived from its relational specification: `solve = Λ tsSpec ≫ maxRel D` in
     `Rel(Set)` — Two Sum by CALCULATION, the same morphism equation shape as Kadane's
     (`leet/L53.lean`'s `solve_eq_maxRel`), obtained through the THINNING theorem rather than
     the greedy/Horner one. -/

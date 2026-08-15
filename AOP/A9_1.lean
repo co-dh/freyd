@@ -2,7 +2,7 @@
   Bird & de Moor, *Algebra of Programming* §9.1  Dynamic programming: theory (book pp. 219-224)
   — CORE (Theorem 9.1).
 
-  The optimisation problem is `min R · Λ(⦇h⦈·⦇T⦈°)` (mirrored: `A H ≫ minRel R` with
+  The optimisation problem is `min R · Λ(⦇h⦈·⦇T⦈°)` (mirrored: `Λ H ≫ minRel R` with
   `H := (relCata I T)° ≫ relCata I h`): unfold the input through the coalgebra `T°`, refold
   through the F-algebra `h` (a function), and take an `R`-minimum over all results.  DYNAMIC
   PROGRAMMING is the recursion that decomposes the input in ALL possible ways, solves the
@@ -14,11 +14,11 @@
   - B&dM `H = ⦇h⦈·⦇T⦈°` is `(relCata I T)° ≫ relCata I h : b ⟶ a` (`h : F.obj a ⟶ a`,
     `T : F.obj b ⟶ b`); the fixed-point equation `H = h·FH·T°` is `AOP.A6_3`'s `hylo_fixed`:
     `T° ≫ F.map H ≫ h = H`.
-  - B&dM `M = min R·ΛH` is `A H ≫ minRel R`.
+  - B&dM `M = min R·ΛH` is `Λ H ≫ minRel R`.
   - the recursion body `min R · P(h·FX) · ΛT°` is
-    `A (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R`.
+    `Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R`.
   - rule (9.4) `min R·PX ⊆ (X·∈) ∩ ((R·X)/∋)` is `AOP.A7_1`'s `powerRel_comp_minRel_le`;
-    `ΛT°·T ⊆ ∋` is `AOP.A8_1`'s `recip_comp_A_le_recip_eps` at `T°`.
+    `ΛT°·T ⊆ ∋` is `AOP.A8_1`'s `recip_comp_Λ_le_recip_eps` at `T°`.
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7 and 8.
 -/
@@ -36,11 +36,11 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 
 /-! ## Theorem 9.1 (B&dM pp. 220-221) -/
 
-/-- **Core of Theorem 9.1**: `M = min R·ΛH` (mirrored `A H ≫ minRel R`) is a PREFIXED point of
+/-- **Core of Theorem 9.1**: `M = min R·ΛH` (mirrored `Λ H ≫ minRel R`) is a PREFIXED point of
     the dynamic-programming body, for ANY `H` satisfying the hylomorphism fixed-point equation
     `H = h·FH·T°` (mirrored `T° ≫ F.map H ≫ h = H`) — Theorems 9.1/9.2 and the exercise
     variants all instantiate `H := ⦇h⦈·⦇T⦈°`.  The two inclusions (9.2) and (9.3) of the book's
-    proof are exactly the components of `min`'s universal property (`le_A_comp_minRel_iff`). -/
+    proof are exactly the components of `min`'s universal property (`le_Λ_comp_minRel_iff`). -/
 public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H) :
@@ -569,11 +569,11 @@ public theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesR
   `T`'s domain of definition for the thinning condition (`Q ∩ (T·T°)`).  The key extra
   ingredient is the sharpened tail bound `T·ΛT°·thin Q ⊆ (Q ∩ T·T°)·∋` (mirrored below),
   obtained for free from `AOP.A8_1`'s Ex 8.6 context rule for `thin`
-  (`A_comp_thinRel_context`) at `S := T°` — no modular-law bookkeeping needed. -/
+  (`Λ_comp_thinRel_context`) at `S := T°` — no modular-law bookkeeping needed. -/
 
 /-- The sharpened tail bound behind Ex 9.2: thinning after unfolding by `T` only ever needs
-    `Q` on `T`'s domain of definition, mirrored `T ≫ A (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫
-    (∋ (F.obj b))°`.  Via `A_comp_thinRel_context (T°) Q` (Ex 8.6) plus the plain
+    `Q` on `T`'s domain of definition, mirrored `T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫
+    (∋ (F.obj b))°`.  Via `Λ_comp_thinRel_context (T°) Q` (Ex 8.6) plus the plain
     `hTA`/`recip_eps_comp_thinRel_le` chain, now run at `Q ∩ (T ≫ T°)` instead of `Q`. -/
 theorem thin_unfold_context_le (T : F.obj b ⟶ b) (Q : F.obj b ⟶ F.obj b) :
     T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫ (∋ (F.obj b))° := by

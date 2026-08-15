@@ -12,7 +12,7 @@
   - B&dM `∋·Q` (`Q` then `∋ = ∈°`) is `Q ≫ (∋ a)°`, and `(∋·Q)/∋` is
     `(((∋ a)°) \ (Q ≫ (∋ a)°))`.
   - The UP `X ⊑ thin Q·ΛS ⟺ ∈·X ⊑ S ∧ X·S° ⊑ ∋·Q` mirrors to
-    `X ⊑ A S ≫ thinRel Q ⟺ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q ≫ (∋ a)°`.
+    `X ⊑ Λ S ≫ thinRel Q ⟺ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q ≫ (∋ a)°`.
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapter 7's `AOP.A7_1`.  The
   thinning theorem (THEOREM 8.1) additionally uses `AOP.A7_2`'s monotonic-algebra calculus and
@@ -28,7 +28,7 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 
-/-- `ΛW·subset = W/∋` mirrored: `A W ≫ subsetRel a = W / (∋ a)` — the transpose of `W`
+/-- `ΛW·subset = W/∋` mirrored: `Λ W ≫ subsetRel a = W / (∋ a)` — the transpose of `W`
     followed by shrinking is exactly "all members come from `W`".  (Ex 7.2's
     `existsImage_comp_subsetRel` is the instance `W := ∋ ≫ R`.) -/
 public theorem Λ_comp_subsetRel (W : b ⟶ a) : Λ W ≫ subsetRel a = W / (∋ a) := by
@@ -71,7 +71,7 @@ public theorem recip_eps_comp_thinRel_le (Q : a ⟶ a) :
   le_trans (comp_mono_left _ (inter_lb_right _ _)) (leftDiv_comp_le _ _)
 
 /-- The (7.5)-analogue for thinning: `thin Q·ΛS = (S/∋... )`-mirrored,
-    `A S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q ≫ (∋ a)°))`. -/
+    `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q ≫ (∋ a)°))`. -/
 public theorem Λ_comp_thinRel (S : b ⟶ a) (Q : a ⟶ a) :
     Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q ≫ (∋ a)°)) := by
   show Λ S ≫ (subsetRel a ∩ (((∋ a)°) \ (Q ≫ (∋ a)°))) = _
@@ -94,7 +94,7 @@ public theorem le_Λ_comp_thinRel_iff {S : b ⟶ a} {Q : a ⟶ a} {X : b ⟶ Pow
 /-! ## Singleton-map facts and a shared transpose lemma (book p.194) -/
 
 /-- `τ·∈ = id` mirrored: `singletonMap ≫ ∋ a = Cat.id a` — the singleton of `x` has `x` as its
-    unique member (B&dM p.194, from `A(1_a)∋ = 1_a`). -/
+    unique member (B&dM p.194, from `Λ(1_a)∋ = 1_a`). -/
 theorem singletonMap_comp_eps : singletonMap ≫ ∋ a = Cat.id a := by
   show Λ (Cat.id a) ≫ ∋ a = Cat.id a
   rw [Λ_eps_eq']
@@ -116,7 +116,7 @@ theorem singletonMap_le_recip_eps :
   have h := recip_mono (singletonMap_recip_le_eps (a := a))
   rwa [Allegory.recip_recip] at h
 
-/-- `T°·ΛT ⊑ ∋` mirrored: `T° ≫ A T ⊑ (∋ a)°` — the transpose of `T` cancels against `T°` down
+/-- `T°·ΛT ⊑ ∋` mirrored: `T° ≫ Λ T ⊑ (∋ a)°` — the transpose of `T` cancels against `T°` down
     to a membership.  Shared by (8.3) thin-elimination-with-context and THEOREM 8.1. -/
 public theorem recip_comp_Λ_le_recip_eps (T : b ⟶ a) : T° ≫ Λ T ⊑ (∋ a)° := by
   have hrecip : T° = (∋ a)° ≫ (Λ T)° := by
@@ -256,8 +256,8 @@ theorem minRel_eq_thinRel_comp_recip_singletonMap {R : a ⟶ a} :
 
 /-- **(8.3)**, thin-elimination with context: `ΛS ≫ min R ≫ τ ⊑ ΛS ≫ thin Q` whenever `R`
     restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal
-    property (`le_A_comp_thinRel_iff`), the context rule (7.6) `A_comp_minRel_context`, and the
-    shared `recip_comp_A_le_recip_eps` (to recover the `S°S`-context bound). -/
+    property (`le_Λ_comp_thinRel_iff`), the context rule (7.6) `Λ_comp_minRel_context`, and the
+    shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound). -/
 theorem Λ_comp_minRel_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
     (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ minRel R ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
@@ -295,8 +295,8 @@ variable {F : Relator 𝒜 𝒜}
     that is monotonic on the preorder `Q°`, thinning at every unfold step
     (`⦇Λ(F∈·S)·thin Q⦈`) refines thinning once, at the end, on the plain catamorphism
     (`thin Q·Λ⦇S⦈`), mirrored
-    `relCata I (A (F.map ∈ ≫ S) ≫ thin Q) ⊑ A (relCata I S) ≫ thin Q`.  Proved via the thin
-    universal property (`le_A_comp_thinRel_iff`): the "shrinks" half by the fusion law (6.5), the
+    `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ⊑ Λ (relCata I S) ≫ thin Q`.  Proved via the thin
+    universal property (`le_Λ_comp_thinRel_iff`): the "shrinks" half by the fusion law (6.5), the
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ ⊑ Q ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a ⟶ a}
@@ -349,7 +349,7 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a �
 
 /-- **Corollary 8.1 (B&dM p.196)**: thinning at every step, then taking the `R`-minimum, refines
     taking the `R`-minimum of the plain catamorphism, mirrored
-    `relCata I (A (F.map ∈ ≫ S) ≫ thin Q) ≫ min R ⊑ A (relCata I S) ≫ min R`, given `Q ⊑ R`,
+    `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ≫ min R ⊑ Λ (relCata I S) ≫ min R`, given `Q ⊑ R`,
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q°`.  Immediate from THEOREM 8.1
     composed with `min R` and thin-introduction (`thinRel_comp_minRel`). -/
 public theorem thinning_min (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : a ⟶ a}
@@ -365,7 +365,7 @@ public theorem thinning_min (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R
 
 /-- **Ex 8.6**, the context rule for thin: thinning by `Q` versus thinning by `Q` restricted to
     the domain-of-definition of `S` (i.e. `Q ∩ S°S`) agree once composed with `ΛS`, mirrored
-    `A S ≫ thinRel (Q ∩ (S° ≫ S)) = A S ≫ thinRel Q` (the (7.6)-analogue for `thin`).
+    `Λ S ≫ thinRel (Q ∩ (S° ≫ S)) = Λ S ≫ thinRel Q` (the (7.6)-analogue for `thin`).
 
     The `⊑` half (dropping the extra context) is just `thinRel_mono` on `Q ∩ S°S ⊑ Q`.  The `⊒`
     half brings the context back: via the thin universal property it reduces to

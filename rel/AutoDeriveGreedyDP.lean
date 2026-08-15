@@ -40,7 +40,7 @@
   extreme-DP instance, so the demo is synthetic — see the closing note.
 
   Mathlib-free.  Axioms ⊆ {propext, Classical.choice, Quot.sound} (`Classical.choice` enters
-  only through the abstract power transpose `A`, which picks its classifier — same cost as
+  only through the abstract power transpose `Λ`, which picks its classifier — same cost as
   every §7-§10 instantiation).
 -/
 import AOP.A10_1

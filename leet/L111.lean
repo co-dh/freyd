@@ -24,7 +24,7 @@
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
 import AOP.A6_TreeBin
-import AOP.A7_4_Horner   -- `eq_A_comp_maxRel`: the `min (≤)·Λ spec` morphism-equation bridge
+import AOP.A7_4_Horner   -- `eq_Λ_comp_maxRel`: the `min (≤)·Λ spec` morphism-equation bridge
 import Freyd.Exacts
 
 set_option linter.unusedVariables false
