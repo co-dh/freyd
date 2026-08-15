@@ -13,8 +13,8 @@
   correctness statement:
 
   * `greedy_max_of_refinement` — the max-form of `A7_2.greedy_of_refinement`: a monotone
-    deterministic algebra `alg` that refines the greedy choice `A S ≫ maxRel R` has its
-    catamorphism land inside the Pareto frontier `A (relCata I S) ≫ maxRel R`.  This is the
+    deterministic algebra `alg` that refines the greedy choice `Λ S ≫ maxRel R` has its
+    catamorphism land inside the Pareto frontier `Λ (relCata I S) ≫ maxRel R`.  This is the
     genuine greedy-theorem content (it routes through `greedy_of_refinement` → the hylomorphism
     theorem `hylo_le_of_prefixed`).
 
@@ -48,18 +48,18 @@ section Abstract
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
 
 /-- The universal property of (7.5) in `max` form (`maxRel R = minRel R°`):
-    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_A_comp_minRel_iff` at `R°`. -/
-public theorem le_A_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
-    X ⊑ A S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_A_comp_minRel_iff
+    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_Λ_comp_minRel_iff` at `R°`. -/
+public theorem le_Λ_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
+    X ⊑ Λ S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_Λ_comp_minRel_iff
 
 /-- **Max form of `A7_2.greedy_of_refinement`.**  A deterministic algebra `f` (a map),
-    MONOTONIC on the order `R`, that REFINES the greedy choice `A S ≫ maxRel R`, already has its
+    MONOTONIC on the order `R`, that REFINES the greedy choice `Λ S ≫ maxRel R`, already has its
     catamorphism inside `max R·Λ⦇S⦈` — the Pareto frontier of the plain non-deterministic
     catamorphism `⦇S⦈`.  Mirror of `greedy_of_refinement` through `R°` (`maxRel R = minRel R°`),
     flipping monotonicity with `monotonicAlg_recip_iff` (needs `f` a map). -/
 public theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
-    (href : f ⊑ A S ≫ maxRel R) : relCata I f ⊑ A (relCata I S) ≫ maxRel R := by
+    (href : f ⊑ Λ S ≫ maxRel R) : relCata I f ⊑ Λ (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
   have hmono' : MonotonicAlg f R° := (monotonicAlg_recip_iff hf hFr).mp hmono
@@ -67,14 +67,14 @@ public theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlg
 
 end Abstract
 
-/-! ## Concrete Rel(Set) helpers: `A` is the classifier, and `maxRel` pointwise -/
+/-! ## Concrete Rel(Set) helpers: `Λ` is the classifier, and `maxRel` pointwise -/
 
 namespace RelSet
 
-/-- In Rel(Set) the transpose `A` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
+/-- In Rel(Set) the transpose `Λ` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
     both are maps whose composition with `∋` is `R`, and that map is unique. -/
-public theorem A_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : A R = classifier R :=
-  ((A_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
+public theorem Λ_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : Λ R = classifier R :=
+  ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
 
 /-- Pointwise form of `maxRel` in Rel(Set): `w` is a `maxRel R`-choice of the set `P` iff
     `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
@@ -85,22 +85,22 @@ public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ maxRel D`
 
   This is the bridge that lets an optimization case study state its headline as the actual
-  morphism equation `solve = A spec ≫ maxRel D` (§7.5's `max D · Λ spec`), instead of only in
+  morphism equation `solve = Λ spec ≫ maxRel D` (§7.5's `max D · Λ spec`), instead of only in
   prose.  It consumes exactly the two halves the case study already proves — achievability
   (`hsound`) and domination (`hbest`) — plus antisymmetry of the preference order `D`, which
   pins the maximum uniquely so `solve` (a map) equals it. -/
 
 /-- **Morphism-equation headline for a maximization solver.**  If `solveFn` always produces a
     `spec`-value (`hsound`) that `D`-dominates every `spec`-value (`hbest`), and the preference
-    order `D` is antisymmetric, then `graph solveFn = A spec ≫ maxRel D` — the program is exactly
+    order `D` is antisymmetric, then `graph solveFn = Λ spec ≫ maxRel D` — the program is exactly
     `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
     for a `≤`-minimum take `D w z := w ≤ z` (`maxRel` of the reversed order is `minRel`). -/
-public theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
+public theorem eq_Λ_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
     (hanti : ∀ x y : V, D x y → D y x → x = y)
     (solveFn : d.carrier → V) (spec : d ⟶ (⟨V⟩ : RelSet.{0}))
     (hsound : ∀ xs, spec xs (solveFn xs))
     (hbest : ∀ xs v, spec xs v → D (solveFn xs) v) :
-    (graph solveFn : d ⟶ (⟨V⟩ : RelSet.{0})) = A spec ≫ maxRel D := by
+    (graph solveFn : d ⟶ (⟨V⟩ : RelSet.{0})) = Λ spec ≫ maxRel D := by
   apply hom_ext; intro xs w
   rw [comp_apply]
   constructor
@@ -108,9 +108,9 @@ public theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelS
     have hwe : w = solveFn xs := hw
     subst hwe
     refine ⟨fun v => spec xs v, ?_, (maxRel_apply D _ _).mpr ⟨hsound xs, hbest xs⟩⟩
-    rw [A_eq_classifier]; rfl
+    rw [Λ_eq_classifier]; rfl
   · rintro ⟨P, hAP, hmax⟩
-    rw [A_eq_classifier] at hAP
+    rw [Λ_eq_classifier] at hAP
     have hPeq : P = fun v => spec xs v := hAP
     subst hPeq
     obtain ⟨hmem, hdomw⟩ := (maxRel_apply D _ _).mp hmax
@@ -143,7 +143,7 @@ public theorem horner_correct {L E A1 : Type}
     (halg_map : Map alg)
     (hfold : ∀ xs w, cataFold alg xs w ↔ w = foldFn xs)
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg (F := F L E) alg R)
-    (href : alg ⊑ A S ≫ maxRel R)
+    (href : alg ⊑ Λ S ≫ maxRel R)
     (hR2 : ∀ x y : A1 × Int, R x y → y.2 ≤ x.2)
     (spec : (dSL L E) ⟶ (⟨Int⟩ : RelSet.{0}))
     (gen_spec : ∀ xs w, cataFold S xs w → spec xs w.2)
@@ -151,14 +151,14 @@ public theorem horner_correct {L E A1 : Type}
     (xs : SnocList L E) :
     spec xs (foldFn xs).2 ∧ ∀ v, spec xs v → v ≤ (foldFn xs).2 := by
   -- The genuine greedy content: the fold lands inside the Pareto frontier of ⦇S⦈.
-  have Hcore : relCata (initial L E) alg ⊑ A (relCata (initial L E) S) ≫ maxRel R :=
+  have Hcore : relCata (initial L E) alg ⊑ Λ (relCata (initial L E) S) ≫ maxRel R :=
     greedy_max_of_refinement (F_preservesRecip L E) (initial L E) halg_map htrans hmono href
   rw [← cataR_eq_relCata alg, ← cataR_eq_relCata S] at Hcore
   -- Apply the refinement at the actual fold output `foldFn xs`.
   have hmem_fold : (cataR alg) xs (foldFn xs) := (hfold xs (foldFn xs)).mpr rfl
   obtain ⟨P, hAP, hmax⟩ := (le_iff.mp Hcore) xs (foldFn xs) hmem_fold
-  rw [A_eq_classifier] at hAP
-  -- `A (⦇S⦈) xs P` pins `P` to the generatable set of `xs`.
+  rw [Λ_eq_classifier] at hAP
+  -- `Λ (⦇S⦈) xs P` pins `P` to the generatable set of `xs`.
   have hPeq : P = fun w => (cataR S) xs w := hAP
   subst hPeq
   obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (foldFn xs)).mp hmax

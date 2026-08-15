@@ -40,7 +40,7 @@
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
 import AOP.A6_SnocList
-import AOP.A7_4_Horner   -- `eq_A_comp_maxRel`: the `max (≤)·Λ spec` morphism-equation bridge
+import AOP.A7_4_Horner   -- `eq_Λ_comp_maxRel`: the `max (≤)·Λ spec` morphism-equation bridge
 import Freyd.Exacts
 
 set_option linter.unusedVariables false
@@ -434,11 +434,11 @@ theorem solve_correct (xs : SnocList Int Int) :
     DistinctAt xs (solveFn xs) ∧ ∀ k, DistinctAt xs k → k ≤ solveFn xs :=
   ⟨solve_achievable xs, domination_all xs⟩
 
-/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `A spec ≫ maxRel D`
+/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for the `≤`-preference order `D w z := z ≤ w` — the longest achievable substring length, not
     merely pointwise. Bridged from soundness (`solve_achievable`) and domination (`domination_all`). -/
-theorem solve_eq_maxRel : solve = A spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) solveFn spec
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) solveFn spec
     solve_achievable (fun xs k hk => domination_all xs k hk)
 
 /-! ## Running the program -/

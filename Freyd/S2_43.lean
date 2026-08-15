@@ -876,7 +876,7 @@ end Freyd.Alg
           `{𝟘}` — exactly the one-object one-morphism allegory.
 
           Cantor application: in a power allegory a morphism `F : a → [a]` with
-          `F°F = 1` makes `T = F∋` thick (witness `R̂ = A(R)F°`), so it cannot
+          `F°F = 1` makes `T = F∋` thick (witness `R̂ = Λ(R)F°`), so it cannot
           coexist with strong connectivity unless the allegory is degenerate.
 
   §2.353  CANCELLATION ON MAPS.  "In a tabular division allegory it suffices to
@@ -887,7 +887,7 @@ end Freyd.Alg
           `straight_of_cancel` (which needs the property for all simple F, G).
 
   Self-contained, mathlib-free.  Lives on S2_1 (Map/Simple/Entire/Tabulation),
-  S2_3 (symmetric division, Straight), S2_4 (Thick, PowerAllegory, A(R)) and
+  S2_3 (symmetric division, Straight), S2_4 (Thick, PowerAllegory, Λ(R)) and
   S2_43 (diag, §2.436 inconsistency core).
 -/
 
@@ -988,10 +988,10 @@ variable {𝒜 : Type u} [PowerAllegory 𝒜]
   `R̂ = (R/∋)F°`; R̂ is entire; `R̂T ⊑ (R/∋)F°F∋ ⊑ (R/∋)∋ ⊑ R`,
   `R̂°R ⊑ F(∋/R)R ⊑ F∋ = T`.  (We used only the thickness of ∋.)"
 
-  We take the honest witness `R̂ = A(R)F°` with `A(R) = R/ₛ∋` (S2_4), the map Freyd
+  We take the honest witness `R̂ = Λ(R)F°` with `Λ(R) = R/ₛ∋` (S2_4), the map Freyd
   writes `R/∋`.  The three §2.431 containments fall out of `F°F = 1`, the map-ness
-  of `A(R)` (§2.412/413, box-matched thickness of ∋) and `A(R)∋ = R`.  The box
-  guard for `A(R)` is discharged because `F°F = 1` makes `codBox (F∋) = codBox ∋`. -/
+  of `Λ(R)` (§2.412/413, box-matched thickness of ∋) and `Λ(R)∋ = R`.  The box
+  guard for `Λ(R)` is discharged because `F°F = 1` makes `codBox (F∋) = codBox ∋`. -/
 
 /-- `codBox (F∋) = codBox ∋` when `F°F = 1` (§2.41 box bookkeeping).
     `codBox R = 1 ∩ R°R`; for `R = F∋`, `(F∋)°(F∋) = ∋°(F°F)∋ = ∋°∋`. -/
@@ -1006,7 +1006,7 @@ theorem codBox_comp_eps {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
   rw [Cat.assoc (∋ a)° F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp]
 
 /-- §2.435 Cantor: in a power allegory, `F : a → [a]` with `F°F = 1` makes
-    `T = F∋` a thick endomorphism.  Witness `R̂ = A(R)F°` (book `(R/∋)F°`). -/
+    `T = F∋` a thick endomorphism.  Witness `R̂ = Λ(R)F°` (book `(R/∋)F°`). -/
 theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
     (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a)) :
     Thick (F ≫ ∋ a) := by
@@ -1014,35 +1014,35 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
   intro c R hbox
   -- translate the box guard of T = F∋ to the box guard of ∋.
   have hboxA : codBox R = codBox (∋ a) := hbox.trans (codBox_comp_eps F hF)
-  have hAmap : Map (A R) := A_is_map R hboxA
-  -- witness R̂ = A(R) ≫ F°
-  refine ⟨A R ≫ F°, ?_, ?_, ?_⟩
-  · -- Entire R̂ : R̂R̂° = A(R)(F°F)A(R)° = A(R)A(R)° ⊒ 1.
-    have hAent : Cat.id c ⊑ A R ≫ (A R)° := by
+  have hAmap : Map (Λ R) := Λ_is_map R hboxA
+  -- witness R̂ = Λ(R) ≫ F°
+  refine ⟨Λ R ≫ F°, ?_, ?_, ?_⟩
+  · -- Entire R̂ : R̂R̂° = Λ(R)(F°F)Λ(R)° = Λ(R)Λ(R)° ⊒ 1.
+    have hAent : Cat.id c ⊑ Λ R ≫ (Λ R)° := by
       have hd := hAmap.1; dsimp [Entire, dom] at hd; rw [← hd]; exact inter_lb_right _ _
-    have hcomp : (A R ≫ F°) ≫ (A R ≫ F°)° = A R ≫ (A R)° := by
+    have hcomp : (Λ R ≫ F°) ≫ (Λ R ≫ F°)° = Λ R ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip,
-        Cat.assoc (A R) F° (F ≫ (A R)°), ← Cat.assoc F° F (A R)°, hF, Cat.id_comp]
+        Cat.assoc (Λ R) F° (F ≫ (Λ R)°), ← Cat.assoc F° F (Λ R)°, hF, Cat.id_comp]
     dsimp [Entire, dom]
     rw [hcomp]
     exact le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) hAent)
-  · -- R̂T ⊑ R : R̂T = A(R)(F°F)∋ = A(R)∋ = R.
-    have hTeq : (A R ≫ F°) ≫ (F ≫ ∋ a) = R := by
-      rw [Cat.assoc (A R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
-        A_eps_eq R hboxA]
+  · -- R̂T ⊑ R : R̂T = Λ(R)(F°F)∋ = Λ(R)∋ = R.
+    have hTeq : (Λ R ≫ F°) ≫ (F ≫ ∋ a) = R := by
+      rw [Cat.assoc (Λ R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
+        Λ_eps_eq R hboxA]
     rw [hTeq]
     exact le_refl R
-  · -- R̂°R ⊑ T : R̂° = F A(R)°, and A(R)°R = A(R)°A(R)∋ ⊑ ∋ (A(R) simple), so ⊑ F∋ = T.
-    have hRhat_recip : (A R ≫ F°)° = F ≫ (A R)° := by
+  · -- R̂°R ⊑ T : R̂° = F Λ(R)°, and Λ(R)°R = Λ(R)°Λ(R)∋ ⊑ ∋ (Λ(R) simple), so ⊑ F∋ = T.
+    have hRhat_recip : (Λ R ≫ F°)° = F ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip]
     rw [hRhat_recip]
-    have hinner : (A R)° ≫ R ⊑ ∋ a := by
-      have e1 : (A R)° ≫ R = ((A R)° ≫ A R) ≫ ∋ a := by
-        rw [Cat.assoc, A_eps_eq R hboxA]
+    have hinner : (Λ R)° ≫ R ⊑ ∋ a := by
+      have e1 : (Λ R)° ≫ R = ((Λ R)° ≫ Λ R) ≫ ∋ a := by
+        rw [Cat.assoc, Λ_eps_eq R hboxA]
       rw [e1]
-      have h2 := comp_mono_right (A_simple R) (∋ a)
+      have h2 := comp_mono_right (Λ_simple R) (∋ a)
       rwa [Cat.id_comp] at h2
-    rw [Cat.assoc F (A R)° R]
+    rw [Cat.assoc F (Λ R)° R]
     exact comp_mono_left F hinner
 
 /-- §2.435 (Cantor, full): in a STRONGLY CONNECTED power allegory, no `F : a → [a]`

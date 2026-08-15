@@ -13,7 +13,7 @@
     (1)  A faithful CONCRETE power-object condition in `Rel(C)` (`IsPowerObj`), phrased with
          the file's own equivariant relations `CRel` (§2.41/§1.9 universal property): `mem`
          is a power-object of `X` iff every equivariant relation `R : A → X` factors as
-         `A(R) ⊚ mem` for a UNIQUE `C`-map `A(R) : A → P`.  `HasPowerObj X` bundles ∃P,mem.
+         `Λ(R) ⊚ mem` for a UNIQUE `C`-map `Λ(R) : A → P`.  `HasPowerObj X` bundles ∃P,mem.
 
     (2)  `RelCIsPowerAllegory := ∀ X, HasPowerObj X` — the concrete §2.414 content of
          "`Rel(C)` is a power allegory".  Target 3 is `¬ RelCIsPowerAllegory`.
@@ -55,7 +55,7 @@ variable {L : Type}
   `CHom`.  Precomposing the graph of `g : A → P` into `mem : P → X` gives the relation
   `(graph g ⊚ mem).rel a x = mem.rel (g a) x`.  Freyd's §2.41 universal property for the
   power-object `[X] = P` with membership `∋_X = mem` reads: every equivariant relation
-  `R : A → X` equals `A(R) ⊚ mem` for a UNIQUE `C`-map `A(R) = g`. -/
+  `R : A → X` equals `Λ(R) ⊚ mem` for a UNIQUE `C`-map `Λ(R) = g`. -/
 
 /-- **§2.41 concrete power-object.**  `mem : P → X` is a power-object of `X` in `Rel(C)`:
     for every object `A` and every equivariant relation `R : A → X` there is a unique

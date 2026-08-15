@@ -15,7 +15,7 @@
     lengths.
   * `alg` (= `L104.alg`, the deterministic depth fold) is shown to (a) be MONOTONE on the reverse-`≤`
     order `R x y := y ≤ x` (`alg_mono`, from `imax` monotone) and (b) REFINE the greedy choice
-    `A S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
+    `Λ S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
     `S° ≫ alg ⊑ R°` — the folded value dominates every generatable value; both from `imax_eq_or`
     and `imax_ge_left/right`).  These two facts FORCE the node step to be `1 + imax dl dr`: it is the
     only monotone map that both lands in `{dl+1, dr+1}` and dominates it.
@@ -129,12 +129,12 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
       have h3 := imax_ge_right rl rr
       show m ≤ 1 + imax rl rr; simp only [dNat] at *; omega
 
-/-- The depth fold `alg` REFINES the greedy choice `A S ≫ maxRel R`.  Via `le_A_comp_maxRel_iff` this
+/-- The depth fold `alg` REFINES the greedy choice `Λ S ≫ maxRel R`.  Via `le_Λ_comp_maxRel_iff` this
     is two facts: `alg ⊑ S` (the folded value `1 + imax rl rr` is one of `{rl+1, rr+1}`, by
     `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/
-theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ A S ≫ maxRel R := by
-  apply le_A_comp_maxRel_iff.mpr
+theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
+  apply le_Λ_comp_maxRel_iff.mpr
   refine ⟨?_, ?_⟩
   · -- alg ⊑ S : every folded value is generatable
     rw [le_iff]; intro u m h
@@ -176,15 +176,15 @@ theorem depth_derived_correct (t : Tree L) :
     pathLen t (depthFn t) ∧ ∀ n, pathLen t n → n ≤ depthFn t := by
   -- GREEDY THEOREM: `⦇alg⦈` lands inside the Pareto frontier `A ⦇S⦈ ≫ maxRel R`.
   have hmap : Map (alg : TFobj L dNat ⟶ dNat) := graph_map algFn
-  have H1 : relCata (initial L) alg ⊑ A (relCata (initial L) S) ≫ maxRel R :=
+  have H1 : relCata (initial L) alg ⊑ Λ (relCata (initial L) S) ≫ maxRel R :=
     greedy_max_of_refinement (F_preservesRecip L) (initial L) hmap R_trans alg_mono alg_refines
   -- TreeBin bridge: transport from the abstract `relCata` to the structural `cataR`.
-  have H2 : cataR (@alg L) ⊑ A (cataR (@S L)) ≫ maxRel R := by
+  have H2 : cataR (@alg L) ⊑ Λ (cataR (@S L)) ≫ maxRel R := by
     rw [← cataR_eq_relCata (@alg L), ← cataR_eq_relCata (@S L)] at H1; exact H1
   -- `depthFn t` is a member of `⦇alg⦈`; apply the frontier refinement there.
   have hmem : cataR alg t (depthFn t) := (cataTreeFold_alg t (depthFn t)).mpr rfl
   obtain ⟨P, hAP, hmax⟩ := (le_iff.mp H2) t (depthFn t) hmem
-  rw [A_eq_classifier] at hAP
+  rw [Λ_eq_classifier] at hAP
   have hPeq : P = fun w => (cataR S) t w := hAP
   subst hPeq
   obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (depthFn t)).mp hmax

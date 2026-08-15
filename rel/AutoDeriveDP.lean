@@ -60,9 +60,9 @@ open Freyd
 
 /-! ## Pointwise (`Rel(Set)`) readings of the power-allegory operations
 
-  `powerRel`, `minRel`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `A` does
-  not (it is a symmetric division), so its content is extracted through `A_eps_eq'` +
-  `A_is_map'` instead.  (Shared home; previously private to `leet.L322_dp`.) -/
+  `powerRel`, `minRel`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `Λ` does
+  not (it is a symmetric division), so its content is extracted through `Λ_eps_eq'` +
+  `Λ_is_map'` instead.  (Shared home; previously private to `leet.L322_dp`.) -/
 
 theorem powerRel_pt {α β : RelSet.{0}} (g : α ⟶ β) (P : (pow α).carrier)
     (Q : (pow β).carrier) :
@@ -78,18 +78,18 @@ theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.c
     leftDiv ((∋ α)°) R P x ↔ ∀ z, P z → R z x :=
   Iff.rfl
 
-/-- The set a transpose `A S` points `x` at contains exactly the `S`-successors of `x`. -/
-theorem A_pt {α β : RelSet.{0}} (S : α ⟶ β) {x : α.carrier} {P : (pow β).carrier}
-    (hP : A S x P) (y : β.carrier) : P y ↔ S x y := by
+/-- The set a transpose `Λ S` points `x` at contains exactly the `S`-successors of `x`. -/
+theorem Λ_pt {α β : RelSet.{0}} (S : α ⟶ β) {x : α.carrier} {P : (pow β).carrier}
+    (hP : Λ S x P) (y : β.carrier) : P y ↔ S x y := by
   constructor
   · intro hy
-    have h1 : (A S ≫ ∋ β) x y := ⟨P, hP, hy⟩
-    rw [A_eps_eq'] at h1
+    have h1 : (Λ S ≫ ∋ β) x y := ⟨P, hP, hy⟩
+    rw [Λ_eps_eq'] at h1
     exact h1
   · intro hS
-    have h1 : (A S ≫ ∋ β) x y := by rw [A_eps_eq']; exact hS
+    have h1 : (Λ S ≫ ∋ β) x y := by rw [Λ_eps_eq']; exact hS
     obtain ⟨P', hP', hy⟩ := h1
-    have hPP : P' = P := simple_uniq (A_is_map' S).2 hP' hP
+    have hPP : P' = P := simple_uniq (Λ_is_map' S).2 hP' hP
     rw [← hPP]
     exact hy
 
@@ -327,8 +327,8 @@ theorem memo_mem_body {X : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0})} 
     (hsub : ∀ w, P.meas w < P.meas v → X w (P.memo w)) :
     dpBodyInf (F L E) P.coalg P.alg P.ord P.tau X v (P.memo v) := by
   -- the decomposition set and its content
-  obtain ⟨D, hD⟩ := entire_total (A_is_map' (P.coalg°)).1 v
-  have hDmem : ∀ t, D t ↔ P.coalg t v := fun t => A_pt (P.coalg°) hD t
+  obtain ⟨D, hD⟩ := entire_total (Λ_is_map' (P.coalg°)).1 v
+  have hDmem : ∀ t, D t ↔ P.coalg t v := fun t => Λ_pt (P.coalg°) hD t
   -- every decomposition's executable value is a genuine `h·FX` candidate
   have hg : ∀ t, D t → ((F L E).map X ≫ P.alg) t (P.stepVal t) := by
     intro t hDt
@@ -383,7 +383,7 @@ theorem memo_mem_mu (v : B) :
     discharged by the bundle, composed with the bridge `memo_mem_mu`. -/
 theorem solve_le_spec :
     (graph P.memo : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}))
-      ⊑ A (P.hylo ∪ P.tau) ≫ minRel P.ord := by
+      ⊑ Λ (P.hylo ∪ P.tau) ≫ minRel P.ord := by
   have habs := dynamic_programming_inf (F := F L E) (F_preservesRecip L E) (initial L E)
     (graph_map P.algFn) P.alg_mono P.ord_trans P.hstrict P.tau_top
   apply le_iff.mpr
@@ -399,7 +399,7 @@ theorem solve_le_spec :
 theorem correct (v : B) :
     (P.Hpt v (P.memo v) ∨ P.memo v = P.top) ∧ ∀ x, P.Hpt v x → P.le (P.memo v) x := by
   have h := le_iff.mp P.solve_le_spec v (P.memo v) rfl
-  rw [A_comp_minRel] at h
+  rw [Λ_comp_minRel] at h
   obtain ⟨hmem, hlb⟩ := h
   constructor
   · rcases hmem with hH | hτ

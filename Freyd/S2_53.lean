@@ -315,10 +315,10 @@ end Effectivity
 /-! ## §2.537  The membership `[∋_b]` is thick
 
   Following the book.  In `𝒜`, the membership `∋_b` is (box-guarded) thick (§2.41:
-  `R/ₛ∋ = A(R)` is entire).  For a quotient relation `[R₀] : [c] → [b]` box-matched to
+  `R/ₛ∋ = Λ(R)` is entire).  For a quotient relation `[R₀] : [c] → [b]` box-matched to
   `[∋_b]`, the book's inequality `1 ⊑ (R⁺/∋_R)(∋_R/R⁺) ⊑ (R⁺/∋_{R⁺}/R⁺)` is realised by
   applying `𝒜`-thickness to the largest `R₀⁺` and transporting the resulting witness
-  `f₀ = A(R₀⁺)` to `[f₀]` via the ⁺-calculus.  The only non-derivable input is the box
+  `f₀ = Λ(R₀⁺)` to `[f₀]` via the ⁺-calculus.  The only non-derivable input is the box
   descent `codBox [R₀] = codBox [∋_b] ⟹ codBox R₀⁺ = codBox (∋_b)`, the book's
   "∋_R = ∋_{R⁺} [2.41]" — surfaced as a named hypothesis. -/
 
@@ -336,7 +336,7 @@ theorem quotRep_codBox {a b : 𝒜} (R : a ⟶ b) :
     `hbox` is the book's "∋_R = ∋_{R⁺} [2.41]" — a quotient box-match descends to an exact
     `𝒜`-box-match for the largest representative, the domain on which `𝒜`'s membership
     thickness is defined.  Given it, the witness for `thick_iff_existential` is `[f₀]` where
-    `f₀ = A(R₀⁺)` comes from `𝒜`-thickness of `∋_b` applied to `R₀⁺`; the three quotient
+    `f₀ = Λ(R₀⁺)` comes from `𝒜`-thickness of `∋_b` applied to `R₀⁺`; the three quotient
     containments are read off from `f₀`'s three `𝒜`-containments through `quotient_le_iff_largest`
     (§2.533) and `amenable_le_largest` (§2.531). -/
 theorem quotThickEps (b : 𝒜)
@@ -354,9 +354,9 @@ theorem quotThickEps (b : 𝒜)
   rw [← quotRep_map amen.cong R₀, quotRep_codBox, quotRep_codBox] at hboxQ
   have hrelBox : amen.cong.rel (codBox R₀) (codBox (∋ b)) := Quotient.exact hboxQ
   have hboxA : codBox (amen.largest R₀) = codBox (∋ b) := hbox R₀ hrelBox
-  -- 𝒜-thickness of ∋_b applied to R₀⁺ gives the witness f₀ = A(R₀⁺).
+  -- 𝒜-thickness of ∋_b applied to R₀⁺ gives the witness f₀ = Λ(R₀⁺).
   obtain ⟨f₀, hEnt, hf₀_le, hf₀o⟩ :=
-    (thick_iff_existential (∋ b)).mp (fun _ R hbox => (A_is_map R hbox).1)
+    (thick_iff_existential (∋ b)).mp (fun _ R hbox => (Λ_is_map R hbox).1)
       c (amen.largest R₀) hboxA
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hEnt, ?_, ?_⟩
   · -- [f₀][∋] ⊑ [R₀] :  largest(f₀∋) ⊑ largest(R₀⁺) = R₀⁺ = largest R₀  (§2.531).

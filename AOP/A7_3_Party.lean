@@ -61,7 +61,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     above and the `⟨include,exclude⟩` calculation p.177) discharge for the concrete tree. -/
 theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (A S ≫ maxRel R) ⊑ A (relCata I S) ≫ maxRel R :=
+    relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R :=
   greedy_max hFr I htrans hmono
 
 end Greedy

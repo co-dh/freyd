@@ -228,7 +228,7 @@ theorem map_reduce_fusion (f : Int → Int) {c : RelSet.{0}} (ψ : Fobj Unit Int
      `mssuf` is the `≤`-MAX suffix sum) is the greedy content, ALREADY proved via the greedy
      theorem in `leet.L53.solve_correct` / `AOP.A7_4_Horner.horner_correct`.  Restating it
      as a pure `comp_le_relCata` step needs the maxRel universal property
-     `le_A_comp_maxRel_iff` (`A7_4_Horner`) plus the monotonicity of `mssufAlg` on `≤`
+     `le_Λ_comp_maxRel_iff` (`A7_4_Horner`) plus the monotonicity of `mssufAlg` on `≤`
      (`MonotonicAlg (graph mssufAlg) (leR : Int ⟶ Int)`), which is exactly the greedy
      hypothesis — so this route re-derives, rather than avoids, the greedy theorem.
 

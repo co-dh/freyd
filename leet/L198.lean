@@ -194,10 +194,10 @@ theorem solve_correct (xs : SnocList Int Int) :
     robSpec xs (solveFn xs) ∧ ∀ v, robSpec xs v → v ≤ solveFn xs :=
   ⟨(foldFn_is_rob xs).1, (foldFn_dominates xs).1⟩
 
-/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `A spec ≫ maxRel D`
+/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise. Bridged from `solve_correct`. -/
-theorem solve_eq_maxRel : solve = A spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) solveFn spec
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Int => z ≤ w) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) solveFn spec
     (fun xs => (solve_correct xs).1) (fun xs v hv => (solve_correct xs).2 v hv)
 
 /-- **The program refines the specification**: every value `solve` returns is an achievable

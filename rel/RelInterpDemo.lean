@@ -77,8 +77,8 @@ end Demo207
 
 /-! ## Demo 3 — LeetCode 121 (Best Time to Buy and Sell Stock) run as its SPEC TERM
 
-  `leet.L121` proves `solve = A spec ≫ maxRel D` in `Rel(Set)` — a PROOF, never executed.
-  Here the SAME shape `A spec ≫ max D` is a term the interpreter RUNS: `A spec` brute-forces
+  `leet.L121` proves `solve = Λ spec ≫ maxRel D` in `Rel(Set)` — a PROOF, never executed.
+  Here the SAME shape `Λ spec ≫ max D` is a term the interpreter RUNS: `Λ spec` brute-forces
   the achievable-profit SET over all `2^|Val|` subset codes, `max D` picks its `≤`-greatest
   member.  Correct, and exponential in `|Val|` — the honest cost of running the spec.
 
@@ -103,7 +103,7 @@ def specFn (n M : Nat) (price : Fin n → Int) : Fin 1 → Fin (2 * M + 1) → B
 def geFn (M : Nat) : Fin (2 * M + 1) → Fin (2 * M + 1) → Bool := fun w z =>
   decide (z.val ≤ w.val)
 
-/-- **The LeetCode solution as a runnable relation-algebra term**: `A spec ≫ max D`. -/
+/-- **The LeetCode solution as a runnable relation-algebra term**: `Λ spec ≫ max D`. -/
 def solveE (n M : Nat) (price : Fin n → Int) : RE One ⟨2 * M + 1⟩ :=
   .comp (AE (.atom (specFn n M price))) (maxRelE (.atom (geFn M)))
 
@@ -137,7 +137,7 @@ theorem specFn_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin (2 *
 
 /-- The interpreted LC 121 spec term, decoded pointwise: `solveE` accepts code `v` iff the
     coded profit is achievable (`specFn`) and `≥` every achievable coded profit — the
-    `A_comp_maxRel_apply` transport specialised to this problem's atoms.
+    `Λ_comp_maxRel_apply` transport specialised to this problem's atoms.
     `rel.AutoDeriveSearch` chains this to the certified `L121.solve_correct`. -/
 theorem eval_solveE_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin (2 * M + 1)} :
     eval (solveE n M price) x v = true ↔
@@ -146,10 +146,10 @@ theorem eval_solveE_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin
   constructor
   · intro h
     obtain ⟨h1, h2⟩ :=
-      (A_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
+      (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
     exact ⟨h1, fun z hz => decide_eq_true_iff.mp (h2 z hz)⟩
   · rintro ⟨h1, h2⟩
-    exact (A_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
+    exact (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
       ⟨h1, fun z hz => decide_eq_true_iff.mpr (h2 z hz)⟩
 
 /-- Tiny instance `[1,2]` (buy 1 sell 2, profit 1), kernel-checked end to end:
@@ -176,7 +176,7 @@ def base121 (x : Int) : Int × Int := (x, 0)
 def step121 (st : Int × Int) (p : Int) : Int × Int := (imin st.1 p, imax st.2 (p - st.1))
 
 /-- **LC 121's derived program as a term**: fold to `(minSoFar, bestProfit)`, then project the
-    profit.  Exactly the fold the AoP derivation `solve = A spec ≫ max D` produces (its `foldFn`
+    profit.  Exactly the fold the AoP derivation `solve = Λ spec ≫ max D` produces (its `foldFn`
     followed by `Prod.snd`, cf. `L121.solve_eq_cata`). -/
 def prog121 : Prog (SL Int) Int := .comp (.cata base121 step121) (.fn Prod.snd)
 -- LeetCode 121's own example `[7,1,5,3,6,4]`: run by FOLDING 6 prices → best profit 5.
@@ -188,9 +188,9 @@ example : evalP prog121 (slOf 7 [6, 4, 3, 1]) = 0 := by decide
 example : evalP prog121 (slOf 2 [4, 1]) = 2 := by decide
 
 /-- **Both evaluators agree on the instance `[1,2]`** (prices 1 then 2, profit 1): the POLYNOMIAL
-    program-fold (`evalP prog121`) and the EXPONENTIAL spec-powerset (`Demo121.answers`, `A spec ≫
+    program-fold (`evalP prog121`) and the EXPONENTIAL spec-powerset (`Demo121.answers`, `Λ spec ≫
     max D` over all 8 subset codes) both return profit 1.  This is the AoP derivation
-    `solve = A spec ≫ max D` (proven in `leet.L121`), now MECHANICALLY runnable on both sides.
+    `solve = Λ spec ≫ max D` (proven in `leet.L121`), now MECHANICALLY runnable on both sides.
     The agreement is also a THEOREM on EVERY instance, not just this kernel-checked one:
     `rel.AutoDeriveSearch.evaluators_agree`, via the spec-transport lemmas above. -/
 example :

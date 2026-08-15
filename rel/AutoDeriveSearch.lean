@@ -11,7 +11,7 @@
     is a `ProgEval.Prog` term, runnable by the structural-fold evaluator `evalP` (polynomial).
 
   * TEST — the differential tester runs the SPEC as the relation-algebra term
-    `A spec ≫ max D` through the `FinRel` interpreter (`Demo121.answers`: exponential in the
+    `Λ spec ≫ max D` through the `FinRel` interpreter (`Demo121.answers`: exponential in the
     value range, exact — and PROVED equal to the certified maximum, `specAnswer_eq` below)
     and compares its decoded answer with each candidate's `evalP` output
     on an EXHAUSTIVELY ENUMERATED set of small instances (every price list of length ≤ 3 over
@@ -112,7 +112,7 @@ def Inst.bound (i : Inst) : Nat :=
   (i.rest.foldl imax i.first - i.rest.foldl imin i.first).toNat
 def Inst.priceFn (i : Inst) : Fin i.n → Int := fun k => i.prices.getD k.val 0
 
-/-- THE SPEC SIDE: run `A spec ≫ max D` through the `FinRel` interpreter (exponential —
+/-- THE SPEC SIDE: run `Λ spec ≫ max D` through the `FinRel` interpreter (exponential —
     `2^(2M+1)` subset codes) and decode the answer column.  A singleton list on every
     well-formed instance (the `≤`-maximum is unique). -/
 def specAnswer (i : Inst) : List Int :=
@@ -260,7 +260,7 @@ theorem solve_correct (xs : SnocList Int Int) :
     `Rel(Set)`. -/
 theorem solve_eq_maxRel :
     (Freyd.Alg.RelSet.graph (fun xs => (l121.foldFn xs).2) : dSL Int Int ⟶ (⟨Int⟩ : RelSet.{0}))
-      = A LC121.spec ≫ maxRel (fun w z : Int => z ≤ w) :=
+      = Λ LC121.spec ≫ maxRel (fun w z : Int => z ≤ w) :=
   l121.eq_maxRel LC121.spec gen_spec' spec_gen'
 
 /-! ### The tested candidate and the certified fold are the same program -/
@@ -314,7 +314,7 @@ theorem selected_correct (s : ProgEval.SL Int) :
   * `profit_bounded` — the bound `M = i.bound` HONESTLY contains every achievable profit,
     so the encoding loses nothing.
   * `specAnswer_eq` — chaining both through the interpreter semantics
-    (`RelInterp.A_comp_maxRel_apply`/`eval_solveE_iff`) and `L121.solve_correct`:
+    (`RelInterp.Λ_comp_maxRel_apply`/`eval_solveE_iff`) and `L121.solve_correct`:
     the spec leg's decoded answer IS `[certified maximum profit]`, on EVERY instance.
   * `agree_iff` / `winner_passes` — the differential test therefore tests candidates against
     the certified optimum (a theorem), and the winner provably passes every instance.
@@ -610,7 +610,7 @@ theorem filterMap_ofFn_singleton {α : Type} : ∀ {n : Nat} (f : Fin n → Opti
         (fun v hv => hnone v.succ (by show v.val + 1 ≠ k' + 1; omega))
 
 /-- **THE ORACLE IS CERTIFIED**: on EVERY instance, the tester's spec leg — the exponential
-    interpreted term `A spec ≫ max D`, decoded — answers exactly the singleton of the
+    interpreted term `Λ spec ≫ max D`, decoded — answers exactly the singleton of the
     certified maximum profit of `L121.solve_correct`.  What used to be a per-instance numeric
     coincidence is now `transport ∘ solve_correct`. -/
 theorem specAnswer_eq (i : Inst) :
@@ -676,7 +676,7 @@ theorem winner_passes (insts : List Inst) : passes winnerProg insts = true :=
   List.all_eq_true.mpr fun i _ => winner_agree i
 
 /-- **Both evaluators agree — now a THEOREM on every instance** (upgrading `RelInterp`'s
-    single kernel-checked example): the exponential interpreted spec `A spec ≫ max D` and the
+    single kernel-checked example): the exponential interpreted spec `Λ spec ≫ max D` and the
     polynomial derived-program fold return the same answer, because both provably equal the
     certified maximum. -/
 theorem evaluators_agree (i : Inst) : specAnswer i = [progAnswer ProgEval.prog121 i] := by

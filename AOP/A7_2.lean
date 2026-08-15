@@ -3,7 +3,7 @@
   (book pp. 172-175).
 
   A DYNAMIC-PROGRAMMING / GREEDY-ALGORITHM problem is a hylomorphism `⦇min R⦈·ΛS` (mirrored
-  `relCata I (A S ≫ minRel R)`): unfold via a coalgebra `S`, then at every step keep only the
+  `relCata I (Λ S ≫ minRel R)`): unfold via a coalgebra `S`, then at every step keep only the
   `R`-minimal choices.  Theorem 7.2 (the GREEDY THEOREM) gives conditions under which this
   "keep minima at every step" strategy is safe to postpone to the very end: if `S` is
   MONOTONIC on the preorder `R°`, then greedily filtering at each unfold step refines the
@@ -15,9 +15,9 @@
   - B&dM `f·FR·f° ⊆ R` mirrors to `f° ≫ F.map R ≫ f ⊑ R`; B&dM `FR ⊆ f°·R·f` mirrors to
     `F.map R ⊑ f ≫ R ≫ f°`.
   - B&dM `f·F(min R) ⊆ min R·Λ(f·F∈)` (Distributes, `f` DISTRIBUTES over `min R`) mirrors to
-    `F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R`.
+    `F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R`.
   - B&dM `⦇min R·ΛS⦈ ⊆ min R·Λ⦇S⦈` (the Greedy Theorem) mirrors to
-    `relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R`.
+    `relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R`.
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), plus `AOP.A6_3`'s hylomorphism theorem
   (`hylo_le_of_prefixed`) and `AOP.A7_1`'s `minRel`/`maxRel` core.
@@ -83,14 +83,14 @@ variable {R : a ⟶ a} {f : F.obj a ⟶ a}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R`: `f·F(min R) ⊆ min R·Λ(f·F∈)`, mirrored. -/
 def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
-  F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R
+  F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R` implies `f`
     distributes over `min R`. -/
 theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
     (hmono : MonotonicAlg f R) : Distributes f R := by
   unfold Distributes
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨comp_mono_right (F.map_mono (show minRel R ⊑ ∋ a from inter_lb_left _ _)) f, ?_⟩
   have step1 : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
     rw [Allegory.recip_comp, ← hFr (∋ a)]
@@ -113,18 +113,18 @@ theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
 theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
     (hpair : R ⊑ (∋ a)° ≫ minRel R) (hdist : Distributes f R) : MonotonicAlg f R := by
   apply (monotonicAlg_iff_conj hf).mpr
-  have hdist' : F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R := hdist
+  have hdist' : F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R := hdist
   have hXrecip : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
     rw [Allegory.recip_comp, ← hFr (∋ a)]
-  have hXA : (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
-    have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° :=
+  have hXA : (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
+    have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° :=
       calc (F.map (∋ a) ≫ f)°
-          = (A (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [A_eps_eq']
-        _ = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
-    calc (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f)
-        = ((∋ a)° ≫ (A (F.map (∋ a) ≫ f))°) ≫ A (F.map (∋ a) ≫ f) := by rw [hrecip]
-      _ = (∋ a)° ≫ ((A (F.map (∋ a) ≫ f))° ≫ A (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
-      _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (A_is_map' (F.map (∋ a) ≫ f)).2
+          = (Λ (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [Λ_eps_eq']
+        _ = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
+    calc (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)
+        = ((∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))°) ≫ Λ (F.map (∋ a) ≫ f) := by rw [hrecip]
+      _ = (∋ a)° ≫ ((Λ (F.map (∋ a) ≫ f))° ≫ Λ (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
+      _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ a) ≫ f)).2
       _ = (∋ a)° := Cat.comp_id _
   have h1 : F.map R ⊑ F.map ((∋ a)° ≫ minRel R) := F.map_mono hpair
   have hmapcomp : F.map ((∋ a)° ≫ minRel R) = F.map ((∋ a)°) ≫ F.map (minRel R) := F.map_comp _ _
@@ -138,10 +138,10 @@ theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
     comp_mono_left _ (comp_mono_right h1 f)
   rw [hregroup] at hA
   have hC : (F.map (∋ a) ≫ f)° ≫ (F.map (minRel R) ≫ f)
-      ⊑ (F.map (∋ a) ≫ f)° ≫ (A (F.map (∋ a) ≫ f) ≫ minRel R) := comp_mono_left _ hdist'
+      ⊑ (F.map (∋ a) ≫ f)° ≫ (Λ (F.map (∋ a) ≫ f) ≫ minRel R) := comp_mono_left _ hdist'
   have hA2 := le_trans hA hC
-  rw [← Cat.assoc (F.map (∋ a) ≫ f)° (A (F.map (∋ a) ≫ f)) (minRel R)] at hA2
-  have hE : ((F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f)) ≫ minRel R ⊑ (∋ a)° ≫ minRel R :=
+  rw [← Cat.assoc (F.map (∋ a) ≫ f)° (Λ (F.map (∋ a) ≫ f)) (minRel R)] at hA2
+  have hE : ((F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)) ≫ minRel R ⊑ (∋ a)° ≫ minRel R :=
     comp_mono_right hXA _
   exact le_trans (le_trans hA2 hE) hUP
 
@@ -161,12 +161,12 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
     monotonic on the preorder `R°`, mirrored. -/
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
-    relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R := by
-  apply le_A_comp_minRel_iff.mpr
+    relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R := by
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨?_, ?_⟩
-  · have hi : A S ≫ minRel R ⊑ S := by
-      have h := comp_mono_left (A S) (show minRel R ⊑ ∋ a from inter_lb_left _ _)
-      rwa [A_eps_eq'] at h
+  · have hi : Λ S ≫ minRel R ⊑ S := by
+      have h := comp_mono_left (Λ S) (show minRel R ⊑ ∋ a from inter_lb_left _ _)
+      rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
   · have step1 : S° ≫ F.map R ⊑ R ≫ S° := by
       have h := recip_mono hmono
@@ -175,13 +175,13 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶
       have heqR : (S ≫ R°)° = R ≫ S° := by
         rw [Allegory.recip_comp, Allegory.recip_recip]
       rwa [heqL, heqR] at h
-    have step2 : A S ≫ minRel R ⊑ (S° \ R) := by
-      rw [A_comp_minRel]; exact inter_lb_right _ _
-    have hprefixed : S° ≫ F.map R ≫ (A S ≫ minRel R) ⊑ R := by
-      have hB : (S° ≫ F.map R) ≫ (A S ≫ minRel R) ⊑ (R ≫ S°) ≫ (A S ≫ minRel R) :=
+    have step2 : Λ S ≫ minRel R ⊑ (S° \ R) := by
+      rw [Λ_comp_minRel]; exact inter_lb_right _ _
+    have hprefixed : S° ≫ F.map R ≫ (Λ S ≫ minRel R) ⊑ R := by
+      have hB : (S° ≫ F.map R) ≫ (Λ S ≫ minRel R) ⊑ (R ≫ S°) ≫ (Λ S ≫ minRel R) :=
         comp_mono_right step1 _
-      rw [Cat.assoc S° (F.map R) (A S ≫ minRel R), Cat.assoc R S° (A S ≫ minRel R)] at hB
-      have hC : R ≫ (S° ≫ (A S ≫ minRel R)) ⊑ R ≫ (S° ≫ (S° \ R)) :=
+      rw [Cat.assoc S° (F.map R) (Λ S ≫ minRel R), Cat.assoc R S° (Λ S ≫ minRel R)] at hB
+      have hC : R ≫ (S° ≫ (Λ S ≫ minRel R)) ⊑ R ≫ (S° ≫ (S° \ R)) :=
         comp_mono_left _ (comp_mono_left _ step2)
       have hD : R ≫ (S° ≫ (S° \ R)) ⊑ R ≫ R := comp_mono_left _ (leftDiv_comp_le _ _)
       exact le_trans hB (le_trans hC (le_trans hD htrans))
@@ -192,7 +192,7 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶
     both reduce to the given hypotheses via `recip_mono`/`Allegory.recip_recip`. -/
 public theorem greedy_max (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (A S ≫ maxRel R) ⊑ A (relCata I S) ≫ maxRel R := by
+    relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans
     rwa [Allegory.recip_comp] at h
@@ -220,14 +220,14 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
   rwa [← Cat.assoc I.α° I.α R, I.recip_alpha_alpha, Cat.id_comp] at h2
 
 /-- **Ex 7.37 variant**: if `f` (an arbitrary algebra, monotonic on `R`) REFINES a greedy
-    candidate `A S ≫ minRel R`, its catamorphism already lands inside `min R·Λ⦇S⦈` — a
+    candidate `Λ S ≫ minRel R`, its catamorphism already lands inside `min R·Λ⦇S⦈` — a
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
-    form `A S ≫ minRel R` up to equality. -/
+    form `Λ S ≫ minRel R` up to equality. -/
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
-    (href : f ⊑ A S ≫ minRel R) : relCata I f ⊑ A (relCata I S) ≫ minRel R := by
-  obtain ⟨hfS, hSf⟩ := le_A_comp_minRel_iff.mp href
-  apply le_A_comp_minRel_iff.mpr
+    (href : f ⊑ Λ S ≫ minRel R) : relCata I f ⊑ Λ (relCata I S) ≫ minRel R := by
+  obtain ⟨hfS, hSf⟩ := le_Λ_comp_minRel_iff.mp href
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨relCata_mono I hfS, ?_⟩
   apply hylo_le_of_prefixed hFr I
   have hA : S° ≫ (F.map R ≫ f) ⊑ S° ≫ (f ≫ R) := comp_mono_left _ hmono
@@ -236,15 +236,15 @@ public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra
   exact le_trans hA (le_trans hB htrans)
 
 /- **Ex 7.38** (`min R·ΛS·min(FR) ⊆ min R·ES` mirrored:
-   `minRel (F.map R) ≫ A S ≫ minRel R ⊑ existsImage S ≫ minRel R` for `MonotonicAlg S R°`):
+   `minRel (F.map R) ≫ Λ S ≫ minRel R ⊑ existsImage S ≫ minRel R` for `MonotonicAlg S R°`):
    DROPPED.  Unlike Ex 7.34/7.37, which reduce directly to `relCata_le_of_prefixed` /
    `hylo_le_of_prefixed` plus the algebra calculus already on hand, this inequality is about
    `minRel` commuting past the EXISTENTIAL IMAGE `existsImage` — a genuinely new absorption
-   law (`A W ≫ minRel R` vs. `existsImage S ≫ minRel R` with `W := ∋ (F.obj a) ≫ S`) not
-   derivable from `A_comp_minRel`/`le_A_comp_minRel_iff` alone: the left-hand side
-   `minRel (F.map R) ≫ A S ≫ minRel R` is not of the `A _ ≫ minRel R` shape the universal
+   law (`Λ W ≫ minRel R` vs. `existsImage S ≫ minRel R` with `W := ∋ (F.obj a) ≫ S`) not
+   derivable from `Λ_comp_minRel`/`le_Λ_comp_minRel_iff` alone: the left-hand side
+   `minRel (F.map R) ≫ Λ S ≫ minRel R` is not of the `Λ _ ≫ minRel R` shape the universal
    property needs, and no absorption lemma connecting `minRel` with `existsImage` (the B&dM
-   p.105 `A`/`E` calculus of `AOP.A4_6`) exists in this file's API.  Left as a documented
+   p.105 `Λ`/`E` calculus of `AOP.A4_6`) exists in this file's API.  Left as a documented
    gap; nothing downstream in this file depends on it. -/
 
 /- **Ex 7.33** (pointwise translation of the greedy theorem into a componentwise/relational

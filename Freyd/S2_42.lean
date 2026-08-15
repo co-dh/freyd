@@ -50,7 +50,7 @@ theorem equivRel_eq_div_self {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} 
 
 /-! ## §2.421 + §2.422  Effectiveness in a power allegory
 
-  In a power allegory, `equivRel_eq_map_comp_recip` already gives `E = f ≫ f°` with `f = A(E)`
+  In a power allegory, `equivRel_eq_map_comp_recip` already gives `E = f ≫ f°` with `f = Λ(E)`
   a map.  We upgrade this to *effectiveness* once coreflexives split.
 
   The coreflexive `f° ≫ f` (which `⊑ 1` because `f` is simple) splits as `g° ≫ g = f° ≫ f`,
@@ -68,7 +68,7 @@ theorem equivRel_effective_of_coreflexives_split {𝒜 : Type u} [PowerAllegory 
     (hsplit : ∀ {x : 𝒜} {A : x ⟶ x}, Coreflexive A →
       ∃ (c : 𝒜) (g : c ⟶ x), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id c) :
     ∃ (c : 𝒜) (h : a ⟶ c), Map h ∧ h ≫ h° = E ∧ h° ≫ h = Cat.id c := by
-  -- §2.421/§2.422: E = f ≫ f° with f = A(E) a map.
+  -- §2.421/§2.422: E = f ≫ f° with f = Λ(E) a map.
   obtain ⟨f, hf, hEeq⟩ := equivRel_eq_map_comp_recip E hE hbox
   have hffE : f ≫ f° = E := hEeq.symm
   -- f° ≫ f is coreflexive (f is simple); split it.

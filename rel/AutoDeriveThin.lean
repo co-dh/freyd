@@ -52,11 +52,11 @@ open Freyd
 
 /-! ## Pointwise Rel(Set) readings: the transpose and `thinRel` -/
 
-/-- In Rel(Set) the transpose `A W` sends `u` to exactly its `W`-successor set (the pointwise
-    content of `A_eq_classifier`). -/
-theorem A_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow b).carrier) :
-    A W u G ↔ G = fun y => W u y := by
-  rw [A_eq_classifier]; exact Iff.rfl
+/-- In Rel(Set) the transpose `Λ W` sends `u` to exactly its `W`-successor set (the pointwise
+    content of `Λ_eq_classifier`). -/
+theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow b).carrier) :
+    Λ W u G ↔ G = fun y => W u y := by
+  rw [Λ_eq_classifier]; exact Iff.rfl
 
 /-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
     and every member of `P` has a `Q`-improvement in `Y` (`Q z w` = "`w` at least as good as
@@ -263,7 +263,7 @@ theorem gen_mono : MonotonicAlg (F := F L E) P.gen P.Qm° := by
 
 /-- The thinning-DP algebra `Λ(S·F∈)·thin Q` of THEOREM 8.1, at the generator. -/
 def thinAlg : Fobj L E (pow (⟨St⟩ : RelSet.{0})) ⟶ pow (⟨St⟩ : RelSet.{0}) :=
-  A ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm
+  Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm
 
 /-- **The fold-bridge**: the program's candidate list, read as a set, is one run of the
     abstract thinning DP `⦇Λ(S·F∈)·thin Q⦈` — at each step the pruned list is a valid
@@ -272,7 +272,7 @@ theorem bridge : ∀ xs : SnocList L E, cataFold P.thinAlg xs (fun s => s ∈ P.
   intro xs; induction xs with
   | wrap x =>
     refine ⟨fun y => ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) (Sum.inl x) y,
-      (A_apply_iff _ _ _).mpr rfl, (thinRel_pt _ _ _).mpr ⟨?_, ?_⟩⟩
+      (Λ_apply_iff _ _ _).mpr rfl, (thinRel_pt _ _ _).mpr ⟨?_, ?_⟩⟩
     · intro y hy
       have hy' : y ∈ thinList P.qDec (P.leafOne x) := hy
       exact ⟨Sum.inl x, rfl, thinList_sub hy'⟩
@@ -289,7 +289,7 @@ theorem bridge : ∀ xs : SnocList L E, cataFold P.thinAlg xs (fun s => s ∈ P.
     refine ⟨fun s => s ∈ P.foldFn xs, ih,
       fun y => ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen)
         (Sum.inr (fun s => s ∈ P.foldFn xs, e)) y,
-      (A_apply_iff _ _ _).mpr rfl, (thinRel_pt _ _ _).mpr ⟨?_, ?_⟩⟩
+      (Λ_apply_iff _ _ _).mpr rfl, (thinRel_pt _ _ _).mpr ⟨?_, ?_⟩⟩
     · intro y hy
       have hy' : y ∈ thinList P.qDec ((P.foldFn xs).flatMap (fun s => P.stepOne s e)) := hy
       obtain ⟨s, hs, hys⟩ := List.mem_flatMap.mp (thinList_sub hy')
@@ -313,11 +313,11 @@ theorem bridge : ∀ xs : SnocList L E, cataFold P.thinAlg xs (fun s => s ∈ P.
 
 /-- **The §8.1 morphism headline**: the program's candidate-set map lies inside
     `thin Q · Λ⦇S⦈` — THEOREM 8.1 applied across the fold-bridge. -/
-theorem le_A_cata_thinRel :
+theorem le_Λ_cata_thinRel :
     (graph (fun xs => fun s => s ∈ P.foldFn xs) : dSL L E ⟶ pow (⟨St⟩ : RelSet.{0}))
-      ⊑ A (cataR P.gen) ≫ thinRel P.Qm := by
+      ⊑ Λ (cataR P.gen) ≫ thinRel P.Qm := by
   have Hcore := thinning (F_preservesRecip L E) (initial L E) P.Qm_trans_le P.gen_mono
-  rw [← cataR_eq_relCata (A ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm),
+  rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm),
     ← cataR_eq_relCata P.gen] at Hcore
   rw [le_iff]; intro xs Y hY
   have hYe : Y = fun s => s ∈ P.foldFn xs := hY
@@ -330,8 +330,8 @@ theorem le_A_cata_thinRel :
 theorem frontier (xs : SnocList L E) :
     (∀ s, s ∈ P.foldFn xs → cataFold P.gen xs s) ∧
     (∀ z, cataFold P.gen xs z → ∃ w ∈ P.foldFn xs, P.Q z w) := by
-  obtain ⟨G, hAG, hthin⟩ := le_iff.mp P.le_A_cata_thinRel xs (fun s => s ∈ P.foldFn xs) rfl
-  have hGeq : G = fun s => cataR P.gen xs s := (A_apply_iff _ _ _).mp hAG
+  obtain ⟨G, hAG, hthin⟩ := le_iff.mp P.le_Λ_cata_thinRel xs (fun s => s ∈ P.foldFn xs) rfl
+  have hGeq : G = fun s => cataR P.gen xs s := (Λ_apply_iff _ _ _).mp hAG
   subst hGeq
   obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp hthin
   exact ⟨hsub, fun z hz => by
@@ -417,14 +417,14 @@ theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
   obtain ⟨hbmem, hblb⟩ := P.bestOf_spec hb
   have Hcore := thinning_min (F_preservesRecip L E) (initial L E) P.Qm_le_Rm P.Qm_refl_le
     P.Qm_trans_le P.Rm_trans_le P.gen_mono
-  rw [← cataR_eq_relCata (A ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm),
+  rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm),
     ← cataR_eq_relCata P.gen] at Hcore
   have hminb : minRel P.Rm (fun s => s ∈ P.foldFn xs) b :=
     ⟨hbmem, fun z hz => hblb z hz⟩
   have hlhs : (cataR P.thinAlg ≫ minRel P.Rm) xs b :=
     ⟨fun s => s ∈ P.foldFn xs, P.bridge xs, hminb⟩
   obtain ⟨G, hAG, hmin⟩ := le_iff.mp Hcore xs b hlhs
-  have hGeq : G = fun s => cataR P.gen xs s := (A_apply_iff _ _ _).mp hAG
+  have hGeq : G = fun s => cataR P.gen xs s := (Λ_apply_iff _ _ _).mp hAG
   subst hGeq
   have hmin' : (fun s => cataR P.gen xs s) b ∧
       ∀ z, (fun s => cataR P.gen xs s) z → P.Rm z b := hmin

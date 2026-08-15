@@ -289,26 +289,26 @@ theorem progenitor_straight_thick_of_coproduct {ℬ : Type u} [EffectiveDivision
   mathematical core of that step; we prove it here.  (The remaining ingredients of the
   full (3)⟹(1) — that `Λ(S)` is a SPLIT-MONIC map, `Λ(S)Λ(S)° = 1` — need `Λ(S)` ENTIRE,
   which in the repo's box-guarded power allegory holds only under the §2.41 box condition
-  `codBox S = codBox ∋` (`A_is_map`); so the full assembly is box-gated, exactly as §2.537.) -/
+  `codBox S = codBox ∋` (`Λ_is_map`); so the full assembly is box-gated, exactly as §2.537.) -/
 
 section PowerDisjoint
 variable {ℬ : Type u} [PowerAllegory ℬ] {a : ℬ}
 
 /-- If `W ⊑ Λ(0)` and `W ⊑ Λ(1)` then `W = 0`.  `WW° ⊑ Λ(0)Λ(1)° ⊑ (0/∋)∋ ⊑ 0`
     (`Λ(0) ⊑ 0/∋`, `Λ(1)° ⊑ ∋/1 = ∋`), so `dom W ⊑ 0` and `W ⊑ (dom W)W ⊑ 0`. -/
-public theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
-    (h0 : W ⊑ A (𝟘 : a ⟶ a)) (h1 : W ⊑ A (Cat.id a)) :
+public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ PowerAllegory.powerObj a)
+    (h0 : W ⊑ Λ (𝟘 : a ⟶ a)) (h1 : W ⊑ Λ (Cat.id a)) :
     W = (𝟘 : a ⟶ PowerAllegory.powerObj a) := by
   apply le_antisymm _ (zero_le _)
-  have hA0 : A (𝟘 : a ⟶ a) ⊑ (𝟘 : a ⟶ a) / PowerAllegory.eps a := inter_lb_left _ _
-  have hA1r : (A (Cat.id a))° ⊑ PowerAllegory.eps a := by
+  have hA0 : Λ (𝟘 : a ⟶ a) ⊑ (𝟘 : a ⟶ a) / PowerAllegory.eps a := inter_lb_left _ _
+  have hA1r : (Λ (Cat.id a))° ⊑ PowerAllegory.eps a := by
     show (symmDiv (Cat.id a) (PowerAllegory.eps a))° ⊑ _
     rw [symmDiv, Allegory.recip_inter, Allegory.recip_recip, div_one]
     exact inter_lb_right _ _
   have hWW : W ≫ W° ⊑ (𝟘 : a ⟶ a) := by
-    have h1' : W ≫ W° ⊑ A (𝟘 : a ⟶ a) ≫ (A (Cat.id a))° :=
+    have h1' : W ≫ W° ⊑ Λ (𝟘 : a ⟶ a) ≫ (Λ (Cat.id a))° :=
       le_trans (comp_mono_right h0 (W°)) (comp_mono_left _ (recip_mono h1))
-    have h2 : A (𝟘 : a ⟶ a) ≫ (A (Cat.id a))°
+    have h2 : Λ (𝟘 : a ⟶ a) ≫ (Λ (Cat.id a))°
         ⊑ ((𝟘 : a ⟶ a) / PowerAllegory.eps a) ≫ PowerAllegory.eps a :=
       le_trans (comp_mono_right hA0 _) (comp_mono_left _ hA1r)
     exact le_trans h1' (le_trans h2 (DivisionAllegory.div_comp_le _ _))
@@ -317,11 +317,11 @@ public theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
   refine le_trans (le_dom_comp W) (le_trans (comp_mono_right hdom W) ?_)
   rw [DistributiveAllegory.zero_comp]; exact le_refl _
 
-/-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`A 𝟘 ∩ A 1 = 𝟘`).  The empty-transpose
+/-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`Λ 𝟘 ∩ Λ 1 = 𝟘`).  The empty-transpose
     and the singleton-transpose are disjoint — the heart of (3)⟹(1)'s `ℓϰ° = 0`. -/
-public theorem A_zero_inter_A_one :
-    A (𝟘 : a ⟶ a) ∩ A (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
-  le_zero_of_le_A_zero_A_one _ (inter_lb_left _ _) (inter_lb_right _ _)
+public theorem Λ_zero_inter_Λ_one :
+    Λ (𝟘 : a ⟶ a) ∩ Λ (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
+  le_zero_of_le_Λ_zero_Λ_one _ (inter_lb_left _ _) (inter_lb_right _ _)
 
 end PowerDisjoint
 

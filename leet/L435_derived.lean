@@ -46,11 +46,11 @@
 
   4. **Correctness is REUSED, not re-proved**, from `LC435.solve_correct` (achievability +
      domination, headline shape 2, extremum/min-removals).  Honest note on the headline SHAPE: the
-     unconditional morphism-equation form `graph solveFn = A spec ≫ maxRel D`
-     (`A7_4_Horner.eq_A_comp_maxRel`) does NOT apply here, for the SAME reason as `L11_derived`:
+     unconditional morphism-equation form `graph solveFn = Λ spec ≫ maxRel D`
+     (`A7_4_Horner.eq_Λ_comp_maxRel`) does NOT apply here, for the SAME reason as `L11_derived`:
      `LC435.solve_correct` is CONDITIONAL on `Valid ivs` (every interval's `.1 < .2`, LeetCode 435's
      own strict constraint — genuinely load-bearing, per `L435.lean`'s own `Valid` docstring, not a
-     proof artifact) — `eq_A_comp_maxRel` demands `hsound`/`hbest` UNCONDITIONALLY over the whole
+     proof artifact) — `eq_Λ_comp_maxRel` demands `hsound`/`hbest` UNCONDITIONALLY over the whole
      domain, which is false for degenerate/invalid interval lists.  We therefore state the honest
      bundle: both emergences (unconditional) ∧ `derivedSolve = solveFn` ∧ the reused CONDITIONAL
      achievability+domination pair, exactly `LC435.solve_correct`'s own shape.
@@ -195,7 +195,7 @@ theorem derivedSolve_eq (ivs : List (Int × Int)) : derivedSolve ivs = solveFn i
 /-! ## Correctness — REUSED from `LC435.solve_correct` (headline shape 2: extremum, min removals)
 
     `solve_correct` is CONDITIONAL on `Valid ivs`, so the unconditional morphism-equation headline
-    `A7_4_Horner.eq_A_comp_maxRel` does not apply (see the file docstring); we bundle the two
+    `A7_4_Horner.eq_Λ_comp_maxRel` does not apply (see the file docstring); we bundle the two
     emergences with the reused conditional achievability+domination pair instead. -/
 
 /-- **Honest headline.**  Bundles:

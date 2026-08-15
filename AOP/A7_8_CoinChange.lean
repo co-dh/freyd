@@ -6,7 +6,7 @@
       `coinSpec n out  :=  sumVal out = n`.
   The wanted answer is the one using the FEWEST coins.  In AoPA this is the shrink
   `(sumc ○ ordered?)˘ ↾ _⊴_`: change relations shrunk by the sub-list order `_⊴_`, so the minimal
-  (fewest-coin) solution survives — and via `A7_6.shrink_eq_A_comp_minRel` that shrink IS
+  (fewest-coin) solution survives — and via `A7_6.shrink_eq_Λ_comp_minRel` that shrink IS
   `A coinSpec ≫ minRel _⊴_`, the Bird & de Moor `min · Λ` optimum.
 
   WHAT IS PORTED HERE (self-contained, proved, axioms ⊆ {propext, Quot.sound}):
@@ -25,7 +25,7 @@
         coin change is an ANAMORPHISM (`hylo In pick-max wf`, an amount→coins UNFOLD), for which the
         repo has no emergence/uniqueness law at the `Rel(Set)` level.  The generic greedy-ana theorem
         is being ported by a sibling agent; per the task this file must not depend on it.
-    (2) UNIQUENESS.  `RelSet.eq_A_comp_maxRel` pins the optimum by ANTISYMMETRY of the preference
+    (2) UNIQUENESS.  `RelSet.eq_Λ_comp_maxRel` pins the optimum by ANTISYMMETRY of the preference
         order; "fewest coins" ordered only by length is NOT antisymmetric.  AoPA restores
         antisymmetry with `ordered?` (canonical descending form) + the sub-list order `_⊴_`; porting
         that canonicalization + the `_⊴_` antisymmetry is the second missing piece.
