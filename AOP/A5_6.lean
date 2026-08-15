@@ -55,16 +55,16 @@ noncomputable def cup {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerA
   A ((P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a))
 
 /-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `A (R∪S) = pair(A R)(A S) ≫ cup P`. -/
-theorem A_union {a c : 𝒜} (R S : c ⟶ a)
+theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     A (R ∪ S) = P.pair (A R) (A S) ≫ cup P := by
-  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (A_is_map' R) (A_is_map' S)
-  have hmap : Map (P.pair (A R) (A S) ≫ cup P) := map_comp hpair (A_is_map' _)
-  symm; apply A_unique _ _ hmap
-  rw [Cat.assoc, show cup P ≫ ∋ a = (P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a) from A_eps_eq' _,
+  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (P.pair (A R) (A S) ≫ cup P) := map_comp hpair (Λ_is_map' _)
+  symm; apply Λ_unique _ _ hmap
+  rw [Cat.assoc, show cup P ≫ ∋ a = (P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a) from Λ_eps_eq' _,
     DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
-    RelProd.pair_outl, RelProd.pair_outr, (A_is_map' S).1, (A_is_map' R).1,
-    Cat.id_comp, Cat.id_comp, A_eps_eq', A_eps_eq']
+    RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
+    Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
 
 /-! ## Ex 5.20  `cap` (book p.126): the intersection relator, transposed
 
@@ -78,16 +78,16 @@ noncomputable def cap {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerA
   A ((P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a))
 
 /-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `A (R∩S) = pair(A R)(A S) ≫ cap P`. -/
-theorem A_inter {a c : 𝒜} (R S : c ⟶ a)
+theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     A (R ∩ S) = P.pair (A R) (A S) ≫ cap P := by
-  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (A_is_map' R) (A_is_map' S)
-  have hmap : Map (P.pair (A R) (A S) ≫ cap P) := map_comp hpair (A_is_map' _)
-  symm; apply A_unique _ _ hmap
-  rw [Cat.assoc, show cap P ≫ ∋ a = (P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a) from A_eps_eq' _,
+  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (P.pair (A R) (A S) ≫ cap P) := map_comp hpair (Λ_is_map' _)
+  symm; apply Λ_unique _ _ hmap
+  rw [Cat.assoc, show cap P ≫ ∋ a = (P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a) from Λ_eps_eq' _,
     simple_dist_inter hpair.2, ← Cat.assoc, ← Cat.assoc,
-    RelProd.pair_outl, RelProd.pair_outr, (A_is_map' S).1, (A_is_map' R).1,
-    Cat.id_comp, Cat.id_comp, A_eps_eq', A_eps_eq']
+    RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
+    Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
 
 /-! ## The general "cp"-pattern (B&dM p.126)
 
@@ -104,6 +104,6 @@ noncomputable def cpMap (F : Relator 𝒜 𝒜) (a : 𝒜) :
     F.obj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj (F.obj a) :=
   A (F.map (∋ a))
 
-theorem cpMap_is_map (F : Relator 𝒜 𝒜) (a : 𝒜) : Map (cpMap F a) := A_is_map' _
+theorem cpMap_is_map (F : Relator 𝒜 𝒜) (a : 𝒜) : Map (cpMap F a) := Λ_is_map' _
 
 end Freyd.Alg

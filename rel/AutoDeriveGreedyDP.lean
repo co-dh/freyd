@@ -375,8 +375,8 @@ theorem body_monotonic (P : GreedyDP L E S W) : Monotonic P.body :=
 theorem run_mem_body (P : GreedyDP L E S W) {X : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩} (v : S)
     (hsub : ∀ w, P.meas w < P.meas v → X w (P.run w)) :
     P.body X v (P.run v) := by
-  obtain ⟨Pset, hPset⟩ := entire_total (A_is_map' (P.TRel°)).1 v
-  have hmem : ∀ t, Pset t ↔ P.TRel t v := fun t => CL.A_pt (P.TRel°) hPset t
+  obtain ⟨Pset, hPset⟩ := entire_total (Λ_is_map' (P.TRel°)).1 v
+  have hmem : ∀ t, Pset t ↔ P.TRel t v := fun t => CL.Λ_pt (P.TRel°) hPset t
   refine ⟨Pset, hPset, P.pick v, (CL.minRel_pt P.Qrel Pset (P.pick v)).mpr ⟨?_, ?_⟩, ?_⟩
   · -- the pick is a member of the decomposition set
     refine (hmem (P.pick v)).mpr ?_
@@ -430,7 +430,7 @@ theorem correct (P : GreedyDP L E S W) (v : S) :
     (∃ ℓ, decT P.baseP P.stepP ℓ v ∧ foldA P.hbase P.hstep ℓ = P.run v)
     ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (foldA P.hbase P.hstep ℓ) (P.run v) := by
   obtain ⟨Pset, hPset, hmin⟩ := le_iff.mp P.greedy_refine v (P.run v) (P.run_mem_mu v)
-  have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.A_pt P.specH hPset z
+  have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
   obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset (P.run v)).mp hmin
   constructor
   · obtain ⟨ℓ, hd, hx⟩ := (P.specH_pt v (P.run v)).mp ((hmem _).mp hm)
@@ -462,7 +462,7 @@ theorem eq_minRel (P : GreedyDP L E S W)
     exact le_iff.mp P.greedy_refine v (P.run v) (P.run_mem_mu v)
   · intro h
     obtain ⟨Pset, hPset, hmin⟩ := h
-    have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.A_pt P.specH hPset z
+    have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
     obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset x).mp hmin
     obtain ⟨⟨ℓ, hd, hx⟩, hRlb⟩ := P.correct v
     obtain ⟨ℓ', hd', hx'⟩ := (P.specH_pt v x).mp ((hmem x).mp hm)

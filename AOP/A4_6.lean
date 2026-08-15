@@ -58,27 +58,27 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- B&dM p.103 universal property of `Λ` (here `A`): for a map `f`,
     `f = A R ↔ f ≫ ∋ b = R`. -/
-public theorem A_UP {a b : 𝒜} (R : a ⟶ b) {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) :
+public theorem Λ_UP {a b : 𝒜} (R : a ⟶ b) {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) :
     f = A R ↔ f ≫ ∋ b = R := by
   constructor
-  · intro h; rw [h]; exact A_eps_eq' R
-  · intro h; exact A_unique R f hf h
+  · intro h; rw [h]; exact Λ_eps_eq' R
+  · intro h; exact Λ_unique R f hf h
 
 /-- `A` is injective: `A R = A S → R = S`. -/
-theorem A_injective {a b : 𝒜} {R S : a ⟶ b} (h : A R = A S) : R = S := by
-  rw [← A_eps_eq' R, ← A_eps_eq' S, h]
+theorem Λ_injective {a b : 𝒜} {R S : a ⟶ b} (h : A R = A S) : R = S := by
+  rw [← Λ_eps_eq' R, ← Λ_eps_eq' S, h]
 
 /-- B&dM p.104 fusion law: for a map `f : c ⟶ a`, `A (f ≫ R) = f ≫ A R`. -/
-public theorem A_fusion {c a : 𝒜} {f : c ⟶ a} (hf : Map f) {b : 𝒜} (R : a ⟶ b) :
+public theorem Λ_fusion {c a : 𝒜} {f : c ⟶ a} (hf : Map f) {b : 𝒜} (R : a ⟶ b) :
     A (f ≫ R) = f ≫ A R := by
-  have hmap : Map (f ≫ A R) := map_comp hf (A_is_map' R)
-  have heq : (f ≫ A R) ≫ ∋ b = f ≫ R := by rw [Cat.assoc, A_eps_eq']
-  exact (A_unique _ _ hmap heq).symm
+  have hmap : Map (f ≫ A R) := map_comp hf (Λ_is_map' R)
+  have heq : (f ≫ A R) ≫ ∋ b = f ≫ R := by rw [Cat.assoc, Λ_eps_eq']
+  exact (Λ_unique _ _ hmap heq).symm
 
 /-- B&dM p.104 reflection law: `A (∋ b) = 1_{[b]}` (`Λ∈ = id`). -/
-public theorem A_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.powerObj b) := by
+public theorem Λ_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.powerObj b) := by
   have heq : Cat.id (PowerAllegory.powerObj b) ≫ ∋ b = ∋ b := Cat.id_comp _
-  exact (A_unique _ _ (id_is_map_local _) heq).symm
+  exact (Λ_unique _ _ (id_is_map_local _) heq).symm
 
 /-! ## Existential image `E` (B&dM p.104-105)
 
@@ -91,26 +91,26 @@ public theorem A_eps_reflection {b : 𝒜} : A (∋ b) = Cat.id (PowerAllegory.p
   A (∋ a ≫ R)
 
 /-- `∈` is an (exactly) natural transformation (B&dM p.105): `E R ≫ ∋ b = ∋ a ≫ R`. -/
-public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := A_eps_eq' _
+public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := Λ_eps_eq' _
 
 /-- `A S ≫ E R = A (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
-theorem A_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
+theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
     A S ≫ existsImage R = A (S ≫ R) := by
-  have hEMap : Map (existsImage R) := A_is_map' _
-  have hmap : Map (A S ≫ existsImage R) := map_comp (A_is_map' S) hEMap
+  have hEMap : Map (existsImage R) := Λ_is_map' _
+  have hmap : Map (A S ≫ existsImage R) := map_comp (Λ_is_map' S) hEMap
   have heq : (A S ≫ existsImage R) ≫ ∋ b = S ≫ R := by
-    rw [Cat.assoc, existsImage_eps, ← Cat.assoc, A_eps_eq']
-  exact A_unique _ _ hmap heq
+    rw [Cat.assoc, existsImage_eps, ← Cat.assoc, Λ_eps_eq']
+  exact Λ_unique _ _ hmap heq
 
 /-- `E` preserves identities: `E 1_a = 1_{[a]}`. -/
 theorem existsImage_id {a : 𝒜} : existsImage (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
   show A (∋ a ≫ Cat.id a) = Cat.id (PowerAllegory.powerObj a)
-  rw [Cat.comp_id, A_eps_reflection]
+  rw [Cat.comp_id, Λ_eps_reflection]
 
 /-- `E` is functorial: `E (R ≫ S) = E R ≫ E S`. -/
 theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     existsImage (R ≫ S) = existsImage R ≫ existsImage S := by
-  have h := A_absorption (∋ a ≫ R) S
+  have h := Λ_absorption (∋ a ≫ R) S
   rw [Cat.assoc] at h
   exact h.symm
 
@@ -118,11 +118,11 @@ theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
 theorem singletonMap_natural {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
     f ≫ singletonMap = singletonMap ≫ existsImage f := by
   have hL : f ≫ singletonMap = A f := by
-    have h := A_fusion hf (Cat.id b)
+    have h := Λ_fusion hf (Cat.id b)
     rw [Cat.comp_id] at h
     exact h.symm
   have hR : singletonMap ≫ existsImage f = A f := by
-    rw [singletonMap, A_absorption, Cat.id_comp]
+    rw [singletonMap, Λ_absorption, Cat.id_comp]
   rw [hL, hR]
 
 /-! ## The powerset monad (B&dM p.106: "union `μ = E∈`")
@@ -139,12 +139,12 @@ theorem bigUnion_eq_existsImage_eps {a : 𝒜} :
 /-- Monad law `μ·τ = id`: `singletonMap ≫ bigUnion = 1`. -/
 theorem bigUnion_singleton {a : 𝒜} :
     singletonMap ≫ bigUnion (a := a) = Cat.id (PowerAllegory.powerObj a) := by
-  rw [bigUnion_eq_existsImage_eps, singletonMap, A_absorption, Cat.id_comp, A_eps_reflection]
+  rw [bigUnion_eq_existsImage_eps, singletonMap, Λ_absorption, Cat.id_comp, Λ_eps_reflection]
 
 /-- Monad law `μ·Pτ = id`: `E singletonMap ≫ bigUnion = 1`. -/
 theorem bigUnion_existsImage_singleton {a : 𝒜} :
     existsImage (singletonMap (a := a)) ≫ bigUnion = Cat.id (PowerAllegory.powerObj a) := by
-  rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, A_eps_eq', existsImage_id]
+  rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, Λ_eps_eq', existsImage_id]
 
 /-- Monad law `μ·μ = μ·Pμ`: `bigUnion ≫ bigUnion = E bigUnion ≫ bigUnion`. -/
 theorem bigUnion_assoc {a : 𝒜} :
@@ -167,12 +167,12 @@ theorem leftDiv_div_eps {a b : 𝒜} (R : a ⟶ b) :
   apply le_antisymm
   · have hi : (A R)° ⊑ ∋ b / R := by
       apply (le_div_iff _ _ _).mpr
-      calc (A R)° ≫ R = (A R)° ≫ (A R ≫ ∋ b) := by rw [A_eps_eq']
+      calc (A R)° ≫ R = (A R)° ≫ (A R ≫ ∋ b) := by rw [Λ_eps_eq']
         _ = ((A R)° ≫ A R) ≫ ∋ b := by rw [Cat.assoc]
-        _ ⊑ Cat.id _ ≫ ∋ b := comp_mono_right (A_simple R) _
+        _ ⊑ Cat.id _ ≫ ∋ b := comp_mono_right (Λ_simple R) _
         _ = ∋ b := Cat.id_comp _
     have hent : Cat.id a ⊑ A R ≫ (A R)° := by
-      have h := (A_is_map' R).1
+      have h := (Λ_is_map' R).1
       dsimp [Entire, dom] at h
       rw [← h]; exact inter_lb_right _ _
     -- Combine the three `⊑` steps by hand (no `Trans le le le` instance in this repo).
@@ -190,7 +190,7 @@ theorem leftDiv_div_eps {a b : 𝒜} (R : a ⟶ b) :
       exact le_trans s0 key
     rw [Cat.id_comp] at step
     calc ((∋ b / R) \ (∋ b)) ⊑ A R ≫ ∋ b := step
-      _ = R := A_eps_eq' R
+      _ = R := Λ_eps_eq' R
   · apply (le_leftDiv_iff R (∋ b / R) (∋ b)).mpr
     exact DivisionAllegory.div_comp_le (∋ b) R
 
@@ -204,19 +204,19 @@ def wlp {a b : 𝒜} (R : a ⟶ b) : PowerAllegory.powerObj b ⟶ PowerAllegory.
 /-- `wlp` is contravariantly functorial (sequential composition of programs). -/
 theorem wlp_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     wlp (R ≫ S) = wlp S ≫ wlp R := by
-  have hmap : Map (wlp S ≫ wlp R) := map_comp (A_is_map' _) (A_is_map' _)
+  have hmap : Map (wlp S ≫ wlp R) := map_comp (Λ_is_map' _) (Λ_is_map' _)
   have heps : (wlp S ≫ wlp R) ≫ ∋ a = ∋ c / (R ≫ S) := by
-    rw [Cat.assoc, show wlp R ≫ ∋ a = ∋ b / R from A_eps_eq' _,
-      map_comp_div (show Map (wlp S) from A_is_map' _) (∋ b) R,
-      show wlp S ≫ ∋ b = ∋ c / S from A_eps_eq' _,
+    rw [Cat.assoc, show wlp R ≫ ∋ a = ∋ b / R from Λ_eps_eq' _,
+      map_comp_div (show Map (wlp S) from Λ_is_map' _) (∋ b) R,
+      show wlp S ≫ ∋ b = ∋ c / S from Λ_eps_eq' _,
       div_comp_assoc]
-  exact (A_unique _ _ hmap heps).symm
+  exact (Λ_unique _ _ hmap heps).symm
 
 /-- B&dM 4.52's refinement order: `R ⊑ S` iff `wlp S ≤ wlp R` in the predicate-transformer
     order `f ≤ g ≡ f ≫ ∋ ⊑ g ≫ ∋`. -/
 theorem wlp_antitone_iff {a b : 𝒜} (R S : a ⟶ b) :
     R ⊑ S ↔ wlp S ≫ ∋ a ⊑ wlp R ≫ ∋ a := by
-  rw [show wlp S ≫ ∋ a = ∋ b / S from A_eps_eq' _, show wlp R ≫ ∋ a = ∋ b / R from A_eps_eq' _]
+  rw [show wlp S ≫ ∋ a = ∋ b / S from Λ_eps_eq' _, show wlp R ≫ ∋ a = ∋ b / R from Λ_eps_eq' _]
   constructor
   · intro h
     apply (le_div_iff _ _ _).mpr
@@ -235,16 +235,16 @@ theorem wlp_antitone_iff {a b : 𝒜} (R S : a ⟶ b) :
 /-! ## Ex 4.47 (B&dM p.106): singleton/existsImage/bigUnion identities -/
 
 /-- `A R = singletonMap ≫ E R`. -/
-theorem A_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
+theorem Λ_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
     A R = singletonMap ≫ existsImage R := by
-  have h := A_absorption (Cat.id a) R
+  have h := Λ_absorption (Cat.id a) R
   rw [Cat.id_comp] at h
   exact h.symm
 
 /-- `E R = E (A R) ≫ bigUnion`. -/
-theorem existsImage_eq_A_bigUnion {a b : 𝒜} (R : a ⟶ b) :
+theorem existsImage_eq_Λ_bigUnion {a b : 𝒜} (R : a ⟶ b) :
     existsImage R = existsImage (A R) ≫ bigUnion := by
-  rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, A_eps_eq']
+  rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, Λ_eps_eq']
 
 end PowerCalculus
 

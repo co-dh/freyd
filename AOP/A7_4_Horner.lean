@@ -49,8 +49,8 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 
 /-- The universal property of (7.5) in `max` form (`maxRel R = minRel R°`):
     `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_A_comp_minRel_iff` at `R°`. -/
-public theorem le_A_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
-    X ⊑ A S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_A_comp_minRel_iff
+public theorem le_Λ_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
+    X ⊑ A S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_Λ_comp_minRel_iff
 
 /-- **Max form of `A7_2.greedy_of_refinement`.**  A deterministic algebra `f` (a map),
     MONOTONIC on the order `R`, that REFINES the greedy choice `A S ≫ maxRel R`, already has its
@@ -73,8 +73,8 @@ namespace RelSet
 
 /-- In Rel(Set) the transpose `A` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
     both are maps whose composition with `∋` is `R`, and that map is unique. -/
-public theorem A_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : A R = classifier R :=
-  ((A_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
+public theorem Λ_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : A R = classifier R :=
+  ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
 
 /-- Pointwise form of `maxRel` in Rel(Set): `w` is a `maxRel R`-choice of the set `P` iff
     `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
@@ -95,7 +95,7 @@ public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
     order `D` is antisymmetric, then `graph solveFn = A spec ≫ maxRel D` — the program is exactly
     `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
     for a `≤`-minimum take `D w z := w ≤ z` (`maxRel` of the reversed order is `minRel`). -/
-public theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
+public theorem eq_Λ_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
     (hanti : ∀ x y : V, D x y → D y x → x = y)
     (solveFn : d.carrier → V) (spec : d ⟶ (⟨V⟩ : RelSet.{0}))
     (hsound : ∀ xs, spec xs (solveFn xs))
@@ -108,9 +108,9 @@ public theorem eq_A_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelS
     have hwe : w = solveFn xs := hw
     subst hwe
     refine ⟨fun v => spec xs v, ?_, (maxRel_apply D _ _).mpr ⟨hsound xs, hbest xs⟩⟩
-    rw [A_eq_classifier]; rfl
+    rw [Λ_eq_classifier]; rfl
   · rintro ⟨P, hAP, hmax⟩
-    rw [A_eq_classifier] at hAP
+    rw [Λ_eq_classifier] at hAP
     have hPeq : P = fun v => spec xs v := hAP
     subst hPeq
     obtain ⟨hmem, hdomw⟩ := (maxRel_apply D _ _).mp hmax
@@ -157,7 +157,7 @@ public theorem horner_correct {L E A1 : Type}
   -- Apply the refinement at the actual fold output `foldFn xs`.
   have hmem_fold : (cataR alg) xs (foldFn xs) := (hfold xs (foldFn xs)).mpr rfl
   obtain ⟨P, hAP, hmax⟩ := (le_iff.mp Hcore) xs (foldFn xs) hmem_fold
-  rw [A_eq_classifier] at hAP
+  rw [Λ_eq_classifier] at hAP
   -- `A (⦇S⦈) xs P` pins `P` to the generatable set of `xs`.
   have hPeq : P = fun w => (cataR S) xs w := hAP
   subst hPeq

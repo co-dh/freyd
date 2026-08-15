@@ -85,7 +85,7 @@ theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.pow
   rw [hterm1, Cat.comp_id]
   show (powerOrder (a := a))° ∩ powerOrder (a := a) = Cat.id (PowerAllegory.powerObj a)
   rw [Allegory.inter_comm]
-  exact A_eps_reflection
+  exact Λ_eps_reflection
 
 /-- **B&dM §5.4 p.119 top** (`P` and `E` agree on maps): for a map `f`, `powerRel f`
     coincides with the existential image `existsImage f` of `AOP.A4_6`.  The term₂
@@ -238,8 +238,8 @@ theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
   let W : w ⟶ b := (x ≫ ∋ a ≫ R) ∩ (z ≫ ∋ c ≫ S°)
   let h : w ⟶ PowerAllegory.powerObj b := A W
   have hWdef : W = (x ≫ ∋ a ≫ R) ∩ (z ≫ ∋ c ≫ S°) := rfl
-  have hhmap : Map h := A_is_map' W
-  have hheps : h ≫ ∋ b = W := A_eps_eq' W
+  have hhmap : Map h := Λ_is_map' W
+  have hheps : h ≫ ∋ b = W := Λ_eps_eq' W
   -- Term₁/term₂ membership of the ORIGINAL tabulated relation `powerRel (R ≫ S) = x° ≫ z`.
   have factI : (∋ a)° ≫ x° ≫ z ⊑ (R ≫ S) ≫ (∋ c)° := by
     have hmem : x° ≫ z ⊑ ((∋ a)° \ ((R ≫ S) ≫ (∋ c)°)) := by

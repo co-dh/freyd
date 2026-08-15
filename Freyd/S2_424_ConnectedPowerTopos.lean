@@ -335,7 +335,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 /-- The base membership `∋ b` is UNCONDITIONALLY thick in an unguarded power allegory:
     `A(R) = R /ₛ ∋ b` is entire for every `R` (`A_is_map'`). -/
 public theorem eps_unthick (b : 𝒜) {c : 𝒜} (R : c ⟶ b) : Entire (R /ₛ ∋ b) :=
-  (A_is_map' R).1
+  (Λ_is_map' R).1
 
 /-- **§2.422 (thick_target for `SplObj 𝒜`, unguarded base).**  EVERY object `E` of
     `SplObj 𝒜` is the target of a THICK split-hom — box-index-free.  Witness: the base

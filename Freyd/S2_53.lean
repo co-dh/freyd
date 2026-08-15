@@ -356,7 +356,7 @@ theorem quotThickEps (b : 𝒜)
   have hboxA : codBox (amen.largest R₀) = codBox (∋ b) := hbox R₀ hrelBox
   -- 𝒜-thickness of ∋_b applied to R₀⁺ gives the witness f₀ = A(R₀⁺).
   obtain ⟨f₀, hEnt, hf₀_le, hf₀o⟩ :=
-    (thick_iff_existential (∋ b)).mp (fun _ R hbox => (A_is_map R hbox).1)
+    (thick_iff_existential (∋ b)).mp (fun _ R hbox => (Λ_is_map R hbox).1)
       c (amen.largest R₀) hboxA
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hEnt, ?_, ?_⟩
   · -- [f₀][∋] ⊑ [R₀] :  largest(f₀∋) ⊑ largest(R₀⁺) = R₀⁺ = largest R₀  (§2.531).

@@ -132,7 +132,7 @@ theorem derivedSolve_dominates (ivs : List (Int × Int)) (v : Nat) (hv : spec iv
     Bundles the emerged fold (`rooms_emerges`) with the reused extremum correctness. -/
 theorem rooms_derived_eq_maxRel :
     (graph derivedSolve : LC253.Ivs ⟶ LC253.dNat) = A spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) derivedSolve spec
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) derivedSolve spec
     derivedSolve_sound derivedSolve_dominates
 
 /-! ## Running the program -/

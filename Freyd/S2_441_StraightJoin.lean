@@ -99,10 +99,10 @@ theorem straight_id {a : 𝒜} : Straight (Cat.id a) :=
 
 /-- For straight `S`, `A(S)` is a SPLIT-MONIC map: `A S ≫ (A S)° = 1`.  (Monic by
     `A_monic_of_straight`, and `1 ⊑ A S ≫ (A S)°` because `A S` is entire — `A_is_map'`.) -/
-theorem A_split_monic {a b : 𝒜} {S : a ⟶ b} (hS : Straight S) :
+theorem Λ_split_monic {a b : 𝒜} {S : a ⟶ b} (hS : Straight S) :
     A S ≫ (A S)° = Cat.id a := by
-  refine le_antisymm (A_monic_of_straight hS) ?_
-  have hent := (A_is_map' S).1
+  refine le_antisymm (Λ_monic_of_straight hS) ?_
+  have hent := (Λ_is_map' S).1
   dsimp [Entire, dom] at hent
   rw [← hent]; exact inter_lb_right _ _
 
@@ -111,7 +111,7 @@ theorem A_split_monic {a b : 𝒜} {S : a ⟶ b} (hS : Straight S) :
 theorem invMem_straight (a : 𝒜) : Straight (Cat.id a / ∋ a) := by
   refine rightInvertible_straight (T := ∋ a) ?_
   refine le_antisymm (DivisionAllegory.div_comp_le (Cat.id a) (∋ a)) ?_
-  have hA : A (Cat.id a) ≫ ∋ a = Cat.id a := A_eps_eq' (Cat.id a)
+  have hA : A (Cat.id a) ≫ ∋ a = Cat.id a := Λ_eps_eq' (Cat.id a)
   have hAle : A (Cat.id a) ⊑ Cat.id a / ∋ a := inter_lb_left _ _
   calc Cat.id a = A (Cat.id a) ≫ ∋ a := hA.symm
     _ ⊑ (Cat.id a / ∋ a) ≫ ∋ a := comp_mono_right hAle (∋ a)
@@ -126,17 +126,17 @@ def kappaMap (a : 𝒜) : a ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj a
 
 /-- `ℓ_a` is a map (composite of the two singleton maps). -/
 theorem ellMap_map (a : 𝒜) : Map (ellMap a) :=
-  map_comp (A_is_map' _) (A_is_map' _)
+  map_comp (Λ_is_map' _) (Λ_is_map' _)
 
 /-- `ℓ_a` is split-monic: `ℓℓ° = 1_a`. -/
 theorem ellMap_split (a : 𝒜) : ellMap a ≫ (ellMap a)° = Cat.id a := by
   unfold ellMap
-  exact split_comp (A_split_monic straight_id) (A_split_monic straight_id)
+  exact split_comp (Λ_split_monic straight_id) (Λ_split_monic straight_id)
 
 /-- `ϰ_a` is split-monic: `ϰϰ° = 1_a` (since `1/∋` is straight). -/
 theorem kappaMap_split (a : 𝒜) : kappaMap a ≫ (kappaMap a)° = Cat.id a := by
   unfold kappaMap
-  exact A_split_monic (invMem_straight a)
+  exact Λ_split_monic (invMem_straight a)
 
 /-- **The disjointness** `ℓϰ° = 0`.  Following Freyd: it suffices that
     `A(1_[a]) ≫ ϰ° = 0`, which is bounded by `1_[a] / (1/∋)` and reduced through
@@ -166,16 +166,16 @@ theorem ellMap_kappaMap_disjoint (a : 𝒜) :
     have h7zero : Cat.id (PowerAllegory.powerObj a) / A (𝟘 : a ⟶ a)
         ⊑ (A (𝟘 : a ⟶ a))° := by
       have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj a))
-        (A_is_map' (𝟘 : a ⟶ a)).1
+        (Λ_is_map' (𝟘 : a ⟶ a)).1
       rwa [Cat.id_comp] at h
     have h7one : Cat.id (PowerAllegory.powerObj a) / A (Cat.id a)
         ⊑ (A (Cat.id a))° := by
       have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj a))
-        (A_is_map' (Cat.id a)).1
+        (Λ_is_map' (Cat.id a)).1
       rwa [Cat.id_comp] at h
     -- `A(0)° ∩ A(1)° = (A(0) ∩ A(1))° = 0°  = 0`.
     have h8 : (A (𝟘 : a ⟶ a))° ∩ (A (Cat.id a))° = (𝟘 : PowerAllegory.powerObj a ⟶ a) := by
-      rw [← Allegory.recip_inter, A_zero_inter_A_one, recip_zero]
+      rw [← Allegory.recip_inter, Λ_zero_inter_Λ_one, recip_zero]
     refine le_trans (comp_mono_left _ step1) ?_
     refine le_trans (comp_mono_right step3 _) ?_
     refine le_trans (div_comp _ _ _) ?_
@@ -201,10 +201,10 @@ theorem straightJoin_to_prePositive :
   refine ⟨PowerAllegory.powerObj (PowerAllegory.powerObj (PowerAllegory.powerObj γ)),
     A S₁ ≫ ellMap (PowerAllegory.powerObj γ),
     A S₂ ≫ kappaMap (PowerAllegory.powerObj γ),
-    map_comp (A_is_map' S₁) (ellMap_map _),
-    map_comp (A_is_map' S₂) (A_is_map' _), ?_, ?_, ?_⟩
-  · exact split_comp (A_split_monic hS₁) (ellMap_split _)
-  · exact split_comp (A_split_monic hS₂) (kappaMap_split _)
+    map_comp (Λ_is_map' S₁) (ellMap_map _),
+    map_comp (Λ_is_map' S₂) (Λ_is_map' _), ?_, ?_, ?_⟩
+  · exact split_comp (Λ_split_monic hS₁) (ellMap_split _)
+  · exact split_comp (Λ_split_monic hS₂) (kappaMap_split _)
   · exact cross_zero (ellMap_kappaMap_disjoint _)
 
 /-- **§2.441 TFAE, closed** for unguarded power allegories.  Feeding the now-proven

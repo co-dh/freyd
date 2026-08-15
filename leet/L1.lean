@@ -886,10 +886,10 @@ theorem thin_eq_hash (nums : List Int) (target : Int) :
 
 /-- The DERIVED program as a morphism equation: `graph thinTwoSum = A tsSpec ≫ maxRel D` —
     B&dM's `max D · Λ spec`, both halves supplied by Corollary 8.1. -/
-theorem thin_eq_A_maxRel :
+theorem thin_eq_Λ_maxRel :
     (graph (fun p : List Int × Int => thinTwoSum p.1 p.2) : Input ⟶ Ans)
       = A tsSpec ≫ maxRel (fun w z => ansLe z w) := by
-  apply eq_A_comp_maxRel
+  apply eq_Λ_comp_maxRel
   · exact fun x y h1 h2 => ansLe_antisym h2 h1
   · -- the program's answer is acceptable
     intro p
@@ -912,9 +912,9 @@ theorem thin_eq_A_maxRel :
     `Rel(Set)` — Two Sum by CALCULATION, the same morphism equation shape as Kadane's
     (`leet/L53.lean`'s `solve_eq_maxRel`), obtained through the THINNING theorem rather than
     the greedy/Horner one. -/
-theorem solve_eq_A_maxRel :
+theorem solve_eq_Λ_maxRel :
     solve = A tsSpec ≫ maxRel (fun w z => ansLe z w) := by
-  rw [← thin_eq_A_maxRel]
+  rw [← thin_eq_Λ_maxRel]
   show (graph (fun p : List Int × Int => twoSumFn p.1 p.2) : Input ⟶ Ans) = _
   exact congrArg (fun f : List Int × Int → Option (Nat × Nat) =>
     (graph f : Input ⟶ Ans)) (funext fun p => (thin_eq_scan p.1 p.2).symm)

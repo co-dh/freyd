@@ -46,10 +46,10 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H) :
     A (T°) ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R ⊑ A H ≫ minRel R := by
   -- the two min-UP components of `M ⊑ min R·ΛH`: `M ⊑ H` and `M·H° ⊑ R` (mirrored)
-  obtain ⟨hMH, hHMR⟩ := le_A_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
+  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
   -- rule (9.4) at `X := h·FM`
   have h94 := powerRel_comp_minRel_le (F.map (A H ≫ minRel R) ≫ h) R
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   constructor
   · -- (9.2): `min R·P(h·FM)·ΛT° ⊆ H`
     have s1 : A (T°) ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R
@@ -58,7 +58,7 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
     -- Λ cancellation: `∈·ΛT° = T°`
     have s2 : A (T°) ≫ ∋ (F.obj b) ≫ F.map (A H ≫ minRel R) ≫ h
         = T° ≫ F.map (A H ≫ minRel R) ≫ h := by
-      rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, A_eps_eq']
+      rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, Λ_eps_eq']
     -- `M ⊑ H`, then the fixed-point equation
     have s3 : T° ≫ F.map (A H ≫ minRel R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
@@ -72,7 +72,7 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
       le_trans h94 (inter_lb_right _ _)
     -- `ΛT°·T ⊆ ∋` mirrored
     have hTA : T ≫ A (T°) ⊑ (∋ (F.obj b))° := by
-      have h0 := recip_comp_A_le_recip_eps (T°)
+      have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
     -- `H° = T·FH°·h°` conversed to diagram order: `H° = h° ≫ F.map H° ≫ T`
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
@@ -157,9 +157,9 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
     A (T°) ≫ thinRel Q ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R ⊑ A H ≫ minRel R := by
-  obtain ⟨hMH, hHMR⟩ := le_A_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
+  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
   have h94 := powerRel_comp_minRel_le (F.map (A H ≫ minRel R) ≫ h) R
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   constructor
   · -- (9.2)-with-thin: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`
     have step1 : A (T°) ≫ thinRel Q ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R
@@ -175,7 +175,7 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
           ⊑ (A (T°) ≫ ∋ (F.obj b)) ≫ F.map (A H ≫ minRel R) ≫ h :=
         comp_mono_right (comp_mono_left _ (thinRel_comp_eps_le Q)) _
       have e3 : (A (T°) ≫ ∋ (F.obj b)) ≫ F.map (A H ≫ minRel R) ≫ h
-          = T° ≫ F.map (A H ≫ minRel R) ≫ h := by rw [A_eps_eq']
+          = T° ≫ F.map (A H ≫ minRel R) ≫ h := by rw [Λ_eps_eq']
       rwa [e3] at e2
     have step3 : T° ≫ F.map (A H ≫ minRel R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
@@ -184,7 +184,7 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
   · -- (9.3)-with-thin: `H°·min R·P(h·FM)·thin Q·ΛT° ⊆ R`
     have hL := le_trans h94 (inter_lb_right _ _)
     have hTA : T ≫ A (T°) ⊑ (∋ (F.obj b))° := by
-      have h0 := recip_comp_A_le_recip_eps (T°)
+      have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
       have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
@@ -578,11 +578,11 @@ public theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesR
 theorem thin_unfold_context_le (T : F.obj b ⟶ b) (Q : F.obj b ⟶ F.obj b) :
     T ≫ A (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫ (∋ (F.obj b))° := by
   have hctxEq : A (T°) ≫ thinRel (Q ∩ ((T°)° ≫ T°)) = A (T°) ≫ thinRel Q :=
-    A_comp_thinRel_context (T°) Q
+    Λ_comp_thinRel_context (T°) Q
   rw [Allegory.recip_recip] at hctxEq
   rw [← hctxEq]
   have hTA : T ≫ A (T°) ⊑ (∋ (F.obj b))° := by
-    have h0 := recip_comp_A_le_recip_eps (T°)
+    have h0 := recip_comp_Λ_le_recip_eps (T°)
     rwa [Allegory.recip_recip] at h0
   have e1 : T ≫ (A (T°) ≫ thinRel (Q ∩ (T ≫ T°)))
       = (T ≫ A (T°)) ≫ thinRel (Q ∩ (T ≫ T°)) := by rw [Cat.assoc]
@@ -598,9 +598,9 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
     A (T°) ≫ thinRel Q ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R ⊑ A H ≫ minRel R := by
-  obtain ⟨hMH, hHMR⟩ := le_A_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
+  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
   have h94 := powerRel_comp_minRel_le (F.map (A H ≫ minRel R) ≫ h) R
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   constructor
   · -- (9.2)-with-thin: identical to `dp_thin_prefixed` (does not use monotonicity/thinning)
     have step1 : A (T°) ≫ thinRel Q ≫ powerRel (F.map (A H ≫ minRel R) ≫ h) ≫ minRel R
@@ -616,7 +616,7 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
           ⊑ (A (T°) ≫ ∋ (F.obj b)) ≫ F.map (A H ≫ minRel R) ≫ h :=
         comp_mono_right (comp_mono_left _ (thinRel_comp_eps_le Q)) _
       have e3 : (A (T°) ≫ ∋ (F.obj b)) ≫ F.map (A H ≫ minRel R) ≫ h
-          = T° ≫ F.map (A H ≫ minRel R) ≫ h := by rw [A_eps_eq']
+          = T° ≫ F.map (A H ≫ minRel R) ≫ h := by rw [Λ_eps_eq']
       rwa [e3] at e2
     have step3 : T° ≫ F.map (A H ≫ minRel R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)

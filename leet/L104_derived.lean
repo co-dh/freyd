@@ -134,7 +134,7 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
     `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/
 theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ A S ≫ maxRel R := by
-  apply le_A_comp_maxRel_iff.mpr
+  apply le_Λ_comp_maxRel_iff.mpr
   refine ⟨?_, ?_⟩
   · -- alg ⊑ S : every folded value is generatable
     rw [le_iff]; intro u m h
@@ -184,7 +184,7 @@ theorem depth_derived_correct (t : Tree L) :
   -- `depthFn t` is a member of `⦇alg⦈`; apply the frontier refinement there.
   have hmem : cataR alg t (depthFn t) := (cataTreeFold_alg t (depthFn t)).mpr rfl
   obtain ⟨P, hAP, hmax⟩ := (le_iff.mp H2) t (depthFn t) hmem
-  rw [A_eq_classifier] at hAP
+  rw [Λ_eq_classifier] at hAP
   have hPeq : P = fun w => (cataR S) t w := hAP
   subst hPeq
   obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (depthFn t)).mp hmax

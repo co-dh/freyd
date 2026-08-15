@@ -442,7 +442,7 @@ theorem eval_minRelE {a : FinObj} (R : RE a a) :
   `rel.AutoDeriveSearch`, where LC 121's instance is chained to `L121.solve_correct`. -/
 
 /-- `Λ` pointwise: `A R` relates `x` to exactly the bit-code of its `R`-image. -/
-theorem A_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).card) :
+theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).card) :
     A R x P = true ↔ ∀ v, epsB b P v = R x v := by
   show (allFin b.card (fun v => !(epsB b P v) || R x v)
      && allFin b.card (fun v => !(R x v) || epsB b P v)) = true ↔ _
@@ -476,7 +476,7 @@ theorem maxRelE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin 
     `(x, v)` iff `v` is `e`-achievable from `x` and `d`-dominates every `e`-achievable value.
     The existential over `2^card` subset codes is discharged by the encoded image itself
     (`encNat`), so no powerset reasoning survives into the statement. -/
-theorem A_comp_maxRel_apply {a b : FinObj} (e : RE a b) (d : RE b b)
+theorem Λ_comp_maxRel_apply {a b : FinObj} (e : RE a b) (d : RE b b)
     (x : Fin a.card) (v : Fin b.card) :
     eval (.comp (AE e) (maxRelE d)) x v = true ↔
       (eval e x v = true ∧ ∀ z, eval e x z = true → eval d v z = true) := by
@@ -485,13 +485,13 @@ theorem A_comp_maxRel_apply {a b : FinObj} (e : RE a b) (d : RE b b)
   · intro h
     obtain ⟨P, hP⟩ := anyFin_iff.mp h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp hP
-    have hA := (A_apply (eval e) x P).mp h1
+    have hA := (Λ_apply (eval e) x P).mp h1
     obtain ⟨hmem, hdom⟩ := (maxRelE_apply d P v).mp h2
     exact ⟨by rw [← hA v]; exact hmem, fun z hz => hdom z (by rw [hA z]; exact hz)⟩
   · rintro ⟨h1, h2⟩
     refine anyFin_iff.mpr ⟨⟨encNat b.card (fun u => eval e x u), encNat_lt _ _⟩,
       Bool.and_eq_true_iff.mpr ⟨?_, ?_⟩⟩
-    · exact (A_apply (eval e) x _).mpr fun u => encNat_testBit b.card (fun u => eval e x u) u
+    · exact (Λ_apply (eval e) x _).mpr fun u => encNat_testBit b.card (fun u => eval e x u) u
     · refine (maxRelE_apply d _ v).mpr ⟨?_, fun z hz => h2 z ?_⟩
       · show (encNat b.card (fun u => eval e x u)).testBit v.val = true
         rw [encNat_testBit b.card (fun u => eval e x u) v]; exact h1

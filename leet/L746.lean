@@ -210,7 +210,7 @@ theorem solve_correct (xs : SnocList Int Int) :
     for `D w z := w ≤ z` — `maxRel` of the reversed "smaller-is-better" order is the `≤`-MINIMUM
     (`minRel (≤)`) — not merely pointwise. Bridged from `solve_correct`. -/
 theorem solve_eq_maxRel : solve = A spec ≫ maxRel (fun w z : Int => w ≤ z) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h1 h2) solveFn spec
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h1 h2) solveFn spec
     (fun xs => (solve_correct xs).1) (fun xs v hv => (solve_correct xs).2 v hv)
 
 /-- **The program refines the specification**: every value `solve` returns is an achievable

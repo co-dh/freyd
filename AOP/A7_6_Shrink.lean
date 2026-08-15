@@ -121,8 +121,8 @@ variable [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
     definition `S ↾ R = S ∩ (S° \ R)`.  So a shrink headline `X = S ↾ R` and an optimization
     headline `X = A S ≫ minRel R` are literally the same statement, and (since
     `maxRel R = minRel R°`) `S ↾ R° = A S ≫ maxRel R`. -/
-public theorem shrink_eq_A_comp_minRel (S : b ⟶ a) (R : a ⟶ a) : S ↾ R = A S ≫ minRel R :=
-  (A_comp_minRel S R).symm
+public theorem shrink_eq_Λ_comp_minRel (S : b ⟶ a) (R : a ⟶ a) : S ↾ R = A S ≫ minRel R :=
+  (Λ_comp_minRel S R).symm
 
 end Power
 

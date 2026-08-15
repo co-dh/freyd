@@ -1014,7 +1014,7 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
   intro c R hbox
   -- translate the box guard of T = F∋ to the box guard of ∋.
   have hboxA : codBox R = codBox (∋ a) := hbox.trans (codBox_comp_eps F hF)
-  have hAmap : Map (A R) := A_is_map R hboxA
+  have hAmap : Map (A R) := Λ_is_map R hboxA
   -- witness R̂ = A(R) ≫ F°
   refine ⟨A R ≫ F°, ?_, ?_, ?_⟩
   · -- Entire R̂ : R̂R̂° = A(R)(F°F)A(R)° = A(R)A(R)° ⊒ 1.
@@ -1029,7 +1029,7 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
   · -- R̂T ⊑ R : R̂T = A(R)(F°F)∋ = A(R)∋ = R.
     have hTeq : (A R ≫ F°) ≫ (F ≫ ∋ a) = R := by
       rw [Cat.assoc (A R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
-        A_eps_eq R hboxA]
+        Λ_eps_eq R hboxA]
     rw [hTeq]
     exact le_refl R
   · -- R̂°R ⊑ T : R̂° = F A(R)°, and A(R)°R = A(R)°A(R)∋ ⊑ ∋ (A(R) simple), so ⊑ F∋ = T.
@@ -1038,9 +1038,9 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
     rw [hRhat_recip]
     have hinner : (A R)° ≫ R ⊑ ∋ a := by
       have e1 : (A R)° ≫ R = ((A R)° ≫ A R) ≫ ∋ a := by
-        rw [Cat.assoc, A_eps_eq R hboxA]
+        rw [Cat.assoc, Λ_eps_eq R hboxA]
       rw [e1]
-      have h2 := comp_mono_right (A_simple R) (∋ a)
+      have h2 := comp_mono_right (Λ_simple R) (∋ a)
       rwa [Cat.id_comp] at h2
     rw [Cat.assoc F (A R)° R]
     exact comp_mono_left F hinner

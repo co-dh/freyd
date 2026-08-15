@@ -200,7 +200,7 @@ theorem gen_recip_le : P.gen° ≫ P.alg ⊑ P.pareto° := by
 
 /-- The greedy-step refinement `alg ⊑ ΛS·max R` that `greedy_max` consumes. -/
 theorem alg_ref : P.alg ⊑ A P.gen ≫ maxRel P.pareto :=
-  le_A_comp_maxRel_iff.mpr ⟨P.alg_le_gen, P.gen_recip_le⟩
+  le_Λ_comp_maxRel_iff.mpr ⟨P.alg_le_gen, P.gen_recip_le⟩
 
 /-- Totality of the generator — free from the selection facts (the deterministic choice
     witnesses it).  Handy for the problem-specific completeness inductions. -/
@@ -234,7 +234,7 @@ theorem eq_maxRel (spec : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
     (spec_gen : ∀ xs v, spec xs v → ∃ e, cataFold P.gen xs (e, v)) :
     (graph (fun xs => (P.foldFn xs).2) : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
       = A spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) _ spec
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) _ spec
     (fun xs => (P.correct spec gen_spec spec_gen xs).1)
     (fun xs v hv => (P.correct spec gen_spec spec_gen xs).2 v hv)
 

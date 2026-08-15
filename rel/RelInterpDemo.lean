@@ -146,10 +146,10 @@ theorem eval_solveE_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin
   constructor
   · intro h
     obtain ⟨h1, h2⟩ :=
-      (A_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
+      (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
     exact ⟨h1, fun z hz => decide_eq_true_iff.mp (h2 z hz)⟩
   · rintro ⟨h1, h2⟩
-    exact (A_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
+    exact (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
       ⟨h1, fun z hz => decide_eq_true_iff.mpr (h2 z hz)⟩
 
 /-- Tiny instance `[1,2]` (buy 1 sell 2, profit 1), kernel-checked end to end:

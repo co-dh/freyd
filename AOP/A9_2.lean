@@ -94,8 +94,8 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
     (hτ : τ° ≫ topHom b a ⊑ R) :
     dpBodyInf F T h R τ (A (H ∪ τ) ≫ minRel R) ⊑ A (H ∪ τ) ≫ minRel R := by
   -- the two min-UP components of `M ⊑ min R · Λ(H ∪ τ)`: `M ⊑ H ∪ τ` and `(H ∪ τ)° ≫ M ⊑ R`
-  obtain ⟨hMS, hSMR⟩ := le_A_comp_minRel_iff.mp (le_refl (A (H ∪ τ) ≫ minRel R))
-  apply le_A_comp_minRel_iff.mpr
+  obtain ⟨hMS, hSMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (A (H ∪ τ) ≫ minRel R))
+  apply le_Λ_comp_minRel_iff.mpr
   constructor
   · -- membership: `body ⊑ H ∪ τ`
     apply union_lub
@@ -106,7 +106,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
         comp_mono_left _ (le_trans h94 (inter_lb_left _ _))
       have s2 : A (T°) ≫ ∋ (F.obj b) ≫ F.map (A (H ∪ τ) ≫ minRel R) ≫ h
           = T° ≫ F.map (A (H ∪ τ) ≫ minRel R) ≫ h := by
-        rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, A_eps_eq']
+        rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, Λ_eps_eq']
       have s3 : T° ≫ F.map (A (H ∪ τ) ≫ minRel R) ≫ h ⊑ T° ≫ F.map (H ∪ τ) ≫ h :=
         comp_mono_left _ (comp_mono_right (F.map_mono hMS) h)
       rw [s2] at s1
@@ -127,7 +127,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
       rw [← h1, hHfix]
     have hTA : T ≫ A (T°) ⊑ (∋ (F.obj b))° := by
-      have h0 := recip_comp_A_le_recip_eps (T°)
+      have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
     have htail : T ≫ A (T°) ≫ powerRel (F.map (A (H ∪ τ) ≫ minRel R) ≫ h)
           ≫ leftDiv ((∋ a)°) R

@@ -148,7 +148,7 @@ theorem derivedSolve_eq (s : List Int) : derivedSolve s = LC5.longestPalinFn s :
     domination (`longestPalin_dominates`) through `derivedSolve_eq`; no optimality is re-proved. -/
 theorem palin_derived_correct :
     (graph derivedSolve : LC5.Arr ⟶ LC5.dNat) = A LC5.IsPalinSubstr ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_A_comp_maxRel (fun w z : Nat => z ≤ w) (fun _ _ hxy hyx => Nat.le_antisymm hyx hxy)
+  eq_Λ_comp_maxRel (fun w z : Nat => z ≤ w) (fun _ _ hxy hyx => Nat.le_antisymm hyx hxy)
     derivedSolve LC5.IsPalinSubstr
     (fun s => by rw [derivedSolve_eq s]; exact (LC5.longest_palin_correct s).1)
     (fun s v hv => by rw [derivedSolve_eq s]; exact (LC5.longest_palin_correct s).2 v hv)

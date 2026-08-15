@@ -52,10 +52,10 @@ variable {F}
     transpose the algebra `R : F c ⟶ c` to the map algebra `Λ(R·F∈) : F[c] ⟶ [c]`, take
     its (map) catamorphism, and compose back down with `∈`. -/
 @[expose] public def relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) : I.t ⟶ c :=
-  I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) ≫ ∋ c
+  I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c
 
 public theorem relCata_unfold (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    relCata I R = I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) ≫ ∋ c := rfl
+    relCata I R = I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c := rfl
 
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
@@ -67,30 +67,30 @@ public theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) 
   · intro h
     -- `A X` is a map, so `X = A X ≫ ∋ c`; rewrite both sides of `h` through this map
     -- and transport the equation to `A (F.map (∋ c) ≫ R)` via `A_fusion`.
-    have hX_eps : A X ≫ ∋ c = X := A_eps_eq' X
+    have hX_eps : A X ≫ ∋ c = X := Λ_eps_eq' X
     have hFX : F.map X = F.map (A X) ≫ F.map (∋ c) := by
       -- rewrite the LARGER pattern `A X ≫ ∋ c` (not bare `X`) so the `A X` inside it
       -- does not spuriously get rewritten too.
       have hcomp : F.map (A X ≫ ∋ c) = F.map (A X) ≫ F.map (∋ c) := F.map_comp _ _
       rwa [hX_eps] at hcomp
     have hRHS : A (F.map X ≫ R) = F.map (A X) ≫ A (F.map (∋ c) ≫ R) := by
-      rw [hFX, Cat.assoc, A_fusion (F.map_is_map (A_is_map' X))]
-    have hLHS : A (I.α ≫ X) = I.α ≫ A X := A_fusion I.α_map X
+      rw [hFX, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
+    have hLHS : A (I.α ≫ X) = I.α ≫ A X := Λ_fusion I.α_map X
     have heq : I.α ≫ A X = F.map (A X) ≫ A (F.map (∋ c) ≫ R) := by
       rw [← hLHS, h, hRHS]
-    have hAX_eq_u : A X = I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) :=
-      I.cata_unique _ (A_is_map' _) (A X) (A_is_map' X) heq
+    have hAX_eq_u : A X = I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) :=
+      I.cata_unique _ (Λ_is_map' _) (A X) (Λ_is_map' X) heq
     rw [relCata_unfold, ← hAX_eq_u, hX_eps]
   · intro h
     rw [h, relCata_unfold]
-    generalize hu_def : I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) = u
+    generalize hu_def : I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) = u
     have hu_comm : I.α ≫ u = F.map u ≫ A (F.map (∋ c) ≫ R) := by
       rw [← hu_def]; exact I.cata_comm _ _
     calc I.α ≫ (u ≫ ∋ c)
         = (I.α ≫ u) ≫ ∋ c := by rw [Cat.assoc]
       _ = (F.map u ≫ A (F.map (∋ c) ≫ R)) ≫ ∋ c := by rw [hu_comm]
       _ = F.map u ≫ (A (F.map (∋ c) ≫ R) ≫ ∋ c) := by rw [Cat.assoc]
-      _ = F.map u ≫ (F.map (∋ c) ≫ R) := by rw [A_eps_eq']
+      _ = F.map u ≫ (F.map (∋ c) ≫ R) := by rw [Λ_eps_eq']
       _ = (F.map u ≫ F.map (∋ c)) ≫ R := by rw [Cat.assoc]
       _ = F.map (u ≫ ∋ c) ≫ R := by rw [F.map_comp]
 
@@ -107,12 +107,12 @@ theorem relCata_map (I : InitialAlgebra F) {c : 𝒜} (f : F.obj c ⟶ c) (hf : 
 
 /-- `Λ(|R|) = (|Λ(R·F∈)|)` (B&dM p.121): the power-transpose of the relational catamorphism
     is exactly the map catamorphism of the transposed algebra it was built from. -/
-theorem A_relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    A (relCata I R) = I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) := by
+theorem Λ_relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+    A (relCata I R) = I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) := by
   rw [relCata_unfold]
-  generalize hu_def : I.cata (A (F.map (∋ c) ≫ R)) (A_is_map' _) = u
+  generalize hu_def : I.cata (A (F.map (∋ c) ≫ R)) (Λ_is_map' _) = u
   have hu_map : Map u := hu_def ▸ I.cata_map _ _
-  exact ((A_UP (u ≫ ∋ c) hu_map).mpr rfl).symm
+  exact ((Λ_UP (u ≫ ∋ c) hu_map).mpr rfl).symm
 
 /-!
   ## Ex 5.19 — dropped

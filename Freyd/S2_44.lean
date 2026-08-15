@@ -296,7 +296,7 @@ variable {ℬ : Type u} [PowerAllegory ℬ] {a : ℬ}
 
 /-- If `W ⊑ Λ(0)` and `W ⊑ Λ(1)` then `W = 0`.  `WW° ⊑ Λ(0)Λ(1)° ⊑ (0/∋)∋ ⊑ 0`
     (`Λ(0) ⊑ 0/∋`, `Λ(1)° ⊑ ∋/1 = ∋`), so `dom W ⊑ 0` and `W ⊑ (dom W)W ⊑ 0`. -/
-public theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
+public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ PowerAllegory.powerObj a)
     (h0 : W ⊑ A (𝟘 : a ⟶ a)) (h1 : W ⊑ A (Cat.id a)) :
     W = (𝟘 : a ⟶ PowerAllegory.powerObj a) := by
   apply le_antisymm _ (zero_le _)
@@ -319,9 +319,9 @@ public theorem le_zero_of_le_A_zero_A_one (W : a ⟶ PowerAllegory.powerObj a)
 
 /-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`A 𝟘 ∩ A 1 = 𝟘`).  The empty-transpose
     and the singleton-transpose are disjoint — the heart of (3)⟹(1)'s `ℓϰ° = 0`. -/
-public theorem A_zero_inter_A_one :
+public theorem Λ_zero_inter_Λ_one :
     A (𝟘 : a ⟶ a) ∩ A (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
-  le_zero_of_le_A_zero_A_one _ (inter_lb_left _ _) (inter_lb_right _ _)
+  le_zero_of_le_Λ_zero_Λ_one _ (inter_lb_left _ _) (inter_lb_right _ _)
 
 end PowerDisjoint
 

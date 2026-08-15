@@ -397,7 +397,7 @@ theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom (solveF
     `A spec ≫ maxRel dom` — the greatest achievable path sum (or `none` for the empty tree) — not
     merely pointwise.  Bridged from soundness + domination + antisymmetry via `eq_A_comp_maxRel`. -/
 theorem solve_eq_maxRel : solve = A spec ≫ maxRel dom :=
-  eq_A_comp_maxRel dom dom_antisymm solveFn spec spec_sound spec_dom
+  eq_Λ_comp_maxRel dom dom_antisymm solveFn spec spec_sound spec_dom
 
 /-! ## Running the program -/
 

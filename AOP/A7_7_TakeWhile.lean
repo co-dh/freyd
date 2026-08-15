@@ -151,9 +151,9 @@ theorem tw_best (p : E → Bool) (c : ConsList Unit E) (out : List E)
     `takeWhile p` is exactly `max prefDom · Λ twSpec`, the longest `p`-satisfying prefix, as a
     relation (not merely pointwise).  Via `RelSet.eq_A_comp_maxRel`, fed the two halves above and
     prefix antisymmetry. -/
-theorem takeWhile_eq_A_maxRel (p : E → Bool) :
+theorem takeWhile_eq_Λ_maxRel (p : E → Bool) :
     (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = A (twSpec p) ≫ maxRel (prefDom (E := E)) :=
-  eq_A_comp_maxRel (prefDom (E := E))
+  eq_Λ_comp_maxRel (prefDom (E := E))
     (fun x y h1 h2 => pre_antisym h2 h1)               -- antisymmetry of prefDom
     (twCL p) (twSpec p)
     (tw_sound p)                                        -- achievability
@@ -165,8 +165,8 @@ theorem takeWhile_eq_A_maxRel (p : E → Bool) :
     (`maxRel R = minRel R°`). -/
 theorem takeWhile_eq_shrink (p : E → Bool) :
     (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = twSpec p ↾ (prefDom (E := E))° := by
-  rw [shrink_eq_A_comp_minRel]
-  exact takeWhile_eq_A_maxRel p
+  rw [shrink_eq_Λ_comp_minRel]
+  exact takeWhile_eq_Λ_maxRel p
 
 /-! ## Executable sanity checks -/
 

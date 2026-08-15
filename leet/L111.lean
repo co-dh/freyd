@@ -200,7 +200,7 @@ def specT : dTree Int ⟶ dNat := fun t d => IsRLDepth t d ∨ (t = Tree.nil ∧
     shortest achievable root-to-leaf path length, with `∅ ↦ 0`.  Bridged from `minDepthFn_isRL` and
     `minDepthFn_le_of_isRL`. -/
 theorem solve_eq_minRel : solve = A specT ≫ maxRel (fun w z : Nat => w ≤ z) :=
-  eq_A_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) minDepthFn specT
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) minDepthFn specT
     (fun t => by
       cases t with
       | nil => exact Or.inr ⟨rfl, rfl⟩

@@ -90,7 +90,7 @@ def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
 theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
     (hmono : MonotonicAlg f R) : Distributes f R := by
   unfold Distributes
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨comp_mono_right (F.map_mono (show minRel R ⊑ ∋ a from inter_lb_left _ _)) f, ?_⟩
   have step1 : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
     rw [Allegory.recip_comp, ← hFr (∋ a)]
@@ -119,12 +119,12 @@ theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
   have hXA : (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
     have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° :=
       calc (F.map (∋ a) ≫ f)°
-          = (A (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [A_eps_eq']
+          = (A (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [Λ_eps_eq']
         _ = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
     calc (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f)
         = ((∋ a)° ≫ (A (F.map (∋ a) ≫ f))°) ≫ A (F.map (∋ a) ≫ f) := by rw [hrecip]
       _ = (∋ a)° ≫ ((A (F.map (∋ a) ≫ f))° ≫ A (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
-      _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (A_is_map' (F.map (∋ a) ≫ f)).2
+      _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ a) ≫ f)).2
       _ = (∋ a)° := Cat.comp_id _
   have h1 : F.map R ⊑ F.map ((∋ a)° ≫ minRel R) := F.map_mono hpair
   have hmapcomp : F.map ((∋ a)° ≫ minRel R) = F.map ((∋ a)°) ≫ F.map (minRel R) := F.map_comp _ _
@@ -162,11 +162,11 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
     relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R := by
-  apply le_A_comp_minRel_iff.mpr
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨?_, ?_⟩
   · have hi : A S ≫ minRel R ⊑ S := by
       have h := comp_mono_left (A S) (show minRel R ⊑ ∋ a from inter_lb_left _ _)
-      rwa [A_eps_eq'] at h
+      rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
   · have step1 : S° ≫ F.map R ⊑ R ≫ S° := by
       have h := recip_mono hmono
@@ -176,7 +176,7 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶
         rw [Allegory.recip_comp, Allegory.recip_recip]
       rwa [heqL, heqR] at h
     have step2 : A S ≫ minRel R ⊑ (S° \ R) := by
-      rw [A_comp_minRel]; exact inter_lb_right _ _
+      rw [Λ_comp_minRel]; exact inter_lb_right _ _
     have hprefixed : S° ≫ F.map R ≫ (A S ≫ minRel R) ⊑ R := by
       have hB : (S° ≫ F.map R) ≫ (A S ≫ minRel R) ⊑ (R ≫ S°) ≫ (A S ≫ minRel R) :=
         comp_mono_right step1 _
@@ -226,8 +226,8 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
     (href : f ⊑ A S ≫ minRel R) : relCata I f ⊑ A (relCata I S) ≫ minRel R := by
-  obtain ⟨hfS, hSf⟩ := le_A_comp_minRel_iff.mp href
-  apply le_A_comp_minRel_iff.mpr
+  obtain ⟨hfS, hSf⟩ := le_Λ_comp_minRel_iff.mp href
+  apply le_Λ_comp_minRel_iff.mpr
   refine ⟨relCata_mono I hfS, ?_⟩
   apply hylo_le_of_prefixed hFr I
   have hA : S° ≫ (F.map R ≫ f) ⊑ S° ≫ (f ≫ R) := comp_mono_left _ hmono

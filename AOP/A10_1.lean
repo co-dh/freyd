@@ -52,8 +52,8 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
     A (T°) ≫ minRel Q ≫ F.map (A H ≫ minRel R) ≫ h ⊑ A H ≫ minRel R := by
-  obtain ⟨hMH, hHMR⟩ := le_A_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
-  apply le_A_comp_minRel_iff.mpr
+  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (A H ≫ minRel R))
+  apply le_Λ_comp_minRel_iff.mpr
   constructor
   · -- component (i): greedy body ⊑ H, via `min Q ⊆ ∈` and the fixed-point equation
     have s1 : A (T°) ≫ minRel Q ≫ F.map (A H ≫ minRel R) ≫ h
@@ -61,7 +61,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
       comp_mono_left _ (comp_mono_right (show minRel Q ⊑ ∋ (F.obj b) from inter_lb_left _ _) _)
     have s2 : A (T°) ≫ ∋ (F.obj b) ≫ F.map (A H ≫ minRel R) ≫ h
         = T° ≫ F.map (A H ≫ minRel R) ≫ h := by
-      rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, A_eps_eq']
+      rw [← Cat.assoc (A (T°)) (∋ (F.obj b)) _, Λ_eps_eq']
     have s3 : T° ≫ F.map (A H ≫ minRel R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
     rw [s2] at s1
@@ -69,7 +69,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     exact le_trans s1 s3
   · -- component (ii): `H°·(greedy body) ⊑ R`
     have hTA : T ≫ A (T°) ⊑ (∋ (F.obj b))° := by
-      have h0 := recip_comp_A_le_recip_eps (T°)
+      have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
       have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
