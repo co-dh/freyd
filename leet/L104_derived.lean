@@ -133,7 +133,7 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
     is two facts: `alg ⊑ S` (the folded value `1 + imax rl rr` is one of `{rl+1, rr+1}`, by
     `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/
-theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ A S ≫ maxRel R := by
+theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
   apply le_Λ_comp_maxRel_iff.mpr
   refine ⟨?_, ?_⟩
   · -- alg ⊑ S : every folded value is generatable
@@ -176,10 +176,10 @@ theorem depth_derived_correct (t : Tree L) :
     pathLen t (depthFn t) ∧ ∀ n, pathLen t n → n ≤ depthFn t := by
   -- GREEDY THEOREM: `⦇alg⦈` lands inside the Pareto frontier `A ⦇S⦈ ≫ maxRel R`.
   have hmap : Map (alg : TFobj L dNat ⟶ dNat) := graph_map algFn
-  have H1 : relCata (initial L) alg ⊑ A (relCata (initial L) S) ≫ maxRel R :=
+  have H1 : relCata (initial L) alg ⊑ Λ (relCata (initial L) S) ≫ maxRel R :=
     greedy_max_of_refinement (F_preservesRecip L) (initial L) hmap R_trans alg_mono alg_refines
   -- TreeBin bridge: transport from the abstract `relCata` to the structural `cataR`.
-  have H2 : cataR (@alg L) ⊑ A (cataR (@S L)) ≫ maxRel R := by
+  have H2 : cataR (@alg L) ⊑ Λ (cataR (@S L)) ≫ maxRel R := by
     rw [← cataR_eq_relCata (@alg L), ← cataR_eq_relCata (@S L)] at H1; exact H1
   -- `depthFn t` is a member of `⦇alg⦈`; apply the frontier refinement there.
   have hmem : cataR alg t (depthFn t) := (cataTreeFold_alg t (depthFn t)).mpr rfl

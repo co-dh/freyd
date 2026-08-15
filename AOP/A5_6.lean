@@ -36,7 +36,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 /-- Diamond check: `RelProd`/`topMor` (division-allegory side) and `A`/`∋`
     (unguarded-power side) resolve on the SAME `Allegory 𝒜`. -/
 noncomputable example (a b : 𝒜) : RelProd a b := relProd a b
-noncomputable example (a c : 𝒜) (R : c ⟶ a) : c ⟶ PowerAllegory.powerObj a := A R
+noncomputable example (a c : 𝒜) (R : c ⟶ a) : c ⟶ PowerAllegory.powerObj a := Λ R
 example (a : 𝒜) (f : a ⟶ PowerAllegory.powerObj a) : Prop := Map f
 
 end
@@ -52,14 +52,14 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 /-- **Ex 5.20** (B&dM p.124): `cup P = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
 noncomputable def cup {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     P.p ⟶ PowerAllegory.powerObj a :=
-  A ((P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a))
+  Λ ((P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a))
 
 /-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `A (R∪S) = pair(A R)(A S) ≫ cup P`. -/
 theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
-    A (R ∪ S) = P.pair (A R) (A S) ≫ cup P := by
-  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
-  have hmap : Map (P.pair (A R) (A S) ≫ cup P) := map_comp hpair (Λ_is_map' _)
+    Λ (R ∪ S) = P.pair (Λ R) (Λ S) ≫ cup P := by
+  have hpair : Map (P.pair (Λ R) (Λ S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (P.pair (Λ R) (Λ S) ≫ cup P) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
   rw [Cat.assoc, show cup P ≫ ∋ a = (P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a) from Λ_eps_eq' _,
     DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
@@ -75,14 +75,14 @@ theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
 /-- **Ex 5.20**: `cap P = Λ((∈·outl) ∩ (∈·outr))`, mirrored. -/
 noncomputable def cap {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     P.p ⟶ PowerAllegory.powerObj a :=
-  A ((P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a))
+  Λ ((P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a))
 
 /-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `A (R∩S) = pair(A R)(A S) ≫ cap P`. -/
 theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
-    A (R ∩ S) = P.pair (A R) (A S) ≫ cap P := by
-  have hpair : Map (P.pair (A R) (A S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
-  have hmap : Map (P.pair (A R) (A S) ≫ cap P) := map_comp hpair (Λ_is_map' _)
+    Λ (R ∩ S) = P.pair (Λ R) (Λ S) ≫ cap P := by
+  have hpair : Map (P.pair (Λ R) (Λ S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (P.pair (Λ R) (Λ S) ≫ cap P) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
   rw [Cat.assoc, show cap P ≫ ∋ a = (P.outl ≫ ∋ a) ∩ (P.outr ≫ ∋ a) from Λ_eps_eq' _,
     simple_dist_inter hpair.2, ← Cat.assoc, ← Cat.assoc,
@@ -102,7 +102,7 @@ theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
     are the instances for the various product relators (`F = Δ`, `∩`, `×`). -/
 noncomputable def cpMap (F : Relator 𝒜 𝒜) (a : 𝒜) :
     F.obj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj (F.obj a) :=
-  A (F.map (∋ a))
+  Λ (F.map (∋ a))
 
 theorem cpMap_is_map (F : Relator 𝒜 𝒜) (a : 𝒜) : Map (cpMap F a) := Λ_is_map' _
 

@@ -83,7 +83,7 @@ variable {R : a ⟶ a} {f : F.obj a ⟶ a}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R`: `f·F(min R) ⊆ min R·Λ(f·F∈)`, mirrored. -/
 def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
-  F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R
+  F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R` implies `f`
     distributes over `min R`. -/
@@ -113,17 +113,17 @@ theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
 theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
     (hpair : R ⊑ (∋ a)° ≫ minRel R) (hdist : Distributes f R) : MonotonicAlg f R := by
   apply (monotonicAlg_iff_conj hf).mpr
-  have hdist' : F.map (minRel R) ≫ f ⊑ A (F.map (∋ a) ≫ f) ≫ minRel R := hdist
+  have hdist' : F.map (minRel R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ minRel R := hdist
   have hXrecip : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
     rw [Allegory.recip_comp, ← hFr (∋ a)]
-  have hXA : (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
-    have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° :=
+  have hXA : (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
+    have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° :=
       calc (F.map (∋ a) ≫ f)°
-          = (A (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [Λ_eps_eq']
-        _ = (∋ a)° ≫ (A (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
-    calc (F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f)
-        = ((∋ a)° ≫ (A (F.map (∋ a) ≫ f))°) ≫ A (F.map (∋ a) ≫ f) := by rw [hrecip]
-      _ = (∋ a)° ≫ ((A (F.map (∋ a) ≫ f))° ≫ A (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
+          = (Λ (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [Λ_eps_eq']
+        _ = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
+    calc (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)
+        = ((∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))°) ≫ Λ (F.map (∋ a) ≫ f) := by rw [hrecip]
+      _ = (∋ a)° ≫ ((Λ (F.map (∋ a) ≫ f))° ≫ Λ (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
       _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ a) ≫ f)).2
       _ = (∋ a)° := Cat.comp_id _
   have h1 : F.map R ⊑ F.map ((∋ a)° ≫ minRel R) := F.map_mono hpair
@@ -138,10 +138,10 @@ theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
     comp_mono_left _ (comp_mono_right h1 f)
   rw [hregroup] at hA
   have hC : (F.map (∋ a) ≫ f)° ≫ (F.map (minRel R) ≫ f)
-      ⊑ (F.map (∋ a) ≫ f)° ≫ (A (F.map (∋ a) ≫ f) ≫ minRel R) := comp_mono_left _ hdist'
+      ⊑ (F.map (∋ a) ≫ f)° ≫ (Λ (F.map (∋ a) ≫ f) ≫ minRel R) := comp_mono_left _ hdist'
   have hA2 := le_trans hA hC
-  rw [← Cat.assoc (F.map (∋ a) ≫ f)° (A (F.map (∋ a) ≫ f)) (minRel R)] at hA2
-  have hE : ((F.map (∋ a) ≫ f)° ≫ A (F.map (∋ a) ≫ f)) ≫ minRel R ⊑ (∋ a)° ≫ minRel R :=
+  rw [← Cat.assoc (F.map (∋ a) ≫ f)° (Λ (F.map (∋ a) ≫ f)) (minRel R)] at hA2
+  have hE : ((F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)) ≫ minRel R ⊑ (∋ a)° ≫ minRel R :=
     comp_mono_right hXA _
   exact le_trans (le_trans hA2 hE) hUP
 
@@ -161,11 +161,11 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
     monotonic on the preorder `R°`, mirrored. -/
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
-    relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R := by
+    relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R := by
   apply le_Λ_comp_minRel_iff.mpr
   refine ⟨?_, ?_⟩
-  · have hi : A S ≫ minRel R ⊑ S := by
-      have h := comp_mono_left (A S) (show minRel R ⊑ ∋ a from inter_lb_left _ _)
+  · have hi : Λ S ≫ minRel R ⊑ S := by
+      have h := comp_mono_left (Λ S) (show minRel R ⊑ ∋ a from inter_lb_left _ _)
       rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
   · have step1 : S° ≫ F.map R ⊑ R ≫ S° := by
@@ -175,13 +175,13 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶
       have heqR : (S ≫ R°)° = R ≫ S° := by
         rw [Allegory.recip_comp, Allegory.recip_recip]
       rwa [heqL, heqR] at h
-    have step2 : A S ≫ minRel R ⊑ (S° \ R) := by
+    have step2 : Λ S ≫ minRel R ⊑ (S° \ R) := by
       rw [Λ_comp_minRel]; exact inter_lb_right _ _
-    have hprefixed : S° ≫ F.map R ≫ (A S ≫ minRel R) ⊑ R := by
-      have hB : (S° ≫ F.map R) ≫ (A S ≫ minRel R) ⊑ (R ≫ S°) ≫ (A S ≫ minRel R) :=
+    have hprefixed : S° ≫ F.map R ≫ (Λ S ≫ minRel R) ⊑ R := by
+      have hB : (S° ≫ F.map R) ≫ (Λ S ≫ minRel R) ⊑ (R ≫ S°) ≫ (Λ S ≫ minRel R) :=
         comp_mono_right step1 _
-      rw [Cat.assoc S° (F.map R) (A S ≫ minRel R), Cat.assoc R S° (A S ≫ minRel R)] at hB
-      have hC : R ≫ (S° ≫ (A S ≫ minRel R)) ⊑ R ≫ (S° ≫ (S° \ R)) :=
+      rw [Cat.assoc S° (F.map R) (Λ S ≫ minRel R), Cat.assoc R S° (Λ S ≫ minRel R)] at hB
+      have hC : R ≫ (S° ≫ (Λ S ≫ minRel R)) ⊑ R ≫ (S° ≫ (S° \ R)) :=
         comp_mono_left _ (comp_mono_left _ step2)
       have hD : R ≫ (S° ≫ (S° \ R)) ⊑ R ≫ R := comp_mono_left _ (leftDiv_comp_le _ _)
       exact le_trans hB (le_trans hC (le_trans hD htrans))
@@ -192,7 +192,7 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶
     both reduce to the given hypotheses via `recip_mono`/`Allegory.recip_recip`. -/
 public theorem greedy_max (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (A S ≫ maxRel R) ⊑ A (relCata I S) ≫ maxRel R := by
+    relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans
     rwa [Allegory.recip_comp] at h
@@ -225,7 +225,7 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
     form `A S ≫ minRel R` up to equality. -/
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
-    (href : f ⊑ A S ≫ minRel R) : relCata I f ⊑ A (relCata I S) ≫ minRel R := by
+    (href : f ⊑ Λ S ≫ minRel R) : relCata I f ⊑ Λ (relCata I S) ≫ minRel R := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_minRel_iff.mp href
   apply le_Λ_comp_minRel_iff.mpr
   refine ⟨relCata_mono I hfS, ?_⟩

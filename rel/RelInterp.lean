@@ -423,7 +423,7 @@ theorem eval_leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) :
     eval (leftDivE S R) = leftDiv (eval S) (eval R) := rfl
 
 /-- `eval (AE R) = Λ(eval R)` — the §2.41 power transpose, on the nose. -/
-theorem eval_AE {a b : FinObj} (R : RE a b) : eval (AE R) = A (eval R) := rfl
+theorem eval_AE {a b : FinObj} (R : RE a b) : eval (AE R) = Λ (eval R) := rfl
 
 /-- `eval (minRelE R)` is B&dM's `min R = ∋ ∩ (∋°\R)` (`AOP.A7_1.minRel`'s body, which is
     stated there under `UnguardedPowerLCDA`; `FinRel` has no computable arbitrary `Sup`, so we
@@ -443,7 +443,7 @@ theorem eval_minRelE {a : FinObj} (R : RE a a) :
 
 /-- `Λ` pointwise: `A R` relates `x` to exactly the bit-code of its `R`-image. -/
 theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).card) :
-    A R x P = true ↔ ∀ v, epsB b P v = R x v := by
+    Λ R x P = true ↔ ∀ v, epsB b P v = R x v := by
   show (allFin b.card (fun v => !(epsB b P v) || R x v)
      && allFin b.card (fun v => !(R x v) || epsB b P v)) = true ↔ _
   constructor

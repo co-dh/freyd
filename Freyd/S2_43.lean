@@ -1014,35 +1014,35 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
   intro c R hbox
   -- translate the box guard of T = F∋ to the box guard of ∋.
   have hboxA : codBox R = codBox (∋ a) := hbox.trans (codBox_comp_eps F hF)
-  have hAmap : Map (A R) := Λ_is_map R hboxA
+  have hAmap : Map (Λ R) := Λ_is_map R hboxA
   -- witness R̂ = A(R) ≫ F°
-  refine ⟨A R ≫ F°, ?_, ?_, ?_⟩
+  refine ⟨Λ R ≫ F°, ?_, ?_, ?_⟩
   · -- Entire R̂ : R̂R̂° = A(R)(F°F)A(R)° = A(R)A(R)° ⊒ 1.
-    have hAent : Cat.id c ⊑ A R ≫ (A R)° := by
+    have hAent : Cat.id c ⊑ Λ R ≫ (Λ R)° := by
       have hd := hAmap.1; dsimp [Entire, dom] at hd; rw [← hd]; exact inter_lb_right _ _
-    have hcomp : (A R ≫ F°) ≫ (A R ≫ F°)° = A R ≫ (A R)° := by
+    have hcomp : (Λ R ≫ F°) ≫ (Λ R ≫ F°)° = Λ R ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip,
-        Cat.assoc (A R) F° (F ≫ (A R)°), ← Cat.assoc F° F (A R)°, hF, Cat.id_comp]
+        Cat.assoc (Λ R) F° (F ≫ (Λ R)°), ← Cat.assoc F° F (Λ R)°, hF, Cat.id_comp]
     dsimp [Entire, dom]
     rw [hcomp]
     exact le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) hAent)
   · -- R̂T ⊑ R : R̂T = A(R)(F°F)∋ = A(R)∋ = R.
-    have hTeq : (A R ≫ F°) ≫ (F ≫ ∋ a) = R := by
-      rw [Cat.assoc (A R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
+    have hTeq : (Λ R ≫ F°) ≫ (F ≫ ∋ a) = R := by
+      rw [Cat.assoc (Λ R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
         Λ_eps_eq R hboxA]
     rw [hTeq]
     exact le_refl R
   · -- R̂°R ⊑ T : R̂° = F A(R)°, and A(R)°R = A(R)°A(R)∋ ⊑ ∋ (A(R) simple), so ⊑ F∋ = T.
-    have hRhat_recip : (A R ≫ F°)° = F ≫ (A R)° := by
+    have hRhat_recip : (Λ R ≫ F°)° = F ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip]
     rw [hRhat_recip]
-    have hinner : (A R)° ≫ R ⊑ ∋ a := by
-      have e1 : (A R)° ≫ R = ((A R)° ≫ A R) ≫ ∋ a := by
+    have hinner : (Λ R)° ≫ R ⊑ ∋ a := by
+      have e1 : (Λ R)° ≫ R = ((Λ R)° ≫ Λ R) ≫ ∋ a := by
         rw [Cat.assoc, Λ_eps_eq R hboxA]
       rw [e1]
       have h2 := comp_mono_right (Λ_simple R) (∋ a)
       rwa [Cat.id_comp] at h2
-    rw [Cat.assoc F (A R)° R]
+    rw [Cat.assoc F (Λ R)° R]
     exact comp_mono_left F hinner
 
 /-- §2.435 (Cantor, full): in a STRONGLY CONNECTED power allegory, no `F : a → [a]`

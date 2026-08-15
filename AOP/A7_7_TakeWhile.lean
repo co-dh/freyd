@@ -152,7 +152,7 @@ theorem tw_best (p : E → Bool) (c : ConsList Unit E) (out : List E)
     relation (not merely pointwise).  Via `RelSet.eq_A_comp_maxRel`, fed the two halves above and
     prefix antisymmetry. -/
 theorem takeWhile_eq_Λ_maxRel (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = A (twSpec p) ≫ maxRel (prefDom (E := E)) :=
+    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = Λ (twSpec p) ≫ maxRel (prefDom (E := E)) :=
   eq_Λ_comp_maxRel (prefDom (E := E))
     (fun x y h1 h2 => pre_antisym h2 h1)               -- antisymmetry of prefDom
     (twCL p) (twSpec p)

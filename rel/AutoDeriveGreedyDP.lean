@@ -321,11 +321,11 @@ theorem hQ (P : GreedyDP L E S W) :
 /-- The greedy recursion body `h·FX·min Q·ΛT°`, mirrored. -/
 def body (P : GreedyDP L E S W) (X : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) :
     (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=
-  A (P.TRel°) ≫ minRel P.Qrel ≫ (CL.F L E).map X ≫ P.hAlg
+  Λ (P.TRel°) ≫ minRel P.Qrel ≫ (CL.F L E).map X ≫ P.hAlg
 
 /-- **Theorem 10.1, auto-instantiated**: the greedy recursion refines `min R·ΛH`. -/
 theorem greedy_refine (P : GreedyDP L E S W) :
-    mu P.body ⊑ A P.specH ≫ minRel P.Rp :=
+    mu P.body ⊑ Λ P.specH ≫ minRel P.Rp :=
   greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel) (h := P.hAlg) (R := P.Rp)
     (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn) P.hmono P.htrans P.hQ
 
@@ -455,7 +455,7 @@ theorem correct_spec (P : GreedyDP L E S W) (spec : S → W → Prop)
     `Rel(Set)` (given antisymmetry of the value order), not merely pointwise. -/
 theorem eq_minRel (P : GreedyDP L E S W)
     (antisym : ∀ {x y}, P.Rp x y → P.Rp y x → x = y) :
-    (graph P.run : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) = A P.specH ≫ minRel P.Rp := by
+    (graph P.run : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) = Λ P.specH ≫ minRel P.Rp := by
   apply hom_ext; intro v x
   constructor
   · rintro rfl
@@ -712,7 +712,7 @@ theorem run_eq_cnt (v : Nat) : coins15.run v = cnt v := by
     morphism of `Rel(Set)`. -/
 theorem coins15_eq_minRel :
     (graph coins15.run : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)
-      = A coins15.specH ≫ minRel coins15.Rp :=
+      = Λ coins15.specH ≫ minRel coins15.Rp :=
   coins15.eq_minRel fun h1 h2 => Nat.le_antisymm h2 h1
 
 example : coins15.run 12 = 4 := by rw [run_eq_cnt]; rfl

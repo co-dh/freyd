@@ -236,7 +236,7 @@ theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
   obtain ⟨w, x, z, hxmap, hzmap, hxz, _hjoint⟩ :=
     TabularAllegory.tabular (𝒜 := 𝒜) (powerRel (R ≫ S))
   let W : w ⟶ b := (x ≫ ∋ a ≫ R) ∩ (z ≫ ∋ c ≫ S°)
-  let h : w ⟶ PowerAllegory.powerObj b := A W
+  let h : w ⟶ PowerAllegory.powerObj b := Λ W
   have hWdef : W = (x ≫ ∋ a ≫ R) ∩ (z ≫ ∋ c ≫ S°) := rfl
   have hhmap : Map h := Λ_is_map' W
   have hheps : h ≫ ∋ b = W := Λ_eps_eq' W

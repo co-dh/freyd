@@ -396,7 +396,7 @@ theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom (solveF
 /-- **The allegory-program headline (§7.5 `max D · Λspec`)**: `solve` is exactly the morphism
     `A spec ≫ maxRel dom` — the greatest achievable path sum (or `none` for the empty tree) — not
     merely pointwise.  Bridged from soundness + domination + antisymmetry via `eq_A_comp_maxRel`. -/
-theorem solve_eq_maxRel : solve = A spec ≫ maxRel dom :=
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel dom :=
   eq_Λ_comp_maxRel dom dom_antisymm solveFn spec spec_sound spec_dom
 
 /-! ## Running the program -/

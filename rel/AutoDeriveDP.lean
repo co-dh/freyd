@@ -80,14 +80,14 @@ theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.c
 
 /-- The set a transpose `A S` points `x` at contains exactly the `S`-successors of `x`. -/
 theorem Λ_pt {α β : RelSet.{0}} (S : α ⟶ β) {x : α.carrier} {P : (pow β).carrier}
-    (hP : A S x P) (y : β.carrier) : P y ↔ S x y := by
+    (hP : Λ S x P) (y : β.carrier) : P y ↔ S x y := by
   constructor
   · intro hy
-    have h1 : (A S ≫ ∋ β) x y := ⟨P, hP, hy⟩
+    have h1 : (Λ S ≫ ∋ β) x y := ⟨P, hP, hy⟩
     rw [Λ_eps_eq'] at h1
     exact h1
   · intro hS
-    have h1 : (A S ≫ ∋ β) x y := by rw [Λ_eps_eq']; exact hS
+    have h1 : (Λ S ≫ ∋ β) x y := by rw [Λ_eps_eq']; exact hS
     obtain ⟨P', hP', hy⟩ := h1
     have hPP : P' = P := simple_uniq (Λ_is_map' S).2 hP' hP
     rw [← hPP]
@@ -383,7 +383,7 @@ theorem memo_mem_mu (v : B) :
     discharged by the bundle, composed with the bridge `memo_mem_mu`. -/
 theorem solve_le_spec :
     (graph P.memo : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}))
-      ⊑ A (P.hylo ∪ P.tau) ≫ minRel P.ord := by
+      ⊑ Λ (P.hylo ∪ P.tau) ≫ minRel P.ord := by
   have habs := dynamic_programming_inf (F := F L E) (F_preservesRecip L E) (initial L E)
     (graph_map P.algFn) P.alg_mono P.ord_trans P.hstrict P.tau_top
   apply le_iff.mpr

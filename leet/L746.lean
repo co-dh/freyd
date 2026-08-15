@@ -209,7 +209,7 @@ theorem solve_correct (xs : SnocList Int Int) :
 /-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `A spec ≫ maxRel D`
     for `D w z := w ≤ z` — `maxRel` of the reversed "smaller-is-better" order is the `≤`-MINIMUM
     (`minRel (≤)`) — not merely pointwise. Bridged from `solve_correct`. -/
-theorem solve_eq_maxRel : solve = A spec ≫ maxRel (fun w z : Int => w ≤ z) :=
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Int => w ≤ z) :=
   eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h1 h2) solveFn spec
     (fun xs => (solve_correct xs).1) (fun xs v hv => (solve_correct xs).2 v hv)
 

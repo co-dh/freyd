@@ -153,7 +153,7 @@ theorem mapTranspose_existsUnique (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
       f.val ≫ PowerAllegory.eps C = R ∧
       ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
         g.val ≫ PowerAllegory.eps C = R → g = f := by
-  refine ⟨⟨A R, Λ_is_map R hbox⟩, Λ_eps_eq R hbox, ?_⟩
+  refine ⟨⟨Λ R, Λ_is_map R hbox⟩, Λ_eps_eq R hbox, ?_⟩
   intro g hgeq
   exact Subtype.ext (Λ_unique R g.val g.property hgeq)
 
@@ -161,7 +161,7 @@ theorem mapTranspose_existsUnique (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
 noncomputable def mapClassify (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
     (hbox : codBox R = codBox (PowerAllegory.eps C)) :
     @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C) :=
-  ⟨A R, Λ_is_map R hbox⟩
+  ⟨Λ R, Λ_is_map R hbox⟩
 
 /-- The classifier transposes back to `R̄`: `mapClassify(R̄) ≫ ∋_C = R̄`. -/
 theorem mapClassify_eps (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
@@ -191,7 +191,7 @@ public theorem mapTranspose_existsUnique_all (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
       f.val ≫ PowerAllegory.eps C = R ∧
       ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
         g.val ≫ PowerAllegory.eps C = R → g = f := by
-  refine ⟨⟨A R, Λ_is_map' R⟩, Λ_eps_eq' R, ?_⟩
+  refine ⟨⟨Λ R, Λ_is_map' R⟩, Λ_eps_eq' R, ?_⟩
   intro g hgeq
   exact Subtype.ext (Λ_unique R g.val g.property hgeq)
 
@@ -243,22 +243,22 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     (⊑) `∋° ⊑ A 1 = 1 /ₛ ∋` by `le_symmDiv_iff`: `∋° ≫ ∋ ⊑ 1` is exactly `PartialUnit` (an endo of
         the unit), and `∋ ≫ 1 ⊑ ∋` is reflexivity; reciprocate. -/
 public theorem unit_eps_eq_singleton_recip :
-    (A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
+    (Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
       = PowerAllegory.eps (UnitaryAllegory.unit_obj : 𝒜) := by
-  have hse : A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)) ≫ PowerAllegory.eps _ = Cat.id _ :=
+  have hse : Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)) ≫ PowerAllegory.eps _ = Cat.id _ :=
     Λ_eps_eq' (Cat.id (UnitaryAllegory.unit_obj : 𝒜))
-  have hssimp : (A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))° ≫ A (Cat.id _) ⊑ Cat.id _ :=
+  have hssimp : (Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))° ≫ Λ (Cat.id _) ⊑ Cat.id _ :=
     Λ_simple (Cat.id (UnitaryAllegory.unit_obj : 𝒜))
   apply le_antisymm
   · -- (A 1)° ⊑ ∋
-    calc (A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
-        = (A (Cat.id _))° ≫ (A (Cat.id _) ≫ PowerAllegory.eps _) := by rw [hse, Cat.comp_id]
-      _ = ((A (Cat.id _))° ≫ A (Cat.id _)) ≫ PowerAllegory.eps _ := by rw [Cat.assoc]
+    calc (Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
+        = (Λ (Cat.id _))° ≫ (Λ (Cat.id _) ≫ PowerAllegory.eps _) := by rw [hse, Cat.comp_id]
+      _ = ((Λ (Cat.id _))° ≫ Λ (Cat.id _)) ≫ PowerAllegory.eps _ := by rw [Cat.assoc]
       _ ⊑ Cat.id _ ≫ PowerAllegory.eps _ := comp_mono_right hssimp _
       _ = PowerAllegory.eps _ := Cat.id_comp _
   · -- ∋ ⊑ (A 1)°
     have he_le : (PowerAllegory.eps (UnitaryAllegory.unit_obj : 𝒜))°
-        ⊑ A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)) := by
+        ⊑ Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)) := by
       refine (le_symmDiv_iff _ (Cat.id _) (PowerAllegory.eps _)).mpr ⟨?_, ?_⟩
       · exact (UnitaryAllegory.unit_prop (𝒜 := 𝒜)).1 _
       · rw [Allegory.recip_recip, Cat.comp_id]; exact le_refl _
@@ -292,7 +292,7 @@ public theorem mapMonic_retract {C a : 𝒜}
     (the singleton map of the unit). -/
 @[expose] public noncomputable def mapTrue :
     @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) (UnitaryAllegory.unit_obj : 𝒜) (mapOmega (𝒜 := 𝒜)) :=
-  ⟨A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)), Λ_is_map' _⟩
+  ⟨Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)), Λ_is_map' _⟩
 
 /-- `mapTrue` is a relational split mono on the nose: `true.val ≫ true.val° = 1_1`
     (singleton monic `singletonMap_monic` + entire `A_is_map'`). -/
@@ -333,7 +333,7 @@ theorem mapTrue_monic :
     (m : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) C a)
     (_hm : @Monic (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) C a m) :
     @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (mapOmega (𝒜 := 𝒜)) :=
-  ⟨A (m.val° ≫ (mapTerm C).val), Λ_is_map' _⟩
+  ⟨Λ (m.val° ≫ (mapTerm C).val), Λ_is_map' _⟩
 
 /-- **§2.415 (classifying square commutes)**: `m ≫ χ_m = (term C) ≫ true`.  Both sides are maps
     `C → Ω` whose composite with `∋_1` is `term C` (LHS uses `m ≫ m° = 1`; RHS uses `true ≫ ∋ = 1`),
@@ -345,17 +345,17 @@ public theorem mapClassify_sq {C a : 𝒜}
       = @Cat.comp (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) C (UnitaryAllegory.unit_obj : 𝒜)
           (mapOmega (𝒜 := 𝒜)) (mapTerm C) (mapTrue (𝒜 := 𝒜)) := by
   apply Subtype.ext
-  show m.val ≫ A (m.val° ≫ (mapTerm C).val)
-      = (mapTerm C).val ≫ A (Cat.id (UnitaryAllegory.unit_obj : 𝒜))
+  show m.val ≫ Λ (m.val° ≫ (mapTerm C).val)
+      = (mapTerm C).val ≫ Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜))
   have hmm : m.val ≫ m.val° = Cat.id C := mapMonic_retract m hm
-  have hLmap : Map (m.val ≫ A (m.val° ≫ (mapTerm C).val)) :=
+  have hLmap : Map (m.val ≫ Λ (m.val° ≫ (mapTerm C).val)) :=
     map_comp m.property (Λ_is_map' _)
-  have hRmap : Map ((mapTerm C).val ≫ A (Cat.id (UnitaryAllegory.unit_obj : 𝒜))) :=
+  have hRmap : Map ((mapTerm C).val ≫ Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜))) :=
     map_comp (mapTerm C).property (Λ_is_map' _)
-  have hL : (m.val ≫ A (m.val° ≫ (mapTerm C).val))
+  have hL : (m.val ≫ Λ (m.val° ≫ (mapTerm C).val))
         ≫ PowerAllegory.eps (UnitaryAllegory.unit_obj : 𝒜) = (mapTerm C).val := by
     rw [Cat.assoc, Λ_eps_eq', ← Cat.assoc, hmm, Cat.id_comp]
-  have hR : ((mapTerm C).val ≫ A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))
+  have hR : ((mapTerm C).val ≫ Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))
         ≫ PowerAllegory.eps (UnitaryAllegory.unit_obj : 𝒜) = (mapTerm C).val := by
     rw [Cat.assoc, Λ_eps_eq', Cat.comp_id]
   rw [Λ_unique _ _ hLmap hL, Λ_unique _ _ hRmap hR]
@@ -369,7 +369,7 @@ public theorem mapClassify_tabulates {C a : 𝒜}
     Tabulates m.val (mapTerm C).val
       ((mapClassifyChi m hm).val ≫ (mapTrue (𝒜 := 𝒜)).val°) := by
   refine ⟨m.property, (mapTerm C).property, ?_, ?_⟩
-  · show A (m.val° ≫ (mapTerm C).val) ≫ (A (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
+  · show Λ (m.val° ≫ (mapTerm C).val) ≫ (Λ (Cat.id (UnitaryAllegory.unit_obj : 𝒜)))°
         = m.val° ≫ (mapTerm C).val
     rw [unit_eps_eq_singleton_recip, Λ_eps_eq']
   · rw [mapMonic_retract m hm]

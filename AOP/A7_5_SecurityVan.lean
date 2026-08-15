@@ -26,7 +26,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     monotonicity are deferred). -/
 theorem security_van_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
-    relCata I (A S ≫ minRel R) ⊑ A (relCata I S) ≫ minRel R :=
+    relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R :=
   greedy hFr I htrans hmono
 
 end Freyd.Alg

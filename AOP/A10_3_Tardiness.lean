@@ -29,8 +29,8 @@ theorem tardiness_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
         ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°) :
-    mu (fun X : b ⟶ a => A (T°) ≫ minRel Q ≫ F.map X ≫ h)
-      ⊑ A ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
+    mu (fun X : b ⟶ a => Λ (T°) ≫ minRel Q ≫ F.map X ≫ h)
+      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   greedy_dp hFr I hh hmono htrans hQ
 
 end Freyd.Alg

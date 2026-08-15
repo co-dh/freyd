@@ -66,37 +66,37 @@ public theorem recip_eps_comp_minRel_le (R : a ⟶ a) : (∋ a)° ≫ minRel R �
     Stated for a numerator of ARBITRARY target type `c` — §7.1 uses it at `c := a`
     (`R` an order on `a`), §8.1's thinning at `c := powerObj a`. -/
 public theorem Λ_comp_lb {c : 𝒜} (S : b ⟶ a) (R : a ⟶ c) :
-    A S ≫ (((∋ a)°) \ R) = (S° \ R) := by
-  have hS' : (∋ a)° ≫ (A S)° = S° := by rw [← Allegory.recip_comp, Λ_eps_eq']
+    Λ S ≫ (((∋ a)°) \ R) = (S° \ R) := by
+  have hS' : (∋ a)° ≫ (Λ S)° = S° := by rw [← Allegory.recip_comp, Λ_eps_eq']
   apply le_antisymm
   · apply (le_leftDiv_iff _ _ _).mpr
-    have hsimple : (A S)° ≫ A S ⊑ Cat.id _ := (Λ_is_map' S).2
-    have hstep : (A S)° ≫ (A S ≫ (((∋ a)°) \ R)) ⊑ (((∋ a)°) \ R) := by
+    have hsimple : (Λ S)° ≫ Λ S ⊑ Cat.id _ := (Λ_is_map' S).2
+    have hstep : (Λ S)° ≫ (Λ S ≫ (((∋ a)°) \ R)) ⊑ (((∋ a)°) \ R) := by
       have h := comp_mono_right hsimple (((∋ a)°) \ R)
       rw [Cat.id_comp] at h
       rwa [Cat.assoc] at h
-    have h2 : S° ≫ (A S ≫ (((∋ a)°) \ R)) =
-        (∋ a)° ≫ ((A S)° ≫ (A S ≫ (((∋ a)°) \ R))) := by
+    have h2 : S° ≫ (Λ S ≫ (((∋ a)°) \ R)) =
+        (∋ a)° ≫ ((Λ S)° ≫ (Λ S ≫ (((∋ a)°) \ R))) := by
       rw [← hS', Cat.assoc]
     rw [h2]
     exact le_trans (comp_mono_left _ hstep) (leftDiv_comp_le _ _)
   · apply (map_shunt_left (Λ_is_map' S) _ _).mp
     apply (le_leftDiv_iff _ _ _).mpr
-    have h3 : (∋ a)° ≫ ((A S)° ≫ (S° \ R)) = S° ≫ (S° \ R) := by
+    have h3 : (∋ a)° ≫ ((Λ S)° ≫ (S° \ R)) = S° ≫ (S° \ R) := by
       rw [← Cat.assoc, hS']
     rw [h3]
     exact leftDiv_comp_le _ _
 
 /-- **(7.5)**: `min R·ΛS = S ∩ (R/S°)`, mirrored: `A S ≫ minRel R = S ∩ (S° \ R)`. -/
 public theorem Λ_comp_minRel (S : b ⟶ a) (R : a ⟶ a) :
-    A S ≫ minRel R = S ∩ (S° \ R) := by
-  show A S ≫ (∋ a ∩ (((∋ a)°) \ R)) = S ∩ (S° \ R)
+    Λ S ≫ minRel R = S ∩ (S° \ R) := by
+  show Λ S ≫ (∋ a ∩ (((∋ a)°) \ R)) = S ∩ (S° \ R)
   rw [simple_dist_inter (Λ_is_map' S).2, Λ_eps_eq', Λ_comp_lb]
 
 /-- The universal property of (7.5), B&dM's "universal property of min":
     `X ⊑ min R·ΛS ⟺ X ⊑ S ∧ X·S° ⊑ R`, mirrored (`X·S°` becomes `S° ≫ X`). -/
 public theorem le_Λ_comp_minRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
-    X ⊑ A S ≫ minRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R := by
+    X ⊑ Λ S ≫ minRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R := by
   rw [Λ_comp_minRel]
   constructor
   · intro h
@@ -109,14 +109,14 @@ public theorem le_Λ_comp_minRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
     inhabitant precisely on the reflexive part of `R` ((7.5) at `S := id`). -/
 theorem singletonMap_comp_minRel (R : a ⟶ a) :
     singletonMap ≫ minRel R = Cat.id a ∩ R := by
-  show A (Cat.id a) ≫ minRel R = Cat.id a ∩ R
+  show Λ (Cat.id a) ≫ minRel R = Cat.id a ∩ R
   rw [Λ_comp_minRel, recip_id, leftDiv_id]
 
 /-! ## (7.1)/(7.3): lower-bound laws (book p.166) -/
 
 /-- **(7.1)**: `τ·(R/∋) = R`, mirrored: `singletonMap ≫ ((∋a)° \ R) = R`. -/
 theorem singletonMap_comp_lb (R : a ⟶ a) : singletonMap ≫ (((∋ a)°) \ R) = R := by
-  show A (Cat.id a) ≫ (((∋ a)°) \ R) = R
+  show Λ (Cat.id a) ≫ (((∋ a)°) \ R) = R
   rw [Λ_comp_lb, recip_id, leftDiv_id]
 
 /-- **(7.3)**: `(R/∋)·union = (R/∋)/∋`, mirrored: `bigUnion ≫ ((∋a)° \ R) =
@@ -124,7 +124,7 @@ theorem singletonMap_comp_lb (R : a ⟶ a) : singletonMap ≫ (((∋ a)°) \ R) 
 theorem bigUnion_comp_lb (R : a ⟶ a) :
     bigUnion ≫ (((∋ a)°) \ R) =
       (((∋ (PowerAllegory.powerObj a))°) \ (((∋ a)°) \ R)) := by
-  show A (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ (((∋ a)°) \ R) =
+  show Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ (((∋ a)°) \ R) =
       (((∋ (PowerAllegory.powerObj a))°) \ (((∋ a)°) \ R))
   rw [Λ_comp_lb, Allegory.recip_comp, leftDiv_comp]
 
@@ -136,7 +136,7 @@ theorem bigUnion_comp_lb (R : a ⟶ a) :
     `S ∩ ((S° \ R) ∩ (S° \ (S°≫S))) = S ∩ (S° \ R)`, which holds because
     `S ⊑ (S° \ (S°≫S))` (the numerator `S°≫S` trivially contains `S°≫S`). -/
 public theorem Λ_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
-    A S ≫ minRel (R ∩ (S° ≫ S)) = A S ≫ minRel R := by
+    Λ S ≫ minRel (R ∩ (S° ≫ S)) = Λ S ≫ minRel R := by
   have hstep : S ⊑ ((S°) \ (S° ≫ S)) := (le_leftDiv_iff S (S°) (S° ≫ S)).mpr (le_refl _)
   rw [Λ_comp_minRel, Λ_comp_minRel, leftDiv_inter, Allegory.inter_assoc]
   exact inter_eq_left (le_trans (inter_lb_left _ _) hstep)
@@ -150,7 +150,7 @@ public theorem Λ_comp_minRel_context (S : b ⟶ a) (R : a ⟶ a) :
 theorem recip_eps_comp_eps (a : 𝒜) : (∋ a)° ≫ ∋ a = topHom a a := by
   apply le_antisymm
   · exact LocallyCompleteDistributiveAllegory.le_Sup trivial
-  · let f := A (topHom a a)
+  · let f := Λ (topHom a a)
     have hfeq : topHom a a = f ≫ ∋ a := (Λ_eps_eq' (topHom a a)).symm
     have hsimple : f° ≫ f ⊑ Cat.id (PowerAllegory.powerObj a) := (Λ_is_map' (topHom a a)).2
     have h1 : Cat.id a ⊑ topHom a a := LocallyCompleteDistributiveAllegory.le_Sup trivial
@@ -230,8 +230,8 @@ theorem minRel_inter (R S : a ⟶ a) : minRel (R ∩ S) = minRel R ∩ minRel S 
     Via (7.5), `A R ≫ minRel R° = R ∩ (R° \ R°)`, and `(R° \ R°) = R°` (`⊑`: `lD = id≫lD
     ⊑ R°≫lD ⊑ R°`; `⊒`: `R°≫R° ⊑ R°` is the converse of `htrans`). -/
 theorem Λ_comp_maxRel_of_preorder {R : a ⟶ a} (htrans : R ≫ R ⊑ R) (hrefl : Cat.id a ⊑ R) :
-    A R ≫ maxRel R = R ∩ R° := by
-  show A R ≫ minRel R° = R ∩ R°
+    Λ R ≫ maxRel R = R ∩ R° := by
+  show Λ R ≫ minRel R° = R ∩ R°
   rw [Λ_comp_minRel]
   have hld : ((R°) \ (R°)) = R° := by
     apply le_antisymm
@@ -384,7 +384,7 @@ public theorem powerRel_comp_minRel_le (S : b ⟶ a) (R : a ⟶ a) :
 theorem powerRel_minRel_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
     powerRel (minRel R) ≫ minRel R ⊑ bigUnion ≫ minRel R := by
   show powerRel (minRel R) ≫ minRel R
-      ⊑ A (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ minRel R
+      ⊑ Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ minRel R
   have hb : (∋ a)° ≫ minRel R ⊑ R :=
     le_trans (comp_mono_left _ (show minRel R ⊑ (((∋ a)°) \ R) from inter_lb_right _ _))
       (leftDiv_comp_le _ R)
