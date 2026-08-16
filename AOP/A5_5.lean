@@ -114,6 +114,46 @@ theorem Λ_relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
   have hu_map : Map u := hu_def ▸ I.cata_map _ _
   exact ((Λ_UP (u ≫ ∋ c) hu_map).mpr rfl).symm
 
+/-! ## §2.6  Fusion (2.12) and Ex 2.35 (book pp. 46, 49)
+
+  These belong here, not in `AOP.A6_2`: the INCLUSION fusion laws (6.4)/(6.5) there need
+  `UnguardedPowerLCDA` because they argue through a least fixed point, whereas the EQUALITY
+  fusion below follows from the universal property `relCata_UP` alone and so lives in the
+  weaker `UnguardedPowerAllegory` setting of this file. -/
+
+/-- **B&dM (2.12), p.46 — fusion**: `h·(|f|) = (|g|) ⟸ h·f = g·F h`, mirrored to diagram
+    order (`h·f ↦ f h`) as `(|R|) S = (|Q|) ⟸ R S = (F S) Q`.
+
+    Unlike the inclusion laws (6.4)/(6.5) of `AOP.A6_2` this needs NO local completeness —
+    no `Sup`/`Inf`, no fixed point — only `relCata_UP` and `relCata_cancel`: the composite
+    `(|R|) S` is shown to satisfy `Q`'s defining equation, and uniqueness does the rest. -/
+public theorem relCata_fusion (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c}
+    {Q : F.obj d ⟶ d} {S : c ⟶ d} (h : R ≫ S = F.map S ≫ Q) :
+    relCata I R ≫ S = relCata I Q := by
+  apply (relCata_UP I Q (relCata I R ≫ S)).mp
+  calc I.α ≫ relCata I R ≫ S
+      = (I.α ≫ relCata I R) ≫ S := by rw [Cat.assoc]
+    _ = (F.map (relCata I R) ≫ R) ≫ S := by rw [relCata_cancel]
+    _ = F.map (relCata I R) ≫ R ≫ S := by rw [Cat.assoc]
+    _ = F.map (relCata I R) ≫ F.map S ≫ Q := by rw [h]
+    _ = (F.map (relCata I R) ≫ F.map S) ≫ Q := by rw [Cat.assoc]
+    _ = F.map (relCata I R ≫ S) ≫ Q := by rw [F.map_comp]
+
+/-- **B&dM Ex 2.35, p.49**, verbatim: "Show that `(|f · g|) = f · (|g · F f|)`", with the
+    types the book leaves implicit — `f : A ← X` and `g : X ← F A`, so `f·g : A ← F A` is an
+    F-algebra on `A` and `g·F f : X ← F X` one on `X`.  Mirrored to diagram order with
+    `f : x ⟶ a` and `g : F.obj a ⟶ x` it reads `(|(F f) g|) f = (|g f|)`.
+
+    This is `relCata_fusion` at `R := (F f) g`, `S := f`, `Q := g f`, whose side condition
+    `R S = (F S) Q` is nothing but associativity: both sides are the same three-arrow word
+    `(F f) g f`, bracketed `((F f) g) f` on the left and `(F f) (g f)` on the right.
+
+    A one-term theorem, kept despite the repo's no-wrapper rule under its stated exception
+    for a statement that is itself a required deliverable — this is a book-numbered exercise. -/
+public theorem relCata_of_comp (I : InitialAlgebra F) {a x : 𝒜} (f : x ⟶ a) (g : F.obj a ⟶ x) :
+    relCata I (F.map f ≫ g) ≫ f = relCata I (g ≫ f) :=
+  relCata_fusion I (Cat.assoc (F.map f) g f)
+
 /-!
   ## Ex 5.19 — dropped
 
