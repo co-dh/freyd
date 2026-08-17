@@ -6,7 +6,7 @@
   `leftCount`/`rightCount` and `width`; the drawn side is the string `Cell.lay` emits.  Nothing
   forces them to agree, and five times running they did not:
 
-  * `swap` reported its strands at `STACKSEP` and was drawn at `strdiag.typ`'s default `0.33`, so the
+  * `swap` reported its strands at `STACKSEP` and was drawn at `circuit.typ`'s default `0.33`, so the
     fork feeding `◁ σ = ◁` abutted a crossing that was somewhere else;
   * a run ending in a snake reported the snake's skew outwards while its stub was also bending it
     away inside, so the outer stub and the strand's own wire were drawn at two different heights;
@@ -27,7 +27,7 @@ namespace Freyd.DiagExport.Test
 
 open Freyd.DiagExport
 
-/-- A separation deliberately unlike any `strdiag.typ` default, so a shape that ignores the
+/-- A separation deliberately unlike any `circuit.typ` default, so a shape that ignores the
     argument and falls back to its own cannot pass. -/
 def oddSep : Float := 0.77
 
@@ -47,7 +47,7 @@ def plainBox : Cell := .box "R"
 /-! ### A generator drawn at one separation and reported at another -/
 
 /-- Every cell that carries two strands must be DRAWN at the separation of the lanes it is wired to
-    — the ones it was handed, or the ones it opens at `sep` — never at a `strdiag.typ` default,
+    — the ones it was handed, or the ones it opens at `sep` — never at a `circuit.typ` default,
     since those are not all alike (`swap`'s is 0.33). -/
 def statesItsStrands (c : Cell) : Bool :=
   if c.leftCount ≥ 2 || c.rightCount ≥ 2 then
@@ -224,7 +224,7 @@ compared against. -/
 A cell that claims to be wider than it draws leaves a gap the joining wire never crosses, which is
 what made the first snakes look unwired. -/
 
--- `conv`'s outgoing wire stops at `0.28 + SPLIT + 2·arc + w + lead`; `strdiag.typ`'s `conv-w` adds
+-- `conv`'s outgoing wire stops at `0.28 + SPLIT + 2·arc + w + lead`; `circuit.typ`'s `conv-w` adds
 -- one more `SPLIT` of trailing air, and the snake's width must follow the DRAWING.
 #guard (Cell.width snake - boxWidth "R") == CONVPAD
 #guard CONVPAD < 0.28 + 0.34 + 2.0 * 0.78 + 0.34 + 0.40

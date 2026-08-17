@@ -341,7 +341,7 @@ Freyd states `inter_assoc`, `semidistrib` and `modular` as EQUALITIES; `meet_ass
 (hence `.symm`), and `meet_eq_left_of_le` (`X ≤ Y → X ∩ Y = X`) converts the two `≤` forms. That lemma is also
 the conceptual bridge between `diag`'s primitive hom order and Freyd's derived `R ⊑ S := R ∩ S = R`.
 
-## Phase 6 — Typst module + the first AOP diagrams (`diag/strdiag.typ`)
+## Phase 6 — Typst module + the first AOP diagrams (`diag/circuit.typ`)
 
 Goal: see AOP theorems as diagrams. cetz 0.3.4 (already the repo standard — `Freyd/note/1.272.typ` etc.).
 
@@ -373,20 +373,20 @@ Risk: low; cetz layout only.
 `diag/S2_124.typ` is — a hand-authored string-diagram *proof* of `Dom(R ∩ S) = 1 ∩ S R°`, with a Lean
 companion `diag/S2_124.lean` that now proves it over any `CartBicat` rather than in a private copy of
 `Rel`; the calculus half of the old `Freyd/S2_124.lean` was `diag/CB.lean` said twice and is gone, and its extra
-axiom `adequacy` is `meet_idem`. `strdiag.typ` was extracted from
+axiom `adequacy` is `meet_idem`. `circuit.typ` was extracted from
 *that* file (line weight, dot radius, bezier control fractions and stub defaults unchanged), and `S2_124.typ` now
 imports it and keeps no drawing code of its own. Verified by pixel diff: all four of its pages render byte-identical
 to the pre-refactor PDF.
 
 | artefact                       | content                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------- |
-| `diag/strdiag.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
+| `diag/circuit.typ`       | `wire` `bend` `dot` `gbox` `note`; `delta` `nabla` `bang` `unitR` `swap`; `cup` `cap`; `conv` `meet` `chain`; `tape*` `cut` |
 | `diag/allegory-axioms.typ` | the vocabulary, the `Rel(Set)` dictionary, and the laws                          |
 | `diag/allegory2.typ`     | the same calculus carrying the proofs the laws note leaves out                    |
 | `diag/S2_124.typ`        | refactored onto the module; 12 private helpers deleted, rendering unchanged       |
 
 Generators are named after `diag/S2_124.lean` (`delta`/`nabla`/`bang`/`unitR`/`cap`/`swap`), so a picture and its
-Lean statement use one word. **Import `strdiag.typ` by name, never with `*`:** `delta`, `nabla`, `cap`, `cup` and
+Lean statement use one word. **Import `circuit.typ` by name, never with `*`:** `delta`, `nabla`, `cap`, `cup` and
 `dot` are also Typst math symbols, and a wildcard import silently turns `$nabla$` into a drawing function with no
 error — this bit once, in `S2_124.typ`, and cost a page of ∇s. The module header says so; both importers list the
 names they use.
@@ -425,7 +425,7 @@ moving each `⊑` clear of the wire stub that starts the right-hand side.
 Goal: given a declaration name, emit the Typst/cetz picture of its *statement* (not its proof).
 
 I/O contract: `./scripts/cap lake exe diag-export Freyd.Alg.simple_dist_inter` writes
-`Freyd/note/generated/Freyd.Alg.simple_dist_inter.typ` (importing `../strdiag.typ`) and prints the path.
+`Freyd/note/generated/Freyd.Alg.simple_dist_inter.typ` (importing `../circuit.typ`) and prints the path.
 Mechanism: load the environment (ONE environment per process — the `lean-refactor` OOM lesson), look up
 `ConstantInfo.type`, walk the `Expr`: `Cat.comp` → horizontal juxtaposition, `Allegory.inter` → `meet`,
 `Allegory.recip` → `conv`, `⊑`/`le` → two canvases joined by `≤`, `dom` → its `1 ∩ RR°` picture, `graph f` and

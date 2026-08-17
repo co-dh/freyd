@@ -99,6 +99,12 @@ Prefer relative cross-references ("the next subsection", "above") over hard-code
 break when sections are reordered. Avoid unexplained field-specific notation (e.g. `Bℤ/2`, `π₁`); spell it
 out ("the one-object category of `ℤ/2`") unless the term has already been introduced.
 
+**NEVER ADD A PARAGRAPH TO `diag/allegory-axioms.typ` UNLESS ASKED.** No new prose, no restated
+conventions, no framing or linking sentences. Answer in chat instead; put durable know-how in the
+relevant skill (drawing conventions go to `string-diagram`) or in a `//` comment in the drawing file.
+Adding a picture, fixing wrong wording, or cutting text is fine — adding explanation nobody asked for
+is not.
+
 ## Searching the book text
 The greppable book prose lives in `/home/dh/anki/typst-book/chapters/<a.b>/section-<a.b>.typ`
 (and the `section-*.fixed.md` siblings — cleaned OCR). ALWAYS grep there.

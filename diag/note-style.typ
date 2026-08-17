@@ -1,10 +1,5 @@
-// note-style.typ — the page setup and the cell helpers shared by the two allegory notes.
-//
-// TWO NOTES, ONE STYLE.  diag/allegory-axioms.typ states the laws and diag/allegory2.typ works the
-// proofs, and they must look like one document: same page, same picture scales, same grey for an
-// aside.  A copy of this block in each of them is how the two would drift — the same failure the
-// header of `scripts/diag-regen` records, where a list of declarations was kept twice and one copy
-// went stale.
+// note-style.typ — the page setup and cell helpers shared by diag/allegory-axioms.typ (the laws) and
+// diag/allegory2.typ (the proofs), which must look like one document; a copy in either is how they drift.
 //
 // `conf` rather than plain `#set` lines: set and show rules at the top level of an imported file do
 // not reach the importer, so the document rules have to be applied by a function the note shows
@@ -13,20 +8,14 @@
 // `theorem`, `example` are re-exported: a note that shows itself through `conf` uses the template's
 // environments too, and importing the template twice is the copy this file exists to avoid.
 #import "@preview/dvdtyp:1.0.1": dvdtyp, builder-thmline, colors, theorem, example
-// `definition` is rebuilt rather than re-exported, to drop the "Definition 9.1." head: every block
-// already names in bold the term it defines, and nothing ever cited a definition by number.  The
-// empty separator goes with it — the template's separator is the period and line break that the
-// head used to end with.
+// `definition` is rebuilt, not re-exported, to drop the "Definition 9.1." head: every block already
+// names its term in bold and nothing ever cited a definition by number.  The separator goes with it.
 #let definition = builder-thmline(color: colors.at(8))(
   "definition", "", separator: []).with(numbering: none)
-#import "strdiag.typ": cetz, d
+#import "circuit.typ": cetz, d
 
-/// The document rules.  A note begins with `#show: conf.with(title: "…")`.
-///
-/// PAGINATED, not one endless page: a viewer's page number and page keys are worth more than the
-/// unbroken column, and the tables here are short enough that few of them straddle a break.  25cm
-/// wide because the widest exported picture is a `⟺` between two containments, four sub-pictures in
-/// a row.
+/// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
+/// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let conf(title: "", body) = {
   set page(width: 25cm, height: 35cm, margin: 1.5cm)
   set text(size: 11.5pt)
@@ -35,45 +24,68 @@
   // Justification inside a table cell stretches the spaces around long unbreakable monospace runs
   // (`Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`) into gaps you can drive a car through.
   show table: set par(justify: false)
-  // The four generators are relation-operator glyphs, cut to sit inline beside `→` and `⊢`, so at
-  // running-text size their rings and triangles are too fine to tell apart.  They are read here as
-  // pictures, not as operators, so scale them back up to the surrounding cap height.
+  // The four generators are read as PICTURES, not operators: at running-text size their rings and
+  // triangles are too fine to tell apart, so scale them back up to the surrounding cap height.
   show regex("[◁▷⊸⟜]"): it => text(size: 1.45em, it)
-  // The template supplies the title block, the running header, page numbers, heading numbering and
-  // the definition environment.  Everything it sets is merged into, not replaced by, the rules
-  // above.
+  // Everything the template sets is merged into, not replaced by, the rules above.
   // `author: none` or the template prints a bare "by" under the title.
   show: dvdtyp.with(title: title, author: none)
+  // The heading path is read from the HEADING COUNTER rather than stored anywhere, so it cannot
+  // disagree with the heading it sits under.  A display is `(13a)` at top level and `(13.1a)` in
+  // subsection §13.1: section references and display references can never be mistaken for one
+  // another.  See `disp`.
+  set figure(numbering: n => context {
+    let h = counter(heading).get()
+    if h.len() == 1 { numbering("(1a)", h.first(), n) }
+    else { numbering("(1.1a)", ..h, n) }
+  })
+  show heading: it => { counter(figure.where(kind: "disp")).update(0); it }
+  // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
+  // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
+  show ref: it => {
+    let el = it.element
+    if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
+      context {
+        let h = counter(heading).at(el.location())
+        let n = counter(figure.where(kind: "disp")).at(el.location()).first()
+        link(el.location(), if h.len() == 1 { numbering("(1a)", h.first(), n) }
+          else { numbering("(1.1a)", ..h, n) })
+      }
+    } else { it }
+  }
+  // THE NUMBER SITS IN THE RIGHT MARGIN and takes no width: a column of its own cost every display
+  // about 35pt.  `breakable` because a figure is not, and the chain tables here run over a page break.
+  show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
+    place(top + right, dx: 1.0cm, text(9pt, luma(130), it.counter.display(it.numbering)))
+    it.body
+  })
   body
 }
+
+/// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
+/// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
+/// sequence per heading whatever the display is.
+#let disp(body) = figure(body, kind: "disp", supplement: none)
 
 #let src(s) = text(9.2pt, luma(105))[#s]
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
 #let P(p, s: 92%) = align(center, box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p)))
-/// A picture set INLINE in a table header, naming the statement the chain proves.  Deliberately
-/// large: the header is the one row every reader looks at first, and at running-text size the
-/// theorem it states cannot be read at all.
+/// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
+/// states cannot be read at all.
 #let Pin(p, s: 70%) = box(baseline: 36%, scale(x: s, y: s, reflow: true, p))
 /// A chain table's top header row: the theorem, one size up from the body.
 #let Th(body) = table.cell(colspan: 3, text(12.5pt)[#body])
 /// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
 /// export, i.e. for the two primitive operations.
 #let fig(body) = align(center, box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, body)))
-/// Pictures laid side by side in one row.  Every exported canvas is drawn symmetrically about its
-/// own `y = 0`, so aligning the cells on the horizon puts the wires of all of them at one height;
-/// a per-box `baseline:` shift cannot, because each box is shifted by a fraction of its OWN height.
+/// Pictures side by side.  Every exported canvas is symmetric about its own `y = 0`, so aligning on the
+/// horizon puts all their wires at one height; a per-box `baseline:` shift cannot, being a fraction of each.
 #let row(items, s: 100%) = align(center, box(inset: (y: 4pt), grid(
   columns: items.len(), align: horizon, column-gutter: 3pt,
   ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
 
-/// A proof in ONE ROW: the steps side by side, and under each the rule that reached it.  The
-/// exporter draws the `=` (or `≤`) at the LEFT edge of every step after the first, so a hint
-/// left-aligned in the same column lands under it — a `place`d one collided with the wires.
-/// The first hint is therefore always empty.  Steps that change no picture are simply left out:
-/// this is a note for a reader who is ahead of it, not a transcript.
-///
-/// `horizon` for the same reason as `row`: every canvas is symmetric about its own `y = 0`, so
-/// centring them puts all the `=` of the chain on one line even when one step is twice as tall.
+/// A proof in ONE ROW, the rule under each step.  The exporter draws the `=` (or `≤`) at the LEFT edge
+/// of every step after the first, so a left-aligned hint lands under it and the first hint is empty.
 #let chain(steps, hints, s: 62%) = align(center, box(inset: (y: 6pt), grid(
   columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
   ..steps.map(t => scale(x: s, y: s, reflow: true, t)),

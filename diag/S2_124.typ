@@ -18,12 +18,12 @@
 #show raw.where(block: false): box.with(fill: luma(240), inset: (x: 2pt), outset: (y: 3pt), radius: 1.5pt)
 
 // ---- drawing primitives -----------------------------------------------------
-// This file's private copies now live in strdiag.typ, shared with the two allegory notes.
+// This file's private copies now live in circuit.typ, shared with the two allegory notes.
 // A copy dot with no incoming stub, used to grow copy trees, is `delta(..., li: 0)`.
 // Imported by name, not with `*`: `delta`, `nabla`, `cap` and `dot` shadow the Typst math symbols
 // of the same name, so an unqualified `*` would silently turn `$nabla$` into a drawing function.
 // Write the symbols themselves (`∇`) in math here.
-#import "strdiag.typ": cetz, d, lw, wire, dot, gbox, delta, nabla, bang, unitR, swap, cap
+#import "circuit.typ": cetz, d, lw, wire, dot, gbox, delta, nabla, bang, unitR, swap, cap
 
 // colour-coded box labels (R red, S blue, P green) — tracked across every figure
 #let cR = text(fill: imgc)[$R$]
