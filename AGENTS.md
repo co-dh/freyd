@@ -17,6 +17,10 @@ curated `Freyd.lean` aggregator (no glob — do not force-build the deliberately
 You should should any 3+ digits sections of the book into `Freyd/Sa_bc.lean`. e.g. section 1.123 in Freyd/S1_12.lean.
 The code should follow the book's terminology, wording, convension.
 Write composition in diagram order, by juxtaposition: `xy` means first x then y (the book's convention).
+Juxtaposition is composition and nothing else, so APPLYING an operator takes parentheses: `E(R)`,
+`P(f)`, `Λ(R)`, `F(𝟙)`, `F(outl)`, `T(R)`, `tri(f)` — never B&dM's `ER`/`Pf`. The one bare form is a
+single object name (`P A`, `T A`, `F A`), which no reader can take for a composite; anything longer
+is parenthesised (`F(P B)`, never `F P B`). Pointwise evaluation is outside this — `f a`, `tip (f a)`.
 Use the global book notation `𝟙 A` for the categorical identity `Cat.id A`; do not spell identities
 as `Cat.id A` in new code.
 Use the shortest unambiguous book name in signatures and prose. Once its namespace is deliberately

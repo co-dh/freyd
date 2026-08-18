@@ -104,18 +104,30 @@
 
 /// ONE CANVAS AND NOT A GRID: separate canvases each centre on their own bounding box, so panels
 /// with beads at different heights would start and end at different heights, matching no `=`.
-#let hm-row(panels, sep: [=], gap: 1.0, length: 0.95cm, sepsize: 13pt) = cetz.canvas(
-  length: length,
-  {
-    let ymid = calc.max(..panels.map(p => p.h)) / 2
-    let x = 0.0
+/// The first `=`'s x rides along as `metadata`, which draws nothing — see `hm-sepx`.  It counts from
+/// canvas x = 0, which IS the box's left edge: every panel drawn here fills a rect from there.
+#let hm-row(panels, sep: [=], gap: 1.0, length: 0.95cm, sepsize: 13pt) = {
+  let ymid = calc.max(..panels.map(p => p.h)) / 2
+  // One walk for where the signs go and where the panels start, so the `=` a caption is lined up
+  // with and the `=` drawn cannot drift apart.
+  let (xs, seps, x) = ((), (), 0.0)
+  for (i, p) in panels.enumerate() {
+    if i > 0 { seps.push(x + gap / 2); x = x + gap }
+    xs.push(x)
+    x = x + p.w
+  }
+  cetz.canvas(length: length, {
     for (i, p) in panels.enumerate() {
-      if i > 0 {
-        if sep != none { d.content((x + gap / 2, ymid), text(sepsize)[#sep]) }
-        x = x + gap
-      }
-      d.group({ d.translate(x: x); p.body })
-      x = x + p.w
+      if i > 0 and sep != none { d.content((seps.at(i - 1), ymid), text(sepsize)[#sep]) }
+      d.group({ d.translate(x: xs.at(i)); p.body })
     }
-  },
-)
+  })
+  if sep != none and seps.len() > 0 { metadata(seps.at(0) * length) }
+}
+
+/// Where `hm-row` put its first `=`, for a caption that has to line up with it; `none` when the
+/// picture is not one row (two of them in a grid), where there is no single sign to line up with.
+#let hm-sepx(pic) = {
+  let m = if pic.has("children") { pic.children.find(c => c.func() == metadata) } else { none }
+  if m != none { m.value }
+}

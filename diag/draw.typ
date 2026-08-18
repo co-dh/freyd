@@ -7,7 +7,7 @@
 
 // A newline ENDS an import list in Typst — keep this on one line however long it gets, or the names
 // after the break are parsed as an expression and `hm-row` becomes the subtraction `hm - row`.
-#import "hm.typ": KNEE, cetz, d, hm-apex, hm-bead, hm-join, hm-name, hm-panel, hm-port, hm-region, hm-row, hm-turn, hm-turn-split, hm-wire, lw
+#import "hm.typ": KNEE, cetz, d, hm-apex, hm-bead, hm-join, hm-name, hm-panel, hm-port, hm-region, hm-row, hm-sepx, hm-turn, hm-turn-split, hm-wire, lw
 // Same one-line rule.  NOT `cap`/`cup` from circuit and NOT `*` from note-style: this file already
 // binds `cap`, and note-style re-exports a `cetz`/`d` that would shadow hm.typ's.
 #import "circuit.typ": wire, bend, gbox, dot as wiredot
@@ -18,7 +18,7 @@
 
 // -------------------------------------------- one geometry for all four laws: THREE ROWS, ONE PITCH
 // A panel leaves a row EMPTY rather than compressing: a shared bead at two heights reads as a reshuffle.
-#let H = 4.0            // panel height — every wire runs it end to end, top edge to bottom edge
+#let H = 3.6            // panel height — every wire runs it end to end, top edge to bottom edge
 #let SEP = 1.0          // the two wires of `F T`
 #let PADX = 0.5         // the box's left edge to the `F` wire
 // Wider on the right, because that strip is `𝟏` and a bead sits on its left boundary with its name
@@ -28,9 +28,11 @@
 #let XF = PADX              // the `F` wire
 #let XO = PADX + SEP        // the object wire
 #let XM = PADX + SEP / 2    // `splitcut`'s merged wire, and where a region's name sits — see both
-#let H1 = 3.0               // row 1
-#let H2 = 2.0               // row 2 — also the row a LONE bead sits on, being the average of the other two
-#let H3 = 1.0               // row 3
+// PITCH 0.9, the one every family here now uses, and MARGIN 0.9 — the `F` strand bends `KNEE` above
+// its row, and at margin 0.8 the 0.2 left over reads as a wire entering the panel already turning.
+#let H1 = 2.7               // row 1
+#let H2 = 1.8               // row 2 — also the row a LONE bead sits on, being the average of the other two
+#let H3 = 0.9               // row 3
 #let GAP = 1.0              // between two panels, with the `=` centred in it
 
 // The object wire, bound once: the vertex at `H2` is where a `homeq` wire changes type, and a 2-point
@@ -42,13 +44,13 @@
 
 // ------------------------------------- a wire's colour is its type (`typed: true`): ONE HUE PER OBJECT
 // Off the note's ARROW palette, since a bead's colour says which arrow; `C` gold not olive, too near `α_C`'s green.
-#let TCOL = rgb("#b91c1c")      // `T`
+#let TCOL = rgb("#b91c1c")      // `T`, and `A` in the `Λ` panels, where no `T` runs
 #let BCOL = rgb("#0e7490")      // `B`
 #let CCOL = rgb("#a16207")      // `C`
 
-// The FUNCTORS of `i ⊣ E`, keyed by name, so a hue follows the functor a strand carries and not the
-// side of the panel it runs down.  `T`/`B`'s hues: no §12 picture stands beside a snake to confuse them.
-#let ADJC = (i: TCOL, E: BCOL)
+// The FUNCTORS of `i ⊣ E`, keyed by name and OFF the palette above: the `Λ` panels set these wires
+// beside typed object wires.  `i` is black, this file's colour for a functor wire; `E` marks the pair.
+#let ADJC = (i: black, E: rgb("#ea580c"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -99,11 +101,13 @@
   },
 )
 
-// `homeq` — "`mid` is a homomorphism of F-algebras": `top mid = (F mid) bot`.  `mid` sits at ONE height
+// `homeq` — "`mid` is a homomorphism of F-algebras": `top mid = F(mid) bot`.  `mid` sits at ONE height
 // and the object wire is one `OWIRE` on both sides; only the ALGEBRA bead moves, which is the law.
+// `gap` widens the space the `=` sits in: `mid`'s name runs right from the left panel's row 2, which is
+// the row the `=` is on, so a long `mid` needs the sign pushed clear of it.
 #let homeq(w1, w2, top, mid, bot, out, ctop: black, cmid: black, cbot: black,
            fmid: none, cfmid: black,
-           typed: false, tcol: TCOL, bcol: BCOL,
+           typed: false, tcol: TCOL, bcol: BCOL, gap: GAP,
            regions: none, acol: AC, ucol: UC, frame: none) = {
   let (cT, cB) = if typed { (tcol, bcol) } else { (black, black) }
   hm-row(
@@ -116,7 +120,7 @@
       algpanel(OWIRE, H3, w1, w2, out, bot, cbot, mid, cmid, cT, cB, regions, acol, ucol, frame,
         fmid: fmid, cfmid: cfmid),
     ),
-    gap: GAP,
+    gap: gap,
   )
 }
 
@@ -199,9 +203,11 @@
 
 // ============================ THE MONAD PICTURES — IntroString §3.1 (p. 64) and Example 3.6 (p. 67)
 // THE IDENTITY FUNCTOR IS A REGION, NOT A WIRE (p. 64); horizontal order is APPLICATIVE, leftmost = outermost.
-#let HMON = 3.6            // panel height — a wire that is not consumed runs it end to end
-#let YU = 2.5           // the row a UNIT acts on
-#let YM = 1.3           // the row a MULTIPLICATION acts on
+// The MARGINS here are not slack: a turn's apex plus its name reaches almost to either edge, so only
+// the pitch shrank, to the 0.9 the other two families use.
+#let HMON = 3.35           // panel height — a wire that is not consumed runs it end to end
+#let YU = 2.15          // the row a UNIT acts on
+#let YM = 1.25          // the row a MULTIPLICATION acts on
 #let GAPN = 0.32        // a bead's name, off its dot; hm-bead's default, respelled so the vertical placements match
 // The four columns of `State∘State`, `R L R L`.  Every picture in the file draws its wires on a
 // prefix of them, so a wire in one picture stands where the same wire stands in the next.
@@ -396,7 +402,7 @@
 #let PEOPLE = (a: (0, 2.4), b: (0, 0.8), c: (0, -0.8), d: (0, -2.4))
 
 // The lists keep their coordinates across §10's three pictures, so the reader compares them by looking
-// at the same place twice; `P R`'s two lists are the top and bottom one, whose arcs then sweep clear.
+// at the same place twice; `P(R)`'s two lists are the top and bottom one, whose arcs then sweep clear.
 #let LX = (-8.6, 0)
 
 #let AD = (a1: (-4.6, 1.6), a2: (-4.6, -1.6))
@@ -466,7 +472,7 @@
 // A hairline parting two independent pictures that share one canvas.
 #let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
 
-// A `[B]`-wire: two strands, each thinner than circuit's `lw` — at full weight the pair reads as two
+// A `P B`-wire: two strands, each thinner than circuit's `lw` — at full weight the pair reads as two
 // wires side by side rather than as one wire one level down.
 #let fb-wire(a, b) = {
   for o in (0.055, -0.055) {
@@ -533,48 +539,117 @@
   lab(-0.35, 0, black)[$C$]; lab(3.75, y, GIVEN1)[$A$]; lab(3.75, -y, GIVEN2)[$B$]
 })
 
-// `lamsnake` — `Λ(R) ∋ = R`.  Its rows and pitch are its own, wider and taller than §14's monads:
-// three beads down one wire, and a loop that has to hold two names inside it.
-#let lamsnake() = {
-  let (pad, sep, h) = (0.6, 1.1, 4.4)
-  let x = (0, 1, 2).map(i => pad + i * sep)
-  let (yu, yr, ye) = (3.3, 2.2, 1.1)
-  let w = 2 * pad + 2 * sep
+// The `Λ` family's geometry, one copy for all three pictures: wider and taller than §14's monads,
+// three beads down one wire and a loop that has to hold two names inside it.  `LAMY` are its rows.
+#let LAMPAD = 0.6
+#let LAMSEP = 1.1
+// §12's pitch and margin, and for its own reason: `{·}` and `∋` are the only beads whose name is set
+// ABOVE or BELOW the dot, and each reaches about 0.7 further towards its edge than one set beside it.
+#let LAMPITCH = 0.9
+#let LAMMARG = 0.9
+// The rows top down, and the height that holds them: a law needing one more row LENGTHENS its panel
+// instead of re-spacing what is already there, so a bead keeps its height as pictures grow.
+#let lamy(n) = range(n).map(i => LAMMARG + (n - 1 - i) * LAMPITCH)
+#let lamh(n) = 2 * LAMMARG + (n - 1) * LAMPITCH
+#let LAMX = (0, 1, 2).map(i => LAMPAD + i * LAMSEP)
+#let LAMW = 2 * LAMPAD + 2 * LAMSEP
+#let LAMH = lamh(3)
+#let LAMY = lamy(3)
+// The quarter-arc that turns the `i` and `E` wires over: `r` its radius, `c` its bezier handle
+// (cetz's own `corner-arc` constant, shapes.typ), so region and wire cannot disagree.
+#let LAMR = LAMSEP / 2
+#let LAMC = 0.551784 * LAMR
+#let LAMM = (LAMX.at(0) + LAMX.at(1)) / 2
+
+// The `i` and `E` names, on the wires they belong to; `y` because a picture that closes the pair puts
+// them beside its beads and one that leaves it open puts them low, clear of everything above.
+#let lamnames(y) = {
+  d.content((LAMX.at(0) - 0.28, y), text(9pt, ADJC.i)[`i`], anchor: "east")
+  d.content((LAMX.at(1) + 0.28, y), text(9pt, ADJC.E)[`E`], anchor: "west")
+}
+
+// ONE panel of `lamfuse`/`lamabsorb`: `{·}` opens the pair `i E` at `yu` and it stays open to the
+// bottom edge, so a bead below that line reads as `E` of its arrow and one above it as the arrow.
+#let lampanel(h, yu, beads) = hm-panel(LAMW, h, fill: fb-ALLC, {
+  d.rect((LAMX.at(2), 0), (LAMW, h), fill: UC, stroke: none)
+  d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+    d.line((LAMX.at(0), 0), (LAMX.at(0), yu - LAMR))
+    d.bezier((LAMX.at(0), yu - LAMR), (LAMM, yu), (LAMX.at(0), yu - LAMR + LAMC), (LAMM - LAMC, yu))
+    d.bezier((LAMM, yu), (LAMX.at(1), yu - LAMR), (LAMM + LAMC, yu), (LAMX.at(1), yu - LAMR + LAMC))
+    d.line((LAMX.at(1), yu - LAMR), (LAMX.at(1), 0))
+  })
+  let side(xe, s, col) = d.merge-path(fill: none, stroke: (thickness: lw, paint: col), {
+    d.bezier((LAMM, yu), (xe, yu - LAMR), (LAMM - s * LAMC, yu), (xe, yu - LAMR + LAMC))
+    d.line((xe, yu - LAMR), (xe, 0))
+  })
+  side(LAMX.at(0), 1, ADJC.i); side(LAMX.at(1), -1, ADJC.E)
+  // The object wire changes type at every bead on it, so the bead heights ARE the segment bounds:
+  // `C` down to the first, `A` to the second, `B` to the bottom edge.
+  let ys = (h,) + beads.map(b => b.at(0)) + (0,)
+  for (k, c) in (CCOL, TCOL, BCOL).enumerate() {
+    hm-wire(((LAMX.at(2), ys.at(k)), (LAMX.at(2), ys.at(k + 1))), col: c)
+  }
+  hm-bead((LAMM, yu), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+  for (y, b, col) in beads { hm-bead((LAMX.at(2), y), b, col: col) }
+  lamnames(LAMMARG / 2)
+  hm-port((LAMX.at(2), h), `C`, col: CCOL); hm-port((LAMX.at(2), 0), `B`, dir: -1, col: BCOL)
+})
+
+// `lamsnake` — `Λ(R) ∋ = R`: the object wire runs straight through, never consumed.  Beside it `{·}`
+// opens the pair `i E` and `∋` closes it, and the loop's two sides are those two functors.
+#let lamsnake() = hm-row(
+  (
+    hm-panel(LAMW, LAMH, fill: fb-ALLC, {
+      d.rect((LAMX.at(2), 0), (LAMW, LAMH), fill: UC, stroke: none)
+      // The rect keeps the FILL and its outline is re-traced in halves off the same arc constants,
+      // so region and wire cannot disagree.
+      d.rect((LAMX.at(0), LAMY.at(2)), (LAMX.at(1), LAMY.at(0)), radius: LAMR, fill: fb-MAPC, stroke: none)
+      let side(xe, s, col) = d.merge-path(fill: none, stroke: (thickness: lw, paint: col), {
+        d.bezier((LAMM, LAMY.at(0)), (xe, LAMY.at(0) - LAMR), (LAMM - s * LAMC, LAMY.at(0)),
+          (xe, LAMY.at(0) - LAMR + LAMC))
+        d.line((xe, LAMY.at(0) - LAMR), (xe, LAMY.at(2) + LAMR))
+        d.bezier((xe, LAMY.at(2) + LAMR), (LAMM, LAMY.at(2)), (xe, LAMY.at(2) + LAMR - LAMC),
+          (LAMM - s * LAMC, LAMY.at(2)))
+      })
+      side(LAMX.at(0), 1, ADJC.i); side(LAMX.at(1), -1, ADJC.E)
+      hm-wire(((LAMX.at(2), LAMH), (LAMX.at(2), LAMY.at(1))), col: TCOL)
+      hm-wire(((LAMX.at(2), LAMY.at(1)), (LAMX.at(2), 0)), col: BCOL)
+      hm-bead((LAMM, LAMY.at(0)), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+      hm-bead((LAMM, LAMY.at(2)), `∋`, col: GIVEN1, dx: 0, dy: -0.3, anchor: "north")
+      hm-bead((LAMX.at(2), LAMY.at(1)), `R`)
+      lamnames(LAMY.at(1))
+      hm-port((LAMX.at(2), LAMH), `A`, col: TCOL); hm-port((LAMX.at(2), 0), `B`, dir: -1, col: BCOL)
+    }),
+    hm-panel(2 * LAMPAD, LAMH, fill: fb-ALLC, {
+      d.rect((LAMPAD, 0), (2 * LAMPAD, LAMH), fill: UC, stroke: none)
+      hm-wire(((LAMPAD, LAMH), (LAMPAD, LAMY.at(1))), col: TCOL)
+      hm-wire(((LAMPAD, LAMY.at(1)), (LAMPAD, 0)), col: BCOL)
+      hm-bead((LAMPAD, LAMY.at(1)), `R`)
+      hm-port((LAMPAD, LAMH), `A`, col: TCOL); hm-port((LAMPAD, 0), `B`, dir: -1, col: BCOL)
+    }),
+  ),
+  gap: 1.2,
+)
+
+// `lamfuse` — `Λ(f R) = f Λ(R)`: the map bead `f` slides across `{·}`, which is unit naturality.
+// `{·}` HOLDS STILL on row 2 and only `f` moves — that is the law — so `f` needs a row of its own on
+// each side, the panel is FOUR rows, and each side leaves one of them empty.
+#let lamfuse() = {
+  let y = lamy(4)
   hm-row(
-    (
-      // The object wire runs straight through — it is never consumed.  Beside it `{·}` opens the pair
-      // `i E` and `∋` closes it, and the loop's two sides are those two functors.
-      hm-panel(w, h, fill: fb-ALLC, {
-        d.rect((x.at(2), 0), (w, h), fill: UC, stroke: none)
-        d.rect((x.at(0), ye), (x.at(1), yu), radius: sep / 2, fill: fb-MAPC, stroke: none)
-        // The rect keeps the FILL and its outline is re-traced in halves off cetz's own rounded-corner
-        // bezier (`corner-arc`, shapes.typ, whence `0.551784`), so region and wire cannot disagree.
-        let (r, xm) = (sep / 2, (x.at(0) + x.at(1)) / 2)
-        let c = 0.551784 * r
-        let side(xe, s, col) = d.merge-path(fill: none, stroke: (thickness: lw, paint: col), {
-          d.bezier((xm, yu), (xe, yu - r), (xm - s * c, yu), (xe, yu - r + c))
-          d.line((xe, yu - r), (xe, ye + r))
-          d.bezier((xe, ye + r), (xm, ye), (xe, ye + r - c), (xm - s * c, ye))
-        })
-        side(x.at(0), 1, ADJC.i); side(x.at(1), -1, ADJC.E)
-        hm-wire(((x.at(2), h), (x.at(2), 0)))
-        hm-bead(((x.at(0) + x.at(1)) / 2, yu), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
-        hm-bead(((x.at(0) + x.at(1)) / 2, ye), `∋`, col: GIVEN1, dx: 0, dy: -0.3, anchor: "north")
-        hm-bead((x.at(2), yr), `R`)
-        d.content((x.at(0) - 0.28, yr), text(9pt, ADJC.i)[`i`], anchor: "east")
-        d.content((x.at(1) + 0.28, yr), text(9pt, ADJC.E)[`E`], anchor: "west")
-        hm-port((x.at(2), h), `A`); hm-port((x.at(2), 0), `B`, dir: -1)
-      }),
-      hm-panel(2 * pad, h, fill: fb-ALLC, {
-        d.rect((pad, 0), (2 * pad, h), fill: UC, stroke: none)
-        hm-wire(((pad, h), (pad, 0)))
-        hm-bead((pad, yr), `R`)
-        hm-port((pad, h), `A`); hm-port((pad, 0), `B`, dir: -1)
-      }),
-    ),
+    (lampanel(lamh(4), y.at(1), ((y.at(2), `f`, GIVEN1), (y.at(3), `R`, black))),
+     lampanel(lamh(4), y.at(1), ((y.at(0), `f`, GIVEN1), (y.at(3), `R`, black)))),
     gap: 1.2,
   )
 }
+
+// `lamabsorb` — the two panels are DELIBERATELY the same strokes: the law is an identity of pictures,
+// and drawing both with the `=` between them is what says so.
+#let lamabsorb() = hm-row(
+  (lampanel(LAMH, LAMY.at(0), ((LAMY.at(1), `S`, GIVEN1), (LAMY.at(2), `R`, GIVEN2))),
+   lampanel(LAMH, LAMY.at(0), ((LAMY.at(1), `S`, GIVEN1), (LAMY.at(2), `R`, GIVEN2)))),
+  gap: 1.2,
+)
 
 // `snake` — ONE triangle identity of `i ⊣ E`, on `unitlaw`'s geometry: the incoming wire, both turns
 // and the outgoing one are one strand.  `flip` puts the opened pair left of it instead of right.
@@ -695,21 +770,39 @@
 
 /// `baseline: 50%` centres the box on its line; the default (bottom) would hang it off the baseline.
 /// `name` is `place`d so it does not measure — a chain is centred on the horizon and would be lifted.
-#let zsq(a, b, name: none) = box(
+// The plain rule IS the `⊑` of §1's notation table; `eq` doubles it and colours it, so a line whose
+// relation is `=` is told from a line whose relation is `⊑` without reading either row.
+#let zsqc(a, b, name: none, eq: false) = box(
   stroke: 0.6pt + luma(120), fill: luma(253), radius: 2pt, inset: (x: 6pt, y: 4pt), baseline: 50%,
   {
-    if name != none { place(bottom + center, dy: 1.15em, src(name)) }
-    grid(columns: 1, align: center, row-gutter: 4pt,
-         zw(a), grid.hline(y: 1, stroke: 0.4pt + luma(185)), zw(b))
+    // The wide box only stops the name wrapping inside a narrow box — `place` is out of flow, so the
+    // name still measures nothing and the centre it hangs from is unmoved.
+    if name != none { place(bottom + center, dy: 1.15em, box(width: 6cm, align(center, src(name)))) }
+    // `measure`, not `length: 100%`: inside an auto-sized column the percentage resolves against the
+    // page, not against the box, and the rule would shoot out of it.
+    let dbl = context {
+      let w = calc.max(measure(a).width, measure(b).width)
+      stack(spacing: 1.4pt, ..(line(length: w, stroke: 0.4pt + INDUCED),) * 2)
+    }
+    grid(columns: 1, align: center, row-gutter: if eq { 1.5pt } else { 4pt },
+         ..if b == none { (a,) } else if eq { (a, dbl, b) }
+           else { (a, grid.hline(y: 1, stroke: 0.4pt + luma(185)), b) })
   },
 )
 
+/// The same box filled from the stroke calculus, where `/` and `\` are generators, not division.
+#let zsq(a, b, name: none) = zsqc(zw(a), zw(b), name: name)
+
 /// A step of a derivation, with the reason on the operator.  The operator is stretched to the width
 /// of the reason, so the two read as one gesture instead of a hint parked beside a short `⟹`.
-#let zstep(reason, op: sym.arrow.r.double) = context {
+/// `under` drops the reason below the operator, for a step standing BETWEEN two boxes on one line:
+/// above it, the reason would sit on the line the boxes are read along.
+/// RULE: a reason NAMES THE ADJUNCTION AND STOPS — `f°· ⊣ f·`, not the display it lives in, not
+/// `, twice`, not the side conditions.  The reader knows where the table is; the strands are visible.
+#let zstep(reason, op: sym.arrow.r.double, under: false) = context {
   let r = src[{#reason}]
-  grid(columns: 1, align: center, row-gutter: 2pt,
-       r, $stretch(#op, size: #measure(r).width)$)
+  let a = $stretch(#op, size: #measure(r).width)$
+  grid(columns: 1, align: center, row-gutter: 2pt, ..if under { (a, r) } else { (r, a) })
 }
 
 /// A named law, its name out at the right where an equation number would go.  The empty `1fr` on the
@@ -720,6 +813,16 @@
   grid(columns: items.pos().len(), align: horizon, column-gutter: 10pt, ..items.pos()),
   align(right, src(name)),
 ))
+
+/// One line of a derivation that runs sideways: boxes and `zstep(under: true)`s alternating.  A
+/// derivation too long for the column wraps into several of these, the next opening with its step.
+#let zline(..items) = align(center, block(breakable: false, inset: (y: 6pt), grid(
+  columns: items.pos().len(), align: horizon, column-gutter: 7pt, ..items.pos(),
+)))
+
+/// Two boxes carrying two strands of ONE derivation.  A strand is a ROW here — stacking the pair puts
+/// each strand on its own line across the whole `zline`, which is what says who continues whom.
+#let zpair(a, b) = grid(columns: 1, align: center, row-gutter: 6pt, a, b)
 
 /// `align: horizon` keeps the shared run on one line whatever the branches do — its cells span both
 /// rows.  The parameter is `shared`, not `chain`: note-style exports a `chain` this would shadow.
@@ -748,8 +851,8 @@
   syqnode(LX, GIVEN2, rgb("#f2e9f8"), `x = {a₁,a₂}`, ring: 0.7pt + GIVEN2)
 }
 
-// A list over `B`: its `∋` fan and its box, washed out when the picture rejects it.
-#let ylist(p, es, w, on: true) = {
+// A subset of `B`: its `∋` fan and its box, washed out when the picture rejects it.
+#let yset(p, es, w, on: true) = {
   let (col, wt) = if on { (SLACK, 1.1) } else { (SLACK.lighten(60%), 0.7) }
   for b in es { syqedge(p, b, col, wt) }
   if on { syqnode(p, GIVEN2, rgb("#f2e9f8"), w, ring: 0.7pt + GIVEN2) } else { syqnode(p, black, white, w) }
@@ -762,11 +865,51 @@
   grid(align: center, row-gutter: 8pt, body, f),
 ))
 
+// Where a formula's own `=` sits: the children up to the one holding it, then the text before it.
+// `none` unless exactly ONE stands before any `#h()` or `\` — only the first line carries the law.
+#let capeqx(f) = {
+  let (x, at, n) = (0pt, none, 0)
+  for c in (if f.has("children") { f.children } else { (f,) }) {
+    if c.func() == h or c.func() == linebreak { break }
+    let t = if c.has("text") { c.text } else { "" }
+    let i = t.position("=")
+    if i != none {
+      n += t.matches("=").len()
+      // Re-set as `raw` or as plain text, whichever the child was, or the prefix measures in the
+      // wrong font and the shift is out by the difference.
+      let same(s) = if c.func() == raw { raw(s, block: false) } else { s }
+      if at == none { at = x + measure(same(t.slice(0, i))).width + measure(same("=")).width / 2 }
+    }
+    x += measure(c).width
+  }
+  if n == 1 { at }
+}
+
 // `pair` — square LEFT, string diagram RIGHT in one box: the reader checks one against the other, and
 // stacked they were a scroll apart.  `s` scales BOTH halves, or the two can no longer be compared.
-#let pair(sq, sd, f, s: 100%) = capbox(
-  grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s)), f,
-)
+// THE FORMULA'S `=` GOES UNDER THE PICTURE'S: the display states one law twice, once in strokes and
+// once in symbols, and the reader drops from one sign to the other to match the sides.
+#let pair(sq, sd, f, s: 100%) = layout(avail => {
+  let body = grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s))
+  let (px, fe) = (hm-sepx(sd), capeqx(f))
+  if px == none or fe == none { return capbox(body, f) }
+  // Where the formula starts with its sign under the picture's: in from the row's right end to the
+  // string diagram's own left edge, on to the sign, then back by the formula's own.
+  let bw = measure(body).width
+  let fx = bw - measure(P(sd, s: s)).width + s * px - fe
+  // `dx` moves the ROW right instead, for a sign so far into the formula that it would start off the
+  // box's left edge.
+  let dx = calc.max(0pt, -fx)
+  let w = calc.max(bw + dx, fx + dx + measure(f).width)
+  // A caption that far off centre can outgrow the page; centred beats aligned-and-overflowing.
+  if w > avail.width - 26pt { return capbox(body, f) }
+  // The offset is a grid COLUMN, not a `move`: `capbox` centres its rows, and that centring happens
+  // after a move and would carry the sign straight back off the mark.
+  let row(off, it) = box(width: w, grid(columns: (off, auto, 1fr), [], it, []))
+  // The caption is left-aligned because `capbox`'s centring reaches inside it and would centre a
+  // multi-line caption's first line — the one with the sign — over the longer prose line below.
+  capbox(row(dx, body), row(fx + dx, align(left, f)))
+})
 
 // ---------------------------------------------------- the standalone page: the note's calls, BLACK BEADS
 // A bead's colour in the note is its arrow's hue in the square beside it, and this page has no square.
@@ -775,13 +918,13 @@
 
 // THE LAWS ARE NAMED, NOT NUMBERED, HERE: B&dM's `(2.10)`–`(2.13)` stay in the header as a citation,
 // and printing them would put a second numbering beside the note's own `(12.n)`.
-#law[the defining equation][`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = (F X) α`#sub[`B`]]
+#law[the defining equation][`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`B`]]
 // THE ONLY PICTURE HERE THAT NAMES ITS REGIONS; the rest carry the same fills unnamed, which is how
 // Hinze & Marsden draw a second picture (Remark 2.1, p. 36) — `regions: auto`.
 #align(center, homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`B`]`⦈`], [`α`#sub[`B`]], `B`,
   typed: true, regions: (`𝒜`, `𝟏`)))
 #cap[
-  This is the universal property: `α`#sub[`T`]` X = (F X) α`#sub[`B`]
+  This is the universal property: `α`#sub[`T`]` X = F(X) α`#sub[`B`]
   holds exactly when `X` is `⦇α`#sub[`B`]`⦈`, so the equation characterises `⦇α`#sub[`B`]`⦈` among
   ALL relations `T ⟶ B`, not only the maps.
   \ #v(3pt)
@@ -789,7 +932,7 @@
   sides of the `=`. What moves is the algebra bead, which falls past it from the row above to the row
   below, entering the left panel as `α`#sub[`T`] and arriving in the right one as `α`#sub[`B`].
   \ #v(3pt)
-  The `F` wire running straight past the `⦇α`#sub[`B`]`⦈` bead is exactly `F ⦇α`#sub[`B`]`⦈`:
+  The `F` wire running straight past the `⦇α`#sub[`B`]`⦈` bead is exactly `F(⦇α`#sub[`B`]`⦈)`:
   applying a functor to an arrow costs no notation at all in this calculus (Hinze & Marsden,
   *Introducing String Diagrams* — `IntroString.pdf` — §1.4.2 and §1.5.2).
 ]
@@ -802,7 +945,7 @@
 #cap[Taking a value apart with `α`#sub[`T`] and putting it straight back is doing nothing.]
 
 #v(14pt)
-#law[fusion][`⦇α`#sub[`B`]`⦈ S = ⦇α`#sub[`C`]`⦈ ⟸ α`#sub[`B`]` S = (F S) α`#sub[`C`]]
+#law[fusion][`⦇α`#sub[`B`]`⦈ S = ⦇α`#sub[`C`]`⦈ ⟸ α`#sub[`B`]` S = F(S) α`#sub[`C`]]
 #cap[the side condition — the picture above under
   `α`#sub[`T`]`↦α`#sub[`B`]`, ⦇α`#sub[`B`]`⦈↦S, α`#sub[`B`]`↦α`#sub[`C`]`, T↦B, B↦C`:]
 // `tcol`/`bcol` SPELLED OUT: this wire runs `B` then `C`, and the defaults are `T` then `B`.
@@ -815,13 +958,13 @@
   regions: auto))
 
 #v(14pt)
-#law[splitting the algebra][`⦇g f⦈ = ⦇(F f) g⦈ f`, for `f : X ⟶ A` and `g : F A ⟶ X`]
+#law[splitting the algebra][`⦇g f⦈ = ⦇F(f) g⦈ f`, for `f : X ⟶ A` and `g : F A ⟶ X`]
 #align(center, splitcut(`F`, `X`, `f`, `g`, `f`, `A`,
-  ltop: [`α`#sub[`B`]` = (F f) g`], lbot: `S = f`, rtop: `F S = F f`,
+  ltop: [`α`#sub[`B`]` = F(f) g`], lbot: `S = f`, rtop: `F(S) = F(f)`,
   rbot: [`α`#sub[`C`]` = g f`]))
 #cap[
-  Fusion at `α`#sub[`B`]` := (F f) g`, `S := f`, `α`#sub[`C`]` := g f`, whose side condition
-  `α`#sub[`B`]` S = (F S) α`#sub[`C`] reads `((F f) g) f = (F f) (g f)` — associativity, and
+  Fusion at `α`#sub[`B`]` := F(f) g`, `S := f`, `α`#sub[`C`]` := g f`, whose side condition
+  `α`#sub[`B`]` S = F(S) α`#sub[`C`] reads `(F(f) g) f = F(f) (g f)` — associativity, and
   nothing else.
   \ #v(3pt)
   The two readings are the two bracket columns, and the picture they bracket is the same one.
@@ -829,17 +972,17 @@
 ]
 
 #v(14pt)
-#law[the type functor][`T R = ⦇F(R, 𝟙) α⦈`, drawn as the naturality of `α`]
+#law[the type functor][`T(R) = ⦇F(R, 𝟙) α⦈`, drawn as the naturality of `α`]
 // THE ONE PICTURE HERE WHOSE `F` IS A BIFUNCTOR: the bead is the transformation `R : A ⟶ B` induces —
 // see `algpanel`'s `fmid`.  Everything else is (2.10)'s picture unchanged.
-#align(center, homeq([`F`#sub[`A`]], [`T A`], `α`, [`T R`], `α`, [`T B`],
+#align(center, homeq([`F`#sub[`A`]], [`T A`], `α`, [`T(R)`], `α`, [`T B`],
   fmid: [`F`#sub[`R`]], typed: true, regions: auto))
 #cap[
   The two beads on row 2 stand on DIFFERENT wires, so their relative height says nothing: level, they
-  read as the one action `F(R, T R)`; slide `F`#sub[`R`] below the `T R` bead and they read
-  `F(𝟙, T R) F(R, 𝟙)`, above it `F(R, 𝟙) F(𝟙, T R)`. Those are the two routes the exchange condition
+  read as the one action `F(R, T(R))`; slide `F`#sub[`R`] below the `T(R)` bead and they read
+  `F(𝟙, T(R)) F(R, 𝟙)`, above it `F(R, 𝟙) F(𝟙, T(R))`. Those are the two routes the exchange condition
   identifies (Hinze & Marsden, Ex 1.23), and in this calculus there is nothing to identify.
   \ #v(3pt)
-  `α` is one bead falling past `T R` from the row above to the row below, exactly as in (2.10) — which
-  is what "`α` is natural" means. `T R` is the only bead that lets it fall.
+  `α` is one bead falling past `T(R)` from the row above to the row below, exactly as in (2.10) — which
+  is what "`α` is natural" means. `T(R)` is the only bead that lets it fall.
 ]

@@ -235,7 +235,7 @@ theorem wlp_antitone_iff {a b : 𝒜} (R S : a ⟶ b) :
 /-! ## Ex 4.47 (B&dM p.106): singleton/existsImage/bigUnion identities -/
 
 /-- `Λ R = singletonMap ≫ E R`. -/
-theorem Λ_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
+public theorem Λ_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
     Λ R = singletonMap ≫ existsImage R := by
   have h := Λ_absorption (Cat.id a) R
   rw [Cat.id_comp] at h
