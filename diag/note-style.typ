@@ -34,11 +34,10 @@
   // disagree with the heading it sits under.  A display is `(13a)` at top level and `(13.1a)` in
   // subsection §13.1: section references and display references can never be mistaken for one
   // another.  See `disp`.
-  set figure(numbering: n => context {
-    let h = counter(heading).get()
-    if h.len() == 1 { numbering("(1a)", h.first(), n) }
-    else { numbering("(1.1a)", ..h, n) }
-  })
+  // ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
+  // four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
+  let dispnum(h, n) = numbering("(" + "1." * (h.len() - 1) + "1a)", ..h, n)
+  set figure(numbering: n => context { dispnum(counter(heading).get(), n) })
   show heading: it => { counter(figure.where(kind: "disp")).update(0); it }
   // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
@@ -48,8 +47,7 @@
       context {
         let h = counter(heading).at(el.location())
         let n = counter(figure.where(kind: "disp")).at(el.location()).first()
-        link(el.location(), if h.len() == 1 { numbering("(1a)", h.first(), n) }
-          else { numbering("(1.1a)", ..h, n) })
+        link(el.location(), dispnum(h, n))
       }
     } else { it }
   }

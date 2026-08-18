@@ -469,6 +469,16 @@
   lab(p.at(0) + dx, p.at(1) + dy, black)[#t]
 }
 
+// `⊥` on a wire: the wire is DRAWN and then severed, a stop bar facing each side of the gap.  A blank
+// space would say "no wire of this type"; `⊥` says the type is there and nothing gets across it.
+#let blocked(a, b, gap: 0.34, h: 0.26) = {
+  let (ax, ay) = a
+  let (bx, by) = b
+  let (l, r) = ((ax + bx) / 2 - gap / 2, (ax + bx) / 2 + gap / 2)
+  wire(a, (l, ay)); wire((r, by), b)
+  for x in (l, r) { d.line((x, ay - h), (x, ay + h), stroke: (thickness: lw, paint: black)) }
+}
+
 // A hairline parting two independent pictures that share one canvas.
 #let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
 
@@ -782,7 +792,7 @@
     // page, not against the box, and the rule would shoot out of it.
     let dbl = context {
       let w = calc.max(measure(a).width, measure(b).width)
-      stack(spacing: 1.4pt, ..(line(length: w, stroke: 0.4pt + INDUCED),) * 2)
+      stack(spacing: 1.4pt, ..(line(length: w, stroke: 0.55pt + TCOL),) * 2)
     }
     grid(columns: 1, align: center, row-gutter: if eq { 1.5pt } else { 4pt },
          ..if b == none { (a,) } else if eq { (a, dbl, b) }

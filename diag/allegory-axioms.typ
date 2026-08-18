@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
 // draw.typ owns the Hinze–Marsden geometry (Catamorphism, Monad) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, lamsnake, lamfuse, lamabsorb, snake, snaketri, zpal, GIVEN1, GIVEN2, INDUCED, SLACK, fb-MAPC, fb-ALLC, fb-ZC, fb-WALL, fb-FILL, IY, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, AD, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, fb-dot, fb-rule, fb-wire, fb-region, fb-wall, fb-sing, syqnode, syqedge, domstr, pairstr, zwire, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair
+#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, lamsnake, lamfuse, lamabsorb, snake, snaketri, zpal, GIVEN1, GIVEN2, INDUCED, SLACK, fb-MAPC, fb-ALLC, fb-ZC, fb-WALL, fb-FILL, IY, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, AD, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, fb-dot, fb-rule, fb-wire, fb-region, fb-wall, fb-sing, syqnode, syqedge, domstr, pairstr, zwire, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -1108,12 +1108,20 @@ Preserving `°` is *not* asked for — `°` is an identity-on-objects involution
 the 2-category.
 ]]<relator-defn>
 
-- For `f` a map, `F(f)` is a map and `F(f°) = F(f)°`.
-- Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.
-- A relator is fixed by what it does to maps.
-- `F(R ∩ S) ⊑ F(R) ∩ F(S)`, and strictly.
-- `F(X ∩ Y) = F(X) ∩ F(Y)` for `X, Y` coreflexive.
-- `F(Dom R) = Dom(F(R))` for `F` preserving `°`.
+#disp[#table(
+  columns: (1fr, 5.2cm),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the statement*], [*B&dM*]),
+
+  [For `f` a map, `F(f)` is a map and `F(f°) = F(f)°`.], [Lemma 5.1],
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [Theorem 5.1],
+  [`F(R°) = F(R)°` for every `R`, so `F(R)°` needs no bracket.], [after Theorem 5.1, p. 113],
+  [Two relators agreeing on maps are equal.], [Corollary 5.1],
+  [`F(X ∩ Y) = F(X) ∩ F(Y)` for `X, Y` coreflexive.], [Ex 5.2],
+  [`F(R ∩ S) ⊑ F(R) ∩ F(S)`, and strictly.], [Ex 5.2, the restriction],
+  [`F(Dom R) = Dom(F(R))` for `F` preserving `°`.], [—],
+)]<relator-laws>
 
 The *power relator* `P` — `x P(R) y ⟺ (∀a ∈ x. ∃b ∈ y. a R b) ∧ (∀b ∈ y. ∃a ∈ x. a R b)` — is where
 the fourth is strict: for `R = {(a₁,b₁), (a₂,b₂)}` and `S = {(a₁,b₂), (a₂,b₁)}` the pair
@@ -1226,68 +1234,100 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
 
 = Coproduct `[R,S]` <sec-coprod>
 
-The injections `ιₗ : A ⟶ A + B` and `ιᵣ : B ⟶ A + B` are maps, and the coproduct they make of the maps
-stays a coproduct once every arrow is allowed: both equations hold with equality and `[R,S]` is the only
-arrow satisfying them, with none of the `Dom` slack `⟨R,S⟩` carries.
-
-#disp[#definition[
-`[R,S] ≜ ιₗ° R ∪ ιᵣ° S`, and `R + S ≜ [R ιₗ, S ιᵣ]`.
-]]<coprod-defn>
-
 // THE DEFINITION, DRAWN, and it needs no new generator: `+` is a UNION, already drawn as the tape of
-// the laws above.  The other rows are calculated from this one line and stay formulas.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let y = 0.62                    // the tape's two branches, at the exported pictures' half-spacing
-  wire((0, 0), (0.34, 0))
-  tape((0.34, -1.14), (3.80, 1.14))
-  tape-fork((0.56, 0), sp: y, len: 0.42)
-  // Mirrored and tinted: this file draws a converse by flipping the box, so these are `ιₗ°` and `ιᵣ°`.
-  gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
-  gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
-  tape-join((3.58, 0), sp: y, len: 0.42)
-  wire((3.80, 0), (4.14, 0))
-  lab(-0.9, 0, black)[$A + B$]; lab(4.49, 0, black)[$C$]
-}))]<coprod-pic>
-
-The tape is the union — a particle entering at `A + B` takes exactly one branch — and the two mirrored
-boxes are what makes the branches disjoint.
-
+// the laws above.  A TAPE ONLY WHERE THERE IS A `∪`, which is why two of the three shape rows have none.
 #disp[#table(
-  columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
+  columns: (1fr, 10.5cm),
+  align: (left + horizon, center + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*the statement*], [*picture*]),
 
-  [`ιₗ [R,S] = R`, `ιᵣ [R,S] = S`, and `[R,S]` is the only such arrow],
+  [`[R,S] ≜ ιₗ° R ∪ ιᵣ° S` \ #src[The tape is the union — a particle entering at `A + B` takes exactly
+   one branch — and the two mirrored boxes are what makes the branches disjoint.]],
+  P(cetz.canvas(length: 0.8cm, {
+    let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
+    wire((0, 0), (0.34, 0))
+    tape((0.34, -1.14), (3.80, 1.14))
+    tape-fork((0.56, 0), sp: y, len: 0.42)
+    // Mirrored and tinted: this file draws a converse by flipping the box, so these are `ιₗ°` and `ιᵣ°`.
+    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
+    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
+    tape-join((3.58, 0), sp: y, len: 0.42)
+    wire((3.80, 0), (4.14, 0))
+    lab(-0.9, 0, black)[$A + B$]; lab(4.49, 0, black)[$C$]
+  }), s: 85%),
+
+  [`[R,S] = [Λ(R), Λ(S)] ∋`], [],
+  [`R + S ≜ [R ιₗ, S ιᵣ]`], [],
+  [`ιₗ [R,S] = R`, `ιᵣ [R,S] = S`, and `[R,S]` is the only such arrow], [],
+
+  // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
+  // by shape as well as by the tint, and a round trip reads as one box undoing the other.
   [`ιₗ ιₗ° = 𝟙 = ιᵣ ιᵣ°`],
+  P(cetz.canvas(length: 0.8cm, {
+    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`ιₗ`], chamfer: false)
+    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`ιₗ`], flip: true, fill: TINT)
+    wire((2.52, 0), (2.86, 0))
+    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$A$]
+    lab(4.00, 0, black)[$=$]
+    lab(4.55, 0, black)[$A$]; wire((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$A$]
+  }), s: 85%),
+
   [`ιₗ ιᵣ° = ⊥ = ιᵣ ιₗ°`],
+  P(cetz.canvas(length: 0.8cm, {
+    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`ιₗ`], chamfer: false)
+    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`ιᵣ`], flip: true, fill: TINT)
+    wire((2.52, 0), (2.86, 0))
+    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$B$]
+    lab(4.00, 0, black)[$=$]
+    lab(4.55, 0, black)[$A$]; blocked((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$B$]
+  }), s: 85%),
+
   [`ιₗ° ιₗ ∪ ιᵣ° ιᵣ = 𝟙`],
-  [`[U,V]° [R,S] = U° R ∪ V° S`],
+  P(cetz.canvas(length: 0.8cm, {
+    let y = 0.62
+    wire((0, 0), (0.34, 0))
+    tape((0.34, -1.14), (4.24, 1.14))
+    tape-fork((0.56, 0), sp: y, len: 0.42)
+    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
+    gbox((2.24, y), [`ιₗ`], chamfer: false); wire((3.16, y), (3.60, y))
+    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
+    gbox((2.24, -y), [`ιᵣ`], chamfer: false); wire((3.16, -y), (3.60, -y))
+    tape-join((4.02, 0), sp: y, len: 0.42)
+    wire((4.24, 0), (4.58, 0))
+    lab(-1.05, 0, black)[$A + B$]; lab(5.60, 0, black)[$A + B$]
+    lab(6.90, 0, black)[$=$]
+    lab(7.85, 0, black)[$A + B$]; wire((8.55, 0), (9.95, 0)); lab(10.75, 0, black)[$A + B$]
+  }), s: 85%),
+
+  [`[U,V]° [R,S] = U° R ∪ V° S`], [],
 )]<coprod-laws>
 
-// B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: why the first row holds with
-// equality where the fork's triangles above only hold up to `Dom`.
-The first row is not free: `ιₗ, ιᵣ` were only ever asked to be a coproduct of *maps*. They stay one
+== `[R,S] ≜ [Λ(R), Λ(S)] ∋`
+
+// B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: why the universal property holds
+// with equality where the fork's triangles above only hold up to `Dom`.
+The universal-property row is not free: `ιₗ, ιᵣ` were only ever asked to be a coproduct of *maps*. They stay one
 once every arrow is allowed because `Λ` sends an arrow `A ⟶ C` to a map `A ⟶ P C` reversibly, so the
 map coproduct can be applied underneath it. For any `T : A + B ⟶ C`,
 
-// B&dM's own layout for a calculation: the line, then the step's justification indented under a `⟺`,
-// then the next line.  Stroke-less, so it reads as one argument and not as another law table.
-#disp[#table(
-  columns: 2, stroke: none, inset: (x: 10pt, y: 3pt), align: (right + horizon, left + horizon),
-  [], [`ιₗ T = R` and `ιᵣ T = S`],
-  [`⟺`], [#src[`Λ` is injective — `Λ(X) ∋ = X` gives `X` back]],
-  [], [`Λ(ιₗ T) = Λ(R)` and `Λ(ιᵣ T) = Λ(S)`],
-  [`⟺`], [#src[`Λ` fusion, `Λ(f X) = f Λ(X)` for `f` a map]],
-  [], [`ιₗ Λ(T) = Λ(R)` and `ιᵣ Λ(T) = Λ(S)`],
-  [`⟺`], [#src[the coproduct of maps, at the map `Λ(T)`]],
-  [], [`Λ(T) = [Λ(R), Λ(S)]`],
-  [`⟺`], [#src[`Λ(X)` is the only map with `Λ(X) ∋ = X`]],
-  [], [`T = [Λ(R), Λ(S)] ∋`],
-)]<coprod-calc>
-
-// The lead-in and the figure in ONE unbreakable block: left to itself the sentence ends a page and
-// the picture opens the next, so the reader turns the page between "drawn" and the drawing.
-#block(breakable: false)[
-Every step is an `⟺`, so `[Λ(R), Λ(S)] ∋` is the *only* arrow satisfying the two equations — which is
-what `[R,S]` was claimed to be. Drawn:
+// The box chain of the `Λ(R) = (R/∋) ∩ (∋/R)°` subsection, wrapped the same way: the row that
+// carries over opens with its `⟺`.  Both `·∋ ⊣ Λ` steps are the same bijection, used each way.
+#disp[
+#zline(
+  zpair(zsqc(`ιₗ T`, `R`, eq: true), zsqc(`ιᵣ T`, `S`, eq: true)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zpair(zsqc(`Λ(ιₗ T)`, `Λ(R)`, eq: true), zsqc(`Λ(ιᵣ T)`, `Λ(S)`, eq: true)),
+  zstep(op: sym.arrow.l.r.double, under: true)[fusion],
+  zpair(zsqc(`ιₗ Λ(T)`, `Λ(R)`, eq: true), zsqc(`ιᵣ Λ(T)`, `Λ(S)`, eq: true)),
+)
+#zline(
+  zstep(op: sym.arrow.l.r.double, under: true)[coproduct of maps],
+  zsqc(`Λ(T)`, `[Λ(R), Λ(S)]`, eq: true),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zsqc(`T`, `[Λ(R), Λ(S)] ∋`, eq: true),
+)
+]<coprod-calc>
 
 // The book's figure turned a quarter turn, source at the left like every other picture here.  `R` and
 // `S` arc outside because their straight lines would run over `P C`; blue dashed is the induced arrow.
@@ -1311,7 +1351,6 @@ what `[R,S]` was claimed to be. Drawn:
   node(PC.at(0), PC.at(1), INDUCED, $P C$)
   node(C.at(0), C.at(1), black, $C$)
 }))]<coprod-square>
-]
 
 Nothing here holds only up to `⊑`: every triangle commutes on the nose, which is the difference from
 the fork above. The border spells `[R,S] = [Λ(R), Λ(S)] ∋`, and pushing `∋` into the union that
@@ -1323,16 +1362,15 @@ the fork above. The border spells `[R,S] = [Λ(R), Λ(S)] ∋`, and pushing `∋
 #pagebreak(weak: true)
 = The power relator `P(R)` <sec-powrel>
 
+// B&dM p. 119's three steps, in its order: the point-free line, the `Rel` set formula, one plain
+// sentence.
 #disp[#definition[
 For `R : A ⟶ B`, #h(4pt) `P(R) ≜ ((∋ R)/∋) ∩ ((∋ R°)/∋)° : P A ⟶ P B`.
+
+`x P(R) y ⟺ (∀a ∈ x. ∃b ∈ y. a R b) ∧ (∀b ∈ y. ∃a ∈ x. a R b)`
+
+Every element of `x` is related by `R` to some element of `y`, and conversely.
 ]]<powrel-defn>
-
-`∋ R` is a *composition* — `∋ : P A ⟶ A` followed by `R` — and not Freyd's subscripted $#e[R]$,
-which is the `∋` at `R`'s *target*: §@sec-power writes one `∋` per object and drops the subscript. Piece by
-piece, on one instance, with `x, y` sets and `a, b` their elements.
-
-`x = {a₁,a₂}`, and `R` sends `a₁` to `b₁` and `b₃`, `a₂` to `b₃` alone. Nothing on `x` reaches `b₂`,
-so `b₂` is drawn hollow.
 
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
   arc(LX, BD.b1, 1, [`∋ R`], h: 4.2, cx: 5)
@@ -1345,8 +1383,7 @@ so `b₂` is drawn hollow.
 ])
 #align(center, src[one arc per element of `B` that `x` reaches, and `b₂` gets none])]<powrel-elem>
 
-Dividing by `∋` turns that into a relation between *sets*: every element of `y` must be one of the
-filled dots.
+Dividing by `∋` turns that into a relation between *sets*.
 
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
   arc(LX, LY.y1, 1, [`(∋ R)/∋`], h: 5.6, cx: 6)
@@ -1359,11 +1396,11 @@ filled dots.
 ])
 #align(center, src[`y₃` is rejected: it names `b₂`, which `x` does not reach])]<powrel-div>
 
-// Lead-in, picture and readings in ONE unbreakable block: left to itself the sentence ends page 17
-// and the picture opens page 18, so the reader turns the page between "them" and them.
+// Lead-in, picture and readings in ONE unbreakable block: left to itself the sentence ends one page
+// and the picture opens the next, so the reader turns the page between the clause and its drawing.
 #block(breakable: false)[
 The other half of the meet is that clause with the sets swapped and `R` turned round: every element
-of `x` must reach `y`. Both together, and two more sets to separate them:
+of `x` must reach `y`:
 
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
   arc(LX, LY.y1, 1, [`P(R)`], h: 5.6, cx: 6)
@@ -1379,24 +1416,6 @@ of `x` must reach `y`. Both together, and two more sets to separate them:
 ])
 #align(center, src[`y₂` is rejected too: `a₂`'s only image is `b₃`, which `y₂` does not name])]<powrel-both>
 ]
-
-In words, if `x P(R) y` then every element of `x` is related by `R` to some element of `y`, and
-conversely — the two clauses of `∩`, one per direction.
-
-Neither `∋` nor `P(R)` is a map. `∋` sends a set to *each* of its elements; `P(R)` sends `x` to
-*every* `y` meeting the two clauses, `y₁` and `y₄` both. Nor is it entire: an `a ∈ x` with no image
-at all leaves `x` with no partner whatever. Turning a relation into a map is `Λ`'s job (§@sec-power), and on
-sets that map is `Λ(∋ R)` — of the four it accepts `y₁` only.
-
-// The question this subsection exists to answer: the definition IS two divisions and a converse, the
-// shape of a symmetric division, and the reader who has just read the symmetric-division section will try to fold it into one.
-*Not* a symmetric division. $frac(∋ R, ∋)$ is `Λ(∋ R)`, and in `Rel` it reads
-`x Λ(∋ R) y ⟺ y = {b | ∃a ∈ x. a R b}`: in words, `y` is *exactly* what `x` reaches, where `P(R)`
-asks only that each side cover the other. Nor can it be repaired: in that fraction's second half
-$(∋ slash (∋ R))^circle.small$ the `R` sits in a denominator, so the operation is antitone there, and
-a relator has to be monotone. `P(R)` keeps the first half and takes the second half at `R°`, which
-puts `R` back in a numerator. The fraction returns exactly where the two halves agree — at `𝟙`, and
-at a map.
 
 #disp[#table(
   columns: (7.4cm, 1fr),
@@ -1429,7 +1448,8 @@ at a map.
 #disp[#definition[
 `F` a relator with an *initial algebra* `α`#sub[`T`]` : F T ⟶ T` among the maps. For a relational
 algebra `α`#sub[`B`]` : F B ⟶ B`, the *catamorphism* `⦇α`#sub[`B`]`⦈ : T ⟶ B` is the unique arrow
-with `α`#sub[`T`]` ⦇α`#sub[`B`]`⦈ = F(⦇α`#sub[`B`]`⦈) α`#sub[`B`].
+with `α`#sub[`T`]` ⦇α`#sub[`B`]`⦈ = F(⦇α`#sub[`B`]`⦈) α`#sub[`B`]. Explicitly, for a relation
+`R : F B ⟶ B`, `⦇R⦈ ≜ ⦇Λ(F(∋) R)⦈ ∋`, the inner `⦇·⦈` being the catamorphism of a *map* algebra.
 ]]<cata-defn>
 
 // Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
@@ -1457,6 +1477,46 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
     typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
   [`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`B`]],
 )]<cata-defining>
+
+== `⦇R⦈ = ⦇Λ(F(∋) R)⦈ ∋`
+
+// @cata-defining's square at `α`#sub[`B`]`:= Λ(F(∋) R)`, `B := P B`: the same geometry, the same
+// colours, only the two induced arrows and the right vertical renamed.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+    let (FT, FB, T, B) = ((-3.4, 1.25), (3.4, 1.25), (-3.4, -1.25), (3.4, -1.25))
+    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.75, s1: 1.15)
+    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.9)
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+    lab(0, 1.8, INDUCED)[`F(⦇Λ(F(∋) R)⦈)`]; lab(0, -1.8, INDUCED)[`⦇Λ(F(∋) R)⦈`]
+    lab(-4.15, 0, GIVEN2)[`α`#sub[`T`]]; lab(4.85, 0, GIVEN1)[`Λ(F(∋) R)`]
+    node(FT.at(0), FT.at(1), black, `F T`); node(FB.at(0), FB.at(1), GIVEN1, `F(P B)`)
+    node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), GIVEN1, `P B`)
+  }),
+  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇Λ(F(∋) R)⦈`], [`Λ(F(∋) R)`], `P B`,
+    typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2),
+  [`α`#sub[`T`]` ⦇Λ(F(∋) R)⦈ = F(⦇Λ(F(∋) R)⦈) Λ(F(∋) R)`],
+)]<cata-map-square>
+
+// B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
+// and the next row opens with the `⟺` that carries it over.
+#disp[
+#zline(
+  zsqc([`α`#sub[`T`]` X`], [`F(X) R`], eq: true),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zsqc([`Λ(α`#sub[`T`]` X)`], [`Λ(F(X) R)`], eq: true),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zsqc([`Λ(α`#sub[`T`]` X)`], [`Λ(F(Λ(X) ∋) R)`], eq: true),
+)
+#zline(
+  zstep(op: sym.arrow.l.r.double, under: true)[relator, fusion twice],
+  zsqc([`α`#sub[`T`]` Λ(X)`], [`F(Λ(X)) Λ(F(∋) R)`], eq: true),
+  zstep(op: sym.arrow.l.r.double, under: true)[catamorphism of maps],
+  zsqc([`Λ(X)`], [`⦇Λ(F(∋) R)⦈`], eq: true),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zsqc([`X`], [`⦇Λ(F(∋) R)⦈ ∋`], eq: true),
+)
+]<cata-map-calc>
 
 == Reflection
 
@@ -1530,7 +1590,7 @@ The side condition is @cata-defining's picture again under
 `α`#sub[`T`]`↦α`#sub[`B`]`, ⦇α`#sub[`B`]`⦈↦S, α`#sub[`B`]`↦α`#sub[`C`]: both say that the bead
 between the two merges is a homomorphism of `F`-algebras.
 
-= Catamorphism in 𝒮et
+== Catamorphism in 𝒮et
 
 // B&dM §3.1 "Banana-split", pp. 55–57.  The book writes `h · f` applicatively; every composite in the
 // table is mirrored to `f h`, this note's diagram order.
@@ -1664,7 +1724,7 @@ of `⦇α`#sub[`B`]`⦈` — and uniqueness finishes it.
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
 #pagebreak(weak: true)
-== Fokkinga's mutual recursion theorem
+=== Fokkinga's mutual recursion theorem
 
 // Algebras lettered `h`, `k` as in @cata-examples; the display below reuses the letters for the
 // general case, which is what the last bullet contrasts the product with.
@@ -1709,7 +1769,7 @@ of `⦇α`#sub[`B`]`⦈` — and uniqueness finishes it.
   [`α f = F(⟨f, g⟩) h  ∧  α g = F(⟨f, g⟩) k  ≡  ⟨f, g⟩ = ⦇⟨h, k⟩⦈`],
 )]<fokkinga>
 
-== Ruby triangles
+=== Ruby triangles
 
 // B&dM §3.2, pp. 58–59.  The book writes `cons · (id × listr f)` applicatively; every composite in the
 // table is mirrored by `h·f ↦ f h` into this note's diagram order.
@@ -1759,7 +1819,7 @@ for cons-lists it is the schoolbook method for evaluating a polynomial (p. 58). 
 // Its own page: the section is one table long and the heading was left orphaned at the foot of the
 // page before it once the F-Alg bullets above pushed the table over the break.
 #pagebreak(weak: true)
-== Depth of a tree
+=== Depth of a tree
 
 // B&dM p. 60, mirrored to diagram order: the book writes `depths = tri succ · tree zero` and
 // `depth = max · depths`.
