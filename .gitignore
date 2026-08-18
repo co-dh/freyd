@@ -42,3 +42,5 @@ Frobenius.pdf
 /node_modules
 /package.json
 /package-lock.json
+# personal scratch, never commit
+/nouse

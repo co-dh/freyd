@@ -2,7 +2,7 @@
   `diag-export` — draw the STATEMENT of a Lean declaration as a string diagram.
 
   `./scripts/diag-export Freyd.Diag.dom_cd` writes `diag/generated/Freyd.Diag.dom_cd.typ`, a page
-  that imports `../strdiag.typ` and draws the theorem's two sides joined by its relation symbol.
+  that imports `../circuit.typ` and draws the theorem's two sides joined by its relation symbol.
   The proof is not looked at; only `ConstantInfo.type`.
 
   WHY THIS IS A TERM WALK AND NOT A GRAPH LAYOUT.  A statement of this calculus is a composite of
@@ -64,7 +64,7 @@ namespace Freyd.DiagExport
 
 /-! ### Picture model
 
-The measurements are `diag/strdiag.typ`'s own, and must move with it: `BW`/`LEAD` are its constants,
+The measurements are `diag/circuit.typ`'s own, and must move with it: `BW`/`LEAD` are its constants,
 `meetW`/`convW` are its `meet-w`/`conv-w` at their default arguments. -/
 
 def BW : Float := 0.92
@@ -83,7 +83,7 @@ def TAPEPAD : Float := 0.22
 def CUTPAD : Float := 0.30
 /-- How far a cap's or a cup's strands bend over. -/
 def CAPBEND : Float := 0.60
-/-- `strdiag.typ`'s `SPLIT`: the stub between the two dots of a cap (`▷` then `⊸`) or a cup (`⟜`
+/-- `circuit.typ`'s `SPLIT`: the stub between the two dots of a cap (`▷` then `⊸`) or a cup (`⟜`
     then `◁`).  They are drawn split, as the paper draws the converse. -/
 def SPLITW : Float := 0.34
 /-- How much wider each further arc of a cap at a PRODUCT object bends.  The arcs of such a cap
@@ -99,7 +99,7 @@ def SYMCOL : Float := 0.95
 /-- The strand offset a fork, a cap and a cup open by, and the pitch new lanes are opened at.  A `⊗`
     may sit wider: `meetSep` grows with what is nested in its runs. -/
 def STACKSEP : Float := 0.62
-/-- `strdiag.typ`'s `conv-frame` geometry: the least a converse climbs from its incoming strand to
+/-- `circuit.typ`'s `conv-frame` geometry: the least a converse climbs from its incoming strand to
     its outgoing one, the fixed width its two bends and stubs cost around whatever rides the middle,
     and how far in from its left edge that middle begins.
 
@@ -118,7 +118,7 @@ def CONVCLEAR : Float := BH / 2.0
 inductive Cell where
   | wire
   | box (label : String)
-  /-- A generator `strdiag.typ` draws directly.  `lead` is the distance from this cell's LEFT EDGE
+  /-- A generator `circuit.typ` draws directly.  `lead` is the distance from this cell's LEFT EDGE
       to the anchor the drawing function wants: `delta`, `nabla` and `bang` hang their incoming stub
       to the LEFT of that anchor, so passing the left edge straight through leaves the wire hanging
       in mid-air — which is what disconnected `▷ ◁` pictures were. -/
@@ -131,7 +131,7 @@ inductive Cell where
       (`TapeDiagrams.pdf` Fig. 1).  A particle takes exactly one branch, which is the union. -/
   | union (upper lower : Array Cell)
   /-- A box the calculus cannot build out of its generators — the residual `R / S` of phase 9
-      (`diag/FO.lean`), which needs the second composition and the linear adjoint.  `strdiag.typ`
+      (`diag/FO.lean`), which needs the second composition and the linear adjoint.  `circuit.typ`
       reserves the dashed frame for exactly this. -/
   | dbox (label : String)
   /-- `R / S`, drawn as long division: a chamfered box like any other, whose interior is the
@@ -151,7 +151,7 @@ inductive Cell where
       two arrows side by side rather than copying one.  This is what makes a proof about bent wires
       readable: `𝟙 ⊗ S°` is a wire above a mirrored box, not an opaque label. -/
   | stack (upper lower : Array Cell)
-  /-- The cap `▷ ⊸` and the cup `⟜ ◁`, in `strdiag.typ`'s `capAt`/`cupAt` one-anchor form.  A cap
+  /-- The cap `▷ ⊸` and the cup `⟜ ◁`, in `circuit.typ`'s `capAt`/`cupAt` one-anchor form.  A cap
       takes a pair on the left and gives nothing on the right; a cup is its mirror.
 
       `n` is the WIDTH OF THE OBJECT, so `cap` at a two-letter word is two arcs and not one: it
@@ -214,7 +214,7 @@ partial def Cell.rightPort : Cell → Port
   | .cut inner => match inner.back? with | some c => c.rightPort | none => .one
   | _ => .one
 
-/-- A box has to hold its label.  `strdiag.typ`'s default `BW` fits about six characters at 10pt;
+/-- A box has to hold its label.  `circuit.typ`'s default `BW` fits about six characters at 10pt;
     anything longer widens the box rather than spilling out of it. -/
 def boxWidth (l : String) : Float := max BW (0.225 * l.length.toFloat + 0.30)
 
@@ -348,7 +348,7 @@ partial def runDeepSep (cells : Array Cell) : Float :=
     ((runLaneGaps cells).foldl (fun acc g => max acc (g / 2.0)) STACKSEP)
 
 /-- The offset of each strand of a meet from its centre line: enough that the two runs clear each
-    other by `STRANDGAP`.  At the leaves this is `strdiag.typ`'s own `0.62`. -/
+    other by `STRANDGAP`.  At the leaves this is `circuit.typ`'s own `0.62`. -/
 partial def meetSep (u l : Array Cell) : Float :=
   (runSpanDown u + runSpanUp l + STRANDGAP) / 2.0
 
@@ -440,7 +440,7 @@ partial def runEdgeDown (cells : Array Cell) : Float := Id.run do
   return reach
 
 /-- WHERE THE MIDDLE OF A CONVERSE SITS, above the strand the frame is entered at, and how far above
-    that strand the frame's outgoing one goes.  A single box wants `strdiag.typ`'s own `RISE / 2`
+    that strand the frame's outgoing one goes.  A single box wants `circuit.typ`'s own `RISE / 2`
     and `RISE`; anything taller — a meet, or another converse, which also climbs on its way through
     — pushes both out so that the frame still clears what rides it by `CONVCLEAR`. -/
 partial def convMid (body : Array Cell) : Float := max (RISE / 2.0) (runEdgeDown body + CONVCLEAR)
@@ -502,7 +502,7 @@ def fmt (x : Float) : String :=
   if n < 0.0 then "-" ++ s else s
 
 /-- `, invert: true` when the ground under this primitive is black, and nothing when it is white.
-    Every drawing function in `strdiag.typ` takes the same flag on the same axis, so one suffix
+    Every drawing function in `circuit.typ` takes the same flag on the same axis, so one suffix
     serves them all. -/
 def inv (b : Bool) : String := if b then ", invert: true" else ""
 
@@ -562,7 +562,7 @@ partial def Cell.lay (c : Cell) (x : Float) (ys : Array Float) (anchor sep : Flo
   | .gen fn w lead =>
     -- A generator is drawn at the lanes it is actually wired to, and REPORTS those lanes, so what
     -- it offers is what its neighbour expects and the two meet as a straight wire.  Never a
-    -- `strdiag.typ` default: those are not all `STACKSEP` — `swap`'s is 0.33 — and a generator drawn
+    -- `circuit.typ` default: those are not all `STACKSEP` — `swap`'s is 0.33 — and a generator drawn
     -- at one separation while reporting another abuts a fork whose prongs are somewhere else, which
     -- is what left the swap in `◁ σ = ◁` hanging beside the copy that feeds it.  The swap also
     -- spans its cell, or the wires into it stop short of the crossing.
@@ -905,7 +905,7 @@ mutual
 partial def toCell (e : Expr) : MetaM Cell := do
   match e.getAppFnArgs with
   | (``Cat.id, args) => return wires (args.back?.map wordWidth |>.getD 1)
-  -- width and lead are the generators' own stubs in `strdiag.typ`: `li + lo` wide, `li` of it to
+  -- width and lead are the generators' own stubs in `circuit.typ`: `li + lo` wide, `li` of it to
   -- the left of the anchor (`unitR` and `swap` anchor on their left edge, so their lead is 0).
   | (``Freyd.Diag.CartBicat.Δ, _) => return .gen "delta" 1.4 0.7
   | (``Freyd.Diag.CartBicat.«∇», _) => return .gen "nabla" 1.4 0.7
@@ -1121,7 +1121,7 @@ def page (declName : Name) (doc : Option String) (body : String) (isChain := fal
     | none => "#let doc = none\n"
   "// GENERATED by `diag-export` — do not edit; regenerate with\n\
    //   ./scripts/diag-export " ++ (if isChain then "--proof " else "") ++ declName.toString ++ "\n\
-   #import \"../strdiag.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv-frame, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
+   #import \"../circuit.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv-frame, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \

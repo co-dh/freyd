@@ -1,4 +1,4 @@
-// strdiag.typ — string-diagram primitives for the Rel(Set) calculus.  cetz 0.3.4.
+// circuit.typ — string-diagram primitives for the Rel(Set) calculus.  cetz 0.3.4.
 //
 // Reading conventions, as in diag/S2_124.typ and
 // functorialSemanticsForRelationalTheories.pdf §2 (p. 7):
