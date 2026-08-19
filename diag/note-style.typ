@@ -20,7 +20,9 @@
   set page(width: 25cm, height: 35cm, margin: 1.5cm)
   set text(size: 11.5pt)
   show raw: set text(size: 9.6pt)
-  show heading: set block(above: 16pt, below: 9pt)
+  // `sticky`: a heading whose display lands on the next page goes with it, instead of sitting alone
+  // at the foot of this one.
+  show heading: set block(above: 16pt, below: 9pt, sticky: true)
   // Justification inside a table cell stretches the spaces around long unbreakable monospace runs
   // (`Freyd.Diag.ClosedLinearBicat.«residual_comp_≤»`) into gaps you can drive a car through.
   show table: set par(justify: false)

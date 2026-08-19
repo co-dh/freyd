@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
 // draw.typ owns the Hinze–Marsden geometry (Catamorphism, Monad) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, lamsnake, lamfuse, lamabsorb, snake, snaketri, zpal, GIVEN1, GIVEN2, INDUCED, SLACK, fb-MAPC, fb-ALLC, fb-ZC, fb-WALL, fb-FILL, IY, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, AD, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, fb-dot, fb-rule, fb-wire, fb-region, fb-wall, fb-sing, syqnode, syqedge, domstr, pairstr, zwire, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
+#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, lambend, lamfuse, lamabsorb, snake, snaketri, zpal, GIVEN1, GIVEN2, INDUCED, SLACK, fb-MAPC, fb-ALLC, fb-ZC, fb-WALL, fb-FILL, IY, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, AD, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, fb-dot, fb-rule, fb-wire, fb-region, fb-wall, fb-sing, syqnode, syqedge, domstr, pairstr, zwire, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -718,6 +718,9 @@ subject to
 
 `R □` is `R`'s target, an identity arrow. For `R : A ⟶ B` write `∋ : P B ⟶ B`, dropping the
 subscript.
+
+// The converse of epsiloff IS membership, and the note's pointwise glosses already write it `∈`.
+`∈ ≜ ∋° : A ⟶ P A`
 ]]<pow-defn>
 
 #disp[#table(
@@ -788,40 +791,23 @@ subscript.
 )]<pow-laws>
 
 #pagebreak(weak: true)
-= `i ⊣ E` <sec-adj-E>
+= `i ⊣ E` Power Allegory defined as adjunction <sec-adj-E>
 
-// `existsImage` and `existsImage_eps`, AOP/A4_6.lean:90 and :94; `E(𝟙) = 𝟙`, `E(R S) = E(R) E(S)` at
-// :106 and :111.  B&dM's `P` is the power relator section below, and `E` is what makes the slide an equality.
-`E(R) ≜ Λ(∋ R)` is Bird & de Moor's *existential image* (p. 105), and it is the right adjoint of the
-inclusion `i : Map(𝒜) ↪ 𝒜`: `Λ` is the transpose, so `𝒜(A, B) ≅ Map(A, P B)`.
-
-#disp[#table(
-  columns: (3.6cm, 4.4cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*part of `i ⊣ E`*], [*type*], [*the statement*]),
-
-  [`∋` the counit, natural], [`∋ : P B ⟶ B`], [`E(R) ∋ = ∋ R`],
-  [`{·}` the unit, natural], [`{·} : A ⟶ P A`], [`f {·} = {·} E(f)`, for `f` a map],
-  [`Λ` the transpose], [`Λ : (A ⟶ B) ⟶ Map(A, P B)`], [`Λ(R) ∋ = R`, and `Λ(R)` the only map with it],
-  [`·∋` the transpose back], [`·∋ : Map(A, P B) ⟶ (A ⟶ B)`], [`{·} ∋ = 𝟙` and `Λ(∋) = 𝟙`, the two triangles],
-)]<adj-lean>
-
-// Trim the diagonal at 0.5, not the 1.15 Catamorphism's squares use: those clear a wide node box, and `B` is
-// one glyph.
+// The only picture here drawing `i` as a strand the arrow absorbs: `R : i A ⟶ B` is a 2-cell, so
+// bending that strand over a cap IS the transposition.  Hinze & Marsden, IntroString (4.7) p. 98.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (A, PB, B) = ((-3, 1.25), (3, 1.25), (3, -1.25))
-    ar(A, PB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.7)
-    ar(PB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(A, B, GIVEN2, s0: 0.5, s1: 0.5)
-    lab(0, 1.85, INDUCED)[`Λ(R)`]; lab(3.55, 0, GIVEN1)[`∋`]; lab(-0.2, -0.75, GIVEN2)[`R`]
-    node(A.at(0), A.at(1), black, `A`); node(PB.at(0), PB.at(1), INDUCED, `P B`)
-    node(B.at(0), B.at(1), black, `B`)
+    // Stacked, not side by side: `lambend()` is four panels wide, and a horizontal bijection pushed
+    // the row past the text block.  The nodes' own width is now the whole canvas's.
+    let (T, B) = (1.35, -1.35)
+    ar((-0.55, T), (-0.55, B), GIVEN2, s0: 0.55, s1: 0.55)
+    ar((0.55, B), (0.55, T), GIVEN1, s0: 0.55, s1: 0.55)
+    lab(-1.15, 0, GIVEN2)[`Λ`]; lab(1.25, 0, GIVEN1)[`·∋`]
+    node(0, T, black, `𝒜(A, B)`); node(0, B, black, `Map(A, E B)`)
   }),
-  lamsnake(),
-  [`Λ(R) ∋ = R` \ and `Λ(R)` is the only *map* with that property],
-)]<adj-E>
+  lambend(),
+  [`R = Λ(R) ∋` #h(1.2cm) `⟺` #h(1.2cm) `Λ(R) = {·} E(R)` #h(2cm) `E A = P A`],
+)]<adj-E-bend>
 
 // The two triangle identities, `i` first: horizontal order is applicative, so `E∘i` stands `E` left,
 // and the pair `{·}` opens lands on the incoming wire's right in one picture and its left in the other.
@@ -833,20 +819,19 @@ inclusion `i : Map(𝒜) ↪ 𝒜`: `Λ` is the transpose, so `𝒜(A, B) ≅ Ma
   [`{·} ∋ = 𝟙` #h(1.6cm) `Λ(∋) = 𝟙`],
 )]<adj-E-snakes>
 
-#pagebreak(weak: true)
 == Fusion law <sec-fusion>
 
 // `f` is the ONE arrow both halves carry, so it is GIVEN1 in both; the square has no `{·}` and no `R`,
 // which is the whole reason the string diagram stands beside it.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (C, A, PB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
+    let (C, A, EB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
     ar(C, A, GIVEN1, s0: 0.4, s1: 0.4)
-    ar(A, PB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    ar(C, PB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
+    ar(A, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
+    ar(C, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
     lab(0, 1.85, GIVEN1)[`f`]; lab(3.5, 0, INDUCED)[`Λ(R)`]; lab(-0.1, -0.8, INDUCED)[`Λ(f R)`]
     node(C.at(0), C.at(1), black, `C`); node(A.at(0), A.at(1), black, `A`)
-    node(PB.at(0), PB.at(1), INDUCED, `P B`)
+    node(EB.at(0), EB.at(1), INDUCED, `E B`)
   }),
   lamfuse(),
   [`Λ(f R) = f Λ(R)`, `f` a map],
@@ -855,13 +840,13 @@ inclusion `i : Map(𝒜) ↪ 𝒜`: `Λ` is the transpose, so `𝒜(A, B) ≅ Ma
 // The two panels are the SAME STROKES, which is the law: the square's two routes are one picture.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (C, PA, PB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
-    ar(C, PA, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    ar(PA, PB, GIVEN1, s0: 0.7, s1: 0.7)
-    ar(C, PB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
+    let (C, EA, EB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
+    ar(C, EA, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
+    ar(EA, EB, GIVEN1, s0: 0.7, s1: 0.7)
+    ar(C, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
     lab(0, 1.85, INDUCED)[`Λ(S)`]; lab(3.6, 0, GIVEN1)[`E(R)`]; lab(-0.1, -0.8, INDUCED)[`Λ(S R)`]
-    node(C.at(0), C.at(1), black, `C`); node(PA.at(0), PA.at(1), INDUCED, `P A`)
-    node(PB.at(0), PB.at(1), INDUCED, `P B`)
+    node(C.at(0), C.at(1), black, `C`); node(EA.at(0), EA.at(1), INDUCED, `E A`)
+    node(EB.at(0), EB.at(1), INDUCED, `E B`)
   }),
   lamabsorb(),
   [`Λ(S R) = Λ(S) E(R)`, for `S : C ⟶ A` and `R : A ⟶ B`],
@@ -874,15 +859,15 @@ inclusion `i : Map(𝒜) ↪ 𝒜`: `Λ` is the transpose, so `𝒜(A, B) ≅ Ma
   table.header([*scan line*], [*the object on it*], [*the bead just passed*]),
 
   [the top edge], [`C`], [—],
-  [between `{·}` and `S`], [`i E C` `=` `P C`], [`{·} : C ⟶ P C`],
-  [between `S` and `R`], [`i E A` `=` `P A`], [`S`, inside the pair, so `E(S) : P C ⟶ P A`],
-  [the bottom edge], [`i E B` `=` `P B`], [`R`, likewise `E(R) : P A ⟶ P B`],
+  [between `{·}` and `S`], [`i E C`], [`{·} : C ⟶ E C`],
+  [between `S` and `R`], [`i E A`], [`S`, inside the pair, so `E(S) : E C ⟶ E A`],
+  [the bottom edge], [`i E B`], [`R`, likewise `E(R) : E A ⟶ E B`],
 )]<absorb-scan>
 
 One string of beads, two groupings:
 
-- The first two, then the third: `{·} E(S) = Λ(S) : C ⟶ P A` followed by `E(R) : P A ⟶ P B`.
-- All three at once: `{·} E(S) E(R) = {·} E(S R) = Λ(S R) : C ⟶ P B`.
+- The first two, then the third: `{·} E(S) = Λ(S) : C ⟶ E A` followed by `E(R) : E A ⟶ E B`.
+- All three at once: `{·} E(S) E(R) = {·} E(S R) = Λ(S R) : C ⟶ E B`.
 
 Absorption holds for every `S`, so fusion is its case `S := f`, plus one step: absorption there reads
 `Λ(f R) = Λ(f) E(R)`, and turning `Λ(f) E(R)` into `f Λ(R)` needs `Λ(f) = f {·}`, which is
@@ -1904,7 +1889,7 @@ In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computat
 // B&dM §7.1, p. 166.  Diagram order reverses every arrow, the order `R` included — which is what
 // keeps all twelve laws below free of `°`; B&dM write that one `R` the other way round.
 #disp[#definition[
-For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∋°\R) : P A ⟶ A`, #h(4pt) `max R ≜ min R°`.
+For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : P A ⟶ A`, #h(4pt) `max R ≜ min R°`.
 
 `x (min R) a ⟺ a ∈ x ∧ (∀b ∈ x. b R a)`
 
@@ -1913,37 +1898,57 @@ every element of `x` points to.
 ]]<min-defn>
 
 #disp[#table(
-  columns: (1fr, 2.4cm),
+  columns: (1fr, 1fr),
   align: (left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*B&dM*]),
+  table.header([*the law*], [*what it says*]),
 
-  [`X ⊑ min R ⟺ X ⊑ ∋` and `∋° X ⊑ R`], [p. 166],
-  [`{·} (∋°\R) = R`], [(7.1)],
-  [`Λ(S) (∋°\R) = S°\R`], [(7.2)],
-  [`union (∋°\R) = ∋°\(∋°\R)` \ #src[`union ≜ Λ(∋ ∋) : P(P A) ⟶ P A`]], [(7.3)],
-  [`{·} min R = 𝟙 ∩ R`], [(7.4)],
-  [`Λ(S) min R = S ∩ (S°\R)`], [(7.5)],
-  [`Λ(S) min R = Λ(S) min(R ∩ S° S)`], [(7.6)],
-  [`E(S) min R = (∋ S) ∩ ((∋ S)°\R)`], [(7.7)],
-  [`P(f) min R = min(f R f°) f`], [(7.8)],
-  [`P(S) min R = (∋ S) ∩ (∋°\(S R))` \ #src[`R` reflexive]], [(7.9)],
-  [`P(S) min R ⊑ (∋ S) ∩ (∋°\(S R))`], [(7.10)],
-  [`P(min R) min R ⊑ union min R` \ #src[`R` a preorder]], [(7.11)],
-  [`P(min R) min R = P(Dom (min R)) union min R` \ #src[`R` a preorder]], [(7.12)],
+  [`X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`], [in the set, and below every element of it],
+  [`{·} (∈\R) = R`], [bounding a singleton is bounding its element],
+  [`Λ(S) (∈\R) = S°\R`], [bound `S`'s image without building the set],
+  [`union (∈\R) = ∈\(∈\R)` \ #src[`union ≜ Λ(∋ ∋) : P(P A) ⟶ P A`]],
+  [bound a union by bounding each member set],
+  [`{·} min R = 𝟙 ∩ R`],
+  [a singleton's minimum is its element, where `R` is reflexive \ #src[`Λ(S) min R` at `S := 𝟙`]],
+  [`Λ(S) min R = S ∩ (S°\R)`], [an `S`-value every `S`-value points to],
+  [`Λ(S) min R = Λ(S) min(R ∩ S° S)`], [only `R` between values `S` gives one argument counts — context],
+  [`E(S) min R = (∋ S) ∩ ((∋ S)°\R)`],
+  [the same for the image of a set \ #src[`Λ(S) min R` at `S := ∋ S`]],
+  [`P(f) min R = min(f R f°) f`], [shunt a function through a minimum],
+  [`P(S) min R = (∋ S) ∩ (∈\(S R))` \ #src[`R` reflexive]],
+  [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
+  [`P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`], [the half of the row above that costs nothing],
+  [`P(min R) min R ⊑ union min R` \ #src[`R` a preorder]],
+  [a minimum in each set, then a minimum of those],
+  [`P(min R) min R = P(Dom (min R)) union min R` \ #src[`R` a preorder]],
+  [the same as an equality, once empty sets are dropped],
 )]<min-laws>
 
-== `{·} (∋°\R) = R`
+== `X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`
+
+// The definition read through the two adjunctions it is built from.  B&dM p. 166 cites this as the
+// hint "universal property of min"; the chains below cite it the same way.
+#disp[
+#zline(
+  zsqc(`X`, `min R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
+  zpair(zsqc(`X`, `∋`), zsqc(`X`, `∈\R`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
+  zpair(zsqc(`X`, `∋`), zsqc(`∈ X`, `R`)),
+)
+]<min-up>
+
+== `{·} (∈\R) = R`
 
 // B&dM (7.1): the same four steps as the subsection below, with `{·} ∋ = 𝟙` — the `i ⊣ E` triangle —
 // where that one has `Λ(S) ∋ = S`.
 #disp[
 #zline(
-  zsqc(`X`, `{·} (∋°\R)`),
+  zsqc(`X`, `{·} (∈\R)`),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
-  zsqc(`{·}° X`, `∋°\R`),
+  zsqc(`{·}° X`, `∈\R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
-  zsqc(`∋° {·}° X`, `R`),
+  zsqc(`∈ {·}° X`, `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`°`],
   zsqc(`({·} ∋)° X`, `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`i⊣E`],
@@ -1951,16 +1956,16 @@ every element of `x` points to.
 )
 ]<min-71>
 
-== `Λ(S) (∋°\R) = S°\R`
+== `Λ(S) (∈\R) = S°\R`
 
 // B&dM (7.2): two adjunctions composed, `Λ(S) ∋ = S` collapsing the middle — the shape of (1.2a).
 #disp[
 #zline(
-  zsqc(`X`, `Λ(S) (∋°\R)`),
+  zsqc(`X`, `Λ(S) (∈\R)`),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
-  zsqc(`Λ(S)° X`, `∋°\R`),
+  zsqc(`Λ(S)° X`, `∈\R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
-  zsqc(`∋° Λ(S)° X`, `R`),
+  zsqc(`∈ Λ(S)° X`, `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`°`],
   zsqc(`(Λ(S) ∋)° X`, `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
@@ -1969,3 +1974,222 @@ every element of `x` points to.
   zsqc(`X`, `S°\R`),
 )
 ]<min-72>
+
+== `union (∈\R) = ∈\(∈\R)`
+
+// B&dM (7.3): the shape of the two chains above with `union ∋ = ∋ ∋` in the middle.
+#disp[
+#zline(
+  zsqc(`X`, `union (∈\R)`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`union° X`, `∈\R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
+  zsqc(`∈ union° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`°`],
+  zsqc(`(union ∋)° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
+  zsqc(`(∋ ∋)° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`°`, `T·⊣T\`],
+  zsqc(`X`, `∈\(∈\R)`),
+)
+]<min-73>
+
+== `Λ(S) min R = S ∩ (S°\R)`
+
+// B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
+#disp[
+#zline(
+  zsqc(`X`, `Λ(S) min R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`Λ(S)° X`, `min R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
+  zpair(zsqc(`Λ(S)° X`, `∋`), zsqc(`Λ(S)° X`, `∈\R`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zpair(zsqc(`X`, `Λ(S) ∋`), zsqc(`X`, `Λ(S) (∈\R)`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`, @min-72],
+  zpair(zsqc(`X`, `S`), zsqc(`X`, `S°\R`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
+  zsqc(`X`, `S ∩ (S°\R)`),
+)
+]<min-75>
+
+== `Λ(S) min R = Λ(S) min(R ∩ S° S)`
+
+// B&dM (7.6): `X ⊑ S` already forces `S° X ⊑ S° S`, so the extra conjunct costs nothing — that is
+// the whole content, and it is the middle step.
+#disp[
+#zline(
+  zsqc(`X`, `Λ(S) min(R ∩ S° S)`),
+  zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
+  zsqc(`X`, `S ∩ (S°\(R ∩ S° S))`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`, `T·⊣T\`],
+  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R ∩ S° S`)),
+)
+// Six boxes on one row squeezed the wide ones into three lines each; the break is at the pair.
+#zline(
+  zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`, `S°·` monotone],
+  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`, `Δ⊣∩`],
+  zsqc(`X`, `S ∩ (S°\R)`),
+  zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
+  zsqc(`X`, `Λ(S) min R`),
+)
+]<min-76>
+
+== `P(f) min R = min(f R f°) f`
+
+// B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
+// modular law, and it needs `f` simple — the only such step in §18.
+#disp[
+#zline(
+  zsqc(`P(f) min R`, none, name: "f a map"),
+  zstep(op: sym.eq, under: true)[`P = E` on maps, @min-75],
+  zsqc(`(∋ f) ∩ ((∋ f)°\R)`, none),
+  zstep(op: sym.eq, under: true)[`°`, `T·⊣T\`, `f°·⊣f·`],
+  zsqc(`(∋ f) ∩ (∈\(f R))`, none),
+)
+// An operator is stretched to the reason's UNWRAPPED width, so a reason squeezed onto two lines
+// overhangs the boxes beside it; the breaks below keep each reason on one line.
+#zline(
+  zstep(op: sym.eq, under: true)[modular law, `f` simple],
+  zsqc(`(∋ ∩ ((∈\(f R)) f°)) f`, none),
+  zstep(op: sym.eq, under: true)[`·f⊣·f°`, `min`],
+  zsqc(`min(f R f°) f`, none),
+)
+]<min-78>
+
+== `P(S) min R = (∋ S) ∩ (∈\(S R))`
+
+// B&dM (7.9), `R` reflexive.  `⊑` is @min-710; `⊒` is the one place in §18 where a tabulation is
+// unavoidable — `y` below is the set the right-hand side only describes.
+#disp[#definition[
+`(p, q)` tabulates `W ≜ (∋ S) ∩ (∈\(S R))`, and #h(4pt) `y ≜ Λ((p ∋ S) ∩ (q R°))`, a map.
+]]<min-79-defn>
+
+#disp[
+#zline(
+  zsqc(`W`, `P(S) min R`),
+  zstep(op: sym.arrow.l.double, under: true)[`p° q = W`, `𝟙 ⊑ y y°`],
+  zpair(zsqc(`p° y`, `P(S)`), zsqc(`y° q`, `min R`)),
+)
+]<min-79>
+
+#disp[
+#zline(
+  zsqc(`y° q`, `∋`),
+  zstep(op: sym.arrow.l.double, under: true)[`f°·⊣f·`, `·∋⊣Λ`],
+  zsqc(`q`, `(p ∋ S) ∩ (q R°)`),
+  zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `f°·⊣f·`],
+  // Only the LOWER box of a pair can carry a `name`: on the upper one it lands on the box below it.
+  zpair(zsqc(`p° q`, `∋ S`), zsqc(`𝟙`, `R°`, name: "R reflexive")),
+)
+#zline(
+  zsqc(`∈ y° q`, `R`),
+  zstep(op: sym.arrow.l.double, under: true)[`·∋⊣Λ`, `°`, meet],
+  zsqc(`R q° q`, `R`, name: "q simple"),
+)
+]<min-79-min>
+
+#disp[
+#zline(
+  zsqc(`p° y`, `P(S)`),
+  zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `·T⊣/T`, `°`, `f°·⊣f·`],
+  zpair(zsqc(`p° y ∋`, `∋ S`), zsqc(`p ∋`, `y ∋ S°`)),
+)
+#zline(
+  zsqc(`p° y ∋`, `∋ S`),
+  zstep(op: sym.arrow.l.double, under: true)[`·∋⊣Λ`, meet],
+  zsqc(`p° p ∋ S`, `∋ S`, name: "p simple"),
+)
+#zline(
+  zsqc(`p ∋`, `y ∋ S°`),
+  zstep(op: sym.arrow.l.double, under: true)[modular law],
+  zsqc(`p ∋`, `(p ∋) ∩ (q R° S°)`),
+  zstep(op: sym.arrow.l.double, under: true)[`𝟙 ⊑ q q°`],
+  zsqc(`q° p ∋`, `R° S°`),
+  zstep(op: sym.arrow.l.double, under: true)[`°`, `T·⊣T\`],
+  zsqc(`W`, `∈\(S R)`, name: "W's right half"),
+)
+]<min-79-pow>
+
+// `sticky` keeps a heading with the display under it, but the display here is a breakable figure, so
+// the heading still stranded itself at the foot of the page; the break is set by hand.
+#pagebreak(weak: true)
+== `P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`
+
+// B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
+// property of `min` that is the whole proof.  The equality (7.9) is not this — it needs tabulations.
+#disp[
+#zline(
+  zsqc(`P(S) min R`, `(∋ S) ∩ (∈\(S R))`),
+  zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `T·⊣T\`],
+  zpair(zsqc(`P(S) min R`, `∋ S`), zsqc(`∈ P(S) min R`, `S R`)),
+  zstep(op: sym.arrow.l.double, under: true)[UP of `min`],
+  zpair(zsqc(`P(S) ∋`, `∋ S`), zsqc(`∈ P(S)`, `S ∈`)),
+)
+]<min-710>
+
+== `P(min R) min R ⊑ union min R`
+
+// B&dM (7.11): (7.5) at `S := ∋ ∋` opens the right-hand side, then the same two facts as (7.10)
+// close both strands — the left one twice, the right one against transitivity.
+#disp[
+#zline(
+  zsqc(`P(min R) min R`, `union min R`, name: "R a preorder"),
+  zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
+  zsqc(`P(min R) min R`, `(∋ ∋) ∩ ((∋ ∋)°\R)`),
+  zstep(op: sym.arrow.l.double, under: true)[`°`, `Δ⊣∩`, `T·⊣T\`],
+  zpair(zsqc(`P(min R) min R`, `∋ ∋`), zsqc(`∈ ∈ P(min R) min R`, `R`)),
+  zstep(op: sym.arrow.l.double, under: true)[UP of `min`, `R` transitive],
+  zpair(zsqc(`P(min R) ∋`, `∋ min R`), zsqc(`∈ P(min R)`, `min R ∈`)),
+)
+]<min-711>
+
+== `P(min R) min R = P(Dom (min R)) union min R`
+
+// B&dM (7.12), `R` a preorder.  `⊑` puts the domain in for free; `⊒` is @min-79 at `S := min R`
+// and then the two halves the book leaves as exercises.
+#disp[
+#zline(
+  zsqc(`P(min R) min R`, none),
+  zstep(op: sym.eq, under: true)[`Dom (min R) min R = min R`],
+  zsqc(`P(Dom (min R) min R) min R`, none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`P` a relator],
+  zsqc(`P(Dom (min R)) P(min R) min R`, none),
+  zstep(op: sym.subset.eq.sq, under: true)[@min-711],
+  zsqc(`P(Dom (min R)) union min R`, none),
+)
+]<min-712>
+
+#disp[
+#zline(
+  zsqc(`P(Dom (min R)) union min R`, `P(min R) min R`),
+  zstep(op: sym.arrow.l.double, under: true)[@min-79 at `S := min R`, `Δ⊣∩`, `T·⊣T\`],
+  zpair(zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
+        zsqc(`∈ P(Dom (min R)) union min R`, `min R R`)),
+)
+#zline(
+  zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
+  zstep(op: sym.arrow.l.double, under: true)[`P(Dom (min R)) ⊑ 𝟙`],
+  zsqc(`union min R`, `∋ min R`),
+)
+#zline(
+  zstep(op: sym.arrow.l.double, under: true)[`T(U ∩ V) ⊑ T U ∩ T V`, `·∋⊣Λ`, @min-73],
+  zsqc(`(∋ ∋) ∩ (∈\(∈\R))`, `∋ min R`),
+  zstep(op: sym.arrow.l.double, under: true)[modular law],
+  zsqc(`∋ (∋ ∩ (∈ (∈\(∈\R))))`, `∋ (∋ ∩ (∈\R))`, name: "counit of T·⊣T\\"),
+)
+#zline(
+  zsqc(`∈ P(Dom (min R)) union min R`, `min R R`),
+  zstep(op: sym.arrow.l.double, under: true)[`∈` lax natural],
+  zsqc(`Dom (min R) ∈ union min R`, `min R R`),
+)
+#zline(
+  zstep(op: sym.arrow.l.double, under: true)[`Dom (min R) ⊑ min R (min R)°`],
+  zsqc(`min R (min R)° ∈ union min R`, `min R R`),
+  zstep(op: sym.arrow.l.double, under: true)[`(min R)° ⊑ ∈`, `∈ ∈ union ⊑ ∈`],
+  zsqc(`min R ∈ min R`, `min R R`, name: "UP of min"),
+)
+]<min-712-geq>

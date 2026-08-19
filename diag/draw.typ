@@ -7,7 +7,7 @@
 
 // A newline ENDS an import list in Typst — keep this on one line however long it gets, or the names
 // after the break are parsed as an expression and `hm-row` becomes the subtraction `hm - row`.
-#import "hm.typ": KNEE, cetz, d, hm-apex, hm-bead, hm-join, hm-name, hm-panel, hm-port, hm-region, hm-row, hm-sepx, hm-turn, hm-turn-split, hm-wire, lw
+#import "hm.typ": KNEE, cetz, d, hm-apex, hm-bead, hm-join, hm-name, hm-panel, hm-path, hm-port, hm-region, hm-row, hm-sepx, hm-turn, hm-turn-split, hm-wire, lw
 // Same one-line rule.  NOT `cap`/`cup` from circuit and NOT `*` from note-style: this file already
 // binds `cap`, and note-style re-exports a `cetz`/`d` that would shadow hm.typ's.
 #import "circuit.typ": wire, bend, gbox, dot as wiredot
@@ -580,7 +580,9 @@
 
 // ONE panel of `lamfuse`/`lamabsorb`: `{·}` opens the pair `i E` at `yu` and it stays open to the
 // bottom edge, so a bead below that line reads as `E` of its arrow and one above it as the arrow.
-#let lampanel(h, yu, beads) = hm-panel(LAMW, h, fill: fb-ALLC, {
+// `cols` is one longer than `beads` — the segments the beads cut the object wire into — so a picture
+// with fewer beads passes a shorter list instead of getting the three-colour one out of bounds.
+#let lampanel(h, yu, beads, top: `C`, bot: `B`, cols: (CCOL, TCOL, BCOL)) = hm-panel(LAMW, h, fill: fb-ALLC, {
   d.rect((LAMX.at(2), 0), (LAMW, h), fill: UC, stroke: none)
   d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
     d.line((LAMX.at(0), 0), (LAMX.at(0), yu - LAMR))
@@ -596,14 +598,130 @@
   // The object wire changes type at every bead on it, so the bead heights ARE the segment bounds:
   // `C` down to the first, `A` to the second, `B` to the bottom edge.
   let ys = (h,) + beads.map(b => b.at(0)) + (0,)
-  for (k, c) in (CCOL, TCOL, BCOL).enumerate() {
+  for (k, c) in cols.enumerate() {
     hm-wire(((LAMX.at(2), ys.at(k)), (LAMX.at(2), ys.at(k + 1))), col: c)
   }
   hm-bead((LAMM, yu), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
   for (y, b, col) in beads { hm-bead((LAMX.at(2), y), b, col: col) }
   lamnames(LAMMARG / 2)
-  hm-port((LAMX.at(2), h), `C`, col: CCOL); hm-port((LAMX.at(2), 0), `B`, dir: -1, col: BCOL)
+  hm-port((LAMX.at(2), h), top, col: cols.first()); hm-port((LAMX.at(2), 0), bot, dir: -1, col: cols.last())
 })
+
+// The bare arrow `R : A ⟶ B` in `𝒜`, nothing opened: `lamsnake`'s right-hand side and
+// `lamtranspose`'s left-hand side are the same panel, at the height its row needs.
+#let lamplain(h, y) = hm-panel(2 * LAMPAD, h, fill: fb-ALLC, {
+  d.rect((LAMPAD, 0), (2 * LAMPAD, h), fill: UC, stroke: none)
+  hm-wire(((LAMPAD, h), (LAMPAD, y)), col: TCOL)
+  hm-wire(((LAMPAD, y), (LAMPAD, 0)), col: BCOL)
+  hm-bead((LAMPAD, y), `R`)
+  hm-port((LAMPAD, h), `A`, col: TCOL); hm-port((LAMPAD, 0), `B`, dir: -1, col: BCOL)
+})
+
+// `lamtranspose` — `Λ` and `·∋` are no part of a picture: they take one picture to another, so they
+// are drawn as the ARROWS BETWEEN two panels.  `Λ` glues the `{·}` cap on and `·∋` glues `∋` on.
+#let lamtranspose() = {
+  let (h, y) = (lamh(2), lamy(2))
+  // The cap each arrow glues on is the colour of that cap's bead, so the arrow and the bead it
+  // produces are read as one thing.
+  let name(a, n, col, up) = {
+    let (t, b) = (text(10pt, col)[#n], text(17pt, col)[#a])
+    grid(rows: 2, row-gutter: 1pt, align: center, ..if up { (t, b) } else { (b, t) })
+  }
+  hm-row(
+    (lamplain(h, y.at(1)),
+     lampanel(h, y.at(0), ((y.at(1), `R`, black),), top: `A`, cols: (TCOL, BCOL))),
+    sep: grid(rows: 2, row-gutter: 5pt, align: center,
+      name($arrow.r.long$, `Λ`, GIVEN2, true), name($arrow.l.long$, `·∋`, GIVEN1, false)),
+    gap: 2.6,
+  )
+}
+
+// `lambend` — IntroString (4.7) p.98 at `i ⊣ E`.  ONLY PICTURE HERE THAT DRAWS `i` AS A STRAND THE
+// ARROW ABSORBS: `R : i A ⟶ B` is a 2-cell `i∘A ⇒ B`, so bending `i` over a cap is what transposes it.
+#let BH = 2.9                   // panel height, all four
+#let BRISE = 0.62               // hm-turn's default rise, respelled so a fill can be handed the same
+// The turn re-traced for a FILL: `hm-turn` strokes this same cubic, so region and wire cannot disagree.
+#let bturn(xl, xr, y, dir) = {
+  let h = dir * BRISE * (xr - xl)
+  d.bezier((xl, y), (xr, y), (xl, y + h), (xr, y + h))
+}
+
+// `R : A ⟶ B` — the `A` strand bends into `i` and the pair leaves as `B`.
+#let bp1() = {
+  let (xi, xa, w, y) = (0.7, 1.8, 2.4, 1.25)
+  hm-panel(w, BH, fill: fb-ALLC, {
+    hm-region(((xa, BH), (xa, y + KNEE), (xi, y), (xi, 0), (w, 0), (w, BH)), UC)
+    hm-region(((xi, BH), (xi, y), (xa, y + KNEE), (xa, BH)), fb-MAPC)
+    hm-wire(((xi, BH), (xi, y)), col: ADJC.i); hm-wire(((xi, y), (xi, 0)), col: BCOL)
+    hm-join(xa, BH, xi, y, col: TCOL)
+    hm-bead((xi, y), `R`, dx: -0.3, anchor: "east")
+    hm-port((xi, BH), `i`, col: ADJC.i); hm-port((xa, BH), `A`, col: TCOL)
+    hm-port((xi, 0), `B`, dir: -1, col: BCOL)
+  })
+}
+
+// `Λ(R) ∋` — the map first, then `∋` closes the `i E` pair it opened.
+#let bp2() = {
+  // The `∋` name hangs below the arch, so a `y2` under 1.05 puts that name outside the panel.
+  let (xi, xm, xa, w) = (0.5, 1.35, 2.2, 3.4)
+  let (y1, y2) = (1.95, 1.05)
+  hm-panel(w, BH, fill: fb-ALLC, {
+    hm-region(((xa, BH), (xa, 0), (w, 0), (w, BH)), UC)
+    d.merge-path(close: true, fill: fb-MAPC, stroke: none, {
+      d.line((xi, BH), (xi, y2))
+      bturn(xi, xm, y2, -1)
+      hm-path(((xm, y2), (xm, y1 - KNEE), (xa, y1), (xa, BH)))
+    })
+    hm-wire(((xi, BH), (xi, y2)), col: ADJC.i)
+    hm-turn-split(xi, xm, y2, ADJC.i, ADJC.E, dir: -1)
+    hm-wire(((xm, y2), (xm, y1 - KNEE), (xa, y1)), col: ADJC.E)
+    hm-wire(((xa, BH), (xa, y1)), col: TCOL); hm-wire(((xa, y1), (xa, 0)), col: BCOL)
+    hm-bead((xa, y1), `Λ(R)`, col: INDUCED)
+    hm-bead(hm-apex(xi, xm, y2, dir: -1), `∋`, col: GIVEN1, dx: 0, dy: -0.3, anchor: "north")
+    hm-port((xi, BH), `i`, col: ADJC.i); hm-port((xa, BH), `A`, col: TCOL)
+    hm-port((xa, 0), `B`, dir: -1, col: BCOL)
+  })
+}
+
+// `{·} E(R)` — the cap opens `E i`, and `R` below it absorbs that `i`, so what leaves is `E B`.
+#let bp3() = {
+  // The `{·}` name rises above the arch, so a `y1` over 1.8 puts that name outside the panel.
+  let (xe, xi, xa, w) = (0.5, 1.35, 2.2, 3.0)
+  let (y1, y2) = (1.8, 0.9)
+  hm-panel(w, BH, fill: fb-MAPC, {
+    d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
+      bturn(xe, xi, y1, 1)
+      d.line((xi, y1), (xi, 0), (xe, 0))
+    })
+    hm-region(((xa, BH), (xa, y2 + KNEE), (xi, y2), (xi, 0), (w, 0), (w, BH)), UC)
+    hm-turn-split(xe, xi, y1, ADJC.E, ADJC.i, dir: 1)
+    hm-wire(((xe, y1), (xe, 0)), col: ADJC.E)
+    hm-wire(((xi, y1), (xi, y2)), col: ADJC.i); hm-wire(((xi, y2), (xi, 0)), col: BCOL)
+    hm-join(xa, BH, xi, y2, col: TCOL)
+    hm-bead(hm-apex(xe, xi, y1, dir: 1), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+    hm-bead((xi, y2), `R`)
+    hm-port((xa, BH), `A`, col: TCOL)
+    hm-port((xe, 0), `E`, dir: -1, col: ADJC.E); hm-port((xi, 0), `B`, dir: -1, col: BCOL)
+  })
+}
+
+// `Λ(R) : A ⟶ E B` — one bead, and the `E` it produces is the strand that bent away in `bp2`.
+#let bp4() = {
+  let (xe, xa, w, y) = (0.7, 1.8, 3.0, 1.4)
+  hm-panel(w, BH, fill: fb-MAPC, {
+    hm-region(((xa, y), (xe, y - KNEE), (xe, 0), (xa, 0)), fb-ALLC)
+    hm-region(((xa, BH), (xa, 0), (w, 0), (w, BH)), UC)
+    hm-wire(((xa, BH), (xa, y)), col: TCOL); hm-wire(((xa, y), (xa, 0)), col: BCOL)
+    hm-wire(((xa, y), (xe, y - KNEE), (xe, 0)), col: ADJC.E)
+    hm-bead((xa, y), `Λ(R)`, col: INDUCED)
+    hm-port((xa, BH), `A`, col: TCOL)
+    hm-port((xe, 0), `E`, dir: -1, col: ADJC.E); hm-port((xa, 0), `B`, dir: -1, col: BCOL)
+  })
+}
+
+#let lambend() = grid(columns: 3, column-gutter: 20pt, align: horizon,
+  hm-row((bp1(), bp2()), gap: 1.2), text(15pt)[$arrow.l.r.double$],
+  hm-row((bp3(), bp4()), gap: 1.2))
 
 // `lamsnake` — `Λ(R) ∋ = R`: the object wire runs straight through, never consumed.  Beside it `{·}`
 // opens the pair `i E` and `∋` closes it, and the loop's two sides are those two functors.
@@ -630,13 +748,7 @@
       lamnames(LAMY.at(1))
       hm-port((LAMX.at(2), LAMH), `A`, col: TCOL); hm-port((LAMX.at(2), 0), `B`, dir: -1, col: BCOL)
     }),
-    hm-panel(2 * LAMPAD, LAMH, fill: fb-ALLC, {
-      d.rect((LAMPAD, 0), (2 * LAMPAD, LAMH), fill: UC, stroke: none)
-      hm-wire(((LAMPAD, LAMH), (LAMPAD, LAMY.at(1))), col: TCOL)
-      hm-wire(((LAMPAD, LAMY.at(1)), (LAMPAD, 0)), col: BCOL)
-      hm-bead((LAMPAD, LAMY.at(1)), `R`)
-      hm-port((LAMPAD, LAMH), `A`, col: TCOL); hm-port((LAMPAD, 0), `B`, dir: -1, col: BCOL)
-    }),
+    lamplain(LAMH, LAMY.at(1)),
   ),
   gap: 1.2,
 )
