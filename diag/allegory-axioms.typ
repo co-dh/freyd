@@ -40,9 +40,6 @@
 #import "generated/Freyd.Alg.leftDiv_comp.typ": pic as p-ldiv-assoc
 #import "generated/Freyd.Alg.map_comp_div.typ": pic as p-map-div
 #import "generated/Freyd.Alg.div_comp_recip_map.typ": pic as p-div-map
-#import "generated/Freyd.Alg.symmDiv.typ": pic as p-symmdiv
-#import "generated/Freyd.Alg.symmDiv_recip.typ": pic as p-sdiv-recip
-#import "generated/Freyd.Alg.symmDiv_comp.typ": pic as p-sdiv-comp
 // §2.314's list, in the book's order.
 #import "generated/Freyd.Alg.div_comp.typ": pic as p-div-comp
 #import "generated/Freyd.Alg.one_le_div_self.typ": pic as p-one-div
@@ -169,91 +166,30 @@ diagrams.
 
 == Composing adjunctions <sec-compose>
 
-One more adjunction first, which §@sec-adj cannot hold because it is ANTITONE — its left adjoint turns
-joins into meets, so that table's `F` preserves `∪` column would read the wrong way; its type is
-contravariant, `F : (B⟶C)^op ⟶ (A⟶B)`, so the `F`'s type column cannot be written in §@sec-adj's form
-either; and BOTH composites are inflationary, `𝟙⊑FG` and `𝟙⊑GF`, so the `GF⊑𝟙` column has no entry
-for it at all. That last is the signature of an antitone Galois connection — two closure operators
-rather than a closure and an interior — and the table's own *both units* cell is it:
 
-// Proved as `le_div_iff` then `le_leftDiv_iff`.
-#disp[#table(
-  columns: 3, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
-  table.header([*`F ⊣ G`*], [*the law*], [*both units*]),
-  [`R/ ⊣ \R`], [`T⊑R/S` iff `S⊑T\R`], [`S⊑(R/S)\R`, `T⊑R/(T\R)`],
-)]<div-antitone>
-
-Two rows of §@sec-adj composed are a third adjunction, and its right adjoint read in the two orders is a
-law. Row first, column second; right adjoints compose the other way round, which is where every
-reversal in the table comes from.
-
-The table's `⟜◁` row and column need a name for that row's left adjoint, and §@sec-adj gave it none:
-write `R^` for the operator listed there, `R ↦ (𝟙⊗⟜◁)(R⊗𝟙)`.
-
-#disp[#block(inset: (y: 6pt))[
-  `R : X⊗A ⟶ Y` #h(1.4cm) `R^ = (𝟙⊗⟜◁)(R⊗𝟙) : X ⟶ Y⊗A`
-]]<bend-type>
-
-// HAND-DRAWN, and allowed to be: `R^` is a definition, with no Lean declaration to export from.  ONE
-// canvas — two side by side would centre on their own boxes and put the two `R` boxes at different heights.
-#disp[#box(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
-  let GLOW = (thickness: 4.5pt, paint: TINT, cap: "round")
-  let bent(glow) = {
-    let seg(a, b) = if glow { d.line(a, b, stroke: GLOW) } else { wire(a, b) }
-    let arc(a, b) = {
-      let mx = a.at(0) + (b.at(0) - a.at(0)) * 0.6
-      if glow { d.bezier(a, b, (mx, a.at(1)), (mx, b.at(1)), stroke: GLOW) } else { bend(a, b) }
-    }
-    // `⟜` then `◁`, drawn split: the pair of `A`s is opened out of nothing and one of them is fed
-    // back into the box it came out beside.
-    seg((4.76, -0.76), (5.1, -0.76))
-    arc((5.1, -0.76), (5.7, -0.42)); seg((5.7, -0.42), (6.1, -0.42))
-    arc((5.1, -0.76), (5.7, -1.1)); seg((5.7, -1.1), (7.7, -1.1))
-    if not glow { wiredot((4.76, -0.76)); wiredot((5.1, -0.76)) }
-  }
-  // `R` itself: `X` and `A` in, `Y` out.
-  wire((0, 0.42), (0.9, 0.42)); wire((0, -0.42), (0.9, -0.42))
-  gbox((0.9, 0), [R], h: 1.5); wire((1.82, 0), (2.4, 0))
-  lab(-0.35, 0.42, black)[$X$]; lab(-0.35, -0.42, black)[$A$]; lab(2.75, 0, black)[$Y$]
-  // `R^`: the same box, the `A` wire bent round to the other side.  Glow first, then the black
-  // strand, then the box — each pass covers the round cap the pass before it left in the way.
-  bent(true); bent(false)
-  wire((4.6, 0.42), (6.1, 0.42))
-  gbox((6.1, 0), [R], h: 1.5); wire((7.02, 0), (7.7, 0))
-  lab(4.25, 0.42, black)[$X$]; lab(8.05, 0, black)[$Y$]; lab(8.05, -1.1, black)[$A$]
-}))
-#align(center, src[left `R`, right `R^`: the pale strand is everything the bend adds, and the box
-and the `X`, `Y` wires are where they were.])]<bend-pic>
-
-In `Rel` the two are one set of triples split two ways — the bend moves the `A` coordinate from the
-input side to the output side:
-
-#disp[#block(inset: (y: 6pt))[`x R^ (y,a) ⟺ (x,a) R y`]]<bend-rel>
-
-Read `Rel(I,J)` as an `I×J` boolean matrix — Freyd's §2.111, which defines reciprocation entrywise
-as `j R° i = i R j` — and `R^` is the smallest of three degrees of bending, all of the same
-`R : X⊗A ⟶ Y`:
-
-#disp[#table(
-  columns: 4, align: left + horizon, inset: 4pt, stroke: 0.4pt + luma(190),
-  table.header([], [*what moves*], [*type*], [*as a matrix*]),
-  [`R^`], [one index, to the output side], [`X ⟶ Y⊗A`],
-    [rows re-indexed from `(x,a)` to `x`, columns from `y` to `(y,a)`],
-  [`R°`], [the input index goes out and the output index comes in
-    #src[drawn in the `°` section below]], [`Y ⟶ X⊗A`], [the transpose],
-  [`⌜R⌝`], [everything, to the output side — the *name* of `R`], [`𝕀 ⟶ Y⊗A⊗X`],
-    [the whole matrix flattened into one row],
-)]<bend-degrees>
-
-All three carry the same entries; only the split of the indices into row and column changes. That is
-what a matrix transpose always was — moving an index from the domain side to the codomain side — and
-compact closure is the structure that permits the move: `Rel` is self-dual, `A* = A`, so there is no
-up/down index distinction to keep track of.
-
-#src[Of the three, only `^` is this note's own, the half bend having no settled symbol. `⌜R⌝` and
-its mirror the *coname* `⌞R⌟ : Y⊗A⊗X ⟶ 𝕀` are the literature's. Neither is the transpose `Λ` of
-B&dM, which is Freyd's §2.421 `R/S = Λ(R)Λ°(S)` as well: that one sends `R : X⊗A ⟶ Y` to a MAP
-`Λ(R) : X⊗A ⟶ P Y`, and needs a power allegory rather than compact closure.]
+// Why every cell below is an equation and not a `⊑`: the chain runs down one composite and back up the
+// other, so both are right adjoints of the one left adjoint `X ↦ f°(X T)`, and that one is unique.
+#disp[
+#zline(
+  zsqc(`X`, `f(R/T)`, name: "f a map"),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`f° X`, `R/T`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·T⊣/T`],
+  zsqc(`(f° X) T`, `R`),
+)
+#zline(
+  zstep(op: sym.arrow.l.r.double, under: true)[associativity],
+  zsqc(`f°(X T)`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`X T`, `f R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·T⊣/T`],
+  zsqc(`X`, `(f R)/T`),
+)
+#zline(
+  zstep(under: true)[indirect equality],
+  zsqc(`f(R/T)`, `(f R)/T`, eq: true),
+)
+]<adj-cross-why>
 
 // A cross table, not a list: what matters is WHICH PAIRS give a law, and a list of the ones that do
 // hides how few they are.  `Δ` is a column and `∪`, `⊥` rows, on ONE side each — the other is all-empty.
@@ -673,78 +609,8 @@ hates, so nothing composes to it. The missing path is exactly the strictness of
 Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what
 the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.
 
-
-== `R/R` is a preorder, which is what a monad is here
-
-A *monad* in a locally posetal 2-category is a 1-cell `M` with `𝟙 ⊑ M` and `M M ⊑ M` — a unit and a
-multiplication, and with the hom-posets thin there is nothing else to give. In `Rel` that is a
-reflexive transitive relation: a preorder. The table above proves both halves at `M := R/R`, and
-names the preorder they define.
-
-`(R/R) R = R` is then the action that makes `R` a module over that monad — Hinze and Marsden's
-α : M ∘ A →̇ A (IntroString p. 83) at M := `R/R`, A := `R`. Their two
-coherence conditions are free here: parallel 2-cells are unique, so any two of them are equal.
-
-// Hand-drawn one dimension up — region an object, wire a relation, dot a 2-cell — read bottom to top.
-// `R/R` is an endo-wire on `X`, so the SAME fill lies on both sides: that is a monad, not a missing colour.
-#disp[#box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
-  d.rect((-1.7, -1.2), (1.7, 1.2), fill: fb-ALLC, stroke: none)
-  d.rect((-1.7, -1.2), (0.5, 1.2), fill: fb-MAPC, stroke: none)
-  // `R` runs the full height: it is the wire the action lands ON, and landing on it changes nothing.
-  d.line((0.5, -1.2), (0.5, 1.2), stroke: 1.1pt)
-  d.bezier((-0.6, -1.2), (0.5, 0.15), (-0.6, -0.3), (0.0, 0.15), stroke: 1.1pt)
-  fb-dot((0.5, 0.15), `α`, dx: 0.32)
-  lab(-0.6, -1.48, black)[`R/R`]; lab(0.5, -1.48, black)[`R`]; lab(0.5, 1.48, black)[`R`]
-  lab(-1.3, 0.7, luma(80))[$X$]; lab(1.1, 0.7, luma(80))[$P$]
-}))
-
-#align(center, src[Green is `X`, where `x` lives; purple is `P`, where the `p` of the definition
-lives. `R/R : X ⟶ X` runs inside `X` and ends on `R : X ⟶ P` at the action `α`, which is
-`(R/R) R ⊑ R`.])]<div-monad-cell>
-
-== The whole family is one preorder
-
-#disp[#box(inset: (y: 6pt), cetz.canvas(length: 1cm, {
-  d.rect((-1.9, -1.2), (1.9, 1.2), fill: fb-MAPC, stroke: none)
-  d.merge-path(close: true, fill: fb-ZC, stroke: none, {
-    d.line((1.9, -1.2), (0.9, -1.2))
-    d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15))
-    d.line((0.0, 0.15), (0.0, 1.2)); d.line((0.0, 1.2), (1.9, 1.2))
-  })
-  d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
-    d.line((-0.9, -1.2), (0.9, -1.2))
-    d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15))
-    d.bezier((0.0, 0.15), (-0.9, -1.2), (-0.4, 0.15), (-0.9, -0.35))
-  })
-  d.bezier((-0.9, -1.2), (0.0, 0.15), (-0.9, -0.35), (-0.4, 0.15), stroke: 1.1pt)
-  d.bezier((0.9, -1.2), (0.0, 0.15), (0.9, -0.35), (0.4, 0.15), stroke: 1.1pt)
-  d.line((0.0, 0.15), (0.0, 1.2), stroke: 1.1pt)
-  wiredot((0.0, 0.15))
-  lab(-0.9, -1.48, black)[`R/S`]; lab(0.9, -1.48, black)[`S/W`]; lab(0.0, 1.48, black)[`R/W`]
-  lab(-1.45, -0.5, luma(80))[$X$]; lab(0.0, -0.75, luma(80))[$Y$]; lab(1.45, -0.5, luma(80))[$Z$]
-}))
-
-#align(center, src[The same dot with one region more: `R/S : X ⟶ Y` and `S/W : Y ⟶ Z` come in,
-`R/W : X ⟶ Z` goes out. Green `X`, purple `Y`, amber `Z`.])]<div-polyad-cell>
-
-Closing `Y` off is the mid-point `y` being quantified away; the `⊑` rather than `=` is the loss the
-figure for that law above already draws.
-
-Concretely in `Rel`, `𝟙 ⊑ R/R` and `(R/S)(S/W) ⊑ R/W` are one preorder on the disjoint union of
-`X`, `Y`, `Z`, …: reflexivity is `𝟙 ⊑ R/R` inside a block, transitivity is `(R/S)(S/W) ⊑ R/W` across
-blocks.
-
-Abstractly the same two are a *lax functor* out of the codiscrete category on `{R, S, W, …}` — one
-object per relation, exactly one arrow each way — sending `R` to `X`, the object its rows are indexed
-by, and the arrow `R → S` to `R/S : X ⟶ Y`. That is Bénabou's *polyad* (Bénabou 1967, Def. 5.5), of
-which a monad is the one-object case: the subsection above is this one at `R = S = W`.
-
-`R/S` is at the same time a bimodule between the two monads `R/R` and `S/S`: `(R/R)(R/S) ⊑ R/S` and
-`(R/S)(S/S) ⊑ R/S`, each the counit `(R/S) S ⊑ R` with one action composed on — `(R/R) R = R` on the
-left, `(S/S) S = S` on the right.
-
 #pagebreak(weak: true)
-= `x (Admires%Hates) y` is `x admires only all whom y hates`
+= $frac(R, S)$
 
 #disp[#definition[
 $frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `x` and `y` has the same image:
@@ -793,25 +659,6 @@ $frac(R, S)$ `≜ (R/S) ∩ (S/R)°`. In `Rel` `x` and `y` has the same image:
   d.content((-6.5, 0), text(10pt, INDUCED)[`A`]); d.content((6.5, 0), text(10pt, SLACK)[`H`])
 }))]<syq-pic>
 
-A meet of two long divisions, the second turned round by the converse frame:
-
-#disp[#P(p-symmdiv, s: 66%)
-#align(center, src[exported from the definition, not transcribed])]<syq-frobenius>
-
-#disp[#table(
-  columns: (8.6cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-
-  [$(frac(R, S))^circle.small = frac(S, R)$ \ #src[Matching is symmetric.]],
-  P(p-sdiv-recip),
-
-  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ \ #src[And transitive.]],
-  P(p-sdiv-comp),
-)]<syq-laws>
-
-No pictures for the rest of §2.35: symmetric division is not built from the generators.
-
 #disp[#table(
   columns: (7.4cm, 1fr),
   align: (left + horizon, left + horizon),
@@ -821,6 +668,10 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X° R ⊑ S`],
   [`X` may pair `x` with `y` only when `x` admires exactly whom `y` hates. Both halves must typecheck,
    so the operation is *partial*.],
+
+  [$(frac(R, S))^circle.small = frac(S, R)$], [Matching is symmetric.],
+
+  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$], [And transitive.],
 
   [$frac(R, S) S ⊑ R$],
   [$(∃ y. thin x (frac(R, S)) y ∧ y S p) → x R p$ \
@@ -848,34 +699,6 @@ No pictures for the rest of §2.35: symmetric division is not built from the gen
   [`Dom` $frac(R, S)$ `= 𝟙 ∩ (R/S)(S/R)`],
   [Its domain is the *domain of simplicity* of `R`.],
 )]<syq-readings>
-
-== Straight
-
-#disp[#definition[
-`S` is *straight* when $frac(S, S) = 𝟙$ — no two `y`s hate the same people.
-]]<straight-defn>
-
-#disp[#table(
-  columns: (7.4cm, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the reading*]),
-
-  [every symmetric `X` with `X S ⊑ S` is coreflexive],
-  [Equivalently, `S` is straight.],
-
-  [`f S = g S ⟹ f = g`],
-  [A straight `S` tells its `y`s apart, so it cancels on the right.],
-
-  [`S R` straight `⟹ S` straight],
-  [If the longer chain tells them apart, the first step already does.],
-
-  [`S` straight `⟺ R/S` simple for all `R`],
-  [If no two `y`s agree, at most one `x` can match a given `y`.],
-
-  [`R = h S`, `h` a cover, `S` straight],
-  [In an effective division allegory every arrow factors that way.],
-)]<straight-laws>
 
 #pagebreak(weak: true)
 = Freyd's Power allegories <sec-power>
@@ -973,15 +796,15 @@ subscript.
 inclusion `i : Map(𝒜) ↪ 𝒜`: `Λ` is the transpose, so `𝒜(A, B) ≅ Map(A, P B)`.
 
 #disp[#table(
-  columns: (4.6cm, 1fr),
-  align: (left + horizon, left + horizon),
+  columns: (3.6cm, 4.4cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*part of `i ⊣ E`*], [*the statement*]),
+  table.header([*part of `i ⊣ E`*], [*type*], [*the statement*]),
 
-  [`∋` the counit, natural], [`E(R) ∋ = ∋ R`],
-  [`{·}` the unit, natural], [`f {·} = {·} E(f)`, for `f` a map],
-  [`Λ` the transpose], [`Λ(R) ∋ = R`, and `Λ(R)` the only map with it],
-  [`·∋` the transpose back], [`{·} ∋ = 𝟙` and `Λ(∋) = 𝟙`, the two triangles],
+  [`∋` the counit, natural], [`∋ : P B ⟶ B`], [`E(R) ∋ = ∋ R`],
+  [`{·}` the unit, natural], [`{·} : A ⟶ P A`], [`f {·} = {·} E(f)`, for `f` a map],
+  [`Λ` the transpose], [`Λ : (A ⟶ B) ⟶ Map(A, P B)`], [`Λ(R) ∋ = R`, and `Λ(R)` the only map with it],
+  [`·∋` the transpose back], [`·∋ : Map(A, P B) ⟶ (A ⟶ B)`], [`{·} ∋ = 𝟙` and `Λ(∋) = 𝟙`, the two triangles],
 )]<adj-lean>
 
 // Trim the diagonal at 0.5, not the 1.15 Catamorphism's squares use: those clear a wide node box, and `B` is
@@ -1072,19 +895,19 @@ Absorption holds for every `S`, so fusion is its case `S := f`, plus one step: a
 #disp[
 #zline(
   zsqc(`g° f`, `Λ(R)`, name: "f, g maps"),
-  zstep(op: sym.arrow.l.r.double, under: true)[`f°· ⊣ f·`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
   zsqc(`f`, `g Λ(R)`, eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[fusion],
   zsqc(`f`, `Λ(g R)`, eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zsqc(`f ∋`, `g R`, eq: true),
 )
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[antisymmetry],
   zpair(zsqc(`f ∋`, `g R`), zsqc(`g R`, `f ∋`)),
-  zstep(op: sym.arrow.l.r.double, under: true)[`f°· ⊣ f·`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
   zpair(zsqc(`g° f ∋`, `R`), zsqc(`f° g R`, `∋`)),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·S ⊣ /S`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·S⊣/S`],
   zpair(zsqc(`g° f`, `R/∋`), zsqc(`f° g`, `∋/R`)),
 )
 #zline(
@@ -1316,7 +1139,7 @@ map coproduct can be applied underneath it. For any `T : A + B ⟶ C`,
 #disp[
 #zline(
   zpair(zsqc(`ιₗ T`, `R`, eq: true), zsqc(`ιᵣ T`, `S`, eq: true)),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zpair(zsqc(`Λ(ιₗ T)`, `Λ(R)`, eq: true), zsqc(`Λ(ιᵣ T)`, `Λ(S)`, eq: true)),
   zstep(op: sym.arrow.l.r.double, under: true)[fusion],
   zpair(zsqc(`ιₗ Λ(T)`, `Λ(R)`, eq: true), zsqc(`ιᵣ Λ(T)`, `Λ(S)`, eq: true)),
@@ -1324,7 +1147,7 @@ map coproduct can be applied underneath it. For any `T : A + B ⟶ C`,
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[coproduct of maps],
   zsqc(`Λ(T)`, `[Λ(R), Λ(S)]`, eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zsqc(`T`, `[Λ(R), Λ(S)] ∋`, eq: true),
 )
 ]<coprod-calc>
@@ -1503,9 +1326,9 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
 #disp[
 #zline(
   zsqc([`α`#sub[`T`]` X`], [`F(X) R`], eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zsqc([`Λ(α`#sub[`T`]` X)`], [`Λ(F(X) R)`], eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zsqc([`Λ(α`#sub[`T`]` X)`], [`Λ(F(Λ(X) ∋) R)`], eq: true),
 )
 #zline(
@@ -1513,7 +1336,7 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
   zsqc([`α`#sub[`T`]` Λ(X)`], [`F(Λ(X)) Λ(F(∋) R)`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[catamorphism of maps],
   zsqc([`Λ(X)`], [`⦇Λ(F(∋) R)⦈`], eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[`·∋ ⊣ Λ`],
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
   zsqc([`X`], [`⦇Λ(F(∋) R)⦈ ∋`], eq: true),
 )
 ]<cata-map-calc>
@@ -2074,3 +1897,75 @@ identity with `L` composed on the inside.
 
 In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computation with the state, and
 `μ A` applies it back, `λ x . f x`, which is `f`.
+
+#pagebreak(weak: true)
+= Minimum and maximum <sec-min>
+
+// B&dM §7.1, p. 166.  Diagram order reverses every arrow, the order `R` included — which is what
+// keeps all twelve laws below free of `°`; B&dM write that one `R` the other way round.
+#disp[#definition[
+For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∋°\R) : P A ⟶ A`, #h(4pt) `max R ≜ min R°`.
+
+`x (min R) a ⟺ a ∈ x ∧ (∀b ∈ x. b R a)`
+
+`R` points from an element to the ones at most as large, so `min R` picks the element of `x` that
+every element of `x` points to.
+]]<min-defn>
+
+#disp[#table(
+  columns: (1fr, 2.4cm),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*B&dM*]),
+
+  [`X ⊑ min R ⟺ X ⊑ ∋` and `∋° X ⊑ R`], [p. 166],
+  [`{·} (∋°\R) = R`], [(7.1)],
+  [`Λ(S) (∋°\R) = S°\R`], [(7.2)],
+  [`union (∋°\R) = ∋°\(∋°\R)` \ #src[`union ≜ Λ(∋ ∋) : P(P A) ⟶ P A`]], [(7.3)],
+  [`{·} min R = 𝟙 ∩ R`], [(7.4)],
+  [`Λ(S) min R = S ∩ (S°\R)`], [(7.5)],
+  [`Λ(S) min R = Λ(S) min(R ∩ S° S)`], [(7.6)],
+  [`E(S) min R = (∋ S) ∩ ((∋ S)°\R)`], [(7.7)],
+  [`P(f) min R = min(f R f°) f`], [(7.8)],
+  [`P(S) min R = (∋ S) ∩ (∋°\(S R))` \ #src[`R` reflexive]], [(7.9)],
+  [`P(S) min R ⊑ (∋ S) ∩ (∋°\(S R))`], [(7.10)],
+  [`P(min R) min R ⊑ union min R` \ #src[`R` a preorder]], [(7.11)],
+  [`P(min R) min R = P(Dom (min R)) union min R` \ #src[`R` a preorder]], [(7.12)],
+)]<min-laws>
+
+== `{·} (∋°\R) = R`
+
+// B&dM (7.1): the same four steps as the subsection below, with `{·} ∋ = 𝟙` — the `i ⊣ E` triangle —
+// where that one has `Λ(S) ∋ = S`.
+#disp[
+#zline(
+  zsqc(`X`, `{·} (∋°\R)`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`{·}° X`, `∋°\R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
+  zsqc(`∋° {·}° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`°`],
+  zsqc(`({·} ∋)° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`i⊣E`],
+  zsqc(`X`, `R`),
+)
+]<min-71>
+
+== `Λ(S) (∋°\R) = S°\R`
+
+// B&dM (7.2): two adjunctions composed, `Λ(S) ∋ = S` collapsing the middle — the shape of (1.2a).
+#disp[
+#zline(
+  zsqc(`X`, `Λ(S) (∋°\R)`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
+  zsqc(`Λ(S)° X`, `∋°\R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
+  zsqc(`∋° Λ(S)° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`°`],
+  zsqc(`(Λ(S) ∋)° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣Λ`],
+  zsqc(`S° X`, `R`),
+  zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
+  zsqc(`X`, `S°\R`),
+)
+]<min-72>

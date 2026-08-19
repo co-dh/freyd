@@ -807,10 +807,12 @@
 /// of the reason, so the two read as one gesture instead of a hint parked beside a short `⟹`.
 /// `under` drops the reason below the operator, for a step standing BETWEEN two boxes on one line:
 /// above it, the reason would sit on the line the boxes are read along.
-/// RULE: a reason NAMES THE ADJUNCTION AND STOPS — `f°· ⊣ f·`, not the display it lives in, not
-/// `, twice`, not the side conditions.  The reader knows where the table is; the strands are visible.
+/// RULE: a reason NAMES THE ADJUNCTION AND STOPS — `f°·⊣f·`, unspaced, not the display it lives in,
+/// not `, twice`, not the side conditions.  The reader knows where the table is; the strands are visible.
+// No braces around the reason: they cost width in a chain that has to fit one row, and nothing reads
+// a grey line under an arrow as anything but the reason.
 #let zstep(reason, op: sym.arrow.r.double, under: false) = context {
-  let r = src[{#reason}]
+  let r = src[#reason]
   let a = $stretch(#op, size: #measure(r).width)$
   grid(columns: 1, align: center, row-gutter: 2pt, ..if under { (a, r) } else { (r, a) })
 }
