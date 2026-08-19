@@ -1884,7 +1884,9 @@ In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computat
 `μ A` applies it back, `λ x . f x`, which is `f`.
 
 #pagebreak(weak: true)
-= Minimum and maximum <sec-min>
+= Optimisation Problems <sec-opt>
+
+== Minimum and maximum <sec-min>
 
 // B&dM §7.1, p. 166.  Diagram order reverses every arrow, the order `R` included — which is what
 // keeps all twelve laws below free of `°`; B&dM write that one `R` the other way round.
@@ -1924,7 +1926,7 @@ every element of `x` points to.
   [the same as an equality, once empty sets are dropped],
 )]<min-laws>
 
-== `X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`
+=== `X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`
 
 // The definition read through the two adjunctions it is built from.  B&dM p. 166 cites this as the
 // hint "universal property of min"; the chains below cite it the same way.
@@ -1938,7 +1940,7 @@ every element of `x` points to.
 )
 ]<min-up>
 
-== `{·} (∈\R) = R`
+=== `{·} (∈\R) = R`
 
 // B&dM (7.1): the same four steps as the subsection below, with `{·} ∋ = 𝟙` — the `i ⊣ E` triangle —
 // where that one has `Λ(S) ∋ = S`.
@@ -1956,7 +1958,7 @@ every element of `x` points to.
 )
 ]<min-71>
 
-== `Λ(S) (∈\R) = S°\R`
+=== `Λ(S) (∈\R) = S°\R`
 
 // B&dM (7.2): two adjunctions composed, `Λ(S) ∋ = S` collapsing the middle — the shape of (1.2a).
 #disp[
@@ -1975,7 +1977,7 @@ every element of `x` points to.
 )
 ]<min-72>
 
-== `union (∈\R) = ∈\(∈\R)`
+=== `union (∈\R) = ∈\(∈\R)`
 
 // B&dM (7.3): the shape of the two chains above with `union ∋ = ∋ ∋` in the middle.
 #disp[
@@ -1994,7 +1996,10 @@ every element of `x` points to.
 )
 ]<min-73>
 
-== `Λ(S) min R = S ∩ (S°\R)`
+// Same reason as the hand-placed break further down: `sticky` cannot hold a heading to a BREAKABLE
+// figure, and the extra heading level pushed this one to the foot of its page.
+#pagebreak(weak: true)
+=== `Λ(S) min R = S ∩ (S°\R)`
 
 // B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
 #disp[
@@ -2013,7 +2018,7 @@ every element of `x` points to.
 )
 ]<min-75>
 
-== `Λ(S) min R = Λ(S) min(R ∩ S° S)`
+=== `Λ(S) min R = Λ(S) min(R ∩ S° S)`
 
 // B&dM (7.6): `X ⊑ S` already forces `S° X ⊑ S° S`, so the extra conjunct costs nothing — that is
 // the whole content, and it is the middle step.
@@ -2036,7 +2041,7 @@ every element of `x` points to.
 )
 ]<min-76>
 
-== `P(f) min R = min(f R f°) f`
+=== `P(f) min R = min(f R f°) f`
 
 // B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
 // modular law, and it needs `f` simple — the only such step in §18.
@@ -2058,7 +2063,7 @@ every element of `x` points to.
 )
 ]<min-78>
 
-== `P(S) min R = (∋ S) ∩ (∈\(S R))`
+=== `P(S) min R = (∋ S) ∩ (∈\(S R))`
 
 // B&dM (7.9), `R` reflexive.  `⊑` is @min-710; `⊒` is the one place in §18 where a tabulation is
 // unavoidable — `y` below is the set the right-hand side only describes.
@@ -2115,7 +2120,7 @@ every element of `x` points to.
 // `sticky` keeps a heading with the display under it, but the display here is a breakable figure, so
 // the heading still stranded itself at the foot of the page; the break is set by hand.
 #pagebreak(weak: true)
-== `P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`
+=== `P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`
 
 // B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
 // property of `min` that is the whole proof.  The equality (7.9) is not this — it needs tabulations.
@@ -2129,7 +2134,7 @@ every element of `x` points to.
 )
 ]<min-710>
 
-== `P(min R) min R ⊑ union min R`
+=== `P(min R) min R ⊑ union min R`
 
 // B&dM (7.11): (7.5) at `S := ∋ ∋` opens the right-hand side, then the same two facts as (7.10)
 // close both strands — the left one twice, the right one against transitivity.
@@ -2145,7 +2150,7 @@ every element of `x` points to.
 )
 ]<min-711>
 
-== `P(min R) min R = P(Dom (min R)) union min R`
+=== `P(min R) min R = P(Dom (min R)) union min R`
 
 // B&dM (7.12), `R` a preorder.  `⊑` puts the domain in for free; `⊒` is @min-79 at `S := min R`
 // and then the two halves the book leaves as exercises.
@@ -2193,3 +2198,165 @@ every element of `x` points to.
   zsqc(`min R ∈ min R`, `min R R`, name: "UP of min"),
 )
 ]<min-712-geq>
+
+#pagebreak(weak: true)
+== Monotonic algebras
+
+// B&dM §7.2, p. 172.  The section numbers no equation, so the table names its two theorems instead.
+#disp[#definition[
+An F-algebra `S : F A ⟶ A` is *monotonic on* `R : A ⟶ A` if #h(4pt) `F(R) S ⊑ S R`.
+
+For a map `f : F A ⟶ A` that is #h(4pt) `f° F(R) f ⊑ R`, #h(4pt) equivalently #h(4pt) `F(R) ⊑ f R f°`.
+
+`(leq × leq) plus ⊑ plus leq` — addition on `Nat` is monotonic on `leq`, which at the point level
+reads #h(4pt) `c = a + b ∧ a ≤ a' ∧ b ≤ b' ⟹ c ≤ a' + b'`.
+]]<mon-defn>
+
+// `F(R)` ON THE VERTICAL: on the top edge the square reads as a naturality square, and `S` is no natural
+// transformation.  `⊑` points NE — down-then-across is the smaller `F(R) S`.  Hues as in @cata-defining.
+#disp[#capbox(
+  cetz.canvas(length: 0.8cm, {
+    let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+    ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
+    ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
+    lab(0, 1.8, GIVEN1)[`S`]; lab(0, -1.8, GIVEN1)[`S`]
+    lab(-3.75, 0, GIVEN2)[`F(R)`]; lab(3.35, 0, GIVEN2)[`R`]
+    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
+    node(FT.at(0), FT.at(1), black, `F A`); node(T.at(0), T.at(1), black, `A`)
+    node(FB.at(0), FB.at(1), black, `F A`); node(B.at(0), B.at(1), black, `A`)
+  }),
+  [`F(R) S ⊑ S R`],
+)]<mon-str>
+
+#disp[#definition[
+`f : F A ⟶ A` *distributes over* `R` if #h(4pt) `F(min R) f ⊑ Λ(F(∋) f) min R`.
+
+`plus` distributes over `leq`, at the point level #h(4pt) `min x + min y = min{a + b ∣ a ∈ x ∧ b ∈ y}`
+#h(4pt) for `x`, `y` non-empty and `min ≜ min leq`.
+]]<dist-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`f° F(R) f ⊑ R ⟺ f° F(R°) f ⊑ R°`],
+  [a *map* is monotonic on an order and on its opposite together — a relation is not],
+  [`f° F(R) f ⊑ R ⟺ F(min R) f ⊑ Λ(F(∋) f) min R` \ #src[Theorem 7.1, `f` a map]],
+  [for a map the two definitions above are one condition],
+  [`⦇Λ(S) min R⦈ ⊑ Λ(⦇S⦈) min R` \ #src[Theorem 7.2, `R°` a preorder and `F(R°) S ⊑ S R°`]],
+  [the *greedy theorem*: keeping one minimum at every step beats no more than taking the minimum at
+   the end],
+)]<mon-laws>
+
+== Planning a company party
+
+// B&dM §7.3, p. 175.  No numbered equations; the two monotonicity claims are the section's own
+// proof obligations, and the exercise blocks (7.43–7.44) are left out as everywhere else.
+#disp[#definition[
+`tree A ::= node (A, list(tree A))`, base functor `F(A, B) = A × list B`, `rating : Employee ⟶ Real`.
+
+`cost ≜ list(rating) sum`, #h(4pt) `R ≜ cost leq cost°`, #h(4pt) `choose ≜ outl ∪ outr`.
+
+`include ≜ (𝟙 × (list(outr) concat)) cons` #h(10pt) `exclude ≜ (𝟙 × (list(choose) concat)) outr`
+
+`S ≜ ⟨include, exclude⟩`, #h(4pt) `party ≜ ⦇S⦈ choose : tree Employee ⟶ list Employee`
+]]<party-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(party) max R`], [the specification: a guest list of greatest total conviviality],
+  [`(R × R) choose ⊑ choose R`], [`choose` is monotonic on `R` — the first claim],
+  [`(𝟙 × list(R × R)) S ⊑ S (R × R)`],
+  [`S` is monotonic on `R × R` — the second claim],
+  [`Λ(party) max R ⊒ ⦇Λ(S) max(R × R)⦈ Λ(choose) max R`],
+  [the greedy theorem: one best pair per subtree instead of all parties of the whole tree],
+  [`party = ⦇S⦈ Λ(choose) max R` \ `include = (𝟙 × (list(outr) concat)) cons` \
+   `exclude = outr list(Λ(choose) max R) concat`],
+  [the program, `exclude` renamed: `include` was already a map, and `exclude` becomes one],
+)]<party-laws>
+
+== Shortest paths on a cylinder
+
+// B&dM §7.4, p. 179.  Its crux is Theorem 7.1, not the greedy theorem: `α` is a map, so monotonic
+// gives distributes, which is (7.13) — the section's only numbered equation.
+#disp[#definition[
+`F(A, X) = A + A × X`, `L = list⁺` with initial algebra `α : F(A, L A) ⟶ L A`, `N` the `n`-tuple relator.
+
+`R ≜ sum leq sum°`, #h(4pt) `setify : N A ⟶ P A`, #h(4pt) `moves : N A ⟶ P N A`, #h(4pt)
+`trans : P N A ⟶ N P A`, #h(4pt) `zip : F(N A, N B) ⟶ N F(A, B)`, #h(4pt) `cp ≜ Λ(F(𝟙, ∋))`.
+
+`generate ≜ F(𝟙, moves trans N(union)) zip N(cp P(α)) : F(N A, N P L A) ⟶ N P L A`
+
+`paths ≜ ⦇generate⦈ setify union : L N Nat ⟶ P L Nat`
+]]<cyl-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`paths min R`], [the specification: a cheapest path across the cylinder],
+  [`F(𝟙, min R) α ⊑ cp P(α) min R` \ #src[(7.13), Theorem 7.1 at the map `α`, using
+   `Λ(F(𝟙, ∋) α) = cp P(α)`]],
+  [extending every path in a set and then taking a minimum is beaten by extending one minimum],
+  [`generate N(min R) ⊒ F(𝟙, N(min R)) Q`],
+  [the fusion condition that defines `Q` — this is what (7.13) is spent on],
+  [`Q = F(𝟙, moves trans N(min R)) zip N(α)` \ #h(4pt) `= [N(wrap),` \ #h(20pt)
+   `(𝟙 × moves trans N(min R)) zip' N(cons)]`],
+  [`generate` with the minimum taken inside each tuple component],
+  [`paths min R ⊒ ⦇Q⦈ setify min R`], [the program: one fold, `n` best paths carried per column],
+)]<cyl-laws>
+
+== The security van problem
+
+// B&dM §7.5, p. 184.  `Π`, the universal relation, is this note's `⊤`; the p. 187 printing of the
+// greedy result puts `wrap wrap` where p. 185 and the final program both put `nil`.
+#disp[#definition[
+`R ≜ length leq length°`, #h(4pt) `ceiling ≜ Λ(prefix sum) max leq`, #h(4pt) `floor ≜ Λ(prefix sum) min leq`.
+
+`secure` the coreflexive on `x` with `bmax(ceiling x, ceiling x − floor x) ≤ N`; #h(4pt) `ok` the
+coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
+
+`new ≜ (wrap × 𝟙) cons` #h(10pt) `glue ≜ (𝟙 × cons°) assocl (cons × 𝟙) cons`
+
+`old ≜ (𝟙 × cons°) assocl ((cons secure) × 𝟙) cons`
+
+`partition = ⦇[nil, new ∪ glue]⦈`, #h(4pt) `S ≜ [nil, new ∪ old]`, #h(4pt) `partition list(secure) = ⦇S⦈`.
+
+`H ≜ (head prefix head°) ∪ (nil° nil)`, #h(4pt) `R ; H ≜ R ∩ (R° ⇒ H)`, #h(4pt) `|R| ≜ R ∩ ¬R°`.
+]]<van-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(partition list(secure)) min R`], [the specification: fewest secure segments],
+  [`secure prefix ⊑ prefix secure`], [`secure` is prefix-closed — the only property of it used until
+   the program],
+  [`(𝟙 × R°) new ⊑ (new ∪ old) R°` \ #src[(7.14)]], [starting a new segment is monotonic on `R°`],
+  [`(𝟙 × R°) old ⊑ (new ∪ old) R°` \ #src[(7.15), FALSE]],
+  [extending the first segment is not — the shorter partition need not stay secure],
+  [`(𝟙 × (R ; H)°) new ⊑ (new ∪ old) (R ; H)°` #h(4pt) #src[(7.16)] \
+   `(𝟙 × (R ; H)°) old ⊑ (new ∪ old) (R ; H)°` #h(4pt) #src[(7.17)]],
+  [both halves do become monotonic once `R` is refined by `H`, which breaks a tie in length by the
+   first segment's prefix order],
+  [`(𝟙 × ⊤) new ⊑ new H°` #h(6pt) #src[(7.18)]],
+  [whatever the tail, `new`'s first segment is `[a]`, a prefix of every first segment — this is what
+   (7.16) rests on],
+  [`(𝟙 × ⊤) old ⊑ new H°` #h(6pt) #src[(7.19)] \ `(𝟙 × |R|°) old ⊑ new R°` #h(6pt) #src[(7.20)] \
+   `(𝟙 × (R° ∩ H°)) old ⊑ old (R° ∩ H°)` #h(6pt) #src[(7.21)]],
+  [the three claims (7.17) rests on, split along \ `(R ; H)° = |R°| ∪ (R° ∩ H°)`],
+  [`old ⊑ new (R ; H)`], [`old` returns a shorter result than `new` if it returns any result at all,
+   so the fold's choice refines to a map],
+  [`⦇[nil, (ok → glue, new)]⦈ ⊑ ⦇Λ(S) min(R ; H)⦈`],
+  [the program: glue onto the first segment while it stays secure, else start a new one],
+)]<van-laws>
