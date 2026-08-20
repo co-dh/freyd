@@ -1893,10 +1893,11 @@ In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computat
 #disp[#definition[
 For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : P A ⟶ A`, #h(4pt) `max R ≜ min R°`.
 
-`x (min R) a ⟺ a ∈ x ∧ (∀b ∈ x. b R a)`
+`xs (min R) x ⟺ x ∈ xs ∧ (∀y ∈ xs. y R x)`
 
-`R` points from an element to the ones at most as large, so `min R` picks the element of `x` that
-every element of `x` points to.
+`xs (min R) x ⟺ (x in xs) and all xs R\: x` #h(4pt) #src[in q]
+
+`min R = ∋ ∩ all R` #h(4pt) #src[`all R ≜ ∈\R`, q's `all`; the chains below keep it written `∈\`]
 ]]<min-defn>
 
 #disp[#table(
@@ -2360,3 +2361,693 @@ coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
   [`⦇[nil, (ok → glue, new)]⦈ ⊑ ⦇Λ(S) min(R ; H)⦈`],
   [the program: glue onto the first segment while it stays secure, else start a new one],
 )]<van-laws>
+
+#pagebreak(weak: true)
+= Thinning Algorithms <sec-thin>
+
+== Thinning
+
+// B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
+// and `min Q {·}` keeps one, `thin Q` keeps a representative collection.
+#disp[#definition[
+For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : P A ⟶ P A` #h(4pt) #src[(8.1)].
+
+`y (thin Q) x ⟺ x ⊆ y ∧ (∀a ∈ y. ∃b ∈ x. a Q b)`
+]]<thin-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`X ⊑ Λ(S) thin Q ⟺ X ∋ ⊑ S` and `S° X ⊑ Q ∈`],
+  [the universal property: everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound
+   among the kept ones],
+  [`Q ⊑ R ⟹ thin Q ⊑ thin R`],
+  [the fewer pairs `Q` relates, the fewer subsets count as thinnings],
+  [`𝟙 ⊑ thin Q`, and `thin Q` is a preorder if `Q` is],
+  [keeping everything is always a legal thinning],
+  [`min R = thin Q min R` #h(4pt) #src[`Q ⊑ R`, both preorders]],
+  [*thin-introduction*: thinning first cannot lose an `R`-minimum],
+  [`thin Q ⊒ min Q {·}` #h(6pt) #src[(8.2)]],
+  [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `min Q` is
+   defined on],
+  [`Λ(S) thin Q ⊒ Λ(S) min R {·}` \ #src[(8.3), `R ∩ (S° S) ⊑ Q`]],
+  [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
+  [`union thin Q ⊒ P(thin Q) union` #h(6pt) #src[(8.4)]],
+  [thinning each member set is a thinning of the union],
+  [`⦇Λ(F(∋) S) thin Q⦈ ⊑ Λ(⦇S⦈) thin Q` \ #src[Theorem 8.1, `S` monotonic on `Q°`]],
+  [the *thinning theorem*: thinning at every step beats thinning only at the end],
+  [`⦇Λ(F(∋) S) thin Q⦈ min R ⊑ Λ(⦇S⦈) min R` \ #src[Corollary 8.1, `Q ⊑ R` as well]],
+  [the same against the optimisation problem itself, by thin-introduction],
+)]<thin-laws>
+
+== Paths in a layered network
+
+// B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head x)` is unbounded: a dearer path
+// with a nearer first vertex can still win.
+#disp[#definition[
+`F(A, X) = A + A × X`, #h(4pt) `L = list⁺` with initial algebra `α ≜ [wrap, cons] : F(A, L A) ⟶ L A`.
+
+`wrapz ≜ ⟨wrap, zero⟩`, #h(4pt) `consw (a, (x, n)) = (cons (a, x), wt (a, head x) + n)`.
+
+`cost ≜ ⦇[wrapz, consw]⦈ outr`, #h(4pt) `⦇[wrapz, consw]⦈ = ⟨𝟙, cost⟩`, #h(4pt) `R ≜ cost leq cost°`.
+
+`Q ≜ R ∩ (head head°)`, #h(4pt) `S ≜ F(𝟙, ∋) α`, #h(4pt) `Λ(F(∋, 𝟙)) = 𝟙 + cpl`, #h(4pt)
+`Λ(F(𝟙, ∋)) = 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min R`.
+]]<path-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(⦇F(∋, 𝟙) α⦈) min R` #h(4pt) #src[`= Λ(L(∋)) min R`]],
+  [the specification: a least-cost path across the network],
+  [`F(∋, Q°) α ⊑ F(∋, 𝟙) α Q°`],
+  [`S` is monotonic on `Q°`; on `R°` it is not, since the next edge can cost arbitrarily much],
+  [`⦇Λ(F(∋, ∋) α) thin Q⦈ min R ⊑ Λ(⦇F(∋, 𝟙) α⦈) min R` \ #src[Corollary 8.1]],
+  [thinning applies: one partial path per starting vertex is enough],
+  [`S head ⊑ [𝟙, outr]` \ #src[`S head` simple, so `R ∩ (S° S) ⊑ Q`]],
+  [the side condition of (8.3): between two paths `S` builds from one argument, equal cost and equal
+   head already means `Q`],
+  [`Λ(F(∋, ∋) α) thin Q` \ #h(6pt) `⊒ Λ(F(∋, 𝟙)) P(Λ(F(𝟙, ∋)) P(α) min R)` \
+   #src[(8.4), (8.3), `P({·}) union = 𝟙`]],
+  [thin eliminated: split the algebra at `F(∋, 𝟙) F(𝟙, ∋)`, thin each part, one minimum per part],
+  [`Λ(F(𝟙, ∋)) P(α) min R = [wrap, step]`],
+  [that inner part read off the two branches of `α`],
+  [`Λ(⦇F(∋, 𝟙) α⦈) min R ⊒ ⦇[P(wrap), cpl P(step)]⦈ min R`],
+  [the program: one fold, a best path per vertex of the current layer],
+)]<path-laws>
+
+// Same reason as the two hand-placed breaks in §18: `sticky` cannot hold a heading to a BREAKABLE
+// figure, so this heading stranded itself at the foot of the page.
+#pagebreak(weak: true)
+== Implementing thin
+
+// B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
+// it is one connected preorder, spelled `P` here.
+#disp[#definition[
+`setify : list A ⟶ P A`, #h(4pt) `cup : P A × P A ⟶ P A`, #h(4pt) `cp(F) ≜ Λ(F(∋))`, #h(4pt)
+`listcp(F) : F(list A) ⟶ list(F A)`, #h(4pt) `sort P ≜ setify° ordered P` for `P` a connected preorder.
+
+`thinlist Q` is any `thinlist Q ⊑ subseq` with #h(4pt) `thinlist Q setify ⊑ setify thin Q`; #h(4pt)
+one is #h(4pt) `⦇[nil, bump Q]⦈`, #h(4pt) `bump Q (a, []) = [a]`, #h(4pt)
+`bump Q (a, [b] ⧺ x) = (b Q a → [a] ⧺ x, a Q b → [b] ⧺ x, [a] ⧺ [b] ⧺ x)`.
+
+*Binary thinning* data: #h(4pt) `S = (f₁ p₁) ∪ (f₂ p₂)` with `p₁`, `p₂` coreflexive; #h(4pt) `Q` a
+preorder with `Q ⊑ R` and both `f₁ p₁`, `f₂ p₂` monotonic on `Q°`; #h(4pt) `P` a connected preorder
+with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(pᵢ)`.
+]]<thinlist-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`thinlist Q x = [minlist Q x]` \ #src[(8.5), `Q` connected, `x` non-empty]],
+  [what thinning should come to when it can: one element],
+  [`sort P thinlist Q ⊑ thin Q sort P` #h(6pt) #src[(8.6)]],
+  [thinning a sorted list is a thinning of the set — this is what `thinlist Q ⊑ subseq` buys],
+  [`sort P minlist Q ⊑ min Q` #h(6pt) #src[(8.7)]],
+  [a minimum of the sorted list is a minimum of the set],
+  [`sort(f P f°) list(f) ⊑ P(f) sort P` #h(6pt) #src[(8.8)]],
+  [shunt a function through a sort],
+  [`sort P filter(p) ⊑ E(p) sort P` #h(6pt) #src[(8.9), `p` coreflexive]],
+  [filtering a sorted list sorts the restricted set],
+  [`(sort P × sort P) merge P ⊑ cup sort P` #h(6pt) #src[(8.10)]],
+  [merging two sorted lists sorts their union],
+  [`F(sort P) listcp(F) ⊑ cp(F) sort(F P)` \ #src[(8.11), `F` linear]],
+  [`listcp(F)` is the list implementation of the cartesian product `cp(F)`],
+  [`F(sort P) listcp(F) list(f) filter(p) ⊑ Λ(F(∋) f p) sort P` \ #src[Lemma 8.1, `f` monotonic on
+   `P`, `p` coreflexive]],
+  [one sorted list built from sorted arguments, instead of a set built and then sorted],
+  [`⦇listcp(F) ⟨g₁, g₂⟩ merge P thinlist Q⦈ minlist R` \ #h(6pt) `⊑ Λ(⦇S⦈) min R` \
+   #src[Theorem 8.2]],
+  [the *binary thinning theorem*: a fold on sorted lists of partial solutions, thinned at every step],
+)]<thinlist-laws>
+
+== The knapsack problem
+
+// B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `wrap` that
+// §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
+#disp[#definition[
+`vol, wt : Item ⟶ Real`, #h(4pt) `value ≜ list(vol) sum`, #h(4pt) `weight ≜ list(wt) sum`.
+
+`subseq = ⦇[nil, cons] ∪ [nil, outr]⦈`, #h(4pt) `within w` the coreflexive on `x` with `weight x ≤ w`.
+
+`geq ≜ leq°`, #h(4pt) `R ≜ value geq value°`, #h(4pt) `Q ≜ R ∩ (weight leq weight°)`, #h(4pt) `P ≜ R`.
+
+`F A = 1 + Item × A`, #h(4pt) `listcp(F) = wrap + cpr`, #h(4pt) `g₁ ≜ list([nil, cons]) filter(within w)`
+#h(4pt) `= [list(nil), h₁]`, #h(4pt) `g₂ ≜ list([nil, outr]) = [list(nil), h₂]`.
+
+`h₁ ≜ list(cons) filter(within w)`, #h(4pt) `h₂ ≜ list(outr)`.
+]]<knap-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(subseq (within w)) min R`],
+  [the specification: a selection of greatest total value that stays within the capacity `w`],
+  [`subseq (within w) = ⦇([nil, cons] (within w)) ∪ [nil, outr]⦈` \ #src[fusion, weights non-negative]],
+  [the selections that fit are themselves a fold, and the fold's algebra already has binary thinning's
+   shape],
+  [`(𝟙 × R°) (cons (within w)) ⊑ cons (within w) R°` \ #src[FALSE]],
+  [not monotonic on `R°`: a selection of greater value need not still fit once one more item goes in],
+  [`(𝟙 × Q°) (cons (within w)) ⊑ cons (within w) Q°` \ `(𝟙 × Q°) outr ⊑ outr Q°`],
+  [both halves are monotonic on `Q°` once ties in value are broken by weight],
+  [`⦇listcp(F) ⟨g₁, g₂⟩ merge R thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ R`, `F` linear]],
+  [binary thinning, sorting in descending order of value],
+  [`knapsack w = ⦇[nil, cpr ⟨h₁, h₂⟩ merge R thinlist Q]⦈ minlist R`],
+  [the program; `minlist R` becomes `head`, since packings come out in descending value],
+)]<knap-laws>
+
+// Stranded at the foot of its page for the same reason as the break above.
+#pagebreak(weak: true)
+== The paragraph problem
+
+// B&dM §8.5, p. 207.  `P ≜ ⊤` works because `merge ⊤ = cat`, which already brings equal first lines
+// together; the book's first choice `head prefix head°` is correct but not needed.
+#disp[#definition[
+`Line = list⁺ Word`, #h(4pt) `Para = list⁺ Line`, #h(4pt) `F A = Word + Word × A`, #h(4pt)
+`listcp(F) = wrap + cpr`.
+
+`new (a, xs) = [[a]] ⧺ xs`, #h(4pt) `glue (a, xs) = [[a] ⧺ head xs] ⧺ tail xs`, #h(4pt)
+`partition ≜ ⦇[wrap wrap, new ∪ glue]⦈ : list⁺ Word ⟶ Para`.
+
+`width ≜ ⦇[length, (length × 𝟙) plus succ]⦈`, #h(4pt) `fits w` the coreflexive on a line `x` with
+`width x ≤ w`, #h(4pt) `ok w` the coreflexive on `[x] ⧺ xs` with `width x ≤ w`.
+
+`white w x = w − width x`, #h(4pt) `collect ≜ list(sqr) sum`, #h(4pt) `waste w ≜ init list(white w) collect`.
+
+`R ≜ (waste w) leq (waste w)°`, #h(4pt) `Q ≜ R ∩ (head head°)`, #h(4pt) `P ≜ ⊤`.
+
+`g₁ ≜ list([wrap wrap, new])`, #h(4pt) `g₂ ≜ list([wrap wrap, glue]) filter(ok w)`, #h(4pt)
+`start ≜ wrap wrap wrap`, #h(4pt) `h₁ ≜ list(new)`, #h(4pt) `h₂ ≜ list(glue) filter(ok w)`.
+]]<para-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(partition list⁺(fits w)) min R`],
+  [the specification: least waste among the paragraphs whose every line fits],
+  [`partition list⁺(fits w) = ⦇[wrap wrap, new ∪ (glue (ok w))]⦈` \ #src[fusion, every word fits on a
+   line by itself]],
+  [the fitting paragraphs are themselves a fold],
+  [`[wrap wrap, new ∪ (glue (ok w))]` \ #h(6pt) `= [wrap wrap, new] ∪ ([wrap wrap, glue] (ok w))`],
+  [rewritten into binary thinning's shape `(f₁ p₁) ∪ (f₂ p₂)`],
+  [`(𝟙 × R°) glue ⊑ glue R°` #h(6pt) #src[FALSE]],
+  [`glue` is not monotonic on `R°`: the waste of a paragraph depends on its whole first line, so no
+   greedy algorithm solves this],
+  [`(𝟙 × Q°) new ⊑ new Q°` \ `(𝟙 × Q°) (glue (ok w)) ⊑ glue (ok w) Q°` \ #src[`cons` monotonic on
+   `collect leq collect°`]],
+  [both halves are monotonic on `Q°` once ties in waste are broken by the first line],
+  [`merge ⊤ = cat`; #h(4pt) `P ≜ head prefix head°` also serves],
+  [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
+   input],
+  [`⦇listcp(F) ⟨g₁, g₂⟩ cat thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ ⊤`]],
+  [binary thinning, one candidate kept per first line],
+  [`paragraph w = ⦇[start, cpr ⟨h₁, h₂⟩ cat thinlist Q]⦈ minlist R`],
+  [the program, `g₁` and `g₂` split along the coproduct],
+)]<para-laws>
+
+== Bitonic tours
+
+// B&dM §8.6, p. 212.  `Q` records `next2`, not `head`: tours of one input already share their heads,
+// and the cost of the next drop turns on the second city of each list.
+#disp[#definition[
+`F A = (City × City) + (City × A)`, the base functor of cons-lists of length at least two; #h(4pt)
+`listcp(F) = wrap + cpr`; #h(4pt) `tc : City × City ⟶ Real`, neither positive nor symmetric.
+
+`start (a, b) = ([a, b], [a, b])`, #h(4pt) `dropl (a, ([b] ⧺ x, y)) = ([a] ⧺ x, [a] ⧺ y)`, #h(4pt)
+`dropr (a, (x, [b] ⧺ y)) = ([a] ⧺ x, [a] ⧺ y)`, #h(4pt) `tour ≜ ⦇[start, dropl ∪ dropr]⦈`.
+
+`cost (x, y) = outcost x + incost y`, #h(4pt) `outcost [a₀, …, aₙ] = tc (a₀, a₁) + ⋯ + tc (aₙ₋₁, aₙ)`,
+#h(4pt) `incost [a₀, …, aₙ] = tc (a₁, a₀) + ⋯ + tc (aₙ, aₙ₋₁)`.
+
+`next ≜ tail head`, #h(4pt) `next2 ≜ next × next`, #h(4pt) `R ≜ cost leq cost°`, #h(4pt)
+`Q ≜ R ∩ (next2 next2°)`, #h(4pt) `P ≜ ⊤`, #h(4pt) `g₁ ≜ list([start, dropl])`, #h(4pt)
+`g₂ ≜ list([start, dropr])`.
+]]<tour-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(tour) min R`],
+  [the specification: a least-cost bitonic tour, outward journey and return kept as a pair of lists],
+  [`(𝟙 × R°) dropl ⊑ dropl R°` #h(6pt) #src[FALSE] \ `(𝟙 × R°) dropr ⊑ dropr R°` #h(6pt) #src[FALSE]],
+  [neither drop is monotonic on `R°`: the two edges it adds and removes depend on `head` and `next`
+   of both lists],
+  [`(𝟙 × Q°) dropl ⊑ dropl Q°` \ `(𝟙 × Q°) dropr ⊑ dropr Q°`],
+  [both are, once ties in cost are broken by the two second cities — the heads already agree among
+   tours of one input],
+  [`⦇listcp(F) ⟨g₁, g₂⟩ cat thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ ⊤`, `merge ⊤ = cat`]],
+  [binary thinning, one candidate per pair of second cities],
+  [`mintour = ⦇[start wrap, cpr ⟨list(dropl), list(dropr)⟩ cat thinlist Q]⦈ minlist R`],
+  [the program: quadratic, because each step adds just two tours to the list kept],
+)]<tour-laws>
+
+#pagebreak(weak: true)
+= Dynamic Programming <sec-dp>
+
+== Theory
+
+// B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
+// come from `⦇T⦈°`, and the recursion is over them rather than over an initial algebra.
+#disp[#definition[
+`h : F B ⟶ B` a map, #h(4pt) `T : F A ⟶ A` an F-algebra, #h(4pt) `R : B ⟶ B`.
+
+`H ≜ ⦇T⦈° ⦇h⦈ : A ⟶ B`, #h(4pt) `M ≜ Λ(H) min R` the problem to be solved, #h(4pt) `(μX : G(X))` the
+least fixed point of `G`.
+]]<dp-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`(μX : Λ(T°) P(F(X) h) min R) ⊑ M` \ #src[Theorem 9.1, `h` monotonic on `R`]],
+  [*dynamic programming*: decompose in every way, solve each part, keep one optimum per part],
+  [`Λ(T°) P(F(M) h) min R ⊑ M` #h(6pt) #src[(9.1)]],
+  [all Knaster–Tarski leaves to prove],
+  [`Λ(T°) P(F(M) h) min R ⊑ H` #h(6pt) #src[(9.2)] \
+   `H° Λ(T°) P(F(M) h) min R ⊑ R` #h(6pt) #src[(9.3)]],
+  [(9.1) split by the universal property of `min`],
+  [`P(X) min R ⊑ (∋ X) ∩ (∈\(X R))` \ #src[(9.4) = (7.10), @min-laws]],
+  [the only fact about `min` either proof uses],
+  [`(μX : Λ(T°) thin Q P(F(X) h) min R) ⊑ M` \ #src[Theorem 9.2, `Q` a preorder with
+   `Q° F(H) h ⊑ F(H) h R°`; `thin Q` as in @thin-laws]],
+  [the same with a thinning step: decompositions that can never win are dropped],
+  [the fixed point is unique, and entire \ #src[Theorem 6.3, `T°` followed by `F`'s membership
+   relation inductive; `Λ(T°)` finite and non-empty, `R` connected]],
+  [when the recursion can be refined to a recursive function],
+  [`Λ([V₁, V₂]°) thin(Q₁ + Q₂) P([U₁, U₂]) min R` \ #h(10pt) `= (Ran V₁ → W₁, W₂)` \ #h(10pt)
+   `Wᵢ ≜ Λ(Vᵢ°) thin(Qᵢ) P(Uᵢ) min R` \ #src[Proposition 9.1, `V₂ V₁° = ⊥`]],
+  [`F A` is usually a coproduct, and disjoint ranges split the fixed point into one branch per
+   summand],
+  [`F(R) h ⊑ h R` \ `Q° F(H) h ⊑ F(H) h R°`],
+  [the two conditions to be checked, in the order the three propositions below discharge them],
+  [`F(R) h ⊑ h R` \ #src[Proposition 9.2, `R ≜ cost leq cost°`, `h cost = F(cost) k`,
+   `F(leq) k ⊑ k leq`]],
+  [monotonicity when the cost is itself a fold with a step `k` monotonic on `leq`],
+  [`F(R ∩ (H° H)) h ⊑ h R` \ #src[Proposition 9.3, `R ≜ cost leq cost°`,
+   `h cost = F(⟨cost, H°⟩) k`, `F(leq × 𝟙) k ⊑ k leq`, `H°` simple]],
+  [monotonicity *in context*: `k` may also read the input the part was built from],
+  [`Q ≜ F(U, V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U, R) h ⊑ h R`, `V° H ⊑ H R°`]],
+  [both conditions of Theorem 9.2 at once, split along the two arguments of a bifunctor],
+)]<dp-laws>
+
+== The string edit problem
+
+// B&dM §9.2, p. 225.  The section numbers no equation.  `base` and `step` are reused for the
+// tabulating fold at the foot of the table; they are not `edit`'s.
+#disp[#definition[
+`Op ::= cpy Char ∣ del Char ∣ ins Char`, #h(4pt) `F(A, B) = 1 + (A × B)`, #h(4pt) `α ≜ [nil, cons]`.
+
+`edit ≜ ⦇[base, step]⦈ : list Op ⟶ list Char × list Char`, #h(4pt) `base` returning `([], [])`,
+#h(4pt) `step (cpy a, (x, y)) = ([a] ⧺ x, [a] ⧺ y)`, #h(4pt) `step (del a, (x, y)) = ([a] ⧺ x, y)`,
+#h(4pt) `step (ins a, (x, y)) = (x, [a] ⧺ y)`.
+
+`length ≜ ⦇[zero, outr succ]⦈`, #h(4pt) `R ≜ length leq length°`, #h(4pt) `U ≜ ⊤`, #h(4pt)
+`V ≜ suffix × suffix`, #h(4pt) `Q ≜ 𝟙 + (U × V)`, #h(4pt) `empty` the coreflexive on `(x, y)` with
+both lists empty.
+
+`unstep` implements `Λ(step°) thin(U × V)`: #h(4pt) `unstep ([a] ⧺ x, []) = [(del a, (x, []))]`,
+#h(4pt) `unstep ([], [b] ⧺ y) = [(ins b, ([], y))]`, #h(4pt)
+`unstep ([a] ⧺ x, [b] ⧺ y) = (a = b → [(cpy a, (x, y))], [(del a, (x, [b] ⧺ y)), (ins b, ([a] ⧺ x, y))])`.
+]]<edit-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(edit°) min R`],
+  [the specification: a shortest edit sequence from which both strings can be reconstituted],
+  [`F(R) α ⊑ α R` \ #src[Proposition 9.2 at `length`, `succ` monotonic on `leq`]],
+  [`cons` is monotonic on `R`, so Theorem 9.1 already applies],
+  [`Q° F(𝟙, edit°) α ⊑ F(𝟙, edit°) α R°`],
+  [the thinning condition sought, over `F(Op, list Char × list Char)`],
+  [`F(⊤, R) α ⊑ α R` #h(6pt) #src[left as an exercise]],
+  [`U ≜ ⊤` costs nothing: any two operations may be compared],
+  [`edit (𝟙 × suffix) ⊑ R edit` \ `edit (suffix × 𝟙) ⊑ R edit`],
+  [the other half of Proposition 9.4 for `V ≜ suffix × suffix`],
+  [`edit (𝟙 × tail) ⊑ R edit` \ `edit (tail × 𝟙) ⊑ R edit` \
+   #src[`suffix = tail*`, and `B A ⊑ C B ⟹ B A* ⊑ C* B`]],
+  [one step is enough: drop the operation that produced the head, or weaken its `cpy` to a `del` —
+   never lengthening the sequence],
+  [`(μX : Λ([base, step]°) thin Q P([nil, (𝟙 × X) cons]) min R) ⊑ Λ(edit°) min R` \
+   #src[Theorem 9.2]],
+  [a copy, when available, beats a delete or an insert],
+  [`X = (empty → nil, Λ(step°) thin(U × V) P((𝟙 × X) cons) min R)` #h(4pt) #src[Proposition 9.1]],
+  [`base` and `step` have disjoint ranges],
+  [`mle = (empty → nil, unstep list((𝟙 × mle) cons) minlist R)`],
+  [the program: at most two decompositions survive, but the same subproblem is solved many times,
+   so the running time is exponential],
+  [`column x y = [mle (u, y) ∣ u ← tails x]` \ `column x = ⦇[fstcol x, nextcol x]⦈`, #h(4pt)
+   `fstcol = list(del) tails`],
+  [the tabulation: `mle (x, y)` needs `mle (u, v)` for every tail `u` of `x` and `v` of `y`, so the
+   columns are built right to left],
+  [`column x ([b] ⧺ y) = nextcol x (b, column x y)` \
+   `nextcol x (b, us)` \ #h(10pt) `= ⦇[base (b, last us), step b]⦈ xus` \ #h(10pt)
+   `xus = zip (x, zip (init us, tail us))`],
+  [each column is a fold built bottom to top, over `x` zipped with the adjacent pairs of the column
+   to its right],
+  [`base (b, u) = [[ins b] ⧺ u]` \ `step b ((a, (u, v)), ws) =` \ #h(10pt)
+   `(a = b → [[cpy a] ⧺ v] ⧺ ws,` \ #h(10pt) `[bmin R ([del a] ⧺ w, [ins b] ⧺ u)] ⧺ ws)` \
+   #src[`w = head ws`; these `base`, `step` are not `edit`'s]],
+  [an entry depends on the one below it (a delete), the one to its right (an insert), and the one
+   below that (a copy) — quadratic in the two lengths],
+)]<edit-laws>
+
+== Optimal bracketing
+
+// B&dM §9.3, p. 230.  `⦇T⦈ = flatten` is a map, so `H° = flatten` is simple and Proposition 9.3
+// applies; no decomposition is preferable to another here, so there is no thinning step.
+#disp[#definition[
+`tree A ::= tip A ∣ bin (tree A, tree A)`, #h(4pt) `F X = A + X²`, so `F(R) = 𝟙 + R²`; #h(4pt)
+`h ≜ [tip, bin]`, #h(4pt) `flatten ≜ ⦇[wrap, cat]⦈ : tree A ⟶ list⁺ A`, #h(4pt) `H = flatten°`.
+
+`⟨cost, size⟩ ≜ ⦇[opt, opb]⦈`, #h(4pt) `opt ≜ ⟨zero, st⟩`, #h(4pt)
+`opb ((cx, sx), (cy, sy)) = (cb (sx, sy) + cx + cy, sb (sx, sy))`.
+
+`sb` associative, so `size = flatten sz` for a map `sz`; #h(4pt) `R ≜ cost leq cost°`, #h(4pt)
+`g ≜ [zero, (𝟙 × sz)² opb outl]`, #h(4pt) `single` the coreflexive on singleton lists.
+
+`splits ≜ ⟨inits⁺, tails⁺⟩ zip`, an implementation of `Λ(cat°)`; #h(4pt) `array ≜ inits list(row)`,
+#h(4pt) `row ≜ tails list(mct)`, #h(4pt) `col ≜ inits list(mct)`.
+
+`mix ≜ zip list(bin) minlist R`, #h(4pt) `next ≜ ⟨outl, mix⟩ snoc`, #h(4pt)
+`process ≜ ((tip wrap) × 𝟙) loop(next)`.
+]]<mct-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(flatten°) min R`],
+  [the specification: a least-cost bracketing of `a₁ ⊕ ⋯ ⊕ aₙ`, the tree whose flattening is the
+   given list],
+  [`[tip, bin] cost = (𝟙 + ⟨cost, flatten⟩²) g` #h(4pt) #src[(9.5)]],
+  [the cost of a node reads only the cost and the flattening of its two subtrees],
+  [`(𝟙 + (leq × 𝟙)²) g ⊑ g leq` #h(6pt) #src[(9.6)]],
+  [`g` is monotonic on `leq` in its two cost arguments],
+  [`F(R ∩ (flatten flatten°)) h ⊑ h R` \ #src[Proposition 9.3, `H° = flatten` a map]],
+  [monotonicity in context: only trees with the same flattening are compared],
+  [`(μX : Λ([wrap, cat]°) P([tip, (X × X) bin]) min R) ⊑ Λ(flatten°) min R` #h(4pt)
+   #src[Theorem 9.1]],
+  [split the list in every way, bracket both halves, join],
+  [`X = (single → wrap° tip, Λ(cat°) P((X × X) bin) min R)` #h(4pt) #src[Proposition 9.1]],
+  [`wrap` and `cat` have disjoint ranges],
+  [`mct = (single → head tip, splits list((mct × mct) bin) minlist R)`],
+  [the program; exponential, since the segments of one list overlap],
+  [`mct = (single → head tip, ⟨init col, tail row⟩ mix)` #h(4pt) #src[(9.7)]],
+  [the tabulation: `mct y` is needed for every non-empty segment `y`, so the values are held as an
+   array of rows],
+  [`col = (single → head tip wrap, ⟨init col, tail row⟩ next)` #h(4pt) #src[(9.8)] \
+   `cons col = (𝟙 × array) process` #h(4pt) #src[(9.9)] \
+   `row = (single → head tip wrap, ⟨mct, tail row⟩ cons)` #h(4pt) #src[(9.10)]],
+  [a column extends the column to its left, a row the row below it; (9.9) is (9.8) rewritten as a
+   loop],
+  [`array = ⦇[fstcol, addcol]⦈`, #h(4pt) `fstcol ≜ tip wrap wrap` \
+   `addcol ≜ ⟨outl tip wrap, step⟩ cons` \ `step ≜ ⟨process tail, outr⟩ zip list(cons)`],
+  [the program: one fold building the array column by column, cubic in the length of the input],
+)]<mct-laws>
+
+== Data compression
+
+// B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
+// book stops at the recursive program and says the details are messy.
+#disp[#definition[
+`list A ::= nil ∣ snoc (list A, A)`, #h(4pt) `list⁺ A ::= wrap A ∣ snoc (list⁺ A, A)`, #h(4pt)
+`String = list Char`, #h(4pt) `Code ::= sym Char ∣ ptr (String, String⁺)`, #h(4pt)
+`F(Code, String) = 1 + (String × Code)`, #h(4pt) `α ≜ [nil, snoc]`.
+
+`decode ≜ ⦇[nil, extend]⦈ : list Code ⟶ String`, #h(4pt) `extend (x, sym a) = x ⧺ [a]`, #h(4pt)
+`extend (x, ptr (y, z)) = x ⧺ z` when `y ⧺ z` is a proper prefix of `x ⧺ z`; #h(4pt) `H = decode°`.
+
+`size ≜ ⦇[zero, distr [𝟙 × c, 𝟙 × p] plus]⦈` with `c`, `p` the constant costs of a symbol and a
+pointer; #h(4pt) `R ≜ size leq size°`, #h(4pt) `Q ≜ F(⊤ + ⊤, prefix) = 𝟙 + (prefix × (⊤ + ⊤))`, the
+two `⊤` on symbols and on pointers.
+
+`lrt w = min(prefix × (⊤ + ⊤)) {(x, (y, z)) ∣ x ⧺ z = w`, `y ⧺ z` a proper prefix of `w}`, the
+longest repeated tail; #h(4pt)
+`reduce (w ⧺ [a]) = (z ≠ [] → [(w, sym a), (x, ptr (y, z))], [(w, sym a)])` with
+`(x, (y, z)) = lrt (w ⧺ [a])`.
+]]<code-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(decode°) min R`],
+  [the specification: a smallest code sequence decoding to the given string],
+  [`F(R) α ⊑ α R` #h(6pt) #src[`(⊤ + ⊤) [c, p] = [c, p]`]],
+  [monotonicity is routine, the two costs being constants],
+  [`F(⊤ + ⊤, R) α ⊑ α R` \ `decode prefix ⊑ R decode` \ #src[Proposition 9.4 at `Q ≜ F(⊤ + ⊤, prefix)`]],
+  [the thinning condition split in two: pointers are ordered only by how much input they consume,
+   symbols and pointers not at all],
+  [`decode init ⊑ R decode`],
+  [enough for the second: drop the last character of the output by shortening or removing the last
+   code element, never raising the cost],
+  [`(μX : Λ([nil, extend]°) thin Q P([nil, (X × 𝟙) snoc]) min R) ⊑ Λ(decode°) min R` \
+   #src[Theorem 9.2]],
+  [between a symbol and a pointer nothing can be decided in advance; between two pointers the longer
+   match wins],
+  [`X = (null → nil, Λ(extend°) thin(prefix × (⊤ + ⊤)) P((X × 𝟙) snoc) min R)` \
+   #src[Proposition 9.1]],
+  [`nil` and `extend` have disjoint ranges],
+  [`Λ(extend°) (w ⧺ [a]) = {(w, sym a)} ∪` \ #h(10pt)
+   `{(x, ptr (y, z)) ∣ x ⧺ z = w ⧺ [a]`, `y ⧺ z` a proper prefix of `w}`],
+  [the decompositions of one string: take the last character as a symbol, or end with a pointer],
+  [`reduce` implements `Λ(extend°) thin(prefix × (⊤ + ⊤))`],
+  [thinning leaves at most two: the symbol, and the pointer of `lrt`],
+  [`encode = (null → nil, reduce list((encode × 𝟙) snoc) minlist R)`],
+  [the program, again exponential; the book gives no tabulation for it],
+)]<code-laws>
+
+#pagebreak(weak: true)
+= Greedy Algorithms <sec-greedy>
+
+== Theory
+
+// B&dM §10.1, p. 245.  Theorem 9.2 with `min Q` for `thin Q`: the same hypotheses, a much stronger
+// conclusion, and one far harder to refine into a program.
+#disp[#definition[
+`h`, `T`, `R`, `H`, `M` as in @dp-defn; #h(4pt) additionally `Q` a *connected* preorder on the sets
+`Λ(T°)` returns, so that `Λ(T°) min Q` is entire.
+]]<greedy-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`(μX : Λ(T°) min Q F(X) h) ⊑ M` \ #src[Theorem 10.1, the hypotheses of Theorem 9.2]],
+  [*greedy*: one decomposition is kept at every step, so `P` and `Λ` disappear from the recursion],
+  [`Λ([V₁, V₂]°) min(Q₁ + Q₂) [U₁, U₂]` \ #h(10pt) `= (Ran V₁ → W₁, W₂)` \ #h(10pt)
+   `Wᵢ ≜ Λ(Vᵢ°) min(Qᵢ) Uᵢ` \ #src[Proposition 10.1, `V₂ V₁° = ⊥`]],
+  [Proposition 9.1 with `min` for `thin`],
+  [`Q ≜ F(U, V)` #h(6pt) #src[Proposition 9.4]],
+  [still the way to get both conditions, but `Λ(T°) min Q` must now be entire as well],
+  [#src[Theorem 7.2, @mon-laws]],
+  [that greedy theorem chooses among the *results* of one relational step of a catamorphism;
+   Theorem 10.1 chooses among the *decompositions* of the input, for an arbitrary `T` rather than an
+   initial algebra, at the cost of `h` being a map],
+)]<greedy-laws>
+
+== The detab-entab problem
+
+// B&dM §10.2, p. 246.  `V ≜ prefix ∩ (fill fill°)` is the whole trick: a bare `prefix` fails because
+// a prefix of the expansion can be longer than the input once it crosses a tab stop.
+#disp[#definition[
+`detab ≜ ⦇[nil, expand]⦈ : String ⟶ String` over snoc-lists, #h(4pt) `α ≜ [nil, snoc]`, #h(4pt)
+`H = detab°`; #h(4pt) `expand (x, a) = (a = TB → fill x, x ⧺ [a])`, #h(4pt)
+`fill x = x ⧺ blanks (n − (col x) mod n)`.
+
+`col ≜ ⦇[zero, count]⦈`, #h(4pt) `count (c, a) = (a = NL → 0, c + 1)`; #h(4pt) `TB` the tab, `BL` the
+blank, `NL` the newline, tab stops every `n` columns.
+
+`R ≜ length leq length°`, #h(4pt) `U` the preorder with `a U b ⟺ b = TB ∨ a = b`, #h(4pt)
+`V ≜ prefix ∩ (fill fill°)`, #h(4pt) `Q ≜ 𝟙 + (V × U)`.
+
+`unfill x` the shortest prefix of `x` with `fill (unfill x) = fill x`; #h(4pt) `tbc` the trailing
+blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
+]]<entab-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(detab°) min R`],
+  [the specification: a shortest input `detab` expands to the given output — `detab entab = 𝟙` and
+   nothing shorter does],
+  [`F(⊤, R) α ⊑ α R` #h(6pt) #src[left as an exercise]],
+  [`U` may be any preorder on characters; `a U b ⟺ b = TB ∨ a = b` puts `TB` on top, so `min` prefers
+   a tab to a blank],
+  [`detab prefix ⊑ R detab` #h(6pt) #src[FALSE]],
+  [at `n = 8`, `detab [a,b,c,d,e,TB] = [a,b,c,d,e,BL,BL,BL]`, whose prefix `[a,b,c,d,e,BL,BL]` is
+   longer than any input giving it],
+  [`detab V ⊑ R detab` #h(6pt) #src[`V ≜ prefix ∩ (fill fill°)`]],
+  [true once only the prefixes that do not cross a tab stop are allowed],
+  [`nil V = nil` #h(10pt) `fill V = fill` \ `snoc V ⊑ snoc ∪ (outl V)` #h(6pt) #src[left as exercises]],
+  [the three properties of `V` the derivation rests on; the second is what `fill fill°` was added for],
+  [`expand V ⊑ expand ∪ (outl V)`],
+  [the claim they add up to: shortening the output either leaves the last step alone or discards it],
+  [`detab V ⊑ detab ∪ (init detab V)` \ #src[`init` inductive, so the greatest solution is the unique
+   one]],
+  [hence `detab V ⊑ prefix detab`, and `prefix ⊑ R` finishes Proposition 9.4],
+  [`(μX : Λ([nil, expand]°) min Q (𝟙 + (X × 𝟙)) [nil, snoc]) ⊑ Λ(detab°) min R` \
+   #src[Theorem 10.1]],
+  [greedy: one character of input is decided at each step],
+  [`X = (null → nil, Λ(expand°) min(V × U) (X × 𝟙) snoc)` #h(4pt) #src[Proposition 10.1]],
+  [`nil` and `expand` have disjoint ranges],
+  [`Λ(expand°) (x ⧺ [a]) = {(y, TB) ∣ fill y = x ⧺ [a]} ∪ {(x, a)}` \ #h(6pt)
+   the first set is non-empty iff `a = BL` and `col (x ⧺ [a]) mod n = 0`],
+  [the last output character came from a tab only if it is a blank landing exactly on a tab stop],
+  [`Λ(expand°) min(V × U) (x ⧺ [a]) =` \ #h(10pt)
+   `(a = BL ∧ col (x ⧺ [a]) mod n = 0 → (unfill x, TB), (x, a))`],
+  [the greedy step: emit a tab whenever a tab is legal, consuming all the blanks back to the previous
+   tab stop],
+  [`entab x = entab (unfill x) ⧺ blanks (tbc x)` #h(4pt) #src[(10.1)]],
+  [what makes `triple` a snoc-list catamorphism: the output splits at the last tab stop],
+  [`triple = ⦇[base, op]⦈` and `entab = triple assocl outl (𝟙 × blanks) cat`],
+  [the program: one pass carrying the column and the count of pending blanks],
+  [`base` returns `([], (0, 0))` \ `op ((x, (t, c)), a) =` \ #h(10pt)
+   `(a = BL ∧ (c + 1) mod n ≠ 0 → (x, (t + 1, c + 1)),` \ #h(10pt)
+   `a = BL → (x ⧺ [TB], (0, c + 1)),` \ #h(10pt)
+   `a = NL → (x ⧺ blanks t ⧺ [NL], (0, 0)),` \ #h(10pt)
+   `(x ⧺ blanks t ⧺ [a], (0, c + 1)))`],
+  [hold a blank back, cash the held blanks in for a tab at a tab stop, flush them at a newline,
+   flush them before anything else],
+)]<entab-laws>
+
+== The minimum tardiness problem
+
+// B&dM §10.3, p. 253.  Both conditions need context, and `cost` has to be restated over `perm x`
+// before Proposition 9.3 fits — `penalty` reads the bag of scheduled jobs, not their order.
+#disp[#definition[
+`F X = 1 + (X × Job)`, #h(4pt) `α ≜ [nil, snoc]` on schedules, #h(4pt) `β ≜ [nil, snag]` on bags,
+`snag` putting a job into a bag; #h(4pt) `bagify ≜ ⦇β⦈ : list Job ⟶ Bag Job`, #h(4pt) `H = bagify°`.
+
+`ct`, `dt`, `wt : Job ⟶ Real` the completion, due and weighting quantities of a job; #h(4pt)
+`penalty (x, j) = (sum (list(ct) x) + ct j − dt j) × wt j`.
+
+`cost ≜ Λ(prefix) P(α° [zero, penalty]) max leq`, #h(4pt) `cost [] = 0`, #h(4pt)
+`cost (x ⧺ [j]) = bmax (cost x, penalty (x, j))`, #h(4pt) `R ≜ cost leq cost°`.
+
+`perm ≜ bagify bagify° = ⦇[nil, add]⦈`, #h(4pt) `add (x, j) = y ⧺ [j] ⧺ z` for some `x = y ⧺ z`.
+
+`k ≜ [zero, assocr (𝟙 × ((bagify° × 𝟙) penalty)) bmax]`, #h(4pt)
+`f ≜ [zero, (bagify° × 𝟙) penalty]`, #h(4pt) `Q ≜ f leq f°`.
+]]<tardy-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(bagify°) min R`],
+  [the specification: an ordering of the given bag of jobs with least maximum penalty],
+  [`F(R ∩ (bagify bagify°)) α ⊑ α R` #h(4pt) #src[(10.2)]],
+  [monotonicity in context — only schedules of one bag are compared],
+  [`(Q° ∩ (β β°)) F(bagify°) α ⊑ F(bagify°) α R°` #h(4pt) #src[(10.3)]],
+  [the greedy condition, also in context],
+  [`cost (x ⧺ [j]) = bmax (cost x, penalty (perm x, j))` \ `α cost = F(⟨cost, bagify⟩) k`, #h(4pt)
+   `F(leq × 𝟙) k ⊑ k leq` \ #src[Proposition 9.3]],
+  [(10.2): `penalty` sums the completion times of `x`, and a sum does not see the order],
+  [`α cost = ⟨g, h⟩ bmax` #h(4pt) #src[(10.4)] \ `g ≜ [zero, penalty]` #h(4pt) #src[(10.5)] \
+   `h ≜ [zero, outl cost]` #h(4pt) #src[(10.6)]],
+  [the cost of a schedule split into the penalty of its last job and the cost of the rest],
+  [`add ⊑ outl R°` #h(6pt) #src[(10.7)] \ `β bagify° = F(bagify°) [nil, add]` #h(6pt) #src[(10.8)]],
+  [adding a job never lowers the cost; and `bagify°` is itself a catamorphism on bags. Together:
+   `β bagify° ⊑ F(bagify°) h geq cost°`],
+  [`F(bagify) Q° F(bagify°) = g geq g°`, met by \ `Q ≜ f leq f°`, `f ≜ [zero, (bagify° × 𝟙) penalty]`],
+  [the specification `Q` has to satisfy, and the choice that meets it: a `Q`-minimum is a job of
+   least penalty],
+  [no greedy *catamorphism* exists],
+  [a greedy snoc-list catamorphism would also solve every prefix of the input, and the best schedule
+   of a prefix need not extend to a best schedule of the whole],
+  [`X = (null → nil, Λ(snag°) min Q (X × 𝟙) snoc)` #h(4pt) #src[Theorem 10.1, Proposition 10.1]],
+  [`nil` and `snag` have disjoint ranges],
+  [`schedule = (null → nil, pick (schedule × 𝟙) snoc)` \ #src[`pick ⊑ Λ(snag°) min Q`, a partial
+   function]],
+  [the program: repeatedly remove a job of least penalty and put it last; quadratic in the number of
+   jobs],
+)]<tardy-laws>
+
+== The TeX problem
+
+// B&dM §10.4, p. 259.  The section's `h` is `⦇[arb, step]⦈`, which is `H°`, not §21.1's algebra `h`.
+// The book prints the base case of `f` as `a < 0` on p. 262 and as `p ≤ 0` in the program.
+#disp[#definition[
+`intern ≜ val round : Decimal ⟶ [0, 2¹⁶)`, #h(4pt) `val ≜ ⦇[zero, shift]⦈`, #h(4pt)
+`shift (d, r) = (d + r)/10`, #h(4pt) `round r` rounds `2¹⁶ r` to the nearest integer:
+`round r = n ⟺ 2n − 1 < 2¹⁷ r < 2n + 1`.
+
+`interval n = ((2n − 1)/2¹⁷, (2n + 1)/2¹⁷)`, #h(4pt) `r inrange (a, b) ⟺ a < r < b`, #h(4pt)
+`round° = interval inrange`, #h(4pt) `R ≜ length leq length°`.
+
+`Interval` the pairs `(a, b)` with `0 < b < 1` and `a < b` #h(4pt) #src[(10.9)]; #h(4pt)
+`[arb, step] : 1 + (Digit × Interval) ⟶ Interval`, #h(4pt)
+`step (d, (a, b)) = ((d + a)/10, (d + b)/10)`.
+
+`F X = 1 + (Digit × X)`, #h(4pt) `α ≜ [nil, cons]`, #h(4pt) `h ≜ ⦇[arb, step]⦈ = H°`, #h(4pt)
+`! : Digit × Interval ⟶ 1`, #h(4pt) `Q ≜ (ιᵣ° ! ιₗ) ∪ 𝟙`, #h(4pt) `w ≜ 2¹⁷`.
+]]<tex-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`Λ(intern°) min R = interval Λ(inrange val°) min R`],
+  [the specification: a shortest decimal whose internal representation is the given multiple of
+   `2⁻¹⁶`. `round°` is not a map, but `interval` is, so it comes out of the `Λ`],
+  [`val inrange° = ⦇[arb, step]⦈` \ #src[fusion; `zero inrange° = arb`,
+   `shift inrange° = (𝟙 × inrange°) step`]],
+  [the converse of `val`, cut down to intervals, is a catamorphism on cons-lists],
+  [`F(R) α ⊑ α R`],
+  [`cons` is monotonic on `R` — routine],
+  [`α° F(h) Q ⊑ R α° F(h)`],
+  [the greedy condition of Theorem 10.1, converted],
+  [`Λ(arb°) (a, b) = (a < 0 → {*}, {})` \
+   `Λ(step°) (a, b) = {(d, (10a − d, 10b − d)) ∣ 0 < 10b − d < 1}`],
+  [the decompositions of an interval: stop, or take one more digit],
+  [`0 < 10b − d₁ < 1` and `0 < 10b − d₂ < 1` imply `d₁ = d₂`],
+  [`step°` is in fact a map, `d` the digit with `0 < 10b − d < 1`, so `Λ([arb, step]°)` returns at
+   most two elements and `Q` need only choose between them],
+  [`Q ≜ (ιᵣ° ! ιₗ) ∪ 𝟙`, and `! nil ⊑ cons R` \ #src[from `! nil length ⊑ cons length leq`]],
+  [stop whenever stopping is legal: the empty decimal is shorter than any other],
+  [`(μX : Λ([arb, step]°) min Q F(X) α) ⊑ Λ(intern°) min R` #h(4pt) #src[Theorem 10.1]],
+  [greedy: emit the one digit the interval allows, until the interval contains zero],
+  [`extern = interval f` \ `f (a, b) = (a < 0 → [], [d] ⧺ f (10a − d, 10b − d))`],
+  [the program, with `d` the digit above],
+  [`extern n = f (2n − 1, 2n + 1)` \
+   `f (p, q) = (p ≤ 0 → [], [d] ⧺ f (10p − w d, 10q − w d))` \ #src[`d = (10q) div w`, `w = 2¹⁷`]],
+  [the same in integer arithmetic only, as chapter 3 required of `intern`: every interval reached is
+   `(p/w, q/w)`],
+)]<tex-laws>
