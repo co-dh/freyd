@@ -482,7 +482,7 @@
 // A hairline parting two independent pictures that share one canvas.
 #let fb-rule(x, y0, y1) = d.line((x, y0), (x, y1), stroke: 0.4pt + luma(170))
 
-// A `P B`-wire: two strands, each thinner than circuit's `lw` — at full weight the pair reads as two
+// An `E B`-wire: two strands, each thinner than circuit's `lw` — at full weight the pair reads as two
 // wires side by side rather than as one wire one level down.
 #let fb-wire(a, b) = {
   for o in (0.055, -0.055) {
@@ -631,7 +631,7 @@
     (lamplain(h, y.at(1)),
      lampanel(h, y.at(0), ((y.at(1), `R`, black),), top: `A`, cols: (TCOL, BCOL))),
     sep: grid(rows: 2, row-gutter: 5pt, align: center,
-      name($arrow.r.long$, `Λ`, GIVEN2, true), name($arrow.l.long$, `·∋`, GIVEN1, false)),
+      name($arrow.r.long$, $frac(#box(width: 8pt), ∋)$, GIVEN2, true), name($arrow.l.long$, `·∋`, GIVEN1, false)),
     gap: 2.6,
   )
 }
@@ -676,7 +676,7 @@
     hm-turn-split(xi, xm, y2, ADJC.i, ADJC.E, dir: -1)
     hm-wire(((xm, y2), (xm, y1 - KNEE), (xa, y1)), col: ADJC.E)
     hm-wire(((xa, BH), (xa, y1)), col: TCOL); hm-wire(((xa, y1), (xa, 0)), col: BCOL)
-    hm-bead((xa, y1), `Λ(R)`, col: INDUCED)
+    hm-bead((xa, y1), $frac(#[`R`], ∋)$, col: INDUCED)
     hm-bead(hm-apex(xi, xm, y2, dir: -1), `∋`, col: GIVEN1, dx: 0, dy: -0.3, anchor: "north")
     hm-port((xi, BH), `i`, col: ADJC.i); hm-port((xa, BH), `A`, col: TCOL)
     hm-port((xa, 0), `B`, dir: -1, col: BCOL)
@@ -713,7 +713,7 @@
     hm-region(((xa, BH), (xa, 0), (w, 0), (w, BH)), UC)
     hm-wire(((xa, BH), (xa, y)), col: TCOL); hm-wire(((xa, y), (xa, 0)), col: BCOL)
     hm-wire(((xa, y), (xe, y - KNEE), (xe, 0)), col: ADJC.E)
-    hm-bead((xa, y), `Λ(R)`, col: INDUCED)
+    hm-bead((xa, y), $frac(#[`R`], ∋)$, col: INDUCED)
     hm-port((xa, BH), `A`, col: TCOL)
     hm-port((xe, 0), `E`, dir: -1, col: ADJC.E); hm-port((xa, 0), `B`, dir: -1, col: BCOL)
   })
@@ -897,6 +897,9 @@
 #let zsqc(a, b, name: none, eq: false) = box(
   stroke: 0.6pt + luma(120), fill: luma(253), radius: 2pt, inset: (x: 6pt, y: 4pt), baseline: 50%,
   {
+    // `bounds`: a line box is cap-height tall by default, so a row carrying a fraction overflows it
+    // and the rule between the rows is drawn straight through the formula.
+    set text(top-edge: "bounds", bottom-edge: "bounds")
     // The wide box only stops the name wrapping inside a narrow box — `place` is out of flow, so the
     // name still measures nothing and the centre it hangs from is unmoved.
     if name != none { place(bottom + center, dy: 1.15em, box(width: 6cm, align(center, src(name)))) }
