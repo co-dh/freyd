@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
 // draw.typ owns the Hinze–Marsden geometry (Catamorphism, Monad) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, lamfuse, lamabsorb, zpal, GIVEN1, GIVEN2, INDUCED, SLACK, fb-MAPC, fb-ALLC, fb-ZC, fb-WALL, fb-FILL, IY, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, AD, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, fb-dot, fb-rule, fb-wire, fb-region, fb-wall, fb-sing, syqnode, syqedge, domstr, pairstr, zwire, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
+#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -152,7 +152,7 @@ diagrams.
 
   [`f°· ⊣ f·`], [`(A⟶C) ⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
-  [`i ⊣ E`], [`Map ↪ Rel`], [`E`], [`{·}:A⟶E A`], [`∋:E B⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
+  [`i ⊣ E`], [`Map ↪ Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶E A`], [`∋:E B⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
 
   // The row above at the HOM-SET level, and the table's only bijection that is not an ORDER-iso:
   // `Λ` is not monotone, and monotone would force every hom-poset discrete.
@@ -713,7 +713,7 @@ subject to
   columns: 2, stroke: none, inset: (x: 14pt, y: 3pt), align: (left + horizon, left + horizon),
   [$#e[R] □ = R □, quad #e[R] = #e[R □]$], [],
   [$𝟙 ⊑ (R slash #e[R])(#e[R] slash R)$], [$#e[R]$ is *thick*],
-  [$(#e[R] slash #e[R]) ∩ (#e[R] slash #e[R])^circle.small ⊑ 𝟙$], [$#e[R]$ is *straight*],
+  [$frac(#e[R], #e[R]) = 𝟙$], [$#e[R]$ is *straight*],
 ))
 
 `R □` is `R`'s target, an identity arrow. For `R : A ⟶ B` write `∋ : E B ⟶ B`, dropping the
@@ -723,97 +723,81 @@ subscript.
 `∈ ≜ ∋° : A ⟶ E A`
 ]]<pow-defn>
 
-#disp[#table(
-  columns: (7.4cm, 1fr),
+#disp[
+  // Row numbers so a law can be cited: `it.y` is the table's OWN index, so deleting a row renumbers
+  // the rest.  Rebuilt as a cell, not returned bare — bare content loses the row's height.
+  #show table.cell.where(x: 0): it => if it.y == 0 or it.body.func() == grid { it } else {
+    let f = it.fields()
+    let _ = f.remove("body")
+    table.cell(..f, grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#it.y], it.body))
+  }
+  #table(
+  columns: (7.95cm, 1fr),
   align: (left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the reading*]),
 
   [$#e[R] □ = R □$, #h(4pt) $#e[R] = #e[R □]$],
-  [`∋` has the same target as `R`, and replacing `R` by the identity at that target leaves it
-   unchanged: one `∋` per object, not per arrow.],
+  [One `∋` per object, not per arrow.],
 
   [`∋` is *thick*],
-  [*Comprehension*: every `x` has a set of exactly the people `x` admires. Equivalently every `R`
-   factors as a map followed by `∋`.],
+  [*Comprehension*: every `x` has a set of exactly the people `x` admires.],
 
-  [`∋` is *straight*, that is $frac(∋, ∋) ⊑ 𝟙$],
-  [*Extensionality*: two sets with the same people are the same set.],
  [`Λ(R) ≜` $frac(R, ∋)$ ` : A ⟶ E B`, for `R : A ⟶ B` ],
- [convert a relation to a function. `a Λ(R) = {b|a R b}`, image of a \
-  #src[`Λ(R)` is the standard notation — Freyd's, B&dM's, everyone's — but the name is dropped after
-  this row, because the extra name was causing confusion.] ],
-  [$frac(#[`R`], ∋)$ is simple],
-  [`∋` is straight, and dividing by a straight arrow is simple. At most one set per `x`.],
+ [convert a relation to a function. `a Λ(R) = {b|a R b}` ],
+  [$frac(#[`R`], ∋)$ is a *map*],  [],
 
-  [$frac(#[`R`], ∋)$ is entire `⟺ ∋` thick],
-  [`Dom` $frac(R, ∋)$ `= 𝟙 ∩ (R/∋)(∋/R)`, the domain row above. At least one set per `x`, so
-   $frac(#[`R`], ∋)$ is a *map*.],
-
-  // The wall stands OUTSIDE the box here, unlike `Λ(∋) = 𝟙`'s: `∋` follows `Λ(R)` rather than sitting
-  // inside it, so its name goes above, clear of the box's own `P`.
-  [$frac(#[`R`], ∋)$ `∋ = R` ], [Drawn in §@sec-adj-E, where it is the counit's cancellation.],
-
-  [$frac(#[`R`], ∋)$ is the only map with $frac(#[`R`], ∋)$ `∋ = R`],
-  [Two maps naming the same people name the same set — extensionality again.],
+  [$frac(#[`R`], ∋)$ `∋ = R` ], [],
 
   [`F ⊑` $frac(#[`F ∋`], ∋)$, `F` simple],
   [A partial choice of sets is inside the total one.],
 
-  [`E A` ≜ source of `∋`, the *power-object*],
-  [Notation, not a law: `∋` goes `E A ⟶ A`, and `E A` is simply a name for where it starts. Every
-   subset of `A`.],
-
-  [`{·} ≜` $frac(#[`𝟙`], ∋)$, the *singleton map*, monic],
-  [The one-person set. $frac(#[`𝟙`], ∋) (frac(#[`𝟙`], ∋))^circle.small$ `⊑` $frac(𝟙, ∋) frac(∋, 𝟙) ⊑ frac(𝟙, 𝟙) ⊑ 𝟙$.],
+  [$frac(#[`𝟙`], ∋)$, the *singleton map*, monic],
+  [The one-person set.],
 
   [$frac(#[`∋`], ∋)$ `= 𝟙`],
-  [Make the set of a set, then read it back one level down. Straightness itself; the other snake law
-   is `{·} ∋ = 𝟙`.],
+  [Make the set of a set, then read it back one level down.],
 
   [*fusion:* $frac(#[`f R`], ∋)$ `= f` $frac(#[`R`], ∋)$, `f` a map],
-  [Naturality of the unit, `f {·} = {·} (E(f))`, and that is the whole content of fusion. Drawn in
-   §@sec-adj-E.],
+  [Naturality of the unit, `f` $frac(#[`𝟙`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `(E(f))`.],
 
-  [$frac(#[`f`], ∋)$ `= f {·}`, `f` a map],
+  [$frac(#[`f`], ∋)$ `= f` $frac(#[`𝟙`], ∋)$, `f` a map],
   [Rename first or take singletons first — the fusion row above at `R = 𝟙`.],
 
   [$frac(R, S) = frac(R, ∋) (frac(S, ∋))^circle.small$],
-  [`x` and `y` match exactly when $frac(#[`R`], ∋)$`x` and $frac(#[`S`], ∋)$`y` are one and the same set.],
+  [`x` and `y` match when `R` sends `x` and `S` sends `y` to the same set.],
 
-  [`E(R) ≜` $frac(#[`∋ R`], ∋)$ ], [`E(R): E A ⟶ E B`, image of a set of A],
-  [$frac(#[`R`], ∋)$ `= {·} E(R)`], [{·}: x ↦ {x} ],
-  [$frac(#[`S`], ∋)$ `E(R) =` $frac(#[`S R`], ∋)$], [absorption ],
+  [`E(R) ≜` $frac(#[`∋ R`], ∋)$, `E ≜` $frac(#[`∋·`], ∋)$], [`E(R): E A ⟶ E B`, image of a set of A],
+  [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`], [$frac(#[`𝟙`], ∋)$`: x ↦ {x}` ],
+  [$frac(#[`S`], ∋)$ `E(R) =` $frac(#[`S`], ∋)$ $frac(#[`∋ R`], ∋)$ `=` $frac(#[`S R`], ∋)$],
+  [absorption ],
 
   [`subset ≜ ∋/∋ : E A ⟶ E A`],
-  [`x subset y ⟺ ∀a. y ∋ a → x ∋ a`, that is `y ⊆ x`: diagram order reverses B&dM's argument order
-   along with the arrow. It *models* inclusion between sets, where `⊑` is the allegory's own
-   primitive comparing arrows (B&dM p. 106).],
+  [`x subset y ⟺ ∀a. y ∋ a → x ∋ a`, that is `y ⊆ x`, not `x ⊆ y`.],
 )]<pow-laws>
 
-#pagebreak(weak: true)
-= `i ⊣ E` Power Allegory defined as adjunction <sec-adj-E>
+== `i ⊣ E` Power Allegory defined as adjunction <sec-adj-E>
 
 // The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
 // the two agree on maps only (B&dM p. 119), and `{·} P(R)` is every nonempty subset of `R(a)`.
 #disp[#box(inset: (y: 10pt), cetz.canvas(length: 0.8cm, {
-  let (T, B) = (1.45, -1.45)
-  let (xA, xPA, xPB, xB) = (-6.4, -2.2, 2.2, 6.4)
-  ar((xA, T), (xB, T), GIVEN1, s0: 0.5, s1: 0.5)
-  ar((xA, B), (xPA, B), GIVEN2, s0: 0.5, s1: 0.85)
-  ar((xPA, B), (xPB, B), GIVEN2, s0: 0.85, s1: 0.85)
-  ar((xPB, B), (xB, B), GIVEN2, s0: 0.85, s1: 0.5)
-  lab(0, T + 0.55, GIVEN1)[`R`]
-  // Each bottom label also says what the arrow IS in the one operator, so the three read as instances
-  // of it.  Fractions are a line and a half tall: the labels ride higher than the plain `∋` to clear.
-  lab((xA + xPA) / 2, B + 0.9, GIVEN2)[`{·} =` $frac(#[`𝟙`], ∋)$]
-  lab(0, B + 1.2, GIVEN2)[#align(center)[`E(R)` \
+  let (T, B) = (1.5, -1.5)
+  let (xA, xB) = (-3.1, 3.1)
+  ar((xA, T), (xB, T), GIVEN1, s0: 0.45, s1: 0.45)
+  ar((xA, T), (xA, B), GIVEN2, s0: 0.5, s1: 0.5)
+  ar((xA, B), (xB, B), GIVEN2, s0: 0.85, s1: 0.85)
+  ar((xB, B), (xB, T), GIVEN2, s0: 0.5, s1: 0.45)
+  // The diagonal cuts the square into the two laws: upper left `𝟙/∋ E(R) = R/∋`, lower right `(R/∋) ∋ = R`.
+  ar((xA, T), (xB, B), INDUCED, dash: "dashed", s0: 0.5, s1: 0.75)
+  lab(0, T + 0.5, GIVEN1)[`R`]
+  // Each label also says what the arrow IS in the one operator, so the four read as instances of it.
+  lab(xA - 0.62, 0, GIVEN2)[$frac(#[`𝟙`], ∋)$]
+  lab(0, B - 0.95, GIVEN2)[#align(center)[`E(R)` \
     #text(8.5pt)[`E =` $frac(#[`∋·`], ∋)$]]]
-  lab((xPB + xB) / 2, B + 0.72, GIVEN2)[`∋`]
-  arc((xA, B), (xPB, B), -1, [$frac(#[`R`], ∋)$], col: INDUCED, h: 3.1, cx: 3)
+  lab(xB + 0.35, 0, GIVEN2)[`∋`]
+  lab(1.25, 0.2, INDUCED)[$frac(#[`R`], ∋)$]
   node(xA, T, black, `A`); node(xB, T, black, `B`)
-  node(xA, B, black, `A`); node(xB, B, black, `B`)
-  node(xPA, B, black, `E A`); node(xPB, B, black, `E B`)
+  node(xA, B, black, `E A`); node(xB, B, black, `E B`)
 }))
 #align(center, block(inset: (y: 4pt))[
   $frac(#[`R`], ∋)$ `∋ = R` #h(1.4cm)
@@ -821,63 +805,6 @@ subscript.
   already the relator `P(R)`.]
 ])]<adj-E-bend>
 
-== Fusion law <sec-fusion>
-
-// `f` is the ONE arrow both halves carry, so it is GIVEN1 in both; the square has no `{·}` and no `R`,
-// which is the whole reason the string diagram stands beside it.
-#disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (C, A, EB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
-    ar(C, A, GIVEN1, s0: 0.4, s1: 0.4)
-    ar(A, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    ar(C, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    lab(0, 1.85, GIVEN1)[`f`]; lab(3.5, 0, INDUCED)[$frac(#[`R`], ∋)$]; lab(-0.1, -0.8, INDUCED)[$frac(#[`f R`], ∋)$]
-    node(C.at(0), C.at(1), black, `C`); node(A.at(0), A.at(1), black, `A`)
-    node(EB.at(0), EB.at(1), INDUCED, `E B`)
-  }),
-  lamfuse(),
-  [`f` $frac(#[`R`], ∋)$ `=` $frac(#[`f R`], ∋)$, `f` a map #h(1cm)
-   #src[the bar associates with composition: drop the brackets and write `f R` over `∋`]],
-)]<adj-E-fusion>
-
-// The two panels are the SAME STROKES, which is the law: the square's two routes are one picture.
-#disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (C, EA, EB) = ((-2.6, 1.25), (2.6, 1.25), (2.6, -1.25))
-    ar(C, EA, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    ar(EA, EB, GIVEN1, s0: 0.7, s1: 0.7)
-    ar(C, EB, INDUCED, dash: "dashed", s0: 0.4, s1: 0.7)
-    lab(0, 1.85, INDUCED)[$frac(#[`S`], ∋)$]; lab(3.6, 0, GIVEN1)[`E(R)`]; lab(-0.1, -0.8, INDUCED)[$frac(#[`S R`], ∋)$]
-    node(C.at(0), C.at(1), black, `C`); node(EA.at(0), EA.at(1), INDUCED, `E A`)
-    node(EB.at(0), EB.at(1), INDUCED, `E B`)
-  }),
-  lamabsorb(),
-  [$frac(#[`S R`], ∋)$ `=` $frac(#[`S`], ∋)$ `E(R)`, for `S : C ⟶ A` and `R : A ⟶ B` #h(1cm)
-   #src[`E =` $frac(#[`∋·`], ∋)$]],
-)]<adj-E-absorb>
-
-#disp[#table(
-  columns: (5.6cm, 4.2cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*scan line*], [*the object on it*], [*the bead just passed*]),
-
-  [the top edge], [`C`], [—],
-  [between `{·}` and `S`], [`i E C`], [`{·} : C ⟶ E C`],
-  [between `S` and `R`], [`i E A`], [`S`, inside the pair, so `E(S) : E C ⟶ E A`],
-  [the bottom edge], [`i E B`], [`R`, likewise `E(R) : E A ⟶ E B`],
-)]<absorb-scan>
-
-One string of beads, two groupings:
-
-- The first two, then the third: `{·} E(S) =` $frac(#[`S`], ∋)$ `: C ⟶ E A` followed by `E(R) : E A ⟶ E B`.
-- All three at once: `{·} E(S) E(R) = {·} E(S R) =` $frac(#[`S R`], ∋)$ `: C ⟶ E B`.
-
-Absorption holds for every `S`, so fusion is its case `S := f`, plus one step: absorption there reads
-$frac(#[`f R`], ∋)$ `=` $frac(#[`f`], ∋)$ `E(R)`, and turning $frac(#[`f`], ∋)$ `E(R)` into `f` $frac(#[`R`], ∋)$ needs $frac(#[`f`], ∋)$ `= f {·}`, which is
-@adj-E-fusion at `R = 𝟙`. That step is the unit's naturality, and it is all fusion adds.
-
-#pagebreak(weak: true)
 = Relator
 
 #disp[#definition[
@@ -1792,7 +1719,7 @@ The two nestings of the fork agree, so three `M`s collapse to one whichever pair
   [`State A = (A × P)`#super[`P`]], [`curry 𝟙`], [`(apply`#sub[`A × P`]`)`#super[`P`]],
   [`η A a = λ x . (a, x)`], [`μ A f = λ x . g y` where `(g, y) = f x`],
 
-  [`Pow A = E A`], [`{·}`], [`⋃`], [`η A a = {a}`], [`μ A Xs = ⋃ Xs`],
+  [`Pow A = E A`], [$frac(#[`𝟙`], ∋)$], [`⋃`], [`η A a = {a}`], [`μ A Xs = ⋃ Xs`],
 )]<monad-table>
 
 == The state monad
@@ -1883,11 +1810,11 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
   table.header([*the law*], [*what it says*]),
 
   [`X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`], [in the set, and below every element of it],
-  [`{·} (∈\R) = R`], [bounding a singleton is bounding its element],
+  [$frac(#[`𝟙`], ∋)$ `(∈\R) = R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R) = S°\R`], [bound `S`'s image without building the set],
   [`union (∈\R) = ∈\(∈\R)` \ #src[`union ≜` $frac(#[`∋ ∋`], ∋)$ `: E(E A) ⟶ E A`]],
   [bound a union by bounding each member set],
-  [`{·} min R = 𝟙 ∩ R`],
+  [$frac(#[`𝟙`], ∋)$ `min R = 𝟙 ∩ R`],
   [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `min R` at `S := 𝟙`]],
   [$frac(#[`S`], ∋)$ `min R = S ∩ (S°\R)`], [an `S`-value every `S`-value points to],
   [$frac(#[`S`], ∋)$ `min R =` $frac(#[`S`], ∋)$ `min(R ∩ S° S)`], [only `R` between values `S` gives one argument counts — context],
@@ -1917,19 +1844,19 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 )
 ]<min-up>
 
-=== `{·} (∈\R) = R`
+=== $frac(#[`𝟙`], ∋)$ `(∈\R) = R`
 
 // B&dM (7.1): the same four steps as the subsection below, with `{·} ∋ = 𝟙` — the `i ⊣ E` triangle —
 // where that one has `Λ(S) ∋ = S`.
 #disp[
 #zline(
-  zsqc(`X`, `{·} (∈\R)`),
+  zsqc(`X`, [$frac(#[`𝟙`], ∋)$ `(∈\R)`]),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
-  zsqc(`{·}° X`, `∈\R`),
+  zsqc([$frac(#[`𝟙`], ∋)$`° X`], `∈\R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
-  zsqc(`∈ {·}° X`, `R`),
+  zsqc([`∈` $frac(#[`𝟙`], ∋)$`° X`], `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`°`],
-  zsqc(`({·} ∋)° X`, `R`),
+  zsqc([`(`$frac(#[`𝟙`], ∋)$` ∋)° X`], `R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`i⊣E`],
   zsqc(`X`, `R`),
 )
@@ -2177,6 +2104,34 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 ]<min-712-geq>
 
 #pagebreak(weak: true)
+== Lax natural transformations
+
+// B&dM §5.7, p. 133.  Same `⇒` the note gives an ordinary natural transformation: B&dM's own hooked
+// arrow marks laxness, but the word already does, and the inequation is right there.
+#disp[#definition[
+`φ`#sub[`A`]` : G A ⟶ F A` is a *lax natural transformation* `φ : G ⇒ F` when, for every
+`R : A ⟶ B`, #h(4pt) `G(R) φ ⊑ φ F(R)`. #h(4pt) #src[(5.13)]
+
+`∋ : P ⇒ Id` — that is `P(R) ∋ ⊑ ∋ R`, @powrel-laws's first row at `X := P(R)`.
+
+It is enough to check *maps*, and there it is an equality #h(4pt) `G(f) φ = φ F(f)`: #h(4pt) laxness
+is about relations only. #h(4pt) #src[Theorem 5.2]
+]]<lax-defn>
+
+#disp[#capbox(
+  cetz.canvas(length: 0.8cm, {
+    let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+    ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
+    ar(GT, GB, GIVEN2, s0: 0.55, s1: 0.55); ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55)
+    lab(0, 1.8, GIVEN1)[`φ`]; lab(0, -1.8, GIVEN1)[`φ`]
+    lab(-3.8, 0, GIVEN2)[`G(R)`]; lab(3.8, 0, GIVEN2)[`F(R)`]
+    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
+    node(GT.at(0), GT.at(1), black, `G A`); node(FT.at(0), FT.at(1), black, `F A`)
+    node(GB.at(0), GB.at(1), black, `G B`); node(FB.at(0), FB.at(1), black, `F B`)
+  }),
+  [`G(R) φ ⊑ φ F(R)`],
+)]<lax-str>
+
 == Monotonic algebras
 
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its two theorems instead.
@@ -2187,10 +2142,13 @@ For a map `f : F A ⟶ A` that is #h(4pt) `f° F(R) f ⊑ R`, #h(4pt) equivalent
 
 `(leq × leq) plus ⊑ plus leq` — addition on `Nat` is monotonic on `leq`, which at the point level
 reads #h(4pt) `c = a + b ∧ a ≤ a' ∧ b ≤ b' ⟹ c ≤ a' + b'`.
+
+`F(R) S ⊑ S R` is @lax-defn's inequation at `G := F`, `F := Id`, `φ := S`, so @mon-str is @lax-str
+with `Id(R)` written `R`.
 ]]<mon-defn>
 
-// `F(R)` ON THE VERTICAL: on the top edge the square reads as a naturality square, and `S` is no natural
-// transformation.  `⊑` points NE — down-then-across is the smaller `F(R) S`.  Hues as in @cata-defining.
+// @lax-str at `G := F`, `F := Id`, `φ := S`: the right edge's `Id(R)` is written `R`, and `S` stands where
+// the lax transformation does.  `⊑` points NE — down-then-across is the smaller `F(R) S`.
 #disp[#capbox(
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
@@ -2366,10 +2324,11 @@ For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : E A ⟶ E A
   [keeping everything is always a legal thinning],
   [`min R = thin Q min R` #h(4pt) #src[`Q ⊑ R`, both preorders]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
-  [`thin Q ⊒ min Q {·}` #h(6pt) #src[(8.2)]],
+  [`thin Q ⊒ min Q` $frac(#[`𝟙`], ∋)$ #h(6pt) #src[(8.2)]],
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `min Q` is
    defined on],
-  [$frac(#[`S`], ∋)$ `thin Q ⊒` $frac(#[`S`], ∋)$ `min R {·}` \ #src[(8.3), `R ∩ (S° S) ⊑ Q`]],
+  [$frac(#[`S`], ∋)$ `thin Q ⊒` $frac(#[`S`], ∋)$ `min R` $frac(#[`𝟙`], ∋)$ \
+   #src[(8.3), `R ∩ (S° S) ⊑ Q`]],
   [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
   [`union thin Q ⊒ P(thin Q) union` #h(6pt) #src[(8.4)]],
   [thinning each member set is a thinning of the union],
@@ -2410,7 +2369,7 @@ $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min
   [the side condition of (8.3): between two paths `S` builds from one argument, equal cost and equal
    head already means `Q`],
   [$frac(#[`F(∋, ∋) α`], ∋)$ `thin Q` \ #h(6pt) `⊒` $frac(#[`F(∋, 𝟙)`], ∋)$ `P(`$frac(#[`F(𝟙, ∋)`], ∋)$ `P(α) min R)` \
-   #src[(8.4), (8.3), `P({·}) union = 𝟙`]],
+   #src[(8.4), (8.3), `P(`$frac(#[`𝟙`], ∋)$`) union = 𝟙`]],
   [thin eliminated: split the algebra at `F(∋, 𝟙) F(𝟙, ∋)`, thin each part, one minimum per part],
   [$frac(#[`F(𝟙, ∋)`], ∋)$ `P(α) min R = [wrap, step]`],
   [that inner part read off the two branches of `α`],
