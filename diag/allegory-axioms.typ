@@ -1099,12 +1099,15 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   [`(∋/(∋ R))°`],
     [`∀y. (∃x ∈ xs. x R y) → y ∈ ys`],
     [every `y` with `some xs R y` is in `ys`],
-  [`P(R)`],
-    [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
-    [`∀y. some xs R y` and \ `∀x. x R some ys`],
   [`E(R)`],
     [`ys = {y ∣ ∃x ∈ xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
+  [`((∋ R°)/∋)°`],
+    [`∀x ∈ xs. ∃y ∈ ys. x R y`],
+    [`∀x. x R some ys`],
+  [`P(R)`],
+    [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
+    [`∀y. some xs R y` and \ `∀x. x R some ys`],
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
