@@ -1404,75 +1404,6 @@ between the two merges is a homomorphism of `F`-algebras.
   [`⟨⦇h⦈, ⦇k⦈⟩ = ⦇⟨F(outl) h, F(outr) k⟩⦈`],
 )]<banana-split>
 
-*The other laws.*
-
-// (2.12) is NOT one of them: it follows from `relCata_UP` (AOP/A5_5.lean:31) and associativity alone,
-// under a class with no local completeness.  The two `⊑` rows are AOP/A6_2.lean:224,239, (6.4)/(6.5).
-The two `⊑` *fusion* rows rewrite `⦇α`#sub[`B`]`⦈ S` through the same `α`#sub[`C`] and `S`. They are the only rows here
-that need the allegory *locally complete* — every hom-set a complete lattice — because they come from
-a least-fixed-point argument; the rest, the equality fusion @cata-fusion included, needs only the
-initial algebra and the defining equation.
-
-// The law column is the law tables' 7.4cm, so `⦇α_C⦈ ⊑ ⦇α_B⦈ S ⟸ F(S) α_C ⊑ α_B S` stays on one line;
-// the name column fits `Eilenberg–Wright` unbroken, a split hyphenated name reading as two names.
-#disp[#table(
-  columns: (4.2cm, 7.4cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*law*], [*what it says*]),
-
-  [Lambek],
-  [`α`#sub[`T`]`° = α`#sub[`T`]`⁻¹`, the initial algebra is an isomorphism],
-  [A constructor can be undone — `α`#sub[`T`]`°` takes a value apart into the parts it was built
-   from.],
-
-  [Eilenberg–Wright],
-  [$frac(#[`⦇α`#sub[`B`]`⦈`], ∋)$ `= ⦇`$frac(#[`F(∋) α`#sub[`B`]], ∋)$`⦈`],
-  [A relational fold is a deterministic fold of SETS: $frac(#box(width: 8pt), ∋)$ pushes the nondeterminism into the
-   power-object, where the fold is a map again.],
-
-  [Eilenberg–Wright],
-  [`⦇α`#sub[`B`]`⦈ = ⦇`$frac(#[`F(∋) α`#sub[`B`]], ∋)$`⦈ ∋`],
-  [The same fact read back — fold deterministically into a set, then take a member of it.],
-
-  [fusion],
-  [`⦇α`#sub[`C`]`⦈ ⊑ ⦇α`#sub[`B`]`⦈ S ⟸ F(S) α`#sub[`C`]` ⊑ α`#sub[`B`]` S`],
-  [Half of fusion: an inclusion between the two algebras is inherited by the folds.],
-
-  [fusion],
-  [`⦇α`#sub[`B`]`⦈ S ⊑ ⦇α`#sub[`C`]`⦈ ⟸ α`#sub[`B`]` S ⊑ F(S) α`#sub[`C`]],
-  [The other half, with both inclusions turned around.],
-)]<cata-other-laws>
-
-// UNBREAKABLE, sentence and figure together: otherwise the sentence ends the page and "drawn:" points
-// at nothing overleaf.  `width: 100%` or the block shrinks and `align(center)` has nothing to centre.
-#block(breakable: false, width: 100%)[
-The two $frac(#box(width: 8pt), ∋)$ rows, drawn:
-
-// `⦇(F(∋) α_B)%∋⦈` is three node-boxes wide, so inside the picture it is the single letter `K` and the
-// sentence below says what `K` is; the middle algebra stays spelled out, being what the square is OF.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let (FT, FP, FB) = ((-6, 1.25), (0, 1.25), (6, 1.25))
-  let (T, P, B) = ((-6, -1.25), (0, -1.25), (6, -1.25))
-  ar(FT, FP, INDUCED, dash: "dashed", s0: 0.75, s1: 0.95)
-  ar(FP, FB, black, s0: 0.95, s1: 0.75)
-  ar(T, P, INDUCED, dash: "dashed", s0: 0.55, s1: 0.7)
-  ar(P, B, black, s0: 0.7, s1: 0.55)
-  ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FP, P, black, s0: 0.55, s1: 0.55)
-  ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-  lab(-3, 1.8, INDUCED)[`F(K)`]; lab(3, 1.8, black)[`F(∋)`]
-  lab(-3, -1.8, INDUCED)[`K`]; lab(3, -1.8, black)[`∋`]
-  lab(-6.75, 0, GIVEN2)[`α`#sub[`T`]]; lab(6.8, 0, GIVEN1)[`α`#sub[`B`]]; lab(2.2, 0, black)[$frac(#[`F(∋) α`#sub[`B`]], ∋)$]
-  node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
-  node(FP.at(0), FP.at(1), INDUCED, `F(E B)`); node(P.at(0), P.at(1), INDUCED, `E B`)
-  node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
-}))]<cata-lambda-square>
-]
-
-The left square is that catamorphism's own defining square, `K = ⦇`$frac(#[`F(∋) α`#sub[`B`]], ∋)$`⦈`, and the
-right one is $frac(#box(width: 8pt), ∋)$'s cancellation, so the outer rectangle says `K ∋` satisfies the defining equation
-of `⦇α`#sub[`B`]`⦈` — and uniqueness finishes it.
-
 // Its own page: the heading was left orphaned at the foot of the page before it.
 #pagebreak(weak: true)
 === Fokkinga's mutual recursion theorem
@@ -1884,6 +1815,72 @@ In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computat
   [Maximum segment sum. `segment = suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `max ≤`
    on each suffix, which the greedy theorem turns into a catamorphism. #h(4pt) #src[Ex 7.40]],
 )]<comb-fns>
+
+== $frac(#[`subseq`], ∋)$ `= ⦇[nil` $frac(#[`𝟙`], ∋)$`, ⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), outr⟩ cup]⦈`
+
+// B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ outr]`, which is what
+// turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.
+#disp[#definition[
+`cup ≜` $frac(#[`outl ∋ ∪ outr ∋`], ∋)$ ` : E A × E A ⟶ E A`, #h(4pt) so
+$frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
+]]<cup-defn>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`F(∋) [nil, cons ∪ outr]`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[`F X = 𝟏 + A × X`],
+  zsqc([$frac(#[`(𝟙 + 𝟙 × ∋) [nil, cons ∪ outr]`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[coproduct],
+  zsqc([$frac(#[`[nil, (𝟙 × ∋)(cons ∪ outr)]`], ∋)$], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[coproduct of maps],
+  zsqc([`[`$frac(#[`nil`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$`]`], none),
+  zstep(op: sym.eq, under: true)[singleton],
+  zsqc([`[nil` $frac(#[`𝟙`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$`]`], none),
+)
+]<subseq-EW-case>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[`∪` composes, `outr` natural],
+  zsqc([$frac(#[`(𝟙 × ∋) cons ∪ outr ∋`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[`cup`],
+  zsqc([`⟨`$frac(#[`(𝟙 × ∋) cons`], ∋)$`,` $frac(#[`outr ∋`], ∋)$`⟩ cup`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[absorption, fusion],
+  zsqc([`⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), outr⟩ cup`], none),
+)
+]<subseq-EW-join>
+
+// @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
+// the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
+#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let y = 1.7                     // branch height: a fraction box is 1.2 tall and has to clear the tape
+  let (u, l) = (-0.75, -2.65)     // the two strands of the fork `⟨·,·⟩` inside the right branch
+  wire((0, 0), (0.34, 0))
+  tape((0.34, -3.2), (11.7, 2.5))
+  tape-fork((0.56, 0), sp: y, len: 1.0)
+  gbox((1.56, y), [`ιₗ`], flip: true, fill: TINT); wire((2.48, y), (3.80, y))
+  gbox((3.80, y), [`nil`], chamfer: false, w: 1.05); wire((4.85, y), (6.10, y))
+  gbox((6.10, y), [$frac(#[`𝟙`], ∋)$], chamfer: false, w: 0.85, h: 1.2); wire((6.95, y), (10.40, y))
+  gbox((1.56, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.48, -y), (2.95, -y))
+  wiredot((2.95, -y)); bend((2.95, -y), (3.70, u)); bend((2.95, -y), (3.70, l))
+  wire((3.70, u), (3.90, u))
+  gbox((3.90, u), [$frac(#[`𝟙 × ∋`], ∋)$], chamfer: false, w: 1.7, h: 1.2); wire((5.60, u), (5.95, u))
+  gbox((5.95, u), [`E(cons)`], chamfer: false, w: 2.0); wire((7.95, u), (8.50, u))
+  wire((3.70, l), (3.90, l))
+  gbox((3.90, l), [`outr`], chamfer: false, w: 1.3); wire((5.20, l), (8.50, l))
+  gbox((8.50, -y), [`cup`], chamfer: false, w: 1.15, h: 2.6); wire((9.65, -y), (10.40, -y))
+  tape-join((11.40, 0), sp: y, len: 1.0)
+  wire((11.70, 0), (12.04, 0))
+  lab(-3.0, 0, black)[`𝟏 + A × E(list A)`]; lab(13.64, 0, black)[`E(list A)`]
+}))
+#align(center, block(inset: (y: 4pt))[
+  #src[B&dM §5.6, p. 124, which writes `Pcons`; `cons` is a map, and there `P(cons) = E(cons)` — @powrel-laws.]
+])]<subseq-alg>
 
 #pagebreak(weak: true)
 = Optimisation Problems <sec-opt>
