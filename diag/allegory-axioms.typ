@@ -1107,6 +1107,15 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
     [*`xs E(R)` — image of `xs`*]),
 
+  [#src[in Rel]],
+    [`∀y ∈ ys. ∃x ∈ xs. x R y`],
+    [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
+    [`ys = {y ∣ ∃x ∈ xs. x R y}`],
+  [#src[in words]],
+    [`∀y, (one of xs) R y`],
+    [`∀y, (one of xs) R y` and \ `∀x, x R (one of ys)`],
+    [`ys` = every `y` with `(one of xs) R y`],
+
   [`∅`],       [`∅`],                    [`∅`],               [`∅`],
   [`{1}`],     [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
   [`{2}`],     [`∅`],                    [none],              [`∅`],
@@ -1198,16 +1207,9 @@ of `xs` must reach `ys`:
 = Catamorphism <sec-cata>
 
 #disp[#definition[
-`F` a relator with an *initial algebra* `α`#sub[`T`]` : F T ⟶ T` among the maps. For a relational
-algebra `α`#sub[`B`]` : F B ⟶ B`, the *catamorphism* `⦇α`#sub[`B`]`⦈ : T ⟶ B` is the unique arrow
-with `α`#sub[`T`]` ⦇α`#sub[`B`]`⦈ = F(⦇α`#sub[`B`]`⦈) α`#sub[`B`]. Explicitly, for a relation
-`R : F B ⟶ B`, `⦇R⦈ ≜ ⦇`$frac(#[`F(∋) R`], ∋)$`⦈ ∋`, the inner `⦇·⦈` being the catamorphism of a *map* algebra.
+let `F` be a relator and has  *initial algebra* `α`#sub[T]` : F T ⟶ T` in the subcategory of functions. 
+α#sub[T] is also initial in the allegory:
 ]]<cata-defn>
-
-// Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
-// functors `𝟏 ⟶ 𝒜`, NOT one `F ⇒ 𝟙` on `𝒜` — `Nat.add` is an algebra that is no such component.
-An F-algebra is a *weakened* natural transformation. A transformation `F ⇒ 𝟙` on `𝒜` would need a
-component `F X ⟶ X` at every object and a commuting square at every arrow, but F-Algebra only need it works on T and B.
 
 
 == The defining equation
@@ -1216,34 +1218,50 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
 // literal).  A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FT, FB, T, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+    let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FT, FB, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, INDUCED)[`F(X)`]; lab(0, -1.8, INDUCED)[`X`]
-    lab(-3.75, 0, GIVEN2)[`α`#sub[`T`]]; lab(3.7, 0, GIVEN1)[`α`#sub[`B`]]
-    node(FT.at(0), FT.at(1), black, `F T`); node(FB.at(0), FB.at(1), GIVEN1, `F B`)
-    node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), GIVEN1, `B`)
+    lab(0, 1.8, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.8, GIVEN1)[`α`#sub[`B`]]
+    lab(-3.9, 0, INDUCED)[`F(X)`]; lab(3.7, 0, INDUCED)[`X`]
+    node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
+    node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
   }),
   homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`B`]`⦈`], [`α`#sub[`B`]], `B`,
     typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
   [`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`B`]],
 )]<cata-defining>
 
+// Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
+// functors `𝟏 ⟶ 𝒜`, NOT one `F ⇒ 𝟙` on `𝒜` — `Nat.add` is an algebra that is no such component.
+An F-algebra is a *weakened* natural transformation. A transformation `F ⇒ 𝟙` on `𝒜` would need a
+component `F X ⟶ X` at every object and a commuting square at every arrow, but F-Algebra only need it works on T and B.
+
+
 == `⦇R⦈ = ⦇`$frac(#[`F(∋) R`], ∋)$`⦈ ∋`
 
-// @cata-defining's square at `α`#sub[`B`]`:= (F(∋) R)%∋`, `B := E B`: the same geometry, the same
-// colours, only the two induced arrows and the right vertical renamed.
+// B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`B`]` := (F(∋) R)%∋`, `B := E B`,
+// over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FT, FB, T, B) = ((-3.4, 1.25), (3.4, 1.25), (-3.4, -1.25), (3.4, -1.25))
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.75, s1: 1.15)
-    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.9)
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, INDUCED)[`F(⦇`$frac(#[`F(∋) R`], ∋)$`⦈)`]; lab(0, -1.8, INDUCED)[`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`]
-    lab(-4.15, 0, GIVEN2)[`α`#sub[`T`]]; lab(4.85, 0, GIVEN1)[$frac(#[`F(∋) R`], ∋)$]
-    node(FT.at(0), FT.at(1), black, `F T`); node(FB.at(0), FB.at(1), GIVEN1, `F(E B)`)
-    node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), GIVEN1, `E B`)
+    let (FT, T) = ((-2.6, 1.5), (2.6, 1.5))
+    let (FE, E) = ((-2.6, -1.2), (2.6, -1.2))
+    let (FB, B) = ((-2.6, -3.9), (2.6, -3.9))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FB, B, black, s0: 0.55, s1: 0.55)
+    ar(FT, FE, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
+    ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FE, FB, black, s0: 0.75, s1: 0.75)
+    ar(E, B, black, s0: 0.55, s1: 0.55)
+    lab(0, 2.05, GIVEN2)[`α`#sub[`T`]]
+    lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋) R`], ∋)$`⦈)`]
+    lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`]
+    lab(0, -0.65, GIVEN1)[$frac(#[`F(∋) R`], ∋)$]
+    lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
+    lab(0, -4.45, black)[`R`]
+    node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
+    node(FE.at(0), FE.at(1), GIVEN1, `F(E B)`); node(E.at(0), E.at(1), GIVEN1, `E B`)
+    node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
   }),
   homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`], [$frac(#[`F(∋) R`], ∋)$], `E B`,
     typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2),
@@ -1839,7 +1857,8 @@ In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computat
   table.header([*name*], [*definition*], [*note*]),
 
   [`list`],
-  [`list A ::= nil | cons (A, list A)`],
+  [`list A ::= nil | cons (A, list A)` \
+   `list(R) = ⦇[nil, (R ⊗ 𝟙) cons]⦈`],
   [B&dM's `listr` under the short name it keeps from p. 125 on.],
 
   [`subseq`],
