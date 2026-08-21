@@ -1095,13 +1095,13 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
   [`(∋ R)/∋`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y`],
-    [`∀y ∈ ys. some xs R y`],
+    [`∀y. some xs R y`],
   [`(∋/(∋ R))°`],
     [`∀y. (∃x ∈ xs. x R y) → y ∈ ys`],
     [every `y` with `some xs R y` is in `ys`],
   [`P(R)`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
-    [`∀y ∈ ys. some xs R y` and \ `∀x ∈ xs. x R some ys`],
+    [`∀y. some xs R y` and \ `∀x. x R some ys`],
   [`E(R)`],
     [`ys = {y ∣ ∃x ∈ xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
@@ -1234,18 +1234,18 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : F T ⟶ T` in the
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
-    let (FT, T, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FT, FA, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
     lab(-4.0, 0, INDUCED)[`F(X)`]; lab(3.6, 0, INDUCED)[`X`]
     node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
-    node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
+    node(FA.at(0), FA.at(1), GIVEN1, `F A`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
-  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`B`]`⦈`], [`α`#sub[`B`]], `B`,
+  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`A`]`⦈`], [`α`#sub[`A`]], `A`,
     typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
-  [`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`B`]],
+  [`X = ⦇α`#sub[`A`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`A`]],
 )]<cata-defining>
 
 // Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
@@ -1256,30 +1256,33 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
 
 == `⦇R⦈ = ⦇`$frac(#[`F(∋) R`], ∋)$`⦈ ∋`
 
-// B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`B`]` := (F(∋) R)%∋`, `B := E B`,
+// B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`A`]` := (F(∋) R)%∋`, `A := E A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
+// Every horizontal is an F-algebra, so each is named `α` at its carrier above the line, its form below.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T) = ((-2.6, 1.5), (2.6, 1.5))
     let (FE, E) = ((-2.6, -1.2), (2.6, -1.2))
-    let (FB, B) = ((-2.6, -3.9), (2.6, -3.9))
+    let (FA, A) = ((-2.6, -3.9), (2.6, -3.9))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FB, B, black, s0: 0.55, s1: 0.55)
+    ar(FA, A, black, s0: 0.55, s1: 0.55)
     ar(FT, FE, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FE, FB, black, s0: 0.55, s1: 0.55)
-    ar(E, B, black, s0: 0.55, s1: 0.55)
+    ar(FE, FA, black, s0: 0.55, s1: 0.55)
+    ar(E, A, black, s0: 0.55, s1: 0.55)
     lab(0, 2.05, GIVEN2)[`α`#sub[`T`]]
     lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋) R`], ∋)$`⦈)`]
     lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`]
-    lab(0, -0.65, GIVEN1)[$frac(#[`F(∋) R`], ∋)$]
+    lab(0, -0.65, GIVEN1)[`α`#sub[`E A`]]
+    lab(0, -1.95, GIVEN1)[$frac(#[`F(∋) R`], ∋)$]
     lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
+    lab(0, -3.35, black)[`α`#sub[`A`]]
     lab(0, -4.45, black)[`R`]
     node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
-    node(FE.at(0), FE.at(1), GIVEN1, `F(E B)`); node(E.at(0), E.at(1), GIVEN1, `E B`)
-    node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
+    node(FE.at(0), FE.at(1), GIVEN1, `F(E A)`); node(E.at(0), E.at(1), GIVEN1, `E A`)
+    node(FA.at(0), FA.at(1), GIVEN1, `F A`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
-  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`], [$frac(#[`F(∋) R`], ∋)$], `E B`,
+  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`], [$frac(#[`F(∋) R`], ∋)$], `E A`,
     typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2),
   [`α`#sub[`T`]` ⦇`$frac(#[`F(∋) R`], ∋)$`⦈ = F(⦇`$frac(#[`F(∋) R`], ∋)$`⦈)` $frac(#[`F(∋) R`], ∋)$],
 )]<cata-map-square>
