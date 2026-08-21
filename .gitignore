@@ -23,13 +23,8 @@ FirstOrderTheoryOfDiagramChasing.pdf
 GraphicRewritingLean4.pdf
 MachineCheckedCategoricalDiagrammaticReasoning.pdf
 Frobenius.pdf
-# generated declaration-graph data (regenerate: lake env lean --run scripts/ExtractGraph.lean)
-/graph/*.tsv
-!/graph/proof-near-clones.tsv
-!/graph/spec-derived.tsv
-!/graph/spec-defs.tsv
-/graph/*.dot
-/graph/*.svg
+# dependency graph rendered by `lean-refactor graph`
+/refactor-graph.html
 # Figure clips cut out of the papers above by scripts/paper-figs, plus the docstring sidecars the
 # generated crosscheck page reads.  The clips are derivative works of those gitignored PDFs, so the
 # same copyright rule applies.  Regenerate both with: ./scripts/paper-figs
