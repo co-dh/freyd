@@ -28,30 +28,6 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 
-/-- `ΛW·subset = W/∋` mirrored: `Λ W ≫ subsetRel a = W / (∋ a)` — the transpose of `W`
-    followed by shrinking is exactly "all members come from `W`".  (Ex 7.2's
-    `existsImage_comp_subsetRel` is the instance `W := ∋ ≫ R`.) -/
-public theorem Λ_comp_subsetRel (W : b ⟶ a) : Λ W ≫ subsetRel a = W / (∋ a) := by
-  apply le_antisymm
-  · apply (le_div_iff _ _ _).mpr
-    have h1 : subsetRel a ≫ ∋ a ⊑ ∋ a := subsetRel_comp_eps_le
-    have h2 : Λ W ≫ (subsetRel a ≫ ∋ a) ⊑ Λ W ≫ ∋ a := comp_mono_left _ h1
-    rw [Λ_eps_eq'] at h2
-    rwa [Cat.assoc]
-  · apply (map_shunt_left (Λ_is_map' W) _ _).mp
-    show (Λ W)° ≫ (W / ∋ a) ⊑ (∋ a) / (∋ a)
-    apply (le_div_iff _ _ _).mpr
-    have hcancel : (W / ∋ a) ≫ ∋ a ⊑ W := (le_div_iff _ _ _).mp (le_refl _)
-    have h1 : (Λ W)° ≫ ((W / ∋ a) ≫ ∋ a) ⊑ (Λ W)° ≫ W := comp_mono_left _ hcancel
-    have h2 : (Λ W)° ≫ W = ((Λ W)° ≫ Λ W) ≫ ∋ a := by
-      rw [Cat.assoc, Λ_eps_eq']
-    have h3 : ((Λ W)° ≫ Λ W) ≫ ∋ a ⊑ Cat.id _ ≫ ∋ a :=
-      comp_mono_right (Λ_is_map' W).2 (∋ a)
-    rw [Cat.id_comp] at h3
-    rw [h2] at h1
-    rw [Cat.assoc]
-    exact le_trans h1 h3
-
 /-! ## `thin Q` (B&dM (8.1)) -/
 
 /-- **(8.1)**: `thin Q = (∈\∈) ∩ ((∋·Q)/∋)`, mirrored: `y (thinRel Q) x ⟺ x ⊆ y ∧
@@ -74,8 +50,8 @@ public theorem recip_eps_comp_thinRel_le (Q : a ⟶ a) :
     `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°))`. -/
 public theorem Λ_comp_thinRel (S : b ⟶ a) (Q : a ⟶ a) :
     Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°)) := by
-  show Λ S ≫ (subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))) = _
-  rw [simple_dist_inter (Λ_is_map' S).2, Λ_comp_subsetRel, Λ_comp_lb]
+  show Λ S ≫ (powerOrder ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))) = _
+  rw [simple_dist_inter (Λ_is_map' S).2, Λ_comp_powerOrder, Λ_comp_lb]
 
 /-- **The universal property of `thin`** (book p.193): `X ⊑ thin Q·ΛS ⟺ ∈·X ⊑ S ∧
     X·S° ⊑ ∋·Q`, mirrored.  Like (7.5)'s UP, this is the workhorse of every calculation

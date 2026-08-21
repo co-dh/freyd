@@ -268,7 +268,7 @@ theorem minRel_simple_of_antisymmetric {R : a ⟶ a} (h : AntiSymmetric R) : Sim
     rwa [Allegory.recip_comp, Allegory.recip_recip, Allegory.recip_recip] at hr
   exact le_trans (le_trans hE (inter_mono hfirst hsecond)) h
 
-/-! ## Ex 7.1/7.2: the subset relation (book p.169) -/
+/-! ## Ex 7.1: the subset relation (book p.169) — Ex 7.2 is `AOP.A4_6`'s `Λ_comp_powerOrder` -/
 
 /-- **B&dM p.169**: `subset = ∈\∈`, mirrored `(∋ a) / (∋ a)` — which is LITERALLY Freyd's
     `powerOrder` (§2.442, `Freyd.S2_4`); `subsetRel` is the B&dM-facing alias for it, kept
@@ -302,46 +302,6 @@ theorem recip_subsetRel_comp_lb (R : a ⟶ a) :
       have h := recip_mono (id_le_subsetRel (a := a)); rwa [recip_id] at h
     have h2 := comp_mono_right hid (((∋ a)°) \ R)
     rwa [Cat.id_comp] at h2
-
-/-- **Ex 7.2** mirrored, the `⊑` half: `existsImage R ≫ subsetRel b ⊑ (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subsetRel_le (R : a ⟶ b) :
-    existsImage R ≫ subsetRel b ⊑ (∋ a ≫ R) / (∋ b) := by
-  show existsImage R ≫ ((∋ b) / (∋ b)) ⊑ (∋ a ≫ R) / (∋ b)
-  apply (le_div_iff _ _ _).mpr
-  calc (existsImage R ≫ ((∋ b) / (∋ b))) ≫ ∋ b
-      = existsImage R ≫ (((∋ b) / (∋ b)) ≫ ∋ b) := Cat.assoc _ _ _
-    _ ⊑ existsImage R ≫ ∋ b := comp_mono_left _ (div_self_comp_le (∋ b))
-    _ = ∋ a ≫ R := existsImage_eps R
-
-/-- **Ex 7.2** mirrored, the `⊒` half: `(∋a≫R)/∋b ⊑ existsImage R ≫ subsetRel b`.  Shunts
-    across the map `existsImage R` (`map_shunt_left`), reducing to `(existsImage R)°≫((∋a≫R)/∋b)
-    ⊑ subsetRel b`, then unfolds `subsetRel b = ∋b/∋b` via `le_div_iff`: the numerator bound
-    `((∋a≫R)/∋b)≫∋b ⊑ ∋a≫R` (`DivisionAllegory.div_comp_le`) composed with `(existsImage R)°`
-    lands on `(existsImage R)°≫(∋a≫R) = (existsImage R)°≫(existsImage R≫∋b) ⊑ id≫∋b = ∋b`
-    (`existsImage_eps` + `Simple (existsImage R)`). -/
-theorem existsImage_comp_subsetRel_ge (R : a ⟶ b) :
-    (∋ a ≫ R) / (∋ b) ⊑ existsImage R ≫ subsetRel b := by
-  have hEMap : Map (existsImage R) := Λ_is_map' _
-  apply (map_shunt_left hEMap _ _).mp
-  show (existsImage R)° ≫ ((∋ a ≫ R) / (∋ b)) ⊑ (∋ b) / (∋ b)
-  apply (le_div_iff _ _ _).mpr
-  have hd : ((∋ a ≫ R) / (∋ b)) ≫ ∋ b ⊑ ∋ a ≫ R := DivisionAllegory.div_comp_le _ _
-  have hsimp : (existsImage R)° ≫ existsImage R ⊑ Cat.id (PowerAllegory.powerObj b) :=
-    hEMap.2
-  have hb1 : ((existsImage R)° ≫ ((∋ a ≫ R) / (∋ b))) ≫ ∋ b
-      ⊑ (existsImage R)° ≫ (∋ a ≫ R) := by
-    rw [Cat.assoc]
-    exact comp_mono_left _ hd
-  have hb2 : (existsImage R)° ≫ (∋ a ≫ R) ⊑ ∋ b := by
-    rw [← existsImage_eps R, ← Cat.assoc]
-    have h := comp_mono_right hsimp (∋ b)
-    rwa [Cat.id_comp] at h
-  exact le_trans hb1 hb2
-
-/-- **Ex 7.2** mirrored (full equality): `existsImage R ≫ subsetRel b = (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subsetRel (R : a ⟶ b) :
-    existsImage R ≫ subsetRel b = (∋ a ≫ R) / (∋ b) :=
-  le_antisymm (existsImage_comp_subsetRel_le R) (existsImage_comp_subsetRel_ge R)
 
 /-! ## (7.10)/(7.11): fusion with the power functor and distribution over union
 

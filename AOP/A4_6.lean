@@ -93,6 +93,30 @@ public theorem Λ_eps_reflection {b : 𝒜} : Λ (∋ b) = Cat.id (PowerAllegory
 /-- `∈` is an (exactly) natural transformation (B&dM p.105): `E R ≫ ∋ b = ∋ a ≫ R`. -/
 public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := Λ_eps_eq' _
 
+/-- `ΛW·(∈\∈) = W/∋` mirrored: `Λ W ≫ powerOrder = W / (∋ a)` — transposing `W` and then
+    shrinking is exactly "every member of the set comes from `W`".  **B&dM Ex 7.2** is the
+    instance `W := ∋ b ≫ R`, i.e. `existsImage R ≫ powerOrder = (∋ b ≫ R) / (∋ a)`. -/
+public theorem Λ_comp_powerOrder {a b : 𝒜} (W : b ⟶ a) :
+    Λ W ≫ powerOrder = W / (∋ a) := by
+  apply le_antisymm
+  · apply (le_div_iff _ _ _).mpr
+    have h : Λ W ≫ (powerOrder ≫ ∋ a) ⊑ Λ W ≫ ∋ a :=
+      comp_mono_left _ (div_self_comp_le (∋ a))
+    rw [Λ_eps_eq'] at h
+    rwa [Cat.assoc]
+  · apply (map_shunt_left (Λ_is_map' W) _ _).mp
+    show (Λ W)° ≫ (W / ∋ a) ⊑ (∋ a) / (∋ a)
+    apply (le_div_iff _ _ _).mpr
+    have h1 : (Λ W)° ≫ ((W / ∋ a) ≫ ∋ a) ⊑ (Λ W)° ≫ W :=
+      comp_mono_left _ (DivisionAllegory.div_comp_le _ _)
+    have h2 : (Λ W)° ≫ W = ((Λ W)° ≫ Λ W) ≫ ∋ a := by rw [Cat.assoc, Λ_eps_eq']
+    have h3 : ((Λ W)° ≫ Λ W) ≫ ∋ a ⊑ Cat.id _ ≫ ∋ a :=
+      comp_mono_right (Λ_is_map' W).2 (∋ a)
+    rw [Cat.id_comp] at h3
+    rw [h2] at h1
+    rw [Cat.assoc]
+    exact le_trans h1 h3
+
 /-- `Λ S ≫ E R = Λ (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
 theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
     Λ S ≫ existsImage R = Λ (S ≫ R) := by
