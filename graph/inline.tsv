@@ -1,7 +1,0 @@
-strict_coterminator_bottomSub_one	bottomSub_dom_iso_one	44	22	call
-Rcat.ERel_not_effective	rec_inL	23	39	derivation
-transp_inj	curry_uncurry	60	79	call
-transp_inj	curry_uncurry	60	79	call
-pushforwardSub_bottom_le	botDom_map_uniq	63	28	derivation
-sigmaRel_sliceMem_iso_baseRestrict	sigmaRel_sliceMem_colA	120	50	rfl
-sigmaRel_sliceMem_iso_baseRestrict	sigmaRel_sliceMem_colB	81	50	rfl
