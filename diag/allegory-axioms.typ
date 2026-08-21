@@ -1954,6 +1954,18 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
   `T(X₁ ∪ X₂) = T X₁ ∪ T X₂` — @adj-cross; `(𝟙 × ∋) outr = outr ∋` — @relprod-pic at `π₂`, an equality
   because `𝟙` is entire.]])]<subseq-union-slide>
 
+// @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `outr`
+// sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
+#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (AE, E, AL, L) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+  ar(AE, E, GIVEN2, s0: 1.55, s1: 1.05); ar(AL, L, GIVEN2, s0: 1.2, s1: 0.7)
+  ar(AE, AL, GIVEN1, s0: 0.55, s1: 0.55); ar(E, L, GIVEN1, s0: 0.55, s1: 0.55)
+  lab(0, 1.9, GIVEN2)[`outr`]; lab(0, -1.9, GIVEN2)[`outr`]
+  lab(-3.95, 0, GIVEN1)[`𝟙 × ∋`]; lab(3.2, 0, GIVEN1)[`∋`]
+  node(AE.at(0), AE.at(1), black, `A × E([A])`); node(E.at(0), E.at(1), black, `E([A])`)
+  node(AL.at(0), AL.at(1), black, `A × [A]`); node(L.at(0), L.at(1), black, `[A]`)
+}))]<subseq-outr-square>
+
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
