@@ -1096,23 +1096,23 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   [`(∋ R)/∋`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y`],
     [`∀y. some xs R y`],
-    [`ys` has only what `xs` reaches],
+    [every `y` has a partner],
   [`(∋/(∋ R))°`],
     [`∀y. (∃x ∈ xs. x R y) → y ∈ ys`],
     [every `y` with `some xs R y` is in `ys`],
-    [`ys` has all that `xs` reaches],
+    [`ys` contains im(xs)],
   [`E(R)`],
     [`ys = {y ∣ ∃x ∈ xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
-    [`ys` has all and only what `xs` reaches],
+    [`ys` is the image of `xs`],
   [`((∋ R°)/∋)°`],
     [`∀x ∈ xs. ∃y ∈ ys. x R y`],
     [`∀x. x R some ys`],
-    [every `x` reaches into `ys`],
+    [every `x` has a partner],
   [`P(R)`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
-    [`ys` has only what `xs` reaches, and \ every `x` reaches into `ys`],
+    [every `x` and every `y` \ has a partner],
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
@@ -1148,57 +1148,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   [`{1,2,3}`],  [all 8 subsets of `abc`], [`abc`], [`abc`], [none], [none],
 ))
 
-#align(center, block(width: 15cm, inset: (y: 8pt))[
-  #src[`R(2) = ∅`, so `P(R)` sends no `ys` at all to any `xs` containing `2` — not entire.] \
-  #src[`R(1)` has two elements, so `{1}` gets three: `1` need only meet `ys`, not be swallowed by it —
-   not simple. Every `E(R)` row has exactly one `ys`, which is what makes it a map.]
-])
 ]]<powrel-vs-erel>
-
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
-  arc(LX, BD.b1, 1, [`∋ R`], h: 4.2, cx: 5)
-  arc(LX, BD.b3, -1, [`∋ R`], h: 4.2, cx: 5)
-})))
-// The arrow and its `Rel` reading go UNDER the picture that draws them, one pair per picture: read
-// against the drawing they were just given, where a table of all three read against nothing.
-#align(center, block(inset: (y: 6pt))[
-  `∋ R : E A ⟶ B` #h(1.4cm) `xs (∋ R) b ⟺ ∃a ∈ xs. a R b`
-])
-#align(center, src[one arc per element of `B` that `xs` reaches, and `b₂` gets none])]<powrel-elem>
-
-Dividing by `∋` turns that into a relation between *sets*.
-
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
-  arc(LX, LY.y1, 1, [`(∋ R)/∋`], h: 5.6, cx: 6)
-  lab(3.2, 3.4, SLACK)[`∋`]
-  yset(LY.y1, (BD.b1, BD.b3), `ys₁ = {b₁,b₃}`)
-  yset(LY.y3, (BD.b2, BD.b3), `ys₃ = {b₂,b₃}`, on: false)
-})))
-#align(center, block(inset: (y: 6pt))[
-  `(∋ R)/∋ : E A ⟶ E B` #h(1.4cm) `xs ((∋ R)/∋) ys ⟺ ∀b ∈ ys. ∃a ∈ xs. a R b`
-])
-#align(center, src[`ys₃` is rejected: it names `b₂`, which `xs` does not reach])]<powrel-div>
-
-// Lead-in, picture and readings in ONE unbreakable block: left to itself the sentence ends one page
-// and the picture opens the next, so the reader turns the page between the clause and its drawing.
-#block(breakable: false)[
-The other half of the meet is that clause with the sets swapped and `R` turned round: every element
-of `xs` must reach `ys`:
-
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
-  arc(LX, LY.y1, 1, [`P(R)`], h: 5.6, cx: 6)
-  arc(LX, LY.y4, -1, [`P(R)`], h: 5.6, cx: 6)
-  lab(3.2, 3.4, SLACK)[`∋`]
-  yset(LY.y1, (BD.b1, BD.b3), `ys₁ = {b₁,b₃}`)
-  yset(LY.y2, (BD.b1,), `ys₂ = {b₁}`, on: false)
-  yset(LY.y3, (BD.b2, BD.b3), `ys₃ = {b₂,b₃}`, on: false)
-  yset(LY.y4, (BD.b3,), `ys₄ = {b₃}`)
-})))
-#align(center, block(inset: (y: 6pt))[
-  `((∋ R°)/∋)° : E A ⟶ E B` #h(1.4cm) `xs ((∋ R°)/∋)° ys ⟺ ∀a ∈ xs. ∃b ∈ ys. a R b`
-])
-#align(center, src[`ys₂` is rejected too: `a₂`'s only image is `b₃`, which `ys₂` does not name])]<powrel-both>
-]
 
 #disp[#table(
   columns: (7.4cm, 1fr),
