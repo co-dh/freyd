@@ -1101,19 +1101,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 })))
 
 #align(center, table(
-  columns: 3,
-  align: (left + horizon, left + horizon, left + horizon),
+  columns: 4,
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*`xs`*], [*`ys` under `P(R)`*], [*`ys` under `E(R)`*]),
+  table.header([*`xs`*], [*`ys` under `(∋ R)/∋`*], [*`ys` under `P(R)`*], [*`ys` under `E(R)`*]),
 
-  [`∅`],       [`∅`],                       [`∅`],
-  [`{1}`],     [`{1}`, `{2}`, `{1,2}`],     [`{1,2}`],
-  [`{2}`],     [none],                      [`∅`],
-  [`{3}`],     [`{3}`],                     [`{3}`],
-  [`{1,2}`],   [none],                      [`{1,2}`],
-  [`{1,3}`],   [`{1,3}`, `{2,3}`, `{1,2,3}`], [`{1,2,3}`],
-  [`{2,3}`],   [none],                      [`{3}`],
-  [`{1,2,3}`], [none],                      [`{1,2,3}`],
+  [`∅`],       [`∅`],                        [`∅`],                       [`∅`],
+  [`{1}`],     [`∅`, `{1}`, `{2}`, `{1,2}`], [`{1}`, `{2}`, `{1,2}`],     [`{1,2}`],
+  [`{2}`],     [`∅`],                        [none],                      [`∅`],
+  [`{3}`],     [`∅`, `{3}`],                 [`{3}`],                     [`{3}`],
+  [`{1,2}`],   [`∅`, `{1}`, `{2}`, `{1,2}`], [none],                      [`{1,2}`],
+  [`{1,3}`],   [all 8 subsets of `{1,2,3}`], [`{1,3}`, `{2,3}`, `{1,2,3}`], [`{1,2,3}`],
+  [`{2,3}`],   [`∅`, `{3}`],                 [none],                      [`{3}`],
+  [`{1,2,3}`], [all 8 subsets of `{1,2,3}`], [none],                      [`{1,2,3}`],
 ))
 
 #align(center, block(width: 15cm, inset: (y: 8pt))[
