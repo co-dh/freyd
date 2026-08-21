@@ -1083,8 +1083,8 @@ For `R : A ⟶ B`, #h(4pt) `P(R) ≜ ((∋ R)/∋) ∩ ((∋ R°)/∋)° : E A �
 Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 ]]<powrel-defn>
 
-// On `1,2,3` both sides, NOT the `a₁,a₂,a₃`/`b₁,b₂,b₃` of the `skel` pictures below: two different
-// examples, and this one has the empty image `R(2) = ∅` that those three cannot show.
+// `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
+// where `a₁,a₂,a₃` is the source, not the target. Only this one has the empty image `R(2) = ∅`.
 #disp[#block(breakable: false)[
 #align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
   let (L, RC) = (0, 3.2)
@@ -1094,10 +1094,10 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   ar((L, ys.at(2)), (RC, ys.at(2)), GIVEN1, s0: 0.22, s1: 0.3)
   for (k, y) in ys.enumerate() {
     wiredot((L, y)); lab(L - 0.42, y, black)[#raw(str(k + 1))]
-    wiredot((RC, y)); lab(RC + 0.42, y, black)[#raw(str(k + 1))]
+    wiredot((RC, y)); lab(RC + 0.42, y, black)[#raw(("a", "b", "c").at(k))]
   }
   lab((L + RC) / 2, 1.5, GIVEN1)[`R`]
-  lab(L, -1.7, black)[`A`]; lab(RC, -1.7, black)[`A`]
+  lab(L, -1.7, black)[`A`]; lab(RC, -1.7, black)[`B`]
 })))
 
 #align(center, table(
@@ -1107,19 +1107,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
     [*`xs E(R)` — image of `xs`*]),
 
-  [`∅`],       [`∅`],                        [`∅`],                       [`∅`],
-  [`{1}`],     [`∅`, `{1}`, `{2}`, `{1,2}`], [`{1}`, `{2}`, `{1,2}`],     [`{1,2}`],
-  [`{2}`],     [`∅`],                        [none],                      [`∅`],
-  [`{3}`],     [`∅`, `{3}`],                 [`{3}`],                     [`{3}`],
-  [`{1,2}`],   [`∅`, `{1}`, `{2}`, `{1,2}`], [none],                      [`{1,2}`],
-  [`{1,3}`],   [all 8 subsets of `{1,2,3}`], [`{1,3}`, `{2,3}`, `{1,2,3}`], [`{1,2,3}`],
-  [`{2,3}`],   [`∅`, `{3}`],                 [none],                      [`{3}`],
-  [`{1,2,3}`], [all 8 subsets of `{1,2,3}`], [none],                      [`{1,2,3}`],
+  [`∅`],   [`∅`],                    [`∅`],               [`∅`],
+  [`1`],   [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
+  [`2`],   [`∅`],                    [none],              [`∅`],
+  [`3`],   [`∅`, `c`],               [`c`],               [`c`],
+  [`12`],  [`∅`, `a`, `b`, `ab`],    [none],              [`ab`],
+  [`13`],  [all 8 subsets of `abc`], [`ac`, `bc`, `abc`], [`abc`],
+  [`23`],  [`∅`, `c`],               [none],              [`c`],
+  [`123`], [all 8 subsets of `abc`], [none],              [`abc`],
 ))
 
 #align(center, block(width: 15cm, inset: (y: 8pt))[
   #src[`R(2) = ∅`, so `P(R)` sends no `ys` at all to any `xs` containing `2` — not entire.] \
-  #src[`R(1)` has two elements, so `{1}` gets three: `1` need only meet `ys`, not be swallowed by it —
+  #src[`R(1)` has two elements, so `1` gets three: `1` need only meet `ys`, not be swallowed by it —
    not simple. Every `E(R)` row has exactly one `ys`, which is what makes it a map.]
 ])
 ]]<powrel-vs-erel>
