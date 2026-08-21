@@ -1107,19 +1107,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
     [*`xs E(R)` — image of `xs`*]),
 
-  [`∅`],   [`∅`],                    [`∅`],               [`∅`],
-  [`1`],   [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
-  [`2`],   [`∅`],                    [none],              [`∅`],
-  [`3`],   [`∅`, `c`],               [`c`],               [`c`],
-  [`12`],  [`∅`, `a`, `b`, `ab`],    [none],              [`ab`],
-  [`13`],  [all 8 subsets of `abc`], [`ac`, `bc`, `abc`], [`abc`],
-  [`23`],  [`∅`, `c`],               [none],              [`c`],
-  [`123`], [all 8 subsets of `abc`], [none],              [`abc`],
+  [`∅`],       [`∅`],                    [`∅`],               [`∅`],
+  [`{1}`],     [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
+  [`{2}`],     [`∅`],                    [none],              [`∅`],
+  [`{3}`],     [`∅`, `c`],               [`c`],               [`c`],
+  [`{1,2}`],   [`∅`, `a`, `b`, `ab`],    [none],              [`ab`],
+  [`{1,3}`],   [all 8 subsets of `abc`], [`ac`, `bc`, `abc`], [`abc`],
+  [`{2,3}`],   [`∅`, `c`],               [none],              [`c`],
+  [`{1,2,3}`], [all 8 subsets of `abc`], [none],              [`abc`],
 ))
 
 #align(center, block(width: 15cm, inset: (y: 8pt))[
   #src[`R(2) = ∅`, so `P(R)` sends no `ys` at all to any `xs` containing `2` — not entire.] \
-  #src[`R(1)` has two elements, so `1` gets three: `1` need only meet `ys`, not be swallowed by it —
+  #src[`R(1)` has two elements, so `{1}` gets three: `1` need only meet `ys`, not be swallowed by it —
    not simple. Every `E(R)` row has exactly one `ys`, which is what makes it a map.]
 ])
 ]]<powrel-vs-erel>
