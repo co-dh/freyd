@@ -119,8 +119,8 @@ def outc : TSChoice → Option (Nat × Nat)
   | _ => none
 
 /-- The selection preorder on answers: `none` is worst; among pairs, smaller second index wins,
-    then larger first index (`ansLe z w` = "`w` at least as good as `z`", the `minRel`
-    convention).  This is the order under which the scan's answer is the maximum. -/
+    then larger first index (`ansLe z w` = "`w` at least as good as `z`").  This is the order
+    under which the scan's answer is the maximum. -/
 def ansLe : Option (Nat × Nat) → Option (Nat × Nat) → Prop
   | none, _ => True
   | some _, none => False
@@ -144,25 +144,25 @@ theorem ansLeB_true : ∀ {a b : Option (Nat × Nat)}, ansLeB a b = true → ans
 theorem ansLeB_false : ∀ {a b : Option (Nat × Nat)}, ansLeB b a = false → ansLe a b := by
   rintro (_ | ⟨i, j⟩) (_ | ⟨i', j'⟩) h <;> simp_all [ansLeB, ansLe] <;> omega
 
-/-- The thinning preorder at scan position `n` (`Qc n z w` = "`w` dominates `z`"): same-value
+/-- The thinning preorder at scan position `n` (`Qc n w z` = "`w` dominates `z`"): same-value
     partials with a larger index dominate; a finished pair with `j < n` dominates every
     unfinished state (any later completion has second index `≥ n > j`); finished pairs compare
     by the answer order. -/
 def Qc (n : Nat) : TSChoice → TSChoice → Prop
   | .start, .start => True
-  | .part k v, .part k' v' => v' = v ∧ k ≤ k'
-  | .start, .found _ j => j < n
-  | .part _ _, .found _ j => j < n
-  | .found i j, .found i' j' => j' < j ∨ (j' = j ∧ i ≤ i')
+  | .part k v, .part k' v' => v = v' ∧ k' ≤ k
+  | .found _ j, .start => j < n
+  | .found _ j, .part _ _ => j < n
+  | .found i j, .found i' j' => j < j' ∨ (j = j' ∧ i' ≤ i)
   | _, _ => False
 
 /-- Boolean test for `Qc` (soundness is all the prune needs). -/
 def qcB (n : Nat) : TSChoice → TSChoice → Bool
   | .start, .start => true
-  | .part k v, .part k' v' => decide (v' = v) && decide (k ≤ k')
-  | .start, .found _ j => decide (j < n)
-  | .part _ _, .found _ j => decide (j < n)
-  | .found i j, .found i' j' => decide (j' < j ∨ (j' = j ∧ i ≤ i'))
+  | .part k v, .part k' v' => decide (v = v') && decide (k' ≤ k)
+  | .found _ j, .start => decide (j < n)
+  | .found _ j, .part _ _ => decide (j < n)
+  | .found i j, .found i' j' => decide (j < j' ∨ (j = j' ∧ i' ≤ i))
   | _, _ => false
 
 theorem qcB_sound {n : Nat} : ∀ {c c'}, qcB n c c' = true → Qc n c c' := by
@@ -174,9 +174,9 @@ theorem Qc_refl {n : Nat} : ∀ c, Qc n c c := by
 
 theorem Qc_trans {n : Nat} : ∀ {a b c}, Qc n a b → Qc n b c → Qc n a c := by
   intro a b c hab hbc
-  cases a <;> cases b <;> cases c <;> simp_all [Qc] <;> omega
+  cases a <;> cases b <;> cases c <;> simp only [Qc] at hab hbc ⊢ <;> omega
 
-theorem Qc_le_ansLe {n : Nat} : ∀ {c c'}, Qc n c c' → ansLe (outc c) (outc c') := by
+theorem Qc_le_ansLe {n : Nat} : ∀ {c c'}, Qc n c c' → ansLe (outc c') (outc c) := by
   intro c c' h
   cases c <;> cases c' <;> simp_all [Qc, outc, ansLe]
 
@@ -205,8 +205,8 @@ def tsB (target : Int) : ThinBest Unit Int (Nat × TSChoice) where
       else [(n + 1, .part k v)]
     | (n, .found i j) => [(n + 1, .found i j)]
   Q z w := z.1 = w.1 ∧ Qc z.1 z.2 w.2
-  R z w := ansLe (outc z.2) (outc w.2)
-  qDec z w := decide (z.1 = w.1) && qcB z.1 z.2 w.2
+  R z w := ansLe (outc w.2) (outc z.2)
+  qDec z w := decide (z.1 = w.1) && qcB w.1 w.2 z.2
   rDec z w := ansLeB (outc w.2) (outc z.2)
   Q_refl s := ⟨rfl, Qc_refl s.2⟩
   Q_trans := by
@@ -217,11 +217,11 @@ def tsB (target : Int) : ThinBest Unit Int (Nat × TSChoice) where
   Q_le_R := by
     rintro s t ⟨-, hq⟩
     exact Qc_le_ansLe hq
-  R_trans := fun h1 h2 => ansLe_trans h1 h2
+  R_trans := fun h1 h2 => ansLe_trans h2 h1
   qDec_sound := by
     intro s t h
     simp only [Bool.and_eq_true, decide_eq_true_eq] at h
-    exact ⟨h.1, qcB_sound h.2⟩
+    exact ⟨h.1.symm, qcB_sound h.2⟩
   rDec_t := fun h => ansLeB_true h
   rDec_f := fun h => ansLeB_false h
   step_mono := by
@@ -230,7 +230,7 @@ def tsB (target : Int) : ThinBest Unit Int (Nat × TSChoice) where
     obtain ⟨n', c'⟩ := s'
     obtain ⟨hn, hqc⟩ := hQ
     -- `subst` on `n = n'` eliminates `n'`, keeping the dominator's counter name `n`
-    have hn2 : n = n' := (hn : n' = n).symm
+    have hn2 : n = n' := hn
     subst hn2
     match c', c with
     | .start, .start =>
@@ -888,9 +888,9 @@ theorem thin_eq_hash (nums : List Int) (target : Int) :
     B&dM's `max D · Λ spec`, both halves supplied by Corollary 8.1. -/
 theorem thin_eq_Λ_maxRel :
     (graph (fun p : List Int × Int => thinTwoSum p.1 p.2) : Input ⟶ Ans)
-      = Λ tsSpec ≫ maxRel (fun w z => ansLe z w) := by
+      = Λ tsSpec ≫ maxRel (fun w z => ansLe w z) := by
   apply eq_Λ_comp_maxRel
-  · exact fun x y h1 h2 => ansLe_antisym h2 h1
+  · exact fun x y h1 h2 => ansLe_antisym h1 h2
   · -- the program's answer is acceptable
     intro p
     cases h : thinTwoSum p.1 p.2 with
@@ -913,7 +913,7 @@ theorem thin_eq_Λ_maxRel :
     (`leet/L53.lean`'s `solve_eq_maxRel`), obtained through the THINNING theorem rather than
     the greedy/Horner one. -/
 theorem solve_eq_Λ_maxRel :
-    solve = Λ tsSpec ≫ maxRel (fun w z => ansLe z w) := by
+    solve = Λ tsSpec ≫ maxRel (fun w z => ansLe w z) := by
   rw [← thin_eq_Λ_maxRel]
   show (graph (fun p : List Int × Int => twoSumFn p.1 p.2) : Input ⟶ Ans) = _
   exact congrArg (fun f : List Int × Int → Option (Nat × Nat) =>

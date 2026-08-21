@@ -161,11 +161,11 @@ structure GreedyDP (L E S W : Type) where
   hbase : L → W
   /-- Value of a choice combined with the residual's value. -/
   hstep : E → W → W
-  /-- The value order, min convention: `Rp z x` = "`x` is at least as good as `z`". -/
+  /-- The value order, min convention: `Rp x z` = "`x` is at least as good as `z`". -/
   Rp : (⟨W⟩ : RelSet.{0}) ⟶ ⟨W⟩
   /-- The Birelator order on choices (only reflexivity is ever used, B&dM p.246). -/
   Up : CL.dE E ⟶ CL.dE E
-  /-- The Birelator order on residual states: `Vp w' w` = "`w` is at least as promising as
+  /-- The Birelator order on residual states: `Vp w w'` = "`w` is at least as promising as
       `w'`" — the greedy residual must `Vp`-dominate every alternative residual. -/
   Vp : (⟨S⟩ : RelSet.{0}) ⟶ ⟨S⟩
   /-- The greedy choice: THE decomposition committed to at each step (the program's decision). -/
@@ -188,11 +188,11 @@ structure GreedyDP (L E S W : Type) where
   /-- `Q`-minimality of the greedy choice, step case: the pick `G(U,V)`-dominates every
       alternative decomposition. -/
   pick_min_step : ∀ {v c' w'}, stepP c' w' v →
-    ∃ c w, pick v = Sum.inr (c, w) ∧ Up c' c ∧ Vp w' w
+    ∃ c w, pick v = Sum.inr (c, w) ∧ Up c c' ∧ Vp w w'
   /-- The greedy-exchange property (Prop 9.4's `hV`, pointwise): a `Vp`-better state admits,
       for every decomposition of the worse one, a decomposition of no worse value. -/
-  exch : ∀ {w u}, Vp w u → ∀ ℓ, decT baseP stepP ℓ w →
-    ∃ ℓ', decT baseP stepP ℓ' u ∧ Rp (foldA hbase hstep ℓ) (foldA hbase hstep ℓ')
+  exch : ∀ {w u}, Vp w u → ∀ ℓ, decT baseP stepP ℓ u →
+    ∃ ℓ', decT baseP stepP ℓ' w ∧ Rp (foldA hbase hstep ℓ') (foldA hbase hstep ℓ)
 
 namespace GreedyDP
 
@@ -256,9 +256,9 @@ theorem specH_pt (P : GreedyDP L E S W) (v : S) (x : W) :
 
 /-! ## Abstract-side hypothesis discharges (the Prop 9.4 Birelator route) -/
 
-/-- Prop 9.4's `hU`, from the componentwise facts: `G(U,R)·h ⊑ h·R` mirrored. -/
+/-- Prop 9.4's `hU`, from the componentwise facts: `G(U°,R°)·h ⊑ h·R°` mirrored. -/
 theorem hU (P : GreedyDP L E S W) :
-    (sumBirel L).map P.Up P.Rp ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp := by
+    (sumBirel L).map P.Up° P.Rp° ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp° := by
   rw [le_iff]; rintro t y ⟨u, hGu, hy⟩
   have hy' : y = P.hFn u := hy
   subst hy'
@@ -276,8 +276,8 @@ theorem hU (P : GreedyDP L E S W) :
       obtain ⟨c, x⟩ := p; obtain ⟨c', x'⟩ := q
       exact P.step_mono hGu.1 hGu.2
 
-/-- `id ⊑ U`, from reflexivity of `Up`. -/
-theorem hUrefl (P : GreedyDP L E S W) : Cat.id (CL.dE E) ⊑ P.Up := by
+/-- `id ⊑ U°`, from reflexivity of `Up`. -/
+theorem hUrefl (P : GreedyDP L E S W) : Cat.id (CL.dE E) ⊑ P.Up° := by
   rw [le_iff]; intro c c' h
   have hcc : c = c' := h
   subst hcc
@@ -288,29 +288,29 @@ theorem htrans (P : GreedyDP L E S W) : P.Rp ≫ P.Rp ⊑ P.Rp := by
   rw [le_iff]; rintro x z ⟨y, h1, h2⟩
   exact P.Rp_trans h1 h2
 
-/-- Prop 9.4's `hV`, from the greedy-exchange property: `V°·H ⊑ H·R°` mirrored. -/
-theorem hV (P : GreedyDP L E S W) : P.Vp° ≫ P.specH ⊑ P.specH ≫ P.Rp° := by
-  rw [le_iff]; rintro u x ⟨w, hVwu, hH⟩
+/-- Prop 9.4's `hV`, from the greedy-exchange property: `V·H ⊑ H·R` mirrored. -/
+theorem hV (P : GreedyDP L E S W) : P.Vp ≫ P.specH ⊑ P.specH ≫ P.Rp := by
+  rw [le_iff]; rintro u x ⟨w, hVuw, hH⟩
   obtain ⟨ℓ, hd, hx⟩ := (P.specH_pt w x).mp hH
-  obtain ⟨ℓ', hd', hR⟩ := P.exch hVwu ℓ hd
+  obtain ⟨ℓ', hd', hR⟩ := P.exch hVuw ℓ hd
   refine ⟨foldA P.hbase P.hstep ℓ', (P.specH_pt u _).mpr ⟨ℓ', hd', rfl⟩, ?_⟩
-  show P.Rp x (foldA P.hbase P.hstep ℓ')
+  show P.Rp (foldA P.hbase P.hstep ℓ') x
   rw [hx]
   exact hR
 
-/-- `MonotonicAlg h R` for the pattern functor, via Prop 9.4(i) (`birelator_fixLeft_mono`). -/
-theorem hmono (P : GreedyDP L E S W) : MonotonicAlg (F := CL.F L E) P.hAlg P.Rp := by
+/-- `MonotonicAlg h R°` for the pattern functor, via Prop 9.4(i) (`birelator_fixLeft_mono`). -/
+theorem hmono (P : GreedyDP L E S W) : MonotonicAlg (F := CL.F L E) P.hAlg P.Rp° := by
   have h := birelator_fixLeft_mono (G := sumBirel L) (e := CL.dE E)
-    (h := P.hAlg) (R := P.Rp) (U := P.Up) P.hUrefl P.hU
-  show (CL.F L E).map P.Rp ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp
+    (h := P.hAlg) (R := P.Rp°) (U := P.Up°) P.hUrefl P.hU
+  show (CL.F L E).map P.Rp° ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp°
   rwa [sumBirel_fixLeft_map] at h
 
 /-- `greedy_dp`'s thinning-compatibility bound `hQ`, via Prop 9.4(ii)
     (`birelator_thin_condition` at `Q := G(U,V)`) — the whole point of the Birelator route:
     the user never sees `hQ`, only `Up_refl`/`step_mono`/`exch`. -/
 theorem hQ (P : GreedyDP L E S W) :
-    P.Qrel° ≫ (CL.F L E).map P.specH ≫ P.hAlg
-      ⊑ (CL.F L E).map P.specH ≫ P.hAlg ≫ P.Rp° := by
+    P.Qrel ≫ (CL.F L E).map P.specH ≫ P.hAlg
+      ⊑ (CL.F L E).map P.specH ≫ P.hAlg ≫ P.Rp := by
   have h := birelator_thin_condition (G := sumBirel L) (sumBirel_preservesRecip L)
     (e := CL.dE E) (h := P.hAlg) (H := P.specH) (R := P.Rp) (U := P.Up) (V := P.Vp)
     (graph_map P.hFn) P.hU P.hV
@@ -428,7 +428,7 @@ theorem run_mem_mu (P : GreedyDP L E S W) (v : S) : mu P.body v (P.run v) := by
     decomposition, and it `Rp`-dominates the value of EVERY decomposition. -/
 theorem correct (P : GreedyDP L E S W) (v : S) :
     (∃ ℓ, decT P.baseP P.stepP ℓ v ∧ foldA P.hbase P.hstep ℓ = P.run v)
-    ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (foldA P.hbase P.hstep ℓ) (P.run v) := by
+    ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (P.run v) (foldA P.hbase P.hstep ℓ) := by
   obtain ⟨Pset, hPset, hmin⟩ := le_iff.mp P.greedy_refine v (P.run v) (P.run_mem_mu v)
   have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
   obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset (P.run v)).mp hmin
@@ -445,7 +445,7 @@ theorem correct (P : GreedyDP L E S W) (v : S) :
 theorem correct_spec (P : GreedyDP L E S W) (spec : S → W → Prop)
     (dec_spec : ∀ v ℓ, decT P.baseP P.stepP ℓ v → spec v (foldA P.hbase P.hstep ℓ))
     (spec_dec : ∀ v y, spec v y → ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ foldA P.hbase P.hstep ℓ = y)
-    (v : S) : spec v (P.run v) ∧ ∀ y, spec v y → P.Rp y (P.run v) := by
+    (v : S) : spec v (P.run v) ∧ ∀ y, spec v y → P.Rp (P.run v) y := by
   obtain ⟨⟨ℓ, hd, hx⟩, hlb⟩ := P.correct v
   refine ⟨hx ▸ dec_spec v ℓ hd, fun y hy => ?_⟩
   obtain ⟨ℓ', hd', hy'⟩ := spec_dec v y hy
@@ -466,11 +466,11 @@ theorem eq_minRel (P : GreedyDP L E S W)
     obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset x).mp hmin
     obtain ⟨⟨ℓ, hd, hx⟩, hRlb⟩ := P.correct v
     obtain ⟨ℓ', hd', hx'⟩ := (P.specH_pt v x).mp ((hmem x).mp hm)
-    have h1 : P.Rp x (P.run v) := hx' ▸ hRlb ℓ' hd'
-    have h2 : P.Rp (P.run v) x :=
+    have h1 : P.Rp (P.run v) x := hx' ▸ hRlb ℓ' hd'
+    have h2 : P.Rp x (P.run v) :=
       hlb (P.run v) ((hmem _).mpr ((P.specH_pt v _).mpr ⟨ℓ, hd, hx.symm⟩))
     show x = P.run v
-    exact antisym h1 h2
+    exact antisym h2 h1
 
 end GreedyDP
 
@@ -566,13 +566,13 @@ def coins15 : GreedyDP Unit Nat Nat Nat where
   stepP := step15
   hbase := hbase15
   hstep := hstep15
-  Rp := fun z x => x ≤ z
+  Rp := fun x z => x ≤ z
   Up := fun _ _ => True
-  Vp := fun w' w => cnt w ≤ cnt w'
+  Vp := fun w w' => cnt w ≤ cnt w'
   pick := pick15
   meas := fun v => v
   Rp_refl x := Nat.le_refl x
-  Rp_trans h1 h2 := Nat.le_trans h2 h1
+  Rp_trans h1 h2 := Nat.le_trans h1 h2
   Up_refl _ := trivial
   step_mono _ h := Nat.succ_le_succ h
   pick_base := by
@@ -639,9 +639,9 @@ def coins15 : GreedyDP Unit Nat Nat Nat where
       rcases hc with rfl | rfl <;> (simp only [cnt]; omega)
   exch := by
     intro w u hV ℓ hd
-    obtain ⟨ℓ', hd', hf'⟩ := dec15_greedy u
-    have hV' : cnt u ≤ cnt w := hV
-    have hlb := dec15_lb ℓ w hd
+    obtain ⟨ℓ', hd', hf'⟩ := dec15_greedy w
+    have hV' : cnt w ≤ cnt u := hV
+    have hlb := dec15_lb ℓ u hd
     refine ⟨ℓ', hd', ?_⟩
     show foldA hbase15 hstep15 ℓ' ≤ foldA hbase15 hstep15 ℓ
     omega
@@ -713,7 +713,7 @@ theorem run_eq_cnt (v : Nat) : coins15.run v = cnt v := by
 theorem coins15_eq_minRel :
     (graph coins15.run : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)
       = Λ coins15.specH ≫ minRel coins15.Rp :=
-  coins15.eq_minRel fun h1 h2 => Nat.le_antisymm h2 h1
+  coins15.eq_minRel fun h1 h2 => Nat.le_antisymm h1 h2
 
 example : coins15.run 12 = 4 := by rw [run_eq_cnt]; rfl
 example : coins15.run 137 = 29 := by rw [run_eq_cnt]; rfl

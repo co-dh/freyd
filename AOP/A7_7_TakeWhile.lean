@@ -10,15 +10,15 @@
   so that only the longest survives.
 
   HEADLINE (this repo).  The longest-prefix requirement is exactly Bird & de Moor's `max`, and the
-  AoPA shrink `S ↾ R` is `Λ S ≫ minRel R` (`A7_6.shrink_eq_Λ_comp_minRel`).  So the derivation's
+  AoPA shrink `S ↾ R` is `Λ S ≫ maxRel R` (`A7_6.shrink_eq_Λ_comp_maxRel`).  So the derivation's
   headline is the morphism equation
-      `graph (twCL p)  =  Λ twSpec ≫ maxRel prefDom`                    (`takeWhile_eq_Λ_maxRel`)
-  where `prefDom w z := z ≼ w` (dominance = "w is at least as long"), and equivalently the shrink
-  form
+      `graph (twCL p)  =  Λ twSpec ≫ maxRel prefSub`                    (`takeWhile_eq_Λ_maxRel`)
+  where `prefSub w z := w ≼ z` is the sub-prefix order, so `maxRel prefSub` keeps the longest,
+  and equivalently the shrink form
       `graph (twCL p)  =  twSpec ↾ prefSub`                             (`takeWhile_eq_shrink`)
-  with `prefSub = prefDom°` the sub-prefix order (`w ≼ z`) — AoPA's `spec ↾ ≽`, up to the
-  min/max and argument-order conventions.  Both come out of `RelSet.eq_Λ_comp_maxRel` (the two
-  halves it consumes — achievability and prefix-domination — are proved here directly).
+  — AoPA's `spec ↾ ≽`, up to the argument-order convention.  Both come out of
+  `RelSet.eq_Λ_comp_maxRel` (the two halves it consumes — achievability and prefix-domination —
+  are proved here directly).
 
   PROGRAM EMERGENCE.  `twCL p` is not hand-written and then verified: it is PRODUCED as the
   catamorphism of its base/step by the cons-list fold-uniqueness law (`CL.consFold_unique`),
@@ -93,9 +93,9 @@ def twCL (p : E → Bool) : ConsList Unit E → List E
 def twSpec (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
   fun c out => Pre out (flat c) ∧ AllP p out
 
-/-- Dominance order on answers: `w` dominates `z` when `z ≼ w` (`w` is at least as long).
-    `maxRel prefDom` selects the LONGEST prefix. -/
-def prefDom : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ := fun w z => Pre z w
+/-- Sub-prefix order on answers: `prefSub w z` when `w ≼ z` (`z` is at least as long).
+    `maxRel prefSub` selects the LONGEST prefix. -/
+def prefSub : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ := fun w z => Pre w z
 
 /-! ## Program emergence (AoPA `foldR-fold`) -/
 
@@ -147,25 +147,24 @@ theorem tw_best (p : E → Bool) (c : ConsList Unit E) (out : List E)
 
 /-! ## Headlines -/
 
-/-- **Morphism-equation headline (max form).**  `graph (twCL p) = Λ twSpec ≫ maxRel prefDom` —
-    `takeWhile p` is exactly `max prefDom · Λ twSpec`, the longest `p`-satisfying prefix, as a
+/-- **Morphism-equation headline (max form).**  `graph (twCL p) = Λ twSpec ≫ maxRel prefSub` —
+    `takeWhile p` is exactly `max prefSub · Λ twSpec`, the longest `p`-satisfying prefix, as a
     relation (not merely pointwise).  Via `RelSet.eq_Λ_comp_maxRel`, fed the two halves above and
     prefix antisymmetry. -/
 theorem takeWhile_eq_Λ_maxRel (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = Λ (twSpec p) ≫ maxRel (prefDom (E := E)) :=
-  eq_Λ_comp_maxRel (prefDom (E := E))
-    (fun x y h1 h2 => pre_antisym h2 h1)               -- antisymmetry of prefDom
+    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = Λ (twSpec p) ≫ maxRel (prefSub (E := E)) :=
+  eq_Λ_comp_maxRel (prefSub (E := E))
+    (fun x y h1 h2 => pre_antisym h1 h2)               -- antisymmetry of prefSub
     (twCL p) (twSpec p)
     (tw_sound p)                                        -- achievability
     (fun c v hv => tw_best p c v hv)                    -- domination (longest)
 
-/-- **Shrink-form headline (AoPA `spec ↾ ≽`).**  `graph (twCL p) = twSpec ↾ prefDom°`.  This is
+/-- **Shrink-form headline (AoPA `spec ↾ ≽`).**  `graph (twCL p) = twSpec ↾ prefSub`.  This is
     the AoPA shrink presentation: the `p`-satisfying-prefix relation, shrunk by the prefix order,
-    equals `takeWhile`.  Immediate from the max form by `shrink_eq_Λ_comp_minRel`
-    (`maxRel R = minRel R°`). -/
+    equals `takeWhile`.  Immediate from the max form by `shrink_eq_Λ_comp_maxRel`. -/
 theorem takeWhile_eq_shrink (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = twSpec p ↾ (prefDom (E := E))° := by
-  rw [shrink_eq_Λ_comp_minRel]
+    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = twSpec p ↾ (prefSub (E := E)) := by
+  rw [shrink_eq_Λ_comp_maxRel]
   exact takeWhile_eq_Λ_maxRel p
 
 /-! ## Executable sanity checks -/

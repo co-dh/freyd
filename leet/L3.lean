@@ -437,8 +437,8 @@ theorem solve_correct (xs : SnocList Int Int) :
 /-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for the `≤`-preference order `D w z := z ≤ w` — the longest achievable substring length, not
     merely pointwise. Bridged from soundness (`solve_achievable`) and domination (`domination_all`). -/
-theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) solveFn spec
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Nat => w ≤ z) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) solveFn spec
     solve_achievable (fun xs k hk => domination_all xs k hk)
 
 /-! ## Running the program -/

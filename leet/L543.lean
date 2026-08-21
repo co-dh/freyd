@@ -186,8 +186,8 @@ def spec : dTree Int ⟶ dNat := fun t k => pathEdges t k
 
 /-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
     for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise. Bridged from `solve_correct`. -/
-theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) solveFn spec
+theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Nat => w ≤ z) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) solveFn spec
     (fun t => (solve_correct t).1) (fun t v hv => (solve_correct t).2 v hv)
 
 /-! ## Running the program -/

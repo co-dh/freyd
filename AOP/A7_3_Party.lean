@@ -60,7 +60,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     (`A7_2.greedy_max`), whose hypotheses B&dM's monotonicity claims (via `choose_monotonic`
     above and the `⟨include,exclude⟩` calculation p.177) discharge for the concrete tree. -/
 theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
+    {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
     relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R :=
   greedy_max hFr I htrans hmono
 

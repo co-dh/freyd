@@ -196,11 +196,11 @@ theorem minDepth_correct (t : Tree Int) (ht : t ≠ Tree.nil) :
 def specT : dTree Int ⟶ dNat := fun t d => IsRLDepth t d ∨ (t = Tree.nil ∧ d = 0)
 
 /-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `A specT ≫ maxRel D`
-    for the REVERSED preference order `D w z := w ≤ z` (so `maxRel D` is the `≤`-minimum) — the
+    for the REVERSED preference order `D w z := z ≤ w` (so `maxRel D` is the `≤`-minimum) — the
     shortest achievable root-to-leaf path length, with `∅ ↦ 0`.  Bridged from `minDepthFn_isRL` and
     `minDepthFn_le_of_isRL`. -/
-theorem solve_eq_minRel : solve = Λ specT ≫ maxRel (fun w z : Nat => w ≤ z) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) minDepthFn specT
+theorem solve_eq_minRel : solve = Λ specT ≫ maxRel (fun w z : Nat => z ≤ w) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) minDepthFn specT
     (fun t => by
       cases t with
       | nil => exact Or.inr ⟨rfl, rfl⟩

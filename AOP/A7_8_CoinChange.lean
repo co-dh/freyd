@@ -6,8 +6,8 @@
       `coinSpec n out  :=  sumVal out = n`.
   The wanted answer is the one using the FEWEST coins.  In AoPA this is the shrink
   `(sumc ○ ordered?)˘ ↾ _⊴_`: change relations shrunk by the sub-list order `_⊴_`, so the minimal
-  (fewest-coin) solution survives — and via `A7_6.shrink_eq_Λ_comp_minRel` that shrink IS
-  `A coinSpec ≫ minRel _⊴_`, the Bird & de Moor `min · Λ` optimum.
+  (fewest-coin) solution survives — and via `A7_6.shrink_eq_Λ_comp_maxRel` that shrink IS
+  `A coinSpec ≫ maxRel _⊴_`, the Bird & de Moor `max · Λ` optimum.
 
   WHAT IS PORTED HERE (self-contained, proved, axioms ⊆ {propext, Quot.sound}):
     * the coin algebra `Coin`/`val`/`sumVal` and the coin order `leC` (AoPA `_≤c_`);

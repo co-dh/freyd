@@ -71,11 +71,11 @@ theorem powerRel_pt {α β : RelSet.{0}} (g : α ⟶ β) (P : (pow α).carrier)
   Iff.rfl
 
 theorem minRel_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
-    minRel R P x ↔ P x ∧ ∀ z, P z → R z x :=
+    minRel R P x ↔ P x ∧ ∀ z, P z → R x z :=
   Iff.rfl
 
 theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
-    leftDiv ((∋ α)°) R P x ↔ ∀ z, P z → R z x :=
+    leftDiv ((∋ α)°) (R°) P x ↔ ∀ z, P z → R x z :=
   Iff.rfl
 
 /-- The set a transpose `Λ S` points `x` at contains exactly the `S`-successors of `x`. -/
@@ -209,8 +209,8 @@ def coalg : Fobj L E (⟨B⟩ : RelSet.{0}) ⟶ (⟨B⟩ : RelSet.{0}) := fun t 
   | Sum.inl d => P.tbase d v
   | Sum.inr (e, v') => P.tstep e v' v
 
-/-- The value order as a morphism, in `minRel`'s convention (`ord y x` = "`x` at most `y`"). -/
-def ord : (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := fun y x => P.le x y
+/-- The value order as a morphism, in `minRel`'s convention (`ord x y` = "`x` at most `y`"). -/
+def ord : (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := fun x y => P.le x y
 
 /-- The fallback: the constant-`∞` map. -/
 def tau : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := graph fun _ => P.top
@@ -235,11 +235,11 @@ theorem hylo_pt (v : B) (x : Ans) : P.hylo v x ↔ P.Hpt v x := by
 theorem ord_trans : P.ord ≫ P.ord ⊑ P.ord := by
   apply le_iff.mpr
   rintro y x ⟨z, hzy, hxz⟩
-  exact P.le_trans hxz hzy
+  exact P.le_trans hzy hxz
 
-/-- `MonotonicAlg h R`, from `le_refl` (base) and `hstep_mono` (step). -/
-theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord := by
-  show (F L E).map P.ord ≫ P.alg ⊑ P.alg ≫ P.ord
+/-- `MonotonicAlg h R°`, from `le_refl` (base) and `hstep_mono` (step). -/
+theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord° := by
+  show (F L E).map P.ord° ≫ P.alg ⊑ P.alg ≫ P.ord°
   apply le_iff.mpr
   rintro u x ⟨w, hFw, hx⟩
   refine ⟨P.algFn u, rfl, ?_⟩
@@ -266,7 +266,7 @@ theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord := by
       exact P.hstep_mono e hyy
 
 /-- `hτ`: the fallback is top-valued — everything is `le` it. -/
-theorem tau_top : P.tau° ≫ topHom (⟨B⟩ : RelSet.{0}) (⟨Ans⟩ : RelSet.{0}) ⊑ P.ord := by
+theorem tau_top : P.tau° ≫ topHom (⟨B⟩ : RelSet.{0}) (⟨Ans⟩ : RelSet.{0}) ⊑ P.ord° := by
   apply le_iff.mpr
   rintro k x ⟨v, hkv, -⟩
   have hk : k = P.top := hkv
@@ -342,7 +342,7 @@ theorem memo_mem_body {X : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0})} 
       ⟨fun t hDt => ⟨P.stepVal t, hg t hDt, t, hDt, rfl⟩,
        fun u hu => by obtain ⟨t, hDt, hut⟩ := hu; exact ⟨t, hDt, hut ▸ hg t hDt⟩⟩
   -- the memo value lower-bounds every candidate
-  have hlb : ∀ z, (∃ t, D t ∧ z = P.stepVal t) → P.ord z (P.memo v) := by
+  have hlb : ∀ z, (∃ t, D t ∧ z = P.stepVal t) → P.ord (P.memo v) z := by
     rintro z ⟨t, hDt, rfl⟩
     cases t with
     | inl d => exact P.memo_lb_base ((hDmem _).mp hDt)

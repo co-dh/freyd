@@ -23,7 +23,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     thinning preorder `Q°`.  A direct instance of `A8_1.thinning_min`. -/
 theorem bitonic_thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : a ⟶ a}
     {S : F.obj a ⟶ a} (hQR : Q ⊑ R) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R ≫ R ⊑ R) (hmono : MonotonicAlg S Q°) :
+    (htransR : R ≫ R ⊑ R) (hmono : MonotonicAlg S Q) :
     relCata I (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ minRel R ⊑ Λ (relCata I S) ≫ minRel R :=
   thinning_min hFr I hQR hreflQ htransQ htransR hmono
 

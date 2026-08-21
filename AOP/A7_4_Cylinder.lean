@@ -25,7 +25,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     `R°`.  A direct instance of the min-catamorphism theorem `A7_2.greedy` (the concrete lax-natural
     `generate` over n-tuples/sets is deferred). -/
 theorem cylinder_paths_min (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R°) :
+    {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
     relCata I (Λ S ≫ minRel R) ⊑ Λ (relCata I S) ≫ minRel R :=
   greedy hFr I htrans hmono
 

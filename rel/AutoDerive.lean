@@ -130,9 +130,10 @@ def genFn : (Fobj L E (⟨A1 × Int⟩ : RelSet.{0})).carrier → (A1 × Int) �
 /-- The generator as a (non-deterministic) morphism. -/
 def gen : Fobj L E (⟨A1 × Int⟩ : RelSet.{0}) ⟶ (⟨A1 × Int⟩ : RelSet.{0}) := P.genFn
 
-/-- The Pareto product order: dominate in the first coordinate, `≥` in the second. -/
+/-- The Pareto product order, `minRel` convention: `pareto w w'` = "`w'` dominates `w`" —
+    better in the first coordinate, `≥` in the second. -/
 def pareto : (⟨A1 × Int⟩ : RelSet.{0}) ⟶ (⟨A1 × Int⟩ : RelSet.{0}) :=
-  fun w w' => P.ord w.1 w'.1 ∧ w'.2 ≤ w.2
+  fun w w' => P.ord w'.1 w.1 ∧ w.2 ≤ w'.2
 
 /-! ## The mechanical side conditions, discharged once -/
 
@@ -152,11 +153,11 @@ theorem cataFold_alg : ∀ (xs : SnocList L E) (r : A1 × Int),
 /-- `pareto` is transitive (`R·R ⊑ R`). -/
 theorem pareto_trans : P.pareto ≫ P.pareto ⊑ P.pareto := by
   rw [le_iff]; rintro w w' ⟨w'', ⟨h1a, h1b⟩, h2a, h2b⟩
-  exact ⟨P.ord_trans h1a h2a, Int.le_trans h2b h1b⟩
+  exact ⟨P.ord_trans h2a h1a, Int.le_trans h1b h2b⟩
 
-/-- The deterministic step is MONOTONIC on the Pareto order. -/
-theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.pareto := by
-  show (F L E).map P.pareto ≫ P.alg ⊑ P.alg ≫ P.pareto
+/-- The deterministic step is MONOTONIC on the Pareto order (`greedy_max`'s form, `pareto°`). -/
+theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.pareto° := by
+  show (F L E).map P.pareto° ≫ P.alg ⊑ P.alg ≫ P.pareto°
   rw [le_iff]; rintro u w ⟨u', hFR, rfl⟩
   refine ⟨P.algFn u, rfl, ?_⟩
   cases u with
@@ -187,7 +188,7 @@ theorem alg_le_gen : P.alg ⊑ P.gen := by
     exact ⟨P.step1_cand st.1 p, P.step2_cand st.1 st.2 p⟩
 
 /-- Greedy-step refinement, part 2: the deterministic choice Pareto-dominates every candidate. -/
-theorem gen_recip_le : P.gen° ≫ P.alg ⊑ P.pareto° := by
+theorem gen_recip_le : P.gen° ≫ P.alg ⊑ P.pareto := by
   rw [le_iff]; rintro w1 w2 ⟨u, hgu, rfl⟩
   cases u with
   | inl x =>
@@ -233,8 +234,8 @@ theorem eq_maxRel (spec : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
     (gen_spec : ∀ xs w, cataFold P.gen xs w → spec xs w.2)
     (spec_gen : ∀ xs v, spec xs v → ∃ e, cataFold P.gen xs (e, v)) :
     (graph (fun xs => (P.foldFn xs).2) : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
-      = Λ spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) _ spec
+      = Λ spec ≫ maxRel (fun w z : Int => w ≤ z) :=
+  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h1 h2) _ spec
     (fun xs => (P.correct spec gen_spec spec_gen xs).1)
     (fun xs v hv => (P.correct spec gen_spec spec_gen xs).2 v hv)
 

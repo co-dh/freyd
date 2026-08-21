@@ -25,7 +25,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     transitive cost order `R`.  A direct instance of `A9_1.dynamic_programming`. -/
 theorem string_edit_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R) :
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R ≫ R ⊑ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   dynamic_programming hFr I hh hmono htrans

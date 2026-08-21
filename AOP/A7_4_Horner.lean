@@ -48,21 +48,24 @@ section Abstract
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
 
 /-- The universal property of (7.5) in `max` form (`maxRel R = minRel R°`):
-    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R°`, mirrored.  Just `le_Λ_comp_minRel_iff` at `R°`. -/
+    `X ⊑ ΛS·max R ⟺ X ⊑ S ∧ S°·X ⊑ R`, mirrored.  Just `le_Λ_comp_minRel_iff` at `R°`. -/
 public theorem le_Λ_comp_maxRel_iff {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a} :
-    X ⊑ Λ S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R° := le_Λ_comp_minRel_iff
+    X ⊑ Λ S ≫ maxRel R ↔ X ⊑ S ∧ S° ≫ X ⊑ R := by
+  show X ⊑ Λ S ≫ minRel (R°) ↔ _
+  rw [le_Λ_comp_minRel_iff, Allegory.recip_recip]
 
 /-- **Max form of `A7_2.greedy_of_refinement`.**  A deterministic algebra `f` (a map),
-    MONOTONIC on the order `R`, that REFINES the greedy choice `Λ S ≫ maxRel R`, already has its
-    catamorphism inside `max R·Λ⦇S⦈` — the Pareto frontier of the plain non-deterministic
-    catamorphism `⦇S⦈`.  Mirror of `greedy_of_refinement` through `R°` (`maxRel R = minRel R°`),
-    flipping monotonicity with `monotonicAlg_recip_iff` (needs `f` a map). -/
+    MONOTONIC on the order `R` in B&dM's sense (`MonotonicAlg f R°`), that REFINES the greedy
+    choice `Λ S ≫ maxRel R`, already has its catamorphism inside `max R·Λ⦇S⦈` — the Pareto
+    frontier of the plain non-deterministic catamorphism `⦇S⦈`.  Mirror of
+    `greedy_of_refinement` through `R°` (`maxRel R = minRel R°`), flipping monotonicity with
+    `monotonicAlg_recip_iff` (needs `f` a map). -/
 public theorem greedy_max_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
-    {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
+    {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R°)
     (href : f ⊑ Λ S ≫ maxRel R) : relCata I f ⊑ Λ (relCata I S) ≫ maxRel R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
-  have hmono' : MonotonicAlg f R° := (monotonicAlg_recip_iff hf hFr).mp hmono
+  have hmono' : MonotonicAlg f (R°)° := (monotonicAlg_recip_iff hf hFr).mp hmono
   exact greedy_of_refinement hFr I htrans' hmono' href
 
 end Abstract
@@ -77,10 +80,10 @@ public theorem Λ_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : Λ R = classi
   ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
 
 /-- Pointwise form of `maxRel` in Rel(Set): `w` is a `maxRel R`-choice of the set `P` iff
-    `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
+    `w ∈ P` and every member `z ∈ P` is `R`-below `w` (`R z w`). -/
 public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
     (P : (PowerAllegory.powerObj a).carrier) (w : a.carrier) :
-    (maxRel R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
+    (maxRel R) P w ↔ P w ∧ ∀ z, P z → R z w := Iff.rfl
 
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ maxRel D`
 
@@ -91,15 +94,15 @@ public theorem maxRel_apply {a : RelSet.{0}} (R : a ⟶ a)
   pins the maximum uniquely so `solve` (a map) equals it. -/
 
 /-- **Morphism-equation headline for a maximization solver.**  If `solveFn` always produces a
-    `spec`-value (`hsound`) that `D`-dominates every `spec`-value (`hbest`), and the preference
+    `spec`-value (`hsound`) that every `spec`-value is `D`-below (`hbest`), and the preference
     order `D` is antisymmetric, then `graph solveFn = Λ spec ≫ maxRel D` — the program is exactly
-    `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
-    for a `≤`-minimum take `D w z := w ≤ z` (`maxRel` of the reversed order is `minRel`). -/
+    `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := w ≤ z`;
+    for a `≤`-minimum take `D w z := z ≤ w` (`maxRel` of the reversed order is `minRel`). -/
 public theorem eq_Λ_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
     (hanti : ∀ x y : V, D x y → D y x → x = y)
     (solveFn : d.carrier → V) (spec : d ⟶ (⟨V⟩ : RelSet.{0}))
     (hsound : ∀ xs, spec xs (solveFn xs))
-    (hbest : ∀ xs v, spec xs v → D (solveFn xs) v) :
+    (hbest : ∀ xs v, spec xs v → D v (solveFn xs)) :
     (graph solveFn : d ⟶ (⟨V⟩ : RelSet.{0})) = Λ spec ≫ maxRel D := by
   apply hom_ext; intro xs w
   rw [comp_apply]
@@ -114,7 +117,7 @@ public theorem eq_Λ_comp_maxRel {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : Rel
     have hPeq : P = fun v => spec xs v := hAP
     subst hPeq
     obtain ⟨hmem, hdomw⟩ := (maxRel_apply D _ _).mp hmax
-    exact hanti w (solveFn xs) (hdomw (solveFn xs) (hsound xs)) (hbest xs w hmem)
+    exact hanti w (solveFn xs) (hbest xs w hmem) (hdomw (solveFn xs) (hsound xs))
 
 /-! ## The Horner correctness packaging over snoc-lists -/
 
@@ -126,7 +129,7 @@ open Freyd
     `⟨A1 × ℤ⟩` with:
 
     * a deterministic fold `alg` computed by `foldFn` (`hfold`), monotone on a product order `R`
-      whose second coordinate is `≤` (`hR2 : R x y → y.2 ≤ x.2`) and transitive (`htrans`),
+      whose second coordinate is `≤` (`hR2 : R x y → x.2 ≤ y.2`) and transitive (`htrans`),
       refining the greedy choice of the non-deterministic generator `S` (`href`);
     * a scalar spec relation `spec`, with `gen_spec` (every `S`-generatable pair's second
       component satisfies `spec`) and `spec_gen` (every `spec` value is the second component of
@@ -142,9 +145,9 @@ public theorem horner_correct {L E A1 : Type}
     (foldFn : SnocList L E → A1 × Int)
     (halg_map : Map alg)
     (hfold : ∀ xs w, cataFold alg xs w ↔ w = foldFn xs)
-    (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg (F := F L E) alg R)
+    (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg (F := F L E) alg R°)
     (href : alg ⊑ Λ S ≫ maxRel R)
-    (hR2 : ∀ x y : A1 × Int, R x y → y.2 ≤ x.2)
+    (hR2 : ∀ x y : A1 × Int, R x y → x.2 ≤ y.2)
     (spec : (dSL L E) ⟶ (⟨Int⟩ : RelSet.{0}))
     (gen_spec : ∀ xs w, cataFold S xs w → spec xs w.2)
     (spec_gen : ∀ xs v, spec xs v → ∃ e : A1, cataFold S xs (e, v))
@@ -163,11 +166,11 @@ public theorem horner_correct {L E A1 : Type}
   subst hPeq
   obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (foldFn xs)).mp hmax
   -- `hmem_gen`: the fold output is itself generatable → achievability via `gen_spec`.
-  -- `hdom`   : it R-dominates every generatable pair → domination via `spec_gen` + `hR2`.
+  -- `hdom`   : every generatable pair is R-below it → domination via `spec_gen` + `hR2`.
   refine ⟨gen_spec xs (foldFn xs) hmem_gen, ?_⟩
   intro v hv
   obtain ⟨e, hgen⟩ := spec_gen xs v hv
-  exact hR2 (foldFn xs) (e, v) (hdom (e, v) hgen)
+  exact hR2 (e, v) (foldFn xs) (hdom (e, v) hgen)
 
 end SL
 end RelSet

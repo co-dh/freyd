@@ -13,10 +13,10 @@
   * `S` — the NONDETERMINISTIC generator `[ () ↦ {0},  (rl,_,rr) ↦ {rl+1, rr+1} ]`; its
     catamorphism `⦇S⦈` is exactly `pathLen` (bridge `cataTreeFold_S`), the set of achievable path
     lengths.
-  * `alg` (= `L104.alg`, the deterministic depth fold) is shown to (a) be MONOTONE on the reverse-`≤`
-    order `R x y := y ≤ x` (`alg_mono`, from `imax` monotone) and (b) REFINE the greedy choice
+  * `alg` (= `L104.alg`, the deterministic depth fold) is shown to (a) be MONOTONE on `R°` for the
+    order `R x y := x ≤ y` (`alg_mono`, from `imax` monotone) and (b) REFINE the greedy choice
     `Λ S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
-    `S° ≫ alg ⊑ R°` — the folded value dominates every generatable value; both from `imax_eq_or`
+    `S° ≫ alg ⊑ R` — the folded value dominates every generatable value; both from `imax_eq_or`
     and `imax_ge_left/right`).  These two facts FORCE the node step to be `1 + imax dl dr`: it is the
     only monotone map that both lands in `{dl+1, dr+1}` and dominates it.
   * The greedy theorem then places `⦇alg⦈` inside the Pareto frontier `A ⦇S⦈ ≫ maxRel R`; the
@@ -43,11 +43,11 @@ variable {L : Type}
 
 /-! ## The specification, as an extremum
 
-`R` is the REVERSE `≤` so that `maxRel R` is the numeric maximum; `S` is the nondeterministic
+`R` is `≤` itself, so that `maxRel R` is the numeric maximum; `S` is the nondeterministic
 generator whose catamorphism enumerates the achievable path lengths. -/
 
-/-- Reverse `≤` on `ℕ`: `R x y := y ≤ x`, so `maxRel R` picks the numerically LARGEST member. -/
-def R : (dNat : RelSet.{0}) ⟶ (dNat : RelSet.{0}) := fun x y => y ≤ x
+/-- `≤` on `ℕ`: `R x y := x ≤ y`, so `maxRel R` picks the numerically LARGEST member. -/
+def R : (dNat : RelSet.{0}) ⟶ (dNat : RelSet.{0}) := fun x y => x ≤ y
 
 /-- The nondeterministic generator `[ () ↦ {0},  (rl,_,rr) ↦ {rl+1, rr+1} ] : F(ℕ) → ℕ` — "extend
     a child's path by one".  Its catamorphism is exactly `pathLen` (see `cataTreeFold_S`). -/
@@ -93,18 +93,18 @@ theorem cataTreeFold_S : ∀ (t : Tree L) (n : Nat), cataTreeFold S t n ↔ path
 
 /-! ## The three greedy side conditions -/
 
-/-- `R` (reverse `≤`) is transitive. -/
+/-- `R` (`≤`) is transitive. -/
 theorem R_trans : (R ≫ R : (dNat : RelSet.{0}) ⟶ dNat) ⊑ R := by
   rw [le_iff]; intro x z h
   obtain ⟨y, hxy, hyz⟩ := h
-  have h1 : y ≤ x := hxy
-  have h2 : z ≤ y := hyz
-  show z ≤ x; simp only [dNat] at *; omega
+  have h1 : x ≤ y := hxy
+  have h2 : y ≤ z := hyz
+  show x ≤ z; simp only [dNat] at *; omega
 
-/-- The depth fold `alg` is MONOTONE on `R`: `imax` is monotone, so a `≤`-larger pair of child
-    depths yields a `≤`-larger node depth (mirrored through the reverse order `R`). -/
-theorem alg_mono : MonotonicAlg (F := F L) alg R := by
-  show (F L).map R ≫ alg ⊑ alg ≫ R
+/-- The depth fold `alg` is MONOTONE on `R°`: `imax` is monotone, so a `≤`-larger pair of child
+    depths yields a `≤`-larger node depth. -/
+theorem alg_mono : MonotonicAlg (F := F L) alg R° := by
+  show (F L).map R° ≫ alg ⊑ alg ≫ R°
   rw [le_iff]; intro u m h
   obtain ⟨v, hFuv, hv⟩ := h
   refine ⟨algFn u, rfl, ?_⟩
@@ -120,7 +120,7 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
     | inr q =>
       obtain ⟨rl, a, rr⟩ := p
       obtain ⟨rl', a', rr'⟩ := q
-      obtain ⟨hRl, ha, hRr⟩ := (hFuv : R rl rl' ∧ a = a' ∧ R rr rr')
+      obtain ⟨hRl, ha, hRr⟩ := (hFuv : R° rl rl' ∧ a = a' ∧ R° rr rr')
       have hRl' : rl' ≤ rl := hRl
       have hRr' : rr' ≤ rr := hRr
       have hm' : m = 1 + imax rl' rr' := hv
@@ -131,7 +131,7 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
 
 /-- The depth fold `alg` REFINES the greedy choice `Λ S ≫ maxRel R`.  Via `le_Λ_comp_maxRel_iff` this
     is two facts: `alg ⊑ S` (the folded value `1 + imax rl rr` is one of `{rl+1, rr+1}`, by
-    `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
+    `imax_eq_or`) and `S° ≫ alg ⊑ R` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/
 theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
   apply le_Λ_comp_maxRel_iff.mpr
@@ -147,7 +147,7 @@ theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
       cases imax_eq_or rl rr with
       | inl he => exact Or.inl (by simp only [dNat] at *; omega)
       | inr he => exact Or.inr (by simp only [dNat] at *; omega)
-  · -- S° ≫ alg ⊑ R° : the folded value dominates every generatable value
+  · -- S° ≫ alg ⊑ R : the folded value dominates every generatable value
     rw [le_iff]; intro x m h
     obtain ⟨v, hSv, hv⟩ := h
     show x ≤ m

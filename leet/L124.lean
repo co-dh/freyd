@@ -345,22 +345,22 @@ theorem solve_correct (l r : Tree Int) (a : Int) :
   otherwise.  The bridge `eq_Λ_comp_maxRel` (§8.1 thinning) then upgrades the pointwise
   achievability + domination facts to the actual morphism equation. -/
 
-/-- The preference order on `Option Int`: `w` `dom`-dominates `z` (`w ≥ z`) with `none` as bottom.
-    `some m ≥ some v ⟺ v ≤ m`; every answer dominates `none`; `none` dominates nothing but `none`. -/
+/-- The preference order on `Option Int`: `dom w z` says `z` dominates `w` (`w ≤ z`) with `none`
+    as bottom.  `some v ≤ some m ⟺ v ≤ m`; `none` is below everything and above nothing else. -/
 def dom : dAns ⟶ dAns := fun w z =>
   match w, z with
-  | _, none => True
-  | none, some _ => False
-  | some m, some v => v ≤ m
+  | none, _ => True
+  | some _, none => False
+  | some v, some m => v ≤ m
 
 /-- `dom` is antisymmetric — the requirement that pins the maximum uniquely. -/
 theorem dom_antisymm : ∀ w z : Option Int, dom w z → dom z w → w = z := by
   intro w z hwz hzw
   rcases w with _ | m <;> rcases z with _ | v
   · rfl
-  · exact hwz.elim
   · exact hzw.elim
-  · exact congrArg some (Int.le_antisymm hzw hwz)
+  · exact hwz.elim
+  · exact congrArg some (Int.le_antisymm hwz hzw)
 
 /-- **The specification** as a morphism `dTree ℤ ⟶ dAns`: `some v` is achievable iff `v` is an
     actual `pathSum`; `none` is achievable iff the tree has NO path (the empty tree).  Stated
@@ -380,8 +380,8 @@ theorem spec_sound : ∀ t : Tree Int, spec t (solveFn t) := by
     show spec (Tree.node l a r) (solveFn (Tree.node l a r))
     rw [hm]; exact hach
 
-/-- Domination: `solveFn t` `dom`-dominates every `spec`-achievable answer. -/
-theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom (solveFn t) o := by
+/-- Domination: every `spec`-achievable answer is `dom`-below `solveFn t`. -/
+theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom o (solveFn t) := by
   intro t o ho
   cases o with
   | none => trivial
@@ -390,7 +390,7 @@ theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom (solveF
     | nil => exact ho.elim
     | node l a r =>
       obtain ⟨m, hm, _, hdom⟩ := solve_correct l r a
-      show dom (solveFn (Tree.node l a r)) (some v)
+      show dom (some v) (solveFn (Tree.node l a r))
       rw [hm]; exact hdom v ho
 
 /-- **The allegory-program headline (§7.5 `max D · Λspec`)**: `solve` is exactly the morphism

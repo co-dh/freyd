@@ -875,7 +875,7 @@ public theorem simplePart_le {a b : 𝒜} (R : a ⟶ b) : simplePart R ⊑ R := 
 
 /-- `1 ∩ M = 1 ∩ M°`: the intersection-with-identity is coreflexive, hence symmetric, so it
     equals its own reciprocal `1 ∩ M°` (`(1∩M)° = 1° ∩ M° = 1 ∩ M°`). -/
-theorem one_inter_eq_one_inter_recip {a : 𝒜} (M : a ⟶ a) :
+public theorem one_inter_eq_one_inter_recip {a : 𝒜} (M : a ⟶ a) :
     Cat.id a ∩ M = Cat.id a ∩ M° := by
   have hsym : (Cat.id a ∩ M)° = Cat.id a ∩ M :=
     symmetric_eq (coreflexive_symmetric_idempotent (inter_lb_left (Cat.id a) M)).1

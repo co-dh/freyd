@@ -26,9 +26,9 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     `A10_1.greedy_dp`. -/
 theorem tex_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
-    (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°) :
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R ≫ R ⊑ R)
+    (hQ : Q ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ minRel Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   greedy_dp hFr I hh hmono htrans hQ

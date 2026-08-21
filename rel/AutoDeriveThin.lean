@@ -59,10 +59,10 @@ theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow 
   rw [Λ_eq_classifier]; exact Iff.rfl
 
 /-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
-    and every member of `P` has a `Q`-improvement in `Y` (`Q z w` = "`w` at least as good as
+    and every member of `P` has a `Q`-improvement in `Y` (`Q w z` = "`w` at least as good as
     `z`", the `minRel` convention). -/
 theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (pow α).carrier) :
-    thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q z w ∧ Y w) := Iff.rfl
+    thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
 
 /-! ## The generic Pareto prune on candidate lists
 
@@ -154,13 +154,13 @@ theorem thinList_ne_nil {St : Type} {q : St → St → Bool} : ∀ {cands : List
 /-- The creative inputs of a thinning derivation (B&dM ch. 8), plus the one-line order facts
     its mechanical side conditions reduce to.  The program state is a LIST of kept candidate
     states; the answer is the `R`-best kept candidate at the end.  Orders follow the `minRel`
-    convention: `Q z w` / `R z w` = "`w` is at least as good as `z`". -/
+    convention: `Q w z` / `R w z` = "`w` is at least as good as `z`". -/
 structure ThinBest (L E St : Type) where
   /-- Candidate states generated from a leaf. -/
   leafOne : L → List St
   /-- Candidate one-step extensions of a single state by a new element. -/
   stepOne : St → E → List St
-  /-- The thinning preorder (Pareto dominance): `Q z w` = "`w` at least as good as `z`". -/
+  /-- The thinning preorder (Pareto dominance): `Q w z` = "`w` at least as good as `z`". -/
   Q : St → St → Prop
   /-- The final selection preorder: the answer must `R`-dominate every candidate. -/
   R : St → St → Prop
@@ -173,15 +173,15 @@ structure ThinBest (L E St : Type) where
   /-- The thinning order refines the selection order (Cor 8.1's `Q ⊑ R`). -/
   Q_le_R : ∀ {s t}, Q s t → R s t
   R_trans : ∀ {s t u}, R s t → R t u → R s u
-  qDec_sound : ∀ {s t}, qDec s t = true → Q s t
+  qDec_sound : ∀ {s t}, qDec s t = true → Q t s
   /-- `rDec s t = true` means `s` is at least as good as `t`. -/
-  rDec_t : ∀ {s t}, rDec s t = true → R t s
+  rDec_t : ∀ {s t}, rDec s t = true → R s t
   /-- ... and `false` means `t` is at least as good as `s` (totality of the comparison). -/
-  rDec_f : ∀ {s t}, rDec s t = false → R s t
-  /-- MONOTONICITY (the §8.1 insight, = `MonotonicAlg S Q°`): a dominating state can match
+  rDec_f : ∀ {s t}, rDec s t = false → R t s
+  /-- MONOTONICITY (the §8.1 insight, = `MonotonicAlg S Q`): a dominating state can match
       any extension of a dominated one. -/
-  step_mono : ∀ {s s' : St} (e : E) {y : St}, Q s' s → y ∈ stepOne s' e →
-    ∃ y' ∈ stepOne s e, Q y y'
+  step_mono : ∀ {s s' : St} (e : E) {y : St}, Q s s' → y ∈ stepOne s' e →
+    ∃ y' ∈ stepOne s e, Q y' y
 
 namespace ThinBest
 
@@ -216,9 +216,9 @@ def foldFn : SnocList L E → List St
 
 /-- `thinList_dom` at the bundle's own order data. -/
 theorem thin_dom {cands : List St} {z : St} (hz : z ∈ cands) :
-    ∃ w ∈ thinList P.qDec cands, P.Q z w :=
-  thinList_dom (Q := P.Q) (fun s t h => P.qDec_sound (s := s) (t := t) h) P.Q_refl
-    (fun a b c h1 h2 => P.Q_trans (s := a) (t := b) (u := c) h1 h2) hz
+    ∃ w ∈ thinList P.qDec cands, P.Q w z :=
+  thinList_dom (Q := fun a b => P.Q b a) (fun s t h => P.qDec_sound (s := s) (t := t) h)
+    P.Q_refl (fun a b c h1 h2 => P.Q_trans (s := c) (t := b) (u := a) h2 h1) hz
 
 /-! ## The mechanical side conditions, discharged once -/
 
@@ -234,10 +234,10 @@ theorem Qm_le_Rm : P.Qm ⊑ P.Rm := by
 theorem Rm_trans_le : P.Rm ≫ P.Rm ⊑ P.Rm := by
   rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.R_trans h1 h2
 
-/-- The generator is MONOTONIC on `Q°` (THEOREM 8.1's hypothesis): `step_mono` on the `snoc`
+/-- The generator is MONOTONIC on `Q` (THEOREM 8.1's hypothesis): `step_mono` on the `snoc`
     summand, reflexivity of `Q` on the leaf summand. -/
-theorem gen_mono : MonotonicAlg (F := F L E) P.gen P.Qm° := by
-  show (F L E).map P.Qm° ≫ P.gen ⊑ P.gen ≫ P.Qm°
+theorem gen_mono : MonotonicAlg (F := F L E) P.gen P.Qm := by
+  show (F L E).map P.Qm ≫ P.gen ⊑ P.gen ≫ P.Qm
   rw [le_iff]; rintro u y ⟨u', hF, hgen⟩
   cases u with
   | inl x =>
@@ -329,7 +329,7 @@ theorem le_Λ_cata_thinRel :
     one. -/
 theorem frontier (xs : SnocList L E) :
     (∀ s, s ∈ P.foldFn xs → cataFold P.gen xs s) ∧
-    (∀ z, cataFold P.gen xs z → ∃ w ∈ P.foldFn xs, P.Q z w) := by
+    (∀ z, cataFold P.gen xs z → ∃ w ∈ P.foldFn xs, P.Q w z) := by
   obtain ⟨G, hAG, hthin⟩ := le_iff.mp P.le_Λ_cata_thinRel xs (fun s => s ∈ P.foldFn xs) rfl
   have hGeq : G = fun s => cataR P.gen xs s := (Λ_apply_iff _ _ _).mp hAG
   subst hGeq
@@ -343,14 +343,14 @@ theorem frontier (xs : SnocList L E) :
 /-- The better of two candidates under the `rDec` comparison. -/
 def pick (b s : St) : St := if P.rDec b s then b else s
 
-theorem pick_left (b s : St) : P.R b (P.pick b s) := by
-  show P.R b (if P.rDec b s then b else s)
+theorem pick_left (b s : St) : P.R (P.pick b s) b := by
+  show P.R (if P.rDec b s then b else s) b
   cases hrd : P.rDec b s with
   | true => rw [if_pos rfl]; exact P.Q_le_R (P.Q_refl b)
   | false => rw [if_neg Bool.false_ne_true]; exact P.rDec_f hrd
 
-theorem pick_right (b s : St) : P.R s (P.pick b s) := by
-  show P.R s (if P.rDec b s then b else s)
+theorem pick_right (b s : St) : P.R (P.pick b s) s := by
+  show P.R (if P.rDec b s then b else s) s
   cases hrd : P.rDec b s with
   | true => rw [if_pos rfl]; exact P.rDec_t hrd
   | false => rw [if_neg Bool.false_ne_true]; exact P.Q_le_R (P.Q_refl s)
@@ -367,12 +367,12 @@ def best1 : St → List St → St
   | b, s :: rest => best1 (P.pick b s) rest
 
 theorem best1_spec : ∀ (cs : List St) (b : St),
-    (P.best1 b cs = b ∨ P.best1 b cs ∈ cs) ∧ P.R b (P.best1 b cs) ∧
-      ∀ z ∈ cs, P.R z (P.best1 b cs)
+    (P.best1 b cs = b ∨ P.best1 b cs ∈ cs) ∧ P.R (P.best1 b cs) b ∧
+      ∀ z ∈ cs, P.R (P.best1 b cs) z
   | [], b => ⟨Or.inl rfl, P.Q_le_R (P.Q_refl b), fun z hz => nomatch hz⟩
   | s :: rest, b => by
     obtain ⟨hmem, hseed, hall⟩ := best1_spec rest (P.pick b s)
-    refine ⟨?_, P.R_trans (P.pick_left b s) hseed, ?_⟩
+    refine ⟨?_, P.R_trans hseed (P.pick_left b s), ?_⟩
     · rcases hmem with h | h
       · rcases P.pick_mem b s with hp | hp
         · exact Or.inl (h.trans hp)
@@ -381,7 +381,7 @@ theorem best1_spec : ∀ (cs : List St) (b : St),
     · intro z hz
       rcases List.mem_cons.mp hz with hzs | hz
       · subst hzs
-        exact P.R_trans (P.pick_right b z) hseed
+        exact P.R_trans hseed (P.pick_right b z)
       · exact hall z hz
 
 /-- The `R`-best of the final candidate list (`none` on an empty list). -/
@@ -390,7 +390,7 @@ def bestOf : List St → Option St
   | s :: rest => some (P.best1 s rest)
 
 theorem bestOf_spec {cs : List St} {b : St} (hb : P.bestOf cs = some b) :
-    b ∈ cs ∧ ∀ z ∈ cs, P.R z b := by
+    b ∈ cs ∧ ∀ z ∈ cs, P.R b z := by
   cases cs with
   | nil => exact nomatch (show (none : Option St) = some b from hb)
   | cons s rest =>
@@ -413,7 +413,7 @@ def solveFn (xs : SnocList L E) : Option St := P.bestOf (P.foldFn xs)
     candidate is a genuine `R`-minimum of ALL generatable states.  Routed through the
     abstract `thinning_min` at the fold-bridge and the `bestOf` pick. -/
 theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
-    cataFold P.gen xs b ∧ ∀ z, cataFold P.gen xs z → P.R z b := by
+    cataFold P.gen xs b ∧ ∀ z, cataFold P.gen xs z → P.R b z := by
   obtain ⟨hbmem, hblb⟩ := P.bestOf_spec hb
   have Hcore := thinning_min (F_preservesRecip L E) (initial L E) P.Qm_le_Rm P.Qm_refl_le
     P.Qm_trans_le P.Rm_trans_le P.gen_mono
@@ -427,7 +427,7 @@ theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
   have hGeq : G = fun s => cataR P.gen xs s := (Λ_apply_iff _ _ _).mp hAG
   subst hGeq
   have hmin' : (fun s => cataR P.gen xs s) b ∧
-      ∀ z, (fun s => cataR P.gen xs s) z → P.Rm z b := hmin
+      ∀ z, (fun s => cataR P.gen xs s) z → P.Rm b z := hmin
   exact ⟨hmin'.1, fun z hz => hmin'.2 z hz⟩
 
 /-- An empty pick certifies an empty search space (via frontier completeness). -/
@@ -449,7 +449,7 @@ theorem correct_empty (xs : SnocList L E) (hb : P.solveFn xs = none) :
     generator-vs-spec characterisation (`gen_spec`/`spec_gen`) and an `R`-monotone answer
     projection `out`, the picked optimum's value is the `vle`-extremum of the spec. -/
 theorem correct_value {V : Type} (spec : SnocList L E → V → Prop) (out : St → V)
-    (vle : V → V → Prop) (hRout : ∀ {z w}, P.R z w → vle (out z) (out w))
+    (vle : V → V → Prop) (hRout : ∀ {z w}, P.R z w → vle (out w) (out z))
     (gen_spec : ∀ xs s, cataFold P.gen xs s → spec xs (out s))
     (spec_gen : ∀ xs v, spec xs v → ∃ s, cataFold P.gen xs s ∧ out s = v)
     (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
@@ -502,20 +502,20 @@ abbrev Item := Nat × Nat
 def knap (W : Nat) : ThinBest Unit Item (Nat × Nat) where
   leafOne _ := [(0, 0)]
   stepOne s e := if s.1 + e.1 ≤ W then [s, (s.1 + e.1, s.2 + e.2)] else [s]
-  Q z w := w.1 ≤ z.1 ∧ z.2 ≤ w.2
-  R z w := z.2 ≤ w.2
+  Q w z := w.1 ≤ z.1 ∧ z.2 ≤ w.2
+  R w z := z.2 ≤ w.2
   qDec z w := decide (w.1 ≤ z.1 ∧ z.2 ≤ w.2)
   rDec s t := decide (t.2 ≤ s.2)
   Q_refl s := ⟨Nat.le_refl _, Nat.le_refl _⟩
-  Q_trans h1 h2 := ⟨Nat.le_trans h2.1 h1.1, Nat.le_trans h1.2 h2.2⟩
+  Q_trans h1 h2 := ⟨Nat.le_trans h1.1 h2.1, Nat.le_trans h2.2 h1.2⟩
   Q_le_R h := h.2
-  R_trans h1 h2 := Nat.le_trans h1 h2
+  R_trans h1 h2 := Nat.le_trans h2 h1
   qDec_sound h := of_decide_eq_true h
   rDec_t h := of_decide_eq_true h
   rDec_f h := Nat.le_of_lt (Nat.not_le.mp (of_decide_eq_false h))
   step_mono := by
     intro s s' e y hq hy
-    -- `hq : Q s' s` — `s` is lighter and at least as valuable
+    -- `hq : Q s s'` — `s` is lighter and at least as valuable
     have hskip : ∀ t : Nat × Nat,
         t ∈ (if t.1 + e.1 ≤ W then [t, (t.1 + e.1, t.2 + e.2)] else [t]) := by
       intro t

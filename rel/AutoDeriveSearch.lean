@@ -260,7 +260,7 @@ theorem solve_correct (xs : SnocList Int Int) :
     `Rel(Set)`. -/
 theorem solve_eq_maxRel :
     (Freyd.Alg.RelSet.graph (fun xs => (l121.foldFn xs).2) : dSL Int Int ⟶ (⟨Int⟩ : RelSet.{0}))
-      = Λ LC121.spec ≫ maxRel (fun w z : Int => z ≤ w) :=
+      = Λ LC121.spec ≫ maxRel (fun w z : Int => w ≤ z) :=
   l121.eq_maxRel LC121.spec gen_spec' spec_gen'
 
 /-! ### The tested candidate and the certified fold are the same program -/

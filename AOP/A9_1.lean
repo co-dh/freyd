@@ -42,10 +42,12 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     variants all instantiate `H := ⦇h⦈·⦇T⦈°`.  The two inclusions (9.2) and (9.3) of the book's
     proof are exactly the components of `min`'s universal property (`le_Λ_comp_minRel_iff`). -/
 public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
-    {R : a ⟶ a} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
+    {R : a ⟶ a} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R°)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R ⊑ Λ H ≫ minRel R := by
-  -- the two min-UP components of `M ⊑ min R·ΛH`: `M ⊑ H` and `M·H° ⊑ R` (mirrored)
+  have htrans' : R° ≫ R° ⊑ R° := by
+    have h0 := recip_mono htrans; rwa [Allegory.recip_comp] at h0
+  -- the two min-UP components of `M ⊑ min R·ΛH`: `M ⊑ H` and `M·H° ⊑ R°` (mirrored)
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (Λ H ≫ minRel R))
   -- rule (9.4) at `X := h·FM`
   have h94 := powerRel_comp_minRel_le (F.map (Λ H ≫ minRel R) ≫ h) R
@@ -65,10 +67,10 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
     rw [s2] at s1
     rw [hHfix] at s3
     exact le_trans s1 s3
-  · -- (9.3): `min R·P(h·FM)·ΛT°·H° ⊆ R`
+  · -- (9.3): `min R·P(h·FM)·ΛT°·H° ⊆ R°`
     -- the lower-bound component of (9.4)
     have hL : powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) :=
+        ⊑ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) :=
       le_trans h94 (inter_lb_right _ _)
     -- `ΛT°·T ⊆ ∋` mirrored
     have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj b))° := by
@@ -82,12 +84,12 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
       rw [← h1, hHfix]
     -- the tail after peeling `h° ≫ F.map H°`: division cancels against `∋`
     have htail : T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+        ⊑ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       have t1 : T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-          ⊑ T ≫ Λ (T°) ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) :=
+          ⊑ T ≫ Λ (T°) ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ hL)
-      have t2 : T ≫ Λ (T°) ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))
-          ⊑ (∋ (F.obj b))° ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) := by
+      have t2 : T ≫ Λ (T°) ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))
+          ⊑ (∋ (F.obj b))° ≫ (((∋ (F.obj b))°) \ ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) := by
         rw [← Cat.assoc T (Λ (T°)) _]
         exact comp_mono_right hTA _
       exact le_trans t1 (le_trans t2 (leftDiv_comp_le _ _))
@@ -103,25 +105,25 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
       simp only [Cat.assoc]
     have hbound : (h° ≫ F.map (H°))
           ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+        ⊑ (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       comp_mono_left _ htail
-    -- collapse: `F(M·H°) ⊆ FR` then conjugated monotonicity and transitivity
-    have hcollapse : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R ⊑ R ≫ R := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map R := by
+    -- collapse: `F(M·H°) ⊆ FR°` then conjugated monotonicity and transitivity
+    have hcollapse : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° ⊑ R° ≫ R° := by
+      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map (R°) := by
         rw [← F.map_comp]
         exact F.map_mono hHMR
-      have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R := by
-        have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ h° ≫ F.map R ≫ h := by
+      have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R° := by
+        have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ h° ≫ F.map (R°) ≫ h := by
           rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ minRel R)) h]
           exact comp_mono_left _ (comp_mono_right hFRM h)
         exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
-      have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-          = (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+      have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+          = (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
         simp only [Cat.assoc]
       rw [hre]
-      exact comp_mono_right hinner R
+      exact comp_mono_right hinner (R°)
     rw [c1, c2]
-    exact le_trans (le_trans hbound hcollapse) htrans
+    exact le_trans (le_trans hbound hcollapse) htrans'
 
 /-- **Theorem 9.1 (B&dM p.220)**, the basic theorem of DYNAMIC PROGRAMMING:
     `(μX : min R·P(h·FX)·ΛT°) ⊆ min R·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — if the algebra `h`
@@ -131,7 +133,7 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.o
     By Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_prefixed`. -/
 public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R) :
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R ≫ R ⊑ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T)))
@@ -153,10 +155,12 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
     as `dp_prefixed`, with a `thinRel Q` factor threaded through both halves of the min
     universal property. -/
 theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
-    {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
+    {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R°)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
-    (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R ⊑ Λ H ≫ minRel R := by
+  have htrans' : R° ≫ R° ⊑ R° := by
+    have h0 := recip_mono htrans; rwa [Allegory.recip_comp] at h0
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (Λ H ≫ minRel R))
   have h94 := powerRel_comp_minRel_le (F.map (Λ H ≫ minRel R) ≫ h) R
   apply le_Λ_comp_minRel_iff.mpr
@@ -190,30 +194,30 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
       have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
       rw [← h1, hHfix]
-    -- the tail bound: peel `T·ΛT°` down to `∋°`, then `thin Q` down to `Q·∋°`
+    -- the tail bound: peel `T·ΛT°` down to `∋°`, then `thin Q` down to `Q°·∋°`
     have t1 : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
         ⊑ T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))) :=
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))) :=
       comp_mono_left _ (comp_mono_left _ (comp_mono_left _ hL))
     have t2 : T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)))
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)))
         ⊑ (∋ (F.obj b))° ≫ (thinRel Q ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))) := by
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))) := by
       rw [← Cat.assoc T (Λ (T°)) _]
       exact comp_mono_right hTA _
     have t3 : (∋ (F.obj b))° ≫ (thinRel Q ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)))
-        ⊑ (Q ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) := by
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)))
+        ⊑ (Q° ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) := by
       rw [← Cat.assoc]
       exact comp_mono_right (recip_eps_comp_thinRel_le Q) _
-    have t4 : (Q ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))
-        ⊑ Q ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have t4 : (Q° ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))
+        ⊑ Q° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       rw [Cat.assoc]
       exact comp_mono_left _ (leftDiv_comp_le _ _)
     have htail : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ Q ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+        ⊑ Q° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       le_trans t1 (le_trans t2 (le_trans t3 t4))
     -- split `H°` in front and reassociate (backward-rewrite trick, cf. `dp_prefixed`'s `c1`)
     have c1 : H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
@@ -227,40 +231,40 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
       simp only [Cat.assoc]
     have hbound : (h° ≫ F.map (H°))
           ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (h° ≫ F.map (H°)) ≫ Q ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+        ⊑ (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       comp_mono_left _ htail
-    -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q ⊑ R·h°·FH°`
-    have hQrec : h° ≫ F.map (H°) ≫ Q ⊑ R ≫ h° ≫ F.map (H°) := by
+    -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q° ⊑ R°·h°·FH°`
+    have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
       have hrm := recip_mono hQ
-      have eL : (Q° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R°)° = R ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+      have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
       rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ Q ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        = (h° ≫ F.map (H°) ≫ Q) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have hre1 : (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        = (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       simp only [Cat.assoc]
     rw [hre1] at hbound
-    have step6 : (h° ≫ F.map (H°) ≫ Q) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        ⊑ (R ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+    have step6 : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       comp_mono_right hQrec _
-    have hre2 : (R ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        = R ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       simp only [Cat.assoc]
     rw [hre2] at step6
-    -- collapse: `F(M·H°) ⊆ FR` then conjugated monotonicity and transitivity
-    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map R := by
+    -- collapse: `F(M·H°) ⊆ FR°` then conjugated monotonicity and transitivity
+    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R° := by
+      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map (R°) := by
         rw [← F.map_comp]
         exact F.map_mono hHMR
-      have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ h° ≫ F.map R ≫ h := by
+      have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ h° ≫ F.map (R°) ≫ h := by
         rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ minRel R)) h]
         exact comp_mono_left _ (comp_mono_right hFRM h)
       exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
-    have step7 : R ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R ⊑ R ≫ R ≫ R :=
-      comp_mono_left R (comp_mono_right hinner R)
-    have hRRR : R ≫ R ≫ R ⊑ R := le_trans (comp_mono_left R htrans) htrans
-    have hchain : (h° ≫ F.map (H°) ≫ Q) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R ⊑ R :=
+    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R° ⊑ R° ≫ R° ≫ R° :=
+      comp_mono_left (R°) (comp_mono_right hinner (R°))
+    have hRRR : R° ≫ R° ≫ R° ⊑ R° := le_trans (comp_mono_left (R°) htrans') htrans'
+    have hchain : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° ⊑ R° :=
       le_trans step6 (le_trans step7 hRRR)
     rw [c1, c2]
     exact le_trans hbound hchain
@@ -272,9 +276,9 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
     `Q := id`. By Knaster–Tarski via `dp_thin_prefixed`. -/
 theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
-    (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°) :
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R ≫ R ⊑ R)
+    (hQ : Q ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ minRel R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
@@ -288,7 +292,7 @@ theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     exactly `hrefl : id ⊑ R`, which the direct proof of Theorem 9.1 does not require. -/
 theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R) (hrefl : Cat.id a ⊑ R) :
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R ≫ R ⊑ R) (hrefl : Cat.id a ⊑ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R := by
   have hpt : ∀ X : b ⟶ a, Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R
@@ -301,13 +305,10 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
       ⊑ mu (fun X : b ⟶ a =>
           Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ minRel R) :=
     mu_le_mu hpt
-  have hQ : (Cat.id (F.obj b))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-      ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R° := by
-    rw [recip_id, Cat.id_comp]
-    have hid : Cat.id a ⊑ R° := by
-      have h1 := recip_mono hrefl
-      rwa [recip_id] at h1
-    have step := comp_mono_left (F.map ((relCata I T)° ≫ relCata I h) ≫ h) hid
+  have hQ : Cat.id (F.obj b) ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+      ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R := by
+    rw [Cat.id_comp]
+    have step := comp_mono_left (F.map ((relCata I T)° ≫ relCata I h) ≫ h) hrefl
     rw [Cat.comp_id, Cat.assoc] at step
     exact step
   exact le_trans hstep (dynamic_programming_thin hFr I hh hmono htrans hQ)
@@ -525,40 +526,41 @@ public theorem birelator_fixLeft_mono {G : Birelator 𝒜} {e : 𝒜} {h : G.obj
     G.map (Cat.id e) R ≫ h ⊑ h ≫ R :=
   le_trans (comp_mono_right (G.map_mono hUrefl (le_refl R)) h) hU
 
-/-- **Proposition 9.4(ii) (B&dM pp.223-224)**, the thinning condition: given the same
-    monotonicity witness `hU` and a reciprocal bound `hV : V°·H ⊑ H·R°`, the thinning
+/-- **Proposition 9.4(ii) (B&dM pp.223-224)**, the thinning condition: given the monotonicity
+    witness `hU : G(U°,R°)·h ⊑ h·R°` and a reciprocal bound `hV : V·H ⊑ H·R`, the thinning
     relation `Q := G(U,V)` discharges `dynamic_programming_thin`'s hypothesis `hQ` for the
     fixed-left relator `G.fixLeft e`. -/
 public theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e w : 𝒜}
     {h : G.obj e a ⟶ a} {H : w ⟶ a} {R : a ⟶ a} {U : e ⟶ e} {V : w ⟶ w}
-    (hh : Map h) (hU : G.map U R ≫ h ⊑ h ≫ R) (hV : V° ≫ H ⊑ H ≫ R°) :
-    (G.map U V)° ≫ G.map (Cat.id e) H ≫ h ⊑ G.map (Cat.id e) H ≫ h ≫ R° := by
-  have eBC : G.map U° V° ≫ G.map (Cat.id e) H = G.map U° (V° ≫ H) := by
+    (hh : Map h) (hU : G.map (U°) (R°) ≫ h ⊑ h ≫ R°) (hV : V ≫ H ⊑ H ≫ R) :
+    G.map U V ≫ G.map (Cat.id e) H ≫ h ⊑ G.map (Cat.id e) H ≫ h ≫ R := by
+  have eBC : G.map U V ≫ G.map (Cat.id e) H = G.map U (V ≫ H) := by
     rw [← G.map_comp, Cat.comp_id]
-  have eE0 := G.map_comp (Cat.id e) U° H R°
+  have eE0 := G.map_comp (Cat.id e) U H R
   rw [Cat.id_comp] at eE0
-  have step1 : (G.map U V)° ≫ G.map (Cat.id e) H ⊑ G.map (Cat.id e) H ≫ G.map U° R° := by
-    rw [← hGr U V, eBC, ← eE0]
-    exact G.map_mono (le_refl U°) hV
-  have hUrecip : h° ≫ G.map U° R° ⊑ R° ≫ h° := by
+  have step1 : G.map U V ≫ G.map (Cat.id e) H ⊑ G.map (Cat.id e) H ≫ G.map U R := by
+    rw [eBC, ← eE0]
+    exact G.map_mono (le_refl U) hV
+  have hUrecip : h° ≫ G.map U R ⊑ R ≫ h° := by
     have hrm := recip_mono hU
-    have eL : (G.map U R ≫ h)° = h° ≫ G.map U° R° := by
-      rw [Allegory.recip_comp, ← hGr U R]
-    have eRr : (h ≫ R)° = R° ≫ h° := Allegory.recip_comp h R
+    have eL : (G.map U° R° ≫ h)° = h° ≫ G.map U R := by
+      rw [Allegory.recip_comp, hGr U R, Allegory.recip_recip]
+    have eRr : (h ≫ R°)° = R ≫ h° := by
+      rw [Allegory.recip_comp, Allegory.recip_recip]
     rwa [eL, eRr] at hrm
-  have hpost : (h° ≫ G.map U° R°) ≫ h ⊑ (R° ≫ h°) ≫ h := comp_mono_right hUrecip h
-  have eLassoc : (h° ≫ G.map U° R°) ≫ h = h° ≫ (G.map U° R° ≫ h) := by rw [Cat.assoc]
-  have eRassoc : (R° ≫ h°) ≫ h = R° ≫ (h° ≫ h) := by rw [Cat.assoc]
+  have hpost : (h° ≫ G.map U R) ≫ h ⊑ (R ≫ h°) ≫ h := comp_mono_right hUrecip h
+  have eLassoc : (h° ≫ G.map U R) ≫ h = h° ≫ (G.map U R ≫ h) := by rw [Cat.assoc]
+  have eRassoc : (R ≫ h°) ≫ h = R ≫ (h° ≫ h) := by rw [Cat.assoc]
   rw [eLassoc, eRassoc] at hpost
-  have hRRcollapse : R° ≫ (h° ≫ h) ⊑ R° ≫ Cat.id a := comp_mono_left R° hh.2
+  have hRRcollapse : R ≫ (h° ≫ h) ⊑ R ≫ Cat.id a := comp_mono_left R hh.2
   rw [Cat.comp_id] at hRRcollapse
-  have step2 : G.map U° R° ≫ h ⊑ h ≫ R° :=
+  have step2 : G.map U R ≫ h ⊑ h ≫ R :=
     (map_shunt_left hh _ _).mp (le_trans hpost hRRcollapse)
   have step3 := comp_mono_right step1 h
-  have e1 : ((G.map U V)° ≫ G.map (Cat.id e) H) ≫ h
-      = (G.map U V)° ≫ (G.map (Cat.id e) H ≫ h) := by rw [Cat.assoc]
-  have e2 : (G.map (Cat.id e) H ≫ G.map U° R°) ≫ h
-      = G.map (Cat.id e) H ≫ (G.map U° R° ≫ h) := by rw [Cat.assoc]
+  have e1 : (G.map U V ≫ G.map (Cat.id e) H) ≫ h
+      = G.map U V ≫ (G.map (Cat.id e) H ≫ h) := by rw [Cat.assoc]
+  have e2 : (G.map (Cat.id e) H ≫ G.map U R) ≫ h
+      = G.map (Cat.id e) H ≫ (G.map U R ≫ h) := by rw [Cat.assoc]
   rw [e1, e2] at step3
   exact le_trans step3 (comp_mono_left _ step2)
 
@@ -572,11 +574,11 @@ public theorem birelator_thin_condition {G : Birelator 𝒜} (hGr : G.PreservesR
   (`Λ_comp_thinRel_context`) at `S := T°` — no modular-law bookkeeping needed. -/
 
 /-- The sharpened tail bound behind Ex 9.2: thinning after unfolding by `T` only ever needs
-    `Q` on `T`'s domain of definition, mirrored `T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫
+    `Q` on `T`'s domain of definition, mirrored `T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°))° ≫
     (∋ (F.obj b))°`.  Via `Λ_comp_thinRel_context (T°) Q` (Ex 8.6) plus the plain
     `hTA`/`recip_eps_comp_thinRel_le` chain, now run at `Q ∩ (T ≫ T°)` instead of `Q`. -/
 theorem thin_unfold_context_le (T : F.obj b ⟶ b) (Q : F.obj b ⟶ F.obj b) :
-    T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°)) ≫ (∋ (F.obj b))° := by
+    T ≫ Λ (T°) ≫ thinRel Q ⊑ (Q ∩ (T ≫ T°))° ≫ (∋ (F.obj b))° := by
   have hctxEq : Λ (T°) ≫ thinRel (Q ∩ ((T°)° ≫ T°)) = Λ (T°) ≫ thinRel Q :=
     Λ_comp_thinRel_context (T°) Q
   rw [Allegory.recip_recip] at hctxEq
@@ -594,10 +596,12 @@ theorem thin_unfold_context_le (T : F.obj b ⟶ b) (Q : F.obj b ⟶ F.obj b) :
     (`R ∩ (H°·H)` for monotonicity, `Q ∩ (T·T°)` for thinning). -/
 theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h)
-    (hctx1 : F.map (R ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R) (htrans : R ≫ R ⊑ R)
+    (hctx1 : F.map (R° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R°) (htrans : R ≫ R ⊑ R)
     (hHfix : T° ≫ F.map H ≫ h = H)
-    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°) :
+    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R ⊑ Λ H ≫ minRel R := by
+  have htrans' : R° ≫ R° ⊑ R° := by
+    have h0 := recip_mono htrans; rwa [Allegory.recip_comp] at h0
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_minRel_iff.mp (le_refl (Λ H ≫ minRel R))
   have h94 := powerRel_comp_minRel_le (F.map (Λ H ≫ minRel R) ≫ h) R
   apply le_Λ_comp_minRel_iff.mpr
@@ -632,25 +636,25 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
     -- the sharpened tail bound: `Q` replaced by `Q ∩ (T ≫ T°)` throughout
     have t1 : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
         ⊑ T ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) :=
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) :=
       comp_mono_left _ (comp_mono_left _ (comp_mono_left _ hL))
     have e1 : T ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))
         = (T ≫ Λ (T°) ≫ thinRel Q) ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) := by simp only [Cat.assoc]
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) := by simp only [Cat.assoc]
     rw [e1] at t1
     have t2 : (T ≫ Λ (T°) ≫ thinRel Q) ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))
-        ⊑ ((Q ∩ (T ≫ T°)) ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
-            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R)) :=
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))
+        ⊑ ((Q ∩ (T ≫ T°))° ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
+            ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°)) :=
       comp_mono_right hsharp _
-    have t3 : ((Q ∩ (T ≫ T°)) ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
-          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R))
-        ⊑ (Q ∩ (T ≫ T°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have t3 : ((Q ∩ (T ≫ T°))° ≫ (∋ (F.obj b))°) ≫ (((∋ (F.obj b))°) \
+          ((F.map (Λ H ≫ minRel R) ≫ h) ≫ R°))
+        ⊑ (Q ∩ (T ≫ T°))° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       rw [Cat.assoc]
       exact comp_mono_left _ (leftDiv_comp_le _ _)
     have htail : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (Q ∩ (T ≫ T°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+        ⊑ (Q ∩ (T ≫ T°))° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       le_trans t1 (le_trans t2 t3)
     have c1 : H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
         = (h° ≫ F.map (H°) ≫ T)
@@ -663,49 +667,49 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
       simp only [Cat.assoc]
     have hbound : (h° ≫ F.map (H°))
           ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ minRel R) ≫ h) ≫ minRel R
-        ⊑ (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+        ⊑ (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       comp_mono_left _ htail
     -- the `hctx2` step, mirroring `hQrec` at `Q ∩ (T ≫ T°)`
-    have hctx2rec : h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°)) ⊑ R ≫ h° ≫ F.map (H°) := by
+    have hctx2rec : h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° ⊑ R° ≫ h° ≫ F.map (H°) := by
       have hrm := recip_mono hctx2
-      have eL : ((Q ∩ (T ≫ T°))° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°)) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R°)° = R ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+      have eL : ((Q ∩ (T ≫ T°)) ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
       rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       simp only [Cat.assoc]
     rw [hre1] at hbound
-    have step6 : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        ⊑ (R ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R :=
+    have step6 : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R° :=
       comp_mono_right hctx2rec _
-    have hre2 : (R ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R
-        = R ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R := by
+    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R° := by
       simp only [Cat.assoc]
     rw [hre2] at step6
-    -- the context collapse, from `hctx1` instead of `MonotonicAlg h R`
-    have hHM_ctx : H° ≫ (Λ H ≫ minRel R) ⊑ R ∩ (H° ≫ H) :=
+    -- the context collapse, from `hctx1` instead of `MonotonicAlg h R°`
+    have hHM_ctx : H° ≫ (Λ H ≫ minRel R) ⊑ R° ∩ (H° ≫ H) :=
       le_inter hHMR (comp_mono_left H° hMH)
-    have hFRM_ctx : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map (R ∩ (H° ≫ H)) := by
+    have hFRM_ctx : F.map (H°) ≫ F.map (Λ H ≫ minRel R) ⊑ F.map (R° ∩ (H° ≫ H)) := by
       rw [← F.map_comp]; exact F.map_mono hHM_ctx
     have hx_ctx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h
-        ⊑ h° ≫ F.map (R ∩ (H° ≫ H)) ≫ h := by
+        ⊑ h° ≫ F.map (R° ∩ (H° ≫ H)) ≫ h := by
       rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ minRel R)) h]
       exact comp_mono_left _ (comp_mono_right hFRM_ctx h)
-    have hshunt : h° ≫ (F.map (R ∩ (H° ≫ H)) ≫ h) ⊑ h° ≫ (h ≫ R) := comp_mono_left h° hctx1
-    have hcollapse2 : h° ≫ (h ≫ R) ⊑ R := by
-      have e : h° ≫ (h ≫ R) = (h° ≫ h) ≫ R := by rw [Cat.assoc]
+    have hshunt : h° ≫ (F.map (R° ∩ (H° ≫ H)) ≫ h) ⊑ h° ≫ (h ≫ R°) := comp_mono_left h° hctx1
+    have hcollapse2 : h° ≫ (h ≫ R°) ⊑ R° := by
+      have e : h° ≫ (h ≫ R°) = (h° ≫ h) ≫ R° := by rw [Cat.assoc]
       rw [e]
-      have e2 := comp_mono_right hh.2 R
+      have e2 := comp_mono_right hh.2 (R°)
       rwa [Cat.id_comp] at e2
-    have hinner_ctx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R :=
+    have hinner_ctx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h ⊑ R° :=
       le_trans hx_ctx (le_trans hshunt hcollapse2)
-    have step7 : R ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R ⊑ R ≫ R ≫ R :=
-      comp_mono_left R (comp_mono_right hinner_ctx R)
-    have hRRR : R ≫ R ≫ R ⊑ R := le_trans (comp_mono_left R htrans) htrans
-    have hchain : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R ⊑ R :=
-      le_trans step6 (le_trans step7 hRRR)
+    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ minRel R) ≫ h) ≫ R° ⊑ R° ≫ R° ≫ R° :=
+      comp_mono_left (R°) (comp_mono_right hinner_ctx (R°))
+    have hRRR : R° ≫ R° ≫ R° ⊑ R° := le_trans (comp_mono_left (R°) htrans') htrans'
+    have hchain : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ (F.map (Λ H ≫ minRel R) ≫ h) ≫ R°
+        ⊑ R° := le_trans step6 (le_trans step7 hRRR)
     rw [c1, c2]
     exact le_trans hbound hchain
 
@@ -713,11 +717,11 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
     hypotheses discharge the least-fixed-point refinement exactly as Theorem 9.2 does. -/
 theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} (hh : Map h)
-    (hctx1 : F.map (R ∩ (((relCata I T)° ≫ relCata I h)° ≫ (relCata I T)° ≫ relCata I h)) ≫ h
-        ⊑ h ≫ R)
+    (hctx1 : F.map (R° ∩ (((relCata I T)° ≫ relCata I h)° ≫ (relCata I T)° ≫ relCata I h)) ≫ h
+        ⊑ h ≫ R°)
     (htrans : R ≫ R ⊑ R)
-    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°) :
+    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ minRel R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
