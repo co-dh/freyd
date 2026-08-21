@@ -1088,26 +1088,31 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 ]]<powrel-defn>
 
 #disp[#align(center, table(
-  columns: 3,
-  align: (left + horizon, left + horizon, left + horizon),
+  columns: 4,
+  align: left + horizon,
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([], [*in Rel*], [*in words*]),
+  table.header([], [*in Rel*], [*in words*], [*in short*]),
 
   [`(∋ R)/∋`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y`],
     [`∀y. some xs R y`],
+    [`ys` has only what `xs` reaches],
   [`(∋/(∋ R))°`],
     [`∀y. (∃x ∈ xs. x R y) → y ∈ ys`],
     [every `y` with `some xs R y` is in `ys`],
+    [`ys` has all that `xs` reaches],
   [`E(R)`],
     [`ys = {y ∣ ∃x ∈ xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
+    [`ys` has all and only what `xs` reaches],
   [`((∋ R°)/∋)°`],
     [`∀x ∈ xs. ∃y ∈ ys. x R y`],
     [`∀x. x R some ys`],
+    [every `x` reaches into `ys`],
   [`P(R)`],
     [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
+    [`ys` has only what `xs` reaches, and \ every `x` reaches into `ys`],
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
@@ -1128,20 +1133,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 })))
 
 #align(center, table(
-  columns: 4,
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  columns: 6,
+  align: left + horizon,
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
-    [*`xs E(R)` — image of `xs`*]),
+  table.header([*`xs`*], [*`(∋ R)/∋`*], [*`(∋/(∋ R))°`*], [*`E(R)`*], [*`((∋ R°)/∋)°`*], [*`P(R)`*]),
 
-  [`∅`],       [`∅`],                    [`∅`],               [`∅`],
-  [`{1}`],     [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
-  [`{2}`],     [`∅`],                    [none],              [`∅`],
-  [`{3}`],     [`∅`, `c`],               [`c`],               [`c`],
-  [`{1,2}`],   [`∅`, `a`, `b`, `ab`],    [none],              [`ab`],
-  [`{1,3}`],   [all 8 subsets of `abc`], [`ac`, `bc`, `abc`], [`abc`],
-  [`{2,3}`],   [`∅`, `c`],               [none],              [`c`],
-  [`{1,2,3}`], [all 8 subsets of `abc`], [none],              [`abc`],
+  [`∅`],        [`∅`],                    [all 8 subsets of `abc`], [`∅`], [all 8 subsets of `abc`], [`∅`],
+  [`{1}`],      [`∅`, `a`, `b`, `ab`],    [`ab`, `abc`], [`ab`], [`a`, `b`, `ab`, `ac`, `bc`, `abc`], [`a`, `b`, `ab`],
+  [`{2}`],      [`∅`],                    [all 8 subsets of `abc`], [`∅`], [none], [none],
+  [`{3}`],      [`∅`, `c`],               [`c`, `ac`, `bc`, `abc`], [`c`], [`c`, `ac`, `bc`, `abc`], [`c`],
+  [`{1,2}`],    [`∅`, `a`, `b`, `ab`],    [`ab`, `abc`], [`ab`], [none], [none],
+  [`{1,3}`],    [all 8 subsets of `abc`], [`abc`], [`abc`], [`ac`, `bc`, `abc`], [`ac`, `bc`, `abc`],
+  [`{2,3}`],    [`∅`, `c`],               [`c`, `ac`, `bc`, `abc`], [`c`], [none], [none],
+  [`{1,2,3}`],  [all 8 subsets of `abc`], [`abc`], [`abc`], [none], [none],
 ))
 
 #align(center, block(width: 15cm, inset: (y: 8pt))[
