@@ -1076,7 +1076,11 @@ the fork above. The border spells `[R,S] = [`$frac(#[`R`], ∋)$`,` $frac(#[`S`]
 // B&dM p. 119's three steps, in its order: the point-free line, the `Rel` set formula, one plain
 // sentence.
 #disp[#definition[
-For `R : A ⟶ B`, #h(4pt) `P(R) ≜ ((∋ R)/∋) ∩ ((∋ R°)/∋)° : E A ⟶ E B`.
+For `R : A ⟶ B`,
+#grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
+  [`P(R) ≜`], [`((∋ R)/∋) ∩ ((∋ R°)/∋)° : E A ⟶ E B`],
+  [`E(R) ≜` $frac(#[`∋ R`], ∋)$ `=`], [`((∋ R)/∋) ∩ (∋/(∋ R))°`],
+)
 
 `xs P(R) ys ⟺ (∀a ∈ xs. ∃b ∈ ys. a R b) ∧ (∀b ∈ ys. ∃a ∈ xs. a R b)`
 
@@ -1112,9 +1116,9 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
     [`ys = {y ∣ ∃x ∈ xs. x R y}`],
   [#src[in words]],
-    [`∀y, (one of xs) R y`],
-    [`∀y, (one of xs) R y` and \ `∀x, x R (one of ys)`],
-    [`ys` = every `y` with `(one of xs) R y`],
+    [`∀y, some xs R y`],
+    [`∀y, some xs R y` and \ `∀x, x R some ys`],
+    [`ys` = every `y` with `some R y`],
 
   [`∅`],       [`∅`],                    [`∅`],               [`∅`],
   [`{1}`],     [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
@@ -1218,12 +1222,13 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : F T ⟶ T` in the
 // literal).  A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
+    // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
+    let (FT, T, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
+    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.8, GIVEN1)[`α`#sub[`B`]]
-    lab(-3.9, 0, INDUCED)[`F(X)`]; lab(3.7, 0, INDUCED)[`X`]
+    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+    lab(-4.0, 0, INDUCED)[`F(X)`]; lab(3.6, 0, INDUCED)[`X`]
     node(FT.at(0), FT.at(1), black, `F T`); node(T.at(0), T.at(1), black, `T`)
     node(FB.at(0), FB.at(1), GIVEN1, `F B`); node(B.at(0), B.at(1), GIVEN1, `B`)
   }),
@@ -1249,9 +1254,9 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
     let (FB, B) = ((-2.6, -3.9), (2.6, -3.9))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FB, B, black, s0: 0.55, s1: 0.55)
-    ar(FT, FE, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
+    ar(FT, FE, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FE, FB, black, s0: 0.75, s1: 0.75)
+    ar(FE, FB, black, s0: 0.55, s1: 0.55)
     ar(E, B, black, s0: 0.55, s1: 0.55)
     lab(0, 2.05, GIVEN2)[`α`#sub[`T`]]
     lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋) R`], ∋)$`⦈)`]
