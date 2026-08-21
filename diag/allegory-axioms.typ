@@ -1087,6 +1087,26 @@ For `R : A ⟶ B`,
 Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 ]]<powrel-defn>
 
+#disp[#align(center, table(
+  columns: 3,
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([], [*in Rel*], [*in words*]),
+
+  [`(∋ R)/∋`],
+    [`∀y ∈ ys. ∃x ∈ xs. x R y`],
+    [`∀y ∈ ys. some xs R y`],
+  [`(∋/(∋ R))°`],
+    [`∀y. (∃x ∈ xs. x R y) → y ∈ ys`],
+    [every `y` with `some xs R y` is in `ys`],
+  [`P(R)`],
+    [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
+    [`∀y ∈ ys. some xs R y` and \ `∀x ∈ xs. x R some ys`],
+  [`E(R)`],
+    [`ys = {y ∣ ∃x ∈ xs. x R y}`],
+    [`ys` = every `y` with `some xs R y`],
+))]<powrel-readings>
+
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
 // where `a₁,a₂,a₃` is the source, not the target. Only this one has the empty image `R(2) = ∅`.
 #disp[#block(breakable: false)[
@@ -1110,15 +1130,6 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
     [*`xs E(R)` — image of `xs`*]),
-
-  [#src[in Rel]],
-    [`∀y ∈ ys. ∃x ∈ xs. x R y`],
-    [`∀y ∈ ys. ∃x ∈ xs. x R y` and \ `∀x ∈ xs. ∃y ∈ ys. x R y`],
-    [`ys = {y ∣ ∃x ∈ xs. x R y}`],
-  [#src[in words]],
-    [`∀y, some xs R y`],
-    [`∀y, some xs R y` and \ `∀x, x R some ys`],
-    [`ys` = every `y` with `some R y`],
 
   [`∅`],       [`∅`],                    [`∅`],               [`∅`],
   [`{1}`],     [`∅`, `a`, `b`, `ab`],    [`a`, `b`, `ab`],    [`ab`],
