@@ -966,7 +966,7 @@
   ar(AD.a1, BD.b1, GIVEN1, s0: 0.3, s1: 0.3); ar(AD.a1, BD.b3, GIVEN1, s0: 0.3, s1: 0.3)
   ar(AD.a2, BD.b3, GIVEN1, s0: 0.3, s1: 0.3)
   for p in (AD.a1, AD.a2) { d.circle(p, radius: 0.17, fill: black, stroke: black) }
-  // Filled = reached from `x`, hollow = not.  That colouring IS `∋ R`, and the next two pictures do
+  // Filled = reached from `xs`, hollow = not.  That colouring IS `∋ R`, and the next two pictures do
   // nothing but read lists off these three dots.
   for p in (BD.b1, BD.b3) { d.circle(p, radius: 0.17, fill: GIVEN2, stroke: GIVEN2) }
   d.circle(BD.b2, radius: 0.17, fill: white, stroke: 0.9pt + black)
@@ -975,7 +975,7 @@
   lab(1.5, 2.7, black)[`b₁`]; lab(0.6, 0.75, black)[`b₂`]; lab(0.6, -1.45, black)[`b₃`]
   lab(-6.6, 0, INDUCED)[`∋`]; lab(-2.0, 2.6, GIVEN1)[`R`]
   body
-  syqnode(LX, GIVEN2, rgb("#f2e9f8"), `x = {a₁,a₂}`, ring: 0.7pt + GIVEN2)
+  syqnode(LX, GIVEN2, rgb("#f2e9f8"), `xs = {a₁,a₂}`, ring: 0.7pt + GIVEN2)
 }
 
 // A subset of `B`: its `∋` fan and its box, washed out when the picture rejects it.
