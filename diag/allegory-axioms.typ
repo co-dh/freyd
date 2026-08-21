@@ -1841,6 +1841,52 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
 )
 ]<subseq-EW-case>
 
+// The `coproduct` step above on @coprod-laws' tape, because the `[·,·]` brackets hide what moves: the
+// sum is one box per branch, so the second fork meets the first and each branch keeps its own composite.
+#disp[#row((
+  box(cetz.canvas(length: 0.8cm, {
+    let y = 1.15
+    wire((0, 0), (0.34, 0))
+    // `R + S ≜ [R ιₗ, S ιᵣ]`, so a branch of the sum ENDS by injecting back — that upright `ιₗ` is what
+    // the second tape's `ιₗ°` cancels against.
+    tape((0.34, -1.9), (6.33, 1.9))
+    tape-fork((0.56, 0), sp: y, len: 0.7)
+    gbox((1.26, y), [`ιₗ`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
+    gbox((2.52, y), [`𝟙`], chamfer: false, w: 0.7); wire((3.22, y), (3.56, y))
+    gbox((3.56, y), [`ιₗ`], chamfer: false); wire((4.48, y), (5.33, y))
+    gbox((1.26, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
+    gbox((2.52, -y), [`𝟙 × ∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
+    gbox((4.41, -y), [`ιᵣ`], chamfer: false)
+    tape-join((6.03, 0), sp: y, len: 0.7)
+    wire((6.33, 0), (7.18, 0))
+    tape((7.18, -1.9), (13.41, 1.9))
+    tape-fork((7.40, 0), sp: y, len: 0.7)
+    gbox((8.10, y), [`ιₗ`], flip: true, fill: TINT); wire((9.02, y), (9.36, y))
+    gbox((9.36, y), [`nil`], chamfer: false, w: 1.05); wire((10.41, y), (12.41, y))
+    gbox((8.10, -y), [`ιᵣ`], flip: true, fill: TINT); wire((9.02, -y), (9.36, -y))
+    gbox((9.36, -y), [`cons ∪ outr`], w: 3.05)
+    tape-join((13.11, 0), sp: y, len: 0.7)
+    wire((13.41, 0), (13.75, 0))
+  })),
+  [#h(12pt) $=$ #h(12pt)],
+  box(cetz.canvas(length: 0.8cm, {
+    let y = 1.15
+    wire((0, 0), (0.34, 0))
+    tape((0.34, -1.9), (8.46, 1.9))
+    tape-fork((0.56, 0), sp: y, len: 0.7)
+    gbox((1.26, y), [`ιₗ`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
+    gbox((2.52, y), [`nil`], chamfer: false, w: 1.05); wire((3.57, y), (7.46, y))
+    gbox((1.26, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
+    // Chamfered where the rest of this section is not: `𝟙 × ∋` and `cons ∪ outr` are relations, not maps.
+    gbox((2.52, -y), [`𝟙 × ∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
+    gbox((4.41, -y), [`cons ∪ outr`], w: 3.05)
+    tape-join((8.16, 0), sp: y, len: 0.7)
+    wire((8.46, 0), (8.80, 0))
+  })),
+), s: 92%)
+#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "coproduct": `R + S ≜ [R ιₗ, S ιᵣ]` and
+  `ιₗ [R,S] = R`, `ιᵣ [R,S] = S` — @coprod-laws.]])]<subseq-sum-branchwise>
+
 #disp[
 #zline(
   zsqc([$frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$], none),
@@ -1854,6 +1900,52 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
   zsqc([`⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), outr⟩ cup`], none),
 )
 ]<subseq-EW-join>
+
+// The first step of the chain above, cut in two so both halves are visible: the tape IS the `∪`
+// (@coprod-laws), so distributing is the box entering it, and `∋` crossing `outr` is the second panel's
+// bottom branch redrawn.  No injections on these branches — the union is not over a coproduct here.
+#disp[#chain((
+  cetz.canvas(length: 0.8cm, {
+    let y = 0.9
+    wire((0, 0), (0.34, 0))
+    gbox((0.34, 0), [`𝟙 × ∋`], w: 1.55); wire((1.89, 0), (2.29, 0))
+    tape((2.29, -1.5), (5.31, 1.5))
+    tape-fork((2.51, 0), sp: y, len: 0.6)
+    gbox((3.11, y), [`cons`], chamfer: false, w: 1.3)
+    gbox((3.11, -y), [`outr`], chamfer: false, w: 1.3)
+    tape-join((5.01, 0), sp: y, len: 0.6)
+    wire((5.31, 0), (5.65, 0))
+  }),
+  cetz.canvas(length: 0.8cm, {
+    let y = 0.9
+    lab(-1.2, 0, black)[$=$]
+    wire((0, 0), (0.34, 0))
+    tape((0.34, -1.5), (5.25, 1.5))
+    tape-fork((0.56, 0), sp: y, len: 0.6)
+    gbox((1.16, y), [`𝟙 × ∋`], w: 1.55); wire((2.71, y), (3.05, y))
+    gbox((3.05, y), [`cons`], chamfer: false, w: 1.3)
+    gbox((1.16, -y), [`𝟙 × ∋`], w: 1.55); wire((2.71, -y), (3.05, -y))
+    gbox((3.05, -y), [`outr`], chamfer: false, w: 1.3)
+    tape-join((4.95, 0), sp: y, len: 0.6)
+    wire((5.25, 0), (5.59, 0))
+  }),
+  cetz.canvas(length: 0.8cm, {
+    let y = 0.9
+    lab(-1.2, 0, black)[$=$]
+    wire((0, 0), (0.34, 0))
+    tape((0.34, -1.5), (5.25, 1.5))
+    tape-fork((0.56, 0), sp: y, len: 0.6)
+    gbox((1.16, y), [`𝟙 × ∋`], w: 1.55); wire((2.71, y), (3.05, y))
+    gbox((3.05, y), [`cons`], chamfer: false, w: 1.3)
+    gbox((1.16, -y), [`outr`], chamfer: false, w: 1.3); wire((2.46, -y), (2.80, -y))
+    gbox((2.80, -y), [`∋`], w: 0.7); wire((3.50, -y), (4.35, -y))
+    tape-join((4.95, 0), sp: y, len: 0.6)
+    wire((5.25, 0), (5.59, 0))
+  }),
+), ("", [composition over `∪`], [`outr` natural]), s: 92%)
+#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "composition over join, naturality of `outr`":
+  `T(X₁ ∪ X₂) = T X₁ ∪ T X₂` — @adj-cross; `(𝟙 × ∋) outr = outr ∋` — @relprod-pic at `π₂`, an equality
+  because `𝟙` is entire.]])]<subseq-union-slide>
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
