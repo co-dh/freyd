@@ -1904,34 +1904,33 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
 // The first step of the chain above, cut in two so both halves are visible: the tape IS the `∪`
 // (@coprod-laws), so distributing is the box entering it, and `∋` crossing `outr` is the second panel's
 // bottom branch redrawn.  No injections on these branches — the union is not over a coproduct here.
-// An object is named ONLY where it changes: source and target once each, at the two ends of the chain,
-// and the intermediate at the cut where the branches differ — which in panel 2 they do not, so one label
-// in the empty middle of the tape serves both.  Labels sit off the wire, @coprod-laws' `A + B` idiom.
+// An object is named ONLY where it changes, and every label sits 0.62 ABOVE the wire it names —
+// except panel 2's, centred between two branches that carry the same object there.
 #disp[#chain((
   cetz.canvas(length: 0.8cm, {
     let y = 1.15
-    lab(-1.90, 0, black)[`A × E(list A)`]
+    lab(-1.52, 0, black)[`A × E([A])`]
     wire((0, 0), (0.34, 0))
-    gbox((0.34, 0), [`𝟙 × ∋`], w: 1.55); wire((1.89, 0), (4.79, 0))
-    lab(3.34, 0.62, black)[`A × list A`]
-    tape((4.79, -1.75), (8.01, 1.75))
-    tape-fork((5.01, 0), sp: y, len: 0.7)
-    gbox((5.71, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((5.71, -y), [`outr`], chamfer: false, w: 1.3)
-    tape-join((7.71, 0), sp: y, len: 0.7)
-    wire((8.01, 0), (8.35, 0))
+    gbox((0.34, 0), [`𝟙 × ∋`], w: 1.55); wire((1.89, 0), (4.00, 0))
+    lab(2.95, 0.62, black)[`A × [A]`]
+    tape((4.00, -2.10), (7.22, 2.10))
+    tape-fork((4.22, 0), sp: y, len: 0.7)
+    gbox((4.92, y), [`cons`], chamfer: false, w: 1.3)
+    gbox((4.92, -y), [`outr`], chamfer: false, w: 1.3)
+    tape-join((6.92, 0), sp: y, len: 0.7)
+    wire((7.22, 0), (7.56, 0))
   }),
   cetz.canvas(length: 0.8cm, {
     let y = 1.15
     lab(-1.2, 0, black)[$=$]
     wire((0, 0), (0.34, 0))
-    tape((0.34, -1.75), (5.45, 1.75))
+    tape((0.34, -2.10), (5.45, 2.10))
     tape-fork((0.56, 0), sp: y, len: 0.7)
     gbox((1.26, y), [`𝟙 × ∋`], w: 1.55); wire((2.81, y), (3.15, y))
     gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
     gbox((1.26, -y), [`𝟙 × ∋`], w: 1.55); wire((2.81, -y), (3.15, -y))
     gbox((3.15, -y), [`outr`], chamfer: false, w: 1.3)
-    lab(2.98, 0, black)[`A × list A`]
+    lab(2.98, 0, black)[`A × [A]`]
     tape-join((5.15, 0), sp: y, len: 0.7)
     wire((5.45, 0), (5.79, 0))
   }),
@@ -1939,18 +1938,18 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     let y = 1.15
     lab(-1.2, 0, black)[$=$]
     wire((0, 0), (0.34, 0))
-    tape((0.34, -1.75), (5.45, 1.75))
+    tape((0.34, -2.10), (5.45, 2.10))
     tape-fork((0.56, 0), sp: y, len: 0.7)
     gbox((1.26, y), [`𝟙 × ∋`], w: 1.55); wire((2.81, y), (3.15, y))
     gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
     gbox((1.26, -y), [`outr`], chamfer: false, w: 1.3); wire((2.56, -y), (2.90, -y))
     gbox((2.90, -y), [`∋`], w: 0.7); wire((3.60, -y), (4.45, -y))
-    lab(2.98, 0.55, black)[`A × list A`]; lab(2.73, -0.55, black)[`E(list A)`]
+    lab(2.98, 1.77, black)[`A × [A]`]; lab(2.73, -0.53, black)[`E([A])`]
     tape-join((5.15, 0), sp: y, len: 0.7)
     wire((5.45, 0), (5.79, 0))
-    lab(6.80, 0, black)[`list A`]
+    lab(6.42, 0, black)[`[A]`]
   }),
-), ("", [composition over `∪`], [`outr` natural]), s: 85%)
+), ("", [composition over `∪`], [`outr` natural]), s: 88%)
 #align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "composition over join, naturality of `outr`":
   `T(X₁ ∪ X₂) = T X₁ ∪ T X₂` — @adj-cross; `(𝟙 × ∋) outr = outr ∋` — @relprod-pic at `π₂`, an equality
   because `𝟙` is entire.]])]<subseq-union-slide>
@@ -1976,7 +1975,7 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
   gbox((8.50, -y), [`cup`], chamfer: false, w: 1.15, h: 2.6); wire((9.65, -y), (10.40, -y))
   tape-join((11.40, 0), sp: y, len: 1.0)
   wire((11.70, 0), (12.04, 0))
-  lab(-3.0, 0, black)[`𝟏 + A × E(list A)`]; lab(13.64, 0, black)[`E(list A)`]
+  lab(-2.22, 0, black)[`𝟏 + A × E([A])`]; lab(13.25, 0, black)[`E([A])`]
 }))
 #align(center, block(inset: (y: 4pt))[
   #src[B&dM §5.6, p. 124, which writes `Pcons`; `cons` is a map, and there `P(cons) = E(cons)` — @powrel-laws.]
