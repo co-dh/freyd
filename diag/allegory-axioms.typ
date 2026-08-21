@@ -1104,7 +1104,8 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   columns: 4,
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*`xs`*], [*`ys` under `(∋ R)/∋`*], [*`ys` under `P(R)`*], [*`ys` under `E(R)`*]),
+  table.header([*`xs`*], [*`xs ((∋ R)/∋)` — subset of `xs E(R)`*], [*`ys` under `P(R)`*],
+    [*`xs E(R)` — image of `xs`*]),
 
   [`∅`],       [`∅`],                        [`∅`],                       [`∅`],
   [`{1}`],     [`∅`, `{1}`, `{2}`, `{1,2}`], [`{1}`, `{2}`, `{1,2}`],     [`{1,2}`],
