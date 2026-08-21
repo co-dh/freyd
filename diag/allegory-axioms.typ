@@ -1083,6 +1083,46 @@ For `R : A ⟶ B`, #h(4pt) `P(R) ≜ ((∋ R)/∋) ∩ ((∋ R°)/∋)° : E A �
 Every element of `x` is related by `R` to some element of `y`, and conversely.
 ]]<powrel-defn>
 
+// On `1,2,3` both sides, NOT the `a₁,a₂,a₃`/`b₁,b₂,b₃` of the `skel` pictures below: two different
+// examples, and this one has the empty image `R(2) = ∅` that those three cannot show.
+#disp[#block(breakable: false)[
+#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+  let (L, RC) = (0, 3.2)
+  let ys = (1.0, 0, -1.0)
+  ar((L, ys.at(0)), (RC, ys.at(0)), GIVEN1, s0: 0.22, s1: 0.3)
+  ar((L, ys.at(0)), (RC, ys.at(1)), GIVEN1, s0: 0.22, s1: 0.3)
+  ar((L, ys.at(2)), (RC, ys.at(2)), GIVEN1, s0: 0.22, s1: 0.3)
+  for (k, y) in ys.enumerate() {
+    wiredot((L, y)); lab(L - 0.42, y, black)[#raw(str(k + 1))]
+    wiredot((RC, y)); lab(RC + 0.42, y, black)[#raw(str(k + 1))]
+  }
+  lab((L + RC) / 2, 1.5, GIVEN1)[`R`]
+  lab(L, -1.7, black)[`A`]; lab(RC, -1.7, black)[`A`]
+})))
+
+#align(center, table(
+  columns: 3,
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*`x`*], [*`y` under `P(R)`*], [*`y` under `E(R)`*]),
+
+  [`∅`],       [`∅`],                       [`∅`],
+  [`{1}`],     [`{1}`, `{2}`, `{1,2}`],     [`{1,2}`],
+  [`{2}`],     [none],                      [`∅`],
+  [`{3}`],     [`{3}`],                     [`{3}`],
+  [`{1,2}`],   [none],                      [`{1,2}`],
+  [`{1,3}`],   [`{1,3}`, `{2,3}`, `{1,2,3}`], [`{1,2,3}`],
+  [`{2,3}`],   [none],                      [`{3}`],
+  [`{1,2,3}`], [none],                      [`{1,2,3}`],
+))
+
+#align(center, block(width: 15cm, inset: (y: 8pt))[
+  #src[`R(2) = ∅`, so `P(R)` sends no `y` at all to any `x` containing `2` — not entire.] \
+  #src[`R(1)` has two elements, so `{1}` gets three: `1` need only meet `y`, not be swallowed by it —
+   not simple. Every `E(R)` row has exactly one `y`, which is what makes it a map.]
+])
+]]<powrel-vs-erel>
+
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, skel({
   arc(LX, BD.b1, 1, [`∋ R`], h: 4.2, cx: 5)
   arc(LX, BD.b3, -1, [`∋ R`], h: 4.2, cx: 5)
@@ -1786,21 +1826,78 @@ identity with `L` composed on the inside.
 In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computation with the state, and
 `μ A` applies it back, `λ x . f x`, which is `f`.
 
+= Combinatorial functions <sec-comb>
+
+// B&dM §5.6, p. 125, plus the three specifications of Ex 7.39–7.41 (p. 174).  Every composite is
+// mirrored to diagram order, so B&dM's `prefix · suffix` is `suffix prefix` here.
+#disp[#table(
+  columns: (3.1cm, 7.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*definition*], [*note*]),
+
+  [`list`],
+  [`list A ::= nil | cons (A, list A)`],
+  [B&dM's `listr` under the short name it keeps from p. 125 on.],
+
+  [`subseq`],
+  [`⦇[nil, cons ∪ outr]⦈`],
+  [`x subseq y`: `y` is `x` with elements dropped — `cons` keeps the head, `outr` drops it.],
+
+  [`prefix`],
+  [`⦇[nil, nil ∪ cons]⦈ = cat° outl = init*`],
+  [`y` is an initial segment of `x`; the first `nil` is where it stops early. `init ≜ snoc° outl`.],
+
+  [`suffix`],
+  [`cat° outr = tail*`],
+  [The dual, `tail ≜ cons° outr`; as a catamorphism it needs snoc-lists.],
+
+  [`segment`],
+  [`suffix prefix`],
+  [A contiguous stretch of `x`: a suffix, then a prefix of that.],
+
+  [`partition`],
+  [`concat°`, #h(4pt) `concat ≜ ⦇[nil, cat]⦈`],
+  [`cat` restricted to a non-empty first argument, so `y` is a list of non-empty segments of `x`.],
+
+  [`inits`, `tails`],
+  [implementations of $frac(#[`prefix`], ∋)$ and $frac(#[`suffix`], ∋)$],
+  [`inits` by increasing length, `tails` by decreasing — opposite orders, which is what
+   `splits ≜ ⟨inits, tails⟩ zip` needs to implement $frac(#[`cat°`], ∋)$.],
+
+  [`filter(p)`],
+  [$frac(#[`subseq list(p)`], ∋)$ `max R`, #h(4pt) `R ≜ length ≤ length°`],
+  [The longest subsequence of `x` whose every element passes `p`. `p` is a *coreflexive* and `list(p)`
+   the relator applied to it, so `list(p)` is the test "every element passes" — no boolean anywhere.
+   The longest is unique: only one subsequence keeps exactly the passing elements. The program is
+   `⦇[nil, (outl p → cons, outr)]⦈`. #h(4pt) #src[Ex 7.41; `max R` is @min-defn]],
+
+  [`takewhile(p)`],
+  [$frac(#[`prefix list(p)`], ∋)$ `max R`],
+  [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`. Unique,
+   since the prefixes of one list are linearly ordered by length. #h(4pt) #src[Ex 7.39]],
+
+  [`mss`],
+  [$frac(#[`segment sum`], ∋)$ `max ≤`],
+  [Maximum segment sum. `segment = suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `max ≤`
+   on each suffix, which the greedy theorem turns into a catamorphism. #h(4pt) #src[Ex 7.40]],
+)]<comb-fns>
+
 #pagebreak(weak: true)
 = Optimisation Problems <sec-opt>
 
 == Minimum and maximum <sec-min>
 
-// B&dM §7.1, p. 166.  Diagram order reverses every arrow, the order `R` included — which is what
-// keeps all twelve laws below free of `°`; B&dM write that one `R` the other way round.
+// B&dM §7.1, p. 166.  The `°` is what diagram order costs: it reverses the arrow but not the `≤`
+// glyph, so without it `min ≤` would come out the greatest element.
 #disp[#definition[
-For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max R ≜ min R°`.
+For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R°) : E A ⟶ A`, #h(4pt) `max R ≜ min R°`.
 
-`xs (min R) x ⟺ x ∈ xs ∧ (∀y ∈ xs. y R x)`
+`xs (min R) x ⟺ x ∈ xs ∧ (∀y ∈ xs. x R y)`
 
-`xs (min R) x ⟺ (x in xs) and all xs R\: x` #h(4pt) #src[in q]
+`xs (min R) x ⟺ (x in xs) and all x R\: xs` #h(4pt) #src[in q]
 
-`min R = ∋ ∩ all R` #h(4pt) #src[`all R ≜ ∈\R`, q's `all`; the chains below keep it written `∈\`]
+`min R = ∋ ∩ all R°` #h(4pt) #src[`all R ≜ ∈\R`, q's `all`; the chains below keep it written `∈\`]
 ]]<min-defn>
 
 #disp[#table(
@@ -1809,28 +1906,28 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`], [in the set, and below every element of it],
+  [`X ⊑ min R ⟺ X ⊑ ∋` and `X° ∋ ⊑ R`], [in the set, and below every element of it],
   [$frac(#[`𝟙`], ∋)$ `(∈\R) = R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R) = S°\R`], [bound `S`'s image without building the set],
   [`union (∈\R) = ∈\(∈\R)` \ #src[`union ≜` $frac(#[`∋ ∋`], ∋)$ `: E(E A) ⟶ E A`]],
   [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `min R = 𝟙 ∩ R`],
   [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `min R` at `S := 𝟙`]],
-  [$frac(#[`S`], ∋)$ `min R = S ∩ (S°\R)`], [an `S`-value every `S`-value points to],
+  [$frac(#[`S`], ∋)$ `min R = S ∩ (S°\R°)`], [an `S`-value that points to every `S`-value],
   [$frac(#[`S`], ∋)$ `min R =` $frac(#[`S`], ∋)$ `min(R ∩ S° S)`], [only `R` between values `S` gives one argument counts — context],
-  [`E(S) min R = (∋ S) ∩ ((∋ S)°\R)`],
+  [`E(S) min R = (∋ S) ∩ ((∋ S)°\R°)`],
   [the same for the image of a set \ #src[$frac(#[`S`], ∋)$ `min R` at `S := ∋ S`]],
   [`P(f) min R = min(f R f°) f`], [shunt a function through a minimum],
-  [`P(S) min R = (∋ S) ∩ (∈\(S R))` \ #src[`R` reflexive]],
+  [`P(S) min R = (∋ S) ∩ (∈\(S R°))` \ #src[`R` reflexive]],
   [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
-  [`P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`], [the half of the row above that costs nothing],
+  [`P(S) min R ⊑ (∋ S) ∩ (∈\(S R°))`], [the half of the row above that costs nothing],
   [`P(min R) min R ⊑ union min R` \ #src[`R` a preorder]],
   [a minimum in each set, then a minimum of those],
   [`P(min R) min R = P(Dom (min R)) union min R` \ #src[`R` a preorder]],
   [the same as an equality, once empty sets are dropped],
 )]<min-laws>
 
-=== `X ⊑ min R ⟺ X ⊑ ∋` and `∈ X ⊑ R`
+=== `X ⊑ min R ⟺ X ⊑ ∋` and `X° ∋ ⊑ R`
 
 // The definition read through the two adjunctions it is built from.  B&dM p. 166 cites this as the
 // hint "universal property of min"; the chains below cite it the same way.
@@ -1838,9 +1935,11 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #zline(
   zsqc(`X`, `min R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
-  zpair(zsqc(`X`, `∋`), zsqc(`X`, `∈\R`)),
+  zpair(zsqc(`X`, `∋`), zsqc(`X`, `∈\R°`)),
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
-  zpair(zsqc(`X`, `∋`), zsqc(`∈ X`, `R`)),
+  zpair(zsqc(`X`, `∋`), zsqc(`∈ X`, `R°`)),
+  zstep(op: sym.arrow.l.r.double, under: true)[`°`],
+  zpair(zsqc(`X`, `∋`), zsqc(`X° ∋`, `R`)),
 )
 ]<min-up>
 
@@ -1903,7 +2002,7 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 // Same reason as the hand-placed break further down: `sticky` cannot hold a heading to a BREAKABLE
 // figure, and the extra heading level pushed this one to the foot of its page.
 #pagebreak(weak: true)
-=== $frac(#[`S`], ∋)$ `min R = S ∩ (S°\R)`
+=== $frac(#[`S`], ∋)$ `min R = S ∩ (S°\R°)`
 
 // B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
 #disp[
@@ -1912,13 +2011,13 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
   zsqc([$frac(#[`S`], ∋)$`° X`], `min R`),
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
-  zpair(zsqc([$frac(#[`S`], ∋)$`° X`], `∋`), zsqc([$frac(#[`S`], ∋)$`° X`], `∈\R`)),
+  zpair(zsqc([$frac(#[`S`], ∋)$`° X`], `∋`), zsqc([$frac(#[`S`], ∋)$`° X`], `∈\R°`)),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
-  zpair(zsqc(`X`, [$frac(#[`S`], ∋)$ `∋`]), zsqc(`X`, [$frac(#[`S`], ∋)$ `(∈\R)`])),
+  zpair(zsqc(`X`, [$frac(#[`S`], ∋)$ `∋`]), zsqc(`X`, [$frac(#[`S`], ∋)$ `(∈\R°)`])),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, @min-72],
-  zpair(zsqc(`X`, `S`), zsqc(`X`, `S°\R`)),
+  zpair(zsqc(`X`, `S`), zsqc(`X`, `S°\R°`)),
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
-  zsqc(`X`, `S ∩ (S°\R)`),
+  zsqc(`X`, `S ∩ (S°\R°)`),
 )
 ]<min-75>
 
@@ -1929,17 +2028,17 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #disp[
 #zline(
   zsqc(`X`, [$frac(#[`S`], ∋)$ `min(R ∩ S° S)`]),
-  zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
-  zsqc(`X`, `S ∩ (S°\(R ∩ S° S))`),
+  zstep(op: sym.arrow.l.r.double, under: true)[@min-75, `°`],
+  zsqc(`X`, `S ∩ (S°\(R° ∩ S° S))`),
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`, `T·⊣T\`],
-  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R ∩ S° S`)),
+  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R° ∩ S° S`)),
 )
 // Six boxes on one row squeezed the wide ones into three lines each; the break is at the pair.
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`, `S°·` monotone],
-  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R`)),
+  zpair(zsqc(`X`, `S`), zsqc(`S° X`, `R°`)),
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`, `Δ⊣∩`],
-  zsqc(`X`, `S ∩ (S°\R)`),
+  zsqc(`X`, `S ∩ (S°\R°)`),
   zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
   zsqc(`X`, [$frac(#[`S`], ∋)$ `min R`]),
 )
@@ -1953,26 +2052,26 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #zline(
   zsqc(`P(f) min R`, none, name: "f a map"),
   zstep(op: sym.eq, under: true)[`P = E` on maps, @min-75],
-  zsqc(`(∋ f) ∩ ((∋ f)°\R)`, none),
+  zsqc(`(∋ f) ∩ ((∋ f)°\R°)`, none),
   zstep(op: sym.eq, under: true)[`°`, `T·⊣T\`, `f°·⊣f·`],
-  zsqc(`(∋ f) ∩ (∈\(f R))`, none),
+  zsqc(`(∋ f) ∩ (∈\(f R°))`, none),
 )
 // An operator is stretched to the reason's UNWRAPPED width, so a reason squeezed onto two lines
 // overhangs the boxes beside it; the breaks below keep each reason on one line.
 #zline(
   zstep(op: sym.eq, under: true)[modular law, `f` simple],
-  zsqc(`(∋ ∩ ((∈\(f R)) f°)) f`, none),
-  zstep(op: sym.eq, under: true)[`·f⊣·f°`, `min`],
+  zsqc(`(∋ ∩ ((∈\(f R°)) f°)) f`, none),
+  zstep(op: sym.eq, under: true)[`·f⊣·f°`, `°`, `min`],
   zsqc(`min(f R f°) f`, none),
 )
 ]<min-78>
 
-=== `P(S) min R = (∋ S) ∩ (∈\(S R))`
+=== `P(S) min R = (∋ S) ∩ (∈\(S R°))`
 
 // B&dM (7.9), `R` reflexive.  `⊑` is @min-710; `⊒` is the one place in §18 where a tabulation is
 // unavoidable — `y` below is the set the right-hand side only describes.
 #disp[#definition[
-`(p, q)` tabulates `W ≜ (∋ S) ∩ (∈\(S R))`, and #h(4pt) `y ≜` $frac(#[`(p ∋ S) ∩ (q R°)`], ∋)$, a map.
+`(p, q)` tabulates `W ≜ (∋ S) ∩ (∈\(S R°))`, and #h(4pt) `y ≜` $frac(#[`(p ∋ S) ∩ (q R)`], ∋)$, a map.
 ]]<min-79-defn>
 
 #disp[
@@ -1987,15 +2086,15 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #zline(
   zsqc(`y° q`, `∋`),
   zstep(op: sym.arrow.l.double, under: true)[`f°·⊣f·`, `·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc(`q`, `(p ∋ S) ∩ (q R°)`),
+  zsqc(`q`, `(p ∋ S) ∩ (q R)`),
   zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `f°·⊣f·`],
   // Only the LOWER box of a pair can carry a `name`: on the upper one it lands on the box below it.
-  zpair(zsqc(`p° q`, `∋ S`), zsqc(`𝟙`, `R°`, name: "R reflexive")),
+  zpair(zsqc(`p° q`, `∋ S`), zsqc(`𝟙`, `R`, name: "R reflexive")),
 )
 #zline(
-  zsqc(`∈ y° q`, `R`),
+  zsqc(`∈ y° q`, `R°`),
   zstep(op: sym.arrow.l.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, `°`, meet],
-  zsqc(`R q° q`, `R`, name: "q simple"),
+  zsqc(`R° q° q`, `R°`, name: "q simple"),
 )
 ]<min-79-min>
 
@@ -2013,26 +2112,26 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #zline(
   zsqc(`p ∋`, `y ∋ S°`),
   zstep(op: sym.arrow.l.double, under: true)[modular law],
-  zsqc(`p ∋`, `(p ∋) ∩ (q R° S°)`),
+  zsqc(`p ∋`, `(p ∋) ∩ (q R S°)`),
   zstep(op: sym.arrow.l.double, under: true)[`𝟙 ⊑ q q°`],
-  zsqc(`q° p ∋`, `R° S°`),
+  zsqc(`q° p ∋`, `R S°`),
   zstep(op: sym.arrow.l.double, under: true)[`°`, `T·⊣T\`],
-  zsqc(`W`, `∈\(S R)`, name: "W's right half"),
+  zsqc(`W`, `∈\(S R°)`, name: "W's right half"),
 )
 ]<min-79-pow>
 
 // `sticky` keeps a heading with the display under it, but the display here is a breakable figure, so
 // the heading still stranded itself at the foot of the page; the break is set by hand.
 #pagebreak(weak: true)
-=== `P(S) min R ⊑ (∋ S) ∩ (∈\(S R))`
+=== `P(S) min R ⊑ (∋ S) ∩ (∈\(S R°))`
 
 // B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
 // property of `min` that is the whole proof.  The equality (7.9) is not this — it needs tabulations.
 #disp[
 #zline(
-  zsqc(`P(S) min R`, `(∋ S) ∩ (∈\(S R))`),
+  zsqc(`P(S) min R`, `(∋ S) ∩ (∈\(S R°))`),
   zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `T·⊣T\`],
-  zpair(zsqc(`P(S) min R`, `∋ S`), zsqc(`∈ P(S) min R`, `S R`)),
+  zpair(zsqc(`P(S) min R`, `∋ S`), zsqc(`∈ P(S) min R`, `S R°`)),
   zstep(op: sym.arrow.l.double, under: true)[UP of `min`],
   zpair(zsqc(`P(S) ∋`, `∋ S`), zsqc(`∈ P(S)`, `S ∈`)),
 )
@@ -2046,9 +2145,9 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 #zline(
   zsqc(`P(min R) min R`, `union min R`, name: "R a preorder"),
   zstep(op: sym.arrow.l.r.double, under: true)[@min-75],
-  zsqc(`P(min R) min R`, `(∋ ∋) ∩ ((∋ ∋)°\R)`),
+  zsqc(`P(min R) min R`, `(∋ ∋) ∩ ((∋ ∋)°\R°)`),
   zstep(op: sym.arrow.l.double, under: true)[`°`, `Δ⊣∩`, `T·⊣T\`],
-  zpair(zsqc(`P(min R) min R`, `∋ ∋`), zsqc(`∈ ∈ P(min R) min R`, `R`)),
+  zpair(zsqc(`P(min R) min R`, `∋ ∋`), zsqc(`∈ ∈ P(min R) min R`, `R°`)),
   zstep(op: sym.arrow.l.double, under: true)[UP of `min`, `R` transitive],
   zpair(zsqc(`P(min R) ∋`, `∋ min R`), zsqc(`∈ P(min R)`, `min R ∈`)),
 )
@@ -2077,7 +2176,7 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
   zsqc(`P(Dom (min R)) union min R`, `P(min R) min R`),
   zstep(op: sym.arrow.l.double, under: true)[@min-79 at `S := min R`, `Δ⊣∩`, `T·⊣T\`],
   zpair(zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
-        zsqc(`∈ P(Dom (min R)) union min R`, `min R R`)),
+        zsqc(`∈ P(Dom (min R)) union min R`, `min R R°`)),
 )
 #zline(
   zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
@@ -2086,20 +2185,20 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R) : E A ⟶ A`, #h(4pt) `max
 )
 #zline(
   zstep(op: sym.arrow.l.double, under: true)[`T(U ∩ V) ⊑ T U ∩ T V`, `·∋⊣`$frac(#box(width: 8pt), ∋)$, @min-73],
-  zsqc(`(∋ ∋) ∩ (∈\(∈\R))`, `∋ min R`),
+  zsqc(`(∋ ∋) ∩ (∈\(∈\R°))`, `∋ min R`),
   zstep(op: sym.arrow.l.double, under: true)[modular law],
-  zsqc(`∋ (∋ ∩ (∈ (∈\(∈\R))))`, `∋ (∋ ∩ (∈\R))`, name: "counit of T·⊣T\\"),
+  zsqc(`∋ (∋ ∩ (∈ (∈\(∈\R°))))`, `∋ (∋ ∩ (∈\R°))`, name: "counit of T·⊣T\\"),
 )
 #zline(
-  zsqc(`∈ P(Dom (min R)) union min R`, `min R R`),
+  zsqc(`∈ P(Dom (min R)) union min R`, `min R R°`),
   zstep(op: sym.arrow.l.double, under: true)[`∈` lax natural],
-  zsqc(`Dom (min R) ∈ union min R`, `min R R`),
+  zsqc(`Dom (min R) ∈ union min R`, `min R R°`),
 )
 #zline(
   zstep(op: sym.arrow.l.double, under: true)[`Dom (min R) ⊑ min R (min R)°`],
-  zsqc(`min R (min R)° ∈ union min R`, `min R R`),
+  zsqc(`min R (min R)° ∈ union min R`, `min R R°`),
   zstep(op: sym.arrow.l.double, under: true)[`(min R)° ⊑ ∈`, `∈ ∈ union ⊑ ∈`],
-  zsqc(`min R ∈ min R`, `min R R`, name: "UP of min"),
+  zsqc(`min R ∈ min R`, `min R R°`, name: "UP of min"),
 )
 ]<min-712-geq>
 
@@ -2140,7 +2239,7 @@ An F-algebra `S : F A ⟶ A` is *monotonic on* `R : A ⟶ A` if #h(4pt) `F(R) S 
 
 For a map `f : F A ⟶ A` that is #h(4pt) `f° F(R) f ⊑ R`, #h(4pt) equivalently #h(4pt) `F(R) ⊑ f R f°`.
 
-`(leq × leq) plus ⊑ plus leq` — addition on `Nat` is monotonic on `leq`, which at the point level
+`(≤ × ≤) + ⊑ + ≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c = a + b ∧ a ≤ a' ∧ b ≤ b' ⟹ c ≤ a' + b'`.
 
 `F(R) S ⊑ S R` is @lax-defn's inequation at `G := F`, `F := Id`, `φ := S`, so @mon-str is @lax-str
@@ -2166,9 +2265,46 @@ with `Id(R)` written `R`.
 #disp[#definition[
 `f : F A ⟶ A` *distributes over* `R` if #h(4pt) `F(min R) f ⊑` $frac(#[`F(∋) f`], ∋)$ `min R`.
 
-`plus` distributes over `leq`, at the point level #h(4pt) `min x + min y = min{a + b ∣ a ∈ x ∧ b ∈ y}`
-#h(4pt) for `x`, `y` non-empty and `min ≜ min leq`.
+`+` distributes over `≤`, at the point level #h(4pt)
+`min xs + min ys = min{x + y ∣ x ∈ xs ∧ y ∈ ys}` #h(4pt) for `xs`, `ys` non-empty and
+`min ≜ min ≤`.
 ]]<dist-defn>
+
+// The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
+// `F(min R) f` and `⊑` points NE.  Right: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
+#disp[#align(center, grid(columns: 2, align: horizon, column-gutter: 14pt,
+  capbox(
+    P(cetz.canvas(length: 0.8cm, {
+      let (FEA, EA, FA, A) = ((-3.6, 1.25), (3.6, 1.25), (-3.6, -1.25), (3.6, -1.25))
+      ar(FEA, EA, GIVEN1, s0: 1.05, s1: 0.65); ar(FA, A, GIVEN1, s0: 0.65, s1: 0.45)
+      ar(FEA, FA, GIVEN2, s0: 0.55, s1: 0.55); ar(EA, A, GIVEN2, s0: 0.55, s1: 0.55)
+      lab(0, 2.1, GIVEN1)[$frac(#[`F(∋) f`], ∋)$]; lab(0, -1.8, GIVEN1)[`f`]
+      lab(-4.75, 0, GIVEN2)[`F(min R)`]; lab(4.4, 0, GIVEN2)[`min R`]
+      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
+      node(FEA.at(0), FEA.at(1), black, `F(E A)`); node(EA.at(0), EA.at(1), black, `E A`)
+      node(FA.at(0), FA.at(1), black, `F A`); node(A.at(0), A.at(1), black, `A`)
+    }), s: 74%),
+    [`F(min R) f ⊑` $frac(#[`F(∋) f`], ∋)$ ` min R`],
+  ),
+  capbox(
+    P(cetz.canvas(length: 0.8cm, {
+      // Each corner carries its VALUE under its type, inside the node's own white box: an annotation
+      // set loose beside the node would land on the vertical edge it hangs off.
+      let val(s) = { show raw: set text(size: 8.5pt); text(luma(110), s) }
+      let vnode(p, ty, el) = node(p.at(0), p.at(1), black,
+        grid(align: center, row-gutter: 2.5pt, ty, val(el)))
+      let (FEA, EA, FA, A) = ((-4.8, 1.9), (4.8, 1.9), (-4.8, -1.9), (4.8, -1.9))
+      ar(FEA, EA, GIVEN1, s0: 2.0, s1: 3.2); ar(FA, A, GIVEN1, s0: 2.15, s1: 2.05)
+      ar(FEA, FA, GIVEN2, s0: 1.0, s1: 1.0); ar(EA, A, GIVEN2, s0: 1.0, s1: 1.0)
+      lab(0, 2.75, GIVEN1)[$frac(#[`(∋ × ∋) +`], ∋)$]; lab(0, -2.5, GIVEN1)[`+`]
+      lab(-6.75, 0, GIVEN2)[`min ≤ × min ≤`]; lab(5.75, 0, GIVEN2)[`min ≤`]
+      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
+      vnode(FEA, `E Nat × E Nat`, `(xs, ys)`); vnode(EA, `E Nat`, `{x + y ∣ x ∈ xs ∧ y ∈ ys}`)
+      vnode(FA, `Nat × Nat`, `(min xs, min ys)`); vnode(A, `Nat`, `min xs + min ys`)
+    }), s: 74%),
+    [`(min ≤ × min ≤) + ⊑` $frac(#[`(∋ × ∋) +`], ∋)$ ` min ≤`],
+  ),
+))]<dist-str>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -2180,7 +2316,7 @@ with `Id(R)` written `R`.
   [a *map* is monotonic on an order and on its opposite together — a relation is not],
   [`f° F(R) f ⊑ R ⟺ F(min R) f ⊑` $frac(#[`F(∋) f`], ∋)$ `min R` \ #src[Theorem 7.1, `f` a map]],
   [for a map the two definitions above are one condition],
-  [`⦇`$frac(#[`S`], ∋)$ `min R⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `min R` \ #src[Theorem 7.2, `R°` a preorder and `F(R°) S ⊑ S R°`]],
+  [`⦇`$frac(#[`S`], ∋)$ `min R⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `min R` \ #src[Theorem 7.2, `R` a preorder and `F(R) S ⊑ S R`]],
   [the *greedy theorem*: keeping one minimum at every step beats no more than taking the minimum at
    the end],
 )]<mon-laws>
@@ -2192,7 +2328,7 @@ with `Id(R)` written `R`.
 #disp[#definition[
 `tree A ::= node (A, list(tree A))`, base functor `F(A, B) = A × list B`, `rating : Employee ⟶ Real`.
 
-`cost ≜ list(rating) sum`, #h(4pt) `R ≜ cost leq cost°`, #h(4pt) `choose ≜ outl ∪ outr`.
+`cost ≜ list(rating) sum`, #h(4pt) `R ≜ cost ≤ cost°`, #h(4pt) `choose ≜ outl ∪ outr`.
 
 `include ≜ (𝟙 × (list(outr) concat)) cons` #h(10pt) `exclude ≜ (𝟙 × (list(choose) concat)) outr`
 
@@ -2206,9 +2342,9 @@ with `Id(R)` written `R`.
   table.header([*the law*], [*what it says*]),
 
   [$frac(#[`party`], ∋)$ `max R`], [the specification: a guest list of greatest total conviviality],
-  [`(R × R) choose ⊑ choose R`], [`choose` is monotonic on `R` — the first claim],
-  [`(𝟙 × list(R × R)) S ⊑ S (R × R)`],
-  [`S` is monotonic on `R × R` — the second claim],
+  [`(R° × R°) choose ⊑ choose R°`], [`choose` is monotonic on `R°` — the first claim],
+  [`(𝟙 × list(R° × R°)) S ⊑ S (R° × R°)`],
+  [`S` is monotonic on `R° × R°` — the second claim],
   [$frac(#[`party`], ∋)$ `max R ⊒ ⦇`$frac(#[`S`], ∋)$ `max(R × R)⦈` $frac(#[`choose`], ∋)$ `max R`],
   [the greedy theorem: one best pair per subtree instead of all parties of the whole tree],
   [`party = ⦇S⦈` $frac(#[`choose`], ∋)$ `max R` \ `include = (𝟙 × (list(outr) concat)) cons` \
@@ -2223,7 +2359,7 @@ with `Id(R)` written `R`.
 #disp[#definition[
 `F(A, X) = A + A × X`, `L = list⁺` with initial algebra `α : F(A, L A) ⟶ L A`, `N` the `n`-tuple relator.
 
-`R ≜ sum leq sum°`, #h(4pt) `setify : N A ⟶ E A`, #h(4pt) `moves : N A ⟶ E(N A)`, #h(4pt)
+`R ≜ sum ≤ sum°`, #h(4pt) `setify : N A ⟶ E A`, #h(4pt) `moves : N A ⟶ E(N A)`, #h(4pt)
 `trans : E(N A) ⟶ N(E A)`, #h(4pt) `zip : F(N A, N B) ⟶ N F(A, B)`, #h(4pt) `cp ≜` $frac(#[`F(𝟙, ∋)`], ∋)$.
 
 `generate ≜ F(𝟙, moves trans N(union)) zip N(cp P(α)) : F(N A, N(E(L A))) ⟶ N(E(L A))`
@@ -2254,7 +2390,7 @@ with `Id(R)` written `R`.
 // B&dM §7.5, p. 184.  `Π`, the universal relation, is this note's `⊤`; the p. 187 printing of the
 // greedy result puts `wrap wrap` where p. 185 and the final program both put `nil`.
 #disp[#definition[
-`R ≜ length leq length°`, #h(4pt) `ceiling ≜` $frac(#[`prefix sum`], ∋)$ `max leq`, #h(4pt) `floor ≜` $frac(#[`prefix sum`], ∋)$ `min leq`.
+`R ≜ length ≤ length°`, #h(4pt) `ceiling ≜` $frac(#[`prefix sum`], ∋)$ `max ≤`, #h(4pt) `floor ≜` $frac(#[`prefix sum`], ∋)$ `min ≤`.
 
 `secure` the coreflexive on `x` with `bmax(ceiling x, ceiling x − floor x) ≤ N`; #h(4pt) `ok` the
 coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
@@ -2265,7 +2401,7 @@ coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
 
 `partition = ⦇[nil, new ∪ glue]⦈`, #h(4pt) `S ≜ [nil, new ∪ old]`, #h(4pt) `partition list(secure) = ⦇S⦈`.
 
-`H ≜ (head prefix head°) ∪ (nil° nil)`, #h(4pt) `R ; H ≜ R ∩ (R° ⇒ H)`, #h(4pt) `|R| ≜ R ∩ ¬R°`.
+`H ≜ (head prefix° head°) ∪ (nil° nil)`, #h(4pt) `R ; H ≜ R ∩ (R° ⇒ H)`, #h(4pt) `|R| ≜ R ∩ ¬R°`.
 ]]<van-defn>
 
 #disp[#table(
@@ -2277,20 +2413,20 @@ coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
   [$frac(#[`partition list(secure)`], ∋)$ `min R`], [the specification: fewest secure segments],
   [`secure prefix ⊑ prefix secure`], [`secure` is prefix-closed — the only property of it used until
    the program],
-  [`(𝟙 × R°) new ⊑ (new ∪ old) R°` \ #src[(7.14)]], [starting a new segment is monotonic on `R°`],
-  [`(𝟙 × R°) old ⊑ (new ∪ old) R°` \ #src[(7.15), FALSE]],
+  [`(𝟙 × R) new ⊑ (new ∪ old) R` \ #src[(7.14)]], [starting a new segment is monotonic on `R`],
+  [`(𝟙 × R) old ⊑ (new ∪ old) R` \ #src[(7.15), FALSE]],
   [extending the first segment is not — the shorter partition need not stay secure],
-  [`(𝟙 × (R ; H)°) new ⊑ (new ∪ old) (R ; H)°` #h(4pt) #src[(7.16)] \
-   `(𝟙 × (R ; H)°) old ⊑ (new ∪ old) (R ; H)°` #h(4pt) #src[(7.17)]],
+  [`(𝟙 × (R ; H)) new ⊑ (new ∪ old) (R ; H)` #h(4pt) #src[(7.16)] \
+   `(𝟙 × (R ; H)) old ⊑ (new ∪ old) (R ; H)` #h(4pt) #src[(7.17)]],
   [both halves do become monotonic once `R` is refined by `H`, which breaks a tie in length by the
    first segment's prefix order],
-  [`(𝟙 × ⊤) new ⊑ new H°` #h(6pt) #src[(7.18)]],
+  [`(𝟙 × ⊤) new ⊑ new H` #h(6pt) #src[(7.18)]],
   [whatever the tail, `new`'s first segment is `[a]`, a prefix of every first segment — this is what
    (7.16) rests on],
-  [`(𝟙 × ⊤) old ⊑ new H°` #h(6pt) #src[(7.19)] \ `(𝟙 × |R|°) old ⊑ new R°` #h(6pt) #src[(7.20)] \
-   `(𝟙 × (R° ∩ H°)) old ⊑ old (R° ∩ H°)` #h(6pt) #src[(7.21)]],
-  [the three claims (7.17) rests on, split along \ `(R ; H)° = |R°| ∪ (R° ∩ H°)`],
-  [`old ⊑ new (R ; H)`], [`old` returns a shorter result than `new` if it returns any result at all,
+  [`(𝟙 × ⊤) old ⊑ new H` #h(6pt) #src[(7.19)] \ `(𝟙 × |R|) old ⊑ new R` #h(6pt) #src[(7.20)] \
+   `(𝟙 × (R ∩ H)) old ⊑ old (R ∩ H)` #h(6pt) #src[(7.21)]],
+  [the three claims (7.17) rests on, split along \ `(R ; H) = |R| ∪ (R ∩ H)`],
+  [`old ⊑ new (R ; H)°`], [`old` returns a shorter result than `new` if it returns any result at all,
    so the fold's choice refines to a map],
   [`⦇[nil, (ok → glue, new)]⦈ ⊑ ⦇`$frac(#[`S`], ∋)$ `min(R ; H)⦈`],
   [the program: glue onto the first segment while it stays secure, else start a new one],
@@ -2304,9 +2440,9 @@ coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
 // B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
 // and `min Q {·}` keeps one, `thin Q` keeps a representative collection.
 #disp[#definition[
-For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : E A ⟶ E A` #h(4pt) #src[(8.1)].
+For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q° ∈)) : E A ⟶ E A` #h(4pt) #src[(8.1)].
 
-`y (thin Q) x ⟺ x ⊆ y ∧ (∀a ∈ y. ∃b ∈ x. a Q b)`
+`y (thin Q) x ⟺ x ⊆ y ∧ (∀a ∈ y. ∃b ∈ x. b Q a)`
 ]]<thin-defn>
 
 #disp[#table(
@@ -2315,7 +2451,7 @@ For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : E A ⟶ E A
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`X ⊑` $frac(#[`S`], ∋)$ `thin Q ⟺ X ∋ ⊑ S` and `S° X ⊑ Q ∈`],
+  [`X ⊑` $frac(#[`S`], ∋)$ `thin Q ⟺ X ∋ ⊑ S` and `S° X ⊑ Q° ∈`],
   [the universal property: everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound
    among the kept ones],
   [`Q ⊑ R ⟹ thin Q ⊑ thin R`],
@@ -2332,7 +2468,7 @@ For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : E A ⟶ E A
   [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
   [`union thin Q ⊒ P(thin Q) union` #h(6pt) #src[(8.4)]],
   [thinning each member set is a thinning of the union],
-  [`⦇`$frac(#[`F(∋) S`], ∋)$ `thin Q⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `thin Q` \ #src[Theorem 8.1, `S` monotonic on `Q°`]],
+  [`⦇`$frac(#[`F(∋) S`], ∋)$ `thin Q⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `thin Q` \ #src[Theorem 8.1, `S` monotonic on `Q`]],
   [the *thinning theorem*: thinning at every step beats thinning only at the end],
   [`⦇`$frac(#[`F(∋) S`], ∋)$ `thin Q⦈ min R ⊑` $frac(#[`⦇S⦈`], ∋)$ `min R` \ #src[Corollary 8.1, `Q ⊑ R` as well]],
   [the same against the optimisation problem itself, by thin-introduction],
@@ -2347,7 +2483,7 @@ For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q ∈)) : E A ⟶ E A
 
 `wrapz ≜ ⟨wrap, zero⟩`, #h(4pt) `consw (a, (x, n)) = (cons (a, x), wt (a, head x) + n)`.
 
-`cost ≜ ⦇[wrapz, consw]⦈ outr`, #h(4pt) `⦇[wrapz, consw]⦈ = ⟨𝟙, cost⟩`, #h(4pt) `R ≜ cost leq cost°`.
+`cost ≜ ⦇[wrapz, consw]⦈ outr`, #h(4pt) `⦇[wrapz, consw]⦈ = ⟨𝟙, cost⟩`, #h(4pt) `R ≜ cost ≤ cost°`.
 
 `Q ≜ R ∩ (head head°)`, #h(4pt) `S ≜ F(𝟙, ∋) α`, #h(4pt) $frac(#[`F(∋, 𝟙)`], ∋)$ `= 𝟙 + cpl`, #h(4pt)
 $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min R`.
@@ -2361,8 +2497,8 @@ $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min
 
   [$frac(#[`⦇F(∋, 𝟙) α⦈`], ∋)$ `min R` #h(4pt) #src[`=` $frac(#[`L(∋)`], ∋)$ `min R`]],
   [the specification: a least-cost path across the network],
-  [`F(∋, Q°) α ⊑ F(∋, 𝟙) α Q°`],
-  [`S` is monotonic on `Q°`; on `R°` it is not, since the next edge can cost arbitrarily much],
+  [`F(∋, Q) α ⊑ F(∋, 𝟙) α Q`],
+  [`S` is monotonic on `Q`; on `R` it is not, since the next edge can cost arbitrarily much],
   [`⦇`$frac(#[`F(∋, ∋) α`], ∋)$ `thin Q⦈ min R ⊑` $frac(#[`⦇F(∋, 𝟙) α⦈`], ∋)$ `min R` \ #src[Corollary 8.1]],
   [thinning applies: one partial path per starting vertex is enough],
   [`S head ⊑ [𝟙, outr]` \ #src[`S head` simple, so `R ∩ (S° S) ⊑ Q`]],
@@ -2393,7 +2529,7 @@ one is #h(4pt) `⦇[nil, bump Q]⦈`, #h(4pt) `bump Q (a, []) = [a]`, #h(4pt)
 `bump Q (a, [b] ⧺ x) = (b Q a → [a] ⧺ x, a Q b → [b] ⧺ x, [a] ⧺ [b] ⧺ x)`.
 
 *Binary thinning* data: #h(4pt) `S = (f₁ p₁) ∪ (f₂ p₂)` with `p₁`, `p₂` coreflexive; #h(4pt) `Q` a
-preorder with `Q ⊑ R` and both `f₁ p₁`, `f₂ p₂` monotonic on `Q°`; #h(4pt) `P` a connected preorder
+preorder with `Q ⊑ R` and both `f₁ p₁`, `f₂ p₂` monotonic on `Q`; #h(4pt) `P` a connected preorder
 with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(pᵢ)`.
 ]]<thinlist-defn>
 
@@ -2434,7 +2570,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 
 `subseq = ⦇[nil, cons] ∪ [nil, outr]⦈`, #h(4pt) `within w` the coreflexive on `x` with `weight x ≤ w`.
 
-`geq ≜ leq°`, #h(4pt) `R ≜ value geq value°`, #h(4pt) `Q ≜ R ∩ (weight leq weight°)`, #h(4pt) `P ≜ R`.
+`≥ ≜ ≤°`, #h(4pt) `R ≜ value ≥ value°`, #h(4pt) `Q ≜ R ∩ (weight ≤ weight°)`, #h(4pt) `P ≜ R`.
 
 `F A = 1 + Item × A`, #h(4pt) `listcp(F) = wrap + cpr`, #h(4pt) `g₁ ≜ list([nil, cons]) filter(within w)`
 #h(4pt) `= [list(nil), h₁]`, #h(4pt) `g₂ ≜ list([nil, outr]) = [list(nil), h₂]`.
@@ -2453,10 +2589,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
   [`subseq (within w) = ⦇([nil, cons] (within w)) ∪ [nil, outr]⦈` \ #src[fusion, weights non-negative]],
   [the selections that fit are themselves a fold, and the fold's algebra already has binary thinning's
    shape],
-  [`(𝟙 × R°) (cons (within w)) ⊑ cons (within w) R°` \ #src[FALSE]],
-  [not monotonic on `R°`: a selection of greater value need not still fit once one more item goes in],
-  [`(𝟙 × Q°) (cons (within w)) ⊑ cons (within w) Q°` \ `(𝟙 × Q°) outr ⊑ outr Q°`],
-  [both halves are monotonic on `Q°` once ties in value are broken by weight],
+  [`(𝟙 × R) (cons (within w)) ⊑ cons (within w) R` \ #src[FALSE]],
+  [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
+  [`(𝟙 × Q) (cons (within w)) ⊑ cons (within w) Q` \ `(𝟙 × Q) outr ⊑ outr Q`],
+  [both halves are monotonic on `Q` once ties in value are broken by weight],
   [`⦇listcp(F) ⟨g₁, g₂⟩ merge R thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ R`, `F` linear]],
   [binary thinning, sorting in descending order of value],
   [`knapsack w = ⦇[nil, cpr ⟨h₁, h₂⟩ merge R thinlist Q]⦈ minlist R`],
@@ -2481,7 +2617,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 
 `white w x = w − width x`, #h(4pt) `collect ≜ list(sqr) sum`, #h(4pt) `waste w ≜ init list(white w) collect`.
 
-`R ≜ (waste w) leq (waste w)°`, #h(4pt) `Q ≜ R ∩ (head head°)`, #h(4pt) `P ≜ ⊤`.
+`R ≜ (waste w) ≤ (waste w)°`, #h(4pt) `Q ≜ R ∩ (head head°)`, #h(4pt) `P ≜ ⊤`.
 
 `g₁ ≜ list([wrap wrap, new])`, #h(4pt) `g₂ ≜ list([wrap wrap, glue]) filter(ok w)`, #h(4pt)
 `start ≜ wrap wrap wrap`, #h(4pt) `h₁ ≜ list(new)`, #h(4pt) `h₂ ≜ list(glue) filter(ok w)`.
@@ -2500,12 +2636,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
   [the fitting paragraphs are themselves a fold],
   [`[wrap wrap, new ∪ (glue (ok w))]` \ #h(6pt) `= [wrap wrap, new] ∪ ([wrap wrap, glue] (ok w))`],
   [rewritten into binary thinning's shape `(f₁ p₁) ∪ (f₂ p₂)`],
-  [`(𝟙 × R°) glue ⊑ glue R°` #h(6pt) #src[FALSE]],
-  [`glue` is not monotonic on `R°`: the waste of a paragraph depends on its whole first line, so no
+  [`(𝟙 × R) glue ⊑ glue R` #h(6pt) #src[FALSE]],
+  [`glue` is not monotonic on `R`: the waste of a paragraph depends on its whole first line, so no
    greedy algorithm solves this],
-  [`(𝟙 × Q°) new ⊑ new Q°` \ `(𝟙 × Q°) (glue (ok w)) ⊑ glue (ok w) Q°` \ #src[`cons` monotonic on
-   `collect leq collect°`]],
-  [both halves are monotonic on `Q°` once ties in waste are broken by the first line],
+  [`(𝟙 × Q) new ⊑ new Q` \ `(𝟙 × Q) (glue (ok w)) ⊑ glue (ok w) Q` \ #src[`cons` monotonic on
+   `collect ≤ collect°`]],
+  [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [`merge ⊤ = cat`; #h(4pt) `P ≜ head prefix head°` also serves],
   [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
    input],
@@ -2529,7 +2665,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 `cost (x, y) = outcost x + incost y`, #h(4pt) `outcost [a₀, …, aₙ] = tc (a₀, a₁) + ⋯ + tc (aₙ₋₁, aₙ)`,
 #h(4pt) `incost [a₀, …, aₙ] = tc (a₁, a₀) + ⋯ + tc (aₙ, aₙ₋₁)`.
 
-`next ≜ tail head`, #h(4pt) `next2 ≜ next × next`, #h(4pt) `R ≜ cost leq cost°`, #h(4pt)
+`next ≜ tail head`, #h(4pt) `next2 ≜ next × next`, #h(4pt) `R ≜ cost ≤ cost°`, #h(4pt)
 `Q ≜ R ∩ (next2 next2°)`, #h(4pt) `P ≜ ⊤`, #h(4pt) `g₁ ≜ list([start, dropl])`, #h(4pt)
 `g₂ ≜ list([start, dropr])`.
 ]]<tour-defn>
@@ -2542,10 +2678,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 
   [$frac(#[`tour`], ∋)$ `min R`],
   [the specification: a least-cost bitonic tour, outward journey and return kept as a pair of lists],
-  [`(𝟙 × R°) dropl ⊑ dropl R°` #h(6pt) #src[FALSE] \ `(𝟙 × R°) dropr ⊑ dropr R°` #h(6pt) #src[FALSE]],
-  [neither drop is monotonic on `R°`: the two edges it adds and removes depend on `head` and `next`
+  [`(𝟙 × R) dropl ⊑ dropl R` #h(6pt) #src[FALSE] \ `(𝟙 × R) dropr ⊑ dropr R` #h(6pt) #src[FALSE]],
+  [neither drop is monotonic on `R`: the two edges it adds and removes depend on `head` and `next`
    of both lists],
-  [`(𝟙 × Q°) dropl ⊑ dropl Q°` \ `(𝟙 × Q°) dropr ⊑ dropr Q°`],
+  [`(𝟙 × Q) dropl ⊑ dropl Q` \ `(𝟙 × Q) dropr ⊑ dropr Q`],
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
   [`⦇listcp(F) ⟨g₁, g₂⟩ cat thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ ⊤`, `merge ⊤ = cat`]],
@@ -2581,10 +2717,10 @@ least fixed point of `G`.
   [$frac(#[`T°`], ∋)$ `P(F(M) h) min R ⊑ H` #h(6pt) #src[(9.2)] \
    `H°` $frac(#[`T°`], ∋)$ `P(F(M) h) min R ⊑ R` #h(6pt) #src[(9.3)]],
   [(9.1) split by the universal property of `min`],
-  [`P(X) min R ⊑ (∋ X) ∩ (∈\(X R))` \ #src[(9.4) = (7.10), @min-laws]],
+  [`P(X) min R ⊑ (∋ X) ∩ (∈\(X R°))` \ #src[(9.4) = (7.10), @min-laws]],
   [the only fact about `min` either proof uses],
   [`(μX :` $frac(#[`T°`], ∋)$ `thin Q P(F(X) h) min R) ⊑ M` \ #src[Theorem 9.2, `Q` a preorder with
-   `Q° F(H) h ⊑ F(H) h R°`; `thin Q` as in @thin-laws]],
+   `Q F(H) h ⊑ F(H) h R`; `thin Q` as in @thin-laws]],
   [the same with a thinning step: decompositions that can never win are dropped],
   [the fixed point is unique, and entire \ #src[Theorem 6.3, `T°` followed by `F`'s membership
    relation inductive; $frac(#[`T°`], ∋)$ finite and non-empty, `R` connected]],
@@ -2593,15 +2729,15 @@ least fixed point of `G`.
    `Wᵢ ≜` $frac(#[`Vᵢ°`], ∋)$ `thin(Qᵢ) P(Uᵢ) min R` \ #src[Proposition 9.1, `V₂ V₁° = ⊥`]],
   [`F A` is usually a coproduct, and disjoint ranges split the fixed point into one branch per
    summand],
-  [`F(R) h ⊑ h R` \ `Q° F(H) h ⊑ F(H) h R°`],
+  [`F(R) h ⊑ h R` \ `Q F(H) h ⊑ F(H) h R`],
   [the two conditions to be checked, in the order the three propositions below discharge them],
-  [`F(R) h ⊑ h R` \ #src[Proposition 9.2, `R ≜ cost leq cost°`, `h cost = F(cost) k`,
-   `F(leq) k ⊑ k leq`]],
-  [monotonicity when the cost is itself a fold with a step `k` monotonic on `leq`],
-  [`F(R ∩ (H° H)) h ⊑ h R` \ #src[Proposition 9.3, `R ≜ cost leq cost°`,
-   `h cost = F(⟨cost, H°⟩) k`, `F(leq × 𝟙) k ⊑ k leq`, `H°` simple]],
+  [`F(R) h ⊑ h R` \ #src[Proposition 9.2, `R ≜ cost ≤ cost°`, `h cost = F(cost) k`,
+   `F(≤) k ⊑ k ≤`]],
+  [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
+  [`F(R ∩ (H° H)) h ⊑ h R` \ #src[Proposition 9.3, `R ≜ cost ≤ cost°`,
+   `h cost = F(⟨cost, H°⟩) k`, `F(≤ × 𝟙) k ⊑ k ≤`, `H°` simple]],
   [monotonicity *in context*: `k` may also read the input the part was built from],
-  [`Q ≜ F(U, V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U, R) h ⊑ h R`, `V° H ⊑ H R°`]],
+  [`Q ≜ F(U, V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U, R) h ⊑ h R`, `V H ⊑ H R`]],
   [both conditions of Theorem 9.2 at once, split along the two arguments of a bifunctor],
 )]<dp-laws>
 
@@ -2616,8 +2752,8 @@ least fixed point of `G`.
 #h(4pt) `step (cpy a, (x, y)) = ([a] ⧺ x, [a] ⧺ y)`, #h(4pt) `step (del a, (x, y)) = ([a] ⧺ x, y)`,
 #h(4pt) `step (ins a, (x, y)) = (x, [a] ⧺ y)`.
 
-`length ≜ ⦇[zero, outr succ]⦈`, #h(4pt) `R ≜ length leq length°`, #h(4pt) `U ≜ ⊤`, #h(4pt)
-`V ≜ suffix × suffix`, #h(4pt) `Q ≜ 𝟙 + (U × V)`, #h(4pt) `empty` the coreflexive on `(x, y)` with
+`length ≜ ⦇[zero, outr succ]⦈`, #h(4pt) `R ≜ length ≤ length°`, #h(4pt) `U ≜ ⊤`, #h(4pt)
+`V ≜ suffix° × suffix°`, #h(4pt) `Q ≜ 𝟙 + (U × V)`, #h(4pt) `empty` the coreflexive on `(x, y)` with
 both lists empty.
 
 `unstep` implements $frac(#[`step°`], ∋)$ `thin(U × V)`: #h(4pt) `unstep ([a] ⧺ x, []) = [(del a, (x, []))]`,
@@ -2633,15 +2769,15 @@ both lists empty.
 
   [$frac(#[`edit°`], ∋)$ `min R`],
   [the specification: a shortest edit sequence from which both strings can be reconstituted],
-  [`F(R) α ⊑ α R` \ #src[Proposition 9.2 at `length`, `succ` monotonic on `leq`]],
+  [`F(R) α ⊑ α R` \ #src[Proposition 9.2 at `length`, `succ` monotonic on `≤`]],
   [`cons` is monotonic on `R`, so Theorem 9.1 already applies],
-  [`Q° F(𝟙, edit°) α ⊑ F(𝟙, edit°) α R°`],
+  [`Q F(𝟙, edit°) α ⊑ F(𝟙, edit°) α R`],
   [the thinning condition sought, over `F(Op, list Char × list Char)`],
   [`F(⊤, R) α ⊑ α R` #h(6pt) #src[left as an exercise]],
   [`U ≜ ⊤` costs nothing: any two operations may be compared],
-  [`edit (𝟙 × suffix) ⊑ R edit` \ `edit (suffix × 𝟙) ⊑ R edit`],
-  [the other half of Proposition 9.4 for `V ≜ suffix × suffix`],
-  [`edit (𝟙 × tail) ⊑ R edit` \ `edit (tail × 𝟙) ⊑ R edit` \
+  [`edit (𝟙 × suffix) ⊑ R° edit` \ `edit (suffix × 𝟙) ⊑ R° edit`],
+  [the other half of Proposition 9.4 for `V ≜ suffix° × suffix°`],
+  [`edit (𝟙 × tail) ⊑ R° edit` \ `edit (tail × 𝟙) ⊑ R° edit` \
    #src[`suffix = tail*`, and `B A ⊑ C B ⟹ B A* ⊑ C* B`]],
   [one step is enough: drop the operation that produced the head, or weaken its `cpy` to a `del` —
    never lengthening the sequence],
@@ -2680,7 +2816,7 @@ both lists empty.
 `⟨cost, size⟩ ≜ ⦇[opt, opb]⦈`, #h(4pt) `opt ≜ ⟨zero, st⟩`, #h(4pt)
 `opb ((cx, sx), (cy, sy)) = (cb (sx, sy) + cx + cy, sb (sx, sy))`.
 
-`sb` associative, so `size = flatten sz` for a map `sz`; #h(4pt) `R ≜ cost leq cost°`, #h(4pt)
+`sb` associative, so `size = flatten sz` for a map `sz`; #h(4pt) `R ≜ cost ≤ cost°`, #h(4pt)
 `g ≜ [zero, (𝟙 × sz)² opb outl]`, #h(4pt) `single` the coreflexive on singleton lists.
 
 `splits ≜ ⟨inits⁺, tails⁺⟩ zip`, an implementation of $frac(#[`cat°`], ∋)$; #h(4pt) `array ≜ inits list(row)`,
@@ -2701,8 +2837,8 @@ both lists empty.
    given list],
   [`[tip, bin] cost = (𝟙 + ⟨cost, flatten⟩²) g` #h(4pt) #src[(9.5)]],
   [the cost of a node reads only the cost and the flattening of its two subtrees],
-  [`(𝟙 + (leq × 𝟙)²) g ⊑ g leq` #h(6pt) #src[(9.6)]],
-  [`g` is monotonic on `leq` in its two cost arguments],
+  [`(𝟙 + (≤ × 𝟙)²) g ⊑ g ≤` #h(6pt) #src[(9.6)]],
+  [`g` is monotonic on `≤` in its two cost arguments],
   [`F(R ∩ (flatten flatten°)) h ⊑ h R` \ #src[Proposition 9.3, `H° = flatten` a map]],
   [monotonicity in context: only trees with the same flattening are compared],
   [`(μX :` $frac(#[`[wrap, cat]°`], ∋)$ `P([tip, (X × X) bin]) min R) ⊑` $frac(#[`flatten°`], ∋)$ `min R` #h(4pt)
@@ -2738,10 +2874,10 @@ both lists empty.
 `extend (x, ptr (y, z)) = x ⧺ z` when `y ⧺ z` is a proper prefix of `x ⧺ z`; #h(4pt) `H = decode°`.
 
 `size ≜ ⦇[zero, distr [𝟙 × c, 𝟙 × p] plus]⦈` with `c`, `p` the constant costs of a symbol and a
-pointer; #h(4pt) `R ≜ size leq size°`, #h(4pt) `Q ≜ F(⊤ + ⊤, prefix) = 𝟙 + (prefix × (⊤ + ⊤))`, the
+pointer; #h(4pt) `R ≜ size ≤ size°`, #h(4pt) `Q ≜ F(⊤ + ⊤, prefix°) = 𝟙 + (prefix° × (⊤ + ⊤))`, the
 two `⊤` on symbols and on pointers.
 
-`lrt w = min(prefix × (⊤ + ⊤)) {(x, (y, z)) ∣ x ⧺ z = w`, `y ⧺ z` a proper prefix of `w}`, the
+`lrt w = min(prefix° × (⊤ + ⊤)) {(x, (y, z)) ∣ x ⧺ z = w`, `y ⧺ z` a proper prefix of `w}`, the
 longest repeated tail; #h(4pt)
 `reduce (w ⧺ [a]) = (z ≠ [] → [(w, sym a), (x, ptr (y, z))], [(w, sym a)])` with
 `(x, (y, z)) = lrt (w ⧺ [a])`.
@@ -2757,23 +2893,23 @@ longest repeated tail; #h(4pt)
   [the specification: a smallest code sequence decoding to the given string],
   [`F(R) α ⊑ α R` #h(6pt) #src[`(⊤ + ⊤) [c, p] = [c, p]`]],
   [monotonicity is routine, the two costs being constants],
-  [`F(⊤ + ⊤, R) α ⊑ α R` \ `decode prefix ⊑ R decode` \ #src[Proposition 9.4 at `Q ≜ F(⊤ + ⊤, prefix)`]],
+  [`F(⊤ + ⊤, R) α ⊑ α R` \ `decode prefix ⊑ R° decode` \ #src[Proposition 9.4 at `Q ≜ F(⊤ + ⊤, prefix°)`]],
   [the thinning condition split in two: pointers are ordered only by how much input they consume,
    symbols and pointers not at all],
-  [`decode init ⊑ R decode`],
+  [`decode init ⊑ R° decode`],
   [enough for the second: drop the last character of the output by shortening or removing the last
    code element, never raising the cost],
   [`(μX :` $frac(#[`[nil, extend]°`], ∋)$ `thin Q P([nil, (X × 𝟙) snoc]) min R) ⊑` $frac(#[`decode°`], ∋)$ `min R` \
    #src[Theorem 9.2]],
   [between a symbol and a pointer nothing can be decided in advance; between two pointers the longer
    match wins],
-  [`X = (null → nil,` $frac(#[`extend°`], ∋)$ `thin(prefix × (⊤ + ⊤)) P((X × 𝟙) snoc) min R)` \
+  [`X = (null → nil,` $frac(#[`extend°`], ∋)$ `thin(prefix° × (⊤ + ⊤)) P((X × 𝟙) snoc) min R)` \
    #src[Proposition 9.1]],
   [`nil` and `extend` have disjoint ranges],
   [$frac(#[`extend°`], ∋)$ `(w ⧺ [a]) = {(w, sym a)} ∪` \ #h(10pt)
    `{(x, ptr (y, z)) ∣ x ⧺ z = w ⧺ [a]`, `y ⧺ z` a proper prefix of `w}`],
   [the decompositions of one string: take the last character as a symbol, or end with a pointer],
-  [`reduce` implements $frac(#[`extend°`], ∋)$ `thin(prefix × (⊤ + ⊤))`],
+  [`reduce` implements $frac(#[`extend°`], ∋)$ `thin(prefix° × (⊤ + ⊤))`],
   [thinning leaves at most two: the symbol, and the pointer of `lrt`],
   [`encode = (null → nil, reduce list((encode × 𝟙) snoc) minlist R)`],
   [the program, again exponential; the book gives no tabulation for it],
@@ -2812,7 +2948,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `min Q` is entire.
 
 == The detab-entab problem
 
-// B&dM §10.2, p. 246.  `V ≜ prefix ∩ (fill fill°)` is the whole trick: a bare `prefix` fails because
+// B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
 #disp[#definition[
 `detab ≜ ⦇[nil, expand]⦈ : String ⟶ String` over snoc-lists, #h(4pt) `α ≜ [nil, snoc]`, #h(4pt)
@@ -2822,8 +2958,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `min Q` is entire.
 `col ≜ ⦇[zero, count]⦈`, #h(4pt) `count (c, a) = (a = NL → 0, c + 1)`; #h(4pt) `TB` the tab, `BL` the
 blank, `NL` the newline, tab stops every `n` columns.
 
-`R ≜ length leq length°`, #h(4pt) `U` the preorder with `a U b ⟺ b = TB ∨ a = b`, #h(4pt)
-`V ≜ prefix ∩ (fill fill°)`, #h(4pt) `Q ≜ 𝟙 + (V × U)`.
+`R ≜ length ≤ length°`, #h(4pt) `U` the preorder with `a U b ⟺ a = TB ∨ a = b`, #h(4pt)
+`V ≜ prefix° ∩ (fill fill°)`, #h(4pt) `Q ≜ 𝟙 + (V × U)`.
 
 `unfill x` the shortest prefix of `x` with `fill (unfill x) = fill x`; #h(4pt) `tbc` the trailing
 blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
@@ -2839,20 +2975,20 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [the specification: a shortest input `detab` expands to the given output — `detab entab = 𝟙` and
    nothing shorter does],
   [`F(⊤, R) α ⊑ α R` #h(6pt) #src[left as an exercise]],
-  [`U` may be any preorder on characters; `a U b ⟺ b = TB ∨ a = b` puts `TB` on top, so `min` prefers
+  [`U` may be any preorder on characters; `a U b ⟺ a = TB ∨ a = b` puts `TB` below every character, so `min` prefers
    a tab to a blank],
-  [`detab prefix ⊑ R detab` #h(6pt) #src[FALSE]],
+  [`detab prefix ⊑ R° detab` #h(6pt) #src[FALSE]],
   [at `n = 8`, `detab [a,b,c,d,e,TB] = [a,b,c,d,e,BL,BL,BL]`, whose prefix `[a,b,c,d,e,BL,BL]` is
    longer than any input giving it],
-  [`detab V ⊑ R detab` #h(6pt) #src[`V ≜ prefix ∩ (fill fill°)`]],
+  [`detab V° ⊑ R° detab` #h(6pt) #src[`V ≜ prefix° ∩ (fill fill°)`]],
   [true once only the prefixes that do not cross a tab stop are allowed],
-  [`nil V = nil` #h(10pt) `fill V = fill` \ `snoc V ⊑ snoc ∪ (outl V)` #h(6pt) #src[left as exercises]],
+  [`nil V° = nil` #h(10pt) `fill V° = fill` \ `snoc V° ⊑ snoc ∪ (outl V°)` #h(6pt) #src[left as exercises]],
   [the three properties of `V` the derivation rests on; the second is what `fill fill°` was added for],
-  [`expand V ⊑ expand ∪ (outl V)`],
+  [`expand V° ⊑ expand ∪ (outl V°)`],
   [the claim they add up to: shortening the output either leaves the last step alone or discards it],
-  [`detab V ⊑ detab ∪ (init detab V)` \ #src[`init` inductive, so the greatest solution is the unique
+  [`detab V° ⊑ detab ∪ (init detab V°)` \ #src[`init` inductive, so the greatest solution is the unique
    one]],
-  [hence `detab V ⊑ prefix detab`, and `prefix ⊑ R` finishes Proposition 9.4],
+  [hence `detab V° ⊑ prefix detab`, and `prefix ⊑ R°` finishes Proposition 9.4],
   [`(μX :` $frac(#[`[nil, expand]°`], ∋)$ `min Q (𝟙 + (X × 𝟙)) [nil, snoc]) ⊑` $frac(#[`detab°`], ∋)$ `min R` \
    #src[Theorem 10.1]],
   [greedy: one character of input is decided at each step],
@@ -2889,13 +3025,13 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
 `ct`, `dt`, `wt : Job ⟶ Real` the completion, due and weighting quantities of a job; #h(4pt)
 `penalty (x, j) = (sum (list(ct) x) + ct j − dt j) × wt j`.
 
-`cost ≜` $frac(#[`prefix`], ∋)$ `P(α° [zero, penalty]) max leq`, #h(4pt) `cost [] = 0`, #h(4pt)
-`cost (x ⧺ [j]) = bmax (cost x, penalty (x, j))`, #h(4pt) `R ≜ cost leq cost°`.
+`cost ≜` $frac(#[`prefix`], ∋)$ `P(α° [zero, penalty]) max ≤`, #h(4pt) `cost [] = 0`, #h(4pt)
+`cost (x ⧺ [j]) = bmax (cost x, penalty (x, j))`, #h(4pt) `R ≜ cost ≤ cost°`.
 
 `perm ≜ bagify bagify° = ⦇[nil, add]⦈`, #h(4pt) `add (x, j) = y ⧺ [j] ⧺ z` for some `x = y ⧺ z`.
 
 `k ≜ [zero, assocr (𝟙 × ((bagify° × 𝟙) penalty)) bmax]`, #h(4pt)
-`f ≜ [zero, (bagify° × 𝟙) penalty]`, #h(4pt) `Q ≜ f leq f°`.
+`f ≜ [zero, (bagify° × 𝟙) penalty]`, #h(4pt) `Q ≜ f ≤ f°`.
 ]]<tardy-defn>
 
 #disp[#table(
@@ -2908,18 +3044,18 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [the specification: an ordering of the given bag of jobs with least maximum penalty],
   [`F(R ∩ (bagify bagify°)) α ⊑ α R` #h(4pt) #src[(10.2)]],
   [monotonicity in context — only schedules of one bag are compared],
-  [`(Q° ∩ (β β°)) F(bagify°) α ⊑ F(bagify°) α R°` #h(4pt) #src[(10.3)]],
+  [`(Q ∩ (β β°)) F(bagify°) α ⊑ F(bagify°) α R` #h(4pt) #src[(10.3)]],
   [the greedy condition, also in context],
   [`cost (x ⧺ [j]) = bmax (cost x, penalty (perm x, j))` \ `α cost = F(⟨cost, bagify⟩) k`, #h(4pt)
-   `F(leq × 𝟙) k ⊑ k leq` \ #src[Proposition 9.3]],
+   `F(≤ × 𝟙) k ⊑ k ≤` \ #src[Proposition 9.3]],
   [(10.2): `penalty` sums the completion times of `x`, and a sum does not see the order],
   [`α cost = ⟨g, h⟩ bmax` #h(4pt) #src[(10.4)] \ `g ≜ [zero, penalty]` #h(4pt) #src[(10.5)] \
    `h ≜ [zero, outl cost]` #h(4pt) #src[(10.6)]],
   [the cost of a schedule split into the penalty of its last job and the cost of the rest],
-  [`add ⊑ outl R°` #h(6pt) #src[(10.7)] \ `β bagify° = F(bagify°) [nil, add]` #h(6pt) #src[(10.8)]],
+  [`add ⊑ outl R` #h(6pt) #src[(10.7)] \ `β bagify° = F(bagify°) [nil, add]` #h(6pt) #src[(10.8)]],
   [adding a job never lowers the cost; and `bagify°` is itself a catamorphism on bags. Together:
-   `β bagify° ⊑ F(bagify°) h geq cost°`],
-  [`F(bagify) Q° F(bagify°) = g geq g°`, met by \ `Q ≜ f leq f°`, `f ≜ [zero, (bagify° × 𝟙) penalty]`],
+   `β bagify° ⊑ F(bagify°) h ≤ cost°`],
+  [`F(bagify) Q° F(bagify°) = g ≥ g°`, met by \ `Q ≜ f ≤ f°`, `f ≜ [zero, (bagify° × 𝟙) penalty]`],
   [the specification `Q` has to satisfy, and the choice that meets it: a `Q`-minimum is a job of
    least penalty],
   [no greedy *catamorphism* exists],
@@ -2943,14 +3079,14 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
 `round r = n ⟺ 2n − 1 < 2¹⁷ r < 2n + 1`.
 
 `interval n = ((2n − 1)/2¹⁷, (2n + 1)/2¹⁷)`, #h(4pt) `r inrange (a, b) ⟺ a < r < b`, #h(4pt)
-`round° = interval inrange`, #h(4pt) `R ≜ length leq length°`.
+`round° = interval inrange`, #h(4pt) `R ≜ length ≤ length°`.
 
 `Interval` the pairs `(a, b)` with `0 < b < 1` and `a < b` #h(4pt) #src[(10.9)]; #h(4pt)
 `[arb, step] : 1 + (Digit × Interval) ⟶ Interval`, #h(4pt)
 `step (d, (a, b)) = ((d + a)/10, (d + b)/10)`.
 
 `F X = 1 + (Digit × X)`, #h(4pt) `α ≜ [nil, cons]`, #h(4pt) `h ≜ ⦇[arb, step]⦈ = H°`, #h(4pt)
-`! : Digit × Interval ⟶ 1`, #h(4pt) `Q ≜ (ιᵣ° ! ιₗ) ∪ 𝟙`, #h(4pt) `w ≜ 2¹⁷`.
+`! : Digit × Interval ⟶ 1`, #h(4pt) `Q ≜ (ιₗ° !° ιᵣ) ∪ 𝟙`, #h(4pt) `w ≜ 2¹⁷`.
 ]]<tex-defn>
 
 #disp[#table(
@@ -2967,7 +3103,7 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [the converse of `val`, cut down to intervals, is a catamorphism on cons-lists],
   [`F(R) α ⊑ α R`],
   [`cons` is monotonic on `R` — routine],
-  [`α° F(h) Q ⊑ R α° F(h)`],
+  [`α° F(h) Q° ⊑ R° α° F(h)`],
   [the greedy condition of Theorem 10.1, converted],
   [$frac(#[`arb°`], ∋)$ `(a, b) = (a < 0 → {*}, {})` \
    $frac(#[`step°`], ∋)$ `(a, b) = {(d, (10a − d, 10b − d)) ∣ 0 < 10b − d < 1}`],
@@ -2975,7 +3111,7 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [`0 < 10b − d₁ < 1` and `0 < 10b − d₂ < 1` imply `d₁ = d₂`],
   [`step°` is in fact a map, `d` the digit with `0 < 10b − d < 1`, so $frac(#[`[arb, step]°`], ∋)$ returns at
    most two elements and `Q` need only choose between them],
-  [`Q ≜ (ιᵣ° ! ιₗ) ∪ 𝟙`, and `! nil ⊑ cons R` \ #src[from `! nil length ⊑ cons length leq`]],
+  [`Q ≜ (ιₗ° !° ιᵣ) ∪ 𝟙`, and `! nil ⊑ cons R°` \ #src[from `! nil length ⊑ cons length ≥`]],
   [stop whenever stopping is legal: the empty decimal is shorter than any other],
   [`(μX :` $frac(#[`[arb, step]°`], ∋)$ `min Q F(X) α) ⊑` $frac(#[`intern°`], ∋)$ `min R` #h(4pt) #src[Theorem 10.1]],
   [greedy: emit the one digit the interval allows, until the interval contains zero],

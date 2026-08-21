@@ -414,7 +414,7 @@
 // ==== primitive drawing helpers — one mark apiece, on a cetz canvas the caller opens =============
 
 // `lab` lives here, ahead of every hand-drawn picture: a Typst binding exists only from its definition on.
-// `rot` points a cell's `⊑` from the SMALLER path to the larger; Typst rotates clockwise, so SW is 135°.
+// A square's SMALLER side is always drawn down the left then across the bottom, so its `⊑` is `-45deg`.
 #let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
 
 // `ar` pulls both ends back off the node centres: a head drawn at a centre is buried under that node's
