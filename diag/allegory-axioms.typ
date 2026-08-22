@@ -1213,14 +1213,13 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : F T ⟶ T` in the
 // Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
 // functors `𝟏 ⟶ 𝒜`, NOT one `F ⇒ 𝟙` on `𝒜` — `Nat.add` is an algebra that is no such component.
 An F-algebra is a *weakened* natural transformation. A transformation `F ⇒ 𝟙` on `𝒜` would need a
-component `F X ⟶ X` at every object and a commuting square at every arrow, but F-Algebra only need it works on T and B.
+component `F X ⟶ X` at every object and a commuting square at every arrow, but F-Algebra only need it works on T and A.
 
 
 == `⦇R⦈ = ⦇`$frac(#[`F(∋) R`], ∋)$`⦈ ∋`
 
 // B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`A`]` := (F(∋) R)%∋`, `A := E A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
-// Every horizontal is an F-algebra, so each is named `α` at its carrier above the line, its form below.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T) = ((-2.6, 1.5), (2.6, 1.5))

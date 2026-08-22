@@ -1003,6 +1003,9 @@ partial def toCells (e : Expr) : MetaM (Array Cell) := do
     match lastTwo args with
     | some (f, g) => return (← toCells f) ++ (← toCells g)
     | none => return #[← toCell e]
+  -- BY ITS DEFINITION, like `cap` and `cup`: `top = ⊸ ⟜` (`diag/CB_Derived.lean`), and a box
+  -- labelled `⊤` hides the very two generators the unit law absorbs.  A run, so it lives here.
+  | (``Freyd.Diag.top, _) => return #[.gen "bang" 0.7 0.7, .gen "unitR" 0.7 0.0]
   | _ => return #[← toCell e]
 
 end
