@@ -4,9 +4,9 @@
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name (see circuit.typ's header); `dot` is renamed on the way in for that reason.
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT
-// draw.typ owns the Hinze–Marsden geometry (Catamorphism, Monad) and every helper this note draws with:
+// draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, monadops, monadunit, monadassoc, stateops, unitlaw, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
+#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -943,7 +943,7 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
   lab(-0.35, 0, black)[$E$]; lab(5.05, y, GIVEN1)[$A$]; lab(5.05, -y, GIVEN2)[$B$]
 }))]<absorption-pic>
 
-= Coproduct `[R,S]` <sec-coprod>
+= Coproduct `[R,S] : A + B ⟶ C` <sec-coprod>
 
 // THE DEFINITION, DRAWN, and it needs no new generator: `+` is a UNION, already drawn as the tape of
 // the laws above.  A TAPE ONLY WHERE THERE IS A `∪`, which is why two of the three shape rows have none.
@@ -958,14 +958,18 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
     wire((0, 0), (0.34, 0))
-    tape((0.34, -1.14), (3.80, 1.14))
+    // 1.57 = y + 0.95, the clearance @subseq-union-slide leaves above a branch it labels.
+    tape((0.34, -1.57), (4.24, 1.57))
     tape-fork((0.56, 0), sp: y, len: 0.42)
     // Mirrored and tinted: this file draws a converse by flipping the box, so these are `ιₗ°` and `ιᵣ°`.
     gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
+    wire((3.16, y), (3.60, y))
     gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
-    tape-join((3.58, 0), sp: y, len: 0.42)
-    wire((3.80, 0), (4.14, 0))
-    lab(-0.9, 0, black)[$A + B$]; lab(4.49, 0, black)[$C$]
+    wire((3.16, -y), (3.60, -y))
+    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
+    tape-join((4.02, 0), sp: y, len: 0.42)
+    wire((4.24, 0), (4.58, 0))
+    lab(-0.9, 0, black)[$A + B$]; lab(4.93, 0, black)[$C$]
   }), s: 85%),
 
   [`[R,S] = [`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`] ∋`], [],
@@ -998,12 +1002,13 @@ For `X : E ⟶ C` and `Y : E ⟶ D`, `⟨X,Y⟩ (R × S) = ⟨X R, Y S⟩`. Both
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     wire((0, 0), (0.34, 0))
-    tape((0.34, -1.14), (4.24, 1.14))
+    tape((0.34, -1.57), (4.24, 1.57))
     tape-fork((0.56, 0), sp: y, len: 0.42)
     gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
     gbox((2.24, y), [`ιₗ`], chamfer: false); wire((3.16, y), (3.60, y))
     gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
     gbox((2.24, -y), [`ιᵣ`], chamfer: false); wire((3.16, -y), (3.60, -y))
+    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
     tape-join((4.02, 0), sp: y, len: 0.42)
     wire((4.24, 0), (4.58, 0))
     lab(-1.05, 0, black)[$A + B$]; lab(5.60, 0, black)[$A + B$]
@@ -1181,7 +1186,8 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
 // a page away from the definition it names, and the defining square below straddles the break.
 #pagebreak(weak: true)
-= Catamorphism <sec-cata>
+// B&dM and Freyd call this a catamorphism; the note says reduce, after q's `/`.
+= Reduce <sec-cata>
 
 #disp[#definition[
 let `F` be a relator and has  *initial algebra* `α`#sub[T]` : F T ⟶ T` in the subcategory of functions. 
@@ -1261,7 +1267,7 @@ component `F X ⟶ X` at every object and a commuting square at every arrow, but
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[relator, fusion twice],
   zsqc([`α`#sub[`T`] $frac(#[`X`], ∋)$], [`F(`$frac(#[`X`], ∋)$`)` $frac(#[`F(∋) R`], ∋)$], eq: true),
-  zstep(op: sym.arrow.l.r.double, under: true)[catamorphism of maps],
+  zstep(op: sym.arrow.l.r.double, under: true)[reduce of maps],
   zsqc([$frac(#[`X`], ∋)$], [`⦇`$frac(#[`F(∋) R`], ∋)$`⦈`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
   zsqc([`X`], [`⦇`$frac(#[`F(∋) R`], ∋)$`⦈ ∋`], eq: true),
@@ -1340,48 +1346,51 @@ The side condition is @cata-defining's picture again under
 `α`#sub[`T`]`↦α`#sub[`B`]`, ⦇α`#sub[`B`]`⦈↦S, α`#sub[`B`]`↦α`#sub[`C`]: both say that the bead
 between the two merges is a homomorphism of `F`-algebras.
 
-== Catamorphism in 𝒮et
+== Reduce in 𝒮et
 
 // B&dM §3.1 "Banana-split", pp. 55–57.  The book writes `h · f` applicatively; every composite in the
 // table is mirrored to `f h`, this note's diagram order.
 #disp[#table(
-  columns: (3.0cm, 11.2cm, 1fr),
+  columns: (11.2cm, 5.3cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*definition*], [*note*]),
+  table.header([*definition*], [*type*], [*note*]),
 
-  [`listr`],
   [`listr A ::= nil | cons (A, listr A)`],
+  [`listr : 𝒮et ⟶ 𝒮et`],
   [The cons-lists over `A`, the datatype every row below folds (B&dM p. 55).],
 
-  [`sum`],
-  [`⦇[zero, plus]⦈`],
+  [`sum ≜ ⦇[zero, plus]⦈`],
+  [`sum : listr Nat ⟶ Nat`],
   [`plus(a, b) = a + b`.],
 
-  [`length`],
-  [`⦇[zero, outr succ]⦈`],
-  [`outr` drops the head and keeps the count of the tail, `succ` adds one for the head.],
+  [`length ≜ ⦇[zero, π₂ succ]⦈`],
+  [`length : listr A ⟶ Nat`],
+  [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
-  [`average`],
-  [`⟨sum, length⟩ div`],
+  [`average ≜ ⟨sum, length⟩ div`],
+  [`average :` \ `listr Nat ⟶ Real`],
   [`div(m, n) = m/n`, with `div(0, 0) = 0` so `average` is total. Traverses the list twice.],
 
-  [banana-split law],
-  [`⟨⦇h⦈, ⦇k⦈⟩ = ⦇⟨F(outl) h, F(outr) k⟩⦈`],
+  [banana-split law \
+   `⟨⦇h⦈, ⦇k⦈⟩ = ⦇⟨F(π₁) h, F(π₂) k⟩⦈`],
+  [`⟨⦇h⦈, ⦇k⦈⟩ :` \ `T ⟶ A × B`],
   [Any fork of folds is a single fold, hence one traversal — `F` the base functor.],
 
-  [what it reduces to],
-  [`α ⟨⦇h⦈, ⦇k⦈⟩ = F(⟨⦇h⦈, ⦇k⦈⟩) ⟨F(outl) h, F(outr) k⟩`],
+  [what it reduces to \
+   `α ⟨⦇h⦈, ⦇k⦈⟩ = F(⟨⦇h⦈, ⦇k⦈⟩) ⟨F(π₁) h, F(π₂) k⟩`],
+  [`α ⟨⦇h⦈, ⦇k⦈⟩ :` \ `F T ⟶ A × B`],
   [All that @cata-defining leaves to check: the fork satisfies the defining equation, and
    uniqueness finishes it.],
 
-  [the instance],
-  [`⟨sum, length⟩ = ⦇[zeros, pluss]⦈`],
+  [the instance \
+   `⟨sum, length⟩ = ⦇[zeros, pluss]⦈`],
+  [`⟨sum, length⟩ :` \ `listr Nat ⟶ Nat × Nat`],
   [`zeros = ⟨zero, zero⟩` and `pluss(a, (b, n)) = (a + b, n + 1)`, so `average` runs in one pass.],
 
-  [`preds`],
-  [`preds : Nat -> [Nat]`, `preds n = [n, n−1, …, 1]`],
-  [B&dM Ex 3.6 (p. 57), posed and not answered there: apply Ex 3.4 to write `preds` as `⦇k⦈ outl`.],
+  [`preds n = [n, n−1, …, 1]`],
+  [`preds : Nat ⟶ [Nat]`],
+  [B&dM Ex 3.6 (p. 57), posed and not answered there: apply Ex 3.4 to write `preds` as `⦇k⦈ π₁`.],
 )]<cata-examples>
 
 // The square is the product's universal property at `T`, the string diagram the row above it: one
@@ -1394,13 +1403,13 @@ between the two merges is a homomorphism of `F`-algebras.
     ar(AB, A, GIVEN1, s0: 0.55, s1: 0.55); ar(AB, B, GIVEN2, s0: 0.55, s1: 0.55)
     lab(-0.7, 1.35, GIVEN1)[`⦇h⦈`]; lab(-0.7, -1.35, GIVEN2)[`⦇k⦈`]
     lab(-0.5, 0.4, INDUCED)[`⟨⦇h⦈, ⦇k⦈⟩`]
-    lab(3.5, 0.95, GIVEN1)[`outl`]; lab(3.5, -0.95, GIVEN2)[`outr`]
+    lab(3.5, 0.95, GIVEN1)[`π₁`]; lab(3.5, -0.95, GIVEN2)[`π₂`]
     node(T.at(0), T.at(1), black, `T`); node(A.at(0), A.at(1), GIVEN1, `A`)
     node(AB.at(0), AB.at(1), INDUCED, `A × B`); node(B.at(0), B.at(1), GIVEN2, `B`)
   }),
-  homeq(`F`, `T`, [`α`], [`⟨⦇h⦈, ⦇k⦈⟩`], [`⟨F(outl) h, F(outr) k⟩`], `A × B`,
+  homeq(`F`, `T`, [`α`], [`⟨⦇h⦈, ⦇k⦈⟩`], [`⟨F(π₁) h, F(π₂) k⟩`], `A × B`,
     ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, typed: true, gap: 3.2, regions: auto),
-  [`⟨⦇h⦈, ⦇k⦈⟩ = ⦇⟨F(outl) h, F(outr) k⟩⦈`],
+  [`⟨⦇h⦈, ⦇k⦈⟩ = ⦇⟨F(π₁) h, F(π₂) k⟩⦈`],
 )]<banana-split>
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
@@ -1411,15 +1420,15 @@ between the two merges is a homomorphism of `F`-algebras.
 // general case, which is what the last bullet contrasts the product with.
 - `F-Alg(𝒜)` — the algebras and their homomorphisms — has binary products whenever `𝒜` does, and the
   forgetful `U : F-Alg(𝒜) ⟶ 𝒜` *creates* them: the product of `h : F A ⟶ A` and `k : F B ⟶ B` is
-  carried by `A × B`, with structure `⟨F(outl) h, F(outr) k⟩ : F(A × B) ⟶ A × B`.
-- `outl` and `outr` are homomorphisms out of it, and `⟨p, q⟩ : X ⟶ A × B` is a homomorphism *iff* `p`
+  carried by `A × B`, with structure `⟨F(π₁) h, F(π₂) k⟩ : F(A × B) ⟶ A × B`.
+- `π₁` and `π₂` are homomorphisms out of it, and `⟨p, q⟩ : X ⟶ A × B` is a homomorphism *iff* `p`
   and `q` both are — substitute the structure and compare the two forks component by component.
 - The banana-split law of @cata-examples IS that product's universal property read at the initial
   algebra: `⦇h⦈` and `⦇k⦈` are the unique homomorphisms to `(A, h)` and `(B, k)`, so their fork is the
-  unique homomorphism into the product, which is `⦇⟨F(outl) h, F(outr) k⟩⦈`.
+  unique homomorphism into the product, which is `⦇⟨F(π₁) h, F(π₂) k⟩⦈`.
 - Fokkinga's theorem is *strictly more general* and is not that product: in @fokkinga the two arrows
   leave `F(A × B)`, not `F A` and `F B`, so each sees BOTH components. The product is the case where
-  they factor as `F(outl) h` and `F(outr) k`; B&dM's Ex 3.4 is the other special case (p. 58). What
+  they factor as `F(π₁) h` and `F(π₂) k`; B&dM's Ex 3.4 is the other special case (p. 58). What
   it says: *any algebra on a product carrier is folded by a fork*.
 
 // B&dM Ex 3.8 (p. 58), ONE SQUARE PER CONJUNCT: `h` and `k` leave `F(A × B)` for different corners,
@@ -1538,7 +1547,7 @@ for cons-lists it is the schoolbook method for evaluating a polynomial (p. 58). 
 
 #disp[#definition[
 `F` a *binary* relator: `F(R, S)` is its action on a pair, and `F(X)` abbreviates `F(𝟙, X)`, the `F` of
-the catamorphism section. For every object `A` the initial algebra is `α : F(A, T A) ⟶ T A`, among the
+the reduce section. For every object `A` the initial algebra is `α : F(A, T A) ⟶ T A`, among the
 maps. The *type functor* `T` acts on an arrow `R : A ⟶ B` by
 
   #align(center, block(inset: (y: 6pt))[`T(R) = ⦇F(R, 𝟙) α⦈ : T A ⟶ T B`])
@@ -1551,7 +1560,7 @@ is `map(R)`.
 // THE DRAWING CONVENTION FOR A BIFUNCTOR, stated before the first picture that uses it.
 A bifunctor puts its two arguments in two different places. The wire is the partial application
 `F`#sub[`A`]` = F(A, −)`, and an arrow in the SECOND argument is a bead on the object wire with the
-`F` wire running past it — the catamorphism section's rule, unchanged — while an arrow `R : A ⟶ B`
+`F` wire running past it — the reduce section's rule, unchanged — while an arrow `R : A ⟶ B`
 in the FIRST induces a natural transformation `F`#sub[`R`]` : F`#sub[`A`]` ⇒ F`#sub[`B`], which is a
 bead ON the `F` wire. Marsden draws bifunctors exactly so (`CatString.pdf`, *Bifunctors*):
 side-by-side is already spent on functor composition, so one argument has to go into the wire's name.
@@ -1585,7 +1594,7 @@ square's top row followed by its right vertical; slide it above and the panel re
 the exchange condition every bifunctor satisfies (Hinze & Marsden, Ex 1.23), and in this calculus
 there is nothing to identify.
 
-// Same widths and stroke as the catamorphism table: the two tables are read one after the other, and
+// Same widths and stroke as the reduce table: the two tables are read one after the other, and
 // a law column that changes width between them reads as a different kind of column.
 #disp[#table(
   columns: (4.2cm, 7.4cm, 1fr),
@@ -1623,7 +1632,7 @@ whose side condition holds because `F` is a bifunctor —
 the defining equation.
 
 // THE NATURALITY ROW, drawn: the square above with its two top arrows composed into the one relator
-// action `F(R, T(R))`, which is why this one is back to the ±3 of the catamorphism square.
+// action `F(R, T(R))`, which is why this one is back to the ±3 of the reduce square.
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
   let (FA, FB, TA, TB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
   ar(FA, FB, INDUCED, s0: 1.45, s1: 1.45)
@@ -1641,202 +1650,103 @@ left as the vertical. In the string diagram that is the `F`#sub[`R`] bead slidin
 what stays put is `α`, one bead falling past `T(R)` from the row above to the row below — which is
 what "`α` is natural" means.
 
-= Monad
-
-// IntroString §3.1 (p. 64), in this note's diagram order; the book prints `μ ⋅ (η∘M) = id`.
-// Juxtaposition is vertical composition, `∘` is functor composition and applicative.
-#disp[#definition[
-An endofunctor `M : 𝒜 ⟶ 𝒜` with two natural transformations, the *unit* `η : Id ⇒ M` and the
-*multiplication* `μ : M∘M ⇒ M`, subject to a unit law and an associativity law:
-
-  #align(center, block(inset: (y: 6pt))[
-    `(η∘M) μ = 𝟙 = (M∘η) μ` #h(1.6cm) `(μ∘M) μ = (M∘μ) μ`
-  ])
-]]<monad-defn>
-
-// ONE HUE PER TRANSFORMATION FOR THE WHOLE SECTION, fixed here: `η` GIVEN2, `μ` GIVEN1.  Both are
-// given data and neither induced by the other, so INDUCED stays for @state-unit's conclusion.
-#disp[#align(center, monadops(ceta: GIVEN2, cmu: GIVEN1))]<monad-ops>
-
-In @monad-ops the identity functor is a REGION and not a wire, so `η : Id ⇒ M` has nothing above it and the `M`
-wire simply begins at its bead — the book's lollipop. `μ : M∘M ⇒ M` is the two `M` wires of `M∘M`
-merging into one, its tuning fork.
-
-// `capbox` and not `pair`: there is no commutative square to set beside an axiom already stated as an
-// equation between pictures.  Same hues as @monad-ops so the beads carry over; `monadassoc` has no `η`.
-#disp[#capbox(monadunit(ceta: GIVEN2, cmu: GIVEN1), [`(η∘M) μ = 𝟙 = (M∘η) μ`])]<monad-unit>
-
-The lollipop is absorbed into the fork from either side and a bare wire is left, which is what `𝟙` is
-in this calculus: nothing is drawn for it.
-
-#disp[#capbox(monadassoc(cmu: GIVEN1), [`(μ∘M) μ = (M∘μ) μ`])]<monad-assoc>
-
-The two nestings of the fork agree, so three `M`s collapse to one whichever pair is multiplied first.
-
-== Monad in 𝒮et
-
-// The powerset row is `Pow`, the book's own name for the functor (p. 66): `P` is spoken for twice —
-// the power relator section and this table's set of states — and `[−]` names the OBJECT, not the functor.
-#disp[#table(
-  columns: 5, inset: 9pt, stroke: 0.4pt + luma(190), align: horizon,
-  table.header([*monad*], [*`η`*], [*`μ`*], [*`η` on elements*], [*`μ` on elements*]),
-
-  [`Id A = A`], [`𝟙`], [`𝟙`], [`η A a = a`], [`μ A a = a`],
-
-  [`Exc A = A + E`], [`ιₗ`], [`𝟙 ▿ ιᵣ`], [`η A a = ιₗ a`],
-  [`μ A (ιₗ y) = y` \ `μ A (ιᵣ e) = ιᵣ e`],
-
-  [`State A = (A × P)`#super[`P`]], [`curry 𝟙`], [`(apply`#sub[`A × P`]`)`#super[`P`]],
-  [`η A a = λ x . (a, x)`], [`μ A f = λ x . g y` where `(g, y) = f x`],
-
-  [`Pow A = E A`], [$frac(#[`𝟙`], ∋)$], [`⋃`], [`η A a = {a}`], [`μ A Xs = ⋃ Xs`],
-)]<monad-table>
-
-== The state monad
-
-// ORDER: the two formulas first, since they are what the reader has and they look arbitrary; then the
-// adjunction that makes them what they are (IntroString p. 96 points at the same connection).
-For a fixed set `P` of states, IntroString p. 67 defines
-
-  #align(center, block(inset: (y: 6pt))[
-    `State A = (A × P)`#super[`P`] #h(1.1cm) `η A = curry (𝟙 : A × P ⟶ A × P)` #h(1.1cm)
-    `μ A = (apply`#sub[`A × P`]`)`#super[`P`]
-  ])
-
-Both arrows come from the curry adjunction `L ⊣ R`, `L A = A × P` and `R B = B`#super[`P`]
-(IntroString p. 96):
-
-// `⊣` LOOKS LIKE A COMPOSITION AND IS NOT: `L ⊣ R` beside `State = R∘L` reads as two opposite orders
-// in one paragraph, so the last row says once that it is no order at all.
-- `State = R∘L`.
-- `η` *is* the unit `Id ⇒ R∘L`, which is why it is the curried identity.
-- the counit `ε : L∘R ⇒ Id` is `apply`.
-- `μ = R∘ε∘L`, that counit with a functor on each side: in `μ A = (apply`#sub[`A × P`]`)`#super[`P`]
-  the subscript `A × P` is `L A`, the functor INSIDE, and the outer `(−)`#super[`P`] is `R`, the
-  functor OUTSIDE.
-- `⊣` composes nothing; it only names the left adjoint first.
-
-// OPEN and CLOSE, not "cup" and "cap": those are the drawing code's names for the bends of the
-// Frobenius calculus every other picture here is made of, and reusing them would name two things once.
-Applicative order stands `R` left and `L` right in `State = R∘L`. The identity functor is a region, so
-a unit `Id ⇒ R∘L` has nothing above it and two wires below — one strand that OPENS the pair; a counit
-`L∘R ⇒ Id` is that strand upside down, CLOSING a pair that arrives from above.
-
-#disp[#align(center, stateops(ceta: GIVEN2, ceps: GIVEN1))]<state-ops>
-
-In @state-ops, `State∘State` is the four wires `R L R L`, and `μ = R∘ε∘L` closes the middle pair — the
-`L∘R` — leaving the outer `R` and `L`, which is `State` again. The two wires that run past the turn
-untouched are the two functors composed on, `R` outside and `L` inside.
-
-// THE DIAGONAL IS SOLID BLUE, NOT DASHED: dashed means "the unique arrow a universal property
-// produces" everywhere else here, and `𝟙` is produced by nothing.  The `ε` bead is green because `μ = R ε L`.
-#disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (SA, SSA, SA2) = ((-3.2, 1.25), (3.2, 1.25), (3.2, -1.25))
-    ar(SA, SSA, GIVEN2, s0: 1.0, s1: 2.3)
-    ar(SSA, SA2, GIVEN1, s0: 0.55, s1: 0.55)
-    // The only edge at an angle, so its trim is computed rather than copied: 1.15 along a slope of
-    // −2.5/6.4 leaves the same tenth-of-a-unit gap the horizontal and vertical edges do.
-    ar(SA, SA2, INDUCED, s0: 1.15, s1: 1.15)
-    lab(0, 1.85, GIVEN2)[`η (State A)`]; lab(3.85, 0, GIVEN1)[`μ A`]
-    lab(0, -0.55, INDUCED)[`𝟙`]
-    node(SA.at(0), SA.at(1), black, `State A`); node(SSA.at(0), SSA.at(1), black, `State (State A)`)
-    node(SA2.at(0), SA2.at(1), black, `State A`)
-  }),
-  unitlaw(ceta: GIVEN2, ceps: GIVEN1),
-  [`(η∘State) μ = 𝟙`],
-)]<state-unit>
-
-@state-unit is the zig-zag. `η∘State` opens a new `R L` left of the pair already there and `μ` closes
-the middle two — the new `L` against the old `R` — leaving the new `R` and the old `L`, which is
-`State` unchanged. Strip the old `L`, which never moves, and what zig-zags is the curry adjunction's
-snake equation `(η∘R)(R∘ε) = 𝟙` (IntroString p. 93): @monad-unit read at `State` is that triangle
-identity with `L` composed on the inside.
-
-In Set it is beta-reduction. `η (State A) f = λ x . (f, x)` pairs the computation with the state, and
-`μ A` applies it back, `λ x . f x`, which is `f`.
-
 #pagebreak(weak: true)
 = Combinatorial functions <sec-comb>
 
 // B&dM §5.6, p. 125, plus the three specifications of Ex 7.39–7.41 (p. 174).  Every composite is
 // mirrored to diagram order, so B&dM's `prefix · suffix` is `suffix prefix` here.
 #disp[#table(
-  columns: (3.1cm, 7.6cm, 1fr),
+  columns: (7.1cm, 5.7cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*definition*], [*note*]),
+  table.header([*definition*], [*type*], [*note*]),
 
-  [`list`],
-  [`list A ::= nil | cons (A, list A)` \
-   `list(R) = ⦇[nil, (R ⊗ 𝟙) cons]⦈`],
+  [`[A] ::= nil | cons (A, [A])`],
+  [`list : 𝒜 ⟶ 𝒜`],
   [B&dM's `listr` under the short name it keeps from p. 125 on.],
 
-  [`subseq`],
-  [`⦇[nil, cons ∪ outr]⦈`],
-  [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `outr` drops it.],
+  [`list(R) ≜ ⦇[nil, (R ⊗ 𝟙) cons]⦈`],
+  [`list(R) : [A] ⟶ [B]`],
+  [The relator's action on `R : A ⟶ B`: one `R` per element, the shape untouched.],
 
-  [`prefix`],
-  [`⦇[nil, nil ∪ cons]⦈ = cat° outl = init*`],
-  [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init ≜ snoc° outl`.],
+  [`subseq ≜ ⦇[nil, cons ∪ π₂]⦈`],
+  [`subseq : [A] ⟶ [A]`],
+  [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
-  [`suffix`],
-  [`cat° outr = tail*`],
-  [The dual, `tail ≜ cons° outr`; as a catamorphism it needs snoc-lists.],
+  [`prefix ≜ ⦇[nil, nil ∪ cons]⦈` \
+   `= cat° π₁ = init*`],
+  [`prefix : [A] ⟶ [A]`],
+  [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init ≜ snoc° π₁`.],
 
-  [`segment`],
-  [`suffix prefix`],
+  [`suffix ≜ cat° π₂ = tail*`],
+  [`suffix : [A] ⟶ [A]`],
+  [The dual, `tail ≜ cons° π₂`; as a reduce it needs snoc-lists.],
+
+  [`segment ≜ suffix prefix`],
+  [`segment : [A] ⟶ [A]`],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
-  [`partition`],
-  [`concat°`, #h(4pt) `concat ≜ ⦇[nil, cat]⦈`],
+  [`partition ≜ concat°`],
+  [`partition : [A] ⟶ [[A]]`],
   [`cat` restricted to a non-empty first argument, so `ys` is a list of non-empty segments of `xs`.],
 
-  [`inits`, `tails`],
-  [implementations of $frac(#[`prefix`], ∋)$ and $frac(#[`suffix`], ∋)$],
-  [`inits` by increasing length, `tails` by decreasing — opposite orders, which is what
-   `splits ≜ ⟨inits, tails⟩ zip` needs to implement $frac(#[`cat°`], ∋)$.],
+  [`concat ≜ ⦇[nil, cat]⦈`],
+  [`concat : [[A]] ⟶ [A]`],
+  [Joins the segments back up, which is why its converse splits a list.],
 
-  [`filter(p)`],
-  [$frac(#[`subseq list(p)`], ∋)$ `max R`, #h(4pt) `R ≜ length ≤ length°`],
+  [`inits`],
+  [`inits : [A] ⟶ [[A]]`],
+  [Implements $frac(#[`prefix`], ∋)$, listing the prefixes by increasing length.],
+
+  [`tails`],
+  [`tails : [A] ⟶ [[A]]`],
+  [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order, which is what
+   #box[`splits ≜ ⟨inits, tails⟩ zip`] needs to implement $frac(#[`cat°`], ∋)$.],
+
+  [`filter(p) ≜` $frac(#[`subseq list(p)`], ∋)$ `max R`],
+  [`filter(p) : [A] ⟶ [A]`],
   [The longest subsequence of `xs` whose every element passes `p`. `p` is a *coreflexive* and `list(p)`
    the relator applied to it, so `list(p)` is the test "every element passes" — no boolean anywhere.
    The longest is unique: only one subsequence keeps exactly the passing elements. The program is
-   `⦇[nil, (outl p → cons, outr)]⦈`. #h(4pt) #src[Ex 7.41; `max R` is @min-defn]],
+   `⦇[nil, (π₁ p → cons, π₂)]⦈`. #h(4pt) #src[Ex 7.41; `max R` is @min-defn]],
 
-  [`takewhile(p)`],
-  [$frac(#[`prefix list(p)`], ∋)$ `max R`],
+  [`R ≜ length ≤ length°`],
+  [`R : [A] ⟶ [A]`],
+  [The preorder `filter` and `takewhile` maximise over: the longer list wins.],
+
+  [`takewhile(p) ≜` $frac(#[`prefix list(p)`], ∋)$ `max R`],
+  [`takewhile(p) : [A] ⟶ [A]`],
   [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`. Unique,
    since the prefixes of one list are linearly ordered by length. #h(4pt) #src[Ex 7.39]],
 
-  [`mss`],
-  [$frac(#[`segment sum`], ∋)$ `max ≤`],
+  [`mss ≜` $frac(#[`segment sum`], ∋)$ `max ≤`],
+  [`mss : [Int] ⟶ Int`],
   [Maximum segment sum. `segment = suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `max ≤`
-   on each suffix, which the greedy theorem turns into a catamorphism. #h(4pt) #src[Ex 7.40]],
+   on each suffix, which the greedy theorem turns into a reduce. #h(4pt) #src[Ex 7.40]],
 )]<comb-fns>
 
-== $frac(#[`subseq`], ∋)$ `= ⦇[nil` $frac(#[`𝟙`], ∋)$`, ⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), outr⟩ cup]⦈`
+== $frac(#[`subseq`], ∋)$ `= ⦇[nil` $frac(#[`𝟙`], ∋)$`, ⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), π₂⟩ cup]⦈`
 
-// B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ outr]`, which is what
+// B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
 // turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.
 #disp[#definition[
-`cup ≜` $frac(#[`outl ∋ ∪ outr ∋`], ∋)$ ` : E A × E A ⟶ E A`, #h(4pt) so
+`cup ≜` $frac(#[`π₁ ∋ ∪ π₂ ∋`], ∋)$ ` : E A × E A ⟶ E A`, #h(4pt) so
 $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
 ]]<cup-defn>
 
 #disp[
 #zline(
-  zsqc([$frac(#[`F(∋) [nil, cons ∪ outr]`], ∋)$], none),
+  zsqc([$frac(#[`F(∋) [nil, cons ∪ π₂]`], ∋)$], none),
   zstep(op: sym.eq, under: true)[`F X = 𝟏 + A × X`],
-  zsqc([$frac(#[`(𝟙 + 𝟙 × ∋) [nil, cons ∪ outr]`], ∋)$], none),
+  zsqc([$frac(#[`(𝟙 + 𝟙 × ∋) [nil, cons ∪ π₂]`], ∋)$], none),
   zstep(op: sym.eq, under: true)[coproduct],
-  zsqc([$frac(#[`[nil, (𝟙 × ∋)(cons ∪ outr)]`], ∋)$], none),
+  zsqc([$frac(#[`[nil, (𝟙 × ∋)(cons ∪ π₂)]`], ∋)$], none),
 )
 #zline(
   zstep(op: sym.eq, under: true)[coproduct of maps],
-  zsqc([`[`$frac(#[`nil`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$`]`], none),
+  zsqc([`[`$frac(#[`nil`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ π₂)`], ∋)$`]`], none),
   zstep(op: sym.eq, under: true)[singleton],
-  zsqc([`[nil` $frac(#[`𝟙`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$`]`], none),
+  zsqc([`[nil` $frac(#[`𝟙`], ∋)$`,` $frac(#[`(𝟙 × ∋)(cons ∪ π₂)`], ∋)$`]`], none),
 )
 ]<subseq-EW-case>
 
@@ -1863,7 +1773,7 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     gbox((8.10, y), [`ιₗ`], flip: true, fill: TINT); wire((9.02, y), (9.36, y))
     gbox((9.36, y), [`nil`], chamfer: false, w: 1.05); wire((10.41, y), (12.41, y))
     gbox((8.10, -y), [`ιᵣ`], flip: true, fill: TINT); wire((9.02, -y), (9.36, -y))
-    gbox((9.36, -y), [`cons ∪ outr`], w: 3.05)
+    gbox((9.36, -y), [`cons ∪ π₂`], w: 3.05)
     tape-join((13.11, 0), sp: y, len: 0.7)
     wire((13.41, 0), (13.75, 0))
   })),
@@ -1876,9 +1786,9 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     gbox((1.26, y), [`ιₗ`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
     gbox((2.52, y), [`nil`], chamfer: false, w: 1.05); wire((3.57, y), (7.46, y))
     gbox((1.26, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
-    // Chamfered where the rest of this section is not: `𝟙 × ∋` and `cons ∪ outr` are relations, not maps.
+    // Chamfered where the rest of this section is not: `𝟙 × ∋` and `cons ∪ π₂` are relations, not maps.
     gbox((2.52, -y), [`𝟙 × ∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
-    gbox((4.41, -y), [`cons ∪ outr`], w: 3.05)
+    gbox((4.41, -y), [`cons ∪ π₂`], w: 3.05)
     tape-join((8.16, 0), sp: y, len: 0.7)
     wire((8.46, 0), (8.80, 0))
   })),
@@ -1888,20 +1798,20 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
 
 #disp[
 #zline(
-  zsqc([$frac(#[`(𝟙 × ∋)(cons ∪ outr)`], ∋)$], none),
-  zstep(op: sym.eq, under: true)[`∪` composes, `outr` natural],
-  zsqc([$frac(#[`(𝟙 × ∋) cons ∪ outr ∋`], ∋)$], none),
+  zsqc([$frac(#[`(𝟙 × ∋)(cons ∪ π₂)`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[`∪` composes, `π₂` natural],
+  zsqc([$frac(#[`(𝟙 × ∋) cons ∪ π₂ ∋`], ∋)$], none),
   zstep(op: sym.eq, under: true)[`cup`],
-  zsqc([`⟨`$frac(#[`(𝟙 × ∋) cons`], ∋)$`,` $frac(#[`outr ∋`], ∋)$`⟩ cup`], none),
+  zsqc([`⟨`$frac(#[`(𝟙 × ∋) cons`], ∋)$`,` $frac(#[`π₂ ∋`], ∋)$`⟩ cup`], none),
 )
 #zline(
   zstep(op: sym.eq, under: true)[absorption, fusion],
-  zsqc([`⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), outr⟩ cup`], none),
+  zsqc([`⟨`$frac(#[`𝟙 × ∋`], ∋)$` E(cons), π₂⟩ cup`], none),
 )
 ]<subseq-EW-join>
 
 // The first step of the chain above, cut in two so both halves are visible: the tape IS the `∪`
-// (@coprod-laws), so distributing is the box entering it, and `∋` crossing `outr` is the second panel's
+// (@coprod-laws), so distributing is the box entering it, and `∋` crossing `π₂` is the second panel's
 // bottom branch redrawn.  No injections on these branches — the union is not over a coproduct here.
 // An object is named ONLY where it changes, and every label sits 0.62 ABOVE the wire it names —
 // except panel 2's, centred between two branches that carry the same object there.
@@ -1915,7 +1825,7 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     tape((4.00, -2.10), (7.22, 2.10))
     tape-fork((4.22, 0), sp: y, len: 0.7)
     gbox((4.92, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((4.92, -y), [`outr`], chamfer: false, w: 1.3)
+    gbox((4.92, -y), [`π₂`], chamfer: false, w: 1.3)
     tape-join((6.92, 0), sp: y, len: 0.7)
     wire((7.22, 0), (7.56, 0))
   }),
@@ -1928,7 +1838,7 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     gbox((1.26, y), [`𝟙 × ∋`], w: 1.55); wire((2.81, y), (3.15, y))
     gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
     gbox((1.26, -y), [`𝟙 × ∋`], w: 1.55); wire((2.81, -y), (3.15, -y))
-    gbox((3.15, -y), [`outr`], chamfer: false, w: 1.3)
+    gbox((3.15, -y), [`π₂`], chamfer: false, w: 1.3)
     lab(2.98, 0, black)[`A × [A]`]
     tape-join((5.15, 0), sp: y, len: 0.7)
     wire((5.45, 0), (5.79, 0))
@@ -1941,25 +1851,25 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
     tape-fork((0.56, 0), sp: y, len: 0.7)
     gbox((1.26, y), [`𝟙 × ∋`], w: 1.55); wire((2.81, y), (3.15, y))
     gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((1.26, -y), [`outr`], chamfer: false, w: 1.3); wire((2.56, -y), (2.90, -y))
+    gbox((1.26, -y), [`π₂`], chamfer: false, w: 1.3); wire((2.56, -y), (2.90, -y))
     gbox((2.90, -y), [`∋`], w: 0.7); wire((3.60, -y), (4.45, -y))
     lab(2.98, 1.77, black)[`A × [A]`]; lab(2.73, -0.53, black)[`E([A])`]
     tape-join((5.15, 0), sp: y, len: 0.7)
     wire((5.45, 0), (5.79, 0))
     lab(6.42, 0, black)[`[A]`]
   }),
-), ("", [composition over `∪`], [`outr` natural]), s: 88%)
-#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "composition over join, naturality of `outr`":
-  `T(X₁ ∪ X₂) = T X₁ ∪ T X₂` — @adj-cross; `(𝟙 × ∋) outr = outr ∋` — @relprod-pic at `π₂`, an equality
+), ("", [composition over `∪`], [`π₂` natural]), s: 88%)
+#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "composition over join, naturality of `π₂`":
+  `T(X₁ ∪ X₂) = T X₁ ∪ T X₂` — @adj-cross; `(𝟙 × ∋) π₂ = π₂ ∋` — @relprod-pic at `π₂`, an equality
   because `𝟙` is entire.]])]<subseq-union-slide>
 
-// @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `outr`
+// @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
   let (AE, E, AL, L) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
   ar(AE, E, GIVEN2, s0: 1.55, s1: 1.05); ar(AL, L, GIVEN2, s0: 1.2, s1: 0.7)
   ar(AE, AL, GIVEN1, s0: 0.55, s1: 0.55); ar(E, L, GIVEN1, s0: 0.55, s1: 0.55)
-  lab(0, 1.9, GIVEN2)[`outr`]; lab(0, -1.9, GIVEN2)[`outr`]
+  lab(0, 1.9, GIVEN2)[`π₂`]; lab(0, -1.9, GIVEN2)[`π₂`]
   lab(-3.95, 0, GIVEN1)[`𝟙 × ∋`]; lab(3.2, 0, GIVEN1)[`∋`]
   node(AE.at(0), AE.at(1), black, `A × E([A])`); node(E.at(0), E.at(1), black, `E([A])`)
   node(AL.at(0), AL.at(1), black, `A × [A]`); node(L.at(0), L.at(1), black, `[A]`)
@@ -1982,7 +1892,7 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
   gbox((3.90, u), [$frac(#[`𝟙 × ∋`], ∋)$], chamfer: false, w: 1.7, h: 1.2); wire((5.60, u), (5.95, u))
   gbox((5.95, u), [`E(cons)`], chamfer: false, w: 2.0); wire((7.95, u), (8.50, u))
   wire((3.70, l), (3.90, l))
-  gbox((3.90, l), [`outr`], chamfer: false, w: 1.3); wire((5.20, l), (8.50, l))
+  gbox((3.90, l), [`π₂`], chamfer: false, w: 1.3); wire((5.20, l), (8.50, l))
   gbox((8.50, -y), [`cup`], chamfer: false, w: 1.15, h: 2.6); wire((9.65, -y), (10.40, -y))
   tape-join((11.40, 0), sp: y, len: 1.0)
   wire((11.70, 0), (12.04, 0))
@@ -1991,6 +1901,303 @@ $frac(#[`R ∪ S`], ∋)$ `= ⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ 
 #align(center, block(inset: (y: 4pt))[
   #src[B&dM §5.6, p. 124, which writes `Pcons`; `cons` is a map, and there `P(cons) = E(cons)` — @powrel-laws.]
 ])]<subseq-alg>
+
+== `takewhile(p) = ⦇[nil, (π₁ p → cons, ⊸ nil)]⦈` <sec-takewhile>
+
+// B&dM Ex 7.39, p. 174.  Everything the derivation runs on lives in §18 — `max R` is @min-defn, the
+// greedy theorem @mon-laws — so the reference points forward, as @comb-fns's rows already do.
+#disp[#definition[
+`F X = 𝟏 + A × X`, #h(4pt) `α ≜ [nil, cons]`, #h(4pt) `p` a coreflexive on `A`, #h(4pt)
+`R ≜ length ≤ length°`, a preorder, #h(4pt) `S ≜ [nil, ⊸ nil ∪ (p × 𝟙) cons] : F([A]) ⟶ [A]`.
+
+`⊸ nil` is the constant `nil`, the second `nil` of `prefix = ⦇[nil, ⊸ nil ∪ cons]⦈`; #h(4pt)
+`(g → X, Y)` is `X` where `g` is defined and `Y` where it is not.
+
+`nil R = ⊤` #h(4pt) #src[`nil` is the shortest list, so it loses every `max R`]
+]]<takewhile-defn>
+
+#disp[
+#zline(
+  zsqc([`α prefix list(p)`], none),
+  zstep(op: sym.eq, under: true)[defining equation],
+  zsqc([`F(prefix) [nil, ⊸ nil ∪ cons] list(p)`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`list(p)` through `cons`],
+  zsqc([`F(prefix) [nil, ⊸ nil ∪ (p × list(p)) cons]`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[relator, `prefix` entire],
+  zsqc([`[nil, ⊸ nil ∪ (p × (prefix list(p))) cons]`], none),
+  zstep(op: sym.eq, under: true)[`prefix list(p)` entire],
+  zsqc([`F(prefix list(p)) S`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p) = ⦇S⦈`.
+  @cata-fusion cannot: `list(p)` is not entire, `(𝟙 × list(p)) ⊸ nil ⊏ ⊸ nil`, and no algebra meets
+  the side condition.]])
+]<takewhile-alg>
+
+#disp[
+#zline(
+  zsqc([`(𝟙 × R°)(⊸ nil ∪ (p × 𝟙) cons)`], none),
+  zstep(op: sym.eq, under: true)[relator, composition over `∪`],
+  zsqc([`(𝟙 × R°) ⊸ nil ∪ (p × R°) cons`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[@dom-slide, `(𝟙 × R°) cons ⊑ cons R°`],
+  zsqc([`⊸ nil ∪ (p × 𝟙) cons R°`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[`R°` reflexive],
+  zsqc([`(⊸ nil ∪ (p × 𝟙) cons) R°`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[the `cons` branch of `F(R°) S ⊑ S R°`; the `nil` branch is
+  `nil ⊑ nil R°`. `(𝟙 × R°) cons ⊑ cons R°` is `cons length = (𝟙 × length) π₂ succ` with `succ`
+  monotone — a longer tail makes a longer list.]])
+]<takewhile-mono>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`S`], ∋)$ ` max R`], none),
+  zstep(op: sym.eq, under: true)[coproduct of maps],
+  zsqc([`[`$frac(#[`nil`], ∋)$` max R,` $frac(#[`⊸ nil ∪ (p × 𝟙) cons`], ∋)$` max R]`], none),
+  zstep(op: sym.eq, under: true)[singleton, `R°` reflexive],
+  zsqc([`[nil,` $frac(#[`⊸ nil ∪ (p × 𝟙) cons`], ∋)$` max R]`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`nil R = ⊤`],
+  zsqc([`[nil, (π₁ p → cons, ⊸ nil)]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
+  `{nil, cons(a, xs)}` where it holds, and `nil` loses the second — @min-defn at a two-element set.]])
+]<takewhile-step>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`⦇`$frac(#[`S`], ∋)$ `max R⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `max R` \ #src[Theorem 7.2, @mon-laws at `R°`;
+   `max R = min R°`, so the condition is @takewhile-mono]],
+  [greedy: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix collected and one
+   chosen at the end],
+
+  [`prefix° prefix ∩ R ∩ R° ⊑ 𝟙` \ #src[context, @min-laws: only `R` between prefixes of one list counts]],
+  [two prefixes of one list of equal length are equal, so $frac(#[`prefix list(p)`], ∋)$ `max R` is
+   simple — *the* longest, not *a* longest],
+
+  [$frac(#[`prefix list(p)`], ∋)$ `max R` entire],
+  [`nil` is always a `p`-prefix and `R` is connected on the prefixes of one list, so the longest exists],
+
+  [`X ⊑ Y`, `X` entire, `Y` simple `⟹ X = Y` \ #src[`⦇[nil, (π₁ p → cons, ⊸ nil)]⦈` is a
+   reduce of maps, hence entire]],
+  [what turns the greedy `⊑` into the heading's `=`],
+)]<takewhile-laws>
+
+== `filter(p) = ⦇[nil, (π₁ p → cons, π₂)]⦈` <sec-filter>
+
+// B&dM Ex 7.41, p. 174.  @sec-takewhile with `subseq` for `prefix`: same `F`, `α`, `p`, `R`, same
+// greedy theorem, and only the second branch of the algebra differs.
+#disp[#definition[
+`F`, #h(4pt) `α`, #h(4pt) `p`, #h(4pt) `R` as in @takewhile-defn; #h(4pt)
+`S ≜ [nil, π₂ ∪ (p × 𝟙) cons] : F([A]) ⟶ [A]`, #h(4pt) `π₂` where @takewhile-defn has `⊸ nil`.
+
+`𝟙 ⊑ π₂ R cons°` #h(4pt) #src[the tail is one shorter than the cons, so `π₂` loses the `max R` at
+every step — where @takewhile-defn's loser is `nil`]
+]]<filter-defn>
+
+#disp[
+#zline(
+  zsqc([`α subseq list(p)`], none),
+  zstep(op: sym.eq, under: true)[defining equation],
+  zsqc([`F(subseq) [nil, cons ∪ π₂] list(p)`], none),
+  zstep(op: sym.eq, under: true)[`list(p)` through `cons`, `π₂` natural],
+  zsqc([`F(subseq) [nil, (p × list(p)) cons ∪ (𝟙 × list(p)) π₂]`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[relator, `subseq list(p)` entire],
+  zsqc([`F(subseq list(p)) S`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `subseq list(p) = ⦇S⦈` —
+  @takewhile-alg's chain with `π₂` for `⊸ nil`. Here @cata-fusion is blocked for the same reason,
+  and `π₂` is the branch that carries `list(p)` out by naturality (@subseq-outr-square at `∋ := list(p)`).]])
+]<filter-alg>
+
+#disp[
+#zline(
+  zsqc([`(𝟙 × R°)(π₂ ∪ (p × 𝟙) cons)`], none),
+  zstep(op: sym.eq, under: true)[composition over `∪`, `π₂` natural],
+  zsqc([`π₂ R° ∪ (p × R°) cons`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[@takewhile-mono's `cons` branch],
+  zsqc([`π₂ R° ∪ (p × 𝟙) cons R°`], none),
+  zstep(op: sym.eq, under: true)[composition over `∪`],
+  zsqc([`(π₂ ∪ (p × 𝟙) cons) R°`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[`F(R°) S ⊑ S R°`, the `nil` branch again `nil ⊑ nil R°`. The
+  first step is an equality: @takewhile-mono spends `R°` reflexive on getting `⊸ nil` past `𝟙 × R°`,
+  and `π₂` needs only its naturality square.]])
+]<filter-mono>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`S`], ∋)$ ` max R`], none),
+  zstep(op: sym.eq, under: true)[@takewhile-step's first two steps],
+  zsqc([`[nil,` $frac(#[`π₂ ∪ (p × 𝟙) cons`], ∋)$` max R]`], none),
+  zstep(op: sym.eq, under: true)[`𝟙 ⊑ π₂ R cons°`],
+  zsqc([`[nil, (π₁ p → cons, π₂)]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[at `(a, xs)` the set is `{xs}` where `p` fails on `a` and
+  `{xs, cons(a, xs)}` where it holds, and `xs` loses the second — @min-defn at a two-element set. The
+  head is dropped, not the whole tail: that is the one place `π₂` shows against @takewhile-step's `⊸ nil`.]])
+]<filter-step>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`⦇`$frac(#[`S`], ∋)$ `max R⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `max R` \ #src[@takewhile-laws's first row at
+   this `S`, its condition @filter-mono]],
+  [greedy: one longest `p`-subsequence kept at each `cons`],
+
+  [`S° S ∩ R ∩ R° ⊑ 𝟙` fails at `S := subseq list(p)` \ #src[@takewhile-laws's uniqueness row does not
+   transfer]],
+  [two `p`-subsequences of one list can have equal length and differ: the prefixes of one list are
+   linearly ordered by length, its subsequences are not],
+
+  [$frac(#[`subseq list(p)`], ∋)$ `max R` simple \ #src[@comb-fns]],
+  [a `p`-subsequence that drops a passing element is beaten by the one that keeps it, so only the
+   subsequence keeping *exactly* the passing elements survives `max R` — *the* longest, not *a* longest],
+
+  [`X ⊑ Y`, `X` entire, `Y` simple `⟹ X = Y` \ #src[@takewhile-laws's last row at this `S`]],
+  [what turns the greedy `⊑` into the heading's `=`; `⦇[nil, (π₁ p → cons, π₂)]⦈` is again a
+   reduce of maps, hence entire],
+)]<filter-laws>
+
+== `mss = ⦇[zero wrap, ⟨(𝟙 × head) ⊕, π₂⟩ cons]⦈ max ≤` <sec-mss>
+
+// B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
+// `≤` is on `Int`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
+#disp[#definition[
+`F X = 𝟏 + A × X`, #h(4pt) `A := Int`, #h(4pt) `α ≜ [nil, cons]`, #h(4pt)
+`sum = ⦇[zero, plus]⦈` and `segment = suffix prefix` from @cata-examples and @comb-fns.
+
+`head ≜ cons° π₁`, #h(4pt) `wrap ≜ ⟨𝟙, ⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
+one-element list, beside @comb-fns's `tail ≜ cons° π₂`]
+
+`⊕ ≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` max ≤` #h(4pt) #src[B&dM's `oplus = max Λ(zero ∪ plus)`; the
+set at `(a, b)` is `{0, a + b}`, so `⊕` is the larger of the two]
+]]<mss-defn>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`segment sum`], ∋)$ ` max ≤`], none),
+  zstep(op: sym.eq, under: true)[`segment = suffix prefix`],
+  zsqc([$frac(#[`suffix (prefix sum)`], ∋)$ ` max ≤`], none),
+  zstep(op: sym.eq, under: true)[absorption],
+  zsqc([$frac(#[`suffix`], ∋)$ ` E(prefix sum) max ≤`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[$frac(#[`R`], ∋)$` ∋ = R`, `union = E(∋)`],
+  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$`) union max ≤`], none),
+  zstep(op: sym.eq, under: true)[@min-laws, the sets non-empty],
+  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$`) E(max ≤) max ≤`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[relator],
+  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$` max ≤) max ≤`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[B&dM's `max P(max Λ(sum prefix)) Λsuffix`, mirrored. The
+  `union` step is @min-laws's `P(min R) min R = P(Dom (min R)) union min R` — every suffix has the
+  empty prefix, so `Dom` is `𝟙` here — and `P(f) = E(f)` at the map it is applied to (@powrel-laws).]])
+]<mss-shape>
+
+#disp[
+#zline(
+  zsqc([`[nil, ⊸ nil ∪ cons] sum`], none),
+  zstep(op: sym.eq, under: true)[coproduct of maps, composition over `∪`],
+  zsqc([`[nil sum, ⊸ nil sum ∪ cons sum]`], none),
+  zstep(op: sym.eq, under: true)[`sum`'s defining equation],
+  zsqc([`[zero, ⊸ zero ∪ (𝟙 × sum) plus]`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`(𝟙 × sum) ⊸ = ⊸`, `sum` entire],
+  zsqc([`[zero, (𝟙 × sum)(⊸ zero ∪ plus)]`], none),
+  zstep(op: sym.eq, under: true)[relator],
+  zsqc([`F(sum) [zero, ⊸ zero ∪ plus]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` := [nil, ⊸ nil ∪ cons]`,
+  `S := sum`: the side condition, so `prefix sum = ⦇[zero, ⊸ zero ∪ plus]⦈`. `prefix` is the
+  reduce, `sum` the map fused into it — the intermediate list is gone.]])
+]<mss-prefix-sum>
+
+#disp[
+#zline(
+  zsqc([`(𝟙 × ≤°)(⊸ zero ∪ plus)`], none),
+  zstep(op: sym.eq, under: true)[relator, composition over `∪`],
+  zsqc([`(𝟙 × ≤°) ⊸ zero ∪ (𝟙 × ≤°) plus`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[@dom-slide, `(≤° × ≤°) plus ⊑ plus ≤°`],
+  zsqc([`⊸ zero ∪ plus ≤°`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[`≤°` reflexive],
+  zsqc([`(⊸ zero ∪ plus) ≤°`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[the `plus` branch of `F(≤°) S ⊑ S ≤°`; the `zero` branch is
+  `zero ⊑ zero ≤°`. `(≤ × ≤) plus ⊑ plus ≤` is @mon-defn, written `+` there, and @mon-laws's first row
+  carries it to `≤°` — `plus` is a map, so it is monotonic on an order and on its opposite together.]])
+]<mss-mono>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`[zero, ⊸ zero ∪ plus]`], ∋)$ ` max ≤`], none),
+  zstep(op: sym.eq, under: true)[coproduct of maps],
+  zsqc([`[`$frac(#[`zero`], ∋)$` max ≤,` $frac(#[`⊸ zero ∪ plus`], ∋)$` max ≤]`], none),
+  zstep(op: sym.eq, under: true)[singleton, `≤°` reflexive],
+  zsqc([`[zero, ⊕]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
+  `⦇[zero, ⊕]⦈ ⊑` $frac(#[`prefix sum`], ∋)$ ` max ≤` — B&dM's own containment — and @mss-laws's
+  second row makes it an equality.]])
+]<mss-step>
+
+#disp[
+#zline(
+  zsqc([`[nil wrap, ⟨(𝟙 × head) cons, π₂⟩ cons] list(g)`], none),
+  zstep(op: sym.eq, under: true)[coproduct of maps, `wrap` and `cons` natural],
+  zsqc([`[nil g wrap, ⟨(𝟙 × head) cons g, π₂ list(g)⟩ cons]`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`g`'s defining equation, `list(g) head = head g`],
+  zsqc([`[c wrap, ⟨(𝟙 × (list(g) head)) f, (𝟙 × list(g)) π₂⟩ cons]`], none),
+  zstep(op: sym.eq, under: true)[fork, relator],
+  zsqc([`F(list(g)) [c wrap, ⟨(𝟙 × head) f, π₂⟩ cons]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[`g ≜ ⦇[c, f]⦈` and
+  `tails = ⦇[nil wrap, ⟨(𝟙 × head) cons, π₂⟩ cons]⦈`, since `tails(cons(a, xs))` is
+  `cons(cons(a, head(tails xs)), tails xs)`. @cata-fusion then reads off
+  `tails list(g) = ⦇[c wrap, ⟨(𝟙 × head) f, π₂⟩ cons]⦈`, at `c, f := zero, ⊕` the heading's fold.]])
+]<mss-scan>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`⦇`$frac(#[`S`], ∋)$ `max ≤⦈ ⊑` $frac(#[`⦇S⦈`], ∋)$ `max ≤` \ #src[@mon-laws at `≤°`,
+   `S := [zero, ⊸ zero ∪ plus]`, condition @mss-mono]],
+  [greedy: one running maximum kept at each `cons`, instead of every prefix sum collected and one
+   chosen at the end],
+
+  [`X ⊑ Y`, `X` entire, `Y` simple `⟹ X = Y` \ #src[@takewhile-laws's last row at this `S`]],
+  [`⦇[zero, ⊕]⦈` is a reduce of maps, and the prefix sums of one list are finitely many
+   integers with one greatest, so @mss-step's `⊑` is an equality],
+
+  [`list(g) head = head g` \ #src[the one step of @mss-scan the note has no law for]],
+  [`head` is a partial map, undefined at `nil`; the equality holds because `tails` never returns an
+   empty list, which is a fact about `tails`, not a naturality square],
+
+  [`tails` implements $frac(#[`suffix`], ∋)$, `list(f)` implements `E(f)` \ #src[@comb-fns]],
+  [what makes @mss-shape a program: one fold builds the `n+1` running maxima, and the final `max ≤`
+   reads them in one more pass, so `mss` is linear],
+)]<mss-laws>
 
 #pagebreak(weak: true)
 = Optimisation Problems <sec-opt>
@@ -2018,8 +2225,8 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R°) : E A ⟶ A`, #h(4pt) `m
   [`X ⊑ min R ⟺ X ⊑ ∋` and `X° ∋ ⊑ R`], [in the set, and below every element of it],
   [$frac(#[`𝟙`], ∋)$ `(∈\R) = R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R) = S°\R`], [bound `S`'s image without building the set],
-  [`union (∈\R) = ∈\(∈\R)` \ #src[`union ≜` $frac(#[`∋ ∋`], ∋)$ `: E(E A) ⟶ E A`]],
-  [bound a union by bounding each member set],
+  [`union ≜` $frac(#[`∋ ∋`], ∋)$ `: E(E A) ⟶ E A`], [flattens a set of sets],
+  [`union (∈\R) = ∈\(∈\R)`], [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `min R = 𝟙 ∩ R`],
   [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `min R` at `S := 𝟙`]],
   [$frac(#[`S`], ∋)$ `min R = S ∩ (S°\R°)`], [an `S`-value that points to every `S`-value],
@@ -2175,63 +2382,6 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R°) : E A ⟶ A`, #h(4pt) `m
 )
 ]<min-78>
 
-=== `P(S) min R = (∋ S) ∩ (∈\(S R°))`
-
-// B&dM (7.9), `R` reflexive.  `⊑` is @min-710; `⊒` is the one place in §18 where a tabulation is
-// unavoidable — `y` below is the set the right-hand side only describes.
-#disp[#definition[
-`(p, q)` tabulates `W ≜ (∋ S) ∩ (∈\(S R°))`, and #h(4pt) `y ≜` $frac(#[`(p ∋ S) ∩ (q R)`], ∋)$, a map.
-]]<min-79-defn>
-
-#disp[
-#zline(
-  zsqc(`W`, `P(S) min R`),
-  zstep(op: sym.arrow.l.double, under: true)[`p° q = W`, `𝟙 ⊑ y y°`],
-  zpair(zsqc(`p° y`, `P(S)`), zsqc(`y° q`, `min R`)),
-)
-]<min-79>
-
-#disp[
-#zline(
-  zsqc(`y° q`, `∋`),
-  zstep(op: sym.arrow.l.double, under: true)[`f°·⊣f·`, `·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc(`q`, `(p ∋ S) ∩ (q R)`),
-  zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `f°·⊣f·`],
-  // Only the LOWER box of a pair can carry a `name`: on the upper one it lands on the box below it.
-  zpair(zsqc(`p° q`, `∋ S`), zsqc(`𝟙`, `R`, name: "R reflexive")),
-)
-#zline(
-  zsqc(`∈ y° q`, `R°`),
-  zstep(op: sym.arrow.l.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, `°`, meet],
-  zsqc(`R° q° q`, `R°`, name: "q simple"),
-)
-]<min-79-min>
-
-#disp[
-#zline(
-  zsqc(`p° y`, `P(S)`),
-  zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `·T⊣/T`, `°`, `f°·⊣f·`],
-  zpair(zsqc(`p° y ∋`, `∋ S`), zsqc(`p ∋`, `y ∋ S°`)),
-)
-#zline(
-  zsqc(`p° y ∋`, `∋ S`),
-  zstep(op: sym.arrow.l.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, meet],
-  zsqc(`p° p ∋ S`, `∋ S`, name: "p simple"),
-)
-#zline(
-  zsqc(`p ∋`, `y ∋ S°`),
-  zstep(op: sym.arrow.l.double, under: true)[modular law],
-  zsqc(`p ∋`, `(p ∋) ∩ (q R S°)`),
-  zstep(op: sym.arrow.l.double, under: true)[`𝟙 ⊑ q q°`],
-  zsqc(`q° p ∋`, `R S°`),
-  zstep(op: sym.arrow.l.double, under: true)[`°`, `T·⊣T\`],
-  zsqc(`W`, `∈\(S R°)`, name: "W's right half"),
-)
-]<min-79-pow>
-
-// `sticky` keeps a heading with the display under it, but the display here is a breakable figure, so
-// the heading still stranded itself at the foot of the page; the break is set by hand.
-#pagebreak(weak: true)
 === `P(S) min R ⊑ (∋ S) ∩ (∈\(S R°))`
 
 // B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
@@ -2261,55 +2411,6 @@ For `R : A ⟶ A`, #h(4pt) `min R ≜ ∋ ∩ (∈\R°) : E A ⟶ A`, #h(4pt) `m
   zpair(zsqc(`P(min R) ∋`, `∋ min R`), zsqc(`∈ P(min R)`, `min R ∈`)),
 )
 ]<min-711>
-
-=== `P(min R) min R = P(Dom (min R)) union min R`
-
-// B&dM (7.12), `R` a preorder.  `⊑` puts the domain in for free; `⊒` is @min-79 at `S := min R`
-// and then the two halves the book leaves as exercises.
-#disp[
-#zline(
-  zsqc(`P(min R) min R`, none),
-  zstep(op: sym.eq, under: true)[`Dom (min R) min R = min R`],
-  zsqc(`P(Dom (min R) min R) min R`, none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[`P` a relator],
-  zsqc(`P(Dom (min R)) P(min R) min R`, none),
-  zstep(op: sym.subset.eq.sq, under: true)[@min-711],
-  zsqc(`P(Dom (min R)) union min R`, none),
-)
-]<min-712>
-
-#disp[
-#zline(
-  zsqc(`P(Dom (min R)) union min R`, `P(min R) min R`),
-  zstep(op: sym.arrow.l.double, under: true)[@min-79 at `S := min R`, `Δ⊣∩`, `T·⊣T\`],
-  zpair(zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
-        zsqc(`∈ P(Dom (min R)) union min R`, `min R R°`)),
-)
-#zline(
-  zsqc(`P(Dom (min R)) union min R`, `∋ min R`),
-  zstep(op: sym.arrow.l.double, under: true)[`P(Dom (min R)) ⊑ 𝟙`],
-  zsqc(`union min R`, `∋ min R`),
-)
-#zline(
-  zstep(op: sym.arrow.l.double, under: true)[`T(U ∩ V) ⊑ T U ∩ T V`, `·∋⊣`$frac(#box(width: 8pt), ∋)$, @min-73],
-  zsqc(`(∋ ∋) ∩ (∈\(∈\R°))`, `∋ min R`),
-  zstep(op: sym.arrow.l.double, under: true)[modular law],
-  zsqc(`∋ (∋ ∩ (∈ (∈\(∈\R°))))`, `∋ (∋ ∩ (∈\R°))`, name: "counit of T·⊣T\\"),
-)
-#zline(
-  zsqc(`∈ P(Dom (min R)) union min R`, `min R R°`),
-  zstep(op: sym.arrow.l.double, under: true)[`∈` lax natural],
-  zsqc(`Dom (min R) ∈ union min R`, `min R R°`),
-)
-#zline(
-  zstep(op: sym.arrow.l.double, under: true)[`Dom (min R) ⊑ min R (min R)°`],
-  zsqc(`min R (min R)° ∈ union min R`, `min R R°`),
-  zstep(op: sym.arrow.l.double, under: true)[`(min R)° ⊑ ∈`, `∈ ∈ union ⊑ ∈`],
-  zsqc(`min R ∈ min R`, `min R R°`, name: "UP of min"),
-)
-]<min-712-geq>
 
 #pagebreak(weak: true)
 == Lax natural transformations
@@ -2434,112 +2535,321 @@ with `Id(R)` written `R`.
 
 // B&dM §7.3, p. 175.  No numbered equations; the two monotonicity claims are the section's own
 // proof obligations, and the exercise blocks (7.43–7.44) are left out as everywhere else.
-#disp[#definition[
-`tree A ::= node (A, list(tree A))`, base functor `F(A, B) = A × list B`, `rating : Employee ⟶ Real`.
-
-`cost ≜ list(rating) sum`, #h(4pt) `R ≜ cost ≤ cost°`, #h(4pt) `choose ≜ outl ∪ outr`.
-
-`include ≜ (𝟙 × (list(outr) concat)) cons` #h(10pt) `exclude ≜ (𝟙 × (list(choose) concat)) outr`
-
-`S ≜ ⟨include, exclude⟩`, #h(4pt) `party ≜ ⦇S⦈ choose : tree Employee ⟶ list Employee`
-]]<party-defn>
-
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+  columns: (9.25cm, 7.05cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
 
-  [$frac(#[`party`], ∋)$ `max R`], [the specification: a guest list of greatest total conviviality],
-  [`(R° × R°) choose ⊑ choose R°`], [`choose` is monotonic on `R°` — the first claim],
-  [`(𝟙 × list(R° × R°)) S ⊑ S (R° × R°)`],
-  [`S` is monotonic on `R° × R°` — the second claim],
-  [$frac(#[`party`], ∋)$ `max R ⊒ ⦇`$frac(#[`S`], ∋)$ `max(R × R)⦈` $frac(#[`choose`], ∋)$ `max R`],
-  [the greedy theorem: one best pair per subtree instead of all parties of the whole tree],
-  [`party = ⦇S⦈` $frac(#[`choose`], ∋)$ `max R` \ `include = (𝟙 × (list(outr) concat)) cons` \
-   `exclude = outr list(`$frac(#[`choose`], ∋)$ `max R) concat`],
-  [the program, `exclude` renamed: `include` was already a map, and `exclude` becomes one],
-)]<party-laws>
+  [`tree A ::= node (A, [tree A])`],
+  [`tree : 𝒜 ⟶ 𝒜`],
+  [The company hierarchy: an employee, and the list of subtrees under them.],
+
+  [`F(A, B) = A × [B]`],
+  [`F : 𝒜 × 𝒜 ⟶ 𝒜`],
+  [The base functor `tree` folds: an employee beside the recursive position, one layer deep.],
+
+  [`rating`],
+  [`rating : A ⟶ Real`],
+  [What one employee is worth as a guest.],
+
+  [`cost ≜ list(rating) sum`],
+  [`cost : [A] ⟶ Real`],
+  [What a guest list is worth.],
+
+  [`R ≜ cost ≤ cost°`],
+  [`R : [A] ⟶ [A]`],
+  [The preorder the guest list is maximised over.],
+
+  [`choose ≜ π₁ ∪ π₂`],
+  [`choose : [A] × [A] ⟶ [A]`],
+  [Takes one of the two parties a subtree returns.],
+
+  [`include ≜ (𝟙 × (list(π₂) concat)) cons`],
+  [`include : F(A, [A] × [A]) ⟶ [A]`],
+  [The party that invites the root, which puts every immediate subtree's root out. A map.],
+
+  [`exclude ≜ (𝟙 × (list(choose) concat)) π₂`],
+  [`exclude : F(A, [A] × [A]) ⟶ [A]`],
+  [The party that leaves the root out, so each subtree is free to choose. Not a map.],
+
+  [`S ≜ ⟨include, exclude⟩`],
+  [`S : F(A, [A] × [A]) ⟶ [A] × [A]`],
+  [The algebra: one step returns both parties of a subtree at once.],
+
+  [`party ≜ ⦇S⦈ choose`],
+  [`party : tree A ⟶ [A]`],
+  [Every guest list the president's ruling allows.],
+
+  [the specification \ $frac(#[`party`], ∋)$ `max R`],
+  [$frac(#[`party`], ∋)$ `max R : tree A ⟶ [A]`],
+  [A guest list of greatest total conviviality.],
+)]<party-defn>
+
+// `list(π₂)` is ONE box, not the `⊸ ⊗ 𝟙` inside the relator: the picture is here for the shape of
+// `include`, and opening `π₂` up costs a discard stub per list element that says nothing about it.
+#disp[#P(cetz.canvas(length: 0.8cm, {
+  let y = 0.8
+  lab(-2.0, 0, black)[`include` #h(0.35em) $=$]
+  wire((0, y), (10.1, y))                    // the root, straight through: the `𝟙` of `𝟙 × (…)`
+  wire((0, -y), (3.0, -y))
+  gbox((3.0, -y), [`list(π₂)`], w: 2.6, h: 0.75, chamfer: false)
+  wire((5.6, -y), (6.9, -y))
+  gbox((6.9, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
+  wire((8.8, -y), (10.1, -y))
+  gbox((10.1, 0), [`cons`], w: 1.4, h: 2 * y + 0.35, chamfer: false)
+  wire((11.5, 0), (12.6, 0))
+  lab(5.0, y + 0.42, black)[$A$]
+  lab(1.5, -y + 0.5, black)[$[[A] times [A]]$]
+  lab(6.25, -y + 0.5, black)[$[[A]]$]
+  lab(9.45, -y + 0.5, black)[$[A]$]
+  lab(12.15, 0.45, black)[$[A]$]
+}), s: 80%)]<include-pic>
+
+// The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
+// `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
+#disp[#P(cetz.canvas(length: 0.8cm, {
+  let y = 0.8
+  lab(-2.0, 0, black)[`exclude` #h(0.35em) $=$]
+  wire((0, y), (10.1, y))                    // the root, thrown away by the `⊸` of `π₂`
+  wiredot((10.1, y))
+  wire((0, -y), (2.3, -y))
+  gbox((2.3, -y), [`list(choose)`], w: 3.3, h: 0.75)
+  wire((5.6, -y), (6.9, -y))
+  gbox((6.9, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
+  wire((8.8, -y), (12.6, -y))
+  lab(5.0, y + 0.42, black)[$A$]
+  lab(1.15, -y + 0.5, black)[$[[A] times [A]]$]
+  lab(6.25, -y + 0.5, black)[$[[A]]$]
+  lab(9.45, -y + 0.5, black)[$[A]$]
+}), s: 80%)]<exclude-pic>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`party`], ∋)$ `max R`], none),
+  zstep(op: sym.eq, under: true)[definition of `party`],
+  zsqc([$frac(#[`⦇S⦈ choose`], ∋)$ `max R`], none),
+  zstep(op: sym.eq, under: true)[@pow-laws, absorption],
+  zsqc([$frac(#[`⦇S⦈`], ∋)$ `E(choose) max R`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[Ex 7.38, `(R° × R°) choose ⊑ choose R°`],
+  zsqc([$frac(#[`⦇S⦈`], ∋)$ `max(R × R)` $frac(#[`choose`], ∋)$ `max R`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[@mon-laws, `(𝟙 × list(R° × R°)) S ⊑ S (R° × R°)`],
+  zsqc([`⦇`$frac(#[`S`], ∋)$ `max(R × R)⦈` $frac(#[`choose`], ∋)$ `max R`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[Ex 7.15, the fork splits],
+  zsqc([`⦇⟨`$frac(#[`include`], ∋)$ `max R,` $frac(#[`exclude`], ∋)$ `max R⟩⦈` $frac(#[`choose`], ∋)$ `max R`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[`include` a map, `max R` into each branch],
+  zsqc([`⦇⟨include, π₂ list(`$frac(#[`choose`], ∋)$ `max R) concat⟩⦈` $frac(#[`choose`], ∋)$ `max R`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[the program is `party = ⦇S⦈` $frac(#[`choose`], ∋)$ `max R` with
+  `exclude` renamed to `π₂ list(`$frac(#[`choose`], ∋)$ `max R) concat` — `include` was already a map,
+  and `exclude` becomes one.]])
+]<party-laws>
 
 == Shortest paths on a cylinder
 
 // B&dM §7.4, p. 179.  Its crux is Theorem 7.1, not the greedy theorem: `α` is a map, so monotonic
 // gives distributes, which is (7.13) — the section's only numbered equation.
-#disp[#definition[
-`F(A, X) = A + A × X`, `L = list⁺` with initial algebra `α : F(A, L A) ⟶ L A`, `N` the `n`-tuple relator.
-
-`R ≜ sum ≤ sum°`, #h(4pt) `setify : N A ⟶ E A`, #h(4pt) `moves : N A ⟶ E(N A)`, #h(4pt)
-`trans : E(N A) ⟶ N(E A)`, #h(4pt) `zip : F(N A, N B) ⟶ N F(A, B)`, #h(4pt) `cp ≜` $frac(#[`F(𝟙, ∋)`], ∋)$.
-
-`generate ≜ F(𝟙, moves trans N(union)) zip N(cp P(α)) : F(N A, N(E(L A))) ⟶ N(E(L A))`
-
-`paths ≜ ⦇generate⦈ setify union : L N Nat ⟶ E(L Nat)`
-]]<cyl-defn>
-
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+  columns: (7.2cm, 6.9cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
 
-  [`paths min R`], [the specification: a cheapest path across the cylinder],
-  [`F(𝟙, min R) α ⊑ cp P(α) min R` \ #src[(7.13), Theorem 7.1 at the map `α`, using
-   $frac(#[`F(𝟙, ∋) α`], ∋)$ `= cp P(α)`]],
-  [extending every path in a set and then taking a minimum is beaten by extending one minimum],
-  [`generate N(min R) ⊒ F(𝟙, N(min R)) Q`],
-  [the fusion condition that defines `Q` — this is what (7.13) is spent on],
-  [`Q = F(𝟙, moves trans N(min R)) zip N(α)` \ #h(4pt) `= [N(wrap),` \ #h(20pt)
-   `(𝟙 × moves trans N(min R)) zip' N(cons)]`],
-  [`generate` with the minimum taken inside each tuple component],
-  [`paths min R ⊒ ⦇Q⦈ setify min R`], [the program: one fold, `n` best paths carried per column],
-)]<cyl-laws>
+  [`F(A, X) = A + A × X`],
+  [`F : 𝒜 × 𝒜 ⟶ 𝒜`],
+  [The base functor: one square of the new column, alone or in front of the path so far.],
+
+  [`L = list⁺`],
+  [`L : 𝒜 ⟶ 𝒜`],
+  [A path is a non-empty list of squares, one per column crossed.],
+
+  [`α` the initial algebra],
+  [`α : F(A, L A) ⟶ L A`],
+  [`α = [wrap, cons]`: a path is started by one square, or extended by one.],
+
+  [`N` \ the `n`-tuple relator],
+  [`N : 𝒜 ⟶ 𝒜`],
+  [One component per row of a column, so the fold carries `n` answers at once.],
+
+  [`R ≜ sum ≤ sum°`],
+  [`R : L Nat ⟶ L Nat`],
+  [The cost of a path, which the cheapest minimises.],
+
+  [`setify`],
+  [`setify : N A ⟶ E A`],
+  [Forgets which row a component came from, so the `n` answers become one set.],
+
+  [`moves`],
+  [`moves : N A ⟶ E(N A)`],
+  [The three columns a path may step to: rotated up, unrotated, rotated down.],
+
+  [`trans`],
+  [`trans : E(N A) ⟶ N(E A)`],
+  [Transposes a set of tuples, so every row collects its own paths.],
+
+  [`zip`],
+  [`zip : F(N A, N B) ⟶ N F(A, B)`],
+  [Commutes `N` with the base functor, pairing each new square with its own row's paths.],
+
+  [`cp ≜` $frac(#[`F(𝟙, ∋)`], ∋)$],
+  [`cp : F(A, E B) ⟶ E(F(A, B))`],
+  [Turns a square paired with a set of paths into the set of extensions of those paths.],
+
+  [`generate ≜ F(𝟙, moves trans N(union)) zip N(cp P(α))`],
+  [`generate :` \ `F(N A, N(E(L A))) ⟶ N(E(L A))`],
+  [One fold step: extends every path of every row by the new column.],
+
+  [`paths ≜ ⦇generate⦈ setify union`],
+  [`paths : L N Nat ⟶ E(L Nat)`],
+  [Every path across the cylinder.],
+
+  [the specification \ `paths min R`],
+  [`paths min R : L N Nat ⟶ L Nat`],
+  [A cheapest path from the entry side to the exit side.],
+)]<cyl-defn>
+
+#disp[
+#zline(
+  zsqc([`paths min R`], none),
+  zstep(op: sym.eq, under: true)[definition of `paths`],
+  zsqc([`⦇generate⦈ setify union min R`], none),
+  zstep(op: sym.supset.eq.sq, under: true)[@min-laws at `union`, `R` a preorder],
+  zsqc([`⦇generate⦈ setify P(min R) min R`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[`setify` lax natural],
+  zsqc([`⦇generate⦈ N(min R) setify min R`], none),
+  zstep(op: sym.supset.eq.sq, under: true)[@cata-fusion at `Q`],
+  zsqc([`⦇Q⦈ setify min R`], none),
+)
+#zline(
+  zsqc([`generate N(min R)`], none),
+  zstep(op: sym.supset.eq.sq, under: true)[(7.13), then `zip`, `trans`, `moves` lax natural],
+  zsqc([`F(𝟙, N(min R)) Q`], none),
+)
+#zline(
+  zsqc([`Q`], none),
+  zstep(op: sym.eq, under: true)[the fusion condition read as a definition],
+  zsqc([`F(𝟙, moves trans N(min R)) zip N(α)`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[`zip = 𝟙 + zip'`, `α = [wrap, cons]`],
+  zsqc([`[N(wrap), (𝟙 × moves trans N(min R)) zip' N(cons)]`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙, min R) α ⊑ cp P(α) min R`, Theorem 7.1 at the map
+  `α` with $frac(#[`F(𝟙, ∋) α`], ∋)$ `= cp P(α)`: extending every path in a set and then taking a minimum
+  is beaten by extending one minimum. It is the crux here, not the greedy theorem.]])
+]<cyl-laws>
 
 == The security van problem
 
 // B&dM §7.5, p. 184.  `Π`, the universal relation, is this note's `⊤`; the p. 187 printing of the
 // greedy result puts `wrap wrap` where p. 185 and the final program both put `nil`.
-#disp[#definition[
-`R ≜ length ≤ length°`, #h(4pt) `ceiling ≜` $frac(#[`prefix sum`], ∋)$ `max ≤`, #h(4pt) `floor ≜` $frac(#[`prefix sum`], ∋)$ `min ≤`.
-
-`secure` the coreflexive on `x` with `bmax(ceiling x, ceiling x − floor x) ≤ N`; #h(4pt) `ok` the
-coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure.
-
-`new ≜ (wrap × 𝟙) cons` #h(10pt) `glue ≜ (𝟙 × cons°) assocl (cons × 𝟙) cons`
-
-`old ≜ (𝟙 × cons°) assocl ((cons secure) × 𝟙) cons`
-
-`partition = ⦇[nil, new ∪ glue]⦈`, #h(4pt) `S ≜ [nil, new ∪ old]`, #h(4pt) `partition list(secure) = ⦇S⦈`.
-
-`H ≜ (head prefix° head°) ∪ (nil° nil)`, #h(4pt) `R ; H ≜ R ∩ (R° ⇒ H)`, #h(4pt) `|R| ≜ R ∩ ¬R°`.
-]]<van-defn>
-
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+  columns: (9.05cm, 6.9cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
 
-  [$frac(#[`partition list(secure)`], ∋)$ `min R`], [the specification: fewest secure segments],
-  [`secure prefix ⊑ prefix secure`], [`secure` is prefix-closed — the only property of it used until
-   the program],
-  [`(𝟙 × R) new ⊑ (new ∪ old) R` \ #src[(7.14)]], [starting a new segment is monotonic on `R`],
-  [`(𝟙 × R) old ⊑ (new ∪ old) R` \ #src[(7.15), FALSE]],
-  [extending the first segment is not — the shorter partition need not stay secure],
-  [`(𝟙 × (R ; H)) new ⊑ (new ∪ old) (R ; H)` #h(4pt) #src[(7.16)] \
-   `(𝟙 × (R ; H)) old ⊑ (new ∪ old) (R ; H)` #h(4pt) #src[(7.17)]],
-  [both halves do become monotonic once `R` is refined by `H`, which breaks a tie in length by the
-   first segment's prefix order],
-  [`(𝟙 × ⊤) new ⊑ new H` #h(6pt) #src[(7.18)]],
-  [whatever the tail, `new`'s first segment is `[a]`, a prefix of every first segment — this is what
-   (7.16) rests on],
-  [`(𝟙 × ⊤) old ⊑ new H` #h(6pt) #src[(7.19)] \ `(𝟙 × |R|) old ⊑ new R` #h(6pt) #src[(7.20)] \
-   `(𝟙 × (R ∩ H)) old ⊑ old (R ∩ H)` #h(6pt) #src[(7.21)]],
-  [the three claims (7.17) rests on, split along \ `(R ; H) = |R| ∪ (R ∩ H)`],
-  [`old ⊑ new (R ; H)°`], [`old` returns a shorter result than `new` if it returns any result at all,
-   so the fold's choice refines to a map],
-  [`⦇[nil, (ok → glue, new)]⦈ ⊑ ⦇`$frac(#[`S`], ∋)$ `min(R ; H)⦈`],
-  [the program: glue onto the first segment while it stays secure, else start a new one],
-)]<van-laws>
+  [`R ≜ length ≤ length°`],
+  [`R : [[Int]] ⟶ [[Int]]`],
+  [The order the schedule is minimised over: fewer van visits is better.],
+
+  [`ceiling ≜` $frac(#[`prefix sum`], ∋)$ `max ≤`],
+  [`ceiling : [Int] ⟶ Int`],
+  [The highest the bank's balance reaches over a stretch of transactions.],
+
+  [`floor ≜` $frac(#[`prefix sum`], ∋)$ `min ≤`],
+  [`floor : [Int] ⟶ Int`],
+  [The lowest it reaches, so `ceiling − floor` is the cash the stretch has to carry.],
+
+  [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x, ceiling x − floor x) ≤ N`],
+  [`secure : [Int] ⟶ [Int]`],
+  [The stretches one van visit can serve: some starting reserve keeps the cash between `0` and `N`.],
+
+  [`ok` \ the coreflexive on `(a, xs)` with `xs` non-empty and `[a] ⧺ head xs` secure],
+  [`ok :` \ `Int × [[Int]]` \ `⟶ Int × [[Int]]`],
+  [The test the final program runs, in place of `old`'s `secure`.],
+
+  [`new ≜ (wrap × 𝟙) cons`],
+  [`new : Int × [[Int]] ⟶ [[Int]]`],
+  [Calls the van: the transaction opens a segment of its own.],
+
+  [`glue ≜ (𝟙 × cons°) assocl (cons × 𝟙) cons`],
+  [`glue : Int × [[Int]] ⟶ [[Int]]`],
+  [Puts the transaction on the front of the first segment.],
+
+  [`old ≜ (𝟙 × cons°) assocl` \
+   `((cons secure) × 𝟙) cons`],
+  [`old : Int × [[Int]] ⟶ [[Int]]`],
+  [`glue` restricted to a first segment that stays secure.],
+
+  [`partition = ⦇[nil, new ∪ glue]⦈`],
+  [`partition : [Int] ⟶ [[Int]]`],
+  [Every splitting of the transactions into consecutive segments.],
+
+  [`S ≜ [nil, new ∪ old]`],
+  [`S :` \ `1 + Int × [[Int]] ⟶ [[Int]]`],
+  [The algebra whose fold is every splitting of the transactions into secure segments.],
+
+  [`partition list(secure) = ⦇S⦈`],
+  [`partition list(secure) :` \ `[Int] ⟶ [[Int]]`],
+  [Fusion: keeping only secure segments is what turns `glue` into `old`.],
+
+  [`H ≜ (head prefix° head°) ∪ (nil° nil)`],
+  [`H : [[Int]] ⟶ [[Int]]`],
+  [One schedule's first segment is a prefix of the other's, or both are empty.],
+
+  [`R ; H ≜ R ∩ (R° ⇒ H)`],
+  [`R ; H : [[Int]] ⟶ [[Int]]`],
+  [The refinement of `R` that makes both halves of `S` monotonic.],
+
+  [`|R| ≜ R ∩ ¬R°`],
+  [`|R| : [[Int]] ⟶ [[Int]]`],
+  [The strict part `R` splits into: `R ; H = |R| ∪ (R ∩ H)`.],
+
+  [the specification \ $frac(#[`partition list(secure)`], ∋)$ `min R`],
+  [$frac(#[`partition list(secure)`], ∋)$ `min R :` \ `[Int] ⟶ [[Int]]`],
+  [A schedule with the fewest secure segments.],
+)]<van-defn>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`partition list(secure)`], ∋)$ `min R`], none),
+  zstep(op: sym.eq, under: true)[@cata-fusion, `secure prefix ⊑ prefix secure`],
+  zsqc([$frac(#[`⦇S⦈`], ∋)$ `min R`], none),
+  zstep(op: sym.supset.eq.sq, under: true)[(7.14) holds, (7.15) FALSE; `R ; H ⊑ R`],
+  zsqc([$frac(#[`⦇S⦈`], ∋)$ `min(R ; H)`], none),
+)
+#zline(
+  zstep(op: sym.supset.eq.sq, under: true)[@mon-laws, `S` monotonic on `R ; H` by (7.16) and (7.17)],
+  zsqc([`⦇`$frac(#[`S`], ∋)$ `min(R ; H)⦈`], none),
+  zstep(op: sym.supset.eq.sq, under: true)[`old ⊑ new (R ; H)°`],
+  zsqc([`⦇[nil, (ok → glue, new)]⦈`], none),
+)
+#zline(
+  zsqc([`(𝟙 × (R ; H)) old`], none),
+  zstep(op: sym.eq, under: true)[`R ; H = |R| ∪ (R ∩ H)`, `∪` distributes],
+  zsqc([`(𝟙 × |R|) old ∪ (𝟙 × (R ∩ H)) old`], none),
+  zstep(op: sym.subset.eq.sq, under: true)[(7.19) and (7.20) on `|R|`, (7.21) on `R ∩ H`],
+  zsqc([`new (R ∩ H) ∪ old (R ∩ H)`], none),
+)
+#zline(
+  zstep(op: sym.subset.eq.sq, under: true)[`X ∩ Y ⊑ X ; Y`, converses],
+  zsqc([`(new ∪ old) (R ; H)`], none),
+)
+#align(center, block(inset: (y: 4pt))[#src[(7.15) `(𝟙 × R) old ⊑ (new ∪ old) R` is FALSE — the shorter
+  partition need not stay secure — and that is what refining `R` to `R ; H` buys; the second chain is
+  (7.17), and (7.16) rests the same way on (7.18) `(𝟙 × ⊤) new ⊑ new H`.]])
+]<van-laws>
 
 #pagebreak(weak: true)
 = Thinning Algorithms <sec-thin>
@@ -2592,7 +2902,7 @@ For `Q : A ⟶ A`, #h(4pt) `thin Q ≜ (∋/∋) ∩ (∈\(Q° ∈)) : E A ⟶ E
 
 `wrapz ≜ ⟨wrap, zero⟩`, #h(4pt) `consw (a, (xs, n)) = (cons (a, xs), wt (a, head xs) + n)`.
 
-`cost ≜ ⦇[wrapz, consw]⦈ outr`, #h(4pt) `⦇[wrapz, consw]⦈ = ⟨𝟙, cost⟩`, #h(4pt) `R ≜ cost ≤ cost°`.
+`cost ≜ ⦇[wrapz, consw]⦈ π₂`, #h(4pt) `⦇[wrapz, consw]⦈ = ⟨𝟙, cost⟩`, #h(4pt) `R ≜ cost ≤ cost°`.
 
 `Q ≜ R ∩ (head head°)`, #h(4pt) `S ≜ F(𝟙, ∋) α`, #h(4pt) $frac(#[`F(∋, 𝟙)`], ∋)$ `= 𝟙 + cpl`, #h(4pt)
 $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min R`.
@@ -2610,7 +2920,7 @@ $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min
   [`S` is monotonic on `Q`; on `R` it is not, since the next edge can cost arbitrarily much],
   [`⦇`$frac(#[`F(∋, ∋) α`], ∋)$ `thin Q⦈ min R ⊑` $frac(#[`⦇F(∋, 𝟙) α⦈`], ∋)$ `min R` \ #src[Corollary 8.1]],
   [thinning applies: one partial path per starting vertex is enough],
-  [`S head ⊑ [𝟙, outr]` \ #src[`S head` simple, so `R ∩ (S° S) ⊑ Q`]],
+  [`S head ⊑ [𝟙, π₂]` \ #src[`S head` simple, so `R ∩ (S° S) ⊑ Q`]],
   [the side condition of (8.3): between two paths `S` builds from one argument, equal cost and equal
    head already means `Q`],
   [$frac(#[`F(∋, ∋) α`], ∋)$ `thin Q` \ #h(6pt) `⊒` $frac(#[`F(∋, 𝟙)`], ∋)$ `P(`$frac(#[`F(𝟙, ∋)`], ∋)$ `P(α) min R)` \
@@ -2630,8 +2940,8 @@ $frac(#[`F(𝟙, ∋)`], ∋)$ `= 𝟙 + cpr`, #h(4pt) `step ≜ cpr P(cons) min
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
 // it is one connected preorder, spelled `P` here.
 #disp[#definition[
-`setify : list A ⟶ E A`, #h(4pt) `cup : E A × E A ⟶ E A`, #h(4pt) `cp(F) ≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
-`listcp(F) : F(list A) ⟶ list(F A)`, #h(4pt) `sort P ≜ setify° ordered P` for `P` a connected preorder.
+`setify : [A] ⟶ E A`, #h(4pt) `cup : E A × E A ⟶ E A`, #h(4pt) `cp(F) ≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
+`listcp(F) : F([A]) ⟶ [F A]`, #h(4pt) `sort P ≜ setify° ordered P` for `P` a connected preorder.
 
 `thinlist Q` is any `thinlist Q ⊑ subseq` with #h(4pt) `thinlist Q setify ⊑ setify thin Q`; #h(4pt)
 one is #h(4pt) `⦇[nil, bump Q]⦈`, #h(4pt) `bump Q (a, []) = [a]`, #h(4pt)
@@ -2677,14 +2987,14 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 #disp[#definition[
 `vol, wt : Item ⟶ Real`, #h(4pt) `value ≜ list(vol) sum`, #h(4pt) `weight ≜ list(wt) sum`.
 
-`subseq = ⦇[nil, cons] ∪ [nil, outr]⦈`, #h(4pt) `within w` the coreflexive on `xs` with `weight xs ≤ w`.
+`subseq = ⦇[nil, cons] ∪ [nil, π₂]⦈`, #h(4pt) `within w` the coreflexive on `xs` with `weight xs ≤ w`.
 
 `≥ ≜ ≤°`, #h(4pt) `R ≜ value ≥ value°`, #h(4pt) `Q ≜ R ∩ (weight ≤ weight°)`, #h(4pt) `P ≜ R`.
 
 `F A = 1 + Item × A`, #h(4pt) `listcp(F) = wrap + cpr`, #h(4pt) `g₁ ≜ list([nil, cons]) filter(within w)`
-#h(4pt) `= [list(nil), h₁]`, #h(4pt) `g₂ ≜ list([nil, outr]) = [list(nil), h₂]`.
+#h(4pt) `= [list(nil), h₁]`, #h(4pt) `g₂ ≜ list([nil, π₂]) = [list(nil), h₂]`.
 
-`h₁ ≜ list(cons) filter(within w)`, #h(4pt) `h₂ ≜ list(outr)`.
+`h₁ ≜ list(cons) filter(within w)`, #h(4pt) `h₂ ≜ list(π₂)`.
 ]]<knap-defn>
 
 #disp[#table(
@@ -2695,12 +3005,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ ≜ list(fᵢ) filter(p
 
   [$frac(#[`subseq (within w)`], ∋)$ `min R`],
   [the specification: a selection of greatest total value that stays within the capacity `w`],
-  [`subseq (within w) = ⦇([nil, cons] (within w)) ∪ [nil, outr]⦈` \ #src[fusion, weights non-negative]],
+  [`subseq (within w) = ⦇([nil, cons] (within w)) ∪ [nil, π₂]⦈` \ #src[fusion, weights non-negative]],
   [the selections that fit are themselves a fold, and the fold's algebra already has binary thinning's
    shape],
   [`(𝟙 × R) (cons (within w)) ⊑ cons (within w) R` \ #src[FALSE]],
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
-  [`(𝟙 × Q) (cons (within w)) ⊑ cons (within w) Q` \ `(𝟙 × Q) outr ⊑ outr Q`],
+  [`(𝟙 × Q) (cons (within w)) ⊑ cons (within w) Q` \ `(𝟙 × Q) π₂ ⊑ π₂ Q`],
   [both halves are monotonic on `Q` once ties in value are broken by weight],
   [`⦇listcp(F) ⟨g₁, g₂⟩ merge R thinlist Q⦈ minlist R` \ #src[Theorem 8.2 at `P ≜ R`, `F` linear]],
   [binary thinning, sorting in descending order of value],
@@ -2857,11 +3167,11 @@ least fixed point of `G`.
 #disp[#definition[
 `Op ::= cpy Char ∣ del Char ∣ ins Char`, #h(4pt) `F(A, B) = 1 + (A × B)`, #h(4pt) `α ≜ [nil, cons]`.
 
-`edit ≜ ⦇[base, step]⦈ : list Op ⟶ list Char × list Char`, #h(4pt) `base` returning `([], [])`,
+`edit ≜ ⦇[base, step]⦈ : [Op] ⟶ [Char] × [Char]`, #h(4pt) `base` returning `([], [])`,
 #h(4pt) `step (cpy a, (xs, ys)) = ([a] ⧺ xs, [a] ⧺ ys)`, #h(4pt) `step (del a, (xs, ys)) = ([a] ⧺ xs, ys)`,
 #h(4pt) `step (ins a, (xs, ys)) = (xs, [a] ⧺ ys)`.
 
-`length ≜ ⦇[zero, outr succ]⦈`, #h(4pt) `R ≜ length ≤ length°`, #h(4pt) `U ≜ ⊤`, #h(4pt)
+`length ≜ ⦇[zero, π₂ succ]⦈`, #h(4pt) `R ≜ length ≤ length°`, #h(4pt) `U ≜ ⊤`, #h(4pt)
 `V ≜ suffix° × suffix°`, #h(4pt) `Q ≜ 𝟙 + (U × V)`, #h(4pt) `empty` the coreflexive on `(xs, ys)` with
 both lists empty.
 
@@ -2881,7 +3191,7 @@ both lists empty.
   [`F(R) α ⊑ α R` \ #src[Proposition 9.2 at `length`, `succ` monotonic on `≤`]],
   [`cons` is monotonic on `R`, so Theorem 9.1 already applies],
   [`Q F(𝟙, edit°) α ⊑ F(𝟙, edit°) α R`],
-  [the thinning condition sought, over `F(Op, list Char × list Char)`],
+  [the thinning condition sought, over `F(Op, [Char] × [Char])`],
   [`F(⊤, R) α ⊑ α R` #h(6pt) #src[left as an exercise]],
   [`U ≜ ⊤` costs nothing: any two operations may be compared],
   [`edit (𝟙 × suffix) ⊑ R° edit` \ `edit (suffix × 𝟙) ⊑ R° edit`],
@@ -2926,12 +3236,12 @@ both lists empty.
 `opb ((cx, sx), (cy, sy)) = (cb (sx, sy) + cx + cy, sb (sx, sy))`.
 
 `sb` associative, so `size = flatten sz` for a map `sz`; #h(4pt) `R ≜ cost ≤ cost°`, #h(4pt)
-`g ≜ [zero, (𝟙 × sz)² opb outl]`, #h(4pt) `single` the coreflexive on singleton lists.
+`g ≜ [zero, (𝟙 × sz)² opb π₁]`, #h(4pt) `single` the coreflexive on singleton lists.
 
 `splits ≜ ⟨inits⁺, tails⁺⟩ zip`, an implementation of $frac(#[`cat°`], ∋)$; #h(4pt) `array ≜ inits list(row)`,
 #h(4pt) `row ≜ tails list(mct)`, #h(4pt) `col ≜ inits list(mct)`.
 
-`mix ≜ zip list(bin) minlist R`, #h(4pt) `next ≜ ⟨outl, mix⟩ snoc`, #h(4pt)
+`mix ≜ zip list(bin) minlist R`, #h(4pt) `next ≜ ⟨π₁, mix⟩ snoc`, #h(4pt)
 `process ≜ ((tip wrap) × 𝟙) loop(next)`.
 ]]<mct-defn>
 
@@ -2966,7 +3276,7 @@ both lists empty.
   [a column extends the column to its left, a row the row below it; (9.9) is (9.8) rewritten as a
    loop],
   [`array = ⦇[fstcol, addcol]⦈`, #h(4pt) `fstcol ≜ tip wrap wrap` \
-   `addcol ≜ ⟨outl tip wrap, step⟩ cons` \ `step ≜ ⟨process tail, outr⟩ zip list(cons)`],
+   `addcol ≜ ⟨π₁ tip wrap, step⟩ cons` \ `step ≜ ⟨process tail, π₂⟩ zip list(cons)`],
   [the program: one fold building the array column by column, cubic in the length of the input],
 )]<mct-laws>
 
@@ -2975,11 +3285,11 @@ both lists empty.
 // B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
 // book stops at the recursive program and says the details are messy.
 #disp[#definition[
-`list A ::= nil ∣ snoc (list A, A)`, #h(4pt) `list⁺ A ::= wrap A ∣ snoc (list⁺ A, A)`, #h(4pt)
-`String = list Char`, #h(4pt) `Code ::= sym Char ∣ ptr (String, String⁺)`, #h(4pt)
+`[A] ::= nil ∣ snoc ([A], A)`, #h(4pt) `list⁺ A ::= wrap A ∣ snoc (list⁺ A, A)`, #h(4pt)
+`String = [Char]`, #h(4pt) `Code ::= sym Char ∣ ptr (String, String⁺)`, #h(4pt)
 `F(Code, String) = 1 + (String × Code)`, #h(4pt) `α ≜ [nil, snoc]`.
 
-`decode ≜ ⦇[nil, extend]⦈ : list Code ⟶ String`, #h(4pt) `extend (xs, sym a) = xs ⧺ [a]`, #h(4pt)
+`decode ≜ ⦇[nil, extend]⦈ : [Code] ⟶ String`, #h(4pt) `extend (xs, sym a) = xs ⧺ [a]`, #h(4pt)
 `extend (xs, ptr (ys, zs)) = xs ⧺ zs` when `ys ⧺ zs` is a proper prefix of `xs ⧺ zs`; #h(4pt)
 `H = decode°`.
 
@@ -3051,7 +3361,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `min Q` is entire.
   [`Q ≜ F(U, V)` #h(6pt) #src[Proposition 9.4]],
   [still the way to get both conditions, but $frac(#[`T°`], ∋)$ `min Q` must now be entire as well],
   [#src[Theorem 7.2, @mon-laws]],
-  [that greedy theorem chooses among the *results* of one relational step of a catamorphism;
+  [that greedy theorem chooses among the *results* of one relational step of a reduce;
    Theorem 10.1 chooses among the *decompositions* of the input, for an arbitrary `T` rather than an
    initial algebra, at the cost of `h` being a map],
 )]<greedy-laws>
@@ -3092,9 +3402,9 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
    longer than any input giving it],
   [`detab V° ⊑ R° detab` #h(6pt) #src[`V ≜ prefix° ∩ (fill fill°)`]],
   [true once only the prefixes that do not cross a tab stop are allowed],
-  [`nil V° = nil` #h(10pt) `fill V° = fill` \ `snoc V° ⊑ snoc ∪ (outl V°)` #h(6pt) #src[left as exercises]],
+  [`nil V° = nil` #h(10pt) `fill V° = fill` \ `snoc V° ⊑ snoc ∪ (π₁ V°)` #h(6pt) #src[left as exercises]],
   [the three properties of `V` the derivation rests on; the second is what `fill fill°` was added for],
-  [`expand V° ⊑ expand ∪ (outl V°)`],
+  [`expand V° ⊑ expand ∪ (π₁ V°)`],
   [the claim they add up to: shortening the output either leaves the last step alone or discards it],
   [`detab V° ⊑ detab ∪ (init detab V°)` \ #src[`init` inductive, so the greatest solution is the unique
    one]],
@@ -3112,8 +3422,8 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [the greedy step: emit a tab whenever a tab is legal, consuming all the blanks back to the previous
    tab stop],
   [`entab xs = entab (unfill xs) ⧺ blanks (tbc xs)` #h(4pt) #src[(10.1)]],
-  [what makes `triple` a snoc-list catamorphism: the output splits at the last tab stop],
-  [`triple = ⦇[base, op]⦈` and `entab = triple assocl outl (𝟙 × blanks) cat`],
+  [what makes `triple` a snoc-list reduce: the output splits at the last tab stop],
+  [`triple = ⦇[base, op]⦈` and `entab = triple assocl π₁ (𝟙 × blanks) cat`],
   [the program: one pass carrying the column and the count of pending blanks],
   [`base` returns `([], (0, 0))` \ `op ((xs, (t, c)), a) =` \ #h(10pt)
    `(a = BL ∧ (c + 1) mod n ≠ 0 → (xs, (t + 1, c + 1)),` \ #h(10pt)
@@ -3130,7 +3440,7 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
 // before Proposition 9.3 fits — `penalty` reads the bag of scheduled jobs, not their order.
 #disp[#definition[
 `F X = 1 + (X × Job)`, #h(4pt) `α ≜ [nil, snoc]` on schedules, #h(4pt) `β ≜ [nil, snag]` on bags,
-`snag` putting a job into a bag; #h(4pt) `bagify ≜ ⦇β⦈ : list Job ⟶ Bag Job`, #h(4pt) `H = bagify°`.
+`snag` putting a job into a bag; #h(4pt) `bagify ≜ ⦇β⦈ : [Job] ⟶ Bag Job`, #h(4pt) `H = bagify°`.
 
 `ct`, `dt`, `wt : Job ⟶ Real` the completion, due and weighting quantities of a job; #h(4pt)
 `penalty (xs, j) = (sum (list(ct) xs) + ct j − dt j) × wt j`.
@@ -3160,16 +3470,16 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
    `F(≤ × 𝟙) k ⊑ k ≤` \ #src[Proposition 9.3]],
   [(10.2): `penalty` sums the completion times of `xs`, and a sum does not see the order],
   [`α cost = ⟨g, h⟩ bmax` #h(4pt) #src[(10.4)] \ `g ≜ [zero, penalty]` #h(4pt) #src[(10.5)] \
-   `h ≜ [zero, outl cost]` #h(4pt) #src[(10.6)]],
+   `h ≜ [zero, π₁ cost]` #h(4pt) #src[(10.6)]],
   [the cost of a schedule split into the penalty of its last job and the cost of the rest],
-  [`add ⊑ outl R` #h(6pt) #src[(10.7)] \ `β bagify° = F(bagify°) [nil, add]` #h(6pt) #src[(10.8)]],
-  [adding a job never lowers the cost; and `bagify°` is itself a catamorphism on bags. Together:
+  [`add ⊑ π₁ R` #h(6pt) #src[(10.7)] \ `β bagify° = F(bagify°) [nil, add]` #h(6pt) #src[(10.8)]],
+  [adding a job never lowers the cost; and `bagify°` is itself a reduce on bags. Together:
    `β bagify° ⊑ F(bagify°) h ≤ cost°`],
   [`F(bagify) Q° F(bagify°) = g ≥ g°`, met by \ `Q ≜ f ≤ f°`, `f ≜ [zero, (bagify° × 𝟙) penalty]`],
   [the specification `Q` has to satisfy, and the choice that meets it: a `Q`-minimum is a job of
    least penalty],
-  [no greedy *catamorphism* exists],
-  [a greedy snoc-list catamorphism would also solve every prefix of the input, and the best schedule
+  [no greedy *reduce* exists],
+  [a greedy snoc-list reduce would also solve every prefix of the input, and the best schedule
    of a prefix need not extend to a best schedule of the whole],
   [`X = (null → nil,` $frac(#[`snag°`], ∋)$ `min Q (X × 𝟙) snoc)` #h(4pt) #src[Theorem 10.1, Proposition 10.1]],
   [`nil` and `snag` have disjoint ranges],
@@ -3210,7 +3520,7 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
    `2⁻¹⁶`. `round°` is not a map, but `interval` is, so it comes out of the $frac(#box(width: 8pt), ∋)$],
   [`val inrange° = ⦇[arb, step]⦈` \ #src[fusion; `zero inrange° = arb`,
    `shift inrange° = (𝟙 × inrange°) step`]],
-  [the converse of `val`, cut down to intervals, is a catamorphism on cons-lists],
+  [the converse of `val`, cut down to intervals, is a reduce on cons-lists],
   [`F(R) α ⊑ α R`],
   [`cons` is monotonic on `R` — routine],
   [`α° F(h) Q° ⊑ R° α° F(h)`],
@@ -3232,3 +3542,6 @@ blank count, #h(4pt) `triple ≜ ⟨unfill entab, ⟨tbc, col⟩⟩`.
   [the same in integer arithmetic only, as chapter 3 required of `intern`: every interval reached is
    `(p/w, q/w)`],
 )]<tex-laws>
+
+#pagebreak(weak: true)
+#include "allegory-appendix.typ"
