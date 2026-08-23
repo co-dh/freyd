@@ -105,13 +105,14 @@
 // and the object wire is one `OWIRE` on both sides; only the ALGEBRA bead moves, which is the law.
 // `gap` widens the space the `=` sits in: `mid`'s name runs right from the left panel's row 2, which is
 // the row the `=` is on, so a long `mid` needs the sign pushed clear of it.
+// `sep`/`rev` state a LAX law instead — the sign, and which side of it `F(mid) bot` falls on; `length`
+// scales the geometry alone, so a caller whose port names crowd sets it rather than shrinking them.
 #let homeq(w1, w2, top, mid, bot, out, ctop: black, cmid: black, cbot: black,
            fmid: none, cfmid: black,
-           typed: false, tcol: TCOL, bcol: BCOL, gap: GAP,
+           typed: false, tcol: TCOL, bcol: BCOL, gap: GAP, sep: [=], rev: false, length: 0.95cm,
            regions: none, acol: AC, ucol: UC, frame: none) = {
   let (cT, cB) = if typed { (tcol, bcol) } else { (black, black) }
-  hm-row(
-    (
+  let panels = (
       // The `F` strand lands on row 1, above `mid`: `w2`-typed through the junction down to `mid`,
       // `out`-typed from `mid` down.
       algpanel(OWIRE, H1, w1, w2, out, top, ctop, mid, cmid, cT, cB, regions, acol, ucol, frame),
@@ -119,9 +120,8 @@
       // difference between the panels, which is the law.
       algpanel(OWIRE, H3, w1, w2, out, bot, cbot, mid, cmid, cT, cB, regions, acol, ucol, frame,
         fmid: fmid, cfmid: cfmid),
-    ),
-    gap: gap,
   )
+  hm-row(if rev { panels.rev() } else { panels }, sep: sep, gap: gap, length: length)
 }
 
 // `beadeq` — `b = 𝟙` on the wire `w`: a bead on the left, a BARE WIRE on the right, which is what the
@@ -992,29 +992,37 @@
   grid(align: center, row-gutter: 8pt, body, f),
 ))
 
-// Where a formula's own `=` sits: the children up to the one holding it, then the text before it.
-// `none` unless exactly ONE stands before any `#h()` or `\` — only the first line carries the law.
+// Where a formula's own relation sign sits: the children up to the one holding it, then the text
+// before it.  `none` unless exactly ONE stands before any `#h()` or `\` — only the first line carries
+// the law.  `=` is tried first and `⊑` only when there is none, so an equation is never lined up on a
+// `⊑` buried in one of its sides.
 #let capeqx(f) = {
-  let (x, at, n) = (0pt, none, 0)
-  for c in (if f.has("children") { f.children } else { (f,) }) {
-    if c.func() == h or c.func() == linebreak { break }
-    let t = if c.has("text") { c.text } else { "" }
-    let i = t.position("=")
-    if i != none {
-      n += t.matches("=").len()
-      // Re-set as `raw` or as plain text, whichever the child was, or the prefix measures in the
-      // wrong font and the shift is out by the difference.
-      let same(s) = if c.func() == raw { raw(s, block: false) } else { s }
-      if at == none { at = x + measure(same(t.slice(0, i))).width + measure(same("=")).width / 2 }
+  let kids = if f.has("children") { f.children } else { (f,) }
+  let find(sign) = {
+    let (x, at, n) = (0pt, none, 0)
+    for c in kids {
+      if c.func() == h or c.func() == linebreak { break }
+      let t = if c.has("text") { c.text } else { "" }
+      let i = t.position(sign)
+      if i != none {
+        n += t.matches(sign).len()
+        // Re-set as `raw` or as plain text, whichever the child was, or the prefix measures in the
+        // wrong font and the shift is out by the difference.
+        let same(s) = if c.func() == raw { raw(s, block: false) } else { s }
+        if at == none { at = x + measure(same(t.slice(0, i))).width + measure(same(sign)).width / 2 }
+      }
+      x += measure(c).width
     }
-    x += measure(c).width
+    if n == 1 { at }
   }
-  if n == 1 { at }
+  let at = find("=")
+  if at == none { at = find("⊑") }
+  at
 }
 
 // `pair` — square LEFT, string diagram RIGHT in one box: the reader checks one against the other, and
 // stacked they were a scroll apart.  `s` scales BOTH halves, or the two can no longer be compared.
-// THE FORMULA'S `=` GOES UNDER THE PICTURE'S: the display states one law twice, once in strokes and
+// THE FORMULA'S SIGN GOES UNDER THE PICTURE'S: the display states one law twice, once in strokes and
 // once in symbols, and the reader drops from one sign to the other to match the sides.
 #let pair(sq, sd, f, s: 100%) = layout(avail => {
   let body = grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s))
