@@ -2624,6 +2624,51 @@ with `Id(R)` written `R`.
   lab(9.45, -y + 0.5, black)[$[A]$]
 }), s: 80%)]<exclude-pic>
 
+// Coordinates are literal: `d` is cetz.draw here and `e` is draw.typ's `∋`, so the six nodes cannot
+// be named after the letters they carry.
+#disp[#P(cetz.canvas(length: 0.8cm, {
+  for (p, q) in (((0, 2.2), (-2, 0)), ((0, 2.2), (2, 0)), ((-2, 0), (-3, -2.2)),
+                 ((-2, 0), (-1, -2.2)), ((2, 0), (3, -2.2))) { d.line(p, q, stroke: 0.75pt + black) }
+  for (x, y, n, r) in ((0, 2.2, "a", "1"), (-2, 0, "b", "2"), (2, 0, "c", "3"),
+                       (-3, -2.2, "d", "4"), (-1, -2.2, "e", "5"), (3, -2.2, "f", "6")) {
+    node(x, y, black, math.attach(raw(n), br: text(9pt, luma(105))[#r]))
+  }
+}), s: 100%)]<party-example-tree>
+
+// The fold on that tree, bottom-up; the last row reads its two cells off the rows for `b` and `c`.
+// The `#src` block is 16.5cm, not the text width: at 22cm the wrap falls inside `[a,d,e,f] = 16`.
+#disp[
+#table(
+  columns: (2.0cm, 6.3cm, 7.3cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*node*], [*the algebra's input* \ `A × [[A] × [A]]`], [*`include`*], [*`exclude`*]),
+
+  [`d`, `e`, `f`],
+  [`(d, [])`],
+  [`[d]`],
+  [`[]`],
+
+  [`b`],
+  [`(b, [([d],[]), ([e],[])])`],
+  [`[b]`],
+  [`[d,e]`, #h(4pt) `[d]`, #h(4pt) `[e]`, #h(4pt) `[]`],
+
+  [`c`],
+  [`(c, [([f],[])])`],
+  [`[c]`],
+  [`[f]`, #h(4pt) `[]`],
+
+  [`a`],
+  [`(a, [([b],…), ([c],…)])`],
+  [`[a] ⧺ exclude(b) ⧺ exclude(c)`],
+  [`choose(b) ⧺ choose(c)`],
+)
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[with the subscripted ratings,
+  `max R` keeps `([b] = 2, [d,e] = 9)` at `b` and `([c] = 3, [f] = 6)` at `c`, so at the root
+  `include = [a,d,e,f] = 16` beats `exclude = [d,e,f] = 15`, and `choose` takes 16.]]])
+]<party-example>
+
 #disp[
 #zline(
   zsqc([$frac(#[`party`], ∋)$ `max R`], none),
