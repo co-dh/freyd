@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, unitR as wcreate
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked
+#import "draw.typ": lambend, homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -962,7 +962,8 @@ subscript.
 
 // The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
 // the two agree on maps only (B&dM p. 119), and `{·} P(R)` is every nonempty subset of `R(a)`.
-#disp[#box(inset: (y: 10pt), cetz.canvas(length: 0.8cm, {
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
   let (T, B) = (1.5, -1.5)
   let (xA, xB) = (-3.1, 3.1)
   ar((xA, T), (xB, T), GIVEN1, s0: 0.45, s1: 0.45)
@@ -980,12 +981,29 @@ subscript.
   lab(1.25, 0.2, INDUCED)[$frac(#[`R`], ∋)$]
   node(xA, T, black, `A`); node(xB, T, black, `B`)
   node(xA, B, black, `EA`); node(xB, B, black, `EB`)
-}))
-#align(center, block(inset: (y: 4pt))[
-  $frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
-  #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
-  already the relator `P(R)`.]
-])]<adj-E-bend>
+  }),
+  // The only picture here drawing `i` as a strand the arrow absorbs: `R : i A⟶B` is a 2-cell, so
+  // bending that strand over a cap IS the transposition.  Hinze & Marsden, IntroString (4.7) p. 98.
+  // The law is set UNDER the picture, on the picture's own `⟺` and at its scale, so each half of the
+  // formula stands under the pair of panels stating it; the shared caption below belongs to the square.
+  // The `⟺` is centred on the PICTURE's measured width rather than on the formula's own, so the sign
+  // lands under the picture's sign instead of wherever the two halves' unequal widths would put it.
+  context {
+    let w = measure(lambend()).width
+    grid(columns: 1, row-gutter: 8pt, align: center,
+      lambend(),
+      box(width: w, grid(columns: (1fr, auto, 1fr), column-gutter: 20pt,
+        align: (right + horizon, center + horizon, left + horizon),
+        [`R=` $frac(#[`R`], ∋)$ `∋`],
+        text(15pt)[$arrow.l.r.double$],
+        [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`])))
+  },
+  [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
+   #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
+   already the relator `P(R)`.]],
+  // `lambend()` is four panels wide, so the pair only clears the 22cm text block scaled down.
+  s: 88%,
+)]<adj-E-bend>
 
 = Relator
 
@@ -3080,7 +3098,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   `[]` does not. That is why the three leaves of §@sec-party-mono's proof all reduce to
   "`cost` is a sum".]]
 
-=== `(𝟙×list(R×R))S⊑S(R×R)` — `S` monotonic on `R×R` <sec-party-mono>
+=== `(𝟙×list(R×R))S⊑S(R×R)` — `S : F([A]×[A])⟶[A]×[A]` monotonic on `R×R` <sec-party-mono>
 
 // @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := R×R`, so `F(R×R) = 𝟙×list(R×R)`; @lax-defn at
 // `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
@@ -3106,6 +3124,99 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      `F(R×R)=𝟙×list(R×R)`])],
 )]<party-mono>
 
+// @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
+// produces, and the factorisation it runs through is that picture's GIVEN2 path.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+    let (T, EB) = ((-2.9, 0), (2.9, 0))
+    ar(T, EB, INDUCED, dash: "dashed", s0: 1.05, s1: 0.8)
+    lab(0, 0.85, INDUCED)[$frac(#[`⦇S⦈ choose`], ∋)$]
+    node(T.at(0), T.at(1), black, `tree A`); node(EB.at(0), EB.at(1), black, `E[A]`)
+  }),
+  cetz.canvas(length: 0.8cm, {
+    lab(-6.8, 0, black)[$=$]
+    let (T, EM, EB) = ((-5.0, 0), (0, 0), (5.0, 0))
+    ar(T, EM, GIVEN2, s0: 1.05, s1: 1.6); ar(EM, EB, GIVEN2, s0: 1.6, s1: 0.8)
+    lab(-2.5, 0.85, GIVEN2)[$frac(#[`⦇S⦈`], ∋)$]
+    lab(2.5, 0.62, GIVEN2)[`E(choose)`]
+    node(T.at(0), T.at(1), black, `tree A`); node(EM.at(0), EM.at(1), black, `E([A]×[A])`)
+    node(EB.at(0), EB.at(1), black, `E[A]`)
+  }),
+  [$frac(#[`⦇S⦈ choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption]],
+)]<party-absorb>
+
+=== `(R×R)choose⊑choose R` — `choose` monotonic on `R` <sec-party-choose>
+
+// B&dM p. 176, §7.3's first claim, left there as a simple exercise; Ex 7.38 is the LAW the derivation
+// applies and this is its side condition.  A TAPE because `choose≜π₁∪π₂` is a `∪` — @coprod-laws.
+#disp[#pair(
+  // The pair enters as two wires, so the tape forks each of them: a branch carries the whole input.
+  // `π₁=𝟙⊗⊸` and `π₂=⊸⊗𝟙`, the discard sitting on the component that branch drops.
+  cetz.canvas(length: 0.8cm, {
+    let ys = 0.5                  // the pair's two wires, off the picture's centre
+    let yb = 1.3                  // the tape's two branches, off the same centre
+    lab(-0.75, ys, black)[`[A]`]; lab(-0.75, -ys, black)[`[A]`]
+    wire((0, ys), (0.4, ys)); gbox((0.4, ys), [R]); wire((1.32, ys), (1.8, ys))
+    wire((0, -ys), (0.4, -ys)); gbox((0.4, -ys), [R]); wire((1.32, -ys), (1.8, -ys))
+    tape((1.8, -2.55), (6.14, 2.55))
+    tape-fork((2.02, ys), sp: yb, len: 0.42); tape-fork((2.02, -ys), sp: yb, len: 0.42)
+    wire((2.44, yb + ys), (5.5, yb + ys))
+    wire((2.44, yb - ys), (3.4, yb - ys)); wiredot((3.4, yb - ys))
+    wire((2.44, -yb + ys), (3.4, -yb + ys)); wiredot((3.4, -yb + ys))
+    wire((2.44, -yb - ys), (5.5, -yb - ys))
+    lab(4.2, yb + ys + 0.5, black)[`π₁`]; lab(4.2, -yb - ys - 0.5, black)[`π₂`]
+    tape-join((5.92, 0), sp: yb + ys, len: 0.42)
+    wire((6.14, 0), (6.6, 0))
+    lab(7.0, 0, black)[`[A]`]
+  }),
+  cetz.canvas(length: 0.8cm, {
+    let ys = 0.5
+    let yb = 1.3
+    lab(-1.9, 0, SLACK)[`⊑`]
+    lab(-0.75, ys, black)[`[A]`]; lab(-0.75, -ys, black)[`[A]`]
+    wire((0, ys), (0.34, ys)); wire((0, -ys), (0.34, -ys))
+    tape((0.34, -2.55), (4.68, 2.55))
+    tape-fork((0.56, ys), sp: yb, len: 0.42); tape-fork((0.56, -ys), sp: yb, len: 0.42)
+    wire((0.98, yb + ys), (4.04, yb + ys))
+    wire((0.98, yb - ys), (1.94, yb - ys)); wiredot((1.94, yb - ys))
+    wire((0.98, -yb + ys), (1.94, -yb + ys)); wiredot((1.94, -yb + ys))
+    wire((0.98, -yb - ys), (4.04, -yb - ys))
+    lab(2.9, yb + ys + 0.5, black)[`π₁`]; lab(2.9, -yb - ys - 0.5, black)[`π₂`]
+    tape-join((4.46, 0), sp: yb + ys, len: 0.42)
+    wire((4.68, 0), (5.0, 0)); gbox((5.0, 0), [R]); wire((5.92, 0), (6.3, 0))
+    lab(6.7, 0, black)[`[A]`]
+  }),
+  [`(R×R)choose⊑choose R`],
+)]<party-choose>
+
+#disp[
+#zline(
+  zsqc([`(R×R)choose`], none),
+  zstep(op: sym.eq, under: true)[`choose≜π₁∪π₂`],
+  zsqc([`(R×R)(π₁∪π₂)`], none),
+  zstep(op: sym.eq, under: true)[composition distributes over `∪`],
+  zsqc([`(R×R)π₁∪(R×R)π₂`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[(5.2) of @bdm-prod-laws, `R×S=⟨π₁R,π₂S⟩`],
+  zsqc([`⟨π₁R,π₂R⟩π₁∪⟨π₁R,π₂R⟩π₂`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[(5.6) and (5.7) of @bdm-prod-laws],
+  zsqc([`(Dom (π₂R))π₁R∪(Dom (π₁R))π₂R`], none),
+)
+#zline(
+  zstep(op: sym.subset.eq.sq, under: true)[`Dom⊑𝟙` — the only step that loses, and the whole law],
+  zsqc([`π₁R∪π₂R`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[composition distributes over `∪`],
+  zsqc([`(π₁∪π₂)R`], none),
+  zstep(op: sym.eq, under: true)[`choose≜π₁∪π₂`],
+  zsqc([`choose R`], none),
+)
+]<party-choose-proof>
+
 === The derivation <sec-party-deriv>
 
 #disp[
@@ -3117,7 +3228,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   zsqc([$frac(#[`⦇S⦈`], ∋)$ `E(choose) max R`], none),
 )
 #zline(
-  zstep(op: sym.supset.eq.sq, under: true)[Ex 7.38, `(R×R) choose⊑choose R`],
+  zstep(op: sym.supset.eq.sq, under: true)[Ex 7.38, §@sec-party-choose],
   zsqc([$frac(#[`⦇S⦈`], ∋)$ `max(R×R)` $frac(#[`choose`], ∋)$ `max R`], none),
 )
 #zline(
@@ -3136,6 +3247,98 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   `exclude` renamed to `π₂ list(`$frac(#[`choose`], ∋)$ `max R) concat` — `include` was already a map,
   and `exclude` becomes one.]])
 ]<party-laws>
+
+// MARSDEN'S calculus (arXiv:1401.7220), not this note's: `Rel` as a BICATEGORY, so a region is a type,
+// a wire a relation with its relator in the label, a bead a `⊑`.  Fills and bead style off his pp. 7, 12.
+#disp[#block(breakable: false)[
+#align(center, cetz.canvas(length: 1cm, {
+  // His own fills: `ccffcc`/`ccccff`/`ffe6cc` for a plain 0-cell, the 50% tints `81ff81`/`8181ff` for
+  // its power set, so `E X` is `X` saturated.
+  let TREE = rgb("#ffe6cc"); let PAIR = rgb("#ccccff"); let EPAIR = rgb("#8181ff")
+  let ELA = rgb("#81ff81"); let LA = rgb("#ccffcc")
+  // One x per wire, held for the wire's whole life; `XB2` is `max(R×R)`, born at `@mon-laws` and
+  // consumed at `Ex 7.38`, and `XR` is `max R`, touched by no step.
+  let (XL, XB, XB2, XC, XR, XE) = (0.0, 1.5, 3.4, 5.7, 8.5, 9.9)
+  // The beads' heights, bottom (the program) to top (the specification).
+  let (Y0, Y1, Y2, Y3, Y4, Y5, TOP) = (1.6, 3.5, 5.4, 8.0, 10.4, 12.3, 13.8)
+  let RA = 1.9    // how far below `@pow-laws` the fold wire leaves its column to meet it
+  let RB = 1.05   // the same for `max(R×R)`, at both its ends
+  // The four wires, bound once: a region's boundary is drawn from THESE lists, so a fill can never
+  // disagree with the wire bounding it.
+  let PXR = ((XR, 0), (XR, TOP))
+  let PXC = ((XC, 0), (XC, TOP))
+  let PXB = ((XB, 0), (XB, Y4 - RA), (XC, Y4))
+  let PXB2 = ((XB, Y2), (XB2, Y2 + RB), (XB2, Y3 - RB), (XC, Y3))
+  let lb(x, y, body) = d.content((x + 0.17, y), body, anchor: "west")
+  let rg(x, y, body) = d.content((x, y), body)
+  let out(x, y, body, up) = d.content((x, y), body, anchor: if up { "south" } else { "north" })
+
+  // Fills first, every one of them a single contiguous area for one type, labelled once.
+  hm-region(((XL, 0), (XL, TOP), (XC, TOP), (XC, Y4), (XB, Y4 - RA), (XB, 0)), TREE)
+  hm-region(((XB, 0), (XB, Y2), (XB2, Y2 + RB), (XB2, Y3 - RB), (XC, Y3), (XC, 0)), PAIR)
+  hm-region(((XB, Y2), (XB, Y4 - RA), (XC, Y4), (XC, Y3), (XB2, Y3 - RB), (XB2, Y2 + RB),
+            (XB, Y2)), EPAIR)
+  d.rect((XC, 0), (XR, TOP), fill: ELA, stroke: none)
+  d.rect((XR, 0), (XE, TOP), fill: LA, stroke: none)
+
+  hm-wire(PXR)
+  hm-wire(PXC)
+  hm-wire(PXB)
+  hm-wire(PXB2)
+
+  // One name per 0-cell, inside its own area.
+  rg(4.0, 0.75, [`[A]×[A]`])
+  rg(3.5, 8.4, [`E([A]×[A])`])
+  rg(7.1, 4.0, [`E[A]`])
+  rg(9.2, 6.5, [`[A]`])
+  rg(2.6, 11.3, [`tree A`])
+
+  // A 1-cell reaching the edge is named outside it — the program along the bottom, the
+  // specification along the top; `max R` is one wire the whole way, so it is named at both.
+  out(XB, -0.34, align(center)[`⦇⟨include,π₂ list(` \ $frac(#[`choose`], ∋)$ `max R) concat⟩⦈`], false)
+  out(XC, -0.34, $frac(#[`choose`], ∋)$, false)
+  out(XR, -0.34, [`max R`], false)
+  out(XC, TOP + 0.34, $frac(#[`party`], ∋)$, true)
+  out(XR, TOP + 0.34, [`max R`], true)
+
+  // A 1-cell born and consumed inside is named beside its own stretch, once.
+  lb(XB, 2.55, [`⦇⟨`$frac(#[`include`], ∋)$ `max R,` \ $frac(#[`exclude`], ∋)$ `max R⟩⦈`])
+  lb(XB, 4.45, [`⦇`$frac(#[`S`], ∋)$ `max(R×R)⦈`])
+  lb(XB, 6.7, $frac(#[`⦇S⦈`], ∋)$)
+  lb(XB2, 6.7, [`max(R×R)`])
+  lb(XC, 9.2, [`E(choose)`])
+  lb(XC, 11.35, $frac(#[`⦇S⦈ choose`], ∋)$)
+
+  // The beads. ONE SHORT KEY apiece, his way; the justification is in the list below the figure.
+  hm-bead((XB, Y0), [`include map`])
+  hm-bead((XB, Y1), [`Ex 7.15`])
+  hm-bead((XB, Y2), [`@mon-laws`])
+  hm-bead((XC, Y3), [`Ex 7.38`])
+  hm-bead((XC, Y4), [`@pow-laws`])
+  hm-bead((XC, Y5), [`party≜`])
+}))
+
+#v(4pt)
+
+// The key list, read UPWARD like the picture: the top line is the bottom bead.
+#align(center, block(width: 12.6cm)[#src[#grid(
+  columns: (2.5cm, 0.7cm, auto),
+  row-gutter: 3.5pt, align: (left, center, left),
+  [`include map`], text(SLACK)[$subset.eq.sq$], [`include` a map, `max R` into each branch],
+  [`Ex 7.15`], text(SLACK)[$subset.eq.sq$], [the fork splits],
+  [`@mon-laws`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list(R×R))S⊑S(R×R)`],
+  [`Ex 7.38`], text(SLACK)[$subset.eq.sq$], [`(R×R)choose⊑choose R`],
+  [`@pow-laws`], [$=$], [absorption],
+  [`party≜`], [$=$], [definition of `party`],
+)]])
+
+#v(2pt)
+
+#align(center, block(width: 12.6cm)[#align(center)[#src[Marsden's conventions, not the note's:
+composition runs left to right and 2-cells run upward, so the picture is the derivation upside down —
+the bottom edge is the program, the top edge the specification, and each bead says that what is below
+it is contained in what is above.]]])
+]]<party-marsden>
 
 == Shortest paths on a cylinder
 
@@ -3199,6 +3402,50 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`paths min R : L N Nat⟶L Nat`],
   [A cheapest path from the entry side to the exit side.],
 )]<cyl-defn>
+
+=== `N(E(L A))` <sec-cyl-nela>
+
+#disp[#align(center, grid(
+  columns: 2, column-gutter: 34pt, align: horizon,
+  grid(columns: 2, column-gutter: 14pt, row-gutter: 5pt, align: center,
+    [`1`], [`5`], [`2`], [`6`], [`3`], [`7`], [`4`], [`8`]),
+  [`[(1,2,3,4),(5,6,7,8)] : L N Nat`],
+))]<cyl-array>
+
+// One raw block, not a grid: the four components line up because every glyph is one monospace
+// advance wide, which no measured column can promise.
+#disp[#align(center)[```
+⦇generate⦈[(5,6,7,8)] = ({[5]},{[6]},{[7]},{[8]})
+
+generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
+    ( {[1,5],[1,6],[1,8]},
+      {[2,5],[2,6],[2,7]},
+      {[3,6],[3,7],[3,8]},
+      {[4,5],[4,7],[4,8]} )
+```]]<cyl-generate>
+
+#disp[#block(breakable: false)[
+#table(
+  columns: (2.0cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+
+  [`N`],
+  [the 4-tuple, one component per row of the entry column],
+
+  [`E`],
+  [the set of paths that can start in that row],
+
+  [`L`],
+  [a path is the non-empty list of the squares it crosses],
+)
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[row 1's set has no `[1,7]` — from row 1
+  only rows 4, 1 and 2 are reachable — and it does have `[1,8]`, because the cylinder glues the
+  bottom row to the top. That is `moves trans N(union)` of @cyl-defn: component `k` collects the
+  paths of rows `k-1`, `k`, `k+1`.]])
+]]<cyl-nela>
+
+=== The derivation <sec-cyl-deriv>
 
 #disp[
 #zline(
