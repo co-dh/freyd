@@ -543,13 +543,14 @@ Equality is `S` entire, which is the same picture read as `Dom R=𝟙⟺R` entir
 // fold bead, the algebra falling past it, exactly as in @cata-defining.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (T, A, AB, B) = ((-4.2, 0), (2.8, 1.9), (2.8, 0), (2.8, -1.9))
-    ar(T, A, GIVEN1, s0: 0.45, s1: 0.55); ar(T, B, GIVEN2, s0: 0.45, s1: 0.55)
-    ar(T, AB, INDUCED, dash: "dashed", s0: 0.45, s1: 0.95)
-    ar(AB, A, GIVEN1, s0: 0.55, s1: 0.55); ar(AB, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(-0.7, 1.35, GIVEN1)[`⦇h⦈`]; lab(-0.7, -1.35, GIVEN2)[`⦇k⦈`]
-    lab(-0.5, 0.4, INDUCED)[`⟨⦇h⦈,⦇k⦈⟩`]
-    lab(3.5, 0.95, GIVEN1)[`π₁`]; lab(3.5, -0.95, GIVEN2)[`π₂`]
+    // The fan is ±4.6 wide only so that `⟨⦇h⦈,⦇k⦈⟩` fits between the induced arrow and `⦇h⦈`'s leg.
+    let (T, A, AB, B) = ((0, 2.2), (-4.6, -1.9), (0, -1.9), (4.6, -1.9))
+    ar(T, A, GIVEN1, s0: 0.5, s1: 0.5); ar(T, B, GIVEN2, s0: 0.5, s1: 0.5)
+    ar(T, AB, INDUCED, dash: "dashed", s0: 0.45, s1: 0.55)
+    ar(AB, A, GIVEN1, s0: 0.95, s1: 0.5); ar(AB, B, GIVEN2, s0: 0.95, s1: 0.5)
+    lab(-2.6, 0.45, GIVEN1)[`⦇h⦈`]; lab(2.6, 0.45, GIVEN2)[`⦇k⦈`]
+    lab(-1.45, -0.85, INDUCED)[`⟨⦇h⦈,⦇k⦈⟩`]
+    lab(-2.4, -2.45, GIVEN1)[`π₁`]; lab(2.4, -2.45, GIVEN2)[`π₂`]
     node(T.at(0), T.at(1), black, `T`); node(A.at(0), A.at(1), GIVEN1, `A`)
     node(AB.at(0), AB.at(1), INDUCED, `A×B`); node(B.at(0), B.at(1), GIVEN2, `B`)
   }),
@@ -582,22 +583,22 @@ Equality is `S` entire, which is the same picture read as `Dom R=𝟙⟺R` entir
 #disp[#capbox(
   grid(columns: 2, align: horizon, column-gutter: 34pt,
     cetz.canvas(length: 0.8cm, {
-      let (FT, FAB, T, A) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.75, s1: 1.45)
-      ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, A, GIVEN1, s0: 0.55, s1: 0.55)
-      lab(0, 1.8, INDUCED)[`F(⟨f,g⟩)`]; lab(0, -1.8, INDUCED)[`f`]
-      lab(-3.4, 0, GIVEN2)[`α`]; lab(3.4, 0, GIVEN1)[`h`]
+      let (FT, T, FAB, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, A, GIVEN1, s0: 1.35, s1: 0.55)
+      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      ar(T, A, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`h`]
+      lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`f`]
       node(FT.at(0), FT.at(1), black, `FT`); node(FAB.at(0), FAB.at(1), GIVEN1, `F(A×B)`)
       node(T.at(0), T.at(1), black, `T`); node(A.at(0), A.at(1), GIVEN1, `A`)
     }),
     cetz.canvas(length: 0.8cm, {
-      let (FT, FAB, T, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.75, s1: 1.45)
-      ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, B, GIVEN1, s0: 0.55, s1: 0.55)
-      lab(0, 1.8, INDUCED)[`F(⟨f,g⟩)`]; lab(0, -1.8, INDUCED)[`g`]
-      lab(-3.4, 0, GIVEN2)[`α`]; lab(3.4, 0, GIVEN1)[`k`]
+      let (FT, T, FAB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, B, GIVEN1, s0: 1.35, s1: 0.55)
+      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      ar(T, B, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`k`]
+      lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`g`]
       node(FT.at(0), FT.at(1), black, `FT`); node(FAB.at(0), FAB.at(1), GIVEN1, `F(A×B)`)
       node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), GIVEN1, `B`)
     }),
@@ -1707,6 +1708,46 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
    calculation: it needs a tabulation of `P(RS)`.],
 )]<powrel-laws>
 
+// Ahead of §11.4 and §11.5, which both write `⦇…⦈` before anything says what it is.  The three
+// squares are the one geometry: algebras across the rows, homomorphisms down the columns.
+#pagebreak(weak: true)
+== Initial algebra
+
+#disp[#definition[
+An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
+]]<alg-defn>
+
+#disp[#definition[
+An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
+`α`#sub[`A`]` h=F(h)α`#sub[`B`].
+
+  #align(center, block(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
+    let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+    ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α`#sub[`A`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+    lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
+    node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
+    node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
+  })))
+]]<hom-defn>
+
+#disp[#definition[
+The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
+`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`].
+
+  #align(center, block(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
+    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FT, FA, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
+    lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
+    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
+    node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
+  })))
+]]<initial-defn>
+
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
 #pagebreak(weak: true)
@@ -1723,16 +1764,16 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 // The wire is the partial application F_A = F(A, −): an arrow in the SECOND argument is a bead on the
 // object wire, an arrow in the FIRST a bead on the F wire.
 // Bead height carries no meaning — the exchange condition identifies the two orders.
-// (2.10) at `F := F(A, −)`, `α_B := F(R, 𝟙) α`: the algebra is the WHOLE right vertical, and the old
-// drawing spent `F(R, 𝟙)` along the top row, which hid the fold.  x = ±3.5 for `F(A, T A)`'s width.
+// (2.10) at `F := F(A, −)`, `α_B := F(R, 𝟙) α`: the algebra is the WHOLE bottom row, and the old
+// drawing spent `F(R, 𝟙)` down a column, which hid the fold.  x = ±3 for `F(A, T A)`'s width.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FA, FM, TA, TB) = ((-3.5, 1.25), (3.5, 1.25), (-3.5, -1.25), (3.5, -1.25))
-    ar(FA, FM, INDUCED, dash: "dashed", s0: 1.45, s1: 1.45)
-    ar(TA, TB, INDUCED, dash: "dashed", s0: 0.65, s1: 0.65)
-    ar(FA, TA, GIVEN2, s0: 0.55, s1: 0.55); ar(FM, TB, GIVEN1, s0: 0.55, s1: 0.55)
-    lab(0, 1.85, INDUCED)[`F(𝟙,T(R))`]; lab(0, -1.85, INDUCED)[`T(R)`]
-    lab(-4.15, 0, GIVEN2)[`α`]; lab(5.6, 0, GIVEN1)[`F(R,𝟙)α`]
+    let (FA, TA, FM, TB) = ((-3, 1.35), (3, 1.35), (-3, -1.35), (3, -1.35))
+    ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FM, TB, GIVEN1, s0: 1.45, s1: 0.65)
+    ar(FA, FM, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0.4, 1.95, GIVEN2)[`α`]; lab(0.4, -1.95, GIVEN1)[`F(R,𝟙)α`]
+    lab(-4.75, 0, INDUCED)[`F(𝟙,T(R))`]; lab(4.0, 0, INDUCED)[`T(R)`]
     node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
     node(FM.at(0), FM.at(1), GIVEN1, `F(A,TB)`); node(TB.at(0), TB.at(1), GIVEN1, `TB`)
   }),
@@ -1776,15 +1817,15 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    map.],
 )]<tf-laws>
 
-// THE NATURALITY ROW, drawn: the square above with its two top arrows composed into the one relator
-// action `F(R, T(R))`, which is why this one is back to the ±3 of the reduce square.
+// THE NATURALITY ROW, drawn: the square above with its left column and the `F(R, 𝟙)` of its bottom
+// row composed into the one relator action `F(R, T(R))` — same ±3 geometry, so the two overlay.
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let (FA, FB, TA, TB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-  ar(FA, FB, INDUCED, s0: 1.45, s1: 1.45)
-  ar(TA, TB, INDUCED, s0: 0.65, s1: 0.65)
-  ar(FA, TA, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, TB, GIVEN1, s0: 0.55, s1: 0.55)
-  lab(0, 1.85, INDUCED)[`F(R,T(R))`]; lab(0, -1.85, INDUCED)[`T(R)`]
-  lab(-3.6, 0, GIVEN2)[`α`]; lab(3.55, 0, GIVEN1)[`α`]
+  let (FA, TA, FB, TB) = ((-3, 1.35), (3, 1.35), (-3, -1.35), (3, -1.35))
+  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FB, TB, GIVEN1, s0: 1.45, s1: 0.65)
+  ar(FA, FB, INDUCED, s0: 0.55, s1: 0.55)
+  ar(TA, TB, INDUCED, s0: 0.55, s1: 0.55)
+  lab(0.4, 1.95, GIVEN2)[`α`]; lab(0.4, -1.95, GIVEN1)[`α`]
+  lab(-4.75, 0, INDUCED)[`F(R,T(R))`]; lab(4.0, 0, INDUCED)[`T(R)`]
   node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
   node(FB.at(0), FB.at(1), GIVEN1, `F(B,TB)`); node(TB.at(0), TB.at(1), GIVEN1, `TB`)
 }))]<tf-nat>
@@ -1910,16 +1951,16 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 === Reflection
 
-// The defining square at `X := 𝟙`, `α_B := α_T`, on the defining equation's ±3 geometry: both verticals are the ONE
+// The defining square at `X := 𝟙`, `α_B := α_T`, on @cata-defining's own geometry: both rows are the ONE
 // arrow `α_T`, so both are GIVEN2.  The right panel is bare — `𝟙` is an empty wire, and that is the law.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FT, FT2, T, T2) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-    ar(FT, FT2, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
-    ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, INDUCED)[`F(𝟙)`]; lab(0, -1.8, INDUCED)[`𝟙`]
-    lab(-3.75, 0, GIVEN2)[`α`#sub[`T`]]; lab(3.7, 0, GIVEN2)[`α`#sub[`T`]]
+    ar(FT, FT2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
+    lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
     node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
     node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
   }),
@@ -1941,17 +1982,18 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
 // defaults run `T`, `B` — one object, one hue.  `s: 92%`: the one row that does not fit at full size.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
-    let (FT, FB, FC) = ((-6, 1.25), (0, 1.25), (6, 1.25))
-    let (T, B, C) = ((-6, -1.25), (0, -1.25), (6, -1.25))
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.75, s1: 0.75)
-    ar(FB, FC, black, s0: 0.75, s1: 0.75)
-    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(B, C, black, s0: 0.55, s1: 0.55)
+    let (FT, T) = ((-2.6, 2.5), (2.6, 2.5))
+    let (FB, B) = ((-2.6, 0), (2.6, 0))
+    let (FC, C) = ((-2.6, -2.5), (2.6, -2.5))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
-    lab(-3, 1.8, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3, 1.8, black)[`F(S)`]
-    lab(-3, -1.8, INDUCED)[`⦇α`#sub[`B`]`⦈`]; lab(3, -1.8, black)[`S`]
-    lab(-6.75, 0, GIVEN2)[`α`#sub[`T`]]; lab(0.75, 0, GIVEN1)[`α`#sub[`B`]]; lab(6.8, 0, GIVEN1)[`α`#sub[`C`]]
+    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FB, FC, black, s0: 0.55, s1: 0.55)
+    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(B, C, black, s0: 0.55, s1: 0.55)
+    lab(-4.25, 1.25, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3.7, 1.25, INDUCED)[`⦇α`#sub[`B`]`⦈`]
+    lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
+    lab(0, 3.05, GIVEN2)[`α`#sub[`T`]]; lab(0, 0.55, GIVEN1)[`α`#sub[`B`]]; lab(0, -1.95, GIVEN1)[`α`#sub[`C`]]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
     node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
@@ -1969,7 +2011,7 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
   s: 92%,
 )]<cata-fusion>
 
-The left square is `⦇α`#sub[`B`]`⦈`'s own defining square and the right one is the side condition,
+The top square is `⦇α`#sub[`B`]`⦈`'s own defining square and the bottom one is the side condition,
 so the outer rectangle says `⦇α`#sub[`B`]`⦈S` satisfies the defining equation of `⦇α`#sub[`C`]`⦈` —
 and uniqueness finishes it. A fold followed by `S` has collapsed into a single fold, which is how an
 intermediate structure is got rid of.
