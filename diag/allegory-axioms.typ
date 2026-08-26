@@ -3,10 +3,10 @@
 #import "note-style.typ": *
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name (see circuit.typ's header); `dot` is renamed on the way in for that reason.
-#import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, unitR as wcreate
+#import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": lambend, homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
+#import "draw.typ": snake, homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -952,7 +952,8 @@ subscript.
   [`E(R)≜` $frac(#[`∋R`], ∋)$, `E≜` $frac(#[`∋·`], ∋)$], [`E(R): EA⟶EB`, image of a set of A],
   [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`], [$frac(#[`𝟙`], ∋)$`: x↦{x}` ],
   [$frac(#[`S`], ∋)$ `E(R)=` $frac(#[`S`], ∋)$ $frac(#[`∋R`], ∋)$ `=` $frac(#[`SR`], ∋)$],
-  [absorption ],
+  [absorption — the monad's composition law, $frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$ `=`
+   $frac(#[`SR`], ∋)$, §@sec-kleisli],
 
   [`subset≜∋/∋ : EA⟶EA`],
   [`xs subset ys⟺∀a. ys∋a→xs∋a`, that is `ys⊆xs`, not `xs⊆ys`.],
@@ -982,28 +983,63 @@ subscript.
   node(xA, T, black, `A`); node(xB, T, black, `B`)
   node(xA, B, black, `EA`); node(xB, B, black, `EB`)
   }),
-  // The only picture here drawing `i` as a strand the arrow absorbs: `R : i A⟶B` is a 2-cell, so
-  // bending that strand over a cap IS the transposition.  Hinze & Marsden, IntroString (4.7) p. 98.
-  // The law is set UNDER the picture, on the picture's own `⟺` and at its scale, so each half of the
-  // formula stands under the pair of panels stating it; the shared caption below belongs to the square.
-  // The `⟺` is centred on the PICTURE's measured width rather than on the formula's own, so the sign
-  // lands under the picture's sign instead of wherever the two halves' unequal widths would put it.
+  // `{·}` opens the `i E` pair and `∋` closes it again, so the strand running in and out of a panel is
+  // the one functor; the panel beside it draws that same functor as the plain wire the law equates it to.
   context {
-    let w = measure(lambend()).width
-    grid(columns: 1, row-gutter: 8pt, align: center,
-      lambend(),
-      box(width: w, grid(columns: (1fr, auto, 1fr), column-gutter: 20pt,
-        align: (right + horizon, center + horizon, left + horizon),
-        [`R=` $frac(#[`R`], ∋)$ `∋`],
-        text(15pt)[$arrow.l.r.double$],
-        [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`])))
+    let g = grid(columns: 2, column-gutter: 14pt, align: horizon,
+      snake(`i`, `E`, false), snake(`E`, `i`, true))
+    let w = measure(g).width
+    grid(columns: 1, row-gutter: 8pt, align: center, g,
+      box(width: w, grid(columns: (1fr, 1fr), align: (center + horizon, center + horizon),
+        [`{·}∋=𝟙`], [$frac(#[`∋`], ∋)$ `=𝟙`])))
   },
   [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
    #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
    already the relator `P(R)`.]],
-  // `lambend()` is four panels wide, so the pair only clears the 22cm text block scaled down.
-  s: 88%,
+  // The two snakes are four panels wide, so the pair only clears the 22cm text block scaled down.
+  s: 95%,
 )]<adj-E-bend>
+
+// The heading gets its own page: §10.1's pair fills the foot of the previous one, and the definition
+// below is unbreakable, so the heading was left standing alone there.
+#pagebreak(weak: true)
+== `𝒜≅Kleisli(E)` <sec-kleisli>
+
+// Every ingredient is a row of @pow-laws; nothing here is new.  `union` is `E(∋)`: the counit with
+// `E` applied to it, which is the multiplication the adjunction hands back.
+#disp[#block(breakable: false)[#definition[
+`E(R)≜` $frac(#[`∋R`], ∋)$, #h(4pt) `{·}=` $frac(#[`𝟙`], ∋)$ ` : A⟶EA`, #h(4pt)
+`union=E(∋)=` $frac(#[`∋∋`], ∋)$ ` : E(EA)⟶EA`
+
+`f⋄g≜f E(g) union : A⟶EC`, #h(4pt) for `f : A⟶EB` and `g : B⟶EC`
+
+#src[the monad is on `Map(𝒜)`, not on the allegory: `E` is a relator on all relations, but `{·}`,
+`union` and `f E(g) union` are maps, and the Kleisli construction happens where they live.]
+]]]<kleisli-defn>
+
+#disp[
+#zline(
+  zsqc([$frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$], none),
+  zstep(op: sym.eq, under: true)[definition of `⋄`, `union=E(∋)`],
+  zsqc([$frac(#[`S`], ∋)$ `E(`$frac(#[`R`], ∋)$`)E(∋)`], none),
+  zstep(op: sym.eq, under: true)[`E` a functor, `E(X)E(Y)=E(XY)`],
+  zsqc([$frac(#[`S`], ∋)$ `E(`$frac(#[`R`], ∋)$`∋)`], none),
+)
+#zline(
+  zstep(op: sym.eq, under: true)[@pow-laws, $frac(#[`R`], ∋)$ `∋=R`],
+  zsqc([$frac(#[`S`], ∋)$ `E(R)`], none),
+  zstep(op: sym.eq, under: true)[@pow-laws, absorption],
+  zsqc([$frac(#[`SR`], ∋)$], none),
+)
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[the first three steps only
+  unfold `⋄` — `E` is a functor, so `E(`$frac(#[`R`], ∋)$`)union=E(`$frac(#[`R`], ∋)$`∋)=E(R)` and the
+  `union` is gone. Absorption, the row of @pow-laws, is the whole law, and it is the functoriality
+  of $frac(#[`·`], ∋)$.]]])
+]<kleisli-comp>
+
+#block[#src[`𝟙` goes to $frac(#[`𝟙`], ∋)$ `={·}`, the Kleisli identity, by definition — so
+$frac(#[`·`], ∋)$ is an isomorphism of categories `𝒜≅Kleisli(E)`, and §@sec-adj-E's `i⊣E` is the
+Kleisli adjunction. `i` is the identity on objects, so every object of the allegory is free.]]
 
 = Relator
 
@@ -1056,7 +1092,6 @@ tabulation of `⊤`.
   lab(-1.75, 1.12, GIVEN1)[`R`]; lab(-1.75, -1.12, GIVEN2)[`S`]
   lab(1.8, 1.12, GIVEN1)[`π₁`]; lab(1.8, -1.12, GIVEN2)[`π₂`]
   lab(-1.0, 0.32, INDUCED)[$chevron.l R, S chevron.r$]
-  lab(1.1, 0.5, SLACK, rot: -135deg)[`⊑`]; lab(1.1, -0.5, SLACK, rot: 135deg)[`⊑`]
   node(C.at(0), C.at(1), black, $C$)
   node(A.at(0), A.at(1), GIVEN1, $A$); node(B.at(0), B.at(1), GIVEN2, $B$)
   node(P.at(0), P.at(1), INDUCED, $A times B$)
@@ -1076,16 +1111,17 @@ the monoid's unit law:
 #disp[#chain((cetz.canvas(length: 0.8cm, {
   wire((0, 0), (0.8, 0)); wiredot((0.8, 0))
   bend((0.8, 0), (1.4, 1.5)); bend((0.8, 0), (1.4, -1.5))
-  wire((1.4, 1.5), (1.6, 1.5)); gbox((1.6, 1.5), [R]); wire((2.52, 1.5), (3.3, 1.5))
-  wire((1.4, -1.5), (1.6, -1.5)); gbox((1.6, -1.5), [S]); wire((2.52, -1.5), (3.3, -1.5))
-  // `⟜` has no input, so these two strands simply begin — that is what a converse of a projection is.
-  wiredot((2.1, 0.5)); wire((2.1, 0.5), (3.3, 0.5))
-  wiredot((2.1, -0.5)); wire((2.1, -0.5), (3.3, -0.5))
-  bend((3.3, 1.5), (4.4, 0.85), k: 0.4); bend((3.3, -0.5), (4.4, 0.85), k: 0.4); wiredot((4.4, 0.85))
-  bend((3.3, 0.5), (4.4, -0.85), k: 0.4); bend((3.3, -1.5), (4.4, -0.85), k: 0.4)
-  wiredot((4.4, -0.85))
-  wire((4.4, 0.85), (5.0, 0.85)); wire((4.4, -0.85), (5.0, -0.85))
-  lab(-0.35, 0, black)[$C$]; lab(5.35, 0.85, GIVEN1)[$A$]; lab(5.35, -0.85, GIVEN2)[$B$]
+  wire((1.4, 1.5), (1.6, 1.5)); gbox((1.6, 1.5), [R]); wire((2.52, 1.5), (3.7, 1.5))
+  wire((1.4, -1.5), (1.6, -1.5)); gbox((1.6, -1.5), [S]); wire((2.52, -1.5), (3.7, -1.5))
+  // `π₁°=𝟙⊗⟜` is a PAIR: `R`'s wire and the created one beside it.  Merging the pairs componentwise
+  // is what crosses.
+  wiredot((2.7, 0.9)); wire((2.7, 0.9), (3.7, 0.9))
+  wiredot((2.7, -0.9)); wire((2.7, -0.9), (3.7, -0.9))
+  bend((3.7, 1.5), (5.4, 0.3), k: 0.4); bend((3.7, -0.9), (5.4, 0.3), k: 0.4); wiredot((5.4, 0.3))
+  bend((3.7, 0.9), (5.4, -0.3), k: 0.4); bend((3.7, -1.5), (5.4, -0.3), k: 0.4)
+  wiredot((5.4, -0.3))
+  wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
+  lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
 }), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half]), s: 100%)]<fork-collapse>
 
 
@@ -1161,31 +1197,13 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // A `#disp` block does NOT break across a page — it overflows and the last row is lost — so the rows
 // below are kept short enough that the whole table fits one.
-// B&dM §5.2, pp. 114–117, MIRRORED: the book writes `h·f` for first `f`, this note `f h`.  Six rows are
+// B&dM §5.2, pp. 114–117, MIRRORED: the book writes `h·f` for first `f`, this note `f h`.  Five rows are
 // ONE picture — `×` is `⊗` and `⟨R,S⟩` is `◁(R⊗S)`, so interchange spends the law before it is stated.
 #disp[#table(
   columns: (1.9cm, 5.4cm, 1fr),
   align: (left + horizon, left + horizon, center + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*B&dM*], [*the law*], [*picture*]),
-
-  [(5.1)], [`⟨R,S⟩=(Rπ₁°)∩(Sπ₂°)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$C$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([R], "r"),)); brun(1.05, -y, (([S], "r"),))
-    lab(3.0, y, black)[$A$]; lab(3.0, -y, black)[$B$]
-    lab(3.65, 0, black)[$=$]
-    lab(4.3, 0, black)[$C$]
-    wcopy((5.1, 0), li: 0.5, lo: 0.6, sp: 1.2)
-    brun(5.7, 1.2, (([R], "r"),)); brun(5.7, -1.2, (([S], "r"),))
-    // `π₁°` creates the second component, `π₂°` the first: two dots with no left end.
-    wcreate((6.6, 0.4), lo: 0.7); wcreate((6.6, -0.4), lo: 0.7)
-    wmerge((8.35, 0.4), li: 1.05, lo: 0.5, sp: 0.8)
-    wmerge((8.35, -0.4), li: 1.05, lo: 0.5, sp: 0.8)
-    lab(9.2, 0.4, black)[$A$]; lab(9.2, -0.4, black)[$B$]
-  }), s: 74%),
 
   [(5.2)], [`R×S=⟨π₁R,π₂S⟩`],
   P(cetz.canvas(length: 0.8cm, {
@@ -1207,32 +1225,14 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(6.65, a, black)[$A$]; lab(6.65, -a, black)[$B$]
   }), s: 74%),
 
-  [(5.3)], [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic]],
+  [(5.3)], [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
+   half is Ex 5.8, that half at `S:=𝟙` and at `R:=𝟙` B&dM's (5.4), (5.5) — stages of their proof of
+   this row; Ex 5.6 is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
     wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
     brun(1.05, y, (([X], "r"), ([R], "r"))); brun(1.05, -y, (([Y], "r"), ([S], "r")))
-    lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
-  }), s: 74%),
-
-  [(5.4)], [`⟨XR,Y⟩⊑⟨X,Y⟩(R×𝟙)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "r")))
-    brun(1.05, -y, (([Y], "r"),)); wire((2.65, -y), (3.91, -y))
-    lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
-  }), s: 74%),
-
-  [(5.5)], [`⟨X,YS⟩⊑⟨X,Y⟩(𝟙×S)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"),)); wire((2.65, y), (3.91, y))
-    brun(1.05, -y, (([Y], "r"), ([S], "r")))
     lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
   }), s: 74%),
 
@@ -1266,16 +1266,6 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(5.3, 0, black)[$C$]
   }), s: 74%),
 
-  [Ex 5.6], [`R×S⊑(𝟙×S)(R×𝟙)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, y, black)[$C$]; lab(-0.35, -y, black)[$D$]
-    // Drawn at the two heights the RIGHT side puts them at; nothing composes them, which is the law.
-    wire((0, y), (1.7, y)); gbox((1.7, y), [R]); wire((2.62, y), (2.96, y))
-    wire((0, -y), (0.34, -y)); gbox((0.34, -y), [S]); wire((1.26, -y), (2.96, -y))
-    lab(3.3, y, black)[$A$]; lab(3.3, -y, black)[$B$]
-  }), s: 74%),
-
   [Ex 5.7], [`⟨R,S⟩°⟨P,Q⟩⊑(R°P)×(S°Q)`],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
@@ -1290,15 +1280,6 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(7.15, y, black)[$A$]; lab(7.15, -y, black)[$B$]
     brun(7.5, y, (([R], "c"), ([P], "r"))); brun(7.5, -y, (([S], "c"), ([Q], "r")))
     lab(10.7, y, black)[$A'$]; lab(10.7, -y, black)[$B'$]
-  }), s: 74%),
-
-  [Ex 5.8], [`⟨X,Y⟩(R×S)⊑⟨XR,YS⟩` \ #src[the easy half of (5.3), and the same picture]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "r"))); brun(1.05, -y, (([Y], "r"), ([S], "r")))
-    lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
   }), s: 74%),
 
   [Ex 5.9], [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow]],
@@ -1349,7 +1330,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [`[R,S]≜ιₗ°R∪ιᵣ°S` \ #src[The tape is the union — a particle entering at `A+B` takes exactly
+  [`[R,S]≜l°R∪r°S` \ #src[The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
@@ -1357,10 +1338,10 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     // 1.57 = y + 0.95, the clearance @subseq-union-slide leaves above a branch it labels.
     tape((0.34, -1.57), (4.24, 1.57))
     tape-fork((0.56, 0), sp: y, len: 0.42)
-    // Mirrored and tinted: this file draws a converse by flipping the box, so these are `ιₗ°` and `ιᵣ°`.
-    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
+    // Mirrored and tinted: this file draws a converse by flipping the box, so these are `l°` and `r°`.
+    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
     wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
+    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
     wire((3.16, -y), (3.60, -y))
     lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
     tape-join((4.02, 0), sp: y, len: 0.42)
@@ -1369,41 +1350,41 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 85%),
 
   [`[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], [],
-  [`R+S≜[Rιₗ,Sιᵣ]`], [],
-  [`ιₗ[R,S]=R`, `ιᵣ[R,S]=S`, and `[R,S]` is the only such arrow], [],
+  [`R+S≜[Rl,Sr]`], [],
+  [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow], [],
 
   // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
   // by shape as well as by the tint, and a round trip reads as one box undoing the other.
-  [`ιₗιₗ°=𝟙=ιᵣιᵣ°`],
+  [`ll°=𝟙=rr°`],
   P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`ιₗ`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`ιₗ`], flip: true, fill: TINT)
+    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
+    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`l`], flip: true, fill: TINT)
     wire((2.52, 0), (2.86, 0))
     lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$A$]
     lab(4.00, 0, black)[$=$]
     lab(4.55, 0, black)[$A$]; wire((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$A$]
   }), s: 85%),
 
-  [`ιₗιᵣ°=⊥=ιᵣιₗ°`],
+  [`lr°=⊥=rl°`],
   P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`ιₗ`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`ιᵣ`], flip: true, fill: TINT)
+    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
+    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`r`], flip: true, fill: TINT)
     wire((2.52, 0), (2.86, 0))
     lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$B$]
     lab(4.00, 0, black)[$=$]
     lab(4.55, 0, black)[$A$]; blocked((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$B$]
   }), s: 85%),
 
-  [`ιₗ°ιₗ∪ιᵣ°ιᵣ=𝟙`],
+  [`l°l∪r°r=𝟙`],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     wire((0, 0), (0.34, 0))
     tape((0.34, -1.57), (4.24, 1.57))
     tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`ιₗ`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`ιᵣ`], chamfer: false); wire((3.16, -y), (3.60, -y))
+    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
+    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
+    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
+    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
     lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
     tape-join((4.02, 0), sp: y, len: 0.42)
     wire((4.24, 0), (4.58, 0))
@@ -1419,7 +1400,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: why the universal property holds
 // with equality where the fork's triangles above only hold up to `Dom`.
-The universal-property row is not free: `ιₗ,ιᵣ` were only ever asked to be a coproduct of *maps*. They stay one
+The universal-property row is not free: `l,r` were only ever asked to be a coproduct of *maps*. They stay one
 once every arrow is allowed because $frac(#box(width: 8pt), ∋)$ sends an arrow `A⟶C` to a map `A⟶EC` reversibly, so the
 map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 
@@ -1427,11 +1408,11 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 // carries over opens with its `⟺`.  Both `·∋ ⊣ %∋` steps are the same bijection, used each way.
 #disp[
 #zline(
-  zpair(zsqc(`ιₗT`, `R`, eq: true), zsqc(`ιᵣT`, `S`, eq: true)),
+  zpair(zsqc(`lT`, `R`, eq: true), zsqc(`rT`, `S`, eq: true)),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zpair(zsqc($frac(#[`ιₗT`], ∋)$, $frac(#[`R`], ∋)$, eq: true), zsqc($frac(#[`ιᵣT`], ∋)$, $frac(#[`S`], ∋)$, eq: true)),
+  zpair(zsqc($frac(#[`lT`], ∋)$, $frac(#[`R`], ∋)$, eq: true), zsqc($frac(#[`rT`], ∋)$, $frac(#[`S`], ∋)$, eq: true)),
   zstep(op: sym.arrow.l.r.double, under: true)[fusion],
-  zpair(zsqc([`ιₗ` $frac(#[`T`], ∋)$], $frac(#[`R`], ∋)$, eq: true), zsqc([`ιᵣ` $frac(#[`T`], ∋)$], $frac(#[`S`], ∋)$, eq: true)),
+  zpair(zsqc([`l` $frac(#[`T`], ∋)$], $frac(#[`R`], ∋)$, eq: true), zsqc([`r` $frac(#[`T`], ∋)$], $frac(#[`S`], ∋)$, eq: true)),
 )
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[coproduct of maps],
@@ -1454,7 +1435,7 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
   ar(B, PC, GIVEN2, s0: 0.5, s1: 0.6)
   arc(A, C, 1, [`R`], col: GIVEN1, h: 4.0, cx: 3)
   arc(B, C, -1, [`S`], col: GIVEN2, h: 4.0, cx: 3)
-  lab(-5.18, 1.55, black)[`ιₗ`]; lab(-5.18, -1.55, black)[`ιᵣ`]
+  lab(-5.18, 1.55, black)[`l`]; lab(-5.18, -1.55, black)[`r`]
   lab(-1.23, 1.62, GIVEN1)[$frac(#[`R`], ∋)$]; lab(-1.23, -1.62, GIVEN2)[$frac(#[`S`], ∋)$]
   lab(-3.0, 0.5, INDUCED)[`[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]`]
   lab(2.5, 0.45, black)[`∋`]
@@ -1467,7 +1448,7 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 Nothing here holds only up to `⊑`: every triangle commutes on the nose, which is the difference from
 the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`, and pushing `∋` into the union that
 `[·,·]` on maps already is turns that back into the definition,
-`(ιₗ°` $frac(#[`R`], ∋)$ `∪ιᵣ°` $frac(#[`S`], ∋)$`)∋=ιₗ°R∪ιᵣ°S`.
+`(l°` $frac(#[`R`], ∋)$ `∪r°` $frac(#[`S`], ∋)$`)∋=l°R∪r°S`.
 
 // B&dM §5.3, pp. 117–119, mirrored like the product table.  A TAPE WHEREVER THERE IS A `∪`, so (5.9)
 // and (5.10) are definitions drawn rather than equations: the tape IS the union on the right.
@@ -1477,35 +1458,35 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*B&dM*], [*the law*], [*picture*]),
 
-  [(5.9)], [`[R,S]=(ιₗ°R)∪(ιᵣ°S)` \ #src[@coprod-laws's first row]],
+  [(5.9)], [`[R,S]=(l°R)∪(r°S)` \ #src[@coprod-laws's first row]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.9, 0, black)[$A + B$]
     wire((-0.3, 0), (0.34, 0))
     tape((0.34, -1.05), (4.24, 1.05))
     tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
+    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
     gbox((2.24, y), [R]); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
+    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
     gbox((2.24, -y), [S]); wire((3.16, -y), (3.60, -y))
     tape-join((4.02, 0), sp: y, len: 0.42)
     wire((4.24, 0), (4.58, 0))
     lab(4.93, 0, black)[$C$]
   }), s: 82%),
 
-  [(5.10)], [`R+S=[Rιₗ,Sιᵣ]`],
+  [(5.10)], [`R+S=[Rl,Sr]`],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.9, 0, black)[$A + B$]
     wire((-0.3, 0), (0.34, 0))
     tape((0.34, -1.05), (5.16, 1.05))
     tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
+    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
     gbox((2.24, y), [R]); wire((3.16, y), (3.50, y))
-    gbox((3.50, y), [`ιₗ`], chamfer: false); wire((4.42, y), (4.52, y))
-    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
+    gbox((3.50, y), [`l`], chamfer: false); wire((4.42, y), (4.52, y))
+    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
     gbox((2.24, -y), [S]); wire((3.16, -y), (3.50, -y))
-    gbox((3.50, -y), [`ιᵣ`], chamfer: false); wire((4.42, -y), (4.52, -y))
+    gbox((3.50, -y), [`r`], chamfer: false); wire((4.42, -y), (4.52, -y))
     tape-join((4.94, 0), sp: y, len: 0.42)
     wire((5.16, 0), (5.50, 0))
     lab(6.25, 0, black)[$C + D$]
@@ -1519,20 +1500,20 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     tape((0.34, -1.05), (3.90, 1.05))
     tape-fork((0.56, 0), sp: y, len: 0.42)
     gbox((0.98, y), [U], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`ιₗ`], chamfer: false); wire((3.16, y), (3.26, y))
+    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.26, y))
     gbox((0.98, -y), [V], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`ιᵣ`], chamfer: false); wire((3.16, -y), (3.26, -y))
+    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.26, -y))
     tape-join((3.68, 0), sp: y, len: 0.42)
     wire((3.90, 0), (5.20, 0)); lab(4.55, 0.42, black)[$A + B$]
     tape((5.20, -1.05), (8.76, 1.05))
     tape-fork((5.42, 0), sp: y, len: 0.42)
-    gbox((5.84, y), [`ιₗ`], flip: true, fill: TINT); wire((6.76, y), (7.10, y))
+    gbox((5.84, y), [`l`], flip: true, fill: TINT); wire((6.76, y), (7.10, y))
     gbox((7.10, y), [R]); wire((8.02, y), (8.12, y))
-    gbox((5.84, -y), [`ιᵣ`], flip: true, fill: TINT); wire((6.76, -y), (7.10, -y))
+    gbox((5.84, -y), [`r`], flip: true, fill: TINT); wire((6.76, -y), (7.10, -y))
     gbox((7.10, -y), [S]); wire((8.02, -y), (8.12, -y))
     tape-join((8.54, 0), sp: y, len: 0.42)
     wire((8.76, 0), (9.10, 0)); lab(9.45, 0, black)[$D$]
-    // `ιₗιₗ°=𝟙` and `ιₗιᵣ°=⊥` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
+    // `ll°=𝟙` and `lr°=⊥` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
     lab(10.1, 0, black)[$=$]
     lab(10.75, 0, black)[$C$]
     wire((11.05, 0), (11.39, 0))
@@ -1546,17 +1527,17 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
   }), s: 68%),
 
-  [Ex 5.12], [`X≜[𝟙,⊥]=ιₗ°` and `Y≜[⊥,𝟙]=ιᵣ°`, \ so `(Xιₗ)∪(Yιᵣ)=[ιₗ,ιᵣ]=𝟙` \ #src[which is (5.9)]],
+  [Ex 5.12], [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl)∪(Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-1.0, 0, black)[$A + B$]
     wire((-0.3, 0), (0.34, 0))
     tape((0.34, -1.05), (4.24, 1.05))
     tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`ιₗ`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`ιₗ`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`ιᵣ`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`ιᵣ`], chamfer: false); wire((3.16, -y), (3.60, -y))
+    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
+    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
+    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
+    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
     tape-join((4.02, 0), sp: y, len: 0.42)
     wire((4.24, 0), (4.58, 0))
     lab(5.30, 0, black)[$A + B$]
@@ -1575,39 +1556,39 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     wcopy((0.6, 0), li: 0.5, lo: 0.8, sp: t)
     tape((1.4, t - 1.05), (6.22, t + 1.05))
     tape-fork((1.62, t), sp: y, len: 0.42)
-    gbox((2.04, t + y), [`ιₗ`], flip: true, fill: TINT); wire((2.96, t + y), (3.30, t + y))
+    gbox((2.04, t + y), [`l`], flip: true, fill: TINT); wire((2.96, t + y), (3.30, t + y))
     gbox((3.30, t + y), [R]); wire((4.22, t + y), (4.56, t + y))
-    gbox((4.56, t + y), [`ιₗ`], chamfer: false); wire((5.48, t + y), (5.58, t + y))
-    gbox((2.04, t - y), [`ιᵣ`], flip: true, fill: TINT); wire((2.96, t - y), (3.30, t - y))
+    gbox((4.56, t + y), [`l`], chamfer: false); wire((5.48, t + y), (5.58, t + y))
+    gbox((2.04, t - y), [`r`], flip: true, fill: TINT); wire((2.96, t - y), (3.30, t - y))
     gbox((3.30, t - y), [S]); wire((4.22, t - y), (4.56, t - y))
-    gbox((4.56, t - y), [`ιᵣ`], chamfer: false); wire((5.48, t - y), (5.58, t - y))
+    gbox((4.56, t - y), [`r`], chamfer: false); wire((5.48, t - y), (5.58, t - y))
     tape-join((6.00, t), sp: y, len: 0.42)
     wire((6.22, t), (9.16, t))
     tape((1.4, -t - 1.05), (4.96, -t + 1.05))
     tape-fork((1.62, -t), sp: y, len: 0.42)
-    gbox((2.04, -t + y), [`ιₗ`], flip: true, fill: TINT); wire((2.96, -t + y), (3.30, -t + y))
+    gbox((2.04, -t + y), [`l`], flip: true, fill: TINT); wire((2.96, -t + y), (3.30, -t + y))
     gbox((3.30, -t + y), [P]); wire((4.22, -t + y), (4.32, -t + y))
-    gbox((2.04, -t - y), [`ιᵣ`], flip: true, fill: TINT); wire((2.96, -t - y), (3.30, -t - y))
+    gbox((2.04, -t - y), [`r`], flip: true, fill: TINT); wire((2.96, -t - y), (3.30, -t - y))
     gbox((3.30, -t - y), [Q]); wire((4.22, -t - y), (4.32, -t - y))
     tape-join((4.74, -t), sp: y, len: 0.42)
     wire((4.96, -t), (5.60, -t))
     tape((5.60, -t - 1.05), (9.16, -t + 1.05))
     tape-fork((5.82, -t), sp: y, len: 0.42)
     gbox((6.24, -t + y), [U], flip: true, fill: TINT); wire((7.16, -t + y), (7.50, -t + y))
-    gbox((7.50, -t + y), [`ιₗ`], chamfer: false); wire((8.42, -t + y), (8.52, -t + y))
+    gbox((7.50, -t + y), [`l`], chamfer: false); wire((8.42, -t + y), (8.52, -t + y))
     gbox((6.24, -t - y), [V], flip: true, fill: TINT); wire((7.16, -t - y), (7.50, -t - y))
-    gbox((7.50, -t - y), [`ιᵣ`], chamfer: false); wire((8.42, -t - y), (8.52, -t - y))
+    gbox((7.50, -t - y), [`r`], chamfer: false); wire((8.42, -t - y), (8.52, -t - y))
     tape-join((8.94, -t), sp: y, len: 0.42)
     wmerge((9.96, 0), li: 0.8, lo: 0.5, sp: t)
     lab(11.2, 0, black)[$=$]
     wire((11.66, 0), (12.0, 0))
     tape((12.0, -2.25), (20.3, 2.25))
     tape-fork((12.22, 0), sp: 1.1, len: 0.42)
-    for (b, u, l, r, i) in ((1.1, [R], [P], [U], [`ιₗ`]), (-1.1, [S], [Q], [V], [`ιᵣ`])) {
+    for (b, u, fwd, cnv, i) in ((1.1, [R], [P], [U], [`l`]), (-1.1, [S], [Q], [V], [`r`])) {
       gbox((12.64, b), i, flip: true, fill: TINT)
       wcopy((14.0, b), li: 0.44, lo: 0.5, sp: y)
       brun(14.5, b + y, ((u, "r"),)); wire((16.1, b + y), (17.36, b + y))
-      brun(14.5, b - y, ((l, "r"), (r, "c")))
+      brun(14.5, b - y, ((fwd, "r"), (cnv, "c")))
       wmerge((17.86, b), li: 0.5, lo: 0.44, sp: y)
       gbox((18.30, b), i, chamfer: false); wire((19.22, b), (19.32, b))
     }
@@ -2105,23 +2086,23 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   box(cetz.canvas(length: 0.8cm, {
     let y = 1.15
     wire((0, 0), (0.34, 0))
-    // `R + S ≜ [R ιₗ, S ιᵣ]`, so a branch of the sum ENDS by injecting back — that upright `ιₗ` is what
-    // the second tape's `ιₗ°` cancels against.
+    // `R + S ≜ [R l, S r]`, so a branch of the sum ENDS by injecting back — that upright `l` is what
+    // the second tape's `l°` cancels against.
     tape((0.34, -1.9), (6.33, 1.9))
     tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`ιₗ`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
+    gbox((1.26, y), [`l`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
     gbox((2.52, y), [`𝟙`], chamfer: false, w: 0.7); wire((3.22, y), (3.56, y))
-    gbox((3.56, y), [`ιₗ`], chamfer: false); wire((4.48, y), (5.33, y))
-    gbox((1.26, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
+    gbox((3.56, y), [`l`], chamfer: false); wire((4.48, y), (5.33, y))
+    gbox((1.26, -y), [`r`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
     gbox((2.52, -y), [`𝟙×∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
-    gbox((4.41, -y), [`ιᵣ`], chamfer: false)
+    gbox((4.41, -y), [`r`], chamfer: false)
     tape-join((6.03, 0), sp: y, len: 0.7)
     wire((6.33, 0), (7.18, 0))
     tape((7.18, -1.9), (13.41, 1.9))
     tape-fork((7.40, 0), sp: y, len: 0.7)
-    gbox((8.10, y), [`ιₗ`], flip: true, fill: TINT); wire((9.02, y), (9.36, y))
+    gbox((8.10, y), [`l`], flip: true, fill: TINT); wire((9.02, y), (9.36, y))
     gbox((9.36, y), [`nil`], chamfer: false, w: 1.05); wire((10.41, y), (12.41, y))
-    gbox((8.10, -y), [`ιᵣ`], flip: true, fill: TINT); wire((9.02, -y), (9.36, -y))
+    gbox((8.10, -y), [`r`], flip: true, fill: TINT); wire((9.02, -y), (9.36, -y))
     gbox((9.36, -y), [`cons∪π₂`], w: 3.05)
     tape-join((13.11, 0), sp: y, len: 0.7)
     wire((13.41, 0), (13.75, 0))
@@ -2132,9 +2113,9 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
     wire((0, 0), (0.34, 0))
     tape((0.34, -1.9), (8.46, 1.9))
     tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`ιₗ`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
+    gbox((1.26, y), [`l`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
     gbox((2.52, y), [`nil`], chamfer: false, w: 1.05); wire((3.57, y), (7.46, y))
-    gbox((1.26, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
+    gbox((1.26, -y), [`r`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
     // Chamfered where the rest of this section is not: `𝟙 × ∋` and `cons ∪ π₂` are relations, not maps.
     gbox((2.52, -y), [`𝟙×∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
     gbox((4.41, -y), [`cons∪π₂`], w: 3.05)
@@ -2142,8 +2123,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
     wire((8.46, 0), (8.80, 0))
   })),
 ), s: 92%)
-#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "coproduct": `R+S≜[Rιₗ,Sιᵣ]` and
-  `ιₗ[R,S]=R`, `ιᵣ[R,S]=S` — @coprod-laws.]])]<subseq-sum-branchwise>
+#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "coproduct": `R+S≜[Rl,Sr]` and
+  `l[R,S]=R`, `r[R,S]=S` — @coprod-laws.]])]<subseq-sum-branchwise>
 
 #disp[
 #zline(
@@ -2228,20 +2209,20 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
 #disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
   let y = 1.7                     // branch height: a fraction box is 1.2 tall and has to clear the tape
-  let (u, l) = (-0.75, -2.65)     // the two strands of the fork `⟨·,·⟩` inside the right branch
+  let (up, dn) = (-0.75, -2.65)     // the two strands of the fork `⟨·,·⟩` inside the right branch
   wire((0, 0), (0.34, 0))
   tape((0.34, -3.2), (11.7, 2.5))
   tape-fork((0.56, 0), sp: y, len: 1.0)
-  gbox((1.56, y), [`ιₗ`], flip: true, fill: TINT); wire((2.48, y), (3.80, y))
+  gbox((1.56, y), [`l`], flip: true, fill: TINT); wire((2.48, y), (3.80, y))
   gbox((3.80, y), [`nil`], chamfer: false, w: 1.05); wire((4.85, y), (6.10, y))
   gbox((6.10, y), [$frac(#[`𝟙`], ∋)$], chamfer: false, w: 0.85, h: 1.2); wire((6.95, y), (10.40, y))
-  gbox((1.56, -y), [`ιᵣ`], flip: true, fill: TINT); wire((2.48, -y), (2.95, -y))
-  wiredot((2.95, -y)); bend((2.95, -y), (3.70, u)); bend((2.95, -y), (3.70, l))
-  wire((3.70, u), (3.90, u))
-  gbox((3.90, u), [$frac(#[`𝟙×∋`], ∋)$], chamfer: false, w: 1.7, h: 1.2); wire((5.60, u), (5.95, u))
-  gbox((5.95, u), [`E(cons)`], chamfer: false, w: 2.0); wire((7.95, u), (8.50, u))
-  wire((3.70, l), (3.90, l))
-  gbox((3.90, l), [`π₂`], chamfer: false, w: 1.3); wire((5.20, l), (8.50, l))
+  gbox((1.56, -y), [`r`], flip: true, fill: TINT); wire((2.48, -y), (2.95, -y))
+  wiredot((2.95, -y)); bend((2.95, -y), (3.70, up)); bend((2.95, -y), (3.70, dn))
+  wire((3.70, up), (3.90, up))
+  gbox((3.90, up), [$frac(#[`𝟙×∋`], ∋)$], chamfer: false, w: 1.7, h: 1.2); wire((5.60, up), (5.95, up))
+  gbox((5.95, up), [`E(cons)`], chamfer: false, w: 2.0); wire((7.95, up), (8.50, up))
+  wire((3.70, dn), (3.90, dn))
+  gbox((3.90, dn), [`π₂`], chamfer: false, w: 1.3); wire((5.20, dn), (8.50, dn))
   gbox((8.50, -y), [`cup`], chamfer: false, w: 1.15, h: 2.6); wire((9.65, -y), (10.40, -y))
   tape-join((11.40, 0), sp: y, len: 1.0)
   wire((11.70, 0), (12.04, 0))
@@ -4237,7 +4218,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `step (d,(a,b))=((d+a)/10,(d+b)/10)`.
 
 `FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `h≜⦇[arb,step]⦈=H°`, #h(4pt)
-`! : Digit×Interval⟶1`, #h(4pt) `Q≜(ιₗ°!°ιᵣ)∪𝟙`, #h(4pt) `w≜2¹⁷`.
+`! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r)∪𝟙`, #h(4pt) `w≜2¹⁷`.
 ]]<tex-defn>
 
 #disp[#table(
@@ -4262,7 +4243,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   [`0<10b−d₁<1` and `0<10b−d₂<1` imply `d₁=d₂`],
   [`step°` is in fact a map, `d` the digit with `0<10b−d<1`, so $frac(#[`[arb,step]°`], ∋)$ returns at
    most two elements and `Q` need only choose between them],
-  [`Q≜(ιₗ°!°ιᵣ)∪𝟙`, and `! nil⊑cons R°` \ #src[from `! nil length⊑cons length≥`]],
+  [`Q≜(l°!°r)∪𝟙`, and `! nil⊑cons R°` \ #src[from `! nil length⊑cons length≥`]],
   [stop whenever stopping is legal: the empty decimal is shorter than any other],
   [`(μX :` $frac(#[`[arb,step]°`], ∋)$ `min Q F(X)α)⊑` $frac(#[`intern°`], ∋)$ `min R` #h(4pt) #src[Theorem 10.1]],
   [greedy: emit the one digit the interval allows, until the interval contains zero],
