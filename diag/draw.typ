@@ -30,9 +30,10 @@
 #let XM = PADX + SEP / 2    // `splitcut`'s merged wire, and where a region's name sits — see both
 // PITCH 0.9, the one every family here now uses, and MARGIN 0.9 — the `F` strand bends `KNEE` above
 // its row, and at margin 0.8 the 0.2 left over reads as a wire entering the panel already turning.
-#let H1 = 2.7               // row 1
-#let H2 = 1.8               // row 2 — also the row a LONE bead sits on, being the average of the other two
-#let H3 = 0.9               // row 3
+#let PITCH = 0.9            // one row to the next, and the margin above row 1 and below the last row
+#let H1 = H - PITCH         // row 1
+#let H2 = H - 2 * PITCH     // row 2 — also the row a LONE bead sits on, being the average of the other two
+#let H3 = H - 3 * PITCH     // row 3
 #let GAP = 1.0              // between two panels, with the `=` centred in it
 
 // The object wire, bound once: the vertex at `H2` is where a `homeq` wire changes type, and a 2-point
@@ -60,14 +61,15 @@
 
 // `algpanel` — ONE PANEL of `homeq`.  The object wire SURVIVES the junction, so it runs straight and the
 // consumed `F` strand bends; `owire` is passed by name so panel and region walk the one list, reversed.
-#let regionfills(owire, regions, ucol) = if regions != none {
+// `w`/`h`/`xo` default to the two-strand panel's; `tfuneq` has a strand and a row more, and passes its own.
+#let regionfills(owire, regions, ucol, w: W, h: H, xo: XO) = if regions != none {
   // Right edge, bottom edge, then UP the object wire; `close` walks the top edge back.
-  hm-region(((W, H), (W, 0)) + owire.rev(), ucol)
+  hm-region(((w, h), (w, 0)) + owire.rev(), ucol)
   if regions != auto {
     // The ambient name at `XM`, one position for both panel kinds: between the wires where an `F`
     // wire runs, and still mid-strip where none does.
-    hm-name((XM, H - 0.3), regions.at(0), col: NAMEC)
-    hm-name((XO + PADR / 2, H - 0.3), regions.at(1), col: NAMEC)
+    hm-name((XM, h - 0.3), regions.at(0), col: NAMEC)
+    hm-name((xo + PADR / 2, h - 0.3), regions.at(1), col: NAMEC)
   }
 }
 
@@ -83,7 +85,8 @@
   hm-wire(owire.slice(0, 2), col: cT)
   hm-wire(owire.slice(1), col: cB)
   hm-bead((XO, ymerge), act, col: cact)
-  hm-bead((XO, H2), mid, col: cmid)
+  // `mid: none` is the IDENTITY: a bare wire, not a labelled bead.
+  if mid != none { hm-bead((XO, H2), mid, col: cmid) }
   hm-port((XF, H), w1)
   hm-port((XO, H), w2, col: cT)
   hm-port((XO, 0), out, dir: -1, col: cB)
@@ -122,6 +125,32 @@
         fmid: fmid, cfmid: cfmid),
   )
   hm-row(if rev { panels.rev() } else { panels }, sep: sep, gap: gap, length: length)
+}
+
+// `tfuneq` — §2.7's type functor on THREE strands `F T A`: `T(f)` is the object bead `f` with `T` running
+// straight past it.  FOUR rows, so the shared `f` holds one height; functors black, the object strand typed.
+#let tfuneq(w1, w2, w3, out, act1, act2, f,
+            cact1: black, cact2: black, cf: black,
+            tcol: TCOL, bcol: BCOL, gap: GAP, length: 0.95cm,
+            regions: none, acol: AC, ucol: UC, frame: none) = {
+  // `T` takes the two-strand panel's object position and the object moves one pitch right; the extra row
+  // goes on TOP, so the `F` strand, the pitch and the grey `𝟏` strip are the ones the panels beside it draw.
+  let (xt, xo, w, h) = (XO, XO + SEP, W + SEP, H + PITCH)
+  let panel(yact, act, cact) = hm-panel(
+    w, h, fill: if regions != none { acol } else { none }, frame: frame, {
+      regionfills(((xo, h), (xo, 0)), regions, ucol, w: w, h: h, xo: xo)
+      hm-join(XF, h, xt, yact)
+      hm-wire(((xt, h), (xt, 0)))
+      hm-wire(((xo, h), (xo, H1)), col: tcol)
+      hm-wire(((xo, H1), (xo, 0)), col: bcol)
+      hm-bead((xt, yact), act, col: cact)
+      hm-bead((xo, H1), f, col: cf)
+      hm-port((XF, h), w1); hm-port((xt, h), w2); hm-port((xo, h), w3, col: tcol)
+      hm-port((xt, 0), w2, dir: -1); hm-port((xo, 0), out, dir: -1, col: bcol)
+    },
+  )
+  // Row 1 or row 4 for the algebra: the two heights the `F` strand falls to are the whole law.
+  hm-row((panel(H, act1, cact1), panel(H3, act2, cact2)), gap: gap, length: length)
 }
 
 // `beadeq` — `b = 𝟙` on the wire `w`: a bead on the left, a BARE WIRE on the right, which is what the

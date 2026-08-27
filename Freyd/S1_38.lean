@@ -332,6 +332,16 @@ theorem equiv_reflects_sat (Q : QSequence) {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [C
   comp_id _      := Prod.ext (Cat.comp_id _) (Cat.comp_id _)
   assoc _ _ _    := Prod.ext (Cat.assoc _ _ _) (Cat.assoc _ _ _)
 
+/-- A functor on a product category applies its two arguments independently: moving in `ℬ`
+    first and then in `𝒜` is the same as moving in both at once. -/
+public theorem prod_map_split {𝒜 ℬ 𝒞 : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ] [Cat.{v} 𝒞]
+    (F : Functor (𝒜 × ℬ) 𝒞) {A B : 𝒜} {A' B' : ℬ} (f : A ⟶ B) (k : A' ⟶ B') :
+    F.map ((𝟙 A, k) : ((A, A') : 𝒜 × ℬ) ⟶ (A, B'))
+        ≫ F.map ((f, 𝟙 B') : ((A, B') : 𝒜 × ℬ) ⟶ (B, B'))
+      = F.map ((f, k) : ((A, A') : 𝒜 × ℬ) ⟶ (B, B')) := by
+  rw [← F.map_comp]
+  exact congrArg F.map (Prod.ext (Cat.id_comp f) (Cat.comp_id k))
+
 /-- The first-projection functor `π₁ : 𝒞 × 𝒟 → 𝒞`. -/
 def fstFunctor (𝒞 𝒟 : Type u) [Cat.{v} 𝒞] [Cat.{v} 𝒟] : Functor (𝒞 × 𝒟) 𝒞 where
   obj        := Prod.fst

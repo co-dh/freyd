@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, beadeq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -556,7 +556,7 @@ Equality is `S` entire, which is the same picture read as `Dom R=𝟙⟺R` entir
   }),
   homeq(`F`, `T`, [`α`], [`⟨⦇h⦈,⦇k⦈⟩`], [`⟨F(π₁)h,F(π₂)k⟩`], `A×B`,
     ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, typed: true, gap: 3.2, regions: auto),
-  [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈`],
+  [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈` #h(6pt) #src[banana split]],
 )]<banana-split>
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
@@ -1715,13 +1715,12 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
-]]<alg-defn>
-
-#disp[#definition[
 An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
 `α`#sub[`A`]` h=F(h)α`#sub[`B`].
+The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
+`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`].
 
-  #align(center, block(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
+  #row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
     let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
@@ -1729,14 +1728,7 @@ An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` wit
     lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
     node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
     node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
-  })))
-]]<hom-defn>
-
-#disp[#definition[
-The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
-`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`].
-
-  #align(center, block(inset: (y: 6pt), cetz.canvas(length: 0.8cm, {
+  })), cetz.canvas(length: 0.8cm, {
     let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FT, FA, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
@@ -1745,8 +1737,110 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
-  })))
+  })), s: 100%)
 ]]<initial-defn>
+
+=== Reflection
+
+// The defining square at `X := 𝟙`, `α_B := α_T`, on @cata-defining's own geometry: both rows are the ONE
+// arrow `α_T`, so both are GIVEN2.  The right panel is bare — `𝟙` is an empty wire, and that is the law.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+    let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
+    ar(FT, FT2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
+    lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
+    node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
+    node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
+  }),
+  homeq(`F`, `T`, [`α`#sub[`T`]], none, [`α`#sub[`T`]], `T`,
+    typed: true, bcol: TCOL, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN2),
+  [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11)]],
+)]<cata-reflection>
+
+// `relCata_alpha`, AOP/A6_3.lean:40.
+Taking a value apart with `α`#sub[`T`] and putting it straight back is doing nothing.
+
+=== Fusion
+
+// `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
+// is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
+Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` : FC⟶C` along an arrow
+`S : B⟶C`.
+
+// `tcol`/`bcol` spelled out because the side condition's object wire runs `B` then `C` where the
+// defaults run `T`, `B` — one object, one hue.  `s: 92%`: the one row that does not fit at full size.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+    let (FT, T) = ((-2.6, 2.5), (2.6, 2.5))
+    let (FB, B) = ((-2.6, 0), (2.6, 0))
+    let (FC, C) = ((-2.6, -2.5), (2.6, -2.5))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FB, FC, black, s0: 0.55, s1: 0.55)
+    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(B, C, black, s0: 0.55, s1: 0.55)
+    lab(-4.25, 1.25, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3.7, 1.25, INDUCED)[`⦇α`#sub[`B`]`⦈`]
+    lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
+    lab(0, 3.05, GIVEN2)[`α`#sub[`T`]]; lab(0, 0.55, GIVEN1)[`α`#sub[`B`]]; lab(0, -1.95, GIVEN1)[`α`#sub[`C`]]
+    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
+    node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
+    node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
+  }),
+  grid(
+    columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
+    src[the side condition],
+    homeq(`F`, `B`, [`α`#sub[`B`]], `S`, [`α`#sub[`C`]], `C`, ctop: GIVEN1, cmid: black, cbot: GIVEN1,
+      typed: true, tcol: BCOL, bcol: CCOL, regions: auto),
+    src[the conclusion],
+    twobeadeq(`T`, [`⦇α`#sub[`B`]`⦈`], `S`, [`⦇α`#sub[`C`]`⦈`], `C`, c1: INDUCED, c2: black, c3: INDUCED,
+      typed: true, regions: auto),
+  ),
+  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`] #h(6pt) #src[(2.12)]],
+  s: 92%,
+)]<cata-fusion>
+
+// Its own page: without the break the heading is the last line under Fusion's prose, a page away from
+// the definition it names.
+#pagebreak(weak: true)
+=== Type functor
+
+#disp[#definition[
+Let `F` be a bifunctor taking both the parameter `A` and the recursive position `TA`, with an initial
+algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
+`f : A⟶B` by
+
+  #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB`])
+]]<tfun-defn>
+
+// The house orientation: the fold runs down the columns, over the DIAGONAL algebra, which the left
+// column splits into its two steps.  @tf-sq is this same square with a relation `R` for the map `f`.
+// The `F` wire is UNINDEXED, against Hinze-Marsden's own practice of partially applying a bifunctor:
+// its bead `F(f,𝟙)` and the object bead `f` are one arrow, `F(f,T(f))` — the square carries both steps.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+  let (FA, TA) = ((-3, 2.5), (3, 2.5))
+  let FM = (-3, 0)
+  let (FB, TB) = ((-3, -2.5), (3, -2.5))
+  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FB, TB, GIVEN1, s0: 1.45, s1: 0.65)
+  ar(FA, FM, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+  ar(FM, FB, black, s0: 0.55, s1: 0.55)
+  ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+  ar(FM, TB, INDUCED, dash: "dashed", s0: 1.45, s1: 1.0)
+  lab(0.4, 3.05, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -3.05, GIVEN1)[`α`#sub[`B`]]
+  lab(-4.75, 1.25, INDUCED)[`F(𝟙,T(f))`]; lab(-4.25, -1.25, black)[`F(f,𝟙)`]
+  lab(4.0, 0, INDUCED)[`T(f)`]; lab(0.4, -0.35, INDUCED)[`F(f,𝟙)α`#sub[`B`]]
+  node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
+  node(FM.at(0), FM.at(1), black, `F(A,TB)`)
+  node(FB.at(0), FB.at(1), GIVEN1, `F(B,TB)`); node(TB.at(0), TB.at(1), GIVEN1, `TB`)
+  }),
+  tfuneq([`F`], [`T`], [`A`], [`B`], [`α`#sub[`A`]], [`α`#sub[`B`]], [`f`],
+    cact1: GIVEN2, cact2: GIVEN1, regions: auto),
+  [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`]],
+)]<tfun-sq>
 
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
@@ -1948,79 +2042,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   zsqc([`X`], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`], eq: true),
 )
 ]<cata-map-calc>
-
-=== Reflection
-
-// The defining square at `X := 𝟙`, `α_B := α_T`, on @cata-defining's own geometry: both rows are the ONE
-// arrow `α_T`, so both are GIVEN2.  The right panel is bare — `𝟙` is an empty wire, and that is the law.
-#disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
-    ar(FT, FT2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
-    lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
-    node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
-  }),
-  beadeq(`T`, [`⦇α`#sub[`T`]`⦈`], `T`, cb: INDUCED, typed: true, regions: auto),
-  [`⦇α`#sub[`T`]`⦈=𝟙`],
-)]<cata-reflection>
-
-// `relCata_alpha`, AOP/A6_3.lean:40.
-Taking a value apart with `α`#sub[`T`] and putting it straight back is doing nothing.
-
-=== Fusion
-
-// `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
-// is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
-Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` : FC⟶C` along an arrow
-`S : B⟶C`.
-
-// `tcol`/`bcol` spelled out because the side condition's object wire runs `B` then `C` where the
-// defaults run `T`, `B` — one object, one hue.  `s: 92%`: the one row that does not fit at full size.
-#disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T) = ((-2.6, 2.5), (2.6, 2.5))
-    let (FB, B) = ((-2.6, 0), (2.6, 0))
-    let (FC, C) = ((-2.6, -2.5), (2.6, -2.5))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FB, FC, black, s0: 0.55, s1: 0.55)
-    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(B, C, black, s0: 0.55, s1: 0.55)
-    lab(-4.25, 1.25, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3.7, 1.25, INDUCED)[`⦇α`#sub[`B`]`⦈`]
-    lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
-    lab(0, 3.05, GIVEN2)[`α`#sub[`T`]]; lab(0, 0.55, GIVEN1)[`α`#sub[`B`]]; lab(0, -1.95, GIVEN1)[`α`#sub[`C`]]
-    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-    node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
-    node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
-  }),
-  grid(
-    columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
-    src[the side condition],
-    homeq(`F`, `B`, [`α`#sub[`B`]], `S`, [`α`#sub[`C`]], `C`, ctop: GIVEN1, cmid: black, cbot: GIVEN1,
-      typed: true, tcol: BCOL, bcol: CCOL, regions: auto),
-    src[the conclusion],
-    twobeadeq(`T`, [`⦇α`#sub[`B`]`⦈`], `S`, [`⦇α`#sub[`C`]`⦈`], `C`, c1: INDUCED, c2: black, c3: INDUCED,
-      typed: true, regions: auto),
-  ),
-  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`]],
-  s: 92%,
-)]<cata-fusion>
-
-The top square is `⦇α`#sub[`B`]`⦈`'s own defining square and the bottom one is the side condition,
-so the outer rectangle says `⦇α`#sub[`B`]`⦈S` satisfies the defining equation of `⦇α`#sub[`C`]`⦈` —
-and uniqueness finishes it. A fold followed by `S` has collapsed into a single fold, which is how an
-intermediate structure is got rid of.
-
-// The substitution stays on ONE source line: a newline inside a backtick span is a hard line break
-// in the output, which cut this sentence in two on the first render.
-The side condition is @cata-defining's picture again under
-`α`#sub[`T`]`↦α`#sub[`B`]`,⦇α`#sub[`B`]`⦈↦S,α`#sub[`B`]`↦α`#sub[`C`]: both say that the bead
-between the two merges is a homomorphism of `F`-algebras.
 
 #pagebreak(weak: true)
 = Combinatorial functions <sec-comb>
