@@ -585,7 +585,7 @@ Equality is `S` entire, which is the same picture read as `Dom R=𝟙⟺R` entir
     cetz.canvas(length: 0.8cm, {
       let (FT, T, FAB, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
       ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, A, GIVEN1, s0: 1.35, s1: 0.55)
-      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      ar(FT, FAB, INDUCED, s0: 0.5, s1: 0.5)
       ar(T, A, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
       lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`h`]
       lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`f`]
@@ -595,7 +595,7 @@ Equality is `S` entire, which is the same picture read as `Dom R=𝟙⟺R` entir
     cetz.canvas(length: 0.8cm, {
       let (FT, T, FAB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
       ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, B, GIVEN1, s0: 1.35, s1: 0.55)
-      ar(FT, FAB, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
+      ar(FT, FAB, INDUCED, s0: 0.5, s1: 0.5)
       ar(T, B, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
       lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`k`]
       lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`g`]
@@ -1731,7 +1731,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
   })), cetz.canvas(length: 0.8cm, {
     let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FA, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
     lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
@@ -1748,7 +1748,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
-    ar(FT, FT2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FT, FT2, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
     lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
@@ -1779,7 +1779,7 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
     let (FC, C) = ((-2.6, -2.5), (2.6, -2.5))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FT, FB, INDUCED, s0: 0.55, s1: 0.55)
     ar(FB, FC, black, s0: 0.55, s1: 0.55)
     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(B, C, black, s0: 0.55, s1: 0.55)
@@ -1816,23 +1816,23 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB`])
 ]]<tfun-defn>
 
-// The house orientation: the fold runs down the columns, over the DIAGONAL algebra, which the left
-// column splits into its two steps.  @tf-sq is this same square with a relation `R` for the map `f`.
+// The house orientation: the fold runs down the columns, over the FLAT algebra `F(f,𝟙)α_B`, which the
+// triangle hanging below splits into its two steps.  @tf-sq is the same square with a relation for `f`.
 // The `F` wire is UNINDEXED, against Hinze-Marsden's own practice of partially applying a bifunctor:
 // its bead `F(f,𝟙)` and the object bead `f` are one arrow, `F(f,T(f))` — the square carries both steps.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
   let (FA, TA) = ((-3, 2.5), (3, 2.5))
-  let FM = (-3, 0)
-  let (FB, TB) = ((-3, -2.5), (3, -2.5))
-  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FB, TB, GIVEN1, s0: 1.45, s1: 0.65)
-  ar(FA, FM, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+  let (FM, TB) = ((-3, 0), (3, 0))
+  let FB = (-3, -2.5)
+  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FM, TB, GIVEN1, s0: 1.45, s1: 0.55)
+  ar(FA, FM, INDUCED, s0: 0.55, s1: 0.55)
   ar(FM, FB, black, s0: 0.55, s1: 0.55)
   ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-  ar(FM, TB, INDUCED, dash: "dashed", s0: 1.45, s1: 1.0)
-  lab(0.4, 3.05, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -3.05, GIVEN1)[`α`#sub[`B`]]
+  ar(FB, TB, GIVEN1, s0: 1.45, s1: 0.85)
+  lab(0.4, 3.05, GIVEN2)[`α`#sub[`A`]]; lab(0.4, 0.6, GIVEN1)[`F(f,𝟙)α`#sub[`B`]]
   lab(-4.75, 1.25, INDUCED)[`F(𝟙,T(f))`]; lab(-4.25, -1.25, black)[`F(f,𝟙)`]
-  lab(4.0, 0, INDUCED)[`T(f)`]; lab(0.4, -0.35, INDUCED)[`F(f,𝟙)α`#sub[`B`]]
+  lab(4.0, 1.25, INDUCED)[`T(f)`]; lab(0.7, -1.8, GIVEN1)[`α`#sub[`B`]]
   node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
   node(FM.at(0), FM.at(1), black, `F(A,TB)`)
   node(FB.at(0), FB.at(1), GIVEN1, `F(B,TB)`); node(TB.at(0), TB.at(1), GIVEN1, `TB`)
@@ -1841,6 +1841,30 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
     cact1: GIVEN2, cact2: GIVEN1, regions: auto),
   [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`]],
 )]<tfun-sq>
+
+// The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
+// bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.
+#disp[#pair(
+  cetz.canvas(length: 0.8cm, {
+  let (FA, TA) = ((-3, 1.6), (3, 1.6))
+  let TB = (5.4, 0)
+  let (FC, C) = ((-3, -1.6), (3, -1.6))
+  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FC, C, GIVEN1, s0: 1.45, s1: 0.5)
+  ar(FA, FC, INDUCED, s0: 0.55, s1: 0.55)
+  ar(TA, C, INDUCED, dash: "dashed", s0: 0.55, s1: 0.5)
+  ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.6)
+  ar(TB, C, INDUCED, dash: "dashed", s0: 0.6, s1: 0.55)
+  lab(0.4, 2.15, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -2.15, GIVEN1)[`F(f,𝟙)h`]
+  lab(-5.15, 0, INDUCED)[`F(𝟙,T(f)⦇h⦈)`]; lab(1.45, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
+  lab(4.55, 1.25, INDUCED)[`T(f)`]; lab(4.95, -1.15, INDUCED)[`⦇h⦈`]
+  node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
+  node(TB.at(0), TB.at(1), black, `TB`)
+  node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
+  }),
+  twobeadeq(`TA`, [`T(f)`], [`⦇h⦈`], [`⦇F(f,𝟙)h⦈`], `C`, c1: INDUCED, c2: INDUCED, c3: INDUCED,
+    typed: true, regions: auto),
+  [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈`],
+)]<tfun-fusion>
 
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
@@ -1864,7 +1888,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   cetz.canvas(length: 0.8cm, {
     let (FA, TA, FM, TB) = ((-3, 1.35), (3, 1.35), (-3, -1.35), (3, -1.35))
     ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FM, TB, GIVEN1, s0: 1.45, s1: 0.65)
-    ar(FA, FM, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FA, FM, INDUCED, s0: 0.55, s1: 0.55)
     ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     lab(0.4, 1.95, GIVEN2)[`α`]; lab(0.4, -1.95, GIVEN1)[`F(R,𝟙)α`]
     lab(-4.75, 0, INDUCED)[`F(𝟙,T(R))`]; lab(4.0, 0, INDUCED)[`T(R)`]
@@ -1945,7 +1969,7 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
     let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FA, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
     lab(-4.0, 0, INDUCED)[`F(X)`]; lab(3.6, 0, INDUCED)[`X`]
@@ -2002,7 +2026,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let (FA, A) = ((-2.6, -3.9), (2.6, -3.9))
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FA, A, black, s0: 0.55, s1: 0.55)
-    ar(FT, FE, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    ar(FT, FE, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(FE, FA, black, s0: 0.55, s1: 0.55)
     ar(E, A, black, s0: 0.55, s1: 0.55)
