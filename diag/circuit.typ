@@ -371,6 +371,23 @@
   wire((cx, y), (cx + lead, y))
 }
 
+/// `chain` with a WIDTH AND A SHAPE PER BOX: `items` is `((label, width, chamfer), …)`.  One shared
+/// width cannot carry `list((R×R)choose)` and `R` on one strand, and one shared flag cannot say that
+/// `concat` is a map while `list(choose)` is a relation — which is what the chamfer is there to say.
+#let boxrun-w(items) = if items.len() == 0 { 2 * LEAD } else {
+  2 * LEAD + items.map(it => it.at(1)).sum() + (items.len() - 1) * LEAD
+}
+#let boxrun(x, y, items) = {
+  let cx = x + LEAD
+  wire((x, y), (cx, y))
+  for (i, it) in items.enumerate() {
+    gbox((cx, y), it.at(0), w: it.at(1), chamfer: it.at(2))
+    cx = cx + it.at(1)
+    if i + 1 < items.len() { wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD }
+  }
+  wire((cx, y), (cx + LEAD, y))
+}
+
 // --------------------------------------------- tapes: the second product (phase 8)
 
 /// The rounded wrapper of a tape (TapeDiagrams.pdf Fig. 1).  A whole circuit is drawn inside it;
