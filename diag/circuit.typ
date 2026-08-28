@@ -67,11 +67,14 @@
 /// A wire from `a` to `b` leaving and arriving horizontally, so strands always meet boxes and dots
 /// at right angles.  `k` is where the control points sit along the run: 0.6 opening out of a dot,
 /// 0.4 closing into one — the two are mirror images, which is why forks and joins match.
-#let bend(a, b, k: 0.6, invert: false) = {
+/// `stroke` overrides the wire paint for a strand that is not an ordinary wire — the dashed coloured
+/// fan into a region holding two alternatives, say.  Same geometry, so a parameter and not a helper.
+#let bend(a, b, k: 0.6, invert: false, stroke: auto) = {
   let (ax, ay) = a
   let (bx, by) = b
   let mx = ax + (bx - ax) * k
-  d.bezier(a, b, (mx, ay), (mx, by), stroke: wstroke(invert: invert))
+  d.bezier(a, b, (mx, ay), (mx, by),
+    stroke: if stroke == auto { wstroke(invert: invert) } else { stroke })
 }
 
 /// One node of the Frobenius structure.  Solid by default, which is every generator of THIS

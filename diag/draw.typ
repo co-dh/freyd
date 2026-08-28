@@ -10,7 +10,7 @@
 #import "hm.typ": KNEE, cetz, d, hm-apex, hm-bead, hm-join, hm-name, hm-panel, hm-path, hm-port, hm-region, hm-row, hm-sepx, hm-turn, hm-turn-split, hm-wire, lw
 // Same one-line rule.  NOT `cap`/`cup` from circuit and NOT `*` from note-style: this file already
 // binds `cap`, and note-style re-exports a `cetz`/`d` that would shadow hm.typ's.
-#import "circuit.typ": wire, bend, gbox, dot as wiredot
+#import "circuit.typ": wire, bend, gbox, dot as wiredot, tape, TAPEEDGE
 #import "note-style.typ": P, src
 
 #set page(width: auto, height: auto, margin: 0.8cm, fill: white)
@@ -567,6 +567,47 @@
   let dir = if from.at(0) < to.at(0) { -1 } else { 1 }
   d.line(from, (to.at(0) + 0.42 * dir, to.at(1)),
     mark: (end: ">", scale: if w > 0.9 { 0.55 } else { 0.4 }), stroke: w * 1pt + col)
+}
+
+// `choose ≜ π₁ ∪ π₂` as ONE region: the tape this note draws every `∪` with, holding TWO STACKED
+// CIRCUITS — `upper` is the whole `π₁` branch, `lower` the whole `π₂` branch, each an ordinary black
+// circuit with its own wires, its own boxes and its own discard.  The two alternatives are told
+// apart by BEING TWO PICTURES, not by two colours laid over one.
+// Colour and dash mark one thing only: the region's ports are doubled, so the pair that arrives once
+// has to reach both copies and each copy's output has to reach the one output wire.  Those are the
+// connections that cross the region's boundary — `GIVEN1` to and from the upper copy, `GIVEN2` the
+// lower — and nothing inside a copy is ever coloured.
+// `a`/`b` are the region's corners, like `tape`.  A copy is drawn `CHPAD` inside them, in its OWN
+// coordinates: input ports at `(0, ±ip)`, output at `(w, ±op)` with the sign the side that branch
+// keeps, and width exactly `b.x - a.x - 2*CHPAD`.  `hh` is the copy's half-height — what the branch
+// name is placed clear of.
+// DRAW IT BEFORE the wires that reach it: the tape's fill would otherwise cover them.
+#let CHPAD = 0.5        // the region's edge to the copies inside it
+#let CHFAN = 0.9        // the region's edge to where the external wires stop — the fan's run
+#let choosebox(a, b, upper, lower, ip: 0.5, op: 0.5, hh: 0.5) = {
+  let cy = (a.at(1) + b.at(1)) / 2
+  // the copies must stand FURTHER apart than the wires inside one of them, or the reader sees
+  // four evenly spaced strands instead of two circuits.
+  let dy = hh + 0.9
+  let cx = a.at(0) + CHPAD
+  let ox = b.at(0) - CHPAD
+  let xi = a.at(0) - CHFAN
+  let xo = b.at(0) + CHFAN
+  let fan(col) = (thickness: lw, paint: col, dash: "dashed")
+  tape(a, b)
+  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.3, TAPEEDGE)[`∪`]
+  d.group({ d.translate((cx, cy + dy)); upper })
+  d.group({ d.translate((cx, cy - dy)); lower })
+  // in: the pair arrives once and is handed to both copies, wire for wire
+  for s in (1, -1) {
+    bend((xi, cy + s * ip), (cx, cy + dy + s * ip), stroke: fan(GIVEN1))
+    bend((xi, cy + s * ip), (cx, cy - dy + s * ip), stroke: fan(GIVEN2))
+  }
+  // out: whichever branch ran, its output is the region's
+  bend((ox, cy + dy + op), (xo, cy), stroke: fan(GIVEN1))
+  bend((ox, cy - dy - op), (xo, cy), stroke: fan(GIVEN2))
+  lab(cx + 0.3, cy + dy + hh + 0.34, GIVEN1)[`π₁`]
+  lab(cx + 0.3, cy - dy - hh - 0.34, GIVEN2)[`π₂`]
 }
 
 // ==== named whole pictures — bound because each is drawn more than once ==========================

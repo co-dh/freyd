@@ -3,10 +3,10 @@
 #import "note-style.typ": *
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name (see circuit.typ's header); `dot` is renamed on the way in for that reason.
-#import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge
+#import "circuit.typ": conv, meet, wire, bend, gbox, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, hm-bead, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, choosebox, CHPAD, CHFAN, hm-bead, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -3182,73 +3182,129 @@ every step — where @takewhile-defn's loser is `nil`]
 
 // B&dM p. 176, §7.3's first claim, left there as a simple exercise; Ex 7.38 is the LAW the derivation
 // applies and this is its side condition.  A TAPE because `choose≜π₁∪π₂` is a `∪` — @coprod-laws.
+// ONE BODY PER BRANCH, and a row's two branches are that body mirrored: `k` is the side the
+// projection keeps, `1` for `π₁` and `-1` for `π₂`.  Each is drawn in its copy's own coordinates —
+// input ports at `(0, ±ip)`, output at `(w, ±op)` — because `choosebox` is what places it.
+#let pi-bare(k) = {
+  let y = 0.5
+  wire((0, k * y), (1.8, k * y))
+  wire((0, -k * y), (1.1, -k * y)); wiredot((1.1, -k * y))
+}
+#let pi-rr(k) = {
+  // `R×R` inside the branch: both wires run `R`, and only then is one of them dropped.
+  let y = 0.5
+  wire((0, k * y), (0.34, k * y)); gbox((0.34, k * y), [R]); wire((1.26, k * y), (2.6, k * y))
+  wire((0, -k * y), (0.34, -k * y)); gbox((0.34, -k * y), [R])
+  wire((1.26, -k * y), (1.9, -k * y)); wiredot((1.9, -k * y))
+}
+#let pi-r(k) = {
+  // `Dom⊑𝟙` has taken the `R` off the strand this branch drops — it ends bare — leaving the `R` on
+  // the kept wire alone, which is where `π₁R` puts it.
+  let y = 0.5
+  wire((0, k * y), (0.9, k * y)); gbox((0.9, k * y), [R]); wire((1.82, k * y), (2.6, k * y))
+  wire((0, -k * y), (0.7, -k * y)); wiredot((0.7, -k * y))
+}
+#let pi-fork(k) = {
+  // `⟨π₁R,π₂R⟩` written out: the pair is COPIED, each copy keeps one component and discards the
+  // other before its `R`, and the projection then drops one of the two components.
+  let y = 0.7
+  wire((0, y), (0.4, y)); wcopy((0.4, y), li: 0, lo: 0.5, sp: 0.45)
+  wire((0, -y), (0.4, -y)); wcopy((0.4, -y), li: 0, lo: 0.5, sp: 0.45)
+  wire((0.9, 1.15), (1.2, 1.15)); gbox((1.2, 1.15), [R])
+  wire((0.9, 0.25), (1.4, 0.25)); wiredot((1.4, 0.25))
+  wire((0.9, -0.25), (1.4, -0.25)); wiredot((1.4, -0.25))
+  wire((0.9, -1.15), (1.2, -1.15)); gbox((1.2, -1.15), [R])
+  wire((2.12, k * 1.15), (3.4, k * 1.15))
+  wire((2.12, -k * 1.15), (2.75, -k * 1.15)); wiredot((2.75, -k * 1.15))
+}
+// While the `∪` stands split into two summands — the rows between `T(R∪S)=TR∪TS` and `Dom⊑𝟙` — a row
+// draws ONE BRANCH of it and no region: the two are symmetric, so the second only doubles the
+// height.  The header says that once.  The rows either side of them carry the union whole.
+#let pi-row(body, w, ip: 0.5, op: 0.5) = {
+  lab(-0.75, ip, black)[`[A]`]; lab(-0.75, -ip, black)[`[A]`]
+  body(1)
+  wire((w, op), (w + 0.4, op)); lab(w + 0.8, op, black)[`[A]`]
+}
+// A row's whole picture: the `∪` region with `body` drawn once per branch, and whatever that row's
+// formula leaves OUTSIDE the region — `R×R` on the way in, or the one `R` on the way out.
+#let choose-row(body, w, ip: 0.5, op: 0.5, hh: 0.5, pre: false, post: false) = {
+  let ys = 0.5
+  let x0 = if pre { 2.6 } else { 1.7 }
+  let x1 = x0 + w + 2 * CHPAD
+  choosebox((x0, -(2 * hh + 1.55)), (x1, 2 * hh + 1.55), body(1), body(-1), ip: ip, op: op, hh: hh)
+  lab(-0.75, ys, black)[`[A]`]; lab(-0.75, -ys, black)[`[A]`]
+  if pre {
+    wire((0, ys), (0.4, ys)); gbox((0.4, ys), [R]); wire((1.32, ys), (x0 - CHFAN, ys))
+    wire((0, -ys), (0.4, -ys)); gbox((0.4, -ys), [R]); wire((1.32, -ys), (x0 - CHFAN, -ys))
+  } else {
+    wire((0, ys), (x0 - CHFAN, ys)); wire((0, -ys), (x0 - CHFAN, -ys))
+  }
+  wire((x1 + CHFAN, 0), (x1 + CHFAN + 0.4, 0))
+  if post {
+    gbox((x1 + CHFAN + 0.4, 0), [R]); wire((x1 + CHFAN + 1.32, 0), (x1 + CHFAN + 1.7, 0))
+    lab(x1 + CHFAN + 2.1, 0, black)[`[A]`]
+  } else {
+    lab(x1 + CHFAN + 0.8, 0, black)[`[A]`]
+  }
+}
+
 #disp[#pair(
-  // The pair enters as two wires, so the tape forks each of them: a branch carries the whole input.
-  // `π₁=𝟙⊗⊸` and `π₂=⊸⊗𝟙`, the discard sitting on the component that branch drops.
-  cetz.canvas(length: 0.8cm, {
-    let ys = 0.5                  // the pair's two wires, off the picture's centre
-    let yb = 1.3                  // the tape's two branches, off the same centre
-    lab(-0.75, ys, black)[`[A]`]; lab(-0.75, -ys, black)[`[A]`]
-    wire((0, ys), (0.4, ys)); gbox((0.4, ys), [R]); wire((1.32, ys), (1.8, ys))
-    wire((0, -ys), (0.4, -ys)); gbox((0.4, -ys), [R]); wire((1.32, -ys), (1.8, -ys))
-    tape((1.8, -2.55), (6.14, 2.55))
-    tape-fork((2.02, ys), sp: yb, len: 0.42); tape-fork((2.02, -ys), sp: yb, len: 0.42)
-    wire((2.44, yb + ys), (5.5, yb + ys))
-    wire((2.44, yb - ys), (3.4, yb - ys)); wiredot((3.4, yb - ys))
-    wire((2.44, -yb + ys), (3.4, -yb + ys)); wiredot((3.4, -yb + ys))
-    wire((2.44, -yb - ys), (5.5, -yb - ys))
-    lab(4.2, yb + ys + 0.5, black)[`π₁`]; lab(4.2, -yb - ys - 0.5, black)[`π₂`]
-    tape-join((5.92, 0), sp: yb + ys, len: 0.42)
-    wire((6.14, 0), (6.6, 0))
-    lab(7.0, 0, black)[`[A]`]
-  }),
-  cetz.canvas(length: 0.8cm, {
-    let ys = 0.5
-    let yb = 1.3
-    lab(-1.9, 0, SLACK)[`⊑`]
-    lab(-0.75, ys, black)[`[A]`]; lab(-0.75, -ys, black)[`[A]`]
-    wire((0, ys), (0.34, ys)); wire((0, -ys), (0.34, -ys))
-    tape((0.34, -2.55), (4.68, 2.55))
-    tape-fork((0.56, ys), sp: yb, len: 0.42); tape-fork((0.56, -ys), sp: yb, len: 0.42)
-    wire((0.98, yb + ys), (4.04, yb + ys))
-    wire((0.98, yb - ys), (1.94, yb - ys)); wiredot((1.94, yb - ys))
-    wire((0.98, -yb + ys), (1.94, -yb + ys)); wiredot((1.94, -yb + ys))
-    wire((0.98, -yb - ys), (4.04, -yb - ys))
-    lab(2.9, yb + ys + 0.5, black)[`π₁`]; lab(2.9, -yb - ys - 0.5, black)[`π₂`]
-    tape-join((4.46, 0), sp: yb + ys, len: 0.42)
-    wire((4.68, 0), (5.0, 0)); gbox((5.0, 0), [R]); wire((5.92, 0), (6.3, 0))
-    lab(6.7, 0, black)[`[A]`]
-  }),
+  cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, pre: true)),
+  cetz.canvas(length: 0.8cm, { lab(-1.9, 0, SLACK)[`⊑`]; choose-row(pi-bare, 1.8, post: true) }),
   [`(R×R)choose⊑choose R`],
 )]<party-choose>
 
-#disp[
-#zline(
-  zsqc([`(R×R)choose`], none),
-  zstep(op: sym.eq, under: true)[`choose≜π₁∪π₂`],
-  zsqc([`(R×R)(π₁∪π₂)`], none),
-  zstep(op: sym.eq, under: true)[`T(R∪S)=TR∪TS`],
-  zsqc([`(R×R)π₁∪(R×R)π₂`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[1 of @bdm-prod-laws, `R×S=⟨π₁R,π₂S⟩`],
-  zsqc([`⟨π₁R,π₂R⟩π₁∪⟨π₁R,π₂R⟩π₂`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[3 and 4 of @bdm-prod-laws],
-  zsqc([`Dom(π₂R)π₁R∪Dom(π₁R)π₂R`], none),
-)
-#zline(
-  zstep(op: sym.subset.eq.sq, under: true)[`Dom⊑𝟙`],
-  zsqc([`π₁R∪π₂R`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[`(R∪S)T=RT∪ST`],
-  zsqc([`(π₁∪π₂)R`], none),
-  zstep(op: sym.eq, under: true)[`choose≜π₁∪π₂`],
-  zsqc([`choose R`], none),
-)
-]<party-choose-proof>
+// The `⊑` is STRICT, and the witness says where: the one inequality above is `Dom⊑𝟙`.
+#disp[#table(
+  columns: (auto, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+
+  [`R≜{(0,0)} : {0,1}⟶{0,1}`], [not entire — undefined at `1`],
+
+  [`(R×R)choose` at `(0,1)`], [nothing — `R×R` needs BOTH components related, and `R` is undefined
+   at `1`],
+
+  [`choose R` at `(0,1)`], [`0` — `choose` picks the first component `0`, and `R 0 0` holds],
+
+  [`((0,1),0)`], [in `choose R`, not in `(R×R)choose`],
+
+  [`(R×R)choose=choose R`], [iff `R` is entire — `Dom⊑𝟙` is the calculation's only inequality step,
+   and it is an equality iff `Dom(R)=𝟙`],
+)]<choose-strict>
+
+// The table's FIRST row has no reason: it is the starting formula.  It has no picture either — the
+// next row unfolds `choose` into `π₁∪π₂` without touching the circuit, so the two would be the same
+// drawing.  Rows 2 and 7–8 are the display's two panels, drawn from the same bodies.
+#disp[#table(
+  columns: (7.2cm, 6.2cm, 1fr),
+  align: (left + horizon, left + horizon, center + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*formula*], [*reason*], [*picture* — one branch of the `∪`; the other is symmetric]),
+
+  [`(R×R)choose`], [], [],
+
+  [`(R×R)(π₁∪π₂)`], [`choose≜π₁∪π₂`],
+  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, pre: true)), s: 68%),
+
+  [`(R×R)π₁∪(R×R)π₂`], [`T(R∪S)=TR∪TS`],
+  P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%),
+
+  [`⟨π₁R,π₂R⟩π₁∪⟨π₁R,π₂R⟩π₂`], [1 of @bdm-prod-laws, `R×S=⟨π₁R,π₂S⟩`],
+  P(cetz.canvas(length: 0.8cm, pi-row(pi-fork, 3.4, ip: 0.7, op: 1.15)), s: 68%),
+
+  [`(Dom(π₂R))π₁R∪(Dom(π₁R))π₂R`], [3 and 4 of @bdm-prod-laws],
+  P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%),
+
+  [`π₁R∪π₂R`], [`Dom⊑𝟙`],
+  P(cetz.canvas(length: 0.8cm, pi-row(pi-r, 2.6)), s: 68%),
+
+  [`(π₁∪π₂)R`], [`(R∪S)T=RT∪ST`],
+  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%),
+
+  [`choose R`], [`choose≜π₁∪π₂`],
+  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%),
+)]<party-choose-proof>
 
 === The derivation <sec-party-deriv>
 
