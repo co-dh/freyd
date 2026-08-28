@@ -40,6 +40,10 @@
 // list would have nowhere to split the colour.  It is also the boundary `regionfills` walks.
 #let OWIRE = ((XO, H), (XO, H2), (XO, 0))
 
+// Where a SPLIT output's second strand runs — see `algpanel`'s `outsplit`.  Well inside `PADR`, so the
+// new port's name still sits over the panel and the `𝟏` strip keeps a name's width to its right.
+#let OUTDX = 0.55
+
 // ONE PANEL WIDTH FOR THE WHOLE FILE, one-wire pictures included: they put their object wire at the same
 // `XO`, so the `𝒜` and `𝟏` strips are the same width everywhere and a colour read off one is found in the next.
 
@@ -75,22 +79,36 @@
 
 // `fmid` — a bead on the `F` wire, for §2.7's BIFUNCTOR `F_A = F(A, −)` (CatString.pdf, §Bifunctors).
 // ALWAYS ON ROW 2: two beads at one height are one composite, and only the `ymerge = H3` panel has room.
+// `outsplit` — the pair of names for an output that LEAVES `mid` AS TWO STRANDS instead of one, `out`'s
+// wire keeping `XO` and the second branching right to `OUTDX`; it replaces `out`'s single port.
 #let algpanel(
   owire, ymerge, w1, w2, out, act, cact, mid, cmid, cT, cB, regions, acol, ucol, frame,
-  fmid: none, cfmid: black,
-) = hm-panel(W, H, fill: if regions != none { acol } else { none }, frame: frame, {
-  regionfills(owire, regions, ucol)
-  hm-join(XF, H, XO, ymerge)
-  if fmid != none { hm-bead((XF, H2), fmid, col: cfmid) }
-  hm-wire(owire.slice(0, 2), col: cT)
-  hm-wire(owire.slice(1), col: cB)
-  hm-bead((XO, ymerge), act, col: cact)
-  // `mid: none` is the IDENTITY: a bare wire, not a labelled bead.
-  if mid != none { hm-bead((XO, H2), mid, col: cmid) }
-  hm-port((XF, H), w1)
-  hm-port((XO, H), w2, col: cT)
-  hm-port((XO, 0), out, dir: -1, col: cB)
-})
+  fmid: none, cfmid: black, outsplit: none,
+) = {
+  // `hm-join`'s knee, mirrored: the branch leaves the bead vertically and straightens into its column.
+  let branch = ((XO, H2), (XO + OUTDX, H2 - KNEE), (XO + OUTDX, 0))
+  hm-panel(W, H, fill: if regions != none { acol } else { none }, frame: frame, {
+    // `𝟏` is bounded on the left by the RIGHTMOST wire, which after a split is the branch.
+    regionfills(if outsplit == none { owire } else { owire.slice(0, 2) + branch.slice(1) },
+      regions, ucol)
+    hm-join(XF, H, XO, ymerge)
+    if fmid != none { hm-bead((XF, H2), fmid, col: cfmid) }
+    hm-wire(owire.slice(0, 2), col: cT)
+    hm-wire(owire.slice(1), col: cB)
+    if outsplit != none { hm-wire(branch, col: cB) }
+    hm-bead((XO, ymerge), act, col: cact)
+    // `mid: none` is the IDENTITY: a bare wire, not a labelled bead.
+    if mid != none { hm-bead((XO, H2), mid, col: cmid) }
+    hm-port((XF, H), w1)
+    hm-port((XO, H), w2, col: cT)
+    if outsplit == none {
+      hm-port((XO, 0), out, dir: -1, col: cB)
+    } else {
+      hm-port((XO, 0), outsplit.at(0), dir: -1, col: cB)
+      hm-port((XO + OUTDX, 0), outsplit.at(1), dir: -1, col: cB)
+    }
+  })
+}
 
 // `onepanel` — ONE PANEL of `beadeq`/`twobeadeq`, no `F` wire.  Width, `XO`, rows and fills are
 // `algpanel`'s through the same `regionfills`, so the two panel kinds cannot disagree about the strip.
@@ -111,18 +129,19 @@
 // `sep`/`rev` state a LAX law instead — the sign, and which side of it `F(mid) bot` falls on; `length`
 // scales the geometry alone, so a caller whose port names crowd sets it rather than shrinking them.
 #let homeq(w1, w2, top, mid, bot, out, ctop: black, cmid: black, cbot: black,
-           fmid: none, cfmid: black,
+           fmid: none, cfmid: black, outsplit: none,
            typed: false, tcol: TCOL, bcol: BCOL, gap: GAP, sep: [=], rev: false, length: 0.95cm,
            regions: none, acol: AC, ucol: UC, frame: none) = {
   let (cT, cB) = if typed { (tcol, bcol) } else { (black, black) }
   let panels = (
       // The `F` strand lands on row 1, above `mid`: `w2`-typed through the junction down to `mid`,
       // `out`-typed from `mid` down.
-      algpanel(OWIRE, H1, w1, w2, out, top, ctop, mid, cmid, cT, cB, regions, acol, ucol, frame),
+      algpanel(OWIRE, H1, w1, w2, out, top, ctop, mid, cmid, cT, cB, regions, acol, ucol, frame,
+        outsplit: outsplit),
       // The `F` strand runs straight past `mid` and lands on row 3: that two-row fall is the only
       // difference between the panels, which is the law.
       algpanel(OWIRE, H3, w1, w2, out, bot, cbot, mid, cmid, cT, cB, regions, acol, ucol, frame,
-        fmid: fmid, cfmid: cfmid),
+        fmid: fmid, cfmid: cfmid, outsplit: outsplit),
   )
   hm-row(if rev { panels.rev() } else { panels }, sep: sep, gap: gap, length: length)
 }
@@ -924,7 +943,7 @@
 // The plain rule IS the `⊑` of §1's notation table; `eq` doubles it and colours it, so a line whose
 // relation is `=` is told from a line whose relation is `⊑` without reading either row.
 #let zsqc(a, b, name: none, eq: false) = box(
-  stroke: 0.6pt + luma(120), fill: luma(253), radius: 2pt, inset: (x: 6pt, y: 4pt), baseline: 50%,
+  stroke: 0.6pt + luma(120), fill: luma(253), radius: 2pt, inset: (y: 4pt), baseline: 50%,
   {
     // `bounds`: a line box is cap-height tall by default, so a row carrying a fraction overflows it
     // and the rule between the rows is drawn straight through the formula.
@@ -935,12 +954,14 @@
     // `measure`, not `length: 100%`: inside an auto-sized column the percentage resolves against the
     // page, not against the box, and the rule would shoot out of it.
     let dbl = context {
-      let w = calc.max(measure(a).width, measure(b).width)
+      let w = calc.max(measure(a).width, measure(b).width) + 12pt
       stack(spacing: 1.4pt, ..(line(length: w, stroke: 0.55pt + TCOL),) * 2)
     }
-    grid(columns: 1, align: center, row-gutter: if eq { 1.5pt } else { 4pt },
-         ..if b == none { (a,) } else if eq { (a, dbl, b) }
-           else { (a, grid.hline(y: 1, stroke: 0.4pt + luma(185)), b) })
+    // The 6pt breathing room is on the cells, not the box: the grid then spans the box's full inner
+    // width, so both rules land on the side strokes instead of stopping short of them.
+    grid(columns: 1, align: center, inset: (x: 6pt), row-gutter: if eq { 1.5pt } else { 4pt },
+         ..if b == none { (a,) } else if eq { (a, grid.cell(inset: 0pt, dbl), b) }
+           else { (a, grid.hline(y: 1, stroke: 0.6pt + luma(120)), b) })
   },
 )
 
