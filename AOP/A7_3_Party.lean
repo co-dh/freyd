@@ -32,13 +32,13 @@ section Choose
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {a : 𝒜}
 
 /-- **B&dM p.176**: `choose = outl ∪ outr` — pick either component of a pair (either party). -/
-def choose (P : RelProd a a) : P.p ⟶ a := P.outl ∪ P.outr
+@[expose] public def choose (P : RelProd a a) : P.p ⟶ a := P.outl ∪ P.outr
 
 /-- **§7.3 (B&dM p.177), first monotonicity claim** ("left as a simple exercise"): `choose` is
     monotonic on `R`, i.e. `choose·(R×R) ⊆ R·choose` (mirrored `(R×R) ≫ choose ⊑ choose ≫ R`).
     Immediate from the product projection laws `prodMap ≫ outl ⊑ outl ≫ R` (and `outr`) and the
     distributivity of composition over `∪`. -/
-theorem choose_monotonic (P : RelProd a a) (R : a ⟶ a) :
+public theorem choose_monotonic (P : RelProd a a) (R : a ⟶ a) :
     prodMap P P R R ≫ choose P ⊑ choose P ≫ R := by
   show prodMap P P R R ≫ (P.outl ∪ P.outr) ⊑ (P.outl ∪ P.outr) ≫ R
   rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
@@ -59,7 +59,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     `max R·Λ⦇S⦈ = max R·Λparty`.  A direct instance of the greedy theorem
     (`A7_2.greedy_max`), whose hypotheses B&dM's monotonicity claims (via `choose_monotonic`
     above and the `⟨include,exclude⟩` calculation p.177) discharge for the concrete tree. -/
-theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
     relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R :=
   greedy_max hFr I htrans hmono
