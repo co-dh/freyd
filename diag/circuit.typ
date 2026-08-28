@@ -374,14 +374,16 @@
 /// `chain` with a WIDTH AND A SHAPE PER BOX: `items` is `((label, width, chamfer), …)`.  One shared
 /// width cannot carry `list((R×R)choose)` and `R` on one strand, and one shared flag cannot say that
 /// `concat` is a map while `list(choose)` is a relation — which is what the chamfer is there to say.
+/// `h` is shared: a run whose labels are two lines tall — `R / ∋` written as a fraction — needs every
+/// box in the run raised together, or the wire steps up and down between them.
 #let boxrun-w(items) = if items.len() == 0 { 2 * LEAD } else {
   2 * LEAD + items.map(it => it.at(1)).sum() + (items.len() - 1) * LEAD
 }
-#let boxrun(x, y, items) = {
+#let boxrun(x, y, items, h: BH) = {
   let cx = x + LEAD
   wire((x, y), (cx, y))
   for (i, it) in items.enumerate() {
-    gbox((cx, y), it.at(0), w: it.at(1), chamfer: it.at(2))
+    gbox((cx, y), it.at(0), w: it.at(1), h: h, chamfer: it.at(2))
     cx = cx + it.at(1)
     if i + 1 < items.len() { wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD }
   }

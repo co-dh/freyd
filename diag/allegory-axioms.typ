@@ -3249,128 +3249,120 @@ every step — where @takewhile-defn's loser is `nil`]
 
 // Every row's picture is drawn at ONE length and ONE scale: 24 cells, and a scale typed per cell is
 // a scale that drifts — both times this one changed, it had to change in all 24.
-#let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 62%)
+#let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 100%)
 
-// The step's relation at the LEFT EDGE of the formula, so the column of symbols reads straight down
-// the table: `⊑` is where the proof loses information and takes `SLACK`, `=` stays grey and quiet.
+// The step's relation at the LEFT EDGE of the formula AND of the picture, so both columns read as
+// chains and their symbols line up: `⊑`/`⊒` is where the proof loses information and takes `SLACK`,
+// `=` stays grey and quiet.  `⊒` is the refinement direction — specification first, program last.
 #let SQ = text(SLACK)[$subset.eq.sq$]
+#let RQ = text(SLACK)[$supset.eq.sq$]
 #let EQ = text(luma(140))[$=$]
-#let step(op, body) = grid(columns: (0.72cm, 1fr), align: (left + horizon, left + horizon), op, body)
+#let step(op, pic, f) = grid(columns: (0.72cm, auto, 1fr), align: (left + horizon, left + horizon, center + horizon), column-gutter: 8pt, op, f, pic)
+
+// THE THEOREM THE TABLE PROVES, in its top row: the reader needs the destination before the steps,
+// and a footer would only confirm what he has already worked out.  Grey ground and a heavier rule
+// under it — no new font size, the template owns those.
+#let Thm(body) = table.cell(colspan: 2, fill: luma(233), align: center + horizon,
+  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
 
 #disp[#table(
-  columns: (8.8cm, 5.4cm, 1fr),
-  align: (left + horizon, left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*reason*],
-    [*picture* — a product is two wires: the root above, the subtrees' pairs below]),
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(𝟙×list(R×R))S⊑S(R×R)`],
+  table.header([*formula* — a product is two wires: the root above, the subtrees' pairs below],
+    [*reason*]),
 
-  [#step([])[`(𝟙×list(R×R))S`]], [],
-  party-pic(sbox((box-lrr,), ())),
+  [#step([])[#party-pic(sbox((box-lrr,), ()))][`(𝟙×list(R×R))S`]], [],
 
-  [#step(EQ)[`(𝟙×list(R×R))⟨include,exclude⟩`]], [`S≜⟨include,exclude⟩`],
-  party-pic(sfork((box-lrr,), (), ())),
+  [#step(EQ)[#party-pic(sfork((box-lrr,), (), ()))][`(𝟙×list(R×R))⟨include,exclude⟩`]],
+  [`S≜⟨include,exclude⟩`],
 
-  [#step(SQ)[`⟨(𝟙×list(R×R))include,` \ #h(1em)`(𝟙×list(R×R))exclude⟩`]],
+  [#step(SQ)[#party-pic(sfork((), (box-lrr,), ()))][`⟨(𝟙×list(R×R))include,` \ #h(1em)`(𝟙×list(R×R))exclude⟩`]],
   [@fork-proj, @meet-semidistrib \ #src[`⊑`, not `=`: 7 of @bdm-prod-laws asks for a map and
    `𝟙×list(R×R)` is not one. B&dM write the step `=`.]],
-  party-pic(sfork((), (box-lrr,), ())),
-
-  [#step(SQ)[`⟨include R,exclude R⟩`]],
+  [#step(SQ)[#party-pic(sfork((), (), (box-r,)))][`⟨include R,exclude R⟩`]],
   [@party-mono-include, @party-mono-exclude \ #src[@fork-proj: a fork is monotonic in both
    components]],
-  party-pic(sfork((), (), (box-r,))),
 
-  [#step(EQ)[`⟨include,exclude⟩(R×R)`]], [2 of @bdm-prod-laws, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`],
-  party-pic(sfork((), (), (box-r,))),
+  [#step(EQ)[#party-pic(sfork((), (), (box-r,)))][`⟨include,exclude⟩(R×R)`]],
+  [2 of @bdm-prod-laws, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`],
 
-  [#step(EQ)[`S(R×R)`]], [`S≜⟨include,exclude⟩`],
-  party-pic(sbox((), (box-r,))),
+  [#step(EQ)[#party-pic(sbox((), (box-r,)))][`S(R×R)`]], [`S≜⟨include,exclude⟩`],
 )]<party-mono-proof>
 
 // The rows either side of a `(R×S)(U×V)=(RU)×(SV)` step are the SAME STROKES — `×` is `⊗`, and the
 // step is spent by the notation — so the picture repeats; the repeat IS the reason cell's content.
 #disp[#table(
-  columns: (9.0cm, 5.4cm, 1fr),
-  align: (left + horizon, left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*reason*], [*picture* — the root above, the subtrees' pairs below]),
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(𝟙×list(R×R))include⊑include R`],
+  table.header([*formula* — the root above, the subtrees' pairs below], [*reason*]),
 
-  [#step([])[`(𝟙×list(R×R))include`]], [],
-  party-pic(tallpic((box-lrr,), [`include`], 2.2)),
+  [#step([])[#party-pic(tallpic((box-lrr,), [`include`], 2.2))][`(𝟙×list(R×R))include`]], [],
 
-  [#step(EQ)[`(𝟙×(list(R×R) list(π₂) concat)) cons`]],
+  [#step(EQ)[#party-pic(tallpic((box-lrr, box-lp, box-cc), [`cons`], 1.4))][`(𝟙×(list(R×R) list(π₂) concat)) cons`]],
   [`include≜(𝟙×(list(π₂) concat)) cons`, then 2 of @bdm-prod-laws \ #src[`(R×S)(U×V)=(RU)×(SV)`,
    Ex 5.6]],
-  party-pic(tallpic((box-lrr, box-lp, box-cc), [`cons`], 1.4)),
 
-  [#step(EQ)[`(𝟙×(list((R×R)π₂) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
-  party-pic(tallpic((box-lrrp, box-cc), [`cons`], 1.4)),
+  [#step(EQ)[#party-pic(tallpic((box-lrrp, box-cc), [`cons`], 1.4))][`(𝟙×(list((R×R)π₂) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
 
-  [#step(SQ)[`(𝟙×(list(π₂R) concat)) cons`]],
+  [#step(SQ)[#party-pic(tallpic((box-lpr, box-cc), [`cons`], 1.4))][`(𝟙×(list(π₂R) concat)) cons`]],
   [`(R×R)π₂=(Dom(π₁R))π₂R` `⊑π₂R` \ #src[1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `list` monotonic,
    @relator-defn]],
-  party-pic(tallpic((box-lpr, box-cc), [`cons`], 1.4)),
 
-  [#step(EQ)[`(𝟙×(list(π₂) list(R) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
-  party-pic(tallpic((box-lp, box-lr, box-cc), [`cons`], 1.4)),
+  [#step(EQ)[#party-pic(tallpic((box-lp, box-lr, box-cc), [`cons`], 1.4))][`(𝟙×(list(π₂) list(R) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
 
-  [#step(SQ)[`(𝟙×(list(π₂) concat R)) cons`]],
+  [#step(SQ)[#party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4))][`(𝟙×(list(π₂) concat R)) cons`]],
   [`list(R)concat⊑concat R` \ #src[a LEAF: no law above it. `cost` is a sum, so
    `cost(concat xss)=sum(list(cost)xss)` and a costlier part makes a costlier whole. B&dM's exercise.]],
-  party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4)),
+  [#step(EQ)[#party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4))][`(𝟙×(list(π₂) concat))(𝟙×R) cons`]], [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
 
-  [#step(EQ)[`(𝟙×(list(π₂) concat))(𝟙×R) cons`]], [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
-  party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4)),
-
-  [#step(SQ)[`(𝟙×(list(π₂) concat)) cons R`]],
+  [#step(SQ)[#party-pic(tallpic((box-lp, box-cc), [`cons`], 1.4, post: (box-r,)))][`(𝟙×(list(π₂) concat)) cons R`]],
   [`(𝟙×R)cons⊑cons R` \ #src[a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a costlier tail
    makes a costlier list. B&dM's exercise.]],
-  party-pic(tallpic((box-lp, box-cc), [`cons`], 1.4, post: (box-r,))),
 
-  [#step(EQ)[`include R`]], [`include≜(𝟙×(list(π₂) concat)) cons`],
-  party-pic(tallpic((), [`include`], 2.2, post: (box-r,))),
+  [#step(EQ)[#party-pic(tallpic((), [`include`], 2.2, post: (box-r,)))][`include R`]],
+  [`include≜(𝟙×(list(π₂) concat)) cons`],
 )]<party-mono-include>
 
 // The same eight steps with `choose` where `include` has `π₂`, and one difference: the step that was
 // `Dom⊑𝟙` there is §@sec-party-choose here, and the closing `π₂` is an EQUALITY — `π₁` is entire.
 #disp[#table(
-  columns: (9.0cm, 5.4cm, 1fr),
-  align: (left + horizon, left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*reason*], [*picture* — the root above, the subtrees' pairs below]),
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(𝟙×list(R×R))exclude⊑exclude R`],
+  table.header([*formula* — the root above, the subtrees' pairs below], [*reason*]),
 
-  [#step([])[`(𝟙×list(R×R))exclude`]], [],
-  party-pic(tallpic((box-lrr,), [`exclude`], 2.2, hc: true)),
+  [#step([])[#party-pic(tallpic((box-lrr,), [`exclude`], 2.2, hc: true))][`(𝟙×list(R×R))exclude`]], [],
 
-  [#step(EQ)[`(𝟙×(list(R×R) list(choose) concat))π₂`]],
+  [#step(EQ)[#party-pic(droppic((box-lrr, box-lch, box-cc)))][`(𝟙×(list(R×R) list(choose) concat))π₂`]],
   [`exclude≜(𝟙×(list(choose) concat))π₂`, then 2 of @bdm-prod-laws \ #src[`(R×S)(U×V)=(RU)×(SV)`,
    Ex 5.6]],
-  party-pic(droppic((box-lrr, box-lch, box-cc))),
 
-  [#step(EQ)[`(𝟙×(list((R×R)choose) concat))π₂`]], [@relator-defn, `F(RS)=F(R)F(S)`],
-  party-pic(droppic((box-lrrc, box-cc))),
+  [#step(EQ)[#party-pic(droppic((box-lrrc, box-cc)))][`(𝟙×(list((R×R)choose) concat))π₂`]],
+  [@relator-defn, `F(RS)=F(R)F(S)`],
 
-  [#step(SQ)[`(𝟙×(list(choose R) concat))π₂`]],
+  [#step(SQ)[#party-pic(droppic((box-lchr, box-cc)))][`(𝟙×(list(choose R) concat))π₂`]],
   [§@sec-party-choose, `(R×R)choose⊑choose R` \ #src[`list` monotonic, @relator-defn]],
-  party-pic(droppic((box-lchr, box-cc))),
 
-  [#step(EQ)[`(𝟙×(list(choose) list(R) concat))π₂`]], [@relator-defn, `F(RS)=F(R)F(S)`],
-  party-pic(droppic((box-lch, box-lr, box-cc))),
+  [#step(EQ)[#party-pic(droppic((box-lch, box-lr, box-cc)))][`(𝟙×(list(choose) list(R) concat))π₂`]],
+  [@relator-defn, `F(RS)=F(R)F(S)`],
 
-  [#step(SQ)[`(𝟙×(list(choose) concat R))π₂`]],
+  [#step(SQ)[#party-pic(droppic((box-lch, box-cc, box-r)))][`(𝟙×(list(choose) concat R))π₂`]],
   [`list(R)concat⊑concat R` \ #src[the same LEAF as @party-mono-include's sixth row]],
-  party-pic(droppic((box-lch, box-cc, box-r))),
 
-  [#step(EQ)[`(𝟙×(list(choose) concat))(𝟙×R)π₂`]], [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
-  party-pic(droppic((box-lch, box-cc, box-r))),
+  [#step(EQ)[#party-pic(droppic((box-lch, box-cc, box-r)))][`(𝟙×(list(choose) concat))(𝟙×R)π₂`]],
+  [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
 
-  [#step(EQ)[`(𝟙×(list(choose) concat))π₂R`]],
+  [#step(EQ)[#party-pic(droppic((box-lch, box-cc), post: (box-r,)))][`(𝟙×(list(choose) concat))π₂R`]],
   [`(𝟙×R)π₂=(Dom(π₁))π₂R` `=π₂R` \ #src[1 and 4 of @bdm-prod-laws; `π₁` is a map, hence entire, so
    `Dom(π₁)=𝟙` — @dom-laws]],
-  party-pic(droppic((box-lch, box-cc), post: (box-r,))),
 
-  [#step(EQ)[`exclude R`]], [`exclude≜(𝟙×(list(choose) concat))π₂`],
-  party-pic(tallpic((), [`exclude`], 2.2, hc: true, post: (box-r,))),
+  [#step(EQ)[#party-pic(tallpic((), [`exclude`], 2.2, hc: true, post: (box-r,)))][`exclude R`]],
+  [`exclude≜(𝟙×(list(choose) concat))π₂`],
 )]<party-mono-exclude>
 
 === `(R×R)choose⊑choose R` — `choose` monotonic on `R` <sec-party-choose>
@@ -3472,62 +3464,149 @@ every step — where @takewhile-defn's loser is `nil`]
 // next row unfolds `choose` into `π₁∪π₂` without touching the circuit, so the two would be the same
 // drawing.  Rows 2 and 7–8 are the display's two panels, drawn from the same bodies.
 #disp[#table(
-  columns: (7.2cm, 6.2cm, 1fr),
-  align: (left + horizon, left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*reason*], [*picture* — one branch of the `∪`; the other is symmetric]),
+  columns: (1fr, 5.2cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(R×R)choose⊑choose R`],
+  table.header([*formula* — one branch of the `∪`; the other is symmetric], [*reason*]),
 
-  [#step([])[`(R×R)choose`]], [], [],
+  [#step([])[][`(R×R)choose`]], [],
 
-  [#step(EQ)[`(R×R)(π₁∪π₂)`]], [`choose≜π₁∪π₂`],
-  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, pre: true)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, pre: true)), s: 68%)][`(R×R)(π₁∪π₂)`]], [`choose≜π₁∪π₂`],
 
-  [#step(EQ)[`(R×R)π₁∪(R×R)π₂`]], [`T(R∪S)=TR∪TS`],
-  P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%)][`(R×R)π₁∪(R×R)π₂`]],
+  [`T(R∪S)=TR∪TS`],
 
-  [#step(EQ)[`⟨π₁R,π₂R⟩π₁∪⟨π₁R,π₂R⟩π₂`]], [1 of @bdm-prod-laws, `R×S=⟨π₁R,π₂S⟩`],
-  P(cetz.canvas(length: 0.8cm, pi-row(pi-fork, 3.4, ip: 0.7, op: 1.15)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, pi-row(pi-fork, 3.4, ip: 0.7, op: 1.15)), s: 68%)][`⟨π₁R,π₂R⟩π₁∪⟨π₁R,π₂R⟩π₂`]], [1 of @bdm-prod-laws, `R×S=⟨π₁R,π₂S⟩`],
 
-  [#step(EQ)[`(Dom(π₂R))π₁R∪(Dom(π₁R))π₂R`]], [3 and 4 of @bdm-prod-laws],
-  P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, pi-row(pi-rr, 2.6)), s: 68%)][`(Dom(π₂R))π₁R∪(Dom(π₁R))π₂R`]], [3 and 4 of @bdm-prod-laws],
 
-  [#step(SQ)[`π₁R∪π₂R`]], [`Dom⊑𝟙`],
-  P(cetz.canvas(length: 0.8cm, pi-row(pi-r, 2.6)), s: 68%),
+  [#step(SQ)[#P(cetz.canvas(length: 0.8cm, pi-row(pi-r, 2.6)), s: 68%)][`π₁R∪π₂R`]], [`Dom⊑𝟙`],
 
-  [#step(EQ)[`(π₁∪π₂)R`]], [`(R∪S)T=RT∪ST`],
-  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%)][`(π₁∪π₂)R`]], [`(R∪S)T=RT∪ST`],
 
-  [#step(EQ)[`choose R`]], [`choose≜π₁∪π₂`],
-  P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%),
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, choose-row(pi-bare, 1.8, post: true)), s: 68%)][`choose R`]],
+  [`choose≜π₁∪π₂`],
 )]<party-choose-proof>
 
 === The derivation <sec-party-deriv>
 
-#disp[
-#zline(
-  zsqc([$frac(#[`party`], ∋)$ `max(R)`], none),
-  zstep(op: sym.eq, under: true)[def. `party`],
-  zsqc([$frac(#[`⦇S⦈ choose`], ∋)$ `max(R)`], none),
-  zstep(op: sym.eq, under: true)[@pow-laws, absorption],
-  zsqc([$frac(#[`⦇S⦈`], ∋)$ `E(choose) max(R)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[§@sec-party-choose],
-  zsqc([$frac(#[`⦇S⦈`], ∋)$ `max(R×R)` $frac(#[`choose`], ∋)$ `max(R)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[@mon-laws, `(𝟙×list(R×R))S⊑S(R×R)`],
-  zsqc([`⦇`$frac(#[`S`], ∋)$ `max(R×R)⦈` $frac(#[`choose`], ∋)$ `max(R)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[Ex 7.15, the fork splits],
-  zsqc([`⦇⟨`$frac(#[`include`], ∋)$ `max(R),` $frac(#[`exclude`], ∋)$ `max(R)⟩⦈` $frac(#[`choose`], ∋)$ `max(R)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[`include` a map, `max(R)` into each branch],
-  zsqc([`⦇⟨include,π₂ list(`$frac(#[`choose`], ∋)$ `max(R)) concat⟩⦈` $frac(#[`choose`], ∋)$ `max(R)`], none),
-)
-]<party-laws>
+// The pictures are ONE WIRE from `tree A` to `[A]`, a box per factor; `[A]×[A]` is where it runs as
+// TWO — `max(R×R)` opens the strand into a pair and `choose/∋` closes it again.  Every `R/∋` is a
+// MAP (@pow-laws), so every fraction box is square and every other box chamfered.
+#let LD = 0.34               // circuit.typ's lead, which it does not export
+#let LH = 1.25               // a box on the wire: two lines tall, because a `/∋` label is a fraction
+#let LSP = 0.62              // half the gap between the two strands of `[A]×[A]`
+#let LPH = 2 * LSP + 0.62    // a box that spans the pair
+#let LBA = 1.5               // inside the fold, a branch's root strand ...
+#let LBB = 0.55              // ... and its subtree-list strand
+#let LBY = (LBA + LBB) / 2   // ... and the single strand the branch leaves on
+#let frc(n) = $frac(#n, ∋)$
+
+#let lb-max = ([`max(R)`], 1.9, true)
+#let lb-cc = ([`concat`], 1.9, false)
+#let lb-lcm = ([`list(`#frc([`choose`])` max(R))`], 5.2, true)
+
+// The tail every row ends with, `choose/∋ max(R)`: `choose` takes TWO wires, so the pair closes
+// there, and `max(R)` reads the set back down to one list.  `sp` is the height the pair arrives at.
+#let ltail(x, sp) = {
+  gbox((x, 0), frc([`choose`]), w: 2.0, h: 2 * sp + 0.62, chamfer: false)
+  boxrun(x + 2.0, 0, (lb-max,), h: LH)
+  lab(x + 2.0 + boxrun-w((lb-max,)) + 0.5, 0, black)[`[A]`]
+}
+#let lsrc = { lab(-1.32, 0, black)[`tree A`]; wire((-0.45, 0), (0, 0)) }
+
+#let lrun(items) = {
+  lsrc; boxrun(0, 0, items, h: LH)
+  lab(boxrun-w(items) + 0.5, 0, black)[`[A]`]
+}
+#let lopen(items) = {
+  lsrc; boxrun(0, 0, items, h: LH)
+  let w = boxrun-w(items)
+  gbox((w, 0), [`max(R×R)`], w: 2.4, h: LPH)
+  wire((w + 2.4, LSP), (w + 2.4 + LD, LSP)); wire((w + 2.4, -LSP), (w + 2.4 + LD, -LSP))
+  ltail(w + 2.4 + LD, LSP)
+}
+
+// `⦇−⦈` drawn as MELLIÈS' functorial box: the body's own circuit, inside brackets.  A bar is where
+// the type changes, so nothing crosses the LEFT one — the tree arrives at it and the algebra's two
+// strands start there, which is the recursion — while the body's output IS the fold's and runs on.
+#let banana(x, yh, right: false) = {
+  let s = if right { -1 } else { 1 }
+  let st = (thickness: lw, paint: black)
+  d.line((x, -yh), (x, yh), stroke: st); d.line((x + s * 0.13, -yh), (x + s * 0.13, yh), stroke: st)
+  d.line((x, yh), (x + s * 0.3, yh), stroke: st); d.line((x, -yh), (x + s * 0.3, -yh), stroke: st)
+}
+#let lfold(yh, bw, sp, body) = {
+  lsrc; banana(0, yh)
+  wire((0.13, LSP), (0.4, LSP)); wire((0.13, -LSP), (0.4, -LSP))
+  body
+  let x1 = 0.8 + bw
+  banana(x1, yh, right: true)
+  wire((0.4 + bw, sp), (x1 + LD, sp)); wire((0.4 + bw, -sp), (x1 + LD, -sp))
+  ltail(x1 + LD, sp)
+}
+
+#let lbody5 = {
+  wire((0.4, LSP), (0.4 + LD, LSP)); wire((0.4, -LSP), (0.4 + LD, -LSP))
+  gbox((0.4 + LD, 0), frc([`S`]), w: 1.0, h: LPH, chamfer: false)
+  wire((1.74, 0), (1.74 + LD, 0))
+  gbox((1.74 + LD, 0), [`max(R×R)`], w: 2.4, h: LPH)
+}
+#let LBW5 = 2 * LD + 1.0 + 2.4
+// The pair is COPIED into the two branches and the middle strands cross, as in §@sec-party-mono:
+// each branch keeps one copy of the root and one of the subtree list.
+#let lshuffle = {
+  wiredot((0.4, LSP)); bend((0.4, LSP), (1.3, LBA)); bend((0.4, LSP), (1.3, -LBB))
+  wiredot((0.4, -LSP)); bend((0.4, -LSP), (1.3, LBB)); bend((0.4, -LSP), (1.3, -LBA))
+}
+#let lbody6 = {
+  lshuffle
+  for (yh, yl, head) in ((LBA, LBB, frc([`include`])), (-LBB, -LBA, frc([`exclude`]))) {
+    gbox((1.3, (yh + yl) / 2), head, w: 2.3, h: yh - yl + 0.55, chamfer: false)
+    boxrun(3.6, (yh + yl) / 2, (lb-max,), h: LH)
+  }
+}
+#let LBW6 = 0.9 + 2.3 + boxrun-w((lb-max,))
+#let lbody7 = {
+  lshuffle
+  gbox((1.3, LBY), [`include`], w: 2.2, h: LBA - LBB + 0.55, chamfer: false)
+  // `π₂` throws the root away, so the lower branch runs on the subtree list alone.
+  wiredot((1.3, -LBB))
+  boxrun(1.3, -LBA, (lb-lcm, lb-cc), h: LH)
+  let xe = 1.3 + boxrun-w((lb-lcm, lb-cc))
+  wire((3.5, LBY), (xe + 0.6, LBY)); bend((xe, -LBA), (xe + 0.6, -LBY))
+}
+#let LBW7 = 0.9 + boxrun-w((lb-lcm, lb-cc)) + 0.6
+
+#let laws-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
+
+#disp[#table(
+  columns: (1fr, 4.2cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`party`])` max(R)⊒⦇⟨include,π₂ list(`#frc([`choose`])` max(R)) concat⟩⦈ `#frc([`choose`])` max(R)`],
+  table.header([*formula* — one wire, `tree A` to `[A]`; the pair `[A]×[A]` is where it runs as two],
+    [*reason*]),
+
+  [#step([])[#laws-pic(lrun(((frc([`party`]), 1.7, false), lb-max)))][#frc([`party`])` max(R)`]],
+  [],
+
+  [#step(EQ)[#laws-pic(lrun(((frc([`⦇S⦈ choose`]), 3.0, false), lb-max)))][#frc([`⦇S⦈ choose`])` max(R)`]], [def. `party`],
+
+  [#step(EQ)[#laws-pic(lrun(((frc([`⦇S⦈`]), 1.3, false), ([`E(choose)`], 2.7, true), lb-max)))][#frc([`⦇S⦈`])` E(choose) max(R)`]], [@pow-laws, absorption],
+
+  [#step(RQ)[#laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),)))][#frc([`⦇S⦈`])` max(R×R) `#frc([`choose`])` max(R)`]], [§@sec-party-choose],
+
+  [#step(RQ)[#laws-pic(lfold(1.18, LBW5, LSP, lbody5))][`⦇`#frc([`S`])` max(R×R)⦈ `#frc([`choose`])` max(R)`]],
+  [@mon-laws, `(𝟙×list(R×R))S⊑S(R×R)`],
+
+  [#step(RQ)[#laws-pic(lfold(2.05, LBW6, LBY, lbody6))][`⦇⟨`#frc([`include`])` max(R),` \ #h(1em)#frc([`exclude`])` max(R)⟩⦈ `#frc([`choose`])` max(R)`]],
+  [Ex 7.15, the fork splits],
+
+  [#step(RQ)[#laws-pic(lfold(2.05, LBW7, LBY, lbody7))][`⦇⟨include,π₂ list(`#frc([`choose`])` max(R)) concat⟩⦈` \ #h(1em)#frc([`choose`])` max(R)`]],
+  [`include` a map, `max(R)` into each branch],
+)]<party-laws>
 
 // MARSDEN'S calculus (arXiv:1401.7220), not this note's: `Rel` as a BICATEGORY, so a region is a type,
 // a wire a relation with its relator in the label, a bead a `⊑`.  Fills and bead style off his pp. 7, 12.
