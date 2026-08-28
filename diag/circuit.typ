@@ -113,7 +113,10 @@
 /// bend and comes back upright — the whole content of Lemma 4.2 — that has to be legible at a
 /// glance.  Pale BLUE, not grey: grey reads as "disabled", and it would also collide with the
 /// greyed-out prose this repo's notes use for provenance.  It is a hint, not a second kind of box.
-#let CHAMFER = 0.35     // fraction of the height taken off the corner
+// The chamfer is a MARK, not a shape: one size on every box.  Proportional to the height alone, a
+// box tall enough to carry two ports has its top-right corner cut away past the upper port, and the
+// wire then leaves from open air — so the cut is capped at what a default-height box gets.
+#let CHAMFER = 0.35     // fraction of the height taken off the corner, up to CHAMFER * BH
 #let TINT = rgb("#dbe8f7")
 #let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false, fill: none,
           chamfer: true) = {
@@ -124,7 +127,7 @@
   // `chamfer: false` is a MAP: a plain rectangle.  The cut corner exists to say which way a relation
   // runs, and a map runs one way by construction — there is nothing for the corner to disambiguate.
   // It also makes maps findable at a glance, which is what most of the calculational steps turn on.
-  let c = if chamfer { CHAMFER * h } else { 0.0 }
+  let c = if chamfer { calc.min(CHAMFER * h, CHAMFER * BH) } else { 0.0 }
   let pts = if flip {
     ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
   } else {
