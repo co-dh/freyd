@@ -552,9 +552,9 @@
   lab(x + 0.42 * side, if up { y1 + 0.22 } else { y0 - 0.22 }, fb-WALL)[#name]
 }
 
-// `{·}`, the unit.  `chamfer: false` is this note's mark for a map, and being a map is the whole
-// reason `{·}` may be moved past another box while `∋` may not.
-#let fb-sing(p) = gbox(p, `{·}`, chamfer: false, w: 1.0)
+// `𝟙%∋`, the unit.  `chamfer: false` is this note's mark for a map, and being a map is the whole
+// reason `𝟙%∋` may be moved past another box while `∋` may not.
+#let fb-sing(p) = gbox(p, $frac(#[`𝟙`], ∋)$, chamfer: false, w: 1.0, h: 1.2)
 
 // WEIGHT, NOT HUE, carries the comparison: the heavy fans are the pair claimed to match, the washed-out
 // ones the pairs that fail, so hue is left to the family — blue for `A`, pink for `H`, as everywhere.
@@ -642,7 +642,7 @@
 // three beads down one wire and a loop that has to hold two names inside it.  `LAMY` are its rows.
 #let LAMPAD = 0.6
 #let LAMSEP = 1.1
-// §12's pitch and margin, and for its own reason: `{·}` and `∋` are the only beads whose name is set
+// §12's pitch and margin, and for its own reason: `𝟙%∋` and `∋` are the only beads whose name is set
 // ABOVE or BELOW the dot, and each reaches about 0.7 further towards its edge than one set beside it.
 #let LAMPITCH = 0.9
 #let LAMMARG = 0.9
@@ -667,7 +667,7 @@
   d.content((LAMX.at(1) + 0.28, y), text(9pt, ADJC.E)[`E`], anchor: "west")
 }
 
-// ONE panel of `lamfuse`/`lamabsorb`: `{·}` opens the pair `i E` at `yu` and it stays open to the
+// ONE panel of `lamfuse`/`lamabsorb`: `𝟙%∋` opens the pair `i E` at `yu` and it stays open to the
 // bottom edge, so a bead below that line reads as `E` of its arrow and one above it as the arrow.
 // `cols` is one longer than `beads` — the segments the beads cut the object wire into — so a picture
 // with fewer beads passes a shorter list instead of getting the three-colour one out of bounds.
@@ -690,7 +690,7 @@
   for (k, c) in cols.enumerate() {
     hm-wire(((LAMX.at(2), ys.at(k)), (LAMX.at(2), ys.at(k + 1))), col: c)
   }
-  hm-bead((LAMM, yu), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+  hm-bead((LAMM, yu), $frac(#[`𝟙`], ∋)$, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
   for (y, b, col) in beads { hm-bead((LAMX.at(2), y), b, col: col) }
   lamnames(LAMMARG / 2)
   hm-port((LAMX.at(2), h), top, col: cols.first()); hm-port((LAMX.at(2), 0), bot, dir: -1, col: cols.last())
@@ -707,7 +707,7 @@
 })
 
 // `lamtranspose` — `Λ` and `·∋` are no part of a picture: they take one picture to another, so they
-// are drawn as the ARROWS BETWEEN two panels.  `Λ` glues the `{·}` cap on and `·∋` glues `∋` on.
+// are drawn as the ARROWS BETWEEN two panels.  `Λ` glues the `𝟙%∋` cap on and `·∋` glues `∋` on.
 #let lamtranspose() = {
   let (h, y) = (lamh(2), lamy(2))
   // The cap each arrow glues on is the colour of that cap's bead, so the arrow and the bead it
@@ -772,9 +772,9 @@
   })
 }
 
-// `{·} E(R)` — the cap opens `E i`, and `R` below it absorbs that `i`, so what leaves is `E B`.
+// `𝟙%∋ E(R)` — the cap opens `E i`, and `R` below it absorbs that `i`, so what leaves is `E B`.
 #let bp3() = {
-  // The `{·}` name rises above the arch, so a `y1` over 1.8 puts that name outside the panel.
+  // The `𝟙%∋` name rises above the arch, so a `y1` over 1.8 puts that name outside the panel.
   let (xe, xi, xa, w) = (0.5, 1.35, 2.2, 3.0)
   let (y1, y2) = (1.8, 0.9)
   hm-panel(w, BH, fill: fb-MAPC, {
@@ -787,7 +787,7 @@
     hm-wire(((xe, y1), (xe, 0)), col: ADJC.E)
     hm-wire(((xi, y1), (xi, y2)), col: ADJC.i); hm-wire(((xi, y2), (xi, 0)), col: BCOL)
     hm-join(xa, BH, xi, y2, col: TCOL)
-    hm-bead(hm-apex(xe, xi, y1, dir: 1), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+    hm-bead(hm-apex(xe, xi, y1, dir: 1), $frac(#[`𝟙`], ∋)$, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
     hm-bead((xi, y2), `R`)
     hm-port((xa, BH), `A`, col: TCOL)
     hm-port((xe, 0), `E`, dir: -1, col: ADJC.E); hm-port((xi, 0), `B`, dir: -1, col: BCOL)
@@ -812,7 +812,7 @@
   hm-row((bp1(), bp2()), gap: 1.2), text(15pt)[$arrow.l.r.double$],
   hm-row((bp3(), bp4()), gap: 1.2))
 
-// `lamsnake` — `Λ(R) ∋ = R`: the object wire runs straight through, never consumed.  Beside it `{·}`
+// `lamsnake` — `Λ(R) ∋ = R`: the object wire runs straight through, never consumed.  Beside it `𝟙%∋`
 // opens the pair `i E` and `∋` closes it, and the loop's two sides are those two functors.
 #let lamsnake() = hm-row(
   (
@@ -831,7 +831,7 @@
       side(LAMX.at(0), 1, ADJC.i); side(LAMX.at(1), -1, ADJC.E)
       hm-wire(((LAMX.at(2), LAMH), (LAMX.at(2), LAMY.at(1))), col: TCOL)
       hm-wire(((LAMX.at(2), LAMY.at(1)), (LAMX.at(2), 0)), col: BCOL)
-      hm-bead((LAMM, LAMY.at(0)), `{·}`, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
+      hm-bead((LAMM, LAMY.at(0)), $frac(#[`𝟙`], ∋)$, col: GIVEN2, dx: 0, dy: 0.3, anchor: "south")
       hm-bead((LAMM, LAMY.at(2)), `∋`, col: GIVEN1, dx: 0, dy: -0.3, anchor: "north")
       hm-bead((LAMX.at(2), LAMY.at(1)), `R`)
       lamnames(LAMY.at(1))
@@ -842,8 +842,8 @@
   gap: 1.2,
 )
 
-// `lamfuse` — `Λ(f R) = f Λ(R)`: the map bead `f` slides across `{·}`, which is unit naturality.
-// `{·}` HOLDS STILL on row 2 and only `f` moves — that is the law — so `f` needs a row of its own on
+// `lamfuse` — `Λ(f R) = f Λ(R)`: the map bead `f` slides across `𝟙%∋`, which is unit naturality.
+// `𝟙%∋` HOLDS STILL on row 2 and only `f` moves — that is the law — so `f` needs a row of its own on
 // each side, the panel is FOUR rows, and each side leaves one of them empty.
 #let lamfuse() = {
   let y = lamy(4)
@@ -897,7 +897,7 @@
         hm-wire(((xmid, YM), (xmid, YU)), col: co)
         hm-turn-split(ul, ur, YU, hue(ul), hue(ur), rise: rise)
         hm-wire(((xout, YU), (xout, 0)), col: cn)
-        hm-bead(hm-apex(ul, ur, YU, rise: rise), `{·}`, col: GIVEN2, dx: 0, dy: GAPN, anchor: "south")
+        hm-bead(hm-apex(ul, ur, YU, rise: rise), $frac(#[`𝟙`], ∋)$, col: GIVEN2, dx: 0, dy: GAPN, anchor: "south")
         hm-bead(hm-apex(cl, cr, YM, dir: -1, rise: rise), `∋`, col: GIVEN1,
           dx: 0, dy: -GAPN, anchor: "north")
         // The middle strand carries no port, so it is named where it runs, on the incoming wire's side.
@@ -917,7 +917,7 @@
 
 // `snaketri` — the same identity as a commutative triangle, `f` the functor that survives and `comp`
 // the composite the unit opens.  `𝟙` is SOLID: dashed is what a universal property produces.
-// `unit`/`counit` are PASSED, not the bare `{·}`/`∋`: the nodes here are FUNCTORS, so the arrows are
+// `unit`/`counit` are PASSED, not the bare `𝟙%∋`/`∋`: the nodes here are FUNCTORS, so the arrows are
 // the transformation with a functor composed on, and dropping it loses the one thing the picture says.
 #let snaketri(f, comp, unit, counit) = cetz.canvas(length: 0.8cm, {
   let (L, T, B) = ((-2, 1.1), (2, 1.1), (2, -1.1))

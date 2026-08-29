@@ -61,7 +61,7 @@ public theorem u₂_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R :
 
 /-- **B&dM 5.9** (UP, uniqueness), reusing the mediator uniqueness already proved for
     `coproduct_five_eqs_to_universal` (§2.214) rather than re-deriving it. -/
-theorem junc_unique {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R : a₁ ⟶ c} {S : a₂ ⟶ c} {T : s ⟶ c}
+public theorem junc_unique {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R : a₁ ⟶ c} {S : a₂ ⟶ c} {T : s ⟶ c}
     (h₁ : C.u₁ ≫ T = R) (h₂ : C.u₂ ≫ T = S) : T = junc C R S := by
   obtain ⟨T', hT'1, hT'2, huniq⟩ := coproduct_five_eqs_to_universal C c R S
   rw [huniq T h₁ h₂, huniq (junc C R S) (u₁_junc C R S) (u₂_junc C R S)]
@@ -91,6 +91,26 @@ public theorem junc_recip {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R 
   rw [recip_union, Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip,
     Allegory.recip_recip]
   exact DistributiveAllegory.union_comm _ _
+
+/-- A coproduct in a DISTRIBUTIVE allegory is also a PRODUCT — `+` is a BIPRODUCT — with the
+    converses `u₁°`, `u₂°` as projections and `(R≫u₁) ∪ (S≫u₂)` as the pairing.  Cancellation is
+    `u₁≫u₁° = 1` against `u₂≫u₁° = 0`; uniqueness is the fifth equation `u₁°u₁ ∪ u₂°u₂ = 1`
+    composed on the right of the competitor. -/
+public theorem coproduct_is_product {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : c ⟶ a₁)
+    (S : c ⟶ a₂) :
+    ((R ≫ C.u₁) ∪ (S ≫ C.u₂)) ≫ C.u₁° = R ∧ ((R ≫ C.u₁) ∪ (S ≫ C.u₂)) ≫ C.u₂° = S ∧
+      ∀ Z : c ⟶ s, Z ≫ C.u₁° = R → Z ≫ C.u₂° = S → Z = (R ≫ C.u₁) ∪ (S ≫ C.u₂) := by
+  refine ⟨?_, ?_, fun Z h₁ h₂ => ?_⟩
+  · rw [union_comp_distrib, Cat.assoc, Cat.assoc, C.u₁_self_comp_recip, C.u₂_u₁_recip,
+      Cat.comp_id, DistributiveAllegory.comp_zero, union_zero]
+  · rw [union_comp_distrib, Cat.assoc, Cat.assoc, C.u₁_u₂_recip, C.u₂_self_comp_recip,
+      Cat.comp_id, DistributiveAllegory.comp_zero, DistributiveAllegory.zero_union]
+  · calc Z = Z ≫ Cat.id s := (Cat.comp_id Z).symm
+      _ = Z ≫ ((C.u₁° ≫ C.u₁) ∪ (C.u₂° ≫ C.u₂)) := by rw [C.recip_union_eq_id]
+      _ = (Z ≫ (C.u₁° ≫ C.u₁)) ∪ (Z ≫ (C.u₂° ≫ C.u₂)) :=
+          DistributiveAllegory.comp_union_distrib _ _ _
+      _ = ((Z ≫ C.u₁°) ≫ C.u₁) ∪ ((Z ≫ C.u₂°) ≫ C.u₂) := by rw [Cat.assoc, Cat.assoc]
+      _ = (R ≫ C.u₁) ∪ (S ≫ C.u₂) := by rw [h₁, h₂]
 
 /-! ## §2  (5.11) cancellation -/
 
@@ -146,6 +166,26 @@ public theorem sumMap_junc {s a₁ a₂ t b₁ b₂ c : 𝒜} (C : Coproduct s a
     sumMap C D R S ≫ junc D P Q = junc C (R ≫ P) (S ≫ Q) := by
   show junc C (R ≫ D.u₁) (S ≫ D.u₂) ≫ junc D P Q = junc C (R ≫ P) (S ≫ Q)
   rw [junc_comp, Cat.assoc, Cat.assoc, u₁_junc, u₂_junc]
+
+/-- `(R+S) ≫ u₁° = u₁° ≫ R`: post-composing a sum with an injection's CONVERSE selects that
+    branch, the other being annihilated by `u₂ ≫ u₁° = 𝟘`.  The converse-side companion of
+    `u₁_junc`, and what makes the projection `u₁°` strictly natural. -/
+public theorem sumMap_recip_u₁ {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+    (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) : sumMap C D R S ≫ D.u₁° = C.u₁° ≫ R := by
+  show junc C (R ≫ D.u₁) (S ≫ D.u₂) ≫ D.u₁° = C.u₁° ≫ R
+  rw [junc_comp, Cat.assoc, Cat.assoc, D.u₁_self_comp_recip, D.u₂_u₁_recip, Cat.comp_id,
+    DistributiveAllegory.comp_zero]
+  show (C.u₁° ≫ R) ∪ (C.u₂° ≫ (𝟘 : a₂ ⟶ b₁)) = C.u₁° ≫ R
+  rw [DistributiveAllegory.comp_zero, union_zero]
+
+/-- `(R+S) ≫ u₂° = u₂° ≫ S`, the `u₂` half of `sumMap_recip_u₁`. -/
+public theorem sumMap_recip_u₂ {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+    (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) : sumMap C D R S ≫ D.u₂° = C.u₂° ≫ S := by
+  show junc C (R ≫ D.u₁) (S ≫ D.u₂) ≫ D.u₂° = C.u₂° ≫ S
+  rw [junc_comp, Cat.assoc, Cat.assoc, D.u₁_u₂_recip, D.u₂_self_comp_recip, Cat.comp_id,
+    DistributiveAllegory.comp_zero]
+  show (C.u₁° ≫ (𝟘 : a₁ ⟶ b₂)) ∪ (C.u₂° ≫ S) = C.u₂° ≫ S
+  rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_union]
 
 /-- **B&dM 5.10**, functor law: `sumMap` commutes with converse (with the coproducts swapped). -/
 public theorem sumMap_recip {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)

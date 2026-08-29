@@ -70,7 +70,7 @@ public theorem RelProd.outr_map (P : RelProd a b) : Map P.outr := P.tab.2.1
 public theorem RelProd.eq_topMor (P : RelProd a b) : P.outl° ≫ P.outr = topMor a b := P.tab.2.2.1.symm
 
 /-- The joint-monic identity `outl≫outl° ∩ outr≫outr° = id_p`. -/
-theorem RelProd.joint_id (P : RelProd a b) :
+public theorem RelProd.joint_id (P : RelProd a b) :
     P.outl ≫ P.outl° ∩ P.outr ≫ P.outr° = Cat.id P.p := P.tab.2.2.2
 
 /-- `outr° ≫ outl = ⊤ : b → a` — the "other" cross term, obtained from `eq_topMor` by
@@ -215,7 +215,7 @@ public theorem RelProd.pair_map {P : RelProd a b} {f : c ⟶ a} {g : c ⟶ b}
 /-- **Ex 5.9**: for a MAP `f : d ⟶ c`, `f ≫ ⟨R,S⟩ = ⟨f≫R, f≫S⟩`, mirrored:
     `f ≫ P.pair R S = P.pair (f≫R) (f≫S)`.  `f` being simple lets composition
     distribute exactly over the defining meet (`simple_dist_inter`). -/
-theorem RelProd.map_comp_pair {P : RelProd a b} {d : 𝒜} {f : d ⟶ c} (hf : Map f)
+public theorem RelProd.map_comp_pair {P : RelProd a b} {d : 𝒜} {f : d ⟶ c} (hf : Map f)
     (R : c ⟶ a) (S : c ⟶ b) : f ≫ P.pair R S = P.pair (f ≫ R) (f ≫ S) := by
   show f ≫ (R ≫ P.outl° ∩ S ≫ P.outr°) = (f ≫ R) ≫ P.outl° ∩ (f ≫ S) ≫ P.outr°
   rw [simple_dist_inter hf.2, Cat.assoc, Cat.assoc]

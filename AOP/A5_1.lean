@@ -76,12 +76,15 @@ public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
     (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
   ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b ⊑ φ a ≫ F.map R
 
-/-- A relator carries a lax square to a lax square: `R ≫ X ⊑ X ≫ R'` gives
-    `F R ≫ F X ⊑ F X ≫ F R'`.  Just `map_mono` read through `map_comp` on both sides. -/
-public theorem Relator.map_monotonic {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜}
-    {R : a ⟶ a} {R' : b ⟶ b} {X : a ⟶ b} (h : R ≫ X ⊑ X ≫ R') :
-    F.map R ≫ F.map X ⊑ F.map X ≫ F.map R' := by
+/-- A relator carries a LAX SQUARE to a lax square: `Ta ≫ X ⊑ X' ≫ Tb` gives
+    `F(Ta) ≫ F(X) ⊑ F(X') ≫ F(Tb)`.  Just `map_mono` read through `map_comp` on both sides.
+    The two sides carry DIFFERENT arrows `X`, `X'` — at `X' = X` and endo `Ta`, `Tb` this is
+    monotonicity of `F(X)`, and at `Ta, Tb := G(R), F(R)`, `X, X' := φ b, φ a` it is a relator
+    applied on the OUTSIDE of a lax natural `φ`, one `R` at a time. -/
+public theorem Relator.map_slides {𝒜 : Type u₁} {ℬ : Type u₂}
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a₁ a₂ b₁ b₂ : 𝒜}
+    {Ta : a₁ ⟶ a₂} {Tb : b₁ ⟶ b₂} {X : a₂ ⟶ b₂} {X' : a₁ ⟶ b₁} (h : Ta ≫ X ⊑ X' ≫ Tb) :
+    F.map Ta ≫ F.map X ⊑ F.map X' ≫ F.map Tb := by
   have := F.map_mono h
   rwa [F.map_comp, F.map_comp] at this
 
