@@ -10,6 +10,8 @@
 module
 
 public import AOP.A6_1_RelSet
+-- for `F_eq_sum_prod`: the `+` half of the generic relator combination lives in §5.3.
+public import AOP.A5_3
 
 set_option linter.unusedVariables false
 
@@ -107,6 +109,19 @@ public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
       | exact ⟨fun h => h.symm, fun h => h.symm⟩
       | exact ⟨fun ⟨h1, h2⟩ => ⟨h1.symm, h2⟩, fun ⟨h1, h2⟩ => ⟨h1.symm, h2⟩⟩
       | exact Iff.rfl
+
+/-- `F` IS the generic relator combination `const L + (const E × id)` of §5.2/§5.3, not merely
+    isomorphic to it: `Rel(Set)` names its own coproduct (`sumCop`) and its own relational product
+    (`HasRelProd`), so the two sides agree on OBJECTS definitionally — which is what makes this
+    equation typecheck — and the calculation below settles them on relations. -/
+public theorem F_eq_sum_prod (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') :
+    (Relator.sum (Relator.const (dL L))
+        (Relator.prod (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))).map R
+      = (F L E).map R := by
+  apply hom_ext; intro u v
+  cases u <;> cases v <;>
+    simp [F, Fmap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
+      RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> grind
 
 /-! ## `ConsList L E` is the initial algebra of `F` -/
 

@@ -42,7 +42,7 @@ public import Freyd.S1_41
 
 open Freyd
 
-universe v u u₁ u₂ u₃
+universe v v₁ v₂ u u₁ u₂ u₃
 
 variable {𝒞 : Type u} [Cat.{v} 𝒞] {𝒟 : Type u} [Cat.{v} 𝒟]
 
@@ -60,7 +60,7 @@ namespace Freyd
     routinely share an object map — e.g. functors between one-object
     categories are monoid homomorphisms — so the morphism action cannot
     be recovered by instance search.) -/
-public structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v} C] [Cat.{v} D] where
+public structure Functor (C : Type u₁) (D : Type u₂) [Cat.{v₁} C] [Cat.{v₂} D] where
   obj  : C → D
   map  : {X Y : C} → (X ⟶ Y) → (obj X ⟶ obj Y)
   map_id : ∀ (X : C), map (Cat.id X) = Cat.id (obj X)

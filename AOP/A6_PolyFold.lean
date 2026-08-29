@@ -223,43 +223,6 @@ theorem foldR_monotonic (F : PolyF) {A B : Type} (R S : Fo F ⟨A⟩ ⟨B⟩ ⟶
   foldR_universal_le F (foldRel F R) S
     (le_trans (foldR_computation_le F R) (comp_mono_left _ h))
 
-/-- The polynomial functor preserves the identity relation: `⟦F⟧ 𝟙 𝟙 = 𝟙`. -/
-theorem bimapR_id (F : PolyF) (a b : RelSet.{0}) :
-    bimapR F (Cat.id a) (Cat.id b) = Cat.id (Fo F a b) := by
-  induction F with
-  | zer => apply hom_ext; intro u; exact (u : Empty).elim
-  | one => apply hom_ext; intro u v; exact ⟨fun _ => Subsingleton.elim _ _, fun _ => trivial⟩
-  | arg₁ => apply hom_ext; intro _ _; exact Iff.rfl
-  | arg₂ => apply hom_ext; intro _ _; exact Iff.rfl
-  | oplus l r ihl ihr =>
-      apply hom_ext; intro u v
-      cases u with
-      | inl x => cases v with
-        | inl y =>
-            have hh := iff_of_eq (congrFun (congrFun ihl x) y)
-            exact ⟨fun h => congrArg Sum.inl (hh.mp h), fun h => hh.mpr (Sum.inl.inj h)⟩
-        | inr y =>
-            constructor
-            · intro h; exact (h : False).elim
-            · intro h; change Sum.inl x = Sum.inr y at h; contradiction
-      | inr x => cases v with
-        | inl y =>
-            constructor
-            · intro h; exact (h : False).elim
-            · intro h; change Sum.inr x = Sum.inl y at h; contradiction
-        | inr y =>
-            have hh := iff_of_eq (congrFun (congrFun ihr x) y)
-            exact ⟨fun h => congrArg Sum.inr (hh.mp h), fun h => hh.mpr (Sum.inr.inj h)⟩
-  | otimes l r ihl ihr =>
-      apply hom_ext; intro u v
-      have el := iff_of_eq (congrFun (congrFun ihl u.1) v.1)
-      have er := iff_of_eq (congrFun (congrFun ihr u.2) v.2)
-      constructor
-      · intro h; exact Prod.ext (el.mp h.1) (er.mp h.2)
-      · intro h
-        have hp : u = v := h
-        exact ⟨el.mpr (congrArg Prod.fst hp), er.mpr (congrArg Prod.snd hp)⟩
-
 /-- aopa `idR-foldR`: `𝟙 = ⦇graph In⦈`. -/
 theorem idR_foldR (F : PolyF) {A : Type} :
     Cat.id (⟨Mu F A⟩ : RelSet.{0}) = foldRel F (inGraph F A) := by

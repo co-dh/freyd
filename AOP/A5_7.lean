@@ -13,16 +13,9 @@ module
 public import AOP.A5_1
 public import AOP.A5_4
 
-universe v₁ v₂ u₁ u₂
+universe v₁ v₂ v₃ u₁ u₂ u₃
 
 namespace Freyd.Alg
-
-/-- **B&dM 5.13** (LAX NATURAL TRANSFORMATION, mirrored to diagram order): `φ : G ⟶ F`,
-    a family `φ a : G.obj a ⟶ F.obj a`, is LAX NATURAL when `G.map R ≫ φ b ⊑ φ a ≫ F.map R`
-    for every `R : a ⟶ b`. -/
-@[expose] public def LaxNatural {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-    (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
-  ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b ⊑ φ a ≫ F.map R
 
 /-! ## §5.7 example (B&dM p.133): `∈` is lax natural from the power relator to the identity
 
@@ -103,5 +96,102 @@ theorem laxNatural_iff_strict_on_maps :
     rw [p1]; exact p2
 
 end Theorem52
+
+/-! ## Sliding a family past a composite -/
+
+section MonotonicComp
+
+variable {𝒜 : Type u₁} [Allegory.{v₁} 𝒜]
+
+/-- **B&dM §5.7**: monotonicity COMPOSES — if `T` slides right past `R` and past `S`, it
+    slides past `R ≫ S`.  The endo case `Ta = Tb = Tc` is this theorem instantiated, not a
+    separate one. -/
+public theorem monotonic_comp {a b c : 𝒜} {Ta : a ⟶ a} {Tb : b ⟶ b} {Tc : c ⟶ c}
+    {R : a ⟶ b} {S : b ⟶ c} (hR : Ta ≫ R ⊑ R ≫ Tb) (hS : Tb ≫ S ⊑ S ≫ Tc) :
+    Ta ≫ (R ≫ S) ⊑ (R ≫ S) ≫ Tc :=
+  calc Ta ≫ (R ≫ S) = (Ta ≫ R) ≫ S := (Cat.assoc _ _ _).symm
+    _ ⊑ (R ≫ Tb) ≫ S := comp_mono_right hR S
+    _ = R ≫ (Tb ≫ S) := Cat.assoc _ _ _
+    _ ⊑ R ≫ (S ≫ Tc) := comp_mono_left R hS
+    _ = (R ≫ S) ≫ Tc := (Cat.assoc _ _ _).symm
+
+example {a : 𝒜} {T : a ⟶ a} {R S : a ⟶ a} (hR : T ≫ R ⊑ R ≫ T) (hS : T ≫ S ⊑ S ≫ T) :
+    T ≫ (R ≫ S) ⊑ (R ≫ S) ≫ T := monotonic_comp hR hS
+
+end MonotonicComp
+
+/-! ## Sliding a family past a union -/
+
+section MonotonicUnion
+
+-- Needs the distributive layer: `∪` and composition's distribution over it on BOTH sides.
+variable {𝒜 : Type u₁} [DistributiveAllegory 𝒜]
+
+/-- Monotonicity is closed under UNION — the `∪` member of the family whose `≫` member is
+    `monotonic_comp` and whose functor member is `Relator.map_monotonic`; B&dM §7.2 builds its
+    algebras from these.  The INTERSECTION case is FALSE: after `Ta ≫ (X ∩ Y) ⊑ (X ≫ Tb) ∩
+    (Y ≫ Tb)` the last step would need `(X ≫ Tb) ∩ (Y ≫ Tb) ⊑ (X ∩ Y) ≫ Tb`, the wrong
+    direction of semi-distributivity. -/
+public theorem monotonic_union {a b : 𝒜} {Ta : a ⟶ a} {Tb : b ⟶ b} {X Y : a ⟶ b}
+    (hX : Ta ≫ X ⊑ X ≫ Tb) (hY : Ta ≫ Y ⊑ Y ≫ Tb) :
+    Ta ≫ (X ∪ Y) ⊑ (X ∪ Y) ≫ Tb :=
+  calc Ta ≫ (X ∪ Y) = (Ta ≫ X) ∪ (Ta ≫ Y) := DistributiveAllegory.comp_union_distrib Ta X Y
+    _ ⊑ (X ≫ Tb) ∪ (Y ≫ Tb) := union_mono hX hY
+    _ = (X ∪ Y) ≫ Tb := (union_comp_distrib X Y Tb).symm
+
+end MonotonicUnion
+
+/-! ## The same closure rules for a WHOLE lax natural transformation
+
+  `LaxNatural F G φ` is the pointwise inequality quantified over every `R`, so each rule is the
+  pointwise argument run at every `R`.  The pointwise theorems themselves do NOT instantiate:
+  they slide ONE arrow past `R` — the same `X` on both sides of `⊑` — whereas a lax natural
+  transformation slides a FAMILY, `φ b` on the left and `φ a` on the right. -/
+
+section LaxNaturalClosure
+
+variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+
+/-- Lax naturality composes VERTICALLY: `ψ : H ⟶ G` followed by `φ : G ⟶ F` is lax natural
+    `H ⟶ F`.  `monotonic_comp`'s argument at every `R`, with the two ends of the family,
+    `ψ b ≫ φ b` and `ψ a ≫ φ a`, where it has one sliding arrow. -/
+public theorem laxNatural_comp {F G H : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+    {ψ : ∀ a : 𝒜, H.obj a ⟶ G.obj a} (hψ : LaxNatural G H ψ) (hφ : LaxNatural F G φ) :
+    LaxNatural F H (fun a => ψ a ≫ φ a) := fun {a b} R =>
+  calc H.map R ≫ (ψ b ≫ φ b) = (H.map R ≫ ψ b) ≫ φ b := (Cat.assoc _ _ _).symm
+    _ ⊑ (ψ a ≫ G.map R) ≫ φ b := comp_mono_right (hψ R) _
+    _ = ψ a ≫ (G.map R ≫ φ b) := Cat.assoc _ _ _
+    _ ⊑ ψ a ≫ (φ a ≫ F.map R) := comp_mono_left _ (hφ R)
+    _ = (ψ a ≫ φ a) ≫ F.map R := (Cat.assoc _ _ _).symm
+
+/-- A relator on the OUTSIDE carries a lax natural transformation to one between the
+    composites: `K ∘ φ : K ∘ G ⟶ K ∘ F`.  `Relator.map_monotonic`'s argument at every `R`
+    (`map_mono` read through `map_comp` on both sides), with `K.map (φ b)` and `K.map (φ a)`
+    where it has one sliding arrow. -/
+public theorem laxNatural_map {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator ℬ 𝒞) (h : LaxNatural F G φ) :
+    LaxNatural (Relator.comp F K) (Relator.comp G K) (fun a => K.map (φ a)) := fun {_ _} R => by
+  have := K.map_mono (h R); rwa [K.map_comp, K.map_comp] at this
+
+end LaxNaturalClosure
+
+section LaxNaturalUnion
+
+-- Needs the distributive layer in the TARGET allegory only: `∪` and its two distribution laws.
+variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [DistributiveAllegory ℬ]
+
+/-- Lax naturality is closed under UNION — `monotonic_union`'s argument at every `R`, with
+    `φ b ∪ ψ b` and `φ a ∪ ψ a` where it has one sliding arrow.  As there, the INTERSECTION
+    case is not available: it would need `(φ a ≫ F.map R) ∩ (ψ a ≫ F.map R) ⊑ (φ a ∩ ψ a) ≫
+    F.map R`, the wrong direction of semi-distributivity. -/
+public theorem laxNatural_union {F G : Relator 𝒜 ℬ} {φ ψ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+    (hφ : LaxNatural F G φ) (hψ : LaxNatural F G ψ) :
+    LaxNatural F G (fun a => φ a ∪ ψ a) := fun {a b} R =>
+  calc G.map R ≫ (φ b ∪ ψ b) = (G.map R ≫ φ b) ∪ (G.map R ≫ ψ b) :=
+        DistributiveAllegory.comp_union_distrib _ _ _
+    _ ⊑ (φ a ≫ F.map R) ∪ (ψ a ≫ F.map R) := union_mono (hφ R) (hψ R)
+    _ = (φ a ∪ ψ a) ≫ F.map R := (union_comp_distrib _ _ _).symm
+
+end LaxNaturalUnion
 
 end Freyd.Alg

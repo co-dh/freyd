@@ -26,7 +26,7 @@ public import Freyd.S2_20
 public import AOP.A4_5
 public import AOP.A5_1
 
-universe v u
+universe v₂ u₂ v u
 
 namespace Freyd.Alg
 
@@ -114,20 +114,20 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
     (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) : s ⟶ t :=
   junc C (R ≫ D.u₁) (S ≫ D.u₂)
 
-theorem sumMap_mono {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+public theorem sumMap_mono {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
     {R R' : a₁ ⟶ b₁} {S S' : a₂ ⟶ b₂} (hR : R ⊑ R') (hS : S ⊑ S') :
     sumMap C D R S ⊑ sumMap C D R' S' :=
   junc_mono C (comp_mono_right hR D.u₁) (comp_mono_right hS D.u₂)
 
 /-- **B&dM 5.10**, functor law: `sumMap` sends identities to identities. -/
-theorem sumMap_id {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
+public theorem sumMap_id {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
     sumMap C C (Cat.id a₁) (Cat.id a₂) = Cat.id s := by
   show junc C (Cat.id a₁ ≫ C.u₁) (Cat.id a₂ ≫ C.u₂) = Cat.id s
   rw [Cat.id_comp, Cat.id_comp]
   exact junc_injections C
 
 /-- **B&dM 5.10**, functor law: `sumMap` sends composition to composition. -/
-theorem sumMap_comp {s a₁ a₂ t b₁ b₂ w c₁ c₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
+public theorem sumMap_comp {s a₁ a₂ t b₁ b₂ w c₁ c₂ : 𝒜} (C : Coproduct s a₁ a₂) (D : Coproduct t b₁ b₂)
     (E : Coproduct w c₁ c₂) (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) (U : b₁ ⟶ c₁) (V : b₂ ⟶ c₂) :
     sumMap C D R S ≫ sumMap D E U V = sumMap C E (R ≫ U) (S ≫ V) := by
   show junc C (R ≫ D.u₁) (S ≫ D.u₂) ≫ junc D (U ≫ E.u₁) (V ≫ E.u₂)
@@ -155,6 +155,30 @@ public theorem sumMap_recip {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a�
   rfl
 
 end SumMap
+
+/-! ## Relators are closed under coproduct -/
+
+section SumRelator
+
+-- Needs `PositiveAllegory`, not merely `DistributiveAllegory`: a relator's `obj` must CHOOSE a
+-- coproduct object for each `x`, which is exactly `PositiveAllegory.coprod`.
+variable {𝒜 : Type u} [PositiveAllegory 𝒜]
+
+/-- Relators are closed under coproduct: `X ↦ F X + G X`, `R ↦ F R + G R`, on the ambient
+    `PositiveAllegory`'s chosen coproducts.  Functor laws from `sumMap`'s composed with `F`'s
+    and `G`'s. -/
+@[expose] public def Relator.sum {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+    Relator 𝒮 𝒜 where
+  obj x := PositiveAllegory.coprod (F.obj x) (G.obj x)
+  map R := sumMap (PositiveAllegory.has_coproduct _ _) (PositiveAllegory.has_coproduct _ _)
+    (F.map R) (G.map R)
+  map_id x := by
+    simp only [F.map_id, G.map_id]; exact sumMap_id (PositiveAllegory.has_coproduct _ _)
+  map_comp R S := by
+    simp only [F.map_comp, G.map_comp]; exact (sumMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := sumMap_mono _ _ (F.map_mono h) (G.map_mono h)
+
+end SumRelator
 
 /-! ## §4  Ex 5.12 -/
 

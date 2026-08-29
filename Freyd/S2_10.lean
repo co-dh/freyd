@@ -100,6 +100,10 @@ public theorem le_trans {a b : 𝒜} {R S T : a ⟶ b} (hRS : R ⊑ S) (hST : S 
     _ = R ∩ S := by rw [hST]
     _ = R := hRS
 
+/-- `calc` support: two consecutive `⊑` steps chain. -/
+public instance {a b : 𝒜} : Trans (α := a ⟶ b) le le le where
+  trans := le_trans
+
 public theorem le_antisymm {a b : 𝒜} {R S : a ⟶ b} (hRS : R ⊑ S) (hSR : S ⊑ R) : R = S := by
   dsimp [le] at hRS hSR
   calc

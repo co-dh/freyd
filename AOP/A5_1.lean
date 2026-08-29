@@ -28,13 +28,8 @@ universe v₁ v₂ v₃ u₁ u₂ u₃ u
 namespace Freyd.Alg
 
 /-- A RELATOR (B&dM §5.1 p. 111): a monotonic functor between allegories. -/
-public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] where
-  /-- Object map. -/
-  obj : 𝒜 → ℬ
-  /-- Hom map. -/
-  map : {a b : 𝒜} → (a ⟶ b) → (obj a ⟶ obj b)
-  map_id : ∀ (a : 𝒜), map (Cat.id a) = Cat.id (obj a)
-  map_comp : ∀ {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c), map (R ≫ S) = map R ≫ map S
+public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+    extends Freyd.Functor 𝒜 ℬ where
   /-- MONOTONICITY — the defining extra over a plain functor. -/
   map_mono : ∀ {a b : 𝒜} {R S : a ⟶ b}, R ⊑ S → map R ⊑ map S
 
@@ -61,6 +56,34 @@ public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
   map_id a := by simp [F.map_id, G.map_id]
   map_comp R S := by simp [F.map_comp, G.map_comp]
   map_mono h := G.map_mono (F.map_mono h)
+
+/-- The CONSTANT relator `X ↦ b`, `R ↦ 𝟙 b`.  With `Relator.prod` it expresses `A×−`
+    as `Relator.prod (Relator.const A) (Relator.idRelator 𝒜)`. -/
+@[expose] public def Relator.const {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+    (b : ℬ) : Relator 𝒜 ℬ where
+  obj _ := b
+  map _ := 𝟙 b
+  map_id _ := rfl
+  map_comp _ _ := (Cat.id_comp (𝟙 b)).symm
+  map_mono _ := le_refl _
+
+-- Lives in §5.1, not with §5.7's theorems about it: it mentions nothing but two relators and a
+-- family of arrows, and §5.2's `outr` example already needs it.
+/-- **B&dM 5.13** (LAX NATURAL TRANSFORMATION, mirrored to diagram order): `φ : G ⟶ F`,
+    a family `φ a : G.obj a ⟶ F.obj a`, is LAX NATURAL when `G.map R ≫ φ b ⊑ φ a ≫ F.map R`
+    for every `R : a ⟶ b`. -/
+@[expose] public def LaxNatural {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+    (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
+  ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b ⊑ φ a ≫ F.map R
+
+/-- A relator carries a lax square to a lax square: `R ≫ X ⊑ X ≫ R'` gives
+    `F R ≫ F X ⊑ F X ≫ F R'`.  Just `map_mono` read through `map_comp` on both sides. -/
+public theorem Relator.map_monotonic {𝒜 : Type u₁} {ℬ : Type u₂}
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜}
+    {R : a ⟶ a} {R' : b ⟶ b} {X : a ⟶ b} (h : R ≫ X ⊑ X ≫ R') :
+    F.map R ≫ F.map X ⊑ F.map X ≫ F.map R' := by
+  have := F.map_mono h
+  rwa [F.map_comp, F.map_comp] at this
 
 /-! ## Lemma 5.1  Relators preserve maps and their converses (B&dM p. 112)
 
@@ -123,7 +146,7 @@ theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
   Any `R` tabulates as `f°≫g` for maps `f, g`; `Theorem 5.1(a)`'s computation of `F.map R`
   only ever touches `F.map f`, `F.map g`, so two relators that agree on all maps already
   agree on `R`.  Stated with `F.obj = G.obj` (rather than reconstructing a bundled `Relator`
-  from raw fields) so that, after `cases F; subst`, the two hom-maps land in literally the
+  from raw fields) so that, after destructuring `F` and `subst`, the two hom-maps land in the
   same type `G.obj a ⟶ G.obj b` and the conclusion becomes an ordinary `Eq` wrapped in
   `HEq` (`heq_of_eq`). -/
 
@@ -134,19 +157,19 @@ theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     {a b : 𝒜} (R : a ⟶ b) : HEq (F.map R) (G.map R) := by
   have hobjeq : F.obj = G.obj := funext hobj
   obtain ⟨c, f, g, hf_map, hg_map, hR, _⟩ := TabularAllegory.tabular R
-  cases F with
-  | mk obj map map_id map_comp map_mono =>
-    subst hobjeq
-    apply heq_of_eq
-    show map R = G.map R
-    have hff : map f = G.map f := eq_of_heq (hmaps f hf_map)
-    have hgg : map g = G.map g := eq_of_heq (hmaps g hg_map)
-    have hFrecip : map f° = (map f)° :=
-      (relator_map_recip_map_aux G.obj map map_id map_comp map_mono hf_map).1
-    have hFR : map R = (map f)° ≫ map g := by rw [hR, map_comp, hFrecip]
-    have hGR : G.map R = (G.map f)° ≫ G.map g := by
-      rw [hR, G.map_comp, Relator.map_recip_map G hf_map]
-    rw [hFR, hGR, hff, hgg]
+  obtain ⟨⟨obj, map, map_id, map_comp⟩, map_mono⟩ := F
+  dsimp only at hobjeq hmaps ⊢
+  subst hobjeq
+  apply heq_of_eq
+  show map R = G.map R
+  have hff : map f = G.map f := eq_of_heq (hmaps f hf_map)
+  have hgg : map g = G.map g := eq_of_heq (hmaps g hg_map)
+  have hFrecip : map f° = (map f)° :=
+    (relator_map_recip_map_aux G.obj map map_id map_comp map_mono hf_map).1
+  have hFR : map R = (map f)° ≫ map g := by rw [hR, map_comp, hFrecip]
+  have hGR : G.map R = (G.map f)° ≫ G.map g := by
+    rw [hR, G.map_comp, Relator.map_recip_map G hf_map]
+  rw [hFR, hGR, hff, hgg]
 
 /-! ## Ex 5.2  A relator preserves meets of coreflexives (B&dM p. 113)
 

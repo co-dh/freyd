@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, choosebox, CHPAD, CHFAN, hm-bead, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, choosebox, CHPAD, CHFAN, fb-ALLC, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -2532,6 +2532,44 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`],
 )]<lax-str>
 
+// Not in B&dM §5.7, which stops at Theorem 5.2.
+#disp[#table(
+  columns: (3.6cm, 7.4cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*what is built*], [*the law*], [*what it costs*]),
+
+  [`ψφ`],
+  [`ψ : H⇒G` and `φ : G⇒F` give `ψφ : H⇒F`],
+  [nothing \ #src[`H(R)ψ`#sub[`B`]`φ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)φ`#sub[`B`]`⊑ψ`#sub[`A`]`φ`#sub[`A`]`F(R)`
+   — `ψ`'s inequation, then `φ`'s]],
+
+  [`K(φ)`],
+  [`φ : G⇒F` and `K` a relator give `K(φ) : K∘G⇒K∘F`, `K` composed on the outside],
+  [nothing \ #src[`K` applied to `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`: `K` is monotonic and
+   `K(XY)=K(X)K(Y)` — @relator-defn]],
+
+  [`φK`],
+  [`φ : G⇒F` gives `φK : G∘K⇒F∘K`, `K` composed on the inside],
+  [nothing at all \ #src[it is `φ`'s own inequation at `K(R)`]],
+
+  [`φ∪ψ`],
+  [`φ,ψ : G⇒F` give `φ∪ψ : G⇒F`],
+  [composition distributes over `∪` \ #src[`G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)` splits into the two
+   inequations, and `φ`#sub[`A`]`F(R)∪ψ`#sub[`A`]`F(R)` rejoins]],
+
+  [`⟨φ,ψ⟩`],
+  [`φ : G⇒F` and `ψ : G⇒F'` give `⟨φ,ψ⟩ : G⇒F×F'`],
+  [one lax copy law, then absorption \ #src[`R◁⊑◁(R×R)` — @rel-monoid — opens
+   `G(R)⟨φ`#sub[`B`]`,ψ`#sub[`B`]`⟩`; `⟨X,Y⟩(R×S)=⟨XR,YS⟩` closes it — 2 of @bdm-prod-laws]],
+
+  [`φ∩ψ`],
+  [`φ∩ψ : G⇒F` *fails*],
+  [the wrong direction of semi-distributivity \ #src[the step it would need is
+   `(φ`#sub[`A`]`F(R))∩(ψ`#sub[`A`]`F(R))⊑(φ∩ψ)`#sub[`A`]`F(R)`, and @meet-semidistrib runs the
+   other way]],
+)]<lax-closure>
+
 == Monotonic algebras
 
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its two theorems instead.
@@ -2710,6 +2748,38 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [what turns the greedy `⊑` into the heading's `=`],
 )]<takewhile-laws>
 
+// §13.4.3's table helpers, hoisted above the mss tables: a Typst `#let` binds only below its line.
+// The step's relation sits at the LEFT EDGE of formula AND picture, so both read as chains:
+// `⊑`/`⊒` takes `SLACK` where the proof loses information (`⊒` = refinement), `=` stays grey.
+#let SQ = text(SLACK)[$subset.eq.sq$]
+#let RQ = text(SLACK)[$supset.eq.sq$]
+#let EQ = text(luma(140))[$=$]
+
+// The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
+// CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
+// PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
+// flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
+#let OPW = 10pt
+#let step(op, pic, f, pw: none) = layout(sz => {
+  let gut = 6pt
+  // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
+  let p = box(pic)
+  let lane = if pw == none { measure(p).width } else { pw }
+  if measure(f).width + lane + gut <= sz.width - OPW - gut {
+    grid(columns: (OPW, lane, 1fr), align: (left + horizon, left + horizon, right + horizon),
+      column-gutter: gut, op, p, f)
+  } else {
+    grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
+      op, stack(spacing: 5pt, p, align(right, f)))
+  }
+})
+
+// THE THEOREM THE TABLE PROVES, in its top row: the reader needs the destination before the steps,
+// and a footer would only confirm it.  Grey ground, heavier rule under it, no new font size.
+#let Thm(body) = table.cell(colspan: 2, fill: luma(233), align: center + horizon,
+  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
+#let frc(n) = $frac(#n, ∋)$
+
 === `mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ max(≤)` <sec-mss>
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
@@ -2725,93 +2795,431 @@ one-element list, beside @comb-fns's `tail≜cons° π₂`]
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ]]<mss-defn>
 
-#disp[
-#zline(
-  zsqc([$frac(#[`segment sum`], ∋)$ ` max(≤)`], none),
-  zstep(op: sym.eq, under: true)[`segment=suffix prefix`],
-  zsqc([$frac(#[`suffix (prefix sum)`], ∋)$ ` max(≤)`], none),
-  zstep(op: sym.eq, under: true)[absorption],
-  zsqc([$frac(#[`suffix`], ∋)$ ` E(prefix sum) max(≤)`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[$frac(#[`R`], ∋)$` ∋=R`, `union=E(∋)`],
-  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$`) union max(≤)`], none),
-  zstep(op: sym.eq, under: true)[@min-laws, the sets non-empty],
-  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$`)E(max(≤)) max(≤)`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[relator],
-  zsqc([$frac(#[`suffix`], ∋)$ ` E(`$frac(#[`prefix sum`], ∋)$` max(≤)) max(≤)`], none),
+// ONE WIRE, `[A]` to `A`: this chain never forks, so a row is a run of boxes and the picture's whole
+// content is the TYPE the wire carries — where `E(EA)` is born, and which box collapses it again.
+// A type sits ON its strand (`node`'s white ground masks the wire): a gap is that white ground (text
+// plus its insets) plus a wire stub either side, so the strand visibly runs into each label.  `X/∋`
+// and `E(X)` are fractions, hence maps (@pow-laws), so their boxes are square; `max(≤)` is the chain's
+// one relation and its only chamfered box.  Widths are measured at the note's text sizes.
+#let TH = 1.2   // a fraction box is two lines tall
+#let ty-l = ([`[A]`], 1.25)
+#let ty-el = ([`E([A])`], 2.0)
+#let ty-ea = ([`EA`], 1.0)
+#let ty-eea = ([`E(EA)`], 1.75)
+#let ty-a = ([`A`], 0.75)
+#let bx-mss = (frc([`segment sum`]), 2.2, false)
+#let bx-spp = (frc([`suffix (prefix sum)`]), 3.6, false)
+#let bx-sf = (frc([`suffix`]), 1.3, false)
+#let bx-eps = ([`E(prefix sum)`], 3.5, false)
+#let bx-ep = ([`E(`#frc([`prefix sum`])`)`], 2.8, false)
+#let bx-un = ([`union`], 1.45, false)
+#let bx-mx = ([`max(≤)`], 1.7, true)
+#let bx-emx = ([`E(max(≤))`], 2.35, false)
+#let bx-epm = ([`E(`#frc([`prefix sum`])` max(≤))`], 4.5, false)
+#let mss-run(tys, items) = {
+  let x = 0.0
+  for (i, it) in items.enumerate() {
+    let (tl, tw) = tys.at(i)
+    wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
+    gbox((x + tw, 0), it.at(0), w: it.at(1), h: TH, chamfer: it.at(2))
+    x = x + tw + it.at(1)
+  }
+  let (tl, tw) = tys.at(items.len())
+  wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
+}
+#let mss-pic(tys, items, s: 100%) = P(cetz.canvas(length: 0.8cm, mss-run(tys, items)), s: s)
+
+#let step = step.with(pw: 303pt)
+#disp[#table(
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`segment sum`])` max(≤)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` max(≤)) max(≤)`],
+  table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
+
+  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-mx))][#frc([`segment sum`])` max(≤)`]], [],
+
+  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, bx-mx))][#frc([`suffix (prefix sum)`])` max(≤)`]],
+  [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
+
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, bx-mx), s: 94%)][#frc([`suffix`])` E(prefix sum) max(≤)`]],
+  [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
+
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, bx-mx), s: 95%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`union max(≤)`]],
+  [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
+   `E(R)≜frac(∋R,∋)`; @min-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
+   `F(RS)=F(R)F(S)` at `F:=E`]],
+
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-emx, bx-mx), s: 85%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`E(max(≤)) max(≤)`]],
+  [@min-laws, the sets non-empty],
+
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epm, bx-mx), s: 92%)][#frc([`suffix`])` E(`#frc([`prefix sum`])` max(≤))` \ #h(1em)`max(≤)`]],
+  [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
 #align(center, block(inset: (y: 4pt))[#src[B&dM's `max(P(max(Λ(sum prefix))))Λsuffix`, mirrored. The
   `union` step is @min-laws's `P(min(R)) min(R)=P(Dom(min(R))) union min(R)` — every suffix has the
   empty prefix, so `Dom` is `𝟙` here — and `P(f)=E(f)` at the map it is applied to (@powrel-laws).]])
 ]<mss-shape>
 
-#disp[
-#zline(
-  zsqc([`[nil,⊸ nil∪cons] sum`], none),
-  zstep(op: sym.eq, under: true)[coproduct of maps, composition over `∪`],
-  zsqc([`[nil sum,⊸ nil sum∪cons sum]`], none),
-  zstep(op: sym.eq, under: true)[`sum`'s defining equation],
-  zsqc([`[zero,⊸ zero∪(𝟙×sum) plus]`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[`(𝟙×sum)⊸=⊸`, `sum` entire],
-  zsqc([`[zero,(𝟙×sum)(⊸ zero∪plus)]`], none),
-  zstep(op: sym.eq, under: true)[relator],
-  zsqc([`F(sum) [zero,⊸ zero∪plus]`], none),
+// The fork is the bracket's case split `F([A])=𝟙+A×[A]`; `⊸` discards.
+#let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's tape edge, which it does not export
+#let BRT = 1.6  // the bracket's branch height
+#let UIP = 0.4  // the pair's half-height, at the fork and inside the `∪` copies
+#let UOP = 0.3  // a `∪` copy's output port
+#let UHH = 0.7  // a `∪` copy's half-height
+#let UDY = UHH + 0.55  // copy separation, wider than the strands inside one copy
+#let UH = UHH + UDY    // the `∪` region's half-height
+#let CW = 3.0  // a `∪` copy's width
+// A `∪` region with arbitrary branch bodies: the pair arrives once, the dashed fan hands it to
+// both copies, and their outputs merge (choosebox's geometry, generalised).
+#let unionbox(a, b, upper, lower, ip: UIP, op: UOP, hh: UHH) = {
+  let cy = (a.at(1) + b.at(1)) / 2
+  let dy = hh + 0.55
+  let cx = a.at(0) + CHPAD
+  let ox = b.at(0) - CHPAD
+  let xi = a.at(0) - CHFAN
+  let xo = b.at(0) + CHFAN
+  let fan = (thickness: lw, paint: black, dash: "dashed")
+  tape(a, b)
+  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.3, TAPEEDGE)[`∪`]
+  d.group({ d.translate((cx, cy + dy)); upper })
+  d.group({ d.translate((cx, cy - dy)); lower })
+  for s in (1, -1) {
+    bend((xi, cy + s * ip), (cx, cy + dy + s * ip), stroke: fan)
+    bend((xi, cy + s * ip), (cx, cy - dy + s * ip), stroke: fan)
+  }
+  bend((ox, cy + dy + op), (xo, cy), stroke: fan)
+  bend((ox, cy - dy - op), (xo, cy), stroke: fan)
+}
+// `⊸ X`: both wires discarded, then `X` created.
+#let disc-copy(label) = {
+  wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
+  wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
+  gbox((0.6, 0), label, w: 0.75, chamfer: false)
+  wire((1.35, 0), (CW, UOP))
+}
+#let cons-copy = {
+  gbox((0, 0), [`cons`], w: 1.3, h: 2 * UIP + 0.35, chamfer: false)
+  bend((1.3, 0), (CW, -UOP))
+}
+#let sumplus-copy = {
+  wire((0, UIP), (1.55, UIP))
+  wire((0, -UIP), (0.5, -UIP)); gbox((0.5, -UIP), [`sum`], w: 0.85, chamfer: false)
+  wire((1.35, -UIP), (1.55, -UIP))
+  gbox((1.55, 0), [`plus`], w: 0.9, h: 2 * UIP + 0.35, chamfer: false)
+  bend((2.45, 0), (CW, -UOP))
+}
+#let plus-copy = {
+  wire((0, UIP), (0.9, UIP)); wire((0, -UIP), (0.9, -UIP))
+  gbox((0.9, 0), [`plus`], w: 0.9, h: 2 * UIP + 0.35, chamfer: false)
+  bend((1.8, 0), (CW, -UOP))
+}
+// One row's picture: the bracket forks into the create `c` above and the pair below, whose `∪` the
+// `lower` copy closes; `pre` puts `𝟙×sum` before the region, `end` a `sum` box after the join.
+#let msspic(c, lower, pre: false, end: none) = {
+  let cy = -BRT
+  let ux0 = if pre { 3.5 } else { 2.6 }
+  let ux1 = ux0 + CW + 2 * CHPAD
+  let xo = ux1 + CHFAN
+  let xj = xo + 1.05
+  tape((0.34, cy - UH - 0.15), (xj, BRT + 0.15))
+  wire((0, 0), (0.34, 0))
+  let st = (thickness: 1.4pt, paint: TAPEEDGE)
+  d.bezier((0.56, 0), (1.26, BRT), (0.98, 0), (0.98, BRT), stroke: st)
+  d.bezier((0.56, 0), (1.26, cy + UIP), (0.98, 0), (0.98, cy + UIP), stroke: st)
+  d.bezier((0.56, 0), (1.26, cy - UIP), (0.98, 0), (0.98, cy - UIP), stroke: st)
+  gbox((1.26, BRT), c, w: 0.75, chamfer: false)
+  wire((2.01, BRT), (xj - 0.7, BRT))
+  if pre {
+    wire((1.26, cy + UIP), (ux0 - CHFAN, cy + UIP))
+    wire((1.26, cy - UIP), (1.55, cy - UIP))
+    gbox((1.55, cy - UIP), [`sum`], w: 0.85, chamfer: false)
+    wire((2.4, cy - UIP), (ux0 - CHFAN, cy - UIP))
+  } else {
+    wire((1.26, cy + UIP), (ux0 - CHFAN, cy + UIP))
+    wire((1.26, cy - UIP), (ux0 - CHFAN, cy - UIP))
+  }
+  unionbox((ux0, cy - UH), (ux1, cy + UH), disc-copy(c), lower)
+  wire((xo, cy), (xj - 0.7, cy))
+  tape-join((xj, 0), sp: BRT, len: 0.7)
+  wire((xj, 0), (xj + 0.34, 0))
+  if end != none {
+    gbox((xj + 0.44, 0), end, w: 0.95, chamfer: false)
+    wire((xj + 1.39, 0), (xj + 1.73, 0))
+    lab(xj + 2.15, 0, black)[`A`]
+  } else {
+    lab(xj + 0.8, 0, black)[`A`]
+  }
+  lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
+}
+#let step = step.with(pw: 262pt)
+#disp[#table(
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt),
+  stroke: 0.4pt + luma(190),
+  Thm[`[nil,⊸ nil∪cons] sum=F(sum)[zero,⊸ zero∪plus]`],
+  table.header([*formula* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*reason*]),
+  [#step([])[#P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`])))][`[nil,⊸ nil∪cons] sum`]], [],
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`])))][`[nil sum,⊸ nil sum∪cons sum]`]], [coproduct of maps, composition over `∪`],
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy)))][`[zero,⊸ zero∪(𝟙×sum) plus]`]], [`sum`'s defining equation],
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true)))][`[zero,(𝟙×sum)(⊸ zero∪plus)]`]], [`(𝟙×sum)⊸=⊸`, `sum` entire],
+  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true)))][`F(sum) [zero,⊸ zero∪plus]`]], [relator],
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil∪cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero∪plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.]])
 ]<mss-prefix-sum>
 
-#disp[
-#zline(
-  zsqc([`(𝟙×≤°)(⊸ zero∪plus)`], none),
-  zstep(op: sym.eq, under: true)[relator, composition over `∪`],
-  zsqc([`(𝟙×≤°)⊸ zero∪(𝟙×≤°) plus`], none),
-  zstep(op: sym.subset.eq.sq, under: true)[@dom-slide, `(≤°×≤°) plus⊑plus≤°`],
-  zsqc([`⊸ zero∪plus≤°`], none),
-  zstep(op: sym.subset.eq.sq, under: true)[`≤°` reflexive],
-  zsqc([`(⊸ zero∪plus)≤°`], none),
-)
-#align(center, block(inset: (y: 4pt))[#src[the `plus` branch of `F(≤°)S⊑S≤°`; the `zero` branch is
-  `zero⊑zero≤°`. `(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and @mon-laws's first row
-  carries it to `≤°` — `plus` is a map, so it is monotonic on an order and on its opposite together.]])
-]<mss-mono>
+// The `∪` is §@sec-party-choose's tape.  `choosebox` itself cannot be reused: it writes `π₁`/`π₂`
+// beside its two branches, and here each branch carries a circuit of its own and wants no label.
+#import "circuit.typ": TAPEEDGE
+#let MIY = 0.5           // `A×Int` is TWO strands: the head above, the running sum below
+#let LEQ = 0.9           // the `≤°` box — an order, not a map, so it keeps its chamfer
+#let MPRE = LEQ + 0.4    // `𝟙×≤°` in front of a branch: the head runs straight past it
 
-#disp[
-#zline(
-  zsqc([$frac(#[`[zero,⊸ zero∪plus]`], ∋)$ ` max(≤)`], none),
-  zstep(op: sym.eq, under: true)[coproduct of maps],
-  zsqc([`[`$frac(#[`zero`], ∋)$` max(≤),` $frac(#[`⊸ zero∪plus`], ∋)$` max(≤)]`], none),
-  zstep(op: sym.eq, under: true)[singleton, `≤°` reflexive],
-  zsqc([`[zero,⊕]`], none),
+#let mtape(a, b, upper, lower) = {
+  let cy = (a.at(1) + b.at(1)) / 2
+  let dy = MIY + 0.9
+  let (cx, ox) = (a.at(0) + CHPAD, b.at(0) - CHPAD)
+  let (xi, xo) = (a.at(0) - CHFAN, b.at(0) + CHFAN)
+  let fan(c) = (thickness: lw, paint: c, dash: "dashed")
+  tape(a, b)
+  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.32, TAPEEDGE)[`∪`]
+  upper(cx, cy + dy); lower(cx, cy - dy)
+  for s in (1, -1) {
+    bend((xi, cy + s * MIY), (cx, cy + dy + s * MIY), stroke: fan(GIVEN1))
+    bend((xi, cy + s * MIY), (cx, cy - dy + s * MIY), stroke: fan(GIVEN2))
+  }
+  bend((ox, cy + dy), (xo, cy), stroke: fan(GIVEN1))
+  bend((ox, cy - dy), (xo, cy), stroke: fan(GIVEN2))
+}
+
+// `⊸ zero`: BOTH strands are discarded and `zero : 𝕀⟶Int` starts a new one — a box with nothing on
+// its left IS a state, which is what the unit `𝕀` looks like when it costs no wire.
+#let bzero(x, y, w) = {
+  for s in (1, -1) { wire((x, y + s * MIY), (x + 0.5, y + s * MIY)); wiredot((x + 0.5, y + s * MIY)) }
+  gbox((x + 0.9, y), [`zero`], w: 1.3, chamfer: false)
+  wire((x + 2.2, y), (x + w, y))
+}
+// `plus` reads both strands and leaves on one; it is a map, so no chamfer.
+#let bplus(x, y, w) = {
+  for s in (1, -1) { wire((x, y + s * MIY), (x + 0.34, y + s * MIY)) }
+  gbox((x + 0.34, y), [`plus`], w: 1.3, h: 2 * MIY + 0.5, chamfer: false)
+  wire((x + 1.64, y), (x + w, y))
+}
+// A branch of the tape, drawn in the coordinates `mtape` hands it; `w` is the body's run, set per
+// row so BOTH branches end at the region's edge whatever they carry.
+#let mbranch(body, w, pre: false, post: false) = (x, y) => {
+  if pre {
+    wire((x, y + MIY), (x + MPRE, y + MIY))
+    wire((x, y - MIY), (x + 0.2, y - MIY)); gbox((x + 0.2, y - MIY), [`≤°`], w: LEQ)
+    wire((x + 0.2 + LEQ, y - MIY), (x + MPRE, y - MIY))
+  }
+  let x0 = x + (if pre { MPRE } else { 0 })
+  body(x0, y, w)
+  if post { gbox((x0 + w, y), [`≤°`], w: LEQ); wire((x0 + w + LEQ, y), (x0 + w + LEQ + 0.3, y)) }
+}
+// One row: the pair arrives on two strands, takes one branch of the `∪`, and leaves on one.
+#let mrow(upper, lower, W, pre: false, post: false) = {
+  let x0 = if pre { 2.6 } else { 1.6 }
+  let x1 = x0 + W + 2 * CHPAD
+  mtape((x0, -2.55), (x1, 2.55), upper, lower)
+  lab(-0.45, MIY, black)[`A`]; lab(-0.62, -MIY, black)[`Int`]
+  wire((0, MIY), (x0 - CHFAN, MIY))
+  if pre {
+    wire((0, -MIY), (0.4, -MIY)); gbox((0.4, -MIY), [`≤°`], w: LEQ)
+    wire((0.4 + LEQ, -MIY), (x0 - CHFAN, -MIY))
+  } else { wire((0, -MIY), (x0 - CHFAN, -MIY)) }
+  let xe = x1 + CHFAN
+  if post {
+    wire((xe, 0), (xe + 0.3, 0)); gbox((xe + 0.3, 0), [`≤°`], w: LEQ)
+    wire((xe + 0.3 + LEQ, 0), (xe + 0.6 + LEQ, 0)); lab(xe + 1.15 + LEQ, 0, black)[`Int`]
+  } else { wire((xe, 0), (xe + 0.4, 0)); lab(xe + 0.95, 0, black)[`Int`] }
+}
+#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
+
+#let step = step.with(pw: 196pt)
+#disp[#table(
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(𝟙×≤°)(⊸ zero∪plus)⊑(⊸ zero∪plus)≤°` \ #src[the `plus` branch of `F(≤°)S⊑S≤°`; the `zero`
+    branch is `zero⊑zero≤°`]],
+  table.header([*formula* — the head above, the running sum below; the tape is the `∪`], [*reason*]),
+
+  [#step([])[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true))][`(𝟙×≤°)(⊸ zero∪plus)`]],
+  [],
+
+  [#step(EQ)[#mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9))][`(𝟙×≤°)⊸ zero∪(𝟙×≤°) plus`]],
+  [relator, composition over `∪`],
+
+  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8))][`⊸ zero∪plus≤°`]],
+  [@dom-slide, `(≤°×≤°) plus⊑plus≤°` \ #src[`(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and
+   @mon-laws's first row carries it to `≤°` — `plus` is a map, so it is monotonic on an order and on
+   its opposite together.]],
+
+  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true))][`(⊸ zero∪plus)≤°`]],
+  [`≤°` reflexive],
+)]<mss-mono>
+
+// Every row is ONE WIRE, `𝟏+A×Int` to `Int` — `F(Int)` with `A:=Int` — so its two ends are drawn once.
+#let mss-src = { lab(-1.62, 0, black)[`𝟏+A×Int`]; wire((-0.45, 0), (0, 0)) }
+#let mss-tgt(x) = lab(x + 0.62, 0, black)[`Int`]
+// Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `max(≤)` is partial — no greatest of
+// the empty set — and is the one chamfered box here.  `h` is shared down a run: a fraction is two lines.
+#let mss-max = ([`max(≤)`], 1.8, true)
+#let mss-alg = $frac(#[`[zero,⊸ zero∪plus]`], ∋)$
+#let mss-zero = $frac(#[`zero`], ∋)$
+#let mss-plus = $frac(#[`⊸ zero∪plus`], ∋)$
+#let mss-run(items, h: 0.6) = { mss-src; boxrun(0, 0, items, h: h); mss-tgt(boxrun-w(items)) }
+// @coprod-laws' tape at this algebra: `[X,Y]` is ONE BRANCH PER SUMMAND, each opening with the
+// injection's converse — `𝟏` above, `A×Int` below.  The shorter branch is padded to the same join.
+#let mss-tape(up, dn, h: 0.6, y: 1.35) = {
+  let hh = y + h / 2 + 0.45
+  let xr = 2.18 + calc.max(boxrun-w(up), boxrun-w(dn)) + 1.2
+  mss-src; wire((0, 0), (0.34, 0))
+  tape((0.34, -hh), (xr, hh))
+  tape-fork((0.56, 0), sp: y, len: 0.7)
+  for (s, inj, run) in ((1, [`l`], up), (-1, [`r`], dn)) {
+    gbox((1.26, s * y), inj, flip: true, fill: TINT)
+    boxrun(2.18, s * y, run, h: h)
+    wire((2.18 + boxrun-w(run), s * y), (xr - 1.0, s * y))
+  }
+  tape-join((xr - 0.3, 0), sp: y, len: 0.7)
+  wire((xr, 0), (xr + 0.34, 0)); mss-tgt(xr + 0.34)
+}
+#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
+
+#let step = step.with(pw: 239pt)
+#disp[#table(
+  columns: (1fr, 4.6cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#mss-alg ` max(≤)=[zero,⊕]`],
+  table.header([*formula* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
+    [*reason*]),
+
+  [#step([])[#mss-pic(mss-run(((mss-alg, 5.4, false), mss-max), h: 1.25))][#mss-alg ` max(≤)`]], [],
+
+  [#step(EQ)[#mss-pic(mss-tape(((mss-zero, 1.35, false), mss-max), ((mss-plus, 3.4, false), mss-max), h: 1.25))][`[`#mss-zero` max(≤),` #mss-plus ` max(≤)]`]],
+  [coproduct of maps \ #src[@coprod-calc at `T:=[zero,⊸ zero∪plus]`, then `[U,V]Z=[UZ,VZ]` —
+   @coprod-laws, composition over `∪`]],
+
+  [#step(EQ)[#mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),)))][`[zero,⊕]`]],
+  [singleton, `≤°` reflexive \ #src[@min-laws's $frac(#[`𝟙`], ∋)$ `min(R)=𝟙∩R` at `R:=≤°`, `zero` a
+   map; the lower branch is `⊕`'s definition, @mss-defn, and no law]],
 )
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` max(≤)` — B&dM's own containment — and @mss-laws's
   second row makes it an equality.]])
 ]<mss-step>
 
-#disp[
-#zline(
-  zsqc([`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)`], none),
-  zstep(op: sym.eq, under: true)[coproduct of maps, `wrap` and `cons` natural],
-  zsqc([`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[`g`'s defining equation, `list(g) head=head g`],
-  zsqc([`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]`], none),
-  zstep(op: sym.eq, under: true)[fork, relator],
-  zsqc([`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`], none),
-)
-#align(center, block(inset: (y: 4pt))[#src[`g≜⦇[c,f]⦈` and
-  `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
-  `cons(cons(a,head(tails xs)),tails xs)`. @cata-fusion then reads off
-  `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, at `c,f:=zero,⊕` the heading's fold.]])
-]<mss-scan>
+// B&dM Ex 7.40's last stage: @cata-fusion's side condition for `tails list(g)`.
+// The algebra `[·,·]` is drawn on @coprod-laws' TAPE — one branch per summand of `𝟏+A×[[A]]`, each
+// opening with its injection's converse, since `[R,S]=(l°R)∪(r°S)`.
+// A PRODUCT IS TWO WIRES: the `A×[[A]]` branch runs the root above its list of tails, so `𝟙×head`
+// is a box on the LOWER strand alone and `π₂` is a discard on the upper one.  Forking that PAIR
+// copies both strands — four run on and the middle two cross, each sub-branch keeping one root and
+// one list — and the trailing `cons` is the box that eats the pair back down to one wire.
+#let MTU = 1.2                  // the `𝟏` branch of the tape ...
+#let MTL = -1.7                 // ... and the `A×[[A]]` branch
+#let MSIY = 0.5                 // half the gap between the pair's two strands
+#let MSTA = 1.35                // inside a sub-branch of the fork, the root strand ...
+#let MSTB = 0.5                 // ... and its list strand
+#let MLD = 0.34                 // circuit.typ's lead, which it does not export
+#let MINJ = 0.92                // the injection box `l°`/`r°`
+// `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
+// per row is a width that drifts.  No chamfer is a MAP — `head` is only a PARTIAL map (@mss-laws),
+// and `c`, `f`, `g` are the arbitrary algebra fusion is applied to, so those four keep the cut corner.
+#let m-nil = ([`nil`], 1.05, false)
+#let m-wrap = ([`wrap`], 1.35, false)
+#let m-cons = ([`cons`], 1.4, false)
+#let m-head = ([`head`], 1.3, true)
+#let m-g = ([`g`], 0.7, true)
+#let m-lg = ([`list(g)`], 1.65, true)
+#let m-c = ([`c`], 0.7, true)
+
+// One row's circuit.  `up` rides the `𝟏` branch; the rest describe the `A×[[A]]` one — `pre` on its
+// list strand before the fork, then the first component (`ua` on its list strand, the box `jl` that
+// joins its pair, `ut` after it) and the second (`db` before its `π₂` discard, `da` after) — and
+// `post` is whatever the row leaves OUTSIDE the tape.
+#let mss-row(up, pre, ua, jl, jw, jc, ut, db, da, post) = {
+  let (yc, sp) = ((MTU + MTL) / 2, (MTU - MTL) / 2)
+  let (yA1, yA2) = (MTL + MSTA, MTL + MSTB)
+  let (yB1, yB2) = (MTL - MSTB, MTL - MSTA)
+  let yAo = (yA1 + yA2) / 2
+  let x0 = 1.56
+  let (wup, wpre, wua, wut) = (boxrun-w(up), boxrun-w(pre), boxrun-w(ua), boxrun-w(ut))
+  let xc = x0 + MINJ + wpre
+  let x2 = xc + 0.9
+  let wB = boxrun-w(db + da)
+  let wsub = calc.max(wua + jw + wut, wB)
+  let xj = x2 + wsub
+  let W = MINJ + wpre + 0.9 + wsub + m-cons.at(1)
+
+  wire((-0.2, yc), (0.34, yc))
+  tape((0.34, MTL - 1.85), (x0 + W + 1.3, MTU + 0.55))
+  tape-fork((0.56, yc), sp: sp, len: 1.0)
+  tape-join((x0 + W + 1.0, yc), sp: sp, len: 1.0)
+
+  gbox((x0, MTU), [`l`], w: MINJ, flip: true, fill: TINT)
+  boxrun(x0 + MINJ, MTU, up); wire((x0 + MINJ + wup, MTU), (x0 + W, MTU))
+
+  gbox((x0, MTL), [`r`], w: MINJ, flip: true, fill: TINT, h: 2 * MSIY + 0.5)
+  wire((x0 + MINJ, MTL + MSIY), (xc, MTL + MSIY))
+  boxrun(x0 + MINJ, MTL - MSIY, pre)
+  wiredot((xc, MTL + MSIY)); bend((xc, MTL + MSIY), (x2, yA1)); bend((xc, MTL + MSIY), (x2, yB1))
+  wiredot((xc, MTL - MSIY)); bend((xc, MTL - MSIY), (x2, yA2)); bend((xc, MTL - MSIY), (x2, yB2))
+
+  wire((x2, yA1), (x2 + wua, yA1)); boxrun(x2, yA2, ua)
+  gbox((x2 + wua, yAo), jl, w: jw, h: yA1 - yA2 + 0.5, chamfer: jc)
+  boxrun(x2 + wua + jw, yAo, ut); wire((x2 + wua + jw + wut, yAo), (xj, yAo))
+
+  // `π₂` lands where the formula puts it: right at the strands if it comes first, after `list(g)`
+  // if the row has already slid that box in front of it.
+  let wdb = if db.len() == 0 { MLD } else { boxrun-w(db) - MLD }
+  wire((x2, yB1), (x2 + wdb, yB1)); wiredot((x2 + wdb, yB1))
+  boxrun(x2, yB2, db + da); wire((x2 + wB, yB2), (xj, yB2))
+
+  gbox((xj, MTL), m-cons.at(0), w: m-cons.at(1), h: 2 * MSTA + 0.5, chamfer: false)
+
+  boxrun(x0 + W + 1.3, yc, post)
+  lab(x0 + W + 1.3 + boxrun-w(post) + 0.55, yc, black)[`[B]`]
+}
+// Every row is drawn at ONE length and ONE scale: a scale typed per cell is a scale that drifts.
+#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 80%)
+
+#let step = step.with(pw: 260pt)
+#disp[#table(
+  columns: (1fr, 4.4cm),
+  align: (center + horizon, left + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)=F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`],
+  table.header([*formula* — the `𝟏` branch of `𝟏+A×[[A]]` above, the root and its list of tails below],
+    [*reason*]),
+
+  [#step([])[#mss-pic(mss-row((m-nil, m-wrap), (), (m-head,), [`cons`], 1.4, false, (), (), (),
+    (m-lg,)))][`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)`]],
+  [#src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
+   `cons(cons(a,head(tails xs)),tails xs)`]],
+
+  [#step(EQ)[#mss-pic(mss-row((m-nil, m-g, m-wrap), (), (m-head,), [`cons`], 1.4, false, (m-g,), (),
+    (m-lg,), ()))][`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]`]],
+  [coproduct of maps, `wrap` and `cons` natural],
+
+  [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (), (m-lg, m-head), [`f`], 0.8, true, (), (m-lg,), (),
+    ()))][`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]`]],
+  [`g`'s defining equation, `list(g) head=head g` \ #src[the `π₂` slide `π₂list(g)=(𝟙×list(g))π₂`
+   is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step of
+   @mss-scan the note has no law for — @mss-laws's third row]],
+
+  [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (m-lg,), (m-head,), [`f`], 0.8, true, (), (), (),
+    ()))][`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`]],
+  [fork, relator \ #src[the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
+   at `c,f:=zero,⊕`. @cata-fusion then reads off
+   `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]],
+)]<mss-scan>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -3181,17 +3589,12 @@ every step — where @takewhile-defn's loser is `nil`]
 // B&dM p. 177 in diagram order; the `exclude` half is their Ex 7.43.  `boxrun` and its width are
 // `circuit.typ`'s, beside `chain`: a run of boxes is not this proof's idea.
 // `(label, width, chamfer)`, set once: the same box is drawn in up to five rows, and a width typed
-// per row is a width that drifts.  No chamfer is a map — `list(π₂)` is one, `list(choose)` is not.
+// per row is a width that drifts.  No chamfer is a map — `concat` is one, `list(g)` is not (`choose`).
 #let box-r = ([`R`], 0.92, true)
 #let box-lrr = ([`list(R×R)`], 2.7, true)
-#let box-lr = ([`list(R)`], 2.2, true)
 #let box-cc = ([`concat`], 1.9, false)
-#let box-lp = ([`list(π₂)`], 2.4, false)
-#let box-lrrp = ([`list((R×R)π₂)`], 3.7, true)
-#let box-lpr = ([`list(π₂R)`], 2.7, true)
-#let box-lch = ([`list(choose)`], 3.3, true)
-#let box-lrrc = ([`list((R×R)choose)`], 4.7, true)
-#let box-lchr = ([`list(choose R)`], 3.8, true)
+#let box-lg = ([`list(g)`], 2.2, true)
+#let box-lgr = ([`list(gR)`], 2.4, true)
 
 // A PRODUCT IS TWO WIRES.  `F([A]×[A])=A×[[A]×[A]]` enters as two, `[A]×[A]` leaves as two, and
 // `𝟙×list(R×R)` is the root's wire running straight past a box that sits on the other one — `×` costs no
@@ -3229,8 +3632,8 @@ every step — where @takewhile-defn's loser is `nil`]
   let ex = x + iw + 2.65 + boxrun-w(post)
   lab(ex, (STA + STB) / 2, black)[`[A]`]; lab(ex, -(STA + STB) / 2, black)[`[A]`]
 }
-// `include`'s shape: the root straight through the upper wire, the subtrees' pairs down the lower
-// one, both entering the box that spans them — `cons` once `include` is unfolded.
+// A branch's shape: the root straight through the upper wire, the subtrees' pairs down the lower
+// one, both entering the box that spans them — `h` once `include`/`exclude` is unfolded.
 #let tallpic(items, head, hw, hc: false, post: ()) = {
   let (y, w) = (0.8, boxrun-w(items))
   pairin(y, items)
@@ -3238,33 +3641,11 @@ every step — where @takewhile-defn's loser is `nil`]
   boxrun(w + hw, 0, post)
   lab(w + hw + boxrun-w(post) + 0.45, 0, black)[`[A]`]
 }
-// `exclude`'s shape: the trailing `π₂` throws the root away, so the upper wire ends in a discard.
-#let droppic(items, post: ()) = {
-  let (y, w) = (0.8, boxrun-w(items))
-  pairin(y, items)
-  wiredot((w, y))
-  boxrun(w, -y, post)
-  lab(w + boxrun-w(post) + 0.45, -y, black)[`[A]`]
-}
-
 // Every row's picture is drawn at ONE length and ONE scale: 24 cells, and a scale typed per cell is
 // a scale that drifts — both times this one changed, it had to change in all 24.
 #let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 100%)
 
-// The step's relation at the LEFT EDGE of the formula AND of the picture, so both columns read as
-// chains and their symbols line up: `⊑`/`⊒` is where the proof loses information and takes `SLACK`,
-// `=` stays grey and quiet.  `⊒` is the refinement direction — specification first, program last.
-#let SQ = text(SLACK)[$subset.eq.sq$]
-#let RQ = text(SLACK)[$supset.eq.sq$]
-#let EQ = text(luma(140))[$=$]
-#let step(op, pic, f) = grid(columns: (0.72cm, auto, 1fr), align: (left + horizon, left + horizon, center + horizon), column-gutter: 8pt, op, f, pic)
-
-// THE THEOREM THE TABLE PROVES, in its top row: the reader needs the destination before the steps,
-// and a footer would only confirm what he has already worked out.  Grey ground and a heavier rule
-// under it — no new font size, the template owns those.
-#let Thm(body) = table.cell(colspan: 2, fill: luma(233), align: center + horizon,
-  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
-
+#let step = step.with(pw: 260pt)
 #disp[#table(
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
@@ -3282,7 +3663,7 @@ every step — where @takewhile-defn's loser is `nil`]
   [@fork-proj, @meet-semidistrib \ #src[`⊑`, not `=`: 7 of @bdm-prod-laws asks for a map and
    `𝟙×list(R×R)` is not one. B&dM write the step `=`.]],
   [#step(SQ)[#party-pic(sfork((), (), (box-r,)))][`⟨include R,exclude R⟩`]],
-  [@party-mono-include, @party-mono-exclude \ #src[@fork-proj: a fork is monotonic in both
+  [@party-mono-branch \ #src[@fork-proj: a fork is monotonic in both
    components]],
 
   [#step(EQ)[#party-pic(sfork((), (), (box-r,)))][`⟨include,exclude⟩(R×R)`]],
@@ -3291,79 +3672,79 @@ every step — where @takewhile-defn's loser is `nil`]
   [#step(EQ)[#party-pic(sbox((), (box-r,)))][`S(R×R)`]], [`S≜⟨include,exclude⟩`],
 )]<party-mono-proof>
 
-// The rows either side of a `(R×S)(U×V)=(RU)×(SV)` step are the SAME STROKES — `×` is `⊗`, and the
-// step is spent by the notation — so the picture repeats; the repeat IS the reason cell's content.
+// Only the three `⊑` steps are rows: the five `=` steps are `F(RS)=F(R)F(S)`, `(R×S)(U×V)=(RU)×(SV)`
+// and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
+// HINZE–MARSDEN (IntroString.pdf §1.4.2): a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.
+// `Δ` = the relator `X↦X×X` (the diagonal `X↦(X,X)`, then `×`): a FUNCTOR, not the copy relation `◁ : A⟶A⊗A`.
+#let HMX = (0.55, 1.70, 2.85, 4.00)                     // `A×−`, `list`, `Δ`, `[A]`
+#let HMY = (0.55, 1.23, 1.91, 2.59, 3.27, 3.95, 4.63)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
+#let HMW = 6.0
+#let HMH = 5.2
+// Wire colour is the TYPE, bead colour is WHICH ARROW: only `[A]` carries a type, and `R` is the
+// arrow the theorem is handed, so it alone leaves the structure maps' black.
+#let party-hm(rs) = P(cetz.canvas(length: 0.8cm, {
+  let (XM, XL, XD, XA) = HMX
+  let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
+  d.rect((0, 0), (XA, HMH), fill: fb-ALLC, stroke: none)
+  d.rect((XA, 0), (HMW, HMH), fill: luma(226), stroke: none)
+  hm-wire(((XA, HMH), (XA, 0)), col: BCOL)
+  // The knee grows with the run, so the three joins meet the straight `[A]` at one angle.
+  hm-join(XD, HMH, XA, YP, knee: 0.5)
+  hm-join(XL, HMH, XA, YC, knee: 0.9)
+  hm-join(XM, HMH, XA, YN, knee: 1.2)
+  hm-bead((XA, YP), [`g`]); hm-bead((XA, YC), [`concat`]); hm-bead((XA, YN), [`h`])
+  hm-bead((XA, (Y0, Y1, Y2, Y3).at(rs)), [`R`], col: GIVEN1)
+  hm-port((XM, HMH), [`A×−`]); hm-port((XL, HMH), [`list`]); hm-port((XD, HMH), [`Δ`])
+  hm-port((XA, HMH), [`[A]`], col: BCOL); hm-port((XA, 0), [`[A]`], dir: -1, col: BCOL)
+  if rs == 0 { hm-name((2.0, 0.55), [`Rel`]); hm-name((5.0, 0.55), [`𝟏`]) }
+}), s: 100%)
+
+#let step = step.with(pw: 319pt)
 #disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
+  columns: (1fr, 5.8cm),
+  align: (center + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×list(R×R))include⊑include R`],
-  table.header([*formula* — the root above, the subtrees' pairs below], [*reason*]),
+  Thm[`(𝟙×list(R×R))include⊑include R` #h(1.4cm) `(𝟙×list(R×R))exclude⊑exclude R` \
+   `include,exclude = (𝟙×(list(g) concat))h`],
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#step([])[#party-pic(tallpic((box-lrr,), [`include`], 2.2))][`(𝟙×list(R×R))include`]], [],
+  [#step([])[#party-pic(tallpic((box-lrr, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
 
-  [#step(EQ)[#party-pic(tallpic((box-lrr, box-lp, box-cc), [`cons`], 1.4))][`(𝟙×(list(R×R) list(π₂) concat)) cons`]],
-  [`include≜(𝟙×(list(π₂) concat)) cons`, then 2 of @bdm-prod-laws \ #src[`(R×S)(U×V)=(RU)×(SV)`,
-   Ex 5.6]],
+  [#step(SQ)[#party-pic(tallpic((box-lgr, box-cc), [`h`], 0.95))][]], [#party-hm(1)],
 
-  [#step(EQ)[#party-pic(tallpic((box-lrrp, box-cc), [`cons`], 1.4))][`(𝟙×(list((R×R)π₂) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
+  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc, box-r), [`h`], 0.95))][]], [#party-hm(2)],
 
-  [#step(SQ)[#party-pic(tallpic((box-lpr, box-cc), [`cons`], 1.4))][`(𝟙×(list(π₂R) concat)) cons`]],
-  [`(R×R)π₂=(Dom(π₁R))π₂R` `⊑π₂R` \ #src[1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `list` monotonic,
-   @relator-defn]],
+  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc), [`h`], 0.95, post: (box-r,)))][]], [#party-hm(3)],
+)
 
-  [#step(EQ)[#party-pic(tallpic((box-lp, box-lr, box-cc), [`cons`], 1.4))][`(𝟙×(list(π₂) list(R) concat)) cons`]], [@relator-defn, `F(RS)=F(R)F(S)`],
+#v(4pt)
 
-  [#step(SQ)[#party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4))][`(𝟙×(list(π₂) concat R)) cons`]],
-  [`list(R)concat⊑concat R` \ #src[a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat xss)=sum(list(cost)xss)` and a costlier part makes a costlier whole. B&dM's exercise.]],
-  [#step(EQ)[#party-pic(tallpic((box-lp, box-cc, box-r), [`cons`], 1.4))][`(𝟙×(list(π₂) concat))(𝟙×R) cons`]], [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
+// The key list, read DOWNWARD like the pictures: one line per bead `R` walks past.
+#align(center, block(width: 17cm)[#src[#grid(
+  columns: (1.7cm, auto),
+  row-gutter: 3.5pt, align: (left, left),
+  [`g`],
+  [`(R×R)g⊑gR` \ `g:=π₂` is `(R×R)π₂=(Dom(π₁R))π₂R` `⊑π₂R` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`;
+   `g:=choose` is §@sec-party-choose. `list` monotonic, @relator-defn],
+  [`concat`],
+  [`list(R)concat⊑concat R` \ a LEAF: no law above it. `cost` is a sum, so
+   `cost(concat xss)=sum(list(cost)xss)` and a costlier part makes a costlier whole. B&dM's exercise.],
+  [`h`],
+  [`(𝟙×R)h⊑hR` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a costlier tail
+   makes a costlier list. B&dM's exercise.  For `h:=π₂` it is an EQUALITY `(𝟙×R)π₂=(Dom(π₁))π₂R`
+   `=π₂R`: `π₁` is a map, hence entire, so `Dom(π₁)=𝟙` — @dom-laws],
+)]])
 
-  [#step(SQ)[#party-pic(tallpic((box-lp, box-cc), [`cons`], 1.4, post: (box-r,)))][`(𝟙×(list(π₂) concat)) cons R`]],
-  [`(𝟙×R)cons⊑cons R` \ #src[a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a costlier tail
-   makes a costlier list. B&dM's exercise.]],
+#v(3pt)
 
-  [#step(EQ)[#party-pic(tallpic((), [`include`], 2.2, post: (box-r,)))][`include R`]],
-  [`include≜(𝟙×(list(π₂) concat)) cons`],
-)]<party-mono-include>
-
-// The same eight steps with `choose` where `include` has `π₂`, and one difference: the step that was
-// `Dom⊑𝟙` there is §@sec-party-choose here, and the closing `π₂` is an EQUALITY — `π₁` is entire.
-#disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×list(R×R))exclude⊑exclude R`],
-  table.header([*formula* — the root above, the subtrees' pairs below], [*reason*]),
-
-  [#step([])[#party-pic(tallpic((box-lrr,), [`exclude`], 2.2, hc: true))][`(𝟙×list(R×R))exclude`]], [],
-
-  [#step(EQ)[#party-pic(droppic((box-lrr, box-lch, box-cc)))][`(𝟙×(list(R×R) list(choose) concat))π₂`]],
-  [`exclude≜(𝟙×(list(choose) concat))π₂`, then 2 of @bdm-prod-laws \ #src[`(R×S)(U×V)=(RU)×(SV)`,
-   Ex 5.6]],
-
-  [#step(EQ)[#party-pic(droppic((box-lrrc, box-cc)))][`(𝟙×(list((R×R)choose) concat))π₂`]],
-  [@relator-defn, `F(RS)=F(R)F(S)`],
-
-  [#step(SQ)[#party-pic(droppic((box-lchr, box-cc)))][`(𝟙×(list(choose R) concat))π₂`]],
-  [§@sec-party-choose, `(R×R)choose⊑choose R` \ #src[`list` monotonic, @relator-defn]],
-
-  [#step(EQ)[#party-pic(droppic((box-lch, box-lr, box-cc)))][`(𝟙×(list(choose) list(R) concat))π₂`]],
-  [@relator-defn, `F(RS)=F(R)F(S)`],
-
-  [#step(SQ)[#party-pic(droppic((box-lch, box-cc, box-r)))][`(𝟙×(list(choose) concat R))π₂`]],
-  [`list(R)concat⊑concat R` \ #src[the same LEAF as @party-mono-include's sixth row]],
-
-  [#step(EQ)[#party-pic(droppic((box-lch, box-cc, box-r)))][`(𝟙×(list(choose) concat))(𝟙×R)π₂`]],
-  [2 of @bdm-prod-laws, `(R×S)(U×V)=(RU)×(SV)`],
-
-  [#step(EQ)[#party-pic(droppic((box-lch, box-cc), post: (box-r,)))][`(𝟙×(list(choose) concat))π₂R`]],
-  [`(𝟙×R)π₂=(Dom(π₁))π₂R` `=π₂R` \ #src[1 and 4 of @bdm-prod-laws; `π₁` is a map, hence entire, so
-   `Dom(π₁)=𝟙` — @dom-laws]],
-
-  [#step(EQ)[#party-pic(tallpic((), [`exclude`], 2.2, hc: true, post: (box-r,)))][`exclude R`]],
-  [`exclude≜(𝟙×(list(choose) concat))π₂`],
-)]<party-mono-exclude>
+#align(center, table(
+  columns: 3, align: center + horizon,
+  inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
+  table.header([], [`g`], [`h`]),
+  [`include`], [`π₂`], [`cons`],
+  [`exclude`], [`choose`], [`π₂`],
+))
+]<party-mono-branch>
 
 === `(R×R)choose⊑choose R` — `choose` monotonic on `R` <sec-party-choose>
 
@@ -3463,6 +3844,7 @@ every step — where @takewhile-defn's loser is `nil`]
 // The table's FIRST row has no reason: it is the starting formula.  It has no picture either — the
 // next row unfolds `choose` into `π₁∪π₂` without touching the circuit, so the two would be the same
 // drawing.  Rows 2 and 7–8 are the display's two panels, drawn from the same bodies.
+#let step = step.with(pw: 140pt)
 #disp[#table(
   columns: (1fr, 5.2cm),
   align: (center + horizon, left + horizon),
@@ -3501,7 +3883,6 @@ every step — where @takewhile-defn's loser is `nil`]
 #let LBA = 1.5               // inside the fold, a branch's root strand ...
 #let LBB = 0.55              // ... and its subtree-list strand
 #let LBY = (LBA + LBB) / 2   // ... and the single strand the branch leaves on
-#let frc(n) = $frac(#n, ∋)$
 
 #let lb-max = ([`max(R)`], 1.9, true)
 #let lb-cc = ([`concat`], 1.9, false)
@@ -3581,6 +3962,7 @@ every step — where @takewhile-defn's loser is `nil`]
 
 #let laws-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
 
+#let step = step.with(pw: 366pt)
 #disp[#table(
   columns: (1fr, 4.2cm),
   align: (center + horizon, left + horizon),

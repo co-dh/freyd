@@ -30,7 +30,7 @@ public import Freyd.S2_30
 public import AOP.A4_2
 public import AOP.A5_1
 
-universe u
+universe v₂ u₂ u
 
 namespace Freyd.Alg
 
@@ -79,14 +79,30 @@ public theorem RelProd.outr_recip_outl (P : RelProd a b) : P.outr° ≫ P.outl =
   have h := congrArg Allegory.recip P.eq_topMor
   rwa [Allegory.recip_comp, Allegory.recip_recip, recip_topMor] at h
 
-/-- The canonical relational product, obtained by tabulating `⊤ : a → b` (mirrors
-    `S2_3.topTab`'s choice pattern). -/
-@[expose] public noncomputable def relProd (a b : 𝒜) : RelProd a b :=
-  let t := TabularAllegory.tabular (topMor a b)
-  { p := t.choose
-    outl := t.choose_spec.choose
-    outr := t.choose_spec.choose_spec.choose
-    tab := t.choose_spec.choose_spec.choose_spec }
+/-- A CHOSEN relational product for every pair of objects — the `×` counterpart of
+    `PositiveAllegory`'s `coprod`/`has_coproduct` fields.  A class rather than a definition
+    because a tabulation of `⊤` fixes the apex only up to isomorphism: with the apex taken from
+    `Exists.choose` nothing reduces, so a concrete allegory could never see its own product
+    object (`Rel(Set)` names `a.carrier × b.carrier`). -/
+public class HasRelProd (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] where
+  /-- The chosen relational product of `x` and `y`. -/
+  relProd (x y : 𝒜) : RelProd x y
+
+export HasRelProd (relProd)
+
+/-- The fallback choice, by tabulating `⊤ : a → b` (mirrors `S2_3.topTab`'s choice pattern).
+    LOW priority, so an allegory that names its own product apex wins. -/
+@[expose] public noncomputable instance (priority := low) : HasRelProd 𝒜 where
+  relProd a b :=
+    let t := TabularAllegory.tabular (topMor a b)
+    { p := t.choose
+      outl := t.choose_spec.choose
+      outr := t.choose_spec.choose_spec.choose
+      tab := t.choose_spec.choose_spec.choose_spec }
+
+-- Everything below takes the choice as a PARAMETER: without this the fallback instance above
+-- would be baked into `Relator.prod`, and `Rel(Set)`'s own apex could never be seen.
+variable [HasRelProd 𝒜]
 
 /-! ## Two generic `topMor`-cancellation facts, used repeatedly below -/
 
@@ -144,7 +160,7 @@ theorem RelProd.pair_mono {P : RelProd a b} {R R' : c ⟶ a} {S S' : c ⟶ b}
   le_inter (le_trans (inter_lb_left _ _) (comp_mono_right hR _))
     (le_trans (inter_lb_right _ _) (comp_mono_right hS _))
 
-theorem prodMap_mono {P : RelProd a b} {Q : RelProd a' b'} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
+public theorem prodMap_mono {P : RelProd a b} {Q : RelProd a' b'} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
     (hR : R ⊑ R') (hS : S ⊑ S') : prodMap P Q R S ⊑ prodMap P Q R' S' :=
   Q.pair_mono (comp_mono_left P.outl hR) (comp_mono_left P.outr hS)
 
@@ -207,7 +223,7 @@ theorem RelProd.map_comp_pair {P : RelProd a b} {d : 𝒜} {f : d ⟶ c} (hf : M
 /-! ## Ex 5.6:  functoriality shape of `prodMap` — identity and converse -/
 
 /-- `prodMap` of the two identities is the identity, via the joint-monic identity. -/
-theorem prodMap_id (P : RelProd a b) :
+public theorem prodMap_id (P : RelProd a b) :
     prodMap P P (Cat.id a) (Cat.id b) = Cat.id P.p := by
   show P.pair (P.outl ≫ Cat.id a) (P.outr ≫ Cat.id b) = Cat.id P.p
   rw [Cat.comp_id, Cat.comp_id]
@@ -387,7 +403,7 @@ public theorem RelProd.pair_prodMap {P : RelProd a b} {Q : RelProd a' b'}
 
 /-- `×` preserves composition (B&dM p.114: the product relator "also preserves
     composition"): `(R×S) ≫ (R'×S') = (R≫R')×(S≫S')`.  From absorption. -/
-theorem prodMap_comp {a'' b'' : 𝒜} (P : RelProd a b) (M : RelProd a' b') (Q : RelProd a'' b'')
+public theorem prodMap_comp {a'' b'' : 𝒜} (P : RelProd a b) (M : RelProd a' b') (Q : RelProd a'' b'')
     (R : a ⟶ a') (S : b ⟶ b') (R' : a' ⟶ a'') (S' : b' ⟶ b'') :
     prodMap P M R S ≫ prodMap M Q R' S' = prodMap P Q (R ≫ R') (S ≫ S') := by
   show M.pair (P.outl ≫ R) (P.outr ≫ S) ≫ prodMap M Q R' S' = _
@@ -418,5 +434,35 @@ public theorem RelProd.pair_recip_pair {P : RelProd a b} {d : 𝒜}
   show ((X ≫ R°) ≫ D.outl° ∩ (Y ≫ S°) ≫ D.outr°) ≫ (D.pair (Cat.id d) (Cat.id d))° =
     (X ≫ R°) ∩ (Y ≫ S°)
   rw [simple_dist_inter_recip hdel.2, hleg1, hleg2]
+
+/-! ## Relators are closed under product; B&dM p.133's `outr` example of lax naturality -/
+
+section ProdRelator
+
+/-- Relators are closed under product: `X ↦ F X × G X`, `R ↦ F R × G R`, on `relProd`'s
+    canonical choice.  The functor laws are `prodMap`'s composed with `F`'s and `G`'s. -/
+@[expose] public def Relator.prod {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    (F G : Relator 𝒮 𝒜) : Relator 𝒮 𝒜 where
+  obj x := (relProd (F.obj x) (G.obj x)).p
+  map R := prodMap (relProd _ _) (relProd _ _) (F.map R) (G.map R)
+  map_id x := by
+    simp only [F.map_id, G.map_id]; exact prodMap_id (relProd (F.obj x) (G.obj x))
+  map_comp R S := by
+    simp only [F.map_comp, G.map_comp]; exact (prodMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := prodMap_mono (F.map_mono h) (G.map_mono h)
+
+/-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
+    relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
+@[expose] public def Δ (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
+    Relator 𝒜 𝒜 :=
+  Relator.prod (Relator.idRelator 𝒜) (Relator.idRelator 𝒜)
+
+/-- **B&dM p.133**: the right projection `outr` is lax natural from the duplication relator to the
+    identity relator — `(R×R) ≫ outr ⊑ outr ≫ R`, the `S := R` case of `prodMap_outr_le`. -/
+public theorem outr_lax_natural :
+    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun a => (relProd a a).outr) :=
+  fun R => prodMap_outr_le _ _ R R
+
+end ProdRelator
 
 end Freyd.Alg

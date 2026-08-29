@@ -19,6 +19,7 @@ module
 
 public import AOP.A6_2
 public import AOP.A5_5
+public import AOP.A5_2
 
 -- The pointwise instance proofs name the relation/element they quantify (documenting each law)
 -- even where the term-mode witness does not reference the binder; silence that lint file-wide.
@@ -73,6 +74,9 @@ public theorem hom_ext {a b : RelSet.{u}} {R S : a ⟶ b} (h : ∀ x y, R x y �
     ⟨fun ⟨⟨y, hR, hS⟩, hT⟩ => ⟨⟨⟨y, hR, hS⟩, hT⟩, ⟨y, ⟨hR, ⟨z, hT, hS⟩⟩, hS⟩⟩,
      fun ⟨⟨hRS, hT⟩, _⟩ => ⟨hRS, hT⟩⟩
 
+@[simp] public theorem inter_apply {a b : RelSet.{u}} (R S : a ⟶ b) (x : a.carrier)
+    (y : b.carrier) : (R ∩ S) x y = (R x y ∧ S x y) := rfl
+
 /-- The allegory order is exactly relational inclusion. -/
 public theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y → S x y := by
   constructor
@@ -95,7 +99,7 @@ public theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, 
 theorem graph_apply {a b : RelSet.{u}} (f : a.carrier → b.carrier) (x : a.carrier)
     (y : b.carrier) : graph f x y = (y = f x) := rfl
 
-theorem recip_apply {a b : RelSet.{u}} (R : a ⟶ b) (y : b.carrier) (x : a.carrier) :
+@[simp] public theorem recip_apply {a b : RelSet.{u}} (R : a ⟶ b) (y : b.carrier) (x : a.carrier) :
     R° y x = R x y := rfl
 
 public theorem graph_simple {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Simple (graph f) := by
@@ -151,6 +155,9 @@ theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
       ⟨fun ⟨hR, hST⟩ => hST.elim (fun hS => Or.inl ⟨hR, hS⟩) (fun hT => Or.inr ⟨hR, hT⟩),
        fun h => h.elim (fun ⟨hR, hS⟩ => ⟨hR, Or.inl hS⟩) (fun ⟨hR, hT⟩ => ⟨hR, Or.inr hT⟩)⟩
     zero_union := fun R => hom_ext fun x y => ⟨fun h => h.elim (fun hf => hf.elim) id, fun hR => Or.inr hR⟩ }
+
+@[simp] public theorem union_apply {a b : RelSet.{u}} (R S : a ⟶ b) (x : a.carrier)
+    (y : b.carrier) : (R ∪ S) x y = (R x y ∨ S x y) := rfl
 
 /-! ### Division: `R / S` = the right residual `∀ z, S y z → R x z` -/
 
@@ -315,6 +322,32 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
       cases s with
       | inl x => exact Or.inl ⟨x, rfl, rfl⟩
       | inr y => exact Or.inr ⟨y, rfl, rfl⟩⟩
+
+/-- Rel(Set) is POSITIVE (§2.215): `PEmpty` is the coterminator and `⊕` the chosen coproduct.
+    Extends the `DistributiveAllegory` instance above so there is one `Allegory RelSet` underneath. -/
+@[expose] public instance : PositiveAllegory RelSet.{u} :=
+  { (inferInstance : DistributiveAllegory RelSet) with
+    coterm := ⟨PEmpty.{u + 1}⟩
+    coprod := fun a b => ⟨a.carrier ⊕ b.carrier⟩
+    has_coproduct := sumCop }
+
+/-- Rel(Set)'s own relational product: the cartesian product `a.carrier × b.carrier` with the two
+    projection graphs, which tabulate `⊤ : a ⟶ b`.  Named concretely for the same reason as
+    `coprod` above — the generic choice of A5_2 tabulates `⊤` through `Exists.choose`, whose apex
+    never reduces, so `Relator.prod` could not be recognised as the product of two datatypes. -/
+@[expose] public instance : HasRelProd RelSet.{u} where
+  relProd a b :=
+    { p := ⟨a.carrier × b.carrier⟩
+      outl := graph (fun p : a.carrier × b.carrier => p.1)
+      outr := graph (fun p : a.carrier × b.carrier => p.2)
+      tab := ⟨graph_map _, graph_map _,
+        le_antisymm (le_iff.mpr fun x y _ => ⟨(x, y), rfl, rfl⟩) (topMor_max _),
+        hom_ext fun p q =>
+          ⟨fun ⟨⟨x, hx1, hx2⟩, ⟨y, hy1, hy2⟩⟩ =>
+            Prod.ext_iff.mpr ⟨hx1.symm.trans hx2, hy1.symm.trans hy2⟩,
+           fun h => by
+            have h' : p = q := h
+            subst h'; exact ⟨⟨p.1, rfl, rfl⟩, ⟨p.2, rfl, rfl⟩⟩⟩⟩ }
 
 end RelSet
 end Freyd.Alg
