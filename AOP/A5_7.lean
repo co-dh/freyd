@@ -11,6 +11,8 @@
 module
 
 public import AOP.A5_1
+public import AOP.A5_2
+public import AOP.A5_3
 public import AOP.A5_4
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
@@ -193,5 +195,156 @@ public theorem laxNatural_union {F G : Relator 𝒜 ℬ} {φ ψ : ∀ a : 𝒜, 
     _ = (φ a ∪ ψ a) ≫ F.map R := (union_comp_distrib _ _ _).symm
 
 end LaxNaturalUnion
+
+/-! ## The closure rules packaged: monotone relations form a category
+
+  `monotonic_comp` and the two unit laws of `𝟙` are exactly what a category needs, so the
+  objects of `𝒜` carrying a chosen endorelation, and the relations that slide past it, form
+  one.  Its hom-sets inherit `⊑` and (over a distributive allegory) `∪`. -/
+
+section OrdCat
+
+/-- An object of `𝒜` with a chosen endorelation on it — an "order", though nothing below needs
+    reflexivity or transitivity. -/
+public structure OrdObj (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] where
+  carrier : 𝒜
+  ord : carrier ⟶ carrier
+
+variable {𝒜 : Type u₁} [Allegory.{v₁} 𝒜]
+
+/-- A MONOTONE relation `a ⟶ b`: one that the source order slides right past. -/
+@[expose] public def MonoHom (a b : OrdObj 𝒜) :=
+  { X : a.carrier ⟶ b.carrier // a.ord ≫ X ⊑ X ≫ b.ord }
+
+-- NOT an allegory: `∩` would need `(X ≫ Tb) ∩ (Y ≫ Tb) ⊑ (X ∩ Y) ≫ Tb`, the wrong direction of
+-- semi-distributivity (`monotonic_union`), and `°` slides the order the wrong way (`recip_slides`).
+/-- Monotone relations form a CATEGORY: `𝟙` is monotone because `a.ord ≫ 𝟙 = a.ord = 𝟙 ≫ a.ord`,
+    and composition is `monotonic_comp`. -/
+@[expose] public instance ordObjCat : Cat.{v₁} (OrdObj 𝒜) where
+  Hom a b := MonoHom a b
+  id a := ⟨𝟙 a.carrier, by rw [Cat.comp_id, Cat.id_comp]; exact le_refl _⟩
+  comp X Y := ⟨X.1 ≫ Y.1, monotonic_comp X.2 Y.2⟩
+  id_comp X := Subtype.ext (Cat.id_comp X.1)
+  comp_id X := Subtype.ext (Cat.comp_id X.1)
+  assoc X Y Z := Subtype.ext (Cat.assoc X.1 Y.1 Z.1)
+
+/-- The hom-sets are POSETS, ordered pointwise by `⊑` on the underlying relations. -/
+@[expose] public def MonoHom.le {a b : OrdObj 𝒜} (X Y : MonoHom a b) : Prop := X.1 ⊑ Y.1
+
+/-- Reflexivity is the underlying `le_refl`; `MonoHom.le` adds no condition to it. -/
+public theorem MonoHom.le_refl {a b : OrdObj 𝒜} (X : MonoHom a b) : X.le X := Freyd.Alg.le_refl X.1
+
+/-- `calc` support, and transitivity: the underlying `le_trans`. -/
+public instance {a b : OrdObj 𝒜} :
+    Trans (α := MonoHom a b) MonoHom.le MonoHom.le MonoHom.le where
+  trans := Freyd.Alg.le_trans
+
+/-- Antisymmetry, from `le_antisymm` on the underlying relations: two monotone relations ordered
+    both ways have equal `.val`, and a `MonoHom` is its `.val` (`Subtype.ext`).  With `le_refl`
+    and `le_trans` this makes each hom-set a POSET, not merely a preorder. -/
+public theorem MonoHom.le_antisymm {a b : OrdObj 𝒜} {X Y : MonoHom a b} (hXY : X.le Y)
+    (hYX : Y.le X) : X = Y := Subtype.ext (Freyd.Alg.le_antisymm hXY hYX)
+
+/-- Composition is a POSET MAP in both arguments — `comp_mono_right` then `comp_mono_left` on the
+    `.val`s.  This and the previous theorem are what "`OrdObj 𝒜` is enriched over posets" asserts:
+    hom-sets are posets AND `≫` is monotone. -/
+public theorem MonoHom.comp_mono {a b c : OrdObj 𝒜} {X X' : a ⟶ b} {Y Y' : b ⟶ c}
+    (hX : MonoHom.le X X') (hY : MonoHom.le Y Y') : MonoHom.le (X ≫ Y) (X' ≫ Y') := by
+  show X.1 ≫ Y.1 ⊑ X'.1 ≫ Y'.1
+  exact Freyd.Alg.le_trans (comp_mono_right hX Y.1) (comp_mono_left X'.1 hY)
+
+/-- Reciprocating `Ta ≫ X ⊑ X ≫ Tb` gives exactly this, and `°` being an order-isomorphism and
+    an involution, this is ALL the hypothesis says about `X°`.  Monotonicity of `X°` for any
+    orders `S`, `S'` would read `S ≫ X° ⊑ X° ≫ S'` — the composites sit on the opposite sides of
+    `⊑`, and flipping the orders to `Tb°`, `Ta°` does not move them.  So `°` leaves `MonoHom`. -/
+public theorem recip_slides {a b : 𝒜} {Ta : a ⟶ a} {Tb : b ⟶ b} {X : a ⟶ b}
+    (h : Ta ≫ X ⊑ X ≫ Tb) : X° ≫ Ta° ⊑ Tb° ≫ X° := by
+  have hr := recip_mono h
+  rwa [Allegory.recip_comp, Allegory.recip_comp] at hr
+
+end OrdCat
+
+section PairSlides
+
+variable {𝒜 : Type u₁} [TabularUnitaryDivisionAllegory 𝒜]
+
+/-- The FORK rule — and the exact contrast with `inter_not_monotonic`.  `⟨X,Y⟩` slides past
+    `Ta×Tb` whenever `X` slides past `Ta` and `Y` past `Tb`: the two witnesses land in DIFFERENT
+    components, so nothing forces them to agree, which is what the meet of two arrows `a ⟶ b`
+    does force.  So `(a,Ta) × (b,Tb) := (P.p, Ta×Tb)` is a TENSOR on `OrdObj 𝒜` — not a
+    CATEGORICAL product, since (5.6) makes `⟨X,Y⟩ ≫ outl = dom Y ≫ X`, which is `X` only when
+    `Y` is entire. -/
+public theorem pair_slides {a b c : 𝒜} (P : RelProd a b) {Tc : c ⟶ c} {Ta : a ⟶ a} {Tb : b ⟶ b}
+    {X : c ⟶ a} {Y : c ⟶ b} (hX : Tc ≫ X ⊑ X ≫ Ta) (hY : Tc ≫ Y ⊑ Y ≫ Tb) :
+    Tc ≫ P.pair X Y ⊑ P.pair X Y ≫ prodMap P P Ta Tb := by
+  rw [RelProd.pair_prodMap]
+  refine RelProd.le_pair_iff.mpr ⟨?_, ?_⟩
+  · rw [Cat.assoc, RelProd.pair_outl]
+    exact le_trans (comp_mono_left Tc (comp_mono_right (dom_coreflexive Y) X))
+      (by rw [Cat.id_comp]; exact hX)
+  · rw [Cat.assoc, RelProd.pair_outr]
+    exact le_trans (comp_mono_left Tc (comp_mono_right (dom_coreflexive X) Y))
+      (by rw [Cat.id_comp]; exact hY)
+
+/-- The lax COPY law `R◁ ⊑ ◁(R×R)` is `pair_slides` at `X = Y = 𝟙` — copy IS `⟨𝟙,𝟙⟩` — so it gets
+    no theorem of its own.  Its two hypotheses are `T ≫ 𝟙 ⊑ 𝟙 ≫ T`, i.e. `le_refl`. -/
+example {a : 𝒜} (P : RelProd a a) {T : a ⟶ a} :
+    T ≫ P.pair (𝟙 a) (𝟙 a) ⊑ P.pair (𝟙 a) (𝟙 a) ≫ prodMap P P T T :=
+  pair_slides P (by rw [Cat.comp_id, Cat.id_comp]; exact le_refl T)
+    (by rw [Cat.comp_id, Cat.id_comp]; exact le_refl T)
+
+-- With `pair_slides` this makes `×` a BIFUNCTOR on `OrdObj 𝒜` — its TENSOR, not a categorical
+-- product, for the (5.6) reason `pair_slides` gives.
+/-- `X×Y` slides past `Ta×Tb` whenever `X` slides past `Ta` and `Y` past `Tb`: `prodMap_comp`
+    flattens both composites — an EQUALITY, so nothing is dropped — and `prodMap_mono` then
+    compares them componentwise. -/
+public theorem prodMap_slides {a b a' b' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
+    {Ta : a ⟶ a} {Tb : b ⟶ b} {Tc : a' ⟶ a'} {Td : b' ⟶ b'} {X : a ⟶ a'} {Y : b ⟶ b'}
+    (hX : Ta ≫ X ⊑ X ≫ Tc) (hY : Tb ≫ Y ⊑ Y ≫ Td) :
+    prodMap P P Ta Tb ≫ prodMap P Q X Y ⊑ prodMap P Q X Y ≫ prodMap Q Q Tc Td := by
+  rw [prodMap_comp, prodMap_comp]
+  exact prodMap_mono hX hY
+
+end PairSlides
+
+section JuncSlides
+
+-- Only `DistributiveAllegory`: unlike the fork, the co-fork needs no tabulation and no `dom`.
+variable {𝒜 : Type u₁} [DistributiveAllegory 𝒜]
+
+/-- The CO-FORK rule, the coproduct's `pair_slides`: `[X,Y]` slides past `Tc` whenever `X` and
+    `Y` do.  Where the fork pays for `⟨X,Y⟩ ≫ outl = dom Y ≫ X` — the lax copy law, `dom Y`
+    dropped by `dom_coreflexive` — the co-fork's cancellation `sumMap_junc` is an EQUALITY, so
+    this proof spends nothing beyond the two hypotheses. -/
+public theorem junc_slides {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {Ta : a₁ ⟶ a₁} {Tb : a₂ ⟶ a₂}
+    {Tc : c ⟶ c} {X : a₁ ⟶ c} {Y : a₂ ⟶ c} (hX : Ta ≫ X ⊑ X ≫ Tc) (hY : Tb ≫ Y ⊑ Y ≫ Tc) :
+    sumMap C C Ta Tb ≫ junc C X Y ⊑ junc C X Y ≫ Tc := by
+  rw [sumMap_junc, junc_comp]
+  exact junc_mono C hX hY
+
+/-- The first injection is monotone, and STRICTLY so: `u₁ ≫ (Ta+Tb) = Ta ≫ u₁` on the nose,
+    since `(Ta+Tb)` is by definition the junc whose first branch is `Ta ≫ u₁`. -/
+public theorem u₁_slides {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) (Ta : a₁ ⟶ a₁) (Tb : a₂ ⟶ a₂) :
+    Ta ≫ C.u₁ = C.u₁ ≫ sumMap C C Ta Tb :=
+  (u₁_junc C (Ta ≫ C.u₁) (Tb ≫ C.u₂)).symm
+
+/-- The second injection, likewise an equality. -/
+public theorem u₂_slides {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) (Ta : a₁ ⟶ a₁) (Tb : a₂ ⟶ a₂) :
+    Tb ≫ C.u₂ = C.u₂ ≫ sumMap C C Ta Tb :=
+  (u₂_junc C (Ta ≫ C.u₁) (Tb ≫ C.u₂)).symm
+
+end JuncSlides
+
+section MonoHomUnion
+
+-- Same distributive layer `monotonic_union` needs; the meet is absent, not merely unproved.
+variable {𝒜 : Type u₁} [DistributiveAllegory 𝒜]
+
+/-- Binary UNION of monotone relations, well defined by `monotonic_union`: the hom-sets are
+    join-semilattices under `MonoHom.le`. -/
+@[expose] public def MonoHom.union {a b : OrdObj 𝒜} (X Y : MonoHom a b) : MonoHom a b :=
+  ⟨X.1 ∪ Y.1, monotonic_union X.2 Y.2⟩
+
+end MonoHomUnion
 
 end Freyd.Alg

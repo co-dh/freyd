@@ -349,5 +349,17 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
             have h' : p = q := h
             subst h'; exact ⟨⟨p.1, rfl, rfl⟩, ⟨p.2, rfl, rfl⟩⟩⟩⟩ }
 
+/-- On the product just chosen, the abstract `R×S` of (5.2) IS the pointwise `rprodMap` — the
+    projections being graphs, both legs of `pair` collapse to a component lookup. -/
+public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+    prodMap (relProd a b) (relProd a' b') R S = rprodMap R S := by
+  apply hom_ext
+  intro p q
+  constructor
+  · rintro ⟨⟨_, ⟨_, rfl, hR⟩, rfl⟩, ⟨_, ⟨_, rfl, hS⟩, rfl⟩⟩
+    exact ⟨hR, hS⟩
+  · rintro ⟨hR, hS⟩
+    exact ⟨⟨q.1, ⟨p.1, rfl, hR⟩, rfl⟩, ⟨q.2, ⟨p.2, rfl, hS⟩, rfl⟩⟩
+
 end RelSet
 end Freyd.Alg

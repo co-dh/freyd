@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, choosebox, CHPAD, CHFAN, fb-ALLC, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, choosebox, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -2512,8 +2512,6 @@ left through the component at `B`, the right through the one at `A`.
 
 `φ : G⇒F` is a *lax natural transformation* (LaT) when it is lax at *every* `R`. #h(4pt) #src[(5.13)]
 
-`∋ : P⇒Id` — that is `P(R)∋⊑∋R`, @powrel-laws's first row at `X:=P(R)`.
-
 Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
 `G(f)φ=φF(f)`: #h(4pt) laxness is about relations only. #h(4pt) #src[Theorem 5.2]
 ]]<lax-defn>
@@ -2533,50 +2531,166 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 )]<lax-str>
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
+// @lax-str's square at table size: `ns` are its four corners (top-left, top-right, bottom-left,
+// bottom-right), `es` its four edges (top, bottom, left, right).  A vertical edge's name sits ON the
+// edge, so two squares sharing one carry it once and a long name cannot reach into the next square.
+#let SQW = 2.2
+#let SQH = 0.95
+#let laxsq(ns, es, x: 0) = {
+  let (l, r) = (x - SQW, x + SQW)
+  ar((l, SQH), (r, SQH), GIVEN1, s0: 0.5, s1: 0.5); ar((l, -SQH), (r, -SQH), GIVEN1, s0: 0.5, s1: 0.5)
+  ar((l, SQH), (l, -SQH), GIVEN2, s0: 0.5, s1: 0.5); ar((r, SQH), (r, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
+  if es.at(0) != none { lab(x, SQH + 0.62, GIVEN1)[#es.at(0)] }
+  if es.at(1) != none { lab(x, -SQH - 0.62, GIVEN1)[#es.at(1)] }
+  if es.at(2) != none { node(l, 0, GIVEN2, es.at(2)) }
+  if es.at(3) != none { node(r, 0, GIVEN2, es.at(3)) }
+  lab(x, 0, SLACK, rot: -45deg)[`⊑`]
+  node(l, SQH, black, ns.at(0)); node(r, SQH, black, ns.at(1))
+  node(l, -SQH, black, ns.at(2)); node(r, -SQH, black, ns.at(3))
+}
+
+// Hinze–Marsden one level up from @party-marsden: a REGION is an allegory, a WIRE a relator, a BEAD a
+// LaT.  Regions are `LATP` wide, so the wire carrying the bead stands at the same pitch in every cell.
+#let LATP = 1.15
+#let LATH = 2.5
+#let LATB = 1.35
+#let latcol(i, j) = ((i * LATP, LATH), (j * LATP, LATH), (j * LATP, 0), (i * LATP, 0))
+#let latpic(regions, wires, beads: (), ports: (), marks: (), names: (), s: 74%) = P(
+  cetz.canvas(length: 0.8cm, {
+    for (f, pts) in regions { hm-region(pts, f) }
+    for pts in wires { hm-wire(pts) }
+    // `side` is which way the name hangs off the dot, `dy` lifts it clear of a strand leaving there.
+    for (p, l, side, dy) in beads {
+      hm-bead(p, l, dx: side * 0.32, dy: dy, anchor: if side > 0 { "west" } else { "east" })
+    }
+    for (p, l, dir) in ports { hm-port(p, l, dir: dir) }
+    // A relator between two beads has no box edge to be named at, so its name goes beside the wire.
+    for (p, l) in marks { d.content((p.at(0) + 0.3, p.at(1)), text(black)[#l], anchor: "west") }
+    for (p, l) in names { hm-name(p, l) }
+  }),
+  s: s,
+)
+
 #disp[#table(
-  columns: (3.6cm, 7.4cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*what is built*], [*the law*], [*what it costs*]),
+  columns: (1fr, 8.4cm, 4.6cm),
+  align: (left + horizon, center + horizon, center + horizon),
+  inset: (x: 9pt, y: 5pt), stroke: 0.4pt + luma(190),
+  table.header([*closed under*], [*commutative diagram*], [*string diagram*]),
 
-  [`ψφ`],
   [`ψ : H⇒G` and `φ : G⇒F` give `ψφ : H⇒F`],
-  [nothing \ #src[`H(R)ψ`#sub[`B`]`φ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)φ`#sub[`B`]`⊑ψ`#sub[`A`]`φ`#sub[`A`]`F(R)`
-   — `ψ`'s inequation, then `φ`'s]],
+  P(cetz.canvas(length: 0.8cm, {
+    laxsq((`HA`, `GA`, `HB`, `GB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], `H(R)`, none), x: -SQW)
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], `G(R)`, `F(R)`), x: SQW)
+  }), s: 74%),
+  latpic(
+    ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
+    (((LATP, LATH), (LATP, 0)),),
+    beads: (((LATP, 1.75), [`ψ`], 1, 0), ((LATP, 0.75), [`φ`], 1, 0)),
+    ports: (((LATP, LATH), [`H`], 1), ((LATP, 0), [`F`], -1)),
+    marks: (((LATP, 1.25), [`G`]),),
+    names: (((0.5 * LATP, 0.3), [`𝓓`]), ((1.5 * LATP, 0.3), [`𝒞`])),
+  ),
 
-  [`K(φ)`],
   [`φ : G⇒F` and `K` a relator give `K(φ) : K∘G⇒K∘F`, `K` composed on the outside],
-  [nothing \ #src[`K` applied to `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`: `K` is monotonic and
-   `K(XY)=K(X)K(Y)` — @relator-defn]],
+  P(cetz.canvas(length: 0.8cm, laxsq(
+    (`K(GA)`, `K(FA)`, `K(GB)`, `K(FB)`),
+    ([`K(φ`#sub[`A`]`)`], [`K(φ`#sub[`B`]`)`], `K(G(R))`, `K(F(R))`),
+  )), s: 74%),
+  latpic(
+    ((fb-MAPC, latcol(0, 1)), (fb-ALLC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
+    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
+    beads: (((2 * LATP, LATB), [`φ`], 1, 0),),
+    ports: (((LATP, LATH), [`K`], 1), ((LATP, 0), [`K`], -1),
+      ((2 * LATP, LATH), [`G`], 1), ((2 * LATP, 0), [`F`], -1)),
+  ),
 
-  [`φK`],
   [`φ : G⇒F` gives `φK : G∘K⇒F∘K`, `K` composed on the inside],
-  [nothing at all \ #src[it is `φ`'s own inequation at `K(R)`]],
+  P(cetz.canvas(length: 0.8cm, laxsq(
+    (`G(KA)`, `F(KA)`, `G(KB)`, `F(KB)`),
+    ([`φ`#sub[`KA`]], [`φ`#sub[`KB`]], `G(K(R))`, `F(K(R))`),
+  )), s: 74%),
+  latpic(
+    ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2)), (fb-MAPC, latcol(2, 3))),
+    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
+    beads: (((LATP, LATB), [`φ`], -1, 0),),
+    ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1),
+      ((2 * LATP, LATH), [`K`], 1), ((2 * LATP, 0), [`K`], -1)),
+  ),
 
-  [`φ∪ψ`],
   [`φ,ψ : G⇒F` give `φ∪ψ : G⇒F`],
-  [composition distributes over `∪` \ #src[`G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)` splits into the two
-   inequations, and `φ`#sub[`A`]`F(R)∪ψ`#sub[`A`]`F(R)` rejoins]],
+  P(cetz.canvas(length: 0.8cm, {
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], `G(R)`, `F(R)`), x: -(SQW + 1.4))
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], `G(R)`, `F(R)`), x: SQW + 1.4)
+    lab(0, 0, black)[`∪`]
+  }), s: 74%),
+  align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
+    latpic(
+      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
+      (((LATP, LATH), (LATP, 0)),),
+      beads: (((LATP, LATB), [`φ`], 1, 0),),
+      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
+    ),
+    [`∪`],
+    latpic(
+      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
+      (((LATP, LATH), (LATP, 0)),),
+      beads: (((LATP, LATB), [`ψ`], 1, 0),),
+      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
+    ),
+  )),
 
-  [`⟨φ,ψ⟩`],
-  [`φ : G⇒F` and `ψ : G⇒F'` give `⟨φ,ψ⟩ : G⇒F×F'`],
-  [one lax copy law, then absorption \ #src[`R◁⊑◁(R×R)` — @rel-monoid — opens
+  [`φ : G⇒F` and `ψ : G⇒F'` give `⟨φ,ψ⟩ : G⇒F×F'` \ #src[`R◁⊑◁(R×R)` — @rel-monoid — opens
    `G(R)⟨φ`#sub[`B`]`,ψ`#sub[`B`]`⟩`; `⟨X,Y⟩(R×S)=⟨XR,YS⟩` closes it — 2 of @bdm-prod-laws]],
+  P(cetz.canvas(length: 0.8cm, laxsq(
+    (`GA`, `FA×F'A`, `GB`, `FB×F'B`),
+    ([`⟨φ,ψ⟩`#sub[`A`]], [`⟨φ,ψ⟩`#sub[`B`]], `G(R)`, `F(R)×F'(R)`),
+  )), s: 74%),
+  // `F×F'=×∘⟨F,F'⟩`: two UNARY functors, so the split is typed — `⟨F,F'⟩ : 𝒞⟶𝓓×𝓓` then `× : 𝓓×𝓓⟶𝓓`.
+  // Two strands labelled `F`, `F'` would read `F∘F'`, since juxtaposition here is composition.
+  latpic(
+    ((fb-ALLC, latcol(0, 1)),
+     (fb-MAPC, ((LATP, LATB), (2 * LATP, LATB - KNEE), (2 * LATP, 0), (LATP, 0))),
+     (fb-ZC, ((LATP, LATH), (LATP, LATB), (2 * LATP, LATB - KNEE), (2 * LATP, 0),
+       (3 * LATP, 0), (3 * LATP, LATH)))),
+    (((LATP, LATH), (LATP, 0)),
+     ((LATP, LATB), (2 * LATP, LATB - KNEE), (2 * LATP, 0))),
+    beads: (((LATP, LATB), [`⟨φ,ψ⟩`], 1, 0.5),),
+    ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`×`], -1), ((2 * LATP, 0), [`⟨F,F'⟩`], -1)),
+    names: (((1.5 * LATP, 0.42), [`𝓓×𝓓`]),),
+  ),
 
-  [`φ∩ψ`],
-  [`φ∩ψ : G⇒F` *fails*],
-  [the wrong direction of semi-distributivity \ #src[the step it would need is
-   `(φ`#sub[`A`]`F(R))∩(ψ`#sub[`A`]`F(R))⊑(φ∩ψ)`#sub[`A`]`F(R)`, and @meet-semidistrib runs the
-   other way]],
+  [`φ : F⇒G` and `ψ : F'⇒G` give `[φ,ψ] : F+F'⇒G`],
+  P(cetz.canvas(length: 0.8cm, laxsq(
+    (`FA+F'A`, `GA`, `FB+F'B`, `GB`),
+    ([`[φ,ψ]`#sub[`A`]], [`[φ,ψ]`#sub[`B`]], `F(R)+F'(R)`, `G(R)`),
+  )), s: 74%),
+  // `F+F'=+∘⟨F,F'⟩`, the fork's split turned over.  The middle region is `𝓓×𝓓` here too: `+`, like
+  // `×`, is a functor `𝓓×𝓓⟶𝓓`, and it is the SOURCE of both that the pair lands in.
+  latpic(
+    ((fb-ALLC, latcol(0, 1)),
+     (fb-MAPC, ((LATP, LATH), (LATP, LATB), (2 * LATP, LATB + KNEE), (2 * LATP, LATH))),
+     (fb-ZC, ((2 * LATP, LATH), (2 * LATP, LATB + KNEE), (LATP, LATB), (LATP, 0),
+       (3 * LATP, 0), (3 * LATP, LATH)))),
+    (((LATP, LATH), (LATP, 0)),
+     ((2 * LATP, LATH), (2 * LATP, LATB + KNEE), (LATP, LATB))),
+    beads: (((LATP, LATB), [`[φ,ψ]`], 1, -0.5),),
+    ports: (((LATP, LATH), [`+`], 1), ((2 * LATP, LATH), [`⟨F,F'⟩`], 1), ((LATP, 0), [`G`], -1)),
+    names: (((1.5 * LATP, LATH - 0.42), [`𝓓×𝓓`]),),
+  ),
+
+  [`φ∩ψ : G⇒F` fails \ #src[the step it would need is
+   `(φ`#sub[`A`]`F(R))∩(ψ`#sub[`A`]`F(R))⊑(φ∩ψ)`#sub[`A`]`F(R)`, the wrong direction of
+   @meet-semidistrib]],
+  [], [],
 )]<lax-closure>
 
 == Monotonic algebras
 
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its two theorems instead.
 #disp[#definition[
-An F-algebra `S : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` at #h(4pt)
-`G:=F`, `F:=Id`, `φ:=S`: #h(4pt) `F(R)S⊑SR`. #h(4pt) `R` is an *endorelation*, so `B=A` and
-the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `S` — an algebra, not a family.
+An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` at #h(4pt)
+`G:=F`, `F:=Id`: #h(4pt) `F(R)φ⊑φR`. #h(4pt) `R` is an *endorelation*, so `B=A` and
+the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R`, #h(4pt) equivalently #h(4pt) `F(R)⊑fRf°`.
 
@@ -2584,20 +2698,20 @@ For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R`, #h(4pt) equivalently #h(4
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
-// @lax-str at `G := F`, `F := Id`, `φ := S`: the right edge's `Id(R)` is written `R`, and the one `S`
-// stands at both `φ` components.  `⊑` points NE — down-then-across is the smaller `F(R)S`.
+// @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
+// stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#capbox(
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
     ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
     ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`S`]; lab(0, -1.8, GIVEN1)[`S`]
+    lab(0, 1.8, GIVEN1)[`φ`]; lab(0, -1.8, GIVEN1)[`φ`]
     lab(-3.75, 0, GIVEN2)[`F(R)`]; lab(3.35, 0, GIVEN2)[`R`]
     lab(0, 0, SLACK, rot: -45deg)[`⊑`]
     node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
     node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
   }),
-  [`F(R)S⊑SR`],
+  [`F(R)φ⊑φR`],
 )]<mon-str>
 
 #disp[#definition[
@@ -2658,6 +2772,118 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [the *greedy theorem*: keeping one minimum at every step beats no more than taking the minimum at
    the end],
 )]<mon-laws>
+
+=== Ordered objects and monotone relations <sec-ordobj>
+
+// `AOP/A5_7.lean`: `OrdObj`, `MonoHom`, `ordObjCat`, `MonoHom.union`, `recip_slides`, `ordEmpty`
+// and `ordEmpty_terminal` — the zero object is the EMPTY one, not a one-element one.
+#disp[#definition[
+An *ordered object* `(A,T)` is an object `A` of the allegory with an endorelation `T : A⟶A`;
+`T` is asked to be neither reflexive nor transitive.
+
+A *monotone relation* `(A,T`#sub[`A`]`)⟶(B,T`#sub[`B`]`)` is a relation `φ : A⟶B` with #h(4pt)
+`T`#sub[`A`]`φ⊑φT`#sub[`B`].
+
+That inequation is @lax-defn's at #h(4pt) `G:=F:=Id`, #h(4pt) and @mon-defn's algebra `φ` is the
+case #h(4pt) `T`#sub[`A`]`:=F(R)`, `T`#sub[`B`]`:=R`.
+]]<ordobj-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*it has*], [*why*]),
+
+  [identity and composition — so it IS a category],
+  [`T𝟙=T=𝟙T`; composition is the sliding rule, @lax-closure's first row at `G=F=Id`],
+
+  [hom-sets ordered by `⊑`, pointwise, and composition monotone in both arguments — *enriched over
+   posets*],
+  [inherited from the allegory: `⊑` is reflexive, transitive and antisymmetric there, and `R⊑R'`
+   gives `RS⊑R'S`],
+
+  [binary union `φ∪ψ`],
+  [@lax-closure's union row at `G=F=Id`],
+
+  [a tensor `(A,T`#sub[`A`]`)×(B,T`#sub[`B`]`)`, *not* a categorical product],
+  [the projections are monotone and so is `⟨φ,ψ⟩`, but `⟨φ,ψ⟩π₁=Dom(ψ)φ⊑φ` — @fork-proj — with
+   equality only when `ψ` is entire, the same reason `R×S` is not a categorical product in `Rel`
+   — @relprod-defn],
+
+  [no meet `φ∩ψ`],
+  [the counterexample @ordobj-meet-counterex],
+
+  [no converse `φ°`],
+  [`°` of `T`#sub[`A`]`φ⊑φT`#sub[`B`] is `φ°T`#sub[`A`]`°⊑T`#sub[`B`]`°φ°` — the orders are
+   converted AND the inclusion points the other way, so `φ°` lands in the op-lax category, not this
+   one],
+
+  [a zero object — the empty object is both terminal and initial],
+  [every relation into it is the empty one, so there is exactly one arrow],
+
+  [binary products, but they are `⊔` and not the `×` this chapter uses],
+  [a relation into a disjoint union splits into its two halves,
+   `Hom(C,A⊔B)≅Hom(C,A)×Hom(C,B)`, and the projections are the converses of the injections],
+
+  [no equalizers, hence not regular],
+  [the counterexample @ordobj-equalizer-counterex],
+)]<ordobj-laws>
+
+// The four sets stand one per line so a correction lands in one place.
+#disp[#align(center, block(width: 17cm)[
+#align(center, grid(columns: 2, column-gutter: 1.6cm, row-gutter: 4pt, align: left,
+  [`A={0,1}`], [`T`#sub[`A`]`={(0,1)}`],
+  [`B={p,q,r}`], [`T`#sub[`B`]`={(p,r),(q,r)}`],
+  [`φ={(0,p),(1,r)}`], [`ψ={(0,q),(1,r)}`],
+))
+#v(6pt)
+#table(
+  columns: (3.6cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+
+  [`φ` monotone],
+  [`0T`#sub[`A`]`1` and `1φr`, witnessed by `p`: #h(4pt) `0φp` and `pT`#sub[`B`]`r`],
+
+  [`ψ` monotone],
+  [the same step through `q`: #h(4pt) `0ψq` and `qT`#sub[`B`]`r`],
+
+  [`φ∩ψ={(1,r)}` not],
+  [that step wants a `b` with `0(φ∩ψ)b`, and `(φ∩ψ)[0]=∅`],
+
+  [the moral],
+  [`⊑` asserts a witness *exists*; the two sides have witnesses but different ones, `p` and `q`,
+   and the meet keeps neither — which is also why @meet-semidistrib runs one way only],
+)
+])]<ordobj-meet-counterex>
+
+// Same shape as the display above: the sets first, then one row per step of the count.
+#disp[#align(center, block(width: 17cm)[
+#align(center, grid(columns: 2, column-gutter: 1.6cm, row-gutter: 4pt, align: left,
+  [`A={0,1}`], [`R=⊤={(0,*),(1,*)}`],
+  [`B={*}`], [`S={(0,*)}`],
+))
+#v(6pt)
+#table(
+  columns: (5.2cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+
+  [the order on `A` and `B`],
+  [*empty*, and every relation is monotone for it — so the count below is a count in this
+   category, not only in `Rel`],
+
+  [`e : C⟶A` equalizes `R` and `S`, at a one-element `C`],
+  [`eR=eS`, which comes to #h(4pt) `xe1⟹xe0` for every `x`],
+
+  [exactly three such `e`],
+  [`∅`, `{0}`, `{0,1}` — `{1}` is the one subset the condition rules out],
+
+  [so no equalizer],
+  [the equalizer would have exactly three arrows from `C`, and `Hom(C,X)` is the power set of `X`
+   — no power set has three elements],
+)
+])]<ordobj-equalizer-counterex>
 
 === `takewhile(p)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` <sec-takewhile>
 

@@ -72,7 +72,7 @@ theorem junc_injections {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
   (junc_unique C (Cat.comp_id C.u₁) (Cat.comp_id C.u₂)).symm
 
 /-- `junc` is monotone in both branches. -/
-theorem junc_mono {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R R' : a₁ ⟶ c} {S S' : a₂ ⟶ c}
+public theorem junc_mono {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R R' : a₁ ⟶ c} {S S' : a₂ ⟶ c}
     (hR : R ⊑ R') (hS : S ⊑ S') : junc C R S ⊑ junc C R' S' :=
   union_mono (comp_mono_left (C.u₁°) hR) (comp_mono_left (C.u₂°) hS)
 

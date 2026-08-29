@@ -237,6 +237,9 @@ import AOP.A10_1
 -- Concrete model Rel(Set) for the AoP case studies (objects = types, morphisms = relations):
 -- the full allegory stack (power/LCDA/tabular/unitary) in which the §6.1+ programs actually run.
 import AOP.A6_1_RelSet
+-- The §5.7 category of MONOTONE relations, refuted in that model: no meet on the hom-sets
+-- (`inter_not_monotonic`) and no monotone merge out of the tensor (`merge_not_monotonic`).
+import AOP.A6_1_OrdRelSet
 -- Bird & de Moor §6.1: Digits of a number — Decimal as an initial algebra of `F A = Digit⁺ + A×Digit`,
 -- the reading catamorphism `val`, and the recursive equation for `val°` (first worked AoP program).
 import AOP.A6_1_Digits
