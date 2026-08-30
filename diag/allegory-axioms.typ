@@ -2088,6 +2088,18 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
 // of the object wire, `𝟏` right of it.
 #let DKN = 0.45                                   // the handle's knee
+// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line, which runs
+// STRAIGHT through it; the functor wires that composite is made of bend in to the bead and out again.
+// `k` is how far above and below the node the lane leaves its column: a panel stacking four lanes in
+// one column detours more shallowly than a two-wire one — still a slope, never a horizontal tangent.
+#let NKN = 0.45
+#let nodepts(x, xo, ys, k: NKN) = {
+  let pts = ()
+  for y in ys { pts += ((x, y + k), (xo, y), (x, y - k)) }
+  pts
+}
+#let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
+  ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 #let dpan(h, w, xa, body, s: 74%) = P(cetz.canvas(length: 0.8cm, {
   d.rect((0, 0), (xa, h), fill: fb-ALLC, stroke: none)
   d.rect((xa, 0), (w, h), fill: luma(226), stroke: none)
@@ -2097,10 +2109,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
 // is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
 #let dhandle(xa, xe, y0, y1, l, born: none) = {
-  if born == none { hm-wire(((xa, y0), (xe, y0 - DKN), (xe, y1 + DKN), (xa, y1))) } else {
-    hm-wire(((xe, y0), (xe, y1 + DKN), (xa, y1)))
-    hm-bead((xe, y0), born)
-  }
+  hm-wire(((xa, y0), (xe, y0 - DKN), (xe, y1 + DKN), (xa, y1)))
+  if born != none { hm-bead((xa, y0), born) }
   hm-name((xe - 0.32, (y0 + y1) / 2), l)
 }
 
@@ -2116,22 +2126,36 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RXF = 1.65                                   // the `F` wire
 #let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
 #let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
-  for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
-  // A relator wire a unit OPENS and nothing closes: it runs from that bead to the bottom edge.
-  for (x, y, l, p) in births { hm-wire(((x, y), (x, 0))); hm-bead((x, y), l); hm-port((x, 0), p, dir: -1) }
-  for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
+#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, s: 82%) = dpan(h, w, xo, {
+  // The nodes a lane at `x` is INSIDE of, so must detour through: one opened on a lane further out.
+  let nodes(x, ylo) = (hands.filter(hd => hd.at(4, default: none) != none and hd.at(0) < x)
+    .map(hd => hd.at(1)) + births.filter(b => b.at(0) < x).map(b => b.at(1))).filter(y => y > ylo)
+  // A lane the composite runs through detours at every node it is inside of, its own ends included.
+  for hd in hands {
+    let (xe, y0, y1) = (hd.at(0), hd.at(1), hd.at(2))
+    hm-wire(((xo, y0), (xe, y0 - DKN)) + nodepts(xe, xo, nodes(xe, y1).filter(y => y < y0))
+      + ((xe, y1 + DKN), (xo, y1)))
+    hm-name((xe - 0.32, (y0 + y1) / 2), hd.at(3))
+    if hd.at(4, default: none) != none { hm-bead((xo, y0), hd.at(4)) }
+  }
+  // A relator wire a unit OPENS and nothing closes: it leaves that bead and runs to the bottom edge.
+  for (x, y, l, p) in births {
+    hm-wire(((xo, y), (x, y - DKN), (x, 0))); hm-bead((xo, y), l); hm-port((x, 0), p, dir: -1)
+  }
+  for (x, y, k) in joins {
+    hm-wire(((x, h),) + nodepts(x, xo, nodes(x, y)) + ((x, y + k), (xo, y)))
+  }
   for (y, l) in beads { hm-bead((xo, y), l) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
-}, s: 82%)
+}, s: s)
 // The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
 // room, so a long one — `⦇S⦈°\X` — cannot run out of the panel.
-#let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`]) = dpan(h, w, 0.55, {
+#let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`], s: 82%) = dpan(h, w, 0.55, {
   hm-bead((0.55, y), l)
   hm-port((0.55, h), top, col: BCOL); hm-port((0.55, 0), bot, dir: -1, col: BCOL)
-}, s: 82%)
+}, s: s)
 #let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
 
 // Otherwise the heading lands alone at the foot of the reduce-of-maps page.
@@ -3438,19 +3462,19 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
   [#trow(
-    tpan(4.0, ((3.45, [`S°`]), (2.45, [`R°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
-      hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 3.45, 1.45, [`F`])),
-      top: ((RXO, [`A`]),), xo: RXO),
-    tpanR(4.0, 2.45, [`R°`]),
+    tpan(5.1, ((4.60, [`S°`]), (3.70, [`R°`]), (1.60, [`S`]), (0.65, [`est(R)`])),
+      hands: ((RXU, 2.70, 0.65, [`E`], frc([`𝟙`])), (GXF, 4.60, 1.60, [`F`])),
+      top: ((RXO, [`A`]),), xo: RXO, s: 65%),
+    tpanR(5.1, 3.12, [`R°`], s: 65%),
   )],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
     [`R°S°(`#frc([`S`])` est(R))` \
      #src[`S°F(R°)⊑R°S°`, the converse of the hypothesis `F(R)S⊑SR`]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
-  [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
-    hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 2.45, 1.45, [`F`])),
-    top: ((RXO, [`A`]),), xo: RXO)],
+  [#tpan(5.1, ((4.60, [`R°`]), (3.70, [`S°`]), (1.60, [`S`]), (0.65, [`est(R)`])),
+    hands: ((RXU, 2.70, 0.65, [`E`], frc([`𝟙`])), (GXF, 3.70, 1.60, [`F`])),
+    top: ((RXO, [`A`]),), xo: RXO, s: 65%)],
 
   [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
     [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
@@ -3713,12 +3737,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `[A]` is TWO wires, `list` beside `A`: `list(p)` is then the bead `p` on `A`, `list` running past.
 // IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line — `A` runs
 // STRAIGHT through it and only the functor wires bend in and back out, as `join` does beside `filter p`.
-#let LKNEE = 0.60
-#let lwire(xf, xo, ys, ytop, ybot) = {
-  let pts = ((xf, ytop),)
-  for y in ys { pts += ((xf, y + LKNEE), (xo, y), (xf, y - LKNEE)) }
-  hm-wire(pts + ((xf, ybot),))
-}
 // `prefix`/`subseq` are only LAX natural in `Rel` — `list(p) prefix⊑prefix list(p)` and no more, since
 // `list(p)` needs every element to have a `p`-image — so they are nodes, and `p` stays strictly below.
 #let TWHX = (0.55, 2.40, 4.30)                    // `A×−`, `list`, `A`
@@ -3849,11 +3867,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
 // closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
 #let LPX = (1.05, 2.35, 4.85)                     // `E`, `list`, `A`
-#let LPY = (3.55, 2.55, 1.00)                     // the singleton, the arrow, `est(R°)`
+#let LPY = (3.50, 2.00, 0.80)                     // the singleton, the arrow, `est(R°)`
 // The specification row splits `LPY.at(1)`'s one arrow into two, straddling it, so the row below —
 // which collapses them into `⦇S⦈` — puts that bead midway between the pair it replaces.
-#let LPYS = (3.05, 2.00)                          // `prefix`/`subseq` above, `p` below
-#let LPH = 4.20
+#let LPYS = (2.30, 1.55)                          // `prefix`/`subseq` above, `p` below
+#let LPH = 4.25
 // ONE `w` for every row of a display, so `list` and `A` stand in one column down it: a per-row width
 // centres each panel on its own label and moves the two wires the chain never touches.
 // `sp` lists the `[A]⟶[A]` nodes on the `A` line, top down, as `(y, label)`: the `list` wire bends in
@@ -3870,14 +3888,29 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
   if names { hm-name((0.45, 0.30), [`Rel`]); hm-name((XO + 2.8, 0.30), [`𝟏`]) }
 }), s: 76%)
-// The `E` wire is BORN by the singleton and killed by `est(R°)`, itself a node like any other: `E`
-// dies on the `A` line under the `list` wire's own bend, so the two fan in without crossing.
+// `𝟙%∋` is only LAX natural too — `(𝟙%∋)E(R)` gives the whole image `aR`, `R(𝟙%∋)` the singletons —
+// so it is a node like `est(R°)`, and the `E` it opens leaves that node for its own lane.
 #let epan(body: (), w: 11.7, names: false, sp: ()) = lpan(
   body: {
-    dhandle(LPX.at(2), LPX.at(0), LPY.at(0), LPY.at(2), [`E`], born: frc([`𝟙`]))
+    dhandle(LPX.at(2), LPX.at(0), LPY.at(0), LPY.at(2), [`E`])
     body
   },
-  w: w, names: names, sp: sp + ((LPY.at(2), [`est(R°)`]),))
+  w: w, names: names,
+  sp: ((LPY.at(0), frc([`𝟙`])),) + sp + ((LPY.at(2), [`est(R°)`]),))
+// `S` is defined in @takewhile-defn, three pages back, and every row below reads it: the definition
+// is repeated here rather than looked up, in that table's own five columns.
+#disp[#align(center, block(width: 21cm)[
+#table(
+  columns: (1.7cm, 5.3cm, 2.9cm, 4.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
+
+  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #h(4pt) #src[@takewhile-defn]], [`F([A])⟶[A]`],
+  [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
+  [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
+)])]
+
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 7.9cm),
   align: (left + horizon, center + horizon),
@@ -4062,9 +4095,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // read as one column, and none of them crosses the wires standing between it and its own dot.
 // `hands` is a relator wire born at `(x0,y0)` — free in its own lane, or on the wire carrying `b` —
 // running down lane `xe` and dying at `(x1,y1)`; `wires` are the lanes that run the whole height.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), h: 4.3, s: 82%) = dpan(h, w, xo, {
-  for x in wires { hm-wire(((x, h), (x, 0))) }
-  for (xf, xt, y, k) in joins { hm-join(xf, h, xt, y, knee: k) }
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3, s: 82%) = dpan(h, w, xo, {
+  // A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
+  // it, lanes outside run past.  A born hand is one; `nodes` carries the ones a plain bead makes.
+  let ns = nodes + hands.filter(hd => hd.at(6) != none).map(hd => (hd.at(1), hd.at(2)))
+  let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
+  for x in wires { lwire(x, xo, at(x, 0), h, 0, k: 0.35) }
+  for (xf, xt, y, k) in joins {
+    hm-wire(((xf, h),) + nodepts(xf, xo, at(xf, y), k: 0.35) + ((xf, y + k), (xt, y)))
+  }
   for (x0, y0, xe, x1, y1, l, b) in hands {
     hm-wire(((x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)))
     hm-name((xe - 0.32, (y0 + y1) / 2), l)
@@ -4264,7 +4303,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
   [#mpan(MC, 8.9, ((MB, [`F`]), (MC, [`Int`])), ((MC, [`Int`]),),
-    hands: ((MA, 3.55, MA, MC, 0.80, [`E`], frc([`𝟙`])),),
+    hands: ((MC, 3.55, MA, MC, 0.80, [`E`], frc([`𝟙`])),),
     joins: ((MB, MC, 2.10, 0.70),),
     beads: ((MC, 2.10, [`[zero,⊸ zero ∪ plus]`]), (MC, 0.80, [`est(≥)`])))],
 
@@ -4366,6 +4405,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // killing the inner one while the outer runs past.  The fork stays whole in one bead: `⟨·,·⟩` needs
 // the product BIFUNCTOR, which is not a wire, and `list(g)` standing still is what the row shows.
 #let mtop4 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`list`]), (MD, [`A`]))
+// Six arrows stacked in one column, each a node the `list` lane detours through: the panel is taller
+// than the others and scaled down to keep the printed height it had.
+#let MSH = 5.55
+#let MSS = 71%
 #let mbot4 = ((MB, [`list`]), (MD, [`B`]))
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 7.1cm),
@@ -4438,20 +4481,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [#vstep([], mbp(mss-line((bx-mss, bx-est))),
     [#frc([`segment sum`]) ` est(≥)` \
      #src[`mss` is the greatest of the segment sums — @mss-defn]])],
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 2.10, [`segment sum`]), (MD, 0.45, [`est(≥)`])))],
+  [#mpan(MD, 7.6, mtopL, mbotL, h: MSH, s: MSS,
+    hands: ((MD, 4.85, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
+    joins: ((MC, MD, 1.90, 0.30),),
+    beads: ((MD, 1.90, [`segment sum`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-epest, bx-est))),
     [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≥)) est(≥)` \ #src[@mss-shape]])],
-  // `suffix` is natural in `A`, so it is a bead on the `list` WIRE; `prefix sum` is not — it adds up
-  // the elements — so it kills that wire onto the object one.
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),
-            (MB, 2.85, MB, MD, 1.35, [`E`], frc([`𝟙`]))),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MC, 3.55, [`suffix`]), (MD, 2.10, [`prefix sum`]), (MD, 1.35, [`est(≥)`]),
+  // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
+  // `E` runs past it, and `prefix sum` is where the `list` wire dies.
+  [#mpan(MD, 7.6, mtopL, mbotL, h: MSH, s: MSS,
+    hands: ((MD, 4.85, MA, MD, 0.45, [`E`], frc([`𝟙`])),
+            (MD, 2.85, MB, MD, 1.15, [`E`], frc([`𝟙`]))),
+    nodes: ((3.85, MB),),
+    joins: ((MC, MD, 1.90, 0.30),),
+    beads: ((MD, 3.85, [`suffix`]), (MD, 1.90, [`prefix sum`]), (MD, 1.15, [`est(≥)`]),
             (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
@@ -4459,30 +4503,31 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
      #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
       entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MC, 3.55, [`suffix`]), (MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
+  [#mpan(MD, 7.6, mtopL, mbotL, h: MSH, s: MSS,
+    hands: ((MD, 4.85, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
+    nodes: ((3.85, MB),),
+    joins: ((MC, MD, 1.90, 0.30),),
+    beads: ((MD, 3.85, [`suffix`]), (MD, 1.90, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-tails, bx-listg, bx-est))),
     [`tails list(⦇[zero,⊕]⦈) est(≥)` \
      #src[`tails` implements #frc([`suffix`]) and `list(f)` implements `E(f)` — @comb-fns]])],
-  // `tails` does the singleton's and `suffix`'s work at once, so its ONE bead sits between their two
-  // heights — on the `list` wire, since that is the wire it opens the `E` beside.
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MC, 3.90, MA, MD, 0.45, [`E`], [`tails`]),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
+  // `tails` does the singleton's and `suffix`'s work at once, so its ONE node sits between their two
+  // heights, and the `E` it opens leaves that node for the outermost lane.
+  [#mpan(MD, 7.6, mtopL, mbotL, h: MSH, s: MSS,
+    hands: ((MD, 4.35, MA, MD, 0.45, [`E`], [`tails`]),),
+    joins: ((MC, MD, 1.90, 0.30),),
+    beads: ((MD, 1.90, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-fold, bx-est))),
     [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
      #src[@cata-fusion at @mss-scan's side condition, `c,f:=zero,⊕`]])],
   // The fold now kills `list` AND opens the `E`, so its bead stands midway between the two beads of
   // the row above, and the `E` leaves the object wire rather than a lane of its own.
-  [#mpan(MD, 9.7, mtopL, mbotL, h: 4.8,
-    hands: ((MD, 3.00, MA, MD, 0.45, [`E`], none),),
-    joins: ((MC, MD, 3.00, 0.90),),
-    beads: ((MD, 3.00, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩cons]⦈`]), (MD, 0.45, [`est(≥)`])))],
+  [#mpan(MD, 9.7, mtopL, mbotL, h: MSH, s: MSS,
+    hands: ((MD, 3.15, MA, MD, 0.45, [`E`], none),),
+    joins: ((MC, MD, 3.15, 0.90),),
+    beads: ((MD, 3.15, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩cons]⦈`]), (MD, 0.45, [`est(≥)`])))],
 ))
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
@@ -4639,6 +4684,20 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // for its own four rows, which is what puts `list` and `A` in a column.
 #let lpan = lpan.with(w: 8.6)
 #let epan = epan.with(w: 8.6)
+// `S` is defined in @filter-defn, three pages back, and every row below reads it: the definition is
+// repeated here rather than looked up, in that table's own five columns.
+#disp[#align(center, block(width: 21cm)[
+#table(
+  columns: (1.7cm, 5.3cm, 2.9cm, 4.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
+
+  [`S`], [`[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[@filter-defn]], [`F([A])⟶[A]`],
+  [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
+  [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
+)])]
+
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 6.3cm),
   align: (left + horizon, center + horizon),
