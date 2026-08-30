@@ -5078,8 +5078,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let PXD = 2.85                  // `Δ`, the pair one subtree returns
 #let PXLi = 4.00                 // `list`, inside one party
 #let PXO = 5.15                  // the object wire, `A`
-#let HMY = (0.55, 1.23, 1.91, 2.59, 3.27, 3.95, 4.63)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
-#let HMH = 5.2
+// The fifth wire cost width, and the panel pays for it in HEIGHT, not in `s`: `scale` would take the
+// 9pt labels down with it, so the seven slots close up instead and the four rows stay one page.
+#let HMY = (0.45, 1.07, 1.69, 2.31, 2.93, 3.55, 4.17)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
+#let HMH = 4.62
 #let party-hm(rs) = {
   let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
   dpanel(HMH, PXO + 2.85, PXO,
@@ -5088,12 +5090,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     ((YP, [`g`]), (YC, [`concat`]), (YN, [`h`]),
      ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1, PXLi)),
     ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXLi, LIST), (PXO, OBJ)),
-    ((PXLi, LIST), (PXO, OBJ)), names: rs == 0)
+    ((PXLi, LIST), (PXO, OBJ)), names: rs == 0, s: 90%)
 }
 
 #let step = step.with(pw: 319pt)
 #disp[#table(
-  columns: (1fr, 5.8cm),
+  // Not `HMW`: that column holds a circuit, this one a panel, and 6.6cm is the five wires at `s: 90%`.
+  columns: (1fr, 6.6cm),
   align: (center + horizon, center + horizon),
   // `y: 1pt`, tighter than the note's usual 3pt: the four rows plus the key list are a page exactly.
   inset: (x: 9pt, y: 1pt), stroke: 0.4pt + luma(190),
