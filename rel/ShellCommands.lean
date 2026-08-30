@@ -9,7 +9,7 @@
 
       ls      one-to-many relation (a non-`Map` atom)          `.atom`
       grep    coreflexive filter (`id ∩ ·`)                     `.meet (.id) _`   §2.121
-      sort    power-transpose SET + `min`/`max` extremum        `AE` , `maxRelE`  §2.41 / B&dM 7.1
+      sort    power-transpose SET + `min`/`max` extremum        `AE` , `estE`  §2.41 / B&dM 7.1
       find    reflexive-transitive closure                      `.join (.id) (reach …)`
       cat     union (a commutative monoid)                      `.join`           §2.21
       wc -l   catamorphism to ℕ (fold = length)                 `foldr`
@@ -155,7 +155,7 @@ theorem grep_idem (p : Fin 5 → Bool) :
   SPEC side (`eval`, exponential): the survivor SET as a power-object point `Λ(ls ≫ grep isTxt)`
   and its size-least member (the ascending sorted output's HEAD) via `max` of the size order — in
   B&dM's `min R = ∋ ∩ (∋°\R)` the selected element sits ABOVE the whole set, so the size-MINIMUM is
-  `maxRelE leqE` (`max R = min R°`).  Runs by brute-forcing all `2^5 = 32` subset codes.
+  `estE leqE` (`max R = min R°`).  Runs by brute-forcing all `2^5 = 32` subset codes.
 
   PROGRAM side (polynomial): a fused filter+insertion-sort FOLD over a plain `List (Fin 5)` (NOT a
   `Prog.cata`, because `grep` can empty the list).  `sort_head_bridge` connects the two. -/
@@ -165,7 +165,7 @@ def leqE : RE Entry Entry := .atom leSize
 /-- The survivor SET (txt files) as a power-object point `Λ(ls ≫ grep isTxt) : Dir ⟶ [Entry]`. -/
 def pipeSet : RE Dir (pow Entry) := AE (RE.comp lsE (grepE isTxt))
 /-- **`sort`, SPEC side**: the HEAD of the ascending sorted output — the smallest-size survivor. -/
-def sortHeadE : RE Dir Entry := RE.comp pipeSet (maxRelE leqE)
+def sortHeadE : RE Dir Entry := RE.comp pipeSet (estE leqE)
 
 /-- Insertion into an ascending (by `le`) list, generic in the order. -/
 def linsertBy {α : Type} (le : α → α → Bool) (x : α) : List α → List α

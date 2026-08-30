@@ -411,12 +411,9 @@ def leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) : RE b c :=
 def AE {a b : FinObj} (R : RE a b) : RE a (pow b) :=
   .meet (.div R (.eps b)) (.conv (.div (.eps b) R))
 
-/-- B&dM §7.1 `min R = ∋ ∩ (∋°\R)` (`AOP.A7_1.minRel` verbatim). -/
-def minRelE {a : FinObj} (R : RE a a) : RE (pow a) a :=
-  .meet (.eps a) (leftDivE (.conv (.eps a)) R)
-
-/-- B&dM §7.1 `max R = min R°` (`AOP.A7_1.maxRel` verbatim). -/
-def maxRelE {a : FinObj} (R : RE a a) : RE (pow a) a := minRelE (.conv R)
+/-- The note's one extremum operator `est R = ∋ ∩ (∈\R°)` (`AOP.A7_1.est` verbatim). -/
+def estE {a : FinObj} (R : RE a a) : RE (pow a) a :=
+  .meet (.eps a) (leftDivE (.conv (.eps a)) (.conv R))
 
 /-- The derived syntax means what the book means: `eval (leftDivE S R) = S\R`. -/
 theorem eval_leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) :
@@ -425,11 +422,11 @@ theorem eval_leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) :
 /-- `eval (AE R) = Λ(eval R)` — the §2.41 power transpose, on the nose. -/
 theorem eval_AE {a b : FinObj} (R : RE a b) : eval (AE R) = Λ (eval R) := rfl
 
-/-- `eval (minRelE R)` is B&dM's `min R = ∋ ∩ (∋°\R)` (`AOP.A7_1.minRel`'s body, which is
-    stated there under `UnguardedPowerLCDA`; `FinRel` has no computable arbitrary `Sup`, so we
-    state the body directly). -/
-theorem eval_minRelE {a : FinObj} (R : RE a a) :
-    eval (minRelE R) = (∋ a ∩ leftDiv ((∋ a)°) (eval R)) := rfl
+/-- `eval (estE R)` is `est R = ∋ ∩ (∈\R°)` (`AOP.A7_1.est`'s body, which is stated there
+    under `UnguardedPowerLCDA`; `FinRel` has no computable arbitrary `Sup`, so we state the
+    body directly). -/
+theorem eval_estE {a : FinObj} (R : RE a a) :
+    eval (estE R) = (∋ a ∩ leftDiv ((∋ a)°) ((eval R)°)) := rfl
 
 /-! ### Pointwise semantics of the spec vocabulary — the general TRANSPORT layer
 
@@ -459,10 +456,10 @@ theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).
     · rw [← h v]; exact hP
     · rw [h v]; exact hR
 
-/-- `max` pointwise: `eval (maxRelE d)` relates a bit-code `P` to `w` iff `w ∈ P` and `w`
+/-- `max` pointwise: `eval (estE d)` relates a bit-code `P` to `w` iff `w ∈ P` and `w`
     `d`-dominates every member of `P` (B&dM §7.1 `max D = min D°`, executably). -/
-theorem maxRelE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin a.card) :
-    eval (maxRelE d) P w = true ↔
+theorem estE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin a.card) :
+    eval (estE d) P w = true ↔
       (epsB a P w = true ∧ ∀ z, epsB a P z = true → eval d w z = true) := by
   show (epsB a P w && allFin a.card (fun z => !(epsB a P z) || eval d w z)) = true ↔ _
   constructor
@@ -476,23 +473,23 @@ theorem maxRelE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin 
     `(x, v)` iff `v` is `e`-achievable from `x` and `d`-dominates every `e`-achievable value.
     The existential over `2^card` subset codes is discharged by the encoded image itself
     (`encNat`), so no powerset reasoning survives into the statement. -/
-theorem Λ_comp_maxRel_apply {a b : FinObj} (e : RE a b) (d : RE b b)
+theorem Λ_comp_est_apply {a b : FinObj} (e : RE a b) (d : RE b b)
     (x : Fin a.card) (v : Fin b.card) :
-    eval (.comp (AE e) (maxRelE d)) x v = true ↔
+    eval (.comp (AE e) (estE d)) x v = true ↔
       (eval e x v = true ∧ ∀ z, eval e x z = true → eval d v z = true) := by
-  show anyFin (pow b).card (fun P => eval (AE e) x P && eval (maxRelE d) P v) = true ↔ _
+  show anyFin (pow b).card (fun P => eval (AE e) x P && eval (estE d) P v) = true ↔ _
   constructor
   · intro h
     obtain ⟨P, hP⟩ := anyFin_iff.mp h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp hP
     have hA := (Λ_apply (eval e) x P).mp h1
-    obtain ⟨hmem, hdom⟩ := (maxRelE_apply d P v).mp h2
+    obtain ⟨hmem, hdom⟩ := (estE_apply d P v).mp h2
     exact ⟨by rw [← hA v]; exact hmem, fun z hz => hdom z (by rw [hA z]; exact hz)⟩
   · rintro ⟨h1, h2⟩
     refine anyFin_iff.mpr ⟨⟨encNat b.card (fun u => eval e x u), encNat_lt _ _⟩,
       Bool.and_eq_true_iff.mpr ⟨?_, ?_⟩⟩
     · exact (Λ_apply (eval e) x _).mpr fun u => encNat_testBit b.card (fun u => eval e x u) u
-    · refine (maxRelE_apply d _ v).mpr ⟨?_, fun z hz => h2 z ?_⟩
+    · refine (estE_apply d _ v).mpr ⟨?_, fun z hz => h2 z ?_⟩
       · show (encNat b.card (fun u => eval e x u)).testBit v.val = true
         rw [encNat_testBit b.card (fun u => eval e x u) v]; exact h1
       · have hz' : (encNat b.card (fun u => eval e x u)).testBit z.val = true := hz

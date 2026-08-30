@@ -77,7 +77,7 @@ end Demo207
 
 /-! ## Demo 3 — LeetCode 121 (Best Time to Buy and Sell Stock) run as its SPEC TERM
 
-  `leet.L121` proves `solve = Λ spec ≫ maxRel D` in `Rel(Set)` — a PROOF, never executed.
+  `leet.L121` proves `solve = Λ spec ≫ est D` in `Rel(Set)` — a PROOF, never executed.
   Here the SAME shape `Λ spec ≫ max D` is a term the interpreter RUNS: `Λ spec` brute-forces
   the achievable-profit SET over all `2^|Val|` subset codes, `max D` picks its `≤`-greatest
   member.  Correct, and exponential in `|Val|` — the honest cost of running the spec.
@@ -99,13 +99,13 @@ def specFn (n M : Nat) (price : Fin n → Int) : Fin 1 → Fin (2 * M + 1) → B
   (v.val == M) || anyFin n fun i => anyFin n fun j =>
     decide (i.val < j.val) && decide (price j - price i + M = (v.val : Int))
 
-/-- L121's preference order `D w z := z ≤ w` (see `L121.solve_eq_maxRel`). -/
+/-- L121's preference order `D w z := z ≤ w` (see `L121.solve_eq_est`). -/
 def geFn (M : Nat) : Fin (2 * M + 1) → Fin (2 * M + 1) → Bool := fun w z =>
   decide (z.val ≤ w.val)
 
 /-- **The LeetCode solution as a runnable relation-algebra term**: `Λ spec ≫ max D`. -/
 def solveE (n M : Nat) (price : Fin n → Int) : RE One ⟨2 * M + 1⟩ :=
-  .comp (AE (.atom (specFn n M price))) (maxRelE (.atom (geFn M)))
+  .comp (AE (.atom (specFn n M price))) (estE (.atom (geFn M)))
 
 /-- Decode the interpreter's answer column back to profits. -/
 def answers (n M : Nat) (price : Fin n → Int) : List (Option Int) :=
@@ -137,7 +137,7 @@ theorem specFn_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin (2 *
 
 /-- The interpreted LC 121 spec term, decoded pointwise: `solveE` accepts code `v` iff the
     coded profit is achievable (`specFn`) and `≥` every achievable coded profit — the
-    `Λ_comp_maxRel_apply` transport specialised to this problem's atoms.
+    `Λ_comp_est_apply` transport specialised to this problem's atoms.
     `rel.AutoDeriveSearch` chains this to the certified `L121.solve_correct`. -/
 theorem eval_solveE_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin (2 * M + 1)} :
     eval (solveE n M price) x v = true ↔
@@ -146,10 +146,10 @@ theorem eval_solveE_iff {n M : Nat} {price : Fin n → Int} {x : Fin 1} {v : Fin
   constructor
   · intro h
     obtain ⟨h1, h2⟩ :=
-      (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
+      (Λ_comp_est_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mp h
     exact ⟨h1, fun z hz => decide_eq_true_iff.mp (h2 z hz)⟩
   · rintro ⟨h1, h2⟩
-    exact (Λ_comp_maxRel_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
+    exact (Λ_comp_est_apply (.atom (specFn n M price)) (.atom (geFn M)) x v).mpr
       ⟨h1, fun z hz => decide_eq_true_iff.mpr (h2 z hz)⟩
 
 /-- Tiny instance `[1,2]` (buy 1 sell 2, profit 1), kernel-checked end to end:

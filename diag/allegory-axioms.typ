@@ -3113,7 +3113,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
 #pagebreak(weak: true)
-=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R and R a preorder` <sec-greedy-thm72>
+=== `⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R)` <sec-greedy-thm72>
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
@@ -3140,6 +3140,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`F(R)S⊑SR⟹⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
+    #src[Theorem 7.2, the greedy theorem; `S` monotonic on `R` — @mon-defn — and `R` a preorder]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
@@ -3563,22 +3565,21 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
-    [#frc([`prefix list(p)`]) ` est(R°)` \
-     #src[the specification; `est(R°)` is B&dM's `max R` — @est-defn]])],
+    [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`]])],
   [#tpan(4.2, ((2.10, [`prefix list(p)`]), (0.80, [`est(R°)`])),
     hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
     top: ((TXO, [`[A]`]),), bot: [`[A]`], names: true, w: 6.6)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
-    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[`prefix list(p)=⦇S⦈` — @takewhile-alg]])],
+    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
   [#tpan(4.2, ((2.10, [`⦇S⦈`]), (0.80, [`est(R°)`])),
     hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
     top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 4.2)],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
-    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[Theorem 7.2 at `R°`, so the hypothesis is monotonicity on
-     `(R°)°=R`, which is @takewhile-mono — one longest `p`-prefix kept at each `cons`, instead of
-     every `p`-prefix collected and one chosen at the end]])],
+    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R)S⊑SR` — @takewhile-mono —
+     for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
+     collected and one chosen at the end]])],
   [#tpan(4.2, ((2.10, [`⦇`#frc([`S`])` est(R°)⦈`]),),
     top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 5.6)],
 
@@ -3587,9 +3588,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#tpan(4.2, ((2.10, [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),),
     top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 8.9)],
 
-  [#vstep([], [], [`prefix° prefix∩R∩R°⊑𝟙` \ #src[context, @est-laws: only `R` between prefixes of
-    one list counts, so two prefixes of one list of equal length are equal and
-    #frc([`prefix list(p)`]) ` est(R°)` is simple — *the* longest, not *a* longest]])],
+  [#vstep([], [], [`prefix° prefix∩R∩R°⊑𝟙` \ #src[@est-laws at `prefix`: two prefixes of one list of
+    equal length are equal, so #frc([`prefix list(p)`]) ` est(R°)` is simple — *the* longest, not
+    *a* longest]])],
   [],
 
   [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and

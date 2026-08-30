@@ -27,7 +27,7 @@
      element) computes the same function (`hashTwoSum_eq`, a data-refinement simulation), so
      `thin_eq_hash`: spec → (Cor 8.1) → pruned fold → scan → `O(n)` hash program.
 
-  4. **Headline** (`solve_eq_Λ_maxRel`, the `leet/L53.lean` form): `solve = Λ tsSpec ≫ maxRel D`
+  4. **Headline** (`solve_eq_Λ_est`, the `leet/L53.lean` form): `solve = Λ tsSpec ≫ est D`
      in `Rel(Set)` — B&dM's `max D · Λ spec`, the function derived from the relational spec, as a
      morphism equation.  No uniqueness assumption on inputs.
 
@@ -119,8 +119,8 @@ def outc : TSChoice → Option (Nat × Nat)
   | _ => none
 
 /-- The selection preorder on answers: `none` is worst; among pairs, smaller second index wins,
-    then larger first index (`ansLe z w` = "`w` at least as good as `z`", the `minRel`
-    convention).  This is the order under which the scan's answer is the maximum. -/
+    then larger first index (`ansLe z w` = "`w` at least as good as `z`").  This is the order
+    under which the scan's answer is the maximum. -/
 def ansLe : Option (Nat × Nat) → Option (Nat × Nat) → Prop
   | none, _ => True
   | some _, none => False
@@ -882,14 +882,14 @@ theorem thin_eq_hash (nums : List Int) (target : Int) :
     thinTwoSum nums target = hashTwoSum nums target := by
   rw [thin_eq_scan, hashTwoSum_eq]
 
-/-! ## Headline: `solve = Λ spec ≫ maxRel D` (the `leet/L53.lean` form, for Two Sum) -/
+/-! ## Headline: `solve = Λ spec ≫ est D` (the `leet/L53.lean` form, for Two Sum) -/
 
-/-- The DERIVED program as a morphism equation: `graph thinTwoSum = Λ tsSpec ≫ maxRel D` —
+/-- The DERIVED program as a morphism equation: `graph thinTwoSum = Λ tsSpec ≫ est D` —
     B&dM's `max D · Λ spec`, both halves supplied by Corollary 8.1. -/
-theorem thin_eq_Λ_maxRel :
+theorem thin_eq_Λ_est :
     (graph (fun p : List Int × Int => thinTwoSum p.1 p.2) : Input ⟶ Ans)
-      = Λ tsSpec ≫ maxRel (fun w z => ansLe z w) := by
-  apply eq_Λ_comp_maxRel
+      = Λ tsSpec ≫ est (fun w z => ansLe z w) := by
+  apply eq_Λ_comp_est
   · exact fun x y h1 h2 => ansLe_antisym h2 h1
   · -- the program's answer is acceptable
     intro p
@@ -908,13 +908,13 @@ theorem thin_eq_Λ_maxRel :
         exact ((thinTwoSum_correct p.1 p.2).1 i' j' h).2 i j hts
 
 /-- **HEADLINE.**  LeetCode 1's allegory program (the scan = the `O(n)` hash program) IS the
-    function derived from its relational specification: `solve = Λ tsSpec ≫ maxRel D` in
+    function derived from its relational specification: `solve = Λ tsSpec ≫ est D` in
     `Rel(Set)` — Two Sum by CALCULATION, the same morphism equation shape as Kadane's
-    (`leet/L53.lean`'s `solve_eq_maxRel`), obtained through the THINNING theorem rather than
+    (`leet/L53.lean`'s `solve_eq_est`), obtained through the THINNING theorem rather than
     the greedy/Horner one. -/
-theorem solve_eq_Λ_maxRel :
-    solve = Λ tsSpec ≫ maxRel (fun w z => ansLe z w) := by
-  rw [← thin_eq_Λ_maxRel]
+theorem solve_eq_Λ_est :
+    solve = Λ tsSpec ≫ est (fun w z => ansLe z w) := by
+  rw [← thin_eq_Λ_est]
   show (graph (fun p : List Int × Int => twoSumFn p.1 p.2) : Input ⟶ Ans) = _
   exact congrArg (fun f : List Int × Int → Option (Nat × Nat) =>
     (graph f : Input ⟶ Ans)) (funext fun p => (thin_eq_scan p.1 p.2).symm)

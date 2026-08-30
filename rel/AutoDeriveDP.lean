@@ -60,7 +60,7 @@ open Freyd
 
 /-! ## Pointwise (`Rel(Set)`) readings of the power-allegory operations
 
-  `powerRel`, `minRel`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `Λ` does
+  `powerRel`, `est`, `leftDiv` and `∋` all unfold definitionally in `Rel(Set)`; `Λ` does
   not (it is a symmetric division), so its content is extracted through `Λ_eps_eq'` +
   `Λ_is_map'` instead.  (Shared home; previously private to `leet.L322_dp`.) -/
 
@@ -70,8 +70,8 @@ theorem powerRel_pt {α β : RelSet.{0}} (g : α ⟶ β) (P : (pow α).carrier)
       (∀ t, P t → ∃ u, g t u ∧ Q u) ∧ (∀ u, Q u → ∃ t, P t ∧ g t u) :=
   Iff.rfl
 
-theorem minRel_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
-    minRel R P x ↔ P x ∧ ∀ z, P z → R z x :=
+theorem est_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
+    est R P x ↔ P x ∧ ∀ z, P z → R x z :=
   Iff.rfl
 
 theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
@@ -209,8 +209,8 @@ def coalg : Fobj L E (⟨B⟩ : RelSet.{0}) ⟶ (⟨B⟩ : RelSet.{0}) := fun t 
   | Sum.inl d => P.tbase d v
   | Sum.inr (e, v') => P.tstep e v' v
 
-/-- The value order as a morphism, in `minRel`'s convention (`ord y x` = "`x` at most `y`"). -/
-def ord : (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := fun y x => P.le x y
+/-- The value order as a morphism, in `est`'s convention (`ord x y` = "`x` at most `y`"). -/
+def ord : (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := fun x y => P.le x y
 
 /-- The fallback: the constant-`∞` map. -/
 def tau : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := graph fun _ => P.top
@@ -232,14 +232,14 @@ theorem hylo_pt (v : B) (x : Ans) : P.hylo v x ↔ P.Hpt v x := by
 /-! ## The abstract hypotheses of `dynamic_programming_inf`, discharged once -/
 
 /-- `R·R ⊑ R`. -/
-theorem ord_trans : P.ord ≫ P.ord ⊑ P.ord := by
+theorem ord_trans : P.ord° ≫ P.ord° ⊑ P.ord° := by
   apply le_iff.mpr
   rintro y x ⟨z, hzy, hxz⟩
   exact P.le_trans hxz hzy
 
 /-- `MonotonicAlg h R`, from `le_refl` (base) and `hstep_mono` (step). -/
-theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord := by
-  show (F L E).map P.ord ≫ P.alg ⊑ P.alg ≫ P.ord
+theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord° := by
+  show (F L E).map P.ord° ≫ P.alg ⊑ P.alg ≫ P.ord°
   apply le_iff.mpr
   rintro u x ⟨w, hFw, hx⟩
   refine ⟨P.algFn u, rfl, ?_⟩
@@ -266,7 +266,7 @@ theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord := by
       exact P.hstep_mono e hyy
 
 /-- `hτ`: the fallback is top-valued — everything is `le` it. -/
-theorem tau_top : P.tau° ≫ topHom (⟨B⟩ : RelSet.{0}) (⟨Ans⟩ : RelSet.{0}) ⊑ P.ord := by
+theorem tau_top : P.tau° ≫ topHom (⟨B⟩ : RelSet.{0}) (⟨Ans⟩ : RelSet.{0}) ⊑ P.ord° := by
   apply le_iff.mpr
   rintro k x ⟨v, hkv, -⟩
   have hk : k = P.top := hkv
@@ -342,7 +342,7 @@ theorem memo_mem_body {X : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0})} 
       ⟨fun t hDt => ⟨P.stepVal t, hg t hDt, t, hDt, rfl⟩,
        fun u hu => by obtain ⟨t, hDt, hut⟩ := hu; exact ⟨t, hDt, hut ▸ hg t hDt⟩⟩
   -- the memo value lower-bounds every candidate
-  have hlb : ∀ z, (∃ t, D t ∧ z = P.stepVal t) → P.ord z (P.memo v) := by
+  have hlb : ∀ z, (∃ t, D t ∧ z = P.stepVal t) → P.ord (P.memo v) z := by
     rintro z ⟨t, hDt, rfl⟩
     cases t with
     | inl d => exact P.memo_lb_base ((hDmem _).mp hDt)
@@ -351,10 +351,10 @@ theorem memo_mem_body {X : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0})} 
       exact P.memo_lb_step ((hDmem _).mp hDt)
   rcases P.memo_mem v with ⟨d, hTd, hval⟩ | ⟨e, v', hTs, hval⟩ | hval
   · exact Or.inl ⟨D, hD, _, hpow,
-      (minRel_pt P.ord _ _).mpr ⟨⟨Sum.inl d, (hDmem _).mpr hTd, hval⟩, hlb⟩⟩
+      (est_pt P.ord _ _).mpr ⟨⟨Sum.inl d, (hDmem _).mpr hTd, hval⟩, hlb⟩⟩
   · exact Or.inl ⟨D, hD, _, hpow,
-      (minRel_pt P.ord _ _).mpr ⟨⟨Sum.inr (e, v'), (hDmem _).mpr hTs, hval⟩, hlb⟩⟩
-  · exact Or.inr ⟨hval, D, hD, _, hpow, (lb_pt P.ord _ _).mpr hlb⟩
+      (est_pt P.ord _ _).mpr ⟨⟨Sum.inr (e, v'), (hDmem _).mpr hTs, hval⟩, hlb⟩⟩
+  · exact Or.inr ⟨hval, D, hD, _, hpow, (lb_pt P.ord° _ _).mpr hlb⟩
 
 /-- **The executable-side bridge**: the memo function's graph is inside the least fixed point
     of the ∞-DP body — induction on the measure (through an explicit fuel bound), one
@@ -383,7 +383,7 @@ theorem memo_mem_mu (v : B) :
     discharged by the bundle, composed with the bridge `memo_mem_mu`. -/
 theorem solve_le_spec :
     (graph P.memo : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}))
-      ⊑ Λ (P.hylo ∪ P.tau) ≫ minRel P.ord := by
+      ⊑ Λ (P.hylo ∪ P.tau) ≫ est P.ord := by
   have habs := dynamic_programming_inf (F := F L E) (F_preservesRecip L E) (initial L E)
     (graph_map P.algFn) P.alg_mono P.ord_trans P.hstrict P.tau_top
   apply le_iff.mpr
@@ -399,7 +399,7 @@ theorem solve_le_spec :
 theorem correct (v : B) :
     (P.Hpt v (P.memo v) ∨ P.memo v = P.top) ∧ ∀ x, P.Hpt v x → P.le (P.memo v) x := by
   have h := le_iff.mp P.solve_le_spec v (P.memo v) rfl
-  rw [Λ_comp_minRel] at h
+  rw [Λ_comp_est] at h
   obtain ⟨hmem, hlb⟩ := h
   constructor
   · rcases hmem with hH | hτ

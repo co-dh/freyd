@@ -17,8 +17,8 @@
   Surface grammar uses the BOOK's Unicode (Freyd, *Categories, Allegories*), matching `RelInterp`:
   `≫` composition (diagram order), `∩` meet, `∪` join, `/` right- and `\` left-division (all ONE
   precedence level, left-associative — the flat left fold), postfix `°` converse (book `R°`, binds
-  tightest), and call-style keywords `id(o)`, `eps(o)`, `Λ(e)` (power transpose), `min(e)`, `max(e)`.
-  Keywords are call-style so they do not reserve the tokens `id`/`min`/`max` as global keywords
+  tightest), and call-style keywords `id(o)`, `eps(o)`, `Λ(e)` (power transpose), `est(e)`.
+  Keywords are call-style so they do not reserve the tokens `id`/`est` as global keywords
   (checked at the bottom).  The examples below are the point: each is a theorem no `.ralg` file can state.
 -/
 import rel.RelInterp
@@ -31,7 +31,7 @@ declare_syntax_cat ralg
 
 -- primaries
 syntax ident                      : ralg  -- an atom: a Lean constant of type `RE a b`
-syntax ident "(" ralg ")"         : ralg  -- call-style prefix: Λ(e), min(e), max(e), id(a), eps(a)
+syntax ident "(" ralg ")"         : ralg  -- call-style prefix: Λ(e), est(e), id(a), eps(a)
 syntax "(" ralg ")"               : ralg
 syntax "!(" term ")"              : ralg  -- splice: any Lean term of type `RE a b`
 -- postfix converse `°` (book `R°`), binds tightest
@@ -53,8 +53,7 @@ macro_rules
   | `(rel⟦ id($o:ident) ⟧)       => `(RE.id $o)
   | `(rel⟦ eps($o:ident) ⟧)      => `(RE.eps $o)
   | `(rel⟦ Λ($a:ralg) ⟧)         => `(AE rel⟦ $a ⟧)
-  | `(rel⟦ min($a:ralg) ⟧)       => `(minRelE rel⟦ $a ⟧)
-  | `(rel⟦ max($a:ralg) ⟧)       => `(maxRelE rel⟦ $a ⟧)
+  | `(rel⟦ est($a:ralg) ⟧)       => `(estE rel⟦ $a ⟧)
   | `(rel⟦ $a:ralg ≫ $b:ralg ⟧)  => `(RE.comp rel⟦ $a ⟧ rel⟦ $b ⟧)
   | `(rel⟦ $a:ralg ∩ $b:ralg ⟧)  => `(RE.meet rel⟦ $a ⟧ rel⟦ $b ⟧)
   | `(rel⟦ $a:ralg ∪ $b:ralg ⟧)  => `(RE.join rel⟦ $a ⟧ rel⟦ $b ⟧)
@@ -94,9 +93,8 @@ theorem eval_unconv2 {a b : FinObj} (e : RE a b) : eval (unconv2 e) = eval e := 
   | .conv (.div _ _) | .conv (.eps _) | .meet _ _ | .join _ _ | .bot _ _ | .top _ _
   | .div _ _ | .eps _ => rfl
 
--- Regression: the call-style keywords must NOT reserve `id`/`min`/`max` as global tokens.
+-- Regression: the call-style keywords must NOT reserve `id`/`est` as global tokens.
 example : id 3 = 3 := rfl
 example : min 1 2 = 1 := rfl
-example : max 1 2 = 2 := rfl
 
 end Freyd.Alg.FinRel

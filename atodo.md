@@ -24,7 +24,7 @@ Foundation (DONE):
       proviso (`hfus_concrete` via `perm_mem`) — so `selection_sort_correct_concrete` holds for ANY
       `R : A → A → Prop` with NO hypotheses.  ✅ FIRST fully un-parameterised optimisation case study.
 - [~] §7.3  Planning a company party — `A7_3_Party.lean`: `choose_monotonic` (first claim, concrete
-      product fact) + `company_party_greedy` (party planning = greedy theorem `greedy_max`).  PARTIAL:
+      product fact) + `company_party_greedy` (party planning = greedy theorem `greedy`).  PARTIAL:
       the rose-tree datatype `tree A = node(A, list(tree A))` (NESTED inductive) + concrete `party`
       catamorphism + `⟨include,exclude⟩` monotonicity DEFERRED — needs a rose-tree engine (mutual
       tree/list structural fold; harder than cons/snoc-lists).  Tree engine = the gate for §7.3 fully.
@@ -82,7 +82,7 @@ The rest are NOT independent one-offs — they share two prerequisite layers tha
 
 Per-section dependency (⇒ = also needs the concrete optimisation layer already built abstractly):
 - §6.6 sorting = cons-lists + `perm` + `ordered` catamorphism + fusion (⦇[nil,select°]⦈°).
-- §7.3–7.5 = cons-lists + `subseq`/`partition` + `minRel`/greedy (A7) on concrete cost.
+- §7.3–7.5 = cons-lists + `subseq`/`partition` + `est`/greedy (A7) on concrete cost.
 - §8.2–8.6 = cons-lists/trees + `thinRel` (A8) on concrete data.
 - §9.2–9.4 = cons-lists + DP (A9) on concrete data; §9.1 case studies were the deferred ones.
 - §10.2–10.4 = cons-lists + greedy (A10) on concrete data.
