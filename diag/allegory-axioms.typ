@@ -4704,9 +4704,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
 // GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
-#let dknee(x, xo) = 0.45 + 0.25 * (xo - x)
+// CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
+// edge, where the wire strikes through the port labels.
+#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * (xo - x), 0.55 * drop)
 #let dlane(xo, h, x, y0, y1, nm, un) = {
-  let k = dknee(x, xo)
+  let top = if y0 == "top" { h } else { y0 }
+  let k = dknee(x, xo, top - (if y1 == "bot" { 0 } else { y1 }))
   let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
     ((xo, y0), (x, y0 - k))
   }
@@ -4723,8 +4726,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for l in lanes { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
   for b in beads {
     let xs = b.at(3, default: none)
-    if xs != none { d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: black)) }
-    hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black))
+    let c = b.at(2, default: black)
+    if xs != none { d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: c)) }
+    hm-bead((xo, b.at(0)), b.at(1), col: c)
   }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
