@@ -1348,7 +1348,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
     wire((0, 0), (0.34, 0))
-    // 1.57 = y + 0.95, the clearance @subseq-union-slide leaves above a branch it labels.
+    // 1.57 = y + 0.95, the clearance §@sec-comb's tapes leave above a branch they label.
     tape((0.34, -1.57), (4.24, 1.57))
     tape-fork((0.56, 0), sp: y, len: 0.42)
     // Mirrored and tinted: this file draws a converse by flipping the box, so these are `l°` and `r°`.
@@ -2116,8 +2116,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RXF = 1.65                                   // the `F` wire
 #let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
 #let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
+#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
+  // A relator wire a unit OPENS and nothing closes: it runs from that bead to the bottom edge.
+  for (x, y, l, p) in births { hm-wire(((x, y), (x, 0))); hm-bead((x, y), l); hm-port((x, 0), p, dir: -1) }
   for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
   for (y, l) in beads { hm-bead((xo, y), l) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
@@ -2363,134 +2365,134 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
 ]]<cup-defn>
 
-#disp[
-#zline(
-  zsqc([$frac(#[`F(∋) [nil,cons∪π₂]`], ∋)$], none),
-  zstep(op: sym.eq, under: true)[`FX=𝟏+A×X`],
-  zsqc([$frac(#[`(𝟙+𝟙×∋) [nil,cons∪π₂]`], ∋)$], none),
-  zstep(op: sym.eq, under: true)[coproduct],
-  zsqc([$frac(#[`[nil,(𝟙×∋)(cons∪π₂)]`], ∋)$], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[coproduct of maps],
-  zsqc([`[`$frac(#[`nil`], ∋)$`,` $frac(#[`(𝟙×∋)(cons∪π₂)`], ∋)$`]`], none),
-  zstep(op: sym.eq, under: true)[singleton],
-  zsqc([`[nil` $frac(#[`𝟙`], ∋)$`,` $frac(#[`(𝟙×∋)(cons∪π₂)`], ∋)$`]`], none),
-)
-]<subseq-EW-case>
+// §12.1's bracket: the tape's fork IS `F([A])=𝟏+A×[A]`'s case split, `𝟏` above and the pair below,
+// ONE WIRE each, each branch opening with an injection's converse — `[R,S]=l°R∪r°S` (@coprod-laws).
+#let SBY = 1.15                                   // the branch height
+#let SBW = 0.92                                   // circuit.typ's box width, which it does not export
+#let sbw(items, inj) = (if inj { SBW + LEAD } else { 0.0 }) + items.map(it => it.at(1)).sum(default: 0.0) + calc.max(items.len() - 1, 0) * LEAD
+#let sbtw(up, lo, inj: true) = calc.max(sbw(up, inj), sbw(lo, inj)) + 1.92
+#let sbbranch(x, y, inj, items, cw) = {
+  let cx = x
+  if inj != none {
+    gbox((cx, y), inj, flip: true, fill: TINT); cx = cx + SBW
+    wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD
+  }
+  for (i, it) in items.enumerate() {
+    if i > 0 { wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD }
+    gbox((cx, y), it.at(0), w: it.at(1), h: it.at(3, default: 0.6), chamfer: it.at(2))
+    cx = cx + it.at(1)
+  }
+  if x + cw - cx > 0.02 { wire((cx, y), (x + cw, y)) }
+}
+// `inj: false` draws a `∪` instead: both its branches carry the same object and inject nothing.
+#let sbtape(x, up, lo, inj: true) = {
+  let cw = calc.max(sbw(up, inj), sbw(lo, inj))
+  let hh = SBY + 0.45 + (up + lo).map(it => it.at(3, default: 0.6)).fold(0.6, calc.max) / 2
+  tape((x, -hh), (x + cw + 1.92, hh))
+  tape-fork((x + 0.22, 0), sp: SBY, len: 0.7)
+  sbbranch(x + 0.92, SBY, if inj { [`l`] } else { none }, up, cw)
+  sbbranch(x + 0.92, -SBY, if inj { [`r`] } else { none }, lo, cw)
+  tape-join((x + cw + 1.62, 0), sp: SBY, len: 0.7)
+}
+// A box is `(label, width, chamfer)`, or `(…, height)` where a fraction needs two lines.
+#let sb-nil = ([`nil`], 1.05, false)
+#let sb-cp = ([`cons∪π₂`], 3.05, true)
+#let sb-me = ([`𝟙×∋`], 1.55, true)
+#let sb-one = ([`𝟙`], 0.7, false)
+#let sb-li = ([`l`], SBW, false)
+#let sb-ri = ([`r`], SBW, false)
+#let sb-cons = ([`cons`], 1.3, false)
+#let sb-p2 = ([`π₂`], 1.3, false)
+#let sb-ni = ([`∋`], 0.7, true)
+#let sb-nilE = (frc([`nil`]), 1.3, false, TH)
+#let sb-oneE = (frc([`𝟙`]), 0.85, false, TH)
+#let sb-lowE = (frc([`(𝟙×∋)(cons∪π₂)`]), 3.9, false, TH)
+#let sb-consE = (frc([`(𝟙×∋)cons`]), 2.9, false, TH)
+#let sb-p2E = (frc([`π₂∋`]), 1.5, false, TH)
+#let sb-meE = (frc([`𝟙×∋`]), 1.7, false, TH)
+#let sb-Econs = ([`E(cons)`], 2.0, false)
 
-// The `coproduct` step above on @coprod-laws' tape, because the `[·,·]` brackets hide what moves: the
-// sum is one box per branch, so the second fork meets the first and each branch keeps its own composite.
-#disp[#row((
-  box(cetz.canvas(length: 0.8cm, {
-    let y = 1.15
-    wire((0, 0), (0.34, 0))
-    // `R + S ≜ [R l, S r]`, so a branch of the sum ENDS by injecting back — that upright `l` is what
-    // the second tape's `l°` cancels against.
-    tape((0.34, -1.9), (6.33, 1.9))
-    tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`l`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
-    gbox((2.52, y), [`𝟙`], chamfer: false, w: 0.7); wire((3.22, y), (3.56, y))
-    gbox((3.56, y), [`l`], chamfer: false); wire((4.48, y), (5.33, y))
-    gbox((1.26, -y), [`r`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
-    gbox((2.52, -y), [`𝟙×∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
-    gbox((4.41, -y), [`r`], chamfer: false)
-    tape-join((6.03, 0), sp: y, len: 0.7)
-    wire((6.33, 0), (7.18, 0))
-    tape((7.18, -1.9), (13.41, 1.9))
-    tape-fork((7.40, 0), sp: y, len: 0.7)
-    gbox((8.10, y), [`l`], flip: true, fill: TINT); wire((9.02, y), (9.36, y))
-    gbox((9.36, y), [`nil`], chamfer: false, w: 1.05); wire((10.41, y), (12.41, y))
-    gbox((8.10, -y), [`r`], flip: true, fill: TINT); wire((9.02, -y), (9.36, -y))
-    gbox((9.36, -y), [`cons∪π₂`], w: 3.05)
-    tape-join((13.11, 0), sp: y, len: 0.7)
-    wire((13.41, 0), (13.75, 0))
-  })),
-  [#h(12pt) $=$ #h(12pt)],
-  box(cetz.canvas(length: 0.8cm, {
-    let y = 1.15
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -1.9), (8.46, 1.9))
-    tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`l`], flip: true, fill: TINT); wire((2.18, y), (2.52, y))
-    gbox((2.52, y), [`nil`], chamfer: false, w: 1.05); wire((3.57, y), (7.46, y))
-    gbox((1.26, -y), [`r`], flip: true, fill: TINT); wire((2.18, -y), (2.52, -y))
-    // Chamfered where the rest of this section is not: `𝟙 × ∋` and `cons ∪ π₂` are relations, not maps.
-    gbox((2.52, -y), [`𝟙×∋`], w: 1.55); wire((4.07, -y), (4.41, -y))
-    gbox((4.41, -y), [`cons∪π₂`], w: 3.05)
-    tape-join((8.16, 0), sp: y, len: 0.7)
-    wire((8.46, 0), (8.80, 0))
-  })),
-), s: 92%)
-#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "coproduct": `R+S≜[Rl,Sr]` and
-  `l[R,S]=R`, `r[R,S]=S` — @coprod-laws.]])]<subseq-sum-branchwise>
+// The chain's five circuits.  The type at the right end is the row's own: `[A]` while the transpose is
+// still outside the bracket, `E([A])` from the row where each branch carries its own.
+#let sbA1 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.62, 0, black)[`F(E([A]))`]
+  wire((0, 0), (LEAD, 0)); gbox((LEAD, 0), [`F(∋)`], w: 1.35)
+  wire((LEAD + 1.35, 0), (2 * LEAD + 1.35, 0))
+  sbtape(2 * LEAD + 1.35, (sb-nil,), (sb-cp,))
+  let xe = 2 * LEAD + 1.35 + sbtw((sb-nil,), (sb-cp,))
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 78%)
+#let sbA2 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.62, 0, black)[`F(E([A]))`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-one, sb-li), (sb-me, sb-ri))
+  let x1 = LEAD + sbtw((sb-one, sb-li), (sb-me, sb-ri))
+  wire((x1, 0), (x1 + 0.85, 0))
+  sbtape(x1 + 0.85, (sb-nil,), (sb-cp,))
+  let xe = x1 + 0.85 + sbtw((sb-nil,), (sb-cp,))
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 78%)
+#let sbA3 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.62, 0, black)[`F(E([A]))`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-nil,), (sb-me, sb-cp))
+  let xe = LEAD + sbtw((sb-nil,), (sb-me, sb-cp))
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 78%)
+#let sbA4 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.62, 0, black)[`F(E([A]))`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-nilE,), (sb-lowE,))
+  let xe = LEAD + sbtw((sb-nilE,), (sb-lowE,))
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 1.10, 0, black)[`E([A])`]
+}), s: 78%)
+#let sbA5 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.62, 0, black)[`F(E([A]))`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-nil, sb-oneE), (sb-lowE,))
+  let xe = LEAD + sbtw((sb-nil, sb-oneE), (sb-lowE,))
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 1.10, 0, black)[`E([A])`]
+}), s: 78%)
 
-#disp[
-#zline(
-  zsqc([$frac(#[`(𝟙×∋)(cons∪π₂)`], ∋)$], none),
-  zstep(op: sym.eq, under: true)[`∪` composes, `π₂` natural],
-  zsqc([$frac(#[`(𝟙×∋) cons∪π₂∋`], ∋)$], none),
-  zstep(op: sym.eq, under: true)[`cup`],
-  zsqc([`⟨`$frac(#[`(𝟙×∋) cons`], ∋)$`,` $frac(#[`π₂∋`], ∋)$`⟩ cup`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[absorption, fusion],
-  zsqc([`⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup`], none),
-)
-]<subseq-EW-join>
+// The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
+// object wire and `cons` is where the `A×−` wire ends on it.  `born` adds the `E` the transpose opens.
+#let SXU = 0.55                                   // the `E` the singleton opens, outside everything
+#let SXF = 1.55                                   // the `A×−` wire, on a wider lane than §13.3.1's `F`
+#let SXC = 2.45                                   // the `E` the counit `∋` closes, inside `A×−`
+#let SXO = 3.15                                   // the object wire
+#let sbpan(born: false, names: false) = tpan(4.4, ((2.30, [`∋`]), (1.20, [`cons`])),
+  joins: ((SXC, 2.30, 0.40), (SXF, 1.20, 0.70)),
+  births: if born { ((SXU, 3.35, frc([`𝟙`]), [`E`]),) } else { () },
+  top: ((SXF, [`A×−`]), (SXC, [`E`]), (SXO, [`[A]`])), bot: [`[A]`], names: names, xo: SXO, w: 5.0)
 
-// The first step of the chain above, cut in two so both halves are visible: the tape IS the `∪`
-// (@coprod-laws), so distributing is the box entering it, and `∋` crossing `π₂` is the second panel's
-// bottom branch redrawn.  No injections on these branches — the union is not over a coproduct here.
-// An object is named ONLY where it changes, and every label sits 0.62 ABOVE the wire it names —
-// except panel 2's, centred between two branches that carry the same object there.
-#disp[#chain((
-  cetz.canvas(length: 0.8cm, {
-    let y = 1.15
-    lab(-1.52, 0, black)[`A×E([A])`]
-    wire((0, 0), (0.34, 0))
-    gbox((0.34, 0), [`𝟙×∋`], w: 1.55); wire((1.89, 0), (4.00, 0))
-    lab(2.95, 0.62, black)[`A×[A]`]
-    tape((4.00, -2.10), (7.22, 2.10))
-    tape-fork((4.22, 0), sp: y, len: 0.7)
-    gbox((4.92, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((4.92, -y), [`π₂`], chamfer: false, w: 1.3)
-    tape-join((6.92, 0), sp: y, len: 0.7)
-    wire((7.22, 0), (7.56, 0))
-  }),
-  cetz.canvas(length: 0.8cm, {
-    let y = 1.15
-    lab(-1.2, 0, black)[$=$]
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -2.10), (5.45, 2.10))
-    tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`𝟙×∋`], w: 1.55); wire((2.81, y), (3.15, y))
-    gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((1.26, -y), [`𝟙×∋`], w: 1.55); wire((2.81, -y), (3.15, -y))
-    gbox((3.15, -y), [`π₂`], chamfer: false, w: 1.3)
-    lab(2.98, 0, black)[`A×[A]`]
-    tape-join((5.15, 0), sp: y, len: 0.7)
-    wire((5.45, 0), (5.79, 0))
-  }),
-  cetz.canvas(length: 0.8cm, {
-    let y = 1.15
-    lab(-1.2, 0, black)[$=$]
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -2.10), (5.45, 2.10))
-    tape-fork((0.56, 0), sp: y, len: 0.7)
-    gbox((1.26, y), [`𝟙×∋`], w: 1.55); wire((2.81, y), (3.15, y))
-    gbox((3.15, y), [`cons`], chamfer: false, w: 1.3)
-    gbox((1.26, -y), [`π₂`], chamfer: false, w: 1.3); wire((2.56, -y), (2.90, -y))
-    gbox((2.90, -y), [`∋`], w: 0.7); wire((3.60, -y), (4.45, -y))
-    lab(2.98, 1.77, black)[`A×[A]`]; lab(2.73, -0.53, black)[`E([A])`]
-    tape-join((5.15, 0), sp: y, len: 0.7)
-    wire((5.45, 0), (5.79, 0))
-    lab(6.42, 0, black)[`[A]`]
-  }),
-), ("", [composition over `∪`], [`π₂` natural]), s: 88%)
-#align(center, block(inset: (y: 4pt))[#src[B&dM p. 124, "composition over join, naturality of `π₂`":
-  `T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross; `(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality
-  because `𝟙` is entire.]])]<subseq-union-slide>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
+    #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns]],
+  table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
+    [*Hinze–Marsden* — the `cons` operand]),
+
+  [#vstep([], sbA1, [#frc([`F(∋)[nil,cons∪π₂]`])])],
+  [#sbpan(names: true)],
+
+  [#vstep(EQ, sbA2, [#frc([`(𝟙+𝟙×∋)[nil,cons∪π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
+  // Empty: every step below moves a bracket, and a bracket has no Hinze–Marsden shape.
+  [],
+
+  [#vstep(EQ, sbA3, [#frc([`[nil,(𝟙×∋)(cons∪π₂)]`]) \
+    #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
+  [],
+
+  [#vstep(EQ, sbA4, [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
+    #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons∪π₂)]`]])],
+  [],
+
+  [#vstep(EQ, sbA5, [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
+    #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+  [],
+))]<subseq-EW-case>
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
@@ -2503,6 +2505,85 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   node(AE.at(0), AE.at(1), black, `A×E([A])`); node(E.at(0), E.at(1), black, `E([A])`)
   node(AL.at(0), AL.at(1), black, `A×[A]`); node(L.at(0), L.at(1), black, `[A]`)
 }))]<subseq-outr-square>
+
+// The union under the transpose: `⟨·,·⟩` copies the input, one transpose per branch, and `cup` joins
+// the two sets.  Both strands carry the same object, so the fork costs no crossing.
+#let sbfork(a, b) = {
+  let s = 0.95
+  let rw(items) = items.map(it => it.at(1)).sum(default: 0.0) + calc.max(items.len() - 1, 0) * LEAD
+  let w = calc.max(rw(a), rw(b))
+  lab(-1.52, 0, black)[`A×E([A])`]
+  wire((0, 0), (LEAD, 0)); wiredot((LEAD, 0))
+  bend((LEAD, 0), (1.10, s)); bend((LEAD, 0), (1.10, -s))
+  for (y, items) in ((s, a), (-s, b)) {
+    wire((1.10, y), (1.10 + LEAD, y))
+    let cx = 1.10 + LEAD
+    for (i, it) in items.enumerate() {
+      if i > 0 { wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD }
+      gbox((cx, y), it.at(0), w: it.at(1), h: it.at(3, default: 0.6), chamfer: it.at(2))
+      cx = cx + it.at(1)
+    }
+    wire((cx, y), (1.10 + w + 2 * LEAD, y))
+  }
+  let xc = 1.10 + w + 2 * LEAD
+  gbox((xc, 0), [`cup`], w: 1.15, h: 2.6, chamfer: false)
+  wire((xc + 1.15, 0), (xc + 1.15 + LEAD, 0)); lab(xc + 2.40, 0, black)[`E([A])`]
+}
+#let sbB1 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.52, 0, black)[`A×E([A])`]
+  wire((0, 0), (LEAD, 0)); gbox((LEAD, 0), [`𝟙×∋`], w: 1.55)
+  wire((LEAD + 1.55, 0), (2 * LEAD + 1.55, 0))
+  sbtape(2 * LEAD + 1.55, (sb-cons,), (sb-p2,), inj: false)
+  let xe = 2 * LEAD + 1.55 + sbtw((sb-cons,), (sb-p2,), inj: false)
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 82%)
+#let sbB2 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.52, 0, black)[`A×E([A])`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-me, sb-cons), (sb-me, sb-p2), inj: false)
+  let xe = LEAD + sbtw((sb-me, sb-cons), (sb-me, sb-p2), inj: false)
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 82%)
+#let sbB3 = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.52, 0, black)[`A×E([A])`]
+  wire((0, 0), (LEAD, 0))
+  sbtape(LEAD, (sb-me, sb-cons), (sb-p2, sb-ni), inj: false)
+  let xe = LEAD + sbtw((sb-me, sb-cons), (sb-p2, sb-ni), inj: false)
+  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
+}), s: 82%)
+#let sbB4 = P(cetz.canvas(length: 0.8cm, sbfork((sb-consE,), (sb-p2E,))), s: 82%)
+#let sbB5 = P(cetz.canvas(length: 0.8cm, sbfork((sb-meE, sb-Econs), (sb-p2,))), s: 82%)
+
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+    #src[B&dM §5.6, p. 124]],
+  table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
+    [*Hinze–Marsden* — the `cons` operand]),
+
+  [#vstep([], sbB1, [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+  [#sbpan()],
+
+  [#vstep(EQ, sbB2, [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
+  // Empty: the step is in the `π₂` operand, which the panel above does not draw.
+  [],
+
+  [#vstep(EQ, sbB3, [#frc([`(𝟙×∋)cons∪π₂∋`]) \
+    #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
+  [],
+
+  [#vstep(EQ, sbB4, [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
+    #src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
+  [#sbpan(born: true)],
+
+  [#vstep(EQ, sbB5, [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+    #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
+     #frc([`∋`])` =𝟙` on the `π₂` operand]])],
+  // Empty: `E((𝟙×∋)cons)=E(𝟙×∋)E(cons)` costs no notation, so the panel above is unchanged.
+  [],
+))]<subseq-EW-join>
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
