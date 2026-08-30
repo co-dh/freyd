@@ -4144,7 +4144,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
 // it.  A hand born ON the object wire is one; a unit, whose source is `Id`, floats in its own lane.
 // Bound outside the drawing so the scan line is handed the nodes that DREW, not the argument alone.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3) = {
+// `hdx` is the hand's name offset FROM its lane: a one-letter functor fits left of it, a wide one
+// like `list` would cross its own wire there and goes right, into the gap before the object wire.
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3,
+    hdx: -0.32) = {
   let ns = nodes + hands.filter(hd => hd.at(6) != none and hd.at(0) == xo).map(hd => (hd.at(1), hd.at(2)))
   dpan(h, w, xo, {
   let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
@@ -4154,7 +4157,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   }
   for (x0, y0, xe, x1, y1, l, b) in hands {
     hm-wire(((x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)))
-    hm-name((xe - 0.32, (y0 + y1) / 2), l)
+    hm-name((xe + hdx, (y0 + y1) / 2), l)
     if b != none { hm-bead((x0, y0), b, dx: xo - x0 + 0.32) }
   }
   for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
@@ -4454,12 +4457,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // Every row is drawn at ONE length and ONE scale: a scale typed per cell is a scale that drifts.
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 80%)
 
-// HINZE–MARSDEN: @mss-prefix-sum's picture at this algebra, with `[[A]]` counted out as TWO `list`
-// wires beside `A` — the algebra kills `A×−` onto the outer one, and `list(g)` is the bead `g`
-// killing the inner one while the outer runs past.  The fork stays whole in one bead: `⟨·,·⟩` needs
-// the product BIFUNCTOR, which is not a wire, and `list(g)` standing still is what the row shows.
-#let mtop4 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`list`]), (MD, [`A`]))
-#let mbot4 = ((MB, [`list`]), (MD, [`B`]))
+// HINZE–MARSDEN: @mss-prefix-sum's picture at this algebra.  `[[A]]` is ONE wire — the algebra's
+// source is `A×[[A]]`, so ITS bead takes the whole of it — and opens only around the lifting
+// `list(g)`, where `g` sits on the inner `[A]` and the outer `list` runs past.  The fork stays whole
+// in one bead: `⟨·,·⟩` needs the product BIFUNCTOR, which is not a wire.
+// The widening's ends carry no bead: `[[A]]=list([A])` and `[B]=list(B)`, one 1-cell either side.
+#let MSL = MA + 0.90                              // the `list` the widening opens: no port label,
+#let MSO = MSL + 1.60                             // and the gap to its right carries its name
+#let mtop2 = ((MA, [`A×−`]), (MSO, [`[[A]]`]))
+#let mbot2 = ((MSO, [`[B]`]),)
+#let mss-hand = ((MSO, 2.45, MSL, MSO, 1.35, [`list`], none),)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -4472,9 +4479,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     (m-lg,))), [`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)` \
     #src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
      `cons(cons(a,head(tails xs)),tails xs)`]])],
-  [#mpan(MD, 8.6, mtop4, mbot4, wires: (MB,),
-    joins: ((MA, MB, 3.00, 0.60), (MC, MD, 1.90, 0.60)),
-    beads: ((MB, 3.00, [`⟨(𝟙×head)cons,` \ `π₂⟩cons`]), (MD, 1.90, [`g`])))],
+  [#mpan(MSO, 7.35, mtop2, mbot2, hands: mss-hand, hdx: 0.68,
+    joins: ((MA, MSO, 3.00, 1.10),),
+    beads: ((MSO, 3.00, [`⟨(𝟙×head)cons,` \ `π₂⟩cons`]), (MSO, 1.90, [`g`])))],
 
   [#vstep(EQ, mss-pic(mss-row((m-nil, m-g, m-wrap), (), (m-head,), [`cons`], 1.4, false, (m-g,), (),
     (m-lg,), ())), [`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]` \
@@ -4496,9 +4503,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     #src[fork, relator — the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
      at `c,f:=zero,⊕`. @cata-fusion then reads off
      `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]])],
-  [#mpan(MD, 8.6, mtop4, mbot4, wires: (MB,),
-    joins: ((MC, MD, 1.90, 0.60), (MA, MB, 0.80, 1.40)),
-    beads: ((MD, 1.90, [`g`]), (MB, 0.80, [`⟨(𝟙×head)f,` \ `π₂⟩cons`])))],
+  [#mpan(MSO, 7.35, mtop2, mbot2, hands: mss-hand, hdx: 0.68,
+    joins: ((MA, MSO, 0.65, 0.85),),
+    beads: ((MSO, 1.90, [`g`]), (MSO, 0.65, [`⟨(𝟙×head)f,` \ `π₂⟩cons`])))],
 ))]<mss-scan>
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
