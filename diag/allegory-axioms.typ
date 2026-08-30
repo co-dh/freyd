@@ -412,7 +412,7 @@ And one law relating `∩` to composition, which is *not* an equation:
   table.header([*semi-distributivity, and what supplies it*], [*picture*]),
 
   [`R (S∩T)⊑RS∩RT` — the lax copy law. #src[Equality exactly when `R` is single valued: the Maps section's
-   `F(R∩S)=FR∩FS`.]], P(p-semidistrib),
+   `F(R∩S)=FR∩FS`. `lean:AOP.A4_1.comp_inter_le@c62bf05a`]], P(p-semidistrib),
 )]<meet-semidistrib>
 
 #pagebreak(weak: true)
@@ -448,14 +448,16 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
   [`Dom(R)≜𝟙∩RR°`],
-  [`Dom(R)⊑A⟺R⊑AR`, for `A` coreflexive],
-  [`Dom(RS)⊑Dom(R)`],
-  [`Dom(R∩S)=𝟙∩SR°`],
+  [`Dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[`lean:AOP.A4_2.dom_UP@9eaee77f`]],
+  [`Dom(RS)⊑Dom(R)` #src[`lean:Freyd.S2_10.dom_comp_le@a99434dd`]],
+  [`Dom(R∩S)=𝟙∩SR°` #src[`lean:Freyd.S2_10.dom_inter@e702a791`]],
   [`R` entire `⟺Dom(R)=𝟙⟺𝟙⊑RR°`],
   [`R` simple `⟺R°R⊑𝟙`],
   [`R` a map `⟺R` entire and simple],
-  [`R,S` entire `⟹RS` entire — likewise simple, likewise maps],
-  [`RS` entire `⟹R` entire],
+  [`R,S` entire `⟹RS` entire — likewise simple, likewise maps
+   #src[`lean:Freyd.S2_10.entire_comp@2dfbf431`, `lean:Freyd.S2_10.simple_comp@c3c56ec3`,
+   `lean:Freyd.S2_10.map_comp@841b047c`]],
+  [`RS` entire `⟹R` entire #src[`lean:Freyd.S2_10.entire_of_comp_entire@ad998fc1`]],
 )]<dom-laws>
 
 == Sliding the discard
@@ -501,7 +503,7 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*picture*]),
 
-  [`F(R∩S)=FR∩FS` \ #v(2pt) #src[`F` single valued]],
+  [`F(R∩S)=FR∩FS` \ #v(2pt) #src[`F` single valued; `lean:Freyd.S2_10.simple_dist_inter@46ef7904`]],
   grid(columns: 3, align: horizon, column-gutter: 10pt,
     [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
     text(17pt)[=],
@@ -941,19 +943,20 @@ subscript.
   [convert a relation to a function. `a` $frac(R, ∋)$ ` ={b|a R b}` ],
   [$frac(#[`R`], ∋)$ is a *map*],  [],
 
-  [$frac(#[`R`], ∋)$ `∋=R` ], [],
+  [$frac(#[`R`], ∋)$ `∋=R` ], [#src[`lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
 
   [`F⊑` $frac(#[`F∋`], ∋)$, `F` simple],
-  [A partial choice of sets is inside the total one.],
+  [A partial choice of sets is inside the total one. #src[`lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe`]],
 
   [$frac(#[`𝟙`], ∋)$, the *singleton map*, monic],
   [The one-person set.],
 
   [$frac(#[`∋`], ∋)$ `=𝟙`],
-  [Make the set of a set, then read it back one level down.],
+  [Make the set of a set, then read it back one level down. #src[`lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3`]],
 
   [*fusion:* $frac(#[`fR`], ∋)$ `=f` $frac(#[`R`], ∋)$, `f` a map],
-  [Naturality of the unit, `f` $frac(#[`𝟙`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `(E(f))`.],
+  [Naturality of the unit, `f` $frac(#[`𝟙`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `(E(f))`.
+   #src[`lean:AOP.A4_6.Λ_fusion@9d7bda13`]],
 
   [$frac(#[`f`], ∋)$ `=f` $frac(#[`𝟙`], ∋)$, `f` a map],
   [Rename first or take singletons first — the fusion row above at `R=𝟙`.],
@@ -962,10 +965,11 @@ subscript.
   [`x` and `y` match when `R` sends `x` and `S` sends `y` to the same set.],
 
   [`E(R)≜` $frac(#[`∋R`], ∋)$, `E≜` $frac(#[`∋·`], ∋)$], [`E(R): EA⟶EB`, image of a set of A],
-  [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`], [$frac(#[`𝟙`], ∋)$`: x↦{x}` ],
+  [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`],
+  [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[`lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8`]],
   [$frac(#[`S`], ∋)$ `E(R)=` $frac(#[`S`], ∋)$ $frac(#[`∋R`], ∋)$ `=` $frac(#[`SR`], ∋)$],
   [absorption — the monad's composition law, $frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$ `=`
-   $frac(#[`SR`], ∋)$, §@sec-kleisli],
+   $frac(#[`SR`], ∋)$, §@sec-kleisli #src[`lean:AOP.A4_6.Λ_absorption@e87bd8f2`]],
 
   [`subset≜∋/∋ : EA⟶EA`],
   [`xs subset ys⟺∀a. ys∋a→xs∋a`, that is `ys⊆xs`, not `xs⊆ys`.],
@@ -1077,13 +1081,13 @@ the 2-category.
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*B&dM*]),
 
-  [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`.], [Lemma 5.1],
+  [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[`lean:AOP.A5_1.map_is_map@8f150beb`, `lean:AOP.A5_1.map_recip_map@c9f5d6f2`]], [Lemma 5.1],
   [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [Theorem 5.1],
   [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.], [after Theorem 5.1, p. 113],
   [Two relators agreeing on maps are equal.], [Corollary 5.1],
-  [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive.], [Ex 5.2],
-  [`F(R∩S)⊑F(R)∩F(S)`, and strictly.], [Ex 5.2, the restriction],
-  [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`.], [—],
+  [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[`lean:AOP.A5_1.map_inter_coreflexive@a2233804`]], [Ex 5.2],
+  [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[`lean:AOP.A5_1.map_inter_le@af565f80`]], [Ex 5.2, the restriction],
+  [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[`lean:AOP.A5_1.map_dom@5e9ecd68`]], [—],
 )]<relator-laws>
 
 The *power relator* `P` — `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)` — is where
@@ -1245,7 +1249,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
    half is Ex 5.8, that half at `S:=𝟙` and at `R:=𝟙` B&dM's (5.4), (5.5) — stages of their proof of
-   this row; Ex 5.6 is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.]],
+   this row; Ex 5.6 is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
+   `lean:AOP.A5_2.pair_prodMap@9d21307f`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1254,7 +1259,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
   }), s: 74%),
 
-  [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj]],
+  [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj, `lean:AOP.A5_2.pair_outl@5cb53112`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1264,7 +1269,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(3.0, y, black)[$A$]
   }), s: 74%),
 
-  [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj]],
+  [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj, `lean:AOP.A5_2.pair_outr@a6bc4ebd`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1274,7 +1279,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(3.0, -y, black)[$B$]
   }), s: 74%),
 
-  [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)`],
+  [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[`lean:AOP.A5_2.pair_recip_pair@c082becf`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1300,7 +1305,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(10.7, y, black)[$A'$]; lab(10.7, -y, black)[$B'$]
   }), s: 74%),
 
-  [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow]],
+  [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow;
+   `lean:AOP.A5_2.map_comp_pair@bbc85d03`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$D$]
@@ -1369,7 +1375,9 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [`[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], [],
   [`R+S≜[Rl,Sr]`], [],
-  [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow], [],
+  [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow
+   #src[`lean:AOP.A5_3.u₁_junc@a01a115a`, `lean:AOP.A5_3.u₂_junc@e692ee94`,
+   `lean:AOP.A5_3.junc_unique@192cec99`]], [],
 
   // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
   // by shape as well as by the tint, and a round trip reads as one box undoing the other.
@@ -1510,7 +1518,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     lab(6.25, 0, black)[$C + D$]
   }), s: 82%),
 
-  [(5.11)], [`[U,V]°[R,S]=(U°R)∪(V°S)` \ #src[@coprod-laws's last row]],
+  [(5.11)], [`[U,V]°[R,S]=(U°R)∪(V°S)` \ #src[@coprod-laws's last row;
+   `lean:AOP.A5_3.junc_recip_junc@838f4abc`]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.3, 0, black)[$C$]
@@ -1710,19 +1719,21 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
   [`X⊑P(R)⟺X∋⊑∋R` and `X°∋⊑∋R°`],
   [One containment, and the same one at `R°` — which is the definition read off the two divisions.
-   Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)`.],
+   Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[`lean:AOP.A5_4.powerRel_mono@00de2d62`].],
 
   [`P(𝟙)=` $frac(∋, ∋)$ `=𝟙`],
-  [The straightness axiom verbatim: extensionality *is* `P`'s unit law.],
+  [The straightness axiom verbatim: extensionality *is* `P`'s unit law.
+   #src[`lean:AOP.A5_4.powerRel_id@4ada24f9`]],
 
   [`P(f)=` $frac(∋ f, ∋)$, for `f` a map],
   [In `Rel`, `xs P(f) ys⟺ys={f a|a∈xs}`. The half at `f°` says every `a∈xs` has its `f a` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
-   reaches, which is the fraction's second half. For a map the two definitions coincide.],
+   reaches, which is the fraction's second half. For a map the two definitions coincide.
+   #src[`lean:AOP.A5_4.powerRel_map@2bf77d9f`]],
 
   [`P(RS)=P(R)P(S)`],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
-   calculation: it needs a tabulation of `P(RS)`.],
+   calculation: it needs a tabulation of `P(RS)`. #src[`lean:AOP.A5_4.powerRel_comp@06364064`]],
 )]<powrel-laws>
 
 // Ahead of §11.4 and §11.5, which both write `⦇…⦈` before anything says what it is.  The three
@@ -1961,7 +1972,8 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
   }),
   homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`A`]`⦈`], [`α`#sub[`A`]], `A`,
     typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
-  [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`]],
+  [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`] #h(6pt)
+   #src[`lean:AOP.A5_5.relCata_UP@e4a4905f`]],
 )]<cata-defining>
 
 // Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
