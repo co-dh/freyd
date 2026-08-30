@@ -5055,38 +5055,250 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 === The derivation <sec-cyl-deriv>
 
+// ---- §13.5.2's own vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
+// corner for a relation and a square box for a map.
+#let cb-paths = ([`paths`], 1.9, false)
+#let cb-est = ([`est(R)`], 1.9, true)
+#let cb-fold = ([`⦇generate⦈`], 3.6, false)
+#let cb-setify = ([`setify`], 1.9, false)
+#let cb-union = ([`union`], 1.75, false)
+#let cb-Pest = ([`P(est(R))`], 3.0, true)
+#let cb-Nest = ([`N(est(R))`], 3.0, true)
+#let cb-foldQ = ([`⦇Q⦈`], 1.5, true)
+#let cb-gen = ([`generate`], 2.7, false)
+#let cb-FNest = ([`F(𝟙,N(est(R)))`], 4.4, true)
+#let cb-Q = ([`Q`], 0.8, true)
+#let cb-Fmtn = ([`F(𝟙,moves trans N(est(R)))`], 7.8, true)
+#let cb-zip = ([`zip`], 1.3, false)
+#let cb-Nal = ([`N(α)`], 1.7, false)
+#let cb-Nwrap = ([`N(wrap)`], 2.4, false)
+#let cb-moves = ([`moves`], 1.75, false)
+#let cb-trans = ([`trans`], 1.75, false)
+#let cb-zipp = ([`zip'`], 1.5, false)
+#let cb-Ncons = ([`N(cons)`], 2.4, false)
+
+#let cyp(body, s: 92%) = P(cetz.canvas(length: 0.8cm, body), s: s)
+// The end names are ANCHORED, not centred at a hand-measured x: one of them is `F(NA,N(E(LA)))`
+// and every row would otherwise need its own offset.
+#let cyrun(lft, rgt, items) = {
+  d.content((-0.2, 0), text(10pt)[#lft], anchor: "east")
+  boxrun(0, 0, items)
+  d.content((boxrun-w(items) + 0.2, 0), text(10pt)[#rgt], anchor: "west")
+}
+// The bracket at `F(NA,N(LA))=NA+NA×N(LA)`: the fork sends `NA` to the box above and the pair
+// below, where `zip'` closes the two strands into one before the run that follows it.
+#let CYBR = 1.40   // the bracket's branch height
+#let CYSP = 0.45   // half the gap between the pair's strands
+#let cyfork(up, lo, span, post) = {
+  let cy = -CYBR
+  let x0 = 1.26
+  let runw(bs) = bs.map(b => b.at(1) + LEAD).sum(default: 0.0)
+  let xs = x0 + runw(lo)
+  let xj = calc.max(x0 + runw(up), xs + span.at(1) + runw(post)) + 0.7
+  tape((0.34, cy - CYSP - 0.95), (xj, CYBR + 0.95))
+  wire((0, 0), (0.34, 0))
+  let st = (thickness: 1.4pt, paint: TAPEEDGE)
+  d.bezier((0.56, 0), (x0, CYBR), (0.98, 0), (0.98, CYBR), stroke: st)
+  d.bezier((0.56, 0), (x0, cy + CYSP), (0.98, 0), (0.98, cy + CYSP), stroke: st)
+  d.bezier((0.56, 0), (x0, cy - CYSP), (0.98, 0), (0.98, cy - CYSP), stroke: st)
+  let x = x0
+  for b in up { gbox((x, CYBR), b.at(0), w: b.at(1), chamfer: b.at(2)); x = x + b.at(1) }
+  wire((x, CYBR), (xj - 0.7, CYBR))
+  // The head strand runs straight to `zip'`; the tail carries the run that `𝟙×−` acts on.
+  wire((x0, cy + CYSP), (xs, cy + CYSP))
+  x = x0
+  for b in lo {
+    gbox((x, cy - CYSP), b.at(0), w: b.at(1), chamfer: b.at(2)); x = x + b.at(1)
+    wire((x, cy - CYSP), (x + LEAD, cy - CYSP)); x = x + LEAD
+  }
+  gbox((xs, cy), span.at(0), w: span.at(1), h: 2 * CYSP + 0.55, chamfer: span.at(2))
+  x = xs + span.at(1)
+  for b in post {
+    wire((x, cy), (x + LEAD, cy)); x = x + LEAD
+    gbox((x, cy), b.at(0), w: b.at(1), chamfer: b.at(2)); x = x + b.at(1)
+  }
+  wire((x, cy), (xj - 0.7, cy))
+  tape-join((xj, 0), sp: CYBR, len: 0.7)
+  wire((xj, 0), (xj + LEAD, 0))
+  d.content((xj + LEAD + 0.2, 0), text(10pt)[`N(LA)`], anchor: "west")
+  d.content((-0.35, CYBR), text(10pt)[`NA`], anchor: "east")
+  d.content((-0.35, cy + CYSP), text(10pt)[`NA`], anchor: "east")
+  d.content((-0.35, cy - CYSP), text(10pt)[`N(LA)`], anchor: "east")
+}
+
+// ---- HINZE–MARSDEN.  A wire is a FUNCTOR, so the object wire carries `L N Nat` down to `L Nat`
+// and the two set functors ride beside it: `N` the fold's tuple, `E` the path set inside it.
+#let CAN = 1.80    // the `N` the fold builds, which `setify` renames `E`
+#let CAE = 2.70    // the `E` inside it, where a set of paths lives
+#let CAO = 4.90    // the object wire
+#let CAW = 8.50
+#let CAH = 5.05
+#let CY5 = 4.30    // the fold
+#let CY4 = 3.30    // `est(R)` under `N`
+#let CY3 = 2.45    // `setify`
+#let CY2 = 1.60    // `union`, or `est(R)` under `E`
+#let CY1 = 0.75    // the last `est(R)`
+#let CKN = 0.45    // the knee, shortened on an arc too flat to carry it twice
+// An arc is `(x, y0, y1, xe)`: a wire born at `y0` on the object wire, run out to lane `x`, landed
+// at `y1` on `xe` (`none` = back on the object wire).  A bead's `sd` is which side its name takes.
+#let cypan(arcs, beads, names, reg: false) = dpan(CAH, CAW, CAO, {
+  for (x, y0, y1, xe) in arcs {
+    let k = calc.min(CKN, (y0 - y1) / 3)
+    hm-wire(((CAO, y0), (x, y0 - k), (x, y1 + k), (if xe == none { CAO } else { xe }, y1)))
+  }
+  for (x, y, l) in names { hm-name((x, y), l) }
+  for (x, y, l, sd) in beads {
+    hm-bead((x, y), l, dx: sd, anchor: if sd > 0 { "west" } else { "east" })
+  }
+  hm-port((CAO, CAH), [`L N Nat`], col: BCOL)
+  hm-port((CAO, 0), [`L Nat`], dir: -1, col: BCOL)
+  if reg { hm-name((4.05, 0.25), [`Rel`]); hm-name((5.55, 0.25), [`𝟏`]) }
+}, s: 78%)
+#let ca1 = cypan(((CAE, CY5, CY1, none),),
+  ((CAO, CY5, [`paths`], 0.32), (CAO, CY1, [`est(R)`], 0.32)),
+  ((CAE - 0.30, 2.60, [`E`]),), reg: true)
+#let ca2 = cypan(((CAE, CY5, CY1, none), (CAN, CY5, CY2, CAE)),
+  ((CAO, CY5, [`⦇generate⦈`], 0.32), (CAN, CY3, [`setify`], -0.32), (CAE, CY2, [`union`], 0.32),
+   (CAO, CY1, [`est(R)`], 0.32)),
+  ((CAE - 0.30, 3.30, [`E`]), (CAN - 0.30, 3.30, [`N`]), (CAN + 0.30, 1.95, [`E`])))
+#let ca3 = cypan(((CAE, CY5, CY2, none), (CAN, CY5, CY1, none)),
+  ((CAO, CY5, [`⦇generate⦈`], 0.32), (CAN, CY3, [`setify`], -0.32), (CAO, CY2, [`est(R)`], 0.32),
+   (CAO, CY1, [`est(R)`], 0.32)),
+  ((CAE - 0.30, 3.30, [`E`]), (CAN - 0.30, 3.30, [`N`]), (CAN + 0.30, 1.95, [`E`])))
+#let ca4 = cypan(((CAE, CY5, CY4, none), (CAN, CY5, CY1, none)),
+  ((CAO, CY5, [`⦇generate⦈`], 0.32), (CAO, CY4, [`est(R)`], 0.32), (CAN, CY3, [`setify`], -0.32),
+   (CAO, CY1, [`est(R)`], 0.32)),
+  ((CAE - 0.40, 3.80, [`E`]), (CAN - 0.30, 2.90, [`N`]), (CAN + 0.30, 1.95, [`E`])))
+#let ca5 = cypan(((CAN, CY5, CY1, none),),
+  ((CAO, CY5, [`⦇Q⦈`], 0.32), (CAN, CY3, [`setify`], -0.32), (CAO, CY1, [`est(R)`], 0.32)),
+  ((CAN - 0.30, 3.30, [`N`]), (CAN + 0.30, 1.95, [`E`])))
+
+// B&dM §7.4, p. 182.  The `E` the fold builds is killed earlier at every step, until @cyl-step's
+// algebra never builds it: that migration is what the right column draws.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, cb-est))), [`paths est(R)`])],
+  [#ca1],
+
+  [#vstep(EQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-setify, cb-union, cb-est))),
+    [`⦇generate⦈ setify union est(R)` \ #src[@cyl-defn at `paths`]])],
+  [#ca2],
+
+  [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-setify, cb-Pest, cb-est))),
+    [`⦇generate⦈ setify P(est(R)) est(R)` \ #src[@est-laws at `union`, `R` a preorder]])],
+  [#ca3],
+
+  [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-Nest, cb-setify, cb-est))),
+    [`⦇generate⦈N(est(R)) setify est(R)` \ #src[`setify` lax natural]])],
+  [#ca4],
+
+  [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-foldQ, cb-setify, cb-est))),
+    [`⦇Q⦈ setify est(R)` \ #src[@cata-fusion at @cyl-fusion]])],
+  [#ca5],
+))]<cyl-laws>
+
+// ---- Chains B and C.  `F` is a BIFUNCTOR, so its wire is drawn UNINDEXED and carries no bead;
+// `trans` and `zip` are where two wires CROSS, which is exactly what those two arrows are.
+#let CL1 = 0.65
+#let CL2 = 1.55
+#let CL3 = 2.45
+#let CBO = 4.60
+#let CBW = 7.60
+#let cbpan(h, wires, beads, top, bot) = dpan(h, CBW, CBO, {
+  for pts in wires { hm-wire(pts) }
+  for (x, y, l, sd) in beads {
+    hm-bead((x, y), l, dx: sd, anchor: if sd > 0 { "west" } else { "east" })
+  }
+  for (x, l) in top { hm-port((x, h), l, col: if x == CBO { BCOL } else { black }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == CBO { BCOL } else { black }) }
+}, s: 78%)
+#let CBH = 4.00
+// `est(R)` is the one bead BOTH sides carry, so it keeps the middle row and the base functor's own
+// bead travels down past it: `generate` above it on the left, `Q` below it on the right.
+#let CBHI = 3.00
+#let CBMD = 1.95
+#let CBLO = 0.90
+#let cb-top = ((CL1, [`F`]), (CL2, [`N`]), (CL3, [`E`]), (CBO, [`LA`]))
+#let cb-bot = ((CL2, [`N`]), (CBO, [`LA`]))
+#let cb1 = cbpan(CBH,
+  (((CL1, CBH), (CL1, CBHI + 0.6), (CBO, CBHI)), ((CL2, CBH), (CL2, 0)),
+   ((CL3, CBH), (CL3, CBMD + 0.6), (CBO, CBMD))),
+  ((CBO, CBHI, [`generate`], 0.32), (CBO, CBMD, [`est(R)`], 0.32)), cb-top, cb-bot)
+#let cb2 = cbpan(CBH,
+  (((CL1, CBH), (CL1, CBLO + 0.6), (CBO, CBLO)), ((CL2, CBH), (CL2, 0)),
+   ((CL3, CBH), (CL3, CBMD + 0.6), (CBO, CBMD))),
+  ((CBO, CBMD, [`est(R)`], 0.32), (CBO, CBLO, [`Q`], 0.32)), cb-top, cb-bot)
+
+// B&dM §7.4, p. 183.  `generate` kills the base functor before the minimum is taken inside the
+// tuple; the right-hand side kills it after, and that swap is the whole step.
 #disp[
-#zline(
-  zsqc([`paths est(R)`], none),
-  zstep(op: sym.eq, under: true)[definition of `paths`],
-  zsqc([`⦇generate⦈ setify union est(R)`], none),
-  zstep(op: sym.supset.eq.sq, under: true)[@est-laws at `union`, `R` a preorder],
-  zsqc([`⦇generate⦈ setify P(est(R)) est(R)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[`setify` lax natural],
-  zsqc([`⦇generate⦈N(est(R)) setify est(R)`], none),
-  zstep(op: sym.supset.eq.sq, under: true)[@cata-fusion at `Q`],
-  zsqc([`⦇Q⦈ setify est(R)`], none),
-)
-#zline(
-  zsqc([`generate N(est(R))`], none),
-  zstep(op: sym.supset.eq.sq, under: true)[(7.13), then `zip`, `trans`, `moves` lax natural],
-  zsqc([`F(𝟙,N(est(R)))Q`], none),
-)
-#zline(
-  zsqc([`Q`], none),
-  zstep(op: sym.eq, under: true)[the fusion condition read as a definition],
-  zsqc([`F(𝟙,moves trans N(est(R))) zip N(α)`], none),
-)
-#zline(
-  zstep(op: sym.eq, under: true)[`zip=𝟙+zip'`, `α=[wrap,cons]`],
-  zsqc([`[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]`], none),
-)
-#align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the map
-  `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a minimum
-  is beaten by extending one minimum. It is the crux here, not the greedy theorem.]])
-]<cyl-laws>
+#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),
+    [`generate N(est(R))`])],
+  [#cb1],
+
+  [#vstep(RQ, cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-FNest, cb-Q)), s: 88%),
+    [`F(𝟙,N(est(R)))Q` \ #src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
+  [#cb2],
+))
+#align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the
+  map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
+  minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.]])
+]<cyl-fusion>
+
+#let CC5 = 4.30    // `moves`, where the `E` is born
+#let CC4 = 3.45    // `trans`, where it crosses `N`
+#let CC3 = 2.60    // `est(R)` under `N`, where it dies
+#let CC2 = 1.70    // `zip`, where `F` crosses `N`
+#let CC1 = 0.85    // `α`, where `F` dies
+#let cc-bot = ((CL1, [`N`]), (CBO, [`LA`]))
+#let cc1 = cbpan(2.60,
+  (((CL1, 2.60), (CL1, 1.55), (CBO, 0.95)), ((CL3, 2.60), (CL3, 0))),
+  ((CBO, 0.95, [`Q`], 0.32),),
+  ((CL1, [`F`]), (CL3, [`N`]), (CBO, [`LA`])), ((CL3, [`N`]), (CBO, [`LA`])))
+#let cc2 = cbpan(5.05,
+  (((CL3, 5.05), (CL3, CC4 + 0.42), (CL2, CC4 - 0.42), (CL2, CC2 + 0.45), (CL1, CC2 - 0.45),
+    (CL1, 0)),
+   ((CL3, CC5), (CL2, CC5 - 0.45), (CL2, CC4 + 0.42), (CL3, CC4 - 0.42), (CL3, CC3 + 0.5),
+    (CBO, CC3)),
+   ((CL1, 5.05), (CL1, CC2 + 0.45), (CL2, CC2 - 0.45), (CL2, CC1 + 0.5), (CBO, CC1))),
+  ((CL3, CC5, [`moves`], 0.32), ((CL2 + CL3) / 2, CC4, [`trans`], 0.75), (CBO, CC3, [`est(R)`], 0.32),
+   ((CL1 + CL2) / 2, CC2, [`zip`], 0.75), (CBO, CC1, [`α`], 0.32)),
+  ((CL1, [`F`]), (CL3, [`N`]), (CBO, [`LA`])), cc-bot)
+
+// B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
+// of maps turns it into the program.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
+    #src[the algebra @cyl-laws's last step folds]],
+  table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
+
+  [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [`Q`])],
+  [#cc1],
+
+  [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
+    [`F(𝟙,moves trans N(est(R))) zip N(α)` \ #src[the fusion condition read as a definition]])],
+  [#cc2],
+
+  [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
+    [`[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \ #src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
+  // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
+  [],
+))]<cyl-step>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
