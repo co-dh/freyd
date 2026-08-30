@@ -50,6 +50,7 @@
   same set, despite its header's claim).
 -/
 import AOP.A6_ConsList
+import AOP.A7_4_Horner
 import AOP.A9_2
 
 set_option linter.unusedVariables false
@@ -68,10 +69,6 @@ theorem powerRel_pt {α β : RelSet.{0}} (g : α ⟶ β) (P : (pow α).carrier)
     (Q : (pow β).carrier) :
     powerRel g P Q ↔
       (∀ t, P t → ∃ u, g t u ∧ Q u) ∧ (∀ u, Q u → ∃ t, P t ∧ g t u) :=
-  Iff.rfl
-
-theorem est_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
-    est R P x ↔ P x ∧ ∀ z, P z → R x z :=
   Iff.rfl
 
 theorem lb_pt {α : RelSet.{0}} (R : α ⟶ α) (P : (pow α).carrier) (x : α.carrier) :
@@ -351,9 +348,9 @@ theorem memo_mem_body {X : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0})} 
       exact P.memo_lb_step ((hDmem _).mp hDt)
   rcases P.memo_mem v with ⟨d, hTd, hval⟩ | ⟨e, v', hTs, hval⟩ | hval
   · exact Or.inl ⟨D, hD, _, hpow,
-      (est_pt P.ord _ _).mpr ⟨⟨Sum.inl d, (hDmem _).mpr hTd, hval⟩, hlb⟩⟩
+      (est_apply P.ord _ _).mpr ⟨⟨Sum.inl d, (hDmem _).mpr hTd, hval⟩, hlb⟩⟩
   · exact Or.inl ⟨D, hD, _, hpow,
-      (est_pt P.ord _ _).mpr ⟨⟨Sum.inr (e, v'), (hDmem _).mpr hTs, hval⟩, hlb⟩⟩
+      (est_apply P.ord _ _).mpr ⟨⟨Sum.inr (e, v'), (hDmem _).mpr hTs, hval⟩, hlb⟩⟩
   · exact Or.inr ⟨hval, D, hD, _, hpow, (lb_pt P.ord° _ _).mpr hlb⟩
 
 /-- **The executable-side bridge**: the memo function's graph is inside the least fixed point
