@@ -1,0 +1,565 @@
+#!/usr/bin/env python3
+"""scanline — the scan-line reading of the note's Hinze–Marsden panels, run mechanically.
+
+Every table-driven panel emits the lists it DRAWS FROM as `#metadata` (`hm-meta` in the note), so
+the structure read here cannot drift from the ink.  `typst query` hands them over; this sweeps each
+panel from the top edge down, maintains the cut — the live wires in `x` order, leftmost = outermost
+functor, the object wire rightmost — and prints the composite the picture denotes in the note's
+notation: diagram order, juxtaposition, `°`, `F(R)`, `𝟙`.
+
+What it PROVES about a panel: every cut is constant between beads, every bead's source is the cut
+above it and its target the cut below, the endpoints are the panel's ports, and one bead label has
+one signature everywhere in its display.  What it only CHECKS: the `cert:` a call site declares —
+`expect:` the row's formula, `src:`/`tgt:` the stated endpoints, `branch:` which case the panel
+draws, `alias:` the abbreviations the display's key list asks the reader to supply.  Applying a
+declared law is mechanical; its truth stays the author's certificate, as in `scripts/cite-check`.
+"""
+import json, subprocess, sys
+
+EPS = 1e-6
+# A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
+UNIT = "𝟙"
+
+# ---------------------------------------------------------------- expressions
+# ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('conv', e) | ('app', name, e)
+OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
+BREAK = OPENERS + CLOSERS + "×° \t"
+
+
+def matching(s, i):
+    c, d = CLOSERS[OPENERS.index(s[i])], 0
+    for j in range(i, len(s)):
+        d += (s[j] == s[i]) - (s[j] == c)
+        if d == 0:
+            return j
+    raise ValueError(f"unbalanced {s[i]} in {s!r}")
+
+
+def split_top(s, sep):
+    """`s` cut at the `sep`s no bracket encloses."""
+    out, last, i = [], 0, 0
+    while i < len(s):
+        if s[i] in OPENERS:
+            i = matching(s, i)
+        elif s[i] == sep:
+            out.append(s[last:i]); last = i + 1
+        i += 1
+    return out + [s[last:]]
+
+
+def parse(s):
+    """Juxtaposition, `×`, postfix `°`, `N(e)`; anything bracketed rides through as one atom."""
+    xs, i = [], 0
+    while i < len(s):
+        if s[i] in " \t":
+            i += 1; continue
+        x, i = p_prod(s, i)
+        xs.append(x)
+    if not xs:
+        raise ValueError(f"empty expression {s!r}")
+    return xs[0] if len(xs) == 1 else ('comp', xs)
+
+
+def p_prod(s, i):
+    xs = []
+    while True:
+        x, i = p_prim(s, i)
+        while i < len(s) and s[i] == '°':
+            x, i = ('conv', x), i + 1
+        xs.append(x)
+        if i >= len(s) or s[i] != '×':
+            return (xs[0] if len(xs) == 1 else ('prod', xs)), i
+        i += 1
+
+
+def p_prim(s, i):
+    while i < len(s) and s[i] in " \t":
+        i += 1
+    if i >= len(s):
+        raise ValueError(f"expected a term at the end of {s!r}")
+    if s[i] in OPENERS:
+        j = matching(s, i)
+        return (parse(s[i + 1:j]) if s[i] == '(' else ('atom', ' '.join(s[i:j + 1].split()))), j + 1
+    j = i
+    while j < len(s) and s[j] not in BREAK:
+        j += 1
+    if j == i:
+        raise ValueError(f"stray {s[i]!r} in {s!r}")
+    if j < len(s) and s[j] == '(':
+        k = matching(s, j)
+        return ('app', s[i:j], parse(s[j + 1:k])), k + 1
+    return ('atom', s[i:j]), j
+
+
+def spell(e):
+    """The note's own spelling.  A juxtaposition needs no space where a bracket already separates."""
+    k = e[0]
+    if k == 'atom':
+        return e[1]
+    if k == 'app':
+        return f"{e[1]}({spell(e[2])})"
+    if k == 'conv':
+        return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod') else spell(e[1])) + '°'
+    if k == 'prod':
+        return '×'.join(f"({spell(x)})" if x[0] == 'comp' else spell(x) for x in e[1])
+    ps = [f"({spell(x)})" if x[0] == 'prod' else spell(x) for x in e[1]]
+    out = ps[0]
+    for p in ps[1:]:
+        out += ('' if out[-1] in CLOSERS or p[0] in OPENERS else ' ') + p
+    return out
+
+
+def tidy(e):
+    """`R°×R°` is printed `(R×R)°`: one converse the reader undoes once, not twice."""
+    e = rec(e, tidy)
+    if e[0] == 'prod' and all(x[0] == 'conv' for x in e[1]):
+        return ('conv', ('prod', [x[1] for x in e[1]]))
+    return e
+
+
+def rec(e, f):
+    if e[0] in ('comp', 'prod'):
+        return (e[0], [f(x) for x in e[1]])
+    return ('conv', f(e[1])) if e[0] == 'conv' else ('app', e[1], f(e[2])) if e[0] == 'app' else e
+
+
+def norm(e):
+    """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
+    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` is the relator law, applied on trust."""
+    e = rec(e, norm)
+    if e[0] == 'conv':
+        b = e[1]
+        if b[0] == 'comp':
+            return norm(('comp', [('conv', x) for x in reversed(b[1])]))
+        if b[0] == 'prod':
+            return norm(('prod', [('conv', x) for x in b[1]]))
+        if b[0] == 'app':
+            return norm(('app', b[1], ('conv', b[2])))
+        if b[0] == 'conv':
+            return b[1]
+    if e[0] == 'app' and e[1] == 'Δ':
+        return ('prod', [e[2], e[2]])
+    if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']') \
+            and ',' not in e[1] and '∪' not in e[1]:
+        return ('app', 'list', norm(parse(e[1][1:-1])))
+    if e[0] in ('comp', 'prod'):
+        xs = [y for x in e[1] for y in (x[1] if x[0] == e[0] else [x])]
+        if e[0] == 'comp':
+            xs = [x for x in xs if x != ('atom', UNIT)] or [('atom', UNIT)]
+            xs = interchange(xs)
+        return xs[0] if len(xs) == 1 else (e[0], xs)
+    return e
+
+
+def interchange(xs):
+    """`(a×b)(c×d)=(ac)×(bd)`: the picture reads two products at two heights, the display writes
+    them at one, so both sides normalise to the merged form."""
+    out = []
+    for x in xs:
+        if out and out[-1][0] == 'prod' and x[0] == 'prod' and len(out[-1][1]) == len(x[1]):
+            out[-1] = norm(('prod', [('comp', [a, b]) for a, b in zip(out[-1][1], x[1])]))
+        else:
+            out.append(x)
+    return out
+
+
+def act(label, e, obj=False):
+    """How a wire acts on what passes it.  A label with a hole is a context — the named slots go to
+    `𝟙` for an arrow and keep their names for an object; `Δ` is the AOP relator `X↦X×X`."""
+    if '−' in label:
+        return ('prod', [e if p == '−' else ('atom', p if obj else UNIT) for p in label.split('×')])
+    if label == 'Δ':
+        return ('prod', [e, e])
+    return ('app', label, e)
+
+
+def fill(wire, bead, inner):
+    """A bead ON a context wire, at the same height as the one inside it (13.3.5b's `p×𝟙` beside
+    `p`): the wire's hole takes the inner factor and the bead supplies the other slots."""
+    ps, bs = wire.split('×'), bead.split('×')
+    if '−' not in ps or len(ps) != len(bs) or bs[ps.index('−')] != UNIT:
+        raise Unhandled(f"the bead {bead} does not fit the wire {wire}")
+    return ('prod', [inner if p == '−' else parse(b) for p, b in zip(ps, bs)])
+
+
+class Unhandled(Exception):
+    """A panel shape the sweep has no rule for — reported, never skipped."""
+
+
+# ---------------------------------------------------------------- the panel model
+class Wire:
+    def __init__(self, x, ytop, ybot, label, born=None):
+        self.x, self.ytop, self.ybot, self.label, self.born = x, ytop, ybot, label, born
+
+
+class Bead:
+    def __init__(self, y, x, label, barx=None, born=False):
+        self.y, self.x, self.label, self.barx, self.born = y, x, label, barx, born
+
+
+class Panel:
+    def __init__(self, r):
+        self.id, self.helper, self.h, self.xo = r['id'], r['helper'], r['h'], r['xo']
+        self.cert = r.get('cert') or {}
+        self.top = [tuple(p) for p in r['top']]
+        self.bot = [tuple(p) for p in r['bot']]
+        self.wires, self.beads, self.splits = [], [], []
+        ADAPT[self.helper](self, r)
+        # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
+        # down the panel (`⦇R⦈ : T⟶A`); nothing reads it as a functor, so the switch height only
+        # affects printing and is taken at the lowest bead on it.
+        self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
+        self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel))
+        os = [b.y for b in self.beads if abs(b.x - self.xo) < EPS]
+        self.oswitch = min(os) if os else 0.0
+
+    def at(self, ports, x):
+        return next((l for (px, l) in ports if abs(px - x) < EPS), None)
+
+
+def a_dpanel(p, r):
+    for (x, y0, y1, nm, un) in r['lanes']:
+        yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
+        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un))
+        if un is not None:
+            p.beads.append(Bead(yt, x, un, born=True))
+    for b in r['beads']:
+        p.beads.append(Bead(b[0], p.xo, b[1], b[3] if len(b) > 3 else None))
+
+
+def a_tpan(p, r):
+    for hd in r['hands']:
+        born = hd[4] if len(hd) > 4 else None
+        p.wires.append(Wire(hd[0], hd[1], hd[2], hd[3], born))
+        if born is not None:
+            p.beads.append(Bead(hd[1], hd[0], born, born=True))
+    for (x, y, l, port) in r['births']:
+        p.wires.append(Wire(x, y, 0.0, port, l))
+        p.beads.append(Bead(y, x, l, born=True))
+        p.bot = sorted(p.bot + [(x, port)])
+    for (x, y, k) in r['joins']:
+        p.wires.append(Wire(x, p.h, y, p.at(p.top, x)))
+    for (y, l) in r['beads']:
+        p.beads.append(Bead(y, p.xo, l))
+
+
+def a_mpan(p, r):
+    for x in r['wires']:
+        p.wires.append(Wire(x, p.h, 0.0, p.at(p.top, x) or p.at(p.bot, x)))
+    for (xf, xt, y, k) in r['joins']:
+        p.wires.append(Wire(xf, p.h, y, p.at(p.top, xf)))
+    for (x0, y0, xe, x1, y1, l, b) in r['hands']:
+        p.wires.append(Wire(xe, y0, y1, l, b))
+        if b is not None:
+            p.beads.append(Bead(y0, x0, b, born=True))
+    for (x, y, l) in r['beads']:
+        p.beads.append(Bead(y, x, l))
+
+
+def a_twhm(p, r):
+    for (xf, yt, xt, y, k) in r['joins']:
+        p.wires.append(Wire(xf, yt, y, p.at(p.top, xf)))
+    for (x, y, l, c) in r['beads']:
+        p.beads.append(Bead(y, x, l))
+    p.splits = [tuple(s) for s in r['splits']]
+
+
+ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'mpan': a_mpan, 'tw-hm': a_twhm}
+
+
+# ---------------------------------------------------------------- the sweep
+def live(p, z):
+    """The cut at a height NO event stands at: the live wires in `x` order, object wire rightmost.
+    A split reads the object wire as `outer` beside `inner` between its two heights."""
+    ws = [(w.x, w.label if w.x != p.xo or z > p.oswitch else p.oblabel)
+          for w in p.wires if w.ybot < z < w.ytop]
+    for (y0, y1, x, of, outer, inner) in p.splits:
+        if not y1 < z < y0:
+            continue
+        if (p.xo, of) not in ws:
+            raise Unhandled(f"the split opens {of} but the object wire carries "
+                            f"{dict(ws).get(p.xo)} at y={z:.3g}")
+        ws = [(x, outer) if (a, b) == (p.xo, of) else (a, b) for (a, b) in ws] + [(p.xo, inner)]
+    return sorted(ws)
+
+
+def levels(p):
+    ys = {p.h, 0.0} | {b.y for b in p.beads} | {y for s in p.splits for y in s[:2]}
+    ys |= {w.ytop for w in p.wires if w.ytop < p.h - EPS}
+    ys |= {w.ybot for w in p.wires if w.ybot > EPS}
+    return sorted(ys, reverse=True)
+
+
+def ports(p, top):
+    """The panel's own endpoints.  A bead may sit ON the top edge (13.3.4g's unit), so the source is
+    the wires drawn from that edge, not the cut just below it."""
+    if top:
+        return sorted((w.x, w.label) for w in p.wires if w.ytop > p.h - EPS and not w.born)
+    return sorted((w.x, w.label if w.x != p.xo else p.oblabel) for w in p.wires if w.ybot < EPS)
+
+
+def owner(p, w, y):
+    """Which bead at height `y` a wire ending there belongs to — the nearest one across."""
+    return min([b for b in p.beads if abs(b.y - y) < EPS], key=lambda b: abs(b.x - w.x))
+
+
+def touched(p, b, above):
+    """The wires the bead's dot and its bar reach: its own lane, what it consumes and creates, and
+    everything the bar spans — a bar is drawn exactly where the bead is not `F(−)` of the wire."""
+    xs = {b.x}
+    for w in p.wires:
+        if (abs(w.ybot - b.y) < EPS or abs(w.ytop - b.y) < EPS) and owner(p, w, b.y) is b:
+            xs.add(w.x)
+    if b.barx is not None:
+        xs |= {x for (x, _) in above if b.barx - EPS <= x <= p.xo + EPS}
+    return xs
+
+
+def factor(p, y, above, below):
+    """The arrow one height denotes.  Beads at the SAME height are ONE factor (interchange), read
+    right to left: the innermost is the rightmost, and each further bead wraps it through its wire."""
+    bs = sorted([b for b in p.beads if abs(b.y - y) < EPS], key=lambda b: -b.x)
+    carried = [b.x for b in bs]
+    e = None
+    for b in bs:
+        lo = min(touched(p, b, above))
+        ctx = [(x, l) for (x, l) in above
+               if x < lo - EPS and not any(abs(x - c) < EPS for c in carried)]
+        if e is None:
+            e = parse(b.label)
+        else:
+            e = fill(next(l for (x, l) in above if abs(x - b.x) < EPS), b.label, e)
+        for (_, l) in reversed(ctx):
+            e = act(l, e)
+    return tidy(e)
+
+
+def sweep(p):
+    """Top to bottom — downwards IS diagram order, so nothing is reversed at the end."""
+    ys, bad = levels(p), []
+    mids = [(ys[i] + ys[i + 1]) / 2 for i in range(len(ys) - 1)]
+    cuts = [ports(p, True)] + [live(p, m) for m in mids] + [ports(p, False)]
+    for w in p.wires:                      # every wire ends where a bead or a split boundary is
+        for y, end in ((w.ytop, 'starts'), (w.ybot, 'ends')):
+            if EPS < y < p.h - EPS and not any(abs(b.y - y) < EPS for b in p.beads) \
+                    and not any(abs(y - s) < EPS for sp in p.splits for s in sp[:2]):
+                bad.append(f"{p.id}: the {w.label} wire at x={w.x} {end} at y={y} with no bead"
+                           f" and no split there — the cut changes with nothing to change it")
+    facs, expr = [], []
+    for y in sorted({b.y for b in p.beads}, reverse=True):
+        i = next(k for k in range(len(ys)) if abs(ys[k] - y) < EPS)
+        above, below = cuts[i], cuts[i + 1]
+        for b in [b for b in p.beads if abs(b.y - y) < EPS]:
+            if b.born and b.label.startswith(UNIT) and abs(b.x - p.xo) < EPS:
+                bad.append(f"{p.id}: the unit {b.label} sits on the object wire at x={p.xo} —"
+                           f" a unit's source is Id, but the cut above it is"
+                           f" ({', '.join(l for _, l in above)}); give it a lane of its own")
+            miss = [x for x in touched(p, b, above) if not any(abs(x - a) < EPS for a, _ in above)
+                    and not any(abs(x - a) < EPS for a, _ in below)]
+            if miss:
+                bad.append(f"{p.id}: the bead {b.label} at y={y} reaches x={miss} where no wire is"
+                           f" live — the cut there is ({', '.join(l for _, l in above)})")
+        e = factor(p, y, above, below)
+        facs.append({"y": y, "beads": [b.label for b in p.beads if abs(b.y - y) < EPS],
+                     "spelled": spell(e), "above": [l for _, l in above],
+                     "below": [l for _, l in below]})
+        expr.append(e)
+    p.cuts, p.factors, p.expr = cuts, facs, ('comp', expr) if len(expr) != 1 else expr[0]
+    return bad
+
+
+# ---------------------------------------------------------------- the declared tables
+BRANCH = {                                 # `F(X)=𝟏+A×X`: which summand the panel draws
+    "cons": {"pick": "cons", "F": "A×−"},
+    "nil": {"pick": "nil", "F": "𝟏"},
+}
+
+
+def take_branch(e, br, obj):
+    """A display states the whole case split and the panel draws ONE branch: `[a,b]` keeps the
+    component naming it, `x∪y` the operand naming it, `F` becomes that branch's summand."""
+    e = rec(e, lambda x: take_branch(x, br, obj))
+    pick = BRANCH[br]["pick"]
+    if e[0] == 'app' and e[1] == 'F':
+        return act(BRANCH[br]["F"], e[2], obj=obj)
+    if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']'):
+        parts = [c for c in split_top(e[1][1:-1], ',') if pick in c]
+        if len(parts) == 1:
+            ops = [c for c in split_top(parts[0], '∪') if pick in c]
+            return take_branch(parse(ops[0] if len(ops) == 1 else parts[0]), br, obj)
+    return e
+
+
+def unfold(e, aliases):
+    used = []
+    for a in aliases:
+        lhs, _, rhs = a.partition('=')
+        lhs, rhs = parse(lhs.strip()), parse(rhs.strip())
+        e2 = subst(e, lhs, rhs)
+        if e2 != e:
+            used.append(a.strip())
+        e = e2
+    return e, used
+
+
+def subst(e, lhs, rhs):
+    if e == lhs:
+        return rhs
+    return rec(e, lambda x: subst(x, lhs, rhs))
+
+
+def read(s, cert, obj):
+    e, used = unfold(parse(s), cert.get('alias') or ())
+    if cert.get('branch'):
+        e = take_branch(e, cert['branch'], obj)
+    return norm(e), used
+
+
+def certify(p):
+    """`cert:` against the sweep.  The tool applies a declared law; whether it is TRUE stays the
+    author's certificate — the same discipline as `scripts/cite-check`'s markers."""
+    c, bad, note = p.cert, [], []
+    for key, top in (("src", True), ("tgt", False)):
+        if not c.get(key):
+            continue
+        want, _ = read(c[key], c, True)
+        got = fold_cut(p, ports(p, top))
+        if want != norm(got):
+            bad.append(f"{p.id}: the {'top' if top else 'bottom'} cut is {spell(got)}, not the"
+                       f" stated {key} {c[key]}, which reads {spell(want)} — declare the branch"
+                       f" the panel draws, or fix the ports")
+    if c.get('expect'):
+        want, used = read(c['expect'], c, False)
+        got = norm(p.expr)
+        if want == got:
+            note.append(f"{p.id}: AGREE{' modulo ' + '; '.join(used) if used else ''}")
+        else:
+            bad.append(f"{p.id}: the panel denotes {spell(tidy(p.expr))} but states"
+                       f" {c['expect']}, which reads {spell(want)}" + first_diff(got, want))
+    return bad, note
+
+
+def fold_cut(p, cut):
+    """A cut spelled as one 1-cell: leftmost wire outermost, object wire innermost."""
+    e = ('atom', cut[-1][1])
+    for (_, l) in reversed(cut[:-1]):
+        e = act(l, e, obj=True)
+    return e
+
+
+def first_diff(got, want):
+    g = got[1] if got[0] == 'comp' else [got]
+    w = want[1] if want[0] == 'comp' else [want]
+    for i, (a, b) in enumerate(zip(g, w)):
+        if a != b:
+            return f"; they first differ at factor {i + 1}: {spell(a)} against {spell(b)}"
+    return "" if len(g) == len(w) else f"; the panel has {len(g)} factors, the formula {len(w)}"
+
+
+def crosscheck(ps):
+    """One bead label, one signature within a display — the cheap catch for a bead moved onto the
+    wrong wire.  Across displays the same name is a different arrow, so the scope is the display."""
+    sigs, wlab, bad = {}, {}, []
+    for p in ps:
+        for w in p.wires:
+            wlab.setdefault(w.label, p.id)
+        for b in p.beads:
+            cons = tuple(sorted(w.label for w in p.wires if abs(w.ybot - b.y) < EPS
+                                and owner(p, w, b.y) is b))
+            made = tuple(sorted(w.label for w in p.wires if abs(w.ytop - b.y) < EPS
+                                and owner(p, w, b.y) is b))
+            key = (p.id.rsplit('.', 1)[0], b.label)
+            sigs.setdefault(key, {})[(cons, made, abs(b.x - p.xo) < EPS)] = p.id
+    for (disp, label), seen in sigs.items():
+        if len(seen) > 1:
+            bad.append(f"{disp}: the bead {label} has {len(seen)} signatures — "
+                       + "; ".join(f"{pid} {sigline(s)}" for s, pid in seen.items()))
+    for label, pid in wlab.items():
+        hit = [p.id for p in ps for b in p.beads if b.label == label]
+        if hit:
+            bad.append(f"{pid}: {label} labels a WIRE here and a BEAD in {hit[0]} — a wire is a"
+                       f" functor, and may never carry an arrow's name")
+    return bad
+
+
+def sigline(s):
+    cons, made, on = s
+    return (("on the object wire" if on else "off the object wire")
+            + f", consumes ({', '.join(cons) or '—'}), creates ({', '.join(made) or '—'})")
+
+
+# ---------------------------------------------------------------- driver
+def panels(path, frm):
+    if frm:
+        vals = json.load(open(frm, encoding="utf-8"))
+    else:
+        out = subprocess.run(["typst", "query", path, "metadata", "--field", "value"],
+                             capture_output=True, text=True)
+        if out.returncode:
+            sys.exit(f"scanline: typst query {path}: {out.stderr.strip()}")
+        vals = json.loads(out.stdout)
+    return [v for v in vals if isinstance(v, dict) and v.get("kind") == "scanline"]
+
+
+def locate(path, p):
+    """Best effort: the one source line carrying a label unique to this panel."""
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines()
+    except OSError:
+        return path
+    for b in p.beads:
+        hits = [i for i, t in enumerate(lines, 1) if f"`{b.label}`" in t]
+        if len(hits) == 1:
+            return f"{path}:{hits[0]}"
+    return path
+
+
+def main(argv):
+    path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
+    only = opt(argv, "--panel")
+    recs = panels(path, opt(argv, "--from"))
+    ps, bad, note, unhandled = [], [], [], []
+    for r in recs:
+        if only and r["id"] != only:
+            continue
+        try:
+            p = Panel(r)
+            bad += sweep(p)
+            b, n = certify(p)
+            bad += b; note += n
+            ps.append(p)
+        except (Unhandled, ValueError) as e:
+            unhandled.append(f"{r['id']} ({r['helper']}): {e}")
+    bad += crosscheck(ps)
+    if opt(argv, "--json"):
+        json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
+                    "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
+                    "expr": spell(tidy(p.expr))} for p in ps],
+                  open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    if only or "--list" in argv:
+        for p in ps:
+            print(f"{p.id:<12} {spell(tidy(p.expr))}")
+            if only:
+                for f in p.factors:
+                    print(f"  y={f['y']:<5} ({', '.join(f['above'])}) --{'+'.join(f['beads'])}-->"
+                          f" ({', '.join(f['below'])})   {f['spelled']}")
+    print(*note, sep="\n")
+    cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
+    print(f"scanline: {len(recs)} panels, {len(ps)} swept, {cert} certified,"
+          f" {len(unhandled)} unhandled, {len(bad)} failures")
+    if unhandled:
+        print("unhandled:", *unhandled, sep="\n  ", file=sys.stderr)
+    if bad:
+        print(*[f"{path}: {b}" for b in bad], sep="\n", file=sys.stderr)
+        first = next((p for p in ps if bad[0].startswith(p.id.rsplit('.', 1)[0])), None)
+        sys.exit(f"scanline: {len(bad)} check{'s' * (len(bad) > 1)} failed"
+                 + (f"; the first is drawn at {locate(path, first)}" if first else ""))
+    if unhandled:
+        sys.exit(f"scanline: {len(unhandled)} panels the sweep has no rule for")
+
+
+def opt(argv, name):
+    return argv[argv.index(name) + 1] if name in argv else None
+
+
+main(sys.argv[1:])

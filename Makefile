@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite
+.PHONY: p w cite scan
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -34,6 +34,12 @@ p: $(STAMP) cite
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
 	./scripts/cite-check $(TYP)
+
+# The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
+# `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after
+# editing a panel's argument lists — that is when the picture can stop saying what the row says.
+scan:
+	./scripts/scanline diag/allegory-axioms.typ
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file

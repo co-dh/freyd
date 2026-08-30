@@ -2159,7 +2159,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RXF = 1.65                                   // the `F` wire
 #let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
 #let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = {
+#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, cert: (:)) = {
   dpan(h, w, xo, {
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
   // A relator wire a unit OPENS and nothing closes: it runs from that bead to the bottom edge.
@@ -2172,7 +2172,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }, s: 100%)
   // `bot` is the one label the drawing pairs with `xo` by hand; emitted as a port list, so every
   // panel's ports have one shape.
-  hm-meta((helper: "tpan", h: h, w: w, xo: xo,
+  hm-meta((helper: "tpan", h: h, w: w, xo: xo, cert: cert,
     beads: beads.map(b => b.map(plain)), hands: hands.map(hd => hd.map(plain)),
     joins: joins.map(j => j.map(plain)), births: births.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: ((xo, plain(bot)),)))
@@ -3771,7 +3771,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let TWHH = 5.40
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
 // colour because it is the head half of `p×list(p)`.
-#let tw-hm(rs, f: [`prefix`]) = {
+// Both takewhile displays draw the same three panels over the same ports and the same branch, so
+// the constant half of the certificate is written once and only the row's formula travels.
+#let twcert(e, a: none) = (expect: e, src: "F([A])", tgt: "[A]", branch: "cons",
+  alias: if a == none { () } else { (a,) })
+#let tw-hm(rs, f: [`prefix`], cert: (:)) = {
   let (XM, XL, XO) = TWHX
   let (YU1, YU2, YC, YL1, YL2) = TWHY
   let ys = (YL1, YU1, YU1).at(rs)
@@ -3804,7 +3808,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == XO { BCOL } else { black }) }
     if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((4.75, 0.25), [`𝟏`]) }
   }), s: 100%)
-  hm-meta((helper: "tw-hm", hand: true, h: TWHH, w: TWHW, xo: XO,
+  hm-meta((helper: "tw-hm", hand: true, h: TWHH, w: TWHW, xo: XO, cert: cert,
     beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
     splits: splits.map(s => s.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
@@ -3821,13 +3825,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `⊸ nil`]),
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-pf, bx-lp)), s: 68%),
-    [`α prefix list(p)`])], [#tw-hm(0)],
+    [`α prefix list(p)`])],
+  [#tw-hm(0, cert: twcert("α prefix list(p)", a: "α = [nil,⊸ nil ∪ cons]"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-pf, post: (bx-lp,)), s: 68%),
-    [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])], [#tw-hm(1)],
+    [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
+  [#tw-hm(1, cert: twcert("F(prefix) [nil,⊸ nil ∪ cons] list(p)"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(4.3, a: bx-p, l: bx-lp), lw: 4.3, pre: bx-pf), s: 68%),
-    [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])], [#tw-hm(2)],
+    [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
+  [#tw-hm(2, cert: twcert("F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-pl), lw: 6.1), s: 68%),
     [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
@@ -4144,7 +4151,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
 // it.  A hand born ON the object wire is one; a unit, whose source is `Id`, floats in its own lane.
 // Bound outside the drawing so the scan line is handed the nodes that DREW, not the argument alone.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3) = {
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3, cert: (:)) = {
   let ns = nodes + hands.filter(hd => hd.at(6) != none and hd.at(0) == xo).map(hd => (hd.at(1), hd.at(2)))
   dpan(h, w, xo, {
   let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
@@ -4161,7 +4168,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   }, s: 100%)
-  hm-meta((helper: "mpan", h: h, w: w, xo: xo,
+  hm-meta((helper: "mpan", h: h, w: w, xo: xo, cert: cert,
     beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
     hands: hands.map(hd => hd.map(plain)), wires: wires.map(plain),
     nodes: ns.map(n => n.map(plain)),
@@ -4634,15 +4641,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `π₂`]),
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-sq, bx-lp)), s: 68%),
-    [`α subseq list(p)`])], [#tw-hm(0, f: [`subseq`])],
+    [`α subseq list(p)`])],
+  [#tw-hm(0, f: [`subseq`], cert: twcert("α subseq list(p)", a: "α = [nil,π₂ ∪ cons]"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-sq, post: (bx-lp,), upper: pi2-copy()), s: 68%),
-    [`F(subseq) [nil,π₂ ∪ cons] list(p)` \ #src[defining equation]])], [#tw-hm(1, f: [`subseq`])],
+    [`F(subseq) [nil,π₂ ∪ cons] list(p)` \ #src[defining equation]])],
+  [#tw-hm(1, f: [`subseq`], cert: twcert("F(subseq) [nil,π₂ ∪ cons] list(p)"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(4.3, a: bx-p, l: bx-lp), lw: 4.3, pre: bx-sq,
     upper: pi2-copy(l: bx-lp)), s: 68%),
     [`F(subseq) [nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]` \
-     #src[`list(p)` through `cons`, `π₂` natural]])], [#tw-hm(2, f: [`subseq`])],
+     #src[`list(p)` through `cons`, `π₂` natural]])],
+  [#tw-hm(2, f: [`subseq`],
+    cert: twcert("F(subseq) [nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]"))],
 
   [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-sl), lw: 6.1, upper: pi2-copy(l: bx-sl)),
     s: 68%),
@@ -5109,7 +5120,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // `beads` are `(y, label)`, `(y, label, colour)` or `(y, label, colour, x)`: colour because wire
 // colour is the TYPE and bead colour is WHICH ARROW, `x` because a bead SPANS the wires it is not
 // `F(−)` of — `est(R)` is not `list` of anything, so its dot reaches the `list` wire by a bar.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%) = {
+// `cert` is the author's certificate, the same discipline as a `lean:` marker: `expect` the row's
+// formula, `src`/`tgt` the stated endpoints, `branch` which case the panel draws, `alias` the
+// abbreviations the display's key list supplies.  `scripts/scanline` applies them; it cannot judge
+// them.  Emitted only — the drawing never reads it, so a certificate cannot move the ink.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
   dpan(h, w, xo, {
   for l in lanes { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
   for b in beads {
@@ -5122,7 +5137,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s)
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo,
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
 }
@@ -5148,6 +5163,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let HMY = (0.45, 1.05, 1.65, 2.25, 2.85, 3.45, 4.05)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
 #let HMH = 4.5
 #let PARTY = [`[A]`]
+// The key table below the display: `include` is the panel's own composite at `g:=π₂`, `h:=cons`.
+#let INCL = "include = (𝟙×(list(g) concat))h"
 #let party-hm(rs) = {
   let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
   dpanel(HMH, PXO + 2.85, PXO,
@@ -5155,7 +5172,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     ((YP, [`g`]), (YC, [`concat`]), (YN, [`h`]),
      ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1)),
     ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXO, PARTY)),
-    ((PXO, PARTY),), names: rs == 0, s: 90%)
+    ((PXO, PARTY),), names: rs == 0, s: 90%,
+    // The first and last panels are the row the display states; the two in between are the steps
+    // the `R°` bead takes to get from one to the other, and the display states no formula for them.
+    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,)), (:), (:),
+           (expect: "include R°", alias: (INCL,))).at(rs))
 }
 
 #let step = step.with(pw: 319pt)
