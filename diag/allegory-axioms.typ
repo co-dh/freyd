@@ -3994,20 +3994,71 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   }
   lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
 }
-#let step = step.with(pw: 262pt)
-#disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
+// §13.3.4's Hinze–Marsden lanes (IntroString.pdf §1.4.2), read left to right as the panel is drawn:
+// `MA` is always the leftmost wire and the object wire is whichever the panel ends on.  `MLW` is one
+// lane — the room two port labels need side by side.  `[A]` is the `list` wire BESIDE the `A` wire.
+#let MLW = 1.25
+#let MA = 0.55
+#let MB = MA + MLW
+#let MC = MB + MLW
+#let MD = MC + MLW
+// A BEAD OFF THE OBJECT WIRE writes its label at the object wire's x all the same: the labels then
+// read as one column, and none of them crosses the wires standing between it and its own dot.
+// `hands` is a relator wire born at `(x0,y0)` — free in its own lane, or on the wire carrying `b` —
+// running down lane `xe` and dying at `(x1,y1)`; `wires` are the lanes that run the whole height.
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), h: 4.3, s: 82%) = dpan(h, w, xo, {
+  for x in wires { hm-wire(((x, h), (x, 0))) }
+  for (xf, xt, y, k) in joins { hm-join(xf, h, xt, y, knee: k) }
+  for (x0, y0, xe, x1, y1, l, b) in hands {
+    hm-wire(((x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)))
+    hm-name((xe - 0.32, (y0 + y1) / 2), l)
+    if b != none { hm-bead((x0, y0), b, dx: xo - x0 + 0.32) }
+  }
+  for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+}, s: s)
+#let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
+
+// HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
+// wire and `sum` kills `list` onto `A`.  `∪` has no shape here — only `cons`'s branch is drawn.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt),
   stroke: 0.4pt + luma(190),
   Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]`],
-  table.header([*formula* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*reason*]),
-  [#step([])[#P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`])))][`[nil,⊸ nil ∪ cons] sum`]], [],
-  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`])))][`[nil sum,⊸ nil sum∪cons sum]`]], [coproduct of maps, composition over `∪`],
-  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy)))][`[zero,⊸ zero ∪ (𝟙×sum) plus]`]], [`sum`'s defining equation],
-  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true)))][`[zero,(𝟙×sum)(⊸ zero ∪ plus)]`]], [`(𝟙×sum)⊸=⊸`, `sum` entire],
-  [#step(EQ)[#P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true)))][`F(sum) [zero,⊸ zero ∪ plus]`]], [relator],
-)
+  table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
+
+  // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
+  // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
+  [#vstep([], P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
+    [`[nil,⊸ nil ∪ cons] sum`])],
+  [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
+    joins: ((MA, MB, 3.00, 0.60), (MB, MC, 1.90, 0.60)),
+    beads: ((MB, 3.00, [`cons`]), (MC, 1.90, [`sum`])))],
+
+  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
+    [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
+  // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
+  [],
+
+  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy))),
+    [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
+  [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
+    joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
+    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`])))],
+
+  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
+    [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
+  // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
+  // `(𝟙×sum)plus` exactly as the row above has it.
+  [],
+
+  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
+    [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
+  [],
+))
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.]])
@@ -4081,29 +4132,41 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 }
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
 
-#let step = step.with(pw: 196pt)
-#disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
+// HINZE–MARSDEN: the drawn branch is `plus`'s, so `A×−` is the functor wire and `Int` the object
+// one; `𝟙×≥` is `F(≥)`, the `≥` bead with `A×−` running past it, and the join stays put while it moves.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
     branch is `zero⊑zero≥`]],
-  table.header([*formula* — the head above, the running sum below; the tape is the `∪`], [*reason*]),
+  table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
+    [*Hinze–Marsden*]),
 
-  [#step([])[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true))][`(𝟙×≥)(⊸ zero ∪ plus)`]],
+  [#vstep([], mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true)),
+    [`(𝟙×≥)(⊸ zero ∪ plus)`])],
+  [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
+    joins: ((MA, MB, 1.90, 1.20),),
+    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`])))],
+
+  [#vstep(EQ, mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9)),
+    [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` \ #src[relator, composition over `∪`]])],
+  // Empty: `∪` is an operation on hom-sets, not a wiring, so distributing over it draws the row above.
   [],
 
-  [#step(EQ)[#mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9))][`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]],
-  [relator, composition over `∪`],
+  [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8)),
+    [`⊸ zero ∪ plus≥` \ #src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
+     written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
+     together, which carries it to `≥`.]])],
+  [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
+    joins: ((MA, MB, 1.90, 1.20),),
+    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`])))],
 
-  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8))][`⊸ zero ∪ plus≥`]],
-  [@dom-slide, `(≥×≥) plus⊑plus≥` \ #src[`(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and
-   `plus` is a map, so it is monotonic on an order and on its opposite together, which carries it
-   to `≥`.]],
-
-  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true))][`(⊸ zero ∪ plus)≥`]],
-  [`≥` reflexive],
-)]<mss-mono>
+  [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true)),
+    [`(⊸ zero ∪ plus)≥` \ #src[`≥` reflexive]])],
+  // Empty: `≥` is put back on the `⊸ zero` branch, which this column does not draw.
+  [],
+))]<mss-mono>
 
 // Every row is ONE WIRE, `𝟏+A×Int` to `Int` — `F(Int)` with `A:=Int` — so its two ends are drawn once.
 #let mss-src = { lab(-1.62, 0, black)[`𝟏+A×Int`]; wire((-0.45, 0), (0, 0)) }
@@ -4133,25 +4196,35 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 }
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
 
-#let step = step.with(pw: 239pt)
-#disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
+// HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
+// there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#mss-alg ` est(≥)=[zero,⊕]`],
-  table.header([*formula* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
-    [*reason*]),
+  table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
+    [*Hinze–Marsden*]),
 
-  [#step([])[#mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25))][#mss-alg ` est(≥)`]], [],
+  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
+  [#mpan(MC, 8.9, ((MB, [`F`]), (MC, [`Int`])), ((MC, [`Int`]),),
+    hands: ((MA, 3.55, MA, MC, 0.80, [`E`], frc([`𝟙`])),),
+    joins: ((MB, MC, 2.10, 0.70),),
+    beads: ((MC, 2.10, [`[zero,⊸ zero ∪ plus]`]), (MC, 0.80, [`est(≥)`])))],
 
-  [#step(EQ)[#mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25))][`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]`]],
-  [coproduct of maps \ #src[@coprod-calc at `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` —
-   @coprod-laws, composition over `∪`]],
+  [#vstep(EQ, mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25)),
+    [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
+     `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
+  // Empty: `[U,V]` is a coproduct of hom-sets, so splitting the bead into branches is not a wiring.
+  [],
 
-  [#step(EQ)[#mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),)))][`[zero,⊕]`]],
-  [singleton, `≥` reflexive \ #src[@est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
-   map; the lower branch is `⊕`'s definition, @mss-defn, and no law]],
-)
+  [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [`[zero,⊕]`
+    \ #src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
+    map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
+  [#mpan(MC, 8.9, ((MB, [`F`]), (MC, [`Int`])), ((MC, [`Int`]),),
+    joins: ((MB, MC, 2.10, 0.70),),
+    beads: ((MC, 2.10, [`[zero,⊕]`]),))],
+))
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
   makes it an equality.]])
@@ -4232,37 +4305,52 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // Every row is drawn at ONE length and ONE scale: a scale typed per cell is a scale that drifts.
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 80%)
 
-#let step = step.with(pw: 260pt)
-#disp[#table(
-  columns: (1fr, 4.4cm),
-  align: (center + horizon, left + horizon),
+// HINZE–MARSDEN: @mss-prefix-sum's picture at this algebra, with `[[A]]` counted out as TWO `list`
+// wires beside `A` — the algebra kills `A×−` onto the outer one, and `list(g)` is the bead `g`
+// killing the inner one while the outer runs past.  The fork stays whole in one bead: `⟨·,·⟩` needs
+// the product BIFUNCTOR, which is not a wire, and `list(g)` standing still is what the row shows.
+#let mtop4 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`list`]), (MD, [`A`]))
+#let mbot4 = ((MB, [`list`]), (MD, [`B`]))
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)=F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`],
-  table.header([*formula* — the `𝟏` branch of `𝟏+A×[[A]]` above, the root and its list of tails below],
-    [*reason*]),
+  table.header([*circuit* — the `𝟏` branch of `𝟏+A×[[A]]` above, the root and its list of tails below],
+    [*Hinze–Marsden*]),
 
-  [#step([])[#mss-pic(mss-row((m-nil, m-wrap), (), (m-head,), [`cons`], 1.4, false, (), (), (),
-    (m-lg,)))][`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)`]],
-  [#src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
-   `cons(cons(a,head(tails xs)),tails xs)`]],
+  [#vstep([], mss-pic(mss-row((m-nil, m-wrap), (), (m-head,), [`cons`], 1.4, false, (), (), (),
+    (m-lg,))), [`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)` \
+    #src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
+     `cons(cons(a,head(tails xs)),tails xs)`]])],
+  [#mpan(MD, 8.6, mtop4, mbot4, wires: (MB,),
+    joins: ((MA, MB, 3.00, 0.60), (MC, MD, 1.90, 0.60)),
+    beads: ((MB, 3.00, [`⟨(𝟙×head)cons,` \ `π₂⟩cons`]), (MD, 1.90, [`g`])))],
 
-  [#step(EQ)[#mss-pic(mss-row((m-nil, m-g, m-wrap), (), (m-head,), [`cons`], 1.4, false, (m-g,), (),
-    (m-lg,), ()))][`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]`]],
-  [coproduct of maps, `wrap` and `cons` natural],
+  [#vstep(EQ, mss-pic(mss-row((m-nil, m-g, m-wrap), (), (m-head,), [`cons`], 1.4, false, (m-g,), (),
+    (m-lg,), ())), [`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]` \
+    #src[coproduct of maps, `wrap` and `cons` natural]])],
+  // Empty: `list(g)` is pushed into the fork's two components, and this column keeps the fork whole.
+  [],
 
-  [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (), (m-lg, m-head), [`f`], 0.8, true, (), (m-lg,), (),
-    ()))][`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]`]],
-  [`g`'s defining equation, `list(g) head=head g` \ #src[the `π₂` slide `π₂list(g)=(𝟙×list(g))π₂`
-   is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step the
-   note has no law for — `head` is undefined at `nil`, and the equality is a fact about `tails`, which
-   never returns an empty list, not a naturality square]],
+  [#vstep(EQ, mss-pic(mss-row((m-c, m-wrap), (), (m-lg, m-head), [`f`], 0.8, true, (), (m-lg,), (),
+    ())), [`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]` \
+    #src[`g`'s defining equation, `list(g) head=head g`; the `π₂` slide `π₂list(g)=(𝟙×list(g))π₂`
+     is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step the
+     note has no law for — `head` is undefined at `nil`, and the equality is a fact about `tails`, which
+     never returns an empty list, not a naturality square]])],
+  // Empty: both components are still inside the fork, so the whole-bead picture cannot move yet.
+  [],
 
-  [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (m-lg,), (m-head,), [`f`], 0.8, true, (), (), (),
-    ()))][`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`]],
-  [fork, relator \ #src[the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
-   at `c,f:=zero,⊕`. @cata-fusion then reads off
-   `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]],
-)]<mss-scan>
+  [#vstep(EQ, mss-pic(mss-row((m-c, m-wrap), (m-lg,), (m-head,), [`f`], 0.8, true, (), (), (),
+    ())), [`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]` \
+    #src[fork, relator — the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
+     at `c,f:=zero,⊕`. @cata-fusion then reads off
+     `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]])],
+  [#mpan(MD, 8.6, mtop4, mbot4, wires: (MB,),
+    joins: ((MC, MD, 1.90, 0.60), (MA, MB, 0.80, 1.40)),
+    beads: ((MD, 1.90, [`g`]), (MB, 0.80, [`⟨(𝟙×head)f,` \ `π₂⟩cons`])))],
+))]<mss-scan>
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
@@ -4272,6 +4360,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let bx-fold = ([`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈`], 9.0, false)
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
+// The Hinze–Marsden column counts `[A]` out as the `list` wire beside the `A` wire, and every row's
+// two ends are the same, so the ports are bound once too.
+#let mtopL = ((MC, [`list`]), (MD, [`A`]))
+#let mbotL = ((MD, [`A`]),)
 #let mss-line(items) = {
   lab(-0.62, 0, black)[`[A]`]; boxrun(0, 0, items, h: TH)
   lab(boxrun-w(items) + 0.55, 0, black)[`A`]
@@ -4284,42 +4376,57 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  // The `E` wire is BORN at the transpose and DIES at `est(≥)`; one height per bead down the
-  // column, so a row that collapses a pair puts its one bead midway between the two it replaces.
-  // The OUTER `E` keeps `RXU` in every row — an unchanged wire is drawn unchanged — and only the
-  // second row, which carries a second `E`, uses `RXC` as well.
+  // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
+  // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
+  // collapses a pair puts its one bead midway between the two it replaces.
   [#vstep([], mbp(mss-line((bx-mss, bx-est))),
     [#frc([`segment sum`]) ` est(≥)` \
      #src[`mss` is the greatest of the segment sums — @mss-defn]])],
-  [#tpan(4.3, ((3.60, frc([`segment sum`])), (0.40, [`est(≥)`])),
-    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
+  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
+    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
+    joins: ((MC, MD, 2.10, 0.70),),
+    beads: ((MD, 2.10, [`segment sum`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-epest, bx-est))),
     [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≥)) est(≥)` \ #src[@mss-shape]])],
-  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.65, frc([`prefix sum`])), (1.35, [`est(≥)`]),
-      (0.40, [`est(≥)`])),
-    hands: ((RXU, 3.60, 0.40, [`E`]), (RXC, 2.65, 1.35, [`E`])),
-    top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
+  // `suffix` is natural in `A`, so it is a bead on the `list` WIRE; `prefix sum` is not — it adds up
+  // the elements — so it kills that wire onto the object one.
+  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
+    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),
+            (MB, 2.85, MB, MD, 1.35, [`E`], frc([`𝟙`]))),
+    joins: ((MC, MD, 2.10, 0.70),),
+    beads: ((MC, 3.55, [`suffix`]), (MD, 2.10, [`prefix sum`]), (MD, 1.35, [`est(≥)`]),
+            (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
     [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
      #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
       entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
-  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≥)`])),
-    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
+  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
+    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
+    joins: ((MC, MD, 2.10, 0.70),),
+    beads: ((MC, 3.55, [`suffix`]), (MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-tails, bx-listg, bx-est))),
     [`tails list(⦇[zero,⊕]⦈) est(≥)` \
      #src[`tails` implements #frc([`suffix`]) and `list(f)` implements `E(f)` — @comb-fns]])],
-  [#tpan(4.3, ((3.60, [`tails`]), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≥)`])),
-    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
+  // `tails` does the singleton's and `suffix`'s work at once, so its ONE bead sits between their two
+  // heights — on the `list` wire, since that is the wire it opens the `E` beside.
+  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
+    hands: ((MC, 3.90, MA, MD, 0.45, [`E`], [`tails`]),),
+    joins: ((MC, MD, 2.10, 0.70),),
+    beads: ((MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
 
   [#vstep(EQ, mbp(mss-line((bx-fold, bx-est))),
     [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
      #src[@cata-fusion at @mss-scan's side condition, `c,f:=zero,⊕`]])],
-  [#tpan(4.3, ((2.80, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩ cons]⦈`]), (0.40, [`est(≥)`])),
-    hands: ((RXU, 2.80, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 9.0)],
+  // The fold now kills `list` AND opens the `E`, so its bead stands midway between the two beads of
+  // the row above, and the `E` leaves the object wire rather than a lane of its own.
+  [#mpan(MD, 9.7, mtopL, mbotL, h: 4.8,
+    hands: ((MD, 3.00, MA, MD, 0.45, [`E`], none),),
+    joins: ((MC, MD, 3.00, 0.90),),
+    beads: ((MD, 3.00, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩cons]⦈`]), (MD, 0.45, [`est(≥)`])))],
 ))
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
