@@ -4043,8 +4043,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    map; the lower branch is `⊕`'s definition, @mss-defn, and no law]],
 )
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
-  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≤°)` — B&dM's own containment — and @mss-laws's
-  second row makes it an equality.]])
+  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≤°)` — B&dM's own containment — and @mss-deriv
+  makes it an equality.]])
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage: @cata-fusion's side condition for `tails list(g)`.
@@ -4062,7 +4062,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let MLD = 0.34                 // circuit.typ's lead, which it does not export
 #let MINJ = 0.92                // the injection box `l°`/`r°`
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
-// per row is a width that drifts.  No chamfer is a MAP — `head` is only a PARTIAL map (@mss-laws),
+// per row is a width that drifts.  No chamfer is a MAP — `head` is only a PARTIAL map (`nil`),
 // and `c`, `f`, `g` are the arbitrary algebra fusion is applied to, so those four keep the cut corner.
 #let m-nil = ([`nil`], 1.05, false)
 #let m-wrap = ([`wrap`], 1.35, false)
@@ -4143,8 +4143,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (), (m-lg, m-head), [`f`], 0.8, true, (), (m-lg,), (),
     ()))][`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]`]],
   [`g`'s defining equation, `list(g) head=head g` \ #src[the `π₂` slide `π₂list(g)=(𝟙×list(g))π₂`
-   is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step of
-   @mss-scan the note has no law for — @mss-laws's third row]],
+   is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step the
+   note has no law for — `head` is undefined at `nil`, and the equality is a fact about `tails`, which
+   never returns an empty list, not a naturality square]],
 
   [#step(EQ)[#mss-pic(mss-row((m-c, m-wrap), (m-lg,), (m-head,), [`f`], 0.8, true, (), (), (),
     ()))][`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`]],
@@ -4153,30 +4154,70 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]],
 )]<mss-scan>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
+// the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
+#let bx-tails = ([`tails`], 1.5, false)
+#let bx-Eg = ([`E(⦇[zero,⊕]⦈)`], 3.6, false)
+#let bx-listg = ([`list(⦇[zero,⊕]⦈)`], 4.4, false)
+#let bx-fold = ([`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈`], 9.0, false)
+// Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
+// along the wire, which is that display's content; here what changes is the boxes.
+#let mss-line(items) = {
+  lab(-0.62, 0, black)[`[A]`]; boxrun(0, 0, items, h: TH)
+  lab(boxrun-w(items) + 0.55, 0, black)[`A`]
+}
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` \
+    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≤°)` — @mss-defn]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `est(≤°)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `est(≤°)` \ #src[Theorem 7.2 at `≤°`,
-   `S:=[zero,⊸ zero ∪ plus]`, condition @mss-mono]],
-  [greedy: one running maximum kept at each `cons`, instead of every prefix sum collected and one
-   chosen at the end],
+  // The `E` wire is BORN at the transpose and DIES at `est(≤°)`; one height per bead down the
+  // column, so a row that collapses a pair puts its one bead midway between the two it replaces.
+  // The OUTER `E` keeps `RXU` in every row — an unchanged wire is drawn unchanged — and only the
+  // second row, which carries a second `E`, uses `RXC` as well.
+  [#vstep([], mbp(mss-line((bx-mss, bx-est))),
+    [#frc([`segment sum`]) ` est(≤°)` \
+     #src[`mss` is the greatest of the segment sums — @mss-defn]])],
+  [#tpan(4.3, ((3.60, frc([`segment sum`])), (0.40, [`est(≤°)`])),
+    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
-  [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[@takewhile-laws's last row at this `S`]],
-  [`⦇[zero,⊕]⦈` is a reduce of maps, and the prefix sums of one list are finitely many
-   integers with one greatest, so @mss-step's `⊑` is an equality],
+  [#vstep(EQ, mbp(mss-line((bx-sf, bx-epest, bx-est))),
+    [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≤°)) est(≤°)` \ #src[@mss-shape]])],
+  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.65, frc([`prefix sum`])), (1.35, [`est(≤°)`]),
+      (0.40, [`est(≤°)`])),
+    hands: ((RXU, 3.60, 0.40, [`E`]), (RXC, 2.65, 1.35, [`E`])),
+    top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
-  [`list(g) head=head g` \ #src[the one step of @mss-scan the note has no law for]],
-  [`head` is a partial map, undefined at `nil`; the equality holds because `tails` never returns an
-   empty list, which is a fact about `tails`, not a naturality square],
+  [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
+    [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≤°)` \
+     #src[the greedy theorem @greedy-thm72 at `R:=≤°`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
+      condition and @mss-step its #frc([`S`]) ` est(≤°)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
+      entire and #frc([`prefix sum`]) ` est(≤°)` simple #src[@takewhile-laws's last row]]])],
+  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≤°)`])),
+    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
-  [`tails` implements $frac(#[`suffix`], ∋)$, `list(f)` implements `E(f)` \ #src[@comb-fns]],
-  [what makes @mss-shape a program: one fold builds the `n+1` running maxima, and the final `est(≤°)`
-   reads them in one more pass, so `mss` is linear],
-)]<mss-laws>
+  [#vstep(EQ, mbp(mss-line((bx-tails, bx-listg, bx-est))),
+    [`tails list(⦇[zero,⊕]⦈) est(≤°)` \
+     #src[`tails` implements #frc([`suffix`]) and `list(f)` implements `E(f)` — @comb-fns]])],
+  [#tpan(4.3, ((3.60, [`tails`]), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≤°)`])),
+    hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
+  [#vstep(EQ, mbp(mss-line((bx-fold, bx-est))),
+    [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` \
+     #src[@cata-fusion at @mss-scan's side condition, `c,f:=zero,⊕`]])],
+  [#tpan(4.3, ((2.80, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩ cons]⦈`]), (0.40, [`est(≤°)`])),
+    hands: ((RXU, 2.80, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 9.0)],
+))
+#align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
+  `est(≤°)` reads them in one more pass, so `mss` is linear.]])
+]<mss-deriv>
+
+// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
+// would sit alone at the foot of @mss-deriv's page.
+#pagebreak(weak: true)
 === `filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` <sec-filter>
 
 // B&dM Ex 7.41, p. 174.  @sec-takewhile with `subseq` for `prefix`: same `F`, `α`, `p`, `R`, same
