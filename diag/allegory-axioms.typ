@@ -3819,7 +3819,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `φ:=⊸ nil`, `ψ:=(p×𝟙) cons`],
 )
-#align(center, block(inset: (y: 4pt))[#src[the `cons` branch of `F(R°)S⊑SR°`; the `nil` branch is
+// The branch is named in the header above; this line adds only what the header does not say.
+#align(center, block(inset: (y: 4pt))[#src[the `nil` branch is
   `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°` is `cons length=(𝟙×length)π₂ succ` with `succ` monotone —
   a shorter tail makes a shorter list.]])
 ]<takewhile-mono>
