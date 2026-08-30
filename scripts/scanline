@@ -79,7 +79,12 @@ def p_prim(s, i):
         raise ValueError(f"expected a term at the end of {s!r}")
     if s[i] in OPENERS:
         j = matching(s, i)
-        return (parse(s[i + 1:j]) if s[i] == '(' else ('atom', ' '.join(s[i:j + 1].split()))), j + 1
+        if s[i] == '(':
+            return parse(s[i + 1:j]), j + 1
+        # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
+        # `plain` spells `frac(x, ∋)`, so `⦇S⦈%∋` must not read as `⦇S⦈` beside a stray `%∋`.
+        j += 3 if s[j + 1:j + 3] == '%∋' else 1
+        return ('atom', ' '.join(s[i:j].split())), j
     j = i
     while j < len(s) and s[j] not in BREAK:
         j += 1
@@ -125,7 +130,8 @@ def rec(e, f):
 
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
-    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` is the relator law, applied on trust."""
+    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` and `F(R)F(S)=F(RS)` are the relator
+    laws, applied on trust."""
     e = rec(e, norm)
     if e[0] == 'conv':
         b = e[1]
@@ -146,7 +152,7 @@ def norm(e):
         xs = [y for x in e[1] for y in (x[1] if x[0] == e[0] else [x])]
         if e[0] == 'comp':
             xs = [x for x in xs if x != ('atom', UNIT)] or [('atom', UNIT)]
-            xs = interchange(xs)
+            xs = fuse(interchange(xs))
         return xs[0] if len(xs) == 1 else (e[0], xs)
     return e
 
@@ -158,6 +164,18 @@ def interchange(xs):
     for x in xs:
         if out and out[-1][0] == 'prod' and x[0] == 'prod' and len(out[-1][1]) == len(x[1]):
             out[-1] = norm(('prod', [('comp', [a, b]) for a, b in zip(out[-1][1], x[1])]))
+        else:
+            out.append(x)
+    return out
+
+
+def fuse(xs):
+    """`F(R)F(S)=F(RS)`: the picture draws one bead per arrow under an unbroken relator wire, the
+    display writes one application of the relator to the composite they make."""
+    out = []
+    for x in xs:
+        if out and out[-1][0] == 'app' and x[0] == 'app' and out[-1][1] == x[1]:
+            out[-1] = norm(('app', x[1], ('comp', [out[-1][2], x[2]])))
         else:
             out.append(x)
     return out

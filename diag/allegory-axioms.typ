@@ -5395,30 +5395,43 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // from the greedy step on, and the inside does not exist before it.
 #let dcell(o, i) = align(center, stack(spacing: 5pt, ..(o, i).filter(x => x != none)))
 
+// Every row writes one fraction where its panel draws two beads: the unit `H%∋=(𝟙%∋)E(H)` opens
+// `E` outside `H`.  One law, instantiated at the numerator each row names.
+#let DUN(h) = h + "%∋ = 𝟙%∋ E(" + h + ")"
+
 // `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
 #let d-out1 = dpanel(3.6, DW, DXO,
   ((DXE, 2.95, 1.00, EW, UNIT), (DXL, "top", 2.05, none, none),
    (DXL, 2.05, "bot", none, none)),
   ((2.05, [`party`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS)
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS,
+  cert: (expect: "party%∋ est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("party"),)))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 #let d-out2 = dpanel(3.9, DW, DXO,
   ((DXE, 3.25, 1.00, EW, UNIT), (DXL, "top", 2.55, none, none),
    (DXL, 2.55, "bot", none, none), (DXD, 2.55, 1.65, DELTA, none)),
   ((2.55, [`⦇S⦈`]), (1.65, [`choose`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  // The ink spells the LOWER of the two rows: `E(⦇S⦈)` and `E(choose)` are two beads, and row 2's
+  // `frc(⦇S⦈ choose)` is that one absorption step away.
+  cert: (expect: "⦇S⦈%∋ E(choose) est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("⦇S⦈"),)))
 #let d-out4 = dpanel(5.0, DW, DXO,
   ((DXE, 4.25, 2.75, EW, UNIT), (DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.55, none, none),
    (DXL, 3.55, "bot", none, none), (DXD, 3.55, 1.35, DELTA, none)),
   ((3.55, [`⦇S⦈`]), (2.75, [`est((R×R)°)`], black, DXD), (1.35, [`choose`]),
    (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  cert: (expect: "⦇S⦈%∋ est((R×R)°) choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
+         alias: (DUN("⦇S⦈"), DUN("choose"))))
 #let d-out5 = dpanel(4.2, DW, DXO,
   ((DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.15, none, none),
    (DXL, 3.15, "bot", none, none), (DXD, 3.15, 1.35, DELTA, none)),
   ((3.15, [`⦇−⦈`]), (1.35, [`choose`]), (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  // The first alias is what the `−` stands for: the body is the panel drawn under this one.
+  cert: (expect: "⦇S%∋ est((R×R)°)⦈ choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
+         alias: ("⦇S%∋ est((R×R)°)⦈ = ⦇−⦈", DUN("choose"))))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
@@ -5429,14 +5442,17 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DID, 2.05, "bot", none, none), (DIl, 2.05, "bot", none, none)),
   ((2.05, [`S`]), (1.00, [`est((R×R)°)`], black, DID)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS)
+  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS,
+  cert: (expect: "S%∋ est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]", alias: (DUN("S"),)))
 #let d-in6 = dpanel(3.6, DIW, DIO,
   ((DIE, 2.95, 1.00, EW, UNIT), (DIM, "top", 2.05, none, none), (DIL, "top", 2.05, none, none),
    (DID, "top", 2.05, none, none), (DIl, "top", 2.05, none, none),
    (DIl, 2.05, "bot", none, none)),
   ((2.05, [`include`]), (1.00, [`est(R°)`], black, DIl)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS)
+  ((DIl, LIST), (DIO, OBJ)), s: DS,
+  // The row states the whole fork; this panel and the next draw one branch each.
+  cert: (expect: "include%∋ est(R°)", src: "A×[[A]×[A]]", tgt: "[A]", alias: (DUN("include"),)))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list, at `DIE2`: the transpose is taken
 // once per element, and `concat` is what finally eats the list the elements sat in.
 #let d-in7 = dpanel(4.6, DIW, DIO,
@@ -5444,7 +5460,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DID, "top", 2.15, none, none), (DIl, "top", "bot", none, none)),
   ((3.75, [`π₂`]), (2.15, [`choose`]), (1.35, [`est(R°)`], black, DIl), (0.55, [`concat`])),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS)
+  ((DIl, LIST), (DIO, OBJ)), s: DS,
+  cert: (expect: "π₂ list(choose%∋ est(R°)) concat", src: "A×[[A]×[A]]", tgt: "[A]",
+         alias: (DUN("choose"),)))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
