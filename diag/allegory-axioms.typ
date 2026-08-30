@@ -3486,12 +3486,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // @takewhile-step's circuits: ONE wire while `S` is still inside a division, then the same bracket
 // once the coproduct is opened.  `up`/`lo` are runs of boxes on the two branches, the lower one
 // spanning the pair, so the fraction boxes read at the height they act on.
-#let twrun(items) = {
-  lab(-1.1, 0, black)[`F([A])`]
+// `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
+// rather than `F([A])`, and its cata rows never open `E([A])` at all.
+#let twrun(items, from: [`F([A])`], mid: [`E([A])`]) = {
+  lab(-1.1, 0, black, from)
   let x = 0.0
   for (i, b) in items.enumerate() {
     wire((x, 0), (x + 0.34, 0)); twbox(x + 0.34, 0, b, h: TH); x = x + 0.34 + b.at(1)
-    if i == 0 { wire((x, 0), (x + 0.34, 0)); node(x + 0.9, 0, black, [`E([A])`]); x = x + 1.46 }
+    if i == 0 and mid != none {
+      wire((x, 0), (x + 0.34, 0)); node(x + 0.9, 0, black, mid); x = x + 1.46
+    }
   }
   wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
 }
@@ -3695,28 +3699,59 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.]])
 ]<takewhile-step>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
+// greedy `⊒` into the heading's `=`.  Only the last three rows are cited rather than derived.
+#let bx-Lpl = (frc([`prefix list(p)`]), 4.3, false)
+#let bx-LS = (frc([`⦇S⦈`]), 1.5, false)
+#let bx-cata = ([`⦇`#frc([`S`])` est(R°)⦈`], 3.3, true)
+#let bx-prog = ([`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], 6.1, false)
+// The `E` wire is BORN by the singleton and killed by `est(R°)`: #frc([`S`]) `=` #frc([`𝟙`]) `E(S)`
+// (@adj-E-bend) splits the transpose, so the relation stays a bead on the object wire.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
+    #src[Ex 7.39: the longest prefix all of whose elements pass `p`]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `est(R°)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `est(R°)` \ #src[Theorem 7.2 at `R°`,
-   so the hypothesis is monotonicity on `(R°)°=R`, which is @takewhile-mono]],
-  [greedy: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix collected and one
-   chosen at the end],
+  [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
+    [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`]])],
+  [#tpan(4.2, ((2.10, [`prefix list(p)`]), (0.80, [`est(R°)`])),
+    hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
+    top: ((TXO, [`[A]`]),), bot: [`[A]`], names: true, w: 6.6)],
 
-  [`prefix° prefix∩R∩R°⊑𝟙` \ #src[context, @est-laws: only `R` between prefixes of one list counts]],
-  [two prefixes of one list of equal length are equal, so $frac(#[`prefix list(p)`], ∋)$ `est(R°)` is
-   simple — *the* longest, not *a* longest],
+  [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
+    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
+  [#tpan(4.2, ((2.10, [`⦇S⦈`]), (0.80, [`est(R°)`])),
+    hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
+    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 4.2)],
 
-  [$frac(#[`prefix list(p)`], ∋)$ `est(R°)` entire],
-  [`nil` is always a `p`-prefix and `R` is connected on the prefixes of one list, so the longest exists],
+  [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
+    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R)S⊑SR` — @takewhile-mono —
+     for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
+     collected and one chosen at the end]])],
+  [#tpan(4.2, ((2.10, [`⦇`#frc([`S`])` est(R°)⦈`]),),
+    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 5.6)],
 
-  [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[`⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a
-   reduce of maps, hence entire]],
-  [what turns the greedy `⊑` into the heading's `=`],
-)]<takewhile-laws>
+  [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
+    [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
+  [#tpan(4.2, ((2.10, [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),),
+    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 8.9)],
+
+  [#vstep([], [], [`prefix° prefix∩R∩R°⊑𝟙` \ #src[@est-laws at `prefix`: two prefixes of one list of
+    equal length are equal, so #frc([`prefix list(p)`]) ` est(R°)` is simple — *the* longest, not
+    *a* longest]])],
+  [],
+
+  [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and
+    `R` is connected on the prefixes of one list, so the longest exists]])],
+  [],
+
+  [#vstep([], [], [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[`⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a
+    reduce of maps, hence entire — what turns the `⊒` above into the heading's `=`]])],
+  [],
+))]<takewhile-laws>
 
 === `mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` <sec-mss>
 
@@ -4264,7 +4299,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `est(R°)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `est(R°)` \ #src[@takewhile-laws's first row at
+  [`⦇`$frac(#[`S`], ∋)$ `est(R°)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `est(R°)` \ #src[@takewhile-laws's greedy step at
    this `S`, its condition @filter-mono]],
   [greedy: one longest `p`-subsequence kept at each `cons`],
 
