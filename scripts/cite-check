@@ -93,4 +93,6 @@ def main(paths):
     print(f"cite-check: {n} markers verified")
 
 
-main(sys.argv[1:])
+# Guarded so `cite-cover` can import this file for `MARK`, `key` and `resolve` instead of copying them.
+if __name__ == "__main__":
+    main(sys.argv[1:])

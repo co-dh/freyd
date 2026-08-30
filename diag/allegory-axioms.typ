@@ -776,7 +776,8 @@ hates, so nothing composes to it. The missing path is exactly the strictness of
    `fR/S`.]],
   P(p-map-div),
 
-  [`R/(fS)=(R/S)f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.]],
+  [`R/(fS)=(R/S)f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.
+   `lean:AOP.A4_4.div_comp_recip_map@bc41ec1a`]],
   P(p-div-map),
 
   [`(R/S)(S/W)⊑R/W` \ #src[Someone who admires all of a hate-set that already covers everyone
@@ -1773,7 +1774,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
   }),
   homeq(`F`, `T`, [`α`#sub[`T`]], none, [`α`#sub[`T`]], `T`,
     typed: true, bcol: TCOL, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN2),
-  [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11)]],
+  [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11), `lean:AOP.A6_3.relCata_alpha@656cd4b8`]],
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
@@ -1815,7 +1816,8 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
     twobeadeq(`T`, [`⦇α`#sub[`B`]`⦈`], `S`, [`⦇α`#sub[`C`]`⦈`], `C`, c1: INDUCED, c2: black, c3: INDUCED,
       typed: true, regions: auto),
   ),
-  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`] #h(6pt) #src[(2.12)]],
+  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`] #h(6pt)
+   #src[(2.12), `lean:AOP.A5_5.relCata_fusion@15d8a5b5`]],
   s: 92%,
 )]<cata-fusion>
 
@@ -2701,7 +2703,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`lean:AOP.A7_1.est@e39806f8`].
 
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[B&dM's `min R`, the same predicate under the same
-letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow]
+letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow;
+`lean:AOP.A7_4_Horner.est_apply@91dc1299`]
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
 

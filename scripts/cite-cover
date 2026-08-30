@@ -1,0 +1,373 @@
+#!/usr/bin/env python3
+"""cite-cover — for every labelled display in a note, the Lean statement worth reading against it.
+
+`cite-check` guards markers that already exist; this finds the displays that have none.  It does NOT
+propose a marker and it cannot: a `lean:` marker is a human's certificate that the display and the
+statement say the same thing, and a key pasted from a search is an uncertified claim wearing a
+certificate's clothes — worse than a bare display.  So the output is a READING TASK, not a patch:
+the note's formula and the candidate's Lean statement on adjacent lines, in one column, so the two
+can be compared term by term and then certified (or rejected) by hand.
+
+    ./scripts/cite-cover                     # every display of the axioms note
+    ./scripts/cite-cover --unmarked -n 3     # only the ones still to do, three candidates each
+    ./scripts/cite-cover --label est-up      # one display, everything known about it
+
+`REFACTOR_INDEX` points at the index when the checkout has none of its own — a git worktree shares
+the main checkout's `.lake` rather than paying for a second full build to answer a reading question.
+"""
+import importlib.util, math, os, re, sqlite3, sys
+from bisect import bisect
+from collections import defaultdict
+from importlib.machinery import SourceFileLoader
+
+sys.dont_write_bytecode = True        # else importing `cite-check` litters scripts/ with __pycache__
+HERE = os.path.dirname(os.path.abspath(__file__))
+# An explicit loader because `cite-check` has no `.py`: extensionless, it is not importable by name.
+_load = SourceFileLoader("cite_check", HERE + "/cite-check")
+cc = importlib.util.module_from_spec(importlib.util.spec_from_loader("cite_check", _load))
+_load.exec_module(cc)                 # MARK, key, resolve, Q, DB — one spelling of each, over there.
+
+DEFAULT_NOTE = "diag/allegory-axioms.typ"
+# A display states something only if one of these stands between two terms.  `≜` and `:=` included:
+# a definition IS a statement Lean can carry, it just cannot be a theorem.
+RELS = "=⊑⊒⟺⟹≜≤≥⊆⊇↔⇒⊣∼≅"
+LIBW = {"AOP": 1.0, "rel": 0.75, "leet": 0.7, "diag": 0.5, "Freyd": 0.5}   # the note explains AOP.
+
+
+# ---------------------------------------------------------------- reading the Typst source
+def spans(src):
+    """One pass over the source: comment/raw/math spans, and the `[`…`]` pairs outside them.
+
+    Brackets are counted everywhere else, string literals included — the notes put no `[` inside a
+    `"…"`, and pretending otherwise costs a second failure mode.  Math is skipped whole: `$frac(#[`x`],
+    ∋)$` is balanced inside, so nothing is lost by not descending into it."""
+    raws, maths, skip, pairs, stack, i, n = [], [], [], {}, [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == "/" and src[i:i + 2] == "//":
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            skip.append((i, j)); i = j
+        elif c == "/" and src[i:i + 2] == "/*":
+            j = src.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            skip.append((i, j)); i = j
+        elif c == "`":
+            k = len(src[i:]) - len(src[i:].lstrip("`"))    # a ``` block closes on its own fence width
+            fence = src[i:i + k]
+            j = src.find(fence, i + k)
+            j = n if j < 0 else j + k
+            raws.append((i, j)); i = j
+        elif c == "$":
+            j = src.find("$", i + 1)
+            j = n if j < 0 else j + 1
+            maths.append((i, j)); i = j
+        else:
+            if c == "[":
+                stack.append(i)
+            elif c == "]" and stack:
+                pairs[i] = stack.pop()
+            i += 1
+    return raws, maths, skip, pairs
+
+
+class Note:
+    """A note's source, indexed the few ways the report needs it."""
+
+    def __init__(self, path):
+        self.path, self.src = path, open(path, encoding="utf-8").read()
+        self.raws, self.maths, self.skip, self.pairs = spans(self.src)
+        self.nl = [m.start() for m in re.finditer("\n", self.src)]
+        self.dead = sorted(self.skip)                       # comments: no formula, no marker
+        self.heads = [(m.start(), m.group(1), m.group(2).strip())
+                      for m in re.finditer(r"(?m)^(=+) (.*)$", self.src)]
+
+    line = lambda self, i: bisect(self.nl, i) + 1
+
+    def head(self, i):
+        """The section heading the display sits under, with its level."""
+        prev = [h for h in self.heads if h[0] < i]
+        return prev[-1] if prev else (0, "=", "(front matter)")
+
+    def displays(self):
+        """`#disp[…]<label>`, found from the LABEL backwards: a label is unambiguous where a scan for
+        `#disp[` would also have to decide what closes it."""
+        out = []
+        for m in re.finditer(r"\]<([\w-]+)>", self.src):
+            open_i = self.pairs.get(m.start())
+            if open_i is None or any(a <= m.start() < b for a, b in self.dead):
+                continue
+            head = self.src[max(0, open_i - 24):open_i]
+            if not re.search(r"#disp\s*$|#disp\[[^\]]*$", head) and "#disp" not in head:
+                continue
+            out.append((m.group(1), open_i, m.start()))
+        return out
+
+    def atoms(self, a, b, drop):
+        """The formula-bearing atoms in `[a,b)`: raw spans and math, minus anything inside `drop`."""
+        out = []
+        for lo, hi in self.raws + self.maths:
+            if a <= lo < b and not any(x <= lo < y for x, y in drop + self.dead):
+                out.append((lo, hi, self.src[lo:hi]))
+        return sorted(out)
+
+    def src_spans(self, a, b):
+        """`#src[…]` regions — the reason column.  Its formulas are citations, not the claim."""
+        out = []
+        for m in re.finditer(r"#src\[", self.src[a:b]):
+            o = a + m.end() - 1
+            close = next((c for c, op in self.pairs.items() if op == o), None)
+            if close:
+                out.append((o, close + 1))
+        return out
+
+
+FRAC = re.compile(r"frac\(\s*#\[(.*?)\]\s*,\s*(.*?)\)", re.S)
+# What may stand BETWEEN two atoms of one statement: the side condition the author wrote in words
+# (`, for `A` coreflexive`), or nothing.  A bracket or a `#` between them is a new cell or a call, so
+# `[`R` entire `⟺Dom(R)=𝟙`]` is one formula and `], [` starts the next row.
+GLUE = re.compile(r"[^#\[\]()$\n]{0,26}|\s*\\?\s*")
+TAIL = re.compile(r"[^#\[\]()$\n]*")
+squash = lambda s: re.sub(r"\s+", " ", s) if s else ""
+
+
+def gap(text, sub):
+    """The source between two atoms, as it reads.  `α`#sub[`T`]`⦈` is ONE term: the subscript call is
+    spelled `_` and its `]` is swallowed, so the formula is not cut into three at every `α_T`."""
+    out, i = "", 0
+    text = re.sub(r"#h\(-?[\d.]+pt\)", " ", text)
+    while i < len(text):
+        m = re.match(r"#(sub|super)\[", text[i:])
+        if m:
+            sub, out, i = sub + 1, out + ("_" if m.group(1) == "sub" else "^"), i + m.end()
+        elif sub and text[i] == "]":
+            sub, i = sub - 1, i + 1
+        else:
+            out, i = out + text[i], i + 1
+    return out, sub
+unraw = lambda t: t.strip("`")
+
+
+def render(text):
+    """One atom as the reader sees it.  `$frac(#[`S`], ∋)$` keeps its own shape — the note's division
+    bar is not `S/∋` (it is `Λ S`), and rewriting it here would hide which of the two the note wrote."""
+    if text.startswith("$"):
+        t = FRAC.sub(lambda m: f"frac({unraw(m.group(1).strip())}, {m.group(2).strip()})", text[1:-1])
+        return " ".join(re.sub(r"#\[|\]|`", "", t).split())
+    return unraw(text).strip()
+
+
+def formulas(note, a, b):
+    """What the display STATES, as strings.
+
+    Atoms written flush against each other are one formula — `` `⦇R⦈=⦇` $frac(…)$ `⦈∋` `` is a single
+    equation the author broke to typeset a fraction — and a gap of any kind starts a new one.  A
+    `zsqc(x, y)` box is the note's rule-between-two-rows, i.e. `x ⊑ y` (`eq: true` makes it `=`), so
+    it is assembled before the loose atoms and its parts are then spent."""
+    drop, out, spent = note.src_spans(a, b), [], set()
+    for m in re.finditer(r"\bzsqc?\(", note.src[a:b]):
+        o = a + m.end() - 1
+        depth, j = 0, o
+        while j < b:
+            if note.src[j] == "(":
+                depth += 1
+            elif note.src[j] == ")":
+                depth -= 1
+                if not depth:
+                    break
+            j += 1
+        body, args, depth, last = note.src[o + 1:j], [], 0, o + 1
+        for k in range(o + 1, j):                       # top-level commas only
+            if note.src[k] in "([":
+                depth += 1
+            elif note.src[k] in ")]":
+                depth -= 1
+            elif note.src[k] == "," and not depth:
+                args.append((last, k)); last = k + 1
+        args.append((last, j))
+        pos = [(x, y) for x, y in args if ":" not in note.src[x:y].split("`")[0]]
+        rel = " = " if re.search(r"eq:\s*true", body) else " ⊑ "
+        if len(pos) >= 2:
+            sides = []
+            for x, y in pos[:2]:
+                at = note.atoms(x, y, drop)
+                spent.update(t[0] for t in at)
+                sides.append("".join(render(t[2]) for t in at))
+            if all(sides):
+                out.append((note.line(o), rel.join(sides)))
+    run, end, start, sub = "", None, None, 0
+    for lo, hi, txt in note.atoms(a, b, drop):
+        if lo in spent:
+            continue
+        glue, sub = gap(note.src[end:lo], sub) if end is not None else (None, 0)
+        if glue is not None and not GLUE.fullmatch(glue.replace("\\\n", " ")):
+            out.append((note.line(start), run + squash(TAIL.match(glue).group(0))))
+            run, glue, sub = "", None, 0                # the words before the cell ends stay with it
+        if not run:
+            start = lo
+        run, end = run + squash(glue) + render(txt), hi
+    if run:
+        out.append((note.line(start), run))
+    seen, keep = set(), []
+    for ln, f in out:
+        f = " ".join(f.split())
+        if len(f) > 2 and any(c in f for c in RELS) and f not in seen:
+            seen.add(f); keep.append((ln, f))
+    return keep
+
+
+# ---------------------------------------------------------------- matching against the index
+WORD = re.compile(r"[A-Za-z][A-Za-z0-9_']*")
+CAMEL = re.compile(r"[A-Z]?[a-z0-9']+|[A-Z]+(?![a-z])")
+SYMS = "⊑⊒∩∪°∋∈⟶≫×⦇⊔⊓↔∀∃⊤𝟙Λμ\\"
+# The note's glyph for a thing Lean spells with letters.  Only where the two really are the same
+# thing: `E(-)` is the power object, `frac(x, ∋)` is `Λ x`, `⦇…⦈` is the reduce.
+GLYPH = [(r"\bE\(", " powerObj "), (r"\bP\(", " powerRel "), (r"⦇|⦈", " relCata cata "),
+         (r"\bfrac\(", " Λ "), (r"𝟙", " id "), (r"⊤", " top "), (r"μ", " mu "),
+         (r"\bDom\b", " dom "), (r"\bRan\b", " ran "), (r"\bunion\b", " bigUnion union ")]
+
+
+def toks(text):
+    for pat, rep in GLYPH:
+        text = re.sub(pat, rep, text)
+    out = [c for c in text if c in SYMS]
+    for w in WORD.findall(text.replace(".", " ").replace("_", " ")):
+        out += [p.lower() for p in CAMEL.findall(w) if len(p) > 1]
+    return out
+
+
+class Index:
+    """The declaration corpus, scored by how much INFORMATION a formula shares with a statement.
+
+    Weight is inverse document frequency, so `est`, `hylo` and `⦇` decide a match and `⊑`, which
+    2000 statements carry, decides nothing — no hand-kept list of interesting words to go stale.
+    A hit in the declaration's NAME counts double: names are chosen, statements accumulate."""
+
+    def __init__(self, db):
+        self.rows = [r for r in db.execute(
+            "select i.user_name, i.module, m.source, r.sl1, i.stmt, i.stmt_key from decl_info i"
+            " join module m on m.name = i.module"
+            " left join decl_range r on r.name = i.name and r.module = i.module"
+            " where i.internal = 0 and i.stmt is not null and i.stmt != ''"
+            " and i.user_name not like '%«%'")]
+        self.post, self.size = defaultdict(list), []
+        for n, (user, mod, _, _, stmt, _) in enumerate(self.rows):
+            bag = defaultdict(float)
+            for t in toks(stmt):
+                bag[t] += 1
+            for t in toks(user):
+                bag[t] += 2
+            self.size.append(sum(bag.values()))
+            for t, c in bag.items():
+                self.post[t].append((n, c))
+        self.idf = {t: math.log(len(self.rows) / len(p)) for t, p in self.post.items()}
+
+    def rank(self, formula, context, k=2):
+        q = defaultdict(float)
+        for t in toks(formula):
+            q[t] += 1.0
+        for t in toks(context):                          # the section's vocabulary, at half weight
+            q[t] += 0.5
+        score = defaultdict(float)
+        for t, w in q.items():
+            idf = self.idf.get(t, 0)
+            if idf < 0.7:                                # in a fifth of all statements: says nothing
+                continue
+            for n, c in self.post[t]:
+                score[n] += w * idf * min(c, 3) / (1 + 0.35 * math.log(1 + self.size[n]))
+        best = sorted(score.items(), key=lambda s: -s[1] * LIBW.get(self.rows[s[0]][1].split(".")[0], 0.5))
+        return [(self.rows[n], s * LIBW.get(self.rows[n][1].split(".")[0], 0.5)) for n, s in best[:k]]
+
+
+flat = lambda s: " ".join(s.split())
+where = lambda row: f"{row[2]}:{row[3] + 1}" if row[3] is not None else row[2]
+
+
+# ---------------------------------------------------------------- the report
+def cover(note, db, idx, args):
+    marked, plausible, unmatched, silent, lines = [], [], [], [], []
+    for label, a, b in note.displays():
+        if args.label and label not in args.label.split(","):
+            continue
+        lvl, title = note.head(a)[1:]
+        text = note.src[a:b]
+        marks = [m for m in cc.MARK.findall(text)]
+        fs = formulas(note, a, b)
+        head = f"\n[{label}] {note.path}:{note.line(a)}  {lvl} {flat(title)}"
+        if marks:
+            marked.append(label)
+            if args.unmarked:
+                continue
+            lines.append(head)
+            for name, want in marks:
+                hits = cc.resolve(db, name.rstrip("."))
+                at = f" — {hits[0][0]} at {where(hits[0][1:3] and hits[0])}" if hits else " — UNRESOLVED"
+                lines.append(f"  certified  lean:{name}@{want}{at}")
+            continue
+        if not fs:
+            silent.append((label, title))
+            if args.unmarked or args.quiet:
+                continue
+            lines.append(head)
+            lines.append("  no statement — picture, drawing step, or prose only")
+            continue
+        rows = [(ln, f, idx.rank(f, title, args.n)) for ln, f in fs]
+        top = max((c[1] for _, _, cs in rows for c in cs), default=0)
+        (plausible if top >= args.thresh else unmatched).append((label, title, top))
+        lines.append(head + f"   UNMARKED, {len(fs)} formula(s), best {top:.1f}")
+        shown = rows if args.all else rows[:8]
+        for ln, f, cands in shown:
+            lines.append(f"  {note.path}:{ln}")
+            lines.append(f"    note ┃ {f}")
+            for row, s in cands:
+                lines.append(f"    lean ┃ {flat(row[4])}")
+                lines.append(f"         ┗━ {row[0]}  ({row[1]}, {where(row)})  "
+                             f"score {s:.1f}  lean:{row[1]}.{row[0].rpartition('.')[2]}@{cc.key(row[5])}")
+            if not cands:
+                lines.append("    lean ┃ (nothing in the index shares a symbol with it)")
+        if len(rows) > len(shown):
+            lines.append(f"  … {len(rows) - len(shown)} more formulas (--all)")
+    return lines, (marked, plausible, unmatched, silent)
+
+
+def main(argv):
+    class A:
+        n, thresh, label, unmarked, all, quiet, summary = 2, 6.0, None, False, False, False, False
+    args, paths = A(), []
+    it = iter(argv)
+    for a in it:
+        if a == "-n":
+            args.n = int(next(it))
+        elif a == "--thresh":
+            args.thresh = float(next(it))
+        elif a == "--label":
+            args.label = next(it)
+        elif a in ("--unmarked", "--all", "--quiet", "--summary"):
+            setattr(args, a[2:], True)
+        elif a.startswith("-"):
+            sys.exit(__doc__)
+        else:
+            paths.append(a)
+    try:
+        db = sqlite3.connect(f"file:{os.environ.get('REFACTOR_INDEX', cc.DB)}?mode=ro", uri=True)
+        db.execute("select 1 from decl_info limit 1")
+    except sqlite3.Error as e:
+        sys.exit(f"cite-cover: {cc.DB}: {e} — run ./scripts/cap lake build && ./scripts/lean-refactor index")
+    idx = Index(db)
+    for p in paths or [DEFAULT_NOTE]:
+        note = Note(p)
+        lines, (marked, plausible, unmatched, silent) = cover(note, db, idx, args)
+        if not args.summary:
+            print(*lines, sep="\n")
+        loose = sum(1 for _ in cc.MARK.finditer(re.sub(r"//[^\n]*", "", note.src))) - sum(
+            len(cc.MARK.findall(note.src[a:b])) for _, a, b in note.displays())
+        print(f"\n{p}: {len(marked) + len(plausible) + len(unmatched) + len(silent)} labelled displays"
+              f" — {len(marked)} certified, {len(plausible)} unmarked with a candidate to read,"
+              f" {len(unmatched)} unmarked with nothing above {args.thresh:g},"
+              f" {len(silent)} stating no formula.  {loose} markers outside a display.")
+        if unmatched and not args.summary:
+            print("  nothing found for: " + ", ".join(f"{l} ({flat(t)})" for l, t, _ in unmatched[:12]))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
