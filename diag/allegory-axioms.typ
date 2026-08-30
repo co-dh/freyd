@@ -2177,6 +2177,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let hb-FcR = ([`F(⦇R⦈)`], 1.90, true)
 #let hb-FX = ([`F(X)`], 1.30, true)
 #let hb-FW = ([`F(⦇S⦈°\X)`], 2.90, true)
+#let hb-mu = ([`(μX : S°F(X)R)`], 4.50, true)
 // A run of boxes between its source and target objects, and with `rhs` the run it is below: `gterm`
 // without the converse frame, which is the shape every row of both tables draws.
 #let hterm(items, a0, a1, rhs: none) = {
@@ -2196,8 +2197,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
-    #src[Theorem 6.2, lean:AOP.A6_3.hylo_eq_mu; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+  Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
+    #src[Theorem 6.2, lean:AOP.A6_3.hylo_fixed; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
@@ -2282,6 +2283,31 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
   )],
 ))]<hylo-least>
+
+// The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
+// `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2, lean:AOP.A6_3.hylo_eq_mu]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], mbp(hterm((hb-mu,), [`B`], [`A`])),
+    [`(μX : S°F(X)R)` \ #src[@mu-defn at `φ(X):=S°F(X)R`]])],
+  [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
+
+  [#vstep(SQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
+    [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
+     `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix; lean:AOP.A6_2.mu_le_of_fixed]])],
+  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
+
+  [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
+    [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
+     `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
+     lean:AOP.A6_2.mu_prefixed]])],
+  [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
+))]<hylo-mu>
 
 #pagebreak(weak: true)
 = Combinatorial functions <sec-comb>
@@ -3396,7 +3422,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-est), rhs: (mb-Ro,))),
     [`S°F(R°)(`#frc([`S`])` est(R))⊑R°` \
      #src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
-      `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[@hylo-fix] #h(4pt) — so Knaster–Tarski
+      `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[@hylo-mu] #h(4pt) — so Knaster–Tarski
       leaves this one inequation] \
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
