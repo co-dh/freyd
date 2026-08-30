@@ -15,6 +15,12 @@
 #import "circuit.typ": cetz, d
 
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
+/// A display's path — `13.4.3c`, the heading numbers then the display's letter.  Bare, so a panel's
+/// `scanline` metadata can use it as an address; `conf` parenthesises it for the margin.
+/// ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
+/// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
+#let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
+
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let conf(title: "", body) = {
   set page(width: 25cm, height: 35cm, margin: 1.5cm)
@@ -36,10 +42,7 @@
   // disagree with the heading it sits under.  A display is `(13a)` at top level and `(13.1a)` in
   // subsection §13.1: section references and display references can never be mistaken for one
   // another.  See `disp`.
-  // ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
-  // four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
-  let dispnum(h, n) = numbering("(" + "1." * (h.len() - 1) + "1a)", ..h, n)
-  set figure(numbering: n => context { dispnum(counter(heading).get(), n) })
+  set figure(numbering: n => context { [(] + dispnum(counter(heading).get(), n) + [)] })
   show heading: it => { counter(figure.where(kind: "disp")).update(0); it }
   // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
@@ -49,7 +52,7 @@
       context {
         let h = counter(heading).at(el.location())
         let n = counter(figure.where(kind: "disp")).at(el.location()).first()
-        link(el.location(), dispnum(h, n))
+        link(el.location(), [(] + dispnum(h, n) + [)])
       }
     } else { it }
   }
@@ -57,6 +60,9 @@
   // about 35pt.  `breakable` because a figure is not, and the chain tables here run over a page break.
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
     place(top + right, dx: 1.0cm, text(9pt, luma(130), it.counter.display(it.numbering)))
+    // A string-diagram panel is addressed by its display and its place in it (see `hm-meta`), so the
+    // count restarts here; the update draws nothing.
+    counter("hm-panel").update(0)
     it.body
   })
   body

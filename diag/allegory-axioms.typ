@@ -2088,6 +2088,31 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let vstep(op, pic, f) = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
   column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
 
+// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
+// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
+// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
+// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
+#let plain(c) = {
+  if type(c) == color { c.to-hex() } else if type(c) != content { c }
+  else if c == [ ] or c.func() == linebreak { " " }
+  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
+  else if c.has("text") { c.text }
+  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
+  else if c.has("children") { c.children.map(plain).join("") }
+  else if c.has("body") { plain(c.body) }
+  else { repr(c) }
+}
+// A panel's address is the display it stands in and its place in that display, both read off the
+// counters at the point it is PLACED, so a reordered row cannot keep a stale name.
+#let hm-meta(rec) = {
+  counter("hm-panel").step()
+  context metadata((kind: "scanline",
+    id: plain(dispnum(counter(heading).get(),
+      counter(figure.where(kind: "disp")).get().first()))
+      + "." + str(counter("hm-panel").get().first()),
+    ..rec))
+}
+
 // The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
 // `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
 // of the object wire, `𝟏` right of it.
@@ -2134,7 +2159,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RXF = 1.65                                   // the `F` wire
 #let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
 #let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
+#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = {
+  dpan(h, w, xo, {
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
   // A relator wire a unit OPENS and nothing closes: it runs from that bead to the bottom edge.
   for (x, y, l, p) in births { hm-wire(((x, y), (x, 0))); hm-bead((x, y), l); hm-port((x, 0), p, dir: -1) }
@@ -2143,7 +2169,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
-}, s: 100%)
+  }, s: 100%)
+  // `bot` is the one label the drawing pairs with `xo` by hand; emitted as a port list, so every
+  // panel's ports have one shape.
+  hm-meta((helper: "tpan", h: h, w: w, xo: xo,
+    beads: beads.map(b => b.map(plain)), hands: hands.map(hd => hd.map(plain)),
+    joins: joins.map(j => j.map(plain)), births: births.map(b => b.map(plain)),
+    top: top.map(p => p.map(plain)), bot: ((xo, plain(bot)),)))
+}
 // The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
 // room, so a long one — `⦇S⦈°\X` — cannot run out of the panel.
 #let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`]) = dpan(h, w, 0.55, {
@@ -3738,30 +3771,44 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let TWHH = 5.40
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
 // colour because it is the head half of `p×list(p)`.
-#let tw-hm(rs, f: [`prefix`]) = P(cetz.canvas(length: 0.8cm, {
+#let tw-hm(rs, f: [`prefix`]) = {
   let (XM, XL, XO) = TWHX
   let (YU1, YU2, YC, YL1, YL2) = TWHY
   let ys = (YL1, YU1, YU1).at(rs)
   let yp = (YL2, YL1, YU2).at(rs)
   // Midway to the beads bracketing `p`, the bottom edge standing in where none is below.
   let (y0, y1) = ((yp + (ys, YC, ys).at(rs)) / 2, (yp + (0, 0, YC).at(rs)) / 2)
-  d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
-  d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
-  hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
-  // The split is LOCAL: `[A]` is ONE wire and opens only around `list(p)`, because `p : A⟶A` needs an
-  // `A` wire to sit on.  Fork and merge carry no bead — `[A]=list(A)`, the same 1-cell either side.
-  let k = calc.min(0.40, (y0 - y1) / 3)
-  hm-wire(((XO, y0), (XL, y0 - k), (XL, y1 + k), (XO, y1)), col: BCOL)
-  d.content((XL + 0.20, yp), text(BCOL)[`list`], anchor: "west")
-  hm-join(XM, TWHH, XO, YC, knee: 0.75)
-  hm-bead((XO, YC), [`cons`])
-  hm-bead((XO, ys), f, col: GIVEN1)
-  hm-bead((XO, yp), [`p`], col: GIVEN2)
-  if rs == 2 { hm-bead((XM, YU2), [`p×𝟙`], col: GIVEN2) }
-  hm-port((XM, TWHH), [`A×−`]); hm-port((XO, TWHH), [`[A]`], col: BCOL)
-  hm-port((XO, 0), [`[A]`], dir: -1, col: BCOL)
-  if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((4.75, 0.25), [`𝟏`]) }
-}), s: 100%)
+  // `tw-hm` draws with primitives, so its beads, joins and ports are listed HERE — one list drawn
+  // from and emitted from, in the screenful the drawing occupies, and `scanline` reads the list.
+  let PA = [`[A]`]
+  let LST = [`list`]
+  let joins = ((XM, TWHH, XO, YC, 0.75),)
+  let beads = ((XO, YC, [`cons`], black), (XO, ys, f, GIVEN1), (XO, yp, [`p`], GIVEN2))
+  if rs == 2 { beads.push((XM, YU2, [`p×𝟙`], GIVEN2)) }
+  let top = ((XM, [`A×−`]), (XO, PA))
+  let bot = ((XO, PA),)
+  // `[A]` is `list` beside `A` between `y0` and `y1`, and one wire above and below.
+  let splits = ((y0, y1, XL, PA, LST, [`A`]),)
+  P(cetz.canvas(length: 0.8cm, {
+    d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
+    d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
+    hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
+    // The split is LOCAL: `[A]` is ONE wire and opens only around `list(p)`, because `p : A⟶A` needs
+    // an `A` wire to sit on.  Fork and merge carry no bead — `[A]=list(A)`, the same 1-cell either side.
+    let k = calc.min(0.40, (y0 - y1) / 3)
+    hm-wire(((XO, y0), (XL, y0 - k), (XL, y1 + k), (XO, y1)), col: BCOL)
+    d.content((XL + 0.20, yp), text(BCOL)[#LST], anchor: "west")
+    for (xf, yt, xt, y, kn) in joins { hm-join(xf, yt, xt, y, knee: kn) }
+    for (x, y, l, c) in beads { hm-bead((x, y), l, col: c) }
+    for (x, l) in top { hm-port((x, TWHH), l, col: if x == XO { BCOL } else { black }) }
+    for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == XO { BCOL } else { black }) }
+    if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((4.75, 0.25), [`𝟏`]) }
+  }), s: 100%)
+  hm-meta((helper: "tw-hm", hand: true, h: TWHH, w: TWHW, xo: XO,
+    beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
+    splits: splits.map(s => s.map(plain)),
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
+}
 
 #disp[#table(
   columns: (1fr, 4.9cm),
@@ -4094,10 +4141,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // read as one column, and none of them crosses the wires standing between it and its own dot.
 // `hands` is a relator wire born at `(x0,y0)` — free in its own lane, or on the wire carrying `b` —
 // running down lane `xe` and dying at `(x1,y1)`; `wires` are the lanes that run the whole height.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3) = dpan(h, w, xo, {
-  // A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
-  // it.  A hand born ON the object wire is one; a unit, whose source is `Id`, floats in its own lane.
+// A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
+// it.  A hand born ON the object wire is one; a unit, whose source is `Id`, floats in its own lane.
+// Bound outside the drawing so the scan line is handed the nodes that DREW, not the argument alone.
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3) = {
   let ns = nodes + hands.filter(hd => hd.at(6) != none and hd.at(0) == xo).map(hd => (hd.at(1), hd.at(2)))
+  dpan(h, w, xo, {
   let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
   for x in wires { lwire(x, xo, at(x, 0), h, 0, k: 0.35) }
   for (xf, xt, y, k) in joins {
@@ -4111,7 +4160,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
-}, s: 100%)
+  }, s: 100%)
+  hm-meta((helper: "mpan", h: h, w: w, xo: xo,
+    beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
+    hands: hands.map(hd => hd.map(plain)), wires: wires.map(plain),
+    nodes: ns.map(n => n.map(plain)),
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
+}
 #let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
@@ -5054,7 +5109,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // `beads` are `(y, label)`, `(y, label, colour)` or `(y, label, colour, x)`: colour because wire
 // colour is the TYPE and bead colour is WHICH ARROW, `x` because a bead SPANS the wires it is not
 // `F(−)` of — `est(R)` is not `list` of anything, so its dot reaches the `list` wire by a bar.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%) = dpan(h, w, xo, {
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%) = {
+  dpan(h, w, xo, {
   for l in lanes { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
   for b in beads {
     let xs = b.at(3, default: none)
@@ -5065,7 +5121,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-}, s: s)
+  }, s: s)
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo,
+    lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
+}
 #let TREE = [`tree`]
 #let LIST = [`list`]
 #let DELTA = [`Δ`]
