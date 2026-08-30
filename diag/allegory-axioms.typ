@@ -4271,6 +4271,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ]<filter-mono>
 
 #let step = step.with(pw: 246pt)
+// §13.3.4 rebound `bx-est` to `est(≤°)`, which is what the pictures below were drawing.
+#let bx-est = ([`est(R°)`], 2.2, true)
 #let bx-ud2 = (frc([`π₂∪(p×𝟙) cons`]), 3.5, false)
 #let bx-cond2 = ([`(π₁p→cons,π₂)`], 3.8, false)
 #disp[#table(
@@ -4293,29 +4295,70 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   head is dropped, not the whole tail: that is the one place `π₂` shows against @takewhile-step's `⊸ nil`.]])
 ]<filter-step>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// B&dM Ex 7.41, p. 174, assembled: the four displays above are the four steps, and the `E([A])` the
+// transpose births is what the greedy step moves inside the reduce.
+#let bx-slp = (frc([`subseq list(p)`]), 2.9, false)
+#let bx-cS = (frc([`⦇S⦈`]), 1.6, false)
+#let bx-gr = ([`⦇`#frc([`S`])` est(R°)⦈`], 4.0, false)
+#let bx-prog = ([`⦇[nil,(π₁p→cons,π₂)]⦈`], 6.2, false)
+// ONE WIRE, `[A]` to `[A]`, its type written along it; `mid: none` once `E([A])` has gone inside the
+// reduce.  Its own run and not @takewhile-step's, which starts at `F([A])` and belongs to §13.3.3.
+#let fpic(items, mid: [`E([A])`]) = P(cetz.canvas(length: 0.8cm, {
+  lab(-1.1, 0, black)[`[A]`]
+  let x = 0.0
+  for (i, b) in items.enumerate() {
+    wire((x, 0), (x + 0.34, 0))
+    gbox((x + 0.34, 0), b.at(0), w: b.at(1), h: TH, chamfer: b.at(2)); x = x + 0.34 + b.at(1)
+    if i == 0 and mid != none {
+      wire((x, 0), (x + 0.34, 0)); node(x + 0.9, 0, black, mid); x = x + 1.46
+    }
+  }
+  wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
+}), s: 80%)
+// The `E` wire the transpose OPENS and `est(R°)` CLOSES, at the heights the two beads keep in both
+// rows: the greedy step is where that pair leaves the `[A]` wire.
+#let fpan(bead, names: false) = tpan(4.0, ((2.60, bead), (1.20, [`est(R°)`])),
+  hands: ((TXH, 2.60, 1.20, [`E`]),), top: ((TXO, [`[A]`]),), bot: [`[A]`], names: names, w: 5.2)
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` #h(4pt) #src[Ex 7.41, `R` a preorder]],
+  table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `est(R°)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `est(R°)` \ #src[@takewhile-laws's greedy step at
-   this `S`, its condition @filter-mono]],
-  [greedy: one longest `p`-subsequence kept at each `cons`],
+  [#vstep([], fpic((bx-slp, bx-est)),
+    [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
+  [#fpan(frc([`subseq list(p)`]), names: true)],
 
-  [`S°S∩R∩R°⊑𝟙` fails at `S:=subseq list(p)` \ #src[@takewhile-laws's uniqueness row does not
-   transfer]],
-  [two `p`-subsequences of one list can have equal length and differ: the prefixes of one list are
-   linearly ordered by length, its subsequences are not],
+  [#vstep(EQ, fpic((bx-cS, bx-est)),
+    [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @filter-alg]])],
+  [#fpan(frc([`⦇S⦈`]))],
 
-  [$frac(#[`subseq list(p)`], ∋)$ `est(R°)` simple \ #src[@comb-fns]],
-  [a `p`-subsequence that drops a passing element is beaten by the one that keeps it, so only the
-   subsequence keeping *exactly* the passing elements survives `est(R°)` — *the* longest, not *a* longest],
+  [#vstep(RQ, fpic((bx-gr,), mid: none),
+    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis at `(R°)°=R` is
+     @filter-mono]])],
+  // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  The `[A]` wire is
+  // unchanged, so it is drawn where the two panels above draw it.
+  [#tpan(4.0, ((1.90, [`⦇`#frc([`S`])` est(R°)⦈`]),), top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 5.2)],
 
-  [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[@takewhile-laws's last row at this `S`]],
-  [what turns the greedy `⊑` into the heading's `=`; `⦇[nil,(π₁p→cons,π₂)]⦈` is again a
-   reduce of maps, hence entire],
-)]<filter-laws>
+  [#vstep(EQ, fpic((bx-prog,), mid: none),
+    [`⦇[nil,(π₁p→cons,π₂)]⦈` \ #src[@filter-step]])],
+  // Empty: the step only renames the algebra, and the picture above already draws the reduce.
+  [],
+
+  [#vstep(EQ, [],
+    [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
+       column-gutter: 6pt, row-gutter: 3pt,
+       [`⦇[nil,(π₁p→cons,π₂)]⦈` entire], [and], [`filter(p)` simple],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[an entire relation below
+         a simple one equals it; the simplicity is @comb-fns's Ex 7.41, not a law of this note]])])],
+  [],
+))
+#align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
+  `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness
+  argument does not transfer. What survives `est(R°)` is the one keeping *exactly* the passing
+  elements: a subsequence that drops a passing element is beaten by the one that keeps it.]])
+]<filter-deriv>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
