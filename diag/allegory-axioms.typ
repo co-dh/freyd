@@ -6848,6 +6848,27 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #pagebreak(weak: true)
 = Dynamic Programming <sec-dp>
 
+// ---- §15's and §16's own vocabulary, built on §14's.  CIRCUIT: one wire, a box per factor
+// (`thpic`); a PRODUCT source is TWO wires, both entering the first box (`gpair`).
+// A `(μX : …)` row draws the BODY of the recursion: a fixed point has no circuit of its own, and
+// what moves from row to row is a box inside that body.
+#let gpair(l1, l2, rgt, head, hw, tail, hc: false, s: 74%) = P(cetz.canvas(length: 0.8cm, {
+  let sp = 0.62
+  d.content((-0.36, sp), text(10pt)[#l1], anchor: "east")
+  d.content((-0.36, -sp), text(10pt)[#l2], anchor: "east")
+  wire((-0.30, sp), (0, sp)); wire((-0.30, -sp), (0, -sp))
+  gbox((0, 0), head, w: hw, h: 2 * sp + 0.62, chamfer: hc)
+  boxrun(hw, 0, tail, h: TH)
+  d.content((hw + boxrun-w(tail) + 0.30, 0), text(10pt)[#rgt], anchor: "west")
+}), s: s)
+
+// ---- HINZE–MARSDEN: §14's own lanes, so the two chapters' panels stack, with one lane added.
+// Outermost functor LEFTMOST and `𝟏` at the right; `E` takes `THU` because the transpose is taken of
+// the WHOLE problem, the base functor `THM` because `T°` opens it inside that set, and a datatype
+// the input carries `THN`, `THP`.  An `est` kills the SET alone, so its wire ends on its own lane
+// wherever a datatype survives under it — bending in would cross that datatype's wire.
+#let THP = 4.15                                   // a datatype inside `THN`
+
 == Theory
 
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
@@ -6859,43 +6880,86 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 in @mu-defn.
 ]]<dp-defn>
 
+// The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
+// nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
+// transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
+// chamfered.
+#let db-LH = (frc([`H`]), 0.95, false)
+#let db-est = ([`est(R)`], 1.90, true)
+#let db-LT = (frc([`T°`]), 1.20, false)
+#let db-thin = ([`thin Q`], 1.90, true)
+#let db-PFX = ([`P(F(X)h)`], 2.55, true)
+#let db-LV = (frc([`Vᵢ°`]), 1.50, false)
+#let db-thini = ([`thin(Qᵢ)`], 2.45, true)
+#let db-PU = ([`P(Uᵢ)`], 1.65, true)
+#let dp-pan(h, wires, beads, names: false, lanes: ()) = thpan(h, wires, beads,
+  ((THO, [`A`]),), ((THO, [`B`]),), lanes: lanes, names: names)
+// `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
+// with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
+// it draws the same panel; the regions are named only in the first.
+#let g-spec-pan(names) = dp-pan(3.0, (((THU, 2.35), (THU, 0.70 + KNEE), (THO, 0.70)),),
+  ((THU, 2.35, frc([`𝟙`]), -0.32), (THO, 1.55, [`H`], 0.32), (THO, 0.70, [`est(R)`], 0.32)),
+  lanes: ((THU - 0.34, 1.60, [`E`]),), names: names)
+
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
+    #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
+     allows, dropping the parts that can never win, solving each of the rest and keeping one
+     optimum]],
+  table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
+    [`M≜`#frc([`H`])` est(R)` \ #src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
+  [#g-spec-pan(true)],
+
+  // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
+  [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, db-thin, db-PFX, db-est)),
+    [`(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
+     #src[Theorem 9.2, `h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
+      @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin Q`, so the body and
+      with it the fixed point only shrink. Knaster–Tarski leaves (9.1) #frc([`T°`])` P(F(M)h)
+      est(R)⊑M`; `M=H∩(H°\R°)` splits that into (9.2) #frc([`T°`])` P(F(M)h) est(R)⊑H` and
+      (9.3) `H°`#frc([`T°`])` P(F(M)h) est(R)⊑R°`, and both use only (9.4) = (7.10)
+      `P(X)est(R)⊑(∋X)∩(∈\(XR°))` — @est-710]])],
+  // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
+  // `F(X)`.  `thin Q : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
+  [#dp-pan(4.6, (((THU, 3.95), (THU, 0.55 + KNEE), (THO, 0.55)), thw-arc(THM, 3.30, 1.45)),
+    ((THU, 3.95, frc([`𝟙`]), -0.32), (THO, 3.30, [`T°`], 0.32), (THU, 2.70, [`thin Q`], -0.32),
+     (THO, 2.10, [`X`], 0.32), (THO, 1.45, [`h`], 0.32), (THO, 0.55, [`est(R)`], 0.32)),
+    lanes: ((THM - 0.34, 2.35, [`F`]), (THU - 0.34, 1.55, [`E`])))],
+
+  [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, db-thini, db-PU, db-est)),
+    [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` thin(Qᵢ) P(Uᵢ) est(R)` \
+     #src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
+      coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
+      point is unique and entire by Theorem 6.3 — `T°` followed by `F`'s membership relation
+      inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
+  // The branch, not the conditional: `→` is a union of two restricted branches and has no wiring in
+  // either calculus, and the two branches have the one shape.
+  [#dp-pan(3.8, (((THU, 3.15), (THU, 0.60 + KNEE), (THO, 0.60)),),
+    ((THU, 3.15, frc([`𝟙`]), -0.32), (THO, 2.55, [`Vᵢ°`], 0.32), (THU, 1.95, [`thin(Qᵢ)`], -0.32),
+     (THO, 1.35, [`Uᵢ`], 0.32), (THO, 0.60, [`est(R)`], 0.32)))],
+))]<dp-laws>
+
 #disp[#table(
   columns: (1fr, 1fr),
   align: (left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+  table.header([*the condition*], [*how it is discharged*]),
 
-  [`(μX :` $frac(#[`T°`], ∋)$ `P(F(X)h) est(R))⊑M` \ #src[Theorem 9.1, `h` monotonic on `R`]],
-  [*dynamic programming*: decompose in every way, solve each part, keep one optimum per part],
-  [$frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑M` #h(6pt) #src[(9.1)]],
-  [all Knaster–Tarski leaves to prove],
-  // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
-  [$frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑H` #h(6pt) #src[(9.2)] \
-   `H°` $frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑R°` #h(6pt) #src[(9.3)]],
-  [(9.1) split by `M=H∩(H°\R°)`],
-  [`P(X) est(R)⊑(∋X)∩(∈\(XR°))` \ #src[(9.4) = (7.10), @est-710]],
-  [the only fact about `est` either proof uses],
-  [`(μX :` $frac(#[`T°`], ∋)$ `thin Q P(F(X)h) est(R))⊑M` \ #src[Theorem 9.2, `Q` a preorder with
-   `QF(H)h⊑F(H)hR`; `thin Q` as in @thin-laws]],
-  [the same with a thinning step: decompositions that can never win are dropped],
-  [the fixed point is unique, and entire \ #src[Theorem 6.3, `T°` followed by `F`'s membership
-   relation inductive; $frac(#[`T°`], ∋)$ finite and non-empty, `R` connected]],
-  [when the recursion can be refined to a recursive function],
-  [$frac(#[`[V₁,V₂]°`], ∋)$ `thin(Q₁+Q₂) P([U₁,U₂]) est(R)` \ #h(10pt) `=(Ran V₁→W₁,W₂)` \ #h(10pt)
-   `Wᵢ≜` $frac(#[`Vᵢ°`], ∋)$ `thin(Qᵢ) P(Uᵢ) est(R)` \ #src[Proposition 9.1, `V₂V₁°=⊥`]],
-  [`FA` is usually a coproduct, and disjoint ranges split the fixed point into one branch per
-   summand],
-  [`F(R)h⊑hR` \ `QF(H)h⊑F(H)hR`],
-  [the two conditions to be checked, in the order the three propositions below discharge them],
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
    `F(≤)k⊑k≤`]],
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple]],
   [monotonicity *in context*: `k` may also read the input the part was built from],
-  [`Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`, `VH⊑HR`]],
+  [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
+   `VH⊑HR`]],
   [both conditions of Theorem 9.2 at once, split along the two arguments of a bifunctor],
-)]<dp-laws>
+)]<dp-conditions>
 
 == The string edit problem
 
@@ -6917,49 +6981,116 @@ both lists empty.
 `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`.
 ]]<edit-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
+// chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
+// `Char` — sugar undone at the ends too.
+#let eb-est = ([`est(R)`], 1.90, true)
+#let eb-thin = ([`thin Q`], 1.90, true)
+#let eb-thinUV = ([`thin(U×V)`], 3.15, true)
+#let eb-PX = ([`P([nil,(𝟙×X)cons])`], 5.95, true)
+#let eb-PXb = ([`P((𝟙×X)cons)`], 4.10, true)
+#let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
+#let eb-min = ([`minlist R`], 2.85, false)
+#let ed-top = ((THN, [`Δ`], 0.62), (THP, [`list`], 0.24), (THO, [`Char`], 0.62))
+#let ed-bot = ((THP, [`list`]), (THO, [`Op`]))
+#let ed-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads, ed-top, ed-bot,
+  lanes: lanes, names: names)
 
-  [$frac(#[`edit°`], ∋)$ `est(R)`],
-  [the specification: a shortest edit sequence from which both strings can be reconstituted],
-  [`F(R)α⊑αR` \ #src[Proposition 9.2 at `length`, `succ` monotonic on `≤`]],
-  [`cons` is monotonic on `R`, so Theorem 9.1 already applies],
-  [`QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`],
-  [the thinning condition sought, over `F(Op,[Char]×[Char])`],
-  [`F(⊤,R)α⊑αR` #h(6pt) #src[left as an exercise]],
-  [`U≜⊤` costs nothing: any two operations may be compared],
-  [`edit (𝟙×suffix)⊑R° edit` \ `edit (suffix×𝟙)⊑R° edit`],
-  [the other half of Proposition 9.4 for `V≜suffix°×suffix°`],
-  [`edit (𝟙×tail)⊑R° edit` \ `edit (tail×𝟙)⊑R° edit` \
-   #src[`suffix=tail*`, and `BA⊑CB⟹BA*⊑C*B`]],
-  [one step is enough: drop the operation that produced the head, or weaken its `cpy` to a `del` —
-   never lengthening the sequence],
-  [`(μX :` $frac(#[`[base,step]°`], ∋)$ `thin Q P([nil,(𝟙×X) cons]) est(R))⊑` $frac(#[`edit°`], ∋)$ `est(R)` \
-   #src[Theorem 9.2]],
-  [a copy, when available, beats a delete or an insert],
-  [`X=(empty→nil,` $frac(#[`step°`], ∋)$ `thin(U×V) P((𝟙×X) cons) est(R))` #h(4pt) #src[Proposition 9.1]],
-  [`base` and `step` have disjoint ranges],
-  [`mle=(empty→nil,unstep list((𝟙×mle) cons) minlist R)`],
-  [the program: at most two decompositions survive, but the same subproblem is solved many times,
-   so the running time is exponential],
-  [`column xs ys=[mle (u,ys)∣u←tails xs]` \ `column xs=⦇[fstcol xs,nextcol xs]⦈`, #h(4pt)
-   `fstcol=list(del) tails`],
-  [the tabulation: `mle (xs,ys)` needs `mle (u,v)` for every tail `u` of `xs` and `v` of `ys`, so the
-   columns are built right to left],
-  [`column xs ([b]⧺ys)=nextcol xs (b,column xs ys)` \
-   `nextcol xs (b,us)` \ #h(10pt) `=⦇[base (b,last us),step b]⦈ xus` \ #h(10pt)
-   `xus=zip (xs,zip (init us,tail us))`],
-  [each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the column
-   to its right],
-  [`base (b,u)=[[ins b]⧺u]` \ `step b ((a,(u,v)),ws)=` \ #h(10pt)
-   `(a=b→[[cpy a]⧺v]⧺ws,` \ #h(10pt) `[bmin(R) ([del a]⧺w,[ins b]⧺u)]⧺ws)` \
-   #src[`w=head ws`; these `base`, `step` are not `edit`'s]],
-  [an entry depends on the one below it (a delete), the one to its right (an insert), and the one
-   below that (a copy) — quadratic in the two lengths],
-)]<edit-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`edit°`])` est(R)⊒mle`, #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist R)` \
+    #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
+     two of them, each step copying, deleting or inserting one character and the best sequence for
+     what is left taken from the entries already computed]],
+  table.header([*circuit* — two wires, one per string], [*Hinze–Marsden*]),
+
+  [#vstep([], gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`edit°`]), 2.15, (eb-est,)),
+    [#frc([`edit°`])` est(R)` \ #src[the specification — @edit-defn]])],
+  // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
+  // `est(R) : E([Op])⟶[Op]` kills the set alone, so its wire ends on the `E` lane.
+  [#ed-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-in(THP, 3.6, 1.85),
+      thw-out(THP, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`edit°`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
+      (eb-thin, eb-PX, eb-est)),
+    [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))` \
+     #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR` is Proposition 9.2 at
+      `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
+      thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR` over `F(Op,[Char]×[Char])` is Proposition 9.4
+      at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be compared — and
+      `V≜suffix°×suffix°` — `edit (𝟙×suffix)⊑R° edit`, `edit (suffix×𝟙)⊑R° edit`. `suffix=tail*`
+      and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
+      weaken its `cpy` to a `del`, never lengthening the sequence]])],
+  // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
+  // closes it again; `Δ` and the source `list` die and are remade at both beads, so each runs as a
+  // loop between them.  `thin Q : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
+  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
+      thw-out(THP, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`[base,step]°`], 0.32),
+     (THU, 3.90, [`thin Q`], -0.32), (THO, 1.70, [`[nil,(𝟙×X)cons]`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 5.55, [`F`]),))],
+
+  [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
+      (eb-thinUV, eb-PXb, eb-est)),
+    [`(μX : (empty→nil,`#frc([`step°`])` thin(U×V) P((𝟙×X)cons) est(R)))` \
+     #src[Proposition 9.1: `base` and `step` have disjoint ranges, so the fixed point splits into
+      one branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
+      `base` returns]])],
+  // The `step` branch, not the conditional: `→` has no wiring in either calculus, and the `base`
+  // branch is `nil` on an empty pair.  `Op×−` is the summand `step°` opens.
+  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
+      thw-out(THP, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`step°`], 0.32),
+     (THU, 3.90, [`thin(U×V)`], -0.32), (THO, 1.70, [`(𝟙×X)cons`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 5.55, [`Op×−`]),))],
+
+  [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
+    [`mle=(empty→nil,unstep list((𝟙×mle)cons) minlist R)` \
+     #src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
+      copy beating a delete or an insert wherever it is available — and `minlist R` implements
+      `est(R)`. The same subproblem is solved many times over, so the running time is exponential in
+      the two lengths]])],
+  // The program is the branch above with each box replaced by a function computing it, so the wires
+  // and the beads are the same picture: only the labels change.
+  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
+      thw-out(THP, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`unstep`], 0.32),
+     (THO, 1.70, [`(𝟙×mle)cons`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
+    lanes: ((THM, 5.55, [`Op×−`]),))],
+
+  [#vstep(EQ, [],
+    [`mle (xs,ys)=head (column xs ys)`, #h(4pt) `column xs ys=[mle (u,ys)∣u←tails xs]` \
+     `column xs=⦇[fstcol xs,nextcol xs]⦈`, #h(4pt) `fstcol=list(del) tails` \
+     #src[the tabulation: `mle (xs,ys)` needs `mle (u,v)` for every tail `u` of `xs` and `v` of
+      `ys`, so the columns are built right to left]])],
+  // No picture: a curried function on lists is not a relation between the objects the panels carry.
+  [],
+
+  [#vstep(EQ, [],
+    [`column xs ([b]⧺ys)=nextcol xs (b,column xs ys)` \
+     `nextcol xs (b,us)=⦇[base (b,last us),step b]⦈ xus`, #h(4pt)
+     `xus=zip (xs,zip (init us,tail us))` \
+     #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the
+      column to its right]])],
+  [],
+
+  [#vstep(EQ, [],
+    [`base (b,u)=[[ins b]⧺u]` \ `step b ((a,(u,v)),ws)=(a=b→[[cpy a]⧺v]⧺ws,`
+     `[bmin(R) ([del a]⧺w,[ins b]⧺u)]⧺ws)` \
+     #src[`w=head ws`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
+      (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
+      the two lengths]])],
+  [],
+))]<edit-laws>
 
 == Optimal bracketing
 
@@ -6982,40 +7113,99 @@ both lists empty.
 `process≜((tip wrap)×𝟙) loop(next)`.
 ]]<mct-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
+// it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
+#let mb-estR = ([`est(R)`], 1.90, true)
+#let mb-Lfl = (frc([`flatten°`]), 3.05, false)
+#let mb-Lwc = (frc([`[wrap,cat]°`]), 4.00, false)
+#let mb-Ptip = ([`P([tip,(X×X)bin])`], 5.35, true)
+#let mb-Lcat = (frc([`cat°`]), 1.80, false)
+#let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
+#let mb-splits = ([`splits`], 1.90, false)
+#let mb-lbin = ([`list((mct×mct)bin)`], 5.65, true)
+#let mb-min = ([`minlist R`], 2.85, false)
+#let mc-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THN, [`list⁺`]), (THO, [`A`])), ((THN, [`tree`]), (THO, [`A`])), lanes: lanes, names: names)
 
-  [$frac(#[`flatten°`], ∋)$ `est(R)`],
-  [the specification: a least-cost bracketing of `a₁⊕⋯⊕aₙ`, the tree whose flattening is the
-   given list],
-  [`[tip,bin] cost=(𝟙+⟨cost,flatten⟩²) g` #h(4pt) #src[(9.5)]],
-  [the cost of a node reads only the cost and the flattening of its two subtrees],
-  [`(𝟙+(≤×𝟙)²) g⊑g≤` #h(6pt) #src[(9.6)]],
-  [`g` is monotonic on `≤` in its two cost arguments],
-  [`F(R∩(flatten flatten°))h⊑hR` \ #src[Proposition 9.3, `H°=flatten` a map]],
-  [monotonicity in context: only trees with the same flattening are compared],
-  [`(μX :` $frac(#[`[wrap,cat]°`], ∋)$ `P([tip,(X×X) bin]) est(R))⊑` $frac(#[`flatten°`], ∋)$ `est(R)` #h(4pt)
-   #src[Theorem 9.1]],
-  [split the list in every way, bracket both halves, join],
-  [`X=(single→wrap° tip,` $frac(#[`cat°`], ∋)$ `P((X×X) bin) est(R))` #h(4pt) #src[Proposition 9.1]],
-  [`wrap` and `cat` have disjoint ranges],
-  [`mct=(single→head tip,splits list((mct×mct) bin) minlist R)`],
-  [the program; exponential, since the segments of one list overlap],
-  [`mct=(single→head tip,⟨init col,tail row⟩ mix)` #h(4pt) #src[(9.7)]],
-  [the tabulation: `mct xs` is needed for every non-empty segment `xs`, so the values are held as an
-   array of rows],
-  [`col=(single→head tip wrap,⟨init col,tail row⟩ next)` #h(4pt) #src[(9.8)] \
-   `cons col=(𝟙×array) process` #h(4pt) #src[(9.9)] \
-   `row=(single→head tip wrap,⟨mct,tail row⟩ cons)` #h(4pt) #src[(9.10)]],
-  [a column extends the column to its left, a row the row below it; (9.9) is (9.8) rewritten as a
-   loop],
-  [`array=⦇[fstcol,addcol]⦈`, #h(4pt) `fstcol≜tip wrap wrap` \
-   `addcol≜⟨π₁ tip wrap,step⟩ cons` \ `step≜⟨process tail,π₂⟩ zip list(cons)`],
-  [the program: one fold building the array column by column, cubic in the length of the input],
-)]<mct-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`flatten°`])` est(R)⊒mct`, #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
+    #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
+     non-empty segment, each entry built from the column to its left and the row below it]],
+  table.header([*circuit* — one wire, `list⁺ A` to `tree A`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`list⁺ A`], [`tree A`], none, (mb-Lfl, mb-estR)),
+    [#frc([`flatten°`])` est(R)` \ #src[the specification — @mct-defn]])],
+  // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
+  // kills the set alone and its wire ends on the `E` lane, `tree` surviving under it.
+  [#mc-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`flatten°`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
+    [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))` \
+     #src[Theorem 9.1: split the list in every way, bracket both halves, join. The condition is
+      monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR` — only trees with the same flattening
+      are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
+      `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` (the cost of a node reads only the cost and the
+      flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤` (`g` monotonic on `≤` in its two
+      cost arguments)]])],
+  // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
+  // `list⁺` dies and is remade at both, so it runs as a loop between them.
+  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`[wrap,cat]°`], 0.32),
+     (THO, 1.60, [`[tip,(X×X)bin]`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 4.85, [`A+(−)²`]),))],
+
+  [#vstep(EQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lcat, mb-Pbin, mb-estR)),
+    [`(μX : (single→wrap° tip,`#frc([`cat°`])` P((X×X)bin) est(R)))` \
+     #src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
+      singleton lists, where `wrap` returns]])],
+  // The `cat` branch, not the conditional: `→` has no wiring in either calculus, and the `wrap`
+  // branch is one bead on a singleton.  `(−)²` is the summand `cat°` opens.
+  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`cat°`], 0.32),
+     (THO, 1.60, [`(X×X)bin`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 4.85, [`(−)²`]),))],
+
+  [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-splits, mb-lbin, mb-min)),
+    [`mct=(single→head tip,splits list((mct×mct)bin) minlist R)` \
+     #src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
+      `est(R)`. Exponential, since the segments of one list overlap]])],
+  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`splits`], 0.32),
+     (THO, 1.60, [`(mct×mct)bin`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
+    lanes: ((THM, 4.85, [`(−)²`]),))],
+
+  [#vstep(EQ, [],
+    [`mct=(single→head tip,⟨init col,tail row⟩ mix)` #h(4pt) #src[(9.7)] \
+     #src[the tabulation: `mct xs` is needed for every non-empty segment `xs`, so the values are
+      held as an array of rows, `array≜inits list(row)`, `row≜tails list(mct)`,
+      `col≜inits list(mct)`, `mix≜zip list(bin) minlist R`]])],
+  // No picture: the tabulated program relates arrays of trees, not the objects the panels carry.
+  [],
+
+  [#vstep(EQ, [],
+    [`col=(single→head tip wrap,⟨init col,tail row⟩ next)` #h(4pt) #src[(9.8)] \
+     `cons col=(𝟙×array) process` #h(4pt) #src[(9.9)] \
+     `row=(single→head tip wrap,⟨mct,tail row⟩ cons)` #h(4pt) #src[(9.10)] \
+     #src[a column extends the column to its left, a row the row below it; (9.9) is (9.8) rewritten
+      as a loop, `next≜⟨π₁,mix⟩ snoc`, `process≜((tip wrap)×𝟙) loop(next)`]])],
+  [],
+
+  [#vstep(EQ, [],
+    [`array=⦇[fstcol,addcol]⦈`, #h(4pt) `fstcol≜tip wrap wrap` \
+     `addcol≜⟨π₁ tip wrap,step⟩ cons`, #h(4pt) `step≜⟨process tail,π₂⟩ zip list(cons)` \
+     #src[the program: one fold building the array column by column, cubic in the length of the
+      input]])],
+  [],
+))]<mct-laws>
 
 == Data compression
 
@@ -7040,37 +7230,82 @@ the longest repeated tail; #h(4pt)
 `(xs,(ys,zs))=lrt (ws⧺[a])`.
 ]]<code-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
+// code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
+#let cb-estR = ([`est(R)`], 1.90, true)
+#let cb-thin = ([`thin Q`], 1.90, true)
+#let cb-Ldec = (frc([`decode°`]), 2.75, false)
+#let cb-Lne = (frc([`[nil,extend]°`]), 4.60, false)
+#let cb-Psnoc = ([`P([nil,(X×𝟙)snoc])`], 5.65, true)
+#let cb-Lext = (frc([`extend°`]), 2.75, false)
+#let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
+#let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
+#let cb-red = ([`reduce`], 1.90, false)
+#let cb-lst = ([`list((encode×𝟙)snoc)`], 6.25, true)
+#let cb-min = ([`minlist R`], 2.85, false)
+#let co-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THN, [`list`]), (THO, [`Char`])), ((THN, [`list`]), (THO, [`Code`])),
+  lanes: lanes, names: names)
 
-  [$frac(#[`decode°`], ∋)$ `est(R)`],
-  [the specification: a smallest code sequence decoding to the given string],
-  [`F(R)α⊑αR` #h(6pt) #src[`(⊤+⊤)[c,p]=[c,p]`]],
-  [monotonicity is routine, the two costs being constants],
-  [`F(⊤+⊤,R)α⊑αR` \ `decode prefix⊑R° decode` \ #src[Proposition 9.4 at `Q≜F(⊤+⊤,prefix°)`]],
-  [the thinning condition split in two: pointers are ordered only by how much input they consume,
-   symbols and pointers not at all],
-  [`decode init⊑R° decode`],
-  [enough for the second: drop the last character of the output by shortening or removing the last
-   code element, never raising the cost],
-  [`(μX :` $frac(#[`[nil,extend]°`], ∋)$ `thin Q P([nil,(X×𝟙) snoc]) est(R))⊑` $frac(#[`decode°`], ∋)$ `est(R)` \
-   #src[Theorem 9.2]],
-  [between a symbol and a pointer nothing can be decided in advance; between two pointers the longer
-   match wins],
-  [`X=(null→nil,` $frac(#[`extend°`], ∋)$ `thin(prefix°×(⊤+⊤)) P((X×𝟙) snoc) est(R))` \
-   #src[Proposition 9.1]],
-  [`nil` and `extend` have disjoint ranges],
-  [$frac(#[`extend°`], ∋)$ `(ws⧺[a])={(ws,sym a)}∪` \ #h(10pt)
-   `{(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a proper prefix of `ws}`],
-  [the decompositions of one string: take the last character as a symbol, or end with a pointer],
-  [`reduce` implements $frac(#[`extend°`], ∋)$ `thin(prefix°×(⊤+⊤))`],
-  [thinning leaves at most two: the symbol, and the pointer of `lrt`],
-  [`encode=(null→nil,reduce list((encode×𝟙) snoc) minlist R)`],
-  [the program, again exponential; the book gives no tabulation for it],
-)]<code-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`decode°`])` est(R)⊒encode`, #h(6pt)
+    `encode=(null→nil,reduce list((encode×𝟙)snoc) minlist R)` \
+    #src[a smallest code sequence decoding to the given string is built from the right, each step
+     emitting the last character as a symbol or ending with a pointer back into what has already
+     been decoded]],
+  table.header([*circuit* — one wire, `String` to `[Code]`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`String`], [`[Code]`], none, (cb-Ldec, cb-estR)),
+    [#frc([`decode°`])` est(R)` \ #src[the specification — @code-defn]])],
+  [#co-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`decode°`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
+    [`(μX : `#frc([`[nil,extend]°`])` thin Q P([nil,(X×𝟙)snoc]) est(R))` \
+     #src[Theorem 9.2 at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
+      pointers. Monotonicity `F(R)α⊑αR` is routine, the two costs being constants:
+      `(⊤+⊤)[c,p]=[c,p]`. Proposition 9.4 splits the thinning condition in two — `F(⊤+⊤,R)α⊑αR`,
+      and `decode prefix⊑R° decode`, for which `decode init⊑R° decode` is enough: dropping the last
+      character of the output shortens or removes the last code element and never raises the cost.
+      So between a symbol and a pointer nothing can be decided in advance, and between two pointers
+      the longer match wins]])],
+  // `[nil,extend]°` opens `(−)×Code` inside the set the singleton opened and `[nil,(X×𝟙)snoc]`
+  // closes it; `list` dies and is remade at both beads, so it runs as a loop between them.
+  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`[nil,extend]°`], 0.32),
+     (THU, 3.90, [`thin Q`], -0.32), (THO, 1.70, [`[nil,(X×𝟙)snoc]`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 5.55, [`−×Code`]),))],
+
+  [#vstep(EQ, thpic([`String`], [`[Code]`], none, (cb-Lext, cb-thinp, cb-Pb, cb-estR)),
+    [`(μX : (null→nil,`#frc([`extend°`])` thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)))` \
+     #src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
+      are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)}∪{(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
+      proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
+  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`extend°`], 0.32),
+     (THU, 3.90, [`thin(prefix°×(⊤+⊤))`], -0.32), (THO, 1.70, [`(X×𝟙)snoc`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THM, 5.55, [`−×Code`]),))],
+
+  [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-red, cb-lst, cb-min)),
+    [`encode=(null→nil,reduce list((encode×𝟙)snoc) minlist R)` \
+     #src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
+      the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
+      gives no tabulation for it]])],
+  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
+      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
+    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`reduce`], 0.32),
+     (THO, 1.70, [`(encode×𝟙)snoc`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
+    lanes: ((THM, 5.55, [`−×Code`]),))],
+))]<code-laws>
 
 #pagebreak(weak: true)
 = Greedy Algorithms <sec-greedy>
@@ -7084,24 +7319,50 @@ the longest repeated tail; #h(4pt)
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+#let gb-estQ = ([`est(Q)`], 1.90, true)
+#let gb-FXh = ([`F(X)h`], 1.85, true)
+#let gb-estQi = ([`est(Qᵢ)`], 2.15, true)
+#let gb-Ui = ([`Uᵢ`], 0.90, true)
 
-  [`(μX :` $frac(#[`T°`], ∋)$ `est(Q) F(X)h)⊑M` \ #src[Theorem 10.1, the hypotheses of Theorem 9.2]],
-  [*greedy*: one decomposition is kept at every step, so `P` and $frac(#box(width: 8pt), ∋)$ disappear from the recursion],
-  [$frac(#[`[V₁,V₂]°`], ∋)$ `est(Q₁+Q₂) [U₁,U₂]` \ #h(10pt) `=(Ran V₁→W₁,W₂)` \ #h(10pt)
-   `Wᵢ≜` $frac(#[`Vᵢ°`], ∋)$ `est(Qᵢ) Uᵢ` \ #src[Proposition 10.1, `V₂V₁°=⊥`]],
-  [Proposition 9.1 with `est` for `thin`],
-  [`Q≜F(U,V)` #h(6pt) #src[Proposition 9.4]],
-  [still the way to get both conditions, but $frac(#[`T°`], ∋)$ `est(Q)` must now be entire as well],
-  [#src[Theorem 7.2]],
-  [that greedy theorem chooses among the *results* of one relational step of a reduce;
-   Theorem 10.1 chooses among the *decompositions* of the input, for an arbitrary `T` rather than an
-   initial algebra, at the cost of `h` being a map],
-)]<greedy-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
+    #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
+     carried and the recursion runs on values alone]],
+  table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
+    [`M≜`#frc([`H`])` est(R)` \ #src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
+  [#g-spec-pan(false)],
+
+  [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, gb-estQ, gb-FXh)),
+    [`(μX : `#frc([`T°`])` est(Q) F(X)h)` \
+     #src[Theorem 10.1, the hypotheses of Theorem 9.2 and, in addition, `Q` a *connected* preorder
+      on the sets #frc([`T°`]) returns, so that #frc([`T°`])` est(Q)` is entire. `est(Q)` stands
+      where `thin Q` stood, so `P` and the transpose of the step disappear from the recursion.
+      Proposition 9.4 is still the way to get both conditions. @greedy-thm72 chooses among the
+      *results* of one relational step of a reduce; this one chooses among the *decompositions* of
+      the input, for an arbitrary `T` rather than an initial algebra, at the cost of `h` being a
+      map]])],
+  // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire ends on the `E` lane:
+  // bending in would cross `F`.  That free end is the whole difference from @dp-laws' second row.
+  [#dp-pan(4.4, (((THU, 3.95), (THU, 2.55)), thw-arc(THM, 3.30, 0.90)),
+    ((THU, 3.95, frc([`𝟙`]), -0.32), (THO, 3.30, [`T°`], 0.32), (THU, 2.55, [`est(Q)`], -0.32),
+     (THO, 1.70, [`X`], 0.32), (THO, 0.90, [`h`], 0.32)),
+    lanes: ((THM - 0.34, 2.10, [`F`]),))],
+
+  [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, gb-estQi, gb-Ui)),
+    [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` est(Qᵢ) Uᵢ` \
+     #src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥` — Proposition 9.1 with
+      `est` for `thin`]])],
+  // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
+  // the object wire.
+  [#dp-pan(3.4, (((THU, 2.85), (THU, 1.40 + KNEE), (THO, 1.40)),),
+    ((THU, 2.85, frc([`𝟙`]), -0.32), (THO, 2.25, [`Vᵢ°`], 0.32), (THO, 1.40, [`est(Qᵢ)`], 0.32),
+     (THO, 0.65, [`Uᵢ`], 0.32)))],
+))]<greedy-laws>
 
 == The detab-entab problem
 
@@ -7122,54 +7383,92 @@ blank, `NL` the newline, tab stops every `n` columns.
 blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 ]]<entab-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
+// `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
+#let nb-est = ([`est(R)`], 1.90, true)
+#let nb-Ldet = (frc([`detab°`]), 2.45, false)
+#let nb-Lnx = (frc([`[nil,expand]°`]), 4.60, false)
+#let nb-estQ = ([`est(Q)`], 1.90, true)
+#let nb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
+#let nb-Lexp = (frc([`expand°`]), 2.75, false)
+#let nb-estVU = ([`est(V×U)`], 2.55, true)
+#let nb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
+#let en-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THN, [`list`]), (THO, [`Char`])), ((THN, [`list`]), (THO, [`Char`])),
+  lanes: lanes, names: names)
 
-  [$frac(#[`detab°`], ∋)$ `est(R)`],
-  [the specification: a shortest input `detab` expands to the given output — `detab entab=𝟙` and
-   nothing shorter does],
-  [`F(⊤,R)α⊑αR` #h(6pt) #src[left as an exercise]],
-  [`U` may be any preorder on characters; `a U b⟺a=TB∨a=b` puts `TB` below every character, so `est` prefers
-   a tab to a blank],
-  [`detab prefix⊑R° detab` #h(6pt) #src[FALSE]],
-  [at `n=8`, `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix `[a,b,c,d,e,BL,BL]` is
-   longer than any input giving it],
-  [`detab V°⊑R° detab` #h(6pt) #src[`V≜prefix°∩(fill fill°)`]],
-  [true once only the prefixes that do not cross a tab stop are allowed],
-  [`nil V°=nil` #h(10pt) `fill V°=fill` \ `snoc V°⊑snoc∪(π₁V°)` #h(6pt) #src[left as exercises]],
-  [the three properties of `V` the derivation rests on; the second is what `fill fill°` was added for],
-  [`expand V°⊑expand∪(π₁V°)`],
-  [the claim they add up to: shortening the output either leaves the last step alone or discards it],
-  [`detab V°⊑detab∪(init detab V°)` \ #src[`init` inductive, so the greatest solution is the unique
-   one]],
-  [hence `detab V°⊑prefix detab`, and `prefix⊑R°` finishes Proposition 9.4],
-  [`(μX :` $frac(#[`[nil,expand]°`], ∋)$ `est(Q) (𝟙+(X×𝟙)) [nil,snoc])⊑` $frac(#[`detab°`], ∋)$ `est(R)` \
-   #src[Theorem 10.1]],
-  [greedy: one character of input is decided at each step],
-  [`X=(null→nil,` $frac(#[`expand°`], ∋)$ `est(V×U) (X×𝟙) snoc)` #h(4pt) #src[Proposition 10.1]],
-  [`nil` and `expand` have disjoint ranges],
-  [$frac(#[`expand°`], ∋)$ `(xs⧺[a])={(ys,TB)∣fill ys=xs⧺[a]}∪{(xs,a)}` \ #h(6pt)
-   the first set is non-empty iff `a=BL` and `col (xs⧺[a]) mod n=0`],
-  [the last output character came from a tab only if it is a blank landing exactly on a tab stop],
-  [$frac(#[`expand°`], ∋)$ `est(V×U) (xs⧺[a])=` \ #h(10pt)
-   `(a=BL∧col (xs⧺[a]) mod n=0→(unfill xs,TB),(xs,a))`],
-  [the greedy step: emit a tab whenever a tab is legal, consuming all the blanks back to the previous
-   tab stop],
-  [`entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt) #src[(10.1)]],
-  [what makes `triple` a snoc-list reduce: the output splits at the last tab stop],
-  [`triple=⦇[base,op]⦈` and `entab=triple assocl π₁ (𝟙×blanks) cat`],
-  [the program: one pass carrying the column and the count of pending blanks],
-  [`base` returns `([],(0,0))` \ `op ((xs,(t,c)),a)=` \ #h(10pt)
-   `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` \ #h(10pt)
-   `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
-   `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` \ #h(10pt)
-   `(xs⧺blanks t⧺[a],(0,c+1)))`],
-  [hold a blank back, cash the held blanks in for a tab at a tab stop, flush them at a newline,
-   flush them before anything else],
-)]<entab-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`detab°`])` est(R)⊒entab`, #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
+    #src[the shortest input `detab` expands to the given output is one pass along that output,
+     holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
+     tab stop]],
+  table.header([*circuit* — one wire, `String` to `String`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`String`], [`String`], none, (nb-Ldet, nb-est)),
+    [#frc([`detab°`])` est(R)` \ #src[the specification — @entab-defn; `detab entab=𝟙` and nothing
+     shorter does]])],
+  [#en-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`detab°`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
+    [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
+     #src[Theorem 10.1 at `Q≜𝟙+(V×U)`: one character of input is decided at each step. `U` may be
+      any preorder on characters, and `a U b⟺a=TB∨a=b` puts `TB` below every character, so `est`
+      prefers a tab to a blank; `F(⊤,R)α⊑αR` is left as an exercise. `detab prefix⊑R° detab` is
+      FALSE — at `n=8`, `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
+      `[a,b,c,d,e,BL,BL]` is longer than any input giving it — so `V≜prefix°∩(fill fill°)` allows
+      only the prefixes that do not cross a tab stop, and `detab V°⊑R° detab` holds. From
+      `nil V°=nil`, `fill V°=fill` (what `fill fill°` was added for) and `snoc V°⊑snoc∪(π₁V°)`,
+      left as exercises, comes `expand V°⊑expand∪(π₁V°)` — shortening the output either leaves the
+      last step alone or discards it — hence `detab V°⊑detab∪(init detab V°)`, and `init` inductive
+      makes the greatest solution the unique one: `detab V°⊑prefix detab`, with `prefix⊑R°`
+      finishing Proposition 9.4]])],
+  // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
+  // not the `F` under it, so its wire ends on the `E` lane.
+  [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`[nil,expand]°`], 0.32),
+     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
+    lanes: ((THM, 4.85, [`−×Char`]),))],
+
+  [#vstep(EQ, thpic([`String`], [`String`], none, (nb-Lexp, nb-estVU, nb-snoc)),
+    [`(μX : (null→nil,`#frc([`expand°`])` est(V×U)(X×𝟙)snoc))` \
+     #src[Proposition 10.1: `nil` and `expand` have disjoint ranges.
+      #frc([`expand°`])` (xs⧺[a])={(ys,TB)∣fill ys=xs⧺[a]}∪{(xs,a)}`, and the first set is
+      non-empty iff `a=BL` and `col (xs⧺[a]) mod n=0` — the last output character came from a tab
+      only if it is a blank landing exactly on a tab stop. So the greedy step is
+      #frc([`expand°`])` est(V×U)(xs⧺[a])=(a=BL∧col (xs⧺[a]) mod n=0→(unfill xs,TB),(xs,a))`: emit
+      a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
+  [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`expand°`], 0.32),
+     (THU, 3.30, [`est(V×U)`], -0.32), (THO, 1.60, [`(X×𝟙)snoc`], 0.32)),
+    lanes: ((THM, 4.85, [`−×Char`]),))],
+
+  [#vstep(EQ, [],
+    [`entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt) #src[(10.1)] \
+     #src[what makes `triple≜⟨unfill entab,⟨tbc,col⟩⟩` a snoc-list reduce: the output splits at the
+      last tab stop, `unfill xs` being the shortest prefix of `xs` with `fill (unfill xs)=fill xs`
+      and `tbc` the trailing blank count]])],
+  // No picture: `entab` is here read on points, and the equation relates two strings, not two
+  // objects the panels carry.
+  [],
+
+  [#vstep(EQ, [],
+    [`triple=⦇[base,op]⦈`, #h(4pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
+     `base` returns `([],(0,0))`, #h(4pt) `op ((xs,(t,c)),a)=` \ #h(10pt)
+     `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` #h(4pt) `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
+     `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
+     #src[the program: one pass carrying the column and the count of pending blanks. Hold a blank
+      back, cash the held blanks in for a tab at a tab stop, flush them at a newline, flush them
+      before anything else]])],
+  [],
+))]<entab-laws>
 
 == The minimum tardiness problem
 
@@ -7191,45 +7490,85 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`.
 ]]<tardy-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
+// `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
+// set at all.
+#let tb-estR = ([`est(R)`], 1.90, true)
+#let tb-Lbag = (frc([`bagify°`]), 2.75, false)
+#let tb-Lb = (frc([`β°`]), 1.25, false)
+#let tb-estQ = ([`est(Q)`], 1.90, true)
+#let tb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
+#let tb-Lsnag = (frc([`snag°`]), 2.15, false)
+#let tb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
+#let tb-pick = ([`pick`], 1.50, false)
+#let tb-sch = ([`(schedule×𝟙)snoc`], 4.90, true)
+#let ty-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THN, [`bag`]), (THO, [`Job`])), ((THN, [`list`]), (THO, [`Job`])),
+  lanes: lanes, names: names)
 
-  [$frac(#[`bagify°`], ∋)$ `est(R)`],
-  [the specification: an ordering of the given bag of jobs with least maximum penalty],
-  [`F(R∩(bagify bagify°))α⊑αR` #h(4pt) #src[(10.2)]],
-  [monotonicity in context — only schedules of one bag are compared],
-  [`(Q∩(ββ°))F(bagify°)α⊑F(bagify°)αR` #h(4pt) #src[(10.3)]],
-  [the greedy condition, also in context],
-  [`cost (xs⧺[j])=bmax (cost xs,penalty (perm xs,j))` \ `α cost=F(⟨cost,bagify⟩)k`, #h(4pt)
-   `F(≤×𝟙)k⊑k≤` \ #src[Proposition 9.3]],
-  [(10.2): `penalty` sums the completion times of `xs`, and a sum does not see the order],
-  [`α cost=⟨g,h⟩ bmax` #h(4pt) #src[(10.4)] \ `g≜[zero,penalty]` #h(4pt) #src[(10.5)] \
-   `h≜[zero,π₁ cost]` #h(4pt) #src[(10.6)]],
-  [the cost of a schedule split into the penalty of its last job and the cost of the rest],
-  [`add⊑π₁R` #h(6pt) #src[(10.7)] \ `β bagify°=F(bagify°) [nil,add]` #h(6pt) #src[(10.8)]],
-  [adding a job never lowers the cost; and `bagify°` is itself a reduce on bags. Together:
-   `β bagify°⊑F(bagify°)h≤cost°`],
-  [`F(bagify)Q°F(bagify°)=g≥g°`, met by \ `Q≜f≤f°`, `f≜[zero,(bagify°×𝟙) penalty]`],
-  [the specification `Q` has to satisfy, and the choice that meets it: a `Q`-minimum is a job of
-   least penalty],
-  [no greedy *reduce* exists],
-  [a greedy snoc-list reduce would also solve every prefix of the input, and the best schedule
-   of a prefix need not extend to a best schedule of the whole],
-  [`X=(null→nil,` $frac(#[`snag°`], ∋)$ `est(Q) (X×𝟙) snoc)` #h(4pt) #src[Theorem 10.1, Proposition 10.1]],
-  [`nil` and `snag` have disjoint ranges],
-  [`schedule=(null→nil,pick (schedule×𝟙) snoc)` \ #src[`pick⊑` $frac(#[`snag°`], ∋)$ `est(Q)`, a partial
-   function]],
-  [the program: repeatedly remove a job of least penalty and put it last; quadratic in the number of
-   jobs],
-)]<tardy-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`bagify°`])` est(R)⊒schedule`, #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+    #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
+     penalty out of the bag, putting it last, and scheduling what is left the same way]],
+  table.header([*circuit* — one wire, `Bag Job` to `[Job]`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`Bag Job`], [`[Job]`], none, (tb-Lbag, tb-estR)),
+    [#frc([`bagify°`])` est(R)` \ #src[the specification — @tardy-defn]])],
+  [#ty-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`bagify°`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
+    [`(μX : `#frc([`β°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
+     #src[Theorem 10.1. Both conditions need context. Monotonicity is (10.2)
+      `F(R∩(bagify bagify°))α⊑αR`, only schedules of one bag being compared: Proposition 9.3 at
+      `cost (xs⧺[j])=bmax (cost xs,penalty (perm xs,j))` — `penalty` sums the completion times of
+      `xs` and a sum does not see the order — with `α cost=F(⟨cost,bagify⟩)k` and `F(≤×𝟙)k⊑k≤`.
+      The greedy condition is (10.3) `(Q∩(ββ°))F(bagify°)α⊑F(bagify°)αR`; it rests on (10.4)
+      `α cost=⟨g,m⟩ bmax` with (10.5) `g≜[zero,penalty]` and (10.6) `m≜[zero,π₁ cost]` — the cost of
+      a schedule split into the penalty of its last job and the cost of the rest — and on (10.7)
+      `add⊑π₁R`, adding a job never lowers the cost, and (10.8) `β bagify°=F(bagify°) [nil,add]`,
+      `bagify°` being itself a reduce on bags; together `β bagify°⊑F(bagify°)m≤cost°`. What `Q` has
+      to satisfy is `F(bagify)Q°F(bagify°)=g≥g°`, and `Q≜f≤f°`, `f≜[zero,(bagify°×𝟙) penalty]`
+      meets it: a `Q`-minimum is a job of least penalty. No greedy *reduce* exists — one would also
+      solve every prefix of the input, and the best schedule of a prefix need not extend to a best
+      schedule of the whole]])],
+  // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
+  // theorem it feeds and it would otherwise both be `h` in one table.
+  [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`β°`], 0.32),
+     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
+    lanes: ((THM, 4.85, [`−×Job`]),))],
+
+  [#vstep(EQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lsnag, tb-estQ, tb-snoc)),
+    [`(μX : (null→nil,`#frc([`snag°`])` est(Q)(X×𝟙)snoc))` \
+     #src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
+  [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
+    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`snag°`], 0.32),
+     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(X×𝟙)snoc`], 0.32)),
+    lanes: ((THM, 4.85, [`−×Job`]),))],
+
+  [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-pick, tb-sch)),
+    [`schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+     #src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function: repeatedly remove a job of least
+      penalty and put it last, quadratic in the number of jobs]])],
+  // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
+  [#ty-pan(4.0, (thw-in(THN, 4.0, 2.80), thw-arc(THM, 2.80, 1.20), thw-arc(THN, 2.80, 1.20),
+      thw-out(THN, 1.20, 0)),
+    ((THO, 2.80, [`pick`], 0.32), (THO, 1.20, [`(schedule×𝟙)snoc`], 0.32)),
+    lanes: ((THM, 3.45, [`−×Job`]),))],
+))]<tardy-laws>
 
 == The TeX problem
 
-// B&dM §10.4, p. 259.  The section's `h` is `⦇[arb, step]⦈`, which is `H°`, not §21.1's algebra `h`.
-// The book prints the base case of `f` as `a < 0` on p. 262 and as `p ≤ 0` in the program.
+// B&dM §10.4, p. 259.  The book's local `h` for `⦇[arb,step]⦈` is @dp-defn's algebra letter, so it
+// is written `H°` here instead.  The base case of `f` is `a<0` on p. 262 and `p≤0` in the program.
 #disp[#definition[
 `intern≜val round : Decimal⟶[0,2¹⁶)`, #h(4pt) `val≜⦇[zero,shift]⦈`, #h(4pt)
 `shift (d,r)=(d+r)/10`, #h(4pt) `round r` rounds `2¹⁶r` to the nearest integer:
@@ -7242,43 +7581,91 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `[arb,step] : 1+(Digit×Interval)⟶Interval`, #h(4pt)
 `step (d,(a,b))=((d+a)/10,(d+b)/10)`.
 
-`FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `h≜⦇[arb,step]⦈=H°`, #h(4pt)
+`FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `H≜⦇[arb,step]⦈°`, #h(4pt)
 `! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r)∪𝟙`, #h(4pt) `w≜2¹⁷`.
 ]]<tex-defn>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+// ONE WIRE, `[0,2¹⁶)` to `Decimal`; the `list` is born only where the algebra builds the digits.
+// `interval` sits ABOVE the singleton in every row from the second on: it is the map pulled out of
+// the transpose, and holding it at one height is what says the rest of the chain moved past it.
+#let xb-est = ([`est(R)`], 1.90, true)
+#let xb-Lint = (frc([`intern°`]), 2.75, false)
+#let xb-ival = ([`interval`], 2.55, false)
+#let xb-Linv = (frc([`inrange val°`]), 4.30, false)
+#let xb-LH = (frc([`H`]), 0.95, false)
+#let xb-Larb = (frc([`[arb,step]°`]), 3.95, false)
+#let xb-estQ = ([`est(Q)`], 1.90, true)
+#let xb-FXa = ([`F(X)α`], 1.85, true)
+#let tx-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THO, [`[0,2¹⁶)`]),), ((THN, [`list`]), (THO, [`Digit`])), lanes: lanes, names: names)
 
-  [$frac(#[`intern°`], ∋)$ `est(R)=interval` $frac(#[`inrange val°`], ∋)$ `est(R)`],
-  [the specification: a shortest decimal whose internal representation is the given multiple of
-   `2⁻¹⁶`. `round°` is not a map, but `interval` is, so it comes out of the $frac(#box(width: 8pt), ∋)$],
-  [`val inrange°=⦇[arb,step]⦈` \ #src[fusion; `zero inrange°=arb`,
-   `shift inrange°=(𝟙×inrange°) step`]],
-  [the converse of `val`, cut down to intervals, is a reduce on cons-lists],
-  [`F(R)α⊑αR`],
-  [`cons` is monotonic on `R` — routine],
-  [`α°F(h)Q°⊑R°α°F(h)`],
-  [the greedy condition of Theorem 10.1, converted],
-  [$frac(#[`arb°`], ∋)$ `(a,b)=(a<0→{*},{})` \
-   $frac(#[`step°`], ∋)$ `(a,b)={(d,(10a−d,10b−d))∣0<10b−d<1}`],
-  [the decompositions of an interval: stop, or take one more digit],
-  [`0<10b−d₁<1` and `0<10b−d₂<1` imply `d₁=d₂`],
-  [`step°` is in fact a map, `d` the digit with `0<10b−d<1`, so $frac(#[`[arb,step]°`], ∋)$ returns at
-   most two elements and `Q` need only choose between them],
-  [`Q≜(l°!°r)∪𝟙`, and `! nil⊑cons R°` \ #src[from `! nil length⊑cons length≥`]],
-  [stop whenever stopping is legal: the empty decimal is shorter than any other],
-  [`(μX :` $frac(#[`[arb,step]°`], ∋)$ `est(Q) F(X)α)⊑` $frac(#[`intern°`], ∋)$ `est(R)` #h(4pt) #src[Theorem 10.1]],
-  [greedy: emit the one digit the interval allows, until the interval contains zero],
-  [`extern=interval f` \ `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))`],
-  [the program, with `d` the digit above],
-  [`extern n=f(2n−1,2n+1)` \
-   `f (p,q)=(p≤0→[],[d]⧺f (10p−w d,10q−w d))` \ #src[`d=(10q) div w`, `w=2¹⁷`]],
-  [the same in integer arithmetic only, as chapter 3 required of `intern`: every interval reached is
-   `(p/w,q/w)`],
-)]<tex-laws>
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern n=f (2n−1,2n+1)` \
+    #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
+     emitting the one digit the interval of admissible reals allows, until that interval contains
+     zero and the empty decimal will do]],
+  table.header([*circuit* — one wire, `[0,2¹⁶)` to `Decimal`], [*Hinze–Marsden*]),
+
+  [#vstep([], thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-Lint, xb-est)),
+    [#frc([`intern°`])` est(R)` \ #src[the specification — @tex-defn]])],
+  [#tx-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-out(THN, 1.85, 0)),
+    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`intern°`], 0.32),
+     (THU, 0.60, [`est(R)`], -0.32)),
+    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+
+  [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Linv, xb-est)),
+    [`interval `#frc([`inrange val°`])` est(R)` \
+     #src[`intern≜val round` and `round°=interval inrange`; `round°` is not a map, but `interval`
+      is, so it comes out of the transpose]])],
+  // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
+  // the unit: the set the transpose opens starts on its target.
+  [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
+    ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
+     (THO, 1.85, [`inrange val°`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
+
+  [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-LH, xb-est)),
+    [`interval `#frc([`H`])` est(R)`, #h(4pt) `H≜⦇[arb,step]⦈°` \
+     #src[fusion: `val inrange°=⦇[arb,step]⦈`, since `zero inrange°=arb` and
+      `shift inrange°=(𝟙×inrange°) step` — the converse of `val`, cut down to intervals, is a reduce
+      on cons-lists]])],
+  [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
+    ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
+     (THO, 1.85, [`H`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
+
+  [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
+    [`interval (μX : `#frc([`[arb,step]°`])` est(Q) F(X)α)` \
+     #src[Theorem 10.1. `F(R)α⊑αR` is routine, `cons` being monotonic on `R`; the greedy condition
+      is `α°F(H°)Q°⊑R°α°F(H°)`, the converse of Theorem 10.1's. The decompositions of an interval
+      are #frc([`arb°`])` (a,b)=(a<0→{*},{})` and
+      #frc([`step°`])` (a,b)={(d,(10a−d,10b−d))∣0<10b−d<1}` — stop, or take one more digit — and
+      `0<10b−d₁<1` with `0<10b−d₂<1` force `d₁=d₂`, so `step°` is in fact a map and
+      #frc([`[arb,step]°`]) returns at most two elements. `Q≜(l°!°r)∪𝟙` need only choose between
+      them, and `! nil⊑cons R°`, from `! nil length⊑cons length≥`, makes it stop whenever stopping
+      is legal: the empty decimal is shorter than any other]])],
+  // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
+  // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born.
+  [#tx-pan(6.2, (((THU, 4.60), (THU, 3.10)), thw-arc(THM, 3.90, 1.60), thw-out(THN, 1.60, 0)),
+    ((THO, 5.30, [`interval`], 0.32), (THU, 4.60, frc([`𝟙`]), -0.32),
+     (THO, 3.90, [`[arb,step]°`], 0.32), (THU, 3.10, [`est(Q)`], -0.32),
+     (THO, 1.60, [`F(X)α`], 0.32)),
+    lanes: ((THM - 0.34, 2.75, [`F`]),))],
+
+  [#vstep(EQ, [],
+    [`extern=interval f`, #h(4pt) `f (a,b)=(a<0→[],[d]⧺f (10a−d,10b−d))` \
+     #src[the program, with `d` the digit above]])],
+  // No picture: `f` is read on points, and the two sides are values, not the objects the panels
+  // carry.
+  [],
+
+  [#vstep(EQ, [],
+    [`extern n=f (2n−1,2n+1)`, #h(4pt) `f (p,q)=(p≤0→[],[d]⧺f (10p−w d,10q−w d))` \
+     #src[`d=(10q) div w`, `w=2¹⁷`: the same in integer arithmetic only, as chapter 3 required of
+      `intern` — every interval reached is `(p/w,q/w)`]])],
+  [],
+))]<tex-laws>
 
 #pagebreak(weak: true)
 #include "allegory-appendix.typ"
