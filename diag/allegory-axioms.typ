@@ -5071,32 +5071,31 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
 // HINZE–MARSDEN (IntroString.pdf §1.4.2): a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.
 // `Δ` = the relator `X↦X×X` (the diagonal `X↦(X,X)`, then `×`): a FUNCTOR, not the copy relation `◁ : A⟶A⊗A`.
-// SUGAR UNDONE, at the ends too: `[A]` is the `list` wire beside the `A` wire.  The list a party is
-// runs the whole height; `Δ`, the subtrees' `list` and `A×−` are the three the branch eats.
+// `[A]` STAYS ONE WIRE here: `R:[A]⟶[A]` is an ordering on parties, not `list` of a relation on
+// elements, so `R°` is a bead on the object wire — split, it would sit on neither half alone.
 #let PXM = 0.55                  // `A×−`, the root employee
 #let PXLo = 1.70                 // `list`, the subtrees
 #let PXD = 2.85                  // `Δ`, the pair one subtree returns
-#let PXLi = 4.00                 // `list`, inside one party
-#let PXO = 5.15                  // the object wire, `A`
-// The fifth wire cost width, and the panel pays for it in HEIGHT, not in `s`: `scale` would take the
-// 9pt labels down with it, so the seven slots close up instead and the four rows stay one page.
-#let HMY = (0.45, 1.07, 1.69, 2.31, 2.93, 3.55, 4.17)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
-#let HMH = 4.62
+#let PXO = 4.00                  // the object wire, `[A]`
+// Tighter slots, not a smaller `s`: the panel prints its labels at the circuit column's 90%, and the
+// height the four rows must give back comes out of the wire spacing instead.
+#let HMY = (0.45, 1.05, 1.65, 2.25, 2.85, 3.45, 4.05)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
+#let HMH = 4.5
+#let PARTY = [`[A]`]
 #let party-hm(rs) = {
   let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
   dpanel(HMH, PXO + 2.85, PXO,
-    ((PXM, "top", YN, none, none), (PXLo, "top", YC, none, none), (PXD, "top", YP, none, none),
-     (PXLi, "top", "bot", none, none)),
+    ((PXM, "top", YN, none, none), (PXLo, "top", YC, none, none), (PXD, "top", YP, none, none)),
     ((YP, [`g`]), (YC, [`concat`]), (YN, [`h`]),
-     ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1, PXLi)),
-    ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXLi, LIST), (PXO, OBJ)),
-    ((PXLi, LIST), (PXO, OBJ)), names: rs == 0, s: 90%)
+     ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1)),
+    ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXO, PARTY)),
+    ((PXO, PARTY),), names: rs == 0, s: 90%)
 }
 
 #let step = step.with(pw: 319pt)
 #disp[#table(
-  // Not `HMW`: that column holds a circuit, this one a panel, and 6.6cm is the five wires at `s: 90%`.
-  columns: (1fr, 6.6cm),
+  // Not `HMW`: that column holds a circuit, this one a panel, and 5.0cm is the four wires at `s: 90%`.
+  columns: (1fr, 5.0cm),
   align: (center + horizon, center + horizon),
   // `y: 1pt`, tighter than the note's usual 3pt: the four rows plus the key list are a page exactly.
   inset: (x: 9pt, y: 1pt), stroke: 0.4pt + luma(190),
