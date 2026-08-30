@@ -202,7 +202,7 @@ variable {L E S W : Type}
 
 /-- The decomposition relation as the algebra `T : F S ⟶ S` (its converse is the coalgebra
     `greedy_dp` unfolds by). -/
-def TRel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ (⟨S⟩ : RelSet.{0}) := fun t v =>
+def TRel (P : GreedyDP L E S W) : (CL.F L E).obj ⟨S⟩ ⟶ (⟨S⟩ : RelSet.{0}) := fun t v =>
   match t with
   | Sum.inl l => P.baseP l v
   | Sum.inr (c, w) => P.stepP c w v
@@ -213,7 +213,7 @@ def hFn (P : GreedyDP L E S W) : (CL.Fobj L E (⟨W⟩ : RelSet.{0})).carrier �
   | Sum.inr (c, x) => P.hstep c x
 
 /-- The refold algebra as a map in `Rel(Set)`. -/
-def hAlg (P : GreedyDP L E S W) : CL.Fobj L E ⟨W⟩ ⟶ (⟨W⟩ : RelSet.{0}) := graph P.hFn
+def hAlg (P : GreedyDP L E S W) : (CL.F L E).obj ⟨W⟩ ⟶ (⟨W⟩ : RelSet.{0}) := graph P.hFn
 
 /-- The thinning order `Q := G(U, V)` on decompositions (B&dM p.246). -/
 def Qrel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ CL.Fobj L E ⟨S⟩ :=
@@ -221,7 +221,7 @@ def Qrel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ CL.Fobj L E ⟨S⟩ :=
 
 /-- B&dM's optimisation-problem relation `H = ⦇h⦈·⦇T⦈°`, mirrored. -/
 def specH (P : GreedyDP L E S W) : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=
-  (relCata (CL.initial L E) P.TRel)° ≫ relCata (CL.initial L E) P.hAlg
+  (relCata P.TRel)° ≫ relCata P.hAlg
 
 /-! ## Pointwise readings of the two catamorphisms -/
 
@@ -246,7 +246,7 @@ theorem foldA_pt (P : GreedyDP L E S W) : ∀ (ℓ : CL.ConsList L E) (x : W),
 /-- The hylomorphism identified: `H v x` iff `x` is the value of some decomposition of `v`. -/
 theorem specH_pt (P : GreedyDP L E S W) (v : S) (x : W) :
     P.specH v x ↔ ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ x = foldA P.hbase P.hstep ℓ := by
-  show ((relCata (CL.initial L E) P.TRel)° ≫ relCata (CL.initial L E) P.hAlg) v x ↔ _
+  show ((relCata P.TRel)° ≫ relCata P.hAlg) v x ↔ _
   rw [← CL.cataR_eq_relCata, ← CL.cataR_eq_relCata]
   constructor
   · rintro ⟨ℓ, hT, hh⟩

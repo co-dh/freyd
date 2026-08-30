@@ -176,7 +176,7 @@ theorem depth_derived_correct (t : Tree L) :
     pathLen t (depthFn t) ∧ ∀ n, pathLen t n → n ≤ depthFn t := by
   -- GREEDY THEOREM: `⦇alg⦈` lands inside the Pareto frontier `A ⦇S⦈ ≫ est R`.
   have hmap : Map (alg : TFobj L dNat ⟶ dNat) := graph_map algFn
-  have H1 : relCata (initial L) alg ⊑ Λ (relCata (initial L) S) ≫ est R :=
+  have H1 : relCata alg ⊑ Λ (relCata S) ≫ est R :=
     greedy_of_refinement_mono (F_preservesRecip L) (initial L) hmap R_trans alg_mono alg_refines
   -- TreeBin bridge: transport from the abstract `relCata` to the structural `cataR`.
   have H2 : cataR (@alg L) ⊑ Λ (cataR (@S L)) ≫ est R := by

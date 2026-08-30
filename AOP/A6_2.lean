@@ -179,7 +179,7 @@ public theorem cataBody_monotonic (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c
 
 /-- The catamorphism UP (5.12), fixed-point form: `X = α° ≫ F.map X ≫ R ↔ X = ⦇R⦈`. -/
 public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c)
-    (X : I.t ⟶ c) : X = I.α° ≫ F.map X ≫ R ↔ X = relCata I R := by
+    (X : I.t ⟶ c) : X = I.α° ≫ F.map X ≫ R ↔ X = relCata R := by
   rw [← relCata_UP]
   constructor
   · intro h
@@ -190,24 +190,24 @@ public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {c : 𝒜} (R : F.obj
 
 /-- `⦇R⦈ = (μX : R·FX·α°)`, mirrored. -/
 public theorem relCata_eq_mu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    relCata I R = mu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
+    relCata R = mu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
   have hfix := mu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- `⦇R⦈ = (νX : R·FX·α°)`, mirrored. -/
 public theorem relCata_eq_nu (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    relCata I R = nu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
+    relCata R = nu (fun X : I.t ⟶ c => I.α° ≫ F.map X ≫ R) := by
   have hfix := nu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- **(6.2)**: `⦇R⦈ ⊑ X ⟸ R·FX·α° ⊑ X`, mirrored. -/
 public theorem relCata_le_of_prefixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
-    {X : I.t ⟶ c} (h : I.α° ≫ F.map X ≫ R ⊑ X) : relCata I R ⊑ X := by
+    {X : I.t ⟶ c} (h : I.α° ≫ F.map X ≫ R ⊑ X) : relCata R ⊑ X := by
   rw [relCata_eq_mu]; exact Sup_le (fun _S hS => hS _ h)
 
 /-- **(6.3)**: `X ⊑ ⦇R⦈ ⟸ X ⊑ R·FX·α°`, mirrored. -/
 public theorem le_relCata_of_postfixed (I : InitialAlgebra F) {c : 𝒜} {R : F.obj c ⟶ c}
-    {X : I.t ⟶ c} (h : X ⊑ I.α° ≫ F.map X ≫ R) : X ⊑ relCata I R := by
+    {X : I.t ⟶ c} (h : X ⊑ I.α° ≫ F.map X ≫ R) : X ⊑ relCata R := by
   rw [relCata_eq_nu]; exact le_Sup h
 
 end CataFix
@@ -223,47 +223,47 @@ variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion. -/
 public theorem relCata_le_comp (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
-    {S : c ⟶ d} (h : F.map S ≫ T ⊑ R ≫ S) : relCata I T ⊑ relCata I R ≫ S := by
+    {S : c ⟶ d} (h : F.map S ≫ T ⊑ R ≫ S) : relCata T ⊑ relCata R ≫ S := by
   apply relCata_le_of_prefixed
-  have e1 : I.α° ≫ F.map (relCata I R ≫ S) ≫ T
-      = I.α° ≫ F.map (relCata I R) ≫ F.map S ≫ T := by rw [F.map_comp, Cat.assoc]
-  have e2 : I.α° ≫ F.map (relCata I R) ≫ R ≫ S = relCata I R ≫ S := by
-    rw [← Cat.assoc (F.map (relCata I R)) R S, ← relCata_cancel I R,
-      Cat.assoc I.α (relCata I R) S, ← Cat.assoc I.α° I.α (relCata I R ≫ S),
+  have e1 : I.α° ≫ F.map (relCata R ≫ S) ≫ T
+      = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := by rw [F.map_comp, Cat.assoc]
+  have e2 : I.α° ≫ F.map (relCata R) ≫ R ≫ S = relCata R ≫ S := by
+    rw [← Cat.assoc (F.map (relCata R)) R S, ← relCata_cancel I R,
+      Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
       I.recip_alpha_alpha, Cat.id_comp]
   rw [e1]
-  calc I.α° ≫ F.map (relCata I R) ≫ F.map S ≫ T
-      ⊑ I.α° ≫ F.map (relCata I R) ≫ R ≫ S := comp_mono_left _ (comp_mono_left _ h)
-    _ = relCata I R ≫ S := e2
+  calc I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T
+      ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S := comp_mono_left _ (comp_mono_left _ h)
+    _ = relCata R ≫ S := e2
 
 /-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion. -/
 public theorem comp_le_relCata (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c} {T : F.obj d ⟶ d}
-    {S : c ⟶ d} (h : R ≫ S ⊑ F.map S ≫ T) : relCata I R ≫ S ⊑ relCata I T := by
+    {S : c ⟶ d} (h : R ≫ S ⊑ F.map S ≫ T) : relCata R ≫ S ⊑ relCata T := by
   apply le_relCata_of_postfixed
-  have e1 : relCata I R ≫ S = I.α° ≫ F.map (relCata I R) ≫ R ≫ S := by
-    rw [← Cat.assoc (F.map (relCata I R)) R S, ← relCata_cancel I R,
-      Cat.assoc I.α (relCata I R) S, ← Cat.assoc I.α° I.α (relCata I R ≫ S),
+  have e1 : relCata R ≫ S = I.α° ≫ F.map (relCata R) ≫ R ≫ S := by
+    rw [← Cat.assoc (F.map (relCata R)) R S, ← relCata_cancel I R,
+      Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
       I.recip_alpha_alpha, Cat.id_comp]
-  have e2 : I.α° ≫ F.map (relCata I R) ≫ F.map S ≫ T
-      = I.α° ≫ F.map (relCata I R ≫ S) ≫ T := by rw [F.map_comp, Cat.assoc]
-  calc relCata I R ≫ S
-      = I.α° ≫ F.map (relCata I R) ≫ R ≫ S := e1
-    _ ⊑ I.α° ≫ F.map (relCata I R) ≫ F.map S ≫ T := comp_mono_left _ (comp_mono_left _ h)
-    _ = I.α° ≫ F.map (relCata I R ≫ S) ≫ T := e2
+  have e2 : I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T
+      = I.α° ≫ F.map (relCata R ≫ S) ≫ T := by rw [F.map_comp, Cat.assoc]
+  calc relCata R ≫ S
+      = I.α° ≫ F.map (relCata R) ≫ R ≫ S := e1
+    _ ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := comp_mono_left _ (comp_mono_left _ h)
+    _ = I.α° ≫ F.map (relCata R ≫ S) ≫ T := e2
 
 /-- **Ex 6.7**: `⦇R⦈ ⊑ ⦇S⦈` when the recursion bodies agree at `⦇S⦈` in the ⊑ direction. -/
 public theorem relCata_le_relCata (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c}
-    (h : F.map (relCata I S) ≫ R ⊑ F.map (relCata I S) ≫ S) : relCata I R ⊑ relCata I S := by
+    (h : F.map (relCata S) ≫ R ⊑ F.map (relCata S) ≫ S) : relCata R ⊑ relCata S := by
   apply relCata_le_of_prefixed
-  calc I.α° ≫ F.map (relCata I S) ≫ R
-      ⊑ I.α° ≫ F.map (relCata I S) ≫ S := comp_mono_left _ h
-    _ = relCata I S := by
-        rw [← relCata_cancel I S, ← Cat.assoc I.α° I.α (relCata I S), I.recip_alpha_alpha,
+  calc I.α° ≫ F.map (relCata S) ≫ R
+      ⊑ I.α° ≫ F.map (relCata S) ≫ S := comp_mono_left _ h
+    _ = relCata S := by
+        rw [← relCata_cancel I S, ← Cat.assoc I.α° I.α (relCata S), I.recip_alpha_alpha,
           Cat.id_comp]
 
 /-- **Corollary of Ex 6.7**: `⦇·⦈` is monotonic in the algebra. -/
 public theorem relCata_mono (I : InitialAlgebra F) {c : 𝒜} {R S : F.obj c ⟶ c} (h : R ⊑ S) :
-    relCata I R ⊑ relCata I S :=
+    relCata R ⊑ relCata S :=
   relCata_le_relCata I (comp_mono_left _ h)
 
 end Fusion

@@ -40,27 +40,27 @@ def con_conv : (Fobj Unit Bit dNat).carrier → Nat
   | Sum.inr p => 2 * p.1 + p.2.val
 
 /-- `convert = ⦇[zero, shift]⦈ : Bin → ℕ` evaluates a bit-list as a binary number. -/
-def convAlg : Fobj Unit Bit dNat ⟶ dNat := graph con_conv
+def convAlg : (F Unit Bit).obj dNat ⟶ dNat := graph con_conv
 
 /-- The exponentiation algebra `[one, op a]`: `one ↦ 1`, `op a (n, d) = (d = 0 → n², a·n²)`. -/
 def con_exp (a : Nat) : (Fobj Unit Bit dNat).carrier → Nat
   | Sum.inl _ => 1
   | Sum.inr p => if p.2.val = 0 then p.1 ^ 2 else a * p.1 ^ 2
 
-def expAlg (a : Nat) : Fobj Unit Bit dNat ⟶ dNat := graph (con_exp a)
+def expAlg (a : Nat) : (F Unit Bit).obj dNat ⟶ dNat := graph (con_exp a)
 
 /-- The modulus algebra `[zero, op b]`: `zero ↦ 0`, `op b (r, d) = (n ≥ b → n-b, n)`, `n = 2r+d`. -/
 def con_mod (b : Nat) : (Fobj Unit Bit dNat).carrier → Nat
   | Sum.inl _ => 0
   | Sum.inr p => if 2 * p.1 + p.2.val ≥ b then 2 * p.1 + p.2.val - b else 2 * p.1 + p.2.val
 
-def modAlg (b : Nat) : Fobj Unit Bit dNat ⟶ dNat := graph (con_mod b)
+def modAlg (b : Nat) : (F Unit Bit).obj dNat ⟶ dNat := graph (con_mod b)
 
 /-- **Fast exponentiation (B&dM p.145)**: `exp a = ⦇[one, op a]⦈ · convert°`, a hylomorphism. -/
-def exp (a : Nat) : dNat ⟶ dNat := (relCata I convAlg)° ≫ relCata I (expAlg a)
+def exp (a : Nat) : dNat ⟶ dNat := (relCata convAlg)° ≫ relCata (expAlg a)
 
 /-- **Fast modulus (B&dM p.145)**: `mod b = ⦇[zero, op b]⦈ · convert°`, a hylomorphism. -/
-def modFast (b : Nat) : dNat ⟶ dNat := (relCata I convAlg)° ≫ relCata I (modAlg b)
+def modFast (b : Nat) : dNat ⟶ dNat := (relCata convAlg)° ≫ relCata (modAlg b)
 
 /-- **§6.4 (B&dM p.145)**: fast exponentiation IS the divide-and-conquer least fixed point.  By
     the hylomorphism theorem, `exp a = μX : op-a · F(X) · shift°` (mirrored) — the `O(log b)`

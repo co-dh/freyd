@@ -133,7 +133,7 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T)))
 
 /-! ## Theorem 9.2 (B&dM p.221) — thinning dynamic programming
@@ -273,10 +273,10 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
 theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+    (hQ : Q° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
+        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R°°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
@@ -290,7 +290,7 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id a ⊑ R°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R := by
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R := by
   have hpt : ∀ X : b ⟶ a, Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R
       ⊑ Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R := by
     intro X
@@ -301,13 +301,13 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
       ⊑ mu (fun X : b ⟶ a =>
           Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R) :=
     mu_le_mu hpt
-  have hQ : (Cat.id (F.obj b))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-      ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°° := by
+  have hQ : (Cat.id (F.obj b))° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
+      ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R°° := by
     rw [recip_id, Cat.id_comp]
     have hid : Cat.id a ⊑ R°° := by
       have h1 := recip_mono hrefl
       rwa [recip_id] at h1
-    have step := comp_mono_left (F.map ((relCata I T)° ≫ relCata I h) ≫ h) hid
+    have step := comp_mono_left (F.map ((relCata T)° ≫ relCata h) ≫ h) hid
     rw [Cat.comp_id, Cat.assoc] at step
     exact step
   exact le_trans hstep (dynamic_programming_thin hFr I hh hmono htrans hQ)
@@ -713,13 +713,13 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
     hypotheses discharge the least-fixed-point refinement exactly as Theorem 9.2 does. -/
 theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} (hh : Map h)
-    (hctx1 : F.map (R° ∩ (((relCata I T)° ≫ relCata I h)° ≫ (relCata I T)° ≫ relCata I h)) ≫ h
+    (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°)
-    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
+        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R°°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
 
 /-! ## Dropped (B&dM Proposition 9.1, Ex 9.5) — disjoint ranges / coproduct split (pp.219-220)

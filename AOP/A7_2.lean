@@ -162,7 +162,7 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (Λ S ≫ est R) ⊑ Λ (relCata I S) ≫ est R := by
+    relCata (Λ S ≫ est R) ⊑ Λ (relCata S) ≫ est R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans
     rwa [Allegory.recip_comp] at h
@@ -214,7 +214,7 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
     form `Λ S ≫ est R` up to equality. -/
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg f R°)
-    (href : f ⊑ Λ S ≫ est R) : relCata I f ⊑ Λ (relCata I S) ≫ est R := by
+    (href : f ⊑ Λ S ≫ est R) : relCata f ⊑ Λ (relCata S) ≫ est R := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
   apply le_Λ_comp_est_iff.mpr
   refine ⟨relCata_mono I hfS, ?_⟩

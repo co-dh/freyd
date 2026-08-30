@@ -362,38 +362,38 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
     B&dM's fusion step: `comp_le_relCata` ((6.5), `AOP.A6_2`) against `⦇α⦈ = id`
     (`relCata_alpha`, `AOP.A6_3`). -/
 private theorem relCata_comp_le_id (I : InitialAlgebra F) {a : 𝒜} {R : F.obj a ⟶ a}
-    {f : a ⟶ I.t} (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata I R ≫ f ⊑ Cat.id I.t := by
-  have h1 : relCata I R ≫ f ⊑ relCata I I.α := comp_le_relCata I hcomm
+    {f : a ⟶ I.t} (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ≫ f ⊑ Cat.id I.t := by
+  have h1 : relCata R ≫ f ⊑ relCata I.α := comp_le_relCata I hcomm
   rwa [relCata_alpha] at h1
 
 /-- **Theorem 6.4** (B&dM p.150), forward/provable half: if `f` is a map and
     `R·f ⊑ α·Ff` (mirrored: `R≫f ⊑ F.map f≫I.α`), then `(|R|) ⊑ f°`. -/
 theorem thm64_forward (I : InitialAlgebra F) {a : 𝒜} {R : F.obj a ⟶ a} {f : a ⟶ I.t}
-    (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata I R ⊑ f° := by
-  have h1 : relCata I R ≫ f ⊑ Cat.id I.t := relCata_comp_le_id I hcomm
-  have h2 : relCata I R ⊑ Cat.id I.t ≫ f° := (map_shunt_right hf (relCata I R) (Cat.id I.t)).mp h1
+    (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ⊑ f° := by
+  have h1 : relCata R ≫ f ⊑ Cat.id I.t := relCata_comp_le_id I hcomm
+  have h2 : relCata R ⊑ Cat.id I.t ≫ f° := (map_shunt_right hf (relCata R) (Cat.id I.t)).mp h1
   rwa [Cat.id_comp] at h2
 
 /-- **Theorem 6.4**, backward half: given `(|R|)` surjective (`hsur`) and `(|R|)·f ⊑ 1`
     (`hcancel`), `f° ⊑ (|R|)`. -/
 theorem thm64_backward (I : InitialAlgebra F) {a : 𝒜} {R : F.obj a ⟶ a} {f : a ⟶ I.t}
-    (hsur : Cat.id a ⊑ (relCata I R)° ≫ relCata I R) (hcancel : relCata I R ≫ f ⊑ Cat.id I.t) :
-    f° ⊑ relCata I R := by
+    (hsur : Cat.id a ⊑ (relCata R)° ≫ relCata R) (hcancel : relCata R ≫ f ⊑ Cat.id I.t) :
+    f° ⊑ relCata R := by
   have e1 : f° = f° ≫ Cat.id a := (Cat.comp_id f°).symm
-  have s1 : f° ≫ Cat.id a ⊑ f° ≫ ((relCata I R)° ≫ relCata I R) := comp_mono_left f° hsur
-  have e2 : f° ≫ ((relCata I R)° ≫ relCata I R) = (relCata I R ≫ f)° ≫ relCata I R := by
+  have s1 : f° ≫ Cat.id a ⊑ f° ≫ ((relCata R)° ≫ relCata R) := comp_mono_left f° hsur
+  have e2 : f° ≫ ((relCata R)° ≫ relCata R) = (relCata R ≫ f)° ≫ relCata R := by
     rw [← Cat.assoc, ← Allegory.recip_comp]
-  have s2 : (relCata I R ≫ f)° ≫ relCata I R ⊑ (Cat.id I.t)° ≫ relCata I R :=
+  have s2 : (relCata R ≫ f)° ≫ relCata R ⊑ (Cat.id I.t)° ≫ relCata R :=
     comp_mono_right (recip_mono hcancel) _
-  have e3 : (Cat.id I.t)° ≫ relCata I R = relCata I R := by rw [recip_id, Cat.id_comp]
-  have hA : f° ⊑ (relCata I R ≫ f)° ≫ relCata I R := by
+  have e3 : (Cat.id I.t)° ≫ relCata R = relCata R := by rw [recip_id, Cat.id_comp]
+  have hA : f° ⊑ (relCata R ≫ f)° ≫ relCata R := by
     calc f° = f° ≫ Cat.id a := e1
-      _ ⊑ f° ≫ ((relCata I R)° ≫ relCata I R) := s1
-      _ = (relCata I R ≫ f)° ≫ relCata I R := e2
-  have hB : (relCata I R ≫ f)° ≫ relCata I R ⊑ relCata I R := by
-    calc (relCata I R ≫ f)° ≫ relCata I R
-        ⊑ (Cat.id I.t)° ≫ relCata I R := s2
-      _ = relCata I R := e3
+      _ ⊑ f° ≫ ((relCata R)° ≫ relCata R) := s1
+      _ = (relCata R ≫ f)° ≫ relCata R := e2
+  have hB : (relCata R ≫ f)° ≫ relCata R ⊑ relCata R := by
+    calc (relCata R ≫ f)° ≫ relCata R
+        ⊑ (Cat.id I.t)° ≫ relCata R := s2
+      _ = relCata R := e3
   exact le_trans hA hB
 
 /-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `f·R ⊑ α·Ff` (mirrored:
@@ -409,7 +409,7 @@ theorem thm64_backward (I : InitialAlgebra F) {a : 𝒜} {R : F.obj a ⟶ a} {f 
     book's actual Theorem 6.4 hypothesis. -/
 theorem thm64 (I : InitialAlgebra F) {a : 𝒜} {R : F.obj a ⟶ a} {f : a ⟶ I.t} (hf : Map f)
     (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (_hRsur : Cat.id a ⊑ R° ≫ R)
-    (hcatasur : Cat.id a ⊑ (relCata I R)° ≫ relCata I R) : f° = relCata I R :=
+    (hcatasur : Cat.id a ⊑ (relCata R)° ≫ relCata R) : f° = relCata R :=
   le_antisymm (thm64_backward I hcatasur (relCata_comp_le_id I hcomm)) (thm64_forward I hf hcomm)
 
 end Theorem64
