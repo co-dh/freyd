@@ -155,7 +155,7 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
 theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
-    (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°°) :
+    (hQ : Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
   have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
@@ -234,8 +234,8 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
       have hrm := recip_mono hQ
       have eL : (Q° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q := by
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R°°)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
       rwa [eL, eR] at hrm
     have hre1 : (h° ≫ F.map (H°)) ≫ Q ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
         = (h° ≫ F.map (H°) ≫ Q) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
@@ -274,7 +274,7 @@ theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
@@ -302,11 +302,11 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
           Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R) :=
     mu_le_mu hpt
   have hQ : (Cat.id (F.obj b))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-      ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°° := by
+      ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R := by
     rw [recip_id, Cat.id_comp]
-    have hid : Cat.id a ⊑ R°° := by
+    have hid : Cat.id a ⊑ R := by
       have h1 := recip_mono hrefl
-      rwa [recip_id] at h1
+      rwa [recip_id, Allegory.recip_recip] at h1
     have step := comp_mono_left (F.map ((relCata I T)° ≫ relCata I h) ≫ h) hid
     rw [Cat.comp_id, Cat.assoc] at step
     exact step
@@ -596,7 +596,7 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
     {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h)
     (hctx1 : F.map (R° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R°) (htrans : R° ≫ R° ⊑ R°)
     (hHfix : T° ≫ F.map H ≫ h = H)
-    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°°) :
+    (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
   have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
@@ -670,8 +670,8 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
       have hrm := recip_mono hctx2
       have eL : ((Q ∩ (T ≫ T°))° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°)) := by
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R°°)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
       rwa [eL, eR] at hrm
     have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
         = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
@@ -717,7 +717,7 @@ theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAl
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°)
     (hctx2 : (Q ∩ (T ≫ T°))° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))

@@ -50,7 +50,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
     {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
-    (hQ : Q°° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°°) :
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
   apply le_Λ_comp_est_iff.mpr
@@ -94,10 +94,10 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q° ⊑ R°·h°·FH°`
     have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
       have hrm := recip_mono hQ
-      have eL : (Q°° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R°°)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+      have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
       rwa [eL, eR] at hrm
     have hre1 : (h° ≫ F.map (H°)) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h
         = (h° ≫ F.map (H°) ≫ Q°) ≫ F.map (Λ H ≫ est R) ≫ h := by
@@ -135,8 +135,8 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
 public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : Q°° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+    (hQ : Q ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (greedy_dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
@@ -167,12 +167,14 @@ theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e 
     (I : InitialAlgebra (G.fixLeft e)) {h : G.obj e a ⟶ a} {T : G.obj e b ⟶ b} {R : a ⟶ a}
     {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R° ≫ R° ⊑ R°) (hUrefl : Cat.id e ⊑ U°)
     (hU : G.map U° R° ≫ h ⊑ h ≫ R°)
-    (hV : V°° ≫ ((relCata I T)° ≫ relCata I h) ⊑ ((relCata I T)° ≫ relCata I h) ≫ R°°) :
+    (hV : V ≫ ((relCata I T)° ≫ relCata I h) ⊑ ((relCata I T)° ≫ relCata I h) ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
       ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R := by
-  -- Prop 9.4(ii) at `U°`, `V°`; `hGr` folds `G(U°,V°)° = G(U,V)°°`, `greedy_dp`'s `hQ` shape.
-  have hQ := birelator_thin_condition hGr (H := (relCata I T)° ≫ relCata I h) hh hU hV
-  rw [hGr U V] at hQ
+  -- Prop 9.4(ii) needs `hV` at `V°`,`R°`; the involution restores it after `hGr` folds `G(U°,V°)°`.
+  have hV' : V°° ≫ ((relCata I T)° ≫ relCata I h) ⊑ ((relCata I T)° ≫ relCata I h) ≫ R°° := by
+    rw [Allegory.recip_recip, Allegory.recip_recip]; exact hV
+  have hQ := birelator_thin_condition hGr (H := (relCata I T)° ≫ relCata I h) hh hU hV'
+  rw [hGr U V, Allegory.recip_recip, Allegory.recip_recip] at hQ
   exact greedy_dp (F := G.fixLeft e) (Birelator.fixLeft_preservesRecip hGr e) I hh
     (birelator_fixLeft_mono hUrefl hU) htrans hQ
 
