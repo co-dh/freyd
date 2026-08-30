@@ -6,7 +6,7 @@
 
 == `P(S) min R=(∋S)∩(∈\(SR°))`
 
-// B&dM (7.9), `R` reflexive.  `⊑` is @min-710; `⊒` is the one place in §18 where a tabulation is
+// B&dM (7.9), `R` reflexive.  `⊑` is @est-710; `⊒` is the one place in §18 where a tabulation is
 // unavoidable — `y` below is the set the right-hand side only describes.
 #disp[#definition[
 `(p,q)` tabulates `W≜(∋S)∩(∈\(SR°))`, and #h(4pt) `y≜` $frac(#[`(p∋S)∩(qR)`], ∋)$, a map.
@@ -71,7 +71,7 @@
 #zline(
   zstep(op: sym.eq, under: true)[`P` a relator],
   zsqc(`P(Dom (min R))P(min R) min R`, none),
-  zstep(op: sym.subset.eq.sq, under: true)[@min-711],
+  zstep(op: sym.subset.eq.sq, under: true)[@est-711],
   zsqc(`P(Dom (min R)) union min R`, none),
 )
 ]<min-712>
@@ -89,7 +89,7 @@
   zsqc(`union min R`, `∋min R`),
 )
 #zline(
-  zstep(op: sym.arrow.l.double, under: true)[`T(U∩V)⊑TU∩TV`, `·∋⊣`$frac(#box(width: 8pt), ∋)$, @min-73],
+  zstep(op: sym.arrow.l.double, under: true)[`T(U∩V)⊑TU∩TV`, `·∋⊣`$frac(#box(width: 8pt), ∋)$, @est-73],
   zsqc(`(∋∋)∩(∈\(∈\R°))`, `∋min R`),
   zstep(op: sym.arrow.l.double, under: true)[modular law],
   zsqc(`∋(∋∩(∈(∈\(∈\R°))))`, `∋(∋∩(∈\R°))`, name: "counit of T·⊣T\\"),
