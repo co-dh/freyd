@@ -5147,20 +5147,46 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   if nm != none { hm-name((x - 0.30, ((if y0 == "top" { h } else { y0 })
     + (if y1 == "bot" { 0 } else { y1 })) / 2), nm) }
 }
-// `beads` are `(y, label)`, `(y, label, colour)` or `(y, label, colour, x)`: colour because wire
-// colour is the TYPE and bead colour is WHICH ARROW, `x` because a bead SPANS the wires it is not
-// `F(−)` of — `est(R)` is not `list` of anything, so its dot reaches the `list` wire by a bar.
-// `cert` is the author's certificate, the same discipline as a `lean:` marker: `expect` the row's
-// formula, `src`/`tgt` the stated endpoints, `branch` which case the panel draws, `alias` the
-// abbreviations the display's key list supplies.  `scripts/scanline` applies them; it cannot judge
-// them.  Emitted only — the drawing never reads it, so a certificate cannot move the ink.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
+// The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
+// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
+#let ddip(xo, h, x, y0, y1, ybs, nm) = {
+  let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
+  // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
+  // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
+  let ke = calc.min(dknee(x, xo, t - b), 0.60 * (t - ybs.first()))
+  let pts = if y0 == "top" { ((x, h),) } else { ((xo, t), (x, t - ke)) }
+  for (i, yb) in ybs.enumerate() {
+    // A dip may share its run with the next dip down, and then each gets under half of it.
+    let (hi, up) = if i == 0 { (t - ke, 0.85) } else { (ybs.at(i - 1), 0.42) }
+    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ke }, 0.85) }
+      else { (ybs.at(i + 1), 0.42) }
+    let kd = calc.min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
+    pts += ((x, yb + kd), (xo, yb), (x, yb - kd))
+  }
+  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ke), (xo, b)) }))
+  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
+}
+
+// `dip` names the bead heights whose span the WIRE makes, by `ddip`, rather than the bar; it is
+// empty by default, so a panel that does not ask for it draws exactly the ink it drew before.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, dip: (), cert: (:)) = {
   dpan(h, w, xo, {
-  for l in lanes { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
+  for l in lanes {
+    // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
+    // across the lanes between, and a wire that crossed the old bar would cross the arm instead.
+    let ys = beads.filter(bd => dip.contains(bd.at(0)) and bd.at(3, default: none) != none
+      and bd.at(3) <= l.at(0) and l.at(0) < xo
+      and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
+      and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
+    if ys == () { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
+    else { ddip(xo, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3)) }
+  }
   for b in beads {
     let xs = b.at(3, default: none)
     let c = b.at(2, default: black)
-    if xs != none { d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: c)) }
+    if xs != none and not dip.contains(b.at(0)) {
+      d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: c))
+    }
     hm-bead((xo, b.at(0)), b.at(1), col: c)
   }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
@@ -5415,14 +5441,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   ((DXE, 2.95, 1.00, EW, UNIT), (DXL, "top", 2.05, none, none),
    (DXL, 2.05, "bot", none, none)),
   ((2.05, [`party`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS,
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS, dip: (1.00,),
   cert: (expect: "party%∋ est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("party"),)))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 #let d-out2 = dpanel(3.9, DW, DXO,
   ((DXE, 3.25, 1.00, EW, UNIT), (DXL, "top", 2.55, none, none),
    (DXL, 2.55, "bot", none, none), (DXD, 2.55, 1.65, DELTA, none)),
   ((2.55, [`⦇S⦈`]), (1.65, [`choose`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (1.00,),
   // The ink spells the LOWER of the two rows: `E(⦇S⦈)` and `E(choose)` are two beads, and row 2's
   // `frc(⦇S⦈ choose)` is that one absorption step away.
   cert: (expect: "⦇S⦈%∋ E(choose) est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("⦇S⦈"),)))
@@ -5431,14 +5457,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DXL, 3.55, "bot", none, none), (DXD, 3.55, 1.35, DELTA, none)),
   ((3.55, [`⦇S⦈`]), (2.75, [`est((R×R)°)`], black, DXD), (1.35, [`choose`]),
    (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (2.75, 0.55),
   cert: (expect: "⦇S⦈%∋ est((R×R)°) choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
          alias: (DUN("⦇S⦈"), DUN("choose"))))
 #let d-out5 = dpanel(4.2, DW, DXO,
   ((DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.15, none, none),
    (DXL, 3.15, "bot", none, none), (DXD, 3.15, 1.35, DELTA, none)),
   ((3.15, [`⦇−⦈`]), (1.35, [`choose`]), (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (0.55,),
   // The first alias is what the `−` stands for: the body is the panel drawn under this one.
   cert: (expect: "⦇S%∋ est((R×R)°)⦈ choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
          alias: ("⦇S%∋ est((R×R)°)⦈ = ⦇−⦈", DUN("choose"))))
@@ -5452,7 +5478,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DID, 2.05, "bot", none, none), (DIl, 2.05, "bot", none, none)),
   ((2.05, [`S`]), (1.00, [`est((R×R)°)`], black, DID)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS,
+  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.00,),
   cert: (expect: "S%∋ est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]", alias: (DUN("S"),)))
 #let d-in6 = dpanel(3.6, DIW, DIO,
   ((DIE, 2.95, 1.00, EW, UNIT), (DIM, "top", 2.05, none, none), (DIL, "top", 2.05, none, none),
@@ -5460,7 +5486,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DIl, 2.05, "bot", none, none)),
   ((2.05, [`include`]), (1.00, [`est(R°)`], black, DIl)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS,
+  ((DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.00,),
   // The row states the whole fork; this panel and the next draw one branch each.
   cert: (expect: "include%∋ est(R°)", src: "A×[[A]×[A]]", tgt: "[A]", alias: (DUN("include"),)))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list, at `DIE2`: the transpose is taken
@@ -5470,7 +5496,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
    (DID, "top", 2.15, none, none), (DIl, "top", "bot", none, none)),
   ((3.75, [`π₂`]), (2.15, [`choose`]), (1.35, [`est(R°)`], black, DIl), (0.55, [`concat`])),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS,
+  ((DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.35,),
   cert: (expect: "π₂ list(choose%∋ est(R°)) concat", src: "A×[[A]×[A]]", tgt: "[A]",
          alias: (DUN("choose"),)))
 
