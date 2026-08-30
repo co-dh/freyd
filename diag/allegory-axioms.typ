@@ -2047,6 +2047,240 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 )
 ]<cata-map-calc>
 
+// The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
+// binds only below its line.  The step's relation sits at the LEFT EDGE of formula AND picture, so
+// both read as chains: `⊑`/`⊒` takes `SLACK` where the proof loses information, `=` stays grey.
+#let SQ = text(SLACK)[$subset.eq.sq$]
+#let RQ = text(SLACK)[$supset.eq.sq$]
+#let EQ = text(luma(140))[$=$]
+#let IFF = text(SLACK)[$arrow.l.r.double$]
+#let IMP = text(SLACK)[$arrow.l.double$]
+
+// The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
+// CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
+// PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
+// flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
+#let OPW = 10pt
+#let step(op, pic, f, pw: none) = layout(sz => {
+  let gut = 6pt
+  // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
+  let p = box(pic)
+  let lane = if pw == none { measure(p).width } else { pw }
+  if measure(f).width + lane + gut <= sz.width - OPW - gut {
+    grid(columns: (OPW, lane, 1fr), align: (left + horizon, left + horizon, right + horizon),
+      column-gutter: gut, op, p, f)
+  } else {
+    grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
+      op, stack(spacing: 5pt, p, align(right, f)))
+  }
+})
+#let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
+
+#let frc(n) = $frac(#n, ∋)$
+#let TH = 1.2   // a fraction box is two lines tall
+
+// A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
+// formula stack on one left edge — which `step`'s side-by-side branch cannot give.
+#let vstep(op, pic, f) = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
+  column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+
+// The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
+// `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
+// of the object wire, `𝟏` right of it.
+#let DKN = 0.45                                   // the handle's knee
+#let dpan(h, w, xa, body, s: 74%) = P(cetz.canvas(length: 0.8cm, {
+  d.rect((0, 0), (xa, h), fill: fb-ALLC, stroke: none)
+  d.rect((xa, 0), (w, h), fill: luma(226), stroke: none)
+  hm-wire(((xa, h), (xa, 0)), col: BCOL)
+  body
+}), s: s)
+// A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
+// is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
+#let dhandle(xa, xe, y0, y1, l, born: none) = {
+  if born == none { hm-wire(((xa, y0), (xe, y0 - DKN), (xe, y1 + DKN), (xa, y1))) } else {
+    hm-wire(((xe, y0), (xe, y1 + DKN), (xa, y1)))
+    hm-bead((xe, y0), born)
+  }
+  hm-name((xe - 0.32, (y0 + y1) / 2), l)
+}
+
+// The columns the wires stand in.  `F` is a relator, hence a WIRE; a reduce, an algebra and a
+// transpose are arrows, hence BEADS on the object wire.  `F(X)` costs no notation: it is the `X`
+// bead with the `F` wire running straight past it — that pass IS the relator's action.
+#let TXF = 0.60                                   // the `F` wire
+#let TXH = 1.20                                   // the `E` wire, inside `F`
+#let TXO = 1.95                                   // the object wire
+// §13.3.1's first right panel runs TWO `E` wires — 10.1a's unit and counit.  `𝟙%∋ : F(EA)⟶E(F(EA))`
+// births its one around the WHOLE object, so that one is outermost and the other three slide right.
+#let RXU = 0.55                                   // the `E` the unit opens, outside `F`
+#let RXF = 1.65                                   // the `F` wire
+#let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
+#let RXO = 2.85                                   // the object wire
+#let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
+  for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
+  for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
+  for (y, l) in beads { hm-bead((xo, y), l) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  hm-port((xo, 0), bot, dir: -1, col: BCOL)
+  if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
+}, s: 82%)
+// The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
+// room, so a long one — `⦇S⦈°\X` — cannot run out of the panel.
+#let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`]) = dpan(h, w, 0.55, {
+  hm-bead((0.55, y), l)
+  hm-port((0.55, h), top, col: BCOL); hm-port((0.55, 0), bot, dir: -1, col: BCOL)
+}, s: 82%)
+#let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
+
+// Otherwise the heading lands alone at the foot of the reduce-of-maps page.
+#pagebreak(weak: true)
+=== `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` <sec-mu>
+
+// B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,
+// and nothing before this said what it was.
+#disp[#definition[
+`φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`.
+
+`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X`.
+]]<mu-defn>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*what it says*]),
+
+  [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1, lean:AOP.A6_2.mu]],
+  [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
+   and every chapter after it uses],
+  [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1, lean:AOP.A6_2.mu_fixed]],
+  [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
+   point and the least fixed point are one relation],
+)]<mu-laws>
+
+=== `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` <sec-hylo>
+
+// §@sec-hylo's boxes.  `R` and `S` are algebras of RELATIONS, so they and their reduces are
+// chamfered; `α` and `α°` are maps — the initial algebra is invertible — so they are plain.
+#let hb-So = ([`S°`], 0.85, true)
+#let hb-R = ([`R`], 0.70, true)
+#let hb-X = ([`X`], 0.70, true)
+#let hb-al = ([`α`], 0.70, false)
+#let hb-alo = ([`α°`], 0.85, false)
+#let hb-cSo = ([`⦇S⦈°`], 1.55, true)
+#let hb-cR = ([`⦇R⦈`], 1.30, true)
+#let hb-W = ([`⦇S⦈°\X`], 2.30, true)
+#let hb-FcSR = ([`F(⦇S⦈°⦇R⦈)`], 3.10, true)
+#let hb-FcSo = ([`F(⦇S⦈°)`], 2.15, true)
+#let hb-FcR = ([`F(⦇R⦈)`], 1.90, true)
+#let hb-FX = ([`F(X)`], 1.30, true)
+#let hb-FW = ([`F(⦇S⦈°\X)`], 2.90, true)
+// A run of boxes between its source and target objects, and with `rhs` the run it is below: `gterm`
+// without the converse frame, which is the shape every row of both tables draws.
+#let hterm(items, a0, a1, rhs: none) = {
+  lab(-0.42, 0, black)[#a0]
+  boxrun(0, 0, items)
+  let xe = boxrun-w(items)
+  if rhs == none { lab(xe + 0.42, 0, black)[#a1] } else {
+    lab(xe + 0.95, 0, SLACK)[`⊑`]
+    boxrun(xe + 1.5, 0, rhs)
+    lab(xe + 1.5 + boxrun-w(rhs) + 0.42, 0, black)[#a1]
+  }
+}
+
+// B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
+// at the trailing algebra; every step shortens it, and by the last row it is gone.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
+    #src[Theorem 6.2, lean:AOP.A6_3.hylo_eq_mu; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
+    [`S°F(⦇S⦈°⦇R⦈)R` \ #src[the body at `⦇S⦈°⦇R⦈`]])],
+  [#tpan(4.2, ((3.6, [`S°`]), (2.1, [`⦇S⦈°⦇R⦈`]), (0.6, [`R`])),
+    hands: ((TXF, 3.6, 0.6, [`F`]),), top: ((TXO, [`B`]),), names: true, w: 4.8)],
+
+  [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-FcR, hb-R), [`B`], [`A`])),
+    [`S°F(⦇S⦈°)F(⦇R⦈)R` \ #src[`F(RS)=F(R)F(S)` — @relator-defn]])],
+  [#tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (1.2, [`⦇R⦈`]), (0.6, [`R`])),
+    hands: ((TXF, 3.6, 0.6, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+
+  [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-al, hb-cR), [`B`], [`A`])),
+    [`S°F(⦇S⦈°)α⦇R⦈` \ #src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]])],
+  [#tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (1.8, [`α`]), (1.2, [`⦇R⦈`])),
+    hands: ((TXF, 3.6, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+
+  [#vstep(EQ, mbp(hterm((hb-cSo, hb-alo, hb-al, hb-cR), [`B`], [`A`])),
+    [`⦇S⦈°α°α⦇R⦈` \ #src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
+     `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]])],
+  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (1.8, [`α`]), (1.2, [`⦇R⦈`])),
+    hands: ((TXF, 3.0, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+
+  [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
+    [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek — lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha]])],
+  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
+))]<hylo-fix>
+
+// B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
+// own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2, lean:AOP.A6_3.hylo_le_of_prefixed]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
+    [`⦇S⦈°⦇R⦈⊑X` \ #src[the conclusion]])],
+  [#trow(
+    tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
+  )],
+
+  [#vstep(IFF, mbp(hterm((hb-cR,), [`T`], [`A`], rhs: (hb-W,))),
+    [`⦇R⦈⊑⦇S⦈°\X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
+  [#trow(
+    tpan(4.2, ((1.2, [`⦇R⦈`]),), top: ((TXO, [`T`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
+  )],
+
+  [#vstep(IMP, mbp(hterm((hb-alo, hb-FW, hb-R), [`T`], [`A`], rhs: (hb-W,))),
+    [`α°F(⦇S⦈°\X)R⊑⦇S⦈°\X` \ #src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
+     lean:AOP.A6_2.relCata_le_of_prefixed]])],
+  [#trow(
+    tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+      hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
+  )],
+
+  [#vstep(IFF, mbp(hterm((hb-cSo, hb-alo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
+    [`⦇S⦈°α°F(⦇S⦈°\X)R⊑X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
+  [#trow(
+    tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+      hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
+  )],
+
+  [#vstep(IFF, mbp(hterm((hb-So, hb-FcSo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
+    [`S°F(⦇S⦈°)F(⦇S⦈°\X)R⊑X` \ #src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]])],
+  [#trow(
+    tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+      hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
+  )],
+
+  [#vstep(IMP, mbp(hterm((hb-So, hb-FX, hb-R), [`B`], [`A`], rhs: (hb-X,))),
+    [`S°F(X)R⊑X` \ #src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]])],
+  [#trow(
+    tpan(4.2, ((3.6, [`S°`]), (2.1, [`X`]), (1.2, [`R`])),
+      hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
+  )],
+))]<hylo-least>
+
 #pagebreak(weak: true)
 = Combinatorial functions <sec-comb>
 
@@ -2905,40 +3139,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ),
 ))]<dist-str>
 
-// The step-table helpers, hoisted above §@sec-mon-thm71, the first section that uses them: a Typst `#let`
-// binds only below its line.  The step's relation sits at the LEFT EDGE of formula AND picture, so
-// both read as chains: `⊑`/`⊒` takes `SLACK` where the proof loses information, `=` stays grey.
-#let SQ = text(SLACK)[$subset.eq.sq$]
-#let RQ = text(SLACK)[$supset.eq.sq$]
-#let EQ = text(luma(140))[$=$]
-
-// The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
-// CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
-// PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
-// flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
-#let OPW = 10pt
-#let step(op, pic, f, pw: none) = layout(sz => {
-  let gut = 6pt
-  // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
-  let p = box(pic)
-  let lane = if pw == none { measure(p).width } else { pw }
-  if measure(f).width + lane + gut <= sz.width - OPW - gut {
-    grid(columns: (OPW, lane, 1fr), align: (left + horizon, left + horizon, right + horizon),
-      column-gutter: gut, op, p, f)
-  } else {
-    grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
-      op, stack(spacing: 5pt, p, align(right, f)))
-  }
-})
-
-#let frc(n) = $frac(#n, ∋)$
-#let TH = 1.2   // a fraction box is two lines tall
-
-// A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
-// formula stack on one left edge — which `step`'s side-by-side branch cannot give.
-#let vstep(op, pic, f) = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
-  column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
-
 // ---- Theorem 7.1's own drawing vocabulary.  A converse is the cup–cap FRAME of @conv-defn, so
 // `f°Xf` is `f` bumped up over `X`; what the chain does is shrink that frame from `(F(∋)f)°` to `f°`.
 #let convrun(x, y, items, rise: 1.9) = {
@@ -2959,55 +3159,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
 }
 
-// The panel every Hinze–Marsden column in this note draws — `tw-hm`, `party-hm`, §13.4.4's two —
-// hoisted here because §13.3.1 is now the first to use it.  A wire is a FUNCTOR, a bead an arrow, a
-// region a category: `Rel` left of the object wire, `𝟏` right of it.
-#let DKN = 0.45                                   // the handle's knee
-#let dpan(h, w, xa, body, s: 74%) = P(cetz.canvas(length: 0.8cm, {
-  d.rect((0, 0), (xa, h), fill: fb-ALLC, stroke: none)
-  d.rect((xa, 0), (w, h), fill: luma(226), stroke: none)
-  hm-wire(((xa, h), (xa, 0)), col: BCOL)
-  body
-}), s: s)
-// A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
-// is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
-#let dhandle(xa, xe, y0, y1, l, born: none) = {
-  if born == none { hm-wire(((xa, y0), (xe, y0 - DKN), (xe, y1 + DKN), (xa, y1))) } else {
-    hm-wire(((xe, y0), (xe, y1 + DKN), (xa, y1)))
-    hm-bead((xe, y0), born)
-  }
-  hm-name((xe - 0.32, (y0 + y1) / 2), l)
-}
-
-// §13.3.1's panels.  `F` is a relator, hence a WIRE; `est(R)`, `f`, `f°` and the transpose are
-// arrows, hence BEADS on the object wire.  `F(est(R))` costs no notation: it is the `est(R)` bead
-// with the `F` wire running straight past it — that pass IS the relator's action.  `f : F(A)⟶A` is
-// where the `F` wire ends on the object wire, and `f°` is where it starts.
-// `F(EA)` IS THREE WIRES, `F`, `E` and the object: the source of rows 1 and 3 opens with all three.
-#let TXF = 0.60                                   // the `F` wire
-#let TXH = 1.20                                   // the `E` wire, inside `F`
-#let TXO = 1.95                                   // the object wire
-// Row 1's right panel runs TWO `E` wires — 10.1a's unit and counit.  `𝟙%∋ : F(EA)⟶E(F(EA))` births
-// its one around the WHOLE object, so that one is outermost and the other three wires slide right.
-#let RXU = 0.55                                   // the `E` the unit opens, outside `F`
-#let RXF = 1.65                                   // the `F` wire
-#let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
-#let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO) = dpan(h, w, xo, {
-  for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
-  for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
-  for (y, l) in beads { hm-bead((xo, y), l) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
-  hm-port((xo, 0), bot, dir: -1, col: BCOL)
-  if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
-}, s: 82%)
-// The right-hand side of every row but the first is the single relation the chain is bounded by.
-#let tpanR(h, y, l) = dpan(h, 1.9, 0.55, {
-  hm-bead((0.55, y), l)
-  hm-port((0.55, h), [`A`], col: BCOL); hm-port((0.55, 0), [`A`], dir: -1, col: BCOL)
-}, s: 82%)
-#let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
-
 // B&dM Theorem 7.1, p. 172.  The note's `est(R)` is B&dM's `min(R°)` — the two conventions read
 // `x R y` from opposite ends — so the mirrored chain lands on `R°`, and the last step, `f` a map,
 // is what carries it back.
@@ -3021,8 +3172,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let mb-FR = ([`F(R)`], 1.3, true)
 #let mb-Ro = ([`R°`], 0.8, true)
 #let mb-R = ([`R`], 0.7, true)
-#let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
-#let IFF = text(SLACK)[$arrow.l.r.double$]
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
 #disp[#pad(right: 10pt, table(
@@ -3045,7 +3194,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[def. `f` distributes over `R` — @dist-defn, @adj-E-bend]])],
   [#trow(
     tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
-      top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), names: true, w: 3.8),
+      top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
     tpan(4.2, ((2.45, [`∋`]), (1.55, [`f`]), (0.65, [`est(R)`])),
       hands: ((RXU, 3.40, 0.65, [`E`], frc([`𝟙`])),),
       joins: ((RXC, 2.45, 0.35), (RXF, 1.55, 0.65)),
@@ -3117,7 +3266,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
-#let IMP = text(SLACK)[$arrow.l.double$]
 // `mconj` with the `⊑` optional, so rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
@@ -3165,7 +3313,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-est), rhs: (mb-Ro,))),
     [`S°F(R°)(`#frc([`S`])` est(R))⊑R°` \
-     #src[the right conjunct; the hylomorphism theorem #h(4pt) #src[Theorem 6.2] #h(4pt) makes
+     #src[the right conjunct; the hylomorphism theorem #h(4pt) #src[Theorem 6.2, @hylo-fix] #h(4pt) makes
       `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` the least `X` with `X=S°F(X)(`#frc([`S`])` est(R))`, so
       Knaster–Tarski leaves this one inequation]])],
   // `S°` births the `F` wire and `S%∋` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
@@ -5309,8 +5457,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #disp[#definition[
 `h : FB⟶B` a map, #h(4pt) `T : FA⟶A` an F-algebra, #h(4pt) `R : B⟶B`.
 
-`H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` the
-least fixed point of `G`.
+`H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` as
+in @mu-defn.
 ]]<dp-defn>
 
 #disp[#table(
