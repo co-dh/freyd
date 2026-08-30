@@ -4701,32 +4701,65 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // that drifts — both times this one changed, it had to change in every cell.
 #let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 90%)
 
+// A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
+// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
+// GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
+#let dknee(x, xo) = 0.45 + 0.25 * (xo - x)
+#let dlane(xo, h, x, y0, y1, nm, un) = {
+  let k = dknee(x, xo)
+  let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
+    ((xo, y0), (x, y0 - k))
+  }
+  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + k), (xo, y1)) }
+  hm-wire(pts)
+  if un != none { hm-bead((x, y0), un) }
+  if nm != none { hm-name((x - 0.30, ((if y0 == "top" { h } else { y0 })
+    + (if y1 == "bot" { 0 } else { y1 })) / 2), nm) }
+}
+// `beads` are `(y, label)`, `(y, label, colour)` or `(y, label, colour, x)`: colour because wire
+// colour is the TYPE and bead colour is WHICH ARROW, `x` because a bead SPANS the wires it is not
+// `F(−)` of — `est(R)` is not `list` of anything, so its dot reaches the `list` wire by a bar.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%) = dpan(h, w, xo, {
+  for l in lanes { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
+  for b in beads {
+    let xs = b.at(3, default: none)
+    if xs != none { d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: black)) }
+    hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black))
+  }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+  if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
+}, s: s)
+#let TREE = [`tree`]
+#let LIST = [`list`]
+#let DELTA = [`Δ`]
+#let OBJ = [`A`]
+#let EW = [`E`]
+#let UNIT = frc([`𝟙`])
+
 // Only the three `⊑` steps are rows: the five `=` steps are `F(RS)=F(R)F(S)`, `(R×S)(U×V)=(RU)×(SV)`
 // and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
 // HINZE–MARSDEN (IntroString.pdf §1.4.2): a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.
 // `Δ` = the relator `X↦X×X` (the diagonal `X↦(X,X)`, then `×`): a FUNCTOR, not the copy relation `◁ : A⟶A⊗A`.
-#let HMX = (0.55, 1.70, 2.85, 4.00)                     // `A×−`, `list`, `Δ`, `[A]`
+// SUGAR UNDONE, at the ends too: `[A]` is the `list` wire beside the `A` wire.  The list a party is
+// runs the whole height; `Δ`, the subtrees' `list` and `A×−` are the three the branch eats.
+#let PXM = 0.55                  // `A×−`, the root employee
+#let PXLo = 1.70                 // `list`, the subtrees
+#let PXD = 2.85                  // `Δ`, the pair one subtree returns
+#let PXLi = 4.00                 // `list`, inside one party
+#let PXO = 5.15                  // the object wire, `A`
 #let HMY = (0.55, 1.23, 1.91, 2.59, 3.27, 3.95, 4.63)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
-#let HMW = 6.0
 #let HMH = 5.2
-// Wire colour is the TYPE, bead colour is WHICH ARROW: only `[A]` carries a type, and `R°` is the
-// arrow the theorem is handed, so it alone leaves the structure maps' black.
-#let party-hm(rs) = P(cetz.canvas(length: 0.8cm, {
-  let (XM, XL, XD, XA) = HMX
+#let party-hm(rs) = {
   let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
-  d.rect((0, 0), (XA, HMH), fill: fb-ALLC, stroke: none)
-  d.rect((XA, 0), (HMW, HMH), fill: luma(226), stroke: none)
-  hm-wire(((XA, HMH), (XA, 0)), col: BCOL)
-  // The knee grows with the run, so the three joins meet the straight `[A]` at one angle.
-  hm-join(XD, HMH, XA, YP, knee: 0.5)
-  hm-join(XL, HMH, XA, YC, knee: 0.9)
-  hm-join(XM, HMH, XA, YN, knee: 1.2)
-  hm-bead((XA, YP), [`g`]); hm-bead((XA, YC), [`concat`]); hm-bead((XA, YN), [`h`])
-  hm-bead((XA, (Y0, Y1, Y2, Y3).at(rs)), [`R°`], col: GIVEN1)
-  hm-port((XM, HMH), [`A×−`]); hm-port((XL, HMH), [`list`]); hm-port((XD, HMH), [`Δ`])
-  hm-port((XA, HMH), [`[A]`], col: BCOL); hm-port((XA, 0), [`[A]`], dir: -1, col: BCOL)
-  if rs == 0 { hm-name((2.0, 0.55), [`Rel`]); hm-name((5.0, 0.55), [`𝟏`]) }
-}), s: 90%)
+  dpanel(HMH, PXO + 2.85, PXO,
+    ((PXM, "top", YN, none, none), (PXLo, "top", YC, none, none), (PXD, "top", YP, none, none),
+     (PXLi, "top", "bot", none, none)),
+    ((YP, [`g`]), (YC, [`concat`]), (YN, [`h`]),
+     ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1, PXLi)),
+    ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXLi, LIST), (PXO, OBJ)),
+    ((PXLi, LIST), (PXO, OBJ)), names: rs == 0)
+}
 
 #let step = step.with(pw: 319pt)
 #disp[#table(
@@ -4741,7 +4774,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     [`(𝟙×list((R×R)°))S`], SQ, [`S(R×R)°`],
     [`(𝟙×list((R×R)°))include`], SQ, [`include R°`],
     [`(𝟙×list((R×R)°))exclude`], SQ, [`exclude R°`],
-  ))],
+  ))
+  #src[bettering both parties of every subtree before the node's algebra runs gets no further than
+   running it first and bettering the two parties it returns]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#step([])[#party-pic(tallpic((box-lrro, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
@@ -4892,98 +4927,138 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let LBW7 = 0.9 + boxrun-w((lb-lcm, lb-cc)) + 0.6
 
 // ---- The two Hinze-Marsden panels: what surrounds the `⦇ ⦈`, and what sits inside it.  A wire is
-// a FUNCTOR and a bead an arrow, as @takewhile-alg's second column.  `E` is the power relator,
-// OPENED by a transpose and CLOSED by an `est` — the counit `E⇒Id` — so a bead drawn inside an open
-// handle is that arrow under `E`, which is how `E(choose)` is one bead and not two.
-#let DXH = 0.90                  // the handle, outside
-#let DXO = 2.05                  // the object wire, outside
-#let DIM = 0.45                  // `A×−`, inside
-#let DIL = 1.55                  // `list`, inside
-#let DIH = 2.15                  // the handle, inside
-#let DIO = 3.30                  // the object wire, inside
-// The LEFTMOST wire takes the SMALLEST knee: it turns last, so two wires landing on one bead run
-// side by side instead of crossing.
-#let DKM = 0.50
-#let DKL = 1.35
-#let dout(h, beads, arcs, top, bot, names: false) = dpan(h, 4.9, DXO, {
-  for (y0, y1) in arcs { dhandle(DXO, DXH, y0, y1, [`E`]) }
-  for (y, l) in beads { hm-bead((DXO, y), l) }
-  hm-port((DXO, h), top, col: BCOL); hm-port((DXO, 0), bot, dir: -1, col: BCOL)
-  if names { hm-name((1.45, 0.35), [`Rel`]); hm-name((3.6, 0.35), [`𝟏`]) }
-})
-#let din(h, beads, arcs, joins, top, bot) = dpan(h, 6.6, DIO, {
-  for (x, y, k) in joins { hm-join(x, h, DIO, y, knee: k) }
-  for (y0, y1) in arcs { dhandle(DIO, DIH, y0, y1, [`E`]) }
-  for (y, l) in beads { hm-bead((DIO, y), l) }
-  hm-port((DIM, h), [`A×−`]); hm-port((DIL, h), [`list`])
-  hm-port((DIO, h), top, col: BCOL); hm-port((DIO, 0), bot, dir: -1, col: BCOL)
-})
+// a FUNCTOR and a bead an arrow, so SUGAR IS UNDONE BEFORE DRAWING and at the ends too: `[A]` is the
+// `list` wire beside the `A` wire, `tree A` the `tree` wire beside it, `[A]×[A]` the relator `Δ`
+// (`X↦X×X`) over both.  One lane then carries `tree` above the bead that eats it and `list` below.
+// The transpose is split, #frc([`R`])`=`#frc([`𝟙`])`E(R)` (@adj-E-bend): the singleton OPENS the `E`
+// wire — a bead of its own, off the object wire — and an `est` CLOSES it.  So `E(choose)` is the
+// `choose` bead with `E` running past, and `party`'s absorption step is one picture drawn twice.
+// The lanes, outermost functor LEFTMOST: the composite reads across applicatively, `𝟏` at the right.
+// Two of these panels stack in ONE cell from the greedy step on, and the seven rows are a page
+// exactly: this is the scale that buys the last row its reason line.
+#let DS = 70%
+#let DXE = 0.55                  // `E`, outside everything
+#let DXD = 1.70                  // `Δ`, born at the fold and eaten by `choose`
+#let DXL = 2.85                  // `tree` down to the bead that eats it, `list` from there on
+#let DXO = 4.00                  // the object wire, `A`
+#let DW = DXO + 2.85
+#let DIE = 0.55                  // `E`, when the transpose is applied OUTSIDE the list ...
+#let DIM = 1.70                  // `A×−`, the base functor's own factor
+#let DIL = 2.85                  // `list`, the algebra's argument
+#let DIE2 = 4.00                 // ... and `E` again, when it is applied to each ELEMENT
+#let DID = 5.15                  // `Δ`
+#let DIl = 6.30                  // `list`, inside the pair
+#let DIO = 7.45                  // the object wire, `A`
+#let DIW = DIO + 2.85
 
 // The panel pair a row shows.  `none` is a panel the row above already drew — the outside is fixed
 // from the greedy step on, and the inside does not exist before it.
 #let dcell(o, i) = align(center, stack(spacing: 5pt, ..(o, i).filter(x => x != none)))
 
-#let TREEA = [`tree A`]
-#let PAIRA = [`[A]×[A]`]
-#let LA = [`[A]`]
-#let d-out1 = dout(3.2, ((2.25, frc([`party`])), (0.95, [`est(R°)`])), ((2.25, 0.95),),
-  TREEA, LA, names: true)
-#let d-out2 = dout(3.2, ((2.25, frc([`⦇S⦈ choose`])), (0.95, [`est(R°)`])), ((2.25, 0.95),),
-  TREEA, LA)
-#let d-out3 = dout(3.5, ((2.55, frc([`⦇S⦈`])), (1.75, [`choose`]), (0.95, [`est(R°)`])),
-  ((2.55, 0.95),), TREEA, LA)
-#let d-out4 = dout(4.3, ((3.45, frc([`⦇S⦈`])), (2.55, [`est((R×R)°)`]), (1.65, frc([`choose`])),
-  (0.75, [`est(R°)`])), ((3.45, 2.55), (1.65, 0.75)), TREEA, LA)
-#let d-out5 = dout(3.5, ((2.70, [`⦇−⦈`]), (1.65, frc([`choose`])), (0.75, [`est(R°)`])),
-  ((1.65, 0.75),), TREEA, LA)
+// `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
+// bead that eats the `tree` wire, and where the `E` it opens is closed.
+#let d-out1 = dpanel(3.6, DW, DXO,
+  ((DXE, 2.95, 1.00, EW, UNIT), (DXL, "top", 2.05, none, none),
+   (DXL, 2.05, "bot", none, none)),
+  ((2.05, [`party`]), (1.00, [`est(R°)`], black, DXL)),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS)
+// Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
+#let d-out2 = dpanel(3.9, DW, DXO,
+  ((DXE, 3.25, 1.00, EW, UNIT), (DXL, "top", 2.55, none, none),
+   (DXL, 2.55, "bot", none, none), (DXD, 2.55, 1.65, DELTA, none)),
+  ((2.55, [`⦇S⦈`]), (1.65, [`choose`]), (1.00, [`est(R°)`], black, DXL)),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
+#let d-out4 = dpanel(5.0, DW, DXO,
+  ((DXE, 4.25, 2.75, EW, UNIT), (DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.55, none, none),
+   (DXL, 3.55, "bot", none, none), (DXD, 3.55, 1.35, DELTA, none)),
+  ((3.55, [`⦇S⦈`]), (2.75, [`est((R×R)°)`], black, DXD), (1.35, [`choose`]),
+   (0.55, [`est(R°)`], black, DXL)),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
+#let d-out5 = dpanel(4.2, DW, DXO,
+  ((DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.15, none, none),
+   (DXL, 3.15, "bot", none, none), (DXD, 3.15, 1.35, DELTA, none)),
+  ((3.15, [`⦇−⦈`]), (1.35, [`choose`]), (0.55, [`est(R°)`], black, DXL)),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS)
 
-#let d-in5 = din(3.4, ((1.95, frc([`S`])), (0.85, [`est((R×R)°)`])), ((1.95, 0.85),),
-  ((DIM, 1.95, DKM), (DIL, 1.95, DKL)), PAIRA, PAIRA)
-#let d-in6 = din(3.4, ((1.95, frc([`include`])), (0.85, [`est(R°)`])), ((1.95, 0.85),),
-  ((DIM, 1.95, DKM), (DIL, 1.95, DKL)), PAIRA, LA)
-#let d-in7 = din(3.9, ((3.00, frc([`choose`])), (2.35, [`est(R°)`]), (1.30, [`concat`]),
-  (0.55, [`π₂`])), ((3.00, 2.35),), ((DIM, 0.55, DKM), (DIL, 1.30, DKL)), PAIRA, LA)
+// Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
+// algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
+// returns — so all four strands land on its bead and the two it returns are born there.
+#let d-in5 = dpanel(3.6, DIW, DIO,
+  ((DIE, 2.95, 1.00, EW, UNIT), (DIM, "top", 2.05, none, none), (DIL, "top", 2.05, none, none),
+   (DID, "top", 2.05, none, none), (DIl, "top", 2.05, none, none),
+   (DID, 2.05, "bot", none, none), (DIl, 2.05, "bot", none, none)),
+  ((2.05, [`S`]), (1.00, [`est((R×R)°)`], black, DID)),
+  ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
+  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS)
+#let d-in6 = dpanel(3.6, DIW, DIO,
+  ((DIE, 2.95, 1.00, EW, UNIT), (DIM, "top", 2.05, none, none), (DIL, "top", 2.05, none, none),
+   (DID, "top", 2.05, none, none), (DIl, "top", 2.05, none, none),
+   (DIl, 2.05, "bot", none, none)),
+  ((2.05, [`include`]), (1.00, [`est(R°)`], black, DIl)),
+  ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
+  ((DIl, LIST), (DIO, OBJ)), s: DS)
+// `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list, at `DIE2`: the transpose is taken
+// once per element, and `concat` is what finally eats the list the elements sat in.
+#let d-in7 = dpanel(4.6, DIW, DIO,
+  ((DIM, "top", 3.75, none, none), (DIL, "top", 0.55, none, none), (DIE2, 2.95, 1.35, EW, UNIT),
+   (DID, "top", 2.15, none, none), (DIl, "top", "bot", none, none)),
+  ((3.75, [`π₂`]), (2.15, [`choose`]), (1.35, [`est(R°)`], black, DIl), (0.55, [`concat`])),
+  ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
+  ((DIl, LIST), (DIO, OBJ)), s: DS)
 
-#let laws-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 76%)
+// Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
+// seven rows are a page exactly — the scale below is what those two insets bought.
+#let laws-pic(body) = align(center, box(inset: (y: 1pt),
+  scale(x: 84%, y: 84%, reflow: true, cetz.canvas(length: 0.8cm, body))))
 
-#let step = step.with(pw: 300pt)
+// The reason rides UNDER the formula, in the picture's own column: a column of its own cost the
+// circuits 3.8cm, and the two laws that would not fit it are now written out in full.  `vstep`, not
+// `step`: a cell whose height `layout` decides is measured on the branch it does not draw, and the
+// third line then lands under the row's rule.
 #disp[#table(
-  columns: (1fr, 4.0cm, 3.8cm),
-  align: (center + horizon, center + horizon, left + horizon),
-  inset: (x: 8pt, y: 1pt), stroke: 0.4pt + luma(190),
-  Thm(cols: 3)[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)`],
-  table.header([*formula* — one wire, `tree A` to `[A]`; the pair `[A]×[A]` is where it runs as two],
-    [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch],
-    [*reason*]),
+  columns: (1fr, 6.6cm),
+  align: (left + horizon, center + horizon),
+  // `y: 2pt`, tighter than the note's usual 3pt: the seven rows are a page exactly.
+  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
+    #src[the best of every guest list the president allows is one pass up the tree, each subtree
+     handing up its best party with its boss in and its best with the boss out, and `choose` taking
+     the better of the two at the root]],
+  table.header([*circuit*],
+    [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch]),
 
-  [#step([])[#laws-pic(lrun(((frc([`party`]), 1.7, false), lb-est)))][#frc([`party`])` est(R°)`]],
-  [#dcell(d-out1, none)], [],
+  [#vstep([], laws-pic(lrun(((frc([`party`]), 1.7, false), lb-est))),
+    [#frc([`party`])` est(R°)` \ #src[the specification — @party-defn]])],
+  [#dcell(d-out1, none)],
 
-  [#step(EQ)[#laws-pic(lrun(((frc([`⦇S⦈ choose`]), 3.0, false), lb-est)))][#frc([`⦇S⦈ choose`])` est(R°)`]],
-  [#dcell(d-out2, none)], [def. `party`],
+  [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈ choose`]), 3.0, false), lb-est))),
+    [#frc([`⦇S⦈ choose`])` est(R°)` \ #src[`party≜⦇S⦈ choose` — @party-defn]])],
+  [#dcell(d-out2, none)],
 
-  [#step(EQ)[#laws-pic(lrun(((frc([`⦇S⦈`]), 1.3, false), ([`E(choose)`], 2.7, true), lb-est)))][#frc([`⦇S⦈`])` E(choose) est(R°)`]],
-  [#dcell(d-out3, none)], [@pow-laws, absorption],
+  [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈`]), 1.3, false), ([`E(choose)`], 2.7, true), lb-est))),
+    [#frc([`⦇S⦈`])` E(choose) est(R°)` \
+     #src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]])],
+  [#dcell(d-out2, none)],
 
-  [#step(RQ)[#laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),)))][#frc([`⦇S⦈`])` est((R×R)°) `#frc([`choose`])` est(R°)`]],
+  [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
+    [#frc([`⦇S⦈`])` est((R×R)°) `#frc([`choose`])` est(R°)` \
+     #src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row]])],
   [#dcell(d-out4, none)],
-  // `(R×R)°choose⊑choose` is one unbreakable run wider than the 3.8cm reason column; it was already
-  // crossing that column's right rule before the `°` moved onto this side.
-  [Ex 7.38 at `choose`, `R°` #h(4pt) #src[@party-mono-branch's `g` row]],
 
-  [#step(RQ)[#laws-pic(lfold(1.18, LBW5, LSP, lbody5))][`⦇`#frc([`S`])` est((R×R)°)⦈ `#frc([`choose`])` est(R°)`]],
+  [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
+    [`⦇`#frc([`S`])` est((R×R)°)⦈ `#frc([`choose`])` est(R°)` \
+     #src[`(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono]])],
   [#dcell(d-out5, d-in5)],
-  // Spelled out, the hypothesis is one unbreakable run wider than the 3.8cm reason column, and the
-  // display named here states it exactly.
-  [Theorem 7.2 at `(R×R)°` #h(4pt) #src[@party-mono]],
 
-  [#step(RQ)[#laws-pic(lfold(2.05, LBW6, LBY, lbody6))][`⦇⟨`#frc([`include`])` est(R°),` \ #h(1em)#frc([`exclude`])` est(R°)⟩⦈ `#frc([`choose`])` est(R°)`]],
+  [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
+    [`⦇⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⦈ `#frc([`choose`])` est(R°)` \
+     #src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15]])],
   [#dcell(none, d-in6)],
-  [Ex 7.15, the fork splits],
 
-  [#step(RQ)[#laws-pic(lfold(2.05, LBW7, LBY, lbody7))][`⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈` \ #h(1em)#frc([`choose`])` est(R°)`]],
+  [#vstep(RQ, laws-pic(lfold(2.05, LBW7, LBY, lbody7)),
+    [`⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
+     #src[`include` a map, `est(R°)` into each branch]])],
   [#dcell(none, d-in7)],
-  [`include` a map, `est(R°)` into each branch],
 )]<party-laws>
 
 // MARSDEN'S calculus (arXiv:1401.7220), not this note's: `Rel` as a BICATEGORY, so a region is a type,
@@ -5499,35 +5574,134 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [A schedule with the fewest secure segments.],
 )]<van-defn>
 
-#disp[
-#zline(
-  zsqc([$frac(#[`partition list(secure)`], ∋)$ `est(R)`], none),
-  zstep(op: sym.eq, under: true)[@cata-fusion, `secure prefix⊑prefix secure`],
-  zsqc([$frac(#[`⦇S⦈`], ∋)$ `est(R)`], none),
-  zstep(op: sym.supset.eq.sq, under: true)[(7.14) holds, (7.15) FALSE; `R;H⊑R`],
-  zsqc([$frac(#[`⦇S⦈`], ∋)$ `est(R;H)`], none),
-)
-#zline(
-  zstep(op: sym.supset.eq.sq, under: true)[Theorem 7.2, `S` monotonic on `R;H` by (7.16) and (7.17)],
-  zsqc([`⦇`$frac(#[`S`], ∋)$ `est(R;H)⦈`], none),
-  zstep(op: sym.supset.eq.sq, under: true)[`old⊑new (R;H)°`],
-  zsqc([`⦇[nil,(ok→glue,new)]⦈`], none),
-)
-#zline(
-  zsqc([`(𝟙×(R;H)) old`], none),
-  zstep(op: sym.eq, under: true)[`R;H=|R|∪(R∩H)`, `∪` distributes],
-  zsqc([`(𝟙×|R|) old∪(𝟙×(R∩H)) old`], none),
-  zstep(op: sym.subset.eq.sq, under: true)[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`],
-  zsqc([`new (R∩H)∪old (R∩H)`], none),
-)
-#zline(
-  zstep(op: sym.subset.eq.sq, under: true)[`X∩Y⊑X;Y`, converses],
-  zsqc([`(new∪old)(R;H)`], none),
-)
-#align(center, block(inset: (y: 4pt))[#src[(7.15) `(𝟙×R) old⊑(new∪old)R` is FALSE — the shorter
-  partition need not stay secure — and that is what refining `R` to `R;H` buys; the second chain is
-  (7.17), and (7.16) rests the same way on (7.18) `(𝟙×⊤) new⊑new H`.]])
-]<van-laws>
+// B&dM §7.5, pp. 186–188: the specification down to the program.  ONE WIRE, `[Int]` to `[[Int]]`:
+// nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
+// fraction is a map (@pow-laws), hence a square box; `est` and the folds that carry one are the
+// chain's relations, hence chamfered.
+#let vb-spec = (frc([`partition list(secure)`]), 7.6, false)
+#let vb-LS = (frc([`⦇S⦈`]), 1.5, false)
+#let vb-estR = ([`est(R)`], 2.0, true)
+#let vb-estRH = ([`est(R;H)`], 2.6, true)
+#let vb-greedy = ([`⦇`#frc([`S`])` est(R;H)⦈`], 4.0, true)
+#let vb-prog = ([`⦇[nil,(ok→glue,new)]⦈`], 6.2, false)
+#let van-line(items) = {
+  lab(-0.82, 0, black)[`[Int]`]; boxrun(0, 0, items, h: TH)
+  lab(boxrun-w(items) + 1.05, 0, black)[`[[Int]]`]
+}
+#let van-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
+
+// The same lanes as §13.4.4's panels, at this section's types: `[[Int]]` is TWO `list` wires beside
+// the `Int` one, and the outer `list` is born where the partition is.  A bead whose source and target
+// differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
+// so every strand lands on it and the ones it returns are born there.
+#let VXE = 0.55                  // `E`, opened by the singleton and closed by an `est`
+#let VXLo = 1.70                 // `list`, the segments
+#let VXLi = 2.85                 // `list`, the transactions in one segment
+#let VXO = 4.00                  // the object wire, `Int`
+#let VXW = VXO + 2.85
+#let INT = [`Int`]
+#let van-top = ((VXLi, LIST), (VXO, INT))
+#let van-bot = ((VXLo, LIST), (VXLi, LIST), (VXO, INT))
+#let v-hm1 = dpanel(4.0, VXW, VXO,
+  ((VXE, 3.30, 0.95, EW, UNIT), (VXLi, "top", 2.60, none, none),
+   (VXLo, 2.60, "bot", none, none), (VXLi, 2.60, "bot", none, none)),
+  ((2.60, [`partition`]), (1.85, [`secure`], black, VXLi), (0.95, [`est(R)`], black, VXLo)),
+  van-top, van-bot, names: true)
+#let van-fold(h, y, l, e) = dpanel(h, VXW, VXO,
+  (((VXE, 3.30, 0.95, EW, UNIT),) * (if e == none { 0 } else { 1 })
+   + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
+  ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
+
+// `(𝟙×X)old` and `old X`: the transaction runs straight past the box on the list wire — that pass is
+// the `𝟙×` — and `old` spans the pair.  A PRODUCT IS TWO WIRES.
+#let vb-RH = ([`R;H`], 1.65, true)
+#let vb-sR = ([`|R|`], 1.4, true)
+#let vb-RH2 = ([`R∩H`], 1.85, true)
+#let van-old(pre, post) = {
+  let y = 0.62
+  let w = boxrun-w(pre)
+  lab(-0.62, y, black)[`Int`]; lab(-1.15, -y, black)[`[[Int]]`]
+  wire((0, y), (w, y))
+  boxrun(0, -y, pre)
+  gbox((w, 0), [`old`], w: 1.35, h: 2 * y + 0.42)
+  boxrun(w + 1.35, 0, post)
+  lab(w + 1.35 + boxrun-w(post) + 1.05, 0, black)[`[[Int]]`]
+}
+// `Int×−` is a wider name than `list`, so its lane keeps a wider gap: the port labels are written at
+// the panel's top edge and two of them touching read as one name.
+#let VMM = 0.55                  // `Int×−`, the base functor's own factor
+#let VMLo = 2.10
+#let VMLi = 3.25
+#let VMO = 4.40
+// `old` holds ONE height in all four panels and the wires land on it the same way: what moves is the
+// relation, from above the algebra to below it, which is the whole of (7.17).
+#let van-mono-hm(l, above) = dpanel(3.8, VMO + 2.85, VMO,
+  ((VMM, "top", 1.95, none, none), (VMLo, "top", 1.95, none, none), (VMLi, "top", 1.95, none, none),
+   (VMLo, 1.95, "bot", none, none), (VMLi, 1.95, "bot", none, none)),
+  ((1.95, [`old`]), (if above { 2.85 } else { 1.05 }, l, black, VMLo)),
+  ((VMM, [`Int×−`]), (VMLo, LIST), (VMLi, LIST), (VMO, INT)),
+  ((VMLo, LIST), (VMLi, LIST), (VMO, INT)))
+
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
+    #src[the fewest secure segments the transactions can be cut into are one pass along them, the
+     next transaction glued onto the open segment wherever that segment stays secure and the van
+     called where it does not]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], van-pic(van-line((vb-spec, vb-estR))),
+    [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
+  [#v-hm1],
+
+  [#vstep(EQ, van-pic(van-line((vb-LS, vb-estR))),
+    [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈` — @van-defn, @cata-fusion at
+     `secure prefix⊑prefix secure`]])],
+  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
+
+  [#vstep(RQ, van-pic(van-line((vb-LS, vb-estRH))),
+    [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new∪old)R` is FALSE, the
+     shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new∪old)R` holds]])],
+  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
+
+  [#vstep(RQ, van-pic(van-line((vb-greedy,))),
+    [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
+     the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
+     `(𝟙×⊤)new⊑new H`]])],
+  [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
+
+  [#vstep(RQ, van-pic(van-line((vb-prog,))),
+    [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
+     returns one, and `ok` is where it does]])],
+  [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
+))]<van-laws>
+
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`(𝟙×(R;H))old⊑(new∪old)(R;H)` \
+    #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
+     on, or calling the van, and bettering the whole schedule after]],
+  table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
+
+  [#vstep([], van-pic(van-old((vb-RH,), ())), [`(𝟙×(R;H))old`])],
+  [#van-mono-hm([`R;H`], true)],
+
+  [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
+    [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes]])],
+  [#van-mono-hm([`|R|`], true)],
+
+  [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
+    [`new (R∩H)∪old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
+  [#van-mono-hm([`R∩H`], false)],
+
+  [#vstep(SQ, van-pic(van-old((), (vb-RH,))),
+    [`(new∪old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
+  [#van-mono-hm([`R;H`], false)],
+))]<van-mono>
 
 #pagebreak(weak: true)
 = Thinning Algorithms <sec-thin>
