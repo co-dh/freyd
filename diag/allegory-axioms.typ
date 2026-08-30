@@ -3700,33 +3700,39 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
 // nothing.  `p×𝟙` is a bead on the `A×−` wire, so `p×list(p)` is two beads at one height.
-#let TWHX = (0.60, 2.30)                          // `A×−`, `[A]`
+// `[A]` is TWO wires, `list` beside `A`: `list(p)` is then the bead `p` on `A` with `list` running
+// straight past, and `prefix`/`subseq`, natural in `A`, are beads on `list` — which is why they slide.
+#let TWHX = (0.55, 2.10, 4.30)                    // `A×−`, `list`, `A`
 #let TWHY = (4.10, 3.30, 2.40, 1.55, 0.75)        // above `cons` ×2, `cons`, below ×2
-#let TWHW = 4.30
+#let TWHW = 5.80
 #let TWHH = 5.00
-// Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p` takes `list(p)`'s
-// colour because it is the head half of it.
+// Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
+// colour because it is the head half of `p×list(p)`.
 #let tw-hm(rs, f: [`prefix`]) = P(cetz.canvas(length: 0.8cm, {
-  let (XM, XA) = TWHX
+  let (XM, XL, XO) = TWHX
   let (YU1, YU2, YC, YL1, YL2) = TWHY
-  d.rect((0, 0), (XA, TWHH), fill: fb-ALLC, stroke: none)
-  d.rect((XA, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
-  hm-wire(((XA, TWHH), (XA, 0)), col: BCOL)
-  hm-join(XM, TWHH, XA, YC, knee: 0.6)
-  hm-bead((XA, YC), [`cons`])
-  hm-bead((XA, (YL1, YU1, YU1).at(rs)), f, col: GIVEN1)
-  hm-bead((XA, (YL2, YL1, YU2).at(rs)), [`list(p)`], col: GIVEN2)
+  d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
+  d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
+  hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
+  hm-wire(((XL, TWHH), (XL, 0)))
+  hm-join(XM, TWHH, XL, YC, knee: 0.6)
+  hm-bead((XL, YC), [`cons`])
+  hm-bead((XL, (YL1, YU1, YU1).at(rs)), f, col: GIVEN1)
+  hm-bead((XO, (YL2, YL1, YU2).at(rs)), [`p`], col: GIVEN2)
   if rs == 2 { hm-bead((XM, YU2), [`p×𝟙`], col: GIVEN2) }
-  hm-port((XM, TWHH), [`A×−`]); hm-port((XA, TWHH), [`[A]`], col: BCOL)
-  hm-port((XA, 0), [`[A]`], dir: -1, col: BCOL)
-  if rs == 0 { hm-name((1.30, 0.30), [`Rel`]); hm-name((3.45, 0.30), [`𝟏`]) }
+  hm-port((XM, TWHH), [`A×−`]); hm-port((XL, TWHH), [`list`])
+  hm-port((XO, TWHH), [`A`], col: BCOL)
+  hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
+  if rs == 0 { hm-name((1.30, 0.30), [`Rel`]); hm-name((5.50, 0.30), [`𝟏`]) }
 }), s: 100%)
 
 #disp[#table(
-  columns: (1fr, 4.0cm),
+  columns: (1fr, 5.4cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`α prefix list(p)=F(prefix list(p))S`],
+  Thm[`α prefix list(p)=F(prefix list(p))S` \
+    #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
+     first, and then building with `S`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
@@ -3758,7 +3764,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, 6.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°`],
+  Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
+    #src[shortening the tail and then taking the step lands inside taking the step and then
+     shortening the result]],
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
   [`(𝟙×R°)⊸ nil⊑⊸ nil R°`],
@@ -3791,7 +3799,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, 4.4cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,⊸ nil)]`],
+  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,⊸ nil)]` \
+    #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
+     `nil` where it does not]],
   table.header([*formula*], [*reason*]),
 
   [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
@@ -3815,10 +3825,39 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let bx-LS = (frc([`⦇S⦈`]), 1.5, false)
 #let bx-cata = ([`⦇`#frc([`S`])` est(R°)⦈`], 3.3, true)
 #let bx-prog = ([`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], 6.1, false)
+// `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
+// closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
+#let LPX = (1.05, 2.35, 4.85)                     // `E`, `list`, `A`
+#let LPY = (3.40, 2.10, 0.80)                     // the singleton, the arrow, `est(R°)`
+#let LPH = 4.20
+// ONE `w` for every row of a display, so `list` and `A` stand in one column down it: a per-row width
+// centres each panel on its own label and moves the two wires the chain never touches.
+#let lpan(body, w: 11.7, names: false) = P(cetz.canvas(length: 0.8cm, {
+  let (XE, XL, XO) = LPX
+  d.rect((0, 0), (XO, LPH), fill: fb-ALLC, stroke: none)
+  d.rect((XO, 0), (w, LPH), fill: luma(226), stroke: none)
+  hm-wire(((XO, LPH), (XO, 0)), col: BCOL)
+  hm-wire(((XL, LPH), (XL, 0)))
+  body
+  hm-port((XL, LPH), [`list`]); hm-port((XO, LPH), [`A`], col: BCOL)
+  hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
+  if names { hm-name((0.45, 0.30), [`Rel`]); hm-name((XO + 2.8, 0.30), [`𝟏`]) }
+}), s: 76%)
+// An arrow `[A]⟶[A]` that is neither natural in `A` nor a `list(f)` is a 2-cell between COMPOSITES,
+// so its node SPANS both wires: on either wire alone it would claim to be one of those two forms.
+#let lspan(y, l) = {
+  hm-wire(((LPX.at(1), y), (LPX.at(2), y)))
+  hm-bead((LPX.at(1), y), none); hm-bead((LPX.at(2), y), l)
+}
 // The `E` wire is BORN by the singleton and killed by `est(R°)`: #frc([`S`]) `=` #frc([`𝟙`]) `E(S)`
-// (@adj-E-bend) splits the transpose, so the relation stays a bead on the object wire.
+// (@adj-E-bend) splits the transpose, so the relation stays a bead between the two.
+#let epan(body, w: 11.7, names: false) = lpan({
+  dhandle(LPX.at(1), LPX.at(0), LPY.at(0), LPY.at(2), [`E`], born: frc([`𝟙`]))
+  body
+  lspan(LPY.at(2), [`est(R°)`])
+}, w: w, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, 7.9cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
@@ -3827,31 +3866,27 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
     [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`]])],
-  [#tpan(4.2, ((2.10, [`prefix list(p)`]), (0.80, [`est(R°)`])),
-    hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
-    top: ((TXO, [`[A]`]),), bot: [`[A]`], names: true, w: 6.6)],
+  [#epan({hm-bead((LPX.at(1), LPY.at(1)), [`prefix`]); hm-bead((LPX.at(2), LPY.at(1)), [`p`])},
+    names: true)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
     [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
-  [#tpan(4.2, ((2.10, [`⦇S⦈`]), (0.80, [`est(R°)`])),
-    hands: ((TXH, 3.40, 0.80, [`E`], frc([`𝟙`])),),
-    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 4.2)],
+  [#epan(lspan(LPY.at(1), [`⦇S⦈`]))],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
      collected and one chosen at the end]])],
-  [#tpan(4.2, ((2.10, [`⦇`#frc([`S`])` est(R°)⦈`]),),
-    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 5.6)],
+  [#lpan(lspan(LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]))],
 
   [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
     [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
-  [#tpan(4.2, ((2.10, [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),),
-    top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 8.9)],
+  [#lpan(lspan(LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]))],
 
-  [#vstep([], [], [`prefix° prefix∩R∩R°⊑𝟙` \ #src[@est-laws at `prefix`: two prefixes of one list of
-    equal length are equal, so #frc([`prefix list(p)`]) ` est(R°)` is simple — *the* longest, not
-    *a* longest]])],
+  [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
+    #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
+     and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
+     longest, not *a* longest]])],
   [],
 
   [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and
@@ -4473,10 +4508,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let bx-sq = ([`subseq`], 1.9, true)
 #let bx-sl = ([`subseq list(p)`], 3.9, true)
 #disp[#table(
-  columns: (1fr, 4.0cm),
+  columns: (1fr, 5.4cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`α subseq list(p)=F(subseq list(p))S`],
+  Thm[`α subseq list(p)=F(subseq list(p))S` \
+    #src[building the list and then keeping a `p`-passing subsequence of it is keeping one of the
+     tail first, and then building with `S`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
@@ -4509,7 +4546,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 6.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°`],
+  Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°` \
+    #src[shortening the tail and then taking the step lands inside taking the step and then
+     shortening the result]],
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
   [`(𝟙×R°)π₂=π₂R°`],
@@ -4537,7 +4576,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 4.4cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]`],
+  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
+    #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
+     the tail where it does not]],
   table.header([*formula*], [*reason*]),
 
   [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
@@ -4573,31 +4614,33 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   }
   wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
 }), s: 80%)
-// The `E` wire the transpose OPENS and `est(R°)` CLOSES, at the heights the two beads keep in both
-// rows: the greedy step is where that pair leaves the `[A]` wire.
-#let fpan(bead, names: false) = tpan(4.0, ((2.60, bead), (1.20, [`est(R°)`])),
-  hands: ((TXH, 2.60, 1.20, [`E`]),), top: ((TXO, [`[A]`]),), bot: [`[A]`], names: names, w: 5.2)
+// This display's longest bead is shorter than @takewhile-laws's, so its gray is narrower — one width
+// for its own four rows, which is what puts `list` and `A` in a column.
+#let lpan = lpan.with(w: 8.6)
+#let epan = epan.with(w: 8.6)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, 6.3cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` #h(4pt) #src[Ex 7.41, `R` a preorder]],
+  Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
+    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`]],
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
   [#vstep([], fpic((bx-slp, bx-est)),
     [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
-  [#fpan(frc([`subseq list(p)`]), names: true)],
+  [#epan({hm-bead((LPX.at(1), LPY.at(1)), [`subseq`]); hm-bead((LPX.at(2), LPY.at(1)), [`p`])},
+    names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
     [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @filter-alg]])],
-  [#fpan(frc([`⦇S⦈`]))],
+  [#epan(lspan(LPY.at(1), [`⦇S⦈`]))],
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
      @filter-mono]])],
-  // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  The `[A]` wire is
-  // unchanged, so it is drawn where the two panels above draw it.
-  [#tpan(4.0, ((1.90, [`⦇`#frc([`S`])` est(R°)⦈`]),), top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 5.2)],
+  // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
+  // unchanged, so they are drawn where the two panels above draw them.
+  [#lpan(lspan(LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]))],
 
   [#vstep(EQ, fpic((bx-prog,), mid: none),
     [`⦇[nil,(π₁p→cons,π₂)]⦈` \ #src[@filter-step]])],
