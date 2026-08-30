@@ -584,4 +584,5 @@ def opt(argv, name):
     return argv[argv.index(name) + 1] if name in argv else None
 
 
-main(sys.argv[1:])
+if __name__ == "__main__":       # `scripts/diagram` imports the parser, the rewrites and `spell`
+    main(sys.argv[1:])
