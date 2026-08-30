@@ -2311,6 +2311,12 @@ For `R : A⟶A`, #h(4pt) `min(R)≜∋∩(∈\R°) : EA⟶A`, #h(4pt) `max(R)≜
 `xs (min(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
 
 `min(R)=∋∩all R°` #h(4pt) #src[`all R≜∈\R`, q's `all`; the chains below keep it written `∈\`]
+
+`E(R)≜` $frac(#[`∋R`], ∋)$ ` : EA⟶EB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
+#src[the image of `xs`, @pow-laws]
+
+`P(R) : EA⟶EB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
+#src[every `x` and every `y` has a partner, @powrel-readings]
 ]]<min-defn>
 
 #disp[#table(
@@ -2376,6 +2382,10 @@ For `R : A⟶A`, #h(4pt) `min(R)≜∋∩(∈\R°) : EA⟶A`, #h(4pt) `max(R)≜
 
 === $frac(#[`S`], ∋)$ `(∈\R)=S°\R`
 
+$frac(#[`S`], ∋)$ gathers the `S`-image of a point into one set and `∈\R` asks that every member of
+that set be `R`-related to the target, so the set cancels and `S°\R` asks it of the `S`-image
+directly.
+
 // B&dM (7.2): two adjunctions composed, `(S%∋) ∋ = S` collapsing the middle — the shape of (1.2a).
 #disp[
 #zline(
@@ -2412,9 +2422,6 @@ For `R : A⟶A`, #h(4pt) `min(R)≜∋∩(∈\R°) : EA⟶A`, #h(4pt) `max(R)≜
 )
 ]<min-73>
 
-// Same reason as the hand-placed break further down: `sticky` cannot hold a heading to a BREAKABLE
-// figure, and the extra heading level pushed this one to the foot of its page.
-#pagebreak(weak: true)
 === $frac(#[`S`], ∋)$ `min(R)=S∩(S°\R°)`
 
 // B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
@@ -2583,16 +2590,18 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #disp[#table(
   columns: (4.8cm, 10.6cm, 6.6cm),
   align: (left + horizon, center + horizon, center + horizon),
-  inset: (x: 9pt, y: 5pt), stroke: 0.4pt + luma(190),
+  // `y: 2pt`: the LaT letters wrap two of the statement lines, and at 5pt the table outgrew the page —
+  // a `#disp` table cannot break, so the last row was laid over the one above it.
+  inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
   table.header([*closed under*], [*commutative diagram*], [*string diagram*]),
 
-  [composition \ `XY`],
+  [composition \ `ψφ`],
   [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`A`, `B`, `A`, `B`), ([`X'`], [`X`], [`R`#sub[`A`]], none), x: -SQW)
-    laxsq((`B`, `C`, `B`, `C`), ([`Y'`], [`Y`], [`R`#sub[`B`]], [`R`#sub[`C`]]), x: SQW)
+    laxsq((`HA`, `GA`, `HB`, `GB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`H(R)`], none), x: -SQW)
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW)
   }), s: 74%)
-   `R`#sub[`A`]`X⊑X'R`#sub[`B`] #h(4pt) and #h(4pt) `R`#sub[`B`]`Y⊑Y'R`#sub[`C`] #h(4pt) give
-   #h(4pt) `R`#sub[`A`]`(XY)⊑(X'Y')R`#sub[`C`]],
+   `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
+   #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
   latpic(
     ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
     (((LATP, LATH), (LATP, 0)),),
@@ -2626,14 +2635,14 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     names: (((0.5 * LATP, 0.3), [`𝓔`]), ((1.5 * LATP, 0.3), [`𝓓`]), ((2.5 * LATP, 0.3), [`𝒞`])),
   ),
 
-  [union \ `X∪Y`],
+  [union \ `φ∪ψ`],
   [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`A`, `B`, `A`, `B`), ([`X'`], [`X`], [`R`#sub[`A`]], [`R`#sub[`B`]]), x: -(SQW + 1.4))
-    laxsq((`A`, `B`, `A`, `B`), ([`Y'`], [`Y`], [`R`#sub[`A`]], [`R`#sub[`B`]]), x: SQW + 1.4)
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: -(SQW + 1.4))
+    laxsq((`GA`, `FA`, `GB`, `FB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW + 1.4)
     lab(0, 0, black)[`∪`]
   }), s: 74%)
-   `R`#sub[`A`]`X⊑X'R`#sub[`B`] #h(4pt) and #h(4pt) `R`#sub[`A`]`Y⊑Y'R`#sub[`B`] #h(4pt) give
-   #h(4pt) `R`#sub[`A`]`(X∪Y)⊑(X'∪Y')R`#sub[`B`]],
+   `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
+   #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)⊑(φ`#sub[`A`]`∪ψ`#sub[`A`]`)F(R)`],
   align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
     latpic(
       ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
@@ -2650,12 +2659,13 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     ),
   )),
 
-  [a relator `F` \ `F(X)`],
+  [a relator `K` \ `K(φ)`],
   [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`FA`, `FB`, `FA`, `FB`),
-    ([`F(X')`], [`F(X)`], [`F(R`#sub[`A`]`)`], [`F(R`#sub[`B`]`)`]),
+    (`K(GA)`, `K(FA)`, `K(GB)`, `K(FB)`),
+    ([`K(φ`#sub[`A`]`)`], [`K(φ`#sub[`B`]`)`], [`K(G(R))`], [`K(F(R))`]),
   )), s: 74%)
-   `R`#sub[`A`]`X⊑X'R`#sub[`B`] #h(4pt) gives #h(4pt) `F(R`#sub[`A`]`)F(X)⊑F(X')F(R`#sub[`B`]`)`],
+   `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) gives #h(4pt)
+   `K(G(R))K(φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`)K(F(R))`],
   [],
 
   [product \ `φ×ψ`],
@@ -2703,10 +2713,12 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    #src[a counterexample: @meet-counterex]],
   [],
 
-  table.cell(colspan: 3, align: left + horizon)[`X'=X` with `R`#sub[`A`]`,R`#sub[`B`] endorelations
-   is the monotonicity reading; #h(4pt) `R`#sub[`A`]`,R`#sub[`B`]`:=G(R),F(R)` and
-   `X,X':=φ`#sub[`B`]`,φ`#sub[`A`], quantified over `R`, is the lax-natural one — the `∀R` sits
-   outside the law, and is the only difference],
+  table.cell(colspan: 3, align: left + horizon)[Each row is the general slide #h(4pt)
+   `R`#sub[`A`]`X⊑X'R`#sub[`B`] and `R`#sub[`B`]`Y⊑Y'R`#sub[`C`] give
+   `R`#sub[`A`]`(XY)⊑(X'Y')R`#sub[`C`] #h(4pt) at `R`#sub[`A`]`,R`#sub[`B`]`:=G(R),F(R)` and
+   `X,X':=φ`#sub[`B`]`,φ`#sub[`A`], quantified over `R`; at `X'=X` with `R`#sub[`A`]`,R`#sub[`B`]
+   endorelations it is the monotonicity reading instead — the `∀R` sits outside the law, and is the
+   only difference],
 )]<lax-closure>
 
 // `sticky` binds a heading to the next BLOCK, and `conf` wraps every display in a breakable one, so
@@ -3015,14 +3027,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let mb-Fni = ([`F(∋)`], 1.3, true)
 #let mb-Lam = (frc([`F(∋)f`]), 1.75, false)
 #let mb-min = ([`min(R)`], 1.7, true)
-#let mb-Fnimin = ([`F(∋° min(R))`], 3.3, true)
+#let mb-Fnimin = ([`F(∈ min(R))`], 3.05, true)
 #let mb-FRo = ([`F(R°)`], 1.4, true)
 #let mb-FR = ([`F(R)`], 1.3, true)
 #let mb-Ro = ([`R°`], 0.8, true)
 #let mb-R = ([`R`], 0.7, true)
 #let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
 #let IFF = text(SLACK)[$arrow.l.r.double$]
-#disp[#table(
+// The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
+// into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
+#disp[#pad(right: 10pt, table(
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
@@ -3050,29 +3064,48 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, [],
-    [`F(min(R))f⊑F(∋)f` #h(6pt) and #h(6pt) `(F(∋)f)°F(min(R))f⊑R°` \
-     #src[universal property of min — @min-laws's #frc([`S`]) `min(R)=S∩(S°\R°)` at `S:=F(∋)f`]])],
-  [],
+    [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
+       column-gutter: 6pt, row-gutter: 3pt,
+       [`F(min(R))f`], [`⊑`], [`F(∋)f`],
+       grid.cell(colspan: 3, align: center + horizon)[and],
+       [`(F(∋)f)°F(min(R))f`], [`⊑`], [`R°`],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[universal property of min
+         — @min-laws's #frc([`S`]) `min(R)=S∩(S°\R°)` at `S:=F(∋)f`]],
+       grid.cell(colspan: 3, align: left + horizon)[#src[`min(R)≜∋∩(∈\R°)` — @min-defn]])])],
+  // One picture per conjunct: the first is row 1's left panel twice over, `min(R)` against `∋`, so
+  // the inequation is bead against bead; the second is the row-3 panel the next step keeps.
+  [#grid(rows: 3, align: center + horizon, row-gutter: 4pt,
+    trow(
+      tpan(4.2, ((2.75, [`min(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
+        top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
+      tpan(4.2, ((2.75, [`∋`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
+        top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
+    ),
+    [and],
+    trow(
+      tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`min(R)`]), (0.55, [`f`])),
+        hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
+      tpanR(4.0, 1.90, [`R°`]),
+    ),
+  )],
 
   [#vstep(IFF, mbp(mconj((mb-Fni, mb-f), (mb-Fmin, mb-f), (mb-Ro,))),
     [`(F(∋)f)°F(min(R))f⊑R°` \ #src[`min(R)⊑∋` — @min-defn; the first conjunct is free]])],
+  // `(F(∋)f)°=f°F(∈)` splits the leading bead: `f°` opens the `F` wire, `∈` the `E` wire inside it.
   [#trow(
-    tpan(4.0, ((3.05, [`(F(∋)f)°`]), (1.90, [`min(R)`]), (0.75, [`f`])),
-      hands: ((TXF, 3.05, 0.75, [`F`]), (TXH, 3.05, 1.90, [`E`])), top: ((TXO, [`A`]),)),
+    tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`min(R)`]), (0.55, [`f`])),
+      hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
     tpanR(4.0, 1.90, [`R°`]),
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-Fnimin, mb-f), (mb-Ro,))),
-    [`f°F(∋° min(R))f⊑R°` \ #src[converse, relators: `(F(∋)f)°=f°F(∋°)` and
-     `F(∋°)F(min(R))=F(∋° min(R))`]])],
-  [#trow(
-    tpan(4.4, ((3.55, [`f°`]), (2.55, [`∋°`]), (1.60, [`min(R)`]), (0.60, [`f`])),
-      hands: ((TXF, 3.55, 0.60, [`F`]), (TXH, 2.55, 1.60, [`E`])), top: ((TXO, [`A`]),)),
-    tpanR(4.4, 2.05, [`R°`]),
-  )],
+    [`f°F(∈ min(R))f⊑R°` \ #src[converse, relators: `(F(∋)f)°=f°F(∈)` and
+     `F(∈)F(min(R))=F(∈ min(R))`]])],
+  // Empty: the step is a formula-level rewrite, and the picture above already draws it.
+  [],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FRo, mb-f), (mb-Ro,))),
-    [`f°F(R°)f⊑R°` \ #src[`∋° min(R)=R°`, `R` reflexive — @min-defn]])],
+    [`f°F(R°)f⊑R°` \ #src[`∈ min(R)=R°`, `R` reflexive — @min-defn]])],
   [#trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
@@ -3086,7 +3119,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
     tpanR(3.8, 1.85, [`R`]),
   )],
-)]<mon-thm71>
+))]<mon-thm71>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
 #let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's tape edge, which it does not export
