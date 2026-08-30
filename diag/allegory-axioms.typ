@@ -2698,8 +2698,8 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
   [`union≜` $frac(#[`∋∋`], ∋)$ `: E(EA)⟶EA`], [flattens a set of sets],
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
-  [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R`],
-  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
+  [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°`],
+  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`; `lean:AOP.A7_1.singletonMap_comp_est@06b2ed05`]],
   [$frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`], [an `S`-value that points to every `S`-value],
   [$frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)`],
@@ -2708,7 +2708,7 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   [`P(S) est(R)=(∋S)∩(∈\(SR°))` \ #src[`R` reflexive]],
   [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
   [`P(S) est(R)⊑(∋S)∩(∈\(SR°))`], [the half of the row above that costs nothing],
-  [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` a preorder]],
+  [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` transitive]],
   [a minimum in each set, then a minimum of those],
   [`P(est(R)) est(R)=P(Dom(est(R))) union est(R)` \ #src[`R` a preorder]],
   [the same as an equality, once empty sets are dropped],
@@ -2882,7 +2882,7 @@ directly.
 // close both strands — the left one twice, the right one against transitivity.
 #disp[
 #zline(
-  zsqc(`P(est(R)) est(R)`, `union est(R)`, name: "R a preorder"),
+  zsqc(`P(est(R)) est(R)`, `union est(R)`, name: "R transitive"),
   zstep(op: sym.arrow.l.r.double, under: true)[@est-75],
   zsqc(`P(est(R)) est(R)`, `(∋∋)∩((∋∋)°\R°)`),
   zstep(op: sym.arrow.l.double, under: true)[`°`, `Δ⊣∩`, `T·⊣T\`],
