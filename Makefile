@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan
+.PHONY: p w cite scan cover
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -34,6 +34,13 @@ p: $(STAMP) cite
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
 	./scripts/cite-check $(TYP)
+
+# The displays that carry NO `lean:` marker, each with the statements worth reading against it.
+# A PROMPT, not a check: it never passes or fails and nothing depends on it, because what it asks
+# for — is this display the same claim as that theorem? — only a person can answer.  `--unmarked`
+# for the work left, `--label X` for one display.
+cover: $(DB)
+	./scripts/cite-cover $(TYP)
 
 # The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
 # `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after
