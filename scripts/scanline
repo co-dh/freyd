@@ -210,8 +210,11 @@ class Panel:
         # affects printing and is taken at the lowest bead on it.
         self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
         self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel))
+        # A widening NAMES the object over its range, so where it opens the bottom port's name the
+        # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
+        sw = [s[0] for s in self.splits if s[3] == self.oblabel]
         os = [b.y for b in self.beads if abs(b.x - self.xo) < EPS]
-        self.oswitch = min(os) if os else 0.0
+        self.oswitch = max(sw) if sw else (min(os) if os else 0.0)
 
     def at(self, ports, x):
         return next((l for (px, l) in ports if abs(px - x) < EPS), None)
@@ -254,6 +257,7 @@ def a_mpan(p, r):
             p.beads.append(Bead(y0, x0, b, born=True))
     for (x, y, l) in r['beads']:
         p.beads.append(Bead(y, x, l))
+    p.splits = [tuple(s) for s in r['splits']]
 
 
 def a_twhm(p, r):

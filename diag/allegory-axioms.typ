@@ -4153,9 +4153,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // Bound outside the drawing so the scan line is handed the nodes that DREW, not the argument alone.
 // `hdx` is the hand's name offset FROM its lane: a one-letter functor fits left of it, a wide one
 // like `list` would cross its own wire there and goes right, into the gap before the object wire.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), wires: (), nodes: (), h: 4.3,
+// A WIDENING is not a functor lane: the object wire opens into `outer` beside `inner` and closes
+// again with no bead, so the scan reads it as `tw-hm`'s split — one record per bead it brackets.
+#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), widen: (), wires: (), nodes: (), h: 4.3,
     hdx: -0.32, cert: (:)) = {
   let ns = nodes + hands.filter(hd => hd.at(6) != none and hd.at(0) == xo).map(hd => (hd.at(1), hd.at(2)))
+  let splits = ()
+  for (y0, y1, x, outer, ofs) in widen {
+    let ys = (y0,) + beads.filter(b => b.at(0) == xo and y1 < b.at(1) and b.at(1) < y0)
+      .map(b => b.at(1)).sorted().rev() + (y1,)
+    for i in range(ofs.len()) {
+      splits.push((ys.at(i), ys.at(i + 1), x, ofs.at(i).at(0), outer, ofs.at(i).at(1)))
+    }
+  }
   dpan(h, w, xo, {
   let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
   for x in wires { lwire(x, xo, at(x, 0), h, 0, k: 0.35) }
@@ -4167,6 +4177,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     hm-name((xe + hdx, (y0 + y1) / 2), l)
     if b != none { hm-bead((x0, y0), b, dx: xo - x0 + 0.32) }
   }
+  for (y0, y1, x, outer, ofs) in widen {
+    hm-wire(((xo, y0), (x, y0 - DKN), (x, y1 + DKN), (xo, y1)))
+    hm-name((x + hdx, (y0 + y1) / 2), outer)
+  }
   for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
@@ -4174,7 +4188,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   hm-meta((helper: "mpan", h: h, w: w, xo: xo, cert: cert,
     beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
     hands: hands.map(hd => hd.map(plain)), wires: wires.map(plain),
-    nodes: ns.map(n => n.map(plain)),
+    splits: splits.map(s => s.map(plain)), nodes: ns.map(n => n.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
 }
 #let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
@@ -4473,7 +4487,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let MSO = MSL + 1.60                             // and the gap to its right carries its name
 #let mtop2 = ((MA, [`A×−`]), (MSO, [`[[A]]`]))
 #let mbot2 = ((MSO, [`[B]`]),)
-#let mss-hand = ((MSO, 2.45, MSL, MSO, 1.35, [`list`], none),)
+#let mss-widen = ((2.45, 1.35, MSL, [`list`], (([`[[A]]`], [`[A]`]), ([`[B]`], [`B`]))),)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -4486,7 +4500,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     (m-lg,))), [`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)` \
     #src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
      `cons(cons(a,head(tails xs)),tails xs)`]])],
-  [#mpan(MSO, 7.35, mtop2, mbot2, hands: mss-hand, hdx: 0.68,
+  [#mpan(MSO, 7.35, mtop2, mbot2, widen: mss-widen, hdx: 0.68,
     joins: ((MA, MSO, 3.00, 1.10),),
     beads: ((MSO, 3.00, [`⟨(𝟙×head)cons,` \ `π₂⟩cons`]), (MSO, 1.90, [`g`])))],
 
@@ -4510,7 +4524,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     #src[fork, relator — the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
      at `c,f:=zero,⊕`. @cata-fusion then reads off
      `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]])],
-  [#mpan(MSO, 7.35, mtop2, mbot2, hands: mss-hand, hdx: 0.68,
+  [#mpan(MSO, 7.35, mtop2, mbot2, widen: mss-widen, hdx: 0.68,
     joins: ((MA, MSO, 0.65, 0.85),),
     beads: ((MSO, 1.90, [`g`]), (MSO, 0.65, [`⟨(𝟙×head)f,` \ `π₂⟩cons`])))],
 ))]<mss-scan>
