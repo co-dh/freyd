@@ -68,6 +68,10 @@
 #let Thm(body, cols: 2) = table.cell(colspan: cols, fill: luma(233), align: center + horizon,
   stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
 
+// The Hinze–Marsden picture column the derivation tables share; the formula column takes the rest
+// of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
+#let HMW = 9cm
+
 = Notation
 
 Traditionaly Adjunction F -| G is defined as $F(x) <= y$ iff $x <= G(y)$, and you derive laws like this: 
@@ -2219,7 +2223,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last row it is gone.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
@@ -2255,7 +2259,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
 // own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_le_of_prefixed@b892517c`]],
@@ -2312,7 +2316,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_eq_mu@c60df971`]],
@@ -2517,7 +2521,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   top: ((SXF, [`A×−`]), (SXC, [`E`]), (SXO, [`[A]`])), bot: [`[A]`], names: names, xo: SXO, w: 5.0)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
@@ -2606,7 +2610,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 #let sbB5 = P(cetz.canvas(length: 0.8cm, sbfork((sb-meE, sb-Econs), (sb-p2,))), s: 82%)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
@@ -3316,7 +3320,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
@@ -3429,7 +3433,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
 // `est(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -3464,8 +3468,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#trow(
     tpan(5.1, ((4.60, [`S°`]), (3.70, [`R°`]), (1.60, [`S`]), (0.65, [`est(R)`])),
       hands: ((RXU, 2.70, 0.65, [`E`], frc([`𝟙`])), (GXF, 4.60, 1.60, [`F`])),
-      top: ((RXO, [`A`]),), xo: RXO, s: 65%),
-    tpanR(5.1, 3.12, [`R°`], s: 65%),
+      top: ((RXO, [`A`]),), xo: RXO, s: 92%),
+    tpanR(5.1, 3.12, [`R°`], s: 92%),
   )],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
@@ -3474,7 +3478,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
   [#tpan(5.1, ((4.60, [`R°`]), (3.70, [`S°`]), (1.60, [`S`]), (0.65, [`est(R)`])),
     hands: ((RXU, 2.70, 0.65, [`E`], frc([`𝟙`])), (GXF, 3.70, 1.60, [`F`])),
-    top: ((RXO, [`A`]),), xo: RXO, s: 65%)],
+    top: ((RXO, [`A`]),), xo: RXO, s: 92%)],
 
   [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
     [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
@@ -4118,7 +4122,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
 // wire and `sum` kills `list` onto `A`.  `∪` has no shape here — only `cons`'s branch is drawn.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt),
   stroke: 0.4pt + luma(190),
@@ -4230,7 +4234,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // HINZE–MARSDEN: the drawn branch is `plus`'s, so `A×−` is the functor wire and `Int` the object
 // one; `𝟙×≥` is `F(≥)`, the `≥` bead with `A×−` running past it, and the join stays put while it moves.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
@@ -4294,7 +4298,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#mss-alg ` est(≥)=[zero,⊕]`],
@@ -4408,10 +4412,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // Six arrows stacked in one column, each a node the `list` lane detours through: the panel is taller
 // than the others and scaled down to keep the printed height it had.
 #let MSH = 5.55
-#let MSS = 71%
+#let MSS = 95%
 #let mbot4 = ((MB, [`list`]), (MD, [`B`]))
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)=F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`],
@@ -4468,7 +4472,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   lab(boxrun-w(items) + 0.55, 0, black)[`A`]
 }
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
@@ -5717,7 +5721,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 // B&dM §7.4, p. 182.  The `E` the fold builds is killed earlier at every step, until @cyl-step's
 // algebra never builds it: that migration is what the right column draws.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra]],
@@ -5785,7 +5789,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 // tuple; the right-hand side kills it after, and that swap is the whole step.
 #disp[
 #pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step]],
@@ -5829,7 +5833,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
 // of maps turns it into the program.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
@@ -5992,7 +5996,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ((VMLo, LIST), (VMLi, LIST), (VMO, INT)))
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
@@ -6028,7 +6032,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 ))]<van-laws>
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×(R;H))old⊑(new∪old)(R;H)` \
@@ -6149,7 +6153,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let tb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
   ((THM, [`T`]), (THO, [`A`])), ((THO, [`A`]),), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
@@ -6226,7 +6230,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   ((THM, [`L`]), (THN, [`E`]), (THO, [`A`])), ((THM, [`L`]), (THO, [`A`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
@@ -6379,7 +6383,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   beads, ((THM, [`list`]), (THO, [`Item`])), ((THM, [`list`]), (THO, [`Item`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
@@ -6477,7 +6481,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
 #let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
@@ -6569,7 +6573,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((THN, [`list`]), (THO, [`City`])), ((THM, [`list×list`]), (THO, [`City`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
