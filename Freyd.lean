@@ -254,7 +254,7 @@ import AOP.A6_ConsList
 -- with its recursion; correctness `sort ⊆ ordered·perm` by fusion (given the select proviso).
 import AOP.A6_6_Sort
 -- Bird & de Moor §7.3: planning a company party — `choose` monotonicity + party planning solved by
--- the greedy theorem (`greedy_max`); the rose-tree datatype `tree A = node(A, list(tree A))` deferred.
+-- the greedy theorem (`greedy`); the rose-tree datatype `tree A = node(A, list(tree A))` deferred.
 import AOP.A7_3_Party
 -- Bird & de Moor §5.6: combinatorial list relations — perm/prefix/subseq/inlist over `list A = ConsList
 -- Unit A`, with reflexivity/symmetry/transitivity (the coalgebra/spec layer for the case studies).
@@ -291,7 +291,7 @@ import leet.L322_dp
 -- A relation-algebra INTERPRETER: a term AST + two sound evaluators — `eval` into finite Bool
 -- matrices (`FinRel`, a proven allegory ⇒ soundness free; runs ground terms + the exponential
 -- powerset specs) and `evalP`, a structural fold running the derived catamorphism programs in
--- polynomial time — bridged by the proven `solve = A spec ≫ maxRel D` (differential testing).
+-- polynomial time — bridged by the proven `solve = A spec ≫ est D` (differential testing).
 import rel.RelInterp
 -- Auto-derive: a generic driver theorem `RunningBest` that discharges every `horner_correct` side
 -- condition (monotonicity, greedy refinement, order transitivity) from 8 one-line arithmetic facts,
@@ -305,7 +305,7 @@ import leet.L53
 import rel.AutoDeriveDP
 import leet.L279
 -- Thread B — propose→test→certify glue: enumerate candidate program shapes from a catalog, TEST each
--- (run the spec `A spec ≫ maxRel D` via FinRel.eval vs the candidate fold via evalP) to auto-select
+-- (run the spec `A spec ≫ est D` via FinRel.eval vs the candidate fold via evalP) to auto-select
 -- the correct shape, then CERTIFY the winner via `RunningBest`. Demo picks L121's pair program (proved
 -- `= prog121` by rfl) after rejecting 17 wrong shapes. Soundness caveat: the runnable-spec ↔ Rel(Set)-
 -- spec link is by construction, not yet a Lean proof (the spec-transport gap, next to close).

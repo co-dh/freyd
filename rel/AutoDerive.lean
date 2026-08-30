@@ -21,7 +21,7 @@
 
       spec xs (fold xs).2  ∧  ∀ v, spec xs v → v ≤ (fold xs).2
 
-  and `RunningBest.eq_maxRel` the §7.5 morphism headline `solve = max (≤)·Λ spec`, with every
+  and `RunningBest.eq_est` the §7.5 morphism headline `solve = max (≤)·Λ spec`, with every
   relational side condition (`pareto_trans`, `alg_mono`, `alg_le_gen`, `gen_recip_le`,
   `alg_ref`, `cataFold_alg`, `gen_total`, `hR2`) discharged internally.  What remains HUMAN,
   per problem: choosing the bundle's fields (the algorithmic insight) and the generator-vs-spec
@@ -198,9 +198,9 @@ theorem gen_recip_le : P.gen° ≫ P.alg ⊑ P.pareto° := by
     obtain ⟨st, p⟩ := pr
     exact ⟨P.cand1_le hgu.1, P.cand2_le hgu.1 hgu.2⟩
 
-/-- The greedy-step refinement `alg ⊑ ΛS·max R` that `greedy_max` consumes. -/
-theorem alg_ref : P.alg ⊑ Λ P.gen ≫ maxRel P.pareto :=
-  le_Λ_comp_maxRel_iff.mpr ⟨P.alg_le_gen, P.gen_recip_le⟩
+/-- The greedy-step refinement `alg ⊑ ΛS·max R` that `greedy` consumes. -/
+theorem alg_ref : P.alg ⊑ Λ P.gen ≫ est P.pareto :=
+  le_Λ_comp_est_iff.mpr ⟨P.alg_le_gen, P.gen_recip_le⟩
 
 /-- Totality of the generator — free from the selection facts (the deterministic choice
     witnesses it).  Handy for the problem-specific completeness inductions. -/
@@ -229,12 +229,12 @@ theorem correct (spec : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
 
 /-- **Auto-derived §7.5 morphism headline**: the program (the graph of `.2 ∘ fold`) IS
     `max (≤)·Λ spec` as a morphism of `Rel(Set)`, not merely pointwise. -/
-theorem eq_maxRel (spec : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
+theorem eq_est (spec : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
     (gen_spec : ∀ xs w, cataFold P.gen xs w → spec xs w.2)
     (spec_gen : ∀ xs v, spec xs v → ∃ e, cataFold P.gen xs (e, v)) :
     (graph (fun xs => (P.foldFn xs).2) : dSL L E ⟶ (⟨Int⟩ : RelSet.{0}))
-      = Λ spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) _ spec
+      = Λ spec ≫ est (fun w z : Int => z ≤ w) :=
+  eq_Λ_comp_est _ (fun x y h1 h2 => Int.le_antisymm h2 h1) _ spec
     (fun xs => (P.correct spec gen_spec spec_gen xs).1)
     (fun xs v hv => (P.correct spec gen_spec spec_gen xs).2 v hv)
 

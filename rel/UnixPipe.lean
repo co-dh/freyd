@@ -27,7 +27,7 @@
     * `sort` has no total order inside `FinRel`, so the fully sorted SEQUENCE is not an `RE`
       term.  We give sort TWO sides: the SPEC side (`eval`, exponential) computes the survivor
       SET as a power-object point and its `≤`-least member (the sorted output's HEAD) with
-      `minRelE`; the PROGRAM side (`evalP`-style, polynomial) is a filter+insertion-sort FOLD
+      `estE`; the PROGRAM side (`evalP`-style, polynomial) is a filter+insertion-sort FOLD
       over a plain `List (Fin 5)`.  `sort_head_bridge` connects the two on the fixture.
     * `ls -l` line formatting and the full lexicographic sort are out of scope; `main` prints a
       `-l`-style line but the algebra only sees the size key.
@@ -170,15 +170,15 @@ theorem grep_only_removes (p : Fin 5 → Bool) :
 /-! ## Stage 3 — `sort`, SPEC side (`eval`, exponential): survivor SET + its `≤`-least HEAD
 
   `FinRel` has no order object, so the sorted SEQUENCE is not an `RE` term.  What IS a term:
-  the survivor SET as a power-object point `Λ(ls ≫ grep)` and its size-least member via `min`
-  (Bird–de Moor §7.1 `minRelE`).  Runs on `eval`, brute-forcing all `2^5 = 32` subset codes. -/
+  the survivor SET as a power-object point `Λ(ls ≫ grep)` and its size-least member via `est`
+  (Bird–de Moor §7.1).  Runs on `eval`, brute-forcing all `2^5 = 32` subset codes. -/
 
 /-- The survivor SET (txt files) as a power-object point `Λ(ls ≫ grep .txt) : Dir ⟶ [Entry]`. -/
 def pipeSet : RE Dir (pow Entry) := AE (RE.comp lsE (grepE isTxt))
-/-- The HEAD of the ascending sorted output: the smallest-size survivor.  In B&dM's `min R = ∋ ∩
-    (∋°\R)` the selected element is the one ABOVE all of the set in `R`, so the size-MINIMUM is
-    `max` of the size order `leqE` (`maxRelE R = minRelE R°`), matching the `#eval` below. -/
-def headE : RE Dir Entry := RE.comp pipeSet (maxRelE leqE)
+/-- The HEAD of the ascending sorted output: the smallest-size survivor.  `est R = ∋ ∩ (∈\R°)`
+    selects the element `R`-below all of the set, so the size-MINIMUM is `est` of the size order
+    `leqE`, matching the `#eval` below. -/
+def headE : RE Dir Entry := RE.comp pipeSet (estE leqE)
 
 /-! ## Stage 3 — `sort`, PROGRAM side (polynomial): filter+insertion-sort FOLD over a plain List
 
@@ -289,7 +289,7 @@ def main : IO Unit := do
   let grepCap : (Fin k → Bool) → RE Ent Ent :=
     fun p => .meet (.id Ent) (.atom (fun e f => decide (e = f) && p e))
   let lsRT   : RE Dr Ent := .atom (fun _ _ => true)
-  let headRT : RE Dr Ent := .comp (AE (.comp lsRT (grepCap keepCap))) (maxRelE (.atom leCap))
+  let headRT : RE Dr Ent := .comp (AE (.comp lsRT (grepCap keepCap))) (estE (.atom leCap))
   let headCol : List Bool := List.ofFn (fun e : Fin k => eval headRT 0 e)
   let heads := (List.ofFn (fun e : Fin k => e)).filter (fun e => headCol[e.val]!)
   IO.println s!"\n# sorted HEAD via  Λ(ls ≫ grep) ≫ max(≤)   (size-least, matrix eval, first {k} entries)"

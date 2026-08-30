@@ -27,8 +27,8 @@
 
   3. **Correctness is REUSED**, not re-proved: `LC253.rooms_correct` (achievability `rooms_achievable`
      + domination `rooms_dominates`) is already the honest S0 extremum pair, so the headline is stated
-     as the actual morphism equation `RelSet.eq_Λ_comp_maxRel` (`AOP/A7_4_Horner.lean`) —
-     `derivedSolve = Λ spec ≫ maxRel D` for the `≤`-preference order `D w z := z ≤ w`, `spec ivs v :=
+     as the actual morphism equation `RelSet.eq_Λ_comp_est` (`AOP/A7_4_Horner.lean`) —
+     `derivedSolve = Λ spec ≫ est D` for the `≤`-preference order `D w z := z ≤ w`, `spec ivs v :=
      ∃ t, countCover ivs t = v` — instead of only a pointwise restatement.
 
   4. **Complexity.**  This is the SAME `O(n²)` algorithm as `L253.lean` (`n` = `ivs.length`): the fold
@@ -128,11 +128,11 @@ theorem derivedSolve_dominates (ivs : List (Int × Int)) (v : Nat) (hv : spec iv
   exact ht ▸ LC253.rooms_dominates ivs t
 
 /-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `derivedSolve` is exactly the morphism
-    `Λ spec ≫ maxRel D` for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise.
+    `Λ spec ≫ est D` for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise.
     Bundles the emerged fold (`rooms_emerges`) with the reused extremum correctness. -/
-theorem rooms_derived_eq_maxRel :
-    (graph derivedSolve : LC253.Ivs ⟶ LC253.dNat) = Λ spec ≫ maxRel (fun w z : Nat => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) derivedSolve spec
+theorem rooms_derived_eq_est :
+    (graph derivedSolve : LC253.Ivs ⟶ LC253.dNat) = Λ spec ≫ est (fun w z : Nat => z ≤ w) :=
+  eq_Λ_comp_est _ (fun x y h1 h2 => Nat.le_antisymm h2 h1) derivedSolve spec
     derivedSolve_sound derivedSolve_dominates
 
 /-! ## Running the program -/

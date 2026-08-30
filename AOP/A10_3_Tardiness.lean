@@ -21,16 +21,16 @@ namespace Freyd.Alg
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
 
 /-- **§10.3 (B&dM pp.253-258)**: minimum tardiness is solved by a GREEDY algorithm —
-    `μX. min Q·ΛT° refolded through h ⊑ min R·Λ⦇h⦈·⦇T⦈°`, for the scheduling algebra `h` monotonic on
-    the transitive tardiness order `R` and the compatibility condition `hQ`.  A direct instance of
+    `μX. min Q°·ΛT° refolded through h ⊑ min R°·Λ⦇h⦈·⦇T⦈°`, for the scheduling algebra `h` monotonic on
+    the transitive tardiness order `R°` and the compatibility condition `hQ`.  A direct instance of
     `A10_1.greedy_dp`. -/
 theorem tardiness_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
-    (hQ : Q° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°) :
-    mu (fun X : b ⟶ a => Λ (T°) ≫ minRel Q ≫ F.map X ≫ h)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ minRel R :=
+    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hQ : Q°° ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
+        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R°°) :
+    mu (fun X : b ⟶ a => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
+      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
   greedy_dp hFr I hh hmono htrans hQ
 
 end Freyd.Alg

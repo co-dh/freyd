@@ -1,7 +1,7 @@
 /-
   AUTO-DERIVE, increment 2: the THINNING (Pareto-frontier) dynamic program, mechanised.
 
-  B&dM's THEOREM 8.1 / Corollary 8.1 (`AOP.A8_1.thinning` / `thinning_min`) refine an
+  B&dM's THEOREM 8.1 / Corollary 8.1 (`AOP.A8_1.thinning` / `thinning_est`) refine an
   optimisation `min R · Λ⦇S⦈` into a fold that carries a THINNED SET of partial solutions:
   at every step, extend all kept candidates, then discard any candidate that another one
   `Q`-dominates (`Q` a preorder below `R` on which the step algebra `S` is monotonic).
@@ -60,7 +60,7 @@ theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow 
 
 /-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
     and every member of `P` has a `Q`-improvement in `Y` (`Q z w` = "`w` at least as good as
-    `z`", the `minRel` convention). -/
+    `z`", the min convention). -/
 theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (pow α).carrier) :
     thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q z w ∧ Y w) := Iff.rfl
 
@@ -153,7 +153,7 @@ theorem thinList_ne_nil {St : Type} {q : St → St → Bool} : ∀ {cands : List
 
 /-- The creative inputs of a thinning derivation (B&dM ch. 8), plus the one-line order facts
     its mechanical side conditions reduce to.  The program state is a LIST of kept candidate
-    states; the answer is the `R`-best kept candidate at the end.  Orders follow the `minRel`
+    states; the answer is the `R`-best kept candidate at the end.  Orders follow the min
     convention: `Q z w` / `R z w` = "`w` is at least as good as `z`". -/
 structure ThinBest (L E St : Type) where
   /-- Candidate states generated from a leaf. -/
@@ -411,17 +411,17 @@ def solveFn (xs : SnocList L E) : Option St := P.bestOf (P.foldFn xs)
 
 /-- **Auto-derived optimum correctness** (Corollary 8.1 read concretely): the `R`-best kept
     candidate is a genuine `R`-minimum of ALL generatable states.  Routed through the
-    abstract `thinning_min` at the fold-bridge and the `bestOf` pick. -/
+    abstract `thinning_est` at the fold-bridge and the `bestOf` pick. -/
 theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
     cataFold P.gen xs b ∧ ∀ z, cataFold P.gen xs z → P.R z b := by
   obtain ⟨hbmem, hblb⟩ := P.bestOf_spec hb
-  have Hcore := thinning_min (F_preservesRecip L E) (initial L E) P.Qm_le_Rm P.Qm_refl_le
+  have Hcore := thinning_est (R := P.Rm°) (F_preservesRecip L E) (initial L E) P.Qm_le_Rm P.Qm_refl_le
     P.Qm_trans_le P.Rm_trans_le P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm),
     ← cataR_eq_relCata P.gen] at Hcore
-  have hminb : minRel P.Rm (fun s => s ∈ P.foldFn xs) b :=
+  have hminb : est P.Rm° (fun s => s ∈ P.foldFn xs) b :=
     ⟨hbmem, fun z hz => hblb z hz⟩
-  have hlhs : (cataR P.thinAlg ≫ minRel P.Rm) xs b :=
+  have hlhs : (cataR P.thinAlg ≫ est P.Rm°) xs b :=
     ⟨fun s => s ∈ P.foldFn xs, P.bridge xs, hminb⟩
   obtain ⟨G, hAG, hmin⟩ := le_iff.mp Hcore xs b hlhs
   have hGeq : G = fun s => cataR P.gen xs s := (Λ_apply_iff _ _ _).mp hAG
@@ -488,7 +488,7 @@ end ThinBest
 
 /-! ## Demo: 0/1 knapsack (B&dM §8.4 — the book's binary-thinning example), concretely
 
-  `AOP.A8_4_Knapsack` states the §8.4 refinement abstractly (an instance of `thinning_min`)
+  `AOP.A8_4_Knapsack` states the §8.4 refinement abstractly (an instance of `thinning_est`)
   and defers the concrete program.  The driver produces it here: state = (weight, value) of a
   selection, generator = skip / take-if-it-fits, thinning order = Pareto dominance (lighter
   AND at least as valuable), selection order = value. -/

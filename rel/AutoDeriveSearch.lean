@@ -258,10 +258,10 @@ theorem solve_correct (xs : SnocList Int Int) :
 
 /-- **CERTIFIED §7.5 headline**: the selected program IS `max (≤) · Λ spec` as a morphism of
     `Rel(Set)`. -/
-theorem solve_eq_maxRel :
+theorem solve_eq_est :
     (Freyd.Alg.RelSet.graph (fun xs => (l121.foldFn xs).2) : dSL Int Int ⟶ (⟨Int⟩ : RelSet.{0}))
-      = Λ LC121.spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  l121.eq_maxRel LC121.spec gen_spec' spec_gen'
+      = Λ LC121.spec ≫ est (fun w z : Int => z ≤ w) :=
+  l121.eq_est LC121.spec gen_spec' spec_gen'
 
 /-! ### The tested candidate and the certified fold are the same program -/
 
@@ -314,7 +314,7 @@ theorem selected_correct (s : ProgEval.SL Int) :
   * `profit_bounded` — the bound `M = i.bound` HONESTLY contains every achievable profit,
     so the encoding loses nothing.
   * `specAnswer_eq` — chaining both through the interpreter semantics
-    (`RelInterp.Λ_comp_maxRel_apply`/`eval_solveE_iff`) and `L121.solve_correct`:
+    (`RelInterp.Λ_comp_est_apply`/`eval_solveE_iff`) and `L121.solve_correct`:
     the spec leg's decoded answer IS `[certified maximum profit]`, on EVERY instance.
   * `agree_iff` / `winner_passes` — the differential test therefore tests candidates against
     the certified optimum (a theorem), and the winner provably passes every instance.
@@ -686,7 +686,7 @@ theorem evaluators_agree (i : Inst) : specAnswer i = [progAnswer ProgEval.prog12
 #eval ProgEval.evalP winnerProg (ProgEval.slOf 7 [1, 5, 3, 6, 4])   -- 5
 
 #print axioms selected_correct
-#print axioms solve_eq_maxRel
+#print axioms solve_eq_est
 #print axioms loop_verdicts
 #print axioms specFn_transport
 #print axioms specAnswer_eq

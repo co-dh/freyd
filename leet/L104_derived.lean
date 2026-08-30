@@ -4,29 +4,29 @@
 
   `leet.L104` writes the depth fold `[ () ↦ 0,  (dl,_,dr) ↦ 1 + imax dl dr ]` down and then verifies
   it against the spec `pathLen`.  HERE we do the opposite: we START from the extremum specification
-  `maxRel (≤) · Λ pathLen` (the ≤-maximum of the achievable root-to-`nil` path lengths) and let the
+  `est (≤) · Λ pathLen` (the ≤-maximum of the achievable root-to-`nil` path lengths) and let the
   max-fold step `1 + imax dl dr` EMERGE as the unique monotone map that refines the greedy choice —
   it is not written first.
 
-  The route (B&dM §7.2 greedy theorem, `A7_4_Horner.greedy_max_of_refinement`):
+  The route (B&dM §7.2 greedy theorem, `A7_4_Horner.greedy_of_refinement_mono`):
 
   * `S` — the NONDETERMINISTIC generator `[ () ↦ {0},  (rl,_,rr) ↦ {rl+1, rr+1} ]`; its
     catamorphism `⦇S⦈` is exactly `pathLen` (bridge `cataTreeFold_S`), the set of achievable path
     lengths.
   * `alg` (= `L104.alg`, the deterministic depth fold) is shown to (a) be MONOTONE on the reverse-`≤`
     order `R x y := y ≤ x` (`alg_mono`, from `imax` monotone) and (b) REFINE the greedy choice
-    `Λ S ≫ maxRel R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
+    `Λ S ≫ est R` (`alg_refines`: `alg ⊑ S` — every folded value is generatable — AND
     `S° ≫ alg ⊑ R°` — the folded value dominates every generatable value; both from `imax_eq_or`
     and `imax_ge_left/right`).  These two facts FORCE the node step to be `1 + imax dl dr`: it is the
     only monotone map that both lands in `{dl+1, dr+1}` and dominates it.
-  * The greedy theorem then places `⦇alg⦈` inside the Pareto frontier `A ⦇S⦈ ≫ maxRel R`; the
+  * The greedy theorem then places `⦇alg⦈` inside the Pareto frontier `A ⦇S⦈ ≫ est R`; the
     TreeBin bridge `cataR_eq_relCata` transports this from the abstract `relCata` to the structural
     `cataR`, and reading off the single greedy conclusion (membership + maximality) gives BOTH halves
     of correctness — achievability and domination — WITHOUT ever invoking `L104.pathLen_depth` /
     `pathLen_le_depth`.
 
   Mathlib-free.  Axioms of the headline `depth_derived_correct` ⊆ {propext, Classical.choice,
-  Quot.sound}; the `Classical.choice` is the honest price of `greedy_max_of_refinement` / `relCata`'s
+  Quot.sound}; the `Classical.choice` is the honest price of `greedy_of_refinement_mono` / `relCata`'s
   universal property.
 -/
 import AOP.A6_TreeBin
@@ -43,10 +43,10 @@ variable {L : Type}
 
 /-! ## The specification, as an extremum
 
-`R` is the REVERSE `≤` so that `maxRel R` is the numeric maximum; `S` is the nondeterministic
+`R` is the REVERSE `≤` so that `est R` is the numeric maximum; `S` is the nondeterministic
 generator whose catamorphism enumerates the achievable path lengths. -/
 
-/-- Reverse `≤` on `ℕ`: `R x y := y ≤ x`, so `maxRel R` picks the numerically LARGEST member. -/
+/-- Reverse `≤` on `ℕ`: `R x y := y ≤ x`, so `est R` picks the numerically LARGEST member. -/
 def R : (dNat : RelSet.{0}) ⟶ (dNat : RelSet.{0}) := fun x y => y ≤ x
 
 /-- The nondeterministic generator `[ () ↦ {0},  (rl,_,rr) ↦ {rl+1, rr+1} ] : F(ℕ) → ℕ` — "extend
@@ -129,12 +129,12 @@ theorem alg_mono : MonotonicAlg (F := F L) alg R := by
       have h3 := imax_ge_right rl rr
       show m ≤ 1 + imax rl rr; simp only [dNat] at *; omega
 
-/-- The depth fold `alg` REFINES the greedy choice `Λ S ≫ maxRel R`.  Via `le_Λ_comp_maxRel_iff` this
+/-- The depth fold `alg` REFINES the greedy choice `Λ S ≫ est R`.  Via `le_Λ_comp_est_iff` this
     is two facts: `alg ⊑ S` (the folded value `1 + imax rl rr` is one of `{rl+1, rr+1}`, by
     `imax_eq_or`) and `S° ≫ alg ⊑ R°` (the folded value dominates every generatable value, by
     `imax_ge_left`/`imax_ge_right`).  These two force the node step to equal `1 + imax rl rr`. -/
-theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
-  apply le_Λ_comp_maxRel_iff.mpr
+theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ est R := by
+  apply le_Λ_comp_est_iff.mpr
   refine ⟨?_, ?_⟩
   · -- alg ⊑ S : every folded value is generatable
     rw [le_iff]; intro u m h
@@ -168,18 +168,18 @@ theorem alg_refines : (alg : TFobj L dNat ⟶ dNat) ⊑ Λ S ≫ maxRel R := by
 
 /-- **LeetCode 104, derived by extremum fusion.**  `depthFn t` is an achievable path length AND is
     the `≤`-greatest achievable path length — the SAME statement as `L104.solve_correct`, but here
-    DERIVED: the load-bearing first line is the greedy theorem `greedy_max_of_refinement`, which
+    DERIVED: the load-bearing first line is the greedy theorem `greedy_of_refinement_mono`, which
     fuses the maximum of the nondeterministic generator `S` into the deterministic fold `alg` whose
     node step `1 + imax dl dr` is forced (via `alg_mono` + `alg_refines`) as the unique monotone map
     refining the greedy choice.  No appeal to `pathLen_depth`/`pathLen_le_depth`. -/
 theorem depth_derived_correct (t : Tree L) :
     pathLen t (depthFn t) ∧ ∀ n, pathLen t n → n ≤ depthFn t := by
-  -- GREEDY THEOREM: `⦇alg⦈` lands inside the Pareto frontier `A ⦇S⦈ ≫ maxRel R`.
+  -- GREEDY THEOREM: `⦇alg⦈` lands inside the Pareto frontier `A ⦇S⦈ ≫ est R`.
   have hmap : Map (alg : TFobj L dNat ⟶ dNat) := graph_map algFn
-  have H1 : relCata (initial L) alg ⊑ Λ (relCata (initial L) S) ≫ maxRel R :=
-    greedy_max_of_refinement (F_preservesRecip L) (initial L) hmap R_trans alg_mono alg_refines
+  have H1 : relCata (initial L) alg ⊑ Λ (relCata (initial L) S) ≫ est R :=
+    greedy_of_refinement_mono (F_preservesRecip L) (initial L) hmap R_trans alg_mono alg_refines
   -- TreeBin bridge: transport from the abstract `relCata` to the structural `cataR`.
-  have H2 : cataR (@alg L) ⊑ Λ (cataR (@S L)) ≫ maxRel R := by
+  have H2 : cataR (@alg L) ⊑ Λ (cataR (@S L)) ≫ est R := by
     rw [← cataR_eq_relCata (@alg L), ← cataR_eq_relCata (@S L)] at H1; exact H1
   -- `depthFn t` is a member of `⦇alg⦈`; apply the frontier refinement there.
   have hmem : cataR alg t (depthFn t) := (cataTreeFold_alg t (depthFn t)).mpr rfl
@@ -187,7 +187,7 @@ theorem depth_derived_correct (t : Tree L) :
   rw [Λ_eq_classifier] at hAP
   have hPeq : P = fun w => (cataR S) t w := hAP
   subst hPeq
-  obtain ⟨hmem_gen, hdom⟩ := (maxRel_apply R _ (depthFn t)).mp hmax
+  obtain ⟨hmem_gen, hdom⟩ := (est_apply R _ (depthFn t)).mp hmax
   -- membership → achievability; maximality + reverse-`≤` → domination.  Bridge `⦇S⦈ = pathLen`.
   refine ⟨(cataTreeFold_S t (depthFn t)).mp hmem_gen, ?_⟩
   intro n hn

@@ -36,7 +36,7 @@ From `L121.lean`:
 | `Tree A`, `dTree`        | `A6_TreeBin`                  | binary tree as initial algebra of `F X = 1 + X×A×X` (cata, `cataR`) |
 | `cataFold`, `cataR`      | `A6_SnocList`                 | the fold / relational catamorphism                          |
 | `imin`, `imax` (+ omega) | `L121`                        | mathlib-free `Int` min/max with rewrite lemmas — copy these |
-| `minRel`/`maxRel`, `Λ`   | `A7_1`, `A6_3`                | relational extremum and power-transpose (the `max(≤)·Λ`)    |
+| `est`, `Λ`               | `A7_1`, `A6_3`                | relational extremum and power-transpose (the `est(≤)·Λ`)    |
 | greedy / DP / thinning   | `A7_2` / `A9_1` / `A8_1`      | the abstract optimality theorems to instantiate             |
 
 Axiom budget target: `⊆ {propext, Quot.sound}` (fully constructive; no `Classical.choice`), like L121.
@@ -470,17 +470,17 @@ Status: `·` todo, `▷` in progress, `✓` done (file). Do `★★★` first.
 
 ### S20 — genuinely APPLYING the AoP greedy/DP theorems (when it works, when it doesn't)
 - **Two-component "running-best" scans (L53 Kadane, L121 best-trade) DO fit the GREEDY THEOREM** —
-  via the reusable law `AOP/A7_4_Horner.lean`: `greedy_max_of_refinement` (max-form of
-  `A7_2.greedy_of_refinement`) + `horner_correct` (Rel(Set) packaging over `A6_SnocList`). Route: the
+  via the reusable law `AOP/A7_4_Horner.lean`: `greedy_of_refinement_mono` (`A7_2.greedy_of_refinement`
+  with monotonicity on `R` rather than `R°`) + `horner_correct` (Rel(Set) packaging over `A6_SnocList`). Route: the
   deterministic pair algebra `alg` is monotone on a PRODUCT/Pareto order `R` and refines the greedy
-  choice `A S ≫ maxRel R` of a nondeterministic generator `S`, so `greedy_max` lands `cataR alg`
-  inside the Pareto frontier `A(relCata I S) ≫ maxRel R`; the scalar answer is the frontier's SECOND
+  choice `A S ≫ est R` of a nondeterministic generator `S`, so `greedy` lands `cataR alg`
+  inside the Pareto frontier `A(relCata I S) ≫ est R`; the scalar answer is the frontier's SECOND
   component. BOTH achievability and domination are read off the single greedy conclusion (membership +
   Pareto-maximality); only "generator = spec" (`gen_spec`/`spec_gen`) stays hand-proved — that is
   program-equivalence, NOT the optimisation. This is the repo's first concrete greedy instantiation on
   a real datatype (`L55`/`A7_3_Party`'s "greedy" was only nominal).
-- **Key semantic fact (Rel(Set), verified `Iff.rfl`):** `minRel R P w = w∈P ∧ ∀z∈P, R z w`, so
-  `minRel(≤)` is numeric MAX; feed `R` as the "≥-dominance"/Pareto order (L53: both coords
+- **Key semantic fact (Rel(Set), verified `Iff.rfl`):** `est R P w = w∈P ∧ ∀z∈P, R w z`, so
+  `est(≥)` is numeric MAX; feed `R` as the "≥-dominance"/Pareto order (L53: both coords
   `≤`-dominance; L121: first coord by `≥`, since a smaller running-min is better).
 - **Prerequisite bridge:** `A6_SnocList.cataR_eq_relCata` (+ `cataFold_comm`) — the missing SnocList
   counterpart of ConsList's — was added so any SnocList greedy/DP instantiation can reach the abstract

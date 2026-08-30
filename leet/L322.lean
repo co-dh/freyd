@@ -384,11 +384,11 @@ theorem solve_le_spec : solve ⊑ spec := by
   (`F.map (≤) ≫ h = h ≫ (≤)`, pointwise: both send `inr (c, m)` to `{k | m + 1 ≤ k}`),
   `F.PreservesRecip` (`CL.F_preservesRecip`), `InitialAlgebra` (`CL.initial Unit Nat`).  The
   SPECIFICATION side even identifies cleanly: with `H := (relCata I T)° ≫ relCata I h` one has
-  `H a n ↔ Achievable coins n a`, and `Λ_comp_minRel` gives
-  `Λ H ≫ minRel R = H ∩ (H° \ R)`, so `(Λ H ≫ minRel R) a n ↔ coinSpec coins a (some n)`.
+  `H a n ↔ Achievable coins n a`, and `Λ_comp_est` gives
+  `Λ H ≫ est R = H ∩ (H° \ R°)`, so `(Λ H ≫ est R) a n ↔ coinSpec coins a (some n)`.
 
   What FAILS is the bridge from the executable `dp` to the theorem's `μ`-body.  That body,
-  `Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ minRel R`, uses the EGLI–MILNER power relator `powerRel`
+  `Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R`, uses the EGLI–MILNER power relator `powerRel`
   (`AOP.A5_4`), whose "term₁" is `((∋)° \ (g ≫ (∋)°))`; on `Rel(Set)` this reads
   `powerRel g P Q → ∀ t ∈ P, ∃ u ∈ Q, g t u`.  Here `Λ (T°) a` is the FULL set of one-step
   decompositions of `a` (ALL valid coins `c ≤ a`), so `μ(body) a` is nonempty only when EVERY

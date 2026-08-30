@@ -71,7 +71,7 @@ example : (List.ofFn fun s : Fin 4 => eval rel⟦ solvedE / solvedE ⟧ s 0)
 -- the LC121 spec shape in surface syntax = the certified `solveE` term, definitionally.
 open Demo121 in
 example {n M : Nat} (price : Fin n → Int) :
-    eval rel⟦ Λ(!(RE.atom (specFn n M price))) ≫ max(!(RE.atom (geFn M))) ⟧
+    eval rel⟦ Λ(!(RE.atom (specFn n M price))) ≫ est(!(RE.atom (geFn M))) ⟧
       = eval (solveE n M price) := rfl
 
 -- id/eps in surface syntax (objects are named Lean constants).  `Demo207.edgeFn` is qualified

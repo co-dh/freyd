@@ -24,7 +24,7 @@
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
 import AOP.A6_TreeBin
-import AOP.A7_4_Horner   -- `eq_Λ_comp_maxRel`: the `min (≤)·Λ spec` morphism-equation bridge
+import AOP.A7_4_Horner   -- `eq_Λ_comp_est`: the `min (≤)·Λ spec` morphism-equation bridge
 import Freyd.Exacts
 
 set_option linter.unusedVariables false
@@ -195,12 +195,12 @@ theorem minDepth_correct (t : Tree Int) (ht : t ≠ Tree.nil) :
     agrees with `spec`. -/
 def specT : dTree Int ⟶ dNat := fun t d => IsRLDepth t d ∨ (t = Tree.nil ∧ d = 0)
 
-/-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `A specT ≫ maxRel D`
-    for the REVERSED preference order `D w z := w ≤ z` (so `maxRel D` is the `≤`-minimum) — the
+/-- **Honest headline (§7.5 `min (≤)·Λ spec`)**: `solve` is exactly the morphism `A specT ≫ est D`
+    for the REVERSED preference order `D w z := w ≤ z` (so `est D` is the `≤`-minimum) — the
     shortest achievable root-to-leaf path length, with `∅ ↦ 0`.  Bridged from `minDepthFn_isRL` and
     `minDepthFn_le_of_isRL`. -/
-theorem solve_eq_minRel : solve = Λ specT ≫ maxRel (fun w z : Nat => w ≤ z) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) minDepthFn specT
+theorem solve_eq_est : solve = Λ specT ≫ est (fun w z : Nat => w ≤ z) :=
+  eq_Λ_comp_est _ (fun x y h1 h2 => Nat.le_antisymm h1 h2) minDepthFn specT
     (fun t => by
       cases t with
       | nil => exact Or.inr ⟨rfl, rfl⟩
