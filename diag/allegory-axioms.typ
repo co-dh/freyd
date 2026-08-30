@@ -3701,30 +3701,41 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
 // nothing.  `p×𝟙` is a bead on the `A×−` wire, so `p×list(p)` is two beads at one height.
-// `[A]` is TWO wires, `list` beside `A`: `list(p)` is then the bead `p` on `A` with `list` running
-// straight past, and `prefix`/`subseq`, natural in `A`, are beads on `list` — which is why they slide.
-#let TWHX = (0.55, 2.10, 4.30)                    // `A×−`, `list`, `A`
-#let TWHY = (4.10, 3.30, 2.40, 1.55, 0.75)        // above `cons` ×2, `cons`, below ×2
-#let TWHW = 5.80
-#let TWHH = 5.00
+// `[A]` is TWO wires, `list` beside `A`: `list(p)` is then the bead `p` on `A`, `list` running past.
+// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line — `A` runs
+// STRAIGHT through it and only the functor wires bend in and back out, as `join` does beside `filter p`.
+#let LKNEE = 0.60
+#let lwire(xf, xo, ys, ytop, ybot) = {
+  let pts = ((xf, ytop),)
+  for y in ys { pts += ((xf, y + LKNEE), (xo, y), (xf, y - LKNEE)) }
+  hm-wire(pts + ((xf, ybot),))
+}
+// `prefix`/`subseq` are only LAX natural in `Rel` — `list(p) prefix⊑prefix list(p)` and no more, since
+// `list(p)` needs every element to have a `p`-image — so they are nodes, and `p` stays strictly below.
+#let TWHX = (0.55, 2.40, 4.30)                    // `A×−`, `list`, `A`
+#let TWHY = (4.95, 4.00, 3.05, 1.50, 0.55)        // above `cons` ×2, `cons`, below ×2
+#let TWHW = 6.30
+#let TWHH = 6.00
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
 // colour because it is the head half of `p×list(p)`.
 #let tw-hm(rs, f: [`prefix`]) = P(cetz.canvas(length: 0.8cm, {
   let (XM, XL, XO) = TWHX
   let (YU1, YU2, YC, YL1, YL2) = TWHY
+  let ys = (YL1, YU1, YU1).at(rs)
   d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
   d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
   hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
-  hm-wire(((XL, TWHH), (XL, 0)))
-  hm-join(XM, TWHH, XL, YC, knee: 0.6)
-  hm-bead((XL, YC), [`cons`])
-  hm-bead((XL, (YL1, YU1, YU1).at(rs)), f, col: GIVEN1)
+  lwire(XL, XO, if rs == 0 { (YC, ys) } else { (ys, YC) }, TWHH, 0)
+  // `A×−` reaches the node under the `list` wire's own bend, so the two fan in without crossing.
+  hm-join(XM, TWHH, XO, YC, knee: 0.75)
+  hm-bead((XO, YC), [`cons`])
+  hm-bead((XO, ys), f, col: GIVEN1)
   hm-bead((XO, (YL2, YL1, YU2).at(rs)), [`p`], col: GIVEN2)
   if rs == 2 { hm-bead((XM, YU2), [`p×𝟙`], col: GIVEN2) }
   hm-port((XM, TWHH), [`A×−`]); hm-port((XL, TWHH), [`list`])
   hm-port((XO, TWHH), [`A`], col: BCOL)
   hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
-  if rs == 0 { hm-name((1.30, 0.30), [`Rel`]); hm-name((5.50, 0.30), [`𝟏`]) }
+  if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((5.95, 0.25), [`𝟏`]) }
 }), s: 100%)
 
 #disp[#table(
@@ -3829,34 +3840,35 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
 // closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
 #let LPX = (1.05, 2.35, 4.85)                     // `E`, `list`, `A`
-#let LPY = (3.40, 2.10, 0.80)                     // the singleton, the arrow, `est(R°)`
+#let LPY = (3.55, 2.55, 1.00)                     // the singleton, the arrow, `est(R°)`
+// The specification row splits `LPY.at(1)`'s one arrow into two, straddling it, so the row below —
+// which collapses them into `⦇S⦈` — puts that bead midway between the pair it replaces.
+#let LPYS = (3.05, 2.00)                          // `prefix`/`subseq` above, `p` below
 #let LPH = 4.20
 // ONE `w` for every row of a display, so `list` and `A` stand in one column down it: a per-row width
 // centres each panel on its own label and moves the two wires the chain never touches.
-#let lpan(body, w: 11.7, names: false) = P(cetz.canvas(length: 0.8cm, {
+// `sp` lists the `[A]⟶[A]` nodes on the `A` line, top down, as `(y, label)`: the `list` wire bends in
+// to each and back out, `A` runs straight through, so the gray's edge stays the rectangle it was.
+#let lpan(body: (), w: 11.7, names: false, sp: ()) = P(cetz.canvas(length: 0.8cm, {
   let (XE, XL, XO) = LPX
   d.rect((0, 0), (XO, LPH), fill: fb-ALLC, stroke: none)
   d.rect((XO, 0), (w, LPH), fill: luma(226), stroke: none)
   hm-wire(((XO, LPH), (XO, 0)), col: BCOL)
-  hm-wire(((XL, LPH), (XL, 0)))
+  lwire(XL, XO, sp.map(n => n.at(0)), LPH, 0)
+  for (y, l) in sp { hm-bead((XO, y), l) }
   body
   hm-port((XL, LPH), [`list`]); hm-port((XO, LPH), [`A`], col: BCOL)
   hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
   if names { hm-name((0.45, 0.30), [`Rel`]); hm-name((XO + 2.8, 0.30), [`𝟏`]) }
 }), s: 76%)
-// An arrow `[A]⟶[A]` that is neither natural in `A` nor a `list(f)` is a 2-cell between COMPOSITES,
-// so its node SPANS both wires: on either wire alone it would claim to be one of those two forms.
-#let lspan(y, l) = {
-  hm-wire(((LPX.at(1), y), (LPX.at(2), y)))
-  hm-bead((LPX.at(1), y), none); hm-bead((LPX.at(2), y), l)
-}
-// The `E` wire is BORN by the singleton and killed by `est(R°)`: #frc([`S`]) `=` #frc([`𝟙`]) `E(S)`
-// (@adj-E-bend) splits the transpose, so the relation stays a bead between the two.
-#let epan(body, w: 11.7, names: false) = lpan({
-  dhandle(LPX.at(1), LPX.at(0), LPY.at(0), LPY.at(2), [`E`], born: frc([`𝟙`]))
-  body
-  lspan(LPY.at(2), [`est(R°)`])
-}, w: w, names: names)
+// The `E` wire is BORN by the singleton and killed by `est(R°)`, itself a node like any other: `E`
+// dies on the `A` line under the `list` wire's own bend, so the two fan in without crossing.
+#let epan(body: (), w: 11.7, names: false, sp: ()) = lpan(
+  body: {
+    dhandle(LPX.at(2), LPX.at(0), LPY.at(0), LPY.at(2), [`E`], born: frc([`𝟙`]))
+    body
+  },
+  w: w, names: names, sp: sp + ((LPY.at(2), [`est(R°)`]),))
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 7.9cm),
   align: (left + horizon, center + horizon),
@@ -3867,22 +3879,21 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
     [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`]])],
-  [#epan({hm-bead((LPX.at(1), LPY.at(1)), [`prefix`]); hm-bead((LPX.at(2), LPY.at(1)), [`p`])},
-    names: true)],
+  [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`prefix`]),), names: true)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
     [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
-  [#epan(lspan(LPY.at(1), [`⦇S⦈`]))],
+  [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
      collected and one chosen at the end]])],
-  [#lpan(lspan(LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]))],
+  [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
 
   [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
     [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
-  [#lpan(lspan(LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]))],
+  [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
 
   [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
     #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
@@ -4629,19 +4640,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#vstep([], fpic((bx-slp, bx-est)),
     [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
-  [#epan({hm-bead((LPX.at(1), LPY.at(1)), [`subseq`]); hm-bead((LPX.at(2), LPY.at(1)), [`p`])},
-    names: true)],
+  [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
     [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @filter-alg]])],
-  [#epan(lspan(LPY.at(1), [`⦇S⦈`]))],
+  [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
      @filter-mono]])],
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
   // unchanged, so they are drawn where the two panels above draw them.
-  [#lpan(lspan(LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]))],
+  [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
 
   [#vstep(EQ, fpic((bx-prog,), mid: none),
     [`⦇[nil,(π₁p→cons,π₂)]⦈` \ #src[@filter-step]])],
