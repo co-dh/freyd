@@ -3118,6 +3118,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
 #let IMP = text(SLACK)[$arrow.l.double$]
+// The `F` lane of the split panels, wider from `RXU` than §13.3.1's `RXF`: here the handle carries
+// its own `F` name, which at that lane would sit against the unit's label.
+#let GXF = 2.05
 // `mconj` with the `⊑` optional, so rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
@@ -3164,12 +3167,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [`S°F(R°)(`#frc([`S`])` est(R))⊑R°` \
      #src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
       `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[Theorem 6.2] #h(4pt) — so Knaster–Tarski
-      leaves this one inequation]])],
-  // `S°` births the `F` wire and `S%∋` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
-  // relator's action costs no notation.  `S%∋` births the `E` wire in its place, `est(R)` kills it.
+      leaves this one inequation] \
+     #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
+  // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
+  // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
   [#trow(
-    tpan(4.0, ((3.45, [`S°`]), (2.45, [`R°`]), (1.45, frc([`S`])), (0.45, [`est(R)`])),
-      hands: ((TXF, 3.45, 1.45, [`F`]), (TXH, 1.45, 0.45, [`E`])), top: ((TXO, [`A`]),)),
+    tpan(4.0, ((3.45, [`S°`]), (2.45, [`R°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
+      hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 3.45, 1.45, [`F`])),
+      top: ((RXO, [`A`]),), xo: RXO),
     tpanR(4.0, 2.45, [`R°`]),
   )],
 
@@ -3177,16 +3182,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [`R°S°(`#frc([`S`])` est(R))` \
      #src[`S°F(R°)⊑R°S°`, the converse of the hypothesis `F(R)S⊑SR`]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
-  [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, frc([`S`])), (0.45, [`est(R)`])),
-    hands: ((TXF, 2.45, 1.45, [`F`]), (TXH, 1.45, 0.45, [`E`])), top: ((TXO, [`A`]),))],
+  [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
+    hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 2.45, 1.45, [`F`])),
+    top: ((RXO, [`A`]),), xo: RXO)],
 
   [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
     [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑R°` — @est-75]])],
-  // The collapsed group's bead sits at the middle of the three it replaces.
-  [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((TXO, [`A`]),))],
+  // The collapsed group's bead sits at the middle of the span it replaces.
+  [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((RXO, [`A`]),), xo: RXO)],
 
   [#vstep(SQ, mbp(gterm((mb-R,), ())), [`R°` \ #src[`R` transitive]])],
-  [#tpan(4.0, ((2.45, [`R°`]),), top: ((TXO, [`A`]),))],
+  [#tpan(4.0, ((2.45, [`R°`]),), top: ((RXO, [`A`]),), xo: RXO)],
 ))]<greedy-thm72>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
