@@ -2646,10 +2646,10 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 // B&dM §7.1, p. 166.  The `°` is what diagram order costs: it reverses the arrow but not the `≤`
 // glyph, so without it `est(≤)` would come out the greatest element.
 #disp[#definition[
-For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A`. #h(4pt)
-#src[`est(R)` is B&dM's `min R`, `est(R°)` his `max R`]
+For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A`.
 
-`xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)`
+`xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[B&dM's `min R`, the same predicate under the same
+letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow]
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
 
@@ -6034,8 +6034,9 @@ in @mu-defn.
   [*dynamic programming*: decompose in every way, solve each part, keep one optimum per part],
   [$frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑M` #h(6pt) #src[(9.1)]],
   [all Knaster–Tarski leaves to prove],
+  // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
   [$frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑H` #h(6pt) #src[(9.2)] \
-   `H°` $frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑R` #h(6pt) #src[(9.3)]],
+   `H°` $frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑R°` #h(6pt) #src[(9.3)]],
   [(9.1) split by `M=H∩(H°\R°)`],
   [`P(X) est(R)⊑(∋X)∩(∈\(XR°))` \ #src[(9.4) = (7.10), @est-710]],
   [the only fact about `est` either proof uses],

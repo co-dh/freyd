@@ -108,6 +108,11 @@ Prefer relative cross-references ("the next subsection", "above") over hard-code
 break when sections are reordered. Avoid unexplained field-specific notation (e.g. `Bℤ/2`, `π₁`); spell it
 out ("the one-object category of `ℤ/2`") unless the term has already been introduced.
 
+**A formula heading a table gets ONE sentence saying what it is about.** Every `Thm[...]` cell, and any
+other table header that is a formula, carries a single `#src` line glossing it — what the equation says,
+in words, checkable against the symbols term by term. Not the law's name, not a restatement of the
+formula: what it means. One sentence, no more.
+
 **NEVER ADD A PARAGRAPH TO `diag/allegory-axioms.typ` UNLESS ASKED.** No new prose, no restated
 conventions, no framing or linking sentences. Answer in chat instead; put durable know-how in the
 relevant skill (drawing conventions go to `string-diagram`) or in a `//` comment in the drawing file.
