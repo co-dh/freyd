@@ -3,30 +3,37 @@
 Working branch: `est-rename`. Style target: §13.3.1's `<mon-thm71>` table — `Thm[...]` statement cell,
 `columns: (1fr, 7.1cm)`, `table.header([*circuit*], [*Hinze–Marsden*])`, one row per derivation step.
 
+## Done
+
+- [x] Theorem 6.1 (Knaster–Tarski) + Theorem 6.2 (hylomorphism) in §11 — `thm62`, merged `4c6bf52`
+- [x] §13.3.3 takewhile — `style-takewhile`, merged `f46985c`
+- [x] §13.3.4 mss — `style-mss`, cherry-picked `d7de3b1`
+- [x] §13.3.5 filter — `style-filter`, merged `69d65a4`
+- [x] §13.5.2 cylinder — `style-cylinder`, merged `f54142d`
+- [x] 13.3.2a: split the `S%∋` bead into `(𝟙%∋)E(S)` in every panel
+- [x] Delete §13.3.1's comment "the note's `est(R)` is B&dM's `min(R°)`"
+- [x] Fix the greedy citations in §13.3.3 / §13.3.5 / §13.4 — the monotonicity lemmas restated
+      at `R°`, `485fb38`
+- [x] Named converses instead of `°`: 72 × `≤°` → `≥`, `485fb38`
+
 ## In flight
 
-- [ ] Theorem 6.1 (Knaster–Tarski) + Theorem 6.2 (hylomorphism) in §11 — branch `thm62`
-- [ ] 13.3.2a: split the `S%∋` bead into `(𝟙%∋)E(S)` in every panel — main checkout
-
-## Done, waiting to merge into `est-rename`
-
-- [x] §13.3.3 takewhile — `style-takewhile`, merge commit `3097335`
-- [x] §13.3.4 mss — `style-mss`, `97c1ccf` (drop its baseline commit `98cbb52` when merging)
-- [x] §13.3.5 filter — `style-filter`, `9f85e65`
+- [ ] §12.1 subseq — branch `style-subseq`
+- [ ] §13.4 party subsections, §13.6b security van — branch `style-party`
+- [ ] §13.3.4c–f get the Hinze–Marsden column — branch `style-mss-hm`
+- [ ] §14.1–14.6 law tables — branch `style-ch14`
 
 ## Next
 
-- [ ] Merge the style branches; drop each one's hand-copied baseline commit
-- [ ] Delete §13.3.1's comment "the note's `est(R)` is B&dM's `min(R°)`" — `@est-defn`'s own `#src`
-      says `est(R)` is B&dM's `min R`, and that is the one matching the pointwise definition
-- [ ] Fix the greedy citations in §13.3.3 / §13.3.5 / §13.4: `@greedy-thm72` at `R°` needs
-      monotonicity on `R°`, not on `(R°)°=R`. `@takewhile-mono`'s `nil R=⊤` row is `R`-specific,
-      so it needs its own `R°` version rather than a reworded citation
-- [ ] §12.1 subseq
-- [ ] §13.4 party subsections, §13.6b security van
-- [ ] The 14 remaining "the law | what it says" tables: §14.1–14.6, §15.1–15.4, §16.1–16.4.
+- [ ] `@est-defn`'s `#src` says `est(R)` is B&dM's `min R`; as *arrows* it is `min_bdm(R°)`,
+      because B&dM's infix `a R b` puts the input on the right. Decide which reading the line
+      states, and say so — the same ambiguity keeps coming back through the greedy citations
+- [ ] The remaining "the law | what it says" tables: §15.1–15.4, §16.1–16.4.
       Most of their rows state B&dM theorems the note cites rather than proves (8.1, 9.1, 9.2, 10.1,
       Prop 9.1/9.4) — those stay citations unless the proof is written
+- [ ] 13.4.4a and the others still giving the reason its own column: fold it into column 1
+- [ ] Colour the wires by type across the string diagrams, 13.5.2a first; one palette, in a comment
+- [ ] Curry the bifunctor in 13.5.2b so no wire crosses — show the picture before changing more
 - [ ] Rewrite `X⊑Y`, `X` entire, `Y` simple as its values — `X`/`Y` clash with `@takewhile-defn`'s
       `(g→X,Y)`; cited from §13.3.3, §13.3.4 and §13.3.5, so all three move together
 

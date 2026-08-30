@@ -3304,7 +3304,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
        [`⦇`#frc([`S`])` est(R)⦈`], [`⊑`], [`⦇S⦈`],
        grid.cell(colspan: 3, align: center + horizon)[and],
        [`⦇S⦈°⦇`#frc([`S`])` est(R)⦈`], [`⊑`], [`R°`],
-       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[@est-75 at `⦇S⦈`]])])],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[@est-75 at `⦇S⦈`;
+         `⦇`#frc([`S`])` est(R)⦈⊑⦇S⦈°\R°⟺⦇S⦈°⦇`#frc([`S`])` est(R)⦈⊑R°` — @div-laws]])])],
   [],
 
   [#vstep(IMP, [], [#frc([`S`])` est(R)⊑S` \
@@ -3335,7 +3336,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     top: ((RXO, [`A`]),), xo: RXO)],
 
   [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
-    [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑R°` — @est-75]])],
+    [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
   // The collapsed group's bead sits at the middle of the span it replaces.
   [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((RXO, [`A`]),), xo: RXO)],
 
