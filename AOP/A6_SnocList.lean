@@ -229,10 +229,6 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dSL L E ⟶ c`. -/
 @[expose] public def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dSL L E ⟶ c := cataFold φ
 
-/-- The book's banana brackets for the catamorphism — one global overload per datatype engine,
-    disambiguated by the algebra's type. -/
-notation:max "⦇" φ "⦈" => cataR φ
-
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataFold φ = F(cataFold φ) ≫ φ`.  (The structural proof never uses `Map φ` — it is the
     `Map`-free form of `initial`'s own `cata_comm` field.) -/

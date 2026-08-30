@@ -33,12 +33,6 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 𝒜}
 
--- The note's spelling of the greedy law, `local` because the exported `⦇…⦈` is `cataR`'s
--- (`AOP.A6_ConsList` and friends); `%∋` is the fraction bar the note draws for `Λ R = R/∋`.
-local notation:max "⦇" R "⦈" => relCata R
-local postfix:max "%∋" => Λ
-local notation:max "est(" R ")" => est R
-
 /-! ## Monotonic algebras (B&dM p.172) -/
 
 section MonotonicAlg

@@ -264,10 +264,6 @@ public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dTree A ⟶ c`. -/
 @[expose] public def cataR {c : RelSet.{0}} (φ : TFobj A c ⟶ c) : dTree A ⟶ c := cataTreeFold φ
 
-/-- The book's banana brackets for the catamorphism — one global overload per datatype engine,
-    disambiguated by the algebra's type. -/
-notation:max "⦇" φ "⦈" => cataR φ
-
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataTreeFold φ = F(cataTreeFold φ) ≫ φ`.  This is the `Map`-free form of `initial`'s own
     `cata_comm` field — the structural proof never references `Map φ` — and is the tree analogue of

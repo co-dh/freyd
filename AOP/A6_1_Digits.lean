@@ -182,15 +182,10 @@ theorem cataFold_map {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dDec ⟶ c`. -/
 @[expose] public def cataR {c : RelSet.{0}} (φ : Fobj c ⟶ c) : dDec ⟶ c := cataFold φ
 
-/-- The book's banana brackets for the catamorphism.  Global (not scoped): each datatype engine
-    declares the same notation for its own `cataR`; Lean overload resolution picks the one whose
-    algebra type fits. -/
-notation:max "⦇" φ "⦈" => cataR φ
-
 /-- The fold square `α ≫ ⦇φ⦈ = F⦇φ⦈ ≫ φ` for EVERY algebra `φ` (not only maps) — the
     homomorphism equation, hoisted out of `decInitial` so the §6.1 derivation can cite it. -/
 theorem cata_square {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
-    graph con ≫ ⦇φ⦈ = F.map ⦇φ⦈ ≫ φ := by
+    graph con ≫ cataR φ = F.map (cataR φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
   | inl d =>
@@ -308,12 +303,12 @@ theorem con_recip_con : (graph con)° ≫ graph con = 𝟙 dDec := by
 
 /-- The fold's fixed-point form `⦇φ⦈ = α° ≫ F⦇φ⦈ ≫ φ` — the book's "{catamorphisms}" step. -/
 theorem cata_fix {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
-    ⦇φ⦈ = (graph con)° ≫ (F.map ⦇φ⦈ ≫ φ) :=
-  calc ⦇φ⦈
-      = 𝟙 dDec ≫ ⦇φ⦈ := (Cat.id_comp _).symm
-    _ = ((graph con)° ≫ graph con) ≫ ⦇φ⦈ := by rw [con_recip_con]
-    _ = (graph con)° ≫ (graph con ≫ ⦇φ⦈) := Cat.assoc _ _ _
-    _ = (graph con)° ≫ (F.map ⦇φ⦈ ≫ φ) := by rw [cata_square]
+    cataR φ = (graph con)° ≫ (F.map (cataR φ) ≫ φ) :=
+  calc cataR φ
+      = 𝟙 dDec ≫ cataR φ := (Cat.id_comp _).symm
+    _ = ((graph con)° ≫ graph con) ≫ cataR φ := by rw [con_recip_con]
+    _ = (graph con)° ≫ (graph con ≫ cataR φ) := Cat.assoc _ _ _
+    _ = (graph con)° ≫ (F.map (cataR φ) ≫ φ) := by rw [cata_square]
 
 /-- `F`'s action in the coproduct calculus: `F R = id + (R × id)` as a `sumMap` over the
     concrete coproducts `sumCop` — the raw material of the "{definition of F}" step. -/
@@ -381,28 +376,28 @@ theorem alg_eq_junc {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
     The proof is the book's derivation, step for step (brace-hints as on p.138). -/
 theorem cata_converse_eq {c : RelSet.{0}} (g : dDigitP ⟶ c)
     (h : (⟨c.carrier × Digit⟩ : RelSet.{0}) ⟶ c) :
-    ⦇⁅g, h⁆⦈° = g° ≫ wrap
-      ∪ h° ≫ (⦇⁅g, h⁆⦈° × 𝟙 dDigit) ≫ snoc :=
-  calc ⦇⁅g, h⁆⦈°
+    (cataR ⁅g, h⁆)° = g° ≫ wrap
+      ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
+  calc (cataR ⁅g, h⁆)°
       -- {catamorphisms}: `⦇φ⦈ = α° ≫ F⦇φ⦈ ≫ φ`
-    _ = ((graph con)° ≫ (F.map ⦇⁅g, h⁆⦈ ≫ ⁅g, h⁆))° := by rw [← cata_fix]
+    _ = ((graph con)° ≫ (F.map (cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by rw [← cata_fix]
       -- {converse}: `(R ≫ S)° = S° ≫ R°`, `R°° = R`
-    _ = ⁅g, h⁆° ≫ ((F.map ⦇⁅g, h⁆⦈)° ≫ graph con) := by
+    _ = ⁅g, h⁆° ≫ ((F.map (cataR ⁅g, h⁆))° ≫ graph con) := by
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
       -- {definition of F}: `(F⦇φ⦈)° = id + (⦇φ⦈° × id)`
-    _ = ⁅g, h⁆° ≫ (((𝟙 dDigitP) + (⦇⁅g, h⁆⦈° × 𝟙 dDigit)) ≫ graph con) := by
+    _ = ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ graph con) := by
         dsimp only [HAdd.hAdd, rsumMap]
         rw [Fmap_recip]
       -- {α = ⁅wrap, snoc⁆}
     _ = ⁅g, h⁆° ≫ (((𝟙 dDigitP) +
-          (⦇⁅g, h⁆⦈° × 𝟙 dDigit)) ≫ ⁅wrap, snoc⁆) := by
+          ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ ⁅wrap, snoc⁆) := by
         rw [con_eq_junc]
       -- {coproduct fusion}: `(R + S) ≫ [P, Q] = [R ≫ P, S ≫ Q]`
-    _ = ⁅g, h⁆° ≫ ⁅wrap, (⦇⁅g, h⁆⦈° × 𝟙 dDigit) ≫ snoc⁆ := by
+    _ = ⁅g, h⁆° ≫ ⁅wrap, ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc⁆ := by
         dsimp only [HAdd.hAdd, rsumMap]
         rw [sumMap_junc, Cat.id_comp]
       -- {coproduct (5.11)}: `⁅g, h⁆° ≫ ⁅P, Q⁆ = (g° ≫ P) ∪ (h° ≫ Q)`
-    _ = g° ≫ wrap ∪ h° ≫ (⦇⁅g, h⁆⦈° × 𝟙 dDigit) ≫ snoc :=
+    _ = g° ≫ wrap ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
         junc_recip_junc (sumCop dDigitP ⟨c.carrier × Digit⟩)
 
 /-! ## The `val`uation catamorphism and its recursion (book p.138)
@@ -420,7 +415,7 @@ def embed : dDigitP ⟶ dNat := graph fun d => d.1.val
 def op : (⟨Nat × Digit⟩ : RelSet.{0}) ⟶ dNat := graph fun p => 10 * p.1 + p.2.val
 
 /-- `val = ⦇⁅embed, op⁆⦈ : Decimal → ℕ`, the reading catamorphism. -/
-def val : dDec ⟶ dNat := ⦇⁅embed, op⁆⦈
+def val : dDec ⟶ dNat := cataR ⁅embed, op⁆
 
 /-- **§6.1 (B&dM p.138)** for the actual valuation: `val°` satisfies the recursive equation
     `val° = (wrap·embed°) ∪ (snoc·(val°×id)·op°)` — a direct instance of `cata_converse_eq`. -/

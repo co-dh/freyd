@@ -76,6 +76,9 @@ notation "∋" => PowerAllegory.eps
 @[expose] public def Λ {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : a ⟶ PowerAllegory.powerObj b :=
   R /ₛ PowerAllegory.eps b
 
+/-- The note's fraction bar for the transpose: `R%∋` is `Λ(R) = R/∋`. -/
+postfix:max "%∋" => Λ
+
 /-- The thickness witness f for R is contained in Λ(R) (§2.412/§2.413).
     Used both for entireness of Λ(R) and the lower bound of Λ(R)∋ = R.
     f ⊑ Λ R = R/ₛ∋ via le_symmDiv_iff: f∋ = R (so f∋ ⊑ R) and f°R = (f°f)∋ ⊑ ∋ (Simple f). -/

@@ -54,6 +54,10 @@ variable {F}
 @[expose] public def relCata [I : InitialAlgebra F] {c : 𝒜} (R : F.obj c ⟶ c) : I.t ⟶ c :=
   I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c
 
+/-- The book's banana brackets `(|R|)`.  The ONE global binding: the structural folds `cataR`
+    equal `relCata` only propositionally (`cataR_eq_relCata`), so they are spelled by name. -/
+notation:max "⦇" R "⦈" => relCata R
+
 public theorem relCata_unfold (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     relCata R = I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c := rfl
 

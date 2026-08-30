@@ -36,6 +36,9 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
 @[expose] public def est (R : a ⟶ a) : PowerAllegory.powerObj a ⟶ a :=
   ∋ a ∩ (((∋ a)°) \ R°)
 
+/-- The note's call-style spelling `est(R)`. -/
+notation:max "est(" R ")" => est R
+
 /-- The universal property of `est` (book p.166's for `min`, at `R°`): `X ⊑ est R ⟺ X ⊑ ∈ ∧
     X·∋ ⊑ R°`, mirrored (`X·∋` becomes `(∋ a)° ≫ X`). -/
 public theorem le_est_iff {R : a ⟶ a} {X : PowerAllegory.powerObj a ⟶ a} :
