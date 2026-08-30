@@ -7571,7 +7571,9 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `step (d,(a,b))=((d+a)/10,(d+b)/10)`.
 
 `FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `H≜⦇[arb,step]⦈°`, #h(4pt)
-`! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r)∪𝟙`, #h(4pt) `w≜2¹⁷`.
+`! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r)∪𝟙` #h(4pt)
+#src[`l`, `r` are @coprod-laws's injections into `FX=1+(Digit×X)`, so `l : 1⟶F(Interval)` and
+ `r : Digit×Interval⟶F(Interval)`], #h(4pt) `w≜2¹⁷`.
 ]]<tex-defn>
 
 // ONE WIRE, `[0,2¹⁶)` to `Decimal`; the `list` is born only where the algebra builds the digits.
