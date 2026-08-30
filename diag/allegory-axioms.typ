@@ -3113,7 +3113,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
 #pagebreak(weak: true)
-=== `⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R)` <sec-greedy-thm72>
+=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R and R a preorder` <sec-greedy-thm72>
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
@@ -3140,8 +3140,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`F(R)S⊑SR⟹⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
-    #src[Theorem 7.2, the greedy theorem; `S` monotonic on `R` — @mon-defn — and `R` a preorder]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
@@ -3155,19 +3153,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
        [`⦇`#frc([`S`])` est(R)⦈`], [`⊑`], [`⦇S⦈`],
        grid.cell(colspan: 3, align: center + horizon)[and],
        [`⦇S⦈°⦇`#frc([`S`])` est(R)⦈`], [`⊑`], [`R°`],
-       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[universal property of est
-         — @est-75's #frc([`S`]) `est(R)=S∩(S°\R°)` at `S:=⦇S⦈`]])])],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[@est-75 at `⦇S⦈`]])])],
   [],
 
   [#vstep(IMP, [], [#frc([`S`])` est(R)⊑S` \
-    #src[the left conjunct; @est-75 at `S` is `S∩(S°\R°)`, and `⦇−⦈` is monotone]])],
+    #src[the left conjunct; @est-75, and `⦇−⦈` is monotone]])],
   [],
 
   [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-est), rhs: (mb-Ro,))),
     [`S°F(R°)(`#frc([`S`])` est(R))⊑R°` \
-     #src[the right conjunct; the hylomorphism theorem #h(4pt) #src[Theorem 6.2] #h(4pt) makes
-      `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` the least `X` with `X=S°F(X)(`#frc([`S`])` est(R))`, so
-      Knaster–Tarski leaves this one inequation]])],
+     #src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
+      `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[Theorem 6.2] #h(4pt) — so Knaster–Tarski
+      leaves this one inequation]])],
   // `S°` births the `F` wire and `S%∋` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  `S%∋` births the `E` wire in its place, `est(R)` kills it.
   [#trow(
@@ -3184,7 +3181,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     hands: ((TXF, 2.45, 1.45, [`F`]), (TXH, 1.45, 0.45, [`E`])), top: ((TXO, [`A`]),))],
 
   [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
-    [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑R°` — @est-75 again: #frc([`S`]) `est(R)⊑S°\R°`]])],
+    [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑R°` — @est-75]])],
   // The collapsed group's bead sits at the middle of the three it replaces.
   [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((TXO, [`A`]),))],
 
