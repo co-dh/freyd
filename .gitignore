@@ -39,3 +39,5 @@ Frobenius.pdf
 /package-lock.json
 # personal scratch, never commit
 /nouse
+# lean-refactor's index lives in /.lake; this is the empty file it touches at the repository root.
+/refactor-index.db

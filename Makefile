@@ -11,11 +11,13 @@
 TYP   := diag/allegory-axioms.typ diag/allegory2.typ
 PDF   := $(TYP:.typ=.pdf)
 LEAN  := $(wildcard diag/*.lean diag/tool/*.lean)
+BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.lean rel/*.lean)
 # One file standing for all of diag/generated: `diag-regen` deletes and rewrites the pictures
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
+DB    := .lake/build/refactor-index.db
 
-.PHONY: p w
+.PHONY: p w cite
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -25,8 +27,13 @@ STAMP := diag/generated/.drawn
 # notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
 # box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
 # its own copy of those, so nothing reaches above diag/ any more.
-p: $(STAMP)
+p: $(STAMP) cite
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+
+# The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
+# a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
+cite: $(DB)
+	./scripts/cite-check $(TYP)
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file
@@ -49,3 +56,9 @@ $(STAMP): $(LEAN)
 	./scripts/cap lake build diag-export
 	./scripts/diag-regen
 	@touch $@
+
+# The index carries the statement keys the markers are checked against, so it is stale the moment any
+# Lean source is.  Re-extraction is per module — one edited file costs seconds, not the full 84.
+$(DB): $(BOOK) $(LEAN)
+	./scripts/cap lake build
+	./scripts/lean-refactor index

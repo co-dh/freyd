@@ -2141,9 +2141,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,
 // and nothing before this said what it was.
 #disp[#definition[
-`φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`.
+`φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`
+#src[`lean:AOP.A6_2.Monotonic@66dddf1e`].
 
-`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X`.
+`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X` #src[`lean:AOP.A6_2.mu@4928a490`].
 ]]<mu-defn>
 
 #disp[#table(
@@ -2152,10 +2153,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1, lean:AOP.A6_2.mu]],
+  [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1, `lean:AOP.A6_2.mu_le@9918bd39`]],
   [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
    and every chapter after it uses],
-  [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1, lean:AOP.A6_2.mu_fixed]],
+  [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1, `lean:AOP.A6_2.mu_fixed@2d3d1a8a`]],
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
 )]<mu-laws>
@@ -2198,7 +2199,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
-    #src[Theorem 6.2, lean:AOP.A6_3.hylo_fixed; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+    #src[Theorem 6.2, `lean:AOP.A6_3.hylo_fixed@42010f9f`; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
@@ -2223,7 +2224,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     hands: ((TXF, 3.0, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek — lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha]])],
+    [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek — `lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6`]])],
   [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
 ))]<hylo-fix>
 
@@ -2233,7 +2234,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2, lean:AOP.A6_3.hylo_le_of_prefixed]],
+  Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_le_of_prefixed@b892517c`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
@@ -2252,7 +2253,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(IMP, mbp(hterm((hb-alo, hb-FW, hb-R), [`T`], [`A`], rhs: (hb-W,))),
     [`α°F(⦇S⦈°\X)R⊑⦇S⦈°\X` \ #src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
-     lean:AOP.A6_2.relCata_le_of_prefixed]])],
+     `lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a`]])],
   [#trow(
     tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
       hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
@@ -2290,7 +2291,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2, lean:AOP.A6_3.hylo_eq_mu]],
+  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_eq_mu@c60df971`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-mu,), [`B`], [`A`])),
@@ -2299,13 +2300,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(SQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
     [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
-     `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix; lean:AOP.A6_2.mu_le_of_fixed]])],
+     `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix; `lean:AOP.A6_2.mu_le_of_fixed@8ea2332b`]])],
   [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
 
   [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
     [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
-     lean:AOP.A6_2.mu_prefixed]])],
+     `lean:AOP.A6_2.mu_prefixed@fc0a1dca`]])],
   [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
 ))]<hylo-mu>
 

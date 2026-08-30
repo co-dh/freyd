@@ -53,13 +53,17 @@ variable [LocallyCompleteDistributiveAllegory 𝒜] {a b : 𝒜}
 /-- `(νX : φX)`: the GREATEST fixed point of `φ`, as the `Sup` of the postfixed points. -/
 @[expose] public def nu (φ : (a ⟶ b) → (a ⟶ b)) : a ⟶ b := Sup (fun X => X ⊑ φ X)
 
+/-- **Theorem 6.1, leastness**: `μφ` is below every prefixed point — the half that bounds a `μ`
+    from above, and the only one that needs no monotonicity. -/
+public theorem mu_le {φ : (a ⟶ b) → (a ⟶ b)} {Y : a ⟶ b} (h : φ Y ⊑ Y) : mu φ ⊑ Y :=
+  Sup_le (fun _S hS => hS _ h)
+
 /-- **Theorem 6.1, first half**: `μφ` is itself a prefixed point. -/
 public theorem mu_prefixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ (mu φ) ⊑ mu φ :=
-  le_Inf (fun _T hT =>
-    le_trans (hφ (show mu φ ⊑ _T from Sup_le (fun _S hS => hS _ hT))) hT)
+  le_Inf (fun _T hT => le_trans (hφ (mu_le hT)) hT)
 
 public theorem mu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : mu φ ⊑ φ (mu φ) :=
-  Sup_le (fun _S hS => hS _ (hφ (mu_prefixed hφ)))
+  mu_le (hφ (mu_prefixed hφ))
 
 /-- **Theorem 6.1 (Knaster-Tarski)**: `μφ` is a fixed point — with the `Sup_le`-based lower
     bound (hence `mu_le_of_fixed`), the least solution of `φX ⊑ X` and of `φX = X` coincide. -/
@@ -67,7 +71,7 @@ public theorem mu_fixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : φ
   le_antisymm (mu_prefixed hφ) (mu_postfixed hφ)
 
 public theorem mu_le_of_fixed {φ : (a ⟶ b) → (a ⟶ b)} {T : a ⟶ b} (h : φ T = T) : mu φ ⊑ T :=
-  Sup_le (fun _S hS => hS T (show φ T ⊑ T by rw [h]; exact le_refl T))
+  mu_le (show φ T ⊑ T by rw [h]; exact le_refl T)
 
 public theorem nu_postfixed {φ : (a ⟶ b) → (a ⟶ b)} (hφ : Monotonic φ) : nu φ ⊑ φ (nu φ) :=
   Sup_le (fun _T hT => le_trans hT (hφ (le_Sup hT)))
@@ -85,7 +89,7 @@ theorem le_nu_of_fixed {φ : (a ⟶ b) → (a ⟶ b)} {T : a ⟶ b} (h : φ T = 
 
 /-- `μ` is monotonic in the mapping: a pointwise-smaller body has a smaller `μ`. -/
 public theorem mu_le_mu {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X ⊑ ψ X) : mu φ ⊑ mu ψ :=
-  le_Inf (fun T hT => show mu φ ⊑ T from Sup_le (fun _S hS => hS _ (le_trans (h T) hT)))
+  le_Inf (fun T hT => mu_le (le_trans (h T) hT))
 
 /-- `μ` depends only on the body's graph. -/
 public theorem mu_congr {φ ψ : (a ⟶ b) → (a ⟶ b)} (h : ∀ X, φ X = ψ X) : mu φ = mu ψ :=
@@ -370,9 +374,9 @@ public theorem mu_rolling {c d : 𝒜} {φ : (a ⟶ b) → (c ⟶ d)} {ψ : (c �
   have hφψ : Monotonic (fun X => φ (ψ X)) := fun h => hφ (hψ h)
   have hψφ : Monotonic (fun Y => ψ (φ Y)) := fun h => hψ (hφ h)
   have h1 : mu (fun X => φ (ψ X)) ⊑ φ (mu (fun Y => ψ (φ Y))) :=
-    Sup_le (fun _S hS => hS _ (hφ (mu_prefixed hψφ)))
+    mu_le (hφ (mu_prefixed hψφ))
   have h2 : mu (fun Y => ψ (φ Y)) ⊑ ψ (mu (fun X => φ (ψ X))) :=
-    Sup_le (fun _S hS => hS _ (hψ (mu_prefixed hφψ)))
+    mu_le (hψ (mu_prefixed hφψ))
   have h3 : φ (mu (fun Y => ψ (φ Y))) ⊑ mu (fun X => φ (ψ X)) :=
     le_trans (hφ h2) (mu_prefixed hφψ)
   exact le_antisymm h1 h3

@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""cite-check — the notes' `lean:<decl>@<key>` markers against the statements they cite.
+
+A marker is a HUMAN's certificate: he read the display and the Lean statement side by side once and
+copied the statement's key down.  The key is `decl_info.stmt_key`, which the indexer computes from
+the alpha- and universe-normalised statement, so ANY later edit to that statement fails this check
+and sends him back to re-read the pair.  Nothing here checks that the display says what Lean says —
+no tool can; it checks that the thing he certified has not moved under him.
+"""
+import re, sqlite3, sys
+from os.path import commonprefix
+
+DB = ".lake/build/refactor-index.db"
+# The note writes the marker inside a raw span — outside one Typst reads the `@` as a reference and
+# refuses to compile.  The lookbehind keeps a comment's `AOP/A4_2.lean:223` from reading as a marker.
+MARK = re.compile(r"(?<![\w.])lean:([^\s\[\];,@`]+)(?:@([0-9a-f]+))?")
+# 32 bits of the 64-bit `stmt_key`: 8 hex digits stay readable in the rendered `#src`, and a changed
+# statement keeping the low half is a 1-in-4-billion coincidence.
+key = lambda k: f"{k & 0xFFFFFFFF:08x}"
+
+Q = ("select i.user_name, i.module, m.source, r.sl1, i.stmt_key from decl_info i"
+     " join module m on m.name = i.module"
+     " left join decl_range r on r.name = i.name and r.module = i.module"
+     " where i.internal = 0 and ")
+
+
+def resolve(db, mark):
+    """`AOP.A6_2.mu` is the MODULE plus the name as its file writes it (`Freyd.Alg.mu` in full).
+    A full Lean name works too, so try that and then every module/suffix split."""
+    rows = db.execute(Q + "i.user_name = ?", (mark,)).fetchall()
+    parts = mark.split(".")
+    for k in range(len(parts) - 1, 0, -1):
+        mod, rest = ".".join(parts[:k]), ".".join(parts[k:])
+        rows += db.execute(Q + "i.module = ? and (i.user_name = ? or i.user_name like ?)",
+                           (mod, rest, "%." + rest)).fetchall()
+    return list({r[:2]: r for r in rows}.values())
+
+
+def near(db, mark):
+    """What the author probably meant.  A marker goes wrong two ways — the declaration was renamed
+    or moved, and it was mistyped — so look for the same last component anywhere, then for the
+    closest spellings inside the module he named."""
+    *mod, last = mark.split(".")
+    moved = db.execute("select module, user_name from decl_info where internal = 0"
+                       " and (user_name = ? or user_name like ?) limit 4", (last, "%." + last))
+    hits = [(m, u) for m, u in moved]
+    if not hits:
+        mod = ".".join(mod)
+        rows = db.execute("select user_name from decl_info where internal = 0 and module = ?", (mod,))
+        shared = lambda u: len(commonprefix([u.rpartition(".")[2], last]))
+        hits = [(mod, u) for (u,) in sorted(rows, key=lambda r: -shared(r[0]))[:3] if shared(u) >= 3]
+    return [f"{m}.{u.rpartition('.')[2]}" for m, u in hits]
+
+
+def check(db, mark, want, loc):
+    """One marker: the message says what to do, not merely that something is wrong."""
+    hits = resolve(db, mark)
+    if not hits:
+        also = near(db, mark)
+        hint = f"did you mean {', '.join(also)}?" if also else \
+            "no declaration of that name in the index; re-run ./scripts/lean-refactor index if it is new"
+        return f"{loc}: {mark}: no such declaration — {hint}"
+    if len(hits) > 1:
+        names = ", ".join(f"{u} ({m})" for u, m, *_ in hits)
+        return f"{loc}: {mark}: ambiguous — {names}; write the full Lean name"
+    user, _, src, line, k = hits[0]
+    at = f"{src}:{line + 1}" if line is not None else src
+    if want is None:
+        return f"{loc}: {mark}: uncertified — read {user} at {at} against the display, then write" \
+               f" lean:{mark}@{key(k)}"
+    if want != key(k):
+        return f"{loc}: {mark}: statement changed, key {want} → {key(k)}; re-verify the display" \
+               f" against {user} at {at} and update the marker"
+    return None
+
+
+def main(paths):
+    try:
+        db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        db.execute("select 1 from decl_info limit 1")
+    except sqlite3.Error as e:
+        sys.exit(f"cite-check: {DB}: {e} — run ./scripts/cap lake build && ./scripts/lean-refactor index")
+    bad, n = [], 0
+    for p in paths:
+        for i, text in enumerate(open(p, encoding="utf-8"), 1):
+            for mark, want in MARK.findall(text):
+                n += 1
+                bad.append(check(db, mark.rstrip("."), want or None, f"{p}:{i}"))
+    bad = [b for b in bad if b]
+    if bad:
+        print(*bad, sep="\n", file=sys.stderr)
+        sys.exit(f"cite-check: {len(bad)} of {n} markers failed")
+    print(f"cite-check: {n} markers verified")
+
+
+main(sys.argv[1:])
