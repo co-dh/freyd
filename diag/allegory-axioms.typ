@@ -3207,8 +3207,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
        [`F(est(R))f`], [`⊑`], [`F(∋)f`],
        grid.cell(colspan: 3, align: center + horizon)[and],
        [`(F(∋)f)°F(est(R))f`], [`⊑`], [`R°`],
-       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[universal property of est
-         — @est-laws's #frc([`S`]) `est(R)=S∩(S°\R°)` at `S:=F(∋)f`]],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[@est-laws's #frc([`S`])
+         `est(R)=S∩(S°\R°)` at `S:=F(∋)f`; `F(est(R))f⊑(F(∋)f)°\R°⟺(F(∋)f)°F(est(R))f⊑R°`
+         — @div-laws]],
        grid.cell(colspan: 3, align: left + horizon)[#src[`est(R)≜∋∩(∈\R°)` — @est-defn]])])],
   // One picture per conjunct: the first is row 1's left panel twice over, `est(R)` against `∋`, so
   // the inequation is bead against bead; the second is the row-3 panel the next step keeps.
@@ -5814,7 +5815,7 @@ in @mu-defn.
   [all Knaster–Tarski leaves to prove],
   [$frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑H` #h(6pt) #src[(9.2)] \
    `H°` $frac(#[`T°`], ∋)$ `P(F(M)h) est(R)⊑R` #h(6pt) #src[(9.3)]],
-  [(9.1) split by the universal property of `est`],
+  [(9.1) split by `M=H∩(H°\R°)`],
   [`P(X) est(R)⊑(∋X)∩(∈\(XR°))` \ #src[(9.4) = (7.10), @est-laws]],
   [the only fact about `est` either proof uses],
   [`(μX :` $frac(#[`T°`], ∋)$ `thin Q P(F(X)h) est(R))⊑M` \ #src[Theorem 9.2, `Q` a preorder with

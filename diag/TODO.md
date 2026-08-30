@@ -16,12 +16,20 @@ Working branch: `est-rename`. Style target: §13.3.1's `<mon-thm71>` table — `
       at `R°`, `485fb38`
 - [x] Named converses instead of `°`: 72 × `≤°` → `≥`, `485fb38`
 
-## In flight
+## In flight — seven agents, one section each, all worktrees off `est-rename`
 
-- [ ] §12.1 subseq — branch `style-subseq`
-- [ ] §13.4 party subsections, §13.6b security van — branch `style-party`
-- [ ] §13.3.4c–f get the Hinze–Marsden column — branch `style-mss-hm`
-- [ ] §14.1–14.6 law tables — branch `style-ch14`
+- [ ] §13.3.1 `<mon-thm71>`'s `⟺` row and §15's line ~5816: drop the law's name, cite the `@div-laws`
+      shunt. Also report whether `@est-laws` and `@est-75` are one fact under two labels — main checkout
+- [ ] §13.3.3b `<takewhile-alg>` and §13.3.5b `<filter-alg>`: `[A]` becomes two wires — `style-wires`
+- [ ] §13.3.4c–f get the Hinze–Marsden column; 13.3.4g's `%∋` beads split — `style-mss-hm`
+- [ ] §13.4 party subsections, §13.6b security van — `style-party`
+- [ ] §13.5.2b: curry the bifunctor so no wire crosses — `style-curry`
+- [ ] §11.6.4: is Theorem 6.2 proved or only stated? — `style-hylo`
+- [ ] §14.1–14.6 law tables — `style-ch14`
+
+## Merged into `est-rename`, or waiting to merge
+
+- [x] §12.1 subseq — `style-subseq`, `2d406d9`, not yet merged
 
 ## Next
 
@@ -32,7 +40,8 @@ Working branch: `est-rename`. Style target: §13.3.1's `<mon-thm71>` table — `
       Most of their rows state B&dM theorems the note cites rather than proves (8.1, 9.1, 9.2, 10.1,
       Prop 9.1/9.4) — those stay citations unless the proof is written
 - [ ] 13.4.4a and the others still giving the reason its own column: fold it into column 1
-- [ ] Colour the wires by type across the string diagrams, 13.5.2a first; one palette, in a comment
+- [ ] Colour the wires by type across the string diagrams, 13.5.2a first; one palette, in a comment.
+      Touches every panel, so it must run alone — after the seven in-flight branches are merged
 - [ ] Curry the bifunctor in 13.5.2b so no wire crosses — show the picture before changing more
 - [ ] Rewrite `X⊑Y`, `X` entire, `Y` simple as its values — `X`/`Y` clash with `@takewhile-defn`'s
       `(g→X,Y)`; cited from §13.3.3, §13.3.4 and §13.3.5, so all three move together
