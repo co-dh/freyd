@@ -135,15 +135,15 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 public theorem cata_fusion (I : InitialAlgebra F) {c d : 𝒜}
     (φ : F.obj c ⟶ c) (h : c ⟶ d) (ψ : F.obj d ⟶ d)
     (hcond : φ ≫ h = F.map h ≫ ψ) :
-    relCata I φ ≫ h = relCata I ψ :=
-  (relCata_UP I ψ (relCata I φ ≫ h)).mp <| by
-    calc I.α ≫ (relCata I φ ≫ h)
-        = (I.α ≫ relCata I φ) ≫ h := by rw [← Cat.assoc]
-      _ = (F.map (relCata I φ) ≫ φ) ≫ h := by rw [relCata_cancel]
-      _ = F.map (relCata I φ) ≫ (φ ≫ h) := by rw [Cat.assoc]
-      _ = F.map (relCata I φ) ≫ (F.map h ≫ ψ) := by rw [hcond]
-      _ = (F.map (relCata I φ) ≫ F.map h) ≫ ψ := by rw [← Cat.assoc]
-      _ = F.map (relCata I φ ≫ h) ≫ ψ := by rw [← F.map_comp]
+    relCata φ ≫ h = relCata ψ :=
+  (relCata_UP I ψ (relCata φ ≫ h)).mp <| by
+    calc I.α ≫ (relCata φ ≫ h)
+        = (I.α ≫ relCata φ) ≫ h := by rw [← Cat.assoc]
+      _ = (F.map (relCata φ) ≫ φ) ≫ h := by rw [relCata_cancel]
+      _ = F.map (relCata φ) ≫ (φ ≫ h) := by rw [Cat.assoc]
+      _ = F.map (relCata φ) ≫ (F.map h ≫ ψ) := by rw [hcond]
+      _ = (F.map (relCata φ) ≫ F.map h) ≫ ψ := by rw [← Cat.assoc]
+      _ = F.map (relCata φ ≫ h) ≫ ψ := by rw [← F.map_comp]
 
 end Fusion
 

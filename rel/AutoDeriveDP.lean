@@ -198,10 +198,10 @@ def algFn : (Fobj L E (⟨Ans⟩ : RelSet.{0})).carrier → Ans
   | Sum.inr (e, x) => P.hstep e x
 
 /-- The refold algebra as a map in `Rel(Set)`. -/
-def alg : Fobj L E (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := graph P.algFn
+def alg : (F L E).obj (⟨Ans⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) := graph P.algFn
 
 /-- The decomposition relation (the coalgebra-converse `T` of `dynamic_programming_inf`). -/
-def coalg : Fobj L E (⟨B⟩ : RelSet.{0}) ⟶ (⟨B⟩ : RelSet.{0}) := fun t v =>
+def coalg : (F L E).obj (⟨B⟩ : RelSet.{0}) ⟶ (⟨B⟩ : RelSet.{0}) := fun t v =>
   match t with
   | Sum.inl d => P.tbase d v
   | Sum.inr (e, v') => P.tstep e v' v
@@ -219,10 +219,10 @@ def Hpt (v : B) (x : Ans) : Prop :=
 
 /-- The abstract `H` of `dynamic_programming_inf`. -/
 def hylo : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}) :=
-  (relCata (initial L E) P.coalg)° ≫ relCata (initial L E) P.alg
+  (relCata P.coalg)° ≫ relCata P.alg
 
 theorem hylo_pt (v : B) (x : Ans) : P.hylo v x ↔ P.Hpt v x := by
-  show ((relCata (initial L E) P.coalg)° ≫ relCata (initial L E) P.alg) v x ↔ _
+  show ((relCata P.coalg)° ≫ relCata P.alg) v x ↔ _
   rw [← cataR_eq_relCata, ← cataR_eq_relCata]
   exact Iff.rfl
 

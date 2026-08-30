@@ -180,7 +180,7 @@ public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) 
     exact cataTree_functional f hf t r r' h1 h2
 
 /-- The initial `F`-algebra structure on `Tree A`. -/
-@[expose] public def initial (A : Type) : InitialAlgebra (F A) where
+@[expose, instance] public def initial (A : Type) : InitialAlgebra (F A) where
   t := dTree A
   α := graph con
   α_map := graph_map con
@@ -308,8 +308,8 @@ public theorem cataTreeFold_comm {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
     `cataTreeFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism
     laws (fusion, greedy, …) apply to `cataR` over binary trees.  Tree analogue of
     `A6_SnocList.cataR_eq_relCata`. -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
-    cataR φ = relCata (initial A) φ :=
+public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F A).obj c ⟶ c) :
+    cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataTreeFold_comm φ)
 
 end Freyd.Alg.RelSet.TB

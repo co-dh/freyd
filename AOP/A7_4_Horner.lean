@@ -54,7 +54,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     transposed to `R°` by `recip_mono`/`monotonicAlg_recip_iff` (the latter needs `f` a map). -/
 public theorem greedy_of_refinement_mono (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
-    (href : f ⊑ Λ S ≫ est R) : relCata I f ⊑ Λ (relCata I S) ≫ est R := by
+    (href : f ⊑ Λ S ≫ est R) : relCata f ⊑ Λ (relCata S) ≫ est R := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
   have hmono' : MonotonicAlg f R° := (monotonicAlg_recip_iff hf hFr).mp hmono
@@ -146,7 +146,7 @@ public theorem horner_correct {L E A1 : Type}
     (xs : SnocList L E) :
     spec xs (foldFn xs).2 ∧ ∀ v, spec xs v → v ≤ (foldFn xs).2 := by
   -- The genuine greedy content: the fold lands inside the Pareto frontier of ⦇S⦈.
-  have Hcore : relCata (initial L E) alg ⊑ Λ (relCata (initial L E) S) ≫ est R :=
+  have Hcore : relCata alg ⊑ Λ (relCata S) ≫ est R :=
     greedy_of_refinement_mono (F_preservesRecip L E) (initial L E) halg_map htrans hmono href
   rw [← cataR_eq_relCata alg, ← cataR_eq_relCata S] at Hcore
   -- Apply the refinement at the actual fold output `foldFn xs`.

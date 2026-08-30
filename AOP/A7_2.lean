@@ -33,6 +33,12 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 𝒜}
 
+-- The note's spelling of the greedy law, `local` because the exported `⦇…⦈` is `cataR`'s
+-- (`AOP.A6_ConsList` and friends); `%∋` is the fraction bar the note draws for `Λ R = R/∋`.
+local notation:max "⦇" R "⦈" => relCata R
+local postfix:max "%∋" => Λ
+local notation:max "est(" R ")" => est R
+
 /-! ## Monotonic algebras (B&dM p.172) -/
 
 section MonotonicAlg
@@ -162,7 +168,7 @@ variable {R : a ⟶ a} {S : F.obj a ⟶ a}
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (Λ S ≫ est R) ⊑ Λ (relCata I S) ≫ est R := by
+    ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans
     rwa [Allegory.recip_comp] at h
@@ -214,7 +220,7 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
     form `Λ S ≫ est R` up to equality. -/
 public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
     {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg f R°)
-    (href : f ⊑ Λ S ≫ est R) : relCata I f ⊑ Λ (relCata I S) ≫ est R := by
+    (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
   apply le_Λ_comp_est_iff.mpr
   refine ⟨relCata_mono I hfS, ?_⟩

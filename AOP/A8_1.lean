@@ -300,7 +300,7 @@ variable {F : Relator 𝒜 𝒜}
     reciprocated monotonicity `S° ≫ FQ ⊑ Q ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a ⟶ a}
     {S : F.obj a ⟶ a} (htrans : Q ≫ Q ⊑ Q) (hmono : MonotonicAlg S Q°) :
-    relCata I (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata I S) ≫ thinRel Q := by
+    relCata (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
   · -- (i) `⦇ΛW·thin Q⦈ ≫ ∈ ⊑ ⦇S⦈`, by the fusion law (6.5)
@@ -354,8 +354,8 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a �
 public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : a ⟶ a}
     {S : F.obj a ⟶ a} (hQR : Q ⊑ R°) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
     (htransR : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg S Q°) :
-    relCata I (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata I S) ≫ est R := by
-  have hrhs : Λ (relCata I S) ≫ est R = (Λ (relCata I S) ≫ thinRel Q) ≫ est R := by
+    relCata (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
+  have hrhs : Λ (relCata S) ≫ est R = (Λ (relCata S) ≫ thinRel Q) ≫ est R := by
     rw [Cat.assoc, thinRel_comp_est hQR hreflQ htransR]
   rw [hrhs]
   exact comp_mono_right (thinning hFr I htransQ hmono) (est R)

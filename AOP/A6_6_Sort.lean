@@ -57,7 +57,7 @@ public theorem selection_sort_correct (oalg : Fobj Unit A (dList A) ⟶ dList A)
     (perm : dList A ⟶ dList A) (hperm : perm° = perm) (hord : cataR oalg ⊑ Cat.id (dList A))
     (hfus : (F Unit A).map perm ≫ sortAlg select ⊑ oalg ≫ perm) :
     sort select ⊑ perm ≫ cataR oalg := by
-  have hf : relCata (initial Unit A) (sortAlg select) ⊑ relCata (initial Unit A) oalg ≫ perm :=
+  have hf : relCata (sortAlg select) ⊑ relCata oalg ≫ perm :=
     relCata_le_comp (initial Unit A) hfus
   rw [← cataR_eq_relCata (sortAlg select), ← cataR_eq_relCata oalg] at hf
   have hrec := recip_mono hf

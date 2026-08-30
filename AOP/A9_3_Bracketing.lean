@@ -28,7 +28,7 @@ theorem bracketing_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   dynamic_programming hFr I hh hmono htrans
 
 end Freyd.Alg

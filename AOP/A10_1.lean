@@ -135,10 +135,10 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
 public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : Q ≫ F.map ((relCata I T)° ≫ relCata I h) ≫ h
-        ⊑ F.map ((relCata I T)° ≫ relCata I h) ≫ h ≫ R) :
+    (hQ : Q ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
+        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (greedy_dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
 
 /-! ## B&dM p.246 — the greedy hypotheses via a bifunctor (recall of Proposition 9.4)
@@ -164,16 +164,17 @@ theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.Preserves
     (`h·G(U,R) ⊆ R·h`) and reciprocal bound `hV` (`V°·H ⊆ H·R°`), plus reflexivity of `U`,
     discharge all of `greedy_dp`'s hypotheses — so the greedy recursion refines the spec. -/
 theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
-    (I : InitialAlgebra (G.fixLeft e)) {h : G.obj e a ⟶ a} {T : G.obj e b ⟶ b} {R : a ⟶ a}
+    (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj a ⟶ a}
+    {T : (G.fixLeft e).obj b ⟶ b} {R : a ⟶ a}
     {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R° ≫ R° ⊑ R°) (hUrefl : Cat.id e ⊑ U°)
     (hU : G.map U° R° ≫ h ⊑ h ≫ R°)
-    (hV : V ≫ ((relCata I T)° ≫ relCata I h) ⊑ ((relCata I T)° ≫ relCata I h) ≫ R) :
+    (hV : V ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
-      ⊑ Λ ((relCata I T)° ≫ relCata I h) ≫ est R := by
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R := by
   -- Prop 9.4(ii) needs `hV` at `V°`,`R°`; the involution restores it after `hGr` folds `G(U°,V°)°`.
-  have hV' : V°° ≫ ((relCata I T)° ≫ relCata I h) ⊑ ((relCata I T)° ≫ relCata I h) ≫ R°° := by
+  have hV' : V°° ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R°° := by
     rw [Allegory.recip_recip, Allegory.recip_recip]; exact hV
-  have hQ := birelator_thin_condition hGr (H := (relCata I T)° ≫ relCata I h) hh hU hV'
+  have hQ := birelator_thin_condition hGr (H := (relCata T)° ≫ relCata h) hh hU hV'
   rw [hGr U V, Allegory.recip_recip, Allegory.recip_recip] at hQ
   exact greedy_dp (F := G.fixLeft e) (Birelator.fixLeft_preservesRecip hGr e) I hh
     (birelator_fixLeft_mono hUrefl hU) htrans hQ

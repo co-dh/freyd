@@ -219,11 +219,11 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
 public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip)
     (I : InitialAlgebra F) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {τ : b ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hstrict : T° ≫ F.map (((relCata I T)° ≫ relCata I h) ∪ τ) ≫ h
-        ⊑ ((relCata I T)° ≫ relCata I h) ∪ τ)
+    (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
+        ⊑ ((relCata T)° ≫ relCata h) ∪ τ)
     (hτ : τ° ≫ topHom b a ⊑ R°) :
     mu (dpBodyInf F T h R τ)
-      ⊑ Λ (((relCata I T)° ≫ relCata I h) ∪ τ) ≫ est R :=
+      ⊑ Λ (((relCata T)° ≫ relCata h) ∪ τ) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS =>
     hS _ (dp_inf_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hstrict hτ))
 

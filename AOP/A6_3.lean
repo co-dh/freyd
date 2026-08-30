@@ -37,7 +37,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
   §6.3's fixed-point reasoning. -/
 
 /-- **B&dM p.142**: `⦇α⦈ = id`. -/
-public theorem relCata_alpha (I : InitialAlgebra F) : relCata I I.α = Cat.id I.t := by
+public theorem relCata_alpha (I : InitialAlgebra F) : relCata I.α = Cat.id I.t := by
   have h : I.α ≫ Cat.id I.t = F.map (Cat.id I.t) ≫ I.α := by
     rw [Cat.comp_id, F.map_id, Cat.id_comp]
   exact ((relCata_UP I I.α (Cat.id I.t)).mp h).symm
@@ -60,40 +60,40 @@ public theorem hyloBody_monotonic {a b : 𝒜} (R : F.obj a ⟶ a) (S : F.obj b 
     leastness half). -/
 public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     {R : F.obj a ⟶ a} {S : F.obj b ⟶ b} {X : b ⟶ a} (h : S° ≫ F.map X ≫ R ⊑ X) :
-    (relCata I S)° ≫ relCata I R ⊑ X := by
-  apply (le_leftDiv_iff (relCata I R) ((relCata I S)°) X).mp
+    (relCata S)° ≫ relCata R ⊑ X := by
+  apply (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp
   apply relCata_le_of_prefixed
-  apply (le_leftDiv_iff _ ((relCata I S)°) X).mpr
-  have hkey : (relCata I S)° ≫ I.α° = S° ≫ F.map ((relCata I S)°) := by
-    have hcancel_recip : (I.α ≫ relCata I S)° = (F.map (relCata I S) ≫ S)° := by
+  apply (le_leftDiv_iff _ ((relCata S)°) X).mpr
+  have hkey : (relCata S)° ≫ I.α° = S° ≫ F.map ((relCata S)°) := by
+    have hcancel_recip : (I.α ≫ relCata S)° = (F.map (relCata S) ≫ S)° := by
       rw [relCata_cancel I S]
-    rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr (relCata I S)] at hcancel_recip
+    rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr (relCata S)] at hcancel_recip
     exact hcancel_recip
-  have hcomp : (relCata I S)° ≫ I.α° ≫ F.map (((relCata I S)°) \ X) ≫ R
-      = S° ≫ F.map ((relCata I S)° ≫ (((relCata I S)°) \ X)) ≫ R := by
+  have hcomp : (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
+      = S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R := by
     rw [F.map_comp, ← Cat.assoc, ← Cat.assoc, hkey, Cat.assoc, Cat.assoc, Cat.assoc]
   rw [hcomp]
-  have hWX : (relCata I S)° ≫ (((relCata I S)°) \ X) ⊑ X := leftDiv_comp_le _ X
+  have hWX : (relCata S)° ≫ (((relCata S)°) \ X) ⊑ X := leftDiv_comp_le _ X
   exact le_trans (comp_mono_left S° (comp_mono_right (F.map_mono hWX) R)) h
 
 /-- **Theorem 6.2 (hylomorphism theorem, B&dM p.142)**: the hylomorphism `[[R,S]]` (mirrored:
     `(|S|)° ≫ (|R|)`) equals the least fixed point of the body `S° ≫ F.map X ≫ R`. -/
 public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
-    (relCata I S)° ≫ relCata I R = mu (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := by
+    (relCata S)° ≫ relCata R = mu (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := by
   have hφ_mono : Monotonic (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := hyloBody_monotonic R S
-  have hstepA : S° ≫ F.map ((relCata I S)° ≫ relCata I R) ≫ R
-      = (relCata I S)° ≫ relCata I R := by
-    have h1 : F.map ((relCata I S)° ≫ relCata I R)
-        = (F.map (relCata I S))° ≫ F.map (relCata I R) := by
+  have hstepA : S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
+      = (relCata S)° ≫ relCata R := by
+    have h1 : F.map ((relCata S)° ≫ relCata R)
+        = (F.map (relCata S))° ≫ F.map (relCata R) := by
       rw [F.map_comp, hFr]
-    have h4 : S° ≫ (F.map (relCata I S))° = (relCata I S)° ≫ I.α° := by
-      have hcancel_recip : (I.α ≫ relCata I S)° = (F.map (relCata I S) ≫ S)° := by
+    have h4 : S° ≫ (F.map (relCata S))° = (relCata S)° ≫ I.α° := by
+      have hcancel_recip : (I.α ≫ relCata S)° = (F.map (relCata S) ≫ S)° := by
         rw [relCata_cancel I S]
       rw [Allegory.recip_comp, Allegory.recip_comp] at hcancel_recip
       exact hcancel_recip.symm
     rw [h1, ← Cat.assoc, ← Cat.assoc, h4, Cat.assoc, Cat.assoc, ← relCata_cancel I R,
-      ← Cat.assoc I.α° I.α (relCata I R), I.recip_alpha_alpha, Cat.id_comp]
+      ← Cat.assoc I.α° I.α (relCata R), I.recip_alpha_alpha, Cat.id_comp]
   exact le_antisymm (hylo_le_of_prefixed hFr I (mu_prefixed hφ_mono)) (mu_le_of_fixed hstepA)
 
 /-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored), extracted from
@@ -101,7 +101,7 @@ public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b :
     the hylomorphism theorem (B&dM p.220, "definition of `H` and hylomorphism theorem"). -/
 public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
-    S° ≫ F.map ((relCata I S)° ≫ relCata I R) ≫ R = (relCata I S)° ≫ relCata I R := by
+    S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R := by
   rw [hylo_eq_mu hFr I R S]
   exact mu_fixed (hyloBody_monotonic R S)
 
@@ -166,7 +166,7 @@ theorem mu_simple (hFr : F.PreservesRecip) {a b : 𝒜} {R : F.obj a ⟶ a} {S :
     simplicity of `R` and of `S°`. -/
 theorem hylo_simple (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
     {R : F.obj a ⟶ a} {S : F.obj b ⟶ b} (hR : Simple R) (hS : Simple (S°)) :
-    Simple ((relCata I S)° ≫ relCata I R) := by
+    Simple ((relCata S)° ≫ relCata R) := by
   rw [hylo_eq_mu hFr I R S]
   exact mu_simple hFr hR hS
 
@@ -212,7 +212,7 @@ theorem hylo_eq_mu_coprod (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {G H : Relator 𝒜 𝒜} (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
     (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
     {a b : 𝒜} {R₁ : G.obj a ⟶ a} {R₂ : H.obj a ⟶ a} {S₁ : G.obj b ⟶ b} {S₂ : H.obj b ⟶ b} :
-    (relCata I (junc (C b) S₁ S₂))° ≫ relCata I (junc (C a) R₁ R₂)
+    (relCata (junc (C b) S₁ S₂))° ≫ relCata (junc (C a) R₁ R₂)
       = mu (fun X : b ⟶ a => (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)) := by
   rw [hylo_eq_mu hFr I (junc (C a) R₁ R₂) (junc (C b) S₁ S₂)]
   exact mu_congr (fun X => hylo_body_coprod_decompose C hF X)

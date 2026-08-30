@@ -173,7 +173,7 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
     exact cataFold_functional f hf dec r r' h1 h2
 
 /-- The initial `F`-algebra structure on `ConsList L E`. -/
-@[expose] public def initial (L E : Type) : InitialAlgebra (F L E) where
+@[expose, instance] public def initial (L E : Type) : InitialAlgebra (F L E) where
   t := dCL L E
   α := graph con
   α_map := graph_map con
@@ -291,8 +291,8 @@ public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
 /-- The structural fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright, via
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, …) apply to `cataR`. -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
-    cataR φ = relCata (initial L E) φ :=
+public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F L E).obj c ⟶ c) :
+    cataR φ = relCata φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 
 /-- The `wrap`-component of an algebra `φ = [g, h]`. -/
