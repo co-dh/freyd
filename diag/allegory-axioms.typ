@@ -6231,11 +6231,76 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `est(Q)` is
    defined on],
   [$frac(#[`S`], ∋)$ `thin Q⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
-   #src[(8.3), `R∩(S°S)⊑Q`]],
+   #src[(8.3), `R∩(S°S)⊑Q` — @thin-83]],
   [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
   [`union thin Q⊒P(thin Q) union` #h(6pt) #src[(8.4)]],
   [thinning each member set is a thinning of the union],
 )]<thin-laws>
+
+// B&dM (8.3), p. 194, mirrored.  The first of the two conditions cancels the singleton against `∋`;
+// the second is the chain, and the context row is where the side condition enters.
+#let eb-So = ([`S°`], 0.85, true)
+#let eb-LamS = (frc([`S`]), 1.0, false)
+#let eb-est = ([`est(R)`], 1.9, true)
+#let eb-estc = ([`est(R∩S°S)`], 3.1, true)
+#let eb-tau = (frc([`𝟙`]), 1.0, false)
+#let eb-Qo = ([`Q°`], 0.85, true)
+#let eb-in = ([`∈`], 0.75, true)
+#let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
+// TWO `E` wires on one lane, never live at once: the transpose opens one that `est(R)` closes, and
+// the singleton opens the one that leaves the panel.
+#let eb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THO, [`A`]),), ((THU, [`E`]), (THO, [`A`])), lanes: lanes, names: names)
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, HMW),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
+    #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
+     values `S` gives one argument — (8.3), p. 194, `R∩(S°S)⊑Q`, `Q` a preorder]],
+  table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
+
+  [#vstep([], [],
+    [#frc([`S`])` est(R) `#frc([`𝟙`])`∋⊑S` #h(10pt) and #h(10pt)
+     `S°`#frc([`S`])` est(R) `#frc([`𝟙`])`⊑Q°∈` \
+     #src[@thin-laws at `X≜`#frc([`S`])` est(R) `#frc([`𝟙`])]])],
+  // A conjunction has no shape in either calculus.
+  [],
+
+  [#vstep(IMP, eb-pic((eb-So, eb-LamS, eb-est, eb-tau)),
+    [`S°`#frc([`S`])` est(R) `#frc([`𝟙`]) \
+     #src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
+      @est-laws; the second is this chain, `−⊑Q°∈`]])],
+  [#eb-pan(4.6, (thw-in(THU, 3.30, 1.60), ((THU, 0.80), (THU, 0))),
+    ((THO, 4.00, [`S°`], 0.32), (THU, 3.30, frc([`𝟙`]), -0.32), (THO, 2.60, [`S`], 0.32),
+     (THO, 1.60, [`est(R)`], 0.32), (THU, 0.80, frc([`𝟙`]), -0.32)),
+    lanes: ((THU - 1.05, 2.45, [`E`]),), names: true)],
+
+  [#vstep(EQ, eb-pic((eb-So, eb-LamS, eb-estc, eb-tau)),
+    [`S°`#frc([`S`])` est(R∩S°S) `#frc([`𝟙`]) \
+     #src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
+  // Empty: the wiring is the row above's, with one bead renamed.
+  [],
+
+  [#vstep(SQ, eb-pic((eb-in, eb-estc, eb-tau)),
+    [`∈ est(R∩S°S) `#frc([`𝟙`]) \
+     #src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
+  [#eb-pan(4.0, (thw-arc(THU, 3.10, 1.60), ((THU, 0.80), (THU, 0))),
+    ((THO, 3.10, [`∈`], 0.32), (THO, 1.60, [`est(R∩S°S)`], 0.32),
+     (THU, 0.80, frc([`𝟙`]), -0.32)),
+    lanes: ((THU - 1.05, 2.35, [`E`]),))],
+
+  [#vstep(SQ, eb-pic((eb-Qo, eb-tau)),
+    [`Q° `#frc([`𝟙`]) \
+     #src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
+  [#eb-pan(3.0, (((THU, 1.10), (THU, 0)),),
+    ((THO, 2.10, [`Q°`], 0.32), (THU, 1.10, frc([`𝟙`]), -0.32)))],
+
+  [#vstep(SQ, eb-pic((eb-Qo, eb-in)),
+    [`Q°∈` \ #src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
+  [#eb-pan(3.0, (thw-out(THU, 1.10, 0),),
+    ((THO, 2.10, [`Q°`], 0.32), (THO, 1.10, [`∈`], 0.32)))],
+))]<thin-83>
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal
 // property: the first half is fusion, and the hylomorphism theorem turns the second into one chain.
@@ -6478,7 +6543,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [`thinlist Q xs=[minlist Q xs]` \ #src[(8.5), `Q` connected, `xs` non-empty]],
   [what thinning should come to when it can: one element],
-  [`sort P thinlist Q⊑thin Q sort P` #h(6pt) #src[(8.6)]],
+  [`sort P thinlist Q⊑thin Q sort P` #h(6pt) #src[(8.6) — @thinlist-86]],
   [thinning a sorted list is a thinning of the set — this is what `thinlist Q⊑subseq` buys],
   [`sort P minlist Q⊑est(Q)` #h(6pt) #src[(8.7)]],
   [a minimum of the sorted list is a minimum of the set],
@@ -6491,6 +6556,58 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [`F(sort P) listcp(F)⊑cp(F) sort(FP)` \ #src[(8.11), `F` linear]],
   [`listcp(F)` is the list implementation of the cartesian product `cp(F)`],
 )]<thinlist-laws>
+
+// B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist Q` only drops elements, and a
+// subsequence of a `P`-ordered list is `P`-ordered, so the thinning may run before the sort.
+#let tl-sort = ([`sort P`], 2.0, true)
+#let tl-tl = ([`thinlist Q`], 3.0, true)
+#let tl-set = ([`setify°`], 2.3, true)
+#let tl-ord = ([`ordered P`], 2.8, true)
+#let tl-pic(tail) = thpic([`EA`], [`[A]`], none, tail)
+// `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
+// the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
+#let tl-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
+  ((THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])), lanes: lanes, names: names)
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, HMW),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`sort P thinlist Q⊑thin Q sort P` \
+    #src[a thinning of the sorted list lists a thinning of the set — (8.6), p. 201, `P` a connected
+     preorder, `thinlist Q⊑subseq`]],
+  table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
+
+  [#vstep([], tl-pic((tl-sort, tl-tl)), [`sort P thinlist Q`])],
+  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
+    ((THO, 2.40, [`sort P`], 0.32), (THU, 1.30, [`thinlist Q`], -0.32)), names: true)],
+
+  [#vstep(EQ, tl-pic((tl-set, tl-ord, tl-tl)),
+    [`setify° ordered P thinlist Q` \ #src[`sort P≜setify° ordered P` — @thinlist-defn]])],
+  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
+    ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`ordered P`], -0.32),
+     (THU, 0.70, [`thinlist Q`], -0.32)))],
+
+  [#vstep(SQ, tl-pic((tl-set, tl-tl, tl-ord)),
+    [`setify° thinlist Q ordered P` \
+     #src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
+      and a subsequence of a `P`-ordered list is `P`-ordered]])],
+  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
+    ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`thinlist Q`], -0.32),
+     (THU, 0.70, [`ordered P`], -0.32)))],
+
+  [#vstep(SQ, tl-pic((nb-thin, tl-set, tl-ord)),
+    [`thin Q setify° ordered P` \
+     #src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
+      for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]])],
+  [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
+    ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`setify°`], 0.32),
+     (THU, 1.10, [`ordered P`], -0.32)))],
+
+  [#vstep(EQ, tl-pic((nb-thin, tl-sort)),
+    [`thin Q sort P` \ #src[`sort P≜setify° ordered P` — @thinlist-defn]])],
+  [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
+    ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`sort P`], 0.32)))],
+))]<thinlist-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
