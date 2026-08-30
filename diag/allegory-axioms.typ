@@ -3887,6 +3887,20 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   },
   w: w, names: names,
   sp: ((LPY.at(0), frc([`𝟙`])),) + sp + ((LPY.at(2), [`est(R°)`]),))
+// `S` is defined in @takewhile-defn, three pages back, and every row below reads it: the definition
+// is repeated here rather than looked up, in that table's own five columns.
+#disp[#align(center, block(width: 21cm)[
+#table(
+  columns: (1.7cm, 5.3cm, 2.9cm, 4.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
+
+  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #h(4pt) #src[@takewhile-defn]], [`F([A])⟶[A]`],
+  [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
+  [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
+)])]
+
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 7.9cm),
   align: (left + horizon, center + horizon),
@@ -4660,6 +4674,20 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // for its own four rows, which is what puts `list` and `A` in a column.
 #let lpan = lpan.with(w: 8.6)
 #let epan = epan.with(w: 8.6)
+// `S` is defined in @filter-defn, three pages back, and every row below reads it: the definition is
+// repeated here rather than looked up, in that table's own five columns.
+#disp[#align(center, block(width: 21cm)[
+#table(
+  columns: (1.7cm, 5.3cm, 2.9cm, 4.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
+
+  [`S`], [`[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[@filter-defn]], [`F([A])⟶[A]`],
+  [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
+  [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
+)])]
+
 #disp[#pad(right: 10pt, table(
   columns: (1fr, 6.3cm),
   align: (left + horizon, center + horizon),
