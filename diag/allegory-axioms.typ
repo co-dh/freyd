@@ -5328,8 +5328,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [#ca5],
 ))]<cyl-laws>
 
-// ---- Chains B and C.  `F` is a BIFUNCTOR, so its wire is drawn UNINDEXED and carries no bead;
-// `trans` and `zip` are where two wires CROSS, which is exactly what those two arrows are.
+// ---- Chains B and C.  `F` is CURRIED to the unary `F(NA,−)`, so its wire is a functor and the
+// algebra may die ON `N` instead of reaching past it; `trans` and `zip` are the only crossings left.
 #let CL1 = 0.65
 #let CL2 = 1.55
 #let CL3 = 2.45
@@ -5343,22 +5343,28 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   for (x, l) in top { hm-port((x, h), l, col: if x == CBO { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == CBO { BCOL } else { black }) }
 }, s: 78%)
-#let CBH = 4.00
+// Tall enough that `F(NA,−)` gets a straight run under its port label before it turns onto `N`.
+#let CBH = 4.40
 // `est(R)` is the one bead BOTH sides carry, so it keeps the middle row and the base functor's own
 // bead travels down past it: `generate` above it on the left, `Q` below it on the right.
 #let CBHI = 3.00
 #let CBMD = 1.95
 #let CBLO = 0.90
-#let cb-top = ((CL1, [`F`]), (CL2, [`N`]), (CL3, [`E`]), (CBO, [`LA`]))
-#let cb-bot = ((CL2, [`N`]), (CBO, [`LA`]))
+// Chain B's own lanes: the wide `F(NA,−)` port label and `generate`'s, left of its bead on `N`,
+// both need room chain C's evenly spaced lanes have no use for.
+#let CB1 = 0.65
+#let CB2 = 2.25
+#let CB3 = 3.15
+#let cb-top = ((CB1, [`F(NA,−)`]), (CB2, [`N`]), (CB3, [`E`]), (CBO, [`LA`]))
+#let cb-bot = ((CB2, [`N`]), (CBO, [`LA`]))
 #let cb1 = cbpan(CBH,
-  (((CL1, CBH), (CL1, CBHI + 0.6), (CBO, CBHI)), ((CL2, CBH), (CL2, 0)),
-   ((CL3, CBH), (CL3, CBMD + 0.6), (CBO, CBMD))),
-  ((CBO, CBHI, [`generate`], 0.32), (CBO, CBMD, [`est(R)`], 0.32)), cb-top, cb-bot)
+  (((CB1, CBH), (CB1, CBHI + 0.95), (CB2, CBHI)), ((CB2, CBH), (CB2, 0)),
+   ((CB3, CBH), (CB3, CBMD + 0.6), (CBO, CBMD))),
+  ((CB2, CBHI, [`generate`], -0.32), (CBO, CBMD, [`est(R)`], 0.32)), cb-top, cb-bot)
 #let cb2 = cbpan(CBH,
-  (((CL1, CBH), (CL1, CBLO + 0.6), (CBO, CBLO)), ((CL2, CBH), (CL2, 0)),
-   ((CL3, CBH), (CL3, CBMD + 0.6), (CBO, CBMD))),
-  ((CBO, CBMD, [`est(R)`], 0.32), (CBO, CBLO, [`Q`], 0.32)), cb-top, cb-bot)
+  (((CB1, CBH), (CB1, CBLO + 0.95), (CB2, CBLO)), ((CB2, CBH), (CB2, 0)),
+   ((CB3, CBH), (CB3, CBMD + 0.6), (CBO, CBMD))),
+  ((CBO, CBMD, [`est(R)`], 0.32), (CB2, CBLO, [`Q`], -0.32)), cb-top, cb-bot)
 
 // B&dM §7.4, p. 183.  `generate` kills the base functor before the minimum is taken inside the
 // tuple; the right-hand side kills it after, and that swap is the whole step.
@@ -5390,9 +5396,11 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #let CC1 = 0.85    // `α`, where `F` dies
 #let cc-bot = ((CL1, [`N`]), (CBO, [`LA`]))
 #let cc1 = cbpan(2.60,
-  (((CL1, 2.60), (CL1, 1.55), (CBO, 0.95)), ((CL3, 2.60), (CL3, 0))),
-  ((CBO, 0.95, [`Q`], 0.32),),
-  ((CL1, [`F`]), (CL3, [`N`]), (CBO, [`LA`])), ((CL3, [`N`]), (CBO, [`LA`])))
+  (((CL1, 2.60), (CL1, 1.85), (CL3, 0.95)), ((CL3, 2.60), (CL3, 0))),
+  ((CL3, 0.95, [`Q`], -0.32),),
+  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), ((CL3, [`N`]), (CBO, [`LA`])))
+// `zip` is the one crossing that RE-INDEXES the curried wire — `F(NA,−)N⇒N F(A,−)` — so below it
+// the `F` wire is `F(A,−)`, which is the wire `N(α)` kills on the object wire.
 #let cc2 = cbpan(5.05,
   (((CL3, 5.05), (CL3, CC4 + 0.42), (CL2, CC4 - 0.42), (CL2, CC2 + 0.45), (CL1, CC2 - 0.45),
     (CL1, 0)),
@@ -5401,7 +5409,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
    ((CL1, 5.05), (CL1, CC2 + 0.45), (CL2, CC2 - 0.45), (CL2, CC1 + 0.5), (CBO, CC1))),
   ((CL3, CC5, [`moves`], 0.32), ((CL2 + CL3) / 2, CC4, [`trans`], 0.75), (CBO, CC3, [`est(R)`], 0.32),
    ((CL1 + CL2) / 2, CC2, [`zip`], 0.75), (CBO, CC1, [`α`], 0.32)),
-  ((CL1, [`F`]), (CL3, [`N`]), (CBO, [`LA`])), cc-bot)
+  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), cc-bot)
 
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
 // of maps turns it into the program.
