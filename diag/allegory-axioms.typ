@@ -3728,46 +3728,50 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
 // nothing.  `p×𝟙` is a bead on the `A×−` wire, so `p×list(p)` is two beads at one height.
-// `[A]` is TWO wires, `list` beside `A`: `list(p)` is then the bead `p` on `A`, `list` running past.
-// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line — `A` runs
+// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line — `[A]` runs
 // STRAIGHT through it and only the functor wires bend in and back out, as `join` does beside `filter p`.
 // `prefix`/`subseq` are only LAX natural in `Rel` — `list(p) prefix⊑prefix list(p)` and no more, since
-// `list(p)` needs every element to have a `p`-image — so they are nodes, and `p` stays strictly below.
-#let TWHX = (0.55, 2.40, 4.30)                    // `A×−`, `list`, `A`
+// `list(p)` needs every element to have a `p`-image — so `p` stays strictly below.
+#let TWHX = (0.55, 2.05, 3.70)                    // `A×−`, the `list` strand, `[A]`
 #let TWHY = (4.95, 4.00, 3.05, 1.50, 0.55)        // above `cons` ×2, `cons`, below ×2
-#let TWHW = 6.30
-#let TWHH = 6.00
+#let TWHW = 5.85
+#let TWHH = 5.40
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
 // colour because it is the head half of `p×list(p)`.
 #let tw-hm(rs, f: [`prefix`]) = P(cetz.canvas(length: 0.8cm, {
   let (XM, XL, XO) = TWHX
   let (YU1, YU2, YC, YL1, YL2) = TWHY
   let ys = (YL1, YU1, YU1).at(rs)
+  let yp = (YL2, YL1, YU2).at(rs)
+  // Midway to the beads bracketing `p`, the bottom edge standing in where none is below.
+  let (y0, y1) = ((yp + (ys, YC, ys).at(rs)) / 2, (yp + (0, 0, YC).at(rs)) / 2)
   d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
   d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
   hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
-  lwire(XL, XO, if rs == 0 { (YC, ys) } else { (ys, YC) }, TWHH, 0)
-  // `A×−` reaches the node under the `list` wire's own bend, so the two fan in without crossing.
+  // The split is LOCAL: `[A]` is ONE wire and opens only around `list(p)`, because `p : A⟶A` needs an
+  // `A` wire to sit on.  Fork and merge carry no bead — `[A]=list(A)`, the same 1-cell either side.
+  let k = calc.min(0.40, (y0 - y1) / 3)
+  hm-wire(((XO, y0), (XL, y0 - k), (XL, y1 + k), (XO, y1)), col: BCOL)
+  d.content((XL + 0.20, yp), text(BCOL)[`list`], anchor: "west")
   hm-join(XM, TWHH, XO, YC, knee: 0.75)
   hm-bead((XO, YC), [`cons`])
   hm-bead((XO, ys), f, col: GIVEN1)
-  hm-bead((XO, (YL2, YL1, YU2).at(rs)), [`p`], col: GIVEN2)
+  hm-bead((XO, yp), [`p`], col: GIVEN2)
   if rs == 2 { hm-bead((XM, YU2), [`p×𝟙`], col: GIVEN2) }
-  hm-port((XM, TWHH), [`A×−`]); hm-port((XL, TWHH), [`list`])
-  hm-port((XO, TWHH), [`A`], col: BCOL)
-  hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
-  if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((5.95, 0.25), [`𝟏`]) }
+  hm-port((XM, TWHH), [`A×−`]); hm-port((XO, TWHH), [`[A]`], col: BCOL)
+  hm-port((XO, 0), [`[A]`], dir: -1, col: BCOL)
+  if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((4.75, 0.25), [`𝟏`]) }
 }), s: 100%)
 
 #disp[#table(
-  columns: (1fr, 5.4cm),
+  columns: (1fr, 4.9cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α prefix list(p)=F(prefix list(p))S` \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
-    [*Hinze–Marsden*]),
+    [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `⊸ nil`]),
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-pf, bx-lp)), s: 68%),
     [`α prefix list(p)`])], [#tw-hm(0)],
@@ -3815,8 +3819,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `φ:=⊸ nil`, `ψ:=(p×𝟙) cons`],
 )
-#align(center, block(inset: (y: 4pt))[#src[the `nil` branch is `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°`
-  is `cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list.]])
+#align(center, block(inset: (y: 4pt))[#src[the `cons` branch of `F(R°)S⊑SR°`; the `nil` branch is
+  `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°` is `cons length=(𝟙×length)π₂ succ` with `succ` monotone —
+  a shorter tail makes a shorter list.]])
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -4563,14 +4568,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let bx-sq = ([`subseq`], 1.9, true)
 #let bx-sl = ([`subseq list(p)`], 3.9, true)
 #disp[#table(
-  columns: (1fr, 5.4cm),
+  columns: (1fr, 4.9cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α subseq list(p)=F(subseq list(p))S` \
     #src[building the list and then keeping a `p`-passing subsequence of it is keeping one of the
      tail first, and then building with `S`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
-    [*Hinze–Marsden*]),
+    [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `π₂`]),
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-sq, bx-lp)), s: 68%),
     [`α subseq list(p)`])], [#tw-hm(0, f: [`subseq`])],
