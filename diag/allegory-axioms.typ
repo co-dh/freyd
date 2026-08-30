@@ -3397,7 +3397,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
 #pagebreak(weak: true)
-=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R and R a preorder` <sec-greedy-thm72>
+=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R, F preserving °, and R a preorder` <sec-greedy-thm72>
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
@@ -3464,7 +3464,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
     [`R°S°(`#frc([`S`])` est(R))` \
-     #src[`S°F(R°)⊑R°S°`, the converse of the hypothesis `F(R)S⊑SR`]])],
+     #src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
   [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
     hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 2.45, 1.45, [`F`])),
