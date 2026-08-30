@@ -2647,7 +2647,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 // B&dM §7.1, p. 166.  The `°` is what diagram order costs: it reverses the arrow but not the `≤`
 // glyph, so without it `est(≤)` would come out the greatest element.
 #disp[#definition[
-For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A`.
+For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`lean:AOP.A7_1.est@e39806f8`].
 
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[B&dM's `min R`, the same predicate under the same
 letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow]
@@ -2704,6 +2704,7 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   zstep(op: sym.arrow.l.r.double, under: true)[`°`],
   zpair(zsqc(`X`, `∋`), zsqc(`X°∋`, `R`)),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.le_est_iff@81855810`]])
 ]<est-up>
 
 === $frac(#[`𝟙`], ∋)$ `(∈\R)=R`
@@ -2722,6 +2723,7 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   zstep(op: sym.arrow.l.r.double, under: true)[`i⊣E`],
   zsqc(`X`, `R`),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.singletonMap_comp_lb@9d4759cf`]])
 ]<est-71>
 
 === $frac(#[`S`], ∋)$ `(∈\R)=S°\R`
@@ -2745,6 +2747,7 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
   zsqc(`X`, `S°\R`),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_lb@f14ab8b5`]])
 ]<est-72>
 
 === `union (∈\R)=∈\(∈\R)`
@@ -2764,6 +2767,7 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`°`, `T·⊣T\`],
   zsqc(`X`, `∈\(∈\R)`),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.bigUnion_comp_lb@ed13dc7a`]])
 ]<est-73>
 
 === $frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`
@@ -2783,6 +2787,7 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
   zsqc(`X`, `S∩(S°\R°)`),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_est@4c6d38d0`]])
 ]<est-75>
 
 === $frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`
@@ -2806,12 +2811,14 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[@est-75],
   zsqc(`X`, [$frac(#[`S`], ∋)$ `est(R)`]),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_est_context@e8052cf4`]])
 ]<est-76>
 
 === `P(f) est(R)=est(fRf°) f`
 
 // B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
 // modular law, and it needs `f` simple — the only such step in §@sec-est.
+// No marker: (7.8) is one of the statements AOP/A7_1.lean drops (its closing block note).
 #disp[
 #zline(
   zsqc(`P(f) est(R)`, none, name: "f a map"),
@@ -2842,6 +2849,7 @@ directly.
   zstep(op: sym.arrow.l.double, under: true)[UP of `est`],
   zpair(zsqc(`P(S)∋`, `∋S`), zsqc(`∈P(S)`, `S∈`)),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.powerRel_comp_est_le@d8b5692c`]])
 ]<est-710>
 
 === `P(est(R)) est(R)⊑union est(R)`
@@ -2858,6 +2866,7 @@ directly.
   zstep(op: sym.arrow.l.double, under: true)[UP of `est`, `R` transitive],
   zpair(zsqc(`P(est(R))∋`, `∋est(R)`), zsqc(`∈P(est(R))`, `est(R)∈`)),
 )
+#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.powerRel_est_le_bigUnion@d0c726a1`, `R` transitive]])
 ]<est-711>
 
 #pagebreak(weak: true)
