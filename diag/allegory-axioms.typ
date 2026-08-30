@@ -2443,6 +2443,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#definition[
 `cup≜` $frac(#[`π₁∋∪π₂∋`], ∋)$ ` : EA×EA⟶EA`, #h(4pt) so
 $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
+#h(4pt) #src[`lean:AOP.A5_6.Λ_union@43127620`]
 ]]<cup-defn>
 
 // §12.1's bracket: the tape's fork IS `F([A])=𝟏+A×[A]`'s case split, `𝟏` above and the pair below,
@@ -2936,7 +2937,8 @@ left through the component at `B`, the right through the one at `A`.
 `φ : G⇒F` is a *lax natural transformation* (LaT) when it is lax at *every* `R`. #h(4pt) #src[(5.13)]
 
 Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
-`G(f)φ=φF(f)`: #h(4pt) laxness is about relations only. #h(4pt) #src[Theorem 5.2]
+`G(f)φ=φF(f)`: #h(4pt) laxness is about relations only.
+#h(4pt) #src[Theorem 5.2, `lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23`]
 ]]<lax-defn>
 
 #disp[#capbox(
@@ -3026,7 +3028,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `φ : G⇒F` with `G,F : 𝒞⟶𝓓` and `χ : L⇒K` with `L,K : 𝓓⟶𝓔` give
    `χ∘φ : L∘G⇒K∘F`, the family `A ↦ χ`#sub[`GA`]`K(φ`#sub[`A`]`)` \
    #src[`L(G(R))χ`#sub[`GB`]`⊑χ`#sub[`GA`]`K(G(R))` is `χ` lax at `G(R)`; then
-   `K(G(R)φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`F(R))` is `K` applied to `φ`'s own inequation] \
+   `K(G(R)φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`F(R))` is `K` applied to `φ`'s own inequation;
+   `lean:AOP.A5_7.laxNatural_hcomp_outer_first@ce6a24d8`] \
    #src[`χ:=𝟙`#sub[`K`] gives `K(φ) : K∘G⇒K∘F`, `K` composed on the outside;
    `φ:=𝟙`#sub[`G`] gives `χG : L∘G⇒K∘G`, `G` composed on the inside] \
    #src[two candidates, `χ`#sub[`GA`]`K(φ`#sub[`A`]`)` and `L(φ`#sub[`A`]`)χ`#sub[`FA`], ordered by
@@ -3049,7 +3052,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     lab(0, 0, black)[`∪`]
   }), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
-   #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)⊑(φ`#sub[`A`]`∪ψ`#sub[`A`]`)F(R)`],
+   #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)⊑(φ`#sub[`A`]`∪ψ`#sub[`A`]`)F(R)`
+   #h(4pt) #src[`lean:AOP.A5_7.union_slides@f7484fb4`]],
   align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
     latpic(
       ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
@@ -3125,7 +3129,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `R`#sub[`A`]`(XY)⊑(X'Y')R`#sub[`C`] #h(4pt) at `R`#sub[`A`]`,R`#sub[`B`]`:=G(R),F(R)` and
    `X,X':=φ`#sub[`B`]`,φ`#sub[`A`], quantified over `R`; at `X'=X` with `R`#sub[`A`]`,R`#sub[`B`]
    endorelations it is the monotonicity reading instead — the `∀R` sits outside the law, and is the
-   only difference],
+   only difference #h(4pt) #src[`lean:AOP.A5_7.comp_slides@480a3dc9`]],
 )]<lax-closure>
 
 // `sticky` binds a heading to the next BLOCK, and `conf` wraps every display in a breakable one, so
@@ -3159,7 +3163,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   }), s: 88%),
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` \
    `π₁,π₂ : Δ⇒Id` are both LaTs #h(4pt) #src[@party-mono-branch's `g` row] #h(4pt) and
-   `π₁∩π₂={((x,x),x)}`],
+   `π₁∩π₂={((x,x),x)}` #h(4pt) #src[`lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc`]],
 )]]<meet-counterex>
 
 === Two stacked towers
@@ -3243,7 +3247,9 @@ An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` a
 the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f°·⊣f·` at `X:=F(R)f`,
-`Y:=R`], #h(4pt) equivalently #h(4pt) `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`].
+`Y:=R`, `lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64`], #h(4pt) equivalently #h(4pt)
+`F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
+`lean:AOP.A7_2.monotonicAlg_iff_sandwich@f82f1b18`].
 
 `(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -5274,7 +5280,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [`choose R` at `(0,1)`], [`0` — `choose` picks the first component `0`, and `R 0 0` holds],
 
-  [`((0,1),0)`], [in `choose R`, not in `(R×R)choose`],
+  [`((0,1),0)`], [in `choose R`, not in `(R×R)choose`
+   #h(4pt) #src[`lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@2b446ff0`]],
 
   [`(R×R)choose=choose R`], [iff `R` is entire — `Dom⊑𝟙` is the `g` row's only inequality step,
    and it is an equality iff `Dom(R)=𝟙`],
