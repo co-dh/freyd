@@ -2835,7 +2835,8 @@ An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` a
 `G:=F`, `F:=Id`: #h(4pt) `F(R)φ⊑φR`. #h(4pt) `R` is an *endorelation*, so `B=A` and
 the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
 
-For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R`, #h(4pt) equivalently #h(4pt) `F(R)⊑fRf°`.
+For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f°·⊣f·` at `X:=F(R)f`,
+`Y:=R`], #h(4pt) equivalently #h(4pt) `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`].
 
 `(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -2857,20 +2858,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`F(R)φ⊑φR`],
 )]<mon-str>
 
-#disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
-
-  [`f°F(R)f⊑R⟺f°F(R°)f⊑R°`],
-  [a *map* is monotonic on an order and on its opposite together — a relation is not],
-  [`⦇`$frac(#[`S`], ∋)$ `min(R)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `min(R)` \ #src[Theorem 7.2, `R` a preorder and `F(R°)S⊑SR°`]],
-  [the *greedy theorem*: keeping one minimum at every step beats no more than taking the minimum at
-   the end],
-)]<mon-laws>
-
-=== `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
+=== Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
 #disp[#definition[
 `f : FA⟶A` *distributes over* `R` if #h(4pt) `F(min(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `min(R)`.
@@ -3113,13 +3101,95 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
-    [`f°F(R)f⊑R` \ #src[`f` a map — @mon-laws's first row]])],
+    [`f°F(R)f⊑R` \ #src[`f` a map, so monotonic on `R` and `R°` together]])],
   [#trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
     tpanR(3.8, 1.85, [`R`]),
   )],
 ))]<mon-thm71>
+
+// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
+// would sit alone at the foot of §13.3.1's last page.
+#pagebreak(weak: true)
+=== `⦇`$frac(#[`S`], ∋)$` min(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` min(R)` <sec-greedy-thm72>
+
+#let mb-S = ([`S`], 0.7, true)
+#let mb-LamS = (frc([`S`]), 0.9, false)
+#let IMP = text(SLACK)[$arrow.l.double$]
+// `mconj` with the `⊑` optional, so rows 5–7 draw a TERM of one chain rather than an inequation,
+// and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
+// of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
+#let gterm(inner, after, rhs: none) = {
+  let rise = 1.9
+  convrun(0, 0, inner)
+  let x = convrun-end(inner)
+  boxrun(x, rise, after, h: TH)
+  let xe = x + boxrun-w(after)
+  lab(-0.42, 0, black)[`A`]
+  if rhs == none { lab(xe + 0.42, rise, black)[`A`] } else {
+    lab(xe + 0.95, rise, SLACK)[`⊑`]
+    boxrun(xe + 1.5, rise, rhs)
+    lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
+  }
+}
+// B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
+// `min(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, 7.1cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`F(R)S⊑SR⟹⦇`#frc([`S`])` min(R)⦈⊑`#frc([`⦇S⦈`])` min(R)` \
+    #src[Theorem 7.2, the greedy theorem; `S` monotonic on `R` — @mon-defn — and `R` a preorder]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], [], [`⦇`#frc([`S`])` min(R)⦈⊑`#frc([`⦇S⦈`])` min(R)` \
+    #src[the conclusion: one minimum kept at each step is below every result collected and one
+     minimum taken at the end]])],
+  [],
+
+  [#vstep(IFF, [],
+    [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
+       column-gutter: 6pt, row-gutter: 3pt,
+       [`⦇`#frc([`S`])` min(R)⦈`], [`⊑`], [`⦇S⦈`],
+       grid.cell(colspan: 3, align: center + horizon)[and],
+       [`⦇S⦈°⦇`#frc([`S`])` min(R)⦈`], [`⊑`], [`R°`],
+       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[universal property of min
+         — @min-75's #frc([`S`]) `min(R)=S∩(S°\R°)` at `S:=⦇S⦈`]])])],
+  [],
+
+  [#vstep(IMP, [], [#frc([`S`])` min(R)⊑S` \
+    #src[the left conjunct; @min-75 at `S` is `S∩(S°\R°)`, and `⦇−⦈` is monotone]])],
+  [],
+
+  [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-min), rhs: (mb-Ro,))),
+    [`S°F(R°)(`#frc([`S`])` min(R))⊑R°` \
+     #src[the right conjunct; the hylomorphism theorem #h(4pt) #src[Theorem 6.2] #h(4pt) makes
+      `⦇S⦈°⦇`#frc([`S`])` min(R)⦈` the least `X` with `X=S°F(X)(`#frc([`S`])` min(R))`, so
+      Knaster–Tarski leaves this one inequation]])],
+  // `S°` births the `F` wire and `S%∋` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
+  // relator's action costs no notation.  `S%∋` births the `E` wire in its place, `min(R)` kills it.
+  [#trow(
+    tpan(4.0, ((3.45, [`S°`]), (2.45, [`R°`]), (1.45, frc([`S`])), (0.45, [`min(R)`])),
+      hands: ((TXF, 3.45, 1.45, [`F`]), (TXH, 1.45, 0.45, [`E`])), top: ((TXO, [`A`]),)),
+    tpanR(4.0, 2.45, [`R°`]),
+  )],
+
+  [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-min))),
+    [`R°S°(`#frc([`S`])` min(R))` \
+     #src[`S°F(R°)⊑R°S°`, the converse of the hypothesis `F(R)S⊑SR`]])],
+  // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
+  [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, frc([`S`])), (0.45, [`min(R)`])),
+    hands: ((TXF, 2.45, 1.45, [`F`]), (TXH, 1.45, 0.45, [`E`])), top: ((TXO, [`A`]),))],
+
+  [#vstep(SQ, mbp(gterm((mb-R, mb-R), ())),
+    [`R°R°` \ #src[`S°(`#frc([`S`])` min(R))⊑R°` — @min-75 again: #frc([`S`]) `min(R)⊑S°\R°`]])],
+  // The collapsed group's bead sits at the middle of the three it replaces.
+  [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((TXO, [`A`]),))],
+
+  [#vstep(SQ, mbp(gterm((mb-R,), ())), [`R°` \ #src[`R` transitive]])],
+  [#tpan(4.0, ((2.45, [`R°`]),), top: ((TXO, [`A`]),))],
+))]<greedy-thm72>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
 #let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's tape edge, which it does not export
@@ -3153,7 +3223,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   bend((ox, cy - dy - op), (xo, cy), stroke: fan)
 }
 // `⊸ X`: both wires discarded, then `X` created.  `w` is the copy's run — the two copies of one `∪`
-// have to reach the same edge, and §13.3.2's `cons` branch is wider than §13.3.3's.
+// have to reach the same edge, and takewhile's `cons` branch is wider than mss's.
 #let disc-copy(label, w: CW) = {
   wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
   wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
@@ -3165,7 +3235,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   bend((1.3, 0), (CW, -UOP))
 }
 
-// ---- §13.3.2's own circuits.  A box is `(label, width, chamfer)`; the pair is TWO strands, the
+// ---- takewhile's own circuits.  A box is `(label, width, chamfer)`; the pair is TWO strands, the
 // head above and the tail below, so a coreflexive `p` is a box on the head strand alone.
 #let TBH = 0.6  // circuit.typ's default box height, which it does not export
 #let PBH = 0.5  // a box sitting on ONE strand of the pair, low enough to clear the other
@@ -3190,7 +3260,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   }
   bend((xe, 0), (w, -UOP))
 }
-// §13.3.4's upper branch, where §13.3.2 has `⊸ nil`: the head is discarded and the TAIL leaves,
+// filter's upper branch, where takewhile has `⊸ nil`: the head is discarded and the TAIL leaves,
 // so `π₂` keeps a wire where `⊸ nil` keeps none.  `l` is a box the tail carries out — `list(p)`
 // slid through by naturality.  Returns a FUNCTION of the copy's run, which is what `twpic` hands it.
 #let pi2-copy(l: none) = w => {
@@ -3240,7 +3310,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   lab(x + 1.0, 0, black)[`[A]`]
   lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
 }
-// §13.3.2c's circuit: no bracket at all — the pair goes straight into the `∪`, which is the shape
+// @takewhile-mono's circuit: no bracket at all — the pair goes straight into the `∪`, which is the shape
 // `F(R)S⊑SR` compares at the `cons` branch.  `pre` acts on the tail before the region, `post` after it.
 #let twrow(lower, lw: CW, pre: none, post: none, upper: none) = {
   let px = if pre == none { 0.0 } else { 0.28 + pre.at(1) }
@@ -3261,9 +3331,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   lab(x + 1.0, 0, black)[`[A]`]
   lab(-0.5, UIP, black)[`A`]; lab(-0.62, -UIP, black)[`[A]`]
 }
-// §13.3.2d's circuits: ONE wire while `S` is still inside a division, then the same bracket once the
-// coproduct is opened.  `up`/`lo` are runs of boxes on the two branches, the lower one spanning the
-// pair, so the fraction boxes read at the height they act on.
+// @takewhile-step's circuits: ONE wire while `S` is still inside a division, then the same bracket
+// once the coproduct is opened.  `up`/`lo` are runs of boxes on the two branches, the lower one
+// spanning the pair, so the fraction boxes read at the height they act on.
 #let twrun(items) = {
   lab(-1.1, 0, black)[`F([A])`]
   let x = 0.0
@@ -3309,7 +3379,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 === `takewhile(p)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` <sec-takewhile>
 
 // B&dM Ex 7.39, p. 174.  The derivation runs on `max(R)` (@min-defn) and the greedy theorem
-// (@mon-laws), both above it.
+// (Theorem 7.2), both above it.
 // One running example: `A≜Nat` and `p≜even`, fixed by the `p` row and used by every row below it.
 #disp[#align(center, block(width: 21cm)[
 #table(
@@ -3479,7 +3549,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `max(R)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `max(R)` \ #src[Theorem 7.2, @mon-laws at `R°`;
+  [`⦇`$frac(#[`S`], ∋)$ `max(R)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `max(R)` \ #src[Theorem 7.2 at `R°`;
    `max(R)=min(R°)`, so the hypothesis is monotonicity on `(R°)°=R`, which is @takewhile-mono]],
   [greedy: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix collected and one
    chosen at the end],
@@ -3731,8 +3801,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8))][`⊸ zero ∪ plus≤°`]],
   [@dom-slide, `(≤°×≤°) plus⊑plus≤°` \ #src[`(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and
-   @mon-laws's first row carries it to `≤°` — `plus` is a map, so it is monotonic on an order and on
-   its opposite together.]],
+   `plus` is a map, so it is monotonic on an order and on its opposite together, which carries it
+   to `≤°`.]],
 
   [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true))][`(⊸ zero ∪ plus)≤°`]],
   [`≤°` reflexive],
@@ -3902,7 +3972,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`⦇`$frac(#[`S`], ∋)$ `max(≤)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `max(≤)` \ #src[@mon-laws at `≤°`,
+  [`⦇`$frac(#[`S`], ∋)$ `max(≤)⦈⊑` $frac(#[`⦇S⦈`], ∋)$ `max(≤)` \ #src[Theorem 7.2 at `≤°`,
    `S:=[zero,⊸ zero ∪ plus]`, condition @mss-mono]],
   [greedy: one running maximum kept at each `cons`, instead of every prefix sum collected and one
    chosen at the end],
@@ -4628,7 +4698,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#step(RQ)[#laws-pic(lfold(1.18, LBW5, LSP, lbody5))][`⦇`#frc([`S`])` max(R×R)⦈ `#frc([`choose`])` max(R)`]],
   [#dcell(d-out5, d-in5)],
-  [@mon-laws, `(𝟙×list(R×R))S⊑S(R×R)`],
+  [Theorem 7.2, `(𝟙×list(R×R))S⊑S(R×R)`],
 
   [#step(RQ)[#laws-pic(lfold(2.05, LBW6, LBY, lbody6))][`⦇⟨`#frc([`include`])` max(R),` \ #h(1em)#frc([`exclude`])` max(R)⟩⦈ `#frc([`choose`])` max(R)`]],
   [#dcell(none, d-in6)],
@@ -4647,7 +4717,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   // its power set, so `E X` is `X` saturated.
   let TREE = rgb("#ffe6cc"); let PAIR = rgb("#ccccff"); let EPAIR = rgb("#8181ff")
   let ELA = rgb("#81ff81"); let LA = rgb("#ccffcc")
-  // One x per wire, held for the wire's whole life; `XB2` is `max(R×R)`, born at `@mon-laws` and
+  // One x per wire, held for the wire's whole life; `XB2` is `max(R×R)`, born at `Theorem 7.2` and
   // consumed at `Ex 7.38`, and `XR` is `max(R)`, touched by no step.
   let (XL, XB, XB2, XC, XR, XE) = (0.0, 1.5, 3.4, 5.7, 8.5, 9.9)
   // The beads' heights, bottom (the program) to top (the specification).
@@ -4703,7 +4773,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   // The beads. ONE SHORT KEY apiece, his way; the justification is in the list below the figure.
   hm-bead((XB, Y0), [`include map`])
   hm-bead((XB, Y1), [`Ex 7.15`])
-  hm-bead((XB, Y2), [`@mon-laws`])
+  hm-bead((XB, Y2), [`Thm 7.2`])
   hm-bead((XC, Y3), [`Ex 7.38`])
   hm-bead((XC, Y4), [`@pow-laws`])
   hm-bead((XC, Y5), [`party≜`])
@@ -4717,7 +4787,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   row-gutter: 3.5pt, align: (left, center, left),
   [`include map`], text(SLACK)[$subset.eq.sq$], [`include` a map, `max(R)` into each branch],
   [`Ex 7.15`], text(SLACK)[$subset.eq.sq$], [the fork splits],
-  [`@mon-laws`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list(R×R))S⊑S(R×R)`],
+  [`Thm 7.2`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list(R×R))S⊑S(R×R)`],
   [`Ex 7.38`], text(SLACK)[$subset.eq.sq$], [`(R×R)choose⊑choose R`],
   [`@pow-laws`], [$=$], [absorption],
   [`party≜`], [$=$], [definition of `party`],
@@ -4949,7 +5019,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   zsqc([$frac(#[`⦇S⦈`], ∋)$ `min(R;H)`], none),
 )
 #zline(
-  zstep(op: sym.supset.eq.sq, under: true)[@mon-laws, `S` monotonic on `R;H` by (7.16) and (7.17)],
+  zstep(op: sym.supset.eq.sq, under: true)[Theorem 7.2, `S` monotonic on `R;H` by (7.16) and (7.17)],
   zsqc([`⦇`$frac(#[`S`], ∋)$ `min(R;H)⦈`], none),
   zstep(op: sym.supset.eq.sq, under: true)[`old⊑new (R;H)°`],
   zsqc([`⦇[nil,(ok→glue,new)]⦈`], none),
@@ -5479,7 +5549,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `min(Q)` is entire.
   [Proposition 9.1 with `min` for `thin`],
   [`Q≜F(U,V)` #h(6pt) #src[Proposition 9.4]],
   [still the way to get both conditions, but $frac(#[`T°`], ∋)$ `min(Q)` must now be entire as well],
-  [#src[Theorem 7.2, @mon-laws]],
+  [#src[Theorem 7.2]],
   [that greedy theorem chooses among the *results* of one relational step of a reduce;
    Theorem 10.1 chooses among the *decompositions* of the input, for an arbitrary `T` rather than an
    initial algebra, at the cost of `h` being a map],
