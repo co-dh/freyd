@@ -12,7 +12,7 @@
   Given the two monotonicity claims B&dM leave as exercises — `choose` monotonic on `R`, and
   `⟨include, exclude⟩` monotonic on `R×R` — the greedy theorem (`A7_2.greedy`) yields the
   algorithm.  Here we prove the first claim concretely (`choose_monotonic`, a general product
-  fact) and state the greedy conclusion as the instance of `greedy` it is; the concrete rose
+  fact); the greedy conclusion is `A7_2.greedy` applied as-is, and the concrete rose
   tree `tree A`, the algebra `⟨include, exclude⟩`, and its monotonicity are the section's remaining
   detail (rose-tree datatype not yet built — see atodo).
 -/
@@ -45,25 +45,5 @@ public theorem choose_monotonic (P : RelProd a a) (R : a ⟶ a) :
   exact union_mono (prodMap_outl_le P P R R) (prodMap_outr_le P P R R)
 
 end Choose
-
-/-! ## The party problem is solved by the greedy theorem (B&dM p.177) -/
-
-section Greedy
-
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 𝒜}
-
-/-- **§7.3 (B&dM p.176-177)**: the company-party optimisation `max R·Λparty` is solved by a
-    GREEDY algorithm.  With `party = ⦇⟨include, exclude⟩⦈` a catamorphism over the employee tree
-    and `S = ⟨include, exclude⟩` its algebra, once `S` is monotonic on the transitive rating order
-    `R` (B&dM's second claim), the greedy recursion `⦇max R·ΛS⦈` refines the specification
-    `max R·Λ⦇S⦈ = max R·Λparty`.  A direct instance of the greedy theorem
-    (`A7_2.greedy`), whose hypotheses B&dM's monotonicity claims (via `choose_monotonic`
-    above and the `⟨include,exclude⟩` calculation p.177) discharge for the concrete tree. -/
-public theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata (Λ S ≫ est R) ⊑ Λ (relCata S) ≫ est R :=
-  greedy hFr I htrans hmono
-
-end Greedy
 
 end Freyd.Alg

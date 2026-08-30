@@ -253,8 +253,8 @@ import AOP.A6_ConsList
 -- Bird & de Moor §6.6: sorting by selection — `sort = ⦇[nil, select°]⦈°` (converse of a catamorphism)
 -- with its recursion; correctness `sort ⊆ ordered·perm` by fusion (given the select proviso).
 import AOP.A6_6_Sort
--- Bird & de Moor §7.3: planning a company party — `choose` monotonicity + party planning solved by
--- the greedy theorem (`greedy`); the rose-tree datatype `tree A = node(A, list(tree A))` deferred.
+-- Bird & de Moor §7.3: planning a company party — `choose` monotonicity (the greedy conclusion is
+-- `greedy` itself); the rose-tree datatype `tree A = node(A, list(tree A))` deferred.
 import AOP.A7_3_Party
 -- Bird & de Moor §5.6: combinatorial list relations — perm/prefix/subseq/inlist over `list A = ConsList
 -- Unit A`, with reflexivity/symmetry/transitivity (the coalgebra/spec layer for the case studies).
@@ -265,22 +265,6 @@ import AOP.A6_6b_SortConcrete
 -- Bird & de Moor §10.2: detab-entab — the tupled catamorphism `(detab, col·detab) = ⦇[base,step]⦈`
 -- over snoc-lists of chars, with its loop recursion (base/step case).
 import AOP.A10_2_Detab
--- Bird & de Moor §8.4: the knapsack problem — binary thinning; `knapsack_thinning` = the thinning
--- theorem `thinning_min` instantiated (selections=subsequences, order by value, thin by weight).
-import AOP.A8_4_Knapsack
--- Bird & de Moor case studies §7.4–§10.4 (each = the relevant abstract optimisation theorem —
--- greedy/thinning/DP — instantiated for the problem; concrete problem-specific data deferred).
-import AOP.A7_4_Cylinder
-import AOP.A7_5_SecurityVan
-import AOP.A8_2_LayeredNetwork
-import AOP.A8_3_ImplementingThin
-import AOP.A8_5_Paragraph
-import AOP.A8_6_Bitonic
-import AOP.A9_2_StringEdit
-import AOP.A9_3_Bracketing
-import AOP.A9_4_Compression
-import AOP.A10_3_Tardiness
-import AOP.A10_4_TeX
 -- LeetCode 121 (Best Time to Buy and Sell Stock) — programmed in the allegory Rel(Set): the O(n)
 -- scan as a snoc-list catamorphism, proven equal to max(≤)·Λspec.  Uses the copied `exacts` tactic.
 import Freyd.Exacts
