@@ -2340,16 +2340,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [`R≜length≤length°`],
   [`[A]⟶[A]`],
-  [The preorder `filter` and `takewhile` maximise over: the longer list wins.],
+  [The preorder `filter` and `takewhile` maximise over: the longer list wins.
+   #h(4pt) #src[`≥≜≤°`]],
 
   [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
   [`[A]⟶[A]`],
   [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
    #h(4pt) #src[Ex 7.39]],
 
-  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≤°)`],
+  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
   [`[Int]⟶Int`],
-  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≤°)`
+  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
    on each suffix. #h(4pt) #src[Ex 7.40]],
 )]<comb-fns>
 
@@ -3159,9 +3160,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
 }
 
-// B&dM Theorem 7.1, p. 172.  The note's `est(R)` is B&dM's `min(R°)` — the two conventions read
-// `x R y` from opposite ends — so the mirrored chain lands on `R°`, and the last step, `f` a map,
-// is what carries it back.
+// B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
+// what carries it back.
 #let mb-f = ([`f`], 0.55, false)
 #let mb-Fest = ([`F(est(R))`], 2.5, true)
 #let mb-Fni = ([`F(∋)`], 1.3, true)
@@ -3578,7 +3578,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [the test picks the branch],
 )
 #v(6pt)
-#align(center)[`nil R=⊤` #h(4pt) #src[`nil` is the shortest list, so it loses every `est(R°)`]]
+#align(center)[`nil R=⊤`, #h(4pt) `nil R°=nil` #h(4pt) #src[`nil` is the shortest list — below
+  every list, and above only itself, so it loses every `est(R°)`]]
 ])]<takewhile-defn>
 
 // `list(p)` starts after the join and ends inside the `∪`'s `cons` branch; `prefix` starts on the
@@ -3642,30 +3643,31 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]<takewhile-alg>
 
 // The two branches are monotonic one at a time — the rows above the pictures — and @lax-closure
-// puts them together; `R` starts on the tail strand and ends past the join.
+// puts them together; `R°` starts on the tail strand and ends past the join.
 #let step = step.with(pw: 232pt)
-#let bx-R = ([`R`], 0.65, true)
+#let bx-Ro = ([`R°`], 0.85, true)
 #disp[#table(
   columns: (1fr, 6.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×R)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R`],
-  table.header([*formula* — the `cons` branch of `F(R)S⊑SR`], [*reason*]),
+  Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°`],
+  table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [`(𝟙×R)⊸ nil⊑⊸ nil R`],
-  [`nil R=⊤` #h(4pt) #src[@takewhile-defn] #h(4pt) — the right side is `⊤`],
+  [`(𝟙×R°)⊸ nil⊑⊸ nil R°`],
+  [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — the right side is `⊸ nil`, and
+   `(𝟙×R°)⊸⊑⊸`],
 
-  [`(𝟙×R)(p×𝟙) cons⊑(p×𝟙) cons R`],
-  [composition #h(4pt) #src[@lax-closure] #h(4pt) at `(𝟙×R)(p×𝟙)=(p×R)=(p×𝟙)(𝟙×R)` and
-   `(𝟙×R) cons⊑cons R`],
+  [`(𝟙×R°)(p×𝟙) cons⊑(p×𝟙) cons R°`],
+  [composition #h(4pt) #src[@lax-closure] #h(4pt) at `(𝟙×R°)(p×𝟙)=(p×R°)=(p×𝟙)(𝟙×R°)` and
+   `(𝟙×R°) cons⊑cons R°`],
 
-  [#step([])[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-R), s: 74%)][`(𝟙×R)(⊸ nil ∪ (p×𝟙) cons)`]], [],
+  [#step([])[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]], [],
 
-  [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-R), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R`]],
+  [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `φ:=⊸ nil`, `ψ:=(p×𝟙) cons`],
 )
-#align(center, block(inset: (y: 4pt))[#src[the `nil` branch is `nil⊑nil R`. `(𝟙×R) cons⊑cons R`
-  is `cons length=(𝟙×length)π₂ succ` with `succ` monotone — a longer tail makes a longer list.]])
+#align(center, block(inset: (y: 4pt))[#src[the `nil` branch is `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°`
+  is `cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list.]])
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -3728,7 +3730,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     top: ((TXO, [`[A]`]),), bot: [`[A]`], w: 4.2)],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
-    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R)S⊑SR` — @takewhile-mono —
+    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
      collected and one chosen at the end]])],
   [#tpan(4.2, ((2.10, [`⦇`#frc([`S`])` est(R°)⦈`]),),
@@ -3753,7 +3755,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [],
 ))]<takewhile-laws>
 
-=== `mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` <sec-mss>
+=== `mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` <sec-mss>
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
 // `≤` is on `Int`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
@@ -3764,7 +3766,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
 
-`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≤°)` #h(4pt) #src[B&dM's `oplus=max(Λ(zero∪plus))`; the
+`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[B&dM's `oplus=max(Λ(zero∪plus))`; the
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ]]<mss-defn>
 
@@ -3772,7 +3774,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // content is the TYPE the wire carries — where `E(EA)` is born, and which box collapses it again.
 // A type sits ON its strand (`node`'s white ground masks the wire): a gap is that white ground (text
 // plus its insets) plus a wire stub either side, so the strand visibly runs into each label.  `X/∋`
-// and `E(X)` are fractions, hence maps (@pow-laws), so their boxes are square; `est(≤°)` is the chain's
+// and `E(X)` are fractions, hence maps (@pow-laws), so their boxes are square; `est(≥)` is the chain's
 // one relation and its only chamfered box.  Widths are measured at the note's text sizes.
 #let TH = 1.2   // a fraction box is two lines tall
 #let ty-l = ([`[A]`], 1.25)
@@ -3786,9 +3788,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let bx-eps = ([`E(prefix sum)`], 3.5, false)
 #let bx-ep = ([`E(`#frc([`prefix sum`])`)`], 2.8, false)
 #let bx-un = ([`union`], 1.45, false)
-#let bx-est = ([`est(≤°)`], 2.0, true)
-#let bx-eest = ([`E(est(≤°))`], 2.65, false)
-#let bx-epest = ([`E(`#frc([`prefix sum`])` est(≤°))`], 4.8, false)
+#let bx-est = ([`est(≥)`], 2.0, true)
+#let bx-eest = ([`E(est(≥))`], 2.65, false)
+#let bx-epest = ([`E(`#frc([`prefix sum`])` est(≥))`], 4.8, false)
 #let mss-run(tys, items) = {
   let x = 0.0
   for (i, it) in items.enumerate() {
@@ -3807,26 +3809,26 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#frc([`segment sum`])` est(≤°)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≤°)) est(≤°)`],
+  Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)`],
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
-  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][#frc([`segment sum`])` est(≤°)`]], [],
+  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][#frc([`segment sum`])` est(≥)`]], [],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, bx-est))][#frc([`suffix (prefix sum)`])` est(≤°)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, bx-est))][#frc([`suffix (prefix sum)`])` est(≥)`]],
   [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, bx-est), s: 94%)][#frc([`suffix`])` E(prefix sum) est(≤°)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, bx-est), s: 94%)][#frc([`suffix`])` E(prefix sum) est(≥)`]],
   [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, bx-est), s: 95%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`union est(≤°)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, bx-est), s: 95%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`union est(≥)`]],
   [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
    `E(R)≜frac(∋R,∋)`; @est-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
    `F(RS)=F(R)F(S)` at `F:=E`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, bx-est), s: 85%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`E(est(≤°)) est(≤°)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, bx-est), s: 85%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`E(est(≥)) est(≥)`]],
   [@est-laws, the sets non-empty],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, bx-est), s: 92%)][#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≤°))` \ #h(1em)`est(≤°)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, bx-est), s: 92%)][#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥))` \ #h(1em)`est(≥)`]],
   [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
 #align(center, block(inset: (y: 4pt))[#src[B&dM's `max(P(max(Λ(sum prefix))))Λsuffix`, mirrored. The
@@ -3907,8 +3909,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 // beside its two branches, and here each branch carries a circuit of its own and wants no label.
 #import "circuit.typ": TAPEEDGE
 #let MIY = 0.5           // `A×Int` is TWO strands: the head above, the running sum below
-#let LEQ = 0.9           // the `≤°` box — an order, not a map, so it keeps its chamfer
-#let MPRE = LEQ + 0.4    // `𝟙×≤°` in front of a branch: the head runs straight past it
+#let GEQ = 0.9           // the `≥` box — an order, not a map, so it keeps its chamfer
+#let MPRE = GEQ + 0.4    // `𝟙×≥` in front of a branch: the head runs straight past it
 
 #let mtape(a, b, upper, lower) = {
   let cy = (a.at(1) + b.at(1)) / 2
@@ -3945,12 +3947,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let mbranch(body, w, pre: false, post: false) = (x, y) => {
   if pre {
     wire((x, y + MIY), (x + MPRE, y + MIY))
-    wire((x, y - MIY), (x + 0.2, y - MIY)); gbox((x + 0.2, y - MIY), [`≤°`], w: LEQ)
-    wire((x + 0.2 + LEQ, y - MIY), (x + MPRE, y - MIY))
+    wire((x, y - MIY), (x + 0.2, y - MIY)); gbox((x + 0.2, y - MIY), [`≥`], w: GEQ)
+    wire((x + 0.2 + GEQ, y - MIY), (x + MPRE, y - MIY))
   }
   let x0 = x + (if pre { MPRE } else { 0 })
   body(x0, y, w)
-  if post { gbox((x0 + w, y), [`≤°`], w: LEQ); wire((x0 + w + LEQ, y), (x0 + w + LEQ + 0.3, y)) }
+  if post { gbox((x0 + w, y), [`≥`], w: GEQ); wire((x0 + w + GEQ, y), (x0 + w + GEQ + 0.3, y)) }
 }
 // One row: the pair arrives on two strands, takes one branch of the `∪`, and leaves on one.
 #let mrow(upper, lower, W, pre: false, post: false) = {
@@ -3960,13 +3962,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   lab(-0.45, MIY, black)[`A`]; lab(-0.62, -MIY, black)[`Int`]
   wire((0, MIY), (x0 - CHFAN, MIY))
   if pre {
-    wire((0, -MIY), (0.4, -MIY)); gbox((0.4, -MIY), [`≤°`], w: LEQ)
-    wire((0.4 + LEQ, -MIY), (x0 - CHFAN, -MIY))
+    wire((0, -MIY), (0.4, -MIY)); gbox((0.4, -MIY), [`≥`], w: GEQ)
+    wire((0.4 + GEQ, -MIY), (x0 - CHFAN, -MIY))
   } else { wire((0, -MIY), (x0 - CHFAN, -MIY)) }
   let xe = x1 + CHFAN
   if post {
-    wire((xe, 0), (xe + 0.3, 0)); gbox((xe + 0.3, 0), [`≤°`], w: LEQ)
-    wire((xe + 0.3 + LEQ, 0), (xe + 0.6 + LEQ, 0)); lab(xe + 1.15 + LEQ, 0, black)[`Int`]
+    wire((xe, 0), (xe + 0.3, 0)); gbox((xe + 0.3, 0), [`≥`], w: GEQ)
+    wire((xe + 0.3 + GEQ, 0), (xe + 0.6 + GEQ, 0)); lab(xe + 1.15 + GEQ, 0, black)[`Int`]
   } else { wire((xe, 0), (xe + 0.4, 0)); lab(xe + 0.95, 0, black)[`Int`] }
 }
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
@@ -3976,31 +3978,31 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×≤°)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≤°` \ #src[the `plus` branch of `F(≤°)S⊑S≤°`; the `zero`
-    branch is `zero⊑zero≤°`]],
+  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
+    branch is `zero⊑zero≥`]],
   table.header([*formula* — the head above, the running sum below; the tape is the `∪`], [*reason*]),
 
-  [#step([])[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true))][`(𝟙×≤°)(⊸ zero ∪ plus)`]],
+  [#step([])[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true))][`(𝟙×≥)(⊸ zero ∪ plus)`]],
   [],
 
-  [#step(EQ)[#mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9))][`(𝟙×≤°)⊸ zero ∪ (𝟙×≤°) plus`]],
+  [#step(EQ)[#mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9))][`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]],
   [relator, composition over `∪`],
 
-  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8))][`⊸ zero ∪ plus≤°`]],
-  [@dom-slide, `(≤°×≤°) plus⊑plus≤°` \ #src[`(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and
+  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8))][`⊸ zero ∪ plus≥`]],
+  [@dom-slide, `(≥×≥) plus⊑plus≥` \ #src[`(≤×≤) plus⊑plus≤` is @mon-defn, written `+` there, and
    `plus` is a map, so it is monotonic on an order and on its opposite together, which carries it
-   to `≤°`.]],
+   to `≥`.]],
 
-  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true))][`(⊸ zero ∪ plus)≤°`]],
-  [`≤°` reflexive],
+  [#step(SQ)[#mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true))][`(⊸ zero ∪ plus)≥`]],
+  [`≥` reflexive],
 )]<mss-mono>
 
 // Every row is ONE WIRE, `𝟏+A×Int` to `Int` — `F(Int)` with `A:=Int` — so its two ends are drawn once.
 #let mss-src = { lab(-1.62, 0, black)[`𝟏+A×Int`]; wire((-0.45, 0), (0, 0)) }
 #let mss-tgt(x) = lab(x + 0.62, 0, black)[`Int`]
-// Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `est(≤°)` is partial — no greatest of
+// Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `est(≥)` is partial — no greatest of
 // the empty set — and is the one chamfered box here.  `h` is shared down a run: a fraction is two lines.
-#let mss-est = ([`est(≤°)`], 2.1, true)
+#let mss-est = ([`est(≥)`], 2.1, true)
 #let mss-alg = $frac(#[`[zero,⊸ zero ∪ plus]`], ∋)$
 #let mss-zero = $frac(#[`zero`], ∋)$
 #let mss-plus = $frac(#[`⊸ zero ∪ plus`], ∋)$
@@ -4028,22 +4030,22 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#mss-alg ` est(≤°)=[zero,⊕]`],
+  Thm[#mss-alg ` est(≥)=[zero,⊕]`],
   table.header([*formula* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*reason*]),
 
-  [#step([])[#mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25))][#mss-alg ` est(≤°)`]], [],
+  [#step([])[#mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25))][#mss-alg ` est(≥)`]], [],
 
-  [#step(EQ)[#mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25))][`[`#mss-zero` est(≤°),` #mss-plus ` est(≤°)]`]],
+  [#step(EQ)[#mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25))][`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]`]],
   [coproduct of maps \ #src[@coprod-calc at `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` —
    @coprod-laws, composition over `∪`]],
 
   [#step(EQ)[#mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),)))][`[zero,⊕]`]],
-  [singleton, `≤°` reflexive \ #src[@est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≤°`, `zero` a
+  [singleton, `≥` reflexive \ #src[@est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
    map; the lower branch is `⊕`'s definition, @mss-defn, and no law]],
 )
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
-  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≤°)` — B&dM's own containment — and @mss-deriv
+  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
   makes it an equality.]])
 ]<mss-step>
 
@@ -4170,49 +4172,49 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 7.1cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` \
-    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≤°)` — @mss-defn]],
+  Thm[`mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
+    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  // The `E` wire is BORN at the transpose and DIES at `est(≤°)`; one height per bead down the
+  // The `E` wire is BORN at the transpose and DIES at `est(≥)`; one height per bead down the
   // column, so a row that collapses a pair puts its one bead midway between the two it replaces.
   // The OUTER `E` keeps `RXU` in every row — an unchanged wire is drawn unchanged — and only the
   // second row, which carries a second `E`, uses `RXC` as well.
   [#vstep([], mbp(mss-line((bx-mss, bx-est))),
-    [#frc([`segment sum`]) ` est(≤°)` \
+    [#frc([`segment sum`]) ` est(≥)` \
      #src[`mss` is the greatest of the segment sums — @mss-defn]])],
-  [#tpan(4.3, ((3.60, frc([`segment sum`])), (0.40, [`est(≤°)`])),
+  [#tpan(4.3, ((3.60, frc([`segment sum`])), (0.40, [`est(≥)`])),
     hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-epest, bx-est))),
-    [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≤°)) est(≤°)` \ #src[@mss-shape]])],
-  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.65, frc([`prefix sum`])), (1.35, [`est(≤°)`]),
-      (0.40, [`est(≤°)`])),
+    [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≥)) est(≥)` \ #src[@mss-shape]])],
+  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.65, frc([`prefix sum`])), (1.35, [`est(≥)`]),
+      (0.40, [`est(≥)`])),
     hands: ((RXU, 3.60, 0.40, [`E`]), (RXC, 2.65, 1.35, [`E`])),
     top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
-    [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≤°)` \
-     #src[the greedy theorem @greedy-thm72 at `R:=≤°`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
-      condition and @mss-step its #frc([`S`]) ` est(≤°)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
-      entire and #frc([`prefix sum`]) ` est(≤°)` simple #src[@takewhile-laws's last row]]])],
-  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≤°)`])),
+    [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
+     #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
+      condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
+      entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
+  [#tpan(4.3, ((3.60, frc([`suffix`])), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≥)`])),
     hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
   [#vstep(EQ, mbp(mss-line((bx-tails, bx-listg, bx-est))),
-    [`tails list(⦇[zero,⊕]⦈) est(≤°)` \
+    [`tails list(⦇[zero,⊕]⦈) est(≥)` \
      #src[`tails` implements #frc([`suffix`]) and `list(f)` implements `E(f)` — @comb-fns]])],
-  [#tpan(4.3, ((3.60, [`tails`]), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≤°)`])),
+  [#tpan(4.3, ((3.60, [`tails`]), (2.00, [`⦇[zero,⊕]⦈`]), (0.40, [`est(≥)`])),
     hands: ((RXU, 3.60, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 6.4)],
 
   [#vstep(EQ, mbp(mss-line((bx-fold, bx-est))),
-    [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≤°)` \
+    [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
      #src[@cata-fusion at @mss-scan's side condition, `c,f:=zero,⊕`]])],
-  [#tpan(4.3, ((2.80, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩ cons]⦈`]), (0.40, [`est(≤°)`])),
+  [#tpan(4.3, ((2.80, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩ cons]⦈`]), (0.40, [`est(≥)`])),
     hands: ((RXU, 2.80, 0.40, [`E`]),), top: ((RXO, [`[A]`]),), xo: RXO, w: 9.0)],
 ))
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
-  `est(≤°)` reads them in one more pass, so `mss` is linear.]])
+  `est(≥)` reads them in one more pass, so `mss` is linear.]])
 ]<mss-deriv>
 
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
@@ -4292,27 +4294,27 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 6.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×R)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R`],
-  table.header([*formula* — the `cons` branch of `F(R)S⊑SR`], [*reason*]),
+  Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°`],
+  table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [`(𝟙×R)π₂=π₂R`],
+  [`(𝟙×R°)π₂=π₂R°`],
   [`π₂` natural #h(4pt) #src[@subseq-outr-square] #h(4pt) — the right side is an EQUALITY here],
 
-  [`(𝟙×R)(p×𝟙) cons⊑(p×𝟙) cons R`],
+  [`(𝟙×R°)(p×𝟙) cons⊑(p×𝟙) cons R°`],
   [@takewhile-mono's `cons` branch, unchanged],
 
-  [#step([])[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-R, upper: pi2-copy()), s: 74%)][`(𝟙×R)(π₂∪(p×𝟙) cons)`]], [],
+  [#step([])[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-Ro, upper: pi2-copy()), s: 74%)][`(𝟙×R°)(π₂∪(p×𝟙) cons)`]], [],
 
-  [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-R, upper: pi2-copy()), s: 74%)][`(π₂∪(p×𝟙) cons)R`]],
+  [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro, upper: pi2-copy()), s: 74%)][`(π₂∪(p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `X:=π₂`, `Y:=(p×𝟙) cons`],
 )
-#align(center, block(inset: (y: 4pt))[#src[`F(R)S⊑SR`, the `nil` branch again `nil⊑nil R`. The
-  first step is an equality: @takewhile-mono buys its `⊸ nil` branch with `nil R=⊤`, and `π₂`
+#align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`. The
+  first step is an equality: @takewhile-mono buys its `⊸ nil` branch with `nil R°=nil`, and `π₂`
   needs only its naturality square.]])
 ]<filter-mono>
 
 #let step = step.with(pw: 246pt)
-// §13.3.4 rebound `bx-est` to `est(≤°)`, which is what the pictures below were drawing.
+// §13.3.4 rebound `bx-est` to `est(≥)`, which is what the pictures below were drawing.
 #let bx-est = ([`est(R°)`], 2.2, true)
 #let bx-ud2 = (frc([`π₂∪(p×𝟙) cons`]), 3.5, false)
 #let bx-cond2 = ([`(π₁p→cons,π₂)`], 3.8, false)
@@ -4376,7 +4378,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [#fpan(frc([`⦇S⦈`]))],
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
-    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis at `(R°)°=R` is
+    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
      @filter-mono]])],
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  The `[A]` wire is
   // unchanged, so it is drawn where the two panels above draw it.
@@ -4575,30 +4577,30 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [#h(1em)`concat flattens:`], [`[d,e]`], [`[d]`], [`[e]`], [`[]`],
 ))]<party-list-choose>
 
-=== `list(R×R)` <sec-party-listrr>
+=== `list((R×R)°)` <sec-party-listrr>
 
 // The two lists are stacked so the correspondence is read DOWN a column: `list` relates lists of the
-// same length position by position, so everything `list(R×R)` says is what `R×R` says of one item.
+// same length position by position, so everything `list((R×R)°)` says is what `(R×R)°` says of one item.
 #disp[#align(center, grid(
   columns: 6, column-gutter: 10pt, row-gutter: 5pt,
   align: (center + horizon, center + horizon, center + horizon, center + horizon, center + horizon,
           left + horizon),
-  [`[`], [`([b],[d])`], [`,`], [`([c],[])`], [`]`], [],
-  [], [`│`], [], [`│`], [], [],
-  [], [`▼`], [], [`▼`], [], src[`list(R×R)`, elementwise],
   [`[`], [`([b],[d,e])`], [`,`], [`([c],[f])`], [`]`], [],
+  [], [`│`], [], [`│`], [], [],
+  [], [`▼`], [], [`▼`], [], src[`list((R×R)°)`, elementwise],
+  [`[`], [`([b],[d])`], [`,`], [`([c],[])`], [`]`], [],
 ))
 // One raw block, not a grid: the ticks land under `b` and `d` because every glyph is one monospace
 // advance wide, which no measured column can promise.
 #v(8pt)
 #align(center)[```
-([b],[d])
+([b],[d,e])
   │   └── exclude: the best party in b's subtree when b does not come
   └────── include: the best party in b's subtree when b comes
 ```]]<party-listrr>
 
-// `R×R` is TWO demands, one per component, and at `a` both elements move, each in its second — the
-// table is here because "the relator relates them elementwise" hides which component that is.
+// `(R×R)°` is TWO demands, one per component, and at `a` both elements move, each in its second —
+// the table is here because "the relator relates them elementwise" hides which component that is.
 #disp[
 #table(
   columns: (3.6cm, 7.4cm, 1fr),
@@ -4606,29 +4608,29 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*element*], [*1st component* \ `include`], [*2nd component* \ `exclude`]),
 
-  [1st, `([b],[d])`],
-  [`[b] R [b]` \ #src[`7≤7`, reflexivity]],
-  [`[d] R [d,e]` \ #src[`5≤6`, and `([b],[d,e])` is the pair `est(R°)` keeps at `b`]],
+  [1st, `([b],[d,e])`],
+  [`[b] R° [b]` \ #src[`7≥7`, reflexivity]],
+  [`[d,e] R° [d]` \ #src[`6≥5`, and `([b],[d,e])` is the pair `est(R°)` keeps at `b`]],
 
-  [2nd, `([c],[])`],
-  [`[c] R [c]` \ #src[`2≤2`, reflexivity]],
-  [`[] R [f]` \ #src[`0≤8`, and `([c],[f])` is the pair `est(R°)` keeps at `c`]],
+  [2nd, `([c],[f])`],
+  [`[c] R° [c]` \ #src[`2≥2`, reflexivity]],
+  [`[f] R° []` \ #src[`8≥0`, and `([c],[f])` is the pair `est(R°)` keeps at `c`]],
 )
-#align(center, src[the first component of `𝟙×list(R×R)` is the root employee.])
+#align(center, src[the first component of `𝟙×list((R×R)°)` is the root employee.])
 ]<party-rr>
 
 // Each note in its own block: the template indents the second of two consecutive paragraphs, and an
 // indented note reads as a continuation of the one above it.
 #block[#src[`R≜cost≤cost°` is a preorder, so the components that do not move are related by
-  reflexivity — `R×R` demands a relation in *both* components, it cannot skip one.]]
+  reflexivity — `(R×R)°` demands a relation in *both* components, it cannot skip one.]]
 
-#block[#src[`R` compares cost only, not contents: `[] R [f]` is legal though `[f]` has an element
+#block[#src[`R` compares cost only, not contents: `[f] R° []` is legal though `[f]` has an element
   `[]` does not. That is why the three leaves of §@sec-party-mono's proof all reduce to
   "`cost` is a sum".]]
 
-=== `(𝟙×list(R×R))S⊑S(R×R)` — `S : F([A]×[A])⟶[A]×[A]` monotonic on `R×R` <sec-party-mono>
+=== `(𝟙×list((R×R)°))S⊑S(R×R)°` — `S : F([A]×[A])⟶[A]×[A]` monotonic on `(R×R)°` <sec-party-mono>
 
-// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := R×R`, so `F(R×R) = 𝟙×list(R×R)`; @lax-defn at
+// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`; @lax-defn at
 // `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -4636,16 +4638,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     ar(FT, T, GIVEN1, s0: 1.9, s1: 1.5); ar(FB, B, GIVEN1, s0: 1.9, s1: 1.5)
     ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
     lab(0, 1.8, GIVEN1)[`S`]; lab(0, -1.8, GIVEN1)[`S`]
-    lab(-6.0, 0, GIVEN2)[`𝟙×list(R×R)`]; lab(4.9, 0, GIVEN2)[`R×R`]
+    lab(-6.4, 0, GIVEN2)[`𝟙×list((R×R)°)`]; lab(5.2, 0, GIVEN2)[`(R×R)°`]
     lab(0, 0, SLACK, rot: -45deg)[`⊑`]
     node(FT.at(0), FT.at(1), black, `F([A]×[A])`); node(T.at(0), T.at(1), black, `[A]×[A]`)
     node(FB.at(0), FB.at(1), black, `F([A]×[A])`); node(B.at(0), B.at(1), black, `[A]×[A]`)
   }),
   // `length` up from the file's 0.95cm: the port labels do not scale with it, and at 0.95cm the two
   // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
-  homeq(`F`, `[A]×[A]`, `S`, `R×R`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
+  homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
     regions: auto, sep: text(SLACK)[`⊑`], rev: true, gap: 1.4, length: 1.35cm),
-  [`(𝟙×list(R×R))S⊑S(R×R)`],
+  [`(𝟙×list((R×R)°))S⊑S(R×R)°`],
 )]<party-mono>
 
 // @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
@@ -4671,14 +4673,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
 // per row is a width that drifts.  No chamfer is a map — `concat` is one, `list(g)` is not (`choose`).
-#let box-r = ([`R`], 0.92, true)
-#let box-lrr = ([`list(R×R)`], 2.7, true)
+#let box-ro = ([`R°`], 1.1, true)
+#let box-lrro = ([`list((R×R)°)`], 3.2, true)
 #let box-cc = ([`concat`], 1.9, false)
 #let box-lg = ([`list(g)`], 2.2, true)
-#let box-lgr = ([`list(gR)`], 2.4, true)
+#let box-lgro = ([`list(gR°)`], 2.6, true)
 
 // A PRODUCT IS TWO WIRES.  `F([A]×[A])=A×[[A]×[A]]` enters as two, `[A]×[A]` leaves as two, and
-// `𝟙×list(R×R)` is the root's wire running straight past a box that sits on the other one — `×` costs no
+// `𝟙×list((R×R)°)` is the root's wire running straight past a box that sits on the other one — `×` costs no
 // notation, it IS the second wire.  `[[A]×[A]]` stays ONE wire: its outermost former is the list.
 // The shape below opens with `pairin`, at two strand heights, so the height is its parameter.
 #let pairin(y, items) = {
@@ -4707,7 +4709,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 #let HMY = (0.55, 1.23, 1.91, 2.59, 3.27, 3.95, 4.63)   // slot 3, `h`, 2, `concat`, 1, `g`, 0
 #let HMW = 6.0
 #let HMH = 5.2
-// Wire colour is the TYPE, bead colour is WHICH ARROW: only `[A]` carries a type, and `R` is the
+// Wire colour is the TYPE, bead colour is WHICH ARROW: only `[A]` carries a type, and `R°` is the
 // arrow the theorem is handed, so it alone leaves the structure maps' black.
 #let party-hm(rs) = P(cetz.canvas(length: 0.8cm, {
   let (XM, XL, XD, XA) = HMX
@@ -4720,7 +4722,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   hm-join(XL, HMH, XA, YC, knee: 0.9)
   hm-join(XM, HMH, XA, YN, knee: 1.2)
   hm-bead((XA, YP), [`g`]); hm-bead((XA, YC), [`concat`]); hm-bead((XA, YN), [`h`])
-  hm-bead((XA, (Y0, Y1, Y2, Y3).at(rs)), [`R`], col: GIVEN1)
+  hm-bead((XA, (Y0, Y1, Y2, Y3).at(rs)), [`R°`], col: GIVEN1)
   hm-port((XM, HMH), [`A×−`]); hm-port((XL, HMH), [`list`]); hm-port((XD, HMH), [`Δ`])
   hm-port((XA, HMH), [`[A]`], col: BCOL); hm-port((XA, 0), [`[A]`], dir: -1, col: BCOL)
   if rs == 0 { hm-name((2.0, 0.55), [`Rel`]); hm-name((5.0, 0.55), [`𝟏`]) }
@@ -4736,38 +4738,38 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   Thm[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
     align: (right + horizon, center + horizon, left + horizon),
     grid.cell(colspan: 3, align: center)[`S≜⟨include,exclude⟩`],
-    [`(𝟙×list(R×R))S`], SQ, [`S(R×R)`],
-    [`(𝟙×list(R×R))include`], SQ, [`include R`],
-    [`(𝟙×list(R×R))exclude`], SQ, [`exclude R`],
+    [`(𝟙×list((R×R)°))S`], SQ, [`S(R×R)°`],
+    [`(𝟙×list((R×R)°))include`], SQ, [`include R°`],
+    [`(𝟙×list((R×R)°))exclude`], SQ, [`exclude R°`],
   ))],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#step([])[#party-pic(tallpic((box-lrr, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
+  [#step([])[#party-pic(tallpic((box-lrro, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
 
-  [#step(SQ)[#party-pic(tallpic((box-lgr, box-cc), [`h`], 0.95))][]], [#party-hm(1)],
+  [#step(SQ)[#party-pic(tallpic((box-lgro, box-cc), [`h`], 0.95))][]], [#party-hm(1)],
 
-  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc, box-r), [`h`], 0.95))][]], [#party-hm(2)],
+  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc, box-ro), [`h`], 0.95))][]], [#party-hm(2)],
 
-  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc), [`h`], 0.95, post: (box-r,)))][]], [#party-hm(3)],
+  [#step(SQ)[#party-pic(tallpic((box-lg, box-cc), [`h`], 0.95, post: (box-ro,)))][]], [#party-hm(3)],
 )
 
 #v(3pt)
 
-// The key list, read DOWNWARD like the pictures: one line per bead `R` walks past.
+// The key list, read DOWNWARD like the pictures: one line per bead `R°` walks past.
 #align(center, block(width: 20.5cm)[#src[#grid(
   columns: (1.7cm, auto),
   row-gutter: 3.5pt, align: (left, left),
   [`g`],
-  [`(R×R)g⊑gR` \ `g:=π₂` is `(R×R)π₂=(Dom(π₁R))π₂R⊑π₂R`, `g:=π₁` its mirror
-   `(Dom(π₂R))π₁R⊑π₁R` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁∪π₂` is the union
+  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`, `g:=π₁` its mirror
+   `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁∪π₂` is the union
    of the two #h(4pt) #src[@lax-closure]. `list` monotonic, @relator-defn],
   [`concat`],
-  [`list(R)concat⊑concat R` \ a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat xss)=sum(list(cost)xss)` and a costlier part makes a costlier whole. B&dM's exercise.],
+  [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
+   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole. B&dM's exercise.],
   [`h`],
-  [`(𝟙×R)h⊑hR` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a costlier tail
-   makes a costlier list. B&dM's exercise.  For `h:=π₂` it is an EQUALITY `(𝟙×R)π₂=(Dom(π₁))π₂R`
-   `=π₂R`: `π₁` is a map, hence entire, so `Dom(π₁)=𝟙` — @dom-laws],
+  [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
+   makes a cheaper list. B&dM's exercise.  For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
+   `=π₂R°`: `π₁` is a map, hence entire, so `Dom(π₁)=𝟙` — @dom-laws],
 )]])
 
 #v(3pt)
@@ -4965,11 +4967,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#step(RQ)[#laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),)))][#frc([`⦇S⦈`])` est((R×R)°) `#frc([`choose`])` est(R°)`]],
   [#dcell(d-out4, none)],
-  [Ex 7.38 at `(R×R)choose⊑choose R` #h(4pt) #src[@party-mono-branch's `g` row]],
+  // `(R×R)°choose⊑choose` is one unbreakable run wider than the 3.8cm reason column; it was already
+  // crossing that column's right rule before the `°` moved onto this side.
+  [Ex 7.38 at `choose`, `R°` #h(4pt) #src[@party-mono-branch's `g` row]],
 
   [#step(RQ)[#laws-pic(lfold(1.18, LBW5, LSP, lbody5))][`⦇`#frc([`S`])` est((R×R)°)⦈ `#frc([`choose`])` est(R°)`]],
   [#dcell(d-out5, d-in5)],
-  [Theorem 7.2, `(𝟙×list(R×R))S⊑S(R×R)`],
+  // Spelled out, the hypothesis is one unbreakable run wider than the 3.8cm reason column, and the
+  // display named here states it exactly.
+  [Theorem 7.2 at `(R×R)°` #h(4pt) #src[@party-mono]],
 
   [#step(RQ)[#laws-pic(lfold(2.05, LBW6, LBY, lbody6))][`⦇⟨`#frc([`include`])` est(R°),` \ #h(1em)#frc([`exclude`])` est(R°)⟩⦈ `#frc([`choose`])` est(R°)`]],
   [#dcell(none, d-in6)],
@@ -5058,8 +5064,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   row-gutter: 3.5pt, align: (left, center, left),
   [`include map`], text(SLACK)[$subset.eq.sq$], [`include` a map, `est(R°)` into each branch],
   [`Ex 7.15`], text(SLACK)[$subset.eq.sq$], [the fork splits],
-  [`Thm 7.2`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list(R×R))S⊑S(R×R)`],
-  [`Ex 7.38`], text(SLACK)[$subset.eq.sq$], [`(R×R)choose⊑choose R`],
+  [`Thm 7.2`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list((R×R)°))S⊑S(R×R)°`],
+  [`Ex 7.38`], text(SLACK)[$subset.eq.sq$], [`(R×R)°choose⊑choose R°`],
   [`@pow-laws`], [$=$], [absorption],
   [`party≜`], [$=$], [definition of `party`],
 )]])
@@ -5435,7 +5441,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [`[[Int]]⟶[[Int]]`],
   [The order the schedule is minimised over: fewer van visits is better.],
 
-  [`ceiling≜` $frac(#[`prefix sum`], ∋)$ `est(≤°)`],
+  [`ceiling≜` $frac(#[`prefix sum`], ∋)$ `est(≥)`],
   [`[Int]⟶Int`],
   [The highest the bank's balance reaches over a stretch of transactions.],
 
@@ -5661,7 +5667,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 `subseq=⦇[nil,cons]∪[nil,π₂]⦈`, #h(4pt) `within w` the coreflexive on `xs` with `weight xs≤w`.
 
-`≥≜≤°`, #h(4pt) `R≜value≥value°`, #h(4pt) `Q≜R∩(weight≤weight°)`, #h(4pt) `P≜R`.
+`R≜value≥value°`, #h(4pt) `Q≜R∩(weight≤weight°)`, #h(4pt) `P≜R`.
 
 `FA=1+Item×A`, #h(4pt) `listcp(F)=wrap+cpr`, #h(4pt) `g₁≜list([nil,cons]) filter(within w)`
 #h(4pt) `=[list(nil),h₁]`, #h(4pt) `g₂≜list([nil,π₂])=[list(nil),h₂]`.
@@ -6117,7 +6123,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `ct`, `dt`, `wt : Job⟶Real` the completion, due and weighting quantities of a job; #h(4pt)
 `penalty (xs,j)=(sum (list(ct) xs)+ct j−dt j)×wt j`.
 
-`cost≜` $frac(#[`prefix`], ∋)$ `P(α° [zero,penalty]) est(≤°)`, #h(4pt) `cost []=0`, #h(4pt)
+`cost≜` $frac(#[`prefix`], ∋)$ `P(α° [zero,penalty]) est(≥)`, #h(4pt) `cost []=0`, #h(4pt)
 `cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, #h(4pt) `R≜cost≤cost°`.
 
 `perm≜bagify bagify°=⦇[nil,add]⦈`, #h(4pt) `add (xs,j)=ys⧺[j]⧺zs` for some `xs=ys⧺zs`.

@@ -23,6 +23,11 @@ single object name (`P A`, `T A`, `F A`), which no reader can take for a composi
 is parenthesised (`F(P B)`, never `F P B`). Pointwise evaluation is outside this — `f a`, `tip (f a)`.
 Use the global book notation `𝟙 A` for the categorical identity `Cat.id A`; do not spell identities
 as `Cat.id A` in new code.
+**When a converse has a name of its own, write the name, not the `°`.** `≥`, never `≤°`; `∈`, never
+`∋°`; `⊒`, never a conversed `⊑`. The `°` is one level of indirection the reader has to undo, and
+`est(≥)` says which end is meant where `est(≤°)` makes him work it out. This binds Lean and the note
+alike. `R°` for an abstract `R` stays — there is no other name for it — and so does the one line that
+defines the named form (`∈ ≜ ∋°`).
 Use the shortest unambiguous book name in signatures and prose. Once its namespace is deliberately
 opened, write `SmallRegCat`, for example, rather than `Freyd.S2_154.SmallRegCat`; keep full
 qualification only where ambiguity or declaration syntax requires it.
