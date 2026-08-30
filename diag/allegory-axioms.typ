@@ -2104,6 +2104,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 }
 #let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
   ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
+// `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
+// `s`; `tpan`/`mpan` pass 100% and print their labels at the size `tw-hm` does.
 #let dpan(h, w, xa, body, s: 74%) = P(cetz.canvas(length: 0.8cm, {
   d.rect((0, 0), (xa, h), fill: fb-ALLC, stroke: none)
   d.rect((xa, 0), (w, h), fill: luma(226), stroke: none)
@@ -2141,13 +2143,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
-}, s: 88%)
+}, s: 100%)
 // The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
 // room, so a long one — `⦇S⦈°\X` — cannot run out of the panel.
 #let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`]) = dpan(h, w, 0.55, {
   hm-bead((0.55, y), l)
   hm-port((0.55, h), top, col: BCOL); hm-port((0.55, 0), bot, dir: -1, col: BCOL)
-}, s: 88%)
+}, s: 100%)
 #let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
 
 // Otherwise the heading lands alone at the foot of the reduce-of-maps page.
@@ -4103,7 +4105,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
-}, s: 95%)
+}, s: 100%)
 #let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
@@ -6140,7 +6142,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let nb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
   ((THO, [`A`]),), ((THU, [`E`]), (THO, [`A`])), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈⊑`#frc([`⦇S⦈`])` thin Q` \
@@ -6402,7 +6404,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`B`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)fp`])` sort P⊒F(sort P) listcp(F) list(f) filter(p)` \
@@ -6461,7 +6463,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let sb-min = ([`minlist R`], 2.7, true)
 #let sb-prog = ([`⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈`], 11.0, false)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \
@@ -6513,7 +6515,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)S`])` thin Q sort P⊒F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
@@ -6889,7 +6891,7 @@ in @mu-defn.
   lanes: ((THU - 0.34, 1.60, [`E`]),), names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
@@ -6984,7 +6986,7 @@ both lists empty.
   lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`edit°`])` est(R)⊒mle`, #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist R)` \
@@ -7115,7 +7117,7 @@ both lists empty.
   ((THN, [`list⁺`]), (THO, [`A`])), ((THN, [`tree`]), (THO, [`A`])), lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`flatten°`])` est(R)⊒mct`, #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
@@ -7235,7 +7237,7 @@ the longest repeated tail; #h(4pt)
   lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`decode°`])` est(R)⊒encode`, #h(6pt)
@@ -7312,7 +7314,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #let gb-Ui = ([`Uᵢ`], 0.90, true)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
@@ -7385,7 +7387,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`detab°`])` est(R)⊒entab`, #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
@@ -7494,7 +7496,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`bagify°`])` est(R)⊒schedule`, #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
@@ -7587,7 +7589,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((THO, [`[0,2¹⁶)`]),), ((THN, [`list`]), (THO, [`Digit`])), lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.1cm),
+  columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern n=f (2n−1,2n+1)` \
