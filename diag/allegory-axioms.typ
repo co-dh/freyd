@@ -6248,7 +6248,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [keeping everything is always a legal thinning],
   [`est(R)=thin Q est(R)` #h(4pt) #src[`Q⊑R`, both preorders]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
-  [`thin Q⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt) #src[(8.2)]],
+  [`thin Q⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
+   #src[(8.2), `lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@5fea4441`]],
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `est(Q)` is
    defined on],
   [$frac(#[`S`], ∋)$ `thin Q⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
@@ -7188,10 +7189,11 @@ in @mu-defn.
   table.header([*the condition*], [*how it is discharged*]),
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
-   `F(≤)k⊑k≤`]],
+   `F(≤)k⊑k≤`; `lean:AOP.A9_1.monotonicAlg_of_cost@c2542f9d`]],
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
-   `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple]],
+   `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
+   `lean:AOP.A9_1.monotonicAlg_in_context@f0a1b13c`]],
   [monotonicity *in context*: `k` may also read the input the part was built from],
   [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
    `VH⊑HR`]],
