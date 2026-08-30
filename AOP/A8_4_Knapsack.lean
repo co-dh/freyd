@@ -9,7 +9,7 @@
   it by THINNING with the preorder `Q = R ∩ (weight°·leq·weight)` (sort by value, break ties by
   weight): the within-`w` selection algebra `S` is monotonic on `Q°` (the "easy to prove" fact),
   and — the cons-list base functor being linear — the thinning theorem applies, giving the
-  binary-thinning program.  The refinement is exactly the thinning theorem (`A8_1.thinning_min`).
+  binary-thinning program.  The refinement is exactly the thinning theorem (`A8_1.thinning_est`).
 -/
 module
 
@@ -24,13 +24,13 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
 /-- **§8.4 (B&dM pp.205-206)**: the knapsack problem is solved by BINARY THINNING.  With the
     subsequence-selection algebra `S`, the descending-value order `R`, and the thinning preorder
     `Q = R ∩ (weight-order)`, once `S` is monotonic on `Q°` the thinning DP
-    `⦇thin Q · Λ(S·F∈)⦈ · min R` refines the specification `min R·Λ⦇S⦈ = min R·Λ(within w·subseq)`.
-    A direct instance of the thinning theorem `A8_1.thinning_min` (with `Q`, `R`, `S`, and the
+    `⦇thin Q · Λ(S·F∈)⦈ · min R°` refines the specification `min R°·Λ⦇S⦈ = min R°·Λ(within w·subseq)`.
+    A direct instance of the thinning theorem `A8_1.thinning_est` (with `Q`, `R°`, `S`, and the
     monotonicity `hmono` supplied concretely by the knapsack data, per B&dM's derivation). -/
 theorem knapsack_thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : a ⟶ a}
-    {S : F.obj a ⟶ a} (hQR : Q ⊑ R) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R ≫ R ⊑ R) (hmono : MonotonicAlg S Q°) :
-    relCata I (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ minRel R ⊑ Λ (relCata I S) ≫ minRel R :=
-  thinning_min hFr I hQR hreflQ htransQ htransR hmono
+    {S : F.obj a ⟶ a} (hQR : Q ⊑ R°) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
+    (htransR : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg S Q°) :
+    relCata I (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata I S) ≫ est R :=
+  thinning_est hFr I hQR hreflQ htransQ htransR hmono
 
 end Freyd.Alg

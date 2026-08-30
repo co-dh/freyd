@@ -24,11 +24,11 @@ example : eval rel⟦ (elem217 ≫ elem217°) ∩ lt217 ⟧ 1 2 = false := by de
 /-! ### 2. L1 Two Sum by CALCULATION — derive a FUNCTION from a relational SPEC.
     `specL1 : One → Ans` is the SPEC as a RELATION: input ↝ every valid answer-pair (the condition
     `nums i + nums j = target` is computed in the atom, from the real data).  The AoP construction
-    `Λ(spec) ≫ max(le)` DERIVES a deterministic function from it — `Λ` transposes the spec to its
-    answer-SET, `max(le)` selects one member.  The interpreter EVALUATES the derived term: it computes
+    `Λ(spec) ≫ est(le)` DERIVES a deterministic function from it — `Λ` transposes the spec to its
+    answer-SET, `est(le)` selects one member.  The interpreter EVALUATES the derived term: it computes
     the answer FROM the spec, nothing supplied; and the derivation is PROVED correct (the function
     refines the spec, and is single-valued).  (Exponential spec side, `2^|Ans|` codes; the general
-    derivation `solve = Λ spec ≫ maxRel D` for ARBITRARY inputs — via the thinning theorem, equal to
+    derivation `solve = Λ spec ≫ est D` for ARBITRARY inputs — via the thinning theorem, equal to
     the O(n) hash program — is `leet/L1.lean`.) -/
 abbrev One1 : FinObj := ⟨1⟩
 abbrev Ans1 : FinObj := ⟨6⟩   -- the 6 ordered index-pairs of positions [0..3]
@@ -39,8 +39,8 @@ def target1 : Int := 9
 -- THE SPEC (a relation, computed from the data), not an answer:
 def specL1 : RE One1 Ans1 := .atom fun _ c => let p := pairOf1 c; decide (nums1 p.1 + nums1 p.2 = target1)
 def leAns1 : RE Ans1 Ans1 := .atom fun i j => decide (i.val ≤ j.val)
--- DERIVE the function from the spec (the calculation): `solve = Λ(spec) ≫ max(le)`.
-def solveL1 : RE One1 Ans1 := rel⟦ Λ(specL1) ≫ max(leAns1) ⟧
+-- DERIVE the function from the spec (the calculation): `solve = Λ(spec) ≫ est(le)`.
+def solveL1 : RE One1 Ans1 := rel⟦ Λ(specL1) ≫ est(leAns1) ⟧
 -- the interpreter COMPUTES the derived function's answer from the spec — prints [0] = pairOf 0 = (0,1):
 #eval (List.finRange 6).filter fun c => eval solveL1 0 c
 -- CALCULATION CORRECT: the derived function refines the spec — every answer it gives is valid …
@@ -118,14 +118,14 @@ def chars49 : RE Word49 Letter49 := .atom fun w l =>
 example : eval rel⟦ (chars49 / chars49) ∩ (chars49 / chars49)° ⟧ 0 3 = true  := by decide  -- eat ~ ate
 example : eval rel⟦ (chars49 / chars49) ∩ (chars49 / chars49)° ⟧ 0 2 = false := by decide  -- eat ≁ tan
 
-/-! ### 10. Power-object EXTREMUM — `Λ(set) ≫ min(le)` picks the ≤-least member (the L121/sort shape). -/
+/-! ### 10. Power-object EXTREMUM — `Λ(set) ≫ est(le)` picks the ≤-least member (the L121/sort shape). -/
 abbrev One10 : FinObj := ⟨1⟩
 abbrev Val10 : FinObj := ⟨4⟩
 def elems10 : RE One10 Val10 := .atom fun _ j => j.val == 1 || j.val == 3   -- the set {1,3}
 def le10    : RE Val10 Val10 := .atom fun i j => decide (i.val ≤ j.val)
--- `Λ(elems)` codes the set as a power-object point; `max(le)` picks the element `≤` all others
+-- `Λ(elems)` codes the set as a power-object point; `est(le)` picks the element `≤` all others
 -- (B&dM's `max` over the `≤` preference), i.e. the minimum of {1,3} = 1.
-example : eval rel⟦ Λ(elems10) ≫ max(le10) ⟧ 0 1 = true  := by decide
-example : eval rel⟦ Λ(elems10) ≫ max(le10) ⟧ 0 3 = false := by decide
+example : eval rel⟦ Λ(elems10) ≫ est(le10) ⟧ 0 1 = true  := by decide
+example : eval rel⟦ Λ(elems10) ≫ est(le10) ⟧ 0 3 = false := by decide
 
 end Freyd.Alg.FinRel.Leet

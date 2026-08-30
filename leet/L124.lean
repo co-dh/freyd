@@ -340,9 +340,9 @@ theorem solve_correct (l r : Tree Int) (a : Int) :
 /-! ## The morphism-equation headline: `solve = max D · Λspec` (§7.5 over `Option Int`)
 
   The maximization has answer type `Option Int` (`none` only for the empty tree, which has no
-  path).  The preference order `dom` makes `none` the bottom, so `maxRel dom` returns `none`
+  path).  The preference order `dom` makes `none` the bottom, so `est dom` returns `none`
   exactly when the achievable set is `{none}` (the empty tree) and the greatest achievable path sum
-  otherwise.  The bridge `eq_Λ_comp_maxRel` (§8.1 thinning) then upgrades the pointwise
+  otherwise.  The bridge `eq_Λ_comp_est` (§8.1 thinning) then upgrades the pointwise
   achievability + domination facts to the actual morphism equation. -/
 
 /-- The preference order on `Option Int`: `w` `dom`-dominates `z` (`w ≥ z`) with `none` as bottom.
@@ -394,10 +394,10 @@ theorem spec_dom : ∀ (t : Tree Int) (o : Option Int), spec t o → dom (solveF
       rw [hm]; exact hdom v ho
 
 /-- **The allegory-program headline (§7.5 `max D · Λspec`)**: `solve` is exactly the morphism
-    `Λ spec ≫ maxRel dom` — the greatest achievable path sum (or `none` for the empty tree) — not
-    merely pointwise.  Bridged from soundness + domination + antisymmetry via `eq_Λ_comp_maxRel`. -/
-theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel dom :=
-  eq_Λ_comp_maxRel dom dom_antisymm solveFn spec spec_sound spec_dom
+    `Λ spec ≫ est dom` — the greatest achievable path sum (or `none` for the empty tree) — not
+    merely pointwise.  Bridged from soundness + domination + antisymmetry via `eq_Λ_comp_est`. -/
+theorem solve_eq_est : solve = Λ spec ≫ est dom :=
+  eq_Λ_comp_est dom dom_antisymm solveFn spec spec_sound spec_dom
 
 /-! ## Running the program -/
 

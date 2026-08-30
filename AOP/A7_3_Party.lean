@@ -10,9 +10,9 @@
   dynamic programming but is solved by a GREEDY algorithm.
 
   Given the two monotonicity claims B&dM leave as exercises — `choose` monotonic on `R`, and
-  `⟨include, exclude⟩` monotonic on `R×R` — the greedy theorem (`A7_2.greedy_max`) yields the
+  `⟨include, exclude⟩` monotonic on `R×R` — the greedy theorem (`A7_2.greedy`) yields the
   algorithm.  Here we prove the first claim concretely (`choose_monotonic`, a general product
-  fact) and state the greedy conclusion as the instance of `greedy_max` it is; the concrete rose
+  fact) and state the greedy conclusion as the instance of `greedy` it is; the concrete rose
   tree `tree A`, the algebra `⟨include, exclude⟩`, and its monotonicity are the section's remaining
   detail (rose-tree datatype not yet built — see atodo).
 -/
@@ -57,12 +57,12 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 
     and `S = ⟨include, exclude⟩` its algebra, once `S` is monotonic on the transitive rating order
     `R` (B&dM's second claim), the greedy recursion `⦇max R·ΛS⦈` refines the specification
     `max R·Λ⦇S⦈ = max R·Λparty`.  A direct instance of the greedy theorem
-    (`A7_2.greedy_max`), whose hypotheses B&dM's monotonicity claims (via `choose_monotonic`
+    (`A7_2.greedy`), whose hypotheses B&dM's monotonicity claims (via `choose_monotonic`
     above and the `⟨include,exclude⟩` calculation p.177) discharge for the concrete tree. -/
 public theorem company_party_greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {R : a ⟶ a} {S : F.obj a ⟶ a} (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
-    relCata I (Λ S ≫ maxRel R) ⊑ Λ (relCata I S) ≫ maxRel R :=
-  greedy_max hFr I htrans hmono
+    relCata I (Λ S ≫ est R) ⊑ Λ (relCata I S) ≫ est R :=
+  greedy hFr I htrans hmono
 
 end Greedy
 

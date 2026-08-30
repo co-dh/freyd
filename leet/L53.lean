@@ -22,7 +22,7 @@
      suffix.  `spec = subSum` is the transpose `Λ⁻¹ spec`, and LeetCode 53 asks for its `≤`-maximum,
      `max (≤) · Λ spec`.
 
-  4. **Correctness** — `solve` computes exactly that maximum (`solve_correct`, `solve_eq_maxRel`).
+  4. **Correctness** — `solve` computes exactly that maximum (`solve_correct`, `solve_eq_est`).
      Every relational side condition of the greedy derivation (`prodDom_trans`, `alg_mono`,
      `alg_le_gen`, `gen_recip_alg_le`, `alg_ref`, `cataFold_alg`, `gen_total` — formerly ~104
      hand-written lines here) is discharged by the `RunningBest` driver from the bundle `kadane`
@@ -245,10 +245,10 @@ theorem solve_correct (xs : SnocList Int Int) :
   rw [show solveFn xs = (kadane.foldFn xs).2 from congrArg Prod.snd (foldFn_eq xs)]
   exact h
 
-/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ maxRel D`
+/-- **Honest headline (§7.5 `max (≤)·Λ spec`)**: `solve` is exactly the morphism `Λ spec ≫ est D`
     for the `≤`-preference order `D w z := z ≤ w` — not merely pointwise. Bridged from `solve_correct`. -/
-theorem solve_eq_maxRel : solve = Λ spec ≫ maxRel (fun w z : Int => z ≤ w) :=
-  eq_Λ_comp_maxRel _ (fun x y h1 h2 => Int.le_antisymm h2 h1) solveFn spec
+theorem solve_eq_est : solve = Λ spec ≫ est (fun w z : Int => z ≤ w) :=
+  eq_Λ_comp_est _ (fun x y h1 h2 => Int.le_antisymm h2 h1) solveFn spec
     (fun xs => (solve_correct xs).1) (fun xs v hv => (solve_correct xs).2 v hv)
 
 /-- **The program refines the specification**: every value `solve` returns is an achievable

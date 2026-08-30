@@ -6,8 +6,8 @@
       `coinSpec n out  :=  sumVal out = n`.
   The wanted answer is the one using the FEWEST coins.  In AoPA this is the shrink
   `(sumc ○ ordered?)˘ ↾ _⊴_`: change relations shrunk by the sub-list order `_⊴_`, so the minimal
-  (fewest-coin) solution survives — and via `A7_6.shrink_eq_Λ_comp_minRel` that shrink IS
-  `A coinSpec ≫ minRel _⊴_`, the Bird & de Moor `min · Λ` optimum.
+  (fewest-coin) solution survives — and via `A7_6.shrink_eq_Λ_comp_est` that shrink IS
+  `A coinSpec ≫ est _⊴_`, the Bird & de Moor `min · Λ` optimum.
 
   WHAT IS PORTED HERE (self-contained, proved, axioms ⊆ {propext, Quot.sound}):
     * the coin algebra `Coin`/`val`/`sumVal` and the coin order `leC` (AoPA `_≤c_`);
@@ -16,22 +16,22 @@
       the greedy list always makes exact change (the `hsound` half of the headline).
 
   WHAT IS BLOCKED (precise diagnosis — NOT a `sorry`, deliberately omitted).  The full AoPA
-  derivation `graph greedy = A coinSpec ≫ minRel _⊴_` needs two things the repo does not yet have:
+  derivation `graph greedy = A coinSpec ≫ est _⊴_` needs two things the repo does not yet have:
     (1) OPTIMALITY / the domination half.  AoPA proves it by the ~100-line exchange argument
         `greedy-lemma` (a finite case analysis over {1,2,5,10}) fed to the GENERIC-functor greedy
         theorem `Data.Generic.Greedy.greedy-ana-cxt`, together with `Data.Generic.Membership` (`ε`)
         and a well-founded-relation accessibility proof `wf`.  The repo's optimization layer is
-        `A7_2.greedy_max`/`A7_4.horner_correct`, which are CATAMORPHISM (fold) greedy theorems;
+        `A7_2.greedy`/`A7_4.horner_correct`, which are CATAMORPHISM (fold) greedy theorems;
         coin change is an ANAMORPHISM (`hylo In pick-max wf`, an amount→coins UNFOLD), for which the
         repo has no emergence/uniqueness law at the `Rel(Set)` level.  The generic greedy-ana theorem
         is being ported by a sibling agent; per the task this file must not depend on it.
-    (2) UNIQUENESS.  `RelSet.eq_Λ_comp_maxRel` pins the optimum by ANTISYMMETRY of the preference
+    (2) UNIQUENESS.  `RelSet.eq_Λ_comp_est` pins the optimum by ANTISYMMETRY of the preference
         order; "fewest coins" ordered only by length is NOT antisymmetric.  AoPA restores
         antisymmetry with `ordered?` (canonical descending form) + the sub-list order `_⊴_`; porting
         that canonicalization + the `_⊴_` antisymmetry is the second missing piece.
   Both are LIST/combinatorial, not deep — but each is a substantial development, and (1) additionally
   waits on anamorphism infrastructure.  A follow-up with the generic greedy-ana layer can complete
-  `graph greedy = A coinSpec ≫ minRel D` from the achievability proved here plus the exchange lemma.
+  `graph greedy = A coinSpec ≫ est D` from the achievability proved here plus the exchange lemma.
 
   Mathlib-free.
 -/
@@ -127,7 +127,7 @@ def coinSpec : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨List Coin⟩ := fun n out => sumV
 
 /-- **Achievability, as a morphism inequality.**  `graph greedy ⊑ coinSpec`: the greedy program
     refines the change spec (it always produces a valid change).  This is the `hsound` half that a
-    completed `graph greedy = A coinSpec ≫ minRel D` headline consumes; the missing `hbest`
+    completed `graph greedy = A coinSpec ≫ est D` headline consumes; the missing `hbest`
     (fewest-coins domination) is the blocked exchange argument described in the file header. -/
 theorem greedy_sound_rel : (graph greedy : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨List Coin⟩) ⊑ coinSpec :=
   RelSet.le_iff.mpr (fun n out h => by

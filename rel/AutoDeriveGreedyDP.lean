@@ -31,7 +31,7 @@
      proves its graph lives inside `μ(greedy body)` (`run_mem_mu`);
   3. emits pointwise correctness `correct`/`correct_spec` ("the greedy result is the value of
      some decomposition and `Rp`-dominates the value of every decomposition") and the
-     morphism headline `eq_minRel` (`graph run = min R·ΛH` on the nose, given antisymmetry).
+     morphism headline `eq_est` (`graph run = est R°·ΛH` on the nose, given antisymmetry).
 
   HONESTY: the split is genuinely creative-vs-plumbing, but `exch` is NOT componentwise — it
   quantifies over all decompositions of a residual state (it IS the problem's greedy-choice
@@ -321,12 +321,12 @@ theorem hQ (P : GreedyDP L E S W) :
 /-- The greedy recursion body `h·FX·min Q·ΛT°`, mirrored. -/
 def body (P : GreedyDP L E S W) (X : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) :
     (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=
-  Λ (P.TRel°) ≫ minRel P.Qrel ≫ (CL.F L E).map X ≫ P.hAlg
+  Λ (P.TRel°) ≫ est P.Qrel° ≫ (CL.F L E).map X ≫ P.hAlg
 
 /-- **Theorem 10.1, auto-instantiated**: the greedy recursion refines `min R·ΛH`. -/
 theorem greedy_refine (P : GreedyDP L E S W) :
-    mu P.body ⊑ Λ P.specH ≫ minRel P.Rp :=
-  greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel) (h := P.hAlg) (R := P.Rp)
+    mu P.body ⊑ Λ P.specH ≫ est P.Rp° :=
+  greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
     (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn) P.hmono P.htrans P.hQ
 
 /-! ## The derived program and the executable-side bridge -/
@@ -377,7 +377,7 @@ theorem run_mem_body (P : GreedyDP L E S W) {X : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W
     P.body X v (P.run v) := by
   obtain ⟨Pset, hPset⟩ := entire_total (Λ_is_map' (P.TRel°)).1 v
   have hmem : ∀ t, Pset t ↔ P.TRel t v := fun t => CL.Λ_pt (P.TRel°) hPset t
-  refine ⟨Pset, hPset, P.pick v, (CL.minRel_pt P.Qrel Pset (P.pick v)).mpr ⟨?_, ?_⟩, ?_⟩
+  refine ⟨Pset, hPset, P.pick v, (CL.est_pt P.Qrel° Pset (P.pick v)).mpr ⟨?_, ?_⟩, ?_⟩
   · -- the pick is a member of the decomposition set
     refine (hmem (P.pick v)).mpr ?_
     cases hp : P.pick v with
@@ -431,7 +431,7 @@ theorem correct (P : GreedyDP L E S W) (v : S) :
     ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (foldA P.hbase P.hstep ℓ) (P.run v) := by
   obtain ⟨Pset, hPset, hmin⟩ := le_iff.mp P.greedy_refine v (P.run v) (P.run_mem_mu v)
   have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
-  obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset (P.run v)).mp hmin
+  obtain ⟨hm, hlb⟩ := (CL.est_pt P.Rp° Pset (P.run v)).mp hmin
   constructor
   · obtain ⟨ℓ, hd, hx⟩ := (P.specH_pt v (P.run v)).mp ((hmem _).mp hm)
     exact ⟨ℓ, hd, hx.symm⟩
@@ -453,9 +453,9 @@ theorem correct_spec (P : GreedyDP L E S W) (spec : S → W → Prop)
 
 /-- **The morphism headline**: the derived greedy program IS `min R·ΛH` as a morphism of
     `Rel(Set)` (given antisymmetry of the value order), not merely pointwise. -/
-theorem eq_minRel (P : GreedyDP L E S W)
+theorem eq_est (P : GreedyDP L E S W)
     (antisym : ∀ {x y}, P.Rp x y → P.Rp y x → x = y) :
-    (graph P.run : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) = Λ P.specH ≫ minRel P.Rp := by
+    (graph P.run : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) = Λ P.specH ≫ est P.Rp° := by
   apply hom_ext; intro v x
   constructor
   · rintro rfl
@@ -463,7 +463,7 @@ theorem eq_minRel (P : GreedyDP L E S W)
   · intro h
     obtain ⟨Pset, hPset, hmin⟩ := h
     have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
-    obtain ⟨hm, hlb⟩ := (CL.minRel_pt P.Rp Pset x).mp hmin
+    obtain ⟨hm, hlb⟩ := (CL.est_pt P.Rp° Pset x).mp hmin
     obtain ⟨⟨ℓ, hd, hx⟩, hRlb⟩ := P.correct v
     obtain ⟨ℓ', hd', hx'⟩ := (P.specH_pt v x).mp ((hmem x).mp hm)
     have h1 : P.Rp x (P.run v) := hx' ▸ hRlb ℓ' hd'
@@ -710,10 +710,10 @@ theorem run_eq_cnt (v : Nat) : coins15.run v = cnt v := by
 
 /-- **The §7.5-style morphism headline, auto-derived**: the greedy program IS `min R·ΛH` as a
     morphism of `Rel(Set)`. -/
-theorem coins15_eq_minRel :
+theorem coins15_eq_est :
     (graph coins15.run : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)
-      = Λ coins15.specH ≫ minRel coins15.Rp :=
-  coins15.eq_minRel fun h1 h2 => Nat.le_antisymm h2 h1
+      = Λ coins15.specH ≫ est coins15.Rp° :=
+  coins15.eq_est fun h1 h2 => Nat.le_antisymm h2 h1
 
 example : coins15.run 12 = 4 := by rw [run_eq_cnt]; rfl
 example : coins15.run 137 = 29 := by rw [run_eq_cnt]; rfl
