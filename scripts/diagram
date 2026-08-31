@@ -37,6 +37,23 @@ X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
 # A name is a WIRE when it is a relator and a BEAD otherwise — `list(p)` is `p` under `list`, but
 # `est(R°)` is one arrow.  Src and tgt add their own; this is what a formula alone cannot say.
 RELATORS = {"F", "E", "P", "T", "list", "tree", "Δ"}
+SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
+                    "hm-sigs.json")
+
+
+def sigs():
+    """`diag/hm-sigs.json` — what each bead's label is an arrow BETWEEN, keyed by the label's head."""
+    return json.load(open(SIGS, encoding="utf-8"))
+
+
+def letters(e):
+    """The wire letters an object names.  A product is one letter `×` whatever its components are:
+    the wire a product opens is a context (`A×−`, `Δ`), and the letter is what Lean must spell."""
+    if e[0] == 'app':
+        return {e[1]} | letters(e[2])
+    if e[0] == 'prod':
+        return {'×'}.union(*(letters(x) for x in e[1]))
+    return letters(e[1]) if e[0] == 'conv' else set()
 
 
 # ---------------------------------------------------------------- objects as wire stacks

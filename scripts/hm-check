@@ -27,8 +27,9 @@ transcription, mechanically, without parsing any topology.
 usage: hm-check [label…]            every fixture, or the ones whose file name contains a label
        hm-check --show              print both canonical port graphs beside each other
        hm-check --verify-fixtures   count the page's own svg against each fixture's `counts`
+       hm-check --verify-sigs       hold `diag/hm-sigs.json` against the declaration index
 """
-import importlib.machinery, importlib.util, json, os, re, subprocess, sys
+import importlib.machinery, importlib.util, json, os, re, sqlite3, subprocess, sys
 
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +44,7 @@ def load(name):
 
 sl = load("scanline")
 dg = load("diagram")
+cc = load("cite-check")
 EPS = sl.EPS
 
 
@@ -255,6 +257,36 @@ def verify(fx, path):
     return bad
 
 
+# ---------------------------------------------------------------- the signature table
+def verify_sigs():
+    """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
+    the statement still has the key the row was read against; then the letters the row's objects use
+    must be spelled somewhere in that statement — a projection carries none, so it goes unchecked."""
+    t = dg.sigs()
+    db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
+    say = {k: v for k, v in t["spelling"].items() if k != "//"}
+    bad = []
+    for name, row in t["sigs"].items():
+        mark, _, k = row["lean"].partition("@")
+        where = f"hm-sigs.json {name} : {row['src']} ⟶ {row['tgt']}"
+        moved = cc.check(db, mark, k, where)
+        if moved:
+            bad.append(moved); continue
+        user, mod = cc.resolve(db, mark)[0][:2]
+        (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
+                             " and user_name = ?", (mod, user)).fetchone()
+        used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
+        miss = [f"{l} as {'/'.join(say[l])}" for l in sorted(used)
+                if l in say and not any(w in stmt for w in say[l])]
+        if stmt and miss:
+            bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
+                       f" it is `{' '.join(stmt.split())}`")
+    print(*bad, sep="\n", file=sys.stderr)
+    print(f"hm-check: {len(t['sigs'])} signature rows audited against the declaration index,"
+          f" {len(bad)} adrift")
+    return 1 if bad else 0
+
+
 # ---------------------------------------------------------------- the driver
 # A declared normalization says WHY the two pictures may differ by convention.  All three are
 # recorded in the fixture as drawn — the transcriber applies them — so none rewrites a graph here;
@@ -304,6 +336,8 @@ def main(argv):
     only = [a for a in argv if not a.startswith("-")]
     paths = [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".json")
              and (not only or any(o in f for o in only))]
+    if "--verify-sigs" in argv:
+        sys.exit(verify_sigs())
     if "--verify-fixtures" in argv:
         bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
         print(*bad, sep="\n", file=sys.stderr)

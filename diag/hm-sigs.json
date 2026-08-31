@@ -1,0 +1,34 @@
+{
+  "//": [
+    "The signature of every bead the note's certified panels draw.  `src`/`tgt` are OBJECTS in the",
+    "note's own notation; a single lower-case letter is a variable, everything else is a constant.",
+    "The key is the head of the bead's label — an application's name (`est(R°)` becomes `est`), a",
+    "bare atom (`concat`), or the bracket shape for the note's list algebras (`[,]`) and its",
+    "catamorphisms (`⦇⦈`), whose body names the step and not the type.  `R%∋` takes R's row with `E`",
+    "wrapped round the target, and a label with no row at all touches the object wire alone.",
+    "`lean` is the declaration whose type the row was read off, in `cite-check`'s marker spelling;",
+    "`hm-check --verify-sigs` holds every row against it."
+  ],
+  "spelling": {
+    "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier.",
+    "list": ["List"],
+    "tree": ["Rose", "I.t"],
+    "E": ["powerObj"],
+    "F": [".obj", "Fo "],
+    "×": ["×", "Prod"]
+  },
+  "sigs": {
+    "α":       {"src": "F(x)",         "tgt": "x",      "lean": "AOP.A6_Poly_List.listAlg@5e2fcaa5"},
+    "[,]":     {"src": "F(x)",         "tgt": "x",      "lean": "AOP.A6_Poly_List.listAlg@5e2fcaa5"},
+    "⦇⦈":      {"src": "tree(x)",      "tgt": "y",      "lean": "AOP.A5_5.relCata@6ef23f02"},
+    "prefix":  {"src": "[x]",          "tgt": "[x]",    "lean": "AOP.A5_6_ListCombinators.prefixR@8658f599"},
+    "subseq":  {"src": "[x]",          "tgt": "[x]",    "lean": "AOP.A5_6_ListCombinators.subseq@9db1a985"},
+    "concat":  {"src": "[[x]]",        "tgt": "[x]",    "lean": "AOP.A5_6_ListCombinators.concatR@f1856819"},
+    "π₂":      {"src": "x×y",          "tgt": "y",      "lean": "AOP.A5_2.RelProd.outr@e89a9433"},
+    "choose":  {"src": "x×x",          "tgt": "x",      "lean": "AOP.A7_3_Party.choose@c779f253"},
+    "include": {"src": "x×[[x]×[x]]",  "tgt": "[x]",    "lean": "AOP.A7_3_Party.includeFn@9197f738"},
+    "S":       {"src": "x×[[x]×[x]]",  "tgt": "[x]×[x]", "lean": "AOP.A7_3_Party.S@d9fff80c"},
+    "party":   {"src": "tree(x)",      "tgt": "[x]",    "lean": "AOP.A7_3_Party.party@d5001e89"},
+    "est":     {"src": "E(x)",         "tgt": "x",      "lean": "AOP.A7_1.est@e39806f8"}
+  }
+}

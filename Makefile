@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan scan-strict cover diagram books
+.PHONY: p w cite scan scan-strict cover diagram books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -76,6 +76,11 @@ diagram:
 # check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
 hm-check:
 	./scripts/hm-check
+
+# The bead signatures `scripts/diagram` draws from, against the Lean declarations they were read
+# off.  A SEPARATE target for the same reason `--verify-fixtures` is one: it needs the index.
+hm-sigs: $(DB)
+	./scripts/hm-check --verify-sigs
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file
