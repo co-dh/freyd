@@ -70,8 +70,19 @@ public inductive ConsList (L E : Type) where
 @[expose] public def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj L E
   map R := Fmap L E R
+  -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
+  -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound}).
   map_id c := hom_ext fun u v => by
-    cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;> grind
+    cases u with
+    | inl d =>
+      cases v with
+      | inl d' => exact ⟨fun h => congrArg Sum.inl (h : d = d'), fun h => Sum.inl.inj h⟩
+      | inr q => exact ⟨fun h => (h : False).elim, fun h => nomatch h⟩
+    | inr p =>
+      cases v with
+      | inl d' => exact ⟨fun h => (h : False).elim, fun h => nomatch h⟩
+      | inr q => exact ⟨fun h => congrArg Sum.inr (Prod.ext_iff.mpr ⟨h.1, h.2⟩),
+          fun h => Prod.ext_iff.mp (Sum.inr.inj h)⟩
   map_comp R S := hom_ext fun u v => by
     cases u with
     | inl d => cases v with

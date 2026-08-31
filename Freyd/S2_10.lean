@@ -427,31 +427,32 @@ public theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a 
 
 /-! ## §2.133  Order on maps is discrete -/
 
-public theorem map_order_discrete {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) (hg : Map g) (h : f ⊑ g) : f = g := by
-  rcases hf with ⟨hf_entire, hf_simple⟩
-  rcases hg with ⟨hg_entire, hg_simple⟩
-  -- Entire means dom = 1, so 1 = 1 ∩ f f°
-  have h_one_f_eq : Cat.id a ∩ (f ≫ f°) = Cat.id a := by
-    dsimp [Entire, dom] at hf_entire; exact hf_entire
-  -- From f ⊑ g we have f° ⊑ g°
-  have h_recip : f° ⊑ g° := recip_mono h
-  -- Show g ⊑ f
-  have h_g_le_f : g ⊑ f := by
-    -- g = (1 ∩ f f°) g ⊑ (f f°) g = f (f° g) ⊑ f (g° g) ⊑ f 1 = f
-    have h1 : g = (Cat.id a ∩ (f ≫ f°)) ≫ g := by rw [h_one_f_eq, Cat.id_comp]
-    have h2 : (Cat.id a ∩ (f ≫ f°)) ≫ g ⊑ f := by
-      have h2a : (Cat.id a ∩ (f ≫ f°)) ≫ g ⊑ (f ≫ f°) ≫ g :=
-        comp_mono_right (inter_lb_right (Cat.id a) (f ≫ f°)) g
-      have h2b : (f ≫ f°) ≫ g ⊑ f := by
+/-- An ENTIRE relation below a SIMPLE one equals it — §2.133's engine, which never uses the
+    other two halves of `Map`. -/
+public theorem eq_of_le_entire_simple {a b : 𝒜} {X Y : a ⟶ b} (hX : Entire X) (hY : Simple Y)
+    (h : X ⊑ Y) : X = Y := by
+  -- Entire means dom = 1, so 1 = 1 ∩ X X°
+  have h_one_X_eq : Cat.id a ∩ (X ≫ X°) = Cat.id a := by
+    dsimp [Entire, dom] at hX; exact hX
+  have h_recip : X° ⊑ Y° := recip_mono h
+  have h_Y_le_X : Y ⊑ X := by
+    -- Y = (1 ∩ X X°) Y ⊑ (X X°) Y = X (X° Y) ⊑ X (Y° Y) ⊑ X 1 = X
+    have h1 : Y = (Cat.id a ∩ (X ≫ X°)) ≫ Y := by rw [h_one_X_eq, Cat.id_comp]
+    have h2 : (Cat.id a ∩ (X ≫ X°)) ≫ Y ⊑ X := by
+      have h2a : (Cat.id a ∩ (X ≫ X°)) ≫ Y ⊑ (X ≫ X°) ≫ Y :=
+        comp_mono_right (inter_lb_right (Cat.id a) (X ≫ X°)) Y
+      have h2b : (X ≫ X°) ≫ Y ⊑ X := by
         rw [Cat.assoc]
-        -- f (f° g) ⊑ f (g° g)
-        have h_fog : f° ≫ g ⊑ g° ≫ g := comp_mono_right h_recip g
-        have h_f_le : f ≫ (f° ≫ g) ⊑ f ≫ (g° ≫ g) := comp_mono_left f h_fog
-        -- f (g° g) ⊑ f 1 = f
-        simpa [Cat.comp_id] using le_trans h_f_le (comp_mono_left f hg_simple)
+        have h_XY : X° ≫ Y ⊑ Y° ≫ Y := comp_mono_right h_recip Y
+        have h_X_le : X ≫ (X° ≫ Y) ⊑ X ≫ (Y° ≫ Y) := comp_mono_left X h_XY
+        simpa [Cat.comp_id] using le_trans h_X_le (comp_mono_left X hY)
       exact le_trans h2a h2b
     rw [h1]; exact h2
-  exact le_antisymm h h_g_le_f
+  exact le_antisymm h h_Y_le_X
+
+public theorem map_order_discrete {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) (hg : Map g) (h : f ⊑ g) :
+    f = g :=
+  eq_of_le_entire_simple hf.1 hg.2 h
 
 /-! ## §2.134  Reciprocation on maps -/
 
