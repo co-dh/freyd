@@ -3451,7 +3451,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
 #pagebreak(weak: true)
-=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R, F preserving °, and R a preorder` <sec-greedy-thm72>
+=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R, F preserving °, and R transitive` <sec-greedy-thm72>
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
@@ -3484,7 +3484,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
-     minimum taken at the end]])],
+     minimum taken at the end, `lean:AOP.A7_2.greedy@21400acf`]])],
   [],
 
   [#vstep(IFF, [],
