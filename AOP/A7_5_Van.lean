@@ -163,6 +163,10 @@ public theorem R_eq :
     subst h2
     exact Int.ofNat_le.mp hmn
 
+/-- `head : Seg ⟵ Sched`, a partial map — the empty schedule has no first segment. -/
+@[expose] public def headR (Tx : Type) : dSched Tx ⟶ (⟨Seg Tx⟩ : RelSet.{0}) :=
+  fun p s => ∃ t, p = ConsList.cons s t
+
 /-- **van-defn**: `H ≜ (head prefix° head°)∪(nil° nil)` — one schedule's first segment is a
     prefix of the other's, or both are empty. -/
 @[expose] public def Hrel (Tx : Type) : dSched Tx ⟶ dSched Tx := fun p q =>
@@ -182,8 +186,36 @@ public theorem RH_eq : RH Tx = R Tx ∩ ((R Tx)° ⇨ Hrel Tx) := by
   · refine le_iff.mpr fun p q h => ⟨h.1, fun hle => ?_⟩
     exact le_iff.mp (impl_cancel ((R Tx)°) (Hrel Tx)) p q ⟨h.2, hle⟩
 
+/-- `H = (head prefix° head°)∪(nil° nil)`, point-free — `nil` being `wrapR` out of the one
+    point `dL Unit`, so `nil° nil` is the coreflexive on the empty schedule. -/
+public theorem H_eq :
+    Hrel Tx = (headR Tx ≫ (prefixR : dList Tx ⟶ dList Tx)° ≫ (headR Tx)°)
+      ∪ ((wrapR : dL Unit ⟶ dSched Tx)° ≫ wrapR) := by
+  apply hom_ext; intro p q
+  constructor
+  · rintro (⟨s, t, s', t', hp, hq, hpre⟩ | ⟨hp, hq⟩)
+    · exact Or.inl ⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩
+    · exact Or.inr ⟨(), hp, hq⟩
+  · rintro (⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩ | ⟨u, hp, hq⟩)
+    · exact Or.inl ⟨s, t, s', t', hp, hq, hpre⟩
+    · exact Or.inr ⟨hp, hq⟩
+
 /-- **van-defn**: `|R| ≜ R∩¬R°`, the strict part `R` splits into. -/
 @[expose] public def strictR (Tx : Type) : dSched Tx ⟶ dSched Tx := fun p q => clen p < clen q
+
+/-- **van-mono**, second row: `R;H = |R|∪(R∩H)` — the split the monotonicity proof
+    distributes over.  It is also all the certification `|R| ≜ R∩¬R°` gets: the allegory
+    carries no complement, so the strict part is named by this equation rather than by `¬`. -/
+public theorem RH_eq_strict : RH Tx = strictR Tx ∪ (R Tx ∩ Hrel Tx) := by
+  apply hom_ext; intro p q
+  constructor
+  · rintro ⟨hle, hH⟩
+    rcases Nat.lt_or_ge (clen p) (clen q) with hlt | hge
+    · exact Or.inl hlt
+    · exact Or.inr ⟨hle, hH hge⟩
+  · rintro (hlt | ⟨hle, hH⟩)
+    · exact ⟨Nat.le_of_lt hlt, fun hge => absurd hge (Nat.not_le_of_lt hlt)⟩
+    · exact ⟨hle, fun _ => hH⟩
 
 public theorem RH_le_R : RH Tx ⊑ R Tx := le_iff.mpr fun _ _ h => h.1
 
