@@ -105,11 +105,28 @@ def peel_arrow(e, cut, rel):
             return ws, e
 
 
+def across(e, rel):
+    """`s∘t` split at its one bead: the identity letters LEFT of it are wires it runs under, the
+    ones right of it are kept by its own variable tail — left is outermost, as in the cut."""
+    if e[0] != 'hc':
+        return [], e, []
+    k = [i for i, x in enumerate(e[1]) if not (x[0] == 'atom' and x[1] in rel)]
+    if len(k) != 1:
+        raise Unhandled(f"{spell(e)} composes {len(k)} beads across; one height draws one bead")
+    return e[1][:k[0]], e[1][k[0]], e[1][k[0] + 1:]
+
+
 def expand(e, rel):
-    """`F(RS)=F(R)F(S)` and `𝟙×(RS)=(𝟙×R)(𝟙×S)` run backwards: `norm` merged the beads a picture
-    draws at two heights, and every bead needs its own height back."""
+    """One written factor as the rows it draws.  A context wire runs past EVERY row of what it
+    wraps, which is the `∘` clause on a composite — `F(RS)` and `𝟙×(RS)` are how the display
+    spells `F∘(RS)`, and `norm` merged those beads that each need their own height back."""
     if e[0] == 'comp':
         return [y for x in e[1] for y in expand(x, rel)]
+    if e == ('atom', sl.UNIT):
+        return []                          # bare wires: the identity draws no bead
+    if e[0] == 'hc':
+        pre, core, post = across(e, rel)
+        return [('hc', pre + [x] + post) for x in expand(core, rel)]
     if e[0] == 'app' and e[1] in rel and e[2][0] == 'comp':
         return [y for x in e[2][1] for y in expand(('app', e[1], x), rel)]
     if e[0] == 'prod' and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
@@ -291,29 +308,33 @@ def elaborate(formula, src, tgt, table):
     want = norm(parse(tgt))
     rel = alphabet(table, norm(parse(src)), want)
     made = [Lane(w, born=TOP) for w in stack]
-    lanes, sub, rows, otop = list(made), {}, [], render(obj)
+    lanes, sub, rows, atop = list(made), {}, [], obj
     for i, e in enumerate(expand(norm(parse(formula)), rel)):
-        wrap, core = peel_arrow(e, [l.label for l in lanes], rel)
+        pre, e, _ = across(e, rel)         # `∘`'s left letters are context; its right ones the tail keeps
+        wrap, core = peel_arrow(e, [l.label for l in lanes[len(pre):]], rel)
+        wrap = [x[1] for x in pre] + wrap
         why = f"factor {i + 1} ({spell(tidy(core))})"
         for k, w in enumerate(wrap):
             if k < len(lanes) and lanes[k].label != w:
                 raise Unhandled(f"{why} runs under {w} where the cut has {lanes[k].label}")
             if k >= len(lanes):                # a wire the formula names and the cut has not got is
-                if not rows:                   # opened out of the object, at the bead above
-                    raise Unhandled(f"{why} runs under {w}, which the source {src} does not open")
-                obj = open_out(obj, w, sub, why)
-                made.append(Lane(w, born=i - 1)); lanes.append(made[-1]); rows[-1].legs.append(made[-1])
+                obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —
+                made.append(Lane(w, born=i - 1 if rows else TOP))   # or at the top edge if there is
+                lanes.append(made[-1])             # none, where the source itself opens further
+                if rows:
+                    rows[-1].legs.append(made[-1])
+                else:
+                    atop = obj
         s, t = signature(core, sigs, i)
         reach = lanes[len(wrap)] if len(wrap) < len(lanes) else None
         k = eat(s, lanes[len(wrap):], obj, sub, why)
         arms, (ws, keep, obj) = lanes[len(wrap):len(wrap) + k], grow(t, sub, why)
-        if ws and keep:
-            raise Unhandled(f"{why} opens {ws[0]} outside {len(keep)} wire(s) it keeps — lanes are"
-                            f" numbered by birth, so that wire cannot be drawn left of them")
         legs = [Lane(w, born=i) for w in ws]
         for l in arms:
             l.dies = i
-        made += legs
+        # `made` is COLUMN order, not birth order: `η∘M` opens its wire left of the one it keeps.
+        at = made.index(keep[0]) if keep else len(made)
+        made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         rows.append(Row(spell(tidy(core)), arms, legs, reach))
     k = eat(want, lanes, obj, sub, f"the target {tgt}")
@@ -321,7 +342,7 @@ def elaborate(formula, src, tgt, table):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
     for l in lanes:
         l.dies = len(rows)
-    obot = render(settle(obj, sub))
+    obot, otop = render(settle(obj, sub)), render(settle(atop, sub))
     if obot is None or otop is None:
         raise Unhandled(f"the object wire carries {spell(settle(obj, sub))}, which has no label")
     return rows, made, otop, obot
@@ -336,8 +357,14 @@ def layout(rows, made, otop, obot, cert):
     for k, l in enumerate(made):
         l.x = round(X0 + k * DX, 2)
     xo = round(X0 + len(made) * DX, 2)
-    beads = []
+    beads, unit = [], {}
     for i, r in enumerate(rows):
+        if not r.arms and r.legs:          # a bead that eats no wire has none to sit on, so
+            if len(r.legs) != 1:           # `dpanel` heads the lane it opens with it instead
+                raise Unhandled(f"the unit {r.label} opens {len(r.legs)} wires; a lane heads one")
+            unit[r.legs[0]] = r.label
+            ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
+            continue
         # the bar says how far left the bead reaches where no wire of its own says it
         bar = r.reach.x if r.reach is not None and r.reach not in r.arms else None
         beads.append([ys[i], r.label] if bar is None else [ys[i], r.label, "#000000", bar])
@@ -345,7 +372,8 @@ def layout(rows, made, otop, obot, cert):
             "xo": xo,
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
                        "bot" if l.dies == n else ys[l.dies],
-                       None if l.born == TOP or l.dies == n else l.label, None] for l in made],
+                       None if l.born == TOP or l.dies == n else l.label,
+                       unit.get(l)] for l in made],
             "beads": beads,
             "top": [[l.x, l.label] for l in made if l.born == TOP] + [[xo, otop]],
             "bot": [[l.x, l.label] for l in made if l.dies == n] + [[xo, obot]],

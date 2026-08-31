@@ -28,6 +28,7 @@ usage: hm-check [label…]            every fixture, or the ones whose file name
        hm-check --show              print both canonical port graphs beside each other
        hm-check --verify-fixtures   count the page's own svg against each fixture's `counts`
        hm-check --verify-sigs       hold `diag/hm-sigs.json` against the declaration index
+       hm-check --laws              the equations functoriality gives, on every term already stated
 """
 import importlib.machinery, importlib.util, json, os, re, sqlite3, subprocess, sys
 
@@ -42,9 +43,9 @@ def load(name):
     m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 
 
-sl = load("scanline")
 dg = load("diagram")
-cc = load("cite-check")
+sl = dg.sl                                 # THE scanline `draw` raises from: a second copy of the
+cc = load("cite-check")                    # module would give `Unhandled` a second, uncatchable class
 EPS = sl.EPS
 
 
@@ -57,9 +58,14 @@ def mirror(applicative, ws):
         for side in applicative.split("="))
 
 
+# The one constant the two texts spell differently: the book's `id` is the note's `𝟙`.
+SAYS = {"id": sl.UNIT}
+
+
 def apply(factor, ws):
     ts = factor.split()
-    return f"{ts[0]}({' '.join(ts[1:])})" if len(ts) > 1 and ts[0] in ws else factor
+    return f"{ts[0]}({' '.join(ts[1:])})" if len(ts) > 1 and ts[0] in ws \
+        else SAYS.get(factor, factor)
 
 
 def words(s):
@@ -88,14 +94,17 @@ def ours(r):
         for b in [b for b in p.beads if abs(b.y - y) < EPS]:
             hit = sl.touched(p, b, above)
             ai = [k for k, (x, _) in enumerate(above) if any(abs(x - t) < EPS for t in hit)]
-            if ai != list(range(ai[0], ai[-1] + 1)):
+            if ai and ai != list(range(ai[0], ai[-1] + 1)):
                 raise sl.Unhandled(f"the bead {b.label} reaches columns {ai}, which are not adjacent")
+            # a unit consumes nothing: its legs are INSERTED at the column the picture gives it
+            at = ai[0] if ai else sum(x < min(hit) - EPS for (x, _) in above)
+            hi = ai[-1] + 1 if ai else at
             legs = [(x, l) for (x, l) in below if any(abs(x - t) < EPS for t in hit)]
             ids = list(range(nxt, nxt + len(legs))); nxt += len(legs)
             lbl.update({t: l for t, (_, l) in zip(ids, legs)})
-            beads.append((b.label, [tok[k] for k in ai], ids))
-            tok = tok[:ai[0]] + ids + tok[ai[-1] + 1:]
-            front = above[:ai[0]] + legs + above[ai[-1] + 1:]
+            beads.append((b.label, [tok[k] for k in ai], ids, at))
+            tok = tok[:at] + ids + tok[hi:]
+            front = above[:at] + legs + above[hi:]
     if [x for x, _ in front] != [x for x, _ in p.cuts[-1]]:
         raise sl.Unhandled("the walk does not end at the panel's bottom ports")
     pairs = sorted(tuple(sorted(m.groups())) for m in
@@ -121,25 +130,9 @@ def book(side, where):
             if ws[w]["lbl"] != l:
                 raise ValueError(f"{where}: the {edge} port {l} is carried by {w},"
                                  f" which is labelled {ws[w]['lbl']}")
-    return (top, bot, [(b["name"], b["arms"], b["legs"]) for b in bs],
+    return (top, bot, [(b["name"], b["arms"], b["legs"], b.get("at")) for b in bs],
             {w: v["lbl"] for w, v in ws.items()}, side["grey1"],
             sorted(tuple(sorted(c)) for c in side["crossings"]))
-
-
-def born(left, front, where):
-    """A bead with NO arms — a unit — stands where the bead that consumes its wire wants it: the
-    picture is planar, so its column is fixed relative to that bead's other arms, and nothing else
-    in the fixture fixes it."""
-    for b in [b for b in left if not b[1]]:
-        for c in left:
-            k = next((i for i, a in enumerate(c[1]) if a in b[2]), None)
-            if k is None or not all(a in front or a in b[2] for a in c[1]):
-                continue
-            lo = [front.index(a) for a in c[1][:k] if a in front]
-            hi = [front.index(a) for a in c[1][k + 1:] if a in front]
-            return b, (max(lo) + 1 if lo else (min(hi) if hi else len(front)))
-    raise ValueError(f"{where}: the bead {[b[0] for b in left if not b[1]][0]} has no arms and no"
-                     f" bead consumes what it makes — nothing says which column its wire stands in")
 
 
 def canon(side, where):
@@ -157,8 +150,12 @@ def canon(side, where):
             if sorted(front.index(a) for a in b[1]) != list(range(i, j + 1)):
                 raise ValueError(f"{where}: the bead {b[0]} reaches wires that are not adjacent")
         else:
-            b, i = born(left, front, where)
-            j = i - 1                        # a unit consumes nothing: its legs are INSERTED
+            free = [b for b in left if not b[1] and b[3] is not None]
+            if not free:
+                raise ValueError(f"{where}: the bead {left[0][0]} has no arms and no `at` —"
+                                 f" nothing says which column its wire stands in")
+            b = min(free, key=lambda b: b[3])
+            i, j = b[3], b[3] - 1            # a unit consumes nothing: its legs are INSERTED
         for t in b[2]:
             num[t] = len(num)
         out.append((b[0], [num[a] for a in b[1]], [num[t] for t in b[2]]))
@@ -250,7 +247,8 @@ def verify(fx, path):
             if got[k] != v:
                 bad.append(f"{os.path.basename(path)} side {i}: {k} claims {v},"
                            f" the page's svg has {got[k]}")
-        if s["grey1"] != (got["grey"] > 0):
+        # `object-wire-added` says the strip is OURS, not the page's, so the page cannot be asked for it
+        if "object-wire-added" not in fx.get("norm", []) and s["grey1"] != (got["grey"] > 0):
             bad.append(f"{os.path.basename(path)} side {i}: grey1 is {s['grey1']},"
                        f" the page's svg has {got['grey']} grey fills")
     return bad
@@ -283,6 +281,50 @@ def verify_sigs():
     print(*bad, sep="\n", file=sys.stderr)
     print(f"hm-check: {len(t['sigs'])} signature rows audited against the declaration index,"
           f" {len(bad)} adrift")
+    return 1 if bad else 0
+
+
+# ---------------------------------------------------------------- the free laws
+# Functoriality states equations no book page has to supply: they hold of EVERY typed term, so the
+# terms the repository already carries — the note's certified panels, the fixtures' own sides — test
+# them for nothing.  Each is an equality of canonical port graphs, which is where `draw` lands.
+NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
+
+
+def terms(paths, tbl):
+    """Every typed term already stated, with the table its labels are typed by."""
+    out = [(r["id"], r["cert"]["expect"], *dg.endpoints(sl.Panel(r)), tbl)
+           for r in sl.panels(NOTE, None) if (r.get("cert") or {}).get("expect")]
+    for p in paths:
+        fx = json.load(open(p, encoding="utf-8"))
+        t = {**tbl, "sigs": {**tbl["sigs"],
+                             **{k: v for k, v in fx.get("sigs", {}).items() if k != "//"}}}
+        out += [(f"{fx['label']}.{i}", f.strip(), fx["src"], fx["tgt"], t)
+                for i, f in enumerate(fx["mirrored"].split("="))]
+    return out
+
+
+def laws(paths, tbl):
+    ts = terms(paths, tbl)
+    bad, n, skip = [], 0, []
+    for (nm, f, src, tgt, t) in ts:
+        try:                               # a term whose own panel the reader cannot canonicalise
+            g = canon(ours(dg.draw(f, src, tgt, t)), nm)      # states no law: it is reported apart
+        except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+            skip.append(f"{nm}: {ex}"); continue
+        for law, h in (("identity", f"𝟙 ({f}) 𝟙"),
+                       ("spelling", sl.spell(sl.tidy(sl.norm(sl.parse(f)))))):
+            n += 1
+            try:
+                d = diff(g, canon(ours(dg.draw(h, src, tgt, t)), f"{law} {nm}"), law)
+            except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+                d = f"{h}: {type(ex).__name__}: {ex}"
+            if d:
+                bad.append(f"FAIL  {nm}   {f}: {d}")
+    print(*bad, sep="\n", file=sys.stderr)
+    print(*(f"  unread {s}" for s in skip), sep="\n")
+    print(f"hm-check: {n} free-law checks over {len(ts) - len(skip)} stated terms,"
+          f" {len(bad)} broken, {len(skip)} unreadable")
     return 1 if bad else 0
 
 
@@ -341,6 +383,8 @@ def main(argv):
              and (not only or any(o in f for o in only))]
     if "--verify-sigs" in argv:
         sys.exit(verify_sigs())
+    if "--laws" in argv:
+        sys.exit(laws(paths, dg.sigs()))
     if "--verify-fixtures" in argv:
         bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
         print(*bad, sep="\n", file=sys.stderr)

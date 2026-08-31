@@ -76,6 +76,7 @@ diagram:
 # check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
 hm-check:
 	./scripts/hm-check
+	./scripts/hm-check --laws
 
 # The bead signatures `scripts/diagram` draws from, against the Lean declarations they were read
 # off.  A SEPARATE target for the same reason `--verify-fixtures` is one: it needs the index.
