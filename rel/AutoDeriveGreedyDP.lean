@@ -325,9 +325,14 @@ def body (P : GreedyDP L E S W) (X : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩) :
 
 /-- **Theorem 10.1, auto-instantiated**: the greedy recursion refines `min R·ΛH`. -/
 theorem greedy_refine (P : GreedyDP L E S W) :
-    mu P.body ⊑ Λ P.specH ≫ est P.Rp° :=
-  greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
-    (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn) P.hmono P.htrans P.hQ
+    mu P.body ⊑ Λ P.specH ≫ est P.Rp° := by
+  -- `greedy_dp` runs at `R := Rp°` (the conclusion's `est Rp°`), so conjugate `hmono`/`htrans`
+  have htrans' : P.Rp° ≫ P.Rp° ⊑ P.Rp° := by
+    have h0 := recip_mono P.htrans
+    rwa [Allegory.recip_comp] at h0
+  exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
+    (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn)
+    ((monotonicAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 
 /-! ## The derived program and the executable-side bridge -/
 

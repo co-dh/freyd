@@ -18,8 +18,8 @@
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; conventions as in `AOP.A9_1`):
   - B&dM `M = min R·ΛH` is `Λ H ≫ est R`; the greedy body `h·FX·min Q·ΛT°` is
     `Λ (T°) ≫ est Q ≫ F.map X ≫ h`.
-  - the hypothesis `Q` satisfies `h·FH·Q° ⊆ R°·h·FH` mirrors to
-    `Q° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R°` — identical to Theorem 9.2's `hQ`.
+  - the hypothesis `Q` satisfies `h·FH·Q° ⊆ R°·h·FH` mirrors, at the `est`-relabeled `Q` and
+    `R` (`est X` = `min X°`), to `Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R` — Theorem 9.2's `hQ` at `Q°`.
   - `min Q ⊆ ∈` is `AOP.A7_1`'s `inter_lb_left` (unfolding `est`); the lower bound
     `min Q·∋ ⊆ Q` is `recip_eps_comp_est_le`.
 
@@ -44,14 +44,19 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 /-- **Core of Theorem 10.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`), for any `H`
     satisfying the hylomorphism fixed-point equation `H = h·FH·T°` and any `Q°` satisfying the
-    thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
+    thinning-compatibility bound `hQ` (`dp_thin_prefixed`'s at `Q°`).  Same two-branch
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q°` handled directly by
     `inter_lb_left` (member) and `recip_eps_comp_est_le` (lower bound). -/
 public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
-    {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R°)
-    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+    {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
+    (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
+  -- the book states both on the mirrored `R°` (`est R` = `min R°`); fold the `°` back in once
+  have hmono' : MonotonicAlg h R° := (monotonicAlg_recip_iff hh hFr).mp hmono
+  have htrans' : R° ≫ R° ⊑ R° := by
+    have h0 := recip_mono htrans
+    rwa [Allegory.recip_comp] at h0
   obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
   apply le_Λ_comp_est_iff.mpr
   constructor
@@ -115,7 +120,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
       have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
         rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
         exact comp_mono_left _ (comp_mono_right hFRM h)
-      exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
+      exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono')
     have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ⊑ R° ≫ R° :=
       comp_mono_left R° hinner
     rw [c1, c2]
@@ -123,18 +128,18 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     rw [hre1]
     refine le_trans step6 ?_
     rw [hre2]
-    exact le_trans step7 htrans
+    exact le_trans step7 htrans'
 
 /-- **Theorem 10.1 (B&dM p.245)**, the GREEDY theorem as an extreme case of dynamic
     programming: `(μX : h·FX·min Q°·ΛT°) ⊆ min R°·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — greedily
     committing to a single `Q°`-minimum decomposition at each unfold step, then refolding
     through `h`, still refines the optimisation spec, under exactly Theorem 9.2's hypotheses
-    (`h` monotonic on transitive `R°`, plus the compatibility bound `hQ`).  By Knaster-Tarski
+    (`h` monotonic on the transitive `R`, plus the compatibility bound `hQ`).  By Knaster-Tarski
     (`Sup_le`'s lower-bound half) via `greedy_dp_prefixed`.  (Distinct from `AOP.A7_2`'s `greedy`,
     the Theorem 7.2 greedy theorem `⦇min R°·ΛS⦈ ⊆ min R°·Λ⦇S⦈`.) -/
 public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hQ : Q ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
         ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
@@ -166,7 +171,7 @@ theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.Preserves
 theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
     (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj a ⟶ a}
     {T : (G.fixLeft e).obj b ⟶ b} {R : a ⟶ a}
-    {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R° ≫ R° ⊑ R°) (hUrefl : Cat.id e ⊑ U°)
+    {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U°)
     (hU : G.map U° R° ≫ h ⊑ h ≫ R°)
     (hV : V ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
@@ -176,7 +181,9 @@ theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e 
     rw [Allegory.recip_recip, Allegory.recip_recip]; exact hV
   have hQ := birelator_thin_condition hGr (H := (relCata T)° ≫ relCata h) hh hU hV'
   rw [hGr U V, Allegory.recip_recip, Allegory.recip_recip] at hQ
-  exact greedy_dp (F := G.fixLeft e) (Birelator.fixLeft_preservesRecip hGr e) I hh
-    (birelator_fixLeft_mono hUrefl hU) htrans hQ
+  have hFr' : (G.fixLeft e).PreservesRecip := Birelator.fixLeft_preservesRecip hGr e
+  have hmono : MonotonicAlg (F := G.fixLeft e) h R :=
+    (monotonicAlg_recip_iff hh hFr').mpr (birelator_fixLeft_mono hUrefl hU)
+  exact greedy_dp (F := G.fixLeft e) hFr' I hh hmono htrans hQ
 
 end Freyd.Alg
