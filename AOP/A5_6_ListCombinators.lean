@@ -418,6 +418,94 @@ public theorem list_cata (R : dE A ⟶ dE B) :
     · rintro ⟨y, hy, q, ⟨hab, rfl⟩, rfl⟩
       exact ⟨hab, hy⟩
 
+/-! ### `list` is a relator: identities, composition, monotonicity, converse (B&dM p.126) -/
+
+public theorem listP_id : ∀ x y : ConsList Unit A, listP (𝟙 (dE A)) x y ↔ x = y
+  | ConsList.wrap (), ConsList.wrap () => ⟨fun _ => rfl, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons a x, ConsList.cons b y =>
+      ⟨fun h => by rw [show a = b from h.1, (listP_id x y).mp h.2],
+       fun h => by cases h; exact ⟨rfl, (listP_id x x).mpr rfl⟩⟩
+
+/-- `list(𝟙) = 𝟙`. -/
+public theorem list_id : list (𝟙 (dE A)) = 𝟙 (dList A) := hom_ext listP_id
+
+public theorem listP_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (x : ConsList Unit A) (z : ConsList Unit C),
+      listP (R ≫ S) x z ↔ ∃ y, listP R x y ∧ listP S y z
+  | ConsList.wrap _, ConsList.wrap _ =>
+      ⟨fun _ => ⟨ConsList.wrap (), trivial, trivial⟩, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h2
+        | cons _ _ => exact h1⟩
+  | ConsList.cons _ _, ConsList.wrap _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1
+        | cons _ _ => exact h2⟩
+  | ConsList.cons a x, ConsList.cons c z => by
+      constructor
+      · rintro ⟨⟨b, hR, hS⟩, hxz⟩
+        obtain ⟨y, hy1, hy2⟩ := (listP_comp R S x z).mp hxz
+        exact ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩
+      · rintro ⟨y, hy1, hy2⟩
+        cases y with
+        | wrap _ => exact hy1.elim
+        | cons b ys =>
+            exact ⟨⟨b, hy1.1, hy2.1⟩, (listP_comp R S x z).mpr ⟨ys, hy1.2, hy2.2⟩⟩
+
+/-- `list(RS) = list(R) list(S)`. -/
+public theorem list_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    list (R ≫ S) = list R ≫ list S := hom_ext (listP_comp R S)
+
+public theorem listP_mono {B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, listP R x y → listP S x y
+  | ConsList.wrap _, ConsList.wrap _, _ => trivial
+  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
+  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
+  | ConsList.cons a x, ConsList.cons b y, hxy =>
+      ⟨h a b hxy.1, listP_mono h x y hxy.2⟩
+
+/-- `R ⊑ S ⟹ list(R) ⊑ list(S)` — `list` is monotonic. -/
+public theorem list_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : list R ⊑ list S :=
+  le_iff.mpr (listP_mono (le_iff.mp h))
+
+public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (y : ConsList Unit B) (x : ConsList Unit A), listP R° y x ↔ listP R x y
+  | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
+  | ConsList.wrap _, ConsList.cons _ _ => Iff.rfl
+  | ConsList.cons _ _, ConsList.wrap _ => Iff.rfl
+  | ConsList.cons _ y, ConsList.cons _ x =>
+      ⟨fun h => ⟨h.1, (listP_recip R y x).mp h.2⟩, fun h => ⟨h.1, (listP_recip R y x).mpr h.2⟩⟩
+
+/-- `list(R°) = list(R)°` — `list` preserves converse. -/
+public theorem list_recip {B : Type} (R : dE A ⟶ dE B) : list R° = (list R)° :=
+  hom_ext (listP_recip R)
+
+/-! ### The function-level map: `list` of a graph is a graph -/
+
+/-- Function-level list map. -/
+@[expose] public def cmap {B : Type} (f : A → B) : ConsList Unit A → ConsList Unit B
+  | ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons a x => ConsList.cons (f a) (cmap f x)
+
+public theorem listP_graph {B : Type} (f : A → B) :
+    ∀ (x : ConsList Unit A) (y : ConsList Unit B), listP (graph f) x y ↔ y = cmap f x
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons a x, ConsList.cons b y =>
+      ⟨fun h => by rw [show b = f a from h.1, (listP_graph f x y).mp h.2]; rfl,
+       fun h => by cases h; exact ⟨rfl, (listP_graph f x (cmap f x)).mpr rfl⟩⟩
+
+/-- `list(graph f) = graph(cmap f)` — the list relator restricts to the list functor on maps. -/
+public theorem list_graph {B : Type} (f : A → B) :
+    list (graph f) = (graph (cmap f) : dList A ⟶ dList B) := by
+  apply hom_ext; intro x y
+  show listP (graph f) x y ↔ y = cmap f x
+  exact listP_graph f x y
+
 /-! ### The catamorphism and `cat°` forms of the note's `comb-fns` rows -/
 
 /-- **`subseq = ⦇[nil, cons ∪ π₂]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; at each

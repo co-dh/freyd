@@ -288,6 +288,31 @@ theorem rprodMap_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
 public theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     (rprodMap R S)° = rprodMap R° S° := rfl
 
+/-- The product action on the identities is the identity. -/
+public theorem rprodMap_id (a b : RelSet.{u}) :
+    rprodMap (𝟙 a) (𝟙 b) = 𝟙 (⟨a.carrier × b.carrier⟩ : RelSet.{u}) := by
+  apply hom_ext; intro p q
+  exact ⟨fun h => Prod.ext h.1 h.2, fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
+
+/-- The product action is functorial: `(R×S)(R'×S') = (RR')×(SS')`. -/
+public theorem rprodMap_comp {a a' a'' b b' b'' : RelSet.{u}} (R : a ⟶ a') (R' : a' ⟶ a'')
+    (S : b ⟶ b') (S' : b' ⟶ b'') :
+    rprodMap R S ≫ rprodMap R' S' = rprodMap (R ≫ R') (S ≫ S') := by
+  apply hom_ext; intro p q
+  constructor
+  · rintro ⟨m, ⟨hR, hS⟩, hR', hS'⟩; exact ⟨⟨m.1, hR, hR'⟩, ⟨m.2, hS, hS'⟩⟩
+  · rintro ⟨⟨y1, hR, hR'⟩, ⟨y2, hS, hS'⟩⟩; exact ⟨(y1, y2), ⟨hR, hS⟩, hR', hS'⟩
+
+/-- `(𝟙×Q)π₂ = π₂Q` — an identity first component slides any `Q` past the second projection
+    (the note's `h:=π₂` row of `party-mono-branch`: `𝟙` is entire, so `Dom(π₁)=𝟙`). -/
+public theorem rprodMap_id_snd {a b b' : RelSet.{u}} (Q : b ⟶ b') :
+    rprodMap (𝟙 a) Q ≫ graph (Prod.snd : a.carrier × b'.carrier → b'.carrier)
+      = graph (Prod.snd : a.carrier × b.carrier → b.carrier) ≫ Q := by
+  apply hom_ext; intro p y
+  constructor
+  · rintro ⟨q, ⟨_, hQ⟩, hy⟩; exact ⟨p.2, rfl, hy ▸ hQ⟩
+  · rintro ⟨z, hz, hQ⟩; exact ⟨(p.1, y), ⟨rfl, hz ▸ hQ⟩, rfl⟩
+
 /-- The product action on two graphs is the graph of the product function — the fact that makes
     every structural isomorphism of the cartesian product a graph, hence a map. -/
 theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
@@ -360,6 +385,17 @@ public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : 
     exact ⟨hR, hS⟩
   · rintro ⟨hR, hS⟩
     exact ⟨⟨q.1, ⟨p.1, rfl, hR⟩, rfl⟩, ⟨q.2, ⟨p.2, rfl, hS⟩, rfl⟩⟩
+
+/-- Pointwise `pair` on the product just chosen: `⟨R,S⟩ x p ↔ R x p.1 ∧ S x p.2` — both legs
+    being graphs, each conjunct collapses to a component lookup. -/
+public theorem relProd_pair_apply {a b c : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b)
+    (x : c.carrier) (p : a.carrier × b.carrier) :
+    (relProd a b).pair R S x p ↔ R x p.1 ∧ S x p.2 := by
+  constructor
+  · rintro ⟨⟨y, hy, hy1⟩, ⟨z, hz, hz1⟩⟩
+    exact ⟨(show y = p.1 from hy1) ▸ hy, (show z = p.2 from hz1) ▸ hz⟩
+  · rintro ⟨h1, h2⟩
+    exact ⟨⟨p.1, h1, rfl⟩, ⟨p.2, h2, rfl⟩⟩
 
 end RelSet
 end Freyd.Alg
