@@ -25,12 +25,17 @@
   "the sets non-empty" side condition — is not in the repo.  Here the sets are non-empty because
   `Λ(prefix sum) est(≥)` is entire, which `mssPre_eq_cata` already gives.
 
-  WHAT IS NOT HERE, AND WHY IT CANNOT BE.  `mss-scan`'s fusion of `tails list(g)`, so the note's
-  headline `mss = ⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` is NOT proved here.  The list in that
-  row is not notational laziness for the power object: `suffixMax_not_relCata` shows NO algebra
-  `h : 𝟏+Int×E(Int) ⟶ E(Int)` has `Λ(suffix) E(g) = ⦇h⦈`, `g ≜ ⦇[zero,⊕]⦈`.  `head` reads `g x`
-  back off `tails x list(g)` because the list keeps the whole of `x` first; a set has no first
-  element, so `E(g)` loses that value and the fold has nothing to feed `⊕`.
+  THE HEADLINE, AND THE CARRIER IT NEEDS.  `mss-deriv`'s last row:
+
+  - `suffixMax_not_relCata`: NO algebra `h : 𝟏+Int×E(Int) ⟶ E(Int)` has `Λ(suffix) E(g) = ⦇h⦈`,
+                             `g ≜ ⦇[zero,⊕]⦈`
+  - `mss_eq_scan`:    `mss = ⦇k⦈ π₂ est(≥)`,  `k ≜ [zero ⟨𝟙,Λ(𝟙)⟩,⟨w,⟨w Λ(𝟙),π₂π₂⟩ cup⟩]`,
+                      `w ≜ (𝟙×π₁)⊕`                             (note `mss-scan`, `mss-deriv`)
+
+  The two go together: `head` reads `g x` back off `tails x list(g)` because the list keeps the
+  whole of `x` first, and a set has no first element, so the fold's carrier must hold that value
+  itself.  `π₁` is it, `π₂` is the note's `Λ(suffix) E(g)`, and B&dM's own list `[Int]` was
+  encoding exactly this pair as head-and-rest.
 
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
@@ -38,6 +43,7 @@ module
 
 public import AOP.A7_2
 public import AOP.A7_4_Horner
+public import AOP.A5_6
 public import AOP.A6_GenFold
 public import AOP.A5_6_ListCombinators
 
@@ -440,6 +446,189 @@ public theorem suffixMax_not_relCata :
   have hy' : y = ConsList.cons 3 ys ∨ y = ys ∨ y = ConsList.cons 1 (ConsList.wrap ())
       ∨ y = ConsList.wrap () := hy
   rcases hy' with rfl | rfl | rfl | rfl <;> exact absurd hv (by decide)
+
+/-! ## Ex 7.40's headline in the power object: `mss = ⦇k⦈ π₂ est(≥)`
+
+  The carrier is the PAIR `Int × E(Int)`: the value at the whole list beside the set of the values
+  at all its suffixes.  `π₂` is the note's `Λ(suffix) E(⦇[zero,⊕]⦈)`; `π₁` is what
+  `suffixMax_not_relCata` shows that set alone cannot carry.
+
+  `⟨·,·⟩`, `π₁`, `π₂` are spelled with `Rel(Set)`'s own `rpair`/`rprodMap`/`graph`, not with
+  `RelProd`: `RelProd.tab` is typed by `topMor`, which is `Exists.choose`n, so every statement
+  naming `RelProd` — `cup` included — carries `Classical.choice`.  `scanStep_union` below is the
+  one bridge to the note's `cup` spelling, and pays that cost alone. -/
+
+/-- `w ≜ (𝟙×π₁)⊕`: the running maximum at `cons a x`, from `a` and the value `π₁` carries. -/
+@[expose] public def wstep : (⟨Int × (Int × (Int → Prop))⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
+  rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) (graph (fun p : Int × (Int → Prop) => p.1)) ≫ oplus
+
+/-- `π₂π₂∋`: membership of the set the tail carries. -/
+@[expose] public def tailSet : (⟨Int × (Int × (Int → Prop))⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
+  graph (fun q : Int × (Int × (Int → Prop)) => q.2)
+    ≫ graph (fun p : Int × (Int → Prop) => p.2) ≫ ∋ (⟨Int⟩ : RelSet.{0})
+
+/-- **The scan algebra** `k ≜ [zero ⟨𝟙,Λ(𝟙)⟩, ⟨w,⟨w Λ(𝟙),π₂π₂⟩ cup⟩]` (`scanStep_union` for the
+    `cup`): start at `(0,{0})`, and at `cons a x` take `a ⊕ (the value at x)` and join it onto the
+    set `x` carries.  The carrier is a PAIR because `π₁` holds the value at the whole list, which
+    `suffixMax_not_relCata` shows a bare `E(Int)` cannot carry — `E(⦇[zero,⊕]⦈)` forgets which
+    member of the set came from that list. -/
+@[expose] public def Kalg :
+    (F Unit Int).obj (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ ⟨Int × (Int → Prop)⟩ :=
+  junc (sumCop (dL Unit) ⟨Int × (Int × (Int → Prop))⟩)
+    (graph (fun _ : Unit => (0 : Int)) ≫ rpair (𝟙 (⟨Int⟩ : RelSet.{0})) singletonMap)
+    (rpair wstep (Λ (wstep ∪ tailSet)))
+
+/-- `Λ(𝟙)` pointwise: the singleton of `v`. -/
+theorem singletonMap_apply (v : Int) (P : (PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0})).carrier) :
+    (singletonMap : (⟨Int⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩) v P
+      ↔ P = fun y => v = y := by
+  show Λ (𝟙 (⟨Int⟩ : RelSet.{0})) v P ↔ _
+  rw [Λ_eq_classifier]
+  exact Iff.rfl
+
+/-- `w` pointwise: `(a,(v,S)) ↦ a ⊕ v`. -/
+theorem wstep_apply (q : Int × (Int × (Int → Prop))) (u : Int) :
+    wstep q u ↔ u = oplusFn q.1 q.2.1 := by
+  have hop : oplus (q.1, q.2.1) u ↔ u = oplusFn q.1 q.2.1 :=
+    Iff.of_eq (congrFun (congrFun oplus_eq (q.1, q.2.1)) u)
+  constructor
+  · rintro ⟨r, ⟨h1, h2⟩, hu⟩
+    have hr : r = (q.1, q.2.1) := Prod.ext h1.symm h2
+    rw [hr] at hu
+    exact hop.mp hu
+  · intro hu
+    exact ⟨(q.1, q.2.1), ⟨rfl, rfl⟩, hop.mpr hu⟩
+
+/-- `π₂π₂∋` pointwise. -/
+theorem tailSet_apply (q : Int × (Int × (Int → Prop))) (u : Int) : tailSet q u ↔ q.2.2 u :=
+  ⟨fun ⟨p, hp, P, hP, hu⟩ => by rw [hP, hp] at hu; exact hu,
+   fun hu => ⟨q.2, rfl, q.2.2, rfl, hu⟩⟩
+
+/-- `w` is a map — it is the graph of `(a,(v,S)) ↦ a ⊕ v`. -/
+theorem wstep_map : Map wstep := by
+  have h : wstep = graph (fun q : Int × (Int × (Int → Prop)) => oplusFn q.1 q.2.1) :=
+    hom_ext fun q u => wstep_apply q u
+  rw [h]; exact graph_map _
+
+/-- The note's `cup-defn` at this step: `k`'s second component IS `⟨w Λ(𝟙),π₂π₂⟩ cup`, the new
+    running maximum joined onto the set the tail carries.  (Classical: `cup` takes a `RelProd`.) -/
+theorem scanStep_union (P : RelProd (PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0}))
+    (PowerAllegory.powerObj ⟨Int⟩)) :
+    P.pair (wstep ≫ singletonMap) (Λ tailSet) ≫ cup P = Λ (wstep ∪ tailSet) := by
+  have hw : wstep ≫ singletonMap = Λ wstep := by
+    have h := Λ_fusion wstep_map (𝟙 (⟨Int⟩ : RelSet.{0}))
+    rw [Cat.comp_id] at h
+    exact h.symm
+  rw [Λ_union _ _ P, hw]
+
+/-- `k` computes: the base is `(0,{0})`, the step `(a,(v,S)) ↦ (a⊕v, {a⊕v} ∪ S)`. -/
+theorem Kalg_eq_prog :
+    Kalg = consScalarAlg (fun _ : Unit => ((0 : Int), fun v => v = 0))
+      (fun (a : Int) (p : Int × (Int → Prop)) =>
+        (oplusFn a p.1, fun u => u = oplusFn a p.1 ∨ p.2 u)) := by
+  rw [Kalg]
+  apply hom_ext; intro u q
+  cases u with
+  | inl d =>
+    rw [junc_sum_inl]
+    constructor
+    · rintro ⟨v, hv, h1, h2⟩
+      have hv0 : v = 0 := hv
+      have hq2 : q.2 = fun y => v = y := (singletonMap_apply v q.2).mp h2
+      show q = ((0 : Int), fun y => y = 0)
+      refine Prod.ext (by rw [← (h1 : v = q.1), hv0]) ?_
+      rw [hq2, hv0]
+      exact funext fun y => propext ⟨fun h => h.symm, fun h => h.symm⟩
+    · intro hq
+      have hq' : q = ((0 : Int), fun y => y = 0) := hq
+      refine ⟨0, rfl, by show (0 : Int) = q.1; rw [hq'], ?_⟩
+      refine (singletonMap_apply 0 q.2).mpr ?_
+      rw [hq']
+      exact funext fun y => propext ⟨fun h => h.symm, fun h => h.symm⟩
+  | inr r =>
+    obtain ⟨a, p⟩ := r
+    rw [junc_sum_inr, Λ_eq_classifier]
+    have hunion : ∀ y, (wstep ∪ tailSet) (a, p) y ↔ (y = oplusFn a p.1 ∨ p.2 y) := fun y =>
+      or_congr (wstep_apply (a, p) y) (tailSet_apply (a, p) y)
+    constructor
+    · rintro ⟨h1, h2⟩
+      show q = (oplusFn a p.1, fun y => y = oplusFn a p.1 ∨ p.2 y)
+      refine Prod.ext ((wstep_apply (a, p) q.1).mp h1) ?_
+      rw [(h2 : q.2 = fun y => (wstep ∪ tailSet) (a, p) y)]
+      exact funext fun y => propext (hunion y)
+    · intro hq
+      have hq' : q = (oplusFn a p.1, fun y => y = oplusFn a p.1 ∨ p.2 y) := hq
+      refine ⟨(wstep_apply (a, p) q.1).mpr (by rw [hq']), ?_⟩
+      show q.2 = fun y => (wstep ∪ tailSet) (a, p) y
+      rw [hq']
+      exact funext fun y => propext (hunion y).symm
+
+/-- The program `⦇k⦈` folds to: the running maximum prefix sum, paired with the set of those
+    maxima over all the suffixes. -/
+@[expose] public def scanFn : ConsList Unit Int → Int × (Int → Prop)
+  | ConsList.wrap _ => (0, fun v => v = 0)
+  | ConsList.cons a x =>
+      (oplusFn a (scanFn x).1, fun u => u = oplusFn a (scanFn x).1 ∨ (scanFn x).2 u)
+
+/-- **The program is produced by the fold law**: `scanFn` obeys `k`'s recursion, so it IS `⦇k⦈`. -/
+public theorem scan_emerges :
+    (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩)
+      = cataR (consScalarAlg (fun _ : Unit => ((0 : Int), fun v => v = 0))
+          (fun (a : Int) (p : Int × (Int → Prop)) =>
+            (oplusFn a p.1, fun u => u = oplusFn a p.1 ∨ p.2 u))) :=
+  consFold_unique _ _ scanFn (fun _ => rfl) (fun _ _ => rfl)
+
+/-- `π₁` of the scan is the greatest prefix sum of the whole list. -/
+theorem scanFn_fst : ∀ s : ConsList Unit Int, (scanFn s).1 = mssPreFn s
+  | ConsList.wrap _ => rfl
+  | ConsList.cons a x => by
+      show oplusFn a (scanFn x).1 = oplusFn a (mssPreFn x)
+      rw [scanFn_fst x]
+
+/-- `π₂` of the scan is the note's `Λ(suffix) E(⦇[zero,⊕]⦈)`: the greatest prefix sums of all the
+    suffixes. -/
+theorem scanFn_snd : ∀ (s : ConsList Unit Int) (v : Int),
+    (scanFn s).2 v ↔ (suffixR ≫ mssPre) s v
+  | ConsList.wrap _, v => by
+      rw [suffix_mssPre_apply]
+      exact ⟨fun hv => ⟨ConsList.wrap (), rfl, hv⟩,
+        fun ⟨y, hy, hv⟩ => by rw [show y = ConsList.wrap () from hy] at hv; exact hv⟩
+  | ConsList.cons a x, v => by
+      rw [suffix_mssPre_apply]
+      constructor
+      · rintro (hv | hv)
+        · exact ⟨ConsList.cons a x, Or.inl rfl, by rw [hv, scanFn_fst x]; rfl⟩
+        · obtain ⟨y, hy, hvy⟩ := (suffix_mssPre_apply x v).mp ((scanFn_snd x v).mp hv)
+          exact ⟨y, Or.inr hy, hvy⟩
+      · rintro ⟨y, hy, hvy⟩
+        rcases hy with rfl | hy
+        · exact Or.inl (by rw [hvy]; show mssPreFn (ConsList.cons a x) = _; rw [scanFn_fst x]; rfl)
+        · exact Or.inr ((scanFn_snd x v).mpr ((suffix_mssPre_apply x v).mpr ⟨y, hy, hvy⟩))
+
+/-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
+    of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
+public theorem mss_eq_scan :
+    mss = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+      : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩) ≫ est(geq) := by
+  have hcata : ⦇Kalg⦈ = (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩) := by
+    rw [scan_emerges, ← Kalg_eq_prog, ← cataR_eq_relCata]
+  have hsnd : (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩)
+      ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+          : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩)
+      = suffixR%∋ ≫ existsImage mssPre := by
+    rw [Λ_absorption, Λ_eq_classifier]
+    apply hom_ext; intro s P
+    constructor
+    · rintro ⟨q, hq, hP⟩
+      rw [show q = scanFn s from hq] at hP
+      rw [show P = (scanFn s).2 from hP]
+      exact funext fun v => propext (scanFn_snd s v)
+    · intro hP
+      refine ⟨scanFn s, rfl, ?_⟩
+      show P = (scanFn s).2
+      rw [show P = fun v => (suffixR ≫ mssPre) s v from hP]
+      exact funext fun v => propext (scanFn_snd s v).symm
+  rw [hcata, ← Cat.assoc, hsnd, Cat.assoc, ← mss_shape]
 
 /-! ## Executable sanity checks -/
 

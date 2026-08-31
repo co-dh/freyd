@@ -20,6 +20,7 @@ module
 public import AOP.A6_2
 public import AOP.A5_5
 public import AOP.A5_2
+public import AOP.A5_6
 
 -- The pointwise instance proofs name the relation/element they quantify (documenting each law)
 -- even where the term-mode witness does not reference the binder; silence that lint file-wide.
@@ -255,6 +256,12 @@ public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier
   { (inferInstance : TabularAllegory RelSet),
     (inferInstance : UnitaryAllegory RelSet),
     (inferInstance : DivisionAllegory RelSet) with }
+
+/-- Ex 5.20's merge class, so `cup`/`cap` apply in `Rel(Set)`: the two halves are the instances
+    just above and the unguarded power object. -/
+@[expose] public instance : Freyd.Alg.TabularUnitaryUnguardedDivisionPowerAllegory RelSet.{u} :=
+  { (inferInstance : Freyd.Alg.TabularUnitaryDivisionAllegory RelSet),
+    (inferInstance : UnguardedPowerAllegory RelSet) with }
 
 /-! ### Two elementary `Rel(Set)` map facts + the product action, shared by every datatype engine
 
