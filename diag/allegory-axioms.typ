@@ -4669,9 +4669,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 
-  [`𝟙⊑π₂R cons°`], [], [], [],
+  [`𝟙⊑π₂R cons°` #h(4pt) #src[`lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@f9fd4c82`]], [], [], [],
   [the tail is one shorter than the cons, so `π₂` loses the `est(R°)` at every step — where
-   @takewhile-defn's loser is `nil` #h(4pt) #src[`lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@f9fd4c82`]],
+   @takewhile-defn's loser is `nil`],
 )
 ])]<filter-defn>
 
