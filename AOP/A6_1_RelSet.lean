@@ -288,6 +288,36 @@ theorem rprodMap_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
 public theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     (rprodMap R S)° = rprodMap R° S° := rfl
 
+/-- The product action on the identities is the identity. -/
+public theorem rprodMap_id (a b : RelSet.{u}) :
+    rprodMap (𝟙 a) (𝟙 b) = 𝟙 (⟨a.carrier × b.carrier⟩ : RelSet.{u}) := by
+  apply hom_ext; intro p q
+  exact ⟨fun h => Prod.ext h.1 h.2, fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
+
+/-- The product action is functorial: `(R×S)(R'×S') = (RR')×(SS')`. -/
+public theorem rprodMap_comp {a a' a'' b b' b'' : RelSet.{u}} (R : a ⟶ a') (R' : a' ⟶ a'')
+    (S : b ⟶ b') (S' : b' ⟶ b'') :
+    rprodMap R S ≫ rprodMap R' S' = rprodMap (R ≫ R') (S ≫ S') := by
+  apply hom_ext; intro p q
+  constructor
+  · rintro ⟨m, ⟨hR, hS⟩, hR', hS'⟩; exact ⟨⟨m.1, hR, hR'⟩, ⟨m.2, hS, hS'⟩⟩
+  · rintro ⟨⟨y1, hR, hR'⟩, ⟨y2, hS, hS'⟩⟩; exact ⟨(y1, y2), ⟨hR, hS⟩, hR', hS'⟩
+
+/-- The product action is monotonic in both arguments. -/
+public theorem rprodMap_mono {a a' b b' : RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
+    (hR : R ⊑ R') (hS : S ⊑ S') : rprodMap R S ⊑ rprodMap R' S' :=
+  le_iff.mpr fun p q h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
+
+/-- `(𝟙×Q)π₂ = π₂Q` — an identity first component slides any `Q` past the second projection
+    (the note's `h:=π₂` row of `party-mono-branch`: `𝟙` is entire, so `Dom(π₁)=𝟙`). -/
+public theorem rprodMap_id_snd {a b b' : RelSet.{u}} (Q : b ⟶ b') :
+    rprodMap (𝟙 a) Q ≫ graph (Prod.snd : a.carrier × b'.carrier → b'.carrier)
+      = graph (Prod.snd : a.carrier × b.carrier → b.carrier) ≫ Q := by
+  apply hom_ext; intro p y
+  constructor
+  · rintro ⟨q, ⟨_, hQ⟩, hy⟩; exact ⟨p.2, rfl, hy ▸ hQ⟩
+  · rintro ⟨z, hz, hQ⟩; exact ⟨(p.1, y), ⟨rfl, hz ▸ hQ⟩, rfl⟩
+
 /-- The product action on two graphs is the graph of the product function — the fact that makes
     every structural isomorphism of the cartesian product a graph, hence a map. -/
 theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
@@ -360,6 +390,29 @@ public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : 
     exact ⟨hR, hS⟩
   · rintro ⟨hR, hS⟩
     exact ⟨⟨q.1, ⟨p.1, rfl, hR⟩, rfl⟩, ⟨q.2, ⟨p.2, rfl, hS⟩, rfl⟩⟩
+
+/-- Relational pairing `⟨R,S⟩` in `Rel(Set)`: `x ↦ (y,z)` iff `R x y` and `S x z` — the
+    graph-level form of (5.1), free of the classically chosen `topMor` inside `RelProd.tab`
+    (which `pair_eq_rpair` below shows it equals). -/
+@[expose] public def rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
+    c ⟶ (⟨a.carrier × b.carrier⟩ : RelSet.{u}) :=
+  fun x p => R x p.1 ∧ S x p.2
+
+/-- `rpair` is monotonic in both arguments. -/
+public theorem rpair_mono {c a b : RelSet.{u}} {R R' : c ⟶ a} {S S' : c ⟶ b}
+    (hR : R ⊑ R') (hS : S ⊑ S') : rpair R S ⊑ rpair R' S' :=
+  le_iff.mpr fun x p h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
+
+/-- On the product just chosen, the abstract `⟨R,S⟩` of (5.1) IS the pointwise `rpair` — the
+    projections being graphs, each defining conjunct collapses to a component lookup. -/
+public theorem pair_eq_rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
+    (relProd a b).pair R S = rpair R S := by
+  apply hom_ext; intro x p
+  constructor
+  · rintro ⟨⟨y, hy, hy1⟩, ⟨z, hz, hz1⟩⟩
+    exact ⟨(show y = p.1 from hy1) ▸ hy, (show z = p.2 from hz1) ▸ hz⟩
+  · rintro ⟨h1, h2⟩
+    exact ⟨⟨p.1, h1, rfl⟩, ⟨p.2, h2, rfl⟩⟩
 
 end RelSet
 end Freyd.Alg
