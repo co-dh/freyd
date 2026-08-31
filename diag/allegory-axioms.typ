@@ -3221,7 +3221,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   [`φ∩ψ` componentwise, *fails* #h(4pt) #src[@meet-counterex]],
 
   [converse], [`R°`],
-  [`φ°`, *fails*, oplax: `φ`#sub[`A`]`°G(R)⊑F(R)φ`#sub[`B`]`°`],
+  [`φ°`, *fails*, oplax: `φ`#sub[`A`]`°G(R)⊑F(R)φ`#sub[`B`]`°`
+   #h(4pt) #src[`lean:AOP.A5_7.recip_oplax@7735eec0`, `lean:AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6`]],
 
   [zero object], [`z` with `𝟙 z=𝟘`],
   [the constant relator at such a `z`, initial and terminal],
