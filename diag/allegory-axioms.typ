@@ -6520,7 +6520,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
     #src[a least-cost path in a layered network, as a fold over the layers —
-     B&dM §8.2, p. 198]],
+     B&dM §8.2, p. 198. `lean:AOP.A8_2.thinning_paths@b30f4f31`]],
   table.header([*circuit* — one wire, `L(EA)` to `LA`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -6534,7 +6534,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
   [#vstep(RQ, pb-pic((pb-alg, pb-thin), (pb-est,)),
     [`⦇`#frc([`F(∋,∋)α`])` thin Q⦈ est(R)` \
-     #src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono]])],
+     #src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
+      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
   [#pb-pan(4.0,
     (thw-in(THM, 4.0, 2.20), thw-in(THN, 4.0, 2.20), thw-out(THM, 2.20, 0.0),
      thw-out(THU, 2.20, 0.85)),
@@ -6543,25 +6544,27 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, pb-un, pb-thin), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])`) union thin Q⦈ est(R)` \
      #src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
-      P(`#frc([`F(𝟙,∋)α`])`) union`]])],
+      P(`#frc([`F(𝟙,∋)α`])`) union`. `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
   // Empty from here down: every step rewrites the ALGEBRA, and the outer panel is row 2's.  The
   // algebra's source is the bifunctor at two DIFFERENT arguments, which is a square, not a wire.
   [],
 
   [#vstep(RQ, pb-pic((pb-out, pb-Pat, pb-un), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` thin Q) union⦈ est(R)` \
-     #src[`union thin Q⊒P(thin Q) union` — @thin-laws]])],
+     #src[`union thin Q⊒P(thin Q) union` — @thin-laws.
+      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
   [],
 
   [#vstep(RQ, pb-pic((pb-out, pb-Pae, pb-un), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`) union⦈ est(R)` \
      #src[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
-      `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono]])],
+      `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pea), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)`])` P(α) est(R))⦈ est(R)` \
-     #src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`]])],
+     #src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`.
+      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pws), (pb-est,)),
@@ -6583,7 +6586,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // it is one connected preorder, spelled `P` here.
 #disp[#definition[
 `setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
-`listcp(F) : F([A])⟶[FA]`, #h(4pt) `sort P≜setify° ordered P` for `P` a connected preorder.
+`listcp(F) : F([A])⟶[FA]`, #h(4pt) `sort P≜setify° ordered P` #src[`lean:AOP.A8_3.sortRel@f1ae9750`]
+for `P` a connected preorder.
 
 `thinlist Q` is any `thinlist Q⊑subseq` with #h(4pt) `thinlist Q setify⊑setify thin Q`; #h(4pt)
 one is #h(4pt) `⦇[nil,bump Q]⦈`, #h(4pt) `bump Q (a,[])=[a]`, #h(4pt)
@@ -6633,7 +6637,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`sort P thinlist Q⊑thin Q sort P` \
     #src[a thinning of the sorted list lists a thinning of the set — (8.6), p. 201, `P` a connected
-     preorder, `thinlist Q⊑subseq`]],
+     preorder, `thinlist Q⊑subseq`. `lean:AOP.A8_3.sortRel_comp_thinlist_le@11564234`]],
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], tl-pic((tl-sort, tl-tl)), [`sort P thinlist Q`])],
@@ -6682,12 +6686,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let lb-sFP = ([`sort(FP)`], 2.4, true)
 #let lb-Fsort = ([`F(sort P)`], 2.7, true)
 #let lb-lcp = ([`listcp(F)`], 2.7, false)
-#let lb-pic(tail) = thpic([`F(EA)`], [`[B]`], none, tail)
-// `sort P : EB⟶[B]` is where one datatype becomes another, and nothing survives outside it, so it
+#let lb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
+// `sort P : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #let lb-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
   (thw-in(THN, h, 3.15), thw-in(THM, h, 2.40)) + wires, beads,
-  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`B`])),
+  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
   lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -6695,8 +6699,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)fp`])` sort P⊒F(sort P) listcp(F) list(f) filter(p)` \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
-     Lemma 8.1, p. 202, `f : FA⟶B` monotonic on `P`, `p` coreflexive, `F` linear]],
-  table.header([*circuit* — one wire, `F(EA)` to `[B]`], [*Hinze–Marsden*]),
+     Lemma 8.1, p. 202, `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
+     `lean:AOP.A8_3.map_sort_comp_listcp_le@88dfad7c`]],
+  table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], lb-pic((lb-Lam, lb-sort)), [#frc([`F(∋)fp`])` sort P`])],
   [#lb-pan(4.6, (((THU, 3.90), (THU, 0.90 + KNEE), (THO, 0.90)), thw-out(THU, 0.90, 0)),
@@ -6754,7 +6759,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
-     Theorem 8.2, p. 203, at @thinlist-defn's binary thinning data]],
+     Theorem 8.2, p. 203, at @thinlist-defn's binary thinning data.
+     `lean:AOP.A8_3.thinningList@7b3eb252`]],
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [#frc([`⦇S⦈`])` est(R)`])],
@@ -6806,7 +6812,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)S`])` thin Q sort P⊒F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
     #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
-     B&dM p. 203, the side condition of @thinlist-thm82's last step]],
+     B&dM p. 203, the side condition of @thinlist-thm82's last step.
+     `lean:AOP.A8_3.sortedAlg_fusion@4732cb05`]],
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], qb-pic((nb-LamS, nb-thin, sb-sort)), [#frc([`F(∋)S`])` thin Q sort P`])],
