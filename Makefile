@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan scan-strict cover diagram
+.PHONY: p w cite scan scan-strict cover diagram books
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -41,6 +41,12 @@ cite: $(DB)
 # for the work left, `--label X` for one display.
 cover: $(DB)
 	./scripts/cite-cover $(TYP)
+
+# The reference PDFs as text: `./scripts/book find 3.1a IntroString`, `book grep`, `book page`.
+# NO prerequisites and no `book-index.db` target: the PDFs are downloads, not build products, so
+# mtimes say nothing about them; `ingest` hashes each file and re-reads only what changed (~1 s).
+books:
+	./scripts/book ingest
 
 # The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
 # `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after

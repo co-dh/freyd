@@ -30,6 +30,9 @@ Frobenius.pdf
 # same copyright rule applies.  Regenerate both with: ./scripts/paper-figs
 /diag/paperfigs/*.png
 /diag/paperfigs/*.doc.txt
+# Full text of the copyrighted PDFs above, extracted by `make books` — same rule, never commit.
+# At the repository root and not in /.lake, which `lake clean` wipes; rebuild with ./scripts/book ingest.
+/book-index.db
 # Diagrams drawn from Lean statements by `diag-export`; regenerate with
 #   ./scripts/diag-export <declaration-name> ...
 /diag/generated

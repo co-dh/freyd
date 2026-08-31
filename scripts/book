@@ -1,0 +1,415 @@
+#!/usr/bin/env python3
+"""book — the reference PDFs as text: label lookup, BM25 paragraph search, page dumps.
+
+Answers "where is (3.1a)", "which page said these words", "show me p.64" without a page image and
+without a `pdftotext | grep` loop.  Three tables carry it: `label` (exact, deterministic), `para`
+with `para_fts` (BM25 over paragraphs, porter-stemmed), `page` (raw text, for dumps).
+
+    ./scripts/book ingest                       # build/update; sha256 skips an unchanged PDF
+    ./scripts/book find 3.1a IntroString        # IntroString  eq (3.1a)  p.64 (pdf 79)
+    ./scripts/book find ex 3.21                 # every book that has it
+    ./scripts/book grep -b IntroString eilenberg moore algebra monad
+    ./scripts/book page IntroString 64          # or `pdf:79`, always available
+    ./scripts/book ls
+
+The DB holds the full text of PDFs gitignored for copyright, so it is gitignored too
+(`book-index.db` at the repository root — NOT under .lake, which `lake clean` wipes) and page dumps
+go to stdout only, never to a file in the tree.  `book.offset` is the shift `pdf_page - printed`
+read off the page numbers themselves; a book whose numbering cannot be pinned down keeps
+`offset=NULL` and every answer says `pdf N (printed=?)` rather than a guess.
+"""
+import hashlib, os, re, sqlite3, subprocess, sys
+from collections import Counter
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB = os.path.join(ROOT, "book-index.db")
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS book(id INTEGER PRIMARY KEY, file TEXT UNIQUE, name TEXT UNIQUE,
+  pages INTEGER, sha256 TEXT, offset INTEGER, status TEXT);
+CREATE TABLE IF NOT EXISTS page(book INTEGER, pdf_page INTEGER, printed TEXT, text TEXT,
+  PRIMARY KEY(book, pdf_page));
+CREATE TABLE IF NOT EXISTS para(id INTEGER PRIMARY KEY, book INTEGER, pdf_page INTEGER, text TEXT);
+CREATE TABLE IF NOT EXISTS label(book INTEGER, kind TEXT, name TEXT, title TEXT, pdf_page INTEGER,
+  PRIMARY KEY(book, kind, name));
+CREATE INDEX IF NOT EXISTS para_book ON para(book);
+CREATE VIRTUAL TABLE IF NOT EXISTS para_fts USING fts5(text, content='para', content_rowid='id',
+  tokenize='porter unicode61');
+"""
+
+NUM = re.compile(r"^(\d{1,4})$")
+ROMAN = re.compile(r"^(?=[ivxlcdm])m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$", re.I)
+WORD = re.compile(r"[^\W\d_]{3,}")
+EQ = re.compile(r"\((\d+(?:\.\d+)?[a-z]?)\)\s*$")
+KIND = {"Theorem": "thm", "Lemma": "lem", "Proposition": "prop", "Corollary": "cor",
+        "Definition": "def", "Example": "ex", "Remark": "rem", "Exercise": "exc",
+        "Notation": "not"}
+# The lookahead is load-bearing: without it `Exercise 2.1 Show …` backtracks to number `2` and eats
+# the `.` as the closing punctuation, filing the item under the chapter it belongs to.
+ITEM = re.compile(r"^(" + "|".join(KIND) +
+                  r")s?\s+(\d+(?:\.\d+)*[a-z]?)\s*(?:\(([^)]{1,60})\))?[.:]?(?=\s|$)")
+# Titles start with a real capitalised word, else every `3.1 A ⋅ B` display line is a heading.
+SEC = re.compile(r"^(\d+(?:\.\d+)*)\.?\s+([A-Z][^\W\d_][^.]{0,58}?)\s*(?:\.|$)")
+FIG = re.compile(r"^(?:Figure|Fig\.|Table|Diagram)\s+(\d+(?:\.\d+)*)")
+EDGE = 3          # lines from each end of a page that may be a running head/foot
+TOC = 5           # this many headings on one page means a contents page, not a section start
+
+
+def prose(s):
+    """Reads as a sentence, not as a formula: three words of three-plus letters."""
+    return len(WORD.findall(s)) >= 3
+
+
+# ---------------------------------------------------------------- scope
+def creator(path):
+    r = subprocess.run(["pdfinfo", path], capture_output=True)
+    for l in r.stdout.decode("utf-8", "replace").splitlines():
+        if l.startswith("Creator:"):
+            return l.split(":", 1)[1].strip()
+    return ""
+
+
+def scope():
+    """The third-party PDFs.  A render of our own is DETECTED, not named: everything Typst made in
+    this tree is ours and its `.typ` is the greppable source (CLAUDE.md); nothing downloaded is."""
+    return [rel for rel in sorted(os.listdir(ROOT)) + sorted("AOP/" + f
+                                                             for f in os.listdir(ROOT + "/AOP"))
+            if rel.endswith(".pdf") and "Typst" not in creator(os.path.join(ROOT, rel))]
+
+
+# ---------------------------------------------------------------- text extraction
+def pdf_pages(path):
+    """Raw pdftotext output per page.  One process for the whole file (form feeds separate the
+    pages); page-at-a-time would be ~200 processes per book for identical text."""
+    r = subprocess.run(["pdftotext", "-eol", "unix", path, "-"], capture_output=True)
+    if r.returncode:
+        sys.exit(f"pdftotext: {path}: {r.stderr.decode(errors='replace').strip()}")
+    ps = r.stdout.decode("utf-8", "replace").split("\f")
+    return ps[:-1] if ps and not ps[-1].strip() else ps
+
+
+def edges(lines):
+    """Indices of the first and last few non-blank lines — where a head, foot or number sits."""
+    ix = [i for i, l in enumerate(lines) if l.strip()]
+    return ix[:EDGE] + ix[-EDGE:]
+
+
+def page_number(lines):
+    """The printed number as it appears, or None.  Arabic votes for the offset; roman does not."""
+    for i in edges(lines):
+        s = lines[i].strip()
+        if NUM.match(s) or ROMAN.match(s):
+            return s
+    return None
+
+
+def running_heads(pages):
+    """Short edge lines repeated within one page parity — running heads alternate left/right.
+    Counted over the whole book, so a per-chapter head ('3.5 Eilenberg-Moore Categories') is caught
+    as surely as a book-wide one ('Monads')."""
+    c = Counter()
+    for n, lines in enumerate(pages):
+        for i in edges(lines):
+            s = lines[i].strip()
+            if s and len(s.split()) <= 6:
+                c[(n % 2, s)] += 1
+    return {s for (_, s), k in c.items() if k >= 3}
+
+
+def body(lines, heads):
+    """Page lines with the number and the running heads removed."""
+    drop = {i for i in edges(lines)
+            if lines[i].strip() in heads or NUM.match(lines[i].strip())
+            or ROMAN.match(lines[i].strip())}
+    return [l for i, l in enumerate(lines) if i not in drop]
+
+
+# ---------------------------------------------------------------- paragraphs
+def blocks(lines):
+    """Line groups: blank lines separate them, and so does the start of a numbered item or a
+    heading — the typesetter runs `3.5.2 Algebras for a Monad.` into the previous paragraph, but
+    it is the unit a search should hand back."""
+    out, cur = [], []
+    for i, l in enumerate(lines):
+        if not l.strip():
+            out += [cur] if cur else []; cur = []
+        elif cur and (item_at(lines, i) or SEC.match(l.strip())):
+            out.append(cur); cur = [l.rstrip()]
+        else:
+            cur.append(l.rstrip())
+    return out + ([cur] if cur else [])
+
+
+def dehyphen(ls):
+    """One paragraph as one line.  A line-final `-` is a break inside a word when the next line
+    continues in lower case; a dash otherwise stays and still takes no space (`Eilenberg–Moore`)."""
+    s = ls[0]
+    for nxt in ls[1:]:
+        if s[-1:] in "-‐–—":
+            s = (s[:-1] if s[-1] == "-" and nxt[:1].islower() else s) + nxt
+        else:
+            s = s + " " + nxt
+    return s
+
+
+def paragraphs(pages, heads):
+    """(pdf_page, text) for every paragraph that carries words; the page it STARTS on is the one
+    recorded, so a sentence cut by a page break stays one searchable unit."""
+    out = []
+    for n, lines in enumerate(pages, 1):
+        for j, b in enumerate(blocks(body(lines, heads))):
+            t = dehyphen(b)
+            join = j == 0 and out and out[-1][0] < n and out[-1][1][-1:] not in ".!?:" \
+                and t[:1].islower()
+            if join:
+                out[-1] = (out[-1][0], out[-1][1] + " " + t)
+            elif prose(t):
+                out.append((n, t))
+    return out
+
+
+# ---------------------------------------------------------------- labels
+def item_at(lines, i):
+    """`Example 3.21 (Monoids).` counts where a sentence starts — a wrapped back-reference
+    ('… as in\\nExample 3.21 we …') does not, and the previous line's punctuation tells them apart."""
+    prev = next((lines[j].strip() for j in range(i - 1, -1, -1) if lines[j].strip()), "")
+    if prev and prev[-1] not in ".!?:":
+        return None
+    m = ITEM.match(lines[i].strip())
+    return (KIND[m.group(1)], m.group(2), m.group(3)) if m else None
+
+
+def page_labels(lines):
+    """(kind, name, title) defined on this page, in reading order."""
+    out, secs = [], []
+    for i, raw in enumerate(lines):
+        l = raw.strip()
+        if not l:
+            continue
+        m = EQ.search(l)
+        # An undotted tag must own its line: `T(0)` closes a formula line too, and papers that
+        # number equations (1), (2), … always set the tag by itself.
+        if m and not prose(l[:m.start()]) and ("." in m.group(1) or m.start() == 0):
+            out.append(("eq", m.group(1), None))
+        it = item_at(lines, i)
+        if it:
+            out.append(it)
+        m = FIG.match(l)
+        if m:
+            out.append(("fig", m.group(1), None))
+        m = SEC.match(l)
+        if m:
+            secs.append(("sec", m.group(1), m.group(2)))
+    return out + (secs if len(secs) < TOC else [])       # a table of contents defines nothing
+
+
+# ---------------------------------------------------------------- offset
+def detect_offset(nums, pages):
+    """printed = pdf_page - offset, taken from the page numbers.  Accepted only when one shift
+    explains most of the numbered pages, so a stray digit line cannot invent a numbering.
+    Returns (offset or None, how the vote went)."""
+    votes = Counter(n - int(s) for n, s in nums if NUM.match(s))
+    need = max(10, pages / 4)
+    if not votes:
+        return None, "no page carried a plain arabic number"
+    off, k = votes.most_common(1)[0]
+    cover = k / sum(votes.values())
+    ok = cover >= 0.6 and k >= need
+    return (off if ok else None), (f"best shift {off:+d} on {k} of {sum(votes.values())} numbered "
+                                   f"pages ({round(100 * cover)}%, needs 60% and {need:.0f} pages)")
+
+
+# ---------------------------------------------------------------- ingest
+def digest(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def counts(db, bid):
+    return [db.execute(f"select count(*) from {t} where book=?", (bid,)).fetchone()[0]
+            for t in ("para", "label")]
+
+
+def wipe(db, bid):
+    """FTS is external-content: its rows must be deleted through the table before `para` loses them."""
+    db.execute("insert into para_fts(para_fts,rowid,text) select 'delete',id,text from para "
+               "where book=?", (bid,))
+    for t in ("para", "page", "label"):
+        db.execute(f"delete from {t} where book=?", (bid,))
+
+
+def store(db, bid, pages, heads, warn):
+    """page/para/label rows for one book; returns (paras, labels)."""
+    nums = [(n, page_number(l)) for n, l in enumerate(pages, 1)]
+    db.executemany("insert into page(book,pdf_page,printed,text) values(?,?,?,?)",
+                   [(bid, n, s, "\n".join(pages[n - 1])) for n, s in nums])
+    db.executemany("insert into para(book,pdf_page,text) values(?,?,?)",
+                   [(bid, n, t) for n, t in paragraphs(pages, heads)])
+    db.execute("insert into para_fts(rowid,text) select id,text from para where book=?", (bid,))
+    seen, dup = {}, []
+    for n, lines in enumerate(pages, 1):
+        for kind, name, title in page_labels(body(lines, heads)):
+            if (kind, name) in seen:
+                # A section number reappears in the running head of every page it covers; only a
+                # second EQUATION or theorem site means a regex read something it should not have.
+                if kind != "sec":
+                    dup.append(f"{kind} {name} on pdf {seen[(kind, name)]} and {n}")
+            else:
+                seen[(kind, name)] = n
+                db.execute("insert into label values(?,?,?,?,?)", (bid, kind, name, title, n))
+    if dup:
+        warn(f"{len(dup)} label(s) redefined: " + "; ".join(dup[:3]) + "; kept the first page")
+    return counts(db, bid)
+
+
+def ingest(files):
+    db = sqlite3.connect(DB)
+    db.executescript(SCHEMA)
+    # Paths are stored relative to the repository root, so `book ingest ../freyd/x.pdf` and
+    # `book ingest x.pdf` name the same row rather than two.
+    for rel in [os.path.relpath(os.path.abspath(f), ROOT) for f in files] or scope():
+        path = os.path.join(ROOT, rel)
+        name = os.path.splitext(os.path.basename(rel))[0]
+        if not os.path.isfile(path):
+            sys.exit(f"no such pdf: {path}")
+        sha = digest(path)
+        row = db.execute("select id,sha256,pages,offset from book where file=?", (rel,)).fetchone()
+        if row and row[1] == sha:
+            print(f"{rel}  {row[2]}p  offset={row[3] if row[3] is not None else '?'}  "
+                  f"paras={counts(db, row[0])[0]}  labels={counts(db, row[0])[1]}  skipped")
+            continue
+        ingest_one(db, rel, name, path, sha, row)
+        db.commit()
+    db.close()
+
+
+def ingest_one(db, rel, name, path, sha, row):
+    warns = []
+    raw = pdf_pages(path)
+    pages = [p.split("\n") for p in raw]
+    n = len(pages)
+    avg = sum(len(p) for p in raw) // max(n, 1)
+    db.execute("insert or replace into book(id,file,name,pages,sha256,offset,status) "
+               "values(?,?,?,?,?,?,?)", (row[0] if row else None, rel, name, n, sha, None, "ok"))
+    bid = db.execute("select id from book where file=?", (rel,)).fetchone()[0]
+    wipe(db, bid)
+    if avg < 100:
+        db.execute("update book set status='no-text' where id=?", (bid,))
+        db.executemany("insert into page(book,pdf_page,printed,text) values(?,?,?,?)",
+                       [(bid, i, None, "\n".join(p)) for i, p in enumerate(pages, 1)])
+        print(f"{rel}  {n}p  offset=?  paras=0  labels=0")
+        return print(f"WARN {rel}: no text layer (avg {avg} B/page) — not searchable", file=sys.stderr)
+    heads = running_heads(pages)
+    paras, labels = store(db, bid, pages, heads, warns.append)
+    nums = [(i, s) for i, p in enumerate(pages, 1) if (s := page_number(p))]
+    off, vote = detect_offset(nums, n)
+    db.execute("update book set offset=?, status=? where id=?",
+               (off, "ok" if off is not None else "no-offset", bid))
+    if off is None:
+        warns.append(f"offset undetected — {vote}; address it by pdf page")
+    if not labels:
+        warns.append("0 labels — the regexes matched nothing")
+    print(f"{rel}  {n}p  offset={off if off is not None else '?'}  paras={paras}  labels={labels}")
+    for w in warns:
+        print(f"WARN {rel}: {w}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------- queries
+def open_db():
+    if not os.path.exists(DB):
+        sys.exit(f"{DB} missing — run ./scripts/book ingest")
+    return sqlite3.connect(DB)
+
+
+def loc(printed, pdf, off):
+    """How a page is named in output.  The book-wide shift outranks the page's own arabic number —
+    a chapter opening prints `3 Monads`, and the whole-book fit is not fooled by that lone 3 —
+    but a roman-numbered front page, or a book with no shift, is shown as the page itself says."""
+    fit = str(pdf - off) if off is not None and pdf - off >= 1 else None
+    p = fit if fit and (printed is None or printed.isdigit()) else printed
+    return f"p.{p} (pdf {pdf})" if p else f"pdf {pdf} (printed=?)"
+
+
+def cmd_find(a):
+    kind = a.pop(0) if a and a[0] in set(KIND.values()) | {"eq", "sec", "fig"} else None
+    if not a:
+        sys.exit("usage: book find [KIND] NAME [BOOK]")
+    name, bk = a[0], (a[1] if len(a) > 1 else None)
+    sql = "where l.name=?" + (" and l.kind=?" if kind else "") + (" and b.name=?" if bk else "")
+    hits = open_db().execute(
+        "select b.name,l.kind,l.name,l.title,l.pdf_page,p.printed,b.offset from label l "
+        "join book b on b.id=l.book left join page p on p.book=l.book and p.pdf_page=l.pdf_page "
+        + sql + " order by b.name",
+        [name] + ([kind] if kind else []) + ([bk] if bk else [])).fetchall()
+    for bn, k, nm, title, pdf, printed, off in hits:
+        what = f"eq ({nm})" if k == "eq" else f"{k} {nm}" + (f" ({title})" if title else "")
+        print(f"{bn}  {what}  {loc(printed, pdf, off)}")
+    if not hits:
+        sys.exit(f"no {kind or 'label'} '{name}'" + (f" in {bk}" if bk else ""))
+
+
+def cmd_grep(a):
+    n, bk, words = 8, None, []
+    while a:
+        x = a.pop(0)
+        if x == "-n":
+            n = int(a.pop(0))
+        elif x == "-b":
+            bk = a.pop(0)
+        else:
+            words.append(x)
+    if not words:
+        sys.exit("usage: book grep [-b BOOK] [-n N] WORDS...")
+    # OR, not the implicit AND: bm25 already floats the paragraph holding every word to the top,
+    # and one missing word should not turn a good query into no result at all.
+    q = " OR ".join('"%s"' % w.replace('"', "") for w in words)
+    hits = open_db().execute(
+        "select b.name,pa.pdf_page,p.printed,b.offset,snippet(para_fts,0,'**','**','…',20) "
+        "from para_fts join para pa on pa.id=para_fts.rowid join book b on b.id=pa.book "
+        "left join page p on p.book=pa.book and p.pdf_page=pa.pdf_page "
+        "where para_fts match ?" + (" and b.name=?" if bk else "") +
+        " order by bm25(para_fts) limit ?", [q] + ([bk] if bk else []) + [n]).fetchall()
+    for bn, pdf, printed, off, snip in hits:
+        print(f"{bn} {loc(printed, pdf, off)}: " + " ".join(snip.split()))
+    if not hits:
+        sys.exit("no matches")
+
+
+def cmd_page(a):
+    if len(a) != 2:
+        sys.exit("usage: book page BOOK PAGE[-PAGE]   (PAGE, or pdf:N for the pdf page)")
+    db = open_db()
+    bk = db.execute("select id,name,offset from book where name=?", (a[0],)).fetchone()
+    if not bk:
+        sys.exit(f"no book '{a[0]}' — ./scripts/book ls")
+    bid, name, off = bk
+    ispdf = a[1].startswith("pdf:")
+    lo, _, hi = a[1][4:].partition("-") if ispdf else a[1].partition("-")
+    if not ispdf and off is None:
+        sys.exit(f"{name}: offset undetected — address by pdf page, e.g. `pdf:{lo}`")
+    shift = 0 if ispdf else off
+    last = db.execute("select pages from book where id=?", (bid,)).fetchone()[0]
+    for n in range(int(lo) + shift, int(hi or lo) + shift + 1):
+        r = db.execute("select printed,text from page where book=? and pdf_page=?",
+                       (bid, n)).fetchone()
+        if not r:
+            sys.exit(f"{name}: no pdf page {n} — the file has {last}")
+        print(f"== {name} {loc(r[0], n, off)} ==")
+        print(r[1])
+
+
+def cmd_ls(a):
+    for name, pages, off, st, k in open_db().execute(
+            "select b.name,b.pages,b.offset,b.status,count(l.name) from book b "
+            "left join label l on l.book=b.id group by b.id order by b.name"):
+        print(f"{name}  {pages}p  offset={off if off is not None else '?'}  {st}  labels={k}")
+
+
+CMDS = {"ingest": ingest, "find": cmd_find, "grep": cmd_grep, "page": cmd_page, "ls": cmd_ls}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] not in CMDS:
+        sys.exit(__doc__)
+    CMDS[sys.argv[1]](sys.argv[2:])
