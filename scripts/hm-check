@@ -1,0 +1,406 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""hm-check — our Hinze–Marsden panel beside the book's own picture, as port graphs.
+
+IntroString prints most of its equations next to the string diagram they denote.  A fixture in
+`diag/pairs/` records ONE such picture as the book draws it — boundary wires, beads with their arms
+and legs, the grey `𝟏` strip — together with the printed formula, the diagram-order form our
+generator takes, and the signatures of the letters that form uses.  This runs `scripts/diagram` on that formula, sweeps the panel with
+`scripts/scanline`'s own model, and compares the two as PORT GRAPHS: the boundary lists, and each
+bead's arms and legs as wire identities.  What the graph forgets is what the book itself agrees to
+forget (pp. 21–22): bead heights, stretching, bending.  What it keeps is every mistake worth
+catching — a bead's source, the boundary order, a missing merge.
+
+Both sides are canonicalised by the SAME scan-line walk, so a bead free to slide up or down cannot
+make the two texts differ.  Interior segments the book leaves unlabelled are `lbl: null` in the
+fixture and go unchecked, because the book prints labels only at the boundary; where it does print
+one, OURS is now definite — `draw` emits the type at every seam instead of letting the sweep guess
+the object wire's label at the lowest bead on it.
+
+`--verify-fixtures` audits the fixture against the page's own vector content instead: the figure's
+stroked paths, filled dots, boundary endpoints and grey fill are counted out of `pdftocairo -svg`
+inside the fixture's bbox and held against its `counts`.  That is what catches a miscounted
+transcription, mechanically, without parsing any topology.
+
+usage: hm-check [label…]            every fixture, or the ones whose file name contains a label
+       hm-check --show              print both canonical port graphs beside each other
+       hm-check --verify-fixtures   count the page's own svg against each fixture's `counts`
+       hm-check --verify-sigs       hold `diag/hm-sigs.json` against the declaration index
+       hm-check --laws              the equations functoriality gives, on every term already stated
+"""
+import importlib.machinery, importlib.util, json, os, re, sqlite3, subprocess, sys
+
+sys.dont_write_bytecode = True
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+
+
+def load(name):
+    p = os.path.join(HERE, name)
+    s = importlib.util.spec_from_loader(name, importlib.machinery.SourceFileLoader(name, p))
+    m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+
+
+dg = load("diagram")
+sl = dg.sl                                 # THE scanline `draw` raises from: a second copy of the
+cc = load("cite-check")                    # module would give `Unhandled` a second, uncatchable class
+EPS = sl.EPS
+
+
+# ---------------------------------------------------------------- the mirror audit
+# The one translation step every past bug hid in: the book composes with `⋅`, right to left, and we
+# juxtapose left to right.  Only that axis flips — application (`F h`) is applicative on both sides.
+def mirror(applicative, ws):
+    return " = ".join(
+        " ".join(apply(f.strip(), ws) for f in reversed(sl.split_top(side, "⋅")) if f.strip())
+        for side in applicative.split("="))
+
+
+# The one constant the two texts spell differently: the book's `id` is the note's `𝟙`.
+SAYS = {"id": sl.UNIT}
+
+
+def apply(factor, ws):
+    ts = factor.split()
+    return f"{ts[0]}({' '.join(ts[1:])})" if len(ts) > 1 and ts[0] in ws \
+        else SAYS.get(factor, factor)
+
+
+def words(s):
+    return " ".join(s.split())
+
+
+# ---------------------------------------------------------------- the port graph
+# A side is (top tokens, bottom tokens, beads as (name, arm tokens, leg tokens), token labels,
+# grey1, crossing label-pairs).  Tokens are opaque: `canon` renumbers them, so the fixture's names
+# and the panel's lane positions cannot leak into the comparison.
+def ours(r):
+    """The port graph of a panel we drew: swept by scanline's own model, then read off the sweep."""
+    p = sl.Panel(r)
+    bad = sl.sweep(p)
+    if bad:
+        raise sl.Unhandled(bad[0])
+    front = [(x, l) for (x, l) in p.cuts[0]]                 # the top ports, left to right
+    tok = list(range(len(front)))
+    lbl = {t: l for t, (_, l) in zip(tok, front)}
+    top, beads, nxt = list(tok), [], len(tok)
+    for y in sorted({b.y for b in p.beads}, reverse=True):
+        i = next(k for k in range(len(p.levels)) if abs(p.levels[k] - y) < EPS)
+        above, below = p.cuts[i], p.cuts[i + 1]
+        if [x for x, _ in above] != [x for x, _ in front]:
+            raise sl.Unhandled(f"the cut above y={y} is not the front the walk carries")
+        for b in [b for b in p.beads if abs(b.y - y) < EPS]:
+            hit = sl.touched(p, b, above)
+            ai = [k for k, (x, _) in enumerate(above) if any(abs(x - t) < EPS for t in hit)]
+            if ai and ai != list(range(ai[0], ai[-1] + 1)):
+                raise sl.Unhandled(f"the bead {b.label} reaches columns {ai}, which are not adjacent")
+            # a unit consumes nothing: its legs are INSERTED at the column the picture gives it
+            at = ai[0] if ai else sum(x < min(hit) - EPS for (x, _) in above)
+            hi = ai[-1] + 1 if ai else at
+            legs = [(x, l) for (x, l) in below if any(abs(x - t) < EPS for t in hit)]
+            ids = list(range(nxt, nxt + len(legs))); nxt += len(legs)
+            lbl.update({t: l for t, (_, l) in zip(ids, legs)})
+            beads.append((b.label, [tok[k] for k in ai], ids, at))
+            tok = tok[:at] + ids + tok[hi:]
+            front = above[:at] + legs + above[hi:]
+    if [x for x, _ in front] != [x for x, _ in p.cuts[-1]]:
+        raise sl.Unhandled("the walk does not end at the panel's bottom ports")
+    pairs = sorted(tuple(sorted(m.groups())) for m in
+                   (re.search(r": (\S+)@\S+ crosses (\S+)@", c) for c in sl.crossings(p)) if m)
+    # `dpan` paints `luma(226)` right of the object wire and nothing else does, so the strip is
+    # there exactly when the panel has an object wire.
+    return (top, list(tok), beads, lbl, True, pairs)
+
+
+def book(side, where):
+    ws, bs = side["wires"], side["beads"]
+    for i, b in enumerate(bs):                                # the fixture's own integrity
+        for kind, ends in (("arm", b["arms"]), ("leg", b["legs"])):
+            for j, w in enumerate(ends):
+                end = ws[w]["to" if kind == "arm" else "from"]
+                if end != f"bead:{i}/{kind}:{j}":
+                    raise ValueError(f"{where}: wire {w} says {kind} end {end}, but bead {i}"
+                                     f" ({b['name']}) lists it as its {kind} {j}")
+    top = [next(w for w, v in ws.items() if v["from"] == f"top:{i}") for i in range(len(side["top"]))]
+    bot = [next(w for w, v in ws.items() if v["to"] == f"bot:{i}") for i in range(len(side["bot"]))]
+    for ends, names, edge in ((top, side["top"], "top"), (bot, side["bot"], "bottom")):
+        for w, l in zip(ends, names):
+            if ws[w]["lbl"] != l:
+                raise ValueError(f"{where}: the {edge} port {l} is carried by {w},"
+                                 f" which is labelled {ws[w]['lbl']}")
+    return (top, bot, [(b["name"], b["arms"], b["legs"], b.get("at")) for b in bs],
+            {w: v["lbl"] for w, v in ws.items()}, side["grey1"],
+            sorted(tuple(sorted(c)) for c in side["crossings"]))
+
+
+def canon(side, where):
+    """The scan-line walk: fire the bead whose arms are all live and leftmost, renumbering as we go.
+    Bead HEIGHT never enters, so two pictures differing only by a slide canonicalise the same."""
+    top, bot, beads, lbl, grey, cross = side
+    front, num, out, left = list(top), {}, [], list(beads)
+    for i, t in enumerate(front):
+        num[t] = i
+    while left:
+        ready = [b for b in left if b[1] and all(a in front for a in b[1])]
+        if ready:
+            b = min(ready, key=lambda b: min(front.index(a) for a in b[1]))
+            i, j = min(front.index(a) for a in b[1]), max(front.index(a) for a in b[1])
+            if sorted(front.index(a) for a in b[1]) != list(range(i, j + 1)):
+                raise ValueError(f"{where}: the bead {b[0]} reaches wires that are not adjacent")
+        else:
+            free = [b for b in left if not b[1] and b[3] is not None]
+            if not free:
+                raise ValueError(f"{where}: the bead {left[0][0]} has no arms and no `at` —"
+                                 f" nothing says which column its wire stands in")
+            b = min(free, key=lambda b: b[3])
+            i, j = b[3], b[3] - 1            # a unit consumes nothing: its legs are INSERTED
+        for t in b[2]:
+            num[t] = len(num)
+        out.append((b[0], [num[a] for a in b[1]], [num[t] for t in b[2]]))
+        front = front[:i] + list(b[2]) + front[j + 1:]
+        left.remove(b)
+    if front != list(bot):
+        raise ValueError(f"{where}: the walk ends on {[num[t] for t in front]},"
+                         f" not the bottom ports {[num.get(t) for t in bot]}")
+    return (list(side[0] and [lbl[t] for t in top]), [lbl[t] for t in bot], out,
+            {num[t]: lbl[t] for t in num}, grey, cross)
+
+
+def diff(a, b, side):
+    """The first disagreement, named down to the element.  `a` is ours, `b` the book's."""
+    at, ab, abd, alb, ag, ac = a
+    bt, bb, bbd, blb, bg, bc = b
+    if at != bt:
+        return f"side {side}: top boundary ours [{', '.join(at)}] book [{', '.join(bt)}]"
+    if ab != bb:
+        return f"side {side}: bottom boundary ours [{', '.join(ab)}] book [{', '.join(bb)}]"
+    if len(abd) != len(bbd):
+        return (f"side {side}: {len(abd)} beads ours ({', '.join(x[0] for x in abd)}),"
+                f" {len(bbd)} book ({', '.join(x[0] for x in bbd)})")
+    for k, (x, y) in enumerate(zip(abd, bbd)):
+        if x[0] != y[0]:
+            return f"side {side}: bead {k} named {x[0]} by us, {y[0]} in the book"
+        if x[1] != y[1]:
+            return f"side {side}: bead {x[0]} arms ours w{x[1]} book w{y[1]}"
+        if x[2] != y[2]:
+            return f"side {side}: bead {x[0]} legs ours w{x[2]} book w{y[2]}"
+    for k in sorted(blb):                        # a label the book does not print goes unchecked
+        if blb[k] is not None and alb.get(k) != blb[k]:
+            return f"side {side}: wire w{k} labelled {alb.get(k)} by us, {blb[k]} in the book"
+    if ag != bg:
+        return f"side {side}: the grey 𝟏 strip is {'ours' if ag else 'the book'}'s alone"
+    return None
+
+
+# ---------------------------------------------------------------- the page's own vector content
+NUM = re.compile(r"[-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9]+)?")
+GREY, BLACK = "rgb(79.998779%, 79.998779%, 79.998779%)", "rgb(0%, 0%, 0%)"
+
+
+def svg_paths(pdf, page):
+    out = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"hm-{os.path.basename(pdf)}.{page}.svg")
+    if not os.path.exists(out):
+        subprocess.run(["pdftocairo", "-svg", "-f", str(page), "-l", str(page), pdf, out],
+                       check=True)
+    ps = []
+    for tag in re.findall(r"<path\b[^>]*/>", open(out, encoding="utf-8").read()):
+        d = re.search(r'\sd="([^"]*)"', tag)
+        if not d:
+            continue
+        n = [float(v) for v in NUM.findall(d.group(1))]
+        pts = list(zip(n[0::2], n[1::2]))
+        m = re.search(r'transform="matrix\(([^)]*)\)"', tag)
+        if m:
+            a, b, c, e, tx, ty = [float(v) for v in m.group(1).split(",")]
+            pts = [(a * x + c * y + tx, b * x + e * y + ty) for (x, y) in pts]
+        fill = (re.search(r'\sfill="([^"]*)"', tag) or re.search(r"(none)", "none")).group(1)
+        ps.append((fill, "stroke=" in tag, pts))
+    return ps
+
+
+def counts(pdf, page, bbox):
+    x0, y0, x1, y1 = bbox
+    inside = [(f, s, p) for (f, s, p) in svg_paths(pdf, page)
+              if p and all(x0 <= x <= x1 and y0 <= y <= y1 for (x, y) in p)]
+    strokes = [p for (f, s, p) in inside if f == "none" and s]
+    dots = [p for (f, s, p) in inside if f == BLACK
+            and max(x for x, _ in p) - min(x for x, _ in p) < 5]
+    if not strokes:
+        return {"strokes": 0, "dots": len(dots), "top_ends": 0, "bot_ends": 0,
+                "grey": sum(f == GREY for (f, _, _) in inside)}
+    ys = [y for p in strokes for (_, y) in p]
+    ends = [p[i] for p in strokes for i in (0, -1)]
+    return {"strokes": len(strokes), "dots": len(dots),
+            "top_ends": sum(abs(y - min(ys)) < 1 for (_, y) in ends),
+            "bot_ends": sum(abs(y - max(ys)) < 1 for (_, y) in ends),
+            "grey": sum(f == GREY for (f, _, _) in inside)}
+
+
+def verify(fx, path):
+    pdf = os.path.join(ROOT, fx["book"])
+    bad = []
+    for i, s in enumerate(fx["sides"]):
+        got = counts(pdf, fx["pdf_page"], s["bbox"])
+        for k, v in s["counts"].items():
+            if got[k] != v:
+                bad.append(f"{os.path.basename(path)} side {i}: {k} claims {v},"
+                           f" the page's svg has {got[k]}")
+        # `object-wire-added` says the strip is OURS, not the page's, so the page cannot be asked for it
+        if "object-wire-added" not in fx.get("norm", []) and s["grey1"] != (got["grey"] > 0):
+            bad.append(f"{os.path.basename(path)} side {i}: grey1 is {s['grey1']},"
+                       f" the page's svg has {got['grey']} grey fills")
+    return bad
+
+
+# ---------------------------------------------------------------- the signature table
+def verify_sigs():
+    """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
+    the statement still has the key the row was read against; then the letters the row's objects use
+    must be spelled somewhere in that statement — a projection carries none, so it goes unchecked."""
+    t = dg.sigs()
+    db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
+    say = {k: v for k, v in t["spelling"].items() if k != "//"}
+    bad = []
+    for name, row in t["sigs"].items():
+        mark, _, k = row["lean"].partition("@")
+        where = f"hm-sigs.json {name} : {row['src']} ⟶ {row['tgt']}"
+        moved = cc.check(db, mark, k, where)
+        if moved:
+            bad.append(moved); continue
+        user, mod = cc.resolve(db, mark)[0][:2]
+        (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
+                             " and user_name = ?", (mod, user)).fetchone()
+        used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
+        miss = [f"{l} as {'/'.join(say[l])}" for l in sorted(used)
+                if l in say and not any(w in stmt for w in say[l])]
+        if stmt and miss:
+            bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
+                       f" it is `{' '.join(stmt.split())}`")
+    print(*bad, sep="\n", file=sys.stderr)
+    print(f"hm-check: {len(t['sigs'])} signature rows audited against the declaration index,"
+          f" {len(bad)} adrift")
+    return 1 if bad else 0
+
+
+# ---------------------------------------------------------------- the free laws
+# Functoriality states equations no book page has to supply: they hold of EVERY typed term, so the
+# terms the repository already carries — the note's certified panels, the fixtures' own sides — test
+# them for nothing.  Each is an equality of canonical port graphs, which is where `draw` lands.
+NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
+
+
+def terms(paths, tbl):
+    """Every typed term already stated, with the table its labels are typed by."""
+    out = [(r["id"], r["cert"]["expect"], *dg.endpoints(sl.Panel(r)), tbl)
+           for r in sl.panels(NOTE, None) if (r.get("cert") or {}).get("expect")]
+    for p in paths:
+        fx = json.load(open(p, encoding="utf-8"))
+        t = {**tbl, "sigs": {**tbl["sigs"],
+                             **{k: v for k, v in fx.get("sigs", {}).items() if k != "//"}}}
+        out += [(f"{fx['label']}.{i}", f.strip(), fx["src"], fx["tgt"], t)
+                for i, f in enumerate(fx["mirrored"].split("="))]
+    return out
+
+
+def laws(paths, tbl):
+    ts = terms(paths, tbl)
+    bad, n, skip = [], 0, []
+    for (nm, f, src, tgt, t) in ts:
+        try:                               # a term whose own panel the reader cannot canonicalise
+            g = canon(ours(dg.draw(f, src, tgt, t)), nm)      # states no law: it is reported apart
+        except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+            skip.append(f"{nm}: {ex}"); continue
+        for law, h in (("identity", f"𝟙 ({f}) 𝟙"),
+                       ("spelling", sl.spell(sl.tidy(sl.norm(sl.parse(f)))))):
+            n += 1
+            try:
+                d = diff(g, canon(ours(dg.draw(h, src, tgt, t)), f"{law} {nm}"), law)
+            except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+                d = f"{h}: {type(ex).__name__}: {ex}"
+            if d:
+                bad.append(f"FAIL  {nm}   {f}: {d}")
+    print(*bad, sep="\n", file=sys.stderr)
+    print(*(f"  unread {s}" for s in skip), sep="\n")
+    print(f"hm-check: {n} free-law checks over {len(ts) - len(skip)} stated terms,"
+          f" {len(bad)} broken, {len(skip)} unreadable")
+    return 1 if bad else 0
+
+
+# ---------------------------------------------------------------- the driver
+# A declared normalization says WHY the two pictures may differ by convention.  All three are
+# recorded in the fixture as drawn — the transcriber applies them — so none rewrites a graph here;
+# an undeclared one is a FAIL, so the list cannot quietly grow into a licence to differ.
+NORMS = ("free-end-vs-bent-in", "object-wire-added", "spider-vs-bead")
+
+
+def show(g, who):
+    top, bot, beads, lbl, grey, _ = g
+    print(f"    {who:<4} top [{' '.join(top)}]  bot [{' '.join(bot)}]  grey1 {str(grey).lower()}"
+          + "  " + " ".join(f"w{k}={lbl[k] or '·'}" for k in sorted(lbl)))
+    for k, (n, a, l) in enumerate(beads):
+        print(f"         bead {k} {n}: arms ({', '.join('w%d' % i for i in a)})"
+              f" legs ({', '.join('w%d' % i for i in l)})")
+
+
+def check(fx, tbl, seen=False):
+    lab, warn = fx["label"], []
+    # The fixture's own letters (`a`, `b`, `h` in 3.6) name nothing outside it, so they are written
+    # where they are used and layered over the note's table.
+    tbl = {**tbl, "sigs": {**tbl["sigs"], **{k: v for k, v in fx.get("sigs", {}).items() if k != "//"}}}
+    odd = [n for n in fx.get("norm", []) if n not in NORMS]
+    if odd:
+        return f"FAIL  {lab}   undeclared normalization {odd[0]!r}", warn
+    ws = dg.alphabet(tbl, sl.norm(sl.parse(fx["src"])), sl.norm(sl.parse(fx["tgt"])))
+    got = mirror(fx["book_formula"], ws)
+    if words(got) != words(fx["mirrored"]):
+        return f"FAIL  {lab}   mirrored is '{fx['mirrored']}', but '{fx['book_formula']}'" \
+               f" mirrors to '{got}'", warn
+    sides = [s.strip() for s in fx["mirrored"].split("=")]
+    if len(sides) != len(fx["sides"]):
+        return f"FAIL  {lab}   {len(sides)} formula sides, {len(fx['sides'])} pictures", warn
+    for i, (f, s) in enumerate(zip(sides, fx["sides"])):
+        try:
+            a = canon(ours(dg.draw(f, fx["src"], fx["tgt"], tbl)), f"ours {lab}.{i}")
+            b = canon(book(s, f"{lab}.{i}"), f"book {lab}.{i}")
+        except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+            return f"FAIL  {lab}   side {i}: {type(ex).__name__}: {ex}", warn
+        if seen:
+            print(f"  {lab} side {i}   {f}"); show(a, "ours"); show(b, "book")
+        bad = diff(a, b, i)
+        if bad:
+            return f"FAIL  {lab}   {bad}", warn
+        if a[5] != b[5]:
+            warn.append(f"WARN  {lab}   side {i} crossings: ours {a[5] or '{}'} book {b[5] or '{}'}")
+    return f"PASS  {lab}   {fx['title']}", warn
+
+
+def main(argv):
+    d = os.path.join(ROOT, "diag", "pairs")
+    only = [a for a in argv if not a.startswith("-")]
+    paths = [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".json")
+             and (not only or any(o in f for o in only))]
+    if "--verify-sigs" in argv:
+        sys.exit(verify_sigs())
+    if "--laws" in argv:
+        sys.exit(laws(paths, dg.sigs()))
+    if "--verify-fixtures" in argv:
+        bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
+        print(*bad, sep="\n", file=sys.stderr)
+        print(f"hm-check: {len(paths)} fixtures audited against the page svg, {len(bad)} miscounts")
+        sys.exit(1 if bad else 0)
+    tbl = dg.sigs()
+    lines = [check(json.load(open(p, encoding="utf-8")), tbl, "--show" in argv)
+             for p in paths]
+    for line, warn in lines:
+        print(line, *warn, sep="\n")
+    n = sum(l.startswith("FAIL") for l, _ in lines)
+    print(f"{len(lines)} pair{'s' * (len(lines) != 1)}: {len(lines) - n} PASS, {n} FAIL,"
+          f" {sum(len(w) for _, w in lines)} WARN")
+    sys.exit(1 if n else 0)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

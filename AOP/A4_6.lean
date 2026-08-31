@@ -94,7 +94,7 @@ public theorem Λ_eps_reflection {b : 𝒜} : Λ (∋ b) = Cat.id (PowerAllegory
 public theorem existsImage_eps {a b : 𝒜} (R : a ⟶ b) : existsImage R ≫ ∋ b = ∋ a ≫ R := Λ_eps_eq' _
 
 /-- `Λ S ≫ E R = Λ (S ≫ R)` (B&dM p.105), the absorption law driving the rest of §4.6. -/
-theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
+public theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
     Λ S ≫ existsImage R = Λ (S ≫ R) := by
   have hEMap : Map (existsImage R) := Λ_is_map' _
   have hmap : Map (Λ S ≫ existsImage R) := map_comp (Λ_is_map' S) hEMap

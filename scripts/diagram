@@ -12,12 +12,15 @@ outermost functor, the object wire last — and a factor is one bead with the wi
 as its context.  So: peel each factor into the wires that wrap it and the bead at its core, walk the
 factors top to bottom keeping the cut, and give every wire a lane from where it is born to where it
 dies.  A wire the formula needs and the cut has not got is OPENED out of the object (`[A]` is
-`list` over `A`); a wire the cut has and no later factor names dies at the bead that reaches it.
+`list` over `A`).
 
-What it CANNOT know is a bead's own signature.  `α : F([A])⟶[A]` consumes the `F` wire and `choose`
-consumes the `Δ`, but nothing in the formula says so, so a wire dies at the FIRST bead that reaches
-past it rather than the one that really eats it.  Both pictures denote the same composite — that is
-what the round trip checks — and only the second is the one an author would draw.
+A bead's own signature comes from `diag/hm-sigs.json`, so the cut is a TYPE.  `elaborate` matches
+the bead's source scheme against the cut by unification — what matches is its arms, the unmatched
+prefix passes — and the target scheme says which wires it makes.  A wire therefore dies at the bead
+that CONSUMES it (`α : F([A])⟶[A]` eats the `F` wire, `choose` the `Δ`), and a factor that does not
+fit is a type error naming the bead and the cut rather than a mis-drawn wire.  `layout` is the
+second half and deliberately not part of the first: lane x's and bead heights are ONE picture out of
+the many the book calls equal (pp. 21–22).
 
 `--roundtrip` is the acceptance test: every panel in the note that carries a `cert:` with an
 `expect` is regenerated from that `expect` alone and swept again, and the printed composite must
@@ -30,13 +33,27 @@ _P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
 _S = importlib.util.spec_from_loader("scanline", importlib.machinery.SourceFileLoader("scanline", _P))
 sl = importlib.util.module_from_spec(_S)
 _S.loader.exec_module(sl)
-parse, norm, spell, tidy, Unhandled = sl.parse, sl.norm, sl.spell, sl.tidy, sl.Unhandled
+parse, norm, spell, tidy, rec, Unhandled = sl.parse, sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
-# A name is a WIRE when it is a relator and a BEAD otherwise — `list(p)` is `p` under `list`, but
-# `est(R°)` is one arrow.  Src and tgt add their own; this is what a formula alone cannot say.
-RELATORS = {"F", "E", "P", "T", "list", "tree", "Δ"}
+SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
+                    "hm-sigs.json")
+
+
+def sigs():
+    """`diag/hm-sigs.json` — what each bead's label is an arrow BETWEEN, keyed by the label's head."""
+    return json.load(open(SIGS, encoding="utf-8"))
+
+
+def letters(e):
+    """The wire letters an object names.  A product is one letter `×` whatever its components are:
+    the wire a product opens is a context (`A×−`, `Δ`), and the letter is what Lean must spell."""
+    if e[0] == 'app':
+        return {e[1]} | letters(e[2])
+    if e[0] == 'prod':
+        return {'×'}.union(*(letters(x) for x in e[1]))
+    return letters(e[1]) if e[0] == 'conv' else set()
 
 
 # ---------------------------------------------------------------- objects as wire stacks
@@ -52,8 +69,8 @@ def render(e):
     return None
 
 
-def peel_obj(e):
-    """A normalised object as (wires outermost first, the label the object wire carries)."""
+def peel(e):
+    """A normalised object as (wires outermost first, the object the object wire itself carries)."""
     ws = []
     while render(e) is None:
         if e[0] == 'prod' and len(e[1]) == 2 and e[1][0] == e[1][1]:
@@ -66,24 +83,7 @@ def peel_obj(e):
             raise Unhandled(f"no wire stack for the object {spell(e)}")
         if len(ws) > 8:
             raise Unhandled(f"the object {spell(e)} nests deeper than a panel can draw")
-    return ws, render(e)
-
-
-def strip(e, ws):
-    """The label left on the object wire once `ws` have been lifted off it."""
-    for w in ws:
-        if w == 'Δ' and e[0] == 'prod' and e[1][0] == e[1][1]:
-            e = e[1][0]
-        elif '−' in w and e[0] == 'prod' and len(e[1]) == 2:
-            e = e[1][1]
-        elif e[0] == 'app' and e[1] == w:
-            e = e[2]
-        else:
-            raise Unhandled(f"the {w} wire does not lift off {spell(e)}")
-    out = render(e)
-    if out is None:
-        raise Unhandled(f"the object {spell(e)} needs more wires than the cut has")
-    return out
+    return ws, e
 
 
 # ---------------------------------------------------------------- factors as bead + context
@@ -105,30 +105,28 @@ def peel_arrow(e, cut, rel):
             return ws, e
 
 
-def head(e, rel):
-    """The wires a factor names, read without a cut — `×` for a context whose label only the cut
-    knows.  Used to ask whether a live wire is still wanted further down."""
-    ws = []
-    while True:
-        if e[0] == 'app' and e[1] in rel:
-            ws.append(e[1]); e = e[2]
-        elif e[0] == 'prod' and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
-            ws.append('×'); e = next(x for x in e[1] if x != ('atom', sl.UNIT))
-        elif e[0] == 'prod' and len(e[1]) == 2 and e[1][0] == e[1][1]:
-            ws.append('Δ'); e = e[1][0]
-        else:
-            return ws
-
-
-def fits(label, token):
-    return label == token or (token == '×' and '−' in label)
+def across(e, rel):
+    """`s∘t` split at its one bead: the identity letters LEFT of it are wires it runs under, the
+    ones right of it are kept by its own variable tail — left is outermost, as in the cut."""
+    if e[0] != 'hc':
+        return [], e, []
+    k = [i for i, x in enumerate(e[1]) if not (x[0] == 'atom' and x[1] in rel)]
+    if len(k) != 1:
+        raise Unhandled(f"{spell(e)} composes {len(k)} beads across; one height draws one bead")
+    return e[1][:k[0]], e[1][k[0]], e[1][k[0] + 1:]
 
 
 def expand(e, rel):
-    """`F(RS)=F(R)F(S)` and `𝟙×(RS)=(𝟙×R)(𝟙×S)` run backwards: `norm` merged the beads a picture
-    draws at two heights, and every bead needs its own height back."""
+    """One written factor as the rows it draws.  A context wire runs past EVERY row of what it
+    wraps, which is the `∘` clause on a composite — `F(RS)` and `𝟙×(RS)` are how the display
+    spells `F∘(RS)`, and `norm` merged those beads that each need their own height back."""
     if e[0] == 'comp':
         return [y for x in e[1] for y in expand(x, rel)]
+    if e == ('atom', sl.UNIT):
+        return []                          # bare wires: the identity draws no bead
+    if e[0] == 'hc':
+        pre, core, post = across(e, rel)
+        return [('hc', pre + [x] + post) for x in expand(core, rel)]
     if e[0] == 'app' and e[1] in rel and e[2][0] == 'comp':
         return [y for x in e[2][1] for y in expand(('app', e[1], x), rel)]
     if e[0] == 'prod' and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
@@ -139,77 +137,260 @@ def expand(e, rel):
     return [e]
 
 
-# ---------------------------------------------------------------- the panel
+# ---------------------------------------------------------------- the elaborator
+# A signature's variables are single lower-case letters, renamed apart per factor (`x@3`) so two
+# beads may both say `x`.  A variable stands for a whole TAIL of the cut: wires, and the object
+# under them.  Everything else in a signature is a constant — a wire letter or a named object.
+VARS, TOP = set("stuvwxyz"), -1
+
+
+def isvar(e):
+    return e[0] == 'atom' and '@' in e[1] and e[1].split('@')[0] in VARS
+
+
+def fresh(e, n):
+    return ('atom', f"{e[1]}@{n}") if e[0] == 'atom' and e[1] in VARS \
+        else rec(e, lambda x: fresh(x, n))
+
+
+def loose(e):
+    return isvar(e) or (e[0] in ('comp', 'prod') and any(loose(x) for x in e[1])) \
+        or (e[0] == 'app' and loose(e[2])) or (e[0] == 'conv' and loose(e[1]))
+
+
+def fold(lanes, obj):
+    """The object a cut denotes — every wire applied, outermost first, to what the object wire holds."""
+    for l in reversed(lanes):
+        obj = sl.act(l.label, obj, True)
+    return obj
+
+
+def deref(e, sub):
+    while isvar(e) and e[1] in sub:
+        e = fold(*sub[e[1]])
+    return e
+
+
+def settle(e, sub):
+    return rec(deref(e, sub), lambda x: settle(x, sub))
+
+
+def unify(a, b, sub, why):
+    """Two objects made equal, binding variables on either side."""
+    a, b = deref(a, sub), deref(b, sub)
+    if isvar(a) or isvar(b):
+        sub[a[1] if isvar(a) else b[1]] = ([], b if isvar(a) else a)
+    elif a[0] != b[0] or (a[0] in ('atom', 'app') and a[1] != b[1]) \
+            or (a[0] in ('comp', 'prod') and len(a[1]) != len(b[1])):
+        raise Unhandled(f"{why}: {spell(a)} is not {spell(b)}")
+    elif a[0] in ('comp', 'prod'):
+        for x, y in zip(a[1], b[1]):
+            unify(x, y, sub, why)
+    elif a[0] != 'atom':
+        unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why)
+
+
+def layer(e):
+    """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it."""
+    if e[0] == 'prod' and len(e[1]) == 2:
+        return ('Δ', e[1][0]) if e[1][0] == e[1][1] else \
+            (render(e[1][0]) and render(e[1][0]) + '×−', e[1][1])
+    return (e[1], e[2]) if e[0] == 'app' else (None, None)
+
+
+def matches(pat, lane, sub):
+    """A scheme's wire against a live one: `x×−` takes the `A×−` context and binds `x` to `A`."""
+    ps, ws = pat.split('×'), lane.split('×')
+    if pat == lane:
+        return True
+    if len(ps) != len(ws):
+        return False
+    for p, w in zip(ps, ws):
+        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], parse(w)))[1] == parse(w)):
+            return False
+    return True
+
+
+def eat(pat, lanes, obj, sub, why):
+    """A source scheme against the cut: how many of its wires the bead consumes, its variable taking
+    the rest.  The context the formula names is peeled off before this — it never reaches here."""
+    k = 0
+    while True:
+        if isvar(pat) and pat[1] not in sub:
+            sub[pat[1]] = (lanes[k:], obj)
+            return k
+        if k >= len(lanes):
+            unify(pat, obj, sub, why)
+            return k
+        w, inner = layer(deref(pat, sub))
+        if w is None or not matches(w, lanes[k].label, sub):
+            raise Unhandled(f"{why} wants {spell(settle(pat, sub))} where the cut has the"
+                            f" {lanes[k].label} wire")
+        pat, k = inner, k + 1
+
+
+def grow(pat, sub, why):
+    """A target scheme as a cut: the wires it opens, then the tail its variable still carries.  A
+    target that renders whole folds into the object wire's label, as `peel` folds `list(A)` to `[A]`."""
+    v = pat
+    while not isvar(v):
+        v = layer(v)[1]
+        if v is None:
+            break
+    keep = sub[v[1]][0] if v is not None and v[1] in sub else []
+    ws = []
+    while True:
+        e = settle(pat, sub)
+        if not keep and not loose(e) and render(e) is not None:
+            return ws, [], e
+        if isvar(pat):
+            return ws, keep, sub[pat[1]][1] if pat[1] in sub else pat
+        w, inner = layer(pat)
+        if w is None:
+            return ws, [], e
+        ws.append(w); pat = inner
+
+
+def signature(core, sigs, n):
+    """What a bead's label is an arrow between.  `R°` is `R` read backwards, `R%∋` is `R` with the
+    division's own `E` wire on its target, and a label with no row touches the object wire alone."""
+    if core[0] == 'conv':
+        s, t = signature(core[1], sigs, n)
+        return t, s
+    lab = core[1] if core[0] == 'app' else spell(core)
+    div = lab.endswith('%∋')
+    k = lab[:-2] if div else lab
+    if k and k[0] in sl.OPENERS:               # `⦇S⦈` and `⦇−⦈` are one catamorphism row: a bracket's
+        k = k[0] + (',' if ',' in k else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]   # body is the step
+    s, t = sigs.get(lab) or sigs.get(k) or (('atom', 'x'), ('atom', 'x'))
+    return fresh(s, n), fresh(('app', 'E', t) if div else t, n)
+
+
+def open_out(obj, w, sub, why):
+    """The wire `w` lifted off the object — `[A]` is `list` over `A`, and an object still unknown
+    becomes whatever the factor asks it to be."""
+    e = deref(obj, sub)
+    if isvar(e):
+        inner = ('atom', f"{e[1]}^{w}")
+        sub[e[1]] = ([], sl.act(w, inner, True))
+        return inner
+    a, inner = layer(e)
+    if a != w:
+        raise Unhandled(f"{why} runs under {w}, which does not lift off {spell(e)}")
+    return inner
+
+
 class Lane:
-    def __init__(self, label, x, ytop):
-        self.label, self.x, self.ytop, self.ybot = label, x, ytop, None
+    """One wire, from the factor that makes it to the factor that eats it."""
+    def __init__(self, label, born=None):
+        self.label, self.born, self.dies = label, born, None
+        self.x = None
 
 
-def build(formula, src, tgt, rel):
-    """The panel a formula denotes: lanes, beads and ports, in `dpanel`'s argument order."""
-    stack, otop = peel_obj(norm(parse(src)))
+class Row:
+    def __init__(self, label, arms, legs, reach, obj):
+        self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
+        self.obj = obj                     # what the object wire carries BELOW this row
+
+
+def alphabet(table, *objs):
+    """The wire letters, as data: what the signatures and the panel's own ports name between them.
+    A name is a wire because a signature uses it as one — there is no list of relators to keep."""
+    ws = {l for v in table["sigs"].values()
+          for e in (v["src"], v["tgt"]) for l in letters(norm(parse(e)))}
+    return {w for w in ws.union(*(peel(o)[0] for o in objs)) if '−' not in w and w != '×'}
+
+
+def elaborate(formula, src, tgt, table):
+    """The typed reading of a formula: one row per bead, carrying the wires its signature eats and
+    the wires it makes.  A wire dies where it is CONSUMED — what a formula alone cannot say."""
+    sigs = {k: (norm(parse(v["src"])), norm(parse(v["tgt"]))) for k, v in table["sigs"].items()}
+    stack, obj = peel(norm(parse(src)))
     want = norm(parse(tgt))
-    tail = peel_obj(want)[0]
-    rel = set(rel) | {w for w in stack + tail if '−' not in w}
-    rows = expand(norm(parse(formula)), rel)
+    rel = alphabet(table, norm(parse(src)), want)
+    made = [Lane(w, born=TOP) for w in stack]
+    lanes, sub, rows, atop = list(made), {}, [], obj
+    for i, e in enumerate(expand(norm(parse(formula)), rel)):
+        pre, e, _ = across(e, rel)         # `∘`'s left letters are context; its right ones the tail keeps
+        wrap, core = peel_arrow(e, [l.label for l in lanes[len(pre):]], rel)
+        wrap = [x[1] for x in pre] + wrap
+        why = f"factor {i + 1} ({spell(tidy(core))})"
+        for k, w in enumerate(wrap):
+            if k < len(lanes) and lanes[k].label != w:
+                raise Unhandled(f"{why} runs under {w} where the cut has {lanes[k].label}")
+            if k >= len(lanes):                # a wire the formula names and the cut has not got is
+                obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —
+                made.append(Lane(w, born=i - 1 if rows else TOP))   # or at the top edge if there is
+                lanes.append(made[-1])             # none, where the source itself opens further
+                if rows:
+                    rows[-1].legs.append(made[-1])
+                else:
+                    atop = obj
+        s, t = signature(core, sigs, i)
+        reach = lanes[len(wrap)] if len(wrap) < len(lanes) else None
+        k = eat(s, lanes[len(wrap):], obj, sub, why)
+        arms, (ws, keep, obj) = lanes[len(wrap):len(wrap) + k], grow(t, sub, why)
+        legs = [Lane(w, born=i) for w in ws]
+        for l in arms:
+            l.dies = i
+        # `made` is COLUMN order, not birth order: `η∘M` opens its wire left of the one it keeps.
+        at = made.index(keep[0]) if keep else len(made)
+        made[at:at] = legs
+        lanes = lanes[:len(wrap)] + legs + keep
+        rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
+    k = eat(want, lanes, obj, sub, f"the target {tgt}")
+    if k != len(lanes):
+        raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
+    for l in lanes:
+        l.dies = len(rows)
+    obot, otop = render(settle(obj, sub)), render(settle(atop, sub))
+    if obot is None or otop is None:
+        raise Unhandled(f"the object wire carries {spell(settle(obj, sub))}, which has no label")
+    for r in rows:                         # the seam labels: what a formula alone cannot say either
+        r.obj = render(settle(r.obj, sub))
+    return rows, made, otop, obot
+
+
+# ---------------------------------------------------------------- the panel a term denotes
+def layout(rows, made, otop, obot, cert):
+    """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
+    height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
-    h, ys = (n + 1) * DY, [(n + 1 - i) * DY for i in range(1, n + 1)]
+    ys = [(n - i) * DY for i in range(n)]
+    for k, l in enumerate(made):
+        l.x = round(X0 + k * DX, 2)
+    xo = round(X0 + len(made) * DX, 2)
+    beads, unit = [], {}
+    for i, r in enumerate(rows):
+        if not r.arms and r.legs:          # a bead that eats no wire has none to sit on, so
+            if len(r.legs) != 1:           # `dpanel` heads the lane it opens with it instead
+                raise Unhandled(f"the unit {r.label} opens {len(r.legs)} wires; a lane heads one")
+            unit[r.legs[0]] = r.label
+            ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
+            continue
+        # the bar says how far left the bead reaches where no wire of its own says it
+        bar = r.reach.x if r.reach is not None and r.reach not in r.arms else None
+        beads.append([ys[i], r.label] if bar is None else [ys[i], r.label, "#000000", bar])
+    return {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY, "w": xo + PAD,
+            "xo": xo,
+            "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
+                       "bot" if l.dies == n else ys[l.dies],
+                       None if l.born == TOP or l.dies == n else l.label,
+                       unit.get(l)] for l in made],
+            "beads": beads,
+            # the object wire's type at every seam.  `dpanel` takes no such argument, so `emit`
+            # drops it: a panel pasted into the note is read back by the sweep's own guess.
+            "obj": [[ys[i], r.obj] for i, r in enumerate(rows) if r.obj is not None],
+            "top": [[l.x, l.label] for l in made if l.born == TOP] + [[xo, otop]],
+            "bot": [[l.x, l.label] for l in made if l.dies == n] + [[xo, obot]],
+            "cert": cert}
 
-    lanes, slot = [], [0]
 
-    def open_lane(label, ytop):
-        lane = Lane(label, round(X0 + slot[0] * DX, 2), ytop)
-        slot[0] += 1; lanes.append(lane); return lane
-
-    cut, beads = [open_lane(w, "top") for w in stack], []
-    for i, e in enumerate(rows):
-        y = ys[i]
-        ws, core = peel_arrow(e, [l.label for l in cut], rel)
-        if [l.label for l in cut[:len(ws)]] != ws:
-            raise Unhandled(f"factor {i + 1} runs under ({', '.join(ws)}) where the cut is"
-                            f" ({', '.join(l.label for l in cut)})")
-        reach = cut[len(ws):]
-        req = head(rows[i + 1], rel) if i + 1 < n else tail
-        keep, j, k, made = list(cut[:len(ws)]), 0, len(ws), False
-        while k < len(req):                    # what must be live below, matched against the reach
-            hit = next((t for t in range(j, len(reach)) if fits(reach[t].label, req[k])), None)
-            if hit is None or made:
-                if req[k] == '×':
-                    raise Unhandled(f"factor {i + 2} runs under a context wire the cut has not got")
-                keep.append(open_lane(req[k], y)); made = True
-                for l in reach[j:]:
-                    l.ybot = y
-                j = len(reach)
-            else:
-                for l in reach[j:hit]:
-                    l.ybot = y
-                keep.append(reach[hit]); j = hit + 1
-            k += 1
-        later = [w for r in rows[i + 1:] for w in head(r, rel)] + tail
-        for l in reach[j:]:                    # a wire nothing names again dies where it is reached
-            if any(fits(l.label, w) for w in later):
-                keep.append(l)
-            else:
-                l.ybot = y
-        cut = keep
-        # `lo` — the leftmost point the bead reaches — must land on the first wire of the reach, so
-        # a reach whose head neither dies nor is born here needs the bar that says so.
-        touch = [l.x for l in lanes if l.ytop == y or l.ybot == y]
-        barx = reach[0].x if reach and reach[0].x not in touch else None
-        beads.append((y, spell(tidy(core)), barx))
-    for l in cut:
-        l.ybot = "bot"
-    obot = strip(want, [l.label for l in cut])
-    xo = round(X0 + len(lanes) * DX, 2)
-    top = [(l.x, l.label) for l in lanes if l.ytop == "top"] + [(xo, otop)]
-    bot = [(l.x, l.label) for l in lanes if l.ybot == "bot"] + [(xo, obot)]
-    return {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": h, "w": xo + PAD, "xo": xo,
-            "lanes": [[l.x, l.ytop, l.ybot,
-                       None if l.ytop == "top" or l.ybot == "bot" else l.label, None]
-                      for l in lanes],
-            "beads": [[y, lab] if bx is None else [y, lab, "#000000", bx] for (y, lab, bx) in beads],
-            "top": [list(p) for p in top], "bot": [list(p) for p in bot],
-            "cert": {"expect": formula, "src": src, "tgt": tgt}}
+def draw(formula, src, tgt, table=None):
+    """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
+    one of the pictures the book calls equal."""
+    rows, made, otop, obot = elaborate(formula, src, tgt, table or sigs())
+    return layout(rows, made, otop, obot, {"expect": formula, "src": src, "tgt": tgt})
 
 
 # ---------------------------------------------------------------- the typst call
@@ -258,7 +439,7 @@ def endpoints(p):
             c.get("tgt") or spell(sl.fold_cut(p, sl.ports(p, False))))
 
 
-def roundtrip(path, frm, show, out):
+def roundtrip(path, frm, show, out, tbl):
     recs = sl.panels(path, frm)
     ok, printer, law, fail, gen = 0, 0, 0, [], []
     for r in recs:
@@ -267,7 +448,7 @@ def roundtrip(path, frm, show, out):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = build(want, src, tgt, RELATORS)
+            g = draw(want, src, tgt, tbl)
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -295,14 +476,14 @@ def roundtrip(path, frm, show, out):
         sys.exit(f"diagram: {len(fail)} panel{'s' * (len(fail) > 1)} did not come back")
 
 
-def compare(path, frm):
+def compare(path, frm, tbl):
     """The generated call beside the note's own — every difference is a drawing convention."""
     for r in sl.panels(path, frm):
         if not (r.get("cert") or {}).get("expect"):
             continue
         src, tgt = endpoints(sl.Panel(r))
         try:
-            g = build(r["cert"]["expect"], src, tgt, RELATORS)
+            g = draw(r["cert"]["expect"], src, tgt, tbl)
         except (Unhandled, ValueError, StopIteration) as ex:
             print(f"{r['id']:<12} {ex}"); continue
         print(f"=== {r['id']}  {r['cert']['expect']}   [{src} ⟶ {tgt}]")
@@ -323,10 +504,13 @@ def main(argv):
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
+    tbl = sigs()
     if "--roundtrip" in argv or "--compare" in argv:
         path = path or "diag/allegory-axioms.typ"
-        (compare if "--compare" in argv else roundtrip)(
-            *((path, frm) if "--compare" in argv else (path, frm, "--show" in argv, out)))
+        if "--compare" in argv:
+            compare(path, frm, tbl)
+        else:
+            roundtrip(path, frm, "--show" in argv, out, tbl)
         return
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
@@ -334,7 +518,7 @@ def main(argv):
                  + '\nusage: diagram --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]')
-    r = build(formula, src, tgt, RELATORS)
+    r = draw(formula, src, tgt, tbl)
     got, bad = swept(r)
     print(emit(r))
     if bad:

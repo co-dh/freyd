@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan scan-strict cover diagram
+.PHONY: p w cite scan scan-strict cover diagram books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -42,6 +42,14 @@ cite: $(DB)
 cover: $(DB)
 	./scripts/cite-cover $(TYP)
 
+# The reference PDFs as text: `./scripts/book find 3.1a IntroString`, `book grep`, `book page`.
+# NO prerequisites and no `book-index.db` target: the PDFs are downloads, not build products, so
+# mtimes say nothing about them; `ingest` hashes each file and re-reads only what changed (~1 s).
+# `embed` is likewise incremental — it vectorises only paragraphs `vec_para` has no row for.
+books:
+	./scripts/book ingest
+	./scripts/book embed
+
 # The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
 # `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after
 # editing a panel's argument lists — that is when the picture can stop saying what the row says.
@@ -60,6 +68,20 @@ scan-strict:
 # `--compare` puts each beside the note's own, and `--src`/`--tgt` draw one formula by hand.
 diagram:
 	./scripts/diagram --roundtrip diag/allegory-axioms.typ
+
+# `diagram` run against the BOOK: each fixture in `diag/pairs/` is one of IntroString's own
+# formula/picture pairs, and the panel our generator draws for the formula must have the book's port
+# graph — boundary order, and every bead's arms and legs.  `--verify-fixtures` is NOT in the target:
+# it shells out to pdftocairo to count the page's strokes and dots against the fixture, which is the
+# check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
+hm-check:
+	./scripts/hm-check
+	./scripts/hm-check --laws
+
+# The bead signatures `scripts/diagram` draws from, against the Lean declarations they were read
+# off.  A SEPARATE target for the same reason `--verify-fixtures` is one: it needs the index.
+hm-sigs: $(DB)
+	./scripts/hm-check --verify-sigs
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file

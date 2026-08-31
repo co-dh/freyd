@@ -77,6 +77,41 @@ public theorem est_apply {a : RelSet.{0}} (R : a ⟶ a)
     (P : (PowerAllegory.powerObj a).carrier) (w : a.carrier) :
     (est R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
 
+/-- Pointwise form of `Λ T ≫ est R` ((7.5) unbundled): `w` is an `est R`-choice over the
+    `T`-image of `x` iff `T x w` and `w` `R`-dominates every `T`-image `z` of `x`. -/
+public theorem Λ_comp_est_apply {b a : RelSet.{0}} (T : b ⟶ a) (R : a ⟶ a) (x : b.carrier)
+    (w : a.carrier) : (Λ T ≫ est R) x w ↔ T x w ∧ ∀ z, T x z → R w z := by
+  rw [Λ_eq_classifier]
+  constructor
+  · rintro ⟨P, hP, hest⟩
+    have hPeq : P = fun v => T x v := hP
+    subst hPeq
+    exact (est_apply R _ w).mp hest
+  · rintro ⟨hT, hall⟩
+    exact ⟨fun v => T x v, rfl, (est_apply R _ w).mpr ⟨hT, hall⟩⟩
+
+/-- Pointwise form of `E R` in Rel(Set): the `E R`-image of a set `P` is the set of all
+    `R`-images of its members. -/
+public theorem existsImage_apply {a b : RelSet.{0}} (R : a ⟶ b) (P : (pow a).carrier)
+    (Q : (pow b).carrier) : existsImage R P Q ↔ Q = fun w => ∃ s, P s ∧ R s w := by
+  show Λ (epsRel a ≫ R) P Q ↔ _
+  rw [Λ_eq_classifier]
+  exact Iff.rfl
+
+/-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
+    of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/
+public theorem existsImage_comp_est_apply {a b : RelSet.{0}} (T : a ⟶ b) (R : b ⟶ b)
+    (P : (pow a).carrier) (w : b.carrier) :
+    (existsImage T ≫ est R) P w
+      ↔ (∃ s, P s ∧ T s w) ∧ ∀ z, (∃ s, P s ∧ T s z) → R w z := by
+  constructor
+  · rintro ⟨Q, hQ, hest⟩
+    have hQeq : Q = fun v => ∃ s, P s ∧ T s v := (existsImage_apply T P Q).mp hQ
+    subst hQeq
+    exact (est_apply R _ w).mp hest
+  · intro h
+    exact ⟨_, (existsImage_apply T P _).mpr rfl, (est_apply R _ w).mpr h⟩
+
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ est D`
 
   This is the bridge that lets an optimization case study state its headline as the actual

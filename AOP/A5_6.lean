@@ -27,7 +27,7 @@ namespace Freyd.Alg
     `AOP.A5_2`) whose power-object membership is additionally UNGUARDED (gives `Λ`/`∋`
     unconditionally, `AOP.A4_6`'s calculus).  Diamond-safe by the same structure-inheritance
     merge as `Freyd.S2_41b.TabularUnitaryPowerAllegory`. -/
-class TabularUnitaryUnguardedDivisionPowerAllegory (𝒜 : Type u) extends
+public class TabularUnitaryUnguardedDivisionPowerAllegory (𝒜 : Type u) extends
     TabularUnitaryDivisionAllegory 𝒜, UnguardedPowerAllegory 𝒜
 
 section
@@ -50,12 +50,12 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
   second set".  `Λ_union` shows this recovers `Λ(R∪S)` when fed the pair of transposes. -/
 
 /-- **Ex 5.20** (B&dM p.124): `cup P = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
-noncomputable def cup {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
+@[expose] public noncomputable def cup {a : 𝒜} (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     P.p ⟶ PowerAllegory.powerObj a :=
   Λ ((P.outl ≫ ∋ a) ∪ (P.outr ≫ ∋ a))
 
 /-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∪S) = pair(Λ R)(Λ S) ≫ cup P`. -/
-theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
+public theorem Λ_union {a c : 𝒜} (R S : c ⟶ a)
     (P : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)) :
     Λ (R ∪ S) = P.pair (Λ R) (Λ S) ≫ cup P := by
   have hpair : Map (P.pair (Λ R) (Λ S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)

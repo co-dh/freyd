@@ -155,7 +155,7 @@ public theorem inter_comp_topMor_eq_dom_comp {a b c : 𝒜} (R : c ⟶ a) (S : c
 
 /-! ## Monotonicity -/
 
-theorem RelProd.pair_mono {P : RelProd a b} {R R' : c ⟶ a} {S S' : c ⟶ b}
+public theorem RelProd.pair_mono {P : RelProd a b} {R R' : c ⟶ a} {S S' : c ⟶ b}
     (hR : R ⊑ R') (hS : S ⊑ S') : P.pair R S ⊑ P.pair R' S' :=
   le_inter (le_trans (inter_lb_left _ _) (comp_mono_right hR _))
     (le_trans (inter_lb_right _ _) (comp_mono_right hS _))

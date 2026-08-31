@@ -21,7 +21,8 @@ EPS = 1e-6
 UNIT = "𝟙"
 
 # ---------------------------------------------------------------- expressions
-# ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('conv', e) | ('app', name, e)
+# ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('hc', [e…]) | ('conv', e) | ('app', name, e)
+# `hc` is the ACROSS composite `s∘t`, leftmost outermost: a factor beside the wires that pass it.
 OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
 BREAK = OPENERS + CLOSERS + "×° \t"
 
@@ -48,7 +49,11 @@ def split_top(s, sep):
 
 
 def parse(s):
-    """Juxtaposition, `×`, postfix `°`, `N(e)`; anything bracketed rides through as one atom."""
+    """Juxtaposition, `×`, `∘`, postfix `°`, `N(e)`; anything bracketed rides through as one atom.
+    `∘` binds loosest — `η∘M μ` is `η` beside the `M` wire, then `μ` — so the note brackets it."""
+    hs = split_top(s, '∘')
+    if len(hs) > 1:
+        return ('hc', [parse(h) for h in hs])
     xs, i = [], 0
     while i < len(s):
         if s[i] in " \t":
@@ -106,8 +111,10 @@ def spell(e):
     if k == 'conv':
         return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod') else spell(e[1])) + '°'
     if k == 'prod':
-        return '×'.join(f"({spell(x)})" if x[0] == 'comp' else spell(x) for x in e[1])
-    ps = [f"({spell(x)})" if x[0] == 'prod' else spell(x) for x in e[1]]
+        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc') else spell(x) for x in e[1])
+    if k == 'hc':
+        return '∘'.join(f"({spell(x)})" if x[0] in ('comp', 'prod') else spell(x) for x in e[1])
+    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc') else spell(x) for x in e[1]]
     out = ps[0]
     for p in ps[1:]:
         out += ('' if out[-1] in CLOSERS or p[0] in OPENERS else ' ') + p
@@ -123,7 +130,7 @@ def tidy(e):
 
 
 def rec(e, f):
-    if e[0] in ('comp', 'prod'):
+    if e[0] in ('comp', 'prod', 'hc'):
         return (e[0], [f(x) for x in e[1]])
     return ('conv', f(e[1])) if e[0] == 'conv' else ('app', e[1], f(e[2])) if e[0] == 'app' else e
 
@@ -148,7 +155,7 @@ def norm(e):
     if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']') \
             and ',' not in e[1] and '∪' not in e[1]:
         return ('app', 'list', norm(parse(e[1][1:-1])))
-    if e[0] in ('comp', 'prod'):
+    if e[0] in ('comp', 'prod', 'hc'):
         xs = [y for x in e[1] for y in (x[1] if x[0] == e[0] else [x])]
         if e[0] == 'comp':
             xs = [x for x in xs if x != ('atom', UNIT)] or [('atom', UNIT)]
@@ -278,19 +285,24 @@ class Panel:
         self.wires, self.beads, self.splits, self.strands = [], [], [], []
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
-        # down the panel (`⦇R⦈ : T⟶A`); nothing reads it as a functor, so the switch height only
-        # affects printing and is taken at the lowest bead on it.
+        # down the panel (`⦇R⦈ : T⟶A`), and a panel that was TYPED says where in `obj`.
         self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
         self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel,
                                pts=[(self.xo, self.h), (self.xo, 0.0)]))
+        # A hand-drawn panel says nothing, so the switch is GUESSED at the lowest bead on the wire.
         # A widening NAMES the object over its range, so where it opens the bottom port's name the
         # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
         sw = [s[0] for s in self.splits if s[3] == self.oblabel]
         os = [b.y for b in self.beads if abs(b.x - self.xo) < EPS]
-        self.oswitch = max(sw) if sw else (min(os) if os else 0.0)
+        self.oseam = sorted((y, l) for (y, l) in r.get('obj') or
+                            [(max(sw) if sw else (min(os) if os else 0.0), self.oblabel)])
 
     def at(self, ports, x):
         return next((l for (px, l) in ports if abs(px - x) < EPS), None)
+
+    def olab(self, z):
+        """What the object wire carries at a height: the lowest seam still above it."""
+        return next((l for (y, l) in self.oseam if z < y - EPS), self.olabel)
 
 
 def a_dpanel(p, r):
@@ -372,7 +384,7 @@ ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'mpan': a_mpan, 'tw-hm': a_twhm}
 def live(p, z):
     """The cut at a height NO event stands at: the live wires in `x` order, object wire rightmost.
     A split reads the object wire as `outer` beside `inner` between its two heights."""
-    ws = [(w.x, w.label if w.x != p.xo or z > p.oswitch else p.oblabel)
+    ws = [(w.x, p.olab(z) if w.x == p.xo else w.label)
           for w in p.wires if w.ybot < z < w.ytop]
     for (y0, y1, x, of, outer, inner) in p.splits:
         if not y1 < z < y0:
@@ -466,7 +478,9 @@ def sweep(p):
                      "below": [l for _, l in below]})
         expr.append(e)
     p.levels, p.cuts = ys, cuts
-    p.factors, p.expr = facs, ('comp', expr) if len(expr) != 1 else expr[0]
+    # A panel with no bead at all is bare wires, and bare wires denote the identity.
+    p.factors, p.expr = facs, expr[0] if len(expr) == 1 else \
+        ('atom', UNIT) if not expr else ('comp', expr)
     return bad
 
 
