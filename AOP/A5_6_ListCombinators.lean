@@ -575,6 +575,24 @@ public theorem list_graph {B : Type} (f : A → B) :
   show listP (graph f) x y ↔ y = cmap f x
   exact listP_graph f x y
 
+/-! ### `total f = sum·list f`, the shape every case study's cost has -/
+
+/-- B&dM's `sum·list f` — the total of a list under a weighting `f` (`value = total vol` and
+    `weight = total wt` in §8.4).  `total f (cons a x) = f a + total f x` holds by `rfl`. -/
+@[expose] public def total (f : A → Int) (x : ConsList Unit A) : Int := csum (cmap f x)
+
+/-- `total f = list(f) sum`, point-free. -/
+public theorem total_eq (f : A → Int) :
+    (graph (total f) : dList A ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph f) ≫ sumR := by
+  apply hom_ext; intro x n
+  constructor
+  · intro h
+    exact ⟨cmap f x, (listP_graph f x _).mpr rfl, (h : n = total f x)⟩
+  · rintro ⟨ns, hns, hsum⟩
+    show n = total f x
+    rw [(show n = csum ns from hsum), (listP_graph f x ns).mp hns]
+    rfl
+
 /-! ### The catamorphism and `cat°` forms of the note's `comb-fns` rows -/
 
 /-- **`subseq = ⦇[nil, cons ∪ π₂]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; at each

@@ -103,7 +103,7 @@ public theorem Λ_absorption {a b c : 𝒜} (S : c ⟶ a) (R : a ⟶ b) :
   exact Λ_unique _ _ hmap heq
 
 /-- `E` preserves identities: `E 1_a = 1_{[a]}`. -/
-theorem existsImage_id {a : 𝒜} : existsImage (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
+public theorem existsImage_id {a : 𝒜} : existsImage (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
   show Λ (∋ a ≫ Cat.id a) = Cat.id (PowerAllegory.powerObj a)
   rw [Cat.comp_id, Λ_eps_reflection]
 
