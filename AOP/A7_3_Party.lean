@@ -114,9 +114,6 @@ public theorem cost_eq :
     show n = costFn rating x
     rw [(show n = csum ns from hsum), (listP_graph rating x ns).mp hns, hcm]
 
-/-- The order `≤` on `Int` as a relation. -/
-@[expose] public def leq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun m n => m ≤ n
-
 /-- **party-defn**: `R ≜ cost ≤ cost°` — guest lists by total rating (`x R y` iff
     `cost x ≤ cost y`; `R_eq` is the point-free form). -/
 @[expose] public def R : dList A ⟶ dList A := fun x y => costFn rating x ≤ costFn rating y

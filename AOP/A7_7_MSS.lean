@@ -55,15 +55,6 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
 /-! ## The note's `mss-defn` -/
 
-/-- The note's `≥` on `Int`, the order `est` maximises over. -/
-@[expose] public def geq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => b ≤ a
-
-/-- `≥` is transitive — the greedy theorem's preorder hypothesis. -/
-public theorem geq_trans : geq ≫ geq ⊑ geq :=
-  le_iff.mpr fun x z h => by
-    obtain ⟨y, h1, h2⟩ := h
-    exact Int.le_trans h2 h1
-
 /-- `⊸ zero ∪ plus : Int×Int ⟶ Int` — start again at `zero`, or add the head to the running
     total. -/
 @[expose] public def zeroPlus : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=

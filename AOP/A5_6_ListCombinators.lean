@@ -306,6 +306,23 @@ public theorem suffixP_iff_append :
 /-- The sum as a morphism `sum : list Int ⟶ Int`. -/
 @[expose] public def sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0}) := graph csum
 
+/-! ## The two orders on `Int` the optimisation case studies compare costs by -/
+
+/-- `≤` on `Int` as a relation — the order every `cost ≤ cost°` is built from. -/
+@[expose] public def leq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun m n => m ≤ n
+
+/-- `≥` on `Int` as a relation, the order `est` maximises over.  Spelled out rather than as
+    `leq°`, per the book-notation rule that a converse with a name of its own gets the name. -/
+@[expose] public def geq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => b ≤ a
+
+/-- `≤` is transitive. -/
+public theorem leq_trans : leq ≫ leq ⊑ leq :=
+  le_iff.mpr fun _ _ h => by obtain ⟨_, h1, h2⟩ := h; exact Int.le_trans h1 h2
+
+/-- `≥` is transitive — the greedy theorem's preorder hypothesis. -/
+public theorem geq_trans : geq ≫ geq ⊑ geq :=
+  le_iff.mpr fun _ _ h => by obtain ⟨_, h1, h2⟩ := h; exact Int.le_trans h2 h1
+
 /-! ## The point-free definitions (B&dM §5.6, the note's `comb-fns` table)
 
   B&dM define the combinators point-free; each theorem below proves such a definition equal to
