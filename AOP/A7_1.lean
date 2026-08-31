@@ -212,7 +212,7 @@ theorem comp_lb_of_preorder {R : a ⟶ a} (htrans : R ≫ R ⊑ R) (hrefl : Cat.
     rwa [Cat.comp_id] at h
 
 /-- **Ex 7.10** (easy half): `est` is monotone, mirrored `R ⊑ S → est R ⊑ est S`. -/
-theorem est_mono {R S : a ⟶ a} (h : R ⊑ S) : est R ⊑ est S := by
+public theorem est_mono {R S : a ⟶ a} (h : R ⊑ S) : est R ⊑ est S := by
   show (∋ a ∩ (((∋ a)°) \ R°) : PowerAllegory.powerObj a ⟶ a) ⊑ ∋ a ∩ (((∋ a)°) \ S°)
   exact inter_mono (le_refl _) (leftDiv_mono_right _ (recip_mono h))
 
