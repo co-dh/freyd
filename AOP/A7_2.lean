@@ -82,12 +82,12 @@ section Distributes
 variable {R : a ⟶ a} {f : F.obj a ⟶ a}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R°`: `f·F(min R°) ⊆ min R°·Λ(f·F∈)`, mirrored. -/
-def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
+@[expose] public def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
   F.map (est R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ est R
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
     distributes over `min R°`. -/
-theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
+public theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
     (hmono : MonotonicAlg f R°) : Distributes f R := by
   unfold Distributes
   apply le_Λ_comp_est_iff.mpr

@@ -383,7 +383,7 @@ public theorem powerRel_comp_est_le (S : b ⟶ a) (R : a ⟶ a) :
     `inter_lb_left` and `powerRel_eps_lax` at `est R`.  Component (ii):
     `(∋[a]·∋a)°·(powerRel(est R)·est R) ⊑ R°` chains `powerRel_term1_cancel (est R)` with
     the `hb` bound twice and `htrans` transposed. -/
-theorem powerRel_est_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
+public theorem powerRel_est_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
     powerRel (est R) ≫ est R ⊑ bigUnion ≫ est R := by
   show powerRel (est R) ≫ est R
       ⊑ Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ est R
