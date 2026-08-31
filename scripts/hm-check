@@ -7,8 +7,8 @@
 
 IntroString prints most of its equations next to the string diagram they denote.  A fixture in
 `diag/pairs/` records ONE such picture as the book draws it — boundary wires, beads with their arms
-and legs, the grey `𝟏` strip — together with the printed formula and the diagram-order form our
-generator takes.  This runs `scripts/diagram` on that formula, sweeps the panel with
+and legs, the grey `𝟏` strip — together with the printed formula, the diagram-order form our
+generator takes, and the signatures of the letters that form uses.  This runs `scripts/diagram` on that formula, sweeps the panel with
 `scripts/scanline`'s own model, and compares the two as PORT GRAPHS: the boundary lists, and each
 bead's arms and legs as wire identities.  What the graph forgets is what the book itself agrees to
 forget (pp. 21–22): bead heights, stretching, bending.  What it keeps is every mistake worth
@@ -28,7 +28,6 @@ usage: hm-check [label…]            every fixture, or the ones whose file name
        hm-check --show              print both canonical port graphs beside each other
        hm-check --verify-fixtures   count the page's own svg against each fixture's `counts`
        hm-check --verify-sigs       hold `diag/hm-sigs.json` against the declaration index
-       hm-check --compare-builds    the note's certified panels drawn both ways, as port graphs
 """
 import importlib.machinery, importlib.util, json, os, re, sqlite3, subprocess, sys
 
@@ -52,15 +51,15 @@ EPS = sl.EPS
 # ---------------------------------------------------------------- the mirror audit
 # The one translation step every past bug hid in: the book composes with `⋅`, right to left, and we
 # juxtapose left to right.  Only that axis flips — application (`F h`) is applicative on both sides.
-def mirror(applicative):
+def mirror(applicative, ws):
     return " = ".join(
-        " ".join(apply(f.strip()) for f in reversed(sl.split_top(side, "⋅")) if f.strip())
+        " ".join(apply(f.strip(), ws) for f in reversed(sl.split_top(side, "⋅")) if f.strip())
         for side in applicative.split("="))
 
 
-def apply(factor):
+def apply(factor, ws):
     ts = factor.split()
-    return f"{ts[0]}({' '.join(ts[1:])})" if len(ts) > 1 and ts[0] in dg.RELATORS else factor
+    return f"{ts[0]}({' '.join(ts[1:])})" if len(ts) > 1 and ts[0] in ws else factor
 
 
 def words(s):
@@ -257,37 +256,6 @@ def verify(fx, path):
     return bad
 
 
-# ---------------------------------------------------------------- the two builds, side by side
-def compare_builds(path):
-    """Every panel the note certifies, drawn both ways and canonicalised.  A difference is a wire
-    that used to die at the first bead reaching past it and now dies at the bead whose signature
-    eats it — the point of the table, so this REPORTS, it does not fail."""
-    tbl = dg.sigs()
-    graphs, n = [], 0
-    for r in sl.panels(path, None):
-        c = r.get("cert") or {}
-        if not c.get("expect"):
-            continue
-        n += 1
-        src, tgt = dg.endpoints(sl.Panel(r))
-        both = []
-        for how, mk in (("functor", lambda: dg.draw(c["expect"], src, tgt, tbl)),
-                        ("old", lambda: dg.build(c["expect"], src, tgt, dg.RELATORS))):
-            try:
-                both.append(canon(ours(mk()), f"{how} {r['id']}"))
-            except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
-                print(f"{r['id']:<12} the {how} build: {type(ex).__name__}: {ex}")
-                both.append(None)
-        if None in both:
-            continue
-        new, old = both
-        bad = diff(new, old, 0)
-        graphs.append(bad is None)
-        print(f"{r['id']:<12} {'same port graph' if bad is None else bad}")
-    print("hm-check: `ours` is the functor's graph, `book` the old build's;"
-          f" {sum(graphs)} of {n} certified panels agree")
-
-
 # ---------------------------------------------------------------- the signature table
 def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
@@ -342,7 +310,8 @@ def check(fx, tbl, seen=False):
     odd = [n for n in fx.get("norm", []) if n not in NORMS]
     if odd:
         return f"FAIL  {lab}   undeclared normalization {odd[0]!r}", warn
-    got = mirror(fx["book_formula"])
+    ws = dg.alphabet(tbl, sl.norm(sl.parse(fx["src"])), sl.norm(sl.parse(fx["tgt"])))
+    got = mirror(fx["book_formula"], ws)
     if words(got) != words(fx["mirrored"]):
         return f"FAIL  {lab}   mirrored is '{fx['mirrored']}', but '{fx['book_formula']}'" \
                f" mirrors to '{got}'", warn
@@ -372,9 +341,6 @@ def main(argv):
              and (not only or any(o in f for o in only))]
     if "--verify-sigs" in argv:
         sys.exit(verify_sigs())
-    if "--compare-builds" in argv:
-        return compare_builds(next((a for a in only if a.endswith(".typ")),
-                                   os.path.join(ROOT, "diag", "allegory-axioms.typ")))
     if "--verify-fixtures" in argv:
         bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
         print(*bad, sep="\n", file=sys.stderr)
