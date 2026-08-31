@@ -198,6 +198,12 @@ example : twCL (fun n => decide (n < 1)) (ofList [1, 2]) = [] := by decide
 @[expose] public def lenLE : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
   fun xs ys => xs.length ≤ ys.length
 
+/-- `R°` is transitive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
+public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
+  le_iff.mpr fun xs zs h => by
+    obtain ⟨ys, h1, h2⟩ := h
+    exact Nat.le_trans h2 h1
+
 /-- `prefix`'s algebra `[nil, ⊸ nil ∪ cons]`, on the carrier `[A]` itself. -/
 @[expose] public def prefAlg : Fobj Unit E (dCL Unit E) ⟶ dCL Unit E :=
   junc (sumCop (dL Unit) ⟨E × ConsList Unit E⟩) wrapR
@@ -251,7 +257,7 @@ theorem junc_inr {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (y : b.carrier
   · intro h
     exact Or.inr ⟨y, rfl, h⟩
 
-theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
+public theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
     pcons p (x, c) ws ↔ p x = true ∧ ws = x :: c := by
   constructor
   · rintro ⟨q, ⟨⟨hx, hp⟩, hc⟩, hw⟩
@@ -272,11 +278,11 @@ theorem prefAlg_inr (x : E) (r ys : ConsList Unit E) :
     prefAlg (Sum.inr (x, r)) ys ↔ ys = ConsList.wrap () ∨ ys = ConsList.cons x r := by
   unfold prefAlg; exact junc_inr _ _ _ _
 
-theorem listPAlg_inl (p : E → Bool) (d : Unit) (ws : List E) :
+public theorem listPAlg_inl (p : E → Bool) (d : Unit) (ws : List E) :
     listPAlg p (Sum.inl d) ws ↔ ws = [] := by
   unfold listPAlg; exact junc_inl _ _ _ _
 
-theorem listPAlg_inr (p : E → Bool) (x : E) (c ws : List E) :
+public theorem listPAlg_inr (p : E → Bool) (x : E) (c ws : List E) :
     listPAlg p (Sum.inr (x, c)) ws ↔ p x = true ∧ ws = x :: c := by
   unfold listPAlg; exact (junc_inr _ _ _ _).trans (pcons_apply p x c ws)
 
@@ -462,13 +468,8 @@ public theorem takewhile_mono (p : E → Bool) :
     refines every `p`-prefix collected and one chosen at the end. -/
 public theorem takewhile_greedy (p : E → Bool) :
     cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
-  have htrans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° := by
-    apply le_iff.mpr
-    intro xs zs h
-    obtain ⟨ys, h1, h2⟩ := h
-    exact Nat.le_trans h2 h1
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit E) (initial Unit E) htrans (takewhile_mono p)
+  exact greedy (F_preservesRecip Unit E) (initial Unit E) lenLE_recip_trans (takewhile_mono p)
 
 theorem twStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : twStep p x c = x :: c := by
   unfold twStep; rw [h]

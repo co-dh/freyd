@@ -113,19 +113,19 @@ theorem prefix_transitive : (prefixR : dList A ⟶ dList A) ≫ prefixR ⊑ pref
 
 /-- The subsequence relation `subseq : list A ⟶ list A`, mirrored to diagram order:
     `subseq x ys` iff `ys` is `x` with some elements dropped. -/
-public def subseq : dList A ⟶ dList A := fun x ys => subseqP ys x
+@[expose] public def subseq : dList A ⟶ dList A := fun x ys => subseqP ys x
 
 theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => Or.inl ⟨rfl, subseqP.refl x⟩
 
 /-- `nil` is a subsequence of every list. -/
-theorem subseqP.nil : ∀ x : ConsList Unit A, subseqP (ConsList.wrap ()) x
+public theorem subseqP.nil : ∀ x : ConsList Unit A, subseqP (ConsList.wrap ()) x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ _ => trivial
 
 /-- Extending the larger list on the front preserves subsequence: `subseq x y → subseq x (b::y)`. -/
-theorem subseqP.weaken {b : A} : ∀ {x y : ConsList Unit A}, subseqP x y → subseqP x (ConsList.cons b y)
+public theorem subseqP.weaken {b : A} : ∀ {x y : ConsList Unit A}, subseqP x y → subseqP x (ConsList.cons b y)
   | ConsList.wrap _, _, _ => trivial
   | ConsList.cons _ _, _, h => Or.inr h
 
@@ -261,7 +261,7 @@ public def segment : dList A ⟶ dList A := fun x ys => ∃ u v, cappend u (capp
   and the algebra bracket `[g,h]` is `junc` over the concrete coproduct `F c = Unit + (E × c)`. -/
 
 /-- `[g,h]` on the left summand: `[g,h] (inl x) = g x`. -/
-theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.carrier) (r : c.carrier) :
+public theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.carrier) (r : c.carrier) :
     junc (sumCop a b) g h (Sum.inl x) r ↔ g x r := by
   show (∃ x', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
       ∨ (∃ y', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ g x r
@@ -273,7 +273,7 @@ theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.car
   · exact fun hg => Or.inl ⟨x, rfl, hg⟩
 
 /-- `[g,h]` on the right summand: `[g,h] (inr p) = h p`. -/
-theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p : b.carrier) (r : c.carrier) :
+public theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p : b.carrier) (r : c.carrier) :
     junc (sumCop a b) g h (Sum.inr p) r ↔ h p r := by
   show (∃ x', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
       ∨ (∃ y', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ h p r
@@ -363,7 +363,7 @@ theorem cata_square_iff {L E : Type} {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) (X
 
 /-- `cata_square_iff` for a `[g,h]` (`junc`) algebra, the coproduct already evaluated: the two
     components mention `g` and `h` directly. -/
-theorem cata_square_junc_iff {L E : Type} {c : RelSet.{0}} (g : dL L ⟶ c)
+public theorem cata_square_junc_iff {L E : Type} {c : RelSet.{0}} (g : dL L ⟶ c)
     (h : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c) (X : dCL L E ⟶ c) :
     (graph con ≫ X = (F L E).map X ≫ junc (sumCop (dL L) ⟨E × c.carrier⟩) g h)
       ↔ ((∀ d r, X (ConsList.wrap d) r ↔ g d r)
