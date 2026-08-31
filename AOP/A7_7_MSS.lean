@@ -16,12 +16,20 @@
   - `mss_greedy`:     `⦇Λ(S) est(≥)⦈ ⊑ Λ(⦇S⦈) est(≥)`           (Theorem 7.2)
   - `mss_step`:       `Λ(S) est(≥) = [zero, ⊕]`                 (note `mss-step`)
   - `mssPre_eq_cata`: `Λ(prefix sum) est(≥) = ⦇[zero, ⊕]⦈`      (the greedy `⊑` closed to `=`)
-  - `mss_shape_segment`: `Λ(segment sum) est(≥) = Λ(suffix (prefix sum)) est(≥)`, the first step
-    of `mss-shape`, from `segment = suffix prefix`.
+  - `mss_shape`:      `Λ(segment sum) est(≥) = Λ(suffix) E(Λ(prefix sum) est(≥)) est(≥)`
+                                                                (note `mss-shape`)
 
-  WHAT IS NOT HERE.  The OUTER half — `mss-shape`'s remaining four steps (absorption, `union`,
-  the `E`/`est` distribution, the relator) and `mss-scan`'s fusion of `tails list(g)` — so the
-  note's headline `mss = ⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` is NOT proved here.
+  `mss_shape`'s first step is the note's (`segment = suffix prefix`, then `Λ_absorption`); its
+  remaining four (`union`, the `E`/`est` distribution, the relator) are collapsed into the one
+  pointwise `mss_shape_union`, because the `⊒` half of `E(est R) est R = union est R` — the note's
+  "the sets non-empty" side condition — is not in the repo.  Here the sets are non-empty because
+  `Λ(prefix sum) est(≥)` is entire, which `mssPre_eq_cata` already gives.
+
+  WHAT IS NOT HERE.  `mss-scan`'s fusion of `tails list(g)`, so the note's headline
+  `mss = ⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` is NOT proved here.  That row also needs a
+  bridge the note leaves informal: `tails` "implements" `Λ(suffix)` and `list(f)` "implements"
+  `E(f)`, i.e. a LIST where the specification has a power object, so the trailing `est(≥)` there
+  is `est` at `∋ := inlist` rather than at the power object's `∋`.
 
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
@@ -78,13 +86,6 @@ theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b
     what the greedy theorem turns into a fold. -/
 @[expose] public def mssPre : dCL Unit Int ⟶ (⟨Int⟩ : RelSet.{0}) :=
   (prefixR ≫ sumR)%∋ ≫ est(geq)
-
-/-- The first step of the note's `mss-shape`: `segment = suffix prefix`, so the specification is
-    a maximum over the prefix sums of the suffixes. -/
-public theorem mss_shape_segment :
-    mss = (suffixR ≫ (prefixR ≫ sumR))%∋ ≫ est(geq) := by
-  show (segment ≫ sumR)%∋ ≫ est(geq) = _
-  rw [segment_eq, Cat.assoc]
 
 /-! ## The note's `mss-prefix-sum`: `prefix sum` is a catamorphism -/
 
@@ -276,6 +277,50 @@ public theorem mssPre_eq_cata :
     rw [← mssPre_emerges]
     exact graph_entire _
   exact (eq_of_le_entire_simple hentire mssPre_simple hle).symm
+
+/-! ## The note's `mss-shape` -/
+
+/-- The specification IS the program function: `Λ(prefix sum) est(≥) = graph mssPreFn`. -/
+public theorem mssPre_eq_graph : mssPre = (graph mssPreFn : dCL Unit Int ⟶ ⟨Int⟩) := by
+  rw [mssPre_eq_cata, ← mssPre_emerges]
+
+theorem mssPre_apply (s : ConsList Unit Int) (v : Int) : mssPre s v ↔ v = mssPreFn s := by
+  rw [mssPre_eq_graph]; exact Iff.rfl
+
+/-- `mssPreFn s` is a prefix sum of `s`, and it dominates every prefix sum of `s` — the two
+    halves `est(≥)` asks for, read off the inner headline. -/
+theorem mssPreFn_spec (s : ConsList Unit Int) :
+    (prefixR ≫ sumR) s (mssPreFn s) ∧ ∀ z, (prefixR ≫ sumR) s z → z ≤ mssPreFn s :=
+  (Λ_comp_est_apply (prefixR ≫ sumR) geq s (mssPreFn s)).mp ((mssPre_apply s _).mpr rfl)
+
+/-- The `mss-shape` rows that move `est(≥)` inside the `E`: maximising over all prefix sums of
+    all the suffixes is maximising over the per-suffix maxima.  (The note gets this from
+    absorption, `union = E(∋)` and the `E`/`est` distribution; here it is one pointwise
+    argument, and the per-suffix maximum exists because `Λ(prefix sum) est(≥)` is entire.) -/
+public theorem mss_shape_union :
+    existsImage (prefixR ≫ sumR) ≫ est(geq) = existsImage mssPre ≫ est(geq) := by
+  apply hom_ext; intro P w
+  rw [existsImage_comp_est_apply, existsImage_comp_est_apply]
+  constructor
+  · rintro ⟨⟨s, hPs, hTw⟩, hdom⟩
+    have hw : w = mssPreFn s :=
+      Int.le_antisymm ((mssPreFn_spec s).2 w hTw)
+        (hdom (mssPreFn s) ⟨s, hPs, (mssPreFn_spec s).1⟩)
+    refine ⟨⟨s, hPs, (mssPre_apply s w).mpr hw⟩, ?_⟩
+    rintro z ⟨s', hPs', hz⟩
+    exact hdom z ⟨s', hPs', by rw [(mssPre_apply s' z).mp hz]; exact (mssPreFn_spec s').1⟩
+  · rintro ⟨⟨s, hPs, hw⟩, hdom⟩
+    have hws : w = mssPreFn s := (mssPre_apply s w).mp hw
+    refine ⟨⟨s, hPs, by rw [hws]; exact (mssPreFn_spec s).1⟩, ?_⟩
+    rintro z ⟨s', hPs', hTz⟩
+    exact Int.le_trans ((mssPreFn_spec s').2 z hTz)
+      (hdom (mssPreFn s') ⟨s', hPs', (mssPre_apply s' _).mpr rfl⟩)
+
+/-- **The `mss-shape` display**: `Λ(segment sum) est(≥) = Λ(suffix) E(Λ(prefix sum) est(≥)) est(≥)`
+    — the greatest segment sum is the greatest of the per-suffix greatest prefix sums. -/
+public theorem mss_shape : mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := by
+  show (segment ≫ sumR)%∋ ≫ est(geq) = _
+  rw [segment_eq, Cat.assoc, ← Λ_absorption, Cat.assoc, mss_shape_union]
 
 /-! ## Executable sanity checks -/
 
