@@ -368,6 +368,13 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
     coprod := fun a b => ⟨a.carrier ⊕ b.carrier⟩
     has_coproduct := sumCop }
 
+/-- `⊤` in `Rel(Set)` relates everything to everything: it is above the full relation, hence
+    equal to it.  (`topMor` itself is chosen classically inside `RelProd.tab`, so it is read
+    through `topMor_max` rather than computed.) -/
+public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
+    topMor a b x y :=
+  le_iff.mp (topMor_max (fun _ _ => True : a ⟶ b)) x y trivial
+
 /-- Rel(Set)'s own relational product: the cartesian product `a.carrier × b.carrier` with the two
     projection graphs, which tabulate `⊤ : a ⟶ b`.  Named concretely for the same reason as
     `coprod` above — the generic choice of A5_2 tabulates `⊤` through `Exists.choose`, whose apex

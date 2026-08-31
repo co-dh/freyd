@@ -70,6 +70,13 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
   { (inferInstance : Freyd.Alg.TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
     (inferInstance : LocallyCompleteDistributiveAllegory RelSet) with }
 
+/-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
+    every candidate list counts as sorted. -/
+public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {a : RelSet.{0}}
+    (f : (F.obj a).carrier → a.carrier) :
+    MonotonicAlg (F := F) (RelSet.graph f) (topMor a a) :=
+  RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
+
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {a c w : 𝒜}
 
 /-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
