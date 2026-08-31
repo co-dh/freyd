@@ -4512,12 +4512,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
-  [`nil` has one suffix, itself, and `g nil=zero`, so the set is the singleton `{zero}`],
+  [#src[`nil` has one suffix, itself, and `g nil=zero`, so the set is the singleton `{zero}`]],
 
   [`cons⟨g,`#frc([`suffix`])` E(g)⟩=(𝟙×⟨g,`#frc([`suffix`])` E(g)⟩)⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩`],
-  [`g(cons(a,x))=a⊕(g x)`, which is `w` reading `g x` off `π₁`; and the suffixes of `cons(a,x)` are
-   `cons(a,x)` itself, whose value is that same `w`, together with those of `x`, which `π₂π₂`
-   carries — so the two sets meet at `cup`],
+  [#src[`g(cons(a,x))=a⊕(g x)`, which is `w` reading `g x` off `π₁`; and the suffixes of
+   `cons(a,x)` are `cons(a,x)` itself, whose value is that same `w`, together with those of `x`,
+   which `π₂π₂` carries — so the two sets meet at `cup`]],
 ))]<mss-scan>
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
