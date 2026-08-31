@@ -1842,7 +1842,8 @@ Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor
 action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce section. For every object
 `A` the initial algebra is `α : F(A,TA)⟶TA`, among the maps. `T` acts on an arrow `R : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(R)=⦇F(R,𝟙)α⦈ : TA⟶TB`])
+  #align(center, block(inset: (y: 6pt))[`T(R)=⦇F(R,𝟙)α⦈ : TA⟶TB` #h(4pt)
+    #src[`lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0`, `lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794`]])
 ]]<tf-defn>
 
 // Same widths and stroke as the reduce table: the two tables are read one after the other, and
@@ -1856,27 +1857,32 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 
   [the defining equation],
   [`T(R)=⦇F(R,𝟙)α⦈`],
-  [Rebuild the structure with `α`, applying `R` to the parameter on the way.],
+  [Rebuild the structure with `α`, applying `R` to the parameter on the way.
+   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794`]],
 
   [functor],
   [`T(𝟙)=𝟙` and `T(R)T(S)=T(RS)`],
-  [Acting by the identity changes nothing, and two actions in a row are one action.],
+  [Acting by the identity changes nothing, and two actions in a row are one action.
+   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1`, `lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd`]],
 
   [type functor fusion],
   [`T(R)⦇Q⦈=⦇F(R,𝟙)Q⦈`],
   [A relator action followed by a fold is a single fold — the intermediate structure is never built.
    The side condition holds because `F` is a bifunctor —
-   `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.],
+   `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
+   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178`, `lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af`]],
 
   [naturality of `α`],
   [`αT(R)=F(R,T(R))α`],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
-   from `G(R)=F(R,T(R))` to `T`.],
+   from `G(R)=F(R,T(R))` to `T`.
+   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627`]],
 
   [type relator],
   [`T(R)°=T(R°)`],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
-   map.],
+   map.
+   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_recip@4bb90fe1`]],
 )]<tf-laws>
 
 // Its own page: the definition and its two squares are read together, and without the break the
@@ -1889,7 +1895,8 @@ Let `F` be a bifunctor taking both the parameter `A` and the recursive position 
 algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
 `f : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB`])
+  #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB` #h(4pt)
+    #src[`lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0`]])
 ]]<tfun-defn>
 
 // The house orientation: the fold runs down the columns, over the FLAT algebra `F(f,𝟙)α_B`, which the
@@ -1915,7 +1922,8 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   }),
   tfuneq([`F`], [`T`], [`A`], [`B`], [`α`#sub[`A`]], [`α`#sub[`B`]], [`f`],
     cact1: GIVEN2, cact2: GIVEN1, regions: auto),
-  [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`]],
+  [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
+   #src[`lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627`]],
 )]<tfun-sq>
 
 // The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
@@ -1939,7 +1947,8 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   }),
   twobeadeq(`TA`, [`T(f)`], [`⦇h⦈`], [`⦇F(f,𝟙)h⦈`], `C`, c1: INDUCED, c2: INDUCED, c3: INDUCED,
     typed: true, regions: auto),
-  [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈`],
+  [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
+   #src[`lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178`]],
 )]<tfun-fusion>
 
 // Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
@@ -2394,24 +2403,24 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`𝒜⟶𝒜`],
   [B&dM's `listr` under the short name it keeps from p. 125 on.],
 
-  [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈`],
+  [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[`lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6`]],
   [`[A]⟶[B]`],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
-  [`subseq≜⦇[nil,cons∪π₂]⦈`],
+  [`subseq≜⦇[nil,cons∪π₂]⦈` #src[`lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47`]],
   [`[A]⟶[A]`],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
   [`prefix≜⦇[nil,nil∪cons]⦈` \
-   `=cat° π₁=init*`],
+   `=cat° π₁=init*` #src[`lean:AOP.A5_6_ListCombinators.prefix_cata@82edcdaa`, `lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936`]],
   [`[A]⟶[A]`],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
-  [`suffix≜cat° π₂=tail*`],
+  [`suffix≜cat° π₂=tail*` #src[`lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e`]],
   [`[A]⟶[A]`],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
-  [`segment≜suffix prefix`],
+  [`segment≜suffix prefix` #src[`lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a`]],
   [`[A]⟶[A]`],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
@@ -2419,7 +2428,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`[A]⟶[[A]]`],
   [`cat` restricted to a non-empty first argument, so `ys` is a list of non-empty segments of `xs`.],
 
-  [`concat≜⦇[nil,cat]⦈`],
+  [`concat≜⦇[nil,cat]⦈` #src[`lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3`]],
   [`[[A]]⟶[A]`],
   [Joins the segments back up, which is why its converse splits a list.],
 
@@ -3869,7 +3878,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
   @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
-  the side condition.]])
+  the side condition. `lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb`,
+  `lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4bc81b63`]])
 ]<takewhile-alg>
 
 // The two branches are monotonic one at a time — the rows above the pictures — and @lax-closure
@@ -3901,7 +3911,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // The branch is named in the header above; this line adds only what the header does not say.
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch is
   `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°` is `cons length=(𝟙×length)π₂ succ` with `succ` monotone —
-  a shorter tail makes a shorter list.]])
+  a shorter tail makes a shorter list. `lean:AOP.A7_7_TakeWhile.takewhile_mono@69b53bd4`]])
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -3934,7 +3944,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`nil R=⊤`],
 )
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
-  `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.]])
+  `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
+  `lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b`]])
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -3994,39 +4005,43 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
-    #src[Ex 7.39: the longest prefix all of whose elements pass `p`]],
+    #src[Ex 7.39: the longest prefix all of whose elements pass `p`.
+     `lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
-    [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`]])],
+    [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`.
+     `lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac`]])],
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`prefix`]),), names: true)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
-    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
+    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg, `lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb`]])],
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
-     collected and one chosen at the end]])],
+     collected and one chosen at the end. `lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1`]])],
   [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
 
   [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
-    [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
+    [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step, `lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b`]])],
   [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
 
   [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
     #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
      and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
-     longest, not *a* longest]])],
+     longest, not *a* longest. `lean:AOP.A7_7_TakeWhile.takewhile_simple@568a360d`]])],
   [],
 
   [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and
-    `R` is connected on the prefixes of one list, so the longest exists]])],
+    `R` is connected on the prefixes of one list, so the longest exists.
+    `lean:AOP.A7_7_TakeWhile.takewhile_entire@d7c8c6e5`]])],
   [],
 
   [#vstep([], [], [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[`⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a
-    reduce of maps, hence entire — what turns the `⊒` above into the heading's `=`]])],
+    reduce of maps, hence entire — what turns the `⊒` above into the heading's `=`.
+    `lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67`]])],
   [],
 ))]<takewhile-laws>
 
