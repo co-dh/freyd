@@ -55,7 +55,9 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
 /-! ## The note's `mss-defn` -/
 
-/-- The note's `≥` on `Int`, the order `est` maximises over. -/
+/-- The note's `≥` on `Int`, the order `est` maximises over.  Kept here, not read from
+    `ListRel`: the note certifies §7.7's statements by a key computed from the constants they
+    name, and moving this one would invalidate six of those certificates. -/
 @[expose] public def geq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => b ≤ a
 
 /-- `≥` is transitive — the greedy theorem's preorder hypothesis. -/

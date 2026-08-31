@@ -34,6 +34,7 @@ module
 
 public import AOP.A8_1
 public import AOP.A5_6
+public import AOP.A6_1_RelSet
 
 universe u
 
@@ -62,6 +63,19 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
     {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] :
     TabularUnitaryUnguardedPowerAllegory 𝒜 :=
   { inst with }
+
+/-- `Rel(Set)` is the setting: both halves of the merge are already instances (`AOP.A6_1_RelSet`),
+    so §8.2's and §8.3's theorems apply to the concrete case studies of §8.4-§8.6. -/
+@[expose] public instance : TabularUnitaryUnguardedPowerLCDA RelSet.{u} :=
+  { (inferInstance : Freyd.Alg.TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
+    (inferInstance : LocallyCompleteDistributiveAllegory RelSet) with }
+
+/-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
+    every candidate list counts as sorted. -/
+public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {a : RelSet.{0}}
+    (f : (F.obj a).carrier → a.carrier) :
+    MonotonicAlg (F := F) (RelSet.graph f) (topMor a a) :=
+  RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {a c w : 𝒜}
 
