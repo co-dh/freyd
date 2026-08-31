@@ -83,14 +83,14 @@ theorem perm_transitive : (perm : dList A ⟶ dList A) ≫ perm ⊑ perm :=
 
 /-- The prefix relation `prefix : list A ⟶ list A`, mirrored to diagram order:
     `prefixR x ys` iff `ys` is an initial segment of `x`. -/
-public def prefixR : dList A ⟶ dList A := fun x ys => prefixP ys x
+@[expose] public def prefixR : dList A ⟶ dList A := fun x ys => prefixP ys x
 
 theorem prefixP.refl : ∀ x : ConsList Unit A, prefixP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => ⟨rfl, prefixP.refl x⟩
 
 /-- `nil` is a prefix of every list. -/
-theorem prefixP.nil : ∀ x : ConsList Unit A, prefixP (ConsList.wrap ()) x
+public theorem prefixP.nil : ∀ x : ConsList Unit A, prefixP (ConsList.wrap ()) x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ _ => trivial
 
@@ -113,19 +113,19 @@ theorem prefix_transitive : (prefixR : dList A ⟶ dList A) ≫ prefixR ⊑ pref
 
 /-- The subsequence relation `subseq : list A ⟶ list A`, mirrored to diagram order:
     `subseq x ys` iff `ys` is `x` with some elements dropped. -/
-public def subseq : dList A ⟶ dList A := fun x ys => subseqP ys x
+@[expose] public def subseq : dList A ⟶ dList A := fun x ys => subseqP ys x
 
 theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => Or.inl ⟨rfl, subseqP.refl x⟩
 
 /-- `nil` is a subsequence of every list. -/
-theorem subseqP.nil : ∀ x : ConsList Unit A, subseqP (ConsList.wrap ()) x
+public theorem subseqP.nil : ∀ x : ConsList Unit A, subseqP (ConsList.wrap ()) x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ _ => trivial
 
 /-- Extending the larger list on the front preserves subsequence: `subseq x y → subseq x (b::y)`. -/
-theorem subseqP.weaken {b : A} : ∀ {x y : ConsList Unit A}, subseqP x y → subseqP x (ConsList.cons b y)
+public theorem subseqP.weaken {b : A} : ∀ {x y : ConsList Unit A}, subseqP x y → subseqP x (ConsList.cons b y)
   | ConsList.wrap _, _, _ => trivial
   | ConsList.cons _ _, _, h => Or.inr h
 
@@ -203,7 +203,7 @@ public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
 
 /-- The suffix relation `suffix : list A ⟶ list A`, mirrored to diagram order:
     `suffixR x ys` iff `ys` is a final segment of `x`. -/
-public def suffixR : dList A ⟶ dList A := fun x ys => suffixP ys x
+@[expose] public def suffixR : dList A ⟶ dList A := fun x ys => suffixP ys x
 
 /-- B&dM's `cat` (append) as a relation: the graph of `cappend`. -/
 public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
@@ -252,7 +252,18 @@ public theorem suffixP_iff_append :
 
 /-- The contiguous-segment relation, concretely: `segment x ys` iff `ys` occurs inside `x`
     (`u ++ ys ++ v = x`). -/
-public def segment : dList A ⟶ dList A := fun x ys => ∃ u v, cappend u (cappend ys v) = x
+@[expose] public def segment : dList A ⟶ dList A := fun x ys => ∃ u v, cappend u (cappend ys v) = x
+
+/-! ## Sum `sum : Int ← list Int` (B&dM's `sum = ⦇[zero, plus]⦈`) -/
+
+/-- The total of a list of numbers (B&dM's `Real` is `Int` here — the repo is Mathlib-free, and
+    only `+` and `≤` are ever used). -/
+@[expose] public def csum : ConsList Unit Int → Int
+  | ConsList.wrap _ => 0
+  | ConsList.cons n x => n + csum x
+
+/-- The sum as a morphism `sum : list Int ⟶ Int`. -/
+@[expose] public def sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0}) := graph csum
 
 /-! ## The point-free definitions (B&dM §5.6, the note's `comb-fns` table)
 
@@ -261,7 +272,7 @@ public def segment : dList A ⟶ dList A := fun x ys => ∃ u v, cappend u (capp
   and the algebra bracket `[g,h]` is `junc` over the concrete coproduct `F c = Unit + (E × c)`. -/
 
 /-- `[g,h]` on the left summand: `[g,h] (inl x) = g x`. -/
-theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.carrier) (r : c.carrier) :
+public theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.carrier) (r : c.carrier) :
     junc (sumCop a b) g h (Sum.inl x) r ↔ g x r := by
   show (∃ x', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
       ∨ (∃ y', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ g x r
@@ -273,7 +284,7 @@ theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.car
   · exact fun hg => Or.inl ⟨x, rfl, hg⟩
 
 /-- `[g,h]` on the right summand: `[g,h] (inr p) = h p`. -/
-theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p : b.carrier) (r : c.carrier) :
+public theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p : b.carrier) (r : c.carrier) :
     junc (sumCop a b) g h (Sum.inr p) r ↔ h p r := by
   show (∃ x', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
       ∨ (∃ y', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ h p r
@@ -363,7 +374,7 @@ theorem cata_square_iff {L E : Type} {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) (X
 
 /-- `cata_square_iff` for a `[g,h]` (`junc`) algebra, the coproduct already evaluated: the two
     components mention `g` and `h` directly. -/
-theorem cata_square_junc_iff {L E : Type} {c : RelSet.{0}} (g : dL L ⟶ c)
+public theorem cata_square_junc_iff {L E : Type} {c : RelSet.{0}} (g : dL L ⟶ c)
     (h : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c) (X : dCL L E ⟶ c) :
     (graph con ≫ X = (F L E).map X ≫ junc (sumCop (dL L) ⟨E × c.carrier⟩) g h)
       ↔ ((∀ d r, X (ConsList.wrap d) r ↔ g d r)
@@ -653,6 +664,17 @@ public theorem concat_cata :
   · exact Iff.rfl
   · show r = cappend seg (cconcat rest) ↔ ∃ y, y = cconcat rest ∧ r = cappend seg y
     exact ⟨fun h => ⟨cconcat rest, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
+
+/-- **`sum = ⦇[zero, plus]⦈`** (note `cata-examples`; B&dM §5.x): fold the list, adding each head
+    onto the total of the tail, `nil` contributing `zero`. -/
+public theorem sum_cata :
+    (sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0}))
+      = ⦇(junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int))
+          (graph fun q => q.1 + q.2) : (F Unit Int).obj (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩)⦈ := by
+  refine (relCata_UP (initial Unit Int) _ _).mp
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => Iff.rfl, fun a x r => ?_⟩)
+  show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
+  exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
 end Freyd.Alg.RelSet.ListRel
 

@@ -88,11 +88,6 @@ open RT (Rose dRose)
 
 variable {A : Type} (rating : A → Int)
 
-/-- `sum : list Real ⟶ Real` at `Real := Int`. -/
-@[expose] public def csum : ConsList Unit Int → Int
-  | ConsList.wrap _ => 0
-  | ConsList.cons n x => n + csum x
-
 /-- **party-defn**: `cost ≜ list(rating) sum` — what a guest list is worth (one recursion;
     `cost_eq` is the point-free form). -/
 @[expose] public def costFn : ConsList Unit A → Int
