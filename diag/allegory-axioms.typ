@@ -4942,7 +4942,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [`A⟶Real`],
   [What one employee is worth as a guest.],
 
-  [`cost≜list(rating) sum` #src[`lean:AOP.A7_3_Party.cost_eq@a00b687c`]],
+  [`cost≜list(rating) sum` #src[`lean:AOP.A7_3_Party.cost_eq@4da87db0`]],
   [`[A]⟶Real`],
   [What a guest list is worth.],
 
