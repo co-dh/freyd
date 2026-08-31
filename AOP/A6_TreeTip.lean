@@ -59,8 +59,16 @@ public inductive Tree (A : Type) where
 @[expose] public def F (A : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := TFobj A
   map R := Fmap A R
+  -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
+  -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound})
   map_id c := hom_ext fun u v => by
-    cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;> grind
+    cases u <;> cases v
+    · exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
+    · next a q => exact ⟨False.elim, fun h => nomatch (show Sum.inl a = Sum.inr q from h)⟩
+    · next p a => exact ⟨False.elim, fun h => nomatch (show Sum.inr p = Sum.inl a from h)⟩
+    · next p q =>
+      exact ⟨fun ⟨h1, h2⟩ => congrArg Sum.inr (Prod.ext h1 h2),
+        fun h => by cases Sum.inr.inj h; exact ⟨rfl, rfl⟩⟩
   map_comp R S := hom_ext fun u v => by
     cases u with
     | inl a => cases v with

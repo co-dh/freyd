@@ -254,4 +254,211 @@ public theorem detab_prefix_false :
   have e7 : slen (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) = 7 := rfl
   omega
 
+/-! ## `entab-defn`: `U`, `V`, `Q`, and the greedy condition
+
+  `detab prefix⊑R° detab` being false, the note replaces `prefix°` by
+  `V≜prefix°∩(fill fill°)` — only the prefixes that do not cross a tab stop.  `expand_V_step`
+  is the note's ladder (`nil V°=nil`, `fill V°=fill`, `snoc V°⊑snoc∪(π₁V°)`,
+  `expand V°⊑expand∪(π₁V°)`) in one statement: shortening the output of one `expand` step to a
+  `V`-smaller string either leaves the step alone or discards it. -/
+
+/-- **entab-defn**: `U` the preorder with `a U b⟺a=TB∨a=b` — `TB` below every character, so
+    `est` prefers a tab to a blank. -/
+@[expose] public def U (tb : Char) : (⟨Char⟩ : RelSet.{0}) ⟶ ⟨Char⟩ := fun a b => a = tb ∨ a = b
+
+/-- **entab-defn**: `V≜prefix°∩(fill fill°)` — a prefix that fills to the same string, i.e. one
+    that does not cross a tab stop. -/
+@[expose] public def V (n : Nat) (nl blank : Char) : dSL Unit Char ⟶ dSL Unit Char :=
+  fun x y => prefixS x y ∧ fillFn n nl blank x = fillFn n nl blank y
+
+/-- **entab-defn**: `Q≜𝟙+(V×U)`. -/
+@[expose] public def Q (n : Nat) (tb nl blank : Char) :
+    (F Unit Char).obj (dSL Unit Char) ⟶ (F Unit Char).obj (dSL Unit Char) :=
+  fun u v => match u, v with
+    | Sum.inl _, Sum.inl _ => True
+    | Sum.inr p, Sum.inr q => V n nl blank p.1 q.1 ∧ U tb p.2 q.2
+    | _, _ => False
+
+public theorem pad_add (blank : Char) (x : Str) (j : Nat) :
+    ∀ k, pad blank (pad blank x j) k = pad blank x (j + k)
+  | 0 => rfl
+  | k + 1 => by
+    show SnocList.snoc (pad blank (pad blank x j) k) blank
+      = SnocList.snoc (pad blank x (j + k)) blank
+    rw [pad_add blank x j k]
+
+/-- Adding `j` to `a` adds `j` to `a mod n`, as long as the sum stays inside one period. -/
+public theorem mod_add_of_lt (n a j : Nat) (h : a % n + j < n) : (a + j) % n = a % n + j := by
+  have hd : n * (a / n) + a % n = a := Nat.div_add_mod a n
+  have he : a + j = n * (a / n) + (a % n + j) := by omega
+  rw [he, Nat.mul_add_mod, Nat.mod_eq_of_lt h]
+
+/-- **entab-laws**: `expand V°⊑expand∪(π₁V°)` — shortening the output of one `expand` step to a
+    `V`-smaller string either leaves the step alone or discards it.  On a tab the step is never
+    discarded: the filled string sits on a tab stop, so its own `fill` is a whole `n` blanks
+    long, which no shorter string can match.  On any other character the discarded case forces
+    that character to be a blank and the rest to be `x` padded, and then the two fills agree. -/
+public theorem expand_V_step (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl)
+    (z : Str) (c : Char) (x : Str) (h : V n nl blank x (expandFn n tb nl blank z c)) :
+    x = expandFn n tb nl blank z c ∨ V n nl blank x z := by
+  obtain ⟨hpre, hfill⟩ := h
+  by_cases hc : c = tb
+  · left
+    have hy : expandFn n tb nl blank z c = pad blank z (n - colFn nl z % n) := by
+      simp only [expandFn, if_pos hc, fillFn]
+    have hrz : colFn nl z % n < n := Nat.mod_lt _ hn
+    have hdz : n * (colFn nl z / n) + colFn nl z % n = colFn nl z := Nat.div_add_mod _ _
+    have hcoly : colFn nl (expandFn n tb nl blank z c) = n * (colFn nl z / n + 1) := by
+      rw [hy, col_pad nl blank hb, Nat.mul_succ]
+      omega
+    have hmod0 : colFn nl (expandFn n tb nl blank z c) % n = 0 := by
+      rw [hcoly]; exact Nat.mul_mod_right _ _
+    have hfy : fillFn n nl blank (expandFn n tb nl blank z c)
+        = pad blank (expandFn n tb nl blank z c) n := by
+      show pad blank (expandFn n tb nl blank z c)
+          (n - colFn nl (expandFn n tb nl blank z c) % n)
+        = pad blank (expandFn n tb nl blank z c) n
+      rw [hmod0, Nat.sub_zero]
+    rw [hfy] at hfill
+    obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (expandFn n tb nl blank z c)
+      (n - colFn nl x % n) n (prefixS_slen_le hpre) hfill
+    have hkx : n - colFn nl x % n ≤ n := Nat.sub_le _ _
+    obtain rfl : m = 0 := by omega
+    exact hm.symm
+  · have hy : expandFn n tb nl blank z c = SnocList.snoc z c := by
+      simp only [expandFn, if_neg hc]
+    rw [hy] at hpre hfill
+    rcases (hpre : x = SnocList.snoc z c ∨ prefixS x z) with rfl | hpz
+    · exact Or.inl hy.symm
+    · refine Or.inr ⟨hpz, ?_⟩
+      have hlx : slen x ≤ slen z := prefixS_slen_le hpz
+      obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (SnocList.snoc z c) (n - colFn nl x % n)
+        (n - colFn nl (SnocList.snoc z c) % n) (by show slen x ≤ slen z + 1; omega) hfill
+      have hslen : slen z + 1 = slen x + m := by
+        show slen (SnocList.snoc z c) = slen x + m
+        rw [hm, slen_pad]
+      obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+      have hsplit : SnocList.snoc z c = SnocList.snoc (pad blank x m') blank := hm
+      obtain ⟨hz, hcb⟩ : z = pad blank x m' ∧ c = blank := by
+        injection hsplit with h1 h2; exact ⟨h1, h2⟩
+      have hcne : c ≠ nl := by rw [hcb]; exact hb
+      have hcolz : colFn nl z = colFn nl x + m' := by rw [hz, col_pad nl blank hb]
+      have hcol_snoc : colFn nl (SnocList.snoc z c) = colFn nl x + m' + 1 := by
+        show (if c = nl then 0 else colFn nl z + 1) = colFn nl x + m' + 1
+        rw [if_neg hcne, hcolz]
+      rw [hcol_snoc] at hjk
+      have hrx : colFn nl x % n < n := Nat.mod_lt _ hn
+      have hsb : (colFn nl x + m' + 1) % n < n := Nat.mod_lt _ hn
+      have hlt : colFn nl x % n + m' < n := by omega
+      have hmodz : colFn nl z % n = colFn nl x % n + m' := by
+        rw [hcolz]; exact mod_add_of_lt n (colFn nl x) m' hlt
+      show pad blank x (n - colFn nl x % n) = pad blank z (n - colFn nl z % n)
+      rw [hmodz, hz, pad_add]
+      congr 1
+      omega
+
+/-- **entab-laws**: `detab V°⊑R° detab` — shortening the output to a `V`-smaller string is
+    matched by an input no longer than the original.  Induction on the input, `expand_V_step`
+    at each step. -/
+public theorem detab_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    ∀ (t x : Str), V n nl blank x (detabFn n tb nl blank t) →
+      ∃ t₀, detabFn n tb nl blank t₀ = x ∧ slen t₀ ≤ slen t
+  | SnocList.wrap _, x, h => by
+    obtain rfl : x = SnocList.wrap () := h.1
+    exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
+  | SnocList.snoc s c, x, h => by
+    rcases expand_V_step n tb nl blank hn hb (detabFn n tb nl blank s) c x h with hx | hV
+    · exact ⟨SnocList.snoc s c, hx.symm, Nat.le_refl _⟩
+    · obtain ⟨t₀, ht₀, hlen⟩ := detab_V n tb nl blank hn hb s x hV
+      exact ⟨t₀, ht₀, Nat.le_succ_of_le hlen⟩
+
+/-- **entab-laws**: Proposition 9.4's `hV`, `V detab°⊑detab° R`. -/
+public theorem entab_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    V n nl blank ≫ (detabR n tb nl blank)° ⊑ (detabR n tb nl blank)° ≫ R :=
+  le_iff.mpr fun x t h => by
+    obtain ⟨y, hV, hy⟩ := h
+    obtain rfl : y = detabFn n tb nl blank t := hy
+    obtain ⟨t₀, ht₀, hlen⟩ := detab_V n tb nl blank hn hb t x hV
+    exact ⟨t₀, ht₀.symm, hlen⟩
+
+/-- **entab-laws**, second row: `F(⊤,R)α⊑αR`, the note's exercise — `snoc` adds one character
+    to both sides, so it never reverses `≤` on lengths, whatever the two characters are. -/
+public theorem entab_mono : MonotonicAlg (F := F Unit Char) (graph con) R :=
+  le_iff.mpr fun u out h => by
+    obtain ⟨v, hFv, hout⟩ := h
+    obtain rfl : out = con v := hout
+    cases u with
+    | inl _ =>
+      cases v with
+      | inl _ => exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
+      | inr _ => exact hFv.elim
+    | inr p =>
+      cases v with
+      | inl _ => exact hFv.elim
+      | inr q =>
+        refine ⟨SnocList.snoc p.1 p.2, rfl, ?_⟩
+        show slen p.1 + 1 ≤ slen q.1 + 1
+        exact Nat.succ_le_succ (hFv.1 : slen p.1 ≤ slen q.1)
+
+public theorem R_trans : R ≫ R ⊑ R :=
+  le_iff.mpr fun u w h => by
+    obtain ⟨v, h1, h2⟩ := h
+    exact Nat.le_trans (h1 : slen u ≤ slen v) (h2 : slen v ≤ slen w)
+
+/-- **entab-laws**, second row: Theorem 10.1's greedy condition, Proposition 9.4 at `U` and
+    `V≜prefix°∩(fill fill°)`.  `U` leaves the character free — `entab_V` supplies the shorter
+    input for the `V`-smaller output, and `snoc` lengthens both sides by one. -/
+public theorem entab_thin_condition (n : Nat) (tb nl blank : Char) (hn : 0 < n)
+    (hb : blank ≠ nl) :
+    Q n tb nl blank ≫ (F Unit Char).map ((detabR n tb nl blank)°) ≫ graph con
+      ⊑ (F Unit Char).map ((detabR n tb nl blank)°) ≫ graph con ≫ R :=
+  le_iff.mpr fun u out h => by
+    obtain ⟨v, hQ, w, hFw, hout⟩ := h
+    cases u with
+    | inl _ =>
+      cases v with
+      | inr _ => exact hQ.elim
+      | inl _ =>
+        cases w with
+        | inr _ => exact hFw.elim
+        | inl _ =>
+          obtain rfl : out = SnocList.wrap () := hout
+          exact ⟨Sum.inl (), rfl, SnocList.wrap (), rfl, Nat.le_refl _⟩
+    | inr p =>
+      cases v with
+      | inl _ => exact hQ.elim
+      | inr q =>
+        cases w with
+        | inl _ => exact hFw.elim
+        | inr r =>
+          obtain rfl : out = SnocList.snoc r.1 r.2 := hout
+          obtain ⟨t₀, ht₀, hlen⟩ := le_iff.mp (entab_V n tb nl blank hn hb) p.1 r.1
+            ⟨q.1, hQ.1, (hFw.1 : q.1 = detabFn n tb nl blank r.1)⟩
+          refine ⟨Sum.inr (t₀, p.2), ⟨ht₀, rfl⟩, SnocList.snoc t₀ p.2, rfl, ?_⟩
+          show slen t₀ + 1 ≤ slen r.1 + 1
+          exact Nat.succ_le_succ hlen
+
+/-- **entab-laws**, second row (B&dM p.247): the shortest input `detab` expands to the given
+    output is the least fixed point of `(μX : [nil,expand]° est(Q)(𝟙+(X×𝟙))[nil,snoc])` —
+    Theorem 10.1 at `Q≜𝟙+(V×U)`, one character of input decided at each step.
+    `H = ⦇α⦈·⦇[nil,expand]⦈°` collapses to `detab°` by reflection
+    (`AOP.A6_SnocList.cataR_con`). -/
+public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    mu (fun X : dSL Unit Char ⟶ dSL Unit Char =>
+        Λ (Allegory.recip (graph (expandAlgFn n tb nl blank)
+            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char))
+          ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ graph (con (L := Unit) (E := Char)))
+      ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
+  have hH : (relCata (F := F Unit Char) (graph (expandAlgFn n tb nl blank)))°
+        ≫ relCata (F := F Unit Char) (I := initial Unit Char)
+            (graph (con (L := Unit) (E := Char)))
+      = Allegory.recip (detabR n tb nl blank) := by
+    rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, detab_cata]
+    exact Cat.comp_id _
+  have key := greedy_dp (F := F Unit Char) (F_preservesRecip Unit Char) (initial Unit Char)
+    (h := graph (con (L := Unit) (E := Char))) (T := graph (expandAlgFn n tb nl blank))
+    (R := R) (Q := Q n tb nl blank) (graph_map con) entab_mono R_trans
+    (by rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
+  rwa [hH] at key
+
 end Freyd.Alg.RelSet.Detab
