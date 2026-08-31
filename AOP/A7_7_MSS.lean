@@ -25,11 +25,12 @@
   "the sets non-empty" side condition — is not in the repo.  Here the sets are non-empty because
   `Λ(prefix sum) est(≥)` is entire, which `mssPre_eq_cata` already gives.
 
-  WHAT IS NOT HERE.  `mss-scan`'s fusion of `tails list(g)`, so the note's headline
-  `mss = ⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` is NOT proved here.  That row also needs a
-  bridge the note leaves informal: `tails` "implements" `Λ(suffix)` and `list(f)` "implements"
-  `E(f)`, i.e. a LIST where the specification has a power object, so the trailing `est(≥)` there
-  is `est` at `∋ := inlist` rather than at the power object's `∋`.
+  WHAT IS NOT HERE, AND WHY IT CANNOT BE.  `mss-scan`'s fusion of `tails list(g)`, so the note's
+  headline `mss = ⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` is NOT proved here.  The list in that
+  row is not notational laziness for the power object: `suffixMax_not_relCata` shows NO algebra
+  `h : 𝟏+Int×E(Int) ⟶ E(Int)` has `Λ(suffix) E(g) = ⦇h⦈`, `g ≜ ⦇[zero,⊕]⦈`.  `head` reads `g x`
+  back off `tails x list(g)` because the list keeps the whole of `x` first; a set has no first
+  element, so `E(g)` loses that value and the fold has nothing to feed `⊕`.
 
   Mathlib-free; axioms ⊆ {propext, Quot.sound}.
 -/
@@ -321,6 +322,115 @@ public theorem mss_shape_union :
 public theorem mss_shape : mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := by
   show (segment ≫ sumR)%∋ ≫ est(geq) = _
   rw [segment_eq, Cat.assoc, ← Λ_absorption, Cat.assoc, mss_shape_union]
+
+/-! ## Why `mss-scan` keeps the list
+
+  The note's last row fuses `tails list(g)` into one fold through `head`, which reads `g x` back
+  off the already-computed list because `tails` puts the whole of `x` first.  A set has no first
+  element and `g` is not monotonic in the suffix order (`g[-1,2] = 1 < 2 = g[2]`), so `E(g)` loses
+  that value: `xs = [1,-1]` and `ys = [-1,1]` have the SAME set of suffix maxima `{0,1}` while `g`
+  gives them `1` and `0`, and `cons 3` separates the two sets again (`{4,1,0}` against `{3,1,0}`).
+  A fold must send equal carriers to equal carriers, so it cannot do both. -/
+
+/-- `[1,-1]`: `g xs = 1`. -/
+private def xs : ConsList Unit Int := ConsList.cons 1 (ConsList.cons (-1) (ConsList.wrap ()))
+/-- `[-1,1]`: the same suffix maxima as `xs`, but `g ys = 0`. -/
+private def ys : ConsList Unit Int := ConsList.cons (-1) (ConsList.cons 1 (ConsList.wrap ()))
+
+/-- `suffix g` pointwise: `v` is `g` at some suffix of `s`. -/
+private theorem suffix_mssPre_apply (s : ConsList Unit Int) (v : Int) :
+    (suffixR ≫ mssPre) s v ↔ ∃ y, suffixP y s ∧ v = mssPreFn y :=
+  ⟨fun ⟨y, hy, hv⟩ => ⟨y, hy, (mssPre_apply y v).mp hv⟩,
+   fun ⟨y, hy, hv⟩ => ⟨y, hy, (mssPre_apply y v).mpr hv⟩⟩
+
+/-- The suffix maxima of `[1,-1]`: `g[1,-1] = 1`, `g[-1] = 0`, `g[] = 0`. -/
+private theorem suffix_mssPre_xs (v : Int) : (suffixR ≫ mssPre) xs v ↔ (v = 1 ∨ v = 0) := by
+  rw [suffix_mssPre_apply]
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    have hy' : y = xs ∨ y = ConsList.cons (-1) (ConsList.wrap ()) ∨ y = ConsList.wrap () := hy
+    rcases hy' with rfl | rfl | rfl
+    · exact Or.inl (by decide)
+    · exact Or.inr (by decide)
+    · exact Or.inr (by decide)
+  · rintro (rfl | rfl)
+    · exact ⟨xs, show suffixP xs xs from Or.inl rfl, by decide⟩
+    · exact ⟨ConsList.wrap (), show suffixP (ConsList.wrap ()) xs from Or.inr (Or.inr rfl),
+        by decide⟩
+
+/-- The suffix maxima of `[-1,1]`: `g[-1,1] = 0`, `g[1] = 1`, `g[] = 0` — the same set. -/
+private theorem suffix_mssPre_ys (v : Int) : (suffixR ≫ mssPre) ys v ↔ (v = 1 ∨ v = 0) := by
+  rw [suffix_mssPre_apply]
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    have hy' : y = ys ∨ y = ConsList.cons 1 (ConsList.wrap ()) ∨ y = ConsList.wrap () := hy
+    rcases hy' with rfl | rfl | rfl
+    · exact Or.inr (by decide)
+    · exact Or.inl (by decide)
+    · exact Or.inr (by decide)
+  · rintro (rfl | rfl)
+    · exact ⟨ConsList.cons 1 (ConsList.wrap ()),
+        show suffixP (ConsList.cons 1 (ConsList.wrap ())) ys from Or.inr (Or.inl rfl), by decide⟩
+    · exact ⟨ConsList.wrap (), show suffixP (ConsList.wrap ()) ys from Or.inr (Or.inr rfl),
+        by decide⟩
+
+/-- **The power object cannot take the note's last step.**  There is no algebra
+    `h : 𝟏+Int×E(Int) ⟶ E(Int)` with `Λ(suffix) E(⦇[zero,⊕]⦈) = ⦇h⦈`: such an `h` would have to
+    read `⦇[zero,⊕]⦈ x` back out of the SET of that fold's values on the suffixes of `x`, and
+    `xs`, `ys` are two lists where the set is the same and the value is not. -/
+public theorem suffixMax_not_relCata :
+    ¬ ∃ h : (F Unit Int).obj (PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0}))
+              ⟶ PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0}),
+        suffixR%∋ ≫ existsImage mssPre = ⦇h⦈ := by
+  rintro ⟨h, hh⟩
+  have hcomm := (relCata_UP (initial Unit Int) h _).mpr hh
+  rw [Λ_absorption, Λ_eq_classifier] at hcomm
+  -- The fold's step at `cons a s` sees only `a` and the SET at `s`.
+  have hstep : ∀ (a : Int) (s : ConsList Unit Int) (P : Int → Prop),
+      classifier (suffixR ≫ mssPre) (ConsList.cons a s) P
+        ↔ h (Sum.inr (a, fun v => (suffixR ≫ mssPre) s v)) P := by
+    intro a s P
+    have e := congrFun (congrFun hcomm (Sum.inr (a, s))) P
+    constructor
+    · intro hP
+      have hl : ((initial Unit Int).α ≫ classifier (suffixR ≫ mssPre)) (Sum.inr (a, s)) P :=
+        ⟨ConsList.cons a s, rfl, hP⟩
+      rw [e] at hl
+      obtain ⟨u, hu, hhu⟩ := hl
+      cases u with
+      | inl d => exact hu.elim
+      | inr q =>
+        obtain ⟨b, T⟩ := q
+        obtain ⟨hab, hT⟩ := hu
+        cases (hab : a = b)
+        have hTeq : T = fun v => (suffixR ≫ mssPre) s v := hT
+        rw [hTeq] at hhu
+        exact hhu
+    · intro hP
+      have hr : ((F Unit Int).map (classifier (suffixR ≫ mssPre)) ≫ h) (Sum.inr (a, s)) P :=
+        ⟨Sum.inr (a, fun v => (suffixR ≫ mssPre) s v), ⟨rfl, rfl⟩, hP⟩
+      rw [← e] at hr
+      obtain ⟨w, hw, hPw⟩ := hr
+      have hweq : w = ConsList.cons a s := hw
+      rw [hweq] at hPw
+      exact hPw
+  -- `xs` and `ys` carry the same set, so `cons 3` must give them the same set too.
+  have hsame : (fun v => (suffixR ≫ mssPre) xs v) = fun v => (suffixR ≫ mssPre) ys v :=
+    funext fun v => propext ((suffix_mssPre_xs v).trans (suffix_mssPre_ys v).symm)
+  have hxs := (hstep 3 xs (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)).mp rfl
+  rw [hsame] at hxs
+  have hboth : (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)
+      = fun v => (suffixR ≫ mssPre) (ConsList.cons 3 ys) v :=
+    (hstep 3 ys (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)).mpr hxs
+  -- But `4` is the maximum prefix sum of `[3,1,-1]`, and of no suffix of `[3,-1,1]`.
+  have h4 : (suffixR ≫ mssPre) (ConsList.cons 3 xs) 4 :=
+    (suffix_mssPre_apply _ 4).mpr
+      ⟨ConsList.cons 3 xs, show suffixP (ConsList.cons 3 xs) (ConsList.cons 3 xs) from Or.inl rfl,
+        by decide⟩
+  obtain ⟨y, hy, hv⟩ := (suffix_mssPre_apply _ 4).mp (cast (congrFun hboth 4) h4)
+  have hy' : y = ConsList.cons 3 ys ∨ y = ys ∨ y = ConsList.cons 1 (ConsList.wrap ())
+      ∨ y = ConsList.wrap () := hy
+  rcases hy' with rfl | rfl | rfl | rfl <;> exact absurd hv (by decide)
 
 /-! ## Executable sanity checks -/
 
