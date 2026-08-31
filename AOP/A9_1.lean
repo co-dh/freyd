@@ -286,31 +286,35 @@ public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlg
     candidate (`id ⊑ thin id`, `id_le_thinRel_id`), so the plain recursion refines the
     thinning recursion pointwise; discharging Theorem 9.2's `hQ` hypothesis at `Q := id` needs
     exactly `hrefl : id ⊑ R°`, which the direct proof of Theorem 9.1 does not require. -/
+public theorem mu_le_mu_thinRel_id {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} :
+    mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
+      ⊑ mu (fun X : b ⟶ a =>
+          Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R) :=
+  mu_le_mu fun X => by
+    have step := comp_mono_right id_le_thinRel_id (powerRel (F.map X ≫ h) ≫ est R)
+    rw [Cat.id_comp] at step
+    exact comp_mono_left _ step
+
+/-- At `Q := id`, Theorem 9.2's thinning condition `hQ` says only that `R` is reflexive. -/
+public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj a ⟶ a}
+    {T : F.obj b ⟶ b} {R : a ⟶ a} (hrefl : Cat.id a ⊑ R°) :
+    Cat.id (F.obj b) ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
+      ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R := by
+  rw [Cat.id_comp]
+  have hid : Cat.id a ⊑ R := by
+    have h1 := recip_mono hrefl
+    rwa [recip_id, Allegory.recip_recip] at h1
+  have step := comp_mono_left (F.map ((relCata T)° ≫ relCata h) ≫ h) hid
+  rw [Cat.comp_id, Cat.assoc] at step
+  exact step
+
 theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id a ⊑ R°) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R := by
-  have hpt : ∀ X : b ⟶ a, Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R
-      ⊑ Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R := by
-    intro X
-    have step := comp_mono_right id_le_thinRel_id (powerRel (F.map X ≫ h) ≫ est R)
-    rw [Cat.id_comp] at step
-    exact comp_mono_left _ step
-  have hstep : mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ mu (fun X : b ⟶ a =>
-          Λ (T°) ≫ thinRel (Cat.id (F.obj b)) ≫ powerRel (F.map X ≫ h) ≫ est R) :=
-    mu_le_mu hpt
-  have hQ : Cat.id (F.obj b) ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
-      ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R := by
-    rw [Cat.id_comp]
-    have hid : Cat.id a ⊑ R := by
-      have h1 := recip_mono hrefl
-      rwa [recip_id, Allegory.recip_recip] at h1
-    have step := comp_mono_left (F.map ((relCata T)° ≫ relCata h) ≫ h) hid
-    rw [Cat.comp_id, Cat.assoc] at step
-    exact step
-  exact le_trans hstep (dynamic_programming_thin hFr I hh hmono htrans hQ)
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+  le_trans mu_le_mu_thinRel_id
+    (dynamic_programming_thin hFr I hh hmono htrans (thin_condition_of_refl I hrefl))
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
@@ -423,7 +427,7 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`) — a
     context-refined version of `monotonicAlg_of_cost` where the extra hypothesis `hk` need
     only see the product bundle, not the bare `cost`. -/
-theorem monotonicAlg_in_context {c : 𝒜} {h : F.obj a ⟶ a} {R : a ⟶ a} {cost : a ⟶ c}
+public theorem monotonicAlg_in_context {c : 𝒜} {h : F.obj a ⟶ a} {R : a ⟶ a} {cost : a ⟶ c}
     {S : a ⟶ b} {P : RelProd c b} {leq : c ⟶ c} {k : F.obj P.p ⟶ c}
     (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ leq ≫ cost°)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
@@ -716,7 +720,7 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T
 
 /-- **Ex 9.2**, packaged as a `dynamic_programming_thin` variant: the context-strengthened
     hypotheses discharge the least-fixed-point refinement exactly as Theorem 9.2 does. -/
-theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} (hh : Map h)
     (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
         ⊑ h ≫ R°)
@@ -726,6 +730,21 @@ theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAl
     mu (fun X : b ⟶ a => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
+
+/-- **Theorem 9.1 in context**: the plain (un-thinned) dynamic-programming recursion refines the
+    optimisation spec when `h` is monotonic only ON `H`'s domain of definition, `R° ∩ (H°·H)` —
+    the form B&dM's §9.3 optimal-bracketing derivation uses, where only trees with the same
+    flattening are ever compared.  Ex 9.2 (`dynamic_programming_thin_context`) at `Q := id`. -/
+public theorem dynamic_programming_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+    {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} (hh : Map h)
+    (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
+        ⊑ h ≫ R°)
+    (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id a ⊑ R°) :
+    mu (fun X : b ⟶ a => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+  le_trans mu_le_mu_thinRel_id
+    (dynamic_programming_thin_context hFr I hh hctx1 htrans
+      (le_trans (comp_mono_right (inter_lb_left _ _) _) (thin_condition_of_refl I hrefl)))
 
 /-! ## Dropped (B&dM Proposition 9.1, Ex 9.5) — disjoint ranges / coproduct split (pp.219-220)
 
