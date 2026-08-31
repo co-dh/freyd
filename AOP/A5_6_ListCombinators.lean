@@ -209,6 +209,36 @@ public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
 public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun p => cappend p.1 p.2
 
+/-- The length of a list. -/
+@[expose] public def clen : ConsList Unit A → Nat
+  | ConsList.wrap _ => 0
+  | ConsList.cons _ x => clen x + 1
+
+/-- Every list is a suffix of itself. -/
+public theorem suffixP.refl : ∀ x : ConsList Unit A, suffixP x x
+  | ConsList.wrap () => rfl
+  | ConsList.cons _ _ => Or.inl rfl
+
+/-- A suffix is no longer than the list it is a suffix of. -/
+public theorem suffixP_clen_le {w : ConsList Unit A} :
+    ∀ {x : ConsList Unit A}, suffixP w x → clen w ≤ clen x
+  | ConsList.wrap _, h => by rw [show w = ConsList.wrap () from h]; exact Nat.le_refl 0
+  | ConsList.cons a y, h => by
+    rcases h with rfl | h
+    · exact Nat.le_refl _
+    · exact Nat.le_succ_of_le (suffixP_clen_le h)
+
+/-- **`suffixP` is antisymmetric**: a set of suffixes has at most one longest member, which is
+    what lets `est(suffix)` recover a list from the set of its suffixes. -/
+public theorem suffixP_antisymm : ∀ {w x : ConsList Unit A}, suffixP w x → suffixP x w → w = x
+  | _, ConsList.wrap (), h1, _ => h1
+  | w, ConsList.cons a y, h1, h2 => by
+    rcases h1 with rfl | h1
+    · rfl
+    · have hle : clen w ≤ clen y := suffixP_clen_le h1
+      have hge : clen y + 1 ≤ clen w := suffixP_clen_le h2
+      exact absurd (Nat.le_trans hge hle) (Nat.not_succ_le_self (clen y))
+
 /-- `ys` is a prefix of `x` iff some `v` completes it on the right: `ys ++ v = x`. -/
 public theorem prefixP_iff_append :
     ∀ (ys x : ConsList Unit A), prefixP ys x ↔ ∃ v, cappend ys v = x

@@ -332,6 +332,15 @@ public theorem mss_shape : mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq)
   gives them `1` and `0`, and `cons 3` separates the two sets again (`{4,1,0}` against `{3,1,0}`).
   A fold must send equal carriers to equal carriers, so it cannot do both. -/
 
+/-- **`est(suffix)` is the power object's `head`**: the longest suffix of `x` is `x` itself, so
+    `Λ(suffix) est(suffix) = 𝟙`.  The recovery `mss-scan` uses `head` for IS available here — what
+    the power object loses is the recovered list's `g`-value, which is where `E(g)` bites. -/
+public theorem Λ_suffix_comp_est {A : Type} : suffixR%∋ ≫ est(suffixR) = 𝟙 (dList A) := by
+  apply hom_ext; intro x w
+  rw [Λ_comp_est_apply]
+  exact ⟨fun ⟨hw, hall⟩ => (suffixP_antisymm hw (hall x (suffixP.refl x))).symm,
+    fun (h : x = w) => h ▸ ⟨suffixP.refl x, fun _ hz => hz⟩⟩
+
 /-- `[1,-1]`: `g xs = 1`. -/
 private def xs : ConsList Unit Int := ConsList.cons 1 (ConsList.cons (-1) (ConsList.wrap ()))
 /-- `[-1,1]`: the same suffix maxima as `xs`, but `g ys = 0`. -/
