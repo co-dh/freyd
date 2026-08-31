@@ -303,6 +303,11 @@ public theorem rprodMap_comp {a a' a'' b b' b'' : RelSet.{u}} (R : a ⟶ a') (R'
   · rintro ⟨m, ⟨hR, hS⟩, hR', hS'⟩; exact ⟨⟨m.1, hR, hR'⟩, ⟨m.2, hS, hS'⟩⟩
   · rintro ⟨⟨y1, hR, hR'⟩, ⟨y2, hS, hS'⟩⟩; exact ⟨(y1, y2), ⟨hR, hS⟩, hR', hS'⟩
 
+/-- The product action is monotonic in both arguments. -/
+public theorem rprodMap_mono {a a' b b' : RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
+    (hR : R ⊑ R') (hS : S ⊑ S') : rprodMap R S ⊑ rprodMap R' S' :=
+  le_iff.mpr fun p q h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
+
 /-- `(𝟙×Q)π₂ = π₂Q` — an identity first component slides any `Q` past the second projection
     (the note's `h:=π₂` row of `party-mono-branch`: `𝟙` is entire, so `Dom(π₁)=𝟙`). -/
 public theorem rprodMap_id_snd {a b b' : RelSet.{u}} (Q : b ⟶ b') :

@@ -168,7 +168,7 @@ theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.id (dLis
   | ConsList.cons a x, ys => ConsList.cons a (cappend x ys)
 
 /-- Flatten a list of lists (`concat = ⦇[nil, cat]⦈`). -/
-def cconcat : ConsList Unit (ConsList Unit A) → ConsList Unit A
+@[expose] public def cconcat : ConsList Unit (ConsList Unit A) → ConsList Unit A
   | ConsList.wrap _ => ConsList.wrap ()
   | ConsList.cons seg rest => cappend seg (cconcat rest)
 
@@ -192,7 +192,7 @@ public def partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelS
 public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
 
 /-- The flatten relation `concat : list (list A) ⟶ list A` — the graph of `cconcat`. -/
-public def concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A := graph cconcat
+@[expose] public def concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A := graph cconcat
 
 /-! ## Suffix `suffix : list A ← list A` and `cat` (append) as a relation -/
 
@@ -394,7 +394,7 @@ variable {B : Type}
   | ConsList.cons a x, ConsList.cons b y => R a b ∧ listP R x y
 
 /-- The list relator's action `list(R) : list A ⟶ list B` (B&dM's `listr R`). -/
-public def list (R : dE A ⟶ dE B) : dList A ⟶ dList B := listP R
+@[expose] public def list (R : dE A ⟶ dE B) : dList A ⟶ dList B := listP R
 
 /-- **`list(R) = ⦇[nil, (R⊗𝟙) cons]⦈`** (note `comb-fns`; B&dM p.126): one `R` per element,
     the shape untouched. -/
