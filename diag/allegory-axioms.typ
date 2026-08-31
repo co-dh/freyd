@@ -6280,7 +6280,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #disp[#definition[
 For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt) #src[(8.1)].
 
-`ys (thin Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)`
+`ys (thin Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[`lean:rel.AutoDeriveThin.thinRel_pt@dec7230e`]
 ]]<thin-defn>
 
 #disp[#table(
@@ -6328,7 +6328,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
     #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
-     values `S` gives one argument — (8.3), p. 194, `R∩(S°S)⊑Q`, `Q` a preorder]],
+     values `S` gives one argument — (8.3), p. 194, `R∩(S°S)⊑Q`, `Q` a preorder
+     #h(4pt) `lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d22de9c7`]],
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
 
   [#vstep([], [],
@@ -6393,7 +6394,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈⊑`#frc([`⦇S⦈`])` thin Q` \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
-     Theorem 8.1, p. 195, `S` monotonic on `Q`, `Q` a preorder]],
+     Theorem 8.1, p. 195, `S` monotonic on `Q`, `Q` a preorder
+     #h(4pt) `lean:AOP.A8_1.thinning@db624922`]],
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
 
   [#vstep([], [],
@@ -6454,7 +6456,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the thinning fold refines the optimisation problem itself —
-     Corollary 8.1, `S` monotonic on `Q`, `Q⊑R`, both preorders]],
+     Corollary 8.1, `S` monotonic on `Q`, `Q⊑R`, both preorders
+     #h(4pt) `lean:AOP.A8_1.thinning_est@c31bcdd8`]],
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
@@ -7195,7 +7198,7 @@ in @mu-defn.
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
-     optimum]],
+     optimum #h(4pt) `lean:AOP.A9_1.dynamic_programming_thin@6b5aa580`]],
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
@@ -7618,7 +7621,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
-     carried and the recursion runs on values alone]],
+     carried and the recursion runs on values alone #h(4pt) `lean:AOP.A10_1.greedy_dp@93506ebf`]],
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
