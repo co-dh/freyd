@@ -5693,11 +5693,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`F(A,EB)⟶E(F(A,B))`],
   [Turns a square paired with a set of paths into the set of extensions of those paths.],
 
-  [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`],
+  [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
+   #src[`lean:AOP.A7_4_Cylinder.generate@4bd0bafd`]],
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
   [One fold step: extends every path of every row by the new column.],
 
-  [`paths≜⦇generate⦈ setify union`],
+  [`paths≜⦇generate⦈ setify union` #src[`lean:AOP.A7_4_Cylinder.paths@c16ad5b9`]],
   [`L N Nat⟶E(L Nat)`],
   [Every path across the cylinder.],
 
@@ -5874,7 +5875,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra]],
+  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
+    `lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, cb-est))), [`paths est(R)`])],
@@ -5942,7 +5944,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step]],
+  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step,
+    `lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),
@@ -5955,7 +5958,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 ))
 #align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
-  minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.]])
+  minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
+  `lean:AOP.A7_4_Cylinder.cyl_7_13@5224efdc`]])
 ]<cyl-fusion>
 
 #let CC5 = 4.30    // `moves`, where the `E` is born
@@ -5987,14 +5991,15 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
-    #src[the algebra @cyl-laws's last step folds]],
+    #src[the algebra @cyl-laws's last step folds, `lean:AOP.A7_4_Cylinder.cyl_step@4930da05`]],
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [`Q`])],
   [#cc1],
 
   [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
-    [`F(𝟙,moves trans N(est(R))) zip N(α)` \ #src[the fusion condition read as a definition]])],
+    [`F(𝟙,moves trans N(est(R))) zip N(α)` \ #src[the fusion condition read as a definition,
+     `lean:AOP.A7_4_Cylinder.Q@2b4dd374`]])],
   [#cc2],
 
   [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
@@ -6015,7 +6020,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`R≜length≤length°`],
+  [`R≜length≤length°` #src[`lean:AOP.A7_5_Van.R_eq@fa26242d`]],
   [`[[Int]]⟶[[Int]]`],
   [The order the schedule is minimised over: fewer van visits is better.],
 
@@ -6056,15 +6061,15 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [`1+Int×[[Int]]⟶[[Int]]`],
   [The algebra whose fold is every splitting of the transactions into secure segments.],
 
-  [`partition list(secure)=⦇S⦈`],
+  [`partition list(secure)=⦇S⦈` #src[`lean:AOP.A7_5_Van.van_spec@79d2f560`]],
   [`[Int]⟶[[Int]]`],
   [Fusion: keeping only secure segments is what turns `glue` into `old`.],
 
-  [`H≜(head prefix° head°)∪(nil° nil)`],
+  [`H≜(head prefix° head°)∪(nil° nil)` #src[`lean:AOP.A7_5_Van.H_eq@b1cf5141`]],
   [`[[Int]]⟶[[Int]]`],
   [One schedule's first segment is a prefix of the other's, or both are empty.],
 
-  [`R;H≜R∩(R°⇒H)`],
+  [`R;H≜R∩(R°⇒H)` #src[`lean:AOP.A7_5_Van.RH_eq@ddc8b9dc`]],
   [`[[Int]]⟶[[Int]]`],
   [The refinement of `R` that makes both halves of `S` monotonic.],
 
@@ -6152,7 +6157,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
-     called where it does not]],
+     called where it does not, `lean:AOP.A7_5_Van.van_laws@400440f3`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-line((vb-spec, vb-estR))),
@@ -6160,24 +6165,26 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [#v-hm1],
 
   [#vstep(EQ, van-pic(van-line((vb-LS, vb-estR))),
-    [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈` — @van-defn, @cata-fusion at
+    [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
+     #h(4pt) `lean:AOP.A7_5_Van.van_spec@79d2f560` — @van-defn, @cata-fusion at
      `secure prefix⊑prefix secure`]])],
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-LS, vb-estRH))),
     [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new∪old)R` is FALSE, the
-     shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new∪old)R` holds]])],
+     shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new∪old)R` holds,
+     `lean:AOP.A7_5_Van.van_7_15_false@1b163187`, `lean:AOP.A7_5_Van.van_7_14@31454849`]])],
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-greedy,))),
     [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
-     `(𝟙×⊤)new⊑new H`]])],
+     `(𝟙×⊤)new⊑new H`, `lean:AOP.A7_5_Van.van_mono_new@ca4101c9`]])],
   [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
 
   [#vstep(RQ, van-pic(van-line((vb-prog,))),
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
-     returns one, and `ok` is where it does]])],
+     returns one, and `ok` is where it does, `lean:AOP.A7_5_Van.prog_le_greedy@9203a952`]])],
   [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
 ))]<van-laws>
 
@@ -6187,14 +6194,16 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×(R;H))old⊑(new∪old)(R;H)` \
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
-     on, or calling the van, and bettering the whole schedule after]],
+     on, or calling the van, and bettering the whole schedule after,
+     `lean:AOP.A7_5_Van.van_mono@5f456bbf`]],
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-old((vb-RH,), ())), [`(𝟙×(R;H))old`])],
   [#van-mono-hm([`R;H`], true)],
 
   [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
-    [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes]])],
+    [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
+     `lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e`]])],
   [#van-mono-hm([`|R|`], true)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
