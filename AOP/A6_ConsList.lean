@@ -73,16 +73,12 @@ public inductive ConsList (L E : Type) where
   -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
   -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound}).
   map_id c := hom_ext fun u v => by
-    cases u with
-    | inl d =>
-      cases v with
-      | inl d' => exact ⟨fun h => congrArg Sum.inl (h : d = d'), fun h => Sum.inl.inj h⟩
-      | inr q => exact ⟨fun h => (h : False).elim, fun h => nomatch h⟩
-    | inr p =>
-      cases v with
-      | inl d' => exact ⟨fun h => (h : False).elim, fun h => nomatch h⟩
-      | inr q => exact ⟨fun h => congrArg Sum.inr (Prod.ext_iff.mpr ⟨h.1, h.2⟩),
-          fun h => Prod.ext_iff.mp (Sum.inr.inj h)⟩
+    cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;>
+      first
+        | exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
+        | exact ⟨False.elim, fun h => nomatch h⟩
+        | exact ⟨fun h => congrArg Sum.inr (Prod.ext_iff.mpr h),
+            fun h => Prod.ext_iff.mp (Sum.inr.inj h)⟩
   map_comp R S := hom_ext fun u v => by
     cases u with
     | inl d => cases v with
