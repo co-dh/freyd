@@ -11,13 +11,15 @@
   functions, replacing the head of one list and consing onto the other.
 
   A FINDING ON THE NOTE.  `tour-mono`'s two positive rows, `(𝟙×Q) dropl ⊑ dropl Q` and
-  `(𝟙×Q) dropr ⊑ dropr Q` at `Q ≜ R ∩ (next2 next2°)`, are FALSE as printed —
-  `tour_mono_dropl_Q_false` and `tour_mono_dropr_Q_false` refute them on four-city data.  The
-  book says why (p.215): the cost of `dropl (a,(x,y))` is `cost (x,y) + tc(a,next x) −
-  tc(head x,next x) + tc(head y,a)`, so the step reads BOTH heads as well as both second
-  cities, and "the first conjunct will hold whenever `(x,y)` and `(u,v)` are tours of the same
-  input".  That is a monotonicity IN CONTEXT: it is a property of the candidates the fold
-  actually holds, not of arbitrary pairs of lists, and `Q` as printed does not record it.
+  `(𝟙×Q) dropr ⊑ dropr Q` at `Q ≜ R ∩ (next2 next2°)`, are FALSE as printed.
+  `tour_mono_dropl_Q_false` and `tour_mono_dropr_Q_false` refute them on two GENUINE tours —
+  each with its own two heads equal, as p.214 says every partial tour has — that are tours of
+  DIFFERENT inputs.  The book says why (p.215): the cost of `dropl (a,(x,y))` is
+  `cost (x,y) + tc(a,next x) − tc(head x,next x) + tc(head y,a)`, so the step reads BOTH heads
+  as well as both second cities, and "the first conjunct will hold whenever `(x,y)` and
+  `(u,v)` are tours of the same input".  That is a monotonicity IN CONTEXT: it is a property of
+  the candidates the fold actually holds together, not of tours at large, and `Q` as printed
+  does not record it.
 
   What is proved here instead is the row at `Qc ≜ Q ∩ (head2 head2°)`, which does record it —
   `tour_mono_dropl`, `tour_mono_dropr` — and `tour_laws` is Theorem 8.2 at `Qc`.  The note's
@@ -199,147 +201,89 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
 
 /-! ## `tour-mono` -/
 
+/-! The four refutations share one pair of GENUINE tours — each has its own two heads equal, as
+  every partial tour does (B&dM p.214) — differing only in the head they share, which is what
+  makes them tours of DIFFERENT inputs.  `tc (a,b) = a·b`, so a step out of `3` costs `3·head`. -/
+
+/-- The tour `([1,0],[1,0])`, of cost `0`. -/
+@[expose] public def tA : Tour Int :=
+  (ConsList.wrap ((1 : Int), (0 : Int)), ConsList.wrap ((1 : Int), (0 : Int)))
+
+/-- The tour `([0,0],[0,0])`, also of cost `0` and with the same two second cities. -/
+@[expose] public def tB : Tour Int :=
+  (ConsList.wrap ((0 : Int), (0 : Int)), ConsList.wrap ((0 : Int), (0 : Int)))
+
+/-- `tA` and `tB` are `Q`-related: equal cost, equal `next2`.  They differ only in their shared
+    head, which `Q` does not record. -/
+public theorem tA_Q_tB : Q (fun p : Int × Int => p.1 * p.2) tA tB :=
+  ⟨by decide, by decide, by decide⟩
+
 /-- **tour-mono**, first row (marked FALSE in the note; B&dM p.215): `(𝟙×R) dropl ⊑ dropl R`
-    fails.  Four cities named by their `Int` labels with `tc (a,b) = a + b`: two tours of equal
-    outward journey and equal cost, but the one whose return starts at `6` becomes dearer once
-    `dropl` conses a city on. -/
+    fails.  `tA` and `tB` cost the same, but continuing either to city `3` costs `tc (head,3)`
+    on the return, which is `3` from `tA` and `0` from `tB`. -/
 public theorem tour_mono_dropl_false :
     ¬ MonotonicAlg (F := F (Int × Int) Int) (graph droplAlgFn)
-        (R (fun p : Int × Int => p.1 + p.2)) := by
+        (R (fun p : Int × Int => p.1 * p.2)) := by
   intro h
-  have hRxy : cost (fun p : Int × Int => p.1 + p.2)
-        (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int)))
-      ≤ cost (fun p : Int × Int => p.1 + p.2)
-        (ConsList.wrap ((0 : Int), (1 : Int)),
-          ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int)))) := by decide
-  have hstep := le_iff.mp h
-    (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int)))))
-    (droplAlgFn (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int)))))))
-    ⟨Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int))))),
-      ⟨rfl, hRxy⟩, rfl⟩
+  have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droplAlgFn (Sum.inr ((3 : Int), tB)))
+    ⟨Sum.inr ((3 : Int), tB), ⟨rfl, tA_Q_tB.1⟩, rfl⟩
   obtain ⟨s, hs, hR⟩ := hstep
-  obtain rfl : s = droplAlgFn (Sum.inr ((0 : Int),
-    (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int))))) := hs
-  have hbad : cost (fun p : Int × Int => p.1 + p.2)
-        (droplAlgFn (Sum.inr ((0 : Int),
-          (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int))))))
-      ≤ cost (fun p : Int × Int => p.1 + p.2)
-        (droplAlgFn (Sum.inr ((0 : Int),
-          (ConsList.wrap ((0 : Int), (1 : Int)),
-            ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int))))))) := hR
+  obtain rfl : s = droplAlgFn (Sum.inr ((3 : Int), tA)) := hs
+  have hbad : cost (fun p : Int × Int => p.1 * p.2) (droplAlgFn (Sum.inr ((3 : Int), tA)))
+      ≤ cost (fun p : Int × Int => p.1 * p.2) (droplAlgFn (Sum.inr ((3 : Int), tB))) := hR
   revert hbad
   decide
 
 /-- **THE FINDING**: `tour-mono`'s POSITIVE first row, `(𝟙×Q) dropl ⊑ dropl Q` at
-    `Q ≜ R ∩ (next2 next2°)`, is false as printed — the same two tours also agree on both
-    second cities.  What separates them is their RETURN HEADS (`6` against `0`), which `Q` does
-    not record and which `dropl` reads (`+ tc(head y,a)`, B&dM p.215).  It holds once the heads
-    are added, which is `tour_mono_dropl` below. -/
+    `Q ≜ R ∩ (next2 next2°)`, is false as printed — `tA` and `tB` are `Q`-related genuine tours,
+    and `dropl` separates them.  What it reads and `Q` does not record is the HEAD
+    (`+ tc(head y,a)`, B&dM p.215); the row holds once the heads are added, which is
+    `tour_mono_dropl` below. -/
 public theorem tour_mono_dropl_Q_false :
     ¬ MonotonicAlg (F := F (Int × Int) Int) (graph droplAlgFn)
-        (Q (fun p : Int × Int => p.1 + p.2)) := by
+        (Q (fun p : Int × Int => p.1 * p.2)) := by
   intro h
-  have hQxy : Q (fun p : Int × Int => p.1 + p.2)
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int)))
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int)))) :=
-    ⟨by decide, by decide, by decide⟩
-  have hstep := le_iff.mp h
-    (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int)))))
-    (droplAlgFn (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int)))))))
-    ⟨Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int))))),
-      ⟨rfl, hQxy⟩, rfl⟩
+  have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droplAlgFn (Sum.inr ((3 : Int), tB)))
+    ⟨Sum.inr ((3 : Int), tB), ⟨rfl, tA_Q_tB⟩, rfl⟩
   obtain ⟨s, hs, hQ⟩ := hstep
-  obtain rfl : s = droplAlgFn (Sum.inr ((0 : Int),
-    (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int))))) := hs
-  have hbad : Q (fun p : Int × Int => p.1 + p.2)
-      (droplAlgFn (Sum.inr ((0 : Int),
-        (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((6 : Int), (0 : Int))))))
-      (droplAlgFn (Sum.inr ((0 : Int),
-        (ConsList.wrap ((0 : Int), (1 : Int)),
-          ConsList.cons (0 : Int) (ConsList.wrap ((0 : Int), (10 : Int))))))) := hQ
+  obtain rfl : s = droplAlgFn (Sum.inr ((3 : Int), tA)) := hs
+  have hbad : Q (fun p : Int × Int => p.1 * p.2) (droplAlgFn (Sum.inr ((3 : Int), tA)))
+      (droplAlgFn (Sum.inr ((3 : Int), tB))) := hQ
   have hbadc := hbad.1
   revert hbadc
   decide
 
-/-- **tour-mono**, second row (marked FALSE in the note): `(𝟙×R) dropr ⊑ dropr R` fails.  The
-    mirror witness — the two RETURNS differ in head, and `dropr` reads `head y` through
-    `− tc(next y,head y)`.  Costs are negative here because `tc` is not positive. -/
+/-- **tour-mono**, second row (marked FALSE in the note): `(𝟙×R) dropr ⊑ dropr R` fails on the
+    same two tours — `dropr` reads the head through `+ tc(a,head x)`. -/
 public theorem tour_mono_dropr_false :
     ¬ MonotonicAlg (F := F (Int × Int) Int) (graph droprAlgFn)
-        (R (fun p : Int × Int => p.1 + p.2)) := by
+        (R (fun p : Int × Int => p.1 * p.2)) := by
   intro h
-  have hRxy : cost (fun p : Int × Int => p.1 + p.2)
-        (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int)))
-      ≤ cost (fun p : Int × Int => p.1 + p.2)
-        (ConsList.wrap ((0 : Int), (1 : Int)),
-          ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int)))) := by decide
-  have hstep := le_iff.mp h
-    (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int)))))
-    (droprAlgFn (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int)))))))
-    ⟨Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int))))),
-      ⟨rfl, hRxy⟩, rfl⟩
+  have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droprAlgFn (Sum.inr ((3 : Int), tB)))
+    ⟨Sum.inr ((3 : Int), tB), ⟨rfl, tA_Q_tB.1⟩, rfl⟩
   obtain ⟨s, hs, hR⟩ := hstep
-  obtain rfl : s = droprAlgFn (Sum.inr ((0 : Int),
-    (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int))))) := hs
-  have hbad : cost (fun p : Int × Int => p.1 + p.2)
-        (droprAlgFn (Sum.inr ((0 : Int),
-          (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int))))))
-      ≤ cost (fun p : Int × Int => p.1 + p.2)
-        (droprAlgFn (Sum.inr ((0 : Int),
-          (ConsList.wrap ((0 : Int), (1 : Int)),
-            ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int))))))) := hR
+  obtain rfl : s = droprAlgFn (Sum.inr ((3 : Int), tA)) := hs
+  have hbad : cost (fun p : Int × Int => p.1 * p.2) (droprAlgFn (Sum.inr ((3 : Int), tA)))
+      ≤ cost (fun p : Int × Int => p.1 * p.2) (droprAlgFn (Sum.inr ((3 : Int), tB))) := hR
   revert hbad
   decide
 
 /-- **THE FINDING**, mirror: `tour-mono`'s POSITIVE second row `(𝟙×Q) dropr ⊑ dropr Q` is false
-    as printed too. -/
+    as printed too, on the same two genuine tours. -/
 public theorem tour_mono_dropr_Q_false :
     ¬ MonotonicAlg (F := F (Int × Int) Int) (graph droprAlgFn)
-        (Q (fun p : Int × Int => p.1 + p.2)) := by
+        (Q (fun p : Int × Int => p.1 * p.2)) := by
   intro h
-  have hQxy : Q (fun p : Int × Int => p.1 + p.2)
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int)))
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int)))) :=
-    ⟨by decide, by decide, by decide⟩
-  have hstep := le_iff.mp h
-    (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int)))))
-    (droprAlgFn (Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int)))))))
-    ⟨Sum.inr ((0 : Int),
-      (ConsList.wrap ((0 : Int), (1 : Int)),
-        ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int))))),
-      ⟨rfl, hQxy⟩, rfl⟩
+  have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droprAlgFn (Sum.inr ((3 : Int), tB)))
+    ⟨Sum.inr ((3 : Int), tB), ⟨rfl, tA_Q_tB⟩, rfl⟩
   obtain ⟨s, hs, hQ⟩ := hstep
-  obtain rfl : s = droprAlgFn (Sum.inr ((0 : Int),
-    (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int))))) := hs
-  have hbad : Q (fun p : Int × Int => p.1 + p.2)
-      (droprAlgFn (Sum.inr ((0 : Int),
-        (ConsList.wrap ((0 : Int), (1 : Int)), ConsList.wrap ((0 : Int), (-6 : Int))))))
-      (droprAlgFn (Sum.inr ((0 : Int),
-        (ConsList.wrap ((0 : Int), (1 : Int)),
-          ConsList.cons (6 : Int) (ConsList.wrap ((-6 : Int), (0 : Int))))))) := hQ
+  obtain rfl : s = droprAlgFn (Sum.inr ((3 : Int), tA)) := hs
+  have hbad : Q (fun p : Int × Int => p.1 * p.2) (droprAlgFn (Sum.inr ((3 : Int), tA)))
+      (droprAlgFn (Sum.inr ((3 : Int), tB))) := hQ
   have hbadc := hbad.1
   revert hbadc
   decide
+
 
 /-- **tour-mono**, first row at `Qc`: `(𝟙×Qc) dropl ⊑ dropl Qc`.  Both deltas of `cost_dropl`
     are then the same number, and the result's own heads (`a`, `a`) and second cities
