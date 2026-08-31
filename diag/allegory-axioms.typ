@@ -4930,11 +4930,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`tree A::=node (A,[tree A])`],
+  [`tree A::=node (A,[tree A])` #src[`lean:AOP.A6_RoseTree.Rose@1e5d7a7f`]],
   [`𝒜⟶𝒜`],
   [The company hierarchy: an employee, and the list of subtrees under them.],
 
-  [`F(A,B)=A×[B]`],
+  [`F(A,B)=A×[B]` #src[`lean:AOP.A6_RoseTree.F@bd6da71e`]],
   [`𝒜×𝒜⟶𝒜`],
   [The base functor `tree` folds: an employee beside the recursive position, one layer deep.],
 
@@ -4942,11 +4942,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [`A⟶Real`],
   [What one employee is worth as a guest.],
 
-  [`cost≜list(rating) sum`],
+  [`cost≜list(rating) sum` #src[`lean:AOP.A7_3_Party.cost_eq@a00b687c`]],
   [`[A]⟶Real`],
   [What a guest list is worth.],
 
-  [`R≜cost≤cost°`],
+  [`R≜cost≤cost°` #src[`lean:AOP.A7_3_Party.R_eq@9fa61324`]],
   [`[A]⟶[A]`],
   [The preorder the guest list is maximised over.],
 
@@ -4966,7 +4966,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [`F(A,[A]×[A])⟶[A]×[A]`],
   [The algebra: one step returns both parties of a subtree at once.],
 
-  [`party≜⦇S⦈ choose`],
+  [`party≜⦇S⦈ choose` #src[`lean:AOP.A7_3_Party.party_eq@db515982`]],
   [`tree A⟶[A]`],
   [Every guest list the president's ruling allows.],
 
@@ -5057,7 +5057,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   lab(11.7, -y - 0.5, black)[`de`]; lab(12.9, -y - 0.5, black)[`f`]
   lab(16.5, -y + 0.5, black)[`[A]`]
   lab(17.8, -y - 0.5, black)[`def`]
-}), s: 80%)]<include-pic>
+}), s: 80%)
+#align(center, src[`lean:AOP.A7_3_Party.include_eq@d4df2bf2`])]<include-pic>
 
 // The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
 // `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
@@ -5079,7 +5080,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   lab(11.7, -y + 0.5, black)[`b`]; lab(12.9, -y - 0.5, black)[`f`]
   lab(16.5, -y + 0.5, black)[`[A]`]
   lab(17.8, -y - 0.5, black)[`bf`]
-}), s: 80%)]<exclude-pic>
+}), s: 80%)
+#align(center, src[`lean:AOP.A7_3_Party.exclude_eq@05c2777f`])]<exclude-pic>
 
 // `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
 #disp[#align(center, grid(
@@ -5112,7 +5114,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ([b],[d,e])
   │   └── exclude: the best party in b's subtree when b does not come
   └────── include: the best party in b's subtree when b comes
-```]]<party-listrr>
+```]
+#align(center, src[`lean:AOP.A7_3_Party.party_listrr_example@286e6447`])]<party-listrr>
 
 // `(R×R)°` is TWO demands, one per component, and at `a` both elements move, each in its second —
 // the table is here because "the relator relates them elementwise" hides which component that is.
@@ -5131,7 +5134,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [`[c] R° [c]` \ #src[`2≥2`, reflexivity]],
   [`[f] R° []` \ #src[`8≥0`, and `([c],[f])` is the pair `est(R°)` keeps at `c`]],
 )
-#align(center, src[the first component of `𝟙×list((R×R)°)` is the root employee.])
+#align(center, src[the first component of `𝟙×list((R×R)°)` is the root employee.
+  `lean:AOP.A7_3_Party.party_listrr_example@286e6447`])
 ]<party-rr>
 
 // Each note in its own block: the template indents the second of two consecutive paragraphs, and an
@@ -5162,7 +5166,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
   homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
     regions: auto, sep: text(SLACK)[`⊑`], rev: true, gap: 1.4, length: 1.35cm),
-  [`(𝟙×list((R×R)°))S⊑S(R×R)°`],
+  [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[`lean:AOP.A7_3_Party.party_mono@8a43178e`]],
 )]<party-mono>
 
 // @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
@@ -5183,7 +5187,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     node(T.at(0), T.at(1), black, `tree A`); node(EM.at(0), EM.at(1), black, `E([A]×[A])`)
     node(EB.at(0), EB.at(1), black, `E[A]`)
   }),
-  [$frac(#[`⦇S⦈ choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption]],
+  [$frac(#[`⦇S⦈ choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
+   `lean:AOP.A4_6.Λ_absorption@e87bd8f2`]],
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
@@ -5338,7 +5343,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     [`(𝟙×list((R×R)°))exclude`], SQ, [`exclude R°`],
   ))
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
-   running it first and bettering the two parties it returns]],
+   running it first and bettering the two parties it returns,
+   `lean:AOP.A7_3_Party.branch_monotonic@668fb773`, `lean:AOP.A7_3_Party.exclude_monotonic@92dade83`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#step([])[#party-pic(tallpic((box-lrro, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
@@ -5357,16 +5363,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1.7cm, auto),
   row-gutter: 3.5pt, align: (left, left),
   [`g`],
-  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`, `g:=π₁` its mirror
+  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`
+   #src[`lean:AOP.A7_3_Party.include_monotonic@c4d977bd`], `g:=π₁` its mirror
    `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁∪π₂` is the union
-   of the two #h(4pt) #src[@lax-closure]. `list` monotonic, @relator-defn],
+   of the two #h(4pt) #src[@lax-closure, `lean:AOP.A7_3_Party.chooseR_monotonic@8817d447`].
+   `list` monotonic, @relator-defn],
   [`concat`],
   [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole. B&dM's exercise.],
+   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole. B&dM's exercise.
+   #src[`lean:AOP.A7_3_Party.concat_monotonic@084e46a9`]],
   [`h`],
   [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
-   makes a cheaper list. B&dM's exercise.  For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
-   `=π₂R°`: `π₁` is a map, hence entire, so `Dom(π₁)=𝟙` — @dom-laws],
+   makes a cheaper list. B&dM's exercise. #src[`lean:AOP.A7_3_Party.cons_monotonic@e5288fc0`]
+   For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
+   `=π₂R°` #src[`lean:AOP.A6_1_RelSet.rprodMap_id_snd@dc93a451`]: `π₁` is a map, hence entire, so
+   `Dom(π₁)=𝟙` — @dom-laws],
 )]])
 
 #v(3pt)
@@ -5376,7 +5387,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
   table.header([`(𝟙×(list(g) concat))h`], [`g`], [`h`]),
   [`include`], [`π₂`], [`cons`],
-  [`exclude`], [`choose`], [`π₂`],
+  [`exclude` #src[`lean:AOP.A7_3_Party.exclude_monotonic@92dade83`]], [`choose`], [`π₂`],
 ))
 ]<party-mono-branch>
 
@@ -5604,7 +5615,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
-     the better of the two at the root]],
+     the better of the two at the root, `lean:AOP.A7_3_Party.party_laws@a2d9caf9`]],
   table.header([*circuit*],
     [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch]),
 
@@ -5623,22 +5634,26 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
     [#frc([`⦇S⦈`])` est((R×R)°) `#frc([`choose`])` est(R°)` \
-     #src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row]])],
+     #src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row,
+      `lean:AOP.A7_2.est_Λ_est_le@1083248a`]])],
   [#dcell(d-out4, none)],
 
   [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
     [`⦇`#frc([`S`])` est((R×R)°)⦈ `#frc([`choose`])` est(R°)` \
-     #src[`(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono]])],
+     #src[`(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
+      `lean:AOP.A7_2.greedy@21400acf`]])],
   [#dcell(d-out5, d-in5)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
     [`⦇⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⦈ `#frc([`choose`])` est(R°)` \
-     #src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15]])],
+     #src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
+      `lean:AOP.A7_3_Party.pair_est_le@75a48598`]])],
   [#dcell(none, d-in6)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW7, LBY, lbody7)),
     [`⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
-     #src[`include` a map, `est(R°)` into each branch]])],
+     #src[`include` a map, `est(R°)` into each branch,
+      `lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d`, `lean:AOP.A7_3_Party.exclude_step@7360252f`]])],
   [#dcell(none, d-in7)],
 )]<party-laws>
 
@@ -5720,8 +5735,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   row-gutter: 3.5pt, align: (left, center, left),
   [`include map`], text(SLACK)[$subset.eq.sq$], [`include` a map, `est(R°)` into each branch],
   [`Ex 7.15`], text(SLACK)[$subset.eq.sq$], [the fork splits],
-  [`Thm 7.2`], text(SLACK)[$subset.eq.sq$], [`(𝟙×list((R×R)°))S⊑S(R×R)°`],
-  [`Ex 7.38`], text(SLACK)[$subset.eq.sq$], [`(R×R)°choose⊑choose R°`],
+  [`Thm 7.2`], text(SLACK)[$subset.eq.sq$],
+    [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[`lean:AOP.A7_3_Party.party_mono@8a43178e`]],
+  [`Ex 7.38`], text(SLACK)[$subset.eq.sq$],
+    [`(R×R)°choose⊑choose R°` #src[`lean:AOP.A7_3_Party.chooseR_monotonic@8817d447`]],
   [`@pow-laws`], [$=$], [absorption],
   [`party≜`], [$=$], [definition of `party`],
 )]])
