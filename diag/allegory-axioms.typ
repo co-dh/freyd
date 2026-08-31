@@ -4108,12 +4108,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#definition[
 `FX=𝟏+A×X`, #h(4pt) `A:=Int`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
 `sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns.
+#h(4pt) #src[`lean:AOP.A5_6_ListCombinators.sum_cata@ce1fa8a0`]
 
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
 
 `⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[B&dM's `oplus=max(Λ(zero∪plus))`; the
-set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
+set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
+`lean:AOP.A7_7_MSS.oplus@f61727f6`, `lean:AOP.A7_7_MSS.oplus_eq@b0466a25`]
 ]]<mss-defn>
 
 // ONE WIRE, `[A]` to `A`: this chain never forks, so a row is a run of boxes and the picture's whole
@@ -4155,7 +4157,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)`],
+  Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
+    #src[`lean:AOP.A7_7_MSS.mss_shape@f600dda0`]],
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
   [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][#frc([`segment sum`])` est(≥)`]], [],
@@ -4330,7 +4333,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ))
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
-  reduce, `sum` the map fused into it — the intermediate list is gone.]])
+  reduce, `sum` the map fused into it — the intermediate list is gone.
+  `lean:AOP.A7_7_MSS.mss_prefix_sum@001a3374`]])
 ]<mss-prefix-sum>
 
 // The `∪` is `choosebox`'s tape, which itself cannot be reused: it writes `π₁`/`π₂`
@@ -4408,7 +4412,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
-    branch is `zero⊑zero≥`]],
+    branch is `zero⊑zero≥`, `lean:AOP.A7_7_MSS.mss_mono@d2c09a73`]],
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
     [*Hinze–Marsden*]),
 
@@ -4471,7 +4475,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#mss-alg ` est(≥)=[zero,⊕]`],
+  Thm[#mss-alg ` est(≥)=[zero,⊕]` \ #src[`lean:AOP.A7_7_MSS.mss_step@ba23320b`]],
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
@@ -4496,7 +4500,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 ))
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
-  makes it an equality.]])
+  makes it an equality. `lean:AOP.A7_7_MSS.mss_greedy@7547c0f9`]])
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage: @cata-fusion's side condition for `tails list(g)`.
@@ -4732,13 +4736,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [`xs subseq ys⟺ys` is `xs` with elements dropped #h(4pt) — at each `cons`, drop the head or
    keep it],
 
-  [`S`], [`[nil,π₂∪(p×𝟙) cons]`], [`F([A])⟶[A]`],
+  [`S`], [`[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[`lean:AOP.A7_7_Filter.Salg@dfbf37e0`]], [`F([A])⟶[A]`],
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 
   [`𝟙⊑π₂R cons°`], [], [], [],
   [the tail is one shorter than the cons, so `π₂` loses the `est(R°)` at every step — where
-   @takewhile-defn's loser is `nil`],
+   @takewhile-defn's loser is `nil` #h(4pt) #src[`lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@f9fd4c82`]],
 )
 ])]<filter-defn>
 
@@ -4753,7 +4757,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α subseq list(p)=F(subseq list(p))S` \
     #src[building the list and then keeping a `p`-passing subsequence of it is keeping one of the
-     tail first, and then building with `S`]],
+     tail first, and then building with `S`, `lean:AOP.A7_7_Filter.filter_alg_comm@d130a86c`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `π₂`]),
 
@@ -4782,7 +4786,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `subseq list(p)=⦇S⦈` —
   @takewhile-alg's chain with `π₂` for `⊸ nil`. Here @cata-fusion is blocked for the same reason,
-  and `π₂` is the branch that carries `list(p)` out by naturality (@subseq-outr-square at `∋:=list(p)`).]])
+  and `π₂` is the branch that carries `list(p)` out by naturality (@subseq-outr-square at `∋:=list(p)`).
+  `lean:AOP.A7_7_Filter.filter_alg@5f9648f5`]])
 ]<filter-alg>
 
 #let step = step.with(pw: 232pt)
@@ -4792,7 +4797,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
-     shortening the result]],
+     shortening the result, `lean:AOP.A7_7_Filter.filter_mono@a4557bcf`]],
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
   [`(𝟙×R°)π₂=π₂R°`],
@@ -4822,7 +4827,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
-     the tail where it does not]],
+     the tail where it does not, `lean:AOP.A7_7_Filter.filter_step@7322621d`]],
   table.header([*formula*], [*reason*]),
 
   [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
@@ -4881,11 +4886,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
-    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`]],
+    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`,
+     `lean:AOP.A7_7_Filter.filter_eq_cata@c34da8f5`]],
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
   [#vstep([], fpic((bx-slp, bx-est)),
-    [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
+    [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns, `lean:AOP.A7_7_Filter.filter@86c3d821`]])],
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
@@ -4894,7 +4900,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
-     @filter-mono]])],
+     @filter-mono, `lean:AOP.A7_7_Filter.filter_greedy@a4d1b1a5`]])],
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
   // unchanged, so they are drawn where the two panels above draw them.
   [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
@@ -4907,9 +4913,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   [#vstep(EQ, [],
     [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
        column-gutter: 6pt, row-gutter: 3pt,
-       [`⦇[nil,(π₁p→cons,π₂)]⦈` entire], [and], [`filter(p)` simple],
+       [`⦇[nil,(π₁p→cons,π₂)]⦈` entire #h(4pt) #src[`lean:AOP.A7_7_Filter.filter_entire@0c8b8ee9`]],
+       [and], [`filter(p)` simple #h(4pt) #src[`lean:AOP.A7_7_Filter.filter_simple@613696ae`]],
        grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[an entire relation below
-         a simple one equals it; the simplicity is @comb-fns's Ex 7.41, not a law of this note]])])],
+         a simple one equals it; the simplicity is @comb-fns's Ex 7.41, not a law of this note,
+         `lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67`]])])],
   [],
 ))
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
