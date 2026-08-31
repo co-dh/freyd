@@ -222,6 +222,26 @@ public theorem knap_mono_cons :
         exact ⟨show vol a + total vol y ≤ vol a + total vol x by omega,
           show wt a + total wt x ≤ wt a + total wt y by omega⟩
 
+/-- **knap-mono**, the FALSE row (B&dM p.206, "the problem is that `within w·[nil,cons]` is
+    not"): `(𝟙×R)(cons (within w)) ⊑ cons (within w)R` fails.  Items are their own weights
+    and each is worth 1, the capacity is 5: `[10]` and `[0]` tie on value, so `R` lets the
+    fold replace one by the other, but only `[0]` still admits another item. -/
+public theorem knap_mono_cons_false :
+    ¬ MonotonicAlg (F := F Unit Int) (graph con ≫ within (fun i : Int => i) 5)
+        (R (fun _ : Int => (1 : Int))) := by
+  intro h
+  have hstep := le_iff.mp h (Sum.inr (0, ConsList.cons (10 : Int) (ConsList.wrap ())))
+    (ConsList.cons (0 : Int) (ConsList.cons (0 : Int) (ConsList.wrap ())))
+    ⟨Sum.inr (0, ConsList.cons (0 : Int) (ConsList.wrap ())),
+      ⟨rfl, show (1 : Int) ≤ 1 from Int.le_refl _⟩,
+      (con_within_apply (wt := fun i : Int => i) (w := 5) _ _).mpr
+        ⟨rfl, show (0 : Int) + (0 + 0) ≤ 5 by omega⟩⟩
+  obtain ⟨s, hs, -⟩ := hstep
+  obtain ⟨hsc, hws⟩ := (con_within_apply (wt := fun i : Int => i) (w := 5) _ s).mp hs
+  obtain rfl : s = con (Sum.inr (0, ConsList.cons (10 : Int) (ConsList.wrap ()))) := hsc
+  have hbad : (0 : Int) + (10 + 0) ≤ 5 := hws
+  omega
+
 /-- **knap-mono**, second row: `(𝟙×Q)π₂ ⊑ π₂Q` — dropping the head cannot undo `Q`. -/
 public theorem knap_mono_drop :
     MonotonicAlg (F := F Unit Item) (graph dropFn) (Q vol wt) :=
