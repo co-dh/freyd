@@ -298,6 +298,21 @@ public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F L E).obj c ⟶ c) :
     cataR φ = relCata φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 
+/-- **Reflection**: the fold of the constructor algebra is the identity, `⦇[wrap,cons]⦈ = 𝟙`.
+    What collapses `H = ⦇h⦈·⦇T⦈°` to `⦇T⦈°` whenever the refolding algebra is `α` itself. -/
+public theorem cataR_con : cataR (graph (con (L := L) (E := E))) = 𝟙 (dCL L E) := by
+  apply hom_ext; intro dec
+  induction dec with
+  | wrap d => exact fun r => ⟨Eq.symm, Eq.symm⟩
+  | cons a x ih =>
+    intro r
+    constructor
+    · rintro ⟨r', hr', hcon⟩
+      obtain rfl : x = r' := (ih r').mp hr'
+      exact (hcon : r = ConsList.cons a x).symm
+    · intro (h : ConsList.cons a x = r)
+      exact ⟨x, (ih x).mpr rfl, h.symm⟩
+
 /-- The `wrap`-component of an algebra `φ = [g, h]`. -/
 @[expose] public def algWrap {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dL L ⟶ c := fun d r => φ (Sum.inl d) r
 /-- The `cons`-component of an algebra `φ = [g, h]`. -/

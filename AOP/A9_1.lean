@@ -270,7 +270,7 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj
     recursion — provided `Q` interacts correctly with `H := ⦇h⦈·⦇T⦈°` and `h` (hypothesis
     `hQ`).  Ex 9.1 (`dynamic_programming_of_thin`) recovers Theorem 9.1 as the instance
     `Q := id`. By Knaster–Tarski via `dp_thin_prefixed`. -/
-theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : Q ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
@@ -319,7 +319,7 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
     monotonic on `leq` — i.e. checking monotonicity of `h` on `R` reduces to checking
     monotonicity of the simpler algebra `k` on `leq`. -/
-theorem monotonicAlg_of_cost {c : 𝒜} {h : F.obj a ⟶ a} {R : a ⟶ a} {cost : a ⟶ c}
+public theorem monotonicAlg_of_cost {c : 𝒜} {h : F.obj a ⟶ a} {R : a ⟶ a} {cost : a ⟶ c}
     {leq : c ⟶ c} {k : F.obj c ⟶ c} (hcost : Map cost) (hR : R = cost ≫ leq ≫ cost°)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map leq ≫ k ⊑ k ≫ leq) :
     MonotonicAlg h R := by
