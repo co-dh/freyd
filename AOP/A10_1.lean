@@ -19,7 +19,8 @@
   - B&dM `M = min R·ΛH` is `Λ H ≫ est R`; the greedy body `h·FX·min Q·ΛT°` is
     `Λ (T°) ≫ est Q ≫ F.map X ≫ h`.
   - the hypothesis `Q` satisfies `h·FH·Q° ⊆ R°·h·FH` mirrors, at the `est`-relabeled `Q` and
-    `R` (`est X` = `min X°`), to `Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R` — Theorem 9.2's `hQ` at `Q°`.
+    `R` (`est X` = `min X°`), to `Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R` — identical to Theorem
+    9.2's `hQ`.
   - `min Q ⊆ ∈` is `AOP.A7_1`'s `inter_lb_left` (unfolding `est`); the lower bound
     `min Q·∋ ⊆ Q` is `recip_eps_comp_est_le`.
 
@@ -44,7 +45,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
 /-- **Core of Theorem 10.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`), for any `H`
     satisfying the hylomorphism fixed-point equation `H = h·FH·T°` and any `Q°` satisfying the
-    thinning-compatibility bound `hQ` (`dp_thin_prefixed`'s at `Q°`).  Same two-branch
+    thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q°` handled directly by
     `inter_lb_left` (member) and `recip_eps_comp_est_le` (lower bound). -/
 public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
@@ -166,24 +167,19 @@ theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.Preserves
 
 /-- **B&dM p.246**, the greedy theorem via bifunctor conditions: with `Q := G(U,V)` for a
     birelator `G` (and `F := G.fixLeft e`), Proposition 9.4's monotonicity witness `hU`
-    (`h·G(U,R) ⊆ R·h`) and reciprocal bound `hV` (`V°·H ⊆ H·R°`), plus reflexivity of `U`,
-    discharge all of `greedy_dp`'s hypotheses — so the greedy recursion refines the spec. -/
+    (`h·G(U,R) ⊆ R·h`) and bound `hV` (`V·H ⊆ H·R`), plus reflexivity of `U` (all at the
+    folded `°`, the note's letters), discharge all of `greedy_dp`'s hypotheses — so the
+    greedy recursion refines the spec. -/
 theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
     (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj a ⟶ a}
     {T : (G.fixLeft e).obj b ⟶ b} {R : a ⟶ a}
-    {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U°)
-    (hU : G.map U° R° ≫ h ⊑ h ≫ R°)
+    {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U)
+    (hU : G.map U R ≫ h ⊑ h ≫ R)
     (hV : V ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R) :
     mu (fun X : b ⟶ a => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R := by
-  -- Prop 9.4(ii) needs `hV` at `V°`,`R°`; the involution restores it after `hGr` folds `G(U°,V°)°`.
-  have hV' : V°° ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R°° := by
-    rw [Allegory.recip_recip, Allegory.recip_recip]; exact hV
-  have hQ := birelator_thin_condition hGr (H := (relCata T)° ≫ relCata h) hh hU hV'
-  rw [hGr U V, Allegory.recip_recip, Allegory.recip_recip] at hQ
   have hFr' : (G.fixLeft e).PreservesRecip := Birelator.fixLeft_preservesRecip hGr e
-  have hmono : MonotonicAlg (F := G.fixLeft e) h R :=
-    (monotonicAlg_recip_iff hh hFr').mpr (birelator_fixLeft_mono hUrefl hU)
-  exact greedy_dp (F := G.fixLeft e) hFr' I hh hmono htrans hQ
+  exact greedy_dp (F := G.fixLeft e) hFr' I hh (birelator_fixLeft_mono hUrefl hU) htrans
+    (birelator_thin_condition (H := (relCata T)° ≫ relCata h) hU hV)
 
 end Freyd.Alg

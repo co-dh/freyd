@@ -9,10 +9,12 @@
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; B&dM `R/S` = Freyd `(S \ R)`;
   B&dM `S\R` = Freyd `R / S`):
   - B&dM `∈\∈` is `subsetRel a` (= Freyd's `powerOrder`, `AOP.A7_1`).
-  - B&dM `∋·Q` (`Q` then `∋ = ∈°`) is `Q ≫ (∋ a)°`, and `(∋·Q)/∋` is
-    `(((∋ a)°) \ (Q ≫ (∋ a)°))`.
-  - The UP `X ⊑ thin Q·ΛS ⟺ ∈·X ⊑ S ∧ X·S° ⊑ ∋·Q` mirrors to
-    `X ⊑ Λ S ≫ thinRel Q ⟺ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q ≫ (∋ a)°`.
+  - like `est R` (= B&dM `min R°`), `thinRel Q` folds the `°` into the argument — it is B&dM's
+    `thin Q°` — so the direction is carried by the relation's name and the `est`/`thin` laws
+    share their letters.  B&dM `∋·Q°` is `Q° ≫ (∋ a)°`, and `(∋·Q°)/∋` is
+    `(((∋ a)°) \ (Q° ≫ (∋ a)°))`.
+  - The UP `X ⊑ thin Q°·ΛS ⟺ ∈·X ⊑ S ∧ X·S° ⊑ ∋·Q°` mirrors to
+    `X ⊑ Λ S ≫ thinRel Q ⟺ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q° ≫ (∋ a)°`.
 
   Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapter 7's `AOP.A7_1`.  The
   thinning theorem (THEOREM 8.1) additionally uses `AOP.A7_2`'s monotonic-algebra calculus and
@@ -54,34 +56,34 @@ public theorem Λ_comp_subsetRel (W : b ⟶ a) : Λ W ≫ subsetRel a = W / (∋
 
 /-! ## `thin Q` (B&dM (8.1)) -/
 
-/-- **(8.1)**: `thin Q = (∈\∈) ∩ ((∋·Q)/∋)`, mirrored: shrink a set without losing
-    `Q`-lower bounds for any of its members. -/
+/-- **(8.1)** at the folded `°` (B&dM's `thin Q°`): shrink a set without losing `Q`-lower
+    bounds for any of its members. -/
 @[expose] public def thinRel (Q : a ⟶ a) : PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
-  subsetRel a ∩ (((∋ a)°) \ (Q ≫ (∋ a)°))
+  subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))
 
 /-- Thinning only shrinks: `thin Q ≫ ∋ ⊑ ∋` (members of the output were members of the
     input). -/
 public theorem thinRel_comp_eps_le (Q : a ⟶ a) : thinRel Q ≫ ∋ a ⊑ ∋ a :=
   le_trans (comp_mono_right (inter_lb_left _ _) (∋ a)) subsetRel_comp_eps_le
 
-/-- Thinning keeps lower bounds: `∋·thin Q ⊑ Q·∋`-mirrored, `(∋ a)° ≫ thinRel Q ⊑
-    Q ≫ (∋ a)°` (every input member has a `Q`-lower bound among the output members). -/
+/-- Thinning keeps lower bounds: `∋·thin Q° ⊑ Q°·∋`-mirrored, `(∋ a)° ≫ thinRel Q ⊑
+    Q° ≫ (∋ a)°` (every input member has a `Q`-lower bound among the output members). -/
 public theorem recip_eps_comp_thinRel_le (Q : a ⟶ a) :
-    (∋ a)° ≫ thinRel Q ⊑ Q ≫ (∋ a)° :=
+    (∋ a)° ≫ thinRel Q ⊑ Q° ≫ (∋ a)° :=
   le_trans (comp_mono_left _ (inter_lb_right _ _)) (leftDiv_comp_le _ _)
 
 /-- The (7.5)-analogue for thinning: `thin Q·ΛS = (S/∋... )`-mirrored,
-    `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q ≫ (∋ a)°))`. -/
+    `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°))`. -/
 public theorem Λ_comp_thinRel (S : b ⟶ a) (Q : a ⟶ a) :
-    Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q ≫ (∋ a)°)) := by
-  show Λ S ≫ (subsetRel a ∩ (((∋ a)°) \ (Q ≫ (∋ a)°))) = _
+    Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°)) := by
+  show Λ S ≫ (subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))) = _
   rw [simple_dist_inter (Λ_is_map' S).2, Λ_comp_subsetRel, Λ_comp_lb]
 
 /-- **The universal property of `thin`** (book p.193): `X ⊑ thin Q·ΛS ⟺ ∈·X ⊑ S ∧
     X·S° ⊑ ∋·Q`, mirrored.  Like (7.5)'s UP, this is the workhorse of every calculation
     in the chapter. -/
 public theorem le_Λ_comp_thinRel_iff {S : b ⟶ a} {Q : a ⟶ a} {X : b ⟶ PowerAllegory.powerObj a} :
-    X ⊑ Λ S ≫ thinRel Q ↔ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q ≫ (∋ a)° := by
+    X ⊑ Λ S ≫ thinRel Q ↔ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q° ≫ (∋ a)° := by
   rw [Λ_comp_thinRel]
   constructor
   · intro h
@@ -129,42 +131,48 @@ public theorem recip_comp_Λ_le_recip_eps (T : b ⟶ a) : T° ≫ Λ T ⊑ (∋ 
 
 /-- `thin` is monotone (B&dM p.194): `Q ⊑ R → thin Q ⊑ thin R`. -/
 public theorem thinRel_mono {Q R : a ⟶ a} (h : Q ⊑ R) : thinRel Q ⊑ thinRel R := by
-  show thinRel Q ⊑ subsetRel a ∩ (((∋ a)°) \ (R ≫ (∋ a)°))
+  show thinRel Q ⊑ subsetRel a ∩ (((∋ a)°) \ (R° ≫ (∋ a)°))
   exact le_inter (inter_lb_left _ _)
-    (le_trans (inter_lb_right _ _) (leftDiv_mono_right _ (comp_mono_right h ((∋ a)°))))
+    (le_trans (inter_lb_right _ _) (leftDiv_mono_right _ (comp_mono_right (recip_mono h) ((∋ a)°))))
 
 /-- Reflexive half of **Ex 8.2**: `id ⊑ Q → id ⊑ thin Q`. -/
 public theorem id_le_thinRel {Q : a ⟶ a} (hrefl : Cat.id a ⊑ Q) :
     Cat.id (PowerAllegory.powerObj a) ⊑ thinRel Q := by
-  show Cat.id (PowerAllegory.powerObj a) ⊑ subsetRel a ∩ (((∋ a)°) \ (Q ≫ (∋ a)°))
+  show Cat.id (PowerAllegory.powerObj a) ⊑ subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))
   refine le_inter id_le_subsetRel ?_
   apply (le_leftDiv_iff _ _ _).mpr
   rw [Cat.comp_id]
-  have h := comp_mono_right hrefl ((∋ a)°)
+  have hrefl' : Cat.id a ⊑ Q° := by
+    have h0 := recip_mono hrefl
+    rwa [recip_id] at h0
+  have h := comp_mono_right hrefl' ((∋ a)°)
   rwa [Cat.id_comp] at h
 
 /-- Transitive half of **Ex 8.2**: `Q ≫ Q ⊑ Q → thin Q ≫ thin Q ⊑ thin Q`. -/
 theorem thinRel_trans {Q : a ⟶ a} (htrans : Q ≫ Q ⊑ Q) :
     thinRel Q ≫ thinRel Q ⊑ thinRel Q := by
-  show thinRel Q ≫ thinRel Q ⊑ subsetRel a ∩ (((∋ a)°) \ (Q ≫ (∋ a)°))
+  have htrans' : Q° ≫ Q° ⊑ Q° := by
+    have h0 := recip_mono htrans
+    rwa [Allegory.recip_comp] at h0
+  show thinRel Q ≫ thinRel Q ⊑ subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))
   refine le_inter ?_ ?_
   · -- component 1: `⊑ subsetRel a = (∋a)/(∋a)`
     show thinRel Q ≫ thinRel Q ⊑ (∋ a) / (∋ a)
     apply (le_div_iff _ _ _).mpr
     rw [Cat.assoc]
     exact le_trans (comp_mono_left _ (thinRel_comp_eps_le Q)) (thinRel_comp_eps_le Q)
-  · -- component 2: `⊑ ((∋a)° \ (Q≫(∋a)°))`
+  · -- component 2: `⊑ ((∋a)° \ (Q°≫(∋a)°))`
     apply (le_leftDiv_iff _ _ _).mpr
     rw [← Cat.assoc]
-    have s1 : ((∋ a)° ≫ thinRel Q) ≫ thinRel Q ⊑ (Q ≫ (∋ a)°) ≫ thinRel Q :=
+    have s1 : ((∋ a)° ≫ thinRel Q) ≫ thinRel Q ⊑ (Q° ≫ (∋ a)°) ≫ thinRel Q :=
       comp_mono_right (recip_eps_comp_thinRel_le Q) (thinRel Q)
-    have s2 : (Q ≫ (∋ a)°) ≫ thinRel Q ⊑ Q ≫ (∋ a)° := by
+    have s2 : (Q° ≫ (∋ a)°) ≫ thinRel Q ⊑ Q° ≫ (∋ a)° := by
       rw [Cat.assoc]
-      have t1 : Q ≫ ((∋ a)° ≫ thinRel Q) ⊑ Q ≫ (Q ≫ (∋ a)°) :=
-        comp_mono_left Q (recip_eps_comp_thinRel_le Q)
-      have t2 : Q ≫ (Q ≫ (∋ a)°) ⊑ Q ≫ (∋ a)° := by
+      have t1 : Q° ≫ ((∋ a)° ≫ thinRel Q) ⊑ Q° ≫ (Q° ≫ (∋ a)°) :=
+        comp_mono_left Q° (recip_eps_comp_thinRel_le Q)
+      have t2 : Q° ≫ (Q° ≫ (∋ a)°) ⊑ Q° ≫ (∋ a)° := by
         rw [← Cat.assoc]
-        exact comp_mono_right htrans ((∋ a)°)
+        exact comp_mono_right htrans' ((∋ a)°)
       exact le_trans t1 t2
     exact le_trans s1 s2
 
@@ -178,29 +186,30 @@ public theorem id_le_thinRel_id : Cat.id (PowerAllegory.powerObj a) ⊑ thinRel 
 
 /-! ## Thin-introduction and thin-elimination (book p.194) -/
 
-/-- **Ex 8.3**: `thin Q ≫ min R° ⊑ min R°` when `Q ⊑ R°` and `R°` is transitive — thinning below a
-    coarser transitive preorder does not lose the minimum. -/
-public theorem thinRel_comp_est_le {Q R : a ⟶ a} (hQR : Q ⊑ R°) (htransR : R° ≫ R° ⊑ R°) :
+/-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R°` is transitive — thinning below a
+    coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
+public theorem thinRel_comp_est_le {Q R : a ⟶ a} (hQR : Q ⊑ R) (htransR : R° ≫ R° ⊑ R°) :
     thinRel Q ≫ est R ⊑ est R := by
   apply le_est_iff.mpr
   refine ⟨?_, ?_⟩
   · exact le_trans (comp_mono_left _ (show est R ⊑ ∋ a from inter_lb_left _ _))
       (thinRel_comp_eps_le Q)
   · rw [← Cat.assoc]
-    have s1 : ((∋ a)° ≫ thinRel Q) ≫ est R ⊑ (Q ≫ (∋ a)°) ≫ est R :=
+    have s1 : ((∋ a)° ≫ thinRel Q) ≫ est R ⊑ (Q° ≫ (∋ a)°) ≫ est R :=
       comp_mono_right (recip_eps_comp_thinRel_le Q) (est R)
-    have s2 : (Q ≫ (∋ a)°) ≫ est R ⊑ R° := by
+    have s2 : (Q° ≫ (∋ a)°) ≫ est R ⊑ R° := by
       rw [Cat.assoc]
       have hbnd : (∋ a)° ≫ est R ⊑ R° :=
         le_trans (comp_mono_left _ (show est R ⊑ (((∋ a)°) \ R°) from inter_lb_right _ _))
           (leftDiv_comp_le _ R°)
-      have t1 : Q ≫ ((∋ a)° ≫ est R) ⊑ Q ≫ R° := comp_mono_left Q hbnd
-      exact le_trans t1 (le_trans (comp_mono_right hQR R°) htransR)
+      have t1 : Q° ≫ ((∋ a)° ≫ est R) ⊑ Q° ≫ R° := comp_mono_left Q° hbnd
+      exact le_trans t1 (le_trans (comp_mono_right (recip_mono hQR) R°) htransR)
     exact le_trans s1 s2
 
-/-- **Thin-introduction** (book p.194): `thin Q ≫ min R° = min R°` when `Q ⊑ R°`, `id ⊑ Q`, and `R°`
-    is transitive — introducing a thinning step below a minimum leaves it unchanged. -/
-public theorem thinRel_comp_est {Q R : a ⟶ a} (hQR : Q ⊑ R°) (hreflQ : Cat.id a ⊑ Q)
+/-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R°`
+    is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
+    leaves it unchanged. -/
+public theorem thinRel_comp_est {Q R : a ⟶ a} (hQR : Q ⊑ R) (hreflQ : Cat.id a ⊑ Q)
     (htransR : R° ≫ R° ⊑ R°) : thinRel Q ≫ est R = est R := by
   apply le_antisymm (thinRel_comp_est_le hQR htransR)
   have h : Cat.id (PowerAllegory.powerObj a) ≫ est R ⊑ thinRel Q ≫ est R :=
@@ -210,7 +219,7 @@ public theorem thinRel_comp_est {Q R : a ⟶ a} (hQR : Q ⊑ R°) (hreflQ : Cat.
 /-- **(8.2)**, thin-elimination: `min Q ≫ τ ⊑ thin Q` — a minimum, viewed as a singleton, is a
     thinning. -/
 theorem est_comp_singletonMap_le_thinRel (Q : a ⟶ a) :
-    est Q ≫ singletonMap ⊑ thinRel Q° := by
+    est Q ≫ singletonMap ⊑ thinRel Q := by
   show est Q ≫ singletonMap ⊑ subsetRel a ∩ (((∋ a)°) \ (Q° ≫ (∋ a)°))
   refine le_inter ?_ ?_
   · show est Q ≫ singletonMap ⊑ (∋ a) / (∋ a)
@@ -229,9 +238,9 @@ theorem est_comp_singletonMap_le_thinRel (Q : a ⟶ a) :
 /-- **Ex 8.5**: `min R = thin R ≫ τ°` — thinning followed by "pick the singleton member" recovers
     the minimum. -/
 theorem est_eq_thinRel_comp_recip_singletonMap {R : a ⟶ a} :
-    est R = thinRel R° ≫ singletonMap° := by
+    est R = thinRel R ≫ singletonMap° := by
   apply le_antisymm
-  · -- `min R° ⊑ thin R° ≫ τ°`
+  · -- `min R° ⊑ thin R ≫ τ°`
     have hid : Cat.id a ⊑ singletonMap ≫ singletonMap° := entire_id_le (Λ_is_map' (Cat.id a)).1
     have step1 : est R ⊑ est R ≫ (singletonMap ≫ singletonMap°) := by
       have h := comp_mono_left (est R) hid
@@ -240,13 +249,13 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : a ⟶ a} :
         = (est R ≫ singletonMap) ≫ singletonMap° := (Cat.assoc _ _ _).symm
     rw [step2] at step1
     exact le_trans step1 (comp_mono_right (est_comp_singletonMap_le_thinRel R) singletonMap°)
-  · -- `thin R° ≫ τ° ⊑ min R°`
+  · -- `thin R ≫ τ° ⊑ min R°`
     apply le_est_iff.mpr
     refine ⟨?_, ?_⟩
-    · exact le_trans (comp_mono_left _ singletonMap_recip_le_eps) (thinRel_comp_eps_le R°)
+    · exact le_trans (comp_mono_left _ singletonMap_recip_le_eps) (thinRel_comp_eps_le R)
     · rw [← Cat.assoc]
-      have s1 : ((∋ a)° ≫ thinRel R°) ≫ singletonMap° ⊑ (R° ≫ (∋ a)°) ≫ singletonMap° :=
-        comp_mono_right (recip_eps_comp_thinRel_le R°) singletonMap°
+      have s1 : ((∋ a)° ≫ thinRel R) ≫ singletonMap° ⊑ (R° ≫ (∋ a)°) ≫ singletonMap° :=
+        comp_mono_right (recip_eps_comp_thinRel_le R) singletonMap°
       have s2 : (R° ≫ (∋ a)°) ≫ singletonMap° ⊑ R° := by
         have e2 : (∋ a)° ≫ singletonMap° = Cat.id a := by
           rw [← Allegory.recip_comp, singletonMap_comp_eps, recip_id]
@@ -255,11 +264,11 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : a ⟶ a} :
       exact le_trans s1 s2
 
 /-- **(8.3)**, thin-elimination with context: `ΛS ≫ min R ≫ τ ⊑ ΛS ≫ thin Q` whenever `R`
-    restricted to the domain of `S` (i.e. `R° ∩ S°S`) refines `Q`.  Proved via the thin universal
+    restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal
     property (`le_Λ_comp_thinRel_iff`), the context rule (7.6) `Λ_comp_est_context`, and the
     shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound). -/
 theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
-    (h : R° ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
+    (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
   · -- `(ΛS ≫ min R° ≫ τ) ≫ ∈ ⊑ S`
@@ -267,7 +276,7 @@ theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
         Cat.assoc (est R) singletonMap (∋ a), singletonMap_comp_eps, Cat.comp_id]
     have h := comp_mono_left (Λ S) (show est R ⊑ ∋ a from inter_lb_left _ _)
     rwa [Λ_eps_eq'] at h
-  · -- `S° ≫ (ΛS ≫ min R° ≫ τ) ⊑ Q ≫ ∋`
+  · -- `S° ≫ (ΛS ≫ min R° ≫ τ) ⊑ Q° ≫ ∋`
     have hSA : S° ≫ Λ S ⊑ (∋ a)° := recip_comp_Λ_le_recip_eps S
     have hbndM : (∋ a)° ≫ est (R ∩ (S° ≫ S)) ⊑ R° ∩ (S° ≫ S) := by
       have hb := recip_eps_comp_est_le (R ∩ (S° ≫ S))
@@ -278,12 +287,15 @@ theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
     have s1 : (S° ≫ Λ S) ≫ (est (R ∩ (S° ≫ S)) ≫ singletonMap)
         ⊑ (∋ a)° ≫ (est (R ∩ (S° ≫ S)) ≫ singletonMap) :=
       comp_mono_right hSA (est (R ∩ (S° ≫ S)) ≫ singletonMap)
-    have s2 : (∋ a)° ≫ (est (R ∩ (S° ≫ S)) ≫ singletonMap) ⊑ Q ≫ (∋ a)° := by
+    have h' : R° ∩ (S° ≫ S) ⊑ Q° := by
+      have h0 := recip_mono h
+      rwa [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip] at h0
+    have s2 : (∋ a)° ≫ (est (R ∩ (S° ≫ S)) ≫ singletonMap) ⊑ Q° ≫ (∋ a)° := by
       rw [← Cat.assoc (∋ a)° (est (R ∩ (S° ≫ S))) singletonMap]
       have t1 : ((∋ a)° ≫ est (R ∩ (S° ≫ S))) ≫ singletonMap
           ⊑ (R° ∩ (S° ≫ S)) ≫ singletonMap := comp_mono_right hbndM singletonMap
-      have t2 : (R° ∩ (S° ≫ S)) ≫ singletonMap ⊑ Q ≫ singletonMap := comp_mono_right h singletonMap
-      exact le_trans t1 (le_trans t2 (comp_mono_left Q singletonMap_le_recip_eps))
+      have t2 : (R° ∩ (S° ≫ S)) ≫ singletonMap ⊑ Q° ≫ singletonMap := comp_mono_right h' singletonMap
+      exact le_trans t1 (le_trans t2 (comp_mono_left Q° singletonMap_le_recip_eps))
     exact le_trans s1 s2
 
 /-! ## THEOREM 8.1 — the thinning theorem (book p.195) -/
@@ -291,15 +303,15 @@ theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
 variable {F : Relator 𝒜 𝒜}
 
 /-- **THEOREM 8.1 (the thinning theorem, B&dM p.195)**: for a transitive `Q` and an algebra `S`
-    that is monotonic on the preorder `Q°`, thinning at every unfold step
+    that is monotonic on the preorder `Q`, thinning at every unfold step
     (`⦇Λ(F∈·S)·thin Q⦈`) refines thinning once, at the end, on the plain catamorphism
     (`thin Q·Λ⦇S⦈`), mirrored
     `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ⊑ Λ (relCata I S) ≫ thin Q`.  Proved via the thin
     universal property (`le_Λ_comp_thinRel_iff`): the "shrinks" half by the fusion law (6.5), the
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
-    reciprocated monotonicity `S° ≫ FQ ⊑ Q ≫ S°` exactly as in the GREEDY THEOREM. -/
+    reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a ⟶ a}
-    {S : F.obj a ⟶ a} (htrans : Q ≫ Q ⊑ Q) (hmono : MonotonicAlg S Q°) :
+    {S : F.obj a ⟶ a} (htrans : Q ≫ Q ⊑ Q) (hmono : MonotonicAlg S Q) :
     relCata (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
@@ -309,22 +321,24 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a �
     have h1 : Λ (F.map (∋ a) ≫ S) ≫ (thinRel Q ≫ ∋ a) ⊑ Λ (F.map (∋ a) ≫ S) ≫ ∋ a :=
       comp_mono_left _ (thinRel_comp_eps_le Q)
     rwa [Λ_eps_eq'] at h1
-  · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q·∋`, by the hylomorphism theorem
+  · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q°·∋`, by the hylomorphism theorem
     apply hylo_le_of_prefixed hFr I
-    -- goal: `S° ≫ F.map (Q ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q ≫ (∋a)°`
-    have step1 : S° ≫ F.map Q ⊑ Q ≫ S° := by
+    -- goal: `S° ≫ F.map (Q° ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q° ≫ (∋a)°`
+    have htrans' : Q° ≫ Q° ⊑ Q° := by
+      have h0 := recip_mono htrans
+      rwa [Allegory.recip_comp] at h0
+    have step1 : S° ≫ F.map Q° ⊑ Q° ≫ S° := by
       have h := recip_mono hmono
-      have heqL : (F.map Q° ≫ S)° = S° ≫ F.map Q := by
-        rw [Allegory.recip_comp, hFr Q, Allegory.recip_recip]
-      have heqR : (S ≫ Q°)° = Q ≫ S° := by
-        rw [Allegory.recip_comp, Allegory.recip_recip]
+      have heqL : (F.map Q ≫ S)° = S° ≫ F.map Q° := by
+        rw [Allegory.recip_comp, hFr Q]
+      have heqR : (S ≫ Q)° = Q° ≫ S° := Allegory.recip_comp _ _
       rwa [heqL, heqR] at h
     have hWrecip : (F.map (∋ a) ≫ S)° = S° ≫ F.map ((∋ a)°) := by
       rw [Allegory.recip_comp, ← hFr (∋ a)]
     have hWA : (F.map (∋ a) ≫ S)° ≫ Λ (F.map (∋ a) ≫ S) ⊑ (∋ a)° :=
       recip_comp_Λ_le_recip_eps (F.map (∋ a) ≫ S)
-    -- the inner bound `S° ≫ rest ⊑ Q ≫ (∋a)°`
-    have hsr : S° ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) ⊑ Q ≫ (∋ a)° := by
+    -- the inner bound `S° ≫ rest ⊑ Q° ≫ (∋a)°`
+    have hsr : S° ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) ⊑ Q° ≫ (∋ a)° := by
       have a1 : S° ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))
           = ((F.map (∋ a) ≫ S)° ≫ Λ (F.map (∋ a) ≫ S)) ≫ thinRel Q := by
         rw [← Cat.assoc S° (F.map ((∋ a)°)) (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q), ← hWrecip,
@@ -332,28 +346,28 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : a �
       rw [a1]
       exact le_trans (comp_mono_right hWA (thinRel Q)) (recip_eps_comp_thinRel_le Q)
     -- assemble the top-level chain
-    rw [F.map_comp Q ((∋ a)°),
-        Cat.assoc (F.map Q) (F.map ((∋ a)°)) (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q),
-        ← Cat.assoc S° (F.map Q) (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))]
-    have b1 : (S° ≫ F.map Q) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))
-        ⊑ (Q ≫ S°) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) :=
+    rw [F.map_comp Q° ((∋ a)°),
+        Cat.assoc (F.map Q°) (F.map ((∋ a)°)) (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q),
+        ← Cat.assoc S° (F.map Q°) (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))]
+    have b1 : (S° ≫ F.map Q°) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))
+        ⊑ (Q° ≫ S°) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) :=
       comp_mono_right step1 _
-    have b2 : (Q ≫ S°) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) ⊑ Q ≫ (∋ a)° := by
-      rw [Cat.assoc Q S° (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))]
-      have c2 : Q ≫ (Q ≫ (∋ a)°) ⊑ Q ≫ (∋ a)° := by
-        rw [← Cat.assoc Q Q ((∋ a)°)]
-        exact comp_mono_right htrans ((∋ a)°)
-      exact le_trans (comp_mono_left Q hsr) c2
+    have b2 : (Q° ≫ S°) ≫ (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q)) ⊑ Q° ≫ (∋ a)° := by
+      rw [Cat.assoc Q° S° (F.map ((∋ a)°) ≫ (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q))]
+      have c2 : Q° ≫ (Q° ≫ (∋ a)°) ⊑ Q° ≫ (∋ a)° := by
+        rw [← Cat.assoc Q° Q° ((∋ a)°)]
+        exact comp_mono_right htrans' ((∋ a)°)
+      exact le_trans (comp_mono_left Q° hsr) c2
     exact le_trans b1 b2
 
 /-- **Corollary 8.1 (B&dM p.196)**: thinning at every step, then taking the `R°`-minimum, refines
     taking the `R°`-minimum of the plain catamorphism, mirrored
-    `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ≫ min R° ⊑ Λ (relCata I S) ≫ min R°`, given `Q ⊑ R°`,
-    `id ⊑ Q`, `Q` and `R°` transitive, and `S` monotonic on `Q°`.  Immediate from THEOREM 8.1
+    `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ≫ min R° ⊑ Λ (relCata I S) ≫ min R°`, given `Q ⊑ R`,
+    `id ⊑ Q`, `Q` and `R°` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : a ⟶ a}
-    {S : F.obj a ⟶ a} (hQR : Q ⊑ R°) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg S Q°) :
+    {S : F.obj a ⟶ a} (hQR : Q ⊑ R) (hreflQ : Cat.id a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
+    (htransR : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg S Q) :
     relCata (Λ (F.map (∋ a) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   have hrhs : Λ (relCata S) ≫ est R = (Λ (relCata S) ≫ thinRel Q) ≫ est R := by
     rw [Cat.assoc, thinRel_comp_est hQR hreflQ htransR]
@@ -368,8 +382,8 @@ public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R
 
     The `⊑` half (dropping the extra context) is just `thinRel_mono` on `Q ∩ S°S ⊑ Q`.  The `⊒`
     half brings the context back: via the thin universal property it reduces to
-    `S° ≫ (ΛS ≫ thin Q) ⊑ (Q ∩ S°S) ≫ ∈°`, and the intersection under the composite is
-    produced by the MODULAR LAW `modular_le` at `(R,S,T) = (Q, ∈°, S°·(ΛS·thin Q))`, using
+    `S° ≫ (ΛS ≫ thin Q) ⊑ (Q° ∩ S°S) ≫ ∈°`, and the intersection under the composite is
+    produced by the MODULAR LAW `modular_le` at `(R,S,T) = (Q°, ∈°, S°·(ΛS·thin Q))`, using
     `(ΛS ≫ thin Q) ≫ ∈ ⊑ S` (thinning shrinks) to bound `T ≫ ∈` by `S°S`.  Note the naive
     "distribute `leftDiv` over the numerator meet" route is unavailable — `(Q∩V)·∈°` does not
     split as `(Q·∈°) ∩ (V·∈°)` for the lax `∈°`. -/
@@ -382,7 +396,8 @@ public theorem Λ_comp_thinRel_context (S : b ⟶ a) (Q : a ⟶ a) :
     · rw [Cat.assoc]
       have h := comp_mono_left (Λ S) (thinRel_comp_eps_le Q)
       rwa [Λ_eps_eq'] at h
-    · have hZQ : S° ≫ (Λ S ≫ thinRel Q) ⊑ Q ≫ (∋ a)° :=
+    · rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip]
+      have hZQ : S° ≫ (Λ S ≫ thinRel Q) ⊑ Q° ≫ (∋ a)° :=
         (le_Λ_comp_thinRel_iff.mp (le_refl (Λ S ≫ thinRel Q))).2
       have hZeps : (S° ≫ (Λ S ≫ thinRel Q)) ≫ ∋ a ⊑ S° ≫ S := by
         rw [Cat.assoc]
@@ -390,13 +405,13 @@ public theorem Λ_comp_thinRel_context (S : b ⟶ a) (Q : a ⟶ a) :
         rw [Cat.assoc]
         have h := comp_mono_left (Λ S) (thinRel_comp_eps_le Q)
         rwa [Λ_eps_eq'] at h
-      have hmod := modular_le Q ((∋ a)°) (S° ≫ (Λ S ≫ thinRel Q))
+      have hmod := modular_le Q° ((∋ a)°) (S° ≫ (Λ S ≫ thinRel Q))
       rw [Allegory.recip_recip] at hmod
       have hZeq : S° ≫ (Λ S ≫ thinRel Q)
-          ⊑ (Q ≫ (∋ a)°) ∩ (S° ≫ (Λ S ≫ thinRel Q)) := le_inter hZQ (le_refl _)
-      have hfin : (Q ∩ (S° ≫ (Λ S ≫ thinRel Q)) ≫ ∋ a) ≫ (∋ a)°
-          ⊑ (Q ∩ (S° ≫ S)) ≫ (∋ a)° :=
-        comp_mono_right (inter_mono (le_refl Q) hZeps) ((∋ a)°)
+          ⊑ (Q° ≫ (∋ a)°) ∩ (S° ≫ (Λ S ≫ thinRel Q)) := le_inter hZQ (le_refl _)
+      have hfin : (Q° ∩ (S° ≫ (Λ S ≫ thinRel Q)) ≫ ∋ a) ≫ (∋ a)°
+          ⊑ (Q° ∩ (S° ≫ S)) ≫ (∋ a)° :=
+        comp_mono_right (inter_mono (le_refl Q°) hZeps) ((∋ a)°)
       exact le_trans hZeq (le_trans hmod hfin)
 
 /-! ## Stretch items (book pp.195-196) — dropped, with obstructions noted

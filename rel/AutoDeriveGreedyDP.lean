@@ -311,9 +311,10 @@ theorem hmono (P : GreedyDP L E S W) : MonotonicAlg (F := CL.F L E) P.hAlg P.Rp 
 theorem hQ (P : GreedyDP L E S W) :
     P.Qrel° ≫ (CL.F L E).map P.specH ≫ P.hAlg
       ⊑ (CL.F L E).map P.specH ≫ P.hAlg ≫ P.Rp° := by
-  have h := birelator_thin_condition (G := sumBirel L) (sumBirel_preservesRecip L)
-    (e := CL.dE E) (h := P.hAlg) (H := P.specH) (R := P.Rp) (U := P.Up) (V := P.Vp)
-    (graph_map P.hFn) P.hU P.hV
+  have h := birelator_thin_condition (G := sumBirel L) (e := CL.dE E) (h := P.hAlg)
+    (H := P.specH) (R := P.Rp°) (U := P.Up°) (V := P.Vp°)
+    (birelator_mono_recip (sumBirel_preservesRecip L) (graph_map P.hFn) P.hU) P.hV
+  rw [sumBirel_preservesRecip L P.Up P.Vp] at h
   rwa [sumBirel_fixLeft_map] at h
 
 /-! ## The abstract refinement (Theorem 10.1, instantiated) -/

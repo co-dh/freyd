@@ -6298,7 +6298,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [`est(R)=thin Q est(R)` #h(4pt) #src[`Q⊑R`, both preorders]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
   [`thin Q⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
-   #src[(8.2), `lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@5fea4441`]],
+   #src[(8.2), `lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@663394c4`]],
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `est(Q)` is
    defined on],
   [$frac(#[`S`], ∋)$ `thin Q⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
