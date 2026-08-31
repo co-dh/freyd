@@ -4101,7 +4101,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [],
 ))]<takewhile-laws>
 
-=== `mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` <sec-mss>
+=== `mss=⦇[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨(𝟙×π₁)⊕,⟨(𝟙×π₁)⊕ `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]⦈ π₂ est(≥)` <sec-mss>
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
 // `≤` is on `Int`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
@@ -4499,138 +4499,32 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   makes it an equality.]])
 ]<mss-step>
 
-// B&dM Ex 7.40's last stage: @cata-fusion's side condition for `tails list(g)`.
-// The algebra `[·,·]` is drawn on @coprod-laws' TAPE — one branch per summand of `𝟏+A×[[A]]`, each
-// opening with its injection's converse, since `[R,S]=(l°R)∪(r°S)`.
-// A PRODUCT IS TWO WIRES: the `A×[[A]]` branch runs the root above its list of tails, so `𝟙×head`
-// is a box on the LOWER strand alone and `π₂` is a discard on the upper one.  Forking that PAIR
-// copies both strands — four run on and the middle two cross, each sub-branch keeping one root and
-// one list — and the trailing `cons` is the box that eats the pair back down to one wire.
-#let MTU = 1.2                  // the `𝟏` branch of the tape ...
-#let MTL = -1.7                 // ... and the `A×[[A]]` branch
-#let MSIY = 0.5                 // half the gap between the pair's two strands
-#let MSTA = 1.35                // inside a sub-branch of the fork, the root strand ...
-#let MSTB = 0.5                 // ... and its list strand
-#let MLD = 0.34                 // circuit.typ's lead, which it does not export
-#let MINJ = 0.92                // the injection box `l°`/`r°`
-// `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
-// per row is a width that drifts.  No chamfer is a MAP — `head` is only a PARTIAL map (`nil`),
-// and `c`, `f`, `g` are the arbitrary algebra fusion is applied to, so those four keep the cut corner.
-#let m-nil = ([`nil`], 1.05, false)
-#let m-wrap = ([`wrap`], 1.35, false)
-#let m-cons = ([`cons`], 1.4, false)
-#let m-head = ([`head`], 1.3, true)
-#let m-g = ([`g`], 0.7, true)
-#let m-lg = ([`list(g)`], 1.65, true)
-#let m-c = ([`c`], 0.7, true)
-
-// One row's circuit.  `up` rides the `𝟏` branch; the rest describe the `A×[[A]]` one — `pre` on its
-// list strand before the fork, then the first component (`ua` on its list strand, the box `jl` that
-// joins its pair, `ut` after it) and the second (`db` before its `π₂` discard, `da` after) — and
-// `post` is whatever the row leaves OUTSIDE the tape.
-#let mss-row(up, pre, ua, jl, jw, jc, ut, db, da, post) = {
-  let (yc, sp) = ((MTU + MTL) / 2, (MTU - MTL) / 2)
-  let (yA1, yA2) = (MTL + MSTA, MTL + MSTB)
-  let (yB1, yB2) = (MTL - MSTB, MTL - MSTA)
-  let yAo = (yA1 + yA2) / 2
-  let x0 = 1.56
-  let (wup, wpre, wua, wut) = (boxrun-w(up), boxrun-w(pre), boxrun-w(ua), boxrun-w(ut))
-  let xc = x0 + MINJ + wpre
-  let x2 = xc + 0.9
-  let wB = boxrun-w(db + da)
-  let wsub = calc.max(wua + jw + wut, wB)
-  let xj = x2 + wsub
-  let W = MINJ + wpre + 0.9 + wsub + m-cons.at(1)
-
-  wire((-0.2, yc), (0.34, yc))
-  tape((0.34, MTL - 1.85), (x0 + W + 1.3, MTU + 0.55))
-  tape-fork((0.56, yc), sp: sp, len: 1.0)
-  tape-join((x0 + W + 1.0, yc), sp: sp, len: 1.0)
-
-  gbox((x0, MTU), [`l`], w: MINJ, flip: true, fill: TINT)
-  boxrun(x0 + MINJ, MTU, up); wire((x0 + MINJ + wup, MTU), (x0 + W, MTU))
-
-  gbox((x0, MTL), [`r`], w: MINJ, flip: true, fill: TINT, h: 2 * MSIY + 0.5)
-  wire((x0 + MINJ, MTL + MSIY), (xc, MTL + MSIY))
-  boxrun(x0 + MINJ, MTL - MSIY, pre)
-  wiredot((xc, MTL + MSIY)); bend((xc, MTL + MSIY), (x2, yA1)); bend((xc, MTL + MSIY), (x2, yB1))
-  wiredot((xc, MTL - MSIY)); bend((xc, MTL - MSIY), (x2, yA2)); bend((xc, MTL - MSIY), (x2, yB2))
-
-  wire((x2, yA1), (x2 + wua, yA1)); boxrun(x2, yA2, ua)
-  gbox((x2 + wua, yAo), jl, w: jw, h: yA1 - yA2 + 0.5, chamfer: jc)
-  boxrun(x2 + wua + jw, yAo, ut); wire((x2 + wua + jw + wut, yAo), (xj, yAo))
-
-  // `π₂` lands where the formula puts it: right at the strands if it comes first, after `list(g)`
-  // if the row has already slid that box in front of it.
-  let wdb = if db.len() == 0 { MLD } else { boxrun-w(db) - MLD }
-  wire((x2, yB1), (x2 + wdb, yB1)); wiredot((x2 + wdb, yB1))
-  boxrun(x2, yB2, db + da); wire((x2 + wB, yB2), (xj, yB2))
-
-  gbox((xj, MTL), m-cons.at(0), w: m-cons.at(1), h: 2 * MSTA + 0.5, chamfer: false)
-
-  boxrun(x0 + W + 1.3, yc, post)
-  lab(x0 + W + 1.3 + boxrun-w(post) + 0.55, yc, black)[`[B]`]
-}
-// Every row is drawn at ONE length and ONE scale: a scale typed per cell is a scale that drifts.
-#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 80%)
-
-// HINZE–MARSDEN: @mss-prefix-sum's picture at this algebra.  `[[A]]` is ONE wire — the algebra's
-// source is `A×[[A]]`, so ITS bead takes the whole of it — and opens only around the lifting
-// `list(g)`, where `g` sits on the inner `[A]` and the outer `list` runs past.  The fork stays whole
-// in one bead: `⟨·,·⟩` needs the product BIFUNCTOR, which is not a wire.
-// The widening's ends carry no bead: `[[A]]=list([A])` and `[B]=list(B)`, one 1-cell either side.
-#let MSL = MA + 0.90                              // the `list` the widening opens: no port label,
-#let MSO = MSL + 1.60                             // and the gap to its right carries its name
-#let mtop2 = ((MA, [`A×−`]), (MSO, [`[[A]]`]))
-#let mbot2 = ((MSO, [`[B]`]),)
-#let mss-widen = ((2.45, 1.35, MSL, [`list`], (([`[[A]]`], [`[A]`]), ([`[B]`], [`B`]))),)
+// B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
+// components are `k`'s two output wires.  No circuit — the carrier is a PRODUCT, and a fork needs
+// the product bifunctor, which is not a wire (as in @subseq-EW-join's Hinze-Marsden column).
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1.5fr, 1fr),
+  align: (left + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)=F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]`],
-  table.header([*circuit* — the `𝟏` branch of `𝟏+A×[[A]]` above, the root and its list of tails below],
-    [*Hinze–Marsden*]),
+  Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
+    #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
+     whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.]],
+  table.header([*the equation at that branch*], [*why*]),
 
-  [#vstep([], mss-pic(mss-row((m-nil, m-wrap), (), (m-head,), [`cons`], 1.4, false, (), (), (),
-    (m-lg,))), [`[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons] list(g)` \
-    #src[`g≜⦇[c,f]⦈` and `tails=⦇[nil wrap,⟨(𝟙×head) cons,π₂⟩ cons]⦈`, since `tails(cons(a,xs))` is
-     `cons(cons(a,head(tails xs)),tails xs)`]])],
-  [#mpan(MSO, 7.35, mtop2, mbot2, widen: mss-widen, hdx: 0.68,
-    joins: ((MA, MSO, 3.00, 1.10),),
-    beads: ((MSO, 3.00, [`⟨(𝟙×head)cons,` \ `π₂⟩cons`]), (MSO, 1.90, [`g`])))],
+  [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
+  [`nil` has one suffix, itself, and `g nil=zero`, so the set is the singleton `{zero}`],
 
-  [#vstep(EQ, mss-pic(mss-row((m-nil, m-g, m-wrap), (), (m-head,), [`cons`], 1.4, false, (m-g,), (),
-    (m-lg,), ())), [`[nil g wrap,⟨(𝟙×head) cons g,π₂ list(g)⟩ cons]` \
-    #src[coproduct of maps, `wrap` and `cons` natural]])],
-  // Empty: `list(g)` is pushed into the fork's two components, and this column keeps the fork whole.
-  [],
-
-  [#vstep(EQ, mss-pic(mss-row((m-c, m-wrap), (), (m-lg, m-head), [`f`], 0.8, true, (), (m-lg,), (),
-    ())), [`[c wrap,⟨(𝟙×(list(g) head))f,(𝟙×list(g))π₂⟩ cons]` \
-    #src[`g`'s defining equation, `list(g) head=head g`; the `π₂` slide `π₂list(g)=(𝟙×list(g))π₂`
-     is 1 and 4 of @bdm-prod-laws, `Dom(π₁)=𝟙` (@dom-laws); `list(g) head=head g` is the one step the
-     note has no law for — `head` is undefined at `nil`, and the equality is a fact about `tails`, which
-     never returns an empty list, not a naturality square]])],
-  // Empty: both components are still inside the fork, so the whole-bead picture cannot move yet.
-  [],
-
-  [#vstep(EQ, mss-pic(mss-row((m-c, m-wrap), (m-lg,), (m-head,), [`f`], 0.8, true, (), (), (),
-    ())), [`F(list(g))[c wrap,⟨(𝟙×head)f,π₂⟩ cons]` \
-    #src[fork, relator — the fork slide is 7 of @bdm-prod-laws, `𝟙×list(g)` a map there — and it is
-     at `c,f:=zero,⊕`. @cata-fusion then reads off
-     `tails list(g)=⦇[c wrap,⟨(𝟙×head)f,π₂⟩ cons]⦈`, the heading's fold.]])],
-  [#mpan(MSO, 7.35, mtop2, mbot2, widen: mss-widen, hdx: 0.68,
-    joins: ((MA, MSO, 0.65, 0.85),),
-    beads: ((MSO, 1.90, [`g`]), (MSO, 0.65, [`⟨(𝟙×head)f,` \ `π₂⟩cons`])))],
+  [`cons⟨g,`#frc([`suffix`])` E(g)⟩=(𝟙×⟨g,`#frc([`suffix`])` E(g)⟩)⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩`],
+  [`g(cons(a,x))=a⊕(g x)`, which is `w` reading `g x` off `π₁`; and the suffixes of `cons(a,x)` are
+   `cons(a,x)` itself, whose value is that same `w`, together with those of `x`, which `π₂π₂`
+   carries — so the two sets meet at `cup`],
 ))]<mss-scan>
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
-#let bx-tails = ([`tails`], 1.5, false)
 #let bx-Eg = ([`E(⦇[zero,⊕]⦈)`], 3.6, false)
-#let bx-listg = ([`list(⦇[zero,⊕]⦈)`], 4.4, false)
-#let bx-fold = ([`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈`], 9.0, false)
+#let bx-fold = ([`⦇k⦈`], 1.5, false)
+#let bx-p2 = ([`π₂`], 1.0, false)
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
 // The Hinze–Marsden column counts `[A]` out as the `list` wire beside the `A` wire, and every row's
@@ -4645,8 +4539,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`mss=⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
-    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn]],
+  Thm[`mss=⦇k⦈ π₂ est(≥)` \
+    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
@@ -4683,25 +4577,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two]
     joins: ((MC, MD, 2.10, 0.70),),
     beads: ((MD, 3.55, [`suffix`]), (MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
 
-  [#vstep(EQ, mbp(mss-line((bx-tails, bx-listg, bx-est))),
-    [`tails list(⦇[zero,⊕]⦈) est(≥)` \
-     #src[`tails` implements #frc([`suffix`]) and `list(f)` implements `E(f)` — @comb-fns]])],
-  // `tails` does the singleton's and `suffix`'s work at once, so its ONE node sits between their two
-  // heights, and the `E` it opens leaves that node for the outermost lane.
+  [#vstep(EQ, mbp(mss-line((bx-fold, bx-p2, bx-est))),
+    [`⦇k⦈ π₂ est(≥)` \
+     #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
+      ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
+  // ONE bead: the fold kills `list` and `π₂` opens the `E`, and the pair they hand across is a
+  // product, which is not a wire.
   [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MD, 3.90, MA, MD, 0.45, [`E`], [`tails`]),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
-
-  [#vstep(EQ, mbp(mss-line((bx-fold, bx-est))),
-    [`⦇[zero wrap,⟨(𝟙×head)⊕,π₂⟩ cons]⦈ est(≥)` \
-     #src[@cata-fusion at @mss-scan's side condition, `c,f:=zero,⊕`]])],
-  // The fold now kills `list` AND opens the `E`, so its bead stands midway between the two beads of
-  // the row above, and the `E` leaves the object wire rather than a lane of its own.
-  [#mpan(MD, 9.7, mtopL, mbotL, h: 4.8,
     hands: ((MD, 3.00, MA, MD, 0.45, [`E`], none),),
     joins: ((MC, MD, 3.00, 0.90),),
-    beads: ((MD, 3.00, [`⦇[zero wrap,` \ `⟨(𝟙×head)⊕,π₂⟩cons]⦈`]), (MD, 0.45, [`est(≥)`])))],
+    beads: ((MD, 3.00, [`⦇k⦈π₂`]), (MD, 0.45, [`est(≥)`])))],
 ))
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
