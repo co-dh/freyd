@@ -225,6 +225,7 @@ diagrams.
   zstep(under: true)[indirect equality],
   zsqc(`f(R/T)`, `(fR)/T`, eq: true),
 )
+#align(center, block(inset: (y: 3pt))[#src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]])
 ]<adj-cross-why>
 
 // A cross table, not a list: what matters is WHICH PAIRS give a law, and a list of the ones that do
@@ -422,7 +423,9 @@ do.
 #fig({ meet((0, 0), $R$, $S$) })
 #align(center, src[transcribed: a definition has no statement to export])
 
-On every hom-set it is associative, commutative and idempotent, with unit the maximal arrow
+On every hom-set it is associative, commutative and idempotent
+#src[`lean:Freyd.S2_10.inter_assoc@958bcd8a`, `lean:Freyd.S2_10.inter_comm@4e93697e`,
+`lean:Freyd.S2_10.inter_idem@599acf28`], with unit the maximal arrow
 `⊤=⊸⟜` #src[(the paper's Lemma 4.11)].
 ]]<meet-defn>
 
@@ -513,7 +516,7 @@ discard drawn apart, the law is one dot walking back along the lower strand.
   lab(-0.35, 0, black)[$A$]; lab(4.95, y, black)[$A$]
 }), domstr(rel: [`⊑`])),
   ("", [`S⊸⊑⊸`, the lax axiom for `⊸` in the first section \
-   — the discard slides back past `S`]), s: 100%)]<dom-slide>
+   — the discard slides back past `S` #src[`lean:Freyd.S2_10.dom_comp_le@a99434dd`]]), s: 100%)]<dom-slide>
 
 Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` entire.
 
@@ -1095,7 +1098,7 @@ $frac(#[`𝟙`], ∋)$,
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[the first three steps only
   unfold `⋄` — `E` is a functor, so `E(`$frac(#[`R`], ∋)$`)union=E(`$frac(#[`R`], ∋)$`∋)=E(R)` and the
   `union` is gone. Absorption, the row of @pow-laws, is the whole law, and it is the functoriality
-  of $frac(#[`·`], ∋)$.]]])
+  of $frac(#[`·`], ∋)$. `lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`, `lean:AOP.A4_6.Λ_absorption@e87bd8f2`]]])
 ]<kleisli-comp>
 
 #block[#src[`𝟙` goes to $frac(#[`𝟙`], ∋)$, the Kleisli identity, by definition — so
@@ -1187,7 +1190,7 @@ the monoid's unit law:
   wiredot((5.4, -0.3))
   wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
   lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
-}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half]), s: 100%)]<fork-collapse>
+}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[`lean:AOP.A5_2.pair@df1791ca`]]), s: 100%)]<fork-collapse>
 
 
 === Relational product `R×S`
@@ -2624,7 +2627,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
-    #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns]],
+    #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns.
+    `lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` operand]),
 
@@ -3025,7 +3029,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)
     node(GB.at(0), GB.at(1), black, `GB`); node(FB.at(0), FB.at(1), black, `FB`)
   }),
-  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`],
+  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[`lean:AOP.A5_1.LaxNatural@ba661fee`]],
 )]<lax-str>
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
@@ -3370,7 +3374,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
       node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
     }), s: 74%),
-    [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)`],
+    [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[`lean:AOP.A7_2.Distributes@e061e29e`]],
   ),
   capbox(
     P(cetz.canvas(length: 0.8cm, {
@@ -3812,10 +3816,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [`F([A])⟶[A]`], [],
   [both constructors as one map],
 
-  [`p`], [a coreflexive], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
+  [`p`], [a coreflexive #src[`lean:AOP.A7_7_TakeWhile.pcor@62cb073c`]], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
   [`{(a,a)∣a` passes the test`}`],
 
-  [`R`], [`length≤length°`, a preorder], [`[A]⟶[A]`], [`[1] R [1,2]`],
+  [`R`], [`length≤length°`, a preorder #src[`lean:AOP.A7_7_TakeWhile.lenLE@833ff8fc`]], [`[A]⟶[A]`], [`[1] R [1,2]`],
   [`xs R ys⟺length xs≤length ys`],
 
   [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`], [`A×[A]⟶[A]`],
@@ -3826,11 +3830,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`[3,1,2] prefix [3,1]`],
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
-  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]`], [`F([A])⟶[A]`],
+  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[`lean:AOP.A7_7_TakeWhile.Salg@bc2565db`]], [`F([A])⟶[A]`],
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 
-  [`(g→X,Y)`], [`X` where `g` is defined and `Y` where it is not], [`A⟶B` #h(4pt) at
+  [`(g→X,Y)`], [`X` where `g` is defined and `Y` where it is not
+   #src[`lean:AOP.A5_3.cond@92c0409f`]], [`A⟶B` #h(4pt) at
    `X`,`Y : A⟶B`], [],
   [the test picks the branch],
 )
@@ -4510,7 +4515,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
-     whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.]],
+     whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
+     `lean:AOP.A7_7_MSS.Kalg@206c4ecd`, `lean:AOP.A7_7_MSS.scanStep_union@ca4b2850`]],
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -4542,7 +4548,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
-    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan]],
+    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan.
+    `lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
