@@ -77,6 +77,19 @@ public theorem est_apply {a : RelSet.{0}} (R : a ⟶ a)
     (P : (PowerAllegory.powerObj a).carrier) (w : a.carrier) :
     (est R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
 
+/-- Pointwise form of `Λ T ≫ est R` ((7.5) unbundled): `w` is an `est R`-choice over the
+    `T`-image of `x` iff `T x w` and `w` `R`-dominates every `T`-image `z` of `x`. -/
+public theorem Λ_comp_est_apply {b a : RelSet.{0}} (T : b ⟶ a) (R : a ⟶ a) (x : b.carrier)
+    (w : a.carrier) : (Λ T ≫ est R) x w ↔ T x w ∧ ∀ z, T x z → R w z := by
+  rw [Λ_eq_classifier]
+  constructor
+  · rintro ⟨P, hP, hest⟩
+    have hPeq : P = fun v => T x v := hP
+    subst hPeq
+    exact (est_apply R _ w).mp hest
+  · rintro ⟨hT, hall⟩
+    exact ⟨fun v => T x v, rfl, (est_apply R _ w).mpr ⟨hT, hall⟩⟩
+
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ est D`
 
   This is the bridge that lets an optimization case study state its headline as the actual
