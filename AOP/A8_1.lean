@@ -430,7 +430,7 @@ public theorem powerRel_thinRel_comp_bigUnion_le (Q : a ⟶ a) :
       ⟶ PowerAllegory.powerObj a) ≫ ∋ a = ∋ (PowerAllegory.powerObj a) ≫ ∋ a := by
     rw [bigUnion_eq_existsImage_eps, existsImage_eps]
   have hsimple : (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a)
-      ⟶ PowerAllegory.powerObj a)° ≫ bigUnion ⊑ Cat.id (PowerAllegory.powerObj a) := by
+      ⟶ PowerAllegory.powerObj a)° ≫ bigUnion ⊑ 𝟙 (PowerAllegory.powerObj a) := by
     rw [bigUnion_eq_existsImage_eps]
     exact (Λ_is_map' _).2
   show powerRel (thinRel Q) ≫ bigUnion

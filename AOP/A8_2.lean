@@ -80,10 +80,10 @@ public theorem thinAlg_elim (V : c ⟶ w) (S : w ⟶ a) {Q R : a ⟶ a}
   -- the power transpose of a composition (book p.198)
   have hsplit : Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
     rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
-  have hmapτ : Map (singletonMap : a ⟶ PowerAllegory.powerObj a) := Λ_is_map' (Cat.id a)
+  have hmapτ : Map (singletonMap : a ⟶ PowerAllegory.powerObj a) := Λ_is_map' (𝟙 a)
   -- `P τ ≫ union = id` (`union·Pτ = id`, the monad law)
   have hτ : powerRel (singletonMap : a ⟶ PowerAllegory.powerObj a) ≫ bigUnion
-      = Cat.id (PowerAllegory.powerObj a) := by
+      = 𝟙 (PowerAllegory.powerObj a) := by
     rw [powerRel_map hmapτ, bigUnion_existsImage_singleton]
   -- thin-elimination (8.3)
   have h83 : (Λ S ≫ est R) ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
