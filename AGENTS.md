@@ -125,3 +125,45 @@ The greppable book prose lives in `/home/dh/anki/typst-book/chapters/<a.b>/secti
 `/home/dh/repo/freyd/book-all.typ` is only a 63-line wrapper that `#include`s those chapter
 files — grepping it alone finds NOTHING. To search the whole book:
 `grep -rni "<term>" /home/dh/anki/typst-book/chapters/`.
+
+## Searching the reference PDFs
+Do NOT open a PDF page as an image to find something, and do NOT run `pdftotext | grep` loops. Every
+third-party PDF in the repo is indexed in `book-index.db` (gitignored — it holds the books' full text);
+`./scripts/book` queries it and costs no image tokens. `make books` rebuilds (sha256 skips unchanged
+files, so a no-op run is under a second).
+
+```
+./scripts/book ls                                    # what is indexed, and each book's page offset
+./scripts/book find 3.1a IntroString                 # exact label: theorem/example/equation tags
+./scripts/book grep -b algprog catamorphism fusion   # BM25 over paragraphs, ranked, with snippets
+./scripts/book sim why is a monad a monoid           # embedding KNN — paraphrase, not keywords
+./scripts/book page IntroString 64                   # printed page; `pdf:79` for the raw index
+```
+
+Which one: `find` for a numbered tag, `grep` when you know the words the page uses, `sim` when you know
+only what it means. `grep` is the default — `sim` wins on well-formed prose stating a concept and loses on
+OCR fragments. Math operators (`∘`, `⦇`) are dropped by the tokenizer, so those still need a real grep.
+Page answers print `p.N (pdf M)`; a book whose numbering could not be pinned says `printed=?` rather than
+guessing.
+
+## Searching the Lean declarations
+Do NOT grep `*.lean` to find a declaration. The whole corpus — every `Freyd`, `AOP`, `leet`, `rel`
+declaration with its statement text and source line — is indexed in one sqlite database,
+`.lake/build/refactor-index.db` (rebuilt by `./scripts/lean-refactor index`, which `make` runs as a
+prerequisite of `cite`/`cover`). Query it, then read the source only to check the hypotheses of the
+one hit you are about to use — the indexed statement omits `variable`-bound hypotheses.
+
+```
+sqlite3 -readonly .lake/build/refactor-index.db "
+  select i.module, i.user_name, printf('%08x', i.stmt_key & 4294967295), m.source, r.sl1+1, i.stmt
+  from decl_info i join module m on m.name = i.module
+  left join decl_range r on r.name = i.name and r.module = i.module
+  where i.internal = 0 and i.module like 'AOP.A5%' and i.stmt like '%Λ%'"
+```
+
+`decl_info(name, user_name, module, kind, internal, stmt, stmt_key, skel, skel_size)`,
+`module(name, source)`, `decl_range(name, module, sl1)`. Always keep `internal = 0`: it drops the
+compiler's own declarations. `sl1` is 0-based, hence the `+1`. Give the ABSOLUTE path from a
+worktree — a worktree has no `.lake` of its own.
+That `printf` is the `lean:<Mod>.<decl>@<key>` marker's key: the low 32 bits of `stmt_key`, the same
+number `scripts/cite-check` recomputes when it re-verifies a citation in the notes.
