@@ -135,7 +135,11 @@ diagrams.
 
   [`⊸⊣⟜`], [`A⟶𝕀`], [`⊸⟜=⊤`], [`𝟙⊑⊸⟜`], [`⟜⊸⊑𝟙`], [`(R∪S)⊸=` \ `R⊸∪S⊸`], [`(R∩S)⟜=` \ `R⟜∩S⟜`], [`⊸⟜⊸=⊸`], [`⟜⊸⟜=⟜`],
 
-  [`°⊣°`], [`(A⟶B)⟶` \ `(B⟶A)`], [`°°=𝟙`], [`R=R°°`], [`R=R°°`], [`(R∪S)°=` \ `R°∪S°`], [`(R∩S)°=` \ `R°∩S°`], [`R°°°=R°`], [`R°°°=R°`],
+  [`°⊣°`], [`(A⟶B)⟶` \ `(B⟶A)`], [`°°=𝟙` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
+    [`R=R°°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]], [`R=R°°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
+    [`(R∪S)°=` \ `R°∪S°` #src[`lean:Freyd.S2_20.recip_union@d1eae8a9`]],
+    [`(R∩S)°=` \ `R°∩S°` #src[`lean:Freyd.S2_10.recip_inter@e08c9f2d`]],
+    [`R°°°=R°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]], [`R°°°=R°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
 
   [`⟜◁⊣▷⊸`], [`(X⊗A⟶Y)⟶` \ `(X⟶Y⊗A)`], [`𝟙`], [`(⟜◁⊗𝟙)` \ `(𝟙⊗▷⊸)=𝟙`], [`(𝟙⊗⟜◁)` \
     `(▷⊸⊗𝟙)=𝟙`], [`=`], [`=`], [`=`], [`=`],
@@ -145,25 +149,44 @@ diagrams.
   [`▷⊸⊣⟜◁`], [`(X⟶Y⊗A)⟶` \ `(X⊗A⟶Y)`], [`𝟙`], [`(𝟙⊗⟜◁)` \ `(▷⊸⊗𝟙)=𝟙`], [`(⟜◁⊗𝟙)` \
     `(𝟙⊗▷⊸)=𝟙`], [`=`], [`=`], [`=`], [`=`],
 
-  [`Δ⊣∩`], [`(A⟶B)⟶` \ `(A⟶B)²`], [`R↦R∩R=R`], [`R⊑R∩R`], [`R∩S⊑R`], [`Δ(R∪S)=` \ `ΔR∪ΔS`], [`(R∩T)∩(S∩U)=` \ `(R∩S)∩(T∩U)`], [`R∩R=R`], [`R∩R=R`],
+  [`Δ⊣∩`], [`(A⟶B)⟶` \ `(A⟶B)²`], [`R↦R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]],
+    [`R⊑R∩R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]], [`R∩S⊑R` #src[`lean:Freyd.S2_10.inter_lb_left@4eca3d20`]],
+    [`Δ(R∪S)=` \ `ΔR∪ΔS`], [`(R∩T)∩(S∩U)=` \ `(R∩S)∩(T∩U)`],
+    [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]], [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]],
 
-  [`∪⊣Δ`], [`(A⟶B)²⟶` \ `(A⟶B)`], [`(R,S)↦` \ `(R∪S,R∪S)`], [`R⊑R∪S`], [`R∪R⊑R`], [`(R∪T)∪(S∪U)=` \ `(R∪S)∪(T∪U)`], [`Δ(R∩S)=` \ `ΔR∩ΔS`], [`R∪R=R`], [`R∪R=R`],
+  [`∪⊣Δ`], [`(A⟶B)²⟶` \ `(A⟶B)`], [`(R,S)↦` \ `(R∪S,R∪S)`],
+    [`R⊑R∪S` #src[`lean:Freyd.S2_20.le_union_left@0a8565e2`]], [`R∪R⊑R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]],
+    [`(R∪T)∪(S∪U)=` \ `(R∪S)∪(T∪U)`], [`Δ(R∩S)=` \ `ΔR∩ΔS`],
+    [`R∪R=R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]], [`R∪R=R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]],
 
-  [`⊥⊣!`], [`{*}⟶` \ `(A⟶B)`], [—], [—], [`⊥⊑R`], [—], [—], [—], [—],
+  [`⊥⊣!`], [`{*}⟶` \ `(A⟶B)`], [—], [—], [`⊥⊑R` #src[`lean:Freyd.S2_20.zero_le@4399de93`]], [—], [—], [—], [—],
 
-  [`·S⊣/S`], [`(A⟶B)⟶` \ `(A⟶C)`], [`S/S`], [`R⊑(RS)/S`], [`(T/S)S⊑T`], [`(R∪T)S=` \ `RS∪TS`], [`(R∩T)/S=` \ `R/S∩T/S`], [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
+  [`·S⊣/S`], [`(A⟶B)⟶` \ `(A⟶C)`], [`S/S`], [`R⊑(RS)/S`], [`(T/S)S⊑T`],
+    [`(R∪T)S=` \ `RS∪TS` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
+    [`(R∩T)/S=` \ `R/S∩T/S` #src[`lean:Freyd.S2_30.div_inter_eq@d75d5861`]],
+    [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
 
-  [`S·⊣S\`], [`(B⟶C)⟶` \ `(A⟶C)`], [`S\S`], [`R⊑S\(SR)`], [`S(S\T)⊑T`], [`S(R∪T)=` \ `SR∪ST`], [`S\(R∩T)=` \ `S\R∩S\T`], [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
+  [`S·⊣S\`], [`(B⟶C)⟶` \ `(A⟶C)`], [`S\S`], [`R⊑S\(SR)`], [`S(S\T)⊑T`],
+    [`S(R∪T)=` \ `SR∪ST` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`S\(R∩T)=` \ `S\R∩S\T` #src[`lean:Freyd.S2_30.leftDiv_inter@ba9dda1e`]],
+    [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
 
-  [`R∩⊣R⇒`], [`(A⟶B)⟶` \ `(A⟶B)`], [`X↦R⇒(X∩R)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`], [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`], [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)`], [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
+  [`R∩⊣R⇒`], [`(A⟶B)⟶` \ `(A⟶B)`], [`X↦R⇒(X∩R)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`],
+    [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`],
+    [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)` #src[`lean:AOP.A4_4.impl_inter@d2d55732`]],
+    [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
 
   [`𝓓⊣·⊤`], [`(A⟶B)⟶` \ `Cor A`], [`R↦(𝓓R)⊤`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
 
   [`𝓡⊣⊤·`], [`(A⟶B)⟶` \ `Cor B`], [`R↦⊤(𝓡R)`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
 
-  [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`(R∪S)f=` \ `Rf∪Sf`], [`(R∩S)f°=` \ `Rf°∩Sf°`], [`ff°f=f`], [`f°ff°=f°`],
+  [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[`lean:Freyd.S2_30.map_entire_le@833e9621`]], [`f°f⊑𝟙`],
+    [`(R∪S)f=` \ `Rf∪Sf` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
+    [`(R∩S)f°=` \ `Rf°∩Sf°` #src[`lean:AOP.A4_2.simple_dist_inter_recip@9d565a77`]], [`ff°f=f`], [`f°ff°=f°`],
 
-  [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°`], [`f°f⊑𝟙`], [`f°(X∪Y)=` \ `f°X∪f°Y`], [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
+  [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[`lean:Freyd.S2_30.map_entire_le@833e9621`]], [`f°f⊑𝟙`],
+    [`f°(X∪Y)=` \ `f°X∪f°Y` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
   [`i⊣E`], [`Map↪Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶EA`], [`∋:EB⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
 
@@ -210,43 +233,56 @@ diagrams.
   columns: 9, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
   table.header([], [*`·T`*], [*`T·`*], [*`·g`*], [*`g°·`*], [*`T∩`*], [*`°`*], [*`⟜◁`*], [*`Δ`*]),
 
-  [*`·S`*], [`R/(ST)=` \ `(R/T)/S`], [`T\(R/S)=` \ `(T\R)/S`],
-    [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S`],
+  [*`·S`*], [`R/(ST)=` \ `(R/T)/S` #src[`lean:Freyd.S2_30.div_comp_assoc@30a074f3`]],
+    [`T\(R/S)=` \ `(T\R)/S` #src[`lean:Freyd.S2_30.leftDiv_div@e6e6897c`]],
+    [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S` #src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]],
     [—], [`(Y/S)°=` \ `S°\(Y°)`], [`(RS)^=` \ `R^(S⊗𝟙)`],
-    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S`],
+    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S` #src[`lean:Freyd.S2_30.div_inter_eq@d75d5861`]],
 
-  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T`], [`(TS)\R=` \ `S\(T\R)`],
+  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T` #src[`lean:Freyd.S2_30.leftDiv_div@e6e6897c`]],
+    [`(TS)\R=` \ `S\(T\R)` #src[`lean:Freyd.S2_30.leftDiv_comp@f40e561a`]],
     [`S\(Rg°)=` \ `(S\R)g°`], [`(g°S)\R=` \ `S\(gR)`], [—],
     [`(S\Y)°=` \ `Y°/S°`], [`((S⊗𝟙)R)^=` \ `SR^`],
-    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂`],
+    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂` #src[`lean:Freyd.S2_30.leftDiv_inter@ba9dda1e`]],
 
-  [*`·f`*], [`R/(fT)=` \ `(R/T)f°`], [`T\(Rf°)=` \ `(T\R)f°`],
-    [`(fg)°=g°f°`], [—], [—], [`(fY)°=Y°f°`], [—],
-    [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°`],
+  [*`·f`*], [`R/(fT)=` \ `(R/T)f°` #src[`lean:AOP.A4_4.div_comp_recip_map@bc41ec1a`]],
+    [`T\(Rf°)=` \ `(T\R)f°`],
+    [`(fg)°=g°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—], [—],
+    [`(fY)°=Y°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
+    [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°` #src[`lean:AOP.A4_2.simple_dist_inter_recip@9d565a77`]],
 
-  [*`f°·`*], [`f(R/T)=` \ `(fR)/T`], [`(Tf°)\R=` \ `f(T\R)`], [—],
-    [`(fg)°=g°f°`], [—], [`(fY)°=Y°f°`], [—],
+  [*`f°·`*], [`f(R/T)=` \ `(fR)/T` #src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]],
+    [`(Tf°)\R=` \ `f(T\R)`], [—],
+    [`(fg)°=g°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
+    [`(fY)°=Y°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
     [`f(T₁∩T₂)=` \ `fT₁∩fT₂`],
 
-  [*`R∩`*], [—], [—], [—], [—], [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)`], [`(R⇒Y)°=` \ `R°⇒(Y°)`], [—],
-    [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)`],
+  [*`R∩`*], [—], [—], [—], [—],
+    [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)` #src[`lean:AOP.A4_4.impl_curry@96ec2371`]],
+    [`(R⇒Y)°=` \ `R°⇒(Y°)`], [—],
+    [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)` #src[`lean:AOP.A4_4.impl_inter@d2d55732`]],
 
   [*`°`*], [`(Y/T)°=` \ `T°\(Y°)`], [`(T\Y)°=` \ `Y°/T°`],
-    [`(gY)°=Y°g°`],
-    [`(gY)°=Y°g°`], [`(T⇒Y)°=` \ `T°⇒(Y°)`], [`Y°°=Y`],
+    [`(gY)°=Y°g°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]],
+    [`(gY)°=Y°g°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [`(T⇒Y)°=` \ `T°⇒(Y°)`],
+    [`Y°°=Y` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
     [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]],
     [`(T₁∩T₂)°=` \ `T₁°∩T₂°`],
 
   [*`⟜◁`*], [`(RT)^=` \ `R^(T⊗𝟙)`], [`((T⊗𝟙)R)^=` \ `TR^`], [—], [—], [—],
     [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]], [—], [—],
 
-  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T`], [`T(X₁∪X₂)=` \ `TX₁∪TX₂`],
-    [`(X₁∪X₂)g=` \ `X₁g∪X₂g`],
-    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂`],
-    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)`], [`(X₁∪X₂)°=` \ `X₁°∪X₂°`], [—], [—],
+  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
+    [`T(X₁∪X₂)=` \ `TX₁∪TX₂` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`(X₁∪X₂)g=` \ `X₁g∪X₂g` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
+    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)` #src[`lean:Freyd.S2_20.inter_union_distrib@83bb6087`]],
+    [`(X₁∪X₂)°=` \ `X₁°∪X₂°` #src[`lean:Freyd.S2_20.recip_union@d1eae8a9`]], [—], [—],
 
-  [*`⊥`*], [`⊥T=⊥`], [`T⊥=⊥`], [`⊥g=⊥`], [`g°⊥=⊥`],
-    [`T∩⊥=⊥`], [`⊥°=⊥`], [—], [—],
+  [*`⊥`*], [`⊥T=⊥` #src[`lean:Freyd.S2_20.zero_comp@77e0792c`]], [`T⊥=⊥` #src[`lean:Freyd.S2_20.comp_zero@ee8988af`]],
+    [`⊥g=⊥` #src[`lean:Freyd.S2_20.zero_comp@77e0792c`]], [`g°⊥=⊥` #src[`lean:Freyd.S2_20.comp_zero@ee8988af`]],
+    [`T∩⊥=⊥` #src[`lean:Freyd.S2_50.inter_zero@d458c7d7`]],
+    [`⊥°=⊥` #src[`lean:Freyd.S2_20.recip_zero@49eaea12`]], [—], [—],
 )]<adj-cross>
 
 // Proved in the repository: div_comp_assoc, leftDiv_div, leftDiv_comp, leftDiv_inter, leftDiv_div_recip,
@@ -356,8 +392,9 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 2-functor `° : 𝒞ᵒᵖ⟶𝒞`:
 
 #align(center, block(inset: (y: 5pt))[
-  (i) `𝟙°=𝟙`  #h(1cm) (ii) `(RS)°=S°R°`  #h(1cm) (iii) `(R⊗S)°=R°⊗S°`
-  #h(1cm) (iv) `R≤S` implies `R°≤S°`
+  (i) `𝟙°=𝟙` #src[`lean:Freyd.S2_10.recip_id@319d8965`]  #h(1cm) (ii) `(RS)°=S°R°`
+  #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]  #h(1cm) (iii) `(R⊗S)°=R°⊗S°`
+  #h(1cm) (iv) `R≤S` implies `R°≤S°` #src[`lean:Freyd.S2_10.recip_mono@d584321d`]
 ])
 ]]<conv-defn>
 
@@ -419,7 +456,7 @@ And one law relating `∩` to composition, which is *not* an equation:
 = Domain and range
 
 #disp[#definition[
-The *domain* `Dom(R)≜𝟙∩RR°` and the *range* `Ran R≜Dom(R°)`.
+The *domain* `Dom(R)≜𝟙∩RR°` #src[`lean:Freyd.S2_10.dom@9e0aed7a`] and the *range* `Ran R≜Dom(R°)`.
 ]]<dom-defn>
 
 // THE MEET FIRST, then the stub: the stub alone does not look like `𝟙 ∩ R R°` — one strand carries no
@@ -815,7 +852,7 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 = $frac(R, S)$
 
 #disp[#definition[
-$frac(R, S)$ `≜(R/S)∩(S/R)°`. In `Rel` `x` and `y` has the same image:
+$frac(R, S)$ `≜(R/S)∩(S/R)°` #src[`lean:Freyd.S2_30.symmDiv@7e3fc41a`]. In `Rel` `x` and `y` has the same image:
 `∀p. (x R p⟺y S p)`
 ]]<syq-defn>
 
@@ -867,38 +904,41 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°`. In `Rel` `x` and `y` has the same image:
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the reading*]),
 
-  [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X°R⊑S`],
+  [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X°R⊑S` #src[`lean:Freyd.S2_30.le_symmDiv_iff@b1cfe4dc`]],
   [`X` may pair `x` with `y` only when `x` admires exactly whom `y` hates. Both halves must typecheck,
    so the operation is *partial*.],
 
-  [$(frac(R, S))^circle.small = frac(S, R)$], [Matching is symmetric.],
+  [$(frac(R, S))^circle.small = frac(S, R)$ #src[`lean:Freyd.S2_30.symmDiv_recip@b93b9076`]],
+  [Matching is symmetric.],
 
-  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$], [And transitive.],
+  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ #src[`lean:Freyd.S2_30.symmDiv_comp@5930c455`]],
+  [And transitive.],
 
   [$frac(R, S) S ⊑ R$],
   [$(∃ y. thin x (frac(R, S)) y ∧ y S p) → x R p$ \
    `x only admires whom y hates` \
    $frac(R, S) S = "Dom"(frac(R, S)) R$],
 
-  [$frac(R, R) R = R$],
+  [$frac(R, R) R = R$ #src[`lean:Freyd.S2_30.symmDiv_self_comp@2b447963`]],
   [$(∃ y. thin x (frac(R, R)) y ∧ y R p) ⟺ x R p$ \
    `x and y admire the same people` \
    `y=x always qualifies (𝟙⊑R%R below)`],
 
-  [$𝟙 ⊑ frac(R, R)$],
+  [$𝟙 ⊑ frac(R, R)$ #src[`lean:Freyd.S2_30.symmDiv_self_reflexive@9e2af20e`]],
   [$x (frac(R, R)) y$ if `x` and `y` admires the same peoples.],
 
   [$(frac(R, R))^2 = frac(R, R)$],
   [So the relation *admires the same people* is an equivalence relation.],
 
-  [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`],
+  [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`
+   #src[`lean:Freyd.S2_11.symmetric_le_symmDiv_self_iff@a5fc04b4`]],
   [The largest symmetric arrow that leaves `R` alone.],
 
-  [$frac(R, 𝟙)$ is the *simple part* of `R`],
+  [$frac(R, 𝟙)$ is the *simple part* of `R` #src[`lean:Freyd.S2_30.simplePart@3779ee66`]],
   [The people who admire exactly one person and nobody else. It equals `R` only when `R` is simple, unlike
    `R/𝟙=R`.],
 
-  [`Dom` $frac(R, S)$ `=𝟙∩(R/S)(S/R)`],
+  [`Dom` $frac(R, S)$ `=𝟙∩(R/S)(S/R)` #src[`lean:Freyd.S2_30.dom_symmDiv@0ef1aa31`]],
   [Its domain is the *domain of simplicity* of `R`.],
 )]<syq-readings>
 
@@ -1007,11 +1047,12 @@ subscript.
     let w = measure(g).width
     grid(columns: 1, row-gutter: 8pt, align: center, g,
       box(width: w, grid(columns: (1fr, 1fr), align: (center + horizon, center + horizon),
-        [$frac(#[`𝟙`], ∋)$ `∋=𝟙`], [$frac(#[`∋`], ∋)$ `=𝟙`])))
+        [$frac(#[`𝟙`], ∋)$ `∋=𝟙` #src[`lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
+        [$frac(#[`∋`], ∋)$ `=𝟙` #src[`lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3`]])))
   },
   [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
    #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
-   already the relator `P(R)`.]],
+   already the relator `P(R)`. `lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
   // The two snakes are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>
@@ -1068,7 +1109,9 @@ Every hom-set of an allegory is a poset, so an allegory is a *locally posetal 2-
 from `R` to `S` IS `R⊑S`. A *relator* `F : 𝒞⟶𝓓` is a 2-functor between allegories:
 
   #align(center, block(inset: (y: 6pt))[
-    #text(12.5pt)[`F(𝟙)=𝟙` #h(1cm) `F(RS)=F(R)F(S)` #h(1cm) `R⊑S⟹F(R)⊑F(S)`]
+    #text(12.5pt)[`F(𝟙)=𝟙` #src[`lean:Freyd.S1_18.map_id@1cd85d8e`] #h(1cm)
+    `F(RS)=F(R)F(S)` #src[`lean:Freyd.S1_18.map_comp@ab212d4e`] #h(1cm)
+    `R⊑S⟹F(R)⊑F(S)` #src[`lean:AOP.A5_1.map_mono@308d5798`]]
   ])
 
 Preserving `°` is *not* asked for — `°` is an identity-on-objects involution `𝒞ᵒᵖ⟶𝒞`, no part of
