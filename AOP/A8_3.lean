@@ -29,25 +29,11 @@
 -/
 module
 
-public import AOP.A8_1
-public import AOP.A5_6
+public import AOP.A8_2
 
 universe u
 
 namespace Freyd.Alg
-
-/-- The §8.3 setting: `AOP.A5_6`'s tabular/unitary + unguarded-power merge (which gives
-    `RelProd`, `cup` and `cpMap` alongside `Λ`) TOGETHER with local completeness (which gives
-    `relCata`, `thinRel` and `est`).  Both parents already share `Allegory`, so this is the
-    same diamond-safe structure merge as `AOP.A6_2`'s `UnguardedPowerLCDA`. -/
-public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
-    TabularUnitaryUnguardedDivisionPowerAllegory 𝒜, LocallyCompleteDistributiveAllegory 𝒜
-
-/-- The power/local-completeness side of the merge, so `AOP.A8_1`'s thinning calculus fires
-    here unchanged. -/
-@[expose] public instance (priority := 100) TabularUnitaryUnguardedPowerLCDA.toUnguardedPowerLCDA
-    {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] : UnguardedPowerLCDA 𝒜 :=
-  { inst with }
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {a l lF : 𝒜}
 

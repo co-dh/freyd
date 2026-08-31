@@ -267,7 +267,7 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : a ⟶ a} :
     restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal
     property (`le_Λ_comp_thinRel_iff`), the context rule (7.6) `Λ_comp_est_context`, and the
     shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound). -/
-theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
+public theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : b ⟶ a} {Q R : a ⟶ a}
     (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
@@ -414,13 +414,56 @@ public theorem Λ_comp_thinRel_context (S : b ⟶ a) (Q : a ⟶ a) :
         comp_mono_right (inter_mono (le_refl Q°) hZeps) ((∋ a)°)
       exact le_trans hZeq (le_trans hmod hfin)
 
-/-! ## Stretch items (book pp.195-196) — dropped, with obstructions noted
+/-! ## (8.4) / Ex 8.7 — thinning distributes over union (book p.195) -/
 
-  * **(8.4) / Ex 8.7** (`P(thin Q)·union ⊆ union·thin Q`, the power-functor fusion of thinning):
-    DROPPED.  Mirrors `A7_1`'s `powerRel_est_le_bigUnion` but the Egli–Milner ingredient here
-    is `powerRel (thinRel Q)`, and the argument needs a lax-naturality bound relating
-    `powerRel (thin Q)` to `thin Q` past `union` that is not among the `A5_4` `powerRel`
-    lemmas on hand; deferred with the other `powerRel`-fusion facts of chapter 7.
+/-- **(8.4) / Ex 8.7**: `P(thin Q)·union ⊑ union·thin Q`, mirrored
+    `powerRel (thinRel Q) ≫ bigUnion ⊑ bigUnion ≫ thinRel Q` — thinning each member of a set
+    of sets and then taking the union thins the union.  Both halves of the thin universal
+    property come from `A5_4`'s two `powerRel` cancellation laws: "shrinks" from
+    `powerRel_eps_lax`, "keeps lower bounds" from `powerRel_term1_cancel`, closed by
+    simplicity of `bigUnion` (it is `Λ` of something, hence a map). -/
+public theorem powerRel_thinRel_comp_bigUnion_le (Q : a ⟶ a) :
+    powerRel (thinRel Q) ≫ (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a)
+        ⟶ PowerAllegory.powerObj a)
+      ⊑ bigUnion ≫ thinRel Q := by
+  have hbeps : (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a)
+      ⟶ PowerAllegory.powerObj a) ≫ ∋ a = ∋ (PowerAllegory.powerObj a) ≫ ∋ a := by
+    rw [bigUnion_eq_existsImage_eps, existsImage_eps]
+  have hsimple : (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a)
+      ⟶ PowerAllegory.powerObj a)° ≫ bigUnion ⊑ Cat.id (PowerAllegory.powerObj a) := by
+    rw [bigUnion_eq_existsImage_eps]
+    exact (Λ_is_map' _).2
+  show powerRel (thinRel Q) ≫ bigUnion
+      ⊑ Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ thinRel Q
+  refine le_Λ_comp_thinRel_iff.mpr ⟨?_, ?_⟩
+  · -- the union of thinnings shrinks: its members were members of the union
+    rw [Cat.assoc, hbeps, ← Cat.assoc]
+    refine le_trans (comp_mono_right (powerRel_eps_lax (thinRel Q)) (∋ a)) ?_
+    rw [Cat.assoc]
+    exact comp_mono_left _ (thinRel_comp_eps_le Q)
+  · -- the union of thinnings keeps a `Q`-lower bound for every member of the union
+    have htail : (∋ a)° ≫ (∋ (PowerAllegory.powerObj a))° ≫ bigUnion ⊑ (∋ a)° := by
+      have h4 : (∋ a)° ≫ (∋ (PowerAllegory.powerObj a))°
+          = (∋ a)° ≫ (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a)
+              ⟶ PowerAllegory.powerObj a)° := by
+        rw [← Allegory.recip_comp, ← Allegory.recip_comp, hbeps]
+      rw [← Cat.assoc, h4, Cat.assoc]
+      refine le_trans (comp_mono_left _ hsimple) ?_
+      rw [Cat.comp_id]
+      exact le_refl _
+    have step : (∋ (PowerAllegory.powerObj a))° ≫ powerRel (thinRel Q) ≫ bigUnion
+        ⊑ thinRel Q ≫ (∋ (PowerAllegory.powerObj a))° ≫ bigUnion := by
+      rw [← Cat.assoc ((∋ (PowerAllegory.powerObj a))°) (powerRel (thinRel Q)) bigUnion,
+          ← Cat.assoc (thinRel Q) ((∋ (PowerAllegory.powerObj a))°) bigUnion]
+      exact comp_mono_right (powerRel_term1_cancel (thinRel Q)) bigUnion
+    rw [Allegory.recip_comp, Cat.assoc]
+    refine le_trans (comp_mono_left _ step) ?_
+    rw [← Cat.assoc]
+    refine le_trans (comp_mono_right (recip_eps_comp_thinRel_le Q) _) ?_
+    rw [Cat.assoc]
+    exact comp_mono_left _ htail
+
+/-! ## Stretch items (book pp.195-196) — dropped, with obstructions noted
 
   * **Ex 8.4** (the cup / pairing rule for `thin`): DROPPED — needs the `cup` operation, which
     lives in `A5_6`'s `TabularUnitaryUnguardedDivisionPowerAllegory` setting, strictly stronger

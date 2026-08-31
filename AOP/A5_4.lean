@@ -230,7 +230,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     (applied to the `x`-leg and, after a flip, the `z`-leg) to give `x°≫h ⊑ powerRel R` and
     `h°≫z ⊑ powerRel S`.  Since `h` is entire, `x°≫z ⊑ x°≫(h≫h°)≫z = (x°≫h)≫(h°≫z) ⊑
     powerRel R ≫ powerRel S`. -/
-theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     powerRel (R ≫ S) = powerRel R ≫ powerRel S := by
   apply le_antisymm _ (powerRel_comp_le R S)
   obtain ⟨w, x, z, hxmap, hzmap, hxz, _hjoint⟩ :=
