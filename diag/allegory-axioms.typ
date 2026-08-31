@@ -2472,11 +2472,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`[A]⟶[A]`],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
-  [`partition≜⦇[nil,(ne×𝟙) cat]⦈°`
-   #src[`lean:AOP.A5_6_ListCombinators.partition_cata@213ef510`]],
-  [`[A]⟶[[A]]`],
-  [`ne` restricts `cat` to a non-empty first argument, so `ys` is a list of non-empty segments of
-   `xs`. Unrestricted, `concat°` would admit empty ones.],
+  [`partition≜concat°` #src[`lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e`]],
+  [`[A]⟶[[A]⁺]`],
+  [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
   [`concat≜⦇[nil,cat]⦈` #src[`lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3`]],
   [`[[A]]⟶[A]`],

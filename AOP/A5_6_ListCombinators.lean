@@ -209,6 +209,17 @@ public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
 public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun p => cappend p.1 p.2
 
+/-- `cat` at the restricted type `list A ⟵ list⁺ A × list A` (B&dM p.128), the restriction carried
+    by the coreflexive `neSeg` on the first argument. -/
+public def catNE : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+  rprodMap neSeg (𝟙 (dList A)) ≫ catR
+
+/-- B&dM's `concat = ⦇[nil, cat]⦈` at p.128, where that `cat` is `catNE`: only a flattening whose
+    segments are all non-empty, so that `concat°` is `partition`. -/
+public def concatNE : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
+  ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catNE
+    : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
+
 /-- The length of a list. -/
 @[expose] public def clen : ConsList Unit A → Nat
   | ConsList.wrap _ => 0
@@ -654,19 +665,13 @@ public theorem perm_cata :
     · rintro ⟨y, hxy, w, rfl, hwr⟩
       exact Perm.trans (Perm.cons a hxy) hwr
 
-/-- **`partition = concat°`** (note `comb-fns`; B&dM §5.6) — with `cat` restricted to a
-    non-empty first argument, carried here by the coreflexive `neSeg` inside the algebra:
-    `partition = ⦇[nil, (neSeg⊗𝟙) cat]⦈°`. -/
-public theorem partition_cata :
-    (partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}))
-      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR
-          (rprodMap neSeg (𝟙 (dList A)) ≫ catR)
-          : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈° := by
+/-- **`partition = concat°`** (note `comb-fns`; B&dM p.128), the book's own spelling: the `concat`
+    it converses is `concatNE`, built on `cat` at the restricted type. -/
+public theorem partition_concat :
+    (partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0})) = concatNE° := by
   have h : (fun ps x => cconcat ps = x ∧ allNonempty ps
         : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR
-          (rprodMap neSeg (𝟙 (dList A)) ≫ catR)
-          : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈ := by
+      = concatNE := by
     refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
       ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun seg rest r => ?_⟩)
     · show (ConsList.wrap () = r ∧ True) ↔ r = ConsList.wrap d
