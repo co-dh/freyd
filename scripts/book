@@ -1,14 +1,21 @@
-#!/usr/bin/env python3
-"""book — the reference PDFs as text: label lookup, BM25 paragraph search, page dumps.
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["numpy", "onnxruntime", "tokenizers", "sqlite-vec"]
+# ///
+"""book — the reference PDFs as text: label lookup, BM25 and semantic search, page dumps.
 
-Answers "where is (3.1a)", "which page said these words", "show me p.64" without a page image and
-without a `pdftotext | grep` loop.  Three tables carry it: `label` (exact, deterministic), `para`
-with `para_fts` (BM25 over paragraphs, porter-stemmed), `page` (raw text, for dumps).
+Answers "where is (3.1a)", "which page said these words", "which page MEANS this", "show me p.64"
+without a page image and without a `pdftotext | grep` loop.  Four tables carry it: `label` (exact,
+deterministic), `para` with `para_fts` (BM25 over paragraphs, porter-stemmed), `vec_para` (one
+sentence embedding per paragraph, cosine KNN inside SQLite), `page` (raw text, for dumps).
 
     ./scripts/book ingest                       # build/update; sha256 skips an unchanged PDF
+    ./scripts/book embed                        # vectors for the new paragraphs; re-run is a no-op
     ./scripts/book find 3.1a IntroString        # IntroString  eq (3.1a)  p.64 (pdf 79)
     ./scripts/book find ex 3.21                 # every book that has it
     ./scripts/book grep -b IntroString eilenberg moore algebra monad
+    ./scripts/book sim -b IntroString why is a monad the same thing as a monoid
     ./scripts/book page IntroString 64          # or `pdf:79`, always available
     ./scripts/book ls
 
@@ -16,13 +23,22 @@ The DB holds the full text of PDFs gitignored for copyright, so it is gitignored
 (`book-index.db` at the repository root — NOT under .lake, which `lake clean` wipes) and page dumps
 go to stdout only, never to a file in the tree.  `book.offset` is the shift `pdf_page - printed`
 read off the page numbers themselves; a book whose numbering cannot be pinned down keeps
-`offset=NULL` and every answer says `pdf N (printed=?)` rather than a guess.
+`offset=NULL` and every answer says `pdf N (printed=?)` rather than a guess.  The encoder is a
+34 MB ONNX file fetched once into `~/.cache/book-index/`, outside the tree for the same reason.
 """
 import hashlib, os, re, sqlite3, subprocess, sys
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB = os.path.join(ROOT, "book-index.db")
+MODEL, DIM, MAXTOK, BATCH = "bge-small-en-v1.5", 384, 512, 64
+MODEL_DIR = os.path.expanduser("~/.cache/book-index")
+HF = "https://huggingface.co/Xenova/bge-small-en-v1.5/resolve/main/"
+MODEL_URL = {"model_quantized.onnx": HF + "onnx/model_quantized.onnx",
+             "tokenizer.json": HF + "tokenizer.json"}
+# bge scores a query against documents only when the query carries this exact sentence; documents
+# get none of it.  Dropping it costs recall silently — the numbers still look like similarities.
+QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS book(id INTEGER PRIMARY KEY, file TEXT UNIQUE, name TEXT UNIQUE,
   pages INTEGER, sha256 TEXT, offset INTEGER, status TEXT);
@@ -34,7 +50,13 @@ CREATE TABLE IF NOT EXISTS label(book INTEGER, kind TEXT, name TEXT, title TEXT,
 CREATE INDEX IF NOT EXISTS para_book ON para(book);
 CREATE VIRTUAL TABLE IF NOT EXISTS para_fts USING fts5(text, content='para', content_rowid='id',
   tokenize='porter unicode61');
+CREATE TABLE IF NOT EXISTS emb_model(name TEXT, dim INTEGER);
 """
+# `vec_para` IS the vector storage — no second BLOB column to keep in step.  `book` is a partition
+# key, not a plain column, so `sim -b IntroString` searches one shard instead of all thirty books.
+VEC_SCHEMA = f"""CREATE VIRTUAL TABLE IF NOT EXISTS vec_para USING vec0(
+  para_id INTEGER PRIMARY KEY, book INTEGER PARTITION KEY,
+  vec FLOAT[{DIM}] DISTANCE_METRIC=cosine)"""
 
 NUM = re.compile(r"^(\d{1,4})$")
 ROMAN = re.compile(r"^(?=[ivxlcdm])m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$", re.I)
@@ -236,6 +258,7 @@ def wipe(db, bid):
     """FTS is external-content: its rows must be deleted through the table before `para` loses them."""
     db.execute("insert into para_fts(para_fts,rowid,text) select 'delete',id,text from para "
                "where book=?", (bid,))
+    db.execute("delete from vec_para where book=?", (bid,))
     for t in ("para", "page", "label"):
         db.execute(f"delete from {t} where book=?", (bid,))
 
@@ -265,7 +288,7 @@ def store(db, bid, pages, heads, warn):
 
 
 def ingest(files):
-    db = sqlite3.connect(DB)
+    db = load_vec(sqlite3.connect(DB))
     db.executescript(SCHEMA)
     # Paths are stored relative to the repository root, so `book ingest ../freyd/x.pdf` and
     # `book ingest x.pdf` name the same row rather than two.
@@ -407,7 +430,118 @@ def cmd_ls(a):
         print(f"{name}  {pages}p  offset={off if off is not None else '?'}  {st}  labels={k}")
 
 
-CMDS = {"ingest": ingest, "find": cmd_find, "grep": cmd_grep, "page": cmd_page, "ls": cmd_ls}
+# ---------------------------------------------------------------- embeddings
+def load_vec(db):
+    """`vec_para` addressable on this connection.  Loaded per command rather than in `open_db`, so
+    find/grep/page/ls never import it."""
+    import sqlite_vec
+    db.enable_load_extension(True)
+    sqlite_vec.load(db)
+    db.enable_load_extension(False)
+    db.execute(VEC_SCHEMA)
+    return db
+
+
+def encoder():
+    """L2-normalised float32 vectors for a list of strings.  numpy/onnxruntime/tokenizers are
+    imported here, not at module scope, so find/grep/page/ls still start in a few milliseconds."""
+    import urllib.request
+    import numpy as np, onnxruntime as ort
+    from tokenizers import Tokenizer
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    for f, url in MODEL_URL.items():
+        path = os.path.join(MODEL_DIR, f)
+        if not os.path.exists(path):
+            print(f"downloading {MODEL}/{f} → {path}", file=sys.stderr)
+            urllib.request.urlretrieve(url, path + ".part")
+            os.rename(path + ".part", path)
+    tok = Tokenizer.from_file(os.path.join(MODEL_DIR, "tokenizer.json"))
+    tok.enable_truncation(MAXTOK)
+    tok.enable_padding()
+    sess = ort.InferenceSession(os.path.join(MODEL_DIR, "model_quantized.onnx"),
+                                providers=["CPUExecutionProvider"])
+    want = {i.name for i in sess.get_inputs()}
+
+    def run(texts):
+        # bge pools the CLS token, position 0; a mean over the mask here would still return
+        # plausible unit vectors and just rank badly, so the choice is not checkable downstream.
+        e = tok.encode_batch(texts)
+        feed = {"input_ids": [x.ids for x in e], "attention_mask": [x.attention_mask for x in e],
+                "token_type_ids": [x.type_ids for x in e]}
+        h = sess.run(None, {k: np.array(v, np.int64) for k, v in feed.items() if k in want})[0][:, 0]
+        return (h / np.linalg.norm(h, axis=1, keepdims=True)).astype(np.float32)
+    return run
+
+
+def cmd_embed(a):
+    import time
+    if a:
+        sys.exit("usage: book embed")
+    db = load_vec(open_db())
+    db.executescript(SCHEMA)
+    was = db.execute("select name,dim from emb_model").fetchone()
+    if was and tuple(was) != (MODEL, DIM):
+        print(f"model changed {was[0]}/{was[1]} → {MODEL}/{DIM}: re-embedding everything")
+        db.execute("delete from vec_para")
+    db.execute("delete from emb_model")
+    db.execute("insert into emb_model values(?,?)", (MODEL, DIM))
+    todo = db.execute("select id,book,text from para where id not in "
+                      "(select para_id from vec_para) order by id").fetchall()
+    if not todo:
+        db.commit()
+        return print(f"{db.execute('select count(*) from vec_para').fetchone()[0]} paragraphs "
+                     f"embedded, 0 new  ({MODEL})")
+    from sqlite_vec import serialize_float32
+    run, t0, tick = encoder(), time.time(), 0.0
+    for i in range(0, len(todo), BATCH):
+        chunk = todo[i:i + BATCH]
+        db.executemany("insert into vec_para(para_id,book,vec) values(?,?,?)",
+                       [(r[0], r[1], serialize_float32(v))
+                        for r, v in zip(chunk, run([r[2] for r in chunk]))])
+        if time.time() - tick > 3:
+            tick = time.time()
+            print(f"  {i + len(chunk)}/{len(todo)}  {(i + len(chunk)) / (tick - t0):.0f} para/s",
+                  file=sys.stderr)
+    db.commit()
+    print(f"{db.execute('select count(*) from vec_para').fetchone()[0]} paragraphs embedded, "
+          f"{len(todo)} new in {time.time() - t0:.0f}s  ({MODEL}, {DIM}d)")
+
+
+def cmd_sim(a):
+    n, bk, words = 8, None, []
+    while a:
+        x = a.pop(0)
+        if x == "-n":
+            n = int(a.pop(0))
+        elif x == "-b":
+            bk = a.pop(0)
+        else:
+            words.append(x)
+    if not words:
+        sys.exit("usage: book sim [-b BOOK] [-n N] WORDS...")
+    db = load_vec(open_db())
+    if not db.execute("select count(*) from vec_para").fetchone()[0]:
+        sys.exit("no embeddings — run ./scripts/book embed")
+    bid = db.execute("select id from book where name=?", (bk,)).fetchone() if bk else None
+    if bk and not bid:
+        sys.exit(f"no book '{bk}' — ./scripts/book ls")
+    from sqlite_vec import serialize_float32
+    hits = db.execute(
+        "select b.name,p.pdf_page,g.printed,b.offset,p.text,v.distance from "
+        "(select para_id,distance from vec_para where vec match ? and k=?"
+        + (" and book=?" if bk else "") + ") v "
+        "join para p on p.id=v.para_id join book b on b.id=p.book "
+        "left join page g on g.book=p.book and g.pdf_page=p.pdf_page order by v.distance",
+        [serialize_float32(encoder()([QUERY_PREFIX + " ".join(words)])[0]), n]
+        + ([bid[0]] if bk else [])).fetchall()
+    for bn, pdf, printed, off, text, d in hits:
+        print(f"{bn} {loc(printed, pdf, off)}: {1 - d:.2f} " + " ".join(text.split())[:150])
+    if not hits:
+        sys.exit("no matches")
+
+
+CMDS = {"ingest": ingest, "find": cmd_find, "grep": cmd_grep, "page": cmd_page, "ls": cmd_ls,
+        "embed": cmd_embed, "sim": cmd_sim}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in CMDS:

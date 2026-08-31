@@ -45,8 +45,10 @@ cover: $(DB)
 # The reference PDFs as text: `./scripts/book find 3.1a IntroString`, `book grep`, `book page`.
 # NO prerequisites and no `book-index.db` target: the PDFs are downloads, not build products, so
 # mtimes say nothing about them; `ingest` hashes each file and re-reads only what changed (~1 s).
+# `embed` is likewise incremental — it vectorises only paragraphs `vec_para` has no row for.
 books:
 	./scripts/book ingest
+	./scripts/book embed
 
 # The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
 # `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after
