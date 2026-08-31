@@ -3436,8 +3436,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[Theorem 7.1, `f` a map, `R` reflexive;
-      `lean:AOP.A7_2.distributes_of_monotonicAlg@a731afab`,
-      `lean:AOP.A7_2.monotonicAlg_of_distributes@c181786e`]],
+      `lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a`,
+      `lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp({
