@@ -144,4 +144,125 @@ public theorem map_sort_comp_listcp_le
         show cpMap F a = Λ (F.map (∋ a)) from rfl, Λ_absorption]
   rw [← s5]
   exact le_trans s1 (le_trans s2 (le_trans s3 s4))
+
+/-! ## THEOREM 8.2 (book p.203) and its fusion side condition
+
+  BINARY THINNING DATA (book p.203): `S = (f₁p₁) ∪ (f₂p₂)` with `p₁`, `p₂` coreflexive; `Q` a
+  preorder with `Q ⊑ R` and both `f₁p₁`, `f₂p₂` monotonic on `Q`; `P` a connected preorder
+  with both `f₁`, `f₂` monotonic on `P`; `gᵢ = list fᵢ·filter pᵢ`.  Connectedness of `P` and
+  coreflexivity of the `pᵢ` enter only through the laws (8.6)-(8.11) they are there to make
+  true, so they are not separate hypotheses below. -/
+
+/-- **The fusion side condition of THEOREM 8.2** (book p.203): sorting the candidate set is
+    what turns the thinning algebra into an algebra on lists,
+    `thin Q·Λ(F∈·S)·sort P ⊒ thinlist Q·merge P·⟨g₁,g₂⟩·listcp(F)·F(sort P)` mirrored to
+    `F(sort P) ≫ listcp ≫ ⟨g₁,g₂⟩ ≫ merge P ≫ thinlist Q ⊑ Λ (F(∋) ≫ S) ≫ thin Q ≫ sort P`.
+    (8.6) exchanges `thin Q` for `thinlist Q`; `cup` splits `Λ` of the union of the two
+    algebras; (8.10) exchanges the union of the two sorted lists for `merge P`; and Lemma 8.1
+    at `f₁,p₁` and at `f₂,p₂` puts the sort back inside `F`. -/
+public theorem sortedAlg_fusion
+    {f₁ f₂ : F.obj a ⟶ a} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q : a ⟶ a}
+    {sortP : PowerAllegory.powerObj a ⟶ l}
+    {sortF : (F.obj a ⟶ F.obj a) → (PowerAllegory.powerObj (F.obj a) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l} {filterp₁ filterp₂ thinlist : l ⟶ l}
+    {Pr : RelProd l l}
+    {Pr' : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)} {mergeP : Pr.p ⟶ l}
+    (hsortF : ∀ {X Y : F.obj a ⟶ F.obj a}, X ⊑ Y → sortF X ⊑ sortF Y)
+    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sortP)
+    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sortP)
+    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage p₁ ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage p₂ ≫ sortP)
+    (h811 : F.map sortP ≫ listcp ⊑ cpMap F a ≫ sortF (F.map P))
+    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h86 : sortP ≫ thinlist ⊑ thinRel Q ≫ sortP) :
+    F.map sortP ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist
+      ⊑ Λ (F.map (∋ a) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q ≫ sortP := by
+  have l1 : (F.map sortP ≫ listcp) ≫ (listf₁ ≫ filterp₁)
+      ⊑ Λ (F.map (∋ a) ≫ f₁ ≫ p₁) ≫ sortP := by
+    rw [Cat.assoc]
+    exact map_sort_comp_listcp_le hf₁ hsortF hmono₁ h88₁ h89₁ h811
+  have l2 : (F.map sortP ≫ listcp) ≫ (listf₂ ≫ filterp₂)
+      ⊑ Λ (F.map (∋ a) ≫ f₂ ≫ p₂) ≫ sortP := by
+    rw [Cat.assoc]
+    exact map_sort_comp_listcp_le hf₂ hsortF hmono₂ h88₂ h89₂ h811
+  -- Lemma 8.1 under the common prefix `F(sort P)·listcp(F)`, at each `fᵢ`, `pᵢ`
+  have pre : F.map sortP ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
+        ≫ mergeP ≫ thinlist
+      ⊑ Pr.pair (Λ (F.map (∋ a) ≫ f₁ ≫ p₁) ≫ sortP) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂) ≫ sortP)
+        ≫ mergeP ≫ thinlist := by
+    rw [← Cat.assoc (F.map sortP) listcp
+          (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist),
+        ← Cat.assoc (F.map sortP ≫ listcp)
+          (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)) (mergeP ≫ thinlist)]
+    exact comp_mono_right
+      (le_trans (RelProd.comp_pair_le _ _ _) (RelProd.pair_mono l1 l2)) _
+  -- `Λ` of the union is the pair of the two transposes, closed by `cup`
+  have hsplit : Λ (F.map (∋ a) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)))
+      = Pr'.pair (Λ (F.map (∋ a) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂)) ≫ cup Pr' := by
+    rw [DistributiveAllegory.comp_union_distrib, Λ_union]
+  have key : Pr.pair (Λ (F.map (∋ a) ≫ f₁ ≫ p₁) ≫ sortP) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂) ≫ sortP)
+        ≫ mergeP ≫ thinlist
+      ⊑ Λ (F.map (∋ a) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q ≫ sortP := by
+    rw [hsplit, ← RelProd.pair_prodMap (P := Pr') (Q := Pr)
+          (Λ (F.map (∋ a) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂)) sortP sortP,
+        Cat.assoc (Pr'.pair (Λ (F.map (∋ a) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂)))
+          (prodMap Pr' Pr sortP sortP) (mergeP ≫ thinlist),
+        Cat.assoc (Pr'.pair (Λ (F.map (∋ a) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ a) ≫ f₂ ≫ p₂)))
+          (cup Pr') (thinRel Q ≫ sortP)]
+    refine comp_mono_left _ ?_
+    have a1 : prodMap Pr' Pr sortP sortP ≫ mergeP ≫ thinlist
+        ⊑ (cup Pr' ≫ sortP) ≫ thinlist := by
+      rw [← Cat.assoc (prodMap Pr' Pr sortP sortP) mergeP thinlist]
+      exact comp_mono_right h810 thinlist
+    have a2 : (cup Pr' ≫ sortP) ≫ thinlist ⊑ cup Pr' ≫ thinRel Q ≫ sortP := by
+      rw [Cat.assoc (cup Pr') sortP thinlist]
+      exact comp_mono_left _ h86
+    exact le_trans a1 a2
+  exact le_trans pre key
+
+/-- **THEOREM 8.2** (book p.203): a fold on SORTED LISTS of partial solutions, thinned at
+    every step, refines the thinning specification —
+    `min R·Λ⦇S⦈ ⊒ minlist R·⦇thinlist Q·merge P·⟨g₁,g₂⟩·listcp(F)⦈`, mirrored to
+    `relCata (listcp(F) ≫ ⟨g₁,g₂⟩ ≫ merge P ≫ thinlist Q) ≫ minlist R ⊑ Λ ⦇S⦈ ≫ est R`.
+    Corollary 8.1 (`thinning_est`) puts `thin Q` inside the fold, (8.7) splits the minimum
+    into `sort P` followed by `minlist R`, and `relCata_le_comp` fuses `sort P` into the
+    algebra — that fusion condition being `sortedAlg_fusion`.  No set is ever built. -/
+public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+    {f₁ f₂ : F.obj a ⟶ a} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : a ⟶ a}
+    {sortP : PowerAllegory.powerObj a ⟶ l}
+    {sortF : (F.obj a ⟶ F.obj a) → (PowerAllegory.powerObj (F.obj a) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l} {filterp₁ filterp₂ thinlist : l ⟶ l}
+    {minlist : l ⟶ a} {Pr : RelProd l l}
+    {Pr' : RelProd (PowerAllegory.powerObj a) (PowerAllegory.powerObj a)} {mergeP : Pr.p ⟶ l}
+    (hQR : Q ⊑ R) (hreflQ : 𝟙 a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hm₁ : MonotonicAlg (f₁ ≫ p₁) Q) (hm₂ : MonotonicAlg (f₂ ≫ p₂) Q)
+    (hsortF : ∀ {X Y : F.obj a ⟶ F.obj a}, X ⊑ Y → sortF X ⊑ sortF Y)
+    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sortP)
+    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sortP)
+    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage p₁ ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage p₂ ≫ sortP)
+    (h811 : F.map sortP ≫ listcp ⊑ cpMap F a ≫ sortF (F.map P))
+    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h86 : sortP ≫ thinlist ⊑ thinRel Q ≫ sortP)
+    (h87 : sortP ≫ minlist ⊑ est R) :
+    relCata (listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist)
+        ≫ minlist
+      ⊑ Λ (relCata ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ est R := by
+  -- the union of two `Q`-monotonic algebras is `Q`-monotonic
+  have hmonoS : MonotonicAlg ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) Q := by
+    show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
+    rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
+    exact union_mono hm₁ hm₂
+  have hfuse :
+      relCata (listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist)
+        ⊑ relCata (Λ (F.map (∋ a) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ sortP := by
+    refine relCata_le_comp I ?_
+    rw [Cat.assoc]
+    exact sortedAlg_fusion hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86
+  refine le_trans (comp_mono_right hfuse minlist) ?_
+  rw [Cat.assoc]
+  exact le_trans (comp_mono_left _ h87) (thinning_est hFr I hQR hreflQ htransQ htransR hmonoS)
+
 end Freyd.Alg
