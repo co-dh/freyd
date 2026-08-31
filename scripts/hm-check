@@ -28,6 +28,7 @@ usage: hm-check [label…]            every fixture, or the ones whose file name
        hm-check --show              print both canonical port graphs beside each other
        hm-check --verify-fixtures   count the page's own svg against each fixture's `counts`
        hm-check --verify-sigs       hold `diag/hm-sigs.json` against the declaration index
+       hm-check --compare-builds    the note's certified panels drawn both ways, as port graphs
 """
 import importlib.machinery, importlib.util, json, os, re, sqlite3, subprocess, sys
 
@@ -70,9 +71,8 @@ def words(s):
 # A side is (top tokens, bottom tokens, beads as (name, arm tokens, leg tokens), token labels,
 # grey1, crossing label-pairs).  Tokens are opaque: `canon` renumbers them, so the fixture's names
 # and the panel's lane positions cannot leak into the comparison.
-def ours(formula, src, tgt):
-    """The panel `scripts/diagram` draws for one side of the mirrored formula, swept and read."""
-    r = dg.build(formula, src, tgt, dg.RELATORS)
+def ours(r):
+    """The port graph of a panel we drew: swept by scanline's own model, then read off the sweep."""
     p = sl.Panel(r)
     bad = sl.sweep(p)
     if bad:
@@ -257,6 +257,37 @@ def verify(fx, path):
     return bad
 
 
+# ---------------------------------------------------------------- the two builds, side by side
+def compare_builds(path):
+    """Every panel the note certifies, drawn both ways and canonicalised.  A difference is a wire
+    that used to die at the first bead reaching past it and now dies at the bead whose signature
+    eats it — the point of the table, so this REPORTS, it does not fail."""
+    tbl = dg.sigs()
+    graphs, n = [], 0
+    for r in sl.panels(path, None):
+        c = r.get("cert") or {}
+        if not c.get("expect"):
+            continue
+        n += 1
+        src, tgt = dg.endpoints(sl.Panel(r))
+        both = []
+        for how, mk in (("functor", lambda: dg.draw(c["expect"], src, tgt, tbl)),
+                        ("old", lambda: dg.build(c["expect"], src, tgt, dg.RELATORS))):
+            try:
+                both.append(canon(ours(mk()), f"{how} {r['id']}"))
+            except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
+                print(f"{r['id']:<12} the {how} build: {type(ex).__name__}: {ex}")
+                both.append(None)
+        if None in both:
+            continue
+        new, old = both
+        bad = diff(new, old, 0)
+        graphs.append(bad is None)
+        print(f"{r['id']:<12} {'same port graph' if bad is None else bad}")
+    print("hm-check: `ours` is the functor's graph, `book` the old build's;"
+          f" {sum(graphs)} of {n} certified panels agree")
+
+
 # ---------------------------------------------------------------- the signature table
 def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
@@ -317,7 +348,7 @@ def check(fx, seen=False):
         return f"FAIL  {lab}   {len(sides)} formula sides, {len(fx['sides'])} pictures", warn
     for i, (f, s) in enumerate(zip(sides, fx["sides"])):
         try:
-            a = canon(ours(f, fx["src"], fx["tgt"]), f"ours {lab}.{i}")
+            a = canon(ours(dg.build(f, fx["src"], fx["tgt"], dg.RELATORS)), f"ours {lab}.{i}")
             b = canon(book(s, f"{lab}.{i}"), f"book {lab}.{i}")
         except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
             return f"FAIL  {lab}   side {i}: {type(ex).__name__}: {ex}", warn
@@ -338,6 +369,9 @@ def main(argv):
              and (not only or any(o in f for o in only))]
     if "--verify-sigs" in argv:
         sys.exit(verify_sigs())
+    if "--compare-builds" in argv:
+        return compare_builds(next((a for a in only if a.endswith(".typ")),
+                                   os.path.join(ROOT, "diag", "allegory-axioms.typ")))
     if "--verify-fixtures" in argv:
         bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
         print(*bad, sep="\n", file=sys.stderr)
