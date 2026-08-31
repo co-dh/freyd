@@ -119,7 +119,7 @@ public theorem le_impl_iff {a b : 𝒜} (X R S : a ⟶ b) : (X ⊑ R ⇨ S) ↔ 
     exact hZ
   · intro h; exact le_Sup h
 
-theorem impl_cancel {a b : 𝒜} (R S : a ⟶ b) : (R ⇨ S) ∩ R ⊑ S :=
+public theorem impl_cancel {a b : 𝒜} (R S : a ⟶ b) : (R ⇨ S) ∩ R ⊑ S :=
   (le_impl_iff (R ⇨ S) R S).mp (le_refl _)
 
 theorem impl_mono_right {a b : 𝒜} {R S S' : a ⟶ b} (h : S ⊑ S') : (R ⇨ S) ⊑ (R ⇨ S') := by

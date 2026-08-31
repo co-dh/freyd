@@ -97,13 +97,13 @@ public theorem le_Λ_comp_thinRel_iff {S : b ⟶ a} {Q : a ⟶ a} {X : b ⟶ Pow
 
 /-- `τ·∈ = id` mirrored: `singletonMap ≫ ∋ a = Cat.id a` — the singleton of `x` has `x` as its
     unique member (B&dM p.194, from `Λ(1_a)∋ = 1_a`). -/
-theorem singletonMap_comp_eps : singletonMap ≫ ∋ a = Cat.id a := by
+public theorem singletonMap_comp_eps : singletonMap ≫ ∋ a = Cat.id a := by
   show Λ (Cat.id a) ≫ ∋ a = Cat.id a
   rw [Λ_eps_eq']
 
 /-- `∈·τ ⊑ id`-mirrored, `singletonMap° ⊑ ∋ a` — a member of the singleton `{x}` is `x`
     (B&dM p.194).  Shunt across the map `singletonMap` then use `singletonMap_comp_eps`. -/
-theorem singletonMap_recip_le_eps : (singletonMap : a ⟶ PowerAllegory.powerObj a)° ⊑ ∋ a := by
+public theorem singletonMap_recip_le_eps : (singletonMap : a ⟶ PowerAllegory.powerObj a)° ⊑ ∋ a := by
   have h : (Λ (Cat.id a))° ≫ Cat.id a ⊑ ∋ a := by
     apply (map_shunt_left (Λ_is_map' (Cat.id a)) (Cat.id a) (∋ a)).mpr
     rw [Λ_eps_eq']
@@ -113,7 +113,7 @@ theorem singletonMap_recip_le_eps : (singletonMap : a ⟶ PowerAllegory.powerObj
 
 /-- `τ ⊑ ∋` mirrored: `singletonMap ⊑ (∋ a)°`, the reciprocated form of
     `singletonMap_recip_le_eps`. -/
-theorem singletonMap_le_recip_eps :
+public theorem singletonMap_le_recip_eps :
     (singletonMap : a ⟶ PowerAllegory.powerObj a) ⊑ (∋ a)° := by
   have h := recip_mono (singletonMap_recip_le_eps (a := a))
   rwa [Allegory.recip_recip] at h

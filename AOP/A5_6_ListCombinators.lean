@@ -85,7 +85,7 @@ theorem perm_transitive : (perm : dList A ⟶ dList A) ≫ perm ⊑ perm :=
     `prefixR x ys` iff `ys` is an initial segment of `x`. -/
 @[expose] public def prefixR : dList A ⟶ dList A := fun x ys => prefixP ys x
 
-theorem prefixP.refl : ∀ x : ConsList Unit A, prefixP x x
+public theorem prefixP.refl : ∀ x : ConsList Unit A, prefixP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => ⟨rfl, prefixP.refl x⟩
 
@@ -94,7 +94,7 @@ public theorem prefixP.nil : ∀ x : ConsList Unit A, prefixP (ConsList.wrap ())
   | ConsList.wrap _ => trivial
   | ConsList.cons _ _ => trivial
 
-theorem prefixP.trans : ∀ {x y z : ConsList Unit A}, prefixP x y → prefixP y z → prefixP x z
+public theorem prefixP.trans : ∀ {x y z : ConsList Unit A}, prefixP x y → prefixP y z → prefixP x z
   | ConsList.wrap _, _, _, _, _ => trivial
   | ConsList.cons _ _, ConsList.cons _ _, ConsList.cons _ _, ⟨hab, hxy⟩, ⟨hbc, hyz⟩ =>
       ⟨hab.trans hbc, prefixP.trans hxy hyz⟩
@@ -173,23 +173,23 @@ theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.id (dLis
   | ConsList.cons seg rest => cappend seg (cconcat rest)
 
 /-- A segment is non-empty (not `nil`). -/
-def isNonempty : ConsList Unit A → Prop
+@[expose] public def isNonempty : ConsList Unit A → Prop
   | ConsList.wrap _ => False
   | ConsList.cons _ _ => True
 
 /-- Every segment of a list-of-lists is non-empty. -/
-def allNonempty : ConsList Unit (ConsList Unit A) → Prop
+@[expose] public def allNonempty : ConsList Unit (ConsList Unit A) → Prop
   | ConsList.wrap _ => True
   | ConsList.cons seg rest => isNonempty seg ∧ allNonempty rest
 
 /-- **`partition : list A ⟶ list (list⁺ A)`** (B&dM p.128, `partition = concat°`): a decomposition
     of `x` into a list of non-empty contiguous segments — `ps` is a partition of `x` iff flattening
     `ps` gives `x` and every segment is non-empty. -/
-public def partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
+@[expose] public def partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
   fun x ps => cconcat ps = x ∧ allNonempty ps
 
 /-- The one-segment non-emptiness coreflexive `neSeg ⊑ 𝟙`: pass a segment iff it is not `nil`. -/
-public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
+@[expose] public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
 
 /-- The flatten relation `concat : list (list A) ⟶ list A` — the graph of `cconcat`. -/
 @[expose] public def concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A := graph cconcat

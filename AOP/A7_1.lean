@@ -212,7 +212,7 @@ theorem comp_lb_of_preorder {R : a ⟶ a} (htrans : R ≫ R ⊑ R) (hrefl : Cat.
     rwa [Cat.comp_id] at h
 
 /-- **Ex 7.10** (easy half): `est` is monotone, mirrored `R ⊑ S → est R ⊑ est S`. -/
-theorem est_mono {R S : a ⟶ a} (h : R ⊑ S) : est R ⊑ est S := by
+public theorem est_mono {R S : a ⟶ a} (h : R ⊑ S) : est R ⊑ est S := by
   show (∋ a ∩ (((∋ a)°) \ R°) : PowerAllegory.powerObj a ⟶ a) ⊑ ∋ a ∩ (((∋ a)°) \ S°)
   exact inter_mono (le_refl _) (leftDiv_mono_right _ (recip_mono h))
 
@@ -383,7 +383,7 @@ public theorem powerRel_comp_est_le (S : b ⟶ a) (R : a ⟶ a) :
     `inter_lb_left` and `powerRel_eps_lax` at `est R`.  Component (ii):
     `(∋[a]·∋a)°·(powerRel(est R)·est R) ⊑ R°` chains `powerRel_term1_cancel (est R)` with
     the `hb` bound twice and `htrans` transposed. -/
-theorem powerRel_est_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
+public theorem powerRel_est_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
     powerRel (est R) ≫ est R ⊑ bigUnion ≫ est R := by
   show powerRel (est R) ≫ est R
       ⊑ Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ est R
