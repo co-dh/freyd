@@ -1986,7 +1986,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#table(
   columns: (4.4cm, 1fr, 1fr),
   align: (left + horizon, left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
+  // `y: 6.5pt`, tighter than the note's 9pt: its rows are two lines tall already, and the slack pays
+  // for the marker line under @cata-map-calc, which the page had no room for.
+  inset: (x: 9pt, y: 6.5pt), stroke: 0.4pt + luma(190),
   table.header(
     table.cell(colspan: 3, align: center, text(12.5pt)[`⦇[c,f]⦈=reduce(c,f)`]),
     [*part*], [*`Nat`*], [*`[A]`*],
@@ -2063,6 +2065,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
   zsqc([`X`], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`], eq: true),
 )
+#align(center, block(inset: (y: 3pt))[#src[the last two rows at `X:=⦇R⦈`:
+ `lean:AOP.A5_5.Λ_relCata@5b63ea5d`, `lean:AOP.A5_5.relCata_unfold@22ba1c5c`]])
 ]<cata-map-calc>
 
 // The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
