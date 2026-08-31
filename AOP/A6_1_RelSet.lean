@@ -391,11 +391,23 @@ public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : 
   · rintro ⟨hR, hS⟩
     exact ⟨⟨q.1, ⟨p.1, rfl, hR⟩, rfl⟩, ⟨q.2, ⟨p.2, rfl, hS⟩, rfl⟩⟩
 
-/-- Pointwise `pair` on the product just chosen: `⟨R,S⟩ x p ↔ R x p.1 ∧ S x p.2` — both legs
-    being graphs, each conjunct collapses to a component lookup. -/
-public theorem relProd_pair_apply {a b c : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b)
-    (x : c.carrier) (p : a.carrier × b.carrier) :
-    (relProd a b).pair R S x p ↔ R x p.1 ∧ S x p.2 := by
+/-- Relational pairing `⟨R,S⟩` in `Rel(Set)`: `x ↦ (y,z)` iff `R x y` and `S x z` — the
+    graph-level form of (5.1), free of the classically chosen `topMor` inside `RelProd.tab`
+    (which `pair_eq_rpair` below shows it equals). -/
+@[expose] public def rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
+    c ⟶ (⟨a.carrier × b.carrier⟩ : RelSet.{u}) :=
+  fun x p => R x p.1 ∧ S x p.2
+
+/-- `rpair` is monotonic in both arguments. -/
+public theorem rpair_mono {c a b : RelSet.{u}} {R R' : c ⟶ a} {S S' : c ⟶ b}
+    (hR : R ⊑ R') (hS : S ⊑ S') : rpair R S ⊑ rpair R' S' :=
+  le_iff.mpr fun x p h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
+
+/-- On the product just chosen, the abstract `⟨R,S⟩` of (5.1) IS the pointwise `rpair` — the
+    projections being graphs, each defining conjunct collapses to a component lookup. -/
+public theorem pair_eq_rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
+    (relProd a b).pair R S = rpair R S := by
+  apply hom_ext; intro x p
   constructor
   · rintro ⟨⟨y, hy, hy1⟩, ⟨z, hz, hz1⟩⟩
     exact ⟨(show y = p.1 from hy1) ▸ hy, (show z = p.2 from hz1) ▸ hz⟩

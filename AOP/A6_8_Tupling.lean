@@ -115,18 +115,13 @@ public theorem tupling_fst {L E C₁ C₂ : Type} (g : L → C₁ × C₂) (step
     | Sum.inl l      => g l
     | Sum.inr (a, e) => st a e)
 
-/-- Relational pairing `⟨R, S⟩ : X ⟶ ⟨C₁ × C₂⟩`, `x ↦ (a, b)` iff `R x a` and `S x b`. -/
-def pairing {X : RelSet.{0}} {C₁ C₂ : Type} (R : X ⟶ (⟨C₁⟩ : RelSet.{0}))
-    (S : X ⟶ (⟨C₂⟩ : RelSet.{0})) : X ⟶ (⟨C₁ × C₂⟩ : RelSet.{0}) :=
-  fun x p => R x p.1 ∧ S x p.2
-
-/-- **Banana-split.**  For non-cross-referencing base/step, the pair-fold is the pairing of the
-    two independent scalar folds.  Proven by the same uniqueness induction as `tupling` (not by
-    delegating to it), threading the two components in lockstep. -/
+/-- **Banana-split.**  For non-cross-referencing base/step, the pair-fold is the pairing
+    `rpair` of the two independent scalar folds.  Proven by the same uniqueness induction as
+    `tupling` (not by delegating to it), threading the two components in lockstep. -/
 theorem tupling_banana {L E C₁ C₂ : Type}
     (g₁ : L → C₁) (g₂ : L → C₂) (step₁ : C₁ → E → C₁) (step₂ : C₂ → E → C₂) :
     cataR (pairAlg (fun l => (g₁ l, g₂ l)) (fun p e => (step₁ p.1 e, step₂ p.2 e)))
-      = pairing (cataR (scalarAlg g₁ step₁)) (cataR (scalarAlg g₂ step₂)) := by
+      = rpair (cataR (scalarAlg g₁ step₁)) (cataR (scalarAlg g₂ step₂)) := by
   apply hom_ext; intro d p
   show cataFold (pairAlg (fun l => (g₁ l, g₂ l)) (fun p e => (step₁ p.1 e, step₂ p.2 e))) d p
       ↔ cataFold (scalarAlg g₁ step₁) d p.1 ∧ cataFold (scalarAlg g₂ step₂) d p.2

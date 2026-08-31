@@ -69,21 +69,16 @@ public theorem graph_le_Λ_est {a b : RelSet.{0}} (f : a.carrier → b.carrier) 
     `⟨Λ(U) est(Ra°), Λ(V) est(Rb°)⟩ ⊑ Λ(⟨U,V⟩) est((Ra×Rb)°)`. -/
 public theorem pair_est_le {c a b : RelSet.{0}} (U : c ⟶ a) (V : c ⟶ b)
     (Ra : a ⟶ a) (Rb : b ⟶ b) :
-    (relProd a b).pair (Λ U ≫ est(Ra°)) (Λ V ≫ est(Rb°))
-      ⊑ Λ ((relProd a b).pair U V) ≫ est((rprodMap Ra Rb)°) := by
+    rpair (Λ U ≫ est(Ra°)) (Λ V ≫ est(Rb°)) ⊑ Λ (rpair U V) ≫ est((rprodMap Ra Rb)°) := by
   apply le_iff.mpr; intro x p hp
-  obtain ⟨h1, h2⟩ := (relProd_pair_apply _ _ x p).mp hp
-  obtain ⟨Pu, hPu, hest1⟩ := h1
-  obtain ⟨Pv, hPv, hest2⟩ := h2
+  obtain ⟨⟨Pu, hPu, hest1⟩, ⟨Pv, hPv, hest2⟩⟩ := hp
   have hPu' : Pu = fun y => U x y := by rw [Λ_eq_classifier] at hPu; exact hPu
   have hPv' : Pv = fun y => V x y := by rw [Λ_eq_classifier] at hPv; exact hPv
   subst hPu' hPv'
   obtain ⟨hU1, hUb⟩ := (est_apply _ _ _).mp hest1
   obtain ⟨hV1, hVb⟩ := (est_apply _ _ _).mp hest2
-  refine ⟨fun q => (relProd a b).pair U V x q, by rw [Λ_eq_classifier]; rfl, ?_⟩
-  refine (est_apply _ _ _).mpr ⟨(relProd_pair_apply _ _ x p).mpr ⟨hU1, hV1⟩, fun q hq => ?_⟩
-  obtain ⟨hqU, hqV⟩ := (relProd_pair_apply _ _ x q).mp hq
-  exact ⟨hUb q.1 hqU, hVb q.2 hqV⟩
+  refine ⟨fun q => rpair U V x q, by rw [Λ_eq_classifier]; rfl, ?_⟩
+  exact (est_apply _ _ _).mpr ⟨⟨hU1, hV1⟩, fun q hq => ⟨hUb q.1 hq.1, hVb q.2 hq.2⟩⟩
 
 /-! ## The party itself (the note's `party-defn` table, concretely) -/
 
@@ -167,7 +162,8 @@ public theorem RR_recip_trans :
 
 /-- `include = (𝟙×(list(π₂) concat)) cons`, point-free. -/
 public theorem include_eq :
-    (graph includeFn : (RT.F A).obj (relProd (dList A) (dList A)).p ⟶ dList A)
+    (graph includeFn
+        : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
       = rprodMap (𝟙 (dE A)) (list (graph Prod.snd) ≫ concatR) ≫ consR := by
   apply hom_ext; intro u y
   constructor
@@ -180,16 +176,25 @@ public theorem include_eq :
       (show v.2 = cconcat zs from hv2), (listP_graph _ _ _).mp hzs]
     rfl
 
+/-- **party-defn**: `choose ≜ π₁∪π₂`, concretely — takes one of the two parties a subtree
+    returns.  `choose_eq` ties it to `choose` at the §5.2 product, whose `tab` is the one
+    classically chosen ingredient — kept out of the working statements' closures. -/
+@[expose] public def chooseR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+  graph Prod.fst ∪ graph Prod.snd
+
+/-- `chooseR` IS `choose` at `Rel(Set)`'s own product. -/
+public theorem choose_eq : choose (relProd (dList A) (dList A)) = chooseR (A := A) := rfl
+
 /-- **party-defn**: `exclude ≜ (𝟙×(list(choose) concat))π₂`, concretely — the party that leaves
     the root out, so each subtree is free to choose.  Not a map (`exclude_eq` is the
     point-free form). -/
 @[expose] public def excludeR :
-    (RT.F A).obj (relProd (dList A) (dList A)).p ⟶ dList A :=
-  fun u y => ∃ qs, listP (choose (relProd (dList A) (dList A))) u.2 qs ∧ y = cconcat qs
+    (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+  fun u y => ∃ qs, listP chooseR u.2 qs ∧ y = cconcat qs
 
 /-- `exclude = (𝟙×(list(choose) concat))π₂`, point-free. -/
 public theorem exclude_eq :
-    excludeR = rprodMap (𝟙 (dE A)) (list (choose (relProd (dList A) (dList A))) ≫ concatR)
+    excludeR = rprodMap (𝟙 (dE A)) (list chooseR ≫ concatR)
       ≫ graph Prod.snd := by
   apply hom_ext; intro u y
   constructor
@@ -200,20 +205,20 @@ public theorem exclude_eq :
       rw [(show y = v.2 from hy), (show v.2 = cconcat qs from hv2)]⟩
 
 /-- **party-defn**: `S ≜ ⟨include, exclude⟩` — the algebra: one step returns both parties of a
-    subtree at once. -/
+    subtree at once (`pair_eq_rpair` ties `rpair` to the §5.2 `⟨,⟩`). -/
 @[expose] public def S :
-    (RT.F A).obj (relProd (dList A) (dList A)).p ⟶ (relProd (dList A) (dList A)).p :=
-  (relProd (dList A) (dList A)).pair (graph includeFn) excludeR
+    (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+      ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) :=
+  rpair (graph includeFn) excludeR
 
 /-- **party-defn**: `party ≜ ⦇S⦈ choose` — every guest list the president's ruling allows
     (structural fold; `party_eq` is the relational-catamorphism form). -/
 @[expose] public def party : dRose A ⟶ dList A :=
-  RT.cataR S ≫ choose (relProd (dList A) (dList A))
+  RT.cataR S ≫ chooseR
 
 /-- `party = ⦇S⦈ choose`. -/
-public theorem party_eq :
-    party (A := A) = ⦇S⦈ ≫ choose (relProd (dList A) (dList A)) := by
-  show RT.cataR S ≫ choose (relProd (dList A) (dList A)) = _
+public theorem party_eq : party (A := A) = ⦇S⦈ ≫ chooseR := by
+  show RT.cataR S ≫ chooseR = _
   rw [RT.cataR_eq_relCata]
 
 /-! ### The two leaves of `party-mono-branch` (B&dM's exercises: `cost` is a sum) -/
@@ -270,7 +275,7 @@ public theorem cons_monotonic :
 /-- **party-mono-branch**: a branch `(𝟙×(list(g) concat)) h` is monotonic on `(R×R)°` given its
     `g` row (`(R×R)°g ⊑ gR°`) and its `h` row (`(𝟙×R°)h ⊑ hR°`); the `concat` leaf and the
     `list` relator laws supply the middle. -/
-public theorem branch_monotonic {g : (relProd (dList A) (dList A)).p ⟶ dList A}
+public theorem branch_monotonic {g : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     {h : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     (hg : (rprodMap (R rating) (R rating))° ≫ g ⊑ g ≫ (R rating)°)
     (hh : rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h ⊑ h ≫ (R rating)°) :
@@ -314,17 +319,26 @@ public theorem include_monotonic :
     rw [(show y = q.2 from hy)]
     exact hq.2⟩
 
+/-- **party-mono-branch `g := choose` row / Ex 7.38's hypothesis**: `(R×R)°choose ⊑ choose R°`
+    — `choose_monotonic` at `R°` (via `choose_eq` and `(R×R)° = R°×R°`), re-proved on the
+    graph-level spelling so its closure stays free of `topMor`'s classical choice. -/
+public theorem chooseR_monotonic :
+    (rprodMap (R rating) (R rating))° ≫ chooseR ⊑ chooseR ≫ (R rating)° := by
+  apply le_iff.mpr; intro p y
+  rintro ⟨q, hq, hy⟩
+  rcases (show y = q.1 ∨ y = q.2 from hy) with hy1 | hy2
+  · exact ⟨p.1, Or.inl rfl, by
+      show costFn rating y ≤ costFn rating p.1; rw [hy1]; exact hq.1⟩
+  · exact ⟨p.2, Or.inr rfl, by
+      show costFn rating y ≤ costFn rating p.2; rw [hy2]; exact hq.2⟩
+
 /-- **party-mono-branch, `exclude` row**: `(𝟙×list((R×R)°)) exclude ⊑ exclude R°` —
-    `g := choose` (`choose_monotonic` at `R°`, via `(R×R)° = R°×R°`) and `h := π₂`
-    (an equality, `rprodMap_id_snd`). -/
+    `g := choose` (`chooseR_monotonic`) and `h := π₂` (an equality, `rprodMap_id_snd`). -/
 public theorem exclude_monotonic :
     rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°)) ≫ excludeR
       ⊑ excludeR ≫ (R rating)° := by
   rw [exclude_eq]
-  refine branch_monotonic rating ?_ (le_of_eq (rprodMap_id_snd _))
-  -- the `g := choose` row, from the abstract `choose_monotonic` at `R°`
-  rw [← prodMap_eq_rprodMap, prodMap_recip]
-  exact choose_monotonic _ ((R rating)°)
+  exact branch_monotonic rating (chooseR_monotonic rating) (le_of_eq (rprodMap_id_snd _))
 
 /-! ### The headline: `S` is monotonic on `(R×R)°` (the note's `party-mono`) -/
 
@@ -336,11 +350,10 @@ public theorem party_mono :
     (RT.F A).map ((rprodMap (R rating) (R rating))°) ≫ S
       ⊑ S ≫ (rprodMap (R rating) (R rating))° := by
   apply le_iff.mpr; intro u p
-  rintro ⟨v, hv, hSp⟩
-  obtain ⟨hi, he⟩ := (relProd_pair_apply _ _ v p).mp hSp
+  rintro ⟨v, hv, hi, he⟩
   obtain ⟨z1, hz1, hR1⟩ := le_iff.mp (include_monotonic rating) u p.1 ⟨v, hv, hi⟩
   obtain ⟨z2, hz2, hR2⟩ := le_iff.mp (exclude_monotonic rating) u p.2 ⟨v, hv, he⟩
-  exact ⟨(z1, z2), (relProd_pair_apply _ _ u (z1, z2)).mpr ⟨hz1, hz2⟩, ⟨hR1, hR2⟩⟩
+  exact ⟨(z1, z2), ⟨hz1, hz2⟩, hR1, hR2⟩
 
 /-! ### The derivation (the note's `party-laws` table) -/
 
@@ -348,8 +361,8 @@ public theorem party_mono :
 theorem best_dominates :
     ∀ (l : ConsList Unit (ConsList Unit A × ConsList Unit A))
       (ys qs : ConsList Unit (ConsList Unit A)),
-      listP (Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)) l ys →
-      listP (choose (relProd (dList A) (dList A))) l qs →
+      listP (Λ chooseR ≫ est((R rating)°)) l ys →
+      listP chooseR l qs →
       listP ((R rating)°) ys qs
   | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => trivial
   | ConsList.wrap _, ConsList.wrap _, ConsList.cons _ _, _, g => g.elim
@@ -359,7 +372,7 @@ theorem best_dominates :
   | ConsList.cons p l, ConsList.cons yi ys, ConsList.cons qi qs, ⟨h1, h2⟩, ⟨g1, g2⟩ => by
       refine ⟨?_, best_dominates l ys qs h2 g2⟩
       obtain ⟨P0, hP0, hest⟩ := h1
-      have hP0' : P0 = fun z => choose (relProd (dList A) (dList A)) p z := by
+      have hP0' : P0 = fun z => chooseR p z := by
         rw [Λ_eq_classifier] at hP0; exact hP0
       subst hP0'
       exact ((est_apply _ _ _).mp hest).2 qi g1
@@ -368,17 +381,17 @@ theorem best_dominates :
     `π₂ list(Λ(choose) est(R°)) concat ⊑ Λ(exclude) est(R°)`: the best root-out party is the
     concatenation of each subtree's best of its two parties. -/
 public theorem exclude_step :
-    (graph Prod.snd : (RT.F A).obj (relProd (dList A) (dList A)).p
+    (graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
         ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
-        ≫ list (Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)) ≫ concatR
+        ≫ list (Λ chooseR ≫ est((R rating)°)) ≫ concatR
       ⊑ Λ excludeR ≫ est((R rating)°) := by
   apply le_iff.mpr; intro u y
   rintro ⟨m, hm, ys, hys, hy⟩
   obtain rfl : m = u.2 := hm
-  have hmem : listP (choose (relProd (dList A) (dList A))) u.2 ys := by
+  have hmem : listP chooseR u.2 ys := by
     refine listP_mono (fun p q hpq => ?_) u.2 ys hys
     obtain ⟨P0, hP0, hest⟩ := hpq
-    have hP0' : P0 = fun z => choose (relProd (dList A) (dList A)) p z := by
+    have hP0' : P0 = fun z => chooseR p z := by
       rw [Λ_eq_classifier] at hP0; exact hP0
     subst hP0'
     exact ((est_apply _ _ _).mp hest).1
@@ -395,25 +408,26 @@ public theorem exclude_step :
     handing up its best party with its boss in and its best with the boss out, and `choose`
     taking the better of the two at the root. -/
 public theorem party_laws :
-    ⦇((relProd (dList A) (dList A)).pair (graph includeFn)
-        ((graph Prod.snd : (RT.F A).obj (relProd (dList A) (dList A)).p
+    ⦇(rpair (graph includeFn)
+        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
-          ≫ list (Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)) ≫ concatR)
-      : (RT.F A).obj (relProd (dList A) (dList A)).p ⟶ (relProd (dList A) (dList A)).p)⦈
-        ≫ Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)
+          ≫ list (Λ chooseR ≫ est((R rating)°)) ≫ concatR)
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+          ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ chooseR ≫ est((R rating)°)
       ⊑ Λ party ≫ est((R rating)°) := by
   -- last row: the program's algebra refines ⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩
   have hRrefl : 𝟙 (dList A) ⊑ (R rating)° := by
     have h := recip_mono (R_refl rating); rwa [recip_id] at h
-  have row7 := RelProd.pair_mono (P := relProd (dList A) (dList A))
-    (graph_le_Λ_est includeFn hRrefl) (exclude_step rating)
+  have row7 := rpair_mono (graph_le_Λ_est includeFn hRrefl) (exclude_step rating)
   -- Ex 7.15 row: `⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩ ⊑ Λ(S) est((R×R)°)`
   have row6 := pair_est_le (graph includeFn) excludeR (R rating) (R rating)
-  have hcata : ⦇((relProd (dList A) (dList A)).pair (graph includeFn)
-        ((graph Prod.snd : (RT.F A).obj (relProd (dList A) (dList A)).p
+  have hcata : ⦇(rpair (graph includeFn)
+        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
-          ≫ list (Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)) ≫ concatR)
-      : (RT.F A).obj (relProd (dList A) (dList A)).p ⟶ (relProd (dList A) (dList A)).p)⦈
+          ≫ list (Λ chooseR ≫ est((R rating)°)) ≫ concatR)
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+          ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
       ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ :=
     relCata_mono (RT.initial A) (le_trans row7 row6)
   -- the greedy theorem at `(R×R)°`
@@ -421,18 +435,13 @@ public theorem party_laws :
       ⊑ ⦇S⦈%∋ ≫ est((rprodMap (R rating) (R rating))°) :=
     greedy (RT.F_preservesRecip A) (RT.initial A) (RR_recip_trans rating) (party_mono rating)
   -- Ex 7.38 row, at `Q := (R×R)°`, `T := choose`
-  have hg : (rprodMap (R rating) (R rating))° ≫ choose (relProd (dList A) (dList A))
-      ⊑ choose (relProd (dList A) (dList A)) ≫ (R rating)° := by
-    rw [← prodMap_eq_rprodMap, prodMap_recip]
-    exact choose_monotonic _ ((R rating)°)
   have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
     have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
-  have row4 : est((rprodMap (R rating) (R rating))°)
-        ≫ Λ (choose (relProd (dList A) (dList A))) ≫ est((R rating)°)
-      ⊑ existsImage (choose (relProd (dList A) (dList A))) ≫ est((R rating)°) :=
-    est_Λ_est_le hg hRtrans'
+  have row4 : est((rprodMap (R rating) (R rating))°) ≫ Λ chooseR ≫ est((R rating)°)
+      ⊑ existsImage chooseR ≫ est((R rating)°) :=
+    est_Λ_est_le (chooseR_monotonic rating) hRtrans'
   -- absorption + `party ≜ ⦇S⦈ choose` close the chain
-  have hfin : ⦇S⦈%∋ ≫ (existsImage (choose (relProd (dList A) (dList A))) ≫ est((R rating)°))
+  have hfin : ⦇S⦈%∋ ≫ (existsImage chooseR ≫ est((R rating)°))
       = Λ party ≫ est((R rating)°) := by
     rw [← Cat.assoc, Λ_absorption, ← party_eq]
   exact le_trans (comp_mono_right hcata _) (le_trans (comp_mono_right hgreedy _)
