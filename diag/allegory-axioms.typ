@@ -7269,15 +7269,20 @@ in @mu-defn.
 #disp[#definition[
 `Op::=cpy Char∣del Char∣ins Char`, #h(4pt) `F(A,B)=1+(A×B)`, #h(4pt) `α≜[nil,cons]`.
 
-`edit≜⦇[base,step]⦈ : [Op]⟶[Char]×[Char]`, #h(4pt) `base` returning `([],[])`,
+`edit≜⦇[base,step]⦈ : [Op]⟶[Char]×[Char]` #src[`lean:AOP.A9_2_Edit.edit_cata@0dafb85c`],
+#h(4pt) `base` returning `([],[])`,
 #h(4pt) `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, #h(4pt) `step (del a,(xs,ys))=([a]⧺xs,ys)`,
 #h(4pt) `step (ins a,(xs,ys))=(xs,[a]⧺ys)`.
 
-`length≜⦇[zero,π₂ succ]⦈`, #h(4pt) `R≜length≤length°`, #h(4pt) `U≜⊤`, #h(4pt)
-`V≜suffix°×suffix°`, #h(4pt) `Q≜𝟙+(U×V)`, #h(4pt) `empty` the coreflexive on `(xs,ys)` with
+`length≜⦇[zero,π₂ succ]⦈` #src[`lean:AOP.A9_2_Edit.length_cata@9e3040b0`], #h(4pt)
+`R≜length≤length°` #src[`lean:AOP.A9_2_Edit.R_eq@0f7a4661`], #h(4pt) `U≜⊤`, #h(4pt)
+`V≜suffix°×suffix°` #src[`lean:AOP.A9_2_Edit.V@09fe0b1a`], #h(4pt)
+`Q≜𝟙+(U×V)` #src[`lean:AOP.A9_2_Edit.Q@e6ebf648`], #h(4pt) `empty` the coreflexive on `(xs,ys)` with
 both lists empty.
 
-`unstep` implements $frac(#[`step°`], ∋)$ `thin(U×V)`: #h(4pt) `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
+`unstep` implements $frac(#[`step°`], ∋)$ `thin(U×V)`
+#src[`lean:AOP.A9_2_Edit.unstep@c08a1892`, `lean:AOP.A9_2_Edit.unstep_sound@623dda5a`]:
+#h(4pt) `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
 #h(4pt) `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, #h(4pt)
 `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`.
 ]]<edit-defn>
@@ -7318,12 +7323,19 @@ both lists empty.
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
       (eb-thin, eb-PX, eb-est)),
-    [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))` \
-     #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR` is Proposition 9.2 at
+    [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))`
+     #src[`lean:AOP.A9_2_Edit.edit_laws@c69d7d69`] \
+     #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
+      #src[`lean:AOP.A9_2_Edit.edit_mono@089b97ab`] is Proposition 9.2 at
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
-      thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR` over `F(Op,[Char]×[Char])` is Proposition 9.4
-      at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be compared — and
-      `V≜suffix°×suffix°` — `edit (𝟙×suffix)⊑R° edit`, `edit (suffix×𝟙)⊑R° edit`. `suffix=tail*`
+      thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
+      #src[`lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4`] over `F(Op,[Char]×[Char])` is
+      Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
+      compared — and `V≜suffix°×suffix°`
+      #src[`lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558`,
+      `lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e`] —
+      `edit (𝟙×suffix)⊑R° edit` #src[`lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2`],
+      `edit (suffix×𝟙)⊑R° edit` #src[`lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1`]. `suffix=tail*`
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
@@ -7399,12 +7411,15 @@ both lists empty.
 // applies; no decomposition is preferable to another here, so there is no thinning step.
 #disp[#definition[
 `tree A::=tip A∣bin (tree A,tree A)`, #h(4pt) `FX=A+X²`, so `F(R)=𝟙+R²`; #h(4pt)
-`h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`, #h(4pt) `H=flatten°`.
+`h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`
+#src[`lean:AOP.A9_3_Bracket.flatten_cata@416f62ee`], #h(4pt) `H=flatten°`.
 
 `⟨cost,size⟩≜⦇[opt,opb]⦈`, #h(4pt) `opt≜⟨zero,st⟩`, #h(4pt)
 `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`.
 
-`sb` associative, so `size=flatten sz` for a map `sz`; #h(4pt) `R≜cost≤cost°`, #h(4pt)
+`sb` associative, so `size=flatten sz` for a map `sz`
+#src[`lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74`]; #h(4pt)
+`R≜cost≤cost°` #src[`lean:AOP.A9_3_Bracket.R_eq@48f5ee2a`], #h(4pt)
 `g≜[zero,(𝟙×sz)² opb π₁]`, #h(4pt) `single` the coreflexive on singleton lists.
 
 `splits≜⟨inits⁺,tails⁺⟩ zip`, an implementation of $frac(#[`cat°`], ∋)$; #h(4pt) `array≜inits list(row)`,
@@ -7447,12 +7462,16 @@ both lists empty.
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
-    [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))` \
+    [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))`
+     #src[`lean:AOP.A9_3_Bracket.mct_laws@6ebebce1`] \
      #src[Theorem 9.1: split the list in every way, bracket both halves, join. The condition is
-      monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR` — only trees with the same flattening
+      monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR`
+      #src[`lean:AOP.A9_3_Bracket.mct_mono@a3daf2b8`] — only trees with the same flattening
       are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
-      `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` (the cost of a node reads only the cost and the
-      flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤` (`g` monotonic on `≤` in its two
+      `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[`lean:AOP.A9_3_Bracket.mct_cost_alg@f266a5f3`]
+      (the cost of a node reads only the cost and the
+      flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤`
+      #src[`lean:AOP.A9_3_Bracket.mct_g_mono@4aa3e122`] (`g` monotonic on `≤` in its two
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `list⁺` dies and is remade at both, so it runs as a loop between them.
@@ -7670,15 +7689,18 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
 #disp[#definition[
-`detab≜⦇[nil,expand]⦈ : String⟶String` over snoc-lists, #h(4pt) `α≜[nil,snoc]`, #h(4pt)
+`detab≜⦇[nil,expand]⦈ : String⟶String` #src[`lean:AOP.A10_2_Detab.detab_cata@37355797`]
+over snoc-lists, #h(4pt) `α≜[nil,snoc]`, #h(4pt)
 `H=detab°`; #h(4pt) `expand (xs,a)=(a=TB→fill xs,xs⧺[a])`, #h(4pt)
 `fill xs=xs⧺blanks (n−(col xs) mod n)`.
 
 `col≜⦇[zero,count]⦈`, #h(4pt) `count (c,a)=(a=NL→0,c+1)`; #h(4pt) `TB` the tab, `BL` the
 blank, `NL` the newline, tab stops every `n` columns.
 
-`R≜length≤length°`, #h(4pt) `U` the preorder with `a U b⟺a=TB∨a=b`, #h(4pt)
-`V≜prefix°∩(fill fill°)`, #h(4pt) `Q≜𝟙+(V×U)`.
+`R≜length≤length°` #src[`lean:AOP.A10_2_Detab.R@5b23da25`], #h(4pt)
+`U` the preorder with `a U b⟺a=TB∨a=b`, #h(4pt)
+`V≜prefix°∩(fill fill°)` #src[`lean:AOP.A10_2_Detab.V@b0fc79bc`], #h(4pt)
+`Q≜𝟙+(V×U)` #src[`lean:AOP.A10_2_Detab.Q@7a0a1541`].
 
 `unfill xs` the shortest prefix of `xs` with `fill (unfill xs)=fill xs`; #h(4pt) `tbc` the trailing
 blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
@@ -7717,15 +7739,24 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
-    [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
-     #src[Theorem 10.1 at `Q≜𝟙+(V×U)`: one character of input is decided at each step. `U` may be
+    [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])`
+     #src[`lean:AOP.A10_2_Detab.entab_laws@3b89184f`] \
+     #src[Theorem 10.1 at `Q≜𝟙+(V×U)`
+      #src[`lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608`]: one character of input is
+      decided at each step. `U` may be
       any preorder on characters, and `a U b⟺a=TB∨a=b` puts `TB` below every character, so `est`
-      prefers a tab to a blank; `F(⊤,R)α⊑αR` is left as an exercise. `detab prefix⊑R° detab` is
-      FALSE — at `n=8`, `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
+      prefers a tab to a blank; `F(⊤,R)α⊑αR` #src[`lean:AOP.A10_2_Detab.entab_mono@b7c30f2e`] is
+      left as an exercise. `detab prefix⊑R° detab` is
+      FALSE #src[`lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9`,
+      `lean:AOP.A10_2_Detab.detab_len_of_short@66be497e`] — at `n=8`,
+      `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
       `[a,b,c,d,e,BL,BL]` is longer than any input giving it — so `V≜prefix°∩(fill fill°)` allows
-      only the prefixes that do not cross a tab stop, and `detab V°⊑R° detab` holds. From
+      only the prefixes that do not cross a tab stop, and `detab V°⊑R° detab`
+      #src[`lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac`, `lean:AOP.A10_2_Detab.entab_V@ff19c265`]
+      holds. From
       `nil V°=nil`, `fill V°=fill` (what `fill fill°` was added for) and `snoc V°⊑snoc∪(π₁V°)`,
-      left as exercises, comes `expand V°⊑expand∪(π₁V°)` — shortening the output either leaves the
+      left as exercises, comes `expand V°⊑expand∪(π₁V°)`
+      #src[`lean:AOP.A10_2_Detab.expand_V_step@1e653239`] — shortening the output either leaves the
       last step alone or discards it — hence `detab V°⊑detab∪(init detab V°)`, and `init` inductive
       makes the greatest solution the unique one: `detab V°⊑prefix detab`, with `prefix⊑R°`
       finishing Proposition 9.4]])],
