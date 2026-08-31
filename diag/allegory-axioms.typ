@@ -1926,7 +1926,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627`]],
 
   [type relator],
-  [`T(R)°=T(R°)`],
+  [`T(R)°=T(R°)`, for `F` preserving `°`],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
    #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_recip@4bb90fe1`]],
@@ -2472,9 +2472,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`[A]⟶[A]`],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
-  [`partition≜concat°`],
+  [`partition≜⦇[nil,(ne×𝟙) cat]⦈°`
+   #src[`lean:AOP.A5_6_ListCombinators.partition_cata@213ef510`]],
   [`[A]⟶[[A]]`],
-  [`cat` restricted to a non-empty first argument, so `ys` is a list of non-empty segments of `xs`.],
+  [`ne` restricts `cat` to a non-empty first argument, so `ys` is a list of non-empty segments of
+   `xs`. Unrestricted, `concat°` would admit empty ones.],
 
   [`concat≜⦇[nil,cat]⦈` #src[`lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3`]],
   [`[[A]]⟶[A]`],
