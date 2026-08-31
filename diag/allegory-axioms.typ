@@ -2518,7 +2518,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#definition[
 `cup≜` $frac(#[`π₁∋∪π₂∋`], ∋)$ ` : EA×EA⟶EA`, #h(4pt) so
 $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
-#h(4pt) #src[`lean:AOP.A5_6.Λ_union@43127620`]
+#h(4pt) #src[`lean:AOP.A5_6.Λ_union@632cc56a`]
 ]]<cup-defn>
 
 // §12.1's bracket: the tape's fork IS `F([A])=𝟏+A×[A]`'s case split, `𝟏` above and the pair below,
