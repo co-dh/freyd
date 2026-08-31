@@ -3834,8 +3834,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 
-  [`(g→X,Y)`], [`X` where `g` is defined and `Y` where it is not
-   #src[`lean:AOP.A5_3.cond@92c0409f`]], [`A⟶B` #h(4pt) at
+  [`(g→X,Y)`], [`X` where `g` is defined and `Y` where it is not], [`A⟶B` #h(4pt) at
    `X`,`Y : A⟶B`], [],
   [the test picks the branch],
 )
