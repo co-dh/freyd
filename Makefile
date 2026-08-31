@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan cover diagram
+.PHONY: p w cite scan scan-strict cover diagram
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -47,6 +47,11 @@ cover: $(DB)
 # editing a panel's argument lists — that is when the picture can stop saying what the row says.
 scan:
 	./scripts/scanline diag/allegory-axioms.typ
+
+# The same sweep with crossings fatal.  A SEPARATE TARGET and not a flag on `scan`: the note has
+# crossings today, so `scan` must stay green while this one names the work still to do.
+scan-strict:
+	./scripts/scanline diag/allegory-axioms.typ --strict
 
 # `scan` run backwards: the panel a formula denotes.  The target is the ROUND TRIP — every panel
 # whose `cert:` states an `expect` is redrawn from that formula alone and swept again, and the

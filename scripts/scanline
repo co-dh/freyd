@@ -204,10 +204,62 @@ class Unhandled(Exception):
     """A panel shape the sweep has no rule for — reported, never skipped."""
 
 
+# ---------------------------------------------------------------- the ink
+# `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
+# below build THE SAME `pts` those helpers build and hand them to `poly`, which is `hm-seg`; the
+# curve maths lives here once, so a crossing is looked for in the shape actually drawn.
+HMK, DKN, MKN = 0.618, 0.45, 0.35
+NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
+
+
+def dknee(x, xo, drop):
+    """`dpanel`'s knee: grows with the run, clamped to the drop the lane has."""
+    return min(0.45 + 0.25 * (xo - x), 0.55 * drop)
+
+
+def nodepts(x, xo, ys, k):
+    """`mpan`'s dip onto the object wire at each node height and back out again."""
+    return [q for y in ys for q in ((x, y + k), (xo, y), (x, y - k))]
+
+
+def seg(a, b, n=16):
+    """`hm-seg` sampled: a straight run, or its bezier with vertical tangents."""
+    if abs(a[0] - b[0]) < EPS or abs(a[1] - b[1]) < EPS:
+        return [a, b]
+    dy = b[1] - a[1]
+    c, e = (a[0], a[1] + HMK * dy), (b[0], b[1] - HMK * dy)
+    return [tuple(u ** 3 * a[i] + 3 * u * u * t * c[i] + 3 * u * t * t * e[i] + t ** 3 * b[i]
+                  for i in (0, 1))
+            for t, u in ((j / n, 1 - j / n) for j in range(n + 1))]
+
+
+def poly(pts):
+    """`hm-path` sampled: the polyline one strand's ink follows."""
+    out = []
+    for a, b in zip(pts, pts[1:]):
+        s = seg(a, b)
+        out += s[1:] if out else s
+    return out
+
+
+def meet(a, b, c, d):
+    """Where `ab` and `cd` cross, or `None`; parallel, and touching at an end, are not crossings."""
+    den = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0])
+    if abs(den) < 1e-12:
+        return None
+    t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / den
+    s = ((c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])) / den
+    return None if not (0 < t < 1 and 0 < s < 1) else \
+        (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
+
+
 # ---------------------------------------------------------------- the panel model
 class Wire:
-    def __init__(self, x, ytop, ybot, label, born=None):
+    def __init__(self, x, ytop, ybot, label, born=None, pts=None, dips=()):
         self.x, self.ytop, self.ybot, self.label, self.born = x, ytop, ybot, label, born
+        # `dips` are the heights where the lane is DRAWN onto the object wire and back out — it
+        # meets a bead there, so a wire arriving at that bead has not passed it.
+        self.pts, self.dips = pts, dips
 
 
 class Bead:
@@ -221,13 +273,16 @@ class Panel:
         self.cert = r.get('cert') or {}
         self.top = [tuple(p) for p in r['top']]
         self.bot = [tuple(p) for p in r['bot']]
-        self.wires, self.beads, self.splits = [], [], []
+        # `strands` are the drawn curves no `Wire` stands for — `mpan`'s widening and `tw-hm`'s
+        # split, which the sweep reads off `splits` instead of off a lane of their own.
+        self.wires, self.beads, self.splits, self.strands = [], [], [], []
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
         # down the panel (`⦇R⦈ : T⟶A`); nothing reads it as a functor, so the switch height only
         # affects printing and is taken at the lowest bead on it.
         self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
-        self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel))
+        self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel,
+                               pts=[(self.xo, self.h), (self.xo, 0.0)]))
         # A widening NAMES the object over its range, so where it opens the bottom port's name the
         # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
         sw = [s[0] for s in self.splits if s[3] == self.oblabel]
@@ -241,7 +296,13 @@ class Panel:
 def a_dpanel(p, r):
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un))
+        # `dlane`'s own points.  `dpanel`'s `dip:` is not emitted, so a lane it re-routes through
+        # `ddip` is read here as the plain lane: the dip is an excursion onto a bead of its own.
+        k = dknee(x, p.xo, yt - yb)
+        pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
+                                              [(p.xo, y0), (x, y0 - k)])
+        pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + k), (p.xo, y1)]
+        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
@@ -251,39 +312,57 @@ def a_dpanel(p, r):
 def a_tpan(p, r):
     for hd in r['hands']:
         born = hd[4] if len(hd) > 4 else None
-        p.wires.append(Wire(hd[0], hd[1], hd[2], hd[3], born))
+        pts = ([(hd[0], hd[1]), (hd[0], hd[2] + DKN), (p.xo, hd[2])] if born is not None else
+               [(p.xo, hd[1]), (hd[0], hd[1] - DKN), (hd[0], hd[2] + DKN), (p.xo, hd[2])])
+        p.wires.append(Wire(hd[0], hd[1], hd[2], hd[3], born, pts))
         if born is not None:
             p.beads.append(Bead(hd[1], hd[0], born, born=True))
     for (x, y, l, port) in r['births']:
-        p.wires.append(Wire(x, y, 0.0, port, l))
+        p.wires.append(Wire(x, y, 0.0, port, l, [(x, y), (x, 0.0)]))
         p.beads.append(Bead(y, x, l, born=True))
         p.bot = sorted(p.bot + [(x, port)])
     for (x, y, k) in r['joins']:
-        p.wires.append(Wire(x, p.h, y, p.at(p.top, x)))
+        p.wires.append(Wire(x, p.h, y, p.at(p.top, x), pts=[(x, p.h), (x, y + k), (p.xo, y)]))
     for (y, l) in r['beads']:
         p.beads.append(Bead(y, p.xo, l))
 
 
 def a_mpan(p, r):
+    ns = [tuple(n) for n in r['nodes']]                     # `(y, x)`: where a lane dips to a bead
+    at = lambda x, ylo: [y for (y, nx) in ns if nx < x and y > ylo]
     for x in r['wires']:
-        p.wires.append(Wire(x, p.h, 0.0, p.at(p.top, x) or p.at(p.bot, x)))
+        ds = at(x, 0.0)
+        p.wires.append(Wire(x, p.h, 0.0, p.at(p.top, x) or p.at(p.bot, x),
+                            pts=[(x, p.h)] + nodepts(x, p.xo, ds, MKN) + [(x, 0.0)], dips=ds))
     for (xf, xt, y, k) in r['joins']:
-        p.wires.append(Wire(xf, p.h, y, p.at(p.top, xf)))
+        ds = at(xf, y)
+        p.wires.append(Wire(xf, p.h, y, p.at(p.top, xf),
+                            pts=[(xf, p.h)] + nodepts(xf, p.xo, ds, MKN)
+                            + [(xf, y + k), (xt, y)], dips=ds))
     for (x0, y0, xe, x1, y1, l, b) in r['hands']:
-        p.wires.append(Wire(xe, y0, y1, l, b))
+        p.wires.append(Wire(xe, y0, y1, l, b,
+                            [(x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)]))
         if b is not None:
             p.beads.append(Bead(y0, x0, b, born=True))
     for (x, y, l) in r['beads']:
         p.beads.append(Bead(y, x, l))
     p.splits = [tuple(s) for s in r['splits']]
+    # One widening is emitted as one `splits` row per bead it spans; the ARC is a single strand.
+    for x in {s[2] for s in p.splits}:
+        ys = [y for s in p.splits if s[2] == x for y in s[:2]]
+        p.strands.append((p.splits[0][4], [(p.xo, max(ys)), (x, max(ys) - DKN),
+                                           (x, min(ys) + DKN), (p.xo, min(ys))]))
 
 
 def a_twhm(p, r):
     for (xf, yt, xt, y, k) in r['joins']:
-        p.wires.append(Wire(xf, yt, y, p.at(p.top, xf)))
+        p.wires.append(Wire(xf, yt, y, p.at(p.top, xf), pts=[(xf, yt), (xf, y + k), (xt, y)]))
     for (x, y, l, c) in r['beads']:
         p.beads.append(Bead(y, x, l))
     p.splits = [tuple(s) for s in r['splits']]
+    for (y0, y1, x, of, outer, inner) in p.splits:
+        k = min(0.40, (y0 - y1) / 3)
+        p.strands.append((outer, [(p.xo, y0), (x, y0 - k), (x, y1 + k), (p.xo, y1)]))
 
 
 ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'mpan': a_mpan, 'tw-hm': a_twhm}
@@ -386,8 +465,66 @@ def sweep(p):
                      "spelled": spell(e), "above": [l for _, l in above],
                      "below": [l for _, l in below]})
         expr.append(e)
-    p.cuts, p.factors, p.expr = cuts, facs, ('comp', expr) if len(expr) != 1 else expr[0]
+    p.levels, p.cuts = ys, cuts
+    p.factors, p.expr = facs, ('comp', expr) if len(expr) != 1 else expr[0]
     return bad
+
+
+# ---------------------------------------------------------------- crossings
+# A CROSSING IS A SYMMETRY: two wires that cross have exchanged, so a picture that crosses claims a
+# permutation the formula does not.  Two checks, and they answer different questions — `inversions`
+# says a crossing is WRONG (the cut orders it the other way), `crossings` says one is THERE (the ink
+# meets).  A wire that leaves its column and comes back satisfies both cuts and is seen only by the
+# second; a lane the sweep re-routes where no ink model exists is seen only by the first.
+def inversions(p):
+    """Order against the cut, on the cut alone.  A wire that ends in another column has moved
+    across every column between the two, and a wire standing in one of them, live on BOTH sides of
+    that height, is passed — unless it dips onto that very bead, where the two are drawn to meet.
+    `dpanel`'s `dip:` is not emitted, so its lanes are read undipped; a dip there is a local
+    excursion at the bead's own height, and 13.4.4a's arms cross above it either way."""
+    out = []
+    for w in p.wires:
+        if not w.pts:
+            continue
+        for (px, _), y, end in ((w.pts[0], w.ytop, 'is born'), (w.pts[-1], w.ybot, 'dies')):
+            if abs(px - w.x) < EPS:
+                continue
+            lo, hi = min(px, w.x), max(px, w.x)
+            i = next((k for k in range(len(p.levels)) if abs(p.levels[k] - y) < EPS), None)
+            if i is None:
+                continue
+            below = [x for (x, _) in p.cuts[i + 1]]
+            met = {v.x for v in p.wires if any(abs(d - y) < EPS for d in v.dips)}
+            for (vx, vl) in p.cuts[i]:
+                if lo + EPS < vx < hi - EPS and any(abs(vx - x) < EPS for x in below) \
+                        and not any(abs(vx - m) < EPS for m in met):
+                    out.append(f"{p.id}: {w.label}@{w.x:g} {end} at x={px:g}, y={y:g}, passing"
+                               f" {vl}@{vx:g}, which is live above and below — the cut orders them"
+                               f" {w.label} then {vl}, the ink exchanges them")
+    return out
+
+
+def crossings(p):
+    """Every wire–wire meeting in the ink, in the curves the note's own helpers draw.  A junction is
+    not a crossing: a hit at a bead, or at either strand's own end, is where the two are DRAWN to
+    meet.  A bead's spanning bar is not ink here — it is the bead's arm, not a wire."""
+    ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts)) for w in p.wires if w.pts] \
+        + [(f"{l or '?'}@{q[1][0]:g}", poly(q)) for (l, q) in p.strands]
+    js = [(b.x, b.y) for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
+    hits = []
+    for i, (la, qa) in enumerate(ss):
+        for (lb, qb) in ss[i + 1:]:
+            for a, b in zip(qa, qa[1:]):
+                for c, e in zip(qb, qb[1:]):
+                    z = meet(a, b, c, e)
+                    if z is None or any(abs(z[0] - jx) < NEAR and abs(z[1] - jy) < NEAR
+                                        for (jx, jy) in js):
+                        continue
+                    # One crossing is found in several sample segments; keep the first of a cluster.
+                    if not any(k == (la, lb) and abs(z[0] - u) < 0.2 and abs(z[1] - v) < 0.2
+                               for (k, u, v) in hits):
+                        hits.append(((la, lb), z[0], z[1]))
+    return [f"{p.id}: {la} crosses {lb} at (x={x:.2f}, y={y:.2f})" for ((la, lb), x, y) in hits]
 
 
 # ---------------------------------------------------------------- the declared tables
@@ -540,7 +677,7 @@ def main(argv):
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
     only = opt(argv, "--panel")
     recs = panels(path, opt(argv, "--from"))
-    ps, bad, note, unhandled = [], [], [], []
+    ps, bad, note, unhandled, warn = [], [], [], [], {"cut order": [], "ink": []}
     for r in recs:
         if only and r["id"] != only:
             continue
@@ -549,10 +686,15 @@ def main(argv):
             bad += sweep(p)
             b, n = certify(p)
             bad += b; note += n
+            warn["cut order"] += inversions(p); warn["ink"] += crossings(p)
             ps.append(p)
         except (Unhandled, ValueError) as e:
             unhandled.append(f"{r['id']} ({r['helper']}): {e}")
     bad += crosscheck(ps)
+    # The note has crossings today, so they are a WARNING: naming every one is the deliverable, and
+    # `--strict` is what a note that has been drawn without them is held to.
+    if "--strict" in argv:
+        bad += warn["cut order"] + warn["ink"]; warn = {k: [] for k in warn}
     if opt(argv, "--json"):
         json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
                     "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
@@ -569,6 +711,15 @@ def main(argv):
     cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
     print(f"scanline: {len(recs)} panels, {len(ps)} swept, {cert} certified,"
           f" {len(unhandled)} unhandled, {len(bad)} failures")
+    if any(warn.values()):
+        all_ = [w for k in warn for w in warn[k]]
+        for k, ws in warn.items():
+            if ws:
+                print(f"{k} crossings ({len(ws)}):", *ws, sep="\n  ", file=sys.stderr)
+        hit = sorted({w.split(':')[0].rsplit('.', 1)[0] for w in all_})
+        per = ", ".join(f"{d} ×{sum(1 for w in all_ if w.startswith(d + '.'))}" for d in hit)
+        print(f"scanline: {len(all_)} crossings in {len(hit)} displays ({per})"
+              f" — warnings; `--strict` makes them failures", file=sys.stderr)
     if unhandled:
         print("unhandled:", *unhandled, sep="\n  ", file=sys.stderr)
     if bad:
