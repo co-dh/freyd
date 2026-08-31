@@ -334,8 +334,11 @@ def show(g, who):
               f" legs ({', '.join('w%d' % i for i in l)})")
 
 
-def check(fx, seen=False):
+def check(fx, tbl, seen=False):
     lab, warn = fx["label"], []
+    # The fixture's own letters (`a`, `b`, `h` in 3.6) name nothing outside it, so they are written
+    # where they are used and layered over the note's table.
+    tbl = {**tbl, "sigs": {**tbl["sigs"], **{k: v for k, v in fx.get("sigs", {}).items() if k != "//"}}}
     odd = [n for n in fx.get("norm", []) if n not in NORMS]
     if odd:
         return f"FAIL  {lab}   undeclared normalization {odd[0]!r}", warn
@@ -348,7 +351,7 @@ def check(fx, seen=False):
         return f"FAIL  {lab}   {len(sides)} formula sides, {len(fx['sides'])} pictures", warn
     for i, (f, s) in enumerate(zip(sides, fx["sides"])):
         try:
-            a = canon(ours(dg.build(f, fx["src"], fx["tgt"], dg.RELATORS)), f"ours {lab}.{i}")
+            a = canon(ours(dg.draw(f, fx["src"], fx["tgt"], tbl)), f"ours {lab}.{i}")
             b = canon(book(s, f"{lab}.{i}"), f"book {lab}.{i}")
         except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
             return f"FAIL  {lab}   side {i}: {type(ex).__name__}: {ex}", warn
@@ -377,7 +380,9 @@ def main(argv):
         print(*bad, sep="\n", file=sys.stderr)
         print(f"hm-check: {len(paths)} fixtures audited against the page svg, {len(bad)} miscounts")
         sys.exit(1 if bad else 0)
-    lines = [check(json.load(open(p, encoding="utf-8")), "--show" in argv) for p in paths]
+    tbl = dg.sigs()
+    lines = [check(json.load(open(p, encoding="utf-8")), tbl, "--show" in argv)
+             for p in paths]
     for line, warn in lines:
         print(line, *warn, sep="\n")
     n = sum(l.startswith("FAIL") for l, _ in lines)

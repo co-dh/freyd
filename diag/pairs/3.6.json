@@ -13,6 +13,12 @@
   "tgt": "B",
   "norm": ["free-end-vs-bent-in"],
   "note": "Interior segments carry no label in the book, so their `lbl` is null and goes unchecked; the boundary labels F, A, B are all the page prints.",
+  "sigs": {
+    "//": "The book's own letters for THIS equation — two F-algebras and an arrow between their carriers. They are local to the fixture because `a`, `b`, `h` name nothing outside it; `diag/hm-sigs.json` holds the beads the note draws by name.",
+    "a": {"src": "F(x)", "tgt": "x"},
+    "b": {"src": "F(x)", "tgt": "x"},
+    "h": {"src": "x",    "tgt": "y"}
+  },
   "sides": [
     { "top": ["F", "A"],
       "bot": ["B"],
