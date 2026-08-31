@@ -447,6 +447,65 @@ public theorem party_laws :
   exact le_trans (comp_mono_right hcata _) (le_trans (comp_mono_right hgreedy _)
     (le_trans (le_of_eq (Cat.assoc _ _ _)) (le_trans (comp_mono_left _ row4) (le_of_eq hfin))))
 
+/-! ### The worked example (`party-example-tree`: employees ARE their ratings, `rating := id`) -/
+
+/-- **party-example-tree**: `a=3` over `b=7` (over `d=5`, `e=1`) and `c=2` (over `f=8`). -/
+@[expose] public def exTree : Rose Int :=
+  Rose.node 3 (ofList
+    [Rose.node 7 (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]),
+     Rose.node 2 (ofList [Rose.node 8 (ofList [])])])
+
+/-- **party-listrr / party-rr**: `list((R×R)°)` relates the fold's two child pairs to what
+    `est(R°)` keeps of them, elementwise and componentwise — `(7≥7, 6≥5)` and `(2≥2, 8≥0)`. -/
+public theorem party_listrr_example :
+    listP ((rprodMap (R (id : Int → Int)) (R (id : Int → Int)))°)
+      (ofList [(ofList [7], ofList [5, 1]), (ofList [2], ofList [8])])
+      (ofList [(ofList [7], ofList [5]), (ofList [2], ofList [])]) := by
+  refine ⟨⟨?_, ?_⟩, ⟨?_, ?_⟩, trivial⟩
+  all_goals (show _ ≤ _; decide)
+
+/-- **party-list-choose**: `choose` is a choice PER ELEMENT, so `list(choose)` then `concat`
+    on `[([d],[]),([e],[])]` (`d=5`, `e=1`) reaches all four flattenings —
+    `[d,e]`, `[d]`, `[e]`, `[]`. -/
+public theorem party_list_choose_example :
+    ∀ y ∈ [ofList [5, 1], ofList [5], ofList [1], ofList ([] : List Int)],
+      (list chooseR ≫ concatR)
+        (ofList [(ofList [5], ofList []), (ofList [1], ofList [])]) y := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false]
+  rintro y (rfl | rfl | rfl | rfl)
+  · exact ⟨ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, trivial⟩, rfl⟩
+  · exact ⟨ofList [ofList [5], ofList []], ⟨Or.inl rfl, Or.inr rfl, trivial⟩, rfl⟩
+  · exact ⟨ofList [ofList [], ofList [1]], ⟨Or.inr rfl, Or.inl rfl, trivial⟩, rfl⟩
+  · exact ⟨ofList [ofList [], ofList []], ⟨Or.inr rfl, Or.inr rfl, trivial⟩, rfl⟩
+
+/-- **party-example**: the fold's run on the example tree — `b` hands up `([7],[5,1])`, `c`
+    hands up `([2],[8])`, and the root's `include = [a,d,e,f]` (cost 17) is a legal `party`
+    answer. -/
+public theorem party_example_run : party exTree (ofList [3, 5, 1, 8]) := by
+  have hd : RT.cataFold S (Rose.node (5 : Int) (ofList [])) (ofList [5], ofList []) :=
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+  have he : RT.cataFold S (Rose.node (1 : Int) (ofList [])) (ofList [1], ofList []) :=
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+  have hf : RT.cataFold S (Rose.node (8 : Int) (ofList [])) (ofList [8], ofList []) :=
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+  have hb : RT.cataFold S
+      (Rose.node (7 : Int) (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]))
+      (ofList [7], ofList [5, 1]) :=
+    ⟨ofList [(ofList [5], ofList []), (ofList [1], ofList [])],
+     ⟨(ofList [5], ofList []), ofList [(ofList [1], ofList [])], hd,
+       ⟨(ofList [1], ofList []), ofList [], he, rfl, rfl⟩, rfl⟩,
+     rfl, ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, trivial⟩, rfl⟩
+  have hc : RT.cataFold S (Rose.node (2 : Int) (ofList [Rose.node 8 (ofList [])]))
+      (ofList [2], ofList [8]) :=
+    ⟨ofList [(ofList [8], ofList [])],
+     ⟨(ofList [8], ofList []), ofList [], hf, rfl, rfl⟩,
+     rfl, ofList [ofList [8]], ⟨Or.inl rfl, trivial⟩, rfl⟩
+  refine ⟨(ofList [3, 5, 1, 8], ofList [7, 8]), ?_, Or.inl rfl⟩
+  refine ⟨ofList [(ofList [7], ofList [5, 1]), (ofList [2], ofList [8])],
+    ⟨(ofList [7], ofList [5, 1]), ofList [(ofList [2], ofList [8])], hb,
+      ⟨(ofList [2], ofList [8]), ofList [], hc, rfl, rfl⟩, rfl⟩,
+    rfl, ofList [ofList [7], ofList [8]], ⟨Or.inl rfl, Or.inr rfl, trivial⟩, rfl⟩
+
 end Party
 
 end RelSet
