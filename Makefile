@@ -69,6 +69,14 @@ scan-strict:
 diagram:
 	./scripts/diagram --roundtrip diag/allegory-axioms.typ
 
+# `diagram` run against the BOOK: each fixture in `diag/pairs/` is one of IntroString's own
+# formula/picture pairs, and the panel our generator draws for the formula must have the book's port
+# graph — boundary order, and every bead's arms and legs.  `--verify-fixtures` is NOT in the target:
+# it shells out to pdftocairo to count the page's strokes and dots against the fixture, which is the
+# check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
+hm-check:
+	./scripts/hm-check
+
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file
 # that changed under it IN PLACE, keeping the page and scroll position.  Chrome does not, which is
