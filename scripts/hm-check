@@ -16,8 +16,9 @@ catching — a bead's source, the boundary order, a missing merge.
 
 Both sides are canonicalised by the SAME scan-line walk, so a bead free to slide up or down cannot
 make the two texts differ.  Interior segments the book leaves unlabelled are `lbl: null` in the
-fixture and their labels go unchecked — the book prints labels only at the boundary, and scanline's
-own object-wire label switches at the LOWEST bead on it, so neither side can be believed there.
+fixture and go unchecked, because the book prints labels only at the boundary; where it does print
+one, OURS is now definite — `draw` emits the type at every seam instead of letting the sweep guess
+the object wire's label at the lowest bead on it.
 
 `--verify-fixtures` audits the fixture against the page's own vector content instead: the figure's
 stroked paths, filled dots, boundary endpoints and grey fill are counted out of `pdftocairo -svg`

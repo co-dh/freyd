@@ -288,8 +288,9 @@ class Lane:
 
 
 class Row:
-    def __init__(self, label, arms, legs, reach):
+    def __init__(self, label, arms, legs, reach, obj):
         self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
+        self.obj = obj                     # what the object wire carries BELOW this row
 
 
 def alphabet(table, *objs):
@@ -336,7 +337,7 @@ def elaborate(formula, src, tgt, table):
         at = made.index(keep[0]) if keep else len(made)
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
-        rows.append(Row(spell(tidy(core)), arms, legs, reach))
+        rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
     k = eat(want, lanes, obj, sub, f"the target {tgt}")
     if k != len(lanes):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
@@ -345,6 +346,8 @@ def elaborate(formula, src, tgt, table):
     obot, otop = render(settle(obj, sub)), render(settle(atop, sub))
     if obot is None or otop is None:
         raise Unhandled(f"the object wire carries {spell(settle(obj, sub))}, which has no label")
+    for r in rows:                         # the seam labels: what a formula alone cannot say either
+        r.obj = render(settle(r.obj, sub))
     return rows, made, otop, obot
 
 
@@ -375,6 +378,9 @@ def layout(rows, made, otop, obot, cert):
                        None if l.born == TOP or l.dies == n else l.label,
                        unit.get(l)] for l in made],
             "beads": beads,
+            # the object wire's type at every seam.  `dpanel` takes no such argument, so `emit`
+            # drops it: a panel pasted into the note is read back by the sweep's own guess.
+            "obj": [[ys[i], r.obj] for i, r in enumerate(rows) if r.obj is not None],
             "top": [[l.x, l.label] for l in made if l.born == TOP] + [[xo, otop]],
             "bot": [[l.x, l.label] for l in made if l.dies == n] + [[xo, obot]],
             "cert": cert}
