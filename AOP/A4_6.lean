@@ -108,7 +108,7 @@ theorem existsImage_id {a : 𝒜} : existsImage (Cat.id a) = Cat.id (PowerAllego
   rw [Cat.comp_id, Λ_eps_reflection]
 
 /-- `E` is functorial: `E (R ≫ S) = E R ≫ E S`. -/
-theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     existsImage (R ≫ S) = existsImage R ≫ existsImage S := by
   have h := Λ_absorption (∋ a ≫ R) S
   rw [Cat.assoc] at h

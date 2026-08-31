@@ -100,10 +100,10 @@ theorem Λ_inter {a c : 𝒜} (R S : c ⟶ a)
 /-- **General cp-pattern** (B&dM p.126): for a relator `F : 𝒜 ⟶ 𝒜` (endo-relator), the
     transpose of `F`'s action on membership, `cp F a : F[a] ⟶ [F a]`.  `cup`/`cap`/`cross`
     are the instances for the various product relators (`F = Δ`, `∩`, `×`). -/
-noncomputable def cpMap (F : Relator 𝒜 𝒜) (a : 𝒜) :
+@[expose] public noncomputable def cpMap (F : Relator 𝒜 𝒜) (a : 𝒜) :
     F.obj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj (F.obj a) :=
   Λ (F.map (∋ a))
 
-theorem cpMap_is_map (F : Relator 𝒜 𝒜) (a : 𝒜) : Map (cpMap F a) := Λ_is_map' _
+public theorem cpMap_is_map (F : Relator 𝒜 𝒜) (a : 𝒜) : Map (cpMap F a) := Λ_is_map' _
 
 end Freyd.Alg

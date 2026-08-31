@@ -92,7 +92,7 @@ theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.pow
     components already match on the nose (both are `(∋a≫f)/∋b`); the term₁ component is
     identified with the reciprocal of the OTHER division component of `existsImage f`'s
     `symmDiv` unfolding via an indirect (Yoneda-style) argument using `map_shunt_left`. -/
-theorem powerRel_map {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : powerRel f = existsImage f := by
+public theorem powerRel_map {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : powerRel f = existsImage f := by
   have hterm1 : ((∋ a)° \ (f ≫ (∋ b)°)) = (∋ b / (∋ a ≫ f))° := by
     have dir1 : ((∋ a)° \ (f ≫ (∋ b)°)) ⊑ (∋ b / (∋ a ≫ f))° := by
       have step1 : (∋ a)° ≫ ((∋ a)° \ (f ≫ (∋ b)°)) ⊑ f ≫ (∋ b)° := leftDiv_comp_le _ _

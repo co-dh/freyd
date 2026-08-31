@@ -87,7 +87,7 @@ theorem coreflexive_transitive {a : 𝒜} {C : a ⟶ a} (hC : Coreflexive C) : T
   exact le_refl C
 
 /-- **Ex 4.10**: for coreflexive `C : a ⟶ a` and `R S : b ⟶ a`, `(R≫C)∩S = (R∩S)≫C`. -/
-theorem coreflexive_comp_inter {a b : 𝒜} {C : a ⟶ a} (hC : Coreflexive C) (R S : b ⟶ a) :
+public theorem coreflexive_comp_inter {a b : 𝒜} {C : a ⟶ a} (hC : Coreflexive C) (R S : b ⟶ a) :
     (R ≫ C) ∩ S = (R ∩ S) ≫ C := by
   apply le_antisymm
   · have hCrecip : Coreflexive C° := by
