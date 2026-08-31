@@ -6865,7 +6865,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 `subseq=⦇[nil,cons]∪[nil,π₂]⦈` #src[`lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6`,
 `lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77`], #h(4pt) `within w` the coreflexive on `xs` with
-`weight xs≤w`.
+`weight xs≤w`, #h(4pt) `0≤w`.
 
 `R≜value≥value°` #src[`lean:AOP.A8_4_Knapsack.R_eq@1c13d35d`], #h(4pt)
 `Q≜R∩(weight≤weight°)` #src[`lean:AOP.A8_4_Knapsack.Q_eq@22acbe51`], #h(4pt)
@@ -6960,8 +6960,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 `new (a,xs)=[[a]]⧺xs`, #h(4pt) `glue (a,xs)=[[a]⧺head xs]⧺tail xs`, #h(4pt)
 `partition≜⦇[wrap wrap,new∪glue]⦈ : list⁺ Word⟶Para`.
 
-`width≜⦇[length,(length×𝟙) plus succ]⦈`, #h(4pt) `fits w` the coreflexive on a line `x` with
-`width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `width x≤w`.
+`width≜⦇[length,(length×𝟙) plus succ]⦈`, #h(4pt) `0≤length a`, #h(4pt) `fits w` the coreflexive on a
+line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `width x≤w`.
 
 `white w x=w−width x`, #h(4pt) `collect≜list(sqr) sum`, #h(4pt) `waste w≜init list(white w) collect`.
 
@@ -7059,8 +7059,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 == Bitonic tours
 
-// B&dM §8.6, p. 212.  `Q` records `next2`, not `head`: tours of one input already share their heads,
-// and the cost of the next drop turns on the second city of each list.
+// B&dM §8.6, p. 212.  `Q` keeps the `head2` conjunct p.215 derives and then drops on the grounds
+// that tours of one input share their heads: without it the two `tour-mono` rows are false.
 #disp[#definition[
 `FA=(City×City)+(City×A)`, the base functor of cons-lists of length at least two; #h(4pt)
 `listcp(F)=wrap+cpr`; #h(4pt) `tc : City×City⟶Real`, neither positive nor symmetric.
@@ -7071,9 +7071,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 `cost (xs,ys)=outcost xs+incost ys`, #h(4pt) `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`,
 #h(4pt) `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`.
 
-`next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `R≜cost≤cost°`
+`next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `head2≜head×head`, #h(4pt) `R≜cost≤cost°`
 #src[`lean:AOP.A8_6_Tour.R_eq@15ad4adc`], #h(4pt)
-`Q≜R∩(next2 next2°)`, #h(4pt) `P≜⊤` #src[`lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e`,
+`Q≜R∩(next2 next2°)∩(head2 head2°)`, #h(4pt) `P≜⊤` #src[`lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e`,
 `lean:AOP.A8_6_Tour.tour_sort_dropr@12e55048`], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
 `g₂≜list([start,dropr])`.
 ]]<tour-defn>
@@ -7087,7 +7087,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [`(𝟙×R) dropl⊑dropl R` #h(6pt) #src[FALSE] \ `(𝟙×R) dropr⊑dropr R` #h(6pt) #src[FALSE]],
   [neither drop is monotonic on `R`: the two edges it adds and removes depend on `head` and `next`
    of both lists],
-  [`(𝟙×Q) dropl⊑dropl Q` \ `(𝟙×Q) dropr⊑dropr Q`],
+  [`(𝟙×Q) dropl⊑dropl Q` \ `(𝟙×Q) dropr⊑dropr Q`
+   #src[`lean:AOP.A8_6_Tour.tour_mono_dropl@72fb7ce1`,
+   `lean:AOP.A8_6_Tour.tour_mono_dropr@950fdec0`]],
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
 )]<tour-mono>
@@ -7115,7 +7117,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
     #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city —
-     B&dM §8.6, p. 215]],
+     B&dM §8.6, p. 215. `lean:AOP.A8_6_Tour.tour_laws@033921a1`]],
   table.header([*circuit* — one wire, `[City]` to `[City]×[City]`; the algebra inside the functorial
     box], [*Hinze–Marsden*]),
 
