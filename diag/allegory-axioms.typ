@@ -155,9 +155,9 @@ diagrams.
     [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]], [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]],
 
   [`∪⊣Δ`], [`(A⟶B)²⟶` \ `(A⟶B)`], [`(R,S)↦` \ `(R∪S,R∪S)`],
-    [`R⊑R∪S` #src[`lean:Freyd.S2_20.le_union_left@0a8565e2`]], [`R∪R⊑R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]],
+    [`R⊑R∪S` #src[`lean:Freyd.S2_20.le_union_left@0a8565e2`]], [`R∪R⊑R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]],
     [`(R∪T)∪(S∪U)=` \ `(R∪S)∪(T∪U)`], [`Δ(R∩S)=` \ `ΔR∩ΔS`],
-    [`R∪R=R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]], [`R∪R=R` #src[`lean:Freyd.S2_20.union_idem@6e40d711`]],
+    [`R∪R=R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]], [`R∪R=R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]],
 
   [`⊥⊣!`], [`{*}⟶` \ `(A⟶B)`], [—], [—], [`⊥⊑R` #src[`lean:Freyd.S2_20.zero_le@4399de93`]], [—], [—], [—], [—],
 
@@ -167,7 +167,7 @@ diagrams.
     [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
 
   [`S·⊣S\`], [`(B⟶C)⟶` \ `(A⟶C)`], [`S\S`], [`R⊑S\(SR)`], [`S(S\T)⊑T`],
-    [`S(R∪T)=` \ `SR∪ST` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`S(R∪T)=` \ `SR∪ST` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
     [`S\(R∩T)=` \ `S\R∩S\T` #src[`lean:Freyd.S2_30.leftDiv_inter@ba9dda1e`]],
     [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
 
@@ -185,7 +185,7 @@ diagrams.
     [`(R∩S)f°=` \ `Rf°∩Sf°` #src[`lean:AOP.A4_2.simple_dist_inter_recip@9d565a77`]], [`ff°f=f`], [`f°ff°=f°`],
 
   [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[`lean:Freyd.S2_30.map_entire_le@833e9621`]], [`f°f⊑𝟙`],
-    [`f°(X∪Y)=` \ `f°X∪f°Y` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`f°(X∪Y)=` \ `f°X∪f°Y` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
     [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
   [`i⊣E`], [`Map↪Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶EA`], [`∋:EB⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
@@ -273,14 +273,14 @@ diagrams.
     [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]], [—], [—],
 
   [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`T(X₁∪X₂)=` \ `TX₁∪TX₂` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
+    [`T(X₁∪X₂)=` \ `TX₁∪TX₂` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
     [`(X₁∪X₂)g=` \ `X₁g∪X₂g` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` #src[`lean:Freyd.S2_20.comp_union_distrib@bd91d212`]],
-    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)` #src[`lean:Freyd.S2_20.inter_union_distrib@83bb6087`]],
+    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
+    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)` #src[`lean:Freyd.Alg.DistributiveAllegory.inter_union_distrib@83bb6087`]],
     [`(X₁∪X₂)°=` \ `X₁°∪X₂°` #src[`lean:Freyd.S2_20.recip_union@d1eae8a9`]], [—], [—],
 
-  [*`⊥`*], [`⊥T=⊥` #src[`lean:Freyd.S2_20.zero_comp@77e0792c`]], [`T⊥=⊥` #src[`lean:Freyd.S2_20.comp_zero@ee8988af`]],
-    [`⊥g=⊥` #src[`lean:Freyd.S2_20.zero_comp@77e0792c`]], [`g°⊥=⊥` #src[`lean:Freyd.S2_20.comp_zero@ee8988af`]],
+  [*`⊥`*], [`⊥T=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c`]], [`T⊥=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af`]],
+    [`⊥g=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c`]], [`g°⊥=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af`]],
     [`T∩⊥=⊥` #src[`lean:Freyd.S2_50.inter_zero@d458c7d7`]],
     [`⊥°=⊥` #src[`lean:Freyd.S2_20.recip_zero@49eaea12`]], [—], [—],
 )]<adj-cross>
