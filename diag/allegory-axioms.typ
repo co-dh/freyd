@@ -1637,8 +1637,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 #disp[#definition[
 For `R : A⟶B`,
 #grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
-  [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB`],
-  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°`],
+  [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB` #src[`lean:AOP.A5_4.powerRel@80c5b402`]],
+  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[`lean:AOP.A4_6.existsImage@db266886`]],
 )
 
 `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)`
@@ -2004,11 +2004,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [base functor `F`],
   [`F(X)=1+X`],
-  [`F(X)=1+A×X`],
+  [`F(X)=1+A×X` #src[`lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7`]],
 
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
-  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]`],
+  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[`lean:AOP.A6_ConsList.initial@79b3402c`]],
 
   [the fold, pointwise],
   [`⦇[c,f]⦈ zero=c` \ `⦇[c,f]⦈ (succ n)=f (⦇[c,f]⦈n)`],
