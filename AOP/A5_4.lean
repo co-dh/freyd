@@ -92,7 +92,7 @@ theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.pow
     components already match on the nose (both are `(∋a≫f)/∋b`); the term₁ component is
     identified with the reciprocal of the OTHER division component of `existsImage f`'s
     `symmDiv` unfolding via an indirect (Yoneda-style) argument using `map_shunt_left`. -/
-theorem powerRel_map {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : powerRel f = existsImage f := by
+public theorem powerRel_map {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : powerRel f = existsImage f := by
   have hterm1 : ((∋ a)° \ (f ≫ (∋ b)°)) = (∋ b / (∋ a ≫ f))° := by
     have dir1 : ((∋ a)° \ (f ≫ (∋ b)°)) ⊑ (∋ b / (∋ a ≫ f))° := by
       have step1 : (∋ a)° ≫ ((∋ a)° \ (f ≫ (∋ b)°)) ⊑ f ≫ (∋ b)° := leftDiv_comp_le _ _
@@ -230,7 +230,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     (applied to the `x`-leg and, after a flip, the `z`-leg) to give `x°≫h ⊑ powerRel R` and
     `h°≫z ⊑ powerRel S`.  Since `h` is entire, `x°≫z ⊑ x°≫(h≫h°)≫z = (x°≫h)≫(h°≫z) ⊑
     powerRel R ≫ powerRel S`. -/
-theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     powerRel (R ≫ S) = powerRel R ≫ powerRel S := by
   apply le_antisymm _ (powerRel_comp_le R S)
   obtain ⟨w, x, z, hxmap, hzmap, hxz, _hjoint⟩ :=

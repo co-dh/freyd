@@ -108,7 +108,7 @@ theorem existsImage_id {a : 𝒜} : existsImage (Cat.id a) = Cat.id (PowerAllego
   rw [Cat.comp_id, Λ_eps_reflection]
 
 /-- `E` is functorial: `E (R ≫ S) = E R ≫ E S`. -/
-theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem existsImage_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     existsImage (R ≫ S) = existsImage R ≫ existsImage S := by
   have h := Λ_absorption (∋ a ≫ R) S
   rw [Cat.assoc] at h
@@ -132,7 +132,7 @@ theorem singletonMap_natural {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
     functions and `Λ` is the isomorphism between relations and Kleisli arrows. -/
 
 /-- `bigUnion = E ∋` (definitional: both unfold to `Λ (∋' ≫ ∋)`). -/
-theorem bigUnion_eq_existsImage_eps {a : 𝒜} :
+public theorem bigUnion_eq_existsImage_eps {a : 𝒜} :
     (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj a)
       = existsImage (∋ a) := rfl
 
@@ -142,7 +142,7 @@ theorem bigUnion_singleton {a : 𝒜} :
   rw [bigUnion_eq_existsImage_eps, singletonMap, Λ_absorption, Cat.id_comp, Λ_eps_reflection]
 
 /-- Monad law `μ·Pτ = id`: `E singletonMap ≫ bigUnion = 1`. -/
-theorem bigUnion_existsImage_singleton {a : 𝒜} :
+public theorem bigUnion_existsImage_singleton {a : 𝒜} :
     existsImage (singletonMap (a := a)) ≫ bigUnion = Cat.id (PowerAllegory.powerObj a) := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, Λ_eps_eq', existsImage_id]
 
@@ -242,7 +242,7 @@ public theorem Λ_eq_singleton_existsImage {a b : 𝒜} (R : a ⟶ b) :
   exact h.symm
 
 /-- `E R = E (Λ R) ≫ bigUnion`. -/
-theorem existsImage_eq_Λ_bigUnion {a b : 𝒜} (R : a ⟶ b) :
+public theorem existsImage_eq_Λ_bigUnion {a b : 𝒜} (R : a ⟶ b) :
     existsImage R = existsImage (Λ R) ≫ bigUnion := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, Λ_eps_eq']
 

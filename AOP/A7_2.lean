@@ -49,7 +49,7 @@ public theorem monotonicAlg_iff_conj (hf : Map f) : MonotonicAlg f R ↔ f° ≫
   (map_shunt_left hf (F.map R ≫ f) R).symm
 
 /-- Function form (sandwich), for `f` a MAP: `FR ⊆ f°·R·f`, mirrored. -/
-theorem monotonicAlg_iff_sandwich (hf : Map f) : MonotonicAlg f R ↔ F.map R ⊑ f ≫ R ≫ f° := by
+public theorem monotonicAlg_iff_sandwich (hf : Map f) : MonotonicAlg f R ↔ F.map R ⊑ f ≫ R ≫ f° := by
   rw [← Cat.assoc]
   exact map_shunt_right hf (F.map R) (f ≫ R)
 

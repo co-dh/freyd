@@ -220,6 +220,16 @@ public theorem RelProd.map_comp_pair {P : RelProd a b} {d : 𝒜} {f : d ⟶ c} 
   show f ≫ (R ≫ P.outl° ∩ S ≫ P.outr°) = (f ≫ R) ≫ P.outl° ∩ (f ≫ S) ≫ P.outr°
   rw [simple_dist_inter hf.2, Cat.assoc, Cat.assoc]
 
+/-- For an arbitrary `X` only one half of Ex 5.9 survives: `X·⟨R,S⟩ ⊑ ⟨X·R,X·S⟩`, mirrored
+    `X ≫ P.pair R S ⊑ P.pair (X ≫ R) (X ≫ S)` — composition on the left is only lax over the
+    defining meet unless `X` is simple. -/
+public theorem RelProd.comp_pair_le {P : RelProd a b} {d : 𝒜} (X : d ⟶ c)
+    (R : c ⟶ a) (S : c ⟶ b) : X ≫ P.pair R S ⊑ P.pair (X ≫ R) (X ≫ S) := by
+  show X ≫ (R ≫ P.outl° ∩ S ≫ P.outr°) ⊑ (X ≫ R) ≫ P.outl° ∩ (X ≫ S) ≫ P.outr°
+  refine le_inter ?_ ?_
+  · rw [Cat.assoc]; exact comp_mono_left X (inter_lb_left _ _)
+  · rw [Cat.assoc]; exact comp_mono_left X (inter_lb_right _ _)
+
 /-! ## Ex 5.6:  functoriality shape of `prodMap` — identity and converse -/
 
 /-- `prodMap` of the two identities is the identity, via the joint-monic identity. -/
