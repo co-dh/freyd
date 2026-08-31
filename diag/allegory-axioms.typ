@@ -6860,11 +6860,17 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `wrap` that
 // §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
 #disp[#definition[
-`vol,wt : Item⟶Real`, #h(4pt) `value≜list(vol) sum`, #h(4pt) `weight≜list(wt) sum`.
+`vol,wt : Item⟶Real`, #h(4pt) `value≜list(vol) sum`, #h(4pt) `weight≜list(wt) sum`
+#src[`lean:AOP.A5_6_ListCombinators.total_eq@bb0818ee`].
 
-`subseq=⦇[nil,cons]∪[nil,π₂]⦈`, #h(4pt) `within w` the coreflexive on `xs` with `weight xs≤w`.
+`subseq=⦇[nil,cons]∪[nil,π₂]⦈` #src[`lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6`,
+`lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77`], #h(4pt) `within w` the coreflexive on `xs` with
+`weight xs≤w`.
 
-`R≜value≥value°`, #h(4pt) `Q≜R∩(weight≤weight°)`, #h(4pt) `P≜R`.
+`R≜value≥value°` #src[`lean:AOP.A8_4_Knapsack.R_eq@1c13d35d`], #h(4pt)
+`Q≜R∩(weight≤weight°)` #src[`lean:AOP.A8_4_Knapsack.Q_eq@22acbe51`], #h(4pt)
+`P≜R` #src[`lean:AOP.A8_4_Knapsack.knap_sort_cons@2219de33`,
+`lean:AOP.A8_4_Knapsack.knap_sort_drop@ab5c746c`].
 
 `FA=1+Item×A`, #h(4pt) `listcp(F)=wrap+cpr`, #h(4pt) `g₁≜list([nil,cons]) filter(within w)`
 #h(4pt) `=[list(nil),h₁]`, #h(4pt) `g₂≜list([nil,π₂])=[list(nil),h₂]`.
@@ -6880,7 +6886,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [`(𝟙×R) (cons (within w))⊑cons (within w)R` \ #src[FALSE]],
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
-  [`(𝟙×Q) (cons (within w))⊑cons (within w)Q` \ `(𝟙×Q)π₂⊑π₂Q`],
+  [`(𝟙×Q) (cons (within w))⊑cons (within w)Q` \ `(𝟙×Q)π₂⊑π₂Q`
+   #src[`lean:AOP.A8_4_Knapsack.knap_mono_cons@978d716e`,
+   `lean:AOP.A8_4_Knapsack.knap_mono_drop@b49841b3`]],
   [both halves are monotonic on `Q` once ties in value are broken by weight],
 )]<knap-mono>
 
@@ -6907,7 +6915,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
     #src[the knapsack problem, as a fold that thins the packings kept at each item —
-     B&dM §8.4, p. 206]],
+     B&dM §8.4, p. 206. `lean:AOP.A8_4_Knapsack.knap_laws@6299a9fe`]],
   table.header([*circuit* — one wire, `[Item]` to `[Item]`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -6920,7 +6928,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep(EQ, kb-pic(none, (kb-fus, kb-est)),
     [#frc([`⦇[nil,cons](within w)∪[nil,π₂]⦈`])` est(R)` \
-     #src[@cata-fusion, weights non-negative]])],
+     #src[@cata-fusion, weights non-negative. `lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d`]])],
   [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 1.95, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
 
@@ -6957,7 +6965,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 `white w x=w−width x`, #h(4pt) `collect≜list(sqr) sum`, #h(4pt) `waste w≜init list(white w) collect`.
 
-`R≜(waste w)≤(waste w)°`, #h(4pt) `Q≜R∩(head head°)`, #h(4pt) `P≜⊤`.
+`R≜(waste w)≤(waste w)°` #src[`lean:AOP.A8_5_Paragraph.R_eq@cf0ea074`], #h(4pt)
+`Q≜R∩(head head°)` #src[`lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf`], #h(4pt)
+`P≜⊤` #src[`lean:AOP.A8_5_Paragraph.para_sort_new@30222bce`,
+`lean:AOP.A8_5_Paragraph.para_sort_glue@bd4641b6`].
 
 `g₁≜list([wrap wrap,new])`, #h(4pt) `g₂≜list([wrap wrap,glue]) filter(ok w)`, #h(4pt)
 `start≜wrap wrap wrap`, #h(4pt) `h₁≜list(new)`, #h(4pt) `h₂≜list(glue) filter(ok w)`.
@@ -6973,7 +6984,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [`glue` is not monotonic on `R`: the waste of a paragraph depends on its whole first line, so no
    greedy algorithm solves this],
   [`(𝟙×Q) new⊑new Q` \ `(𝟙×Q) (glue (ok w))⊑glue (ok w)Q` \ #src[`cons` monotonic on
-   `collect≤collect°`]],
+   `collect≤collect°`. `lean:AOP.A8_5_Paragraph.para_mono_new@d0ba9ffb`,
+   `lean:AOP.A8_5_Paragraph.para_mono_glue@0149af32`]],
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [`merge ⊤=cat`; #h(4pt) `P≜head prefix head°` also serves],
   [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
@@ -7006,7 +7018,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
     #src[a paragraph laid out as a fold that thins the layouts kept at each word —
-     B&dM §8.5, p. 210]],
+     B&dM §8.5, p. 210. `lean:AOP.A8_5_Paragraph.para_laws@2ed8ee5e`]],
   table.header([*circuit* — one wire, `list⁺ Word` to `Para`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -7019,14 +7031,16 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep(EQ, ab-pic(none, (ab-fus, ab-est)),
     [#frc([`⦇[wrap wrap,new∪(glue (ok w))]⦈`])` est(R)` \
-     #src[@cata-fusion, every word fits on a line by itself]])],
+     #src[@cata-fusion, every word fits on a line by itself.
+     `lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24`]])],
   [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
     ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`est(R)`], -0.32)),
     ab-bot)],
 
   [#vstep(EQ, ab-pic(none, (ab-split, ab-est)),
     [#frc([`⦇[wrap wrap,new]∪([wrap wrap,glue] (ok w))⦈`])` est(R)` \
-     #src[the algebra as `(f₁p₁)∪(f₂p₂)`, `p₁≜𝟙` — @thinlist-defn]])],
+     #src[the algebra as `(f₁p₁)∪(f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
+     `lean:AOP.A8_5_Paragraph.para_spec@f39d2ce8`]])],
   // Empty: the step renames the algebra and the panel above already draws the reduce.
   [],
 
@@ -7057,8 +7071,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 `cost (xs,ys)=outcost xs+incost ys`, #h(4pt) `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`,
 #h(4pt) `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`.
 
-`next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `R≜cost≤cost°`, #h(4pt)
-`Q≜R∩(next2 next2°)`, #h(4pt) `P≜⊤`, #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
+`next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `R≜cost≤cost°`
+#src[`lean:AOP.A8_6_Tour.R_eq@15ad4adc`], #h(4pt)
+`Q≜R∩(next2 next2°)`, #h(4pt) `P≜⊤` #src[`lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e`,
+`lean:AOP.A8_6_Tour.tour_sort_dropr@12e55048`], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
 `g₂≜list([start,dropr])`.
 ]]<tour-defn>
 
