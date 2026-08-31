@@ -1097,12 +1097,14 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 == Fork `⟨R,S⟩`
 
 #disp[#definition[
-The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°`, where `(π₁,π₂)` is the
-tabulation of `⊤`.
+The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[`lean:AOP.A5_2.pair@df1791ca`],
+where `(π₁,π₂)` is the tabulation of `⊤`
+#src[`lean:AOP.A5_2.eq_topMor@31e6622f`, `lean:AOP.A5_2.joint_id@f9cba0f7`].
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
-  `⟨R,S⟩π₁=Dom(S)R` #h(1.4cm) `⟨R,S⟩π₂=Dom(R)S`
+  `⟨R,S⟩π₁=Dom(S)R` #src[`lean:AOP.A5_2.pair_outl@5cb53112`] #h(1.4cm)
+  `⟨R,S⟩π₂=Dom(R)S` #src[`lean:AOP.A5_2.pair_outr@a6bc4ebd`]
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
@@ -1148,7 +1150,8 @@ the monoid's unit law:
 === Relational product `R×S`
 
 #disp[#definition[
-`R×S≜⟨π₁R,π₂S⟩`, a relator in each argument but no longer a categorical product.
+`R×S≜⟨π₁R,π₂S⟩` #src[`lean:AOP.A5_2.prodMap@28e34ad0`], a relator in each argument
+#src[`lean:AOP.A5_2.prod@64fdb8dc`] but no longer a categorical product.
 ]]<relprod-defn>
 
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
@@ -1746,7 +1749,8 @@ An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
 An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
 `α`#sub[`A`]` h=F(h)α`#sub[`B`].
 The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
-`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`].
+`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`]
+#src[`lean:AOP.A5_5.InitialAlgebra@a45a8436`].
 
   #row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
     let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
@@ -2044,7 +2048,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`], [`α`#sub[`EA`]], `EA`,
     typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2,
     outsplit: (`E`, `A`)),
-  [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$],
+  [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
+   #src[`lean:AOP.A5_5.Λ_relCata@5b63ea5d`, `lean:AOP.A5_5.relCata_unfold@22ba1c5c`]],
 )]<cata-map-square>
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
@@ -3284,13 +3289,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
     node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
   }),
-  [`F(R)φ⊑φR`],
+  [`F(R)φ⊑φR` #src[`lean:AOP.A7_2.MonotonicAlg@26944450`]],
 )]<mon-str>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
 #disp[#definition[
-`f : FA⟶A` *distributes over* `R` if #h(4pt) `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`.
+`f : FA⟶A` *distributes over* `R` if #h(4pt) `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`
+#src[`lean:AOP.A7_2.Distributes@e061e29e`].
 
 `+` distributes over `≤`, at the point level #h(4pt)
 `min xs+min ys=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
@@ -3372,7 +3378,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
-    #src[Theorem 7.1, `f` a map, `R` reflexive]],
+    #src[Theorem 7.1, `f` a map, `R` reflexive;
+      `lean:AOP.A7_2.distributes_of_monotonicAlg@a731afab`,
+      `lean:AOP.A7_2.monotonicAlg_of_distributes@c181786e`]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp({
@@ -3444,7 +3452,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
-    [`f°F(R)f⊑R` \ #src[`f` a map, so monotonic on `R` and `R°` together]])],
+    [`f°F(R)f⊑R` \ #src[`f` a map, so monotonic on `R` and `R°` together;
+     `lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64`,
+     `lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47`]])],
   [#trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
