@@ -94,9 +94,11 @@ def branch(formula):
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
-# Slope mode: the object wire is a polyline hugging the lanes already born, so a lane born at a
-# bead drops straight down from the dot instead of reaching sideways; False = the old vertical.
-SLOPE = True
+# Slope mode: the object wire is a polyline hugging the live lanes.  "right": legs sit right of the
+# arms they replace and drop straight from the dot, so the wire runs away rightward (6c26635).
+# "left": legs sit LEFT of the arms, so the wire sweeps top-right to bottom-left and absorbs each
+# innermost arm at its own column (IntroString p.79, 3.8b).  None = the old vertical.
+SLOPE = "right"
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "hm-sigs.json")
 
@@ -419,7 +421,8 @@ def elaborate(formula, src, tgt, table):
         for l in arms:
             l.dies = i
         # `made` is COLUMN order, not birth order: `η∘M` opens its wire left of the one it keeps.
-        at = made.index(keep[0]) if keep else len(made)
+        at = made.index(arms[0]) if arms and SLOPE == "left" else \
+            made.index(keep[0]) if keep else len(made)
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
@@ -466,12 +469,19 @@ def layout(rows, made, otop, obot, cert):
     hh = (n + 1) * DY
 
     def xat(y):
-        """The object wire's x at a height: one lane-gap right of every lane already born there,
-        and AT the innermost leg born at that very height — the bead sits on that leg."""
+        """The object wire's x at a height.  "right": one lane-gap right of every lane already born
+        there, and AT the innermost leg born at that height — it never comes back after a death.
+        "left": one gap right of every lane ALIVE there, and AT the innermost arm dying at that
+        height — the wire absorbs it at its own column and is free to come back left below."""
         c = [X0]
         for l in made:
             yb = hh if l.born == TOP else ys[l.born]
-            if l.born == TOP or yb > y + 1e-9 or (l in unit and abs(yb - y) <= 1e-9):
+            yd = 0.0 if l.dies == n else ys[l.dies]
+            if SLOPE == "left":
+                if yb < y - 1e-9 or yd > y + 1e-9:
+                    continue                   # not yet born, or already dead
+                c.append(l.x if l.dies != n and abs(yd - y) <= 1e-9 else l.x + DX)
+            elif l.born == TOP or yb > y + 1e-9 or (l in unit and abs(yb - y) <= 1e-9):
                 c.append(l.x + DX)
             elif abs(yb - y) <= 1e-9:
                 c.append(l.x)
@@ -480,9 +490,12 @@ def layout(rows, made, otop, obot, cert):
     op = None
     if SLOPE:
         op = [[xat(y), y] for y in [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]]
-        if all(q[0] == xo for q in op):
+        if all(q[0] == op[0][0] for q in op):
             op = None
-    rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY, "w": xo + PAD,
+    if SLOPE == "left":                # the wire's top x, which the sweep and both ports key on
+        xo = xat(hh)
+    rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
+            "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
                        "bot" if l.dies == n else ys[l.dies],

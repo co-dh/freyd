@@ -2439,7 +2439,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
     // across the lanes between, so a wire inside the span meets the bead rather than passing it.
     let ys = beads.filter(bd => bd.at(3, default: none) != none
-      and bd.at(3) <= l.at(0) and l.at(0) < xo
+      and bd.at(3) <= l.at(0) and l.at(0) < xat(bd.at(0))
       and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
       and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
     let kb = if l.at(1) == "top" or l.at(4) != none { none }
@@ -2451,7 +2451,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
     hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { black }) }
-  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in bot {
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath)
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
