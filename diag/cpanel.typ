@@ -12,7 +12,7 @@
 #import "@preview/cetz:0.3.4"
 #import "circuit.typ": gbox, wire, bend, delta, nabla, bang, cut, tape, tape-join, BH, TINT, TAPEEDGE, lw
 #import "draw.typ": lab, node
-#import "note-style.typ": P
+#import "note-style.typ": P, TYCOL
 
 #let d = cetz.draw
 
@@ -43,7 +43,9 @@
 #let CGAP = 0.34        // wire stub before the first box, between two boxes, and after the last
 #let CPAD = 0.34        // label to box edge, each side
 #let CNODE = 0.34       // the white inset `node` paints round a seam label, in canvas units
-#let CPORT = 0.34       // wire end to the nearest edge of a port label
+#let CPORT = 0.05       // wire end to its type label: a hairline, so the glyph does not overprint the stroke
+#let CLEAD = 0.34       // wire run past each side of a label sitting above it, so it clears the bar and the box
+#let CABOVE = 0.25      // a label sitting above its wire: text centre to the stroke
 // A run carrying a two-line fraction label is raised WHOLE — one shared height, or the wire steps
 // up and down between boxes (`boxrun`'s own rule, and why the note's `twrun` passes `TH`).
 #let CTH = 1.2
@@ -86,7 +88,7 @@
       if str(i) in seam {
         let g = cu(measure(tx(seam.at(str(i)))).width, length) + 2 * CNODE
         body.push(wire((x, 0), (x + g, 0), invert: invert))
-        body.push(node(x + g / 2, 0, black, tx(seam.at(str(i))))); x = x + g
+        body.push(node(x + g / 2, 0, TYCOL, tx(seam.at(str(i))))); x = x + g
       }
     }
     let (x2, s) = stub(x, n); body.push(s)
@@ -144,26 +146,26 @@
   if t.k == "cata" {
     let p = pic(t.body, length, invert: invert)
     let yh = calc.max(p.hh, (t.nin - 1) * UIP) + 0.28
-    let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CPORT
+    let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
     let x0 = CBAR + ld
     let xr = x0 + p.w + CBAR
     // The CARRIER types the fold's OUTPUT WIRE, so it sits on that wire's own stub, exactly like
     // an input port label sits on its wire (below) — never floating over the box.  `scripts/circuit`
     // sends `label: none` when the panel or the next box already names that same type at this
     // wire's end — drawing it twice would put `[A]` on the wire and its end (§13.3.3b).
-    let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CPORT }
+    let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
       banana(0, yh, invert: invert)
       banana(xr + CBAR, yh, right: true, invert: invert)
       for (i, y) in ys(t.body.nin).enumerate() {
         wire((CBAR, y), (x0, y), invert: invert)
-        lab(CBAR + ld / 2, y + 0.3, if invert { white } else { black }, tx(t.port.at(i)))
+        lab(CBAR + ld / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.port.at(i)))
       }
       d.group({ d.translate((x0, 0)); p.body })
       for y in ys(t.nout) {
         wire((x0 + p.w, y), (xr + CBAR + og, y), invert: invert)
         if t.label != none {
-          lab(xr + CBAR + og / 2, y + 0.3, if invert { white } else { black }, tx(t.label))
+          lab(xr + CBAR + og / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.label))
         }
       }
     }
@@ -257,7 +259,7 @@
       }
       for (j, y) in ys(ports.len()).enumerate() {
         wire((xf, oy + y), (xf + lead, oy + y))
-        lab(xf + lead / 2, oy + y + 0.32, black, tx(ports.at(j)))
+        lab(xf + lead / 2, oy + y + CABOVE, TYCOL, tx(ports.at(j)))
       }
       d.group({ d.translate((xf + lead, oy)); p.body; wire((p.w, 0), (mw - lead, 0)) })
     }
@@ -272,10 +274,10 @@
   let p = pic(t, length)
   p.body
   for (i, y) in ys(t.nin).enumerate() {
-    lab(-CPORT - cu(measure(tx(t.src.at(i))).width, length) / 2, y, black, tx(t.src.at(i)))
+    lab(-CPORT - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
   }
   for (i, y) in ys(t.nout).enumerate() {
-    lab(p.w + CPORT + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, black, tx(t.tgt.at(i)))
+    lab(p.w + CPORT + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
   }
 }
 
