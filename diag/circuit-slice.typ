@@ -11,9 +11,9 @@
     (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
   ), seams: (
-    (0, "E(F([A]))", ),
-    (1, "E([A])", ),
-  ), src: ("F([A])", ), tgt: ("[A]", )),
+    (0, "EF[A]", ),
+    (1, "E[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))
 
 // 13.3.3c r1  (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)   [A×[A] ⟶ [A]]
@@ -72,7 +72,7 @@
         ("A", "[A]", ),
       )),
     (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("F([A])", ), tgt: ("[A]", )),
+  ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))
 
 // ∩ (13.3.3b)  prefix° prefix∩R   [[A] ⟶ [A]]
@@ -125,7 +125,7 @@
           (),
           ("A", "[A]", ),
         )),
-    ), seams: ()), label: none, port: ("F([A])", ), src: ("[A]", ), tgt: ("[A]", )),
+    ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,⊸ nil ∪ cons]⦈", src: "[A]", tgt: "[A]"))
 
 // ⦇⦈ (13.4.4a)  ⦇S⦈   [tree(A) ⟶ [A]×[A]]
@@ -143,7 +143,7 @@
   ), seams: (
     (0, "E(tree(A))", ),
     (1, "E([A]×[A])", ),
-    (2, "E([A])", ),
+    (2, "E[A]", ),
   ), src: ("tree(A)", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
@@ -158,6 +158,6 @@
   ), seams: (
     (0, "E(tree(A))", ),
     (1, "E([A]×[A])", ),
-    (4, "E([A])", ),
+    (4, "E[A]", ),
   ), src: ("tree(A)", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
