@@ -17,7 +17,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
-.PHONY: p w cite scan scan-strict cover diagram books hm-check hm-sigs
+.PHONY: p w cite spell scan scan-strict cover diagram books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -27,13 +27,21 @@ DB    := .lake/build/refactor-index.db
 # notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
 # box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
 # its own copy of those, so nothing reaches above diag/ any more.
-p: $(STAMP) cite
+p: $(STAMP) cite spell
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
 	./scripts/cite-check $(TYP)
+
+# Every string a `cert:` states, parsed and written back: `spell(parse(x)) == x`.  BESIDE `cite`
+# and before the compile for the same reason — a formula the parser cannot reproduce is a formula
+# `scanline` is only guessing at, and a hand-spaced alias is how that drift gets in.  It pays a
+# `typst query`, which `scan` refuses to; this one reads the note's STRINGS, not its geometry, and
+# the strings are what every other check quotes.
+spell:
+	./scripts/scanline --spell diag/allegory-axioms.typ
 
 # The displays that carry NO `lean:` marker, each with the statements worth reading against it.
 # A PROMPT, not a check: it never passes or fails and nothing depends on it, because what it asks
