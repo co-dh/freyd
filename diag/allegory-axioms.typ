@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -2358,7 +2358,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
 // `xat` is the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are
 // knees shared by every arm into one bead — equal knees keep the arms' x order, so they nest.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none) = {
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none) = {
+  let wc = if col == none { (:) } else { (col: col) }
   let top = if y0 == "top" { h } else { y0 }
   let bot = if y1 == "bot" { 0 } else { y1 }
   let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
@@ -2369,13 +2370,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let k = if kd == none { dknee(x, xat(y1), top - bot) } else { kd }
     ((x, y1 + k), (xat(y1), y1))
   }
-  hm-wire(pts)
+  hm-wire(pts, ..wc)
   if un != none { hm-bead((x, y0), un) }
-  if nm != none { hm-name((x - 0.30, (top + bot) / 2), nm) }
+  if nm != none { hm-name((x - 0.30, (top + bot) / 2), nm, ..wc) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
-#let ddip(xat, h, x, y0, y1, ybs, nm, kb: none, kd: none) = {
+#let ddip(xat, h, x, y0, y1, ybs, nm, kb: none, kd: none, col: none) = {
+  let wc = if col == none { (:) } else { (col: col) }
   let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
   // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
   // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
@@ -2392,8 +2394,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let kdip = calc.min(0.30 * (xat(yb) - x), up * (hi - yb), dn * (yb - lo))
     pts += ((x, yb + kdip), (xat(yb), yb), (x, yb - kdip))
   }
-  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ked), (xat(b), b)) }))
-  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
+  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ked), (xat(b), b)) }), ..wc)
+  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm, ..wc) }
 }
 
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
@@ -2456,14 +2458,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let kb = if l.at(1) == "top" or l.at(4) != none { none }
       else { gk.at("b" + str(l.at(1)), default: none) }
     let kd = if l.at(2) == "bot" { none } else { gk.at("d" + str(l.at(2)), default: none) }
-    if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd) }
-    else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd) }
+    // The lane's functor is its mid-run name, else the port label at its column: `FCOL` keys on it.
+    let nm = if l.at(3) != none { l.at(3) } else {
+      let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
+      if q == none { none } else { q.at(1) } }
+    let col = if nm == none { none } else { FCOL.at(plain(nm), default: none) }
+    if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
+    else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd, col: col) }
   }
   for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { black }) }
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
   for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath)
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,

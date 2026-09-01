@@ -56,6 +56,10 @@
 // The FUNCTORS of `i ⊣ E`, keyed by name and OFF the palette above: the `Λ` panels set these wires
 // beside typed object wires.  `i` is black, this file's colour for a functor wire; `E` marks the pair.
 #let ADJC = (i: black, E: rgb("#ea580c"))
+// Functor wires (`dpanel` lanes) are coloured BY NAME at the user's request (2026-09-01): once a wire
+// leaves its bead nothing else says which functor it is.  Muted, so the black beads stay loudest.
+#let FCOL = ("E": rgb("#6b4c9a"), "list": rgb("#3f7d4e"), "tree": rgb("#8c5a2b"), "Δ": rgb("#b0508a"),
+  "A×−": rgb("#4a6fa5"), "Int×−": rgb("#7a7a3a"), "F": rgb("#5c6b7a"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
