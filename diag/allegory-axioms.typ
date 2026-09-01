@@ -7916,13 +7916,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, gb-estQ, gb-FXh)),
     [`(μX : `#frc([`T°`])` est(Q) F(X)h)` \
-     #src[Theorem 10.1, the hypotheses of Theorem 9.2 and, in addition, `Q` a *connected* preorder
-      on the sets #frc([`T°`]) returns, so that #frc([`T°`])` est(Q)` is entire. `est(Q)` stands
-      where `thin Q` stood, so `P` and the transpose of the step disappear from the recursion.
-      Proposition 9.4 is still the way to get both conditions. @greedy-thm72 chooses among the
-      *results* of one relational step of a reduce; this one chooses among the *decompositions* of
-      the input, for an arbitrary `T` rather than an initial algebra, at the cost of `h` being a
-      map]])],
+     #src[Theorem 10.1]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire ends on the `E` lane:
   // bending in would cross `F`.  That free end is the whole difference from @dp-laws' second row.
   [#dp-pan(4.4, (((THU, 3.95), (THU, 2.55)), thw-arc(THM, 3.30, 0.90)),
@@ -7932,8 +7926,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
   [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, gb-estQi, gb-Ui)),
     [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` est(Qᵢ) Uᵢ` \
-     #src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥` — Proposition 9.1 with
-      `est` for `thin`]])],
+     #src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
   [#dp-pan(3.4, (((THU, 2.85), (THU, 1.40 + KNEE), (THO, 1.40)),),
@@ -8006,28 +7999,21 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      #src[Theorem 10.1 at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
       // lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608
-      decided at each step. `U` may be
-      any preorder on characters, and `a U b⟺a=TB∨a=b` puts `TB` below every character, so `est`
- prefers a tab to a blank; `F(⊤,R)α⊑αR` #src[] is
+      decided at each step. `F(⊤,R)α⊑αR`#src[].
       // lean:AOP.A10_2_Detab.entab_mono@b7c30f2e
-      left as an exercise. `detab prefix⊑R° detab` is
+      `detab prefix⊑R° detab` is
  FALSE #src[,
       // lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9
  ] — at `n=8`,
       // lean:AOP.A10_2_Detab.detab_len_of_short@66be497e
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
-      `[a,b,c,d,e,BL,BL]` is longer than any input giving it — so `V≜prefix°∩(fill fill°)` allows
-      only the prefixes that do not cross a tab stop, and `detab V°⊑R° detab`
+      `[a,b,c,d,e,BL,BL]` is longer than any input giving it, and `detab V°⊑R° detab`
  #src[]
       // lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac lean:AOP.A10_2_Detab.entab_V@ff19c265
-      holds. From
-      `nil V°=nil`, `fill V°=fill` (what `fill fill°` was added for) and `snoc V°⊑snoc∪(π₁V°)`,
-      left as exercises, comes `expand V°⊑expand∪(π₁V°)`
+      holds. `expand V°⊑expand∪(π₁V°)`
  #src[] — shortening the output either leaves the
       // lean:AOP.A10_2_Detab.expand_V_step@1e653239
-      last step alone or discards it — hence `detab V°⊑detab∪(init detab V°)`, and `init` inductive
-      makes the greatest solution the unique one: `detab V°⊑prefix detab`, with `prefix⊑R°`
-      finishing Proposition 9.4]])],
+      last step alone or discards it]])],
   // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
   // not the `F` under it, so its wire ends on the `E` lane.
   [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
@@ -8038,11 +8024,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(EQ, thpic([`String`], [`String`], none, (nb-Lexp, nb-estVU, nb-snoc)),
     [`(μX : (null→nil,`#frc([`expand°`])` est(V×U)(X×𝟙)snoc))` \
-     #src[Proposition 10.1: `nil` and `expand` have disjoint ranges.
-      #frc([`expand°`])` (xs⧺[a])={(ys,TB)∣fill ys=xs⧺[a]}∪{(xs,a)}`, and the first set is
-      non-empty iff `a=BL` and `col (xs⧺[a]) mod n=0` — the last output character came from a tab
-      only if it is a blank landing exactly on a tab stop. So the greedy step is
-      #frc([`expand°`])` est(V×U)(xs⧺[a])=(a=BL∧col (xs⧺[a]) mod n=0→(unfill xs,TB),(xs,a))`: emit
+     #src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
   [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
@@ -8053,8 +8035,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   [#vstep(EQ, [],
     [`entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt) #src[(10.1)] \
      #src[what makes `triple≜⟨unfill entab,⟨tbc,col⟩⟩` a snoc-list reduce: the output splits at the
-      last tab stop, `unfill xs` being the shortest prefix of `xs` with `fill (unfill xs)=fill xs`
-      and `tbc` the trailing blank count]])],
+      last tab stop]])],
   // No picture: `entab` is here read on points, and the equation relates two strings, not two
   // objects the panels carry.
   [],
@@ -8064,9 +8045,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      `base` returns `([],(0,0))`, #h(4pt) `op ((xs,(t,c)),a)=` \ #h(10pt)
      `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` #h(4pt) `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
      `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
-     #src[the program: one pass carrying the column and the count of pending blanks. Hold a blank
-      back, cash the held blanks in for a tab at a tab stop, flush them at a newline, flush them
-      before anything else]])],
+     #src[the program: one pass carrying the column and the count of pending blanks]])],
   [],
 ))]<entab-laws>
 
@@ -8124,17 +8103,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
     [`(μX : `#frc([`β°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
-     #src[Theorem 10.1. Both conditions need context. Monotonicity is (10.2)
-      `F(R∩(bagify bagify°))α⊑αR`, only schedules of one bag being compared: Proposition 9.3 at
-      `cost (xs⧺[j])=bmax (cost xs,penalty (perm xs,j))` — `penalty` sums the completion times of
-      `xs` and a sum does not see the order — with `α cost=F(⟨cost,bagify⟩)k` and `F(≤×𝟙)k⊑k≤`.
-      The greedy condition is (10.3) `(Q∩(ββ°))F(bagify°)α⊑F(bagify°)αR`; it rests on (10.4)
-      `α cost=⟨g,m⟩ bmax` with (10.5) `g≜[zero,penalty]` and (10.6) `m≜[zero,π₁ cost]` — the cost of
-      a schedule split into the penalty of its last job and the cost of the rest — and on (10.7)
-      `add⊑π₁R`, adding a job never lowers the cost, and (10.8) `β bagify°=F(bagify°) [nil,add]`,
-      `bagify°` being itself a reduce on bags; together `β bagify°⊑F(bagify°)m≤cost°`. What `Q` has
-      to satisfy is `F(bagify)Q°F(bagify°)=g≥g°`, and `Q≜f≤f°`, `f≜[zero,(bagify°×𝟙) penalty]`
-      meets it: a `Q`-minimum is a job of least penalty. No greedy *reduce* exists — one would also
+     #src[Theorem 10.1. No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
       schedule of the whole]])],
   // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
@@ -8156,8 +8125,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-pick, tb-sch)),
     [`schedule=(null→nil,pick (schedule×𝟙) snoc)` \
-     #src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function: repeatedly remove a job of least
-      penalty and put it last, quadratic in the number of jobs]])],
+     #src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
   [#ty-pan(4.0, (thw-in(THN, 4.0, 2.80), thw-arc(THM, 2.80, 1.20), thw-arc(THN, 2.80, 1.20),
       thw-out(THN, 1.20, 0)),
@@ -8220,8 +8188,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Linv, xb-est)),
     [`interval `#frc([`inrange val°`])` est(R)` \
-     #src[`intern≜val round` and `round°=interval inrange`; `round°` is not a map, but `interval`
-      is, so it comes out of the transpose]])],
+     #src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
   // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
   // the unit: the set the transpose opens starts on its target.
   [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
@@ -8230,23 +8197,16 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-LH, xb-est)),
     [`interval `#frc([`H`])` est(R)`, #h(4pt) `H≜⦇[arb,step]⦈°` \
-     #src[fusion: `val inrange°=⦇[arb,step]⦈`, since `zero inrange°=arb` and
-      `shift inrange°=(𝟙×inrange°) step` — the converse of `val`, cut down to intervals, is a reduce
-      on cons-lists]])],
+     #src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
+      reduce on cons-lists]])],
   [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
     ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
      (THO, 1.85, [`H`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
 
   [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
     [`interval (μX : `#frc([`[arb,step]°`])` est(Q) F(X)α)` \
-     #src[Theorem 10.1. `F(R)α⊑αR` is routine, `cons` being monotonic on `R`; the greedy condition
-      is `α°F(H°)Q°⊑R°α°F(H°)`, the converse of Theorem 10.1's. The decompositions of an interval
-      are #frc([`arb°`])` (a,b)=(a<0→{*},{})` and
-      #frc([`step°`])` (a,b)={(d,(10a−d,10b−d))∣0<10b−d<1}` — stop, or take one more digit — and
-      `0<10b−d₁<1` with `0<10b−d₂<1` force `d₁=d₂`, so `step°` is in fact a map and
-      #frc([`[arb,step]°`]) returns at most two elements. `Q≜(l°!°r)∪𝟙` need only choose between
-      them, and `! nil⊑cons R°`, from `! nil length⊑cons length≥`, makes it stop whenever stopping
-      is legal: the empty decimal is shorter than any other]])],
+     #src[Theorem 10.1: #frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
+      digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
   // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born.
   [#tx-pan(6.2, (((THU, 4.60), (THU, 3.10)), thw-arc(THM, 3.90, 1.60), thw-out(THN, 1.60, 0)),
@@ -8264,7 +8224,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(EQ, [],
     [`extern n=f (2n−1,2n+1)`, #h(4pt) `f (p,q)=(p≤0→[],[d]⧺f (10p−w d,10q−w d))` \
-     #src[`d=(10q) div w`, `w=2¹⁷`: the same in integer arithmetic only, as chapter 3 required of
+     #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
       `intern` — every interval reached is `(p/w,q/w)`]])],
   [],
 ))]<tex-laws>
