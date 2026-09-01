@@ -413,11 +413,11 @@ def fold(e, tbl, src, tgt):
     if b[2] != c:
         raise Unhandled(f"the algebra `{spell(e[1][0])}` lands on {oshow(b[2])}, not the carrier"
                         f" {oshow(c)} the fold is stated at")
-    # A `tgt` passed in means the caller already fixes this fold's output type — that is exactly
-    # the type the panel or the next box displays at this same wire, so drawing it again here would
-    # duplicate it (§13.3.3b showed `[A]` twice on one wire).  Only when the carrier had to be
-    # DECLARED here (tgt is None) does this box carry the sole label for it.
-    return pic("cata", src, c, b[3], body=lane(b), label=None if tgt is not None else oshow(c),
+    # A product carrier is drawn as its wires, never as a label (§13.4.4a: `[A]×[A]` is two wires
+    # each `[A]`).  A single-wire carrier is drawn only when it differs from that wire's own label.
+    cw = wires(c)
+    show = len(cw) == 1 and oshow(cw[0]) != oshow(c)
+    return pic("cata", src, c, b[3], body=lane(b), label=oshow(c) if show else None,
                port=[oshow(w) for w in wires(a)])
 
 

@@ -1,3 +1,4 @@
+circuit: 9 rows in CIRCUIT-GEN §5, 9 drawn, 0 blocked
 // 13.3.3d r1  S%∋ est(R°)   [F([A]) ⟶ [A]]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
