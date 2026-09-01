@@ -7,12 +7,22 @@
     "`map` says rectangle or chamfer (§3 rows 1-2), and an operator's `arg` is the arrow scheme its",
     "argument is checked against, which is what binds the variables `src`/`tgt` are written over.",
     "`x%∋` needs no row of its own: it takes `x`'s, with `E` wrapped round the target, and is a map.",
-    "One row per atom a GENERATED row has actually typed — §13.3.3's `S%∋ est(R°)` so far."
+    "One row per atom a GENERATED row has actually typed — CIRCUIT-GEN §5's three so far.",
+    "`polys` is the other half of §1.3: a functor as a coproduct of branch objects, which is what",
+    "`[x,y]` forks along and what the fusion law `F(R)[f,g]=[f,(𝟙×R)g]` puts the `𝟙` and the `R` on."
   ],
   "sigs": {
-    "S":   {"src": "F([x])", "tgt": "[x]", "map": false},
-    "R":   {"src": "[x]",    "tgt": "[x]", "map": false},
-    "est": {"arg": "a⟶a", "src": "E(a)", "tgt": "a", "map": false},
-    "E":   {"arg": "a⟶b", "src": "E(a)", "tgt": "E(b)", "map": true}
+    "S":      {"src": "F([x])", "tgt": "[x]", "map": false},
+    "R":      {"src": "[x]",    "tgt": "[x]", "map": false},
+    "p":      {"src": "A",      "tgt": "A",   "map": false},
+    "nil":    {"src": "𝟏",      "tgt": "[A]", "map": true},
+    "cons":   {"src": "A×[A]",  "tgt": "[A]", "map": true},
+    "prefix": {"src": "[A]",    "tgt": "[A]", "map": false},
+    "est":    {"arg": "a⟶a", "src": "E(a)", "tgt": "a",    "map": false},
+    "E":      {"arg": "a⟶b", "src": "E(a)", "tgt": "E(b)", "map": true},
+    "list":   {"arg": "a⟶b", "src": "[a]",  "tgt": "[b]",  "map": false}
+  },
+  "polys": {
+    "F": ["𝟏", "A×x"]
   }
 }

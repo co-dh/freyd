@@ -8,17 +8,17 @@ downstream is the other language: a WIRE is an object, a BOX is a morphism, comp
 right, and a product is TWO wires, never one wire labelled `A×B`.  A `#cpanel(...)` call goes out,
 ready to paste beside the row it draws.
 
-The design is diag/CIRCUIT-GEN.md and this is its §5 first slice.  Typing is §1.3: every subterm
-carries its source and target OBJECT, read off diag/circuit-sigs.json by unification with the port
-in hand, and `wires(X)` is the list of ×-factors of `X`.  Drawing is §3: one clause of `walk` per
-operator, each primitive placed once.  Widths are deliberately absent — `cpanel` measures its own
-labels at render time (§4f), so this never guesses font metrics.
+The design is diag/CIRCUIT-GEN.md and this is its §5 slice.  Typing is §1.3: every subterm carries
+its source and target OBJECT, read off diag/circuit-sigs.json by unification with the port in hand,
+and `wires(X)` is the list of ×-factors of `X` (the unit object has none).  Drawing is §3: one
+clause of `walk` per operator, each primitive placed once.  Widths are deliberately absent —
+`cpanel` measures its own labels at render time (§4f), so this never guesses font metrics.
 
-WHAT IT REFUSES, AND WHY THAT IS THE POINT.  `∪`, `∩`, `⊸`, `→` and a bracket holding a top-level
-comma are not operators of today's shared grammar: `parse` hands `∪` back as an ATOM standing in the
-composite, and `[nil,⊸ nil ∪ cons]` as one opaque atom.  Drawing either would draw a `∪` box sitting
-on a wire, so both are rejected by name, pointing at the grammar extension of CIRCUIT-GEN §1.5.
-That is exactly what stops §5's rows 2 and 3, and `--slice` prints where.
+WHAT IT STILL REFUSES.  `∩`, `(g→x,y)` and `⦇x⦈` are `('cap', …)`, `('cond', …)` and `('cata', …)`
+in CIRCUIT-GEN §1.5 and are not in the shared grammar, so they arrive MIS-PARSED rather than
+rejected — `∩` as an atom standing in the composite, a `⦇…⦈` bracket as one atom.  Drawing either
+would draw a `∩` box sitting on a wire, so `guard` refuses them by name.  `∪` and `[x,y]` are real
+nodes now; `⊸` is still an atom, and §3 row 14 reads it where it stands, as the constant it is.
 """
 import importlib.machinery, importlib.util, json, os, sys
 
@@ -31,6 +31,7 @@ parse, norm, spell, Unhandled = sl.parse, sl.norm, sl.spell, sl.Unhandled
 
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
+KONST = "⊸"
 # CIRCUIT-GEN §5's three rows, in dependency order: `--slice` is the acceptance test.
 SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("13.3.3c r1", "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", "A×[A]", "[A]"),
@@ -39,7 +40,7 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
 
 def sigs():
     """diag/circuit-sigs.json — what each atom is an arrow between, and whether it is a map."""
-    return json.load(open(SIGS, encoding="utf-8"))["sigs"]
+    return json.load(open(SIGS, encoding="utf-8"))
 
 
 # ---------------------------------------------------------------- objects
@@ -56,8 +57,10 @@ def oshow(e):
 
 
 def wires(X):
-    """The ×-factors of `X` — the strands a port at `X` has.  A functor application is ONE wire."""
-    return [w for x in X[1] for w in wires(x)] if X[0] == 'prod' else [X]
+    """The ×-factors of `X` — the strands a port at `X` has.  A functor application is ONE wire and
+    the unit is NONE: `𝟏` is the empty product, which is why the note's `nil` has no left port."""
+    return [] if X == ('atom', '𝟏') else \
+        [w for x in X[1] for w in wires(x)] if X[0] == 'prod' else [X]
 
 
 def var(e):
@@ -96,49 +99,86 @@ def subst(scheme, env):
         else sl.rec(scheme, lambda x: subst(x, env))
 
 
+# ---------------------------------------------------------------- the circuit normalizer (§1.4)
+def mk(tag, ops):
+    """A `union`/`case` the normalizer MANUFACTURES: `spell` reads the third element verbatim, so a
+    rebuilt node needs a spelling of its own instead of the stale one it inherited."""
+    return (tag, ops, ' ∪ '.join(spell(x) for x in ops) if tag == 'union'
+            else '[' + ','.join(spell(x) for x in ops) + ']')
+
+
+def crec(e, f):
+    """`sl.rec` stops AT a `union`/`case` — the spider side never looks inside one, and that is what
+    keeps `[x,y]` one bead over there.  A circuit opens both, so this walks in."""
+    if e[0] not in ('union', 'case'):
+        return sl.rec(e, f)
+    ops = [f(x) for x in e[1]]
+    return e if ops == list(e[1]) else mk(e[0], ops)
+
+
+def cnorm(e):
+    """CIRCUIT-GEN §1.4, applied before drawing on trust, exactly as scanline's `norm` trusts
+    `F(R)F(S)=F(RS)`.  It is NOT that `norm`: this one keeps the `°` where the formula writes it,
+    which `norm` pushes to the atoms, erasing the distinction §3 rows 7/8 draw."""
+    e = crec(e, cnorm)
+    # `R%∋=𝟙%∋ E(R)`, the note's own `DUN` (allegory-axioms.typ): a row writes ONE fraction where
+    # the picture draws two — the unit opens `E` outside `R`.  Guarded at `𝟙`, the rewrite's own
+    # fixed point, which would otherwise regress for ever.
+    if e[0] == 'atom' and e[1].endswith('%∋') and e[1][:-2] != sl.UNIT:
+        return ('comp', [('atom', sl.UNIT + '%∋'), ('app', 'E', cnorm(parse(e[1][:-2])))])
+    if e[0] != 'comp':
+        return e
+    xs = [y for x in e[1] for y in (x[1] if x[0] == 'comp' else [x])]   # rule 1: flatten,
+    xs = fuse(xs) or xs
+    xs = [x for x in xs if x != ('atom', sl.UNIT)] or [('atom', sl.UNIT)]   # and `𝟙` is a wire
+    return xs[0] if len(xs) == 1 else ('comp', xs)
+
+
+def fuse(xs, polys=None):
+    """Rule 3, tape fusion: `F(R)[f,g]=[f,(𝟙×R)g]` at `FX=𝟏+A×X`.  Without it a compositional draw
+    of `F(prefix)[nil,body]` is two tapes in series where the note draws one (§4b).  Keyed on the
+    polynomial, so the `𝟙` lands on the constant branch factor and `R` on the recursive one."""
+    polys = sigs()["polys"] if polys is None else polys
+    for i, (x, y) in enumerate(zip(xs, xs[1:])):
+        if x[0] != 'app' or y[0] != 'case' or x[1] not in polys:
+            continue
+        rc = obj(polys[x[1]][-1])                        # `A×x`: the branch the functor recurses on
+        if len(polys[x[1]]) != len(y[1]) or rc[0] != 'prod':
+            continue
+        f = ('prod', [x[2] if var(k) else ('atom', sl.UNIT) for k in rc[1]])
+        br = list(y[1]); br[-1] = ('comp', [f, br[-1]])
+        return xs[:i] + [mk('case', br)] + xs[i + 2:]
+    return None
+
+
 # ---------------------------------------------------------------- the grammar guard
-# CIRCUIT-GEN §1.5's productions are not in the shared parser yet, so the terms that need them
-# arrive MIS-PARSED rather than rejected: `∪` as an atom beside its operands, `[f,g]` as one atom.
+# CIRCUIT-GEN §1.5's remaining productions are not in the shared parser, so the terms that need them
+# arrive MIS-PARSED rather than rejected: `∩` as an atom beside its operands, `⦇x⦈` as one atom.
 # Refusing them by name is the whole reason this is a guard and not a missing clause.
-STOP = {'∪': ("x∪y", "('cup', …)"), '∩': ("x∩y", "('cap', …)"),
-        '⊸': ("⊸ x", "('konst', …)"), '→': ("(g→x,y)", "('cond', …)")}
+STOP = {'∩': ("x∩y", "('cap', …)"), '→': ("(g→x,y)", "('cond', …)"), '⦇': ("⦇x⦈", "('cata', …)")}
 
 
 def guard(e):
     """Every term §13.3.x draws that today's `parse` cannot open, refused where it is written."""
-    # The bracket first: `[nil,⊸ nil ∪ cons]` holds a `∪` too, and the atom it arrives as is the
-    # blocker the reader has to fix — the `∪` inside is not even reachable until the bracket opens.
-    if e[0] == 'atom' and e[1][:1] in sl.OPENERS and len(sl.split_top(e[1][1:-1], ',')) > 1:
-        raise Unhandled(
-            f"`{e[1]}` is ONE opaque atom to today's `parse` — the spider generator's reading, where"
-            f" a bracket is one bead.  A circuit must open it into a tape fork, which needs"
-            f" CIRCUIT-GEN §1.5's `('case', …)` for `[x,y]`")
     for c, (surface, node) in STOP.items():
         if e[0] == 'atom' and c in e[1]:
             raise Unhandled(
                 f"`{c}` is an ATOM to today's `parse`, not an operator: `{e[1]}` arrives whole."
                 f"  CIRCUIT-GEN §1.5 adds `{node}` for `{surface}` to scripts/scanline's grammar;"
                 f" until it lands the circuit generator cannot open it")
-    sl.rec(e, guard)
-
-
-# ---------------------------------------------------------------- the circuit normalizer (§1.4)
-# Applied before drawing, on trust, exactly as scanline's `norm` trusts `F(R)F(S)=F(RS)`.  It is NOT
-# that `norm`: this one must keep the `°` where the formula writes it, which `norm` pushes away.
-def cnorm(e):
-    """`R%∋=𝟙%∋ E(R)`, the note's own `DUN` (allegory-axioms.typ): a row writes ONE fraction where
-    the picture draws two — the unit opens `E` outside `R`, and `E(R)` runs under it.  Guarded at
-    `𝟙`, which is the rewrite's own fixed point and would otherwise regress for ever."""
-    e = sl.rec(e, cnorm)
-    if e[0] == 'atom' and e[1].endswith('%∋') and e[1][:-2] != sl.UNIT:
-        return ('comp', [('atom', sl.UNIT + '%∋'), ('app', 'E', cnorm(parse(e[1][:-2])))])
+    crec(e, guard)          # `crec` rebuilds, so the visit has to hand every subterm back
     return e
 
 
 # ---------------------------------------------------------------- one clause per operator (§3)
+def pic(k, src, tgt, is_map, **kw):
+    """A layout node.  `nin`/`nout` are the strand counts its ports carry, which is what `cpanel`
+    lays the picture out over; a `_`-prefixed field is the elaborator's and is not emitted."""
+    return dict(k=k, nin=len(wires(src)), nout=len(wires(tgt)), **kw), src, tgt, is_map
+
+
 def box(label, src, tgt, is_map, frac=False, flip=False):
-    return {"k": "box", "label": label, "chamfer": not is_map, "frac": frac, "flip": flip}, \
-        src, tgt, is_map
+    return pic("box", src, tgt, is_map, label=label, chamfer=not is_map, frac=frac, flip=flip)
 
 
 def walk(e, tbl, src=None, tgt=None):
@@ -153,15 +193,18 @@ def walk(e, tbl, src=None, tgt=None):
         n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src)
         if n["k"] != "box":
             raise Unhandled(f"`{spell(e)}` writes `°` on a composite, which is the cup/cap frame of"
-                            f" CIRCUIT-GEN §3 row 8 — not in the first slice")
+                            f" CIRCUIT-GEN §3 row 8 — not in the slice")
         return box(n["label"], t, s, False, frac=n["frac"], flip=not n["flip"])
     if e[0] == 'prod':
-        raise Unhandled(f"`{spell(e)}` is a product: two wires, drawn as a stack (§3 row 6) — not in"
-                        f" the first slice, which has no row that types one")
-    if e[0] == 'atom' and e[1] == sl.UNIT:
+        return stack(e[1], tbl, src)
+    if e[0] == 'union':
+        return fan(e, tbl, src)
+    if e[0] == 'case':
+        return tape(e, tbl, src)
+    if e[0] == 'atom' and e[1] == sl.UNIT:            # §3 row 4: the identity is bare wires
         if src is None and tgt is None:
             raise Unhandled("`𝟙` is the identity on the object at its port, and neither is known")
-        return box(spell(e), src or tgt, src or tgt, True)
+        return pic("seq", src or tgt, src or tgt, True, items=[], seams=[], _objs=[src or tgt])
     if e[0] == 'atom' and e[1].endswith('%∋'):       # §3 row 15: the transpose, always a map
         n, s, t, _ = walk(parse(e[1][:-2]), tbl, src=src)
         return box(spell(parse(e[1][:-2])), s, ('app', 'E', t), True, frac=True)
@@ -189,17 +232,77 @@ def leaf(e, tbl, src, tgt):
     return box(spell(e), subst(obj(row["src"]), env), subst(obj(row["tgt"]), env), row["map"])
 
 
+def lane(t):
+    """One branch or one strand of a stack is always a run, so a single box becomes a one-box run
+    and every consumer below has exactly one shape to place."""
+    n, s, t2, m = t
+    return n if n["k"] == "seq" else \
+        pic("seq", s, t2, m, items=[n], seams=[], _objs=[s, t2])[0]
+
+
 def seq(xs, tbl, src):
     """§3 row 5: juxtaposition, ports glued.  The objects between the factors are kept — the seam
     rule below decides which get printed — and a nested composite splices in rather than nesting."""
-    items, objs = [], [src]
-    for x in xs:
-        n, s, t, _ = walk(x, tbl, src=objs[-1])
+    items, objs, mp, i = [], [src], True, 0
+    while i < len(xs):
+        if xs[i] == ('atom', KONST):                  # §3 row 14: `⊸ x`, the constant `x`
+            if i + 1 == len(xs):
+                raise Unhandled("`⊸` with nothing after it: a constant needs the thing it creates")
+            b = walk(xs[i + 1], tbl, src=obj("𝟏"))
+            items.append(pic("konst", objs[-1], b[2], b[3], body=lane(b))[0])
+            objs.append(b[2]); mp = mp and b[3]; i += 2
+            continue
+        n, s, t, m = walk(xs[i], tbl, src=objs[-1])
         if n["k"] == "seq":
-            items += n["items"]; objs += n["objs"][1:]
+            items += n["items"]; objs += n["_objs"][1:]
         else:
             items.append(n); objs.append(t)
-    return {"k": "seq", "items": items, "objs": objs}, objs[0], objs[-1], False
+        mp = mp and m; i += 1
+    return pic("seq", objs[0], objs[-1], mp, items=items, seams=seams(objs), _objs=objs)
+
+
+def stack(xs, tbl, src):
+    """§3 row 6: a product is a vertical stack, one wire per factor.  The general split of the src
+    object's ×-factors between the factors is not needed while every factor takes exactly one."""
+    ws = wires(src)
+    if len(ws) != len(xs):
+        raise Unhandled(f"`{spell(('prod', xs))}` has {len(xs)} factors over the {len(ws)} wires of"
+                        f" {oshow(src)}: §3 row 6's general split is not in the slice")
+    ls = [walk(x, tbl, src=w) for x, w in zip(xs, ws)]
+    t = ls[0][2] if len(ls) == 1 else ('prod', [b[2] for b in ls])
+    return pic("stack", src, t, all(b[3] for b in ls), lanes=[lane(b) for b in ls])
+
+
+def branches(e, tbl, srcs):
+    """A `∪` and a `[x,y]` differ in where their branches START, never in where they end: both close
+    by merging, so every branch has to land on the one object the region leaves at."""
+    bs = [walk(x, tbl, src=s) for x, s in zip(e[1], srcs)]
+    if len({oshow(b[2]) for b in bs}) > 1:
+        raise Unhandled(f"`{spell(e)}` merges branches at {', '.join(oshow(b[2]) for b in bs)}")
+    return bs
+
+
+def fan(e, tbl, src):
+    """§3 row 11: the `∪` region — the input arrives once, a dashed fan hands it to both bodies."""
+    bs = branches(e, tbl, [src] * len(e[1]))
+    return pic("union", src, bs[0][2], False, bodies=[lane(b) for b in bs])
+
+
+def tape(e, tbl, src):
+    """§3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  The source
+    is opened by the functor's own polynomial, which is the object-level unfold of §1.3."""
+    polys = sigs()["polys"]
+    if src[0] != 'app' or src[1] not in polys:
+        raise Unhandled(f"`{spell(e)}` forks {oshow(src)}, which diag/circuit-sigs.json gives no"
+                        f" polynomial for — a case needs the coproduct it splits")
+    env = {}
+    unify(obj(f"{src[1]}(x)"), src, env)
+    ss = [subst(obj(p), env) for p in polys[src[1]]]
+    if len(ss) != len(e[1]):
+        raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
+    bs = branches(e, tbl, ss)
+    return pic("case", src, bs[0][2], all(b[3] for b in bs),
+               bodies=[lane(b) for b in bs], ports=[[oshow(w) for w in wires(s)] for s in ss])
 
 
 # ---------------------------------------------------------------- seams and the panel
@@ -209,7 +312,7 @@ def seams(objs):
     out, prev = [], objs[0]
     for i, o in enumerate(objs[1:-1]):
         if len(wires(o)) == 1 and o != prev and o != objs[i + 2]:
-            out.append((i, oshow(o))); prev = o
+            out.append([i, oshow(o)]); prev = o
     return out
 
 
@@ -217,42 +320,53 @@ def draw(formula, src, tgt, table=None):
     """The circuit a formula denotes, typed, with its ports checked against the stated ones."""
     e = cnorm(parse(formula))
     guard(e)
-    tree, s, t, _ = walk(e, table or sigs(), src=obj(src))
-    if tree["k"] != "seq":
-        tree = {"k": "seq", "items": [tree], "objs": [s, t]}
+    tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
-    tree["src"], tree["tgt"] = oshow(s), oshow(t)
-    tree["seams"] = seams(tree["objs"])
+    tree["src"] = [oshow(w) for w in wires(s)]
+    tree["tgt"] = [oshow(w) for w in wires(t)]
     tree["cert"] = {"expect": formula, "src": src, "tgt": tgt}
     return tree
 
 
 # ---------------------------------------------------------------- the typst call
-def label(it):
-    """`x%∋` is the note's `frc`, a fraction two lines tall; everything else is its own raw text."""
-    return f'frc([`{it["label"]}`])' if it["frac"] else f'[`{it["label"]}`]'
+def tv(v, ind=2):
+    """A layout node as Typst source.  A label rides as a STRING and `cpanel` wraps it in `raw` —
+    one spelling of `[`x`]`, in the file that also decides which of them becomes a fraction."""
+    p = " " * ind
+    if isinstance(v, dict):
+        return "(" + ", ".join(f"{k}: {tv(x, ind + 2)}"
+                               for k, x in v.items() if not k.startswith("_")) + ")"
+    if isinstance(v, list):
+        return "(\n" + "".join(f"{p}{tv(x, ind + 2)},\n" for x in v) + " " * (ind - 2) + ")" \
+            if any(isinstance(x, (dict, list)) for x in v) \
+            else "(" + "".join(f"{tv(x, ind)}, " for x in v) + ")"
+    return str(v).lower() if isinstance(v, bool) else \
+        '"' + v + '"' if isinstance(v, str) else str(v)
 
 
 def emit(t):
-    items = ",\n          ".join(
-        f'(label: {label(it)}, chamfer: {str(it["chamfer"]).lower()}'
-        + (', frac: true' if it["frac"] else '')
-        + (', flip: true' if it["flip"] else '') + ')' for it in t["items"])
-    sm = "".join(f'(({i}, [`{l}`]),)' if len(t["seams"]) == 1 else f'({i}, [`{l}`]), '
-                 for i, l in t["seams"])
-    return (f'#cpanel((k: "seq",\n  items: ({items}),\n'
-            + (f'  seams: {sm if len(t["seams"]) == 1 else "(" + sm.rstrip(", ") + ")"},\n'
-               if t["seams"] else "")
-            + f'  src: [`{t["src"]}`], tgt: [`{t["tgt"]}`]),\n'
-            + "  cert: (" + ", ".join(f'{k}: "{v}"' for k, v in t["cert"].items()) + "))")
+    t = dict(t)
+    cert = t.pop("cert")
+    return f"#cpanel({tv(t)},\n  cert: {tv(cert)})"
 
 
 def read_back(t):
     """The composite the drawn boxes spell, in the note's own notation — the circuit's answer to
-    `scripts/diagram`'s sweep.  A box IS a factor, so the run reads back as the formula."""
-    xs = [parse(it["label"] + ("%∋" if it["frac"] else "")) for it in t["items"]]
-    return spell(xs[0] if len(xs) == 1 else ('comp', xs))
+    `scripts/diagram`'s sweep.  Every node was built from one operator, so the picture reads back as
+    the normalised term or the walk dropped something."""
+    k = t["k"]
+    if k == "box":
+        e = parse(t["label"] + ("%∋" if t["frac"] else ""))
+        return ('conv', e) if t["flip"] else e
+    if k == "seq":
+        xs = [read_back(x) for x in t["items"]]
+        return ('atom', sl.UNIT) if not xs else xs[0] if len(xs) == 1 else ('comp', xs)
+    if k == "stack":
+        return ('prod', [read_back(x) for x in t["lanes"]])
+    if k == "konst":
+        return ('comp', [('atom', KONST), read_back(t["body"])])
+    return mk("union" if k == "union" else "case", [read_back(x) for x in t["bodies"]])
 
 
 def main(argv):
@@ -270,7 +384,8 @@ def main(argv):
             except (Unhandled, ValueError, KeyError) as ex:
                 bad += 1; print(f"circuit: {name}: {ex}", file=sys.stderr)
             print()
-        print(f"circuit: {len(SLICE)} rows in CIRCUIT-GEN §5, {len(SLICE) - bad} drawn, {bad} blocked")
+        print(f"circuit: {len(SLICE)} rows in CIRCUIT-GEN §5, {len(SLICE) - bad} drawn,"
+              f" {bad} blocked", file=sys.stderr)     # stdout is the pasteable file, nothing else
         sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} need the §1.5 grammar extension")
     formula = next(iter(free), None)
     if not (formula and src and tgt):
@@ -279,8 +394,10 @@ def main(argv):
                  + '\n       circuit --slice')
     t = draw(formula, src, tgt, tbl)
     print(emit(t))
-    if read_back(t) != spell(cnorm(parse(formula))):   # the boxes spell the NORMALISED term
-        print(f"// the run reads back as {read_back(t)}", file=sys.stderr)
+    # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
+    # spelling verbatim, and a rebuilt one cannot know that this bracket was written `(p×𝟙) cons`.
+    if spell(read_back(t)).replace(" ", "") != spell(cnorm(parse(formula))).replace(" ", ""):
+        print(f"// the run reads back as {spell(read_back(t))}", file=sys.stderr)
 
 
 if __name__ == "__main__":
