@@ -4192,11 +4192,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     // lean:AOP.A7_7_Filter.filter_alg@5f9648f5
     ],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
-    [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `⊸ nil`]),
+    [*Hinze–Marsden*]),
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-pf, bx-lp)), s: 68%),
     [`α prefix list(p)`])],
-  [#tw-hm(0, cert: twcert("α prefix list(p)", a: "α = [nil,⊸ nil ∪ cons]"))],
+  [#tw-hm(0, cert: twcert("α prefix list(p)", a: "α = [nil,⊸ nil ∪ cons]")) \
+    #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-pf, post: (bx-lp,)), s: 68%),
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
