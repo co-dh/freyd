@@ -22,8 +22,10 @@
 #let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
 
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
+#let PAGEW = 25cm
+#let MARGIN = 1.5cm
 #let conf(title: "", body) = {
-  set page(width: 25cm, height: 35cm, margin: 1.5cm)
+  set page(width: PAGEW, height: 35cm, margin: MARGIN)
   set text(size: 11.5pt)
   show raw: set text(size: 9.6pt)
   // `sticky`: a heading whose display lands on the next page goes with it, instead of sitting alone
@@ -71,12 +73,51 @@
 /// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
-#let disp(body) = figure(body, kind: "disp", supplement: none)
+// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
+// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
+// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
+// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
+#let plain(c) = {
+  if type(c) == color { c.to-hex() } else if type(c) != content { c }
+  else if c == [ ] or c.func() == linebreak { " " }
+  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
+  else if c.has("text") { c.text }
+  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
+  else if c.has("children") { c.children.map(plain).join("") }
+  else if c.has("body") { plain(c.body) }
+  // `styled` is what a `src` side note in a step's caption is; a `ref` reads as its label.
+  else if c.has("child") { plain(c.child) }
+  else if c.func() == ref { repr(c.target) }
+  else { repr(c) }
+}
+// Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
+// `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
+#let pic-meta(key, body, width: auto) = context {
+  let hs = query(selector(heading).before(here()))
+  let sec = if hs.len() == 0 { "" } else {
+    numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
+  let (sz, pos) = (measure(body, width: width), here().position())
+  // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
+  [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
+    x: pos.x.pt(), y: pos.y.pt(),
+    w: sz.width.pt(), h: sz.height.pt()))<pic>]
+}
+#let disp(body) = figure(kind: "disp", supplement: none, {
+  // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
+  context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
+    body, width: PAGEW - 2 * MARGIN)
+  body
+})
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
-#let P(p, s: 92%) = align(center, box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p)))
+/// `key`: the picture also reports its crop box (`pic-meta`) — INSIDE the box, so the corner is its own.
+#let P(p, s: 92%, key: none) = align(center, box(inset: (y: 5pt), {
+  let q = scale(x: s, y: s, reflow: true, p)
+  if key != none { pic-meta(key, q) }
+  q
+}))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
 /// states cannot be read at all.
 #let Pin(p, s: 70%) = box(baseline: 36%, scale(x: s, y: s, reflow: true, p))

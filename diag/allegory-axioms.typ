@@ -2280,13 +2280,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
   let p = box(pic)
   let lane = if pw == none { measure(p).width } else { pw }
-  if measure(f).width + lane + gut <= sz.width - OPW - gut {
+  let row = if measure(f).width + lane + gut <= sz.width - OPW - gut {
     grid(columns: (OPW, lane, 1fr), align: (left + horizon, left + horizon, right + horizon),
       column-gutter: gut, op, p, f)
   } else {
     grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
       op, stack(spacing: 5pt, p, align(right, f)))
   }
+  pic-meta(plain(f), row, width: sz.width)
+  row
 })
 #let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
 
@@ -2295,23 +2297,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
 // formula stack on one left edge — which `step`'s side-by-side branch cannot give.
-#let vstep(op, pic, f) = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
-  column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+#let vstep(op, pic, f) = layout(sz => {
+  let row = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
+    column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+  pic-meta(plain(f), row, width: sz.width)
+  row
+})
 
-// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
-// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
-// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
-// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
-#let plain(c) = {
-  if type(c) == color { c.to-hex() } else if type(c) != content { c }
-  else if c == [ ] or c.func() == linebreak { " " }
-  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
-  else if c.has("text") { c.text }
-  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
-  else if c.has("children") { c.children.map(plain).join("") }
-  else if c.has("body") { plain(c.body) }
-  else { repr(c) }
-}
 // A panel's address is the display it stands in and its place in that display, both read off the
 // counters at the point it is PLACED, so a reordered row cannot keep a stale name.
 #let hm-meta(rec) = {
@@ -2343,13 +2335,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `s`; `tpan`/`mpan` pass 100% and print their labels at the size `tw-hm` does.
 // `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
 // lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
-#let dpan(h, w, xa, body, s: 74%, opath: none) = P(cetz.canvas(length: 0.8cm, {
+#let dpan(h, w, xa, body, s: 74%, opath: none, key: none) = P(cetz.canvas(length: 0.8cm, {
   let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
   hm-region(((0, 0), (0, h)) + op, fb-ALLC)
   hm-region(op + ((w, 0), (w, h)), luma(226))
   hm-wire(op, col: BCOL)
   body
-}), s: s)
+}), s: s, key: key)
 
 // A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
@@ -2471,7 +2463,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for (x, l) in bot {
     hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s, opath: opath)
+  }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
