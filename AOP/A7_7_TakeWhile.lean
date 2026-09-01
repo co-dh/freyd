@@ -226,11 +226,15 @@ public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
 @[expose] public def listP (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
   cataR (listPAlg p)
 
+/-- `⊸ nil : A×[A] ⟶ [A]` — discard the pair, return `nil`; `S`'s `stop` operand. -/
+@[expose] public def discNil : (⟨E × List E⟩ : RelSet.{0}) ⟶ (⟨List E⟩ : RelSet.{0}) :=
+  graph fun _ => []
+
 /-- The note's `S ≜ [nil, ⊸ nil ∪ (p×𝟙) cons]` — `prefix`'s algebra with one extra `p`. -/
 @[expose] public def Salg (p : E → Bool) :
     Fobj Unit E (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
   junc (sumCop (dL Unit) ⟨E × List E⟩) (graph fun _ => [])
-    ((graph fun _ => []) ∪ pcons p)
+    (discNil ∪ pcons p)
 
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix
     all of whose elements pass `p`. -/
@@ -432,6 +436,75 @@ public theorem takewhile_alg (p : E → Bool) : prefixR ≫ listP p = cataR (Sal
   rw [cataR_eq_relCata]
   exact (relCata_UP (initial Unit E) (Salg p) (prefixR ≫ listP p)).mp (takewhile_alg_comm p)
 
+/-! ### `takewhile-mono`, a law to a step
+
+    `F(R°)` is `𝟙×R°` on the `cons` summand, so that branch of `F(R°)S⊑SR°` is the note's
+    display: `R°` distributes into the two operands of the `∪`, `⊸` swallows it on the constant
+    branch, it slides past `cons` on the other, and `nil R°=nil` puts it back on both so it can
+    leave past the join. -/
+
+/-- `(𝟙×R°)⊸ nil⊑⊸ nil` — `⊸` discards the pair, so nothing that ran on it survives. -/
+public theorem takewhile_mono_disc :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
+      ⊑ discNil :=
+  le_iff.mpr fun _ _ h => h.elim fun _ hy => hy.2
+
+/-- `(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)=(𝟙×R°)⊸ nil ∪ (p×R°) cons` — `R°` reaches each operand of the
+    `∪` on its own, and on the `cons` one it stands beside `p` as the pair's second strand. -/
+public theorem takewhile_mono_fork (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ (discNil ∪ pcons p)
+      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
+        ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
+  have hcons : rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p
+      = rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
+    unfold pcons
+    rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
+  rw [DistributiveAllegory.comp_union_distrib, hcons]
+
+/-- `(p×R°) cons⊑(p×𝟙) cons R°` — a shorter tail makes a shorter list, so the `R°` the pair
+    carried in comes back out on the built list. -/
+public theorem takewhile_mono_slide (p : E → Bool) :
+    rprodMap (pcor p) (lenLE (E := E))° ≫ (graph fun q : E × List E => q.1 :: q.2)
+      ⊑ pcons p ≫ lenLE° := by
+  refine le_iff.mpr fun q ws h => ?_
+  obtain ⟨x, c⟩ := q
+  obtain ⟨⟨x', c'⟩, ⟨⟨_, hpx⟩, hlen⟩, hws⟩ := h
+  subst hws
+  exact ⟨x :: c, (pcons_apply p x c (x :: c)).mpr ⟨hpx, rfl⟩, Nat.succ_le_succ hlen⟩
+
+/-- `⊸ nil R°=⊸ nil` — `nil` is the shortest list, so it is above only itself. -/
+public theorem takewhile_mono_nil :
+    discNil ≫ (lenLE (E := E))°
+      = discNil := by
+  refine hom_ext fun _ ws => ⟨?_, ?_⟩
+  · rintro ⟨vs, hvs, hlen⟩
+    subst hvs
+    cases ws with
+    | nil => rfl
+    | cons a as => exact absurd (Nat.le_zero.mp hlen) (Nat.succ_ne_zero as.length)
+  · rintro rfl
+    exact ⟨[], rfl, Nat.le_refl 0⟩
+
+/-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
+public theorem takewhile_mono_cons (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))°
+        ≫ (discNil ∪ pcons p)
+      ⊑ (discNil ∪ pcons p) ≫ lenLE° :=
+  calc rprodMap (𝟙 (dE E)) (lenLE (E := E))°
+          ≫ (discNil ∪ pcons p)
+      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
+          ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 :=
+        takewhile_mono_fork p
+    _ ⊑ discNil
+          ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 :=
+        union_mono takewhile_mono_disc (le_refl _)
+    _ ⊑ discNil ∪ pcons p ≫ lenLE° :=
+        union_mono (le_refl _) (takewhile_mono_slide p)
+    _ = discNil ≫ (lenLE (E := E))° ∪ pcons p ≫ lenLE° := by
+        rw [takewhile_mono_nil]
+    _ = (discNil ∪ pcons p) ≫ lenLE° :=
+        (union_comp_distrib _ _ _).symm
+
 /-- The `takewhile-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step
     lands inside taking the step and then shortening the result. -/
 public theorem takewhile_mono (p : E → Bool) :
@@ -449,19 +522,13 @@ public theorem takewhile_mono (p : E → Bool) :
           exact ⟨[], (Salg_inl p d []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
-      obtain ⟨x, c⟩ := q
       cases v with
       | inl d' => exact hv.elim
       | inr q' =>
-          obtain ⟨x', c'⟩ := q'
-          obtain ⟨hx, hlen⟩ := hv
-          cases hx
-          rcases (Salg_inr p x c' ws).mp hS with hws | ⟨hp, hws⟩
-          · subst hws
-            exact ⟨[], (Salg_inr p x c []).mpr (Or.inl rfl), Nat.le_refl 0⟩
-          · subst hws
-            exact ⟨x :: c, (Salg_inr p x c (x :: c)).mpr (Or.inr ⟨hp, rfl⟩),
-              Nat.succ_le_succ hlen⟩
+          -- `Salg`'s `cons` summand IS the `∪` the chain above works on, and `F(R°)` there is `𝟙×R°`.
+          obtain ⟨vs, hvs, hlen⟩ :=
+            le_iff.mp (takewhile_mono_cons p) q ws ⟨q', hv, (junc_inr _ _ _ _).mp hS⟩
+          exact ⟨vs, (junc_inr _ _ _ _).mpr hvs, hlen⟩
 
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,
     with `takewhile-mono` for its hypothesis: one longest `p`-prefix kept at each `cons`

@@ -4026,7 +4026,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[]], [`F([A])⟶[A]`],
-  // lean:AOP.A7_7_TakeWhile.Salg@bc2565db
+  // lean:AOP.A7_7_TakeWhile.Salg@25dee952
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 
@@ -4139,36 +4139,66 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4bc81b63
 ]<takewhile-alg>
 
-// The two branches are monotonic one at a time — the rows above the pictures — and @lax-closure
-// puts them together; `R°` starts on the tail strand and ends past the join.
-#let step = step.with(pw: 232pt)
+// One law to a step: `R°` starts on the tail strand, is copied into both operands of the `∪`,
+// dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
+#let step = step.with(pw: 300pt)
 #let bx-Ro = ([`R°`], 0.85, true)
+// The `∪`'s constant branch at the two ends of the chain — `R°` on the tail before the discard,
+// and `R°` after the `nil` — which `disc-copy`, having no box on either side, cannot draw.
+#let ro-disc-nil = w => {
+  wire((0, UIP), (1.20, UIP)); wiredot((1.20, UIP))
+  wire((0, -UIP), (0.28, -UIP)); twbox(0.28, -UIP, bx-Ro)
+  wire((1.13, -UIP), (1.20, -UIP)); wiredot((1.20, -UIP))
+  gbox((1.60, 0), [`nil`], w: 0.75, chamfer: false)
+  wire((2.35, 0), (w, UOP))
+}
+#let disc-nil-ro = w => {
+  wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
+  wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
+  gbox((0.6, 0), [`nil`], w: 0.75, chamfer: false)
+  wire((1.35, 0), (1.63, 0)); twbox(1.63, 0, bx-Ro, h: TBH)
+  wire((2.48, 0), (w, UOP))
+}
+// ONE run for every row, set by the widest branch `(p×𝟙) cons R°`: only the box that moves may
+// move, so the `∪` region stands still down the chain.
+#let TWMW = 4.0
 #disp[#table(
-  columns: (1fr, 6.6cm),
+  columns: (1fr, 6.0cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
      shortening the result]],
-  table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
+  table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [`(𝟙×R°)⊸ nil⊑⊸ nil R°`],
-  [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — the right side is `⊸ nil`, and
-   `(𝟙×R°)⊸⊑⊸`],
+  [#step([])[#twp(twrow(tw-cons(TWMW, a: bx-p, types: true), lw: TWMW, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
+  [],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@ea69a5bc
 
-  [`(𝟙×R°)(p×𝟙) cons⊑(p×𝟙) cons R°`],
-  [composition #h(4pt) #src[@lax-closure] #h(4pt) at `(𝟙×R°)(p×𝟙)=(p×R°)=(p×𝟙)(𝟙×R°)` and
-   `(𝟙×R°) cons⊑cons R°`],
+  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW, upper: ro-disc-nil), s: 74%)][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
+  [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
+   and `R°` on the pair's two strands at once],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@cbdcc4d1
 
-  [#step([])[#twp(twrow(tw-cons(3.47, a: bx-p, types: true), lw: 3.47, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]], [],
+  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×R°) cons`]],
+  [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6d2514be
 
-  [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
-  [union #h(4pt) #src[@lax-closure] #h(4pt) at `φ:=⊸ nil`, `ψ:=(p×𝟙) cons`],
+  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×𝟙) cons R°`]],
+  [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@577d240b
+
+  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW, upper: disc-nil-ro), s: 74%)][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
+  [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
+   the other one already has],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@5635abfd
+
+  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p), lw: TWMW, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
+  [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
+  // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
-// The branch is named in the header above; this line adds only what the header does not say.
-#align(center, block(inset: (y: 4pt))[#src[the `nil` branch is
-  `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°` is `cons length=(𝟙×length)π₂ succ` with `succ` monotone —
- a shorter tail makes a shorter list. ]])
+#align(center, block(inset: (y: 4pt))[#src[the `nil` branch, which no row above draws, is
+  `nil⊑nil R°`.]])
   // lean:AOP.A7_7_TakeWhile.takewhile_mono@69b53bd4
 ]<takewhile-mono>
 
