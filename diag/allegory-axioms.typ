@@ -2346,6 +2346,69 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   hm-wire(((xa, h), (xa, 0)), col: BCOL)
   body
 }), s: s)
+
+// A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
+// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
+// GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
+// CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
+// edge, where the wire strikes through the port labels.
+#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
+#let dlane(xo, h, x, y0, y1, nm, un) = {
+  let top = if y0 == "top" { h } else { y0 }
+  let k = dknee(x, xo, top - (if y1 == "bot" { 0 } else { y1 }))
+  let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
+    ((xo, y0), (x, y0 - k))
+  }
+  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + k), (xo, y1)) }
+  hm-wire(pts)
+  if un != none { hm-bead((x, y0), un) }
+  if nm != none { hm-name((x - 0.30, ((if y0 == "top" { h } else { y0 })
+    + (if y1 == "bot" { 0 } else { y1 })) / 2), nm) }
+}
+// The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
+// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
+#let ddip(xo, h, x, y0, y1, ybs, nm) = {
+  let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
+  // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
+  // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
+  let ke = calc.min(dknee(x, xo, t - b), 0.60 * (t - ybs.first()))
+  let pts = if y0 == "top" { ((x, h),) } else { ((xo, t), (x, t - ke)) }
+  for (i, yb) in ybs.enumerate() {
+    // A dip may share its run with the next dip down, and then each gets under half of it.
+    let (hi, up) = if i == 0 { (t - ke, 0.85) } else { (ybs.at(i - 1), 0.42) }
+    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ke }, 0.85) }
+      else { (ybs.at(i + 1), 0.42) }
+    let kd = calc.min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
+    pts += ((x, yb + kd), (xo, yb), (x, yb - kd))
+  }
+  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ke), (xo, b)) }))
+  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
+}
+
+// A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
+// bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
+  dpan(h, w, xo, {
+  for l in lanes {
+    // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
+    // across the lanes between, so a wire inside the span meets the bead rather than passing it.
+    let ys = beads.filter(bd => bd.at(3, default: none) != none
+      and bd.at(3) <= l.at(0) and l.at(0) < xo
+      and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
+      and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
+    if ys == () { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
+    else { ddip(xo, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3)) }
+  }
+  for b in beads { hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black)) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+  if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
+  }, s: s)
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
+    lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
+}
+
 // A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
 // is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
 #let dhandle(xa, xe, y0, y1, l, born: none) = {
@@ -4102,6 +4165,21 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
 }
 
+// Emitted verbatim by `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`: the
+// source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
+#let tw-pfx2 = dpanel(4, 5.7, 2.85,
+  ((0.55, "top", 2, none, none), (1.7, 2, "bot", none, none)),
+  ((3, [`prefix`]), (2, [`[nil,⊸ nil ∪ cons]`], black, 0.55), (1, [`p`])),
+  ((0.55, [`F`]), (2.85, [`[A]`])),
+  ((1.7, [`list`]), (2.85, [`A`])),
+  cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]"))
+#let tw-pfx3 = dpanel(3, 4.55, 1.7,
+  ((0.55, "top", 1, none, none),),
+  ((2, [`prefix`]), (1, [`[nil,⊸ nil ∪ (p×list(p)) cons]`], black, 0.55)),
+  ((0.55, [`F`]), (1.7, [`[A]`])),
+  ((1.7, [`[A]`]),),
+  cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))
+
 #disp[#table(
   columns: (1fr, 4.9cm),
   align: (left + horizon, center + horizon),
@@ -4118,12 +4196,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-pf, post: (bx-lp,)), s: 68%),
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
-  [#tw-hm(1, cert: twcert("F(prefix) [nil,⊸ nil ∪ cons] list(p)"))],
+  [#tw-pfx2],
 
   [#vstep(EQ, twp(twpic(tw-cons(5.17, a: bx-p, l: bx-lp, types: true), lw: 5.17, pre: bx-pf,
       from: [`F([A])`]), s: 68%),
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
-  [#tw-hm(2, cert: twcert("F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]"))],
+  [#tw-pfx3],
 
   [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-pl), lw: 6.1), s: 68%),
     [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
@@ -4894,6 +4972,20 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // slid out of it and `⊸ nil` swallowed it.
 #let bx-sq = ([`subseq`], 1.9, true)
 #let bx-sl = ([`subseq list(p)`], 3.9, true)
+// `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`, verbatim, as above.
+#let tw-sub2 = dpanel(4, 5.7, 2.85,
+  ((0.55, "top", 2, none, none), (1.7, 2, "bot", none, none)),
+  ((3, [`subseq`]), (2, [`[nil,π₂ ∪ cons]`], black, 0.55), (1, [`p`])),
+  ((0.55, [`F`]), (2.85, [`[A]`])),
+  ((1.7, [`list`]), (2.85, [`A`])),
+  cert: (expect: "F(subseq)[nil,π₂ ∪ cons]list(p)", src: "F([A])", tgt: "[A]"))
+#let tw-sub3 = dpanel(3, 4.55, 1.7,
+  ((0.55, "top", 1, none, none),),
+  ((2, [`subseq`]), (1, [`[nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]`], black, 0.55)),
+  ((0.55, [`F`]), (1.7, [`[A]`])),
+  ((1.7, [`[A]`]),),
+  cert: (expect: "F(subseq)[nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))
+
 #disp[#table(
   columns: (1fr, 4.9cm),
   align: (left + horizon, center + horizon),
@@ -4911,14 +5003,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-sq, post: (bx-lp,), upper: pi2-copy()), s: 68%),
     [`F(subseq) [nil,π₂ ∪ cons] list(p)` \ #src[defining equation]])],
-  [#tw-hm(1, f: [`subseq`], cert: twcert("F(subseq) [nil,π₂ ∪ cons] list(p)"))],
+  [#tw-sub2],
 
   [#vstep(EQ, twp(twpic(tw-cons(4.3, a: bx-p, l: bx-lp), lw: 4.3, pre: bx-sq,
     upper: pi2-copy(l: bx-lp)), s: 68%),
     [`F(subseq) [nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]` \
      #src[`list(p)` through `cons`, `π₂` natural]])],
-  [#tw-hm(2, f: [`subseq`],
-    cert: twcert("F(subseq) [nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]"))],
+  [#tw-sub3],
 
   [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-sl), lw: 6.1, upper: pi2-copy(l: bx-sl)),
     s: 68%),
@@ -5392,68 +5483,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // Every row's picture is drawn at ONE length and ONE scale, and a scale typed per cell is a scale
 // that drifts — both times this one changed, it had to change in every cell.
 #let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 90%)
-
-// A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
-// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
-// GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
-// CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
-// edge, where the wire strikes through the port labels.
-#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
-#let dlane(xo, h, x, y0, y1, nm, un) = {
-  let top = if y0 == "top" { h } else { y0 }
-  let k = dknee(x, xo, top - (if y1 == "bot" { 0 } else { y1 }))
-  let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
-    ((xo, y0), (x, y0 - k))
-  }
-  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + k), (xo, y1)) }
-  hm-wire(pts)
-  if un != none { hm-bead((x, y0), un) }
-  if nm != none { hm-name((x - 0.30, ((if y0 == "top" { h } else { y0 })
-    + (if y1 == "bot" { 0 } else { y1 })) / 2), nm) }
-}
-// The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
-// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
-#let ddip(xo, h, x, y0, y1, ybs, nm) = {
-  let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
-  // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
-  // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
-  let ke = calc.min(dknee(x, xo, t - b), 0.60 * (t - ybs.first()))
-  let pts = if y0 == "top" { ((x, h),) } else { ((xo, t), (x, t - ke)) }
-  for (i, yb) in ybs.enumerate() {
-    // A dip may share its run with the next dip down, and then each gets under half of it.
-    let (hi, up) = if i == 0 { (t - ke, 0.85) } else { (ybs.at(i - 1), 0.42) }
-    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ke }, 0.85) }
-      else { (ybs.at(i + 1), 0.42) }
-    let kd = calc.min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
-    pts += ((x, yb + kd), (xo, yb), (x, yb - kd))
-  }
-  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ke), (xo, b)) }))
-  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
-}
-
-// A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
-// bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
-  dpan(h, w, xo, {
-  for l in lanes {
-    // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
-    // across the lanes between, so a wire inside the span meets the bead rather than passing it.
-    let ys = beads.filter(bd => bd.at(3, default: none) != none
-      and bd.at(3) <= l.at(0) and l.at(0) < xo
-      and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
-      and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
-    if ys == () { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
-    else { ddip(xo, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3)) }
-  }
-  for b in beads { hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black)) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
-  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
-  if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s)
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
-    lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
-    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
-}
 #let TREE = [`tree`]
 #let LIST = [`list`]
 #let DELTA = [`Δ`]
@@ -5701,14 +5730,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // exactly: this is the scale that buys the last row its reason line.
 #let DS = 70%
 #let DXE = 0.55                  // `E`, outside everything
-#let DXD = 1.70                  // `Δ`, born at the fold and eaten by `choose`
 #let DXL = 2.85                  // `tree` down to the bead that eats it, `list` from there on
 #let DXO = 4.00                  // the object wire, `A`
 #let DW = DXO + 2.85
-#let DIE = 0.55                  // `E`, when the transpose is applied OUTSIDE the list ...
+#let DIE = 0.55                  // `E`, when the transpose is applied OUTSIDE the list
 #let DIM = 1.70                  // `A×−`, the base functor's own factor
 #let DIL = 2.85                  // `list`, the algebra's argument
-#let DIE2 = 4.00                 // ... and `E` again, when it is applied to each ELEMENT
 #let DID = 5.15                  // `Δ`
 #let DIl = 6.30                  // `list`, inside the pair
 #let DIO = 7.45                  // the object wire, `A`
@@ -5731,30 +5758,26 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS,
   cert: (expect: "party%∋ est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("party"),)))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
-#let d-out2 = dpanel(3.9, DW, DXO,
-  ((DXE, 3.25, 1.00, EW, UNIT), (DXL, "top", 2.55, none, none),
-   (DXL, 2.55, "bot", none, none), (DXD, 2.55, 1.65, DELTA, none)),
-  ((2.55, [`⦇S⦈`]), (1.65, [`choose`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
-  // The ink spells the LOWER of the two rows: `E(⦇S⦈)` and `E(choose)` are two beads, and row 2's
-  // `frc(⦇S⦈ choose)` is that one absorption step away.
-  cert: (expect: "⦇S⦈%∋ E(choose) est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("⦇S⦈"),)))
-#let d-out4 = dpanel(5.0, DW, DXO,
-  ((DXE, 4.25, 2.75, EW, UNIT), (DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.55, none, none),
-   (DXL, 3.55, "bot", none, none), (DXD, 3.55, 1.35, DELTA, none)),
-  ((3.55, [`⦇S⦈`]), (2.75, [`est((R×R)°)`], black, DXD), (1.35, [`choose`]),
-   (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
-  cert: (expect: "⦇S⦈%∋ est((R×R)°) choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
-         alias: (DUN("⦇S⦈"), DUN("choose"))))
-#let d-out5 = dpanel(4.2, DW, DXO,
-  ((DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.15, none, none),
-   (DXL, 3.15, "bot", none, none), (DXD, 3.15, 1.35, DELTA, none)),
-  ((3.15, [`⦇−⦈`]), (1.35, [`choose`]), (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
-  // The first alias is what the `−` stands for: the body is the panel drawn under this one.
-  cert: (expect: "⦇S%∋ est((R×R)°)⦈ choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
-         alias: ("⦇S%∋ est((R×R)°)⦈ = ⦇−⦈", DUN("choose"))))
+// The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
+// `frc(⦇S⦈ choose)` is that one absorption step away.
+#let d-out2 = dpanel(4, 5.7, 2.85,
+  ((0.55, "top", 3, none, none), (1.7, 3, 1, [`E`], none)),
+  ((3, [`⦇S⦈%∋`], black, 0.55), (2, [`choose`]), (1, [`est(R°)`], black, 1.7)),
+  ((0.55, [`tree`]), (2.85, [`A`])),
+  ((2.85, [`[A]`]),), s: DS,
+  cert: (expect: "⦇S⦈%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
+#let d-out4 = dpanel(5, 6.85, 4,
+  ((0.55, "top", 4, none, none), (1.7, 4, 3, [`E`], none), (2.85, 1.5, 1, [`E`], [`choose%∋`])),
+  ((4, [`⦇S⦈%∋`], black, 0.55), (3, [`est((R×R)°)`], black, 1.7), (1, [`est(R°)`], black, 2.85)),
+  ((0.55, [`tree`]), (4, [`A`])),
+  ((4, [`[A]`]),), s: DS,
+  cert: (expect: "⦇S⦈%∋ est((R×R)°)choose%∋ est(R°)", src: "tree(A)", tgt: "[A]"))
+#let d-out5 = dpanel(4, 5.7, 2.85,
+  ((0.55, "top", 3, none, none), (1.7, 1.5, 1, [`E`], [`choose%∋`])),
+  ((3, [`⦇S%∋ est((R×R)°)⦈`], black, 0.55), (1, [`est(R°)`], black, 1.7)),
+  ((0.55, [`tree`]), (2.85, [`A`])),
+  ((2.85, [`[A]`]),), s: DS,
+  cert: (expect: "⦇S%∋ est((R×R)°)⦈choose%∋ est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
@@ -5776,16 +5799,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((DIl, LIST), (DIO, OBJ)), s: DS,
   // The row states the whole fork; this panel and the next draw one branch each.
   cert: (expect: "include%∋ est(R°)", src: "A×[[A]×[A]]", tgt: "[A]", alias: (DUN("include"),)))
-// `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list, at `DIE2`: the transpose is taken
-// once per element, and `concat` is what finally eats the list the elements sat in.
-#let d-in7 = dpanel(4.6, DIW, DIO,
-  ((DIM, "top", 3.75, none, none), (DIL, "top", 0.55, none, none), (DIE2, 2.95, 1.35, EW, UNIT),
-   (DID, "top", 2.15, none, none), (DIl, "top", "bot", none, none)),
-  ((3.75, [`π₂`]), (2.15, [`choose`]), (1.35, [`est(R°)`], black, DIl), (0.55, [`concat`])),
-  ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS,
-  cert: (expect: "π₂ list(choose%∋ est(R°)) concat", src: "A×[[A]×[A]]", tgt: "[A]",
-         alias: (DUN("choose"),)))
+// `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
+// element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
+// beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
+#let d-in7 = dpanel(5, 8, 5.15,
+  ((0.55, "top", 4, none, none), (1.7, "top", 1, none, none), (2.85, "top", 3, none, none), (4, 3, 2, [`E`], none)),
+  ((4, [`π₂`], black, 0.55), (3, [`choose%∋`], black, 2.85), (2, [`est(R°)`], black, 4), (1, [`concat`], black, 1.7)),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`Δ`]), (5.15, [`[A]`])),
+  ((5.15, [`[A]`]),), s: DS,
+  cert: (expect: "π₂ list(choose%∋)list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
