@@ -75,3 +75,56 @@
   ), seams: (), src: ("F([A])", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))
 
+// ∩ (13.3.3b)  prefix° prefix∩R   [[A] ⟶ [A]]
+#cpanel((k: "cap", nin: 1, nout: 1, lanes: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("[A]", ), tgt: ("[A]", )),
+  cert: (expect: "prefix° prefix∩R", src: "[A]", tgt: "[A]"))
+
+// → (13.3.3c)  (π₁p→cons,⊸ nil)   [A×[A] ⟶ [A]]
+#cpanel((k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
+      (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
+      (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+    ), seams: ()), bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(π₁p→cons,⊸ nil)", src: "A×[A]", tgt: "[A]"))
+
+// ⦇⦈ (13.3.3b)  ⦇[nil,⊸ nil ∪ cons]⦈   [[A] ⟶ [A]]
+#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
+      (k: "case", nin: 1, nout: 1, bodies: (
+          (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ()),
+          (k: "seq", nin: 2, nout: 1, items: (
+              (k: "union", nin: 2, nout: 1, bodies: (
+                  (k: "seq", nin: 2, nout: 1, items: (
+                      (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                          ), seams: ())),
+                    ), seams: ()),
+                  (k: "seq", nin: 2, nout: 1, items: (
+                      (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+                    ), seams: ()),
+                )),
+            ), seams: ()),
+        ), ports: (
+          (),
+          ("A", "[A]", ),
+        )),
+    ), seams: ()), port: ("F([A])", ), src: ("[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⦇[nil,⊸ nil ∪ cons]⦈", src: "[A]", tgt: "[A]"))
+

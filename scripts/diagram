@@ -60,16 +60,28 @@ def cut(e, obj, br):
 BR = None                   # the branch `draw` picked, as `scanline.BRANCH` names it
 
 
+def bead(e):
+    """`∩`, `⦇⦈` and `(g→x,y)` are wirings of the CIRCUIT calculus (`scripts/circuit`) — this model
+    has no picture for any of them, so each folds back to the one bead it was before the parser
+    could read it.  Folded BEFORE `cut` runs, so that `branch` — which asks whether `cut` CHANGED
+    the tree — does not read a fold as a branch having been picked."""
+    if e[0] in ('cap', 'cond', 'cata'):
+        return ('atom', e[2])
+    if e[0] in ('union', 'case'):
+        return (e[0], [bead(x) for x in e[1]], e[2])
+    return rec(e, bead)
+
+
 def parse(s, obj=True):
     """The shared parser, every choice in it cut down to the branch being drawn."""
-    return cut(sl.parse(s), obj, BR)
+    return cut(bead(sl.parse(s)), obj, BR)
 
 
 def branch(formula):
     """The name `scanline.BRANCH` gives the branch `cut` picks, or None where the formula states no
     choice at all.  The `cert:` declares it and `scanline.read` cuts the STATED formula down the
     same way, so the picture and the sweep that reads it back agree on what is being drawn."""
-    e = sl.parse(formula)
+    e = bead(sl.parse(formula))
     drawn = cut(e, False, None)
     if drawn == e:
         return None

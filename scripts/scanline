@@ -27,6 +27,9 @@ UNIT = "𝟙"
 # `hc` is the ACROSS composite `s∘t`, leftmost outermost: a factor beside the wires that pass it.
 OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
 BREAK = OPENERS + CLOSERS + "×° \t"
+# A projection ends its own token: the note writes the guard of a conditional `π₁p`, with nothing
+# between the two arrows, and one bead reading `π₁p` is a composite drawn as though it were an atom.
+PROJ = ("π₁", "π₂")
 
 
 def matching(s, i):
@@ -56,15 +59,19 @@ def squeeze(s):
 
 
 def parse(s):
-    """Juxtaposition, `×`, `∘`, `∪`, postfix `°`, `N(e)`, `[x,y]`; anything else bracketed rides
-    through as one atom.  `∘` binds loosest — `η∘M μ` is `η` beside the `M` wire, then `μ` — so the
-    note brackets it — and `∪` looser than juxtaposition, so `a b ∪ c d` is `(a b)∪(c d)`."""
+    """Juxtaposition, `×`, `∘`, `∪`, `∩`, postfix `°`, `N(e)`, `[x,y]`, `⦇x⦈`, `(g→x,y)`; anything
+    else bracketed rides through as one atom.  `∘` binds loosest — `η∘M μ` is `η` beside the `M`
+    wire, then `μ` — so the note brackets it — then `∪`, then `∩`, then juxtaposition: `a b ∪ c∩d`
+    is `(a b)∪(c∩d)`, which is the lattice's own precedence."""
     hs = split_top(s, '∘')
     if len(hs) > 1:
         return ('hc', [parse(h) for h in hs])
     us = split_top(s, '∪')
     if len(us) > 1:
         return ('union', [parse(u) for u in us], squeeze(s))
+    ms = split_top(s, '∩')
+    if len(ms) > 1:
+        return ('cap', [parse(m) for m in ms], squeeze(s))
     xs, i = [], 0
     while i < len(s):
         if s[i] in " \t":
@@ -96,15 +103,26 @@ def p_prim(s, i):
     if s[i] in OPENERS:
         j = matching(s, i)
         if s[i] == '(':
+            # `(g→x,y)`: guarded branches, then an optional default.  The operands stay FLAT in
+            # source order — guard, body, …, default — so a walk maps over them like any other list.
+            bs = split_top(s[i + 1:j], ',')
+            gs = [x for b in bs for x in split_top(b, '→')]
+            if len(gs) > len(bs):
+                return ('cond', [parse(g) for g in gs], squeeze(s[i:j + 1])), j + 1
             return parse(s[i + 1:j]), j + 1
         # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
         # `plain` spells `frac(x, ∋)`, so `⦇S⦈%∋` must not read as `⦇S⦈` beside a stray `%∋`.
         if s[j + 1:j + 3] == '%∋':
             return ('atom', squeeze(s[i:j + 3])), j + 3
+        if s[i] == '⦇':
+            return ('cata', [parse(s[i + 1:j])], squeeze(s[i:j + 1])), j + 1
         bs = split_top(s[i + 1:j], ',')
         if s[i] == '[' and len(bs) > 1:
             return ('case', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
         return ('atom', squeeze(s[i:j + 1])), j + 1
+    for q in PROJ:
+        if s.startswith(q, i):
+            return ('atom', q), i + len(q)
     j = i
     while j < len(s) and s[j] not in BREAK:
         j += 1
@@ -121,18 +139,19 @@ def spell(e):
     k = e[0]
     if k == 'atom':
         return e[1]
-    if k in ('union', 'case'):
+    if k in ('union', 'case', 'cap', 'cond', 'cata'):
         return e[2]
     if k == 'app':
         return f"{e[1]}({spell(e[2])})"
     if k == 'conv':
-        return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union') else spell(e[1])) + '°'
+        return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union', 'cap')
+                else spell(e[1])) + '°'
     if k == 'prod':
-        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc', 'union') else spell(x)
+        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc', 'union', 'cap') else spell(x)
                         for x in e[1])
     if k == 'hc':
         return '∘'.join(f"({spell(x)})" if x[0] in ('comp', 'prod') else spell(x) for x in e[1])
-    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union') else spell(x) for x in e[1]]
+    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union', 'cap') else spell(x) for x in e[1]]
     out = ps[0]
     for p in ps[1:]:
         out += ('' if out[-1] in CLOSERS or p[0] in OPENERS else ' ') + p
@@ -169,6 +188,10 @@ def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
     `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` and `F(R)F(S)=F(RS)` are the relator
     laws, applied on trust."""
+    # One bead on the sweep side, so the comparison form stays the atom these were before the parser
+    # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
+    if e[0] in ('cap', 'cond', 'cata'):
+        return ('atom', e[2])
     e = rec(e, norm)
     if e[0] == 'conv':
         b = e[1]
