@@ -1,10 +1,3 @@
-// The acceptance render for CIRCUIT-GEN §5's slice: `./scripts/circuit --slice` pasted whole.
-// Everything below the header is generator output, so a redraw is a re-run of that line — never a
-// hand edit.  Compile with `typst compile --root . diag/circuit-slice.typ` from the repo root.
-#import "cpanel.typ": cpanel
-#set page(width: auto, height: auto, margin: 14pt)
-#set par(spacing: 20pt)
-
 // 13.3.3d r1  S%∋ est(R°)   [F([A]) ⟶ [A]]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
