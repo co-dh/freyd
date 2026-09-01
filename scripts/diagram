@@ -67,12 +67,15 @@ def letters(e):
 
 
 # ---------------------------------------------------------------- objects as wire stacks
+SPLIT_LIST = False          # --split-list: preview `[A]` as the `list` wire over `A`, uncollapsed
+
+
 def render(e):
     """The ONE label a cut's object may carry, or None.  `norm` reads `[X]` back as `list(X)`, so a
     list of a renderable object needs no wire of its own; nothing else survives the round trip."""
     if e[0] == 'atom':
         return e[1]
-    if e[0] == 'app' and e[1] == 'list':
+    if e[0] == 'app' and e[1] == 'list' and not SPLIT_LIST:
         inner = render(e[2])
         if inner is not None and sl.listable(e[2]):
             return f"[{inner}]"
@@ -517,6 +520,8 @@ def compare(path, frm, tbl):
 
 
 def main(argv):
+    global SPLIT_LIST
+    SPLIT_LIST = "--split-list" in argv
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     taken = {i for o in ("--from", "--json", "--src", "--tgt") if o in argv
