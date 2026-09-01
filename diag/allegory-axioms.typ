@@ -5533,39 +5533,35 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch]),
 
   [#vstep([], laws-pic(lrun(((frc([`party`]), 1.7, false), lb-est))),
-    [#frc([`party`])` est(R°)` \ #src[the specification — @party-defn]])],
+    [#src[the specification — @party-defn]])],
   [#dcell(d-out1, none)],
 
   [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈ choose`]), 3.0, false), lb-est))),
-    [#frc([`⦇S⦈ choose`])` est(R°)` \ #src[`party≜⦇S⦈ choose` — @party-defn]])],
+    [#src[`party≜⦇S⦈ choose` — @party-defn]])],
   [#dcell(d-out2, none)],
 
   [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈`]), 1.3, false), ([`E(choose)`], 2.7, true), lb-est))),
-    [#frc([`⦇S⦈`])` E(choose) est(R°)` \
-     #src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]])],
+    [#src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]])],
   [#dcell(d-out2, none)],
 
   [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
-    [#frc([`⦇S⦈`])` est((R×R)°) `#frc([`choose`])` est(R°)` \
-     #src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row,
+    [#src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row,
       `lean:AOP.A7_2.est_Λ_est_le@1083248a`]])],
   [#dcell(d-out4, none)],
 
   [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
-    [`⦇`#frc([`S`])` est((R×R)°)⦈ `#frc([`choose`])` est(R°)` \
-     #src[`(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
+    [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
+      `(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
       `lean:AOP.A7_2.greedy@21400acf`]])],
   [#dcell(d-out5, d-in5)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
-    [`⦇⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⦈ `#frc([`choose`])` est(R°)` \
-     #src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
+    [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
       `lean:AOP.A7_3_Party.pair_est_le@75a48598`]])],
   [#dcell(none, d-in6)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW7, LBY, lbody7)),
-    [`⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
-     #src[`include` a map, `est(R°)` into each branch,
+    [#src[`include` a map, `est(R°)` into each branch,
       `lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d`, `lean:AOP.A7_3_Party.exclude_step@7360252f`]])],
   [#dcell(none, d-in7)],
 )]<party-laws>
