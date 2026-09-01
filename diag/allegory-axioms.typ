@@ -7,6 +7,7 @@
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
 #import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -4259,25 +4260,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
 #let bx-Ro = ([`R°`], 0.85, true)
-// The `∪`'s constant branch at the two ends of the chain — `R°` on the tail before the discard,
-// and `R°` after the `nil` — which `disc-copy`, having no box on either side, cannot draw.
-#let ro-disc-nil = w => {
-  wire((0, UIP), (1.20, UIP)); wiredot((1.20, UIP))
-  wire((0, -UIP), (0.28, -UIP)); twbox(0.28, -UIP, bx-Ro)
-  wire((1.13, -UIP), (1.20, -UIP)); wiredot((1.20, -UIP))
-  gbox((1.60, 0), [`nil`], w: 0.75, chamfer: false)
-  wire((2.35, 0), (w, UOP))
-}
-#let disc-nil-ro = w => {
-  wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
-  wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
-  gbox((0.6, 0), [`nil`], w: 0.75, chamfer: false)
-  wire((1.35, 0), (1.63, 0)); twbox(1.63, 0, bx-Ro, h: TBH)
-  wire((2.48, 0), (w, UOP))
-}
-// ONE run for every row, set by the widest branch `(p×𝟙) cons R°`: only the box that moves may
-// move, so the `∪` region stands still down the chain.
-#let TWMW = 4.0
 #disp[#table(
   columns: (1fr, 6.0cm),
   align: (center + horizon, left + horizon),
@@ -4287,29 +4269,149 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [#step([])[#twp(twrow(tw-cons(TWMW, a: bx-p, types: true), lw: TWMW, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
+  [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+          ), seams: ()),
+      )),
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@ea69a5bc
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW, upper: ro-disc-nil), s: 74%)][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@cbdcc4d1
 
-  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×R°) cons`]],
+  [#step(SQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×R°) cons`]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6d2514be
 
-  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×𝟙) cons R°`]],
+  [#step(SQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×𝟙) cons R°`]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@577d240b
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW, upper: disc-nil-ro), s: 74%)][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@5635abfd
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p), lw: TWMW, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
+  [#step(EQ)[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
