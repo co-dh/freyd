@@ -5717,12 +5717,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((1.7, [`tree`]), (4, [`A`])),
   ((4, [`[A]`]),), s: DS,
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
-#let d-out5 = dpanel(5, 5.7, 2.85,
-  ((0.55, "top", 4, none, none), (1.7, 2.5, 1, [`E`], frc([`𝟙`]))),
-  ((4, [`⦇𝟙%∋ E(S)est((R×R)°)⦈`], black, 0.55), (2, [`choose`]), (1, [`est(R°)`], black, 1.7)),
-  ((0.55, [`tree`]), (2.85, [`A`])),
-  ((2.85, [`[A]`]),), s: DS,
-  cert: (expect: "⦇𝟙%∋ E(S)est((R×R)°)⦈𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
@@ -5796,7 +5790,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       `(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
  ]])],
       // lean:AOP.A7_2.greedy@21400acf
-  [#dcell(d-out5, d-in5)],
+  [#dcell(none, d-in5)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
     [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
