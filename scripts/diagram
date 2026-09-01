@@ -67,7 +67,8 @@ def letters(e):
 
 
 # ---------------------------------------------------------------- objects as wire stacks
-SPLIT_LIST = False          # --split-list: preview `[A]` as the `list` wire over `A`, uncollapsed
+SPLIT = frozenset()         # the panel's own `cert:` `split:` — the functors it draws as a wire of
+                            # their own instead of folding into the object wire's label
 
 
 def render(e):
@@ -75,7 +76,7 @@ def render(e):
     list of a renderable object needs no wire of its own; nothing else survives the round trip."""
     if e[0] == 'atom':
         return e[1]
-    if e[0] == 'app' and e[1] == 'list' and not SPLIT_LIST:
+    if e[0] == 'app' and e[1] == 'list' and 'list' not in SPLIT:
         inner = render(e[2])
         if inner is not None and sl.listable(e[2]):
             return f"[{inner}]"
@@ -314,6 +315,18 @@ def alphabet(table, *objs):
     return {w for w in ws.union(*(peel(o)[0] for o in objs)) if '−' not in w and w != '×'}
 
 
+def born_at(rows, ws, sub):
+    """Which bead a wire the BOTTOM edge needs comes off.  `⦇S⦈`'s target is the free `y`, so the
+    row that made the list is known only once `sub` is solved: the first already wearing `ws`."""
+    def wears(e):
+        for w in ws:
+            if render(e) is not None or layer(e)[0] != w:
+                return False
+            e = layer(e)[1]
+        return True
+    return next((i for i, r in enumerate(rows) if wears(settle(r.obj, sub))), len(rows) - 1)
+
+
 def elaborate(formula, src, tgt, table):
     """The typed reading of a formula: one row per bead, carrying the wires its signature eats and
     the wires it makes.  A wire dies where it is CONSUMED — what a formula alone cannot say."""
@@ -356,9 +369,15 @@ def elaborate(formula, src, tgt, table):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
     for l in lanes:
         l.dies = len(rows)
-    obot, otop = render(settle(obj, sub)), render(settle(atop, sub))
-    if obot is None or otop is None:
-        raise Unhandled(f"the object wire carries {spell(settle(obj, sub))}, which has no label")
+    # The bottom edge is a wire stack too, not one label: a target the beads only pin by unification
+    # reaches here still wrapped, so peel it and give each wire the bead it comes off.
+    ws, ob = peel(settle(obj, sub))
+    for k, w in enumerate(ws):
+        made.append(Lane(w, born=born_at(rows, ws[:k + 1], sub)))
+        made[-1].dies = len(rows)
+    obot, otop = render(ob), render(settle(atop, sub))
+    if otop is None:
+        raise Unhandled(f"the object wire carries {spell(settle(atop, sub))}, which has no label")
     for r in rows:                         # the seam labels: what a formula alone cannot say either
         r.obj = render(settle(r.obj, sub))
     return rows, made, otop, obot
@@ -400,11 +419,15 @@ def layout(rows, made, otop, obot, cert):
             "cert": cert}
 
 
-def draw(formula, src, tgt, table=None):
+def draw(formula, src, tgt, table=None, split=""):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
-    one of the pictures the book calls equal."""
+    one of the pictures the book calls equal.  `split` rides in the `cert:` beside `src` and `tgt`,
+    for the same reason they do — a formula alone does not say which picture of it the note wants."""
+    global SPLIT
+    SPLIT = frozenset(split.split())
+    cert = {"expect": formula, "src": src, "tgt": tgt}
     rows, made, otop, obot = elaborate(formula, src, tgt, table or sigs())
-    return layout(rows, made, otop, obot, {"expect": formula, "src": src, "tgt": tgt})
+    return layout(rows, made, otop, obot, cert | ({"split": split} if split else {}))
 
 
 # ---------------------------------------------------------------- the typst call
@@ -470,7 +493,7 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl)
+            g = draw(want, src, tgt, tbl, r["cert"].get("split", ""))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -505,7 +528,7 @@ def compare(path, frm, tbl):
             continue
         src, tgt = endpoints(sl.Panel(r))
         try:
-            g = draw(r["cert"]["expect"], src, tgt, tbl)
+            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", ""))
         except (Unhandled, ValueError, StopIteration) as ex:
             print(f"{r['id']:<12} {ex}"); continue
         print(f"=== {r['id']}  {r['cert']['expect']}   [{src} ⟶ {tgt}]")
@@ -520,8 +543,6 @@ def compare(path, frm, tbl):
 
 
 def main(argv):
-    global SPLIT_LIST
-    SPLIT_LIST = "--split-list" in argv
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     taken = {i for o in ("--from", "--json", "--src", "--tgt") if o in argv
@@ -539,10 +560,10 @@ def main(argv):
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
-                 + '\nusage: diagram --src "F([A])" --tgt "[A]" "α prefix list(p)"'
+                 + '\nusage: diagram [--split-list] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]')
-    r = draw(formula, src, tgt, tbl)
+    r = draw(formula, src, tgt, tbl, "list" if "--split-list" in argv else "")
     got, bad = swept(r)
     print(emit(r))
     if bad:
