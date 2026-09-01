@@ -7,6 +7,7 @@
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
 #import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -2279,13 +2280,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
   let p = box(pic)
   let lane = if pw == none { measure(p).width } else { pw }
-  if measure(f).width + lane + gut <= sz.width - OPW - gut {
+  let row = if measure(f).width + lane + gut <= sz.width - OPW - gut {
     grid(columns: (OPW, lane, 1fr), align: (left + horizon, left + horizon, right + horizon),
       column-gutter: gut, op, p, f)
   } else {
     grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
       op, stack(spacing: 5pt, p, align(right, f)))
   }
+  pic-meta(plain(f), row, width: sz.width)
+  row
 })
 #let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
 
@@ -2294,23 +2297,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
 // formula stack on one left edge — which `step`'s side-by-side branch cannot give.
-#let vstep(op, pic, f) = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
-  column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+#let vstep(op, pic, f) = layout(sz => {
+  let row = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
+    column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+  pic-meta(plain(f), row, width: sz.width)
+  row
+})
 
-// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
-// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
-// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
-// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
-#let plain(c) = {
-  if type(c) == color { c.to-hex() } else if type(c) != content { c }
-  else if c == [ ] or c.func() == linebreak { " " }
-  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
-  else if c.has("text") { c.text }
-  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
-  else if c.has("children") { c.children.map(plain).join("") }
-  else if c.has("body") { plain(c.body) }
-  else { repr(c) }
-}
 // A panel's address is the display it stands in and its place in that display, both read off the
 // counters at the point it is PLACED, so a reordered row cannot keep a stale name.
 #let hm-meta(rec) = {
@@ -2342,13 +2335,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `s`; `tpan`/`mpan` pass 100% and print their labels at the size `tw-hm` does.
 // `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
 // lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
-#let dpan(h, w, xa, body, s: 74%, opath: none) = P(cetz.canvas(length: 0.8cm, {
+#let dpan(h, w, xa, body, s: 74%, opath: none, key: none) = P(cetz.canvas(length: 0.8cm, {
   let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
   hm-region(((0, 0), (0, h)) + op, fb-ALLC)
   hm-region(op + ((w, 0), (w, h)), luma(226))
   hm-wire(op, col: BCOL)
   body
-}), s: s)
+}), s: s, key: key)
 
 // A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
@@ -2470,7 +2463,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for (x, l) in bot {
     hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s, opath: opath)
+  }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
@@ -4306,25 +4299,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
 #let bx-Ro = ([`R°`], 0.85, true)
-// The `∪`'s constant branch at the two ends of the chain — `R°` on the tail before the discard,
-// and `R°` after the `nil` — which `disc-copy`, having no box on either side, cannot draw.
-#let ro-disc-nil = w => {
-  wire((0, UIP), (1.20, UIP)); wiredot((1.20, UIP))
-  wire((0, -UIP), (0.28, -UIP)); twbox(0.28, -UIP, bx-Ro)
-  wire((1.13, -UIP), (1.20, -UIP)); wiredot((1.20, -UIP))
-  gbox((1.60, 0), [`nil`], w: 0.75, chamfer: false)
-  wire((2.35, 0), (w, UOP))
-}
-#let disc-nil-ro = w => {
-  wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
-  wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
-  gbox((0.6, 0), [`nil`], w: 0.75, chamfer: false)
-  wire((1.35, 0), (1.63, 0)); twbox(1.63, 0, bx-Ro, h: TBH)
-  wire((2.48, 0), (w, UOP))
-}
-// ONE run for every row, set by the widest branch `(p×𝟙) cons R°`: only the box that moves may
-// move, so the `∪` region stands still down the chain.
-#let TWMW = 4.0
 #disp[#table(
   columns: (1fr, 6.0cm),
   align: (center + horizon, left + horizon),
@@ -4334,29 +4308,149 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [#step([])[#twp(twrow(tw-cons(TWMW, a: bx-p, types: true), lw: TWMW, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
+  [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+          ), seams: ()),
+      )),
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@ea69a5bc
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW, upper: ro-disc-nil), s: 74%)][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@cbdcc4d1
 
-  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, l: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×R°) cons`]],
+  [#step(SQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×R°) cons`]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6d2514be
 
-  [#step(SQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW), s: 74%)][`⊸ nil ∪ (p×𝟙) cons R°`]],
+  [#step(SQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×𝟙) cons R°`]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@577d240b
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p, post: bx-Ro), lw: TWMW, upper: disc-nil-ro), s: 74%)][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@5635abfd
 
-  [#step(EQ)[#twp(twrow(tw-cons(TWMW, a: bx-p), lw: TWMW, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
+  [#step(EQ)[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )

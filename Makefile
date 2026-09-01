@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p w cite spell scan scan-strict cover diagram slice books hm-check hm-sigs
+.PHONY: p w cite spell scan scan-strict cover diagram slice circuit books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -28,14 +28,24 @@ SLICE := diag/circuit-slice.typ
 # notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
 # box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
 # its own copy of those, so nothing reaches above diag/ any more.
-p: $(STAMP) slice cite spell
+# The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
+# lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
+p: $(STAMP) slice circuit cite spell
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+	./scripts/book ingest diag/allegory-axioms.pdf
+	./scripts/book pics
 
 # The circuit generator's acceptance render.  `--slice` writes the whole .typ itself — header,
 # import, rows — so nothing in it is hand-kept, and the compile is the check that it still parses.
 slice:
 	./scripts/circuit --slice
 	typst compile $(SLICE) $(SLICE:.typ=.pdf)
+
+# The note's own `#cpanel(…)` literals, each rebuilt from its `cert:` and diffed against the text.
+# BEFORE the compile and without typst: a pasted circuit the generator no longer draws is drift,
+# and `./scripts/circuit --write` splices the rebuilt one over it.
+circuit:
+	./scripts/circuit --compare diag/allegory-axioms.typ
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
