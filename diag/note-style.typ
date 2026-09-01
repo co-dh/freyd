@@ -73,6 +73,7 @@
 /// sequence per heading whatever the display is.
 #let disp(body) = figure(body, kind: "disp", supplement: none)
 
+#let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
 #let P(p, s: 92%) = align(center, box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p)))

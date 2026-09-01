@@ -10,9 +10,10 @@ ready to paste beside the row it draws.
 
 The design is diag/CIRCUIT-GEN.md and this is its §5 slice.  Typing is §1.3: every subterm carries
 its source and target OBJECT, read off diag/circuit-sigs.json by unification with the port in hand,
-and `wires(X)` is the list of ×-factors of `X` (the unit object has none).  Drawing is §3: one
-clause of `walk` per operator, each primitive placed once.  Widths are deliberately absent —
-`cpanel` measures its own labels at render time (§4f), so this never guesses font metrics.
+and `wires(X)` is the list of strands a port at `X` carries: its ×-factors, none for the unit, and
+a `polys` functor's product summand.  Drawing is §3: one clause of `walk` per operator, each
+primitive placed once.  Widths are deliberately absent — `cpanel` measures its own labels at
+render time (§4f), so this never guesses font metrics.
 
 `∩`, `(g→x,y)` and `⦇x⦈` are real nodes in the shared grammar now, with a drawing rule each: a meet
 is copy / both lanes / merge (§3 row 12), a conditional is the `∪` of two guarded branches with the
@@ -21,10 +22,11 @@ circuit between two bars, which is how the note already draws it (row 17).  `⊸
 and §3 row 14 reads it where it stands, as the constant it is.
 
 WHAT IT STILL REFUSES, each where it is written: an `∩` of more than two operands, a conditional of
-more than one test, a fold whose carrier the panel does not state, a guard that is not boxes and
-wires (a region's own colours do not invert inside a cut), and `°` on a composite (row 8's frame).
+more than one test, a fold whose carrier neither the panel nor the algebra's row declares, a guard
+that is not boxes and wires (a region's own colours do not invert inside a cut), and `°` on a
+composite (row 8's frame — over a PRODUCT it distributes, one flipped box per wire).
 """
-import importlib.machinery, importlib.util, json, os, sys
+import functools, importlib.machinery, importlib.util, json, os, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 _P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
@@ -35,6 +37,7 @@ parse, norm, spell, Unhandled = sl.parse, sl.norm, sl.spell, sl.Unhandled
 
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
+OUT = os.path.join(os.path.dirname(SIGS), "circuit-slice.typ")      # what `--slice` writes
 KONST = "⊸"
 PROJ = {"π₁": 0, "π₂": 1}       # §3 row 3: which ×-factor survives; the others end at a dot
 # CIRCUIT-GEN §5's rows, in dependency order: `--slice` is the acceptance test.  The last three are
@@ -44,11 +47,16 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("13.3.3b r2", "F(prefix) [nil,⊸ nil ∪ cons] list(p)", "F([A])", "[A]"),
          ("∩ (13.3.3b)", "prefix° prefix∩R", "[A]", "[A]"),
          ("→ (13.3.3c)", "(π₁p→cons,⊸ nil)", "A×[A]", "[A]"),
-         ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]")]
+         ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]"),
+         ("⦇⦈ (13.4.4a)", "⦇S⦈", "tree(A)", "[A]×[A]"),
+         ("13.4.4a r2", "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", "tree(A)", "[A]"),
+         ("13.4.4a r4", "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", "tree(A)", "[A]")]
 
 
+@functools.lru_cache(maxsize=None)
 def sigs():
-    """diag/circuit-sigs.json — what each atom is an arrow between, and whether it is a map."""
+    """diag/circuit-sigs.json — what each atom is an arrow between, and whether it is a map.
+    Read once: `wires` asks for the polynomials at every node, and nobody writes to the table."""
     return json.load(open(SIGS, encoding="utf-8"))
 
 
@@ -65,11 +73,39 @@ def oshow(e):
     return '×'.join(oshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
 
 
+def bare(e):
+    """Whether `e`'s label opens with a visible boundary: `[`, or a one-letter functor before one."""
+    return e[0] == 'app' and (e[1] == 'list' or len(e[1]) == 1 and bare(e[2]))
+
+
+def lshow(e):
+    """A wire label — the ONE place `F([A])` prints `F[A]` (user's choice): parentheses drop only
+    while every boundary stays visible (`EF[A]`); `tree(A)`, `F(A)`, `E([A]×[A])` keep theirs."""
+    if e[0] == 'app' and e[1] == 'list':
+        return f"[{lshow(e[2])}]"
+    if e[0] == 'app':
+        return f"{e[1]}{lshow(e[2])}" if len(e[1]) == 1 and bare(e[2]) else f"{e[1]}({lshow(e[2])})"
+    return '×'.join(lshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
+
+
 def wires(X):
-    """The ×-factors of `X` — the strands a port at `X` has.  A functor application is ONE wire and
-    the unit is NONE: `𝟏` is the empty product, which is why the note's `nil` has no left port."""
-    return [] if X == ('atom', '𝟏') else \
-        [w for x in X[1] for w in wires(x)] if X[0] == 'prod' else [X]
+    """The strands a port at `X` has: its ×-factors, none for `𝟏`, and for a `polys` functor the
+    strands of its one product summand — `F([A])` at a box is the `cons` branch's `A`,`[A]`, the
+    note's §13.3.3b decision that `𝟏+` is not drawn (`E(F([A]))` stays one wire: only a
+    polynomial head opens).  The tape alone keeps the coproduct as one wire, and says so itself."""
+    if X == ('atom', '𝟏'):
+        return []
+    if X[0] == 'prod':
+        return [w for x in X[1] for w in wires(x)]
+    ps = sigs()["polys"].get(X[1]) if X[0] == 'app' else None
+    if ps is None:
+        return [X]
+    ss = [b for b in (subst(obj(p), {'x': X[2]}) for p in ps) if b != ('atom', '𝟏')]
+    if len(ss) != 1:
+        raise Unhandled(f"`{oshow(X)}` has {len(ss)} summands besides `𝟏` in {X[1]}'s polynomial"
+                        f" ({', '.join(oshow(b) for b in ss)}): a case split, which only a tape"
+                        f" draws — not a port's wires")
+    return wires(ss[0])
 
 
 def var(e):
@@ -169,10 +205,13 @@ def fuse(xs, polys=None):
 
 
 # ---------------------------------------------------------------- one clause per operator (§3)
-def pic(k, src, tgt, is_map, **kw):
-    """A layout node.  `nin`/`nout` are the strand counts its ports carry, which is what `cpanel`
-    lays the picture out over; a `_`-prefixed field is the elaborator's and is not emitted."""
-    return dict(k=k, nin=len(wires(src)), nout=len(wires(tgt)), **kw), src, tgt, is_map
+def pic(k, src, tgt, is_map, _in=None, _out=None, **kw):
+    """A layout node.  `_in`/`_out` are the strands its ports carry — the objects' `wires`, unless
+    a tape keeps its coproduct whole or a composite takes its children's — and `nin`/`nout` their
+    counts, which `cpanel` lays out over.  A `_`-prefixed field is the elaborator's, not emitted."""
+    _in = wires(src) if _in is None else _in
+    _out = wires(tgt) if _out is None else _out
+    return dict(k=k, nin=len(_in), nout=len(_out), _in=_in, _out=_out, **kw), src, tgt, is_map
 
 
 def box(label, src, tgt, is_map, frac=False, flip=False):
@@ -188,6 +227,10 @@ def walk(e, tbl, src=None, tgt=None):
     if e[0] == 'comp':
         return seq(e[1], tbl, src, tgt)
     if e[0] == 'conv':
+        # `(R×S)°=R°×S°`: over a PRODUCT the `°` distributes, one flipped box per wire.  Rewritten
+        # here and not in `cnorm`, so the label a box carrying `(R×S)°` prints stays the note's.
+        if e[1][0] == 'prod':
+            return stack([('conv', x) for x in e[1][1]], tbl, src)
         n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src)
         if n["k"] != "box":
             raise Unhandled(f"`{spell(e)}` writes `°` on a composite, which is the cup/cap frame of"
@@ -217,13 +260,29 @@ def walk(e, tbl, src=None, tgt=None):
     return leaf(e, tbl, src, tgt)
 
 
+def rows(tbl, key):
+    """The arrows a key names.  A letter the note reuses across sections carries several, as a
+    list, and nothing but the port in hand tells them apart."""
+    r = tbl.get(key)
+    return [] if r is None else r if isinstance(r, list) else [r]
+
+
 def leaf(e, tbl, src, tgt):
     """An atom (§3 rows 1-2) or an application read as one box (§3 row 10): the signature's `src`
     and `tgt` are schemes, and the port in hand binds their variables."""
     key = e[1] if e[0] in ('atom', 'app') else None
-    row = tbl.get(key)
-    if row is None:
+    rs = rows(tbl, key)
+    if not rs:
         raise Unhandled(f"no signature for `{key or spell(e)}` in diag/circuit-sigs.json")
+    for i, row in enumerate(rs):
+        try:
+            return typed(e, row, tbl, src, tgt)
+        except Unhandled:
+            if i + 1 == len(rs):
+                raise
+
+
+def typed(e, row, tbl, src, tgt):
     env = {}
     unify(obj(row["src"]) if src is not None else obj(row["tgt"]), src if src is not None else tgt,
           env)
@@ -254,7 +313,7 @@ def lane(t):
     and every consumer below has exactly one shape to place."""
     n, s, t2, m = t
     return n if n["k"] == "seq" else \
-        pic("seq", s, t2, m, items=[n], seams=[], _objs=[s, t2])[0]
+        pic("seq", s, t2, m, _in=n["_in"], _out=n["_out"], items=[n], seams=[], _objs=[s, t2])[0]
 
 
 def seq(xs, tbl, src, tgt=None):
@@ -271,12 +330,18 @@ def seq(xs, tbl, src, tgt=None):
             objs.append(b[2]); mp = mp and b[3]; i += 2
             continue
         n, s, t, m = walk(xs[i], tbl, src=objs[-1], tgt=tgt if i + 1 == len(xs) else None)
+        if items and items[-1]["_out"] != n["_in"]:
+            raise Unhandled(f"`{spell(xs[i])}` takes {oshow(objs[-1])} as one coproduct wire where"
+                            f" the factor before leaves it as the strands"
+                            f" {', '.join(oshow(w) for w in items[-1]['_out'])}: only the tape"
+                            f" fusion `F(R)[f,g]=[f,(𝟙×R)g]` puts a box before a tape")
         if n["k"] == "seq":
             items += n["items"]; objs += n["_objs"][1:]
         else:
             items.append(n); objs.append(t)
         mp = mp and m; i += 1
-    return pic("seq", objs[0], objs[-1], mp, items=items, seams=seams(objs), _objs=objs)
+    return pic("seq", objs[0], objs[-1], mp, items=items, seams=seams(objs), _objs=objs,
+               _in=items[0]["_in"] if items else None, _out=items[-1]["_out"] if items else None)
 
 
 def stack(xs, tbl, src):
@@ -288,7 +353,9 @@ def stack(xs, tbl, src):
                         f" {oshow(src)}: §3 row 6's general split is not in the slice")
     ls = [walk(x, tbl, src=w) for x, w in zip(xs, ws)]
     t = ls[0][2] if len(ls) == 1 else ('prod', [b[2] for b in ls])
-    return pic("stack", src, t, all(b[3] for b in ls), lanes=[lane(b) for b in ls])
+    lanes = [lane(b) for b in ls]
+    return pic("stack", src, t, all(b[3] for b in ls), lanes=lanes,
+               _in=[w for l in lanes for w in l["_in"]], _out=[w for l in lanes for w in l["_out"]])
 
 
 def branches(ops, tbl, srcs, what):
@@ -297,13 +364,17 @@ def branches(ops, tbl, srcs, what):
     bs = [walk(x, tbl, src=s) for x, s in zip(ops, srcs)]
     if len({oshow(b[2]) for b in bs}) > 1:
         raise Unhandled(f"`{what}` merges branches at {', '.join(oshow(b[2]) for b in bs)}")
+    ins = {tuple(oshow(w) for w in b[0]["_in"]) for b in bs}
+    if len({oshow(s) for s in srcs}) == 1 and len(ins) > 1:    # a tape's branches start apart
+        raise Unhandled(f"`{what}`'s branches take the one input as different strands:"
+                        f" {'; '.join(','.join(oshow(w) for w in b[0]['_in']) for b in bs)}")
     return bs
 
 
 def fan(e, tbl, src):
     """§3 row 11: the `∪` region — the input arrives once, a dashed fan hands it to both bodies."""
     bs = branches(e[1], tbl, [src] * len(e[1]), spell(e))
-    return pic("union", src, bs[0][2], False, bodies=[lane(b) for b in bs])
+    return pic("union", src, bs[0][2], False, _in=bs[0][0]["_in"], bodies=[lane(b) for b in bs])
 
 
 def meet(e, tbl, src):
@@ -314,7 +385,7 @@ def meet(e, tbl, src):
         raise Unhandled(f"`{spell(e)}` meets {len(e[1])} operands where a copy has TWO outputs:"
                         f" bracket it, `a∩(b∩c)`, and the copies nest")
     bs = branches(e[1], tbl, [src] * 2, spell(e))
-    return pic("cap", src, bs[0][2], False, lanes=[lane(b) for b in bs])
+    return pic("cap", src, bs[0][2], False, _in=bs[0][0]["_in"], lanes=[lane(b) for b in bs])
 
 
 FLAT = ('box', 'proj', 'stack', 'seq')
@@ -339,27 +410,64 @@ def test(e, tbl, src):
         raise Unhandled(f"the guard `{spell(e[1][0])}` draws a region, and a region's own colours"
                         f" do not invert: row 16's cut is drawn round boxes and wires only")
     bs = branches(e[1][1:], tbl, [src] * 2, spell(e))
-    return pic("cond", src, bs[0][2], False, guard=g, bodies=[lane(b) for b in bs])
+    return pic("cond", src, bs[0][2], False, _in=bs[0][0]["_in"], guard=g,
+               bodies=[lane(b) for b in bs])
+
+
+def base(f, c, polys):
+    """The object the algebra meets: the functor at the carrier.  A coproduct of ONE branch IS that
+    branch, so its algebra takes the branch's own ×-factors as separate strands; a several-branch
+    one stays folded, because the `[x,y]` inside is what forks it."""
+    bs = polys.get(f)
+    return subst(obj(bs[0]), {'x': c}) if bs and len(bs) == 1 else ('app', f, c)
+
+
+def declared(alg, tbl, f, env, polys):
+    """A fold inside a functor gets no target from the panel, so the carrier is READ OFF the
+    algebra's own row — `scripts/diagram` reads the same declaration for the spider side. `f`'s
+    algebra is the row whose source is `f` at its target, which is also what picks between the
+    arrows a reused letter carries; `env` binds the letters `mu`'s scheme wrote the source over."""
+    cs = [t for r in rows(tbl, alg[1] if alg[0] in ('atom', 'app') else None)
+          for t in [subst(obj(r["tgt"]), env)]
+          if ground(t) and subst(obj(r["src"]), env) == base(f, t, polys)]
+    if len(cs) != 1:
+        raise Unhandled(f"`{spell(alg)}` is {len(cs)} algebras for {f} in diag/circuit-sigs.json:"
+                        f" a fold inside a functor takes its carrier from the one row declaring it")
+    return cs[0]
 
 
 def fold(e, tbl, src, tgt):
     """§3 row 17: `⦇α⦈` as MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars,
     the note's own `banana` (allegory-axioms.typ).  Nothing crosses the LEFT bar: the input arrives
-    at it and the algebra's strands start there, and that break is the recursion."""
-    if tgt is None:
-        raise Unhandled(f"`{spell(e)}` folds onto a carrier the formula does not name: state the"
-                        f" panel's target, or the bars have no object to close on")
-    mus = sigs().get("mu", {})
-    fs = [f for f, o in mus.items() if obj(o) == src]
-    if len(fs) != 1:
+    at it and the algebra's strands start there, and that break is the recursion.  The carrier is
+    never inferred: the panel's target declares it, or the algebra's row does, and the box is
+    LABELLED with it — the term names the algebra and the source, so this is what it cannot say."""
+    cfg = sigs()
+    hits = []
+    for f, o in cfg.get("mu", {}).items():
+        env = {}
+        try:
+            unify(obj(o), src, env)
+        except Unhandled:
+            continue
+        hits.append((f, env))
+    if len(hits) != 1:
         raise Unhandled(f"`{spell(e)}` folds {oshow(src)}, which diag/circuit-sigs.json gives"
-                        f" {len(fs)} initial algebras for — a fold needs exactly one")
-    a = ('app', fs[0], tgt)
+                        f" {len(hits)} initial algebras for — a fold needs exactly one")
+    f, env = hits[0]
+    c = tgt if tgt is not None else declared(e[1][0], tbl, f, env, cfg["polys"])
+    a = base(f, c, cfg["polys"])
     b = walk(e[1][0], tbl, src=a)
-    if b[2] != tgt:
+    if b[2] != c:
         raise Unhandled(f"the algebra `{spell(e[1][0])}` lands on {oshow(b[2])}, not the carrier"
-                        f" {oshow(tgt)} the fold is stated at")
-    return pic("cata", src, tgt, b[3], body=lane(b), port=[oshow(w) for w in wires(a)])
+                        f" {oshow(c)} the fold is stated at")
+    # A product carrier is drawn as its wires, never as a label (§13.4.4a: `[A]×[A]` is two wires
+    # each `[A]`).  A single-wire carrier is drawn only when it differs from that wire's own label.
+    cw = wires(c)
+    show = len(cw) == 1 and oshow(cw[0]) != oshow(c)
+    body = lane(b)          # the port labels are the algebra's own strands: one per wire it takes
+    return pic("cata", src, c, b[3], body=body, label=lshow(c) if show else None,
+               port=[lshow(w) for w in body["_in"]])
 
 
 def tape(e, tbl, src):
@@ -375,8 +483,10 @@ def tape(e, tbl, src):
     if len(ss) != len(e[1]):
         raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
     bs = branches(e[1], tbl, ss, spell(e))
-    return pic("case", src, bs[0][2], all(b[3] for b in bs),
-               bodies=[lane(b) for b in bs], ports=[[oshow(w) for w in wires(s)] for s in ss])
+    # The coproduct arrives as ONE wire, the fork being what opens it; a box at the same object
+    # takes the product summand's strands (`wires`).
+    return pic("case", src, bs[0][2], all(b[3] for b in bs), _in=[src],
+               bodies=[lane(b) for b in bs], ports=[[lshow(w) for w in wires(s)] for s in ss])
 
 
 # ---------------------------------------------------------------- seams and the panel
@@ -386,7 +496,7 @@ def seams(objs):
     out, prev = [], objs[0]
     for i, o in enumerate(objs[1:-1]):
         if len(wires(o)) == 1 and o != prev and o != objs[i + 2]:
-            out.append([i, oshow(o)]); prev = o
+            out.append([i, lshow(o)]); prev = o
     return out
 
 
@@ -396,8 +506,8 @@ def draw(formula, src, tgt, table=None):
     tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
-    tree["src"] = [oshow(w) for w in wires(s)]
-    tree["tgt"] = [oshow(w) for w in wires(t)]
+    tree["src"] = [lshow(w) for w in tree["_in"]]
+    tree["tgt"] = [lshow(w) for w in tree["_out"]]
     tree["cert"] = {"expect": formula, "src": src, "tgt": tgt}
     return tree
 
@@ -414,7 +524,8 @@ def tv(v, ind=2):
         return "(\n" + "".join(f"{p}{tv(x, ind + 2)},\n" for x in v) + " " * (ind - 2) + ")" \
             if any(isinstance(x, (dict, list)) for x in v) \
             else "(" + "".join(f"{tv(x, ind)}, " for x in v) + ")"
-    return str(v).lower() if isinstance(v, bool) else \
+    return "none" if v is None else \
+        str(v).lower() if isinstance(v, bool) else \
         '"' + v + '"' if isinstance(v, str) else str(v)
 
 
@@ -457,16 +568,28 @@ def main(argv):
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     tbl = sigs()
     if "--slice" in argv:
-        bad = 0
+        # The whole file is written here, header included: a hand-kept header above a `>` redirect
+        # was lost three times over, so nothing about circuit-slice.typ is edited by hand any more.
+        bad, out = 0, [
+            "// The acceptance render for CIRCUIT-GEN §5's slice, written whole by `./scripts/circuit"
+            " --slice`.",
+            "// Everything here is generator output, so a redraw is a re-run of that line — never a"
+            " hand edit.",
+            "// `make slice` regenerates and compiles it; `make p` runs that too.",
+            '#import "cpanel.typ": cpanel',
+            "#set page(width: auto, height: auto, margin: 0.8cm, fill: white)",
+            "#set par(spacing: 20pt)", ""]
         for name, f, s, t in SLICE:
-            print(f"// {name}  {f}   [{s} ⟶ {t}]")
+            out.append(f"// {name}  {f}   [{s} ⟶ {t}]")
             try:
-                print(emit(draw(f, s, t, tbl)))
+                out.append(emit(draw(f, s, t, tbl)))
             except (Unhandled, ValueError, KeyError) as ex:
                 bad += 1; print(f"circuit: {name}: {ex}", file=sys.stderr)
-            print()
+            out.append("")
+        with open(OUT, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(out))
         print(f"circuit: {len(SLICE)} rows in CIRCUIT-GEN §5, {len(SLICE) - bad} drawn,"
-              f" {bad} blocked", file=sys.stderr)     # stdout is the pasteable file, nothing else
+              f" {bad} blocked → {os.path.relpath(OUT)}", file=sys.stderr)
         sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} did not draw")
     formula = next(iter(free), None)
     if not (formula and src and tgt):

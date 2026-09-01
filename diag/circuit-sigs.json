@@ -8,26 +8,35 @@
     "argument is checked against, which is what binds the variables `src`/`tgt` are written over.",
     "`x%∋` needs no row of its own: it takes `x`'s, with `E` wrapped round the target, and is a map.",
     "One row per atom a GENERATED row has actually typed — CIRCUIT-GEN §5's three so far.",
+    "A key may carry SEVERAL arrows, as a LIST, because the note reuses a letter across sections:",
+    "`S` is §13.3.3's list algebra and §13.4.4's party algebra, and the port in hand picks the row.",
     "`polys` is the other half of §1.3: a functor as a coproduct of branch objects, which is what",
     "`[x,y]` forks along and what the fusion law `F(R)[f,g]=[f,(𝟙×R)g]` puts the `𝟙` and the `R` on.",
+    "A coproduct of ONE branch is that branch: `T` has nothing to fork, so its algebra meets the",
+    "branch's own ×-factors as separate strands, which is how the note draws the party fold.",
     "`mu` names each functor's INITIAL algebra, the object a `⦇ ⦈` folds FROM.  A fold's carrier is",
-    "not in the term at all, so the panel's stated target supplies it and this says which functor."
+    "not in the term at all, so it is DECLARED: the panel's stated target declares it at the top",
+    "level, and inside a functor — where no target reaches the fold — the algebra's own row does."
   ],
   "sigs": {
-    "S":      {"src": "F([x])", "tgt": "[x]", "map": false},
+    "S":      [{"src": "F([x])",       "tgt": "[x]",     "map": false},
+               {"src": "x×[[x]×[x]]",  "tgt": "[x]×[x]", "map": false}],
     "R":      {"src": "[x]",    "tgt": "[x]", "map": false},
     "p":      {"src": "A",      "tgt": "A",   "map": false},
     "nil":    {"src": "𝟏",      "tgt": "[A]", "map": true},
     "cons":   {"src": "A×[A]",  "tgt": "[A]", "map": true},
     "prefix": {"src": "[A]",    "tgt": "[A]", "map": false},
+    "choose": {"src": "x×x",    "tgt": "x",   "map": false},
     "est":    {"arg": "a⟶a", "src": "E(a)", "tgt": "a",    "map": false},
     "E":      {"arg": "a⟶b", "src": "E(a)", "tgt": "E(b)", "map": true},
     "list":   {"arg": "a⟶b", "src": "[a]",  "tgt": "[b]",  "map": false}
   },
   "polys": {
-    "F": ["𝟏", "A×x"]
+    "F": ["𝟏", "A×x"],
+    "T": ["A×[x]"]
   },
   "mu": {
-    "F": "[A]"
+    "F": "[A]",
+    "T": "tree(x)"
   }
 }

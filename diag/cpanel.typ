@@ -11,8 +11,8 @@
 
 #import "@preview/cetz:0.3.4"
 #import "circuit.typ": gbox, wire, bend, delta, nabla, bang, cut, tape, tape-join, BH, TINT, TAPEEDGE, lw
-#import "draw.typ": lab, node
-#import "note-style.typ": P
+#import "draw.typ": lab
+#import "note-style.typ": P, TYCOL
 
 #let d = cetz.draw
 
@@ -42,8 +42,10 @@
 
 #let CGAP = 0.34        // wire stub before the first box, between two boxes, and after the last
 #let CPAD = 0.34        // label to box edge, each side
-#let CNODE = 0.34       // the white inset `node` paints round a seam label, in canvas units
-#let CPORT = 0.34       // wire end to the nearest edge of a port label
+#let CPORT = 0.4        // how far a wire runs INTO its type label, as a fraction of one mono advance: where
+                        // the ink of `[`/`]` starts (measured); `A`/`E`/`F` are wider there and hide the rest
+#let CLEAD = 0.34       // wire run past each side of a label sitting above it, so it clears the bar and the box
+#let CABOVE = 0.25      // a label sitting above its wire: text centre to the stroke
 // A run carrying a two-line fraction label is raised WHOLE — one shared height, or the wire steps
 // up and down between boxes (`boxrun`'s own rule, and why the note's `twrun` passes `TH`).
 #let CTH = 1.2
@@ -56,6 +58,7 @@
 #let ys(n) = if n == 0 { () } else { range(n).map(i => (n - 1) * UIP - 2 * UIP * i) }
 #let lb(it) = if it.at("frac", default: false) { frc(raw(it.label)) } else { raw(it.label) }
 #let tx(s) = text(10pt, raw(s))
+#let into(length) = CPORT * cu(measure(tx("[")).width, length)  // `measure` is the advance box, not the ink
 
 // `invert` is the Peirce cut's axis, not a decoration: inside a `cut` the page is black, so every
 // wire, dot and box drawn there has to be light-on-dark.  Only a lane the walker calls `flat` — a
@@ -84,9 +87,11 @@
       body.push(d.group({ d.translate((x, 0)); p.body }))
       x = x + p.w; n = it.nout; hh = calc.max(hh, p.hh)
       if str(i) in seam {
-        let g = cu(measure(tx(seam.at(str(i)))).width, length) + 2 * CNODE
-        body.push(wire((x, 0), (x + g, 0), invert: invert))
-        body.push(node(x + g / 2, 0, black, tx(seam.at(str(i))))); x = x + g
+        let (w, o) = (cu(measure(tx(seam.at(str(i)))).width, length), into(length))
+        body.push(wire((x, 0), (x + CGAP + o, 0), invert: invert))
+        body.push(wire((x + CGAP + w - o, 0), (x + 2 * CGAP + w, 0), invert: invert))
+        body.push(lab(x + CGAP + w / 2, 0, if invert { white } else { TYCOL }, tx(seam.at(str(i)))))
+        x = x + 2 * CGAP + w
       }
     }
     let (x2, s) = stub(x, n); body.push(s)
@@ -144,20 +149,28 @@
   if t.k == "cata" {
     let p = pic(t.body, length, invert: invert)
     let yh = calc.max(p.hh, (t.nin - 1) * UIP) + 0.28
-    let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CPORT
+    let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
     let x0 = CBAR + ld
     let xr = x0 + p.w + CBAR
+    // The carrier labels the fold's single OUTPUT wire on its stub; `scripts/circuit` sends `none`
+    // when the carrier is a product (already drawn as its wires) or is that wire's own label.
+    let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
       banana(0, yh, invert: invert)
       banana(xr + CBAR, yh, right: true, invert: invert)
       for (i, y) in ys(t.body.nin).enumerate() {
         wire((CBAR, y), (x0, y), invert: invert)
-        lab(CBAR + ld / 2, y + 0.3, if invert { white } else { black }, tx(t.port.at(i)))
+        lab(CBAR + ld / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.port.at(i)))
       }
       d.group({ d.translate((x0, 0)); p.body })
-      for y in ys(t.nout) { wire((x0 + p.w, y), (xr + CBAR + CGAP, y), invert: invert) }
+      for y in ys(t.nout) {
+        wire((x0 + p.w, y), (xr + CBAR + og, y), invert: invert)
+        if t.label != none {
+          lab(xr + CBAR + og / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.label))
+        }
+      }
     }
-    return (w: xr + CBAR + CGAP, hh: yh, body: body)
+    return (w: xr + CBAR + og, hh: yh, body: body)
   }
   // ---- §3 row 16: `(g→x,y)`.  A `∪` of two RESTRICTED branches: each copies the input, runs the
   // guard on one copy and ends it at a dot — that composite is `dom(g)` — and its body on the
@@ -247,7 +260,7 @@
       }
       for (j, y) in ys(ports.len()).enumerate() {
         wire((xf, oy + y), (xf + lead, oy + y))
-        lab(xf + lead / 2, oy + y + 0.32, black, tx(ports.at(j)))
+        lab(xf + lead / 2, oy + y + CABOVE, TYCOL, tx(ports.at(j)))
       }
       d.group({ d.translate((xf + lead, oy)); p.body; wire((p.w, 0), (mw - lead, 0)) })
     }
@@ -261,11 +274,12 @@
 #let cbody(t, length) = {
   let p = pic(t, length)
   p.body
+  let o = into(length)
   for (i, y) in ys(t.nin).enumerate() {
-    lab(-CPORT - cu(measure(tx(t.src.at(i))).width, length) / 2, y, black, tx(t.src.at(i)))
+    lab(o - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
   }
   for (i, y) in ys(t.nout).enumerate() {
-    lab(p.w + CPORT + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, black, tx(t.tgt.at(i)))
+    lab(p.w - o + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
   }
 }
 
