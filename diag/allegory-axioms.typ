@@ -5697,7 +5697,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
 #let d-out1 = dpanel(4, 5.7, 2.85,
-  ((0.55, 2.5, 1, [`E`], [`𝟙%∋`]), (1.7, "top", 2, none, none)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
   ((2, [`party`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (2.85, [`A`])),
   ((2.85, [`[A]`]),), s: DS,
@@ -5706,19 +5706,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
 // `frc(⦇S⦈ choose)` is that one absorption step away.
 #let d-out2 = dpanel(5, 5.7, 2.85,
-  ((0.55, 3.5, 1, [`E`], [`𝟙%∋`]), (1.7, "top", 3, none, none)),
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 3, none, none)),
   ((3, [`⦇S⦈`], black, 1.7), (2, [`choose`]), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (2.85, [`A`])),
   ((2.85, [`[A]`]),), s: DS,
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out4 = dpanel(7, 6.85, 4,
-  ((0.55, 5.5, 4, [`E`], [`𝟙%∋`]), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], [`𝟙%∋`])),
+  ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], frc([`𝟙`]))),
   ((5, [`⦇S⦈`], black, 1.7), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`]), (1, [`est(R°)`], black, 2.85)),
   ((1.7, [`tree`]), (4, [`A`])),
   ((4, [`[A]`]),), s: DS,
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out5 = dpanel(5, 5.7, 2.85,
-  ((0.55, "top", 4, none, none), (1.7, 2.5, 1, [`E`], [`𝟙%∋`])),
+  ((0.55, "top", 4, none, none), (1.7, 2.5, 1, [`E`], frc([`𝟙`]))),
   ((4, [`⦇𝟙%∋ E(S)est((R×R)°)⦈`], black, 0.55), (2, [`choose`]), (1, [`est(R°)`], black, 1.7)),
   ((0.55, [`tree`]), (2.85, [`A`])),
   ((2.85, [`[A]`]),), s: DS,
@@ -5728,13 +5728,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
 #let d-in5 = dpanel(4, 9.15, 6.3,
-  ((0.55, 2.5, 1, [`E`], [`𝟙%∋`]), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, 2, "bot", none, none)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, 2, "bot", none, none)),
   ((2, [`S`], black, 1.7), (1, [`est((R×R)°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (6.3, [`[A]`])),
   ((5.15, [`Δ`]), (6.3, [`[A]`])), s: DS,
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 8, 5.15,
-  ((0.55, 2.5, 1, [`E`], [`𝟙%∋`]), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
   ((2, [`include`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`[A]`])),
   ((5.15, [`[A]`]),), s: DS,
@@ -5744,7 +5744,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
 // beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
 #let d-in7 = dpanel(6, 8, 5.15,
-  ((0.55, "top", 5, none, none), (1.7, "top", 1, none, none), (2.85, 3.5, 2, [`E`], [`𝟙%∋`]), (4, "top", 3, none, none)),
+  ((0.55, "top", 5, none, none), (1.7, "top", 1, none, none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none)),
   ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 4), (2, [`est(R°)`], black, 2.85), (1, [`concat`], black, 1.7)),
   ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`Δ`]), (5.15, [`[A]`])),
   ((5.15, [`[A]`]),), s: DS,

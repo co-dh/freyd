@@ -399,9 +399,17 @@ def num(v):
     return f"{v:g}"
 
 
+def labelcode(v):
+    """The one spelling of a bead or lane label: `X%∋` is the note's own fraction, `frc([X])`;
+    everything else is today's inline code."""
+    if v.endswith("%∋"):
+        return f"frc([`{v[:-2]}`])"
+    return f"[`{v}`]"
+
+
 def cell(v):
     return "none" if v is None else f'"{v}"' if isinstance(v, str) and v in ("top", "bot") \
-        else f"[`{v}`]" if isinstance(v, str) else num(v)
+        else labelcode(v) if isinstance(v, str) else num(v)
 
 
 def tup(xs):
@@ -417,7 +425,7 @@ def emit(r):
     beads = [b[:2] + [None, b[3]] if len(b) > 3 else b for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
             f'  {lst(r["lanes"])},\n'
-            + "  (" + ", ".join("(" + num(b[0]) + ", [`" + b[1] + "`]"
+            + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
                                 + (", black, " + num(b[3]) if len(b) > 3 else "") + ")"
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
