@@ -36,6 +36,8 @@ Frobenius.pdf
 # Diagrams drawn from Lean statements by `diag-export`; regenerate with
 #   ./scripts/diag-export <declaration-name> ...
 /diag/generated
+# The compile check `make slice` leaves behind; the .typ beside it is the tracked deliverable.
+/diag/circuit-slice.pdf
 # npm cruft from the claude-code install, not part of the library
 /node_modules
 /package.json

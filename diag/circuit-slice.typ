@@ -1,4 +1,10 @@
-circuit: 9 rows in CIRCUIT-GEN §5, 9 drawn, 0 blocked
+// The acceptance render for CIRCUIT-GEN §5's slice, written whole by `./scripts/circuit --slice`.
+// Everything here is generator output, so a redraw is a re-run of that line — never a hand edit.
+// `make slice` regenerates and compiles it; `make p` runs that too.
+#import "cpanel.typ": cpanel
+#set page(width: auto, height: auto, margin: 0.8cm, fill: white)
+#set par(spacing: 20pt)
+
 // 13.3.3d r1  S%∋ est(R°)   [F([A]) ⟶ [A]]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -155,4 +161,3 @@ circuit: 9 rows in CIRCUIT-GEN §5, 9 drawn, 0 blocked
     (4, "E([A])", ),
   ), src: ("tree(A)", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
-

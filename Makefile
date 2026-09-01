@@ -16,8 +16,9 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
+SLICE := diag/circuit-slice.typ
 
-.PHONY: p w cite spell scan scan-strict cover diagram books hm-check hm-sigs
+.PHONY: p w cite spell scan scan-strict cover diagram slice books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -27,8 +28,14 @@ DB    := .lake/build/refactor-index.db
 # notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
 # box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
 # its own copy of those, so nothing reaches above diag/ any more.
-p: $(STAMP) cite spell
+p: $(STAMP) slice cite spell
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+
+# The circuit generator's acceptance render.  `--slice` writes the whole .typ itself — header,
+# import, rows — so nothing in it is hand-kept, and the compile is the check that it still parses.
+slice:
+	./scripts/circuit --slice
+	typst compile $(SLICE) $(SLICE:.typ=.pdf)
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
