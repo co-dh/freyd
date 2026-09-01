@@ -4169,16 +4169,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 #let tw-pfx2 = dpanel(4, 5.7, 2.85,
   ((0.55, "top", 2, none, none), (1.7, 2, "bot", none, none)),
-  ((3, [`prefix`]), (2, [`[nil,⊸ nil ∪ cons]`], black, 0.55), (1, [`p`])),
-  ((0.55, [`F`]), (2.85, [`[A]`])),
+  ((3, [`prefix`]), (2, [`cons`], black, 0.55), (1, [`p`])),
+  ((0.55, [`A×−`]), (2.85, [`[A]`])),
   ((1.7, [`list`]), (2.85, [`A`])),
-  cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]"))
+  cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
 #let tw-pfx3 = dpanel(3, 4.55, 1.7,
   ((0.55, "top", 1, none, none),),
-  ((2, [`prefix`]), (1, [`[nil,⊸ nil ∪ (p×list(p)) cons]`], black, 0.55)),
-  ((0.55, [`F`]), (1.7, [`[A]`])),
+  ((2, [`prefix`]), (1, [`(p×list(p))cons`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`[A]`])),
   ((1.7, [`[A]`]),),
-  cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))
+  cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
   columns: (1fr, 4.9cm),

@@ -24,7 +24,7 @@ the many the book calls equal (pp. 21–22).
 
 `--roundtrip` is the acceptance test: every panel in the note that carries a `cert:` with an
 `expect` is regenerated from that `expect` alone and swept again, and the printed composite must
-come back the same.  `--compare` puts the generated call beside the note's own.
+come back the same — cut down to the one branch it draws, where the formula states a choice.  `--compare` puts the generated call beside the note's own.
 """
 import importlib.machinery, importlib.util, json, os, subprocess, sys
 
@@ -36,13 +36,48 @@ _S.loader.exec_module(sl)
 norm, spell, tidy, rec, Unhandled = sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
 
 
-def parse(s):
-    """The shared parser with `x∪y` and `[x,y]` folded back to the one atom the note labels them
-    with.  This model is one bead per factor and has no picture for a union or a coproduct, so
-    peeling one open here would only raise `Unhandled`; drawing them is the circuit generator's."""
-    def one(e):
-        return ('atom', spell(e)) if e[0] in ('union', 'case') else rec(e, one)
-    return one(sl.parse(s))
+# Which operand of a `∪`/`[f,g]` gets drawn, as a RULE and not a taste: a branch that throws its
+# source away (`⊸`) draws nothing, then the most factors, then the longer spelling breaks the tie.
+def rank(e):
+    return (0 if '⊸' in spell(e) else 1, len(e[1]) if e[0] == 'comp' else 1, len(spell(e)))
+
+
+def cut(e, obj, br):
+    """A formula down to the ONE branch the panel draws: each `∪`/`[f,g]` down to the operand `rank`
+    calls the most complicated, and `F` down to that branch's summand (`scanline.BRANCH`).  This
+    model has one bead per factor and no picture for a choice — the honest picture is one branch,
+    and the `cert:`'s `branch:` tells the sweep, and the reader, which one it is."""
+    if e[0] == 'app' and e[1] == 'F' and br:
+        return sl.act(sl.BRANCH[br]["F"], cut(e[2], obj, br), obj=obj)
+    if e[0] in ('union', 'case'):
+        p = max([cut(x, obj, br) for x in e[1]], key=rank)
+        # The bracket stays a NODE where the display writes one: the bead wears the branch's name
+        # and keeps the algebra's signature, which a bare operand would not have.
+        return ('case', [p], spell(p)) if e[0] == 'case' else p
+    return rec(e, lambda x: cut(x, obj, br))
+
+
+BR = None                   # the branch `draw` picked, as `scanline.BRANCH` names it
+
+
+def parse(s, obj=True):
+    """The shared parser, every choice in it cut down to the branch being drawn."""
+    return cut(sl.parse(s), obj, BR)
+
+
+def branch(formula):
+    """The name `scanline.BRANCH` gives the branch `cut` picks, or None where the formula states no
+    choice at all.  The `cert:` declares it and `scanline.read` cuts the STATED formula down the
+    same way, so the picture and the sweep that reads it back agree on what is being drawn."""
+    e = sl.parse(formula)
+    drawn = cut(e, False, None)
+    if drawn == e:
+        return None
+    ks = [k for k, v in sl.BRANCH.items() if v["pick"] in spell(drawn)]
+    if len(ks) != 1:
+        raise Unhandled(f"the branch {spell(drawn)} is {'none' if not ks else 'more than one'} of"
+                        f" the branches {list(sl.BRANCH)} the sweep knows")
+    return ks[0]
 
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
@@ -274,7 +309,9 @@ def signature(core, sigs, n):
     lab = core[1] if core[0] == 'app' else spell(core)
     div = lab.endswith('%∋')
     k = lab[:-2] if div else lab
-    if k and k[0] in sl.OPENERS:               # `⦇S⦈` and `⦇−⦈` are one catamorphism row: a bracket's
+    if core[0] == 'case':                      # a bracket cut to one branch is still the ALGEBRA's
+        k = '[,]'                              # arrow: the branch's name, the bracket's signature
+    elif k and k[0] in sl.OPENERS:             # `⦇S⦈` and `⦇−⦈` are one catamorphism row: a bracket's
         k = k[0] + (',' if ',' in k else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]   # body is the step
     s, t = sigs.get(lab) or sigs.get(k) or (('atom', 'x'), ('atom', 'x'))
     return fresh(s, n), fresh(('app', 'E', t) if div else t, n)
@@ -336,7 +373,7 @@ def elaborate(formula, src, tgt, table):
     rel = alphabet(table, norm(parse(src)), want)
     made = [Lane(w, born=TOP) for w in stack]
     lanes, sub, rows, atop = list(made), {}, [], obj
-    for i, e in enumerate(expand(norm(parse(formula)), rel)):
+    for i, e in enumerate(expand(norm(parse(formula, False)), rel)):
         pre, e, _ = across(e, rel)         # `∘`'s left letters are context; its right ones the tail keeps
         wrap, core = peel_arrow(e, [l.label for l in lanes[len(pre):]], rel)
         wrap = [x[1] for x in pre] + wrap
@@ -423,9 +460,10 @@ def draw(formula, src, tgt, table=None, split=""):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` rides in the `cert:` beside `src` and `tgt`,
     for the same reason they do — a formula alone does not say which picture of it the note wants."""
-    global SPLIT
+    global SPLIT, BR
     SPLIT = frozenset(split.split())
-    cert = {"expect": formula, "src": src, "tgt": tgt}
+    BR = branch(formula)
+    cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
     rows, made, otop, obot = elaborate(formula, src, tgt, table or sigs())
     return layout(rows, made, otop, obot, cert | ({"split": split} if split else {}))
 
@@ -469,6 +507,12 @@ def emit(r):
 
 
 # ---------------------------------------------------------------- the round trip
+def shown(formula, br):
+    """What a panel must sweep back as.  A panel drawing ONE branch of a `∪` denotes that branch,
+    not the whole formula, so the formula is cut down to it — the reading the sweep certifies by."""
+    return spell(tidy(parse(formula, False))) if br else formula
+
+
 def swept(r):
     """The composite the generated panel denotes, read by the same sweep `make scan` runs."""
     p = sl.Panel(r)
@@ -499,16 +543,17 @@ def roundtrip(path, frm, show, out, tbl):
             gen.append(g)
         except (Unhandled, ValueError, KeyError, StopIteration) as ex:
             fail.append(f"{r['id']}: {type(ex).__name__}: {ex}"); continue
+        drawn = shown(want, g["cert"].get("branch"))
         if bad:
             fail.append(f"{r['id']}: the generated panel fails its own sweep — {bad[0]}")
-        elif got == want:
+        elif got == drawn:
             ok += 1
         elif got == spell(tidy(parse(want))):
             printer += 1                       # differs only where `spell` spaces a bracket
         elif norm(parse(got)) == norm(parse(want)):
             law += 1                           # `F(R)F(S)=F(RS)`: two heights the display writes as one
         else:
-            fail.append(f"{r['id']}: {want}  ->  {got}")
+            fail.append(f"{r['id']}: {drawn}  ->  {got}")
         if show:
             print(f"// {r['id']}  {want}"); print(emit(g)); print()
     print(f"diagram: {ok + printer + law + len(fail)} certified panels, {ok} verbatim,"
@@ -568,7 +613,7 @@ def main(argv):
     print(emit(r))
     if bad:
         print(*bad, sep="\n", file=sys.stderr); sys.exit("diagram: the panel fails its own sweep")
-    if got != formula:
+    if got != shown(formula, BR):
         print(f"// the sweep reads it back as {got}", file=sys.stderr)
 
 
