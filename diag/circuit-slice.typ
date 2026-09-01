@@ -88,19 +88,7 @@
   cert: (expect: "prefix° prefix∩R", src: "[A]", tgt: "[A]"))
 
 // → (13.3.3c)  (π₁p→cons,⊸ nil)   [A×[A] ⟶ [A]]
-#cpanel((k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
-      (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
-      (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-    ), seams: ()), bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-            ), seams: ())),
-      ), seams: ()),
-  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+#cpanel((k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false, src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(π₁p→cons,⊸ nil)", src: "A×[A]", tgt: "[A]"))
 
 // ⦇⦈ (13.3.3b)  ⦇[nil,⊸ nil ∪ cons]⦈   [[A] ⟶ [A]]
@@ -457,19 +445,7 @@
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 2, nout: 1, items: (
-        (k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
-              (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
-              (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-            ), seams: ()), bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-          )),
+        (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), ports: (
     (),
@@ -505,19 +481,7 @@
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 2, nout: 1, items: (
-              (k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
-                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                  ), seams: ()), bodies: (
-                  (k: "seq", nin: 2, nout: 1, items: (
-                      (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-                    ), seams: ()),
-                  (k: "seq", nin: 2, nout: 1, items: (
-                      (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                          ), seams: ())),
-                    ), seams: ()),
-                )),
+              (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
             ), seams: ()),
         ), ports: (
           (),
@@ -670,17 +634,7 @@
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 2, nout: 1, items: (
-        (k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
-              (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
-              (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-            ), seams: ()), bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-              ), seams: ()),
-          )),
+        (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), ports: (
     (),
@@ -695,17 +649,7 @@
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 2, nout: 1, items: (
-              (k: "cond", nin: 2, nout: 1, guard: (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "proj", nin: 2, nout: 1, at: 0, label: "π₁", keep: (1, 1, )),
-                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                  ), seams: ()), bodies: (
-                  (k: "seq", nin: 2, nout: 1, items: (
-                      (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-                    ), seams: ()),
-                  (k: "seq", nin: 2, nout: 1, items: (
-                      (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-                    ), seams: ()),
-                )),
+              (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
             ), seams: ()),
         ), ports: (
           (),

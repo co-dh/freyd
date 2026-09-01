@@ -10,7 +10,7 @@
 // `ys(nout)`.  Branch equalisation — §4e's `w` — lives here and nowhere else.
 
 #import "@preview/cetz:0.3.4"
-#import "circuit.typ": gbox, wire, bend, delta, nabla, bang, cut, tape, tape-join, BH, TINT, TAPEEDGE, lw
+#import "circuit.typ": gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw
 #import "draw.typ": lab
 #import "note-style.typ": P, TYCOL
 
@@ -23,9 +23,9 @@
 #let CBAR = 0.13        // the functorial box's two bars, as the note's own `banana` spaces them
 // MELLIÈS' functorial box, the note's `banana`, here for the reason `frc` is.  A bar is where the
 // type changes, so the tick closes the pair on the side the fold's own object is not.
-#let banana(x, yh, right: false, invert: false) = {
+#let banana(x, yh, right: false) = {
   let s = if right { -1 } else { 1 }
-  let st = (thickness: lw, paint: if invert { white } else { black })
+  let st = (thickness: lw, paint: black)
   d.line((x, -yh), (x, yh), stroke: st)
   d.line((x + s * CBAR, -yh), (x + s * CBAR, yh), stroke: st)
   d.line((x, yh), (x + s * 0.3, yh), stroke: st)
@@ -52,7 +52,6 @@
 #let FAN = (thickness: lw, paint: black, dash: "dashed")
 #let CSP = 0.34         // a copy dot to the lane it opens, and a merge dot to the lane it closes
 #let CDL = 0.35         // the last box of a guard to the dot that discards it
-#let CBACK = 0.5        // a guarded body's output back up to the branch's own port height
 
 #let cu(len, length) = len / length     // an absolute length in canvas units
 #let ys(n) = if n == 0 { () } else { range(n).map(i => (n - 1) * UIP - 2 * UIP * i) }
@@ -62,50 +61,47 @@
 
 // The dashed fan into and out of a region holding alternatives, one arm per height in `ss`, after
 // a straight `lead` at each port (see `pic`).
-#let fan(nin, nout, x0, x1, ss, lead: 0, invert: false) = {
+#let fan(nin, nout, x0, x1, ss, lead: 0) = {
   for s in ss {
     for y in ys(nin) { bend((lead, y), (x0 + CHPAD, s + y), stroke: FAN) }
     for y in ys(nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN - lead, y), stroke: FAN) }
   }
   if lead > 0 {
-    for y in ys(nin) { wire((0, y), (lead, y), invert: invert) }
-    for y in ys(nout) { wire((x1 + CHFAN - lead, y), (x1 + CHFAN, y), invert: invert) }
+    for y in ys(nin) { wire((0, y), (lead, y)) }
+    for y in ys(nout) { wire((x1 + CHFAN - lead, y), (x1 + CHFAN, y)) }
   }
 }
 
-// `invert` is the Peirce cut's axis, not a decoration: inside a `cut` the page is black, so every
-// wire, dot and box drawn there has to be light-on-dark.  Only a lane the walker calls `flat` — a
-// run of boxes, stacks and projections — is ever asked for it; a tape keeps its own colours.
 // `lead` is a straight run at every port for whoever places the node: the panel's labels run `into`
 // a port, and a fan leaving the port itself would cross their ink.
-#let pic(t, length, invert: false, lead: 0) = {
-  // ---- §3 rows 1-2, 7, 10, 15: one box.  A box spanning several strands is as tall as they are.
+#let pic(t, length, lead: 0) = {
+  // ---- §3 rows 1-2, 7, 10, 15-16: one box.  A box spanning several strands is as tall as they are.
   if t.k == "box" {
     let n = calc.max(t.nin, t.nout)
     let h = if n > 1 { (n - 1) * 2 * UIP + 0.35 } else if t.at("frac", default: false) { CTH }
             else { BH }
     let w = cu(measure(lb(t)).width, length) + 2 * CPAD
     return (w: w, hh: h / 2, body: gbox((0, 0), lb(t), w: w, h: h, chamfer: t.chamfer,
-      flip: t.flip, invert: invert, fill: if t.flip { TINT } else { none }))
+      flip: t.flip, fill: if t.flip { TINT } else { none }))
   }
   // ---- §3 row 5: composition, ports glued, with the printed seams between the factors.
   if t.k == "seq" {
     let seam = (:)
     for s in t.seams { seam.insert(str(s.at(0)), s.at(1)) }
     let stub(x, n) = if n == 0 { (x, none) } else {
-      (x + CGAP, ys(n).map(y => wire((x, y), (x + CGAP, y), invert: invert)).join())
+      (x + CGAP, ys(n).map(y => wire((x, y), (x + CGAP, y))).join())
     }
     let x = 0.0; let n = t.nin; let hh = 0.2; let body = ()
     for (i, it) in t.items.enumerate() {
       let (x2, s) = stub(x, n); x = x2; body.push(s)
-      let p = pic(it, length, invert: invert)
+      let p = pic(it, length)
       body.push(d.group({ d.translate((x, 0)); p.body }))
       x = x + p.w; n = it.nout; hh = calc.max(hh, p.hh)
       if str(i) in seam {
         let (w, o) = (cu(measure(tx(seam.at(str(i)))).width, length), into(length))
-        body.push(wire((x, 0), (x + CGAP + o, 0), invert: invert))
-        body.push(wire((x + CGAP + w - o, 0), (x + 2 * CGAP + w, 0), invert: invert))
-        body.push(lab(x + CGAP + w / 2, 0, if invert { white } else { TYCOL }, tx(seam.at(str(i)))))
+        body.push(wire((x, 0), (x + CGAP + o, 0)))
+        body.push(wire((x + CGAP + w - o, 0), (x + 2 * CGAP + w, 0)))
+        body.push(lab(x + CGAP + w / 2, 0, TYCOL, tx(seam.at(str(i)))))
         x = x + 2 * CGAP + w
       }
     }
@@ -114,11 +110,11 @@
   }
   // ---- §3 row 6: a product is a vertical stack, one lane per ×-factor, padded to one right edge.
   if t.k == "stack" {
-    let ps = t.lanes.map(l => pic(l, length, invert: invert))
+    let ps = t.lanes.map(l => pic(l, length))
     let mw = calc.max(..ps.map(p => p.w))
     return (w: mw, hh: (t.nin - 1) * UIP + calc.max(..ps.map(p => p.hh)),
       body: ps.zip(ys(t.nin)).map(((p, y)) =>
-        d.group({ d.translate((0, y)); p.body; wire((p.w, 0), (mw, 0), invert: invert) })).join())
+        d.group({ d.translate((0, y)); p.body; wire((p.w, 0), (mw, 0)) })).join())
   }
   // ---- §3 row 3: a projection.  The factors it drops END AT A DOT and the one it keeps crosses to
   // the port it leaves on — a product is already two wires, so this costs no box at all.
@@ -126,21 +122,21 @@
     let lo = t.keep.slice(0, t.at).sum(default: 0)
     let ins = ys(t.nin); let outs = ys(t.nout)
     let body = range(t.nin).map(i => if i >= lo and i < lo + t.keep.at(t.at) {
-        bend((0, ins.at(i)), (0.75, outs.at(i - lo)), k: 0.5, invert: invert)
-      } else { bang((CDL, ins.at(i)), li: CDL, invert: invert) }).join()
+        bend((0, ins.at(i)), (0.75, outs.at(i - lo)), k: 0.5)
+      } else { bang((CDL, ins.at(i)), li: CDL) }).join()
     return (w: 0.75, hh: calc.max(t.nin, t.nout, 1) * UIP - UIP, body: body)
   }
   // ---- §3 row 14: `⊸ x`, the constant.  Every input strand ends at a dot, then `x` is created.
   if t.k == "konst" {
-    let p = pic(t.body, length, invert: invert)
-    let body = ys(t.nin).map(y => bang((0.35, y), li: 0.35, invert: invert)).join()
+    let p = pic(t.body, length)
+    let body = ys(t.nin).map(y => bang((0.35, y), li: 0.35)).join()
     return (w: 0.6 + p.w, hh: calc.max(p.hh, (t.nin - 1) * UIP + 0.1),
       body: { body; d.group({ d.translate((0.6, 0)); p.body }) })
   }
   // ---- §3 row 12: `x∩y`.  Copy every strand, run BOTH lanes, merge.  `∇=Δ°` forces the two to
   // carry the same value, and that is the whole of the intersection: no box says `∩`.
   if t.k == "cap" {
-    let ps = t.lanes.map(l => pic(l, length, invert: invert))
+    let ps = t.lanes.map(l => pic(l, length))
     let mw = calc.max(..ps.map(p => p.w))
     let mh = calc.max(..ps.map(p => p.hh))
     let sp = mh + 0.22
@@ -150,11 +146,11 @@
         let s = if i == 0 { 1 } else { -1 }
         d.group({
           d.translate((CSP, s * sp)); p.body
-          for y in ys(t.nout) { wire((p.w, y), (mw, y), invert: invert) }
+          for y in ys(t.nout) { wire((p.w, y), (mw, y)) }
         })
       }
-      for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp, invert: invert) }
-      for y in ys(t.nout) { nabla((x1, y), li: CSP, lo: 0, sp: sp, invert: invert) }
+      for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp) }
+      for y in ys(t.nout) { nabla((x1, y), li: CSP, lo: 0, sp: sp) }
     }
     return (w: x1, hh: sp + mh, body: body)
   }
@@ -162,7 +158,7 @@
   // input arrives at them and the algebra's own strands start inside, and that break IS the
   // recursion.  The algebra's output is the fold's, so it runs out through the right pair.
   if t.k == "cata" {
-    let p = pic(t.body, length, invert: invert)
+    let p = pic(t.body, length)
     let yh = calc.max(p.hh, (t.nin - 1) * UIP) + 0.28
     let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
     // A stub before the left bars, the mirror of the one after the right bars: the source label
@@ -173,67 +169,22 @@
     // when the carrier is a product (already drawn as its wires) or is that wire's own label.
     let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
-      for y in ys(t.nin) { wire((0, y), (CGAP, y), invert: invert) }
-      banana(CGAP, yh, invert: invert)
-      banana(xr + CBAR, yh, right: true, invert: invert)
+      for y in ys(t.nin) { wire((0, y), (CGAP, y)) }
+      banana(CGAP, yh)
+      banana(xr + CBAR, yh, right: true)
       for (i, y) in ys(t.body.nin).enumerate() {
-        wire((x0 - ld, y), (x0, y), invert: invert)
-        lab(x0 - ld / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.port.at(i)))
+        wire((x0 - ld, y), (x0, y))
+        lab(x0 - ld / 2, y + CABOVE, TYCOL, tx(t.port.at(i)))
       }
       d.group({ d.translate((x0, 0)); p.body })
       for y in ys(t.nout) {
-        wire((x0 + p.w, y), (xr + CBAR + og, y), invert: invert)
+        wire((x0 + p.w, y), (xr + CBAR + og, y))
         if t.label != none {
-          lab(xr + CBAR + og / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.label))
+          lab(xr + CBAR + og / 2, y + CABOVE, TYCOL, tx(t.label))
         }
       }
     }
     return (w: xr + CBAR + og, hh: yh, body: body)
-  }
-  // ---- §3 row 16: `(g→x,y)`.  A `∪` of two RESTRICTED branches: each copies the input, runs the
-  // guard on one copy and ends it at a dot — that composite is `dom(g)` — and its body on the
-  // other.  `¬dom(g)` is that same guard inside a Peirce CUT, negation having no wiring of its own.
-  if t.k == "cond" {
-    let arm(i, neg) = {
-      let pg = pic(t.guard, length, invert: neg)
-      let pb = pic(t.bodies.at(i), length, invert: invert)
-      let gh = calc.max(pg.hh, (t.guard.nin - 1) * UIP, (t.guard.nout - 1) * UIP) + 0.2
-      let gw = CBAR + pg.w + CDL + CBAR
-      let sp = calc.max(gh, pb.hh + 0.22, 0.5)
-      let mw = calc.max(gw, pb.w)
-      let body = {
-        for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp, invert: invert) }
-        if neg { cut((CSP, sp - gh), (CSP + gw, sp + gh)) }
-        for y in ys(t.guard.nin) { wire((CSP, sp + y), (CSP + CBAR, sp + y), invert: neg) }
-        d.group({
-          d.translate((CSP + CBAR, sp)); pg.body
-          for y in ys(t.guard.nout) { bang((pg.w + CDL, y), li: CDL, invert: neg) }
-        })
-        d.group({
-          d.translate((CSP, -sp)); pb.body
-          for y in ys(t.nout) { wire((pb.w, y), (mw, y), invert: invert) }
-        })
-        for y in ys(t.nout) { bend((CSP + mw, -sp + y), (CSP + mw + CBACK, y), invert: invert) }
-      }
-      (w: CSP + mw + CBACK, hh: sp + calc.max(gh, pb.hh), body: body)
-    }
-    let ps = (arm(0, false), arm(1, true))
-    let mw = calc.max(..ps.map(p => p.w))
-    let mh = calc.max(..ps.map(p => p.hh))
-    let x0 = CHFAN; let x1 = CHFAN + mw + 2 * CHPAD; let hh = mh + 0.35 + mh + UM
-    let body = {
-      tape((x0, -hh), (x1, hh))
-      lab((x0 + x1) / 2, hh + 0.3, TAPEEDGE)[`→`]
-      for (i, p) in ps.enumerate() {
-        let s = if i == 0 { 1 } else { -1 } * (mh + 0.35)
-        d.group({
-          d.translate((x0 + CHPAD, s)); p.body
-          for y in ys(t.nout) { wire((p.w, y), (mw, y), invert: invert) }
-        })
-      }
-      fan(t.nin, t.nout, x0, x1, (mh + 0.35, -(mh + 0.35)), lead: lead, invert: invert)
-    }
-    return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
   // ---- §3 row 11: the `∪` region.  The input arrives once and a dashed fan hands it to BOTH
   // bodies, which are padded to a common right edge (§4e) and merge into one output.
