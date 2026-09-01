@@ -2372,7 +2372,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }
   hm-wire(pts, ..wc)
   if un != none { hm-bead((x, y0), un) }
-  if nm != none { hm-name((x - 0.30, (top + bot) / 2), nm, ..wc) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
@@ -2395,7 +2394,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     pts += ((x, yb + kdip), (xat(yb), yb), (x, yb - kdip))
   }
   hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ked), (xat(b), b)) }), ..wc)
-  if nm != none { hm-name((x - 0.30, (t + b) / 2), nm, ..wc) }
 }
 
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
@@ -2458,7 +2456,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let kb = if l.at(1) == "top" or l.at(4) != none { none }
       else { gk.at("b" + str(l.at(1)), default: none) }
     let kd = if l.at(2) == "bot" { none } else { gk.at("d" + str(l.at(2)), default: none) }
-    // The lane's functor is its mid-run name, else the port label at its column: `FCOL` keys on it.
+    // The lane's functor name keys `FCOL`; it is never drawn, the colour names the wire (2026-09-01).
     let nm = if l.at(3) != none { l.at(3) } else {
       let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
       if q == none { none } else { q.at(1) } }
