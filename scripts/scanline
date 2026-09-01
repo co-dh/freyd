@@ -385,10 +385,6 @@ def a_tpan(p, r):
         p.wires.append(Wire(hd[0], hd[1], hd[2], hd[3], born, pts))
         if born is not None:
             p.beads.append(Bead(hd[1], hd[0], born, born=True))
-    for (x, y, l, port) in r['births']:
-        p.wires.append(Wire(x, y, 0.0, port, l, [(x, y), (x, 0.0)]))
-        p.beads.append(Bead(y, x, l, born=True))
-        p.bot = sorted(p.bot + [(x, port)])
     for (x, y, k) in r['joins']:
         p.wires.append(Wire(x, p.h, y, p.at(p.top, x), pts=[(x, p.h), (x, y + k), (p.xo, y)]))
     for (y, l) in r['beads']:

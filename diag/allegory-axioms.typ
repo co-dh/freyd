@@ -2431,11 +2431,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RXF = 1.65                                   // the `F` wire
 #let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
 #let RXO = 2.85                                   // the object wire
-#let tpan(h, beads, hands: (), joins: (), births: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, cert: (:)) = {
+#let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, cert: (:)) = {
   dpan(h, w, xo, {
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
-  // A relator wire a unit OPENS and nothing closes: it runs from that bead to the bottom edge.
-  for (x, y, l, p) in births { hm-wire(((x, y), (x, 0))); hm-bead((x, y), l); hm-port((x, 0), p, dir: -1) }
   for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
   for (y, l) in beads { hm-bead((xo, y), l) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
@@ -2446,7 +2444,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // panel's ports have one shape.
   hm-meta((helper: "tpan", h: h, w: w, xo: xo, cert: cert,
     beads: beads.map(b => b.map(plain)), hands: hands.map(hd => hd.map(plain)),
-    joins: joins.map(j => j.map(plain)), births: births.map(b => b.map(plain)),
+    joins: joins.map(j => j.map(plain)),
     top: top.map(p => p.map(plain)), bot: ((xo, plain(bot)),)))
 }
 // The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
@@ -2829,11 +2827,15 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 #let SXU = 0.55                                   // the `E` the singleton opens, outside everything
 #let SXF = 1.55                                   // the `A×−` wire, on a wider lane than §13.3.1's `F`
 #let SXC = 2.45                                   // the `E` the counit `∋` closes, inside `A×−`
-#let SXO = 3.15                                   // the object wire
-#let sbpan(born: false, names: false) = tpan(4.4, ((2.30, [`∋`]), (1.20, [`cons`])),
-  joins: ((SXC, 2.30, 0.40), (SXF, 1.20, 0.70)),
-  births: if born { ((SXU, 3.35, frc([`𝟙`]), [`E`]),) } else { () },
-  top: ((SXF, [`A×−`]), (SXC, [`E`]), (SXO, [`[A]`])), bot: [`[A]`], names: names, xo: SXO, w: 5.0)
+#let SXL = 3.15                                   // `list`: no bead touches it, `∋` and `cons` are
+#let SXO = 3.85                                   // both under it — and the object wire, `A`
+#let sbpan(born: false, names: false) = dpanel(4.4, 5.7, SXO,
+  ((SXF, "top", 1.20, none, none), (SXC, "top", 2.30, none, none), (SXL, "top", "bot", none, none))
+    + if born { ((SXU, 3.35, "bot", [`E`], frc([`𝟙`])),) } else { () },
+  ((2.30, [`∋`], black, SXC), (1.20, [`cons`], black, SXF)),
+  ((SXF, [`A×−`]), (SXC, [`E`]), (SXL, [`list`]), (SXO, [`A`])),
+  (if born { ((SXU, [`E`]),) } else { () }) + ((SXL, [`list`]), (SXO, [`A`])),
+  names: names, s: 100%)
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -4111,73 +4113,32 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // HINZE–MARSDEN (IntroString.pdf §1.4.2), @party-mono-branch's second column at this section's data:
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
-// nothing.  `p×𝟙` is a bead on the `A×−` wire, so `p×list(p)` is two beads at one height.
-// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line — `[A]` runs
-// STRAIGHT through it and only the functor wires bend in and back out, as `join` does beside `filter p`.
+// nothing.  `[A]` is TWO wires, `list` beside `A`: `p : A⟶A` is a bead on the object wire with the
+// `list` running past it, and `prefix : [A]⟶[A]` eats that `list` and makes another.
 // `prefix`/`subseq` are only LAX natural in `Rel` — `list(p) prefix⊑prefix list(p)` and no more, since
 // `list(p)` needs every element to have a `p`-image — so `p` stays strictly below.
-#let TWHX = (0.55, 2.05, 3.70)                    // `A×−`, the `list` strand, `[A]`
-#let TWHY = (4.95, 4.00, 3.05, 1.50, 0.55)        // above `cons` ×2, `cons`, below ×2
-#let TWHW = 5.85
-#let TWHH = 5.40
-// Bead colour is WHICH ARROW: `cons` is the structure map and stays black, and `p×𝟙` takes `p`'s
-// colour because it is the head half of `p×list(p)`.
-// Both takewhile displays draw the same three panels over the same ports and the same branch, so
-// the constant half of the certificate is written once and only the row's formula travels.
-#let twcert(e, a: none) = (expect: e, src: "F([A])", tgt: "[A]", branch: "cons",
-  alias: if a == none { () } else { (a,) })
-#let tw-hm(rs, f: [`prefix`], cert: (:)) = {
-  let (XM, XL, XO) = TWHX
-  let (YU1, YU2, YC, YL1, YL2) = TWHY
-  let ys = (YL1, YU1, YU1).at(rs)
-  let yp = (YL2, YL1, YU2).at(rs)
-  // Midway to the beads bracketing `p`, the bottom edge standing in where none is below.
-  let (y0, y1) = ((yp + (ys, YC, ys).at(rs)) / 2, (yp + (0, 0, YC).at(rs)) / 2)
-  // `tw-hm` draws with primitives, so its beads, joins and ports are listed HERE — one list drawn
-  // from and emitted from, in the screenful the drawing occupies, and `scanline` reads the list.
-  let PA = [`[A]`]
-  let LST = [`list`]
-  let joins = ((XM, TWHH, XO, YC, 0.75),)
-  let beads = ((XO, YC, [`cons`], black), (XO, ys, f, GIVEN1), (XO, yp, [`p`], GIVEN2))
-  if rs == 2 { beads.push((XM, YU2, [`p×𝟙`], GIVEN2)) }
-  let top = ((XM, [`A×−`]), (XO, PA))
-  let bot = ((XO, PA),)
-  // `[A]` is `list` beside `A` between `y0` and `y1`, and one wire above and below.
-  let splits = ((y0, y1, XL, PA, LST, [`A`]),)
-  P(cetz.canvas(length: 0.8cm, {
-    d.rect((0, 0), (XO, TWHH), fill: fb-ALLC, stroke: none)
-    d.rect((XO, 0), (TWHW, TWHH), fill: luma(226), stroke: none)
-    hm-wire(((XO, TWHH), (XO, 0)), col: BCOL)
-    // The split is LOCAL: `[A]` is ONE wire and opens only around `list(p)`, because `p : A⟶A` needs
-    // an `A` wire to sit on.  Fork and merge carry no bead — `[A]=list(A)`, the same 1-cell either side.
-    let k = calc.min(0.40, (y0 - y1) / 3)
-    hm-wire(((XO, y0), (XL, y0 - k), (XL, y1 + k), (XO, y1)), col: BCOL)
-    d.content((XL + 0.20, yp), text(BCOL)[#LST], anchor: "west")
-    for (xf, yt, xt, y, kn) in joins { hm-join(xf, yt, xt, y, knee: kn) }
-    for (x, y, l, c) in beads { hm-bead((x, y), l, col: c) }
-    for (x, l) in top { hm-port((x, TWHH), l, col: if x == XO { BCOL } else { black }) }
-    for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == XO { BCOL } else { black }) }
-    if rs == 0 { hm-name((1.30, 0.25), [`Rel`]); hm-name((4.75, 0.25), [`𝟏`]) }
-  }), s: 100%)
-  hm-meta((helper: "tw-hm", hand: true, h: TWHH, w: TWHW, xo: XO, cert: cert,
-    beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
-    splits: splits.map(s => s.map(plain)),
-    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
-}
 
 // Emitted verbatim by `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`: the
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
-#let tw-pfx2 = dpanel(4, 5.7, 2.85,
-  ((0.55, "top", 2, none, none), (1.7, 2, "bot", none, none)),
-  ((3, [`prefix`]), (2, [`cons`], black, 0.55), (1, [`p`])),
-  ((0.55, [`A×−`]), (2.85, [`[A]`])),
-  ((1.7, [`list`]), (2.85, [`A`])),
+// Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
+#let tw-pfx1 = dpanel(4, 6.85, 4,
+  ((0.55, "top", 3, none, none), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
+  ((3, [`cons`], black, 0.55), (2, [`prefix`], GIVEN1, 1.7), (1, [`p`], GIVEN2)),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])), names: true,
+  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]", branch: "cons",
+    alias: ("α = [nil,⊸ nil ∪ cons]",)))
+#let tw-pfx2 = dpanel(4, 6.85, 4,
+  ((0.55, "top", 2, none, none), (1.7, "top", 3, none, none), (2.85, 3, "bot", none, none)),
+  ((3, [`prefix`], black, 1.7), (2, [`cons`], black, 0.55), (1, [`p`])),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
-#let tw-pfx3 = dpanel(3, 4.55, 1.7,
-  ((0.55, "top", 1, none, none),),
-  ((2, [`prefix`]), (1, [`(p×list(p))cons`], black, 0.55)),
-  ((0.55, [`A×−`]), (1.7, [`[A]`])),
-  ((1.7, [`[A]`]),),
+#let tw-pfx3 = dpanel(3, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
+  ((2, [`prefix`], black, 1.7), (1, [`(p×list(p))cons`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
@@ -4196,7 +4157,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-pf, bx-lp)), s: 68%),
     [`α prefix list(p)`])],
-  [#tw-hm(0, cert: twcert("α prefix list(p)", a: "α = [nil,⊸ nil ∪ cons]"))],
+  [#tw-pfx1],
 
   [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-pf, post: (bx-lp,)), s: 68%),
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
@@ -5439,8 +5400,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
 // HINZE–MARSDEN (IntroString.pdf §1.4.2): a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.
 // `Δ` = the relator `X↦X×X` (the diagonal `X↦(X,X)`, then `×`): a FUNCTOR, not the copy relation `◁ : A⟶A⊗A`.
-// `[A]` STAYS ONE WIRE here: `R:[A]⟶[A]` is an ordering on parties, not `list` of a relation on
-// elements, so `R°` is a bead on the object wire — split, it would sit on neither half alone.
+// `[A]` STAYS ONE WIRE here, the one panel family that declares `split: ""`: `R:[A]⟶[A]` is an
+// ordering on parties, so split it would have to eat the `list` and make another at each of the four
+// heights the `R°` bead takes — two more columns, and 10.3 of width in a 5.0cm column.
 #let PXM = 0.55                  // `A×−`, the root employee
 #let PXLo = 1.70                 // `list`, the subtrees
 #let PXD = 2.85                  // `Δ`, the pair one subtree returns
@@ -5462,8 +5424,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     ((PXO, PARTY),), names: rs == 0, s: 90%,
     // The first and last panels are the row the display states; the two in between are the steps
     // the `R°` bead takes to get from one to the other, and the display states no formula for them.
-    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,)), (:), (:),
-           (expect: "include R°", alias: (INCL,))).at(rs))
+    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""), (:), (:),
+           (expect: "include R°", alias: (INCL,), split: "")).at(rs))
 }
 
 #let step = step.with(pw: 319pt)
@@ -5701,22 +5663,22 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`party`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (4, [`A`])),
   ((2.85, [`list`]), (4, [`A`])), s: DS,
-  cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]", split: "list"))
+  cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]"))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
 // `frc(⦇S⦈ choose)` is that one absorption step away.
-#let d-out2 = dpanel(5, 6.85, 4,
-  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 3, none, none), (2.85, 2, "bot", none, none)),
-  ((3, [`⦇S⦈`], black, 1.7), (2, [`choose`]), (1, [`est(R°)`], black, 0.55)),
-  ((1.7, [`tree`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])), s: DS,
-  cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]", split: "list"))
-#let d-out4 = dpanel(7, 8, 5.15,
-  ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], frc([`𝟙`])), (4, 2, "bot", none, none)),
-  ((5, [`⦇S⦈`], black, 1.7), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`]), (1, [`est(R°)`], black, 2.85)),
+#let d-out2 = dpanel(5, 8, 5.15,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 3, none, none), (2.85, 3, 2, [`Δ`], none), (4, 3, "bot", none, none)),
+  ((3, [`⦇S⦈`], black, 1.7), (2, [`choose`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (5.15, [`A`])),
   ((4, [`list`]), (5.15, [`A`])), s: DS,
-  cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]", split: "list"))
+  cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
+#let d-out4 = dpanel(7, 9.15, 6.3,
+  ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], frc([`𝟙`])), (4, 5, 2, [`Δ`], none), (5.15, 5, "bot", none, none)),
+  ((5, [`⦇S⦈`], black, 1.7), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 4), (1, [`est(R°)`], black, 2.85)),
+  ((1.7, [`tree`]), (6.3, [`A`])),
+  ((5.15, [`list`]), (6.3, [`A`])), s: DS,
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
@@ -5726,14 +5688,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`S`], black, 1.7), (1, [`est((R×R)°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (8.6, [`A`])),
   ((6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])), s: DS,
-  cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]", split: "list"))
+  cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 10.3, 7.45,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, 2, "bot", none, none)),
   ((2, [`include`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
   ((6.3, [`list`]), (7.45, [`A`])), s: DS,
   // The row states the whole fork; this panel and the next draw one branch each.
-  cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]", split: "list"))
+  cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]"))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
 // beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
@@ -5742,7 +5704,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 4), (2, [`est(R°)`], black, 2.85), (1, [`concat`], black, 1.7)),
   ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
   ((6.3, [`list`]), (7.45, [`A`])), s: DS,
-  cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]", split: "list"))
+  cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
