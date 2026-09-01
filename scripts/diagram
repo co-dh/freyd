@@ -368,9 +368,10 @@ def layout(rows, made, otop, obot, cert):
             unit[r.legs[0]] = r.label
             ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
             continue
-        # the bar says how far left the bead reaches where no wire of its own says it
-        bar = r.reach.x if r.reach is not None and r.reach not in r.arms else None
-        beads.append([ys[i], r.label] if bar is None else [ys[i], r.label, "#000000", bar])
+        # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
+        # crossed wires alike, because a bead is a POINT and there is no such thing as a straight bar
+        reach = r.reach.x if r.reach is not None else None
+        beads.append([ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
     return {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY, "w": xo + PAD,
             "xo": xo,
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],

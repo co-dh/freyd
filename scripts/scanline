@@ -270,8 +270,10 @@ class Wire:
 
 
 class Bead:
-    def __init__(self, y, x, label, barx=None, born=False):
-        self.y, self.x, self.label, self.barx, self.born = y, x, label, barx, born
+    def __init__(self, y, x, label, reach=None, born=False):
+        # `reach` is how far left the bead reaches; the reach is ALWAYS drawn as arms the wires bend
+        # into, never as a straight line past them — a bead is a point, so every arm is a bend.
+        self.y, self.x, self.label, self.reach, self.born = y, x, label, reach, born
 
 
 class Panel:
@@ -305,16 +307,39 @@ class Panel:
         return next((l for (y, l) in self.oseam if z < y - EPS), self.olabel)
 
 
+def dipys(r, x, yt, yb):
+    """`dpanel`'s own rule for which bead heights a lane bends down to: every bead whose reach
+    spans this column, and which the lane is live across."""
+    return sorted((b[0] for b in r['beads']
+                   if len(b) > 3 and b[3] is not None
+                   and b[3] <= x < r['xo'] and yt > b[0] > yb), reverse=True)
+
+
+def dippts(x, xo, h, y0, y1, ybs):
+    """`ddip`'s points: the lane's own knee, then one bend onto the dot and back out per bead."""
+    t, b = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
+    ke = min(dknee(x, xo, t - b), 0.60 * (t - ybs[0]))
+    pts = [(x, h)] if y0 == 'top' else [(xo, t), (x, t - ke)]
+    for i, yb in enumerate(ybs):
+        hi, up = (t - ke, 0.85) if i == 0 else (ybs[i - 1], 0.42)
+        lo, dn = ((b if y1 == 'bot' else b + ke), 0.85) if i == len(ybs) - 1 else (ybs[i + 1], 0.42)
+        kd = min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
+        pts += [(x, yb + kd), (xo, yb), (x, yb - kd)]
+    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + ke), (xo, b)])
+
+
 def a_dpanel(p, r):
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-        # `dlane`'s own points.  `dpanel`'s `dip:` is not emitted, so a lane it re-routes through
-        # `ddip` is read here as the plain lane: the dip is an excursion onto a bead of its own.
-        k = dknee(x, p.xo, yt - yb)
-        pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
-                                              [(p.xo, y0), (x, y0 - k)])
-        pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + k), (p.xo, y1)]
-        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts))
+        ds = dipys(r, x, yt, yb)
+        if ds:                             # `ddip`'s points — the arms the crossed wires make
+            pts = dippts(x, p.xo, p.h, y0, y1, ds)
+        else:                              # `dlane`'s own points
+            k = dknee(x, p.xo, yt - yb)
+            pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
+                                                  [(p.xo, y0), (x, y0 - k)])
+            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + k), (p.xo, y1)]
+        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
@@ -417,14 +442,18 @@ def owner(p, w, y):
 
 
 def touched(p, b, above):
-    """The wires the bead's dot and its bar reach: its own lane, what it consumes and creates, and
-    everything the bar spans — a bar is drawn exactly where the bead is not `F(−)` of the wire."""
+    """The wires the bead's dot reaches: its own lane, what it consumes and creates, and everything
+    its reach spans — a bead reaches past a wire exactly where it is not `F(−)` of that wire."""
     xs = {b.x}
     for w in p.wires:
         if (abs(w.ybot - b.y) < EPS or abs(w.ytop - b.y) < EPS) and owner(p, w, b.y) is b:
             xs.add(w.x)
-    if b.barx is not None:
-        xs |= {x for (x, _) in above if b.barx - EPS <= x <= p.xo + EPS}
+    if b.reach is not None:
+        xs |= {x for (x, _) in above if b.reach - EPS <= x <= p.xo + EPS}
+    # A lane DRAWN down to the dot is on the boundary as surely as one the reach spans — `mpan`'s
+    # `nodes` and `dpanel`'s reach are the same declaration made two ways.
+    if abs(b.x - p.xo) < EPS:
+        xs |= {w.x for w in p.wires if any(abs(d - b.y) < EPS for d in w.dips)}
     return xs
 
 
@@ -484,6 +513,71 @@ def sweep(p):
     return bad
 
 
+# ---------------------------------------------------------------- the ink's own graph
+# The sweep reads the LANE TABLE, so a panel can type perfectly and still be DRAWN in pieces: a
+# strand stopping in mid-air, a bead covering a column nothing bends onto, a group of wires joined
+# to nothing.  These ask the same questions of the ink the adapters build instead of of the table.
+def arms(p, b):
+    """The strands that MEET the dot — one that ends there, and a lane that bends down to it.
+    Nothing else counts: an arm is ink the WIRE makes, not a line drawn beside it."""
+    return [w for w in p.wires if w.pts
+            and (any(abs(q[0] - b.x) < EPS and abs(q[1] - b.y) < EPS for q in (w.pts[0], w.pts[-1]))
+                 or any(abs(d - b.y) < EPS for d in w.dips))]
+
+
+def pieces(p):
+    """Reachability.  A component that reaches an edge is a wire the panel's own ports account for
+    — p. 17's `F f` runs straight past, and §13.3.1's unit opens one that runs to the bottom.  A
+    component that reaches no edge and joins nothing is a fragment, and a panel drawn in fragments
+    is not one arrow however well it types."""
+    up = {id(w): id(w) for w in p.wires}
+
+    def find(k):
+        while up[k] != k:
+            up[k] = k = up[k]
+        return k
+
+    for b in p.beads:
+        ws = arms(p, b) + [w for w in p.wires if abs(w.x - b.x) < EPS and w.ybot < b.y < w.ytop]
+        for w in ws[1:]:
+            up[find(id(w))] = find(id(ws[0]))
+    comps = {}
+    for w in p.wires:
+        comps.setdefault(find(id(w)), []).append(w)
+    home = find(id(next(w for w in p.wires if abs(w.x - p.xo) < EPS and w.ytop > p.h - EPS)))
+    return [f"{p.id}: the {', '.join(sorted(w.label or '?' for w in ws))} wire"
+            f"{'s' * (len(ws) > 1)} reach neither an edge nor the object wire — one arrow is one"
+            f" drawing"
+            for k, ws in comps.items()
+            if k != home and not any(w.ytop > p.h - EPS or w.ybot < EPS for w in ws)]
+
+
+def connect(p):
+    """Continuity, degree and reachability, of the ink.  `sweep` runs first: its cuts are what say
+    what a bead's boundary IS, and these say whether the drawing has it."""
+    bad = []
+    for w in p.wires:
+        for q, end in ((w.pts[0], 'starts'), (w.pts[-1], 'ends')):
+            if EPS < q[1] < p.h - EPS \
+                    and not any(abs(q[0] - b.x) < EPS and abs(q[1] - b.y) < EPS for b in p.beads):
+                bad.append(f"{p.id}: the {w.label} wire {end} in mid-air at ({q[0]:g}, {q[1]:g})"
+                           f" — a strand ends on a bead or on an edge, nowhere else")
+    for b in p.beads:
+        i = next((k for k in range(len(p.levels)) if abs(p.levels[k] - b.y) < EPS), None)
+        if i is None:
+            continue
+        want = touched(p, b, p.cuts[i])
+        got = {b.x} | {w.x for w in arms(p, b)} | ({p.xo} if abs(b.x - p.xo) < EPS else set())
+        for x in sorted(want - got, reverse=True):
+            bad.append(f"{p.id}: the bead {b.label} at y={b.y:g} covers x={x:g} with no ink at all"
+                       f" — an arm is a wire bent into the dot (IntroString p. 40)")
+        for x in sorted(got - want, reverse=True):
+            bad.append(f"{p.id}: the bead {b.label} at y={b.y:g} is met at x={x:g} by a wire its"
+                       f" type neither consumes, creates nor spans — a strand touching the dot is"
+                       f" an arm, and this one is not one")
+    return bad + pieces(p)
+
+
 # ---------------------------------------------------------------- crossings
 # A CROSSING IS A SYMMETRY: two wires that cross have exchanged, so a picture that crosses claims a
 # permutation the formula does not.  Two checks, and they answer different questions — `inversions`
@@ -494,7 +588,7 @@ def inversions(p):
     """Order against the cut, on the cut alone.  A wire that ends in another column has moved
     across every column between the two, and a wire standing in one of them, live on BOTH sides of
     that height, is passed — unless it dips onto that very bead, where the two are drawn to meet.
-    `dpanel`'s `dip:` is not emitted, so its lanes are read undipped; a dip there is a local
+    `dpanel` does not say which lanes dip, so its lanes are read undipped; a dip there is a local
     excursion at the bead's own height, and 13.4.4a's arms cross above it either way."""
     out = []
     for w in p.wires:
@@ -521,7 +615,7 @@ def inversions(p):
 def crossings(p):
     """Every wire–wire meeting in the ink, in the curves the note's own helpers draw.  A junction is
     not a crossing: a hit at a bead, or at either strand's own end, is where the two are DRAWN to
-    meet.  A bead's spanning bar is not ink here — it is the bead's arm, not a wire."""
+    meet.  A bead's reach is not ink of its own — it is the arms the crossed wires make."""
     ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts)) for w in p.wires if w.pts] \
         + [(f"{l or '?'}@{q[1][0]:g}", poly(q)) for (l, q) in p.strands]
     js = [(b.x, b.y) for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
@@ -691,7 +785,8 @@ def main(argv):
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
     only = opt(argv, "--panel")
     recs = panels(path, opt(argv, "--from"))
-    ps, bad, note, unhandled, warn = [], [], [], [], {"cut order": [], "ink": []}
+    ps, bad, note, unhandled, drawn = [], [], [], [], []
+    warn = {"cut order": [], "ink": []}
     for r in recs:
         if only and r["id"] != only:
             continue
@@ -700,6 +795,7 @@ def main(argv):
             bad += sweep(p)
             b, n = certify(p)
             bad += b; note += n
+            drawn += connect(p)
             warn["cut order"] += inversions(p); warn["ink"] += crossings(p)
             ps.append(p)
         except (Unhandled, ValueError) as e:
@@ -707,8 +803,11 @@ def main(argv):
     bad += crosscheck(ps)
     # The note has crossings today, so they are a WARNING: naming every one is the deliverable, and
     # `--strict` is what a note that has been drawn without them is held to.
+    # The note is drawn with bars today, so a broken drawing is a WARNING while stage 4 redraws the
+    # panels one at a time; `--strict` is what a redrawn one is held to.
     if "--strict" in argv:
-        bad += warn["cut order"] + warn["ink"]; warn = {k: [] for k in warn}
+        bad += warn["cut order"] + warn["ink"] + drawn
+        warn = {k: [] for k in warn}; drawn = []
     if opt(argv, "--json"):
         json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
                     "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
@@ -725,6 +824,11 @@ def main(argv):
     cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
     print(f"scanline: {len(recs)} panels, {len(ps)} swept, {cert} certified,"
           f" {len(unhandled)} unhandled, {len(bad)} failures")
+    if drawn:
+        hit = sorted({w.split(':')[0].rsplit('.', 1)[0] for w in drawn})
+        print(f"drawing ({len(drawn)}):", *drawn, sep="\n  ", file=sys.stderr)
+        print(f"scanline: {len(drawn)} drawing defects in {len(hit)} displays"
+              f" ({', '.join(hit)}) — warnings; `--strict` makes them failures", file=sys.stderr)
     if any(warn.values()):
         all_ = [w for k in warn for w in warn[k]]
         for k, ws in warn.items():
