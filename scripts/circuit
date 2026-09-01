@@ -413,7 +413,11 @@ def fold(e, tbl, src, tgt):
     if b[2] != c:
         raise Unhandled(f"the algebra `{spell(e[1][0])}` lands on {oshow(b[2])}, not the carrier"
                         f" {oshow(c)} the fold is stated at")
-    return pic("cata", src, c, b[3], body=lane(b), label=oshow(c),
+    # A `tgt` passed in means the caller already fixes this fold's output type — that is exactly
+    # the type the panel or the next box displays at this same wire, so drawing it again here would
+    # duplicate it (§13.3.3b showed `[A]` twice on one wire).  Only when the carrier had to be
+    # DECLARED here (tgt is None) does this box carry the sole label for it.
+    return pic("cata", src, c, b[3], body=lane(b), label=None if tgt is not None else oshow(c),
                port=[oshow(w) for w in wires(a)])
 
 
@@ -469,7 +473,8 @@ def tv(v, ind=2):
         return "(\n" + "".join(f"{p}{tv(x, ind + 2)},\n" for x in v) + " " * (ind - 2) + ")" \
             if any(isinstance(x, (dict, list)) for x in v) \
             else "(" + "".join(f"{tv(x, ind)}, " for x in v) + ")"
-    return str(v).lower() if isinstance(v, bool) else \
+    return "none" if v is None else \
+        str(v).lower() if isinstance(v, bool) else \
         '"' + v + '"' if isinstance(v, str) else str(v)
 
 

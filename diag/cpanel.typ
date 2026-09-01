@@ -148,8 +148,10 @@
     let x0 = CBAR + ld
     let xr = x0 + p.w + CBAR
     // The CARRIER types the fold's OUTPUT WIRE, so it sits on that wire's own stub, exactly like
-    // an input port label sits on its wire (below) — never floating over the box.
-    let og = cu(measure(tx(t.label)).width, length) + 2 * CPORT
+    // an input port label sits on its wire (below) — never floating over the box.  `scripts/circuit`
+    // sends `label: none` when the panel or the next box already names that same type at this
+    // wire's end — drawing it twice would put `[A]` on the wire and its end (§13.3.3b).
+    let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CPORT }
     let body = {
       banana(0, yh, invert: invert)
       banana(xr + CBAR, yh, right: true, invert: invert)
@@ -160,7 +162,9 @@
       d.group({ d.translate((x0, 0)); p.body })
       for y in ys(t.nout) {
         wire((x0 + p.w, y), (xr + CBAR + og, y), invert: invert)
-        lab(xr + CBAR + og / 2, y + 0.3, if invert { white } else { black }, tx(t.label))
+        if t.label != none {
+          lab(xr + CBAR + og / 2, y + 0.3, if invert { white } else { black }, tx(t.label))
+        }
       }
     }
     return (w: xr + CBAR + og, hh: yh, body: body)

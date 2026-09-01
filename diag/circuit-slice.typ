@@ -118,13 +118,13 @@
           (),
           ("A", "[A]", ),
         )),
-    ), seams: ()), label: "[A]", port: ("F([A])", ), src: ("[A]", ), tgt: ("[A]", )),
+    ), seams: ()), label: none, port: ("F([A])", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,⊸ nil ∪ cons]⦈", src: "[A]", tgt: "[A]"))
 
 // ⦇⦈ (13.4.4a)  ⦇S⦈   [tree(A) ⟶ [A]×[A]]
 #cpanel((k: "cata", nin: 1, nout: 2, body: (k: "seq", nin: 2, nout: 2, items: (
       (k: "box", nin: 2, nout: 2, label: "S", chamfer: true, frac: false, flip: false),
-    ), seams: ()), label: "[A]×[A]", port: ("A", "[[A]×[A]]", ), src: ("tree(A)", ), tgt: ("[A]", "[A]", )),
+    ), seams: ()), label: none, port: ("A", "[[A]×[A]]", ), src: ("tree(A)", ), tgt: ("[A]", "[A]", )),
   cert: (expect: "⦇S⦈", src: "tree(A)", tgt: "[A]×[A]"))
 
 // 13.4.4a r2  𝟙%∋ E(⦇S⦈)E(choose)est(R°)   [tree(A) ⟶ [A]]
