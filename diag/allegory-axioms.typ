@@ -5320,6 +5320,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let LBA = 1.5               // inside the fold, a branch's root strand ...
 #let LBB = 0.55              // ... and its subtree-list strand
 #let LBY = (LBA + LBB) / 2   // ... and the single strand the branch leaves on
+#let TG = 1.7                // a lead wide enough to carry a TYPE label, not just join two boxes
+#let TGW = 3.0                // ... and wide enough for the longest of them, `E([A]×[A])`
+#let TY = 0.34                // how far above (or, mirrored, below) its wire a type label floats
 
 #let lb-est = ([`est(R°)`], 2.2, true)
 #let lb-cc = ([`concat`], 1.9, false)
@@ -5327,10 +5330,17 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // The tail every row ends with, `choose/∋ est(R°)`: `choose` takes TWO wires, so the pair closes
 // there, and `est(R°)` reads the set back down to one list.  `sp` is the height the pair arrives at.
-#let ltail(x, sp) = {
+// `midlabel`: `13.4.4a`'s row is the only caller that names the type between `choose/∋` and `est(R°)`
+// — every other row shares this same tail, so the label stays off unless asked for.
+#let ltail(x, sp, midlabel: none) = {
   gbox((x, 0), frc([`choose`]), w: 2.0, h: 2 * sp + 0.62, chamfer: false)
-  boxrun(x + 2.0, 0, (lb-est,), h: LH)
-  lab(x + 2.0 + boxrun-w((lb-est,)) + 0.5, 0, black)[`[A]`]
+  let g = if midlabel == none { LD } else { TG }
+  wire((x + 2.0, 0), (x + 2.0 + g, 0))
+  if midlabel != none { lab(x + 2.0 + g / 2, TY, black)[#midlabel] }
+  gbox((x + 2.0 + g, 0), lb-est.at(0), w: lb-est.at(1), h: LH, chamfer: lb-est.at(2))
+  let xe = x + 2.0 + g + lb-est.at(1)
+  wire((xe, 0), (xe + LD, 0))
+  lab(xe + LD + 0.5, 0, black)[`[A]`]
 }
 #let lsrc = { lab(-1.32, 0, black)[`tree A`]; wire((-0.45, 0), (0, 0)) }
 
@@ -5338,12 +5348,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lsrc; boxrun(0, 0, items, h: LH)
   lab(boxrun-w(items) + 0.5, 0, black)[`[A]`]
 }
+// `13.4.4a`'s row: the only one where the type actually changes mid-run, so it is the only one
+// that gets the wire types spelled out — `E([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
+// each of the two strands it opens into (a PRODUCT is two wires, never one wire marked `×`).
 #let lopen(items) = {
   lsrc; boxrun(0, 0, items, h: LH)
   let w = boxrun-w(items)
-  gbox((w, 0), [`est((R×R)°)`], w: 3.3, h: LPH)
-  wire((w + 3.3, LSP), (w + 3.3 + LD, LSP)); wire((w + 3.3, -LSP), (w + 3.3 + LD, -LSP))
-  ltail(w + 3.3 + LD, LSP)
+  wire((w, 0), (w + TGW, 0)); lab(w + TGW / 2, TY, black)[`E([A]×[A])`]
+  gbox((w + TGW, 0), [`est((R×R)°)`], w: 3.3, h: LPH)
+  let w2 = w + TGW + 3.3
+  wire((w2, LSP), (w2 + TG, LSP)); lab(w2 + TG / 2, LSP + TY, black)[`[A]`]
+  wire((w2, -LSP), (w2 + TG, -LSP)); lab(w2 + TG / 2, -LSP - TY, black)[`[A]`]
+  ltail(w2 + TG, LSP, midlabel: [`E([A])`])
 }
 
 // `⦇−⦈` drawn as MELLIÈS' functorial box: the body's own circuit, inside brackets.  A bar is where
