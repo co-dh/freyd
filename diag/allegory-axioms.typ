@@ -7434,8 +7434,8 @@ in @mu-defn.
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
       point is unique and entire by Theorem 6.3 — `T°` followed by `F`'s membership relation
       inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
-  // The branch, not the conditional: `→` is a union of two restricted branches and has no wiring in
-  // either calculus, and the two branches have the one shape.
+  // One branch of the `→`, not both: it is a union of two restricted branches with the one shape, so
+  // the second adds no shape the first does not already show.
   [#dp-pan(3.8, (((THU, 3.15), (THU, 0.60 + KNEE), (THO, 0.60)),),
     ((THU, 3.15, frc([`𝟙`]), -0.32), (THO, 2.55, [`Vᵢ°`], 0.32), (THU, 1.95, [`thin(Qᵢ)`], -0.32),
      (THO, 1.35, [`Uᵢ`], 0.32), (THO, 0.60, [`est(R)`], 0.32)))],
@@ -7567,8 +7567,8 @@ both lists empty.
      #src[Proposition 9.1: `base` and `step` have disjoint ranges, so the fixed point splits into
       one branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
       `base` returns]])],
-  // The `step` branch, not the conditional: `→` has no wiring in either calculus, and the `base`
-  // branch is `nil` on an empty pair.  `Op×−` is the summand `step°` opens.
+  // The `step` branch of the `→`, not both: the `base` branch is `nil` on an empty pair, nothing to
+  // draw.  `Op×−` is the summand `step°` opens.
   [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
       thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
       thw-out(THP, 1.70, 0)),
@@ -7704,8 +7704,8 @@ both lists empty.
     [`(μX : (single→wrap° tip,`#frc([`cat°`])` P((X×X)bin) est(R)))` \
      #src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
-  // The `cat` branch, not the conditional: `→` has no wiring in either calculus, and the `wrap`
-  // branch is one bead on a singleton.  `(−)²` is the summand `cat°` opens.
+  // The `cat` branch of the `→`, not both: the `wrap` branch is one bead on a singleton, nothing the
+  // `cat` branch does not already show.  `(−)²` is the summand `cat°` opens.
   [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
     ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`cat°`], 0.32),
