@@ -14,11 +14,15 @@ and `wires(X)` is the list of ×-factors of `X` (the unit object has none).  Dra
 clause of `walk` per operator, each primitive placed once.  Widths are deliberately absent —
 `cpanel` measures its own labels at render time (§4f), so this never guesses font metrics.
 
-WHAT IT STILL REFUSES.  `∩`, `(g→x,y)` and `⦇x⦈` are `('cap', …)`, `('cond', …)` and `('cata', …)`
-in CIRCUIT-GEN §1.5 and are not in the shared grammar, so they arrive MIS-PARSED rather than
-rejected — `∩` as an atom standing in the composite, a `⦇…⦈` bracket as one atom.  Drawing either
-would draw a `∩` box sitting on a wire, so `guard` refuses them by name.  `∪` and `[x,y]` are real
-nodes now; `⊸` is still an atom, and §3 row 14 reads it where it stands, as the constant it is.
+`∩`, `(g→x,y)` and `⦇x⦈` are real nodes in the shared grammar now, with a drawing rule each: a meet
+is copy / both lanes / merge (§3 row 12), a conditional is the `∪` of two guarded branches with the
+`else` guard inside a Peirce cut (row 16), and a fold is MELLIÈS' FUNCTORIAL BOX — the algebra's own
+circuit between two bars, which is how the note already draws it (row 17).  `⊸` is still an atom,
+and §3 row 14 reads it where it stands, as the constant it is.
+
+WHAT IT STILL REFUSES, each where it is written: an `∩` of more than two operands, a conditional of
+more than one test, a fold whose carrier the panel does not state, a guard that is not boxes and
+wires (a region's own colours do not invert inside a cut), and `°` on a composite (row 8's frame).
 """
 import importlib.machinery, importlib.util, json, os, sys
 
@@ -32,10 +36,15 @@ parse, norm, spell, Unhandled = sl.parse, sl.norm, sl.spell, sl.Unhandled
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
 KONST = "⊸"
-# CIRCUIT-GEN §5's three rows, in dependency order: `--slice` is the acceptance test.
+PROJ = {"π₁": 0, "π₂": 1}       # §3 row 3: which ×-factor survives; the others end at a dot
+# CIRCUIT-GEN §5's rows, in dependency order: `--slice` is the acceptance test.  The last three are
+# the operators §1.5 added — one demonstration each, every one a term the note itself writes.
 SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("13.3.3c r1", "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", "A×[A]", "[A]"),
-         ("13.3.3b r2", "F(prefix) [nil,⊸ nil ∪ cons] list(p)", "F([A])", "[A]")]
+         ("13.3.3b r2", "F(prefix) [nil,⊸ nil ∪ cons] list(p)", "F([A])", "[A]"),
+         ("∩ (13.3.3b)", "prefix° prefix∩R", "[A]", "[A]"),
+         ("→ (13.3.3c)", "(π₁p→cons,⊸ nil)", "A×[A]", "[A]"),
+         ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]")]
 
 
 def sigs():
@@ -100,17 +109,25 @@ def subst(scheme, env):
 
 
 # ---------------------------------------------------------------- the circuit normalizer (§1.4)
+BRACKETS = ('union', 'case', 'cap', 'cond', 'cata')
+
+
 def mk(tag, ops):
-    """A `union`/`case` the normalizer MANUFACTURES: `spell` reads the third element verbatim, so a
+    """A bracket node the normalizer MANUFACTURES: `spell` reads the third element verbatim, so a
     rebuilt node needs a spelling of its own instead of the stale one it inherited."""
-    return (tag, ops, ' ∪ '.join(spell(x) for x in ops) if tag == 'union'
-            else '[' + ','.join(spell(x) for x in ops) + ']')
+    if tag == 'cond':                  # guard, body, …; an odd operand out is the default branch
+        ts = [f"{spell(a)}→{spell(b)}" for a, b in zip(ops[::2], ops[1::2])]
+        return (tag, ops, '(' + ','.join(ts + ([spell(ops[-1])] if len(ops) % 2 else [])) + ')')
+    return (tag, ops, {'union': ' ∪ '.join(spell(x) for x in ops),
+                       'cap': '∩'.join(spell(x) for x in ops),
+                       'case': '[' + ','.join(spell(x) for x in ops) + ']',
+                       'cata': '⦇' + spell(ops[0]) + '⦈'}[tag])
 
 
 def crec(e, f):
-    """`sl.rec` stops AT a `union`/`case` — the spider side never looks inside one, and that is what
-    keeps `[x,y]` one bead over there.  A circuit opens both, so this walks in."""
-    if e[0] not in ('union', 'case'):
+    """`sl.rec` stops AT a bracket node — the spider side never looks inside one, and that is what
+    keeps `[x,y]` one bead over there.  A circuit opens all of them, so this walks in."""
+    if e[0] not in BRACKETS:
         return sl.rec(e, f)
     ops = [f(x) for x in e[1]]
     return e if ops == list(e[1]) else mk(e[0], ops)
@@ -151,25 +168,6 @@ def fuse(xs, polys=None):
     return None
 
 
-# ---------------------------------------------------------------- the grammar guard
-# CIRCUIT-GEN §1.5's remaining productions are not in the shared parser, so the terms that need them
-# arrive MIS-PARSED rather than rejected: `∩` as an atom beside its operands, `⦇x⦈` as one atom.
-# Refusing them by name is the whole reason this is a guard and not a missing clause.
-STOP = {'∩': ("x∩y", "('cap', …)"), '→': ("(g→x,y)", "('cond', …)"), '⦇': ("⦇x⦈", "('cata', …)")}
-
-
-def guard(e):
-    """Every term §13.3.x draws that today's `parse` cannot open, refused where it is written."""
-    for c, (surface, node) in STOP.items():
-        if e[0] == 'atom' and c in e[1]:
-            raise Unhandled(
-                f"`{c}` is an ATOM to today's `parse`, not an operator: `{e[1]}` arrives whole."
-                f"  CIRCUIT-GEN §1.5 adds `{node}` for `{surface}` to scripts/scanline's grammar;"
-                f" until it lands the circuit generator cannot open it")
-    crec(e, guard)          # `crec` rebuilds, so the visit has to hand every subterm back
-    return e
-
-
 # ---------------------------------------------------------------- one clause per operator (§3)
 def pic(k, src, tgt, is_map, **kw):
     """A layout node.  `nin`/`nout` are the strand counts its ports carry, which is what `cpanel`
@@ -188,7 +186,7 @@ def walk(e, tbl, src=None, tgt=None):
         raise Unhandled(f"`∘` composes ACROSS a functor wire, which is the spider reading;"
                         f" a circuit has no such direction (CIRCUIT-GEN §3 row 19): {spell(e)}")
     if e[0] == 'comp':
-        return seq(e[1], tbl, src)
+        return seq(e[1], tbl, src, tgt)
     if e[0] == 'conv':
         n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src)
         if n["k"] != "box":
@@ -201,6 +199,14 @@ def walk(e, tbl, src=None, tgt=None):
         return fan(e, tbl, src)
     if e[0] == 'case':
         return tape(e, tbl, src)
+    if e[0] == 'cap':
+        return meet(e, tbl, src)
+    if e[0] == 'cond':
+        return test(e, tbl, src)
+    if e[0] == 'cata':
+        return fold(e, tbl, src, tgt)
+    if e[0] == 'atom' and e[1] in PROJ:               # §3 row 3: a projection is a discard
+        return proj(e[1], src)
     if e[0] == 'atom' and e[1] == sl.UNIT:            # §3 row 4: the identity is bare wires
         if src is None and tgt is None:
             raise Unhandled("`𝟙` is the identity on the object at its port, and neither is known")
@@ -232,6 +238,17 @@ def leaf(e, tbl, src, tgt):
     return box(spell(e), subst(obj(row["src"]), env), subst(obj(row["tgt"]), env), row["map"])
 
 
+def proj(name, src):
+    """§3 row 3: a projection is a DISCARD on the factors it drops, never a box.  The product is
+    already two wires, so `π₁` costs one dot per wire it ends and no notation at all."""
+    i = PROJ[name]
+    if src is None or src[0] != 'prod' or i >= len(src[1]):
+        raise Unhandled(f"`{name}` projects out of a product of {i + 1} factors or more, and its"
+                        f" port is {oshow(src) if src else 'not known here'}")
+    return pic("proj", src, src[1][i], True, at=i, label=name,
+               keep=[len(wires(x)) for x in src[1]])
+
+
 def lane(t):
     """One branch or one strand of a stack is always a run, so a single box becomes a one-box run
     and every consumer below has exactly one shape to place."""
@@ -240,19 +257,20 @@ def lane(t):
         pic("seq", s, t2, m, items=[n], seams=[], _objs=[s, t2])[0]
 
 
-def seq(xs, tbl, src):
+def seq(xs, tbl, src, tgt=None):
     """§3 row 5: juxtaposition, ports glued.  The objects between the factors are kept — the seam
-    rule below decides which get printed — and a nested composite splices in rather than nesting."""
+    rule below decides which get printed — and a nested composite splices in rather than nesting.
+    Only the LAST factor gets the stated target: a fold needs it, having no carrier in the term."""
     items, objs, mp, i = [], [src], True, 0
     while i < len(xs):
         if xs[i] == ('atom', KONST):                  # §3 row 14: `⊸ x`, the constant `x`
             if i + 1 == len(xs):
                 raise Unhandled("`⊸` with nothing after it: a constant needs the thing it creates")
-            b = walk(xs[i + 1], tbl, src=obj("𝟏"))
+            b = walk(xs[i + 1], tbl, src=obj("𝟏"), tgt=tgt if i + 2 == len(xs) else None)
             items.append(pic("konst", objs[-1], b[2], b[3], body=lane(b))[0])
             objs.append(b[2]); mp = mp and b[3]; i += 2
             continue
-        n, s, t, m = walk(xs[i], tbl, src=objs[-1])
+        n, s, t, m = walk(xs[i], tbl, src=objs[-1], tgt=tgt if i + 1 == len(xs) else None)
         if n["k"] == "seq":
             items += n["items"]; objs += n["_objs"][1:]
         else:
@@ -273,19 +291,75 @@ def stack(xs, tbl, src):
     return pic("stack", src, t, all(b[3] for b in ls), lanes=[lane(b) for b in ls])
 
 
-def branches(e, tbl, srcs):
-    """A `∪` and a `[x,y]` differ in where their branches START, never in where they end: both close
-    by merging, so every branch has to land on the one object the region leaves at."""
-    bs = [walk(x, tbl, src=s) for x, s in zip(e[1], srcs)]
+def branches(ops, tbl, srcs, what):
+    """A `∪`, a `[x,y]` and a `→`'s two sides differ in where their branches START, never in where
+    they end: all close by merging, so every branch lands on the one object the region leaves at."""
+    bs = [walk(x, tbl, src=s) for x, s in zip(ops, srcs)]
     if len({oshow(b[2]) for b in bs}) > 1:
-        raise Unhandled(f"`{spell(e)}` merges branches at {', '.join(oshow(b[2]) for b in bs)}")
+        raise Unhandled(f"`{what}` merges branches at {', '.join(oshow(b[2]) for b in bs)}")
     return bs
 
 
 def fan(e, tbl, src):
     """§3 row 11: the `∪` region — the input arrives once, a dashed fan hands it to both bodies."""
-    bs = branches(e, tbl, [src] * len(e[1]))
+    bs = branches(e[1], tbl, [src] * len(e[1]), spell(e))
     return pic("union", src, bs[0][2], False, bodies=[lane(b) for b in bs])
+
+
+def meet(e, tbl, src):
+    """§3 row 12: `x∩y` — the input is COPIED, both lanes run, and the results MERGE.  `∇=Δ°`
+    forces the two strands to carry the same value, which is what makes the merge an intersection
+    (circuit.typ's `nabla`); nothing here is a box labelled `∩`."""
+    if len(e[1]) != 2:
+        raise Unhandled(f"`{spell(e)}` meets {len(e[1])} operands where a copy has TWO outputs:"
+                        f" bracket it, `a∩(b∩c)`, and the copies nest")
+    bs = branches(e[1], tbl, [src] * 2, spell(e))
+    return pic("cap", src, bs[0][2], False, lanes=[lane(b) for b in bs])
+
+
+FLAT = ('box', 'proj', 'stack', 'seq')
+
+
+def flat(n):
+    """Whether a lane may be drawn inside a Peirce cut: `cpanel` inverts a wire, a box and a dot,
+    but a tape and a seam label keep their own colours, so neither is in the slice."""
+    return n["k"] in FLAT and not n.get("seams") \
+        and all(flat(x) for x in n.get("items", []) + n.get("lanes", []))
+
+
+def test(e, tbl, src):
+    """§3 row 16: `(g→x,y)` is `x` where `g` is DEFINED and `y` where it is not, so it is the `∪` of
+    two restricted branches.  Each copies the input, runs `g` on one copy and ends it at a discard —
+    that composite is `dom(g)` — and runs its body on the other; the `else` guard sits in a cut."""
+    if len(e[1]) != 3:
+        raise Unhandled(f"`{spell(e)}` states {len(e[1]) // 2} tests where row 16 draws ONE and its"
+                        f" two sides: a chain of tests is not in the slice")
+    g = lane(walk(e[1][0], tbl, src=src))
+    if not flat(g):
+        raise Unhandled(f"the guard `{spell(e[1][0])}` draws a region, and a region's own colours"
+                        f" do not invert: row 16's cut is drawn round boxes and wires only")
+    bs = branches(e[1][1:], tbl, [src] * 2, spell(e))
+    return pic("cond", src, bs[0][2], False, guard=g, bodies=[lane(b) for b in bs])
+
+
+def fold(e, tbl, src, tgt):
+    """§3 row 17: `⦇α⦈` as MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars,
+    the note's own `banana` (allegory-axioms.typ).  Nothing crosses the LEFT bar: the input arrives
+    at it and the algebra's strands start there, and that break is the recursion."""
+    if tgt is None:
+        raise Unhandled(f"`{spell(e)}` folds onto a carrier the formula does not name: state the"
+                        f" panel's target, or the bars have no object to close on")
+    mus = sigs().get("mu", {})
+    fs = [f for f, o in mus.items() if obj(o) == src]
+    if len(fs) != 1:
+        raise Unhandled(f"`{spell(e)}` folds {oshow(src)}, which diag/circuit-sigs.json gives"
+                        f" {len(fs)} initial algebras for — a fold needs exactly one")
+    a = ('app', fs[0], tgt)
+    b = walk(e[1][0], tbl, src=a)
+    if b[2] != tgt:
+        raise Unhandled(f"the algebra `{spell(e[1][0])}` lands on {oshow(b[2])}, not the carrier"
+                        f" {oshow(tgt)} the fold is stated at")
+    return pic("cata", src, tgt, b[3], body=lane(b), port=[oshow(w) for w in wires(a)])
 
 
 def tape(e, tbl, src):
@@ -300,7 +374,7 @@ def tape(e, tbl, src):
     ss = [subst(obj(p), env) for p in polys[src[1]]]
     if len(ss) != len(e[1]):
         raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
-    bs = branches(e, tbl, ss)
+    bs = branches(e[1], tbl, ss, spell(e))
     return pic("case", src, bs[0][2], all(b[3] for b in bs),
                bodies=[lane(b) for b in bs], ports=[[oshow(w) for w in wires(s)] for s in ss])
 
@@ -319,8 +393,7 @@ def seams(objs):
 def draw(formula, src, tgt, table=None):
     """The circuit a formula denotes, typed, with its ports checked against the stated ones."""
     e = cnorm(parse(formula))
-    guard(e)
-    tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src))
+    tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
     tree["src"] = [oshow(w) for w in wires(s)]
@@ -366,6 +439,14 @@ def read_back(t):
         return ('prod', [read_back(x) for x in t["lanes"]])
     if k == "konst":
         return ('comp', [('atom', KONST), read_back(t["body"])])
+    if k == "proj":
+        return ('atom', t["label"])
+    if k == "cap":
+        return mk("cap", [read_back(x) for x in t["lanes"]])
+    if k == "cata":
+        return mk("cata", [read_back(t["body"])])
+    if k == "cond":
+        return mk("cond", [read_back(t["guard"])] + [read_back(x) for x in t["bodies"]])
     return mk("union" if k == "union" else "case", [read_back(x) for x in t["bodies"]])
 
 
@@ -386,7 +467,7 @@ def main(argv):
             print()
         print(f"circuit: {len(SLICE)} rows in CIRCUIT-GEN §5, {len(SLICE) - bad} drawn,"
               f" {bad} blocked", file=sys.stderr)     # stdout is the pasteable file, nothing else
-        sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} need the §1.5 grammar extension")
+        sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} did not draw")
     formula = next(iter(free), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]

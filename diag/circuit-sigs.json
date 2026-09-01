@@ -9,7 +9,9 @@
     "`x%∋` needs no row of its own: it takes `x`'s, with `E` wrapped round the target, and is a map.",
     "One row per atom a GENERATED row has actually typed — CIRCUIT-GEN §5's three so far.",
     "`polys` is the other half of §1.3: a functor as a coproduct of branch objects, which is what",
-    "`[x,y]` forks along and what the fusion law `F(R)[f,g]=[f,(𝟙×R)g]` puts the `𝟙` and the `R` on."
+    "`[x,y]` forks along and what the fusion law `F(R)[f,g]=[f,(𝟙×R)g]` puts the `𝟙` and the `R` on.",
+    "`mu` names each functor's INITIAL algebra, the object a `⦇ ⦈` folds FROM.  A fold's carrier is",
+    "not in the term at all, so the panel's stated target supplies it and this says which functor."
   ],
   "sigs": {
     "S":      {"src": "F([x])", "tgt": "[x]", "map": false},
@@ -24,5 +26,8 @@
   },
   "polys": {
     "F": ["𝟏", "A×x"]
+  },
+  "mu": {
+    "F": "[A]"
   }
 }
