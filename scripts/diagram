@@ -33,7 +33,17 @@ _P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
 _S = importlib.util.spec_from_loader("scanline", importlib.machinery.SourceFileLoader("scanline", _P))
 sl = importlib.util.module_from_spec(_S)
 _S.loader.exec_module(sl)
-parse, norm, spell, tidy, rec, Unhandled = sl.parse, sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
+norm, spell, tidy, rec, Unhandled = sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
+
+
+def parse(s):
+    """The shared parser with `x∪y` and `[x,y]` folded back to the one atom the note labels them
+    with.  This model is one bead per factor and has no picture for a union or a coproduct, so
+    peeling one open here would only raise `Unhandled`; drawing them is the circuit generator's."""
+    def one(e):
+        return ('atom', spell(e)) if e[0] in ('union', 'case') else rec(e, one)
+    return one(sl.parse(s))
+
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
@@ -64,7 +74,7 @@ def render(e):
         return e[1]
     if e[0] == 'app' and e[1] == 'list':
         inner = render(e[2])
-        if inner is not None and ',' not in inner and '∪' not in inner:
+        if inner is not None and sl.listable(e[2]):
             return f"[{inner}]"
     return None
 

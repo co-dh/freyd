@@ -22,6 +22,8 @@ UNIT = "𝟙"
 
 # ---------------------------------------------------------------- expressions
 # ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('hc', [e…]) | ('conv', e) | ('app', name, e)
+# ('union', [e…], s) | ('case', [e…], s) — `x∪y` and `[x,y]`; the trailing `s` is the note's own
+# spelling, kept because one bracket spaces `(𝟙×list(p))π₂` and `(p×list(p)) cons` differently.
 # `hc` is the ACROSS composite `s∘t`, leftmost outermost: a factor beside the wires that pass it.
 OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
 BREAK = OPENERS + CLOSERS + "×° \t"
@@ -48,12 +50,21 @@ def split_top(s, sep):
     return out + [s[last:]]
 
 
+def squeeze(s):
+    """A source slice as the note spells it: runs of whitespace collapsed, single spaces kept."""
+    return ' '.join(s.split())
+
+
 def parse(s):
-    """Juxtaposition, `×`, `∘`, postfix `°`, `N(e)`; anything bracketed rides through as one atom.
-    `∘` binds loosest — `η∘M μ` is `η` beside the `M` wire, then `μ` — so the note brackets it."""
+    """Juxtaposition, `×`, `∘`, `∪`, postfix `°`, `N(e)`, `[x,y]`; anything else bracketed rides
+    through as one atom.  `∘` binds loosest — `η∘M μ` is `η` beside the `M` wire, then `μ` — so the
+    note brackets it — and `∪` looser than juxtaposition, so `a b ∪ c d` is `(a b)∪(c d)`."""
     hs = split_top(s, '∘')
     if len(hs) > 1:
         return ('hc', [parse(h) for h in hs])
+    us = split_top(s, '∪')
+    if len(us) > 1:
+        return ('union', [parse(u) for u in us], squeeze(s))
     xs, i = [], 0
     while i < len(s):
         if s[i] in " \t":
@@ -88,8 +99,12 @@ def p_prim(s, i):
             return parse(s[i + 1:j]), j + 1
         # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
         # `plain` spells `frac(x, ∋)`, so `⦇S⦈%∋` must not read as `⦇S⦈` beside a stray `%∋`.
-        j += 3 if s[j + 1:j + 3] == '%∋' else 1
-        return ('atom', ' '.join(s[i:j].split())), j
+        if s[j + 1:j + 3] == '%∋':
+            return ('atom', squeeze(s[i:j + 3])), j + 3
+        bs = split_top(s[i + 1:j], ',')
+        if s[i] == '[' and len(bs) > 1:
+            return ('case', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
+        return ('atom', squeeze(s[i:j + 1])), j + 1
     j = i
     while j < len(s) and s[j] not in BREAK:
         j += 1
@@ -106,15 +121,18 @@ def spell(e):
     k = e[0]
     if k == 'atom':
         return e[1]
+    if k in ('union', 'case'):
+        return e[2]
     if k == 'app':
         return f"{e[1]}({spell(e[2])})"
     if k == 'conv':
-        return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod') else spell(e[1])) + '°'
+        return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union') else spell(e[1])) + '°'
     if k == 'prod':
-        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc') else spell(x) for x in e[1])
+        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc', 'union') else spell(x)
+                        for x in e[1])
     if k == 'hc':
         return '∘'.join(f"({spell(x)})" if x[0] in ('comp', 'prod') else spell(x) for x in e[1])
-    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc') else spell(x) for x in e[1]]
+    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union') else spell(x) for x in e[1]]
     out = ps[0]
     for p in ps[1:]:
         out += ('' if out[-1] in CLOSERS or p[0] in OPENERS else ' ') + p
@@ -135,6 +153,18 @@ def rec(e, f):
     return ('conv', f(e[1])) if e[0] == 'conv' else ('app', e[1], f(e[2])) if e[0] == 'app' else e
 
 
+def listable(e):
+    """Whether `[X]` reads back as `list(X)`.  A `,` inside the bracket opens a case and a `∪` a
+    union, so those nodes — and an atom whose own text carries either — swallow the bracket."""
+    if e[0] == 'atom':
+        return ',' not in e[1] and '∪' not in e[1]
+    if e[0] in ('comp', 'prod', 'hc'):
+        return all(listable(x) for x in e[1])
+    if e[0] == 'conv':
+        return listable(e[1])
+    return listable(e[2]) if e[0] == 'app' else False
+
+
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
     `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` and `F(R)F(S)=F(RS)` are the relator
@@ -152,9 +182,10 @@ def norm(e):
             return b[1]
     if e[0] == 'app' and e[1] == 'Δ':
         return ('prod', [e[2], e[2]])
-    if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']') \
-            and ',' not in e[1] and '∪' not in e[1]:
-        return ('app', 'list', norm(parse(e[1][1:-1])))
+    if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']'):
+        inner = parse(e[1][1:-1])
+        if listable(inner):
+            return ('app', 'list', norm(inner))
     if e[0] in ('comp', 'prod', 'hc'):
         xs = [y for x in e[1] for y in (x[1] if x[0] == e[0] else [x])]
         if e[0] == 'comp':
@@ -649,11 +680,11 @@ def take_branch(e, br, obj):
     pick = BRANCH[br]["pick"]
     if e[0] == 'app' and e[1] == 'F':
         return act(BRANCH[br]["F"], e[2], obj=obj)
-    if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']'):
-        parts = [c for c in split_top(e[1][1:-1], ',') if pick in c]
+    if e[0] == 'case':
+        parts = [x for x in e[1] if pick in spell(x)]
         if len(parts) == 1:
-            ops = [c for c in split_top(parts[0], '∪') if pick in c]
-            return take_branch(parse(ops[0] if len(ops) == 1 else parts[0]), br, obj)
+            ops = [x for x in parts[0][1] if pick in spell(x)] if parts[0][0] == 'union' else []
+            return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj)
     return e
 
 
@@ -768,6 +799,20 @@ def panels(path, frm):
     return [v for v in vals if isinstance(v, dict) and v.get("kind") == "scanline"]
 
 
+def respell(recs):
+    """`spell(parse(x)) == x` over every string a `cert:` states.  The grammar may grow new nodes
+    only while the note's own spelling comes back — a bracket stays ONE bead to the panel."""
+    xs = [(r['id'], x) for r in recs for c in (r.get('cert') or {},)
+          for x in [c[k] for k in ('expect', 'src', 'tgt') if c.get(k)]
+          + [h.strip() for a in c.get('alias') or () for h in a.split('=')]]
+    bad = []
+    for i, x in xs:
+        got = spell(parse(x))
+        if got != squeeze(x):
+            bad.append(f"{i}: {x} spells back as {got}")
+    return len(xs), bad
+
+
 def locate(path, p):
     """Best effort: the one source line carrying a label unique to this panel."""
     try:
@@ -785,6 +830,14 @@ def main(argv):
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
     only = opt(argv, "--panel")
     recs = panels(path, opt(argv, "--from"))
+    if "--spell" in argv:
+        n, bad = respell(recs)
+        print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
+        if bad:
+            print(*bad, sep="\n", file=sys.stderr)
+            sys.exit(f"scanline: {len(bad)} string{'s' * (len(bad) > 1)} the grammar cannot"
+                     " write back")
+        return
     ps, bad, note, unhandled, drawn = [], [], [], [], []
     warn = {"cut order": [], "ink": []}
     for r in recs:
