@@ -264,8 +264,8 @@
   let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - 0.15
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
   let body = {
-    tape((0.34, bot), (xj, top))
-    wire((0, 0), (0.34, 0))
+    tape((CGAP, bot), (xj, top))
+    wire((0, 0), (CGAP, 0))
     for (i, p) in ps.enumerate() {
       let oy = oys.at(i); let ports = t.ports.at(i); let lead = leads.at(i)
       for y in (if ports.len() > 0 { ys(ports.len()) } else { (0.0,) }) {
@@ -278,8 +278,10 @@
       d.group({ d.translate((xf + lead, oy)); p.body; wire((p.w, 0), (mw - lead, 0)) })
     }
     tape-join((xj, 0), sp: BRT, len: 0.7)
+    // The join sits on the tape edge, so the label needs a stub after it, the mirror of the input stub.
+    wire((xj, 0), (xj + CGAP, 0))
   }
-  (w: xj, hh: calc.max(top, -bot), body: body)
+  (w: xj + CGAP, hh: calc.max(top, -bot), body: body)
 }
 
 // The panel: the tree's own picture, with the ports named at both ends.  `src`/`tgt` are one label
