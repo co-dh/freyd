@@ -6,7 +6,8 @@ the MONOIDAL one.  Same input — the formula in the note's notation plus the so
 objects, which a formula alone does not fix — and the same self-certifying `cert:`, but the picture
 downstream is the other language: a WIRE is an object, a BOX is a morphism, composition runs left to
 right, and a product is TWO wires, never one wire labelled `A×B`.  A `#cpanel(...)` call goes out,
-ready to paste beside the row it draws.
+ready to paste beside the row it draws; once pasted, `--compare` rebuilds every literal the note
+holds from its own `cert:` and fails on any drift, and `--write` splices the rebuilt ones over them.
 
 The design is diag/CIRCUIT-GEN.md and this is its §5 slice.  Typing is §1.3: every subterm carries
 its source and target OBJECT, read off diag/circuit-sigs.json by unification with the port in hand,
@@ -26,7 +27,7 @@ more than one test, a fold whose carrier neither the panel nor the algebra's row
 that is not boxes and wires (a region's own colours do not invert inside a cut), and `°` on a
 composite (row 8's frame — over a PRODUCT it distributes, one flipped box per wire).
 """
-import functools, importlib.machinery, importlib.util, json, os, sys
+import difflib, functools, importlib.machinery, importlib.util, json, os, re, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 _P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
@@ -595,6 +596,61 @@ def emit(t):
     return f"#cpanel({tv(t)},\n  cert: {tv(cert)})"
 
 
+# ---------------------------------------------------------------- the note's own literals
+def literals(text):
+    """Every `#cpanel(…)` in a file as (start, end, cert).  A `"…"` is opaque and ends at the next
+    `"` — `tv` never escapes one — because a label or an `expect` carries brackets of its own."""
+    out, i = [], text.find("#cpanel(")
+    while i >= 0:
+        j, depth = i + 7, 0
+        while True:
+            c = text[j]
+            if c == '"':
+                j = text.index('"', j + 1)
+            elif c in "([{":
+                depth += 1
+            elif c in ")]}":
+                depth -= 1
+                if not depth:
+                    break
+            j += 1
+        k = text.rfind("cert: (", i, j)
+        out.append((i, j + 1, dict(re.findall(r'(\w+): "([^"]*)"', text[k:j])) if k >= 0 else {}))
+        i = text.find("#cpanel(", j)
+    return out
+
+
+def regen(path, tbl, write):
+    """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
+    drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
+    text = open(path, encoding="utf-8").read()
+    lits = [x for x in literals(text) if all(x[2].get(k) for k in ("expect", "src", "tgt"))]
+    fail, drift, msgs = 0, 0, []
+    for i, j, c in reversed(lits):
+        ln = text.count("\n", 0, i) + 1
+        head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
+        try:
+            new = emit(draw(c["expect"], c["src"], c["tgt"], tbl))
+        except (Unhandled, ValueError, KeyError) as ex:
+            fail += 1; msgs.append(f"{head}\n  {ex}"); continue
+        if new == text[i:j]:
+            continue
+        drift += 1
+        if write:
+            text = text[:i] + new + text[j:]; msgs.append(f"{head}\n  rewritten")
+        else:
+            msgs.append("\n".join([head] + list(difflib.unified_diff(
+                text[i:j].splitlines(), new.splitlines(), "note", "generated", lineterm=""))))
+    if write:
+        open(path, "w", encoding="utf-8").write(text)
+    if msgs:
+        print(*reversed(msgs), sep="\n")
+    print(f"circuit: {len(lits)} literals in {path}, {len(lits) - drift - fail} verbatim, {drift}"
+          f" {'rewritten' if write else 'drifted'}, {fail} undrawable", file=sys.stderr)
+    sys.exit((fail or drift and not write)
+             and f"circuit: {path} does not hold what the generator draws")
+
+
 def read_back(t):
     """The composite the drawn boxes spell, in the note's own notation — the circuit's answer to
     `scripts/diagram`'s sweep.  Every node was built from one operator, so the picture reads back as
@@ -651,11 +707,17 @@ def main(argv):
         print(f"circuit: {len(SLICE)} rows in CIRCUIT-GEN §5, {len(SLICE) - bad} drawn,"
               f" {bad} blocked → {os.path.relpath(OUT)}", file=sys.stderr)
         sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} did not draw")
+    if "--compare" in argv or "--write" in argv:
+        regen(next((a for a in free if a.endswith(".typ")), "diag/allegory-axioms.typ"), tbl,
+              "--write" in argv)
+        return
     formula = next(iter(free), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
                  + '\nusage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
-                 + '\n       circuit --slice')
+                 + '\n       circuit --slice'
+                 + '\n       circuit --compare [diag/allegory-axioms.typ]'
+                 + '\n       circuit --write [diag/allegory-axioms.typ]')
     t = draw(formula, src, tgt, tbl)
     print(emit(t))
     # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
