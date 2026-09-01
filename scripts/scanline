@@ -724,6 +724,8 @@ def crossings(p):
 BRANCH = {                                 # `F(X)=𝟏+A×X`: which summand the panel draws
     "cons": {"pick": "cons", "F": "A×−"},
     "nil": {"pick": "nil", "F": "𝟏"},
+    "plus": {"pick": "plus", "F": "A×−"},   # §13.3.4's `[zero,⊸ zero ∪ plus]`: `sum` fused into
+    "zero": {"pick": "zero", "F": "𝟏"},     # `prefix`'s algebra, one branch per summand as above
 }
 
 
@@ -734,8 +736,8 @@ def take_branch(e, br, obj):
     pick = BRANCH[br]["pick"]
     if e[0] == 'app' and e[1] == 'F':
         return act(BRANCH[br]["F"], e[2], obj=obj)
-    if e[0] == 'case':
-        parts = [x for x in e[1] if pick in spell(x)]
+    if e[0] == 'case':                     # `[zero,⊸ zero ∪ plus]`: the component that IS the branch
+        parts = [x for x in e[1] if spell(x) == pick] or [x for x in e[1] if pick in spell(x)]
         if len(parts) == 1:
             ops = [x for x in parts[0][1] if pick in spell(x)] if parts[0][0] == 'union' else []
             return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj)

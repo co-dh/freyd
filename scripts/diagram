@@ -197,8 +197,8 @@ def expand(e, rel):
     if e[0] == 'hc':
         pre, core, post = across(e, rel)
         return [('hc', pre + [x] + post) for x in expand(core, rel)]
-    if e[0] == 'app' and e[1] in rel and e[2][0] == 'comp':
-        return [y for x in e[2][1] for y in expand(('app', e[1], x), rel)]
+    if e[0] == 'app' and e[1] in rel:      # `E(E(RS))`: the context wraps each row however deep
+        return [('app', e[1], y) for y in expand(e[2], rel)]
     if e[0] == 'prod' and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
         k = next(i for i, x in enumerate(e[1]) if x != ('atom', sl.UNIT))
         if e[1][k][0] == 'comp':
@@ -330,6 +330,36 @@ def grow(pat, sub, why):
         ws.append(w); pat = inner
 
 
+def own_comma(body):
+    """A comma of the bracket's own sits at depth 0 of its body: `[zero,⊕]` is a `[,]`, `⦇[zero,⊕]⦈`
+    a `⦇⦈`."""
+    d = 0
+    for c in body:
+        d += (c in sl.OPENERS) - (c in sl.CLOSERS)
+        if c == ',' and d == 0:
+            return True
+    return False
+
+
+def row(core, sigs, n):
+    """The row a bead's label keys, or None.  A bracket cut to one branch is still the ALGEBRA's
+    arrow (`[,]`); a catamorphism runs on the initial algebra of the functor its step consumes —
+    `list` for an `F`-algebra, `F(X)=𝟏+A×X`, the row's own otherwise — and lands on the step's carrier."""
+    lab = core[1] if core[0] == 'app' else spell(core)
+    k = lab[:-2] if lab.endswith('%∋') else lab
+    if core[0] == 'case':
+        k = '[,]'
+    elif k and k[0] in sl.OPENERS:
+        body = k[1:-1]
+        k = k[0] + (',' if own_comma(body) else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
+        r, step = sigs.get(lab) or sigs.get(k), row(bead(sl.parse(body)), sigs, n)
+        if r and step:                         # `[,]`'s `x` is the carrier, so `list`'s element is a
+            lst = step[0][:2] == ('app', 'F')  # letter of its own; `tree(x)` keeps the step's `x`
+            return (('app', 'list', ('atom', f"x@{n}s")) if lst else r[0]), step[1]
+        return r
+    return sigs.get(lab) or sigs.get(k)
+
+
 def signature(core, sigs, n):
     """What a bead's label is an arrow between.  `R°` is `R` read backwards, `R%∋` is `R` with the
     division's own `E` wire on its target, and a label with no row touches the object wire alone."""
@@ -337,17 +367,8 @@ def signature(core, sigs, n):
         s, t = signature(core[1], sigs, n)
         return t, s
     lab = core[1] if core[0] == 'app' else spell(core)
-    div = lab.endswith('%∋')
-    k, body = lab[:-2] if div else lab, None
-    if core[0] == 'case':                      # a bracket cut to one branch is still the ALGEBRA's
-        k = '[,]'                              # arrow: the branch's name, the bracket's signature
-    elif k and k[0] in sl.OPENERS:             # `⦇S⦈` and `⦇−⦈` are one catamorphism row: a bracket's
-        body = k[1:-1]                         # body is the step
-        k = k[0] + (',' if ',' in k else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
-    s, t = sigs.get(lab) or sigs.get(k) or (('atom', 'x'), ('atom', 'x'))
-    if body in sigs:                           # a catamorphism lands on its step's CARRIER: the row's
-        t = sigs[body][1]                      # free `y` is what the body's own target already says
-    return fresh(s, n), fresh(('app', 'E', t) if div else t, n)
+    s, t = row(core, sigs, n) or (('atom', 'x'), ('atom', 'x'))
+    return fresh(s, n), fresh(('app', 'E', t) if lab.endswith('%∋') else t, n)
 
 
 def open_out(obj, w, sub, why):
