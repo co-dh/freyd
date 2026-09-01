@@ -4186,7 +4186,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α prefix list(p)=F(prefix list(p))S` \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
-     first, and then building with `S`]],
+     first, and then building with `S`] \
+    #src[`subseq` for `prefix`, `π₂` for `⊸ nil`: `α subseq list(p)=F(subseq list(p))S`]],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `⊸ nil`]),
 
@@ -4967,65 +4968,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 )
 ])]<filter-defn>
 
-// @takewhile-alg's five steps at this `S`: the same `twpic`, with `pi2-copy` for `disc-copy` in the
-// `∪`'s upper branch.  `π₂` keeps a wire where `⊸ nil` keeps none, which is why `list(p)` has to be
-// slid out of it and `⊸ nil` swallowed it.
-#let bx-sq = ([`subseq`], 1.9, true)
-#let bx-sl = ([`subseq list(p)`], 3.9, true)
-// `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`, verbatim, as above.
-#let tw-sub2 = dpanel(4, 5.7, 2.85,
-  ((0.55, "top", 2, none, none), (1.7, 2, "bot", none, none)),
-  ((3, [`subseq`]), (2, [`[nil,π₂ ∪ cons]`], black, 0.55), (1, [`p`])),
-  ((0.55, [`F`]), (2.85, [`[A]`])),
-  ((1.7, [`list`]), (2.85, [`A`])),
-  cert: (expect: "F(subseq)[nil,π₂ ∪ cons]list(p)", src: "F([A])", tgt: "[A]"))
-#let tw-sub3 = dpanel(3, 4.55, 1.7,
-  ((0.55, "top", 1, none, none),),
-  ((2, [`subseq`]), (1, [`[nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]`], black, 0.55)),
-  ((0.55, [`F`]), (1.7, [`[A]`])),
-  ((1.7, [`[A]`]),),
-  cert: (expect: "F(subseq)[nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))
-
-#disp[#table(
-  columns: (1fr, 4.9cm),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`α subseq list(p)=F(subseq list(p))S` \
-    #src[building the list and then keeping a `p`-passing subsequence of it is keeping one of the
- tail first, and then building with `S`]],
-     // lean:AOP.A7_7_Filter.filter_alg_comm@d130a86c
-  table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
-    [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `π₂`]),
-
-  [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-sq, bx-lp)), s: 68%),
-    [`α subseq list(p)`])],
-  [#tw-hm(0, f: [`subseq`], cert: twcert("α subseq list(p)", a: "α = [nil,π₂ ∪ cons]"))],
-
-  [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-sq, post: (bx-lp,), upper: pi2-copy()), s: 68%),
-    [`F(subseq) [nil,π₂ ∪ cons] list(p)` \ #src[defining equation]])],
-  [#tw-sub2],
-
-  [#vstep(EQ, twp(twpic(tw-cons(4.3, a: bx-p, l: bx-lp), lw: 4.3, pre: bx-sq,
-    upper: pi2-copy(l: bx-lp)), s: 68%),
-    [`F(subseq) [nil,(𝟙×list(p))π₂ ∪ (p×list(p)) cons]` \
-     #src[`list(p)` through `cons`, `π₂` natural]])],
-  [#tw-sub3],
-
-  [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-sl), lw: 6.1, upper: pi2-copy(l: bx-sl)),
-    s: 68%),
-    [`[nil,(𝟙×(subseq list(p)))π₂ ∪ (p×(subseq list(p))) cons]` \
-     #src[relator, `subseq` entire]])], [],
-
-  [#vstep(EQ, twp(twpic(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-sl, upper: pi2-copy()), s: 68%),
-    [`F(subseq list(p))S` \ #src[`subseq list(p)` entire]])], [],
-)
-#align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `subseq list(p)=⦇S⦈` —
-  @takewhile-alg's chain with `π₂` for `⊸ nil`. Here @cata-fusion is blocked for the same reason,
-  and `π₂` is the branch that carries `list(p)` out by naturality (@subseq-outr-square at `∋:=list(p)`).
- ]])
-  // lean:AOP.A7_7_Filter.filter_alg@5f9648f5
-]<filter-alg>
-
 #let step = step.with(pw: 232pt)
 #disp[#table(
   columns: (1fr, 6.6cm),
@@ -5135,7 +5077,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
-    [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @filter-alg]])],
+    [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
