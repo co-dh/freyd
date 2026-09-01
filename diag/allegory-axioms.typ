@@ -2893,19 +2893,22 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 }), s: 78%)
 
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
-// object wire and `cons` is where the `A×−` wire ends on it.  `born` adds the `E` the transpose opens.
-#let SXU = 0.55                                   // the `E` the singleton opens, outside everything
-#let SXF = 1.55                                   // the `A×−` wire, on a wider lane than §13.3.1's `F`
-#let SXC = 2.45                                   // the `E` the counit `∋` closes, inside `A×−`
-#let SXL = 3.15                                   // `list`: no bead touches it, `∋` and `cons` are
-#let SXO = 3.85                                   // both under it — and the object wire, `A`
-#let sbpan(born: false, names: false) = dpanel(4.4, 5.7, SXO,
-  ((SXF, "top", 1.20, none, none), (SXC, "top", 2.30, none, none), (SXL, "top", "bot", none, none))
-    + if born { ((SXU, 3.35, "bot", [`E`], frc([`𝟙`])),) } else { () },
-  ((2.30, [`∋`], black, SXC), (1.20, [`cons`], black, SXF)),
-  ((SXF, [`A×−`]), (SXC, [`E`]), (SXL, [`list`]), (SXO, [`A`])),
-  (if born { ((SXU, [`E`]),) } else { () }) + ((SXL, [`list`]), (SXO, [`A`])),
-  names: names, s: 100%)
+// object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
+// `sb-hm-born` adds the `E` the transpose opens.
+#let sb-hm = dpanel(3, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, "top", 1, none, none), (2.85, "top", 2, none, none), (4, "top", 1, none, none)),
+  ((2, [`∋`], black, 2.85), (1, [`cons`], black, 1.7)),
+  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`list`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  opath: ((5.15, 3), (5.15, 2), (4, 1), (1.7, 0)),
+  cert: (expect: "(𝟙×∋)cons", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-born = dpanel(4, 9.15, 6.3,
+  ((0.55, 2.5, "bot", none, frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, "top", 2, none, none), (5.15, "top", 1, none, none)),
+  ((2, [`∋`], black, 4), (1, [`cons`], black, 2.85)),
+  ((2.85, [`A×−`]), (4, [`E`]), (5.15, [`list`]), (6.3, [`A`])),
+  ((0.55, [`E`]), (1.7, [`list`]), (6.3, [`A`])),
+  opath: ((6.3, 4), (6.3, 2), (5.15, 1), (2.85, 0)),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)E(cons)", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -2919,7 +2922,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
     [*Hinze–Marsden* — the `cons` operand]),
 
   [#vstep([], sbA1, [#frc([`F(∋)[nil,cons∪π₂]`])])],
-  [#sbpan(names: true)],
+  [#sb-hm],
 
   [#vstep(EQ, sbA2, [#frc([`(𝟙+𝟙×∋)[nil,cons∪π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
   // Empty: every step below moves a bracket, and a bracket has no Hinze–Marsden shape.
@@ -3008,7 +3011,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
     [*Hinze–Marsden* — the `cons` operand]),
 
   [#vstep([], sbB1, [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
-  [#sbpan()],
+  [#sb-hm],
 
   [#vstep(EQ, sbB2, [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
   // Empty: the step is in the `π₂` operand, which the panel above does not draw.
@@ -3020,7 +3023,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 
   [#vstep(EQ, sbB4, [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
     #src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
-  [#sbpan(born: true)],
+  [#sb-hm-born],
 
   [#vstep(EQ, sbB5, [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
@@ -4656,6 +4659,51 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 }
 #let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
 
+// §13.3.4's generated panels, emitted verbatim by `./scripts/diagram --src … --tgt … "<formula>"`: a
+// bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
+#let mh-cons-sum = dpanel(3, 6.85, 4,
+  ((0.55, 2, 1, [`list`], none), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none)),
+  ((2, [`cons`], black, 1.7), (1, [`sum`], black, 0.55)),
+  ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
+  ((4, [`A`]),),
+  opath: ((4, 3), (2.85, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "cons sum", src: "A×list(A)", tgt: "A"))
+#let mh-alg-est = dpanel(4, 5.7, 2.85,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
+  ((2, [`zero`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((1.7, [`𝟏`]), (2.85, [`Int`])),
+  ((2.85, [`Int`]),),
+  opath: ((2.85, 4), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "zero"))
+#let mh-alg = dpanel(2, 4.55, 1.7,
+  ((0.55, "top", 1, none, none),),
+  ((1, [`zero`], black, 0.55),),
+  ((0.55, [`𝟏`]), (1.7, [`Int`])),
+  ((1.7, [`Int`]),),
+  opath: ((1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
+#let mh-segsum = dpanel(5, 6.85, 4,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
+  ((3, [`segment`], black, 2.85), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((2.85, [`list`]), (4, [`A`])),
+  ((4, [`A`]),),
+  opath: ((4, 5), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(segment sum)est(≥)", src: "list(A)", tgt: "A"))
+#let mh-greedy = dpanel(5, 6.85, 4,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
+  ((3, [`suffix`], black, 2.85), (2, [`⦇[zero,⊕]⦈`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((2.85, [`list`]), (4, [`A`])),
+  ((4, [`A`]),),
+  opath: ((4, 5), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥)", src: "list(A)", tgt: "A"))
+#let mh-shape = dpanel(8, 9.15, 6.3,
+  ((0.55, 6.5, 1, [`E`], frc([`𝟙`])), (1.7, 4.5, 2, [`E`], frc([`𝟙`])), (2.85, 4, 3, [`list`], none), (4, 6, 4, [`list`], none), (5.15, "top", 6, none, none)),
+  ((6, [`suffix`], black, 5.15), (4, [`prefix`], black, 4), (3, [`sum`], black, 2.85), (2, [`est(≥)`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((5.15, [`list`]), (6.3, [`A`])),
+  ((6.3, [`A`]),),
+  opath: ((6.3, 8), (5.15, 6), (4, 4), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(suffix)E(𝟙%∋)E(E(prefix sum))E(est(≥))est(≥)", src: "list(A)", tgt: "A"))
+
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
 // wire and `sum` kills `list` onto `A`.  `∪` has no shape here — only `cons`'s branch is drawn.
 #disp[#pad(right: 10pt, table(
@@ -4670,9 +4718,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
   [#vstep([], P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
     [`[nil,⊸ nil ∪ cons] sum`])],
-  [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
-    joins: ((MA, MB, 3.00, 0.60), (MB, MC, 1.90, 0.60)),
-    beads: ((MB, 3.00, [`cons`]), (MC, 1.90, [`sum`])))],
+  [#mh-cons-sum],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
     [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
@@ -4847,10 +4893,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [*Hinze–Marsden*]),
 
   [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
-  [#mpan(MC, 8.9, ((MB, [`F`]), (MC, [`Int`])), ((MC, [`Int`]),),
-    hands: ((MA, 3.55, MA, MC, 0.80, [`E`], frc([`𝟙`])),),
-    joins: ((MB, MC, 2.10, 0.70),),
-    beads: ((MC, 2.10, [`[zero,⊸ zero ∪ plus]`]), (MC, 0.80, [`est(≥)`])))],
+  [#mh-alg-est],
 
   [#vstep(EQ, mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25)),
     [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
@@ -4861,9 +4904,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [`[zero,⊕]`
     \ #src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
-  [#mpan(MC, 8.9, ((MB, [`F`]), (MC, [`Int`])), ((MC, [`Int`]),),
-    joins: ((MB, MC, 2.10, 0.70),),
-    beads: ((MC, 2.10, [`[zero,⊕]`]),))],
+  [#mh-alg],
 ))
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
@@ -4925,33 +4966,20 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep([], mbp(mss-line((bx-mss, bx-est))),
     [#frc([`segment sum`]) ` est(≥)` \
      #src[`mss` is the greatest of the segment sums — @mss-defn]])],
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 2.10, [`segment sum`]), (MD, 0.45, [`est(≥)`])))],
+  [#mh-segsum],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-epest, bx-est))),
     [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≥)) est(≥)` \ #src[@mss-shape]])],
   // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
   // `E` runs past it, and `prefix sum` is where the `list` wire dies.
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),
-            (MB, 2.85, MB, MD, 1.35, [`E`], frc([`𝟙`]))),
-    nodes: ((3.55, MB),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 3.55, [`suffix`]), (MD, 2.10, [`prefix sum`]), (MD, 1.35, [`est(≥)`]),
-            (MD, 0.45, [`est(≥)`])))],
+  [#mh-shape],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
     [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
      #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
       entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MA, 4.30, MA, MD, 0.45, [`E`], frc([`𝟙`])),),
-    nodes: ((3.55, MB),),
-    joins: ((MC, MD, 2.10, 0.70),),
-    beads: ((MD, 3.55, [`suffix`]), (MD, 2.10, [`⦇[zero,⊕]⦈`]), (MD, 0.45, [`est(≥)`])))],
+  [#mh-greedy],
 
   [#vstep(EQ, mbp(mss-line((bx-fold, bx-p2, bx-est))),
     [`⦇k⦈ π₂ est(≥)` \
