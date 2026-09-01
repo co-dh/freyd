@@ -2340,10 +2340,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 // `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
 // `s`; `tpan`/`mpan` pass 100% and print their labels at the size `tw-hm` does.
-#let dpan(h, w, xa, body, s: 74%) = P(cetz.canvas(length: 0.8cm, {
-  d.rect((0, 0), (xa, h), fill: fb-ALLC, stroke: none)
-  d.rect((xa, 0), (w, h), fill: luma(226), stroke: none)
-  hm-wire(((xa, h), (xa, 0)), col: BCOL)
+// `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
+// lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
+#let dpan(h, w, xa, body, s: 74%, opath: none) = P(cetz.canvas(length: 0.8cm, {
+  let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
+  hm-region(((0, 0), (0, h)) + op, fb-ALLC)
+  hm-region(op + ((w, 0), (w, h)), luma(226))
+  hm-wire(op, col: BCOL)
   body
 }), s: s)
 
@@ -2353,41 +2356,84 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
 // edge, where the wire strikes through the port labels.
 #let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
-#let dlane(xo, h, x, y0, y1, nm, un) = {
+// `xat` is the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are
+// knees shared by every arm into one bead — equal knees keep the arms' x order, so they nest.
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none) = {
   let top = if y0 == "top" { h } else { y0 }
-  let k = dknee(x, xo, top - (if y1 == "bot" { 0 } else { y1 }))
+  let bot = if y1 == "bot" { 0 } else { y1 }
   let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
-    ((xo, y0), (x, y0 - k))
+    let k = if kb == none { dknee(x, xat(y0), top - bot) } else { kb }
+    ((xat(y0), y0), (x, y0 - k))
   }
-  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + k), (xo, y1)) }
+  pts += if y1 == "bot" { ((x, 0),) } else {
+    let k = if kd == none { dknee(x, xat(y1), top - bot) } else { kd }
+    ((x, y1 + k), (xat(y1), y1))
+  }
   hm-wire(pts)
   if un != none { hm-bead((x, y0), un) }
-  if nm != none { hm-name((x - 0.30, ((if y0 == "top" { h } else { y0 })
-    + (if y1 == "bot" { 0 } else { y1 })) / 2), nm) }
+  if nm != none { hm-name((x - 0.30, (top + bot) / 2), nm) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
-#let ddip(xo, h, x, y0, y1, ybs, nm) = {
+#let ddip(xat, h, x, y0, y1, ybs, nm, kb: none, kd: none) = {
   let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
   // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
   // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
-  let ke = calc.min(dknee(x, xo, t - b), 0.60 * (t - ybs.first()))
-  let pts = if y0 == "top" { ((x, h),) } else { ((xo, t), (x, t - ke)) }
+  let keb = calc.min(if kb == none { dknee(x, xat(t), t - b) } else { kb },
+    0.60 * (t - ybs.first()))
+  let ked = calc.min(if kd == none { dknee(x, xat(b), t - b) } else { kd },
+    0.60 * (t - ybs.first()))
+  let pts = if y0 == "top" { ((x, h),) } else { ((xat(t), t), (x, t - keb)) }
   for (i, yb) in ybs.enumerate() {
     // A dip may share its run with the next dip down, and then each gets under half of it.
-    let (hi, up) = if i == 0 { (t - ke, 0.85) } else { (ybs.at(i - 1), 0.42) }
-    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ke }, 0.85) }
+    let (hi, up) = if i == 0 { (t - keb, 0.85) } else { (ybs.at(i - 1), 0.42) }
+    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ked }, 0.85) }
       else { (ybs.at(i + 1), 0.42) }
-    let kd = calc.min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
-    pts += ((x, yb + kd), (xo, yb), (x, yb - kd))
+    let kdip = calc.min(0.30 * (xat(yb) - x), up * (hi - yb), dn * (yb - lo))
+    pts += ((x, yb + kdip), (xat(yb), yb), (x, yb - kdip))
   }
-  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ke), (xo, b)) }))
+  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ked), (xat(b), b)) }))
   if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
 }
 
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
 // bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, cert: (:)) = {
+  let xat = if opath == none { y => xo } else { y => {
+    let r = xo
+    for i in range(opath.len() - 1) {
+      let (a, b) = (opath.at(i), opath.at(i + 1))
+      if y <= a.at(1) + 0.001 and y >= b.at(1) - 0.001 {
+        r = if a.at(1) - b.at(1) < 0.001 { b.at(0) } else {
+          b.at(0) + (a.at(0) - b.at(0)) * (y - b.at(1)) / (a.at(1) - b.at(1)) }
+      }
+    }
+    r
+  } }
+  // One knee per bead-and-side (sized by the group's longest run, clamped by its shortest drop):
+  // arms converging on one dot with EQUAL knees keep their x order, so they nest, never braid.
+  let gk = (:)
+  if opath != none {
+    let acc = (:)
+    for l in lanes {
+      let drop = ((if l.at(1) == "top" { h } else { l.at(1) })
+        - (if l.at(2) == "bot" { 0 } else { l.at(2) }))
+      if l.at(1) != "top" and l.at(4) == none {
+        let key = "b" + str(l.at(1))
+        acc.insert(key, acc.at(key, default: ()) + ((l.at(0), drop),))
+      }
+      if l.at(2) != "bot" {
+        let key = "d" + str(l.at(2))
+        acc.insert(key, acc.at(key, default: ()) + ((l.at(0), drop),))
+      }
+    }
+    for (key, v) in acc {
+      let y = float(key.slice(1))
+      gk.insert(key, calc.min(
+        0.45 + 0.25 * v.map(p => xat(y) - p.at(0)).fold(0, calc.max),
+        0.55 * v.map(p => p.at(1)).fold(99, calc.min)))
+    }
+  }
   dpan(h, w, xo, {
   for l in lanes {
     // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
@@ -2396,17 +2442,22 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       and bd.at(3) <= l.at(0) and l.at(0) < xo
       and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
       and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
-    if ys == () { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
-    else { ddip(xo, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3)) }
+    let kb = if l.at(1) == "top" or l.at(4) != none { none }
+      else { gk.at("b" + str(l.at(1)), default: none) }
+    let kd = if l.at(2) == "bot" { none } else { gk.at("d" + str(l.at(2)), default: none) }
+    if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd) }
+    else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd) }
   }
-  for b in beads { hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black)) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
+  for (x, l) in top {
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s)
+  }, s: s, opath: opath)
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
-    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
+    + (if opath == none { (:) } else { (opath: opath) }))
 }
 
 // A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
@@ -5663,7 +5714,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
   ((2, [`party`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])), s: DS,
+  ((2.85, [`list`]), (4, [`A`])),
+  opath: ((2.85, 4), (2.85, 2), (4, 1), (4, 0)),
   cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]"))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
@@ -5672,13 +5724,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 3, none, none), (2.85, 3, 2, [`Δ`], none), (4, 3, "bot", none, none)),
   ((3, [`⦇S⦈`], black, 1.7), (2, [`choose`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (5.15, [`A`])),
-  ((4, [`list`]), (5.15, [`A`])), s: DS,
+  ((4, [`list`]), (5.15, [`A`])),
+  opath: ((2.85, 5), (4, 3), (5.15, 2), (5.15, 1), (5.15, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out4 = dpanel(7, 9.15, 6.3,
   ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], frc([`𝟙`])), (4, 5, 2, [`Δ`], none), (5.15, 5, "bot", none, none)),
   ((5, [`⦇S⦈`], black, 1.7), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 4), (1, [`est(R°)`], black, 2.85)),
   ((1.7, [`tree`]), (6.3, [`A`])),
-  ((5.15, [`list`]), (6.3, [`A`])), s: DS,
+  ((5.15, [`list`]), (6.3, [`A`])),
+  opath: ((2.85, 7), (5.15, 5), (6.3, 4), (6.3, 2), (6.3, 1), (6.3, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
@@ -5688,14 +5742,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, 2, "bot", none, none), (7.45, 2, "bot", none, none)),
   ((2, [`S`], black, 1.7), (1, [`est((R×R)°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (8.6, [`A`])),
-  ((6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])), s: DS,
+  ((6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])),
+  opath: ((6.3, 4), (7.45, 2), (8.6, 1), (8.6, 0)),
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 10.3, 7.45,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, 2, "bot", none, none)),
   ((2, [`include`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
-  ((6.3, [`list`]), (7.45, [`A`])), s: DS,
-  // The row states the whole fork; this panel and the next draw one branch each.
+  ((6.3, [`list`]), (7.45, [`A`])),
+  opath: ((6.3, 4), (6.3, 2), (7.45, 1), (7.45, 0)),
   cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]"))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
@@ -5704,7 +5759,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, "top", 5, none, none), (1.7, "top", 1, none, none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 1, none, none), (6.3, 1, "bot", none, none)),
   ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 4), (2, [`est(R°)`], black, 2.85), (1, [`concat`], black, 1.7)),
   ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
-  ((6.3, [`list`]), (7.45, [`A`])), s: DS,
+  ((6.3, [`list`]), (7.45, [`A`])),
+  opath: ((6.3, 6), (6.3, 5), (6.3, 3), (6.3, 2), (6.3, 1), (7.45, 0)),
   cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the

@@ -324,10 +324,12 @@ class Wire:
 
 
 class Bead:
-    def __init__(self, y, x, label, reach=None, born=False):
+    def __init__(self, y, x, label, reach=None, born=False, ink=None):
         # `reach` is how far left the bead reaches; the reach is ALWAYS drawn as arms the wires bend
         # into, never as a straight line past them — a bead is a point, so every arm is a bend.
         self.y, self.x, self.label, self.reach, self.born = y, x, label, reach, born
+        # where the dot is DRAWN — off `(x, y)` only where a sloped `opath` carries the object wire
+        self.ink = ink or (x, y)
 
 
 class Panel:
@@ -339,12 +341,13 @@ class Panel:
         # `strands` are the drawn curves no `Wire` stands for — `mpan`'s widening and `tw-hm`'s
         # split, which the sweep reads off `splits` instead of off a lane of their own.
         self.wires, self.beads, self.splits, self.strands = [], [], [], []
+        self.opath = [tuple(q) for q in r.get('opath') or []]
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
         # down the panel (`⦇R⦈ : T⟶A`), and a panel that was TYPED says where in `obj`.
         self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
         self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel,
-                               pts=[(self.xo, self.h), (self.xo, 0.0)]))
+                               pts=self.opath or [(self.xo, self.h), (self.xo, 0.0)]))
         # A hand-drawn panel says nothing, so the switch is GUESSED at the lowest bead on the wire.
         # A widening NAMES the object over its range, so where it opens the bottom port's name the
         # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
@@ -360,6 +363,14 @@ class Panel:
         """What the object wire carries at a height: the lowest seam still above it."""
         return next((l for (y, l) in self.oseam if z < y - EPS), self.olabel)
 
+    def xat(self, y):
+        """The object wire's x at a height — `xo` unless a sloped `opath` carries it."""
+        for a, b in zip(self.opath, self.opath[1:]):
+            if b[1] - EPS <= y <= a[1] + EPS:
+                return b[0] if a[1] - b[1] < EPS else \
+                    b[0] + (a[0] - b[0]) * (y - b[1]) / (a[1] - b[1])
+        return self.xo
+
 
 def dipys(r, x, yt, yb):
     """`dpanel`'s own rule for which bead heights a lane bends down to: every bead whose reach
@@ -369,35 +380,56 @@ def dipys(r, x, yt, yb):
                    and b[3] <= x < r['xo'] and yt > b[0] > yb), reverse=True)
 
 
-def dippts(x, xo, h, y0, y1, ybs):
-    """`ddip`'s points: the lane's own knee, then one bend onto the dot and back out per bead."""
+def dippts(x, X, h, y0, y1, ybs, kb=None, kd=None):
+    """`ddip`'s points: the lane's own knee, then one bend onto the dot and back out per bead.
+    `X` is the object wire's x at a height, so every bend aims at the dot actually drawn."""
     t, b = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-    ke = min(dknee(x, xo, t - b), 0.60 * (t - ybs[0]))
-    pts = [(x, h)] if y0 == 'top' else [(xo, t), (x, t - ke)]
+    keb = min(kb if kb is not None else dknee(x, X(t), t - b), 0.60 * (t - ybs[0]))
+    ked = min(kd if kd is not None else dknee(x, X(b), t - b), 0.60 * (t - ybs[0]))
+    pts = [(x, h)] if y0 == 'top' else [(X(t), t), (x, t - keb)]
     for i, yb in enumerate(ybs):
-        hi, up = (t - ke, 0.85) if i == 0 else (ybs[i - 1], 0.42)
-        lo, dn = ((b if y1 == 'bot' else b + ke), 0.85) if i == len(ybs) - 1 else (ybs[i + 1], 0.42)
-        kd = min(0.30 * (xo - x), up * (hi - yb), dn * (yb - lo))
-        pts += [(x, yb + kd), (xo, yb), (x, yb - kd)]
-    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + ke), (xo, b)])
+        hi, up = (t - keb, 0.85) if i == 0 else (ybs[i - 1], 0.42)
+        lo, dn = ((b if y1 == 'bot' else b + ked), 0.85) if i == len(ybs) - 1 else (ybs[i + 1], 0.42)
+        kd = min(0.30 * (X(yb) - x), up * (hi - yb), dn * (yb - lo))
+        pts += [(x, yb + kd), (X(yb), yb), (x, yb - kd)]
+    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + ked), (X(b), b)])
+
+
+def dgroups(r, X, h):
+    """One knee per bead-and-side: arms converging on one dot with EQUAL knees keep their x order
+    at every height (`hm-seg` gives them the same y(t)), so they nest instead of braiding.
+    Sized by the group's longest run, clamped by its shortest drop."""
+    g = {}
+    for (x, y0, y1, nm, un) in r['lanes']:
+        drop = (h if y0 == 'top' else y0) - (0.0 if y1 == 'bot' else y1)
+        if y0 != 'top' and un is None:
+            g.setdefault(('b', y0), []).append((x, drop))
+        if y1 != 'bot':
+            g.setdefault(('d', y1), []).append((x, drop))
+    return {k: min(0.45 + 0.25 * max(X(k[1]) - x for x, _ in v),
+                   0.55 * min(d for _, d in v)) for k, v in g.items()}
 
 
 def a_dpanel(p, r):
+    grp = dgroups(r, p.xat, p.h) if p.opath else {}
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, x, yt, yb)
+        kb = None if y0 == 'top' or un is not None else \
+            grp.get(('b', y0), dknee(x, p.xat(y0), yt - yb))
+        kd = None if y1 == 'bot' else grp.get(('d', y1), dknee(x, p.xat(y1), yt - yb))
         if ds:                             # `ddip`'s points — the arms the crossed wires make
-            pts = dippts(x, p.xo, p.h, y0, y1, ds)
+            pts = dippts(x, p.xat, p.h, y0, y1, ds, kb, kd)
         else:                              # `dlane`'s own points
-            k = dknee(x, p.xo, yt - yb)
             pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
-                                                  [(p.xo, y0), (x, y0 - k)])
-            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + k), (p.xo, y1)]
+                                                  [(p.xat(y0), y0), (x, y0 - kb)])
+            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + kd), (p.xat(y1), y1)]
         p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
-        p.beads.append(Bead(b[0], p.xo, b[1], b[3] if len(b) > 3 else None))
+        p.beads.append(Bead(b[0], p.xo, b[1], b[3] if len(b) > 3 else None,
+                            ink=(p.xat(b[0]), b[0])))
 
 
 def a_tpan(p, r):
@@ -571,7 +603,8 @@ def arms(p, b):
     """The strands that MEET the dot — one that ends there, and a lane that bends down to it.
     Nothing else counts: an arm is ink the WIRE makes, not a line drawn beside it."""
     return [w for w in p.wires if w.pts
-            and (any(abs(q[0] - b.x) < EPS and abs(q[1] - b.y) < EPS for q in (w.pts[0], w.pts[-1]))
+            and (any(abs(q[0] - b.ink[0]) < EPS and abs(q[1] - b.ink[1]) < EPS
+                     for q in (w.pts[0], w.pts[-1]))
                  or any(abs(d - b.y) < EPS for d in w.dips))]
 
 
@@ -609,7 +642,8 @@ def connect(p):
     for w in p.wires:
         for q, end in ((w.pts[0], 'starts'), (w.pts[-1], 'ends')):
             if EPS < q[1] < p.h - EPS \
-                    and not any(abs(q[0] - b.x) < EPS and abs(q[1] - b.y) < EPS for b in p.beads):
+                    and not any(abs(q[0] - b.ink[0]) < EPS and abs(q[1] - b.ink[1]) < EPS
+                                for b in p.beads):
                 bad.append(f"{p.id}: the {w.label} wire {end} in mid-air at ({q[0]:g}, {q[1]:g})"
                            f" — a strand ends on a bead or on an edge, nowhere else")
     for b in p.beads:
@@ -668,7 +702,7 @@ def crossings(p):
     meet.  A bead's reach is not ink of its own — it is the arms the crossed wires make."""
     ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts)) for w in p.wires if w.pts] \
         + [(f"{l or '?'}@{q[1][0]:g}", poly(q)) for (l, q) in p.strands]
-    js = [(b.x, b.y) for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
+    js = [b.ink for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
     hits = []
     for i, (la, qa) in enumerate(ss):
         for (lb, qb) in ss[i + 1:]:
