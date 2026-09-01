@@ -108,6 +108,15 @@ def sigs():
     return json.load(open(SIGS, encoding="utf-8"))
 
 
+def typed(table, own):
+    """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
+    one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
+    if not own:
+        return table
+    return {**table, "sigs": {**table["sigs"], **{k: dict(zip(("src", "tgt"), v.split("⟶")))
+                                                  for k, v in own.items()}}}
+
+
 def letters(e):
     """The wire letters an object names.  A product is one letter `×` whatever its components are:
     the wire a product opens is a context (`A×−`, `Δ`), and the letter is what Lean must spell."""
@@ -346,6 +355,8 @@ def row(core, sigs, n):
     arrow (`[,]`); a catamorphism runs on the initial algebra of the functor its step consumes —
     `list` for an `F`-algebra, `F(X)=𝟏+A×X`, the row's own otherwise — and lands on the step's carrier."""
     lab = core[1] if core[0] == 'app' else spell(core)
+    if lab in sigs:                        # a row of the label's own beats the bracket's inference
+        return sigs[lab]
     k = lab[:-2] if lab.endswith('%∋') else lab
     if core[0] == 'case':
         k = '[,]'
@@ -503,8 +514,10 @@ def layout(rows, made, otop, obot, cert):
     xo = round(X0 + len(made) * DX, 2)
     beads, unit = [], {}
     for i, r in enumerate(rows):
-        if not r.arms and r.legs:          # a bead that eats no wire has none to sit on, so
-            if len(r.legs) != 1:           # `dpanel` heads the lane it opens with it instead
+        # `𝟙%∋` is the unit `Id⟹E`, a 2-cell between FUNCTORS with no object wire to sit on, so
+        # `dpanel` heads the lane it opens with it; `S° : B⟶F(B)` is a relation and stays a bead.
+        if not r.arms and r.legs and r.label == f"{sl.UNIT}%∋":
+            if len(r.legs) != 1:
                 raise Unhandled(f"the unit {r.label} opens {len(r.legs)} wires; a lane heads one")
             unit[r.legs[0]] = r.label
             ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
@@ -518,15 +531,17 @@ def layout(rows, made, otop, obot, cert):
     def xat(y):
         """The object wire's x at a height.  "right": one lane-gap right of every lane already born
         there, and AT the innermost leg born at that height — it never comes back after a death.
-        "left": one gap right of every lane ALIVE there, and AT the innermost arm dying at that
-        height — the wire absorbs it at its own column and is free to come back left below."""
+        "left": one gap right of every lane alive there or NOT YET BORN — a column is held from the
+        top, else the wire's own `xo` could be a lane's column and the sweep would read one for the
+        other — and AT the innermost arm dying at that height: the wire absorbs it at its own
+        column and is free to come back left below."""
         c = [X0]
         for l in made:
             yb = hh if l.born == TOP else ys[l.born]
             yd = 0.0 if l.dies == n else ys[l.dies]
             if SLOPE == "left":
-                if yb < y - 1e-9 or yd > y + 1e-9:
-                    continue                   # not yet born, or already dead
+                if yd > y + 1e-9:
+                    continue                   # already dead
                 c.append(l.x if l.dies != n and abs(yd - y) <= 1e-9 else l.x + DX)
             elif l.born == TOP or yb > y + 1e-9 or (l in unit and abs(yb - y) <= 1e-9):
                 c.append(l.x + DX)
@@ -560,17 +575,19 @@ def layout(rows, made, otop, obot, cert):
     return rec
 
 
-def draw(formula, src, tgt, table=None, split=DEFSPLIT):
+def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
-    one of the pictures the book calls equal.  `split` rides in the `cert:` beside `src` and `tgt`,
-    for the same reason they do — a formula alone does not say which picture of it the note wants.
-    Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note no field."""
+    one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
+    and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
+    note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
+    no field; `sigs:` likewise appears only where the panel types a letter itself."""
     global SPLIT, BR
     SPLIT = frozenset(split.split())
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
-    rows, made, otop, obot = elaborate(formula, src, tgt, table or sigs())
-    return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {}))
+    rows, made, otop, obot = elaborate(formula, src, tgt, typed(table or sigs(), own))
+    return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {})
+                  | ({"sigs": own} if own else {}))
 
 
 # ---------------------------------------------------------------- the typst call
@@ -599,6 +616,11 @@ def lst(xs):
     return "(" + ", ".join(tup(x) for x in xs) + ("," if len(xs) == 1 else "") + ")"
 
 
+def quoted(v):
+    """A `cert:` string as Typst source, where `\\` is an escape and so must be doubled."""
+    return '"' + v.replace("\\", "\\\\") + '"'
+
+
 def emit(r):
     c = r["cert"]
     beads = [b[:2] + [None, b[3]] if len(b) > 3 else b for b in r["beads"]]
@@ -609,7 +631,9 @@ def emit(r):
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
-            + "  cert: (" + ", ".join(f'{k}: "{v}"' for k, v in c.items()) + "))")
+            + "  cert: (" + ", ".join(f'{k}: ' + (quoted(v) if isinstance(v, str) else
+                "(" + ", ".join(f'{quoted(a)}: {quoted(b)}' for a, b in v.items()) + ")")
+                                     for k, v in c.items()) + "))")
 
 
 # ---------------------------------------------------------------- the round trip
@@ -643,7 +667,7 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT))
+            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -679,7 +703,8 @@ def compare(path, frm, tbl):
             continue
         src, tgt = endpoints(sl.Panel(r))
         try:
-            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", DEFSPLIT))
+            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", DEFSPLIT),
+                     r["cert"].get("sigs"))
         except (Unhandled, ValueError, StopIteration) as ex:
             print(f"{r['id']:<12} {ex}"); continue
         print(f"=== {r['id']}  {r['cert']['expect']}   [{src} ⟶ {tgt}]")
@@ -696,7 +721,9 @@ def compare(path, frm, tbl):
 def main(argv):
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
-    taken = {i for o in ("--from", "--json", "--src", "--tgt") if o in argv
+    own = sl.opt(argv, "--sigs")           # `R:F(A)⟶A S:F(B)⟶B`: the key is left of the LAST colon
+    own = dict(x.rsplit(":", 1) for x in own.split()) if own else None
+    taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -711,10 +738,11 @@ def main(argv):
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
-                 + '\nusage: diagram [--fold-list] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
+                 + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"]'
+                 + ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]')
-    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT)
+    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own)
     got, bad = swept(r)
     print(emit(r))
     if bad:

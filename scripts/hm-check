@@ -294,7 +294,8 @@ NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
 
 def terms(paths, tbl):
     """Every typed term already stated, with the table its labels are typed by."""
-    out = [(r["id"], r["cert"]["expect"], *dg.endpoints(sl.Panel(r)), tbl)
+    out = [(r["id"], r["cert"]["expect"], *dg.endpoints(sl.Panel(r)),
+            dg.typed(tbl, r["cert"].get("sigs")))
            for r in sl.panels(NOTE, None) if (r.get("cert") or {}).get("expect")]
     for p in paths:
         fx = json.load(open(p, encoding="utf-8"))

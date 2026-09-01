@@ -2585,6 +2585,57 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }
 }
 
+// §@sec-hylo's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus
+// `s: 100%`, the size their `tpanR` partners keep.  `sigs:` types the section's abstract letters.
+#let hy-body = dpanel(5, 4.55, 1.7,
+  ((0.55, 4, 1, [`F`], none),),
+  ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`⦇R⦈`]), (1, [`R`], black, 0.55)),
+  ((1.7, [`B`]),),
+  ((1.7, [`A`]),),
+  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "S° F(⦇S⦈°⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")),
+  names: true, s: 100%)
+#let hy-split = dpanel(5, 4.55, 1.7,
+  ((0.55, 4, 1, [`F`], none),),
+  ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`⦇R⦈`]), (1, [`R`], black, 0.55)),
+  ((1.7, [`B`]),),
+  ((1.7, [`A`]),),
+  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "S° F(⦇S⦈°)F(⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+#let hy-alg = dpanel(5, 4.55, 1.7,
+  ((0.55, 4, 2, [`F`], none),),
+  ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`α`], black, 0.55), (1, [`⦇R⦈`])),
+  ((1.7, [`B`]),),
+  ((1.7, [`A`]),),
+  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (0.55, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+#let hy-lambek = dpanel(5, 4.55, 1.7,
+  ((0.55, 3, 2, [`F`], none),),
+  ((4, [`⦇S⦈°`]), (3, [`α°`]), (2, [`α`], black, 0.55), (1, [`⦇R⦈`])),
+  ((1.7, [`B`]),),
+  ((1.7, [`A`]),),
+  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (0.55, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+#let hy-cata = dpanel(3, 3.4, 0.55,
+  (),
+  ((2, [`⦇S⦈°`]), (1, [`⦇R⦈`])),
+  ((0.55, [`B`]),),
+  ((0.55, [`A`]),),
+  cert: (expect: "⦇S⦈°⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+#let hy-cataR = dpanel(2, 3.4, 0.55,
+  (),
+  ((1, [`⦇R⦈`]),),
+  ((0.55, [`T`]),),
+  ((0.55, [`A`]),),
+  cert: (expect: "⦇R⦈", src: "T", tgt: "A", sigs: ("⦇R⦈": "T⟶A")), s: 100%)
+#let hy-prefix = dpanel(4, 4.55, 1.7,
+  ((0.55, 3, 1, [`F`], none),),
+  ((3, [`S°`]), (2, [`X`]), (1, [`R`], black, 0.55)),
+  ((1.7, [`B`]),),
+  ((1.7, [`A`]),),
+  opath: ((1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A")), s: 100%)
+
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last row it is gone.
 #disp[#pad(right: 10pt, table(
@@ -2598,29 +2649,25 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
     [`S°F(⦇S⦈°⦇R⦈)R` \ #src[the body at `⦇S⦈°⦇R⦈`]])],
-  [#tpan(4.2, ((3.6, [`S°`]), (2.1, [`⦇S⦈°⦇R⦈`]), (0.6, [`R`])),
-    hands: ((TXF, 3.6, 0.6, [`F`]),), top: ((TXO, [`B`]),), names: true, w: 4.8)],
+  [#hy-body],
 
   [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-FcR, hb-R), [`B`], [`A`])),
     [`S°F(⦇S⦈°)F(⦇R⦈)R` \ #src[`F(RS)=F(R)F(S)` — @relator-defn]])],
-  [#tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (1.2, [`⦇R⦈`]), (0.6, [`R`])),
-    hands: ((TXF, 3.6, 0.6, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+  [#hy-split],
 
   [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-al, hb-cR), [`B`], [`A`])),
     [`S°F(⦇S⦈°)α⦇R⦈` \ #src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]])],
-  [#tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (1.8, [`α`]), (1.2, [`⦇R⦈`])),
-    hands: ((TXF, 3.6, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+  [#hy-alg],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-alo, hb-al, hb-cR), [`B`], [`A`])),
     [`⦇S⦈°α°α⦇R⦈` \ #src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
      `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]])],
-  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (1.8, [`α`]), (1.2, [`⦇R⦈`])),
-    hands: ((TXF, 3.0, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
+  [#hy-lambek],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
  [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek]])],
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
-  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
+  [#hy-cata],
 ))]<hylo-fix>
 
 // B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
@@ -2636,14 +2683,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
     [`⦇S⦈°⦇R⦈⊑X` \ #src[the conclusion]])],
   [#trow(
-    tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8),
+    hy-cata,
     tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
   )],
 
   [#vstep(IFF, mbp(hterm((hb-cR,), [`T`], [`A`], rhs: (hb-W,))),
     [`⦇R⦈⊑⦇S⦈°\X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
   [#trow(
-    tpan(4.2, ((1.2, [`⦇R⦈`]),), top: ((TXO, [`T`]),), w: 4.8),
+    hy-cataR,
     tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
   )],
 
@@ -2676,8 +2723,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#vstep(IMP, mbp(hterm((hb-So, hb-FX, hb-R), [`B`], [`A`], rhs: (hb-X,))),
     [`S°F(X)R⊑X` \ #src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]])],
   [#trow(
-    tpan(4.2, ((3.6, [`S°`]), (2.1, [`X`]), (1.2, [`R`])),
-      hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+    hy-prefix,
     tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
   )],
 ))]<hylo-least>
@@ -2700,7 +2746,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
  `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]])],
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-  [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
+  [#hy-cata],
 
   [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
     [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
