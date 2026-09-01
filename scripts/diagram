@@ -102,8 +102,12 @@ def letters(e):
 
 
 # ---------------------------------------------------------------- objects as wire stacks
-SPLIT = frozenset()         # the panel's own `cert:` `split:` — the functors it draws as a wire of
-                            # their own instead of folding into the object wire's label
+# The functors drawn as a wire of their own instead of folded into the object wire's label.  `list`
+# splits by DEFAULT: one bead name must have one signature across a display, and a `[A]` folded in
+# one panel makes `cons` CREATE the `list` its neighbour already carries.  A panel's own `cert:`
+# `split:` still overrides — `split: ""` folds it back.
+DEFSPLIT = "list"
+SPLIT = frozenset(DEFSPLIT.split())
 
 
 def render(e):
@@ -308,12 +312,15 @@ def signature(core, sigs, n):
         return t, s
     lab = core[1] if core[0] == 'app' else spell(core)
     div = lab.endswith('%∋')
-    k = lab[:-2] if div else lab
+    k, body = lab[:-2] if div else lab, None
     if core[0] == 'case':                      # a bracket cut to one branch is still the ALGEBRA's
         k = '[,]'                              # arrow: the branch's name, the bracket's signature
     elif k and k[0] in sl.OPENERS:             # `⦇S⦈` and `⦇−⦈` are one catamorphism row: a bracket's
-        k = k[0] + (',' if ',' in k else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]   # body is the step
+        body = k[1:-1]                         # body is the step
+        k = k[0] + (',' if ',' in k else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
     s, t = sigs.get(lab) or sigs.get(k) or (('atom', 'x'), ('atom', 'x'))
+    if body in sigs:                           # a catamorphism lands on its step's CARRIER: the row's
+        t = sigs[body][1]                      # free `y` is what the body's own target already says
     return fresh(s, n), fresh(('app', 'E', t) if div else t, n)
 
 
@@ -456,16 +463,17 @@ def layout(rows, made, otop, obot, cert):
             "cert": cert}
 
 
-def draw(formula, src, tgt, table=None, split=""):
+def draw(formula, src, tgt, table=None, split=DEFSPLIT):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` rides in the `cert:` beside `src` and `tgt`,
-    for the same reason they do — a formula alone does not say which picture of it the note wants."""
+    for the same reason they do — a formula alone does not say which picture of it the note wants.
+    Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note no field."""
     global SPLIT, BR
     SPLIT = frozenset(split.split())
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
     rows, made, otop, obot = elaborate(formula, src, tgt, table or sigs())
-    return layout(rows, made, otop, obot, cert | ({"split": split} if split else {}))
+    return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {}))
 
 
 # ---------------------------------------------------------------- the typst call
@@ -537,7 +545,7 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl, r["cert"].get("split", ""))
+            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -573,7 +581,7 @@ def compare(path, frm, tbl):
             continue
         src, tgt = endpoints(sl.Panel(r))
         try:
-            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", ""))
+            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", DEFSPLIT))
         except (Unhandled, ValueError, StopIteration) as ex:
             print(f"{r['id']:<12} {ex}"); continue
         print(f"=== {r['id']}  {r['cert']['expect']}   [{src} ⟶ {tgt}]")
@@ -605,10 +613,10 @@ def main(argv):
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
-                 + '\nusage: diagram [--split-list] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
+                 + '\nusage: diagram [--fold-list] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]')
-    r = draw(formula, src, tgt, tbl, "list" if "--split-list" in argv else "")
+    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT)
     got, bad = swept(r)
     print(emit(r))
     if bad:
