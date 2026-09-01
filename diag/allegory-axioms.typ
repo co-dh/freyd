@@ -4187,7 +4187,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   Thm[`α prefix list(p)=F(prefix list(p))S` \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
-    #src[`subseq` for `prefix`, `π₂` for `⊸ nil`: `α subseq list(p)=F(subseq list(p))S`]],
+    #src[`subseq` for `prefix`, `π₂` for `⊸ nil`: `α subseq list(p)=F(subseq list(p))S`]
+    // lean:AOP.A7_7_Filter.filter_alg_comm@d130a86c
+    // lean:AOP.A7_7_Filter.filter_alg@5f9648f5
+    ],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `⊸ nil`]),
 
