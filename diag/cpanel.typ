@@ -11,7 +11,7 @@
 
 #import "@preview/cetz:0.3.4"
 #import "circuit.typ": gbox, wire, bend, delta, nabla, bang, cut, tape, tape-join, BH, TINT, TAPEEDGE, lw
-#import "draw.typ": lab, node
+#import "draw.typ": lab
 #import "note-style.typ": P, TYCOL
 
 #let d = cetz.draw
@@ -42,8 +42,8 @@
 
 #let CGAP = 0.34        // wire stub before the first box, between two boxes, and after the last
 #let CPAD = 0.34        // label to box edge, each side
-#let CNODE = 0.34       // the white inset `node` paints round a seam label, in canvas units
-#let CPORT = 0.05       // wire end to its type label: a hairline, so the glyph does not overprint the stroke
+#let CPORT = 0.4        // how far a wire runs INTO its type label, as a fraction of one mono advance: where
+                        // the ink of `[`/`]` starts (measured); `A`/`E`/`F` are wider there and hide the rest
 #let CLEAD = 0.34       // wire run past each side of a label sitting above it, so it clears the bar and the box
 #let CABOVE = 0.25      // a label sitting above its wire: text centre to the stroke
 // A run carrying a two-line fraction label is raised WHOLE — one shared height, or the wire steps
@@ -58,6 +58,7 @@
 #let ys(n) = if n == 0 { () } else { range(n).map(i => (n - 1) * UIP - 2 * UIP * i) }
 #let lb(it) = if it.at("frac", default: false) { frc(raw(it.label)) } else { raw(it.label) }
 #let tx(s) = text(10pt, raw(s))
+#let into(length) = CPORT * cu(measure(tx("[")).width, length)  // `measure` is the advance box, not the ink
 
 // `invert` is the Peirce cut's axis, not a decoration: inside a `cut` the page is black, so every
 // wire, dot and box drawn there has to be light-on-dark.  Only a lane the walker calls `flat` — a
@@ -86,9 +87,11 @@
       body.push(d.group({ d.translate((x, 0)); p.body }))
       x = x + p.w; n = it.nout; hh = calc.max(hh, p.hh)
       if str(i) in seam {
-        let g = cu(measure(tx(seam.at(str(i)))).width, length) + 2 * CNODE
-        body.push(wire((x, 0), (x + g, 0), invert: invert))
-        body.push(node(x + g / 2, 0, TYCOL, tx(seam.at(str(i))))); x = x + g
+        let (w, o) = (cu(measure(tx(seam.at(str(i)))).width, length), into(length))
+        body.push(wire((x, 0), (x + CGAP + o, 0), invert: invert))
+        body.push(wire((x + CGAP + w - o, 0), (x + 2 * CGAP + w, 0), invert: invert))
+        body.push(lab(x + CGAP + w / 2, 0, if invert { white } else { TYCOL }, tx(seam.at(str(i)))))
+        x = x + 2 * CGAP + w
       }
     }
     let (x2, s) = stub(x, n); body.push(s)
@@ -273,11 +276,12 @@
 #let cbody(t, length) = {
   let p = pic(t, length)
   p.body
+  let o = into(length)
   for (i, y) in ys(t.nin).enumerate() {
-    lab(-CPORT - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
+    lab(o - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
   }
   for (i, y) in ys(t.nout).enumerate() {
-    lab(p.w + CPORT + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
+    lab(p.w - o + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
   }
 }
 

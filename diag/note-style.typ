@@ -73,8 +73,8 @@
 /// sequence per heading whatever the display is.
 #let disp(body) = figure(body, kind: "disp", supplement: none)
 
-#let TYCOL = luma(105)  // secondary text: `src` side-notes and the circuit panels' type labels
-#let src(s) = text(9.2pt, TYCOL)[#s]
+#let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
+#let src(s) = text(9.2pt, luma(105))[#s]
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
 #let P(p, s: 92%) = align(center, box(inset: (y: 5pt), scale(x: s, y: s, reflow: true, p)))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
