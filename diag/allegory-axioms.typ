@@ -135,11 +135,16 @@ diagrams.
 
   [`⊸⊣⟜`], [`A⟶𝕀`], [`⊸⟜=⊤`], [`𝟙⊑⊸⟜`], [`⟜⊸⊑𝟙`], [`(R∪S)⊸=` \ `R⊸∪S⊸`], [`(R∩S)⟜=` \ `R⟜∩S⟜`], [`⊸⟜⊸=⊸`], [`⟜⊸⟜=⟜`],
 
-  [`°⊣°`], [`(A⟶B)⟶` \ `(B⟶A)`], [`°°=𝟙` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
-    [`R=R°°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]], [`R=R°°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
-    [`(R∪S)°=` \ `R°∪S°` #src[`lean:Freyd.S2_20.recip_union@d1eae8a9`]],
-    [`(R∩S)°=` \ `R°∩S°` #src[`lean:Freyd.S2_10.recip_inter@e08c9f2d`]],
-    [`R°°°=R°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]], [`R°°°=R°` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
+ [`°⊣°`], [`(A⟶B)⟶` \ `(B⟶A)`], [`°°=𝟙` #src[]],
+  // lean:Freyd.S2_10.recip_recip@cb99fa11
+ [`R=R°°` #src[]], [`R=R°°` #src[]],
+    // lean:Freyd.S2_10.recip_recip@cb99fa11 lean:Freyd.S2_10.recip_recip@cb99fa11
+ [`(R∪S)°=` \ `R°∪S°` #src[]],
+    // lean:Freyd.S2_20.recip_union@d1eae8a9
+ [`(R∩S)°=` \ `R°∩S°` #src[]],
+    // lean:Freyd.S2_10.recip_inter@e08c9f2d
+ [`R°°°=R°` #src[]], [`R°°°=R°` #src[]],
+    // lean:Freyd.S2_10.recip_recip@cb99fa11 lean:Freyd.S2_10.recip_recip@cb99fa11
 
   [`⟜◁⊣▷⊸`], [`(X⊗A⟶Y)⟶` \ `(X⟶Y⊗A)`], [`𝟙`], [`(⟜◁⊗𝟙)` \ `(𝟙⊗▷⊸)=𝟙`], [`(𝟙⊗⟜◁)` \
     `(▷⊸⊗𝟙)=𝟙`], [`=`], [`=`], [`=`], [`=`],
@@ -149,43 +154,59 @@ diagrams.
   [`▷⊸⊣⟜◁`], [`(X⟶Y⊗A)⟶` \ `(X⊗A⟶Y)`], [`𝟙`], [`(𝟙⊗⟜◁)` \ `(▷⊸⊗𝟙)=𝟙`], [`(⟜◁⊗𝟙)` \
     `(𝟙⊗▷⊸)=𝟙`], [`=`], [`=`], [`=`], [`=`],
 
-  [`Δ⊣∩`], [`(A⟶B)⟶` \ `(A⟶B)²`], [`R↦R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]],
-    [`R⊑R∩R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]], [`R∩S⊑R` #src[`lean:Freyd.S2_10.inter_lb_left@4eca3d20`]],
+ [`Δ⊣∩`], [`(A⟶B)⟶` \ `(A⟶B)²`], [`R↦R∩R=R` #src[]],
+  // lean:Freyd.S2_10.inter_idem@599acf28
+ [`R⊑R∩R` #src[]], [`R∩S⊑R` #src[]],
+    // lean:Freyd.S2_10.inter_idem@599acf28 lean:Freyd.S2_10.inter_lb_left@4eca3d20
     [`Δ(R∪S)=` \ `ΔR∪ΔS`], [`(R∩T)∩(S∩U)=` \ `(R∩S)∩(T∩U)`],
-    [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]], [`R∩R=R` #src[`lean:Freyd.S2_10.inter_idem@599acf28`]],
+ [`R∩R=R` #src[]], [`R∩R=R` #src[]],
+    // lean:Freyd.S2_10.inter_idem@599acf28 lean:Freyd.S2_10.inter_idem@599acf28
 
   [`∪⊣Δ`], [`(A⟶B)²⟶` \ `(A⟶B)`], [`(R,S)↦` \ `(R∪S,R∪S)`],
-    [`R⊑R∪S` #src[`lean:Freyd.S2_20.le_union_left@0a8565e2`]], [`R∪R⊑R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]],
+ [`R⊑R∪S` #src[]], [`R∪R⊑R` #src[]],
+    // lean:Freyd.S2_20.le_union_left@0a8565e2 lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711
     [`(R∪T)∪(S∪U)=` \ `(R∪S)∪(T∪U)`], [`Δ(R∩S)=` \ `ΔR∩ΔS`],
-    [`R∪R=R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]], [`R∪R=R` #src[`lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711`]],
+ [`R∪R=R` #src[]], [`R∪R=R` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711 lean:Freyd.Alg.DistributiveAllegory.union_idem@6e40d711
 
-  [`⊥⊣!`], [`{*}⟶` \ `(A⟶B)`], [—], [—], [`⊥⊑R` #src[`lean:Freyd.S2_20.zero_le@4399de93`]], [—], [—], [—], [—],
+ [`⊥⊣!`], [`{*}⟶` \ `(A⟶B)`], [], [], [`⊥⊑R` #src[]], [], [], [], [],
+  // lean:Freyd.S2_20.zero_le@4399de93
 
   [`·S⊣/S`], [`(A⟶B)⟶` \ `(A⟶C)`], [`S/S`], [`R⊑(RS)/S`], [`(T/S)S⊑T`],
-    [`(R∪T)S=` \ `RS∪TS` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`(R∩T)/S=` \ `R/S∩T/S` #src[`lean:Freyd.S2_30.div_inter_eq@d75d5861`]],
+ [`(R∪T)S=` \ `RS∪TS` #src[]],
+    // lean:Freyd.S2_20.union_comp_distrib@0025430d
+ [`(R∩T)/S=` \ `R/S∩T/S` #src[]],
+    // lean:Freyd.S2_30.div_inter_eq@d75d5861
     [`((RS)/S)S` \ `=RS`], [`((T/S)S)/S` \ `=T/S`],
 
   [`S·⊣S\`], [`(B⟶C)⟶` \ `(A⟶C)`], [`S\S`], [`R⊑S\(SR)`], [`S(S\T)⊑T`],
-    [`S(R∪T)=` \ `SR∪ST` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
-    [`S\(R∩T)=` \ `S\R∩S\T` #src[`lean:Freyd.S2_30.leftDiv_inter@ba9dda1e`]],
+ [`S(R∪T)=` \ `SR∪ST` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
+ [`S\(R∩T)=` \ `S\R∩S\T` #src[]],
+    // lean:Freyd.S2_30.leftDiv_inter@ba9dda1e
     [`S(S\(SR))` \ `=SR`], [`S\(S(S\T))` \ `=S\T`],
 
   [`R∩⊣R⇒`], [`(A⟶B)⟶` \ `(A⟶B)`], [`X↦R⇒(X∩R)`], [`X⊑R⇒(X∩R)`], [`R∩(R⇒Y)⊑Y`],
     [`R∩(X∪Y)=` \ `(R∩X)∪(R∩Y)`],
-    [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)` #src[`lean:AOP.A4_4.impl_inter@d2d55732`]],
+ [`R⇒(X∩Y)=` \ `(R⇒X)∩(R⇒Y)` #src[]],
+    // lean:AOP.A4_4.impl_inter@d2d55732
     [`R∩(R⇒(X∩R))` \ `=X∩R`], [`R⇒(R∩(R⇒Y))` \ `=R⇒Y`],
 
   [`𝓓⊣·⊤`], [`(A⟶B)⟶` \ `Cor A`], [`R↦(𝓓R)⊤`], [`R⊑(𝓓R)⊤`], [`𝓓(A⊤)⊑A`], [`𝓓(R∪S)=` \ `𝓓R∪𝓓S`], [`(A∩B)⊤=` \ `A⊤∩B⊤`], [`𝓓((𝓓R)⊤)` \ `=𝓓R`], [`(𝓓(A⊤))⊤` \ `=A⊤`],
 
   [`𝓡⊣⊤·`], [`(A⟶B)⟶` \ `Cor B`], [`R↦⊤(𝓡R)`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R∪S)=` \ `𝓡R∪𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
 
-  [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[`lean:Freyd.S2_30.map_entire_le@833e9621`]], [`f°f⊑𝟙`],
-    [`(R∪S)f=` \ `Rf∪Sf` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`(R∩S)f°=` \ `Rf°∩Sf°` #src[`lean:AOP.A4_2.simple_dist_inter_recip@9d565a77`]], [`ff°f=f`], [`f°ff°=f°`],
+ [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[]], [`f°f⊑𝟙`],
+  // lean:Freyd.S2_30.map_entire_le@833e9621
+ [`(R∪S)f=` \ `Rf∪Sf` #src[]],
+    // lean:Freyd.S2_20.union_comp_distrib@0025430d
+ [`(R∩S)f°=` \ `Rf°∩Sf°` #src[]], [`ff°f=f`], [`f°ff°=f°`],
+    // lean:AOP.A4_2.simple_dist_inter_recip@9d565a77
 
-  [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[`lean:Freyd.S2_30.map_entire_le@833e9621`]], [`f°f⊑𝟙`],
-    [`f°(X∪Y)=` \ `f°X∪f°Y` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
+ [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[]], [`f°f⊑𝟙`],
+  // lean:Freyd.S2_30.map_entire_le@833e9621
+ [`f°(X∪Y)=` \ `f°X∪f°Y` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
     [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
   [`i⊣E`], [`Map↪Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶EA`], [`∋:EB⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
@@ -225,7 +246,8 @@ diagrams.
   zstep(under: true)[indirect equality],
   zsqc(`f(R/T)`, `(fR)/T`, eq: true),
 )
-#align(center, block(inset: (y: 3pt))[#src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]])
+#align(center, block(inset: (y: 3pt))[#src[]])
+// lean:AOP.A4_4.map_comp_div@3b1816a2
 ]<adj-cross-why>
 
 // A cross table, not a list: what matters is WHICH PAIRS give a law, and a list of the ones that do
@@ -234,56 +256,85 @@ diagrams.
   columns: 9, align: left + horizon, inset: 3pt, stroke: 0.4pt + luma(190),
   table.header([], [*`·T`*], [*`T·`*], [*`·g`*], [*`g°·`*], [*`T∩`*], [*`°`*], [*`⟜◁`*], [*`Δ`*]),
 
-  [*`·S`*], [`R/(ST)=` \ `(R/T)/S` #src[`lean:Freyd.S2_30.div_comp_assoc@30a074f3`]],
-    [`T\(R/S)=` \ `(T\R)/S` #src[`lean:Freyd.S2_30.leftDiv_div@e6e6897c`]],
-    [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S` #src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]],
+ [*`·S`*], [`R/(ST)=` \ `(R/T)/S` #src[]],
+  // lean:Freyd.S2_30.div_comp_assoc@30a074f3
+ [`T\(R/S)=` \ `(T\R)/S` #src[]],
+    // lean:Freyd.S2_30.leftDiv_div@e6e6897c
+ [`R/(Sg)=` \ `(Rg°)/S`], [`g(R/S)=` \ `(gR)/S` #src[]],
+    // lean:AOP.A4_4.map_comp_div@3b1816a2
     [—], [`(Y/S)°=` \ `S°\(Y°)`], [`(RS)^=` \ `R^(S⊗𝟙)`],
-    [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S` #src[`lean:Freyd.S2_30.div_inter_eq@d75d5861`]],
+ [`(T₁∩T₂)/S=` \ `T₁/S∩T₂/S` #src[]],
+    // lean:Freyd.S2_30.div_inter_eq@d75d5861
 
-  [*`S·`*], [`S\(R/T)=` \ `(S\R)/T` #src[`lean:Freyd.S2_30.leftDiv_div@e6e6897c`]],
-    [`(TS)\R=` \ `S\(T\R)` #src[`lean:Freyd.S2_30.leftDiv_comp@f40e561a`]],
+ [*`S·`*], [`S\(R/T)=` \ `(S\R)/T` #src[]],
+  // lean:Freyd.S2_30.leftDiv_div@e6e6897c
+ [`(TS)\R=` \ `S\(T\R)` #src[]],
+    // lean:Freyd.S2_30.leftDiv_comp@f40e561a
     [`S\(Rg°)=` \ `(S\R)g°`], [`(g°S)\R=` \ `S\(gR)`], [—],
     [`(S\Y)°=` \ `Y°/S°`], [`((S⊗𝟙)R)^=` \ `SR^`],
-    [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂` #src[`lean:Freyd.S2_30.leftDiv_inter@ba9dda1e`]],
+ [`S\(T₁∩T₂)=` \ `S\T₁∩S\T₂` #src[]],
+    // lean:Freyd.S2_30.leftDiv_inter@ba9dda1e
 
-  [*`·f`*], [`R/(fT)=` \ `(R/T)f°` #src[`lean:AOP.A4_4.div_comp_recip_map@bc41ec1a`]],
+ [*`·f`*], [`R/(fT)=` \ `(R/T)f°` #src[]],
+  // lean:AOP.A4_4.div_comp_recip_map@bc41ec1a
     [`T\(Rf°)=` \ `(T\R)f°`],
-    [`(fg)°=g°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—], [—],
-    [`(fY)°=Y°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
-    [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°` #src[`lean:AOP.A4_2.simple_dist_inter_recip@9d565a77`]],
+ [`(fg)°=g°f°` #src[]], [], [],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
+ [`(fY)°=Y°f°` #src[]], [],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
+ [`(T₁∩T₂)f°=` \ `T₁f°∩T₂f°` #src[]],
+    // lean:AOP.A4_2.simple_dist_inter_recip@9d565a77
 
-  [*`f°·`*], [`f(R/T)=` \ `(fR)/T` #src[`lean:AOP.A4_4.map_comp_div@3b1816a2`]],
+ [*`f°·`*], [`f(R/T)=` \ `(fR)/T` #src[]],
+  // lean:AOP.A4_4.map_comp_div@3b1816a2
     [`(Tf°)\R=` \ `f(T\R)`], [—],
-    [`(fg)°=g°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
-    [`(fY)°=Y°f°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [—],
+ [`(fg)°=g°f°` #src[]], [],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
+ [`(fY)°=Y°f°` #src[]], [],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
     [`f(T₁∩T₂)=` \ `fT₁∩fT₂`],
 
   [*`R∩`*], [—], [—], [—], [—],
-    [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)` #src[`lean:AOP.A4_4.impl_curry@96ec2371`]],
+ [`(R∩T)⇒Y=` \ `R⇒(T⇒Y)` #src[]],
+    // lean:AOP.A4_4.impl_curry@96ec2371
     [`(R⇒Y)°=` \ `R°⇒(Y°)`], [—],
-    [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)` #src[`lean:AOP.A4_4.impl_inter@d2d55732`]],
+ [`R⇒(T₁∩T₂)=` \ `(R⇒T₁)∩(R⇒T₂)` #src[]],
+    // lean:AOP.A4_4.impl_inter@d2d55732
 
   [*`°`*], [`(Y/T)°=` \ `T°\(Y°)`], [`(T\Y)°=` \ `Y°/T°`],
-    [`(gY)°=Y°g°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]],
-    [`(gY)°=Y°g°` #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]], [`(T⇒Y)°=` \ `T°⇒(Y°)`],
-    [`Y°°=Y` #src[`lean:Freyd.S2_10.recip_recip@cb99fa11`]],
+ [`(gY)°=Y°g°` #src[]],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
+ [`(gY)°=Y°g°` #src[]], [`(T⇒Y)°=` \ `T°⇒(Y°)`],
+    // lean:Freyd.S2_10.recip_comp@516c2d8a
+ [`Y°°=Y` #src[]],
+    // lean:Freyd.S2_10.recip_recip@cb99fa11
     [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]],
     [`(T₁∩T₂)°=` \ `T₁°∩T₂°`],
 
   [*`⟜◁`*], [`(RT)^=` \ `R^(T⊗𝟙)`], [`((T⊗𝟙)R)^=` \ `TR^`], [—], [—], [—],
     [`(R^)°=` \ `(R°⊗𝟙)(𝟙⊗▷⊸)` \ #src[both bends: the `°` section's display]], [—], [—],
 
-  [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`T(X₁∪X₂)=` \ `TX₁∪TX₂` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
-    [`(X₁∪X₂)g=` \ `X₁g∪X₂g` #src[`lean:Freyd.S2_20.union_comp_distrib@0025430d`]],
-    [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212`]],
-    [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)` #src[`lean:Freyd.Alg.DistributiveAllegory.inter_union_distrib@83bb6087`]],
-    [`(X₁∪X₂)°=` \ `X₁°∪X₂°` #src[`lean:Freyd.S2_20.recip_union@d1eae8a9`]], [—], [—],
+ [*`∪`*], [`(X₁∪X₂)T=` \ `X₁T∪X₂T` #src[]],
+  // lean:Freyd.S2_20.union_comp_distrib@0025430d
+ [`T(X₁∪X₂)=` \ `TX₁∪TX₂` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
+ [`(X₁∪X₂)g=` \ `X₁g∪X₂g` #src[]],
+    // lean:Freyd.S2_20.union_comp_distrib@0025430d
+ [`g°(X₁∪X₂)=` \ `g°X₁∪g°X₂` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
+ [`T∩(X₁∪X₂)=` \ `(T∩X₁)∪(T∩X₂)` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.inter_union_distrib@83bb6087
+ [`(X₁∪X₂)°=` \ `X₁°∪X₂°` #src[]], [], [],
+    // lean:Freyd.S2_20.recip_union@d1eae8a9
 
-  [*`⊥`*], [`⊥T=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c`]], [`T⊥=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af`]],
-    [`⊥g=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c`]], [`g°⊥=⊥` #src[`lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af`]],
-    [`T∩⊥=⊥` #src[`lean:Freyd.S2_50.inter_zero@d458c7d7`]],
-    [`⊥°=⊥` #src[`lean:Freyd.S2_20.recip_zero@49eaea12`]], [—], [—],
+ [*`⊥`*], [`⊥T=⊥` #src[]], [`T⊥=⊥` #src[]],
+  // lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af
+ [`⊥g=⊥` #src[]], [`g°⊥=⊥` #src[]],
+    // lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af
+ [`T∩⊥=⊥` #src[]],
+    // lean:Freyd.S2_50.inter_zero@d458c7d7
+ [`⊥°=⊥` #src[]], [], [],
+    // lean:Freyd.S2_20.recip_zero@49eaea12
 )]<adj-cross>
 
 // Proved in the repository: div_comp_assoc, leftDiv_div, leftDiv_comp, leftDiv_inter, leftDiv_div_recip,
@@ -393,9 +444,12 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 2-functor `° : 𝒞ᵒᵖ⟶𝒞`:
 
 #align(center, block(inset: (y: 5pt))[
-  (i) `𝟙°=𝟙` #src[`lean:Freyd.S2_10.recip_id@319d8965`]  #h(1cm) (ii) `(RS)°=S°R°`
-  #src[`lean:Freyd.S2_10.recip_comp@516c2d8a`]  #h(1cm) (iii) `(R⊗S)°=R°⊗S°`
-  #h(1cm) (iv) `R≤S` implies `R°≤S°` #src[`lean:Freyd.S2_10.recip_mono@d584321d`]
+ (i) `𝟙°=𝟙` #src[] #h(1cm) (ii) `(RS)°=S°R°`
+  // lean:Freyd.S2_10.recip_id@319d8965
+ #src[] #h(1cm) (iii) `(R⊗S)°=R°⊗S°`
+  // lean:Freyd.S2_10.recip_comp@516c2d8a
+ #h(1cm) (iv) `R≤S` implies `R°≤S°` #src[]
+  // lean:Freyd.S2_10.recip_mono@d584321d
 ])
 ]]<conv-defn>
 
@@ -424,8 +478,10 @@ do.
 #align(center, src[transcribed: a definition has no statement to export])
 
 On every hom-set it is associative, commutative and idempotent
-#src[`lean:Freyd.S2_10.inter_assoc@958bcd8a`, `lean:Freyd.S2_10.inter_comm@4e93697e`,
-`lean:Freyd.S2_10.inter_idem@599acf28`], with unit the maximal arrow
+#src[,
+// lean:Freyd.S2_10.inter_assoc@958bcd8a lean:Freyd.S2_10.inter_comm@4e93697e
+], with unit the maximal arrow
+// lean:Freyd.S2_10.inter_idem@599acf28
 `⊤=⊸⟜` #src[(the paper's Lemma 4.11)].
 ]]<meet-defn>
 
@@ -452,14 +508,16 @@ And one law relating `∩` to composition, which is *not* an equation:
   table.header([*semi-distributivity, and what supplies it*], [*picture*]),
 
   [`R (S∩T)⊑RS∩RT` — the lax copy law. #src[Equality exactly when `R` is single valued: the Maps section's
-   `F(R∩S)=FR∩FS`. `lean:AOP.A4_1.comp_inter_le@c62bf05a`]], P(p-semidistrib),
+ `F(R∩S)=FR∩FS`. ]], P(p-semidistrib),
+   // lean:AOP.A4_1.comp_inter_le@c62bf05a
 )]<meet-semidistrib>
 
 #pagebreak(weak: true)
 = Domain and range
 
 #disp[#definition[
-The *domain* `Dom(R)≜𝟙∩RR°` #src[`lean:Freyd.S2_10.dom@9e0aed7a`] and the *range* `Ran R≜Dom(R°)`.
+The *domain* `Dom(R)≜𝟙∩RR°` #src[] and the *range* `Ran R≜Dom(R°)`.
+// lean:Freyd.S2_10.dom@9e0aed7a
 ]]<dom-defn>
 
 // THE MEET FIRST, then the stub: the stub alone does not look like `𝟙 ∩ R R°` — one strand carries no
@@ -488,16 +546,22 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
   [`Dom(R)≜𝟙∩RR°`],
-  [`Dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[`lean:AOP.A4_2.dom_UP@9eaee77f`]],
-  [`Dom(RS)⊑Dom(R)` #src[`lean:Freyd.S2_10.dom_comp_le@a99434dd`]],
-  [`Dom(R∩S)=𝟙∩SR°` #src[`lean:Freyd.S2_10.dom_inter@e702a791`]],
+ [`Dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[]],
+  // lean:AOP.A4_2.dom_UP@9eaee77f
+ [`Dom(RS)⊑Dom(R)` #src[]],
+  // lean:Freyd.S2_10.dom_comp_le@a99434dd
+ [`Dom(R∩S)=𝟙∩SR°` #src[]],
+  // lean:Freyd.S2_10.dom_inter@e702a791
   [`R` entire `⟺Dom(R)=𝟙⟺𝟙⊑RR°`],
   [`R` simple `⟺R°R⊑𝟙`],
   [`R` a map `⟺R` entire and simple],
   [`R,S` entire `⟹RS` entire — likewise simple, likewise maps
-   #src[`lean:Freyd.S2_10.entire_comp@2dfbf431`, `lean:Freyd.S2_10.simple_comp@c3c56ec3`,
-   `lean:Freyd.S2_10.map_comp@841b047c`]],
-  [`RS` entire `⟹R` entire #src[`lean:Freyd.S2_10.entire_of_comp_entire@ad998fc1`]],
+ #src[,
+   // lean:Freyd.S2_10.entire_comp@2dfbf431 lean:Freyd.S2_10.simple_comp@c3c56ec3
+ ]],
+   // lean:Freyd.S2_10.map_comp@841b047c
+ [`RS` entire `⟹R` entire #src[]],
+  // lean:Freyd.S2_10.entire_of_comp_entire@ad998fc1
 )]<dom-laws>
 
 == Sliding the discard
@@ -516,7 +580,8 @@ discard drawn apart, the law is one dot walking back along the lower strand.
   lab(-0.35, 0, black)[$A$]; lab(4.95, y, black)[$A$]
 }), domstr(rel: [`⊑`])),
   ("", [`S⊸⊑⊸`, the lax axiom for `⊸` in the first section \
-   — the discard slides back past `S` #src[`lean:Freyd.S2_10.dom_comp_le@a99434dd`]]), s: 100%)]<dom-slide>
+ — the discard slides back past `S` #src[]]), s: 100%)]<dom-slide>
+   // lean:Freyd.S2_10.dom_comp_le@a99434dd
 
 Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` entire.
 
@@ -543,7 +608,8 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*picture*]),
 
-  [`F(R∩S)=FR∩FS` \ #v(2pt) #src[`F` single valued; `lean:Freyd.S2_10.simple_dist_inter@46ef7904`]],
+ [`F(R∩S)=FR∩FS` \ #v(2pt) #src[`F` single valued]],
+  // lean:Freyd.S2_10.simple_dist_inter@46ef7904
   grid(columns: 3, align: horizon, column-gutter: 10pt,
     [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
     text(17pt)[=],
@@ -819,7 +885,8 @@ hates, so nothing composes to it. The missing path is exactly the strictness of
   P(p-map-div),
 
   [`R/(fS)=(R/S)f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.
-   `lean:AOP.A4_4.div_comp_recip_map@bc41ec1a`]],
+ ]],
+   // lean:AOP.A4_4.div_comp_recip_map@bc41ec1a
   P(p-div-map),
 
   [`(R/S)(S/W)⊑R/W` \ #src[Someone who admires all of a hate-set that already covers everyone
@@ -855,7 +922,8 @@ the Frobenius generators build, and `/` is none of those — it is posited, with
 = $frac(R, S)$
 
 #disp[#definition[
-$frac(R, S)$ `≜(R/S)∩(S/R)°` #src[`lean:Freyd.S2_30.symmDiv@7e3fc41a`]. In `Rel` `x` and `y` has the same image:
+$frac(R, S)$ `≜(R/S)∩(S/R)°` #src[]. In `Rel` `x` and `y` has the same image:
+// lean:Freyd.S2_30.symmDiv@7e3fc41a
 `∀p. (x R p⟺y S p)`
 ]]<syq-defn>
 
@@ -907,14 +975,17 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°` #src[`lean:Freyd.S2_30.symmDiv@7e3fc41a`]. In 
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the reading*]),
 
-  [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X°R⊑S` #src[`lean:Freyd.S2_30.le_symmDiv_iff@b1cfe4dc`]],
+ [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X°R⊑S` #src[]],
+  // lean:Freyd.S2_30.le_symmDiv_iff@b1cfe4dc
   [`X` may pair `x` with `y` only when `x` admires exactly whom `y` hates. Both halves must typecheck,
    so the operation is *partial*.],
 
-  [$(frac(R, S))^circle.small = frac(S, R)$ #src[`lean:Freyd.S2_30.symmDiv_recip@b93b9076`]],
+ [$(frac(R, S))^circle.small = frac(S, R)$ #src[]],
+  // lean:Freyd.S2_30.symmDiv_recip@b93b9076
   [Matching is symmetric.],
 
-  [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ #src[`lean:Freyd.S2_30.symmDiv_comp@5930c455`]],
+ [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ #src[]],
+  // lean:Freyd.S2_30.symmDiv_comp@5930c455
   [And transitive.],
 
   [$frac(R, S) S ⊑ R$],
@@ -922,26 +993,31 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°` #src[`lean:Freyd.S2_30.symmDiv@7e3fc41a`]. In 
    `x only admires whom y hates` \
    $frac(R, S) S = "Dom"(frac(R, S)) R$],
 
-  [$frac(R, R) R = R$ #src[`lean:Freyd.S2_30.symmDiv_self_comp@2b447963`]],
+ [$frac(R, R) R = R$ #src[]],
+  // lean:Freyd.S2_30.symmDiv_self_comp@2b447963
   [$(∃ y. thin x (frac(R, R)) y ∧ y R p) ⟺ x R p$ \
    `x and y admire the same people` \
    `y=x always qualifies (𝟙⊑R%R below)`],
 
-  [$𝟙 ⊑ frac(R, R)$ #src[`lean:Freyd.S2_30.symmDiv_self_reflexive@9e2af20e`]],
+ [$𝟙 ⊑ frac(R, R)$ #src[]],
+  // lean:Freyd.S2_30.symmDiv_self_reflexive@9e2af20e
   [$x (frac(R, R)) y$ if `x` and `y` admires the same peoples.],
 
   [$(frac(R, R))^2 = frac(R, R)$],
   [So the relation *admires the same people* is an equivalence relation.],
 
   [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`
-   #src[`lean:Freyd.S2_11.symmetric_le_symmDiv_self_iff@a5fc04b4`]],
+ #src[]],
+   // lean:Freyd.S2_11.symmetric_le_symmDiv_self_iff@a5fc04b4
   [The largest symmetric arrow that leaves `R` alone.],
 
-  [$frac(R, 𝟙)$ is the *simple part* of `R` #src[`lean:Freyd.S2_30.simplePart@3779ee66`]],
+ [$frac(R, 𝟙)$ is the *simple part* of `R` #src[]],
+  // lean:Freyd.S2_30.simplePart@3779ee66
   [The people who admire exactly one person and nobody else. It equals `R` only when `R` is simple, unlike
    `R/𝟙=R`.],
 
-  [`Dom` $frac(R, S)$ `=𝟙∩(R/S)(S/R)` #src[`lean:Freyd.S2_30.dom_symmDiv@0ef1aa31`]],
+ [`Dom` $frac(R, S)$ `=𝟙∩(R/S)(S/R)` #src[]],
+  // lean:Freyd.S2_30.dom_symmDiv@0ef1aa31
   [Its domain is the *domain of simplicity* of `R`.],
 )]<syq-readings>
 
@@ -986,20 +1062,24 @@ subscript.
   [convert a relation to a function. `a` $frac(R, ∋)$ ` ={b|a R b}` ],
   [$frac(#[`R`], ∋)$ is a *map*],  [],
 
-  [$frac(#[`R`], ∋)$ `∋=R` ], [#src[`lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
+ [$frac(#[`R`], ∋)$ `∋=R` ], [#src[]],
+  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
 
   [`F⊑` $frac(#[`F∋`], ∋)$, `F` simple],
-  [A partial choice of sets is inside the total one. #src[`lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe`]],
+ [A partial choice of sets is inside the total one. #src[]],
+  // lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe
 
   [$frac(#[`𝟙`], ∋)$, the *singleton map*, monic],
   [The one-person set.],
 
   [$frac(#[`∋`], ∋)$ `=𝟙`],
-  [Make the set of a set, then read it back one level down. #src[`lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3`]],
+ [Make the set of a set, then read it back one level down. #src[]],
+  // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
 
   [*fusion:* $frac(#[`fR`], ∋)$ `=f` $frac(#[`R`], ∋)$, `f` a map],
   [Naturality of the unit, `f` $frac(#[`𝟙`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `(E(f))`.
-   #src[`lean:AOP.A4_6.Λ_fusion@9d7bda13`]],
+ #src[]],
+   // lean:AOP.A4_6.Λ_fusion@9d7bda13
 
   [$frac(#[`f`], ∋)$ `=f` $frac(#[`𝟙`], ∋)$, `f` a map],
   [Rename first or take singletons first — the fusion row above at `R=𝟙`.],
@@ -1009,10 +1089,12 @@ subscript.
 
   [`E(R)≜` $frac(#[`∋R`], ∋)$, `E≜` $frac(#[`∋·`], ∋)$], [`E(R): EA⟶EB`, image of a set of A],
   [$frac(#[`R`], ∋)$ `=` $frac(#[`𝟙`], ∋)$ `E(R)`],
-  [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[`lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8`]],
+ [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[]],
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
   [$frac(#[`S`], ∋)$ `E(R)=` $frac(#[`S`], ∋)$ $frac(#[`∋R`], ∋)$ `=` $frac(#[`SR`], ∋)$],
   [absorption — the monad's composition law, $frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$ `=`
-   $frac(#[`SR`], ∋)$, §@sec-kleisli #src[`lean:AOP.A4_6.Λ_absorption@e87bd8f2`]],
+ $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
+   // lean:AOP.A4_6.Λ_absorption@e87bd8f2
 
   [`subset≜∋/∋ : EA⟶EA`],
   [`xs subset ys⟺∀a. ys∋a→xs∋a`, that is `ys⊆xs`, not `xs⊆ys`.],
@@ -1050,12 +1132,15 @@ subscript.
     let w = measure(g).width
     grid(columns: 1, row-gutter: 8pt, align: center, g,
       box(width: w, grid(columns: (1fr, 1fr), align: (center + horizon, center + horizon),
-        [$frac(#[`𝟙`], ∋)$ `∋=𝟙` #src[`lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
-        [$frac(#[`∋`], ∋)$ `=𝟙` #src[`lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3`]])))
+ [$frac(#[`𝟙`], ∋)$ `∋=𝟙` #src[]],
+        // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
+ [$frac(#[`∋`], ∋)$ `=𝟙` #src[]])))
+        // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
   },
   [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
    #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
-   already the relator `P(R)`. `lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`]],
+ already the relator `P(R)`. ]],
+   // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
   // The two snakes are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>
@@ -1098,7 +1183,8 @@ $frac(#[`𝟙`], ∋)$,
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[the first three steps only
   unfold `⋄` — `E` is a functor, so `E(`$frac(#[`R`], ∋)$`)union=E(`$frac(#[`R`], ∋)$`∋)=E(R)` and the
   `union` is gone. Absorption, the row of @pow-laws, is the whole law, and it is the functoriality
-  of $frac(#[`·`], ∋)$. `lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a`, `lean:AOP.A4_6.Λ_absorption@e87bd8f2`]]])
+ of $frac(#[`·`], ∋)$. ]]])
+  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a lean:AOP.A4_6.Λ_absorption@e87bd8f2
 ]<kleisli-comp>
 
 #block[#src[`𝟙` goes to $frac(#[`𝟙`], ∋)$, the Kleisli identity, by definition — so
@@ -1112,9 +1198,12 @@ Every hom-set of an allegory is a poset, so an allegory is a *locally posetal 2-
 from `R` to `S` IS `R⊑S`. A *relator* `F : 𝒞⟶𝓓` is a 2-functor between allegories:
 
   #align(center, block(inset: (y: 6pt))[
-    #text(12.5pt)[`F(𝟙)=𝟙` #src[`lean:Freyd.S1_18.map_id@1cd85d8e`] #h(1cm)
-    `F(RS)=F(R)F(S)` #src[`lean:Freyd.S1_18.map_comp@ab212d4e`] #h(1cm)
-    `R⊑S⟹F(R)⊑F(S)` #src[`lean:AOP.A5_1.map_mono@308d5798`]]
+ #text(12.5pt)[`F(𝟙)=𝟙` #src[] #h(1cm)
+    // lean:Freyd.S1_18.map_id@1cd85d8e
+ `F(RS)=F(R)F(S)` #src[] #h(1cm)
+    // lean:Freyd.S1_18.map_comp@ab212d4e
+ `R⊑S⟹F(R)⊑F(S)` #src[]]
+    // lean:AOP.A5_1.map_mono@308d5798
   ])
 
 Preserving `°` is *not* asked for — `°` is an identity-on-objects involution `𝒞ᵒᵖ⟶𝒞`, no part of
@@ -1127,13 +1216,17 @@ the 2-category.
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*B&dM*]),
 
-  [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[`lean:AOP.A5_1.map_is_map@8f150beb`, `lean:AOP.A5_1.map_recip_map@c9f5d6f2`]], [Lemma 5.1],
+ [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]], [Lemma 5.1],
+  // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [Theorem 5.1],
   [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.], [after Theorem 5.1, p. 113],
   [Two relators agreeing on maps are equal.], [Corollary 5.1],
-  [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[`lean:AOP.A5_1.map_inter_coreflexive@a2233804`]], [Ex 5.2],
-  [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[`lean:AOP.A5_1.map_inter_le@af565f80`]], [Ex 5.2, the restriction],
-  [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[`lean:AOP.A5_1.map_dom@5e9ecd68`]], [—],
+ [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]], [Ex 5.2],
+  // lean:AOP.A5_1.map_inter_coreflexive@a2233804
+ [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]], [Ex 5.2, the restriction],
+  // lean:AOP.A5_1.map_inter_le@af565f80
+ [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[]], [],
+  // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
 The *power relator* `P` — `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)` — is where
@@ -1143,14 +1236,18 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 == Fork `⟨R,S⟩`
 
 #disp[#definition[
-The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[`lean:AOP.A5_2.pair@df1791ca`],
+The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
+// lean:AOP.A5_2.pair@df1791ca
 where `(π₁,π₂)` is the tabulation of `⊤`
-#src[`lean:AOP.A5_2.eq_topMor@31e6622f`, `lean:AOP.A5_2.joint_id@f9cba0f7`].
+#src[].
+// lean:AOP.A5_2.eq_topMor@31e6622f lean:AOP.A5_2.joint_id@f9cba0f7
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
-  `⟨R,S⟩π₁=Dom(S)R` #src[`lean:AOP.A5_2.pair_outl@5cb53112`] #h(1.4cm)
-  `⟨R,S⟩π₂=Dom(R)S` #src[`lean:AOP.A5_2.pair_outr@a6bc4ebd`]
+ `⟨R,S⟩π₁=Dom(S)R` #src[] #h(1.4cm)
+  // lean:AOP.A5_2.pair_outl@5cb53112
+ `⟨R,S⟩π₂=Dom(R)S` #src[]
+  // lean:AOP.A5_2.pair_outr@a6bc4ebd
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
@@ -1190,14 +1287,17 @@ the monoid's unit law:
   wiredot((5.4, -0.3))
   wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
   lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
-}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[`lean:AOP.A5_2.pair@df1791ca`]]), s: 100%)]<fork-collapse>
+}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[]]), s: 100%)]<fork-collapse>
+// lean:AOP.A5_2.pair@df1791ca
 
 
 === Relational product `R×S`
 
 #disp[#definition[
-`R×S≜⟨π₁R,π₂S⟩` #src[`lean:AOP.A5_2.prodMap@28e34ad0`], a relator in each argument
-#src[`lean:AOP.A5_2.prod@64fdb8dc`] but no longer a categorical product.
+`R×S≜⟨π₁R,π₂S⟩` #src[], a relator in each argument
+// lean:AOP.A5_2.prodMap@28e34ad0
+#src[] but no longer a categorical product.
+// lean:AOP.A5_2.prod@64fdb8dc
 ]]<relprod-defn>
 
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
@@ -1299,7 +1399,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
    half is Ex 5.8, that half at `S:=𝟙` and at `R:=𝟙` B&dM's (5.4), (5.5) — stages of their proof of
    this row; Ex 5.6 is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
-   `lean:AOP.A5_2.pair_prodMap@9d21307f`]],
+ ]],
+   // lean:AOP.A5_2.pair_prodMap@9d21307f
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1308,7 +1409,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
   }), s: 74%),
 
-  [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj, `lean:AOP.A5_2.pair_outl@5cb53112`]],
+ [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj]],
+  // lean:AOP.A5_2.pair_outl@5cb53112
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1318,7 +1420,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(3.0, y, black)[$A$]
   }), s: 74%),
 
-  [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj, `lean:AOP.A5_2.pair_outr@a6bc4ebd`]],
+ [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj]],
+  // lean:AOP.A5_2.pair_outr@a6bc4ebd
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1328,7 +1431,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(3.0, -y, black)[$B$]
   }), s: 74%),
 
-  [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[`lean:AOP.A5_2.pair_recip_pair@c082becf`]],
+ [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[]],
+  // lean:AOP.A5_2.pair_recip_pair@c082becf
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1355,7 +1459,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 74%),
 
   [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow;
-   `lean:AOP.A5_2.map_comp_pair@bbc85d03`]],
+ ]],
+   // lean:AOP.A5_2.map_comp_pair@bbc85d03
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$D$]
@@ -1425,8 +1530,10 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   [`[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], [],
   [`R+S≜[Rl,Sr]`], [],
   [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow
-   #src[`lean:AOP.A5_3.u₁_junc@a01a115a`, `lean:AOP.A5_3.u₂_junc@e692ee94`,
-   `lean:AOP.A5_3.junc_unique@192cec99`]], [],
+ #src[,
+   // lean:AOP.A5_3.u₁_junc@a01a115a lean:AOP.A5_3.u₂_junc@e692ee94
+ ]], [],
+   // lean:AOP.A5_3.junc_unique@192cec99
 
   // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
   // by shape as well as by the tint, and a round trip reads as one box undoing the other.
@@ -1568,7 +1675,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   }), s: 82%),
 
   [(5.11)], [`[U,V]°[R,S]=(U°R)∪(V°S)` \ #src[@coprod-laws's last row;
-   `lean:AOP.A5_3.junc_recip_junc@838f4abc`]],
+ ]],
+   // lean:AOP.A5_3.junc_recip_junc@838f4abc
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.3, 0, black)[$C$]
@@ -1683,8 +1791,10 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 #disp[#definition[
 For `R : A⟶B`,
 #grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
-  [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB` #src[`lean:AOP.A5_4.powerRel@80c5b402`]],
-  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[`lean:AOP.A4_6.existsImage@db266886`]],
+ [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB` #src[]],
+  // lean:AOP.A5_4.powerRel@80c5b402
+ [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[]],
+  // lean:AOP.A4_6.existsImage@db266886
 )
 
 `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)`
@@ -1768,21 +1878,25 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
   [`X⊑P(R)⟺X∋⊑∋R` and `X°∋⊑∋R°`],
   [One containment, and the same one at `R°` — which is the definition read off the two divisions.
-   Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[`lean:AOP.A5_4.powerRel_mono@00de2d62`].],
+ Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[].],
+   // lean:AOP.A5_4.powerRel_mono@00de2d62
 
   [`P(𝟙)=` $frac(∋, ∋)$ `=𝟙`],
   [The straightness axiom verbatim: extensionality *is* `P`'s unit law.
-   #src[`lean:AOP.A5_4.powerRel_id@4ada24f9`]],
+ #src[]],
+   // lean:AOP.A5_4.powerRel_id@4ada24f9
 
   [`P(f)=` $frac(∋ f, ∋)$, for `f` a map],
   [In `Rel`, `xs P(f) ys⟺ys={f a|a∈xs}`. The half at `f°` says every `a∈xs` has its `f a` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
-   #src[`lean:AOP.A5_4.powerRel_map@2bf77d9f`]],
+ #src[]],
+   // lean:AOP.A5_4.powerRel_map@2bf77d9f
 
   [`P(RS)=P(R)P(S)`],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
-   calculation: it needs a tabulation of `P(RS)`. #src[`lean:AOP.A5_4.powerRel_comp@06364064`]],
+ calculation: it needs a tabulation of `P(RS)`. #src[]],
+   // lean:AOP.A5_4.powerRel_comp@06364064
 )]<powrel-laws>
 
 // Ahead of §11.4 and §11.5, which both write `⦇…⦈` before anything says what it is.  The three
@@ -1796,7 +1910,8 @@ An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` wit
 `α`#sub[`A`]` h=F(h)α`#sub[`B`].
 The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
 `⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`]
-#src[`lean:AOP.A5_5.InitialAlgebra@a45a8436`].
+#src[].
+// lean:AOP.A5_5.InitialAlgebra@a45a8436
 
   #row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
     let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
@@ -1835,7 +1950,8 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
   }),
   homeq(`F`, `T`, [`α`#sub[`T`]], none, [`α`#sub[`T`]], `T`,
     typed: true, bcol: TCOL, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN2),
-  [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11), `lean:AOP.A6_3.relCata_alpha@656cd4b8`]],
+ [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11)]],
+  // lean:AOP.A6_3.relCata_alpha@656cd4b8
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
@@ -1878,7 +1994,8 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
       typed: true, regions: auto),
   ),
   [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`] #h(6pt)
-   #src[(2.12), `lean:AOP.A5_5.relCata_fusion@15d8a5b5`]],
+ #src[(2.12)]],
+   // lean:AOP.A5_5.relCata_fusion@15d8a5b5
   s: 92%,
 )]<cata-fusion>
 
@@ -1893,7 +2010,8 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 `A` the initial algebra is `α : F(A,TA)⟶TA`, among the maps. `T` acts on an arrow `R : A⟶B` by
 
   #align(center, block(inset: (y: 6pt))[`T(R)=⦇F(R,𝟙)α⦈ : TA⟶TB` #h(4pt)
-    #src[`lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0`, `lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794`]])
+ #src[]])
+    // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0 lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 ]]<tf-defn>
 
 // Same widths and stroke as the reduce table: the two tables are read one after the other, and
@@ -1908,31 +2026,36 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   [the defining equation],
   [`T(R)=⦇F(R,𝟙)α⦈`],
   [Rebuild the structure with `α`, applying `R` to the parameter on the way.
-   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 
   [functor],
   [`T(𝟙)=𝟙` and `T(R)T(S)=T(RS)`],
   [Acting by the identity changes nothing, and two actions in a row are one action.
-   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1`, `lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1 lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd
 
   [type functor fusion],
   [`T(R)⦇Q⦈=⦇F(R,𝟙)Q⦈`],
   [A relator action followed by a fold is a single fold — the intermediate structure is never built.
    The side condition holds because `F` is a bifunctor —
    `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
-   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178`, `lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
 
   [naturality of `α`],
   [`αT(R)=F(R,T(R))α`],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
-   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
 
   [type relator],
   [`T(R)°=T(R°)`, for `F` preserving `°`],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
-   #h(4pt) #src[`lean:AOP.A5_5_TypeFunctor.typeMap_recip@4bb90fe1`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_recip@4bb90fe1
 )]<tf-laws>
 
 // Its own page: the definition and its two squares are read together, and without the break the
@@ -1946,7 +2069,8 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 `f : A⟶B` by
 
   #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB` #h(4pt)
-    #src[`lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0`]])
+ #src[]])
+    // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0
 ]]<tfun-defn>
 
 // The house orientation: the fold runs down the columns, over the FLAT algebra `F(f,𝟙)α_B`, which the
@@ -1973,7 +2097,8 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   tfuneq([`F`], [`T`], [`A`], [`B`], [`α`#sub[`A`]], [`α`#sub[`B`]], [`f`],
     cact1: GIVEN2, cact2: GIVEN1, regions: auto),
   [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
-   #src[`lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627`]],
+ #src[]],
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
 )]<tfun-sq>
 
 // The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
@@ -1998,7 +2123,8 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   twobeadeq(`TA`, [`T(f)`], [`⦇h⦈`], [`⦇F(f,𝟙)h⦈`], `C`, c1: INDUCED, c2: INDUCED, c3: INDUCED,
     typed: true, regions: auto),
   [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
-   #src[`lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178`]],
+ #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178
 )]<tfun-fusion>
 
 // Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
@@ -2032,7 +2158,8 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
   homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`A`]`⦈`], [`α`#sub[`A`]], `A`,
     typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
   [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`] #h(6pt)
-   #src[`lean:AOP.A5_5.relCata_UP@e4a4905f`]],
+ #src[]],
+   // lean:AOP.A5_5.relCata_UP@e4a4905f
 )]<cata-defining>
 
 // Machine-checked: an algebra on `A` IS definitionally a natural transformation `F∘A ⇒ A` between
@@ -2059,11 +2186,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [base functor `F`],
   [`F(X)=1+X`],
-  [`F(X)=1+A×X` #src[`lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7`]],
+ [`F(X)=1+A×X` #src[]],
+  // lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
 
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
-  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[`lean:AOP.A6_ConsList.initial@79b3402c`]],
+ [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[]],
+  // lean:AOP.A6_ConsList.initial@79b3402c
 
   [the fold, pointwise],
   [`⦇[c,f]⦈ zero=c` \ `⦇[c,f]⦈ (succ n)=f (⦇[c,f]⦈n)`],
@@ -2104,7 +2233,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2,
     outsplit: (`E`, `A`)),
   [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
-   #src[`lean:AOP.A5_5.Λ_relCata@5b63ea5d`, `lean:AOP.A5_5.relCata_unfold@22ba1c5c`]],
+ #src[]],
+   // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 )]<cata-map-square>
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
@@ -2126,7 +2256,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   zsqc([`X`], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`], eq: true),
 )
 #align(center, block(inset: (y: 3pt))[#src[the last two rows at `X:=⦇R⦈`:
- `lean:AOP.A5_5.Λ_relCata@5b63ea5d`, `lean:AOP.A5_5.relCata_unfold@22ba1c5c`]])
+ ]])
+ // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 ]<cata-map-calc>
 
 // The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
@@ -2271,9 +2402,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // and nothing before this said what it was.
 #disp[#definition[
 `φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`
-#src[`lean:AOP.A6_2.Monotonic@66dddf1e`].
+#src[].
+// lean:AOP.A6_2.Monotonic@66dddf1e
 
-`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X` #src[`lean:AOP.A6_2.mu@4928a490`].
+`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X` #src[].
+// lean:AOP.A6_2.mu@4928a490
 ]]<mu-defn>
 
 #disp[#table(
@@ -2282,10 +2415,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1, `lean:AOP.A6_2.mu_le@9918bd39`]],
+ [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1]],
+  // lean:AOP.A6_2.mu_le@9918bd39
   [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
    and every chapter after it uses],
-  [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1, `lean:AOP.A6_2.mu_fixed@2d3d1a8a`]],
+ [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1]],
+  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
 )]<mu-laws>
@@ -2328,7 +2463,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
-    #src[Theorem 6.2, `lean:AOP.A6_3.hylo_fixed@42010f9f`; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+ #src[Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+    // lean:AOP.A6_3.hylo_fixed@42010f9f
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
@@ -2353,7 +2489,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     hands: ((TXF, 3.0, 1.8, [`F`]),), top: ((TXO, [`B`]),), w: 4.8)],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek — `lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6`]])],
+ [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek]])],
+    // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
   [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
 ))]<hylo-fix>
 
@@ -2363,7 +2500,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_le_of_prefixed@b892517c`]],
+ Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2]],
+  // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
@@ -2382,7 +2520,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(IMP, mbp(hterm((hb-alo, hb-FW, hb-R), [`T`], [`A`], rhs: (hb-W,))),
     [`α°F(⦇S⦈°\X)R⊑⦇S⦈°\X` \ #src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
-     `lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a`]])],
+ ]])],
+     // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
   [#trow(
     tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
       hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
@@ -2420,7 +2559,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2, `lean:AOP.A6_3.hylo_eq_mu@c60df971`]],
+ Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2]],
+  // lean:AOP.A6_3.hylo_eq_mu@c60df971
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-mu,), [`B`], [`A`])),
@@ -2429,13 +2569,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(SQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
     [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
-     `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix; `lean:AOP.A6_2.mu_le_of_fixed@8ea2332b`]])],
+ `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]])],
+     // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
   [#tpan(4.2, ((3.6, [`⦇S⦈°`]), (1.2, [`⦇R⦈`])), top: ((TXO, [`B`]),), w: 4.8)],
 
   [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
     [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
-     `lean:AOP.A6_2.mu_prefixed@fc0a1dca`]])],
+ ]])],
+     // lean:AOP.A6_2.mu_prefixed@fc0a1dca
   [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
 ))]<hylo-mu>
 
@@ -2454,32 +2596,39 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`𝒜⟶𝒜`],
   [B&dM's `listr` under the short name it keeps from p. 125 on.],
 
-  [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[`lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6`]],
+ [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[]],
+  // lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6
   [`[A]⟶[B]`],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
-  [`subseq≜⦇[nil,cons∪π₂]⦈` #src[`lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47`]],
+ [`subseq≜⦇[nil,cons∪π₂]⦈` #src[]],
+  // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   [`[A]⟶[A]`],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
   [`prefix≜⦇[nil,nil∪cons]⦈` \
-   `=cat° π₁=init*` #src[`lean:AOP.A5_6_ListCombinators.prefix_cata@82edcdaa`, `lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936`]],
+ `=cat° π₁=init*` #src[]],
+   // lean:AOP.A5_6_ListCombinators.prefix_cata@82edcdaa lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
   [`[A]⟶[A]`],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
-  [`suffix≜cat° π₂=tail*` #src[`lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e`]],
+ [`suffix≜cat° π₂=tail*` #src[]],
+  // lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e
   [`[A]⟶[A]`],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
-  [`segment≜suffix prefix` #src[`lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a`]],
+ [`segment≜suffix prefix` #src[]],
+  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
   [`[A]⟶[A]`],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
-  [`partition≜concat°` #src[`lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e`]],
+ [`partition≜concat°` #src[]],
+  // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
   [`[A]⟶[[A]⁺]`],
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
-  [`concat≜⦇[nil,cat]⦈` #src[`lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3`]],
+ [`concat≜⦇[nil,cat]⦈` #src[]],
+  // lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3
   [`[[A]]⟶[A]`],
   [Joins the segments back up, which is why its converse splits a list.],
 
@@ -2519,7 +2668,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#definition[
 `cup≜` $frac(#[`π₁∋∪π₂∋`], ∋)$ ` : EA×EA⟶EA`, #h(4pt) so
 $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
-#h(4pt) #src[`lean:AOP.A5_6.Λ_union@632cc56a`]
+#h(4pt) #src[]
+// lean:AOP.A5_6.Λ_union@632cc56a
 ]]<cup-defn>
 
 // §12.1's bracket: the tape's fork IS `F([A])=𝟏+A×[A]`'s case split, `𝟏` above and the pair below,
@@ -2628,7 +2778,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
     #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns.
-    `lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47`]],
+ ]],
+    // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` operand]),
 
@@ -2778,11 +2929,13 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 // B&dM §7.1, p. 166.  The `°` is what diagram order costs: it reverses the arrow but not the `≤`
 // glyph, so without it `est(≤)` would come out the greatest element.
 #disp[#definition[
-For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`lean:AOP.A7_1.est@e39806f8`].
+For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[].
+// lean:AOP.A7_1.est@e39806f8
 
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[B&dM's `min R`, the same predicate under the same
 letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow;
-`lean:AOP.A7_4_Horner.est_apply@91dc1299`]
+]
+// lean:AOP.A7_4_Horner.est_apply@91dc1299
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
 
@@ -2807,7 +2960,8 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   [`union≜` $frac(#[`∋∋`], ∋)$ `: E(EA)⟶EA`], [flattens a set of sets],
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°`],
-  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`; `lean:AOP.A7_1.singletonMap_comp_est@06b2ed05`]],
+ [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
+  // lean:AOP.A7_1.singletonMap_comp_est@06b2ed05
   [$frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`], [an `S`-value that points to every `S`-value],
   [$frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)`],
@@ -2836,7 +2990,8 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   zstep(op: sym.arrow.l.r.double, under: true)[`°`],
   zpair(zsqc(`X`, `∋`), zsqc(`X°∋`, `R`)),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.le_est_iff@81855810`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.le_est_iff@81855810
 ]<est-up>
 
 === $frac(#[`𝟙`], ∋)$ `(∈\R)=R`
@@ -2855,7 +3010,8 @@ letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)`
   zstep(op: sym.arrow.l.r.double, under: true)[`i⊣E`],
   zsqc(`X`, `R`),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.singletonMap_comp_lb@9d4759cf`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.singletonMap_comp_lb@9d4759cf
 ]<est-71>
 
 === $frac(#[`S`], ∋)$ `(∈\R)=S°\R`
@@ -2879,7 +3035,8 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`T·⊣T\`],
   zsqc(`X`, `S°\R`),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_lb@f14ab8b5`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.Λ_comp_lb@f14ab8b5
 ]<est-72>
 
 === `union (∈\R)=∈\(∈\R)`
@@ -2899,7 +3056,8 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`°`, `T·⊣T\`],
   zsqc(`X`, `∈\(∈\R)`),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.bigUnion_comp_lb@ed13dc7a`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.bigUnion_comp_lb@ed13dc7a
 ]<est-73>
 
 === $frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`
@@ -2919,7 +3077,8 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[`Δ⊣∩`],
   zsqc(`X`, `S∩(S°\R°)`),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_est@4c6d38d0`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.Λ_comp_est@4c6d38d0
 ]<est-75>
 
 === $frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`
@@ -2943,7 +3102,8 @@ directly.
   zstep(op: sym.arrow.l.r.double, under: true)[@est-75],
   zsqc(`X`, [$frac(#[`S`], ∋)$ `est(R)`]),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.Λ_comp_est_context@e8052cf4`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.Λ_comp_est_context@e8052cf4
 ]<est-76>
 
 === `P(f) est(R)=est(fRf°) f`
@@ -2981,7 +3141,8 @@ directly.
   zstep(op: sym.arrow.l.double, under: true)[UP of `est`],
   zpair(zsqc(`P(S)∋`, `∋S`), zsqc(`∈P(S)`, `S∈`)),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.powerRel_comp_est_le@d8b5692c`]])
+#align(center, block(inset: (y: 4pt))[#src[]])
+// lean:AOP.A7_1.powerRel_comp_est_le@d8b5692c
 ]<est-710>
 
 === `P(est(R)) est(R)⊑union est(R)`
@@ -2998,7 +3159,8 @@ directly.
   zstep(op: sym.arrow.l.double, under: true)[UP of `est`, `R` transitive],
   zpair(zsqc(`P(est(R))∋`, `∋est(R)`), zsqc(`∈P(est(R))`, `est(R)∈`)),
 )
-#align(center, block(inset: (y: 4pt))[#src[`lean:AOP.A7_1.powerRel_est_le_bigUnion@d0c726a1`, `R` transitive]])
+#align(center, block(inset: (y: 4pt))[#src[, `R` transitive]])
+// lean:AOP.A7_1.powerRel_est_le_bigUnion@d0c726a1
 ]<est-711>
 
 #pagebreak(weak: true)
@@ -3015,7 +3177,8 @@ left through the component at `B`, the right through the one at `A`.
 
 Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
 `G(f)φ=φF(f)`: #h(4pt) laxness is about relations only.
-#h(4pt) #src[Theorem 5.2, `lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23`]
+#h(4pt) #src[Theorem 5.2]
+// lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23
 ]]<lax-defn>
 
 #disp[#capbox(
@@ -3029,7 +3192,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)
     node(GB.at(0), GB.at(1), black, `GB`); node(FB.at(0), FB.at(1), black, `FB`)
   }),
-  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[`lean:AOP.A5_1.LaxNatural@ba661fee`]],
+ [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
+  // lean:AOP.A5_1.LaxNatural@ba661fee
 )]<lax-str>
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
@@ -3106,7 +3270,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `χ∘φ : L∘G⇒K∘F`, the family `A ↦ χ`#sub[`GA`]`K(φ`#sub[`A`]`)` \
    #src[`L(G(R))χ`#sub[`GB`]`⊑χ`#sub[`GA`]`K(G(R))` is `χ` lax at `G(R)`; then
    `K(G(R)φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`F(R))` is `K` applied to `φ`'s own inequation;
-   `lean:AOP.A5_7.laxNatural_hcomp_outer_first@ce6a24d8`] \
+ ] \
+   // lean:AOP.A5_7.laxNatural_hcomp_outer_first@ce6a24d8
    #src[`χ:=𝟙`#sub[`K`] gives `K(φ) : K∘G⇒K∘F`, `K` composed on the outside;
    `φ:=𝟙`#sub[`G`] gives `χG : L∘G⇒K∘G`, `G` composed on the inside] \
    #src[two candidates, `χ`#sub[`GA`]`K(φ`#sub[`A`]`)` and `L(φ`#sub[`A`]`)χ`#sub[`FA`], ordered by
@@ -3130,7 +3295,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   }), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]`∪ψ`#sub[`B`]`)⊑(φ`#sub[`A`]`∪ψ`#sub[`A`]`)F(R)`
-   #h(4pt) #src[`lean:AOP.A5_7.union_slides@f7484fb4`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_7.union_slides@f7484fb4
   align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
     latpic(
       ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
@@ -3206,7 +3372,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `R`#sub[`A`]`(XY)⊑(X'Y')R`#sub[`C`] #h(4pt) at `R`#sub[`A`]`,R`#sub[`B`]`:=G(R),F(R)` and
    `X,X':=φ`#sub[`B`]`,φ`#sub[`A`], quantified over `R`; at `X'=X` with `R`#sub[`A`]`,R`#sub[`B`]
    endorelations it is the monotonicity reading instead — the `∀R` sits outside the law, and is the
-   only difference #h(4pt) #src[`lean:AOP.A5_7.comp_slides@480a3dc9`]],
+ only difference #h(4pt) #src[]],
+   // lean:AOP.A5_7.comp_slides@480a3dc9
 )]<lax-closure>
 
 // `sticky` binds a heading to the next BLOCK, and `conf` wraps every display in a breakable one, so
@@ -3240,7 +3407,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   }), s: 88%),
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` \
    `π₁,π₂ : Δ⇒Id` are both LaTs #h(4pt) #src[@party-mono-branch's `g` row] #h(4pt) and
-   `π₁∩π₂={((x,x),x)}` #h(4pt) #src[`lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc`]],
+ `π₁∩π₂={((x,x),x)}` #h(4pt) #src[]],
+   // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
 )]]<meet-counterex>
 
 === Two stacked towers
@@ -3278,7 +3446,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 
   [converse], [`R°`],
   [`φ°`, *fails*, oplax: `φ`#sub[`A`]`°G(R)⊑F(R)φ`#sub[`B`]`°`
-   #h(4pt) #src[`lean:AOP.A5_7.recip_oplax@7735eec0`, `lean:AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A5_7.recip_oplax@7735eec0 lean:AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6
 
   [zero object], [`z` with `𝟙 z=𝟘`],
   [the constant relator at such a `z`, initial and terminal],
@@ -3325,9 +3494,11 @@ An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` a
 the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f°·⊣f·` at `X:=F(R)f`,
-`Y:=R`, `lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64`], #h(4pt) equivalently #h(4pt)
+`Y:=R`], #h(4pt) equivalently #h(4pt)
+// lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
 `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
-`lean:AOP.A7_2.monotonicAlg_iff_sandwich@f82f1b18`].
+].
+// lean:AOP.A7_2.monotonicAlg_iff_sandwich@f82f1b18
 
 `(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -3346,14 +3517,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
     node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
   }),
-  [`F(R)φ⊑φR` #src[`lean:AOP.A7_2.MonotonicAlg@26944450`]],
+ [`F(R)φ⊑φR` #src[]],
+  // lean:AOP.A7_2.MonotonicAlg@26944450
 )]<mon-str>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
 #disp[#definition[
 `f : FA⟶A` *distributes over* `R` if #h(4pt) `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`
-#src[`lean:AOP.A7_2.Distributes@e061e29e`].
+#src[].
+// lean:AOP.A7_2.Distributes@e061e29e
 
 `+` distributes over `≤`, at the point level #h(4pt)
 `min xs+min ys=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
@@ -3374,7 +3547,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
       node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
     }), s: 74%),
-    [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[`lean:AOP.A7_2.Distributes@e061e29e`]],
+ [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
+    // lean:AOP.A7_2.Distributes@e061e29e
   ),
   capbox(
     P(cetz.canvas(length: 0.8cm, {
@@ -3436,8 +3610,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[Theorem 7.1, `f` a map, `R` reflexive;
-      `lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a`,
-      `lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b`]],
+ ,
+      // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
+ ]],
+      // lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp({
@@ -3510,8 +3686,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
     [`f°F(R)f⊑R` \ #src[`f` a map, so monotonic on `R` and `R°` together;
-     `lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64`,
-     `lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47`]])],
+ ,
+     // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+ ]])],
+     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
   [#trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
@@ -3555,7 +3733,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
-     minimum taken at the end, `lean:AOP.A7_2.greedy@21400acf`]])],
+ minimum taken at the end]])],
+     // lean:AOP.A7_2.greedy@21400acf
   [],
 
   [#vstep(IFF, [],
@@ -3816,10 +3995,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [`F([A])⟶[A]`], [],
   [both constructors as one map],
 
-  [`p`], [a coreflexive #src[`lean:AOP.A7_7_TakeWhile.pcor@62cb073c`]], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
+ [`p`], [a coreflexive #src[]], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
+  // lean:AOP.A7_7_TakeWhile.pcor@62cb073c
   [`{(a,a)∣a` passes the test`}`],
 
-  [`R`], [`length≤length°`, a preorder #src[`lean:AOP.A7_7_TakeWhile.lenLE@833ff8fc`]], [`[A]⟶[A]`], [`[1] R [1,2]`],
+ [`R`], [`length≤length°`, a preorder #src[]], [`[A]⟶[A]`], [`[1] R [1,2]`],
+  // lean:AOP.A7_7_TakeWhile.lenLE@833ff8fc
   [`xs R ys⟺length xs≤length ys`],
 
   [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`], [`A×[A]⟶[A]`],
@@ -3830,7 +4011,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`[3,1,2] prefix [3,1]`],
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
-  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[`lean:AOP.A7_7_TakeWhile.Salg@bc2565db`]], [`F([A])⟶[A]`],
+ [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[]], [`F([A])⟶[A]`],
+  // lean:AOP.A7_7_TakeWhile.Salg@bc2565db
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 
@@ -3936,8 +4118,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
   @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
-  the side condition. `lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb`,
-  `lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4bc81b63`]])
+ the side condition. ,
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb
+ ]])
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4bc81b63
 ]<takewhile-alg>
 
 // The two branches are monotonic one at a time — the rows above the pictures — and @lax-closure
@@ -3969,7 +4153,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // The branch is named in the header above; this line adds only what the header does not say.
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch is
   `nil⊑nil R°`. `(𝟙×R°) cons⊑cons R°` is `cons length=(𝟙×length)π₂ succ` with `succ` monotone —
-  a shorter tail makes a shorter list. `lean:AOP.A7_7_TakeWhile.takewhile_mono@69b53bd4`]])
+ a shorter tail makes a shorter list. ]])
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono@69b53bd4
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -4003,7 +4188,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
-  `lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b`]])
+ ]])
+  // lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -4064,42 +4250,50 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
     #src[Ex 7.39: the longest prefix all of whose elements pass `p`.
-     `lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510`]],
+ ]],
+     // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
     [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`.
-     `lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac`]])],
+ ]])],
+     // lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`prefix`]),), names: true)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
-    [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg, `lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb`]])],
+ [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
+    // lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
-     collected and one chosen at the end. `lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1`]])],
+ collected and one chosen at the end. ]])],
+     // lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1
   [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
 
   [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
-    [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step, `lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b`]])],
+ [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
+    // lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b
   [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
 
   [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
     #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
      and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
-     longest, not *a* longest. `lean:AOP.A7_7_TakeWhile.takewhile_simple@568a360d`]])],
+ longest, not *a* longest. ]])],
+     // lean:AOP.A7_7_TakeWhile.takewhile_simple@568a360d
   [],
 
   [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and
     `R` is connected on the prefixes of one list, so the longest exists.
-    `lean:AOP.A7_7_TakeWhile.takewhile_entire@d7c8c6e5`]])],
+ ]])],
+    // lean:AOP.A7_7_TakeWhile.takewhile_entire@d7c8c6e5
   [],
 
   [#vstep([], [], [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[`⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a
     reduce of maps, hence entire — what turns the `⊒` above into the heading's `=`.
-    `lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67`]])],
+ ]])],
+    // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
 ))]<takewhile-laws>
 
@@ -4110,14 +4304,16 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#definition[
 `FX=𝟏+A×X`, #h(4pt) `A:=Int`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
 `sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns.
-#h(4pt) #src[`lean:AOP.A5_6_ListCombinators.sum_cata@ce1fa8a0`]
+#h(4pt) #src[]
+// lean:AOP.A5_6_ListCombinators.sum_cata@ce1fa8a0
 
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
 
 `⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[B&dM's `oplus=max(Λ(zero∪plus))`; the
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
-`lean:AOP.A7_7_MSS.oplus@f61727f6`, `lean:AOP.A7_7_MSS.oplus_eq@b0466a25`]
+]
+// lean:AOP.A7_7_MSS.oplus@f61727f6 lean:AOP.A7_7_MSS.oplus_eq@b0466a25
 ]]<mss-defn>
 
 // ONE WIRE, `[A]` to `A`: this chain never forks, so a row is a run of boxes and the picture's whole
@@ -4160,7 +4356,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
-    #src[`lean:AOP.A7_7_MSS.mss_shape@f600dda0`]],
+ #src[]],
+    // lean:AOP.A7_7_MSS.mss_shape@f600dda0
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
   [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][#frc([`segment sum`])` est(≥)`]], [],
@@ -4336,7 +4533,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
-  `lean:AOP.A7_7_MSS.mss_prefix_sum@001a3374`]])
+ ]])
+  // lean:AOP.A7_7_MSS.mss_prefix_sum@001a3374
 ]<mss-prefix-sum>
 
 // The `∪` is `choosebox`'s tape, which itself cannot be reused: it writes `π₁`/`π₂`
@@ -4414,7 +4612,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
-    branch is `zero⊑zero≥`, `lean:AOP.A7_7_MSS.mss_mono@d2c09a73`]],
+ branch is `zero⊑zero≥`]],
+    // lean:AOP.A7_7_MSS.mss_mono@d2c09a73
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
     [*Hinze–Marsden*]),
 
@@ -4477,7 +4676,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#mss-alg ` est(≥)=[zero,⊕]` \ #src[`lean:AOP.A7_7_MSS.mss_step@ba23320b`]],
+ Thm[#mss-alg ` est(≥)=[zero,⊕]` \ #src[]],
+  // lean:AOP.A7_7_MSS.mss_step@ba23320b
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
@@ -4502,7 +4702,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ))
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
-  makes it an equality. `lean:AOP.A7_7_MSS.mss_greedy@7547c0f9`]])
+ makes it an equality. ]])
+  // lean:AOP.A7_7_MSS.mss_greedy@7547c0f9
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
@@ -4515,7 +4716,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
-     `lean:AOP.A7_7_MSS.Kalg@206c4ecd`, `lean:AOP.A7_7_MSS.scanStep_union@ca4b2850`]],
+ ]],
+     // lean:AOP.A7_7_MSS.Kalg@206c4ecd lean:AOP.A7_7_MSS.scanStep_union@ca4b2850
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -4548,7 +4750,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
     #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan.
-    `lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8`]],
+ ]],
+    // lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
@@ -4625,11 +4828,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`xs subseq ys⟺ys` is `xs` with elements dropped #h(4pt) — at each `cons`, drop the head or
    keep it],
 
-  [`S`], [`[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[`lean:AOP.A7_7_Filter.Salg@dfbf37e0`]], [`F([A])⟶[A]`],
+ [`S`], [`[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[]], [`F([A])⟶[A]`],
+  // lean:AOP.A7_7_Filter.Salg@dfbf37e0
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 
-  [`𝟙⊑π₂R cons°` #h(4pt) #src[`lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@f9fd4c82`]], [], [], [],
+ [`𝟙⊑π₂R cons°` #h(4pt) #src[]], [], [], [],
+  // lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@f9fd4c82
   [the tail is one shorter than the cons, so `π₂` loses the `est(R°)` at every step — where
    @takewhile-defn's loser is `nil`],
 )
@@ -4646,7 +4851,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α subseq list(p)=F(subseq list(p))S` \
     #src[building the list and then keeping a `p`-passing subsequence of it is keeping one of the
-     tail first, and then building with `S`, `lean:AOP.A7_7_Filter.filter_alg_comm@d130a86c`]],
+ tail first, and then building with `S`]],
+     // lean:AOP.A7_7_Filter.filter_alg_comm@d130a86c
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden* — the `cons` branch alone, without `𝟏+` or `π₂`]),
 
@@ -4676,7 +4882,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `subseq list(p)=⦇S⦈` —
   @takewhile-alg's chain with `π₂` for `⊸ nil`. Here @cata-fusion is blocked for the same reason,
   and `π₂` is the branch that carries `list(p)` out by naturality (@subseq-outr-square at `∋:=list(p)`).
-  `lean:AOP.A7_7_Filter.filter_alg@5f9648f5`]])
+ ]])
+  // lean:AOP.A7_7_Filter.filter_alg@5f9648f5
 ]<filter-alg>
 
 #let step = step.with(pw: 232pt)
@@ -4686,7 +4893,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
-     shortening the result, `lean:AOP.A7_7_Filter.filter_mono@a4557bcf`]],
+ shortening the result]],
+     // lean:AOP.A7_7_Filter.filter_mono@a4557bcf
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
   [`(𝟙×R°)π₂=π₂R°`],
@@ -4716,7 +4924,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
-     the tail where it does not, `lean:AOP.A7_7_Filter.filter_step@7322621d`]],
+ the tail where it does not]],
+     // lean:AOP.A7_7_Filter.filter_step@7322621d
   table.header([*formula*], [*reason*]),
 
   [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
@@ -4776,11 +4985,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
     #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`,
-     `lean:AOP.A7_7_Filter.filter_eq_cata@c34da8f5`]],
+ ]],
+     // lean:AOP.A7_7_Filter.filter_eq_cata@c34da8f5
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
   [#vstep([], fpic((bx-slp, bx-est)),
-    [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns, `lean:AOP.A7_7_Filter.filter@86c3d821`]])],
+ [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
+    // lean:AOP.A7_7_Filter.filter@86c3d821
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
@@ -4789,7 +5000,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(RQ, fpic((bx-gr,), mid: none),
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
-     @filter-mono, `lean:AOP.A7_7_Filter.filter_greedy@a4d1b1a5`]])],
+ @filter-mono]])],
+     // lean:AOP.A7_7_Filter.filter_greedy@a4d1b1a5
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
   // unchanged, so they are drawn where the two panels above draw them.
   [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
@@ -4802,11 +5014,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, [],
     [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
        column-gutter: 6pt, row-gutter: 3pt,
-       [`⦇[nil,(π₁p→cons,π₂)]⦈` entire #h(4pt) #src[`lean:AOP.A7_7_Filter.filter_entire@0c8b8ee9`]],
-       [and], [`filter(p)` simple #h(4pt) #src[`lean:AOP.A7_7_Filter.filter_simple@613696ae`]],
+ [`⦇[nil,(π₁p→cons,π₂)]⦈` entire #h(4pt) #src[]],
+       // lean:AOP.A7_7_Filter.filter_entire@0c8b8ee9
+ [and], [`filter(p)` simple #h(4pt) #src[]],
+       // lean:AOP.A7_7_Filter.filter_simple@613696ae
        grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[an entire relation below
          a simple one equals it; the simplicity is @comb-fns's Ex 7.41, not a law of this note,
-         `lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67`]])])],
+ ]])])],
+         // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
 ))
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
@@ -4827,11 +5042,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`tree A::=node (A,[tree A])` #src[`lean:AOP.A6_RoseTree.Rose@1e5d7a7f`]],
+ [`tree A::=node (A,[tree A])` #src[]],
+  // lean:AOP.A6_RoseTree.Rose@1e5d7a7f
   [`𝒜⟶𝒜`],
   [The company hierarchy: an employee, and the list of subtrees under them.],
 
-  [`F(A,B)=A×[B]` #src[`lean:AOP.A6_RoseTree.F@bd6da71e`]],
+ [`F(A,B)=A×[B]` #src[]],
+  // lean:AOP.A6_RoseTree.F@bd6da71e
   [`𝒜×𝒜⟶𝒜`],
   [The base functor `tree` folds: an employee beside the recursive position, one layer deep.],
 
@@ -4839,11 +5056,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`A⟶Real`],
   [What one employee is worth as a guest.],
 
-  [`cost≜list(rating) sum` #src[`lean:AOP.A7_3_Party.cost_eq@4da87db0`]],
+ [`cost≜list(rating) sum` #src[]],
+  // lean:AOP.A7_3_Party.cost_eq@4da87db0
   [`[A]⟶Real`],
   [What a guest list is worth.],
 
-  [`R≜cost≤cost°` #src[`lean:AOP.A7_3_Party.R_eq@9fa61324`]],
+ [`R≜cost≤cost°` #src[]],
+  // lean:AOP.A7_3_Party.R_eq@9fa61324
   [`[A]⟶[A]`],
   [The preorder the guest list is maximised over.],
 
@@ -4863,7 +5082,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`F(A,[A]×[A])⟶[A]×[A]`],
   [The algebra: one step returns both parties of a subtree at once.],
 
-  [`party≜⦇S⦈ choose` #src[`lean:AOP.A7_3_Party.party_eq@db515982`]],
+ [`party≜⦇S⦈ choose` #src[]],
+  // lean:AOP.A7_3_Party.party_eq@db515982
   [`tree A⟶[A]`],
   [Every guest list the president's ruling allows.],
 
@@ -4955,7 +5175,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(16.5, -y + 0.5, black)[`[A]`]
   lab(17.8, -y - 0.5, black)[`def`]
 }), s: 80%)
-#align(center, src[`lean:AOP.A7_3_Party.include_eq@d4df2bf2`])]<include-pic>
+#align(center, src[])]<include-pic>
+// lean:AOP.A7_3_Party.include_eq@d4df2bf2
 
 // The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
 // `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
@@ -4978,7 +5199,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(16.5, -y + 0.5, black)[`[A]`]
   lab(17.8, -y - 0.5, black)[`bf`]
 }), s: 80%)
-#align(center, src[`lean:AOP.A7_3_Party.exclude_eq@05c2777f`])]<exclude-pic>
+#align(center, src[])]<exclude-pic>
+// lean:AOP.A7_3_Party.exclude_eq@05c2777f
 
 // `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
 #disp[#align(center, grid(
@@ -5012,7 +5234,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   │   └── exclude: the best party in b's subtree when b does not come
   └────── include: the best party in b's subtree when b comes
 ```]
-#align(center, src[`lean:AOP.A7_3_Party.party_listrr_example@286e6447`])]<party-listrr>
+#align(center, src[])]<party-listrr>
+// lean:AOP.A7_3_Party.party_listrr_example@286e6447
 
 // `(R×R)°` is TWO demands, one per component, and at `a` both elements move, each in its second —
 // the table is here because "the relator relates them elementwise" hides which component that is.
@@ -5032,7 +5255,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`[f] R° []` \ #src[`8≥0`, and `([c],[f])` is the pair `est(R°)` keeps at `c`]],
 )
 #align(center, src[the first component of `𝟙×list((R×R)°)` is the root employee.
-  `lean:AOP.A7_3_Party.party_listrr_example@286e6447`])
+ ])
+  // lean:AOP.A7_3_Party.party_listrr_example@286e6447
 ]<party-rr>
 
 // Each note in its own block: the template indents the second of two consecutive paragraphs, and an
@@ -5063,7 +5287,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
   homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
     regions: auto, sep: text(SLACK)[`⊑`], rev: true, gap: 1.4, length: 1.35cm),
-  [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[`lean:AOP.A7_3_Party.party_mono@8a43178e`]],
+ [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[]],
+  // lean:AOP.A7_3_Party.party_mono@8a43178e
 )]<party-mono>
 
 // @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
@@ -5085,7 +5310,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     node(EB.at(0), EB.at(1), black, `E[A]`)
   }),
   [$frac(#[`⦇S⦈ choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
-   `lean:AOP.A4_6.Λ_absorption@e87bd8f2`]],
+ ]],
+   // lean:AOP.A4_6.Λ_absorption@e87bd8f2
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
@@ -5241,7 +5467,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ))
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
    running it first and bettering the two parties it returns,
-   `lean:AOP.A7_3_Party.branch_monotonic@668fb773`, `lean:AOP.A7_3_Party.exclude_monotonic@92dade83`]],
+ ]],
+   // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@92dade83
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#step([])[#party-pic(tallpic((box-lrro, box-lg, box-cc), [`h`], 0.95))][]], [#party-hm(0)],
@@ -5261,19 +5488,24 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   row-gutter: 3.5pt, align: (left, left),
   [`g`],
   [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`
-   #src[`lean:AOP.A7_3_Party.include_monotonic@c4d977bd`], `g:=π₁` its mirror
+ #src[], `g:=π₁` its mirror
+   // lean:AOP.A7_3_Party.include_monotonic@c4d977bd
    `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁∪π₂` is the union
-   of the two #h(4pt) #src[@lax-closure, `lean:AOP.A7_3_Party.chooseR_monotonic@8817d447`].
+ of the two #h(4pt) #src[@lax-closure].
+   // lean:AOP.A7_3_Party.chooseR_monotonic@8817d447
    `list` monotonic, @relator-defn],
   [`concat`],
   [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
    `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole. B&dM's exercise.
-   #src[`lean:AOP.A7_3_Party.concat_monotonic@084e46a9`]],
+ #src[]],
+   // lean:AOP.A7_3_Party.concat_monotonic@084e46a9
   [`h`],
   [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
-   makes a cheaper list. B&dM's exercise. #src[`lean:AOP.A7_3_Party.cons_monotonic@e5288fc0`]
+ makes a cheaper list. B&dM's exercise. #src[]
+   // lean:AOP.A7_3_Party.cons_monotonic@e5288fc0
    For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
-   `=π₂R°` #src[`lean:AOP.A6_1_RelSet.rprodMap_id_snd@dc93a451`]: `π₁` is a map, hence entire, so
+ `=π₂R°` #src[]: `π₁` is a map, hence entire, so
+   // lean:AOP.A6_1_RelSet.rprodMap_id_snd@dc93a451
    `Dom(π₁)=𝟙` — @dom-laws],
 )]])
 
@@ -5284,7 +5516,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
   table.header([`(𝟙×(list(g) concat))h`], [`g`], [`h`]),
   [`include`], [`π₂`], [`cons`],
-  [`exclude` #src[`lean:AOP.A7_3_Party.exclude_monotonic@92dade83`]], [`choose`], [`π₂`],
+ [`exclude` #src[]], [`choose`], [`π₂`],
+  // lean:AOP.A7_3_Party.exclude_monotonic@92dade83
 ))
 ]<party-mono-branch>
 
@@ -5302,7 +5535,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`choose R` at `(0,1)`], [`0` — `choose` picks the first component `0`, and `R 0 0` holds],
 
   [`((0,1),0)`], [in `choose R`, not in `(R×R)choose`
-   #h(4pt) #src[`lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@2b446ff0`]],
+ #h(4pt) #src[]],
+   // lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@2b446ff0
 
   [`(R×R)choose=choose R`], [iff `R` is entire — `Dom⊑𝟙` is the `g` row's only inequality step,
    and it is an equality iff `Dom(R)=𝟙`],
@@ -5525,11 +5759,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   // `y: 1pt`, tighter than the note's usual 3pt: the seven rows are a page exactly, and a `#disp`
   // that outgrows its page does not break — the last row keeps its rule and spills its text past it.
-  inset: (x: 8pt, y: 1pt), stroke: 0.4pt + luma(190),
+  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
-     the better of the two at the root, `lean:AOP.A7_3_Party.party_laws@a2d9caf9`]],
+ the better of the two at the root]],
+     // lean:AOP.A7_3_Party.party_laws@a2d9caf9
   table.header([*circuit*],
     [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch]),
 
@@ -5547,23 +5782,27 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
     [#src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row,
-      `lean:AOP.A7_2.est_Λ_est_le@1083248a`]])],
+ ]])],
+      // lean:AOP.A7_2.est_Λ_est_le@1083248a
   [#dcell(d-out4, none)],
 
   [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
     [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
       `(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
-      `lean:AOP.A7_2.greedy@21400acf`]])],
+ ]])],
+      // lean:AOP.A7_2.greedy@21400acf
   [#dcell(d-out5, d-in5)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
     [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
-      `lean:AOP.A7_3_Party.pair_est_le@75a48598`]])],
+ ]])],
+      // lean:AOP.A7_3_Party.pair_est_le@75a48598
   [#dcell(none, d-in6)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW7, LBY, lbody7)),
     [#src[`include` a map, `est(R°)` into each branch,
-      `lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d`, `lean:AOP.A7_3_Party.exclude_step@7360252f`]])],
+ ]])],
+      // lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d lean:AOP.A7_3_Party.exclude_step@7360252f
   [#dcell(none, d-in7)],
 )]<party-laws>
 
@@ -5620,11 +5859,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Turns a square paired with a set of paths into the set of extensions of those paths.],
 
   [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
-   #src[`lean:AOP.A7_4_Cylinder.generate@4bd0bafd`]],
+ #src[]],
+   // lean:AOP.A7_4_Cylinder.generate@4bd0bafd
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
   [One fold step: extends every path of every row by the new column.],
 
-  [`paths≜⦇generate⦈ setify union` #src[`lean:AOP.A7_4_Cylinder.paths@c16ad5b9`]],
+ [`paths≜⦇generate⦈ setify union` #src[]],
+  // lean:AOP.A7_4_Cylinder.paths@c16ad5b9
   [`L N Nat⟶E(L Nat)`],
   [Every path across the cylinder.],
 
@@ -5802,7 +6043,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
-    `lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336`]],
+ ]],
+    // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, cb-est))), [`paths est(R)`])],
@@ -5871,7 +6113,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step,
-    `lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189`]],
+ ]],
+    // lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),
@@ -5885,7 +6128,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
-  `lean:AOP.A7_4_Cylinder.cyl_7_13@5224efdc`]])
+ ]])
+  // lean:AOP.A7_4_Cylinder.cyl_7_13@5224efdc
 ]<cyl-fusion>
 
 #let CC5 = 4.30    // `moves`, where the `E` is born
@@ -5917,7 +6161,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
-    #src[the algebra @cyl-laws's last step folds, `lean:AOP.A7_4_Cylinder.cyl_step@4930da05`]],
+ #src[the algebra @cyl-laws's last step folds]],
+    // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [`Q`])],
@@ -5925,7 +6170,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
   [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
     [`F(𝟙,moves trans N(est(R))) zip N(α)` \ #src[the fusion condition read as a definition,
-     `lean:AOP.A7_4_Cylinder.Q@2b4dd374`]])],
+ ]])],
+     // lean:AOP.A7_4_Cylinder.Q@2b4dd374
   [#cc2],
 
   [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
@@ -5946,7 +6192,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`R≜length≤length°` #src[`lean:AOP.A7_5_Van.R_eq@fa26242d`]],
+ [`R≜length≤length°` #src[]],
+  // lean:AOP.A7_5_Van.R_eq@fa26242d
   [`[[Int]]⟶[[Int]]`],
   [The order the schedule is minimised over: fewer van visits is better.],
 
@@ -5987,15 +6234,18 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [`1+Int×[[Int]]⟶[[Int]]`],
   [The algebra whose fold is every splitting of the transactions into secure segments.],
 
-  [`partition list(secure)=⦇S⦈` #src[`lean:AOP.A7_5_Van.van_spec@79d2f560`]],
+ [`partition list(secure)=⦇S⦈` #src[]],
+  // lean:AOP.A7_5_Van.van_spec@79d2f560
   [`[Int]⟶[[Int]]`],
   [Fusion: keeping only secure segments is what turns `glue` into `old`.],
 
-  [`H≜(head prefix° head°)∪(nil° nil)` #src[`lean:AOP.A7_5_Van.H_eq@b1cf5141`]],
+ [`H≜(head prefix° head°)∪(nil° nil)` #src[]],
+  // lean:AOP.A7_5_Van.H_eq@b1cf5141
   [`[[Int]]⟶[[Int]]`],
   [One schedule's first segment is a prefix of the other's, or both are empty.],
 
-  [`R;H≜R∩(R°⇒H)` #src[`lean:AOP.A7_5_Van.RH_eq@ddc8b9dc`]],
+ [`R;H≜R∩(R°⇒H)` #src[]],
+  // lean:AOP.A7_5_Van.RH_eq@ddc8b9dc
   [`[[Int]]⟶[[Int]]`],
   [The refinement of `R` that makes both halves of `S` monotonic.],
 
@@ -6083,7 +6333,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
-     called where it does not, `lean:AOP.A7_5_Van.van_laws@400440f3`]],
+ called where it does not]],
+     // lean:AOP.A7_5_Van.van_laws@400440f3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-line((vb-spec, vb-estR))),
@@ -6092,25 +6343,29 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
   [#vstep(EQ, van-pic(van-line((vb-LS, vb-estR))),
     [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
-     #h(4pt) `lean:AOP.A7_5_Van.van_spec@79d2f560` — @van-defn, @cata-fusion at
+ #h(4pt) — @van-defn, @cata-fusion at
+     // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-LS, vb-estRH))),
     [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new∪old)R` is FALSE, the
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new∪old)R` holds,
-     `lean:AOP.A7_5_Van.van_7_15_false@1b163187`, `lean:AOP.A7_5_Van.van_7_14@31454849`]])],
+ ]])],
+     // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-greedy,))),
     [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
-     `(𝟙×⊤)new⊑new H`, `lean:AOP.A7_5_Van.van_mono_new@ca4101c9`]])],
+ `(𝟙×⊤)new⊑new H`]])],
+     // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
   [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
 
   [#vstep(RQ, van-pic(van-line((vb-prog,))),
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
-     returns one, and `ok` is where it does, `lean:AOP.A7_5_Van.prog_le_greedy@9203a952`]])],
+ returns one, and `ok` is where it does]])],
+     // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
   [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
 ))]<van-laws>
 
@@ -6121,7 +6376,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   Thm[`(𝟙×(R;H))old⊑(new∪old)(R;H)` \
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
      on, or calling the van, and bettering the whole schedule after,
-     `lean:AOP.A7_5_Van.van_mono@5f456bbf`]],
+ ]],
+     // lean:AOP.A7_5_Van.van_mono@5f456bbf
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-old((vb-RH,), ())), [`(𝟙×(R;H))old`])],
@@ -6129,7 +6385,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
   [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
     [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
-     `lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e`]])],
+ ]])],
+     // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
   [#van-mono-hm([`|R|`], true)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
@@ -6200,7 +6457,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #disp[#definition[
 For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt) #src[(8.1)].
 
-`ys (thin Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[`lean:rel.AutoDeriveThin.thinRel_pt@dec7230e`]
+`ys (thin Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[]
+// lean:rel.AutoDeriveThin.thinRel_pt@dec7230e
 ]]<thin-defn>
 
 #disp[#table(
@@ -6218,7 +6476,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [`est(R)=thin Q est(R)` #h(4pt) #src[`Q⊑R`, both preorders]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
   [`thin Q⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
-   #src[(8.2), `lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@663394c4`]],
+ #src[(8.2)]],
+   // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@663394c4
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `est(Q)` is
    defined on],
   [$frac(#[`S`], ∋)$ `thin Q⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
@@ -6249,7 +6508,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   Thm[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
     #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
      values `S` gives one argument — (8.3), p. 194, `R∩(S°S)⊑Q`, `Q` a preorder
-     #h(4pt) `lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d22de9c7`]],
+ #h(4pt) ]],
+     // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d22de9c7
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
 
   [#vstep([], [],
@@ -6315,7 +6575,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈⊑`#frc([`⦇S⦈`])` thin Q` \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
      Theorem 8.1, p. 195, `S` monotonic on `Q`, `Q` a preorder
-     #h(4pt) `lean:AOP.A8_1.thinning@db624922`]],
+ #h(4pt) ]],
+     // lean:AOP.A8_1.thinning@db624922
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
 
   [#vstep([], [],
@@ -6377,7 +6638,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the thinning fold refines the optimisation problem itself —
      Corollary 8.1, `S` monotonic on `Q`, `Q⊑R`, both preorders
-     #h(4pt) `lean:AOP.A8_1.thinning_est@c31bcdd8`]],
+ #h(4pt) ]],
+     // lean:AOP.A8_1.thinning_est@c31bcdd8
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
@@ -6455,7 +6717,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
     #src[a least-cost path in a layered network, as a fold over the layers —
-     B&dM §8.2, p. 198. `lean:AOP.A8_2.thinning_paths@b30f4f31`]],
+ B&dM §8.2, p. 198. ]],
+     // lean:AOP.A8_2.thinning_paths@b30f4f31
   table.header([*circuit* — one wire, `L(EA)` to `LA`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -6470,7 +6733,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#vstep(RQ, pb-pic((pb-alg, pb-thin), (pb-est,)),
     [`⦇`#frc([`F(∋,∋)α`])` thin Q⦈ est(R)` \
      #src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
-      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
+ ]])],
+      // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [#pb-pan(4.0,
     (thw-in(THM, 4.0, 2.20), thw-in(THN, 4.0, 2.20), thw-out(THM, 2.20, 0.0),
      thw-out(THU, 2.20, 0.85)),
@@ -6479,7 +6743,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, pb-un, pb-thin), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])`) union thin Q⦈ est(R)` \
      #src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
-      P(`#frc([`F(𝟙,∋)α`])`) union`. `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
+ P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
+      // lean:AOP.A8_2.thinAlg_elim@f26d947f
   // Empty from here down: every step rewrites the ALGEBRA, and the outer panel is row 2's.  The
   // algebra's source is the bifunctor at two DIFFERENT arguments, which is a square, not a wire.
   [],
@@ -6487,19 +6752,22 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#vstep(RQ, pb-pic((pb-out, pb-Pat, pb-un), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` thin Q) union⦈ est(R)` \
      #src[`union thin Q⊒P(thin Q) union` — @thin-laws.
-      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
+ ]])],
+      // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(RQ, pb-pic((pb-out, pb-Pae, pb-un), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`) union⦈ est(R)` \
      #src[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
-      `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
+ `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
+      // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pea), (pb-est,)),
     [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)`])` P(α) est(R))⦈ est(R)` \
      #src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`.
-      `lean:AOP.A8_2.thinAlg_elim@f26d947f`]])],
+ ]])],
+      // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pws), (pb-est,)),
@@ -6521,7 +6789,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // it is one connected preorder, spelled `P` here.
 #disp[#definition[
 `setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
-`listcp(F) : F([A])⟶[FA]`, #h(4pt) `sort P≜setify° ordered P` #src[`lean:AOP.A8_3.sortRel@f1ae9750`]
+`listcp(F) : F([A])⟶[FA]`, #h(4pt) `sort P≜setify° ordered P` #src[]
+// lean:AOP.A8_3.sortRel@f1ae9750
 for `P` a connected preorder.
 
 `thinlist Q` is any `thinlist Q⊑subseq` with #h(4pt) `thinlist Q setify⊑setify thin Q`; #h(4pt)
@@ -6572,7 +6841,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`sort P thinlist Q⊑thin Q sort P` \
     #src[a thinning of the sorted list lists a thinning of the set — (8.6), p. 201, `P` a connected
-     preorder, `thinlist Q⊑subseq`. `lean:AOP.A8_3.sortRel_comp_thinlist_le@11564234`]],
+ preorder, `thinlist Q⊑subseq`. ]],
+     // lean:AOP.A8_3.sortRel_comp_thinlist_le@11564234
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], tl-pic((tl-sort, tl-tl)), [`sort P thinlist Q`])],
@@ -6635,7 +6905,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   Thm[#frc([`F(∋)fp`])` sort P⊒F(sort P) listcp(F) list(f) filter(p)` \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      Lemma 8.1, p. 202, `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
-     `lean:AOP.A8_3.map_sort_comp_listcp_le@88dfad7c`]],
+ ]],
+     // lean:AOP.A8_3.map_sort_comp_listcp_le@88dfad7c
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], lb-pic((lb-Lam, lb-sort)), [#frc([`F(∋)fp`])` sort P`])],
@@ -6695,7 +6966,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
      Theorem 8.2, p. 203, at @thinlist-defn's binary thinning data.
-     `lean:AOP.A8_3.thinningList@7b3eb252`]],
+ ]],
+     // lean:AOP.A8_3.thinningList@7b3eb252
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [#frc([`⦇S⦈`])` est(R)`])],
@@ -6748,7 +7020,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   Thm[#frc([`F(∋)S`])` thin Q sort P⊒F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
     #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
      B&dM p. 203, the side condition of @thinlist-thm82's last step.
-     `lean:AOP.A8_3.sortedAlg_fusion@4732cb05`]],
+ ]],
+     // lean:AOP.A8_3.sortedAlg_fusion@4732cb05
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], qb-pic((nb-LamS, nb-thin, sb-sort)), [#frc([`F(∋)S`])` thin Q sort P`])],
@@ -6796,16 +7069,23 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
 #disp[#definition[
 `vol,wt : Item⟶Real`, #h(4pt) `value≜list(vol) sum`, #h(4pt) `weight≜list(wt) sum`
-#src[`lean:AOP.A5_6_ListCombinators.total_eq@bb0818ee`].
+#src[].
+// lean:AOP.A5_6_ListCombinators.total_eq@bb0818ee
 
-`subseq=⦇[nil,cons]∪[nil,π₂]⦈` #src[`lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6`,
-`lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77`], #h(4pt) `within w` the coreflexive on `xs` with
+`subseq=⦇[nil,cons]∪[nil,π₂]⦈` #src[,
+// lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6
+], #h(4pt) `within w` the coreflexive on `xs` with
+// lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77
 `weight xs≤w`, #h(4pt) `0≤w`.
 
-`R≜value≥value°` #src[`lean:AOP.A8_4_Knapsack.R_eq@1c13d35d`], #h(4pt)
-`Q≜R∩(weight≤weight°)` #src[`lean:AOP.A8_4_Knapsack.Q_eq@22acbe51`], #h(4pt)
-`P≜R` #src[`lean:AOP.A8_4_Knapsack.knap_sort_cons@2219de33`,
-`lean:AOP.A8_4_Knapsack.knap_sort_drop@ab5c746c`].
+`R≜value≥value°` #src[], #h(4pt)
+// lean:AOP.A8_4_Knapsack.R_eq@1c13d35d
+`Q≜R∩(weight≤weight°)` #src[], #h(4pt)
+// lean:AOP.A8_4_Knapsack.Q_eq@22acbe51
+`P≜R` #src[,
+// lean:AOP.A8_4_Knapsack.knap_sort_cons@2219de33
+].
+// lean:AOP.A8_4_Knapsack.knap_sort_drop@ab5c746c
 
 `FA=1+Item×A`, #h(4pt) `listcp(F)=wrap+cpr`, #h(4pt) `g₁≜list([nil,cons]) filter(within w)`
 #h(4pt) `=[list(nil),h₁]`, #h(4pt) `g₂≜list([nil,π₂])=[list(nil),h₂]`.
@@ -6822,8 +7102,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [`(𝟙×R) (cons (within w))⊑cons (within w)R` \ #src[FALSE]],
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
   [`(𝟙×Q) (cons (within w))⊑cons (within w)Q` \ `(𝟙×Q)π₂⊑π₂Q`
-   #src[`lean:AOP.A8_4_Knapsack.knap_mono_cons@978d716e`,
-   `lean:AOP.A8_4_Knapsack.knap_mono_drop@b49841b3`]],
+ #src[,
+   // lean:AOP.A8_4_Knapsack.knap_mono_cons@978d716e
+ ]],
+   // lean:AOP.A8_4_Knapsack.knap_mono_drop@b49841b3
   [both halves are monotonic on `Q` once ties in value are broken by weight],
 )]<knap-mono>
 
@@ -6850,7 +7132,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
     #src[the knapsack problem, as a fold that thins the packings kept at each item —
-     B&dM §8.4, p. 206. `lean:AOP.A8_4_Knapsack.knap_laws@6299a9fe`]],
+ B&dM §8.4, p. 206. ]],
+     // lean:AOP.A8_4_Knapsack.knap_laws@6299a9fe
   table.header([*circuit* — one wire, `[Item]` to `[Item]`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -6863,7 +7146,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep(EQ, kb-pic(none, (kb-fus, kb-est)),
     [#frc([`⦇[nil,cons](within w)∪[nil,π₂]⦈`])` est(R)` \
-     #src[@cata-fusion, weights non-negative. `lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d`]])],
+ #src[@cata-fusion, weights non-negative. ]])],
+     // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
   [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 1.95, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
 
@@ -6900,10 +7184,14 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
 `white w x=w−width x`, #h(4pt) `collect≜list(sqr) sum`, #h(4pt) `waste w≜init list(white w) collect`.
 
-`R≜(waste w)≤(waste w)°` #src[`lean:AOP.A8_5_Paragraph.R_eq@cf0ea074`], #h(4pt)
-`Q≜R∩(head head°)` #src[`lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf`], #h(4pt)
-`P≜⊤` #src[`lean:AOP.A8_5_Paragraph.para_sort_new@30222bce`,
-`lean:AOP.A8_5_Paragraph.para_sort_glue@bd4641b6`].
+`R≜(waste w)≤(waste w)°` #src[], #h(4pt)
+// lean:AOP.A8_5_Paragraph.R_eq@cf0ea074
+`Q≜R∩(head head°)` #src[], #h(4pt)
+// lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf
+`P≜⊤` #src[,
+// lean:AOP.A8_5_Paragraph.para_sort_new@30222bce
+].
+// lean:AOP.A8_5_Paragraph.para_sort_glue@bd4641b6
 
 `g₁≜list([wrap wrap,new])`, #h(4pt) `g₂≜list([wrap wrap,glue]) filter(ok w)`, #h(4pt)
 `start≜wrap wrap wrap`, #h(4pt) `h₁≜list(new)`, #h(4pt) `h₂≜list(glue) filter(ok w)`.
@@ -6919,8 +7207,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [`glue` is not monotonic on `R`: the waste of a paragraph depends on its whole first line, so no
    greedy algorithm solves this],
   [`(𝟙×Q) new⊑new Q` \ `(𝟙×Q) (glue (ok w))⊑glue (ok w)Q` \ #src[`cons` monotonic on
-   `collect≤collect°`. `lean:AOP.A8_5_Paragraph.para_mono_new@d0ba9ffb`,
-   `lean:AOP.A8_5_Paragraph.para_mono_glue@0149af32`]],
+ `collect≤collect°`. ,
+   // lean:AOP.A8_5_Paragraph.para_mono_new@d0ba9ffb
+ ]],
+   // lean:AOP.A8_5_Paragraph.para_mono_glue@0149af32
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [`merge ⊤=cat`; #h(4pt) `P≜head prefix head°` also serves],
   [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
@@ -6953,7 +7243,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
     #src[a paragraph laid out as a fold that thins the layouts kept at each word —
-     B&dM §8.5, p. 210. `lean:AOP.A8_5_Paragraph.para_laws@2ed8ee5e`]],
+ B&dM §8.5, p. 210. ]],
+     // lean:AOP.A8_5_Paragraph.para_laws@2ed8ee5e
   table.header([*circuit* — one wire, `list⁺ Word` to `Para`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -6967,7 +7258,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep(EQ, ab-pic(none, (ab-fus, ab-est)),
     [#frc([`⦇[wrap wrap,new∪(glue (ok w))]⦈`])` est(R)` \
      #src[@cata-fusion, every word fits on a line by itself.
-     `lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24`]])],
+ ]])],
+     // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
   [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
     ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`est(R)`], -0.32)),
     ab-bot)],
@@ -6975,7 +7267,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep(EQ, ab-pic(none, (ab-split, ab-est)),
     [#frc([`⦇[wrap wrap,new]∪([wrap wrap,glue] (ok w))⦈`])` est(R)` \
      #src[the algebra as `(f₁p₁)∪(f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
-     `lean:AOP.A8_5_Paragraph.para_spec@f39d2ce8`]])],
+ ]])],
+     // lean:AOP.A8_5_Paragraph.para_spec@f39d2ce8
   // Empty: the step renames the algebra and the panel above already draws the reduce.
   [],
 
@@ -7007,9 +7300,12 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #h(4pt) `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`.
 
 `next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `head2≜head×head`, #h(4pt) `R≜cost≤cost°`
-#src[`lean:AOP.A8_6_Tour.R_eq@15ad4adc`], #h(4pt)
-`Q≜R∩(next2 next2°)∩(head2 head2°)`, #h(4pt) `P≜⊤` #src[`lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e`,
-`lean:AOP.A8_6_Tour.tour_sort_dropr@12e55048`], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
+#src[], #h(4pt)
+// lean:AOP.A8_6_Tour.R_eq@15ad4adc
+`Q≜R∩(next2 next2°)∩(head2 head2°)`, #h(4pt) `P≜⊤` #src[,
+// lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e
+], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
+// lean:AOP.A8_6_Tour.tour_sort_dropr@12e55048
 `g₂≜list([start,dropr])`.
 ]]<tour-defn>
 
@@ -7023,8 +7319,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [neither drop is monotonic on `R`: the two edges it adds and removes depend on `head` and `next`
    of both lists],
   [`(𝟙×Q) dropl⊑dropl Q` \ `(𝟙×Q) dropr⊑dropr Q`
-   #src[`lean:AOP.A8_6_Tour.tour_mono_dropl@72fb7ce1`,
-   `lean:AOP.A8_6_Tour.tour_mono_dropr@950fdec0`]],
+ #src[,
+   // lean:AOP.A8_6_Tour.tour_mono_dropl@72fb7ce1
+ ]],
+   // lean:AOP.A8_6_Tour.tour_mono_dropr@950fdec0
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
 )]<tour-mono>
@@ -7052,7 +7350,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
     #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city —
-     B&dM §8.6, p. 215. `lean:AOP.A8_6_Tour.tour_laws@033921a1`]],
+ B&dM §8.6, p. 215. ]],
+     // lean:AOP.A8_6_Tour.tour_laws@033921a1
   table.header([*circuit* — one wire, `[City]` to `[City]×[City]`; the algebra inside the functorial
     box], [*Hinze–Marsden*]),
 
@@ -7143,7 +7442,8 @@ in @mu-defn.
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
-     optimum #h(4pt) `lean:AOP.A9_1.dynamic_programming_thin@6b5aa580`]],
+ optimum #h(4pt) ]],
+     // lean:AOP.A9_1.dynamic_programming_thin@6b5aa580
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
@@ -7186,11 +7486,13 @@ in @mu-defn.
   table.header([*the condition*], [*how it is discharged*]),
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
-   `F(≤)k⊑k≤`; `lean:AOP.A9_1.monotonicAlg_of_cost@c2542f9d`]],
+ `F(≤)k⊑k≤`]],
+   // lean:AOP.A9_1.monotonicAlg_of_cost@c2542f9d
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
-   `lean:AOP.A9_1.monotonicAlg_in_context@f0a1b13c`]],
+ ]],
+   // lean:AOP.A9_1.monotonicAlg_in_context@f0a1b13c
   [monotonicity *in context*: `k` may also read the input the part was built from],
   [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
    `VH⊑HR`]],
@@ -7204,19 +7506,25 @@ in @mu-defn.
 #disp[#definition[
 `Op::=cpy Char∣del Char∣ins Char`, #h(4pt) `F(A,B)=1+(A×B)`, #h(4pt) `α≜[nil,cons]`.
 
-`edit≜⦇[base,step]⦈ : [Op]⟶[Char]×[Char]` #src[`lean:AOP.A9_2_Edit.edit_cata@0dafb85c`],
+`edit≜⦇[base,step]⦈ : [Op]⟶[Char]×[Char]` #src[],
+// lean:AOP.A9_2_Edit.edit_cata@0dafb85c
 #h(4pt) `base` returning `([],[])`,
 #h(4pt) `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, #h(4pt) `step (del a,(xs,ys))=([a]⧺xs,ys)`,
 #h(4pt) `step (ins a,(xs,ys))=(xs,[a]⧺ys)`.
 
-`length≜⦇[zero,π₂ succ]⦈` #src[`lean:AOP.A9_2_Edit.length_cata@9e3040b0`], #h(4pt)
-`R≜length≤length°` #src[`lean:AOP.A9_2_Edit.R_eq@0f7a4661`], #h(4pt) `U≜⊤`, #h(4pt)
-`V≜suffix°×suffix°` #src[`lean:AOP.A9_2_Edit.V@09fe0b1a`], #h(4pt)
-`Q≜𝟙+(U×V)` #src[`lean:AOP.A9_2_Edit.Q@e6ebf648`], #h(4pt) `empty` the coreflexive on `(xs,ys)` with
+`length≜⦇[zero,π₂ succ]⦈` #src[], #h(4pt)
+// lean:AOP.A9_2_Edit.length_cata@9e3040b0
+`R≜length≤length°` #src[], #h(4pt) `U≜⊤`, #h(4pt)
+// lean:AOP.A9_2_Edit.R_eq@0f7a4661
+`V≜suffix°×suffix°` #src[], #h(4pt)
+// lean:AOP.A9_2_Edit.V@09fe0b1a
+`Q≜𝟙+(U×V)` #src[], #h(4pt) `empty` the coreflexive on `(xs,ys)` with
+// lean:AOP.A9_2_Edit.Q@e6ebf648
 both lists empty.
 
 `unstep` implements $frac(#[`step°`], ∋)$ `thin(U×V)`
-#src[`lean:AOP.A9_2_Edit.unstep@c08a1892`, `lean:AOP.A9_2_Edit.unstep_sound@623dda5a`]:
+#src[]:
+// lean:AOP.A9_2_Edit.unstep@c08a1892 lean:AOP.A9_2_Edit.unstep_sound@623dda5a
 #h(4pt) `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
 #h(4pt) `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, #h(4pt)
 `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`.
@@ -7259,18 +7567,25 @@ both lists empty.
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
       (eb-thin, eb-PX, eb-est)),
     [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))`
-     #src[`lean:AOP.A9_2_Edit.edit_laws@c69d7d69`] \
+ #src[] \
+     // lean:AOP.A9_2_Edit.edit_laws@c69d7d69
      #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
-      #src[`lean:AOP.A9_2_Edit.edit_mono@089b97ab`] is Proposition 9.2 at
+ #src[] is Proposition 9.2 at
+      // lean:AOP.A9_2_Edit.edit_mono@089b97ab
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
-      #src[`lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4`] over `F(Op,[Char]×[Char])` is
+ #src[] over `F(Op,[Char]×[Char])` is
+      // lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4
       Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
-      #src[`lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558`,
-      `lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e`] —
-      `edit (𝟙×suffix)⊑R° edit` #src[`lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2`],
-      `edit (suffix×𝟙)⊑R° edit` #src[`lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1`]. `suffix=tail*`
+ #src[,
+      // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
+ ] —
+      // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+ `edit (𝟙×suffix)⊑R° edit` #src[],
+      // lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+ `edit (suffix×𝟙)⊑R° edit` #src[]. `suffix=tail*`
+      // lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
@@ -7347,14 +7662,17 @@ both lists empty.
 #disp[#definition[
 `tree A::=tip A∣bin (tree A,tree A)`, #h(4pt) `FX=A+X²`, so `F(R)=𝟙+R²`; #h(4pt)
 `h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`
-#src[`lean:AOP.A9_3_Bracket.flatten_cata@416f62ee`], #h(4pt) `H=flatten°`.
+#src[], #h(4pt) `H=flatten°`.
+// lean:AOP.A9_3_Bracket.flatten_cata@416f62ee
 
 `⟨cost,size⟩≜⦇[opt,opb]⦈`, #h(4pt) `opt≜⟨zero,st⟩`, #h(4pt)
 `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`.
 
 `sb` associative, so `size=flatten sz` for a map `sz`
-#src[`lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74`]; #h(4pt)
-`R≜cost≤cost°` #src[`lean:AOP.A9_3_Bracket.R_eq@48f5ee2a`], #h(4pt)
+#src[]; #h(4pt)
+// lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74
+`R≜cost≤cost°` #src[], #h(4pt)
+// lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
 `g≜[zero,(𝟙×sz)² opb π₁]`, #h(4pt) `single` the coreflexive on singleton lists.
 
 `splits≜⟨inits⁺,tails⁺⟩ zip`, an implementation of $frac(#[`cat°`], ∋)$; #h(4pt) `array≜inits list(row)`,
@@ -7398,15 +7716,19 @@ both lists empty.
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
     [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))`
-     #src[`lean:AOP.A9_3_Bracket.mct_laws@6ebebce1`] \
+ #src[] \
+     // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
      #src[Theorem 9.1: split the list in every way, bracket both halves, join. The condition is
       monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR`
-      #src[`lean:AOP.A9_3_Bracket.mct_mono@a3daf2b8`] — only trees with the same flattening
+ #src[] — only trees with the same flattening
+      // lean:AOP.A9_3_Bracket.mct_mono@a3daf2b8
       are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
-      `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[`lean:AOP.A9_3_Bracket.mct_cost_alg@f266a5f3`]
+ `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[]
+      // lean:AOP.A9_3_Bracket.mct_cost_alg@f266a5f3
       (the cost of a node reads only the cost and the
       flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤`
-      #src[`lean:AOP.A9_3_Bracket.mct_g_mono@4aa3e122`] (`g` monotonic on `≤` in its two
+ #src[] (`g` monotonic on `≤` in its two
+      // lean:AOP.A9_3_Bracket.mct_g_mono@4aa3e122
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `list⁺` dies and is remade at both, so it runs as a loop between them.
@@ -7585,7 +7907,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
-     carried and the recursion runs on values alone #h(4pt) `lean:AOP.A10_1.greedy_dp@93506ebf`]],
+ carried and the recursion runs on values alone #h(4pt) ]],
+     // lean:AOP.A10_1.greedy_dp@93506ebf
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
@@ -7624,7 +7947,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
 #disp[#definition[
-`detab≜⦇[nil,expand]⦈ : String⟶String` #src[`lean:AOP.A10_2_Detab.detab_cata@37355797`]
+`detab≜⦇[nil,expand]⦈ : String⟶String` #src[]
+// lean:AOP.A10_2_Detab.detab_cata@37355797
 over snoc-lists, #h(4pt) `α≜[nil,snoc]`, #h(4pt)
 `H=detab°`; #h(4pt) `expand (xs,a)=(a=TB→fill xs,xs⧺[a])`, #h(4pt)
 `fill xs=xs⧺blanks (n−(col xs) mod n)`.
@@ -7632,10 +7956,13 @@ over snoc-lists, #h(4pt) `α≜[nil,snoc]`, #h(4pt)
 `col≜⦇[zero,count]⦈`, #h(4pt) `count (c,a)=(a=NL→0,c+1)`; #h(4pt) `TB` the tab, `BL` the
 blank, `NL` the newline, tab stops every `n` columns.
 
-`R≜length≤length°` #src[`lean:AOP.A10_2_Detab.R@5b23da25`], #h(4pt)
+`R≜length≤length°` #src[], #h(4pt)
+// lean:AOP.A10_2_Detab.R@5b23da25
 `U` the preorder with `a U b⟺a=TB∨a=b`, #h(4pt)
-`V≜prefix°∩(fill fill°)` #src[`lean:AOP.A10_2_Detab.V@b0fc79bc`], #h(4pt)
-`Q≜𝟙+(V×U)` #src[`lean:AOP.A10_2_Detab.Q@7a0a1541`].
+`V≜prefix°∩(fill fill°)` #src[], #h(4pt)
+// lean:AOP.A10_2_Detab.V@b0fc79bc
+`Q≜𝟙+(V×U)` #src[].
+// lean:AOP.A10_2_Detab.Q@7a0a1541
 
 `unfill xs` the shortest prefix of `xs` with `fill (unfill xs)=fill xs`; #h(4pt) `tbc` the trailing
 blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
@@ -7675,23 +8002,30 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
     [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])`
-     #src[`lean:AOP.A10_2_Detab.entab_laws@3b89184f`] \
+ #src[] \
+     // lean:AOP.A10_2_Detab.entab_laws@3b89184f
      #src[Theorem 10.1 at `Q≜𝟙+(V×U)`
-      #src[`lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608`]: one character of input is
+ #src[]: one character of input is
+      // lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608
       decided at each step. `U` may be
       any preorder on characters, and `a U b⟺a=TB∨a=b` puts `TB` below every character, so `est`
-      prefers a tab to a blank; `F(⊤,R)α⊑αR` #src[`lean:AOP.A10_2_Detab.entab_mono@b7c30f2e`] is
+ prefers a tab to a blank; `F(⊤,R)α⊑αR` #src[] is
+      // lean:AOP.A10_2_Detab.entab_mono@b7c30f2e
       left as an exercise. `detab prefix⊑R° detab` is
-      FALSE #src[`lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9`,
-      `lean:AOP.A10_2_Detab.detab_len_of_short@66be497e`] — at `n=8`,
+ FALSE #src[,
+      // lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9
+ ] — at `n=8`,
+      // lean:AOP.A10_2_Detab.detab_len_of_short@66be497e
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
       `[a,b,c,d,e,BL,BL]` is longer than any input giving it — so `V≜prefix°∩(fill fill°)` allows
       only the prefixes that do not cross a tab stop, and `detab V°⊑R° detab`
-      #src[`lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac`, `lean:AOP.A10_2_Detab.entab_V@ff19c265`]
+ #src[]
+      // lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac lean:AOP.A10_2_Detab.entab_V@ff19c265
       holds. From
       `nil V°=nil`, `fill V°=fill` (what `fill fill°` was added for) and `snoc V°⊑snoc∪(π₁V°)`,
       left as exercises, comes `expand V°⊑expand∪(π₁V°)`
-      #src[`lean:AOP.A10_2_Detab.expand_V_step@1e653239`] — shortening the output either leaves the
+ #src[] — shortening the output either leaves the
+      // lean:AOP.A10_2_Detab.expand_V_step@1e653239
       last step alone or discards it — hence `detab V°⊑detab∪(init detab V°)`, and `init` inductive
       makes the greatest solution the unique one: `detab V°⊑prefix detab`, with `prefix⊑R°`
       finishing Proposition 9.4]])],
