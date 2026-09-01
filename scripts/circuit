@@ -73,6 +73,21 @@ def oshow(e):
     return '×'.join(oshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
 
 
+def bare(e):
+    """Whether `e`'s label opens with a visible boundary: `[`, or a one-letter functor before one."""
+    return e[0] == 'app' and (e[1] == 'list' or len(e[1]) == 1 and bare(e[2]))
+
+
+def lshow(e):
+    """A wire label — the ONE place `F([A])` prints `F[A]` (user's choice): parentheses drop only
+    while every boundary stays visible (`EF[A]`); `tree(A)`, `F(A)`, `E([A]×[A])` keep theirs."""
+    if e[0] == 'app' and e[1] == 'list':
+        return f"[{lshow(e[2])}]"
+    if e[0] == 'app':
+        return f"{e[1]}{lshow(e[2])}" if len(e[1]) == 1 and bare(e[2]) else f"{e[1]}({lshow(e[2])})"
+    return '×'.join(lshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
+
+
 def wires(X):
     """The strands a port at `X` has: its ×-factors, none for `𝟏`, and for a `polys` functor the
     strands of its one product summand — `F([A])` at a box is the `cons` branch's `A`,`[A]`, the
@@ -451,8 +466,8 @@ def fold(e, tbl, src, tgt):
     cw = wires(c)
     show = len(cw) == 1 and oshow(cw[0]) != oshow(c)
     body = lane(b)          # the port labels are the algebra's own strands: one per wire it takes
-    return pic("cata", src, c, b[3], body=body, label=oshow(c) if show else None,
-               port=[oshow(w) for w in body["_in"]])
+    return pic("cata", src, c, b[3], body=body, label=lshow(c) if show else None,
+               port=[lshow(w) for w in body["_in"]])
 
 
 def tape(e, tbl, src):
@@ -471,7 +486,7 @@ def tape(e, tbl, src):
     # The coproduct arrives as ONE wire, the fork being what opens it; a box at the same object
     # takes the product summand's strands (`wires`).
     return pic("case", src, bs[0][2], all(b[3] for b in bs), _in=[src],
-               bodies=[lane(b) for b in bs], ports=[[oshow(w) for w in wires(s)] for s in ss])
+               bodies=[lane(b) for b in bs], ports=[[lshow(w) for w in wires(s)] for s in ss])
 
 
 # ---------------------------------------------------------------- seams and the panel
@@ -481,7 +496,7 @@ def seams(objs):
     out, prev = [], objs[0]
     for i, o in enumerate(objs[1:-1]):
         if len(wires(o)) == 1 and o != prev and o != objs[i + 2]:
-            out.append([i, oshow(o)]); prev = o
+            out.append([i, lshow(o)]); prev = o
     return out
 
 
@@ -491,8 +506,8 @@ def draw(formula, src, tgt, table=None):
     tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
-    tree["src"] = [oshow(w) for w in tree["_in"]]
-    tree["tgt"] = [oshow(w) for w in tree["_out"]]
+    tree["src"] = [lshow(w) for w in tree["_in"]]
+    tree["tgt"] = [lshow(w) for w in tree["_out"]]
     tree["cert"] = {"expect": formula, "src": src, "tgt": tgt}
     return tree
 
