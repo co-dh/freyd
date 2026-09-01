@@ -5451,7 +5451,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let HMH = 4.5
 #let PARTY = [`[A]`]
 // The key table below the display: `include` is the panel's own composite at `g:=π₂`, `h:=cons`.
-#let INCL = "include = (𝟙×(list(g) concat))h"
+#let INCL = "include = (𝟙×(list(g)concat))h"
 #let party-hm(rs) = {
   let (Y3, YN, Y2, YC, Y1, YP, Y0) = HMY
   dpanel(HMH, PXO + 2.85, PXO,
