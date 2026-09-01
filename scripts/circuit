@@ -182,9 +182,24 @@ def cnorm(e):
     if e[0] != 'comp':
         return e
     xs = [y for x in e[1] for y in (x[1] if x[0] == 'comp' else [x])]   # rule 1: flatten,
+    xs = juxta(xs)
     xs = fuse(xs) or xs
     xs = [x for x in xs if x != ('atom', sl.UNIT)] or [('atom', sl.UNIT)]   # and `𝟙` is a wire
     return xs[0] if len(xs) == 1 else ('comp', xs)
+
+
+def juxta(xs, tbl=None):
+    """Application by juxtaposition (`bare` above is the printer's): an atom the table knows only WITH
+    an argument takes the next one, keeping the note's `thin Q` — no rule tells it from `est(R)`."""
+    tbl = sigs()["sigs"] if tbl is None else tbl
+    out, i = [], 0
+    while i < len(xs):
+        rs = rows(tbl, xs[i][1]) if xs[i][0] == 'atom' else []
+        if rs and all('arg' in r for r in rs) and i + 1 < len(xs) and xs[i + 1][0] == 'atom':
+            out.append(('app', xs[i][1], xs[i + 1], f"{xs[i][1]} {xs[i + 1][1]}")); i += 2
+        else:
+            out.append(xs[i]); i += 1
+    return out
 
 
 def fuse(xs, polys=None):
@@ -271,7 +286,9 @@ def leaf(e, tbl, src, tgt):
     """An atom (§3 rows 1-2) or an application read as one box (§3 row 10): the signature's `src`
     and `tgt` are schemes, and the port in hand binds their variables."""
     key = e[1] if e[0] in ('atom', 'app') else None
-    rs = rows(tbl, key)
+    # A letter may be both a preorder and an operator (`P`, `P(f)`): an application takes the rows
+    # with an `arg` scheme and an atom the rows without, so neither ever reads the other's.
+    rs = [r for r in rows(tbl, key) if ('arg' in r) == (e[0] == 'app')]
     if not rs:
         raise Unhandled(f"no signature for `{key or spell(e)}` in diag/circuit-sigs.json")
     for i, row in enumerate(rs):
