@@ -5523,8 +5523,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#table(
   columns: (1fr, 6.6cm),
   align: (left + horizon, center + horizon),
-  // `y: 2pt`, tighter than the note's usual 3pt: the seven rows are a page exactly.
-  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
+  // `y: 1pt`, tighter than the note's usual 3pt: the seven rows are a page exactly, and a `#disp`
+  // that outgrows its page does not break — the last row keeps its rule and spills its text past it.
+  inset: (x: 8pt, y: 1pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
