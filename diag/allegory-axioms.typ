@@ -4011,47 +4011,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   wire((x, -UIP), (w - 0.5, -UIP)); bend((w - 0.5, -UIP), (w, UOP))
 }
 
-// The bracket `[nil, …]` at `F([A])=𝟏+A×[A]`: the fork sends `𝟏` to the `nil` box above and the pair
-// below.  `pre` is a box on the TAIL strand between the fork and the branch — that is what `F(X)`
-// looks like here; `post` a run of boxes after the join.  `union: false` drops the `∪` region, which
-// is the difference between `α` and `S`.
-#let twpic(lower, lw: CW, union: true, pre: none, post: (), upper: none, from: none) = {
-  let cy = -BRT
-  let px = if pre == none { 0.0 } else { 0.28 + pre.at(1) }
-  let ux0 = 2.6 + px
-  let bx = ux0 - CHFAN
-  let ux1 = ux0 + lw + 2 * CHPAD
-  let xo = if union { ux1 + CHFAN } else { bx + lw + 0.35 }
-  let xj = xo + 1.05
-  tape((0.34, cy - (if union { UH + UM } else { UIP + 0.9 }) - 0.15), (xj, BRT + 0.15))
-  wire((0, 0), (0.34, 0))
-  let st = (thickness: 1.4pt, paint: TAPEEDGE)
-  d.bezier((0.56, 0), (1.26, BRT), (0.98, 0), (0.98, BRT), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy + UIP), (0.98, 0), (0.98, cy + UIP), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy - UIP), (0.98, 0), (0.98, cy - UIP), stroke: st)
-  gbox((1.26, BRT), [`nil`], w: 0.75, chamfer: false)
-  wire((2.01, BRT), (xj - 0.7, BRT))
-  wire((1.26, cy + UIP), (bx, cy + UIP))
-  if pre == none { wire((1.26, cy - UIP), (bx, cy - UIP)) } else {
-    wire((1.26, cy - UIP), (1.54, cy - UIP)); twbox(1.54, cy - UIP, pre)
-    wire((1.54 + pre.at(1), cy - UIP), (bx, cy - UIP))
-  }
-  if union {
-    unionbox((ux0, cy - UH - UM), (ux1, cy + UH + UM),
-      if upper == none { disc-copy([`nil`], w: lw) } else { upper(lw) }, lower)
-    wire((xo, cy), (xj - 0.7, cy))
-  } else {
-    d.group({ d.translate((bx, cy)); lower })
-    bend((bx + lw, cy - UOP), (xj - 0.7, cy))
-  }
-  tape-join((xj, 0), sp: BRT, len: 0.7)
-  let x = xj
-  for b in post { wire((x, 0), (x + 0.34, 0)); twbox(x + 0.34, 0, b, h: TBH); x = x + 0.34 + b.at(1) }
-  wire((x, 0), (x + 0.34, 0))
-  lab(x + 1.0, 0, black)[`[A]`]
-  lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
-  if from != none { lab(-1.05, 0, black, from) }
-}
 // @takewhile-mono's circuit: no bracket at all — the pair goes straight into the `∪`, which is the shape
 // `F(R)S⊑SR` compares at the `cons` branch.  `pre` acts on the tail before the region, `post` after it.
 #let twrow(lower, lw: CW, pre: none, post: none, upper: none) = {
@@ -4176,12 +4135,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   every list, and above only itself, so it loses every `est(R°)`]]
 ])]<takewhile-defn>
 
-// `list(p)` starts after the join and ends inside the `∪`'s `cons` branch; `prefix` starts on the
-// tail strand and joins it there.  That motion is the whole chain.
-#let bx-lp = ([`list(p)`], 2.15, true)
 #let bx-p = ([`p`], 0.65, true)
-#let bx-pf = ([`prefix`], 1.9, true)
-#let bx-pl = ([`prefix list(p)`], 3.9, true)
 // HINZE–MARSDEN (IntroString.pdf §1.4.2), @party-mono-branch's second column at this section's data:
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
@@ -4229,24 +4183,124 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], twp(twpic(tw-cons(1.3), lw: 1.3, union: false, post: (bx-pf, bx-lp)), s: 68%),
+  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "box", nin: 2, nout: 1, label: "α", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))],
     [`α prefix list(p)`])],
   [#tw-pfx1 \
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
-  [#vstep(EQ, twp(twpic(tw-cons(CW), pre: bx-pf, post: (bx-lp,)), s: 68%),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "case", nin: 1, nout: 1, bodies: (
+        (k: "seq", nin: 0, nout: 1, items: (
+            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+              )),
+            (k: "union", nin: 2, nout: 1, bodies: (
+                (k: "seq", nin: 2, nout: 1, items: (
+                    (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                          (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                        ), seams: ())),
+                  ), seams: ()),
+                (k: "seq", nin: 2, nout: 1, items: (
+                    (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+                  ), seams: ()),
+              )),
+          ), seams: ()),
+      ), ports: (
+        (),
+        ("A", "[A]", ),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))],
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
   [#tw-pfx2],
 
-  [#vstep(EQ, twp(twpic(tw-cons(5.17, a: bx-p, l: bx-lp, types: true), lw: 5.17, pre: bx-pf,
-      from: [`F([A])`]), s: 68%),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 0, nout: 1, items: (
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "stack", nin: 2, nout: 2, lanes: (
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                  )),
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+  ), ports: (
+    (),
+    ("A", "[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
   [#tw-pfx3],
 
-  [#vstep(EQ, twp(twpic(tw-cons(6.1, a: bx-p, l: bx-pl), lw: 6.1), s: 68%),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 0, nout: 1, items: (
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "stack", nin: 2, nout: 2, lanes: (
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
+                        (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                  )),
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+  ), ports: (
+    (),
+    ("A", "[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]"))],
     [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
 
-  [#vstep(EQ, twp(twpic(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-pl), s: 68%),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "box", nin: 2, nout: 2, label: "F(prefix list(p))", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "S", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "F(prefix list(p))S", src: "F([A])", tgt: "[A]"))],
     [`F(prefix list(p))S` \ #src[`prefix list(p)` entire]])], [],
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
@@ -4423,13 +4477,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
 // the coproduct of maps has opened it.
-#let step = step.with(pw: 246pt)
+#let step = step.with(pw: 340pt)
 #let bx-est = ([`est(R°)`], 2.2, true)
 #let bx-Sd = (frc([`S`]), 1.0, false)
-#let bx-1d = (frc([`𝟙`]), 0.85, false)
-#let bx-ES = ([`E(S)`], 1.4, false)
-#let bx-nd = (frc([`nil`]), 1.3, false)
-#let bx-ud = (frc([`⊸ nil ∪ (p×𝟙) cons`]), 4.6, false)
 #let bx-nil = ([`nil`], 1.15, false)
 #let bx-cond = ([`(π₁p→cons,⊸ nil)`], 4.6, false)
 #disp[#table(
@@ -4441,14 +4491,58 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      `nil` where it does not]],
   table.header([*formula*], [*reason*]),
 
-  // The unit births `E` outside `F([A])` and `E(S)` runs under it, so `E([A])` is the SECOND gap.
   // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
-  [#step([])[#twp(twrun((bx-1d, bx-ES, bx-est), mid-at: 1), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
+  [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (0, "EF[A]", ),
+    (1, "E[A]", ),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
 
-  [#step(EQ)[#twp(twbr((bx-nd, bx-est), (bx-ud, bx-est)), s: 74%)][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 0, nout: 1, items: (
+        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (0, "E𝟏", ),
+        (1, "E[A]", ),
+      )),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (0, "E(A×[A])", ),
+        (1, "E[A]", ),
+      )),
+  ), ports: (
+    (),
+    ("A", "[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [coproduct of maps],
 
-  [#step(EQ)[#twp(twbr((bx-nil,), (bx-ud, bx-est)), s: 74%)][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 0, nout: 1, items: (
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (0, "E(A×[A])", ),
+        (1, "E[A]", ),
+      )),
+  ), ports: (
+    (),
+    ("A", "[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#twp(twbr((bx-nil,), (bx-cond,)), s: 74%)][`[nil,(π₁p→cons,⊸ nil)]`]],
@@ -4462,9 +4556,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
 // greedy `⊒` into the heading's `=`.  Only the last three rows are cited rather than derived.
-#let bx-Lpl = (frc([`prefix list(p)`]), 4.3, false)
 #let bx-LS = (frc([`⦇S⦈`]), 1.5, false)
-#let bx-cata = ([`⦇`#frc([`S`])` est(R°)⦈`], 3.3, true)
 #let bx-prog = ([`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], 6.1, false)
 // `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
 // closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
@@ -4522,7 +4614,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], twp(twrun((bx-Lpl, bx-est), from: [`[A]`]), s: 70%),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(prefix list(p))", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (1, "E[A]", ),
+  ), src: ("[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]"))],
     [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`.
  ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac
@@ -4533,7 +4632,15 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     // lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
-  [#vstep(RQ, twp(twrun((bx-cata,), from: [`[A]`], mid: none), s: 70%),
+  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+      (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+      (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
+      (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+    ), seams: (
+      (0, "EF[A]", ),
+      (1, "E[A]", ),
+    )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
  collected and one chosen at the end. ]])],
