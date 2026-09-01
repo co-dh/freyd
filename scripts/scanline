@@ -102,6 +102,11 @@ def p_prim(s, i):
         raise ValueError(f"expected a term at the end of {s!r}")
     if s[i] in OPENERS:
         j = matching(s, i)
+        # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
+        # `plain` spells `frac(x, ∋)`, so `⦇S⦈%∋` must not read as `⦇S⦈` beside a stray `%∋`.
+        # Checked before the `(` case, or a composite numerator `(prefix list(p))%∋` loses its `%∋`.
+        if s[j + 1:j + 3] == '%∋':
+            return ('atom', squeeze(s[i:j + 3])), j + 3
         if s[i] == '(':
             # `(g→x,y)`: guarded branches, then an optional default.  The operands stay FLAT in
             # source order — guard, body, …, default — so a walk maps over them like any other list.
@@ -110,10 +115,6 @@ def p_prim(s, i):
             if len(gs) > len(bs):
                 return ('cond', [parse(g) for g in gs], squeeze(s[i:j + 1])), j + 1
             return parse(s[i + 1:j]), j + 1
-        # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
-        # `plain` spells `frac(x, ∋)`, so `⦇S⦈%∋` must not read as `⦇S⦈` beside a stray `%∋`.
-        if s[j + 1:j + 3] == '%∋':
-            return ('atom', squeeze(s[i:j + 3])), j + 3
         if s[i] == '⦇':
             return ('cata', [parse(s[i + 1:j])], squeeze(s[i:j + 1])), j + 1
         bs = split_top(s[i + 1:j], ',')
