@@ -28,8 +28,12 @@ SLICE := diag/circuit-slice.typ
 # notes make now lives inside diag/.  The flag was here while allegory-axioms borrowed the zigzag
 # box and wires from notation_as_a_tool_of_thought_adjunction.typ at the repository root; §1 carries
 # its own copy of those, so nothing reaches above diag/ any more.
+# The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
+# lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
 p: $(STAMP) slice circuit cite spell
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+	./scripts/book ingest diag/allegory-axioms.pdf
+	./scripts/book pics
 
 # The circuit generator's acceptance render.  `--slice` writes the whole .typ itself — header,
 # import, rows — so nothing in it is hand-kept, and the compile is the check that it still parses.
