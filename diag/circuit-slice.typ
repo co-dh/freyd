@@ -6,14 +6,14 @@
 #set par(spacing: 20pt)
 
 // 13.3.3d r1  S%∋ est(R°)   [F([A]) ⟶ [A]]
-#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
     (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
   ), seams: (
     (0, "E(F([A]))", ),
     (1, "E([A])", ),
-  ), src: ("F([A])", ), tgt: ("[A]", )),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))
 
 // 13.3.3c r1  (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)   [A×[A] ⟶ [A]]
