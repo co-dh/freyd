@@ -73,19 +73,30 @@ def oshow(e):
     return '×'.join(oshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
 
 
-def bare(e):
-    """Whether `e`'s label opens with a visible boundary: `[`, or a one-letter functor before one."""
-    return e[0] == 'app' and (e[1] == 'list' or len(e[1]) == 1 and bare(e[2]))
+SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def head(e):
+    """The name `e`'s label opens with — `[` for a list or a power of lists — which sets the spacing."""
+    return '[' if e[0] == 'app' and e[1] == 'list' else e[1] if e[0] in ('app', 'atom') else head(e[1][0])
 
 
 def lshow(e):
-    """A wire label — the ONE place `F([A])` prints `F[A]` (user's choice): parentheses drop only
-    while every boundary stays visible (`EF[A]`); `tree(A)`, `F(A)`, `E([A]×[A])` keep theirs."""
-    if e[0] == 'app' and e[1] == 'list':
-        return f"[{lshow(e[2])}]"
-    if e[0] == 'app':
-        return f"{e[1]}{lshow(e[2])}" if len(e[1]) == 1 and bare(e[2]) else f"{e[1]}({lshow(e[2])})"
-    return '×'.join(lshow(x) for x in e[1]) if e[0] == 'prod' else spell(e)
+    """A type label: application is juxtaposition, spaced only beside a multi-letter name (`E tree A`,
+    `EF[A]`, `FA`); n equal ×-factors are a power (`E[A]²`); `F(A,B)`, `F(A×B)` keep the parentheses."""
+    if e[0] == 'prod':
+        if any(x != e[1][0] for x in e[1]):
+            return '×'.join(lshow(x) for x in e[1])
+        s = lshow(e[1][0])
+        return (f"({s})" if ' ' in s else s) + str(len(e[1])).translate(SUP)
+    if e[0] != 'app':
+        return spell(e)
+    s = lshow(e[2])
+    if e[1] == 'list':
+        return f"[{s}]"
+    if e[2][0] == 'atom' and ',' in s or e[2][0] == 'prod' and '×' in s:
+        return f"{e[1]}({s})"
+    return e[1] + ('' if s[0] == '[' or len(e[1]) == 1 == len(head(e[2])) else ' ') + s
 
 
 def wires(X):
