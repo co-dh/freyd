@@ -60,10 +60,25 @@
 #let tx(s) = text(10pt, raw(s))
 #let into(length) = CPORT * cu(measure(tx("[")).width, length)  // `measure` is the advance box, not the ink
 
+// The dashed fan into and out of a region holding alternatives, one arm per height in `ss`, after
+// a straight `lead` at each port (see `pic`).
+#let fan(nin, nout, x0, x1, ss, lead: 0, invert: false) = {
+  for s in ss {
+    for y in ys(nin) { bend((lead, y), (x0 + CHPAD, s + y), stroke: FAN) }
+    for y in ys(nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN - lead, y), stroke: FAN) }
+  }
+  if lead > 0 {
+    for y in ys(nin) { wire((0, y), (lead, y), invert: invert) }
+    for y in ys(nout) { wire((x1 + CHFAN - lead, y), (x1 + CHFAN, y), invert: invert) }
+  }
+}
+
 // `invert` is the Peirce cut's axis, not a decoration: inside a `cut` the page is black, so every
 // wire, dot and box drawn there has to be light-on-dark.  Only a lane the walker calls `flat` — a
 // run of boxes, stacks and projections — is ever asked for it; a tape keeps its own colours.
-#let pic(t, length, invert: false) = {
+// `lead` is a straight run at every port for whoever places the node: the panel's labels run `into`
+// a port, and a fan leaving the port itself would cross their ink.
+#let pic(t, length, invert: false, lead: 0) = {
   // ---- §3 rows 1-2, 7, 10, 15: one box.  A box spanning several strands is as tall as they are.
   if t.k == "box" {
     let n = calc.max(t.nin, t.nout)
@@ -212,9 +227,8 @@
           d.translate((x0 + CHPAD, s)); p.body
           for y in ys(t.nout) { wire((p.w, y), (mw, y), invert: invert) }
         })
-        for y in ys(t.nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN, y), stroke: FAN) }
-        for y in ys(t.nin) { bend((0, y), (x0 + CHPAD, s + y), stroke: FAN) }
       }
+      fan(t.nin, t.nout, x0, x1, (mh + 0.35, -(mh + 0.35)), lead: lead, invert: invert)
     }
     return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
@@ -230,9 +244,8 @@
       for (i, p) in ps.enumerate() {
         let s = if i == 0 { 1 } else { -1 }
         d.group({ d.translate((x0 + CHPAD, s * UDY)); p.body; wire((p.w, 0), (mw, 0)) })
-        bend((x1 - CHPAD, s * UDY), (x1 + CHFAN, 0), stroke: FAN)
-        for y in ys(t.nin) { bend((0, y), (x0 + CHPAD, s * UDY + y), stroke: FAN) }
       }
+      fan(t.nin, t.nout, x0, x1, (UDY, -UDY), lead: lead)
     }
     return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
@@ -272,9 +285,9 @@
 // The panel: the tree's own picture, with the ports named at both ends.  `src`/`tgt` are one label
 // per STRAND — a product is two wires, so it is two labels, never one reading `A×[A]`.
 #let cbody(t, length) = {
-  let p = pic(t, length)
-  p.body
   let o = into(length)
+  let p = pic(t, length, lead: o)
+  p.body
   for (i, y) in ys(t.nin).enumerate() {
     lab(o - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
   }
