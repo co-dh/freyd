@@ -3215,7 +3215,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   node(l, -SQH, black, ns.at(2)); node(r, -SQH, black, ns.at(3))
 }
 
-// Hinze–Marsden one level up from @party-marsden: a REGION is an allegory, a WIRE a relator, a BEAD a
+// Hinze–Marsden at the 2-category level: a REGION is an allegory, a WIRE a relator, a BEAD a
 // LaT.  Regions are `LATP` wide, so the wire carrying the bead stands at the same pitch in every cell.
 #let LATP = 1.15
 #let LATH = 2.5
@@ -5349,7 +5349,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
 // CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
 // edge, where the wire strikes through the port labels.
-#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * (xo - x), 0.55 * drop)
+#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
 #let dlane(xo, h, x, y0, y1, nm, un) = {
   let top = if y0 == "top" { h } else { y0 }
   let k = dknee(x, xo, top - (if y1 == "bot" { 0 } else { y1 }))

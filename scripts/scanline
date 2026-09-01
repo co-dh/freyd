@@ -221,7 +221,7 @@ NEAR = 0.06                      # a hit this close to a junction IS that juncti
 
 def dknee(x, xo, drop):
     """`dpanel`'s knee: grows with the run, clamped to the drop the lane has."""
-    return min(0.45 + 0.25 * (xo - x), 0.55 * drop)
+    return min(0.45 + 0.25 * abs(xo - x), 0.55 * drop)
 
 
 def nodepts(x, xo, ys, k):
