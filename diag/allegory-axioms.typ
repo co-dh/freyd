@@ -3578,16 +3578,24 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   boxrun(b.at(0), b.at(1), items)
 }
 #let convrun-end(items) = conv-w(w: boxrun-w(items)) - SPLIT
-#let mconj(inner, after, rhs) = {
+// `mid` types the wire OUT of the frame; it also opens the `⊑` up so both runs can name their ends,
+// which is how row 1 is typed.  Left `none`, the picture is the untyped one the later rows want.
+#let mconj(inner, after, rhs, mid: none) = {
   let rise = 1.9
   convrun(0, 0, inner)
   let x = convrun-end(inner)
   boxrun(x, rise, after)
   let xe = x + boxrun-w(after)
+  let d = if mid == none { 0.0 } else { 1.2 }
   lab(-0.42, 0, black)[`A`]
-  lab(xe + 0.95, rise, SLACK)[`⊑`]
-  boxrun(xe + 1.5, rise, rhs)
-  lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
+  if mid != none {
+    node((1.4 + x) / 2, rise, black, mid)
+    lab(xe + 0.42, rise, black)[`A`]
+    lab(xe + 1.5 + d - 0.42, rise, black)[`A`]
+  }
+  lab(xe + 0.95 + d / 2, rise, SLACK)[`⊑`]
+  boxrun(xe + 1.5 + d, rise, rhs)
+  lab(xe + 1.5 + d + boxrun-w(rhs) + 0.42, rise, black)[`A`]
 }
 
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
@@ -3661,7 +3669,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     ),
   )],
 
-  [#vstep(IFF, mbp(mconj((mb-Fni, mb-f), (mb-Fest, mb-f), (mb-Ro,))),
+  [#vstep(IFF, mbp(mconj((mb-Fni, mb-f), (mb-Fest, mb-f), (mb-Ro,), mid: [`F(EA)`])),
     [`(F(∋)f)°F(est(R))f⊑R°` \ #src[`est(R)⊑∋` — @est-defn; the first conjunct is free]])],
   // `(F(∋)f)°=f°F(∈)` splits the leading bead: `f°` opens the `F` wire, `∈` the `E` wire inside it.
   [#trow(
@@ -3834,14 +3842,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let twbox(x, y, b, h: PBH) = gbox((x, y), b.at(0), w: b.at(1), h: h, chamfer: b.at(2))
 // The `cons` branch of a `∪`: `a` restricts the head and `l` acts on the tail — drawn to one shared
 // width so `cons` stays upright — then `cons`, then `post`.  `w` is the copy's run.
-#let tw-cons(w, a: none, l: none, post: none) = {
+#let tw-cons(w, a: none, l: none, post: none, types: false) = {
   let pw = calc.max(if a == none { 0.0 } else { a.at(1) }, if l == none { 0.0 } else { l.at(1) })
-  let x = if pw > 0 { 0.56 + pw } else { 0.0 }
+  // The fan hands the pair over unlabelled, so `types` says which of the two strands is which; it
+  // buys the room for those labels by starting the boxes 0.87 further in — add that to `w` too.
+  let lead = if types { 1.15 } else { 0.28 }
+  let x = if pw > 0 { lead + 0.28 + pw } else { 0.0 }
+  if types { lab(lead / 2, UIP + 0.34, black)[`A`]; lab(lead / 2, -UIP + 0.34, black)[`[A]`] }
   if pw > 0 {
     for (s, b) in ((1, a), (-1, l)) {
-      wire((0, s * UIP), (0.28, s * UIP))
-      if b != none { twbox(0.28, s * UIP, b) }
-      wire((0.28 + (if b == none { 0.0 } else { b.at(1) }), s * UIP), (x, s * UIP))
+      wire((0, s * UIP), (lead, s * UIP))
+      if b != none { twbox(lead, s * UIP, b) }
+      wire((lead + (if b == none { 0.0 } else { b.at(1) }), s * UIP), (x, s * UIP))
     }
   }
   gbox((x, 0), [`cons`], w: 1.3, h: 2 * UIP + 0.35, chamfer: false)
@@ -3866,7 +3878,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // below.  `pre` is a box on the TAIL strand between the fork and the branch — that is what `F(X)`
 // looks like here; `post` a run of boxes after the join.  `union: false` drops the `∪` region, which
 // is the difference between `α` and `S`.
-#let twpic(lower, lw: CW, union: true, pre: none, post: (), upper: none) = {
+#let twpic(lower, lw: CW, union: true, pre: none, post: (), upper: none, from: none) = {
   let cy = -BRT
   let px = if pre == none { 0.0 } else { 0.28 + pre.at(1) }
   let ux0 = 2.6 + px
@@ -3901,6 +3913,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   wire((x, 0), (x + 0.34, 0))
   lab(x + 1.0, 0, black)[`[A]`]
   lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
+  if from != none { lab(-1.05, 0, black, from) }
 }
 // @takewhile-mono's circuit: no bracket at all — the pair goes straight into the `∪`, which is the shape
 // `F(R)S⊑SR` compares at the `cons` branch.  `pre` acts on the tail before the region, `post` after it.
@@ -3928,13 +3941,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // spanning the pair, so the fraction boxes read at the height they act on.
 // `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
 // rather than `F([A])`, and its cata rows never open `E([A])` at all.
-#let twrun(items, from: [`F([A])`], mid: [`E([A])`]) = {
+#let twrun(items, from: [`F([A])`], mid: [`E([A])`], mid-at: 0) = {
   lab(-1.1, 0, black, from)
   let x = 0.0
   for (i, b) in items.enumerate() {
     wire((x, 0), (x + 0.34, 0)); twbox(x + 0.34, 0, b, h: TH); x = x + 0.34 + b.at(1)
-    if i == 0 and mid != none {
-      wire((x, 0), (x + 0.34, 0)); node(x + 0.9, 0, black, mid); x = x + 1.46
+    if i == mid-at and mid != none {
+      // 2.26, not 0.34: `E([A])`'s white fill is 1.94 wide and was painting out both boxes' edges.
+      wire((x, 0), (x + 2.26, 0)); node(x + 1.3, 0, black, mid); x = x + 2.26
     }
   }
   wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
@@ -4106,7 +4120,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
   [#tw-hm(1, cert: twcert("F(prefix) [nil,⊸ nil ∪ cons] list(p)"))],
 
-  [#vstep(EQ, twp(twpic(tw-cons(4.3, a: bx-p, l: bx-lp), lw: 4.3, pre: bx-pf), s: 68%),
+  [#vstep(EQ, twp(twpic(tw-cons(5.17, a: bx-p, l: bx-lp, types: true), lw: 5.17, pre: bx-pf,
+      from: [`F([A])`]), s: 68%),
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
   [#tw-hm(2, cert: twcert("F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]"))],
 
@@ -4145,7 +4160,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [composition #h(4pt) #src[@lax-closure] #h(4pt) at `(𝟙×R°)(p×𝟙)=(p×R°)=(p×𝟙)(𝟙×R°)` and
    `(𝟙×R°) cons⊑cons R°`],
 
-  [#step([])[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]], [],
+  [#step([])[#twp(twrow(tw-cons(3.47, a: bx-p, types: true), lw: 3.47, pre: bx-Ro), s: 74%)][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]], [],
 
   [#step(SQ)[#twp(twrow(tw-cons(2.6, a: bx-p), lw: 2.6, post: bx-Ro), s: 74%)][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `φ:=⊸ nil`, `ψ:=(p×𝟙) cons`],
@@ -4162,6 +4177,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let step = step.with(pw: 246pt)
 #let bx-est = ([`est(R°)`], 2.2, true)
 #let bx-Sd = (frc([`S`]), 1.0, false)
+#let bx-1d = (frc([`𝟙`]), 0.85, false)
+#let bx-ES = ([`E(S)`], 1.4, false)
 #let bx-nd = (frc([`nil`]), 1.3, false)
 #let bx-ud = (frc([`⊸ nil ∪ (p×𝟙) cons`]), 4.6, false)
 #let bx-nil = ([`nil`], 1.15, false)
@@ -4175,7 +4192,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      `nil` where it does not]],
   table.header([*formula*], [*reason*]),
 
-  [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
+  // The unit births `E` outside `F([A])` and `E(S)` runs under it, so `E([A])` is the SECOND gap.
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  [#step([])[#twp(twrun((bx-1d, bx-ES, bx-est), mid-at: 1), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
 
   [#step(EQ)[#twp(twbr((bx-nd, bx-est), (bx-ud, bx-est)), s: 74%)][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [coproduct of maps],
@@ -5382,28 +5401,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   if nm != none { hm-name((x - 0.30, (t + b) / 2), nm) }
 }
 
-// `dip` names the bead heights whose span the WIRE makes, by `ddip`, rather than the bar; it is
-// empty by default, so a panel that does not ask for it draws exactly the ink it drew before.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, dip: (), cert: (:)) = {
+// A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
+// bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, cert: (:)) = {
   dpan(h, w, xo, {
   for l in lanes {
     // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
-    // across the lanes between, and a wire that crossed the old bar would cross the arm instead.
-    let ys = beads.filter(bd => dip.contains(bd.at(0)) and bd.at(3, default: none) != none
+    // across the lanes between, so a wire inside the span meets the bead rather than passing it.
+    let ys = beads.filter(bd => bd.at(3, default: none) != none
       and bd.at(3) <= l.at(0) and l.at(0) < xo
       and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
       and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
     if ys == () { dlane(xo, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4)) }
     else { ddip(xo, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3)) }
   }
-  for b in beads {
-    let xs = b.at(3, default: none)
-    let c = b.at(2, default: black)
-    if xs != none and not dip.contains(b.at(0)) {
-      d.line((xs, b.at(0)), (xo, b.at(0)), stroke: (thickness: lw, paint: c))
-    }
-    hm-bead((xo, b.at(0)), b.at(1), col: c)
-  }
+  for b in beads { hm-bead((xo, b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
   for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
@@ -5686,14 +5698,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((DXE, 2.95, 1.00, EW, UNIT), (DXL, "top", 2.05, none, none),
    (DXL, 2.05, "bot", none, none)),
   ((2.05, [`party`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS, dip: (1.00,),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), names: true, s: DS,
   cert: (expect: "party%∋ est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("party"),)))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 #let d-out2 = dpanel(3.9, DW, DXO,
   ((DXE, 3.25, 1.00, EW, UNIT), (DXL, "top", 2.55, none, none),
    (DXL, 2.55, "bot", none, none), (DXD, 2.55, 1.65, DELTA, none)),
   ((2.55, [`⦇S⦈`]), (1.65, [`choose`]), (1.00, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (1.00,),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
   // The ink spells the LOWER of the two rows: `E(⦇S⦈)` and `E(choose)` are two beads, and row 2's
   // `frc(⦇S⦈ choose)` is that one absorption step away.
   cert: (expect: "⦇S⦈%∋ E(choose) est(R°)", src: "tree(A)", tgt: "[A]", alias: (DUN("⦇S⦈"),)))
@@ -5702,14 +5714,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    (DXL, 3.55, "bot", none, none), (DXD, 3.55, 1.35, DELTA, none)),
   ((3.55, [`⦇S⦈`]), (2.75, [`est((R×R)°)`], black, DXD), (1.35, [`choose`]),
    (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (2.75, 0.55),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
   cert: (expect: "⦇S⦈%∋ est((R×R)°) choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
          alias: (DUN("⦇S⦈"), DUN("choose"))))
 #let d-out5 = dpanel(4.2, DW, DXO,
   ((DXE, 2.05, 0.55, EW, UNIT), (DXL, "top", 3.15, none, none),
    (DXL, 3.15, "bot", none, none), (DXD, 3.15, 1.35, DELTA, none)),
   ((3.15, [`⦇−⦈`]), (1.35, [`choose`]), (0.55, [`est(R°)`], black, DXL)),
-  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS, dip: (0.55,),
+  ((DXL, TREE), (DXO, OBJ)), ((DXL, LIST), (DXO, OBJ)), s: DS,
   // The first alias is what the `−` stands for: the body is the panel drawn under this one.
   cert: (expect: "⦇S%∋ est((R×R)°)⦈ choose%∋ est(R°)", src: "tree(A)", tgt: "[A]",
          alias: ("⦇S%∋ est((R×R)°)⦈ = ⦇−⦈", DUN("choose"))))
@@ -5723,7 +5735,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    (DID, 2.05, "bot", none, none), (DIl, 2.05, "bot", none, none)),
   ((2.05, [`S`]), (1.00, [`est((R×R)°)`], black, DID)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.00,),
+  ((DID, DELTA), (DIl, LIST), (DIO, OBJ)), s: DS,
   cert: (expect: "S%∋ est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]", alias: (DUN("S"),)))
 #let d-in6 = dpanel(3.6, DIW, DIO,
   ((DIE, 2.95, 1.00, EW, UNIT), (DIM, "top", 2.05, none, none), (DIL, "top", 2.05, none, none),
@@ -5731,7 +5743,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    (DIl, 2.05, "bot", none, none)),
   ((2.05, [`include`]), (1.00, [`est(R°)`], black, DIl)),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.00,),
+  ((DIl, LIST), (DIO, OBJ)), s: DS,
   // The row states the whole fork; this panel and the next draw one branch each.
   cert: (expect: "include%∋ est(R°)", src: "A×[[A]×[A]]", tgt: "[A]", alias: (DUN("include"),)))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list, at `DIE2`: the transpose is taken
@@ -5741,7 +5753,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    (DID, "top", 2.15, none, none), (DIl, "top", "bot", none, none)),
   ((3.75, [`π₂`]), (2.15, [`choose`]), (1.35, [`est(R°)`], black, DIl), (0.55, [`concat`])),
   ((DIM, [`A×−`]), (DIL, LIST), (DID, DELTA), (DIl, LIST), (DIO, OBJ)),
-  ((DIl, LIST), (DIO, OBJ)), s: DS, dip: (1.35,),
+  ((DIl, LIST), (DIO, OBJ)), s: DS,
   cert: (expect: "π₂ list(choose%∋ est(R°)) concat", src: "A×[[A]×[A]]", tgt: "[A]",
          alias: (DUN("choose"),)))
 
