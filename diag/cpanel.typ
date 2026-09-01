@@ -152,10 +152,8 @@
     let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
     let x0 = CBAR + ld
     let xr = x0 + p.w + CBAR
-    // The CARRIER types the fold's OUTPUT WIRE, so it sits on that wire's own stub, exactly like
-    // an input port label sits on its wire (below) — never floating over the box.  `scripts/circuit`
-    // sends `label: none` when the panel or the next box already names that same type at this
-    // wire's end — drawing it twice would put `[A]` on the wire and its end (§13.3.3b).
+    // The carrier labels the fold's single OUTPUT wire on its stub; `scripts/circuit` sends `none`
+    // when the carrier is a product (already drawn as its wires) or is that wire's own label.
     let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
       banana(0, yh, invert: invert)
