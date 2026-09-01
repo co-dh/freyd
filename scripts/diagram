@@ -98,7 +98,7 @@ X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
 # arms they replace and drop straight from the dot, so the wire runs away rightward (6c26635).
 # "left": legs sit LEFT of the arms, so the wire sweeps top-right to bottom-left and absorbs each
 # innermost arm at its own column (IntroString p.79, 3.8b).  None = the old vertical.
-SLOPE = "right"
+SLOPE = "left"
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "hm-sigs.json")
 

@@ -2433,6 +2433,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
         0.45 + 0.25 * v.map(p => xat(y) - p.at(0)).fold(0, calc.max),
         0.55 * v.map(p => p.at(1)).fold(99, calc.min)))
     }
+    // An arm's knee stays UNDER where every leg dipping to its bead lands on its lane (`ddip`'s
+    // `t - keb`), else the arm cuts through that leg on its way in, off any column.
+    for key in gk.keys().filter(k => k.first() == "d") {
+      let y = float(key.slice(1))
+      let land = lanes.filter(l => l.at(1) != "top" and l.at(4) == none and l.at(1) > y
+          and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < y
+          and beads.any(bd => bd.at(3, default: none) != none and calc.abs(bd.at(0) - y) < 0.001
+            and bd.at(3) <= l.at(0) and l.at(0) < xat(y)))
+        .map(l => l.at(1) - calc.min(gk.at("b" + str(l.at(1)), default: 99), 0.60 * (l.at(1) - y)) - y)
+      if land != () { gk.insert(key, calc.min(gk.at(key), 0.85 * land.fold(99, calc.min))) }
+    }
   }
   dpan(h, w, xo, {
   for l in lanes {
@@ -4174,23 +4185,25 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
 #let tw-pfx1 = dpanel(4, 6.85, 4,
-  ((0.55, "top", 3, none, none), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
-  ((3, [`cons`], black, 0.55), (2, [`prefix`], GIVEN1, 1.7), (1, [`p`], GIVEN2)),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])), names: true,
-  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]", branch: "cons",
-    alias: ("α = [nil,⊸ nil ∪ cons]",)))
+  ((0.55, "top", 3, none, none), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((3, [`α`], black, 0.55), (2, [`prefix`], black, 2.85), (1, [`p`])),
+  ((0.55, [`F`]), (2.85, [`list`]), (4, [`A`])),
+  ((1.7, [`list`]), (4, [`A`])),
+  opath: ((4, 4), (4, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
+  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))
 #let tw-pfx2 = dpanel(4, 6.85, 4,
-  ((0.55, "top", 2, none, none), (1.7, "top", 3, none, none), (2.85, 3, "bot", none, none)),
-  ((3, [`prefix`], black, 1.7), (2, [`cons`], black, 0.55), (1, [`p`])),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])),
+  ((0.55, "top", 2, none, none), (1.7, 3, "bot", none, none), (2.85, "top", 3, none, none)),
+  ((3, [`prefix`], black, 2.85), (2, [`cons`], black, 0.55), (1, [`p`])),
+  ((0.55, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
+  ((1.7, [`list`]), (4, [`A`])),
+  opath: ((4, 4), (2.85, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
 #let tw-pfx3 = dpanel(3, 6.85, 4,
-  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
-  ((2, [`prefix`], black, 1.7), (1, [`(p×list(p))cons`], black, 0.55)),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])),
+  ((0.55, "top", 1, none, none), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`prefix`], black, 2.85), (1, [`(p×list(p))cons`], black, 0.55)),
+  ((0.55, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
+  ((1.7, [`list`]), (4, [`A`])),
+  opath: ((4, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
@@ -5712,56 +5725,56 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
 #let d-out1 = dpanel(4, 6.85, 4,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none)),
-  ((2, [`party`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
-  ((1.7, [`tree`]), (4, [`A`])),
-  ((2.85, [`list`]), (4, [`A`])),
-  opath: ((2.85, 4), (2.85, 2), (4, 1), (4, 0)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`party`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
+  ((2.85, [`tree`]), (4, [`A`])),
+  ((1.7, [`list`]), (4, [`A`])),
+  opath: ((4, 4), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]"))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
 // `frc(⦇S⦈ choose)` is that one absorption step away.
 #let d-out2 = dpanel(5, 8, 5.15,
-  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 3, none, none), (2.85, 3, 2, [`Δ`], none), (4, 3, "bot", none, none)),
-  ((3, [`⦇S⦈`], black, 1.7), (2, [`choose`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
-  ((1.7, [`tree`]), (5.15, [`A`])),
-  ((4, [`list`]), (5.15, [`A`])),
-  opath: ((2.85, 5), (4, 3), (5.15, 2), (5.15, 1), (5.15, 0)),
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`Δ`], none), (2.85, 3, "bot", none, none), (4, "top", 3, none, none)),
+  ((3, [`⦇S⦈`], black, 4), (2, [`choose`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
+  ((4, [`tree`]), (5.15, [`A`])),
+  ((2.85, [`list`]), (5.15, [`A`])),
+  opath: ((5.15, 5), (4, 3), (4, 2), (4, 1), (4, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out4 = dpanel(7, 9.15, 6.3,
-  ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, "top", 5, none, none), (2.85, 2.5, 1, [`E`], frc([`𝟙`])), (4, 5, 2, [`Δ`], none), (5.15, 5, "bot", none, none)),
-  ((5, [`⦇S⦈`], black, 1.7), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 4), (1, [`est(R°)`], black, 2.85)),
-  ((1.7, [`tree`]), (6.3, [`A`])),
-  ((5.15, [`list`]), (6.3, [`A`])),
-  opath: ((2.85, 7), (5.15, 5), (6.3, 4), (6.3, 2), (6.3, 1), (6.3, 0)),
+  ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, 2.5, 1, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`Δ`], none), (4, 5, "bot", none, none), (5.15, "top", 5, none, none)),
+  ((5, [`⦇S⦈`], black, 5.15), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 2.85), (1, [`est(R°)`], black, 1.7)),
+  ((5.15, [`tree`]), (6.3, [`A`])),
+  ((4, [`list`]), (6.3, [`A`])),
+  opath: ((6.3, 7), (5.15, 5), (5.15, 4), (5.15, 2), (5.15, 1), (5.15, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
 #let d-in5 = dpanel(4, 11.45, 8.6,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, 2, "bot", none, none), (7.45, 2, "bot", none, none)),
-  ((2, [`S`], black, 1.7), (1, [`est((R×R)°)`], black, 0.55)),
-  ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (8.6, [`A`])),
-  ((6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])),
-  opath: ((6.3, 4), (7.45, 2), (8.6, 1), (8.6, 0)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 2, "bot", none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, "top", 2, none, none), (7.45, "top", 2, none, none)),
+  ((2, [`S`], black, 4), (1, [`est((R×R)°)`], black, 0.55)),
+  ((4, [`A×−`]), (5.15, [`list`]), (6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])),
+  ((1.7, [`Δ`]), (2.85, [`list`]), (8.6, [`A`])),
+  opath: ((8.6, 4), (7.45, 2), (4, 1), (4, 0)),
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 10.3, 7.45,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, 2, "bot", none, none)),
-  ((2, [`include`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
-  ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
-  ((6.3, [`list`]), (7.45, [`A`])),
-  opath: ((6.3, 4), (6.3, 2), (7.45, 1), (7.45, 0)),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, "top", 2, none, none)),
+  ((2, [`include`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
+  ((2.85, [`A×−`]), (4, [`list`]), (5.15, [`Δ`]), (6.3, [`list`]), (7.45, [`A`])),
+  ((1.7, [`list`]), (7.45, [`A`])),
+  opath: ((7.45, 4), (6.3, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]"))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
 // beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
 #let d-in7 = dpanel(6, 10.3, 7.45,
-  ((0.55, "top", 5, none, none), (1.7, "top", 1, none, none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 1, none, none), (6.3, 1, "bot", none, none)),
-  ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 4), (2, [`est(R°)`], black, 2.85), (1, [`concat`], black, 1.7)),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (7.45, [`A`])),
-  ((6.3, [`list`]), (7.45, [`A`])),
-  opath: ((6.3, 6), (6.3, 5), (6.3, 3), (6.3, 2), (6.3, 1), (7.45, 0)),
+  ((0.55, "top", 5, none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, 3.5, 2, [`E`], frc([`𝟙`])), (5.15, "top", 3, none, none), (6.3, "top", 1, none, none)),
+  ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 5.15), (2, [`est(R°)`], black, 4), (1, [`concat`], black, 2.85)),
+  ((0.55, [`A×−`]), (2.85, [`list`]), (5.15, [`Δ`]), (6.3, [`list`]), (7.45, [`A`])),
+  ((1.7, [`list`]), (7.45, [`A`])),
+  opath: ((7.45, 6), (7.45, 5), (7.45, 3), (7.45, 2), (6.3, 1), (2.85, 0)),
   cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
