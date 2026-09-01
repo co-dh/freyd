@@ -165,17 +165,20 @@
     let p = pic(t.body, length, invert: invert)
     let yh = calc.max(p.hh, (t.nin - 1) * UIP) + 0.28
     let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
-    let x0 = CBAR + ld
+    // A stub before the left bars, the mirror of the one after the right bars: the source label
+    // then sits on a wire, not between the bars.
+    let x0 = CGAP + CBAR + ld
     let xr = x0 + p.w + CBAR
     // The carrier labels the fold's single OUTPUT wire on its stub; `scripts/circuit` sends `none`
     // when the carrier is a product (already drawn as its wires) or is that wire's own label.
     let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
-      banana(0, yh, invert: invert)
+      for y in ys(t.nin) { wire((0, y), (CGAP, y), invert: invert) }
+      banana(CGAP, yh, invert: invert)
       banana(xr + CBAR, yh, right: true, invert: invert)
       for (i, y) in ys(t.body.nin).enumerate() {
-        wire((CBAR, y), (x0, y), invert: invert)
-        lab(CBAR + ld / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.port.at(i)))
+        wire((x0 - ld, y), (x0, y), invert: invert)
+        lab(x0 - ld / 2, y + CABOVE, if invert { white } else { TYCOL }, tx(t.port.at(i)))
       }
       d.group({ d.translate((x0, 0)); p.body })
       for y in ys(t.nout) {
