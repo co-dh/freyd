@@ -277,17 +277,26 @@ def matches(pat, lane, sub):
 
 
 def eat(pat, lanes, obj, sub, why):
-    """A source scheme against the cut: how many of its wires the bead consumes, its variable taking
-    the rest.  The context the formula names is peeled off before this — it never reaches here."""
-    k = 0
+    """A source scheme against the cut: how many of its wires the bead consumes, the wires it eats
+    that the cut carried FOLDED, and what is left on the object wire.  The context the formula names
+    is peeled off before this — it never reaches here."""
+    k, opened = 0, []
     while True:
         if isvar(pat) and pat[1] not in sub:
             sub[pat[1]] = (lanes[k:], obj)
-            return k
-        if k >= len(lanes):
-            unify(pat, obj, sub, why)
-            return k
+            return k, opened, obj
         w, inner = layer(deref(pat, sub))
+        if k >= len(lanes):
+            # past the end of the cut the scheme still names a wire: open it here rather than unify
+            # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a
+            # wire the scheme only names by a variable, and a port the panel's `split:` folds.
+            e = deref(obj, sub)
+            if w is None or '@' in w or (not isvar(e) and render(e) is not None):
+                unify(pat, obj, sub, why)
+                return k, opened, obj
+            opened.append((w, obj))
+            obj, pat = open_out(obj, w, sub, why), inner
+            continue
         if w is None or not matches(w, lanes[k].label, sub):
             raise Unhandled(f"{why} wants {spell(settle(pat, sub))} where the cut has the"
                             f" {lanes[k].label} wire")
@@ -371,16 +380,20 @@ def alphabet(table, *objs):
     return {w for w in ws.union(*(peel(o)[0] for o in objs)) if '−' not in w and w != '×'}
 
 
-def born_at(rows, ws, sub):
-    """Which bead a wire the BOTTOM edge needs comes off.  `⦇S⦈`'s target is the free `y`, so the
-    row that made the list is known only once `sub` is solved: the first already wearing `ws`."""
-    def wears(e):
-        for w in ws:
-            if render(e) is not None or layer(e)[0] != w:
+def born_at(rows, tail, sub, dflt):
+    """Which bead a wire comes off.  A wire IS the object-tail hanging below it, so it is born at the
+    first row whose object already carries that tail — `⦇S⦈`'s target is the free `y`, so which row
+    that is is known only once `sub` is solved.  Identifying the wire by its tail and not by its
+    depth is what lets a wire keep its lane across a bead that eats the wire OUTSIDE it."""
+    def carries(e):
+        while e != tail:
+            if render(e) is not None:
                 return False
-            e = layer(e)[1]
+            w, e = layer(e)
+            if w is None:
+                return False
         return True
-    return next((i for i, r in enumerate(rows) if wears(settle(r.obj, sub))), len(rows) - 1)
+    return next((i for i, r in enumerate(rows) if carries(settle(r.obj, sub))), dflt)
 
 
 def elaborate(formula, src, tgt, table):
@@ -391,7 +404,7 @@ def elaborate(formula, src, tgt, table):
     want = norm(parse(tgt))
     rel = alphabet(table, norm(parse(src)), want)
     made = [Lane(w, born=TOP) for w in stack]
-    lanes, sub, rows, atop = list(made), {}, [], obj
+    lanes, sub, rows, atop, pending = list(made), {}, [], obj, []
     for i, e in enumerate(expand(norm(parse(formula, False)), rel)):
         pre, e, _ = across(e, rel)         # `∘`'s left letters are context; its right ones the tail keeps
         wrap, core = peel_arrow(e, [l.label for l in lanes[len(pre):]], rel)
@@ -410,8 +423,14 @@ def elaborate(formula, src, tgt, table):
                     atop = obj
         s, t = signature(core, sigs, i)
         reach = lanes[len(wrap)] if len(wrap) < len(lanes) else None
-        k = eat(s, lanes[len(wrap):], obj, sub, why)
-        arms, (ws, keep, obj) = lanes[len(wrap):len(wrap) + k], grow(t, sub, why)
+        k, opened, obj = eat(s, lanes[len(wrap):], obj, sub, why)
+        arms = lanes[len(wrap):len(wrap) + k]
+        for w, e in opened:                # a wire opened HERE was born further up, where the object
+            made.append(Lane(w))           # first carried it; it is drawn down to the bead eating it
+            pending.append((made[-1], e, i)); arms.append(made[-1])
+        if reach is None and opened:       # a bead with no lane of its own still reaches the wires
+            reach = arms[k]                # it opened — a bead is a point, and every reach is an arm
+        ws, keep, obj = grow(t, sub, why)
         legs = [Lane(w, born=i) for w in ws]
         for l in arms:
             l.dies = i
@@ -420,17 +439,24 @@ def elaborate(formula, src, tgt, table):
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
-    k = eat(want, lanes, obj, sub, f"the target {tgt}")
+    k, opened, obj = eat(want, lanes, obj, sub, f"the target {tgt}")
     if k != len(lanes):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
+    for w, e in opened:
+        made.append(Lane(w)); pending.append((made[-1], e, len(rows))); lanes.append(made[-1])
     for l in lanes:
         l.dies = len(rows)
     # The bottom edge is a wire stack too, not one label: a target the beads only pin by unification
     # reaches here still wrapped, so peel it and give each wire the bead it comes off.
     ws, ob = peel(settle(obj, sub))
     for k, w in enumerate(ws):
-        made.append(Lane(w, born=born_at(rows, ws[:k + 1], sub)))
+        tail = ob
+        for x in reversed(ws[k:]):
+            tail = sl.act(x, tail, True)
+        made.append(Lane(w, born=born_at(rows, tail, sub, len(rows) - 1)))
         made[-1].dies = len(rows)
+    for l, e, i in pending:
+        l.born = born_at(rows[:i], settle(e, sub), sub, TOP)
     obot, otop = render(ob), render(settle(atop, sub))
     if otop is None:
         raise Unhandled(f"the object wire carries {spell(settle(atop, sub))}, which has no label")
