@@ -21,8 +21,9 @@ circuit between two bars, which is how the note already draws it (row 17).  `⊸
 and §3 row 14 reads it where it stands, as the constant it is.
 
 WHAT IT STILL REFUSES, each where it is written: an `∩` of more than two operands, a conditional of
-more than one test, a fold whose carrier the panel does not state, a guard that is not boxes and
-wires (a region's own colours do not invert inside a cut), and `°` on a composite (row 8's frame).
+more than one test, a fold whose carrier neither the panel nor the algebra's row declares, a guard
+that is not boxes and wires (a region's own colours do not invert inside a cut), and `°` on a
+composite (row 8's frame — over a PRODUCT it distributes, one flipped box per wire).
 """
 import importlib.machinery, importlib.util, json, os, sys
 
@@ -44,7 +45,10 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("13.3.3b r2", "F(prefix) [nil,⊸ nil ∪ cons] list(p)", "F([A])", "[A]"),
          ("∩ (13.3.3b)", "prefix° prefix∩R", "[A]", "[A]"),
          ("→ (13.3.3c)", "(π₁p→cons,⊸ nil)", "A×[A]", "[A]"),
-         ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]")]
+         ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]"),
+         ("⦇⦈ (13.4.4a)", "⦇S⦈", "tree(A)", "[A]×[A]"),
+         ("13.4.4a r2", "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", "tree(A)", "[A]"),
+         ("13.4.4a r4", "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", "tree(A)", "[A]")]
 
 
 def sigs():
@@ -188,6 +192,10 @@ def walk(e, tbl, src=None, tgt=None):
     if e[0] == 'comp':
         return seq(e[1], tbl, src, tgt)
     if e[0] == 'conv':
+        # `(R×S)°=R°×S°`: over a PRODUCT the `°` distributes, one flipped box per wire.  Rewritten
+        # here and not in `cnorm`, so the label a box carrying `(R×S)°` prints stays the note's.
+        if e[1][0] == 'prod':
+            return stack([('conv', x) for x in e[1][1]], tbl, src)
         n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src)
         if n["k"] != "box":
             raise Unhandled(f"`{spell(e)}` writes `°` on a composite, which is the cup/cap frame of"
@@ -217,13 +225,29 @@ def walk(e, tbl, src=None, tgt=None):
     return leaf(e, tbl, src, tgt)
 
 
+def rows(tbl, key):
+    """The arrows a key names.  A letter the note reuses across sections carries several, as a
+    list, and nothing but the port in hand tells them apart."""
+    r = tbl.get(key)
+    return [] if r is None else r if isinstance(r, list) else [r]
+
+
 def leaf(e, tbl, src, tgt):
     """An atom (§3 rows 1-2) or an application read as one box (§3 row 10): the signature's `src`
     and `tgt` are schemes, and the port in hand binds their variables."""
     key = e[1] if e[0] in ('atom', 'app') else None
-    row = tbl.get(key)
-    if row is None:
+    rs = rows(tbl, key)
+    if not rs:
         raise Unhandled(f"no signature for `{key or spell(e)}` in diag/circuit-sigs.json")
+    for i, row in enumerate(rs):
+        try:
+            return typed(e, row, tbl, src, tgt)
+        except Unhandled:
+            if i + 1 == len(rs):
+                raise
+
+
+def typed(e, row, tbl, src, tgt):
     env = {}
     unify(obj(row["src"]) if src is not None else obj(row["tgt"]), src if src is not None else tgt,
           env)
@@ -342,24 +366,55 @@ def test(e, tbl, src):
     return pic("cond", src, bs[0][2], False, guard=g, bodies=[lane(b) for b in bs])
 
 
+def base(f, c, polys):
+    """The object the algebra meets: the functor at the carrier.  A coproduct of ONE branch IS that
+    branch, so its algebra takes the branch's own ×-factors as separate strands; a several-branch
+    one stays folded, because the `[x,y]` inside is what forks it."""
+    bs = polys.get(f)
+    return subst(obj(bs[0]), {'x': c}) if bs and len(bs) == 1 else ('app', f, c)
+
+
+def declared(alg, tbl, f, env, polys):
+    """A fold inside a functor gets no target from the panel, so the carrier is READ OFF the
+    algebra's own row — `scripts/diagram` reads the same declaration for the spider side. `f`'s
+    algebra is the row whose source is `f` at its target, which is also what picks between the
+    arrows a reused letter carries; `env` binds the letters `mu`'s scheme wrote the source over."""
+    cs = [t for r in rows(tbl, alg[1] if alg[0] in ('atom', 'app') else None)
+          for t in [subst(obj(r["tgt"]), env)]
+          if ground(t) and subst(obj(r["src"]), env) == base(f, t, polys)]
+    if len(cs) != 1:
+        raise Unhandled(f"`{spell(alg)}` is {len(cs)} algebras for {f} in diag/circuit-sigs.json:"
+                        f" a fold inside a functor takes its carrier from the one row declaring it")
+    return cs[0]
+
+
 def fold(e, tbl, src, tgt):
     """§3 row 17: `⦇α⦈` as MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars,
     the note's own `banana` (allegory-axioms.typ).  Nothing crosses the LEFT bar: the input arrives
-    at it and the algebra's strands start there, and that break is the recursion."""
-    if tgt is None:
-        raise Unhandled(f"`{spell(e)}` folds onto a carrier the formula does not name: state the"
-                        f" panel's target, or the bars have no object to close on")
-    mus = sigs().get("mu", {})
-    fs = [f for f, o in mus.items() if obj(o) == src]
-    if len(fs) != 1:
+    at it and the algebra's strands start there, and that break is the recursion.  The carrier is
+    never inferred: the panel's target declares it, or the algebra's row does, and the box is
+    LABELLED with it — the term names the algebra and the source, so this is what it cannot say."""
+    cfg = sigs()
+    hits = []
+    for f, o in cfg.get("mu", {}).items():
+        env = {}
+        try:
+            unify(obj(o), src, env)
+        except Unhandled:
+            continue
+        hits.append((f, env))
+    if len(hits) != 1:
         raise Unhandled(f"`{spell(e)}` folds {oshow(src)}, which diag/circuit-sigs.json gives"
-                        f" {len(fs)} initial algebras for — a fold needs exactly one")
-    a = ('app', fs[0], tgt)
+                        f" {len(hits)} initial algebras for — a fold needs exactly one")
+    f, env = hits[0]
+    c = tgt if tgt is not None else declared(e[1][0], tbl, f, env, cfg["polys"])
+    a = base(f, c, cfg["polys"])
     b = walk(e[1][0], tbl, src=a)
-    if b[2] != tgt:
+    if b[2] != c:
         raise Unhandled(f"the algebra `{spell(e[1][0])}` lands on {oshow(b[2])}, not the carrier"
-                        f" {oshow(tgt)} the fold is stated at")
-    return pic("cata", src, tgt, b[3], body=lane(b), port=[oshow(w) for w in wires(a)])
+                        f" {oshow(c)} the fold is stated at")
+    return pic("cata", src, c, b[3], body=lane(b), label=oshow(c),
+               port=[oshow(w) for w in wires(a)])
 
 
 def tape(e, tbl, src):

@@ -44,6 +44,7 @@
 #let CPAD = 0.34        // label to box edge, each side
 #let CNODE = 0.34       // the white inset `node` paints round a seam label, in canvas units
 #let CPORT = 0.34       // wire end to the nearest edge of a port label
+#let CLBL = 0.28        // the functorial box's top bar to the carrier label riding over it
 // A run carrying a two-line fraction label is raised WHOLE — one shared height, or the wire steps
 // up and down between boxes (`boxrun`'s own rule, and why the note's `twrun` passes `TH`).
 #let CTH = 1.2
@@ -150,6 +151,9 @@
     let body = {
       banana(0, yh, invert: invert)
       banana(xr + CBAR, yh, right: true, invert: invert)
+      // The CARRIER, over the box: the term names the algebra and the source, so the object the
+      // fold lands on is the one thing only the label can say.  Above the bars, never through them.
+      lab((xr + CBAR) / 2, yh + CLBL, if invert { white } else { black }, tx(t.label))
       for (i, y) in ys(t.body.nin).enumerate() {
         wire((CBAR, y), (x0, y), invert: invert)
         lab(CBAR + ld / 2, y + 0.3, if invert { white } else { black }, tx(t.port.at(i)))
@@ -157,7 +161,7 @@
       d.group({ d.translate((x0, 0)); p.body })
       for y in ys(t.nout) { wire((x0 + p.w, y), (xr + CBAR + CGAP, y), invert: invert) }
     }
-    return (w: xr + CBAR + CGAP, hh: yh, body: body)
+    return (w: xr + CBAR + CGAP, hh: yh + 2 * CLBL, body: body)
   }
   // ---- §3 row 16: `(g→x,y)`.  A `∪` of two RESTRICTED branches: each copies the input, runs the
   // guard on one copy and ends it at a dot — that composite is `dom(g)` — and its body on the
