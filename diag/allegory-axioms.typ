@@ -8671,7 +8671,21 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_thin@6b5aa580
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(H)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+    (
+      1,
+      ("EB", ),
+    ),
+  ), src: ("A", ), tgt: ("B", )),
+  cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: "H:A⟶B"))],
     [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
   // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
   // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
@@ -8917,14 +8931,10 @@ both lists empty.
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #let mb-estR = ([`est(R)`], 1.90, true)
-#let mb-Lfl = (frc([`flatten°`]), 3.05, false)
 #let mb-Lwc = (frc([`[wrap,cat]°`]), 4.00, false)
 #let mb-Ptip = ([`P([tip,(X×X)bin])`], 5.35, true)
 #let mb-Lcat = (frc([`cat°`]), 1.80, false)
 #let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
-#let mb-splits = ([`splits`], 1.90, false)
-#let mb-lbin = ([`list((mct×mct)bin)`], 5.65, true)
-#let mb-min = ([`minlist R`], 2.85, false)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8934,7 +8944,21 @@ both lists empty.
      non-empty segment, each entry built from the column to its left and the row below it]],
   table.header([*circuit* — one wire, `list⁺ A` to `tree A`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`list⁺ A`], [`tree A`], none, (mb-Lfl, mb-estR)),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(flatten°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E list⁺ A", ),
+    ),
+    (
+      1,
+      ("E tree A", ),
+    ),
+  ), src: ("list⁺ A", ), tgt: ("tree A", )),
+  cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "flatten:tree(A)⟶list⁺(A)"))],
     [#src[the specification — @mct-defn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
@@ -8977,7 +9001,21 @@ both lists empty.
   // shape of its own; the panel above already draws the `cat` branch.
   [],
 
-  [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-splits, mb-lbin, mb-min)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "splits", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "list((mct×mct)bin)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "minlist R", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("[(list⁺ A)²]", ),
+    ),
+    (
+      1,
+      ("[tree A]", ),
+    ),
+  ), src: ("list⁺ A", ), tgt: ("tree A", )),
+  cert: (expect: "splits list((mct×mct)bin)minlist R", src: "list⁺(A)", tgt: "tree(A)", sigs: "splits:list⁺(A)⟶[list⁺(A)×list⁺(A)] mct:list⁺(A)⟶tree(A) bin:tree(A)×tree(A)⟶tree(A)"))],
     [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
   [#dpanel(5, 10.3, 7.45,
@@ -9038,15 +9076,11 @@ the longest repeated tail; #h(4pt)
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
 #let cb-estR = ([`est(R)`], 1.90, true)
 #let cb-thin = ([`thin Q`], 1.90, true)
-#let cb-Ldec = (frc([`decode°`]), 2.75, false)
 #let cb-Lne = (frc([`[nil,extend]°`]), 4.60, false)
 #let cb-Psnoc = ([`P([nil,(X×𝟙)snoc])`], 5.65, true)
 #let cb-Lext = (frc([`extend°`]), 2.75, false)
 #let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
 #let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
-#let cb-red = ([`reduce`], 1.90, false)
-#let cb-lst = ([`list((encode×𝟙)snoc)`], 6.25, true)
-#let cb-min = ([`minlist R`], 2.85, false)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -9058,7 +9092,21 @@ the longest repeated tail; #h(4pt)
      been decoded]],
   table.header([*circuit* — one wire, `String` to `[Code]`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`String`], [`[Code]`], none, (cb-Ldec, cb-estR)),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(decode°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Char]", ),
+    ),
+    (
+      1,
+      ("E[Code]", ),
+    ),
+  ), src: ("[Char]", ), tgt: ("[Code]", )),
+  cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: "decode:[Code]⟶[Char]"))],
     [#src[the specification — @code-defn]])],
   [#dpanel(4, 6.85, 4,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
@@ -9096,7 +9144,21 @@ the longest repeated tail; #h(4pt)
   ((2.85, [`list`]), (8.6, [`Code`])),
   cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))E((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
-  [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-red, cb-lst, cb-min)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "reduce", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "list((encode×𝟙)snoc)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "minlist R", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("[[Char]×Code]", ),
+    ),
+    (
+      1,
+      ("[[Code]]", ),
+    ),
+  ), src: ("[Char]", ), tgt: ("[Code]", )),
+  cert: (expect: "reduce list((encode×𝟙)snoc)minlist R", src: "[Char]", tgt: "[Code]", sigs: "reduce:[Char]⟶[[Char]×Code] encode:[Char]⟶[Code] snoc:[Code]×Code⟶[Code]"))],
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
