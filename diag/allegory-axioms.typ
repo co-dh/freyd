@@ -7114,10 +7114,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let nb-Qo = ([`Q°`], 0.85, true)
 #let nb-in = ([`∈`], 0.75, true)
 #let nb-pic(tail) = thpic([`A`], [`EA`], none, tail)
-// TWO `E` wires, and that is the content: the one `∈` opens INSIDE `F`, and the transpose's own,
-// opened outside everything by the unit and carried out of the panel by `thin Q`.
-#let nb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THO, [`A`]),), ((THU, [`E`]), (THO, [`A`])), lanes: lanes, names: names)
+// `thin Q : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
+// touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7140,37 +7138,54 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
     [`S°F(Q°∈)`#frc([`F(∋)S`])` thin Q` \
      #src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to
       `−⊑Q°∈`]])],
-  [#nb-pan(5.4, (thw-arc(THM, 4.85, 1.10), thw-arc(THN, 3.35, 1.85), ((THU, 2.60), (THU, 0))),
-    ((THO, 4.85, [`S°`], 0.32), (THO, 4.10, [`Q°`], 0.32), (THO, 3.35, [`∈`], 0.32),
-     (THU, 2.60, frc([`𝟙`]), -0.32), (THO, 1.85, [`∋`], 0.32), (THO, 1.10, [`S`], 0.32),
-     (THU, 0.45, [`thin Q`], -0.32)),
-    lanes: ((THM - 0.34, 3.70, [`F`]), (THN - 0.34, 2.60, [`E`])), names: true)],
+  [#dpanel(7, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`E`], none), (2.85, 6, 2, [`F`], none), (4, 4, 3, [`E`], none)),
+  ((6, [`S°`]), (5, [`Q°`]), (4, [`∈`]), (3, [`∋`], black, 4), (2, frc([`S`]), black, 2.85), (1, [`thin(Q)`], black, 1.7)),
+  ((5.15, [`A`]),),
+  ((0.55, [`E`]), (5.15, [`A`])),
+  opath: ((5.15, 7), (5.15, 6), (5.15, 5), (5.15, 4), (5.15, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
+  cert: (expect: "S° F(Q° ∈)F(∋)S%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-So, nb-Fin, nb-LamS, nb-thin)),
     [`Q°S°F(∈)`#frc([`F(∋)S`])` thin Q` \
      #src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `Q°` has walked out of the `F` handle: that move IS the monotonicity assumption.
-  [#nb-pan(5.4, (thw-arc(THM, 4.10, 1.10), thw-arc(THN, 3.35, 1.85), ((THU, 2.60), (THU, 0))),
-    ((THO, 4.85, [`Q°`], 0.32), (THO, 4.10, [`S°`], 0.32), (THO, 3.35, [`∈`], 0.32),
-     (THU, 2.60, frc([`𝟙`]), -0.32), (THO, 1.85, [`∋`], 0.32), (THO, 1.10, [`S`], 0.32),
-     (THU, 0.45, [`thin Q`], -0.32)))],
+  [#dpanel(7, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`E`], none), (2.85, 5, 2, [`F`], none), (4, 4, 3, [`E`], none)),
+  ((6, [`Q°`]), (5, [`S°`]), (4, [`∈`]), (3, [`∋`], black, 4), (2, frc([`S`]), black, 2.85), (1, [`thin(Q)`], black, 1.7)),
+  ((5.15, [`A`]),),
+  ((0.55, [`E`]), (5.15, [`A`])),
+  opath: ((5.15, 7), (5.15, 6), (5.15, 5), (5.15, 4), (5.15, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
+  cert: (expect: "Q° S° F(∈)F(∋)S%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-in, nb-thin)),
     [`Q°∈ thin Q` \
      #src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
       @pow-laws]])],
-  [#nb-pan(3.4, (thw-out(THU, 1.85, 0),),
-    ((THO, 2.60, [`Q°`], 0.32), (THO, 1.85, [`∈`], 0.32), (THU, 0.85, [`thin Q`], -0.32)))],
+  [#dpanel(4, 5.7, 2.85,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`E`], none)),
+  ((3, [`Q°`]), (2, [`∈`]), (1, [`thin(Q)`], black, 1.7)),
+  ((2.85, [`A`]),),
+  ((0.55, [`E`]), (2.85, [`A`])),
+  cert: (expect: "Q° ∈ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-Qo, nb-in)),
     [`Q°Q°∈` \ #src[`∈ thin Q⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
-  [#nb-pan(3.4, (thw-out(THU, 1.30, 0),),
-    ((THO, 2.60, [`Q°`], 0.32), (THO, 1.95, [`Q°`], 0.32), (THO, 1.30, [`∈`], 0.32)))],
+  [#dpanel(4, 4.55, 1.7,
+  ((0.55, 1, "bot", none, none),),
+  ((3, [`Q°`]), (2, [`Q°`]), (1, [`∈`])),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "Q° Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(EQ, nb-pic((nb-Qo, nb-in)),
     [`Q°∈` \ #src[`Q°Q°=Q°`, `Q` a preorder]])],
-  [#nb-pan(3.4, (thw-out(THU, 1.60, 0),),
-    ((THO, 2.35, [`Q°`], 0.32), (THO, 1.60, [`∈`], 0.32)))],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 1, "bot", none, none),),
+  ((2, [`Q°`]), (1, [`∈`])),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 ))]<thin-thm81>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
@@ -7195,22 +7210,33 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
     [`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)`])],
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
-  [#tb-pan(3.2, (thw-in(THM, 3.2, 2.15), thw-arc(THU, 2.15, 0.85)),
-    ((THO, 2.15, [`⦇−⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
-    lanes: ((THU - 1.05, 1.50, [`E`]),), names: true)],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 2, 1, [`E`], none),),
+  ((2, [`⦇F(∋)S%∋ thin(Q)⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "⦇F(∋)S%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
     [#frc([`⦇S⦈`])` thin Q est(R)` \ #src[@thin-thm81]])],
-  // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it and `thin Q`
-  // — an arrow of the set alone — is a bead on the `E` wire, not on the object wire.
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THU, 1.55, [`thin Q`], -0.32),
-     (THO, 0.85, [`est(R)`], 0.32)))],
+  // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it.  `thin Q : EA⟶EA`
+  // is fixed by one `Q`, not natural in `A`: an arrow of `EA`, so its bead touches both wires `E` and `A`.
+  [#dpanel(5, 5.7, 2.85,
+  ((0.55, 2, 1, [`E`], none), (1.7, 3.5, 2, [`E`], frc([`𝟙`]))),
+  ((3, [`⦇S⦈`]), (2, [`thin(Q)`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`T`]),),
+  ((2.85, [`A`]),),
+  opath: ((2.85, 5), (2.85, 3), (2.85, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)thin(Q)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 
   [#vstep(EQ, thpic([`T`], [`A`], none, (tb-cS, tb-est)),
     [#frc([`⦇S⦈`])` est(R)` \ #src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)))],
+  [#dpanel(4, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((2, [`⦇S⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 ))]<thin-cor>
 
 == Paths in a layered network
