@@ -17,7 +17,3 @@
     branch names, or a general fallback, so all six generate and certify.
 [X] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
-[ ] `make hm-check` fails one book fixture: `FAIL 3.1a side 0: bead η arms ours w[0, 1] book w[]`.
-    Pre-existing, exposed once hm-check's own `dg.sigs`/`dg.typed` crash was fixed.  `NORMS` says a
-    fixture is transcribed with normalization already applied, so the fix is in `diag/pairs/3.1a.json`:
-    re-transcribe η's arms bent-in and declare `free-end-vs-bent-in`.  Needs the book page looked at.
