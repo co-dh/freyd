@@ -2529,16 +2529,18 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
 // bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, cert: (:)) = {
+  // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
+  // sides match, so taking the last one would make `xat` two functions in two languages, not one.
   let xat = if opath == none { y => xo } else { y => {
-    let r = xo
+    let r = none
     for i in range(opath.len() - 1) {
       let (a, b) = (opath.at(i), opath.at(i + 1))
-      if y <= a.at(1) + 0.001 and y >= b.at(1) - 0.001 {
-        r = if a.at(1) - b.at(1) < 0.001 { b.at(0) } else {
+      if r == none and y <= a.at(1) + 1e-6 and y >= b.at(1) - 1e-6 {
+        r = if a.at(1) - b.at(1) < 1e-6 { b.at(0) } else {
           b.at(0) + (a.at(0) - b.at(0)) * (y - b.at(1)) / (a.at(1) - b.at(1)) }
       }
     }
-    r
+    if r == none { xo } else { r }
   } }
   let gk = dknees(xat, h, lanes, beads)
   dpan(h, w, xo, {
