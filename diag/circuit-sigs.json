@@ -21,7 +21,9 @@
     "after it (B&dM's spelling, which the note keeps).  A preorder letter `Q`/`P`/`R` is `x⟶x`.",
     "Sources: `sum`/`≥`/`zero`/`plus` are the mss rows' own labels `[A]`/`EA`/`A`; `thin` p.193,",
     "`minlist` p.169, `setify` p.125, `merge` p.156 of algprog; `sort`/`thinlist` are forced by the",
-    "note's `sort P = setify° ordered P thinlist Q`; `α` by the 13.3.3b cert; `union=E(∋)`."
+    "note's `sort P = setify° ordered P thinlist Q`; `α` by the 13.3.3b cert; `union=E(∋)`.",
+    "A cert instantiates a constant with a key of its own, `A: \"Int\"` beside `src`/`tgt`: the",
+    "element type B&dM leave a parameter, which the mss rows fix at `Int` — no second table."
   ],
   "sigs": {
     "S":      [{"src": "F([x])",       "tgt": "[x]",     "map": false},

@@ -85,11 +85,28 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("filter :5128 fpic", "⦇[nil,(π₁p→cons,π₂)]⦈", "[A]", "[A]")]
 
 
+AT = {}     # the table constants the cert in hand instantiates, `A: "Int"`, while its circuit is drawn
+
+
 @functools.lru_cache(maxsize=None)
-def sigs():
+def raw():
     """diag/circuit-sigs.json — what each atom is an arrow between, and whether it is a map.
     Read once: `wires` asks for the polynomials at every node, and nobody writes to the table."""
     return json.load(open(SIGS, encoding="utf-8"))
+
+
+def sigs():
+    """The table at `AT`: B&dM leave the element type `A` a parameter, and the mss rows fix it at
+    `Int` — one key on the cert, not a second table over `Int`.  Any constant, any object."""
+    return inst(raw(), AT)
+
+
+def inst(t, env):
+    if isinstance(t, dict):
+        return {k: v if k == "//" else inst(v, env) for k, v in t.items()}
+    if isinstance(t, list):
+        return [inst(v, env) for v in t]
+    return re.sub(r'\w+', lambda m: env.get(m[0], m[0]), t) if env and isinstance(t, str) else t
 
 
 # ---------------------------------------------------------------- objects
@@ -560,15 +577,18 @@ def seams(objs):
     return out
 
 
-def draw(formula, src, tgt, table=None):
-    """The circuit a formula denotes, typed, with its ports checked against the stated ones."""
+def draw(formula, src, tgt, at=None):
+    """The circuit a formula denotes, typed, with its ports checked against the stated ones.  `at`
+    is the cert's other keys, table constants instantiated for this row, and the cert keeps them."""
+    global AT
+    AT = at or {}
     e = cnorm(parse(formula))
-    tree, s, t, _ = walk(e, (table or sigs())["sigs"], src=obj(src), tgt=obj(tgt))
+    tree, s, t, _ = walk(e, sigs()["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
     tree["src"] = [lshow(w) for w in tree["_in"]]
     tree["tgt"] = [lshow(w) for w in tree["_out"]]
-    tree["cert"] = {"expect": formula, "src": src, "tgt": tgt}
+    tree["cert"] = {"expect": formula, "src": src, "tgt": tgt, **AT}
     return tree
 
 
@@ -619,7 +639,7 @@ def literals(text):
     return out
 
 
-def regen(path, tbl, write):
+def regen(path, write):
     """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
     drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
     text = open(path, encoding="utf-8").read()
@@ -629,7 +649,8 @@ def regen(path, tbl, write):
         ln = text.count("\n", 0, i) + 1
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
-            new = emit(draw(c["expect"], c["src"], c["tgt"], tbl))
+            new = emit(draw(c["expect"], c["src"], c["tgt"],
+                            {k: v for k, v in c.items() if k not in ("expect", "src", "tgt")}))
         except (Unhandled, ValueError, KeyError) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:j]:
@@ -682,7 +703,6 @@ def main(argv):
     taken = {i for o in ("--src", "--tgt") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
-    tbl = sigs()
     if "--slice" in argv:
         # The whole file is written here, header included: a hand-kept header above a `>` redirect
         # was lost three times over, so nothing about circuit-slice.typ is edited by hand any more.
@@ -698,7 +718,7 @@ def main(argv):
         for name, f, s, t in SLICE:
             out.append(f"// {name}  {f}   [{s} ⟶ {t}]")
             try:
-                out.append(emit(draw(f, s, t, tbl)))
+                out.append(emit(draw(f, s, t)))
             except (Unhandled, ValueError, KeyError) as ex:
                 bad += 1; print(f"circuit: {name}: {ex}", file=sys.stderr)
             out.append("")
@@ -708,7 +728,7 @@ def main(argv):
               f" {bad} blocked → {os.path.relpath(OUT)}", file=sys.stderr)
         sys.exit(bad and f"circuit: {bad} row{'s' * (bad > 1)} did not draw")
     if "--compare" in argv or "--write" in argv:
-        regen(next((a for a in free if a.endswith(".typ")), "diag/allegory-axioms.typ"), tbl,
+        regen(next((a for a in free if a.endswith(".typ")), "diag/allegory-axioms.typ"),
               "--write" in argv)
         return
     formula = next(iter(free), None)
@@ -718,7 +738,7 @@ def main(argv):
                  + '\n       circuit --slice'
                  + '\n       circuit --compare [diag/allegory-axioms.typ]'
                  + '\n       circuit --write [diag/allegory-axioms.typ]')
-    t = draw(formula, src, tgt, tbl)
+    t = draw(formula, src, tgt)
     print(emit(t))
     # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
     # spelling verbatim, and a rebuilt one cannot know that this bracket was written `(p×𝟙) cons`.
