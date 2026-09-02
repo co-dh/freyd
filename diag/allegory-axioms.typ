@@ -2373,33 +2373,43 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   pic-meta(plain(f), row, width: sz.width)
   row
 })
-// A derivation read LEFT TO RIGHT: one Hinze–Marsden panel per `(op, panel, reason)` step, the
-// op between it and the step before, the reason underneath both.  Steps pack greedily into lines
-// of the cell's width, a continued line opening with its op; a line's slack widens its columns.
-#let hchain(..steps) = layout(sz => {
+// A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
+// between it and the step before, the formula above, the reason underneath both.  Steps pack
+// greedily into lines of the cell's width, a continued line opening with its op; a line's slack
+// widens its columns — or, `fill`, ONE line, the pictures scaled by the factor that spends it all.
+#let hchain(..steps, fill: false) = layout(sz => {
   let gut = 4pt
-  let ss = steps.pos().map(((op, pic, why)) => (op: op, pic: box(pic), why: why, w: measure(box(pic)).width))
+  let ss = steps.pos().map(s => (op: s.at(0), pic: box(s.at(1)), why: s.at(2), f: s.at(3, default: none),
+    w: measure(box(s.at(1))).width))
+  if fill {
+    let k = (sz.width - (ss.len() - 1) * (OPW + 2 * gut)) / ss.map(s => s.w).sum()
+    ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k))
+  }
   let (lines, cur, used) = ((), (), 0pt)
   for s in ss {
     let add = s.w + if lines.len() == 0 and cur.len() == 0 { 0pt } else { OPW + 2 * gut }
-    if cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
+    if not fill and cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
     cur.push(s)
   }
   lines.push(cur)
   stack(dir: ttb, spacing: 10pt, ..lines.enumerate().map(((li, line)) => {
     let extra = calc.max(0pt, (sz.width - line.map(s => s.w).sum()
       - (line.len() - if li == 0 { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
-    let (cols, pr, rr) = ((), (), ())
+    let py = if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
+    let (cols, fr, pr, rr) = ((), (), (), ())
     for (i, s) in line.enumerate() {
       let op = not (li == 0 and i == 0)
       if op { cols.push(OPW); pr.push(s.op) }
       cols.push(s.w + extra)
-      pr.push({ pic-meta(plain(s.why), s.pic); s.pic })
-      rr.push(grid.cell(colspan: if op { 2 } else { 1 },
-        box(width: s.w + extra + if op { OPW + gut } else { 0pt }, s.why)))
+      pr.push({ pic-meta(plain(if s.f == none { s.why } else { s.f }), s.pic); s.pic })
+      let span = grid.cell.with(colspan: if op { 2 } else { 1 })
+      let wide = box.with(width: s.w + extra + if op { OPW + gut } else { 0pt })
+      fr.push(span(wide(if s.f == none { [] } else { s.f })))
+      rr.push(span(wide(s.why)))
     }
     grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
-      align: (x, y) => if y == 0 { center + horizon } else { left + top }, ..pr, ..rr)
+      align: (x, y) => if y == py { center + horizon } else { left + top },
+      ..if py == 1 { fr } else { () }, ..pr, ..rr)
   }))
 })
 
@@ -5142,7 +5152,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           ), seams: (
             (
               0,
-              ("A", "[A]", ),
+              ("Int", "[Int]", ),
             ),
           )),
       )),
@@ -5150,10 +5160,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), seams: (
     (
       0,
-      ("[A]", ),
+      ("[Int]", ),
     ),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[nil,⊸ nil ∪ cons] sum", src: "F([A])", tgt: "A"))],
+  ), src: ("F[Int]", ), tgt: ("Int", )),
+  cert: (expect: "[nil,⊸ nil ∪ cons] sum", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`[nil,⊸ nil ∪ cons] sum`])],
   [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
@@ -5165,7 +5175,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: (
         (
           1,
-          ("[A]", ),
+          ("[Int]", ),
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5179,7 +5189,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
               ), seams: (
                 (
                   0,
-                  ("[A]", ),
+                  ("[Int]", ),
                 ),
               )),
             (k: "seq", nin: 2, nout: 1, items: (
@@ -5188,18 +5198,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
               ), seams: (
                 (
                   0,
-                  ("[A]", ),
+                  ("[Int]", ),
                 ),
               )),
           )),
       ), seams: (
         (
           0,
-          ("A", "[A]", ),
+          ("Int", "[Int]", ),
         ),
       )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[nil sum,⊸ nil sum∪cons sum]", src: "F([A])", tgt: "A"))],
+  ), src: ("F[Int]", ), tgt: ("Int", )),
+  cert: (expect: "[nil sum,⊸ nil sum∪cons sum]", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
@@ -5230,11 +5240,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: (
         (
           0,
-          ("A", "[A]", ),
+          ("Int", "[Int]", ),
         ),
       )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[zero,⊸ zero ∪ (𝟙×sum) plus]", src: "F([A])", tgt: "A"))],
+  ), src: ("F[Int]", ), tgt: ("Int", )),
+  cert: (expect: "[zero,⊸ zero ∪ (𝟙×sum) plus]", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
     joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
@@ -5266,11 +5276,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: (
         (
           0,
-          ("A", "[A]", ),
+          ("Int", "[Int]", ),
         ),
       )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[zero,(𝟙×sum)(⊸ zero ∪ plus)]", src: "F([A])", tgt: "A"))],
+  ), src: ("F[Int]", ), tgt: ("Int", )),
+  cert: (expect: "[zero,(𝟙×sum)(⊸ zero ∪ plus)]", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
@@ -5302,11 +5312,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: (
         (
           0,
-          ("A", "[A]", ),
+          ("Int", "[Int]", ),
         ),
       )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "F(sum) [zero,⊸ zero ∪ plus]", src: "F([A])", tgt: "A"))],
+  ), src: ("F[Int]", ), tgt: ("Int", )),
+  cert: (expect: "F(sum) [zero,⊸ zero ∪ plus]", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
@@ -5317,29 +5327,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // lean:AOP.A7_7_MSS.mss_prefix_sum@001a3374
 ]<mss-prefix-sum>
 
-// The `∪` is `choosebox`'s tape, which itself cannot be reused: it writes `π₁`/`π₂`
-// beside its two branches, and here each branch carries a circuit of its own and wants no label.
-#import "circuit.typ": TAPEEDGE
-#let MIY = 0.5           // `A×Int` is TWO strands: the head above, the running sum below
-#let GEQ = 0.9           // the `≥` box — an order, not a map, so it keeps its chamfer
-
-
-
-// HINZE–MARSDEN: the drawn branch is `plus`'s, so `A×−` is the functor wire and `Int` the object
-// one; `𝟙×≥` is `F(≥)`, the `≥` bead with `A×−` running past it, and the join stays put while it moves.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1fr,),
+  align: left + horizon,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   // B&dM p.172: "By definition, an F-algebra S : A ← FA is monotonic on a relation R : A ← A if S·FR ⊆ R·S."
-  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
+  Thm(cols: 1)[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
      branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
     // lean:AOP.A7_7_MSS.mss_mono@d2c09a73
-  table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
-    [*Hinze–Marsden*]),
+  table.header([*circuit* — the head above, the running sum below; the tape is the `∪`]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+  [#hchain(fill: true,
+    (none, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "stack", nin: 2, nout: 2, lanes: (
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (
@@ -5356,14 +5356,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
             (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
           ), seams: ()),
       )),
-  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(𝟙×≥)(⊸ zero ∪ plus)", src: "A×A", tgt: "A"))],
-    [`(𝟙×≥)(⊸ zero ∪ plus)`])],
-  [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
-    joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`]))) \ #src[the `(𝟙×≥) plus` operand of `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]],
-
-  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+  ), seams: (), src: ("Int", "Int", ), tgt: ("Int", )),
+  cert: (expect: "(𝟙×≥)(⊸ zero ∪ plus)", src: "Int×Int", tgt: "Int", A: "Int"))],
+      [], [`(𝟙×≥)(⊸ zero ∪ plus)`]),
+    (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
@@ -5384,13 +5380,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           )),
         (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-  ), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus", src: "A×A", tgt: "A"))],
-    [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` \ #src[relator, composition over `∪`]])],
-  // Empty: `∪` is an operation on hom-sets, not a wiring, so distributing over it draws the row above.
-  [],
-
-  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+  ), src: ("Int", "Int", ), tgt: ("Int", )),
+  cert: (expect: "(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus", src: "Int×Int", tgt: "Int", A: "Int"))],
+      src[relator, composition over `∪`], [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]),
+    (SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
         (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
               (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
@@ -5400,16 +5393,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
       ), seams: ()),
-  ), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "⊸ zero ∪ plus ≥", src: "A×A", tgt: "A"))],
-    [`⊸ zero ∪ plus≥` \ #src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
-     written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
-     together, which carries it to `≥`.]])],
-  [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
-    joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`]))) \ #src[the `plus≥` operand of `⊸ zero ∪ plus≥`]],
-
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+  ), src: ("Int", "Int", ), tgt: ("Int", )),
+  cert: (expect: "⊸ zero ∪ plus ≥", src: "Int×Int", tgt: "Int", A: "Int"))],
+      src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
+       written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
+       together, which carries it to `≥`.], [`⊸ zero ∪ plus≥`]),
+    (SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
         (k: "seq", nin: 2, nout: 1, items: (
             (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -5421,11 +5410,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           ), seams: ()),
       )),
     (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(⊸ zero ∪ plus)≥", src: "A×A", tgt: "A"))],
-    [`(⊸ zero ∪ plus)≥` \ #src[`≥` reflexive]])],
-  // Empty: `≥` is put back on the `⊸ zero` branch, which this column does not draw.
-  [],
+  ), seams: (), src: ("Int", "Int", ), tgt: ("Int", )),
+  cert: (expect: "(⊸ zero ∪ plus)≥", src: "Int×Int", tgt: "Int", A: "Int"))],
+      src[`≥` reflexive], [`(⊸ zero ∪ plus)≥`]),
+  )],
 ))]<mss-mono>
 
 // Every row is ONE WIRE, `𝟏+A×Int` to `Int` — `F(Int)` with `A:=Int` — so its two ends are drawn once.
