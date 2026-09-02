@@ -30,7 +30,7 @@ SLICE := diag/circuit-slice.typ
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit cite spell scan
+p: $(STAMP) slice circuit cite spell scan-strict
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
@@ -77,15 +77,16 @@ books:
 
 # The scan line over every panel that emits its lists as metadata.  Cached on a hash of every
 # `dpanel`/`cpanel`/`tpan`/`mpan` call: unchanged since the last clean pass skips the `typst query`
-# that dominates its cost, so `p` can afford it now; `scan-full` bypasses the cache.
+# that dominates its cost; `scan-full` bypasses the cache.
 scan:
 	./scripts/scanline diag/allegory-axioms.typ
 
 scan-full:
 	./scripts/scanline diag/allegory-axioms.typ --full
 
-# The same sweep with crossings fatal.  A SEPARATE TARGET and not a flag on `scan`: the note has
-# crossings today, so `scan` must stay green while this one names the work still to do.
+# The same sweep with crossings fatal, and the one `p` runs.  A wire is a functor and horizontal
+# composition has no swap, so a crossing claims a symmetry that is not there and there is no
+# acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
 scan-strict:
 	./scripts/scanline diag/allegory-axioms.typ --strict
 
