@@ -88,6 +88,8 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
 
 
 AT = {}     # the table constants the cert in hand instantiates, `A: "Int"`, while its circuit is drawn
+OWN = {}    # and the signatures it declares itself, laid over the table: a §14 name it has never heard
+            # of, or a letter the table binds to another section's meaning.
 
 
 @functools.lru_cache(maxsize=None)
@@ -99,8 +101,28 @@ def raw():
 
 def sigs():
     """The table at `AT`: B&dM leave the element type `A` a parameter, and the mss rows fix it at
-    `Int` — one key on the cert, not a second table over `Int`.  Any constant, any object."""
-    return inst(raw(), AT)
+    `Int` — one key on the cert, not a second table over `Int`.  Any constant, any object.
+    `OWN` lies over the result: what the panel declares itself beats what the file says."""
+    t = inst(raw(), AT)
+    if not OWN:
+        return t
+    # An own row types the head's ATOM use; the file's rows for the head as an OPERATOR keep their
+    # argument scheme, which `head:src⟶tgt` has no room to state.
+    own = {k: [v] + [r for r in rows(t["sigs"], k) if "arg" in r] for k, v in inst(OWN, AT).items()}
+    return {**t, "sigs": {**t["sigs"], **own}}
+
+
+def parse_sigs(s):
+    """`--sigs "sort:E(A)⟶[A] S:F(A)⟶A"` — space-separated `head:src⟶tgt` pairs, keyed by the
+    label's HEAD (`sort`, never `sort(P)`); the cert carries the string back verbatim."""
+    out = {}
+    for p in s.split():
+        head, _, arrow = p.partition(":")
+        src, sep, tgt = arrow.partition("⟶")
+        if not (head and sep and src and tgt):
+            raise Unhandled(f"--sigs: `{p}` is not a `head:src⟶tgt` pair")
+        out[head] = {"src": src, "tgt": tgt, "map": False}
+    return out
 
 
 def inst(t, env):
@@ -603,16 +625,20 @@ def seams(objs):
 
 def draw(formula, src, tgt, at=None):
     """The circuit a formula denotes, typed, with its ports checked against the stated ones.  `at`
-    is the cert's other keys, table constants instantiated for this row, and the cert keeps them."""
-    global AT
-    AT = at or {}
+    is the cert's other keys, table constants instantiated for this row, and the cert keeps them;
+    its `sigs:` is the row's OWN signatures, the sibling of those constants — a §14 name the file
+    has never heard of, or a letter the file binds to another section's arrow."""
+    global AT, OWN
+    at = dict(at or {})
+    own = at.pop("sigs", "")
+    AT, OWN = at, parse_sigs(own) if own else {}
     e = cnorm(parse(formula))
     tree, s, t, _ = walk(e, sigs()["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
     tree["src"] = [lshow(w) for w in tree["_in"]]
     tree["tgt"] = [lshow(w) for w in tree["_out"]]
-    tree["cert"] = {"expect": formula, "src": src, "tgt": tgt, **AT}
+    tree["cert"] = {"expect": formula, "src": src, "tgt": tgt, **AT} | ({"sigs": own} if own else {})
     return tree
 
 
@@ -725,8 +751,8 @@ def read_back(t):
 
 
 def main(argv):
-    src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
-    taken = {i for o in ("--src", "--tgt") if o in argv
+    src, tgt, own = sl.opt(argv, "--src"), sl.opt(argv, "--tgt"), sl.opt(argv, "--sigs")
+    taken = {i for o in ("--src", "--tgt", "--sigs") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     if "--slice" in argv:
@@ -761,10 +787,11 @@ def main(argv):
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
                  + '\nusage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
+                 + '\n       circuit --src "E(A)" --tgt "[A]" --sigs "sort:E(A)⟶[A]" "sort(P)"'
                  + '\n       circuit --slice'
                  + '\n       circuit --compare [diag/allegory-axioms.typ]'
                  + '\n       circuit --write [diag/allegory-axioms.typ]')
-    t = draw(formula, src, tgt)
+    t = draw(formula, src, tgt, {"sigs": own} if own else None)
     print(emit(t))
     # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
     # spelling verbatim, and a rebuilt one cannot know that this bracket was written `(p×𝟙) cons`.
