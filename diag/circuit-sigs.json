@@ -32,6 +32,7 @@
     "P":      {"src": "x",      "tgt": "x",   "map": false},
     "p":      {"src": "A",      "tgt": "A",   "map": false},
     "nil":    {"src": "𝟏",      "tgt": "[A]", "map": true},
+    "⟨π₂%∋,((p×𝟙) cons)%∋⟩": {"src": "A×[A]", "tgt": "E([A])×E([A])", "map": true},
     "cons":   {"src": "A×[A]",  "tgt": "[A]", "map": true},
     "prefix": {"src": "[A]",    "tgt": "[A]", "map": false},
     "suffix": {"src": "[A]",    "tgt": "[A]", "map": false},

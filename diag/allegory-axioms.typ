@@ -4619,7 +4619,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // the coproduct of maps has opened it.
 #let step = step.with(pw: 340pt)
 #let bx-est = ([`est(R°)`], 2.2, true)
-#let bx-Sd = (frc([`S`]), 1.0, false)
 #disp[#table(
   columns: (1fr, 4.4cm),
   align: (center + horizon, left + horizon),
@@ -5497,9 +5496,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 )
 ])]<filter-defn>
 
-#let step = step.with(pw: 232pt)
+#let step = step.with(pw: 300pt)
 #disp[#table(
-  columns: (1fr, 6.6cm),
+  columns: (1fr, 6.0cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`(𝟙×R°)(π₂∪(p×𝟙) cons)⊑(π₂∪(p×𝟙) cons)R°` \
@@ -5507,12 +5506,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  shortening the result]],
      // lean:AOP.A7_7_Filter.filter_mono@a4557bcf
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
-
-  [`(𝟙×R°)π₂=π₂R°`],
-  [`π₂` natural #h(4pt) #src[@subseq-outr-square] #h(4pt) — the right side is an EQUALITY here],
-
-  [`(𝟙×R°)(p×𝟙) cons⊑(p×𝟙) cons R°`],
-  [@takewhile-mono's `cons` branch, unchanged],
 
   [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "stack", nin: 2, nout: 2, lanes: (
@@ -5538,6 +5531,73 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(π₂∪(p×𝟙) cons)`]], [],
 
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×R°)π₂ ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)π₂ ∪ (p×R°) cons`]],
+  [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
+   and `R°` on the pair's two strands at once],
+
+  [#step(EQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "π₂R° ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`π₂R° ∪ (p×R°) cons`]],
+  [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square] #h(4pt) — `π₂` natural, so this branch is an
+   EQUALITY],
+
+  [#step(SQ)[#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
+      ), seams: ()),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "π₂R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`π₂R° ∪ (p×𝟙) cons R°`]],
+  [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono's `cons` branch] #h(4pt) — a shorter
+   tail makes a shorter list],
+
   [#step(SQ)[#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
         (k: "seq", nin: 2, nout: 1, items: (
@@ -5556,14 +5616,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(π₂∪(p×𝟙) cons)R°`]],
-  [union #h(4pt) #src[@lax-closure] #h(4pt) at `X:=π₂`, `Y:=(p×𝟙) cons`],
+  [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
 )
-#align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`. The
-  first step is an equality: @takewhile-mono buys its `⊸ nil` branch with `nil R°=nil`, and `π₂`
-  needs only its naturality square.]])
+#align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`.
+  @takewhile-mono buys its `⊸ nil` branch with `nil R°=nil`; `π₂` needs only its naturality square,
+  so that step is an equality.]])
 ]<filter-mono>
 
-#let step = step.with(pw: 246pt)
+#let step = step.with(pw: 340pt)
 // §13.3.4 rebound `bx-est` to `est(≥)`, which is what the pictures below were drawing.
 #let bx-est = ([`est(R°)`], 2.2, true)
 #disp[#table(
@@ -5576,7 +5636,61 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_step@7322621d
   table.header([*formula*], [*reason*]),
 
-  [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][]], [],
+  [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EF[A]", ),
+    ),
+    (
+      1,
+      ("E[A]", ),
+    ),
+  ), src: ("A", "[A]", ), tgt: ("[A]", )),
+  cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][]], [],
+
+  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          1,
+          ("E𝟏", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
+      )),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(π₂∪(p×𝟙) cons)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+        (
+          1,
+          ("E(A×[A])", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil%∋ est(R°),(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`π₂∪(p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [`S=[nil,π₂∪(p×𝟙) cons]` #h(4pt) #src[@filter-defn] #h(4pt) — and the `%∋` of a coproduct of maps
+   is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5604,7 +5718,32 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`π₂∪(p×𝟙) cons`], ∋)$` est(R°)]`]],
-  [@takewhile-step's first two steps],
+  [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
+   reflexive #h(4pt) #src[@est-defn]],
+
+  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 2, nout: 2, label: "⟨π₂%∋,((p×𝟙) cons)%∋⟩", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)]", src: "F([A])", tgt: "[A]"))][]],
+  [#frc([`π₂∪(p×𝟙) cons`])` =⟨`#frc([`π₂`])`,`#frc([`(p×𝟙) cons`])`⟩ cup` #h(4pt) #src[@cup-defn]],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5622,11 +5761,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(π₁p→cons,π₂)]", src: "F([A])", tgt: "[A]"))][]],
-  [`𝟙⊑π₂R cons°`],
+  [`𝟙⊑π₂R cons°` #h(4pt) #src[@filter-defn] #h(4pt) — `xs R cons(a,xs)`, so `est(R°)` returns the
+   `cons` where `p a` puts it in the set and `xs` where the set is `{xs}` #h(4pt) #src[@est-defn]],
 )
-#align(center, block(inset: (y: 4pt))[#src[at `(a,xs)` the set is `{xs}` where `p` fails on `a` and
-  `{xs,cons(a,xs)}` where it holds, and `xs` loses the second — @est-defn at a two-element set. The
-  head is dropped, not the whole tail: that is the one place `π₂` shows against @takewhile-step's `⊸ nil`.]])
+#align(center, block(inset: (y: 4pt))[#src[the head is dropped, not the whole tail: that is the one
+  place `π₂` shows against @takewhile-step's `⊸ nil`.]])
 ]<filter-step>
 
 // B&dM Ex 7.41, p. 174, assembled: the four displays above are the four steps, and the `E([A])` the
