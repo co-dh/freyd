@@ -628,9 +628,10 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
+  // cons-lists definition: B&dM p. 55
   [`listr A::=nil|cons (A,listr A)`],
   [`𝒮et⟶𝒮et`],
-  [The cons-lists over `A`, the datatype every row below folds (B&dM p. 55).],
+  [The cons-lists over `A`, the datatype every row below folds.],
 
   [`sum≜⦇[zero,plus]⦈`],
   [`listr Nat⟶Nat`],
@@ -659,9 +660,10 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   [`listr Nat⟶Nat×Nat`],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
+  // preds row: B&dM Ex 3.6 (p. 57); uses Ex 3.4
   [`preds n=[n,n−1,…,1]`],
   [`Nat⟶[Nat]`],
-  [B&dM Ex 3.6 (p. 57): apply Ex 3.4 to write `preds` as `⦇k⦈π₁`.],
+  [apply the earlier special case to write `preds` as `⦇k⦈π₁`.],
 )]<cata-examples>
 
 // The square is the product's universal property at `T`, the string diagram the row above it: one
@@ -698,9 +700,10 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
 - The banana-split law of @cata-examples IS that product's universal property read at the initial
   algebra: `⦇h⦈` and `⦇k⦈` are the unique homomorphisms to `(A,h)` and `(B,k)`, so their fork is the
   unique homomorphism into the product, which is `⦇⟨F(π₁)h,F(π₂)k⟩⦈`.
+// Fokkinga bullet: B&dM's Ex 3.4 (p. 58) is the other special case
 - Fokkinga's theorem is *strictly more general* and is not that product: in @fokkinga the two arrows
   leave `F(A×B)`, not `FA` and `FB`, so each sees BOTH components. The product is the case where
-  they factor as `F(π₁)h` and `F(π₂)k`; B&dM's Ex 3.4 is the other special case (p. 58). What
+  they factor as `F(π₁)h` and `F(π₂)k`. What
   it says: *any algebra on a product carrier is folded by a fork*.
 
 // B&dM Ex 3.8 (p. 58), ONE SQUARE PER CONJUNCT: `h` and `k` leave `F(A × B)` for different corners,
@@ -741,16 +744,17 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*stage*], [*definition*]),
 
-  [informally (p. 58)],
+  // tri-evolution stages: B&dM pp. 58-59
+  [informally],
   [`tri(f) [a₀,a₁,…,aᵢ,…,aₙ]=[a₀,f a₁,…,fⁱ aᵢ,…,fⁿ aₙ]`],
 
-  [for cons-lists (p. 59)],
+  [for cons-lists],
   [`tri(f)=⦇[nil,(𝟙×listr(f)) cons]⦈`],
 
   [with the base functor named],
   [`F(A,B)=1+A×B`, `α=[nil,cons]`, so `tri(f)=⦇F(𝟙,listr(f))α⦈`],
 
-  [abstractly (p. 59)],
+  [abstractly],
   [`F` a bifunctor with initial type `(α,T)`: `tri(f)=⦇F(𝟙,T(f))α⦈`],
 )]<tri-evolution>
 
@@ -774,9 +778,10 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
 
+// horner paragraph: B&dM pp. 58-59
 @horner is Horner's rule, generalised from cons-lists to any initial type; B&dM call it that because
-for cons-lists it is the schoolbook method for evaluating a polynomial (p. 58). Fusion reduces it to
-`F(𝟙,T(f))α⦇g⦈=F(𝟙,⦇g⦈)F(𝟙,f)g` (p. 59).
+for cons-lists it is the schoolbook method for evaluating a polynomial. Fusion reduces it to
+`F(𝟙,T(f))α⦇g⦈=F(𝟙,⦇g⦈)F(𝟙,f)g`.
 
 // Its own page: the section is one table long and the heading was left orphaned at the foot of the
 // page before it once the F-Alg bullets above pushed the table over the break.
@@ -1217,14 +1222,20 @@ the 2-category.
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*B&dM*]),
 
- [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]], [Lemma 5.1],
+ // F(f) map preserving row: Lemma 5.1
+ [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]], [],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
-  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [Theorem 5.1],
-  [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.], [after Theorem 5.1, p. 113],
-  [Two relators agreeing on maps are equal.], [Corollary 5.1],
- [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]], [Ex 5.2],
+  // functor-is-relator row: Theorem 5.1
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [],
+  // F(R°)=F(R)° row: after Theorem 5.1, p. 113
+  [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.], [],
+  // relators-agree-on-maps row: Corollary 5.1
+  [Two relators agreeing on maps are equal.], [],
+ // F(X∩Y) row: Ex 5.2
+ [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]], [],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
- [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]], [Ex 5.2, the restriction],
+ // F(R∩S) row: Ex 5.2, the restriction
+ [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]], [],
   // lean:AOP.A5_1.map_inter_le@af565f80
  [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[]], [],
   // lean:AOP.A5_1.map_dom@5e9ecd68
@@ -1398,8 +1409,9 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 74%),
 
   [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
-   half is Ex 5.8, that half at `S:=𝟙` and at `R:=𝟙` B&dM's (5.4), (5.5) — stages of their proof of
-   this row; Ex 5.6 is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
+// R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
+   half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
+   this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
  ]],
    // lean:AOP.A5_2.pair_prodMap@9d21307f
   P(cetz.canvas(length: 0.8cm, {
@@ -1712,7 +1724,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
   }), s: 68%),
 
-  [Ex 5.12], [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl)∪(Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
+  // row: Ex 5.12
+  [], [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl)∪(Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-1.0, 0, black)[$A + B$]
@@ -1730,10 +1743,12 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     lab(7.40, 0, black)[$A + B$]; wire((8.10, 0), (9.30, 0)); lab(10.0, 0, black)[$A + B$]
   }), s: 78%),
 
-  [Ex 5.13], [#src[prove (5.11), and say why duality does not carry it over from the product law]],
+  // row: Ex 5.13
+  [], [#src[prove (5.11), and say why duality does not carry it over from the product law]],
   [],
 
-  [Ex 5.14], [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
+  // row: Ex 5.14
+  [], [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
    composites; `R+S` is diagonal, so the meet cuts the two off-diagonal branches]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
@@ -2539,11 +2554,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
- [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[Theorem 6.1]],
+ // μX upper bound row: Theorem 6.1
+ [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[]],
   // lean:AOP.A6_2.mu_le@9918bd39
   [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
    and every chapter after it uses],
- [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[Theorem 6.1]],
+ // μX fixed point row: Theorem 6.1
+ [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[]],
   // lean:AOP.A6_2.mu_fixed@2d3d1a8a
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
@@ -2633,8 +2650,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
+    // hylo-fixed row: Theorem 6.2
     #src[taking the input apart with `S°`, running `⦇S⦈°⦇R⦈` on each part and putting the results
-     together with `R` is `⦇S⦈°⦇R⦈` again — Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T`
+     together with `R` is `⦇S⦈°⦇R⦈` again; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T`
      initial]],
     // lean:AOP.A6_3.hylo_fixed@42010f9f
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -2668,9 +2686,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+ // hylo-least row: Theorem 6.2
  Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
     #src[an `X` that contains "take apart with `S°`, `X` on each part, put together with `R`"
-     contains `⦇S⦈°⦇R⦈` — Theorem 6.2]],
+     contains `⦇S⦈°⦇R⦈`]],
   // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -2728,9 +2747,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+ // hylo-fusion-eq row: Theorem 6.2
  Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
     #src[`⦇S⦈°⦇R⦈` is the least `X` equal to "take apart with `S°`, `X` on each part, put together
-     with `R`" — Theorem 6.2]],
+     with `R`"]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -2765,7 +2785,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [`[A]::=nil|cons (A,[A])`],
   [`𝒜⟶𝒜`],
-  [B&dM's `listr` under the short name it keeps from p. 125 on.],
+  // list type note: B&dM's `listr`, renamed here from p. 125 on
+  [The list type, under the short name it keeps.],
 
  [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[]],
   // lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6
@@ -2814,7 +2835,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
   [`[A]⟶[A]`],
   [The longest subsequence of `xs` whose every element passes `p`.
-   #h(4pt) #src[Ex 7.41; `est(R°)` is @est-defn]],
+   // filter row: Ex 7.41
+   #h(4pt) #src[`est(R°)` is @est-defn]],
 
   [`R≜length≤length°`],
   [`[A]⟶[A]`],
@@ -2824,12 +2846,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
   [`[A]⟶[A]`],
   [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
-   #h(4pt) #src[Ex 7.39]],
+   // takewhile row: Ex 7.39
+   #h(4pt) #src[]],
 
   [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
   [`[Int]⟶Int`],
   [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
-   on each suffix. #h(4pt) #src[Ex 7.40]],
+   // mss row: Ex 7.40
+   on each suffix. #h(4pt) #src[]],
 )]<comb-fns>
 
 == $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`
@@ -3084,7 +3108,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[the set of tails with the head put on or left off is the union of the set of tails each
-     with the head put on and the set of tails itself — B&dM §5.6, p. 124]],
+     // tails row: B&dM §5.6, p. 124
+     with the head put on and the set of tails itself]],
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
     [*Hinze–Marsden* — the `cons` operand]),
 
@@ -3134,7 +3159,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   lab(-2.22, 0, black)[`𝟏+A×E([A])`]; lab(13.25, 0, black)[`E([A])`]
 }))
 #align(center, block(inset: (y: 4pt))[
-  #src[B&dM §5.6, p. 124, which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
+  // Pcons row: B&dM §5.6, p. 124
+  #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
 ])]<subseq-alg>
 
 #pagebreak(weak: true)
@@ -3393,7 +3419,8 @@ left through the component at `B`, the right through the one at `A`.
 
 Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
 `G(f)φ=φF(f)`: #h(4pt) laxness is about relations only.
-#h(4pt) #src[Theorem 5.2]
+// lax-defn row: Theorem 5.2
+#h(4pt) #src[]
 // lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23
 ]]<lax-defn>
 
@@ -3832,9 +3859,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
+  // monotonic-alg row: Theorem 7.1
+ Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[bettering the parts betters `f`'s result exactly when `f` applied to best parts is a best
-     among `f`'s results on all the parts — Theorem 7.1, `f` a map, `R` reflexive;
+     among `f`'s results on all the parts — `f` a map, `R` reflexive;
  ,
       // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
  ]],
@@ -4686,7 +4714,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
-    #src[Ex 7.39: the longest prefix all of whose elements pass `p` is one pass along the list, each
+    // takewhile-cata row: Ex 7.39
+    #src[the longest prefix all of whose elements pass `p` is one pass along the list, each
      head put onto the tail's prefix where it passes `p` and the prefix emptied where it does not.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
@@ -5273,7 +5302,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
     #src[the largest segment sum is the largest of the set `⦇k⦈` carries in its second component, the
-     largest prefix sum of every suffix — Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
+     // mss-scan row: Ex 7.40
+     largest prefix sum of every suffix — `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8
@@ -5554,7 +5584,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
-    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p` is one pass
+    // filter-simple row: Ex 7.41
+    #src[`R` a preorder: the longest subsequence all of whose elements pass `p` is one pass
      along the list, each head put onto the tail's result where it passes `p` and dropped where it
      does not,
  ]],
@@ -5622,7 +5653,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  [and], [`filter(p)` simple #h(4pt) #src[]],
        // lean:AOP.A7_7_Filter.filter_simple@613696ae
        grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[an entire relation below
-         a simple one equals it; the simplicity is @comb-fns's Ex 7.41, not a law of this note,
+         // simplicity fact: Ex 7.41
+         a simple one equals it; the simplicity is @comb-fns's, not a law of this note,
  ]])])],
          // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
@@ -6301,20 +6333,23 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#dcell(d-out2, none)],
 
   [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
-    [#src[`(R×R)°choose⊑choose R°` — Ex 7.38, @party-mono-branch's `g` row,
+    // party-branch row: Ex 7.38
+    [#src[`(R×R)°choose⊑choose R°` — @party-mono-branch's `g` row,
  ]])],
       // lean:AOP.A7_2.est_Λ_est_le@1083248a
   [#dcell(d-out4, none)],
 
   [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
     [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
-      `(𝟙×list((R×R)°))S⊑S(R×R)°` — Theorem 7.2 at `(R×R)°`, @party-mono,
+      // greedy row: Theorem 7.2
+      `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono,
  ]])],
       // lean:AOP.A7_2.greedy@21400acf
   [#dcell(none, d-in5)],
 
   [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
-    [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)` — Ex 7.15,
+    // pair_est_le row: Ex 7.15
+    [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`,
  ]])],
       // lean:AOP.A7_3_Party.pair_est_le@75a48598
   [#dcell(none, d-in6)],
@@ -6564,7 +6599,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \
     #src[a cheapest path across the cylinder is a cheapest among the `n` paths `⦇Q⦈` returns, one for
-     each row — B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
+     // cylinder row: B&dM §7.4, p. 182
+     each row; `Q` is @cyl-step's algebra,
  ]],
     // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -7033,7 +7069,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
     #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
-     values `S` gives one argument — (8.3), p. 194, `R∩(S°S)⊑Q`, `Q` a preorder
+     // thinning row: (8.3), p. 194
+     values `S` gives one argument — `R∩(S°S)⊑Q`, `Q` a preorder
  #h(4pt) ]],
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d22de9c7
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
@@ -7100,7 +7137,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈⊑`#frc([`⦇S⦈`])` thin Q` \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
-     Theorem 8.1, p. 195, `S` monotonic on `Q`, `Q` a preorder
+     // thinning-of-reduce row: Theorem 8.1, p. 195
+     `S` monotonic on `Q`, `Q` a preorder
  #h(4pt) ]],
      // lean:AOP.A8_1.thinning@db624922
   table.header([*circuit* — one wire, `A` to `EA`], [*Hinze–Marsden*]),
@@ -7163,7 +7201,8 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the thinning fold refines the optimisation problem itself —
-     Corollary 8.1, `S` monotonic on `Q`, `Q⊑R`, both preorders
+     // thinning-est row: Corollary 8.1
+     `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
      // lean:AOP.A8_1.thinning_est@c31bcdd8
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
@@ -7242,8 +7281,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
-    #src[a least-cost path in a layered network, as a fold over the layers —
- B&dM §8.2, p. 198. ]],
+    // layered-network row: B&dM §8.2, p. 198
+    #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@b30f4f31
   table.header([*circuit* — one wire, `L(EA)` to `LA`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
@@ -7258,7 +7297,8 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
   [#vstep(RQ, pb-pic((pb-alg, pb-thin), (pb-est,)),
     [`⦇`#frc([`F(∋,∋)α`])` thin Q⦈ est(R)` \
-     #src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
+     // thinAlg-elim row: Corollary 8.1
+     #src[@thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
  ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [#pb-pan(4.0,
@@ -7366,7 +7406,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`sort P thinlist Q⊑thin Q sort P` \
-    #src[a thinning of the sorted list lists a thinning of the set — (8.6), p. 201, `P` a connected
+    // sortRel row: (8.6), p. 201
+    #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
  preorder, `thinlist Q⊑subseq`. ]],
      // lean:AOP.A8_3.sortRel_comp_thinlist_le@11564234
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
@@ -7430,7 +7471,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)fp`])` sort P⊒F(sort P) listcp(F) list(f) filter(p)` \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
-     Lemma 8.1, p. 202, `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
+     // map_sort row: Lemma 8.1, p. 202
+     `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
  ]],
      // lean:AOP.A8_3.map_sort_comp_listcp_le@88dfad7c
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
@@ -7491,7 +7533,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
-     Theorem 8.2, p. 203, at @thinlist-defn's binary thinning data.
+     // thinningList row: Theorem 8.2, p. 203
+     at @thinlist-defn's binary thinning data.
  ]],
      // lean:AOP.A8_3.thinningList@7b3eb252
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
@@ -7545,7 +7588,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)S`])` thin Q sort P⊒F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
     #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
-     B&dM p. 203, the side condition of @thinlist-thm82's last step.
+     // sortedAlg-fusion row: B&dM p. 203
+     the side condition of @thinlist-thm82's last step.
  ]],
      // lean:AOP.A8_3.sortedAlg_fusion@4732cb05
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
@@ -7657,8 +7701,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
-    #src[the knapsack problem, as a fold that thins the packings kept at each item —
- B&dM §8.4, p. 206. ]],
+    // knapsack row: B&dM §8.4, p. 206
+    #src[the knapsack problem, as a fold that thins the packings kept at each item]],
      // lean:AOP.A8_4_Knapsack.knap_laws@6299a9fe
   table.header([*circuit* — one wire, `[Item]` to `[Item]`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
@@ -7768,8 +7812,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
-    #src[a paragraph laid out as a fold that thins the layouts kept at each word —
- B&dM §8.5, p. 210. ]],
+    // paragraph row: B&dM §8.5, p. 210
+    #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
      // lean:AOP.A8_5_Paragraph.para_laws@2ed8ee5e
   table.header([*circuit* — one wire, `list⁺ Word` to `Para`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
@@ -7875,8 +7919,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
-    #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city —
- B&dM §8.6, p. 215. ]],
+    // tour row: B&dM §8.6, p. 215
+    #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city]],
      // lean:AOP.A8_6_Tour.tour_laws@033921a1
   table.header([*circuit* — one wire, `[City]` to `[City]×[City]`; the algebra inside the functorial
     box], [*Hinze–Marsden*]),
@@ -7979,8 +8023,9 @@ in @mu-defn.
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, db-thin, db-PFX, db-est)),
     [`(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
-     #src[Theorem 9.2, `h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
-      @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin Q`, so the body and
+     // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
+     #src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
+      @thin-laws. This is the same with the thinning step dropped — `𝟙⊑thin Q`, so the body and
       with it the fixed point only shrink. Knaster–Tarski leaves (9.1) #frc([`T°`])` P(F(M)h)
       est(R)⊑M`; `M=H∩(H°\R°)` splits that into (9.2) #frc([`T°`])` P(F(M)h) est(R)⊑H` and
       (9.3) `H°`#frc([`T°`])` P(F(M)h) est(R)⊑R°`, and both use only (9.4) = (7.10)
@@ -7996,7 +8041,8 @@ in @mu-defn.
     [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` thin(Qᵢ) P(Uᵢ) est(R)` \
      #src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
-      point is unique and entire by Theorem 6.3 — `T°` followed by `F`'s membership relation
+      // uniqueness fact: Theorem 6.3
+      point is unique and entire — `T°` followed by `F`'s membership relation
       inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
   // One branch of the `→`, not both: it is a union of two restricted branches with the one shape, so
   // the second adds no shape the first does not already show.
@@ -8022,7 +8068,8 @@ in @mu-defn.
   [monotonicity *in context*: `k` may also read the input the part was built from],
   [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
    `VH⊑HR`]],
-  [both conditions of Theorem 9.2 at once, split along the two arguments of a bifunctor],
+  // combined row: Theorem 9.2
+  [both conditions at once, split along the two arguments of a bifunctor],
 )]<dp-conditions>
 
 == The string edit problem
@@ -8095,7 +8142,8 @@ both lists empty.
     [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))`
  #src[] \
      // lean:AOP.A9_2_Edit.edit_laws@c69d7d69
-     #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
+     // edit_mono row: Theorem 9.2
+     #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
  #src[] is Proposition 9.2 at
       // lean:AOP.A9_2_Edit.edit_mono@089b97ab
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
@@ -8244,7 +8292,8 @@ both lists empty.
     [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))`
  #src[] \
      // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
-     #src[Theorem 9.1: split the list in every way, bracket both halves, join. The condition is
+     // mct_laws row: Theorem 9.1
+     #src[split the list in every way, bracket both halves, join. The condition is
       monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR`
  #src[] — only trees with the same flattening
       // lean:AOP.A9_3_Bracket.mct_mono@a3daf2b8
@@ -8370,7 +8419,8 @@ the longest repeated tail; #h(4pt)
 
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
     [`(μX : `#frc([`[nil,extend]°`])` thin Q P([nil,(X×𝟙)snoc]) est(R))` \
-     #src[Theorem 9.2 at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
+     // entab row: Theorem 9.2
+     #src[at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
       pointers. Monotonicity `F(R)α⊑αR` is routine, the two costs being constants:
       `(⊤+⊤)[c,p]=[c,p]`. Proposition 9.4 splits the thinning condition in two — `F(⊤+⊤,R)α⊑αR`,
       and `decode prefix⊑R° decode`, for which `decode init⊑R° decode` is enough: dropping the last
@@ -8443,7 +8493,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, gb-estQ, gb-FXh)),
     [`(μX : `#frc([`T°`])` est(Q) F(X)h)` \
-     #src[Theorem 10.1]])],
+     // dp-shrink row: Theorem 10.1
+     #src[]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire ends on the `E` lane:
   // bending in would cross `F`.  That free end is the whole difference from @dp-laws' second row.
   [#dp-pan(4.4, (((THU, 3.95), (THU, 2.55)), thw-arc(THM, 3.30, 0.90)),
@@ -8523,7 +8574,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])`
  #src[] \
      // lean:AOP.A10_2_Detab.entab_laws@3b89184f
-     #src[Theorem 10.1 at `Q≜𝟙+(V×U)`
+     // entab-thin row: Theorem 10.1
+     #src[at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
       // lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608
       decided at each step. `F(⊤,R)α⊑αR`#src[].
@@ -8630,7 +8682,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
     [`(μX : `#frc([`β°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
-     #src[Theorem 10.1. No greedy *reduce* exists — one would also
+     // job-schedule row: Theorem 10.1
+     #src[No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
       schedule of the whole]])],
   // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
@@ -8732,7 +8785,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
     [`interval (μX : `#frc([`[arb,step]°`])` est(Q) F(X)α)` \
-     #src[Theorem 10.1: #frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
+     // interval row: Theorem 10.1
+     #src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
   // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born.
