@@ -272,8 +272,8 @@ def pic(k, src, tgt, is_map, _in=None, _out=None, **kw):
     return dict(k=k, nin=len(_in), nout=len(_out), _in=_in, _out=_out, **kw), src, tgt, is_map
 
 
-def box(label, src, tgt, is_map, frac=False, flip=False):
-    return pic("box", src, tgt, is_map, label=label, chamfer=not is_map, frac=frac, flip=flip)
+def box(label, src, tgt, is_map, frac=False, flip=False, **kw):
+    return pic("box", src, tgt, is_map, label=label, chamfer=not is_map, frac=frac, flip=flip, **kw)
 
 
 def walk(e, tbl, src=None, tgt=None):
@@ -528,20 +528,35 @@ def tape(e, tbl, src):
     if len(ss) != len(e[1]):
         raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
     bs = branches(e[1], tbl, ss, spell(e))
+    if len(ss) != 2:
+        raise Unhandled(f"`{spell(e)}` forks {len(ss)} summands, and the injections `l`, `r` name two")
     # The coproduct arrives as ONE wire, the fork being what opens it; a box at the same object
     # takes the product summand's strands (`wires`).
     return pic("case", src, bs[0][2], all(b[3] for b in bs), _in=[src],
-               bodies=[lane(b) for b in bs], ports=[[lshow(w) for w in wires(s)] for s in ss])
+               bodies=[armed(n, src, s, lane(b)) for n, s, b in zip("lr", ss, bs)])
+
+
+def armed(name, src, s, body):
+    """11.2a, `[R,S]=l°R∪r°S`: the converse injection heads each arm, as the note's hand-drawn
+    brackets put `l` flipped and tinted there.  It takes the coproduct wire and returns the
+    summand's strands, so the seam after it is where those get their names."""
+    inj = box(name, src, s, False, flip=True, _in=[src])[0]
+    ws = [lshow(w) for w in wires(s)]
+    body["items"].insert(0, inj); body["_objs"].insert(0, src)
+    body["seams"] = ([[0, ws]] if ws else []) + [[i + 1, l] for i, l in body["seams"]]
+    body["nin"], body["_in"] = 1, [src]
+    return body
 
 
 # ---------------------------------------------------------------- seams and the panel
 def seams(objs):
-    """Which interior objects the picture prints.  The ports always; an interior seam exactly when
-    its object is ONE wire and differs from both printed neighbours (CIRCUIT-GEN §3)."""
+    """Which interior objects the picture prints, as one label per strand.  The ports always; an
+    interior seam exactly when its object is ONE wire and differs from both printed neighbours
+    (CIRCUIT-GEN §3); a bracket's arm adds the seam after its injection (`armed`)."""
     out, prev = [], objs[0]
     for i, o in enumerate(objs[1:-1]):
         if len(wires(o)) == 1 and o != prev and o != objs[i + 2]:
-            out.append([i, lshow(o)]); prev = o
+            out.append([i, [lshow(o)]]); prev = o
     return out
 
 
@@ -656,7 +671,10 @@ def read_back(t):
         return mk("cap", [read_back(x) for x in t["lanes"]])
     if k == "cata":
         return mk("cata", [read_back(t["body"])])
-    return mk("union" if k == "union" else "case", [read_back(x) for x in t["bodies"]])
+    if k == "union":
+        return mk("union", [read_back(x) for x in t["bodies"]])
+    # a bracket's arms open with the injections `armed` put there: the bracket's own drawing of `[f,g]`
+    return mk("case", [read_back(dict(x, items=x["items"][1:])) for x in t["bodies"]])
 
 
 def main(argv):

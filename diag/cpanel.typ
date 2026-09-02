@@ -114,15 +114,20 @@
     }
     let x = 0.0; let n = t.nin; let hh = 0.2; let body = ()
     for (i, it) in t.items.enumerate() {
-      let (x2, s) = stub(x, n); x = x2; body.push(s)
+      // two boxes with no strand between them (`l°` into `nil`) still stand a stub apart
+      let (x2, s) = if n == 0 and i > 0 { (x + CGAP, none) } else { stub(x, n) }; x = x2; body.push(s)
       let p = pic(it, length)
       body.push(d.group({ d.translate((x, 0)); p.body }))
       x = x + p.w; n = it.nout; hh = calc.max(hh, p.hh)
       if str(i) in seam {
-        let (w, o) = (cu(measure(tx(seam.at(str(i)))).width, length), into(length))
-        body.push(wire((x, 0), (x + CGAP + o, 0)))
-        body.push(wire((x + CGAP + w - o, 0), (x + 2 * CGAP + w, 0)))
-        body.push(lab(x + CGAP + w / 2, 0, TYCOL, tx(seam.at(str(i)))))
+        // one label per strand, each wire broken round its own ink; the column is as wide as the widest
+        let ws = seam.at(str(i)).map(s => cu(measure(tx(s)).width, length))
+        let (w, o) = (calc.max(..ws), into(length))
+        for ((s, wi), y) in seam.at(str(i)).zip(ws).zip(ys(n)) {
+          body.push(wire((x, y), (x + CGAP + (w - wi) / 2 + o, y)))
+          body.push(wire((x + CGAP + (w + wi) / 2 - o, y), (x + 2 * CGAP + w, y)))
+          body.push(lab(x + CGAP + w / 2, y, TYCOL, tx(s)))
+        }
         x = x + 2 * CGAP + w
       }
     }
@@ -224,14 +229,12 @@
     }
     return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
-  // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  A branch
-  // with no strand (the `𝟏` summand) still gets one fork stroke: that is what says it is reachable.
+  // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  Every arm
+  // opens with the converse injection `scripts/circuit` put there (11.2a), so the fork hands ONE
+  // coproduct wire to each arm and the seam after that box names the summand's strands.
   let ps = t.bodies.map(b => pic(b, length))
   let oys = (BRT, -BRT)
-  // A branch whose source object HAS strands names them, and buys the room for the labels with a
-  // lead — the fan hands the pair over unlabelled, so the fork is the only place to say which is which.
-  let leads = t.ports.map(q => if q.len() > 0 { 0.7 } else { 0.0 })
-  let mw = calc.max(..ps.zip(leads).map(((p, l)) => p.w + l))
+  let mw = calc.max(..ps.map(p => p.w))
   let xf = 1.26; let xj = xf + mw + 0.7
   // The tape is drawn round what the branches actually reach, top and bottom apart: the `𝟏` summand
   // is one small box where the pair below it carries a whole `∪` region.
@@ -242,15 +245,9 @@
     tape((CGAP, bot), (xj, top))
     wire((0, 0), (CGAP, 0))
     for (i, p) in ps.enumerate() {
-      let oy = oys.at(i); let ports = t.ports.at(i); let lead = leads.at(i)
-      for y in (if ports.len() > 0 { ys(ports.len()) } else { (0.0,) }) {
-        d.bezier((0.56, 0), (xf, oy + y), (0.98, 0), (0.98, oy + y), stroke: st)
-      }
-      for (j, y) in ys(ports.len()).enumerate() {
-        wire((xf, oy + y), (xf + lead, oy + y))
-        lab(xf + lead / 2, oy + y + CABOVE, TYCOL, tx(ports.at(j)))
-      }
-      d.group({ d.translate((xf + lead, oy)); p.body; wire((p.w, 0), (mw - lead, 0)) })
+      let oy = oys.at(i)
+      d.bezier((0.56, 0), (xf, oy), (0.98, 0), (0.98, oy), stroke: st)
+      d.group({ d.translate((xf, oy)); p.body; wire((p.w, 0), (mw, 0)) })
     }
     tape-join((xj, 0), sp: BRT, len: 0.7)
     // The join sits on the tape edge, so the label needs a stub after it, the mirror of the input stub.

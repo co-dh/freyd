@@ -2948,42 +2948,60 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   [],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
       ), seams: (
-        (0, "E𝟏", ),
+        (
+          1,
+          ("E𝟏", ),
+        ),
       )),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons∪π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
-        (0, "E(A×E[A])", ),
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+        (
+          1,
+          ("E(A×E[A])", ),
+        ),
       )),
-  ), ports: (
-    (),
-    ("A", "E[A]", ),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
   cert: (expect: "[nil%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons∪π₂)]`]])],
   [],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
       ), seams: (
-        (0, "[A]", ),
+        (
+          1,
+          ("[A]", ),
+        ),
       )),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons∪π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
-        (0, "E(A×E[A])", ),
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+        (
+          1,
+          ("E(A×E[A])", ),
+        ),
       )),
-  ), ports: (
-    (),
-    ("A", "E[A]", ),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
   cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
     #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
@@ -4188,10 +4206,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "case", nin: 1, nout: 1, bodies: (
-        (k: "seq", nin: 0, nout: 1, items: (
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
             (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
           ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
             (k: "stack", nin: 2, nout: 2, lanes: (
                 (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
                 (k: "seq", nin: 1, nout: 1, items: (
@@ -4208,10 +4228,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
                     (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
                   ), seams: ()),
               )),
-          ), seams: ()),
-      ), ports: (
-        (),
-        ("A", "[A]", ),
+          ), seams: (
+            (
+              0,
+              ("A", "[A]", ),
+            ),
+          )),
       )),
     (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
   ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
@@ -4220,10 +4242,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#tw-pfx2],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -4248,20 +4272,24 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
                 (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
               ), seams: ()),
           )),
-      ), seams: ()),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
   [#tw-pfx3],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "union", nin: 2, nout: 1, bodies: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -4281,10 +4309,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
                 (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
               ), seams: ()),
           )),
-      ), seams: ()),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]"))],
     [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
@@ -4488,64 +4518,98 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
   ), seams: (
-    (0, "EF[A]", ),
-    (1, "E[A]", ),
+    (
+      0,
+      ("EF[A]", ),
+    ),
+    (
+      1,
+      ("E[A]", ),
+    ),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
-        (0, "E𝟏", ),
-        (1, "E[A]", ),
+        (
+          1,
+          ("E𝟏", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
       )),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
-        (0, "E(A×[A])", ),
-        (1, "E[A]", ),
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+        (
+          1,
+          ("E(A×[A])", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
       )),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [coproduct of maps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
-        (0, "E(A×[A])", ),
-        (1, "E[A]", ),
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+        (
+          1,
+          ("E(A×[A])", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
       )),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(π₁p→cons,⊸ nil)]", src: "F([A])", tgt: "[A]"))][`[nil,(π₁p→cons,⊸ nil)]`]],
   [`nil R=⊤`],
@@ -4620,7 +4684,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "E(prefix list(p))", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
   ), seams: (
-    (1, "E[A]", ),
+    (
+      1,
+      ("E[A]", ),
+    ),
   ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]"))],
     [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`.
@@ -4638,8 +4705,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
       (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
     ), seams: (
-      (0, "EF[A]", ),
-      (1, "E[A]", ),
+      (
+        0,
+        ("EF[A]", ),
+      ),
+      (
+        1,
+        ("E[A]", ),
+      ),
     )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
@@ -4650,15 +4723,19 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
-          (k: "seq", nin: 0, nout: 1, items: (
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
-          (k: "seq", nin: 2, nout: 1, items: (
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
-            ), seams: ()),
-        ), ports: (
-          (),
-          ("A", "[A]", ),
+            ), seams: (
+              (
+                0,
+                ("A", "[A]", ),
+              ),
+            )),
         )),
     ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]"))],
@@ -5188,8 +5265,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (k: "box", nin: 1, nout: 1, label: "E(segment sum)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
   ), seams: (
-    (0, "E[A]", ),
-    (1, "EA", ),
+    (
+      0,
+      ("E[A]", ),
+    ),
+    (
+      1,
+      ("EA", ),
+    ),
   ), src: ("[A]", ), tgt: ("A", )),
   cert: (expect: "(segment sum)%∋ est(≥)", src: "[A]", tgt: "A"))],
     [#frc([`segment sum`]) ` est(≥)` \
@@ -5202,8 +5285,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (k: "box", nin: 1, nout: 1, label: "E(𝟙%∋ E(prefix sum)est(≥))", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
   ), seams: (
-    (1, "E[A]", ),
-    (2, "EA", ),
+    (
+      1,
+      ("E[A]", ),
+    ),
+    (
+      2,
+      ("EA", ),
+    ),
   ), src: ("[A]", ), tgt: ("A", )),
   cert: (expect: "suffix%∋ E((prefix sum)%∋ est(≥))est(≥)", src: "[A]", tgt: "A"))],
     [#src[@mss-shape]])],
@@ -5352,34 +5441,47 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(π₂∪(p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
-        (0, "E(A×[A])", ),
-        (1, "E[A]", ),
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+        (
+          1,
+          ("E(A×[A])", ),
+        ),
+        (
+          2,
+          ("E[A]", ),
+        ),
       )),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`π₂∪(p×𝟙) cons`], ∋)$` est(R°)]`]],
   [@takewhile-step's first two steps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 0, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), ports: (
-    (),
-    ("A", "[A]", ),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(π₁p→cons,π₂)]", src: "F([A])", tgt: "[A]"))][`[nil,(π₁p→cons,π₂)]`]],
   [`𝟙⊑π₂R cons°`],
@@ -5449,8 +5551,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
       (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
     ), seams: (
-      (0, "EF[A]", ),
-      (1, "E[A]", ),
+      (
+        0,
+        ("EF[A]", ),
+      ),
+      (
+        1,
+        ("E[A]", ),
+      ),
     )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
     [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
@@ -5462,15 +5570,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
-          (k: "seq", nin: 0, nout: 1, items: (
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
-          (k: "seq", nin: 2, nout: 1, items: (
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
-            ), seams: ()),
-        ), ports: (
-          (),
-          ("A", "[A]", ),
+            ), seams: (
+              (
+                0,
+                ("A", "[A]", ),
+              ),
+            )),
         )),
     ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,(π₁p→cons,π₂)]⦈", src: "[A]", tgt: "[A]"))],
