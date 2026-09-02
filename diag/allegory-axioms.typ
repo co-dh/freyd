@@ -1648,12 +1648,13 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 // B&dM §5.3, pp. 117–119, mirrored like the product table.  A TAPE WHEREVER THERE IS A `∪`, so (5.9)
 // and (5.10) are definitions drawn rather than equations: the tape IS the union on the right.
 #disp[#table(
-  columns: (1.9cm, 5.4cm, 1fr),
-  align: (left + horizon, left + horizon, center + horizon),
+  columns: (5.4cm, 1fr),
+  align: (left + horizon, center + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*B&dM*], [*the law*], [*picture*]),
+  table.header([*the law*], [*picture*]),
 
-  [(5.9)], [`[R,S]=(l°R)∪(r°S)` \ #src[@coprod-laws's first row]],
+  // [R,S]=(l°R)∪(r°S): B&dM (5.9)
+  [`[R,S]=(l°R)∪(r°S)` \ #src[@coprod-laws's first row]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.9, 0, black)[$A + B$]
@@ -1669,7 +1670,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     lab(4.93, 0, black)[$C$]
   }), s: 82%),
 
-  [(5.10)], [`R+S=[Rl,Sr]`],
+  // R+S=[Rl,Sr]: B&dM (5.10)
+  [`R+S=[Rl,Sr]`],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-0.9, 0, black)[$A + B$]
@@ -1687,7 +1689,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     lab(6.25, 0, black)[$C + D$]
   }), s: 82%),
 
-  [(5.11)], [`[U,V]°[R,S]=(U°R)∪(V°S)` \ #src[@coprod-laws's last row;
+  // [U,V]°[R,S]=(U°R)∪(V°S): B&dM (5.11)
+  [`[U,V]°[R,S]=(U°R)∪(V°S)` \ #src[@coprod-laws's last row;
  ]],
    // lean:AOP.A5_3.junc_recip_junc@838f4abc
   P(cetz.canvas(length: 0.8cm, {
@@ -1724,8 +1727,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
   }), s: 68%),
 
-  // row: Ex 5.12
-  [], [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl)∪(Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
+  // X≜[𝟙,⊥]=l° and Y≜[⊥,𝟙]=r°, so (Xl)∪(Yr)=[l,r]=𝟙: B&dM Ex 5.12
+  [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl)∪(Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-1.0, 0, black)[$A + B$]
@@ -1743,12 +1746,12 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     lab(7.40, 0, black)[$A + B$]; wire((8.10, 0), (9.30, 0)); lab(10.0, 0, black)[$A + B$]
   }), s: 78%),
 
-  // row: Ex 5.13
-  [], [#src[prove (5.11), and say why duality does not carry it over from the product law]],
+  // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
+  [#src[prove (5.11), and say why duality does not carry it over from the product law]],
   [],
 
   // row: Ex 5.14
-  [], [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
+  [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
    composites; `R+S` is diagonal, so the meet cuts the two off-diagonal branches]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
