@@ -24,9 +24,11 @@ the many the book calls equal (pp. 21–22).
 
 `--roundtrip` is the acceptance test: every panel in the note that carries a `cert:` with an
 `expect` is regenerated from that `expect` alone and swept again, and the printed composite must
-come back the same — cut down to the one branch it draws, where the formula states a choice.  `--compare` puts the generated call beside the note's own.
+come back the same — cut down to the one branch it draws, where the formula states a choice.
+`--compare` rebuilds every `dpanel(` literal the note holds from its own `cert:` and fails on any
+drift, and `--write` splices the rebuilt ones over them, the note's own trailing arguments kept.
 """
-import importlib.machinery, importlib.util, json, os, subprocess, sys
+import difflib, importlib.machinery, importlib.util, json, os, re, subprocess, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the two scripts
 _P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
@@ -96,8 +98,9 @@ def branch(formula):
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
 # Slope mode: the object wire is a polyline hugging the live lanes.  "right": legs sit right of the
 # arms they replace and drop straight from the dot, so the wire runs away rightward (6c26635).
-# "left": legs sit LEFT of the arms, so the wire sweeps top-right to bottom-left and absorbs each
-# innermost arm at its own column (IntroString p.79, 3.8b).  None = the old vertical.
+# "left": legs sit LEFT of the arms, so the wire sweeps top-right to bottom-left and absorbs the
+# innermost arm at its own column where it slides (IntroString p.79, 3.8b); a death that would move
+# it ONE gap it sits out, the arm bending in (user, 2026-09-01).  None = the old vertical.
 SLOPE = "left"
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "hm-sigs.json")
@@ -528,13 +531,14 @@ def layout(rows, made, otop, obot, cert):
         beads.append([ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
     hh = (n + 1) * DY
 
-    def xat(y):
+    def xat(y, dying=True):
         """The object wire's x at a height.  "right": one lane-gap right of every lane already born
         there, and AT the innermost leg born at that height — it never comes back after a death.
         "left": one gap right of every lane alive there or NOT YET BORN — a column is held from the
         top, else the wire's own `xo` could be a lane's column and the sweep would read one for the
         other — and AT the innermost arm dying at that height: the wire absorbs it at its own
-        column and is free to come back left below."""
+        column.  With `dying` off the arms dying there are already gone: where the wire would sit
+        just below the bead."""
         c = [X0]
         for l in made:
             yb = hh if l.born == TOP else ys[l.born]
@@ -542,18 +546,30 @@ def layout(rows, made, otop, obot, cert):
             if SLOPE == "left":
                 if yd > y + 1e-9:
                     continue                   # already dead
-                c.append(l.x if l.dies != n and abs(yd - y) <= 1e-9 else l.x + DX)
+                if l.dies != n and abs(yd - y) <= 1e-9:
+                    if dying:
+                        c.append(l.x)
+                else:
+                    c.append(l.x + DX)
             elif l.born == TOP or yb > y + 1e-9 or (l in unit and abs(yb - y) <= 1e-9):
                 c.append(l.x + DX)
             elif abs(yb - y) <= 1e-9:
                 c.append(l.x)
         return round(max(c), 2)
 
-    op = None
-    if SLOPE:
-        op = [[xat(y), y] for y in [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]]
-        if all(q[0] == op[0][0] for q in op):
-            op = None
+    op, hs = None, [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]
+    if SLOPE == "left":
+        # The wire holds its column across a death that would move it ONE gap — the arm bends into
+        # it, as the note draws by hand (2026-09-01) — and slopes only where it is left further adrift.
+        op, x = [], xat(hh)
+        for y in hs:
+            if x - xat(y, False) > DX + 1e-6:
+                x = xat(y)
+            op.append([x, y])
+    elif SLOPE:
+        op = [[xat(y), y] for y in hs]
+    if op and all(q[0] == op[0][0] for q in op):
+        op = None
     if SLOPE == "left":                # the wire's top x, which the sweep and both ports key on
         xo = xat(hh)
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
@@ -696,26 +712,77 @@ def roundtrip(path, frm, show, out, tbl):
         sys.exit(f"diagram: {len(fail)} panel{'s' * (len(fail) > 1)} did not come back")
 
 
-def compare(path, frm, tbl):
-    """The generated call beside the note's own — every difference is a drawing convention."""
-    for r in sl.panels(path, frm):
-        if not (r.get("cert") or {}).get("expect"):
-            continue
-        src, tgt = endpoints(sl.Panel(r))
+# ---------------------------------------------------------------- the note's own literals
+def close(text, i):
+    """The index of the `)` matching the `(` at `i`.  A `"…"` is opaque and ends at the next `"` —
+    `quoted` never escapes one — because an `expect` carries brackets of its own."""
+    j, depth = i, 0
+    while True:
+        c = text[j]
+        if c == '"':
+            j = text.index('"', j + 1)
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+            if not depth:
+                return j
+        j += 1
+
+
+def certof(s):
+    """A literal's `cert:` group as `draw` takes it: the string fields, and `sigs` as a dict."""
+    c = {k: v.replace("\\\\", "\\") for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
+    k = s.find("sigs: (")
+    if k >= 0:
+        c["sigs"] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + 6) + 1]))
+    return c
+
+
+def literals(text):
+    """Every `dpanel(…)` in a file that carries a drawable `cert:`, as (start, cert end, end, cert):
+    the text after the `cert:` group — `names:`, `s:` — is the note's own and rides along unchanged."""
+    out, i = [], text.find("dpanel(")
+    while i >= 0:
+        j = close(text, i + 6)
+        k = text.rfind("cert: (", i, j)
+        c = certof(text[k:j]) if k >= 0 else {}
+        if all(c.get(x) for x in ("expect", "src", "tgt")):
+            out.append((i, close(text, k + 6) + 1, j + 1, c))
+        i = text.find("dpanel(", j)
+    return out
+
+
+def regen(path, tbl, write):
+    """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
+    drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
+    text = open(path, encoding="utf-8").read()
+    lits = literals(text)
+    fail, drift, msgs = 0, 0, []
+    for i, e, j, c in reversed(lits):
+        ln = text.count("\n", 0, i) + 1
+        head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
-            g = draw(r["cert"]["expect"], src, tgt, tbl, r["cert"].get("split", DEFSPLIT),
-                     r["cert"].get("sigs"))
-        except (Unhandled, ValueError, StopIteration) as ex:
-            print(f"{r['id']:<12} {ex}"); continue
-        print(f"=== {r['id']}  {r['cert']['expect']}   [{src} ⟶ {tgt}]")
-        for k in ("h", "w", "xo"):
-            if abs(r.get(k, 0) - g[k]) > 1e-9:
-                print(f"  {k}: note {r[k]}, generated {g[k]}")
-        for k in ("lanes", "beads", "top", "bot"):
-            a = json.dumps(r.get(k, []), ensure_ascii=False)
-            b = json.dumps(g[k], ensure_ascii=False)
-            if a != b:
-                print(f"  {k}:\n    note {a}\n    gen  {b}")
+            new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
+                            c.get("sigs")))[1:-1]
+        except (Unhandled, ValueError, KeyError, StopIteration) as ex:
+            fail += 1; msgs.append(f"{head}\n  {ex}"); continue
+        if new == text[i:e]:
+            continue
+        drift += 1
+        if write:
+            text = text[:i] + new + text[e:]; msgs.append(f"{head}\n  rewritten")
+        else:
+            msgs.append("\n".join([head] + list(difflib.unified_diff(
+                text[i:e].splitlines(), new.splitlines(), "note", "generated", lineterm=""))))
+    if write:
+        open(path, "w", encoding="utf-8").write(text)
+    if msgs:
+        print(*reversed(msgs), sep="\n")
+    print(f"diagram: {len(lits)} literals in {path}, {len(lits) - drift - fail} verbatim, {drift}"
+          f" {'rewritten' if write else 'drifted'}, {fail} undrawable", file=sys.stderr)
+    sys.exit((fail or drift and not write)
+             and f"diagram: {path} does not hold what the generator draws")
 
 
 def main(argv):
@@ -728,12 +795,12 @@ def main(argv):
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
     tbl = sigs()
-    if "--roundtrip" in argv or "--compare" in argv:
+    if "--roundtrip" in argv or "--compare" in argv or "--write" in argv:
         path = path or "diag/allegory-axioms.typ"
-        if "--compare" in argv:
-            compare(path, frm, tbl)
-        else:
+        if "--roundtrip" in argv:
             roundtrip(path, frm, "--show" in argv, out, tbl)
+        else:
+            regen(path, tbl, "--write" in argv)
         return
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
@@ -741,7 +808,8 @@ def main(argv):
                  + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"]'
                  + ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
-                 + '\n       diagram --compare [diag/allegory-axioms.typ]')
+                 + '\n       diagram --compare [diag/allegory-axioms.typ]'
+                 + '\n       diagram --write [diag/allegory-axioms.typ]')
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own)
     got, bad = swept(r)
     print(emit(r))

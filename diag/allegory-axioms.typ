@@ -2585,7 +2585,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`⦇R⦈`]), (1, [`R`], black, 0.55)),
   ((1.7, [`B`]),),
   ((1.7, [`A`]),),
-  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "S° F(⦇S⦈°⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")),
   names: true, s: 100%)
 #let hy-split = dpanel(5, 4.55, 1.7,
@@ -2593,21 +2592,18 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`⦇R⦈`]), (1, [`R`], black, 0.55)),
   ((1.7, [`B`]),),
   ((1.7, [`A`]),),
-  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "S° F(⦇S⦈°)F(⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-alg = dpanel(5, 4.55, 1.7,
   ((0.55, 4, 2, [`F`], none),),
   ((4, [`S°`]), (3, [`⦇S⦈°`]), (2, [`α`], black, 0.55), (1, [`⦇R⦈`])),
   ((1.7, [`B`]),),
   ((1.7, [`A`]),),
-  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (0.55, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-lambek = dpanel(5, 4.55, 1.7,
   ((0.55, 3, 2, [`F`], none),),
   ((4, [`⦇S⦈°`]), (3, [`α°`]), (2, [`α`], black, 0.55), (1, [`⦇R⦈`])),
   ((1.7, [`B`]),),
   ((1.7, [`A`]),),
-  opath: ((1.7, 5), (1.7, 4), (1.7, 3), (0.55, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-cata = dpanel(3, 3.4, 0.55,
   (),
@@ -2626,7 +2622,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3, [`S°`]), (2, [`X`]), (1, [`R`], black, 0.55)),
   ((1.7, [`B`]),),
   ((1.7, [`A`]),),
-  opath: ((1.7, 4), (1.7, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A")), s: 100%)
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
@@ -4190,21 +4185,19 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((3, [`α`], black, 0.55), (2, [`prefix`], black, 2.85), (1, [`p`])),
   ((0.55, [`F`]), (2.85, [`list`]), (4, [`A`])),
   ((1.7, [`list`]), (4, [`A`])),
-  opath: ((4, 4), (4, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))
-#let tw-pfx2 = dpanel(4, 6.85, 4,
-  ((0.55, "top", 2, none, none), (1.7, 3, "bot", none, none), (2.85, "top", 3, none, none)),
-  ((3, [`prefix`], black, 2.85), (2, [`cons`], black, 0.55), (1, [`p`])),
-  ((0.55, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
-  ((1.7, [`list`]), (4, [`A`])),
-  opath: ((4, 4), (2.85, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
+#let tw-pfx2 = dpanel(4, 8, 5.15,
+  ((0.55, 2, "bot", none, none), (1.7, "top", 2, none, none), (2.85, 3, 2, [`list`], none), (4, "top", 3, none, none)),
+  ((3, [`prefix`], black, 4), (2, [`cons`], black, 1.7), (1, [`p`])),
+  ((1.7, [`A×−`]), (4, [`list`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  opath: ((5.15, 4), (5.15, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
 #let tw-pfx3 = dpanel(3, 6.85, 4,
   ((0.55, "top", 1, none, none), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
   ((2, [`prefix`], black, 2.85), (1, [`(p×list(p))cons`], black, 0.55)),
   ((0.55, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
   ((1.7, [`list`]), (4, [`A`])),
-  opath: ((4, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
@@ -4918,35 +4911,34 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`zero`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((1.7, [`𝟏`]), (2.85, [`Int`])),
   ((2.85, [`Int`]),),
-  opath: ((2.85, 4), (1.7, 2), (0.55, 1), (0.55, 0)),
+  opath: ((2.85, 4), (2.85, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "zero"))
 #let mh-alg = dpanel(2, 4.55, 1.7,
   ((0.55, "top", 1, none, none),),
   ((1, [`zero`], black, 0.55),),
   ((0.55, [`𝟏`]), (1.7, [`Int`])),
   ((1.7, [`Int`]),),
-  opath: ((1.7, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
 #let mh-segsum = dpanel(5, 6.85, 4,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
   ((3, [`segment`], black, 2.85), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`A`])),
   ((4, [`A`]),),
-  opath: ((4, 5), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  opath: ((4, 5), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(segment sum)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-greedy = dpanel(5, 6.85, 4,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
   ((3, [`suffix`], black, 2.85), (2, [`⦇[zero,⊕]⦈`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`A`])),
   ((4, [`A`]),),
-  opath: ((4, 5), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  opath: ((4, 5), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-shape = dpanel(8, 9.15, 6.3,
   ((0.55, 6.5, 1, [`E`], frc([`𝟙`])), (1.7, 4.5, 2, [`E`], frc([`𝟙`])), (2.85, 4, 3, [`list`], none), (4, 6, 4, [`list`], none), (5.15, "top", 6, none, none)),
   ((6, [`suffix`], black, 5.15), (4, [`prefix`], black, 4), (3, [`sum`], black, 2.85), (2, [`est(≥)`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((5.15, [`list`]), (6.3, [`A`])),
   ((6.3, [`A`]),),
-  opath: ((6.3, 8), (5.15, 6), (4, 4), (2.85, 3), (1.7, 2), (0.55, 1), (0.55, 0)),
+  opath: ((6.3, 8), (6.3, 6), (4, 4), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(suffix)E(𝟙%∋)E(E(prefix sum))E(est(≥))est(≥)", src: "list(A)", tgt: "A"))
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
@@ -6009,7 +6001,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`party`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
   ((2.85, [`tree`]), (4, [`A`])),
   ((1.7, [`list`]), (4, [`A`])),
-  opath: ((4, 4), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]"))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
@@ -6019,14 +6010,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3, [`⦇S⦈`], black, 4), (2, [`choose`], black, 1.7), (1, [`est(R°)`], black, 0.55)),
   ((4, [`tree`]), (5.15, [`A`])),
   ((2.85, [`list`]), (5.15, [`A`])),
-  opath: ((5.15, 5), (4, 3), (4, 2), (4, 1), (4, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out4 = dpanel(7, 9.15, 6.3,
   ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, 2.5, 1, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`Δ`], none), (4, 5, "bot", none, none), (5.15, "top", 5, none, none)),
   ((5, [`⦇S⦈`], black, 5.15), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 2.85), (1, [`est(R°)`], black, 1.7)),
   ((5.15, [`tree`]), (6.3, [`A`])),
   ((4, [`list`]), (6.3, [`A`])),
-  opath: ((6.3, 7), (5.15, 5), (5.15, 4), (5.15, 2), (5.15, 1), (5.15, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
