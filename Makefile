@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p w cite spell scan scan-strict cover diagram slice circuit books hm-check hm-sigs
+.PHONY: p w cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -30,7 +30,7 @@ SLICE := diag/circuit-slice.typ
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit cite spell
+p: $(STAMP) slice circuit cite spell scan
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
@@ -75,11 +75,14 @@ books:
 	./scripts/book ingest
 	./scripts/book embed
 
-# The scan line over every panel that emits its lists as metadata.  NOT a prerequisite of `p`:
-# `typst query` is a second full compile of the note, and `p` already pays for one.  Run it after
-# editing a panel's argument lists — that is when the picture can stop saying what the row says.
+# The scan line over every panel that emits its lists as metadata.  Cached on a hash of every
+# `dpanel`/`cpanel`/`tpan`/`mpan` call: unchanged since the last clean pass skips the `typst query`
+# that dominates its cost, so `p` can afford it now; `scan-full` bypasses the cache.
 scan:
 	./scripts/scanline diag/allegory-axioms.typ
+
+scan-full:
+	./scripts/scanline diag/allegory-axioms.typ --full
 
 # The same sweep with crossings fatal.  A SEPARATE TARGET and not a flag on `scan`: the note has
 # crossings today, so `scan` must stay green while this one names the work still to do.

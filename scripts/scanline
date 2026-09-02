@@ -14,7 +14,9 @@ one signature everywhere in its display.  What it only CHECKS: the `cert:` a cal
 draws, `alias:` the abbreviations the display's key list asks the reader to supply.  Applying a
 declared law is mechanical; its truth stays the author's certificate, as in `scripts/cite-check`.
 """
-import json, subprocess, sys
+import hashlib, json, os, re, subprocess, sys
+
+CACHE = ".lake/build/scanline-cache.json"
 
 EPS = 1e-6
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
@@ -843,6 +845,15 @@ def sigline(s):
 
 
 # ---------------------------------------------------------------- driver
+def lit_hashes(path):
+    """sha256 of every `dpanel(`/`cpanel(`/`tpan(`/`mpan(` call in the source, whitespace included.
+    `typst query` compiles the whole file regardless of which panel changed, so this is what a
+    cache CAN key on cheaply — the set is compared whole, not panel by panel."""
+    text = open(path, encoding="utf-8").read()
+    return sorted(hashlib.sha256(text[m.start():matching(text, m.end() - 1) + 1].encode()).hexdigest()
+                  for m in re.finditer(r'\b(?:dpanel|cpanel|tpan|mpan)\(', text))
+
+
 def panels(path, frm):
     if frm:
         vals = json.load(open(frm, encoding="utf-8"))
@@ -885,7 +896,15 @@ def locate(path, p):
 def main(argv):
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
     only = opt(argv, "--panel")
-    recs = panels(path, opt(argv, "--from"))
+    frm = opt(argv, "--from")
+    keep = not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
+    hs = lit_hashes(path) if keep else None
+    if keep and "--full" not in argv:
+        c = json.load(open(CACHE, encoding="utf-8")) if os.path.exists(CACHE) else {}
+        if c.get("path") == path and c.get("hashes") == hs and c.get("pass"):
+            print(f"scanline: {len(hs)} panel literals unchanged since last pass — skipped")
+            return
+    recs = panels(path, frm)
     if "--spell" in argv:
         n, bad = respell(recs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
@@ -933,6 +952,9 @@ def main(argv):
     cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
     print(f"scanline: {len(recs)} panels, {len(ps)} swept, {cert} certified,"
           f" {len(unhandled)} unhandled, {len(bad)} failures")
+    if keep:
+        json.dump({"path": path, "hashes": hs, "pass": not bad and not unhandled},
+                  open(CACHE, "w", encoding="utf-8"))
     if drawn:
         hit = sorted({w.split(':')[0].rsplit('.', 1)[0] for w in drawn})
         print(f"drawing ({len(drawn)}):", *drawn, sep="\n  ", file=sys.stderr)
