@@ -58,8 +58,13 @@
 #let ADJC = (i: black, E: rgb("#ea580c"))
 // Functor wires (`dpanel` lanes) are coloured BY NAME at the user's request (2026-09-01): once a wire
 // leaves its bead nothing else says which functor it is.  Muted, so the black beads stay loudest.
-#let FCOL = ("E": rgb("#6b4c9a"), "list": rgb("#3f7d4e"), "tree": rgb("#8c5a2b"), "Δ": rgb("#b0508a"),
-  "A×−": rgb("#4a6fa5"), "Int×−": rgb("#7a7a3a"), "F": rgb("#5c6b7a"))
+// The eight product functors share one terracotta band because no two of them ever meet in a panel, and
+// the band stays off blue so none of them nears the teal object wire.
+#let FCOL = (
+  "E": rgb("#6b4c9a"), "list": rgb("#3f7d4e"), "tree": rgb("#8c5a2b"), "F": rgb("#695c53"),
+  "L": rgb("#4e9986"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"), "bag": rgb("#b6813f"),
+  "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#ae6160"), "Int×−": rgb("#c78675"), "Op×−": rgb("#844a3b"),
+  "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"), "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.

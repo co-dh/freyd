@@ -2564,15 +2564,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let nm = if l.at(3) != none { l.at(3) } else {
       let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
       if q == none { none } else { q.at(1) } }
-    let col = if nm == none { none } else { FCOL.at(plain(nm), default: none) }
+    let col = if nm == none { none } else { FCOL.at(plain(nm)) }
     if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
     else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd, col: col) }
   }
   for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
