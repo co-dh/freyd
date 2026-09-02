@@ -832,7 +832,32 @@ def regen(path, tbl, write):
              and f"diagram: {path} does not hold what the generator draws")
 
 
+_HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
+              ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
+              '\n       diagram --roundtrip [--show] [--from FIELD] [--json FILE] [diag/allegory-axioms.typ]'
+              '\n       diagram --compare [diag/allegory-axioms.typ]'
+              '\n       diagram --write [diag/allegory-axioms.typ]'
+              '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
+              " formula alone does not fix the ports"
+              '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
+              " separated by spaces; the key is left of the LAST colon"
+              '\n--slope left  lean the layout left instead of the default lane placement'
+              '\n--fold-list   keep a composite object as one wire instead of splitting it (e.g. `[A]`'
+              " stays folded, not `list` beside `A`)"
+              '\n--roundtrip   the acceptance test: regenerate every certified panel in the note from'
+              " its own `cert: expect` and sweep it again; --show prints each rebuilt panel, --json"
+              " FILE writes the results, --from FIELD reads a non-default metadata field"
+              '\n--compare     rebuild every `dpanel(` literal in the note from its own `cert:` and'
+              " fail on any drift from the note's text"
+              '\n--write       like --compare, but splices the rebuilt literals back over the note'
+              " (trailing arguments kept)"
+              '\n\nDefault mode prints one `#dpanel(...)` call on stdout, ready to paste into the note;'
+              " diagnostics (a failed self-sweep, a formula the sweep reads back differently) go to"
+              " stderr.  Exit status is nonzero if the drawn panel fails its own sweep.")
+
+
 def main(argv):
+    sl.help_if(argv, __doc__, _HELP_BODY)
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     own = sl.opt(argv, "--sigs")           # `R:F(A)⟶A S:F(B)⟶B`: the key is left of the LAST colon

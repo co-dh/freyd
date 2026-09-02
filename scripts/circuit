@@ -751,7 +751,27 @@ def read_back(t):
     return mk("case", [read_back(dict(x, items=x["items"][1:])) for x in t["bodies"]])
 
 
+_HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
+              '\n       circuit --src "E(A)" --tgt "[A]" --sigs "sort:E(A)⟶[A]" "sort(P)"'
+              '\n       circuit --slice'
+              '\n       circuit --compare [diag/allegory-axioms.typ]'
+              '\n       circuit --write [diag/allegory-axioms.typ]'
+              '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
+              " formula alone does not fix the ports"
+              '\n--sigs        extra bead signatures beyond diag/circuit-sigs.json, `NAME:SRC⟶TGT`'
+              " pairs separated by spaces; the key is left of the LAST colon"
+              '\n--slice       regenerate CIRCUIT-GEN §5'"'"'s whole acceptance file'
+              " (diag/circuit-slice.typ) from the built-in SLICE table, header included — never hand-edit it"
+              '\n--compare     rebuild every `cpanel(` literal in the note from its own `cert:` and'
+              " fail on any drift from the note's text"
+              '\n--write       like --compare, but splices the rebuilt literals back over the note'
+              '\n\nDefault mode prints one `#cpanel(...)` call on stdout, ready to paste beside the row'
+              " it draws; a mismatch between the run and the note's own spelling of the formula goes"
+              " to stderr as a comment, not a failure.")
+
+
 def main(argv):
+    sl.help_if(argv, __doc__, _HELP_BODY)
     src, tgt, own = sl.opt(argv, "--src"), sl.opt(argv, "--tgt"), sl.opt(argv, "--sigs")
     taken = {i for o in ("--src", "--tgt", "--sigs") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
