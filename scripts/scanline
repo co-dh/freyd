@@ -393,6 +393,8 @@ class Panel:
         # `strands` are the drawn curves no `Wire` stands for — `mpan`'s widening and `tw-hm`'s
         # split, which the sweep reads off `splits` instead of off a lane of their own.
         self.wires, self.beads, self.splits, self.strands, self.kdrift = [], [], [], [], []
+        # `(name, x, y, box)` for every name DRAWN beside a wire — ink no `Wire` stands for.
+        self.labels = []
         self.opath = [tuple(q) for q in r.get('opath') or []]
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
@@ -491,6 +493,8 @@ def a_dpanel(p, r):
                                                   [(p.xat(y0), y0), (x, y0 - gk[('b', float(y0))])])
             pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (p.xat(y1), y1)]
         p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
+        if y0 != 'top' and y1 != 'bot':
+            p.labels.append((nm, x, y0, lbox(x, y0, nm)))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
@@ -787,6 +791,35 @@ def crossings(p):
     return [f"{p.id}: {la} crosses {lb} at (x={x:.2f}, y={y:.2f})" for ((la, lb), x, y) in hits]
 
 
+# A drawn name is 9pt mono, so one character is 0.2039cm wide and a line 0.2573cm tall.  `dpan`'s
+# `length: 0.8cm` turns those into the panel's own units; `P`'s `s` scales the drawn canvas whole,
+# ink and coordinates together, so it cancels here.
+LCW, LLH, LDX = 0.2039 / 0.8, 0.2573 / 0.8, 0.12
+
+
+def lbox(x, y, nm):
+    """`dpanel`'s box for a lane's own name: anchored east at `x - LDX`, centred on the bead row."""
+    return (x - LDX - LCW * len(nm or '?'), y - LLH / 2, x - LDX, y + LLH / 2)
+
+
+def labels(p):
+    """A lane born at a bead and dying at a bead reaches neither port list, so `dpanel` writes its
+    name beside it — and that name is ink: a strand through its box is a collision, not a warning."""
+    out = []
+    ss = [(w.label or '?', poly(w.pts)) for w in p.wires if w.pts] \
+        + [(l or '?', poly(q)) for (l, q) in p.strands]
+    for (nm, x, y, bx) in p.labels:
+        es = [((bx[0], bx[1]), (bx[2], bx[1])), ((bx[2], bx[1]), (bx[2], bx[3])),
+              ((bx[2], bx[3]), (bx[0], bx[3])), ((bx[0], bx[3]), (bx[0], bx[1]))]
+        for (l, q) in ss:
+            if any(bx[0] <= a[0] <= bx[2] and bx[1] <= a[1] <= bx[3]
+                   or any(meet(a, b, u, v) for (u, v) in es) for a, b in zip(q, q[1:])):
+                out.append(f"{p.id}: the name {nm}@{x:g}, drawn west of the wire on the y={y:g}"
+                           f" row, is struck through by {l}")
+                break
+    return out
+
+
 # ---------------------------------------------------------------- the declared tables
 VARS = set("stuvwxyz")                     # a signature's variables: single lower-case letters
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
@@ -1051,7 +1084,7 @@ def main(argv):
             continue
         try:
             p = Panel(r)
-            bad += p.kdrift + sweep(p)
+            bad += p.kdrift + sweep(p) + labels(p)
             b, n = certify(p)
             bad += b; note += n
             drawn += connect(p)

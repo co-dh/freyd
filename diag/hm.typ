@@ -88,7 +88,9 @@
 
 /// A region name, muted, inside the region.  Named ONCE in a family's first picture — the book's own
 /// practice; unlabelled regions still carry their colour.
-#let hm-name(p, label, col: luma(150), size: 9pt) = d.content(p, text(size, col)[#label])
+#let hm-name(p, label, col: luma(150), size: 9pt, anchor: "center") = d.content(
+  p, text(size, col)[#label], anchor: anchor,
+)
 
 /// `body` is drawn in the panel's own coordinates, `(0, 0)` bottom left.  Returns DATA, not a
 /// drawing: `hm-row` needs `w` to lay panels out.  `frame` defaults to none — the fills are the box.

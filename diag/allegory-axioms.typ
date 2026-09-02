@@ -2540,13 +2540,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     let ys = ddips(xat, h, beads, l.at(0), l.at(1), l.at(2))
     let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
     let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
-    // The lane's functor name keys `FCOL`; it is never drawn, the colour names the wire (2026-09-01).
+    // The lane's functor name keys `FCOL`, and the colour names a wire that has a PORT to be read
+    // beside; one born at a bead and dying at a bead has none, so there the name is drawn as well.
     let nm = if l.at(3) != none { l.at(3) } else {
       let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
       if q == none { none } else { q.at(1) } }
     let col = if nm == none { none } else { FCOL.at(plain(nm)) }
     if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
     else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
+    // On the BIRTH BEAD's own row: every arm leaves its dot vertically and every leg reaches its
+    // column only at a knee, so that row is the one place west of the wire no other strand sweeps.
+    if l.at(1) != "top" and l.at(2) != "bot" {
+      hm-name((l.at(0) - 0.12, l.at(1)), nm, col: col, anchor: "east")
+    }
   }
   for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
@@ -2590,7 +2596,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
   for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
   for (y, l) in beads { hm-bead((xo, y), l) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
   }, s: 100%)
@@ -5024,8 +5030,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     hm-name((x + hdx, (y0 + y1) / 2), outer)
   }
   for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { black }) }
-  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { black }) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   }, s: 100%)
   hm-meta((helper: "mpan", h: h, w: w, xo: xo, cert: cert,
     beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
