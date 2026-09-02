@@ -136,7 +136,7 @@
     ), seams: ()), label: none, port: ("A", "[[A]²]", ), src: ("tree A", ), tgt: ("[A]", "[A]", )),
   cert: (expect: "⦇S⦈", src: "tree(A)", tgt: "[A]×[A]"))
 
-// ⟨⟩ (12.1e)  [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]   [F(E([A])) ⟶ E([A])]
+// ⟨⟩ (12.1e)  [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
@@ -181,7 +181,7 @@
         ),
       )),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E([A]))", tgt: "E([A])"))
+  cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E[A])", tgt: "E[A]"))
 
 // 13.4.4a r2  𝟙%∋ E(⦇S⦈)E(choose)est(R°)   [tree(A) ⟶ [A]]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -229,7 +229,7 @@
   ), src: ("tree A", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
-// subseq :2932 sbA4  [nil%∋,((𝟙×∋)(cons∪π₂))%∋]   [F(E([A])) ⟶ E([A])]
+// subseq :2932 sbA4  [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
@@ -244,7 +244,7 @@
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons∪π₂))", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
           0,
@@ -256,9 +256,9 @@
         ),
       )),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))
+  cert: (expect: "[nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]", src: "F(E[A])", tgt: "E[A]"))
 
-// subseq :2936 sbA5  [nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]   [F(E([A])) ⟶ E([A])]
+// subseq :2936 sbA5  [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
@@ -273,7 +273,7 @@
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons∪π₂))", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
           0,
@@ -285,7 +285,7 @@
         ),
       )),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))
+  cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]", src: "F(E[A])", tgt: "E[A]"))
 
 // greedy :3920 mbp  R°R°   [A ⟶ A]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -752,7 +752,7 @@
   ), src: ("[A]", ), tgt: ("A", )),
   cert: (expect: "suffix%∋ E((prefix sum)%∋ est(≥))est(≥)", src: "[A]", tgt: "A"))
 
-// filter :5025 twp  (𝟙×R°)(π₂∪(p×𝟙) cons)   [A×[A] ⟶ [A]]
+// filter :5025 twp  (𝟙×R°)(π₂ ∪ (p×𝟙) cons)   [A×[A] ⟶ [A]]
 #cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "stack", nin: 2, nout: 2, lanes: (
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
@@ -775,9 +775,9 @@
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))
+  cert: (expect: "(𝟙×R°)(π₂ ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))
 
-// filter :5027 twp  (π₂∪(p×𝟙) cons)R°   [A×[A] ⟶ [A]]
+// filter :5027 twp  (π₂ ∪ (p×𝟙) cons)R°   [A×[A] ⟶ [A]]
 #cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
         (k: "seq", nin: 2, nout: 1, items: (
@@ -795,9 +795,9 @@
       )),
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))
+  cert: (expect: "(π₂ ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))
 
-// filter :5052 twp  [nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]   [F([A]) ⟶ [A]]
+// filter :5052 twp  [nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
@@ -806,7 +806,7 @@
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(π₂∪(p×𝟙) cons)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
         (
@@ -823,7 +823,7 @@
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))
+  cert: (expect: "[nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))
 
 // filter :5055 twp  [nil,(π₁p→cons,π₂)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (

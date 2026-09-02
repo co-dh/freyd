@@ -71,7 +71,9 @@ def parse(s):
         return ('hc', [parse(h) for h in hs])
     us = split_top(s, '∪')
     if len(us) > 1:
-        return ('union', [parse(u) for u in us], squeeze(s))
+        # The `∪` always gets a space on each side; the operands keep the source's own spacing,
+        # which `spell` would renormalise (`(p×𝟙) cons` → `(p×𝟙)cons`).
+        return ('union', [parse(u) for u in us], ' ∪ '.join(squeeze(u) for u in us))
     ms = split_top(s, '∩')
     if len(ms) > 1:
         return ('cap', [parse(m) for m in ms], squeeze(s))
@@ -137,6 +139,11 @@ def p_prim(s, i):
     if j < len(s) and s[j] == '(':
         k = matching(s, j)
         return ('app', s[i:j], parse(s[j + 1:k])), k + 1
+    if j < len(s) and s[j] == '[':
+        # `[A]` is a name, so `E[A]` is an application spelled without parentheses; the argument
+        # keeps its brackets so the AST is exactly the one `E([A])` builds.
+        k = matching(s, j)
+        return ('app', s[i:j], parse(s[j:k + 1]), s[i:k + 1]), k + 1
     return ('atom', s[i:j]), j
 
 
