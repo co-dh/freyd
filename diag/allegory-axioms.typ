@@ -7016,6 +7016,72 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ((CAO, CY5, [`⦇Q⦈`], 0.32), (CAN, CY3, [`setify`], -0.32), (CAO, CY1, [`est(R)`], 0.32)),
   ((CAN - 0.30, 3.30, [`N`]), (CAN + 0.30, 1.95, [`E`])))
 
+// ---- Chains B and C.  `F` is CURRIED to the unary `F(NA,−)`, so its wire is a functor and the
+// algebra may die ON `N` instead of reaching past it; `trans` and `zip` are the only crossings left.
+#let CL1 = 0.65
+#let CL2 = 1.55
+#let CL3 = 2.45
+#let CBO = 4.60
+#let CBW = 7.60
+#let cbpan(h, wires, beads, top, bot) = dpan(h, CBW, CBO, {
+  for pts in wires { hm-wire(pts) }
+  for (x, y, l, sd) in beads {
+    hm-bead((x, y), l, dx: sd, anchor: if sd > 0 { "west" } else { "east" })
+  }
+  for (x, l) in top { hm-port((x, h), l, col: if x == CBO { BCOL } else { black }) }
+  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == CBO { BCOL } else { black }) }
+}, s: 78%)
+
+#let CC5 = 4.30    // `moves`, where the `E` is born
+#let CC4 = 3.45    // `trans`, where it crosses `N`
+#let CC3 = 2.60    // `est(R)` under `N`, where it dies
+#let CC2 = 1.70    // `zip`, where `F` crosses `N`
+#let CC1 = 0.85    // `α`, where `F` dies
+#let cc-bot = ((CL1, [`N`]), (CBO, [`LA`]))
+#let cc1 = cbpan(2.60,
+  (((CL1, 2.60), (CL1, 1.85), (CL3, 0.95)), ((CL3, 2.60), (CL3, 0))),
+  ((CL3, 0.95, [`Q`], -0.32),),
+  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), ((CL3, [`N`]), (CBO, [`LA`])))
+// `zip` is the one crossing that RE-INDEXES the curried wire — `F(NA,−)N⇒N F(A,−)` — so below it
+// the `F` wire is `F(A,−)`, which is the wire `N(α)` kills on the object wire.
+#let cc2 = cbpan(5.05,
+  (((CL3, 5.05), (CL3, CC4 + 0.42), (CL2, CC4 - 0.42), (CL2, CC2 + 0.45), (CL1, CC2 - 0.45),
+    (CL1, 0)),
+   ((CL3, CC5), (CL2, CC5 - 0.45), (CL2, CC4 + 0.42), (CL3, CC4 - 0.42), (CL3, CC3 + 0.5),
+    (CBO, CC3)),
+   ((CL1, 5.05), (CL1, CC2 + 0.45), (CL2, CC2 - 0.45), (CL2, CC1 + 0.5), (CBO, CC1))),
+  ((CL3, CC5, [`moves`], 0.32), ((CL2 + CL3) / 2, CC4, [`trans`], 0.75), (CBO, CC3, [`est(R)`], 0.32),
+   ((CL1 + CL2) / 2, CC2, [`zip`], 0.75), (CBO, CC1, [`α`], 0.32)),
+  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), cc-bot)
+
+// B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
+// of maps turns it into the program.
+#disp[#pad(right: 10pt, table(
+  columns: (1fr, HMW),
+  align: (left + horizon, center + horizon),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
+    #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
+     front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
+     step folds]],
+    // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
+  table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
+
+  [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [])],
+  [#cc1],
+
+  [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
+    [#src[the fusion condition @cyl-fusion read as a definition,
+ ]])],
+     // lean:AOP.A7_4_Cylinder.Q@2b4dd374
+  [#cc2],
+
+  [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
+    [#src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
+  // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
+  [],
+))]<cyl-step>
+
 // B&dM §7.4, p. 182.  The `E` the fold builds is killed earlier at every step, until @cyl-step's
 // algebra never builds it: that migration is what the right column draws.
 #disp[#pad(right: 10pt, table(
@@ -7052,21 +7118,6 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [#ca5],
 ))]<cyl-laws>
 
-// ---- Chains B and C.  `F` is CURRIED to the unary `F(NA,−)`, so its wire is a functor and the
-// algebra may die ON `N` instead of reaching past it; `trans` and `zip` are the only crossings left.
-#let CL1 = 0.65
-#let CL2 = 1.55
-#let CL3 = 2.45
-#let CBO = 4.60
-#let CBW = 7.60
-#let cbpan(h, wires, beads, top, bot) = dpan(h, CBW, CBO, {
-  for pts in wires { hm-wire(pts) }
-  for (x, y, l, sd) in beads {
-    hm-bead((x, y), l, dx: sd, anchor: if sd > 0 { "west" } else { "east" })
-  }
-  for (x, l) in top { hm-port((x, h), l, col: if x == CBO { BCOL } else { black }) }
-  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == CBO { BCOL } else { black }) }
-}, s: 78%)
 // Tall enough that `F(NA,−)` gets a straight run under its port label before it turns onto `N`.
 #let CBH = 4.40
 // `est(R)` is the one bead BOTH sides carry, so it keeps the middle row and the base functor's own
@@ -7119,56 +7170,6 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
  ]])
   // lean:AOP.A7_4_Cylinder.cyl_7_13@5224efdc
 ]<cyl-fusion>
-
-#let CC5 = 4.30    // `moves`, where the `E` is born
-#let CC4 = 3.45    // `trans`, where it crosses `N`
-#let CC3 = 2.60    // `est(R)` under `N`, where it dies
-#let CC2 = 1.70    // `zip`, where `F` crosses `N`
-#let CC1 = 0.85    // `α`, where `F` dies
-#let cc-bot = ((CL1, [`N`]), (CBO, [`LA`]))
-#let cc1 = cbpan(2.60,
-  (((CL1, 2.60), (CL1, 1.85), (CL3, 0.95)), ((CL3, 2.60), (CL3, 0))),
-  ((CL3, 0.95, [`Q`], -0.32),),
-  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), ((CL3, [`N`]), (CBO, [`LA`])))
-// `zip` is the one crossing that RE-INDEXES the curried wire — `F(NA,−)N⇒N F(A,−)` — so below it
-// the `F` wire is `F(A,−)`, which is the wire `N(α)` kills on the object wire.
-#let cc2 = cbpan(5.05,
-  (((CL3, 5.05), (CL3, CC4 + 0.42), (CL2, CC4 - 0.42), (CL2, CC2 + 0.45), (CL1, CC2 - 0.45),
-    (CL1, 0)),
-   ((CL3, CC5), (CL2, CC5 - 0.45), (CL2, CC4 + 0.42), (CL3, CC4 - 0.42), (CL3, CC3 + 0.5),
-    (CBO, CC3)),
-   ((CL1, 5.05), (CL1, CC2 + 0.45), (CL2, CC2 - 0.45), (CL2, CC1 + 0.5), (CBO, CC1))),
-  ((CL3, CC5, [`moves`], 0.32), ((CL2 + CL3) / 2, CC4, [`trans`], 0.75), (CBO, CC3, [`est(R)`], 0.32),
-   ((CL1 + CL2) / 2, CC2, [`zip`], 0.75), (CBO, CC1, [`α`], 0.32)),
-  ((CL1, [`F(NA,−)`]), (CL3, [`N`]), (CBO, [`LA`])), cc-bot)
-
-// B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
-// of maps turns it into the program.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
-    #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
-     front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
-     step folds]],
-    // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
-  table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
-
-  [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [])],
-  [#cc1],
-
-  [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
-    [#src[the fusion condition read as a definition,
- ]])],
-     // lean:AOP.A7_4_Cylinder.Q@2b4dd374
-  [#cc2],
-
-  [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
-    [#src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
-  // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
-  [],
-))]<cyl-step>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
