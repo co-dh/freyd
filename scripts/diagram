@@ -150,14 +150,10 @@ def peel(e):
     """A normalised object as (wires outermost first, the object the object wire itself carries)."""
     ws = []
     while render(e) is None:
-        if e[0] == 'prod' and len(e[1]) == 2 and e[1][0] == e[1][1]:
-            ws.append('Δ'); e = e[1][0]
-        elif e[0] == 'prod' and len(e[1]) == 2 and render(e[1][0]) is not None:
-            ws.append(render(e[1][0]) + '×−'); e = e[1][1]
-        elif e[0] == 'app':
-            ws.append(e[1]); e = e[2]
-        else:
+        w, inner = layer(e)
+        if w is None:
             raise Unhandled(f"no wire stack for the object {spell(e)}")
+        ws.append(w); e = inner
         if len(ws) > 8:
             raise Unhandled(f"the object {spell(e)} nests deeper than a panel can draw")
     return ws, e
@@ -279,10 +275,20 @@ def unify(a, b, sub, why):
 
 
 def layer(e):
-    """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it."""
-    if e[0] == 'prod' and len(e[1]) == 2:
-        return ('Δ', e[1][0]) if e[1][0] == e[1][1] else \
-            (render(e[1][0]) and render(e[1][0]) + '×−', e[1][1])
+    """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it.  A
+    product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
+    `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
+    staying folded on the object wire.  `norm` flattens nested products, so one end comes off and
+    the rest is still a product: `Op×[C]×[C]` is `Op×−` over `[C]×[C]`."""
+    if e[0] == 'prod':
+        xs = e[1]
+        if len(xs) == 2 and xs[0] == xs[1]:
+            return 'Δ', xs[0]
+        if render(xs[0]) is not None:
+            return render(xs[0]) + '×−', xs[1] if len(xs) == 2 else ('prod', xs[1:])
+        if render(xs[-1]) is not None:
+            return '−×' + render(xs[-1]), xs[0] if len(xs) == 2 else ('prod', xs[:-1])
+        return None, None
     return (e[1], e[2]) if e[0] == 'app' else (None, None)
 
 
@@ -369,7 +375,11 @@ def row(core, sigs, n):
     k = lab
     if core[0] == 'case':
         k = '[,]'
-    elif k and k[0] in sl.OPENERS:
+    # A bracket node is a label the bracket ENCLOSES, not one that merely opens with a bracket:
+    # `⦇(F(∋)S)%∋ thin(Q)⦈`'s body and `[nil,cons]within(w) ∪ [nil,π₂]` both start with an opener
+    # whose closer is in the middle, and stripping the ends there cuts the label in half.
+    elif k and k[0] in sl.OPENERS and k[-1] == sl.CLOSERS[sl.OPENERS.index(k[0])] \
+            and sl.matching(k, 0) == len(k) - 1:
         body = k[1:-1]
         k = k[0] + (',' if own_comma(body) else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
         r, step = sigs.get(lab) or sigs.get(k), row(bead(sl.parse(body)), sigs, n)
@@ -382,12 +392,22 @@ def row(core, sigs, n):
 
 def signature(core, sigs, n):
     """What a bead's label is an arrow between.  `R°` is `R` read backwards, `R%∋` is `R` with the
-    division's own `E` wire on its target, and a label with no row touches the object wire alone."""
+    division's own `E` wire on its target, and a SCHEMATIC label touches the object wire alone."""
     if core[0] == 'conv':
         s, t = signature(core[1], sigs, n)
         return t, s
     lab = core[1] if core[0] == 'app' else spell(core)
-    s, t = row(core, sigs, n) or (('atom', 'x'), ('atom', 'x'))
+    r = row(core, sigs, n)
+    if r is None:
+        # A bare one-letter name is the note's abstract relation — `R`, `p`, the `𝟙` of `𝟙%∋` — and a
+        # letter can only be endo on the object wire, so the schematic reading IS its signature.  Any
+        # other name is a real arrow: guessing `x⟶x` for it draws an identity bead spanning every
+        # live wire, which is a picture of a different arrow and no error says so.
+        if core[0] != 'atom' or len(lab.removesuffix('%∋')) != 1:
+            raise Unhandled(f"the bead {lab} has no signature in diag/hm-sigs.json and is not a"
+                            f' schematic letter; pass --sigs "{lab}:SRC⟶TGT"')
+        r = (('atom', 'x'), ('atom', 'x'))
+    s, t = r
     return fresh(s, n), fresh(('app', 'E', t) if lab.endswith('%∋') else t, n)
 
 

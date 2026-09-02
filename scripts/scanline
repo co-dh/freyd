@@ -30,17 +30,24 @@ UNIT = "𝟙"
 # `hc` is the ACROSS composite `s∘t`, leftmost outermost: a factor beside the wires that pass it.
 OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
 BREAK = OPENERS + CLOSERS + "×° \t"
+# `[0,2¹⁶)` is an OBJECT NAME (§16's machine words), one token whose `[` closes with a `)`: the
+# bracket walk would pair that `)` with the wrong opener, so the name is matched before it runs.
+INTERVAL = re.compile(r"\[[^\[\]()]*\)")
 # A projection ends its own token: the note writes the guard of a conditional `π₁p`, with nothing
 # between the two arrows, and one bead reading `π₁p` is a composite drawn as though it were an atom.
 PROJ = ("π₁", "π₂")
 
 
 def matching(s, i):
-    c, d = CLOSERS[OPENERS.index(s[i])], 0
-    for j in range(i, len(s)):
+    c, d, j = CLOSERS[OPENERS.index(s[i])], 0, i
+    while j < len(s):
+        m = j > i and INTERVAL.match(s, j)
+        if m:
+            j = m.end(); continue
         d += (s[j] == s[i]) - (s[j] == c)
         if d == 0:
             return j
+        j += 1
     raise ValueError(f"unbalanced {s[i]} in {s!r}")
 
 
@@ -48,7 +55,10 @@ def split_top(s, sep):
     """`s` cut at the `sep`s no bracket encloses."""
     out, last, i = [], 0, 0
     while i < len(s):
-        if s[i] in OPENERS:
+        m = INTERVAL.match(s, i)
+        if m:
+            i = m.end() - 1
+        elif s[i] in OPENERS:
             i = matching(s, i)
         elif s[i] == sep:
             out.append(s[last:i]); last = i + 1
@@ -105,6 +115,9 @@ def p_prim(s, i):
         i += 1
     if i >= len(s):
         raise ValueError(f"expected a term at the end of {s!r}")
+    m = INTERVAL.match(s, i)
+    if m:
+        return ('atom', m.group()), m.end()
     if s[i] in OPENERS:
         j = matching(s, i)
         # A division is ONE token, `x%∋`, whether or not `x` is bracketed: that is how the note's
@@ -191,9 +204,11 @@ def rec(e, f):
 
 def listable(e):
     """Whether `[X]` reads back as `list(X)`.  A `,` inside the bracket opens a case and a `∪` a
-    union, so those nodes — and an atom whose own text carries either — swallow the bracket."""
+    union, so those nodes — and an atom whose own text carries either — swallow the bracket.  It is
+    the TOP-LEVEL separator that swallows it: the `,` of the object name `[0,2¹⁶)` is inside the
+    name's own brackets, so `[[0,2¹⁶)]` is still a list."""
     if e[0] == 'atom':
-        return ',' not in e[1] and '∪' not in e[1]
+        return len(split_top(e[1], ',')) == 1 and len(split_top(e[1], '∪')) == 1
     if e[0] in ('comp', 'prod', 'hc'):
         return all(listable(x) for x in e[1])
     if e[0] == 'conv':
