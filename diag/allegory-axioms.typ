@@ -5168,7 +5168,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (2, "EA", ),
   ), src: ("[A]", ), tgt: ("A", )),
   cert: (expect: "suffix%∋ E((prefix sum)%∋ est(≥))est(≥)", src: "[A]", tgt: "A"))],
-    [#frc([`suffix`]) ` E(` #frc([`prefix sum`]) ` est(≥)) est(≥)` \ #src[@mss-shape]])],
+    [#src[@mss-shape]])],
   // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
   // `E` runs past it, and `prefix sum` is where the `list` wire dies.
   [#mh-shape],
