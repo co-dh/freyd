@@ -53,11 +53,11 @@
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "case", nin: 1, nout: 1, bodies: (
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 0),
             (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 2),
             (k: "stack", nin: 2, nout: 2, lanes: (
                 (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
                 (k: "seq", nin: 1, nout: 1, items: (
@@ -105,11 +105,11 @@
 #cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 0),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 2),
               (k: "union", nin: 2, nout: 1, bodies: (
                   (k: "seq", nin: 2, nout: 1, items: (
                       (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -139,7 +139,7 @@
 // ⟨⟩ (12.1e)  [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
       ), seams: (
@@ -149,7 +149,7 @@
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "fork", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -232,7 +232,7 @@
 // subseq :2932 sbA4  [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -242,7 +242,7 @@
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -261,7 +261,7 @@
 // subseq :2936 sbA5  [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]   [F(E[A]) ⟶ E[A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
       ), seams: (
@@ -271,7 +271,7 @@
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -309,11 +309,11 @@
 // takewhile :4239 twp  F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -350,11 +350,11 @@
 // takewhile :4244 twp  [nil,⊸ nil ∪ (p×(prefix list(p))) cons]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "union", nin: 2, nout: 1, bodies: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -504,7 +504,7 @@
 // takewhile :4345 twp  [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -519,7 +519,7 @@
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -543,11 +543,11 @@
 // takewhile :4348 twp  [nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -571,11 +571,11 @@
 // takewhile :4351 twp  [nil,(π₁p→cons,⊸ nil)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
@@ -620,11 +620,11 @@
 #cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 0),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 2),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
             ), seams: (
               (
@@ -800,11 +800,11 @@
 // filter :5052 twp  [nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -828,11 +828,11 @@
 // filter :5055 twp  [nil,(π₁p→cons,π₂)]   [F([A]) ⟶ [A]]
 #cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
@@ -847,11 +847,11 @@
 #cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 0),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 2),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
             ), seams: (
               (

@@ -2990,11 +2990,11 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust (CIRCUIT-GEN §1.4).
   [#vstep([], [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -3022,11 +3022,11 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // `+` is not in the generator's grammar: `𝟙+𝟙×∋` is drawn as the `F(∋)` it unfolds (`F(X)=𝟏+A×X`).
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -3053,11 +3053,11 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -3085,7 +3085,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -3095,7 +3095,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -3116,7 +3116,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
       ), seams: (
@@ -3126,7 +3126,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -3305,7 +3305,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
 #disp[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
       ), seams: (
@@ -3315,7 +3315,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "fork", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -4344,11 +4344,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "case", nin: 1, nout: 1, bodies: (
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 0),
             (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 2),
             (k: "stack", nin: 2, nout: 2, lanes: (
                 (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
                 (k: "seq", nin: 1, nout: 1, items: (
@@ -4380,11 +4380,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -4422,11 +4422,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "union", nin: 2, nout: 1, bodies: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -4668,7 +4668,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -4683,7 +4683,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -4707,11 +4707,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ nil ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -4735,11 +4735,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
@@ -4865,11 +4865,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 0),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 2),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
             ), seams: (
               (
@@ -5119,11 +5119,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "case", nin: 1, nout: 1, bodies: (
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 0),
             (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+            (k: "open", nin: 1, nout: 2),
             (k: "union", nin: 2, nout: 1, bodies: (
                 (k: "seq", nin: 2, nout: 1, items: (
                     (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -5154,7 +5154,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
       ), seams: (
@@ -5164,7 +5164,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "union", nin: 2, nout: 1, bodies: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -5201,11 +5201,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "union", nin: 2, nout: 1, bodies: (
             (k: "seq", nin: 2, nout: 1, items: (
                 (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
@@ -5237,11 +5237,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -5273,11 +5273,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
             (k: "seq", nin: 1, nout: 1, items: (
@@ -5447,7 +5447,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(zero)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
@@ -5462,7 +5462,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(⊸ zero ∪ plus)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
@@ -5811,7 +5811,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -5826,7 +5826,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -5851,11 +5851,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
         (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙) cons)", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -5880,11 +5880,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 2, label: "⟨π₂%∋,((p×𝟙) cons)%∋⟩", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
@@ -5904,11 +5904,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 0),
         (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
-        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "open", nin: 1, nout: 2),
         (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
       ), seams: (
         (
@@ -6009,11 +6009,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 0),
               (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
             ), seams: ()),
           (k: "seq", nin: 1, nout: 1, items: (
-              (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+              (k: "open", nin: 1, nout: 2),
               (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
             ), seams: (
               (

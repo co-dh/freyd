@@ -159,6 +159,13 @@
     return (w: 0.6 + p.w, hh: calc.max(p.hh, (t.nin - 1) * UIP + 0.1),
       body: { body; d.group({ d.translate((0.6, 0)); p.body }) })
   }
+  // ---- §3 row 13's arms: the coproduct wire opened into the summand's strands.  `𝟏` ends the
+  // wire at a dot, a pair splits it — the shape is the arm's only mark of which summand it is.
+  if t.k == "open" {
+    if t.nout == 0 { return (w: CDL, hh: 0.0, body: bang((CDL, 0), li: CDL)) }
+    if t.nout == 1 { return (w: CGAP, hh: 0.0, body: wire((0, 0), (CGAP, 0))) }
+    return (w: CSP, hh: UIP, body: delta((0, 0), li: 0, lo: CSP, sp: UIP))
+  }
   // ---- §3 row 12: `x∩y`.  Copy every strand, run BOTH lanes, merge.  `∇=Δ°` forces the two to
   // carry the same value, and that is the whole of the intersection: no box says `∩`.
   if t.k == "cap" {
@@ -252,9 +259,9 @@
     }
     return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
-  // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  Every arm
-  // opens with the converse injection `scripts/circuit` put there (11.2a), so the fork hands ONE
-  // coproduct wire to each arm and the seam after that box names the summand's strands.
+  // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  The fork
+  // hands ONE coproduct wire to each arm and the arm's `open` generator splits or ends it, so the
+  // seam after that generator names the summand's strands.
   let ps = t.bodies.map(b => pic(b, length))
   let oys = (BRT, -BRT)
   let mw = calc.max(..ps.map(p => p.w))
