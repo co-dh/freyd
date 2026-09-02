@@ -423,7 +423,7 @@ def seq(xs, tbl, src, tgt=None):
             items.append(n); objs.append(t)
         mp = mp and m; i += 1
     # a pair's strands are typed nowhere else — its lanes END at them — so the seam after a fork
-    # is printed whole, as `armed` prints the one after an injection
+    # is printed whole, as `armed` prints the one after the wire an arm opens
     sm = seams(objs) + [[i, [lshow(w) for w in it["_out"]]]
                         for i, it in enumerate(items[:-1]) if it["k"] == "fork"]
     return pic("seq", objs[0], objs[-1], mp, items=items, seams=sorted(sm), _objs=objs,
@@ -570,20 +570,23 @@ def tape(e, tbl, src):
         raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
     bs = branches(e[1], tbl, ss, spell(e))
     if len(ss) != 2:
-        raise Unhandled(f"`{spell(e)}` forks {len(ss)} summands, and the injections `l`, `r` name two")
-    # The coproduct arrives as ONE wire, the fork being what opens it; a box at the same object
-    # takes the product summand's strands (`wires`).
+        raise Unhandled(f"`{spell(e)}` forks {len(ss)} summands, and the tape fork draws two")
+    # The coproduct arrives as ONE wire, the fork being what opens it; each arm opens that wire
+    # into the summand's strands (`wires`).
     return pic("case", src, bs[0][2], all(b[3] for b in bs), _in=[src],
-               bodies=[armed(n, src, s, lane(b)) for n, s, b in zip("lr", ss, bs)])
+               bodies=[armed(src, s, lane(b)) for s, b in zip(ss, bs)])
 
 
-def armed(name, src, s, body):
-    """11.2a, `[R,S]=l°R∪r°S`: the converse injection heads each arm, as the note's hand-drawn
-    brackets put `l` flipped and tinted there.  It takes the coproduct wire and returns the
-    summand's strands, so the seam after it is where those get their names."""
-    inj = box(name, src, s, False, flip=True, _in=[src])[0]
+def armed(src, s, body):
+    """11.2a, `[R,S] = l°R ∪ r°S`: the arm opens with the coproduct wire itself, not with a box —
+    a generator whose shape the summand fixes (`𝟏` ends the wire, a pair splits it), so the picture
+    says which summand this is without naming the injection.  The seam after it names the strands."""
     ws = [lshow(w) for w in wires(s)]
-    body["items"].insert(0, inj); body["_objs"].insert(0, src)
+    if len(ws) > 2:
+        raise Unhandled(f"a case arm at {oshow(s)} opens {len(ws)} strands, and the generators"
+                        f" `!`, `Δ` open none, one or two")
+    op = pic("open", src, s, True, _in=[src])[0]
+    body["items"].insert(0, op); body["_objs"].insert(0, src)
     body["seams"] = ([[0, ws]] if ws else []) + [[i + 1, l] for i, l in body["seams"]]
     body["nin"], body["_in"] = 1, [src]
     return body
@@ -593,7 +596,7 @@ def armed(name, src, s, body):
 def seams(objs):
     """Which interior objects the picture prints, as one label per strand.  The ports always; an
     interior seam exactly when its object is ONE wire and differs from both printed neighbours
-    (CIRCUIT-GEN §3); a bracket's arm adds the seam after its injection (`armed`)."""
+    (CIRCUIT-GEN §3); a bracket's arm adds the seam after the wire it opens (`armed`)."""
     out, prev = [], objs[0]
     for i, o in enumerate(objs[1:-1]):
         if len(wires(o)) == 1 and o != prev and o != objs[i + 2]:
