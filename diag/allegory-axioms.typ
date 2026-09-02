@@ -825,9 +825,9 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
 
-// horner paragraph: B&dM pp. 58-59
-@horner is Horner's rule, generalised from cons-lists to any initial type; B&dM call it that because
-for cons-lists it is the schoolbook method for evaluating a polynomial. Fusion reduces it to
+// horner paragraph: B&dM pp. 58-59; B&dM call it Horner's rule because for cons-lists it is the
+// schoolbook method for evaluating a polynomial.
+@horner is Horner's rule, generalised from cons-lists to any initial type. Fusion reduces it to
 `F(𝟙,T(f))α⦇g⦈=F(𝟙,⦇g⦈)F(𝟙,f)g`.
 
 // Its own page: the section is one table long and the heading was left orphaned at the foot of the
@@ -1191,9 +1191,10 @@ subscript.
         // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
   },
   [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
-   #src[`EA` is the powerset of `A`. B&dM write `PA` — standard mathematics, but here `P` is
+   #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
  already the relator `P(R)`. ]],
    // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
+   // B&dM write `PA` for the powerset.
   // The two snakes are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>
@@ -3253,10 +3254,11 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[].
 // lean:AOP.A7_1.est@e39806f8
 
-`xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[B&dM's `min R`, the same predicate under the same
-letter; his `R : A⟵A` reads `x R y` as the arrow `y⟶x`, so `est(R)=min(R°)` once `R` is an arrow;
+`xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[the same predicate under the same
+letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 ]
 // lean:AOP.A7_4_Horner.est_apply@91dc1299
+// B&dM's `min R` has `R : A⟵A` reading `x R y` as the arrow `y⟶x`, ours `R : A⟶A` reading `x⟶y`.
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
 
@@ -4895,9 +4897,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
 
-`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[B&dM's `oplus=max(Λ(zero∪plus))`; the
+`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[the
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ]
+// B&dM's `oplus=max(Λ(zero∪plus))`.
 // lean:AOP.A7_7_MSS.oplus@f61727f6 lean:AOP.A7_7_MSS.oplus_eq@b0466a25
 ]]<mss-defn>
 
@@ -4944,7 +4947,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // Using segment = prefix·suffix, express this problem in the form mss = max·P(max·Λ(sum·prefix))·Λsuffix."
   Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
-     form — Ex 7.40]],
+     form]],
     // lean:AOP.A7_7_MSS.mss_shape@f600dda0
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
@@ -4967,7 +4970,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, bx-est), s: 92%)][]],
   [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
-#align(center, block(inset: (y: 4pt))[#src[B&dM's `max(P(max(Λ(sum prefix))))Λsuffix`, mirrored. The
+// mirrored from `max(P(max(Λ(sum prefix))))Λsuffix`.
+#align(center, block(inset: (y: 4pt))[#src[The
   `union` step is @est-laws's `P(est(R)) est(R)=P(Dom(est(R))) union est(R)` — every suffix has the
   empty prefix, so `Dom` is `𝟙` here — and `P(f)=E(f)` at the map it is applied to (@powrel-laws).]])
 ]<mss-shape>
@@ -5134,7 +5138,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // sum·prefix as a catamorphism."
   Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]` \
     #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
-     the fusion condition that expresses `prefix sum` as a catamorphism — Ex 7.40]],
+     the fusion condition that expresses `prefix sum` as a catamorphism]],
   table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
@@ -5332,8 +5336,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
   [#mh-alg],
 ))
+// B&dM's own containment.
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
-  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — B&dM's own containment — and @mss-deriv
+  `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — and @mss-deriv
  makes it an equality. ]])
   // lean:AOP.A7_7_MSS.mss_greedy@7547c0f9
 ]<mss-step>
@@ -6145,13 +6150,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    `list` monotonic, @relator-defn],
   [`concat`],
   [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole. B&dM's exercise.
+   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole.
  #src[]],
-   // lean:AOP.A7_3_Party.concat_monotonic@084e46a9
+   // lean:AOP.A7_3_Party.concat_monotonic@084e46a9  — B&dM's exercise
   [`h`],
   [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
- makes a cheaper list. B&dM's exercise. #src[]
-   // lean:AOP.A7_3_Party.cons_monotonic@e5288fc0
+ makes a cheaper list. #src[]
+   // lean:AOP.A7_3_Party.cons_monotonic@e5288fc0  — B&dM's exercise
    For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
  `=π₂R°` #src[]: `π₁` is a map, hence entire, so
    // lean:AOP.A6_1_RelSet.rprodMap_id_snd@dc93a451
