@@ -3282,28 +3282,53 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
-  let y = 1.7                     // branch height: a fraction box is 1.2 tall and has to clear the tape
-  let (up, dn) = (-0.75, -2.65)     // the two strands of the fork `⟨·,·⟩` inside the right branch
-  wire((0, 0), (0.34, 0))
-  tape((0.34, -3.2), (11.7, 2.5))
-  tape-fork((0.56, 0), sp: y, len: 1.0)
-  gbox((1.56, y), [`l`], flip: true, fill: TINT); wire((2.48, y), (3.80, y))
-  gbox((3.80, y), [`nil`], chamfer: false, w: 1.05); wire((4.85, y), (6.10, y))
-  gbox((6.10, y), [$frac(#[`𝟙`], ∋)$], chamfer: false, w: 0.85, h: 1.2); wire((6.95, y), (10.40, y))
-  gbox((1.56, -y), [`r`], flip: true, fill: TINT); wire((2.48, -y), (2.95, -y))
-  wiredot((2.95, -y)); bend((2.95, -y), (3.70, up)); bend((2.95, -y), (3.70, dn))
-  wire((3.70, up), (3.90, up))
-  gbox((3.90, up), [$frac(#[`𝟙×∋`], ∋)$], chamfer: false, w: 1.7, h: 1.2); wire((5.60, up), (5.95, up))
-  gbox((5.95, up), [`E(cons)`], chamfer: false, w: 2.0); wire((7.95, up), (8.50, up))
-  wire((3.70, dn), (3.90, dn))
-  gbox((3.90, dn), [`π₂`], chamfer: false, w: 1.3); wire((5.20, dn), (8.50, dn))
-  gbox((8.50, -y), [`cup`], chamfer: false, w: 1.15, h: 2.6); wire((9.65, -y), (10.40, -y))
-  tape-join((11.40, 0), sp: y, len: 1.0)
-  wire((11.70, 0), (12.04, 0))
-  lab(-2.22, 0, black)[`𝟏+A×E([A])`]; lab(13.25, 0, black)[`E([A])`]
-}))
+#disp[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+      ), seams: (
+        (
+          1,
+          ("[A]", ),
+        ),
+      )),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "fork", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E(𝟙×∋)", chamfer: false, frac: false, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E(cons)", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("E(A×E[A])", ),
+                ),
+                (
+                  1,
+                  ("E(A×[A])", ),
+                ),
+              )),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+        (
+          1,
+          ("E[A]", "E[A]", ),
+        ),
+      )),
+  ), src: ("FE[A]", ), tgt: ("E[A]", )),
+  cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E([A]))", tgt: "E([A])"))
 #align(center, block(inset: (y: 4pt))[
+  `[`#frc([`nil`])`,⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup]` \
   // Pcons row: B&dM §5.6, p. 124
   #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
 ])]<subseq-alg>

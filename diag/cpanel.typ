@@ -180,6 +180,29 @@
     }
     return (w: x1, hh: sp + mh, body: body)
   }
+  // ---- §3 row 20: `⟨x,y⟩`.  Copy every strand, run BOTH lanes, and leave on their outputs STACKED,
+  // the upper lane's over the lower's, bent to the port heights — a `cap` with no merge.
+  if t.k == "fork" {
+    let ps = t.lanes.map(l => pic(l, length))
+    let mw = calc.max(..ps.map(p => p.w))
+    let mh = calc.max(..ps.map(p => p.hh))
+    let sp = mh + 0.22
+    let x1 = CSP + mw
+    let outs = ys(t.nout)
+    let body = {
+      for (i, p) in ps.enumerate() {
+        let (s, l) = (if i == 0 { 1 } else { -1 }, t.lanes.at(i))
+        let o = if i == 0 { 0 } else { t.lanes.at(0).nout }
+        d.group({
+          d.translate((CSP, s * sp)); p.body
+          for y in ys(l.nout) { wire((p.w, y), (mw, y)) }
+        })
+        for (j, y) in ys(l.nout).enumerate() { bend((x1, s * sp + y), (x1 + CSP, outs.at(o + j)), k: 0.5) }
+      }
+      for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp) }
+    }
+    return (w: x1 + CSP, hh: sp + mh, body: body)
+  }
   // ---- §3 row 17: `⦇α⦈` as MELLIÈS' FUNCTORIAL BOX.  Nothing crosses the LEFT pair of bars: the
   // input arrives at them and the algebra's own strands start inside, and that break IS the
   // recursion.  The algebra's output is the fold's, so it runs out through the right pair.
