@@ -485,7 +485,7 @@ def a_dpanel(p, r):
             if a is None or b is None or abs(a - b) > 1e-9:
                 p.kdrift.append(f"{p.id}: the knee {k[0]}@y={k[1]:g} is {a} in the note and {b} in"
                                 f" the sweep — `dknees` states one rule twice, and they differ")
-    for (x, y0, y1, nm, un) in r['lanes']:
+    for i, (x, y0, y1, nm, un) in enumerate(r['lanes']):
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, p.xat, x, yt, yb)
         if ds:                             # `ddip`'s points — the arms the crossed wires make
@@ -494,9 +494,13 @@ def a_dpanel(p, r):
             pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
                                                   [(p.xat(y0), y0), (x, y0 - gk[('b', float(y0))])])
             pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (p.xat(y1), y1)]
-        p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
-        if y0 != 'top' and y1 != 'bot':
-            p.labels.append((nm, x, y0, lbox(x, y0, nm)))
+        lab = nm or p.at(p.top if y0 == 'top' else p.bot, x)      # `dnm`: its own name, else a port's
+        p.wires.append(Wire(x, yt, yb, lab, un, pts, ds))
+        # WHICH lanes write that name is the note's `dnamed`, and the panel emits its answer: the
+        # rule is stated once and the boxes swept here are the boxes drawn.  A rec `scripts/diagram`
+        # builds is not ink yet, so it names nothing.
+        if i in r.get('named', ()):
+            p.labels.append((lab, x, y0, lbox(x, y0, lab)))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
@@ -817,8 +821,9 @@ def lbox(x, y, nm):
 
 
 def labels(p):
-    """A lane born at a bead and dying at a bead reaches neither port list, so `dpanel` writes its
-    name beside it — and that name is ink: a strand through its box is a collision, not a warning."""
+    """A wire whose name is written nowhere else on the page — no port list, no other lane of the
+    same wire — has it written beside the lane it is born on (`dnamed`, whose answer the panel
+    emits).  That name is ink: a strand through its box is a collision, not a warning."""
     out = []
     ss = [(w.label or '?', poly(w.pts)) for w in p.wires if w.pts] \
         + [(l or '?', poly(q)) for (l, q) in p.strands]

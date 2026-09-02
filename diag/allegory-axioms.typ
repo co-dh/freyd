@@ -2526,6 +2526,40 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     else { ((x, b + gk.at(dkey("d", b))), (xat(b), b)) }), ..wc)
 }
 
+// A lane's name is its own when it has one, and otherwise the one the port list writes at the edge
+// it reaches — the two places on the page the same wire can be read.
+#let dnm(l, top, bot) = if l.at(3) != none { l.at(3) } else {
+  let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
+  if q == none { none } else { q.at(1) } }
+
+// A WIRE is not one lane: a bead hands it from one column to the next and the reader sees one
+// continuous wire, so the lanes with the same name, each dying where the next is born, are ONE
+// group.  Its name is written once — on the lane born highest, where the wire first appears — and
+// not at all when some lane of the group reaches an edge, where a port list already writes it.
+#let dnamed(lanes, top, bot) = {
+  let n = lanes.len()
+  let ns = lanes.map(l => plain(dnm(l, top, bot)))
+  // A death and a birth are the same literal from the same table, so this `==` needs no `EPS`; one
+  // pass per lane closes a chain of at most that many lanes.
+  let g = range(n)
+  for _ in range(n) {
+    for i in range(n) {
+      for j in range(n) {
+        if ns.at(i) != none and ns.at(i) == ns.at(j) and lanes.at(i).at(2) == lanes.at(j).at(1) {
+          let m = calc.min(g.at(i), g.at(j))
+          g.at(i) = m
+          g.at(j) = m
+        }
+      }
+    }
+  }
+  let edge = range(n).filter(i => lanes.at(i).at(1) == "top" or lanes.at(i).at(2) == "bot")
+    .map(i => g.at(i))
+  range(n).filter(i => not edge.contains(g.at(i)) and range(n).all(j =>
+    g.at(j) != g.at(i) or lanes.at(j).at(1) < lanes.at(i).at(1)
+      or (lanes.at(j).at(1) == lanes.at(i).at(1) and j >= i)))
+}
+
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
 // bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, cert: (:)) = {
@@ -2543,22 +2577,21 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     if r == none { xo } else { r }
   } }
   let gk = dknees(xat, h, lanes, beads)
+  let nmd = dnamed(lanes, top, bot)
   dpan(h, w, xo, {
-  for l in lanes {
+  for (i, l) in lanes.enumerate() {
     let ys = ddips(xat, h, beads, l.at(0), l.at(1), l.at(2))
     let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
     let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
     // The lane's functor name keys `FCOL`, and the colour names a wire that has a PORT to be read
-    // beside; one born at a bead and dying at a bead has none, so there the name is drawn as well.
-    let nm = if l.at(3) != none { l.at(3) } else {
-      let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
-      if q == none { none } else { q.at(1) } }
+    // beside; `dnamed` says on which lanes that name is nowhere else on the page.
+    let nm = dnm(l, top, bot)
     let col = if nm == none { none } else { FCOL.at(plain(nm)) }
     if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
     else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // On the BIRTH BEAD's own row: every arm leaves its dot vertically and every leg reaches its
     // column only at a knee, so that row is the one place west of the wire no other strand sweeps.
-    if l.at(1) != "top" and l.at(2) != "bot" {
+    if nmd.contains(i) {
       hm-name((l.at(0) - 0.12, l.at(1)), nm, col: col, anchor: "east")
     }
   }
@@ -2571,7 +2604,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
   // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
   // two knees disagree is a crossing the sweep would call clean while the page still braids.
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk,
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk, named: nmd,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
     + (if opath == none { (:) } else { (opath: opath) }))
