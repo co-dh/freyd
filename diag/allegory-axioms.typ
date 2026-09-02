@@ -8366,11 +8366,6 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ub-tl = ([`thinlist Q`], 3.0, true)
 #let ub-prog = ([`[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]`], 16.1, true)
 #let ub-pic(alg, tail) = thpic([`[City]`], [`[City]×[City]`], alg, tail)
-#let ub-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
-  (((THO, h), (THO, 0)), ((THN, h), (THN, 2.60)), ((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)))
-    + wires, beads,
-  ((THN, [`list`]), (THO, [`City`])), ((THM, [`list×list`]), (THO, [`City`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8383,9 +8378,12 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     box], [*Hinze–Marsden*]),
 
   [#vstep([], ub-pic(none, (ub-tour, ub-est)), [#frc([`tour`])` est(R)`])],
-  [#ub-pan(4.2, (((THU, 3.55), (THU, 0.75)),),
-    ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`tour`], 0.32), (THU, 0.75, [`est(R)`], -0.32)),
-    names: true)],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 2, "bot", none, none), (4, "top", 2, none, none)),
+  ((2, [`tour`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((4, [`list`]), (5.15, [`City`])),
+  ((1.7, [`Δ`]), (2.85, [`list`]), (5.15, [`City`])),
+  cert: (expect: "tour%∋ est(R)", src: "[City]", tgt: "[City]×[City]", sigs: ("tour": "[City]⟶[City]×[City]")), names: true)],
 
   [#vstep(EQ, ub-pic(none, (ub-fold, ub-est)),
     [#frc([`⦇[start,dropl ∪ dropr]⦈`])` est(R)` \ #src[`tour≜⦇[start,dropl ∪ dropr]⦈` — @tour-defn]])],
@@ -8395,9 +8393,12 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep(RQ, ub-pic((ub-lcp, ub-g, ub-cat, ub-tl), (ub-min,)),
     [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono]])],
-  [#ub-pan(4.2, (((THO, 2.60), (THU, 2.60 - KNEE), (THU, 0.75)),),
-    ((THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`minlist R`], -0.32)),
-    lanes: ((THU - 1.05, 1.75, [`list`]),))],
+  [#dpanel(3, 8, 5.15,
+  ((0.55, 2, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 2, "bot", none, none), (4, "top", 2, none, none)),
+  ((2, [`⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`], black, 4), (1, [`minlist(R)`], black, 0.55)),
+  ((4, [`list`]), (5.15, [`City`])),
+  ((1.7, [`Δ`]), (2.85, [`list`]), (5.15, [`City`])),
+  cert: (expect: "⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈minlist(R)", src: "[City]", tgt: "[City]×[City]", sigs: ("⦇⦈": "[City]⟶[[City]×[City]]", "minlist": "[x]⟶x", "thinlist": "[x]⟶[x]", "listcp": "[x]⟶[x]", "cat": "[x]×[x]⟶[x]")))],
 
   [#vstep(EQ, ub-pic((ub-prog,), (ub-min,)),
     [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
@@ -8426,8 +8427,8 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 // ---- HINZE–MARSDEN: §14's own lanes, so the two chapters' panels stack, with one lane added.
 // Outermost functor LEFTMOST and `𝟏` at the right; `E` takes `THU` because the transpose is taken of
 // the WHOLE problem, the base functor `THM` because `T°` opens it inside that set, and a datatype
-// the input carries `THN`, `THP`.  An `est` kills the SET alone, so its wire ends on its own lane
-// wherever a datatype survives under it — bending in would cross that datatype's wire.
+// the input carries `THN`, `THP`.  An `est` bead spans from the `E` lane down to the object wire,
+// the way `scripts/diagram` draws it; the crossings that makes are the accepted ones.
 #let THP = 4.15                                   // a datatype inside `THN`
 
 == Theory
@@ -8452,15 +8453,16 @@ in @mu-defn.
 #let db-PFX = ([`P(F(X)h)`], 2.55, true)
 #let db-LV = (frc([`Vᵢ°`]), 1.50, false)
 #let db-thini = ([`thin(Qᵢ)`], 2.45, true)
-#let db-PU = ([`P(Uᵢ)`], 1.65, true)
-#let dp-pan(h, wires, beads, names: false, lanes: ()) = thpan(h, wires, beads,
-  ((THO, [`A`]),), ((THO, [`B`]),), lanes: lanes, names: names)
+#let db-PU = ([`P(Fᵢ(X)Uᵢ)`], 2.95, true)
 // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
 // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
 // it draws the same panel; the regions are named only in the first.
-#let g-spec-pan(names) = dp-pan(3.0, (((THU, 2.35), (THU, 0.70 + KNEE), (THO, 0.70)),),
-  ((THU, 2.35, frc([`𝟙`]), -0.32), (THO, 1.55, [`H`], 0.32), (THO, 0.70, [`est(R)`], 0.32)),
-  lanes: ((THU - 0.34, 1.60, [`E`]),), names: names)
+#let g-spec-pan(names) = dpanel(4, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((2, [`H`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`A`]),),
+  ((1.7, [`B`]),),
+  cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: ("H": "A⟶B")), names: names)
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -8488,10 +8490,12 @@ in @mu-defn.
       `P(X)est(R)⊑(∋X)∩(∈\(XR°))` — @est-710]])],
   // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
   // `F(X)`.  `thin Q : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
-  [#dp-pan(4.6, (((THU, 3.95), (THU, 0.55 + KNEE), (THO, 0.55)), thw-arc(THM, 3.30, 1.45)),
-    ((THU, 3.95, frc([`𝟙`]), -0.32), (THO, 3.30, [`T°`], 0.32), (THU, 2.70, [`thin Q`], -0.32),
-     (THO, 2.10, [`X`], 0.32), (THO, 1.45, [`h`], 0.32), (THO, 0.55, [`est(R)`], 0.32)),
-    lanes: ((THM - 0.34, 2.35, [`F`]), (THU - 0.34, 1.55, [`E`])))],
+  [#dpanel(7, 6.85, 4,
+  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`F`], none)),
+  ((5, [`T°`]), (4, [`thin(Q)`], black, 1.7), (3, [`X`]), (2, [`h`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((4, [`A`]),),
+  ((4, [`B`]),),
+  cert: (expect: "(T°)%∋ thin(Q)E(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, db-thini, db-PU, db-est)),
     [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
@@ -8501,9 +8505,12 @@ in @mu-defn.
       inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
   // One branch of the `→`, not both: it is a union of two restricted branches with the one shape, so
   // the second adds no shape the first does not already show.
-  [#dp-pan(3.8, (((THU, 3.15), (THU, 0.60 + KNEE), (THO, 0.60)),),
-    ((THU, 3.15, frc([`𝟙`]), -0.32), (THO, 2.55, [`Vᵢ°`], 0.32), (THU, 1.95, [`thin(Qᵢ)`], -0.32),
-     (THO, 1.35, [`Uᵢ`], 0.32), (THO, 0.60, [`est(R)`], 0.32)))],
+  [#dpanel(7, 6.85, 4,
+  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`Fᵢ`], none)),
+  ((5, [`Vᵢ°`]), (4, [`thin(Qᵢ)`], black, 1.7), (3, [`X`]), (2, [`Uᵢ`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((4, [`A`]),),
+  ((4, [`B`]),),
+  cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)E(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 ))]<dp-laws>
 
 #disp[#table(
@@ -8586,11 +8593,13 @@ both lists empty.
   [#vstep([], gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`edit°`]), 2.15, (eb-est,)),
     [#src[the specification — @edit-defn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
-  // `est(R) : E([Op])⟶[Op]` kills the set alone, so its wire ends on the `E` lane.
-  [#ed-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-in(THP, 3.6, 1.85),
-      thw-out(THP, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`edit°`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  // `est(R) : E([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
+  ((2, [`edit°`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`Δ`]), (4, [`list`]), (5.15, [`Char`])),
+  ((1.7, [`list`]), (5.15, [`Op`])),
+  cert: (expect: "(edit°)%∋ est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("edit": "[Op]⟶[Char]×[Char]")), names: true)],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
       (eb-thin, eb-PX, eb-est)),
@@ -8619,12 +8628,15 @@ both lists empty.
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
   // closes it again; `Δ` and the source `list` die and are remade at both beads, so each runs as a
   // loop between them.  `thin Q : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
-  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
+  // Hand-drawn, uncertified: the cons arm of `[nil,(𝟙×X)cons]` is typed against the `Op×−` lane,
+  // not the summand, so `scripts/diagram` cannot split the sum — TODO.md.
+  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60 + KNEE), (THO, 0.60)), thw-in(THN, 6.4, 4.70),
+      thw-in(THP, 6.4, 4.70),
       thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
       thw-out(THP, 1.70, 0)),
     ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`[base,step]°`], 0.32),
      (THU, 3.90, [`thin Q`], -0.32), (THO, 1.70, [`[nil,(𝟙×X)cons]`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
+     (THO, 0.60, [`est(R)`], 0.32)),
     lanes: ((THM, 5.55, [`F`]),))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
@@ -8634,13 +8646,12 @@ both lists empty.
       `base` returns]])],
   // The `step` branch of the `→`, not both: the `base` branch is `nil` on an empty pair, nothing to
   // draw.  `Op×−` is the summand `step°` opens.
-  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
-      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
-      thw-out(THP, 1.70, 0)),
-    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`step°`], 0.32),
-     (THU, 3.90, [`thin(U×V)`], -0.32), (THO, 1.70, [`(𝟙×X)cons`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THM, 5.55, [`Op×−`]),))],
+  [#dpanel(7, 13.75, 10.9,
+  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`Op×−`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`Δ`], none), (7.45, 5, 3, [`list`], none), (8.6, "top", 5, none, none), (9.75, "top", 5, none, none)),
+  ((5, [`step°`], black, 8.6), (4, [`thin(U×V)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`cons`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((8.6, [`Δ`]), (9.75, [`list`]), (10.9, [`Char`])),
+  ((2.85, [`list`]), (10.9, [`Op`])),
+  cert: (expect: "(step°)%∋ thin(U×V)E((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
@@ -8649,12 +8660,12 @@ both lists empty.
       the two lengths]])],
   // The program is the branch above with each box replaced by a function computing it, so the wires
   // and the beads are the same picture: only the labels change.
-  [#ed-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70), thw-in(THP, 6.4, 4.70),
-      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-arc(THP, 4.70, 1.70),
-      thw-out(THP, 1.70, 0)),
-    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`unstep`], 0.32),
-     (THO, 1.70, [`(𝟙×mle)cons`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
-    lanes: ((THM, 5.55, [`Op×−`]),))],
+  [#dpanel(5, 12.6, 9.75,
+  ((0.55, 4, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`Op×−`], none), (4, 3, 2, [`list`], none), (5.15, 4, 3, [`Δ`], none), (6.3, 4, 3, [`list`], none), (7.45, "top", 4, none, none), (8.6, "top", 4, none, none)),
+  ((4, [`unstep`], black, 7.45), (3, [`mle`], black, 5.15), (2, [`cons`], black, 2.85), (1, [`minlist(R)`], black, 0.55)),
+  ((7.45, [`Δ`]), (8.6, [`list`]), (9.75, [`Char`])),
+  ((1.7, [`list`]), (9.75, [`Op`])),
+  cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
     [`mle (xs,ys)=head (column xs ys)`, #h(4pt) `column xs ys=[mle (u,ys)∣u←tails xs]` \
@@ -8734,11 +8745,13 @@ both lists empty.
   [#vstep([], thpic([`list⁺ A`], [`tree A`], none, (mb-Lfl, mb-estR)),
     [#src[the specification — @mct-defn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
-  // kills the set alone and its wire ends on the `E` lane, `tree` surviving under it.
-  [#mc-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`flatten°`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`flatten°`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`list⁺`]), (4, [`A`])),
+  ((1.7, [`tree`]), (4, [`A`])),
+  cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("flatten": "tree(A)⟶list⁺(A)")), names: true)],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
     [
@@ -8758,10 +8771,12 @@ both lists empty.
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `list⁺` dies and is remade at both, so it runs as a loop between them.
-  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
+  // Hand-drawn, uncertified: the case-split sweep knows only the branches cons/nil/plus/zero, so
+  // `[wrap,cat]°` cannot be split — TODO.md.
+  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60 + KNEE), (THO, 0.60)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
     ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`[wrap,cat]°`], 0.32),
-     (THO, 1.60, [`[tip,(X×X)bin]`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
+     (THO, 1.60, [`[tip,(X×X)bin]`], 0.32), (THO, 0.60, [`est(R)`], 0.32)),
     lanes: ((THM, 4.85, [`A+(−)²`]),))],
 
   [#vstep(EQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lcat, mb-Pbin, mb-estR)),
@@ -8769,20 +8784,22 @@ both lists empty.
       singleton lists, where `wrap` returns]])],
   // The `cat` branch of the `→`, not both: the `wrap` branch is one bead on a singleton, nothing the
   // `cat` branch does not already show.  `(−)²` is the summand `cat°` opens.
-  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
-      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
-    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`cat°`], 0.32),
-     (THO, 1.60, [`(X×X)bin`], 0.32), (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THM, 4.85, [`(−)²`]),))],
+  [#dpanel(6, 10.3, 7.45,
+  ((0.55, 4.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`Δ`], none), (4, 3, 2, [`tree`], none), (5.15, 4, 3, [`list⁺`], none), (6.3, "top", 4, none, none)),
+  ((4, [`cat°`], black, 6.3), (3, [`X`], black, 5.15), (2, [`bin`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((6.3, [`list⁺`]), (7.45, [`A`])),
+  ((1.7, [`tree`]), (7.45, [`A`])),
+  cert: (expect: "(cat°)%∋ E((X×X)bin)est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-splits, mb-lbin, mb-min)),
     [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
-  [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
-      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
-    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`splits`], 0.32),
-     (THO, 1.60, [`(mct×mct)bin`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
-    lanes: ((THM, 4.85, [`(−)²`]),))],
+  [#dpanel(5, 10.3, 7.45,
+  ((0.55, 4, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`Δ`], none), (4, 3, 2, [`tree`], none), (5.15, 4, 3, [`list⁺`], none), (6.3, "top", 4, none, none)),
+  ((4, [`splits`], black, 6.3), (3, [`mct`], black, 5.15), (2, [`bin`], black, 2.85), (1, [`minlist(R)`], black, 0.55)),
+  ((6.3, [`list⁺`]), (7.45, [`A`])),
+  ((1.7, [`tree`]), (7.45, [`A`])),
+  cert: (expect: "splits list((mct×mct)bin)minlist(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("splits": "list⁺(A)⟶[list⁺(A)×list⁺(A)]", "mct": "list⁺(A)⟶tree(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
     [`mct=(single→head tip,⟨init col,tail row⟩ mix)` #h(4pt) #src[(9.7)] \
@@ -8861,10 +8878,12 @@ the longest repeated tail; #h(4pt)
 
   [#vstep([], thpic([`String`], [`[Code]`], none, (cb-Ldec, cb-estR)),
     [#src[the specification — @code-defn]])],
-  [#co-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`decode°`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`decode°`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`list`]), (4, [`Char`])),
+  ((1.7, [`list`]), (4, [`Code`])),
+  cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: ("decode": "[Code]⟶[Char]")), names: true)],
 
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
     // entab row: Theorem 9.2
@@ -8877,33 +8896,36 @@ the longest repeated tail; #h(4pt)
       the longer match wins]])],
   // `[nil,extend]°` opens `(−)×Code` inside the set the singleton opened and `[nil,(X×𝟙)snoc]`
   // closes it; `list` dies and is remade at both beads, so it runs as a loop between them.
-  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
+  // Hand-drawn, uncertified: the case-split sweep knows only the branches cons/nil/plus/zero, so
+  // `[nil,extend]°` cannot be split — TODO.md.
+  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60 + KNEE), (THO, 0.60)), thw-in(THN, 6.4, 4.70),
       thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
     ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`[nil,extend]°`], 0.32),
      (THU, 3.90, [`thin Q`], -0.32), (THO, 1.70, [`[nil,(X×𝟙)snoc]`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
+     (THO, 0.60, [`est(R)`], 0.32)),
     lanes: ((THM, 5.55, [`−×Code`]),))],
 
   [#vstep(EQ, thpic([`String`], [`[Code]`], none, (cb-Lext, cb-thinp, cb-Pb, cb-estR)),
     [#src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
       are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)} ∪ {(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
-  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
-      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
-    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`extend°`], 0.32),
-     (THU, 3.90, [`thin(prefix°×(⊤+⊤))`], -0.32), (THO, 1.70, [`(X×𝟙)snoc`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THM, 5.55, [`−×Code`]),))],
+  [#dpanel(7, 11.45, 8.6,
+  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`−×Code`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`list`], none), (7.45, "top", 5, none, none)),
+  ((5, [`extend°`], black, 7.45), (4, [`thin(prefix°×⊤+⊤)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((7.45, [`list`]), (8.6, [`Char`])),
+  ((2.85, [`list`]), (8.6, [`Code`])),
+  cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))E((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-red, cb-lst, cb-min)),
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
-  [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
-      thw-arc(THM, 4.70, 1.70), thw-arc(THN, 4.70, 1.70), thw-out(THN, 1.70, 0)),
-    ((THU, 5.70, frc([`𝟙`]), -0.32), (THO, 4.70, [`reduce`], 0.32),
-     (THO, 1.70, [`(encode×𝟙)snoc`], 0.32), (THU, 0.60, [`minlist R`], -0.32)),
-    lanes: ((THM, 5.55, [`−×Code`]),))],
+  [#dpanel(5, 10.3, 7.45,
+  ((0.55, 4, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`−×Code`], none), (4, 3, 2, [`list`], none), (5.15, 4, 3, [`list`], none), (6.3, "top", 4, none, none)),
+  ((4, [`reduce`], black, 6.3), (3, [`encode`], black, 5.15), (2, [`snoc`], black, 2.85), (1, [`minlist(R)`], black, 0.55)),
+  ((6.3, [`list`]), (7.45, [`Char`])),
+  ((1.7, [`list`]), (7.45, [`Code`])),
+  cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: ("reduce": "[Char]⟶[[Char]×Code]", "encode": "[Char]⟶[Code]", "snoc": "[Code]×Code⟶[Code]", "minlist": "[x]⟶x")))],
 ))]<code-laws>
 
 #pagebreak(weak: true)
@@ -8921,7 +8943,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #let gb-estQ = ([`est(Q)`], 1.90, true)
 #let gb-FXh = ([`F(X)h`], 1.85, true)
 #let gb-estQi = ([`est(Qᵢ)`], 2.15, true)
-#let gb-Ui = ([`Uᵢ`], 0.90, true)
+#let gb-Ui = ([`Fᵢ(X)Uᵢ`], 2.20, true)
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -8940,20 +8962,25 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, gb-estQ, gb-FXh)),
     // dp-shrink row: Theorem 10.1
     [#src[]])],
-  // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire ends on the `E` lane:
-  // bending in would cross `F`.  That free end is the whole difference from @dp-laws' second row.
-  [#dp-pan(4.4, (((THU, 3.95), (THU, 2.55)), thw-arc(THM, 3.30, 0.90)),
-    ((THU, 3.95, frc([`𝟙`]), -0.32), (THO, 3.30, [`T°`], 0.32), (THU, 2.55, [`est(Q)`], -0.32),
-     (THO, 1.70, [`X`], 0.32), (THO, 0.90, [`h`], 0.32)),
-    lanes: ((THM - 0.34, 2.10, [`F`]),))],
+  // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
+  // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
+  [#dpanel(6, 5.7, 2.85,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 4, 1, [`F`], none)),
+  ((4, [`T°`]), (3, [`est(Q)`], black, 0.55), (2, [`X`]), (1, [`h`], black, 1.7)),
+  ((2.85, [`A`]),),
+  ((2.85, [`B`]),),
+  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, gb-estQi, gb-Ui)),
     [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
-  [#dp-pan(3.4, (((THU, 2.85), (THU, 1.40 + KNEE), (THO, 1.40)),),
-    ((THU, 2.85, frc([`𝟙`]), -0.32), (THO, 2.25, [`Vᵢ°`], 0.32), (THO, 1.40, [`est(Qᵢ)`], 0.32),
-     (THO, 0.65, [`Uᵢ`], 0.32)))],
+  [#dpanel(6, 5.7, 2.85,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 4, 1, [`Fᵢ`], none)),
+  ((4, [`Vᵢ°`]), (3, [`est(Qᵢ)`], black, 0.55), (2, [`X`]), (1, [`Uᵢ`], black, 1.7)),
+  ((2.85, [`A`]),),
+  ((2.85, [`B`]),),
+  cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 ))]<greedy-laws>
 
 == The detab-entab problem
@@ -9009,10 +9036,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   [#vstep([], thpic([`String`], [`String`], none, (nb-Ldet, nb-est)),
     [#src[the specification — @entab-defn; `detab entab=𝟙` and nothing
      shorter does]])],
-  [#en-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`detab°`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`detab°`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`list`]), (4, [`Char`])),
+  ((1.7, [`list`]), (4, [`Char`])),
+  cert: (expect: "(detab°)%∋ est(R)", src: "[Char]", tgt: "[Char]", sigs: ("detab": "[Char]⟶[Char]")), names: true)],
 
   [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
     [
@@ -9037,21 +9066,24 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       // lean:AOP.A10_2_Detab.expand_V_step@1e653239
       last step alone or discards it]])],
   // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
-  // not the `F` under it, so its wire ends on the `E` lane.
-  [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+  // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
+  // Hand-drawn, uncertified: the case-split sweep knows only the branches cons/nil/plus/zero, so
+  // `[nil,expand]°` and the sum `(𝟙+(X×𝟙))` cannot be split — TODO.md.
+  [#en-pan(5.6, (((THU, 4.90), (THU, 3.30 + KNEE), (THO, 3.30)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
     ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`[nil,expand]°`], 0.32),
-     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
+     (THO, 3.30, [`est(Q)`], 0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
     lanes: ((THM, 4.85, [`−×Char`]),))],
 
   [#vstep(EQ, thpic([`String`], [`String`], none, (nb-Lexp, nb-estVU, nb-snoc)),
     [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
-  [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
-      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
-    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`expand°`], 0.32),
-     (THU, 3.30, [`est(V×U)`], -0.32), (THO, 1.60, [`(X×𝟙)snoc`], 0.32)),
-    lanes: ((THM, 4.85, [`−×Char`]),))],
+  [#dpanel(6, 10.3, 7.45,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Char`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`list`], none), (6.3, "top", 4, none, none)),
+  ((4, [`expand°`], black, 6.3), (3, [`est(V×U)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
+  ((6.3, [`list`]), (7.45, [`Char`])),
+  ((1.7, [`list`]), (7.45, [`Char`])),
+  cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "[Char]", tgt: "[Char]", sigs: ("expand": "[Char]×Char⟶[Char]", "snoc": "[Char]×Char⟶[Char]", "X": "[Char]⟶[Char]")))],
 
   [#vstep(EQ, [],
     [`entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt) #src[(10.1)] \
@@ -9117,10 +9149,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep([], thpic([`Bag Job`], [`[Job]`], none, (tb-Lbag, tb-estR)),
     [#src[the specification — @tardy-defn]])],
-  [#ty-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`bagify°`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`bagify°`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`bag`]), (4, [`Job`])),
+  ((1.7, [`list`]), (4, [`Job`])),
+  cert: (expect: "(bagify°)%∋ est(R)", src: "bag(Job)", tgt: "[Job]", sigs: ("bagify": "[Job]⟶bag(Job)")), names: true)],
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
     // job-schedule row: Theorem 10.1
@@ -9129,27 +9163,32 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       schedule of the whole]])],
   // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
   // theorem it feeds and it would otherwise both be `h` in one table.
-  [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
+  // Hand-drawn, uncertified: the case-split sweep knows only the branches cons/nil/plus/zero, so
+  // `β°` and the sum `(𝟙+(X×𝟙))` cannot be split — TODO.md.
+  [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30 + KNEE), (THO, 3.30)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
     ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`β°`], 0.32),
-     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
+     (THO, 3.30, [`est(Q)`], 0.32), (THO, 1.60, [`(𝟙+(X×𝟙))[nil,snoc]`], 0.32)),
     lanes: ((THM, 4.85, [`−×Job`]),))],
 
   [#vstep(EQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lsnag, tb-estQ, tb-snoc)),
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
-  [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
-      thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
-    ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`snag°`], 0.32),
-     (THU, 3.30, [`est(Q)`], -0.32), (THO, 1.60, [`(X×𝟙)snoc`], 0.32)),
-    lanes: ((THM, 4.85, [`−×Job`]),))],
+  [#dpanel(6, 10.3, 7.45,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),
+  ((4, [`snag°`], black, 6.3), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
+  ((6.3, [`bag`]), (7.45, [`Job`])),
+  ((1.7, [`list`]), (7.45, [`Job`])),
+  cert: (expect: "(snag°)%∋ est(Q)(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-pick, tb-sch)),
     [#src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
-  [#ty-pan(4.0, (thw-in(THN, 4.0, 2.80), thw-arc(THM, 2.80, 1.20), thw-arc(THN, 2.80, 1.20),
-      thw-out(THN, 1.20, 0)),
-    ((THO, 2.80, [`pick`], 0.32), (THO, 1.20, [`(schedule×𝟙)snoc`], 0.32)),
-    lanes: ((THM, 3.45, [`−×Job`]),))],
+  [#dpanel(4, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 3, 1, [`−×Job`], none), (2.85, 2, 1, [`list`], none), (4, 3, 2, [`bag`], none), (5.15, "top", 3, none, none)),
+  ((3, [`pick`], black, 5.15), (2, [`schedule`], black, 4), (1, [`snoc`], black, 1.7)),
+  ((5.15, [`bag`]), (6.3, [`Job`])),
+  ((0.55, [`list`]), (6.3, [`Job`])),
+  cert: (expect: "pick (schedule×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("pick": "bag(Job)⟶bag(Job)×Job", "schedule": "bag(Job)⟶[Job]", "snoc": "[Job]×Job⟶[Job]")))],
 ))]<tardy-laws>
 
 == The TeX problem

@@ -11,4 +11,5 @@
 [ ] 12.1d row 4 HM panel shows a horizontal bar; check it is generated and the bar goes with the straight-wire default
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
-
+[ ] five §15 HM panels stay hand-drawn: the case-split sweep knows only cons/nil/plus/zero, so [base,step]°, [wrap,cat]°, [nil,extend]°, [nil,expand]° and β° cannot be split, and a sum of arrows (𝟙+(X×𝟙)) has no bead
+[ ] scanline --spell cannot write two cert strings back: thin(prefix°×(⊤+⊤)) loses its parens, pick (schedule×𝟙)snoc loses the space that tells composition from application
