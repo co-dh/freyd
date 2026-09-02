@@ -9132,7 +9132,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let tb-Lbag = (frc([`bagify°`]), 2.75, false)
 #let tb-Lns = (frc([`[nil,snag]°`]), 4.00, false)
 #let tb-estQ = ([`est(Q)`], 1.90, true)
-#let tb-estQp = ([`est(Q')`], 1.90, true)
+#let tb-estQp = ([`est(Q')`], 2.20, true)
 #let tb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
 #let tb-Lsnag = (frc([`snag°`]), 2.15, false)
 #let tb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
