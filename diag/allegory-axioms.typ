@@ -5885,13 +5885,36 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: ()),
     (k: "seq", nin: 1, nout: 1, items: (
         (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 2, label: "⟨π₂%∋,((p×𝟙) cons)%∋⟩", chamfer: false, frac: false, flip: false),
+        (k: "fork", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E(π₂)", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("E(A×[A])", ),
+                ),
+              )),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E((p×𝟙)cons)", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("E(A×[A])", ),
+                ),
+              )),
+          )),
         (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
         (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
       ), seams: (
         (
           0,
           ("A", "[A]", ),
+        ),
+        (
+          1,
+          ("E[A]", "E[A]", ),
         ),
         (
           2,
