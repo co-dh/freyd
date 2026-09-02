@@ -9174,9 +9174,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
  `r : Digit×Interval⟶F(Interval)`], #h(4pt) `w≜2¹⁷`.
 ]]<tex-defn>
 
-// ONE WIRE, `[0,2¹⁶)` to `Decimal`; the `list` is born only where the algebra builds the digits.
-// `interval` sits ABOVE the singleton in every row from the second on: it is the map pulled out of
-// the transpose, and holding it at one height is what says the rest of the chain moved past it.
+// ONE WIRE, `[0,2¹⁶)` to `Decimal`, in every row: `interval`, `H` and `[arb,step]°` are relations
+// between objects with no functor of their own, so the picture never needs to open `Decimal`'s own
+// `list`.  `interval` sits ABOVE the singleton in every row from the second on: it is the map
+// pulled out of the transpose, and holding it at one height is what says the rest of the chain
+// moved past it.
 #let xb-est = ([`est(R)`], 1.90, true)
 #let xb-Lint = (frc([`intern°`]), 2.75, false)
 #let xb-ival = ([`interval`], 2.55, false)
@@ -9185,8 +9187,6 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let xb-Larb = (frc([`[arb,step]°`]), 3.95, false)
 #let xb-estQ = ([`est(Q)`], 1.90, true)
 #let xb-FXa = ([`F(X)α`], 1.85, true)
-#let tx-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THO, [`[0,2¹⁶)`]),), ((THN, [`list`]), (THO, [`Digit`])), lanes: lanes, names: names)
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -9200,37 +9200,49 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
   [#vstep([], thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-Lint, xb-est)),
     [#src[the specification — @tex-defn]])],
-  [#tx-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-out(THN, 1.85, 0)),
-    ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`intern°`], 0.32),
-     (THU, 0.60, [`est(R)`], -0.32)),
-    lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
+  [#dpanel(4, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((2, [`intern°`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`[0,2¹⁶)`]),),
+  ((1.7, [`Decimal`]),),
+  cert: (expect: "𝟙%∋ E(intern°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("intern": "Decimal⟶[0,2¹⁶)")))],
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Linv, xb-est)),
     [#src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
   // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
   // the unit: the set the transpose opens starts on its target.
-  [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
-    ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
-     (THO, 1.85, [`inrange val°`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
+  [#dpanel(6, 4.55, 1.7,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])),),
+  ((5, [`interval`]), (3, [`inrange`]), (2, [`val°`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`[0,2¹⁶)`]),),
+  ((1.7, [`Decimal`]),),
+  cert: (expect: "interval 𝟙%∋ E(inrange val°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "inrange": "Interval⟶Real", "val": "Decimal⟶Real")))],
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-LH, xb-est)),
     [#src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
       reduce on cons-lists]])],
-  [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
-    ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
-     (THO, 1.85, [`H`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
+  [#dpanel(5, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((4, [`interval`]), (2, [`H`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`[0,2¹⁶)`]),),
+  ((1.7, [`Decimal`]),),
+  cert: (expect: "interval 𝟙%∋ E(H)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "H": "Interval⟶Decimal")))],
 
   [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
     // interval row: Theorem 10.1
     [#src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
-  // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born.
-  [#tx-pan(6.2, (((THU, 4.60), (THU, 3.10)), thw-arc(THM, 3.90, 1.60), thw-out(THN, 1.60, 0)),
-    ((THO, 5.30, [`interval`], 0.32), (THU, 4.60, frc([`𝟙`]), -0.32),
-     (THO, 3.90, [`[arb,step]°`], 0.32), (THU, 3.10, [`est(Q)`], -0.32),
-     (THO, 1.60, [`F(X)α`], 0.32)),
-    lanes: ((THM - 0.34, 2.75, [`F`]),))],
+  // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
+  // `α≜[nil,cons]` — @tex-defn — builds the list).
+  // `[arb,step]°`'s bead is hand-relabelled: `scripts/scanline`'s `BRANCH` table only names
+  // `cons`/`nil`/`plus`/`zero`, so `./scripts/diagram` cannot cut a case split on `arb`/`step` —
+  // geometry generated for the stand-in atom `arbstep°`; TODO.md notes the gap.
+  [#dpanel(7, 5.7, 2.85,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 4, 1, [`F`], none)),
+  ((6, [`interval`]), (4, [`[arb,step]°`]), (3, [`est(Q)`], black, 0.55), (2, [`H`]), (1, [`α`], black, 1.7)),
+  ((2.85, [`[0,2¹⁶)`]),),
+  ((2.85, [`Decimal`]),))],
 
   [#vstep(EQ, [],
     [`extern=interval f`, #h(4pt) `f (a,b)=(a<0→[],[d]⧺f (10a−d,10b−d))` \

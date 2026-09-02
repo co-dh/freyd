@@ -9,6 +9,9 @@
 [ ] circuit wire types print E[A], not E([A]); applies to every type label in every circuit diagram
 [ ] 12.1d rows 4–5 circuits are still hand-drawn (sbB4, sbB5); generate them with the fork kind
 [ ] 12.1d row 4 HM panel shows a horizontal bar; check it is generated and the bar goes with the straight-wire default
+[ ] §16 tex-laws row 4's `[arb,step]°` bead is hand-relabelled, no cert: `scripts/scanline`'s `BRANCH`
+    table only names cons/nil/plus/zero, so `./scripts/diagram` can't cut a case split on arb/step;
+    register the algebra's own branch names (or a general fallback) so it generates and certifies.
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
 
