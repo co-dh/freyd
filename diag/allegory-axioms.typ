@@ -7223,17 +7223,6 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // fraction is a map (@pow-laws), hence a square box; `est` and the folds that carry one are the
 // chain's relations, hence chamfered.
-#let vb-spec = (frc([`partition list(secure)`]), 7.6, false)
-#let vb-LS = (frc([`⦇S⦈`]), 1.5, false)
-#let vb-estR = ([`est(R)`], 2.0, true)
-#let vb-estRH = ([`est(R;H)`], 2.6, true)
-#let vb-greedy = ([`⦇`#frc([`S`])` est(R;H)⦈`], 4.0, true)
-#let vb-prog = ([`⦇[nil,(ok→glue,new)]⦈`], 6.2, false)
-#let van-line(items) = {
-  lab(-0.82, 0, black)[`[Int]`]; boxrun(0, 0, items, h: TH)
-  lab(boxrun-w(items) + 1.05, 0, black)[`[[Int]]`]
-}
-#let van-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
 
 // The same lanes as §13.4.4's panels, at this section's types: `[[Int]]` is TWO `list` wires beside
 // the `Int` one, and the outer `list` is born where the partition is.  A bead whose source and target
@@ -8208,7 +8197,37 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((2.85, [`A`]),),
   cert: (expect: "⦇−⦈sort(P)minlist(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "sort": "E(A)⟶[A]", "minlist": "[A]⟶A")))],
 
-  [#vstep(RQ, thpic([`T`], [`A`], none, (sb-prog, sb-min)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+          (k: "box", nin: 2, nout: 1, label: "listcp(F)", chamfer: true, frac: false, flip: false),
+          (k: "fork", nin: 1, nout: 2, lanes: (
+              (k: "seq", nin: 1, nout: 1, items: (
+                  (k: "box", nin: 1, nout: 1, label: "g₁", chamfer: true, frac: false, flip: false),
+                ), seams: ()),
+              (k: "seq", nin: 1, nout: 1, items: (
+                  (k: "box", nin: 1, nout: 1, label: "g₂", chamfer: true, frac: false, flip: false),
+                ), seams: ()),
+            )),
+          (k: "box", nin: 2, nout: 1, label: "merge P", chamfer: true, frac: false, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "thinlist Q", chamfer: true, frac: false, flip: false),
+        ), seams: (
+          (
+            0,
+            ("[FA]", ),
+          ),
+          (
+            1,
+            ("[A]", "[A]", ),
+          ),
+        )), label: none, port: ("A", "[A]", )),
+    (k: "box", nin: 1, nout: 1, label: "minlist R", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("[A]", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R", src: "T", tgt: "A", mu: "F:T⟶[A]", sigs: "listcp(F):F([A])⟶[F(A)] g₁:[F(A)]⟶[A] g₂:[F(A)]⟶[A]"))],
     [#src[@cata-fusion at @thinlist-fusion]])],
   // The reduce now births `list` where it births `E` above: no set is ever built.
   [#dpanel(3, 4.55, 1.7,
@@ -8698,7 +8717,27 @@ in @mu-defn.
   cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: ("H": "A⟶B")), names: true)],
 
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
-  [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, db-thin, db-PFX, db-est)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(T°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "thin Q", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P(F(X)h)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+    (
+      2,
+      ("EFA", ),
+    ),
+    (
+      3,
+      ("EB", ),
+    ),
+  ), src: ("A", ), tgt: ("B", )),
+  cert: (expect: "(T°)%∋ thin Q P(F(X)h) est(R)", src: "A", tgt: "B", sigs: "T:F(A)⟶A h:F(B)⟶B X:A⟶B"))],
     // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
     [#src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
       @thin-laws. This is the same with the thinning step dropped — `𝟙⊑thin Q`, so the body and
@@ -8715,7 +8754,27 @@ in @mu-defn.
   ((4, [`B`]),),
   cert: (expect: "(T°)%∋ thin(Q)E(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
-  [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, db-thini, db-PU, db-est)),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(Vᵢ°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "thin(Qᵢ)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P(Fᵢ(X)Uᵢ)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+    (
+      2,
+      ("E Fᵢ A", ),
+    ),
+    (
+      3,
+      ("EB", ),
+    ),
+  ), src: ("A", ), tgt: ("B", )),
+  cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟶B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
     [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
       // uniqueness fact: Theorem 6.3
@@ -8969,6 +9028,8 @@ both lists empty.
   ((1.7, [`tree`]), (4, [`A`])),
   cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("flatten": "tree(A)⟶list⁺(A)")), names: true)],
 
+  // Still hand-drawn: `[wrap,cat]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
+  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
     [
      // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
@@ -8994,7 +9055,26 @@ both lists empty.
   ((1.7, [`tree`]), (7.45, [`A`])),
   cert: (expect: "([wrap,cat]°)%∋ E([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", branch: "cat", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
 
-  [#vstep(EQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lcat, mb-Pbin, mb-estR)),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(cat°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P((X×X)bin)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E list⁺ A", ),
+    ),
+    (
+      1,
+      ("E (list⁺ A)²", ),
+    ),
+    (
+      2,
+      ("E tree A", ),
+    ),
+  ), src: ("list⁺ A", ), tgt: ("tree A", )),
+  cert: (expect: "(cat°)%∋ P((X×X)bin) est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "cat:list⁺(A)×list⁺(A)⟶list⁺(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
     [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
   // No picture: the disjointness of the two ranges is a case split on a coproduct, which has no
@@ -9115,6 +9195,8 @@ the longest repeated tail; #h(4pt)
   ((1.7, [`list`]), (4, [`Code`])),
   cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: ("decode": "[Code]⟶[Char]")), names: true)],
 
+  // Still hand-drawn: `[nil,extend]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
+  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
     // entab row: Theorem 9.2
     [#src[at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
@@ -9133,7 +9215,27 @@ the longest repeated tail; #h(4pt)
   ((2.85, [`list`]), (8.6, [`Code`])),
   cert: (expect: "([nil,extend]°)%∋ thin(Q)E([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", branch: "extend", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
-  [#vstep(EQ, thpic([`String`], [`[Code]`], none, (cb-Lext, cb-thinp, cb-Pb, cb-estR)),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(extend°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "thin(prefix°×(⊤+⊤))", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P((X×𝟙)snoc)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Char]", ),
+    ),
+    (
+      2,
+      ("E([Char]×Code)", ),
+    ),
+    (
+      3,
+      ("E[Code]", ),
+    ),
+  ), src: ("[Char]", ), tgt: ("[Code]", )),
+  cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)", src: "[Char]", tgt: "[Code]", sigs: "extend:[Char]×Code⟶[Char] snoc:[Code]×Code⟼[Code] X:[Char]⟶[Code] prefix:[Char]⟶[Char] ⊤+⊤:Code⟶Code"))],
     [#src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
       are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)} ∪ {(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
@@ -9158,7 +9260,7 @@ the longest repeated tail; #h(4pt)
       ("[[Code]]", ),
     ),
   ), src: ("[Char]", ), tgt: ("[Code]", )),
-  cert: (expect: "reduce list((encode×𝟙)snoc)minlist R", src: "[Char]", tgt: "[Code]", sigs: "reduce:[Char]⟶[[Char]×Code] encode:[Char]⟶[Code] snoc:[Code]×Code⟶[Code]"))],
+  cert: (expect: "reduce list((encode×𝟙)snoc)minlist R", src: "[Char]", tgt: "[Code]", sigs: "reduce:[Char]⟶[[Char]×Code] encode:[Char]⟶[Code] snoc:[Code]×Code⟼[Code]"))],
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
@@ -9248,9 +9350,31 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ((2.85, [`B`]),),
   cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
-  // Still hand-drawn: `Fᵢ(X)` applies a RELATOR, and `--sigs` states atom rows only
-  // (`head:src⟶tgt` has no room for an `arg` scheme), so only diag/circuit-sigs.json types `Fᵢ`.
-  [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, gb-estQi, gb-Ui)),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(Vᵢ°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(Qᵢ)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "Fᵢ(X)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "Uᵢ", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+    (
+      1,
+      ("E Fᵢ A", ),
+    ),
+    (
+      2,
+      ("Fᵢ A", ),
+    ),
+    (
+      3,
+      ("Fᵢ B", ),
+    ),
+  ), src: ("A", ), tgt: ("B", )),
+  cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟶B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
     [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
@@ -9371,7 +9495,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
       )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
   ), seams: (
     (
       0,
@@ -9382,7 +9506,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("E(String×Char)", ),
     ),
   ), src: ("String", ), tgt: ("String", )),
-  cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "String", tgt: "String", sigs: "expand:String×Char⟶String snoc:String×Char⟶String X:String⟶String V:String⟶String U:Char⟶Char"))],
+  cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "String", tgt: "String", sigs: "expand:String×Char⟶String snoc:String×Char⟼String X:String⟶String V:String⟶String U:Char⟶Char"))],
     [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
   [#dpanel(6, 10.3, 7.45,
@@ -9500,7 +9624,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
       )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
   ), seams: (
     (
       0,
@@ -9511,7 +9635,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("E(Bag Job×Job)", ),
     ),
   ), src: ("Bag Job", ), tgt: ("[Job]", )),
-  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "snag:Bag(Job)×Job⟶Bag(Job) snoc:[Job]×Job⟶[Job] X:Bag(Job)⟶[Job] Q':Bag(Job)×Job⟶Bag(Job)×Job"))],
+  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "snag:Bag(Job)×Job⟶Bag(Job) snoc:[Job]×Job⟼[Job] X:Bag(Job)⟶[Job] Q':Bag(Job)×Job⟶Bag(Job)×Job"))],
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#dpanel(6, 10.3, 7.45,
   ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),
@@ -9521,16 +9645,16 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 2, label: "pick", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 2, label: "pick", chamfer: false, frac: false, flip: false),
     (k: "stack", nin: 2, nout: 2, lanes: (
         (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "schedule", chamfer: true, frac: false, flip: false),
+            (k: "box", nin: 1, nout: 1, label: "schedule", chamfer: false, frac: false, flip: false),
           ), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
       )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
   ), seams: (), src: ("Bag Job", ), tgt: ("[Job]", )),
-  cert: (expect: "pick (schedule×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "pick:Bag(Job)⟶Bag(Job)×Job schedule:Bag(Job)⟶[Job] snoc:[Job]×Job⟶[Job]"))],
+  cert: (expect: "pick (schedule×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "pick:Bag(Job)⟼Bag(Job)×Job schedule:Bag(Job)⟼[Job] snoc:[Job]×Job⟼[Job]"))],
     [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
   [#dpanel(4, 9.15, 6.3,
@@ -9611,7 +9735,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "𝟙%∋ E(intern°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("intern": "Decimal⟶[0,2¹⁶)")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
     (k: "box", nin: 1, nout: 1, label: "E(inrange val°)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
@@ -9629,7 +9753,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("E Decimal", ),
     ),
   ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
-  cert: (expect: "interval (inrange val°)%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟶Interval inrange:Interval⟶Real val:Decimal⟶Real"))],
+  cert: (expect: "interval (inrange val°)%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟼Interval inrange:Interval⟶Real val:Decimal⟶Real"))],
     [#src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
   // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
   // the unit: the set the transpose opens starts on its target.
@@ -9641,7 +9765,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "interval 𝟙%∋ E(inrange val°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "inrange": "Interval⟶Real", "val": "Decimal⟶Real")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
     (k: "box", nin: 1, nout: 1, label: "E(H)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
@@ -9659,7 +9783,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("E Decimal", ),
     ),
   ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
-  cert: (expect: "interval H%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟶Interval H:Interval⟶Decimal"))],
+  cert: (expect: "interval H%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟼Interval H:Interval⟶Decimal"))],
     [#src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
       reduce on cons-lists]])],
   [#dpanel(5, 4.55, 1.7,

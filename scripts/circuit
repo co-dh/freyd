@@ -118,14 +118,19 @@ def sigs():
 
 def parse_sigs(s):
     """`--sigs "sort:E(A)⟶[A] S:F(A)⟶A"` — space-separated `head:src⟶tgt` pairs, keyed by the
-    label's HEAD (`sort`, never `sort(P)`); the cert carries the string back verbatim."""
+    label's HEAD (`sort`, never `sort(P)`); the cert carries the string back verbatim.
+    The ARROW says which box: `⟶` a relation, chamfered, and `⟼` — maps to — a MAP, square.  The
+    marker belongs here because these are the SECTION-LOCAL names, declared per panel and nowhere
+    else (`pick`, `schedule`, `snoc` at `[Job]` and at `String`); without it every local map would
+    have to enter diag/circuit-sigs.json for no reason but to be drawn square."""
     out = {}
     for p in s.split():
         head, _, arrow = p.partition(":")
-        src, sep, tgt = arrow.partition("⟶")
+        is_map = "⟼" in arrow
+        src, sep, tgt = arrow.partition("⟼" if is_map else "⟶")
         if not (head and sep and src and tgt):
-            raise Unhandled(f"--sigs: `{p}` is not a `head:src⟶tgt` pair")
-        out[head] = {"src": src, "tgt": tgt, "map": False}
+            raise Unhandled(f"--sigs: `{p}` is not a `head:src⟶tgt` pair (`⟼` for a map)")
+        out[head] = {"src": src, "tgt": tgt, "map": is_map}
     return out
 
 
@@ -404,6 +409,10 @@ def leaf(e, tbl, src, tgt):
     """An atom (§3 rows 1-2) or an application read as one box (§3 row 10): the signature's `src`
     and `tgt` are schemes, and the port in hand binds their variables."""
     key = e[1] if e[0] in ('atom', 'app') else None
+    # An application whose WHOLE spelling has a row is ONE opaque box, its argument untyped:
+    # `listcp(F)` applies an operator to a FUNCTOR, and an `arg` scheme states an ARROW.
+    if e[0] == 'app' and rows(tbl, spell(e)):
+        e, key = ('atom', spell(e)), spell(e)
     # A letter may be both a preorder and an operator (`P`, `P(f)`): an application takes the rows
     # with an `arg` scheme and an atom the rows without, so neither ever reads the other's.
     rs = [r for r in rows(tbl, key) if ('arg' in r) == (e[0] == 'app')]
@@ -799,7 +808,11 @@ _HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
               '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
               " formula alone does not fix the ports"
               '\n--sigs        extra bead signatures beyond diag/circuit-sigs.json, `NAME:SRC⟶TGT`'
-              " pairs separated by spaces; the key is left of the LAST colon"
+              " pairs separated by spaces; the key is left of the FIRST colon.  The ARROW says which"
+              " box: `⟶` a relation, drawn chamfered, `⟼` a MAP, drawn square —"
+              ' `--sigs "snoc:[Job]×Job⟼[Job]"`.  These are the section-local names, declared here'
+              " and nowhere else, so without the marker every local map would enter the global table"
+              " for no reason but to be drawn square"
               '\n--at          the table constants this row fixes, `KEY:OBJECT` pairs — `--at "A:Int"`'
               " instantiates diag/circuit-sigs.json's parameter `A`, so `nil:𝟏⟶[A]` types at `[Int]`."
               " The cert carries them back, which is how --compare rebuilds the same picture"
