@@ -96,12 +96,6 @@ def branch(formula):
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
-# Slope mode: the object wire is a polyline hugging the live lanes.  "right": legs sit right of the
-# arms they replace and drop straight from the dot, so the wire runs away rightward (6c26635).
-# "left": legs sit LEFT of the arms, so the wire sweeps top-right to bottom-left and absorbs the
-# innermost arm at its own column where it slides (IntroString p.79, 3.8b); a death that would move
-# it ONE gap it sits out, the arm bending in (user, 2026-09-01).  None = the old vertical.
-SLOPE = "left"
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "hm-sigs.json")
 
@@ -475,8 +469,8 @@ def elaborate(formula, src, tgt, table):
         for l in arms:
             l.dies = i
         # `made` is COLUMN order, not birth order: `η∘M` opens its wire left of the one it keeps.
-        at = made.index(arms[0]) if arms and SLOPE == "left" else \
-            made.index(keep[0]) if keep else len(made)
+        # Legs sit LEFT of the arms they replace, so the object wire's column is the rightmost.
+        at = made.index(arms[0]) if arms else made.index(keep[0]) if keep else len(made)
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
@@ -532,46 +526,38 @@ def layout(rows, made, otop, obot, cert):
     hh = (n + 1) * DY
 
     def xat(y, dying=True):
-        """The object wire's x at a height.  "right": one lane-gap right of every lane already born
-        there, and AT the innermost leg born at that height — it never comes back after a death.
-        "left": one gap right of every lane alive there or NOT YET BORN — a column is held from the
-        top, else the wire's own `xo` could be a lane's column and the sweep would read one for the
-        other — and AT the innermost arm dying at that height: the wire absorbs it at its own
-        column.  With `dying` off the arms dying there are already gone: where the wire would sit
-        just below the bead."""
+        """The sloped object wire's x at a height: one gap right of every lane alive there or NOT
+        YET BORN — a column is held from the top, else the wire's own `xo` could be a lane's column
+        and the sweep would read one for the other — and AT the innermost arm dying at that height:
+        the wire absorbs it at its own column.  With `dying` off the arms dying there are already
+        gone: where the wire would sit just below the bead."""
         c = [X0]
         for l in made:
-            yb = hh if l.born == TOP else ys[l.born]
             yd = 0.0 if l.dies == n else ys[l.dies]
-            if SLOPE == "left":
-                if yd > y + 1e-9:
-                    continue                   # already dead
-                if l.dies != n and abs(yd - y) <= 1e-9:
-                    if dying:
-                        c.append(l.x)
-                else:
-                    c.append(l.x + DX)
-            elif l.born == TOP or yb > y + 1e-9 or (l in unit and abs(yb - y) <= 1e-9):
+            if yd > y + 1e-9:
+                continue                       # already dead
+            if l.dies != n and abs(yd - y) <= 1e-9:
+                if dying:
+                    c.append(l.x)
+            else:
                 c.append(l.x + DX)
-            elif abs(yb - y) <= 1e-9:
-                c.append(l.x)
         return round(max(c), 2)
 
-    op, hs = None, [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]
-    if SLOPE == "left":
-        # The wire holds its column across a death that would move it ONE gap — the arm bends into
-        # it, as the note draws by hand (2026-09-01) — and slopes only where it is left further adrift.
-        op, x = [], xat(hh)
-        for y in hs:
-            if x - xat(y, False) > DX + 1e-6:
+    # Straight by default — the surviving wire runs at one column and every arm bends into it, the
+    # Hinze–Marsden convention; `slope: "left"` only where a straight wire makes the panel unreadable.
+    op = None
+    if cert.get("slope") == "left":
+        # The wire sweeps top-right to bottom-left, absorbing the innermost arm at its own column
+        # (IntroString p.79, 3.8b); a death that would move it ONE gap it sits out, the arm bending in.
+        op, x, nat = [], xat(hh), xat(hh)
+        for y in [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]:
+            if nat - xat(y, False) > DX + 1e-6:
                 x = xat(y)
+            nat = xat(y, False)
             op.append([x, y])
-    elif SLOPE:
-        op = [[xat(y), y] for y in hs]
-    if op and all(q[0] == op[0][0] for q in op):
-        op = None
-    if SLOPE == "left":                # the wire's top x, which the sweep and both ports key on
-        xo = xat(hh)
+        if all(q[0] == op[0][0] for q in op):
+            op = None
+        xo = xat(hh)                   # the wire's top x, which the sweep and both ports key on
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
             "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
@@ -591,19 +577,20 @@ def layout(rows, made, otop, obot, cert):
     return rec
 
 
-def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None):
+def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
     note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
-    no field; `sigs:` likewise appears only where the panel types a letter itself."""
+    no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
+    only where the object wire is not the straight default (see `layout`)."""
     global SPLIT, BR
     SPLIT = frozenset(split.split())
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
     rows, made, otop, obot = elaborate(formula, src, tgt, typed(table or sigs(), own))
     return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {})
-                  | ({"sigs": own} if own else {}))
+                  | ({"sigs": own} if own else {}) | ({"slope": slope} if slope else {}))
 
 
 # ---------------------------------------------------------------- the typst call
@@ -683,7 +670,8 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"))
+            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
+                     r["cert"].get("slope"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -764,7 +752,7 @@ def regen(path, tbl, write):
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
-                            c.get("sigs")))[1:-1]
+                            c.get("sigs"), c.get("slope")))[1:-1]
         except (Unhandled, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -790,7 +778,8 @@ def main(argv):
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     own = sl.opt(argv, "--sigs")           # `R:F(A)⟶A S:F(B)⟶B`: the key is left of the LAST colon
     own = dict(x.rsplit(":", 1) for x in own.split()) if own else None
-    taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs") if o in argv
+    slope = sl.opt(argv, "--slope")
+    taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -805,12 +794,12 @@ def main(argv):
     formula = next((a for a in free if not a.endswith(".typ")), None)
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
-                 + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"]'
+                 + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
                  + ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]'
                  + '\n       diagram --write [diag/allegory-axioms.typ]')
-    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own)
+    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope)
     got, bad = swept(r)
     print(emit(r))
     if bad:
