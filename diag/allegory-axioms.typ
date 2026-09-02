@@ -7515,10 +7515,6 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let eb-Qo = ([`Q°`], 0.85, true)
 #let eb-in = ([`∈`], 0.75, true)
 #let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
-// TWO `E` wires on one lane, never live at once: the transpose opens one that `est(R)` closes, and
-// the singleton opens the one that leaves the panel.
-#let eb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THO, [`A`]),), ((THU, [`E`]), (THO, [`A`])), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7541,10 +7537,13 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [#vstep(IMP, eb-pic((eb-So, eb-LamS, eb-est, eb-tau)),
     [#src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
       @est-laws; the second is this chain, `−⊑Q°∈`]])],
-  [#eb-pan(4.6, (thw-in(THU, 3.30, 1.60), ((THU, 0.80), (THU, 0))),
-    ((THO, 4.00, [`S°`], 0.32), (THU, 3.30, frc([`𝟙`]), -0.32), (THO, 2.60, [`S`], 0.32),
-     (THO, 1.60, [`est(R)`], 0.32), (THU, 0.80, frc([`𝟙`]), -0.32)),
-    lanes: ((THU - 1.05, 2.45, [`E`]),), names: true)],
+  // `S`,`Q`,`R : A⟶A`, read off the circuit column's one wire, `A` to `EA`.
+  [#dpanel(6, 5.7, 2.85,
+  ((0.55, 3.5, 2, [`E`], frc([`𝟙`])), (1.7, 0.5, "bot", none, frc([`𝟙`]))),
+  ((5, [`S°`]), (3, [`S`]), (2, [`est(R)`], black, 0.55)),
+  ((2.85, [`A`]),),
+  ((1.7, [`E`]), (2.85, [`A`])),
+  cert: (expect: "S° S%∋ est(R)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
   [#vstep(EQ, eb-pic((eb-So, eb-LamS, eb-estc, eb-tau)),
     [#src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
@@ -7553,20 +7552,30 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 
   [#vstep(SQ, eb-pic((eb-in, eb-estc, eb-tau)),
     [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
-  [#eb-pan(4.0, (thw-arc(THU, 3.10, 1.60), ((THU, 0.80), (THU, 0))),
-    ((THO, 3.10, [`∈`], 0.32), (THO, 1.60, [`est(R∩S°S)`], 0.32),
-     (THU, 0.80, frc([`𝟙`]), -0.32)),
-    lanes: ((THU - 1.05, 2.35, [`E`]),))],
+  [#dpanel(4, 5.7, 2.85,
+  ((0.55, 3, 2, [`E`], none), (1.7, 0.5, "bot", none, frc([`𝟙`]))),
+  ((3, [`∈`]), (2, [`est(R∩S°S)`], black, 0.55)),
+  ((2.85, [`A`]),),
+  ((1.7, [`E`]), (2.85, [`A`])),
+  cert: (expect: "∈ est(R∩S°S)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
   [#vstep(SQ, eb-pic((eb-Qo, eb-tau)),
     [#src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
-  [#eb-pan(3.0, (((THU, 1.10), (THU, 0)),),
-    ((THO, 2.10, [`Q°`], 0.32), (THU, 1.10, frc([`𝟙`]), -0.32)))],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 0.5, "bot", none, frc([`𝟙`])),),
+  ((2, [`Q°`]),),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "Q° 𝟙%∋", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(SQ, eb-pic((eb-Qo, eb-in)),
     [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
-  [#eb-pan(3.0, (thw-out(THU, 1.10, 0),),
-    ((THO, 2.10, [`Q°`], 0.32), (THO, 1.10, [`∈`], 0.32)))],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 1, "bot", none, none),),
+  ((2, [`Q°`]), (1, [`∈`])),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 ))]<thin-83>
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal
@@ -7747,9 +7756,6 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #let pb-pic(alg, tail) = thpic([`L(EA)`], [`LA`], alg, tail)
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
-#let pb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THM, [`L`]), (THN, [`E`]), (THO, [`A`])), ((THM, [`L`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7763,21 +7769,24 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
   [#vstep([], pb-pic(none, (pb-spec, pb-est)),
     [#src[`=` #frc([`L(∋)`])` est(R)`]])],
-  [#pb-pan(4.0,
-    (((THU, 3.35), (THU, 0.85)), thw-in(THM, 4.0, 2.20),
-     thw-in(THN, 4.0, 2.20), thw-out(THM, 2.20, 0.0)),
-    ((THU, 3.35, frc([`𝟙`]), -0.32), (THO, 2.20, [`⦇F(∋,𝟙)α⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)),
-    lanes: ((THU - 1.05, 2.10, [`E`]),), names: true)],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
+  ((2, [`⦇F(∋,𝟙)α⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`L`]), (4, [`E`]), (5.15, [`A`])),
+  ((1.7, [`L`]), (5.15, [`A`])),
+  cert: (expect: "⦇F(∋,𝟙)α⦈%∋ est(R)", src: "L(E(A))", tgt: "L(A)", sigs: ("⦇F(∋,𝟙)α⦈": "L(E(A))⟶L(A)", "R": "L(A)⟶L(A)")))],
 
   [#vstep(RQ, pb-pic((pb-alg, pb-thin), (pb-est,)),
     // thinAlg-elim row: Corollary 8.1
     [#src[@thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
  ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
-  [#pb-pan(4.0,
-    (thw-in(THM, 4.0, 2.20), thw-in(THN, 4.0, 2.20), thw-out(THM, 2.20, 0.0),
-     thw-out(THU, 2.20, 0.85)),
-    ((THO, 2.20, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
+  [#dpanel(3, 8, 5.15,
+  ((0.55, 2, 1, [`E`], none), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
+  ((2, [`⦇−⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`L`]), (4, [`E`]), (5.15, [`A`])),
+  ((1.7, [`L`]), (5.15, [`A`])),
+  cert: (expect: "⦇−⦈est(R)", src: "L(E(A))", tgt: "L(A)", sigs: ("⦇−⦈": "L(E(A))⟶E(L(A))", "R": "L(A)⟶L(A)")))],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, pb-un, pb-thin), (pb-est,)),
     [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
@@ -7867,8 +7876,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let tl-pic(tail) = thpic([`EA`], [`[A]`], none, tail)
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#let tl-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7881,33 +7888,52 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], tl-pic((tl-sort, tl-tl)), [])],
-  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
-    ((THO, 2.40, [`sort P`], 0.32), (THU, 1.30, [`thinlist Q`], -0.32)), names: true)],
+  // `sort P : EA⟶[A]`, `ordered P`,`thinlist Q : [A]⟶[A]` — @thinlist-defn's
+  // `sort P≜setify° ordered P` at `setify : [A]⟶EA`.
+  [#dpanel(3, 6.85, 4,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, "top", 2, none, none)),
+  ((2, [`sort(P)`], black, 2.85), (1, [`thinlist(Q)`], black, 1.7)),
+  ((2.85, [`E`]), (4, [`A`])),
+  ((0.55, [`list`]), (4, [`A`])),
+  cert: (expect: "sort(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("sort": "E(A)⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(EQ, tl-pic((tl-set, tl-ord, tl-tl)),
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
-  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
-    ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`ordered P`], -0.32),
-     (THU, 0.70, [`thinlist Q`], -0.32)))],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3, 2, [`list`], none), (4, "top", 3, none, none)),
+  ((3, [`setify°`], black, 4), (2, [`ordered(P)`], black, 2.85), (1, [`thinlist(Q)`], black, 1.7)),
+  ((4, [`E`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((tl-set, tl-tl, tl-ord)),
     [#src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
       and a subsequence of a `P`-ordered list is `P`-ordered]])],
-  [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
-    ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`thinlist Q`], -0.32),
-     (THU, 0.70, [`ordered P`], -0.32)))],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3, 2, [`list`], none), (4, "top", 3, none, none)),
+  ((3, [`setify°`], black, 4), (2, [`thinlist(Q)`], black, 2.85), (1, [`ordered(P)`], black, 1.7)),
+  ((4, [`E`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((nb-thin, tl-set, tl-ord)),
     [#src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
       for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]])],
-  [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
-    ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`setify°`], 0.32),
-     (THU, 1.10, [`ordered P`], -0.32)))],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3, 2, [`E`], none), (4, "top", 3, none, none)),
+  ((3, [`thin(Q)`], black, 4), (2, [`setify°`], black, 2.85), (1, [`ordered(P)`], black, 1.7)),
+  ((4, [`E`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(EQ, tl-pic((nb-thin, tl-sort)),
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
-  [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
-    ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`sort P`], 0.32)))],
+  [#dpanel(3, 6.85, 4,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`E`], none), (2.85, "top", 2, none, none)),
+  ((2, [`thin(Q)`], black, 2.85), (1, [`sort(P)`], black, 1.7)),
+  ((2.85, [`E`]), (4, [`A`])),
+  ((0.55, [`list`]), (4, [`A`])),
+  cert: (expect: "thin(Q)sort(P)", src: "E(A)", tgt: "[A]", sigs: ("sort": "E(A)⟶[A]", "Q": "A⟶A")))],
 ))]<thinlist-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
@@ -7927,10 +7953,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let lb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // `sort P : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
-#let lb-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
-  (thw-in(THN, h, 3.15), thw-in(THM, h, 2.40)) + wires, beads,
-  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7944,10 +7966,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], lb-pic((lb-Lam, lb-sort)), [])],
-  [#lb-pan(4.6, (((THU, 3.90), (THU, 0.90 + KNEE), (THO, 0.90)), thw-out(THU, 0.90, 0)),
-    ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`f`], 0.32),
-     (THO, 1.65, [`p`], 0.32), (THO, 0.90, [`sort P`], 0.32)),
-    lanes: ((THU - 1.05, 2.60, [`E`]),), names: true)],
+  [#dpanel(6, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 4.5, 1, [`E`], frc([`𝟙`])), (2.85, "top", 3, none, none), (4, "top", 4, none, none)),
+  ((4, [`∋`], black, 4), (3, [`f`], black, 2.85), (2, [`p`]), (1, [`sort(P)`], black, 1.7)),
+  ((2.85, [`F`]), (4, [`E`]), (5.15, [`A`])),
+  ((0.55, [`list`]), (5.15, [`A`])),
+  cert: (expect: "(F(∋)f p)%∋ sort(P)", src: "F(E(A))", tgt: "[A]", sigs: ("f": "F(A)⟶A", "p": "A⟶A", "sort": "E(A)⟶[A]")))],
 
   [#vstep(EQ, lb-pic((lb-cp, lb-Efp, lb-sort)),
     [#src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws; `cp(F)≜`#frc([`F(∋)`]) —
@@ -7964,9 +7988,13 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     [#src[`sort P filter(p)⊑E(p) sort P` — @thinlist-laws]])],
   // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
   // lane: the same coreflexive, applied to the sorted list instead of to the set.
-  [#lb-pan(4.6, (((THU, 3.90), (THU, 1.65 + KNEE), (THO, 1.65)), thw-out(THU, 1.65, 0)),
-    ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`f`], 0.32),
-     (THO, 1.65, [`sort P`], 0.32), (THU, 0.75, [`filter(p)`], -0.32)))],
+  // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
+  [#dpanel(6, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 5, none, none)),
+  ((5, [`∋`], black, 5.15), (3, [`f`], black, 4), (2, [`sort(P)`], black, 2.85), (1, [`filter(p)`], black, 1.7)),
+  ((4, [`F`]), (5.15, [`E`]), (6.3, [`A`])),
+  ((0.55, [`list`]), (6.3, [`A`])),
+  cert: (expect: "F(∋)f%∋ sort(P)filter(p)", src: "F(E(A))", tgt: "[A]", sigs: ("f": "F(A)⟶A", "sort": "E(A)⟶[A]", "filter": "[A]⟶[A]")))],
 
   [#vstep(RQ, lb-pic((lb-cp, lb-sfPf, lb-lf, lb-fil)),
     [#src[`sort(fPf°) list(f)⊑P(f) sort P` — @thinlist-laws]])],
@@ -8002,29 +8030,42 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [])],
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
-    names: true)],
+  [#dpanel(4, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((2, [`⦇S⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "⦇S⦈%∋ est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A", "R": "A⟶A")))],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, tb-est)),
     [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
-  [#tb-pan(3.2, (thw-in(THM, 3.2, 2.15), thw-arc(THU, 2.15, 0.85)),
-    ((THO, 2.15, [`⦇−⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
-    lanes: ((THU - 1.05, 1.50, [`E`]),))],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 2, 1, [`E`], none),),
+  ((2, [`⦇−⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "⦇−⦈est(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "R": "A⟶A")))],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, sb-sort, sb-min)),
     [#src[`sort P minlist R⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
   // `est(R)` has split into the node that sorts and the `minlist R` that reads the head back.
-  [#tb-pan(4.6, (thw-in(THM, 4.6, 3.50), thw-arc(THU, 3.50, 2.10), thw-arc(THU, 2.10, 0.80)),
-    ((THO, 3.50, [`⦇−⦈`], 0.32), (THO, 2.10, [`sort P`], 0.32), (THO, 0.80, [`minlist R`], 0.32)),
-    lanes: ((THU - 1.05, 2.80, [`E`]), (THU - 1.05, 1.45, [`list`])))],
+  // `minlist R : [A]⟶A` — @thinlist-laws' (8.5) `thinlist Q xs=[minlist Q xs]`.
+  [#dpanel(4, 5.7, 2.85,
+  ((0.55, 2, 1, [`list`], none), (1.7, 3, 2, [`E`], none)),
+  ((3, [`⦇−⦈`]), (2, [`sort(P)`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
+  ((2.85, [`T`]),),
+  ((2.85, [`A`]),),
+  cert: (expect: "⦇−⦈sort(P)minlist(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "sort": "E(A)⟶[A]", "minlist": "[A]⟶A")))],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (sb-prog, sb-min)),
     [#src[@cata-fusion at @thinlist-fusion]])],
   // The reduce now births `list` where it births `E` above: no set is ever built.
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.50), thw-arc(THU, 2.50, 1.00)),
-    ((THO, 2.50, [`⦇−⦈`], 0.32), (THO, 1.00, [`minlist R`], 0.32)),
-    lanes: ((THU - 1.05, 1.75, [`list`]),))],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 2, 1, [`list`], none),),
+  ((2, [`⦇−thinlist(Q)⦈`]), (1, [`minlist(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "T", tgt: "A", sigs: ("⦇−thinlist(Q)⦈": "T⟶[A]", "minlist": "[A]⟶A")))],
 ))]<thinlist-thm82>
 
 // The fusion condition of the last step above, B&dM p. 203.  Two of its moves are unwritten there:
@@ -8038,10 +8079,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let qb-g = ([`⟨g₁,g₂⟩`], 2.2, false)
 #let qb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // The panel `lb-pan` draws, with `S` for `f` and no `p`: same source, same two ports killed.
-#let qb-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
-  (thw-in(THN, h, 3.15), thw-in(THM, h, 2.40)) + wires, beads,
-  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8055,18 +8092,23 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], qb-pic((nb-LamS, nb-thin, sb-sort)), [])],
-  [#qb-pan(4.6, (((THU, 3.90), (THU, 0.90 + KNEE), (THO, 0.90)), thw-out(THU, 0.90, 0)),
-    ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`S`], 0.32),
-     (THU, 1.65, [`thin Q`], -0.32), (THO, 0.90, [`sort P`], 0.32)),
-    lanes: ((THU - 1.05, 2.85, [`E`]),), names: true)],
+  [#dpanel(6, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`E`], none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 5, none, none)),
+  ((5, [`∋`], black, 5.15), (3, [`S`], black, 4), (2, [`thin(Q)`], black, 2.85), (1, [`sort(P)`], black, 1.7)),
+  ((4, [`F`]), (5.15, [`E`]), (6.3, [`A`])),
+  ((0.55, [`list`]), (6.3, [`A`])),
+  cert: (expect: "F(∋)S%∋ thin(Q)sort(P)", src: "F(E(A))", tgt: "[A]", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(RQ, qb-pic((nb-LamS, sb-sort, qb-tl)),
     [#src[`sort P thinlist Q⊑thin Q sort P` — @thinlist-laws]])],
   // The node has walked up past `thin Q`, which comes out below it as `thinlist Q` on the `list`
   // lane: that exchange is the whole of (8.6), and the rest of the chain rewrites the algebra.
-  [#qb-pan(4.6, (((THU, 3.90), (THU, 1.65 + KNEE), (THO, 1.65)), thw-out(THU, 1.65, 0)),
-    ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`S`], 0.32),
-     (THO, 1.65, [`sort P`], 0.32), (THU, 0.75, [`thinlist Q`], -0.32)))],
+  [#dpanel(6, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 5, none, none)),
+  ((5, [`∋`], black, 5.15), (3, [`S`], black, 4), (2, [`sort(P)`], black, 2.85), (1, [`thinlist(Q)`], black, 1.7)),
+  ((4, [`F`]), (5.15, [`E`]), (6.3, [`A`])),
+  ((0.55, [`list`]), (6.3, [`A`])),
+  cert: (expect: "F(∋)S%∋ sort(P)thinlist(Q)", src: "F(E(A))", tgt: "[A]", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(EQ, qb-pic((qb-fork, qb-cup, sb-sort, qb-tl)),
     [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩ cup sort P thinlist Q` \
@@ -8150,11 +8192,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let kb-tl = ([`thinlist Q`], 3.0, true)
 #let kb-prog = ([`[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]`], 10.5, true)
 #let kb-pic(alg, tail) = thpic([`[Item]`], [`[Item]`], alg, tail)
-// The `list` wire runs the panel's whole height — the selections stay lists throughout — so it is
-// drawn here rather than repeated in every row.
-#let kb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, (((THM, h), (THM, 0)),) + wires,
-  beads, ((THM, [`list`]), (THO, [`Item`])), ((THM, [`list`]), (THO, [`Item`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8168,25 +8205,36 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep([], kb-pic(none, (kb-spec, kb-est)),
     [#frc([`subseq (within w)`])` est(R)`])],
-  [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 2.30, [`subseq`], 0.32), (THM, 1.65, [`within w`], 0.32),
-     (THU, 0.85, [`est(R)`], -0.32)),
-    names: true)],
+  [#dpanel(5, 8, 5.15,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 3, 2, [`list`], none), (4, "top", 3, none, none)),
+  ((3, [`subseq`], black, 4), (2, [`within(w)`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((4, [`list`]), (5.15, [`Item`])),
+  ((1.7, [`list`]), (5.15, [`Item`])),
+  cert: (expect: "(subseq within(w))%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("within": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
 
   [#vstep(EQ, kb-pic(none, (kb-fus, kb-est)),
     [#frc([`⦇[nil,cons](within w) ∪ [nil,π₂]⦈`])` est(R)` \
  #src[@cata-fusion, weights non-negative. ]])],
      // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
-  [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 1.95, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
+  ((2, [`⦇−⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`list`]), (4, [`Item`])),
+  ((1.7, [`list`]), (4, [`Item`])),
+  cert: (expect: "⦇−⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−⦈": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
 
   [#vstep(RQ, kb-pic((kb-lcp, kb-g, kb-mg, kb-tl), (kb-min,)),
     [`⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
-  // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
-  [#kb-pan(3.6, (((THM, 2.30), (THU, 2.30 - KNEE), (THU, 0.85)),),
-    ((THM, 2.30, [`⦇−⦈`], 0.32), (THU, 0.85, [`minlist R`], -0.32)),
-    lanes: ((THU - 1.05, 1.75, [`list`]),))],
+  // The candidate set is now a candidate LIST: the reduce births `list` where it births
+  // `E` above.  `⦇−thinlist(Q)⦈` rather than `⦇−⦈`: two folds of one display may not share
+  // a name when they land on different wires — `scanline`'s cross-panel signature check.
+  [#dpanel(3, 8, 5.15,
+  ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 2, 1, [`list`], none), (4, "top", 2, none, none)),
+  ((2, [`⦇−thinlist(Q)⦈`], black, 4), (1, [`minlist(R)`], black, 1.7)),
+  ((4, [`list`]), (5.15, [`Item`])),
+  ((0.55, [`list`]), (5.15, [`Item`])),
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−thinlist(Q)⦈": "[Item]⟶[[Item]]", "minlist": "[[Item]]⟶[Item]")))],
 
   [#vstep(EQ, kb-pic((kb-prog,), (kb-min,)),
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
@@ -8261,9 +8309,6 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ab-pic(alg, tail) = thpic([`list⁺ Word`], [`Para`], alg, tail)
 // The source is ONE `list⁺`; `partition` births the paragraph's, and the reduce of the last two rows
 // births a third — the list of candidate paragraphs `minlist R` reads back down.
-#let ab-pan(h, wires, beads, bot, lanes: (), names: false) = thpan(h,
-  (((THO, h), (THO, 0)), ((THN, h), (THN, 2.60))) + wires, beads,
-  ((THN, [`list⁺`]), (THO, [`Word`])), bot, lanes: lanes, names: names)
 #let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
 #let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
 #disp[#pad(right: 10pt, table(
@@ -8279,19 +8324,24 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep([], ab-pic(none, (ab-spec, ab-est)),
     [#frc([`partition list⁺(fits w)`])` est(R)`])],
-  [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
-    ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`partition`], 0.32), (THN, 1.60, [`fits w`], 0.32),
-     (THU, 0.75, [`est(R)`], -0.32)),
-    ab-bot, names: true)],
+  [#dpanel(5, 9.15, 6.3,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, "bot", none, none), (2.85, 2, "bot", none, none), (4, 3, 2, [`list⁺`], none), (5.15, "top", 3, none, none)),
+  ((3, [`partition`], black, 5.15), (2, [`fits(w)`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((5.15, [`list⁺`]), (6.3, [`Word`])),
+  ((1.7, [`list⁺`]), (2.85, [`list⁺`]), (6.3, [`Word`])),
+  cert: (expect: "(partition list⁺(fits(w)))%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("partition": "list⁺(Word)⟶list⁺(list⁺(Word))", "fits": "list⁺(Word)⟶list⁺(Word)", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-fus, ab-est)),
     [#frc([`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`])` est(R)` \
      #src[@cata-fusion, every word fits on a line by itself.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
-  [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
-    ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`est(R)`], -0.32)),
-    ab-bot)],
+  [#dpanel(4, 8, 5.15,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 2, "bot", none, none), (4, "top", 2, none, none)),
+  ((2, [`⦇−⦈`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((4, [`list⁺`]), (5.15, [`Word`])),
+  ((1.7, [`list⁺`]), (2.85, [`list⁺`]), (5.15, [`Word`])),
+  cert: (expect: "⦇−⦈%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−⦈": "list⁺(Word)⟶list⁺(list⁺(Word))", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-split, ab-est)),
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
@@ -8304,9 +8354,12 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep(RQ, ab-pic((ab-lcp, ab-g, ab-cat, ab-tl), (ab-min,)),
     [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
-  [#ab-pan(4.2, (((THO, 2.60), (THU, 2.60 - KNEE), (THU, 0.75)),) + ab-out,
-    ((THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`minlist R`], -0.32)),
-    ab-bot, lanes: ((THU - 1.05, 1.75, [`list`]),))],
+  [#dpanel(3, 10.3, 7.45,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 2, 1, [`list`], none), (4, 2, 1, [`list⁺`], none), (5.15, 2, 1, [`list⁺`], none), (6.3, "top", 2, none, none)),
+  ((2, [`⦇−thinlist(Q)⦈`], black, 6.3), (1, [`minlist(R)`], black, 2.85)),
+  ((6.3, [`list⁺`]), (7.45, [`Word`])),
+  ((0.55, [`list⁺`]), (1.7, [`list⁺`]), (7.45, [`Word`])),
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−thinlist(Q)⦈": "list⁺(Word)⟶[list⁺(list⁺(Word))]", "minlist": "[list⁺(list⁺(Word))]⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic((ab-prog,), (ab-min,)),
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
