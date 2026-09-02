@@ -2934,14 +2934,14 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ((2, [`∋`], black, 2.85), (1, [`cons`], black, 1.7)),
   ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`list`]), (5.15, [`A`])),
   ((0.55, [`list`]), (5.15, [`A`])),
-  opath: ((5.15, 3), (5.15, 2), (4, 1), (1.7, 0)),
+  opath: ((5.15, 3), (5.15, 2), (4, 1), (4, 0)),
   cert: (expect: "(𝟙×∋)cons", src: "A×E(list(A))", tgt: "list(A)"))
 #let sb-hm-born = dpanel(4, 9.15, 6.3,
   ((0.55, 2.5, "bot", none, frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, "top", 2, none, none), (5.15, "top", 1, none, none)),
   ((2, [`∋`], black, 4), (1, [`cons`], black, 2.85)),
   ((2.85, [`A×−`]), (4, [`E`]), (5.15, [`list`]), (6.3, [`A`])),
   ((0.55, [`E`]), (1.7, [`list`]), (6.3, [`A`])),
-  opath: ((6.3, 4), (6.3, 2), (5.15, 1), (2.85, 0)),
+  opath: ((6.3, 4), (6.3, 2), (5.15, 1), (5.15, 0)),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(cons)", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#pad(right: 10pt, table(
@@ -4998,14 +4998,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`cons`], black, 1.7), (1, [`sum`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`A`])),
   ((4, [`A`]),),
-  opath: ((4, 3), (2.85, 2), (0.55, 1), (0.55, 0)),
+  opath: ((4, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "cons sum", src: "A×list(A)", tgt: "A"))
 #let mh-alg-est = dpanel(4, 5.7, 2.85,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
   ((2, [`zero`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((1.7, [`𝟏`]), (2.85, [`Int`])),
   ((2.85, [`Int`]),),
-  opath: ((2.85, 4), (2.85, 2), (0.55, 1), (0.55, 0)),
   cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "zero"))
 #let mh-alg = dpanel(2, 4.55, 1.7,
   ((0.55, "top", 1, none, none),),
@@ -5018,21 +5017,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3, [`segment`], black, 2.85), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`A`])),
   ((4, [`A`]),),
-  opath: ((4, 5), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(segment sum)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-greedy = dpanel(5, 6.85, 4,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
   ((3, [`suffix`], black, 2.85), (2, [`⦇[zero,⊕]⦈`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`A`])),
   ((4, [`A`]),),
-  opath: ((4, 5), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-shape = dpanel(8, 9.15, 6.3,
   ((0.55, 6.5, 1, [`E`], frc([`𝟙`])), (1.7, 4.5, 2, [`E`], frc([`𝟙`])), (2.85, 4, 3, [`list`], none), (4, 6, 4, [`list`], none), (5.15, "top", 6, none, none)),
   ((6, [`suffix`], black, 5.15), (4, [`prefix`], black, 4), (3, [`sum`], black, 2.85), (2, [`est(≥)`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((5.15, [`list`]), (6.3, [`A`])),
   ((6.3, [`A`]),),
-  opath: ((6.3, 8), (6.3, 6), (4, 4), (4, 3), (1.7, 2), (1.7, 1), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(suffix)E(𝟙%∋)E(E(prefix sum))E(est(≥))est(≥)", src: "list(A)", tgt: "A"))
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
@@ -6270,14 +6266,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2, [`S`], black, 4), (1, [`est((R×R)°)`], black, 0.55)),
   ((4, [`A×−`]), (5.15, [`list`]), (6.3, [`Δ`]), (7.45, [`list`]), (8.6, [`A`])),
   ((1.7, [`Δ`]), (2.85, [`list`]), (8.6, [`A`])),
-  opath: ((8.6, 4), (7.45, 2), (4, 1), (4, 0)),
+  opath: ((8.6, 4), (7.45, 2), (7.45, 1), (7.45, 0)),
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 10.3, 7.45,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none), (6.3, "top", 2, none, none)),
   ((2, [`include`], black, 2.85), (1, [`est(R°)`], black, 0.55)),
   ((2.85, [`A×−`]), (4, [`list`]), (5.15, [`Δ`]), (6.3, [`list`]), (7.45, [`A`])),
   ((1.7, [`list`]), (7.45, [`A`])),
-  opath: ((7.45, 4), (6.3, 2), (2.85, 1), (2.85, 0)),
+  opath: ((7.45, 4), (6.3, 2), (6.3, 1), (6.3, 0)),
   cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]"))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
@@ -6287,7 +6283,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((5, [`π₂`], black, 0.55), (3, [`choose`], black, 5.15), (2, [`est(R°)`], black, 4), (1, [`concat`], black, 2.85)),
   ((0.55, [`A×−`]), (2.85, [`list`]), (5.15, [`Δ`]), (6.3, [`list`]), (7.45, [`A`])),
   ((1.7, [`list`]), (7.45, [`A`])),
-  opath: ((7.45, 6), (7.45, 5), (7.45, 3), (7.45, 2), (6.3, 1), (2.85, 0)),
+  opath: ((7.45, 6), (7.45, 5), (7.45, 3), (7.45, 2), (6.3, 1), (6.3, 0)),
   cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the

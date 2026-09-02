@@ -559,12 +559,13 @@ def layout(rows, made, otop, obot, cert):
 
     op, hs = None, [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]
     if SLOPE == "left":
-        # The wire holds its column across a death that would move it ONE gap — the arm bends into
-        # it, as the note draws by hand (2026-09-01) — and slopes only where it is left further adrift.
-        op, x = [], xat(hh)
+        # The wire holds its column across every one-gap death — the arm bends into it, as the note
+        # draws by hand (2026-09-01) — and slopes only where ONE bead leaves it more than a gap adrift.
+        op, x, nat = [], xat(hh), xat(hh)
         for y in hs:
-            if x - xat(y, False) > DX + 1e-6:
+            if nat - xat(y, False) > DX + 1e-6:
                 x = xat(y)
+            nat = xat(y, False)
             op.append([x, y])
     elif SLOPE:
         op = [[xat(y), y] for y in hs]
