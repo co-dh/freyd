@@ -90,6 +90,8 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
 AT = {}     # the table constants the cert in hand instantiates, `A: "Int"`, while its circuit is drawn
 OWN = {}    # and the signatures it declares itself, laid over the table: a §14 name it has never heard
             # of, or a letter the table binds to another section's meaning.
+MU = {}     # and the initial algebra it folds from, laid over the table's `mu` the same way: §15's
+            # `T` is an object no functor in the file names, and its carrier `E(A)` no row declares.
 
 
 @functools.lru_cache(maxsize=None)
@@ -104,6 +106,8 @@ def sigs():
     `Int` — one key on the cert, not a second table over `Int`.  Any constant, any object.
     `OWN` lies over the result: what the panel declares itself beats what the file says."""
     t = inst(raw(), AT)
+    if MU:
+        t = {**t, "mu": {**t["mu"], **{f: inst(o, AT) for f, (o, _) in MU.items()}}}
     if not OWN:
         return t
     # An own row types the head's ATOM use; the file's rows for the head as an OPERATOR keep their
@@ -122,6 +126,35 @@ def parse_sigs(s):
         if not (head and sep and src and tgt):
             raise Unhandled(f"--sigs: `{p}` is not a `head:src⟶tgt` pair")
         out[head] = {"src": src, "tgt": tgt, "map": False}
+    return out
+
+
+def parse_mu(s):
+    """`--mu "F:T⟶E(A)"` — space-separated `functor:object[⟶carrier]` triples.  The object is the
+    functor's INITIAL ALGEBRA, laid over diag/circuit-sigs.json's `mu`; the optional carrier is what
+    a fold takes when the panel's target does not reach it and the algebra is a composite, so no row
+    of its own declares it (§15's `⦇(F(∋)S)%∋ thin Q⦈`, whose carrier is `E(A)` and not the `A` the
+    panel ends at)."""
+    out = {}
+    for p in s.split():
+        f, sep, rest = p.partition(":")
+        o, _, c = rest.partition("⟶")
+        if not (f and sep and o):
+            raise Unhandled(f"--mu: `{p}` is not a `functor:object[⟶carrier]` triple")
+        out[f] = (o, c or None)
+    return out
+
+
+def parse_at(s):
+    """`--at "A:Int"` — space-separated `key:object` pairs, the table constants this row fixes.
+    The cert already carries them (`draw` merges `AT` into it), so this is what lets a hand run
+    reach the instantiation `--compare` reads back."""
+    out = {}
+    for p in s.split():
+        key, sep, val = p.partition(":")
+        if not (key and sep and val):
+            raise Unhandled(f"--at: `{p}` is not a `key:object` pair")
+        out[key] = val
     return out
 
 
@@ -561,7 +594,13 @@ def fold(e, tbl, src, tgt):
         raise Unhandled(f"`{spell(e)}` folds {oshow(src)}, which diag/circuit-sigs.json gives"
                         f" {len(hits)} initial algebras for — a fold needs exactly one")
     f, env = hits[0]
-    c = tgt if tgt is not None else declared(e[1][0], tbl, f, env, cfg["polys"])
+    own = MU.get(f, (None, None))[1]
+    if tgt is not None:
+        c = tgt
+    elif own is not None:
+        c = obj(inst(own, AT))
+    else:
+        c = declared(e[1][0], tbl, f, env, cfg["polys"])
     a = base(f, c, cfg["polys"])
     b = walk(e[1][0], tbl, src=a)
     if b[2] != c:
@@ -629,17 +668,18 @@ def draw(formula, src, tgt, at=None):
     is the cert's other keys, table constants instantiated for this row, and the cert keeps them;
     its `sigs:` is the row's OWN signatures, the sibling of those constants — a §14 name the file
     has never heard of, or a letter the file binds to another section's arrow."""
-    global AT, OWN
+    global AT, OWN, MU
     at = dict(at or {})
-    own = at.pop("sigs", "")
-    AT, OWN = at, parse_sigs(own) if own else {}
+    own, ini = at.pop("sigs", ""), at.pop("mu", "")
+    AT, OWN, MU = at, parse_sigs(own) if own else {}, parse_mu(ini) if ini else {}
     e = cnorm(parse(formula))
     tree, s, t, _ = walk(e, sigs()["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
         raise Unhandled(f"{spell(e)} lands on {oshow(t)}, not the stated {tgt}")
     tree["src"] = [lshow(w) for w in tree["_in"]]
     tree["tgt"] = [lshow(w) for w in tree["_out"]]
-    tree["cert"] = {"expect": formula, "src": src, "tgt": tgt, **AT} | ({"sigs": own} if own else {})
+    tree["cert"] = ({"expect": formula, "src": src, "tgt": tgt, **AT}
+                    | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {}))
     return tree
 
 
@@ -751,9 +791,37 @@ def read_back(t):
     return mk("case", [read_back(dict(x, items=x["items"][1:])) for x in t["bodies"]])
 
 
+_HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
+              '\n       circuit --src "E(A)" --tgt "[A]" --sigs "sort:E(A)⟶[A]" "sort(P)"'
+              '\n       circuit --slice'
+              '\n       circuit --compare [diag/allegory-axioms.typ]'
+              '\n       circuit --write [diag/allegory-axioms.typ]'
+              '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
+              " formula alone does not fix the ports"
+              '\n--sigs        extra bead signatures beyond diag/circuit-sigs.json, `NAME:SRC⟶TGT`'
+              " pairs separated by spaces; the key is left of the LAST colon"
+              '\n--at          the table constants this row fixes, `KEY:OBJECT` pairs — `--at "A:Int"`'
+              " instantiates diag/circuit-sigs.json's parameter `A`, so `nil:𝟏⟶[A]` types at `[Int]`."
+              " The cert carries them back, which is how --compare rebuilds the same picture"
+              '\n--mu          the initial algebra this row folds from, `FUNCTOR:OBJECT[⟶CARRIER]`'
+              ' pairs — `--mu "F:T⟶E(A)"` folds the abstract `T` §15 writes, which no `mu` row in'
+              " diag/circuit-sigs.json names, and gives the carrier when the algebra is a composite"
+              " with no row of its own and the panel's target does not reach it"
+              '\n--slice       regenerate CIRCUIT-GEN §5'"'"'s whole acceptance file'
+              " (diag/circuit-slice.typ) from the built-in SLICE table, header included — never hand-edit it"
+              '\n--compare     rebuild every `cpanel(` literal in the note from its own `cert:` and'
+              " fail on any drift from the note's text"
+              '\n--write       like --compare, but splices the rebuilt literals back over the note'
+              '\n\nDefault mode prints one `#cpanel(...)` call on stdout, ready to paste beside the row'
+              " it draws; a mismatch between the run and the note's own spelling of the formula goes"
+              " to stderr as a comment, not a failure.")
+
+
 def main(argv):
+    sl.help_if(argv, __doc__, _HELP_BODY)
     src, tgt, own = sl.opt(argv, "--src"), sl.opt(argv, "--tgt"), sl.opt(argv, "--sigs")
-    taken = {i for o in ("--src", "--tgt", "--sigs") if o in argv
+    at, ini = sl.opt(argv, "--at"), sl.opt(argv, "--mu")
+    taken = {i for o in ("--src", "--tgt", "--sigs", "--at", "--mu") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     if "--slice" in argv:
@@ -792,7 +860,8 @@ def main(argv):
                  + '\n       circuit --slice'
                  + '\n       circuit --compare [diag/allegory-axioms.typ]'
                  + '\n       circuit --write [diag/allegory-axioms.typ]')
-    t = draw(formula, src, tgt, {"sigs": own} if own else None)
+    t = draw(formula, src, tgt, (parse_at(at) if at else {})
+             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {}))
     print(emit(t))
     # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
     # spelling verbatim, and a rebuilt one cannot know that this bracket was written `(p×𝟙) cons`.

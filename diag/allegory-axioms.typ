@@ -7283,32 +7283,105 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
      // lean:AOP.A7_5_Van.van_laws@400440f3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], van-pic(van-line((vb-spec, vb-estR))),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(partition list(secure))", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Int]", ),
+    ),
+    (
+      1,
+      ("E[[Int]]", ),
+    ),
+  ), src: ("[Int]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(partition list(secure))%∋ est(R)", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "partition:[Int]⟶[[Int]] secure:[Int]⟶[Int]"))],
     [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
   [#v-hm1],
 
-  [#vstep(EQ, van-pic(van-line((vb-LS, vb-estR))),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Int]", ),
+    ),
+    (
+      1,
+      ("E[[Int]]", ),
+    ),
+  ), src: ("[Int]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(⦇S⦈)%∋ est(R)", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "S:F([[Int]])⟶[[Int]]"))],
     [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
  #h(4pt) — @van-defn, @cata-fusion at
      // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
 
-  [#vstep(RQ, van-pic(van-line((vb-LS, vb-estRH))),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R;H)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Int]", ),
+    ),
+    (
+      1,
+      ("E[[Int]]", ),
+    ),
+  ), src: ("[Int]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(⦇S⦈)%∋ est(R;H)", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "S:F([[Int]])⟶[[Int]]"))],
     [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new ∪ old)R` is FALSE, the
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds,
  ]])],
      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
 
-  [#vstep(RQ, van-pic(van-line((vb-greedy,))),
+  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+      (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+      (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
+      (k: "box", nin: 1, nout: 1, label: "est(R;H)", chamfer: true, frac: false, flip: false),
+    ), seams: (
+      (
+        0,
+        ("EF[[Int]]", ),
+      ),
+      (
+        1,
+        ("E[[Int]]", ),
+      ),
+    )), label: none, port: ("Int", "[[Int]]", ), src: ("[Int]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "S:F([[Int]])⟶[[Int]]"))],
     [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
  `(𝟙×⊤)new⊑new H`]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
   [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
 
-  [#vstep(RQ, van-pic(van-line((vb-prog,))),
+  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
+      (k: "case", nin: 1, nout: 1, bodies: (
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "open", nin: 1, nout: 0),
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: true, frac: false, flip: false),
+            ), seams: ()),
+          (k: "seq", nin: 1, nout: 1, items: (
+              (k: "open", nin: 1, nout: 2),
+              (k: "box", nin: 2, nout: 1, label: "(ok→glue,new)", chamfer: true, frac: false, flip: false),
+            ), seams: (
+              (
+                0,
+                ("Int", "[[Int]]", ),
+              ),
+            )),
+        )),
+    ), seams: ()), label: none, port: ("F[[Int]]", ), src: ("[Int]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "⦇[nil,(ok→glue,new)]⦈", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "nil:𝟏⟶[[Int]] glue:Int×[[Int]]⟶[[Int]] ok:Int×[[Int]]⟶Int×[[Int]]"))],
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
@@ -7654,7 +7727,25 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
      // lean:AOP.A8_1.thinning_est@c31bcdd8
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+          (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "E(F(∋)S)", chamfer: false, frac: false, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "thin Q", chamfer: true, frac: false, flip: false),
+        ), seams: (
+          (
+            0,
+            ("EFEA", ),
+          ),
+        )), label: none, port: ("A", "EA", )),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "⦇(F(∋)S)%∋ thin Q⦈est(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: "S:F(A)⟶A"))],
     [])],
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   [#dpanel(3, 4.55, 1.7,
@@ -7664,7 +7755,22 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((1.7, [`A`]),),
   cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
-  [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
+  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "thin Q", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("ET", ),
+    ),
+    (
+      2,
+      ("EA", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "(⦇S⦈)%∋ thin Q est(R)", src: "T", tgt: "A", mu: "F:T", sigs: "S:F(A)⟶A"))],
     [#src[@thin-thm81]])],
   // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it.  `thin Q : EA⟶EA`
   // is fixed by one `Q`, not natural in `A`: an arrow of `EA`, so its bead touches both wires `E` and `A`.
@@ -7675,7 +7781,21 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((2.85, [`A`]),),
   cert: (expect: "𝟙%∋ E(⦇S⦈)thin(Q)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 
-  [#vstep(EQ, thpic([`T`], [`A`], none, (tb-cS, tb-est)),
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("ET", ),
+    ),
+    (
+      1,
+      ("EA", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "(⦇S⦈)%∋ est(R)", src: "T", tgt: "A", mu: "F:T", sigs: "S:F(A)⟶A"))],
     [#src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
   [#dpanel(4, 4.55, 1.7,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
@@ -8003,7 +8123,21 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_3.thinningList@7b3eb252
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [])],
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("ET", ),
+    ),
+    (
+      1,
+      ("EA", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "(⦇S⦈)%∋ est(R)", src: "T", tgt: "A", mu: "F:T", sigs: "S:F(A)⟶A"))], [])],
   [#dpanel(4, 4.55, 1.7,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
   ((2, [`⦇S⦈`]), (1, [`est(R)`], black, 0.55)),
@@ -8011,7 +8145,25 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((1.7, [`A`]),),
   cert: (expect: "⦇S⦈%∋ est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A", "R": "A⟶A")))],
 
-  [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, tb-est)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+          (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "E(F(∋)S)", chamfer: false, frac: false, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "thin Q", chamfer: true, frac: false, flip: false),
+        ), seams: (
+          (
+            0,
+            ("EFEA", ),
+          ),
+        )), label: none, port: ("A", "EA", )),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "⦇(F(∋)S)%∋ thin Q⦈est(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: "S:F(A)⟶A"))],
     [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
   [#dpanel(3, 4.55, 1.7,
   ((0.55, 2, 1, [`E`], none),),
@@ -8020,7 +8172,32 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((1.7, [`A`]),),
   cert: (expect: "⦇−⦈est(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "R": "A⟶A")))],
 
-  [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, sb-sort, sb-min)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
+          (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "E(F(∋)S)", chamfer: false, frac: false, flip: false),
+          (k: "box", nin: 1, nout: 1, label: "thin Q", chamfer: true, frac: false, flip: false),
+        ), seams: (
+          (
+            0,
+            ("EFEA", ),
+          ),
+        )), label: none, port: ("A", "EA", )),
+    (k: "box", nin: 1, nout: 1, label: "sort", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "minlist", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("EA", ),
+    ),
+    (
+      2,
+      ("[A]", ),
+    ),
+  ), src: ("T", ), tgt: ("A", )),
+  cert: (expect: "⦇(F(∋)S)%∋ thin Q⦈sort P minlist R", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: "S:F(A)⟶A sort:E(A)⟶[A] minlist:[A]⟶A"))],
     [#src[`sort P minlist R⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
   // `est(R)` has split into the node that sorts and the `minlist R` that reads the head back.
   // `minlist R : [A]⟶A` — @thinlist-laws' (8.5) `thinlist Q xs=[minlist Q xs]`.

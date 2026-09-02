@@ -1012,6 +1012,7 @@ def locate(path, p):
 
 
 def main(argv):
+    help_if(argv, __doc__, _HELP_BODY)
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
     only = opt(argv, "--panel")
     frm = opt(argv, "--from")
@@ -1100,6 +1101,31 @@ def main(argv):
 
 def opt(argv, name):
     return argv[argv.index(name) + 1] if name in argv else None
+
+
+def help_if(argv, doc, body):
+    """`-h` prints the module docstring and the caller's own flag/example block."""
+    if "-h" in argv or "--help" in argv:
+        print(doc.strip() + "\n\n" + body.strip()); sys.exit(0)
+
+
+_HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict] [--full]
+       [--json FILE] [--list] [diag/allegory-axioms.typ]
+
+--panel ID     sweep and print only the one panel with this metadata id, with its per-bead factors
+--from FIELD   read `#metadata` with this --field name instead of the default "value"
+--spell        respell every certified `cert:` string from what the sweep read and report mismatches
+--strict       promote today's warnings (cut-order/ink crossings, drawing defects) to failures
+--full         ignore the literal-hash cache and re-sweep every panel even if nothing changed
+--json FILE    write each panel's source/target/factors/expr as JSON to FILE
+--list         print one line per panel: its id and the composite the sweep reads it as
+
+With no flags, sweeps every panel in the file (default diag/allegory-axioms.typ), prints the
+`cert:` mismatches, and a summary line "N panels, M swept, C certified, U unhandled, F failures" to
+stdout; per-panel warnings and failures go to stderr.  Must be run from a place that resolves
+`diag/` (or pass the file explicitly), since panel literals live there.  Exit status is nonzero on
+any failed check or unhandled panel.  A pass is cached by literal hash, so a second run with no
+changes prints "panel literals unchanged since last pass — skipped" and exits 0."""
 
 
 if __name__ == "__main__":       # `scripts/diagram` imports the parser, the rewrites and `spell`
