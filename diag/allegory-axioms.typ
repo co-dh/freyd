@@ -2636,24 +2636,24 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
-    [`S°F(⦇S⦈°⦇R⦈)R` \ #src[the body at `⦇S⦈°⦇R⦈`]])],
+    [#src[the body at `⦇S⦈°⦇R⦈`]])],
   [#hy-body],
 
   [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-FcR, hb-R), [`B`], [`A`])),
-    [`S°F(⦇S⦈°)F(⦇R⦈)R` \ #src[`F(RS)=F(R)F(S)` — @relator-defn]])],
+    [#src[`F(RS)=F(R)F(S)` — @relator-defn]])],
   [#hy-split],
 
   [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-al, hb-cR), [`B`], [`A`])),
-    [`S°F(⦇S⦈°)α⦇R⦈` \ #src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]])],
+    [#src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]])],
   [#hy-alg],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-alo, hb-al, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°α°α⦇R⦈` \ #src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
+    [#src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
      `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]])],
   [#hy-lambek],
 
   [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
- [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek]])],
+ [#src[`α°α=𝟙`, Lambek]])],
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
   [#hy-cata],
 ))]<hylo-fix>
@@ -2669,21 +2669,21 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
-    [`⦇S⦈°⦇R⦈⊑X` \ #src[the conclusion]])],
+    [#src[the conclusion]])],
   [#trow(
     hy-cata,
     tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
   )],
 
   [#vstep(IFF, mbp(hterm((hb-cR,), [`T`], [`A`], rhs: (hb-W,))),
-    [`⦇R⦈⊑⦇S⦈°\X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
+    [#src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
   [#trow(
     hy-cataR,
     tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
   )],
 
   [#vstep(IMP, mbp(hterm((hb-alo, hb-FW, hb-R), [`T`], [`A`], rhs: (hb-W,))),
-    [`α°F(⦇S⦈°\X)R⊑⦇S⦈°\X` \ #src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
+    [#src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
  ]])],
      // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
   [#trow(
@@ -2693,7 +2693,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   )],
 
   [#vstep(IFF, mbp(hterm((hb-cSo, hb-alo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`⦇S⦈°α°F(⦇S⦈°\X)R⊑X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
+    [#src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
   [#trow(
     tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
       hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
@@ -2701,7 +2701,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   )],
 
   [#vstep(IFF, mbp(hterm((hb-So, hb-FcSo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`S°F(⦇S⦈°)F(⦇S⦈°\X)R⊑X` \ #src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]])],
+    [#src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]])],
   [#trow(
     tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
       hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
@@ -2709,7 +2709,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   )],
 
   [#vstep(IMP, mbp(hterm((hb-So, hb-FX, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`S°F(X)R⊑X` \ #src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]])],
+    [#src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]])],
   [#trow(
     hy-prefix,
     tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
@@ -2727,17 +2727,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], mbp(hterm((hb-mu,), [`B`], [`A`])),
-    [`(μX : S°F(X)R)` \ #src[@mu-defn at `φ(X):=S°F(X)R`]])],
+    [#src[@mu-defn at `φ(X):=S°F(X)R`]])],
   [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
 
   [#vstep(SQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
+    [#src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
  `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]])],
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
   [#hy-cata],
 
   [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
-    [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
+    [#src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
  ]])],
      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
@@ -3088,23 +3088,20 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
     [*Hinze–Marsden* — the `cons` operand]),
 
-  [#vstep([], sbB1, [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+  [#vstep([], sbB1, [#src[@subseq-EW-case's second branch]])],
   [#sb-hm],
 
-  [#vstep(EQ, sbB2, [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
+  [#vstep(EQ, sbB2, [#src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
   // Empty: the step is in the `π₂` operand, which the panel above does not draw.
   [],
 
-  [#vstep(EQ, sbB3, [#frc([`(𝟙×∋)cons∪π₂∋`]) \
-    #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
+  [#vstep(EQ, sbB3, [#src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
   [],
 
-  [#vstep(EQ, sbB4, [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
-    #src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
+  [#vstep(EQ, sbB4, [#src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
   [#sb-hm-born],
 
-  [#vstep(EQ, sbB5, [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
-    #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
+  [#vstep(EQ, sbB5, [#src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   // Empty: `E((𝟙×∋)cons)=E(𝟙×∋)E(cons)` costs no notation, so the panel above is unchanged.
   [],
@@ -3847,9 +3844,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     lab(xl + 0.42, 0, black)[`A`]
     lab(xl + 1.35, 0, SLACK)[`⊑`]
     boxrun(xl + 1.9, 0, (mb-Lam, mb-est), h: TH)
-  }), [`F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
-    #frc([`S`]) `=` #frc([`𝟙`]) `E(S)`, #h(4pt) `S≜F(∋)f` \
-    #src[def. `f` distributes over `R` — @dist-defn, @adj-E-bend]])],
+  }), [#src[def. `f` distributes over `R` — @dist-defn, @adj-E-bend]])],
   [#trow(
     tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
       top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
@@ -3886,7 +3881,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-Fni, mb-f), (mb-Fest, mb-f), (mb-Ro,), mid: [`F(EA)`])),
-    [`(F(∋)f)°F(est(R))f⊑R°` \ #src[`est(R)⊑∋` — @est-defn; the first conjunct is free]])],
+    [#src[`est(R)⊑∋` — @est-defn; the first conjunct is free]])],
   // `(F(∋)f)°=f°F(∈)` splits the leading bead: `f°` opens the `F` wire, `∈` the `E` wire inside it.
   [#trow(
     tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
@@ -3895,13 +3890,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-Fniest, mb-f), (mb-Ro,))),
-    [`f°F(∈ est(R))f⊑R°` \ #src[converse, relators: `(F(∋)f)°=f°F(∈)` and
+    [#src[converse, relators: `(F(∋)f)°=f°F(∈)` and
      `F(∈)F(est(R))=F(∈ est(R))`]])],
   // Empty: the step is a formula-level rewrite, and the picture above already draws it.
   [],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FRo, mb-f), (mb-Ro,))),
-    [`f°F(R°)f⊑R°` \ #src[`∈ est(R)=R°`, `R` reflexive — @est-defn]])],
+    [#src[`∈ est(R)=R°`, `R` reflexive — @est-defn]])],
   [#trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
@@ -3909,7 +3904,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
-    [`f°F(R)f⊑R` \ #src[`f` a map, so monotonic on `R` and `R°` together;
+    [#src[`f` a map, so monotonic on `R` and `R°` together;
  ,
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
  ]])],
@@ -3976,8 +3971,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [],
 
   [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-est), rhs: (mb-Ro,))),
-    [`S°F(R°)(`#frc([`S`])` est(R))⊑R°` \
-     #src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
+    [#src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
       `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[@hylo-mu] #h(4pt) — so Knaster–Tarski
       leaves this one inequation] \
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
@@ -3991,8 +3985,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
-    [`R°S°(`#frc([`S`])` est(R))` \
-     #src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
+    [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
   [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
     hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 2.45, 1.45, [`F`])),
@@ -4003,12 +3996,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", ), tgt: ("A", )),
   cert: (expect: "R°R°", src: "A", tgt: "A"))],
-    [`R°R°` \ #src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
+    [#src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
   // The collapsed group's bead sits at the middle of the span it replaces.
   [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((RXO, [`A`]),), xo: RXO)],
 
   [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true, src: ("A", ), tgt: ("A", )),
-  cert: (expect: "R°", src: "A", tgt: "A"))], [`R°` \ #src[`R` transitive]])],
+  cert: (expect: "R°", src: "A", tgt: "A"))], [#src[`R` transitive]])],
   [#tpan(4.0, ((2.45, [`R°`]),), top: ((RXO, [`A`]),), xo: RXO)],
 ))]<greedy-thm72>
 
@@ -4211,7 +4204,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))],
-    [`α prefix list(p)`])],
+    [])],
   [#tw-pfx1 \
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
@@ -4249,7 +4242,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
   ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))],
-    [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
+    [#src[defining equation]])],
   [#tw-pfx2],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -4291,7 +4284,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
-    [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
+    [#src[`list(p)` through `cons`]])],
   [#tw-pfx3],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -4328,14 +4321,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]"))],
-    [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
+    [#src[relator, `prefix` entire]])], [],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "box", nin: 2, nout: 2, label: "F(prefix list(p))", chamfer: true, frac: false, flip: false),
     (k: "box", nin: 2, nout: 1, label: "S", chamfer: true, frac: false, flip: false),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix list(p))S", src: "F([A])", tgt: "[A]"))],
-    [`F(prefix list(p))S` \ #src[`prefix list(p)` entire]])], [],
+    [#src[`prefix list(p)` entire]])], [],
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
   @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
@@ -4382,7 +4375,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
+  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@ea69a5bc
 
@@ -4410,7 +4403,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
+  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@cbdcc4d1
@@ -4433,7 +4426,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×R°) cons`]],
+  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6d2514be
 
@@ -4454,7 +4447,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×𝟙) cons R°`]],
+  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@577d240b
 
@@ -4476,7 +4469,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
+  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@5635abfd
@@ -4500,7 +4493,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
+  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
@@ -4538,7 +4531,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       ("E[A]", ),
     ),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
+  cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][]], [],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -4576,7 +4569,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
   [coproduct of maps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -4604,7 +4597,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -4622,7 +4615,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₁p→cons,⊸ nil)]", src: "F([A])", tgt: "[A]"))][`[nil,(π₁p→cons,⊸ nil)]`]],
+  cert: (expect: "[nil,(π₁p→cons,⊸ nil)]", src: "F([A])", tgt: "[A]"))][]],
   [`nil R=⊤`],
 )
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
@@ -4701,13 +4694,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     ),
   ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]"))],
-    [#frc([`prefix list(p)`]) ` est(R°)` \ #src[the specification — @est-defn's `est(R°)`.
+    [#src[the specification — @est-defn's `est(R°)`.
  ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`prefix`]),), names: true)],
 
   [#vstep(EQ, twp(twrun((bx-LS, bx-est), from: [`[A]`]), s: 70%),
- [#frc([`⦇S⦈`]) ` est(R°)` \ #src[@takewhile-alg]])],
+ [#src[@takewhile-alg]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
@@ -4726,7 +4719,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       ),
     )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
-    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
+    [#src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
  collected and one chosen at the end. ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1
@@ -4750,7 +4743,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         )),
     ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]"))],
- [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
+ [#src[@takewhile-step]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b
   [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
 
@@ -4837,23 +4830,23 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     // lean:AOP.A7_7_MSS.mss_shape@f600dda0
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
-  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][#frc([`segment sum`])` est(≥)`]], [],
+  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, bx-est))][]], [],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, bx-est))][#frc([`suffix (prefix sum)`])` est(≥)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, bx-est))][]],
   [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, bx-est), s: 94%)][#frc([`suffix`])` E(prefix sum) est(≥)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, bx-est), s: 94%)][]],
   [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, bx-est), s: 95%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`union est(≥)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, bx-est), s: 95%)][]],
   [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
    `E(R)≜frac(∋R,∋)`; @est-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
    `F(RS)=F(R)F(S)` at `F:=E`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, bx-est), s: 85%)][#frc([`suffix`])` E(`#frc([`prefix sum`])`)` \ #h(1em)`E(est(≥)) est(≥)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, bx-est), s: 85%)][]],
   [@est-laws, the sets non-empty],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, bx-est), s: 92%)][#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥))` \ #h(1em)`est(≥)`]],
+  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, bx-est), s: 92%)][]],
   [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
 #align(center, block(inset: (y: 4pt))[#src[B&dM's `max(P(max(Λ(sum prefix))))Λsuffix`, mirrored. The
@@ -5025,28 +5018,28 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
   [#vstep([], P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
-    [`[nil,⊸ nil ∪ cons] sum`])],
+    [])],
   [#mh-cons-sum],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
-    [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
+    [#src[coproduct of maps, composition over `∪`]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy))),
-    [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
+    [#src[`sum`'s defining equation]])],
   [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
     joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
     beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`])))],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
-    [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
+    [#src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
   [],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
-    [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
+    [#src[relator]])],
   [],
 ))
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
@@ -5137,18 +5130,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [*Hinze–Marsden*]),
 
   [#vstep([], mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true)),
-    [`(𝟙×≥)(⊸ zero ∪ plus)`])],
+    [])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
     joins: ((MA, MB, 1.90, 1.20),),
     beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`])))],
 
   [#vstep(EQ, mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9)),
-    [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` \ #src[relator, composition over `∪`]])],
+    [#src[relator, composition over `∪`]])],
   // Empty: `∪` is an operation on hom-sets, not a wiring, so distributing over it draws the row above.
   [],
 
   [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8)),
-    [`⊸ zero ∪ plus≥` \ #src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
+    [#src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
      written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
      together, which carries it to `≥`.]])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
@@ -5156,7 +5149,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`])))],
 
   [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true)),
-    [`(⊸ zero ∪ plus)≥` \ #src[`≥` reflexive]])],
+    [#src[`≥` reflexive]])],
   // Empty: `≥` is put back on the `⊸ zero` branch, which this column does not draw.
   [],
 ))]<mss-mono>
@@ -5200,17 +5193,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
+  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [])],
   [#mh-alg-est],
 
   [#vstep(EQ, mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25)),
-    [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
+    [#src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
   // Empty: `[U,V]` is a coproduct of hom-sets, so splitting the bead into branches is not a wiring.
   [],
 
-  [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [`[zero,⊕]`
-    \ #src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
+  [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
   [#mh-alg],
 ))
@@ -5286,8 +5278,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     ),
   ), src: ("[A]", ), tgt: ("A", )),
   cert: (expect: "(segment sum)%∋ est(≥)", src: "[A]", tgt: "A"))],
-    [#frc([`segment sum`]) ` est(≥)` \
-     #src[`mss` is the greatest of the segment sums — @mss-defn]])],
+    [#src[`mss` is the greatest of the segment sums — @mss-defn]])],
   [#mh-segsum],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -5312,15 +5303,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#mh-shape],
 
   [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, bx-est))),
-    [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
-     #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
+    [#src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
       entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
   [#mh-greedy],
 
   [#vstep(EQ, mbp(mss-line((bx-fold, bx-p2, bx-est))),
-    [`⦇k⦈ π₂ est(≥)` \
-     #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
+    [#src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
       ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
   // ONE bead: the fold kills `list` and `π₂` opens the `E`, and the pair they hand across is a
   // product, which is not a wire.
@@ -5409,7 +5398,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(π₂∪(p×𝟙) cons)`]], [],
+  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][]], [],
 
   [#step(SQ)[#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -5428,7 +5417,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       )),
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(π₂∪(p×𝟙) cons)R°`]],
+  cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `X:=π₂`, `Y:=(p×𝟙) cons`],
 )
 #align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`. The
@@ -5449,7 +5438,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_step@7322621d
   table.header([*formula*], [*reason*]),
 
-  [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][$frac(#[`S`], ∋)$ ` est(R°)`]], [],
+  [#step([])[#twp(twrun((bx-Sd, bx-est)), s: 74%)][]], [],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5476,7 +5465,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`π₂∪(p×𝟙) cons`], ∋)$` est(R°)]`]],
+  cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
   [@takewhile-step's first two steps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -5494,7 +5483,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₁p→cons,π₂)]", src: "F([A])", tgt: "[A]"))][`[nil,(π₁p→cons,π₂)]`]],
+  cert: (expect: "[nil,(π₁p→cons,π₂)]", src: "F([A])", tgt: "[A]"))][]],
   [`𝟙⊑π₂R cons°`],
 )
 #align(center, block(inset: (y: 4pt))[#src[at `(a,xs)` the set is `{xs}` where `p` fails on `a` and
@@ -5549,12 +5538,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
   [#vstep([], fpic((bx-slp, bx-est)),
- [`filter(p)≜`#frc([`subseq list(p)`])` est(R°)` \ #src[@comb-fns]])],
+ [#src[@comb-fns]])],
     // lean:AOP.A7_7_Filter.filter@86c3d821
   [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
 
   [#vstep(EQ, fpic((bx-cS, bx-est)),
-    [#frc([`⦇S⦈`])` est(R°)` \ #src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
+    [#src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
   [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
@@ -5572,7 +5561,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ),
     )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
-    [`⦇`#frc([`S`])` est(R°)⦈` \ #src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
+    [#src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
  @filter-mono]])],
      // lean:AOP.A7_7_Filter.filter_greedy@a4d1b1a5
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
@@ -5597,7 +5586,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         )),
     ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
   cert: (expect: "⦇[nil,(π₁p→cons,π₂)]⦈", src: "[A]", tgt: "[A]"))],
-    [`⦇[nil,(π₁p→cons,π₂)]⦈` \ #src[@filter-step]])],
+    [#src[@filter-step]])],
   // Empty: the step only renames the algebra, and the picture above already draws the reduce.
   [],
 
@@ -6554,23 +6543,23 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
     // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, cb-est))), [`paths est(R)`])],
+  [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, cb-est))), [])],
   [#ca1],
 
   [#vstep(EQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-setify, cb-union, cb-est))),
-    [`⦇generate⦈ setify union est(R)` \ #src[@cyl-defn at `paths`]])],
+    [#src[@cyl-defn at `paths`]])],
   [#ca2],
 
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-setify, cb-Pest, cb-est))),
-    [`⦇generate⦈ setify P(est(R)) est(R)` \ #src[@est-laws at `union`, `R` a preorder]])],
+    [#src[@est-laws at `union`, `R` a preorder]])],
   [#ca3],
 
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-Nest, cb-setify, cb-est))),
-    [`⦇generate⦈N(est(R)) setify est(R)` \ #src[`setify` lax natural]])],
+    [#src[`setify` lax natural]])],
   [#ca4],
 
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-foldQ, cb-setify, cb-est))),
-    [`⦇Q⦈ setify est(R)` \ #src[@cata-fusion at @cyl-fusion]])],
+    [#src[@cata-fusion at @cyl-fusion]])],
   [#ca5],
 ))]<cyl-laws>
 
@@ -6625,11 +6614,11 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),
-    [`generate N(est(R))`])],
+    [])],
   [#cb1],
 
   [#vstep(RQ, cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-FNest, cb-Q)), s: 88%),
-    [`F(𝟙,N(est(R)))Q` \ #src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
+    [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
   [#cb2],
 ))
 #align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the
@@ -6672,17 +6661,17 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
     // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
-  [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [`Q`])],
+  [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [])],
   [#cc1],
 
   [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
-    [`F(𝟙,moves trans N(est(R))) zip N(α)` \ #src[the fusion condition read as a definition,
+    [#src[the fusion condition read as a definition,
  ]])],
      // lean:AOP.A7_4_Cylinder.Q@2b4dd374
   [#cc2],
 
   [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
-    [`[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \ #src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
+    [#src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
   // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
   [],
 ))]<cyl-step>
@@ -6845,32 +6834,32 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-line((vb-spec, vb-estR))),
-    [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
+    [#src[the specification — @van-defn]])],
   [#v-hm1],
 
   [#vstep(EQ, van-pic(van-line((vb-LS, vb-estR))),
-    [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
+    [#src[`partition list(secure)=⦇S⦈`
  #h(4pt) — @van-defn, @cata-fusion at
      // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-LS, vb-estRH))),
-    [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new∪old)R` is FALSE, the
+    [#src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new∪old)R` is FALSE, the
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new∪old)R` holds,
  ]])],
      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
   [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
 
   [#vstep(RQ, van-pic(van-line((vb-greedy,))),
-    [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
+    [#src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
  `(𝟙×⊤)new⊑new H`]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
   [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
 
   [#vstep(RQ, van-pic(van-line((vb-prog,))),
-    [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
+    [#src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
   [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
@@ -6887,21 +6876,21 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
      // lean:AOP.A7_5_Van.van_mono@5f456bbf
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
-  [#vstep([], van-pic(van-old((vb-RH,), ())), [`(𝟙×(R;H))old`])],
+  [#vstep([], van-pic(van-old((vb-RH,), ())), [])],
   [#van-mono-hm([`R;H`], true)],
 
   [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
-    [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
+    [#src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
   [#van-mono-hm([`|R|`], true)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
-    [`new (R∩H)∪old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
+    [#src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
   [#van-mono-hm([`R∩H`], false)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH,))),
-    [`(new∪old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
+    [#src[`X∩Y⊑X;Y`, converses]])],
   [#van-mono-hm([`R;H`], false)],
 ))]<van-mono>
 
@@ -7027,8 +7016,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [],
 
   [#vstep(IMP, eb-pic((eb-So, eb-LamS, eb-est, eb-tau)),
-    [`S°`#frc([`S`])` est(R) `#frc([`𝟙`]) \
-     #src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
+    [#src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
       @est-laws; the second is this chain, `−⊑Q°∈`]])],
   [#eb-pan(4.6, (thw-in(THU, 3.30, 1.60), ((THU, 0.80), (THU, 0))),
     ((THO, 4.00, [`S°`], 0.32), (THU, 3.30, frc([`𝟙`]), -0.32), (THO, 2.60, [`S`], 0.32),
@@ -7036,27 +7024,24 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
     lanes: ((THU - 1.05, 2.45, [`E`]),), names: true)],
 
   [#vstep(EQ, eb-pic((eb-So, eb-LamS, eb-estc, eb-tau)),
-    [`S°`#frc([`S`])` est(R∩S°S) `#frc([`𝟙`]) \
-     #src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
+    [#src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
   // Empty: the wiring is the row above's, with one bead renamed.
   [],
 
   [#vstep(SQ, eb-pic((eb-in, eb-estc, eb-tau)),
-    [`∈ est(R∩S°S) `#frc([`𝟙`]) \
-     #src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
+    [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
   [#eb-pan(4.0, (thw-arc(THU, 3.10, 1.60), ((THU, 0.80), (THU, 0))),
     ((THO, 3.10, [`∈`], 0.32), (THO, 1.60, [`est(R∩S°S)`], 0.32),
      (THU, 0.80, frc([`𝟙`]), -0.32)),
     lanes: ((THU - 1.05, 2.35, [`E`]),))],
 
   [#vstep(SQ, eb-pic((eb-Qo, eb-tau)),
-    [`Q° `#frc([`𝟙`]) \
-     #src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
+    [#src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
   [#eb-pan(3.0, (((THU, 1.10), (THU, 0)),),
     ((THO, 2.10, [`Q°`], 0.32), (THU, 1.10, frc([`𝟙`]), -0.32)))],
 
   [#vstep(SQ, eb-pic((eb-Qo, eb-in)),
-    [`Q°∈` \ #src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
+    [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
   [#eb-pan(3.0, (thw-out(THU, 1.10, 0),),
     ((THO, 2.10, [`Q°`], 0.32), (THO, 1.10, [`∈`], 0.32)))],
 ))]<thin-83>
@@ -7094,8 +7079,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [],
 
   [#vstep(IMP, nb-pic((nb-So, nb-FQin, nb-LamS, nb-thin)),
-    [`S°F(Q°∈)`#frc([`F(∋)S`])` thin Q` \
-     #src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to
+    [#src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to
       `−⊑Q°∈`]])],
   [#nb-pan(5.4, (thw-arc(THM, 4.85, 1.10), thw-arc(THN, 3.35, 1.85), ((THU, 2.60), (THU, 0))),
     ((THO, 4.85, [`S°`], 0.32), (THO, 4.10, [`Q°`], 0.32), (THO, 3.35, [`∈`], 0.32),
@@ -7104,8 +7088,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
     lanes: ((THM - 0.34, 3.70, [`F`]), (THN - 0.34, 2.60, [`E`])), names: true)],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-So, nb-Fin, nb-LamS, nb-thin)),
-    [`Q°S°F(∈)`#frc([`F(∋)S`])` thin Q` \
-     #src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
+    [#src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `Q°` has walked out of the `F` handle: that move IS the monotonicity assumption.
   [#nb-pan(5.4, (thw-arc(THM, 4.10, 1.10), thw-arc(THN, 3.35, 1.85), ((THU, 2.60), (THU, 0))),
     ((THO, 4.85, [`Q°`], 0.32), (THO, 4.10, [`S°`], 0.32), (THO, 3.35, [`∈`], 0.32),
@@ -7113,19 +7096,18 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
      (THU, 0.45, [`thin Q`], -0.32)))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-in, nb-thin)),
-    [`Q°∈ thin Q` \
-     #src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
+    [#src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
       @pow-laws]])],
   [#nb-pan(3.4, (thw-out(THU, 1.85, 0),),
     ((THO, 2.60, [`Q°`], 0.32), (THO, 1.85, [`∈`], 0.32), (THU, 0.85, [`thin Q`], -0.32)))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-Qo, nb-in)),
-    [`Q°Q°∈` \ #src[`∈ thin Q⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
+    [#src[`∈ thin Q⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
   [#nb-pan(3.4, (thw-out(THU, 1.30, 0),),
     ((THO, 2.60, [`Q°`], 0.32), (THO, 1.95, [`Q°`], 0.32), (THO, 1.30, [`∈`], 0.32)))],
 
   [#vstep(EQ, nb-pic((nb-Qo, nb-in)),
-    [`Q°∈` \ #src[`Q°Q°=Q°`, `Q` a preorder]])],
+    [#src[`Q°Q°=Q°`, `Q` a preorder]])],
   [#nb-pan(3.4, (thw-out(THU, 1.60, 0),),
     ((THO, 2.35, [`Q°`], 0.32), (THO, 1.60, [`∈`], 0.32)))],
 ))]<thin-thm81>
@@ -7150,14 +7132,14 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
-    [`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)`])],
+    [])],
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   [#tb-pan(3.2, (thw-in(THM, 3.2, 2.15), thw-arc(THU, 2.15, 0.85)),
     ((THO, 2.15, [`⦇−⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
     lanes: ((THU - 1.05, 1.50, [`E`]),), names: true)],
 
   [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
-    [#frc([`⦇S⦈`])` thin Q est(R)` \ #src[@thin-thm81]])],
+    [#src[@thin-thm81]])],
   // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it and `thin Q`
   // — an arrow of the set alone — is a bead on the `E` wire, not on the object wire.
   [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
@@ -7165,7 +7147,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
      (THO, 0.85, [`est(R)`], 0.32)))],
 
   [#vstep(EQ, thpic([`T`], [`A`], none, (tb-cS, tb-est)),
-    [#frc([`⦇S⦈`])` est(R)` \ #src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
+    [#src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
   [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)))],
 ))]<thin-cor>
@@ -7230,7 +7212,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     [*Hinze–Marsden*]),
 
   [#vstep([], pb-pic(none, (pb-spec, pb-est)),
-    [#frc([`⦇F(∋,𝟙)α⦈`])` est(R)` #h(4pt) #src[`=` #frc([`L(∋)`])` est(R)`]])],
+    [#src[`=` #frc([`L(∋)`])` est(R)`]])],
   [#pb-pan(4.0,
     (((THU, 3.35), (THU, 0.85)), thw-in(THM, 4.0, 2.20),
      thw-in(THN, 4.0, 2.20), thw-out(THM, 2.20, 0.0)),
@@ -7238,8 +7220,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     lanes: ((THU - 1.05, 2.10, [`E`]),), names: true)],
 
   [#vstep(RQ, pb-pic((pb-alg, pb-thin), (pb-est,)),
-    [`⦇`#frc([`F(∋,∋)α`])` thin Q⦈ est(R)` \
-     #src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
+    [#src[Corollary 8.1 — @thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
  ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [#pb-pan(4.0,
@@ -7248,8 +7229,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     ((THO, 2.20, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, pb-un, pb-thin), (pb-est,)),
-    [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])`) union thin Q⦈ est(R)` \
-     #src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
+    [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
  P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   // Empty from here down: every step rewrites the ALGEBRA, and the outer panel is row 2's.  The
@@ -7257,33 +7237,29 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [],
 
   [#vstep(RQ, pb-pic((pb-out, pb-Pat, pb-un), (pb-est,)),
-    [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` thin Q) union⦈ est(R)` \
-     #src[`union thin Q⊒P(thin Q) union` — @thin-laws.
+    [#src[`union thin Q⊒P(thin Q) union` — @thin-laws.
  ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(RQ, pb-pic((pb-out, pb-Pae, pb-un), (pb-est,)),
-    [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`) union⦈ est(R)` \
-     #src[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
+    [#src[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
  `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pea), (pb-est,)),
-    [`⦇`#frc([`F(∋,𝟙)`])` P(`#frc([`F(𝟙,∋)`])` P(α) est(R))⦈ est(R)` \
-     #src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`.
+    [#src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`.
  ]])],
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pws), (pb-est,)),
-    [`⦇`#frc([`F(∋,𝟙)`])` P([wrap,step])⦈ est(R)` \
-     #src[#frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]])],
+    [#src[#frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]])],
   [],
 
   [#vstep(EQ, pb-pic((pb-prog,), (pb-est,)),
-    [`⦇[P(wrap),cpl P(step)]⦈ est(R)` \ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
+    [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
   [],
 ))]<path-laws>
 
@@ -7352,34 +7328,32 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_3.sortRel_comp_thinlist_le@11564234
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
-  [#vstep([], tl-pic((tl-sort, tl-tl)), [`sort P thinlist Q`])],
+  [#vstep([], tl-pic((tl-sort, tl-tl)), [])],
   [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
     ((THO, 2.40, [`sort P`], 0.32), (THU, 1.30, [`thinlist Q`], -0.32)), names: true)],
 
   [#vstep(EQ, tl-pic((tl-set, tl-ord, tl-tl)),
-    [`setify° ordered P thinlist Q` \ #src[`sort P≜setify° ordered P` — @thinlist-defn]])],
+    [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
   [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
     ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`ordered P`], -0.32),
      (THU, 0.70, [`thinlist Q`], -0.32)))],
 
   [#vstep(SQ, tl-pic((tl-set, tl-tl, tl-ord)),
-    [`setify° thinlist Q ordered P` \
-     #src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
+    [#src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
       and a subsequence of a `P`-ordered list is `P`-ordered]])],
   [#tl-pan(3.6, (thw-in(THN, 3.6, 2.40), thw-out(THU, 2.40, 0)),
     ((THO, 2.40, [`setify°`], 0.32), (THU, 1.45, [`thinlist Q`], -0.32),
      (THU, 0.70, [`ordered P`], -0.32)))],
 
   [#vstep(SQ, tl-pic((nb-thin, tl-set, tl-ord)),
-    [`thin Q setify° ordered P` \
-     #src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
+    [#src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
       for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]])],
   [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
     ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`setify°`], 0.32),
      (THU, 1.10, [`ordered P`], -0.32)))],
 
   [#vstep(EQ, tl-pic((nb-thin, tl-sort)),
-    [`thin Q sort P` \ #src[`sort P≜setify° ordered P` — @thinlist-defn]])],
+    [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
   [#tl-pan(4.2, (thw-in(THN, 4.2, 2.10), thw-out(THU, 2.10, 0)),
     ((THN, 3.10, [`thin Q`], -0.32), (THO, 2.10, [`sort P`], 0.32)))],
 ))]<thinlist-86>
@@ -7416,26 +7390,25 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_3.map_sort_comp_listcp_le@88dfad7c
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
-  [#vstep([], lb-pic((lb-Lam, lb-sort)), [#frc([`F(∋)fp`])` sort P`])],
+  [#vstep([], lb-pic((lb-Lam, lb-sort)), [])],
   [#lb-pan(4.6, (((THU, 3.90), (THU, 0.90 + KNEE), (THO, 0.90)), thw-out(THU, 0.90, 0)),
     ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`f`], 0.32),
      (THO, 1.65, [`p`], 0.32), (THO, 0.90, [`sort P`], 0.32)),
     lanes: ((THU - 1.05, 2.60, [`E`]),), names: true)],
 
   [#vstep(EQ, lb-pic((lb-cp, lb-Efp, lb-sort)),
-    [`cp(F)E(fp) sort P` \
-     #src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws; `cp(F)≜`#frc([`F(∋)`]) —
+    [#src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws; `cp(F)≜`#frc([`F(∋)`]) —
       @thinlist-defn]])],
   // Empty: rows 2 and 3 redraw row 1 — the two steps only rebracket what the transpose is made of.
   [],
 
   [#vstep(EQ, lb-pic((lb-cp, lb-Pf, lb-Ep, lb-sort)),
-    [`cp(F)P(f)E(p) sort P` \ #src[`E(fp)=E(f)E(p)`; #h(3pt) `E(f)=P(f)` for `f` a map —
+    [#src[`E(fp)=E(f)E(p)`; #h(3pt) `E(f)=P(f)` for `f` a map —
      @powrel-laws]])],
   [],
 
   [#vstep(RQ, lb-pic((lb-cp, lb-Pf, lb-sort, lb-fil)),
-    [`cp(F)P(f) sort P filter(p)` \ #src[`sort P filter(p)⊑E(p) sort P` — @thinlist-laws]])],
+    [#src[`sort P filter(p)⊑E(p) sort P` — @thinlist-laws]])],
   // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
   // lane: the same coreflexive, applied to the sorted list instead of to the set.
   [#lb-pan(4.6, (((THU, 3.90), (THU, 1.65 + KNEE), (THO, 1.65)), thw-out(THU, 1.65, 0)),
@@ -7443,21 +7416,18 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      (THO, 1.65, [`sort P`], 0.32), (THU, 0.75, [`filter(p)`], -0.32)))],
 
   [#vstep(RQ, lb-pic((lb-cp, lb-sfPf, lb-lf, lb-fil)),
-    [`cp(F) sort(fPf°) list(f) filter(p)` \
-     #src[`sort(fPf°) list(f)⊑P(f) sort P` — @thinlist-laws]])],
+    [#src[`sort(fPf°) list(f)⊑P(f) sort P` — @thinlist-laws]])],
   // Empty from here: the node now acts while `F` is still alive, so it cannot reach the object wire
   // without crossing it, and `listcp(F)` below is the `F`/`list` swap — two functor wires, not one.
   [],
 
   [#vstep(RQ, lb-pic((lb-cp, lb-sFP, lb-lf, lb-fil)),
-    [`cp(F) sort(FP) list(f) filter(p)` \
-     #src[`FP⊑fPf°` — @mon-str at `f` a map; `sort P≜setify° ordered P` grows with `P` —
+    [#src[`FP⊑fPf°` — @mon-str at `f` a map; `sort P≜setify° ordered P` grows with `P` —
       @thinlist-defn]])],
   [],
 
   [#vstep(RQ, lb-pic((lb-Fsort, lb-lcp, lb-lf, lb-fil)),
-    [`F(sort P) listcp(F) list(f) filter(p)` \
-     #src[`F(sort P) listcp(F)⊑cp(F) sort(FP)` — @thinlist-laws, `F` linear]])],
+    [#src[`F(sort P) listcp(F)⊑cp(F) sort(FP)` — @thinlist-laws, `F` linear]])],
   [],
 ))]<thinlist-lem81>
 
@@ -7477,28 +7447,26 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_3.thinningList@7b3eb252
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
-  [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [#frc([`⦇S⦈`])` est(R)`])],
+  [#vstep([], thpic([`T`], [`A`], none, (tb-cS, tb-est)), [])],
   [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
     names: true)],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, tb-est)),
-    [`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)` \
-     #src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
+    [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
   [#tb-pan(3.2, (thw-in(THM, 3.2, 2.15), thw-arc(THU, 2.15, 0.85)),
     ((THO, 2.15, [`⦇−⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
     lanes: ((THU - 1.05, 1.50, [`E`]),))],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, sb-sort, sb-min)),
-    [`⦇`#frc([`F(∋)S`])` thin Q⦈ sort P minlist R` \
-     #src[`sort P minlist R⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
+    [#src[`sort P minlist R⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
   // `est(R)` has split into the node that sorts and the `minlist R` that reads the head back.
   [#tb-pan(4.6, (thw-in(THM, 4.6, 3.50), thw-arc(THU, 3.50, 2.10), thw-arc(THU, 2.10, 0.80)),
     ((THO, 3.50, [`⦇−⦈`], 0.32), (THO, 2.10, [`sort P`], 0.32), (THO, 0.80, [`minlist R`], 0.32)),
     lanes: ((THU - 1.05, 2.80, [`E`]), (THU - 1.05, 1.45, [`list`])))],
 
   [#vstep(RQ, thpic([`T`], [`A`], none, (sb-prog, sb-min)),
-    [`⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \ #src[@cata-fusion at @thinlist-fusion]])],
+    [#src[@cata-fusion at @thinlist-fusion]])],
   // The reduce now births `list` where it births `E` above: no set is ever built.
   [#tb-pan(3.7, (thw-in(THM, 3.7, 2.50), thw-arc(THU, 2.50, 1.00)),
     ((THO, 2.50, [`⦇−⦈`], 0.32), (THO, 1.00, [`minlist R`], 0.32)),
@@ -7531,15 +7499,14 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_3.sortedAlg_fusion@4732cb05
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
-  [#vstep([], qb-pic((nb-LamS, nb-thin, sb-sort)), [#frc([`F(∋)S`])` thin Q sort P`])],
+  [#vstep([], qb-pic((nb-LamS, nb-thin, sb-sort)), [])],
   [#qb-pan(4.6, (((THU, 3.90), (THU, 0.90 + KNEE), (THO, 0.90)), thw-out(THU, 0.90, 0)),
     ((THU, 3.90, frc([`𝟙`]), -0.32), (THO, 3.15, [`∋`], 0.32), (THO, 2.40, [`S`], 0.32),
      (THU, 1.65, [`thin Q`], -0.32), (THO, 0.90, [`sort P`], 0.32)),
     lanes: ((THU - 1.05, 2.85, [`E`]),), names: true)],
 
   [#vstep(RQ, qb-pic((nb-LamS, sb-sort, qb-tl)),
-    [#frc([`F(∋)S`])` sort P thinlist Q` \
-     #src[`sort P thinlist Q⊑thin Q sort P` — @thinlist-laws]])],
+    [#src[`sort P thinlist Q⊑thin Q sort P` — @thinlist-laws]])],
   // The node has walked up past `thin Q`, which comes out below it as `thinlist Q` on the `list`
   // lane: that exchange is the whole of (8.6), and the rest of the chain rewrites the algebra.
   [#qb-pan(4.6, (((THU, 3.90), (THU, 1.65 + KNEE), (THO, 1.65)), thw-out(THU, 1.65, 0)),
@@ -7547,25 +7514,21 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      (THO, 1.65, [`sort P`], 0.32), (THU, 0.75, [`thinlist Q`], -0.32)))],
 
   [#vstep(EQ, qb-pic((qb-fork, qb-cup, sb-sort, qb-tl)),
-    [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩ cup sort P thinlist Q` \
-     #src[`S=(f₁p₁)∪(f₂p₂)` — @thinlist-defn, then @cup-defn]])],
+    [#src[`S=(f₁p₁)∪(f₂p₂)` — @thinlist-defn, then @cup-defn]])],
   // Empty from here: a fork is an operation on hom-sets, and `×` is a bifunctor, so neither is a
   // wiring; the circuit column keeps them as one box, §14's convention for a pair.
   [],
 
   [#vstep(RQ, qb-pic((qb-fork, qb-sxs, qb-merge, qb-tl)),
-    [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩(sort P×sort P) merge P thinlist Q` \
-     #src[`(sort P×sort P) merge P⊑cup sort P` — @thinlist-laws]])],
+    [#src[`(sort P×sort P) merge P⊑cup sort P` — @thinlist-laws]])],
   [],
 
   [#vstep(EQ, qb-pic((qb-fork2, qb-merge, qb-tl)),
-    [`⟨`#frc([`F(∋)f₁p₁`])` sort P,`#frc([`F(∋)f₂p₂`])` sort P⟩ merge P thinlist Q` \
-     #src[`⟨X,Y⟩(sort P×sort P)=⟨X sort P,Y sort P⟩` — @bdm-prod-laws]])],
+    [#src[`⟨X,Y⟩(sort P×sort P)=⟨X sort P,Y sort P⟩` — @bdm-prod-laws]])],
   [],
 
   [#vstep(RQ, qb-pic((lb-Fsort, lb-lcp, qb-g, qb-merge, qb-tl)),
-    [`F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
-     #src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
+    [#src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
       `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @bdm-prod-laws; `gᵢ≜list(fᵢ) filter(pᵢ)` — @thinlist-defn]])],
   [],
 ))]<thinlist-fusion>
@@ -7645,30 +7608,27 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     [*Hinze–Marsden*]),
 
   [#vstep([], kb-pic(none, (kb-spec, kb-est)),
-    [#frc([`subseq (within w)`])` est(R)`])],
+    [])],
   [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 2.30, [`subseq`], 0.32), (THM, 1.65, [`within w`], 0.32),
      (THU, 0.85, [`est(R)`], -0.32)),
     names: true)],
 
   [#vstep(EQ, kb-pic(none, (kb-fus, kb-est)),
-    [#frc([`⦇[nil,cons](within w)∪[nil,π₂]⦈`])` est(R)` \
- #src[@cata-fusion, weights non-negative. ]])],
+    [#src[@cata-fusion, weights non-negative. ]])],
      // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
   [#kb-pan(3.6, (((THU, 3.05), (THU, 0.85)),),
     ((THU, 3.05, frc([`𝟙`]), -0.32), (THM, 1.95, [`⦇−⦈`], 0.32), (THU, 0.85, [`est(R)`], -0.32)))],
 
   [#vstep(RQ, kb-pic((kb-lcp, kb-g, kb-mg, kb-tl), (kb-min,)),
-    [`⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R` \
-     #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
+    [#src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
   // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#kb-pan(3.6, (((THM, 2.30), (THU, 2.30 - KNEE), (THU, 0.85)),),
     ((THM, 2.30, [`⦇−⦈`], 0.32), (THU, 0.85, [`minlist R`], -0.32)),
     lanes: ((THU - 1.05, 1.75, [`list`]),))],
 
   [#vstep(EQ, kb-pic((kb-prog,), (kb-min,)),
-    [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
-     #src[`listcp(F)=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn; `minlist R` is `head`, packings
+    [#src[`listcp(F)=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn; `minlist R` is `head`, packings
       coming out in descending value]])],
   [],
 ))]<knap-laws>
@@ -7756,15 +7716,14 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     [*Hinze–Marsden*]),
 
   [#vstep([], ab-pic(none, (ab-spec, ab-est)),
-    [#frc([`partition list⁺(fits w)`])` est(R)`])],
+    [])],
   [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
     ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`partition`], 0.32), (THN, 1.60, [`fits w`], 0.32),
      (THU, 0.75, [`est(R)`], -0.32)),
     ab-bot, names: true)],
 
   [#vstep(EQ, ab-pic(none, (ab-fus, ab-est)),
-    [#frc([`⦇[wrap wrap,new∪(glue (ok w))]⦈`])` est(R)` \
-     #src[@cata-fusion, every word fits on a line by itself.
+    [#src[@cata-fusion, every word fits on a line by itself.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
   [#ab-pan(4.2, (((THU, 3.55), (THU, 0.75)),) + ab-out,
@@ -7772,23 +7731,20 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     ab-bot)],
 
   [#vstep(EQ, ab-pic(none, (ab-split, ab-est)),
-    [#frc([`⦇[wrap wrap,new]∪([wrap wrap,glue] (ok w))⦈`])` est(R)` \
-     #src[the algebra as `(f₁p₁)∪(f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
+    [#src[the algebra as `(f₁p₁)∪(f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_spec@f39d2ce8
   // Empty: the step renames the algebra and the panel above already draws the reduce.
   [],
 
   [#vstep(RQ, ab-pic((ab-lcp, ab-g, ab-cat, ab-tl), (ab-min,)),
-    [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈ minlist R` \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
+    [#src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
   [#ab-pan(4.2, (((THO, 2.60), (THU, 2.60 - KNEE), (THU, 0.75)),) + ab-out,
     ((THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`minlist R`], -0.32)),
     ab-bot, lanes: ((THU - 1.05, 1.75, [`list`]),))],
 
   [#vstep(EQ, ab-pic((ab-prog,), (ab-min,)),
-    [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
-     #src[`listcp(F)=wrap+cpr`, `gᵢ` along the coproduct — @para-defn]])],
+    [#src[`listcp(F)=wrap+cpr`, `gᵢ` along the coproduct — @para-defn]])],
   [],
 ))]<para-laws>
 
@@ -7862,26 +7818,24 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   table.header([*circuit* — one wire, `[City]` to `[City]×[City]`; the algebra inside the functorial
     box], [*Hinze–Marsden*]),
 
-  [#vstep([], ub-pic(none, (ub-tour, ub-est)), [#frc([`tour`])` est(R)`])],
+  [#vstep([], ub-pic(none, (ub-tour, ub-est)), [])],
   [#ub-pan(4.2, (((THU, 3.55), (THU, 0.75)),),
     ((THU, 3.55, frc([`𝟙`]), -0.32), (THO, 2.60, [`tour`], 0.32), (THU, 0.75, [`est(R)`], -0.32)),
     names: true)],
 
   [#vstep(EQ, ub-pic(none, (ub-fold, ub-est)),
-    [#frc([`⦇[start,dropl∪dropr]⦈`])` est(R)` \ #src[`tour≜⦇[start,dropl∪dropr]⦈` — @tour-defn]])],
+    [#src[`tour≜⦇[start,dropl∪dropr]⦈` — @tour-defn]])],
   // Empty: the step only names the reduce, and the panel above already draws it.
   [],
 
   [#vstep(RQ, ub-pic((ub-lcp, ub-g, ub-cat, ub-tl), (ub-min,)),
-    [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈ minlist R` \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono]])],
+    [#src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono]])],
   [#ub-pan(4.2, (((THO, 2.60), (THU, 2.60 - KNEE), (THU, 0.75)),),
     ((THO, 2.60, [`⦇−⦈`], 0.32), (THU, 0.75, [`minlist R`], -0.32)),
     lanes: ((THU - 1.05, 1.75, [`list`]),))],
 
   [#vstep(EQ, ub-pic((ub-prog,), (ub-min,)),
-    [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
-     #src[`listcp(F)=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn; quadratic, two tours
+    [#src[`listcp(F)=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn; quadratic, two tours
       added per step]])],
   [],
 ))]<tour-laws>
@@ -7954,13 +7908,12 @@ in @mu-defn.
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
-    [`M≜`#frc([`H`])` est(R)` \ #src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
+    [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
   [#g-spec-pan(true)],
 
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, db-thin, db-PFX, db-est)),
-    [`(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
-     #src[Theorem 9.2, `h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
+    [#src[Theorem 9.2, `h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin Q` as in
       @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin Q`, so the body and
       with it the fixed point only shrink. Knaster–Tarski leaves (9.1) #frc([`T°`])` P(F(M)h)
       est(R)⊑M`; `M=H∩(H°\R°)` splits that into (9.2) #frc([`T°`])` P(F(M)h) est(R)⊑H` and
@@ -7974,8 +7927,7 @@ in @mu-defn.
     lanes: ((THM - 0.34, 2.35, [`F`]), (THU - 0.34, 1.55, [`E`])))],
 
   [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, db-thini, db-PU, db-est)),
-    [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` thin(Qᵢ) P(Uᵢ) est(R)` \
-     #src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
+    [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
       point is unique and entire by Theorem 6.3 — `T°` followed by `F`'s membership relation
       inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
@@ -8063,7 +8015,7 @@ both lists empty.
   table.header([*circuit* — two wires, one per string], [*Hinze–Marsden*]),
 
   [#vstep([], gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`edit°`]), 2.15, (eb-est,)),
-    [#frc([`edit°`])` est(R)` \ #src[the specification — @edit-defn]])],
+    [#src[the specification — @edit-defn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
   // `est(R) : E([Op])⟶[Op]` kills the set alone, so its wire ends on the `E` lane.
   [#ed-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-in(THP, 3.6, 1.85),
@@ -8073,8 +8025,7 @@ both lists empty.
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
       (eb-thin, eb-PX, eb-est)),
-    [`(μX : `#frc([`[base,step]°`])` thin Q P([nil,(𝟙×X)cons]) est(R))`
- #src[] \
+    [
      // lean:AOP.A9_2_Edit.edit_laws@c69d7d69
      #src[Theorem 9.2 at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
  #src[] is Proposition 9.2 at
@@ -8108,8 +8059,7 @@ both lists empty.
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
       (eb-thinUV, eb-PXb, eb-est)),
-    [`(μX : (empty→nil,`#frc([`step°`])` thin(U×V) P((𝟙×X)cons) est(R)))` \
-     #src[Proposition 9.1: `base` and `step` have disjoint ranges, so the fixed point splits into
+    [#src[Proposition 9.1: `base` and `step` have disjoint ranges, so the fixed point splits into
       one branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
       `base` returns]])],
   // The `step` branch of the `→`, not both: the `base` branch is `nil` on an empty pair, nothing to
@@ -8123,8 +8073,7 @@ both lists empty.
     lanes: ((THM, 5.55, [`Op×−`]),))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
-    [`mle=(empty→nil,unstep list((𝟙×mle)cons) minlist R)` \
-     #src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
+    [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
       copy beating a delete or an insert wherever it is available — and `minlist R` implements
       `est(R)`. The same subproblem is solved many times over, so the running time is exponential in
       the two lengths]])],
@@ -8213,7 +8162,7 @@ both lists empty.
   table.header([*circuit* — one wire, `list⁺ A` to `tree A`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`list⁺ A`], [`tree A`], none, (mb-Lfl, mb-estR)),
-    [#frc([`flatten°`])` est(R)` \ #src[the specification — @mct-defn]])],
+    [#src[the specification — @mct-defn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
   // kills the set alone and its wire ends on the `E` lane, `tree` surviving under it.
   [#mc-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
@@ -8222,8 +8171,7 @@ both lists empty.
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
-    [`(μX : `#frc([`[wrap,cat]°`])` P([tip,(X×X)bin]) est(R))`
- #src[] \
+    [
      // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
      #src[Theorem 9.1: split the list in every way, bracket both halves, join. The condition is
       monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR`
@@ -8246,8 +8194,7 @@ both lists empty.
     lanes: ((THM, 4.85, [`A+(−)²`]),))],
 
   [#vstep(EQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lcat, mb-Pbin, mb-estR)),
-    [`(μX : (single→wrap° tip,`#frc([`cat°`])` P((X×X)bin) est(R)))` \
-     #src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
+    [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
   // The `cat` branch of the `→`, not both: the `wrap` branch is one bead on a singleton, nothing the
   // `cat` branch does not already show.  `(−)²` is the summand `cat°` opens.
@@ -8258,8 +8205,7 @@ both lists empty.
     lanes: ((THM, 4.85, [`(−)²`]),))],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-splits, mb-lbin, mb-min)),
-    [`mct=(single→head tip,splits list((mct×mct)bin) minlist R)` \
-     #src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
+    [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
   [#mc-pan(5.6, (((THU, 4.90), (THU, 0.60)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
@@ -8343,15 +8289,14 @@ the longest repeated tail; #h(4pt)
   table.header([*circuit* — one wire, `String` to `[Code]`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`String`], [`[Code]`], none, (cb-Ldec, cb-estR)),
-    [#frc([`decode°`])` est(R)` \ #src[the specification — @code-defn]])],
+    [#src[the specification — @code-defn]])],
   [#co-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
     ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`decode°`], 0.32),
      (THU, 0.60, [`est(R)`], -0.32)),
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
-    [`(μX : `#frc([`[nil,extend]°`])` thin Q P([nil,(X×𝟙)snoc]) est(R))` \
-     #src[Theorem 9.2 at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
+    [#src[Theorem 9.2 at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
       pointers. Monotonicity `F(R)α⊑αR` is routine, the two costs being constants:
       `(⊤+⊤)[c,p]=[c,p]`. Proposition 9.4 splits the thinning condition in two — `F(⊤+⊤,R)α⊑αR`,
       and `decode prefix⊑R° decode`, for which `decode init⊑R° decode` is enough: dropping the last
@@ -8368,8 +8313,7 @@ the longest repeated tail; #h(4pt)
     lanes: ((THM, 5.55, [`−×Code`]),))],
 
   [#vstep(EQ, thpic([`String`], [`[Code]`], none, (cb-Lext, cb-thinp, cb-Pb, cb-estR)),
-    [`(μX : (null→nil,`#frc([`extend°`])` thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)))` \
-     #src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
+    [#src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
       are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)}∪{(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
   [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
@@ -8380,8 +8324,7 @@ the longest repeated tail; #h(4pt)
     lanes: ((THM, 5.55, [`−×Code`]),))],
 
   [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-red, cb-lst, cb-min)),
-    [`encode=(null→nil,reduce list((encode×𝟙)snoc) minlist R)` \
-     #src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
+    [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
   [#co-pan(6.4, (((THU, 5.70), (THU, 0.60)), thw-in(THN, 6.4, 4.70),
@@ -8419,12 +8362,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`A`], [`B`], none, (db-LH, db-est)),
-    [`M≜`#frc([`H`])` est(R)` \ #src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
+    [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
   [#g-spec-pan(false)],
 
   [#vstep(RQ, thpic([`A`], [`B`], none, (db-LT, gb-estQ, gb-FXh)),
-    [`(μX : `#frc([`T°`])` est(Q) F(X)h)` \
-     #src[Theorem 10.1]])],
+    [#src[Theorem 10.1]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire ends on the `E` lane:
   // bending in would cross `F`.  That free end is the whole difference from @dp-laws' second row.
   [#dp-pan(4.4, (((THU, 3.95), (THU, 2.55)), thw-arc(THM, 3.30, 0.90)),
@@ -8433,8 +8375,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     lanes: ((THM - 0.34, 2.10, [`F`]),))],
 
   [#vstep(EQ, thpic([`A`], [`B`], none, (db-LV, gb-estQi, gb-Ui)),
-    [`(Ran V₁→W₁,W₂)`, #h(4pt) `Wᵢ≜`#frc([`Vᵢ°`])` est(Qᵢ) Uᵢ` \
-     #src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
+    [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
   [#dp-pan(3.4, (((THU, 2.85), (THU, 1.40 + KNEE), (THO, 1.40)),),
@@ -8493,7 +8434,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   table.header([*circuit* — one wire, `String` to `String`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`String`], [`String`], none, (nb-Ldet, nb-est)),
-    [#frc([`detab°`])` est(R)` \ #src[the specification — @entab-defn; `detab entab=𝟙` and nothing
+    [#src[the specification — @entab-defn; `detab entab=𝟙` and nothing
      shorter does]])],
   [#en-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
     ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`detab°`], 0.32),
@@ -8501,8 +8442,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
-    [`(μX : `#frc([`[nil,expand]°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])`
- #src[] \
+    [
      // lean:AOP.A10_2_Detab.entab_laws@3b89184f
      #src[Theorem 10.1 at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
@@ -8531,8 +8471,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     lanes: ((THM, 4.85, [`−×Char`]),))],
 
   [#vstep(EQ, thpic([`String`], [`String`], none, (nb-Lexp, nb-estVU, nb-snoc)),
-    [`(μX : (null→nil,`#frc([`expand°`])` est(V×U)(X×𝟙)snoc))` \
-     #src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
+    [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
   [#en-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
@@ -8603,15 +8542,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   table.header([*circuit* — one wire, `Bag Job` to `[Job]`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`Bag Job`], [`[Job]`], none, (tb-Lbag, tb-estR)),
-    [#frc([`bagify°`])` est(R)` \ #src[the specification — @tardy-defn]])],
+    [#src[the specification — @tardy-defn]])],
   [#ty-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-in(THN, 3.6, 1.85), thw-out(THN, 1.85, 0)),
     ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`bagify°`], 0.32),
      (THU, 0.60, [`est(R)`], -0.32)),
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
-    [`(μX : `#frc([`β°`])` est(Q)(𝟙+(X×𝟙))[nil,snoc])` \
-     #src[Theorem 10.1. No greedy *reduce* exists — one would also
+    [#src[Theorem 10.1. No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
       schedule of the whole]])],
   // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
@@ -8623,8 +8561,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     lanes: ((THM, 4.85, [`−×Job`]),))],
 
   [#vstep(EQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lsnag, tb-estQ, tb-snoc)),
-    [`(μX : (null→nil,`#frc([`snag°`])` est(Q)(X×𝟙)snoc))` \
-     #src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
+    [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#ty-pan(5.6, (((THU, 4.90), (THU, 3.30)), thw-in(THN, 5.6, 4.10),
       thw-arc(THM, 4.10, 1.60), thw-arc(THN, 4.10, 1.60), thw-out(THN, 1.60, 0)),
     ((THU, 4.90, frc([`𝟙`]), -0.32), (THO, 4.10, [`snag°`], 0.32),
@@ -8632,8 +8569,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     lanes: ((THM, 4.85, [`−×Job`]),))],
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-pick, tb-sch)),
-    [`schedule=(null→nil,pick (schedule×𝟙) snoc)` \
-     #src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function, quadratic in the number of jobs]])],
+    [#src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
   [#ty-pan(4.0, (thw-in(THN, 4.0, 2.80), thw-arc(THM, 2.80, 1.20), thw-arc(THN, 2.80, 1.20),
       thw-out(THN, 1.20, 0)),
@@ -8688,15 +8624,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   table.header([*circuit* — one wire, `[0,2¹⁶)` to `Decimal`], [*Hinze–Marsden*]),
 
   [#vstep([], thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-Lint, xb-est)),
-    [#frc([`intern°`])` est(R)` \ #src[the specification — @tex-defn]])],
+    [#src[the specification — @tex-defn]])],
   [#tx-pan(3.6, (((THU, 2.95), (THU, 0.60)), thw-out(THN, 1.85, 0)),
     ((THU, 2.95, frc([`𝟙`]), -0.32), (THO, 1.85, [`intern°`], 0.32),
      (THU, 0.60, [`est(R)`], -0.32)),
     lanes: ((THU - 0.34, 1.75, [`E`]),), names: true)],
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Linv, xb-est)),
-    [`interval `#frc([`inrange val°`])` est(R)` \
-     #src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
+    [#src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
   // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
   // the unit: the set the transpose opens starts on its target.
   [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
@@ -8704,16 +8639,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      (THO, 1.85, [`inrange val°`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
 
   [#vstep(EQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-LH, xb-est)),
-    [`interval `#frc([`H`])` est(R)`, #h(4pt) `H≜⦇[arb,step]⦈°` \
-     #src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
+    [#src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
       reduce on cons-lists]])],
   [#tx-pan(4.2, (((THU, 2.85), (THU, 0.60)), thw-out(THN, 1.85, 0)),
     ((THO, 3.55, [`interval`], 0.32), (THU, 2.85, frc([`𝟙`]), -0.32),
      (THO, 1.85, [`H`], 0.32), (THU, 0.60, [`est(R)`], -0.32)))],
 
   [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
-    [`interval (μX : `#frc([`[arb,step]°`])` est(Q) F(X)α)` \
-     #src[Theorem 10.1: #frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
+    [#src[Theorem 10.1: #frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
   // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born.
