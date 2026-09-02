@@ -130,6 +130,10 @@ def p_prim(s, i):
         return ('atom', squeeze(s[i:j + 1])), j + 1
     for q in PROJ:
         if s.startswith(q, i):
+            # A projection is the one token that returns early, so it must take a trailing `%∋`
+            # with it just as the bracket branch does; otherwise `π₂%∋` orphans an empty numerator.
+            if s[i + len(q):i + len(q) + 2] == '%∋':
+                return ('atom', q + '%∋'), i + len(q) + 2
             return ('atom', q), i + len(q)
     j = i
     while j < len(s) and s[j] not in BREAK:
