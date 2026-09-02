@@ -7866,10 +7866,10 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
       // lean:AOP.A8_2.thinAlg_elim@f26d947f
   [#dpanel(3, 8, 5.15,
   ((0.55, 2, 1, [`E`], none), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none)),
-  ((2, [`⦇−⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇(F(∋,∋)α)%∋ thin(Q)⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((2.85, [`L`]), (4, [`E`]), (5.15, [`A`])),
   ((1.7, [`L`]), (5.15, [`A`])),
-  cert: (expect: "⦇−⦈est(R)", src: "L(E(A))", tgt: "L(A)", sigs: ("⦇−⦈": "L(E(A))⟶E(L(A))", "R": "L(A)⟶L(A)")))],
+  cert: (expect: "⦇(F(∋,∋)α)%∋ thin(Q)⦈est(R)", src: "L(E(A))", tgt: "L(A)", mu: "F:L(x)⟶E(L(A))", sigs: ("R": "L(A)⟶L(A)")))],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, pb-un, pb-thin), (pb-est,)),
     [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
@@ -8156,10 +8156,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
   [#dpanel(3, 4.55, 1.7,
   ((0.55, 2, 1, [`E`], none),),
-  ((2, [`⦇−⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (1, [`est(R)`], black, 0.55)),
   ((1.7, [`T`]),),
   ((1.7, [`A`]),),
-  cert: (expect: "⦇−⦈est(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "R": "A⟶A")))],
+  cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: ("S": "F(A)⟶A", "R": "A⟶A")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
@@ -8192,10 +8192,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   // `minlist R : [A]⟶A` — @thinlist-laws' (8.5) `thinlist Q xs=[minlist Q xs]`.
   [#dpanel(4, 5.7, 2.85,
   ((0.55, 2, 1, [`list`], none), (1.7, 3, 2, [`E`], none)),
-  ((3, [`⦇−⦈`]), (2, [`sort(P)`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
+  ((3, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (2, [`sort(P)`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
   ((2.85, [`T`]),),
   ((2.85, [`A`]),),
-  cert: (expect: "⦇−⦈sort(P)minlist(R)", src: "T", tgt: "A", sigs: ("⦇−⦈": "T⟶E(A)", "sort": "E(A)⟶[A]", "minlist": "[A]⟶A")))],
+  cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈sort(P)minlist(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "minlist": "[A]⟶A")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
@@ -8388,17 +8388,15 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
   [#dpanel(4, 6.85, 4,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
-  ((2, [`⦇−⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`Item`])),
   ((1.7, [`list`]), (4, [`Item`])),
-  cert: (expect: "⦇−⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−⦈": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
+  cert: (expect: "⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", mu: "F:list(x)⟶[Item]", sigs: ("R": "[Item]⟶[Item]")))],
 
   [#vstep(RQ, kb-pic((kb-lcp, kb-g, kb-mg, kb-tl), (kb-min,)),
     [`⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
-  // The candidate set is now a candidate LIST: the reduce births `list` where it births
-  // `E` above.  `⦇−thinlist(Q)⦈` rather than `⦇−⦈`: two folds of one display may not share
-  // a name when they land on different wires — `scanline`'s cross-panel signature check.
+  // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#dpanel(3, 8, 5.15,
   ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 2, 1, [`list`], none), (4, "top", 2, none, none)),
   ((2, [`⦇−thinlist(Q)⦈`], black, 4), (1, [`minlist(R)`], black, 1.7)),
@@ -8507,11 +8505,11 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
   [#dpanel(4, 8, 5.15,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 2, "bot", none, none), (4, "top", 2, none, none)),
-  ((2, [`⦇−⦈`], black, 4), (1, [`est(R)`], black, 0.55)),
-  ((4, [`list⁺`]), (5.15, [`Word`])),
-  ((1.7, [`list⁺`]), (2.85, [`list⁺`]), (5.15, [`Word`])),
-  cert: (expect: "⦇−⦈%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−⦈": "list⁺(Word)⟶list⁺(list⁺(Word))", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, 2, "bot", none, none), (4, 2, "bot", none, none)),
+  ((2, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`list⁺`]), (5.15, [`Word`])),
+  ((2.85, [`list⁺`]), (4, [`list⁺`]), (5.15, [`Word`])),
+  cert: (expect: "⦇[wrap wrap,new ∪ (glue (ok w))]⦈%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", mu: "F:list⁺(x)", sigs: ("R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-split, ab-est)),
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
@@ -8752,7 +8750,7 @@ in @mu-defn.
   ((5, [`T°`]), (4, [`thin(Q)`], black, 1.7), (3, [`X`]), (2, [`h`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((4, [`A`]),),
   ((4, [`B`]),),
-  cert: (expect: "(T°)%∋ thin(Q)E(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
+  cert: (expect: "(T°)%∋ thin(Q)P(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -8787,7 +8785,7 @@ in @mu-defn.
   ((5, [`Vᵢ°`]), (4, [`thin(Qᵢ)`], black, 1.7), (3, [`X`]), (2, [`Uᵢ`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((4, [`A`]),),
   ((4, [`B`]),),
-  cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)E(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
+  cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 ))]<dp-laws>
 
 #disp[#table(
@@ -8905,7 +8903,7 @@ both lists empty.
   ((5, [`step°`], black, 8.6), (4, [`thin(Q)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`cons`], black, 4), (1, [`est(R)`], black, 0.55)),
   ((8.6, [`Δ`]), (9.75, [`list`]), (10.9, [`Char`])),
   ((2.85, [`list`]), (10.9, [`Op`])),
-  cert: (expect: "([base,step]°)%∋ thin(Q)E([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
+  cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
       (eb-thinUV, eb-PXb, eb-est)),
@@ -8919,7 +8917,7 @@ both lists empty.
   ((5, [`step°`], black, 8.6), (4, [`thin(U×V)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`cons`], black, 4), (1, [`est(R)`], black, 0.55)),
   ((8.6, [`Δ`]), (9.75, [`list`]), (10.9, [`Char`])),
   ((2.85, [`list`]), (10.9, [`Op`])),
-  cert: (expect: "(step°)%∋ thin(U×V)E((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
+  cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
@@ -9067,7 +9065,7 @@ both lists empty.
   ((4, [`cat°`], black, 6.3), (3, [`X`], black, 5.15), (2, [`bin`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((6.3, [`list⁺`]), (7.45, [`A`])),
   ((1.7, [`tree`]), (7.45, [`A`])),
-  cert: (expect: "([wrap,cat]°)%∋ E([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", branch: "cat", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
+  cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", branch: "cat", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -9241,7 +9239,7 @@ the longest repeated tail; #h(4pt)
   ((5, [`extend°`], black, 7.45), (4, [`thin(Q)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
   ((7.45, [`list`]), (8.6, [`Char`])),
   ((2.85, [`list`]), (8.6, [`Code`])),
-  cert: (expect: "([nil,extend]°)%∋ thin(Q)E([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", branch: "extend", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
+  cert: (expect: "([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", branch: "extend", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -9272,7 +9270,7 @@ the longest repeated tail; #h(4pt)
   ((5, [`extend°`], black, 7.45), (4, [`thin(prefix°×(⊤+⊤))`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
   ((7.45, [`list`]), (8.6, [`Char`])),
   ((2.85, [`list`]), (8.6, [`Code`])),
-  cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))E((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
+  cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "reduce", chamfer: true, frac: false, flip: false),

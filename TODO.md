@@ -9,15 +9,15 @@
 [X] circuit wire types print E[A], not E([A]); applies to every type label in every circuit diagram
 [X] 12.1d rows 4–5 circuits are still hand-drawn (sbB4, sbB5); generate them with the fork kind
 [X] 12.1d row 4 HM panel shows a horizontal bar; check it is generated and the bar goes with the straight-wire default
-[ ] scripts/diagram forces a ⦇…⦈ bead source to list(x) and --sigs cannot override it, so a fold over list⁺ (14.5c row 2) can only be drawn under a plain ⦇−⦈ label
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
 [X] six HM panels stay hand-drawn and uncertified because `scripts/scanline`'s `BRANCH` table names only
     cons/nil/plus/zero, so a case split on [base,step]°, [wrap,cat]°, [nil,extend]°, [nil,expand]°, β° or
     [arb,step]° cannot be cut; a sum of arrows (𝟙+(X×𝟙)) has no bead either.  Register the algebra's own
     branch names, or a general fallback, so all six generate and certify.
-[ ] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
+[X] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
-[ ] the note's HM certs at diag/allegory-axioms.typ :8755 :8790 :9247 write E(F(X)h), E(Fᵢ(X)Uᵢ), E((X×𝟙)snoc)
-    where B&dM p.220, the circuit column and Lean's `powerRel` all write P; P and E agree only on maps
-    (B&dM p.119, p.202) and these arguments are relations, so the three certs name the wrong operator.
+[ ] `make hm-check` fails one book fixture: `FAIL 3.1a side 0: bead η arms ours w[0, 1] book w[]`.
+    Pre-existing, exposed once hm-check's own `dg.sigs`/`dg.typed` crash was fixed.  `NORMS` says a
+    fixture is transcribed with normalization already applied, so the fix is in `diag/pairs/3.1a.json`:
+    re-transcribe η's arms bent-in and declare `free-end-vs-bent-in`.  Needs the book page looked at.

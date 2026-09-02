@@ -234,8 +234,8 @@ def dun(e):
 
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
-    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)` and `dun`'s
-    `R%∋=𝟙%∋ E(R)` are laws applied on trust."""
+    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)`, `P(R)=E(R)` and
+    `dun`'s `R%∋=𝟙%∋ E(R)` are laws applied on trust."""
     # One bead on the sweep side, so the comparison form stays the atom these were before the parser
     # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
@@ -256,6 +256,11 @@ def norm(e):
             return b[1]
     if e[0] == 'app' and e[1] == 'Δ':
         return ('prod', [e[2], e[2]])
+    # `P(R)` and `E(R)` differ as RELATIONS — B&dM p.119 symmetrises `P`'s second conjunct, and only
+    # on functions do they agree (p.202) — but not as pictures: both are the one existential-image
+    # wire, and a panel carries no bit telling them apart, so a formula may state either.
+    if e[0] == 'app' and e[1] == 'P':
+        return ('app', 'E', e[2])
     if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']'):
         inner = parse(e[1][1:-1])
         if listable(inner):
