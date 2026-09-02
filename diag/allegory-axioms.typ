@@ -4016,9 +4016,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   bend((xe, 0), (w, -UOP))
 }
 
-// @takewhile-step's circuits: ONE wire while `S` is still inside a division, then the same bracket
-// once the coproduct is opened.  `up`/`lo` are runs of boxes on the two branches, the lower one
-// spanning the pair, so the fraction boxes read at the height they act on.
+// ONE wire while `S` is still inside a division: a run of boxes on it.
 // `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
 // rather than `F([A])`, and its cata rows never open `E([A])` at all.
 #let twrun(items, from: [`F([A])`], mid: [`E([A])`], mid-at: 0) = {
@@ -4032,34 +4030,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     }
   }
   wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
-}
-#let twbr(up, lo) = {
-  let cy = -BRT
-  let uw = up.map(b => b.at(1) + 0.34).sum(default: 0.0)
-  let lo-w = lo.map(b => b.at(1) + 0.34).sum(default: 0.0)
-  let xj = 1.26 + calc.max(uw, lo-w) + 0.7
-  tape((0.34, cy - UIP - 0.9), (xj, BRT + 0.9))
-  wire((0, 0), (0.34, 0))
-  let st = (thickness: 1.4pt, paint: TAPEEDGE)
-  d.bezier((0.56, 0), (1.26, BRT), (0.98, 0), (0.98, BRT), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy + UIP), (0.98, 0), (0.98, cy + UIP), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy - UIP), (0.98, 0), (0.98, cy - UIP), stroke: st)
-  let x = 1.26
-  for b in up { twbox(x, BRT, b, h: TH); x = x + b.at(1); wire((x, BRT), (x + 0.34, BRT)); x = x + 0.34 }
-  wire((x, BRT), (xj - 0.7, BRT))
-  // The lower branch reads BOTH strands, so its boxes are the pair's full height.
-  wire((1.26, cy + UIP), (1.6, cy + UIP)); wire((1.26, cy - UIP), (1.6, cy - UIP))
-  x = 1.6
-  let first = true
-  for b in lo {
-    gbox((x, cy), b.at(0), w: b.at(1), h: if first { 2 * UIP + 0.55 } else { TH }, chamfer: b.at(2))
-    x = x + b.at(1); wire((x, cy), (x + 0.34, cy)); x = x + 0.34
-    first = false
-  }
-  wire((x - 0.34, cy), (xj - 0.7, cy))
-  tape-join((xj, 0), sp: BRT, len: 0.7)
-  wire((xj, 0), (xj + 0.34, 0)); lab(xj + 0.95, 0, black)[`[A]`]
-  lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
 }
 #let twp(body, s: 100%) = P(cetz.canvas(length: 0.8cm, body), s: s)
 
@@ -4464,8 +4434,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let step = step.with(pw: 340pt)
 #let bx-est = ([`est(R°)`], 2.2, true)
 #let bx-Sd = (frc([`S`]), 1.0, false)
-#let bx-nil = ([`nil`], 1.15, false)
-#let bx-cond = ([`(π₁p→cons,⊸ nil)`], 4.6, false)
 #disp[#table(
   columns: (1fr, 4.4cm),
   align: (center + horizon, left + horizon),
@@ -4529,7 +4497,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [singleton, `R°` reflexive],
 
-  [#step(EQ)[#twp(twbr((bx-nil,), (bx-cond,)), s: 74%)][`[nil,(π₁p→cons,⊸ nil)]`]],
+  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 0, nout: 1, items: (
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), ports: (
+    (),
+    ("A", "[A]", ),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,(π₁p→cons,⊸ nil)]", src: "F([A])", tgt: "[A]"))][`[nil,(π₁p→cons,⊸ nil)]`]],
   [`nil R=⊤`],
 )
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
@@ -4541,7 +4520,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
 // greedy `⊒` into the heading's `=`.  Only the last three rows are cited rather than derived.
 #let bx-LS = (frc([`⦇S⦈`]), 1.5, false)
-#let bx-prog = ([`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], 6.1, false)
 // `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
 // closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
 #let LPX = (1.05, 2.35, 4.85)                     // `E`, `list`, `A`
@@ -4631,7 +4609,20 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      // lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1
   [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
 
-  [#vstep(EQ, twp(twrun((bx-prog,), from: [`[A]`], mid: none), s: 70%),
+  [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
+      (k: "case", nin: 1, nout: 1, bodies: (
+          (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+            ), seams: ()),
+          (k: "seq", nin: 2, nout: 1, items: (
+              (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
+            ), seams: ()),
+        ), ports: (
+          (),
+          ("A", "[A]", ),
+        )),
+    ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
+  cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]"))],
  [`⦇[nil,(π₁p→cons,⊸ nil)]⦈` \ #src[@takewhile-step]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b
   [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
