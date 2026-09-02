@@ -7199,22 +7199,33 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [#vstep([], thpic([`T`], [`A`], none, (tb-fold, tb-est)),
     [`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)`])],
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
-  [#tb-pan(3.2, (thw-in(THM, 3.2, 2.15), thw-arc(THU, 2.15, 0.85)),
-    ((THO, 2.15, [`⦇−⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)),
-    lanes: ((THU - 1.05, 1.50, [`E`]),), names: true)],
+  [#dpanel(3, 4.55, 1.7,
+  ((0.55, 2, 1, [`E`], none),),
+  ((2, [`⦇F(∋)S%∋ thin(Q)⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "⦇F(∋)S%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
     [#frc([`⦇S⦈`])` thin Q est(R)` \ #src[@thin-thm81]])],
-  // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it and `thin Q`
-  // — an arrow of the set alone — is a bead on the `E` wire, not on the object wire.
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THU, 1.55, [`thin Q`], -0.32),
-     (THO, 0.85, [`est(R)`], 0.32)))],
+  // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it.  `thin Q : EA⟶EA`
+  // is fixed by one `Q`, not natural in `A`: an arrow of `EA`, so its bead touches both wires `E` and `A`.
+  [#dpanel(5, 5.7, 2.85,
+  ((0.55, 2, 1, [`E`], none), (1.7, 3.5, 2, [`E`], frc([`𝟙`]))),
+  ((3, [`⦇S⦈`]), (2, [`thin(Q)`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`T`]),),
+  ((2.85, [`A`]),),
+  opath: ((2.85, 5), (2.85, 3), (2.85, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)thin(Q)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 
   [#vstep(EQ, thpic([`T`], [`A`], none, (tb-cS, tb-est)),
     [#frc([`⦇S⦈`])` est(R)` \ #src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
-  [#tb-pan(3.7, (thw-in(THM, 3.7, 2.15), ((THU, 3.05), (THU, 0.85 + KNEE), (THO, 0.85))),
-    ((THU, 3.05, frc([`𝟙`]), -0.32), (THO, 2.15, [`⦇S⦈`], 0.32), (THO, 0.85, [`est(R)`], 0.32)))],
+  [#dpanel(4, 4.55, 1.7,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
+  ((2, [`⦇S⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`T`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 ))]<thin-cor>
 
 == Paths in a layered network

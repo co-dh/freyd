@@ -35,6 +35,7 @@
     "include": {"src": "x×[[x]×[x]]",  "tgt": "[x]",    "lean": "AOP.A7_3_Party.includeFn@9197f738"},
     "S":       {"src": "x×[[x]×[x]]",  "tgt": "[x]×[x]", "lean": "AOP.A7_3_Party.S@d9fff80c"},
     "party":   {"src": "tree(x)",      "tgt": "[x]",    "lean": "AOP.A7_3_Party.party@d5001e89"},
-    "est":     {"src": "E(x)",         "tgt": "x",      "lean": "AOP.A7_1.est@e39806f8"}
+    "est":     {"src": "E(x)",         "tgt": "x",      "lean": "AOP.A7_1.est@e39806f8"},
+    "thin":    {"src": "E(x)",         "tgt": "E(x)",   "lean": "AOP.A8_1.thinRel@14d13c27"}
   }
 }
