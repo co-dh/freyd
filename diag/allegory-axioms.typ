@@ -2177,7 +2177,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // for the marker line under @cata-map-calc, which the page had no room for.
   inset: (x: 9pt, y: 6.5pt), stroke: 0.4pt + luma(190),
   table.header(
-    table.cell(colspan: 3, align: center, text(12.5pt)[`⦇[c,f]⦈=reduce(c,f)`]),
+    table.cell(colspan: 3, align: center)[#text(12.5pt)[`⦇[c,f]⦈=reduce(c,f)`] \
+      #src[the fold with algebra `[c,f]` is the recursion that returns `c` at the base constructor
+       and applies `f` at the recursive one]],
     [*part*], [*`Nat`*], [*`[A]`*],
   ),
 
@@ -2631,7 +2633,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
- #src[Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+    #src[taking the input apart with `S°`, running `⦇S⦈°⦇R⦈` on each part and putting the results
+     together with `R` is `⦇S⦈°⦇R⦈` again — Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T`
+     initial]],
     // lean:AOP.A6_3.hylo_fixed@42010f9f
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -2664,7 +2668,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2]],
+ Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
+    #src[an `X` that contains "take apart with `S°`, `X` on each part, put together with `R`"
+     contains `⦇S⦈°⦇R⦈` — Theorem 6.2]],
   // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -2722,7 +2728,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2]],
+ Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
+    #src[`⦇S⦈°⦇R⦈` is the least `X` equal to "take apart with `S°`, `X` on each part, put together
+     with `R`" — Theorem 6.2]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -2930,7 +2938,9 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
-    #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns.
+    #src[the set of lists the algebra builds is, from nothing, just `nil`, and from a head and a set
+     of tails, every tail in the set with the head put on or left off — @cata-map-calc at
+     `subseq=⦇[nil,cons∪π₂]⦈`, @comb-fns.
  ]],
     // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
@@ -3073,7 +3083,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
-    #src[B&dM §5.6, p. 124]],
+    #src[the set of tails with the head put on or left off is the union of the set of tails each
+     with the head put on and the set of tails itself — B&dM §5.6, p. 124]],
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
     [*Hinze–Marsden* — the `cons` operand]),
 
@@ -3822,7 +3833,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
-    #src[Theorem 7.1, `f` a map, `R` reflexive;
+    #src[bettering the parts betters `f`'s result exactly when `f` applied to best parts is a best
+     among `f`'s results on all the parts — Theorem 7.1, `f` a map, `R` reflexive;
  ,
       // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
  ]],
@@ -4674,7 +4686,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
-    #src[Ex 7.39: the longest prefix all of whose elements pass `p`.
+    #src[Ex 7.39: the longest prefix all of whose elements pass `p` is one pass along the list, each
+     head put onto the tail's prefix where it passes `p` and the prefix emptied where it does not.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -4822,7 +4835,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
- #src[]],
+    #src[the largest sum of a segment is the largest, over the suffixes, of the largest sum of a
+     prefix of that suffix]],
     // lean:AOP.A7_7_MSS.mss_shape@f600dda0
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
@@ -5008,7 +5022,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt),
   stroke: 0.4pt + luma(190),
-  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]`],
+  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]` \
+    #src[summing a list built as empty, or as the head put onto the tail or onto nothing, is summing
+     the tail first and then giving zero, or adding the head to that sum or to zero]],
   table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
@@ -5119,7 +5135,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
+  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
+    #src[lowering the running sum and then restarting at zero or adding the head lands inside
+     restarting or adding and then lowering the result — the `plus` branch of `F(≥)S⊑S≥`; the `zero`
  branch is `zero⊑zero≥`]],
     // lean:AOP.A7_7_MSS.mss_mono@d2c09a73
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
@@ -5184,7 +5202,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[#mss-alg ` est(≥)=[zero,⊕]` \ #src[]],
+ Thm[#mss-alg ` est(≥)=[zero,⊕]` \
+    #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
+     the larger of zero and the head added to it]],
   // lean:AOP.A7_7_MSS.mss_step@ba23320b
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
@@ -5252,7 +5272,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
-    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan.
+    #src[the largest segment sum is the largest of the set `⦇k⦈` carries in its second component, the
+     largest prefix sum of every suffix — Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
+     @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -5532,7 +5554,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
-    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`,
+    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p` is one pass
+     along the list, each head put onto the tail's result where it passes `p` and dropped where it
+     does not,
  ]],
      // lean:AOP.A7_7_Filter.filter_eq_cata@c34da8f5
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
@@ -6538,7 +6562,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
+  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \
+    #src[a cheapest path across the cylinder is a cheapest among the `n` paths `⦇Q⦈` returns, one for
+     each row — B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
  ]],
     // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -6608,7 +6634,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step,
+  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \
+    #src[extending a cheapest path per row by the new column, with `Q`, gives a cheapest per row of
+     everything `generate` extends — the fusion condition of @cyl-laws's last step,
  ]],
     // lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -6657,7 +6685,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
- #src[the algebra @cyl-laws's last step folds]],
+    #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
+     front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
+     step folds]],
     // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
