@@ -260,7 +260,7 @@ def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
     the statement still has the key the row was read against; then the letters the row's objects use
     must be spelled somewhere in that statement — a projection carries none, so it goes unchecked."""
-    t = dg.sigs()
+    t = sl.sigs()
     db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
     say = {k: v for k, v in t["spelling"].items() if k != "//"}
     bad = []
@@ -292,16 +292,23 @@ def verify_sigs():
 NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
 
 
+def how(c):
+    """The `cert:` fields that pick one of the panels a formula denotes, as `draw` takes them: a
+    formula alone says neither which functors split off the object wire nor what a fold runs on."""
+    return {k: c[k] for k in ("split", "slope") if k in c} | ({"ini": c["mu"]} if c.get("mu") else {})
+
+
 def terms(paths, tbl):
-    """Every typed term already stated, with the table its labels are typed by."""
+    """Every typed term already stated, with the table its labels are typed by and the `cert:`
+    fields that say which of its panels the note draws."""
     out = [(r["id"], r["cert"]["expect"], *dg.endpoints(sl.Panel(r)),
-            dg.typed(tbl, r["cert"].get("sigs")))
+            sl.typed(tbl, r["cert"].get("sigs")), how(r["cert"]))
            for r in sl.panels(NOTE, None) if (r.get("cert") or {}).get("expect")]
     for p in paths:
         fx = json.load(open(p, encoding="utf-8"))
         t = {**tbl, "sigs": {**tbl["sigs"],
                              **{k: v for k, v in fx.get("sigs", {}).items() if k != "//"}}}
-        out += [(f"{fx['label']}.{i}", f.strip(), fx["src"], fx["tgt"], t)
+        out += [(f"{fx['label']}.{i}", f.strip(), fx["src"], fx["tgt"], t, {})
                 for i, f in enumerate(fx["mirrored"].split("="))]
     return out
 
@@ -309,16 +316,16 @@ def terms(paths, tbl):
 def laws(paths, tbl):
     ts = terms(paths, tbl)
     bad, n, skip = [], 0, []
-    for (nm, f, src, tgt, t) in ts:
+    for (nm, f, src, tgt, t, pick) in ts:
         try:                               # a term whose own panel the reader cannot canonicalise
-            g = canon(ours(dg.draw(f, src, tgt, t)), nm)      # states no law: it is reported apart
+            g = canon(ours(dg.draw(f, src, tgt, t, **pick)), nm)  # states no law: it is reported apart
         except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
             skip.append(f"{nm}: {ex}"); continue
         for law, h in (("identity", f"𝟙 ({f}) 𝟙"),
                        ("spelling", sl.spell(sl.tidy(sl.norm(sl.parse(f)))))):
             n += 1
             try:
-                d = diff(g, canon(ours(dg.draw(h, src, tgt, t)), f"{law} {nm}"), law)
+                d = diff(g, canon(ours(dg.draw(h, src, tgt, t, **pick)), f"{law} {nm}"), law)
             except (sl.Unhandled, ValueError, KeyError, StopIteration) as ex:
                 d = f"{h}: {type(ex).__name__}: {ex}"
             if d:
@@ -386,13 +393,13 @@ def main(argv):
     if "--verify-sigs" in argv:
         sys.exit(verify_sigs())
     if "--laws" in argv:
-        sys.exit(laws(paths, dg.sigs()))
+        sys.exit(laws(paths, sl.sigs()))
     if "--verify-fixtures" in argv:
         bad = [b for p in paths for b in verify(json.load(open(p, encoding="utf-8")), p)]
         print(*bad, sep="\n", file=sys.stderr)
         print(f"hm-check: {len(paths)} fixtures audited against the page svg, {len(bad)} miscounts")
         sys.exit(1 if bad else 0)
-    tbl = dg.sigs()
+    tbl = sl.sigs()
     lines = [check(json.load(open(p, encoding="utf-8")), tbl, "--show" in argv)
              for p in paths]
     for line, warn in lines:

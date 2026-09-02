@@ -556,6 +556,10 @@ def elaborate(formula, src, tgt, table):
         if reach is None and opened:       # a bead with no lane of its own still reaches the wires
             reach = arms[k]                # it opened — a bead is a point, and every reach is an arm
         ws, keep, obj = grow(t, sub, why)
+        # A wire the source only bound to a tail VARIABLE, which the target then does not carry, is
+        # eaten here too: `⦇−⦈ : L(xs)⟶E(L(A))` swallows the `E` inside its `L`.  Left out of `arms`
+        # it would be dropped from the cut with no closing row at all, and nothing draws its end.
+        arms = arms + [l for l in lanes[len(wrap) + k:] if l not in keep]
         legs = [Lane(w, born=i) for w in ws]
         for l in arms:
             l.dies = i
