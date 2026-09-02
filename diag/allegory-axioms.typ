@@ -2920,11 +2920,6 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 #let sb-one = ([`𝟙`], 0.7, false)
 #let sb-li = ([`l`], SBW, false)
 #let sb-ri = ([`r`], SBW, false)
-#let sb-p2 = ([`π₂`], 1.3, false)
-#let sb-consE = (frc([`(𝟙×∋)cons`]), 2.9, false, TH)
-#let sb-p2E = (frc([`π₂∋`]), 1.5, false, TH)
-#let sb-meE = (frc([`𝟙×∋`]), 1.7, false, TH)
-#let sb-Econs = ([`E(cons)`], 2.0, false)
 
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
 // object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
@@ -3162,43 +3157,14 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   node(AL.at(0), AL.at(1), black, `A×[A]`); node(L.at(0), L.at(1), black, `[A]`)
 }))]<subseq-outr-square>
 
-// The union under the transpose: `⟨·,·⟩` copies the input, one transpose per branch, and `cup` joins
-// the two sets.  Both strands carry the same object, so the fork costs no crossing.
-#let sbfork(a, b) = {
-  let s = 0.95
-  let rw(items) = items.map(it => it.at(1)).sum(default: 0.0) + calc.max(items.len() - 1, 0) * LEAD
-  let w = calc.max(rw(a), rw(b))
-  lab(-1.52, 0, black)[`A×E[A]`]
-  wire((0, 0), (LEAD, 0)); wiredot((LEAD, 0))
-  bend((LEAD, 0), (1.10, s)); bend((LEAD, 0), (1.10, -s))
-  for (y, items) in ((s, a), (-s, b)) {
-    wire((1.10, y), (1.10 + LEAD, y))
-    let cx = 1.10 + LEAD
-    for (i, it) in items.enumerate() {
-      if i > 0 { wire((cx, y), (cx + LEAD, y)); cx = cx + LEAD }
-      gbox((cx, y), it.at(0), w: it.at(1), h: it.at(3, default: 0.6), chamfer: it.at(2))
-      cx = cx + it.at(1)
-    }
-    wire((cx, y), (1.10 + w + 2 * LEAD, y))
-  }
-  let xc = 1.10 + w + 2 * LEAD
-  gbox((xc, 0), [`cup`], w: 1.15, h: 2.6, chamfer: false)
-  wire((xc + 1.15, 0), (xc + 1.15 + LEAD, 0)); lab(xc + 2.40, 0, black)[`E[A]`]
-}
-#let sbB4 = P(cetz.canvas(length: 0.8cm, sbfork((sb-consE,), (sb-p2E,))), s: 82%)
-#let sbB5 = P(cetz.canvas(length: 0.8cm, sbfork((sb-meE, sb-Econs), (sb-p2,))), s: 82%)
-
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  // B&dM p.124: "we will need the power transpose of the join of two relations. This is given by
-  // Λ(R ∪ S) = cup·⟨ΛR,ΛS⟩, where cup … is the function that returns the union of two sets."
   Thm[#frc([`(𝟙×∋)(cons ∪ π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[power transpose of join: the power transpose of the join of two relations is
-     // tails row: B&dM §5.6, p. 124
      `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
-  table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
+  table.header([*circuit*],
     [*Hinze–Marsden*]),
 
   [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
@@ -3270,11 +3236,66 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
   [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
 
-  [#vstep(EQ, sbB4, [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "fork", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+            (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)cons)", chamfer: false, frac: false, flip: false),
+          ), seams: (
+            (
+              0,
+              ("E(A×E[A])", ),
+            ),
+          )),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+            (k: "box", nin: 1, nout: 1, label: "E(π₂ ∋)", chamfer: false, frac: false, flip: false),
+          ), seams: (
+            (
+              0,
+              ("E(A×E[A])", ),
+            ),
+          )),
+      )),
+    (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[A]", "E[A]", ),
+    ),
+  ), src: ("A", "E[A]", ), tgt: ("E[A]", )),
+  cert: (expect: "⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup", src: "A×E[A]", tgt: "E[A]"))], [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
     #src[#frc([`R ∪ S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
   [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
-  [#vstep(EQ, sbB5, [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "fork", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+            (k: "box", nin: 1, nout: 1, label: "E(𝟙×∋)", chamfer: false, frac: false, flip: false),
+            (k: "box", nin: 1, nout: 1, label: "E(cons)", chamfer: false, frac: false, flip: false),
+          ), seams: (
+            (
+              0,
+              ("E(A×E[A])", ),
+            ),
+            (
+              1,
+              ("E(A×[A])", ),
+            ),
+          )),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[A]", "E[A]", ),
+    ),
+  ), src: ("A", "E[A]", ), tgt: ("E[A]", )),
+  cert: (expect: "⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup", src: "A×E[A]", tgt: "E[A]"))], [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
@@ -3329,7 +3350,6 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E[A])", tgt: "E[A]"))
 #align(center, block(inset: (y: 4pt))[
   `[`#frc([`nil`])`,⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup]` \
-  // Pcons row: B&dM §5.6, p. 124
   #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
 ])]<subseq-alg>
 
