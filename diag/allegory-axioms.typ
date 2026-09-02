@@ -4311,14 +4311,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((4, [`prefix`], black, 5.15), (3, [`p×𝟙`], black, 2.85), (2, [`p`]), (1, [`cons`], black, 1.7)),
   ((2.85, [`A×−`]), (5.15, [`list`]), (6.3, [`A`])),
   ((0.55, [`list`]), (6.3, [`A`])),
-  opath: ((6.3, 5), (6.3, 4), (6.3, 3), (6.3, 2), (4, 1), (1.7, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 #let tw-pfx4 = dpanel(5, 9.15, 6.3,
   ((0.55, 1, "bot", none, none), (1.7, 4, 1, [`A×−`], none), (2.85, "top", 4, none, none), (4, 3, 1, [`list`], none), (5.15, "top", 3, none, none)),
   ((4, [`p×𝟙`], black, 2.85), (3, [`prefix`], black, 5.15), (2, [`p`]), (1, [`cons`], black, 1.7)),
   ((2.85, [`A×−`]), (5.15, [`list`]), (6.3, [`A`])),
   ((0.55, [`list`]), (6.3, [`A`])),
-  opath: ((6.3, 5), (6.3, 4), (6.3, 3), (6.3, 2), (4, 1), (1.7, 0)),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
