@@ -177,14 +177,19 @@ def spell(e):
         return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union', 'cap')
                 else spell(e[1])) + '°'
     if k == 'prod':
-        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc', 'union', 'cap') else spell(x)
+        # A sum reaches here as one atom, its parentheses eaten by the parser; × binds tighter, so
+        # re-parenthesise it or `prefix°×(⊤+⊤)` writes back as `prefix°×⊤+⊤`, which is a different relation.
+        return '×'.join(f"({spell(x)})" if x[0] in ('comp', 'hc', 'union', 'cap')
+                        or (x[0] == 'atom' and '+' in x[1]) else spell(x)
                         for x in e[1])
     if k == 'hc':
         return '∘'.join(f"({spell(x)})" if x[0] in ('comp', 'prod') else spell(x) for x in e[1])
     ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union', 'cap') else spell(x) for x in e[1]]
     out = ps[0]
     for p in ps[1:]:
-        out += ('' if out[-1] in CLOSERS or p[0] in OPENERS else ' ') + p
+        # A factor opening with `(` keeps its space: `pick (schedule×𝟙)snoc` closed up reads as an
+        # application of `pick`.  The other openers (`⦇`, `[`, `⟨`) cannot, so they still close up.
+        out += ('' if out[-1] in CLOSERS or (p[0] in OPENERS and p[0] != '(') else ' ') + p
     return out
 
 

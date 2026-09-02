@@ -12,5 +12,7 @@
 [ ] scripts/diagram forces a ⦇…⦈ bead source to list(x) and --sigs cannot override it, so a fold over list⁺ (14.5c row 2) can only be drawn under a plain ⦇−⦈ label
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
+[ ] five §15 HM panels stay hand-drawn: the case-split sweep knows only cons/nil/plus/zero, so [base,step]°,
+    [wrap,cat]°, [nil,extend]°, [nil,expand]° and β° cannot be split, and a sum of arrows (𝟙+(X×𝟙)) has no bead
 [ ] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
