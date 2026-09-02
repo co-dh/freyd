@@ -2224,7 +2224,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // for the marker line under @cata-map-calc, which the page had no room for.
   inset: (x: 9pt, y: 6.5pt), stroke: 0.4pt + luma(190),
   table.header(
-    table.cell(colspan: 3, align: center, text(12.5pt)[`⦇[c,f]⦈=reduce(c,f)`]),
+    // B&dM p.46: "Arrows of the form ⦇f⦈ are called catamorphisms" … "two examples that reveal the notion of
+    // a catamorphism to be a familiar idea in abstract clothing."
+    table.cell(colspan: 3, align: center)[#text(12.5pt)[`⦇[c,f]⦈=reduce(c,f)`] \
+      #src[catamorphism: arrows of the form `⦇f⦈` are called catamorphisms, and these two examples reveal the
+       notion to be a familiar idea in abstract clothing]],
     [*part*], [*`Nat`*], [*`[A]`*],
   ),
 
@@ -2677,8 +2681,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#pad(right: 10pt, table(
   columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.144: "The term S° represents the decomposition stage, FX represents the stage of solving the
+  // subproblems recursively, and R represents the recombination stage."
   Thm(cols: 1)[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
- #src[Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
+ #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
+     decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
+     recombination stage — Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
     // lean:AOP.A6_3.hylo_fixed@42010f9f
   [#hchain(
     (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
@@ -2696,7 +2704,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#pad(right: 10pt, table(
   columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2]],
+ // B&dM p.173: "by Knaster-Tarski, the hylomorphism ⦇min R·ΛS⦈⦇S⦈° is included in R if R satisfies the
+ // associated recursion inequation."
+ Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
+    #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
+     satisfies the associated recursion inequation — Theorem 6.2]],
   // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
   [#hchain(
     (none, trow(hy-cata, tpanR(4.2, 2.1, [`X`], top: [`B`])),
@@ -2730,7 +2742,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#pad(right: 10pt, table(
   columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2]],
+ // B&dM p.146: "The hylomorphism theorem states that a hylomorphism is the least fixed point of a certain
+ // recursion equation."
+ Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
+    #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation —
+     Theorem 6.2]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   [#hchain(
     (none, tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`]),
@@ -2933,7 +2949,9 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`F(∋)[nil,cons∪π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
-    #src[@cata-map-calc at `subseq=⦇[nil,cons∪π₂]⦈` — @comb-fns.
+    #src[the set of lists the algebra builds is, from nothing, just `nil`, and from a head and a set
+     of tails, every tail in the set with the head put on or left off — @cata-map-calc at
+     `subseq=⦇[nil,cons∪π₂]⦈`, @comb-fns.
  ]],
     // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
@@ -3075,8 +3093,12 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.124: "we will need the power transpose of the join of two relations. This is given by
+  // Λ(R∪S) = cup·⟨ΛR,ΛS⟩, where cup … is the function that returns the union of two sets."
   Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
-    #src[B&dM §5.6, p. 124]],
+    #src[power transpose of join: the power transpose of the join of two relations is
+     `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets —
+     B&dM §5.6]],
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
     [*Hinze–Marsden* — the `cons` operand]),
 
@@ -3824,8 +3846,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.172: "For functions, monotonicity is equivalent to distributivity." Theorem 7.1: "Function f is
+  // monotonic over R if and only if it distributes over R."
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
-    #src[Theorem 7.1, `f` a map, `R` reflexive;
+    #src[function `f` is monotonic over `R` if and only if it distributes over `R` — Theorem 7.1, `f` a map,
+     `R` reflexive;
  ,
       // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
  ]],
@@ -4676,8 +4701,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   columns: (1fr, 7.9cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
+  // its elements satisfy p." … "derive the standard implementation of takewhile."
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
-    #src[Ex 7.39: the longest prefix all of whose elements pass `p`.
+    #src[takewhile: `takewhile(p) x` returns the longest prefix of `x` with the property that all its
+     elements satisfy `p`; the catamorphism is the standard implementation — Ex 7.39.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -4824,8 +4852,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, 4.6cm),
   align: (center + horizon, left + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.174, Ex 7.40: "The maximum segment sum problem … is specified by mss = max·Λ(sum·segment) …
+  // Using segment = prefix·suffix, express this problem in the form mss = max·P(max·Λ(sum·prefix))·Λsuffix."
   Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
- #src[]],
+    #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
+     form — Ex 7.40]],
     // lean:AOP.A7_7_MSS.mss_shape@f600dda0
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
@@ -5011,7 +5042,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt),
   stroke: 0.4pt + luma(190),
-  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]`],
+  // B&dM p.174, Ex 7.40: "Express prefix as a catamorphism on cons-lists, and use fusion to express
+  // sum·prefix as a catamorphism."
+  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]` \
+    #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
+     the fusion condition that expresses `prefix sum` as a catamorphism — Ex 7.40]],
   table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
@@ -5122,8 +5157,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \ #src[the `plus` branch of `F(≥)S⊑S≥`; the `zero`
- branch is `zero⊑zero≥`]],
+  // B&dM p.172: "By definition, an F-algebra S : A ← FA is monotonic on a relation R : A ← A if S·FR ⊆ R·S."
+  Thm[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
+    #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
+     branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
     // lean:AOP.A7_7_MSS.mss_mono@d2c09a73
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
     [*Hinze–Marsden*]),
@@ -5187,7 +5224,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[#mss-alg ` est(≥)=[zero,⊕]` \ #src[]],
+ Thm[#mss-alg ` est(≥)=[zero,⊕]` \
+    #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
+     the larger of zero and the head added to it]],
   // lean:AOP.A7_7_MSS.mss_step@ba23320b
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
@@ -5254,8 +5293,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
+  // implement mss by a linear-time algorithm."
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
-    #src[Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` — @mss-defn; `k` and `w` — @mss-scan.
+    #src[maximum segment sum problem: #frc([`suffix`])` E(⦇[zero,⊕]⦈)` expressed as the catamorphism `⦇k⦈`,
+     hence `mss` implemented by a linear-time algorithm — Ex 7.40, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
+     @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@d283eef8
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -5534,8 +5577,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1fr, 6.3cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+  // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
+  // all its elements satisfy p." … "derive the standard program for filter."
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
-    #src[Ex 7.41, `R` a preorder: the longest subsequence all of whose elements pass `p`,
+    #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
+     elements satisfy `p`; the catamorphism is the standard program — Ex 7.41, `R` a preorder.
  ]],
      // lean:AOP.A7_7_Filter.filter_eq_cata@c34da8f5
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
@@ -6541,7 +6587,11 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \ #src[B&dM §7.4, p. 182; `Q` is @cyl-step's algebra,
+  // B&dM p.179: "Show how the dynamic programming approach to exhaustive search allows a path of least
+  // cost to be found in O(n × m) time."
+  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \
+    #src[shortest paths on a cylinder: the dynamic programming approach to exhaustive search allows a path
+     of least cost to be found in `O(n×m)` time — B&dM §7.4; `Q` is @cyl-step's algebra.
  ]],
     // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -6611,7 +6661,10 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \ #src[the fusion condition of @cyl-laws's last step,
+  // B&dM p.182: "The condition for fusion is N(min R)·generate ⊇ Q·F(id, N(min R)), and we can use this to
+  // derive a definition of Q"
+  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \
+    #src[fusion: the condition for fusion in @cyl-laws's last step, used to derive a definition of `Q`.
  ]],
     // lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -6660,7 +6713,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
- #src[the algebra @cyl-laws's last step folds]],
+    #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
+     front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
+     step folds]],
     // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
