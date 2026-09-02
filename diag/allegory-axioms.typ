@@ -1217,27 +1217,27 @@ the 2-category.
 ]]<relator-defn>
 
 #disp[#table(
-  columns: (1fr, 5.2cm),
-  align: (left + horizon, left + horizon),
+  columns: (1fr,),
+  align: (left + horizon,),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the statement*], [*B&dM*]),
+  table.header([*the statement*]),
 
  // F(f) map preserving row: Lemma 5.1
- [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]], [],
+ [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
-  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.], [],
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.],
   // F(R°)=F(R)° row: after Theorem 5.1, p. 113
-  [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.], [],
+  [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.],
   // relators-agree-on-maps row: Corollary 5.1
-  [Two relators agreeing on maps are equal.], [],
+  [Two relators agreeing on maps are equal.],
  // F(X∩Y) row: Ex 5.2
- [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]], [],
+ [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
  // F(R∩S) row: Ex 5.2, the restriction
- [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]], [],
+ [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[]], [],
+ [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
