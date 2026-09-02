@@ -2904,12 +2904,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   tape-join((x + cw + 1.62, 0), sp: SBY, len: 0.7)
 }
 // A box is `(label, width, chamfer)`, or `(…, height)` where a fraction needs two lines.
-#let sb-nil = ([`nil`], 1.05, false)
-#let sb-cp = ([`cons∪π₂`], 3.05, true)
 #let sb-me = ([`𝟙×∋`], 1.55, true)
-#let sb-one = ([`𝟙`], 0.7, false)
-#let sb-li = ([`l`], SBW, false)
-#let sb-ri = ([`r`], SBW, false)
 #let sb-cons = ([`cons`], 1.3, false)
 #let sb-p2 = ([`π₂`], 1.3, false)
 #let sb-ni = ([`∋`], 0.7, true)
@@ -2917,34 +2912,6 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 #let sb-p2E = (frc([`π₂∋`]), 1.5, false, TH)
 #let sb-meE = (frc([`𝟙×∋`]), 1.7, false, TH)
 #let sb-Econs = ([`E(cons)`], 2.0, false)
-
-// The chain's five circuits.  The type at the right end is the row's own: `[A]` while the transpose is
-// still outside the bracket, `E([A])` from the row where each branch carries its own.
-#let sbA1 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.62, 0, black)[`F(E([A]))`]
-  wire((0, 0), (LEAD, 0)); gbox((LEAD, 0), [`F(∋)`], w: 1.35)
-  wire((LEAD + 1.35, 0), (2 * LEAD + 1.35, 0))
-  sbtape(2 * LEAD + 1.35, (sb-nil,), (sb-cp,))
-  let xe = 2 * LEAD + 1.35 + sbtw((sb-nil,), (sb-cp,))
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 78%)
-#let sbA2 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.62, 0, black)[`F(E([A]))`]
-  wire((0, 0), (LEAD, 0))
-  sbtape(LEAD, (sb-one, sb-li), (sb-me, sb-ri))
-  let x1 = LEAD + sbtw((sb-one, sb-li), (sb-me, sb-ri))
-  wire((x1, 0), (x1 + 0.85, 0))
-  sbtape(x1 + 0.85, (sb-nil,), (sb-cp,))
-  let xe = x1 + 0.85 + sbtw((sb-nil,), (sb-cp,))
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 78%)
-#let sbA3 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.62, 0, black)[`F(E([A]))`]
-  wire((0, 0), (LEAD, 0))
-  sbtape(LEAD, (sb-nil,), (sb-me, sb-cp))
-  let xe = LEAD + sbtw((sb-nil,), (sb-me, sb-cp))
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 78%)
 
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
 // object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
@@ -2963,6 +2930,22 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ((0.55, [`E`]), (1.7, [`list`]), (6.3, [`A`])),
   opath: ((6.3, 4), (6.3, 2), (5.15, 1), (2.85, 0)),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(cons)", src: "A×E(list(A))", tgt: "E(list(A))"))
+// @subseq-EW-case draws the `π₂` operand of `cons∪π₂` in every row, never `cons`: the derivation
+// rewrites only `π₂` (@subseq-outr-square, then `∋%∋=𝟙`); `(𝟙×∋)cons` stays as `sb-hm` draws it.
+// Recipe for a union's lower operand: the `cert:` is the formula with the `∪` cut to that operand
+// by hand (`rank` in `scripts/diagram` would pick the other), and the cell's `#src` names it.
+#let sb-hm-p2a = dpanel(3, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`∋`], black, 1.7), (1, [`π₂`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-p2 = dpanel(4, 8, 5.15,
+  ((0.55, 2.5, "bot", none, frc([`𝟙`])), (1.7, "top", 1, none, none), (2.85, "top", 2, none, none), (4, "top", "bot", none, none)),
+  ((2, [`∋`], black, 2.85), (1, [`π₂`], black, 1.7)),
+  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`list`]), (5.15, [`A`])),
+  ((0.55, [`E`]), (4, [`list`]), (5.15, [`A`])),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)E(π₂)", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -2975,18 +2958,104 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
  ]],
     // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
-    [*Hinze–Marsden* — the `cons` operand]),
+    [*Hinze–Marsden*]),
 
-  [#vstep([], sbA1, [#frc([`F(∋)[nil,cons∪π₂]`])])],
-  [#sb-hm],
+  // Rows 1–3 draw the NUMERATOR, `F(E([A])) ⟶ [A]`: the transpose is still outside the bracket there,
+  // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust (CIRCUIT-GEN §1.4).
+  [#vstep([], [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+      )),
+  ), src: ("FE[A]", ), tgt: ("[A]", )),
+  cert: (expect: "F(∋)[nil,cons∪π₂]", src: "F(E([A]))", tgt: "[A]"))], [#frc([`F(∋)[nil,cons∪π₂]`])])],
+  [#sb-hm-p2a \ #src[the `π₂` operand of `cons∪π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
 
-  [#vstep(EQ, sbA2, [#frc([`(𝟙+𝟙×∋)[nil,cons∪π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
-  // Empty: every step below moves a bracket, and a bracket has no Hinze–Marsden shape.
-  [],
+  // `+` is not in the generator's grammar: `𝟙+𝟙×∋` is drawn as the `F(∋)` it unfolds (`F(X)=𝟏+A×X`).
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+      )),
+  ), src: ("FE[A]", ), tgt: ("[A]", )),
+  cert: (expect: "F(∋)[nil,cons∪π₂]", src: "F(E([A]))", tgt: "[A]"))], [#frc([`(𝟙+𝟙×∋)[nil,cons∪π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
+  [#sb-hm-p2a \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
-  [#vstep(EQ, sbA3, [#frc([`[nil,(𝟙×∋)(cons∪π₂)]`]) \
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+      )),
+  ), src: ("FE[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,(𝟙×∋)(cons∪π₂)]", src: "F(E([A]))", tgt: "[A]"))], [#frc([`[nil,(𝟙×∋)(cons∪π₂)]`]) \
     #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
-  [],
+  [#sb-hm-p2a \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons∪π₂)`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -3016,7 +3085,8 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
   cert: (expect: "[nil%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons∪π₂)]`]])],
-  [],
+  [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
+    `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -3046,7 +3116,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
   cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
     #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
-  [],
+  [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 ))]<subseq-EW-case>
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
