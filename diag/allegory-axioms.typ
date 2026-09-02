@@ -2538,10 +2538,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
     else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd, col: col) }
   }
-  // A fifth field is the lane the bead sits ON (`p×−` on the `A×−` wire); else it is on the object.
-  for b in beads {
-    let x = b.at(4, default: none)
-    hm-bead((if x == none { xat(b.at(0)) } else { x }, b.at(0)), b.at(1), col: b.at(2, default: black)) }
+  for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
     hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l), default: black) }) }
   for (x, l) in bot {
@@ -4204,23 +4201,23 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((0.55, [`list`]), (5.15, [`A`])),
   opath: ((5.15, 4), (5.15, 3), (2.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
-#let tw-pfx3 = dpanel(5, 8, 5.15,
-  ((0.55, 1, "bot", none, none), (1.7, "top", 1, none, none), (2.85, 4, 1, [`list`], none), (4, "top", 4, none, none)),
-  ((4, [`prefix`], black, 4), (3, [`p`], black, none, 1.7), (2, [`p`]), (1, [`cons`], black, 1.7)),
-  ((1.7, [`A×−`]), (4, [`list`]), (5.15, [`A`])),
-  ((0.55, [`list`]), (5.15, [`A`])),
-  opath: ((5.15, 5), (5.15, 4), (5.15, 3), (5.15, 2), (2.85, 1), (2.85, 0)),
+#let tw-pfx3 = dpanel(5, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 3, 1, [`A×−`], none), (2.85, "top", 3, none, none), (4, 4, 1, [`list`], none), (5.15, "top", 4, none, none)),
+  ((4, [`prefix`], black, 5.15), (3, [`p×𝟙`], black, 2.85), (2, [`p`]), (1, [`cons`], black, 1.7)),
+  ((2.85, [`A×−`]), (5.15, [`list`]), (6.3, [`A`])),
+  ((0.55, [`list`]), (6.3, [`A`])),
+  opath: ((6.3, 5), (6.3, 4), (6.3, 3), (6.3, 2), (4, 1), (1.7, 0)),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
-#let tw-pfx4 = dpanel(5, 8, 5.15,
-  ((0.55, 1, "bot", none, none), (1.7, "top", 1, none, none), (2.85, 3, 1, [`list`], none), (4, "top", 3, none, none)),
-  ((4, [`p`], black, none, 1.7), (3, [`prefix`], black, 4), (2, [`p`]), (1, [`cons`], black, 1.7)),
-  ((1.7, [`A×−`]), (4, [`list`]), (5.15, [`A`])),
-  ((0.55, [`list`]), (5.15, [`A`])),
-  opath: ((5.15, 5), (5.15, 4), (5.15, 3), (5.15, 2), (2.85, 1), (2.85, 0)),
+#let tw-pfx4 = dpanel(5, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 4, 1, [`A×−`], none), (2.85, "top", 4, none, none), (4, 3, 1, [`list`], none), (5.15, "top", 3, none, none)),
+  ((4, [`p×𝟙`], black, 2.85), (3, [`prefix`], black, 5.15), (2, [`p`]), (1, [`cons`], black, 1.7)),
+  ((2.85, [`A×−`]), (5.15, [`list`]), (6.3, [`A`])),
+  ((0.55, [`list`]), (6.3, [`A`])),
+  opath: ((6.3, 5), (6.3, 4), (6.3, 3), (6.3, 2), (4, 1), (1.7, 0)),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#table(
-  columns: (1fr, 4.9cm),
+  columns: (1fr, 5.6cm),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   Thm[`α prefix list(p)=F(prefix list(p))S` \

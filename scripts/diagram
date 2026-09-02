@@ -418,10 +418,9 @@ class Lane:
 
 
 class Row:
-    def __init__(self, label, arms, legs, reach, obj, on=None):
+    def __init__(self, label, arms, legs, reach, obj):
         self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
         self.obj = obj                     # what the object wire carries BELOW this row
-        self.on = on                       # the functor lane the bead sits ON, if not the object
 
 
 def alphabet(table, *objs):
@@ -477,18 +476,20 @@ def elaborate(formula, src, tgt, table):
         if core[0] == 'prod' and reach is not None and '−' in reach.label \
                 and len(core[1]) == len(reach.label.split('×')) \
                 and sum(x != ('atom', sl.UNIT) for x in core[1]) == 1:
-            # `f×𝟙` under the `A×−` wire is `f×−`, natural in the hole: `f` is a bead ON that wire.
-            # The lane has one label, so `f` may not change the `A` it carries.
-            f = next(x for x in core[1] if x != ('atom', sl.UNIT))
-            a = norm(parse(next(q for q in reach.label.split('×') if q != '−')))
-            s, t = signature(f, sigs, i)
-            unify(s, a, sub, why)
-            if settle(t, sub) != a:
-                raise Unhandled(f"{why} turns the {reach.label} wire into"
-                                f" {spell(settle(t, sub))}×−, which one lane cannot carry")
-            rows.append(Row(spell(tidy(f)), [], [], None, obj, on=reach))
-            continue
-        s, t = signature(core, sigs, i)
+            # `p×𝟙 : A×X⟶A×X` is an arrow of the object the `A×−` wire is applied to, so it is a
+            # bead on the object wire that eats the lane and makes it again, as `thin : E(x)⟶E(x)`
+            # eats `E` and makes `E`.  A bead ON the lane would be a natural transformation, which
+            # the note never draws (user, 2026-09-01).
+            k = next(j for j, x in enumerate(core[1]) if x != ('atom', sl.UNIT))
+            s, t = signature(core[1][k], sigs, i)
+            unify(s, norm(parse(reach.label.split('×')[k])), sub, why)
+            if render(settle(t, sub)) is None:
+                raise Unhandled(f"{why} lands the {reach.label} wire on"
+                                f" {spell(settle(t, sub))}×−, which is no wire label")
+            s, t = (('prod', [settle(v, sub) if j == k else ('atom', f"z@{i}−")
+                              for j in range(len(core[1]))]) for v in (s, t))
+        else:
+            s, t = signature(core, sigs, i)
         k, opened, obj = eat(s, lanes[len(wrap):], obj, sub, why)
         arms = lanes[len(wrap):len(wrap) + k]
         for w, e in opened:                # a wire opened HERE was born further up, where the object
@@ -551,8 +552,6 @@ def layout(rows, made, otop, obot, cert):
             unit[r.legs[0]] = r.label
             ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
             continue
-        if r.on is not None:               # on a functor wire: the dot at that lane's x, no reach
-            beads.append([ys[i], r.label, "#000000", None, r.on.x]); continue
         # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
         # crossed wires alike, because a bead is a POINT and there is no such thing as a straight bar
         reach = r.reach.x if r.reach is not None else None
@@ -667,12 +666,11 @@ def quoted(v):
 
 def emit(r):
     c = r["cert"]
-    beads = [b[:2] + [None] + b[3:] for b in r["beads"]]
+    beads = [b[:2] + [None, b[3]] if len(b) > 3 else b for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
             f'  {lst(r["lanes"])},\n'
             + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
-                                + (", black, " + cell(b[3]) if len(b) > 3 else "")
-                                + (", " + num(b[4]) if len(b) > 4 else "") + ")"
+                                + (", black, " + num(b[3]) if len(b) > 3 else "") + ")"
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
