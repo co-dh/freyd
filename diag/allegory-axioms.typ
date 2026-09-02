@@ -2934,6 +2934,26 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`list`]), (5.15, [`A`])),
   ((0.55, [`E`]), (4, [`list`]), (5.15, [`A`])),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(π₂)", src: "A×E(list(A))", tgt: "E(list(A))"))
+// @subseq-EW-join's `π₂` operand at three steps, each the `∪` cut to `π₂` by hand (`rank` would pick
+// `cons`): after the distribution, after @relprod-pic slides the `∋` past `π₂`, and bare at the end.
+#let sb-hm-p2-dist = dpanel(3, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`∋`], black, 1.7), (1, [`π₂`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-p2-slid = dpanel(3, 6.85, 4,
+  ((0.55, "top", 2, none, none), (1.7, "top", 1, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`π₂`], black, 0.55), (1, [`∋`], black, 1.7)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "π₂ ∋", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-p2-bare = dpanel(2, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", "bot", none, none), (2.85, "top", "bot", none, none)),
+  ((1, [`π₂`], black, 0.55),),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "π₂", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -3086,25 +3106,24 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   Thm[#frc([`(𝟙×∋)(cons∪π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[B&dM §5.6, p. 124]],
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
-    [*Hinze–Marsden* — the `cons` operand]),
+    [*Hinze–Marsden*]),
 
-  [#vstep([], sbB1, [#src[@subseq-EW-case's second branch]])],
-  [#sb-hm],
+  [#vstep([], sbB1, [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+  [#sb-hm \ #src[the `cons` operand of `cons∪π₂`]],
 
-  [#vstep(EQ, sbB2, [#src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
-  // Empty: the step is in the `π₂` operand, which the panel above does not draw.
-  [],
+  [#vstep(EQ, sbB2, [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
+  [#sb-hm-p2-dist \ #src[the `π₂` operand of `(𝟙×∋)cons∪(𝟙×∋)π₂`]],
 
-  [#vstep(EQ, sbB3, [#src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
-  [],
+  [#vstep(EQ, sbB3, [#frc([`(𝟙×∋)cons∪π₂∋`]) \
+    #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
+  [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons∪π₂∋`]],
 
   [#vstep(EQ, sbB4, [#src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
-  [#sb-hm-born],
+  [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
   [#vstep(EQ, sbB5, [#src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
-  // Empty: `E((𝟙×∋)cons)=E(𝟙×∋)E(cons)` costs no notation, so the panel above is unchanged.
-  [],
+  [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
 ))]<subseq-EW-join>
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
@@ -4242,8 +4261,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
   ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))],
-    [#src[defining equation]])],
-  [#tw-pfx2],
+    [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
+  [#tw-pfx2 \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -4284,8 +4303,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
-    [#src[`list(p)` through `cons`]])],
-  [#tw-pfx3],
+    [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
+  [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `⊸ nil ∪ (p×list(p)) cons`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -4321,7 +4340,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]"))],
-    [#src[relator, `prefix` entire]])], [],
+    [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])], [],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "box", nin: 2, nout: 2, label: "F(prefix list(p))", chamfer: true, frac: false, flip: false),
@@ -4375,7 +4394,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@ea69a5bc
 
@@ -4403,7 +4422,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "(𝟙×R°)⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@cbdcc4d1
@@ -4426,7 +4445,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "⊸ nil ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×R°) cons`]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6d2514be
 
@@ -4447,7 +4466,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "⊸ nil ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil ∪ (p×𝟙) cons R°`]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@577d240b
 
@@ -4469,7 +4488,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "⊸ nil R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@5635abfd
@@ -4493,7 +4512,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       )),
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "(⊸ nil ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
@@ -4569,7 +4588,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
+  cert: (expect: "[nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [coproduct of maps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -4597,7 +4616,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
+  cert: (expect: "[nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -5398,7 +5417,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][]], [],
+  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))][`(𝟙×R°)(π₂∪(p×𝟙) cons)`]], [],
 
   [#step(SQ)[#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -5417,7 +5436,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       )),
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][]],
+  cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))][`(π₂∪(p×𝟙) cons)R°`]],
   [union #h(4pt) #src[@lax-closure] #h(4pt) at `X:=π₂`, `Y:=(p×𝟙) cons`],
 )
 #align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`. The
@@ -5465,7 +5484,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
         ),
       )),
   ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][]],
+  cert: (expect: "[nil,(π₂∪(p×𝟙) cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`π₂∪(p×𝟙) cons`], ∋)$` est(R°)]`]],
   [@takewhile-step's first two steps],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
