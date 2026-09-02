@@ -8796,14 +8796,9 @@ both lists empty.
   [#vstep(EQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lcat, mb-Pbin, mb-estR)),
     [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
-  // The `cat` branch of the `→`, not both: the `wrap` branch is one bead on a singleton, nothing the
-  // `cat` branch does not already show.  `(−)²` is the summand `cat°` opens.
-  [#dpanel(6, 10.3, 7.45,
-  ((0.55, 4.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`Δ`], none), (4, 3, 2, [`tree`], none), (5.15, 4, 3, [`list⁺`], none), (6.3, "top", 4, none, none)),
-  ((4, [`cat°`], black, 6.3), (3, [`X`], black, 5.15), (2, [`bin`], black, 2.85), (1, [`est(R)`], black, 0.55)),
-  ((6.3, [`list⁺`]), (7.45, [`A`])),
-  ((1.7, [`tree`]), (7.45, [`A`])),
-  cert: (expect: "(cat°)%∋ E((X×X)bin)est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
+  // No picture: the disjointness of the two ranges is a case split on a coproduct, which has no
+  // shape of its own; the panel above already draws the `cat` branch.
+  [],
 
   [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-splits, mb-lbin, mb-min)),
     [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
@@ -9127,7 +9122,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `perm≜bagify bagify°=⦇[nil,add]⦈`, #h(4pt) `add (xs,j)=ys⧺[j]⧺zs` for some `xs=ys⧺zs`.
 
 `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, #h(4pt)
-`f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`.
+`f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`, #h(4pt) `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`.
 ]]<tardy-defn>
 
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
@@ -9135,8 +9130,9 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // set at all.
 #let tb-estR = ([`est(R)`], 1.90, true)
 #let tb-Lbag = (frc([`bagify°`]), 2.75, false)
-#let tb-Lb = (frc([`β°`]), 1.25, false)
+#let tb-Lns = (frc([`[nil,snag]°`]), 4.00, false)
 #let tb-estQ = ([`est(Q)`], 1.90, true)
+#let tb-estQp = ([`est(Q')`], 1.90, true)
 #let tb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
 #let tb-Lsnag = (frc([`snag°`]), 2.15, false)
 #let tb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
@@ -9160,7 +9156,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.7, [`list`]), (4, [`Job`])),
   cert: (expect: "(bagify°)%∋ est(R)", src: "bag(Job)", tgt: "[Job]", sigs: ("bagify": "[Job]⟶bag(Job)")), names: true)],
 
-  [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lb, tb-estQ, tb-alg)),
+  [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lns, tb-estQ, tb-alg)),
     // job-schedule row: Theorem 10.1
     [#src[No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
@@ -9174,17 +9170,17 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.7, [`list`]), (7.45, [`Job`])),
   cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", branch: "snag", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
-  [#vstep(EQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lsnag, tb-estQ, tb-snoc)),
+  [#vstep(EQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lsnag, tb-estQp, tb-snoc)),
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#dpanel(6, 10.3, 7.45,
   ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),
-  ((4, [`snag°`], black, 6.3), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
+  ((4, [`snag°`], black, 6.3), (3, [`est(Q')`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
   ((6.3, [`bag`]), (7.45, [`Job`])),
   ((1.7, [`list`]), (7.45, [`Job`])),
-  cert: (expect: "(snag°)%∋ est(Q)(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
+  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-pick, tb-sch)),
-    [#src[`pick⊑`#frc([`snag°`])` est(Q)`, a partial function, quadratic in the number of jobs]])],
+    [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
   [#dpanel(4, 9.15, 6.3,
   ((0.55, 1, "bot", none, none), (1.7, 3, 1, [`−×Job`], none), (2.85, 2, 1, [`list`], none), (4, 3, 2, [`bag`], none), (5.15, "top", 3, none, none)),
