@@ -8068,10 +8068,10 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   // The reduce now births `list` where it births `E` above: no set is ever built.
   [#dpanel(3, 4.55, 1.7,
   ((0.55, 2, 1, [`list`], none),),
-  ((2, [`⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈`]), (1, [`minlist(R)`], black, 0.55)),
+  ((2, [`⦇−thinlist(Q)⦈`]), (1, [`minlist(R)`], black, 0.55)),
   ((1.7, [`T`]),),
   ((1.7, [`A`]),),
-  cert: (expect: "⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈minlist(R)", src: "T", tgt: "A", sigs: ("⦇⦈": "T⟶[A]", "minlist": "[A]⟶A")))],
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "T", tgt: "A", sigs: ("⦇−thinlist(Q)⦈": "T⟶[A]", "minlist": "[A]⟶A")))],
 ))]<thinlist-thm82>
 
 // The fusion condition of the last step above, B&dM p. 203.  Two of its moves are unwritten there:
@@ -8233,21 +8233,23 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
   [#dpanel(4, 6.85, 4,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (2.85, "top", 2, none, none)),
-  ((2, [`⦇[nil,cons]within(w) ∪ [nil,π₂]⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇−⦈`], black, 2.85), (1, [`est(R)`], black, 0.55)),
   ((2.85, [`list`]), (4, [`Item`])),
   ((1.7, [`list`]), (4, [`Item`])),
-  cert: (expect: "⦇[nil,cons]within(w) ∪ [nil,π₂]⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇⦈": "[Item]⟶[Item]", "within": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
+  cert: (expect: "⦇−⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−⦈": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
 
   [#vstep(RQ, kb-pic((kb-lcp, kb-g, kb-mg, kb-tl), (kb-min,)),
     [`⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
-  // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
+  // The candidate set is now a candidate LIST: the reduce births `list` where it births
+  // `E` above.  `⦇−thinlist(Q)⦈` rather than `⦇−⦈`: two folds of one display may not share
+  // a name when they land on different wires — `scanline`'s cross-panel signature check.
   [#dpanel(3, 8, 5.15,
   ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 2, 1, [`list`], none), (4, "top", 2, none, none)),
-  ((2, [`⦇−⦈`], black, 4), (1, [`minlist(R)`], black, 1.7)),
+  ((2, [`⦇−thinlist(Q)⦈`], black, 4), (1, [`minlist(R)`], black, 1.7)),
   ((4, [`list`]), (5.15, [`Item`])),
   ((0.55, [`list`]), (5.15, [`Item`])),
-  cert: (expect: "⦇−⦈minlist(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−⦈": "[Item]⟶[[Item]]", "minlist": "[[Item]]⟶[Item]")))],
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−thinlist(Q)⦈": "[Item]⟶[[Item]]", "minlist": "[[Item]]⟶[Item]")))],
 
   [#vstep(EQ, kb-pic((kb-prog,), (kb-min,)),
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
@@ -8372,10 +8374,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
   [#dpanel(3, 10.3, 7.45,
   ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 2, 1, [`list`], none), (4, 2, 1, [`list⁺`], none), (5.15, 2, 1, [`list⁺`], none), (6.3, "top", 2, none, none)),
-  ((2, [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈`], black, 6.3), (1, [`minlist(R)`], black, 2.85)),
+  ((2, [`⦇−thinlist(Q)⦈`], black, 6.3), (1, [`minlist(R)`], black, 2.85)),
   ((6.3, [`list⁺`]), (7.45, [`Word`])),
   ((0.55, [`list⁺`]), (1.7, [`list⁺`]), (7.45, [`Word`])),
-  cert: (expect: "⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈minlist(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇⦈": "list⁺(Word)⟶[list⁺(list⁺(Word))]", "minlist": "[list⁺(list⁺(Word))]⟶list⁺(list⁺(Word))")))],
+  cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−thinlist(Q)⦈": "list⁺(Word)⟶[list⁺(list⁺(Word))]", "minlist": "[list⁺(list⁺(Word))]⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic((ab-prog,), (ab-min,)),
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
