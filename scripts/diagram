@@ -279,15 +279,18 @@ def layer(e):
     product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
     `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
     staying folded on the object wire.  `norm` flattens nested products, so one end comes off and
-    the rest is still a product: `Op×[C]×[C]` is `Op×−` over `[C]×[C]`."""
+    the rest is still a product: `Op×[C]×[C]` is `Op×−` over `[C]×[C]`.  A variable factor is a tail
+    still to be unified, not a name a lane can be labelled with, so it is taken only when neither end
+    is a constant — that is what lets `𝟙×g`'s `z×Char` meet a `−×Char` lane."""
     if e[0] == 'prod':
         xs = e[1]
         if len(xs) == 2 and xs[0] == xs[1]:
             return 'Δ', xs[0]
-        if render(xs[0]) is not None:
-            return render(xs[0]) + '×−', xs[1] if len(xs) == 2 else ('prod', xs[1:])
-        if render(xs[-1]) is not None:
-            return '−×' + render(xs[-1]), xs[0] if len(xs) == 2 else ('prod', xs[:-1])
+        for var in (False, True):
+            if render(xs[0]) is not None and isvar(xs[0]) == var:
+                return render(xs[0]) + '×−', xs[1] if len(xs) == 2 else ('prod', xs[1:])
+            if render(xs[-1]) is not None and isvar(xs[-1]) == var:
+                return '−×' + render(xs[-1]), xs[0] if len(xs) == 2 else ('prod', xs[:-1])
         return None, None
     return (e[1], e[2]) if e[0] == 'app' else (None, None)
 
