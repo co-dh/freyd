@@ -197,15 +197,27 @@ def listable(e):
     return listable(e[2]) if e[0] == 'app' else False
 
 
+def dun(e):
+    """`R%∋=𝟙%∋ E(R)`, the note's own `DUN` (`Λ R = singletonMap ≫ existsImage R`, `AOP/A4_6.lean`):
+    ONE fraction the display writes, TWO beads the picture draws — the unit opens `E` outside `R`.
+    Guarded at `𝟙`, the rewrite's own fixed point, which would otherwise regress for ever."""
+    if e[0] != 'atom' or not e[1].endswith('%∋') or e[1][:-2] == UNIT:
+        return None
+    return ('comp', [('atom', UNIT + '%∋'), ('app', 'E', parse(e[1][:-2]))])
+
+
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
-    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°` and `F(R)F(S)=F(RS)` are the relator
-    laws, applied on trust."""
+    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)` and `dun`'s
+    `R%∋=𝟙%∋ E(R)` are laws applied on trust."""
     # One bead on the sweep side, so the comparison form stays the atom these were before the parser
     # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
         return ('atom', e[2])
     e = rec(e, norm)
+    d = dun(e)
+    if d is not None:
+        return norm(d)
     if e[0] == 'conv':
         b = e[1]
         if b[0] == 'comp':

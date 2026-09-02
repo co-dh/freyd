@@ -237,11 +237,9 @@ def cnorm(e):
     `F(R)F(S)=F(RS)`.  It is NOT that `norm`: this one keeps the `°` where the formula writes it,
     which `norm` pushes to the atoms, erasing the distinction §3 rows 7/8 draw."""
     e = crec(e, cnorm)
-    # `R%∋=𝟙%∋ E(R)`, the note's own `DUN` (allegory-axioms.typ): a row writes ONE fraction where
-    # the picture draws two — the unit opens `E` outside `R`.  Guarded at `𝟙`, the rewrite's own
-    # fixed point, which would otherwise regress for ever.
-    if e[0] == 'atom' and e[1].endswith('%∋') and e[1][:-2] != sl.UNIT:
-        return ('comp', [('atom', sl.UNIT + '%∋'), ('app', 'E', cnorm(parse(e[1][:-2])))])
+    d = sl.dun(e)                          # `R%∋=𝟙%∋ E(R)`, shared with `scanline.norm`
+    if d is not None:
+        return sl.rec(d, cnorm)
     if e[0] != 'comp':
         return e
     xs = [y for x in e[1] for y in (x[1] if x[0] == 'comp' else [x])]   # rule 1: flatten,
