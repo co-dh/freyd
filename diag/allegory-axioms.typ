@@ -2906,9 +2906,10 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
 }
 // A box is `(label, width, chamfer)`, or `(…, height)` where a fraction needs two lines.
 #let sb-me = ([`𝟙×∋`], 1.55, true)
-#let sb-cons = ([`cons`], 1.3, false)
+#let sb-one = ([`𝟙`], 0.7, false)
+#let sb-li = ([`l`], SBW, false)
+#let sb-ri = ([`r`], SBW, false)
 #let sb-p2 = ([`π₂`], 1.3, false)
-#let sb-ni = ([`∋`], 0.7, true)
 #let sb-consE = (frc([`(𝟙×∋)cons`]), 2.9, false, TH)
 #let sb-p2E = (frc([`π₂∋`]), 1.5, false, TH)
 #let sb-meE = (frc([`𝟙×∋`]), 1.7, false, TH)
@@ -2947,6 +2948,26 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`list`]), (5.15, [`A`])),
   ((0.55, [`E`]), (4, [`list`]), (5.15, [`A`])),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(π₂)", src: "A×E(list(A))", tgt: "E(list(A))"))
+// @subseq-EW-join's `π₂` operand at three steps, each the `∪` cut to `π₂` by hand (`rank` would pick
+// `cons`): after the distribution, after @relprod-pic slides the `∋` past `π₂`, and bare at the end.
+#let sb-hm-p2-dist = dpanel(3, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`∋`], black, 1.7), (1, [`π₂`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-p2-slid = dpanel(3, 6.85, 4,
+  ((0.55, "top", 2, none, none), (1.7, "top", 1, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`π₂`], black, 0.55), (1, [`∋`], black, 1.7)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "π₂ ∋", src: "A×E(list(A))", tgt: "list(A)"))
+#let sb-hm-p2-bare = dpanel(2, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", "bot", none, none), (2.85, "top", "bot", none, none)),
+  ((1, [`π₂`], black, 0.55),),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "π₂", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -3155,28 +3176,6 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   gbox((xc, 0), [`cup`], w: 1.15, h: 2.6, chamfer: false)
   wire((xc + 1.15, 0), (xc + 1.15 + LEAD, 0)); lab(xc + 2.40, 0, black)[`E([A])`]
 }
-#let sbB1 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.52, 0, black)[`A×E([A])`]
-  wire((0, 0), (LEAD, 0)); gbox((LEAD, 0), [`𝟙×∋`], w: 1.55)
-  wire((LEAD + 1.55, 0), (2 * LEAD + 1.55, 0))
-  sbtape(2 * LEAD + 1.55, (sb-cons,), (sb-p2,), inj: false)
-  let xe = 2 * LEAD + 1.55 + sbtw((sb-cons,), (sb-p2,), inj: false)
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 82%)
-#let sbB2 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.52, 0, black)[`A×E([A])`]
-  wire((0, 0), (LEAD, 0))
-  sbtape(LEAD, (sb-me, sb-cons), (sb-me, sb-p2), inj: false)
-  let xe = LEAD + sbtw((sb-me, sb-cons), (sb-me, sb-p2), inj: false)
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 82%)
-#let sbB3 = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.52, 0, black)[`A×E([A])`]
-  wire((0, 0), (LEAD, 0))
-  sbtape(LEAD, (sb-me, sb-cons), (sb-p2, sb-ni), inj: false)
-  let xe = LEAD + sbtw((sb-me, sb-cons), (sb-p2, sb-ni), inj: false)
-  wire((xe, 0), (xe + LEAD, 0)); lab(xe + 0.95, 0, black)[`[A]`]
-}), s: 82%)
 #let sbB4 = P(cetz.canvas(length: 0.8cm, sbfork((sb-consE,), (sb-p2E,))), s: 82%)
 #let sbB5 = P(cetz.canvas(length: 0.8cm, sbfork((sb-meE, sb-Econs), (sb-p2,))), s: 82%)
 
@@ -3191,28 +3190,85 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
      // tails row: B&dM §5.6, p. 124
      `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
   table.header([*circuit* — the tape IS the `∪`, and neither branch injects],
-    [*Hinze–Marsden* — the `cons` operand]),
+    [*Hinze–Marsden*]),
 
-  [#vstep([], sbB1, [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
-  [#sb-hm],
+  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+          ), seams: ()),
+      )),
+  ), seams: (), src: ("A", "E[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×∋)(cons∪π₂)", src: "A×E([A])", tgt: "[A]"))],
+    [#frc([`(𝟙×∋)(cons∪π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+  [#sb-hm \ #src[the `cons` operand of `cons∪π₂`]],
 
-  [#vstep(EQ, sbB2, [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
-  // Empty: the step is in the `π₂` operand, which the panel above does not draw.
-  [],
+  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+      ), seams: ()),
+  ), src: ("A", "E[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×∋)cons∪(𝟙×∋)π₂", src: "A×E([A])", tgt: "[A]"))],
+    [#frc([`(𝟙×∋)cons∪(𝟙×∋)π₂`]) \ #src[`T(X₁∪X₂)=TX₁∪TX₂` — @adj-cross]])],
+  [#sb-hm-p2-dist \ #src[the `π₂` operand of `(𝟙×∋)cons∪(𝟙×∋)π₂`]],
 
-  [#vstep(EQ, sbB3, [#frc([`(𝟙×∋)cons∪π₂∋`]) \
+  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+        (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("E[A]", ),
+        ),
+      )),
+  ), src: ("A", "E[A]", ), tgt: ("[A]", )),
+  cert: (expect: "(𝟙×∋)cons∪π₂∋", src: "A×E([A])", tgt: "[A]"))],
+    [#frc([`(𝟙×∋)cons∪π₂∋`]) \
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
-  [],
+  [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons∪π₂∋`]],
 
   [#vstep(EQ, sbB4, [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
     #src[#frc([`R∪S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
-  [#sb-hm-born],
+  [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
   [#vstep(EQ, sbB5, [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
-  // Empty: `E((𝟙×∋)cons)=E(𝟙×∋)E(cons)` costs no notation, so the panel above is unchanged.
-  [],
+  [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
 ))]<subseq-EW-join>
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
@@ -4120,47 +4176,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
 #let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's tape edge, which it does not export
-#let BRT = 1.6  // the bracket's branch height
 #let UIP = 0.4  // the pair's half-height, at the fork and inside the `∪` copies
 #let UOP = 0.3  // a `∪` copy's output port
 #let UHH = 0.7  // a `∪` copy's half-height
-#let UDY = UHH + 0.55  // copy separation, wider than the strands inside one copy
-#let UH = UHH + UDY    // the `∪` region's half-height
-#let CW = 3.0  // a `∪` copy's width
 #let UM = 0.2  // region edge to the deepest box inside a copy — a strand box is taller than a wire
-// A `∪` region with arbitrary branch bodies: the pair arrives once, the dashed fan hands it to
-// both copies, and their outputs merge (choosebox's geometry, generalised).
-#let unionbox(a, b, upper, lower, ip: UIP, op: UOP, hh: UHH) = {
-  let cy = (a.at(1) + b.at(1)) / 2
-  let dy = hh + 0.55
-  let cx = a.at(0) + CHPAD
-  let ox = b.at(0) - CHPAD
-  let xi = a.at(0) - CHFAN
-  let xo = b.at(0) + CHFAN
-  let fan = (thickness: lw, paint: black, dash: "dashed")
-  tape(a, b)
-  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.3, TAPEEDGE)[`∪`]
-  d.group({ d.translate((cx, cy + dy)); upper })
-  d.group({ d.translate((cx, cy - dy)); lower })
-  for s in (1, -1) {
-    bend((xi, cy + s * ip), (cx, cy + dy + s * ip), stroke: fan)
-    bend((xi, cy + s * ip), (cx, cy - dy + s * ip), stroke: fan)
-  }
-  bend((ox, cy + dy + op), (xo, cy), stroke: fan)
-  bend((ox, cy - dy - op), (xo, cy), stroke: fan)
-}
-// `⊸ X`: both wires discarded, then `X` created.  `w` is the copy's run — the two copies of one `∪`
-// have to reach the same edge, and takewhile's `cons` branch is wider than mss's.
-#let disc-copy(label, w: CW) = {
-  wire((0, UIP), (0.35, UIP)); wiredot((0.35, UIP))
-  wire((0, -UIP), (0.35, -UIP)); wiredot((0.35, -UIP))
-  gbox((0.6, 0), label, w: 0.75, chamfer: false)
-  wire((1.35, 0), (w, UOP))
-}
-#let cons-copy = {
-  gbox((0, 0), [`cons`], w: 1.3, h: 2 * UIP + 0.35, chamfer: false)
-  bend((1.3, 0), (CW, -UOP))
-}
 
 // ---- takewhile's own circuits.  A box is `(label, width, chamfer)`; the pair is TWO strands, the
 // head above and the tail below, so a coreflexive `p` is a box on the head strand alone.
@@ -4356,7 +4375,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))],
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
-  [#tw-pfx2],
+  [#tw-pfx2 \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -4398,7 +4417,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ), src: ("F[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
-  [#tw-pfx3],
+  [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `⊸ nil ∪ (p×list(p)) cons`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -4976,56 +4995,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   empty prefix, so `Dom` is `𝟙` here — and `P(f)=E(f)` at the map it is applied to (@powrel-laws).]])
 ]<mss-shape>
 
-#let sumplus-copy = {
-  wire((0, UIP), (1.55, UIP))
-  wire((0, -UIP), (0.5, -UIP)); gbox((0.5, -UIP), [`sum`], w: 0.85, chamfer: false)
-  wire((1.35, -UIP), (1.55, -UIP))
-  gbox((1.55, 0), [`plus`], w: 0.9, h: 2 * UIP + 0.35, chamfer: false)
-  bend((2.45, 0), (CW, -UOP))
-}
-#let plus-copy = {
-  wire((0, UIP), (0.9, UIP)); wire((0, -UIP), (0.9, -UIP))
-  gbox((0.9, 0), [`plus`], w: 0.9, h: 2 * UIP + 0.35, chamfer: false)
-  bend((1.8, 0), (CW, -UOP))
-}
-// One row's picture: the bracket forks into the create `c` above and the pair below, whose `∪` the
-// `lower` copy closes; `pre` puts `𝟙×sum` before the region, `end` a `sum` box after the join.
-#let msspic(c, lower, pre: false, end: none) = {
-  let cy = -BRT
-  let ux0 = if pre { 3.5 } else { 2.6 }
-  let ux1 = ux0 + CW + 2 * CHPAD
-  let xo = ux1 + CHFAN
-  let xj = xo + 1.05
-  tape((0.34, cy - UH - 0.15), (xj, BRT + 0.15))
-  wire((0, 0), (0.34, 0))
-  let st = (thickness: 1.4pt, paint: TAPEEDGE)
-  d.bezier((0.56, 0), (1.26, BRT), (0.98, 0), (0.98, BRT), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy + UIP), (0.98, 0), (0.98, cy + UIP), stroke: st)
-  d.bezier((0.56, 0), (1.26, cy - UIP), (0.98, 0), (0.98, cy - UIP), stroke: st)
-  gbox((1.26, BRT), c, w: 0.75, chamfer: false)
-  wire((2.01, BRT), (xj - 0.7, BRT))
-  if pre {
-    wire((1.26, cy + UIP), (ux0 - CHFAN, cy + UIP))
-    wire((1.26, cy - UIP), (1.55, cy - UIP))
-    gbox((1.55, cy - UIP), [`sum`], w: 0.85, chamfer: false)
-    wire((2.4, cy - UIP), (ux0 - CHFAN, cy - UIP))
-  } else {
-    wire((1.26, cy + UIP), (ux0 - CHFAN, cy + UIP))
-    wire((1.26, cy - UIP), (ux0 - CHFAN, cy - UIP))
-  }
-  unionbox((ux0, cy - UH), (ux1, cy + UH), disc-copy(c), lower)
-  wire((xo, cy), (xj - 0.7, cy))
-  tape-join((xj, 0), sp: BRT, len: 0.7)
-  wire((xj, 0), (xj + 0.34, 0))
-  if end != none {
-    gbox((xj + 0.44, 0), end, w: 0.95, chamfer: false)
-    wire((xj + 1.39, 0), (xj + 1.73, 0))
-    lab(xj + 2.15, 0, black)[`A`]
-  } else {
-    lab(xj + 0.8, 0, black)[`A`]
-  }
-  lab(-1.3, cy + UIP, black)[`A`]; lab(-1.3, cy - UIP, black)[`[A]`]
-}
 // §13.3.4's Hinze–Marsden lanes (IntroString.pdf §1.4.2), read left to right as the panel is drawn:
 // `MA` is always the leftmost wire and the object wire is whichever the panel ends on.  `MLW` is one
 // lane — the room two port labels need side by side.  `[A]` is the `list` wire BESIDE the `A` wire.
@@ -5105,6 +5074,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, [`𝟏`]), (1.7, [`Int`])),
   ((1.7, [`Int`]),),
   cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
+// The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
+// `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×Int⟶Int"`.
+#let mh-alg-plus = dpanel(4, 5.7, 2.85,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
+  ((2, [`plus`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((1.7, [`A×−`]), (2.85, [`Int`])),
+  ((2.85, [`Int`]),),
+  opath: ((2.85, 4), (2.85, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(plus)est(≥)", src: "A×Int", tgt: "Int", sigs: ("plus": "A×Int⟶Int")))
 #let mh-segsum = dpanel(5, 6.85, 4,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
   ((3, [`segment`], black, 2.85), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
@@ -5143,28 +5121,192 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
-  [#vstep([], P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
+  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "case", nin: 1, nout: 1, bodies: (
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+            (k: "union", nin: 2, nout: 1, bodies: (
+                (k: "seq", nin: 2, nout: 1, items: (
+                    (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                          (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                        ), seams: ())),
+                  ), seams: ()),
+                (k: "seq", nin: 2, nout: 1, items: (
+                    (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+                  ), seams: ()),
+              )),
+          ), seams: (
+            (
+              0,
+              ("A", "[A]", ),
+            ),
+          )),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("[A]", ),
+    ),
+  ), src: ("F[A]", ), tgt: ("A", )),
+  cert: (expect: "[nil,⊸ nil ∪ cons] sum", src: "F([A])", tgt: "A"))],
     [`[nil,⊸ nil ∪ cons] sum`])],
-  [#mh-cons-sum],
+  [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
-  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+      ), seams: (
+        (
+          1,
+          ("[A]", ),
+        ),
+      )),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("[A]", ),
+                ),
+              )),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("[A]", ),
+                ),
+              )),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("A", )),
+  cert: (expect: "[nil sum,⊸ nil sum∪cons sum]", src: "F([A])", tgt: "A"))],
     [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
-  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy))),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "stack", nin: 2, nout: 2, lanes: (
+                    (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+                      ), seams: ()),
+                  )),
+                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("A", )),
+  cert: (expect: "[zero,⊸ zero ∪ (𝟙×sum) plus]", src: "F([A])", tgt: "A"))],
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
     joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
-    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`])))],
+    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`]))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
-  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("A", )),
+  cert: (expect: "[zero,(𝟙×sum)(⊸ zero ∪ plus)]", src: "F([A])", tgt: "A"))],
     [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
   [],
 
-  [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("A", )),
+  cert: (expect: "F(sum) [zero,⊸ zero ∪ plus]", src: "F([A])", tgt: "A"))],
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
@@ -5180,68 +5322,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #import "circuit.typ": TAPEEDGE
 #let MIY = 0.5           // `A×Int` is TWO strands: the head above, the running sum below
 #let GEQ = 0.9           // the `≥` box — an order, not a map, so it keeps its chamfer
-#let MPRE = GEQ + 0.4    // `𝟙×≥` in front of a branch: the head runs straight past it
 
-#let mtape(a, b, upper, lower) = {
-  let cy = (a.at(1) + b.at(1)) / 2
-  let dy = MIY + 0.9
-  let (cx, ox) = (a.at(0) + CHPAD, b.at(0) - CHPAD)
-  let (xi, xo) = (a.at(0) - CHFAN, b.at(0) + CHFAN)
-  let fan(c) = (thickness: lw, paint: c, dash: "dashed")
-  tape(a, b)
-  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.32, TAPEEDGE)[`∪`]
-  upper(cx, cy + dy); lower(cx, cy - dy)
-  for s in (1, -1) {
-    bend((xi, cy + s * MIY), (cx, cy + dy + s * MIY), stroke: fan(GIVEN1))
-    bend((xi, cy + s * MIY), (cx, cy - dy + s * MIY), stroke: fan(GIVEN2))
-  }
-  bend((ox, cy + dy), (xo, cy), stroke: fan(GIVEN1))
-  bend((ox, cy - dy), (xo, cy), stroke: fan(GIVEN2))
-}
 
-// `⊸ zero`: BOTH strands are discarded and `zero : 𝕀⟶Int` starts a new one — a box with nothing on
-// its left IS a state, which is what the unit `𝕀` looks like when it costs no wire.
-#let bzero(x, y, w) = {
-  for s in (1, -1) { wire((x, y + s * MIY), (x + 0.5, y + s * MIY)); wiredot((x + 0.5, y + s * MIY)) }
-  gbox((x + 0.9, y), [`zero`], w: 1.3, chamfer: false)
-  wire((x + 2.2, y), (x + w, y))
-}
-// `plus` reads both strands and leaves on one; it is a map, so no chamfer.
-#let bplus(x, y, w) = {
-  for s in (1, -1) { wire((x, y + s * MIY), (x + 0.34, y + s * MIY)) }
-  gbox((x + 0.34, y), [`plus`], w: 1.3, h: 2 * MIY + 0.5, chamfer: false)
-  wire((x + 1.64, y), (x + w, y))
-}
-// A branch of the tape, drawn in the coordinates `mtape` hands it; `w` is the body's run, set per
-// row so BOTH branches end at the region's edge whatever they carry.
-#let mbranch(body, w, pre: false, post: false) = (x, y) => {
-  if pre {
-    wire((x, y + MIY), (x + MPRE, y + MIY))
-    wire((x, y - MIY), (x + 0.2, y - MIY)); gbox((x + 0.2, y - MIY), [`≥`], w: GEQ)
-    wire((x + 0.2 + GEQ, y - MIY), (x + MPRE, y - MIY))
-  }
-  let x0 = x + (if pre { MPRE } else { 0 })
-  body(x0, y, w)
-  if post { gbox((x0 + w, y), [`≥`], w: GEQ); wire((x0 + w + GEQ, y), (x0 + w + GEQ + 0.3, y)) }
-}
-// One row: the pair arrives on two strands, takes one branch of the `∪`, and leaves on one.
-#let mrow(upper, lower, W, pre: false, post: false) = {
-  let x0 = if pre { 2.6 } else { 1.6 }
-  let x1 = x0 + W + 2 * CHPAD
-  mtape((x0, -2.55), (x1, 2.55), upper, lower)
-  lab(-0.45, MIY, black)[`A`]; lab(-0.62, -MIY, black)[`Int`]
-  wire((0, MIY), (x0 - CHFAN, MIY))
-  if pre {
-    wire((0, -MIY), (0.4, -MIY)); gbox((0.4, -MIY), [`≥`], w: GEQ)
-    wire((0.4 + GEQ, -MIY), (x0 - CHFAN, -MIY))
-  } else { wire((0, -MIY), (x0 - CHFAN, -MIY)) }
-  let xe = x1 + CHFAN
-  if post {
-    wire((xe, 0), (xe + 0.3, 0)); gbox((xe + 0.3, 0), [`≥`], w: GEQ)
-    wire((xe + 0.3 + GEQ, 0), (xe + 0.6 + GEQ, 0)); lab(xe + 1.15 + GEQ, 0, black)[`Int`]
-  } else { wire((xe, 0), (xe + 0.4, 0)); lab(xe + 0.95, 0, black)[`Int`] }
-}
-#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 88%)
 
 // HINZE–MARSDEN: the drawn branch is `plus`'s, so `A×−` is the functor wire and `Int` the object
 // one; `𝟙×≥` is `F(≥)`, the `≥` bead with `A×−` running past it, and the join stays put while it moves.
@@ -5257,26 +5339,90 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`],
     [*Hinze–Marsden*]),
 
-  [#vstep([], mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true)),
+  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
+  cert: (expect: "(𝟙×≥)(⊸ zero ∪ plus)", src: "A×A", tgt: "A"))],
     [`(𝟙×≥)(⊸ zero ∪ plus)`])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
     joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`])))],
+    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`]))) \ #src[the `(𝟙×≥) plus` operand of `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]],
 
-  [#vstep(EQ, mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9)),
+  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "A", ), tgt: ("A", )),
+  cert: (expect: "(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus", src: "A×A", tgt: "A"))],
     [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` \ #src[relator, composition over `∪`]])],
   // Empty: `∪` is an operation on hom-sets, not a wiring, so distributing over it draws the row above.
   [],
 
-  [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8)),
+  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+              (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+            ), seams: ())),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("A", "A", ), tgt: ("A", )),
+  cert: (expect: "⊸ zero ∪ plus ≥", src: "A×A", tgt: "A"))],
     [`⊸ zero ∪ plus≥` \ #src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
      written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
      together, which carries it to `≥`.]])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
     joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`])))],
+    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`]))) \ #src[the `plus≥` operand of `⊸ zero ∪ plus≥`]],
 
-  [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true)),
+  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                  (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
+                ), seams: ())),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
+  cert: (expect: "(⊸ zero ∪ plus)≥", src: "A×A", tgt: "A"))],
     [`(⊸ zero ∪ plus)≥` \ #src[`≥` reflexive]])],
   // Empty: `≥` is put back on the `⊸ zero` branch, which this column does not draw.
   [],
@@ -5323,14 +5469,49 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [])],
-  [#mh-alg-est],
+  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
+  [#mh-alg-est \ #src[the `zero` arm of the bracket]],
 
-  [#vstep(EQ, mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25)),
-    [#src[coproduct of maps — @coprod-calc at
+  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(zero)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          1,
+          ("E𝟏", ),
+        ),
+        (
+          2,
+          ("EA", ),
+        ),
+      )),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "E(⊸ zero ∪ plus)", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("A", "A", ),
+        ),
+        (
+          1,
+          ("EA²", ),
+        ),
+        (
+          2,
+          ("EA", ),
+        ),
+      )),
+  ), src: ("FA", ), tgt: ("A", )),
+  cert: (expect: "[zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]", src: "F(A)", tgt: "A"))],
+    [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
-  // Empty: `[U,V]` is a coproduct of hom-sets, so splitting the bead into branches is not a wiring.
-  [],
+  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
 
   [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
@@ -6948,21 +7129,6 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
    + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
   ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
 
-// `(𝟙×X)old` and `old X`: the transaction runs straight past the box on the list wire — that pass is
-// the `𝟙×` — and `old` spans the pair.  A PRODUCT IS TWO WIRES.
-#let vb-RH = ([`R;H`], 1.65, true)
-#let vb-sR = ([`|R|`], 1.4, true)
-#let vb-RH2 = ([`R∩H`], 1.85, true)
-#let van-old(pre, post) = {
-  let y = 0.62
-  let w = boxrun-w(pre)
-  lab(-0.62, y, black)[`Int`]; lab(-1.15, -y, black)[`[[Int]]`]
-  wire((0, y), (w, y))
-  boxrun(0, -y, pre)
-  gbox((w, 0), [`old`], w: 1.35, h: 2 * y + 0.42)
-  boxrun(w + 1.35, 0, post)
-  lab(w + 1.35 + boxrun-w(post) + 1.05, 0, black)[`[[Int]]`]
-}
 // `Int×−` is a wider name than `list`, so its lane keeps a wider gap: the port labels are written at
 // the panel's top edge and two of them touching read as one name.
 #let VMM = 0.55                  // `Int×−`, the base functor's own factor
@@ -7032,20 +7198,92 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
      // lean:AOP.A7_5_Van.van_mono@5f456bbf
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
-  [#vstep([], van-pic(van-old((vb-RH,), ())), [`(𝟙×(R;H))old`])],
-  [#van-mono-hm([`R;H`], true)],
+  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(𝟙×(R;H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+    [])],
+  [#van-mono-hm([`R;H`], true) \ #src[the `old` operand of `new∪old`, in every row]],
 
-  [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
+  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "|R|", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "cap", nin: 1, nout: 1, lanes: (
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                  )),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(𝟙×|R|)old∪(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
   [#van-mono-hm([`|R|`], true)],
 
-  [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
+  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
+        (k: "cap", nin: 1, nout: 1, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+        (k: "cap", nin: 1, nout: 1, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "new (R∩H)∪old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`new (R∩H)∪old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
   [#van-mono-hm([`R∩H`], false)],
 
-  [#vstep(SQ, van-pic(van-old((), (vb-RH,))),
+  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(new∪old)(R;H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`(new∪old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
   [#van-mono-hm([`R;H`], false)],
 ))]<van-mono>
