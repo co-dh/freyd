@@ -3263,6 +3263,7 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
   cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E([A]))", tgt: "E([A])"))
 #align(center, block(inset: (y: 4pt))[
+  `[`#frc([`nil`])`,⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup]` \
   // Pcons row: B&dM §5.6, p. 124
   #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
 ])]<subseq-alg>
