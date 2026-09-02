@@ -366,7 +366,7 @@ def row(core, sigs, n):
     lab = core[1] if core[0] == 'app' else spell(core)
     if lab in sigs:                        # a row of the label's own beats the bracket's inference
         return sigs[lab]
-    k = lab[:-2] if lab.endswith('%∋') else lab
+    k = lab
     if core[0] == 'case':
         k = '[,]'
     elif k and k[0] in sl.OPENERS:
