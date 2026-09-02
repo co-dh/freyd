@@ -7515,10 +7515,6 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let eb-Qo = ([`Q°`], 0.85, true)
 #let eb-in = ([`∈`], 0.75, true)
 #let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
-// TWO `E` wires on one lane, never live at once: the transpose opens one that `est(R)` closes, and
-// the singleton opens the one that leaves the panel.
-#let eb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THO, [`A`]),), ((THU, [`E`]), (THO, [`A`])), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7541,6 +7537,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [#vstep(IMP, eb-pic((eb-So, eb-LamS, eb-est, eb-tau)),
     [#src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
       @est-laws; the second is this chain, `−⊑Q°∈`]])],
+  // `S`,`Q`,`R : A⟶A`, read off the circuit column's one wire, `A` to `EA`.
   [#dpanel(6, 5.7, 2.85,
   ((0.55, 3.5, 2, [`E`], frc([`𝟙`])), (1.7, 0.5, "bot", none, frc([`𝟙`]))),
   ((5, [`S°`]), (3, [`S`]), (2, [`est(R)`], black, 0.55)),
@@ -7757,9 +7754,6 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #let pb-pic(alg, tail) = thpic([`L(EA)`], [`LA`], alg, tail)
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
-#let pb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THM, [`L`]), (THN, [`E`]), (THO, [`A`])), ((THM, [`L`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7880,8 +7874,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let tl-pic(tail) = thpic([`EA`], [`[A]`], none, tail)
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#let tl-pan(h, wires, beads, lanes: (), names: false) = thpan(h, wires, beads,
-  ((THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])), lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7894,6 +7886,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], tl-pic((tl-sort, tl-tl)), [])],
+  // `sort P : EA⟶[A]`, `ordered P`,`thinlist Q : [A]⟶[A]` — @thinlist-defn's
+  // `sort P≜setify° ordered P` at `setify : [A]⟶EA`.
   [#dpanel(3, 6.85, 4,
   ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, "top", 2, none, none)),
   ((2, [`sort(P)`], black, 2.85), (1, [`thinlist(Q)`], black, 1.7)),
@@ -7957,10 +7951,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let lb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // `sort P : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
-#let lb-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
-  (thw-in(THN, h, 3.15), thw-in(THM, h, 2.40)) + wires, beads,
-  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -7996,6 +7986,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     [#src[`sort P filter(p)⊑E(p) sort P` — @thinlist-laws]])],
   // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
   // lane: the same coreflexive, applied to the sorted list instead of to the set.
+  // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
   [#dpanel(6, 9.15, 6.3,
   ((0.55, 1, "bot", none, none), (1.7, 2, 1, [`list`], none), (2.85, 3.5, 2, [`E`], frc([`𝟙`])), (4, "top", 3, none, none), (5.15, "top", 5, none, none)),
   ((5, [`∋`], black, 5.15), (3, [`f`], black, 4), (2, [`sort(P)`], black, 2.85), (1, [`filter(p)`], black, 1.7)),
@@ -8056,6 +8047,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [#vstep(RQ, thpic([`T`], [`A`], none, (tb-fold, sb-sort, sb-min)),
     [#src[`sort P minlist R⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
   // `est(R)` has split into the node that sorts and the `minlist R` that reads the head back.
+  // `minlist R : [A]⟶A` — @thinlist-laws' (8.5) `thinlist Q xs=[minlist Q xs]`.
   [#dpanel(4, 5.7, 2.85,
   ((0.55, 2, 1, [`list`], none), (1.7, 3, 2, [`E`], none)),
   ((3, [`⦇−⦈`]), (2, [`sort(P)`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
@@ -8085,10 +8077,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let qb-g = ([`⟨g₁,g₂⟩`], 2.2, false)
 #let qb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // The panel `lb-pan` draws, with `S` for `f` and no `p`: same source, same two ports killed.
-#let qb-pan(h, wires, beads, lanes: (), names: false) = thpan(h,
-  (thw-in(THN, h, 3.15), thw-in(THM, h, 2.40)) + wires, beads,
-  ((THM, [`F`]), (THN, [`E`]), (THO, [`A`])), ((THU, [`list`]), (THO, [`A`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8202,11 +8190,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let kb-tl = ([`thinlist Q`], 3.0, true)
 #let kb-prog = ([`[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]`], 10.5, true)
 #let kb-pic(alg, tail) = thpic([`[Item]`], [`[Item]`], alg, tail)
-// The `list` wire runs the panel's whole height — the selections stay lists throughout — so it is
-// drawn here rather than repeated in every row.
-#let kb-pan(h, wires, beads, lanes: (), names: false) = thpan(h, (((THM, h), (THM, 0)),) + wires,
-  beads, ((THM, [`list`]), (THO, [`Item`])), ((THM, [`list`]), (THO, [`Item`])),
-  lanes: lanes, names: names)
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
@@ -8324,9 +8307,6 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ab-pic(alg, tail) = thpic([`list⁺ Word`], [`Para`], alg, tail)
 // The source is ONE `list⁺`; `partition` births the paragraph's, and the reduce of the last two rows
 // births a third — the list of candidate paragraphs `minlist R` reads back down.
-#let ab-pan(h, wires, beads, bot, lanes: (), names: false) = thpan(h,
-  (((THO, h), (THO, 0)), ((THN, h), (THN, 2.60))) + wires, beads,
-  ((THN, [`list⁺`]), (THO, [`Word`])), bot, lanes: lanes, names: names)
 #let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
 #let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
 #disp[#pad(right: 10pt, table(

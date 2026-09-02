@@ -9,6 +9,7 @@
 [ ] circuit wire types print E[A], not E([A]); applies to every type label in every circuit diagram
 [ ] 12.1d rows 4–5 circuits are still hand-drawn (sbB4, sbB5); generate them with the fork kind
 [ ] 12.1d row 4 HM panel shows a horizontal bar; check it is generated and the bar goes with the straight-wire default
+[ ] scripts/diagram forces a ⦇…⦈ bead source to list(x) and --sigs cannot override it, so a fold over list⁺ (14.5c row 2) can only be drawn under a plain ⦇−⦈ label
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
 
