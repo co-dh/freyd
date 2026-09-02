@@ -7491,7 +7491,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   cert: (expect: "Q° ∈ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-Qo, nb-in)),
-    [`Q°Q°∈` \ #src[`∈ thin Q⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
+    [#src[`∈ thin Q⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
   [#dpanel(4, 4.55, 1.7,
   ((0.55, 1, "bot", none, none),),
   ((3, [`Q°`]), (2, [`Q°`]), (1, [`∈`])),
@@ -7500,7 +7500,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   cert: (expect: "Q° Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(EQ, nb-pic((nb-Qo, nb-in)),
-    [`Q°∈` \ #src[`Q°Q°=Q°`, `Q` a preorder]])],
+    [#src[`Q°Q°=Q°`, `Q` a preorder]])],
   [#dpanel(3, 4.55, 1.7,
   ((0.55, 1, "bot", none, none),),
   ((2, [`Q°`]), (1, [`∈`])),
@@ -7540,7 +7540,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   cert: (expect: "⦇F(∋)S%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
-    [#frc([`⦇S⦈`])` thin Q est(R)` \ #src[@thin-thm81]])],
+    [#src[@thin-thm81]])],
   // `⦇S⦈%∋=(𝟙%∋)E(⦇S⦈)`: the unit births `E` OUTSIDE `T`, so the reduce runs under it.  `thin Q : EA⟶EA`
   // is fixed by one `Q`, not natural in `A`: an arrow of `EA`, so its bead touches both wires `E` and `A`.
   [#dpanel(5, 5.7, 2.85,
@@ -7551,7 +7551,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   cert: (expect: "𝟙%∋ E(⦇S⦈)thin(Q)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 
   [#vstep(EQ, thpic([`T`], [`A`], none, (tb-cS, tb-est)),
-    [#frc([`⦇S⦈`])` est(R)` \ #src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
+    [#src[`est(R)=thin Q est(R)` — @thin-laws, `Q⊑R`]])],
   [#dpanel(4, 4.55, 1.7,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])),),
   ((2, [`⦇S⦈`]), (1, [`est(R)`], black, 0.55)),
