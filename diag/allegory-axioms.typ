@@ -3850,7 +3850,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     // -45deg, the note's own tilt: a `⊑` turned the full -90deg is read as a `⊔`.
     lab(7.4, 0, SLACK, rot: -45deg)[`⊑`]
     node(5.2, 0, black, `A`); node(9.6, 0, black, `B`)
-  }), s: 82%),
+  }), s: 98%),
   [`G≜const A`, #h(4pt) `F≜const B` #h(4pt) — the relators `X↦A` and `X↦B`, each sending every arrow
    to `𝟙` #h(4pt) #src[@lax-defn] \
    with `𝒞` two objects and one non-identity arrow `X⟶Y`, a LaT `const A⇒const B` is the pair
@@ -3997,8 +3997,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // monotonic-alg row: Theorem 7.1
   Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
-     `R` reflexive;
- ,
+     `R` reflexive
       // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
  ]],
       // lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b
@@ -4071,8 +4070,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   )],
 
   [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
-    [#src[`f` a map, so monotonic on `R` and `R°` together;
- ,
+    [#src[`f` a map, so monotonic on `R` and `R°` together
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
  ]])],
      // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
@@ -6051,16 +6049,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [],
 
   [#vstep(EQ, [],
-    [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
-       column-gutter: 6pt, row-gutter: 3pt,
- [`⦇[nil,(π₁p→cons,π₂)]⦈` entire #h(4pt) #src[]],
-       // lean:AOP.A7_7_Filter.filter_entire@0c8b8ee9
- [and], [`filter(p)` simple #h(4pt) #src[]],
-       // lean:AOP.A7_7_Filter.filter_simple@613696ae
-       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[an entire relation below
-         // simplicity fact: Ex 7.41
-         a simple one equals it; the simplicity is @comb-fns's, not a law of this note,
- ]])])],
+    // lean:AOP.A7_7_Filter.filter_entire@0c8b8ee9
+    // lean:AOP.A7_7_Filter.filter_simple@613696ae
+    [#src[the catamorphism is entire and `filter(p)` simple, so `⊒` is `=`]])],
          // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
 ))
