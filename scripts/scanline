@@ -577,6 +577,13 @@ def sweep(p):
         i = next(k for k in range(len(ys)) if abs(ys[k] - y) < EPS)
         above, below = cuts[i], cuts[i + 1]
         for b in [b for b in p.beads if abs(b.y - y) < EPS]:
+            # A bead ON a functor wire is a natural transformation, which the note never draws: `p×𝟙`
+            # is a bead on the object wire eating and remaking the `A×−` lane, never `p` on it (2026-09-01).
+            if not b.born and abs(b.x - p.xo) >= EPS:
+                on = next((w.label for w in p.wires if abs(w.x - b.x) < EPS
+                           and w.ybot - EPS <= y <= w.ytop + EPS), "no")
+                bad.append(f"{p.id}: bead {b.label} sits on the {on} wire: a bead on a functor"
+                           f" wire is a natural transformation, which the note never draws")
             if b.born and b.label.startswith(UNIT) and abs(b.x - p.xo) < EPS:
                 bad.append(f"{p.id}: the unit {b.label} sits on the object wire at x={p.xo} —"
                            f" a unit's source is Id, but the cut above it is"
