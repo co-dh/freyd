@@ -55,7 +55,29 @@
 
 #let cu(len, length) = len / length     // an absolute length in canvas units
 #let ys(n) = if n == 0 { () } else { range(n).map(i => (n - 1) * UIP - 2 * UIP * i) }
-#let lb(it) = if it.at("frac", default: false) { frc(raw(it.label)) } else { raw(it.label) }
+// A `x%∋` INSIDE a label (`E((prefix sum)%∋ est(≥))`) is the fraction the note writes by hand: the
+// numerator is the parenthesised group, or the one word, before the `%∋`.
+#let lbl(s) = {
+  let cs = s.clusters()
+  let i = cs.position(c => c == "%")
+  if i == none or cs.at(i + 1, default: none) != "∋" { return raw(s) }
+  let j = i - 1
+  let pre(k) = raw(cs.slice(0, k).sum(default: ""))
+  let rest = lbl(cs.slice(i + 2).sum(default: ""))
+  if cs.at(j) == ")" {
+    let depth = 0
+    while true {
+      depth = depth + (if cs.at(j) == ")" { 1 } else if cs.at(j) == "(" { -1 } else { 0 })
+      if depth == 0 { break }
+      j = j - 1
+    }
+    return pre(j) + frc(raw(cs.slice(j + 1, i - 1).sum(default: ""))) + rest
+  }
+  while j > 0 and cs.at(j - 1) not in (" ", "(") { j = j - 1 }
+  pre(j) + frc(raw(cs.slice(j, i).sum(default: ""))) + rest
+}
+#let lb(it) = if it.at("frac", default: false) { frc(lbl(it.label)) } else { lbl(it.label) }
+#let tall(it) = it.at("frac", default: false) or it.label.contains("%∋")
 #let tx(s) = text(10pt, raw(s))
 #let into(length) = CPORT * cu(measure(tx("[")).width, length)  // `measure` is the advance box, not the ink
 
@@ -78,8 +100,7 @@
   // ---- §3 rows 1-2, 7, 10, 15-16: one box.  A box spanning several strands is as tall as they are.
   if t.k == "box" {
     let n = calc.max(t.nin, t.nout)
-    let h = if n > 1 { (n - 1) * 2 * UIP + 0.35 } else if t.at("frac", default: false) { CTH }
-            else { BH }
+    let h = if n > 1 { (n - 1) * 2 * UIP + 0.35 } else if tall(t) { CTH } else { BH }
     let w = cu(measure(lb(t)).width, length) + 2 * CPAD
     return (w: w, hh: h / 2, body: gbox((0, 0), lb(t), w: w, h: h, chamfer: t.chamfer,
       flip: t.flip, fill: if t.flip { TINT } else { none }))
