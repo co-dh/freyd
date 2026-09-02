@@ -426,25 +426,27 @@ class Panel:
         return self.xo
 
 
-def dipys(r, x, yt, yb):
+def dipys(r, X, x, yt, yb):
     """`dpanel`'s own rule for which bead heights a lane bends down to: every bead whose reach
-    spans this column, and which the lane is live across."""
+    spans this column, and which the lane is live across.  The reach ends at the object wire where
+    it actually is — `X(y)`, not `xo` — or an `opath` would give the note a dip the sweep misses."""
     return sorted((b[0] for b in r['beads']
                    if len(b) > 3 and b[3] is not None
-                   and b[3] <= x < r['xo'] and yt > b[0] > yb), reverse=True)
+                   and b[3] <= x < X(b[0]) and yt > b[0] > yb), reverse=True)
 
 
 def dknees(r, X, h):
     """`dknees` in the note: ONE knee per bead-and-side — `('d', y)` above the dot, `('b', y)` below
     it — for the arms, legs and dips alike, since equal knees on one bezier family nest and unequal
     ones braid.  It grows with the group's longest run, capped at HALF the gap to the nearest bend
-    on a participating lane or bead on that side, so two bands never touch.  A unit row is off the
-    object column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55."""
+    on a participating lane or bead on that side, so two bands never OVERLAP — they may share a
+    midpoint, and there each strand is vertical, in its own column.  A unit row is off the object
+    column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55."""
     bys = [b[0] for b in r['beads']]
     run, cap = {}, {}
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-        ds = dipys(r, x, yt, yb)
+        ds = dipys(r, X, x, yt, yb)
         if un is not None and ds:
             raise Unhandled(f"the unit lane at x={x:g} dips onto a bead — `ddip` draws no unit bead")
         es = ([(y0, ('b',))] if y0 != 'top' and un is None else []) \
@@ -485,7 +487,7 @@ def a_dpanel(p, r):
                                 f" the sweep — `dknees` states one rule twice, and they differ")
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-        ds = dipys(r, x, yt, yb)
+        ds = dipys(r, p.xat, x, yt, yb)
         if ds:                             # `ddip`'s points — the arms the crossed wires make
             pts = dippts(x, p.xat, p.h, y0, y1, ds, gk)
         else:                              # `dlane`'s own points
@@ -759,12 +761,24 @@ def inversions(p):
             if abs(px - w.x) < EPS:
                 continue
             lo, hi = min(px, w.x), max(px, w.x)
+            # A unit lane BORN at exactly `y` is not live above it, so `> y + EPS` lets it through;
+            # the ink check sees that one.
             for v in p.wires:
                 if lo + EPS < v.x < hi - EPS and v.ytop > y + EPS and v.ybot < y - EPS \
                         and not any(abs(d - y) < EPS for d in v.dips):
                     out.append(f"{p.id}: {w.label}@{w.x:g} {end} at x={px:g}, y={y:g}, passing"
                                f" {v.label}@{v.x:g}, which is live above and below — the cut orders"
                                f" them {w.label} then {v.label}, the ink exchanges them")
+            # A widening is a column of its own — `live` reads `outer` there — so it is passed like
+            # a wire.  The ARC is the column, not the `splits` row: `mpan` states one row per bead
+            # spanned and draws one arc, and a row boundary is inside it.  Its own two ends are
+            # back on the object column, where the two are drawn to meet, hence the strict bounds.
+            for (outer, q) in p.strands:
+                sx, yt, yb = q[1][0], q[0][1], q[-1][1]
+                if lo + EPS < sx < hi - EPS and yb + EPS < y < yt - EPS:
+                    out.append(f"{p.id}: {w.label}@{w.x:g} {end} at x={px:g}, y={y:g}, passing the"
+                               f" {outer} widening at x={sx:g}, live above and below — the cut"
+                               f" orders them {w.label} then {outer}, the ink exchanges them")
     return out
 
 

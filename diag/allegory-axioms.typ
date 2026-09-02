@@ -2462,8 +2462,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
 #let dkey(s, y) = s + str(float(y))
 // ONE knee per bead-and-side, for arms, legs and dips alike: equal knees on one bezier family give
-// the strands the same y(t) and they nest, where unequal ones braid — so a knee that grew with the
-// run, and met the object at one angle, is given up.  Half the gap, so two bands never touch.
+// the strands the same y(t) and they nest, where unequal ones braid — so a per-strand knee, whose
+// aspect grew with the horizontal run, is given up; the arrival stays VERTICAL either way, since
+// `hm-seg` puts its controls straight above and below the ends.  Half the gap, so two bands never
+// OVERLAP — they may share a midpoint, and there each strand is vertical, in its own column.
+// `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
+// left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
+// it.  The 17 `tpan`/`mpan` panels keep fixed `DKN`/`MKN` and a per-join `k` — an empirical fit.
 #let dknees(xat, h, lanes, beads) = {
   let bys = beads.map(bd => bd.at(0))
   let (run, cap) = ((:), (:))
@@ -2479,7 +2484,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
         let nb = if s == "d" and i > 0 { es.at(i - 1).at(0) }
           else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
         let c = if nb == none { 0.55 * room } else { 0.5 * calc.abs(nb - y) }
-        let o = bys.filter(z => if s == "d" { z > y + 0.001 } else { z < y - 0.001 })
+        // 1e-6 is `scanline`'s `EPS`: ONE tolerance, so the two `dknees` are one function.
+        let o = bys.filter(z => if s == "d" { z > y + 1e-6 } else { z < y - 1e-6 })
         if o != () {
           c = calc.min(c, 0.5 * calc.abs(
             (if s == "d" { o.fold(99, calc.min) } else { o.fold(-99, calc.max) }) - y))
