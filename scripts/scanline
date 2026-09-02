@@ -330,11 +330,6 @@ HMK, DKN, MKN = 0.618, 0.45, 0.35
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
 
 
-def dknee(x, xo, drop):
-    """`dpanel`'s knee: grows with the run, clamped to the drop the lane has."""
-    return min(0.45 + 0.25 * abs(xo - x), 0.55 * drop)
-
-
 def nodepts(x, xo, ys, k):
     """`mpan`'s dip onto the object wire at each node height and back out again."""
     return [q for y in ys for q in ((x, y + k), (xo, y), (x, y - k))]
@@ -397,7 +392,7 @@ class Panel:
         self.bot = [tuple(p) for p in r['bot']]
         # `strands` are the drawn curves no `Wire` stands for — `mpan`'s widening and `tw-hm`'s
         # split, which the sweep reads off `splits` instead of off a lane of their own.
-        self.wires, self.beads, self.splits, self.strands = [], [], [], []
+        self.wires, self.beads, self.splits, self.strands, self.kdrift = [], [], [], [], []
         self.opath = [tuple(q) for q in r.get('opath') or []]
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
@@ -437,50 +432,64 @@ def dipys(r, x, yt, yb):
                    and b[3] <= x < r['xo'] and yt > b[0] > yb), reverse=True)
 
 
-def dippts(x, X, h, y0, y1, ybs, kb=None, kd=None):
-    """`ddip`'s points: the lane's own knee, then one bend onto the dot and back out per bead.
-    `X` is the object wire's x at a height, so every bend aims at the dot actually drawn."""
-    t, b = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-    keb = min(kb if kb is not None else dknee(x, X(t), t - b), 0.60 * (t - ybs[0]))
-    ked = min(kd if kd is not None else dknee(x, X(b), t - b), 0.60 * (t - ybs[0]))
-    pts = [(x, h)] if y0 == 'top' else [(X(t), t), (x, t - keb)]
-    for i, yb in enumerate(ybs):
-        hi, up = (t - keb, 0.85) if i == 0 else (ybs[i - 1], 0.42)
-        lo, dn = ((b if y1 == 'bot' else b + ked), 0.85) if i == len(ybs) - 1 else (ybs[i + 1], 0.42)
-        kd = min(0.30 * (X(yb) - x), up * (hi - yb), dn * (yb - lo))
-        pts += [(x, yb + kd), (X(yb), yb), (x, yb - kd)]
-    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + ked), (X(b), b)])
-
-
-def dgroups(r, X, h):
-    """One knee per bead-and-side: arms converging on one dot with EQUAL knees keep their x order
-    at every height (`hm-seg` gives them the same y(t)), so they nest instead of braiding.
-    Sized by the group's longest run, clamped by its shortest drop."""
-    g = {}
+def dknees(r, X, h):
+    """`dknees` in the note: ONE knee per bead-and-side — `('d', y)` above the dot, `('b', y)` below
+    it — for the arms, legs and dips alike, since equal knees on one bezier family nest and unequal
+    ones braid.  It grows with the group's longest run, capped at HALF the gap to the nearest bend
+    on a participating lane or bead on that side, so two bands never touch.  A unit row is off the
+    object column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55."""
+    bys = [b[0] for b in r['beads']]
+    run, cap = {}, {}
     for (x, y0, y1, nm, un) in r['lanes']:
-        drop = (h if y0 == 'top' else y0) - (0.0 if y1 == 'bot' else y1)
-        if y0 != 'top' and un is None:
-            g.setdefault(('b', y0), []).append((x, drop))
-        if y1 != 'bot':
-            g.setdefault(('d', y1), []).append((x, drop))
-    return {k: min(0.45 + 0.25 * max(X(k[1]) - x for x, _ in v),
-                   0.55 * min(d for _, d in v)) for k, v in g.items()}
+        yt, yb = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
+        ds = dipys(r, x, yt, yb)
+        if un is not None and ds:
+            raise Unhandled(f"the unit lane at x={x:g} dips onto a bead — `ddip` draws no unit bead")
+        es = ([(y0, ('b',))] if y0 != 'top' and un is None else []) \
+            + [(y, ('b', 'd')) for y in ds] + ([(y1, ('d',))] if y1 != 'bot' else [])
+        for i, (y, sides) in enumerate(es):
+            for s in sides:
+                nb = es[i - 1][0] if s == 'd' and i > 0 else \
+                    es[i + 1][0] if s == 'b' and i + 1 < len(es) else None
+                c = 0.55 * (yt - yb) if nb is None else 0.5 * abs(nb - y)
+                o = [z for z in bys if (z > y + EPS if s == 'd' else z < y - EPS)]
+                if o:
+                    c = min(c, 0.5 * abs((min(o) if s == 'd' else max(o)) - y))
+                run[(s, float(y))] = max(run.get((s, float(y)), 0.0), abs(X(y) - x))
+                cap[(s, float(y))] = min(cap.get((s, float(y)), 99.0), c)
+    return {k: min(0.45 + 0.25 * run[k], cap[k]) for k in run}
+
+
+def dippts(x, X, h, y0, y1, ybs, gk):
+    """`ddip`'s points: one bend onto the dot and back out again per bead, at that bead's own two
+    knees.  `X` is the object wire's x at a height, so every bend aims at the dot actually drawn."""
+    t, b = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
+    pts = [(x, h)] if y0 == 'top' else [(X(t), t), (x, t - gk[('b', float(t))])]
+    for yb in ybs:
+        pts += [(x, yb + gk[('d', float(yb))]), (X(yb), yb), (x, yb - gk[('b', float(yb))])]
+    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + gk[('d', float(b))]), (X(b), b)])
 
 
 def a_dpanel(p, r):
-    grp = dgroups(r, p.xat, p.h) if p.opath else {}
+    gk = dknees(r, p.xat, p.h)
+    # The note EMITS the `gk` it drew with, and the two implementations of one rule are the whole
+    # risk here: a sweep with no crossings proves the model has none, never the ink.
+    if 'knees' in r:
+        drew = {(k[0], float(k[1:])): v for k, v in r['knees'].items()}
+        for k in sorted(set(drew) | set(gk)):
+            a, b = drew.get(k), gk.get(k)
+            if a is None or b is None or abs(a - b) > 1e-9:
+                p.kdrift.append(f"{p.id}: the knee {k[0]}@y={k[1]:g} is {a} in the note and {b} in"
+                                f" the sweep — `dknees` states one rule twice, and they differ")
     for (x, y0, y1, nm, un) in r['lanes']:
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, x, yt, yb)
-        kb = None if y0 == 'top' or un is not None else \
-            grp.get(('b', y0), dknee(x, p.xat(y0), yt - yb))
-        kd = None if y1 == 'bot' else grp.get(('d', y1), dknee(x, p.xat(y1), yt - yb))
         if ds:                             # `ddip`'s points — the arms the crossed wires make
-            pts = dippts(x, p.xat, p.h, y0, y1, ds, kb, kd)
+            pts = dippts(x, p.xat, p.h, y0, y1, ds, gk)
         else:                              # `dlane`'s own points
             pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
-                                                  [(p.xat(y0), y0), (x, y0 - kb)])
-            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + kd), (p.xat(y1), y1)]
+                                                  [(p.xat(y0), y0), (x, y0 - gk[('b', float(y0))])])
+            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (p.xat(y1), y1)]
         p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
@@ -733,11 +742,11 @@ def connect(p):
 # meets).  A wire that leaves its column and comes back satisfies both cuts and is seen only by the
 # second; a lane the sweep re-routes where no ink model exists is seen only by the first.
 def inversions(p):
-    """Order against the cut, on the cut alone.  A wire that ends in another column has moved
-    across every column between the two, and a wire standing in one of them, live on BOTH sides of
-    that height, is passed — unless it dips onto that very bead, where the two are drawn to meet.
-    `dpanel` does not say which lanes dip, so its lanes are read undipped; a dip there is a local
-    excursion at the bead's own height, and 13.4.4a's arms cross above it either way."""
+    """Order against the cut.  A wire that ends in another column has moved across every column
+    between the two, and a WIRE live on both sides of that height is passed — unless it dips onto
+    that very bead, where the two are drawn to meet.  Live is asked of the wire INSTANCE, never of
+    its column: two instances may share one column, one dying on the bead and one born on it, and
+    the column is then live above and below while nothing at all is passed."""
     out = []
     for w in p.wires:
         if not w.pts:
@@ -746,17 +755,12 @@ def inversions(p):
             if abs(px - w.x) < EPS:
                 continue
             lo, hi = min(px, w.x), max(px, w.x)
-            i = next((k for k in range(len(p.levels)) if abs(p.levels[k] - y) < EPS), None)
-            if i is None:
-                continue
-            below = [x for (x, _) in p.cuts[i + 1]]
-            met = {v.x for v in p.wires if any(abs(d - y) < EPS for d in v.dips)}
-            for (vx, vl) in p.cuts[i]:
-                if lo + EPS < vx < hi - EPS and any(abs(vx - x) < EPS for x in below) \
-                        and not any(abs(vx - m) < EPS for m in met):
+            for v in p.wires:
+                if lo + EPS < v.x < hi - EPS and v.ytop > y + EPS and v.ybot < y - EPS \
+                        and not any(abs(d - y) < EPS for d in v.dips):
                     out.append(f"{p.id}: {w.label}@{w.x:g} {end} at x={px:g}, y={y:g}, passing"
-                               f" {vl}@{vx:g}, which is live above and below — the cut orders them"
-                               f" {w.label} then {vl}, the ink exchanges them")
+                               f" {v.label}@{v.x:g}, which is live above and below — the cut orders"
+                               f" them {w.label} then {v.label}, the ink exchanges them")
     return out
 
 
@@ -1047,7 +1051,7 @@ def main(argv):
             continue
         try:
             p = Panel(r)
-            bad += sweep(p)
+            bad += p.kdrift + sweep(p)
             b, n = certify(p)
             bad += b; note += n
             drawn += connect(p)
@@ -1056,8 +1060,8 @@ def main(argv):
         except (Unhandled, ValueError) as e:
             unhandled.append(f"{r['id']} ({r['helper']}): {e}")
     bad += crosscheck(ps)
-    # The note has crossings today, so they are a WARNING: naming every one is the deliverable, and
-    # `--strict` is what a note that has been drawn without them is held to.
+    # `make p` runs `--strict`, where a crossing IS a build failure.  Without it they stay warnings,
+    # so one panel can be swept while another is mid-redraw and naming every crossing is the answer.
     # The note is drawn with bars today, so a broken drawing is a WARNING while stage 4 redraws the
     # panels one at a time; `--strict` is what a redrawn one is held to.
     if "--strict" in argv:

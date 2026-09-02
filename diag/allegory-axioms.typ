@@ -2454,50 +2454,70 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   body
 }), s: s, key: key)
 
+// Which bead heights a lane bends down to: every bead whose reach spans this column and which the
+// lane is live across — the reach crosses the lanes between, so a wire inside it MEETS that bead.
+#let ddips(xat, h, beads, x, y0, y1) = beads.filter(bd => bd.at(3, default: none) != none
+  and bd.at(3) <= x and x < xat(bd.at(0))
+  and (if y0 == "top" { h } else { y0 }) > bd.at(0)
+  and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
+#let dkey(s, y) = s + str(float(y))
+// ONE knee per bead-and-side, for arms, legs and dips alike: equal knees on one bezier family give
+// the strands the same y(t) and they nest, where unequal ones braid — so a knee that grew with the
+// run, and met the object at one angle, is given up.  Half the gap, so two bands never touch.
+#let dknees(xat, h, lanes, beads) = {
+  let bys = beads.map(bd => bd.at(0))
+  let (run, cap) = ((:), (:))
+  for l in lanes {
+    let (x, y0, y1) = (l.at(0), l.at(1), l.at(2))
+    let room = (if y0 == "top" { h } else { y0 }) - (if y1 == "bot" { 0 } else { y1 })
+    let es = ((if y0 != "top" and l.at(4) == none { ((y0, ("b",)),) } else { () })
+      + ddips(xat, h, beads, x, y0, y1).map(y => (y, ("b", "d")))
+      + (if y1 != "bot" { ((y1, ("d",)),) } else { () }))
+    for (i, e) in es.enumerate() {
+      let y = e.at(0)
+      for s in e.at(1) {
+        let nb = if s == "d" and i > 0 { es.at(i - 1).at(0) }
+          else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
+        let c = if nb == none { 0.55 * room } else { 0.5 * calc.abs(nb - y) }
+        let o = bys.filter(z => if s == "d" { z > y + 0.001 } else { z < y - 0.001 })
+        if o != () {
+          c = calc.min(c, 0.5 * calc.abs(
+            (if s == "d" { o.fold(99, calc.min) } else { o.fold(-99, calc.max) }) - y))
+        }
+        run.insert(dkey(s, y), calc.max(run.at(dkey(s, y), default: 0), calc.abs(xat(y) - x)))
+        cap.insert(dkey(s, y), calc.min(cap.at(dkey(s, y), default: 99), c))
+      }
+    }
+  }
+  let gk = (:)
+  for (k, v) in run { gk.insert(k, calc.min(0.45 + 0.25 * v, cap.at(k))) }
+  gk
+}
 // A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
-// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  The knee
-// GROWS WITH THE RUN, so a wire crossing four lanes and one crossing none meet the object at one angle.
-// CLAMPED to the drop the lane has: a knee taller than the run puts the turn above the panel's top
-// edge, where the wire strikes through the port labels.
-#let dknee(x, xo, drop) = calc.min(0.45 + 0.25 * calc.abs(xo - x), 0.55 * drop)
-// `xat` is the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are
-// knees shared by every arm into one bead — equal knees keep the arms' x order, so they nest.
+// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
+// the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
+// `dknees` gave the bead this lane is born on and the one it dies on.
 #let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none) = {
   let wc = if col == none { (:) } else { (col: col) }
-  let top = if y0 == "top" { h } else { y0 }
-  let bot = if y1 == "bot" { 0 } else { y1 }
   let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
-    let k = if kb == none { dknee(x, xat(y0), top - bot) } else { kb }
-    ((xat(y0), y0), (x, y0 - k))
+    ((xat(y0), y0), (x, y0 - kb))
   }
-  pts += if y1 == "bot" { ((x, 0),) } else {
-    let k = if kd == none { dknee(x, xat(y1), top - bot) } else { kd }
-    ((x, y1 + k), (xat(y1), y1))
-  }
+  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), (xat(y1), y1)) }
   hm-wire(pts, ..wc)
   if un != none { hm-bead((x, y0), un) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
-// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out.
-#let ddip(xat, h, x, y0, y1, ybs, nm, kb: none, kd: none, col: none) = {
+// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out —
+// at that bead's own two knees, the same ones its arms and legs use.
+#let ddip(xat, h, x, y0, y1, ybs, nm, gk, col: none) = {
   let wc = if col == none { (:) } else { (col: col) }
   let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
-  // The lane change keeps `dlane`'s own knee, so the wire reaches its lane exactly where it did
-  // before and crosses nothing new; the dip is a separate, smaller excursion below that corner.
-  let keb = calc.min(if kb == none { dknee(x, xat(t), t - b) } else { kb },
-    0.60 * (t - ybs.first()))
-  let ked = calc.min(if kd == none { dknee(x, xat(b), t - b) } else { kd },
-    0.60 * (t - ybs.first()))
-  let pts = if y0 == "top" { ((x, h),) } else { ((xat(t), t), (x, t - keb)) }
-  for (i, yb) in ybs.enumerate() {
-    // A dip may share its run with the next dip down, and then each gets under half of it.
-    let (hi, up) = if i == 0 { (t - keb, 0.85) } else { (ybs.at(i - 1), 0.42) }
-    let (lo, dn) = if i == ybs.len() - 1 { (if y1 == "bot" { b } else { b + ked }, 0.85) }
-      else { (ybs.at(i + 1), 0.42) }
-    let kdip = calc.min(0.30 * (xat(yb) - x), up * (hi - yb), dn * (yb - lo))
-    pts += ((x, yb + kdip), (xat(yb), yb), (x, yb - kdip))
+  let pts = if y0 == "top" { ((x, h),) } else { ((xat(t), t), (x, t - gk.at(dkey("b", t)))) }
+  for yb in ybs {
+    pts += ((x, yb + gk.at(dkey("d", yb))), (xat(yb), yb), (x, yb - gk.at(dkey("b", yb))))
   }
-  hm-wire(pts + (if y1 == "bot" { ((x, 0),) } else { ((x, b + ked), (xat(b), b)) }), ..wc)
+  hm-wire(pts + (if y1 == "bot" { ((x, 0),) }
+    else { ((x, b + gk.at(dkey("d", b))), (xat(b), b)) }), ..wc)
 }
 
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
@@ -2514,59 +2534,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     }
     r
   } }
-  // One knee per bead-and-side (sized by the group's longest run, clamped by its shortest drop):
-  // arms converging on one dot with EQUAL knees keep their x order, so they nest, never braid.
-  let gk = (:)
-  if opath != none {
-    let acc = (:)
-    for l in lanes {
-      let drop = ((if l.at(1) == "top" { h } else { l.at(1) })
-        - (if l.at(2) == "bot" { 0 } else { l.at(2) }))
-      if l.at(1) != "top" and l.at(4) == none {
-        let key = "b" + str(l.at(1))
-        acc.insert(key, acc.at(key, default: ()) + ((l.at(0), drop),))
-      }
-      if l.at(2) != "bot" {
-        let key = "d" + str(l.at(2))
-        acc.insert(key, acc.at(key, default: ()) + ((l.at(0), drop),))
-      }
-    }
-    for (key, v) in acc {
-      let y = float(key.slice(1))
-      gk.insert(key, calc.min(
-        0.45 + 0.25 * v.map(p => xat(y) - p.at(0)).fold(0, calc.max),
-        0.55 * v.map(p => p.at(1)).fold(99, calc.min)))
-    }
-    // An arm's knee stays UNDER where every leg dipping to its bead lands on its lane (`ddip`'s
-    // `t - keb`), else the arm cuts through that leg on its way in, off any column.
-    for key in gk.keys().filter(k => k.first() == "d") {
-      let y = float(key.slice(1))
-      let land = lanes.filter(l => l.at(1) != "top" and l.at(4) == none and l.at(1) > y
-          and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < y
-          and beads.any(bd => bd.at(3, default: none) != none and calc.abs(bd.at(0) - y) < 0.001
-            and bd.at(3) <= l.at(0) and l.at(0) < xat(y)))
-        .map(l => l.at(1) - calc.min(gk.at("b" + str(l.at(1)), default: 99), 0.60 * (l.at(1) - y)) - y)
-      if land != () { gk.insert(key, calc.min(gk.at(key), 0.85 * land.fold(99, calc.min))) }
-    }
-  }
+  let gk = dknees(xat, h, lanes, beads)
   dpan(h, w, xo, {
   for l in lanes {
-    // EVERY live wire the bead spans dips onto it, not just the one its `x` names: the span reaches
-    // across the lanes between, so a wire inside the span meets the bead rather than passing it.
-    let ys = beads.filter(bd => bd.at(3, default: none) != none
-      and bd.at(3) <= l.at(0) and l.at(0) < xat(bd.at(0))
-      and (if l.at(1) == "top" { h } else { l.at(1) }) > bd.at(0)
-      and (if l.at(2) == "bot" { 0 } else { l.at(2) }) < bd.at(0)).map(bd => bd.at(0))
-    let kb = if l.at(1) == "top" or l.at(4) != none { none }
-      else { gk.at("b" + str(l.at(1)), default: none) }
-    let kd = if l.at(2) == "bot" { none } else { gk.at("d" + str(l.at(2)), default: none) }
+    let ys = ddips(xat, h, beads, l.at(0), l.at(1), l.at(2))
+    let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
+    let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
     // The lane's functor name keys `FCOL`; it is never drawn, the colour names the wire (2026-09-01).
     let nm = if l.at(3) != none { l.at(3) } else {
       let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
       if q == none { none } else { q.at(1) } }
     let col = if nm == none { none } else { FCOL.at(plain(nm)) }
     if ys == () { dlane(xat, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
-    else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys.sorted().rev(), l.at(3), kb: kb, kd: kd, col: col) }
+    else { ddip(xat, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
   }
   for b in beads { hm-bead((xat(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black)) }
   for (x, l) in top {
@@ -2575,7 +2555,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert,
+  // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
+  // two knees disagree is a crossing the sweep would call clean while the page still braids.
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
     + (if opath == none { (:) } else { (opath: opath) }))
