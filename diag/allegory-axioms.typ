@@ -8911,7 +8911,7 @@ the longest repeated tail; #h(4pt)
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
   [#dpanel(7, 11.45, 8.6,
   ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`−×Code`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`list`], none), (7.45, "top", 5, none, none)),
-  ((5, [`extend°`], black, 7.45), (4, [`thin(prefix°×⊤+⊤)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((5, [`extend°`], black, 7.45), (4, [`thin(prefix°×(⊤+⊤))`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
   ((7.45, [`list`]), (8.6, [`Char`])),
   ((2.85, [`list`]), (8.6, [`Code`])),
   cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))E((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
