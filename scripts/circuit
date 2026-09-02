@@ -92,6 +92,8 @@ OWN = {}    # and the signatures it declares itself, laid over the table: a §14
             # of, or a letter the table binds to another section's meaning.
 MU = {}     # and the initial algebra it folds from, laid over the table's `mu` the same way: §15's
             # `T` is an object no functor in the file names, and its carrier `E(A)` no row declares.
+POLYS = {}  # and the coproduct its `F` is: §15's snoc-lists put the recursive factor FIRST, where
+            # the file's cons-list `A×x` has it last, and §14's dp leaves `F` a summand with none.
 
 
 @functools.lru_cache(maxsize=None)
@@ -108,11 +110,15 @@ def sigs():
     t = inst(raw(), AT)
     if MU:
         t = {**t, "mu": {**t["mu"], **{f: inst(o, AT) for f, (o, _) in MU.items()}}}
+    if POLYS:
+        # An EMPTY branch list drops the row: an abstract summand functor is one wire, not a fork.
+        p = {**t["polys"], **inst(POLYS, AT)}
+        t = {**t, "polys": {f: bs for f, bs in p.items() if bs}}
     if not OWN:
         return t
     # An own row types the head's ATOM use; the file's rows for the head as an OPERATOR keep their
     # argument scheme, which `head:src⟶tgt` has no room to state.
-    own = {k: [v] + [r for r in rows(t["sigs"], k) if "arg" in r] for k, v in inst(OWN, AT).items()}
+    own = {k: v + [r for r in rows(t["sigs"], k) if "arg" in r] for k, v in inst(OWN, AT).items()}
     return {**t, "sigs": {**t["sigs"], **own}}
 
 
@@ -122,7 +128,10 @@ def parse_sigs(s):
     The ARROW says which box: `⟶` a relation, chamfered, and `⟼` — maps to — a MAP, square.  The
     marker belongs here because these are the SECTION-LOCAL names, declared per panel and nowhere
     else (`pick`, `schedule`, `snoc` at `[Job]` and at `String`); without it every local map would
-    have to enter diag/circuit-sigs.json for no reason but to be drawn square."""
+    have to enter diag/circuit-sigs.json for no reason but to be drawn square.
+    A head may be given TWICE, as the file's own table gives one: §15's `nil` is `𝟏⟼[Code]` in the
+    algebra and `𝟏⟼[Char]` in the bracket beside it, and the port in hand picks the row — the one
+    an unknown target cannot choose between goes FIRST."""
     out = {}
     for p in s.split():
         head, _, arrow = p.partition(":")
@@ -130,7 +139,23 @@ def parse_sigs(s):
         src, sep, tgt = arrow.partition("⟼" if is_map else "⟶")
         if not (head and sep and src and tgt):
             raise Unhandled(f"--sigs: `{p}` is not a `head:src⟶tgt` pair (`⟼` for a map)")
-        out[head] = {"src": src, "tgt": tgt, "map": is_map}
+        out.setdefault(head, []).append({"src": src, "tgt": tgt, "map": is_map})
+    return out
+
+
+def parse_polys(s):
+    """`--polys "F:𝟏+x×Code"` — space-separated `functor:branch+branch` pairs, the coproduct a
+    `[x,y]` forks and the fusion law puts its `𝟙` and `R` on, laid over diag/circuit-sigs.json's
+    `polys`.  §15's lists are built by `snoc`, so the recursive factor comes FIRST and the file's
+    cons-list `A×x` has the product the wrong way round; §14's dp leaves `F` an abstract summand
+    functor, and an EMPTY right side — `--polys "F:"` — drops the row, which is the one wire the
+    `Fᵢ` beside it draws."""
+    out = {}
+    for p in s.split():
+        f, sep, bs = p.partition(":")
+        if not (f and sep):
+            raise Unhandled(f"--polys: `{p}` is not a `functor:branch+branch` pair")
+        out[f] = [b for b in bs.split("+") if b]
     return out
 
 
@@ -354,9 +379,11 @@ def box(label, src, tgt, is_map, frac=False, flip=False, **kw):
     return pic("box", src, tgt, is_map, label=label, chamfer=not is_map, frac=frac, flip=flip, **kw)
 
 
-def walk(e, tbl, src=None, tgt=None):
+def walk(e, tbl, src=None, tgt=None, typing=False):
     """`(node, src, tgt, is_map)`.  One end of the arrow is always known — the panel's own port at
-    the top, the previous factor's target inside a composite — and the signature says the other."""
+    the top, the previous factor's target inside a composite — and the signature says the other.
+    `typing` is set where `typed` walks an OPERATOR's argument: that node is thrown away and only
+    its two ends are kept, so a term with no picture of its own still has to type."""
     if e[0] == 'hc':
         raise Unhandled(f"`∘` composes ACROSS a functor wire, which is the spider reading;"
                         f" a circuit has no such direction (CIRCUIT-GEN §3 row 19): {spell(e)}")
@@ -367,8 +394,12 @@ def walk(e, tbl, src=None, tgt=None):
         # here and not in `cnorm`, so the label a box carrying `(R×S)°` prints stays the note's.
         if e[1][0] == 'prod':
             return stack([('conv', x) for x in e[1][1]], tbl, src)
-        n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src)
+        n, s, t, _ = walk(e[1], tbl, src=tgt, tgt=src, typing=typing)
         if n["k"] != "box":
+            # Under `E(−)`/`P(−)` the node is discarded and only the swapped ends are wanted, so a
+            # bracket's `°` — `[wrap,cat]°`, which has no box to flip — still types.
+            if typing:
+                return pic("conv", t, s, False, _in=[t], _out=[s])
             raise Unhandled(f"`{spell(e)}` writes `°` on a composite, which is the cup/cap frame of"
                             f" CIRCUIT-GEN §3 row 8 — not in the slice")
         return box(n["label"], t, s, False, frac=n["frac"], flip=not n["flip"])
@@ -377,7 +408,7 @@ def walk(e, tbl, src=None, tgt=None):
     if e[0] == 'union':
         return fan(e, tbl, src)
     if e[0] == 'case':
-        return tape(e, tbl, src)
+        return tape(e, tbl, src, tgt)
     if e[0] == 'cap':
         return meet(e, tbl, src)
     if e[0] == 'fork':
@@ -437,7 +468,7 @@ def typed(e, row, tbl, src, tgt):
         # `E(R): E(a)⟶E(b)` binds `b` from the ARGUMENT's target, not from the port in hand, so the
         # argument's own ends come back and go into `env` before the entry's scheme is substituted.
         _, s2, t2, _ = walk(e[2], tbl, src=sa if ground(sa) else None,
-                            tgt=sb if ground(sb) else None)
+                            tgt=sb if ground(sb) else None, typing=True)
         unify(a, s2, env), unify(b, t2, env)
     return box(spell(e), subst(obj(row["src"]), env), subst(obj(row["tgt"]), env), row["map"])
 
@@ -475,6 +506,11 @@ def seq(xs, tbl, src, tgt=None):
             objs.append(b[2]); mp = mp and b[3]; i += 2
             continue
         n, s, t, m = walk(xs[i], tbl, src=objs[-1], tgt=tgt if i + 1 == len(xs) else None)
+        if items and items[-1]["_out"] != n["_in"] and n["k"] == "case" \
+                and items[-1]["k"] == "box" and n["_in"] == [objs[-1]]:
+            # A box handing over to a tape hands the coproduct WHOLE — `est(Q)[nil,snoc]` is not a
+            # fusion, and the fork is what opens it, so the box before it ends on the one wire.
+            items[-1] = dict(items[-1], nout=1, _out=[objs[-1]])
         if items and items[-1]["_out"] != n["_in"]:
             raise Unhandled(f"`{spell(xs[i])}` takes {oshow(objs[-1])} as one coproduct wire where"
                             f" the factor before leaves it as the strands"
@@ -625,10 +661,21 @@ def fold(e, tbl, src, tgt):
                port=[lshow(w) for w in body["_in"]])
 
 
-def tape(e, tbl, src):
+def tape(e, tbl, src, tgt=None):
     """§3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  The source
-    is opened by the functor's own polynomial, which is the object-level unfold of §1.3."""
+    is opened by the functor's own polynomial, which is the object-level unfold of §1.3.
+    A `°` swaps the ends and hands the bracket only its TARGET, so with no source the branches are
+    typed from where they all land and the coproduct is read back off their sources."""
     polys = sigs()["polys"]
+    if src is None:
+        if tgt is None:
+            raise Unhandled(f"`{spell(e)}` forks a coproduct neither port names")
+        bs = [walk(x, tbl, tgt=tgt) for x in e[1]]
+        if len({oshow(b[2]) for b in bs}) > 1:
+            raise Unhandled(f"`{spell(e)}` merges branches at"
+                            f" {', '.join(oshow(b[2]) for b in bs)}")
+        ss = [b[1] for b in bs]
+        return taped(e, coproduct(ss, polys, spell(e)), ss, bs)
     if src[0] != 'app' or src[1] not in polys:
         raise Unhandled(f"`{spell(e)}` forks {oshow(src)}, which diag/circuit-sigs.json gives no"
                         f" polynomial for — a case needs the coproduct it splits")
@@ -638,6 +685,28 @@ def tape(e, tbl, src):
     if len(ss) != len(e[1]):
         raise Unhandled(f"`{spell(e)}` has {len(e[1])} branches over {oshow(src)}'s {len(ss)}")
     bs = branches(e[1], tbl, ss, spell(e))
+    return taped(e, src, ss, bs)
+
+
+def coproduct(ss, polys, what):
+    """Which `F(c)` has exactly these branch objects.  `[nil,extend]°` gives the branches' sources
+    and wants the object they sum to, the one thing a converse cannot read off the port it has."""
+    for f, ps in polys.items():
+        if len(ps) != len(ss):
+            continue
+        env = {}
+        try:
+            for p, s in zip(ps, ss):
+                unify(obj(p), s, env)
+        except Unhandled:
+            continue
+        if 'x' in env:
+            return ('app', f, env['x'])
+    raise Unhandled(f"`{what}` sums {', '.join(oshow(s) for s in ss)}, which no `polys` functor has"
+                    f" as its branches — `--polys \"F:{'+'.join(oshow(s) for s in ss)}\"` names it")
+
+
+def taped(e, src, ss, bs):
     if len(ss) != 2:
         raise Unhandled(f"`{spell(e)}` forks {len(ss)} summands, and the tape fork draws two")
     # The coproduct arrives as ONE wire, the fork being what opens it; each arm opens that wire
@@ -678,10 +747,11 @@ def draw(formula, src, tgt, at=None):
     is the cert's other keys, table constants instantiated for this row, and the cert keeps them;
     its `sigs:` is the row's OWN signatures, the sibling of those constants — a §14 name the file
     has never heard of, or a letter the file binds to another section's arrow."""
-    global AT, OWN, MU
+    global AT, OWN, MU, POLYS
     at = dict(at or {})
-    own, ini = at.pop("sigs", ""), at.pop("mu", "")
+    own, ini, pol = at.pop("sigs", ""), at.pop("mu", ""), at.pop("polys", "")
     AT, OWN, MU = at, parse_sigs(own) if own else {}, parse_mu(ini) if ini else {}
+    POLYS = parse_polys(pol) if pol else {}
     e = cnorm(parse(formula))
     tree, s, t, _ = walk(e, sigs()["sigs"], src=obj(src), tgt=obj(tgt))
     if t != obj(tgt):
@@ -689,7 +759,8 @@ def draw(formula, src, tgt, at=None):
     tree["src"] = [lshow(w) for w in tree["_in"]]
     tree["tgt"] = [lshow(w) for w in tree["_out"]]
     tree["cert"] = ({"expect": formula, "src": src, "tgt": tgt, **AT}
-                    | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {}))
+                    | ({"mu": ini} if ini else {}) | ({"polys": pol} if pol else {})
+                    | ({"sigs": own} if own else {}))
     return tree
 
 
@@ -821,6 +892,10 @@ _HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
               ' pairs — `--mu "F:T⟶E(A)"` folds the abstract `T` §15 writes, which no `mu` row in'
               " diag/circuit-sigs.json names, and gives the carrier when the algebra is a composite"
               " with no row of its own and the panel's target does not reach it"
+              '\n--polys       the coproduct this row'"'"'s functor is, `FUNCTOR:BRANCH+BRANCH` pairs —'
+              ' `--polys "F:𝟏+x×Code"` gives §15 the snoc order the file'"'"'s cons-list `A×x` has'
+              " backwards, and an EMPTY right side drops the row, leaving an abstract summand functor"
+              " the one wire it draws"
               '\n--slice       regenerate CIRCUIT-GEN §5'"'"'s whole acceptance file'
               " (diag/circuit-slice.typ) from the built-in SLICE table, header included — never hand-edit it"
               '\n--compare     rebuild every `cpanel(` literal in the note from its own `cert:` and'
@@ -834,8 +909,8 @@ _HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
 def main(argv):
     sl.help_if(argv, __doc__, _HELP_BODY)
     src, tgt, own = sl.opt(argv, "--src"), sl.opt(argv, "--tgt"), sl.opt(argv, "--sigs")
-    at, ini = sl.opt(argv, "--at"), sl.opt(argv, "--mu")
-    taken = {i for o in ("--src", "--tgt", "--sigs", "--at", "--mu") if o in argv
+    at, ini, pol = sl.opt(argv, "--at"), sl.opt(argv, "--mu"), sl.opt(argv, "--polys")
+    taken = {i for o in ("--src", "--tgt", "--sigs", "--at", "--mu", "--polys") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     if "--slice" in argv:
@@ -874,8 +949,8 @@ def main(argv):
                  + '\n       circuit --slice'
                  + '\n       circuit --compare [diag/allegory-axioms.typ]'
                  + '\n       circuit --write [diag/allegory-axioms.typ]')
-    t = draw(formula, src, tgt, (parse_at(at) if at else {})
-             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {}))
+    t = draw(formula, src, tgt, (parse_at(at) if at else {}) | ({"mu": ini} if ini else {})
+             | ({"polys": pol} if pol else {}) | ({"sigs": own} if own else {}))
     print(emit(t))
     # The boxes spell the NORMALISED term, up to spacing: a `union`/`case` keeps the note's own
     # spelling verbatim, and a rebuilt one cannot know that this bracket was written `(p×𝟙) cons`.

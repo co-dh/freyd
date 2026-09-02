@@ -18,14 +18,6 @@
     branch names, or a general fallback, so all six generate and certify.
 [ ] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
-[ ] scripts/circuit refuses `°` on a bracket, so five §14–16 circuit cells stay hand-drawn (`[wrap,cat]°`,
-    `[nil,extend]°`, `[nil,expand]°`, `[nil,snag]°`, `[arb,step]°`): a bracket is a `case`, `conv` wants a
-    box, and `tape` reads the coproduct off `polys` at the SOURCE, which the conv swap hands only the
-    target.  Under `%∋` the node is discarded, so TYPING alone blocks; the mct and entab cells also carry a
-    bracket INSIDE `P(…)`, which `typed` really does walk, so those two need `polys` rows as well.
-    Needs `conv` under `%∋` to return types without a box, plus a per-panel `polys` override — `polys.F`'s
-    `A×x` has the wrong product order for snoc-lists (note :9541) — the same override the greedy `F`/`Fᵢ`
-    row mismatch wants.
 [ ] the note's HM certs at diag/allegory-axioms.typ :8755 :8790 :9247 write E(F(X)h), E(Fᵢ(X)Uᵢ), E((X×𝟙)snoc)
     where B&dM p.220, the circuit column and Lean's `powerRel` all write P; P and E agree only on maps
     (B&dM p.119, p.202) and these arguments are relations, so the three certs name the wrong operator.

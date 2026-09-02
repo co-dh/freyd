@@ -8989,9 +8989,6 @@ both lists empty.
 
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
-#let mb-estR = ([`est(R)`], 1.90, true)
-#let mb-Lwc = (frc([`[wrap,cat]°`]), 4.00, false)
-#let mb-Ptip = ([`P([tip,(X×X)bin])`], 5.35, true)
 #let mb-Lcat = (frc([`cat°`]), 1.80, false)
 #let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
 #disp[#pad(right: 10pt, table(
@@ -9028,9 +9025,26 @@ both lists empty.
   ((1.7, [`tree`]), (4, [`A`])),
   cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("flatten": "tree(A)⟶list⁺(A)")), names: true)],
 
-  // Still hand-drawn: `[wrap,cat]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
-  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
-  [#vstep(RQ, thpic([`list⁺ A`], [`tree A`], none, (mb-Lwc, mb-Ptip, mb-estR)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E([wrap,cat]°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P([tip,(X×X)bin])", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E list⁺ A", ),
+    ),
+    (
+      1,
+      ("EF list⁺ A", ),
+    ),
+    (
+      2,
+      ("E tree A", ),
+    ),
+  ), src: ("list⁺ A", ), tgt: ("tree A", )),
+  cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", polys: "F:A+x×x", sigs: "wrap:A⟼list⁺(A) cat:list⁺(A)×list⁺(A)⟶list⁺(A) tip:A⟼tree(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
     [
      // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
      // mct_laws row: Theorem 9.1
@@ -9154,10 +9168,6 @@ the longest repeated tail; #h(4pt)
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
-#let cb-estR = ([`est(R)`], 1.90, true)
-#let cb-thin = ([`thin Q`], 1.90, true)
-#let cb-Lne = (frc([`[nil,extend]°`]), 4.60, false)
-#let cb-Psnoc = ([`P([nil,(X×𝟙)snoc])`], 5.65, true)
 #let cb-Lext = (frc([`extend°`]), 2.75, false)
 #let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
 #let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
@@ -9195,9 +9205,27 @@ the longest repeated tail; #h(4pt)
   ((1.7, [`list`]), (4, [`Code`])),
   cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: ("decode": "[Code]⟶[Char]")), names: true)],
 
-  // Still hand-drawn: `[nil,extend]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
-  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
-  [#vstep(RQ, thpic([`String`], [`[Code]`], none, (cb-Lne, cb-thin, cb-Psnoc, cb-estR)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E([nil,extend]°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "P([nil,(X×𝟙)snoc])", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("E[Char]", ),
+    ),
+    (
+      2,
+      ("EF[Char]", ),
+    ),
+    (
+      3,
+      ("E[Code]", ),
+    ),
+  ), src: ("[Char]", ), tgt: ("[Code]", )),
+  cert: (expect: "([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", polys: "F:𝟏+x×Code", sigs: "nil:𝟏⟼[Code] nil:𝟏⟼[Char] extend:[Char]×Code⟶[Char] snoc:[Code]×Code⟼[Code] X:[Char]⟶[Code]"))],
     // entab row: Theorem 9.2
     [#src[at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
       pointers. Monotonicity `F(R)α⊑αR` is routine, the two costs being constants:
@@ -9325,9 +9353,9 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
     (k: "box", nin: 1, nout: 1, label: "E(T°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 2, label: "est(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 2, label: "F(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 1, label: "h", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "F(X)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "h", chamfer: false, frac: false, flip: false),
   ), seams: (
     (
       0,
@@ -9337,8 +9365,16 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       1,
       ("EFA", ),
     ),
+    (
+      2,
+      ("FA", ),
+    ),
+    (
+      3,
+      ("FB", ),
+    ),
   ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: "T:F(A)⟶A h:F(B)⟼B X:A⟶B"))],
+  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", polys: "F:", sigs: "T:F(A)⟶A h:F(B)⟼B X:A⟶B"))],
     // dp-shrink row: Theorem 10.1
     [#src[]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
@@ -9416,9 +9452,6 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
 #let nb-est = ([`est(R)`], 1.90, true)
 #let nb-Ldet = (frc([`detab°`]), 2.45, false)
-#let nb-Lnx = (frc([`[nil,expand]°`]), 4.60, false)
-#let nb-estQ = ([`est(Q)`], 1.90, true)
-#let nb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
 #let nb-Lexp = (frc([`expand°`]), 2.75, false)
 #let nb-estVU = ([`est(V×U)`], 2.55, true)
 #let nb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
@@ -9452,9 +9485,42 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.7, [`list`]), (4, [`Char`])),
   cert: (expect: "(detab°)%∋ est(R)", src: "[Char]", tgt: "[Char]", sigs: ("detab": "[Char]⟶[Char]")), names: true)],
 
-  // Still hand-drawn: `[nil,expand]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
-  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
-  [#vstep(RQ, thpic([`String`], [`String`], none, (nb-Lnx, nb-estQ, nb-alg)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E([nil,expand]°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
+    (k: "case", nin: 1, nout: 1, bodies: (
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "open", nin: 1, nout: 0),
+            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "open", nin: 1, nout: 2),
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
+          ), seams: (
+            (
+              0,
+              ("[Char]", "Char", ),
+            ),
+          )),
+      )),
+  ), seams: (
+    (
+      0,
+      ("E[Char]", ),
+    ),
+    (
+      1,
+      ("EF[Char]", ),
+    ),
+  ), src: ("[Char]", ), tgt: ("[Char]", )),
+  cert: (expect: "([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "[Char]", tgt: "[Char]", polys: "F:𝟏+x×Char", sigs: "nil:𝟏⟼[Char] expand:[Char]×Char⟶[Char] snoc:[Char]×Char⟼[Char] X:[Char]⟶[Char]"))],
     [
      // lean:AOP.A10_2_Detab.entab_laws@3b89184f
      // entab-thin row: Theorem 10.1
@@ -9558,10 +9624,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // set at all.
 #let tb-estR = ([`est(R)`], 1.90, true)
 #let tb-Lbag = (frc([`bagify°`]), 2.75, false)
-#let tb-Lns = (frc([`[nil,snag]°`]), 4.00, false)
-#let tb-estQ = ([`est(Q)`], 1.90, true)
 #let tb-estQp = ([`est(Q')`], 2.20, true)
-#let tb-alg = ([`(𝟙+(X×𝟙))[nil,snoc]`], 6.25, true)
 #let tb-Lsnag = (frc([`snag°`]), 2.15, false)
 #let tb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
 #let tb-pick = ([`pick`], 1.50, false)
@@ -9598,9 +9661,42 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.7, [`list`]), (4, [`Job`])),
   cert: (expect: "(bagify°)%∋ est(R)", src: "bag(Job)", tgt: "[Job]", sigs: ("bagify": "[Job]⟶bag(Job)")), names: true)],
 
-  // Still hand-drawn: `[nil,snag]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
-  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
-  [#vstep(RQ, thpic([`Bag Job`], [`[Job]`], none, (tb-Lns, tb-estQ, tb-alg)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E([nil,snag]°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
+    (k: "case", nin: 1, nout: 1, bodies: (
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "open", nin: 1, nout: 0),
+            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "open", nin: 1, nout: 2),
+            (k: "stack", nin: 2, nout: 2, lanes: (
+                (k: "seq", nin: 1, nout: 1, items: (
+                    (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
+                  ), seams: ()),
+                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+              )),
+            (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
+          ), seams: (
+            (
+              0,
+              ("bag Job", "Job", ),
+            ),
+          )),
+      )),
+  ), seams: (
+    (
+      0,
+      ("E bag Job", ),
+    ),
+    (
+      1,
+      ("EF bag Job", ),
+    ),
+  ), src: ("bag Job", ), tgt: ("[Job]", )),
+  cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", polys: "F:𝟏+x×Job", sigs: "nil:𝟏⟼[Job] nil:𝟏⟼bag(Job) snag:bag(Job)×Job⟶bag(Job) snoc:[Job]×Job⟼[Job] X:bag(Job)⟶[Job]"))],
     // job-schedule row: Theorem 10.1
     [#src[No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
@@ -9694,12 +9790,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // moved past it.
 #let xb-est = ([`est(R)`], 1.90, true)
 #let xb-Lint = (frc([`intern°`]), 2.75, false)
-#let xb-ival = ([`interval`], 2.55, false)
 #let xb-Linv = (frc([`inrange val°`]), 4.30, false)
 #let xb-LH = (frc([`H`]), 0.95, false)
-#let xb-Larb = (frc([`[arb,step]°`]), 3.95, false)
-#let xb-estQ = ([`est(Q)`], 1.90, true)
-#let xb-FXa = ([`F(X)α`], 1.85, true)
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -9793,9 +9885,28 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.7, [`Decimal`]),),
   cert: (expect: "interval 𝟙%∋ E(H)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "H": "Interval⟶Decimal")))],
 
-  // Still hand-drawn: `[arb,step]°` writes `°` on a bracket, which is CIRCUIT-GEN §3 row 8's
-  // cup/cap frame and outside scripts/circuit's slice — `conv` wants a box, a bracket is a case.
-  [#vstep(RQ, thpic([`[0,2¹⁶)`], [`Decimal`], none, (xb-ival, xb-Larb, xb-estQ, xb-FXa)),
+  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
+    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "E([arb,step]°)", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 2, label: "est(Q)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 2, label: "F(X)", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "α", chamfer: false, frac: false, flip: false),
+  ), seams: (
+    (
+      0,
+      ("Interval", ),
+    ),
+    (
+      1,
+      ("E Interval", ),
+    ),
+    (
+      2,
+      ("EF Interval", ),
+    ),
+  ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
+  cert: (expect: "interval ([arb,step]°)%∋ est(Q)F(X)α", src: "[0,2¹⁶)", tgt: "Decimal", polys: "F:𝟏+Digit×x", sigs: "interval:[0,2¹⁶)⟼Interval arb:𝟏⟶Interval step:Digit×Interval⟼Interval X:Interval⟶Decimal α:F(Decimal)⟼Decimal"))],
     // interval row: Theorem 10.1
     [#src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
