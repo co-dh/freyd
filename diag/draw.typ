@@ -56,14 +56,13 @@
 // The FUNCTORS of `i ⊣ E`, keyed by name and OFF the palette above: the `Λ` panels set these wires
 // beside typed object wires.  `i` is black, this file's colour for a functor wire; `E` marks the pair.
 #let ADJC = (i: black, E: rgb("#ea580c"))
-// Functor wires (`dpanel` lanes) are coloured BY NAME at the user's request (2026-09-01): once a wire
-// leaves its bead nothing else says which functor it is.  Muted, so the black beads stay loudest.
-// The eight product functors share one terracotta band because no two of them ever meet in a panel, and
-// the band stays off blue so none of them nears the teal object wire.
+// Functor wires are coloured BY NAME; a bead sits ON the wire it changes, so the FIXED obstacles are the
+// bead hues `GIVEN1`/`GIVEN2`/`INDUCED`/`SLACK` and the object hues `BCOL`/`TCOL`/`CCOL`.  ΔE76 ≥ 25 from
+// every one, ≥ 30 between two lanes sharing a panel, ≥ 12 between any two; muted, so the beads stay loudest.
 #let FCOL = (
-  "E": rgb("#6b4c9a"), "list": rgb("#3f7d4e"), "tree": rgb("#8c5a2b"), "F": rgb("#695c53"),
-  "L": rgb("#4e9986"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"), "bag": rgb("#b6813f"),
-  "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#ae6160"), "Int×−": rgb("#c78675"), "Op×−": rgb("#844a3b"),
+  "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"),
+  "L": rgb("#7e668d"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"), "bag": rgb("#a29366"),
+  "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"), "Op×−": rgb("#844a3b"),
   "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"), "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
