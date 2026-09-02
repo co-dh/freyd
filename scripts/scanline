@@ -234,8 +234,9 @@ def dun(e):
 
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
-    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)`, `P(R)=E(R)` and
-    `dun`'s `R%∋=𝟙%∋ E(R)` are laws applied on trust."""
+    `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)` and `dun`'s
+    `R%∋=𝟙%∋ E(R)` are laws applied on trust.  `P(R)` and `E(R)` collapse as ONE HM picture, not as
+    one relation — they agree on maps (B&dM p.202) and the panel cannot tell them apart."""
     # One bead on the sweep side, so the comparison form stays the atom these were before the parser
     # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
@@ -888,10 +889,12 @@ def subst(e, lhs, rhs):
 
 
 def read(s, cert, obj):
+    """The cert's OWN expression — aliases unfolded and the branch taken, but not normalised, so a
+    mismatch message spells the formula the file states and not `norm`'s picture quotient."""
     e, used = unfold(parse(s), cert.get('alias') or ())
     if cert.get('branch'):
         e = take_branch(e, cert['branch'], obj, typed(sigs(), cert.get('sigs')))
-    return norm(e), used
+    return e, used
 
 
 def certify(p):
@@ -901,20 +904,20 @@ def certify(p):
     for key, top in (("src", True), ("tgt", False)):
         if not c.get(key):
             continue
-        want, _ = read(c[key], c, True)
-        got = fold_cut(p, ports(p, top))
+        said, _ = read(c[key], c, True)
+        want, got = norm(said), fold_cut(p, ports(p, top))
         if want != norm(got):
             bad.append(f"{p.id}: the {'top' if top else 'bottom'} cut is {spell(got)}, not the"
-                       f" stated {key} {c[key]}, which reads {spell(want)} — declare the branch"
+                       f" stated {key} {c[key]}, which reads {spell(said)} — declare the branch"
                        f" the panel draws, or fix the ports")
     if c.get('expect'):
-        want, used = read(c['expect'], c, False)
-        got = norm(p.expr)
+        said, used = read(c['expect'], c, False)
+        want, got = norm(said), norm(p.expr)
         if want == got:
             note.append(f"{p.id}: AGREE{' modulo ' + '; '.join(used) if used else ''}")
         else:
             bad.append(f"{p.id}: the panel denotes {spell(tidy(p.expr))} but states"
-                       f" {c['expect']}, which reads {spell(want)}" + first_diff(got, want))
+                       f" {c['expect']}, which reads {spell(said)}" + first_diff(got, want))
     return bad, note
 
 

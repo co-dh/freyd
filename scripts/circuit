@@ -691,6 +691,7 @@ def tape(e, tbl, src, tgt=None):
 def coproduct(ss, polys, what):
     """Which `F(c)` has exactly these branch objects.  `[nil,extend]°` gives the branches' sources
     and wants the object they sum to, the one thing a converse cannot read off the port it has."""
+    hits = []
     for f, ps in polys.items():
         if len(ps) != len(ss):
             continue
@@ -701,7 +702,13 @@ def coproduct(ss, polys, what):
         except Unhandled:
             continue
         if 'x' in env:
-            return ('app', f, env['x'])
+            hits.append(('app', f, env['x']))
+    # Two rows of one shape would label the tape by table order, which is not a reading of the cell.
+    if len(hits) > 1:
+        raise Unhandled(f"ambiguous coproduct for `{what}`: {', '.join(h[1] for h in hits)} all sum"
+                        f" {', '.join(oshow(s) for s in ss)} — drop all but one from `--polys`")
+    if hits:
+        return hits[0]
     raise Unhandled(f"`{what}` sums {', '.join(oshow(s) for s in ss)}, which no `polys` functor has"
                     f" as its branches — `--polys \"F:{'+'.join(oshow(s) for s in ss)}\"` names it")
 

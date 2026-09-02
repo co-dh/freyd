@@ -9042,7 +9042,7 @@ both lists empty.
       ("E tree A", ),
     ),
   ), src: ("list⁺ A", ), tgt: ("tree A", )),
-  cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", polys: "F:A+x×x", sigs: "wrap:A⟼list⁺(A) cat:list⁺(A)×list⁺(A)⟶list⁺(A) tip:A⟼tree(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
+  cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", polys: "F:A+x×x", sigs: "wrap:A⟼list⁺(A) cat:list⁺(A)×list⁺(A)⟼list⁺(A) tip:A⟼tree(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
     [
      // lean:AOP.A9_3_Bracket.mct_laws@6ebebce1
      // mct_laws row: Theorem 9.1
@@ -9086,7 +9086,7 @@ both lists empty.
       ("E tree A", ),
     ),
   ), src: ("list⁺ A", ), tgt: ("tree A", )),
-  cert: (expect: "(cat°)%∋ P((X×X)bin) est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "cat:list⁺(A)×list⁺(A)⟶list⁺(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
+  cert: (expect: "(cat°)%∋ P((X×X)bin) est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "cat:list⁺(A)×list⁺(A)⟼list⁺(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
     [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
   // No picture: the disjointness of the two ranges is a case split on a coproduct, which has no
@@ -9694,7 +9694,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("EF bag Job", ),
     ),
   ), src: ("bag Job", ), tgt: ("[Job]", )),
-  cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", polys: "F:𝟏+x×Job", sigs: "nil:𝟏⟼[Job] nil:𝟏⟼bag(Job) snag:bag(Job)×Job⟶bag(Job) snoc:[Job]×Job⟼[Job] X:bag(Job)⟶[Job]"))],
+  cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", polys: "F:𝟏+x×Job", sigs: "nil:𝟏⟼[Job] nil:𝟏⟼bag(Job) snag:bag(Job)×Job⟼bag(Job) snoc:[Job]×Job⟼[Job] X:bag(Job)⟶[Job]"))],
     // job-schedule row: Theorem 10.1
     [#src[No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
@@ -9729,7 +9729,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       ("E(Bag Job×Job)", ),
     ),
   ), src: ("Bag Job", ), tgt: ("[Job]", )),
-  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "snag:Bag(Job)×Job⟶Bag(Job) snoc:[Job]×Job⟼[Job] X:Bag(Job)⟶[Job] Q':Bag(Job)×Job⟶Bag(Job)×Job"))],
+  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "snag:Bag(Job)×Job⟼Bag(Job) snoc:[Job]×Job⟼[Job] X:Bag(Job)⟶[Job] Q':Bag(Job)×Job⟶Bag(Job)×Job"))],
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#dpanel(6, 10.3, 7.45,
   ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),

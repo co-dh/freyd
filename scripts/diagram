@@ -782,7 +782,7 @@ def roundtrip(path, frm, show, out, tbl):
             ok += 1
         elif got == spell(tidy(parse(want))):
             printer += 1                       # differs only where `spell` spaces a bracket
-        elif norm(sl.parse(got)) == sl.read(want, g["cert"], False)[0]:
+        elif norm(sl.parse(got)) == norm(sl.read(want, g["cert"], False)[0]):
             law += 1                           # `F(R)F(S)=F(RS)`, `f×g=(f×𝟙)(𝟙×g)`: heights the
         # display writes as one — the sweep's own reading, which also cuts `[,]` to the branch drawn
         else:
