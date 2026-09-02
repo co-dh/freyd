@@ -2413,25 +2413,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       ..if py == 1 { fr } else { () }, ..pr, ..rr)
   }))
 })
-// A derivation in ONE line: the formulas in a row over their panels, the relation between
-// consecutive panels, the reasons in a row under them; the panels scale alike to fill the width.
-#let crow(steps, rels) = layout(sz => {
-  let gut = 4pt
-  let ws = steps.map(((f, pic, why)) => measure(box(pic)).width)
-  let k = (sz.width - (steps.len() - 1) * (OPW + 2 * gut)) / ws.sum()
-  let (cols, fr, pr, rr) = ((), (), (), ())
-  for (i, (f, pic, why)) in steps.enumerate() {
-    if i > 0 { cols.push(OPW); fr.push([]); pr.push(rels.at(i - 1)); rr.push([]) }
-    let q = box(scale(x: k * 100%, y: k * 100%, reflow: true, box(pic)))
-    cols.push(ws.at(i) * k)
-    fr.push(f)
-    pr.push({ pic-meta(plain(f), q); q })
-    rr.push(why)
-  }
-  grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
-    align: (x, y) => if y == 0 { center + bottom } else if y == 1 { center + horizon } else { left + top },
-    ..fr, ..pr, ..rr)
-})
 
 
 // A panel's address is the display it stands in and its place in that display, both read off the
@@ -5635,8 +5616,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_mono@a4557bcf
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
-  [#crow((
-  ([`(𝟙×R°)(π₂∪(p×𝟙) cons)`], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+  [#hchain(fill: true,
+  (none, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "stack", nin: 2, nout: 2, lanes: (
         (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
         (k: "seq", nin: 1, nout: 1, items: (
@@ -5658,10 +5639,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
           ), seams: ()),
       )),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))],
-   []),
+  cert: (expect: "(𝟙×R°)(π₂∪(p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))], [],
+   [`(𝟙×R°)(π₂∪(p×𝟙) cons)`]),
 
-  ([`(𝟙×R°)π₂ ∪ (p×R°) cons`], [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+  (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
         (k: "stack", nin: 2, nout: 2, lanes: (
             (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
@@ -5685,9 +5666,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(𝟙×R°)π₂ ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
    [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
-   and `R°` on the pair's two strands at once]),
+   and `R°` on the pair's two strands at once], [`(𝟙×R°)π₂ ∪ (p×R°) cons`]),
 
-  ([`π₂R° ∪ (p×R°) cons`], [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+  (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
         (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
@@ -5706,9 +5687,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "π₂R° ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
    [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square] #h(4pt) — `π₂` natural, so this branch is an
-   EQUALITY]),
+   EQUALITY], [`π₂R° ∪ (p×R°) cons`]),
 
-  ([`π₂R° ∪ (p×𝟙) cons R°`], [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+  (SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
         (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
         (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
@@ -5726,9 +5707,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "π₂R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))],
    [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono's `cons` branch] #h(4pt) — a shorter
-   tail makes a shorter list]),
+   tail makes a shorter list], [`π₂R° ∪ (p×𝟙) cons R°`]),
 
-  ([`(π₂∪(p×𝟙) cons)R°`], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+  (SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
         (k: "seq", nin: 2, nout: 1, items: (
             (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
@@ -5746,8 +5727,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(π₂∪(p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))],
-   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]]),
-  ), (EQ, EQ, SQ, SQ))],
+   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]], [`(π₂∪(p×𝟙) cons)R°`]),
+  )],
 )
 #align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`.
   @takewhile-mono buys its `⊸ nil` branch with `nil R°=nil`; `π₂` needs only its naturality square,
