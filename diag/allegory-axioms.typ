@@ -3902,83 +3902,38 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   boxrun(b.at(0), b.at(1), items)
 }
 #let convrun-end(items) = conv-w(w: boxrun-w(items)) - SPLIT
-// `mid` types the wire OUT of the frame; it also opens the `⊑` up so both runs can name their ends,
-// which is how row 1 is typed.  Left `none`, the picture is the untyped one the later rows want.
-#let mconj(inner, after, rhs, mid: none) = {
-  let rise = 1.9
-  convrun(0, 0, inner)
-  let x = convrun-end(inner)
-  boxrun(x, rise, after)
-  let xe = x + boxrun-w(after)
-  let d = if mid == none { 0.0 } else { 1.2 }
-  lab(-0.42, 0, black)[`A`]
-  if mid != none {
-    node((1.4 + x) / 2, rise, black, mid)
-    lab(xe + 0.42, rise, black)[`A`]
-    lab(xe + 1.5 + d - 0.42, rise, black)[`A`]
-  }
-  lab(xe + 0.95 + d / 2, rise, SLACK)[`⊑`]
-  boxrun(xe + 1.5 + d, rise, rhs)
-  lab(xe + 1.5 + d + boxrun-w(rhs) + 0.42, rise, black)[`A`]
-}
-
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
 // what carries it back.
-#let mb-f = ([`f`], 0.55, false)
-#let mb-Fest = ([`F(est(R))`], 2.5, true)
-#let mb-Fni = ([`F(∋)`], 1.3, true)
-#let mb-Lam = (frc([`F(∋)f`]), 1.75, false)
 #let mb-est = ([`est(R)`], 1.7, true)
-#let mb-Fniest = ([`F(∈ est(R))`], 3.05, true)
 #let mb-FRo = ([`F(R°)`], 1.4, true)
-#let mb-FR = ([`F(R)`], 1.3, true)
 #let mb-Ro = ([`R°`], 0.8, true)
 #let mb-R = ([`R`], 0.7, true)
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
   // monotonic-alg row: Theorem 7.1
-  Thm[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
+  Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
-     `R` reflexive;
- ,
+     `R` reflexive
       // lean:AOP.A7_2.distributes_of_monotonicAlg@188d993a
  ]],
       // lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b
-  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], mbp({
-    lab(-1.05, 0, black)[`F(EA)`]
-    boxrun(0, 0, (mb-Fest, mb-f))
-    let xl = boxrun-w((mb-Fest, mb-f))
-    lab(xl + 0.42, 0, black)[`A`]
-    lab(xl + 1.35, 0, SLACK)[`⊑`]
-    boxrun(xl + 1.9, 0, (mb-Lam, mb-est), h: TH)
-  }), [#src[def. `f` distributes over `R` — @dist-defn, @adj-E-bend]])],
-  [#trow(
+  [#vstep([], trow(
     tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
       top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
     tpan(4.2, ((2.45, [`∋`]), (1.55, [`f`]), (0.65, [`est(R)`])),
       hands: ((RXU, 3.40, 0.65, [`E`], frc([`𝟙`])),),
       joins: ((RXC, 2.45, 0.35), (RXF, 1.55, 0.65)),
       top: ((RXF, [`F`]), (RXC, [`E`]), (RXO, [`A`])), xo: RXO, w: 4.5),
-  )],
+  ), [#src[`f` distributes over `R` — @dist-defn; the right panel draws the fraction as `F(∋)f` with
+     its `E` wire bent back by the unit, then `est(R)` — @adj-E-bend]])],
 
-  [#vstep(IFF, [],
-    [#grid(columns: 3, align: (right + horizon, center + horizon, left + horizon),
-       column-gutter: 6pt, row-gutter: 3pt,
-       [`F(est(R))f`], [`⊑`], [`F(∋)f`],
-       grid.cell(colspan: 3, align: center + horizon)[and],
-       [`(F(∋)f)°F(est(R))f`], [`⊑`], [`R°`],
-       grid.cell(colspan: 3, align: left + horizon, inset: (top: 3pt))[#src[@est-75 at `F(∋)f`;
-         `F(est(R))f⊑(F(∋)f)°\R°⟺(F(∋)f)°F(est(R))f⊑R°` — @div-laws]],
-       grid.cell(colspan: 3, align: left + horizon)[#src[`est(R)≜∋∩(∈\R°)` — @est-defn]])])],
-  // One picture per conjunct: the first is row 1's left panel twice over, `est(R)` against `∋`, so
-  // the inequation is bead against bead; the second is the row-3 panel the next step keeps.
-  [#grid(rows: 3, align: center + horizon, row-gutter: 4pt,
+  // One picture per conjunct, side by side so the display stays on one page: the first is row 1's
+  // left panel twice over, `est(R)` against `∋`; the second is the row-3 panel the next step keeps.
+  [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
     trow(
       tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
         top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
@@ -3991,42 +3946,40 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
       tpanR(4.0, 1.90, [`R°`]),
     ),
-  )],
+  ), [#src[@est-75 at `F(∋)f` splits the bound in two: `F(est(R))f` below `F(∋)f`, and below `R°`
+     divided by the conversed `F(∋)f`, which @div-laws moves across: `(F(∋)f)°F(est(R))f` below `R°`]])],
 
-  [#vstep(IFF, mbp(mconj((mb-Fni, mb-f), (mb-Fest, mb-f), (mb-Ro,), mid: [`F(EA)`])),
-    [#src[`est(R)⊑∋` — @est-defn; the first conjunct is free]])],
   // `(F(∋)f)°=f°F(∈)` splits the leading bead: `f°` opens the `F` wire, `∈` the `E` wire inside it.
-  [#trow(
+  [#vstep(IFF, trow(
     tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
       hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
     tpanR(4.0, 1.90, [`R°`]),
-  )],
+  ), [#src[`est(R)` picks a member, so it is below `∋` — @est-defn; `F` keeps the order —
+     @relator-defn — so the first conjunct holds by itself and drops]])],
 
-  [#vstep(IFF, mbp(mconj((mb-f,), (mb-Fniest, mb-f), (mb-Ro,))),
-    [#src[converse, relators: `(F(∋)f)°=f°F(∈)` and
-     `F(∈)F(est(R))=F(∈ est(R))`]])],
   // Empty: the step is a formula-level rewrite, and the picture above already draws it.
-  [],
+  [#vstep(IFF, [],
+    [#src[the converse of `F(∋)f` is `f°` then `F(∈)`, order reversed, `F` passing `°` through —
+     @conv-defn; `F(∈)` then `F(est(R))` is `F` of `∈ est(R)` — @relator-defn; the panel above
+     already draws both, its `E` wire from `∈` to `est(R)` inside `F`]])],
 
-  [#vstep(IFF, mbp(mconj((mb-f,), (mb-FRo, mb-f), (mb-Ro,))),
-    [#src[`∈ est(R)=R°`, `R` reflexive — @est-defn]])],
-  [#trow(
+  [#vstep(IFF, trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
     tpanR(3.8, 1.85, [`R°`]),
-  )],
+  ), [#src[in through `∈`, out through the `est(R)` pick, which is `R` to every member, the entry
+     point included, so `∈ est(R)` lies within `R°`; `R` reflexive makes any `R°`-pair its own such
+     set, so it is all of `R°` — @est-defn]])],
 
-  [#vstep(IFF, mbp(mconj((mb-f,), (mb-FR, mb-f), (mb-R,))),
-    [#src[`f` a map, so monotonic on `R` and `R°` together;
- ,
-     // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
- ]])],
-     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
-  [#trow(
+  [#vstep(IFF, trow(
     tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
       hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
     tpanR(3.8, 1.85, [`R`]),
-  )],
+  ), [#src[conversing both sides turns the `R°` bead inside `F` and the `R°` on the right into `R`:
+     `f` a map, so monotonic on `R` and `R°` together
+     // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+ ]])],
+     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
 ))]<mon-thm71>
 
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
@@ -4039,7 +3992,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // The `F` lane of the split panels, wider from `RXU` than §13.3.1's `RXF`: here the handle carries
 // its own `F` name, which at that lane would sit against the unit's label.
 #let GXF = 2.05
-// `mconj` with the `⊑` optional, so rows 5–7 draw a TERM of one chain rather than an inequation,
+// `inner` conversed, `after` above, `⊑ rhs` if given: rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
 #let gterm(inner, after, rhs: none) = {
