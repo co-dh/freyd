@@ -21,6 +21,8 @@ CACHE = ".lake/build/scanline-cache.json"
 EPS = 1e-6
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
+# The terminal object, which is the summand a non-recursive branch — `nil`, `zero` — collapses `F` to.
+TERM = "𝟏"
 
 # ---------------------------------------------------------------- expressions
 # ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('hc', [e…]) | ('conv', e) | ('app', name, e[, s])
@@ -776,26 +778,89 @@ def crossings(p):
 
 
 # ---------------------------------------------------------------- the declared tables
-BRANCH = {                                 # `F(X)=𝟏+A×X`: which summand the panel draws
-    "cons": {"pick": "cons", "F": "A×−"},
-    "nil": {"pick": "nil", "F": "𝟏"},
-    "plus": {"pick": "plus", "F": "A×−"},   # §13.3.4's `[zero,⊸ zero ∪ plus]`: `sum` fused into
-    "zero": {"pick": "zero", "F": "𝟏"},     # `prefix`'s algebra, one branch per summand as above
-}
+VARS = set("stuvwxyz")                     # a signature's variables: single lower-case letters
+SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
+                    "hm-sigs.json")
+_TBL = None
 
 
-def take_branch(e, br, obj):
+def sigs():
+    """`diag/hm-sigs.json` — what each bead's label is an arrow BETWEEN, keyed by the label's head."""
+    global _TBL
+    if _TBL is None:
+        _TBL = json.load(open(SIGS, encoding="utf-8"))
+    return _TBL
+
+
+def typed(table, own):
+    """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
+    one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
+    if not own:
+        return table
+    return {**table, "sigs": {**table["sigs"], **{k: dict(zip(("src", "tgt"), v.split("⟶")))
+                                                  for k, v in own.items()}}}
+
+
+def brname(e):
+    """The name a branch goes by: the arrow its component ENDS in, which is what carries the
+    summand — `(p×list(p))cons` is the `cons` branch and `(X×X)bin` the `bin` one."""
+    return spell(e[1][-1] if e[0] == 'comp' else e)
+
+
+def bind(pat, e, sub):
+    """A signature's variables tied to a live object, so `cons : x×[x]⟶[x]` yields `A×−` where the
+    display writes `F([A])`."""
+    if pat[0] == 'atom' and pat[1] in VARS:
+        sub[pat[1]] = e
+    elif pat[0] == e[0]:
+        if pat[0] in ('comp', 'prod', 'hc'):
+            [bind(a, b, sub) for a, b in zip(pat[1], e[1])]
+        elif pat[0] == 'conv':
+            bind(pat[1], e[1], sub)
+        elif pat[0] == 'app' and pat[1] == e[1]:
+            bind(pat[2], e[2], sub)
+
+
+def inst(e, sub):
+    return sub.get(e[1], e) if e[0] == 'atom' else rec(e, lambda x: inst(x, sub))
+
+
+def summand(br, table, arg=None):
+    """The summand `F(X)` collapses to on the branch `b : S⟶A`, DERIVED from `b`'s row: `S` with
+    every occurrence of the carrier `A` replaced by the hole.  `cons : A×[A]⟶[A]` gives `A×−`, and a
+    branch with no row at all is a CONSTANT summand — `nil` and `zero` name none, which is
+    hm-sigs.json's own reading of a label that touches the object wire alone."""
+    row = ((table or {}).get("sigs") or {}).get(br[:br.find('(')] if br.find('(') > 0 else br)
+    if not row:
+        return TERM
+    src, tgt, sub, hole = parse(row["src"]), parse(row["tgt"]), {}, ('atom', '−')
+    if arg is not None:
+        bind(norm(tgt), arg, sub)
+    cut = subst(src, tgt, hole)            # the carrier as the DISPLAY writes it, brackets and all,
+    if cut == src:                         # because `norm` flattens `Op×([C]×[C])` and hides it
+        cut = subst(norm(src), norm(tgt), hole)
+    return spell(inst(norm(cut), sub))
+
+
+def take_branch(e, br, obj, table=None):
     """A display states the whole case split and the panel draws ONE branch: `[a,b]` keeps the
-    component naming it, `x∪y` the operand naming it, `F` becomes that branch's summand."""
-    e = rec(e, lambda x: take_branch(x, br, obj))
-    pick = BRANCH[br]["pick"]
+    component naming it, `x∪y` the operand naming it, `F` becomes that branch's summand.  A second
+    bracket in the same formula names a DIFFERENT arrow — `[wrap,cat]°` beside `[tip,(X×X)bin]` —
+    so it is matched by summand, which is the class a branch really is."""
+    d = dun(e)
+    if d is not None:                      # a choice inside a division: `([wrap,cat]°)%∋` is one
+        t = take_branch(d, br, obj, table)             # token until the numerator is reparsed, and
+        return t if t != d else e                      # left one bead where it holds no choice
+    e = rec(e, lambda x: take_branch(x, br, obj, table))
     if e[0] == 'app' and e[1] == 'F':
-        return act(BRANCH[br]["F"], e[2], obj=obj)
+        return act(summand(br, table, norm(e[2])), e[2], obj=obj)
     if e[0] == 'case':                     # `[zero,⊸ zero ∪ plus]`: the component that IS the branch
-        parts = [x for x in e[1] if spell(x) == pick] or [x for x in e[1] if pick in spell(x)]
+        s = summand(br, table)
+        parts = [x for x in e[1] if spell(x) == br] or [x for x in e[1] if br in spell(x)] \
+            or [x for x in e[1] if s != TERM and summand(brname(x), table) == s]
         if len(parts) == 1:
-            ops = [x for x in parts[0][1] if pick in spell(x)] if parts[0][0] == 'union' else []
-            return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj)
+            ops = [x for x in parts[0][1] if br in spell(x)] if parts[0][0] == 'union' else []
+            return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj, table)
     return e
 
 
@@ -820,7 +885,7 @@ def subst(e, lhs, rhs):
 def read(s, cert, obj):
     e, used = unfold(parse(s), cert.get('alias') or ())
     if cert.get('branch'):
-        e = take_branch(e, cert['branch'], obj)
+        e = take_branch(e, cert['branch'], obj, typed(sigs(), cert.get('sigs')))
     return norm(e), used
 
 

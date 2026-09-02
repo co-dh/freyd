@@ -12,7 +12,7 @@
 [ ] scripts/diagram forces a ⦇…⦈ bead source to list(x) and --sigs cannot override it, so a fold over list⁺ (14.5c row 2) can only be drawn under a plain ⦇−⦈ label
 [X] scanline check on in make p; if slow, full scan once, then only the changed diagrams
 [X] TODO.md: mark finished items with [X]
-[ ] six HM panels stay hand-drawn and uncertified because `scripts/scanline`'s `BRANCH` table names only
+[X] six HM panels stay hand-drawn and uncertified because `scripts/scanline`'s `BRANCH` table names only
     cons/nil/plus/zero, so a case split on [base,step]°, [wrap,cat]°, [nil,extend]°, [nil,expand]°, β° or
     [arb,step]° cannot be cut; a sum of arrows (𝟙+(X×𝟙)) has no bead either.  Register the algebra's own
     branch names, or a general fallback, so all six generate and certify.

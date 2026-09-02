@@ -39,18 +39,25 @@ norm, spell, tidy, rec, Unhandled = sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhan
 
 
 # Which operand of a `∪`/`[f,g]` gets drawn, as a RULE and not a taste: a branch that throws its
-# source away (`⊸`) draws nothing, then the most factors, then the longer spelling breaks the tie.
+# source away (`⊸`) draws nothing, then the one whose summand still holds the carrier — the branch
+# that RECURSES — then the most factors, then the longer spelling breaks the tie.
 def rank(e):
-    return (0 if '⊸' in spell(e) else 1, len(e[1]) if e[0] == 'comp' else 1, len(spell(e)))
+    return (0 if '⊸' in spell(e) else 1, '−' in sl.summand(sl.brname(e), TBL),
+            len(e[1]) if e[0] == 'comp' else 1, len(spell(e)))
 
 
 def cut(e, obj, br):
     """A formula down to the ONE branch the panel draws: each `∪`/`[f,g]` down to the operand `rank`
-    calls the most complicated, and `F` down to that branch's summand (`scanline.BRANCH`).  This
+    calls the most complicated, and `F` down to that branch's summand (`scanline.summand`).  This
     model has one bead per factor and no picture for a choice — the honest picture is one branch,
     and the `cert:`'s `branch:` tells the sweep, and the reader, which one it is."""
+    if e[0] == 'atom':
+        d = sl.dun(e)                      # a choice inside a division: `([wrap,cat]°)%∋` is one
+        c = d if d is None else cut(d, obj, br)        # token until the numerator is reparsed
+        return e if d is None or c == d else c
     if e[0] == 'app' and e[1] == 'F' and br:
-        return sl.act(sl.BRANCH[br]["F"], cut(e[2], obj, br), obj=obj)
+        x = cut(e[2], obj, br)
+        return sl.act(sl.summand(br, TBL, norm(x)), x, obj=obj)
     if e[0] in ('union', 'case'):
         p = max([cut(x, obj, br) for x in e[1]], key=rank)
         # The bracket stays a NODE where the display writes one: the bead wears the branch's name
@@ -59,7 +66,8 @@ def cut(e, obj, br):
     return rec(e, lambda x: cut(x, obj, br))
 
 
-BR = None                   # the branch `draw` picked, as `scanline.BRANCH` names it
+BR = None                   # the branch `draw` picked, as `scanline.brname` spells it
+TBL = None                  # the signatures `draw` types by, the panel's own `sigs:` laid over
 
 
 def bead(e):
@@ -80,39 +88,37 @@ def parse(s, obj=True):
     return cut(bead(sl.parse(s)), obj, BR)
 
 
+def picks(e, out):
+    """The branch every choice in the formula is cut to, OUTERMOST first.  A choice inside the
+    chosen operand is that same branch again — `[nil,⊸ nil ∪ cons]` is the `cons` branch twice over
+    — so only the outermost is named, and a second BRACKET names an arrow of its own."""
+    d = sl.dun(e) if e[0] == 'atom' else None
+    if d is not None:
+        return picks(d, out)
+    if e[0] in ('union', 'case'):
+        out.append(sl.brname(max([cut(x, False, None) for x in e[1]], key=rank)))
+    else:
+        rec(e, lambda x: (picks(x, out), x)[1])
+    return out
+
+
 def branch(formula):
-    """The name `scanline.BRANCH` gives the branch `cut` picks, or None where the formula states no
-    choice at all.  The `cert:` declares it and `scanline.read` cuts the STATED formula down the
-    same way, so the picture and the sweep that reads it back agree on what is being drawn."""
+    """The branch `cut` picks, spelled as the arrow its component ends in, or None where the formula
+    states no choice at all.  Every choice in one formula must cut to the SAME summand — that is
+    what makes them one branch of one case split.  The `cert:` declares it and `scanline.read` cuts
+    the STATED formula down the same way, so the picture and the sweep agree on what is drawn."""
     e = bead(sl.parse(formula))
-    drawn = cut(e, False, None)
-    if drawn == e:
+    if cut(e, False, None) == e:
         return None
-    ks = [k for k, v in sl.BRANCH.items() if v["pick"] in spell(drawn)]
-    if len(ks) != 1:
-        raise Unhandled(f"the branch {spell(drawn)} is {'none' if not ks else 'more than one'} of"
-                        f" the branches {list(sl.BRANCH)} the sweep knows")
+    ks = picks(e, [])
+    if len({sl.summand(k, TBL) for k in ks}) != 1:
+        raise Unhandled(f"the choices {ks} cut to the summands {[sl.summand(k, TBL) for k in ks]};"
+                        f" one panel draws one branch, so they must be the same summand")
     return ks[0]
 
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
-SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
-                    "hm-sigs.json")
-
-
-def sigs():
-    """`diag/hm-sigs.json` — what each bead's label is an arrow BETWEEN, keyed by the label's head."""
-    return json.load(open(SIGS, encoding="utf-8"))
-
-
-def typed(table, own):
-    """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
-    one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
-    if not own:
-        return table
-    return {**table, "sigs": {**table["sigs"], **{k: dict(zip(("src", "tgt"), v.split("⟶")))
-                                                  for k, v in own.items()}}}
 
 
 def letters(e):
@@ -225,7 +231,7 @@ def expand(e, rel):
 # A signature's variables are single lower-case letters, renamed apart per factor (`x@3`) so two
 # beads may both say `x`.  A variable stands for a whole TAIL of the cut: wires, and the object
 # under them.  Everything else in a signature is a constant — a wire letter or a named object.
-VARS, TOP = set("stuvwxyz"), -1
+VARS, TOP = sl.VARS, -1
 
 
 def isvar(e):
@@ -635,11 +641,12 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None):
     note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
     no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
     only where the object wire is not the straight default (see `layout`)."""
-    global SPLIT, BR
+    global SPLIT, BR, TBL
     SPLIT = frozenset(split.split())
+    TBL = sl.typed(table or sl.sigs(), own)
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
-    rows, made, otop, obot = elaborate(formula, src, tgt, typed(table or sigs(), own))
+    rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
     return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {})
                   | ({"sigs": own} if own else {}) | ({"slope": slope} if slope else {}))
 
@@ -835,7 +842,7 @@ def main(argv):
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
-    tbl = sigs()
+    tbl = sl.sigs()
     if "--roundtrip" in argv or "--compare" in argv or "--write" in argv:
         path = path or "diag/allegory-axioms.typ"
         if "--roundtrip" in argv:
