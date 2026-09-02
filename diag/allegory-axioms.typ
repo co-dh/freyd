@@ -73,6 +73,53 @@
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm
 
+// A CITED DISPLAY RENDERS AS ITS NAME, the way B&dM cite a law in a hint; a number sends the reader
+// off to look the display up.  `≜ x` is the display that DEFINES `x`; a display named here nowhere
+// keeps its number (`conf`'s rule).  Laws carry B&dM's names, lowercase as the book prints them.
+#let refname = (
+  "conv-defn": [≜ `°`],
+  "relator-defn": [≜ relator],
+  "relprod-defn": [≜ `×`],
+  "mu-defn": [≜ `μ`],
+  "cata-defining": [≜ `reduce`],
+  "comb-fns": [≜ `subseq`],
+  "cup-defn": [≜ `cup`],
+  "est-defn": [≜ `est`],
+  "lax-defn": [≜ lax],
+  "mon-defn": [≜ monotonic],
+  "dist-defn": [≜ distributes],
+  "takewhile-defn": [≜ `takewhile`],
+  "mss-defn": [≜ `mss`],
+  "filter-defn": [≜ `filter`],
+  "party-defn": [≜ `party`],
+  "cyl-defn": [≜ `paths`],
+  "van-defn": [≜ `secure`],
+  "thin-defn": [≜ `thin`],
+  "path-defn": [≜ `cost`],
+  "thinlist-defn": [≜ `thinlist`],
+  "knap-defn": [≜ `within`],
+  "para-defn": [≜ `partition`],
+  "tour-defn": [≜ `tour`],
+  "dp-defn": [≜ `H`],
+  "edit-defn": [≜ `edit`],
+  "mct-defn": [≜ `flatten`],
+  "code-defn": [≜ `decode`],
+  "greedy-defn": [≜ `H`, `Q`],
+  "entab-defn": [≜ `detab`],
+  "tardy-defn": [≜ `bagify`],
+  "tex-defn": [≜ `intern`],
+  "fokkinga": [mutual recursion],
+  "horner": [Horner's rule],
+  "absorption-pic": [absorption],
+  "cata-fusion": [fusion],
+  "hylo-mu": [hylomorphism theorem],
+  "greedy-thm72": [greedy theorem],
+  "thin-thm81": [thinning theorem],
+  "thinlist-thm82": [binary thinning theorem],
+  "dp-laws": [dynamic programming theorem],
+)
+#show ref: it => if str(it.target) in refname { link(it.target, refname.at(str(it.target))) } else { it }
+
 = Notation
 
 Traditionaly Adjunction F -| G is defined as $F(x) <= y$ iff $x <= G(y)$, and you derive laws like this: 
