@@ -23,7 +23,12 @@
     "`minlist` p.169, `setify` p.125, `merge` p.156 of algprog; `sort`/`thinlist` are forced by the",
     "note's `sort P = setify° ordered P thinlist Q`; `α` by the 13.3.3b cert; `union=E(∋)`.",
     "A cert instantiates a constant with a key of its own, `A: \"Int\"` beside `src`/`tgt`: the",
-    "element type B&dM leave a parameter, which the mss rows fix at `Int` — no second table."
+    "element type B&dM leave a parameter, which the mss rows fix at `Int` — no second table.",
+    "`P` is NOT a map, so its box is CHAMFERED, and it is not `E` under another spelling: p. 119",
+    "gives `P(R)≜((∋R)/∋)∩((∋R°)/∋)°` against `E(R)≜((∋R)/∋)∩(∋/(∋R))°`, and at `R={(a,b),(a,c)}`",
+    "the set `{a}` stands in `P(R)` to `{b}`, `{c}` and `{b,c}` alike — three images, so not simple,",
+    "where `E(R){a}={b,c}` is the one image. §14's own prose says the same: `est`, `thin` and `P(−)`",
+    "are relations, hence chamfered.  `Fᵢ` is `F`'s i-th summand functor, a book constant like `F`."
   ],
   "sigs": {
     "S":      [{"src": "F([x])",       "tgt": "[x]",     "map": false},
@@ -31,7 +36,8 @@
     "R":      [{"src": "[x]",    "tgt": "[x]", "map": false},
                {"src": "x",      "tgt": "x",   "map": false}],
     "Q":      {"src": "x",      "tgt": "x",   "map": false},
-    "P":      {"src": "x",      "tgt": "x",   "map": false},
+    "P":      [{"src": "x",      "tgt": "x",   "map": false},
+               {"arg": "a⟶b", "src": "E(a)", "tgt": "E(b)", "map": false}],
     "p":      {"src": "A",      "tgt": "A",   "map": false},
     "nil":    {"src": "𝟏",      "tgt": "[A]", "map": true},
     "⟨π₂%∋,((p×𝟙) cons)%∋⟩": {"src": "A×[A]", "tgt": "E([A])×E([A])", "map": true},
@@ -60,6 +66,7 @@
     "est":    {"arg": "a⟶a", "src": "E(a)", "tgt": "a",    "map": false},
     "E":      {"arg": "a⟶b", "src": "E(a)", "tgt": "E(b)", "map": true},
     "F":      {"arg": "a⟶b", "src": "F(a)", "tgt": "F(b)", "map": false},
+    "Fᵢ":     {"arg": "a⟶b", "src": "Fᵢ(a)", "tgt": "Fᵢ(b)", "map": false},
     "list":   {"arg": "a⟶b", "src": "[a]",  "tgt": "[b]",  "map": false},
     "thin":   {"arg": "a⟶a", "src": "E(a)", "tgt": "E(a)", "map": false},
     "thinlist": {"arg": "a⟶a", "src": "[a]", "tgt": "[a]", "map": false},
