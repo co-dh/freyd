@@ -2376,22 +2376,23 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // A derivation read LEFT TO RIGHT: one Hinze–Marsden panel per `(op, panel, reason)` step, the
 // op between it and the step before, the reason underneath both.  Steps pack greedily into lines
 // of the cell's width, a continued line opening with its op; a line's slack widens its columns.
+// A chain that continues the row above it gives its FIRST step an op too (`none` = a fresh start).
 #let hchain(..steps) = layout(sz => {
   let gut = 4pt
   let ss = steps.pos().map(((op, pic, why)) => (op: op, pic: box(pic), why: why, w: measure(box(pic)).width))
   let (lines, cur, used) = ((), (), 0pt)
   for s in ss {
-    let add = s.w + if lines.len() == 0 and cur.len() == 0 { 0pt } else { OPW + 2 * gut }
+    let add = s.w + if lines.len() == 0 and cur.len() == 0 and s.op == none { 0pt } else { OPW + 2 * gut }
     if cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
     cur.push(s)
   }
   lines.push(cur)
   stack(dir: ttb, spacing: 10pt, ..lines.enumerate().map(((li, line)) => {
     let extra = calc.max(0pt, (sz.width - line.map(s => s.w).sum()
-      - (line.len() - if li == 0 { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
+      - (line.len() - if li == 0 and line.first().op == none { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
     let (cols, pr, rr) = ((), (), ())
     for (i, s) in line.enumerate() {
-      let op = not (li == 0 and i == 0)
+      let op = not (li == 0 and i == 0 and s.op == none)
       if op { cols.push(OPW); pr.push(s.op) }
       cols.push(s.w + extra)
       pr.push({ pic-meta(plain(s.why), s.pic); s.pic })
@@ -3928,8 +3929,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       hands: ((RXU, 3.40, 0.65, [`E`], frc([`𝟙`])),),
       joins: ((RXC, 2.45, 0.35), (RXF, 1.55, 0.65)),
       top: ((RXF, [`F`]), (RXC, [`E`]), (RXO, [`A`])), xo: RXO, w: 4.5),
-  ), [#src[`f` distributes over `R` — @dist-defn; the right panel draws the fraction as `F(∋)f` with
-     its `E` wire bent back by the unit, then `est(R)` — @adj-E-bend]])],
+  ), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
   // One picture per conjunct, side by side so the display stays on one page: the first is row 1's
   // left panel twice over, `est(R)` against `∋`; the second is the row-3 panel the next step keeps.
@@ -3946,40 +3946,30 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
         hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
       tpanR(4.0, 1.90, [`R°`]),
     ),
-  ), [#src[@est-75 at `F(∋)f` splits the bound in two: `F(est(R))f` below `F(∋)f`, and below `R°`
-     divided by the conversed `F(∋)f`, which @div-laws moves across: `(F(∋)f)°F(est(R))f` below `R°`]])],
+  ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
-  // `(F(∋)f)°=f°F(∈)` splits the leading bead: `f°` opens the `F` wire, `∈` the `E` wire inside it.
-  [#vstep(IFF, trow(
-    tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
-      hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
-    tpanR(4.0, 1.90, [`R°`]),
-  ), [#src[`est(R)` picks a member, so it is below `∋` — @est-defn; `F` keeps the order —
-     @relator-defn — so the first conjunct holds by itself and drops]])],
-
-  // Empty: the step is a formula-level rewrite, and the picture above already draws it.
-  [#vstep(IFF, [],
-    [#src[the converse of `F(∋)f` is `f°` then `F(∈)`, order reversed, `F` passing `°` through —
-     @conv-defn; `F(∈)` then `F(est(R))` is `F` of `∈ est(R)` — @relator-defn; the panel above
-     already draws both, its `E` wire from `∈` to `est(R)` inside `F`]])],
-
-  [#vstep(IFF, trow(
-    tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
-      hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
-    tpanR(3.8, 1.85, [`R°`]),
-  ), [#src[in through `∈`, out through the `est(R)` pick, which is `R` to every member, the entry
-     point included, so `∈ est(R)` lies within `R°`; `R` reflexive makes any `R°`-pair its own such
-     set, so it is all of `R°` — @est-defn]])],
-
-  [#vstep(IFF, trow(
-    tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
-      hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
-    tpanR(3.8, 1.85, [`R`]),
-  ), [#src[conversing both sides turns the `R°` bead inside `F` and the `R°` on the right into `R`:
-     `f` a map, so monotonic on `R` and `R°` together
+  // The last three panels share one row, so the display stays on one page: the surviving conjunct,
+  // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
+  [#hchain(
+    (IFF, trow(
+      tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
+        hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
+      tpanR(4.0, 1.90, [`R°`]),
+    ), src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
+    (IFF, trow(
+      tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
+        hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
+      tpanR(3.8, 1.85, [`R°`]),
+    ), src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
+    (IFF, trow(
+      tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
+        hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
+      tpanR(3.8, 1.85, [`R`]),
+    ), src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
- ]])],
-     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
+    ]),
+    // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
+  )],
 ))]<mon-thm71>
 
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
