@@ -138,6 +138,8 @@ files, so a no-op run is under a second).
 ./scripts/book grep -b algprog catamorphism fusion   # BM25 over paragraphs, ranked, with snippets
 ./scripts/book sim why is a monad a monoid           # embedding KNN — paraphrase, not keywords
 ./scripts/book page IntroString 64                   # printed page; `pdf:79` for the raw index
+./scripts/book grep -b axioms takewhile              # the note itself is `axioms`, re-indexed by `make p`
+./scripts/book pic takewhile                         # a display's page + crop box, and the pdftoppm that cuts it
 ```
 
 Which one: `find` for a numbered tag, `grep` when you know the words the page uses, `sim` when you know

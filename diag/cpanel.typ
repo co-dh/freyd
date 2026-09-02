@@ -253,7 +253,8 @@
 }
 
 #let cpanel(tree, s: 74%, length: 0.8cm, cert: (:)) = {
-  context P(cetz.canvas(length: length, cbody(tree, length)), s: s)
+  context P(cetz.canvas(length: length, cbody(tree, length)), s: s,
+    key: cert.at("expect", default: "cpanel"))
   // The drawn lists want the note's `plain` to serialise; the cert is the part that is text already.
   metadata((kind: "circuit", helper: "cpanel", cert: cert))
 }
