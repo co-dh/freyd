@@ -6808,7 +6808,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`α` the initial algebra],
   [`F(A,LA)⟶LA`],
-  [`α=[wrap,cons]`: a path is started by one square, or extended by one.],
+  [`α(5)=[5]` and `α(1,[5])=[1,5]`: a path is started by one square, or extended by one.],
 
   [`N` \ the `n`-tuple relator],
   [`𝒜⟶𝒜`],
@@ -6820,34 +6820,34 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`setify`],
   [`NA⟶EA`],
-  [Forgets which row a component came from, so the `n` answers become one set.],
+  [`setify(1,2,3,4)={1,2,3,4}` — which row a component came from is forgotten.],
 
   [`moves`],
   [`NA⟶E(NA)`],
-  [The three columns a path may step to: rotated up, unrotated, rotated down.],
+  [`moves(5,6,7,8)={(6,7,8,5),(5,6,7,8),(8,5,6,7)}` — rotated up, unrotated, rotated down.],
 
   [`trans`],
   [`E(NA)⟶N(EA)`],
-  [Transposes a set of tuples, so every row collects its own paths.],
+  [`trans{(6,7,8,5),(5,6,7,8),(8,5,6,7)}=({6,5,8},{7,6,5},{8,7,6},{5,8,7})` — row `k` collects rows `k-1`, `k`, `k+1`.],
 
   [`zip`],
   [`F(NA,NB)⟶NF(A,B)`],
-  [Commutes `N` with the base functor, pairing each new square with its own row's paths.],
+  [`zip((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))=((1,{[5]}),(2,{[6]}),(3,{[7]}),(4,{[8]}))`.],
 
   [`cp≜` $frac(#[`F(𝟙,∋)`], ∋)$],
   [`F(A,EB)⟶E(F(A,B))`],
-  [Turns a square paired with a set of paths into the set of extensions of those paths.],
+  [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`, and `P(α)` of that is `{[1,5],[1,6],[1,8]}`.],
 
   [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
    // lean:AOP.A7_4_Cylinder.generate@4bd0bafd
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
-  [One fold step: extends every path of every row by the new column.],
+  [`generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-generate.],
 
  [`paths≜⦇generate⦈ setify union` #src[]],
   // lean:AOP.A7_4_Cylinder.paths@c16ad5b9
   [`L N Nat⟶E(L Nat)`],
-  [Every path across the cylinder.],
+  [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-generate's four sets: 12 paths, 3 from each entry row.],
 
   [the specification \ `paths est(R)`],
   [`L N Nat⟶L Nat`],
