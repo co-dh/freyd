@@ -181,7 +181,8 @@ def peel_arrow(e, cut, rel):
             ws.append('Δ'); e = e[1][0]
         elif e[0] == 'prod' and live is not None and '−' in live \
                 and len(e[1]) == len(live.split('×')) \
-                and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
+                and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1 \
+                and e[1][live.split('×').index('−')] != ('atom', sl.UNIT):
             ws.append(live); e = next(x for x in e[1] if x != ('atom', sl.UNIT))
         else:
             return ws, e
@@ -211,6 +212,16 @@ def expand(e, rel):
         return [('hc', pre + [x] + post) for x in expand(core, rel)]
     if e[0] == 'app' and e[1] in rel:      # `E(E(RS))`: the context wraps each row however deep
         return [('app', e[1], y) for y in expand(e[2], rel)]
+    if e[0] == 'case' and len(e[1]) == 1 and e[1][0][0] == 'comp':
+        # `[nil,⊸ nil ∪ (p×list(p)) cons]` cut to its branch: the bracket is the LAST factor's node,
+        # the algebra's own arrow; the factors before it are beads of their own (user, 2026-09-01).
+        xs = e[1][0][1]
+        return expand(('comp', xs[:-1]), rel) + [('case', [xs[-1]], spell(xs[-1]))]
+    if e[0] == 'prod' and len({spell(x) for x in e[1] if x != ('atom', sl.UNIT)}) > 1:
+        # `f×g` is `(f×𝟙)(𝟙×g)`, one height each: `f×−` is natural, so `f` is a bead ON the `A×−`
+        # wire and `g` sits under it.  `R×R` stays whole — that is `Δ(R)`, one bead under `Δ`.
+        return [y for k, x in enumerate(e[1]) if x != ('atom', sl.UNIT) for y in expand(
+            ('prod', [x if j == k else ('atom', sl.UNIT) for j in range(len(e[1]))]), rel)]
     if e[0] == 'prod' and sum(x != ('atom', sl.UNIT) for x in e[1]) == 1:
         k = next(i for i, x in enumerate(e[1]) if x != ('atom', sl.UNIT))
         if e[1][k][0] == 'comp':
@@ -407,9 +418,10 @@ class Lane:
 
 
 class Row:
-    def __init__(self, label, arms, legs, reach, obj):
+    def __init__(self, label, arms, legs, reach, obj, on=None):
         self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
         self.obj = obj                     # what the object wire carries BELOW this row
+        self.on = on                       # the functor lane the bead sits ON, if not the object
 
 
 def alphabet(table, *objs):
@@ -461,8 +473,22 @@ def elaborate(formula, src, tgt, table):
                     rows[-1].legs.append(made[-1])
                 else:
                     atop = obj
-        s, t = signature(core, sigs, i)
         reach = lanes[len(wrap)] if len(wrap) < len(lanes) else None
+        if core[0] == 'prod' and reach is not None and '−' in reach.label \
+                and len(core[1]) == len(reach.label.split('×')) \
+                and sum(x != ('atom', sl.UNIT) for x in core[1]) == 1:
+            # `f×𝟙` under the `A×−` wire is `f×−`, natural in the hole: `f` is a bead ON that wire.
+            # The lane has one label, so `f` may not change the `A` it carries.
+            f = next(x for x in core[1] if x != ('atom', sl.UNIT))
+            a = norm(parse(next(q for q in reach.label.split('×') if q != '−')))
+            s, t = signature(f, sigs, i)
+            unify(s, a, sub, why)
+            if settle(t, sub) != a:
+                raise Unhandled(f"{why} turns the {reach.label} wire into"
+                                f" {spell(settle(t, sub))}×−, which one lane cannot carry")
+            rows.append(Row(spell(tidy(f)), [], [], None, obj, on=reach))
+            continue
+        s, t = signature(core, sigs, i)
         k, opened, obj = eat(s, lanes[len(wrap):], obj, sub, why)
         arms = lanes[len(wrap):len(wrap) + k]
         for w, e in opened:                # a wire opened HERE was born further up, where the object
@@ -525,6 +551,8 @@ def layout(rows, made, otop, obot, cert):
             unit[r.legs[0]] = r.label
             ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
             continue
+        if r.on is not None:               # on a functor wire: the dot at that lane's x, no reach
+            beads.append([ys[i], r.label, "#000000", None, r.on.x]); continue
         # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
         # crossed wires alike, because a bead is a POINT and there is no such thing as a straight bar
         reach = r.reach.x if r.reach is not None else None
@@ -639,11 +667,12 @@ def quoted(v):
 
 def emit(r):
     c = r["cert"]
-    beads = [b[:2] + [None, b[3]] if len(b) > 3 else b for b in r["beads"]]
+    beads = [b[:2] + [None] + b[3:] for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
             f'  {lst(r["lanes"])},\n'
             + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
-                                + (", black, " + num(b[3]) if len(b) > 3 else "") + ")"
+                                + (", black, " + cell(b[3]) if len(b) > 3 else "")
+                                + (", " + num(b[4]) if len(b) > 4 else "") + ")"
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
@@ -696,8 +725,9 @@ def roundtrip(path, frm, show, out, tbl):
             ok += 1
         elif got == spell(tidy(parse(want))):
             printer += 1                       # differs only where `spell` spaces a bracket
-        elif norm(parse(got)) == norm(parse(want)):
-            law += 1                           # `F(R)F(S)=F(RS)`: two heights the display writes as one
+        elif norm(sl.parse(got)) == sl.read(want, g["cert"], False)[0]:
+            law += 1                           # `F(R)F(S)=F(RS)`, `f×g=(f×𝟙)(𝟙×g)`: heights the
+        # display writes as one — the sweep's own reading, which also cuts `[,]` to the branch drawn
         else:
             fail.append(f"{r['id']}: {drawn}  ->  {got}")
         if show:

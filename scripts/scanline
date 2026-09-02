@@ -257,6 +257,8 @@ def fill(wire, bead, inner):
     """A bead ON a context wire, at the same height as the one inside it (13.3.5b's `p×𝟙` beside
     `p`): the wire's hole takes the inner factor and the bead supplies the other slots."""
     ps, bs = wire.split('×'), bead.split('×')
+    if len(bs) == 1 and len(ps) == 2:      # a bare `f` ON the `A×−` wire is `f×−`: it fills the slot
+        bs = [UNIT if p == '−' else bead for p in ps]
     if '−' not in ps or len(ps) != len(bs) or bs[ps.index('−')] != UNIT:
         raise Unhandled(f"the bead {bead} does not fit the wire {wire}")
     return ('prod', [inner if p == '−' else parse(b) for p, b in zip(ps, bs)])
@@ -428,9 +430,10 @@ def a_dpanel(p, r):
         p.wires.append(Wire(x, yt, yb, nm or p.at(p.top if y0 == 'top' else p.bot, x), un, pts, ds))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
-    for b in r['beads']:
-        p.beads.append(Bead(b[0], p.xo, b[1], b[3] if len(b) > 3 else None,
-                            ink=(p.xat(b[0]), b[0])))
+    for b in r['beads']:                   # a fifth field puts the dot ON a lane, off the object
+        x = b[4] if len(b) > 4 and b[4] is not None else None
+        p.beads.append(Bead(b[0], p.xo if x is None else x, b[1], b[3] if len(b) > 3 else None,
+                            ink=(p.xat(b[0]) if x is None else x, b[0])))
 
 
 def a_tpan(p, r):
@@ -550,8 +553,9 @@ def factor(p, y, above, below):
         lo = min(touched(p, b, above))
         ctx = [(x, l) for (x, l) in above
                if x < lo - EPS and not any(abs(x - c) < EPS for c in carried)]
-        if e is None:
-            e = parse(b.label)
+        if e is None:                      # alone on a context wire, the bead's hole is `𝟙`
+            on = next((l for (x, l) in above if abs(x - b.x) < EPS), '')
+            e = fill(on, b.label, ('atom', UNIT)) if '−' in on else parse(b.label)
         else:
             e = fill(next(l for (x, l) in above if abs(x - b.x) < EPS), b.label, e)
         for (_, l) in reversed(ctx):
@@ -823,7 +827,10 @@ def crosscheck(ps):
             made = tuple(sorted(w.label for w in p.wires if abs(w.ytop - b.y) < EPS
                                 and owner(p, w, b.y) is b))
             key = (p.id.rsplit('.', 1)[0], b.label)
-            sigs.setdefault(key, {})[(cons, made, abs(b.x - p.xo) < EPS)] = p.id
+            # on a context wire `A×−` the bead is `f×−`, the same arrow `f` as on the object wire
+            on = abs(b.x - p.xo) < EPS or '−' in next((w.label for w in p.wires if abs(w.x - b.x)
+                                                       < EPS and w.ybot < b.y < w.ytop), '')
+            sigs.setdefault(key, {})[(cons, made, on)] = p.id
     for (disp, label), seen in sigs.items():
         if len(seen) > 1:
             bad.append(f"{disp}: the bead {label} has {len(seen)} signatures — "
