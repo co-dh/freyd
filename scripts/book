@@ -18,6 +18,8 @@ sentence embedding per paragraph, cosine KNN inside SQLite), `page` (raw text, f
     ./scripts/book sim -b IntroString why is a monad the same thing as a monoid
     ./scripts/book page IntroString 64          # or `pdf:79`, always available
     ./scripts/book ls
+    ./scripts/book pics                         # the note's displays' crop boxes, from `<pic>` metadata
+    ./scripts/book pic takewhile axioms         # p.44  x y w h  section  key, and the pdftoppm crop
 
 The DB holds the full text of PDFs gitignored for copyright, so it is gitignored too
 (`book-index.db` at the repository root — NOT under .lake, which `lake clean` wipes) and page dumps
@@ -26,7 +28,7 @@ read off the page numbers themselves; a book whose numbering cannot be pinned do
 `offset=NULL` and every answer says `pdf N (printed=?)` rather than a guess.  The encoder is a
 34 MB ONNX file fetched once into `~/.cache/book-index/`, outside the tree for the same reason.
 """
-import hashlib, os, re, sqlite3, subprocess, sys
+import hashlib, json, os, re, sqlite3, subprocess, sys
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +49,8 @@ CREATE TABLE IF NOT EXISTS page(book INTEGER, pdf_page INTEGER, printed TEXT, te
 CREATE TABLE IF NOT EXISTS para(id INTEGER PRIMARY KEY, book INTEGER, pdf_page INTEGER, text TEXT);
 CREATE TABLE IF NOT EXISTS label(book INTEGER, kind TEXT, name TEXT, title TEXT, pdf_page INTEGER,
   PRIMARY KEY(book, kind, name));
+CREATE TABLE IF NOT EXISTS pic(book INTEGER, key TEXT, section TEXT, pdf_page INTEGER, x REAL,
+  y REAL, w REAL, h REAL);
 CREATE INDEX IF NOT EXISTS para_book ON para(book);
 CREATE VIRTUAL TABLE IF NOT EXISTS para_fts USING fts5(text, content='para', content_rowid='id',
   tokenize='porter unicode61');
@@ -90,12 +94,16 @@ def creator(path):
     return ""
 
 
+# Our own notes, under the name the chat uses; page = pdf page, and `pics` reads their `<pic>` metadata.
+NOTES = {"diag/allegory-axioms.pdf": "axioms"}
+
+
 def scope():
-    """The third-party PDFs.  A render of our own is DETECTED, not named: everything Typst made in
-    this tree is ours and its `.typ` is the greppable source (CLAUDE.md); nothing downloaded is."""
+    """The third-party PDFs, plus NOTES.  A render of our own is DETECTED, not named: everything Typst
+    made in this tree is ours and its `.typ` is the greppable source (CLAUDE.md); nothing downloaded is."""
     return [rel for rel in sorted(os.listdir(ROOT)) + sorted("AOP/" + f
                                                              for f in os.listdir(ROOT + "/AOP"))
-            if rel.endswith(".pdf") and "Typst" not in creator(os.path.join(ROOT, rel))]
+            if rel.endswith(".pdf") and "Typst" not in creator(os.path.join(ROOT, rel))] + list(NOTES)
 
 
 # ---------------------------------------------------------------- text extraction
@@ -294,7 +302,7 @@ def ingest(files):
     # `book ingest x.pdf` name the same row rather than two.
     for rel in [os.path.relpath(os.path.abspath(f), ROOT) for f in files] or scope():
         path = os.path.join(ROOT, rel)
-        name = os.path.splitext(os.path.basename(rel))[0]
+        name = NOTES.get(rel) or os.path.splitext(os.path.basename(rel))[0]
         if not os.path.isfile(path):
             sys.exit(f"no such pdf: {path}")
         sha = digest(path)
@@ -327,7 +335,7 @@ def ingest_one(db, rel, name, path, sha, row):
     heads = running_heads(pages)
     paras, labels = store(db, bid, pages, heads, warns.append)
     nums = [(i, s) for i, p in enumerate(pages, 1) if (s := page_number(p))]
-    off, vote = detect_offset(nums, n)
+    off, vote = (0, "") if rel in NOTES else detect_offset(nums, n)
     db.execute("update book set offset=?, status=? where id=?",
                (off, "ok" if off is not None else "no-offset", bid))
     if off is None:
@@ -540,8 +548,49 @@ def cmd_sim(a):
         sys.exit("no matches")
 
 
+def cmd_pics(a):
+    """`pic` rows for the notes: every `<pic>` metadata a display helper emits (`pic-meta`), replacing
+    the note's old rows.  A second typst pass, like `spell`; `make p` runs it right after the compile."""
+    db = open_db()
+    db.executescript(SCHEMA)
+    for rel in [os.path.relpath(os.path.abspath(f), ROOT) for f in a] or NOTES:
+        bk = db.execute("select id from book where file=?", (rel,)).fetchone()
+        if not bk:
+            sys.exit(f"{rel} not ingested — ./scripts/book ingest {rel}")
+        typ = os.path.join(ROOT, os.path.splitext(rel)[0] + ".typ")
+        out = subprocess.run(["typst", "query", typ, "<pic>", "--field", "value"],
+                             capture_output=True, text=True)
+        if out.returncode:
+            sys.exit(f"typst query {typ}: {out.stderr.strip()}")
+        rows = [(bk[0], v["key"], v["section"], v["page"], v["x"], v["y"], v["w"], v["h"])
+                for v in json.loads(out.stdout)]
+        db.execute("delete from pic where book=?", (bk[0],))
+        db.executemany("insert into pic values(?,?,?,?,?,?,?,?)", rows)
+        db.commit()
+        print(f"{rel}  pics={len(rows)}")
+
+
+def cmd_pic(a):
+    """Where a display is: `p.N  x y w h  section  key` in pt, and the `pdftoppm` that crops it at
+    200 dpi with a 6 pt margin (`-singlefile`, so the PNG is exactly the path given)."""
+    if not a or len(a) > 2:
+        sys.exit("usage: book pic KEY-SUBSTRING [BOOK]")
+    hits = open_db().execute(
+        "select b.name,b.file,p.pdf_page,p.x,p.y,p.w,p.h,p.section,p.key from pic p "
+        "join book b on b.id=p.book where p.key like '%'||?||'%'"
+        + (" and b.name=?" if len(a) == 2 else "") + " order by b.name,p.pdf_page,p.y", a).fetchall()
+    k, m = 200 / 72, 6
+    for name, file, n, x, y, w, h, sec, key in hits:
+        print(f"{name} p.{n}  {x:.1f} {y:.1f} {w:.1f} {h:.1f}  {sec}  {key}")
+        print(f"  pdftoppm -singlefile -r 200 -f {n} -l {n} -x {int(max(x - m, 0) * k)} "
+              f"-y {int(max(y - m, 0) * k)} -W {int((w + 2 * m) * k) + 1} -H {int((h + 2 * m) * k) + 1} "
+              f"-png {file} /tmp/pic")
+    if not hits:
+        sys.exit("no matches")
+
+
 CMDS = {"ingest": ingest, "find": cmd_find, "grep": cmd_grep, "page": cmd_page, "ls": cmd_ls,
-        "embed": cmd_embed, "sim": cmd_sim}
+        "embed": cmd_embed, "sim": cmd_sim, "pics": cmd_pics, "pic": cmd_pic}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in CMDS:
