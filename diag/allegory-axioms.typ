@@ -2924,10 +2924,16 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
   ((0.55, [`E`]), (1.7, [`list`]), (6.3, [`A`])),
   opath: ((6.3, 4), (6.3, 2), (5.15, 1), (2.85, 0)),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(cons)", src: "A×E(list(A))", tgt: "E(list(A))"))
-// The `π₂` operand of `cons∪π₂` alone, opened by its `𝟙%∋`: it is the operand @subseq-outr-square
-// rewrites (`(𝟙×∋)π₂=π₂∋`, then `∋%∋=𝟙` absorbs the `∋`); the `cons` operand is `sb-hm` unchanged.
+// @subseq-EW-case draws the `π₂` operand of `cons∪π₂` in every row, never `cons`: the derivation
+// rewrites only `π₂` (@subseq-outr-square, then `∋%∋=𝟙`); `(𝟙×∋)cons` stays as `sb-hm` draws it.
 // Recipe for a union's lower operand: the `cert:` is the formula with the `∪` cut to that operand
 // by hand (`rank` in `scripts/diagram` would pick the other), and the cell's `#src` names it.
+#let sb-hm-p2a = dpanel(3, 6.85, 4,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none), (2.85, "top", "bot", none, none)),
+  ((2, [`∋`], black, 1.7), (1, [`π₂`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
+  ((2.85, [`list`]), (4, [`A`])),
+  cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
 #let sb-hm-p2 = dpanel(4, 8, 5.15,
   ((0.55, 2.5, "bot", none, frc([`𝟙`])), (1.7, "top", 1, none, none), (2.85, "top", 2, none, none), (4, "top", "bot", none, none)),
   ((2, [`∋`], black, 2.85), (1, [`π₂`], black, 1.7)),
@@ -2947,15 +2953,14 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
     [*Hinze–Marsden*]),
 
   [#vstep([], sbA1, [#frc([`F(∋)[nil,cons∪π₂]`])])],
-  [#sb-hm \ #src[the `cons` operand of `cons∪π₂`]],
+  [#sb-hm-p2a \ #src[the `π₂` operand of `cons∪π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
 
   [#vstep(EQ, sbA2, [#frc([`(𝟙+𝟙×∋)[nil,cons∪π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
-  // Empty: every step below moves a bracket, and a bracket has no Hinze–Marsden shape.
-  [],
+  [#sb-hm-p2a \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, sbA3, [#frc([`[nil,(𝟙×∋)(cons∪π₂)]`]) \
     #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
-  [],
+  [#sb-hm-p2a \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons∪π₂)`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -2983,11 +2988,10 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
         ),
       )),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))],
-    [#src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons∪π₂)]`]])],
-  // Both rows' second arm opens the same `π₂` operand, so one panel spans them.
-  table.cell(rowspan: 2)[#sb-hm-p2 \ #src[The `π₂` operand of `cons∪π₂` under its `𝟙%∋`: the operand
-    @subseq-outr-square's square rewrites, `(𝟙×∋)π₂=π₂∋`; the `cons` operand is row 1's panel.]],
+  cert: (expect: "[nil%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
+    #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons∪π₂)]`]])],
+  [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
+    `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -3015,8 +3019,9 @@ $frac(#[`R∪S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup
         ),
       )),
   ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))],
-    [#src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+  cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons∪π₂))%∋]", src: "F(E([A]))", tgt: "E([A])"))], [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons∪π₂)`])`]` \
+    #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+  [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 ))]<subseq-EW-case>
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
