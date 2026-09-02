@@ -7603,22 +7603,24 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   [#vstep(IMP, nb-pic((nb-So, nb-FQin, nb-LamS, nb-thin)),
     [#src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to
       `−⊑Q°∈`]])],
+  // `(F(∋)S)%∋`, not `F(∋)S%∋`: `%∋` binds the atom before it, and B&dM Thm 8.1 / `Freyd.Alg.thinning`
+  // put the whole composite under the transpose, so the `𝟙` is born ABOVE `∋`.
   [#dpanel(8, 8, 5.15,
-  ((0.55, 1, "bot", none, none), (1.7, 2.5, 1, [`E`], frc([`𝟙`])), (2.85, 7, 2, [`F`], none), (4, 5, 4, [`E`], none)),
-  ((7, [`S°`]), (6, [`Q°`]), (5, [`∈`]), (4, [`∋`], black, 4), (2, [`S`], black, 2.85), (1, [`thin(Q)`], black, 1.7)),
+  ((0.55, 1, "bot", none, none), (1.7, 3.5, 1, [`E`], frc([`𝟙`])), (2.85, 7, 2, [`F`], none), (4, 5, 3, [`E`], none)),
+  ((7, [`S°`]), (6, [`Q°`]), (5, [`∈`]), (3, [`∋`], black, 4), (2, [`S`], black, 2.85), (1, [`thin(Q)`], black, 1.7)),
   ((5.15, [`A`]),),
   ((0.55, [`E`]), (5.15, [`A`])),
-  cert: (expect: "S° F(Q° ∈)F(∋)S%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
+  cert: (expect: "S° F(Q° ∈)(F(∋)S)%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-So, nb-Fin, nb-LamS, nb-thin)),
     [#src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `Q°` has walked out of the `F` handle: that move IS the monotonicity assumption.
   [#dpanel(8, 8, 5.15,
-  ((0.55, 1, "bot", none, none), (1.7, 2.5, 1, [`E`], frc([`𝟙`])), (2.85, 6, 2, [`F`], none), (4, 5, 4, [`E`], none)),
-  ((7, [`Q°`]), (6, [`S°`]), (5, [`∈`]), (4, [`∋`], black, 4), (2, [`S`], black, 2.85), (1, [`thin(Q)`], black, 1.7)),
+  ((0.55, 1, "bot", none, none), (1.7, 3.5, 1, [`E`], frc([`𝟙`])), (2.85, 6, 2, [`F`], none), (4, 5, 3, [`E`], none)),
+  ((7, [`Q°`]), (6, [`S°`]), (5, [`∈`]), (3, [`∋`], black, 4), (2, [`S`], black, 2.85), (1, [`thin(Q)`], black, 1.7)),
   ((5.15, [`A`]),),
   ((0.55, [`E`]), (5.15, [`A`])),
-  cert: (expect: "Q° S° F(∈)F(∋)S%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
+  cert: (expect: "Q° S° F(∈)(F(∋)S)%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((nb-Qo, nb-in, nb-thin)),
     [#src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
@@ -7674,10 +7676,10 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   [#dpanel(3, 4.55, 1.7,
   ((0.55, 2, 1, [`E`], none),),
-  ((2, [`⦇F(∋)S%∋ thin(Q)⦈`]), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (1, [`est(R)`], black, 0.55)),
   ((1.7, [`T`]),),
   ((1.7, [`A`]),),
-  cert: (expect: "⦇F(∋)S%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
+  cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, thpic([`T`], [`A`], none, (tb-cS, tb-thin, tb-est)),
     [#src[@thin-thm81]])],
