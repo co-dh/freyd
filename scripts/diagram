@@ -68,6 +68,8 @@ def cut(e, obj, br):
 
 BR = None                   # the branch `draw` picked, as `scanline.brname` spells it
 TBL = None                  # the signatures `draw` types by, the panel's own `sigs:` laid over
+MU = {}                     # and the initial algebra each functor folds from, `diag/hm-sigs.json`'s
+                            # `mu` with the panel's own `mu:` laid over it the same way
 
 
 def bead(e):
@@ -374,10 +376,42 @@ def own_comma(body):
     return False
 
 
+def parse_mu(s):
+    """`--mu "F:list⁺(x)⟶Para"` — space-separated `functor:object[⟶carrier]` triples, the same flag
+    `scripts/circuit` takes.  The object is the functor's INITIAL ALGEBRA, laid over
+    diag/hm-sigs.json's `mu`; the optional carrier is what the fold lands on when its algebra is a
+    composite and so keys no row that could say (§14.3's `⦇(F(∋)S)%∋ thin Q⦈`, carrier `E(A)`)."""
+    out = {}
+    for p in s.split():
+        f, sep, rest = p.partition(":")
+        o, _, c = rest.partition("⟶")
+        if not (f and sep and o):
+            raise Unhandled(f"--mu: `{p}` is not a `functor:object[⟶carrier]` triple")
+        out[f] = (o, c or None)
+    return out
+
+
+def mu(step, n):
+    """The initial algebra a fold of `step` runs on and the carrier it lands on, or `(None, None)`.
+    Keyed by the FUNCTOR the algebra consumes — `F` is `list` unless the panel says otherwise."""
+    f = step[0][1] if step and step[0][0] == 'app' else None
+    if f is None:
+        # A composite algebra (`(F(∋)S)%∋ thin Q`) keys no row at all, so the panel's own `mu:` is
+        # the only declaration there is and there must be exactly one of it.
+        ds = [k for k, (_, c) in MU.items() if c]
+        if len(ds) > 1:
+            raise Unhandled(f"`mu:` declares the carriers {ds}; a fold whose algebra is a composite"
+                            f" takes its carrier from exactly one")
+        f = ds[0] if ds else None
+    o, c = MU.get(f, (None, None))
+    return (fresh(norm(parse(o)), f"{n}s") if o else None,
+            fresh(norm(parse(c)), n) if c else None)
+
+
 def row(core, sigs, n):
     """The row a bead's label keys, or None.  A bracket cut to one branch is still the ALGEBRA's
     arrow (`[,]`); a catamorphism runs on the initial algebra of the functor its step consumes —
-    `list` for an `F`-algebra, `F(X)=𝟏+A×X`, the row's own otherwise — and lands on the step's carrier."""
+    `mu`'s row for that functor, the bracket's own source otherwise — and lands on the step's carrier."""
     lab = core[1] if core[0] == 'app' else spell(core)
     if lab in sigs:                        # a row of the label's own beats the bracket's inference
         return sigs[lab]
@@ -392,10 +426,10 @@ def row(core, sigs, n):
         body = k[1:-1]
         k = k[0] + (',' if own_comma(body) else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
         r, step = sigs.get(lab) or sigs.get(k), row(bead(sl.parse(body)), sigs, n)
-        if r and step:                         # `[,]`'s `x` is the carrier, so `list`'s element is a
-            lst = step[0][:2] == ('app', 'F')  # letter of its own; `tree(x)` keeps the step's `x`
-            return (('app', 'list', ('atom', f"x@{n}s")) if lst else r[0]), step[1]
-        return r
+        o, c = mu(step, n)                     # `[,]`'s `x` is the carrier, so the initial algebra's
+        s = o or (r and r[0])                  # element is a letter of its own; a functor with no
+        t = c or (step and step[1])            # `mu` row keeps the bracket's own source (`tree(x)`)
+        return (s, t) if s and t else r
     return sigs.get(lab) or sigs.get(k)
 
 
@@ -634,21 +668,23 @@ def layout(rows, made, otop, obot, cert):
     return rec
 
 
-def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None):
+def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
     note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
     no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
     only where the object wire is not the straight default (see `layout`)."""
-    global SPLIT, BR, TBL
+    global SPLIT, BR, TBL, MU
     SPLIT = frozenset(split.split())
     TBL = sl.typed(table or sl.sigs(), own)
+    MU = {f: (o, None) for f, o in TBL.get("mu", {}).items()} | (parse_mu(ini) if ini else {})
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
     rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
     return layout(rows, made, otop, obot, cert | ({"split": split} if split != DEFSPLIT else {})
-                  | ({"sigs": own} if own else {}) | ({"slope": slope} if slope else {}))
+                  | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
+                  | ({"slope": slope} if slope else {}))
 
 
 # ---------------------------------------------------------------- the typst call
@@ -729,7 +765,7 @@ def roundtrip(path, frm, show, out, tbl):
         try:
             src, tgt = endpoints(sl.Panel(r))
             g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
-                     r["cert"].get("slope"))
+                     r["cert"].get("slope"), r["cert"].get("mu"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -811,7 +847,7 @@ def regen(path, tbl, write):
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
-                            c.get("sigs"), c.get("slope")))[1:-1]
+                            c.get("sigs"), c.get("slope"), c.get("mu")))[1:-1]
         except (Unhandled, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -841,6 +877,10 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               " formula alone does not fix the ports"
               '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
               " separated by spaces; the key is left of the LAST colon"
+              '\n--mu          the initial algebra this row folds from, `FUNCTOR:OBJECT[⟶CARRIER]`'
+              ' pairs — `--mu "F:list⁺(x)"` folds the `list⁺` §14.5 writes, laid over'
+              " diag/hm-sigs.json's `mu`, and gives the carrier when the algebra is a composite with"
+              " no row of its own.  The same flag `scripts/circuit` takes, spelled the same way"
               '\n--slope left  lean the layout left instead of the default lane placement'
               '\n--fold-list   keep a composite object as one wire instead of splitting it (e.g. `[A]`'
               " stays folded, not `list` beside `A`)"
@@ -862,9 +902,9 @@ def main(argv):
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     own = sl.opt(argv, "--sigs")           # `R:F(A)⟶A S:F(B)⟶B`: the key is left of the LAST colon
     own = dict(x.rsplit(":", 1) for x in own.split()) if own else None
-    slope = sl.opt(argv, "--slope")
-    taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope") if o in argv
-             for i in (argv.index(o), argv.index(o) + 1)}
+    slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
+    taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu")
+             if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
     tbl = sl.sigs()
@@ -883,7 +923,7 @@ def main(argv):
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]'
                  + '\n       diagram --write [diag/allegory-axioms.typ]')
-    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope)
+    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini)
     got, bad = swept(r)
     print(emit(r))
     if bad:

@@ -5,11 +5,14 @@
     "The key is the head of the bead's label — an application's name (`est(R°)` becomes `est`), a",
     "bare atom (`concat`), or the bracket shape for the note's list algebras (`[,]`) and its",
     "catamorphisms (`⦇⦈`), which run on the initial algebra of the functor the step's row consumes",
-    "(`list` for an `F`-algebra) and land on the step's carrier.  `R%∋` takes R's row with `E`",
+    "(`mu`'s row for that functor) and land on the step's carrier.  `R%∋` takes R's row with `E`",
     "wrapped round the target, and a label with no row at all touches the object wire alone.",
     "`lean` is the declaration whose type the row was read off, in `cite-check`'s marker spelling;",
     "`hm-check --verify-sigs` holds every row against it."
   ],
+  "mu": {
+    "F": "list(x)"
+  },
   "spelling": {
     "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier.",
     "list": ["List"],
