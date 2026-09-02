@@ -22,8 +22,9 @@ UNIT = "𝟙"
 
 # ---------------------------------------------------------------- expressions
 # ('atom', s) | ('comp', [e…]) | ('prod', [e…]) | ('hc', [e…]) | ('conv', e) | ('app', name, e[, s])
-# ('union', [e…], s) | ('case', [e…], s) — `x∪y` and `[x,y]`; the trailing `s` is the note's own
-# spelling, kept because one bracket spaces `(𝟙×list(p))π₂` and `(p×list(p)) cons` differently.
+# ('union', [e…], s) | ('case', [e…], s) | ('fork', [e…], s) — `x∪y`, `[x,y]`, `⟨x,y⟩`; the
+# trailing `s` is the note's own spelling, kept because one bracket spaces `(𝟙×list(p))π₂` and
+# `(p×list(p)) cons` differently.
 # `hc` is the ACROSS composite `s∘t`, leftmost outermost: a factor beside the wires that pass it.
 OPENERS, CLOSERS = "([⟨⦇{", ")]⟩⦈}"
 BREAK = OPENERS + CLOSERS + "×° \t"
@@ -120,6 +121,8 @@ def p_prim(s, i):
         bs = split_top(s[i + 1:j], ',')
         if s[i] == '[' and len(bs) > 1:
             return ('case', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
+        if s[i] == '⟨' and len(bs) > 1:
+            return ('fork', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
         return ('atom', squeeze(s[i:j + 1])), j + 1
     for q in PROJ:
         if s.startswith(q, i):
@@ -140,7 +143,7 @@ def spell(e):
     k = e[0]
     if k == 'atom':
         return e[1]
-    if k in ('union', 'case', 'cap', 'cond', 'cata'):
+    if k in ('union', 'case', 'cap', 'cond', 'cata', 'fork'):
         return e[2]
     if k == 'app':      # read by juxtaposition (circuit's `juxta`, `thin Q`) it carries its spelling
         return e[3] if len(e) > 3 else f"{e[1]}({spell(e[2])})"
@@ -191,7 +194,7 @@ def norm(e):
     laws, applied on trust."""
     # One bead on the sweep side, so the comparison form stays the atom these were before the parser
     # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
-    if e[0] in ('cap', 'cond', 'cata'):
+    if e[0] in ('cap', 'cond', 'cata', 'fork'):
         return ('atom', e[2])
     e = rec(e, norm)
     if e[0] == 'conv':

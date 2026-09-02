@@ -136,6 +136,53 @@
     ), seams: ()), label: none, port: ("A", "[[A]²]", ), src: ("tree A", ), tgt: ("[A]", "[A]", )),
   cert: (expect: "⦇S⦈", src: "tree(A)", tgt: "[A]×[A]"))
 
+// ⟨⟩ (12.1e)  [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]   [F(E([A])) ⟶ E([A])]
+#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 0, label: "l", chamfer: true, frac: false, flip: true),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+        (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+      ), seams: (
+        (
+          1,
+          ("[A]", ),
+        ),
+      )),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "box", nin: 1, nout: 2, label: "r", chamfer: true, frac: false, flip: true),
+        (k: "fork", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E(𝟙×∋)", chamfer: false, frac: false, flip: false),
+                (k: "box", nin: 1, nout: 1, label: "E(cons)", chamfer: false, frac: false, flip: false),
+              ), seams: (
+                (
+                  0,
+                  ("E(A×E[A])", ),
+                ),
+                (
+                  1,
+                  ("E(A×[A])", ),
+                ),
+              )),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
+      ), seams: (
+        (
+          0,
+          ("A", "E[A]", ),
+        ),
+        (
+          1,
+          ("E[A]", "E[A]", ),
+        ),
+      )),
+  ), src: ("FE[A]", ), tgt: ("E[A]", )),
+  cert: (expect: "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", src: "F(E([A]))", tgt: "E([A])"))
+
 // 13.4.4a r2  𝟙%∋ E(⦇S⦈)E(choose)est(R°)   [tree(A) ⟶ [A]]
 #cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),

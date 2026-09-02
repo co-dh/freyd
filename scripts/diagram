@@ -63,11 +63,12 @@ BR = None                   # the branch `draw` picked, as `scanline.BRANCH` nam
 
 
 def bead(e):
-    """`∩`, `⦇⦈` and `(g→x,y)` are wirings of the CIRCUIT calculus (`scripts/circuit`) — this model
+    """`∩`, `⦇⦈`, `(g→x,y)` and `⟨x,y⟩` are wirings of the CIRCUIT calculus (`scripts/circuit`) — this
+    model
     has no picture for any of them, so each folds back to the one bead it was before the parser
     could read it.  Folded BEFORE `cut` runs, so that `branch` — which asks whether `cut` CHANGED
     the tree — does not read a fold as a branch having been picked."""
-    if e[0] in ('cap', 'cond', 'cata'):
+    if e[0] in ('cap', 'cond', 'cata', 'fork'):
         return ('atom', e[2])
     if e[0] in ('union', 'case'):
         return (e[0], [bead(x) for x in e[1]], e[2])

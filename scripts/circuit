@@ -21,6 +21,7 @@ is copy / both lanes / merge (§3 row 12), a conditional is ONE box carrying the
 (row 16 — the expanded `∪` of guarded branches was unreadable, user 2026-09-01), and a fold is
 MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars, which is how the note already
 draws it (row 17).  `⊸` is still an atom, and §3 row 14 reads it where it stands, as the constant it is.
+`⟨x,y⟩` is the fork (row 20): copy, both lanes, outputs stacked — a meet less its merge.
 
 WHAT IT STILL REFUSES, each where it is written: an `∩` of more than two operands, a fold whose
 carrier neither the panel nor the algebra's row declares, and `°` on a composite (row 8's frame —
@@ -49,6 +50,7 @@ SLICE = [("13.3.3d r1", "S%∋ est(R°)", "F([A])", "[A]"),
          ("→ (13.3.3c)", "(π₁p→cons,⊸ nil)", "A×[A]", "[A]"),
          ("⦇⦈ (13.3.3b)", "⦇[nil,⊸ nil ∪ cons]⦈", "[A]", "[A]"),
          ("⦇⦈ (13.4.4a)", "⦇S⦈", "tree(A)", "[A]×[A]"),
+         ("⟨⟩ (12.1e)", "[nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]", "F(E([A]))", "E([A])"),
          ("13.4.4a r2", "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", "tree(A)", "[A]"),
          ("13.4.4a r4", "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", "tree(A)", "[A]"),
          # rows 10–39: named `<section> :<note line> <helper>`; the ports were read off the note's own
@@ -188,7 +190,7 @@ def subst(scheme, env):
 
 
 # ---------------------------------------------------------------- the circuit normalizer (§1.4)
-BRACKETS = ('union', 'case', 'cap', 'cond', 'cata')
+BRACKETS = ('union', 'case', 'cap', 'cond', 'cata', 'fork')
 
 
 def mk(tag, ops):
@@ -200,7 +202,8 @@ def mk(tag, ops):
     return (tag, ops, {'union': ' ∪ '.join(spell(x) for x in ops),
                        'cap': '∩'.join(spell(x) for x in ops),
                        'case': '[' + ','.join(spell(x) for x in ops) + ']',
-                       'cata': '⦇' + spell(ops[0]) + '⦈'}[tag])
+                       'cata': '⦇' + spell(ops[0]) + '⦈',
+                       'fork': '⟨' + ','.join(spell(x) for x in ops) + '⟩'}[tag])
 
 
 def crec(e, f):
@@ -302,6 +305,8 @@ def walk(e, tbl, src=None, tgt=None):
         return tape(e, tbl, src)
     if e[0] == 'cap':
         return meet(e, tbl, src)
+    if e[0] == 'fork':
+        return fork(e, tbl, src)
     if e[0] == 'cond':
         return test(e, tbl, src)
     if e[0] == 'cata':
@@ -400,7 +405,11 @@ def seq(xs, tbl, src, tgt=None):
         else:
             items.append(n); objs.append(t)
         mp = mp and m; i += 1
-    return pic("seq", objs[0], objs[-1], mp, items=items, seams=seams(objs), _objs=objs,
+    # a pair's strands are typed nowhere else — its lanes END at them — so the seam after a fork
+    # is printed whole, as `armed` prints the one after an injection
+    sm = seams(objs) + [[i, [lshow(w) for w in it["_out"]]]
+                        for i, it in enumerate(items[:-1]) if it["k"] == "fork"]
+    return pic("seq", objs[0], objs[-1], mp, items=items, seams=sorted(sm), _objs=objs,
                _in=items[0]["_in"] if items else None, _out=items[-1]["_out"] if items else None)
 
 
@@ -418,11 +427,12 @@ def stack(xs, tbl, src):
                _in=[w for l in lanes for w in l["_in"]], _out=[w for l in lanes for w in l["_out"]])
 
 
-def branches(ops, tbl, srcs, what):
+def branches(ops, tbl, srcs, what, join=True):
     """A `∪`, a `[x,y]` and a `→`'s two sides differ in where their branches START, never in where
-    they end: all close by merging, so every branch lands on the one object the region leaves at."""
+    they end: all close by merging, so every branch lands on the one object the region leaves at.
+    A fork's lanes (`join=False`) end apart, stacked, so only their starts are checked."""
     bs = [walk(x, tbl, src=s) for x, s in zip(ops, srcs)]
-    if len({oshow(b[2]) for b in bs}) > 1:
+    if join and len({oshow(b[2]) for b in bs}) > 1:
         raise Unhandled(f"`{what}` merges branches at {', '.join(oshow(b[2]) for b in bs)}")
     ins = {tuple(oshow(w) for w in b[0]["_in"]) for b in bs}
     if len({oshow(s) for s in srcs}) == 1 and len(ins) > 1:    # a tape's branches start apart
@@ -446,6 +456,20 @@ def meet(e, tbl, src):
                         f" bracket it, `a∩(b∩c)`, and the copies nest")
     bs = branches(e[1], tbl, [src] * 2, spell(e))
     return pic("cap", src, bs[0][2], False, _in=bs[0][0]["_in"], lanes=[lane(b) for b in bs])
+
+
+def fork(e, tbl, src):
+    """§3 row 20: `⟨x,y⟩` — the input is COPIED, both lanes run, and the outputs are STACKED, `x`'s
+    wires over `y`'s: row 12 less its merge.  At a product the per-wire copy crosses the middle two
+    strands, and `cpanel` draws that crossing rather than routing round it."""
+    if len(e[1]) != 2:
+        raise Unhandled(f"`{spell(e)}` pairs {len(e[1])} operands where a copy has TWO outputs:"
+                        f" bracket it, `⟨a,⟨b,c⟩⟩`, and the copies nest")
+    bs = branches(e[1], tbl, [src] * 2, spell(e), join=False)
+    lanes = [lane(b) for b in bs]
+    t = ('prod', [y for b in bs for y in (b[2][1] if b[2][0] == 'prod' else [b[2]])])
+    return pic("fork", src, t, all(b[3] for b in bs), _in=lanes[0]["_in"],
+               _out=[w for l in lanes for w in l["_out"]], lanes=lanes)
 
 
 def test(e, tbl, src):
@@ -673,6 +697,8 @@ def read_back(t):
         return mk("cata", [read_back(t["body"])])
     if k == "union":
         return mk("union", [read_back(x) for x in t["bodies"]])
+    if k == "fork":
+        return mk("fork", [read_back(x) for x in t["lanes"]])
     # a bracket's arms open with the injections `armed` put there: the bracket's own drawing of `[f,g]`
     return mk("case", [read_back(dict(x, items=x["items"][1:])) for x in t["bodies"]])
 
