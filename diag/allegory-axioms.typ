@@ -5002,6 +5002,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((0.55, [`𝟏`]), (1.7, [`Int`])),
   ((1.7, [`Int`]),),
   cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
+// The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
+// `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×Int⟶Int"`.
+#let mh-alg-plus = dpanel(4, 5.7, 2.85,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
+  ((2, [`plus`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((1.7, [`A×−`]), (2.85, [`Int`])),
+  ((2.85, [`Int`]),),
+  opath: ((2.85, 4), (2.85, 2), (0.55, 1), (0.55, 0)),
+  cert: (expect: "𝟙%∋ E(plus)est(≥)", src: "A×Int", tgt: "Int", sigs: ("plus": "A×Int⟶Int")))
 #let mh-segsum = dpanel(5, 6.85, 4,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (2.85, "top", 3, none, none)),
   ((3, [`segment`], black, 2.85), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
@@ -5037,28 +5046,28 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
   [#vstep([], P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
-    [])],
-  [#mh-cons-sum],
+    [`[nil,⊸ nil ∪ cons] sum`])],
+  [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`nil`], cons-copy, end: [`sum`]))),
-    [#src[coproduct of maps, composition over `∪`]])],
+    [`[nil sum,⊸ nil sum∪cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], sumplus-copy))),
-    [#src[`sum`'s defining equation]])],
+    [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
     joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
-    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`])))],
+    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`]))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
-    [#src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
+    [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
   [],
 
   [#vstep(EQ, P(cetz.canvas(length: 0.8cm, msspic([`zero`], plus-copy, pre: true))),
-    [#src[relator]])],
+    [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
@@ -5149,26 +5158,26 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [*Hinze–Marsden*]),
 
   [#vstep([], mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, pre: true)),
-    [])],
+    [`(𝟙×≥)(⊸ zero ∪ plus)`])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
     joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`])))],
+    beads: ((MB, 3.00, [`≥`]), (MB, 1.90, [`plus`]))) \ #src[the `(𝟙×≥) plus` operand of `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]],
 
   [#vstep(EQ, mss-pic(mrow(mbranch(bzero, 2.6, pre: true), mbranch(bplus, 2.6, pre: true), 3.9)),
-    [#src[relator, composition over `∪`]])],
+    [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` \ #src[relator, composition over `∪`]])],
   // Empty: `∪` is an operation on hom-sets, not a wiring, so distributing over it draws the row above.
   [],
 
   [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 3.8), mbranch(bplus, 2.6, post: true), 3.8)),
-    [#src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
+    [`⊸ zero ∪ plus≥` \ #src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
      written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
      together, which carries it to `≥`.]])],
   [#mpan(MB, 4.2, ((MA, [`A×−`]), (MB, [`Int`])), ((MB, [`Int`]),),
     joins: ((MA, MB, 1.90, 1.20),),
-    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`])))],
+    beads: ((MB, 1.90, [`plus`]), (MB, 0.80, [`≥`]))) \ #src[the `plus≥` operand of `⊸ zero ∪ plus≥`]],
 
   [#vstep(SQ, mss-pic(mrow(mbranch(bzero, 2.6), mbranch(bplus, 2.6), 2.6, post: true)),
-    [#src[`≥` reflexive]])],
+    [`(⊸ zero ∪ plus)≥` \ #src[`≥` reflexive]])],
   // Empty: `≥` is put back on the `⊸ zero` branch, which this column does not draw.
   [],
 ))]<mss-mono>
@@ -5212,14 +5221,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [])],
-  [#mh-alg-est],
+  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
+  [#mh-alg-est \ #src[the `zero` arm of the bracket]],
 
   [#vstep(EQ, mss-pic(mss-tape(((mss-zero, 1.35, false), mss-est), ((mss-plus, 3.4, false), mss-est), h: 1.25)),
-    [#src[coproduct of maps — @coprod-calc at
+    [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
-  // Empty: `[U,V]` is a coproduct of hom-sets, so splitting the bead into branches is not a wiring.
-  [],
+  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
 
   [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
@@ -6896,20 +6904,20 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
   [#vstep([], van-pic(van-old((vb-RH,), ())), [])],
-  [#van-mono-hm([`R;H`], true)],
+  [#van-mono-hm([`R;H`], true) \ #src[the `old` operand of `new∪old`, in every row]],
 
   [#vstep(EQ, van-pic(van-old((vb-sR,), ())),
-    [#src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
+    [`(𝟙×|R|)old∪(𝟙×(R∩H))old` \ #src[`R;H=|R|∪(R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
   [#van-mono-hm([`|R|`], true)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH2,))),
-    [#src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
+    [`new (R∩H)∪old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
   [#van-mono-hm([`R∩H`], false)],
 
   [#vstep(SQ, van-pic(van-old((), (vb-RH,))),
-    [#src[`X∩Y⊑X;Y`, converses]])],
+    [`(new∪old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
   [#van-mono-hm([`R;H`], false)],
 ))]<van-mono>
 
