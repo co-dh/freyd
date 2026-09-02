@@ -2303,6 +2303,36 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   pic-meta(plain(f), row, width: sz.width)
   row
 })
+// A derivation read LEFT TO RIGHT: one Hinze–Marsden panel per `(op, panel, reason)` step, the
+// op between it and the step before, the reason underneath both.  Steps pack greedily into lines
+// of the cell's width, a continued line opening with its op; a line's slack widens its columns.
+#let hchain(..steps) = layout(sz => {
+  let gut = 4pt
+  let ss = steps.pos().map(((op, pic, why)) => (op: op, pic: box(pic), why: why, w: measure(box(pic)).width))
+  let (lines, cur, used) = ((), (), 0pt)
+  for s in ss {
+    let add = s.w + if lines.len() == 0 and cur.len() == 0 { 0pt } else { OPW + 2 * gut }
+    if cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
+    cur.push(s)
+  }
+  lines.push(cur)
+  stack(dir: ttb, spacing: 10pt, ..lines.enumerate().map(((li, line)) => {
+    let extra = calc.max(0pt, (sz.width - line.map(s => s.w).sum()
+      - (line.len() - if li == 0 { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
+    let (cols, pr, rr) = ((), (), ())
+    for (i, s) in line.enumerate() {
+      let op = not (li == 0 and i == 0)
+      if op { cols.push(OPW); pr.push(s.op) }
+      cols.push(s.w + extra)
+      pr.push({ pic-meta(plain(s.why), s.pic); s.pic })
+      rr.push(grid.cell(colspan: if op { 2 } else { 1 },
+        box(width: s.w + extra + if op { OPW + gut } else { 0pt }, s.why)))
+    }
+    grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
+      align: (x, y) => if y == 0 { center + horizon } else { left + top }, ..pr, ..rr)
+  }))
+})
+
 
 // A panel's address is the display it stands in and its place in that display, both read off the
 // counters at the point it is PLACED, so a reordered row cannot keep a stale name.
@@ -2549,35 +2579,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 === `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` <sec-hylo>
 
-// §@sec-hylo's boxes.  `R` and `S` are algebras of RELATIONS, so they and their reduces are
-// chamfered; `α` and `α°` are maps — the initial algebra is invertible — so they are plain.
-#let hb-So = ([`S°`], 0.85, true)
-#let hb-R = ([`R`], 0.70, true)
-#let hb-X = ([`X`], 0.70, true)
-#let hb-al = ([`α`], 0.70, false)
-#let hb-alo = ([`α°`], 0.85, false)
-#let hb-cSo = ([`⦇S⦈°`], 1.55, true)
-#let hb-cR = ([`⦇R⦈`], 1.30, true)
-#let hb-W = ([`⦇S⦈°\X`], 2.30, true)
-#let hb-FcSR = ([`F(⦇S⦈°⦇R⦈)`], 3.10, true)
-#let hb-FcSo = ([`F(⦇S⦈°)`], 2.15, true)
-#let hb-FcR = ([`F(⦇R⦈)`], 1.90, true)
-#let hb-FX = ([`F(X)`], 1.30, true)
-#let hb-FW = ([`F(⦇S⦈°\X)`], 2.90, true)
-#let hb-mu = ([`(μX : S°F(X)R)`], 4.50, true)
-// A run of boxes between its source and target objects, and with `rhs` the run it is below: `gterm`
-// without the converse frame, which is the shape every row of both tables draws.
-#let hterm(items, a0, a1, rhs: none) = {
-  lab(-0.42, 0, black)[#a0]
-  boxrun(0, 0, items)
-  let xe = boxrun-w(items)
-  if rhs == none { lab(xe + 0.42, 0, black)[#a1] } else {
-    lab(xe + 0.95, 0, SLACK)[`⊑`]
-    boxrun(xe + 1.5, 0, rhs)
-    lab(xe + 1.5 + boxrun-w(rhs) + 0.42, 0, black)[#a1]
-  }
-}
-
 // §@sec-hylo's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus
 // `s: 100%`, the size their `tpanR` partners keep.  `sigs:` types the section's abstract letters.
 #let hy-body = dpanel(5, 4.55, 1.7,
@@ -2625,123 +2626,78 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A")), s: 100%)
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
-// at the trailing algebra; every step shortens it, and by the last row it is gone.
+// at the trailing algebra; every step shortens it, and by the last panel it is gone.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
+  Thm(cols: 1)[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
  #src[Theorem 6.2; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
     // lean:AOP.A6_3.hylo_fixed@42010f9f
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], mbp(hterm((hb-So, hb-FcSR, hb-R), [`B`], [`A`])),
-    [`S°F(⦇S⦈°⦇R⦈)R` \ #src[the body at `⦇S⦈°⦇R⦈`]])],
-  [#hy-body],
-
-  [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-FcR, hb-R), [`B`], [`A`])),
-    [`S°F(⦇S⦈°)F(⦇R⦈)R` \ #src[`F(RS)=F(R)F(S)` — @relator-defn]])],
-  [#hy-split],
-
-  [#vstep(EQ, mbp(hterm((hb-So, hb-FcSo, hb-al, hb-cR), [`B`], [`A`])),
-    [`S°F(⦇S⦈°)α⦇R⦈` \ #src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]])],
-  [#hy-alg],
-
-  [#vstep(EQ, mbp(hterm((hb-cSo, hb-alo, hb-al, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°α°α⦇R⦈` \ #src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
-     `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]])],
-  [#hy-lambek],
-
-  [#vstep(EQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
- [`⦇S⦈°⦇R⦈` \ #src[`α°α=𝟙`, Lambek]])],
+  [#hchain(
+    (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
+    (EQ, hy-split, src[`F(RS)=F(R)F(S)` — @relator-defn]),
+    (EQ, hy-alg, src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
+    (EQ, hy-lambek, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
+     `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
+    (EQ, hy-cata, src[`α°α=𝟙`, Lambek]),
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
-  [#hy-cata],
+  )],
 ))]<hylo-fix>
 
 // B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
 // own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2]],
+ Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \ #src[Theorem 6.2]],
   // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`], rhs: (hb-X,))),
-    [`⦇S⦈°⦇R⦈⊑X` \ #src[the conclusion]])],
-  [#trow(
-    hy-cata,
-    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
-  )],
-
-  [#vstep(IFF, mbp(hterm((hb-cR,), [`T`], [`A`], rhs: (hb-W,))),
-    [`⦇R⦈⊑⦇S⦈°\X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
-  [#trow(
-    hy-cataR,
-    tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
-  )],
-
-  [#vstep(IMP, mbp(hterm((hb-alo, hb-FW, hb-R), [`T`], [`A`], rhs: (hb-W,))),
-    [`α°F(⦇S⦈°\X)R⊑⦇S⦈°\X` \ #src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
- ]])],
+  [#hchain(
+    (none, trow(hy-cata, tpanR(4.2, 2.1, [`X`], top: [`B`])),
+     src[the conclusion]),
+    (IFF, trow(hy-cataR, tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`])),
+     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+    (IMP, trow(
+      tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+        hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
+      tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`])),
+     src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
+ ]),
      // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-  [#trow(
-    tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-      hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
-    tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`]),
-  )],
-
-  [#vstep(IFF, mbp(hterm((hb-cSo, hb-alo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`⦇S⦈°α°F(⦇S⦈°\X)R⊑X` \ #src[@adj-all's `S·⊣S\` at `⦇S⦈°`]])],
-  [#trow(
-    tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-      hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
-    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
-  )],
-
-  [#vstep(IFF, mbp(hterm((hb-So, hb-FcSo, hb-FW, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`S°F(⦇S⦈°)F(⦇S⦈°\X)R⊑X` \ #src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]])],
-  [#trow(
-    tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-      hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
-    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
-  )],
-
-  [#vstep(IMP, mbp(hterm((hb-So, hb-FX, hb-R), [`B`], [`A`], rhs: (hb-X,))),
-    [`S°F(X)R⊑X` \ #src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]])],
-  [#trow(
-    hy-prefix,
-    tpanR(4.2, 2.1, [`X`], w: 3.0, top: [`B`]),
+    (IFF, trow(
+      tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+        hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+      tpanR(4.2, 2.1, [`X`], top: [`B`])),
+     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+    (IFF, trow(
+      tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
+        hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
+      tpanR(4.2, 2.1, [`X`], top: [`B`])),
+     src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]),
+    (IMP, trow(hy-prefix, tpanR(4.2, 2.1, [`X`], top: [`B`])),
+     src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
   )],
 ))]<hylo-least>
 
 // The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
 #disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
+  columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
- Thm[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2]],
+ Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \ #src[Theorem 6.2]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], mbp(hterm((hb-mu,), [`B`], [`A`])),
-    [`(μX : S°F(X)R)` \ #src[@mu-defn at `φ(X):=S°F(X)R`]])],
-  [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
-
-  [#vstep(SQ, mbp(hterm((hb-cSo, hb-cR), [`B`], [`A`])),
-    [`⦇S⦈°⦇R⦈` \ #src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
- `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]])],
+  [#hchain(
+    (none, tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`]),
+     src[@mu-defn at `φ(X):=S°F(X)R`]),
+    (SQ, hy-cata,
+     src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
+ `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]),
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-  [#hy-cata],
-
-  [#vstep(SQ, mbp(hterm((hb-mu,), [`B`], [`A`])),
-    [`(μX : S°F(X)R)` \ #src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
+    (SQ, tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`]),
+     src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
- ]])],
+ ]),
      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
-  [#tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`])],
+  )],
 ))]<hylo-mu>
 
 #pagebreak(weak: true)
