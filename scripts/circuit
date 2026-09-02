@@ -409,9 +409,10 @@ def leaf(e, tbl, src, tgt):
     """An atom (§3 rows 1-2) or an application read as one box (§3 row 10): the signature's `src`
     and `tgt` are schemes, and the port in hand binds their variables."""
     key = e[1] if e[0] in ('atom', 'app') else None
-    # An application whose WHOLE spelling has a row is ONE opaque box, its argument untyped:
-    # `listcp(F)` applies an operator to a FUNCTOR, and an `arg` scheme states an ARROW.
-    if e[0] == 'app' and rows(tbl, spell(e)):
+    # A whole-spelling row is ONE opaque box only when the head has no `arg` row: `listcp(F)` applies
+    # an operator to a FUNCTOR, where `E(…)`/`P(…)`/`thin` state an ARROW and must type their argument.
+    if (e[0] == 'app' and rows(tbl, spell(e))
+            and not any('arg' in r for r in rows(tbl, e[1]))):
         e, key = ('atom', spell(e)), spell(e)
     # A letter may be both a preorder and an operator (`P`, `P(f)`): an application takes the rows
     # with an `arg` scheme and an atom the rows without, so neither ever reads the other's.

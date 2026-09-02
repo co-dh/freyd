@@ -8199,7 +8199,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
-          (k: "box", nin: 2, nout: 1, label: "listcp(F)", chamfer: true, frac: false, flip: false),
+          (k: "box", nin: 2, nout: 1, label: "listcp(F)", chamfer: false, frac: false, flip: false),
           (k: "fork", nin: 1, nout: 2, lanes: (
               (k: "seq", nin: 1, nout: 1, items: (
                   (k: "box", nin: 1, nout: 1, label: "g₁", chamfer: true, frac: false, flip: false),
@@ -8227,7 +8227,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
       ("[A]", ),
     ),
   ), src: ("T", ), tgt: ("A", )),
-  cert: (expect: "⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R", src: "T", tgt: "A", mu: "F:T⟶[A]", sigs: "listcp(F):F([A])⟶[F(A)] g₁:[F(A)]⟶[A] g₂:[F(A)]⟶[A]"))],
+  cert: (expect: "⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R", src: "T", tgt: "A", mu: "F:T⟶[A]", sigs: "listcp(F):F([A])⟼[F(A)] g₁:[F(A)]⟶[A] g₂:[F(A)]⟶[A]"))],
     [#src[@cata-fusion at @thinlist-fusion]])],
   // The reduce now births `list` where it births `E` above: no set is ever built.
   [#dpanel(3, 4.55, 1.7,
@@ -9327,7 +9327,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (k: "box", nin: 1, nout: 1, label: "E(T°)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 2, label: "est(Q)", chamfer: true, frac: false, flip: false),
     (k: "box", nin: 2, nout: 2, label: "F(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 1, label: "h", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 2, nout: 1, label: "h", chamfer: false, frac: false, flip: false),
   ), seams: (
     (
       0,
@@ -9338,7 +9338,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       ("EFA", ),
     ),
   ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: "T:F(A)⟶A h:F(B)⟶B X:A⟶B"))],
+  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: "T:F(A)⟶A h:F(B)⟼B X:A⟶B"))],
     // dp-shrink row: Theorem 10.1
     [#src[]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
@@ -9355,7 +9355,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (k: "box", nin: 1, nout: 1, label: "E(Vᵢ°)", chamfer: false, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "est(Qᵢ)", chamfer: true, frac: false, flip: false),
     (k: "box", nin: 1, nout: 1, label: "Fᵢ(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "Uᵢ", chamfer: true, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 1, label: "Uᵢ", chamfer: false, frac: false, flip: false),
   ), seams: (
     (
       0,
@@ -9374,7 +9374,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       ("Fᵢ B", ),
     ),
   ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟶B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
+  cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟼B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
     [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
@@ -9645,7 +9645,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 2, label: "pick", chamfer: false, frac: false, flip: false),
+    (k: "box", nin: 1, nout: 2, label: "pick", chamfer: true, frac: false, flip: false),
     (k: "stack", nin: 2, nout: 2, lanes: (
         (k: "seq", nin: 1, nout: 1, items: (
             (k: "box", nin: 1, nout: 1, label: "schedule", chamfer: false, frac: false, flip: false),
@@ -9654,7 +9654,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       )),
     (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
   ), seams: (), src: ("Bag Job", ), tgt: ("[Job]", )),
-  cert: (expect: "pick (schedule×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "pick:Bag(Job)⟼Bag(Job)×Job schedule:Bag(Job)⟼[Job] snoc:[Job]×Job⟼[Job]"))],
+  cert: (expect: "pick (schedule×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "pick:Bag(Job)⟶Bag(Job)×Job schedule:Bag(Job)⟼[Job] snoc:[Job]×Job⟼[Job]"))],
     [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
   [#dpanel(4, 9.15, 6.3,
