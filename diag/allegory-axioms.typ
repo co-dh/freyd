@@ -5704,8 +5704,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(𝟙×R°)π₂ ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
-   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
-   and `R°` on the pair's two strands at once], [`(𝟙×R°)π₂ ∪ (p×R°) cons`]),
+   [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]], [`(𝟙×R°)π₂ ∪ (p×R°) cons`]),
 
   (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -5725,8 +5724,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "π₂R° ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
-   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square] #h(4pt) — `π₂` natural, so this branch is an
-   EQUALITY], [`π₂R° ∪ (p×R°) cons`]),
+   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]], [`π₂R° ∪ (p×R°) cons`]),
 
   (SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -5745,8 +5743,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       ), seams: ()),
   ), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "π₂R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))],
-   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono's `cons` branch] #h(4pt) — a shorter
-   tail makes a shorter list], [`π₂R° ∪ (p×𝟙) cons R°`]),
+   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]], [`π₂R° ∪ (p×𝟙) cons R°`]),
 
   (SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -5766,12 +5763,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
   ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
   cert: (expect: "(π₂ ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))],
-   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]], [`(π₂ ∪ (p×𝟙) cons)R°`]),
+   [#src[@adj-all]], [`(π₂ ∪ (p×𝟙) cons)R°`]),
   )],
 )
-#align(center, block(inset: (y: 4pt))[#src[`F(R°)S⊑SR°`, the `nil` branch again `nil⊑nil R°`.
-  @takewhile-mono buys its `⊸ nil` branch with `nil R°=nil`; `π₂` needs only its naturality square,
-  so that step is an equality.]])
+#align(center, block(inset: (y: 4pt))[#src[the `nil` branch: `nil⊑nil R°`.]])
 ]<filter-mono>
 
 #let step = step.with(pw: 340pt)
