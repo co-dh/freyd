@@ -1,0 +1,109 @@
+{
+  "label": "fig p40",
+  "title": "the spider — one bead, two arms, four legs",
+  "book": "IntroString.pdf",
+  "page": 40,
+  "pdf_page": 55,
+  "eq": "§2.2.3, the unnumbered figure the book calls a small spider",
+  "transcribed": "2026-08-31",
+  "transcribed_from": "pdftocairo -svg page 55, the paths inside the bbox below; labels from pdftotext -bbox",
+  "book_formula": "ψ",
+  "mirrored": "ψ",
+  "src": "F(G(x))",
+  "tgt": "H(J(K(L(x))))",
+  "norm": [
+    "object-wire-added"
+  ],
+  "note": "ψ is a transformation between composite functors, so the book draws no object wire and no 𝟏 strip, and this fixture is the page verbatim: two arms `F G`, four legs `H J K L`, and nothing else. The book's own point is that the six functors stay reachable one by one: the arms and legs are bends, not one fat wire. Its regions are three colours (the composites separate three categories); `grey1` records only the `𝟏` strip's own luma, which the page paints nowhere here.",
+  "sigs": {
+    "//": "The book's own letters for THIS figure: ψ : F∘G →̇ H∘J∘K∘L, read off the wire labels at the two edges. `nat` says the page draws the bead OFF the object wire — ψ is one letter and the schematic rule would read it as endo on that wire.",
+    "ψ": {
+      "src": "F(G(x))",
+      "tgt": "H(J(K(L(x))))",
+      "nat": true
+    }
+  },
+  "sides": [
+    {
+      "top": [
+        "F",
+        "G",
+        "x"
+      ],
+      "bot": [
+        "H",
+        "J",
+        "K",
+        "L",
+        "x"
+      ],
+      "beads": [
+        {
+          "name": "ψ",
+          "arms": [
+            "w0",
+            "w1"
+          ],
+          "legs": [
+            "w3",
+            "w4",
+            "w5",
+            "w6"
+          ]
+        }
+      ],
+      "wires": {
+        "w0": {
+          "lbl": "F",
+          "from": "top:0",
+          "to": "bead:0/arm:0"
+        },
+        "w1": {
+          "lbl": "G",
+          "from": "top:1",
+          "to": "bead:0/arm:1"
+        },
+        "w3": {
+          "lbl": "H",
+          "from": "bead:0/leg:0",
+          "to": "bot:0"
+        },
+        "w4": {
+          "lbl": "J",
+          "from": "bead:0/leg:1",
+          "to": "bot:1"
+        },
+        "w5": {
+          "lbl": "K",
+          "from": "bead:0/leg:2",
+          "to": "bot:2"
+        },
+        "w6": {
+          "lbl": "L",
+          "from": "bead:0/leg:3",
+          "to": "bot:3"
+        },
+        "wx": {
+          "lbl": "x",
+          "from": "top:2",
+          "to": "bot:4"
+        }
+      },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [
+        195,
+        98,
+        288,
+        133
+      ],
+      "counts": {
+        "strokes": 1,
+        "dots": 1,
+        "top_ends": 0,
+        "bot_ends": 2,
+        "grey": 0
+      }
+    }
+  ]
+}

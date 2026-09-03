@@ -70,6 +70,8 @@ BR = None                   # the branch `draw` picked, as `scanline.brname` spe
 TBL = None                  # the signatures `draw` types by, the panel's own `sigs:` laid over
 MU = {}                     # and the initial algebra each functor folds from, `diag/hm-sigs.json`'s
                             # `mu` with the panel's own `mu:` laid over it the same way
+NAT = {}                    # the rows that STATE whether their bead is natural, which `natural`
+                            # takes ahead of its own reading of the signature
 
 
 def bead(e):
@@ -153,6 +155,13 @@ def natural(core, sigs):
     monotone.  A schematic one-letter name is endo on the object wire by construction."""
     if core[0] == 'conv':
         return natural(core[1], sigs)
+    # A row may say it outright, because no signature can tell the two apart: `α : F(x)⟶x` is an
+    # algebra at ONE carrier and `τ : C(B(x))⟶B(C(x))` a natural transformation, and both read
+    # polymorphic.  The book's own names for the second kind are single Greek letters, which the
+    # schematic rule below would send to the object wire (IntroString p.48, Cheng's τ σ λ μ).
+    lab = core[1] if core[0] == 'app' else spell(core)
+    if lab in NAT:
+        return NAT[lab]
     if core[0] == 'app':
         return False
     if len(spell(core).removesuffix('%∋')) == 1:
@@ -843,9 +852,11 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
     no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
     only where the object wire is not the straight default (see `layout`)."""
-    global SPLIT, BR, TBL, MU
+    global SPLIT, BR, TBL, MU, NAT
     SPLIT = frozenset(split.split())
     TBL = sl.typed(table or sl.sigs(), own)
+    NAT = {k: bool(v["nat"]) for k, v in TBL["sigs"].items()
+           if isinstance(v, dict) and "nat" in v}
     MU = {f: (o, None) for f, o in TBL.get("mu", {}).items()} | (parse_mu(ini) if ini else {})
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})

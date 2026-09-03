@@ -917,8 +917,12 @@ def typed(table, own):
     one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
     if not own:
         return table
-    return {**table, "sigs": {**table["sigs"], **{k: dict(zip(("src", "tgt"), v.split("⟶")))
-                                                  for k, v in own.items()}}}
+    # `!nat` on the end states the bead is a natural transformation, which a signature cannot say:
+    # `α : F(x)⟶x` and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is one.
+    return {**table, "sigs": {**table["sigs"],
+                              **{k: dict(zip(("src", "tgt"), v.removesuffix("!nat").split("⟶")),
+                                         **({"nat": True} if v.endswith("!nat") else {}))
+                                 for k, v in own.items()}}}
 
 
 def brname(e):

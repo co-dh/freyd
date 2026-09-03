@@ -1,0 +1,406 @@
+{
+  "label": "fig p48 cheng",
+  "title": "Cheng's twelve-polygon commuting diagram, replaced by one string-diagram step",
+  "book": "IntroString.pdf",
+  "page": 48,
+  "pdf_page": 63,
+  "eq": "§2.4.2, the first of the two steps that replace Figure 2.1",
+  "transcribed": "2026-09-03",
+  "transcribed_from": "pdftocairo -svg page 63 through scripts/figgeom, the paths inside the bbox below; labels from pdftotext -bbox",
+  "book_formula": "λ ⋅ B(σ) ⋅ B(ν) ⋅ μ ⋅ B(τ) = A(B(ν)) ⋅ A(μ) ⋅ λ ⋅ B(λ) ⋅ B(B(σ)) ⋅ B(B(C(σ))) ⋅ B(τ)",
+  "mirrored": "B(τ) μ B(ν) B(σ) λ = B(τ) B(B(C(σ))) B(B(σ)) B(λ) λ A(μ) A(B(ν))",
+  "src": "B(C(B(C(A(x)))))",
+  "tgt": "A(B(C(x)))",
+  "norm": [
+    "object-wire-added"
+  ],
+  "note": "Figure 2.1 on the facing page is the commuting diagram this replaces: 12 polygons, 9 of them naturality squares. The page draws the A wire as one straight 4:1 diagonal leaving through the figure's left and right EDGES rather than its bottom, so the two beads riding it — σ where it meets C, λ where it meets B — are the whole content, and the diagonal is what the book's next sentence tells you to drag. The page prints μ on BOTH merges, at B and at C; our signature table is keyed by name, so the second one is called ν here and is the only label that differs from the page. The page's two μ beads sit at ONE height (y 404.28 for both); ours stacks them, which the port graph does not see. The painted region is the book's yellow, not the grey `𝟏` strip, so the object wire and its strip are ours alone — the declared `object-wire-added`. The right-hand panel is the same 2-cell after the two distributive laws are applied twice: τ still first, then the A wire crosses C, C, B, B on its way down the diagonal, and the two μ merges come last.",
+  "sigs": {
+    "//": "Three distributive laws and two multiplications, the page's own letters: σ : CA →̇ AC, τ : CB →̇ BC, λ : BA →̇ AB.",
+    "τ": {
+      "src": "C(B(x))",
+      "tgt": "B(C(x))",
+      "nat": true
+    },
+    "λ": {
+      "src": "B(A(x))",
+      "tgt": "A(B(x))",
+      "nat": true
+    },
+    "σ": {
+      "src": "C(A(x))",
+      "tgt": "A(C(x))",
+      "nat": true
+    },
+    "μ": {
+      "src": "B(B(x))",
+      "tgt": "B(x)",
+      "nat": true
+    },
+    "ν": {
+      "src": "C(C(x))",
+      "tgt": "C(x)",
+      "nat": true
+    }
+  },
+  "sides": [
+    {
+      "top": [
+        "B",
+        "C",
+        "B",
+        "C",
+        "A",
+        "x"
+      ],
+      "bot": [
+        "A",
+        "B",
+        "C",
+        "x"
+      ],
+      "beads": [
+        {
+          "name": "τ",
+          "arms": [
+            "w1",
+            "w2"
+          ],
+          "legs": [
+            "w6",
+            "w7"
+          ]
+        },
+        {
+          "name": "μ",
+          "arms": [
+            "w0",
+            "w6"
+          ],
+          "legs": [
+            "w8"
+          ]
+        },
+        {
+          "name": "ν",
+          "arms": [
+            "w7",
+            "w3"
+          ],
+          "legs": [
+            "w9"
+          ]
+        },
+        {
+          "name": "σ",
+          "arms": [
+            "w9",
+            "w4"
+          ],
+          "legs": [
+            "w10",
+            "w11"
+          ]
+        },
+        {
+          "name": "λ",
+          "arms": [
+            "w8",
+            "w10"
+          ],
+          "legs": [
+            "w12",
+            "w13"
+          ]
+        }
+      ],
+      "wires": {
+        "w0": {
+          "lbl": "B",
+          "from": "top:0",
+          "to": "bead:1/arm:0"
+        },
+        "w1": {
+          "lbl": "C",
+          "from": "top:1",
+          "to": "bead:0/arm:0"
+        },
+        "w2": {
+          "lbl": "B",
+          "from": "top:2",
+          "to": "bead:0/arm:1"
+        },
+        "w3": {
+          "lbl": "C",
+          "from": "top:3",
+          "to": "bead:2/arm:1"
+        },
+        "w4": {
+          "lbl": "A",
+          "from": "top:4",
+          "to": "bead:3/arm:1"
+        },
+        "w5": {
+          "lbl": "x",
+          "from": "top:5",
+          "to": "bot:3"
+        },
+        "w6": {
+          "lbl": null,
+          "from": "bead:0/leg:0",
+          "to": "bead:1/arm:1"
+        },
+        "w7": {
+          "lbl": null,
+          "from": "bead:0/leg:1",
+          "to": "bead:2/arm:0"
+        },
+        "w8": {
+          "lbl": null,
+          "from": "bead:1/leg:0",
+          "to": "bead:4/arm:0"
+        },
+        "w9": {
+          "lbl": null,
+          "from": "bead:2/leg:0",
+          "to": "bead:3/arm:0"
+        },
+        "w10": {
+          "lbl": null,
+          "from": "bead:3/leg:0",
+          "to": "bead:4/arm:1"
+        },
+        "w11": {
+          "lbl": "C",
+          "from": "bead:3/leg:1",
+          "to": "bot:2"
+        },
+        "w12": {
+          "lbl": "A",
+          "from": "bead:4/leg:0",
+          "to": "bot:0"
+        },
+        "w13": {
+          "lbl": "B",
+          "from": "bead:4/leg:1",
+          "to": "bot:1"
+        }
+      },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [
+        86,
+        346,
+        180,
+        434
+      ],
+      "counts": {
+        "strokes": 4,
+        "dots": 5,
+        "top_ends": 1,
+        "bot_ends": 2,
+        "grey": 0
+      }
+    },
+    {
+      "top": [
+        "B",
+        "C",
+        "B",
+        "C",
+        "A",
+        "x"
+      ],
+      "bot": [
+        "A",
+        "B",
+        "C",
+        "x"
+      ],
+      "beads": [
+        {
+          "name": "τ",
+          "arms": [
+            "w1",
+            "w2"
+          ],
+          "legs": [
+            "w6",
+            "w7"
+          ]
+        },
+        {
+          "name": "σ",
+          "arms": [
+            "w3",
+            "w4"
+          ],
+          "legs": [
+            "w8",
+            "w9"
+          ]
+        },
+        {
+          "name": "σ",
+          "arms": [
+            "w7",
+            "w8"
+          ],
+          "legs": [
+            "w10",
+            "w11"
+          ]
+        },
+        {
+          "name": "λ",
+          "arms": [
+            "w6",
+            "w10"
+          ],
+          "legs": [
+            "w12",
+            "w13"
+          ]
+        },
+        {
+          "name": "λ",
+          "arms": [
+            "w0",
+            "w12"
+          ],
+          "legs": [
+            "w14",
+            "w15"
+          ]
+        },
+        {
+          "name": "μ",
+          "arms": [
+            "w15",
+            "w13"
+          ],
+          "legs": [
+            "w16"
+          ]
+        },
+        {
+          "name": "ν",
+          "arms": [
+            "w11",
+            "w9"
+          ],
+          "legs": [
+            "w17"
+          ]
+        }
+      ],
+      "wires": {
+        "w0": {
+          "lbl": "B",
+          "from": "top:0",
+          "to": "bead:4/arm:0"
+        },
+        "w1": {
+          "lbl": "C",
+          "from": "top:1",
+          "to": "bead:0/arm:0"
+        },
+        "w2": {
+          "lbl": "B",
+          "from": "top:2",
+          "to": "bead:0/arm:1"
+        },
+        "w3": {
+          "lbl": "C",
+          "from": "top:3",
+          "to": "bead:1/arm:0"
+        },
+        "w4": {
+          "lbl": "A",
+          "from": "top:4",
+          "to": "bead:1/arm:1"
+        },
+        "w5": {
+          "lbl": "x",
+          "from": "top:5",
+          "to": "bot:3"
+        },
+        "w6": {
+          "lbl": null,
+          "from": "bead:0/leg:0",
+          "to": "bead:3/arm:0"
+        },
+        "w7": {
+          "lbl": null,
+          "from": "bead:0/leg:1",
+          "to": "bead:2/arm:0"
+        },
+        "w8": {
+          "lbl": null,
+          "from": "bead:1/leg:0",
+          "to": "bead:2/arm:1"
+        },
+        "w9": {
+          "lbl": null,
+          "from": "bead:1/leg:1",
+          "to": "bead:6/arm:1"
+        },
+        "w10": {
+          "lbl": null,
+          "from": "bead:2/leg:0",
+          "to": "bead:3/arm:1"
+        },
+        "w11": {
+          "lbl": null,
+          "from": "bead:2/leg:1",
+          "to": "bead:6/arm:0"
+        },
+        "w12": {
+          "lbl": null,
+          "from": "bead:3/leg:0",
+          "to": "bead:4/arm:1"
+        },
+        "w13": {
+          "lbl": null,
+          "from": "bead:3/leg:1",
+          "to": "bead:5/arm:1"
+        },
+        "w14": {
+          "lbl": "A",
+          "from": "bead:4/leg:0",
+          "to": "bot:0"
+        },
+        "w15": {
+          "lbl": null,
+          "from": "bead:4/leg:1",
+          "to": "bead:5/arm:0"
+        },
+        "w16": {
+          "lbl": "B",
+          "from": "bead:5/leg:0",
+          "to": "bot:1"
+        },
+        "w17": {
+          "lbl": "C",
+          "from": "bead:6/leg:0",
+          "to": "bot:2"
+        }
+      },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [
+        239,
+        346,
+        333,
+        434
+      ],
+      "counts": {
+        "strokes": 6,
+        "dots": 7,
+        "top_ends": 3,
+        "bot_ends": 1,
+        "grey": 0
+      }
+    }
+  ]
+}

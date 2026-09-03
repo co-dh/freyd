@@ -1,0 +1,190 @@
+{
+  "label": "3.1b",
+  "title": "monad associativity",
+  "book": "IntroString.pdf",
+  "page": 64,
+  "pdf_page": 79,
+  "eq": "(3.1b)",
+  "transcribed": "2026-08-31",
+  "transcribed_from": "pdftoppm -f 79 -l 79 -r 150 -x 100 -y 700 -W 950 -H 760, read once",
+  "book_formula": "μ ⋅ (μ∘M) = μ ⋅ (M∘μ)",
+  "mirrored": "(μ∘M) μ = (M∘μ) μ",
+  "src": "M(M(M(x)))",
+  "tgt": "M(x)",
+  "norm": [
+    "object-wire-added"
+  ],
+  "note": "The book's (3.2b) is a 2-cell between endofunctors, so it draws no object wire and no 𝟏 strip, and the fixture records that page verbatim. Each μ is a two-armed fork: on the left the outer pair merges first, on the right the inner pair, and the third `M` passes the first fork on the side the `∘` names. The page's middle picture is the trident, the book's own shorthand for two nested forks, and no formula of ours denotes it, so this pair is the two ends only. Interior segments carry no label in the book.",
+  "sigs": {
+    "//": "The book's own monad letters for THIS equation; `M` names no functor outside it. `nat` says the page draws the bead OFF the object wire, which no signature can: μ is one Greek letter and the schematic rule would read it as endo on that wire.",
+    "μ": {
+      "src": "M(M(x))",
+      "tgt": "M(x)",
+      "nat": true
+    }
+  },
+  "sides": [
+    {
+      "top": [
+        "M",
+        "M",
+        "M",
+        "x"
+      ],
+      "bot": [
+        "M",
+        "x"
+      ],
+      "beads": [
+        {
+          "name": "μ",
+          "arms": [
+            "w0",
+            "w1"
+          ],
+          "legs": [
+            "w4"
+          ]
+        },
+        {
+          "name": "μ",
+          "arms": [
+            "w4",
+            "w2"
+          ],
+          "legs": [
+            "w5"
+          ]
+        }
+      ],
+      "wires": {
+        "w0": {
+          "lbl": "M",
+          "from": "top:0",
+          "to": "bead:0/arm:0"
+        },
+        "w1": {
+          "lbl": "M",
+          "from": "top:1",
+          "to": "bead:0/arm:1"
+        },
+        "w2": {
+          "lbl": "M",
+          "from": "top:2",
+          "to": "bead:1/arm:1"
+        },
+        "w4": {
+          "lbl": null,
+          "from": "bead:0/leg:0",
+          "to": "bead:1/arm:0"
+        },
+        "w5": {
+          "lbl": "M",
+          "from": "bead:1/leg:0",
+          "to": "bot:0"
+        },
+        "wx": {
+          "lbl": "x",
+          "from": "top:3",
+          "to": "bot:1"
+        }
+      },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [
+        130,
+        468,
+        182,
+        518
+      ],
+      "counts": {
+        "strokes": 3,
+        "dots": 2,
+        "top_ends": 3,
+        "bot_ends": 1,
+        "grey": 0
+      }
+    },
+    {
+      "top": [
+        "M",
+        "M",
+        "M",
+        "x"
+      ],
+      "bot": [
+        "M",
+        "x"
+      ],
+      "beads": [
+        {
+          "name": "μ",
+          "arms": [
+            "w1",
+            "w2"
+          ],
+          "legs": [
+            "w4"
+          ]
+        },
+        {
+          "name": "μ",
+          "arms": [
+            "w0",
+            "w4"
+          ],
+          "legs": [
+            "w5"
+          ]
+        }
+      ],
+      "wires": {
+        "w0": {
+          "lbl": "M",
+          "from": "top:0",
+          "to": "bead:1/arm:0"
+        },
+        "w1": {
+          "lbl": "M",
+          "from": "top:1",
+          "to": "bead:0/arm:0"
+        },
+        "w2": {
+          "lbl": "M",
+          "from": "top:2",
+          "to": "bead:0/arm:1"
+        },
+        "w4": {
+          "lbl": null,
+          "from": "bead:0/leg:0",
+          "to": "bead:1/arm:1"
+        },
+        "w5": {
+          "lbl": "M",
+          "from": "bead:1/leg:0",
+          "to": "bot:0"
+        },
+        "wx": {
+          "lbl": "x",
+          "from": "top:3",
+          "to": "bot:1"
+        }
+      },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [
+        300,
+        468,
+        352,
+        518
+      ],
+      "counts": {
+        "strokes": 3,
+        "dots": 2,
+        "top_ends": 3,
+        "bot_ends": 1,
+        "grey": 0
+      }
+    }
+  ]
+}
