@@ -6858,12 +6858,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 === `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
 
-#disp[#align(center, dpanel(2, 9.15, 6.3,
-  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, "top", 1, none, none), (5.15, "top", "bot", none, none)),
-  ((1, [`cp`], black, 2.85),),
-  ((2.85, [`F_A`]), (4, [`E`]), (5.15, [`L`]), (6.3, [`N`])),
-  ((0.55, [`E`]), (1.7, [`F_A`]), (5.15, [`L`]), (6.3, [`N`])),
-  cert: (expect: "cp", src: "F_A(E(L(N)))", tgt: "E(F_A(L(N)))", sigs: ("cp": "F_A(E(x))⟶E(F_A(x))"))))]<cp-diag>
+#disp[#align(center, dpanel(2, 11.45, 8.6,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 1, "bot", none, none), (4, "top", 1, none, none), (5.15, "top", 1, none, none), (6.3, "top", 1, none, none), (7.45, "top", "bot", none, none)),
+  ((1, [`cp`], black, 4),),
+  ((4, [`A+`]), (5.15, [`A×−`]), (6.3, [`E`]), (7.45, [`L`]), (8.6, [`N`])),
+  ((0.55, [`E`]), (1.7, [`A+`]), (2.85, [`A×−`]), (7.45, [`L`]), (8.6, [`N`])),
+  cert: (expect: "cp", src: "A+(A×E(L(N)))", tgt: "E(A+(A×L(N)))", sigs: ("cp": "(A+(A×E(x)))⟶E(A+(A×x))"))))]<cp-diag>
 
 #disp[#table(
   columns: (5.6cm, 1fr),
@@ -6871,8 +6871,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*type*], [*note*]),
 
-  [`F_A≜F(A,−)=A+A×−`],
-  [the unary functor a wire can carry; `F` itself is binary],
+  [`F(A,−)=A+A×−`],
+  [`F` is binary; a wire carries the unary `A+A×−`, which is what the picture draws],
 
   [`B=L N`],
   [one path: the non-empty list of squares it crosses, `N≜Nat`],
@@ -6880,13 +6880,13 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [`∋:E(L N)⟶L N`],
   [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them],
 
-  [`F(𝟙,∋):F_A(E B)⟶F_A B`],
-  [`=𝟙+𝟙×∋`, the relator acting on each summand of `A+A×−`],
+  [`F(𝟙,∋)=𝟙+𝟙×∋`],
+  [`:A+A×E B⟶A+A×B`, the relator acting on each summand],
 
-  [`∋:E(F_A B)⟶F_A B`],
+  [`∋:E(A+A×B)⟶A+A×B`],
   [the `∋` under the bar: a set of cells, one of them — a different `∋`],
 
-  [`cp:F_A(E B)⟶E(F_A B)`],
+  [`cp:A+A×E B⟶E(A+A×B)`],
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
   [`cp ∋=F(𝟙,∋)`],
@@ -6894,9 +6894,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 )]<cp-types>
 
 #disp[#align(center)[```
-w      = (1,{[5],[6],[8]})             : A×E(L N)    the right summand of F_A(E B)
+w      = (1,{[5],[6],[8]})             : A×E(L N)    the right summand, A×E B
 w (𝟙×∋) (1,x)  ⟺  x ∈ {[5],[6],[8]}    : A×L N       𝟙 keeps 1, ∋ picks one path
-cp w   = {(1,[5]),(1,[6]),(1,[8])}     : E(F_A B)    the three of them, collected
+cp w   = {(1,[5]),(1,[6]),(1,[8])}     : E(A+A×B)    the three of them, collected
 cp P(α) w = {[1,5],[1,6],[1,8]}        : E B         q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
 ```]]<cp-step>
 
