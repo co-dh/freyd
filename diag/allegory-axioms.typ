@@ -4099,17 +4099,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
     trow(ma-Fest, ma-Fni),
     [and],
-    trow(ma-conj, tpanR(4.0, 1.90, [`R°`])),
+    trow(ma-conj, tpanR(5.0, 2.5, [`R°`])),
   ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
   [#hchain(
-    (IFF, trow(ma-conj, tpanR(4.0, 1.90, [`R°`])),
+    (IFF, trow(ma-conj, tpanR(5.0, 2.5, [`R°`])),
       src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
-    (IFF, trow(ma-Ro, tpanR(3.8, 1.85, [`R°`])),
+    (IFF, trow(ma-Ro, tpanR(4.0, 2.0, [`R°`])),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
-    (IFF, trow(ma-R, tpanR(3.8, 1.85, [`R`])),
+    (IFF, trow(ma-R, tpanR(4.0, 2.0, [`R`])),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
     ]),
@@ -4201,7 +4201,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
-  [#trow(gr-mon, tpanR(4.0, 2.45, [`R°`]))],
+  [#trow(gr-mon, tpanR(6.0, 4.0, [`R°`]))],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
