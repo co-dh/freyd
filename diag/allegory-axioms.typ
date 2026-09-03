@@ -676,7 +676,7 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
   table.header([*definition*], [*type*], [*note*]),
 
   // cons-lists definition: B&dM p. 55
-  [`listr A::=nil|cons (A,listr A)`],
+  [`listr A::=nil|cons(A,listr A)`],
   [`𝒮et⟶𝒮et`],
   [The cons-lists over `A`, the datatype every row below folds.],
 
@@ -793,7 +793,7 @@ Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` enti
 
   // tri-evolution stages: B&dM pp. 58-59
   [informally],
-  [`tri(f) [a₀,a₁,…,aᵢ,…,aₙ]=[a₀,f a₁,…,fⁱ aᵢ,…,fⁿ aₙ]`],
+  [`tri(f)[a₀,a₁,…,aᵢ,…,aₙ]=[a₀,f(a₁),…,fⁱ(aᵢ),…,fⁿ(aₙ)]`],
 
   [for cons-lists],
   [`tri(f)=⦇[nil,(𝟙×listr(f)) cons]⦈`],
@@ -843,18 +843,18 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
   inset: 9pt, stroke: 0.4pt + luma(190),
 
   [the datatype],
-  [`tree A::=tip A|bin (tree A,tree A)`, base functor `F(A,B)=A+B×B`, \
+  [`tree A::=tip(A)|bin(tree A,tree A)`, base functor `F(A,B)=A+B×B`, \
    initial type `([tip,bin],tree)`],
 
   [the fold],
-  [`⦇[g,h]⦈` is the unique `f` with `f (tip a)=g a` and `f (bin (x,y))=h (f x,f y)`],
+  [`⦇[g,h]⦈` is the unique `f` with `f(tip(a))=g(a)` and `f(bin(x,y))=h(f(x),f(y))`],
 
   [`tree(f)`],
-  [`tree(f)=⦇F(f,𝟙) [tip,bin]⦈`; pointwise `tree(f) (tip a)=tip (f a)` and \
-   `tree(f) (bin (x,y))=bin (tree(f) x,tree(f) y)`],
+  [`tree(f)=⦇F(f,𝟙) [tip,bin]⦈`; pointwise `tree(f)(tip(a))=tip(f(a))` and \
+   `tree(f)(bin(x,y))=bin(tree(f)(x),tree(f)(y))`],
 
   [`max`],
-  [`max=⦇[𝟙,bmax]⦈`, where `bmax (a,b)` is the larger of `a` and `b`],
+  [`max=⦇[𝟙,bmax]⦈`, where `bmax(a,b)` is the larger of `a` and `b`],
 
   [`depths`],
   [`depths=tree(zero) tri(succ)` — replaces every tip by its depth in the tree, `zero` the
@@ -1954,7 +1954,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
    // lean:AOP.A5_4.powerRel_id@4ada24f9
 
   [`P(f)=` $frac(∋ f, ∋)$, for `f` a map],
-  [In `Rel`, `xs P(f) ys⟺ys={f a|a∈xs}`. The half at `f°` says every `a∈xs` has its `f a` on
+  [In `Rel`, `xs P(f) ys⟺ys={f(a)|a∈xs}`. The half at `f°` says every `a∈xs` has its `f(a)` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
  #src[]],
@@ -2253,7 +2253,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [datatype],
   [`Nat::=zero|succ Nat`],
-  [`[A]::=nil|cons (A,[A])`],
+  [`[A]::=nil|cons(A,[A])`],
 
   [base functor `F`],
   [`F(X)=1+X`],
@@ -2266,8 +2266,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // lean:AOP.A6_ConsList.initial@79b3402c
 
   [the fold, pointwise],
-  [`⦇[c,f]⦈ zero=c` \ `⦇[c,f]⦈ (succ n)=f (⦇[c,f]⦈n)`],
-  [`⦇[c,f]⦈ nil=c` \ `⦇[c,f]⦈ (cons (a,x))=f (a,⦇[c,f]⦈ x)`],
+  [`⦇[c,f]⦈(zero)=c` \ `⦇[c,f]⦈(succ(n))=f(⦇[c,f]⦈(n))`],
+  [`⦇[c,f]⦈(nil)=c` \ `⦇[c,f]⦈(cons(a,x))=f(a,⦇[c,f]⦈(x))`],
 )]<cata-initial>
 
 
@@ -2825,7 +2825,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`[A]::=nil|cons (A,[A])`],
+  [`[A]::=nil|cons(A,[A])`],
   [`𝒜⟶𝒜`],
   // list type note: B&dM's `listr`, renamed here from p. 125 on
   [The list type, under the short name it keeps.],
@@ -3986,7 +3986,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // lean:AOP.A7_2.Distributes@e061e29e
 
 `+` distributes over `≤`, at the point level #h(4pt)
-`min xs+min ys=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
+`min(xs)+min(ys)=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
 `min≜est(≤)`.
 ]]<dist-defn>
 
@@ -4021,7 +4021,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       lab(-6.75, 0, GIVEN2)[`est(≤)×est(≤)`]; lab(5.75, 0, GIVEN2)[`est(≤)`]
       lab(0, 0, SLACK, rot: -45deg)[`⊑`]
       vnode(FEA, `E Nat×E Nat`, `(xs,ys)`); vnode(EA, `E Nat`, `{x+y∣x∈xs∧y∈ys}`)
-      vnode(FA, `Nat×Nat`, `(min xs,min ys)`); vnode(A, `Nat`, `min xs+min ys`)
+      vnode(FA, `Nat×Nat`, `(min(xs),min(ys))`); vnode(A, `Nat`, `min(xs)+min(ys)`)
     }), s: 74%),
     [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
   ),
@@ -4294,7 +4294,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`F`], [`FX=𝟏+A×X`], [`𝒜⟶𝒜`], [],
   [nothing, or a head and a tail],
 
-  [`nil`, `cons`], [`[A]::=nil|cons (A,[A])` #h(4pt) #src[@comb-fns]],
+  [`nil`, `cons`], [`[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns]],
   [`𝟏⟶[A]`, #h(4pt) `A×[A]⟶[A]`],
   [`cons(3,[1,2])=[3,1,2]`],
   [the empty list; a head onto a tail],
@@ -4308,7 +4308,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
  [`R`], [`length≤length°`, a preorder #src[]], [`[A]⟶[A]`], [`[1] R [1,2]`],
   // lean:AOP.A7_7_TakeWhile.lenLE@833ff8fc
-  [`xs R ys⟺length xs≤length ys`],
+  [`xs R ys⟺length(xs)≤length(ys)`],
 
   [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`], [`A×[A]⟶[A]`],
   [`(⊸ nil)(3,[1,2])=nil`],
@@ -4866,7 +4866,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // its elements satisfy p." … "derive the standard implementation of takewhile."
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
     // takewhile-cata row: Ex 7.39
-    #src[takewhile: `takewhile(p) x` returns the longest prefix of `x` with the property that all its
+    #src[takewhile: `takewhile(p)(x)` returns the longest prefix of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard implementation.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@3fbff510
@@ -5510,10 +5510,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
-  [#src[`nil` has one suffix, itself, and `g nil=zero`, so the set is the singleton `{zero}`]],
+  [#src[`nil` has one suffix, itself, and `g(nil)=zero`, so the set is the singleton `{zero}`]],
 
   [`cons⟨g,`#frc([`suffix`])` E(g)⟩=(𝟙×⟨g,`#frc([`suffix`])` E(g)⟩)⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩`],
-  [#src[`g(cons(a,x))=a⊕(g x)`, which is `w` reading `g x` off `π₁`; and the suffixes of
+  [#src[`g(cons(a,x))=a⊕(g(x))`, which is `w` reading `g(x)` off `π₁`; and the suffixes of
    `cons(a,x)` are `cons(a,x)` itself, whose value is that same `w`, together with those of `x`,
    which `π₂π₂` carries — so the two sets meet at `cup`]],
 ))]<mss-scan>
@@ -6451,7 +6451,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    `list` monotonic, @relator-defn],
   [`concat`],
   [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat xss)=sum(list(cost)xss)` and a cheaper part makes a cheaper whole.
+   `cost(concat(xss))=sum(list(cost)(xss))` and a cheaper part makes a cheaper whole.
  #src[]],
    // lean:AOP.A7_3_Party.concat_monotonic@084e46a9  — B&dM's exercise
   [`h`],
@@ -6897,8 +6897,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 w           = (1,{[5],[6],[8]})            : A×E(L N)   the right summand, A×E B
 𝟙×∋        : A×E(L N) ⟶ A×L N                          𝟙 keeps 1, ∋ picks one path
               w ↦ (1,[5]), (1,[6]), (1,[8]) : A×L N      one output per path in w
-cp w        = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×B)  the three of them, collected
-(cp P(α)) w = {[1,5],[1,6],[1,8]}         : E B        q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
+cp(w)        = {(1,[5]),(1,[6]),(1,[8])}  : E(A+A×B)  the three of them, collected
+(cp P(α))(w) = {[1,5],[1,6],[1,8]}        : E B        q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
 ```]]<cp-step>
 
 === `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
@@ -7160,7 +7160,7 @@ cp w        = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×B)  the three of them, collec
   [`[Int]⟶[Int]`],
   [The stretches one van visit can serve: some starting reserve keeps the cash between `0` and `N`.],
 
-  [`ok` \ the coreflexive on `(a,xs)` with `xs` non-empty and `[a]⧺head xs` secure],
+  [`ok` \ the coreflexive on `(a,xs)` with `xs` non-empty and `[a]⧺head(xs)` secure],
   [`Int×[[Int]]` \ `⟶Int×[[Int]]`],
   [The test the final program runs, in place of `old`'s `secure`.],
 
@@ -7801,7 +7801,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #disp[#definition[
 `F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra `α≜[wrap,cons] : F(A,LA)⟶LA`.
 
-`wrapz≜⟨wrap,zero⟩`, #h(4pt) `consw (a,(xs,n))=(cons (a,xs),wt (a,head xs)+n)`.
+`wrapz≜⟨wrap,zero⟩`, #h(4pt) `consw(a,(xs,n))=(cons(a,xs),wt(a,head(xs))+n)`.
 
 `cost≜⦇[wrapz,consw]⦈π₂`, #h(4pt) `⦇[wrapz,consw]⦈=⟨𝟙,cost⟩`, #h(4pt) `R≜cost≤cost°`.
 
@@ -8421,7 +8421,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 `Line=list⁺ Word`, #h(4pt) `Para=list⁺ Line`, #h(4pt) `FA=Word+Word×A`, #h(4pt)
 `listcp(F)=wrap+cpr`.
 
-`new (a,xs)=[[a]]⧺xs`, #h(4pt) `glue (a,xs)=[[a]⧺head xs]⧺tail xs`, #h(4pt)
+`new(a,xs)=[[a]]⧺xs`, #h(4pt) `glue(a,xs)=[[a]⧺head(xs)]⧺tail(xs)`, #h(4pt)
 `partition≜⦇[wrap wrap,new ∪ glue]⦈ : list⁺ Word⟶Para`.
 
 `width≜⦇[length,(length×𝟙) plus succ]⦈`, #h(4pt) `0≤length a`, #h(4pt) `fits w` the coreflexive on a
@@ -8934,25 +8934,25 @@ both lists empty.
   cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
-    [`mle (xs,ys)=head (column xs ys)`, #h(4pt) `column xs ys=[mle (u,ys)∣u←tails xs]` \
-     `column xs=⦇[fstcol xs,nextcol xs]⦈`, #h(4pt) `fstcol=list(del) tails` \
-     #src[the tabulation: `mle (xs,ys)` needs `mle (u,v)` for every tail `u` of `xs` and `v` of
+    [`mle(xs,ys)=head(column(xs,ys))`, #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
+     `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=list(del) tails` \
+     #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
   // No picture: a curried function on lists is not a relation between the objects the panels carry.
   [],
 
   [#vstep(EQ, [],
-    [`column xs ([b]⧺ys)=nextcol xs (b,column xs ys)` \
-     `nextcol xs (b,us)=⦇[base (b,last us),step b]⦈ xus`, #h(4pt)
-     `xus=zip (xs,zip (init us,tail us))` \
+    [`column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` \
+     `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`, #h(4pt)
+     `xus=zip(xs,zip(init(us),tail(us)))` \
      #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the
       column to its right]])],
   [],
 
   [#vstep(EQ, [],
-    [`base (b,u)=[[ins b]⧺u]` \ `step b ((a,(u,v)),ws)=(a=b→[[cpy a]⧺v]⧺ws,`
-     `[bmin(R) ([del a]⧺w,[ins b]⧺u)]⧺ws)` \
-     #src[`w=head ws`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
+    [`base(b,u)=[[ins(b)]⧺u]` \ `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,`
+     `[bmin(R)([del(a)]⧺w,[ins(b)]⧺u)]⧺ws)` \
+     #src[`w=head(ws)`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
       (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
       the two lengths]])],
   [],
@@ -9606,7 +9606,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `snag` putting a job into a bag; #h(4pt) `bagify≜⦇β⦈ : [Job]⟶Bag Job`, #h(4pt) `H=bagify°`.
 
 `ct`, `dt`, `wt : Job⟶Real` the completion, due and weighting quantities of a job; #h(4pt)
-`penalty (xs,j)=(sum (list(ct) xs)+ct j−dt j)×wt j`.
+`penalty(xs,j)=(sum(list(ct)(xs))+ct(j)−dt(j))×wt(j)`.
 
 `cost≜` $frac(#[`prefix`], ∋)$ `P(α° [zero,penalty]) est(≥)`, #h(4pt) `cost []=0`, #h(4pt)
 `cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, #h(4pt) `R≜cost≤cost°`.
@@ -9795,7 +9795,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   columns: (1fr, HMW),
   align: (left + horizon, center + horizon),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
-  Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern n=f (2n−1,2n+1)` \
+  Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern(n)=f(2n−1,2n+1)` \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
@@ -9921,14 +9921,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((2.85, [`Decimal`]),))],
 
   [#vstep(EQ, [],
-    [`extern=interval f`, #h(4pt) `f (a,b)=(a<0→[],[d]⧺f (10a−d,10b−d))` \
+    [`extern=interval f`, #h(4pt) `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \
      #src[the program, with `d` the digit above]])],
   // No picture: `f` is read on points, and the two sides are values, not the objects the panels
   // carry.
   [],
 
   [#vstep(EQ, [],
-    [`extern n=f (2n−1,2n+1)`, #h(4pt) `f (p,q)=(p≤0→[],[d]⧺f (10p−w d,10q−w d))` \
+    [`extern(n)=f(2n−1,2n+1)`, #h(4pt) `f(p,q)=(p≤0→[],[d]⧺f(10p−w d,10q−w d))` \
      #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
       `intern` — every interval reached is `(p/w,q/w)`]])],
   [],
