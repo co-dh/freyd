@@ -61,9 +61,10 @@
 // every one, ≥ 30 between two lanes sharing a panel, ≥ 12 between any two; muted, so the beads stay loudest.
 #let FCOL = (
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"),
-  "L": rgb("#7e668d"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"), "bag": rgb("#a29366"),
-  "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"), "Op×−": rgb("#844a3b"),
-  "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"), "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"))
+  "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
+  "bag": rgb("#a29366"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
+  "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),
+  "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
