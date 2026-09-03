@@ -6858,12 +6858,30 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 === The cross product `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
 
-#disp[#align(center, dpanel(3, 8, 5.15,
+#disp[#align(center, grid(columns: 3, align: bottom, column-gutter: 14pt, row-gutter: 4pt,
+  dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
   ((1.7, [`F(A,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
   ((0.55, [`E`]), (1.7, [`F(A,−)`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(N)))", tgt: "E(F(A,L(N)))")))]<cp-diag>
+  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(N)))", tgt: "E(F(A,L(N)))")),
+  dpanel(3, 8, 5.15,
+  ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
+  ((1, [`∋`], black, 2.85),),
+  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
+  ((0.55, [`E`]), (1.7, [`A×−`]), (4, [`L`]), (5.15, [`N`])),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(N))", tgt: "E(A×L(N))")),
+  dpanel(2, 4.55, 1.7,
+  ((0.55, 0.5, "bot", none, frc([`𝟙`])),),
+  (),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "𝟙%∋", src: "A", tgt: "E(A)")),
+
+  src[`cp` on all of `F(A,E B)`],
+  src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
+  src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
+))]<cp-diag>
 
 #disp[#table(
   columns: (5.6cm, 1fr),
