@@ -76,7 +76,7 @@ books:
 	./scripts/book embed
 
 # The scan line over every panel that emits its lists as metadata.  Cached on a hash of every
-# `dpanel`/`cpanel`/`tpan`/`mpan` call: unchanged since the last clean pass skips the `typst query`
+# `dpanel`/`cpanel`/`tpan` call: unchanged since the last clean pass skips the `typst query`
 # that dominates its cost; `scan-full` bypasses the cache.
 scan:
 	./scripts/scanline diag/allegory-axioms.typ

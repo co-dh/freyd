@@ -215,7 +215,11 @@ def spell(e):
                         for x in e[1])
     if k == 'hc':
         return '∘'.join(f"({spell(x)})" if x[0] in ('comp', 'prod') else spell(x) for x in e[1])
-    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union', 'cap') else spell(x) for x in e[1]]
+    # A cap or union reaches here as one atom, its parentheses eaten by the parser; juxtaposition
+    # binds tighter, so re-bracket it or `old (R∩H)` writes back as `old R∩H` = `(old R)∩H`.
+    ps = [f"({spell(x)})" if x[0] in ('prod', 'hc', 'union', 'cap')
+          or (x[0] == 'atom' and any(len(split_top(x[1], o)) > 1 for o in '∩∪'))
+          else spell(x) for x in e[1]]
     out = ps[0]
     for p in ps[1:]:
         # A factor opening with `(` keeps its space: `pick (schedule×𝟙)snoc` closed up reads as an
@@ -366,13 +370,8 @@ class Unhandled(Exception):
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
 # below build THE SAME `pts` those helpers build and hand them to `poly`, which is `hm-seg`; the
 # curve maths lives here once, so a crossing is looked for in the shape actually drawn.
-HMK, DKN, MKN = 0.618, 0.45, 0.35
+HMK, DKN = 0.618, 0.45
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
-
-
-def nodepts(x, xo, ys, k):
-    """`mpan`'s dip onto the object wire at each node height and back out again."""
-    return [q for y in ys for q in ((x, y + k), (xo, y), (x, y - k))]
 
 
 def seg(a, b, n=16):
@@ -430,8 +429,8 @@ class Panel:
         self.cert = r.get('cert') or {}
         self.top = [tuple(p) for p in r['top']]
         self.bot = [tuple(p) for p in r['bot']]
-        # `strands` are the drawn curves no `Wire` stands for — `mpan`'s widening and `tw-hm`'s
-        # split, which the sweep reads off `splits` instead of off a lane of their own.
+        # `strands` are the drawn curves no `Wire` stands for — `tw-hm`'s split, which the
+        # sweep reads off `splits` instead of off a lane of its own.
         self.wires, self.beads, self.splits, self.strands, self.kdrift = [], [], [], [], []
         # `(name, x, y, box)` for every name DRAWN beside a wire — ink no `Wire` stands for.
         self.labels = []
@@ -562,33 +561,6 @@ def a_tpan(p, r):
         p.beads.append(Bead(y, p.xo, l))
 
 
-def a_mpan(p, r):
-    ns = [tuple(n) for n in r['nodes']]                     # `(y, x)`: where a lane dips to a bead
-    at = lambda x, ylo: [y for (y, nx) in ns if nx < x and y > ylo]
-    for x in r['wires']:
-        ds = at(x, 0.0)
-        p.wires.append(Wire(x, p.h, 0.0, p.at(p.top, x) or p.at(p.bot, x),
-                            pts=[(x, p.h)] + nodepts(x, p.xo, ds, MKN) + [(x, 0.0)], dips=ds))
-    for (xf, xt, y, k) in r['joins']:
-        ds = at(xf, y)
-        p.wires.append(Wire(xf, p.h, y, p.at(p.top, xf),
-                            pts=[(xf, p.h)] + nodepts(xf, p.xo, ds, MKN)
-                            + [(xf, y + k), (xt, y)], dips=ds))
-    for (x0, y0, xe, x1, y1, l, b) in r['hands']:
-        p.wires.append(Wire(xe, y0, y1, l, b,
-                            [(x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)]))
-        if b is not None:
-            p.beads.append(Bead(y0, x0, b, born=True))
-    for (x, y, l) in r['beads']:
-        p.beads.append(Bead(y, x, l))
-    p.splits = [tuple(s) for s in r['splits']]
-    # One widening is emitted as one `splits` row per bead it spans; the ARC is a single strand.
-    for x in {s[2] for s in p.splits}:
-        ys = [y for s in p.splits if s[2] == x for y in s[:2]]
-        p.strands.append((p.splits[0][4], [(p.xo, max(ys)), (x, max(ys) - DKN),
-                                           (x, min(ys) + DKN), (p.xo, min(ys))]))
-
-
 def a_twhm(p, r):
     for (xf, yt, xt, y, k) in r['joins']:
         p.wires.append(Wire(xf, yt, y, p.at(p.top, xf), pts=[(xf, yt), (xf, y + k), (xt, y)]))
@@ -600,7 +572,7 @@ def a_twhm(p, r):
         p.strands.append((outer, [(p.xo, y0), (x, y0 - k), (x, y1 + k), (p.xo, y1)]))
 
 
-ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'mpan': a_mpan, 'tw-hm': a_twhm}
+ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'tw-hm': a_twhm}
 
 
 # ---------------------------------------------------------------- the sweep
@@ -648,8 +620,8 @@ def touched(p, b, above):
             xs.add(w.x)
     if b.reach is not None:
         xs |= {x for (x, _) in above if b.reach - EPS <= x <= p.xo + EPS}
-    # A lane DRAWN down to the dot is on the boundary as surely as one the reach spans — `mpan`'s
-    # `nodes` and `dpanel`'s reach are the same declaration made two ways.
+    # A lane DRAWN down to the dot is on the boundary as surely as one the reach spans: a lane's
+    # `dips` and `dpanel`'s reach are the same declaration made two ways.
     if abs(b.x - p.xo) < EPS:
         xs |= {w.x for w in p.wires if any(abs(d - b.y) < EPS for d in w.dips)}
     return xs
@@ -814,7 +786,7 @@ def inversions(p):
                                f" {v.label}@{v.x:g}, which is live above and below — the cut orders"
                                f" them {w.label} then {v.label}, the ink exchanges them")
             # A widening is a column of its own — `live` reads `outer` there — so it is passed like
-            # a wire.  The ARC is the column, not the `splits` row: `mpan` states one row per bead
+            # a wire.  The ARC is the column, not the `splits` row: a widening states one row per bead
             # spanned and draws one arc, and a row boundary is inside it.  Its own two ends are
             # back on the object column, where the two are drawn to meet, hence the strict bounds.
             for (outer, q) in p.strands:
@@ -1082,12 +1054,12 @@ def sigline(s):
 
 # ---------------------------------------------------------------- driver
 def lit_hashes(path):
-    """sha256 of every `dpanel(`/`cpanel(`/`tpan(`/`mpan(` call in the source, whitespace included.
+    """sha256 of every `dpanel(`/`cpanel(`/`tpan(` call in the source, whitespace included.
     `typst query` compiles the whole file regardless of which panel changed, so this is what a
     cache CAN key on cheaply — the set is compared whole, not panel by panel."""
     text = open(path, encoding="utf-8").read()
     return sorted(hashlib.sha256(text[m.start():matching(text, m.end() - 1) + 1].encode()).hexdigest()
-                  for m in re.finditer(r'\b(?:dpanel|cpanel|tpan|mpan)\(', text))
+                  for m in re.finditer(r'\b(?:dpanel|cpanel|tpan)\(', text))
 
 
 def panels(path, frm):
