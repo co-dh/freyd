@@ -157,13 +157,41 @@ def p_prim(s, i):
         raise ValueError(f"stray {s[i]!r} in {s!r}")
     if j < len(s) and s[j] == '(':
         k = matching(s, j)
+        # `F(X)` abbreviates `F(𝟙,X)` (the note's own `== Type relator` definition), so ONE live slot
+        # parses as an application with a context saying which; `F(∋,∋)` stays one opaque bead.
+        bs = [b.strip() for b in split_top(s[j + 1:k], ',')]
+        hs = [n for n, b in enumerate(bs) if b != UNIT]
+        if len(bs) > 1 and len(hs) == 1:
+            ctx = s[i:j] + '(' + ','.join('−' if n == hs[0] else b for n, b in enumerate(bs)) + ')'
+            return ('app', s[i:j], parse(bs[hs[0]]), ctx), k + 1
         return ('app', s[i:j], parse(s[j + 1:k])), k + 1
     if j < len(s) and s[j] == '[':
         # `[A]` is a name, so `E[A]` is an application spelled without parentheses; the argument
         # keeps its brackets so the AST is exactly the one `E([A])` builds.
         k = matching(s, j)
-        return ('app', s[i:j], parse(s[j:k + 1]), s[i:k + 1]), k + 1
+        return ('app', s[i:j], parse(s[j:k + 1]), s[i:j] + '−'), k + 1
     return ('atom', s[i:j]), j
+
+
+def hole_last(ctx):
+    """Whether an `app` context acts in its LAST argument slot: `F(𝟙,−)`, `E−` and `thin −` do,
+    `F(−,𝟙)` does not.  A lane passes the last slot, so only that one reads as a wire."""
+    return ctx.rstrip(')').endswith('−')
+
+
+def hole_slot(ctx):
+    """Which argument slot of an `app` context the hole sits in, and how many slots there are."""
+    bs = [b.strip() for b in split_top(ctx[ctx.index('(') + 1:ctx.rindex(')')], ',')]
+    return bs.index('−') + 1, len(bs)
+
+
+def require_hole_last(e):
+    """Every consumer reads an `app`'s `e[2]` as the LAST slot's argument, so a hole anywhere else
+    is drawn in the wrong slot: refused here once, for all of them, rather than in each."""
+    if e[0] == 'app' and len(e) > 3 and not hole_last(e[3]):
+        i, n = hole_slot(e[3])
+        raise Unhandled(f"{spell(e)} acts in slot {i} of {n} of {e[1]}; a lane passes only the last"
+                        f" slot, so write {e[1]} with {spell(e[2])} in slot {n}")
 
 
 def spell(e):
@@ -173,8 +201,9 @@ def spell(e):
         return e[1]
     if k in ('union', 'case', 'cap', 'cond', 'cata', 'fork'):
         return e[2]
-    if k == 'app':      # read by juxtaposition (circuit's `juxta`, `thin Q`) it carries its spelling
-        return e[3] if len(e) > 3 else f"{e[1]}({spell(e[2])})"
+    if k == 'app':      # a context — `E−`, `thin −`, `F(𝟙,−)` — spells by filling its own hole, so
+        # the spelling cannot go stale when `rec` rewrites what is inside it (`F(𝟙,R)°` → `F(𝟙,R°)`).
+        return e[3].replace('−', spell(e[2])) if len(e) > 3 else f"{e[1]}({spell(e[2])})"
     if k == 'conv':
         return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union', 'cap')
                 else spell(e[1])) + '°'
@@ -206,7 +235,11 @@ def tidy(e):
 def rec(e, f):
     if e[0] in ('comp', 'prod', 'hc'):
         return (e[0], [f(x) for x in e[1]])
-    return ('conv', f(e[1])) if e[0] == 'conv' else ('app', e[1], f(e[2])) if e[0] == 'app' else e
+    if e[0] == 'conv':
+        return ('conv', f(e[1]))
+    # The context tail travels with the node: `f` rewrites what sits in the hole, and only a context
+    # — never a finished spelling — survives that.
+    return ('app', e[1], f(e[2])) + e[3:] if e[0] == 'app' else e
 
 
 def listable(e):
@@ -242,6 +275,10 @@ def norm(e):
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
         return ('atom', e[2])
     e = rec(e, norm)
+    # A hole-LAST context is only a spelling — `F(𝟙,R)` is the picture `F(R)` — so it goes and every
+    # `F(`-bearing certificate compares equal; a hole-first one stays, so `F(∋,𝟙)F(𝟙,∋)` cannot fuse.
+    if e[0] == 'app' and len(e) > 3 and hole_last(e[3]):
+        e = ('app', e[1], e[2])
     d = dun(e)
     if d is not None:
         return norm(d)
@@ -252,7 +289,7 @@ def norm(e):
         if b[0] == 'prod':
             return norm(('prod', [('conv', x) for x in b[1]]))
         if b[0] == 'app':
-            return norm(('app', b[1], ('conv', b[2])))
+            return norm(('app', b[1], ('conv', b[2])) + b[3:])
         if b[0] == 'conv':
             return b[1]
     if e[0] == 'app' and e[1] == 'Δ':
@@ -292,8 +329,11 @@ def fuse(xs):
     display writes one application of the relator to the composite they make."""
     out = []
     for x in xs:
-        if out and out[-1][0] == 'app' and x[0] == 'app' and out[-1][1] == x[1]:
-            out[-1] = norm(('app', x[1], ('comp', [out[-1][2], x[2]])))
+        # The context is part of the wire's identity: `F(∋,𝟙)F(𝟙,∋)` acts in two different slots
+        # and is not `F(∋∋)`, so two applications merge only when their contexts agree.
+        if out and out[-1][0] == 'app' and x[0] == 'app' and out[-1][1] == x[1] \
+                and out[-1][3:] == x[3:]:
+            out[-1] = norm(('app', x[1], ('comp', [out[-1][2], x[2]])) + x[3:])
         else:
             out.append(x)
     return out
@@ -915,6 +955,7 @@ def take_branch(e, br, obj, table=None):
         return t if t != d else e                      # left one bead where it holds no choice
     e = rec(e, lambda x: take_branch(x, br, obj, table))
     if e[0] == 'app' and e[1] == 'F':
+        require_hole_last(e)                         # `act` puts `e[2]` in the LAST factor either way
         return act(summand(br, table, norm(e[2])), e[2], obj=obj)
     if e[0] == 'case':                     # `[zero,⊸ zero ∪ plus]`: the component that IS the branch
         s = summand(br, table)
@@ -924,6 +965,19 @@ def take_branch(e, br, obj, table=None):
             ops = [x for x in parts[0][1] if br in spell(x)] if parts[0][0] == 'union' else []
             return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj, table)
     return e
+
+
+def selfcheck():
+    """The two laws the context tail exists to enforce, run by every invocation because two parses
+    cost nothing and there is no other harness."""
+    assert norm(parse("F(∋,𝟙)F(𝟙,∋)")) != norm(parse("F(∋∋)")), \
+        "fuse merged F(∋,𝟙)F(𝟙,∋) into F(∋∋): acting in the first slot and in the last is not acting twice in one"
+    try:
+        take_branch(parse("F(p,𝟙)"), "cons", False)
+    except Unhandled as x:
+        assert "slot 1 of 2" in str(x), f"F(p,𝟙) is refused without naming the slot: {x}"
+    else:
+        raise AssertionError("take_branch read F(p,𝟙) as the last slot and made it 𝟙×p")
 
 
 def unfold(e, aliases):
@@ -1193,4 +1247,5 @@ changes prints "panel literals unchanged since last pass — skipped" and exits 
 
 
 if __name__ == "__main__":       # `scripts/diagram` imports the parser, the rewrites and `spell`
+    selfcheck()
     main(sys.argv[1:])

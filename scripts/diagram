@@ -175,6 +175,10 @@ def peel_arrow(e, cut, rel):
     while True:
         d, live = len(ws), cut[len(ws)] if len(ws) < len(cut) else None
         if e[0] == 'app' and e[1] in rel:
+            sl.require_hole_last(e)
+            if len(sl.split_top(spell(e[2]), ',')) > 1:
+                # a many-slot bead is opaque: hand it back whole so `signature` names its head
+                return ws, e
             ws.append(e[1]); e = e[2]
         elif e[0] == 'prod' and len(e[1]) == 2 and e[1][0] == e[1][1] and live == 'Δ':
             ws.append('Δ'); e = e[1][0]
@@ -210,7 +214,9 @@ def expand(e, rel):
         pre, core, post = across(e, rel)
         return [('hc', pre + [x] + post) for x in expand(core, rel)]
     if e[0] == 'app' and e[1] in rel:      # `E(E(RS))`: the context wraps each row however deep
-        return [('app', e[1], y) for y in expand(e[2], rel)]
+        # The slot travels with each row — `norm` has already dropped the hole-last contexts, so a
+        # surviving one is hole-first and must reach `peel_arrow`, which is where it is refused.
+        return [('app', e[1], y) + e[3:] for y in expand(e[2], rel)]
     if e[0] == 'case' and len(e[1]) == 1 and e[1][0][0] == 'comp':
         # `[nil,⊸ nil ∪ (p×list(p)) cons]` cut to its branch: the bracket is the LAST factor's node,
         # the algebra's own arrow; the factors before it are beads of their own (user, 2026-09-01).
@@ -440,6 +446,12 @@ def signature(core, sigs, n):
         s, t = signature(core[1], sigs, n)
         return t, s
     lab = core[1] if core[0] == 'app' else spell(core)
+    # A many-slot application names its own head: `F(∋,∋)` is live in two slots, and a wire passes
+    # ONE argument, so no lane and no bead can stand for it — a `sigs` row for `F` does not either.
+    if core[0] == 'app' and len(sl.split_top(spell(core[2]), ',')) > 1:
+        raise Unhandled(f"{lab} is live in more than one slot of {spell(core)}; a wire passes"
+                        f' one argument, so write {lab}(𝟙,−) with a single non-𝟙 slot')
+    sl.require_hole_last(core)
     r = row(core, sigs, n)
     if r is None:
         # A bare one-letter name is the note's abstract relation — `R`, `p`, the `𝟙` of `𝟙%∋` — and a
