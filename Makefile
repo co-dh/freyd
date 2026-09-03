@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs
+.PHONY: p c w cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -93,6 +93,11 @@ scan-strict:
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
 c: circuit cite spell scan-strict
+
+# One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
+# No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
+v:
+	./scripts/scanline diag/allegory-axioms.typ --view $(SEC)
 
 # `scan` run backwards: the panel a formula denotes.  The target is the ROUND TRIP — every panel
 # whose `cert:` states an `expect` is redrawn from that formula alone and swept again, and the

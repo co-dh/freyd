@@ -14,7 +14,7 @@ one signature everywhere in its display.  What it only CHECKS: the `cert:` a cal
 draws, `alias:` the abbreviations the display's key list asks the reader to supply.  Applying a
 declared law is mechanical; its truth stays the author's certificate, as in `scripts/cite-check`.
 """
-import glob, hashlib, json, os, re, subprocess, sys
+import glob, hashlib, json, os, re, subprocess, sys, time
 
 CACHE = ".lake/build/scanline-cache.json"
 
@@ -1129,21 +1129,23 @@ def parts(path):
     return pre, secs
 
 
-def sliced(pre, secs, sec):
-    """The prelude, every declaration in the note, and the one section's body — with the heading
-    counter seeded, so the panel ids come out exactly as they do in the whole note (the display
-    counter and the panel counter reset at every heading and display, so those need nothing).
-    `#show ref: it => []`: the sections a slice drops take their labels with them.
+def sliced(pre, secs, sel):
+    """The prelude, every declaration in the note, and the selected (consecutive) sections' bodies —
+    with the heading counter seeded from the FIRST selected section, so the panel ids come out exactly
+    as they do in the whole note (the display counter and the panel counter reset at every heading and
+    display, so those need nothing). `#show ref: it => []`: the sections a slice drops take their
+    labels with them.
 
-    Only the declarations BEFORE the section, in source order, and the section itself VERBATIM: one
-    name is bound twice in the note — `mss-pic` at :5011 and :5428, both inside §13.3.4 — and every
-    use sees the binding that precedes IT, so hoisting a section's own declarations over its own body
-    would let the second definition answer for the first's call sites."""
-    n = [int(x) for x in sec["num"].split(".")]
+    Only the declarations BEFORE the first selected section, in source order, and the selected
+    sections themselves VERBATIM, in source order: one name is bound twice in the note — `mss-pic` at
+    :5011 and :5428, both inside §13.3.4 — and every use sees the binding that precedes IT, so hoisting
+    a section's own declarations over its own body would let the second definition answer for the
+    first's call sites."""
+    n = [int(x) for x in sel[0]["num"].split(".")]
     return ("".join(pre) + "#show ref: it => []\n"
-            + "".join(b for s in secs[:secs.index(sec)] for b in s["decls"])
+            + "".join(b for s in secs[:secs.index(sel[0])] for b in s["decls"])
             + "#counter(heading).update((%s,))\n" % ", ".join(map(str, n[:-1] + [n[-1] - 1]))
-            + "".join(sec["text"]))
+            + "".join(b for s in sel for b in s["text"]))
 
 
 def query(path):
@@ -1193,7 +1195,7 @@ def panels(path, frm, full=False):
           and len(stale) <= MAXSEC and not any(k.startswith("@") or k in rest for k in changed))
     if ok:
         for s in stale:
-            open(SLICE, "w", encoding="utf-8").write(sliced(pre, secs, s))
+            open(SLICE, "w", encoding="utf-8").write(sliced(pre, secs, [s]))
             try:
                 s["recs"] = query(SLICE)
             finally:
@@ -1250,6 +1252,23 @@ def locate(path, p):
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
     path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
+    view = opt(argv, "--view")
+    if view:
+        pre, secs = parts(path)
+        sel = [s for s in secs if s["num"] == view or s["num"].startswith(view + ".")]
+        if not sel:
+            sys.exit(f"scanline: no section {view} in {path}")
+        out = "diag/.view-slice.typ"
+        open(out, "w", encoding="utf-8").write(sliced(pre, secs, sel))
+        t0 = time.time()
+        r = subprocess.run(["typst", "compile", out, "diag/.view.pdf"], capture_output=True, text=True)
+        if r.returncode:
+            sys.exit(r.stderr.strip())
+        elapsed = time.time() - t0
+        info = subprocess.run(["pdfinfo", "diag/.view.pdf"], capture_output=True, text=True)
+        pages = next((l.split()[-1] for l in info.stdout.splitlines() if l.startswith("Pages:")), "?")
+        print(f"scanline: {view} → diag/.view.pdf  {pages} pages  {elapsed:.2f}s")
+        return
     only = opt(argv, "--panel")
     frm = opt(argv, "--from")
     keep = not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
