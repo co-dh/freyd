@@ -7,10 +7,13 @@ the alpha- and universe-normalised statement, so ANY later edit to that statemen
 and sends him back to re-read the pair.  Nothing here checks that the display says what Lean says —
 no tool can; it checks that the thing he certified has not moved under him.
 """
-import re, sqlite3, sys
+import hashlib, json, os, re, sqlite3, sys
 from os.path import commonprefix
 
 DB = ".lake/build/refactor-index.db"
+# Cache keyed on (each .typ file's sha256, the db's mtime+size): the 0.9s is 369 markers' worth of
+# sqlite queries against a 337MB db, not interpreter startup, so a hit skips the db entirely.
+CACHE = ".lake/build/cite-check.cache"
 # The note writes the marker inside a raw span — outside one Typst reads the `@` as a reference and
 # refuses to compile.  The lookbehind keeps a comment's `AOP/A4_2.lean:223` from reading as a marker.
 MARK = re.compile(r"(?<![\w.])lean:([^\s\[\];,@`]+)(?:@([0-9a-f]+))?")
@@ -74,7 +77,23 @@ def check(db, mark, want, loc):
     return None
 
 
+def fingerprint(paths):
+    st = os.stat(DB)
+    h = hashlib.sha256(f"{st.st_mtime_ns}:{st.st_size}".encode())
+    for p in paths:
+        h.update(p.encode() + b"\0" + hashlib.sha256(open(p, "rb").read()).digest())
+    return h.hexdigest()
+
+
 def main(paths):
+    fp = fingerprint(paths)
+    try:
+        cached = json.load(open(CACHE))
+    except (OSError, ValueError):
+        cached = None
+    if cached and cached.get("fingerprint") == fp:
+        print(cached["line"])
+        return
     try:
         db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
         db.execute("select 1 from decl_info limit 1")
@@ -90,7 +109,10 @@ def main(paths):
     if bad:
         print(*bad, sep="\n", file=sys.stderr)
         sys.exit(f"cite-check: {len(bad)} of {n} markers failed")
-    print(f"cite-check: {n} markers verified")
+    line = f"cite-check: {n} markers verified"
+    print(line)
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    json.dump({"fingerprint": fp, "line": line}, open(CACHE, "w"))
 
 
 # Guarded so `cite-cover` can import this file for `MARK`, `key` and `resolve` instead of copying them.
