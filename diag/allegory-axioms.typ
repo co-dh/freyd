@@ -6894,11 +6894,11 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 )]<cp-types>
 
 #disp[#align(center)[```
-w      = (1,{[5],[6],[8]})             : A×E(L N)    the right summand, A×E B
-𝟙×∋   : A×E(L N) ⟶ A×L N                            𝟙 keeps 1, ∋ picks one path
-       w ↦ (1,[5]), (1,[6]), (1,[8])   : A×L N       one output per path in w
-cp w   = {(1,[5]),(1,[6]),(1,[8])}     : E(A+A×B)    the three of them, collected
-cp P(α) w = {[1,5],[1,6],[1,8]}        : E B         q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
+w           = (1,{[5],[6],[8]})            : A×E(L N)   the right summand, A×E B
+𝟙×∋        : A×E(L N) ⟶ A×L N                          𝟙 keeps 1, ∋ picks one path
+              w ↦ (1,[5]), (1,[6]), (1,[8]) : A×L N      one output per path in w
+cp w        = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×B)  the three of them, collected
+(cp P(α)) w = {[1,5],[1,6],[1,8]}         : E B        q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
 ```]]<cp-step>
 
 === `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
