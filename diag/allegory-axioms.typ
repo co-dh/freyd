@@ -6872,7 +6872,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   table.header([*type*], [*note*]),
 
   [`F(A,−)=A+A×−`],
-  [the picture draws the `A×−` summand: a sum is a case split, which one wire cannot carry],
+  [one wire carries the whole functor, both summands with it; the `∋` under it is `F(𝟙,∋)`],
 
   [`B=L N`],
   [one path: the non-empty list of squares it crosses, `N≜Nat`],
