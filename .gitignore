@@ -1,7 +1,7 @@
 /.lake
 # `scripts/scanline`'s one-section slice, removed as soon as the query returns — tracked only so a
 # crashed run does not leave a stray .typ in diag/.
-diag/.gate-slice.typ
+diag/.gate-slice-*.typ
 # `make v`'s one-section render loop: the slice it compiles and the fixed-path PDF it reloads.
 diag/.view-slice.typ
 diag/.view.pdf

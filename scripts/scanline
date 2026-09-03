@@ -1085,7 +1085,9 @@ def lit_hashes(path):
 # same records come back byte-identical, in 1.4 s.  What is left is linear in the note's LINES —
 # 0.24 s of imports plus 0.12 ms a line — so the last factor of five is to hand typst one section.
 GATE = ".lake/build/note-gate.json"
-SLICE = "diag/.gate-slice.typ"     # a dotfile: no `diag/*.typ` glob picks the scratch slice up
+# A dotfile so no `diag/*.typ` glob picks the scratch slice up, and per-process because `make` runs
+# `spell` and `scan-strict` in parallel: one fixed path had each removing the other's file mid-query.
+SLICE = "diag/.gate-slice-%d.typ" % os.getpid()
 MAXSEC = 4                         # more sections than this changed: the whole note is cheaper
 HEAD = re.compile(r'(={1,6}) ')
 DECL = re.compile(r'#(?:let|show|set|import)\b')
