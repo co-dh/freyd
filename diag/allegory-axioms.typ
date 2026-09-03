@@ -2505,13 +2505,27 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
 // the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
 // `dknees` gave the bead this lane is born on and the one it dies on.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none) = {
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false) = {
   let wc = if col == none { (:) } else { (col: col) }
-  let pts = if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
-    ((xat(y0), y0), (x, y0 - kb))
+  // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
+  // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
+  // bezier dot to dot is the same corridor without the wiggle.  Two guards keep the corridor the
+  // same one: the lane is ALONE between those two beads, since siblings leave one dot and land on
+  // one dot and only their columns hold them apart; and its column lies BETWEEN the two dots, so
+  // the columned route was already monotone and the straight line sweeps nothing new.
+  let flat = (alone and y0 != "top" and y1 != "bot" and un == none
+    and y0 - kb <= y1 + kd + 1e-6
+    and x >= calc.min(xat(y0), xat(y1)) - 1e-6 and x <= calc.max(xat(y0), xat(y1)) + 1e-6)
+  let pts = if flat { ((xat(y0), y0), (xat(y1), y1)) } else {
+    (if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
+      ((xat(y0), y0), (x, y0 - kb))
+    }) + (if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), (xat(y1), y1)) })
   }
-  pts += if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), (xat(y1), y1)) }
-  hm-wire(pts, ..wc)
+  // Straight, as the object edge is: dot to dot the two ends need no vertical tangent to meet, and
+  // `hm-seg`'s would bow the run into an S — IntroString p. 48 draws that run as a single `L`.
+  // Otherwise the end that lands ON a dot arrives along the bead's row, as the book's arcs do.
+  hm-wire(pts, ..(if flat { (k: 0) } else { (:) }), ..wc,
+          ha: not flat and y0 != "top" and un == none, hb: not flat and y1 != "bot")
   if un != none { hm-bead((x, y0), un) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
@@ -2525,7 +2539,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     pts += ((x, yb + gk.at(dkey("d", yb))), (xat(yb), yb), (x, yb - gk.at(dkey("b", yb))))
   }
   hm-wire(pts + (if y1 == "bot" { ((x, 0),) }
-    else { ((x, b + gk.at(dkey("d", b))), (xat(b), b)) }), ..wc)
+    else { ((x, b + gk.at(dkey("d", b))), (xat(b), b)) }), ..wc,
+    ha: y0 != "top", hb: y1 != "bot")
 }
 
 // A lane's name is its own when it has one, and otherwise the one the port list writes at the edge
@@ -2596,7 +2611,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     // beside; `dnamed` says on which lanes that name is nowhere else on the page.
     let nm = dnm(l, top, bot)
     let col = if nm == none { none } else { FCOL.at(plain(nm)) }
-    if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col) }
+    let alone = lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1
+    if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
+                        alone: alone) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // On the birth row, where every arm leaves its dot vertically — EXCEPT where a leg of the same
     // bead is born west of this one: that leg sweeps from the dot across the very gap the name is

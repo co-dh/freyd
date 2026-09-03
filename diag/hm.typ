@@ -14,25 +14,42 @@
 // client that bends in by hand (draw.typ's `splitcut`) must use the same or shapes differ.
 #let KNEE = 0.6
 
-// A step changing both x and y is a bezier with vertical tangents, so wires meet edges and beads at
-// a right angle.  Mirror-symmetric on purpose: reversing `pts` gives back the same curve.
-#let hm-seg(a, b, k: HMK) = {
+// A step changing both x and y is a bezier with vertical tangents, so wires meet edges at a right
+// angle.  Mirror-symmetric on purpose: reversing `pts` gives back the same curve.  `ha`/`hb` turn
+// an END horizontal instead: a wire meets a BEAD along the bead's own row, which is how the book
+// draws every arm and leg — measured on IntroString p. 48, whose arcs carry the handles
+// `(0, 5.82) (-5.82, 0)`, vertical where the wire stands in its column and horizontal at the dot.
+// Two ends both vertical over a long sideways run bow the step into an S; one of them horizontal
+// makes it a quarter turn.
+#let hm-seg(a, b, k: HMK, ha: false, hb: false) = {
   if a.at(0) == b.at(0) or a.at(1) == b.at(1) {
     d.line(a, b)
   } else {
-    let dy = b.at(1) - a.at(1)
-    d.bezier(a, b, (a.at(0), a.at(1) + k * dy), (b.at(0), b.at(1) - k * dy))
+    let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+    // A quarter turn — one end along the row, the other along the column — takes the SAME handle at
+    // both ends, so the turn is circular rather than hooked: the book's are `(0, 5.82) (-5.82, 0)`
+    // on a `Δ(9.63, 11.33)`, which is `k` times the SHORTER side twice, not each side's own.
+    let (ux, uy) = if ha == hb { (dx, dy) } else {
+      let m = calc.min(calc.abs(dx), calc.abs(dy))
+      (m * (if dx < 0 { -1 } else { 1 }), m * (if dy < 0 { -1 } else { 1 })) }
+    d.bezier(a, b,
+      if ha { (a.at(0) + k * ux, a.at(1)) } else { (a.at(0), a.at(1) + k * uy) },
+      if hb { (b.at(0) - k * ux, b.at(1)) } else { (b.at(0), b.at(1) - k * uy) })
   }
 }
 
 /// The path through `pts`, unstyled — `hm-wire` and `hm-region` put the stroke or fill on it.
-#let hm-path(pts, k: HMK) = {
-  for i in range(pts.len() - 1) { hm-seg(pts.at(i), pts.at(i + 1), k: k) }
+/// `ha`/`hb` are the WHOLE path's ends, the only places a caller knows it lands on a dot.
+#let hm-path(pts, k: HMK, ha: false, hb: false) = {
+  for i in range(pts.len() - 1) {
+    hm-seg(pts.at(i), pts.at(i + 1), k: k,
+           ha: ha and i == 0, hb: hb and i == pts.len() - 2)
+  }
 }
 
 /// One `merge-path` and not one element per segment, so a bend and its straight run cannot seam.
-#let hm-wire(pts, col: black, thickness: lw, k: HMK) = d.merge-path(
-  fill: none, stroke: (thickness: thickness, paint: col), hm-path(pts, k: k),
+#let hm-wire(pts, col: black, thickness: lw, k: HMK, ha: false, hb: false) = d.merge-path(
+  fill: none, stroke: (thickness: thickness, paint: col), hm-path(pts, k: k, ha: ha, hb: hb),
 )
 
 /// AN UNCHANGED WIRE IS DRAWN UNCHANGED: at a junction the SURVIVOR runs straight and the CONSUMED

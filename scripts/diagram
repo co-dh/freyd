@@ -684,6 +684,14 @@ def columns(rows, made):
         # below because it touches no object wire at all.
         c = ((min(xs) + max(xs)) / 2 if xs
              else max((l.x for l in live), default=X0 - DX) + DX)
+        # A bead that gives back as many wires as it takes moves nothing sideways, so its legs KEEP
+        # the arms' own columns: a swap becomes two straight lines crossing, and a wire that meets
+        # several of them runs down ONE line instead of a staircase of knees — IntroString p.48 draws
+        # exactly that run as a single straight diagonal.  Only a merge or a split needs new columns.
+        if xs and len(r.legs) == len(r.arms) == len(xs):
+            for g, x in zip(r.legs, sorted(xs)):
+                g.x = x
+            continue
         # The DOT stays at the arms' centre; the block of legs slides off it by half steps until it
         # fits BETWEEN the arms' own neighbours — the legs replace the arms in the cut, so a lane
         # west of the arms must stay west of the legs and one east must stay east, or the ink claims

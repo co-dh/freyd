@@ -558,9 +558,21 @@ def a_dpanel(p, r):
         if ds:                             # `ddip`'s points — the arms the crossed wires make
             pts = dippts(x, dx, p.h, y0, y1, ds, gk)
         else:                              # `dlane`'s own points
-            pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
-                                                  [(dx(y0), y0), (x, y0 - gk[('b', float(y0))])])
-            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (dx(y1), y1)]
+            kb = gk[('b', float(y0))] if y0 != 'top' and un is None else 0.0
+            kd = gk[('d', float(y1))] if y1 != 'bot' else 0.0
+            # `dlane`'s `flat`: the two knees eat the whole gap, the lane's column is reached for
+            # zero height, and the note draws one bezier dot to dot instead of kinking there — only
+            # where this lane is the ONLY one between those two beads and its column lies BETWEEN
+            # the two dots, so the straight line sweeps the corridor the columned route already did.
+            alone = sum(1 for o in r['lanes'] if o[1] == y0 and o[2] == y1) == 1
+            if (alone and y0 != 'top' and y1 != 'bot' and un is None
+                    and y0 - kb <= y1 + kd + EPS
+                    and min(dx(y0), dx(y1)) - EPS <= x <= max(dx(y0), dx(y1)) + EPS):
+                pts = [(dx(y0), y0), (dx(y1), y1)]
+            else:
+                pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
+                                                      [(dx(y0), y0), (x, y0 - kb)])
+                pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + kd), (dx(y1), y1)]
         lab = nm or p.at(p.top if y0 == 'top' else p.bot, x)      # `dnm`: its own name, else a port's
         p.wires.append(Wire(x, yt, yb, lab, un, pts, ds))
         # WHICH lanes write that name is the note's `dnamed`, and the panel emits its answer: the
