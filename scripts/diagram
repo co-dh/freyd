@@ -175,9 +175,7 @@ def peel_arrow(e, cut, rel):
     while True:
         d, live = len(ws), cut[len(ws)] if len(ws) < len(cut) else None
         if e[0] == 'app' and e[1] in rel:
-            if len(e) > 3 and not sl.hole_last(e[3]):
-                raise Unhandled(f"{spell(e)} acts in a slot the {e[1]} wire does not pass; a lane"
-                                f" carries {e[1]}'s last argument and acting in another is a swap")
+            sl.require_hole_last(e)
             if len(sl.split_top(spell(e[2]), ',')) > 1:
                 # a many-slot bead is opaque: hand it back whole so `signature` names its head
                 return ws, e
@@ -448,13 +446,14 @@ def signature(core, sigs, n):
         s, t = signature(core[1], sigs, n)
         return t, s
     lab = core[1] if core[0] == 'app' else spell(core)
+    # A many-slot application names its own head: `F(∋,∋)` is live in two slots, and a wire passes
+    # ONE argument, so no lane and no bead can stand for it — a `sigs` row for `F` does not either.
+    if core[0] == 'app' and len(sl.split_top(spell(core[2]), ',')) > 1:
+        raise Unhandled(f"{lab} is live in more than one slot of {spell(core)}; a wire passes"
+                        f' one argument, so write {lab}(𝟙,−) with a single non-𝟙 slot')
+    sl.require_hole_last(core)
     r = row(core, sigs, n)
     if r is None:
-        # A many-slot application names its own head: `F(∋,∋)` is live in two slots, and a wire
-        # passes ONE argument, so no lane and no bead can stand for it.
-        if core[0] == 'app' and len(sl.split_top(spell(core[2]), ',')) > 1:
-            raise Unhandled(f"{lab} is live in more than one slot of {spell(core)}; a wire passes"
-                            f' one argument, so write {lab}(𝟙,−) with a single non-𝟙 slot')
         # A bare one-letter name is the note's abstract relation — `R`, `p`, the `𝟙` of `𝟙%∋` — and a
         # letter can only be endo on the object wire, so the schematic reading IS its signature.  Any
         # other name is a real arrow: guessing `x⟶x` for it draws an identity bead spanning every
