@@ -44,7 +44,9 @@
 // drawing function instead of ∇ — with no error.  Import the handful of names a note actually uses,
 // and write the symbol itself in math.
 
-#import "@preview/cetz:0.3.4"
+// NOT the package directly: `cetz-nodraw.typ` is cetz with the `--input nodraw=1` switch that makes
+// `typst query` skip the ink, and every drawing file takes its `cetz` from here.
+#import "cetz-nodraw.typ" as cetz
 #let d = cetz.draw
 
 // ---------------------------------------------------------------- style constants

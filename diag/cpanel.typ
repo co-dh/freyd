@@ -9,8 +9,8 @@
 // (what a tape has to be drawn round), and the cetz content, entering at `ys(nin)` and leaving at
 // `ys(nout)`.  Branch equalisation — §4e's `w` — lives here and nowhere else.
 
-#import "@preview/cetz:0.3.4"
-#import "circuit.typ": gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw
+// `cetz` through `circuit.typ`, not from the package: that is where the `--input nodraw=1` shim lives.
+#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw
 #import "draw.typ": lab
 #import "note-style.typ": P, TYCOL
 
