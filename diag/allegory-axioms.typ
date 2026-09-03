@@ -6784,11 +6784,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`moves`],
   [`NA⟶E(NA)`],
-  [`moves(5,6,7,8)={(6,7,8,5),(5,6,7,8),(8,5,6,7)}` — rotated up, unrotated, rotated down.],
+  [`moves(x)={up(x),x,down(x)}` — rotated up, unrotated, rotated down.],
 
   [`trans`],
   [`E(NA)⟶N(EA)`],
-  [`trans{(6,7,8,5),(5,6,7,8),(8,5,6,7)}=({6,5,8},{7,6,5},{8,7,6},{5,8,7})` — row `k` collects rows `k-1`, `k`, `k+1`.],
+  [`trans{(a,b,c),(x,y,z)}=({a,x},{b,y},{c,z})` — component `k` of the result is the set of the `k`-th components.],
 
   [`zip`],
   [`F(NA,NB)⟶NF(A,B)`],
@@ -6862,25 +6862,25 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
-  ((1.7, [`F(N,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
-  ((0.55, [`E`]), (1.7, [`F(N,−)`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(N,E(L(N)))", tgt: "E(F(N,L(N)))")),
+  ((1.7, [`F(A,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`A`])),
+  ((0.55, [`E`]), (1.7, [`F(A,−)`]), (4, [`L`]), (5.15, [`A`])),
+  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(A)))", tgt: "E(F(A,L(A)))")),
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
-  ((1.7, [`N×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
-  ((0.55, [`E`]), (1.7, [`N×−`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "N×E(L(N))", tgt: "E(N×L(N))")),
+  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`A`])),
+  ((0.55, [`E`]), (1.7, [`A×−`]), (4, [`L`]), (5.15, [`A`])),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(A))", tgt: "E(A×L(A))")),
   dpanel(2, 4.55, 1.7,
   ((0.55, 0.5, "bot", none, frc([`𝟙`])),),
   (),
-  ((1.7, [`N`]),),
-  ((0.55, [`E`]), (1.7, [`N`])),
-  cert: (expect: "𝟙%∋", src: "N", tgt: "E(N)")),
+  ((1.7, [`A`]),),
+  ((0.55, [`E`]), (1.7, [`A`])),
+  cert: (expect: "𝟙%∋", src: "A", tgt: "E(A)")),
 
-  src[`cp` on all of `F(N,E(L N))`],
-  src[the `N×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
-  src[the `N` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
+  src[`cp` on all of `F(A,E(L A))`],
+  src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
+  src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
 
 #disp[#table(
@@ -6889,19 +6889,19 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*type*], [*note*]),
 
-  [`F(N,−)=N+N×−`],
+  [`F(A,−)=A+A×−`],
   [one wire carries the whole functor, both summands with it; the `∋` under it is `F(𝟙,∋)`],
 
-  [`∋:E(L N)⟶L N`],
-  [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them — `L N` is one path, `N≜Nat` one square],
+  [`∋:E(L A)⟶L A`],
+  [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them — `L A` is one path, `A` one square],
 
   [`F(𝟙,∋)=𝟙+𝟙×∋`],
-  [`:N+N×E(L N)⟶N+N×L N`, the relator acting on each summand],
+  [`:A+A×E(L A)⟶A+A×L A`, the relator acting on each summand],
 
-  [`∋:E(N+N×L N)⟶N+N×L N`],
+  [`∋:E(A+A×L A)⟶A+A×L A`],
   [the `∋` under the bar: a set of cells, one of them — a different `∋`],
 
-  [`cp:N+N×E(L N)⟶E(N+N×L N)`],
+  [`cp:A+A×E(L A)⟶E(A+A×L A)`],
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
   [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
@@ -6909,13 +6909,37 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 )]<cp-types>
 
 #disp[#align(center)[```
-w      = (1,{[5],[6],[8]})            : N×E(L N)      the right summand
-𝟙×∋   : N×E(L N) ⟶ N×L N                              𝟙 keeps the square 1, ∋ picks one path
-         w ↦ (1,[5]), (1,[6]), (1,[8]) : N×L N         one output per path in w
-cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(N+N×L N)    the three of them, collected
+w      = (1,{[5],[6],[8]})            : A×E(L A)     the right summand
+𝟙×∋   : A×E(L A) ⟶ A×L A                             𝟙 keeps the square 1, ∋ picks one path
+         w ↦ (1,[5]), (1,[6]), (1,[8]) : A×L A        one output per path in w
+cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collected
 ```]]<cp-step>
 
+#v(8pt)
+
 === `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
+
+#disp[#align(center)[```
+Q : F(N A,N(L A)) ⟶ N(L A)                     the fold's algebra: a new column, one path per row
+
+u = ((1,2,3,4),([5],[6],[7],[8]))              : F(N A,N(L A))
+F(𝟙,moves trans N(est(R)))                        𝟙 keeps the column, the paths move
+  moves([5],[6],[7],[8])
+   = {([6],[7],[8],[5]),
+      ([5],[6],[7],[8]),
+      ([8],[5],[6],[7])}                       : E(N(L A))     up, unmoved, down
+  trans(that)
+   = ({[6],[5],[8]},{[7],[6],[5]},
+      {[8],[7],[6]},{[5],[8],[7]})             : N(E(L A))     row k gets rows k-1, k, k+1
+  N(est(R))(that)
+   = ([5],[5],[6],[5])                         : N(L A)        the cheapest into each row —
+                                                               chosen BEFORE the new square
+zip(that)
+   = ((1,[5]),(2,[5]),(3,[6]),(4,[5]))         : N(F(A,L A))   each row: its square, and the one
+                                                               predecessor that survived
+N(α)(that)
+   = ([1,5],[2,5],[3,6],[4,5])                 : N(L A)        α(1,[5])=[1,5]
+```]]<q-step>
 
 // ---- §13.5.2's own vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
 // corner for a relation and a square box for a map.
