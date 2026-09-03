@@ -6856,7 +6856,51 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   paths of rows `k-1`, `k`, `k+1`.]])
 ]]<cyl-nela>
 
-=== The derivation <sec-cyl-deriv>
+=== `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
+
+#disp[#align(center, dpanel(2, 9.15, 6.3,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, "top", 1, none, none), (5.15, "top", "bot", none, none)),
+  ((1, [`cp`], black, 2.85),),
+  ((2.85, [`F_A`]), (4, [`E`]), (5.15, [`L`]), (6.3, [`N`])),
+  ((0.55, [`E`]), (1.7, [`F_A`]), (5.15, [`L`]), (6.3, [`N`])),
+  cert: (expect: "cp", src: "F_A(E(L(N)))", tgt: "E(F_A(L(N)))", sigs: ("cp": "F_A(E(x))⟶E(F_A(x))"))))]<cp-diag>
+
+#disp[#table(
+  columns: (5.6cm, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*type*], [*note*]),
+
+  [`F_A≜F(A,−)=A+A×−`],
+  [the unary functor a wire can carry; `F` itself is binary],
+
+  [`B=L N`],
+  [one path: the non-empty list of squares it crosses, `N≜Nat`],
+
+  [`∋:E(L N)⟶L N`],
+  [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them],
+
+  [`F(𝟙,∋):F_A(E B)⟶F_A B`],
+  [`=𝟙+𝟙×∋`, the relator acting on each summand of `A+A×−`],
+
+  [`∋:E(F_A B)⟶F_A B`],
+  [the `∋` under the bar: a set of cells, one of them — a different `∋`],
+
+  [`cp:F_A(E B)⟶E(F_A B)`],
+  [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
+
+  [`cp ∋=F(𝟙,∋)`],
+  [taking a member of `cp`'s result is running `F(𝟙,∋)` — @pow-laws],
+)]<cp-types>
+
+#disp[#align(center)[```
+w      = (1,{[5],[6],[8]})             : A×E(L N)    the right summand of F_A(E B)
+w (𝟙×∋) (1,x)  ⟺  x ∈ {[5],[6],[8]}    : A×L N       𝟙 keeps 1, ∋ picks one path
+cp w   = {(1,[5]),(1,[6]),(1,[8])}     : E(F_A B)    the three of them, collected
+cp P(α) w = {[1,5],[1,6],[1,8]}        : E B         q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
+```]]<cp-step>
+
+=== `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
 
 // ---- §13.5.2's own vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
 // corner for a relation and a square box for a map.
