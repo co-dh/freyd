@@ -60,7 +60,7 @@
 // bead hues `GIVEN1`/`GIVEN2`/`INDUCED`/`SLACK` and the object hues `BCOL`/`TCOL`/`CCOL`.  ΔE76 ≥ 25 from
 // every one, ≥ 30 between two lanes sharing a panel, ≥ 12 between any two; muted, so the beads stay loudest.
 #let FCOL = (
-  "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "A+": rgb("#93ae75"),
+  "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"),
   "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
   "bag": rgb("#a29366"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
   "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),

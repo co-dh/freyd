@@ -6856,14 +6856,14 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   paths of rows `k-1`, `k`, `k+1`.]])
 ]]<cyl-nela>
 
-=== `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
+=== The cross product `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
 
-#disp[#align(center, dpanel(2, 11.45, 8.6,
-  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 1, "bot", none, none), (4, "top", 1, none, none), (5.15, "top", 1, none, none), (6.3, "top", 1, none, none), (7.45, "top", "bot", none, none)),
-  ((1, [`cp`], black, 4),),
-  ((4, [`A+`]), (5.15, [`A×−`]), (6.3, [`E`]), (7.45, [`L`]), (8.6, [`N`])),
-  ((0.55, [`E`]), (1.7, [`A+`]), (2.85, [`A×−`]), (7.45, [`L`]), (8.6, [`N`])),
-  cert: (expect: "cp", src: "A+(A×E(L(N)))", tgt: "E(A+(A×L(N)))", sigs: ("cp": "(A+(A×E(x)))⟶E(A+(A×x))"))))]<cp-diag>
+#disp[#align(center, dpanel(3, 8, 5.15,
+  ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
+  ((1, [`∋`], black, 2.85),),
+  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
+  ((0.55, [`E`]), (1.7, [`A×−`]), (4, [`L`]), (5.15, [`N`])),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(N))", tgt: "E(A×L(N))")))]<cp-diag>
 
 #disp[#table(
   columns: (5.6cm, 1fr),
@@ -6872,7 +6872,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   table.header([*type*], [*note*]),
 
   [`F(A,−)=A+A×−`],
-  [`F` is binary; a wire carries the unary `A+A×−`, which is what the picture draws],
+  [the picture draws the `A×−` summand: a sum is a case split, which one wire cannot carry],
 
   [`B=L N`],
   [one path: the non-empty list of squares it crosses, `N≜Nat`],
@@ -6889,8 +6889,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [`cp:A+A×E B⟶E(A+A×B)`],
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
-  [`cp ∋=F(𝟙,∋)`],
-  [taking a member of `cp`'s result is running `F(𝟙,∋)` — @pow-laws],
+  [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
+  [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @pow-laws],
 )]<cp-types>
 
 #disp[#align(center)[```
