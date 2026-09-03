@@ -342,7 +342,8 @@ def juxta(xs, tbl=None):
     while i < len(xs):
         rs = rows(tbl, xs[i][1]) if xs[i][0] == 'atom' else []
         if rs and all('arg' in r for r in rs) and i + 1 < len(xs) and xs[i + 1][0] == 'atom':
-            out.append(('app', xs[i][1], xs[i + 1], f"{xs[i][1]} {xs[i + 1][1]}")); i += 2
+            # A hole, not a finished spelling: `rec` rewrites the argument and the context follows it.
+            out.append(('app', xs[i][1], xs[i + 1], f"{xs[i][1]} −")); i += 2
         else:
             out.append(xs[i]); i += 1
     return out
@@ -459,6 +460,7 @@ def leaf(e, tbl, src, tgt):
 
 
 def typed(e, row, tbl, src, tgt):
+    sl.require_hole_last(e)      # the box label fills the hole, `row["arg"]` types the last slot
     env = {}
     unify(obj(row["src"]) if src is not None else obj(row["tgt"]), src if src is not None else tgt,
           env)
