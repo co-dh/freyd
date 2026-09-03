@@ -7128,12 +7128,12 @@ N(α)(that)
   ((1.125, [`N`]), (4.85, [`LA`])),
   opath: ((4.85, 2), (2.85, 1), (2.85, 0)),
   cert: (expect: "Q", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("Q": "F(N(x))⟶N(x)")))
-#let cc2 = dpanel(6, 9.72, 6.87,
-  ((0.55, 2, "bot", none, none), (1.7, 2, 1, [`F`], none), (0.838, "top", 2, none, none), (1.413, 4, 2, [`N`], none), (2.562, 4, 3, [`E`], none), (1.413, 5, 4, [`E`], none), (2.562, 5, 4, [`N`], none), (1.987, "top", 5, none, none)),
-  ((5, [`moves`], black, 1.987, 1.987), (4, [`trans`], black, 1.413, 1.9875), (3, [`est(R)`], black, 2.562), (2, [`zip`], black, 0.838, 1.1255), (1, [`α`], black, 1.7)),
-  ((0.838, [`F`]), (1.987, [`N`]), (6.87, [`LA`])),
-  ((0.55, [`N`]), (6.87, [`LA`])),
-  opath: ((6.87, 6), (3.71, 3), (3.71, 0)),
+#let cc2 = dpanel(6, 9.14, 6.29,
+  ((0.55, 2, "bot", none, none), (1.125, 2, 1, [`F`], none), (0.55, "top", 2, none, none), (1.125, 4, 2, [`N`], none), (2.275, 4, 3, [`E`], none), (1.125, 5, 4, [`E`], none), (2.275, 5, 4, [`N`], none), (1.7, "top", 5, none, none)),
+  ((5, [`moves`], black, 1.7, 1.7), (4, [`trans`], black, 1.125, 1.7), (3, [`est(R)`], black, 2.275), (2, [`zip`], black, 0.55, 0.8375), (1, [`α`], black, 1.125)),
+  ((0.55, [`F`]), (1.7, [`N`]), (6.29, [`LA`])),
+  ((0.55, [`N`]), (6.29, [`LA`])),
+  opath: ((6.29, 6), (3.42, 3), (3.42, 0)),
   cert: (expect: "F(𝟙,moves trans N(est(R)))zip N(α)", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("moves": "N(x)⟶E(N(x))", "trans": "E(N(x))⟶N(E(x))", "zip": "F(N(x))⟶N(F(x))")))
 
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
@@ -7188,7 +7188,8 @@ N(α)(that)
   [#ca2],
 
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-setify, cb-Pest, cb-est))),
-    [#src[@est-laws at `union`, `R` a preorder]])],
+    [#src[`P(est(R)) est(R)⊑union est(R)` — a minimum in each set, then a minimum of those;
+     @est-laws, `R` transitive]])],
   [#ca3],
 
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-fold, cb-Nest, cb-setify, cb-est))),
@@ -9084,11 +9085,12 @@ both lists empty.
       the two lengths]])],
   // The program is the branch above with each box replaced by a function computing it, so the wires
   // and the beads are the same picture: only the labels change.
-  [#dpanel(5, 12.6, 9.75,
-  ((0.55, 4, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`Op×−`], none), (4, 3, 2, [`list`], none), (5.15, 4, 3, [`Δ`], none), (6.3, 4, 3, [`list`], none), (7.45, "top", 4, none, none), (8.6, "top", 4, none, none)),
-  ((4, [`unstep`], black, 7.45), (3, [`mle`], black, 5.15), (2, [`cons`], black, 2.85), (1, [`minlist(R)`], black, 0.55)),
-  ((7.45, [`Δ`]), (8.6, [`list`]), (9.75, [`Char`])),
-  ((1.7, [`list`]), (9.75, [`Op`])),
+  [#dpanel(5, 10, 7.15,
+  ((0.55, 4, 1, [`list`], none), (2.562, 2, "bot", none, none), (1.7, 4, 2, [`Op×−`], none), (3.425, 3, 2, [`list`], none), (2.85, 4, 3, [`Δ`], none), (4, 4, 3, [`list`], none), (1.7, "top", 4, none, none), (2.85, "top", 4, none, none)),
+  ((4, [`unstep`], black, 1.7), (3, [`mle`], black, 2.85), (2, [`cons`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
+  ((1.7, [`Δ`]), (2.85, [`list`]), (7.15, [`Char`])),
+  ((2.562, [`list`]), (7.15, [`Op`])),
+  opath: ((7.15, 5), (5.15, 4), (5.15, 0)),
   cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
@@ -9918,11 +9920,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "pick (schedule×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "pick:Bag(Job)⟶Bag(Job)×Job schedule:Bag(Job)⟼[Job] snoc:[Job]×Job⟼[Job]"))],
     [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
-  [#dpanel(4, 9.15, 6.3,
-  ((0.55, 1, "bot", none, none), (1.7, 3, 1, [`−×Job`], none), (2.85, 2, 1, [`list`], none), (4, 3, 2, [`bag`], none), (5.15, "top", 3, none, none)),
-  ((3, [`pick`], black, 5.15), (2, [`schedule`], black, 4), (1, [`snoc`], black, 1.7)),
-  ((5.15, [`bag`]), (6.3, [`Job`])),
-  ((0.55, [`list`]), (6.3, [`Job`])),
+  [#dpanel(4, 7.7, 4.85,
+  ((1.125, 1, "bot", none, none), (0.55, 3, 1, [`−×Job`], none), (1.7, 2, 1, [`list`], none), (1.7, 3, 2, [`bag`], none), (1.125, "top", 3, none, none)),
+  ((3, [`pick`], black, 1.125), (2, [`schedule`], black, 1.7), (1, [`snoc`], black, 0.55)),
+  ((1.125, [`bag`]), (4.85, [`Job`])),
+  ((1.125, [`list`]), (4.85, [`Job`])),
+  opath: ((4.85, 4), (2.85, 3), (2.85, 0)),
   cert: (expect: "pick (schedule×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("pick": "bag(Job)⟶bag(Job)×Job", "schedule": "bag(Job)⟶[Job]", "snoc": "[Job]×Job⟶[Job]")))],
 ))]<tardy-laws>
 

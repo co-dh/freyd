@@ -1057,6 +1057,14 @@ def regen(path, tbl, write):
              and f"diagram: {path} does not hold what the generator draws")
 
 
+def sigpair(x):
+    """One `--sigs` word: `NAME:SRC⟶TGT[!nat[=lean:Mod.decl@key]]`, cut at the SIGNATURE's last
+    colon.  Not the word's — a marker carries colons of its own, and they come after `!nat`."""
+    head, nat, mark = x.partition("!nat")
+    k, _, v = head.rpartition(":")
+    return k, v + nat + mark
+
+
 _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
               ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
               '\n       diagram --roundtrip [--show] [--from FIELD] [--json FILE] [diag/allegory-axioms.typ]'
@@ -1089,8 +1097,8 @@ def main(argv):
     sl.help_if(argv, __doc__, _HELP_BODY)
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
-    own = sl.opt(argv, "--sigs")           # `R:F(A)⟶A S:F(B)⟶B`: the key is left of the LAST colon
-    own = dict(x.rsplit(":", 1) for x in own.split()) if own else None
+    own = sl.opt(argv, "--sigs")
+    own = dict(sigpair(x) for x in own.split()) if own else None
     slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}

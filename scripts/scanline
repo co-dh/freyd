@@ -930,11 +930,15 @@ def typed(table, own):
     if not own:
         return table
     # `!nat` on the end states the bead is a natural transformation, which a signature cannot say:
-    # `α : F(x)⟶x` and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is one.
-    return {**table, "sigs": {**table["sigs"],
-                              **{k: dict(zip(("src", "tgt"), v.removesuffix("!nat").split("⟶")),
-                                         **({"nat": True} if v.endswith("!nat") else {}))
-                                 for k, v in own.items()}}}
+    # `α : F(x)⟶x` and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is one.  `=<marker>`
+    # after it names the theorem that says so, and `cite-check` verifies it where it stands, so the
+    # claim stops being the author's word — the whole point of `LaxNatural` being a `Prop`.
+    def one(v):
+        sig, nat, mark = v.partition("!nat")
+        return dict(zip(("src", "tgt"), sig.split("⟶")),
+                    **({"nat": True} if nat else {}),
+                    **({"cite": mark[1:]} if mark.startswith("=") else {}))
+    return {**table, "sigs": {**table["sigs"], **{k: one(v) for k, v in own.items()}}}
 
 
 def brname(e):
