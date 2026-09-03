@@ -1,0 +1,41 @@
+{
+  "label": "fig p74 f;g",
+  "title": "the Kleisli composite f ; g — two arrows and a fork",
+  "book": "IntroString.pdf",
+  "page": 74,
+  "pdf_page": 89,
+  "eq": "§3.4, the unnumbered figure defining (f ; g) : A → M C",
+  "transcribed": "2026-08-31",
+  "transcribed_from": "pdftocairo -svg page 89, the paths inside the bbox below; one 300dpi crop at -x 1100 -y 810 -W 400 -H 300",
+  "book_formula": "μ ⋅ M g ⋅ f",
+  "mirrored": "f M(g) μ",
+  "src": "A",
+  "tgt": "M(C)",
+  "norm": ["spider-vs-bead"],
+  "note": "The third figure of the p. 74 pair, and the one the wall made undrawable: f and g are arrows, so their dots sit on the object wire and carry it A → B → C, while μ forks the two M wires they made. On the page the object wire slides past μ's dot — the naturality licence p. 40 §2.2.4 states, and the whole of the declared `spider-vs-bead`: the spider bends that wire in instead, so `C` is μ's third arm and a second leg, which is the weaker claim the type `M(M(C)) → M(C)` itself makes. The book draws the object wire as a slanted line with the grey 𝟏 above it, so it leaves at the figure's right edge rather than its bottom — the same licence as the η and f figures beside it, not a missing port. Interior segments carry no label in the book.",
+  "sigs": {
+    "//": "The book's own letters for THIS figure: the two Kleisli arrows and the monad's multiplication.",
+    "f": {"src": "A",       "tgt": "M(B)"},
+    "g": {"src": "B",       "tgt": "M(C)"},
+    "μ": {"src": "M(M(x))", "tgt": "M(x)"}
+  },
+  "sides": [
+    { "top": ["A"],
+      "bot": ["M", "C"],
+      "beads": [ {"name": "f", "arms": ["w0"],             "legs": ["w1", "w2"]},
+                 {"name": "g", "arms": ["w2"],             "legs": ["w3", "w4"]},
+                 {"name": "μ", "arms": ["w1", "w3", "w4"], "legs": ["w5", "w6"]} ],
+      "wires": { "w0": {"lbl": "A",  "from": "top:0",        "to": "bead:0/arm:0"},
+                 "w1": {"lbl": null, "from": "bead:0/leg:0", "to": "bead:2/arm:0"},
+                 "w2": {"lbl": null, "from": "bead:0/leg:1", "to": "bead:1/arm:0"},
+                 "w3": {"lbl": null, "from": "bead:1/leg:0", "to": "bead:2/arm:1"},
+                 "w4": {"lbl": null, "from": "bead:1/leg:1", "to": "bead:2/arm:2"},
+                 "w5": {"lbl": "M",  "from": "bead:2/leg:0", "to": "bot:0"},
+                 "w6": {"lbl": "C",  "from": "bead:2/leg:1", "to": "bot:1"} },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [283, 200, 348, 266],
+      "counts": {"strokes": 2, "dots": 3, "top_ends": 1, "bot_ends": 1, "grey": 1}
+    }
+  ]
+}

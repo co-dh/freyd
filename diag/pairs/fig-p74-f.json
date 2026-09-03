@@ -1,0 +1,33 @@
+{
+  "label": "fig p74 f",
+  "title": "f : A → M B — a bead that retypes the object wire",
+  "book": "IntroString.pdf",
+  "page": 74,
+  "pdf_page": 89,
+  "eq": "§3.4, the left operand of the Kleisli composite figure",
+  "transcribed": "2026-08-31",
+  "transcribed_from": "pdftocairo -svg page 89, the paths inside the bbox below; labels from pdftotext -bbox",
+  "book_formula": "f",
+  "mirrored": "f",
+  "src": "A",
+  "tgt": "M(B)",
+  "norm": [],
+  "note": "The pair beside `fig p74 η`, and the reason it earns a fixture: η makes the M wire and leaves A alone, whereas f makes the M wire AND carries A to B, so the book breaks the object wire at f and leaves it whole at η. The M wire runs down on f's left; the object wire leaves at the figure's right edge, as in the η figure.",
+  "sigs": {
+    "//": "The book's own letters for THIS figure — the left operand of `f ; g`, an arrow of the Kleisli category.",
+    "f": {"src": "A", "tgt": "M(B)"}
+  },
+  "sides": [
+    { "top": ["A"],
+      "bot": ["M", "B"],
+      "beads": [ {"name": "f", "arms": ["w0"], "legs": ["w1", "w2"]} ],
+      "wires": { "w0": {"lbl": "A", "from": "top:0",        "to": "bead:0/arm:0"},
+                 "w1": {"lbl": "M", "from": "bead:0/leg:0", "to": "bot:0"},
+                 "w2": {"lbl": "B", "from": "bead:0/leg:1", "to": "bot:1"} },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [125, 200, 162, 266],
+      "counts": {"strokes": 1, "dots": 1, "top_ends": 1, "bot_ends": 1, "grey": 1}
+    }
+  ]
+}

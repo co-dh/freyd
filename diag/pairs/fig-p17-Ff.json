@@ -1,0 +1,33 @@
+{
+  "label": "fig p17",
+  "title": "F f — the functor as a second wire",
+  "book": "IntroString.pdf",
+  "page": 17,
+  "pdf_page": 32,
+  "eq": "§1.4.2, the unnumbered figure that introduces the functor wire",
+  "transcribed": "2026-08-31",
+  "transcribed_from": "pdftocairo -svg page 32, the paths inside the bbox below; labels from pdftotext -bbox",
+  "book_formula": "F f",
+  "mirrored": "F(f)",
+  "src": "F(A)",
+  "tgt": "F(B)",
+  "norm": ["regions-unpainted"],
+  "note": "The page draws two panels side by side — the object `F A` as two bare wires, and the arrow `F f` — and they are not the two sides of an equation, so only the arrow is a side here. §1.4.2 is before Remark 2.1, so the page paints no region at all: its svg has zero fills, which is the declared `regions-unpainted`.",
+  "sigs": {
+    "//": "The book's own letters for THIS figure: one arrow between two named objects, and the functor F carrying it.",
+    "f": {"src": "A", "tgt": "B"}
+  },
+  "sides": [
+    { "top": ["F", "A"],
+      "bot": ["F", "B"],
+      "beads": [ {"name": "f", "arms": ["w1"], "legs": ["w2"]} ],
+      "wires": { "w0": {"lbl": "F", "from": "top:0",        "to": "bot:0"},
+                 "w1": {"lbl": "A", "from": "top:1",        "to": "bead:0/arm:0"},
+                 "w2": {"lbl": "B", "from": "bead:0/leg:0", "to": "bot:1"} },
+      "crossings": [],
+      "grey1": true,
+      "bbox": [260, 450, 288, 490],
+      "counts": {"strokes": 2, "dots": 1, "top_ends": 2, "bot_ends": 2, "grey": 0}
+    }
+  ]
+}
