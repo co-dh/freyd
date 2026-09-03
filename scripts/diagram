@@ -85,9 +85,11 @@ def bead(e):
     return rec(e, bead)
 
 
-def parse(s, obj=True):
-    """The shared parser, every choice in it cut down to the branch being drawn."""
-    return cut(bead(sl.parse(s)), obj, BR)
+def parse(s, obj=True, sobj=False):
+    """The shared parser, every choice in it cut down to the branch being drawn.  `sobj` says the
+    string is an OBJECT, where a binary functor's last slot is the wire and the rest is the lane's
+    name — `F(A,E B)` is `F(A,−)` over `E B`, which an arrow's `𝟙`-marked slot rule cannot see."""
+    return cut(bead(sl.parse(s, sobj)), obj, BR)
 
 
 def picks(e, out):
@@ -306,13 +308,13 @@ def layer(e):
             if render(xs[-1]) is not None and isvar(xs[-1]) == var:
                 return '−×' + render(xs[-1]), xs[0] if len(xs) == 2 else ('prod', xs[:-1])
         return None, None
-    return (e[1], e[2]) if e[0] == 'app' else (None, None)
+    return ((e[3] if len(e) > 3 else e[1]), e[2]) if e[0] == 'app' else (None, None)
 
 
 def matches(pat, lane, sub):
     """A scheme's wire against a live one: `x×−` takes the `A×−` context and binds `x` to `A`."""
     ps, ws = pat.split('×'), lane.split('×')
-    if pat == lane:
+    if wire_eq(pat, lane):
         return True
     if len(ps) != len(ws):
         return False
@@ -320,6 +322,13 @@ def matches(pat, lane, sub):
         if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], parse(w)))[1] == parse(w)):
             return False
     return True
+
+
+def wire_eq(w, lane):
+    """The wire a formula names against the lane it runs under.  An arrow spells the functor with
+    its other slot at `𝟙` — `F(𝟙,∋)` — so what peels off it is the bare head `F`, where the lane,
+    read off an object, says which object that slot holds: `F(A,−)`.  One wire, two spellings."""
+    return w == lane or (w is not None and lane.startswith(w + '(') and lane.endswith('−)'))
 
 
 def eat(pat, lanes, obj, sub, why):
@@ -475,7 +484,7 @@ def open_out(obj, w, sub, why):
         sub[e[1]] = ([], sl.act(w, inner, True))
         return inner
     a, inner = layer(e)
-    if a != w:
+    if not wire_eq(w, a):
         raise Unhandled(f"{why} runs under {w}, which does not lift off {spell(e)}")
     return inner
 
@@ -521,9 +530,9 @@ def elaborate(formula, src, tgt, table):
     """The typed reading of a formula: one row per bead, carrying the wires its signature eats and
     the wires it makes.  A wire dies where it is CONSUMED — what a formula alone cannot say."""
     sigs = {k: (norm(parse(v["src"])), norm(parse(v["tgt"]))) for k, v in table["sigs"].items()}
-    stack, obj = peel(norm(parse(src)))
-    want = norm(parse(tgt))
-    rel = alphabet(table, norm(parse(src)), want)
+    stack, obj = peel(norm(parse(src, sobj=True)))
+    want = norm(parse(tgt, sobj=True))
+    rel = alphabet(table, norm(parse(src, sobj=True)), want)
     made = [Lane(w, born=TOP) for w in stack]
     lanes, sub, rows, atop, pending = list(made), {}, [], obj, []
     for i, e in enumerate(expand(norm(parse(formula, False)), rel)):
@@ -532,7 +541,7 @@ def elaborate(formula, src, tgt, table):
         wrap = [x[1] for x in pre] + wrap
         why = f"factor {i + 1} ({spell(tidy(core))})"
         for k, w in enumerate(wrap):
-            if k < len(lanes) and lanes[k].label != w:
+            if k < len(lanes) and not wire_eq(w, lanes[k].label):
                 raise Unhandled(f"{why} runs under {w} where the cut has {lanes[k].label}")
             if k >= len(lanes):                # a wire the formula names and the cut has not got is
                 obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —

@@ -73,37 +73,37 @@ def squeeze(s):
     return ' '.join(s.split())
 
 
-def parse(s):
+def parse(s, obj=False):
     """Juxtaposition, `×`, `∘`, `∪`, `∩`, postfix `°`, `N(e)`, `[x,y]`, `⦇x⦈`, `(g→x,y)`; anything
     else bracketed rides through as one atom.  `∘` binds loosest — `η∘M μ` is `η` beside the `M`
     wire, then `μ` — so the note brackets it — then `∪`, then `∩`, then juxtaposition: `a b ∪ c∩d`
     is `(a b)∪(c∩d)`, which is the lattice's own precedence."""
     hs = split_top(s, '∘')
     if len(hs) > 1:
-        return ('hc', [parse(h) for h in hs])
+        return ('hc', [parse(h, obj) for h in hs])
     us = split_top(s, '∪')
     if len(us) > 1:
         # The `∪` always gets a space on each side; the operands keep the source's own spacing,
         # which `spell` would renormalise (`(p×𝟙) cons` → `(p×𝟙)cons`).
-        return ('union', [parse(u) for u in us], ' ∪ '.join(squeeze(u) for u in us))
+        return ('union', [parse(u, obj) for u in us], ' ∪ '.join(squeeze(u) for u in us))
     ms = split_top(s, '∩')
     if len(ms) > 1:
-        return ('cap', [parse(m) for m in ms], squeeze(s))
+        return ('cap', [parse(m, obj) for m in ms], squeeze(s))
     xs, i = [], 0
     while i < len(s):
         if s[i] in " \t":
             i += 1; continue
-        x, i = p_prod(s, i)
+        x, i = p_prod(s, i, obj)
         xs.append(x)
     if not xs:
         raise ValueError(f"empty expression {s!r}")
     return xs[0] if len(xs) == 1 else ('comp', xs)
 
 
-def p_prod(s, i):
+def p_prod(s, i, obj=False):
     xs = []
     while True:
-        x, i = p_prim(s, i)
+        x, i = p_prim(s, i, obj)
         while i < len(s) and s[i] == '°':
             x, i = ('conv', x), i + 1
         xs.append(x)
@@ -112,7 +112,7 @@ def p_prod(s, i):
         i += 1
 
 
-def p_prim(s, i):
+def p_prim(s, i, obj=False):
     while i < len(s) and s[i] in " \t":
         i += 1
     if i >= len(s):
@@ -133,15 +133,15 @@ def p_prim(s, i):
             bs = split_top(s[i + 1:j], ',')
             gs = [x for b in bs for x in split_top(b, '→')]
             if len(gs) > len(bs):
-                return ('cond', [parse(g) for g in gs], squeeze(s[i:j + 1])), j + 1
-            return parse(s[i + 1:j]), j + 1
+                return ('cond', [parse(g, obj) for g in gs], squeeze(s[i:j + 1])), j + 1
+            return parse(s[i + 1:j], obj), j + 1
         if s[i] == '⦇':
-            return ('cata', [parse(s[i + 1:j])], squeeze(s[i:j + 1])), j + 1
+            return ('cata', [parse(s[i + 1:j], obj)], squeeze(s[i:j + 1])), j + 1
         bs = split_top(s[i + 1:j], ',')
         if s[i] == '[' and len(bs) > 1:
-            return ('case', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
+            return ('case', [parse(b, obj) for b in bs], squeeze(s[i:j + 1])), j + 1
         if s[i] == '⟨' and len(bs) > 1:
-            return ('fork', [parse(b) for b in bs], squeeze(s[i:j + 1])), j + 1
+            return ('fork', [parse(b, obj) for b in bs], squeeze(s[i:j + 1])), j + 1
         return ('atom', squeeze(s[i:j + 1])), j + 1
     for q in PROJ:
         if s.startswith(q, i):
@@ -159,17 +159,19 @@ def p_prim(s, i):
         k = matching(s, j)
         # `F(X)` abbreviates `F(𝟙,X)` (the note's own `== Type relator` definition), so ONE live slot
         # parses as an application with a context saying which; `F(∋,∋)` stays one opaque bead.
+        # In an OBJECT every slot is an object, so `𝟙` cannot mark the live one: there the LAST
+        # slot is the wire and the rest is context, which makes `F(A,E B)` the lane `F(A,−)`.
         bs = [b.strip() for b in split_top(s[j + 1:k], ',')]
-        hs = [n for n, b in enumerate(bs) if b != UNIT]
+        hs = [len(bs) - 1] if obj else [n for n, b in enumerate(bs) if b != UNIT]
         if len(bs) > 1 and len(hs) == 1:
             ctx = s[i:j] + '(' + ','.join('−' if n == hs[0] else b for n, b in enumerate(bs)) + ')'
-            return ('app', s[i:j], parse(bs[hs[0]]), ctx), k + 1
-        return ('app', s[i:j], parse(s[j + 1:k])), k + 1
+            return ('app', s[i:j], parse(bs[hs[0]], obj), ctx), k + 1
+        return ('app', s[i:j], parse(s[j + 1:k], obj)), k + 1
     if j < len(s) and s[j] == '[':
         # `[A]` is a name, so `E[A]` is an application spelled without parentheses; the argument
         # keeps its brackets so the AST is exactly the one `E([A])` builds.
         k = matching(s, j)
-        return ('app', s[i:j], parse(s[j:k + 1]), s[i:j] + '−'), k + 1
+        return ('app', s[i:j], parse(s[j:k + 1], obj), s[i:j] + '−'), k + 1
     return ('atom', s[i:j]), j
 
 
@@ -177,6 +179,15 @@ def hole_last(ctx):
     """Whether an `app` context acts in its LAST argument slot: `F(𝟙,−)`, `E−` and `thin −` do,
     `F(−,𝟙)` does not.  A lane passes the last slot, so only that one reads as a wire."""
     return ctx.rstrip(')').endswith('−')
+
+
+def unit_ctx(ctx):
+    """A context whose non-hole slots are all `𝟙`, so it says nothing the bare application does
+    not: `F(𝟙,−)` and `E−` do, `F(A,−)` does not — that one names the object its lane carries."""
+    if '(' not in ctx:
+        return True
+    return all(b.strip() in ('−', UNIT)
+               for b in split_top(ctx[ctx.index('(') + 1:ctx.rindex(')')], ','))
 
 
 def hole_slot(ctx):
@@ -281,7 +292,7 @@ def norm(e):
     e = rec(e, norm)
     # A hole-LAST context is only a spelling — `F(𝟙,R)` is the picture `F(R)` — so it goes and every
     # `F(`-bearing certificate compares equal; a hole-first one stays, so `F(∋,𝟙)F(𝟙,∋)` cannot fuse.
-    if e[0] == 'app' and len(e) > 3 and hole_last(e[3]):
+    if e[0] == 'app' and len(e) > 3 and hole_last(e[3]) and unit_ctx(e[3]):
         e = ('app', e[1], e[2])
     d = dun(e)
     if d is not None:
@@ -346,6 +357,11 @@ def fuse(xs):
 def act(label, e, obj=False):
     """How a wire acts on what passes it.  A label with a hole is a context — the named slots go to
     `𝟙` for an arrow and keep their names for an object; `Δ` is the AOP relator `X↦X×X`."""
+    if '−' in label and '(' in label and label.endswith(')'):
+        head = label[:label.index('(')]
+        bs = [b.strip() for b in split_top(label[label.index('(') + 1:-1], ',')]
+        return ('app', head, e,
+                head + '(' + ','.join('−' if b == '−' else (b if obj else UNIT) for b in bs) + ')')
     if '−' in label:
         return ('prod', [e if p == '−' else ('atom', p if obj else UNIT) for p in label.split('×')])
     if label == 'Δ':
@@ -973,7 +989,7 @@ def subst(e, lhs, rhs):
 def read(s, cert, obj):
     """The cert's OWN expression — aliases unfolded and the branch taken, but not normalised, so a
     mismatch message spells the formula the file states and not `norm`'s picture quotient."""
-    e, used = unfold(parse(s), cert.get('alias') or ())
+    e, used = unfold(parse(s, obj), cert.get('alias') or ())
     if cert.get('branch'):
         e = take_branch(e, cert['branch'], obj, typed(sigs(), cert.get('sigs')))
     return e, used

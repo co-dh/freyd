@@ -6861,9 +6861,9 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #disp[#align(center, dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
-  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
-  ((0.55, [`E`]), (1.7, [`A×−`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(N))", tgt: "E(A×L(N))")))]<cp-diag>
+  ((1.7, [`F(A,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
+  ((0.55, [`E`]), (1.7, [`F(A,−)`]), (4, [`L`]), (5.15, [`N`])),
+  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(N)))", tgt: "E(F(A,L(N)))")))]<cp-diag>
 
 #disp[#table(
   columns: (5.6cm, 1fr),
@@ -6895,7 +6895,8 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 #disp[#align(center)[```
 w      = (1,{[5],[6],[8]})             : A×E(L N)    the right summand, A×E B
-w (𝟙×∋) (1,x)  ⟺  x ∈ {[5],[6],[8]}    : A×L N       𝟙 keeps 1, ∋ picks one path
+𝟙×∋   : A×E(L N) ⟶ A×L N                            𝟙 keeps 1, ∋ picks one path
+       w ↦ (1,[5]), (1,[6]), (1,[8])   : A×L N       one output per path in w
 cp w   = {(1,[5]),(1,[6]),(1,[8])}     : E(A+A×B)    the three of them, collected
 cp P(α) w = {[1,5],[1,6],[1,8]}        : E B         q: 1 ,/: 5 6 8 — `/:` is cp, `,` is α
 ```]]<cp-step>
