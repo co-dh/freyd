@@ -2626,12 +2626,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let TXF = 0.60                                   // the `F` wire
 #let TXH = 1.20                                   // the `E` wire, inside `F`
 #let TXO = 1.95                                   // the object wire
-// §13.3.1's first right panel runs TWO `E` wires — 10.1a's unit and counit.  `𝟙%∋ : F(EA)⟶E(F(EA))`
-// births its one around the WHOLE object, so that one is outermost and the other three slide right.
-#let RXU = 0.55                                   // the `E` the unit opens, outside `F`
-#let RXF = 1.65                                   // the `F` wire
-#let RXC = 2.25                                   // the `E` the counit `∋` closes, inside `F`
-#let RXO = 2.85                                   // the object wire
 #let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, cert: (:)) = {
   dpan(h, w, xo, {
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
@@ -4049,6 +4043,44 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let mb-R = ([`R`], 0.7, true)
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
+// The monotonic-alg panels, emitted by `./scripts/diagram --sigs "f:F(x)⟶x" --src … --tgt … "<formula>"`
+// plus `s: 100%`, the size their `tpanR` partners keep.
+#let ma-Fest = dpanel(3, 5.7, 2.85,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none)),
+  ((2, [`est(R)`], black, 1.7), (1, [`f`], black, 0.55)),
+  ((0.55, [`F`]), (1.7, [`E`]), (2.85, [`A`])),
+  ((2.85, [`A`]),),
+  cert: (expect: "F(est(R))f", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
+#let ma-lam = dpanel(5, 6.85, 4,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none), (2.85, "top", 3, none, none)),
+  ((3, [`∋`], black, 2.85), (2, [`f`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((1.7, [`F`]), (2.85, [`E`]), (4, [`A`])),
+  ((4, [`A`]),),
+  cert: (expect: "𝟙%∋ E(F(∋)f)est(R)", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
+#let ma-Fni = dpanel(3, 5.7, 2.85,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none)),
+  ((2, [`∋`], black, 1.7), (1, [`f`], black, 0.55)),
+  ((0.55, [`F`]), (1.7, [`E`]), (2.85, [`A`])),
+  ((2.85, [`A`]),),
+  cert: (expect: "F(∋)f", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
+#let ma-conj = dpanel(5, 5.7, 2.85,
+  ((0.55, 4, 1, [`F`], none), (1.7, 3, 2, [`E`], none)),
+  ((4, [`f°`]), (3, [`∈`]), (2, [`est(R)`], black, 1.7), (1, [`f`], black, 0.55)),
+  ((2.85, [`A`]),),
+  ((2.85, [`A`]),),
+  cert: (expect: "f° F(∈)F(est(R))f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
+#let ma-Ro = dpanel(4, 4.55, 1.7,
+  ((0.55, 3, 1, [`F`], none),),
+  ((3, [`f°`]), (2, [`R°`]), (1, [`f`], black, 0.55)),
+  ((1.7, [`A`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "f° F(R°)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
+#let ma-R = dpanel(4, 4.55, 1.7,
+  ((0.55, 3, 1, [`F`], none),),
+  ((3, [`f°`]), (2, [`R`]), (1, [`f`], black, 0.55)),
+  ((1.7, [`A`]),),
+  ((1.7, [`A`]),),
+  cert: (expect: "f° F(R)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
 #disp[#pad(right: 10pt, table(
   columns: (1fr,),
   inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
@@ -4060,50 +4092,25 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
  ]],
       // lean:AOP.A7_2.monotonicAlg_of_distributes@2fa0f83b
 
-  [#vstep([], trow(
-    tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
-      top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
-    tpan(4.2, ((2.45, [`∋`]), (1.55, [`f`]), (0.65, [`est(R)`])),
-      hands: ((RXU, 3.40, 0.65, [`E`], frc([`𝟙`])),),
-      joins: ((RXC, 2.45, 0.35), (RXF, 1.55, 0.65)),
-      top: ((RXF, [`F`]), (RXC, [`E`]), (RXO, [`A`])), xo: RXO, w: 4.5),
-  ), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
+  [#vstep([], trow(ma-Fest, ma-lam), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
   // One picture per conjunct, side by side so the display stays on one page: the first is row 1's
   // left panel twice over, `est(R)` against `∋`; the second is the row-3 panel the next step keeps.
   [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
-    trow(
-      tpan(4.2, ((2.75, [`est(R)`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
-        top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
-      tpan(4.2, ((2.75, [`∋`]), (1.35, [`f`])), joins: ((TXH, 2.75, 0.40), (TXF, 1.35, 0.70)),
-        top: ((TXF, [`F`]), (TXH, [`E`]), (TXO, [`A`])), w: 3.8),
-    ),
+    trow(ma-Fest, ma-Fni),
     [and],
-    trow(
-      tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
-        hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
-      tpanR(4.0, 1.90, [`R°`]),
-    ),
+    trow(ma-conj, tpanR(4.0, 1.90, [`R°`])),
   ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
   [#hchain(
-    (IFF, trow(
-      tpan(4.0, ((3.25, [`f°`]), (2.35, [`∈`]), (1.35, [`est(R)`]), (0.55, [`f`])),
-        hands: ((TXF, 3.25, 0.55, [`F`]), (TXH, 2.35, 1.35, [`E`])), top: ((TXO, [`A`]),)),
-      tpanR(4.0, 1.90, [`R°`]),
-    ), src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
-    (IFF, trow(
-      tpan(3.8, ((3.00, [`f°`]), (1.85, [`R°`]), (0.70, [`f`])),
-        hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
-      tpanR(3.8, 1.85, [`R°`]),
-    ), src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
-    (IFF, trow(
-      tpan(3.8, ((3.00, [`f°`]), (1.85, [`R`]), (0.70, [`f`])),
-        hands: ((TXF, 3.00, 0.70, [`F`]),), top: ((TXO, [`A`]),)),
-      tpanR(3.8, 1.85, [`R`]),
-    ), src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
+    (IFF, trow(ma-conj, tpanR(4.0, 1.90, [`R°`])),
+      src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
+    (IFF, trow(ma-Ro, tpanR(3.8, 1.85, [`R°`])),
+      src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
+    (IFF, trow(ma-R, tpanR(3.8, 1.85, [`R`])),
+      src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
     ]),
     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
@@ -4117,9 +4124,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 #let mb-S = ([`S`], 0.7, true)
 #let mb-LamS = (frc([`S`]), 0.9, false)
-// The `F` lane of the split panels, wider from `RXU` than §13.3.1's `RXF`: here the handle carries
-// its own `F` name, which at that lane would sit against the unit's label.
-#let GXF = 2.05
 // `inner` conversed, `after` above, `⊑ rhs` if given: rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
@@ -4136,6 +4140,32 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
   }
 }
+// The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
+// `s: 100%`, the size their `tpanR` partner keeps.
+#let gr-mon = dpanel(6, 5.7, 2.85,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 5, 2, [`F`], none)),
+  ((5, [`S°`]), (4, [`R°`]), (2, [`S`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`A`]),),
+  ((2.85, [`A`]),),
+  cert: (expect: "S° F(R°)𝟙%∋ E(S)est(R)", src: "A", tgt: "A", sigs: ("S": "F(x)⟶x")), s: 100%)
+#let gr-slid = dpanel(6, 5.7, 2.85,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 4, 2, [`F`], none)),
+  ((5, [`R°`]), (4, [`S°`]), (2, [`S`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((2.85, [`A`]),),
+  ((2.85, [`A`]),),
+  cert: (expect: "R° S° 𝟙%∋ E(S)est(R)", src: "A", tgt: "A", sigs: ("S": "F(x)⟶x")), s: 100%)
+#let gr-RR = dpanel(3, 3.4, 0.55,
+  (),
+  ((2, [`R°`]), (1, [`R°`])),
+  ((0.55, [`A`]),),
+  ((0.55, [`A`]),),
+  cert: (expect: "R° R°", src: "A", tgt: "A"), s: 100%)
+#let gr-R = dpanel(2, 3.4, 0.55,
+  (),
+  ((1, [`R°`]),),
+  ((0.55, [`A`]),),
+  ((0.55, [`A`]),),
+  cert: (expect: "R°", src: "A", tgt: "A"), s: 100%)
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
 // `est(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
 #disp[#pad(right: 10pt, table(
@@ -4171,19 +4201,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
-  [#trow(
-    tpan(4.0, ((3.45, [`S°`]), (2.45, [`R°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
-      hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 3.45, 1.45, [`F`])),
-      top: ((RXO, [`A`]),), xo: RXO),
-    tpanR(4.0, 2.45, [`R°`]),
-  )],
+  [#trow(gr-mon, tpanR(4.0, 2.45, [`R°`]))],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
-  [#tpan(4.0, ((3.45, [`R°`]), (2.45, [`S°`]), (1.45, [`S`]), (0.45, [`est(R)`])),
-    hands: ((RXU, 1.95, 0.45, [`E`], frc([`𝟙`])), (GXF, 2.45, 1.45, [`F`])),
-    top: ((RXO, [`A`]),), xo: RXO)],
+  [#gr-slid],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
@@ -4192,11 +4215,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   cert: (expect: "R°R°", src: "A", tgt: "A"))],
     [#src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
   // The collapsed group's bead sits at the middle of the span it replaces.
-  [#tpan(4.0, ((3.45, [`R°`]), (1.45, [`R°`])), top: ((RXO, [`A`]),), xo: RXO)],
+  [#gr-RR],
 
   [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true, src: ("A", ), tgt: ("A", )),
   cert: (expect: "R°", src: "A", tgt: "A"))], [#src[`R` transitive]])],
-  [#tpan(4.0, ((2.45, [`R°`]),), top: ((RXO, [`A`]),), xo: RXO)],
+  [#gr-R],
 ))]<greedy-thm72>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
