@@ -27,7 +27,7 @@ namespace Freyd.Alg
   `map_comp` field needs the STRONGER `TabularUnitaryUnguardedPowerAllegory` hypothesis of
   `powerRel_comp`, more than this bare-`UnguardedPowerAllegory` section carries — so the
   example is stated as the raw inequality, with `Relator.idRelator`'s `map` unfolding to `id`
-  on the nose. -/
+  on the nose.  (Under that stronger class it IS bundled: `powerRelator`, AOP.A5_4.) -/
 
 section EpsExample
 
@@ -226,6 +226,20 @@ example {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ} {K L 
     maps, where Theorem 5.2 gives it for free. -/
 @[expose] public def StrictNatural (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
   ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b = φ a ≫ F.map R
+
+/-- Every strictly natural family is lax natural: the inequation at `R` is its own equality. -/
+public theorem laxNatural_of_strictNatural {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (h : StrictNatural F G φ) : LaxNatural F G φ :=
+  fun {_ _} R => le_of_eq (h R)
+
+/-- Theorem 5.2's right-hand side with the EQUALITY on maps weakened to an INCLUSION: the
+    `LaxNatural` inequation at the maps only.  It is strictly weaker than `LaxNatural` —
+    `laxOnMaps_not_laxNatural` (A6_1_OrdRelSet) — so Theorem 5.2's equality is forced, not a
+    convenience of its proof: shunting the two maps in the step `(G f)° ≫ φ ⊑ φ ≫ (F f)°` that
+    tabulation needs turns it into `(G f)° ≫ φ ≫ F f ⊑ φ`, the CONVERSE of what the inclusion
+    `G f ≫ φ ⊑ φ ≫ F f` gives. -/
+@[expose] public def LaxOnMaps (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
+  ∀ {a b : 𝒜} (f : a ⟶ b), Map f → G.map f ≫ φ b ⊑ φ a ≫ F.map f
 
 /-- The two horizontal composites COINCIDE when the OUTER 2-cell is strictly natural: their whole
     gap is `χ`'s laxness at the components `φ a`, so removing laxness removes the gap.  Nothing is

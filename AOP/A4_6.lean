@@ -159,6 +159,16 @@ theorem bigUnion_assoc {a : 𝒜} :
     rw [bigUnion_eq_existsImage_eps (a := a), ← existsImage_comp, existsImage_eps]
   exact hL.trans hR.symm
 
+/-- `μ` is NATURAL, on the nose and for every `R` (B&dM p.106): `E(E R) ≫ ⋃ = ⋃ ≫ E R`.
+    Both sides are `E (∋ ≫ R)`: on the left `E`'s functoriality then `existsImage_eps`, on the
+    right `bigUnion = E ∋`.  `E` itself is NOT a `Relator` — it is not monotone, since a map into
+    a power object is determined by its composite with `∋` — so this square cannot be phrased as
+    `LaxNatural`; for the relator `P` of §5.4 it becomes `bigUnion_lax_natural` (AOP.A5_4). -/
+public theorem bigUnion_natural {a b : 𝒜} (R : a ⟶ b) :
+    existsImage (existsImage R) ≫ bigUnion = bigUnion ≫ existsImage R := by
+  rw [bigUnion_eq_existsImage_eps (a := b), bigUnion_eq_existsImage_eps (a := a),
+      ← existsImage_comp, ← existsImage_comp, existsImage_eps]
+
 /-! ## Ex 4.50 (B&dM p.108): `R` is recovered from its weakest-liberal-precondition data. -/
 
 /-- Ex 4.50: `(∋ b / R) \ ∋ b = R`. -/

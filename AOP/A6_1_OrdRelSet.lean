@@ -116,6 +116,28 @@ public theorem recip_not_laxNatural :
   obtain ⟨q, -, hd⟩ := RelSet.le_iff.mp (h R) true (true, false) ⟨false, rfl, rfl⟩
   exact Bool.noConfusion ((delta_map_apply R q (true, false)).mp hd).1
 
+/-- **Theorem 5.2 FAILS with its equality on maps weakened to an inclusion** (`LaxOnMaps`,
+    A5_7).  `φ : Δ ⟶ 1` is DISTINCTNESS, `φ a = {((x,y),∗) : x ≠ y}`.  A map cannot separate
+    what it received together, which is exactly its simplicity, so `(f×f) ≫ φ ⊑ φ`; a RELATION
+    can, and at `R = ⊤ : 1 ⟶ Bool` the pair `((∗,∗),∗)` lies in `(R×R) ≫ φ Bool` — route the two
+    components to `false` and to `true` — but not in `φ 1`, where `∗ = ∗`. -/
+public theorem laxOnMaps_not_laxNatural :
+    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ a, G.obj a ⟶ F.obj a),
+      LaxOnMaps F G φ ∧ ¬ LaxNatural F G φ := by
+  refine ⟨Relator.const (⟨Unit⟩ : RelSet.{0}), Δ RelSet.{0}, fun _ p _ => p.1 ≠ p.2, ?_, ?_⟩
+  · intro a b f hf
+    refine RelSet.le_iff.mpr ?_
+    rintro p u ⟨q, hq, hne⟩
+    obtain ⟨h1, h2⟩ := (delta_map_apply f p q).mp hq
+    refine ⟨u, fun hp => hne (RelSet.le_iff.mp hf.2 q.1 q.2 ⟨p.1, h1, ?_⟩), rfl⟩
+    rw [hp]; exact h2
+  · intro h
+    let R : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ _ => True
+    obtain ⟨-, hne, -⟩ := RelSet.le_iff.mp (h R) ((), ()) ()
+      ⟨(false, true), (delta_map_apply R _ _).mpr ⟨trivial, trivial⟩,
+        by intro hEq; exact Bool.noConfusion hEq⟩
+    exact hne rfl
+
 /-! ## The two horizontal composites are genuinely DIFFERENT
 
   `laxNatural_hcomp_inner_first` sits below `laxNatural_hcomp_outer_first`, by the outer 2-cell's

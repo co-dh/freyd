@@ -19,6 +19,7 @@ module
 public import Freyd.S2_40
 public import AOP.A4_6
 public import AOP.A4_2
+public import AOP.A5_1
 public import Freyd.S2_41b
 
 universe u
@@ -73,7 +74,7 @@ public theorem powerRel_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : powerR
     `powerOrder°` on the nose (`(S \ R)` unfolds to `(R° / S°)°`, and `(∋a)°° = ∋a`), so the
     whole meet is `powerOrder° ∩ powerOrder = powerOrder ∩ powerOrder°`, which is exactly
     the unfolding of `Λ (∋ a) = ∋a /ₛ ∋a`. -/
-theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
+public theorem powerRel_id {a : 𝒜} : powerRel (Cat.id a) = Cat.id (PowerAllegory.powerObj a) := by
   have hterm1 : ((∋ a)° \ (Cat.id a ≫ (∋ a)°)) = (powerOrder (a := a))° := by
     have e : Cat.id a ≫ (∋ a)° = (∋ a)° := Cat.id_comp _
     rw [e]
@@ -307,5 +308,96 @@ public theorem powerRel_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
   exact le_trans p1 (le_trans p2 p3)
 
 end PowerRelCompHard
+
+/-! ## The power relator bundled, and `union` as a lax natural transformation -/
+
+section PowerRelator
+
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
+
+/-- **B&dM §5.4 p.119**: the power relator `P` as a `Relator` — object part `powerObj`, arrow
+    part `powerRel`.  Only `map_comp` (`powerRel_comp`) needs this section's tabularity; every
+    other field holds in a bare `UnguardedPowerAllegory`. -/
+@[expose] public def powerRelator : Relator 𝒜 𝒜 where
+  obj := PowerAllegory.powerObj
+  map := powerRel
+  map_id _ := powerRel_id
+  map_comp := powerRel_comp
+  map_mono := powerRel_mono
+
+/-- **B&dM §7.1 p.166** (`union ≜ Λ(∋∋) : E(EA) ⟶ EA` is LAX NATURAL): the monad
+    multiplication `⋃` is a lax natural transformation `P∘P ⟶ P`, i.e.
+    `P(P R) ≫ ⋃ ⊑ ⋃ ≫ P R` for every relation `R`.
+
+    `⋃` is a map, so the square shunts to `⋃° ≫ P(P R) ≫ ⋃ ⊑ P R` and splits along `P R`'s two
+    division terms; each half is `powerRel`'s own cancellation used twice — once at `P R` and
+    once at `R` — glued by `⋃ ≫ ∋ = ∋ ≫ ∋` and the simplicity of `⋃`.
+
+    For the existential image `E` the same square is an EQUALITY (`bigUnion_natural`, AOP.A4_6);
+    it cannot be stated as `LaxNatural` because `E` is not monotone, hence not a `Relator`. -/
+public theorem bigUnion_lax_natural :
+    LaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.comp powerRelator powerRelator)
+      (fun a => bigUnion (a := a)) :=
+  fun {a b} R => by
+  have hUm : ∀ x : 𝒜, Map (bigUnion (a := x)) := fun x => by
+    show Map (Λ (∋ (PowerAllegory.powerObj x) ≫ ∋ x)); exact Λ_is_map' _
+  have hUe : ∀ x : 𝒜, bigUnion (a := x) ≫ ∋ x = ∋ (PowerAllegory.powerObj x) ≫ ∋ x :=
+    fun x => Λ_eps_eq' _
+  show powerRel (powerRel R) ≫ bigUnion (a := b) ⊑ bigUnion (a := a) ≫ powerRel R
+  refine (map_shunt_left (hUm a) _ _).mp ?_
+  show (bigUnion (a := a))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := b))
+      ⊑ ((∋ a)° \ (R ≫ (∋ b)°)) ∩ ((∋ a ≫ R) / ∋ b)
+  apply le_inter
+  · -- TERM₁: cancel `(∋a)°⋃°` to `(∋a)°(∋_{[a]})°`, then term₁ at `P R` and at `R`.
+    refine (le_leftDiv_iff _ _ _).mpr ?_
+    have e1 : (∋ a)° ≫ (bigUnion (a := a))° = (∋ a)° ≫ (∋ (PowerAllegory.powerObj a))° := by
+      rw [← Allegory.recip_comp, hUe a, Allegory.recip_comp]
+    -- `⋃` is simple, so a member of a member of a family is a member of its union.
+    have h3 : (bigUnion (a := b))° ≫ (∋ (PowerAllegory.powerObj b) ≫ ∋ b) ⊑ ∋ b := by
+      rw [← hUe b, ← Cat.assoc]
+      calc ((bigUnion (a := b))° ≫ bigUnion (a := b)) ≫ ∋ b
+          ⊑ Cat.id _ ≫ ∋ b := comp_mono_right (hUm b).2 _
+        _ = ∋ b := Cat.id_comp _
+    have s3 : (∋ b)° ≫ ((∋ (PowerAllegory.powerObj b))° ≫ bigUnion (a := b)) ⊑ (∋ b)° := by
+      simpa only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc] using recip_mono h3
+    calc (∋ a)° ≫ ((bigUnion (a := a))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := b)))
+        = ((∋ a)° ≫ (bigUnion (a := a))°) ≫ (powerRel (powerRel R) ≫ bigUnion (a := b)) := by
+          simp only [Cat.assoc]
+      _ = ((∋ a)° ≫ (∋ (PowerAllegory.powerObj a))°)
+            ≫ (powerRel (powerRel R) ≫ bigUnion (a := b)) := by rw [e1]
+      _ = (∋ a)° ≫ (((∋ (PowerAllegory.powerObj a))° ≫ powerRel (powerRel R))
+            ≫ bigUnion (a := b)) := by simp only [Cat.assoc]
+      _ ⊑ (∋ a)° ≫ ((powerRel R ≫ (∋ (PowerAllegory.powerObj b))°) ≫ bigUnion (a := b)) :=
+          comp_mono_left _ (comp_mono_right (powerRel_term1_cancel (powerRel R)) _)
+      _ = ((∋ a)° ≫ powerRel R)
+            ≫ ((∋ (PowerAllegory.powerObj b))° ≫ bigUnion (a := b)) := by simp only [Cat.assoc]
+      _ ⊑ (R ≫ (∋ b)°)
+            ≫ ((∋ (PowerAllegory.powerObj b))° ≫ bigUnion (a := b)) :=
+          comp_mono_right (powerRel_term1_cancel R) _
+      _ = R ≫ ((∋ b)° ≫ ((∋ (PowerAllegory.powerObj b))° ≫ bigUnion (a := b))) := by
+          simp only [Cat.assoc]
+      _ ⊑ R ≫ (∋ b)° := comp_mono_left _ s3
+  · -- TERM₂: `⋃∋ = ∋∋` on both ends, with `∋` lax natural at `P R` and at `R` in between.
+    refine (le_div_iff _ _ _).mpr ?_
+    calc ((bigUnion (a := a))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := b))) ≫ ∋ b
+        = (bigUnion (a := a))° ≫ (powerRel (powerRel R) ≫ (bigUnion (a := b) ≫ ∋ b)) := by
+          simp only [Cat.assoc]
+      _ = (bigUnion (a := a))°
+            ≫ ((powerRel (powerRel R) ≫ ∋ (PowerAllegory.powerObj b)) ≫ ∋ b) := by
+          rw [hUe b]; simp only [Cat.assoc]
+      _ ⊑ (bigUnion (a := a))° ≫ ((∋ (PowerAllegory.powerObj a) ≫ powerRel R) ≫ ∋ b) :=
+          comp_mono_left _ (comp_mono_right (powerRel_eps_lax (powerRel R)) _)
+      _ = (bigUnion (a := a))° ≫ (∋ (PowerAllegory.powerObj a) ≫ (powerRel R ≫ ∋ b)) := by
+          simp only [Cat.assoc]
+      _ ⊑ (bigUnion (a := a))° ≫ (∋ (PowerAllegory.powerObj a) ≫ (∋ a ≫ R)) :=
+          comp_mono_left _ (comp_mono_left _ (powerRel_eps_lax R))
+      _ = (bigUnion (a := a))° ≫ ((∋ (PowerAllegory.powerObj a) ≫ ∋ a) ≫ R) := by
+          simp only [Cat.assoc]
+      _ = ((bigUnion (a := a))° ≫ bigUnion (a := a)) ≫ (∋ a ≫ R) := by
+          rw [← hUe a]; simp only [Cat.assoc]
+      _ ⊑ Cat.id _ ≫ (∋ a ≫ R) := comp_mono_right (hUm a).2 _
+      _ = ∋ a ≫ R := Cat.id_comp _
+
+end PowerRelator
 
 end Freyd.Alg
