@@ -249,7 +249,7 @@ label (Typst `measure` inside `cpanel` at render time, so the generator never gu
 note's existing widths are not the standard — matching them is a non-goal.
 
 **(g) Rows that stay hand-drawn.**  The Hinze–Marsden column (`tw-hm`, `tpan`, `lpan`/`epan`) is the other
-generator's territory.  `cbpan`/§7.4 quotation figures and the `cut`-based complement pictures (phase 9)
+generator's territory.  §7.4 quotation figures and the `cut`-based complement pictures (phase 9)
 quote definitions rather than denote terms — no term input exists for them.  The §13.1 `unzip(F)` displays
 DO fit the functor (a 1-in 2-out box from its sig) but are outside 13.3.x and not first-slice.
 
