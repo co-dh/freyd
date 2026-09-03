@@ -5,41 +5,48 @@
 #set page(width: auto, height: auto, margin: 0.8cm, fill: white)
 #set text(11pt)
 
-#stack(dir: ltr, spacing: 18pt,
+// 13.5.3's five panels, regenerated.  The object edge now SLOPES: an arrow of the base category
+// rides it (`est(R)`), which is IntroString's condition for the sloped edge, and it is one straight
+// line across the whole picture — the run is the lanes' span, the book's 2:1 being too wide here.
+#stack(dir: ltr, spacing: 26pt,
 
-// 13.3.3b.1  α prefix list(p) — the `list` wire OPENED out of the object wire at `prefix`
-dpanel(4, 5.7, 2.85,
-  ((0.55, "top", 3, none, none), (1.7, 2, "bot", none, none)),
-  ((3, [`α`]), (2, [`prefix`]), (1, [`p`])),
-  ((0.55, [`F`]), (2.85, [`[A]`])),
-  ((1.7, [`list`]), (2.85, [`A`])),
-  names: true, s: 100%,
-  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]")),
+// ca1  paths est(R)
+dpanel(3, 8, 5.15,
+  ((0.55, 2, 1, [`E`], none), (1.7, 2, "bot", none, none), (0.55, "top", 2, none, none), (1.7, "top", 2, none, none)),
+  ((2, [`paths`], black, 0.55, 1.125), (1, [`est(R)`], black, 0.55)),
+  ((0.55, [`L`]), (1.7, [`N`]), (5.15, [`Nat`])),
+  ((1.7, [`L`]), (5.15, [`Nat`])),
+  opath: ((5.15, 3), (2.85, 1), (2.85, 0))),
 
-// 13.4.4a.2  ⦇S⦈%∋ E(choose) est(R°) — the `E` wire born and eaten by beads on the object wire
-dpanel(4, 5.7, 2.85,
-  ((0.55, "top", 3, none, none), (1.7, 3, 1, [`E`], none)),
-  ((3, [`⦇S⦈%∋`]), (2, [`choose`]), (1, [`est(R°)`])),
-  ((0.55, [`tree`]), (2.85, [`A`])),
-  ((2.85, [`[A]`]),),
-  s: 100%,
-  cert: (expect: "⦇S⦈%∋ E(choose) est(R°)", src: "tree(A)", tgt: "[A]")),
+// ca2  ⦇generate⦈setify union est(R)
+dpanel(5, 10.3, 7.45,
+  ((1.125, 2, 1, [`E`], none), (0.55, 3, 2, [`E`], none), (0.55, 4, 3, [`N`], none), (1.7, 4, 2, [`E`], none), (2.85, 4, "bot", none, none), (1.125, "top", 4, none, none), (2.275, "top", 4, none, none)),
+  ((4, [`⦇generate⦈`], black, 1.125, 1.7), (3, [`setify`], black, 0.55, 0.55), (2, [`union`], black, 0.55, 1.125), (1, [`est(R)`], black, 1.125)),
+  ((1.125, [`L`]), (2.275, [`N`]), (7.45, [`Nat`])),
+  ((2.85, [`L`]), (7.45, [`Nat`])),
+  opath: ((7.45, 5), (4, 1), (4, 0))),
 
-// 13.4.4a.6  S%∋ est((R×R)°) — the bar that says how far the bead's source reaches
-dpanel(3, 6.85, 4,
-  ((0.55, "top", 2, none, none), (1.7, "top", 2, none, none), (2.85, "top", "bot", none, none)),
-  ((2, [`S%∋`]), (1, [`est((R×R)°)`], black, 2.85)),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`Δ`]), (4, [`[A]`])),
-  ((2.85, [`Δ`]), (4, [`[A]`])),
-  s: 100%,
-  cert: (expect: "S%∋ est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]")),
+// ca3  ⦇generate⦈setify P(est(R))est(R)
+dpanel(5, 10.3, 7.45,
+  ((0.55, 3, 1, [`E`], none), (0.55, 4, 3, [`N`], none), (1.7, 4, 2, [`E`], none), (2.85, 4, "bot", none, none), (1.125, "top", 4, none, none), (2.275, "top", 4, none, none)),
+  ((4, [`⦇generate⦈`], black, 1.125, 1.7), (3, [`setify`], black, 0.55, 0.55), (2, [`est(R)`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((1.125, [`L`]), (2.275, [`N`]), (7.45, [`Nat`])),
+  ((2.85, [`L`]), (7.45, [`Nat`])),
+  opath: ((7.45, 5), (4, 2), (4, 0))),
 
-// 13.4.4a.8  π₂ list(choose%∋ est(R°)) concat — two beads at two heights under one `list` wire
-dpanel(5, 6.85, 4,
-  ((0.55, "top", 4, none, none), (1.7, "top", 1, none, none), (2.85, "top", 4, none, none)),
-  ((4, [`π₂`]), (3, [`choose%∋`]), (2, [`est(R°)`]), (1, [`concat`])),
-  ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`Δ`]), (4, [`[A]`])),
-  ((4, [`[A]`]),),
-  s: 100%,
-  cert: (expect: "π₂ list(choose%∋ est(R°)) concat", src: "A×[[A]×[A]]", tgt: "[A]")),
+// ca4  ⦇generate⦈N(est(R))setify est(R)
+dpanel(5, 10.3, 7.45,
+  ((0.55, 2, 1, [`E`], none), (0.55, 4, 2, [`N`], none), (1.7, 4, 3, [`E`], none), (2.85, 4, "bot", none, none), (1.125, "top", 4, none, none), (2.275, "top", 4, none, none)),
+  ((4, [`⦇generate⦈`], black, 1.125, 1.7), (3, [`est(R)`], black, 1.7), (2, [`setify`], black, 0.55, 0.55), (1, [`est(R)`], black, 0.55)),
+  ((1.125, [`L`]), (2.275, [`N`]), (7.45, [`Nat`])),
+  ((2.85, [`L`]), (7.45, [`Nat`])),
+  opath: ((7.45, 5), (4, 3), (4, 0))),
+
+// ca5  ⦇Q⦈setify est(R)
+dpanel(4, 8, 5.15,
+  ((0.55, 2, 1, [`E`], none), (0.55, 3, 2, [`N`], none), (1.7, 3, "bot", none, none), (0.55, "top", 3, none, none), (1.7, "top", 3, none, none)),
+  ((3, [`⦇Q⦈`], black, 0.55, 1.125), (2, [`setify`], black, 0.55, 0.55), (1, [`est(R)`], black, 0.55)),
+  ((0.55, [`L`]), (1.7, [`N`]), (5.15, [`Nat`])),
+  ((1.7, [`L`]), (5.15, [`Nat`])),
+  opath: ((5.15, 4), (2.85, 1), (2.85, 0))),
 )

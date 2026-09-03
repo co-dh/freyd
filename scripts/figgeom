@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""figgeom — the exact geometry of a figure in a PDF, as text.
+
+`pdftocairo -svg` keeps every wire as path data, so a diagram can be MEASURED instead of guessed at
+from a raster: `L 56.694 -28.346` is a 2:1 diagonal, `L 0 -33.73` an exact vertical, a radius-1.4
+closed circle a bead, `M … Z` a filled region.  It costs no image tokens and hits no image cap.
+
+    ./scripts/figgeom IntroString 74                 # printed page, offset from book-index.db
+    ./scripts/figgeom IntroString pdf:89 --cm        # pdf page, lengths in cm (1cm = 28.3465pt)
+    ./scripts/figgeom IntroString 74 --crop 200 70 300 140
+
+Coordinates are the page's own: points, origin top left, y DOWNWARD.  Labels come from
+`pdftotext -bbox`, because pdftocairo turns text into glyph outlines.
+"""
+import math, os, re, subprocess, sqlite3, sys, tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB = os.path.join(ROOT, "book-index.db")
+CM = 28.346456693  # pt
+
+
+# ---------------------------------------------------------------- svg path data
+def tokens(d):
+    for m in re.finditer(r"[MmLlCcHhVvZz]|-?\d*\.?\d+(?:[eE][-+]?\d+)?", d):
+        t = m.group(0)
+        yield t if t[0].isalpha() else float(t)
+
+
+def subpaths(d):
+    """[[(cmd, [(x,y), …]), …], …] — one list per subpath, absolute, curves keeping their controls."""
+    out, cur, pt, start, cmd = [], [], (0.0, 0.0), (0.0, 0.0), None
+    it, buf = list(tokens(d)), []
+    i = 0
+    while i < len(it):
+        if isinstance(it[i], str):
+            cmd = it[i]
+            i += 1
+            if cmd in "Zz":
+                if cur: cur.append(("Z", [start])); out.append(cur); cur, pt = [], start
+            continue
+        n = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6}[cmd.upper()]
+        buf = it[i:i + n]
+        i += n
+        rel = cmd.islower()
+        if cmd.upper() == "H": buf = [buf[0], 0.0 if rel else pt[1]]
+        if cmd.upper() == "V": buf = [0.0 if rel else pt[0], buf[0]]
+        ps = [(buf[k] + (pt[0] if rel else 0), buf[k + 1] + (pt[1] if rel else 0)) for k in range(0, len(buf), 2)]
+        if cmd.upper() == "M":
+            if cur: out.append(cur)
+            cur, start, pt = [], ps[0], ps[0]
+            cmd = "L" if cmd == "M" else "l"  # an M's extra pairs are implicit lineto
+            continue
+        cur.append((cmd.upper(), [pt] + ps))
+        pt = ps[-1]
+    if cur: out.append(cur)
+    return out
+
+
+def apply(m, p):
+    a, b, c, d, e, f = m
+    return (a * p[0] + c * p[1] + e, b * p[0] + d * p[1] + f)
+
+
+def matrix(s):
+    if not s: return (1, 0, 0, 1, 0, 0)
+    return tuple(float(x) for x in re.findall(r"-?\d*\.?\d+(?:[eE][-+]?\d+)?", s))
+
+
+# ---------------------------------------------------------------- classification
+def bbox(pts):
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def gradient(p, q, u, prec):
+    """A segment named the way the book's own picture names it."""
+    dx, dy = q[0] - p[0], q[1] - p[1]
+    if abs(dx) < 0.05 and abs(dy) < 0.05: return "degenerate"
+    if abs(dx) < 0.05: return f"vertical      len {abs(dy)/u:{prec}}"
+    if abs(dy) < 0.05: return f"HORIZONTAL (zero gradient)  len {abs(dx)/u:{prec}}"
+    r = abs(dx) / abs(dy)
+    arrow = ("↘" if dx > 0 else "↙") if dy > 0 else ("↗" if dx > 0 else "↖")
+    return f"{r:6.3f}:1 {arrow}   Δ ({dx/u:{prec}}, {dy/u:{prec}})"
+
+
+def describe(sub, u, prec):
+    """One line per segment of one subpath."""
+    lines = []
+    for cmd, ps in sub:
+        if cmd == "Z":
+            lines.append("        close")
+        elif cmd == "L":
+            lines.append(f"        ({ps[0][0]/u:{prec}},{ps[0][1]/u:{prec}}) → ({ps[1][0]/u:{prec}},{ps[1][1]/u:{prec}})"
+                         f"  L  {gradient(ps[0], ps[1], u, prec)}")
+        else:
+            p0, c1, c2, p1 = ps
+            h1 = (c1[0] - p0[0], c1[1] - p0[1])
+            h2 = (c2[0] - p1[0], c2[1] - p1[1])
+            sym = "symmetric" if abs(abs(h1[0]) - abs(h2[0])) < 0.3 and abs(abs(h1[1]) - abs(h2[1])) < 0.3 else "skew"
+            lines.append(f"        ({p0[0]/u:{prec}},{p0[1]/u:{prec}}) → ({p1[0]/u:{prec}},{p1[1]/u:{prec}})"
+                         f"  C  {sym}  handles ({h1[0]/u:{prec}},{h1[1]/u:{prec}}) ({h2[0]/u:{prec}},{h2[1]/u:{prec}})")
+    return lines
+
+
+def hexcol(s):
+    v = [float(x) for x in re.findall(r"([\d.]+)%", s or "")]
+    return "#" + "".join(f"{round(c*255/100):02x}" for c in v) if len(v) == 3 else (s or "?")
+
+
+# ---------------------------------------------------------------- the page
+def elements(svg):
+    """(kind, colour, subpaths-in-page-coords) for every drawn path, text excluded."""
+    body = svg.split("</defs>", 1)[1] if "</defs>" in svg else svg
+    for m in re.finditer(r"<path\b([^>]*)/>", body):
+        a = m.group(1)
+        d = re.search(r'\bd="([^"]*)"', a)
+        if not d: continue
+        tm = re.search(r'transform="matrix\(([^)]*)\)"', a)
+        mt = matrix(tm.group(1) if tm else "")
+        fill = (re.search(r'\bfill="([^"]*)"', a) or [None, "none"])[1]
+        stroke = (re.search(r'\bstroke="([^"]*)"', a) or [None, "none"])[1]
+        sub = [[(c, [apply(mt, p) for p in ps]) for c, ps in s] for s in subpaths(d.group(1))]
+        pts = [p for s in sub for _, ps in s for p in ps]
+        if not pts: continue
+        x0, y0, x1, y1 = bbox(pts)
+        w, h = x1 - x0, y1 - y0
+        closed = any(c == "Z" for s in sub for c, _ in s)
+        if fill != "none" and closed and w < 6 and h < 6:
+            kind = "bead"
+        elif fill == "none":
+            kind = "wire"
+        elif closed and w * h > 25:
+            kind = "region"
+        else:
+            kind = "glyph" if w < 12 and h < 12 else "fill"
+        yield kind, hexcol(fill if fill != "none" else stroke), sub, (x0, y0, x1, y1)
+
+
+def labels(pdf, page):
+    out = subprocess.run(["pdftotext", "-bbox", "-f", str(page), "-l", str(page), pdf, "-"],
+                         capture_output=True, text=True)
+    for m in re.finditer(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)</word>',
+                         out.stdout):
+        x0, y0, x1, y1, t = float(m[1]), float(m[2]), float(m[3]), float(m[4]), m[5]
+        yield t, ((x0 + x1) / 2, (y0 + y1) / 2), (x0, y0, x1, y1)
+
+
+# ---------------------------------------------------------------- main
+def resolve(book, page):
+    """(pdf path, pdf page, printed page or None)."""
+    if book.endswith(".pdf"):
+        p = book if os.path.exists(book) else os.path.join(ROOT, book)
+        return p, int(page[4:] if page.startswith("pdf:") else page), None
+    if not os.path.exists(DB): sys.exit(f"no {DB} — run `make books`")
+    r = sqlite3.connect(f"file:{DB}?mode=ro", uri=True).execute(
+        "select file,offset from book where name=?", (book,)).fetchone()
+    if not r: sys.exit(f"no book '{book}' — ./scripts/book ls")
+    f, off = r
+    if page.startswith("pdf:"): return os.path.join(ROOT, f), int(page[4:]), None
+    if off is None: sys.exit(f"{book}: offset undetected — address by pdf page, e.g. pdf:{page}")
+    return os.path.join(ROOT, f), int(page) + off, int(page)
+
+
+def main(argv):
+    if len(argv) < 2: sys.exit(__doc__)
+    book, page, rest = argv[0], argv[1], argv[2:]
+    crop = None
+    if "--crop" in rest:
+        i = rest.index("--crop")
+        crop = tuple(float(x) for x in rest[i + 1:i + 5])
+    u, prec = (CM, "7.3f") if "--cm" in rest else (1.0, "8.2f")
+    show = set(rest) & {"wire", "bead", "region", "fill", "glyph", "label"}
+    pdf, pno, printed = resolve(book, page)
+
+    with tempfile.TemporaryDirectory() as td:
+        svgf = os.path.join(td, "p.svg")
+        subprocess.run(["pdftocairo", "-svg", "-f", str(pno), "-l", str(pno), pdf, svgf], check=True)
+        svg = open(svgf).read()
+
+    vb = re.search(r'viewBox="([^"]*)"', svg)
+    unit = "cm" if u != 1.0 else "pt"
+    print(f"== {os.path.basename(pdf)} {'p.'+str(printed)+' ' if printed else ''}(pdf {pno}) "
+          f"viewBox {vb.group(1) if vb else '?'} — {unit}, y downward ==")
+
+    inside = lambda b: crop is None or (b[0] <= crop[2] and b[2] >= crop[0] and b[1] <= crop[3] and b[3] >= crop[1])
+    for kind, col, sub, bb in elements(svg):
+        if not inside(bb) or (show and kind not in show): continue
+        if kind == "bead":
+            cx, cy = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
+            print(f"bead    ({cx/u:{prec}},{cy/u:{prec}})  r {(bb[2]-bb[0])/2/u:{prec}}  {col}")
+            continue
+        if kind == "region":
+            v = [s[0][1][0] for s in sub] + [ps[1] for s in sub for c, ps in s if c == "L"]
+            print(f"region  {col}  " + " ".join(f"({p[0]/u:{prec}},{p[1]/u:{prec}})" for p in v))
+            continue
+        print(f"{kind:7} {col}  bbox ({bb[0]/u:{prec}},{bb[1]/u:{prec}})-({bb[2]/u:{prec}},{bb[3]/u:{prec}})")
+        for s in sub:
+            print("\n".join(describe(s, u, prec)))
+    if not show or "label" in show:
+        for t, c, bb in labels(pdf, pno):
+            if inside(bb): print(f"label   {t!r:12} at ({c[0]/u:{prec}},{c[1]/u:{prec}})")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

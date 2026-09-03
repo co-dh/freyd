@@ -135,6 +135,32 @@ def letters(e):
     return letters(e[1]) if e[0] == 'conv' else set()
 
 
+def varsof(e):
+    """The signature's free variables — the letters that make it polymorphic.  `letters` gives the
+    functors and stops at the bottom atom, which is exactly the one that says `for any object`."""
+    if isinstance(e, (list, tuple)):
+        if e and e[0] == 'atom':
+            return {e[1]} & VARS
+        return set().union(set(), *(varsof(x) for x in e if isinstance(x, (list, tuple))))
+    return set()
+
+
+def natural(core, sigs):
+    """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
+    Only when its signature is polymorphic AND it names no object.  An APPLICATION names one:
+    `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given is one relation at one object, and
+    naturality would need `E(f) est(R_B) = est(R_A) f` for every `f`, which fails — `f` need not be
+    monotone.  A schematic one-letter name is endo on the object wire by construction."""
+    if core[0] == 'conv':
+        return natural(core[1], sigs)
+    if core[0] == 'app':
+        return False
+    if len(spell(core).removesuffix('%∋')) == 1:
+        return False
+    r = row(core, sigs, 0)
+    return r is not None and bool(varsof(r[0]) | varsof(r[1]))
+
+
 # ---------------------------------------------------------------- objects as wire stacks
 # The functors drawn as a wire of their own instead of folded into the object wire's label.  `list`
 # splits by DEFAULT: one bead name must have one signature across a display, and a `[A]` folded in
@@ -242,6 +268,8 @@ def expand(e, rel):
 # beads may both say `x`.  A variable stands for a whole TAIL of the cut: wires, and the object
 # under them.  Everything else in a signature is a constant — a wire letter or a named object.
 VARS, TOP = sl.VARS, -1
+# How far a block of legs may slide off its dot to clear a wire beside it: half steps, out from zero.
+SLIDE = [0.0] + [0.5 * DX * (i // 2 + 1) * (-1 if i % 2 else 1) for i in range(12)]
 
 
 def isvar(e):
@@ -497,8 +525,9 @@ class Lane:
 
 
 class Row:
-    def __init__(self, label, arms, legs, reach, obj):
+    def __init__(self, label, arms, legs, reach, obj, nat=False):
         self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
+        self.nat = nat                     # a natural transformation: its dot may not touch the wire
         self.obj = obj                     # what the object wire carries BELOW this row
 
 
@@ -589,7 +618,7 @@ def elaborate(formula, src, tgt, table):
         at = made.index(arms[0]) if arms else made.index(keep[0]) if keep else len(made)
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
-        rows.append(Row(spell(tidy(core)), arms, legs, reach, obj))
+        rows.append(Row(spell(tidy(core)), arms, legs, reach, obj, natural(core, sigs)))
     k, opened, obj = eat(want, lanes, obj, sub, f"the target {tgt}")
     if k != len(lanes):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
@@ -617,19 +646,109 @@ def elaborate(formula, src, tgt, table):
 
 
 # ---------------------------------------------------------------- the panel a term denotes
+def isunit(r):
+    """`layout`'s own test, stated once: `𝟙%∋` heads the lane it opens, where `S° : B⟶F(B)` is a
+    relation with a bead of its own even though it too eats nothing."""
+    return not r.arms and r.legs and r.label == f"{sl.UNIT}%∋"
+
+
+def columns(rows, made):
+    """A column per lane.  `made` is already column order; this says how far apart the columns sit.
+    The top-born lanes take the grid, and a bead's legs are a contiguous `DX` block CENTRED on the
+    arms it replaces — which is what makes a merge's two arms symmetric and drops its survivor
+    vertically from between them (IntroString p. 74) — so a 1-in-1-out bead keeps its own column and
+    a 2-in-1-out drops to a half step.  Columns come out relative and are slid right at the end."""
+    for l in made:
+        l.x = None
+    for k, l in enumerate(l for l in made if l.born == TOP):
+        l.x = k * DX
+    for i, r in enumerate(rows):
+        if not r.legs or isunit(r):    # a unit row is placed in the pass below
+            continue
+        live = [l for l in made if l.x is not None and l.born < i < l.dies]
+        # Not every arm is placed yet — one opened at the bead that eats it has no column until the
+        # pass below — and a row whose arms are all still pending falls back to the unit's rule.
+        xs = [a.x for a in r.arms if a.x is not None]
+        # A bead with no arms of its own opens its wire AT the object wire, so that wire is born
+        # east of every lane already live — born west, it would cross each of them on the way out.
+        # The one that goes west instead is `𝟙%∋`, a 2-cell between functors, placed in the pass
+        # below because it touches no object wire at all.
+        c = ((min(xs) + max(xs)) / 2 if xs
+             else max((l.x for l in live), default=X0 - DX) + DX)
+        # The DOT stays at the arms' centre; the block of legs slides off it by half steps until it
+        # fits BETWEEN the arms' own neighbours — the legs replace the arms in the cut, so a lane
+        # west of the arms must stay west of the legs and one east must stay east, or the ink claims
+        # an exchange the formula does not (`inversions`).  Clearing columns alone is not enough.
+        oth = [o for o in live if o not in r.arms]
+        lo = max([o.x for o in oth if o.x < min(xs, default=c)], default=-1e9)
+        hi = min([o.x for o in oth if o.x > max(xs, default=c)], default=1e9)
+        for d in SLIDE:
+            got = [c + d + (j - (len(r.legs) - 1) / 2) * DX for j in range(len(r.legs))]
+            if lo + 1e-6 < got[0] and got[-1] < hi - 1e-6:
+                break
+        for g, x in zip(r.legs, got):
+            g.x = x
+    # A unit opens a wire out of nothing, and that wire goes LEFT of every lane it is live beside —
+    # otherwise it falls inside some bead's reach, and a reach is drawn by BENDING each spanned wire
+    # onto the dot, which a unit lane (born at its own column, no bead) has no shape for.  Shortest
+    # span first, so a unit outliving another ends up further left and the two never trade columns.
+    for r in sorted((r for r in rows if isunit(r)),
+                    key=lambda r: max(g.dies for g in r.legs) - min(g.born for g in r.legs)):
+        b0, d0 = min(g.born for g in r.legs), max(g.dies for g in r.legs)
+        ov = [o.x for o in made if o.x is not None and o.born < d0 and b0 < o.dies]
+        base = min(ov, default=DX) - DX
+        for j, g in enumerate(r.legs):
+            g.x = base - (len(r.legs) - 1 - j) * DX
+    # A lane OPENED at the bead that eats it is born above and has no row of legs to space it; it
+    # takes the free column beside the neighbour `made` already puts it next to.
+    for i, l in enumerate(made):
+        if l.x is None:
+            nxt = next((q.x for q in made[i + 1:] if q.x is not None), None)
+            prv = next((q.x for q in reversed(made[:i]) if q.x is not None), None)
+            l.x = nxt - DX if nxt is not None else (prv + DX if prv is not None else 0.0)
+    # A lane's own NAME is written west of it, and `scanline` reads a strand through that box as a
+    # collision.  One `DX` holds two characters; a wider name needs the gap widened, so every lane
+    # west of it moves west by the deficit — the relative order, and the dots computed from it, are
+    # untouched.  The name may not be drawn on this very lane (`dnamed` picks one of a chain), so the
+    # room is reserved on all of them, which is the same rule stated without the chain.
+    for _ in range(len(made)):
+        for l in made:
+            if not l.label or len(l.label) < 2:
+                continue
+            w = sl.LDX + sl.LCW * len(l.label)
+            west = [o for o in made if o.x < l.x - 1e-6 and o.born < l.dies and l.born < o.dies]
+            if not west or l.x - max(o.x for o in west) >= w - 1e-6:
+                continue
+            d = w - (l.x - max(o.x for o in west))
+            for o in made:
+                if o.x < l.x - 1e-6:
+                    o.x -= d
+            break
+        else:
+            break
+    off = X0 - min(l.x for l in made) if made else 0.0
+    for l in made:
+        l.x = round(l.x + off, 3)
+    live = {}
+    for l in made:
+        for o in live.get(l.x, ()):
+            if o.born < l.dies and l.born < o.dies:
+                raise Unhandled(f"the {l.label} and {o.label} wires are both live at x={l.x:g}")
+        live.setdefault(l.x, []).append(l)
+
+
 def layout(rows, made, otop, obot, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
     ys = [(n - i) * DY for i in range(n)]
-    for k, l in enumerate(made):
-        l.x = round(X0 + k * DX, 2)
-    xo = round(X0 + len(made) * DX, 2)
+    columns(rows, made)
+    xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}
     for i, r in enumerate(rows):
         # `𝟙%∋` is the unit `Id⟹E`, a 2-cell between FUNCTORS with no object wire to sit on, so
         # `dpanel` heads the lane it opens with it; `S° : B⟶F(B)` is a relation and stays a bead.
-        if not r.arms and r.legs and r.label == f"{sl.UNIT}%∋":
+        if isunit(r):
             if len(r.legs) != 1:
                 raise Unhandled(f"the unit {r.label} opens {len(r.legs)} wires; a lane heads one")
             unit[r.legs[0]] = r.label
@@ -638,7 +757,14 @@ def layout(rows, made, otop, obot, cert):
         # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
         # crossed wires alike, because a bead is a POINT and there is no such thing as a straight bar
         reach = r.reach.x if r.reach is not None else None
-        beads.append([ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
+        # Where the DOT sits.  A bead that leaves the object wire's label alone names no object, so
+        # it is a transformation between FUNCTORS and may not sit on that wire (IntroString p. 36);
+        # it goes at the centre of the arms it eats, which is what makes a merge's two arms
+        # symmetric and drops its survivor vertically from their midpoint (p. 74).
+        xs = [l.x for l in (r.arms or r.legs)]
+        dot = round((min(xs) + max(xs)) / 2, 4) if xs and r.nat else None
+        beads.append([ys[i], r.label, "#000000", reach, dot] if dot is not None
+                     else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
     hh = (n + 1) * DY
 
     def xat(y, dying=True):
@@ -659,10 +785,27 @@ def layout(rows, made, otop, obot, cert):
                 c.append(l.x + DX)
         return round(max(c), 2)
 
-    # Straight by default — the surviving wire runs at one column and every arm bends into it, the
-    # Hinze–Marsden convention; `slope: "left"` only where a straight wire makes the panel unreadable.
+    # The object edge SLOPES exactly when an arrow of the base category travels along it, and then it
+    # is one straight line at 2 across : 1 down — IntroString p. 74 draws every such figure that way
+    # (`L 56.694 -28.346`, measured), and p. 73 keeps the edge vertical in the figures where no arrow
+    # rides it.  Sloping it right of every lane needs no clearance test: the line only moves further
+    # right going up, and it starts one gap right of the rightmost lane that reaches the bottom.
     op = None
-    if cert.get("slope") == "left":
+    if any(len(b) < 5 or b[4] is None for b in beads):
+        # The edge only moves right going UP, so clearing every lane at the bottom clears it
+        # everywhere: `xb` is the straight wire's old column, and the lean is added above it.
+        xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
+        # The book's gradient is 2 across : 1 down, which a composite five rows tall cannot hold —
+        # ten columns of run would be wider than the page.  Take the steepest line that fits: the
+        # run is the lanes' own span, so the edge crosses the whole picture and is never a stair.
+        # It leans down to the HIGHEST bead riding it and drops vertically from there — IntroString
+        # p. 74's shape, and the only one that keeps it clear of the wires that dip onto those beads:
+        # a dip leaves its dot VERTICALLY, so an edge still moving left below the dot cuts it.
+        yl = max(b[0] for b in beads if len(b) < 5 or b[4] is None)
+        run = min(2 * (hh - yl), max(DX, xb - min([l.x for l in made], default=xb)))
+        op, xo = [[round(xb + run, 2), hh], [xb, yl]], round(xb + run, 2)
+        if yl > 1e-9: op.append([xb, 0.0])
+    elif cert.get("slope") == "left":
         # The wire sweeps top-right to bottom-left, absorbing the innermost arm at its own column
         # (IntroString p.79, 3.8b); a death that would move it ONE gap it sits out, the arm bending in.
         op, x, nat = [], xat(hh), xat(hh)
@@ -745,11 +888,13 @@ def quoted(v):
 
 def emit(r):
     c = r["cert"]
-    beads = [b[:2] + [None, b[3]] if len(b) > 3 else b for b in r["beads"]]
+    beads = [b[:2] + [None, b[3]] + b[4:] if len(b) > 3 else b for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
             f'  {lst(r["lanes"])},\n'
             + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
-                                + (", black, " + num(b[3]) if len(b) > 3 else "") + ")"
+                                + (", black, " + (num(b[3]) if b[3] is not None else "none")
+                                   if len(b) > 3 else "")
+                                + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "") + ")"
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")

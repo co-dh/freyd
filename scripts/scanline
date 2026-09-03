@@ -401,11 +401,12 @@ def seg(a, b, n=16):
             for t, u in ((j / n, 1 - j / n) for j in range(n + 1))]
 
 
-def poly(pts):
-    """`hm-path` sampled: the polyline one strand's ink follows."""
+def poly(pts, straight=False):
+    """`hm-path` sampled: the polyline one strand's ink follows.  `straight` is `dpan`'s `k: 0` on
+    the object edge — one gradient end to end, the book's single `L`, not `hm-seg`'s bowed cubic."""
     out = []
     for a, b in zip(pts, pts[1:]):
-        s = seg(a, b)
+        s = [a, b] if straight else seg(a, b)
         out += s[1:] if out else s
     return out
 
@@ -461,7 +462,7 @@ class Panel:
         # A widening NAMES the object over its range, so where it opens the bottom port's name the
         # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
         sw = [s[0] for s in self.splits if s[3] == self.oblabel]
-        os = [b.y for b in self.beads if abs(b.x - self.xo) < EPS]
+        os = [b.y for b in self.beads if abs(self.col(b) - self.xo) < EPS]
         self.oseam = sorted((y, l) for (y, l) in r.get('obj') or
                             [(max(sw) if sw else (min(os) if os else 0.0), self.oblabel)])
 
@@ -471,6 +472,12 @@ class Panel:
     def olab(self, z):
         """What the object wire carries at a height: the lowest seam still above it."""
         return next((l for (y, l) in self.oseam if z < y - EPS), self.olabel)
+
+    def col(self, b):
+        """The COLUMN a bead is keyed on: the object column for one riding that wire, wherever the
+        slope draws it, and its own x for every other.  `xat` says where the ink is, `col` what the
+        cut calls it, and the two part company the moment the object edge leans."""
+        return self.xo if abs(b.x - self.xat(b.y)) < EPS else b.x
 
     def xat(self, y):
         """The object wire's x at a height — `xo` unless a sloped `opath` carries it."""
@@ -530,7 +537,12 @@ def dippts(x, X, h, y0, y1, ybs, gk):
 
 
 def a_dpanel(p, r):
-    gk = dknees(r, p.xat, p.h)
+    # A bead's 5th element is where its DOT sits: a transformation between FUNCTORS names no object,
+    # so it never touches the object wire (IntroString p. 36).  `dx` is `dpanel`'s own `dx` — every
+    # arm, leg and dip aims at the dot actually drawn, and only a bead without one aims at `xat`.
+    dotx = {float(b[0]): b[4] for b in r['beads'] if len(b) > 4 and b[4] is not None}
+    dx = lambda y: dotx.get(float(y), p.xat(y))
+    gk = dknees(r, dx, p.h)
     # The note EMITS the `gk` it drew with, and the two implementations of one rule are the whole
     # risk here: a sweep with no crossings proves the model has none, never the ink.
     if 'knees' in r:
@@ -542,25 +554,30 @@ def a_dpanel(p, r):
                                 f" the sweep — `dknees` states one rule twice, and they differ")
     for i, (x, y0, y1, nm, un) in enumerate(r['lanes']):
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-        ds = dipys(r, p.xat, x, yt, yb)
+        ds = dipys(r, dx, x, yt, yb)
         if ds:                             # `ddip`'s points — the arms the crossed wires make
-            pts = dippts(x, p.xat, p.h, y0, y1, ds, gk)
+            pts = dippts(x, dx, p.h, y0, y1, ds, gk)
         else:                              # `dlane`'s own points
             pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
-                                                  [(p.xat(y0), y0), (x, y0 - gk[('b', float(y0))])])
-            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (p.xat(y1), y1)]
+                                                  [(dx(y0), y0), (x, y0 - gk[('b', float(y0))])])
+            pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + gk[('d', float(y1))]), (dx(y1), y1)]
         lab = nm or p.at(p.top if y0 == 'top' else p.bot, x)      # `dnm`: its own name, else a port's
         p.wires.append(Wire(x, yt, yb, lab, un, pts, ds))
         # WHICH lanes write that name is the note's `dnamed`, and the panel emits its answer: the
         # rule is stated once and the boxes swept here are the boxes drawn.  A rec `scripts/diagram`
         # builds is not ink yet, so it names nothing.
         if i in r.get('named', ()):
-            p.labels.append((lab, x, y0, lbox(x, y0, lab)))
+            # `dpanel` writes it on the birth row, or at the end of the knee where a leg of the
+            # same bead is born west of this one and sweeps that row.
+            swept = any(o[1] == y0 and o[0] < x for o in r['lanes'])
+            yn = (y0 - gk[('b', float(y0))] - LLH / 2
+                  if swept and un is None and y0 != 'top' else y0)
+            p.labels.append((lab, x, yn, lbox(x, yn, lab)))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
     for b in r['beads']:
-        p.beads.append(Bead(b[0], p.xo, b[1], b[3] if len(b) > 3 else None,
-                            ink=(p.xat(b[0]), b[0])))
+        p.beads.append(Bead(b[0], dx(b[0]), b[1], b[3] if len(b) > 3 else None,
+                            ink=(dx(b[0]), b[0])))
 
 
 def a_tpan(p, r):
@@ -630,15 +647,17 @@ def owner(p, w, y):
 def touched(p, b, above):
     """The wires the bead's dot reaches: its own lane, what it consumes and creates, and everything
     its reach spans — a bead reaches past a wire exactly where it is not `F(−)` of that wire."""
-    xs = {b.x}
+    # A dot ON the object wire is that wire's own point and the cut must account for it; a dot at the
+    # midpoint of two arms sits on no column at all, and is no x the cut has to answer for.
+    xs = {p.xo} if abs(p.col(b) - p.xo) < EPS else set()
     for w in p.wires:
         if (abs(w.ybot - b.y) < EPS or abs(w.ytop - b.y) < EPS) and owner(p, w, b.y) is b:
             xs.add(w.x)
     if b.reach is not None:
-        xs |= {x for (x, _) in above if b.reach - EPS <= x <= p.xo + EPS}
+        xs |= {x for (x, _) in above if b.reach - EPS <= x <= b.x + EPS}
     # A lane DRAWN down to the dot is on the boundary as surely as one the reach spans: a lane's
     # `dips` and `dpanel`'s reach are the same declaration made two ways.
-    if abs(b.x - p.xo) < EPS:
+    if abs(p.col(b) - p.xo) < EPS:
         xs |= {w.x for w in p.wires if any(abs(d - b.y) < EPS for d in w.dips)}
     return xs
 
@@ -678,14 +697,20 @@ def sweep(p):
         i = next(k for k in range(len(ys)) if abs(ys[k] - y) < EPS)
         above, below = cuts[i], cuts[i + 1]
         for b in [b for b in p.beads if abs(b.y - y) < EPS]:
-            # A bead ON a functor wire is a natural transformation, which the note never draws: `p×𝟙`
-            # is a bead on the object wire eating and remaking the `A×−` lane, never `p` on it (2026-09-01).
-            if not b.born and abs(b.x - p.xo) >= EPS:
-                on = next((w.label for w in p.wires if abs(w.x - b.x) < EPS
-                           and w.ybot - EPS <= y <= w.ytop + EPS), "no")
-                bad.append(f"{p.id}: bead {b.label} sits on the {on} wire: a bead on a functor"
-                           f" wire is a natural transformation, which the note never draws")
-            if b.born and b.label.startswith(UNIT) and abs(b.x - p.xo) < EPS:
+            # WHERE the dot sits.  A transformation between FUNCTORS names no object, so it may not
+            # touch the object wire (IntroString p. 36); it sits at the midpoint of the arms it eats
+            # — that is what makes a merge's two arms symmetric and drops its survivor vertically
+            # from between them (p. 74).  A bead that does name the object stays on that wire.
+            if not b.born:
+                arms = [w.x for w in p.wires if abs(w.ybot - y) < EPS and owner(p, w, y) is b]
+                legs = [w.x for w in p.wires if abs(w.ytop - y) < EPS and owner(p, w, y) is b]
+                mid = arms or legs
+                want = (min(mid) + max(mid)) / 2 if mid else p.xat(y)
+                if abs(b.x - want) > EPS and abs(p.col(b) - p.xo) > EPS:
+                    bad.append(f"{p.id}: bead {b.label} has its dot at x={b.x:g}, neither the"
+                               f" midpoint x={want:g} of the wires it joins nor the object wire"
+                               f" at x={p.xat(y):g}")
+            if b.born and b.label.startswith(UNIT) and abs(p.col(b) - p.xo) < EPS:
                 bad.append(f"{p.id}: the unit {b.label} sits on the object wire at x={p.xo} —"
                            f" a unit's source is Id, but the cut above it is"
                            f" ({', '.join(l for _, l in above)}); give it a lane of its own")
@@ -732,7 +757,8 @@ def pieces(p):
         return k
 
     for b in p.beads:
-        ws = arms(p, b) + [w for w in p.wires if abs(w.x - b.x) < EPS and w.ybot < b.y < w.ytop]
+        ws = arms(p, b) + [w for w in p.wires
+              if abs(w.x - p.col(b)) < EPS and w.ybot < b.y < w.ytop]
         for w in ws[1:]:
             up[find(id(w))] = find(id(ws[0]))
     comps = {}
@@ -762,7 +788,11 @@ def connect(p):
         if i is None:
             continue
         want = touched(p, b, p.cuts[i])
-        got = {b.x} | {w.x for w in arms(p, b)} | ({p.xo} if abs(b.x - p.xo) < EPS else set())
+        # A bead ON the object wire is DRAWN at `xat(y)` but keyed on the object column, the one the
+        # cut names it by; every other bead is its own x.
+        # `touched`'s own rule, from the other side: a dot at the arms' midpoint sits on no column
+        # and is no x the cut answers for; only a dot on the object wire brings a column of its own.
+        got = ({p.xo} if abs(p.col(b) - p.xo) < EPS else set()) | {w.x for w in arms(p, b)}
         for x in sorted(want - got, reverse=True):
             bad.append(f"{p.id}: the bead {b.label} at y={b.y:g} covers x={x:g} with no ink at all"
                        f" — an arm is a wire bent into the dot (IntroString p. 40)")
@@ -818,7 +848,7 @@ def crossings(p):
     """Every wire–wire meeting in the ink, in the curves the note's own helpers draw.  A junction is
     not a crossing: a hit at a bead, or at either strand's own end, is where the two are DRAWN to
     meet.  A bead's reach is not ink of its own — it is the arms the crossed wires make."""
-    ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts)) for w in p.wires if w.pts] \
+    ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts, abs(w.x - p.xo) < EPS)) for w in p.wires if w.pts] \
         + [(f"{l or '?'}@{q[1][0]:g}", poly(q)) for (l, q) in p.strands]
     js = [b.ink for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
     hits = []
@@ -1049,7 +1079,7 @@ def crosscheck(ps):
             made = tuple(sorted(w.label for w in p.wires if abs(w.ytop - b.y) < EPS
                                 and owner(p, w, b.y) is b))
             key = (p.id.rsplit('.', 1)[0], b.label)
-            sigs.setdefault(key, {})[(cons, made, abs(b.x - p.xo) < EPS)] = p.id
+            sigs.setdefault(key, {})[(cons, made, abs(p.col(b) - p.xo) < EPS)] = p.id
     for (disp, label), seen in sigs.items():
         if len(seen) > 1:
             bad.append(f"{disp}: the bead {label} has {len(seen)} signatures — "
