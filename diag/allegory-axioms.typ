@@ -6862,25 +6862,25 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
-  ((1.7, [`F(A,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
-  ((0.55, [`E`]), (1.7, [`F(A,−)`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(N)))", tgt: "E(F(A,L(N)))")),
+  ((1.7, [`F(N,−)`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
+  ((0.55, [`E`]), (1.7, [`F(N,−)`]), (4, [`L`]), (5.15, [`N`])),
+  cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(N,E(L(N)))", tgt: "E(F(N,L(N)))")),
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
-  ((1.7, [`A×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
-  ((0.55, [`E`]), (1.7, [`A×−`]), (4, [`L`]), (5.15, [`N`])),
-  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(N))", tgt: "E(A×L(N))")),
+  ((1.7, [`N×−`]), (2.85, [`E`]), (4, [`L`]), (5.15, [`N`])),
+  ((0.55, [`E`]), (1.7, [`N×−`]), (4, [`L`]), (5.15, [`N`])),
+  cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "N×E(L(N))", tgt: "E(N×L(N))")),
   dpanel(2, 4.55, 1.7,
   ((0.55, 0.5, "bot", none, frc([`𝟙`])),),
   (),
-  ((1.7, [`A`]),),
-  ((0.55, [`E`]), (1.7, [`A`])),
-  cert: (expect: "𝟙%∋", src: "A", tgt: "E(A)")),
+  ((1.7, [`N`]),),
+  ((0.55, [`E`]), (1.7, [`N`])),
+  cert: (expect: "𝟙%∋", src: "N", tgt: "E(N)")),
 
-  src[`cp` on all of `F(A,E B)`],
-  src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
-  src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
+  src[`cp` on all of `F(N,E(L N))`],
+  src[the `N×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
+  src[the `N` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
 
 #disp[#table(
@@ -6889,22 +6889,19 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*type*], [*note*]),
 
-  [`F(A,−)=A+A×−`],
+  [`F(N,−)=N+N×−`],
   [one wire carries the whole functor, both summands with it; the `∋` under it is `F(𝟙,∋)`],
 
-  [`B=L N`],
-  [one path: the non-empty list of squares it crosses, `N≜Nat`],
-
   [`∋:E(L N)⟶L N`],
-  [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them],
+  [the `∋` inside `F(𝟙,∋)`: a set of paths, one of them — `L N` is one path, `N≜Nat` one square],
 
   [`F(𝟙,∋)=𝟙+𝟙×∋`],
-  [`:A+A×E B⟶A+A×B`, the relator acting on each summand],
+  [`:N+N×E(L N)⟶N+N×L N`, the relator acting on each summand],
 
-  [`∋:E(A+A×B)⟶A+A×B`],
+  [`∋:E(N+N×L N)⟶N+N×L N`],
   [the `∋` under the bar: a set of cells, one of them — a different `∋`],
 
-  [`cp:A+A×E B⟶E(A+A×B)`],
+  [`cp:N+N×E(L N)⟶E(N+N×L N)`],
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
   [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
@@ -6912,10 +6909,10 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 )]<cp-types>
 
 #disp[#align(center)[```
-w      = (1,{[5],[6],[8]})            : A×E(L N)   the right summand, A×E B
-𝟙×∋   : A×E(L N) ⟶ A×L N                           𝟙 keeps 1, ∋ picks one path
-         w ↦ (1,[5]), (1,[6]), (1,[8]) : A×L N      one output per path in w
-cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×B)  the three of them, collected
+w      = (1,{[5],[6],[8]})            : N×E(L N)      the right summand
+𝟙×∋   : N×E(L N) ⟶ N×L N                              𝟙 keeps the square 1, ∋ picks one path
+         w ↦ (1,[5]), (1,[6]), (1,[8]) : N×L N         one output per path in w
+cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(N+N×L N)    the three of them, collected
 ```]]<cp-step>
 
 === `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
