@@ -5260,9 +5260,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ), src: ("F[Int]", ), tgt: ("Int", )),
   cert: (expect: "[zero,⊸ zero ∪ (𝟙×sum) plus]", src: "F([Int])", tgt: "Int", A: "Int"))],
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
-  [#mpan(MC, 5.2, mtop3, ((MC, [`A`]),),
-    joins: ((MB, MC, 1.90, 0.60), (MA, MC, 0.80, 1.40)),
-    beads: ((MC, 1.90, [`sum`]), (MC, 0.80, [`plus`]))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
+  [#dpanel(3, 5.7, 2.85,
+  ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none)),
+  ((2, [`sum`], black, 1.7), (1, [`plus`], black, 0.55)),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`A`])),
+  ((2.85, [`A`]),),
+  cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×x⟶x"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5632,12 +5635,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`⦇k⦈ π₂ est(≥)` \
      #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
       ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
-  // ONE bead: the fold kills `list` and `π₂` opens the `E`, and the pair they hand across is a
-  // product, which is not a wire.
-  [#mpan(MD, 7.6, mtopL, mbotL, h: 4.8,
-    hands: ((MD, 3.00, MA, MD, 0.45, [`E`], none),),
-    joins: ((MC, MD, 3.00, 0.90),),
-    beads: ((MD, 3.00, [`⦇k⦈π₂`]), (MD, 0.45, [`est(≥)`])))],
+  [#dpanel(4, 6.85, 4,
+  ((0.55, 3, 2, [`A×−`], none), (1.7, 3, 1, [`E`], none), (2.85, "top", 3, none, none)),
+  ((3, [`⦇k⦈`], black, 2.85), (2, [`π₂`], black, 0.55), (1, [`est(≥)`], black, 1.7)),
+  ((2.85, [`list`]), (4, [`A`])),
+  ((4, [`A`]),),
+  cert: (expect: "⦇k⦈π₂ est(≥)", src: "[A]", tgt: "A", sigs: ("⦇k⦈": "[A]⟶A×E(A)")))],
 ))
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
@@ -7266,30 +7269,10 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 #let INT = [`Int`]
 #let van-top = ((VXLi, LIST), (VXO, INT))
 #let van-bot = ((VXLo, LIST), (VXLi, LIST), (VXO, INT))
-#let v-hm1 = dpanel(4.0, VXW, VXO,
-  ((VXE, 3.30, 0.95, EW, UNIT), (VXLi, "top", 2.60, none, none),
-   (VXLo, 2.60, "bot", none, none), (VXLi, 2.60, "bot", none, none)),
-  ((2.60, [`partition`]), (1.85, [`secure`], black, VXLi), (0.95, [`est(R)`], black, VXLo)),
-  van-top, van-bot, names: true)
 #let van-fold(h, y, l, e) = dpanel(h, VXW, VXO,
   (((VXE, 3.30, 0.95, EW, UNIT),) * (if e == none { 0 } else { 1 })
    + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
   ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
-
-// `Int×−` is a wider name than `list`, so its lane keeps a wider gap: the port labels are written at
-// the panel's top edge and two of them touching read as one name.
-#let VMM = 0.55                  // `Int×−`, the base functor's own factor
-#let VMLo = 2.10
-#let VMLi = 3.25
-#let VMO = 4.40
-// `old` holds ONE height in all four panels and the wires land on it the same way: what moves is the
-// relation, from above the algebra to below it, which is the whole of (7.17).
-#let van-mono-hm(l, above) = dpanel(3.8, VMO + 2.85, VMO,
-  ((VMM, "top", 1.95, none, none), (VMLo, "top", 1.95, none, none), (VMLi, "top", 1.95, none, none),
-   (VMLo, 1.95, "bot", none, none), (VMLi, 1.95, "bot", none, none)),
-  ((1.95, [`old`]), (if above { 2.85 } else { 1.05 }, l, black, VMLo)),
-  ((VMM, [`Int×−`]), (VMLo, LIST), (VMLi, LIST), (VMO, INT)),
-  ((VMLo, LIST), (VMLi, LIST), (VMO, INT)))
 
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -7318,7 +7301,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ), src: ("[Int]", ), tgt: ("[[Int]]", )),
   cert: (expect: "(partition list(secure))%∋ est(R)", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "partition:[Int]⟶[[Int]] secure:[Int]⟶[Int]"))],
     [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
-  [#v-hm1],
+  [#dpanel(5, 9.15, 6.3,
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, "bot", none, none), (2.85, 2, "bot", none, none), (4, 3, 2, [`list`], none), (5.15, "top", 3, none, none)),
+  ((3, [`partition`], black, 5.15), (2, [`secure`], black, 4), (1, [`est(R)`], black, 0.55)),
+  ((5.15, [`list`]), (6.3, [`Int`])),
+  ((1.7, [`list`]), (2.85, [`list`]), (6.3, [`Int`])),
+  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7381,7 +7369,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
  `(𝟙×⊤)new⊑new H`]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
-  [#van-fold(3.4, 2.20, [`⦇`#frc([`S`])` est(R;H)⦈`], none)],
+  [#dpanel(2, 6.85, 4,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none)),
+  ((1, [`⦇S%∋ est(R;H)⦈`], black, 2.85),),
+  ((2.85, [`list`]), (4, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (4, [`Int`])),
+  cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("⦇⦈": "[x]⟶[[x]]")))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
@@ -7429,7 +7422,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
   cert: (expect: "(𝟙×(R;H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [])],
-  [#van-mono-hm([`R;H`], true) \ #src[the `old` operand of `new ∪ old`, in every row]],
+  [#dpanel(3, 11.45, 8.6,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, 2, 1, [`list`], none), (5.15, 2, 1, [`list`], none), (6.3, "top", 2, none, none), (7.45, "top", 2, none, none)),
+  ((2, [`R;H`], black, 6.3), (1, [`old`], black, 2.85)),
+  ((2.85, [`Int×−`]), (6.3, [`list`]), (7.45, [`list`]), (8.6, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (8.6, [`Int`])),
+  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
 
   [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7462,7 +7460,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
     [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
-  [#van-mono-hm([`|R|`], true)],
+  [#dpanel(3, 11.45, 8.6,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, 2, 1, [`list`], none), (5.15, 2, 1, [`list`], none), (6.3, "top", 2, none, none), (7.45, "top", 2, none, none)),
+  ((2, [`|R|`], black, 6.3), (1, [`old`], black, 2.85)),
+  ((2.85, [`Int×−`]), (6.3, [`list`]), (7.45, [`list`]), (8.6, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (8.6, [`Int`])),
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "|R|": "[[Int]]⟶[[Int]]")))],
 
   [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7490,7 +7493,14 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
   cert: (expect: "new (R∩H) ∪ old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
-  [#van-mono-hm([`R∩H`], false)],
+  // Hand-laid, so it carries no `cert:`: `hm-check --laws` re-spells a generated `old (R∩H)` without
+  // its parentheses, and `old R∩H` then reads as ONE bead, for which there is no signature.
+  [#dpanel(3.8, 7.25, 4.40,
+    ((0.55, "top", 1.95, none, none), (2.10, "top", 1.95, none, none), (3.25, "top", 1.95, none, none),
+     (2.10, 1.95, "bot", none, none), (3.25, 1.95, "bot", none, none)),
+    ((1.95, [`old`]), (1.05, [`R∩H`], black, 2.10)),
+    ((0.55, [`Int×−`]), (2.10, LIST), (3.25, LIST), (4.40, INT)),
+    ((2.10, LIST), (3.25, LIST), (4.40, INT)))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -7505,7 +7515,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
   cert: (expect: "(new ∪ old)(R;H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
-  [#van-mono-hm([`R;H`], false)],
+  [#dpanel(3, 11.45, 8.6,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 2, 1, [`list`], none), (4, 2, 1, [`list`], none), (5.15, "top", 2, none, none), (6.3, "top", 2, none, none), (7.45, "top", 2, none, none)),
+  ((2, [`old`], black, 5.15), (1, [`R;H`], black, 2.85)),
+  ((5.15, [`Int×−`]), (6.3, [`list`]), (7.45, [`list`]), (8.6, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (8.6, [`Int`])),
+  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]")))],
 ))]<van-mono>
 
 #pagebreak(weak: true)
