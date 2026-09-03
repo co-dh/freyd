@@ -248,8 +248,7 @@ def verify(fx, path):
             if got[k] != v:
                 bad.append(f"{os.path.basename(path)} side {i}: {k} claims {v},"
                            f" the page's svg has {got[k]}")
-        # `object-wire-added` says the strip is OURS, not the page's, so the page cannot be asked for it
-        if "object-wire-added" not in fx.get("norm", []) and s["grey1"] != (got["grey"] > 0):
+        if not UNPAINTED & set(fx.get("norm", [])) and s["grey1"] != (got["grey"] > 0):
             bad.append(f"{os.path.basename(path)} side {i}: grey1 is {s['grey1']},"
                        f" the page's svg has {got['grey']} grey fills")
     return bad
@@ -338,10 +337,14 @@ def laws(paths, tbl):
 
 
 # ---------------------------------------------------------------- the driver
-# A declared normalization says WHY the two pictures may differ by convention.  All three are
+# A declared normalization says WHY the two pictures may differ by convention.  All four are
 # recorded in the fixture as drawn — the transcriber applies them — so none rewrites a graph here;
 # an undeclared one is a FAIL, so the list cannot quietly grow into a licence to differ.
-NORMS = ("free-end-vs-bent-in", "object-wire-added", "spider-vs-bead")
+NORMS = ("free-end-vs-bent-in", "object-wire-added", "regions-unpainted", "spider-vs-bead")
+# Two of them put the grey `𝟏` strip on OUR side alone, so the page cannot be asked for it:
+# `object-wire-added` where the book draws a 2-cell with no object under it, and `regions-unpainted`
+# where the figure comes before Remark 2.1 and the page paints no region at all.
+UNPAINTED = {"object-wire-added", "regions-unpainted"}
 
 
 def show(g, who):
