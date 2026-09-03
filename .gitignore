@@ -1,4 +1,7 @@
 /.lake
+# `scripts/scanline`'s one-section slice, removed as soon as the query returns — tracked only so a
+# crashed run does not leave a stray .typ in diag/.
+diag/.gate-slice.typ
 cate*.pdf
 # Third-party copyrighted reference material — kept locally only, NEVER commit (copyright).
 # The books: Freyd "Categories, Allegories" (book-all/book-color), Bird & de Moor

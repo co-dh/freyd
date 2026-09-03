@@ -14,7 +14,7 @@ one signature everywhere in its display.  What it only CHECKS: the `cert:` a cal
 draws, `alias:` the abbreviations the display's key list asks the reader to supply.  Applying a
 declared law is mechanical; its truth stays the author's certificate, as in `scripts/cite-check`.
 """
-import hashlib, json, os, re, subprocess, sys
+import glob, hashlib, json, os, re, subprocess, sys
 
 CACHE = ".lake/build/scanline-cache.json"
 
@@ -1062,16 +1062,146 @@ def lit_hashes(path):
                   for m in re.finditer(r'\b(?:dpanel|cpanel|tpan)\(', text))
 
 
-def panels(path, frm):
+# ---------------------------------------------------------------- per-section acquisition
+# The whole 13 s of a `typst query` on the note was the INK: 646 cetz canvases drawn into a document
+# that is then thrown away, while every panel computes the lists it emits as `#metadata` outside the
+# canvas.  `--input nodraw=1` (`diag/cetz-nodraw.typ`) turns each canvas into an empty box and the
+# same records come back byte-identical, in 1.4 s.  What is left is linear in the note's LINES —
+# 0.24 s of imports plus 0.12 ms a line — so the last factor of five is to hand typst one section.
+GATE = ".lake/build/note-gate.json"
+SLICE = "diag/.gate-slice.typ"     # a dotfile: no `diag/*.typ` glob picks the scratch slice up
+MAXSEC = 4                         # more sections than this changed: the whole note is cheaper
+HEAD = re.compile(r'(={1,6}) ')
+DECL = re.compile(r'#(?:let|show|set|import)\b')
+TOP = re.compile(r'[#=]|//')
+NAME = re.compile(r'#let\s+([\w-]+)')
+
+
+def sha(s):
+    return hashlib.sha256(s.encode()).hexdigest()
+
+
+def parts(path):
+    """The note cut into (prelude, sections) — an EXACT line partition, asserted below.
+
+    A heading opens a section and its numbers ARE the ids of the panels it draws: `13.3.4` draws
+    `13.3.4a.1`.  A top-level `#let`/`#show`/`#set`/`#import` (column 0) runs to the line before the
+    next column-0 `#`, `=` or `//`, and is held apart from the body: a slice needs EVERY declaration
+    in the note — the section it draws may use any of them — but only ONE section's displays."""
+    lines = open(path, encoding="utf-8").read().splitlines(keepends=True)
+    pre, secs, nums, i = [], [], [], 0
+    while i < len(lines):
+        head = HEAD.match(lines[i])
+        if head:
+            d = len(head.group(1))
+            nums = (nums + [0] * d)[:d]
+            nums[d - 1] += 1
+            secs.append({"num": ".".join(map(str, nums)), "text": [], "body": [], "decls": []})
+        j = i + 1
+        if DECL.match(lines[i]) and not head:
+            while j < len(lines) and not TOP.match(lines[j]):
+                j += 1
+        blk = "".join(lines[i:j])
+        if not secs:
+            pre.append(blk)
+        else:
+            secs[-1]["text"].append(blk)
+            (secs[-1]["decls"] if DECL.match(lines[i]) else secs[-1]["body"]).append(blk)
+        i = j
+    assert "".join(pre) + "".join(b for s in secs for b in s["text"]) \
+        == open(path, encoding="utf-8").read(), f"scanline: {path} did not partition"
+    return pre, secs
+
+
+def sliced(pre, secs, sec):
+    """The prelude, every declaration in the note, and the one section's body — with the heading
+    counter seeded, so the panel ids come out exactly as they do in the whole note (the display
+    counter and the panel counter reset at every heading and display, so those need nothing).
+    `#show ref: it => []`: the sections a slice drops take their labels with them.
+
+    Only the declarations BEFORE the section, in source order, and the section itself VERBATIM: one
+    name is bound twice in the note — `mss-pic` at :5011 and :5428, both inside §13.3.4 — and every
+    use sees the binding that precedes IT, so hoisting a section's own declarations over its own body
+    would let the second definition answer for the first's call sites."""
+    n = [int(x) for x in sec["num"].split(".")]
+    return ("".join(pre) + "#show ref: it => []\n"
+            + "".join(b for s in secs[:secs.index(sec)] for b in s["decls"])
+            + "#counter(heading).update((%s,))\n" % ", ".join(map(str, n[:-1] + [n[-1] - 1]))
+            + "".join(sec["text"]))
+
+
+def query(path):
+    out = subprocess.run(["typst", "query", "--input", "nodraw=1", path, "metadata",
+                          "--field", "value"], capture_output=True, text=True)
+    if out.returncode:
+        sys.exit(f"scanline: typst query {path}: {out.stderr.strip()}")
+    return [v for v in json.loads(out.stdout) if isinstance(v, dict) and v.get("kind") == "scanline"]
+
+
+def owns(num):
+    return re.compile(re.escape(num) + r'[a-z]+\.\d+').fullmatch
+
+
+def panels(path, frm, full=False):
+    """The note's panels — re-querying only the sections whose SOURCE changed, and handing back what
+    the last full run stored for the rest, so the checks downstream still see EVERY panel in the note
+    (`crosscheck`'s wire-against-bead pass is note-wide, and a partial list would weaken it).
+
+    Falls back to the whole note whenever the incremental answer could differ from it: a changed
+    prelude or imported file, a renumbered section, a changed declaration another section names,
+    more than `MAXSEC` sections at once, or a slice whose panel ids are not the section's own."""
     if frm:
-        vals = json.load(open(frm, encoding="utf-8"))
+        return [v for v in json.load(open(frm, encoding="utf-8"))
+                if isinstance(v, dict) and v.get("kind") == "scanline"]
+    pre, secs = parts(path)
+    imp = sha("".join(open(p, encoding="utf-8").read() for p in sorted(glob.glob("diag/*.typ"))
+                      if os.path.abspath(p) != os.path.abspath(path)))
+    key = {"path": path, "pre": sha("".join(pre)), "imports": imp,
+           "order": [s["num"] for s in secs]}
+    c = json.load(open(GATE, encoding="utf-8")) if os.path.exists(GATE) else {}
+    old = c.get("sections", {})
+    for s in secs:
+        s["sha"] = sha("".join(s["text"]))
+        # name → the block that binds it; `#show`/`#set`/`#import` bind nothing, so they are keyed
+        # by position and any change in one is a `@`, which no section can be searched for.
+        s["dmap"] = {(NAME.match(b).group(1) if NAME.match(b) else f"@{i}"): sha(b)
+                     for i, b in enumerate(s["decls"])}
+    stale = [s for s in secs if old.get(s["num"], {}).get("sha") != s["sha"]]
+    # A DECLARATION that changed, and that another section names, cannot be re-read section by
+    # section: that section's cached records were drawn with the old one.  A `#show`/`#set`/`#import`
+    # binds no name to look for, so a change in one is only ever answered by the whole note.
+    changed = {k for s in stale for o in (old.get(s["num"], {}).get("decls", {}),)
+               for k in set(o) | set(s["dmap"]) if o.get(k) != s["dmap"].get(k)}
+    rest = "".join(b for s in secs if s not in stale for b in s["text"])
+    ok = (not full and all(c.get(k) == v for k, v in key.items()) and secs
+          and len(stale) <= MAXSEC and not any(k.startswith("@") or k in rest for k in changed))
+    if ok:
+        for s in stale:
+            open(SLICE, "w", encoding="utf-8").write(sliced(pre, secs, s))
+            try:
+                s["recs"] = query(SLICE)
+            finally:
+                os.remove(SLICE)
+            if not all(owns(s["num"])(r["id"]) for r in s["recs"]):
+                ok = False                        # the slice drew something this section does not own
+                break
+    if ok:
+        for s in secs:
+            if "recs" not in s:
+                s["recs"] = old[s["num"]]["recs"]
+        recs = [r for s in secs for r in s["recs"]]
+        print(f"scanline: {len(stale)} section{'s' * (len(stale) != 1)} re-read"
+              f" ({', '.join(s['num'] for s in stale) or 'none'}), {len(secs) - len(stale)} cached")
     else:
-        out = subprocess.run(["typst", "query", path, "metadata", "--field", "value"],
-                             capture_output=True, text=True)
-        if out.returncode:
-            sys.exit(f"scanline: typst query {path}: {out.stderr.strip()}")
-        vals = json.loads(out.stdout)
-    return [v for v in vals if isinstance(v, dict) and v.get("kind") == "scanline"]
+        recs = query(path)
+        for s in secs:
+            s["recs"] = [r for r in recs if owns(s["num"])(r["id"])]
+    if secs:                                      # a file with no headings has nothing to cache
+        os.makedirs(os.path.dirname(GATE), exist_ok=True)
+        json.dump(dict(key, sections={s["num"]: {"sha": s["sha"], "decls": s["dmap"],
+                                                 "recs": s["recs"]} for s in secs}),
+                  open(GATE, "w", encoding="utf-8"), ensure_ascii=False)
+    return recs
 
 
 def respell(recs):
@@ -1113,7 +1243,7 @@ def main(argv):
         if c.get("path") == path and c.get("hashes") == hs and c.get("pass"):
             print(f"scanline: {len(hs)} panel literals unchanged since last pass — skipped")
             return
-    recs = panels(path, frm)
+    recs = panels(path, frm, "--full" in argv)
     if "--spell" in argv:
         n, bad = respell(recs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")

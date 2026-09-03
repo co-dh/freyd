@@ -13,6 +13,7 @@
 #let definition = builder-thmline(color: colors.at(8))(
   "definition", "", separator: []).with(numbering: none)
 #import "circuit.typ": cetz, d
+#let NODRAW = cetz.NODRAW
 
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
 /// A display's path — `13.4.3c`, the heading numbers then the display's letter.  Bare, so a panel's
@@ -92,7 +93,9 @@
 }
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
-#let pic-meta(key, body, width: auto) = context {
+// Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
+// `query(heading.before(here()))` per picture is quadratic in the note (650 pictures × 600 headings).
+#let pic-meta(key, body, width: auto) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
     numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
@@ -101,7 +104,7 @@
   [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
     x: pos.x.pt(), y: pos.y.pt(),
     w: sz.width.pt(), h: sz.height.pt()))<pic>]
-}
+} }
 #let disp(body) = figure(kind: "disp", supplement: none, {
   // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
   context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
