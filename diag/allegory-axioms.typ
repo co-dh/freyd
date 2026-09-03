@@ -2443,7 +2443,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
   ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 // `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
-// `s`; `tpan`/`mpan` pass 100% and print their labels at the size `tw-hm` does.
+// `s`; `tpan` passes 100% and prints its labels at the size `tw-hm` does.
 // `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
 // lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
 #let dpan(h, w, xa, body, s: 74%, opath: none, key: none) = P(cetz.canvas(length: 0.8cm, {
@@ -2468,7 +2468,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // OVERLAP — they may share a midpoint, and there each strand is vertical, in its own column.
 // `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
 // left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
-// it.  The 17 `tpan`/`mpan` panels keep fixed `DKN`/`MKN` and a per-join `k` — an empirical fit.
+// it.  The `tpan` panels keep fixed `DKN` and a per-join `k` — an empirical fit.
 #let dknees(xat, h, lanes, beads) = {
   let bys = beads.map(bd => bd.at(0))
   let (run, cap) = ((:), (:))
@@ -5048,63 +5048,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   empty prefix, so `Dom` is `𝟙` here — and `P(f)=E(f)` at the map it is applied to (@powrel-laws).]])
 ]<mss-shape>
 
-// §13.3.4's Hinze–Marsden lanes (IntroString.pdf §1.4.2), read left to right as the panel is drawn:
-// `MA` is always the leftmost wire and the object wire is whichever the panel ends on.  `MLW` is one
-// lane — the room two port labels need side by side.  `[A]` is the `list` wire BESIDE the `A` wire.
-#let MLW = 1.25
-#let MA = 0.55
-#let MB = MA + MLW
-#let MC = MB + MLW
-#let MD = MC + MLW
-// A BEAD OFF THE OBJECT WIRE writes its label at the object wire's x all the same: the labels then
-// read as one column, and none of them crosses the wires standing between it and its own dot.
-// `hands` is a relator wire born at `(x0,y0)` — free in its own lane, or on the wire carrying `b` —
-// running down lane `xe` and dying at `(x1,y1)`; `wires` are the lanes that run the whole height.
-// A node on the object wire at `y` that a lane outside `xin` opened; lanes INSIDE it detour through
-// it.  A hand born ON the object wire is one; a unit, whose source is `Id`, floats in its own lane.
-// Bound outside the drawing so the scan line is handed the nodes that DREW, not the argument alone.
-// `hdx` is the hand's name offset FROM its lane: a one-letter functor fits left of it, a wide one
-// like `list` would cross its own wire there and goes right, into the gap before the object wire.
-// A WIDENING is not a functor lane: the object wire opens into `outer` beside `inner` and closes
-// again with no bead, so the scan reads it as `tw-hm`'s split — one record per bead it brackets.
-#let mpan(xo, w, top, bot, beads: (), joins: (), hands: (), widen: (), wires: (), nodes: (), h: 4.3,
-    hdx: -0.32, cert: (:)) = {
-  let ns = nodes + hands.filter(hd => hd.at(6) != none and hd.at(0) == xo).map(hd => (hd.at(1), hd.at(2)))
-  let splits = ()
-  for (y0, y1, x, outer, ofs) in widen {
-    let ys = (y0,) + beads.filter(b => b.at(0) == xo and y1 < b.at(1) and b.at(1) < y0)
-      .map(b => b.at(1)).sorted().rev() + (y1,)
-    for i in range(ofs.len()) {
-      splits.push((ys.at(i), ys.at(i + 1), x, ofs.at(i).at(0), outer, ofs.at(i).at(1)))
-    }
-  }
-  dpan(h, w, xo, {
-  let at(x, ylo) = ns.filter(n => n.at(1) < x and n.at(0) > ylo).map(n => n.at(0))
-  for x in wires { lwire(x, xo, at(x, 0), h, 0, k: 0.35) }
-  for (xf, xt, y, k) in joins {
-    hm-wire(((xf, h),) + nodepts(xf, xo, at(xf, y), k: 0.35) + ((xf, y + k), (xt, y)))
-  }
-  for (x0, y0, xe, x1, y1, l, b) in hands {
-    hm-wire(((x0, y0), (xe, y0 - DKN), (xe, y1 + DKN), (x1, y1)))
-    hm-name((xe + hdx, (y0 + y1) / 2), l)
-    if b != none { hm-bead((x0, y0), b, dx: xo - x0 + 0.32) }
-  }
-  for (y0, y1, x, outer, ofs) in widen {
-    hm-wire(((xo, y0), (x, y0 - DKN), (x, y1 + DKN), (xo, y1)))
-    hm-name((x + hdx, (y0 + y1) / 2), outer)
-  }
-  for (x, y, l) in beads { hm-bead((x, y), l, dx: xo - x + 0.32) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
-  for (x, l) in bot { hm-port((x, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
-  }, s: 100%)
-  hm-meta((helper: "mpan", h: h, w: w, xo: xo, cert: cert,
-    beads: beads.map(b => b.map(plain)), joins: joins.map(j => j.map(plain)),
-    hands: hands.map(hd => hd.map(plain)), wires: wires.map(plain),
-    splits: splits.map(s => s.map(plain)), nodes: ns.map(n => n.map(plain)),
-    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain))))
-}
-#let mtop3 = ((MA, [`A×−`]), (MB, [`list`]), (MC, [`A`]))
-
 // §13.3.4's generated panels, emitted verbatim by `./scripts/diagram --src … --tgt … "<formula>"`: a
 // bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
 #let mh-cons-sum = dpanel(3, 6.85, 4,
@@ -5582,10 +5525,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let bx-p2 = ([`π₂`], 1.0, false)
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
-// The Hinze–Marsden column counts `[A]` out as the `list` wire beside the `A` wire, and every row's
-// two ends are the same, so the ports are bound once too.
-#let mtopL = ((MC, [`list`]), (MD, [`A`]))
-#let mbotL = ((MD, [`A`]),)
 #let mss-line(items) = {
   lab(-0.62, 0, black)[`[A]`]; boxrun(0, 0, items, h: TH)
   lab(boxrun-w(items) + 0.55, 0, black)[`A`]
@@ -7516,14 +7455,12 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
   cert: (expect: "new (R∩H) ∪ old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
-  // Hand-laid, so it carries no `cert:`: `hm-check --laws` re-spells a generated `old (R∩H)` without
-  // its parentheses, and `old R∩H` then reads as ONE bead, for which there is no signature.
-  [#dpanel(3.8, 7.25, 4.40,
-    ((0.55, "top", 1.95, none, none), (2.10, "top", 1.95, none, none), (3.25, "top", 1.95, none, none),
-     (2.10, 1.95, "bot", none, none), (3.25, 1.95, "bot", none, none)),
-    ((1.95, [`old`]), (1.05, [`R∩H`], black, 2.10)),
-    ((0.55, [`Int×−`]), (2.10, LIST), (3.25, LIST), (4.40, INT)),
-    ((2.10, LIST), (3.25, LIST), (4.40, INT)))],
+  [#dpanel(3, 11.45, 8.6,
+  ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (2.85, 2, 1, [`list`], none), (4, 2, 1, [`list`], none), (5.15, "top", 2, none, none), (6.3, "top", 2, none, none), (7.45, "top", 2, none, none)),
+  ((2, [`old`], black, 5.15), (1, [`R∩H`], black, 2.85)),
+  ((5.15, [`Int×−`]), (6.3, [`list`]), (7.45, [`list`]), (8.6, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (8.6, [`Int`])),
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
