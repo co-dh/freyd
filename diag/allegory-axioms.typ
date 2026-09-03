@@ -6796,7 +6796,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`cp≜` $frac(#[`F(𝟙,∋)`], ∋)$],
   [`F(A,EB)⟶E(F(A,B))`],
-  [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`, and `P(α)` of that is `{[1,5],[1,6],[1,8]}`.],
+  [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`.],
 
   [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
@@ -6858,7 +6858,7 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 === The cross product `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
 
-#disp[#align(center, grid(columns: 3, align: bottom, column-gutter: 14pt, row-gutter: 4pt,
+#disp[#align(center, grid(columns: (1fr, 1fr, 1fr), align: center + bottom, column-gutter: 10pt, row-gutter: 4pt,
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
   ((1, [`∋`], black, 2.85),),
