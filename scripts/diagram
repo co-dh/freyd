@@ -767,7 +767,9 @@ def columns(rows, made):
         for l in made:
             if not l.label or len(l.label) < 2:
                 continue
-            w = sl.LDX + sl.LCW * len(l.label)
+            # + 0.002: `l.x` is rounded to 3 decimals below, and the two roundings can eat 0.001
+            # of an exactly-reserved gap, putting the wire back on the name box's own edge.
+            w = sl.LDX + sl.LCW * len(l.label) + 0.002
             west = [o for o in made if o.x < l.x - 1e-6 and o.born < l.dies and l.born < o.dies]
             if not west or l.x - max(o.x for o in west) >= w - 1e-6:
                 continue

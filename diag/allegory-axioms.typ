@@ -6765,7 +6765,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
 #let d-out1 = dpanel(4, 8, 5.15,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 2, "bot", none, none), (1.7, "top", 2, none, none)),
-  ((2, [`party`], black, 1.7, 1.7), (1, [`est(R°)`], black, 0.55)),
+  ((2, [`party`], black, 1.7, 1.7, "lax"), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`tree`]), (5.15, [`A`])),
   ((1.7, [`list`]), (5.15, [`A`])),
   opath: ((5.15, 4), (2.85, 0)),
@@ -6793,14 +6793,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // returns — so all four strands land on its bead and the two it returns are born there.
 #let d-in5 = dpanel(4, 12.6, 9.75,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 2, "bot", none, none), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none)),
-  ((2, [`S`], black, 1.7), (1, [`est((R×R)°)`], black, 0.55)),
+  ((2, [`S`], black, 1.7, 3.425, "lax"), (1, [`est((R×R)°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (9.75, [`A`])),
   ((2.85, [`Δ`]), (4, [`list`]), (9.75, [`A`])),
   opath: ((9.75, 4), (5.15, 0)),
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
 #let d-in6 = dpanel(4, 11.5, 8.65,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (3.425, 2, "bot", none, none), (1.7, "top", 2, none, none), (2.85, "top", 2, none, none), (4, "top", 2, none, none), (5.15, "top", 2, none, none)),
-  ((2, [`include`], black, 1.7, 3.425), (1, [`est(R°)`], black, 0.55)),
+  ((2, [`include`], black, 1.7, 3.425, "lax"), (1, [`est(R°)`], black, 0.55)),
   ((1.7, [`A×−`]), (2.85, [`list`]), (4, [`Δ`]), (5.15, [`list`]), (8.65, [`A`])),
   ((3.425, [`list`]), (8.65, [`A`])),
   opath: ((8.65, 4), (4.6, 0)),
@@ -6810,11 +6810,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
 // HAND-KEPT lanes, dots added by hand: regenerated, the unit's `E` lane goes leftmost and the sweep
 // reads `𝟙%∋` outside the `list` it is stated inside.
-#let d-in7 = dpanel(6, 10.3, 7.45,
-  ((0.55, "top", 5, none, none), (1.7, 1, "bot", none, none), (2.85, "top", 1, none, none), (4, 3.5, 2, [`E`], frc([`𝟙`])), (5.15, "top", 3, none, none), (6.3, "top", 1, none, none)),
-  ((5, [`π₂`], black, 0.55, 0.55, "lax"), (3, [`choose`], black, 5.15, 5.15, "lax"), (2, [`est(R°)`], black, 4), (1, [`concat`], black, 2.85)),
-  ((0.55, [`A×−`]), (2.85, [`list`]), (5.15, [`Δ`]), (6.3, [`list`]), (7.45, [`A`])),
-  ((1.7, [`list`]), (7.45, [`A`])),
+#let d-in7 = dpanel(6, 11.9, 9.05,
+  ((0.55, "top", 5, none, none), (2.85, 1, "bot", none, none), (1.7, "top", 1, none, none), (0.55, 3.5, 2, [`E`], frc([`𝟙`])), (2.85, "top", 3, none, none), (4, "top", 1, none, none)),
+  ((5, [`π₂`], black, 0.55, 0.55, "lax"), (3, [`choose`], black, 2.85, 2.85, "lax"), (2, [`est(R°)`], black, 0.55), (1, [`concat`], black, 1.7, 2.85)),
+  ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`Δ`]), (4, [`list`]), (9.05, [`A`])),
+  ((2.85, [`list`]), (9.05, [`A`])),
+  opath: ((9.05, 6), (4.8, 0)),
   cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
@@ -6995,10 +6996,10 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 #disp[#align(center, grid(columns: (1fr, 1fr, 1fr), align: center + bottom, column-gutter: 10pt, row-gutter: 4pt,
   dpanel(3, 8.5, 5.65,
-  ((0.55, 1.5, "bot", none, frc([`𝟙`])), (2.199, "top", "bot", none, none), (3.349, "top", 1, none, none), (4.499, "top", "bot", none, none)),
-  ((1, [`∋`], black, 3.349, 3.349, "lax"),),
-  ((2.199, [`F(A,−)`]), (3.349, [`E`]), (4.499, [`L`]), (5.65, [`A`])),
-  ((0.55, [`E`]), (2.199, [`F(A,−)`]), (4.499, [`L`]), (5.65, [`A`])),
+  ((0.55, 1.5, "bot", none, frc([`𝟙`])), (2.201, "top", "bot", none, none), (3.351, "top", 1, none, none), (4.501, "top", "bot", none, none)),
+  ((1, [`∋`], black, 3.351, 3.351, "lax"),),
+  ((2.201, [`F(A,−)`]), (3.351, [`E`]), (4.501, [`L`]), (5.65, [`A`])),
+  ((0.55, [`E`]), (2.201, [`F(A,−)`]), (4.501, [`L`]), (5.65, [`A`])),
   cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(A)))", tgt: "E(F(A,L(A)))")),
   dpanel(3, 8, 5.15,
   ((0.55, 1.5, "bot", none, frc([`𝟙`])), (1.7, "top", "bot", none, none), (2.85, "top", 1, none, none), (4, "top", "bot", none, none)),
@@ -8632,10 +8633,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep([], ab-pic(none, (ab-spec, est-R-box)),
     [#frc([`partition list⁺(fits w)`])` est(R)`])],
   [#dpanel(5, 11.28, 8.43,
-  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.944, 3, "bot", none, none), (3.339, 2, "bot", none, none), (3.339, 3, 2, [`list⁺`], none), (2.519, "top", 3, none, none)),
-  ((3, [`partition`], black, 2.519), (2, [`fits(w)`], black, 3.339), (1, [`est(R)`], black, 0.55)),
-  ((2.519, [`list⁺`]), (8.43, [`Word`])),
-  ((1.944, [`list⁺`]), (3.339, [`list⁺`]), (8.43, [`Word`])),
+  ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.946, 3, "bot", none, none), (3.343, 2, "bot", none, none), (3.343, 3, 2, [`list⁺`], none), (2.521, "top", 3, none, none)),
+  ((3, [`partition`], black, 2.521), (2, [`fits(w)`], black, 3.343), (1, [`est(R)`], black, 0.55)),
+  ((2.521, [`list⁺`]), (8.43, [`Word`])),
+  ((1.946, [`list⁺`]), (3.343, [`list⁺`]), (8.43, [`Word`])),
   opath: ((8.43, 5), (4.49, 0)),
   cert: (expect: "(partition list⁺(fits(w)))%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("partition": "list⁺(Word)⟶list⁺(list⁺(Word))", "fits": "list⁺(Word)⟶list⁺(Word)", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
@@ -8645,10 +8646,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
   [#dpanel(4, 13.58, 10.73,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.944, "top", 2, none, none), (3.094, 2, "bot", none, none), (4.489, 2, "bot", none, none)),
-  ((2, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 1.944), (1, [`est(R)`], black, 0.55)),
-  ((1.944, [`list⁺`]), (10.73, [`Word`])),
-  ((3.094, [`list⁺`]), (4.489, [`list⁺`]), (10.73, [`Word`])),
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.946, "top", 2, none, none), (3.096, 2, "bot", none, none), (4.493, 2, "bot", none, none)),
+  ((2, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 1.946), (1, [`est(R)`], black, 0.55)),
+  ((1.946, [`list⁺`]), (10.73, [`Word`])),
+  ((3.096, [`list⁺`]), (4.493, [`list⁺`]), (10.73, [`Word`])),
   opath: ((10.73, 4), (5.64, 0)),
   cert: (expect: "⦇[wrap wrap,new ∪ (glue (ok w))]⦈%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", mu: "F:list⁺(x)", sigs: ("R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
@@ -8664,10 +8665,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     [`⦇listcp(F) ⟨g₁,g₂⟩ cat thinlist Q⦈ minlist R` \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
   [#dpanel(3, 10.18, 7.33,
-  ((1.125, 1, "bot", none, none), (2.764, 1, "bot", none, none), (0.55, 2, 1, [`list`], none), (1.944, 2, 1, [`list⁺`], none), (3.339, 2, 1, [`list⁺`], none), (1.944, "top", 2, none, none)),
-  ((2, [`⦇−thinlist(Q)⦈`], black, 1.944), (1, [`minlist(R)`], black, 0.55)),
-  ((1.944, [`list⁺`]), (7.33, [`Word`])),
-  ((1.125, [`list⁺`]), (2.764, [`list⁺`]), (7.33, [`Word`])),
+  ((1.125, 1, "bot", none, none), (2.768, 1, "bot", none, none), (0.55, 2, 1, [`list`], none), (1.946, 2, 1, [`list⁺`], none), (3.343, 2, 1, [`list⁺`], none), (1.946, "top", 2, none, none)),
+  ((2, [`⦇−thinlist(Q)⦈`], black, 1.946), (1, [`minlist(R)`], black, 0.55)),
+  ((1.946, [`list⁺`]), (7.33, [`Word`])),
+  ((1.125, [`list⁺`]), (2.768, [`list⁺`]), (7.33, [`Word`])),
   opath: ((7.33, 3), (3.94, 0)),
   cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−thinlist(Q)⦈": "list⁺(Word)⟶[list⁺(list⁺(Word))]", "minlist": "[list⁺(list⁺(Word))]⟶list⁺(list⁺(Word))")))],
 
@@ -8875,11 +8876,12 @@ in @mu-defn.
       `P(X)est(R)⊑(∋X)∩(∈\(XR°))` — @est-710]])],
   // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
   // `F(X)`.  `thin Q : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
-  [#dpanel(7, 6.85, 4,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`F`], none)),
-  ((5, [`T°`]), (4, [`thin(Q)`], black, 1.7), (3, [`X`]), (2, [`h`], black, 2.85), (1, [`est(R)`], black, 0.55)),
-  ((4, [`A`]),),
-  ((4, [`B`]),),
+  [#dpanel(7, 10, 7.15,
+  ((2.85, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, 5, 2, [`F`], none)),
+  ((5, [`T°`]), (4, [`thin(Q)`], black, 0.55), (3, [`X`]), (2, [`h`], black, 1.7), (1, [`est(R)`], black, 2.85)),
+  ((7.15, [`A`]),),
+  ((7.15, [`B`]),),
+  opath: ((7.15, 7), (3.85, 0)),
   cert: (expect: "(T°)%∋ thin(Q)P(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8910,11 +8912,12 @@ in @mu-defn.
       inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
   // One branch of the `→`, not both: it is a union of two restricted branches with the one shape, so
   // the second adds no shape the first does not already show.
-  [#dpanel(7, 6.85, 4,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 5, 2, [`Fᵢ`], none)),
-  ((5, [`Vᵢ°`]), (4, [`thin(Qᵢ)`], black, 1.7), (3, [`X`]), (2, [`Uᵢ`], black, 2.85), (1, [`est(R)`], black, 0.55)),
-  ((4, [`A`]),),
-  ((4, [`B`]),),
+  [#dpanel(7, 10, 7.15,
+  ((2.85, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (1.7, 5, 2, [`Fᵢ`], none)),
+  ((5, [`Vᵢ°`]), (4, [`thin(Qᵢ)`], black, 0.55), (3, [`X`]), (2, [`Uᵢ`], black, 1.7), (1, [`est(R)`], black, 2.85)),
+  ((7.15, [`A`]),),
+  ((7.15, [`B`]),),
+  opath: ((7.15, 7), (3.85, 0)),
   cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 )]<dp-laws>
 
@@ -9024,11 +9027,12 @@ both lists empty.
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
   // closes it again; `Δ` and the source `list` die and are remade at both beads, so each runs as a
   // loop between them.  `thin Q : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
-  [#dpanel(7, 13.75, 10.9,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`Op×−`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`Δ`], none), (7.45, 5, 3, [`list`], none), (8.6, "top", 5, none, none), (9.75, "top", 5, none, none)),
-  ((5, [`step°`], black, 8.6), (4, [`thin(Q)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`cons`], black, 4), (1, [`est(R)`], black, 0.55)),
-  ((8.6, [`Δ`]), (9.75, [`list`]), (10.9, [`Char`])),
-  ((2.85, [`list`]), (10.9, [`Op`])),
+  [#dpanel(7, 14.3, 11.45,
+  ((5.15, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.562, 2, "bot", none, none), (1.7, 5, 2, [`Op×−`], none), (3.425, 3, 2, [`list`], none), (2.85, 5, 3, [`Δ`], none), (4, 5, 3, [`list`], none), (2.275, "top", 5, none, none), (3.425, "top", 5, none, none)),
+  ((5, [`step°`], black, 2.275), (4, [`thin(Q)`], black, 0.55), (3, [`X`], black, 2.85), (2, [`cons`], black, 1.7), (1, [`est(R)`], black, 5.15)),
+  ((2.275, [`Δ`]), (3.425, [`list`]), (11.45, [`Char`])),
+  ((2.562, [`list`]), (11.45, [`Op`])),
+  opath: ((11.45, 7), (6, 0)),
   cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
@@ -9038,11 +9042,12 @@ both lists empty.
       `base` returns]])],
   // The `step` branch of the `→`, not both: the `base` branch is `nil` on an empty pair, nothing to
   // draw.  `Op×−` is the summand `step°` opens.
-  [#dpanel(7, 13.75, 10.9,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`Op×−`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`Δ`], none), (7.45, 5, 3, [`list`], none), (8.6, "top", 5, none, none), (9.75, "top", 5, none, none)),
-  ((5, [`step°`], black, 8.6), (4, [`thin(U×V)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`cons`], black, 4), (1, [`est(R)`], black, 0.55)),
-  ((8.6, [`Δ`]), (9.75, [`list`]), (10.9, [`Char`])),
-  ((2.85, [`list`]), (10.9, [`Op`])),
+  [#dpanel(7, 14.3, 11.45,
+  ((5.15, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.562, 2, "bot", none, none), (1.7, 5, 2, [`Op×−`], none), (3.425, 3, 2, [`list`], none), (2.85, 5, 3, [`Δ`], none), (4, 5, 3, [`list`], none), (2.275, "top", 5, none, none), (3.425, "top", 5, none, none)),
+  ((5, [`step°`], black, 2.275), (4, [`thin(U×V)`], black, 0.55), (3, [`X`], black, 2.85), (2, [`cons`], black, 1.7), (1, [`est(R)`], black, 5.15)),
+  ((2.275, [`Δ`]), (3.425, [`list`]), (11.45, [`Char`])),
+  ((2.562, [`list`]), (11.45, [`Op`])),
+  opath: ((11.45, 7), (6, 0)),
   cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
@@ -9140,12 +9145,12 @@ both lists empty.
     [#src[the specification — @mct-defn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
-  [#dpanel(4, 8.48, 5.63,
-  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.944, 2, "bot", none, none), (1.944, "top", 2, none, none)),
-  ((2, [`flatten°`], black, 1.944), (1, [`est(R)`], black, 0.55)),
-  ((1.944, [`list⁺`]), (5.63, [`A`])),
-  ((1.944, [`tree`]), (5.63, [`A`])),
-  opath: ((5.63, 4), (3.09, 0)),
+  [#dpanel(4, 8.5, 5.65,
+  ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.946, 2, "bot", none, none), (1.946, "top", 2, none, none)),
+  ((2, [`flatten°`], black, 1.946), (1, [`est(R)`], black, 0.55)),
+  ((1.946, [`list⁺`]), (5.65, [`A`])),
+  ((1.946, [`tree`]), (5.65, [`A`])),
+  opath: ((5.65, 4), (3.1, 0)),
   cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("flatten": "tree(A)⟶list⁺(A)")), names: true)],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9185,12 +9190,12 @@ both lists empty.
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `list⁺` dies and is remade at both, so it runs as a loop between them.
-  [#dpanel(6, 9.18, 6.33,
-  ((0.55, 4.5, 1, [`E`], frc([`𝟙`])), (2.275, 2, "bot", none, none), (1.7, 4, 2, [`Δ`], none), (3.094, 3, 2, [`tree`], none), (3.094, 4, 3, [`list⁺`], none), (2.275, "top", 4, none, none)),
-  ((4, [`cat°`], black, 2.275), (3, [`X`], black, 3.094), (2, [`bin`], black, 1.7), (1, [`est(R)`], black, 0.55)),
-  ((2.275, [`list⁺`]), (6.33, [`A`])),
-  ((2.275, [`tree`]), (6.33, [`A`])),
-  opath: ((6.33, 6), (3.44, 0)),
+  [#dpanel(6, 9.2, 6.35,
+  ((0.55, 4.5, 1, [`E`], frc([`𝟙`])), (2.275, 2, "bot", none, none), (1.7, 4, 2, [`Δ`], none), (3.096, 3, 2, [`tree`], none), (3.096, 4, 3, [`list⁺`], none), (2.275, "top", 4, none, none)),
+  ((4, [`cat°`], black, 2.275), (3, [`X`], black, 3.096), (2, [`bin`], black, 1.7), (1, [`est(R)`], black, 0.55)),
+  ((2.275, [`list⁺`]), (6.35, [`A`])),
+  ((2.275, [`tree`]), (6.35, [`A`])),
+  opath: ((6.35, 6), (3.45, 0)),
   cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", branch: "cat", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9236,12 +9241,12 @@ both lists empty.
   cert: (expect: "splits list((mct×mct)bin)minlist R", src: "list⁺(A)", tgt: "tree(A)", sigs: "splits:list⁺(A)⟶[list⁺(A)×list⁺(A)] mct:list⁺(A)⟶tree(A) bin:tree(A)×tree(A)⟶tree(A)"))],
     [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist R` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
-  [#dpanel(5, 9.18, 6.33,
-  ((0.55, 4, 1, [`list`], none), (2.275, 2, "bot", none, none), (1.7, 4, 2, [`Δ`], none), (3.094, 3, 2, [`tree`], none), (3.094, 4, 3, [`list⁺`], none), (1.7, "top", 4, none, none)),
-  ((4, [`splits`], black, 1.7), (3, [`mct`], black, 3.094), (2, [`bin`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
-  ((1.7, [`list⁺`]), (6.33, [`A`])),
-  ((2.275, [`tree`]), (6.33, [`A`])),
-  opath: ((6.33, 5), (3.44, 0)),
+  [#dpanel(5, 9.2, 6.35,
+  ((0.55, 4, 1, [`list`], none), (2.275, 2, "bot", none, none), (1.7, 4, 2, [`Δ`], none), (3.096, 3, 2, [`tree`], none), (3.096, 4, 3, [`list⁺`], none), (1.7, "top", 4, none, none)),
+  ((4, [`splits`], black, 1.7), (3, [`mct`], black, 3.096), (2, [`bin`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
+  ((1.7, [`list⁺`]), (6.35, [`A`])),
+  ((2.275, [`tree`]), (6.35, [`A`])),
+  opath: ((6.35, 5), (3.45, 0)),
   cert: (expect: "splits list((mct×mct)bin)minlist(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("splits": "list⁺(A)⟶[list⁺(A)×list⁺(A)]", "mct": "list⁺(A)⟶tree(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
@@ -9359,11 +9364,12 @@ the longest repeated tail; #h(4pt)
       the longer match wins]])],
   // `[nil,extend]°` opens `(−)×Code` inside the set the singleton opened and `[nil,(X×𝟙)snoc]`
   // closes it; `list` dies and is remade at both beads, so it runs as a loop between them.
-  [#dpanel(7, 11.45, 8.6,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`−×Code`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`list`], none), (7.45, "top", 5, none, none)),
-  ((5, [`extend°`], black, 7.45), (4, [`thin(Q)`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
-  ((7.45, [`list`]), (8.6, [`Char`])),
-  ((2.85, [`list`]), (8.6, [`Code`])),
+  [#dpanel(7, 13.1, 10.25,
+  ((4.501, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.776, 2, "bot", none, none), (2.201, 5, 2, [`−×Code`], none), (3.351, 3, 2, [`list`], none), (3.351, 5, 3, [`list`], none), (2.776, "top", 5, none, none)),
+  ((5, [`extend°`], black, 2.776), (4, [`thin(Q)`], black, 0.55), (3, [`X`], black, 3.351), (2, [`snoc`], black, 2.201), (1, [`est(R)`], black, 4.501)),
+  ((2.776, [`list`]), (10.25, [`Char`])),
+  ((2.776, [`list`]), (10.25, [`Code`])),
+  opath: ((10.25, 7), (5.4, 0)),
   cert: (expect: "([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", branch: "extend", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9390,11 +9396,12 @@ the longest repeated tail; #h(4pt)
     [#src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
       are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)} ∪ {(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
-  [#dpanel(7, 11.45, 8.6,
-  ((0.55, 4, 1, [`E`], none), (1.7, 5.5, 4, [`E`], frc([`𝟙`])), (2.85, 2, "bot", none, none), (4, 5, 2, [`−×Code`], none), (5.15, 3, 2, [`list`], none), (6.3, 5, 3, [`list`], none), (7.45, "top", 5, none, none)),
-  ((5, [`extend°`], black, 7.45), (4, [`thin(prefix°×(⊤+⊤))`], black, 1.7), (3, [`X`], black, 6.3), (2, [`snoc`], black, 4), (1, [`est(R)`], black, 0.55)),
-  ((7.45, [`list`]), (8.6, [`Char`])),
-  ((2.85, [`list`]), (8.6, [`Code`])),
+  [#dpanel(7, 13.1, 10.25,
+  ((4.501, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.776, 2, "bot", none, none), (2.201, 5, 2, [`−×Code`], none), (3.351, 3, 2, [`list`], none), (3.351, 5, 3, [`list`], none), (2.776, "top", 5, none, none)),
+  ((5, [`extend°`], black, 2.776), (4, [`thin(prefix°×(⊤+⊤))`], black, 0.55), (3, [`X`], black, 3.351), (2, [`snoc`], black, 2.201), (1, [`est(R)`], black, 4.501)),
+  ((2.776, [`list`]), (10.25, [`Char`])),
+  ((2.776, [`list`]), (10.25, [`Code`])),
+  opath: ((10.25, 7), (5.4, 0)),
   cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9415,11 +9422,12 @@ the longest repeated tail; #h(4pt)
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
-  [#dpanel(5, 10.3, 7.45,
-  ((0.55, 4, 1, [`list`], none), (1.7, 2, "bot", none, none), (2.85, 4, 2, [`−×Code`], none), (4, 3, 2, [`list`], none), (5.15, 4, 3, [`list`], none), (6.3, "top", 4, none, none)),
-  ((4, [`reduce`], black, 6.3), (3, [`encode`], black, 5.15), (2, [`snoc`], black, 2.85), (1, [`minlist(R)`], black, 0.55)),
-  ((6.3, [`list`]), (7.45, [`Char`])),
-  ((1.7, [`list`]), (7.45, [`Code`])),
+  [#dpanel(5, 10.2, 7.35,
+  ((0.55, 4, 1, [`list`], none), (2.776, 2, "bot", none, none), (2.201, 4, 2, [`−×Code`], none), (3.351, 3, 2, [`list`], none), (3.351, 4, 3, [`list`], none), (2.201, "top", 4, none, none)),
+  ((4, [`reduce`], black, 2.201), (3, [`encode`], black, 3.351), (2, [`snoc`], black, 2.201), (1, [`minlist(R)`], black, 0.55)),
+  ((2.201, [`list`]), (7.35, [`Char`])),
+  ((2.776, [`list`]), (7.35, [`Code`])),
+  opath: ((7.35, 5), (3.95, 0)),
   cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: ("reduce": "[Char]⟶[[Char]×Code]", "encode": "[Char]⟶[Code]", "snoc": "[Code]×Code⟶[Code]", "minlist": "[x]⟶x")))],
 )]<code-laws>
 
@@ -9663,11 +9671,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       last step alone or discards it]])],
   // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
   // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
-  [#dpanel(6, 10.3, 7.45,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Char`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`list`], none), (6.3, "top", 4, none, none)),
-  ((4, [`expand°`], black, 6.3), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
-  ((6.3, [`list`]), (7.45, [`Char`])),
-  ((1.7, [`list`]), (7.45, [`Char`])),
+  [#dpanel(6, 10.7, 7.85,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (2.776, 1, "bot", none, none), (2.201, 4, 1, [`−×Char`], none), (3.351, 2, 1, [`list`], none), (3.351, 4, 2, [`list`], none), (2.776, "top", 4, none, none)),
+  ((4, [`expand°`], black, 2.776), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 3.351), (1, [`snoc`], black, 2.201)),
+  ((2.776, [`list`]), (7.85, [`Char`])),
+  ((2.776, [`list`]), (7.85, [`Char`])),
+  opath: ((7.85, 6), (4.2, 0)),
   cert: (expect: "([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "[Char]", tgt: "[Char]", branch: "expand", sigs: ("expand": "[Char]×Char⟶[Char]", "snoc": "[Char]×Char⟶[Char]", "X": "[Char]⟶[Char]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9694,11 +9703,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "String", tgt: "String", sigs: "expand:String×Char⟶String snoc:String×Char⟼String X:String⟶String V:String⟶String U:Char⟶Char"))],
     [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
-  [#dpanel(6, 10.3, 7.45,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Char`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`list`], none), (6.3, "top", 4, none, none)),
-  ((4, [`expand°`], black, 6.3), (3, [`est(V×U)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
-  ((6.3, [`list`]), (7.45, [`Char`])),
-  ((1.7, [`list`]), (7.45, [`Char`])),
+  [#dpanel(6, 10.7, 7.85,
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (2.776, 1, "bot", none, none), (2.201, 4, 1, [`−×Char`], none), (3.351, 2, 1, [`list`], none), (3.351, 4, 2, [`list`], none), (2.776, "top", 4, none, none)),
+  ((4, [`expand°`], black, 2.776), (3, [`est(V×U)`], black, 0.55), (2, [`X`], black, 3.351), (1, [`snoc`], black, 2.201)),
+  ((2.776, [`list`]), (7.85, [`Char`])),
+  ((2.776, [`list`]), (7.85, [`Char`])),
+  opath: ((7.85, 6), (4.2, 0)),
   cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "[Char]", tgt: "[Char]", sigs: ("expand": "[Char]×Char⟶[Char]", "snoc": "[Char]×Char⟶[Char]", "X": "[Char]⟶[Char]")))],
 
   [#vstep(EQ, [],
@@ -9819,10 +9829,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
   // theorem it feeds and it would otherwise both be `h` in one table.
   [#dpanel(6, 10.3, 7.45,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),
-  ((4, [`snag°`], black, 6.3), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
-  ((6.3, [`bag`]), (7.45, [`Job`])),
-  ((1.7, [`list`]), (7.45, [`Job`])),
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (2.521, 1, "bot", none, none), (1.946, 4, 1, [`−×Job`], none), (3.096, 2, 1, [`list`], none), (3.096, 4, 2, [`bag`], none), (2.521, "top", 4, none, none)),
+  ((4, [`snag°`], black, 2.521), (3, [`est(Q)`], black, 0.55), (2, [`X`], black, 3.096), (1, [`snoc`], black, 1.946)),
+  ((2.521, [`bag`]), (7.45, [`Job`])),
+  ((2.521, [`list`]), (7.45, [`Job`])),
+  opath: ((7.45, 6), (4, 0)),
   cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", branch: "snag", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9849,10 +9860,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "Bag(Job)", tgt: "[Job]", sigs: "snag:Bag(Job)×Job⟼Bag(Job) snoc:[Job]×Job⟼[Job] X:Bag(Job)⟶[Job] Q':Bag(Job)×Job⟶Bag(Job)×Job"))],
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#dpanel(6, 10.3, 7.45,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 1, "bot", none, none), (2.85, 4, 1, [`−×Job`], none), (4, 2, 1, [`list`], none), (5.15, 4, 2, [`bag`], none), (6.3, "top", 4, none, none)),
-  ((4, [`snag°`], black, 6.3), (3, [`est(Q')`], black, 0.55), (2, [`X`], black, 5.15), (1, [`snoc`], black, 2.85)),
-  ((6.3, [`bag`]), (7.45, [`Job`])),
-  ((1.7, [`list`]), (7.45, [`Job`])),
+  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (2.521, 1, "bot", none, none), (1.946, 4, 1, [`−×Job`], none), (3.096, 2, 1, [`list`], none), (3.096, 4, 2, [`bag`], none), (2.521, "top", 4, none, none)),
+  ((4, [`snag°`], black, 2.521), (3, [`est(Q')`], black, 0.55), (2, [`X`], black, 3.096), (1, [`snoc`], black, 1.946)),
+  ((2.521, [`bag`]), (7.45, [`Job`])),
+  ((2.521, [`list`]), (7.45, [`Job`])),
+  opath: ((7.45, 6), (4, 0)),
   cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
