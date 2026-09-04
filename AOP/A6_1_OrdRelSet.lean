@@ -195,6 +195,30 @@ public theorem prod_not_categorical_product :
   obtain ⟨-, _, hz, -⟩ := hd
   exact Bool.noConfusion hz
 
+/-- **The free theorem of `π₂` is LAX, not strict.**  `F` the identity relator and `G` constant
+    at `1` make the square at `R` read `(R×𝟙) ≫ outr = outr`; at the EMPTY `R : 1 ⟶ 1` the left
+    side is empty and the right side is not.  `prodMap_outr_eq_of_entire`'s `Entire (F.map R)` is
+    exactly what fails, so that hypothesis is forced. -/
+public theorem outr_not_strictNatural :
+    ∃ (F G : Relator RelSet.{0} RelSet.{0}),
+      LaxNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outr) ∧
+      ¬ StrictNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outr) := by
+  refine ⟨Relator.idRelator RelSet.{0}, Relator.const (⟨Unit⟩ : RelSet.{0}),
+    outr_laxNatural _ _, ?_⟩
+  intro hstrict
+  have heq : prodMap (relProd (⟨Unit⟩ : RelSet.{0}) ⟨Unit⟩) (relProd (⟨Unit⟩ : RelSet.{0}) ⟨Unit⟩)
+        (fun _ _ => False) (𝟙 (⟨Unit⟩ : RelSet.{0}))
+      ≫ (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
+      = (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr ≫ 𝟙 (⟨Unit⟩ : RelSet.{0}) :=
+    hstrict (a := ⟨Unit⟩) (b := ⟨Unit⟩) (fun _ _ => False)
+  have hne : ((relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
+      ≫ 𝟙 (⟨Unit⟩ : RelSet.{0})) ((), ()) () := ⟨(), rfl, rfl⟩
+  rw [← heq] at hne
+  obtain ⟨q, hq, -⟩ := hne
+  have hq' : RelSet.rprodMap (fun _ _ => False : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨Unit⟩)
+      (𝟙 (⟨Unit⟩ : RelSet.{0})) ((), ()) q := by rw [← RelSet.prodMap_eq_rprodMap]; exact hq
+  exact hq'.1
+
 /-- The EMPTY object, carrying the only relation there is on `Empty`. -/
 @[expose] public def ordEmpty : OrdObj RelSet.{0} := ⟨⟨Empty⟩, fun _ y => y.elim⟩
 
