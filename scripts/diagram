@@ -162,8 +162,9 @@ def natural(core, sigs):
     if core[0] == 'conv':
         return natural(core[1], sigs)
     lab = core[1] if core[0] == 'app' else spell(core)
-    if lab in NAT:
-        return NAT[lab]                # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
+    if lab in NAT:                     # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is
+        return NAT[lab] != "no" and NAT[lab]   # the third answer — a REFUTED row, on the wire with a
+                                       # counterexample behind it, not an undecided one
     # An APPLICATION names one object: `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given
     # is one relation at one object, and naturality would need `E(f) est(R_B) = est(R_A) f` for every
     # `f`, which fails — `f` need not be monotone.  A schematic one-letter name is endo by construction.

@@ -267,8 +267,10 @@ def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
     the statement still has the key the row was read against; then the letters the row's objects use
     must be spelled somewhere in that statement — a projection carries none, so it goes unchecked.
-    A row STATING a `nat` is held to the same standard: the dot it draws is a theorem, so `nat-lean`
-    must name the declaration proving it.  A row with no `nat` claims nothing and is skipped."""
+    A row STATING a `nat` is held to the same standard: the mark it draws is a theorem, so `nat-lean`
+    must name the declaration behind it — `"strict"` and `"lax"` the proof of the square, `"no"` the
+    counterexample refuting it.  A row with no `nat` claims nothing and is skipped, which for a
+    polymorphic row is not an option: `diagram` refuses to draw one."""
     t = sl.sigs()
     db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
     say = {k: v for k, v in t["spelling"].items() if k != "//"}
