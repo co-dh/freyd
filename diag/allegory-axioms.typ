@@ -2493,6 +2493,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   and (if y0 == "top" { h } else { y0 }) > bd.at(0)
   and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
 #let dkey(s, y) = s + str(float(y))
+// A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
+// IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
+// covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
+#let HSTUB = 0.075
+// Where a strand standing in column `x` stops on its way to the dot at `(bx, y)`: back along the row
+// it arrives on, or — where the dot stands in the strand's OWN column and there is no room along the
+// row — back up its column, `vy` being +1 for a strand above the dot and -1 for one below.
+#let dstub(bx, y, x, vy) = {
+  let d = if calc.abs(x - bx) < 1e-6 { (0, HSTUB * vy) } else if x < bx { (-HSTUB, 0) } else { (HSTUB, 0) }
+  (bx + d.at(0), y + d.at(1))
+}
 // ONE knee per bead-and-side, for arms, legs and dips alike: equal knees on one bezier family give
 // the strands the same y(t) and they nest, where unequal ones braid — so a per-strand knee, whose
 // aspect grew with the horizontal run, is given up; the arrival stays VERTICAL either way, since
@@ -2546,10 +2557,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   let flat = (alone and y0 != "top" and y1 != "bot" and un == none
     and y0 - kb <= y1 + kd + 1e-6
     and x >= calc.min(xat(y0), xat(y1)) - 1e-6 and x <= calc.max(xat(y0), xat(y1)) + 1e-6)
-  let pts = if flat { ((xat(y0), y0), (xat(y1), y1)) } else {
-    (if y0 == "top" { ((x, h),) } else if un != none { ((x, y0),) } else {
-      ((xat(y0), y0), (x, y0 - kb))
-    }) + (if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), (xat(y1), y1)) })
+  let pts = if flat {
+    // Dot to dot the stub runs along the LINE, which is the strand's own direction here.
+    let (a, b) = ((xat(y0), y0), (xat(y1), y1))
+    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+    let m = calc.sqrt(ux * ux + uy * uy)
+    ((a.at(0) + HSTUB * ux / m, a.at(1) + HSTUB * uy / m),
+     (b.at(0) - HSTUB * ux / m, b.at(1) - HSTUB * uy / m))
+  } else {
+    (if y0 == "top" { ((x, h),) } else if un != none { ((x, y0 - HSTUB),) } else {
+      (dstub(xat(y0), y0, x, -1), (x, y0 - kb))
+    }) + (if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), dstub(xat(y1), y1, x, 1)) })
   }
   // Straight, as the object edge is: dot to dot the two ends need no vertical tangent to meet, and
   // `hm-seg`'s would bow the run into an S — IntroString p. 48 draws that run as a single `L`.
@@ -2569,17 +2587,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   let (pts, hs) = ((), ())
   if y0 == "top" { pts.push((x, h)) } else {
     hs.push(pts.len())
-    pts += ((xat(t), t), (x, t - gk.at(dkey("b", t))))
+    pts += (dstub(xat(t), t, x, -1), (x, t - gk.at(dkey("b", t))))
   }
   for yb in ybs {
     pts.push((x, yb + gk.at(dkey("d", yb))))
     hs.push(pts.len())
-    pts += ((xat(yb), yb), (x, yb - gk.at(dkey("b", yb))))
+    pts += (dstub(xat(yb), yb, x, 0), (x, yb - gk.at(dkey("b", yb))))
   }
   if y1 == "bot" { pts.push((x, 0)) } else {
     pts.push((x, b + gk.at(dkey("d", b))))
     hs.push(pts.len())
-    pts.push((xat(b), b))
+    pts.push(dstub(xat(b), b, x, 1))
   }
   hm-wire(pts, ..wc, hs: hs)
 }
@@ -2668,6 +2686,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       // strand has just come vertical; on the knee's own end the box still straddles the bend.
       hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { kb + 0.161 } else { 0 })),
               nm, col: col, anchor: "east")
+    }
+  }
+  // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
+  // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the
+  // outgoing leg from its midpoint — exactly the two `HSTUB`s back to back.
+  for b in beads {
+    let dy = lanes.filter(l => l.at(2) != "bot" and l.at(2) == b.at(0))
+    if dy.len() > 1 {
+      let nm = dnm(dy.sorted(key: l => l.at(0)).first(), top, bot)
+      hm-wire(((dx(b.at(0)) - HSTUB, b.at(0)), (dx(b.at(0)) + HSTUB, b.at(0))),
+              ..(if nm == none { (:) } else { (col: FCOL.at(plain(nm))) }))
     }
   }
   // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
