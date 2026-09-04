@@ -1164,7 +1164,33 @@ def sigpair(x):
     return k, v + nat + mark
 
 
-_HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
+# A formula to a PICTURE in one command.  The scratch lives beside the note because its `#import`
+# resolves from its own directory, and it is removed whether or not typst succeeded.
+def picture(recs, out=None, tag="render", dpi=200):
+    """The panels' pdf, or the png at `out` when given.  One panel is emitted alone, so a caller
+    measuring the page — `hm-check --geom` — gets the same ink as pasting the literal into the note."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    src = os.path.join(root, "diag", f".diagram-{tag}.typ")
+    pdf = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"diagram-{tag}.pdf")
+    body = (emit(recs[0]) if len(recs) == 1 else "#stack(dir: ltr, spacing: 30pt,\n"
+            + ",\n".join(emit(r).lstrip("#") for r in recs) + ")")
+    with open(src, "w", encoding="utf-8") as f:
+        f.write(f"// SCRATCH — written and removed by `diagram.picture`.\n"
+                '#import "allegory-axioms.typ": dpanel, frc\n'
+                "#set page(width: auto, height: auto, margin: 0.8cm, fill: white)\n"
+                "#set text(11pt)\n\n" + body + "\n")
+    try:
+        subprocess.run(["typst", "compile", "--root", root, src, pdf], check=True)
+    finally:
+        os.remove(src)
+    if out is None:
+        return pdf
+    subprocess.run(["pdftoppm", "-r", str(dpi), "-png", "-singlefile", pdf,
+                    out[:-4] if out.endswith(".png") else out], check=True)
+    return out
+
+
+_HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left] [--png OUT]'
               ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
               '\n       diagram --roundtrip [--show] [--from FIELD] [--json FILE] [diag/allegory-axioms.typ]'
               '\n       diagram --compare [diag/allegory-axioms.typ]'
@@ -1178,6 +1204,8 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               " diag/hm-sigs.json's `mu`, and gives the carrier when the algebra is a composite with"
               " no row of its own.  The same flag `scripts/circuit` takes, spelled the same way"
               '\n--slope left  lean the layout left instead of the default lane placement'
+              '\n--png OUT     also render the panel to OUT (200 dpi); the `dpanel` literal still'
+              " goes to stdout and the written path to stderr"
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
               " descending to the right at 2 across : 1 down, one lane pitch per bead that retypes"
               " it, in ROW units of 0.5cm, held vertical in its own column above the first bead"
@@ -1208,9 +1236,9 @@ def main(argv):
     own = sl.opt(argv, "--sigs")
     own = dict(sigpair(x) for x in own.split()) if own else None
     slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
-    pan = sl.opt(argv, "--panel")
+    pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--panel") if o in argv for i in (argv.index(o), argv.index(o) + 1)}
+                         "--panel", "--png") if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
     tbl = sl.sigs()
@@ -1225,7 +1253,7 @@ def main(argv):
     if not (formula and src and tgt):
         sys.exit(__doc__.strip().splitlines()[0]
                  + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
-                 + ' --src "F([A])" --tgt "[A]" "α prefix list(p)"'
+                 + ' [--png OUT] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]'
                  + '\n       diagram --write [diag/allegory-axioms.typ]')
@@ -1235,6 +1263,8 @@ def main(argv):
             + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
              book)
+    if png:
+        print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`
         print(emit(r))          # panel lets the object wire out through the RIGHT side instead
         return

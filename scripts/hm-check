@@ -410,17 +410,8 @@ def ourgeom(fx, tbl, tag):
     book = tuple(int(v) for v in g["panel"].lower().split("x")) + (bool(g.get("obreak")),)
     rec = dg.draw(renamed(fx["mirrored"].split("=")[0].strip(), a),
                   renamed(fx["src"], a), renamed(fx["tgt"], a), t, book=book)
-    src = os.path.join(ROOT, "diag", f".hm-geom-{tag}.typ")
-    pdf = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"hm-geom-{tag}.pdf")
-    with open(src, "w", encoding="utf-8") as f:                 # `#import` is resolved from the
-        f.write("// SCRATCH — written and removed by `hm-check --geom`.\n"   # file's own directory,
-                '#import "allegory-axioms.typ": dpanel, frc\n'   # so the scratch lives beside it
-                "#set page(width: auto, height: auto, margin: 0.8cm, fill: white)\n"
-                "#set text(11pt)\n\n" + dg.emit(rec) + "\n")
-    try:
-        subprocess.run(["typst", "compile", "--root", ROOT, src, pdf], check=True)
-    finally:
-        os.remove(src)
+    # ONE renderer, shared with `diagram --png`: what is measured here is what that command shows.
+    pdf = dg.picture([rec], tag=f"geom-{tag}")
     subprocess.run(["pdftocairo", "-svg", "-f", "1", "-l", "1", pdf, pdf[:-4] + ".svg"], check=True)
     els = list(fg.elements(open(pdf[:-4] + ".svg", encoding="utf-8").read()))
     return frame(els, rec), a
