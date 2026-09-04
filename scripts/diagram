@@ -1161,7 +1161,7 @@ def regen(path, tbl, write):
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
                             c.get("sigs"), c.get("slope"), c.get("mu")))[1:-1]
-        except (Unhandled, ValueError, KeyError, StopIteration) as ex:
+        except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
             continue

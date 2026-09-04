@@ -5201,22 +5201,24 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
 #let mh-cons-sum = dpanel(3, 5.7, 2.85,
   ((1.125, 2, 1, [`list`], none), (0.55, "top", 2, none, none), (1.7, "top", 2, none, none)),
-  ((2, [`cons`], black, 0.55, 1.125), (1, [`sum`], black, 1.125, 1.125)),
+  ((2, [`cons`], black, 0.55, 1.125), (1, [`sum`], black, 1.125)),
   ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`A`])),
   ((2.85, [`A`]),),
+  opath: ((2.85, 3), (1.7, 0)),
   cert: (expect: "cons sum", src: "A×list(A)", tgt: "A"))
 #let mh-alg-est = dpanel(4, 6.3, 3.45,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, "top", 2, none, none)),
-  ((2, [`zero`], black, 1.7, 1.7), (1, [`est(≥)`], black, 0.55)),
-  ((1.7, [`𝟏`]), (3.45, [`Int`])),
+  ((2, [`plus`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((1.7, [`A×−`]), (3.45, [`Int`])),
   ((3.45, [`Int`]),),
   opath: ((3.45, 4), (2, 0)),
-  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "zero"))
+  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus"))
 #let mh-alg = dpanel(2, 4.55, 1.7,
   ((0.55, "top", 1, none, none),),
-  ((1, [`zero`], black, 0.55, 0.55),),
+  ((1, [`zero`], black, 0.55),),
   ((0.55, [`𝟏`]), (1.7, [`Int`])),
   ((1.7, [`Int`]),),
+  opath: ((1.7, 2), (0.55, 0)),
   cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
 // `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×Int⟶Int"`.
@@ -5229,21 +5231,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   cert: (expect: "𝟙%∋ E(plus)est(≥)", src: "A×Int", tgt: "Int", sigs: ("plus": "A×Int⟶Int")))
 #let mh-segsum = dpanel(5, 6.3, 3.45,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (1.7, "top", 3, none, none)),
-  ((3, [`segment`], black, 1.7, 1.7, "lax"), (2, [`sum`], black, 1.7, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((3, [`segment`], black, 1.7, 1.7, "lax"), (2, [`sum`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((1.7, [`list`]), (3.45, [`A`])),
   ((3.45, [`A`]),),
   opath: ((3.45, 5), (2, 0)),
   cert: (expect: "𝟙%∋ E(segment sum)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-greedy = dpanel(5, 6.3, 3.45,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`list`], none), (1.7, "top", 3, none, none)),
-  ((3, [`suffix`], black, 1.7, 1.7, "lax"), (2, [`⦇[zero,⊕]⦈`], black, 1.7, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((3, [`suffix`], black, 1.7, 1.7, "lax"), (2, [`⦇[zero,⊕]⦈`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((1.7, [`list`]), (3.45, [`A`])),
   ((3.45, [`A`]),),
   opath: ((3.45, 5), (2, 0)),
   cert: (expect: "𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥)", src: "list(A)", tgt: "A"))
 #let mh-shape = dpanel(8, 8, 5.15,
   ((0.55, 6.5, 1, [`E`], frc([`𝟙`])), (1.7, 4.5, 2, [`E`], frc([`𝟙`])), (2.85, 4, 3, [`list`], none), (2.85, 6, 4, [`list`], none), (2.85, "top", 6, none, none)),
-  ((6, [`suffix`], black, 2.85, 2.85, "lax"), (4, [`prefix`], black, 2.85, 2.85, "lax"), (3, [`sum`], black, 2.85, 2.85), (2, [`est(≥)`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
+  ((6, [`suffix`], black, 2.85, 2.85, "lax"), (4, [`prefix`], black, 2.85, 2.85, "lax"), (3, [`sum`], black, 2.85), (2, [`est(≥)`], black, 1.7), (1, [`est(≥)`], black, 0.55)),
   ((2.85, [`list`]), (5.15, [`A`])),
   ((5.15, [`A`]),),
   opath: ((5.15, 8), (2.85, 0)),
@@ -5382,9 +5384,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#dpanel(3, 5.7, 2.85,
   ((0.55, "top", 1, none, none), (1.7, "top", 2, none, none)),
-  ((2, [`sum`], black, 1.7, 1.7), (1, [`plus`], black, 0.55, 0.55)),
+  ((2, [`sum`], black, 1.7), (1, [`plus`], black, 0.55)),
   ((0.55, [`A×−`]), (1.7, [`list`]), (2.85, [`A`])),
   ((2.85, [`A`]),),
+  opath: ((2.85, 3), (1.7, 0)),
   cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×x⟶x"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -6772,14 +6775,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // `frc(⦇S⦈ choose)` is that one absorption step away.
 #let d-out2 = dpanel(5, 10.3, 7.45,
   ((0.55, 3.5, 1, [`E`], frc([`𝟙`])), (1.7, 3, 2, [`Δ`], none), (2.85, 3, "bot", none, none), (2.275, "top", 3, none, none)),
-  ((3, [`⦇S⦈`], black, 2.275, 2.275), (2, [`choose`], black, 1.7, 1.7, "lax"), (1, [`est(R°)`], black, 0.55)),
+  ((3, [`⦇S⦈`], black, 2.275), (2, [`choose`], black, 1.7, 1.7, "lax"), (1, [`est(R°)`], black, 0.55)),
   ((2.275, [`tree`]), (7.45, [`A`])),
   ((2.85, [`list`]), (7.45, [`A`])),
   opath: ((7.45, 5), (4, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 #let d-out4 = dpanel(7, 10.3, 7.45,
   ((0.55, 5.5, 4, [`E`], frc([`𝟙`])), (0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.7, 5, 2, [`Δ`], none), (2.85, 5, "bot", none, none), (2.275, "top", 5, none, none)),
-  ((5, [`⦇S⦈`], black, 2.275, 2.275), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 1.7, 1.7, "lax"), (1, [`est(R°)`], black, 0.55)),
+  ((5, [`⦇S⦈`], black, 2.275), (4, [`est((R×R)°)`], black, 0.55), (2, [`choose`], black, 1.7, 1.7, "lax"), (1, [`est(R°)`], black, 0.55)),
   ((2.275, [`tree`]), (7.45, [`A`])),
   ((2.85, [`list`]), (7.45, [`A`])),
   opath: ((7.45, 7), (4, 0)),
@@ -7174,7 +7177,7 @@ N(α)(that)
   cert: (expect: "⦇generate⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca5 = dpanel(4, 8, 5.15,
   ((0.55, 2, 1, [`E`], none), (0.55, 3, 2, [`N`], none), (1.7, 3, "bot", none, none), (0.55, "top", 3, none, none), (1.7, "top", 3, none, none)),
-  ((3, [`⦇Q⦈`], black, 0.55, 1.125), (2, [`setify`], black, 0.55, 0.55), (1, [`est(R)`], black, 0.55)),
+  ((3, [`⦇Q⦈`], black, 0.55), (2, [`setify`], black, 0.55, 0.55, "lax"), (1, [`est(R)`], black, 0.55)),
   ((0.55, [`L`]), (1.7, [`N`]), (5.15, [`Nat`])),
   ((1.7, [`L`]), (5.15, [`Nat`])),
   opath: ((5.15, 4), (2.85, 0)),
@@ -7260,7 +7263,7 @@ N(α)(that)
 // bead travels past it: `generate` above it on the left, `Q` below it on the right.
 #let cb1 = dpanel(3, 7.7, 4.85,
   ((1.125, 2, "bot", none, none), (0.55, "top", 2, none, none), (1.7, "top", 2, none, none), (2.85, "top", 1, none, none)),
-  ((2, [`generate`], black, 0.55, 1.125), (1, [`est(R)`], black, 2.85)),
+  ((2, [`generate`], black, 0.55), (1, [`est(R)`], black, 2.85)),
   ((0.55, [`F`]), (1.7, [`N`]), (2.85, [`E`]), (4.85, [`LA`])),
   ((1.125, [`N`]), (4.85, [`LA`])),
   opath: ((4.85, 3), (2.7, 0)),
@@ -7493,11 +7496,12 @@ N(α)(that)
      the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
  `(𝟙×⊤)new⊑new H`]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
-  [#dpanel(2, 5.7, 2.85,
+  [#dpanel(2, 8, 5.15,
   ((0.55, 1, "bot", none, none), (1.7, 1, "bot", none, none), (1.125, "top", 1, none, none)),
-  ((1, [`⦇S%∋ est(R;H)⦈`], black, 1.125, 1.125),),
-  ((1.125, [`list`]), (2.85, [`Int`])),
-  ((0.55, [`list`]), (1.7, [`list`]), (2.85, [`Int`])),
+  ((1, [`⦇S%∋ est(R;H)⦈`], black, 1.125),),
+  ((1.125, [`list`]), (5.15, [`Int`])),
+  ((0.55, [`list`]), (1.7, [`list`]), (5.15, [`Int`])),
+  opath: ((5.15, 2), (2.85, 0)),
   cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("⦇⦈": "[x]⟶[[x]]")))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
@@ -8642,7 +8646,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@658f3c24
   [#dpanel(4, 13.58, 10.73,
   ((0.55, 2.5, 1, [`E`], frc([`𝟙`])), (1.944, "top", 2, none, none), (3.094, 2, "bot", none, none), (4.489, 2, "bot", none, none)),
-  ((2, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 1.944, 1.944), (1, [`est(R)`], black, 0.55)),
+  ((2, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 1.944), (1, [`est(R)`], black, 0.55)),
   ((1.944, [`list⁺`]), (10.73, [`Word`])),
   ((3.094, [`list⁺`]), (4.489, [`list⁺`]), (10.73, [`Word`])),
   opath: ((10.73, 4), (5.64, 0)),
