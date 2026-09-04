@@ -9029,7 +9029,7 @@ both lists empty.
   // loop between them.  `thin Q : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
   [#dpanel(7, 10.18, 7.33,
   ((0.55, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.554, 2, "bot", none, none), (1.691, 5, 2, [`Op×−`], none), (3.416, 3, 2, [`list`], none), (2.841, 5, 3, [`Δ`], none), (3.991, 5, 3, [`list`], none), (2.266, "top", 5, none, none), (3.416, "top", 5, none, none)),
-  ((5, [`step°`], black, 2.266), (4, [`thin(Q)`], black, 0.55), (3, [`X`], black, 2.841), (2, [`cons`], black, 1.691), (1, [`est(R)`], black, 0.55)),
+  ((5, [`step°`], black, 2.266), (4, [`thin(Q)`], black, 0.55), (3, [`X`], black, 2.841), (2, [`cons`], black, 1.691, 2.5535), (1, [`est(R)`], black, 0.55)),
   ((2.266, [`Δ`]), (3.416, [`list`]), (7.33, [`Char`])),
   ((2.554, [`list`]), (7.33, [`Op`])),
   opath: ((7.33, 7), (3.94, 0)),
@@ -9044,7 +9044,7 @@ both lists empty.
   // draw.  `Op×−` is the summand `step°` opens.
   [#dpanel(7, 10.18, 7.33,
   ((0.55, 4, 1, [`E`], none), (0.55, 5.5, 4, [`E`], frc([`𝟙`])), (2.554, 2, "bot", none, none), (1.691, 5, 2, [`Op×−`], none), (3.416, 3, 2, [`list`], none), (2.841, 5, 3, [`Δ`], none), (3.991, 5, 3, [`list`], none), (2.266, "top", 5, none, none), (3.416, "top", 5, none, none)),
-  ((5, [`step°`], black, 2.266), (4, [`thin(U×V)`], black, 0.55), (3, [`X`], black, 2.841), (2, [`cons`], black, 1.691), (1, [`est(R)`], black, 0.55)),
+  ((5, [`step°`], black, 2.266), (4, [`thin(U×V)`], black, 0.55), (3, [`X`], black, 2.841), (2, [`cons`], black, 1.691, 2.5535), (1, [`est(R)`], black, 0.55)),
   ((2.266, [`Δ`]), (3.416, [`list`]), (7.33, [`Char`])),
   ((2.554, [`list`]), (7.33, [`Op`])),
   opath: ((7.33, 7), (3.94, 0)),
@@ -9059,7 +9059,7 @@ both lists empty.
   // and the beads are the same picture: only the labels change.
   [#dpanel(5, 9.8, 6.95,
   ((0.55, 4, 1, [`list`], none), (2.562, 2, "bot", none, none), (1.7, 4, 2, [`Op×−`], none), (3.425, 3, 2, [`list`], none), (2.85, 4, 3, [`Δ`], none), (4, 4, 3, [`list`], none), (1.7, "top", 4, none, none), (2.85, "top", 4, none, none)),
-  ((4, [`unstep`], black, 1.7), (3, [`mle`], black, 2.85), (2, [`cons`], black, 1.7), (1, [`minlist(R)`], black, 0.55)),
+  ((4, [`unstep`], black, 1.7), (3, [`mle`], black, 2.85), (2, [`cons`], black, 1.7, 2.5625), (1, [`minlist(R)`], black, 0.55)),
   ((1.7, [`Δ`]), (2.85, [`list`]), (6.95, [`Char`])),
   ((2.562, [`list`]), (6.95, [`Op`])),
   opath: ((6.95, 5), (3.75, 0)),

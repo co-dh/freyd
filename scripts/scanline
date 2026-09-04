@@ -990,6 +990,23 @@ def sigs():
     return _TBL
 
 
+def instance(row, d):
+    """Is the panel's signature `d` the ROW's arrow, written at this display's objects?
+    `cons : Op×[Op]⟶[Op]` instantiates the row's `x×[x]⟶[x]` and is the same arrow; an `X : A⟶B`
+    against a row that types some other `X` is not, and must not inherit its proof."""
+    if not (row.get("src") and row.get("tgt")):
+        return False
+    try:
+        ps, pt, es, et = (parse(row["src"]), parse(row["tgt"]), parse(d["src"]), parse(d["tgt"]))
+        sub = {}
+        bind(norm(ps), norm(es), sub)
+        bind(norm(pt), norm(et), sub)
+        return all(spell(inst(norm(p), sub)) == spell(norm(e))
+                   for p, e in ((ps, es), (pt, et)))
+    except Exception:
+        return False
+
+
 def typed(table, own):
     """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
     one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
@@ -1004,11 +1021,14 @@ def typed(table, own):
         d = dict(zip(("src", "tgt"), sig.split("⟶")),
                  **({"nat": "strict"} if nat else {}),
                  **({"cite": mark[1:]} if mark.startswith("=") else {}))
-        # A panel RESTATING the global row is the same arrow, so what that row proved still holds;
-        # a different signature is a different arrow and no proof of the name travels with it.
+        # A panel naming the global arrow — restating its signature, or INSTANTIATING it at this
+        # display's objects (`cons : Op×[Op]⟶[Op]` for the row's `x×[x]⟶[x]`) — is that same arrow,
+        # so what Lean proved of it still holds and the mark follows the proof, not the shape the
+        # panel happens to write.  A signature that does not instantiate the row is a different
+        # arrow wearing the same letter, and no proof of the name travels with it.
         old = table["sigs"].get(k, {})
         keep = {x: old[x] for x in ("lean", "nat", "nat-lean", "not-lax") if x in old} \
-            if (old.get("src"), old.get("tgt")) == (d["src"], d["tgt"]) else {}
+            if instance(old, d) else {}
         return {**keep, **d}
     return {**table, "sigs": {**table["sigs"], **{k: one(k, v) for k, v in own.items()}}}
 
