@@ -67,6 +67,9 @@
   "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"),
   // IntroString p.48's three monads, for the panels that redraw Cheng's commuting diagram.
   "B": rgb("#7a5c3e"), "C": rgb("#3f7d6e"),
+  // `M`, the monad of IntroString p.74, so those figures render against the book without a rename;
+  // amber is ΔE76 66 from the nearest bead colour and 31 from the nearest lane.
+  "M": rgb("#b58900"),
   // `P A = E A` is the same object, so `P` takes `E`'s hue a shade darker: the two relators must
   // read as siblings, because the whole content of `P(est(R))est(R)⊑union est(R)` is that they differ.
   "P": rgb("#00767e"))
