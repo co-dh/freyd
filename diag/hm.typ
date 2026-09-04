@@ -39,17 +39,16 @@
 }
 
 /// The path through `pts`, unstyled — `hm-wire` and `hm-region` put the stroke or fill on it.
-/// `ha`/`hb` are the WHOLE path's ends, the only places a caller knows it lands on a dot.
-#let hm-path(pts, k: HMK, ha: false, hb: false) = {
+/// `hs` lists the POINT indices where the path lands on a dot, and so leaves horizontal, not down.
+#let hm-path(pts, k: HMK, hs: ()) = {
   for i in range(pts.len() - 1) {
-    hm-seg(pts.at(i), pts.at(i + 1), k: k,
-           ha: ha and i == 0, hb: hb and i == pts.len() - 2)
+    hm-seg(pts.at(i), pts.at(i + 1), k: k, ha: hs.contains(i), hb: hs.contains(i + 1))
   }
 }
 
 /// One `merge-path` and not one element per segment, so a bend and its straight run cannot seam.
-#let hm-wire(pts, col: black, thickness: lw, k: HMK, ha: false, hb: false) = d.merge-path(
-  fill: none, stroke: (thickness: thickness, paint: col), hm-path(pts, k: k, ha: ha, hb: hb),
+#let hm-wire(pts, col: black, thickness: lw, k: HMK, hs: ()) = d.merge-path(
+  fill: none, stroke: (thickness: thickness, paint: col), hm-path(pts, k: k, hs: hs),
 )
 
 /// AN UNCHANGED WIRE IS DRAWN UNCHANGED: at a junction the SURVIVOR runs straight and the CONSUMED

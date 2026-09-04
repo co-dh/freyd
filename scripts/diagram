@@ -125,6 +125,7 @@ def branch(formula):
 
 # The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
 X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
+OKNEE = 0.88                                   # the note's `oknee`: the bow a sloped object edge has
 
 
 def letters(e):
@@ -815,30 +816,32 @@ def layout(rows, made, otop, obot, cert):
     # The object edge SLOPES exactly when an arrow of the base category travels along it, and then it
     # is one straight line at 2 across : 1 down — IntroString p. 74 draws every such figure that way
     # (`L 56.694 -28.346`, measured), and p. 73 keeps the edge vertical in the figures where no arrow
-    # rides it.  Sloping it right of every lane needs no clearance test: the line only moves further
-    # right going up, and it starts one gap right of the rightmost lane that reaches the bottom.
+    # rides it.  It leans wherever a bead has no dot of its own, and `--slope left` is the caller
+    # asking for the lean where no bead does; the clearance is `xat`'s, height by height.
     op = None
-    if cert.get("slope") == "left":
-        # `--slope left` is the caller SAYING the object wire is not the straight default, so it
-        # outranks the lean below — which a dotless bead would otherwise claim first.
-        # The lean then runs the WHOLE height: a bead riding the edge must sit on a SLOPING wire,
-        # which is what makes the lane arriving at it stand ON the edge (IntroString p. 79's bed).
-        # A bead on a vertical run has the edge passing it end-on instead.
-        xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
-        run = min(2 * hh, max(DX, xb - min([l.x for l in made], default=xb)))
-        op, xo = [[round(xb + run, 2), hh], [xb, 0.0]], round(xb + run, 2)
-    elif any(len(b) < 5 or b[4] is None for b in beads):
-        # The edge only moves right going UP, so clearing every lane at the bottom clears it
-        # everywhere: `xb` is the straight wire's old column, and the lean is added above it.
-        xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
-        # The book's gradient is 2 across : 1 down, which a composite five rows tall cannot hold —
-        # ten columns of run would be wider than the page.  Take the steepest line that fits: the
-        # run is the lanes' own span, so the edge crosses the whole picture and is never a stair.
+    if cert.get("slope") == "left" or any(len(b) < 5 or b[4] is None for b in beads):
         # The lean runs the WHOLE height, not down to the topmost bead and vertical from there:
         # a bead riding the edge must sit on a SLOPING wire, which is what makes the lane arriving
         # at it read as standing on the edge (IntroString p. 79's bed).  A bead on the vertical run
         # below has the edge passing it end-on instead.
-        run = min(2 * hh, max(DX, xb - min([l.x for l in made], default=xb)))
+        # The book's gradient is 2 across : 1 down, which a composite five rows tall cannot hold —
+        # ten columns of run would be wider than the page.  Take the steepest line that fits: the
+        # run is the lanes' own span, so the edge crosses the whole picture and is never a stair.
+        xl = min([l.x for l in made], default=X0)
+        xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
+        ry = ys + [0.0, hh]            # liveness changes only at a row, so those heights decide it
+
+        def fits(x):
+            # the note bows the edge and the sweep reads its chord; the bow is left of the chord
+            # below the midpoint and right of it above, so the clearance must hold for both
+            xt = round(x + min(2 * hh, max(DX, x - xl)), 2)
+            return all(min(sl.obez([xt, hh], [x, 0.0], OKNEE, y), x + (xt - x) * y / hh)
+                       >= xat(y) - 1e-9 for y in ry)
+        # `run` is measured FROM `xb`, so a step left buys clearance the step itself changes: no
+        # closed form, step and re-test, keeping the last bottom whose bow clears every row.
+        while round(xb - 0.05, 2) >= xl and fits(round(xb - 0.05, 2)):
+            xb = round(xb - 0.05, 2)
+        run = min(2 * hh, max(DX, xb - xl))
         op, xo = [[round(xb + run, 2), hh], [xb, 0.0]], round(xb + run, 2)
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
             "w": (max(q[0] for q in op) if op else xo) + PAD,

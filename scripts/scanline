@@ -404,23 +404,45 @@ HMK, DKN = 0.618, 0.45
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
 
 
-def seg(a, b, n=16):
-    """`hm-seg` sampled: a straight run, or its bezier with vertical tangents."""
+def seg(a, b, n=16, k=HMK, ha=False, hb=False):
+    """`hm-seg` sampled: a straight run, or its bezier — vertical tangents, except that `ha`/`hb`
+    lay an end along the row instead, where it lands on a dot.  A quarter turn takes the SAME
+    handle at both ends, `k` times the shorter side twice, so the turn is circular not hooked."""
     if abs(a[0] - b[0]) < EPS or abs(a[1] - b[1]) < EPS:
         return [a, b]
-    dy = b[1] - a[1]
-    c, e = (a[0], a[1] + HMK * dy), (b[0], b[1] - HMK * dy)
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    if ha == hb:
+        ux, uy = dx, dy
+    else:
+        m = min(abs(dx), abs(dy))
+        ux, uy = m * (-1 if dx < 0 else 1), m * (-1 if dy < 0 else 1)
+    c = (a[0] + k * ux, a[1]) if ha else (a[0], a[1] + k * uy)
+    e = (b[0] - k * ux, b[1]) if hb else (b[0], b[1] - k * uy)
     return [tuple(u ** 3 * a[i] + 3 * u * u * t * c[i] + 3 * u * t * t * e[i] + t ** 3 * b[i]
                   for i in (0, 1))
             for t, u in ((j / n, 1 - j / n) for j in range(n + 1))]
 
 
-def poly(pts, straight=False):
-    """`hm-path` sampled: the polyline one strand's ink follows.  `straight` is `dpan`'s `k: 0` on
-    the object edge — one gradient end to end, the book's single `L`, not `hm-seg`'s bowed cubic."""
+def obez(a, b, k, y):
+    """`obez`: where the object wire's own bezier stands at a height.  Its handles are VERTICAL, so
+    the x-controls ARE the endpoints and x(t) is the smoothstep `3t²-2t³`; y(t) is inverted by the
+    same 40-step bisection the note takes, so both languages land on one number."""
+    u = (y - a[1]) / (b[1] - a[1])
+    lo, hi = 0.0, 1.0
+    for _ in range(40):
+        m = (lo + hi) / 2
+        f = 3 * k * m * (1 - m) ** 2 + 3 * (1 - k) * m * m * (1 - m) + m ** 3
+        lo, hi = (m, hi) if f < u else (lo, m)
+    t = (lo + hi) / 2
+    return a[0] + (b[0] - a[0]) * (3 * t * t - 2 * t * t * t)
+
+
+def poly(pts, k=HMK, hs=()):
+    """`hm-path` sampled: the polyline one strand's ink follows.  `hs` is `hm-path`'s — the POINT
+    indices where the path lands on a dot, and so leaves along the dot's row instead of down."""
     out = []
-    for a, b in zip(pts, pts[1:]):
-        s = [a, b] if straight else seg(a, b)
+    for i, (a, b) in enumerate(zip(pts, pts[1:])):
+        s = seg(a, b, k=k, ha=(i in hs), hb=(i + 1 in hs))
         out += s[1:] if out else s
     return out
 
@@ -438,11 +460,12 @@ def meet(a, b, c, d):
 
 # ---------------------------------------------------------------- the panel model
 class Wire:
-    def __init__(self, x, ytop, ybot, label, born=None, pts=None, dips=()):
+    def __init__(self, x, ytop, ybot, label, born=None, pts=None, dips=(), hs=(), k=HMK):
         self.x, self.ytop, self.ybot, self.label, self.born = x, ytop, ybot, label, born
         # `dips` are the heights where the lane is DRAWN onto the object wire and back out — it
-        # meets a bead there, so a wire arriving at that bead has not passed it.
-        self.pts, self.dips = pts, dips
+        # meets a bead there, so a wire arriving at that bead has not passed it.  `hs` and `k` are
+        # the two things `hm-wire` was handed, so the sampled curve is the one drawn.
+        self.pts, self.dips, self.hs, self.k = pts, dips, hs, k
 
 
 class Bead:
@@ -466,12 +489,16 @@ class Panel:
         # `(name, x, y, box)` for every name DRAWN beside a wire — ink no `Wire` stands for.
         self.labels = []
         self.opath = [tuple(q) for q in r.get('opath') or []]
+        # `ok` is the note's OWN `oknee(op)` result, carried on the rec like `opath` — re-deriving it
+        # here is the exact bug this field exists to remove.
+        self.ok = r.get('ok') or 0
         ADAPT[self.helper](self, r)
         # The object wire is drawn by `dpan` itself, so no helper lists it.  Its label may change
         # down the panel (`⦇R⦈ : T⟶A`), and a panel that was TYPED says where in `obj`.
         self.olabel, self.oblabel = self.at(self.top, self.xo), self.at(self.bot, self.xo)
         self.wires.append(Wire(self.xo, self.h, 0.0, self.olabel,
-                               pts=self.opath or [(self.xo, self.h), (self.xo, 0.0)]))
+                               pts=self.opath or [(self.xo, self.h), (self.xo, 0.0)],
+                               k=self.ok))
         # A hand-drawn panel says nothing, so the switch is GUESSED at the lowest bead on the wire.
         # A widening NAMES the object over its range, so where it opens the bottom port's name the
         # object already carries it — the lowest bead cannot tell WHICH bead renames the object.
@@ -494,10 +521,14 @@ class Panel:
         return self.xo if abs(b.x - self.xat(b.y)) < EPS else b.x
 
     def xat(self, y):
-        """The object wire's x at a height — `xo` unless a sloped `opath` carries it."""
+        """The object wire's x at a height — `xo` unless a sloped `opath` carries it.  A sloped one
+        is DRAWN as `hm-seg`'s bezier, so the height is read off that curve and not off its chord,
+        exactly as `dpanel`'s `xat` does; a chord would hang every dot off the wire it rides."""
+        ok = self.ok
         for a, b in zip(self.opath, self.opath[1:]):
             if b[1] - EPS <= y <= a[1] + EPS:
                 return b[0] if a[1] - b[1] < EPS else \
+                    obez(a, b, ok, y) if ok and abs(a[0] - b[0]) > EPS else \
                     b[0] + (a[0] - b[0]) * (y - b[1]) / (a[1] - b[1])
         return self.xo
 
@@ -541,13 +572,27 @@ def dknees(r, X, h):
 
 
 def dippts(x, X, h, y0, y1, ybs, gk):
-    """`ddip`'s points: one bend onto the dot and back out again per bead, at that bead's own two
-    knees.  `X` is the object wire's x at a height, so every bend aims at the dot actually drawn."""
+    """`ddip`'s points and its `hs`: one bend onto the dot and back out again per bead, at that
+    bead's own two knees.  `X` is the object wire's x at a height, so every bend aims at the dot
+    actually drawn; a point AT that dot is a contact, met along its row, hence recorded in `hs`."""
     t, b = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
-    pts = [(x, h)] if y0 == 'top' else [(X(t), t), (x, t - gk[('b', float(t))])]
+    pts, hs = [], []
+    if y0 == 'top':
+        pts.append((x, h))
+    else:
+        hs.append(len(pts))
+        pts += [(X(t), t), (x, t - gk[('b', float(t))])]
     for yb in ybs:
-        pts += [(x, yb + gk[('d', float(yb))]), (X(yb), yb), (x, yb - gk[('b', float(yb))])]
-    return pts + ([(x, 0.0)] if y1 == 'bot' else [(x, b + gk[('d', float(b))]), (X(b), b)])
+        pts.append((x, yb + gk[('d', float(yb))]))
+        hs.append(len(pts))
+        pts += [(X(yb), yb), (x, yb - gk[('b', float(yb))])]
+    if y1 == 'bot':
+        pts.append((x, 0.0))
+    else:
+        pts.append((x, b + gk[('d', float(b))]))
+        hs.append(len(pts))
+        pts.append((X(b), b))
+    return pts, hs
 
 
 def a_dpanel(p, r):
@@ -570,7 +615,7 @@ def a_dpanel(p, r):
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, dx, x, yt, yb)
         if ds:                             # `ddip`'s points — the arms the crossed wires make
-            pts = dippts(x, dx, p.h, y0, y1, ds, gk)
+            (pts, hs), wk = dippts(x, dx, p.h, y0, y1, ds, gk), HMK
         else:                              # `dlane`'s own points
             kb = gk[('b', float(y0))] if y0 != 'top' and un is None else 0.0
             kd = gk[('d', float(y1))] if y1 != 'bot' else 0.0
@@ -582,13 +627,19 @@ def a_dpanel(p, r):
             if (alone and y0 != 'top' and y1 != 'bot' and un is None
                     and y0 - kb <= y1 + kd + EPS
                     and min(dx(y0), dx(y1)) - EPS <= x <= max(dx(y0), dx(y1)) + EPS):
-                pts = [(dx(y0), y0), (dx(y1), y1)]
+                # Straight, dot to dot: the two ends need no vertical tangent to meet, so `k = 0`
+                # and neither end is a contact met along a row.
+                pts, hs, wk = [(dx(y0), y0), (dx(y1), y1)], [], 0
             else:
                 pts = [(x, p.h)] if y0 == 'top' else ([(x, y0)] if un is not None else
                                                       [(dx(y0), y0), (x, y0 - kb)])
                 pts += [(x, 0.0)] if y1 == 'bot' else [(x, y1 + kd), (dx(y1), y1)]
+                # The end that lands ON a dot arrives along the bead's row, as the book's arcs do.
+                hs = ([0] if y0 != 'top' and un is None else []) \
+                    + ([len(pts) - 1] if y1 != 'bot' else [])
+                wk = HMK
         lab = nm or p.at(p.top if y0 == 'top' else p.bot, x)      # `dnm`: its own name, else a port's
-        p.wires.append(Wire(x, yt, yb, lab, un, pts, ds))
+        p.wires.append(Wire(x, yt, yb, lab, un, pts, ds, hs, wk))
         # WHICH lanes write that name is the note's `dnamed`, and the panel emits its answer: the
         # rule is stated once and the boxes swept here are the boxes drawn.  A rec `scripts/diagram`
         # builds is not ink yet, so it names nothing.
@@ -874,7 +925,7 @@ def crossings(p):
     """Every wire–wire meeting in the ink, in the curves the note's own helpers draw.  A junction is
     not a crossing: a hit at a bead, or at either strand's own end, is where the two are DRAWN to
     meet.  A bead's reach is not ink of its own — it is the arms the crossed wires make."""
-    ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts, abs(w.x - p.xo) < EPS)) for w in p.wires if w.pts] \
+    ss = [(f"{w.label or '?'}@{w.x:g}", poly(w.pts, k=w.k, hs=w.hs)) for w in p.wires if w.pts] \
         + [(f"{l or '?'}@{q[1][0]:g}", poly(q)) for (l, q) in p.strands]
     js = [b.ink for b in p.beads] + [q[i] for (_, q) in ss for i in (0, -1)]
     hits = []
@@ -909,7 +960,7 @@ def labels(p):
     same wire — has it written beside the lane it is born on (`dnamed`, whose answer the panel
     emits).  That name is ink: a strand through its box is a collision, not a warning."""
     out = []
-    ss = [(w.label or '?', poly(w.pts)) for w in p.wires if w.pts] \
+    ss = [(w.label or '?', poly(w.pts, k=w.k, hs=w.hs)) for w in p.wires if w.pts] \
         + [(l or '?', poly(q)) for (l, q) in p.strands]
     for (nm, x, y, bx) in p.labels:
         es = [((bx[0], bx[1]), (bx[2], bx[1])), ((bx[2], bx[1]), (bx[2], bx[3])),
