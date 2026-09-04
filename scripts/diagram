@@ -138,37 +138,16 @@ def letters(e):
     return letters(e[1]) if e[0] == 'conv' else set()
 
 
-def varsof(e):
-    """The signature's free variables — the letters that make it polymorphic.  `letters` gives the
-    functors and stops at the bottom atom, which is exactly the one that says `for any object`."""
-    if isinstance(e, (list, tuple)):
-        if e and e[0] == 'atom':
-            return {e[1]} & VARS
-        return set().union(set(), *(varsof(x) for x in e if isinstance(x, (list, tuple))))
-    return set()
-
-
 def natural(core, sigs):
     """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
-    Only when its signature is polymorphic AND it names no object.  An APPLICATION names one:
-    `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given is one relation at one object, and
-    naturality would need `E(f) est(R_B) = est(R_A) f` for every `f`, which fails — `f` need not be
-    monotone.  A schematic one-letter name is endo on the object wire by construction."""
+    Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean` — no
+    signature decides it: `α : F(x)⟶x` is an algebra at ONE carrier and `τ : C(B(x))⟶B(C(x))` a
+    natural transformation, and both read polymorphic.  Unstated is not natural, so a bead the note
+    types itself (a panel's own `sigs:`, which has nowhere to hang a proof) rides the object wire."""
     if core[0] == 'conv':
         return natural(core[1], sigs)
-    # A row may say it outright, because no signature can tell the two apart: `α : F(x)⟶x` is an
-    # algebra at ONE carrier and `τ : C(B(x))⟶B(C(x))` a natural transformation, and both read
-    # polymorphic.  The book's own names for the second kind are single Greek letters, which the
-    # schematic rule below would send to the object wire (IntroString p.48, Cheng's τ σ λ μ).
     lab = core[1] if core[0] == 'app' else spell(core)
-    if lab in NAT:
-        return NAT[lab]                # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
-    if core[0] == 'app':
-        return False
-    if len(spell(core).removesuffix('%∋')) == 1:
-        return False
-    r = row(core, sigs, 0)
-    return r is not None and bool(varsof(r[0]) | varsof(r[1]))
+    return NAT.get(lab, False)         # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
 
 
 # ---------------------------------------------------------------- objects as wire stacks
