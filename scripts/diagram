@@ -138,16 +138,43 @@ def letters(e):
     return letters(e[1]) if e[0] == 'conv' else set()
 
 
+def varsof(e):
+    """The signature's free variables — the letters that make it polymorphic.  `letters` gives the
+    functors and stops at the bottom atom, which is exactly the one that says `for any object`."""
+    if isinstance(e, (list, tuple)):
+        if e and e[0] == 'atom':
+            return {e[1]} & VARS
+        return set().union(set(), *(varsof(x) for x in e if isinstance(x, (list, tuple))))
+    return set()
+
+
+class Undecided(Exception):
+    """A polymorphic row that states no `nat:`.  The picture cannot be drawn from it either way."""
+
+
 def natural(core, sigs):
     """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
-    Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean` — no
+    Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean`.  No
     signature decides it: `α : F(x)⟶x` is an algebra at ONE carrier and `τ : C(B(x))⟶B(C(x))` a
-    natural transformation, and both read polymorphic.  Unstated is not natural, so a bead the note
-    types itself (a panel's own `sigs:`, which has nowhere to hang a proof) rides the object wire."""
+    natural transformation, and both read polymorphic, so a polymorphic row that states nothing is
+    an ERROR rather than a default — drawing it either way is a claim nobody checked.  A row with no
+    variable at all needs no statement: it is one arrow between two named objects."""
     if core[0] == 'conv':
         return natural(core[1], sigs)
     lab = core[1] if core[0] == 'app' else spell(core)
-    return NAT.get(lab, False)         # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
+    if lab in NAT:
+        return NAT[lab]                # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
+    # An APPLICATION names one object: `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given
+    # is one relation at one object, and naturality would need `E(f) est(R_B) = est(R_A) f` for every
+    # `f`, which fails — `f` need not be monotone.  A schematic one-letter name is endo by construction.
+    if core[0] == 'app' or len(spell(core).removesuffix('%∋')) == 1:
+        return False
+    r = row(core, sigs, 0)
+    if r is not None and (varsof(r[0]) | varsof(r[1])):
+        raise Undecided(f'{lab} : {spell(r[0])}⟶{spell(r[1])} is polymorphic and states no `nat:` — '
+                        f'add `nat` and the Lean proof in `nat-lean` to its row, or name the object '
+                        f'it is an arrow at')
+    return False
 
 
 # ---------------------------------------------------------------- objects as wire stacks
