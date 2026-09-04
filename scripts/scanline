@@ -999,12 +999,18 @@ def typed(table, own):
     # `α : F(x)⟶x` and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is one.  `=<marker>`
     # after it names the theorem that says so, and `cite-check` verifies it where it stands, so the
     # claim stops being the author's word — the whole point of `LaxNatural` being a `Prop`.
-    def one(v):
+    def one(k, v):
         sig, nat, mark = v.partition("!nat")
-        return dict(zip(("src", "tgt"), sig.split("⟶")),
-                    **({"nat": "strict"} if nat else {}),
-                    **({"cite": mark[1:]} if mark.startswith("=") else {}))
-    return {**table, "sigs": {**table["sigs"], **{k: one(v) for k, v in own.items()}}}
+        d = dict(zip(("src", "tgt"), sig.split("⟶")),
+                 **({"nat": "strict"} if nat else {}),
+                 **({"cite": mark[1:]} if mark.startswith("=") else {}))
+        # A panel RESTATING the global row is the same arrow, so what that row proved still holds;
+        # a different signature is a different arrow and no proof of the name travels with it.
+        old = table["sigs"].get(k, {})
+        keep = {x: old[x] for x in ("lean", "nat", "nat-lean", "not-lax") if x in old} \
+            if (old.get("src"), old.get("tgt")) == (d["src"], d["tgt"]) else {}
+        return {**keep, **d}
+    return {**table, "sigs": {**table["sigs"], **{k: one(k, v) for k, v in own.items()}}}
 
 
 def brname(e):
