@@ -4,11 +4,20 @@
 // order.  Sibling of circuit.typ, where a wire is an object and pictures read left to right.
 // THE ONE INVARIANT: a region boundary and the wire bounding it come from THE SAME `pts` through THE
 // SAME `hm-path` — bind the list once, never hand-fit a fill to a wire.
-#import "circuit.typ": cetz, d, lw, Rr
+#import "circuit.typ": cetz, d, lw
 
 // Where a bend's control points sit along its drop.  The golden ratio, from the CTAN package
 // `string-diagrams`, whose model (not code) this file follows.
 #let HMK = 0.618
+
+// A quarter turn's handles, as a fraction of that bend's OWN chord: TikZ's default control distance
+// for `to[out=,in=]`, which is what IntroString's own figures are drawn with.
+#let HMQ = 0.3915
+
+// A bead's radius.  The book's dot is 1.42pt = 0.05cm (p. 74) and a panel is `length: 0.8cm`, so
+// 0.0625 of a canvas unit.  Its own name: `circuit.typ`'s `Rr` serves the circuit pictures, which
+// are a different drawing language and measured against nothing here.
+#let HMR = 0.0625
 
 // How far above a junction the consumed strand leaves its straight run.  `hm-join`'s default, and a
 // client that bends in by hand (draw.typ's `splitcut`) must use the same or shapes differ.
@@ -17,24 +26,22 @@
 // A step changing both x and y is a bezier with vertical tangents, so wires meet edges at a right
 // angle.  Mirror-symmetric on purpose: reversing `pts` gives back the same curve.  `ha`/`hb` turn
 // an END horizontal instead: a wire meets a BEAD along the bead's own row, which is how the book
-// draws every arm and leg — measured on IntroString p. 48, whose arcs carry the handles
-// `(0, 5.82) (-5.82, 0)`, vertical where the wire stands in its column and horizontal at the dot.
-// Two ends both vertical over a long sideways run bow the step into an S; one of them horizontal
-// makes it a quarter turn.
+// draws every arm and leg.  Such a quarter turn takes `HMQ` times its OWN CHORD at both ends —
+// IntroString p. 48 `Δ(9.63,11.33)` handle 5.82, p. 74's Kleisli arms `Δ(12.47,14.17)` handle 7.39,
+// its third row's right arm `Δ(12.47,12.46)` handle 6.90: 0.3915 of the chord every time, where
+// `k` times the shorter side misses the last two by 4% and 11%.  Two ends both vertical over a long
+// sideways run bow the step into an S instead, and that family keeps `k`.
 #let hm-seg(a, b, k: HMK, ha: false, hb: false) = {
   if a.at(0) == b.at(0) or a.at(1) == b.at(1) {
     d.line(a, b)
   } else {
     let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
-    // A quarter turn — one end along the row, the other along the column — takes the SAME handle at
-    // both ends, so the turn is circular rather than hooked: the book's are `(0, 5.82) (-5.82, 0)`
-    // on a `Δ(9.63, 11.33)`, which is `k` times the SHORTER side twice, not each side's own.
-    let (ux, uy) = if ha == hb { (dx, dy) } else {
-      let m = calc.min(calc.abs(dx), calc.abs(dy))
-      (m * (if dx < 0 { -1 } else { 1 }), m * (if dy < 0 { -1 } else { 1 })) }
+    let (hx, hy) = if ha == hb { (k * dx, k * dy) } else {
+      let q = HMQ * calc.sqrt(dx * dx + dy * dy)
+      (q * (if dx < 0 { -1 } else { 1 }), q * (if dy < 0 { -1 } else { 1 })) }
     d.bezier(a, b,
-      if ha { (a.at(0) + k * ux, a.at(1)) } else { (a.at(0), a.at(1) + k * uy) },
-      if hb { (b.at(0) - k * ux, b.at(1)) } else { (b.at(0), b.at(1) - k * uy) })
+      if ha { (a.at(0) + hx, a.at(1)) } else { (a.at(0), a.at(1) + hy) },
+      if hb { (b.at(0) - hx, b.at(1)) } else { (b.at(0), b.at(1) - hy) })
   }
 }
 
@@ -91,7 +98,7 @@
 /// `bg` is the colour BEHIND the dot and makes it hollow at the same radius — a naturality that
 /// holds only laxly, which is a weaker claim and so must not draw the same mark as a strict one.
 #let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none) = {
-  d.circle(p, radius: Rr, fill: if bg == none { col } else { bg },
+  d.circle(p, radius: HMR, fill: if bg == none { col } else { bg },
            stroke: if bg == none { none } else { col + lw })
   if label != none {
     d.content((p.at(0) + dx, p.at(1) + dy), text(col)[#label], anchor: anchor)
