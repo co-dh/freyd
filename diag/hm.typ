@@ -40,7 +40,11 @@
   } else {
     let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
     let (hx, hy) = if ha == hb { (k * dx, k * dy) } else {
-      let q = HMQ * calc.sqrt(dx * dx + dy * dy)
+      // Capped at the SHORTER side, or the handle outruns the drop and the turn bows back PAST its
+      // own end — a zero gradient (p. 40), and a run-length-dependent bow, which is what braided
+      // two arms sharing a knee.  Never bites on the book's own turns: they are near-square, where
+      // `HMQ` times the chord is 0.55 of a side.
+      let q = calc.min(HMQ * calc.sqrt(dx * dx + dy * dy), calc.min(calc.abs(dx), calc.abs(dy)))
       (q * (if dx < 0 { -1 } else { 1 }), q * (if dy < 0 { -1 } else { 1 })) }
     d.bezier(a, b,
       if ha { (a.at(0) + hx, a.at(1)) } else { (a.at(0), a.at(1) + hy) },

@@ -14,7 +14,7 @@ one signature everywhere in its display.  What it only CHECKS: the `cert:` a cal
 draws, `alias:` the abbreviations the display's key list asks the reader to supply.  Applying a
 declared law is mechanical; its truth stays the author's certificate, as in `scripts/cite-check`.
 """
-import glob, hashlib, json, os, re, subprocess, sys, time
+import glob, hashlib, json, math, os, re, subprocess, sys, time
 
 CACHE = ".lake/build/scanline-cache.json"
 
@@ -400,24 +400,25 @@ class Unhandled(Exception):
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
 # below build THE SAME `pts` those helpers build and hand them to `poly`, which is `hm-seg`; the
 # curve maths lives here once, so a crossing is looked for in the shape actually drawn.
-HMK, DKN = 0.618, 0.45
+HMK, HMQ, DKN = 0.618, 0.3915, 0.45
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
 
 
 def seg(a, b, n=16, k=HMK, ha=False, hb=False):
     """`hm-seg` sampled: a straight run, or its bezier — vertical tangents, except that `ha`/`hb`
     lay an end along the row instead, where it lands on a dot.  A quarter turn takes the SAME
-    handle at both ends, `k` times the shorter side twice, so the turn is circular not hooked."""
+    handle at both ends, `HMQ` times its own CHORD, capped at the shorter side, as `hm-seg` does —
+    uncapped, a long sideways run bows the turn BACK past its own end and crosses what it left."""
     if abs(a[0] - b[0]) < EPS or abs(a[1] - b[1]) < EPS:
         return [a, b]
     dx, dy = b[0] - a[0], b[1] - a[1]
     if ha == hb:
-        ux, uy = dx, dy
+        hx, hy = k * dx, k * dy
     else:
-        m = min(abs(dx), abs(dy))
-        ux, uy = m * (-1 if dx < 0 else 1), m * (-1 if dy < 0 else 1)
-    c = (a[0] + k * ux, a[1]) if ha else (a[0], a[1] + k * uy)
-    e = (b[0] - k * ux, b[1]) if hb else (b[0], b[1] - k * uy)
+        q = min(HMQ * math.hypot(dx, dy), abs(dx), abs(dy))
+        hx, hy = q * (-1 if dx < 0 else 1), q * (-1 if dy < 0 else 1)
+    c = (a[0] + hx, a[1]) if ha else (a[0], a[1] + hy)
+    e = (b[0] - hx, b[1]) if hb else (b[0], b[1] - hy)
     return [tuple(u ** 3 * a[i] + 3 * u * u * t * c[i] + 3 * u * t * t * e[i] + t ** 3 * b[i]
                   for i in (0, 1))
             for t, u in ((j / n, 1 - j / n) for j in range(n + 1))]
