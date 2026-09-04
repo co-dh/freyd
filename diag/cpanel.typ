@@ -10,27 +10,10 @@
 // `ys(nout)`.  Branch equalisation — §4e's `w` — lives here and nowhere else.
 
 // `cetz` through `circuit.typ`, not from the package: that is where the `--input nodraw=1` shim lives.
-#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw
+#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc
 #import "draw.typ": lab
 #import "note-style.typ": P, TYCOL
 
-#let d = cetz.draw
-
-// The note's own `frc` and `unionbox` geometry (allegory-axioms.typ), duplicated because the note is
-// a DOCUMENT: importing it would evaluate 8000 lines of prose and close an import cycle the moment
-// the note draws a generated panel.  Fold them the day those helpers move into circuit.typ.
-#let frc(n) = $frac(#n, ∋)$
-#let CBAR = 0.13        // the functorial box's two bars, as the note's own `banana` spaces them
-// MELLIÈS' functorial box, the note's `banana`, here for the reason `frc` is.  A bar is where the
-// type changes, so the tick closes the pair on the side the fold's own object is not.
-#let banana(x, yh, right: false) = {
-  let s = if right { -1 } else { 1 }
-  let st = (thickness: lw, paint: black)
-  d.line((x, -yh), (x, yh), stroke: st)
-  d.line((x + s * CBAR, -yh), (x + s * CBAR, yh), stroke: st)
-  d.line((x, yh), (x + s * 0.3, yh), stroke: st)
-  d.line((x, -yh), (x + s * 0.3, -yh), stroke: st)
-}
 #let UIP = 0.4          // the pair's half-height — one strand of a product to the next
 #let UOP = 0.3          // a `∪` copy's output port
 #let UHH = 0.7          // a `∪` copy's half-height

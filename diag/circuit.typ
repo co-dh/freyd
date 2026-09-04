@@ -58,6 +58,8 @@
 #let LEAD = 0.34        // wire stub before the first box of a chain and after the last
 #let TAPEFILL = rgb("#f6cfcf")
 #let TAPEEDGE = rgb("#c25b5b")
+#let CBAR = 0.13        // the functorial box's two bars, as `banana` spaces them
+#let frc(n) = $frac(#n, ∋)$
 
 #let wstroke(invert: false) = (thickness: lw, paint: if invert { white } else { black })
 
@@ -120,6 +122,8 @@
 // wire then leaves from open air — so the cut is capped at what a default-height box gets.
 #let CHAMFER = 0.35     // fraction of the height taken off the corner, up to CHAMFER * BH
 #let TINT = rgb("#dbe8f7")
+// The five-point chamfered outline shared by `gbox` and `divbox` — each computes its own `c`.
+#let chamfer-pts(x, y, w, h, c, flip) = if flip { ((x, y - h/2), (x + w, y - h/2), (x + w, y + h/2), (x + c, y + h/2), (x, y + h/2 - c)) } else { ((x, y - h/2), (x + w, y - h/2), (x + w, y + h/2 - c), (x + w - c, y + h/2), (x, y + h/2)) }
 #let gbox(p, label, w: BW, h: BH, dashed: false, invert: false, flip: false, fill: none,
           chamfer: true) = {
   let (x, y) = p
@@ -130,13 +134,20 @@
   // runs, and a map runs one way by construction — there is nothing for the corner to disambiguate.
   // It also makes maps findable at a glance, which is what most of the calculational steps turn on.
   let c = if chamfer { calc.min(CHAMFER * h, CHAMFER * BH) } else { 0.0 }
-  let pts = if flip {
-    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
-  } else {
-    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2 - c), (x + w - c, y + h / 2), (x, y + h / 2))
-  }
+  let pts = chamfer-pts(x, y, w, h, c, flip)
   d.line(..pts, close: true, fill: paper, stroke: st)
   d.content((x + w / 2, y), text(fill: paint, label))
+}
+
+// MELLIÈS' functorial box, for `⦇−⦈`: a bar is where the type changes, so the tick closes the pair
+// on the side the fold's own object is not.
+#let banana(x, yh, right: false) = {
+  let s = if right { -1 } else { 1 }
+  let st = (thickness: lw, paint: black)
+  d.line((x, -yh), (x, yh), stroke: st)
+  d.line((x + s * CBAR, -yh), (x + s * CBAR, yh), stroke: st)
+  d.line((x, yh), (x + s * 0.3, yh), stroke: st)
+  d.line((x, -yh), (x + s * 0.3, -yh), stroke: st)
 }
 
 /// An annotation set to the right of a picture, left-aligned so it can never run back into it.
@@ -165,11 +176,7 @@
   let (x, y) = p
   let ink = if invert { white } else { black }
   let c = CHAMFER * h
-  let pts = if flip {
-    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2), (x + c, y + h / 2), (x, y + h / 2 - c))
-  } else {
-    ((x, y - h / 2), (x + w, y - h / 2), (x + w, y + h / 2 - c), (x + w - c, y + h / 2), (x, y + h / 2))
-  }
+  let pts = chamfer-pts(x, y, w, h, c, flip)
   d.line(..pts, close: true, fill: DIVNUM, stroke: (thickness: lw, paint: ink))
   let ty = h / 2 - 0.11
   let t0 = if flip { x + slack } else { x + w - slack - denw }

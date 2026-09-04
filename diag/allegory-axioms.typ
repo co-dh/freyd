@@ -3,10 +3,10 @@
 #import "note-style.typ": *
 // Imported by name, not with `*`: `delta`, `nabla`, `cap`, `cup` and `dot` shadow the Typst math
 // symbols of the same name (see circuit.typ's header); `dot` is renamed on the way in for that reason.
-#import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw
+#import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, LX, BD, LY, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, CHPAD, CHFAN, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -2362,7 +2362,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 })
 #let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
 
-#let frc(n) = $frac(#n, ∋)$
 #let TH = 1.2   // a fraction box is two lines tall
 
 // A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
@@ -6650,12 +6649,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // `⦇−⦈` drawn as MELLIÈS' functorial box: the body's own circuit, inside brackets.  A bar is where
 // the type changes, so nothing crosses the LEFT one — the tree arrives at it and the algebra's two
 // strands start there, which is the recursion — while the body's output IS the fold's and runs on.
-#let banana(x, yh, right: false) = {
-  let s = if right { -1 } else { 1 }
-  let st = (thickness: lw, paint: black)
-  d.line((x, -yh), (x, yh), stroke: st); d.line((x + s * 0.13, -yh), (x + s * 0.13, yh), stroke: st)
-  d.line((x, yh), (x + s * 0.3, yh), stroke: st); d.line((x, -yh), (x + s * 0.3, -yh), stroke: st)
-}
 #let lfold(yh, bw, sp, body) = {
   lsrc; banana(0, yh)
   wire((0.13, LSP), (0.4, LSP)); wire((0.13, -LSP), (0.4, -LSP))
