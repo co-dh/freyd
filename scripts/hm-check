@@ -258,7 +258,9 @@ def verify(fx, path):
 def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
     the statement still has the key the row was read against; then the letters the row's objects use
-    must be spelled somewhere in that statement — a projection carries none, so it goes unchecked."""
+    must be spelled somewhere in that statement — a projection carries none, so it goes unchecked.
+    A row STATING a `nat` is held to the same standard: the dot it draws is a theorem, so `nat-lean`
+    must name the declaration proving it.  A row with no `nat` claims nothing and is skipped."""
     t = sl.sigs()
     db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
     say = {k: v for k, v in t["spelling"].items() if k != "//"}
@@ -266,7 +268,7 @@ def verify_sigs():
     for name, row in t["sigs"].items():
         mark, _, k = row["lean"].partition("@")
         where = f"hm-sigs.json {name} : {row['src']} ⟶ {row['tgt']}"
-        moved = cc.check(db, mark, k, where)
+        moved = cc.check(db, mark, k or None, where)
         if moved:
             bad.append(moved); continue
         user, mod = cc.resolve(db, mark)[0][:2]
@@ -278,6 +280,18 @@ def verify_sigs():
         if stmt and miss:
             bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
                        f" it is `{' '.join(stmt.split())}`")
+        if "nat" not in row:
+            continue
+        marks = row.get("nat-lean")
+        if not marks:
+            bad.append(f'{where}: nat is "{row["nat"]}" with no nat-lean — add the marker of the'
+                       f' declaration that proves it, as `Mod.decl@key`')
+            continue
+        for m in [marks] if isinstance(marks, str) else marks:
+            mark, _, k = m.partition("@")
+            moved = cc.check(db, mark, k or None, f"{where} nat-lean")
+            if moved:
+                bad.append(moved)
     print(*bad, sep="\n", file=sys.stderr)
     print(f"hm-check: {len(t['sigs'])} signature rows audited against the declaration index,"
           f" {len(bad)} adrift")

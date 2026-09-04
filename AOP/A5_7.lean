@@ -33,7 +33,7 @@ section EpsExample
 
 variable {𝒜 : Type u₁} [UnguardedPowerAllegory 𝒜]
 
-/-- **B&dM p.133**: membership `∈` is lax natural from the power relator to the identity
+/-- **B&dM p.133**: membership `∋` is lax natural from the power relator to the identity
     relator. -/
 theorem eps_lax_natural {a b : 𝒜} (R : a ⟶ b) :
     powerRel R ≫ ∋ b ⊑ ∋ a ≫ (Relator.idRelator 𝒜).map R :=

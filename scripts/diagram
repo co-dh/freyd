@@ -70,8 +70,8 @@ BR = None                   # the branch `draw` picked, as `scanline.brname` spe
 TBL = None                  # the signatures `draw` types by, the panel's own `sigs:` laid over
 MU = {}                     # and the initial algebra each functor folds from, `diag/hm-sigs.json`'s
                             # `mu` with the panel's own `mu:` laid over it the same way
-NAT = {}                    # the rows that STATE whether their bead is natural, which `natural`
-                            # takes ahead of its own reading of the signature
+NAT = {}                    # the rows that STATE whether their bead is natural — `"strict"` or
+                            # `"lax"` — which `natural` takes ahead of its own reading of the signature
 
 
 def bead(e):
@@ -162,7 +162,7 @@ def natural(core, sigs):
     # schematic rule below would send to the object wire (IntroString p.48, Cheng's τ σ λ μ).
     lab = core[1] if core[0] == 'app' else spell(core)
     if lab in NAT:
-        return NAT[lab]
+        return NAT[lab]                # `"strict"` or `"lax"`: both truthy, and the dot's fill draws which
     if core[0] == 'app':
         return False
     if len(spell(core).removesuffix('%∋')) == 1:
@@ -791,7 +791,8 @@ def layout(rows, made, otop, obot, cert):
         # symmetric and drops its survivor vertically from their midpoint (p. 74).
         xs = [l.x for l in (r.arms or r.legs)]
         dot = round((min(xs) + max(xs)) / 2, 4) if xs and r.nat else None
-        beads.append([ys[i], r.label, "#000000", reach, dot] if dot is not None
+        beads.append([ys[i], r.label, "#000000", reach, dot] + (["lax"] if r.nat == "lax" else [])
+                     if dot is not None
                      else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
     hh = (n + 1) * DY
 
@@ -872,7 +873,7 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     global SPLIT, BR, TBL, MU, NAT
     SPLIT = frozenset(split.split())
     TBL = sl.typed(table or sl.sigs(), own)
-    NAT = {k: bool(v["nat"]) for k, v in TBL["sigs"].items()
+    NAT = {k: v["nat"] for k, v in TBL["sigs"].items()
            if isinstance(v, dict) and "nat" in v}
     MU = {f: (o, None) for f, o in TBL.get("mu", {}).items()} | (parse_mu(ini) if ini else {})
     BR = branch(formula)
@@ -922,7 +923,8 @@ def emit(r):
             + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
                                 + (", black, " + (num(b[3]) if b[3] is not None else "none")
                                    if len(b) > 3 else "")
-                                + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "") + ")"
+                                + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "")
+                                + (f', "{b[5]}"' if len(b) > 5 else "") + ")"
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
