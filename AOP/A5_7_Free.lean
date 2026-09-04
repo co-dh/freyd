@@ -156,6 +156,120 @@ public theorem PE.free_on_maps {σ τ : TyE 𝒜} (t : PE σ τ) {a b : 𝒜} (f
     σ.rel.map f ≫ t.eval b = t.eval a ≫ τ.rel.map f :=
   (laxNatural_iff_strict_on_maps τ.rel σ.rel t.eval).mp t.free f hf
 
+/-! ## Splitting `Map`: which half of it each constructor actually spends
+
+  `free_on_maps` demands `Map f` — ENTIRE and SIMPLE — of every term, but no constructor spends
+  both and three spend neither.  `PE.Strict R t` below hands each half to the constructor that
+  uses it, and `PE.free_strict` is the free theorem as an EQUALITY under exactly that much. -/
+
+/-- A relator carries ENTIRENESS: in the form `𝟙 ⊑ R ≫ R°` (`entire_id_le`, §2.13) the condition
+    is built from `𝟙`, `≫` and `°`, and over a tabular source a relator preserves all three
+    (Theorem 5.1(a)), so `𝟙 = F(𝟙) ⊑ F(R ≫ R°) = F R ≫ (F R)°`. -/
+public theorem Relator.entire_map (F : Relator 𝒜 𝒜) {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) :
+    Entire (F.map R) := by
+  show 𝟙 (F.obj a) ∩ F.map R ≫ (F.map R)° = 𝟙 (F.obj a)
+  refine le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) ?_)
+  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
+  have h := F.map_mono (entire_id_le hR)
+  rwa [F.map_id] at h
+
+/-- A relator carries SIMPLICITY: over a tabular source it preserves converse (Theorem 5.1(a)),
+    so `(F R)° ≫ F R = F(R° ≫ R) ⊑ F(𝟙) = 𝟙`. -/
+public theorem Relator.simple_map (F : Relator 𝒜 𝒜) {a b : 𝒜} {R : a ⟶ b} (hR : Simple R) :
+    Simple (F.map R) := by
+  show (F.map R)° ≫ F.map R ⊑ 𝟙 (F.obj b)
+  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
+  have h := F.map_mono (show R° ≫ R ⊑ 𝟙 b from hR)
+  rwa [F.map_id] at h
+
+/-- **(5.6) sharpened.**  The `dom` factor (5.6) leaves behind sits on the DISCARDED leg, so it
+    is `𝟙` as soon as that leg's relation is ENTIRE: `(R×S) ≫ outl = outl ≫ R`.
+    `prodMap_id_outl` (A5_2) is the case `S = 𝟙`. -/
+public theorem prodMap_outl_eq_of_entire {a b a' b' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
+    (R : a ⟶ a') {S : b ⟶ b'} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
+  show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl = P.outl ≫ R
+  rw [RelProd.pair_outl, entire_comp P.outr_map.1 hS, Cat.id_comp]
+
+/-- **(5.7) sharpened**, the mirror: `(R×S) ≫ outr = outr ≫ S` when `R` is ENTIRE. -/
+public theorem prodMap_outr_eq_of_entire {a b a' b' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
+    {R : a ⟶ a'} (S : b ⟶ b') (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
+  show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr = P.outr ≫ S
+  rw [RelProd.pair_outr, entire_comp P.outl_map.1 hR, Cat.id_comp]
+
+-- No `mem` rule, for the reason `PE` itself has no `conv`: `mem` carries its lax square as the
+-- HYPOTHESIS `h`, so nothing in the syntax can sharpen it, and the only thing that does — Theorem
+-- 5.2, `laxNatural_iff_strict_on_maps` — spends the WHOLE of `Map R`.  `mem` is therefore exactly
+-- the constructor this split has nothing to give, which is why `PE.free_on_maps` (all terms,
+-- `mem` included) keeps its own proof rather than becoming a corollary of `PE.free_strict`.
+/-- The SIDE CONDITION, constructor by constructor.  `outl`/`outr` DISCARD a component, and the
+    `dom` factor (5.6)/(5.7) leaves on the discarded leg is `𝟙` exactly when `R` is ENTIRE;
+    `pair` DUPLICATES, and `R` distributes over the meet defining the fork exactly when `R` is
+    SIMPLE; `id`, `comp` and `map` spend nothing and only propagate. -/
+public inductive PE.Strict {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+    {σ τ : TyE 𝒜} → PE σ τ → Prop where
+  | id {σ : TyE 𝒜} : PE.Strict R (PE.id σ)
+  | comp {σ τ υ : TyE 𝒜} {s : PE σ τ} {t : PE τ υ} :
+      PE.Strict R s → PE.Strict R t → PE.Strict R (PE.comp s t)
+  | outl {σ τ : TyE 𝒜} : Entire R → PE.Strict R (PE.outl (σ := σ) (τ := τ))
+  | outr {σ τ : TyE 𝒜} : Entire R → PE.Strict R (PE.outr (σ := σ) (τ := τ))
+  | pair {σ τ υ : TyE 𝒜} {s : PE σ τ} {t : PE σ υ} :
+      Simple R → PE.Strict R s → PE.Strict R t → PE.Strict R (PE.pair s t)
+  | map {σ τ : TyE 𝒜} (F : Relator 𝒜 𝒜) {t : PE σ τ} :
+      PE.Strict R t → PE.Strict R (PE.map F t)
+
+/-- **THE FREE THEOREM AS AN EQUALITY.**  Under `PE.Strict R t` the lax square of `PE.free`
+    closes on the nose:
+
+      `⟦σ⟧R R ≫ ⟦t⟧ b = ⟦t⟧ a ≫ ⟦τ⟧R R`
+
+    The induction is the same one as `PE.free`; what each case now needs of `R` is what its
+    `PE.Strict` rule carries, transported along the type expression by `Relator.entire_map` and
+    `Relator.simple_map` — `⟦σ⟧R R` is entire (simple) whenever `R` is. -/
+public theorem PE.free_strict {a b : 𝒜} {R : a ⟶ b} : ∀ {σ τ : TyE 𝒜} {t : PE σ τ},
+    PE.Strict R t → σ.rel.map R ≫ t.eval b = t.eval a ≫ τ.rel.map R
+  | σ, _, _, .id => by
+      show σ.rel.map R ≫ 𝟙 (σ.rel.obj b) = 𝟙 (σ.rel.obj a) ≫ σ.rel.map R
+      rw [Cat.comp_id, Cat.id_comp]
+  | σ, υ, _, .comp (τ := τ) (s := s) (t := t) hs ht => by
+      have ihs := PE.free_strict hs
+      have iht := PE.free_strict ht
+      show σ.rel.map R ≫ (s.eval b ≫ t.eval b) = (s.eval a ≫ t.eval a) ≫ υ.rel.map R
+      calc σ.rel.map R ≫ (s.eval b ≫ t.eval b)
+          = (σ.rel.map R ≫ s.eval b) ≫ t.eval b := (Cat.assoc _ _ _).symm
+        _ = (s.eval a ≫ τ.rel.map R) ≫ t.eval b := by rw [ihs]
+        _ = s.eval a ≫ (τ.rel.map R ≫ t.eval b) := Cat.assoc _ _ _
+        _ = s.eval a ≫ (t.eval a ≫ υ.rel.map R) := by rw [iht]
+        _ = (s.eval a ≫ t.eval a) ≫ υ.rel.map R := (Cat.assoc _ _ _).symm
+  | .prod _ τ, _, _, .outl hR =>
+      prodMap_outl_eq_of_entire _ _ _ (Relator.entire_map τ.rel hR)
+  | .prod σ _, _, _, .outr hR =>
+      prodMap_outr_eq_of_entire _ _ _ (Relator.entire_map σ.rel hR)
+  | σ, .prod τ υ, _, .pair (s := s) (t := t) hR hs ht => by
+      have ihs := PE.free_strict hs
+      have iht := PE.free_strict ht
+      show σ.rel.map R ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).pair (s.eval b) (t.eval b)
+          = (relProd (τ.rel.obj a) (υ.rel.obj a)).pair (s.eval a) (t.eval a)
+            ≫ prodMap (relProd (τ.rel.obj a) (υ.rel.obj a)) (relProd (τ.rel.obj b) (υ.rel.obj b))
+                (τ.rel.map R) (υ.rel.map R)
+      rw [RelProd.pair_prodMap, ← ihs, ← iht]
+      show σ.rel.map R ≫ (s.eval b ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outl°
+            ∩ t.eval b ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outr°)
+          = (σ.rel.map R ≫ s.eval b) ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outl°
+            ∩ (σ.rel.map R ≫ t.eval b) ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outr°
+      rw [simple_dist_inter (Relator.simple_map σ.rel hR), Cat.assoc, Cat.assoc]
+  | .app _ σ, .app _ τ, _, .map F (t := u) hu => by
+      have ih := PE.free_strict hu
+      show F.map (σ.rel.map R) ≫ F.map (u.eval b) = F.map (u.eval a) ≫ F.map (τ.rel.map R)
+      rw [← F.map_comp, ← F.map_comp, ih]
+
+-- The split, pinned: a PROJECTION is strict under entireness alone, a FORK under simplicity
+-- alone.  Neither asks for `Map`, and the two conditions are not the same condition.
+example {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) (σ τ : TyE 𝒜) :
+    PE.Strict R (PE.outr (σ := σ) (τ := τ)) := .outr hR
+
+example {a b : 𝒜} {R : a ⟶ b} (hR : Simple R) (σ : TyE 𝒜) :
+    PE.Strict R (PE.pair (PE.id σ) (PE.id σ)) := .pair hR .id .id
+
 /-! ## Cashing it out: the already-proved instances as corollaries of the induction -/
 
 /-- **B&dM p.133**, `outr_lax_natural` (A5_2) DERIVED: it is `PE.free` at the single term
