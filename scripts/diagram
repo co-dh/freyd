@@ -869,17 +869,20 @@ ROW = 0.625      # one book ROW: IntroString p.74's 0.5cm, in cetz's own `length
 
 def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
     """IntroString p.74's own construction, in ROW UNITS (1 row = 0.5cm, one lane pitch = 2 rows).
-    The object edge is a STRAIGHT polyline descending to the RIGHT at 2 across : 1 down: it advances
-    one lane pitch per bead that RETYPES it, over that bead's own row, and the riding bead sits at
-    the middle of its own advance.  A lane born on such a bead drops vertically in that bead's own
-    column, so — the edge moving right as it descends — no lane ever crosses it.  Two things are the
-    book's own typesetting and are taken as inputs rather than derived: `wr` x `hr`, the panel, and
-    `obreak`, whether the edge is broken at the dots riding it (p.74 breaks it in the one-bead `f`
+    The lanes alive at the TOP stand in columns `0, 2, 4, …` in cut order, leftmost the outermost
+    functor, and the object edge holds the column one lane pitch right of the last of them, running
+    VERTICALLY while nothing rides it (IntroString p.79's (3.8b): the object wire keeps its own
+    column above the first bead on it).  It is then a STRAIGHT polyline descending to the RIGHT at
+    2 across : 1 down, advancing one lane pitch per bead that RETYPES it, over that bead's own row,
+    the riding bead at the middle of its own advance; it leaves through the RIGHT side if that
+    advance carries it to the boundary and through the bottom otherwise.  A lane born on a bead
+    drops vertically in that bead's own column, so — the edge moving right as it descends — no lane
+    ever crosses it.  `wr` x `hr` is p.74's own typesetting where a fixture states it, else the one
+    derivation `2·(top lanes) + 2·(riding beads) + 2` wide by `beads + 1` high; `obreak`, whether
+    the edge is broken at the dots riding it, is the book's too (p.74 breaks it in the one-bead `f`
     figure and runs it through the dots in the two figures beside it)."""
     n = len(rows)
-    if any(l.born == TOP for l in made):
-        raise Unhandled("--book draws p.74's shape, where every lane is born on a bead; a lane born"
-                        " at the top edge has no column rule there")
+    tops = [l for l in made if l.born == TOP]
     # A bead RIDES the edge exactly when it retypes the object wire: `f : A⟶M(B)` carries A to B and
     # the edge steps right under it, where `μ : M(M(x))⟶M(x)` leaves the object alone and hangs clear.
     carried = [otop]
@@ -887,38 +890,55 @@ def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
         carried.append(r.obj if r.obj is not None else carried[-1])
     ride = [carried[i] != carried[i + 1] for i in range(n)]
     free = [i for i in range(n) if not ride[i]]
+    hr = n + 1 if hr is None else hr
+    wr = 2 * len(tops) + 2 * (n - len(free)) + 2 if wr is None else wr
+    x0 = 2 * len(tops)                         # the edge's column, one lane pitch right of the last
+    for j, l in enumerate(tops):               # top lane; those stand one pitch apart in cut order
+        l.x = 2 * j * ROW
     bx, by, k = {}, {}, 0
     for i, r in enumerate(rows):
         if ride[i]:
-            bx[i], by[i] = (2 * k + 1) * ROW, (hr - k - 0.5) * ROW
+            bx[i], by[i] = (x0 + 2 * k + 1) * ROW, (hr - k - 0.5) * ROW
             k += 1
         else:
             # Off the edge the beads stack up from the BOTTOM, one row apart, so the lowest keeps a
             # row for its lane to drop in.  Across, such a bead sits at the centre of the columns it
             # eats — and one that eats nothing, a unit, on the panel's own midline, which is where
             # p.74 puts `η` between the left boundary and the point the edge leaves at.
-            xs = [bx[a.born] for a in r.arms]
+            xs = [a.x if a.born == TOP else bx[a.born] for a in r.arms]
             by[i] = (len(free) - free.index(i)) * ROW
             bx[i] = (min(xs) + max(xs)) / 2 if xs else wr / 2 * ROW
     for l in made:
-        l.x = bx[l.born]
-    xe = min(wr, 2 * hr)                       # 2 across : 1 down until the edge leaves the panel —
-    ye = hr - xe / 2                           # through the RIGHT side while `ye` is still above 0
+        if l.born != TOP:
+            l.x = bx[l.born]
+    # With no top lane the edge starts at the panel's left boundary and has no column of its own to
+    # hold, which is p.74's case: there it sweeps the whole width the book set, at 2 across : 1 down
+    # until it runs out of height.  With top lanes it holds `x0` and advances only for what rides it.
+    xe = min(2 * (n - len(free)), wr - x0) if tops else min(wr - x0, 2 * hr)
+    ye, xo, xb = hr - xe / 2, round(x0 * ROW, 4), round((x0 + xe) * ROW, 4)
+    side = x0 + xe >= wr                       # the edge leaves through the RIGHT side only if its
+    op = [[xo, round(hr * ROW, 4)]]                          # advance reached the panel's boundary
+    if xe:
+        op.append([xb, round(ye * ROW, 4)])
+    if not side:
+        op.append([xb, 0.0])
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel",
-           "h": round(hr * ROW, 4), "w": round(wr * ROW, 4), "xo": 0.0,
-           "lanes": [[l.x, by[l.born], "bot" if l.dies == n else by[l.dies],
-                      None if l.dies == n else l.label, None] for l in made],
+           "h": round(hr * ROW, 4), "w": round(wr * ROW, 4), "xo": xo,
+           "lanes": [[l.x, "top" if l.born == TOP else by[l.born],
+                      "bot" if l.dies == n else by[l.dies],
+                      None if l.born == TOP or l.dies == n else l.label, None] for l in made],
            "beads": [[by[i], r.label, "#000000",
                       r.reach.x if r.reach is not None else None, bx[i]]
                      for i, r in enumerate(rows)],
            "obj": [[by[i], r.obj] for i, r in enumerate(rows) if r.obj is not None],
-           "top": [[0.0, otop]],
-           "bot": [[l.x, l.label] for l in made if l.dies == n]
-                  + ([[0.0, obot]] if ye <= 1e-9 else []),
-           "opath": [[0.0, round(hr * ROW, 4)], [round(xe * ROW, 4), round(ye * ROW, 4)]],
+           # `dpanel` reads an object port by its x being `xo` and then DRAWS it where the edge is,
+           # so both object ports carry `xo` however far the advance has moved the edge's foot.
+           "top": [[l.x, l.label] for l in tops] + [[xo, otop]],
+           "bot": [[l.x, l.label] for l in made if l.dies == n] + ([] if side else [[xo, obot]]),
+           "opath": op,
            "ostraight": True,
            "cert": cert}
-    if ye > 1e-9:
+    if side:
         rec["right"] = [[round(ye * ROW, 4), obot]]
     if obreak:
         rec["obreak"] = [by[i] for i in range(n) if ride[i]]
@@ -1160,9 +1180,11 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               '\n--slope left  lean the layout left instead of the default lane placement'
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
               " descending to the right at 2 across : 1 down, one lane pitch per bead that retypes"
-              " it, in ROW units of 0.5cm.  Needs --panel, and takes --obreak"
-              '\n--panel WxH   the panel\'s outer size in rows, e.g. `--panel 4x4` — the book\'s own'
-              " typesetting choice, which the construction does not derive"
+              " it, in ROW units of 0.5cm, held vertical in its own column above the first bead"
+              " riding it.  Takes --panel and --obreak"
+              '\n--panel WxH   the panel\'s outer size in rows, e.g. `--panel 4x4` — p.74\'s own'
+              " typesetting, for a fixture that states it; without it the one derivation"
+              " `2·(top lanes) + 2·(riding beads) + 2` wide by `beads + 1` high"
               '\n--obreak      break the object edge at each bead riding it, as p.74\'s one-bead'
               " figure does and the two beside it do not"
               '\n--fold-list   keep a composite object as one wire instead of splitting it (e.g. `[A]`'
@@ -1209,9 +1231,8 @@ def main(argv):
                  + '\n       diagram --write [diag/allegory-axioms.typ]')
     book = None
     if "--book" in argv:
-        if not pan:
-            sys.exit("diagram: --book needs --panel WxH, the book's own outer size in rows")
-        book = tuple(int(v) for v in pan.lower().split("x")) + ("--obreak" in argv,)
+        book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
+            + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
              book)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`
