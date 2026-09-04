@@ -789,6 +789,16 @@ def columns(rows, made):
         live.setdefault(l.x, []).append(l)
 
 
+def crosses(rec):
+    """Does the panel's own ink cross?  `scanline` owns the ink model, so the routing is held to it
+    here rather than to a second copy of the rule.  A rec the sweep has no rule for is no evidence
+    of a crossing, so an unswept candidate counts as clear."""
+    try:
+        return bool(sl.crossings(sl.Panel(rec)))
+    except (Unhandled, ValueError, KeyError, IndexError, ZeroDivisionError):
+        return False
+
+
 def layout(rows, made, otop, obot, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
@@ -883,7 +893,17 @@ def layout(rows, made, otop, obot, cert):
             "bot": [[l.x, l.label] for l in made if l.dies == n] + [[xo, obot]],
             "cert": cert}
     if op:
-        rec["opath"] = op
+        # Clearing every lane at every row is necessary and not sufficient: a bead with no dot of
+        # its own stands ON the edge, so every wire landing there reaches out to wherever the edge
+        # is, and a descent running the whole height drags that reach across the columns between.
+        # Keep the LONGEST descent whose ink clears — the straight chord where it does, else bend at
+        # the lowest row that does and hold the column below, which is the book's vertical run.
+        for cand in [op] + [[op[0], [xb, y], op[1]] for y in sorted(ry) if 0.0 < y < hh]:
+            rec["opath"] = cand
+            if not crosses({**rec, "ok": OKNEE}):
+                break
+        else:
+            rec["opath"] = op
     return rec
 
 

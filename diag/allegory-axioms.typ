@@ -7173,7 +7173,7 @@ N(α)(that)
   ((4, [`⦇generate⦈`], black, 1.125, 1.7, "lax"), (3, [`est(R)`], black, 1.7), (2, [`setify`], black, 0.55, 0.55, "lax"), (1, [`est(R)`], black, 0.55)),
   ((1.125, [`L`]), (2.275, [`N`]), (7.45, [`Nat`])),
   ((2.85, [`L`]), (7.45, [`Nat`])),
-  opath: ((7.45, 5), (4, 0)),
+  opath: ((7.45, 5), (4, 3), (4, 0)),
   cert: (expect: "⦇generate⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca5 = dpanel(4, 8, 5.15,
   ((0.55, 2, 1, [`E`], none), (0.55, 3, 2, [`N`], none), (1.7, 3, "bot", none, none), (0.55, "top", 3, none, none), (1.7, "top", 3, none, none)),
