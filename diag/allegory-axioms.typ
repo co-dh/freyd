@@ -73,6 +73,8 @@
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm
 
+#let calc-table(..rows, cols: (1fr, HMW), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+
 // A CITED DISPLAY RENDERS AS ITS NAME, the way B&dM cite a law in a hint; a number sends the reader
 // off to look the display up.  `≜ x` is the display that DEFINES `x`; a display named here nowhere
 // keeps its number (`conf`'s rule).  Laws carry B&dM's names, lowercase as the book prints them.
@@ -2802,9 +2804,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr,),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: auto, 
   // hylo-fixed row: Theorem 6.2
   Thm(cols: 1)[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
  #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
@@ -2820,13 +2820,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     (EQ, hy-cata, src[`α°α=𝟙`, Lambek]),
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
   )],
-))]<hylo-fix>
+)]<hylo-fix>
 
 // B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
 // own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr,),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-least row: Theorem 6.2
  Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
     #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
@@ -2857,13 +2855,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     (IMP, trow(hy-prefix, tpanR(4.2, 2.1, [`X`], top: [`B`])),
      src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
   )],
-))]<hylo-least>
+)]<hylo-least>
 
 // The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr,),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-fusion-eq row: Theorem 6.2
  Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
@@ -2881,7 +2877,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
  ]),
      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
   )],
-))]<hylo-mu>
+)]<hylo-mu>
 
 #pagebreak(weak: true)
 = Combinatorial functions <sec-comb>
@@ -3071,10 +3067,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   ((1.7, [`E`]), (2.85, [`list`]), (4, [`A`])),
   cert: (expect: "π₂", src: "A×E(list(A))", tgt: "E(list(A))"))
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`F(∋)[nil,cons ∪ π₂]`])` =[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[the set of lists the algebra builds is, from nothing, just `nil`, and from a head and a set
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
@@ -3241,7 +3234,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   cert: (expect: "[nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]", src: "F(E[A])", tgt: "E[A]"))], [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
-))]<subseq-EW-case>
+)]<subseq-EW-case>
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
@@ -3255,10 +3248,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   node(AL.at(0), AL.at(1), black, `A×[A]`); node(L.at(0), L.at(1), black, `[A]`)
 }))]<subseq-outr-square>
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`(𝟙×∋)(cons ∪ π₂)`])` =⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[power transpose of join: the power transpose of the join of two relations is
      `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
@@ -3397,7 +3387,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
     #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
-))]<subseq-EW-join>
+)]<subseq-EW-join>
 
 // @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
 // the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
@@ -4162,9 +4152,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((2.85, [`A`]),),
   opath: ((2.85, 4), (1.7, 0)),
   cert: (expect: "f° F(R)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr,),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: auto, 
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
@@ -4196,7 +4184,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     ]),
     // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
   )],
-))]<mon-thm71>
+)]<mon-thm71>
 
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
@@ -4253,10 +4241,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   cert: (expect: "R°", src: "A", tgt: "A"), s: 100%)
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
 // `est(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
@@ -4305,7 +4290,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true, src: ("A", ), tgt: ("A", )),
   cert: (expect: "R°", src: "A", tgt: "A"))], [#src[`R` transitive]])],
   [#gr-R],
-))]<greedy-thm72>
+)]<greedy-thm72>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
 #let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's tape edge, which it does not export
@@ -4458,10 +4443,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   opath: ((5.15, 5), (2.85, 0)),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
-#disp[#table(
-  columns: (1fr, 5.6cm),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
   Thm[`α prefix list(p)=F(prefix list(p))S` \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
@@ -4617,10 +4599,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
 #let bx-Ro = ([`R°`], 0.85, true)
-#disp[#table(
-  columns: (1fr, 6.0cm),
-  align: (center + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 6.0cm), al: (center + horizon, left + horizon), pr: 0pt, 
   Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
      shortening the result]],
@@ -4781,10 +4760,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // the coproduct of maps has opened it.
 #let step = step.with(pw: 340pt)
 #let bx-est = ([`est(R°)`], 2.2, true)
-#disp[#table(
-  columns: (1fr, 4.4cm),
-  align: (center + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
   Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,⊸ nil)]` \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
      `nil` where it does not]],
@@ -4947,10 +4923,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 )])]
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, 7.9cm),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 7.9cm), 
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
   Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
@@ -5043,7 +5016,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
  ]])],
     // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
-))]<takewhile-laws>
+)]<takewhile-laws>
 
 === `mss=⦇[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨(𝟙×π₁)⊕,⟨(𝟙×π₁)⊕ `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]⦈ π₂ est(≥)` <sec-mss>
 
@@ -5100,10 +5073,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let mss-pic(tys, items, s: 100%) = P(cetz.canvas(length: 0.8cm, mss-run(tys, items)), s: s)
 
 #let step = step.with(pw: 303pt)
-#disp[#table(
-  columns: (1fr, 4.6cm),
-  align: (center + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt, 
   // B&dM p.174, Ex 7.40: "The maximum segment sum problem … is specified by mss = max·Λ(sum·segment) …
   // Using segment = prefix·suffix, express this problem in the form mss = max·P(max·Λ(sum·prefix))·Λsuffix."
   Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
@@ -5404,10 +5374,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // lean:AOP.A7_7_MSS.mss_prefix_sum@001a3374
 ]<mss-prefix-sum>
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr,),
-  align: left + horizon,
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: left + horizon, 
   // B&dM p.172: "By definition, an F-algebra S : A ← FA is monotonic on a relation R : A ← A if S·FR ⊆ R·S."
   Thm(cols: 1)[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
@@ -5491,7 +5458,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   cert: (expect: "(⊸ zero ∪ plus)≥", src: "Int×Int", tgt: "Int", A: "Int"))],
       src[`≥` reflexive], [`(⊸ zero ∪ plus)≥`]),
   )],
-))]<mss-mono>
+)]<mss-mono>
 
 // Every row is ONE WIRE, `𝟏+A×Int` to `Int` — `F(Int)` with `A:=Int` — so its two ends are drawn once.
 #let mss-src = { lab(-1.62, 0, black)[`𝟏+A×Int`]; wire((-0.45, 0), (0, 0)) }
@@ -5523,10 +5490,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
  Thm[#mss-alg ` est(≥)=[zero,⊕]` \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
@@ -5581,7 +5545,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
   [#mh-alg],
-))
+)
 // B&dM's own containment.
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — and @mss-deriv
@@ -5592,10 +5556,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
 // components are `k`'s two output wires.  No circuit — the carrier is a PRODUCT, and a fork needs
 // the product bifunctor, which is not a wire (as in @subseq-EW-join's Hinze-Marsden column).
-#disp[#pad(right: 10pt, table(
-  columns: (1.5fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1.5fr, 1fr), al: (left + horizon, left + horizon), 
   Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
@@ -5610,7 +5571,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#src[`g(cons(a,x))=a⊕(g(x))`, which is `w` reading `g(x)` off `π₁`; and the suffixes of
    `cons(a,x)` are `cons(a,x)` itself, whose value is that same `w`, together with those of `x`,
    which `π₂π₂` carries — so the two sets meet at `cup`]],
-))]<mss-scan>
+)]<mss-scan>
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
@@ -5623,10 +5584,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(-0.62, 0, black)[`[A]`]; boxrun(0, 0, items, h: TH)
   lab(boxrun-w(items) + 0.55, 0, black)[`A`]
 }
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
   Thm[`mss=⦇k⦈ π₂ est(≥)` \
@@ -5698,7 +5656,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((5.15, [`A`]),),
   opath: ((5.15, 4), (2.85, 0)),
   cert: (expect: "⦇k⦈π₂ est(≥)", src: "[A]", tgt: "A", sigs: ("⦇k⦈": "[A]⟶A×E(A)")))],
-))
+)
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
 ]<mss-deriv>
@@ -5740,10 +5698,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 )
 ])]<filter-defn>
 
-#disp[#table(
-  columns: 1fr,
-  align: center + horizon,
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: 1fr, al: center + horizon, pr: 0pt, 
   Thm(cols: 1)[`(𝟙×R°)(π₂ ∪ (p×𝟙) cons)⊑(π₂ ∪ (p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
@@ -5867,10 +5822,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let step = step.with(pw: 340pt)
 // §13.3.4 rebound `bx-est` to `est(≥)`, which is what the pictures below were drawing.
 #let bx-est = ([`est(R°)`], 2.2, true)
-#disp[#table(
-  columns: (1fr, 4.4cm),
-  align: (center + horizon, left + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
   Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
@@ -6068,10 +6020,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 )])]
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, 6.3cm),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr, 6.3cm), 
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
   Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
@@ -6141,7 +6090,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [#src[the catamorphism is entire and `filter(p)` simple, so `⊒` is `=`]])],
          // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
   [],
-))
+)
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
   `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness
   argument does not transfer. What survives `est(R°)` is the one keeping *exactly* the passing
@@ -7163,10 +7112,7 @@ N(α)(that)
 
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
 // of maps turns it into the program.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
     #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
      front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
@@ -7187,14 +7133,11 @@ N(α)(that)
     [#src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
   // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
   [],
-))]<cyl-step>
+)]<cyl-step>
 
 // B&dM §7.4, p. 182.  The `E` the fold builds is killed earlier at every step, until @cyl-step's
 // algebra never builds it: that migration is what the right column draws.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   // B&dM p.179: "Show how the dynamic programming approach to exhaustive search allows a path of least
   // cost to be found in O(n × m) time."
   Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \
@@ -7224,7 +7167,7 @@ N(α)(that)
   [#vstep(RQ, cyp(cyrun([`L N Nat`], [`L Nat`], (cb-foldQ, cb-setify, cb-est))),
     [#src[@cata-fusion at @cyl-fusion]])],
   [#ca5],
-))]<cyl-laws>
+)]<cyl-laws>
 
 // ---- Chain B, generated.  `est(R)` is the one bead BOTH sides carry, and the base functor's own
 // bead travels past it: `generate` above it on the left, `Q` below it on the right.
@@ -7246,10 +7189,7 @@ N(α)(that)
 // B&dM §7.4, p. 183.  `generate` kills the base functor before the minimum is taken inside the
 // tuple; the right-hand side kills it after, and that swap is the whole step.
 #disp[
-#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#calc-table(
   // B&dM p.182: "The condition for fusion is N(min R)·generate ⊇ Q·F(id, N(min R)), and we can use this to
   // derive a definition of Q"
   Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \
@@ -7265,7 +7205,7 @@ N(α)(that)
   [#vstep(RQ, cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-FNest, cb-Q)), s: 88%),
     [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
   [#cb2],
-))
+)
 #align(center, block(inset: (y: 4pt))[#src[(7.13) is `F(𝟙,est(R))α⊑cp P(α) est(R)`, @mon-thm71 at the
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
@@ -7373,10 +7313,7 @@ N(α)(that)
    + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
   ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
@@ -7498,12 +7435,9 @@ N(α)(that)
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
   [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
-))]<van-laws>
+)]<van-laws>
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[`(𝟙×(R;H))old⊑(new ∪ old)(R;H)` \
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
      on, or calling the van, and bettering the whole schedule after,
@@ -7623,7 +7557,7 @@ N(α)(that)
   ((1.125, [`list`]), (2.275, [`list`]), (6, [`Int`])),
   opath: ((6, 3), (4, 2), (4, 0)),
   cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]")))],
-))]<van-mono>
+)]<van-mono>
 
 #pagebreak(weak: true)
 = Thinning Algorithms <sec-thin>
@@ -7700,10 +7634,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let eb-Qo = ([`Q°`], 0.85, true)
 #let eb-in = ([`∈`], 0.75, true)
 #let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`S`])` thin Q⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
     #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
      // thinning row: (8.3), p. 194
@@ -7765,7 +7696,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((0.55, [`E`]), (2.85, [`A`])),
   opath: ((2.85, 3), (1.7, 2), (1.7, 0)),
   cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
-))]<thin-83>
+)]<thin-83>
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal
 // property: the first half is fusion, and the hylomorphism theorem turns the second into one chain.
@@ -7779,10 +7710,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let nb-pic(tail) = thpic([`A`], [`EA`], none, tail)
 // `thin Q : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈⊑`#frc([`⦇S⦈`])` thin Q` \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
      // thinning-of-reduce row: Theorem 8.1, p. 195
@@ -7852,7 +7780,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((0.55, [`E`]), (2.85, [`A`])),
   opath: ((2.85, 3), (1.7, 2), (1.7, 0)),
   cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
-))]<thin-thm81>
+)]<thin-thm81>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
@@ -7860,10 +7788,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 #let tb-thin = ([`thin Q`], 1.9, true)
 #let tb-cS = (frc([`⦇S⦈`]), 1.5, false)
 #let tb-fold = ([`⦇`#frc([`F(∋)S`])` thin Q⦈`], 4.2, false)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[`⦇`#frc([`F(∋)S`])` thin Q⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the thinning fold refines the optimisation problem itself —
      // thinning-est row: Corollary 8.1
@@ -7951,7 +7876,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((2.85, [`A`]),),
   opath: ((2.85, 4), (1.7, 0)),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
-))]<thin-cor>
+)]<thin-cor>
 
 == Paths in a layered network
 
@@ -7998,10 +7923,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #let pb-pic(alg, tail) = thpic([`L(EA)`], [`LA`], alg, tail)
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
@@ -8065,7 +7987,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#vstep(EQ, pb-pic((pb-prog,), (pb-est,)),
     [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
   [],
-))]<path-laws>
+)]<path-laws>
 
 // Same reason as the hand-placed breaks in §@sec-opt: `sticky` cannot hold a heading to a BREAKABLE
 // figure, so this heading stranded itself at the foot of the page.
@@ -8120,10 +8042,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let tl-pic(tail) = thpic([`EA`], [`[A]`], none, tail)
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[`sort P thinlist Q⊑thin Q sort P` \
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
@@ -8183,7 +8102,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((0.55, [`list`]), (2.85, [`A`])),
   opath: ((2.85, 3), (1.7, 2), (1.7, 0)),
   cert: (expect: "thin(Q)sort(P)", src: "E(A)", tgt: "[A]", sigs: ("sort": "E(A)⟶[A]", "Q": "A⟶A")))],
-))]<thinlist-86>
+)]<thinlist-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
@@ -8202,10 +8121,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let lb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // `sort P : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`F(∋)fp`])` sort P⊒F(sort P) listcp(F) list(f) filter(p)` \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      // map_sort row: Lemma 8.1, p. 202
@@ -8261,17 +8177,14 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [#vstep(RQ, lb-pic((lb-Fsort, lb-lcp, lb-lf, lb-fil)),
     [#src[`F(sort P) listcp(F)⊑cp(F) sort(FP)` — @thinlist-laws, `F` linear]])],
   [],
-))]<thinlist-lem81>
+)]<thinlist-lem81>
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
 // LIST, and that swap — `E` killed by `est(R)`, `list` by `minlist R` — is what rows 3 and 4 draw.
 #let sb-sort = ([`sort P`], 2.0, true)
 #let sb-min = ([`minlist R`], 2.7, true)
 #let sb-prog = ([`⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈`], 11.0, false)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R` \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
      // thinningList row: Theorem 8.2, p. 203
@@ -8408,7 +8321,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((2.85, [`A`]),),
   opath: ((2.85, 3), (1.7, 2), (1.7, 0)),
   cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "T", tgt: "A", sigs: ("⦇−thinlist(Q)⦈": "T⟶[A]", "minlist": "[A]⟶A")))],
-))]<thinlist-thm82>
+)]<thinlist-thm82>
 
 // The fusion condition of the last step above, B&dM p. 203.  Two of its moves are unwritten there:
 // the product law that distributes `sort P×sort P` over the fork, and the fork law that closes it.
@@ -8421,10 +8334,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let qb-g = ([`⟨g₁,g₂⟩`], 2.2, false)
 #let qb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // The panel `lb-pan` draws, with `S` for `f` and no `p`: same source, same two ports killed.
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`F(∋)S`])` thin Q sort P⊒F(sort P) listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q` \
     #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
      // sortedAlg-fusion row: B&dM p. 203
@@ -8476,7 +8386,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      #src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
       `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @bdm-prod-laws; `gᵢ≜list(fᵢ) filter(pᵢ)` — @thinlist-defn]])],
   [],
-))]<thinlist-fusion>
+)]<thinlist-fusion>
 
 == The knapsack problem
 
@@ -8536,10 +8446,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let kb-tl = ([`thinlist Q`], 3.0, true)
 #let kb-prog = ([`[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]`], 10.5, true)
 #let kb-pic(alg, tail) = thpic([`[Item]`], [`[Item]`], alg, tail)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist Q]⦈ minlist R` \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
@@ -8586,7 +8493,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      #src[`listcp(F)=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn; `minlist R` is `head`, packings
       coming out in descending value]])],
   [],
-))]<knap-laws>
+)]<knap-laws>
 
 // Stranded at the foot of its page for the same reason as the break above.
 #pagebreak(weak: true)
@@ -8656,10 +8563,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 // births a third — the list of candidate paragraphs `minlist R` reads back down.
 #let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
 #let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
@@ -8713,7 +8617,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist Q]⦈ minlist R` \
      #src[`listcp(F)=wrap+cpr`, `gᵢ` along the coproduct — @para-defn]])],
   [],
-))]<para-laws>
+)]<para-laws>
 
 == Bitonic tours
 
@@ -8769,10 +8673,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ub-tl = ([`thinlist Q`], 3.0, true)
 #let ub-prog = ([`[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]`], 16.1, true)
 #let ub-pic(alg, tail) = thpic([`[City]`], [`[City]×[City]`], alg, tail)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist Q]⦈ minlist R` \
     // tour row: B&dM §8.6, p. 215
     #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city]],
@@ -8810,7 +8711,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
      #src[`listcp(F)=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn; quadratic, two tours
       added per step]])],
   [],
-))]<tour-laws>
+)]<tour-laws>
 
 #pagebreak(weak: true)
 = Dynamic Programming <sec-dp>
@@ -8859,10 +8760,7 @@ in @mu-defn.
 #let db-LV = (frc([`Vᵢ°`]), 1.50, false)
 #let db-thini = ([`thin(Qᵢ)`], 2.45, true)
 #let db-PU = ([`P(Fᵢ(X)Uᵢ)`], 2.95, true)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin Q P(F(X)h) est(R))` \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
@@ -8969,7 +8867,7 @@ in @mu-defn.
   ((4, [`A`]),),
   ((4, [`B`]),),
   cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
-))]<dp-laws>
+)]<dp-laws>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -9033,10 +8931,7 @@ both lists empty.
 #let eb-PXb = ([`P((𝟙×X)cons)`], 4.10, true)
 #let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
 #let eb-min = ([`minlist R`], 2.85, false)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`edit°`])` est(R)⊒mle`, #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist R)` \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
@@ -9141,7 +9036,7 @@ both lists empty.
       (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
       the two lengths]])],
   [],
-))]<edit-laws>
+)]<edit-laws>
 
 == Optimal bracketing
 
@@ -9174,10 +9069,7 @@ both lists empty.
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #let mb-Lcat = (frc([`cat°`]), 1.80, false)
 #let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`flatten°`])` est(R)⊒mct`, #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
     #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
      non-empty segment, each entry built from the column to its left and the row below it]],
@@ -9327,7 +9219,7 @@ both lists empty.
      #src[the program: one fold building the array column by column, cubic in the length of the
       input]])],
   [],
-))]<mct-laws>
+)]<mct-laws>
 
 == Data compression
 
@@ -9357,10 +9249,7 @@ the longest repeated tail; #h(4pt)
 #let cb-Lext = (frc([`extend°`]), 2.75, false)
 #let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
 #let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`decode°`])` est(R)⊒encode`, #h(6pt)
     `encode=(null→nil,reduce list((encode×𝟙)snoc) minlist R)` \
     #src[a smallest code sequence decoding to the given string is built from the right, each step
@@ -9485,7 +9374,7 @@ the longest repeated tail; #h(4pt)
   ((6.3, [`list`]), (7.45, [`Char`])),
   ((1.7, [`list`]), (7.45, [`Code`])),
   cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: ("reduce": "[Char]⟶[[Char]×Code]", "encode": "[Char]⟶[Code]", "snoc": "[Code]×Code⟶[Code]", "minlist": "[x]⟶x")))],
-))]<code-laws>
+)]<code-laws>
 
 #pagebreak(weak: true)
 = Greedy Algorithms <sec-greedy>
@@ -9504,10 +9393,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #let gb-estQi = ([`est(Qᵢ)`], 2.15, true)
 #let gb-Ui = ([`Fᵢ(X)Uᵢ`], 2.20, true)
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
  carried and the recursion runs on values alone #h(4pt) ]],
@@ -9610,7 +9496,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ((5.15, [`B`]),),
   opath: ((5.15, 6), (2.85, 0)),
   cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
-))]<greedy-laws>
+)]<greedy-laws>
 
 == The detab-entab problem
 
@@ -9645,10 +9531,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let nb-Lexp = (frc([`expand°`]), 2.75, false)
 #let nb-estVU = ([`est(V×U)`], 2.55, true)
 #let nb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`detab°`])` est(R)⊒entab`, #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
     #src[the shortest input `detab` expands to the given output is one pass along that output,
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
@@ -9788,7 +9671,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
      #src[the program: one pass carrying the column and the count of pending blanks]])],
   [],
-))]<entab-laws>
+)]<entab-laws>
 
 == The minimum tardiness problem
 
@@ -9820,10 +9703,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let tb-snoc = ([`(X×𝟙)snoc`], 2.85, true)
 #let tb-pick = ([`pick`], 1.50, false)
 #let tb-sch = ([`(schedule×𝟙)snoc`], 4.90, true)
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`bagify°`])` est(R)⊒schedule`, #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
@@ -9952,7 +9832,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((1.125, [`list`]), (4.85, [`Job`])),
   opath: ((4.85, 4), (2.85, 3), (2.85, 0)),
   cert: (expect: "pick (schedule×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("pick": "bag(Job)⟶bag(Job)×Job", "schedule": "bag(Job)⟶[Job]", "snoc": "[Job]×Job⟶[Job]")))],
-))]<tardy-laws>
+)]<tardy-laws>
 
 == The TeX problem
 
@@ -9986,10 +9866,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let xb-Linv = (frc([`inrange val°`]), 4.30, false)
 #let xb-LH = (frc([`H`]), 0.95, false)
 
-#disp[#pad(right: 10pt, table(
-  columns: (1fr, HMW),
-  align: (left + horizon, center + horizon),
-  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(
   Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern(n)=f(2n−1,2n+1)` \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
@@ -10130,7 +10007,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
       `intern` — every interval reached is `(p/w,q/w)`]])],
   [],
-))]<tex-laws>
+)]<tex-laws>
 
 #pagebreak(weak: true)
 #include "allegory-appendix.typ"
