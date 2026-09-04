@@ -162,34 +162,6 @@ public theorem PE.free_on_maps {σ τ : TyE 𝒜} (t : PE σ τ) {a b : 𝒜} (f
   both and three spend neither.  `PE.Strict R t` below hands each half to the constructor that
   uses it, and `PE.free_strict` is the free theorem as an EQUALITY under exactly that much. -/
 
-/-- A relator carries ENTIRENESS: in the form `𝟙 ⊑ R ≫ R°` (`entire_id_le`, §2.13) the condition
-    is built from `𝟙`, `≫` and `°`, and over a tabular source a relator preserves all three
-    (Theorem 5.1(a)), so `𝟙 = F(𝟙) ⊑ F(R ≫ R°) = F R ≫ (F R)°`. -/
-public theorem Relator.entire_map (F : Relator 𝒜 𝒜) {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) :
-    Entire (F.map R) := by
-  show 𝟙 (F.obj a) ∩ F.map R ≫ (F.map R)° = 𝟙 (F.obj a)
-  refine le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) ?_)
-  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
-  have h := F.map_mono (entire_id_le hR)
-  rwa [F.map_id] at h
-
-/-- A relator carries SIMPLICITY: over a tabular source it preserves converse (Theorem 5.1(a)),
-    so `(F R)° ≫ F R = F(R° ≫ R) ⊑ F(𝟙) = 𝟙`. -/
-public theorem Relator.simple_map (F : Relator 𝒜 𝒜) {a b : 𝒜} {R : a ⟶ b} (hR : Simple R) :
-    Simple (F.map R) := by
-  show (F.map R)° ≫ F.map R ⊑ 𝟙 (F.obj b)
-  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
-  have h := F.map_mono (show R° ≫ R ⊑ 𝟙 b from hR)
-  rwa [F.map_id] at h
-
-/-- **(5.6) sharpened.**  The `dom` factor (5.6) leaves behind sits on the DISCARDED leg, so it
-    is `𝟙` as soon as that leg's relation is ENTIRE: `(R×S) ≫ outl = outl ≫ R`.
-    `prodMap_id_outl` (A5_2) is the case `S = 𝟙`. -/
-public theorem prodMap_outl_eq_of_entire {a b a' b' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
-    (R : a ⟶ a') {S : b ⟶ b'} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
-  show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl = P.outl ≫ R
-  rw [RelProd.pair_outl, entire_comp P.outr_map.1 hS, Cat.id_comp]
-
 -- No `mem` rule, for the reason `PE` itself has no `conv`: `mem` carries its lax square as the
 -- HYPOTHESIS `h`, so nothing in the syntax can sharpen it, and the only thing that does — Theorem
 -- 5.2, `laxNatural_iff_strict_on_maps` — spends the WHOLE of `Map R`.  `mem` is therefore exactly

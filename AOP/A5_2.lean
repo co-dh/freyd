@@ -285,21 +285,25 @@ public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
   have h := comp_mono_right (dom_coreflexive (P.outr ≫ S)) (P.outl ≫ R)
   rwa [Cat.id_comp] at h
 
+/-- **(5.6) sharpened**, the mirror of `prodMap_outr_eq_of_entire`: the `dom` factor (5.6) leaves
+    behind sits on the DISCARDED leg, so it is `𝟙` as soon as that leg's relation is ENTIRE:
+    `(R×S) ≫ outl = outl ≫ R`.  `prodMap_id_outl` is the case `S = 𝟙`. -/
+public theorem prodMap_outl_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a')
+    {S : b ⟶ b'} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
+  show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl = P.outl ≫ R
+  rw [RelProd.pair_outl, entire_comp P.outr_map.1 hS, Cat.id_comp]
+
 /-- Book p.115 claim: `outl·(R×id) = R·outl` — with the identity in the second slot the
     `dom` factor of (5.6) is the identity (`outr` is entire), so the bound sharpens to an
     equality.  Mirrored: `(R×id) ≫ Q.outl = P.outl ≫ R`. -/
 public theorem prodMap_id_outl (P : RelProd a b) (Q : RelProd a' b) (R : a ⟶ a') :
-    prodMap P Q R (Cat.id b) ≫ Q.outl = P.outl ≫ R := by
-  have hdom : dom (P.outr ≫ Cat.id b) = Cat.id P.p := by rw [Cat.comp_id]; exact P.outr_map.1
-  show Q.pair (P.outl ≫ R) (P.outr ≫ Cat.id b) ≫ Q.outl = P.outl ≫ R
-  rw [RelProd.pair_outl, hdom, Cat.id_comp]
+    prodMap P Q R (Cat.id b) ≫ Q.outl = P.outl ≫ R :=
+  prodMap_outl_eq_of_entire P Q R (id_is_map_local b).1
 
 /-- Mirror on the right leg: `(id×S) ≫ Q.outr = P.outr ≫ S`. -/
 public theorem prodMap_id_outr (P : RelProd a b) (Q : RelProd a b') (S : b ⟶ b') :
-    prodMap P Q (Cat.id a) S ≫ Q.outr = P.outr ≫ S := by
-  have hdom : dom (P.outl ≫ Cat.id a) = Cat.id P.p := by rw [Cat.comp_id]; exact P.outl_map.1
-  show Q.pair (P.outl ≫ Cat.id a) (P.outr ≫ S) ≫ Q.outr = P.outr ≫ S
-  rw [RelProd.pair_outr, hdom, Cat.id_comp]
+    prodMap P Q (Cat.id a) S ≫ Q.outr = P.outr ≫ S :=
+  prodMap_outr_eq_of_entire P Q S (id_is_map_local a).1
 
 /-- Claim 1 reciprocated: `R ≫ Q.outl° = P.outl° ≫ (R×id)` — the rewrite that pushes a
     relation across the products' left legs in (5.4)'s proof. -/

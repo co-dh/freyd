@@ -144,6 +144,28 @@ public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type 
     rw [hRrecip, F.map_comp, F.map_recip_map hg_map]
   rw [hFmapRrecip, hFmapR, Allegory.recip_comp, Allegory.recip_recip]
 
+/-- A relator carries ENTIRENESS: in the form `𝟙 ⊑ R ≫ R°` (`entire_id_le`, §2.13) the condition
+    is built from `𝟙`, `≫` and `°`, and over a tabular source a relator preserves all three
+    (Theorem 5.1(a)), so `𝟙 = F(𝟙) ⊑ F(R ≫ R°) = F R ≫ (F R)°`. -/
+public theorem Relator.entire_map {𝒜 : Type u₁} {ℬ : Type u₂}
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {R : a ⟶ b}
+    (hR : Entire R) : Entire (F.map R) := by
+  show 𝟙 (F.obj a) ∩ F.map R ≫ (F.map R)° = 𝟙 (F.obj a)
+  refine le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) ?_)
+  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
+  have h := F.map_mono (entire_id_le hR)
+  rwa [F.map_id] at h
+
+/-- A relator carries SIMPLICITY: over a tabular source it preserves converse (Theorem 5.1(a)),
+    so `(F R)° ≫ F R = F(R° ≫ R) ⊑ F(𝟙) = 𝟙`. -/
+public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {R : a ⟶ b}
+    (hR : Simple R) : Simple (F.map R) := by
+  show (F.map R)° ≫ F.map R ⊑ 𝟙 (F.obj b)
+  rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
+  have h := F.map_mono (show R° ≫ R ⊑ 𝟙 b from hR)
+  rwa [F.map_id] at h
+
 /-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 112)
 
   Any `R` tabulates as `f°≫g` for maps `f, g`; `Theorem 5.1(a)`'s computation of `F.map R`
