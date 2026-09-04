@@ -12,6 +12,7 @@ module
 
 public import AOP.A5_7
 public import AOP.A6_1_RelSet
+public import AOP.A7_1
 
 namespace Freyd.Alg
 
@@ -366,5 +367,37 @@ public theorem laT_no_equalizer :
 public theorem relSetEmpty_zero :
     𝟙 (⟨Empty⟩ : RelSet.{0}) = (𝟘 : (⟨Empty⟩ : RelSet.{0}) ⟶ ⟨Empty⟩) :=
   RelSet.hom_ext fun x _ => x.elim
+
+/-! ## §7.1: `P(est(R)) est(R) ⊑ union est(R)` is STRICT
+
+  `powerRel_est_le_bigUnion` cannot be strengthened to an equality: the guard `P(Dom(est(R)))`
+  of `powerRel_est_eq_bigUnion` is doing real work.  Witness: the one-element set `s = {()}`
+  with `R = 𝟙` — a total order on `s`, so `est(R)` picks `()` out of `s` — and `xss = {∅, s}`,
+  the set of ALL subsets of `s`.  `union xss = s`, so `union est(R)` relates `xss` to `()`.
+  But `P(est(R))` is Egli–Milner, and its first conjunct ("every member of the input
+  `est(R)`-reaches into the output") already fails at the member `∅`, which has no `est`: one
+  uncovered member empties `P(est(R))` at `xss`, hence empties `P(est(R)) est(R)` there. -/
+public theorem powerRel_est_lt_bigUnion :
+    ∃ (a : RelSet.{0}) (R : a ⟶ a), 𝟙 a ⊑ R ∧ R ≫ R ⊑ R ∧
+      ¬ (bigUnion ≫ est R ⊑ powerRel (est R) ≫ est R) := by
+  refine ⟨⟨Unit⟩, 𝟙 _, le_refl _, ?_, ?_⟩
+  · rw [Cat.id_comp]; exact le_refl _
+  intro h
+  -- on a ONE-element carrier `𝟙 = ⊤`, and `est(⊤) = ∋`: every element of a set is an `est`
+  have htop : (𝟙 (⟨Unit⟩ : RelSet.{0})) = topHom (⟨Unit⟩ : RelSet.{0}) ⟨Unit⟩ :=
+    le_antisymm (LocallyCompleteDistributiveAllegory.le_Sup trivial)
+      (RelSet.le_iff.mpr fun _ _ _ => rfl)
+  rw [(est_eq_eps_iff (𝟙 (⟨Unit⟩ : RelSet.{0}))).mpr htop] at h
+  -- `union xss = s ∋ ()`, so the left side relates `xss` to `()`
+  have hbe : (∋ (PowerAllegory.powerObj (⟨Unit⟩ : RelSet.{0})) ≫ ∋ (⟨Unit⟩ : RelSet.{0}))
+      = bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0}) := (Λ_eps_eq' _).symm
+  have hmem : (bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0})) (fun _ => True) () := by
+    rw [← hbe]; exact ⟨fun _ => True, trivial, trivial⟩
+  obtain ⟨ys, hys, -⟩ := RelSet.le_iff.mp h (fun _ => True) () hmem
+  -- term₁ of `P(∋)` at the member `∅`: it would have to `∋`-reach into `ys`
+  obtain ⟨y, hy, -⟩ := RelSet.le_iff.mp
+    (powerRel_term1_cancel (∋ (⟨Unit⟩ : RelSet.{0}))) (fun _ => False) ys
+    ⟨fun _ => True, trivial, hys⟩
+  exact hy
 
 end Freyd.Alg
