@@ -125,8 +125,9 @@ def branch(formula):
     return ks[0]
 
 
-# The note's own geometry: `hm` columns 1.15 apart from 0.55, the `𝟏` region 2.85 wide.
-X0, DX, DY, PAD = 0.55, 1.15, 1.0, 2.85
+# IntroString's own geometry, measured off its pp. 46/75/79: columns 0.625 apart (14.17pt = 0.5cm),
+# rows 1.5, so a knee is half a row; `X0` is the margin the leftmost lane's NAME is written into.
+X0, DX, DY, PAD = 1.875, 0.625, 1.5, 1.85
 OKNEE = 0.88                                   # the note's `oknee`: the bow a sloped object edge has
 
 
@@ -776,7 +777,9 @@ def columns(rows, made):
     # room is reserved on all of them, which is the same rule stated without the chain.
     for _ in range(len(made)):
         for l in made:
-            if not l.label or len(l.label) < 2:
+            # EVERY name, one letter included: a column is 0.625 and `E` is 0.375, so the letter
+            # fits between two full columns and is struck through by a lane a half step away.
+            if not l.label:
                 continue
             # + 0.002: `l.x` is rounded to 3 decimals below, and the two roundings can eat 0.001
             # of an exactly-reserved gap, putting the wire back on the name box's own edge.
@@ -791,7 +794,12 @@ def columns(rows, made):
             break
         else:
             break
-    off = X0 - min(l.x for l in made) if made else 0.0
+    # The leftmost lane's own name is written west of it too, into the margin, so the margin holds
+    # the wider of a column and that name — the same reservation the pass above makes between lanes.
+    lo = min(made, key=lambda l: l.x) if made else None
+    gap = max(DX, sl.LDX + sl.LCW * len(lo.label) + 0.002) if lo and lo.label and len(lo.label) > 1 \
+        else DX
+    off = X0 + gap - min(l.x for l in made) if made else 0.0
     for l in made:
         l.x = round(l.x + off, 3)
     live = {}
@@ -861,13 +869,12 @@ def layout(rows, made, otop, obot, cert):
                 c.append(l.x + DX)
         return round(max(c), 2)
 
-    # The object edge SLOPES exactly when an arrow of the base category travels along it, and then it
-    # is one straight line at 2 across : 1 down — IntroString p. 74 draws every such figure that way
-    # (`L 56.694 -28.346`, measured), and p. 73 keeps the edge vertical in the figures where no arrow
-    # rides it.  It leans wherever a bead has no dot of its own, and `--slope left` is the caller
-    # asking for the lean where no bead does; the clearance is `xat`'s, height by height.
+    # The object edge runs STRAIGHT DOWN.  A bead riding it is no reason to lean: IntroString p. 79
+    # lets the wire that dies on such a bead fall vertically and brings the edge to meet it, and a
+    # lean is legal only where every column it sweeps is a birth or a death (p. 75).  `--slope left`
+    # is the caller asking for it; the clearance is `xat`'s, height by height.
     op = None
-    if cert.get("slope") == "left" or any(len(b) < 5 or b[4] is None for b in beads):
+    if cert.get("slope") == "left":
         # The lean runs the WHOLE height, not down to the topmost bead and vertical from there:
         # a bead riding the edge must sit on a SLOPING wire, which is what makes the lane arriving
         # at it read as standing on the edge (IntroString p. 79's bed).  A bead on the vertical run
