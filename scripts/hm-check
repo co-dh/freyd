@@ -269,11 +269,16 @@ def verify_sigs():
     must be spelled somewhere in that statement — a projection carries none, so it goes unchecked.
     A row STATING a `nat` is held to the same standard: the mark it draws is a theorem, so `nat-lean`
     must name the declaration behind it — `"strict"` and `"lax"` the proof of the square, `"no"` the
-    counterexample refuting it.  A row with no `nat` claims nothing and is skipped, which for a
-    polymorphic row is not an option: `diagram` refuses to draw one."""
+    counterexample refuting it.  A row with no `nat` claims nothing, which for a polymorphic row is
+    not an option — `diagram` refuses to draw one — and which stops being honest the moment Lean
+    proves the square anyway, so the corpus is swept for a proof the table never took up."""
     t = sl.sigs()
     db = sqlite3.connect(f"file:{os.path.join(ROOT, cc.DB)}?mode=ro", uri=True)
     say = {k: v for k, v in t["spelling"].items() if k != "//"}
+    proofs = [(u, m) for u, m in
+              db.execute("select user_name, module from decl_info where internal = 0 and"
+                         " user_name like '%natural'")
+              if u.split(".")[-1].endswith(("_natural", "_lax_natural", "_not_lax_natural"))]
     bad = []
     for name, row in t["sigs"].items():
         mark, _, k = row["lean"].partition("@")
@@ -291,6 +296,13 @@ def verify_sigs():
             bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
                        f" it is `{' '.join(stmt.split())}`")
         if "nat" not in row:
+            # A row with no `nat` claims nothing — but silence is only honest while Lean says
+            # nothing either.  Once the corpus proves `<name>_natural`, `<name>_lax_natural` or
+            # refutes it, the row is out of date, and no one would find that by reading the table.
+            free = [f"{m}.{u}" for u, m in proofs if u.split(".")[-1].split("_")[0] == name]
+            if free:
+                bad.append(f'{where}: no `nat`, but Lean has {free[0]} — state the mark and cite it'
+                           f' in `nat-lean`, or rename that theorem if it is a different arrow')
             continue
         marks = row.get("nat-lean")
         if not marks:
