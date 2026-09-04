@@ -2475,14 +2475,47 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 // `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
 // `s`; `tpan` passes 100% and prints its labels at the size `tw-hm` does.
+// A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
+// IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
+// covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
+#let HSTUB = 0.075
+// The object edge BROKEN at the beads riding it: IntroString p.74's single-bead figure leaves a gap
+// centred on the dot, each stub ending `HSTUB` from the centre measured ALONG the edge, where the
+// two-bead figure beside it draws the same edge through its dots unbroken.  The REGION boundary
+// stays the whole `op` — the break is a gap in the INK, not in the boundary the fills follow.
+#let obroken(op, bks) = {
+  let (out, cur) = ((), (op.at(0),))
+  for i in range(op.len() - 1) {
+    let (a, b) = (op.at(i), op.at(i + 1))
+    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+    let m = calc.max(calc.sqrt(ux * ux + uy * uy), 1e-9)
+    for p in bks.filter(p => p.at(1) <= a.at(1) + 1e-9 and p.at(1) >= b.at(1) - 1e-9)
+                .sorted(key: p => -p.at(1)) {
+      cur.push((p.at(0) - HSTUB * ux / m, p.at(1) - HSTUB * uy / m))
+      out.push(cur)
+      cur = ((p.at(0) + HSTUB * ux / m, p.at(1) + HSTUB * uy / m),)
+    }
+    cur.push(b)
+  }
+  out + (cur,)
+}
 // `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
 // lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
-#let dpan(h, w, xa, body, s: 74%, opath: none, key: none) = P(cetz.canvas(length: 0.8cm, {
+// `straight` draws it as the book's own polyline instead of `oknee`'s bow, and `obreak` lists the
+// dots it is broken at.  An edge may STOP ON THE PANEL'S RIGHT SIDE rather than its bottom (all
+// three of IntroString p.74's figures do), and then both regions close along that side.
+#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, key: none) = P(
+    cetz.canvas(length: 0.8cm, {
   let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
-  let ok = oknee(op)
-  hm-region(((0, 0), (0, h)) + op, fb-ALLC, k: ok)
-  hm-region(op + ((w, 0), (w, h)), luma(226), k: ok)
-  hm-wire(op, col: BCOL, k: ok)
+  let ok = if straight { 0 } else { oknee(op) }
+  let (ex, ey) = op.last()
+  let side = if ey > 1e-9 and calc.abs(ex - w) > 1e-9 { ((w, ey),) } else { () }
+  let lead = if calc.abs(op.first().at(0)) > 1e-9 { ((0, 0), (0, h)) } else { ((0, 0),) }
+  hm-region(lead + op + (if ey > 1e-9 { side + ((w, 0),) } else { () }), fb-ALLC,
+            k: ok, straight: straight)
+  hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
+            k: ok, straight: straight)
+  for seg in obroken(op, obreak) { hm-wire(seg, col: BCOL, k: ok, straight: straight) }
   body
 }), s: s, key: key)
 
@@ -2493,10 +2526,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   and (if y0 == "top" { h } else { y0 }) > bd.at(0)
   and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
 #let dkey(s, y) = s + str(float(y))
-// A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
-// IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
-// covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
-#let HSTUB = 0.075
 // Where a strand standing in column `x` stops on its way to the dot at `(bx, y)`: back along the row
 // it arrives on, or — where the dot stands in the strand's OWN column and there is no room along the
 // row — back up its column, `vy` being +1 for a strand above the dot and -1 for one below.
@@ -2638,10 +2667,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
 // bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, cert: (:)) = {
+// `right` is a port list for the panel's RIGHT side, `(y, label)` each: the object edge may leave
+// through that side instead of the bottom (IntroString p.74).  `obreak` names the bead heights the
+// edge is broken at, and `ostraight` draws it as the book's straight polyline.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
+            obreak: (), ostraight: false, cert: (:)) = {
   // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
   // sides match, so taking the last one would make `xat` two functions in two languages, not one.
-  let ok = if opath == none { 0 } else { oknee(opath) }
+  let ok = if opath == none or ostraight { 0 } else { oknee(opath) }
   let xat = if opath == none { y => xo } else { y => {
     let r = none
     for i in range(opath.len() - 1) {
@@ -2707,14 +2740,20 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
   for (x, l) in bot {
     hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
+  for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s, opath: opath, key: cert.at("expect", default: "dpanel"))
+  }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight,
+     key: cert.at("expect", default: "dpanel"))
   // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
   // two knees disagree is a crossing the sweep would call clean while the page still braids.
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk, ok: ok, named: nmd,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
-    + (if opath == none { (:) } else { (opath: opath) }))
+    + (if opath == none { (:) } else { (opath: opath) })
+    + (if right == () { (:) } else { (right: right.map(p => p.map(plain))) })
+    + (if obreak == () { (:) } else { (obreak: obreak) })
+    + (if ostraight { (ostraight: true) } else { (:) }))
 }
 
 // A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`

@@ -31,8 +31,11 @@
 // its third row's right arm `Δ(12.47,12.46)` handle 6.90: 0.3915 of the chord every time, where
 // `k` times the shorter side misses the last two by 4% and 11%.  Two ends both vertical over a long
 // sideways run bow the step into an S instead, and that family keeps `k`.
-#let hm-seg(a, b, k: HMK, ha: false, hb: false) = {
-  if a.at(0) == b.at(0) or a.at(1) == b.at(1) {
+// `straight` draws the segment as a LINE whatever its gradient: IntroString p.74's object edge is
+// `L 56.694 -28.346`, a straight polyline and not a bow, so a bezier with its controls on the ends
+// would not do — that still emits a cubic, and the page's own edge carries no handles at all.
+#let hm-seg(a, b, k: HMK, ha: false, hb: false, straight: false) = {
+  if straight or a.at(0) == b.at(0) or a.at(1) == b.at(1) {
     d.line(a, b)
   } else {
     let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
@@ -47,15 +50,17 @@
 
 /// The path through `pts`, unstyled — `hm-wire` and `hm-region` put the stroke or fill on it.
 /// `hs` lists the POINT indices where the path lands on a dot, and so leaves horizontal, not down.
-#let hm-path(pts, k: HMK, hs: ()) = {
+#let hm-path(pts, k: HMK, hs: (), straight: false) = {
   for i in range(pts.len() - 1) {
-    hm-seg(pts.at(i), pts.at(i + 1), k: k, ha: hs.contains(i), hb: hs.contains(i + 1))
+    hm-seg(pts.at(i), pts.at(i + 1), k: k, ha: hs.contains(i), hb: hs.contains(i + 1),
+           straight: straight)
   }
 }
 
 /// One `merge-path` and not one element per segment, so a bend and its straight run cannot seam.
-#let hm-wire(pts, col: black, thickness: lw, k: HMK, hs: ()) = d.merge-path(
-  fill: none, stroke: (thickness: thickness, paint: col), hm-path(pts, k: k, hs: hs),
+#let hm-wire(pts, col: black, thickness: lw, k: HMK, hs: (), straight: false) = d.merge-path(
+  fill: none, stroke: (thickness: thickness, paint: col),
+  hm-path(pts, k: k, hs: hs, straight: straight),
 )
 
 /// AN UNCHANGED WIRE IS DRAWN UNCHANGED: at a junction the SURVIVOR runs straight and the CONSUMED
@@ -89,8 +94,8 @@
 
 /// FILL AND STROKE ARE NEVER THE SAME PATH, or the region draws a floor along the box's edges.
 /// Draw every region before any wire, or a fill hides the wire bounding it.
-#let hm-region(pts, fill, k: HMK) = d.merge-path(
-  close: true, fill: fill, stroke: none, hm-path(pts, k: k),
+#let hm-region(pts, fill, k: HMK, straight: false) = d.merge-path(
+  close: true, fill: fill, stroke: none, hm-path(pts, k: k, straight: straight),
 )
 
 /// Dot and name share `col`, so an arrow and its label cannot be told apart by colour.  `dx`/`dy`
@@ -107,9 +112,14 @@
 
 /// A wire end on a box edge, name OUTSIDE; `dir` is `+1` above the top edge, `-1` below the bottom.
 /// `p` and not `(x, "top")`: a panel body is drawn in its own coordinates and is not told the height.
-#let hm-port(p, label, dir: 1, col: black, gap: 0.28) = d.content(
-  (p.at(0), p.at(1) + dir * gap), text(col)[#label],
-  anchor: if dir > 0 { "south" } else { "north" },
+/// `axis: "x"` turns the pair a quarter — `+1` right of the RIGHT edge — for a wire that leaves
+/// through the panel's side, which is what all three of IntroString p.74's figures do.
+#let hm-port(p, label, dir: 1, col: black, gap: 0.28, axis: "y") = d.content(
+  (p.at(0) + (if axis == "x" { dir * gap } else { 0 }),
+   p.at(1) + (if axis == "x" { 0 } else { dir * gap })),
+  text(col)[#label],
+  anchor: if axis == "x" { if dir > 0 { "west" } else { "east" } }
+          else if dir > 0 { "south" } else { "north" },
 )
 
 /// A region name, muted, inside the region.  Named ONCE in a family's first picture — the book's own

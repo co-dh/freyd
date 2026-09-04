@@ -404,8 +404,12 @@ def ourgeom(fx, tbl, tag):
     own = {renamed(k, a): {p: renamed(v, a) if isinstance(v, str) else v for p, v in s.items()}
            for k, s in fx.get("sigs", {}).items() if k != "//"}
     t = {**tbl, "sigs": {**tbl["sigs"], **own}}
+    # The fixture's `geom` block states the two things the p.74 construction does not derive — the
+    # panel the book set and whether it broke the edge at a riding dot — so `--book` is passed them.
+    g = fx["geom"]
+    book = tuple(int(v) for v in g["panel"].lower().split("x")) + (bool(g.get("obreak")),)
     rec = dg.draw(renamed(fx["mirrored"].split("=")[0].strip(), a),
-                  renamed(fx["src"], a), renamed(fx["tgt"], a), t)
+                  renamed(fx["src"], a), renamed(fx["tgt"], a), t, book=book)
     src = os.path.join(ROOT, "diag", f".hm-geom-{tag}.typ")
     pdf = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"hm-geom-{tag}.pdf")
     with open(src, "w", encoding="utf-8") as f:                 # `#import` is resolved from the
@@ -444,9 +448,12 @@ def frame(els, rec):
                          f" the frame is not one uniform scale")
     s = (sx + sy) / 2
     wires = [(hexrgb(c), sp) for k, c, sub, _ in els if k == "wire" for sp in sub]
-    edge = [sp for c, sp in wires if c and dist(c, BCOL) < 24]
-    if len(edge) != 1:
-        raise ValueError(f"our render has {len(edge)} strokes in the object wire's colour, not one")
+    # ONE edge, but not always one stroke: p.74 breaks it at a riding dot, and the fixture states
+    # that break as a second path.  Top to bottom, so the first stroke's upper end is the origin.
+    edge = sorted((sp for c, sp in wires if c and dist(c, BCOL) < 24),
+                  key=lambda sp: min(p[1] for _, ps in sp for p in ps))
+    if not edge:
+        raise ValueError("our render has no stroke in the object wire's colour")
     ends = [edge[0][0][1][0], edge[0][-1][1][-1]]
     ox, oy = min(ends, key=lambda q: q[1])
     at = lambda p: [round((p[0] - ox) / s * UNIT, 4), round((p[1] - oy) / s * UNIT, 4)]
@@ -456,7 +463,7 @@ def frame(els, rec):
     # `dg.draw`'s own bead list, top first, is what NAMES them: the svg keeps no label.
     nm = [b[1] for b in sorted(rec["beads"], key=lambda b: -b[0])]
     return {"extent": [round(rec["w"] * UNIT, 3), round(rec["h"] * UNIT, 3)],
-            "edge": [ir(edge[0])],
+            "edge": [ir(sp) for sp in edge],
             "wires": [ir(sp) for c, sp in wires if not (c and dist(c, BCOL) < 24)],
             "beads": [{"name": n, "at": at(d), "r": round(d[2] / s * UNIT, 4)}
                       for n, d in zip(nm + ["?"] * len(dots), sorted(dots, key=lambda d: d[1]))]}
