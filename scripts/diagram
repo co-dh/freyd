@@ -707,9 +707,31 @@ def columns(rows, made):
     for k, l in enumerate(l for l in made if l.born == TOP):
         l.x = k * DX
     for i, r in enumerate(rows):
-        if not r.legs or isunit(r):    # a unit row is placed in the pass below
+        if not r.legs:
             continue
         live = [l for l in made if l.x is not None and l.born < i < l.dies]
+        if isunit(r):
+            # A unit opens a wire out of nothing, so no arm it eats says where that wire goes and
+            # `made`, which IS column order, is all there is to go on.  The block sits as far WEST
+            # as the wires it runs UNDER allow: east of every placed lane before it in that order,
+            # and whatever is born below is placed east of the block in turn.  West of its own
+            # context instead, `list(𝟙%∋)` would come back as `E(list(−))`, the region inside out.
+            b0, d0 = min(g.born for g in r.legs), max(g.dies for g in r.legs)
+            j = made.index(r.legs[0])
+
+            def beside(ls):
+                return [o.x for o in ls if o.x is not None and o.born < d0 and b0 < o.dies]
+            n = len(r.legs)
+            lo, hi = max(beside(made[:j]), default=None), min(beside(made[j + n:]), default=None)
+            # As far EAST as its own context allows, so a lane born below still fits west of it;
+            # where the two neighbours are one grid step apart the block shares the gap evenly.
+            x0, step = (hi - n * DX if hi is not None else lo + DX if lo is not None else 0.0), DX
+            if lo is not None and hi is not None and x0 <= lo + 1e-9:
+                step = (hi - lo) / (n + 1)
+                x0 = lo + step
+            for k, g in enumerate(r.legs):
+                g.x = x0 + k * step
+            continue
         # Not every arm is placed yet — one opened at the bead that eats it has no column until the
         # pass below — and a row whose arms are all still pending falls back to the unit's rule.
         xs = [a.x for a in r.arms if a.x is not None]
@@ -740,17 +762,6 @@ def columns(rows, made):
                 break
         for g, x in zip(r.legs, got):
             g.x = x
-    # A unit opens a wire out of nothing, and that wire goes LEFT of every lane it is live beside —
-    # otherwise it falls inside some bead's reach, and a reach is drawn by BENDING each spanned wire
-    # onto the dot, which a unit lane (born at its own column, no bead) has no shape for.  Shortest
-    # span first, so a unit outliving another ends up further left and the two never trade columns.
-    for r in sorted((r for r in rows if isunit(r)),
-                    key=lambda r: max(g.dies for g in r.legs) - min(g.born for g in r.legs)):
-        b0, d0 = min(g.born for g in r.legs), max(g.dies for g in r.legs)
-        ov = [o.x for o in made if o.x is not None and o.born < d0 and b0 < o.dies]
-        base = min(ov, default=DX) - DX
-        for j, g in enumerate(r.legs):
-            g.x = base - (len(r.legs) - 1 - j) * DX
     # A lane OPENED at the bead that eats it is born above and has no row of legs to space it; it
     # takes the free column beside the neighbour `made` already puts it next to.
     for i, l in enumerate(made):
