@@ -50,7 +50,7 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [TabularAllegory 𝒜] [Allegory.{
 
 /-- **B&dM Theorem 5.2**: `φ` is lax natural from `G` to `F` iff it is STRICTLY natural on
     every map `f`. -/
-theorem laxNatural_iff_strict_on_maps :
+public theorem laxNatural_iff_strict_on_maps :
     LaxNatural F G φ ↔ ∀ {a b : 𝒜} (f : a ⟶ b), Map f → G.map f ≫ φ b = φ a ≫ F.map f := by
   constructor
   · intro hlax a b f hf
