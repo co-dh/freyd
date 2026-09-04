@@ -364,8 +364,10 @@ def matches(pat, lane, sub):
 def wire_eq(w, lane):
     """The wire a formula names against the lane it runs under.  An arrow spells the functor with
     its other slot at `𝟙` — `F(𝟙,∋)` — so what peels off it is the bare head `F`, where the lane,
-    read off an object, says which object that slot holds: `F(A,−)`.  One wire, two spellings."""
-    return w == lane or (w is not None and lane.startswith(w + '(') and lane.endswith('−)'))
+    read off an object, says which object that slot holds: `F(A,−)`.  One wire, two spellings.
+    `P` and `E` are one wire too — same objects, different arrows — so either may run on the other."""
+    return sl.ALIAS.get(w, w) == sl.ALIAS.get(lane, lane) \
+        or (w is not None and lane.startswith(w + '(') and lane.endswith('−)'))
 
 
 def eat(pat, lanes, obj, sub, why):
@@ -542,9 +544,10 @@ class Row:
 
 def alphabet(table, *objs):
     """The wire letters, as data: what the signatures and the panel's own ports name between them.
-    A name is a wire because a signature uses it as one — there is no list of relators to keep."""
-    ws = {l for v in table["sigs"].values()
-          for e in (v["src"], v["tgt"]) for l in letters(norm(parse(e)))}
+    A name is a wire because a signature uses it as one — there is no list of relators to keep,
+    beyond the aliases, whose whole point is that no signature spells them (`P A = E A`)."""
+    ws = set(sl.ALIAS) | {l for v in table["sigs"].values()
+                          for e in (v["src"], v["tgt"]) for l in letters(norm(parse(e)))}
     return {w for w in ws.union(*(peel(o)[0] for o in objs)) if '−' not in w and w != '×'}
 
 
@@ -581,6 +584,13 @@ def elaborate(formula, src, tgt, table):
         for k, w in enumerate(wrap):
             if k < len(lanes) and not wire_eq(w, lanes[k].label):
                 raise Unhandled(f"{why} runs under {w} where the cut has {lanes[k].label}")
+            # An aliased wire is named by the FORMULA where the port is all the cut has to go on:
+            # `E(E A)` says nothing about which relator its outer wire is, and `P(est(R))` does.  A
+            # lane a bead made keeps its maker's letter — `(T°)%∋` builds an existential image, and
+            # the `P` a display writes over it is that panel's own law, not a different wire.
+            if k < len(lanes) and lanes[k].born == TOP and w != lanes[k].label \
+                    and sl.ALIAS.get(w, w) == sl.ALIAS.get(lanes[k].label, lanes[k].label):
+                lanes[k].label = w
             if k >= len(lanes):                # a wire the formula names and the cut has not got is
                 obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —
                 made.append(Lane(w, born=i - 1 if rows else TOP))   # or at the top edge if there is
@@ -808,32 +818,28 @@ def layout(rows, made, otop, obot, cert):
     # rides it.  Sloping it right of every lane needs no clearance test: the line only moves further
     # right going up, and it starts one gap right of the rightmost lane that reaches the bottom.
     op = None
-    if any(len(b) < 5 or b[4] is None for b in beads):
+    if cert.get("slope") == "left":
+        # `--slope left` is the caller SAYING the object wire is not the straight default, so it
+        # outranks the lean below — which a dotless bead would otherwise claim first.
+        # The lean then runs the WHOLE height: a bead riding the edge must sit on a SLOPING wire,
+        # which is what makes the lane arriving at it stand ON the edge (IntroString p. 79's bed).
+        # A bead on a vertical run has the edge passing it end-on instead.
+        xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
+        run = min(2 * hh, max(DX, xb - min([l.x for l in made], default=xb)))
+        op, xo = [[round(xb + run, 2), hh], [xb, 0.0]], round(xb + run, 2)
+    elif any(len(b) < 5 or b[4] is None for b in beads):
         # The edge only moves right going UP, so clearing every lane at the bottom clears it
         # everywhere: `xb` is the straight wire's old column, and the lean is added above it.
         xb = round(max([l.x for l in made], default=X0 - DX) + DX, 2)
         # The book's gradient is 2 across : 1 down, which a composite five rows tall cannot hold —
         # ten columns of run would be wider than the page.  Take the steepest line that fits: the
         # run is the lanes' own span, so the edge crosses the whole picture and is never a stair.
-        # It leans down to the HIGHEST bead riding it and drops vertically from there — IntroString
-        # p. 74's shape, and the only one that keeps it clear of the wires that dip onto those beads:
-        # a dip leaves its dot VERTICALLY, so an edge still moving left below the dot cuts it.
-        yl = max(b[0] for b in beads if len(b) < 5 or b[4] is None)
-        run = min(2 * (hh - yl), max(DX, xb - min([l.x for l in made], default=xb)))
-        op, xo = [[round(xb + run, 2), hh], [xb, yl]], round(xb + run, 2)
-        if yl > 1e-9: op.append([xb, 0.0])
-    elif cert.get("slope") == "left":
-        # The wire sweeps top-right to bottom-left, absorbing the innermost arm at its own column
-        # (IntroString p.79, 3.8b); a death that would move it ONE gap it sits out, the arm bending in.
-        op, x, nat = [], xat(hh), xat(hh)
-        for y in [hh] + sorted({b[0] for b in beads}, reverse=True) + [0.0]:
-            if nat - xat(y, False) > DX + 1e-6:
-                x = xat(y)
-            nat = xat(y, False)
-            op.append([x, y])
-        if all(q[0] == op[0][0] for q in op):
-            op = None
-        xo = xat(hh)                   # the wire's top x, which the sweep and both ports key on
+        # The lean runs the WHOLE height, not down to the topmost bead and vertical from there:
+        # a bead riding the edge must sit on a SLOPING wire, which is what makes the lane arriving
+        # at it read as standing on the edge (IntroString p. 79's bed).  A bead on the vertical run
+        # below has the edge passing it end-on instead.
+        run = min(2 * hh, max(DX, xb - min([l.x for l in made], default=xb)))
+        op, xo = [[round(xb + run, 2), hh], [xb, 0.0]], round(xb + run, 2)
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
             "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
@@ -967,7 +973,7 @@ def roundtrip(path, frm, show, out, tbl):
             ok += 1
         elif got == spell(tidy(parse(want))):
             printer += 1                       # differs only where `spell` spaces a bracket
-        elif norm(sl.parse(got)) == norm(sl.read(want, g["cert"], False)[0]):
+        elif sl.quot(sl.parse(got)) == sl.quot(sl.read(want, g["cert"], False)[0]):
             law += 1                           # `F(R)F(S)=F(RS)`, `f×g=(f×𝟙)(𝟙×g)`: heights the
         # display writes as one — the sweep's own reading, which also cuts `[,]` to the branch drawn
         else:

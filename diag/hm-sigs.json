@@ -35,6 +35,7 @@
     "∋":       {"src": "E(x)",         "tgt": "x",      "lean": "Freyd.S2_40.PowerAllegory.eps@ca3b1fd5"},
     "∈":       {"src": "x",            "tgt": "E(x)",   "lean": "Freyd.S2_40.PowerAllegory.eps@ca3b1fd5",
                 "note": "∈≜∋°, no declaration of its own: the row is eps's, read backwards"},
+    "union":   {"src": "E(E(x))",      "tgt": "E(x)",   "lean": "Freyd.S2_40.bigUnion@be608ccc"},
     "π₂":      {"src": "x×y",          "tgt": "y",      "lean": "AOP.A5_2.RelProd.outr@e89a9433"},
     "choose":  {"src": "x×x",          "tgt": "x",      "lean": "AOP.A7_3_Party.choose@c779f253"},
     "include": {"src": "x×[[x]×[x]]",  "tgt": "[x]",    "lean": "AOP.A7_3_Party.includeFn@9197f738"},

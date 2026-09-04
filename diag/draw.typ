@@ -66,7 +66,10 @@
   "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),
   "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"),
   // IntroString p.48's three monads, for the panels that redraw Cheng's commuting diagram.
-  "B": rgb("#7a5c3e"), "C": rgb("#3f7d6e"))
+  "B": rgb("#7a5c3e"), "C": rgb("#3f7d6e"),
+  // `P A = E A` is the same object, so `P` takes `E`'s hue a shade darker: the two relators must
+  // read as siblings, because the whole content of `P(est(R))est(R)⊑union est(R)` is that they differ.
+  "P": rgb("#00767e"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.

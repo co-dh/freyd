@@ -283,8 +283,8 @@ def dun(e):
 def norm(e):
     """The confluent rewrite comparison runs on: `°` pushed to the atoms, `Δ(R)=R×R`, `𝟙` dropped,
     `[A]=list(A)`, juxtaposition and `×` flat.  `F(R°)=F(R)°`, `F(R)F(S)=F(RS)` and `dun`'s
-    `R%∋=𝟙%∋ E(R)` are laws applied on trust.  `P(R)` and `E(R)` collapse as ONE HM picture, not as
-    one relation — they agree on maps (B&dM p.202) and the panel cannot tell them apart."""
+    `R%∋=𝟙%∋ E(R)` are laws applied on trust.  `P` keeps its own head here — `quot` is what
+    identifies it with `E`, and only where two readings are COMPARED."""
     # One bead on the sweep side, so the comparison form stays the atom these were before the parser
     # could read them — `cond` alone gains its brackets, and no certified string carries a `→`.
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
@@ -309,11 +309,6 @@ def norm(e):
             return b[1]
     if e[0] == 'app' and e[1] == 'Δ':
         return ('prod', [e[2], e[2]])
-    # `P(R)` and `E(R)` differ as RELATIONS — B&dM p.119 symmetrises `P`'s second conjunct, and only
-    # on functions do they agree (p.202) — but not as pictures: both are the one existential-image
-    # wire, and a panel carries no bit telling them apart, so a formula may state either.
-    if e[0] == 'app' and e[1] == 'P':
-        return ('app', 'E', e[2])
     if e[0] == 'atom' and e[1].startswith('[') and e[1].endswith(']'):
         inner = parse(e[1][1:-1])
         if listable(inner):
@@ -325,6 +320,25 @@ def norm(e):
             xs = fuse(interchange(xs))
         return xs[0] if len(xs) == 1 else (e[0], xs)
     return e
+
+
+# The relators one wire draws: `P A = E A`, so a lane labelled either carries the same object and a
+# panel may name it either way.  They differ as RELATIONS — B&dM p.119 symmetrises `P`'s second
+# conjunct, and only on maps do they agree (p.202) — so the panel keeps the letter it was drawn with
+# and the quotient is taken at the comparison alone.
+ALIAS = {'P': 'E'}
+
+
+def canon(e):
+    """One head for every wire that draws the same lane, `P(R)` read as `E(R)`.  Runs BEFORE `norm`,
+    whose `fuse` merges two applications only when their heads already agree."""
+    return rec(('app', ALIAS[e[1]], e[2]) + e[3:], canon) if e[0] == 'app' and e[1] in ALIAS \
+        else rec(e, canon)
+
+
+def quot(e):
+    """The form two readings are held against: normalised, with the aliased relators identified."""
+    return norm(canon(e))
 
 
 def interchange(xs):
@@ -1053,14 +1067,14 @@ def certify(p):
         if not c.get(key):
             continue
         said, _ = read(c[key], c, True)
-        want, got = norm(said), fold_cut(p, ports(p, top))
-        if want != norm(got):
+        want, got = quot(said), fold_cut(p, ports(p, top))
+        if want != quot(got):
             bad.append(f"{p.id}: the {'top' if top else 'bottom'} cut is {spell(got)}, not the"
                        f" stated {key} {c[key]}, which reads {spell(said)} — declare the branch"
                        f" the panel draws, or fix the ports")
     if c.get('expect'):
         said, used = read(c['expect'], c, False)
-        want, got = norm(said), norm(p.expr)
+        want, got = quot(said), quot(p.expr)
         if want == got:
             note.append(f"{p.id}: AGREE{' modulo ' + '; '.join(used) if used else ''}")
         else:
