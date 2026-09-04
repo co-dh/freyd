@@ -76,6 +76,16 @@
         "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
       ]
     },
+    "⦇generate⦈": {
+      "src": "L(N(x))",
+      "tgt": "N(E(L(x)))",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate@4c4ca025",
+      "note": "§15's fold over the columns; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "nat": "lax",
+      "nat-lean": [
+        "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate_lax_natural@822259ff"
+      ]
+    },
     "⦇S%∋ est(R;H)⦈": {
       "src": "[x]",
       "tgt": "[[x]]",
@@ -292,12 +302,13 @@
       ]
     },
     "zip": {
-      "src": "N(x)×N(y)",
-      "tgt": "N(x×y)",
-      "lean": "AOP.A7_4_CylinderBeads.RelSet.Tuple.zipT@a63fc839",
-      "nat": "strict",
+      "src": "F(N(x))",
+      "tgt": "N(F(x))",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.zipF@ac1fd663",
+      "note": "the fork ⟨F(π₁),…,F(π_n)⟩ at an ARBITRARY relator F; strict at the product summand `zipT` (AOP.A7_4_CylinderBeads.zip_natural@ac0b1dc4), not claimed at a general F",
+      "nat": "lax",
       "nat-lean": [
-        "AOP.A7_4_CylinderBeads.RelSet.Tuple.zip_natural@ac0b1dc4"
+        "AOP.A7_4_CylinderPaths.RelSet.Tuple.zipF_lax_natural@f3f82f16"
       ]
     },
     "setify": {
@@ -307,6 +318,16 @@
       "nat": "lax",
       "nat-lean": [
         "AOP.A7_4_CylinderBeads.RelSet.Tuple.setify_lax_natural@e3a479f2"
+      ]
+    },
+    "paths": {
+      "src": "L(N(x))",
+      "tgt": "E(L(x))",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.pathsRel@85049eb8",
+      "note": "`⦇generate⦈setify union`, natural in the ELEMENT type — the index AOP.A7_4_Cylinder has not got, since it fixes one initial algebra",
+      "nat": "lax",
+      "nat-lean": [
+        "AOP.A7_4_CylinderPaths.RelSet.Tuple.paths_lax_natural@abed3a18"
       ]
     }
   }
