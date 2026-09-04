@@ -19,6 +19,20 @@
     "g": {"src": "B",       "tgt": "M(C)"},
     "μ": {"src": "M(M(x))", "tgt": "M(x)"}
   },
+  "geom": {
+    "//": "Measured with `./scripts/figgeom IntroString 74` on 2026-09-04; frame as in `fig-p74-eta.json`. The two laws the p.74 figures state, each confirmed on three independent samples: (1) A BEND'S CONTROL HANDLES ARE 0.3915 × THE BEND'S OWN CHORD AT BOTH ENDS — samples Δ(0.44,0.50)→0.2607 (the two bends below), Δ(0.44,0.4396)→0.2434 (p.74's third row), Δ(9.63,11.33)pt→5.82pt (p.48); `diag/hm.typ`'s HMK=0.618 times the SHORTER SIDE fits the p.48 sample by luck and misses both p.74 ones by ~11%. (2) THE MERGE IS A HORIZONTAL HOLD OF LENGTH 2×0.06 CENTRED ON THE BEAD, both arriving strands ending on it and the outgoing leg leaving its midpoint. Note also that the object edge runs through f and g UNBROKEN here, where the single-bead `fig-p74-f` breaks it.",
+    "page_bbox": [287.15, 204.66, 343.82, 261.33],
+    "edge": [[["L", [0.0, 0.0], [2.0, 1.0]]]],
+    "wires": [[["L", [0.5, 0.31], [0.5, 1.0]],
+               ["C", [0.5, 1.0], [0.5, 1.2607], [0.6793, 1.5], [0.94, 1.5]],
+               ["L", [0.94, 1.5], [1.06, 1.5]],
+               ["C", [1.06, 1.5], [1.3207, 1.5], [1.5, 1.2607], [1.5, 1.0]],
+               ["L", [1.5, 1.0], [1.5, 0.81]]],
+              [["L", [1.0, 1.56], [1.0, 2.0]]]],
+    "beads": [{"name": "f", "at": [0.5, 0.25], "r": 0.05, "on_edge": true},
+              {"name": "g", "at": [1.5, 0.75], "r": 0.05, "on_edge": true},
+              {"name": "μ", "at": [1.0, 1.5], "r": 0.05, "on_edge": false}]
+  },
   "sides": [
     { "top": ["A"],
       "bot": ["M", "C"],

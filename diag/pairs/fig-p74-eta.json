@@ -21,6 +21,13 @@
       "nat": true
     }
   },
+  "geom": {
+    "//": "The picture's own geometry, measured with `./scripts/figgeom IntroString 74` on 2026-09-04: cm, panel-local, origin at the object edge's TOP-LEFT end, y DOWNWARD, 1cm = 28.346456693pt. The two laws these three p.74 figures state are written out in `fig-p74-kleisli.json`, the one of them that exhibits both. Here: the edge is one unbroken 2:1 stroke and η's dot hangs 0.5cm BELOW it — a unit touches no wire it does not make — with the M leg dropping vertically from 0.06 under the dot.",
+    "page_bbox": [212.55, 77.59, 269.22, 120.09],
+    "edge": [[["L", [0.0, 0.0], [2.0, 1.0]]]],
+    "wires": [[["L", [1.0, 1.06], [1.0, 1.5]]]],
+    "beads": [{"name": "η", "at": [1.0, 1.0], "r": 0.05, "on_edge": false}]
+  },
   "sides": [
     {
       "top": [

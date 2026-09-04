@@ -17,6 +17,13 @@
     "//": "The book's own letters for THIS figure — the left operand of `f ; g`, an arrow of the Kleisli category.",
     "f": {"src": "A", "tgt": "M(B)"}
   },
+  "geom": {
+    "//": "Measured with `./scripts/figgeom IntroString 74` on 2026-09-04; frame as in `fig-p74-eta.json`. The one thing this figure adds: the object edge is BROKEN at the bead it rides, the gap centred on the dot and each stub ending 0.06 from the centre measured ALONG the edge — where the two-bead Kleisli figure beside it draws the same edge through its dots unbroken.",
+    "page_bbox": [129.01, 204.66, 157.34, 261.33],
+    "edge": [[["L", [0.0, 0.0], [0.446, 0.223]]], [["L", [0.553, 0.277], [1.0, 0.5]]]],
+    "wires": [[["L", [0.5, 0.31], [0.5, 2.0]]]],
+    "beads": [{"name": "f", "at": [0.5, 0.25], "r": 0.05, "on_edge": true}]
+  },
   "sides": [
     { "top": ["A"],
       "bot": ["M", "B"],
