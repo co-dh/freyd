@@ -172,7 +172,7 @@ private theorem dom_comp_self_eq {a b : 𝒜} (S : a ⟶ b) : dom S ≫ S = S :=
   · exact le_dom_comp S
 
 /-- **B&dM 4.14** (mirrored to `dom`): `dom(R≫S) = dom(R≫dom S)`. -/
-theorem dom_comp_dom {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem dom_comp_dom {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     dom (R ≫ S) = dom (R ≫ dom S) := by
   apply le_antisymm
   · have heq : R ≫ S = (R ≫ dom S) ≫ S := by rw [Cat.assoc, dom_comp_self_eq S]

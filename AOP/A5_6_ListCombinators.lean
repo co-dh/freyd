@@ -552,6 +552,87 @@ public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
 public theorem list_recip {B : Type} (R : dE A ⟶ dE B) : list R° = (list R)° :=
   hom_ext (listP_recip R)
 
+/-! ### The free theorems of `cons` and `concat`
+
+  A polymorphic combinator's type names two relators, and the free theorem is the lax naturality
+  square between them.  For `cons : A × list A ⟶ list A` the relators are `× ∘ ⟨1, list⟩` and
+  `list`; for `concat : list (list A) ⟶ list A` they are `list ∘ list` and `list` — `concat` is
+  the list monad's `μ`, the shape `bigUnion_natural` (A4_6) has for the power relator.  Both come
+  out as EQUALITIES, not merely the `⊑` of `LaxNatural`: `cons` because it is the initial
+  algebra's constructor, `concat` because `list(R)` preserves the length of every segment, so a
+  related flattening can be re-split along the segment boundaries.  Contrast `π₂`
+  (`outr_laxNatural`, A5_2), whose square is strict exactly at the entire relations. -/
+
+/-- `list(R)` respects append: relating the two halves relates the appends. -/
+public theorem listP_cappend {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x : ConsList Unit A) (y : ConsList Unit B) {u : ConsList Unit A} {v : ConsList Unit B},
+      listP R x y → listP R u v → listP R (cappend x u) (cappend y v)
+  | ConsList.wrap _, ConsList.wrap _, _, _, _, huv => huv
+  | ConsList.wrap _, ConsList.cons _ _, _, _, hxy, _ => hxy.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, _, hxy, _ => hxy.elim
+  | ConsList.cons _ x, ConsList.cons _ y, _, _, hxy, huv =>
+      ⟨hxy.1, listP_cappend R x y hxy.2 huv⟩
+
+/-- The converse half: anything `list(R)`-related to an append SPLITS at the same boundary.
+    This is what makes `concat`'s free theorem strict — `list(R)` cannot move an element across
+    a segment boundary, because it relates `cons` to `cons` and `nil` to `nil` only. -/
+public theorem listP_cappend_split {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x u : ConsList Unit A) (w : ConsList Unit B), listP R (cappend x u) w →
+      ∃ y v, listP R x y ∧ listP R u v ∧ w = cappend y v
+  | ConsList.wrap _, _, w, h => ⟨ConsList.wrap (), w, trivial, h, rfl⟩
+  | ConsList.cons _ _, _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ x, u, ConsList.cons b w, h => by
+      obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split R x u w h.2
+      exact ⟨ConsList.cons b y, v, ⟨h.1, hy⟩, hv, rfl⟩
+
+/-- `list(list R)`-related lists of lists have `list(R)`-related flattenings. -/
+public theorem listP_cconcat {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (xs : ConsList Unit (ConsList Unit A)) (ys : ConsList Unit (ConsList Unit B)),
+      listP (list R) xs ys → listP R (cconcat xs) (cconcat ys)
+  | ConsList.wrap _, ConsList.wrap _, _ => trivial
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons x xs, ConsList.cons y ys, h =>
+      listP_cappend R x y h.1 (listP_cconcat R xs ys h.2)
+
+/-- And the converse: a `list(R)`-image of a flattening is itself a flattening, of a
+    `list(list R)`-image of the original segments — `listP_cappend_split` at each `cons`. -/
+public theorem listP_cconcat_split {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (xs : ConsList Unit (ConsList Unit A)) (w : ConsList Unit B), listP R (cconcat xs) w →
+      ∃ ys, listP (list R) xs ys ∧ w = cconcat ys
+  | ConsList.wrap _, ConsList.wrap _, _ => ⟨ConsList.wrap (), trivial, rfl⟩
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons x xs, w, h => by
+      obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split R x (cconcat xs) w h
+      obtain ⟨ys, hys, rfl⟩ := listP_cconcat_split R xs v hv
+      exact ⟨ConsList.cons y ys, ⟨hy, hys⟩, rfl⟩
+
+/-- **The free theorem of `cons`**, and it is STRICT: `(R × list R) cons = cons list(R)`.  Both
+    sides relate `(a,x)` to `cons b y` exactly when `R a b` and `list(R) x y`. -/
+public theorem cons_natural {B : Type} (R : dE A ⟶ dE B) :
+    rprodMap R (list R) ≫ consR = consR ≫ list R := by
+  apply hom_ext; intro p w
+  obtain ⟨a, x⟩ := p
+  constructor
+  · rintro ⟨⟨b, y⟩, ⟨hab, hxy⟩, rfl⟩
+    exact ⟨ConsList.cons a x, rfl, hab, hxy⟩
+  · rintro ⟨_, rfl, hz⟩
+    cases w with
+    | wrap _ => exact hz.elim
+    | cons b y => exact ⟨(b, y), ⟨hz.1, hz.2⟩, rfl⟩
+
+/-- **The free theorem of `concat`**, and it is STRICT: `list(list R) concat = concat list(R)`.
+    `⊑` is `listP_cconcat`, `⊒` is `listP_cconcat_split`. -/
+public theorem concat_natural {B : Type} (R : dE A ⟶ dE B) :
+    list (list R) ≫ concatR = concatR ≫ list R := by
+  apply hom_ext; intro xs w
+  constructor
+  · rintro ⟨ys, hxy, rfl⟩
+    exact ⟨cconcat xs, rfl, listP_cconcat R xs ys hxy⟩
+  · rintro ⟨_, rfl, hz⟩
+    obtain ⟨ys, hys, rfl⟩ := listP_cconcat_split R xs w hz
+    exact ⟨ys, hys, rfl⟩
+
 /-! ### The function-level map: `list` of a graph is a graph -/
 
 /-- Function-level list map. -/
