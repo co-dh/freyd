@@ -6794,8 +6794,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#table(
   columns: (1fr, 6.6cm),
   align: (left + horizon, center + horizon),
-  // `y: 1pt`, tighter than the note's usual 3pt: the seven rows are a page exactly, and a `#disp`
-  // that outgrows its page does not break — the last row keeps its rule and spills its text past it.
+  // Four rows here and three in the next display: at the book's own panel metric the seven no longer
+  // fit one page, and the cut is where the fold is opened — outside the `⦇ ⦈` here, inside it there.
   inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
   Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
@@ -6803,7 +6803,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  the better of the two at the root]],
      // lean:AOP.A7_3_Party.party_laws@a2d9caf9
   table.header([*circuit*],
-    [*Hinze–Marsden* — outside the `⦇ ⦈` above, inside it below; a fork drawn at one branch]),
+    [*Hinze–Marsden* — outside the `⦇ ⦈`]),
 
   [#vstep([], laws-pic(lrun(((frc([`party`]), 1.7, false), lb-est))),
     [#src[the specification — @party-defn]])],
@@ -6823,6 +6823,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  ]])],
       // lean:AOP.A7_2.est_Λ_est_le@1083248a
   [#dcell(d-out4, none)],
+)]<party-laws>
+
+#disp[#table(
+  columns: (1fr, 6.6cm),
+  align: (left + horizon, center + horizon),
+  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
+  table.header([*circuit*],
+    [*Hinze–Marsden* — inside the `⦇ ⦈`; a fork drawn at one branch]),
 
   [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
     [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
@@ -6844,7 +6852,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  ]])],
       // lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d lean:AOP.A7_3_Party.exclude_step@7360252f
   [#dcell(none, d-in7)],
-)]<party-laws>
+)]<party-laws-fold>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
@@ -6934,6 +6942,36 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
       {[3,6],[3,7],[3,8]},
       {[4,5],[4,7],[4,8]} )
 ```]]<cyl-generate>
+
+#disp[#align(center, dpanel(10.5, 6.35, 4.5,
+  ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
+  ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877), (1.5, [`α`], black, 3.658)),
+  ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
+  ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
+  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))", sigs: ("cp": "F(E(LA))⟶E(F(LA))"))))]<gen-diag>
+
+#disp[#align(center)[```
+u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
+F(𝟙,moves trans N(union))                         𝟙 keeps the column, the path SETS move
+  moves({[5]},{[6]},{[7]},{[8]})
+   = {({[6]},{[7]},{[8]},{[5]}),
+      ({[5]},{[6]},{[7]},{[8]}),
+      ({[8]},{[5]},{[6]},{[7]})}               : E(N(E(L A)))  down, unmoved, up
+  trans(that)
+   = ({{[6]},{[5]},{[8]}},{{[7]},{[6]},{[5]}},
+      {{[8]},{[7]},{[6]}},{{[5]},{[8]},{[7]}}) : N(E(E(L A)))  row k gets rows k-1, k, k+1
+  N(union)(that)
+   = ({[5],[6],[8]},{[5],[6],[7]},
+      {[6],[7],[8]},{[5],[7],[8]})             : N(E(L A))     every path into row k, none dropped
+zip(that)
+   = ((1,{[5],[6],[8]}),(2,{[5],[6],[7]}),
+      (3,{[6],[7],[8]}),(4,{[5],[7],[8]}))     : N(F(A,E(L A)))  each row: its square, and the
+                                                                paths it may be put in front of
+N(cp P(α))(that)
+   = ({[1,5],[1,6],[1,8]},{[2,5],[2,6],[2,7]},
+      {[3,6],[3,7],[3,8]},{[4,5],[4,7],[4,8]}) : N(E(L A))     cp pairs the square with each path,
+                                                               α prefixes it: α(1,[5])=[1,5]
+```]]<gen-step>
 
 #disp[#block(breakable: false)[
 #table(
