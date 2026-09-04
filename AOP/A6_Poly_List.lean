@@ -39,7 +39,7 @@ def nil {A : Type} : Mu LF A := In (Sum.inl PUnit.unit)
 def cons {A : Type} (a : A) (xs : Mu LF A) : Mu LF A := In (Sum.inr (a, xs))
 
 /-- A list algebra `1 + A×C → C`, split into base `g : C` and step `st : A → C → C`. -/
-def listFun {A C : Type} (g : C) (st : A → C → C) : sem LF A C → C
+@[expose] public def listFun {A C : Type} (g : C) (st : A → C → C) : sem LF A C → C
   | Sum.inl _      => g
   | Sum.inr (a, c) => st a c
 
@@ -58,7 +58,7 @@ theorem fold_cons {A C : Type} (g : C) (st : A → C → C) (a : A) (xs : Mu LF 
   rw [fold_computation]; rfl
 
 /-- The list algebra as a `Rel(Set)` map (a graph), matching `A6_GenFold.CL.consScalarAlg`. -/
-def listAlg {A C : Type} (g : C) (st : A → C → C) : Fo LF ⟨A⟩ ⟨C⟩ ⟶ (⟨C⟩ : RelSet.{0}) :=
+@[expose] public def listAlg {A C : Type} (g : C) (st : A → C → C) : Fo LF ⟨A⟩ ⟨C⟩ ⟶ (⟨C⟩ : RelSet.{0}) :=
   graph (listFun g st)
 
 /-- **The generic universal property, specialized to lists** = `A6_GenFold.CL.consFold_unique`'s

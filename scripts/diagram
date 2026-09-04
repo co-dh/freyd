@@ -72,6 +72,8 @@ MU = {}                     # and the initial algebra each functor folds from, `
                             # `mu` with the panel's own `mu:` laid over it the same way
 NAT = {}                    # the rows that STATE whether their bead is natural — `"strict"` or
                             # `"lax"` — which `natural` takes ahead of its own reading of the signature
+OWN = frozenset()           # the keys the PANEL typed itself, which `row` reads as a statement
+                            # rather than as a fallback the step's inference may overrule
 
 
 def bead(e):
@@ -162,8 +164,9 @@ def natural(core, sigs):
     if core[0] == 'conv':
         return natural(core[1], sigs)
     lab = core[1] if core[0] == 'app' else spell(core)
-    if lab in NAT:                     # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is
-        return NAT[lab] != "no" and NAT[lab]   # the third answer — a REFUTED row, on the wire with a
+    k = key(core, sigs)                # the row it reads its objects off is the row that says this
+    if k in NAT:                       # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is
+        return NAT[k] != "no" and NAT[k]   # the third answer — a REFUTED row, on the wire with a
                                        # counterexample behind it, not an undecided one
     # An APPLICATION names one object: `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given
     # is one relation at one object, and naturality would need `E(f) est(R_B) = est(R_A) f` for every
@@ -470,29 +473,43 @@ def mu(step, n):
             fresh(norm(parse(c)), n) if c else None)
 
 
+def brkey(lab):
+    """The bracket a label ENCLOSES — `⦇⦈` for a catamorphism, `[,]` for an algebra — or None.
+    A bracket node is a label the bracket ENCLOSES, not one that merely opens with a bracket:
+    `⦇(F(∋)S)%∋ thin(Q)⦈`'s body and `[nil,cons]within(w) ∪ [nil,π₂]` both start with an opener
+    whose closer is in the middle, and stripping the ends there cuts the label in half."""
+    if lab and lab[0] in sl.OPENERS and lab[-1] == sl.CLOSERS[sl.OPENERS.index(lab[0])] \
+            and sl.matching(lab, 0) == len(lab) - 1:
+        return lab[0] + (',' if own_comma(lab[1:-1]) else '') + sl.CLOSERS[sl.OPENERS.index(lab[0])]
+    return None
+
+
+def key(core, sigs):
+    """The `diag/hm-sigs.json` row a bead's label keys: its own where the table has one, else the
+    SCHEMATIC key its shape names — `[,]` for a bracket's branch, `⦇⦈`/`[,]` for the bracket it
+    encloses.  This is the key `natural` reads `nat` off, so a fold the generator SYNTHESISES a
+    label for is answered by the shape's row unless the table names that very label."""
+    lab = core[1] if core[0] == 'app' else spell(core)
+    if lab in sigs:                        # a row of the label's own beats the bracket's shape
+        return lab
+    return '[,]' if core[0] == 'case' else (brkey(lab) or lab)
+
+
 def row(core, sigs, n):
     """The row a bead's label keys, or None.  A bracket cut to one branch is still the ALGEBRA's
     arrow (`[,]`); a catamorphism runs on the initial algebra of the functor its step consumes —
     `mu`'s row for that functor, the bracket's own source otherwise — and lands on the step's carrier."""
     lab = core[1] if core[0] == 'app' else spell(core)
-    if lab in sigs:                        # a row of the label's own beats the bracket's inference
-        return sigs[lab]
-    k = lab
-    if core[0] == 'case':
-        k = '[,]'
-    # A bracket node is a label the bracket ENCLOSES, not one that merely opens with a bracket:
-    # `⦇(F(∋)S)%∋ thin(Q)⦈`'s body and `[nil,cons]within(w) ∪ [nil,π₂]` both start with an opener
-    # whose closer is in the middle, and stripping the ends there cuts the label in half.
-    elif k and k[0] in sl.OPENERS and k[-1] == sl.CLOSERS[sl.OPENERS.index(k[0])] \
-            and sl.matching(k, 0) == len(k) - 1:
-        body = k[1:-1]
-        k = k[0] + (',' if own_comma(body) else '') + sl.CLOSERS[sl.OPENERS.index(k[0])]
-        r, step = sigs.get(lab) or sigs.get(k), row(bead(sl.parse(body)), sigs, n)
+    b = None if core[0] == 'case' else brkey(lab)
+    if b:                                      # a bracket node: its body is the fold's step
+        r, step = sigs.get(lab) or sigs.get(b), row(bead(sl.parse(lab[1:-1])), sigs, n)
+        if r and (lab in OWN or b in OWN):     # the PANEL typed the fold: `⦇⦈` is a shape, and a
+            return r                           # row the panel states for it is not a fallback
         o, c = mu(step, n)                     # `[,]`'s `x` is the carrier, so the initial algebra's
         s = o or (r and r[0])                  # element is a letter of its own; a functor with no
         t = c or (step and step[1])            # `mu` row keeps the bracket's own source (`tree(x)`)
         return (s, t) if s and t else r
-    return sigs.get(lab) or sigs.get(k)
+    return sigs.get(key(core, sigs))
 
 
 def signature(core, sigs, n):
@@ -959,8 +976,9 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     note wants.  Only a panel that DIFFERS from `DEFSPLIT` states it, so the default costs the note
     no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
     only where the object wire is not the straight default (see `layout`)."""
-    global SPLIT, BR, TBL, MU, NAT
+    global SPLIT, BR, TBL, MU, NAT, OWN
     SPLIT = frozenset(split.split())
+    OWN = frozenset(own) if isinstance(own, dict) else frozenset()
     TBL = sl.typed(table or sl.sigs(), own)
     NAT = {k: v["nat"] for k, v in TBL["sigs"].items()
            if isinstance(v, dict) and "nat" in v}
@@ -1064,7 +1082,7 @@ def roundtrip(path, frm, show, out, tbl):
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
-        except (Unhandled, ValueError, KeyError, StopIteration) as ex:
+        except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail.append(f"{r['id']}: {type(ex).__name__}: {ex}"); continue
         drawn = shown(want, g["cert"].get("branch"))
         if bad:

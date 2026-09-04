@@ -10,9 +10,10 @@
     "`lean` is the declaration whose type the row was read off, in `cite-check`'s marker spelling;",
     "`hm-check --verify-sigs` holds every row against it.",
     "`nat` is the naturality the bead's dot draws: `strict` a filled dot, `lax` a hollow one (B&dM",
-    "5.13, `G(R) ≫ φ ⊑ φ ≫ F(R)` with equality failing).  ABSENT is the third state — no dot, the",
-    "bead sits on the object wire — and covers both a label that is no polymorphic family at all and",
-    "one whose naturality is still open.  A row that states `nat` carries `nat-lean`, the marker (or",
+    "5.13, `G(R) ≫ φ ⊑ φ ≫ F(R)` with equality failing), `no` a REFUTED row — no dot, the bead rides",
+    "the object wire, with a counterexample behind it.  ABSENT is the fourth state, the same picture",
+    "as `no` but nothing claimed: a label that is no polymorphic family at all, or one whose",
+    "naturality is still open.  A row that states `nat` carries `nat-lean`, the marker (or",
     "list of markers) of the declaration proving it, checked exactly as `lean` is.",
     "`not-lax` records a bead proved NOT even lax natural: it still draws as a spider, same as an",
     "unmarked row (no `nat`), but the marker is kept so the negative evidence is not lost."
@@ -45,17 +46,55 @@
     "α": {
       "src": "F(x)",
       "tgt": "x",
-      "lean": "AOP.A6_Poly_List.listAlg@5e2fcaa5"
+      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f"
     },
     "[,]": {
       "src": "F(x)",
       "tgt": "x",
-      "lean": "AOP.A6_Poly_List.listAlg@5e2fcaa5"
+      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
+      ]
     },
     "⦇⦈": {
       "src": "tree(x)",
       "tgt": "y",
-      "lean": "AOP.A5_5.relCata@6ef23f02"
+      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+      ]
+    },
+    "⦇Q⦈": {
+      "src": "L(N(x))",
+      "tgt": "N(L(x))",
+      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "note": "§15's fold over the cylinder tuple; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+      ]
+    },
+    "⦇S%∋ est(R;H)⦈": {
+      "src": "[x]",
+      "tgt": "[[x]]",
+      "lean": "AOP.A5_6_ListCombinators.partition@27a85ee0",
+      "note": "§13.4's partition fold; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+      ]
+    },
+    "⦇(F(∋)S)%∋ thin(Q)⦈": {
+      "src": "T",
+      "tgt": "y",
+      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "note": "§14.3's thinned fold; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+      ]
     },
     "prefix": {
       "src": "[x]",
@@ -109,7 +148,30 @@
     "sum": {
       "src": "[x]",
       "tgt": "x",
-      "lean": "AOP.A5_6_ListCombinators.sumR@5194de0e"
+      "lean": "AOP.A5_6_ListCombinators.sumR@5194de0e",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+      ]
+    },
+    "plus": {
+      "src": "A×x",
+      "tgt": "x",
+      "lean": "AOP.A7_4_CarrierBeads.RelSet.Carrier.plusR@1ee04124",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.plus_not_lax_natural@73d728aa"
+      ]
+    },
+    "generate": {
+      "src": "F(N(x))",
+      "tgt": "N(x)",
+      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
+      "note": "§15's step algebra at the carrier N(x) — the `α : F(x)⟶x` shape, refuted as that shape",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
+      ]
     },
     "cons": {
       "src": "x×[x]",
@@ -199,7 +261,12 @@
     "est": {
       "src": "E(x)",
       "tgt": "x",
-      "lean": "AOP.A7_1.est@e39806f8"
+      "lean": "AOP.A7_1.est@e39806f8",
+      "note": "the `R` is one relation at one object, so `est(R)` is an arrow there, not a family",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.est_not_lax_natural@1a9b3551"
+      ]
     },
     "thin": {
       "src": "E(x)",
