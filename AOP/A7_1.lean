@@ -175,7 +175,7 @@ theorem recip_eps_comp_eps (a : 𝒜) : (∋ a)° ≫ ∋ a = topHom a a := by
     `(∋a)°≫∋a ⊑ R°`, i.e. (Ex 7.7 above) `⊤ ⊑ R°`, forcing `R° = ⊤` and so `R = ⊤`.
     (←): at `R = ⊤`, `((∋a)° \ ⊤°) = ⊤` (both bounds are `le_Sup trivial`), so
     `est ⊤ = ∋a ∩ ⊤ = ∋a`. -/
-theorem est_eq_eps_iff (R : a ⟶ a) : est R = ∋ a ↔ R = topHom a a := by
+public theorem est_eq_eps_iff (R : a ⟶ a) : est R = ∋ a ↔ R = topHom a a := by
   constructor
   · intro h
     have h2 : (∋ a)° ≫ ∋ a ⊑ R° := by
@@ -418,6 +418,160 @@ public theorem powerRel_est_le_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
     rw [e2] at hfin
     exact le_trans hfin (le_trans (comp_mono_right hb (R°)) htrans')
   exact le_Λ_comp_est_iff.mpr ⟨hi, hii⟩
+
+/-! ## (7.11) as an EQUALITY: `P(est(R)) est(R) = P(Dom(est(R))) union est(R)`
+
+  The `⊑` above is strict — a member set with no `est` (the empty one) empties the left side
+  and not the right — and guarding the right side with the coreflexive `P(Dom(est(R)))`
+  ("every member set HAS an `est`") is exactly what closes the gap. -/
+
+/-- `dom(P S) ⊑ P(dom S)`: a set has a `P S`-image only if EVERY member has an `S`-image.
+    One bound gives both halves of `powerRel (dom S)`, since `dom S` and `dom (P S)` are
+    coreflexive hence symmetric, so term₁ is the converse of term₂.  That bound,
+    `dom(P S)∋ ⊑ ∋ dom S`, is the codomain form of the modular law at `U := dom(P S)∋`
+    (`U ⊑ U(𝟙∩U°U)`) together with `𝟙∩U°U ⊑ dom S`, which chains term₁ of `P S` on both sides
+    of `U°U` and then drops the `∋°∋` left in the middle by the modular law again. -/
+public theorem dom_powerRel_le {a b : 𝒜} (S : a ⟶ b) :
+    dom (powerRel S) ⊑ powerRel (dom S) := by
+  have hcor : dom (powerRel S) ⊑ 𝟙 (PowerAllegory.powerObj a) := dom_coreflexive _
+  have hsym : (dom (powerRel S))° = dom (powerRel S) :=
+    symmetric_eq (coreflexive_symmetric_idempotent hcor).1
+  have hdsym : (dom S)° = dom S :=
+    symmetric_eq (coreflexive_symmetric_idempotent (dom_coreflexive S)).1
+  have hUeps : dom (powerRel S) ≫ ∋ a ⊑ ∋ a := by
+    have h := comp_mono_right hcor (∋ a); rwa [Cat.id_comp] at h
+  have hflip : (powerRel S)° ≫ ∋ a ⊑ ∋ b ≫ S° := by
+    have h := recip_mono (powerRel_term1_cancel S)
+    rwa [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip,
+      Allegory.recip_recip] at h
+  -- every member of a set that HAS a `P S`-image has an `S`-image
+  have hkey : dom (powerRel S) ≫ ∋ a ⊑ ∋ a ≫ dom S := by
+    have hV : (∋ a)° ≫ (dom (powerRel S) ≫ ∋ a) ⊑ S ≫ ((∋ b)° ≫ (∋ b ≫ S°)) := by
+      have hdomle : dom (powerRel S) ⊑ powerRel S ≫ (powerRel S)° :=
+        inter_lb_right (𝟙 (PowerAllegory.powerObj a)) (powerRel S ≫ (powerRel S)°)
+      calc (∋ a)° ≫ (dom (powerRel S) ≫ ∋ a)
+          ⊑ (∋ a)° ≫ ((powerRel S ≫ (powerRel S)°) ≫ ∋ a) :=
+            comp_mono_left _ (comp_mono_right hdomle _)
+        _ = ((∋ a)° ≫ powerRel S) ≫ ((powerRel S)° ≫ ∋ a) := by rw [Cat.assoc, Cat.assoc]
+        _ ⊑ (S ≫ (∋ b)°) ≫ (∋ b ≫ S°) :=
+            le_trans (comp_mono_right (powerRel_term1_cancel S) _) (comp_mono_left _ hflip)
+        _ = S ≫ ((∋ b)° ≫ (∋ b ≫ S°)) := Cat.assoc _ _ _
+    have hUU : (dom (powerRel S) ≫ ∋ a)° ≫ (dom (powerRel S) ≫ ∋ a)
+        ⊑ S ≫ ((∋ b)° ≫ (∋ b ≫ S°)) :=
+      le_trans (comp_mono_right (recip_mono hUeps) _) hV
+    have hmod : (S ≫ ((∋ b)° ≫ (∋ b ≫ S°))) ∩ 𝟙 a ⊑ S ≫ S° := by
+      refine le_trans (modular_le_right S ((∋ b)° ≫ (∋ b ≫ S°)) (𝟙 a)) (comp_mono_left _ ?_)
+      rw [Cat.comp_id]
+      exact inter_lb_right _ _
+    have hcore : 𝟙 a ∩ (dom (powerRel S) ≫ ∋ a)° ≫ (dom (powerRel S) ≫ ∋ a) ⊑ dom S := by
+      show _ ⊑ 𝟙 a ∩ (S ≫ S°)
+      refine le_inter (inter_lb_left _ _) (le_trans (le_trans
+        (le_inter (inter_lb_right _ _) (inter_lb_left _ _)) (inter_mono hUU (le_refl _))) hmod)
+    have hcod : dom (powerRel S) ≫ ∋ a
+        ⊑ (dom (powerRel S) ≫ ∋ a)
+            ≫ (𝟙 a ∩ (dom (powerRel S) ≫ ∋ a)° ≫ (dom (powerRel S) ≫ ∋ a)) := by
+      have h := modular_le_right (dom (powerRel S) ≫ ∋ a) (𝟙 a) (dom (powerRel S) ≫ ∋ a)
+      rwa [Cat.comp_id, Allegory.inter_idem] at h
+    exact le_trans hcod (le_trans (comp_mono_right hUeps _) (comp_mono_left _ hcore))
+  have hkey' : (∋ a)° ≫ dom (powerRel S) ⊑ dom S ≫ (∋ a)° := by
+    have h := recip_mono hkey
+    rwa [Allegory.recip_comp, Allegory.recip_comp, hsym, hdsym] at h
+  show dom (powerRel S) ⊑ ((∋ a)° \ (dom S ≫ (∋ a)°)) ∩ ((∋ a ≫ dom S) / ∋ a)
+  exact le_inter ((le_leftDiv_iff _ _ _).mpr hkey') ((le_div_iff _ _ _).mpr hkey)
+
+/-- **B&dM Ex 5.16** (the `⊑` half B&dM asks for): `P(Dom S) E(S) ⊑ P(S)` — on the sets all of
+    whose members have an `S`-image, the EXISTENTIAL image is an Egli–Milner image.  Term₂ is
+    `E(S)∋ = ∋S` with the coreflexive dropped; term₁ shunts the map `E(S)` out
+    (`(Dom S)∋° ⊑ S∋°E(S)°`, and `∋°E(S)° = (E(S)∋)° = (∋S)° = S°∋°`), leaving `Dom S ⊑ SS°`. -/
+public theorem powerRel_dom_comp_existsImage_le {a b : 𝒜} (S : a ⟶ b) :
+    powerRel (dom S) ≫ existsImage S ⊑ powerRel S := by
+  have hmap : Map (existsImage S) := Λ_is_map' _
+  have hcor : powerRel (dom S) ⊑ 𝟙 (PowerAllegory.powerObj a) := by
+    have h := powerRel_mono (dom_coreflexive S); rwa [powerRel_id] at h
+  show _ ⊑ ((∋ a)° \ (S ≫ (∋ b)°)) ∩ ((∋ a ≫ S) / ∋ b)
+  apply le_inter
+  · apply (le_leftDiv_iff _ _ _).mpr
+    have hstep : (∋ a)° ≫ (powerRel (dom S) ≫ existsImage S)
+        ⊑ (dom S ≫ (∋ a)°) ≫ existsImage S := by
+      rw [← Cat.assoc]
+      exact comp_mono_right (powerRel_term1_cancel (dom S)) _
+    refine le_trans hstep ((map_shunt_right hmap _ _).mpr ?_)
+    have heq : (S ≫ (∋ b)°) ≫ (existsImage S)° = S ≫ (S° ≫ (∋ a)°) := by
+      rw [Cat.assoc, ← Allegory.recip_comp, existsImage_eps, Allegory.recip_comp]
+    rw [heq, ← Cat.assoc]
+    exact comp_mono_right (inter_lb_right (𝟙 a) (S ≫ S°)) _
+  · apply (le_div_iff _ _ _).mpr
+    rw [Cat.assoc, existsImage_eps]
+    have h := comp_mono_right hcor (∋ a ≫ S)
+    rwa [Cat.id_comp] at h
+
+/-- The `est` of a UNION is an `est` of the set of the members' `est`s:
+    `union est(R) ⊑ E(est(R)) est(R)`, no hypothesis on `R`.  Shunting the map `E(est(R))`
+    out reduces it to `est`'s universal property, whose two halves are: the `est` of the union
+    lies in SOME member set (`union est(R) ⊑ ∋ est(R)`, the modular law at `∋'∋` with the
+    lower bound below), and every member set is `R`-below it (`∋'union est(R) ⊑ ∈\R°`, since
+    `union` is simple and `∈ est(R) ⊑ R°`). -/
+public theorem bigUnion_comp_est_le (R : a ⟶ a) :
+    bigUnion ≫ est R ⊑ existsImage (est R) ≫ est R := by
+  have hmap : Map (existsImage (est R)) := Λ_is_map' _
+  have hUmap : Map (bigUnion (a := a)) := Λ_is_map' _
+  have heps : existsImage (est R) ≫ ∋ a = ∋ (PowerAllegory.powerObj a) ≫ est R :=
+    existsImage_eps (est R)
+  have hbeps : ∋ (PowerAllegory.powerObj a) ≫ ∋ a = bigUnion ≫ ∋ a := (Λ_eps_eq' _).symm
+  have hlb : (∋ (PowerAllegory.powerObj a))° ≫ (bigUnion ≫ est R) ⊑ ((∋ a)° \ R°) := by
+    apply (le_leftDiv_iff _ _ _).mpr
+    have e1 : (∋ a)° ≫ ((∋ (PowerAllegory.powerObj a))° ≫ (bigUnion ≫ est R))
+        = ((∋ (PowerAllegory.powerObj a) ≫ ∋ a)°) ≫ (bigUnion ≫ est R) := by
+      rw [Allegory.recip_comp, Cat.assoc]
+    rw [e1, hbeps, Allegory.recip_comp, Cat.assoc,
+      ← Cat.assoc ((bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶
+        PowerAllegory.powerObj a)°) bigUnion (est R)]
+    refine le_trans (comp_mono_left _ (comp_mono_right hUmap.2 (est R))) ?_
+    rw [Cat.id_comp]
+    exact recip_eps_comp_est_le R
+  have hmem : bigUnion ≫ est R ⊑ ∋ (PowerAllegory.powerObj a) ≫ est R := by
+    have hsub : bigUnion ≫ est R ⊑ ∋ (PowerAllegory.powerObj a) ≫ ∋ a := by
+      have h1 : bigUnion ≫ est R ⊑ bigUnion ≫ ∋ a :=
+        comp_mono_left _ (show est R ⊑ ∋ a from inter_lb_left _ _)
+      rwa [← hbeps] at h1
+    refine le_trans (le_trans (le_inter hsub (le_refl _))
+      (modular_le_right (∋ (PowerAllegory.powerObj a)) (∋ a) (bigUnion ≫ est R))) ?_
+    exact comp_mono_left _ (inter_mono (le_refl _) hlb)
+  apply (map_shunt_left hmap _ _).mp
+  apply le_est_iff.mpr
+  refine ⟨(map_shunt_left hmap _ _).mpr (by rw [heps]; exact hmem), ?_⟩
+  have e3 : (∋ a)° ≫ ((existsImage (est R))° ≫ (bigUnion ≫ est R))
+      = ((est R)° ≫ (∋ (PowerAllegory.powerObj a))°) ≫ (bigUnion ≫ est R) := by
+    rw [← Cat.assoc, ← Allegory.recip_comp, heps, Allegory.recip_comp]
+  rw [e3]
+  refine le_trans (comp_mono_right (comp_mono_right
+    (recip_mono (show est R ⊑ ∋ a from inter_lb_left _ _)) _) _) ?_
+  rw [Cat.assoc]
+  exact le_trans (comp_mono_left _ hlb) (leftDiv_comp_le _ _)
+
+/-- **(7.11) as an EQUALITY** (the note's `est-laws` last row): for TRANSITIVE `R`,
+    `P(est(R)) est(R) = P(Dom(est(R))) union est(R)`.  `⊑` is `powerRel_est_le_bigUnion`
+    with `P(est(R)) ⊑ P(Dom(est(R))) P(est(R))` in front (`dom_UP` at `dom_powerRel_le`);
+    `⊒` is `bigUnion_comp_est_le` followed by Ex 5.16 at `est(R)`.  The note's side condition
+    is `R` a preorder, but reflexivity is never used: only the `⊑` half constrains `R`, and it
+    asks for transitivity alone. -/
+public theorem powerRel_est_eq_bigUnion {R : a ⟶ a} (htrans : R ≫ R ⊑ R) :
+    powerRel (est R) ≫ est R = powerRel (dom (est R)) ≫ (bigUnion ≫ est R) := by
+  apply le_antisymm
+  · have hcor : powerRel (dom (est R)) ⊑ 𝟙 (PowerAllegory.powerObj (PowerAllegory.powerObj a)) := by
+      have h := powerRel_mono (dom_coreflexive (est R)); rwa [powerRel_id] at h
+    calc powerRel (est R) ≫ est R
+        ⊑ (powerRel (dom (est R)) ≫ powerRel (est R)) ≫ est R :=
+          comp_mono_right ((dom_UP hcor).mp (dom_powerRel_le (est R))) _
+      _ = powerRel (dom (est R)) ≫ (powerRel (est R) ≫ est R) := Cat.assoc _ _ _
+      _ ⊑ powerRel (dom (est R)) ≫ (bigUnion ≫ est R) :=
+          comp_mono_left _ (powerRel_est_le_bigUnion htrans)
+  · calc powerRel (dom (est R)) ≫ (bigUnion ≫ est R)
+        ⊑ powerRel (dom (est R)) ≫ (existsImage (est R) ≫ est R) :=
+          comp_mono_left _ (bigUnion_comp_est_le R)
+      _ = (powerRel (dom (est R)) ≫ existsImage (est R)) ≫ est R := (Cat.assoc _ _ _).symm
+      _ ⊑ powerRel (est R) ≫ est R :=
+          comp_mono_right (powerRel_dom_comp_existsImage_le (est R)) _
 
 -- (7.12), (7.8), the (7.9) equality, Ex 7.3/7.4, Ex 7.8/7.9/7.16/7.17/7.18, and
 -- well-boundedness (Ex 7.26-7.32) are DROPPED here.  Ex 7.8/7.9/7.18/7.26 are TABULATION
