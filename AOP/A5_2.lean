@@ -268,17 +268,14 @@ public theorem prodMap_outr_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
   have h := comp_mono_right (dom_coreflexive (P.outl ≫ R)) (P.outr ≫ S)
   rwa [Cat.id_comp] at h
 
-/-- `outr·(R×S) = S·outr` exactly where `R` is ENTIRE: (5.7) leaves the factor
-    `dom (outl≫R)`, and `dom_comp_dom` collapses it to `dom(outl≫dom R) = dom outl = id` when
-    `dom R = id`.  `prodMap_id_outr` is the `R := id` case; the inclusion is STRICT without the
-    hypothesis (`outr_not_strictNatural`, A6_1_OrdRelSet). -/
+/-- **(5.7) sharpened.**  The `dom` factor (5.7) leaves behind sits on the DISCARDED leg, so it
+    is `𝟙` as soon as that leg's relation is ENTIRE: `(R×S) ≫ outr = outr ≫ S`.
+    `prodMap_id_outr` is the case `R = 𝟙`; the inclusion is STRICT without the hypothesis
+    (`outr_not_strictNatural`, A6_1_OrdRelSet). -/
 public theorem prodMap_outr_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') {R : a ⟶ a'}
-    (hR : Entire R) (S : b ⟶ b') : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
-  have hR' : dom R = Cat.id a := hR
-  have hdom : dom (P.outl ≫ R) = Cat.id P.p := by
-    rw [dom_comp_dom, hR', Cat.comp_id]; exact P.outl_map.1
+    (S : b ⟶ b') (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr = P.outr ≫ S
-  rw [RelProd.pair_outr, hdom, Cat.id_comp]
+  rw [RelProd.pair_outr, entire_comp P.outl_map.1 hR, Cat.id_comp]
 
 /-- Mirror of the previous claim on the left leg: `(R×S) ≫ Q.outl ⊑ P.outl ≫ R`. -/
 public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
@@ -500,7 +497,7 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
     (hF : ∀ {x y : 𝒮} (R : x ⟶ y), Entire (F.map R)) {x y : 𝒮} (R : x ⟶ y) :
     (Relator.prod F G).map R ≫ (relProd (F.obj y) (G.obj y)).outr
       = (relProd (F.obj x) (G.obj x)).outr ≫ G.map R :=
-  prodMap_outr_eq_of_entire _ _ (hF R) _
+  prodMap_outr_eq_of_entire _ _ _ (hF R)
 
 end ProdRelator
 
