@@ -828,23 +828,21 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
     node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   row((
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((3, [`tri(f)`], GIVEN2), (1.5, [`⦇g⦈`], INDUCED)),
-      ((1.875, [`TA`]),),
-      ((1.875, [`A`]),),
-      obj: ((3, [`TA`]), (1.5, [`A`])),
-      cert: (expect: "tri(f)⦇g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
-        sigs: ("tri": "TA⟶TA", "g": "F(A,TA)⟶A"))),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((2.2, [`tri(f)`]), (1.1, [`⦇g⦈`])),
+  ((1.875, [`TA`]),),
+  ((1.875, [`A`]),),
+  obj: ((2.2, [`TA`]), (1.1, [`A`])),
+  cert: (expect: "tri(f)⦇g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A", sigs: ("tri": "TA⟶TA", "g": "F(A,TA)⟶A"))),
     [#h(7pt) = #h(7pt)],
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((1.5, [`⦇F(𝟙,f)g⦈`], INDUCED),),
-      ((1.875, [`TA`]),),
-      ((1.875, [`A`]),),
-      obj: ((1.5, [`A`]),),
-      cert: (expect: "⦇F(𝟙,f)g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
-        sigs: ("g": "F(A,TA)⟶A"), frame: 3, top: 1)),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((1.1, [`⦇F(𝟙,f)g⦈`]),),
+  ((1.875, [`TA`]),),
+  ((1.875, [`A`]),),
+  obj: ((1.1, [`A`]),),
+  cert: (expect: "⦇F(𝟙,f)g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A", sigs: ("g": "F(A,TA)⟶A"), frame: 3, top: 1)),
   )),
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
@@ -2331,23 +2329,21 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
   }),
   row((
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((3, [`T(f)`], INDUCED), (1.5, [`⦇h⦈`], INDUCED)),
-      ((1.875, [`TA`]),),
-      ((1.875, [`C`]),),
-      obj: ((3, [`TB`]), (1.5, [`C`])),
-      cert: (expect: "T(f)⦇h⦈", src: "TA", tgt: "C", mu: "F:TB⟶C",
-        sigs: ("T": "TA⟶TB", "h": "F(A,C)⟶C"))),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((2.2, [`T(f)`]), (1.1, [`⦇h⦈`])),
+  ((1.875, [`TA`]),),
+  ((1.875, [`C`]),),
+  obj: ((2.2, [`TB`]), (1.1, [`C`])),
+  cert: (expect: "T(f)⦇h⦈", src: "TA", tgt: "C", mu: "F:TB⟶C", sigs: ("T": "TA⟶TB", "h": "F(A,C)⟶C"))),
     [#h(7pt) = #h(7pt)],
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((1.5, [`⦇F(f,𝟙)h⦈`], INDUCED),),
-      ((1.875, [`TA`]),),
-      ((1.875, [`C`]),),
-      obj: ((1.5, [`C`]),),
-      cert: (expect: "⦇F(f,𝟙)h⦈", src: "TA", tgt: "C", mu: "F:TA⟶C",
-        sigs: ("h": "F(A,C)⟶C"), frame: 3, top: 1)),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((1.1, [`⦇F(f,𝟙)h⦈`]),),
+  ((1.875, [`TA`]),),
+  ((1.875, [`C`]),),
+  obj: ((1.1, [`C`]),),
+  cert: (expect: "⦇F(f,𝟙)h⦈", src: "TA", tgt: "C", mu: "F:TA⟶C", sigs: ("h": "F(A,C)⟶C"), frame: 3, top: 1)),
   )),
   [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
  #src[]],
@@ -6477,9 +6473,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1)),
     ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXO, PARTY)),
     ((PXO, PARTY),), names: rs == 0, s: 90%,
-    // The first and last panels are the row the display states; the two in between are the steps
-    // the `R°` bead takes to get from one to the other, and the display states no formula for them.
-    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""), (:), (:),
+    // The first and last panels are the row the display states; the two in between are the steps the
+    // `R°` bead takes to get from one to the other, so their `expect` is the composite itself, with
+    // no `include` to abbreviate it — the bead sits inside what `include` would name.
+    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""),
+           (expect: "(𝟙×list(g))(𝟙×list(R°))(𝟙×concat)h", split: ""),
+           (expect: "(𝟙×list(g))(𝟙×concat)(𝟙×R°)h", split: ""),
            (expect: "include R°", alias: (INCL,), split: "")).at(rs))
 }
 
@@ -7416,19 +7415,6 @@ N(α)(that)
 // the `Int` one, and the outer `list` is born where the partition is.  A bead whose source and target
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
-#let VXE = 0.55                  // `E`, opened by the singleton and closed by an `est`
-#let VXLo = 1.70                 // `list`, the segments
-#let VXLi = 2.85                 // `list`, the transactions in one segment
-#let VXO = 4.00                  // the object wire, `Int`
-#let VXW = VXO + 2.85
-#let INT = [`Int`]
-#let van-top = ((VXLi, LIST), (VXO, INT))
-#let van-bot = ((VXLo, LIST), (VXLi, LIST), (VXO, INT))
-#let van-fold(h, y, l, e) = dpanel(h, VXW, VXO,
-  (((VXE, 3.30, 0.95, EW, UNIT),) * (if e == none { 0 } else { 1 })
-   + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
-  ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
-
 #disp[#calc-table(
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
@@ -7480,7 +7466,13 @@ N(α)(that)
  #h(4pt) — @van-defn, @cata-fusion at
      // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
-  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
+  [#dpanel(4.4, 7.26, 5.41,
+  ((2.5, 2.75, 1.1, [`E`], frc([`𝟙`])), (3.641, 2.2, "bot", none, none), (4.783, 2.2, "bot", none, none), (3.954, "top", 2.2, none, none)),
+  ((2.2, [`⦇S⦈`], black, 3.954), (1.1, [`est(R)`], black, 2.5)),
+  ((3.954, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("S": "F([[Int]])⟶[[Int]]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7501,7 +7493,13 @@ N(α)(that)
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds,
  ]])],
      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
-  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
+  [#dpanel(4.4, 7.26, 5.41,
+  ((2.5, 2.75, 1.1, [`E`], frc([`𝟙`])), (3.641, 2.2, "bot", none, none), (4.783, 2.2, "bot", none, none), (3.954, "top", 2.2, none, none)),
+  ((2.2, [`⦇S⦈`], black, 3.954), (1.1, [`est(R;H)`], black, 2.5)),
+  ((3.954, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R;H)", src: "[Int]", tgt: "[[Int]]", sigs: ("S": "F([[Int]])⟶[[Int]]")))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
       (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7551,7 +7549,12 @@ N(α)(that)
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
-  [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
+  [#dpanel(2.2, 7.26, 5.41,
+  ((3.016, "top", 1.1, none, none), (3.641, 1.1, "bot", none, none), (4.783, 1.1, "bot", none, none)),
+  ((1.1, [`⦇[nil,(ok→glue,new)]⦈`], black, 3.016),),
+  ((3.016, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  cert: (expect: "⦇[nil,(ok→glue,new)]⦈", src: "[Int]", tgt: "[[Int]]"))],
 )]<van-laws>
 
 #disp[#calc-table(
@@ -10064,14 +10067,13 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
   // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
   // `α≜[nil,cons]` — @tex-defn — builds the list).
-  // `[arb,step]°`'s bead is hand-relabelled: `scripts/scanline`'s `BRANCH` table only names
-  // `cons`/`nil`/`plus`/`zero`, so `./scripts/diagram` cannot cut a case split on `arb`/`step` —
-  // geometry generated for the stand-in atom `arbstep°`; TODO.md notes the gap.
-  [#dpanel(7, 5.7, 2.85,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 4, 1, [`F`], none)),
-  ((6, [`interval`]), (4, [`[arb,step]°`]), (3, [`est(Q)`], black, 0.55), (2, [`H`]), (1, [`α`], black, 1.7)),
-  ((2.85, [`[0,2¹⁶)`]),),
-  ((2.85, [`Decimal`]),))],
+  [#dpanel(7.7, 6.88, 5.03,
+  ((2.5, 4.95, 3.3, [`E`], frc([`𝟙`])), (4.406, 4.4, 1.1, [`Digit×−`], none)),
+  ((6.6, [`interval`]), (4.4, [`step°`]), (3.3, [`est(Q)`], black, 2.5), (2.2, [`H`]), (1.1, [`α`], black, 4.406)),
+  ((5.03, [`[0,2¹⁶)`]),),
+  ((5.03, [`Decimal`]),),
+  obj: ((6.6, [`Interval`]), (4.95, [`Interval`]), (4.4, [`Interval`]), (3.3, [`Interval`]), (2.2, [`Decimal`]), (1.1, [`Decimal`])),
+  cert: (expect: "interval 𝟙%∋ E([arb,step]°)est(Q)F(H)α", src: "[0,2¹⁶)", tgt: "Decimal", branch: "step", sigs: ("interval": "[0,2¹⁶)⟶Interval", "arb": "𝟏⟶Interval", "step": "Digit×Interval⟶Interval", "H": "Interval⟶Decimal", "α": "F(Decimal)⟶Decimal", "Q": "F(Interval)⟶F(Interval)")))],
 
   [#vstep(EQ, [],
     [`extern=interval f`, #h(4pt) `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \
