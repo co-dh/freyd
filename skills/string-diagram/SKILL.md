@@ -31,6 +31,14 @@ the switch, say in one line that the convention has changed and why.
 - An arrow out of `F A` is a bead where two wires join into one — the shape a monad `μ : M∘M ⇒ M` has.
 - **Name a (lax) natural transformation with a GREEK letter** — `φ`, `ψ`, `χ` — and index it by the
   object where the component matters: `φ_A`. A Latin capital in that slot reads as a plain relation.
+- **A BEAD'S INDEX IS THE OBJECT WIRE UNDER IT, and the fold is no exception** (user, 2026-09-05,
+  reversing the earlier "the banana must carry its carrier"). `α` bare over a `B` wire is `α_B`, and
+  `⦇α⦈` with `A` under it is `⦇αᴀ⦈` — the carrier is the fold's target, which IS that wire, so writing
+  it in the label as well spells one object twice and lets the two drift. Two folds that read alike on
+  a display are told apart by their wires: §11.4.2a's `⦇α⦈` over `B` and over `C`. Enforced both ways —
+  `scripts/diagram` strips an index written anyway (and raises if it disagrees with the wire), and
+  `scripts/scanline --strict` refuses one a hand-laid panel keeps. The formula captioning the row and
+  the commutative square beside it keep the subscript: neither has a wire to read it off.
 - **One set of letters across the whole row.** The formula, the commutative square and the string
   diagram beside each other must use the SAME names; generalising the formula's letters without
   redrawing is how the square ends up saying `X` where the picture says `φ`.
@@ -364,6 +372,15 @@ fails: taking the least under `R_A` and then mapping is not mapping and then tak
 `est(R) ≜ ∋ ∩ (∈ \ R°)` is what `R` breaks. Same for `thin(Q)`, `fits(w)`, `⦇generate⦈`, `⦇Q⦈`. The
 parameterless beads — `union`, `setify`, `∋`, `∈`, `concat`, `cons`, `π₂` — are the natural ones and
 leave the object wire alone.
+
+**Drawing INSIDE a `⦇ ⦈`: what goes in the box is the ALGEBRA, not the fold.** IntroString (5.8), p. 147 gives two
+styles for `⦇a⦈` — a double circle annotated with the target algebra `a`, and, "if the algebra has structure", a
+rounded box holding the algebra's own diagram, "so it avoids the need to mix symbols and diagrams". Both carry `a`,
+never an unfolding of the recursion: the fold IS determined by its algebra. So the style pays exactly when the
+algebra is a composite of beads on lanes (`⦇F(𝟙,f)g⦈`, `⦇S%∋ est(R;H)⦈`) and buys nothing when it is not. A
+division is not: `%` is drawn only in the one shape `𝟙%∋`, the unit `Id⇒E`, which `isunit` heads a lane with — a
+general `frac(X,∋)` has no bead, so §11.6.2a's algebra `frac(F(∋)R,∋)` would put the same `frac` symbols inside a
+box that the bead label already carries.
 
 **But a free end is only legible if something receives it.** Drawing a unit or counit free, to mark it
 as structural against neighbouring beads that are data, needs the adjunction's other wire to land on —

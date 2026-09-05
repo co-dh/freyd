@@ -1164,7 +1164,7 @@
 
 /// A named law, its name out at the right where an equation number would go.  The empty `1fr` on the
 /// left keeps the law centred on the page rather than on what is left once the name is placed.
-#let znamed(name, ..items) = block(width: 100%, inset: (y: 5pt), grid(
+#let znamed(name, ..items) = block(width: 100%, grid(
   columns: (1fr, auto, 1fr), align: horizon,
   [],
   grid(columns: items.pos().len(), align: horizon, column-gutter: 10pt, ..items.pos()),
@@ -1173,7 +1173,7 @@
 
 /// One line of a derivation that runs sideways: boxes and `zstep(under: true)`s alternating.  A
 /// derivation too long for the column wraps into several of these, the next opening with its step.
-#let zline(..items) = align(center, block(breakable: false, inset: (y: 6pt), grid(
+#let zline(..items) = align(center, block(breakable: false, grid(
   columns: items.pos().len(), align: horizon, column-gutter: 7pt, ..items.pos(),
 )))
 
@@ -1183,7 +1183,7 @@
 
 /// `align: horizon` keeps the shared run on one line whatever the branches do — its cells span both
 /// rows.  The parameter is `shared`, not `chain`: note-style exports a `chain` this would shadow.
-#let zderiv(shared, branches) = align(center, block(inset: (y: 5pt), grid(
+#let zderiv(shared, branches) = align(center, block(grid(
   columns: shared.len() + 2, align: horizon, column-gutter: 10pt, row-gutter: 10pt,
   ..shared.map(c => grid.cell(rowspan: 2, c)),
   ..branches.map(b => (zstep(b.at(0)), b.at(1))).flatten(),
@@ -1216,10 +1216,12 @@
 }
 
 // `capbox` — the frame binds picture and caption into one unit; the formula is a REQUIRED positional,
-// so a law has one place to land.  Its stroke, radius and insets are the note's own, not new values.
+// so a law has one place to land.  Its stroke and radius are the note's own, not new values.
+// It DRAWS a boundary, so it owns two bands and they are the only ones inside it (see `P`): `inset`
+// keeps the panel's ink off the hairline, `row-gutter` separates the picture from its formula.
 #let capbox(body, f) = align(center, box(
-  stroke: 0.4pt + luma(190), radius: 2pt, inset: (x: 12pt, y: 8pt),
-  grid(align: center, row-gutter: 8pt, body, f),
+  stroke: 0.4pt + luma(190), radius: 2pt, inset: (x: 12pt, y: 6pt),
+  grid(align: center, row-gutter: 6pt, body, f),
 ))
 
 // Where a formula's own relation sign sits: the children up to the one holding it, then the text

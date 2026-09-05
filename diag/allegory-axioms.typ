@@ -79,7 +79,12 @@
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm
 
-#let calc-table(..rows, cols: (1fr, HMW), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+// `auto` and not a fixed width: a panel column is as wide as the panels IN IT, so the column beside
+// it keeps every point they do not use.  A constant is a guess made against one table's widest panel
+// and spent in every other, and the picture it starves overflows its own column — both pictures are
+// centred, so they grow towards each other and a label of one lands on a label of the other
+// (`./scripts/labelfit`), which no per-panel geometry can prevent.
+#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
 
 // A CITED DISPLAY RENDERS AS ITS NAME, the way B&dM cite a law in a hint; a number sends the reader
 // off to look the display up.  `≜ x` is the display that DEFINES `x`; a display named here nowhere
@@ -829,23 +834,21 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
     node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   row((
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((3, [`tri(f)`], GIVEN2), (1.5, [`⦇g⦈`], INDUCED)),
-      ((1.875, [`TA`]),),
-      ((1.875, [`A`]),),
-      obj: ((3, [`TA`]), (1.5, [`A`])),
-      cert: (expect: "tri(f)⦇g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
-        sigs: ("tri": "TA⟶TA", "g": "F(A,TA)⟶A"))),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((2.2, [`tri(f)`]), (1.1, [`⦇g⦈`])),
+  ((1.875, [`TA`]),),
+  ((1.875, [`A`]),),
+  obj: ((2.2, [`TA`]), (1.1, [`A`])),
+  cert: (expect: "tri(f)⦇g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A", sigs: ("tri": "TA⟶TA", "g": "F(A,TA)⟶A"))),
     [#h(7pt) = #h(7pt)],
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((1.5, [`⦇F(𝟙,f)g⦈`], INDUCED),),
-      ((1.875, [`TA`]),),
-      ((1.875, [`A`]),),
-      obj: ((1.5, [`A`]),),
-      cert: (expect: "⦇F(𝟙,f)g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
-        sigs: ("g": "F(A,TA)⟶A"), frame: 3, top: 1)),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((1.1, [`⦇F(𝟙,f)g⦈`]),),
+  ((1.875, [`TA`]),),
+  ((1.875, [`A`]),),
+  obj: ((1.1, [`A`]),),
+  cert: (expect: "⦇F(𝟙,f)g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A", sigs: ("g": "F(A,TA)⟶A"), frame: 3, top: 1)),
   )),
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
@@ -905,7 +908,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 == `(R/S)(S/W)⊑R/W`
 
 
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   edges(-9.6, -4.8, ADMIRES); edges(0, -4.8, HATES); edges(0, 4.8, HATES); edges(9.6, 4.8, WORKS)
   arc((-9.6, 1.6), (-0.8, 1.6), 1, [`A/H` admires all])
   arc((0.8, 1.6), (9.6, 0), 1, [`H/W` hates all])
@@ -1016,7 +1019,7 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°` #src[]. In `Rel` `x` and `y` has the same imag
 `x` admires exactly whom `y` hates: `/` is *all of*, $frac(R, S)$ is *only all of*.
 
 
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   // `A`: who each `x` admires.  `H`: who each `y` hates.  `x` and `y` name the same three.
   for p in ("a", "b", "c") { syqedge(ADMIRERS.x1, PEOPLE.at(p), INDUCED, 1.1) }
   for p in ("a", "b") { syqedge(ADMIRERS.x2, PEOPLE.at(p), INDUCED.lighten(60%), 0.7) }
@@ -1421,7 +1424,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let y = 0.85
   wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
   bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
@@ -1692,7 +1695,7 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 
 // The book's figure turned a quarter turn, source at the left like every other picture here.  `R` and
 // `S` arc outside because their straight lines would run over `E C`; blue dashed is the induced arrow.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let (AB, PC, C) = ((-6.4, 0), (0.4, 0), (4.6, 0))
   let (A, B) = ((-3.4, 2.4), (-3.4, -2.4))
   ar(A, AB, black, s0: 0.5, s1: 0.9)
@@ -1930,7 +1933,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
 // where `a₁,a₂,a₃` is the source, not the target. Only this one has the empty image `R(2) = ∅`.
 #disp[#block(breakable: false)[
-#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#align(center, box(cetz.canvas(length: 0.8cm, {
   let (L, RC) = (0, 3.2)
   let ys = (1.0, 0, -1.0)
   ar((L, ys.at(0)), (RC, ys.at(0)), GIVEN1, s0: 0.22, s1: 0.3)
@@ -1998,7 +2001,9 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
 // §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
 // the squares' own size.  The bead is `α` BARE: an algebra is a transformation `F⇒Id`, and the
-// component's index is the object wire it stands on, so a subscript would say it twice.
+// component's index is the object wire it stands on, so a subscript would say it twice.  The FOLD
+// takes its carrier off that same wire — `⦇α⦈` over an `A` wire IS `⦇αᴀ⦈` — and `scripts/diagram`
+// strips an index written anyway, `scripts/scanline` refusing one a hand-laid panel keeps.
 // `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
 // `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
 // §11.4.2a draws the same `α` the same way, its side condition being this very square at `h := S`.
@@ -2018,18 +2023,18 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #let ia-cata-l = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇αᴀ⦈`])),
+  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇α⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇αᴀ⦈", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
 #let ia-cata-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`⦇αᴀ⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((3.3, [`⦇α⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇αᴀ⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
@@ -2076,15 +2081,15 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
 
 // THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
-// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The banana carries its index:
-// `⦇α⦈` would fold every algebra at once and the law would read "every catamorphism is the identity".
+// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
+// bead is the fold's carrier, so `⦇α⦈` here is `⦇αᴛ⦈` and not the fold of every algebra at once.
 #let ia-refl-l = dpanel(2.2, 3.725, 1.875,
   (),
-  ((1.1, [`⦇αᴛ⦈`]),),
+  ((1.1, [`⦇α⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`T`]),),
   obj: ((1.1, [`T`]),),
-  cert: (expect: "⦇αᴛ⦈", src: "T", tgt: "T", sigs: ("⦇αᴛ⦈": "T⟶T")), s: 100%)
+  cert: (expect: "⦇α⦈", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
 #let ia-refl-r = dpanel(2.2, 3.725, 1.875,
   (),
   (),
@@ -2134,22 +2139,22 @@ then applying `S` is folding with `α`#sub[`C`].
   ((3.12, [`C`]),),
   obj: ((3.3, [`C`]), (2.2, [`C`])),
   cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
-// The conclusion, generated like the side condition above it: two BANANAS, so they keep an index
-// where the bare `α` cannot — `⦇αʙ⦈ : T⟶B` and `⦇αᴄ⦈ : T⟶C` are different arrows on one display.
+// The conclusion, generated like the side condition above it: two BANANAS reading `⦇α⦈` alike, and
+// what tells them apart is the wire under each — `B` on the left, `C` on the right.
 #let ia-fuse-cl = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇αʙ⦈`]), (1.1, [`S`])),
+  ((2.2, [`⦇α⦈`]), (1.1, [`S`])),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "⦇αʙ⦈S", src: "T", tgt: "C", sigs: ("⦇αʙ⦈": "T⟶B", "S": "B⟶C")), s: 100%)
+  cert: (expect: "⦇α⦈S", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶B", "S": "B⟶C")), s: 100%)
 #let ia-fuse-cr = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇αᴄ⦈`]),),
+  ((2.2, [`⦇α⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`C`]),),
-  cert: (expect: "⦇αᴄ⦈", src: "T", tgt: "C", sigs: ("⦇αᴄ⦈": "T⟶C"), frame: 3), s: 100%)
+  cert: (expect: "⦇α⦈", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶C"), frame: 3), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -2330,23 +2335,21 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
   }),
   row((
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((3, [`T(f)`], INDUCED), (1.5, [`⦇h⦈`], INDUCED)),
-      ((1.875, [`TA`]),),
-      ((1.875, [`C`]),),
-      obj: ((3, [`TB`]), (1.5, [`C`])),
-      cert: (expect: "T(f)⦇h⦈", src: "TA", tgt: "C", mu: "F:TB⟶C",
-        sigs: ("T": "TA⟶TB", "h": "F(A,C)⟶C"))),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((2.2, [`T(f)`]), (1.1, [`⦇h⦈`])),
+  ((1.875, [`TA`]),),
+  ((1.875, [`C`]),),
+  obj: ((2.2, [`TB`]), (1.1, [`C`])),
+  cert: (expect: "T(f)⦇h⦈", src: "TA", tgt: "C", mu: "F:TB⟶C", sigs: ("T": "TA⟶TB", "h": "F(A,C)⟶C"))),
     [#h(7pt) = #h(7pt)],
-    dpanel(4.5, 3.725, 1.875,
-      (),
-      ((1.5, [`⦇F(f,𝟙)h⦈`], INDUCED),),
-      ((1.875, [`TA`]),),
-      ((1.875, [`C`]),),
-      obj: ((1.5, [`C`]),),
-      cert: (expect: "⦇F(f,𝟙)h⦈", src: "TA", tgt: "C", mu: "F:TA⟶C",
-        sigs: ("h": "F(A,C)⟶C"), frame: 3, top: 1)),
+    dpanel(3.3, 3.725, 1.875,
+  (),
+  ((1.1, [`⦇F(f,𝟙)h⦈`]),),
+  ((1.875, [`TA`]),),
+  ((1.875, [`C`]),),
+  obj: ((1.1, [`C`]),),
+  cert: (expect: "⦇F(f,𝟙)h⦈", src: "TA", tgt: "C", mu: "F:TA⟶C", sigs: ("h": "F(A,C)⟶C"), frame: 3, top: 1)),
   )),
   [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
  #src[]],
@@ -2451,11 +2454,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
 // banana, `T⟶EA` being where the power object enters, and `α`'s two components are one natural bead.
-#let cata-map-l = dpanel(4.4, 6.85, 5,
-  ((2.5, "top", 2.2, none, none), (4.375, 1.1, "bot", none, none)),
+#let cata-map-l = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none), (2.5, 1.1, "bot", none, none)),
   ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇`#frc([`F(∋)R`])`⦈`])),
-  ((2.5, [`F`]), (5, [`T`])),
-  ((4.375, [`E`]), (5, [`A`])),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((2.5, [`E`]), (3.12, [`A`])),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
   cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
 #let cata-map-r = dpanel(4.4, 5.6, 3.75,
@@ -3185,7 +3188,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let (AE, E, AL, L) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
   ar(AE, E, GIVEN2, s0: 1.55, s1: 1.05); ar(AL, L, GIVEN2, s0: 1.2, s1: 0.7)
   ar(AE, AL, GIVEN1, s0: 0.55, s1: 0.55); ar(E, L, GIVEN1, s0: 0.55, s1: 0.55)
@@ -3994,9 +3997,31 @@ For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
+// @lax-hm-l/@lax-hm-r at `G := F`, `F := Id`, emitted by
+// `./scripts/diagram --frame 4 --sigs "φ:F(A)⟶A R:A⟶A"` plus `s: 100%`, with `--top 3` on the left
+// so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
+// functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
+// the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
+#let mon-hm-l = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none),),
+  ((3.3, [`R`]), (2.2, [`φ`], black, 2.5)),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`A`]),),
+  obj: ((3.3, [`A`]), (2.2, [`A`])),
+  cert: (expect: "F(R)φ", src: "F(A)", tgt: "A", sigs: ("φ": "F(A)⟶A", "R": "A⟶A"), frame: 4, top: 3),
+  s: 100%)
+#let mon-hm-r = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none),),
+  ((2.2, [`φ`], black, 2.5), (1.1, [`R`])),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`A`]),),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "φ R", src: "F(A)", tgt: "A", sigs: ("φ": "F(A)⟶A", "R": "A⟶A"), frame: 4, top: 2),
+  s: 100%)
+
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
-#disp[#capbox(
+#disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
     ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
@@ -4007,6 +4032,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
     node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
   }),
+  row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
   // lean:AOP.A7_2.MonotonicAlg@26944450
 )]<mon-str>
@@ -6476,9 +6502,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      ((Y0, Y1, Y2, Y3).at(rs), [`R°`], GIVEN1)),
     ((PXM, [`A×−`]), (PXLo, LIST), (PXD, DELTA), (PXO, PARTY)),
     ((PXO, PARTY),), names: rs == 0, s: 90%,
-    // The first and last panels are the row the display states; the two in between are the steps
-    // the `R°` bead takes to get from one to the other, and the display states no formula for them.
-    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""), (:), (:),
+    // The first and last panels are the row the display states; the two in between are the steps the
+    // `R°` bead takes to get from one to the other, so their `expect` is the composite itself, with
+    // no `include` to abbreviate it — the bead sits inside what `include` would name.
+    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""),
+           (expect: "(𝟙×list(g))(𝟙×list(R°))(𝟙×concat)h", split: ""),
+           (expect: "(𝟙×list(g))(𝟙×concat)(𝟙×R°)h", split: ""),
            (expect: "include R°", alias: (INCL,), split: "")).at(rs))
 }
 
@@ -6762,7 +6791,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
-#let laws-pic(body) = align(center, box(inset: (y: 1pt),
+#let laws-pic(body) = align(center, box(
   scale(x: 84%, y: 84%, reflow: true, cetz.canvas(length: 0.8cm, body))))
 
 // The reason rides UNDER the formula, in the picture's own column: a column of its own cost the
@@ -7518,19 +7547,6 @@ N(α)(that)
 // the `Int` one, and the outer `list` is born where the partition is.  A bead whose source and target
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
-#let VXE = 0.55                  // `E`, opened by the singleton and closed by an `est`
-#let VXLo = 1.70                 // `list`, the segments
-#let VXLi = 2.85                 // `list`, the transactions in one segment
-#let VXO = 4.00                  // the object wire, `Int`
-#let VXW = VXO + 2.85
-#let INT = [`Int`]
-#let van-top = ((VXLi, LIST), (VXO, INT))
-#let van-bot = ((VXLo, LIST), (VXLi, LIST), (VXO, INT))
-#let van-fold(h, y, l, e) = dpanel(h, VXW, VXO,
-  (((VXE, 3.30, 0.95, EW, UNIT),) * (if e == none { 0 } else { 1 })
-   + ((VXLi, "top", y, none, none), (VXLo, y, "bot", none, none), (VXLi, y, "bot", none, none))),
-  ((y, l),) + (if e == none { () } else { ((0.95, e, black, VXLo),) }), van-top, van-bot)
-
 #disp[#calc-table(
   Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
@@ -7582,7 +7598,13 @@ N(α)(that)
  #h(4pt) — @van-defn, @cata-fusion at
      // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
-  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R)`])],
+  [#dpanel(4.4, 7.26, 5.41,
+  ((2.5, 2.75, 1.1, [`E`], frc([`𝟙`])), (3.641, 2.2, "bot", none, none), (4.783, 2.2, "bot", none, none), (3.954, "top", 2.2, none, none)),
+  ((2.2, [`⦇S⦈`], black, 3.954), (1.1, [`est(R)`], black, 2.5)),
+  ((3.954, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("S": "F([[Int]])⟶[[Int]]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7603,7 +7625,13 @@ N(α)(that)
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds,
  ]])],
      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
-  [#van-fold(4.0, 2.20, [`⦇S⦈`], [`est(R;H)`])],
+  [#dpanel(4.4, 7.26, 5.41,
+  ((2.5, 2.75, 1.1, [`E`], frc([`𝟙`])), (3.641, 2.2, "bot", none, none), (4.783, 2.2, "bot", none, none), (3.954, "top", 2.2, none, none)),
+  ((2.2, [`⦇S⦈`], black, 3.954), (1.1, [`est(R;H)`], black, 2.5)),
+  ((3.954, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "𝟙%∋ E(⦇S⦈)est(R;H)", src: "[Int]", tgt: "[[Int]]", sigs: ("S": "F([[Int]])⟶[[Int]]")))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
       (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7653,7 +7681,12 @@ N(α)(that)
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
-  [#van-fold(3.4, 2.20, [`⦇[nil,(ok→glue,new)]⦈`], none)],
+  [#dpanel(2.2, 7.26, 5.41,
+  ((3.016, "top", 1.1, none, none), (3.641, 1.1, "bot", none, none), (4.783, 1.1, "bot", none, none)),
+  ((1.1, [`⦇[nil,(ok→glue,new)]⦈`], black, 3.016),),
+  ((3.016, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  cert: (expect: "⦇[nil,(ok→glue,new)]⦈", src: "[Int]", tgt: "[[Int]]"))],
 )]<van-laws>
 
 #disp[#calc-table(
@@ -7884,11 +7917,11 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 
   [#vstep(SQ, eb-pic((in-box, eb-estc, eb-tau)),
     [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
-  [#dpanel(4.4, 6.85, 5,
-  ((4.375, 3.3, 2.2, [`E`], none), (2.5, 0.55, "bot", none, frc([`𝟙`]))),
-  ((3.3, [`∈`]), (2.2, [`est(R∩S°S)`], black, 4.375)),
-  ((5, [`A`]),),
-  ((2.5, [`E`]), (5, [`A`])),
+  [#dpanel(4.4, 4.97, 3.12,
+  ((2.5, 3.3, 2.2, [`E`], none), (2.5, 0.55, "bot", none, frc([`𝟙`]))),
+  ((3.3, [`∈`]), (2.2, [`est(R∩S°S)`], black, 2.5)),
+  ((3.12, [`A`]),),
+  ((2.5, [`E`]), (3.12, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (0.55, [`A`])),
   cert: (expect: "∈ est(R∩S°S)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
@@ -10166,14 +10199,13 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
   // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
   // `α≜[nil,cons]` — @tex-defn — builds the list).
-  // `[arb,step]°`'s bead is hand-relabelled: `scripts/scanline`'s `BRANCH` table only names
-  // `cons`/`nil`/`plus`/`zero`, so `./scripts/diagram` cannot cut a case split on `arb`/`step` —
-  // geometry generated for the stand-in atom `arbstep°`; TODO.md notes the gap.
-  [#dpanel(7, 5.7, 2.85,
-  ((0.55, 4.5, 3, [`E`], frc([`𝟙`])), (1.7, 4, 1, [`F`], none)),
-  ((6, [`interval`]), (4, [`[arb,step]°`]), (3, [`est(Q)`], black, 0.55), (2, [`H`]), (1, [`α`], black, 1.7)),
-  ((2.85, [`[0,2¹⁶)`]),),
-  ((2.85, [`Decimal`]),))],
+  [#dpanel(7.7, 6.88, 5.03,
+  ((2.5, 4.95, 3.3, [`E`], frc([`𝟙`])), (4.406, 4.4, 1.1, [`Digit×−`], none)),
+  ((6.6, [`interval`]), (4.4, [`step°`]), (3.3, [`est(Q)`], black, 2.5), (2.2, [`H`]), (1.1, [`α`], black, 4.406)),
+  ((5.03, [`[0,2¹⁶)`]),),
+  ((5.03, [`Decimal`]),),
+  obj: ((6.6, [`Interval`]), (4.95, [`Interval`]), (4.4, [`Interval`]), (3.3, [`Interval`]), (2.2, [`Decimal`]), (1.1, [`Decimal`])),
+  cert: (expect: "interval 𝟙%∋ E([arb,step]°)est(Q)F(H)α", src: "[0,2¹⁶)", tgt: "Decimal", branch: "step", sigs: ("interval": "[0,2¹⁶)⟶Interval", "arb": "𝟏⟶Interval", "step": "Digit×Interval⟶Interval", "H": "Interval⟶Decimal", "α": "F(Decimal)⟶Decimal", "Q": "F(Interval)⟶F(Interval)")))],
 
   [#vstep(EQ, [],
     [`extern=interval f`, #h(4pt) `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \

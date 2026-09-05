@@ -36,6 +36,25 @@ INTERVAL = re.compile(r"\[[^\[\]()]*\)")
 # A projection ends its own token: the note writes the guard of a conditional `π₁p`, with nothing
 # between the two arrows, and one bead reading `π₁p` is a composite drawn as though it were an atom.
 PROJ = ("π₁", "π₂")
+# An index is written as a SMALL CAPITAL — the subscript block has no `b` and no `c`, so one family
+# (`αᴀ`, `αʙ`, `αᴄ`) cannot be spelled with real subscripts at all.
+SMALLCAP = dict(zip("ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘꞯʀꜱᴛᴜᴠᴡʏᴢ", "ABCDEFGHIJKLMNOPQRSTUVWYZ"))
+# A fold that writes its carrier: `⦇αᴀ⦈`.  The body is bracket-free, so the index is the small-capital
+# run just inside the closing banana.
+CARRIER = re.compile("⦇([^⦇⦈]*?)([" + "".join(SMALLCAP) + "]+)⦈")
+
+
+def deindex(s):
+    """`s` with every fold's carrier index stripped, and a map from the stripped label to what it
+    dropped: `⦇αᴀ⦈` is drawn `⦇α⦈` at carrier `A`.  A bead's index IS the object wire under it, so a
+    carrier written in the label as well spells one object twice and the two are free to drift."""
+    idx = {}
+
+    def one(m):
+        lab = f"⦇{m.group(1)}⦈"
+        idx[lab] = "".join(SMALLCAP[c] for c in m.group(2))
+        return lab
+    return CARRIER.sub(one, s), idx
 
 
 def matching(s, i):
