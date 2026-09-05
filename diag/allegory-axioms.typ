@@ -7171,11 +7171,10 @@ zip(that)                                         each row: its square, and its 
      (2, 7 6 5)
      (3, 8 7 6)
      (4, 5 8 7)                                 : F(A,A[3])[n]
-Vec(n)(cp)(that)                                  cp pairs the square with each candidate,
-   = [1,6] [1,5] [1,8]                            and a pair is a two-square path
-     [2,7] [2,6] [2,5]
-     [3,8] [3,7] [3,6]
-     [4,5] [4,8] [4,7]                          : A[n][3][2]
+Vec(n)(cp)(that)                                  cp pairs the square with each candidate:
+   = 1 6   2 7   3 8   4 5                        row k of that is the k-th 3×2 block, left
+     1 5   2 6   3 7   4 8                        to right; each line a two-square path
+     1 8   2 5   3 6   4 7                      : A[n][3][2]
 ```]]<vec-step>
 
 === `gen` is an `F`-algebra; `⦇gen⦈`: `α⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-fold>
