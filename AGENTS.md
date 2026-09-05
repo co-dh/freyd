@@ -144,12 +144,34 @@ only by eye is how a bead landed on a wire that was not its source, and `cite-ch
 --verify-sigs` can only hold what has a declaration behind it. No declaration, no dot, no claim: a
 transformation with no naturality proof draws as a spider, a type with no Lean spelling is not written.
 
+**A REVIEW PICTURE CARRIES ITS OWN CAPTION, AND `scripts/diff-crop` IS THE ONLY THING THAT MAKES ONE.**
+Cut every before/after with `./scripts/diff-crop --key <key> --caption "<the line in the author's own
+words>"`, because a file called `p53-1.png` says nothing about which item it answers and a caption written
+in chat makes him match picture to sentence by hand. The caption is his wording — the `TODO.md` line, or
+the question he asked — not a paraphrase. When the before is not a page of the note — a panel redrawn
+either side of a generator change — it is `--stack BEFORE.png AFTER.png --caption "…"`, never a
+hand-assembled `montage`: a hand-rolled comparison loses the caption, the before-above-after order and
+the font, which is how a caption shipped as a row of empty boxes twice. `diff-crop` draws captions
+through `pango:` so fontconfig falls back per character, and refuses to write a picture whose caption
+holds a character nothing installed can draw.
+
 ## Searching the book text
 The greppable book prose lives in `/home/dh/anki/typst-book/chapters/<a.b>/section-<a.b>.typ`
 (and the `section-*.fixed.md` siblings — cleaned OCR). ALWAYS grep there.
 `/home/dh/repo/freyd/book-all.typ` is only a 63-line wrapper that `#include`s those chapter
 files — grepping it alone finds NOTHING. To search the whole book:
 `grep -rni "<term>" /home/dh/anki/typst-book/chapters/`.
+
+## Before touching a picture, a book page or a declaration, use the tool that already answers it
+Each of these exists because the obvious alternative — looking at a rendered page, grepping the
+sources, guessing a coordinate — costs image tokens or gives a wrong answer, so reach for them FIRST.
+
+| the question                                    | the tool                                                          |
+|-------------------------------------------------|-------------------------------------------------------------------|
+| how do I draw / read a Hinze–Marsden panel?     | the `string-diagram` skill (circuits: `circuit-diagram`)          |
+| where is this in a reference PDF?               | `./scripts/book` over `book-index.db` — never `pdftotext \| grep`  |
+| what are this figure's exact coordinates?       | `./scripts/figgeom <book> <page>` — SVG path data, no image tokens |
+| where is this Lean declaration, and its `@key`? | `.lake/build/refactor-index.db` — never grep `*.lean`             |
 
 ## Searching the reference PDFs
 Do NOT open a PDF page as an image to find something, and do NOT run `pdftotext | grep` loops. Every
