@@ -1343,7 +1343,9 @@ def pairs_rows(text, tbl):
 
 def pairs_check(path):
     """Two panels either side of a step sign are one statement: `--pairs` checks that every `trow`/
-    `row` pair shares one frame height and, for every bead they have in common, one bead height."""
+    `row` pair shares one frame height and lines up on a bead they have in common.  ONE such bead is
+    the requirement, not all of them — the shorter side of a step legitimately carries fewer beads,
+    so §13.3.1's first row aligns on `est(R)` while its `f` sits three rows lower on the right."""
     text = open(path, encoding="utf-8").read()
     tbl = panel_table(text)
     rows = pairs_rows(text, tbl)
@@ -1358,10 +1360,10 @@ def pairs_check(path):
         for f, b, s, name in panels[1:]:
             if f != f0:
                 bad.append(f"frame {f0} vs {f}")
-            skip = s0 | s
-            for label, h0 in b0.items():
-                if label not in skip and label in b and b[label] != h0:
-                    bad.append(f"bead `{label}` {h0} vs {b[label]}")
+            shared = [l for l in b0 if l in b]
+            if shared and not any(b[l] == b0[l] for l in shared):
+                bad.append("no shared bead at one height: "
+                           + ", ".join(f"`{l}` {b0[l]} vs {b[l]}" for l in shared))
         if bad:
             unequal += 1
             fails.append(f"{path}:{line}  {desc}  " + "; ".join(bad))
@@ -1448,7 +1450,7 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               '\n--write       like --compare, but splices the rebuilt literals back over the note'
               " (trailing arguments kept)"
               '\n--pairs       check every `trow`/`row` pair either side of a step sign: the two'
-              " panels must share one frame height and, for every bead in common, one bead height"
+              " panels must share one frame height and line up on one bead they have in common"
               '\n\nDefault mode prints one `#dpanel(...)` call on stdout, ready to paste into the note;'
               " diagnostics (a failed self-sweep, a formula the sweep reads back differently) go to"
               " stderr.  Exit status is nonzero if the drawn panel fails its own sweep.")
