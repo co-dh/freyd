@@ -7044,7 +7044,7 @@ N(cp P(α))(that)
 // Beside @sec-cyl-gen with every type a `Vec`: `N=Vec(n)`, the paths into a row `Vec(p)` with `p` their
 // count, and `E` gone.  The composite is the same; `union` becomes `concat`, `trans` the transpose.
 #disp[#table(
-  columns: (2.8cm, 4.6cm, 6.4cm, 1fr),
+  columns: (2.6cm, 4.4cm, 7.4cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([], [*on `L=list⁺`, @sec-cyl-gen*], [*on `Vec`*], [*note*]),
@@ -7076,27 +7076,27 @@ N(cp P(α))(that)
 
   [`trans`],
   [`E(NX)⟶N(EX)`],
-  [`Vec(3,Vec(n,X))⟶Vec(n,Vec(3,X))`],
+  [`Vec(3,Vec(n,X))` \ `⟶Vec(n,Vec(3,X))`],
   [The transpose.],
 
   [`union`],
   [`E(EX)⟶EX`],
-  [`concat:Vec(3,Vec(p,X))⟶Vec(3p,X)`],
+  [`concat` \ `Vec(3,Vec(p,X))⟶Vec(3p,X)`],
   [The three candidate lists, end to end.],
 
   [`zip`],
   [`F(NA,NB)⟶NF(A,B)`],
-  [`F(Vec(n,A),Vec(n,B))⟶Vec(n,F(A,B))`],
+  [`F(Vec(n,A),Vec(n,B))` \ `⟶Vec(n,F(A,B))`],
   [Unchanged.],
 
   [`cp`],
   [`F(A,EB)⟶E(F(A,B))`],
   [`A⟶Vec(1,F(A,B))` \ `A×Vec(p,B)⟶Vec(p,F(A,B))`],
-  [One candidate at the exit column, `p` after it: `cp(1,[[5],[6],[8]])=[(1,[5]),(1,[6]),(1,[8])]`.],
+  [One candidate at the exit column, `p` after it.],
 
   [`gen`],
   [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(E(LA)))` \ `⟶N(E(LA))`],
-  [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(α))` \ `F(Vec(n,A),Vec(n,Vec(p,Vec(m,A))))` \ `⟶Vec(n,Vec(3p,Vec(m+1,A)))`],
+  [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(α))` \ `F(Vec(n,A),` \ `Vec(n,Vec(p,Vec(m,A))))` \ `⟶Vec(n,Vec(3p,Vec(m+1,A)))`],
   [The same composite, every object a matrix; the type shown is the `cons` side.],
 
   [`⦇gen⦈`],
