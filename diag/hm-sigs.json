@@ -311,6 +311,16 @@
         "AOP.A7_4_CylinderPaths.RelSet.Tuple.zipF_lax_natural@f3f82f16"
       ]
     },
+    "cp": {
+      "src": "F(E(x))",
+      "tgt": "E(F(x))",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.cp@720d4b26",
+      "note": "the cross product `F(𝟙,∋)%∋`: the powerset pulled out of the base functor, `(a,S)↦{(a,s)∣s∈S}` on the product summand and `d↦{d}` on the other",
+      "nat": "strict",
+      "nat-lean": [
+        "AOP.A7_4_CylinderPaths.RelSet.Tuple.cp_natural@86010c6a"
+      ]
+    },
     "setify": {
       "src": "N(x)",
       "tgt": "E(x)",

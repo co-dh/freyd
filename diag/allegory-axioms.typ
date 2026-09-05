@@ -6945,10 +6945,10 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
 #disp[#align(center, dpanel(10.5, 6.35, 4.5,
   ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
-  ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877), (1.5, [`α`], black, 3.658)),
+  ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877, 3.2675), (1.5, [`α`], black, 3.658)),
   ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
   ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
-  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))", sigs: ("cp": "F(E(LA))⟶E(F(LA))"))))]<gen-diag>
+  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))")))]<gen-diag>
 
 #disp[#align(center)[```
 u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
