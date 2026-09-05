@@ -836,7 +836,9 @@ def layout(rows, made, otop, obot, cert):
     # The non-natural case reads off `hh` directly, so an override there repositions every bead;
     # the natural case's `k`-shifted placement is independent of `hh` and is left alone.
     hh = cert.get("frame", (2 * n if nat else max(n, 1) + 1) * DY)
-    ys = [(n + k - i) * DY for i in range(n)] if nat else [hh - (i + 1) * DY for i in range(n)]
+    ys = ([(n + k - i) * DY for i in range(n)] if nat else
+          [(n - i) * DY for i in range(n)] if cert.get("anchor") == "bottom" else
+          [hh - (i + 1) * DY for i in range(n)])
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}
@@ -1021,7 +1023,7 @@ def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
 
 
 def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None, book=None,
-         frame=None):
+         frame=None, anchor=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
@@ -1040,7 +1042,8 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
     cert = (cert | ({"split": split} if split != DEFSPLIT else {})
             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
-            | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {}))
+            | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {})
+            | ({"anchor": anchor} if anchor else {}))
     if book:
         return booklayout(rows, made, otop, obot, cert, *book)
     return layout(rows, made, otop, obot, cert)
@@ -1135,7 +1138,8 @@ def roundtrip(path, frm, show, out, tbl):
         try:
             src, tgt = endpoints(sl.Panel(r))
             g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
-                     r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"))
+                     r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"),
+                     anchor=r["cert"].get("anchor"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1219,7 +1223,7 @@ def regen(path, tbl, write):
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
                             c.get("sigs"), c.get("slope"), c.get("mu"),
-                            frame=c.get("frame")))[1:-1]
+                            frame=c.get("frame"), anchor=c.get("anchor")))[1:-1]
         except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -1288,6 +1292,10 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               " diag/hm-sigs.json's `mu`, and gives the carrier when the algebra is a composite with"
               " no row of its own.  The same flag `scripts/circuit` takes, spelled the same way"
               '\n--slope left  lean the layout left instead of the default lane placement'
+              '\n--frame H     force the panel'"'"'s frame height in rows, so two panels either side'
+              ' of an `=` share one box'
+              '\n--anchor bottom  keep the beads at their default heights and add the extra frame'
+              ' ABOVE them (default: beads hang from the top)'
               '\n--png OUT     also render the panel to OUT (200 dpi); the `dpanel` literal still'
               " goes to stdout and the written path to stderr"
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
@@ -1322,9 +1330,10 @@ def main(argv):
     slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
     frame = sl.opt(argv, "--frame")
     frame = float(frame) if frame else None
+    anchor = sl.opt(argv, "--anchor")
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--frame", "--panel", "--png")
+                         "--frame", "--anchor", "--panel", "--png")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -1349,7 +1358,7 @@ def main(argv):
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book, frame=frame)
+             book, frame=frame, anchor=anchor)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`
