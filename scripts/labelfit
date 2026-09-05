@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""labelfit — no two labels inside one panel touch, measured off the COMPILED page.
+
+The vertical unit a panel is drawn on (`DY` in `scripts/diagram`) is only as small as the labels
+allow: shrink the rows past the point where a bead's name runs into the name a row below it and the
+picture stops being readable, with nothing in the sweep or the pair check to say so.  This is that
+check, so the unit is a measured number and not a guess.
+
+    ./scripts/labelfit                       # the note, every page
+    ./scripts/labelfit --tight 12            # the 12 closest pairs, worst first — the headroom
+    ./scripts/labelfit some.pdf --page 22
+
+Geometry comes from the page itself, not from the drawing code: `pdftocairo -svg` for the filled
+REGIONS a panel is made of (`figgeom.elements`) and `pdftotext -bbox` for the label boxes
+(`figgeom.labels`).  A panel is a connected component of region rectangles; a label belongs to the
+panel its centre falls in, and prose outside every panel is ignored.
+"""
+import importlib.util, os, re, subprocess, sys, tempfile
+from importlib.machinery import SourceFileLoader
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NOTE = os.path.join(ROOT, "diag", "allegory-axioms.pdf")
+BAND = 0.6      # a fill wider or taller than this much of the page is a rule or a page band, not a panel
+PAD = 2.0       # a panel's own labels sit ON its frame edge, so the box is grown before a label is placed
+HIT = 0.5       # boxes must OVERLAP by this much to conflict — a shared edge is not a collision
+SAME = 6.0      # two boxes whose tops are this close are one label: a base and its subscript
+
+_spec = importlib.util.spec_from_loader(
+    "figgeom", SourceFileLoader("figgeom", os.path.join(ROOT, "scripts", "figgeom")))
+figgeom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(figgeom)
+
+
+def panels(svg, pw, ph):
+    """The page's panels, as rectangles: connected components of the filled regions, page bands out."""
+    rs = [bb for kind, _, _, bb in figgeom.elements(svg)
+          if kind == "region" and bb[2] - bb[0] < BAND * pw and bb[3] - bb[1] < BAND * ph]
+    out = []
+    for r in rs:
+        hit = [q for q in out if q[0] <= r[2] + PAD and q[2] >= r[0] - PAD
+               and q[1] <= r[3] + PAD and q[3] >= r[1] - PAD]
+        for q in hit:
+            out.remove(q)
+        r = (min([r[0]] + [q[0] for q in hit]), min([r[1]] + [q[1] for q in hit]),
+             max([r[2]] + [q[2] for q in hit]), max([r[3]] + [q[3] for q in hit]))
+        out.append(r)
+    return out
+
+
+def overlap(a, b, i):
+    return min(a[i + 2], b[i + 2]) - max(a[i], b[i])
+
+
+def onelabel(a, b):
+    """A base and its subscript are ONE label: their tops are a hair apart and they touch sideways."""
+    return abs(a[1] - b[1]) < SAME and overlap(a, b, 0) < 2.0
+
+
+def clearance(a, b):
+    """How far two boxes stand apart: the axis they are furthest apart on, since one is enough to
+    keep them off each other.  Negative means they overlap on BOTH axes, which is a collision."""
+    return max(-overlap(a, b, 0), -overlap(a, b, 1))
+
+
+def page(pdf, pno, td):
+    svgf = os.path.join(td, "p.svg")
+    subprocess.run(["pdftocairo", "-svg", "-f", str(pno), "-l", str(pno), pdf, svgf], check=True)
+    svg = open(svgf).read()
+    vb = re.search(r'viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"', svg)
+    pw, ph = (float(vb[1]), float(vb[2])) if vb else (612.0, 792.0)
+    ps = panels(svg, pw, ph)
+    put = {i: [] for i in range(len(ps))}
+    for t, c, bb in figgeom.labels(pdf, pno):
+        for i, p in enumerate(ps):
+            if p[0] - PAD <= c[0] <= p[2] + PAD and p[1] - PAD <= c[1] <= p[3] + PAD:
+                put[i].append((t, bb))
+                break
+    bad, near = [], []
+    for i, ls in put.items():
+        for j in range(len(ls)):
+            for k in range(j + 1, len(ls)):
+                (ta, a), (tb, b) = ls[j], ls[k]
+                if onelabel(a, b):
+                    continue
+                where = f"p.{pno} panel at ({ps[i][0]:.0f},{ps[i][1]:.0f}) [{' '.join(t for t, _ in ls)}]"
+                if clearance(a, b) < -HIT:
+                    bad.append(f"{where}: {ta!r} and {tb!r} overlap by "
+                               f"{overlap(a, b, 0):.1f}x{overlap(a, b, 1):.1f}pt")
+                else:
+                    near.append((clearance(a, b), f"{where}: {ta!r} to {tb!r}"))
+    return bad, near
+
+
+def main(argv):
+    pdf = next((a for a in argv if a.endswith(".pdf")), NOTE)
+    if not os.path.exists(pdf):
+        sys.exit(f"labelfit: no {pdf} — compile the note first")
+    tight = int(argv[argv.index("--tight") + 1]) if "--tight" in argv else 0
+    one = int(argv[argv.index("--page") + 1]) if "--page" in argv else 0
+    n = int(re.search(r"Pages:\s+(\d+)", subprocess.run(
+        ["pdfinfo", pdf], capture_output=True, text=True).stdout)[1])
+    bad, near = [], []
+    with tempfile.TemporaryDirectory() as td:
+        for p in ([one] if one else range(1, n + 1)):
+            b, c = page(pdf, p, td)
+            bad += b
+            near += c
+    for line in bad:
+        print("labelfit: " + line)
+    for gap, line in sorted(near)[:tight]:
+        print(f"labelfit: {gap:6.2f}pt  {line}")
+    print(f"labelfit: {os.path.basename(pdf)}, {n} pages, {len(bad)} overlapping label pairs,"
+          f" tightest {min([g for g, _ in near], default=float('nan')):.2f}pt")
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

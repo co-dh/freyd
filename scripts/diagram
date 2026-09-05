@@ -127,7 +127,15 @@ def branch(formula):
 
 # IntroString's own geometry, measured off its pp. 46/75/79: columns 0.625 apart (14.17pt = 0.5cm),
 # rows 1.5, so a knee is half a row; `X0` is the margin the leftmost lane's NAME is written into.
-X0, DX, DY, PAD = 1.875, 0.625, 1.5, 1.85
+X0, DX, DY, PAD = 1.875, 0.625, 1.1, 1.85
+# `DY` is the one number that decides how TALL a panel is, and it is measured, not chosen: a row must
+# hold one label clear of the label a row below it, and `./scripts/labelfit` reads that clearance off
+# the compiled page.  A label box is 15.28pt, so the book's own 1.5 (34.0pt) left a whole second
+# label of air per row.  Lower it only with `labelfit` still green, and NOT by scaling a panel —
+# `s:` shrinks the labels with the geometry.
+# 1.1 is where `labelfit` stops improving: below it a bead's name meets the name a row down, and a
+# separate top band that is not a row was tried and rejected — it bought the same 1.1 and broke the
+# `0.5·gap` knee proof (a crossing in 13.5.5c), because the band is not a bending event.
 OKNEE = 0.88                                   # the note's `oknee`: the bow a sloped object edge has
 
 
@@ -839,8 +847,11 @@ def layout(rows, made, otop, obot, cert):
     # `--top`/`cert.top` moves the first bead, which is the OTHER half of lining a short panel up
     # with a tall one: the frame gives them one box, the top gives them one bead height.  It binds
     # the shifted case too — the `k`-shift is only what it defaults to.
-    hh = cert.get("frame", (n + k + 1 if nat else max(n, 1) + 1) * DY)
-    ys = [cert.get("top", (n + k) * DY if nat else hh - DY) - i * DY for i in range(n)]
+    # BOTH ARE ROW COUNTS, not lengths: the caller states the panel's COMPLEXITY and `DY` turns it
+    # into a size, so the vertical unit can be re-measured without touching a single `cert:`.
+    nr = cert.get("frame", n + k + 1 if nat else max(n, 1) + 1)
+    hh = nr * DY
+    ys = [(cert.get("top", n + k if nat else nr - 1) - i) * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}
