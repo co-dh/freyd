@@ -485,6 +485,17 @@ name the axis, a constant index (`[3]`) is an axis of its own, and a lift that c
 new axis letter draws through `fcol`'s free-hue path without an edit. Pass the
 wire's own label to `fcol`; never a local `VEC = …` constant.
 
+**Write an index functor POSTFIX in an object and applied in a formula, and give the generator the note's
+abbreviation as a `--defn`.** `A[n][p]` is `[n]([p](A))` — the leftmost bracket is the outermost functor,
+so the brackets read left to right in the same order as the wires of the cut — and `Vec(n)(h)` is that
+same `[n]` applied to an arrow, drawn inside the `[n]` lane the way `N(union)` is drawn inside `N`. A
+lower-case letter inside a bracket of a SIGNATURE is an index variable, matched and substituted textually
+(`[3k]` takes `[3p]`, `[k+1]` takes `[m+1]`), so one row types the bead at every index. Where the note
+abbreviates an object, state it as `--defn "A[k+1]≜F(A[k])"` rather than writing the abbreviation at the
+port: the ports must draw what the picture IS, two wires, and the edge then writes `[m+1]` once under a
+thin bracket spanning them — a per-wire label there would make the reader re-derive the abbreviation the
+note already stated.
+
 **Every `FCOL` addition moves every UNNAMED lane.** `fcol` indexes the free-hue list by the name's hash,
 and the list shrinks around each new entry, so a lane that was drawing on a free hue lands on a different
 one — `Digit×−` went from clear of `E` to ΔE76 12 from it when the four axis lanes were added. Name the

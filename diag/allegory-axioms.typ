@@ -7141,6 +7141,15 @@ N(cp P(α))(that)
   [The cheapest of three; no `p` anywhere. `⦇Q⦈:A[m][n]⟶A[n][m]` has the type of a transpose.],
 )]<vec-defn-cyl>
 
+#disp[#align(center, dpanel(6.6, 9.04, 7.19,
+  ((2.762, 2.2, "bot", none, none), (3.903, 1.1, "bot", none, none), (5.306, 1.1, "bot", none, none), (3.903, 2.2, 1.1, [`F`], none), (2.762, "top", 2.2, none, none), (3.903, 4.4, 2.2, [`[n]`], none), (5.306, 3.3, 1.1, [`[3p]`], none), (4.79, 4.4, 3.3, [`[3]`], none), (3.903, 5.5, 4.4, [`[3]`], none), (4.79, 5.5, 4.4, [`[n]`], none), (4.216, "top", 5.5, none, none), (5.676, "top", 3.3, none, none), (6.563, "top", "bot", none, none)),
+  ((5.5, [`moves`], black, 4.216, 4.216), (4.4, [`trans`], black, 3.903, 4.3465), (3.3, [`concat`], black, 4.79, 5.233), (2.2, [`zip`], black, 2.762, 3.3325), (1.1, [`cp`], black, 3.903, 4.6045)),
+  ((2.762, [`F`]), (4.216, [`[n]`]), (5.676, [`[p]`]), (6.563, [`[m]`]), (7.19, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (5.306, [`F`]), (6.563, [`[m]`]), (7.19, [`A`])),
+  obj: ((5.5, [`A`]), (4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
+  defn: ((5.306, 6.563, 0, [`[m+1]`]),),
+  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[3][k]⟶x[3k]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@e93491b8!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@8c89291c", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("A[k+1]": "F(A[k])"))))]<vec-gen-diag>
+
 #disp[#align(center)[```
 a row is the outer index, a cell one path
 u = ((1,2,3,4),C)                               : F(A[n],A[n])
