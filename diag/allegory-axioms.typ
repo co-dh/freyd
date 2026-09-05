@@ -46,6 +46,348 @@
 #import "generated/Freyd.Alg.div_union.typ": pic as p-div-union
 #import "generated/Freyd.Alg.leftDiv_div.typ": pic as p-ldiv-div
 
+// ---- the Hinze-Marsden panel machinery, ABOVE every section that draws one: Typst binds a
+// `#let` where it stands, and §11.4's generated panels are the first `dpanel` calls in the note.
+// A panel's address is the display it stands in and its place in that display, both read off the
+// counters at the point it is PLACED, so a reordered row cannot keep a stale name.
+#let hm-meta(rec) = {
+  counter("hm-panel").step()
+  context metadata((kind: "scanline",
+    id: plain(dispnum(counter(heading).get(),
+      counter(figure.where(kind: "disp")).get().first()))
+      + "." + str(counter("hm-panel").get().first()),
+    ..rec))
+}
+
+// The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
+// `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
+// of the object wire, `𝟏` right of it.
+#let DKN = 0.45                                   // the handle's knee
+// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line, which runs
+// STRAIGHT through it; the functor wires that composite is made of bend in to the bead and out again.
+// `k` is how far above and below the node the lane leaves its column: a panel stacking four lanes in
+// one column detours more shallowly than a two-wire one — still a slope, never a horizontal tangent.
+#let NKN = 0.45
+// EVERY sloped run of the object edge is bowed, p. 74's lone corner-to-corner `L` included: the bow
+// is what lets a bead riding the edge sit ON a surface instead of being passed end-on, and what
+// makes the join with a vertical run smooth instead of a kink.  A path with no sloped run — a
+// plain vertical edge — has no knee to give.
+// The knee is 0.88, the top of IntroString p. 79's own measured range (0.55 to 0.88) and as flat
+// as the edge may get: at 1, the flat limit, `hm-seg`'s vertical handles put the curve's one
+// stationary point on its midpoint, and an arm reaching a bead THERE arrives along the same
+// horizontal the edge already has — the two run tangent and the ink grazes.  Seven panels put a
+// bead on that midpoint.  Past 1 the handle overshoots the far end and the wire doubles back.
+#let oknee(op) = {
+  let k = 0
+  for i in range(op.len() - 1) {
+    let (a, b) = (op.at(i), op.at(i + 1))
+    if a.at(0) != b.at(0) and a.at(1) != b.at(1) { k = 0.88 }
+  }
+  k
+}
+// Where that bezier stands at a height.  Its handles are VERTICAL, so the x-controls ARE the
+// endpoints and x(t) is the smoothstep `3t²-2t³`; y(t) is inverted by bisection.
+#let obez(a, b, k, y) = {
+  let u = (y - a.at(1)) / (b.at(1) - a.at(1))
+  let (lo, hi) = (0.0, 1.0)
+  for i in range(40) {
+    let m = (lo + hi) / 2
+    let f = 3 * k * m * calc.pow(1 - m, 2) + 3 * (1 - k) * m * m * (1 - m) + calc.pow(m, 3)
+    if f < u { lo = m } else { hi = m }
+  }
+  let t = (lo + hi) / 2
+  a.at(0) + (b.at(0) - a.at(0)) * (3 * t * t - 2 * t * t * t)
+}
+#let nodepts(x, xo, ys, k: NKN) = {
+  let pts = ()
+  for y in ys { pts += ((x, y + k), (xo, y), (x, y - k)) }
+  pts
+}
+#let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
+  ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
+// `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
+// `s`; `tpan` passes 100% and prints its labels at the size `tw-hm` does.
+// A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
+// IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
+// covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
+#let HSTUB = 0.075
+// The object edge BROKEN at the beads riding it: IntroString p.74's single-bead figure leaves a gap
+// centred on the dot, each stub ending `HSTUB` from the centre measured ALONG the edge, where the
+// two-bead figure beside it draws the same edge through its dots unbroken.  The REGION boundary
+// stays the whole `op` — the break is a gap in the INK, not in the boundary the fills follow.
+#let obroken(op, bks) = {
+  let (out, cur) = ((), (op.at(0),))
+  for i in range(op.len() - 1) {
+    let (a, b) = (op.at(i), op.at(i + 1))
+    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+    let m = calc.max(calc.sqrt(ux * ux + uy * uy), 1e-9)
+    for p in bks.filter(p => p.at(1) <= a.at(1) + 1e-9 and p.at(1) >= b.at(1) - 1e-9)
+                .sorted(key: p => -p.at(1)) {
+      cur.push((p.at(0) - HSTUB * ux / m, p.at(1) - HSTUB * uy / m))
+      out.push(cur)
+      cur = ((p.at(0) + HSTUB * ux / m, p.at(1) + HSTUB * uy / m),)
+    }
+    cur.push(b)
+  }
+  out + (cur,)
+}
+// `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
+// lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
+// `straight` draws it as the book's own polyline instead of `oknee`'s bow, and `obreak` lists the
+// dots it is broken at.  An edge may STOP ON THE PANEL'S RIGHT SIDE rather than its bottom (all
+// three of IntroString p.74's figures do), and then both regions close along that side.
+#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, key: none) = P(
+    cetz.canvas(length: 0.8cm, {
+  let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
+  let ok = if straight { 0 } else { oknee(op) }
+  let (ex, ey) = op.last()
+  let side = if ey > 1e-9 and calc.abs(ex - w) > 1e-9 { ((w, ey),) } else { () }
+  let lead = if calc.abs(op.first().at(0)) > 1e-9 { ((0, 0), (0, h)) } else { ((0, 0),) }
+  hm-region(lead + op + (if ey > 1e-9 { side + ((w, 0),) } else { () }), fb-ALLC,
+            k: ok, straight: straight)
+  hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
+            k: ok, straight: straight)
+  for seg in obroken(op, obreak) { hm-wire(seg, col: BCOL, k: ok, straight: straight) }
+  body
+}), s: s, key: key)
+
+// Which bead heights a lane bends down to: every bead whose reach spans this column and which the
+// lane is live across — the reach crosses the lanes between, so a wire inside it MEETS that bead.
+#let ddips(xat, h, beads, x, y0, y1) = beads.filter(bd => bd.at(3, default: none) != none
+  and bd.at(3) <= x and x < xat(bd.at(0))
+  and (if y0 == "top" { h } else { y0 }) > bd.at(0)
+  and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
+#let dkey(s, y) = s + str(float(y))
+// Where a strand standing in column `x` stops on its way to the dot at `(bx, y)`: back along the row
+// it arrives on, or — where the dot stands in the strand's OWN column and there is no room along the
+// row — back up its column, `vy` being +1 for a strand above the dot and -1 for one below.
+#let dstub(bx, y, x, vy) = {
+  let d = if calc.abs(x - bx) < 1e-6 { (0, HSTUB * vy) } else if x < bx { (-HSTUB, 0) } else { (HSTUB, 0) }
+  (bx + d.at(0), y + d.at(1))
+}
+// ONE knee per bead-and-side, for arms, legs and dips alike: equal knees on one bezier family give
+// the strands the same y(t) and they nest, where unequal ones braid — so a per-strand knee, whose
+// aspect grew with the horizontal run, is given up; the arrival stays VERTICAL either way, since
+// `hm-seg` puts its controls straight above and below the ends.  Half the gap, so two bands never
+// OVERLAP — they may share a midpoint, and there each strand is vertical, in its own column.
+// `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
+// left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
+// it.  The `tpan` panels keep fixed `DKN` and a per-join `k` — an empirical fit.
+#let dknees(xat, h, lanes, beads) = {
+  let bys = beads.map(bd => bd.at(0))
+  let (run, cap) = ((:), (:))
+  for l in lanes {
+    let (x, y0, y1) = (l.at(0), l.at(1), l.at(2))
+    let room = (if y0 == "top" { h } else { y0 }) - (if y1 == "bot" { 0 } else { y1 })
+    let es = ((if y0 != "top" and l.at(4) == none { ((y0, ("b",)),) } else { () })
+      + ddips(xat, h, beads, x, y0, y1).map(y => (y, ("b", "d")))
+      + (if y1 != "bot" { ((y1, ("d",)),) } else { () }))
+    for (i, e) in es.enumerate() {
+      let y = e.at(0)
+      for s in e.at(1) {
+        let nb = if s == "d" and i > 0 { es.at(i - 1).at(0) }
+          else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
+        let c = if nb == none { 0.55 * room } else { 0.5 * calc.abs(nb - y) }
+        // 1e-6 is `scanline`'s `EPS`: ONE tolerance, so the two `dknees` are one function.
+        let o = bys.filter(z => if s == "d" { z > y + 1e-6 } else { z < y - 1e-6 })
+        if o != () {
+          c = calc.min(c, 0.5 * calc.abs(
+            (if s == "d" { o.fold(99, calc.min) } else { o.fold(-99, calc.max) }) - y))
+        }
+        run.insert(dkey(s, y), calc.max(run.at(dkey(s, y), default: 0), calc.abs(xat(y) - x)))
+        cap.insert(dkey(s, y), calc.min(cap.at(dkey(s, y), default: 99), c))
+      }
+    }
+  }
+  let gk = (:)
+  for (k, v) in run { gk.insert(k, calc.min(0.45 + 0.25 * v, cap.at(k))) }
+  gk
+}
+// A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
+// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
+// the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
+// `dknees` gave the bead this lane is born on and the one it dies on.
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false) = {
+  let wc = if col == none { (:) } else { (col: col) }
+  // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
+  // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
+  // bezier dot to dot is the same corridor without the wiggle.  Two guards keep the corridor the
+  // same one: the lane is ALONE between those two beads, since siblings leave one dot and land on
+  // one dot and only their columns hold them apart; and its column lies BETWEEN the two dots, so
+  // the columned route was already monotone and the straight line sweeps nothing new.
+  let flat = (alone and y0 != "top" and y1 != "bot" and un == none
+    and y0 - kb <= y1 + kd + 1e-6
+    and x >= calc.min(xat(y0), xat(y1)) - 1e-6 and x <= calc.max(xat(y0), xat(y1)) + 1e-6)
+  let pts = if flat {
+    // Dot to dot the stub runs along the LINE, which is the strand's own direction here.
+    let (a, b) = ((xat(y0), y0), (xat(y1), y1))
+    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+    let m = calc.sqrt(ux * ux + uy * uy)
+    ((a.at(0) + HSTUB * ux / m, a.at(1) + HSTUB * uy / m),
+     (b.at(0) - HSTUB * ux / m, b.at(1) - HSTUB * uy / m))
+  } else {
+    (if y0 == "top" { ((x, h),) } else if un != none { ((x, y0 - HSTUB),) } else {
+      (dstub(xat(y0), y0, x, -1), (x, y0 - kb))
+    }) + (if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), dstub(xat(y1), y1, x, 1)) })
+  }
+  // Straight, as the object edge is: dot to dot the two ends need no vertical tangent to meet, and
+  // `hm-seg`'s would bow the run into an S — IntroString p. 48 draws that run as a single `L`.
+  // Otherwise the end that lands ON a dot arrives along the bead's row, as the book's arcs do.
+  hm-wire(pts, ..(if flat { (k: 0) } else { (:) }), ..wc,
+          hs: (if not flat and y0 != "top" and un == none { (0,) } else { () })
+            + (if not flat and y1 != "bot" { (pts.len() - 1,) } else { () }))
+  if un != none { hm-bead((x, y0), un) }
+}
+// The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
+// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out, at
+// that bead's own two knees — and EVERY contact is met along the bead's row, which is what `hs` says.
+#let ddip(xat, h, x, y0, y1, ybs, nm, gk, col: none) = {
+  let wc = if col == none { (:) } else { (col: col) }
+  let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
+  // `hs` is recorded where the contact is appended, so the index and the point cannot drift apart.
+  let (pts, hs) = ((), ())
+  if y0 == "top" { pts.push((x, h)) } else {
+    hs.push(pts.len())
+    pts += (dstub(xat(t), t, x, -1), (x, t - gk.at(dkey("b", t))))
+  }
+  for yb in ybs {
+    pts.push((x, yb + gk.at(dkey("d", yb))))
+    hs.push(pts.len())
+    pts += (dstub(xat(yb), yb, x, 0), (x, yb - gk.at(dkey("b", yb))))
+  }
+  if y1 == "bot" { pts.push((x, 0)) } else {
+    pts.push((x, b + gk.at(dkey("d", b))))
+    hs.push(pts.len())
+    pts.push(dstub(xat(b), b, x, 1))
+  }
+  hm-wire(pts, ..wc, hs: hs)
+}
+
+// A lane's name is its own when it has one, and otherwise the one the port list writes at the edge
+// it reaches — the two places on the page the same wire can be read.
+#let dnm(l, top, bot) = if l.at(3) != none { l.at(3) } else {
+  let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
+  if q == none { none } else { q.at(1) } }
+
+// A WIRE is not one lane: a bead hands it from one column to the next and the reader sees one
+// continuous wire, so the lanes with the same name, each dying where the next is born, are ONE
+// group.  Its name is written once — on the lane born highest, where the wire first appears — and
+// not at all when some lane of the group reaches an edge, where a port list already writes it.
+#let dnamed(lanes, top, bot) = {
+  let n = lanes.len()
+  let ns = lanes.map(l => plain(dnm(l, top, bot)))
+  // A death and a birth are the same literal from the same table, so this `==` needs no `EPS`; one
+  // pass per lane closes a chain of at most that many lanes.
+  let g = range(n)
+  for _ in range(n) {
+    for i in range(n) {
+      for j in range(n) {
+        if ns.at(i) != none and ns.at(i) == ns.at(j) and lanes.at(i).at(2) == lanes.at(j).at(1) {
+          let m = calc.min(g.at(i), g.at(j))
+          g.at(i) = m
+          g.at(j) = m
+        }
+      }
+    }
+  }
+  let edge = range(n).filter(i => lanes.at(i).at(1) == "top" or lanes.at(i).at(2) == "bot")
+    .map(i => g.at(i))
+  range(n).filter(i => not edge.contains(g.at(i)) and range(n).all(j =>
+    g.at(j) != g.at(i) or lanes.at(j).at(1) < lanes.at(i).at(1)
+      or (lanes.at(j).at(1) == lanes.at(i).at(1) and j >= i)))
+}
+
+// A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
+// bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
+// `right` is a port list for the panel's RIGHT side, `(y, label)` each: the object edge may leave
+// through that side instead of the bottom (IntroString p.74).  `obreak` names the bead heights the
+// edge is broken at, and `ostraight` draws it as the book's straight polyline.
+#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
+            obreak: (), ostraight: false, cert: (:)) = {
+  // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
+  // sides match, so taking the last one would make `xat` two functions in two languages, not one.
+  let ok = if opath == none or ostraight { 0 } else { oknee(opath) }
+  let xat = if opath == none { y => xo } else { y => {
+    let r = none
+    for i in range(opath.len() - 1) {
+      let (a, b) = (opath.at(i), opath.at(i + 1))
+      if r == none and y <= a.at(1) + 1e-6 and y >= b.at(1) - 1e-6 {
+        r = if a.at(1) - b.at(1) < 1e-6 { b.at(0) }
+          else if ok == 0 or a.at(0) == b.at(0) {
+            b.at(0) + (a.at(0) - b.at(0)) * (y - b.at(1)) / (a.at(1) - b.at(1)) }
+          else { obez(a, b, ok, y) }
+      }
+    }
+    if r == none { xo } else { r }
+  } }
+  // A bead's 5th element is where its DOT sits.  IntroString p. 36: an object IS the constant functor
+  // `𝟏 → 𝒞` and an arrow IS a natural transformation between two of them, so a dot ON the object
+  // wire says "an arrow of the base category".  One natural in the object is `α∘X` (p. 38), whose
+  // object argument is drawn as a wire running PAST the dot, so its dot names only functor wires.
+  let dotx = (:)
+  for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
+  let dx = y => dotx.at(dkey("x", y), default: xat(y))
+  let gk = dknees(dx, h, lanes, beads)
+  let nmd = dnamed(lanes, top, bot)
+  dpan(h, w, xo, {
+  for (i, l) in lanes.enumerate() {
+    let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
+    let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
+    let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
+    // The lane's functor name keys `FCOL`, and the colour names a wire that has a PORT to be read
+    // beside; `dnamed` says on which lanes that name is nowhere else on the page.
+    let nm = dnm(l, top, bot)
+    let col = if nm == none { none } else { FCOL.at(plain(nm)) }
+    let alone = lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1
+    if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
+                        alone: alone) }
+    else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
+    // On the birth row, where every arm leaves its dot vertically — EXCEPT where a leg of the same
+    // bead is born west of this one: that leg sweeps from the dot across the very gap the name is
+    // written in, so the name drops to the end of the knee, where both are back in their columns.
+    if nmd.contains(i) {
+      let swept = lanes.any(o => o.at(1) == l.at(1) and o.at(0) < l.at(0))
+      // Half a name's height BELOW the knee's end, so the box's top edge is where the sibling's
+      // strand has just come vertical; on the knee's own end the box still straddles the bend.
+      hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { kb + 0.161 } else { 0 })),
+              nm, col: col, anchor: "east")
+    }
+  }
+  // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
+  // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the
+  // outgoing leg from its midpoint — exactly the two `HSTUB`s back to back.
+  for b in beads {
+    let dy = lanes.filter(l => l.at(2) != "bot" and l.at(2) == b.at(0))
+    if dy.len() > 1 {
+      let nm = dnm(dy.sorted(key: l => l.at(0)).first(), top, bot)
+      hm-wire(((dx(b.at(0)) - HSTUB, b.at(0)), (dx(b.at(0)) + HSTUB, b.at(0))),
+              ..(if nm == none { (:) } else { (col: FCOL.at(plain(nm))) }))
+    }
+  }
+  // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
+  // hollow — punched out in the region behind it, which is the `Rel` side every dot sits in.
+  for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
+                           bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none }) }
+  for (x, l) in top {
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  for (x, l) in bot {
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
+  for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
+  if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
+  }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight,
+     key: cert.at("expect", default: "dpanel"))
+  // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
+  // two knees disagree is a crossing the sweep would call clean while the page still braids.
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk, ok: ok, named: nmd,
+    lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
+    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
+    + (if opath == none { (:) } else { (opath: opath) })
+    + (if right == () { (:) } else { (right: right.map(p => p.map(plain))) })
+    + (if obreak == () { (:) } else { (obreak: obreak) })
+    + (if ostraight { (ostraight: true) } else { (:) }))
+}
+
 #show: conf.with(title: "Relation Algebra")
 
 // `supplement: none` so a `@sec-…` reference prints the BARE number: the prose writes its own
@@ -1973,6 +2315,38 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 #pagebreak(weak: true)
 == Initial algebra
 
+// §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
+// the squares' own size.  The bead is `α` BARE: an algebra is a transformation `F⇒Id`, and the
+// component's index is the object wire it stands on, so a subscript would say it twice.
+// `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
+// `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
+// §11.4.2a's side condition must stay in `𝒜` — it SAYS `S` is an arrow of `Alg(F)`, which is not
+// statable inside `Alg(F)`; that is why the same letter is drawn on the object wire there.
+#let ia-hom-l = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`h`])),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`B`]),),
+  cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let ia-hom-r = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 1.5, none, none),),
+  ((3, [`h`]), (1.5, [`α`], black, 2.5, 2.5)),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`B`]),),
+  cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let ia-cata-l = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`⦇α⦈`])),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((3.12, [`A`]),),
+  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let ia-cata-r = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 1.5, none, none),),
+  ((3, [`⦇α⦈`]), (1.5, [`α`], black, 2.5, 2.5)),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((3.12, [`A`]),),
+  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
 An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
@@ -1982,30 +2356,55 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
 #src[].
 // lean:AOP.A5_5.InitialAlgebra@a45a8436
 
-  #row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
-    let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`A`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
-    lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
-    node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-    node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
-  })), cetz.canvas(length: 0.8cm, {
-    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
-    lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-    node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
-  })), s: 100%)
+  // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
+  // paint the same carrier red in the row below and cyan in the row above.
+  #pair(
+    cetz.canvas(length: 0.8cm, {
+      let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+      ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+      ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
+      lab(0, 1.9, GIVEN2)[`α`#sub[`A`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+      lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
+      node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
+      node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
+    }),
+    row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
+    [`αh=F(h)α`],
+  )
+  #pair(
+    cetz.canvas(length: 0.8cm, {
+      let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
+      ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
+      ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+      lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
+      lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
+      node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
+      node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
+    }),
+    row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
+    [`α⦇α⦈=F(⦇α⦈)α`],
+  )
+  // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
 
 === Reflection
 
-// The defining square at `X := 𝟙`, `α_B := α_T`, on @cata-defining's own geometry: both rows are the ONE
-// arrow `α_T`, so both are GIVEN2.  The right panel is bare — `𝟙` is an empty wire, and that is the law.
+// THE LAW ITSELF, not the square that proves it: one `T` wire carrying `⦇α⦈` against one carrying
+// nothing.  `𝟙` has no notation in this calculus, so the right panel is the grey region and a bare wire.
+#let ia-refl-l = dpanel(3, 3.725, 1.875,
+  (),
+  ((1.5, [`⦇α⦈`]),),
+  ((1.875, [`T`]),),
+  ((1.875, [`T`]),),
+  cert: (expect: "⦇α⦈", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
+#let ia-refl-r = dpanel(1.5, 3.725, 1.875,
+  (),
+  (),
+  ((1.875, [`T`]),),
+  ((1.875, [`T`]),),
+  cert: (expect: "𝟙", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
+
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
@@ -2017,9 +2416,8 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
     node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
   }),
-  homeq(`F`, `T`, [`α`#sub[`T`]], none, [`α`#sub[`T`]], `T`,
-    typed: true, bcol: TCOL, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN2),
- [`⦇α`#sub[`T`]`⦈=𝟙` #h(6pt) #src[(2.11)]],
+  row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
+ [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
   // lean:AOP.A6_3.relCata_alpha@656cd4b8
 )]<cata-reflection>
 
@@ -2033,8 +2431,21 @@ Taking a value apart with `α`#sub[`T`] and putting it straight back is doing no
 Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` : FC⟶C` along an arrow
 `S : B⟶C`.
 
-// `tcol`/`bcol` spelled out because the side condition's object wire runs `B` then `C` where the
-// defaults run `T`, `B` — one object, one hue.  `s: 92%`: the one row that does not fit at full size.
+// `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
+// of `α` at `S` — the same two panels as (11.4a), at `h := S`.
+#let ia-fuse-l = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((3, [`α`], black, 2.5), (1.5, [`S`])),
+  ((2.5, [`F`]), (3.12, [`B`])),
+  ((3.12, [`C`]),),
+  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C")), s: 100%)
+#let ia-fuse-r = dpanel(4.5, 4.97, 3.12,
+  ((2.5, "top", 1.5, none, none),),
+  ((3, [`S`]), (1.5, [`α`], black, 2.5)),
+  ((2.5, [`F`]), (3.12, [`B`])),
+  ((3.12, [`C`]),),
+  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C")), s: 100%)
+
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T) = ((-2.6, 2.5), (2.6, 2.5))
@@ -2056,13 +2467,12 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
   grid(
     columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
     src[the side condition],
-    homeq(`F`, `B`, [`α`#sub[`B`]], `S`, [`α`#sub[`C`]], `C`, ctop: GIVEN1, cmid: black, cbot: GIVEN1,
-      typed: true, tcol: BCOL, bcol: CCOL, regions: auto),
+    row((ia-fuse-l, [#h(7pt) = #h(7pt)], ia-fuse-r)),
     src[the conclusion],
     twobeadeq(`T`, [`⦇α`#sub[`B`]`⦈`], `S`, [`⦇α`#sub[`C`]`⦈`], `C`, c1: INDUCED, c2: black, c3: INDUCED,
       typed: true, regions: auto),
   ),
-  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸α`#sub[`B`]` S=F(S)α`#sub[`C`] #h(6pt)
+  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸αS=F(S)α` #h(6pt)
  #src[(2.12)]],
    // lean:AOP.A5_5.relCata_fusion@15d8a5b5
   s: 92%,
@@ -2416,345 +2826,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 })
 
 
-// A panel's address is the display it stands in and its place in that display, both read off the
-// counters at the point it is PLACED, so a reordered row cannot keep a stale name.
-#let hm-meta(rec) = {
-  counter("hm-panel").step()
-  context metadata((kind: "scanline",
-    id: plain(dispnum(counter(heading).get(),
-      counter(figure.where(kind: "disp")).get().first()))
-      + "." + str(counter("hm-panel").get().first()),
-    ..rec))
-}
-
-// The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
-// `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
-// of the object wire, `𝟏` right of it.
-#let DKN = 0.45                                   // the handle's knee
-// IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line, which runs
-// STRAIGHT through it; the functor wires that composite is made of bend in to the bead and out again.
-// `k` is how far above and below the node the lane leaves its column: a panel stacking four lanes in
-// one column detours more shallowly than a two-wire one — still a slope, never a horizontal tangent.
-#let NKN = 0.45
-// EVERY sloped run of the object edge is bowed, p. 74's lone corner-to-corner `L` included: the bow
-// is what lets a bead riding the edge sit ON a surface instead of being passed end-on, and what
-// makes the join with a vertical run smooth instead of a kink.  A path with no sloped run — a
-// plain vertical edge — has no knee to give.
-// The knee is 0.88, the top of IntroString p. 79's own measured range (0.55 to 0.88) and as flat
-// as the edge may get: at 1, the flat limit, `hm-seg`'s vertical handles put the curve's one
-// stationary point on its midpoint, and an arm reaching a bead THERE arrives along the same
-// horizontal the edge already has — the two run tangent and the ink grazes.  Seven panels put a
-// bead on that midpoint.  Past 1 the handle overshoots the far end and the wire doubles back.
-#let oknee(op) = {
-  let k = 0
-  for i in range(op.len() - 1) {
-    let (a, b) = (op.at(i), op.at(i + 1))
-    if a.at(0) != b.at(0) and a.at(1) != b.at(1) { k = 0.88 }
-  }
-  k
-}
-// Where that bezier stands at a height.  Its handles are VERTICAL, so the x-controls ARE the
-// endpoints and x(t) is the smoothstep `3t²-2t³`; y(t) is inverted by bisection.
-#let obez(a, b, k, y) = {
-  let u = (y - a.at(1)) / (b.at(1) - a.at(1))
-  let (lo, hi) = (0.0, 1.0)
-  for i in range(40) {
-    let m = (lo + hi) / 2
-    let f = 3 * k * m * calc.pow(1 - m, 2) + 3 * (1 - k) * m * m * (1 - m) + calc.pow(m, 3)
-    if f < u { lo = m } else { hi = m }
-  }
-  let t = (lo + hi) / 2
-  a.at(0) + (b.at(0) - a.at(0)) * (3 * t * t - 2 * t * t * t)
-}
-#let nodepts(x, xo, ys, k: NKN) = {
-  let pts = ()
-  for y in ys { pts += ((x, y + k), (xo, y), (x, y - k)) }
-  pts
-}
-#let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
-  ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
-// `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
-// `s`; `tpan` passes 100% and prints its labels at the size `tw-hm` does.
-// A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
-// IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
-// covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
-#let HSTUB = 0.075
-// The object edge BROKEN at the beads riding it: IntroString p.74's single-bead figure leaves a gap
-// centred on the dot, each stub ending `HSTUB` from the centre measured ALONG the edge, where the
-// two-bead figure beside it draws the same edge through its dots unbroken.  The REGION boundary
-// stays the whole `op` — the break is a gap in the INK, not in the boundary the fills follow.
-#let obroken(op, bks) = {
-  let (out, cur) = ((), (op.at(0),))
-  for i in range(op.len() - 1) {
-    let (a, b) = (op.at(i), op.at(i + 1))
-    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
-    let m = calc.max(calc.sqrt(ux * ux + uy * uy), 1e-9)
-    for p in bks.filter(p => p.at(1) <= a.at(1) + 1e-9 and p.at(1) >= b.at(1) - 1e-9)
-                .sorted(key: p => -p.at(1)) {
-      cur.push((p.at(0) - HSTUB * ux / m, p.at(1) - HSTUB * uy / m))
-      out.push(cur)
-      cur = ((p.at(0) + HSTUB * ux / m, p.at(1) + HSTUB * uy / m),)
-    }
-    cur.push(b)
-  }
-  out + (cur,)
-}
-// `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
-// lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
-// `straight` draws it as the book's own polyline instead of `oknee`'s bow, and `obreak` lists the
-// dots it is broken at.  An edge may STOP ON THE PANEL'S RIGHT SIDE rather than its bottom (all
-// three of IntroString p.74's figures do), and then both regions close along that side.
-#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, key: none) = P(
-    cetz.canvas(length: 0.8cm, {
-  let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
-  let ok = if straight { 0 } else { oknee(op) }
-  let (ex, ey) = op.last()
-  let side = if ey > 1e-9 and calc.abs(ex - w) > 1e-9 { ((w, ey),) } else { () }
-  let lead = if calc.abs(op.first().at(0)) > 1e-9 { ((0, 0), (0, h)) } else { ((0, 0),) }
-  hm-region(lead + op + (if ey > 1e-9 { side + ((w, 0),) } else { () }), fb-ALLC,
-            k: ok, straight: straight)
-  hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
-            k: ok, straight: straight)
-  for seg in obroken(op, obreak) { hm-wire(seg, col: BCOL, k: ok, straight: straight) }
-  body
-}), s: s, key: key)
-
-// Which bead heights a lane bends down to: every bead whose reach spans this column and which the
-// lane is live across — the reach crosses the lanes between, so a wire inside it MEETS that bead.
-#let ddips(xat, h, beads, x, y0, y1) = beads.filter(bd => bd.at(3, default: none) != none
-  and bd.at(3) <= x and x < xat(bd.at(0))
-  and (if y0 == "top" { h } else { y0 }) > bd.at(0)
-  and (if y1 == "bot" { 0 } else { y1 }) < bd.at(0)).map(bd => bd.at(0)).sorted().rev()
-#let dkey(s, y) = s + str(float(y))
-// Where a strand standing in column `x` stops on its way to the dot at `(bx, y)`: back along the row
-// it arrives on, or — where the dot stands in the strand's OWN column and there is no room along the
-// row — back up its column, `vy` being +1 for a strand above the dot and -1 for one below.
-#let dstub(bx, y, x, vy) = {
-  let d = if calc.abs(x - bx) < 1e-6 { (0, HSTUB * vy) } else if x < bx { (-HSTUB, 0) } else { (HSTUB, 0) }
-  (bx + d.at(0), y + d.at(1))
-}
-// ONE knee per bead-and-side, for arms, legs and dips alike: equal knees on one bezier family give
-// the strands the same y(t) and they nest, where unequal ones braid — so a per-strand knee, whose
-// aspect grew with the horizontal run, is given up; the arrival stays VERTICAL either way, since
-// `hm-seg` puts its controls straight above and below the ends.  Half the gap, so two bands never
-// OVERLAP — they may share a midpoint, and there each strand is vertical, in its own column.
-// `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
-// left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
-// it.  The `tpan` panels keep fixed `DKN` and a per-join `k` — an empirical fit.
-#let dknees(xat, h, lanes, beads) = {
-  let bys = beads.map(bd => bd.at(0))
-  let (run, cap) = ((:), (:))
-  for l in lanes {
-    let (x, y0, y1) = (l.at(0), l.at(1), l.at(2))
-    let room = (if y0 == "top" { h } else { y0 }) - (if y1 == "bot" { 0 } else { y1 })
-    let es = ((if y0 != "top" and l.at(4) == none { ((y0, ("b",)),) } else { () })
-      + ddips(xat, h, beads, x, y0, y1).map(y => (y, ("b", "d")))
-      + (if y1 != "bot" { ((y1, ("d",)),) } else { () }))
-    for (i, e) in es.enumerate() {
-      let y = e.at(0)
-      for s in e.at(1) {
-        let nb = if s == "d" and i > 0 { es.at(i - 1).at(0) }
-          else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
-        let c = if nb == none { 0.55 * room } else { 0.5 * calc.abs(nb - y) }
-        // 1e-6 is `scanline`'s `EPS`: ONE tolerance, so the two `dknees` are one function.
-        let o = bys.filter(z => if s == "d" { z > y + 1e-6 } else { z < y - 1e-6 })
-        if o != () {
-          c = calc.min(c, 0.5 * calc.abs(
-            (if s == "d" { o.fold(99, calc.min) } else { o.fold(-99, calc.max) }) - y))
-        }
-        run.insert(dkey(s, y), calc.max(run.at(dkey(s, y), default: 0), calc.abs(xat(y) - x)))
-        cap.insert(dkey(s, y), calc.min(cap.at(dkey(s, y), default: 99), c))
-      }
-    }
-  }
-  let gk = (:)
-  for (k, v) in run { gk.insert(k, calc.min(0.45 + 0.25 * v, cap.at(k))) }
-  gk
-}
-// A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
-// bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
-// the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
-// `dknees` gave the bead this lane is born on and the one it dies on.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false) = {
-  let wc = if col == none { (:) } else { (col: col) }
-  // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
-  // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
-  // bezier dot to dot is the same corridor without the wiggle.  Two guards keep the corridor the
-  // same one: the lane is ALONE between those two beads, since siblings leave one dot and land on
-  // one dot and only their columns hold them apart; and its column lies BETWEEN the two dots, so
-  // the columned route was already monotone and the straight line sweeps nothing new.
-  let flat = (alone and y0 != "top" and y1 != "bot" and un == none
-    and y0 - kb <= y1 + kd + 1e-6
-    and x >= calc.min(xat(y0), xat(y1)) - 1e-6 and x <= calc.max(xat(y0), xat(y1)) + 1e-6)
-  let pts = if flat {
-    // Dot to dot the stub runs along the LINE, which is the strand's own direction here.
-    let (a, b) = ((xat(y0), y0), (xat(y1), y1))
-    let (ux, uy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
-    let m = calc.sqrt(ux * ux + uy * uy)
-    ((a.at(0) + HSTUB * ux / m, a.at(1) + HSTUB * uy / m),
-     (b.at(0) - HSTUB * ux / m, b.at(1) - HSTUB * uy / m))
-  } else {
-    (if y0 == "top" { ((x, h),) } else if un != none { ((x, y0 - HSTUB),) } else {
-      (dstub(xat(y0), y0, x, -1), (x, y0 - kb))
-    }) + (if y1 == "bot" { ((x, 0),) } else { ((x, y1 + kd), dstub(xat(y1), y1, x, 1)) })
-  }
-  // Straight, as the object edge is: dot to dot the two ends need no vertical tangent to meet, and
-  // `hm-seg`'s would bow the run into an S — IntroString p. 48 draws that run as a single `L`.
-  // Otherwise the end that lands ON a dot arrives along the bead's row, as the book's arcs do.
-  hm-wire(pts, ..(if flat { (k: 0) } else { (:) }), ..wc,
-          hs: (if not flat and y0 != "top" and un == none { (0,) } else { () })
-            + (if not flat and y1 != "bot" { (pts.len() - 1,) } else { () }))
-  if un != none { hm-bead((x, y0), un) }
-}
-// The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
-// of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out, at
-// that bead's own two knees — and EVERY contact is met along the bead's row, which is what `hs` says.
-#let ddip(xat, h, x, y0, y1, ybs, nm, gk, col: none) = {
-  let wc = if col == none { (:) } else { (col: col) }
-  let (t, b) = (if y0 == "top" { h } else { y0 }, if y1 == "bot" { 0 } else { y1 })
-  // `hs` is recorded where the contact is appended, so the index and the point cannot drift apart.
-  let (pts, hs) = ((), ())
-  if y0 == "top" { pts.push((x, h)) } else {
-    hs.push(pts.len())
-    pts += (dstub(xat(t), t, x, -1), (x, t - gk.at(dkey("b", t))))
-  }
-  for yb in ybs {
-    pts.push((x, yb + gk.at(dkey("d", yb))))
-    hs.push(pts.len())
-    pts += (dstub(xat(yb), yb, x, 0), (x, yb - gk.at(dkey("b", yb))))
-  }
-  if y1 == "bot" { pts.push((x, 0)) } else {
-    pts.push((x, b + gk.at(dkey("d", b))))
-    hs.push(pts.len())
-    pts.push(dstub(xat(b), b, x, 1))
-  }
-  hm-wire(pts, ..wc, hs: hs)
-}
-
-// A lane's name is its own when it has one, and otherwise the one the port list writes at the edge
-// it reaches — the two places on the page the same wire can be read.
-#let dnm(l, top, bot) = if l.at(3) != none { l.at(3) } else {
-  let q = (if l.at(1) == "top" { top } else { bot }).find(t => t.at(0) == l.at(0))
-  if q == none { none } else { q.at(1) } }
-
-// A WIRE is not one lane: a bead hands it from one column to the next and the reader sees one
-// continuous wire, so the lanes with the same name, each dying where the next is born, are ONE
-// group.  Its name is written once — on the lane born highest, where the wire first appears — and
-// not at all when some lane of the group reaches an edge, where a port list already writes it.
-#let dnamed(lanes, top, bot) = {
-  let n = lanes.len()
-  let ns = lanes.map(l => plain(dnm(l, top, bot)))
-  // A death and a birth are the same literal from the same table, so this `==` needs no `EPS`; one
-  // pass per lane closes a chain of at most that many lanes.
-  let g = range(n)
-  for _ in range(n) {
-    for i in range(n) {
-      for j in range(n) {
-        if ns.at(i) != none and ns.at(i) == ns.at(j) and lanes.at(i).at(2) == lanes.at(j).at(1) {
-          let m = calc.min(g.at(i), g.at(j))
-          g.at(i) = m
-          g.at(j) = m
-        }
-      }
-    }
-  }
-  let edge = range(n).filter(i => lanes.at(i).at(1) == "top" or lanes.at(i).at(2) == "bot")
-    .map(i => g.at(i))
-  range(n).filter(i => not edge.contains(g.at(i)) and range(n).all(j =>
-    g.at(j) != g.at(i) or lanes.at(j).at(1) < lanes.at(i).at(1)
-      or (lanes.at(j).at(1) == lanes.at(i).at(1) and j >= i)))
-}
-
-// A bead's 4th element is how far left it reaches, and the reach is ink the crossed WIRES make by
-// bending onto the dot (`ddip`) — never a line drawn past them, which would cross without meeting.
-// `right` is a port list for the panel's RIGHT side, `(y, label)` each: the object edge may leave
-// through that side instead of the bottom (IntroString p.74).  `obreak` names the bead heights the
-// edge is broken at, and `ostraight` draws it as the book's straight polyline.
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
-            obreak: (), ostraight: false, cert: (:)) = {
-  // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
-  // sides match, so taking the last one would make `xat` two functions in two languages, not one.
-  let ok = if opath == none or ostraight { 0 } else { oknee(opath) }
-  let xat = if opath == none { y => xo } else { y => {
-    let r = none
-    for i in range(opath.len() - 1) {
-      let (a, b) = (opath.at(i), opath.at(i + 1))
-      if r == none and y <= a.at(1) + 1e-6 and y >= b.at(1) - 1e-6 {
-        r = if a.at(1) - b.at(1) < 1e-6 { b.at(0) }
-          else if ok == 0 or a.at(0) == b.at(0) {
-            b.at(0) + (a.at(0) - b.at(0)) * (y - b.at(1)) / (a.at(1) - b.at(1)) }
-          else { obez(a, b, ok, y) }
-      }
-    }
-    if r == none { xo } else { r }
-  } }
-  // A bead's 5th element is where its DOT sits.  IntroString p. 36: an object IS the constant functor
-  // `𝟏 → 𝒞` and an arrow IS a natural transformation between two of them, so a dot ON the object
-  // wire says "an arrow of the base category".  One natural in the object is `α∘X` (p. 38), whose
-  // object argument is drawn as a wire running PAST the dot, so its dot names only functor wires.
-  let dotx = (:)
-  for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
-  let dx = y => dotx.at(dkey("x", y), default: xat(y))
-  let gk = dknees(dx, h, lanes, beads)
-  let nmd = dnamed(lanes, top, bot)
-  dpan(h, w, xo, {
-  for (i, l) in lanes.enumerate() {
-    let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
-    let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
-    let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
-    // The lane's functor name keys `FCOL`, and the colour names a wire that has a PORT to be read
-    // beside; `dnamed` says on which lanes that name is nowhere else on the page.
-    let nm = dnm(l, top, bot)
-    let col = if nm == none { none } else { FCOL.at(plain(nm)) }
-    let alone = lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1
-    if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
-                        alone: alone) }
-    else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
-    // On the birth row, where every arm leaves its dot vertically — EXCEPT where a leg of the same
-    // bead is born west of this one: that leg sweeps from the dot across the very gap the name is
-    // written in, so the name drops to the end of the knee, where both are back in their columns.
-    if nmd.contains(i) {
-      let swept = lanes.any(o => o.at(1) == l.at(1) and o.at(0) < l.at(0))
-      // Half a name's height BELOW the knee's end, so the box's top edge is where the sibling's
-      // strand has just come vertical; on the knee's own end the box still straddles the bend.
-      hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { kb + 0.161 } else { 0 })),
-              nm, col: col, anchor: "east")
-    }
-  }
-  // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
-  // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the
-  // outgoing leg from its midpoint — exactly the two `HSTUB`s back to back.
-  for b in beads {
-    let dy = lanes.filter(l => l.at(2) != "bot" and l.at(2) == b.at(0))
-    if dy.len() > 1 {
-      let nm = dnm(dy.sorted(key: l => l.at(0)).first(), top, bot)
-      hm-wire(((dx(b.at(0)) - HSTUB, b.at(0)), (dx(b.at(0)) + HSTUB, b.at(0))),
-              ..(if nm == none { (:) } else { (col: FCOL.at(plain(nm))) }))
-    }
-  }
-  // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
-  // hollow — punched out in the region behind it, which is the `Rel` side every dot sits in.
-  for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
-                           bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none }) }
-  for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
-  for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
-  // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
-  for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
-  if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight,
-     key: cert.at("expect", default: "dpanel"))
-  // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
-  // two knees disagree is a crossing the sweep would call clean while the page still braids.
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk, ok: ok, named: nmd,
-    lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
-    top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
-    + (if opath == none { (:) } else { (opath: opath) })
-    + (if right == () { (:) } else { (right: right.map(p => p.map(plain))) })
-    + (if obreak == () { (:) } else { (obreak: obreak) })
-    + (if ostraight { (ostraight: true) } else { (:) }))
-}
 
 // A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
 // is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
