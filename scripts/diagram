@@ -830,7 +830,13 @@ def layout(rows, made, otop, obot, cert):
     # bead's index puts it at `n·DY` wherever it stands in the composite, and the frame below makes
     # `n·DY` the canvas horizon, which is where `row`'s `align: horizon` lines the panels up.
     k = next((i for i, r in enumerate(rows) if r.nat), 0)
-    ys = [(n + k - i) * DY for i in range(n)]
+    nat = any(r.nat for r in rows)
+    # `--frame`/`cert.frame` OVERRIDES the frame height so two panels either side of an `=` can be
+    # forced to the same frame (their `row`'s `align: horizon` lines up FRAME centres, not ports).
+    # The non-natural case reads off `hh` directly, so an override there repositions every bead;
+    # the natural case's `k`-shifted placement is independent of `hh` and is left alone.
+    hh = cert.get("frame", (2 * n if nat else max(n, 1) + 1) * DY)
+    ys = [(n + k - i) * DY for i in range(n)] if nat else [hh - (i + 1) * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}
@@ -855,13 +861,6 @@ def layout(rows, made, otop, obot, cert):
         beads.append([ys[i], r.label, "#000000", reach, dot] + (["lax"] if r.nat == "lax" else [])
                      if dot is not None
                      else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
-    # The natural bead is drawn on the HORIZON, so the frame reserves a row above every bead as well
-    # as below: `2n·DY` tall, centre `n·DY`.  A panel with no natural bead keeps the tight frame.
-    # An IDENTITY panel has no bead and is still one side of an equation: the book draws `𝟙` as the
-    # edge of its own functor (IntroString p. 37), so what is on the page is a bare wire, and a wire
-    # half as long as the other side's makes `row`'s `align: horizon` line the frames up instead of
-    # the ports.  It therefore takes the one-bead frame — the shortest picture it can stand beside.
-    hh = (2 * n if any(r.nat for r in rows) else max(n, 1) + 1) * DY
 
     def xat(y, dying=True):
         """The sloped object wire's x at a height: one gap right of every lane alive there or NOT
@@ -1021,7 +1020,8 @@ def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
     return rec
 
 
-def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None, book=None):
+def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None, book=None,
+         frame=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
@@ -1040,7 +1040,7 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
     cert = (cert | ({"split": split} if split != DEFSPLIT else {})
             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
-            | ({"slope": slope} if slope else {}))
+            | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {}))
     if book:
         return booklayout(rows, made, otop, obot, cert, *book)
     return layout(rows, made, otop, obot, cert)
@@ -1095,6 +1095,7 @@ def emit(r):
             + (f'  obj: {lst(r["obj"])},\n' if r.get("obj") else "")
             + ("  ostraight: true,\n" if r.get("ostraight") else "")
             + "  cert: (" + ", ".join(f'{k}: ' + (quoted(v) if isinstance(v, str) else
+                num(v) if isinstance(v, (int, float)) else
                 "(" + ", ".join(f'{quoted(a)}: {quoted(b)}' for a, b in v.items()) + ")")
                                      for k, v in c.items()) + "))")
 
@@ -1131,7 +1132,7 @@ def roundtrip(path, frm, show, out, tbl):
         try:
             src, tgt = endpoints(sl.Panel(r))
             g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
-                     r["cert"].get("slope"), r["cert"].get("mu"))
+                     r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1182,6 +1183,7 @@ def close(text, i):
 def certof(s):
     """A literal's `cert:` group as `draw` takes it: the string fields, and `sigs` as a dict."""
     c = {k: v.replace("\\\\", "\\") for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
+    c |= {k: float(v) for k, v in re.findall(r'(\w+): (-?\d+(?:\.\d+)?)\b', s)}
     k = s.find("sigs: (")
     if k >= 0:
         c["sigs"] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + 6) + 1]))
@@ -1213,7 +1215,8 @@ def regen(path, tbl, write):
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
-                            c.get("sigs"), c.get("slope"), c.get("mu")))[1:-1]
+                            c.get("sigs"), c.get("slope"), c.get("mu"),
+                            frame=c.get("frame")))[1:-1]
         except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -1314,9 +1317,12 @@ def main(argv):
     own = sl.opt(argv, "--sigs")
     own = dict(sigpair(x) for x in own.split()) if own else None
     slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
+    frame = sl.opt(argv, "--frame")
+    frame = float(frame) if frame else None
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--panel", "--png") if o in argv for i in (argv.index(o), argv.index(o) + 1)}
+                         "--frame", "--panel", "--png")
+             if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
     tbl = sl.sigs()
@@ -1340,7 +1346,7 @@ def main(argv):
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book)
+             book, frame=frame)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`

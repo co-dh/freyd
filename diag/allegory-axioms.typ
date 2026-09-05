@@ -2490,8 +2490,8 @@ Taking a value apart with `α`#sub[`T`] and putting it straight back is doing no
 
 // `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
 // is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
-Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` : FC⟶C` along an arrow
-`S : B⟶C`.
+Fusion absorbs `S`: the composite `⦇α`#sub[`B`]`⦈S` becomes the single fold `⦇α`#sub[`C`]`⦈` over a
+second algebra `α`#sub[`C`]` : FC⟶C`, along `S : B⟶C`.
 
 // `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
 // of `α` at `S` — the same two panels as (11.4a), at `h := S`.
@@ -2518,13 +2518,13 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
   ((1.875, [`C`]),),
   obj: ((3, [`B`]), (1.5, [`C`])),
   cert: (expect: "⦇αʙ⦈S", src: "T", tgt: "C", sigs: ("⦇αʙ⦈": "T⟶B", "S": "B⟶C")), s: 100%)
-#let ia-fuse-cr = dpanel(3, 3.725, 1.875,
+#let ia-fuse-cr = dpanel(4.5, 3.725, 1.875,
   (),
-  ((1.5, [`⦇αᴄ⦈`]),),
+  ((3, [`⦇αᴄ⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
-  obj: ((1.5, [`C`]),),
-  cert: (expect: "⦇αᴄ⦈", src: "T", tgt: "C", sigs: ("⦇αᴄ⦈": "T⟶C")), s: 100%)
+  obj: ((3, [`C`]),),
+  cert: (expect: "⦇αᴄ⦈", src: "T", tgt: "C", sigs: ("⦇αᴄ⦈": "T⟶C"), frame: 4.5), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
