@@ -1,5 +1,5 @@
 /-
-  Bird & de Moor, *Algebra of Programming* §7.4 (book pp. 180-184) — the three cylinder beads that
+  Bird & de Moor, *Algebra of Programming* §7.4 (book pp. 180-184) — the four cylinder beads that
   are natural in the ELEMENT TYPE, which is the index `AOP.A7_4_Cylinder` does not have: it fixes
   one `H` and one `I : InitialAlgebra H`, so `generate`'s tail `N(cp P(α))` is an algebra at the
   single carrier `LA` and no square in the element type can be stated there.  Here `L` is the
@@ -7,6 +7,8 @@
   concrete relations, as in `AOP.A7_4_CylinderBeads`:
 
   - `zip  : F(N(x))⟶N(F(x))` at an ARBITRARY relator `F` — LAX, and lax is all that is proved.
+  - `cp   : F(E x)⟶E(F(x))` at the list base functor `F X = L + (E × X)` — STRICT, the one square
+    here that is an equality.
   - `⦇generate⦈ : L(N(x))⟶N(E(L(x)))` — LAX, by induction on the list of columns.
   - `paths ≜ ⦇generate⦈ setify union : L(N(x))⟶E(L(x))` — LAX, the three squares composed.
 
@@ -86,6 +88,118 @@ public theorem zipF_lax_natural (F : Relator RelSet.{0} RelSet.{0}) (R : a ⟶ b
     exact le_iff.mp hslide w (u k) ⟨w', hw', hu k⟩
   obtain ⟨v, hv⟩ := tuple_of_forall_exists key
   exact ⟨v, fun k => (hv k).1, fun k => (hv k).2⟩
+
+/-! ## `cp` -/
+
+/-- **`cp(inl d) = {inl d}`, `cp(e,S) = {(e,s) | s ∈ S}`** (book p.181): `cp ≜ frac(F(𝟙,∋),∋) :
+    F(A,E B)⟶E(F(A,B))`, the cross product — the powerset pulled out of the base functor.  It is
+    the second half of `generate`'s tail `N(cp P(α))`: `cp` turns a column paired with a SET of
+    tails into the SET of pairs, and `P(α)` conses the column onto each of them.  At the repo's
+    list functor `F X = L + (E × X)` the `𝟙` slot is the column `e`, so the first component is the
+    same in every element of the answer; on the `L` summand there is no set to distribute and `cp`
+    is the singleton. -/
+@[expose] public def cp (L E : Type) {a : RelSet.{0}} :
+    (F L E).obj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj ((F L E).obj a) :=
+  graph fun w => match w with
+    | Sum.inl d => fun y => y = Sum.inl d
+    | Sum.inr p => fun y => ∃ s, p.2 s ∧ y = Sum.inr (p.1, s)
+
+/-- **`cp` is natural, and it is STRICT**: `F(P(R)) cp = cp P(F(R))`.  On the `L` summand both
+    sides relate `inl d` to the singleton `{inl d}` and to nothing else — `F(R)` moves no `inl`,
+    so Egli-Milner pins the set.  On the product summand the first component is pinned by the
+    `𝟙`, so a set the right side names is `{e}×S'` for `S' = {s' | (e,s') ∈ ·}`, and the two
+    Egli-Milner halves read off `S` and `S'` are exactly `P(R)`'s.  Compare `zip_natural`
+    (`AOP.A7_4_CylinderBeads`), strict for the same reason; the other cylinder beads are lax
+    because they duplicate or merge rows, which `cp` never does. -/
+public theorem cp_natural (L E : Type) (R : a ⟶ b) :
+    (F L E).map (powerRel R) ≫ cp L E (a := b)
+      = cp L E (a := a) ≫ powerRel ((F L E).map R) := by
+  apply hom_ext
+  intro w T
+  cases w with
+  | inl d =>
+      constructor
+      · rintro ⟨v, hv, hT⟩
+        cases v with
+        | inr q => exact hv.elim
+        | inl d' =>
+            cases hv
+            have hTe : T = fun y : (Fobj L E b).carrier => y = Sum.inl d := hT
+            subst hTe
+            refine ⟨fun y => y = Sum.inl d, rfl, (powerRel_apply _ _ _).mpr ⟨?_, ?_⟩⟩
+            · rintro x rfl; exact ⟨Sum.inl d, rfl, rfl⟩
+            · rintro y rfl; exact ⟨Sum.inl d, rfl, rfl⟩
+      · rintro ⟨U, hU, hEM⟩
+        have hUe : U = fun y : (Fobj L E a).carrier => y = Sum.inl d := hU
+        subst hUe
+        refine ⟨Sum.inl d, rfl, ?_⟩
+        have hd : T (Sum.inl d) := by
+          obtain ⟨y, hy, hTy⟩ := ((powerRel_apply _ _ _).mp hEM).1 (Sum.inl d) rfl
+          cases y with
+          | inr q => exact hy.elim
+          | inl d' => cases hy; exact hTy
+        show T = fun y : (Fobj L E b).carrier => y = Sum.inl d
+        funext z
+        refine propext ⟨fun hz => ?_, ?_⟩
+        · obtain ⟨x, hx, hR⟩ := ((powerRel_apply _ _ _).mp hEM).2 z hz
+          subst hx
+          cases z with
+          | inr q => exact hR.elim
+          | inl d' => cases hR; rfl
+        · rintro rfl; exact hd
+  | inr p =>
+      constructor
+      · rintro ⟨v, hv, hT⟩
+        cases v with
+        | inl d => exact hv.elim
+        | inr q =>
+            obtain ⟨he, hS⟩ := hv
+            have hTe : T = fun y : (Fobj L E b).carrier => ∃ s, q.2 s ∧ y = Sum.inr (q.1, s) := hT
+            subst hTe
+            refine ⟨fun y => ∃ s, p.2 s ∧ y = Sum.inr (p.1, s), rfl,
+              (powerRel_apply _ _ _).mpr ⟨?_, ?_⟩⟩
+            · rintro x ⟨s, hs, rfl⟩
+              obtain ⟨s', hRs, hq⟩ := ((powerRel_apply _ _ _).mp hS).1 s hs
+              exact ⟨Sum.inr (q.1, s'), ⟨he, hRs⟩, ⟨s', hq, rfl⟩⟩
+            · rintro y ⟨s', hq, rfl⟩
+              obtain ⟨s, hs, hRs⟩ := ((powerRel_apply _ _ _).mp hS).2 s' hq
+              exact ⟨Sum.inr (p.1, s), ⟨s, hs, rfl⟩, ⟨he, hRs⟩⟩
+      · rintro ⟨U, hU, hEM⟩
+        have hUe : U = fun y : (Fobj L E a).carrier => ∃ s, p.2 s ∧ y = Sum.inr (p.1, s) := hU
+        subst hUe
+        refine ⟨Sum.inr (p.1, fun s' => T (Sum.inr (p.1, s'))), ⟨rfl, ?_⟩, ?_⟩
+        -- `S'` is read back off `T` one second component at a time; the first is pinned by `𝟙`
+        · refine (powerRel_apply _ _ _).mpr ⟨?_, ?_⟩
+          · intro s hs
+            obtain ⟨y, hy, hTy⟩ :=
+              ((powerRel_apply _ _ _).mp hEM).1 (Sum.inr (p.1, s)) ⟨s, hs, rfl⟩
+            cases y with
+            | inl d => exact hy.elim
+            | inr q =>
+                obtain ⟨e', s'⟩ := q
+                obtain ⟨he, hRs⟩ := hy
+                subst he
+                exact ⟨s', hRs, hTy⟩
+          · intro s' hs'
+            obtain ⟨x, hx, hR⟩ :=
+              ((powerRel_apply _ _ _).mp hEM).2 (Sum.inr (p.1, s')) hs'
+            obtain ⟨s, hs, rfl⟩ := hx
+            exact ⟨s, hs, hR.2⟩
+        · show T = fun y : (Fobj L E b).carrier =>
+            ∃ s, T (Sum.inr (p.1, s)) ∧ y = Sum.inr (p.1, s)
+          funext z
+          refine propext ⟨fun hz => ?_, ?_⟩
+          · obtain ⟨x, hx, hR⟩ := ((powerRel_apply _ _ _).mp hEM).2 z hz
+            obtain ⟨s, hs, rfl⟩ := hx
+            cases z with
+            | inl d => exact hR.elim
+            | inr q =>
+                obtain ⟨e', s'⟩ := q
+                obtain ⟨he, hRs⟩ := hR
+                subst he
+                exact ⟨s', hz, rfl⟩
+          · rintro ⟨s, hTs, rfl⟩
+            exact hTs
 
 /-! ## `⦇generate⦈` -/
 
