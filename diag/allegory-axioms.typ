@@ -8,6 +8,7 @@
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
 #import "draw.typ": snake, homeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
+#import "veccat1.typ": veccat-pic
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -10477,6 +10478,41 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       `intern` — every interval reached is `(p/w,q/w)`]])],
   [],
 )]<tex-laws>
+
+#pagebreak(weak: true)
+= Indexed types <sec-vec>
+
+// A functor out of a DISCRETE category is a wire like any other, so a type indexed by a number is
+// drawn, and its index arithmetic is a wire too.  The picture is diag/veccat1.typ, hand-drawn there
+// (the reason is in its header) and imported, so the note and its standalone PNG are one drawing.
+#disp[#table(
+  columns: (7.2cm, 5.0cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
+
+  [`Vec`],
+  [`ℕ⟶𝒜`],
+  [`n↦Vec(n,Int)`, the lists of length `n`. `ℕ` is the discrete category — identities only — and
+   `N` of @cyl-defn is `Vec(4)`.],
+
+  [`+`],
+  [`ℕ×ℕ⟶ℕ`],
+  [Any function between discrete categories is a functor, so the index arithmetic is a wire.],
+
+  [`Vec×Vec`],
+  [`ℕ×ℕ⟶𝒜`],
+  [`(m,n)↦Vec(m)×Vec(n)`, pairing and product as one functor.],
+
+  [`cat`],
+  [`Vec×Vec⇒Vec∘+`],
+  [`cat : Vec(m)×Vec(n)⟶Vec(m+n)`, natural in `(m,n)`; over a discrete category naturality is empty.],
+)]<vec-defn>
+
+#disp[#align(center, grid(columns: 1, row-gutter: 6pt,
+  veccat-pic,
+  src[the bottom cut reads `Vec(+(4,5))`: `9` is written nowhere — the `+` wire beside `(4,5)` is it],
+))]<vec-cat>
 
 #pagebreak(weak: true)
 #include "allegory-appendix.typ"
