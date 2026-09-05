@@ -36,7 +36,7 @@
 [X] 13.2b generate /string-diagram
 [X] why 13.5.3a suddenly becomes so tall, with space wasted on top? same for 13.5.5b row 2.
 [X] 13.5.2a make the 3 diagram same height. you do not fix a global(cross the note) height.
-[.] 13.3b no HM diagram (13.3.1b done)
+[X] 13.3b no HM diagram (13.3.1b done)
 [X] 13.5.4 section title: prepend: generate is F-Alg.
 [X] rename all generate to gen. the lean code, use our lean-refactor. and the allegory-axioms.typ.
 [X] 13.5.5. section header, add type of Q : F(N A,N(L A))⟶N(L A), and say it's  F(N A,−)'s algebra
