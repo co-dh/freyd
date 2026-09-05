@@ -2446,6 +2446,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     }),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
     [`αh=F(h)α`],
+    s: 80%,
   )
   #pair(
     cetz.canvas(length: 0.8cm, {
@@ -2460,6 +2461,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     }),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
     [`α⦇αᴀ⦈=F(⦇αᴀ⦈)α`],
+    s: 80%,
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -2507,8 +2509,8 @@ Taking a value apart with `α`#sub[`T`] and putting it straight back is doing no
 
 // `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
 // is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
-Fusion absorbs `S`: the composite `⦇α`#sub[`B`]`⦈S` becomes the single fold `⦇α`#sub[`C`]`⦈` over a
-second algebra `α`#sub[`C`]` : FC⟶C`, along `S : B⟶C`.
+When `S : B⟶C` is an F-homomorphism from `α`#sub[`B`] to `α`#sub[`C`], folding with `α`#sub[`B`] and
+then applying `S` is folding with `α`#sub[`C`].
 
 // `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
 // of `α` at `S` — the same two panels as (11.4a), at `h := S`.
