@@ -31,7 +31,7 @@
     maybe that can be used to draw inside catamorphism.
 [X] break the circuit diagram code and skill into a separated one.
 [X] there are hard coded name, color in the string diagram generator make it less general. make it general.
-[.] HM diagram on both side of <=, = should have the same hight and aligned.
+[X] HM diagram on both side of <=, = should have the same hight and aligned.
     e.g. for LaT, align on the φ. you can ask me
 [X] 13.2b generate /string-diagram
 [X] why 13.5.3a suddenly becomes so tall, with space wasted on top? same for 13.5.5b row 2.
