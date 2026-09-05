@@ -752,8 +752,12 @@ def columns(rows, made):
         # east of every lane already live — born west, it would cross each of them on the way out.
         # The one that goes west instead is `𝟙%∋`, a 2-cell between functors, placed in the pass
         # below because it touches no object wire at all.
+        # `columns` is RELATIVE — the first top-born lane is at 0 — so the empty case must fall back
+        # to the leftmost column, not to the absolute margin `X0`: with nothing alive the new wire
+        # has no lane to clear, and planting it at `X0` left §11.6.2a's `E` three columns right of a
+        # dead `F`, dragging the object wire 1.875 east of where the panel beside it holds it.
         c = ((min(xs) + max(xs)) / 2 if xs
-             else max((l.x for l in live), default=X0 - DX) + DX)
+             else max((l.x for l in live), default=-DX) + DX)
         # A bead that gives back as many wires as it takes moves nothing sideways, so its legs KEEP
         # the arms' own columns: a swap becomes two straight lines crossing, and a wire that meets
         # several of them runs down ONE line instead of a staircase of knees — IntroString p.48 draws
