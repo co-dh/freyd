@@ -1229,12 +1229,16 @@ def close(text, i):
 
 def certof(s):
     """A literal's `cert:` group as `draw` takes it: the string fields, and `sigs` as a dict."""
-    c = {k: v.replace("\\\\", "\\") for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
+    # A Typst string's one escape, undone on the KEYS too: a residual bead is named `⦇S⦈°\X`, and a
+    # key left as `⦇S⦈°\\X` types no bead the formula mentions.
+    un = lambda v: v.replace("\\\\", "\\")
+    c = {k: un(v) for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
     c |= {k: float(v) for k, v in re.findall(r'(\w+): (-?\d+(?:\.\d+)?)\b', s)}
     for f in ("sigs", "tint"):
         k = s.find(f + ": (")
         if k >= 0:
-            c[f] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + len(f) + 2) + 1]))
+            c[f] = {un(a): un(b) for a, b in
+                    re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + len(f) + 2) + 1])}
     return c
 
 
@@ -1418,6 +1422,19 @@ def pairs_check(path):
     sys.exit(unequal and f"diagram --pairs: {unequal} row{'s' * (unequal > 1)} disagree")
 
 
+def sigwords(s):
+    """`--sigs` cut at whitespace OUTSIDE brackets, so a bead whose own name carries spaces —
+    `(μX : S°F(X)R)` — can still be typed on the command line."""
+    out, cur, d = [], "", 0
+    for c in s:
+        d += (c in sl.OPENERS) - (c in sl.CLOSERS)
+        if c.isspace() and d == 0:
+            out, cur = out + [cur] if cur else out, ""
+        else:
+            cur += c
+    return out + ([cur] if cur else [])
+
+
 def sigpair(x):
     """One `--sigs` word: `NAME:SRC⟶TGT[!nat|!lax[=lean:Mod.decl@key]]`, cut at the SIGNATURE's last
     colon.  Not the word's — a marker carries colons of its own, and they come after the `!`."""
@@ -1509,7 +1526,7 @@ def main(argv):
     frm, out = sl.opt(argv, "--from"), sl.opt(argv, "--json")
     src, tgt = sl.opt(argv, "--src"), sl.opt(argv, "--tgt")
     own = sl.opt(argv, "--sigs")
-    own = dict(sigpair(x) for x in own.split()) if own else None
+    own = dict(sigpair(x) for x in sigwords(own)) if own else None
     slope, ini = sl.opt(argv, "--slope"), sl.opt(argv, "--mu")
     frame = sl.opt(argv, "--frame")
     frame = float(frame) if frame else None

@@ -27,7 +27,6 @@
 // The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
 // `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
 // of the object wire, `𝟏` right of it.
-#let DKN = 0.45                                   // the handle's knee
 // One ROW — `scripts/diagram`'s own `DY`, respelled so a panel can report its size as the COMPLEXITY
 // it was drawn from: `rows` beads deep and `wires` wide.  A pair's `cert.frame` is a row count for
 // that reason, so re-measuring the row (`./scripts/labelfit`) moves no number in this file.
@@ -75,7 +74,7 @@
 #let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
   ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 // `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
-// `s`; `tpan` passes 100% and prints its labels at the size `tw-hm` does.
+// `s`; §@sec-hylo passes 100% and prints its labels at the size `tw-hm` does.
 // A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap
 // IntroString p.74 (pdf 89) leaves at every arm, leg and dip, of which the dot's own 0.05cm radius
 // covers all but 0.01cm.  0.06cm / (cetz `length: 0.8cm`) = 0.075 canvas units.
@@ -184,7 +183,7 @@
 // OVERLAP — they may share a midpoint, and there each strand is vertical, in its own column.
 // `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
 // left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
-// it.  The `tpan` panels keep fixed `DKN` and a per-join `k` — an empirical fit.
+// it.
 #let dknees(xat, h, lanes, beads) = {
   let bys = beads.map(bd => bd.at(0))
   let (run, cap) = ((:), (:))

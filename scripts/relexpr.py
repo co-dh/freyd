@@ -36,6 +36,9 @@ INTERVAL = re.compile(r"\[[^\[\]()]*\)")
 # A projection ends its own token: the note writes the guard of a conditional `π₁p`, with nothing
 # between the two arrows, and one bead reading `π₁p` is a composite drawn as though it were an atom.
 PROJ = ("π₁", "π₂")
+# A RESIDUAL is one token, as `x%∋` is: `⦇S⦈°\X` is the largest `Y` with `⦇S⦈°Y⊑X`, one relation,
+# and reading it as `⦇S⦈°` beside `X` would draw two beads where the note names one.
+DIV = "\\/"
 # An index is written as a SMALL CAPITAL — the subscript block has no `b` and no `c`, so one family
 # (`αᴀ`, `αʙ`, `αᴄ`) cannot be spelled with real subscripts at all.
 SMALLCAP = dict(zip("ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘꞯʀꜱᴛᴜᴠᴡʏᴢ", "ABCDEFGHIJKLMNOPQRSTUVWYZ"))
@@ -120,9 +123,19 @@ def parse(s, obj=False):
 def p_prod(s, i, obj=False):
     xs = []
     while True:
+        while i < len(s) and s[i] in " \t":
+            i += 1
+        j0 = i
         x, i = p_prim(s, i, obj)
         while i < len(s) and s[i] == '°':
             x, i = ('conv', x), i + 1
+        # A residual swallows the term after it and the whole span becomes ONE atom, the same shape
+        # `x%∋` takes: it binds tighter than juxtaposition, so `⦇S⦈°⦇S⦈°\X` is `⦇S⦈°` then `⦇S⦈°\X`.
+        while i < len(s) and s[i] in DIV:
+            _, i = p_prim(s, i + 1, obj)
+            while i < len(s) and s[i] == '°':
+                i += 1
+            x = ('atom', squeeze(s[j0:i]))
         xs.append(x)
         if i >= len(s) or s[i] != '×':
             return (xs[0] if len(xs) == 1 else ('prod', xs)), i
@@ -145,6 +158,10 @@ def p_prim(s, i, obj=False):
         if s[j + 1:j + 3] == '%∋':
             return ('atom', squeeze(s[i:j + 3])), j + 3
         if s[i] == '(':
+            # A BINDER is one token: `(μX : S°F(X)R)` is the least fixed point, a single relation
+            # whose body mentions the bound `X`, so the bracket names a bead and is not walked into.
+            if len(split_top(s[i + 1:j], ':')) > 1:
+                return ('atom', squeeze(s[i:j + 1])), j + 1
             # `(g→x,y)`: guarded branches, then an optional default.  The operands stay FLAT in
             # source order — guard, body, …, default — so a walk maps over them like any other list.
             bs = split_top(s[i + 1:j], ',')

@@ -1,6 +1,6 @@
 // cetz, with one switch: `--input nodraw=1` makes every canvas an empty box.
 //
-// WHY.  Every panel helper (`dpanel`, `tpan`, `cpanel`) computes the lists it emits as `#metadata`
+// WHY.  Every panel helper (`dpanel`, `cpanel`) computes the lists it emits as `#metadata`
 // OUTSIDE the canvas and then draws from them, so `typst query` — which is all `scanline`,
 // `diagram --roundtrip` and `hm-check` ever want — needs none of the ink.  Measured on the note:
 // 12.9 s with the 646 canvases, 0.5 s without, and the queried metadata is byte-identical.

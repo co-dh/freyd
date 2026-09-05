@@ -35,7 +35,7 @@ from relexpr import (alias, BREAK, CARRIER, CLOSERS, INTERVAL, OPENERS, PROJ, TE
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
 # below build THE SAME `pts` those helpers build and hand them to `poly`, which is `hm-seg`; the
 # curve maths lives here once, so a crossing is looked for in the shape actually drawn.
-HMK, HMQ, DKN, DY = 0.618, 0.3915, 0.45, 1.1   # `DY` is one ROW — `scripts/diagram`'s own, and
+HMK, HMQ, DY = 0.618, 0.3915, 1.1              # `DY` is one ROW — `scripts/diagram`'s own, and
 # the knee is 0.3 of it: a knee measured in absolute units does not shrink when the row does, and a
 # row-and-a-bit of knee is what braids two strands falling on one bead.
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
@@ -296,20 +296,6 @@ def a_dpanel(p, r):
                             ink=(dx(b[0]), b[0])))
 
 
-def a_tpan(p, r):
-    for hd in r['hands']:
-        born = hd[4] if len(hd) > 4 else None
-        pts = ([(hd[0], hd[1]), (hd[0], hd[2] + DKN), (p.xo, hd[2])] if born is not None else
-               [(p.xo, hd[1]), (hd[0], hd[1] - DKN), (hd[0], hd[2] + DKN), (p.xo, hd[2])])
-        p.wires.append(Wire(hd[0], hd[1], hd[2], hd[3], born, pts))
-        if born is not None:
-            p.beads.append(Bead(hd[1], hd[0], born, born=True))
-    for (x, y, k) in r['joins']:
-        p.wires.append(Wire(x, p.h, y, p.at(p.top, x), pts=[(x, p.h), (x, y + k), (p.xo, y)]))
-    for (y, l) in r['beads']:
-        p.beads.append(Bead(y, p.xo, l))
-
-
 def a_twhm(p, r):
     for (xf, yt, xt, y, k) in r['joins']:
         p.wires.append(Wire(xf, yt, y, p.at(p.top, xf), pts=[(xf, yt), (xf, y + k), (xt, y)]))
@@ -321,7 +307,7 @@ def a_twhm(p, r):
         p.strands.append((outer, [(p.xo, y0), (x, y0 - k), (x, y1 + k), (p.xo, y1)]))
 
 
-ADAPT = {'dpanel': a_dpanel, 'tpan': a_tpan, 'tw-hm': a_twhm}
+ADAPT = {'dpanel': a_dpanel, 'tw-hm': a_twhm}
 
 
 # ---------------------------------------------------------------- the sweep
@@ -921,12 +907,12 @@ def sigline(s):
 
 # ---------------------------------------------------------------- driver
 def lit_hashes(path):
-    """sha256 of every `dpanel(`/`cpanel(`/`tpan(` call in the source, whitespace included.
+    """sha256 of every `dpanel(`/`cpanel(` call in the source, whitespace included.
     `typst query` compiles the whole file regardless of which panel changed, so this is what a
     cache CAN key on cheaply — the set is compared whole, not panel by panel."""
     text = open(path, encoding="utf-8").read()
     return sorted(hashlib.sha256(text[m.start():matching(text, m.end() - 1) + 1].encode()).hexdigest()
-                  for m in re.finditer(r'\b(?:dpanel|cpanel|tpan)\(', text))
+                  for m in re.finditer(r'\b(?:dpanel|cpanel)\(', text))
 
 
 # ---------------------------------------------------------------- per-section acquisition

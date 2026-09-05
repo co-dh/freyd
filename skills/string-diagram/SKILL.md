@@ -296,7 +296,7 @@ minus the wires consumed above it, which is `x` constants and bead heights and n
 diag/allegory-axioms.typ metadata --field value` (`kind == "scanline"`) and sweeps all of them. Read the
 counts off the run itself — a number written down here is a snapshot and rots; what must hold is
 `0 unhandled, 0 failures`, and the certified count only rises as hand-laid panels are replaced by
-generated ones. `dpanel` and `tpan` emit their own lists as `#metadata`, and `tw-hm` emits by hand from
+generated ones. `dpanel` emits its own lists as `#metadata`, and `tw-hm` emits by hand from
 the same bindings it draws with — the emitted list IS the list that draws, so it cannot drift from the
 picture (`dpan` alone stays unchecked: it only ever sees an opaque drawing closure). A `cert:` dict
 (`expect`, `src`, `tgt`, `branch`, `alias`) certifies a panel; `branch:` names the case-split arm drawn,
@@ -304,11 +304,11 @@ and a fired `alias:` prints `AGREE modulo <alias>` rather than hiding the residu
 moved onto the object wire and a top cut answering the wrong statement — and one error only IT catches: a
 bead moved from the object wire onto a functor wire spells the same either way when nothing sits to its
 left, so expression comparison alone is blind to it; only the cross-panel signature check sees it.
-`tpanR` emits nothing and stays outside the sweep. Run it after any panel edit, and before arguing from a
+Run it after any panel edit, and before arguing from a
 rendering — cheaper than looking, and it checks what looking cannot.
 
-The sweep is this convention's only: it reads the `kind == "scanline"` metadata that `dpanel`/`tpan`
-emit, and a circuit panel emits `kind == "circuit"` instead and is checked by its own generator's
+The sweep is this convention's only: it reads the `kind == "scanline"` metadata that `dpanel`
+emits, and a circuit panel emits `kind == "circuit"` instead and is checked by its own generator's
 `--compare`.
 
 ## Crossings are zero and gated — one knee per bead and side
