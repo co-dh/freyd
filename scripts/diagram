@@ -1040,7 +1040,7 @@ def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
 
 
 def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None, book=None,
-         frame=None, top=None):
+         frame=None, top=None, tint=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
@@ -1060,7 +1060,7 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     cert = (cert | ({"split": split} if split != DEFSPLIT else {})
             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
             | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {})
-            | ({"top": top} if top is not None else {}))
+            | ({"top": top} if top is not None else {}) | ({"tint": tint} if tint else {}))
     if book:
         return booklayout(rows, made, otop, obot, cert, *book)
     return layout(rows, made, otop, obot, cert)
@@ -1100,16 +1100,25 @@ def quoted(v):
     return '"' + v.replace("\\", "\\\\") + '"'
 
 
+def beadcode(b, tint):
+    """One bead as Typst source.  Its colour slot is the note's, not the drawing's: a panel beside a
+    commutative square tints each bead to the arrow it stands for, and `cert: tint` is where that
+    lives so `--compare` rebuilds the same picture instead of bleaching it black."""
+    col = tint.get(b[1], "black")
+    return ("(" + num(b[0]) + ", " + labelcode(b[1])
+            + (", " + col + ", " + (num(b[3]) if b[3] is not None else "none") if len(b) > 3
+               else ", " + col if col != "black" else "")
+            + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "")
+            + (f', "{b[5]}"' if len(b) > 5 else "") + ")")
+
+
 def emit(r):
     c = r["cert"]
+    tint = c.get("tint") or {}
     beads = [b[:2] + [None, b[3]] + b[4:] if len(b) > 3 else b for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
             f'  {lst(r["lanes"])},\n'
-            + "  (" + ", ".join("(" + num(b[0]) + ", " + labelcode(b[1])
-                                + (", black, " + (num(b[3]) if b[3] is not None else "none")
-                                   if len(b) > 3 else "")
-                                + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "")
-                                + (f', "{b[5]}"' if len(b) > 5 else "") + ")"
+            + "  (" + ", ".join(beadcode(b, tint)
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
@@ -1156,7 +1165,7 @@ def roundtrip(path, frm, show, out, tbl):
             src, tgt = endpoints(sl.Panel(r))
             g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
                      r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"),
-                     top=r["cert"].get("top"))
+                     top=r["cert"].get("top"), tint=r["cert"].get("tint"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1208,9 +1217,10 @@ def certof(s):
     """A literal's `cert:` group as `draw` takes it: the string fields, and `sigs` as a dict."""
     c = {k: v.replace("\\\\", "\\") for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
     c |= {k: float(v) for k, v in re.findall(r'(\w+): (-?\d+(?:\.\d+)?)\b', s)}
-    k = s.find("sigs: (")
-    if k >= 0:
-        c["sigs"] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + 6) + 1]))
+    for f in ("sigs", "tint"):
+        k = s.find(f + ": (")
+        if k >= 0:
+            c[f] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + len(f) + 2) + 1]))
     return c
 
 
@@ -1449,6 +1459,10 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               ' of an `=` share one box'
               '\n--top Y       the height of the panel'"'"'s first bead, so a shorter panel can'
               ' align on the taller one'"'"'s bead (default: one row below the frame top)'
+              '\n--tint        colour a bead, `LABEL=COLOUR` pairs separated by spaces'
+              ' (`--tint "T(f)=INDUCED"`), for a panel that stands beside a commutative square and'
+              ' tints each bead to the arrow it draws; it rides in the `cert:` so `--compare`'
+              " rebuilds the same colours instead of bleaching them black"
               '\n--png OUT     also render the panel to OUT (200 dpi); the `dpanel` literal still'
               " goes to stdout and the written path to stderr"
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
@@ -1487,9 +1501,11 @@ def main(argv):
     frame = float(frame) if frame else None
     top = sl.opt(argv, "--top")
     top = float(top) if top else None
+    tint = sl.opt(argv, "--tint")
+    tint = dict(x.rsplit("=", 1) for x in tint.split()) if tint else None
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--frame", "--top", "--panel", "--png")
+                         "--frame", "--top", "--tint", "--panel", "--png")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -1517,7 +1533,7 @@ def main(argv):
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book, frame=frame, top=top)
+             book, frame=frame, top=top, tint=tint)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`
