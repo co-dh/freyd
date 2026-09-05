@@ -1,0 +1,33 @@
+#!/bin/sh
+# wt-setup — boot a worktree agent: link it to the main checkout's build artifacts and verify green.
+#
+# WHY: ~15 worktree agents each typed the same sequence by hand in one day (42 commands total) —
+# mkdir the build dir, symlink the refactor-index.db and generated diagrams from the main checkout
+# (a worktree has neither; rebuilding them per-worktree is slow and wasteful), then check the note
+# still compiles as a known-green baseline before doing any real work. Not `make p` — that needs
+# Freyd.olean, which a fresh worktree has never built, so it fails on exactly the case this exists for.
+#
+# Run this from INSIDE the worktree. Idempotent — safe to re-run.
+MAIN=/home/dh/repo/freyd
+
+[ -f "$MAIN/.lake/build/refactor-index.db" ] || {
+  echo "wt-setup: $MAIN/.lake/build/refactor-index.db not found — run 'make' in $MAIN to build it" >&2
+  exit 1
+}
+[ -d "$MAIN/diag/generated" ] || {
+  echo "wt-setup: $MAIN/diag/generated not found — run 'make' in $MAIN to build it" >&2
+  exit 1
+}
+
+mkdir -p .lake/build
+ln -sf "$MAIN/.lake/build/refactor-index.db" .lake/build/
+ln -sfn "$MAIN/diag/generated" diag/generated
+
+./scripts/cite-check diag/allegory-axioms.typ || {
+  echo "wt-setup: cite-check failed — this worktree's refactor-index.db is not usable yet" >&2
+  exit 1
+}
+typst compile --root . diag/allegory-axioms.typ diag/allegory-axioms.pdf || {
+  echo "wt-setup: typst compile failed — this worktree's note is not usable yet" >&2
+  exit 1
+}

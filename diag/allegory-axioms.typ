@@ -2446,7 +2446,6 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     }),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
     [`αh=F(h)α`],
-    s: 80%,
   )
   #pair(
     cetz.canvas(length: 0.8cm, {
@@ -2461,7 +2460,6 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     }),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
     [`α⦇αᴀ⦈=F(⦇αᴀ⦈)α`],
-    s: 80%,
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -4062,7 +4060,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ((2.5, [`G`]), (3.12, [`A`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   obj: ((3, [`A`]), (1.5, [`B`])),
-  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee")), s: 100%)
+  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"), frame: 6), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -4436,7 +4434,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((3.125, [`F`]), (3.75, [`E`]), (4.38, [`A`])),
   ((4.38, [`A`]),),
   obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
-  cert: (expect: "(F(∋)f)%∋ est(R)", src: "F(E(A))", tgt: "A", sigs: ("f": "F(A)⟶A")),
+  cert: (expect: "(F(∋)f)%∋ est(R)", src: "F(E(A))", tgt: "A", sigs: ("f": "F(A)⟶A"), frame: 12),
   s: 100%)
 
 // The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
