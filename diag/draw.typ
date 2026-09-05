@@ -119,7 +119,10 @@
   "G": rgb("#babd56"),
   // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`idxcol` below maps `[3p]`
   // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
-  "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"))
+  "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
+  // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
+  // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
+  "Digit×−": rgb("#a58a6e"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.

@@ -473,6 +473,23 @@ so the pair a reader compares is bead-against-lane, not lane-against-lane. Separ
 Two lanes that never co-occur may reuse a band. A palette checked lane-against-lane only is not checked
 (`GIVEN1 #26734d` vs `list #3f7d4e` measured 7.1 and they are on the page together in 13.4.3c).
 
+**An index functor `[k] : X ↦ X[k]` is a lane of its own, and each AXIS of a matrix gets its own colour**
+(user, 2026-09-05, on `diag/vecgen.typ`: "need different color of different dimensions of vector"). `A[n][p][m]`
+is the wires `[n] [p] [m] A`, and `[n]`, `[p]`, `[m]` are three functors, so one `Vec` hue for all of them
+is the silent-black mistake again: once `trans` has swapped two of them the reader cannot tell which is
+which. The colour follows the axis, not the length: `[p]` and `[3p]` are one candidate axis that `concat`
+lengthened, `[m]` and `[m+1]` one path axis, so the wire keeps its hue across the bead that changed its
+length. `idxcol(label)` in `diag/draw.typ` is the rule — the letters inside the first `[…]` of the label
+name the axis, a constant index (`[3]`) is an axis of its own, and a lift that carries one index
+(`𝟙×[p]`, `[n]×[n]`, `⟨𝟙,[m]⟩`) takes that index's hue — and the four axis lanes are `FCOL` entries, so a
+new axis letter draws through `fcol`'s free-hue path without an edit. Hand-drawn or generated, pass the
+wire's own label to `idxcol`; never a local `VEC = …` constant.
+
+**Every `FCOL` addition moves every UNNAMED lane.** `fcol` indexes the free-hue list by the name's hash,
+and the list shrinks around each new entry, so a lane that was drawing on a free hue lands on a different
+one — `Digit×−` went from clear of `E` to ΔE76 12 from it when the four axis lanes were added. Name the
+lane (`lanecheck`'s own message says which) rather than tuning the new entry around it.
+
 ## Isotopy: a bead's height relative to OTHER wires is free
 
 IntroString.pdf p. 21, eq. (1.16): pictures differing only in the relative vertical position of beads on
