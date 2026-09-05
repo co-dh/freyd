@@ -26,10 +26,10 @@ DY = 1.5                                       # one row: `scripts/diagram`'s be
 # names this file and `scripts/diagram` use.
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from relexpr import (alias, BREAK, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT, Unhandled, act,
-                     canon, dun, fill, fuse, help_if, hole_last, hole_slot, interchange, listable,
-                     matching, norm, opt, p_prim, p_prod, parse, quot, rec, require_hole_last,
-                     spell, split_top, squeeze, tidy, unit_ctx)
+from relexpr import (alias, BREAK, CARRIER, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT, Unhandled,
+                     act, canon, deindex, dun, fill, fuse, help_if, hole_last, hole_slot,
+                     interchange, listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
+                     require_hole_last, spell, split_top, squeeze, tidy, unit_ctx)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -658,28 +658,17 @@ def objhue(p):
          f" — an object wire changes hue where it changes object"]
 
 
-BAN = re.compile(r"⦇(.+)⦈")
-VAR = re.compile(r"(?<![A-Za-z])[stuvwxyz](?![A-Za-z])")   # a bare signature variable, not `T` in `tree`
-
-
-def unindexed(p):
-    """A catamorphism's ALGEBRA sits on no wire, so the convention that reads a bare bead's index off
-    the object wire under it stops at the banana's brackets.  `⦇α⦈`, whose `α : F(x)⟶x` gives its
-    carrier only as a variable, is then the fold of EVERY algebra, and the reflection law reads "every
-    catamorphism is the identity".  The banana must write the carrier: `⦇αᴀ⦈`.
-
-    A carrier that is a SHAPE is already written — `gen : F(N(x))⟶N(x)` and §13.3's
-    `S : x×[[x]×[x]]⟶[x]×[x]` fold at `N(x)` and `[x]×[x]`, whose `x` is the section's element type,
-    the thing every bead on the page is polymorphic in.  Only a BARE variable names nothing."""
-    tbl = typed(sigs(), p.cert.get("sigs"))["sigs"]
+def indexed(p):
+    """A bead's index is the object wire UNDER it, and the FOLD is no exception (user, 2026-09-05,
+    reversing the rule that the banana must carry its carrier): the panel draws `⦇α⦈` with `A` on the
+    wire below, which says `⦇αᴀ⦈` and says it once.  A carrier written in the label as well spells one
+    object twice, and the label is then free to drift from the wire the sweep actually reads."""
     out = []
     for b in p.beads:
-        m = BAN.fullmatch(b.label or "")
-        d = tbl.get(m.group(1)) if m else None
-        if d and VAR.fullmatch(str(d.get("tgt", "")).strip()):
-            out.append(f"{p.id}: the banana {b.label} folds {m.group(1)} : {d['src']}⟶{d['tgt']},"
-                       f" whose carrier is a variable — a catamorphism's algebra sits on no wire, so"
-                       f" the banana must carry the index")
+        lab, idx = deindex(b.label or "")
+        for k, v in idx.items():
+            out.append(f"{p.id}: the fold {b.label} writes its carrier {v}, which is already the"
+                       f" object wire under the bead — draw it {k}")
     return out
 
 
@@ -1158,7 +1147,7 @@ def main(argv):
             continue
         try:
             p = Panel(r)
-            bad += p.kdrift + sweep(p) + labels(p) + natframe(p) + objhue(p) + unindexed(p)
+            bad += p.kdrift + sweep(p) + labels(p) + natframe(p) + objhue(p) + indexed(p)
             b, n = certify(p)
             bad += b; note += n
             drawn += connect(p)

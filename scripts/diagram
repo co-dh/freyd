@@ -1048,6 +1048,10 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     no field; `sigs:` likewise appears only where the panel types a letter itself, and `slope:`
     only where the object wire is not the straight default (see `layout`)."""
     global SPLIT, BR, TBL, MU, NAT, OWN
+    # A fold takes its carrier from the object wire UNDER it, like every other bead's index, so the
+    # label is stripped of it here — before the `cert:`, which then records what the picture says.
+    formula, idx = sl.deindex(formula)
+    own = own if not isinstance(own, dict) else {sl.deindex(k)[0]: v for k, v in own.items()}
     SPLIT = frozenset(split.split())
     OWN = frozenset(own) if isinstance(own, dict) else frozenset()
     TBL = sl.typed(table or sl.sigs(), own)
@@ -1057,6 +1061,12 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
     rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
+    below = otop                       # the index dropped above must be what the picture puts there
+    for r in rows:
+        below = r.obj if r.obj is not None else below
+        if r.label in idx and idx[r.label] != below:
+            raise sl.Unhandled(f"{r.label} was written at the carrier {idx[r.label]}, where the"
+                               f" object wire under the bead is {below} — a fold's index IS that wire")
     cert = (cert | ({"split": split} if split != DEFSPLIT else {})
             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
             | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {})

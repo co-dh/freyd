@@ -21,7 +21,7 @@
 [ ] replace every hand-draw picture with the generator, and remove code that used to hand draw. let user review png first.
 [.] redraw 11.5.1b
 [X] shrink the diagram in 11.4a and try to fit fusion 11.4.2 in the same page.
-[ ] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
+[X] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
 [ ] 11.6.1a , 11.6.2a need revisit. like what we did for initial algebra.  alpha is natural.
 [ ] revisit 11.6.2a. alpha is natural and draw wrong. secondly, how to draw things inside (| |),
     IntroString has fold (| |) for different purpose, but claude said that catamorphsim is a special case of fold,

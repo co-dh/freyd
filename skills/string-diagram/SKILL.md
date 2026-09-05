@@ -31,6 +31,14 @@ the switch, say in one line that the convention has changed and why.
 - An arrow out of `F A` is a bead where two wires join into one — the shape a monad `μ : M∘M ⇒ M` has.
 - **Name a (lax) natural transformation with a GREEK letter** — `φ`, `ψ`, `χ` — and index it by the
   object where the component matters: `φ_A`. A Latin capital in that slot reads as a plain relation.
+- **A BEAD'S INDEX IS THE OBJECT WIRE UNDER IT, and the fold is no exception** (user, 2026-09-05,
+  reversing the earlier "the banana must carry its carrier"). `α` bare over a `B` wire is `α_B`, and
+  `⦇α⦈` with `A` under it is `⦇αᴀ⦈` — the carrier is the fold's target, which IS that wire, so writing
+  it in the label as well spells one object twice and lets the two drift. Two folds that read alike on
+  a display are told apart by their wires: §11.4.2a's `⦇α⦈` over `B` and over `C`. Enforced both ways —
+  `scripts/diagram` strips an index written anyway (and raises if it disagrees with the wire), and
+  `scripts/scanline --strict` refuses one a hand-laid panel keeps. The formula captioning the row and
+  the commutative square beside it keep the subscript: neither has a wire to read it off.
 - **One set of letters across the whole row.** The formula, the commutative square and the string
   diagram beside each other must use the SAME names; generalising the formula's letters without
   redrawing is how the square ends up saying `X` where the picture says `φ`.

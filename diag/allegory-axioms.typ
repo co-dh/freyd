@@ -1997,7 +1997,9 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 
 // §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
 // the squares' own size.  The bead is `α` BARE: an algebra is a transformation `F⇒Id`, and the
-// component's index is the object wire it stands on, so a subscript would say it twice.
+// component's index is the object wire it stands on, so a subscript would say it twice.  The FOLD
+// takes its carrier off that same wire — `⦇α⦈` over an `A` wire IS `⦇αᴀ⦈` — and `scripts/diagram`
+// strips an index written anyway, `scripts/scanline` refusing one a hand-laid panel keeps.
 // `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
 // `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
 // §11.4.2a draws the same `α` the same way, its side condition being this very square at `h := S`.
@@ -2017,18 +2019,18 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #let ia-cata-l = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇αᴀ⦈`])),
+  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇α⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇αᴀ⦈", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
 #let ia-cata-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`⦇αᴀ⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((3.3, [`⦇α⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇αᴀ⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
@@ -2075,15 +2077,15 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
 
 // THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
-// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The banana carries its index:
-// `⦇α⦈` would fold every algebra at once and the law would read "every catamorphism is the identity".
+// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
+// bead is the fold's carrier, so `⦇α⦈` here is `⦇αᴛ⦈` and not the fold of every algebra at once.
 #let ia-refl-l = dpanel(2.2, 3.725, 1.875,
   (),
-  ((1.1, [`⦇αᴛ⦈`]),),
+  ((1.1, [`⦇α⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`T`]),),
   obj: ((1.1, [`T`]),),
-  cert: (expect: "⦇αᴛ⦈", src: "T", tgt: "T", sigs: ("⦇αᴛ⦈": "T⟶T")), s: 100%)
+  cert: (expect: "⦇α⦈", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
 #let ia-refl-r = dpanel(2.2, 3.725, 1.875,
   (),
   (),
@@ -2133,22 +2135,22 @@ then applying `S` is folding with `α`#sub[`C`].
   ((3.12, [`C`]),),
   obj: ((3.3, [`C`]), (2.2, [`C`])),
   cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
-// The conclusion, generated like the side condition above it: two BANANAS, so they keep an index
-// where the bare `α` cannot — `⦇αʙ⦈ : T⟶B` and `⦇αᴄ⦈ : T⟶C` are different arrows on one display.
+// The conclusion, generated like the side condition above it: two BANANAS reading `⦇α⦈` alike, and
+// what tells them apart is the wire under each — `B` on the left, `C` on the right.
 #let ia-fuse-cl = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇αʙ⦈`]), (1.1, [`S`])),
+  ((2.2, [`⦇α⦈`]), (1.1, [`S`])),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "⦇αʙ⦈S", src: "T", tgt: "C", sigs: ("⦇αʙ⦈": "T⟶B", "S": "B⟶C")), s: 100%)
+  cert: (expect: "⦇α⦈S", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶B", "S": "B⟶C")), s: 100%)
 #let ia-fuse-cr = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇αᴄ⦈`]),),
+  ((2.2, [`⦇α⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`C`]),),
-  cert: (expect: "⦇αᴄ⦈", src: "T", tgt: "C", sigs: ("⦇αᴄ⦈": "T⟶C"), frame: 3), s: 100%)
+  cert: (expect: "⦇α⦈", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶C"), frame: 3), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
