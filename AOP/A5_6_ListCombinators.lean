@@ -27,7 +27,7 @@ variable {A : Type}
 /-- `list A = ConsList Unit A` (`nil = wrap ()`, `cons a x`). -/
 @[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
-/-! ## Membership `inlist : A ← list A` -/
+/-! ## Membership `inlist : A ← list A` and `setify : E A ← list A` -/
 
 /-- `a ∈ x`. -/
 @[expose] public def inlistP : ConsList Unit A → A → Prop
@@ -36,6 +36,14 @@ variable {A : Type}
 
 /-- The membership relation `inlist : list A ⟶ A`. -/
 def inlist : dList A ⟶ dE A := inlistP
+
+/-- **`setify[a₁,…,aₙ] = {a₁,…,aₙ}`** (B&dM §7.3 p.177), `setify : [A]⟶E(A)`: a list goes to the
+    set of its elements, so the order and the repetitions are forgotten.  It is the classifier of
+    `inlist` — `Λ(inlist)`, `graph` of `x ↦ {a | a ∈ x}`, hence a MAP by `graph_map`, since a list
+    has exactly one element set.  `AOP.A7_4_CylinderBeads`'s `Tuple.setify` is the §7.4 arrow of the
+    same name at the tuple relator, `Aⁿ⟶E(A)`, forgetting which row a component came from; the
+    two are different arrows and neither is an instance of the other. -/
+@[expose] public def setify : dList A ⟶ PowerAllegory.powerObj (dE A) := graph inlistP
 
 /-! ## Permutation `perm : list A ← list A` -/
 
@@ -620,6 +628,22 @@ public theorem cons_natural {B : Type} (R : dE A ⟶ dE B) :
     cases w with
     | wrap _ => exact hz.elim
     | cons b y => exact ⟨(b, y), ⟨hz.1, hz.2⟩, rfl⟩
+
+/-- **The free theorem of `wrap`**, and it is STRICT: `wrap list(R) = R wrap`.  Both sides relate
+    `a` to the one-element list `[b]` exactly when `R a b`, and to nothing else. -/
+public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
+    (singleR () : dE A ⟶ dList A) ≫ list R = R ≫ singleR () := by
+  apply hom_ext; intro a w
+  constructor
+  · rintro ⟨_, rfl, hz⟩
+    cases w with
+    | wrap _ => exact hz.elim
+    | cons b y =>
+      cases y with
+      | wrap _ => exact ⟨b, hz.1, rfl⟩
+      | cons _ _ => exact hz.2.elim
+  · rintro ⟨b, hab, rfl⟩
+    exact ⟨ConsList.cons a (ConsList.wrap ()), rfl, hab, trivial⟩
 
 /-- **The free theorem of `concat`**, and it is STRICT: `list(list R) concat = concat list(R)`.
     `⊑` is `listP_cconcat`, `⊒` is `listP_cconcat_split`. -/

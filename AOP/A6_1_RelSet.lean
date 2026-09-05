@@ -368,6 +368,16 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
     coprod := fun a b => ⟨a.carrier ⊕ b.carrier⟩
     has_coproduct := sumCop }
 
+/-- `⊤ : a ⟶ b` in `Rel(Set)`, constructively: a hom here IS a predicate, so the greatest one
+    is the predicate that holds everywhere.  The abstract `topMor` of a unitary allegory picks
+    the two unit projections with `Exists.choose` and is therefore noncomputable; this one costs
+    no choice, so a statement that names `⊤` stays axiom-clean. -/
+@[expose] public def relTop (a b : RelSet.{u}) : a ⟶ b := fun _ _ => True
+
+/-- `relTop` is the greatest relation: every `R : a ⟶ b` is below it. -/
+public theorem le_relTop {a b : RelSet.{u}} (R : a ⟶ b) : R ⊑ relTop a b :=
+  le_iff.mpr fun _ _ _ => trivial
+
 /-- `⊤` in `Rel(Set)` relates everything to everything: it is above the full relation, hence
     equal to it.  (`topMor` itself is chosen classically inside `RelProd.tab`, so it is read
     through `topMor_max` rather than computed.) -/

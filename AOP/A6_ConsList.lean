@@ -323,6 +323,10 @@ public theorem cataR_con : cataR (graph (con (L := L) (E := E))) = 𝟙 (dCL L E
 @[expose] public def wrapR : dL L ⟶ dCL L E := graph ConsList.wrap
 /-- The constructor `cons` as a relation. -/
 @[expose] public def consR : (⟨E × ConsList L E⟩ : RelSet.{0}) ⟶ dCL L E := graph (fun p => ConsList.cons p.1 p.2)
+/-- B&dM's `wrap`, the one-element list `a ↦ [a]` (the note's `wrap≜⟨𝟙,⊸nil⟩ cons`) — NOT this
+    file's `wrapR`/`ConsList.wrap`, which is a cons-list's `nil`: that is the leaf `l` this one
+    conses the element onto. -/
+@[expose] public def singleR (l : L) : dE E ⟶ dCL L E := graph (fun a => ConsList.cons a (ConsList.wrap l))
 
 /-- The recursive equation for the converse of a cons-list catamorphism:
     `val° = (wrap·g°) ∪ (cons·(id×val°)·h°)` (mirrored), for any algebra `φ = [g, h]`. -/

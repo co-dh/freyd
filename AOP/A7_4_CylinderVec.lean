@@ -47,8 +47,15 @@ namespace Vec
     -- Core has no `Fin.divNat`/`Fin.modNat`; both bounds and `p > 0` come from `i.isLt`.
     have hi : i.val < j * p := i.isLt
     have hp : 0 < p := Nat.pos_of_ne_zero fun h => by simp [h] at hi
-    v ⟨i.val / p, Nat.div_lt_of_lt_mul (Nat.lt_of_lt_of_le hi (Nat.le_of_eq (Nat.mul_comm j p)))⟩
-      ⟨i.val % p, Nat.mod_lt _ hp⟩
+    -- Core's `Nat.div_lt_of_lt_mul` is proved classically and `concat` sits under every fold and
+    -- square of this file, so the row bound is argued here: `j ≤ i/p` would give `j*p ≤ i`.
+    have hrow : i.val / p < j :=
+      match Nat.lt_or_ge (i.val / p) j with
+      | Or.inl h => h
+      | Or.inr h =>
+          absurd hi (Nat.not_lt_of_le
+            (Nat.le_trans (Nat.mul_le_mul_right p h) (Nat.div_mul_le_self i.val p)))
+    v ⟨i.val / p, hrow⟩ ⟨i.val % p, Nat.mod_lt _ hp⟩
 
 /-- Entry `i` of row `r` sits at flat index `r·p+i`, which is in range. -/
 public theorem concat_lt {j p : Nat} (r : Fin j) (i : Fin p) : r.val * p + i.val < j * p :=
@@ -205,6 +212,26 @@ public theorem genFold_natural {n : Nat} (f : A ⟶ B) : ∀ m : Nat,
               ≫ (Vec n).map ((Vec (pow3 (m + 1))).map ((Vec (m + 1 + 1)).map f))) q :=
               congrFun (gen_natural (n := n) (p := pow3 m) (m := m + 1) f)
                 (q 0, genFold m (fun l => q l.succ))
+
+/-- **`paths` is natural**: `Vec(m+1)(Vec(n)(f)) paths = paths Vec(n3^m)(Vec(m+1)(f))` — acting on
+    the squares of the cylinder before reading off its paths is acting on them after.  `paths` is
+    `⦇gen⦈ concat` and both factors are natural (`genFold_natural`, `concat_natural`), so the square
+    is those two stacked; it is STRICT because every bead of `Vec` is a function.  The relational
+    `Tuple.pathsRel` (`AOP.A7_4_CylinderPaths`) is a DIFFERENT arrow — it takes a LIST of columns to
+    a SET of paths and steps by all `n` rotations rather than the three neighbours — and is lax
+    only, so its `paths_lax_natural` is not a verdict on this bead. -/
+public theorem paths_natural {n m : Nat} (f : A ⟶ B) :
+    (Vec (m + 1)).map ((Vec n).map f) ≫ paths
+      = paths ≫ (Vec (n * pow3 m)).map ((Vec (m + 1)).map f) :=
+  calc (Vec (m + 1)).map ((Vec n).map f) ≫ paths
+      = ((Vec (m + 1)).map ((Vec n).map f) ≫ genFold m) ≫ concat :=
+        (Cat.assoc _ (genFold m) concat).symm
+    _ = (genFold m ≫ (Vec n).map ((Vec (pow3 m)).map ((Vec (m + 1)).map f))) ≫ concat := by
+        rw [genFold_natural f m]
+    _ = genFold m ≫ concat ≫ (Vec (n * pow3 m)).map ((Vec (m + 1)).map f) := by
+        rw [Cat.assoc, concat_natural]
+    _ = paths ≫ (Vec (n * pow3 m)).map ((Vec (m + 1)).map f) :=
+        (Cat.assoc (genFold m) concat _).symm
 
 /-- The note's run `gen((1,2,3,4),([5],[6],[7],[8]))` at `n=4`, `p=1`, `m=1`: row `k` is square
     `k` in front of squares `k+1`, `k`, `k-1` of the next column — up, unmoved, down. -/
