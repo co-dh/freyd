@@ -78,7 +78,12 @@
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm
 
-#let calc-table(..rows, cols: (1fr, HMW), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+// `auto` and not a fixed width: a panel column is as wide as the panels IN IT, so the column beside
+// it keeps every point they do not use.  A constant is a guess made against one table's widest panel
+// and spent in every other, and the picture it starves overflows its own column — both pictures are
+// centred, so they grow towards each other and a label of one lands on a label of the other
+// (`./scripts/labelfit`), which no per-panel geometry can prevent.
+#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
 
 // A CITED DISPLAY RENDERS AS ITS NAME, the way B&dM cite a law in a hint; a number sends the reader
 // off to look the display up.  `≜ x` is the display that DEFINES `x`; a display named here nowhere
