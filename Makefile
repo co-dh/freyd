@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -32,6 +32,7 @@ SLICE := diag/circuit-slice.typ
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
 p: $(STAMP) slice circuit pairs cite spell scan-strict
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+	./scripts/labelfit
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
 
@@ -52,6 +53,16 @@ circuit:
 # compile, next to `circuit`, so a misaligned pair never produces a PDF that looks fine.
 pairs:
 	./scripts/diagram --pairs diag/allegory-axioms.typ
+
+# No two labels inside one panel may touch, measured off the COMPILED page — the check that makes
+# `scripts/diagram`'s vertical unit a measured number instead of a guess, and keeps it one.  It
+# needs the PDF, so unlike its neighbours it pays a typst compile when the note is newer; `p` calls
+# it straight after its own compile instead, and pays nothing extra.
+labels: diag/allegory-axioms.pdf
+	./scripts/labelfit
+
+diag/allegory-axioms.pdf: diag/allegory-axioms.typ $(wildcard diag/*.typ)
+	typst compile diag/allegory-axioms.typ $@
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
@@ -98,7 +109,7 @@ scan-strict:
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: circuit pairs cite spell scan-strict
+c: circuit pairs labels cite spell scan-strict
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.

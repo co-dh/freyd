@@ -15,7 +15,7 @@ arrow).  The two pictures share nothing else, so this file is the one place the 
 spellings of one arrow are compared in.  `opt`/`help_if` are here for the same reason: every
 script that reads this language has the same two flags.
 """
-import re, sys
+import json, os, re, sys
 
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
@@ -330,13 +330,25 @@ def norm(e):
 # panel may name it either way.  They differ as RELATIONS — B&dM p.119 symmetrises `P`'s second
 # conjunct, and only on maps do they agree (p.202) — so the panel keeps the letter it was drawn with
 # and the quotient is taken at the comparison alone.
-ALIAS = {'P': 'E'}
+# Declared in `diag/hm-sigs.json`, beside the signatures, because which two letters draw one lane is
+# a fact about the NOTE, not about the sweep.
+SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
+                    "hm-sigs.json")
+_ALIAS = None
+
+
+def alias():
+    global _ALIAS
+    if _ALIAS is None:
+        _ALIAS = json.load(open(SIGS, encoding="utf-8")).get("alias", {})
+    return _ALIAS
 
 
 def canon(e):
     """One head for every wire that draws the same lane, `P(R)` read as `E(R)`.  Runs BEFORE `norm`,
     whose `fuse` merges two applications only when their heads already agree."""
-    return rec(('app', ALIAS[e[1]], e[2]) + e[3:], canon) if e[0] == 'app' and e[1] in ALIAS \
+    a = alias()
+    return rec(('app', a[e[1]], e[2]) + e[3:], canon) if e[0] == 'app' and e[1] in a \
         else rec(e, canon)
 
 
