@@ -11,6 +11,10 @@
 #import "@preview/cetz:0.3.4" as cetzlib
 
 #let draw = cetzlib.draw
+#let d = draw
+// The two conventions draw with the same pen: a wire is a wire whether it carries an object
+// (`circuit.typ`) or a functor (`hm.typ`).  Here, so neither of those files imports the other.
+#let lw = 1.1pt         // wire thickness            (S2_124.typ)
 #let NODRAW = "nodraw" in sys.inputs
 // The placeholder has a NONZERO size on purpose: `hchain(fill: true)` divides by the summed width of
 // the pictures it packs, and a zero-width box makes that a division by zero rather than a blank page.
