@@ -137,6 +137,13 @@ formula, and its port types are checked by nobody — which is how a bead ends u
 its source. When the generator cannot draw a panel, extend the generator (parser, `hm-sigs.json`,
 `dpanel.typ`) first and then generate; a one-off `cetz` file is never the answer.
 
+**ALWAYS PROVE IT IN LEAN.** A type the note writes, the naturality a bead's dot claims, the equation
+a table row states — each is backed by a Lean declaration cited by its `lean:` marker (a signature row
+carries `lean` and `nat-lean`, in `hm-sigs.json` or in the panel's own `cert:`), because a claim checked
+only by eye is how a bead landed on a wire that was not its source, and `cite-check` and `hm-check
+--verify-sigs` can only hold what has a declaration behind it. No declaration, no dot, no claim: a
+transformation with no naturality proof draws as a spider, a type with no Lean spelling is not written.
+
 ## Searching the book text
 The greppable book prose lives in `/home/dh/anki/typst-book/chapters/<a.b>/section-<a.b>.typ`
 (and the `section-*.fixed.md` siblings — cleaned OCR). ALWAYS grep there.
