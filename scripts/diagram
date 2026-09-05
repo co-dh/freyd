@@ -840,26 +840,25 @@ def layout(rows, made, otop, obot, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
-    # A bead the row DECLARES natural is the picture's FIXED POINT: naturality is exactly the freedom
-    # to slide the other beads past it (IntroString (1.15)), so the two sides of an equation must draw
-    # it at ONE height and an ordinary arrow as the thing that moved.  Shifting every row up by that
-    # bead's index puts it at `n·DY` above the frame's FLOOR wherever it stands in the composite, so
-    # two panels that share a frame height line up on it under `row`'s `align: horizon`.
-    k = next((i for i, r in enumerate(rows) if r.nat), 0)
-    nat = any(r.nat for r in rows)
     # `--frame`/`cert.frame` OVERRIDES the frame height so two panels either side of an `=` can be
     # forced to the same frame (their `row`'s `align: horizon` lines up FRAME centres, not ports).
-    # THE FRAME ENDS ONE ROW ABOVE THE TOPMOST BEAD — `n·DY` for a plain panel, `(n+k)·DY` for a
-    # shifted one.  The old `2·n` was the `k`-free upper bound, so every panel of the same bead count
-    # got one frame for free; it also left `n−k` empty rows on top, half the box in a `k=0` panel.
+    # THE FRAME IS ANCHORED AT ITS FLOOR: the LAST bead sits one row above it and the frame ends one
+    # row above the FIRST, so a panel is `n+1` rows deep and both bands are one row.  A declared
+    # `frame:` is always the taller partner's count, so its slack lands ABOVE the first bead, where
+    # the wires are already running; anchoring at the top instead put that slack under the last bead,
+    # as a white band between the picture and its own end labels.
+    # The old default also shifted every row up by the index `k` of the first row DECLARED natural,
+    # and grew the frame by `k` to keep one row above the top.  Relative to the frame that shift is
+    # the identity — it moved the ceiling with the beads — so its whole effect was `k` empty rows at
+    # the floor; `13.4.4a`'s `k=4` panel carried five.  Naturality still decides where a bead's DOT
+    # sits (below), which is the part of it that draws.
     # `--top`/`cert.top` moves the first bead, which is the OTHER half of lining a short panel up
-    # with a tall one: the frame gives them one box, the top gives them one bead height.  It binds
-    # the shifted case too — the `k`-shift is only what it defaults to.
+    # with a tall one: the frame gives them one box, the top gives them one bead height.
     # BOTH ARE ROW COUNTS, not lengths: the caller states the panel's COMPLEXITY and `DY` turns it
     # into a size, so the vertical unit can be re-measured without touching a single `cert:`.
-    nr = cert.get("frame", n + k + 1 if nat else max(n, 1) + 1)
+    nr = cert.get("frame", max(n, 1) + 1)
     hh = nr * DY
-    ys = [(cert.get("top", n + k if nat else nr - 1) - i) * DY for i in range(n)]
+    ys = [(cert.get("top", n) - i) * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}

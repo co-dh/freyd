@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""framefit — no Hinze-Marsden panel stands on a band of white it has no use for.
+
+A panel's frame is a ROW COUNT (`layout` in `scripts/diagram`, `DY`): one row above the first bead,
+one row below the last, and the ports on the two edges.  Grow that count past what the beads need and
+the extra rows land under the picture, between the lowest bead and the end labels — space that says a
+step is missing.  `13.4.4a` carried five such rows, because the old default lifted every bead by the
+index of the first row declared natural and grew the frame to match, paying at the floor for an
+alignment only a PAIR needs.
+
+    ./scripts/framefit                       # the note: the literals, then the ink
+    ./scripts/framefit --tight 12            # the 12 deepest bands, worst first
+    ./scripts/framefit some.typ some.pdf
+
+Two passes over the same panels, because each sees what the other cannot:
+
+  * THE LITERALS say how deep the band is, exactly and in rows: `#dpanel(h, …, beads, …)` carries the
+    frame height and every bead's height, and it is the list that DRAWS (see `dpanel.typ`).  One row
+    is the band; the only licence to stand higher is a `top:` in the panel's own `cert:`, which is
+    how two panels either side of a step sign line up on a bead standing at different depths in the
+    two composites — the shorter side then legitimately keeps its partner's taller frame.
+  * THE INK says where the beads actually came out: `pdftocairo -svg` through `scripts/figgeom`, the
+    same path `./scripts/labelfit` takes and at no image cost.  The band is measured as a FRACTION of
+    the frame, which is scale-free — a panel is drawn at anything from `s: 42%` to `s: 100%` and then
+    shrunk again to fit its column, so points say nothing across panels.  The wires run to the floor
+    and the end labels sit BELOW it, so the lowest ink inside the frame is the lowest bead.
+
+The licence is read off the literals, so the ink pass has a number to fail against and names the PAGE
+the panel is on, which the literals do not know.
+"""
+import importlib.util, os, re, subprocess, sys, tempfile
+from importlib.machinery import SourceFileLoader
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
+PDF = os.path.join(ROOT, "diag", "allegory-axioms.pdf")
+BAND = 0.6      # a fill wider or taller than this much of the page is a rule or a page band, not a panel
+PAD = 2.0       # the two regions a panel is made of meet on the object wire, so the join needs slack
+ONE = 1.0       # the band, in rows: one row under the last bead, as `layout` lays it out
+EPS = 0.02      # a bead's centre against the frame's foot, as a fraction of the frame
+GREY = "#e2e2e2"  # `luma(226)`: the `𝟏` strip every `dpanel` lays down, and nothing else in the note
+
+
+def _load(name):
+    spec = importlib.util.spec_from_loader(name, SourceFileLoader(name, os.path.join(ROOT, "scripts", name)))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+figgeom = _load("figgeom")
+dg = _load("diagram")
+
+
+# ---------------------------------------------------------------- the literals
+def isnum(s):
+    return re.fullmatch(r"-?\d*\.?\d+", s.strip()) is not None
+
+
+def tup(e):
+    e = e.strip()
+    return dg.split_args(e[1:-1] if e.startswith("(") else e)
+
+
+def tuples(args, i):
+    """The i-th positional argument of a `dpanel(...)` call, as a list of its tuples."""
+    t = args[i].strip() if len(args) > i else "()"
+    return [e for e in dg.split_args(t[1:-1] if t.startswith("(") else t) if e.strip()]
+
+
+def literals(path):
+    """(line, name, expect, rows below the last bead, licensed) for every `#dpanel` in the note."""
+    text = open(path, encoding="utf-8").read()
+    out = []
+    for m in re.finditer(r"\bdpanel\(", text):
+        popen = m.end() - 1
+        arg = text[popen + 1:dg.close(text, popen)]
+        args = dg.split_args(arg)
+        # EVERY bead's height, not just the ones a `sigs:` key can name: the band is where the ink
+        # stops, so a bead whose label is interpolated markup counts exactly like a plain one.  A
+        # lane's two ends count with them: a unit heads its lane half a row BELOW the row it stands
+        # on and draws its name there, so a composite ending in `𝟙%∋` has ink under its last bead.
+        try:
+            ys = [float(tup(e)[0]) for e in tuples(args, 4)]
+            ends = [float(v) for e in tuples(args, 3) for v in tup(e)[1:3] if isnum(v)]
+            h = float(args[0])
+        except ValueError:
+            # A HAND-LAID panel (`tw-hm`, `party-hm`) writes its heights as bound names, so there is
+            # no number to read; the ink pass still measures it, which is the point of having two.
+            continue
+        if not ys:
+            continue                                   # a panel with no bead has no band to measure
+        line = text.count("\n", 0, m.start()) + 1
+        name = re.search(r"#let ([\w-]+) = $", text[:m.start()])
+        cert = arg.find("cert: (")
+        # `top:` is the pair's knob and the ONE licence to stand off the floor; `frame:` is not — it
+        # is the shared BOX, and a panel can keep its partner's frame with its own beads at the foot.
+        lic = cert >= 0 and "top:" in arg[cert:]
+        out.append((line, name.group(1) if name else "dpanel", arg_expect(arg),
+                    round(min(ys + ends) / dg.DY, 3), h, lic))
+    return out
+
+
+def arg_expect(arg):
+    m = re.search(r'expect: "((?:[^"\\]|\\.)*)"', arg)
+    return m.group(1) if m else "?"
+
+
+# ---------------------------------------------------------------- the ink
+def panels(svg, pw, ph):
+    """A panel is a connected component of the filled regions that carries the grey `𝟏` strip."""
+    rs = [(col, bb) for kind, col, _, bb in figgeom.elements(svg)
+          if kind == "region" and bb[2] - bb[0] < BAND * pw and bb[3] - bb[1] < BAND * ph]
+    out = []                                            # [x0, y0, x1, y1, has-grey]
+    for col, r in rs:
+        r = [r[0], r[1], r[2], r[3], col == GREY]
+        hit = [q for q in out if q[0] <= r[2] + PAD and q[2] >= r[0] - PAD
+               and q[1] <= r[3] + PAD and q[3] >= r[1] - PAD]
+        for q in hit:
+            out.remove(q)
+        out.append([min([r[0]] + [q[0] for q in hit]), min([r[1]] + [q[1] for q in hit]),
+                    max([r[2]] + [q[2] for q in hit]), max([r[3]] + [q[3] for q in hit]),
+                    any(q[4] for q in hit + [r])])
+    return [q for q in out if q[4]]
+
+
+def page(pdf, pno, td):
+    """(band as a fraction of the frame, where) for every Hinze-Marsden panel on the page."""
+    svgf = os.path.join(td, "p.svg")
+    subprocess.run(["pdftocairo", "-svg", "-f", str(pno), "-l", str(pno), pdf, svgf], check=True)
+    svg = open(svgf).read()
+    vb = re.search(r'viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"', svg)
+    pw, ph = (float(vb[1]), float(vb[2])) if vb else (612.0, 792.0)
+    ps = panels(svg, pw, ph)
+    beads = [((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2)
+             for kind, _, _, bb in figgeom.elements(svg) if kind == "bead"]
+    out = []
+    for p in ps:
+        ys = [c[1] for c in beads if p[0] <= c[0] <= p[2] and p[1] <= c[1] <= p[3]]
+        if not ys or p[3] - p[1] < 1e-6:
+            continue                                    # a panel with no bead has no band to measure
+        out.append(((p[3] - max(ys)) / (p[3] - p[1]), f"p.{pno} panel at ({p[0]:.0f},{p[1]:.0f})"))
+    return out
+
+
+def main(argv):
+    typ = next((a for a in argv if a.endswith(".typ")), NOTE)
+    pdf = next((a for a in argv if a.endswith(".pdf")), PDF)
+    tight = int(argv[argv.index("--tight") + 1]) if "--tight" in argv else 0
+    if not os.path.exists(pdf):
+        sys.exit(f"framefit: no {pdf} — compile the note first")
+    lits = literals(typ)
+    bad = [f"{typ}:{line}  {name} `{exp}`: {rows:g} rows under the last bead, expected {ONE:g}"
+           f" — declare `top:` in its `cert:` if a step pair lifts it"
+           for line, name, exp, rows, h, lic in lits if rows > ONE + 1e-9 and not lic]
+    # What the ink is allowed to show: the deepest band any literal states, as a fraction of its own
+    # frame.  This is where the ink pass earns its keep — a HAND-LAID panel writes its heights as
+    # bound names and the literal pass cannot read it, so the generated panels set the bar for it.
+    cap = max([rows * dg.DY / h for _, _, _, rows, h, _ in lits], default=ONE * dg.DY / 2)
+    n = int(re.search(r"Pages:\s+(\d+)", subprocess.run(
+        ["pdfinfo", pdf], capture_output=True, text=True).stdout)[1])
+    ink = []
+    with tempfile.TemporaryDirectory() as td:
+        for p in range(1, n + 1):
+            ink += page(pdf, p, td)
+    over = [f"{where}: band {frac:.3f} of the frame, deepest a `cert:` licenses is {cap:.3f}"
+            for frac, where in ink if frac > cap + EPS]
+    for line in bad + over:
+        print("framefit: " + line)
+    for frac, where in sorted(ink, reverse=True)[:tight]:
+        print(f"framefit: {frac:6.3f}  {where}")
+    print(f"framefit: {os.path.basename(typ)}, {len(lits)} panels, {len(bad)} standing off the floor;"
+          f" {os.path.basename(pdf)}, {len(ink)} drawn, {len(over)} over {cap:.3f} of the frame")
+    return 1 if bad or over else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
