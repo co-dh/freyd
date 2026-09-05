@@ -65,7 +65,7 @@
 // object name belongs here — `obands` reads it with no default, so an unlisted one is a compile
 // error, not a wrong hue.
 #let OCOL = (
-  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL,
+  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL, "TA": TCOL, "TB": TCOL,
   "Int": TCOL, "Nat": TCOL, "LA": TCOL, "Job": TCOL, "Item": TCOL, "Word": TCOL, "City": TCOL,
   "Char": TCOL, "Code": BCOL, "Op": GCOL,
   "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
