@@ -13,6 +13,8 @@ whole review.
 import os, re, shutil, subprocess, sys, tempfile
 
 DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
+# ImageMagick's default font renders every glyph as an empty box here; this face has both Latin and CJK.
+FONT = "/usr/share/fonts/noto-cjk/NotoSansCJK-Medium.ttc"
 MINAREA = 40                     # ignore antialiasing specks
 GAP = 90                         # change regions closer than this are one edit
 NOTES = ("diag/allegory-axioms.pdf", "diag/allegory2.pdf")
@@ -65,11 +67,16 @@ def merge(boxes):
 
 def label(src, out, text, tmp, scale):
     run("magick", src, *scale, "-bordercolor", "white", "-border", "6", "-background", "white",
-        "-splice", "0x30", "-gravity", "northwest", "-pointsize", "22", "-fill", "red",
+        "-splice", "0x30", "-gravity", "northwest", "-font", FONT, "-pointsize", "22", "-fill", "red",
         "-annotate", "+8+4", text, out)
 
 
-def crops(before_pdf, after_pdf, out, tag=""):
+def caption_strip(src, out, text):
+    run("magick", src, "-background", "white", "-splice", "0x36", "-gravity", "northwest",
+        "-font", FONT, "-pointsize", "22", "-fill", "black", "-annotate", "+8+6", text, out)
+
+
+def crops(before_pdf, after_pdf, out, tag="", caption=""):
     tmp = tempfile.mkdtemp(prefix="diff-crop.")
     os.makedirs(out, exist_ok=True)
     os.makedirs(tmp + "/b"), os.makedirs(tmp + "/a")
@@ -95,6 +102,8 @@ def crops(before_pdf, after_pdf, out, tag=""):
             label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag}p{n} AFTER", tmp, scale)
             pair = os.path.join(out, f"{tag.strip('- ')}p{n}-{j}.png".lstrip("-"))
             run("magick", f"{tmp}/lb.png", f"{tmp}/la.png", "-background", "gray70", "-append", pair)
+            if caption:
+                caption_strip(pair, pair, caption)
             if size(pair)[1] > MAXH:
                 run("magick", pair, "-resize", f"x{MAXH}", pair)
             print(f"{tag}page {n} region {j}: {geo} -> {pair}")
@@ -105,7 +114,8 @@ def crops(before_pdf, after_pdf, out, tag=""):
 
 def main(argv):
     if len(argv) >= 2:
-        crops(argv[0], argv[1], argv[2] if len(argv) > 2 else "review")
+        crops(argv[0], argv[1], argv[2] if len(argv) > 2 else "review",
+              caption=argv[3] if len(argv) > 3 else "")
         return
     # No arguments: the usual review, HEAD's committed PDF against the one `make p` just built.
     out = os.path.join(tempfile.gettempdir(), "diff-crop")
