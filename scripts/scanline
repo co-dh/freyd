@@ -332,14 +332,17 @@ def norm(e):
 # The relators one wire draws: `P A = E A`, so a lane labelled either carries the same object and a
 # panel may name it either way.  They differ as RELATIONS — B&dM p.119 symmetrises `P`'s second
 # conjunct, and only on maps do they agree (p.202) — so the panel keeps the letter it was drawn with
-# and the quotient is taken at the comparison alone.
-ALIAS = {'P': 'E'}
+# and the quotient is taken at the comparison alone.  Declared in `diag/hm-sigs.json`, beside the
+# signatures, because which two letters draw one lane is a fact about the NOTE, not about the sweep.
+def alias():
+    return sigs().get("alias", {})
 
 
 def canon(e):
     """One head for every wire that draws the same lane, `P(R)` read as `E(R)`.  Runs BEFORE `norm`,
     whose `fuse` merges two applications only when their heads already agree."""
-    return rec(('app', ALIAS[e[1]], e[2]) + e[3:], canon) if e[0] == 'app' and e[1] in ALIAS \
+    a = alias()
+    return rec(('app', a[e[1]], e[2]) + e[3:], canon) if e[0] == 'app' and e[1] in a \
         else rec(e, canon)
 
 

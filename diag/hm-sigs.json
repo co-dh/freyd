@@ -16,8 +16,16 @@
     "naturality is still open.  A row that states `nat` carries `nat-lean`, the marker (or",
     "list of markers) of the declaration proving it, checked exactly as `lean` is.",
     "`not-lax` records a bead proved NOT even lax natural: it still draws as a spider, same as an",
-    "unmarked row (no `nat`), but the marker is kept so the negative evidence is not lost."
+    "unmarked row (no `nat`), but the marker is kept so the negative evidence is not lost.",
+    "`split` names the functors drawn as a wire of their own instead of folded into the object",
+    "wire's label, space separated; a panel's own `cert:` `split:` overrides it, `\"\"` folding",
+    "them all back.  `alias` names the relators that draw ONE lane, read as the alias's own head",
+    "when two spellings are compared: `P A = E A`, so a panel may say either."
   ],
+  "split": "list",
+  "alias": {
+    "P": "E"
+  },
   "mu": {
     "F": "list(x)"
   },
