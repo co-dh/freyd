@@ -41,3 +41,6 @@
 [X] rename all generate to gen. the lean code, use our lean-refactor. and the allegory-axioms.typ.
 [X] 13.5.5. section header, add type of Q : F(N A,N(L A))⟶N(L A), and say it's  F(N A,−)'s algebra
 [X] squeeze the boxes around the diagrams. space has value.
+[X] 13.4.4a too much space at the bottom of string diagrams. add checker, find root cause, fix in general.
+[X] in general, the lable are covered by the text. e.g. (13.4.4a becomes 3.4.4a. add checker, find root cause, fix in general
+[X] add $13.6.1 for prefix . secure <= secure . prefix. on Bird P185. add string diagram for secure(bmax def) and it,
