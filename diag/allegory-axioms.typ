@@ -4947,38 +4947,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
 // greedy `⊒` into the heading's `=`.  Only the last three rows are cited rather than derived.
-// `[A]` is TWO wires, `list` beside `A`, so the object wire is `A` and the `E` the transpose opens
-// closes on `list`, the leftmost survivor; `dpan`'s single object wire cannot say either.
-#let LPX = (1.05, 2.35, 4.85)                     // `E`, `list`, `A`
-#let LPY = (3.55, 2.55, 1.00)                     // the singleton, the arrow, `est(R°)`
-// The specification row splits `LPY.at(1)`'s one arrow into two, straddling it, so the row below —
-// which collapses them into `⦇S⦈` — puts that bead midway between the pair it replaces.
-#let LPYS = (3.05, 2.00)                          // `prefix`/`subseq` above, `p` below
-#let LPH = 4.20
-// ONE `w` for every row of a display, so `list` and `A` stand in one column down it: a per-row width
-// centres each panel on its own label and moves the two wires the chain never touches.
-// `sp` lists the `[A]⟶[A]` nodes on the `A` line, top down, as `(y, label)`: the `list` wire bends in
-// to each and back out, `A` runs straight through, so the gray's edge stays the rectangle it was.
-#let lpan(body: (), w: 11.7, names: false, sp: ()) = P(cetz.canvas(length: 0.8cm, {
-  let (XE, XL, XO) = LPX
-  d.rect((0, 0), (XO, LPH), fill: fb-ALLC, stroke: none)
-  d.rect((XO, 0), (w, LPH), fill: luma(226), stroke: none)
-  hm-wire(((XO, LPH), (XO, 0)), col: BCOL)
-  lwire(XL, XO, sp.map(n => n.at(0)), LPH, 0)
-  for (y, l) in sp { hm-bead((XO, y), l) }
-  body
-  hm-port((XL, LPH), [`list`]); hm-port((XO, LPH), [`A`], col: BCOL)
-  hm-port((XL, 0), [`list`], dir: -1); hm-port((XO, 0), [`A`], dir: -1, col: BCOL)
-  if names { hm-name((0.45, 0.30), [`Rel`]); hm-name((XO + 2.8, 0.30), [`𝟏`]) }
-}), s: 76%)
-// The `E` wire is BORN by the singleton and killed by `est(R°)`, itself a node like any other: `E`
-// dies on the `A` line under the `list` wire's own bend, so the two fan in without crossing.
-#let epan(body: (), w: 11.7, names: false, sp: ()) = lpan(
-  body: {
-    dhandle(LPX.at(2), LPX.at(0), LPY.at(0), LPY.at(2), [`E`], born: frc([`𝟙`]))
-    body
-  },
-  w: w, names: names, sp: sp + ((LPY.at(2), [`est(R°)`]),))
 // `S` is defined in @takewhile-defn, three pages back, and every row below reads it: the definition
 // is repeated here rather than looked up, in that table's own five columns.
 #disp[#align(center, block(width: 21cm)[
@@ -5018,12 +4986,22 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [#src[the specification — @est-defn's `est(R°)`.
  ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac
-  [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`prefix`]),), names: true)],
+  [#align(center, dpanel(7.5, 6.12, 4.27,
+  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
+  ((4.5, [`prefix`], black, 3.641, 3.641, "lax"), (3, [`p`]), (1.5, [`est(R°)`], black, 2.5)),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]")))],
 
   [#vstep(EQ, twp(twrun((LS-box, est-Rc-box), from: [`[A]`]), s: 70%),
  [#src[@takewhile-alg]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_alg@950e7adb
-  [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
+  [#align(center, dpanel(6, 6.12, 4.27,
+  ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.641, 3, "bot", none, none), (3.641, "top", 3, none, none)),
+  ((3, [`⦇S⦈`], black, 3.641), (1.5, [`est(R°)`], black, 2.5)),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  cert: (expect: "(⦇S⦈)%∋ est(R°)", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
       (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -5044,7 +5022,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
  collected and one chosen at the end. ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile_greedy@22f769a1
-  [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
+  [#align(center, dpanel(3, 5.49, 3.64,
+  ((3.016, 1.5, "bot", none, none), (3.016, "top", 1.5, none, none)),
+  ((1.5, [`⦇S%∋ est(R°)⦈`], black, 3.016),),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
@@ -5066,7 +5049,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]"))],
  [#src[@takewhile-step]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_step@60d42a5b
-  [#lpan(sp: ((LPY.at(1), [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`]),))],
+  [#align(center, dpanel(3, 5.49, 3.64,
+  ((3.016, 1.5, "bot", none, none), (3.016, "top", 1.5, none, none)),
+  ((1.5, [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], black, 3.016),),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
     #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
@@ -6064,10 +6052,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   }
   wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
 }), s: 80%)
-// This display's longest bead is shorter than @takewhile-laws's, so its gray is narrower — one width
-// for its own four rows, which is what puts `list` and `A` in a column.
-#let lpan = lpan.with(w: 8.6)
-#let epan = epan.with(w: 8.6)
 // `S` is defined in @filter-defn, three pages back, and every row below reads it: the definition is
 // repeated here rather than looked up, in that table's own five columns.
 #disp[#align(center, block(width: 21cm)[
@@ -6096,11 +6080,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep([], fpic((bx-slp, est-Rc-box)),
  [#src[@comb-fns]])],
     // lean:AOP.A7_7_Filter.filter@86c3d821
-  [#epan(body: hm-bead((LPX.at(2), LPYS.at(1)), [`p`]), sp: ((LPYS.at(0), [`subseq`]),), names: true)],
+  [#align(center, dpanel(7.5, 6.12, 4.27,
+  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
+  ((4.5, [`subseq`], black, 3.641, 3.641, "lax"), (3, [`p`]), (1.5, [`est(R°)`], black, 2.5)),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  cert: (expect: "(subseq list(p))%∋ est(R°)", src: "[A]", tgt: "[A]")))],
 
   [#vstep(EQ, fpic((bx-cS, est-Rc-box)),
     [#src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
-  [#epan(sp: ((LPY.at(1), [`⦇S⦈`]),))],
+  [#align(center, dpanel(6, 6.12, 4.27,
+  ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.641, 3, "bot", none, none), (3.641, "top", 3, none, none)),
+  ((3, [`⦇S⦈`], black, 3.641), (1.5, [`est(R°)`], black, 2.5)),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  ((3.641, [`list`]), (4.27, [`A`])),
+  cert: (expect: "(⦇S⦈)%∋ est(R°)", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
       (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -6122,7 +6116,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_greedy@a4d1b1a5
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
   // unchanged, so they are drawn where the two panels above draw them.
-  [#lpan(sp: ((LPY.at(1), [`⦇`#frc([`S`])` est(R°)⦈`]),))],
+  [#align(center, dpanel(3, 5.49, 3.64,
+  ((3.016, 1.5, "bot", none, none), (3.016, "top", 1.5, none, none)),
+  ((1.5, [`⦇S%∋ est(R°)⦈`], black, 3.016),),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  ((3.016, [`list`]), (3.64, [`A`])),
+  cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
       (k: "case", nin: 1, nout: 1, bodies: (
@@ -6943,36 +6942,6 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
       {[4,5],[4,7],[4,8]} )
 ```]]<cyl-generate>
 
-#disp[#align(center, dpanel(10.5, 6.35, 4.5,
-  ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
-  ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877, 3.2675), (1.5, [`α`], black, 3.658)),
-  ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
-  ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
-  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))")))]<gen-diag>
-
-#disp[#align(center)[```
-u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
-F(𝟙,moves trans N(union))                         𝟙 keeps the column, the path SETS move
-  moves({[5]},{[6]},{[7]},{[8]})
-   = {({[6]},{[7]},{[8]},{[5]}),
-      ({[5]},{[6]},{[7]},{[8]}),
-      ({[8]},{[5]},{[6]},{[7]})}               : E(N(E(L A)))  down, unmoved, up
-  trans(that)
-   = ({{[6]},{[5]},{[8]}},{{[7]},{[6]},{[5]}},
-      {{[8]},{[7]},{[6]}},{{[5]},{[8]},{[7]}}) : N(E(E(L A)))  row k gets rows k-1, k, k+1
-  N(union)(that)
-   = ({[5],[6],[8]},{[5],[6],[7]},
-      {[6],[7],[8]},{[5],[7],[8]})             : N(E(L A))     every path into row k, none dropped
-zip(that)
-   = ((1,{[5],[6],[8]}),(2,{[5],[6],[7]}),
-      (3,{[6],[7],[8]}),(4,{[5],[7],[8]}))     : N(F(A,E(L A)))  each row: its square, and the
-                                                                paths it may be put in front of
-N(cp P(α))(that)
-   = ({[1,5],[1,6],[1,8]},{[2,5],[2,6],[2,7]},
-      {[3,6],[3,7],[3,8]},{[4,5],[4,7],[4,8]}) : N(E(L A))     cp pairs the square with each path,
-                                                               α prefixes it: α(1,[5])=[1,5]
-```]]<gen-step>
-
 #disp[#block(breakable: false)[
 #table(
   columns: (2.0cm, 1fr),
@@ -7054,6 +7023,74 @@ cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collecte
 ```]]<cp-step>
 
 #v(8pt)
+
+=== `generate=F(𝟙,moves trans N(union)) zip N(cp P(α))` <sec-cyl-gen>
+
+#disp[#align(center, dpanel(10.5, 6.35, 4.5,
+  ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
+  ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877, 3.2675), (1.5, [`α`], black, 3.658)),
+  ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
+  ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
+  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))")))]<gen-diag>
+
+#disp[#align(center)[```
+u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
+F(𝟙,moves trans N(union))                         𝟙 keeps the column, the path SETS move
+  moves({[5]},{[6]},{[7]},{[8]})
+   = {({[6]},{[7]},{[8]},{[5]}),
+      ({[5]},{[6]},{[7]},{[8]}),
+      ({[8]},{[5]},{[6]},{[7]})}               : E(N(E(L A)))  down, unmoved, up
+  trans(that)
+   = ({{[6]},{[5]},{[8]}},{{[7]},{[6]},{[5]}},
+      {{[8]},{[7]},{[6]}},{{[5]},{[8]},{[7]}}) : N(E(E(L A)))  row k gets rows k-1, k, k+1
+  N(union)(that)
+   = ({[5],[6],[8]},{[5],[6],[7]},
+      {[6],[7],[8]},{[5],[7],[8]})             : N(E(L A))     every path into row k, none dropped
+zip(that)
+   = ((1,{[5],[6],[8]}),(2,{[5],[6],[7]}),
+      (3,{[6],[7],[8]}),(4,{[5],[7],[8]}))     : N(F(A,E(L A)))  each row: its square, and the
+                                                                paths it may be put in front of
+N(cp P(α))(that)
+   = ({[1,5],[1,6],[1,8]},{[2,5],[2,6],[2,7]},
+      {[3,6],[3,7],[3,8]},{[4,5],[4,7],[4,8]}) : N(E(L A))     cp pairs the square with each path,
+                                                               α prefixes it: α(1,[5])=[1,5]
+```]]<gen-step>
+
+=== `⦇generate⦈`: `α⦇generate⦈=F(𝟙,⦇generate⦈)generate` <sec-cyl-fold>
+
+// The defining equation of @cata-defining at `generate`, both sides drawn: the fold bead is
+// OUTSIDE `F` on the left and INSIDE it on the right — that is all the recursion there is.
+#disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
+  dpanel(4.5, 6.54, 4.69,
+  ((2.5, "top", 3, none, none), (2.812, 1.5, "bot", none, none), (3.438, 1.5, "bot", none, none), (4.062, 1.5, "bot", none, none), (3.125, "top", 1.5, none, none), (3.75, "top", 1.5, none, none)),
+  ((3, [`α`], black, 2.5), (1.5, [`⦇generate⦈`], black, 3.125, 3.4375, "lax")),
+  ((2.5, [`F`]), (3.125, [`L`]), (3.75, [`N`]), (4.69, [`A`])),
+  ((2.812, [`N`]), (3.438, [`E`]), (4.062, [`L`]), (4.69, [`A`])),
+  cert: (expect: "α⦇generate⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
+  EQ,
+  dpanel(4.5, 6.6, 4.75,
+  ((2.656, 1.5, "bot", none, none), (2.5, "top", 1.5, none, none), (2.877, 3, 1.5, [`N`], none), (3.502, 3, "bot", none, none), (4.127, 3, "bot", none, none), (3.189, "top", 3, none, none), (3.814, "top", 3, none, none)),
+  ((3, [`⦇generate⦈`], black, 3.189, 3.5015, "lax"), (1.5, [`generate`], black, 2.5)),
+  ((2.5, [`F`]), (3.189, [`L`]), (3.814, [`N`]), (4.75, [`A`])),
+  ((2.656, [`N`]), (3.502, [`E`]), (4.127, [`L`]), (4.75, [`A`])),
+  cert: (expect: "F(𝟙,⦇generate⦈)generate", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
+
+  src[`α` puts the column back on the list, then the fold reads all of it],
+  [],
+  src[the fold reads the rest under `F`, then one `generate` puts the column in front],
+))]<fold-diag>
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate@4c4ca025
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate_lax_natural@822259ff
+
+#disp[#align(center)[```
+xs = [(1,2,3,4),(5,6,7,8)] = α((1,2,3,4),[(5,6,7,8)])   : L(N A)
+
+⦇generate⦈(xs) = generate((1,2,3,4), ⦇generate⦈[(5,6,7,8)])
+```]]<fold-step>
+
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @cyl-generate: the
+  tail folds to `({[5]},{[6]},{[7]},{[8]})`, one path per row and each of them one square long,
+  and `generate` on it is @gen-step's walk.]])
 
 === `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
 
