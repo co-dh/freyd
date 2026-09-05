@@ -111,6 +111,13 @@ Prefer relative cross-references ("the next subsection", "above") over hard-code
 break when sections are reordered. Avoid unexplained field-specific notation (e.g. `Bℤ/2`, `π₁`); spell it
 out ("the one-object category of `ℤ/2`") unless the term has already been introduced.
 
+**Banned words, in chat and in the note alike.** No eponyms for a result — never "Lambek"; say the
+property ("`α` is an iso"). None of B&dM's Greek scheme names — no catamorphism, anamorphism,
+hylomorphism, paramorphism; `⦇R⦈` is "the fold", `⟦R⟧` an "unfold", a hylomorphism "an unfold then a
+fold". A technical term keeps the note's own English spelling inside a Chinese sentence (`path`, never
+路径), because a word the reader has not met in the note or the book reads as invented even when it is
+in B&dM.
+
 **A formula heading a table gets ONE sentence saying what it is about.** Every `Thm[...]` cell, and any
 other table header that is a formula, carries a single `#src` line glossing it — what the equation says,
 in words, checkable against the symbols term by term. Not the law's name, not a restatement of the
@@ -118,7 +125,8 @@ formula: what it means. One sentence, no more.
 
 **NEVER ADD A PARAGRAPH TO `diag/allegory-axioms.typ` UNLESS ASKED.** No new prose, no restated
 conventions, no framing or linking sentences. Answer in chat instead; put durable know-how in the
-relevant skill (drawing conventions go to `string-diagram`) or in a `//` comment in the drawing file.
+relevant skill (Hinze–Marsden conventions go to `string-diagram`, circuit ones to `circuit-diagram`) or
+in a `//` comment in the drawing file.
 Adding a picture, fixing wrong wording, or cutting text is fine — adding explanation nobody asked for
 is not.
 
