@@ -30,7 +30,7 @@
     "F": "list(x)"
   },
   "spelling": {
-    "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier.",
+    "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index.",
     "list": [
       "List"
     ],
@@ -43,7 +43,11 @@
     ],
     "F": [
       ".obj",
-      "Fo "
+      "Fo ",
+      "Prod.map"
+    ],
+    "[]": [
+      "Vec"
     ],
     "×": [
       "×",

@@ -263,6 +263,71 @@ def verify(fx, path):
 
 
 # ---------------------------------------------------------------- the signature table
+def spelt(l, say):
+    """How Lean writes one wire letter, or None where the table says nothing.  EVERY index functor
+    is one entry: `[n]`, `[3p]` and `[m+1]` are all `Vec`, so the table names the shape `[]` once
+    rather than a row per index the note happens to write."""
+    return say.get("[]" if sl.idxhead(l) else l)
+
+
+def sigrow(db, say, proofs, name, row, where):
+    """One signature row against the declaration its marker names, wherever the row is stated.
+    `cite-check` says the statement still has the key the row was read against; then the letters the
+    row's objects use must be spelled somewhere in that statement — a projection carries none, so it
+    goes unchecked.  A row STATING a `nat` is held to the same standard: the mark it draws is a
+    theorem, so `nat-lean` must name the declaration behind it — `"strict"` and `"lax"` the proof of
+    the square, `"no"` the counterexample refuting it.  A row with no `nat` claims nothing, which for
+    a polymorphic row is not an option — `diagram` refuses to draw one — and which stops being honest
+    the moment Lean proves the square anyway, so the corpus is swept for a proof the table never took
+    up.  A row that cites no declaration at all — a panel typing a letter of its own display — has no
+    statement to read the letters off, and only the `nat` half is auditable."""
+    bad = []
+    if row.get("lean"):
+        mark, _, k = row["lean"].partition("@")
+        moved = cc.check(db, mark, k or None, where)
+        if moved:
+            return [moved]
+        user, mod = cc.resolve(db, mark)[0][:2]
+        (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
+                             " and user_name = ?", (mod, user)).fetchone()
+        used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
+        miss = [f"{l} as {'/'.join(spelt(l, say))}" for l in sorted(used)
+                if spelt(l, say) and not any(w in stmt for w in spelt(l, say))]
+        if stmt and miss:
+            bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
+                       f" it is `{' '.join(stmt.split())}`")
+    if "nat" not in row:
+        # A row with no `nat` claims nothing — but silence is only honest while Lean says
+        # nothing either.  Once the corpus proves `<name>_natural`, `<name>_lax_natural` or
+        # refutes it, the row is out of date, and no one would find that by reading the table.
+        free = [f"{m}.{u}" for u, m in proofs if u.split(".")[-1].split("_")[0] == name]
+        if free:
+            bad.append(f'{where}: no `nat`, but Lean has {free[0]} — state the mark and cite it'
+                       f' in `nat-lean`, or rename that theorem if it is a different arrow')
+        return bad
+    marks = row.get("nat-lean")
+    if not marks:
+        return bad + [f'{where}: nat is "{row["nat"]}" with no nat-lean — add the marker of the'
+                      f' declaration that proves it, as `Mod.decl@key`']
+    for m in [marks] if isinstance(marks, str) else marks:
+        mark, _, k = m.partition("@")
+        moved = cc.check(db, mark, k or None, f"{where} nat-lean")
+        if moved:
+            bad.append(moved)
+    return bad
+
+
+def own_rows():
+    """The rows the NOTE's own panels state, `(where, name, row)` each.  A panel types a letter of
+    its one display, which no `hm-sigs.json` row could — and the claims it hangs on that letter are
+    the same claims, so they are audited in the same place and not on the author's word."""
+    t = sl.sigs()
+    return [(f"{r['id']} sigs {k} : {v}", k, sl.typed(t, own)["sigs"][k])
+            for r in sl.panels(NOTE, None)
+            for own in [(r.get("cert") or {}).get("sigs") or {}]
+            for k, v in own.items()]
+
+
 def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
     the statement still has the key the row was read against; then the letters the row's objects use
@@ -279,43 +344,14 @@ def verify_sigs():
               db.execute("select user_name, module from decl_info where internal = 0 and"
                          " user_name like '%natural'")
               if u.split(".")[-1].endswith(("_natural", "_lax_natural", "_not_lax_natural"))]
-    bad = []
-    for name, row in t["sigs"].items():
-        mark, _, k = row["lean"].partition("@")
-        where = f"hm-sigs.json {name} : {row['src']} ⟶ {row['tgt']}"
-        moved = cc.check(db, mark, k or None, where)
-        if moved:
-            bad.append(moved); continue
-        user, mod = cc.resolve(db, mark)[0][:2]
-        (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
-                             " and user_name = ?", (mod, user)).fetchone()
-        used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
-        miss = [f"{l} as {'/'.join(say[l])}" for l in sorted(used)
-                if l in say and not any(w in stmt for w in say[l])]
-        if stmt and miss:
-            bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
-                       f" it is `{' '.join(stmt.split())}`")
-        if "nat" not in row:
-            # A row with no `nat` claims nothing — but silence is only honest while Lean says
-            # nothing either.  Once the corpus proves `<name>_natural`, `<name>_lax_natural` or
-            # refutes it, the row is out of date, and no one would find that by reading the table.
-            free = [f"{m}.{u}" for u, m in proofs if u.split(".")[-1].split("_")[0] == name]
-            if free:
-                bad.append(f'{where}: no `nat`, but Lean has {free[0]} — state the mark and cite it'
-                           f' in `nat-lean`, or rename that theorem if it is a different arrow')
-            continue
-        marks = row.get("nat-lean")
-        if not marks:
-            bad.append(f'{where}: nat is "{row["nat"]}" with no nat-lean — add the marker of the'
-                       f' declaration that proves it, as `Mod.decl@key`')
-            continue
-        for m in [marks] if isinstance(marks, str) else marks:
-            mark, _, k = m.partition("@")
-            moved = cc.check(db, mark, k or None, f"{where} nat-lean")
-            if moved:
-                bad.append(moved)
+    # The sweep for a proof nobody took up asks whether the TABLE is out of date, so it is put to
+    # the table alone: a panel's own row is one display's letter, and the place to state the mark
+    # for the arrow it names is the row that names the arrow everywhere.
+    rows = [(f"hm-sigs.json {n} : {r['src']} ⟶ {r['tgt']}", n, r, proofs)
+            for n, r in t["sigs"].items()] + [w + ((),) for w in own_rows()]
+    bad = [b for where, name, row, pf in rows for b in sigrow(db, say, pf, name, row, where)]
     print(*bad, sep="\n", file=sys.stderr)
-    print(f"hm-check: {len(t['sigs'])} signature rows audited against the declaration index,"
+    print(f"hm-check: {len(rows)} signature rows audited against the declaration index,"
           f" {len(bad)} adrift")
     return 1 if bad else 0
 

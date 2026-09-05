@@ -519,13 +519,16 @@
 // the bead that changed the length or the reader loses which axis it is.  The letters of `e` name the
 // axis; a constant index (`[3]`) is an axis of its own.  A lift that carries one index — `𝟙×[p]`,
 // `⟨𝟙,[m]⟩` — takes that index's hue, so the label is read whole and its first `[…]` decides.
-#let fcol(nm) = {
+#let faxis(nm) = {
   let s = plain(nm)
   let m = s.match(regex("\\[([^\\]]*)\\]"))
-  let n = if m == none { s } else {
+  if m == none { s } else {
     let e = m.captures.at(0)
     let ax = e.replace(regex("[^a-zA-Z]+"), "")
     "[" + (if ax == "" { e } else { ax }) + "]" }
+}
+#let fcol(nm) = {
+  let n = faxis(nm)
   if n in FCOL { FCOL.at(n) } else {
     let free = freehues()
     assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
@@ -541,7 +544,9 @@
   for (i, a) in lanes.enumerate() {
     for b in lanes.slice(i + 1) {
       let d = dE76(a.at(1), b.at(1))
-      assert(a.at(0) == b.at(0) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
+      // Two labels of ONE axis are one wire at two lengths — `[p]` above `concat` and `[3p]` below —
+      // and share a hue by the rule above, so the separation rule cannot be put to them.
+      assert(faxis(a.at(0)) == faxis(b.at(0)) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
         + a.at(0) + "` and `" + b.at(0) + "` are ΔE76 " + str(calc.round(d, digits: 1)) + " apart,"
         + " under " + str(SEPPANEL) + " — give one of them its own entry in `FCOL` (diag/draw.typ)")
     }
