@@ -1243,6 +1243,137 @@ def regen(path, tbl, write):
              and f"diagram: {path} does not hold what the generator draws")
 
 
+def split_args(s):
+    """Top-level comma-split of a parenthesised argument list's INNER text — respects nesting and
+    quotes the same way `close` does, so a bead's `[`...`]` label or a nested `dpanel(...)` survives
+    whole."""
+    out, depth, j, start = [], 0, 0, 0
+    while j < len(s):
+        c = s[j]
+        if c == '"':
+            j = s.index('"', j + 1)
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == "," and depth == 0:
+            out.append(s[start:j]); start = j + 1
+        j += 1
+    tail = s[start:].strip()
+    if tail:
+        out.append(tail)
+    return [a.strip() for a in out]
+
+
+def dpanel_frame_beads(text, popen):
+    """A `dpanel(...)` call's FRAME (first positional arg), BEADS (`{label: height}` from its fifth
+    positional arg, the bead tuple `(3, [`est(R)`], black, 3.125)` — height, backticked label,
+    colour, x), and the `cert: sigs` keys — the formula's own FREE VARIABLES (`f: F(x)⟶x`), whose
+    bead marks where an arbitrary argument sits and so is excluded from the bead-height check; only
+    a fixed operator's bead (`est(R)`, `R°`, `∋`, …) says the two panels are drawing the same step."""
+    inner = text[popen + 1:close(text, popen)]
+    args = split_args(inner)
+    frame = float(args[0])
+    beads = {}
+    bt = args[4].strip()
+    if bt not in ("()", ""):
+        for entry in split_args(bt[1:-1] if bt.startswith("(") else bt):
+            e = split_args(entry[1:-1] if entry.startswith("(") else entry)
+            # A compound label (`⦇`#frc(...)`⦈`, interpolated markup) has no plain text a `sigs:`
+            # key could match, so it is left out of the table rather than compared under a truncated
+            # or unmatchable name.
+            m = re.fullmatch(r'\[`([^`]*)`\]', e[1])
+            if m:
+                beads[m.group(1)] = float(e[0])
+    k = inner.find("cert: (")
+    sigs = set(certof(inner[k:close(inner, k + 6) + 1]).get("sigs", {})) if k >= 0 else set()
+    return frame, beads, sigs
+
+
+def panel_table(text):
+    """Every `#let NAME = dpanel(...)` binding: `name -> (frame, beads, sigs, line)`."""
+    tbl = {}
+    for m in re.finditer(r'#let ([\w-]+)\s*=\s*dpanel\(', text):
+        popen = m.end() - 1
+        frame, beads, sigs = dpanel_frame_beads(text, popen)
+        tbl[m.group(1)] = (frame, beads, sigs, text.count("\n", 0, m.start()) + 1)
+    return tbl
+
+
+def resolve_panel(arg, tbl):
+    """A row argument as a panel: a bound name (from `panel_table`), an inline `dpanel(...)`
+    literal, or `None` — a hand-drawn `mbp(...)`/`cpanel(...)`/plain `[]` the row leaves UNRESOLVED."""
+    arg = arg.strip()
+    if arg.startswith("dpanel("):
+        frame, beads, sigs = dpanel_frame_beads(arg, 6)
+        return frame, beads, sigs, arg[:20]
+    if re.fullmatch(r'[\w-]+', arg) and arg in tbl:
+        frame, beads, sigs, _ = tbl[arg]
+        return frame, beads, sigs, arg
+    return None
+
+
+def pairs_rows(text, tbl):
+    """Every `trow(a, b)` and `row((a, sign, b, ...))` call, as (line, kind, names, panels) with
+    `panels` a list of `(frame, beads, name)` — empty when the row could not be resolved."""
+    rows = []
+    for m in re.finditer(r'\btrow\(', text):
+        if text.rfind("#let trow(", 0, m.start()) == m.start() - 5:
+            continue
+        popen = m.end() - 1
+        args = split_args(text[popen + 1:close(text, popen)])
+        line = text.count("\n", 0, m.start()) + 1
+        resolved = [resolve_panel(a, tbl) for a in args]
+        panels = [] if any(r is None for r in resolved) or len(resolved) < 2 else resolved
+        names = [(r[3] if r else "?") for r in resolved]
+        rows.append((line, f"trow({', '.join(names)})", panels))
+    for m in re.finditer(r'\brow\(\(', text):
+        popen = m.start() + 3
+        args = split_args(text[popen + 1:close(text, popen)])
+        line = text.count("\n", 0, m.start()) + 1
+        tup = args[0]
+        entries = split_args(tup[1:-1] if tup.startswith("(") else tup)
+        panel_args = entries[0::2]
+        resolved = [resolve_panel(a, tbl) for a in panel_args]
+        panels = [] if any(r is None for r in resolved) or len(resolved) < 2 else resolved
+        names = [(r[3] if r else "?") for r in resolved]
+        rows.append((line, f"row({', '.join(names)})", panels))
+    return rows
+
+
+def pairs_check(path):
+    """Two panels either side of a step sign are one statement: `--pairs` checks that every `trow`/
+    `row` pair shares one frame height and, for every bead they have in common, one bead height."""
+    text = open(path, encoding="utf-8").read()
+    tbl = panel_table(text)
+    rows = pairs_rows(text, tbl)
+    unresolved = sum(1 for _, _, panels in rows if not panels)
+    aligned = unequal = 0
+    fails = []
+    for line, desc, panels in rows:
+        if not panels:
+            continue
+        f0, b0, s0, _ = panels[0]
+        bad = []
+        for f, b, s, name in panels[1:]:
+            if f != f0:
+                bad.append(f"frame {f0} vs {f}")
+            skip = s0 | s
+            for label, h0 in b0.items():
+                if label not in skip and label in b and b[label] != h0:
+                    bad.append(f"bead `{label}` {h0} vs {b[label]}")
+        if bad:
+            unequal += 1
+            fails.append(f"{path}:{line}  {desc}  " + "; ".join(bad))
+        else:
+            aligned += 1
+    if fails:
+        print(*fails, sep="\n")
+    print(f"diagram --pairs: {len(rows)} rows, {aligned} aligned, {unequal} unequal,"
+          f" {unresolved} unresolved", file=sys.stderr)
+    sys.exit(unequal and f"diagram --pairs: {unequal} row{'s' * (unequal > 1)} disagree")
+
+
 def sigpair(x):
     """One `--sigs` word: `NAME:SRC⟶TGT[!nat[=lean:Mod.decl@key]]`, cut at the SIGNATURE's last
     colon.  Not the word's — a marker carries colons of its own, and they come after `!nat`."""
@@ -1282,6 +1413,7 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               '\n       diagram --roundtrip [--show] [--from FIELD] [--json FILE] [diag/allegory-axioms.typ]'
               '\n       diagram --compare [diag/allegory-axioms.typ]'
               '\n       diagram --write [diag/allegory-axioms.typ]'
+              '\n       diagram --pairs [diag/allegory-axioms.typ]'
               '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
               " formula alone does not fix the ports"
               '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
@@ -1315,6 +1447,8 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               " fail on any drift from the note's text"
               '\n--write       like --compare, but splices the rebuilt literals back over the note'
               " (trailing arguments kept)"
+              '\n--pairs       check every `trow`/`row` pair either side of a step sign: the two'
+              " panels must share one frame height and, for every bead in common, one bead height"
               '\n\nDefault mode prints one `#dpanel(...)` call on stdout, ready to paste into the note;'
               " diagnostics (a failed self-sweep, a formula the sweep reads back differently) go to"
               " stderr.  Exit status is nonzero if the drawn panel fails its own sweep.")
@@ -1338,10 +1472,12 @@ def main(argv):
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
     tbl = sl.sigs()
-    if "--roundtrip" in argv or "--compare" in argv or "--write" in argv:
+    if "--roundtrip" in argv or "--compare" in argv or "--write" in argv or "--pairs" in argv:
         path = path or "diag/allegory-axioms.typ"
         if "--roundtrip" in argv:
             roundtrip(path, frm, "--show" in argv, out, tbl)
+        elif "--pairs" in argv:
+            pairs_check(path)
         else:
             regen(path, tbl, "--write" in argv)
         return
@@ -1352,7 +1488,8 @@ def main(argv):
                  + ' [--png OUT] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
                  + '\n       diagram --roundtrip [--show] [diag/allegory-axioms.typ]'
                  + '\n       diagram --compare [diag/allegory-axioms.typ]'
-                 + '\n       diagram --write [diag/allegory-axioms.typ]')
+                 + '\n       diagram --write [diag/allegory-axioms.typ]'
+                 + '\n       diagram --pairs [diag/allegory-axioms.typ]')
     book = None
     if "--book" in argv:
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
