@@ -19,9 +19,9 @@
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
 [X] 11.4.2a bottom string diagram, make both side of = same height and align on alpah.  labeledas alpha_B sucks in S. ( use a better English). review png first
 [.] replace every hand-draw picture with the generator, and remove code that used to hand draw. let user review png first.
-    done: 13.6b rows 1/2/4 (van-fold deleted), 16.4b row 4, 13.4.3c rows 2/3 certified.
-    left: 11.6.4b rows 3/4/5 (tpan/tpanR, §11.6 held by another agent); the four dpanel literals in
-    §7.2 and §11.5.1c that carry bead colours the generator does not emit.
+    done: 13.6b rows 2/3/5 (van-fold deleted), 16.4b row 4, 13.4.3c rows 2/3 certified, and the four
+    tinted literals in 7.2b/11.5.1c now regenerate (cert: tint carries a bead's colour).
+    left: 11.6.4b rows 3/4/5 — tpan/tpanR, the last hand-draw helper, in §11.6.
 [.] redraw 11.5.1b
 [X] shrink the diagram in 11.4a and try to fit fusion 11.4.2 in the same page.
 [ ] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
