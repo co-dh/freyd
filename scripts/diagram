@@ -1053,7 +1053,10 @@ def num(v):
 
 def labelcode(v):
     """The one spelling of a bead or lane label: `X%∋` is the note's own fraction, `frc([X])`;
-    everything else is today's inline code."""
+    everything else is today's inline code.  A banana keeps its brackets around the fraction —
+    `⦇X%∋⦈` is the note's own `⦇`#frc([`X`])`⦈`, not a raw `%` inside the picture."""
+    if v.startswith("⦇") and v.endswith("%∋⦈"):
+        return f"[`⦇`#frc([`{v[1:-3]}`])`⦈`]"
     if v.endswith("%∋"):
         return f"frc([`{v[:-2]}`])"
     return f"[`{v}`]"
