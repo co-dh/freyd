@@ -27,14 +27,15 @@ WHAT IT STILL REFUSES, each where it is written: an `∩` of more than two opera
 carrier neither the panel nor the algebra's row declares, and `°` on a composite (row 8's frame —
 over a PRODUCT it distributes, one flipped box per wire).
 """
-import difflib, functools, importlib.machinery, importlib.util, json, os, re, sys
+import difflib, functools, json, os, re, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
-_P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
-_S = importlib.util.spec_from_loader("scanline", importlib.machinery.SourceFileLoader("scanline", _P))
-sl = importlib.util.module_from_spec(_S)
-_S.loader.exec_module(sl)
-parse, norm, spell, Unhandled = sl.parse, sl.norm, sl.spell, sl.Unhandled
+# ONLY the notation, not the other convention's geometry: `relexpr.py` is the note's relation
+# language, which `scripts/diagram` and `scripts/scanline` read to draw and sweep Hinze–Marsden
+# panels and this file reads to draw a circuit.  Nothing else crosses between the two.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import relexpr as rx
+from relexpr import Unhandled, norm, parse, spell
 
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
@@ -265,7 +266,7 @@ def ground(e):
 
     def scan(x):
         seen.append(var(x))
-        return sl.rec(x, scan)
+        return rx.rec(x, scan)
     scan(e)
     return not any(seen)
 
@@ -288,7 +289,7 @@ def unify(scheme, X, env):
 
 def subst(scheme, env):
     return env[scheme[1]] if var(scheme) and scheme[1] in env \
-        else sl.rec(scheme, lambda x: subst(x, env))
+        else rx.rec(scheme, lambda x: subst(x, env))
 
 
 # ---------------------------------------------------------------- the circuit normalizer (§1.4)
@@ -309,10 +310,10 @@ def mk(tag, ops):
 
 
 def crec(e, f):
-    """`sl.rec` stops AT a bracket node — the spider side never looks inside one, and that is what
+    """`rx.rec` stops AT a bracket node — the spider side never looks inside one, and that is what
     keeps `[x,y]` one bead over there.  A circuit opens all of them, so this walks in."""
     if e[0] not in BRACKETS:
-        return sl.rec(e, f)
+        return rx.rec(e, f)
     ops = [f(x) for x in e[1]]
     return e if ops == list(e[1]) else mk(e[0], ops)
 
@@ -322,15 +323,15 @@ def cnorm(e):
     `F(R)F(S)=F(RS)`.  It is NOT that `norm`: this one keeps the `°` where the formula writes it,
     which `norm` pushes to the atoms, erasing the distinction §3 rows 7/8 draw."""
     e = crec(e, cnorm)
-    d = sl.dun(e)                          # `R%∋=𝟙%∋ E(R)`, shared with `scanline.norm`
+    d = rx.dun(e)                          # `R%∋=𝟙%∋ E(R)`, shared with `scanline.norm`
     if d is not None:
-        return sl.rec(d, cnorm)
+        return rx.rec(d, cnorm)
     if e[0] != 'comp':
         return e
     xs = [y for x in e[1] for y in (x[1] if x[0] == 'comp' else [x])]   # rule 1: flatten,
     xs = juxta(xs)
     xs = fuse(xs) or xs
-    xs = [x for x in xs if x != ('atom', sl.UNIT)] or [('atom', sl.UNIT)]   # and `𝟙` is a wire
+    xs = [x for x in xs if x != ('atom', rx.UNIT)] or [('atom', rx.UNIT)]   # and `𝟙` is a wire
     return xs[0] if len(xs) == 1 else ('comp', xs)
 
 
@@ -360,7 +361,7 @@ def fuse(xs, polys=None):
         rc = obj(polys[x[1]][-1])                        # `A×x`: the branch the functor recurses on
         if len(polys[x[1]]) != len(y[1]) or rc[0] != 'prod':
             continue
-        f = ('prod', [x[2] if var(k) else ('atom', sl.UNIT) for k in rc[1]])
+        f = ('prod', [x[2] if var(k) else ('atom', rx.UNIT) for k in rc[1]])
         br = list(y[1]); br[-1] = ('comp', [f, br[-1]])
         return xs[:i] + [mk('case', br)] + xs[i + 2:]
     return None
@@ -420,7 +421,7 @@ def walk(e, tbl, src=None, tgt=None, typing=False):
         return fold(e, tbl, src, tgt)
     if e[0] == 'atom' and e[1] in PROJ:               # §3 row 3: a projection is a discard
         return proj(e[1], src)
-    if e[0] == 'atom' and e[1] == sl.UNIT:            # §3 row 4: the identity is bare wires
+    if e[0] == 'atom' and e[1] == rx.UNIT:            # §3 row 4: the identity is bare wires
         if src is None and tgt is None:
             raise Unhandled("`𝟙` is the identity on the object at its port, and neither is known")
         return pic("seq", src or tgt, src or tgt, True, items=[], seams=[], _objs=[src or tgt])
@@ -460,7 +461,7 @@ def leaf(e, tbl, src, tgt):
 
 
 def typed(e, row, tbl, src, tgt):
-    sl.require_hole_last(e)      # the box label fills the hole, `row["arg"]` types the last slot
+    rx.require_hole_last(e)      # the box label fills the hole, `row["arg"]` types the last slot
     env = {}
     unify(obj(row["src"]) if src is not None else obj(row["tgt"]), src if src is not None else tgt,
           env)
@@ -862,7 +863,7 @@ def read_back(t):
         return ('conv', e) if t["flip"] else e
     if k == "seq":
         xs = [read_back(x) for x in t["items"]]
-        return ('atom', sl.UNIT) if not xs else xs[0] if len(xs) == 1 else ('comp', xs)
+        return ('atom', rx.UNIT) if not xs else xs[0] if len(xs) == 1 else ('comp', xs)
     if k == "stack":
         return ('prod', [read_back(x) for x in t["lanes"]])
     if k == "konst":
@@ -916,9 +917,9 @@ _HELP_BODY = ('usage: circuit --src "F([A])" --tgt "[A]" "S%∋ est(R°)"'
 
 
 def main(argv):
-    sl.help_if(argv, __doc__, _HELP_BODY)
-    src, tgt, own = sl.opt(argv, "--src"), sl.opt(argv, "--tgt"), sl.opt(argv, "--sigs")
-    at, ini, pol = sl.opt(argv, "--at"), sl.opt(argv, "--mu"), sl.opt(argv, "--polys")
+    rx.help_if(argv, __doc__, _HELP_BODY)
+    src, tgt, own = rx.opt(argv, "--src"), rx.opt(argv, "--tgt"), rx.opt(argv, "--sigs")
+    at, ini, pol = rx.opt(argv, "--at"), rx.opt(argv, "--mu"), rx.opt(argv, "--polys")
     taken = {i for o in ("--src", "--tgt", "--sigs", "--at", "--mu", "--polys") if o in argv
              for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]

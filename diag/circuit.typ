@@ -47,10 +47,11 @@
 // NOT the package directly: `cetz-nodraw.typ` is cetz with the `--input nodraw=1` switch that makes
 // `typst query` skip the ink, and every drawing file takes its `cetz` from here.
 #import "cetz-nodraw.typ" as cetz
-#let d = cetz.draw
+// `d` and `lw` are the pen BOTH conventions draw with, so they live in the neutral file and
+// `hm.typ` takes them from there rather than from this one.
+#import "cetz-nodraw.typ": d, lw
 
 // ---------------------------------------------------------------- style constants
-#let lw = 1.1pt         // wire thickness            (S2_124.typ)
 #let Rr = 0.07          // solid dot radius          (S2_124.typ)
 #let Rh = 0.088         // hollow dot radius — larger, or the ring closes up at `lw`
 #let BW = 0.92          // default box width
