@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, fcol, lanecheck, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 // The two panel helpers, one per convention: `cpanel` draws a circuit (wire = object, box = a
 // morphism), `dpanel` a Hinze–Marsden panel (wire = functor, bead = an arrow).  Neither file
 // imports the other.
@@ -2640,7 +2640,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
   for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
   for (y, l) in beads { hm-bead((xo, y), l) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { fcol(l) }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
   }, s: 100%)

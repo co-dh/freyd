@@ -194,8 +194,12 @@ def natural(core, sigs):
 # The functors drawn as a wire of their own instead of folded into the object wire's label.  `list`
 # splits by DEFAULT: one bead name must have one signature across a display, and a `[A]` folded in
 # one panel makes `cons` CREATE the `list` its neighbour already carries.  A panel's own `cert:`
-# `split:` still overrides — `split: ""` folds it back.
-DEFSPLIT = "list"
+# `split:` still overrides — `split: ""` folds it back.  DECLARED in `diag/hm-sigs.json`, beside the
+# signatures, because which functors the note gives a wire to is a fact about the note.
+DEFSPLIT = sl.sigs().get("split")
+if DEFSPLIT is None:
+    raise SystemExit('diagram: diag/hm-sigs.json declares no `split` — name there the functors that'
+                     ' get a wire of their own, space separated, as `"split": "list"`')
 SPLIT = frozenset(DEFSPLIT.split())
 
 
@@ -386,7 +390,7 @@ def wire_eq(w, lane):
     its other slot at `𝟙` — `F(𝟙,∋)` — so what peels off it is the bare head `F`, where the lane,
     read off an object, says which object that slot holds: `F(A,−)`.  One wire, two spellings.
     `P` and `E` are one wire too — same objects, different arrows — so either may run on the other."""
-    return sl.ALIAS.get(w, w) == sl.ALIAS.get(lane, lane) \
+    return sl.alias().get(w, w) == sl.alias().get(lane, lane) \
         or (w is not None and lane.startswith(w + '(') and lane.endswith('−)'))
 
 
@@ -580,7 +584,7 @@ def alphabet(table, *objs):
     """The wire letters, as data: what the signatures and the panel's own ports name between them.
     A name is a wire because a signature uses it as one — there is no list of relators to keep,
     beyond the aliases, whose whole point is that no signature spells them (`P A = E A`)."""
-    ws = set(sl.ALIAS) | {l for v in table["sigs"].values()
+    ws = set(sl.alias()) | {l for v in table["sigs"].values()
                           for e in (v["src"], v["tgt"]) for l in letters(norm(parse(e)))}
     return {w for w in ws.union(*(peel(o)[0] for o in objs)) if '−' not in w and w != '×'}
 
@@ -623,7 +627,7 @@ def elaborate(formula, src, tgt, table):
             # lane a bead made keeps its maker's letter — `(T°)%∋` builds an existential image, and
             # the `P` a display writes over it is that panel's own law, not a different wire.
             if k < len(lanes) and lanes[k].born == TOP and w != lanes[k].label \
-                    and sl.ALIAS.get(w, w) == sl.ALIAS.get(lanes[k].label, lanes[k].label):
+                    and sl.alias().get(w, w) == sl.alias().get(lanes[k].label, lanes[k].label):
                 lanes[k].label = w
             if k >= len(lanes):                # a wire the formula names and the cut has not got is
                 obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —

@@ -26,7 +26,7 @@ DY = 1.5                                       # one row: `scripts/diagram`'s be
 # names this file and `scripts/diagram` use.
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from relexpr import (ALIAS, BREAK, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT, Unhandled, act,
+from relexpr import (alias, BREAK, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT, Unhandled, act,
                      canon, dun, fill, fuse, help_if, hole_last, hole_slot, interchange, listable,
                      matching, norm, opt, p_prim, p_prod, parse, quot, rec, require_hole_last,
                      spell, split_top, squeeze, tidy, unit_ctx)
