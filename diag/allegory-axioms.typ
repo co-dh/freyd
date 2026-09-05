@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, twobeadeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -2393,18 +2393,18 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #let ia-cata-l = dpanel(6, 4.97, 3.12,
   ((2.5, "top", 3, none, none),),
-  ((3, [`α`], black, 2.5, 2.5), (1.5, [`⦇α⦈`])),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`⦇αᴀ⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((3, [`T`]), (1.5, [`A`])),
-  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+  cert: (expect: "α⦇αᴀ⦈", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #let ia-cata-r = dpanel(6, 4.97, 3.12,
   ((2.5, "top", 3, none, none),),
-  ((4.5, [`⦇α⦈`]), (3, [`α`], black, 2.5, 2.5)),
+  ((4.5, [`⦇αᴀ⦈`]), (3, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((4.5, [`A`]), (3, [`A`])),
-  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+  cert: (expect: "F(⦇αᴀ⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇αᴀ⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
@@ -2442,28 +2442,30 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
       node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
     }),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
-    [`α⦇α⦈=F(⦇α⦈)α`],
+    [`α⦇αᴀ⦈=F(⦇αᴀ⦈)α`],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
 
 === Reflection
 
-// THE LAW ITSELF, not the square that proves it: one `T` wire carrying `⦇α⦈` against one carrying
-// nothing.  `𝟙` has no notation in this calculus, so the right panel is the grey region and a bare wire.
+// THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
+// the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
+// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The banana carries its index:
+// `⦇α⦈` would fold every algebra at once and the law would read "every catamorphism is the identity".
 #let ia-refl-l = dpanel(3, 3.725, 1.875,
   (),
-  ((1.5, [`⦇α⦈`]),),
+  ((1.5, [`⦇αᴛ⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`T`]),),
   obj: ((1.5, [`T`]),),
-  cert: (expect: "⦇α⦈", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
-#let ia-refl-r = dpanel(1.5, 3.725, 1.875,
+  cert: (expect: "⦇αᴛ⦈", src: "T", tgt: "T", sigs: ("⦇αᴛ⦈": "T⟶T")), s: 100%)
+#let ia-refl-r = dpanel(3, 3.725, 1.875,
   (),
   (),
   ((1.875, [`T`]),),
   ((1.875, [`T`]),),
-  cert: (expect: "𝟙", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
+  cert: (expect: "𝟙", src: "T", tgt: "T"), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -2477,7 +2479,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
   }),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
- [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
+ [`⦇αᴛ⦈=𝟙` #h(6pt) #src[(2.11)]],
   // lean:AOP.A6_3.relCata_alpha@656cd4b8
 )]<cata-reflection>
 
@@ -2631,8 +2633,25 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 
 // The house orientation: the fold runs down the columns, over the FLAT algebra `F(f,𝟙)α_B`, which the
 // triangle hanging below splits into its two steps.
-// The `F` wire is UNINDEXED, against Hinze-Marsden's own practice of partially applying a bifunctor:
-// its bead `F(f,𝟙)` and the object bead `f` are one arrow, `F(f,T(f))` — the square carries both steps.
+// TWO WIRES, not one indexed `F`: `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` packs the two arguments and `F : 𝒜×𝒜⟶𝒜` is then
+// unary, so every wire is a functor again and the region between them is `𝒜×𝒜`.  That is what makes
+// `F(f,T(f))` free — it is `f` on the object wire with `⟨𝟙,T⟩` and `F` running past — and the law the
+// naturality of `α`, the `f` bead sliding past it.  Not `P`, which is the powerset relator already.
+// This REPLACES the 2026-08-26 unindexed-`F` exception, which needed a second bead `F(f,𝟙)`.
+#let tfun-l = dpanel(6, 6.37, 4.52,
+  ((2.812, 3, "bot", none, none), (2.5, "top", 3, none, none), (3.896, "top", 3, none, none)),
+  ((3, [`α`], black, 2.5, 3.198), (1.5, [`f`])),
+  ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
+  ((2.812, [`T`]), (4.52, [`B`])),
+  obj: ((3, [`A`]), (1.5, [`B`])),
+  cert: (expect: "α T(f)", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B")))
+#let tfun-r = dpanel(6, 6.37, 4.52,
+  ((2.812, 3, "bot", none, none), (2.5, "top", 3, none, none), (3.896, "top", 3, none, none)),
+  ((4.5, [`f`]), (3, [`α`], black, 2.5, 3.198)),
+  ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
+  ((2.812, [`T`]), (4.52, [`B`])),
+  obj: ((4.5, [`B`]), (3, [`B`])),
+  cert: (expect: "F(⟨𝟙,T⟩(f))α", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B")))
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
   let (FA, TA) = ((-3, 2.5), (3, 2.5))
@@ -2650,12 +2669,21 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   node(FM.at(0), FM.at(1), black, `F(A,TB)`)
   node(FB.at(0), FB.at(1), GIVEN1, `F(B,TB)`); node(TB.at(0), TB.at(1), GIVEN1, `TB`)
   }),
-  tfuneq([`F`], [`T`], [`A`], [`B`], [`α`#sub[`A`]], [`α`#sub[`B`]], [`f`],
-    cact1: GIVEN2, cact2: GIVEN1, regions: auto),
+  row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
   [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
  #src[]],
    // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
 )]<tfun-sq>
+
+- `F : 𝒜×𝒜⟶𝒜` is a bifunctor and a wire is a unary functor, so the two arguments are packed first:
+  `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` sends `A` to `(A,TA)`, and `F(⟨𝟙,T⟩(A))` is `F(A,TA)`.
+- The picture is three wires — `F`, `⟨𝟙,T⟩`, and the object — and the region between the first two
+  is `𝒜×𝒜`.
+- `α` is then an ordinary natural transformation `F∘⟨𝟙,T⟩⇒T`: its bead eats the `F` and `⟨𝟙,T⟩` wires,
+  and the `T` wire is born under it.
+- `F(f,T(f))` costs no notation. It is the bead `f` on the object wire with `⟨𝟙,T⟩` and `F` running
+  past: `⟨𝟙,T⟩` is what turns `f` into the pair `(f,T(f))`, and `F` is what applies it.
+- The law is the naturality of `α`, which is exactly the freedom to slide that `f` bead past it.
 
 // The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
 // bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.

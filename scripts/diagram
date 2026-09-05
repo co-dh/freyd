@@ -857,7 +857,11 @@ def layout(rows, made, otop, obot, cert):
                      else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
     # The natural bead is drawn on the HORIZON, so the frame reserves a row above every bead as well
     # as below: `2n·DY` tall, centre `n·DY`.  A panel with no natural bead keeps the tight frame.
-    hh = (2 * n if any(r.nat for r in rows) else n + 1) * DY
+    # An IDENTITY panel has no bead and is still one side of an equation: the book draws `𝟙` as the
+    # edge of its own functor (IntroString p. 37), so what is on the page is a bare wire, and a wire
+    # half as long as the other side's makes `row`'s `align: horizon` line the frames up instead of
+    # the ports.  It therefore takes the one-bead frame — the shortest picture it can stand beside.
+    hh = (2 * n if any(r.nat for r in rows) else max(n, 1) + 1) * DY
 
     def xat(y, dying=True):
         """The sloped object wire's x at a height: one gap right of every lane alive there or NOT

@@ -17,3 +17,12 @@
     branch names, or a general fallback, so all six generate and certify.
 [X] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
+[ ] 11.4.2a bottom string diagram, make both side of = same height and align on alpah.  labeledas alpha_B sucks in S. ( use a better English). review png first
+[ ] replace every hand-draw picture with the generator, and remove code that used to hand draw. let user review png first.
+[.] redraw 11.5.1b
+[ ] shrink the diagram in 11.4a and try to fit fusion 11.4.2 in the same page.
+[ ] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
+[ ] 11.6.1a , 11.6.2a need revisit. like what we did for initial algebra.  alpha is natural.
+[ ] revisit 11.6.2a. alpha is natural and draw wrong. secondly, how to draw things inside (| |),
+    IntroString has fold (| |) for different purpose, but claude said that catamorphsim is a special case of fold,
+    maybe that can be used to draw inside catamorphism.

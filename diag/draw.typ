@@ -94,7 +94,10 @@
   "M": rgb("#b58900"),
   // `P A = E A` is the same object, so `P` takes `E`'s hue a shade darker: the two relators must
   // read as siblings, because the whole content of `P(est(R))est(R)⊑union est(R)` is that they differ.
-  "P": rgb("#00767e"))
+  "P": rgb("#00767e"),
+  // §11.5.1's type functor and the fork that feeds the bifunctor its two arguments, `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜`.
+  // They share a panel with `F`, hence ΔE76 37 and 41 from it and from each other.
+  "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -104,7 +107,7 @@
 
 // `algpanel` — ONE PANEL of `homeq`.  The object wire SURVIVES the junction, so it runs straight and the
 // consumed `F` strand bends; `owire` is passed by name so panel and region walk the one list, reversed.
-// `w`/`h`/`xo` default to the two-strand panel's; `tfuneq` has a strand and a row more, and passes its own.
+// `w`/`h`/`xo` default to the two-strand panel's; a caller with a strand or a row more passes its own.
 #let regionfills(owire, regions, ucol, w: W, h: H, xo: XO) = if regions != none {
   // Right edge, bottom edge, then UP the object wire; `close` walks the top edge back.
   hm-region(((w, h), (w, 0)) + owire.rev(), ucol)
@@ -183,33 +186,6 @@
         fmid: fmid, cfmid: cfmid, outsplit: outsplit),
   )
   hm-row(if rev { panels.rev() } else { panels }, sep: sep, gap: gap, length: length)
-}
-
-// `tfuneq` — §2.7's type functor on THREE strands `F T A`: `T(f)` is the object bead `f` with `T` running
-// straight past it.  FOUR rows, so the shared `f` holds one height; functors black, the object strand typed.
-#let tfuneq(w1, w2, w3, out, act1, act2, f,
-            cact1: black, cact2: black, cf: black,
-            tcol: auto, bcol: auto, gap: GAP, length: 0.95cm,
-            regions: none, acol: AC, ucol: UC, frame: none) = {
-  let (tcol, bcol) = (ocol(tcol, w3, TCOL), ocol(bcol, out, BCOL))
-  // `T` takes the two-strand panel's object position and the object moves one pitch right; the extra row
-  // goes on TOP, so the `F` strand, the pitch and the grey `𝟏` strip are the ones the panels beside it draw.
-  let (xt, xo, w, h) = (XO, XO + SEP, W + SEP, H + PITCH)
-  let panel(yact, act, cact) = hm-panel(
-    w, h, fill: if regions != none { acol } else { none }, frame: frame, {
-      regionfills(((xo, h), (xo, 0)), regions, ucol, w: w, h: h, xo: xo)
-      hm-join(XF, h, xt, yact)
-      hm-wire(((xt, h), (xt, 0)))
-      hm-wire(((xo, h), (xo, H1)), col: tcol)
-      hm-wire(((xo, H1), (xo, 0)), col: bcol)
-      hm-bead((xt, yact), act, col: cact)
-      hm-bead((xo, H1), f, col: cf)
-      hm-port((XF, h), w1); hm-port((xt, h), w2); hm-port((xo, h), w3, col: tcol)
-      hm-port((xt, 0), w2, dir: -1); hm-port((xo, 0), out, dir: -1, col: bcol)
-    },
-  )
-  // Row 1 or row 4 for the algebra: the two heights the `F` strand falls to are the whole law.
-  hm-row((panel(H, act1, cact1), panel(H3, act2, cact2)), gap: gap, length: length)
 }
 
 // `beadeq` — `b = 𝟙` on the wire `w`: a bead on the left, a BARE WIRE on the right, which is what the

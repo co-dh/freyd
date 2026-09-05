@@ -141,6 +141,12 @@ def p_prim(s, i, obj=False):
         if s[i] == '[' and len(bs) > 1:
             return ('case', [parse(b, obj) for b in bs], squeeze(s[i:j + 1])), j + 1
         if s[i] == '⟨' and len(bs) > 1:
+            # A fork of FUNCTORS is itself a functor and can be APPLIED: `⟨𝟙,T⟩(A)` is the object
+            # `(A,TA)` of `𝒜×𝒜`, which is ONE wire, and §11.5.1's `F(A,TA)` is `F` over it.  So a
+            # bracket followed by `(` is the lane's NAME, not a fork of arrows.
+            if j + 1 < len(s) and s[j + 1] == '(':
+                k = matching(s, j + 1)
+                return ('app', s[i:j + 1], parse(s[j + 2:k], obj), s[i:j + 1] + '(−)'), k + 1
             return ('fork', [parse(b, obj) for b in bs], squeeze(s[i:j + 1])), j + 1
         return ('atom', squeeze(s[i:j + 1])), j + 1
     for q in PROJ:
@@ -1010,6 +1016,31 @@ def objhue(p):
          f" — an object wire changes hue where it changes object"]
 
 
+BAN = re.compile(r"⦇(.+)⦈")
+VAR = re.compile(r"(?<![A-Za-z])[stuvwxyz](?![A-Za-z])")   # a bare signature variable, not `T` in `tree`
+
+
+def unindexed(p):
+    """A catamorphism's ALGEBRA sits on no wire, so the convention that reads a bare bead's index off
+    the object wire under it stops at the banana's brackets.  `⦇α⦈`, whose `α : F(x)⟶x` gives its
+    carrier only as a variable, is then the fold of EVERY algebra, and the reflection law reads "every
+    catamorphism is the identity".  The banana must write the carrier: `⦇αᴀ⦈`.
+
+    A carrier that is a SHAPE is already written — `generate : F(N(x))⟶N(x)` and §13.3's
+    `S : x×[[x]×[x]]⟶[x]×[x]` fold at `N(x)` and `[x]×[x]`, whose `x` is the section's element type,
+    the thing every bead on the page is polymorphic in.  Only a BARE variable names nothing."""
+    tbl = typed(sigs(), p.cert.get("sigs"))["sigs"]
+    out = []
+    for b in p.beads:
+        m = BAN.fullmatch(b.label or "")
+        d = tbl.get(m.group(1)) if m else None
+        if d and VAR.fullmatch(str(d.get("tgt", "")).strip()):
+            out.append(f"{p.id}: the banana {b.label} folds {m.group(1)} : {d['src']}⟶{d['tgt']},"
+                       f" whose carrier is a variable — a catamorphism's algebra sits on no wire, so"
+                       f" the banana must carry the index")
+    return out
+
+
 # ---------------------------------------------------------------- the declared tables
 VARS = set("stuvwxyz")                     # a signature's variables: single lower-case letters
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
@@ -1473,7 +1504,7 @@ def main(argv):
             continue
         try:
             p = Panel(r)
-            bad += p.kdrift + sweep(p) + labels(p) + natframe(p) + objhue(p)
+            bad += p.kdrift + sweep(p) + labels(p) + natframe(p) + objhue(p) + unindexed(p)
             b, n = certify(p)
             bad += b; note += n
             drawn += connect(p)
