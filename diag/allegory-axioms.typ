@@ -3991,9 +3991,31 @@ For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
+// @lax-hm-l/@lax-hm-r at `G := F`, `F := Id`, emitted by
+// `./scripts/diagram --frame 4 --sigs "φ:F(A)⟶A R:A⟶A"` plus `s: 100%`, with `--top 3` on the left
+// so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
+// functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
+// the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
+#let mon-hm-l = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none),),
+  ((3.3, [`R`]), (2.2, [`φ`], black, 2.5)),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`A`]),),
+  obj: ((3.3, [`A`]), (2.2, [`A`])),
+  cert: (expect: "F(R)φ", src: "F(A)", tgt: "A", sigs: ("φ": "F(A)⟶A", "R": "A⟶A"), frame: 4, top: 3),
+  s: 100%)
+#let mon-hm-r = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none),),
+  ((2.2, [`φ`], black, 2.5), (1.1, [`R`])),
+  ((2.5, [`F`]), (3.12, [`A`])),
+  ((3.12, [`A`]),),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "φ R", src: "F(A)", tgt: "A", sigs: ("φ": "F(A)⟶A", "R": "A⟶A"), frame: 4, top: 2),
+  s: 100%)
+
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
-#disp[#capbox(
+#disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
     ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
@@ -4004,6 +4026,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
     node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
   }),
+  row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
   // lean:AOP.A7_2.MonotonicAlg@26944450
 )]<mon-str>
