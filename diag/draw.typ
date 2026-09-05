@@ -116,7 +116,10 @@
   // They share a panel with `F`, hence ΔE76 37 and 41 from it and from each other.
   "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"),
   // §13.2's SOURCE relator: a LaT `φ : G⇒F` puts the two in one panel, hence ΔE76 59 from `F`.
-  "G": rgb("#babd56"))
+  "G": rgb("#babd56"),
+  // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`idxcol` below maps `[3p]`
+  // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
+  "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -517,6 +520,18 @@
       + " `FCOL` already names — give `" + n + "` an entry in `FCOL` (diag/draw.typ) or widen `RINGS`")
     free.at(calc.rem(namehash(n), free.len()))
   }
+}
+// AN INDEX FUNCTOR `[e]` IS COLOURED BY ITS AXIS, not by its length: `[p]` and `[3p]` are one candidate
+// axis that `concat` lengthened, `[m]` and `[m+1]` one path axis, and the wire must keep its hue across
+// the bead that changed the length or the reader loses which axis it is.  The letters of `e` name the
+// axis; a constant index (`[3]`) is an axis of its own.  A lift that carries one index — `𝟙×[p]`,
+// `[n]×[n]`, `⟨𝟙,[m]⟩` — takes that index's hue, so a label is passed whole and its first `[…]` read.
+#let idxcol(l) = {
+  let s = plain(l)
+  let m = s.match(regex("\\[([^\\]]*)\\]"))
+  let e = if m == none { s } else { m.captures.at(0) }
+  let ax = e.replace(regex("[^a-zA-Z]+"), "")
+  fcol("[" + (if ax == "" { e } else { ax }) + "]")
 }
 // THE PALETTE'S RULE IS ONLY TRUE PANEL BY PANEL — two lanes that never share a picture may reuse a
 // band — so this is where it is checked: every pair of lanes drawn together, and every lane against
