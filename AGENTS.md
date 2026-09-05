@@ -122,6 +122,13 @@ relevant skill (drawing conventions go to `string-diagram`) or in a `//` comment
 Adding a picture, fixing wrong wording, or cutting text is fine — adding explanation nobody asked for
 is not.
 
+**NEVER HAND-DRAW A PICTURE. Every panel in the note is emitted by `scripts/diagram` or
+`scripts/circuit` from its formula and carries the `cert:` they write.** A hand-laid drawing has no
+`cert:`, so `scripts/scanline` cannot read it back, `--compare` cannot catch it drifting from the
+formula, and its port types are checked by nobody — which is how a bead ends up on a wire that is not
+its source. When the generator cannot draw a panel, extend the generator (parser, `hm-sigs.json`,
+`dpanel.typ`) first and then generate; a one-off `cetz` file is never the answer.
+
 ## Searching the book text
 The greppable book prose lives in `/home/dh/anki/typst-book/chapters/<a.b>/section-<a.b>.typ`
 (and the `section-*.fixed.md` siblings — cleaned OCR). ALWAYS grep there.
