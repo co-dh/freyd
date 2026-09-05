@@ -97,6 +97,31 @@ public instance decSecureP (amount : Tx → Int) (N : Int) (x : Seg Tx) :
 public theorem secure_coreflexive : Coreflexive (secure amount N) :=
   le_iff.mpr fun _ _ h => h.1
 
+/-! ### `secure` is the coreflexive of the book's p.185 test -/
+
+/-- **van-secure**: `⟨ceiling,ceiling−floor⟩`, the pair the p.185 predicate compares. -/
+@[expose] public def ceilSpread (amount : Tx → Int) : dList Tx ⟶ (⟨Int × Int⟩ : RelSet.{0}) :=
+  graph fun x => (ceilingFn amount x, ceilingFn amount x - floorFn amount x)
+
+/-- **van-secure**: `bmax`, the larger of the two. -/
+@[expose] public def bmax : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph fun p => max p.1 p.2
+
+/-- **van-secure**: `≤N`, the coreflexive on `Int` the test has to land in. -/
+@[expose] public def leN (N : Int) : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => a = b ∧ a ≤ N
+
+/-- **van-secure**: `secure⟨ceiling,ceiling−floor⟩bmax=⟨ceiling,ceiling−floor⟩bmax(≤N)` (book p.185).
+    The test is a map, so sliding the coreflexive across it says exactly that `secure` holds at the
+    stretches whose test value is at most `N` — which is what "the coreflexive corresponding to this
+    predicate" means. -/
+public theorem secure_bmax :
+    secure amount N ≫ ceilSpread amount ≫ bmax = ceilSpread amount ≫ bmax ≫ leN N := by
+  apply hom_ext; intro x n
+  constructor
+  · rintro ⟨y, ⟨rfl, hs⟩, p, rfl, rfl⟩
+    exact ⟨_, rfl, _, rfl, rfl, hs⟩
+  · rintro ⟨p, rfl, m, rfl, rfl, hle⟩
+    exact ⟨x, ⟨rfl, hle⟩, _, rfl, rfl⟩
+
 /-! ### `secure` is prefix-closed, and closed under dropping the first transaction -/
 
 public theorem ceilingFn_mono :

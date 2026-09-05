@@ -7544,6 +7544,63 @@ N(α)(that)
   [A schedule with the fewest secure segments.],
 )]<van-defn>
 
+=== `secure prefix⊑prefix secure` <sec-van-prefix>
+
+// B&dM p.185.  `secure` is "the coreflexive corresponding to this predicate", and the predicate's
+// test `⟨ceiling,ceiling−floor⟩bmax` is a MAP, so the coreflexive is the one that slides across it
+// into `≤N` — which is the equation below, and the whole of what @van-defn's `bmax` row says.
+// `Δ` is the pair lane the fork opens and `bmax` eats; `ceiling` and `floor` are @van-defn's.
+#let van-sec-l = dpanel(5.5, 4.97, 3.12,
+  ((2.5, 3.3, 2.2, [`Δ`], none), (2.5, 4.4, 3.3, [`list`], none), (2.5, "top", 4.4, none, none)),
+  ((4.4, [`secure`], black, 2.5), (3.3, [`⟨ceiling,ceiling−floor⟩`], black, 2.5), (2.2, [`bmax`], black, 2.5)),
+  ((2.5, [`list`]), (3.12, [`Int`])),
+  ((3.12, [`Int`]),),
+  obj: ((4.4, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "secure⟨ceiling,ceiling−floor⟩bmax", src: "[Int]", tgt: "Int", sigs: ("secure": "[Int]⟶[Int]", "bmax": "Int×Int⟶Int", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int"), frame: 5, top: 4))
+#let van-sec-r = dpanel(5.5, 4.97, 3.12,
+  ((2.5, 3.3, 2.2, [`Δ`], none), (2.5, "top", 3.3, none, none)),
+  ((3.3, [`⟨ceiling,ceiling−floor⟩`], black, 2.5), (2.2, [`bmax`], black, 2.5), (1.1, [`≤N`])),
+  ((2.5, [`list`]), (3.12, [`Int`])),
+  ((3.12, [`Int`]),),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "⟨ceiling,ceiling−floor⟩bmax ≤N", src: "[Int]", tgt: "Int", sigs: ("bmax": "Int×Int⟶Int", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int", "≤N": "Int⟶Int"), frame: 5, top: 3))
+
+#disp[#capbox(
+  row((van-sec-l, [#h(7pt) = #h(7pt)], van-sec-r)),
+ [`secure⟨ceiling,ceiling−floor⟩bmax=⟨ceiling,ceiling−floor⟩bmax(≤N)` \
+   #src[a stretch passes `secure` before the test exactly where the test's own value passes `≤N`
+    after it, which is @van-defn's `bmax(ceiling x,ceiling x−floor x)≤N`]],
+  // lean:AOP.A7_5_Van.secure_bmax@ddf3c4a7
+)]<van-secure>
+
+// The two panels differ only in the ORDER of the two beads, so they share `prefix`'s height and
+// `secure` is the one that moves: above `prefix` on the left, below it on the right.  `prefix` is
+// only LAX natural — `prefix_lax_natural`/`prefix_not_strict` in diag/hm-sigs.json — hence `⊑`, not `=`.
+#let van-pre-l = dpanel(4.4, 5.49, 3.64,
+  ((3.016, 2.2, "bot", none, none), (3.016, 3.3, 2.2, [`list`], none), (3.016, "top", 3.3, none, none)),
+  ((3.3, [`secure`], black, 3.016), (2.2, [`prefix`], black, 3.016, 3.016, "lax")),
+  ((3.016, [`list`]), (3.64, [`Int`])),
+  ((3.016, [`list`]), (3.64, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "secure prefix", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]"), frame: 4, top: 3))
+#let van-pre-r = dpanel(4.4, 5.49, 3.64,
+  ((3.016, 1.1, "bot", none, none), (3.016, 2.2, 1.1, [`list`], none), (3.016, "top", 2.2, none, none)),
+  ((2.2, [`prefix`], black, 3.016, 3.016, "lax"), (1.1, [`secure`], black, 3.016)),
+  ((3.016, [`list`]), (3.64, [`Int`])),
+  ((3.016, [`list`]), (3.64, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "prefix secure", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]"), frame: 4, top: 2))
+
+#disp[#capbox(
+  row((van-pre-l, [#h(7pt) #SQ #h(7pt)], van-pre-r)),
+ [`secure prefix⊑prefix secure` \
+   #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
+    secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
+  // lean:AOP.A7_5_Van.secure_prefix@572206f0
+)]<van-prefix>
+
+=== The derivation <sec-van-deriv>
+
 // B&dM §7.5, pp. 186–188: the specification down to the program.  ONE WIRE, `[Int]` to `[[Int]]`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // fraction is a map (@pow-laws), hence a square box; `est` and the folds that carry one are the
