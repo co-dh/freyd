@@ -7041,8 +7041,9 @@ N(cp P(α))(that)
 
 === `gen` on `Vec`: `F(𝟙,moves trans Vec(n)(concat)) zip Vec(n)(cp Vec(3p)(α))` <sec-cyl-vec>
 
-// Beside @sec-cyl-gen with every type a `Vec`: `N=Vec(n)`, the paths into a row `Vec(p)` with `p` their
-// count, and `E` gone.  The composite is the same; `union` becomes `concat`, `trans` the transpose.
+// Beside @sec-cyl-gen with every type a matrix, `A[m]≜Vec(m,A)` and `A[m][n]≜Vec(m,Vec(n,A))`,
+// outermost index first: `N=Vec(n)`, the paths into a row `A[p][m]`, and `E` gone.  The composite is
+// the same; `union` becomes `concat`, `trans` the transpose.
 #disp[#table(
   columns: (2.6cm, 4.4cm, 7.4cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
@@ -7051,84 +7052,97 @@ N(cp P(α))(that)
 
   [the input],
   [`L(N A)`],
-  [`Vec(m,Vec(n,A))`],
-  [`m` columns of `n` squares — the matrix itself, column by column.],
+  [`A[m][n]≜Vec(m,Vec(n,A))`],
+  [`m` columns of `n` squares, outermost index first — the matrix itself.],
 
   [a path],
   [`L A`, a non-empty list],
-  [`Vec(m,A)`, an `m`-tuple],
+  [`A[m]≜Vec(m,A)`, an `m`-tuple],
   [Through `m` columns, `m` squares: the count is in the type.],
 
   [the paths into a row],
   [`E(L A)`],
-  [`Vec(p,Vec(m,A))`, `p=3^(m-1)`],
+  [`A[p][m]`, `p=3^(m-1)`],
   [Three moves per column crossed, so this count is in the type too; a set forgets it.],
 
   [`α`],
   [`[wrap,cons]` \ `F(A,LA)⟶LA`],
-  [`wrap:A⟶Vec(1,A)` \ `cons:A×Vec(m,A)⟶Vec(m+1,A)`],
+  [`wrap:A⟶A[1]` \ `cons:A×A[m]⟶A[m+1]`],
   [The same two maps, indexed. `wrap` stays: the three moves of one empty path are three copies of one path, and only a set absorbs that.],
 
   [`moves`],
   [`NA⟶E(NA)`],
-  [`Vec(n,X)⟶Vec(3,Vec(n,X))`],
+  [`X[n]⟶X[3][n]`],
   [`moves(x)=(up(x),x,down(x))`, a `3×n` matrix.],
 
   [`trans`],
   [`E(NX)⟶N(EX)`],
-  [`Vec(3,Vec(n,X))` \ `⟶Vec(n,Vec(3,X))`],
+  [`X[3][n]⟶X[n][3]`],
   [The transpose.],
 
   [`union`],
   [`E(EX)⟶EX`],
-  [`concat` \ `Vec(3,Vec(p,X))⟶Vec(3p,X)`],
+  [`concat:X[3][p]⟶X[3p]`],
   [The three candidate lists, end to end.],
 
   [`zip`],
   [`F(NA,NB)⟶NF(A,B)`],
-  [`F(Vec(n,A),Vec(n,B))` \ `⟶Vec(n,F(A,B))`],
+  [`F(A[n],B[n])⟶F(A,B)[n]`],
   [Unchanged.],
 
   [`cp`],
   [`F(A,EB)⟶E(F(A,B))`],
-  [`A⟶Vec(1,F(A,B))` \ `A×Vec(p,B)⟶Vec(p,F(A,B))`],
+  [`A⟶F(A,B)[1]` \ `A×B[p]⟶F(A,B)[p]`],
   [One candidate at the exit column, `p` after it.],
 
   [`gen`],
   [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(E(LA)))` \ `⟶N(E(LA))`],
-  [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(α))` \ `F(Vec(n,A),` \ `Vec(n,Vec(p,Vec(m,A))))` \ `⟶Vec(n,Vec(3p,Vec(m+1,A)))`],
+  [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(α))` \ `F(A[n],A[n][p][m])⟶A[n][3p][m+1]`],
   [The same composite, every object a matrix; the type shown is the `cons` side.],
 
   [`⦇gen⦈`],
   [`L(N A)⟶N(E(L A))`],
-  [`Vec(m,Vec(n,A))` \ `⟶Vec(n,Vec(p,Vec(m,A)))`],
+  [`A[m][n]⟶A[n][p][m]`],
   [Columns in, rows out.],
 
   [`Q`, @sec-cyl-deriv],
   [`F(𝟙,moves trans N(est(R)))` \ `zip N(α)`],
-  [`F(𝟙,moves trans Vec(n)(est(R)))` \ `zip Vec(n)(α)`, `est(R):Vec(3,X)⟶X`],
-  [The cheapest of three; no `p` anywhere. `⦇Q⦈:Vec(m,Vec(n,A))⟶Vec(n,Vec(m,A))` has the type of a transpose.],
+  [`F(𝟙,moves trans Vec(n)(est(R)))` \ `zip Vec(n)(α)`, `est(R):X[3]⟶X`],
+  [The cheapest of three; no `p` anywhere. `⦇Q⦈:A[m][n]⟶A[n][m]` has the type of a transpose.],
 )]<vec-defn-cyl>
 
 #disp[#align(center)[```
-u = ((1,2,3,4),([[5]],[[6]],[[7]],[[8]]))      : F(Vec(n,A),Vec(n,Vec(1,Vec(1,A))))
-F(𝟙,moves trans Vec(n)(concat))                   𝟙 keeps the column, the path VECTORS move
-  moves([[5]],[[6]],[[7]],[[8]])                  down, unmoved, up: a 3×n matrix
-   = (([[6]],[[7]],[[8]],[[5]]),
-      ([[5]],[[6]],[[7]],[[8]]),
-      ([[8]],[[5]],[[6]],[[7]]))               : Vec(3,Vec(n,Vec(1,Vec(1,A))))
+a row is the outer index, a cell one path; an axis of length 1 is not drawn
+u = ((1,2,3,4),C)                               : F(A[n],A[n][1][1])
+    C = [5]                                       one candidate per row, one square long
+        [6]
+        [7]
+        [8]
+F(𝟙,moves trans Vec(n)(concat))                   𝟙 keeps the column, the candidates move
+  moves(C)                                        down, unmoved, up: a 3×n matrix
+   = [6] [7] [8] [5]
+     [5] [6] [7] [8]
+     [8] [5] [6] [7]                            : A[3][n][1][1]
   trans(that)                                     the transpose: row k gets rows k-1, k, k+1
-   = (([[6]],[[5]],[[8]]),([[7]],[[6]],[[5]]),
-      ([[8]],[[7]],[[6]]),([[5]],[[8]],[[7]])) : Vec(n,Vec(3,Vec(1,Vec(1,A))))
-  Vec(n)(concat)(that)                            the three candidates, end to end
-   = ([[6],[5],[8]],[[7],[6],[5]],
-      [[8],[7],[6]],[[5],[8],[7]])             : Vec(n,Vec(3,Vec(1,A)))
+   = [6] [5] [8]
+     [7] [6] [5]
+     [8] [7] [6]
+     [5] [8] [7]                                : A[n][3][1][1]
+  Vec(n)(concat)(that)                            the same cells: three one-candidate lists
+   = [6] [5] [8]                                  are one three-candidate list
+     [7] [6] [5]
+     [8] [7] [6]
+     [5] [8] [7]                                : A[n][3][1]
 zip(that)                                         each row: its square, and its candidates
-   = ((1,[[6],[5],[8]]),(2,[[7],[6],[5]]),
-      (3,[[8],[7],[6]]),(4,[[5],[8],[7]]))     : Vec(n,F(A,Vec(3,Vec(1,A))))
+   = (1, [6] [5] [8])
+     (2, [7] [6] [5])
+     (3, [8] [7] [6])
+     (4, [5] [8] [7])                           : F(A,A[3][1])[n]
 Vec(n)(cp Vec(3)(α))(that)                        cp pairs, α prefixes: α(1,[6])=[1,6]
-   = ([[1,6],[1,5],[1,8]],[[2,7],[2,6],[2,5]],
-      [[3,8],[3,7],[3,6]],[[4,5],[4,8],[4,7]]) : Vec(n,Vec(3,Vec(2,A)))
+   = [1,6] [1,5] [1,8]
+     [2,7] [2,6] [2,5]
+     [3,8] [3,7] [3,6]
+     [4,5] [4,8] [4,7]                          : A[n][3][2]
 ```]]<vec-step>
 
 === `gen` is an `F`-algebra; `⦇gen⦈`: `α⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-fold>
