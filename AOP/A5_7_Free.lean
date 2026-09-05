@@ -1,6 +1,6 @@
 /-
   Bird & de Moor, *Algebra of Programming* §5.7 — the FREE THEOREM for a REIFIED combinator
-  language (Wadler, "Theorems for free!"; the §5.7 citation B&dM p.180 attaches to `generate`).
+  language (Wadler, "Theorems for free!"; the §5.7 citation B&dM p.180 attaches to `gen`).
 
   B&dM p.180: "the type assigned to `generate` is parameterised by `A` … Accordingly,
   `generate` will be a lax natural transformation."  For an arbitrary LEAN term that is not
@@ -129,7 +129,7 @@ public inductive PE {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] : TyE 𝒜 → TyE
 
 /-! ## The free theorem -/
 
-/-- **THE FREE THEOREM** (Wadler; B&dM §5.7, cited at p.180 for `generate`): a term's TYPE
+/-- **THE FREE THEOREM** (Wadler; B&dM §5.7, cited at p.180 for `gen`): a term's TYPE
     alone forces its naturality square.  Written out, for every `t : PE σ τ` and `R : a ⟶ b`,
 
       `⟦σ⟧R R ≫ ⟦t⟧ b ⊑ ⟦t⟧ a ≫ ⟦τ⟧R R`
