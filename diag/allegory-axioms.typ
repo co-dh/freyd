@@ -6947,7 +6947,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2.762, [`[n]`]), (3.903, [`[3p]`]), (5.306, [`F`]), (6.563, [`[m]`]), (7.19, [`A`])),
   obj: ((5.5, [`A`]), (4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
   defn: ((5.306, 6.563, 0, [`[m+1]`]),),
-  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@1374d571!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@632dd38e", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("x[k+1]": "F(x[k])"))))]<vec-gen-diag>
+  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@1374d571!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@37b9e848", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("x[k+1]": "F(x[k])"))))]<vec-gen-diag>
 
 #disp[#align(center)[```
 a row is the outer index, a cell one path
@@ -7100,11 +7100,11 @@ zip(that)                                         each row: its square, and the 
   [#vstep([], cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-paths, est-R-box))), [])],
   [#dpanel(3.3, 6.38, 4.53,
   ((3.016, 2.2, 1.1, [`[np]`], none), (3.903, 2.2, "bot", none, none), (3.016, "top", 2.2, none, none), (3.903, "top", 2.2, none, none)),
-  ((2.2, [`paths`], black, 3.016), (1.1, [`est(R)`], black, 3.016)),
+  ((2.2, [`paths`], black, 3.016, 3.4595), (1.1, [`est(R)`], black, 3.016)),
   ((3.016, [`[m]`]), (3.903, [`[n]`]), (4.53, [`Nat`])),
   ((3.903, [`[m]`]), (4.53, [`Nat`])),
   obj: ((2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "paths est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("paths": "Nat[m][n]⟶Nat[np][m]!lean=lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+  cert: (expect: "paths est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("paths": "Nat[m][n]⟶Nat[np][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.paths_natural@54a4beda!lean=lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
 
   [#vstep(EQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-concat, est-R-box))),
     [#src[@vec-defn-cyl at `paths`]])],
@@ -7114,7 +7114,7 @@ zip(that)                                         each row: its square, and the 
   ((3.074, [`[m]`]), (4.117, [`[n]`]), (5.32, [`Nat`])),
   ((4.691, [`[m]`]), (5.32, [`Nat`])),
   obj: ((3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "⦇gen⦈concat est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.concat_natural@cc5628c5!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@632dd38e", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+  cert: (expect: "⦇gen⦈concat est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.concat_natural@cc5628c5!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@37b9e848", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
 
   [#vstep(RQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-Nest, est-R-box))),
     [#src[a cheapest of each of the `n` rows, then a cheapest of those; `R` transitive]])],
@@ -7275,14 +7275,14 @@ zip(that)                                         each row: its square, and the 
   ((2.5, [`list`]), (3.12, [`Int`])),
   ((3.12, [`Int`]),),
   obj: ((4.4, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "secure⟨ceiling,ceiling−floor⟩bmax", src: "[Int]", tgt: "Int", sigs: ("secure": "[Int]⟶[Int]", "bmax": "Int×Int⟶Int", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int"), frame: 5, top: 4))
+  cert: (expect: "secure⟨ceiling,ceiling−floor⟩bmax", src: "[Int]", tgt: "Int", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "bmax": "Int×Int⟶Int!lean=lean:AOP.A7_5_Van.Van.bmax@6afe4642", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int"), frame: 5, top: 4))
 #let van-sec-r = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 2.2, [`Δ`], none), (2.5, "top", 3.3, none, none)),
   ((3.3, [`⟨ceiling,ceiling−floor⟩`], black, 2.5), (2.2, [`bmax`], black, 2.5), (1.1, [`≤N`])),
   ((2.5, [`list`]), (3.12, [`Int`])),
   ((3.12, [`Int`]),),
   obj: ((3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "⟨ceiling,ceiling−floor⟩bmax ≤N", src: "[Int]", tgt: "Int", sigs: ("bmax": "Int×Int⟶Int", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int", "≤N": "Int⟶Int"), frame: 5, top: 3))
+  cert: (expect: "⟨ceiling,ceiling−floor⟩bmax ≤N", src: "[Int]", tgt: "Int", sigs: ("bmax": "Int×Int⟶Int!lean=lean:AOP.A7_5_Van.Van.bmax@6afe4642", "⟨ceiling,ceiling−floor⟩": "[Int]⟶Int×Int", "≤N": "Int⟶Int"), frame: 5, top: 3))
 
 #disp[#capbox(
   row((van-sec-l, [#h(7pt) = #h(7pt)], van-sec-r)),
@@ -7301,14 +7301,14 @@ zip(that)                                         each row: its square, and the 
   ((3.016, [`list`]), (3.64, [`Int`])),
   ((3.016, [`list`]), (3.64, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "secure prefix", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]"), frame: 4, top: 3))
+  cert: (expect: "secure prefix", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a"), frame: 4, top: 3))
 #let van-pre-r = dpanel(4.4, 5.49, 3.64,
   ((3.016, 1.1, "bot", none, none), (3.016, 2.2, 1.1, [`list`], none), (3.016, "top", 2.2, none, none)),
   ((2.2, [`prefix`], black, 3.016, 3.016, "lax"), (1.1, [`secure`], black, 3.016)),
   ((3.016, [`list`]), (3.64, [`Int`])),
   ((3.016, [`list`]), (3.64, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "prefix secure", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]"), frame: 4, top: 2))
+  cert: (expect: "prefix secure", src: "[Int]", tgt: "[Int]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a"), frame: 4, top: 2))
 
 #disp[#capbox(
   row((van-pre-l, [#h(7pt) #SQ #h(7pt)], van-pre-r)),
@@ -7317,6 +7317,414 @@ zip(that)                                         each row: its square, and the 
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
   // lean:AOP.A7_5_Van.secure_prefix@572206f0
 )]<van-prefix>
+
+=== `partition list(secure)=⦇[nil,new ∪ old]⦈` <sec-van-fusion>
+
+// B&dM p.185.  The three algebras are arrows out of a PRODUCT, so their panels are a stack of
+// context wires: `Int×−` carries the transaction the algebra is handed, `[Int]×−` the segment being
+// built, and the two `list` wires the schedule.  `assocl` draws nothing — `×` is flat in both
+// calculi, so a re-bracketing is the identity and there is no bead for it (`scripts/relexpr.py`).
+#disp[#calc-table(
+  table.header([*definition*], [*Hinze–Marsden*]),
+
+  [`new≜(wrap×𝟙) cons` \
+   #src[`wrap` makes the transaction a segment on its own, and `cons` puts that segment at the
+    front of the schedule: the van is called]],
+  // lean:AOP.A7_5_Van.new_eq@e9699c4a
+  [#dpanel(3.3, 9.16, 7.31,
+  ((4.923, 1.1, "bot", none, none), (3.781, 2.2, 1.1, [`[Int]×−`], none), (3.781, "top", 2.2, none, none), (4.923, "top", 1.1, none, none), (6.064, "top", 1.1, none, none), (6.689, 1.1, "bot", none, none)),
+  ((2.2, [`wrap×𝟙`], black, 3.781), (1.1, [`cons`], black, 3.781, 4.9225)),
+  ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
+  ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
+  obj: ((2.2, [`Int`]),),
+  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+
+  [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons` \
+   #src[`cons°` splits the schedule into its first segment and the rest, the first `cons` puts the
+    transaction at the front of that segment, and the second puts the segment back]],
+  // lean:AOP.A7_5_Van.glue_eq@f4301628
+  [#dpanel(4.4, 10.56, 8.71,
+  ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.271, "top", 2.2, none, none), (5.178, 3.3, 2.2, [`[Int]×−`], none), (6.319, 3.3, 1.1, [`list`], none), (5.49, "top", 3.3, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
+  ((3.3, [`cons°`], black, 5.49, 5.49), (2.2, [`cons×𝟙`], black, 3.271), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
+  ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×cons°)assocl (cons×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+
+  [`old≜(𝟙×cons°) assocl ((cons secure)×𝟙) cons` \
+   #src[`glue` with `secure` on the segment the transaction has just joined: the van stays away
+    only where the longer segment still passes]],
+  // lean:AOP.A7_5_Van.old_eq@b9c3949e
+  [#dpanel(5.5, 10.56, 8.71,
+  ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.428, 3.3, 2.2, [`[Int]×−`], none), (3.271, "top", 3.3, none, none), (5.178, 4.4, 3.3, [`[Int]×−`], none), (6.319, 4.4, 1.1, [`list`], none), (5.49, "top", 4.4, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
+  ((4.4, [`cons°`], black, 5.49, 5.49), (3.3, [`cons×𝟙`], black, 3.271), (2.2, [`secure×𝟙`], black, 3.428), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
+  ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
+  obj: ((4.4, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×cons°)assocl ((cons secure)×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
+)]<van-algebras>
+
+// One wire in, two out, both sides: the fold is ONE bead where the left panel has the two the
+// specification writes, and `secure` is what the fusion has moved inside it.
+#let van-fus-l = dpanel(3.3, 6.63, 4.78,
+  ((3.016, 2.2, "bot", none, none), (4.158, 1.1, "bot", none, none), (4.158, 2.2, 1.1, [`list`], none), (3.329, "top", 2.2, none, none)),
+  ((2.2, [`partition`], black, 3.329, 3.329), (1.1, [`secure`], black, 4.158)),
+  ((3.329, [`list`]), (4.78, [`Int`])),
+  ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "partition list(secure)", src: "[Int]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "partition": "[Int]⟶[[Int]]")))
+#let van-fus-r = dpanel(3.3, 7.26, 5.41,
+  ((3.016, "top", 1.1, none, none), (3.641, 1.1, "bot", none, none), (4.783, 1.1, "bot", none, none)),
+  ((1.1, [`⦇[nil,new ∪ old]⦈`], black, 3.016),),
+  ((3.016, [`list`]), (5.41, [`Int`])),
+  ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  cert: (expect: "⦇[nil,new ∪ old]⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 3))
+
+#disp[#capbox(
+  row((van-fus-l, [#h(7pt) = #h(7pt)], van-fus-r)),
+ [`partition list(secure)=⦇[nil,new ∪ old]⦈` \
+   #src[cutting the transactions every way and then keeping the cuts whose every segment is secure
+    is one pass along them that either calls the van or extends the open segment while it stays
+    secure]],
+  // lean:AOP.A7_5_Van.van_spec@79d2f560
+)]<van-fusion>
+
+=== `(𝟙×R)new⊑(new ∪ old)R` <sec-van-714>
+
+// B&dM p.186's (7.14).  Its mirror (7.15) — the same with `old` in place of `new` — is FALSE, and
+// @van-deriv is where that costs the refinement of `R` to `R;H`.  `R` sits on the two schedule
+// wires and `new` on the product context, so the chain is those two beads swapping height.
+#disp[#calc-table(
+  Thm[`(𝟙×R)new⊑(new ∪ old)R` \
+    #src[calling the van for the transaction on a no-longer schedule gets no further than calling
+     it on this one and shortening the schedule afterwards]],
+     // lean:AOP.A7_5_Van.van_7_14@31454849
+  table.header([*step*], [*Hinze–Marsden*]),
+
+  [`(𝟙×R)new` \ #src[the left side of (7.14) — @van-defn]],
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`R`], black, 4.413), (1.1, [`new`], black, 3.271, 4.4125)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+
+  [#EQ #h(5pt) `(wrap×R)cons` \ #src[`new≜(wrap×𝟙)cons` — @van-algebras — and `(wrap×𝟙)(𝟙×R)=(wrap×R)`]],
+     // lean:AOP.A7_5_Van.new_eq_cons@4d0d4d7b
+  [#dpanel(4.4, 9.16, 7.31,
+  ((4.923, 1.1, "bot", none, none), (3.781, 3.3, 1.1, [`[Int]×−`], none), (3.781, "top", 3.3, none, none), (4.923, 2.2, 1.1, [`list`], none), (6.064, 2.2, 1.1, [`list`], none), (4.923, "top", 2.2, none, none), (6.064, "top", 2.2, none, none), (6.689, 1.1, "bot", none, none)),
+  ((3.3, [`wrap×𝟙`], black, 3.781), (2.2, [`R`], black, 4.923), (1.1, [`cons`], black, 3.781, 4.9225)),
+  ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
+  ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+
+  [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
+   no-longer schedule leaves it no longer — and `new⊑new ∪ old`]],
+     // lean:AOP.A7_5_Van.cons_mono_R@60ccf227
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`R`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+)]<van-714>
+
+=== `H≜(head prefix° head°) ∪ (nil° nil)` <sec-van-h>
+
+// B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
+// first segment with `head`, compares the two with `prefix` and closes both again; the right is the
+// coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
+#let van-h-l = dpanel(4.4, 6.63, 4.78,
+  ((3.016, 1.1, "bot", none, none), (4.158, 1.1, "bot", none, none), (3.329, 2.2, 1.1, [`list`], none), (3.329, 3.3, 2.2, [`list`], none), (3.016, "top", 3.3, none, none), (4.158, "top", 3.3, none, none)),
+  ((3.3, [`head`], black, 3.016, 3.587, "lax"), (2.2, [`prefix°`], black, 3.329, 3.329, "lax"), (1.1, [`head°`], black, 3.329, 3.329, "lax")),
+  ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
+  ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "head prefix° head°", src: "[[Int]]", tgt: "[[Int]]", sigs: ("head": "[[Int]]⟶[Int]", "prefix": "[Int]⟶[Int]")))
+#let van-h-r = dpanel(4.4, 7.46, 5.61,
+  ((3.329, "top", 2.2, none, none), (4.987, "top", 2.2, none, none), (3.017, 1.1, "bot", none, none), (4.158, 1.1, "bot", none, none)),
+  ((2.2, [`nil°`], black, 3.329, 4.158), (1.1, [`nil`], black, none, 3.5875)),
+  ((3.329, [`list`]), (4.987, [`list`]), (5.61, [`Int`])),
+  ((3.017, [`list`]), (4.158, [`list`]), (5.61, [`Int`])),
+  obj: ((2.2, [`𝟏`]), (1.1, [`Int`])),
+  cert: (expect: "nil° nil", src: "[[Int]]", tgt: "[[Int]]", sigs: ("nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 4))
+
+#disp[#capbox(
+  row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
+ [`H≜(head prefix° head°) ∪ (nil° nil)` \
+   #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
+  // lean:AOP.A7_5_Van.H_eq@b1cf5141
+)]<van-h>
+
+=== `(𝟙×(R;H))new⊑(new ∪ old)(R;H)` <sec-van-716>
+
+// B&dM p.187's (7.16), the `new` half of monotonicity on the refined order.  It rests on (7.18):
+// both sides open a segment `[a]` of their own, so the two first segments are EQUAL and `H` holds
+// whatever the schedules were — which is why the left panel below carries `⊤` and not `H`.
+#let van-newR = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`R`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f"), frame: 4, top: 2))
+#let van-718-l = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
+  ((3.3, [`⊤`], black, 4.413), (2.2, [`new`], black, 3.271, 4.4125)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×⊤)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+#let van-718-r = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "new H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.H_not_lax_natural@c647d911!lean=lean:AOP.A7_5_Van.Van.Hrel@a9423ec2"), frame: 4, top: 2))
+
+#disp[#capbox(
+  row((van-718-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
+ [`(𝟙×⊤)new⊑new H` \
+   #src[whatever schedule the van is called on, the result's first segment is the one transaction
+    `[a]`, so any two results of `new` on that transaction stand in `H`]],
+  // lean:AOP.A7_5_Van.van_7_18@767da25f
+)]<van-718>
+
+#disp[#calc-table(
+  Thm[`(𝟙×(R;H))new⊑(new ∪ old)(R;H)` \
+    #src[calling the van for the transaction on a `R;H`-better schedule gets no further than calling
+     it on this one and bettering the whole schedule afterwards]],
+     // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
+  table.header([*step*], [*Hinze–Marsden*]),
+
+  [`(𝟙×(R;H))new` \ #src[the left side of (7.16)]],
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`R;H`], black, 4.413), (1.1, [`new`], black, 3.271, 4.4125)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "(𝟙×R;H)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+
+  [#SQ #h(5pt) `(𝟙×R)new` \ #src[`R;H⊑R` — @van-defn]],
+     // lean:AOP.A7_5_Van.RH_le_R@84a882e3
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`R`], black, 4.413), (1.1, [`new`], black, 3.271, 4.4125)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+
+  [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
+  [#row((van-newR, [#h(7pt) ∩ #h(7pt)], van-718-r))],
+
+  [#EQ #h(5pt) `new (R∩H)` \ #src[`new` is a map, and a map distributes over `∩`]],
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`R∩H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "new (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+
+  [#SQ #h(5pt) `new (R;H)` \ #src[`X∩Y⊑X;Y`, and `new⊑new ∪ old`]],
+     // lean:AOP.A7_5_Van.inter_le_RH@a000aeda
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`R;H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "new R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+)]<van-716>
+
+=== `(𝟙×(R;H))old⊑(new ∪ old)(R;H)` <sec-van-717>
+
+// B&dM p.187–188's (7.17), the `old` half.  `R;H` splits as `|R| ∪ (R∩H)` and the two pieces are
+// answered by different branches of the algebra: on the strict part the van is called, on the tie
+// `old` fires again.  (7.19)–(7.21) below are the three claims that split rests on.
+#let van-719-l = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
+  ((3.3, [`⊤`], black, 4.413), (2.2, [`old`], black, 3.271)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×⊤)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+#let van-720-l = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
+  ((3.3, [`|R|`], black, 4.413), (2.2, [`old`], black, 3.271)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f"), frame: 4, top: 3))
+#let van-721-l = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
+  ((3.3, [`R∩H`], black, 4.413), (2.2, [`old`], black, 3.271)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3.3, [`Int`]), (2.2, [`Int`])),
+  cert: (expect: "(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 3))
+#let van-721-r = dpanel(4.4, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`old`], black, 3.271), (1.1, [`R∩H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 2))
+
+#disp[#capbox(
+  row((van-719-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
+ [`(𝟙×⊤)old⊑new H` \
+   #src[`old` leaves the transaction `[a]` at the front of the first segment, and `[a]` is what
+    `new` makes that segment, so the two first segments are `prefix`-related whatever the schedules
+    were]],
+  // lean:AOP.A7_5_Van.van_7_19@78e3274f
+)]<van-719>
+
+#disp[#capbox(
+  row((van-720-l, [#h(7pt) #SQ #h(7pt)], van-newR)),
+ [`(𝟙×|R|)old⊑new R` \
+   #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
+    the one the van's own segment lengthens]],
+  // lean:AOP.A7_5_Van.van_7_20@b29be38c
+)]<van-720>
+
+#disp[#capbox(
+  row((van-721-l, [#h(7pt) #SQ #h(7pt)], van-721-r)),
+ [`(𝟙×(R∩H))old⊑old (R∩H)` \
+   #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
+    @van-prefix — lets `old` fire on this side too, and it keeps both the length and the prefix]],
+  // lean:AOP.A7_5_Van.van_7_21@302aa148
+)]<van-721>
+
+#disp[#calc-table(
+  Thm[`(𝟙×(R;H))old⊑(new ∪ old)(R;H)` \
+    #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
+     on, or calling the van, and bettering the whole schedule after,
+ ]],
+     // lean:AOP.A7_5_Van.van_mono@5f456bbf
+  table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
+
+  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "stack", nin: 2, nout: 2, lanes: (
+        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+        (k: "seq", nin: 1, nout: 1, items: (
+            (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(𝟙×(R;H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+    [])],
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`R;H`], black, 4.413), (1.1, [`old`], black, 3.271)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
+
+  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "|R|", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "stack", nin: 2, nout: 2, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "cap", nin: 1, nout: 1, lanes: (
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                    (k: "seq", nin: 1, nout: 1, items: (
+                        (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+                      ), seams: ()),
+                  )),
+              ), seams: ()),
+          )),
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(𝟙×|R|)old ∪ (𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+    [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
+ ]])],
+     // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`|R|`], black, 4.413), (1.1, [`old`], black, 3.271)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f")))],
+
+  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
+        (k: "cap", nin: 1, nout: 1, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+    (k: "seq", nin: 2, nout: 1, items: (
+        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+        (k: "cap", nin: 1, nout: 1, lanes: (
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+            (k: "seq", nin: 1, nout: 1, items: (
+                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: ()),
+  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "new (R∩H) ∪ old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+    [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
+ on `R∩H` — @van-721]])],
+     // lean:AOP.A7_5_Van.van_strict_old@80a35936 lean:AOP.A7_5_Van.van_7_21@302aa148
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`old`], black, 3.271), (1.1, [`R∩H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+
+  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
+    (k: "union", nin: 2, nout: 1, bodies: (
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+        (k: "seq", nin: 2, nout: 1, items: (
+            (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
+          ), seams: ()),
+      )),
+    (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
+  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
+  cert: (expect: "(new ∪ old)(R;H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+    [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
+  [#dpanel(3.3, 8.03, 6.18,
+  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
+  ((2.2, [`old`], black, 3.271), (1.1, [`R;H`], black, 3.584)),
+  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
+  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
+  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+)]<van-mono>
 
 === The derivation <sec-van-deriv>
 
@@ -7355,11 +7763,11 @@ zip(that)                                         each row: its square, and the 
     [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
   [#dpanel(5.5, 7.26, 5.41,
   ((2.5, 3.85, 1.1, [`E`], frc([`𝟙`])), (3.641, 3.3, "bot", none, none), (4.783, 2.2, "bot", none, none), (4.783, 3.3, 2.2, [`list`], none), (3.954, "top", 3.3, none, none)),
-  ((3.3, [`partition`], black, 3.954), (2.2, [`secure`], black, 4.783), (1.1, [`est(R)`], black, 2.5)),
+  ((3.3, [`partition`], black, 3.954, 3.954), (2.2, [`secure`], black, 4.783), (1.1, [`est(R)`], black, 2.5)),
   ((3.954, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
   obj: ((3.85, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]")))],
+  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -7431,8 +7839,8 @@ zip(that)                                         each row: its square, and the 
     )), label: none, port: ("Int", "[[Int]]", ), src: ("[Int]", ), tgt: ("[[Int]]", )),
   cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[Int]", tgt: "[[Int]]", A: "Int", sigs: "S:F([[Int]])⟶[[Int]]"))],
     [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
-     the `old` half (7.17) — @van-mono — and the `new` half (7.16), which rests on (7.18)
- `(𝟙×⊤)new⊑new H`]])],
+     the `old` half (7.17) — @van-mono — and the `new` half (7.16) — @van-716 — which rests on
+ (7.18) `(𝟙×⊤)new⊑new H` — @van-718]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
   [#dpanel(2.2, 6.63, 4.78,
   ((3.016, 1.1, "bot", none, none), (4.158, 1.1, "bot", none, none), (3.329, "top", 1.1, none, none)),
@@ -7470,128 +7878,6 @@ zip(that)                                         each row: its square, and the 
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
   cert: (expect: "⦇[nil,(ok→glue,new)]⦈", src: "[Int]", tgt: "[[Int]]"))],
 )]<van-laws>
-
-#disp[#calc-table(
-  Thm[`(𝟙×(R;H))old⊑(new ∪ old)(R;H)` \
-    #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
-     on, or calling the van, and bettering the whole schedule after,
- ]],
-     // lean:AOP.A7_5_Van.van_mono@5f456bbf
-  table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
-
-  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
-  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
-  cert: (expect: "(𝟙×(R;H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
-    [])],
-  [#dpanel(3.3, 8.03, 6.18,
-  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
-  ((2.2, [`R;H`], black, 4.413), (1.1, [`old`], black, 3.271)),
-  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
-  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
-  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
-
-  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "|R|", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "cap", nin: 1, nout: 1, lanes: (
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                  )),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
-  cert: (expect: "(𝟙×|R|)old ∪ (𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
-    [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
- ]])],
-     // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
-  [#dpanel(3.3, 8.03, 6.18,
-  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
-  ((2.2, [`|R|`], black, 4.413), (1.1, [`old`], black, 3.271)),
-  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
-  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
-  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "|R|": "[[Int]]⟶[[Int]]")))],
-
-  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
-        (k: "cap", nin: 1, nout: 1, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
-        (k: "cap", nin: 1, nout: 1, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: ()),
-  ), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
-  cert: (expect: "new (R∩H) ∪ old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
-    [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|`, (7.21) on `R∩H`]])],
-  [#dpanel(3.3, 8.03, 6.18,
-  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
-  ((2.2, [`old`], black, 3.271), (1.1, [`R∩H`], black, 3.584)),
-  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
-  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
-  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]")))],
-
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "old", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("Int", "[[Int]]", ), tgt: ("[[Int]]", )),
-  cert: (expect: "(new ∪ old)(R;H)", src: "Int×[[Int]]", tgt: "[[Int]]"))],
-    [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
-  [#dpanel(3.3, 8.03, 6.18,
-  ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
-  ((2.2, [`old`], black, 3.271), (1.1, [`R;H`], black, 3.584)),
-  ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
-  ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
-  obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]")))],
-)]<van-mono>
 
 #pagebreak(weak: true)
 = Thinning Algorithms <sec-thin>
@@ -8083,33 +8369,33 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
   [#dpanel(4.4, 5.49, 3.64,
   ((3.016, 1.1, "bot", none, none), (3.016, 2.2, 1.1, [`list`], none), (3.016, 3.3, 2.2, [`list`], none), (3.016, "top", 3.3, none, none)),
-  ((3.3, [`setify°`], black, 3.016), (2.2, [`ordered(P)`], black, 3.016), (1.1, [`thinlist(Q)`], black, 3.016)),
+  ((3.3, [`setify°`], black, 3.016, 3.016, "lax"), (2.2, [`ordered(P)`], black, 3.016), (1.1, [`thinlist(Q)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((tl-set, thinlist-Q-box, tl-ord)),
     [#src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
       and a subsequence of a `P`-ordered list is `P`-ordered]])],
   [#dpanel(4.4, 5.49, 3.64,
   ((3.016, 1.1, "bot", none, none), (3.016, 2.2, 1.1, [`list`], none), (3.016, 3.3, 2.2, [`list`], none), (3.016, "top", 3.3, none, none)),
-  ((3.3, [`setify°`], black, 3.016), (2.2, [`thinlist(Q)`], black, 3.016), (1.1, [`ordered(P)`], black, 3.016)),
+  ((3.3, [`setify°`], black, 3.016, 3.016, "lax"), (2.2, [`thinlist(Q)`], black, 3.016), (1.1, [`ordered(P)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((thin-Q-box, tl-set, tl-ord)),
     [#src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
       for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]])],
   [#dpanel(4.4, 5.49, 3.64,
   ((3.016, 1.1, "bot", none, none), (3.016, 2.2, 1.1, [`list`], none), (3.016, 3.3, 2.2, [`E`], none), (3.016, "top", 3.3, none, none)),
-  ((3.3, [`thin(Q)`], black, 3.016), (2.2, [`setify°`], black, 3.016), (1.1, [`ordered(P)`], black, 3.016)),
+  ((3.3, [`thin(Q)`], black, 3.016), (2.2, [`setify°`], black, 3.016, 3.016, "lax"), (1.1, [`ordered(P)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
+  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(EQ, tl-pic((thin-Q-box, sort-P-box)),
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
@@ -8580,7 +8866,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((4.209, [`list⁺`]), (5.92, [`Word`])),
   ((3.896, [`list⁺`]), (5.293, [`list⁺`]), (5.92, [`Word`])),
   obj: ((3.85, [`Word`]), (3.3, [`Word`]), (2.2, [`Word`]), (1.1, [`Word`])),
-  cert: (expect: "(partition list⁺(fits(w)))%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("partition": "list⁺(Word)⟶list⁺(list⁺(Word))", "fits": "list⁺(Word)⟶list⁺(Word)", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
+  cert: (expect: "(partition list⁺(fits(w)))%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("partition": "list⁺(Word)⟶list⁺(list⁺(Word))!lean=lean:AOP.A8_5_Paragraph.Paragraph.partition@ae82ce9b", "fits": "list⁺(Word)⟶list⁺(Word)", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-fus, est-R-box)),
     [#frc([`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`])` est(R)` \

@@ -125,7 +125,10 @@
   "[np]": rgb("#cb677e"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
   // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
-  "Digit×−": rgb("#a58a6e"))
+  "Digit×−": rgb("#a58a6e"),
+  // §13.6.1's `[Int]×−`, the segment `new`, `glue` and `old` build: it stands beside `Int×−` and
+  // `list` in every one of their panels, hence ΔE76 43 and 40 from those two.
+  "[Int]×−": rgb("#613a56"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -524,7 +527,11 @@
 // `⟨𝟙,[m]⟩` — takes that index's hue, so the label is read whole and its first `[…]` decides.
 #let faxis(nm) = {
   let s = plain(nm)
-  let m = s.match(regex("\\[([^\\]]*)\\]"))
+  // A product CONTEXT is a lane of its own, never an axis: `[Int]×−` is the bifunctor applied to the
+  // object `[Int]`, where `[3p]` and `[p]` are one axis at two lengths.  The product HOLE is what
+  // tells them apart — `𝟙×[p]` carries the `[p]` axis and must keep reading as one.
+  let m = if s.contains("×−") or s.contains("−×") { none }
+          else { s.match(regex("\\[([^\\]]*)\\]")) }
   if m == none { s } else {
     let e = m.captures.at(0)
     let ax = e.replace(regex("[^a-zA-Z]+"), "")
