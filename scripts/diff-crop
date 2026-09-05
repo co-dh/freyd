@@ -3,6 +3,7 @@
 
     ./scripts/diff-crop                          # HEAD's PDF vs the working tree's, for both notes
     ./scripts/diff-crop --key 7.2b [--key 13.3.1a] [OUTDIR]   # one pair per named display
+    ./scripts/diff-crop --key 7.2b --caption "what changed" [--key 13.3.1a --caption "..."] [OUTDIR]
     ./scripts/diff-crop --key 7.2b --before OLD.pdf [--after NEW.pdf] [OUTDIR]
     ./scripts/diff-crop BEFORE.pdf AFTER.pdf [OUTDIR]
 
@@ -349,7 +350,7 @@ def neighbours(key, page, sy, sh, H):
     return top, bot
 
 
-def keycrop(key, before_pdf, after_pdf, out, tmp):
+def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     row = run("sqlite3", "-readonly", db_path(),
               f"select pdf_page, y, h from pic where key = '{key}' order by pdf_page limit 1").stdout.strip()
     if not row:
@@ -385,6 +386,8 @@ def keycrop(key, before_pdf, after_pdf, out, tmp):
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
     pair = os.path.join(out, f"key-{key}.png")
     run("magick", f"{tmp}/klb.png", f"{tmp}/kla.png", "-background", "gray70", "-append", pair)
+    if caption:
+        caption_strip(pair, pair, caption)
     print(f"{key}: after p{ap} ink {fmt(aink)}; before p{bp} ink {fmt(bink)}; anchor {txt!r}")
     print(f"{key}: crop after [x 0.0..{W:.1f} y {ay0:.1f}..{ay1:.1f}] before [y {by0:.1f}..{by1:.1f}]"
           f" -> {pair} {size(pair)[0]}x{size(pair)[1]}")
@@ -542,9 +545,30 @@ def head_copy(note):
 
 def main(argv):
     if "--key" in argv:
-        keys = [argv[i + 1] for i, a in enumerate(argv) if a == "--key" and i + 1 < len(argv)]
+        # walk once: a --caption attaches to the --key just before it, or — before any --key,
+        # or repeated with no --key of its own in between — becomes the default for keys with none.
+        pairs, pending, default_caption, i = [], None, "", 0
+        while i < len(argv):
+            a = argv[i]
+            if a == "--key" and i + 1 < len(argv):
+                if pending is not None:
+                    pairs.append((pending, None))
+                pending, i = argv[i + 1], i + 2
+            elif a == "--caption" and i + 1 < len(argv):
+                if pending is not None:
+                    pairs.append((pending, argv[i + 1]))
+                    pending = None
+                else:
+                    default_caption = argv[i + 1]
+                i += 2
+            else:
+                i += 1
+        if pending is not None:
+            pairs.append((pending, None))
+        keys = [(k, c if c is not None else default_caption) for k, c in pairs]
         rest = [a for i, a in enumerate(argv)
-                if not a.startswith("--") and argv[i - 1] not in ("--key", "--before", "--after")]
+                if not a.startswith("--")
+                and argv[i - 1] not in ("--key", "--before", "--after", "--caption")]
         note = NOTES[0]
         after = argv[argv.index("--after") + 1] if "--after" in argv else os.path.join(ROOT, note)
         before = argv[argv.index("--before") + 1] if "--before" in argv else head_copy(note)
@@ -553,8 +577,8 @@ def main(argv):
         out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "diff-crop")
         os.makedirs(out, exist_ok=True)
         tmp = tempfile.mkdtemp(prefix="diff-crop-key.")
-        for k in keys:
-            keycrop(k, before, after, out, tmp)
+        for k, caption in keys:
+            keycrop(k, before, after, out, tmp, caption=caption)
         shutil.rmtree(tmp, ignore_errors=True)
         return
     if len(argv) >= 2:
