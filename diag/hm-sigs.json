@@ -44,10 +44,12 @@
     "F": [
       ".obj",
       "Fo ",
-      "Prod.map"
+      "Prod.map",
+      ".carrier ×"
     ],
     "[]": [
-      "Vec"
+      "Vec",
+      "dTuple"
     ],
     "×": [
       "×",

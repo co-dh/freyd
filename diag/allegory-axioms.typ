@@ -6838,12 +6838,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #pagebreak(weak: true)
 == Shortest paths on a cylinder
 
-=== `gen` on `Vec`: `F(𝟙,moves trans Vec(n)(concat)) zip Vec(n)(cp)` <sec-cyl-vec>
-
-// Beside @sec-cyl-gen with every type a matrix: `A[1]≜A`, `A[m+1]≜A×A[m]`, `A[m][n]≜(A[n])[m]`,
-// outermost index first; `N=Vec(n)`, the paths into a row `A[p][m]`, and `E` gone.  `wrap` and `cons`
-// are identities by that definition, so `α` drops out of `gen`; `union` becomes `concat`, `trans` the
-// transpose.  A one-square path is its square, which is what keeps `[1]` out of every type.
+// B&dM §7.4, p. 179, with every type a matrix: `A[1]≜A`, `A[m+1]≜A×A[m]`, `A[m][n]≜(A[n])[m]`,
+// outermost index first, and `Vec(k)` the functor `X↦X[k]`.  The count of columns crossed and of
+// candidate paths is then in the type, so `E` never appears and `wrap`/`cons` are identities.  The
+// list version is @sec-cyl-lists.
 #disp[#table(
   columns: (2.6cm, 4.4cm, 7.4cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
@@ -6882,8 +6880,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`union`],
   [`E(EX)⟶EX`],
-  [`concat:X[3][p]⟶X[3p]`],
-  [The three candidate lists, end to end.],
+  [`concat:X[j][k]⟶X[jk]`],
+  [The `j` rows laid end to end; `j` is `3` inside `gen` and `n` inside `paths`.],
 
   [`zip`],
   [`F(NA,NB)⟶NF(A,B)`],
@@ -6895,22 +6893,53 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`A×B[p]⟶(A×B)[p]`],
   [The square paired with each of the `p` candidates.],
 
+  [`est(R)≜∋∩(∈\R°)`],
+  [`E X⟶X`],
+  [`X[k]⟶X`, `∋:X[k]⟶X`],
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_eq@6474d151
+  [A component that is `R`-below every component; `∋` is "is some component" and `∈` its converse.],
+
+  [`R≜sum≤sum°`],
+  [`L Nat⟶L Nat`],
+  [`Nat[m]⟶Nat[m]`],
+  [The cost of a path, which the cheapest minimises — one order per length `m`.],
+
   [`gen`],
   [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(E(LA)))` \ `⟶N(E(LA))`],
   [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp)` \ `F(A[n],A[n][p][m])⟶A[n][3p][m+1]`],
+  // lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f
   [The same composite without `α`; the type shown is the `cons` side, the `wrap` side is `𝟙:A[n]⟶A[n]`.],
 
   [`⦇gen⦈`],
   [`L(N A)⟶N(E(L A))`],
   [`A[m][n]⟶A[n][p][m]`],
+  // lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83
   [Columns in, rows out.],
 
-  [`Q`, @sec-cyl-deriv],
+  [`paths≜⦇gen⦈ concat`],
+  [`⦇gen⦈ setify union` \ `L N Nat⟶E(L Nat)`],
+  [`A[m][n]⟶A[np][m]`],
+  // lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b
+  [The `n` rows of `p` paths laid end to end: every path of the cylinder, in one row.],
+
+  [`Q`, @sec-cyl-vec-q],
   [`F(𝟙,moves trans N(est(R)))` \ `zip N(α)`],
-  [`F(𝟙,moves trans Vec(n)(est(R)))` \ `zip`, `est(R):X[3]⟶X`],
+  [`F(𝟙,moves trans Vec(n)(est(R)))` \ `zip`, `F(A[n],A[n][m])⟶A[n][m+1]`],
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a
   [The cheapest of three; no `p` anywhere. `⦇Q⦈:A[m][n]⟶A[n][m]` has the type of a transpose.],
+
+  [the specification \ `paths est(R)`],
+  [`L N Nat⟶L Nat`],
+  [`A[m][n]⟶A[m]`, `est(R):X[np]⟶X`],
+  [A cheapest path from the entry side to the exit side.],
 )]<vec-defn-cyl>
 
+=== `gen≜F(𝟙,moves trans Vec(n)(concat)) zip Vec(n)(cp)` <sec-cyl-vec>
+
+// Beside @sec-cyl-gen: `union` becomes `concat`, `trans` the transpose, and `α` drops out because
+// `wrap` and `cons` are identities.  A one-square path is its square, which is what keeps `[1]` out
+// of every type; the `[m+1]` bracket under the ports is the hidden `cons`.
 #disp[#align(center, dpanel(6.6, 9.04, 7.19,
   ((2.762, 2.2, "bot", none, none), (3.903, 1.1, "bot", none, none), (5.306, 1.1, "bot", none, none), (3.903, 2.2, 1.1, [`F`], none), (2.762, "top", 2.2, none, none), (3.903, 4.4, 2.2, [`[n]`], none), (5.306, 3.3, 1.1, [`[3p]`], none), (4.79, 4.4, 3.3, [`[3]`], none), (3.903, 5.5, 4.4, [`[3]`], none), (4.79, 5.5, 4.4, [`[n]`], none), (4.216, "top", 5.5, none, none), (5.676, "top", 3.3, none, none), (6.563, "top", "bot", none, none)),
   ((5.5, [`moves`], black, 4.216, 4.216), (4.4, [`trans`], black, 3.903, 4.3465), (3.3, [`concat`], black, 4.79, 5.233), (2.2, [`zip`], black, 2.762, 3.3325), (1.1, [`cp`], black, 3.903, 4.6045)),
@@ -6918,7 +6947,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2.762, [`[n]`]), (3.903, [`[3p]`]), (5.306, [`F`]), (6.563, [`[m]`]), (7.19, [`A`])),
   obj: ((5.5, [`A`]), (4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
   defn: ((5.306, 6.563, 0, [`[m+1]`]),),
-  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[3][k]⟶x[3k]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@e93491b8!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@8c89291c", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("A[k+1]": "F(A[k])"))))]<vec-gen-diag>
+  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@1374d571!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@632dd38e", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("x[k+1]": "F(x[k])"))))]<vec-gen-diag>
 
 #disp[#align(center)[```
 a row is the outer index, a cell one path
@@ -6948,6 +6977,215 @@ Vec(n)(cp)(that)                                  cp pairs the square with each 
      1 5   2 6   3 7   4 8                        to right; each line a two-square path
      1 8   2 5   3 6   4 7                      : A[n][3][2]
 ```]]<vec-step>
+   // lean:AOP.A7_4_CylinderVec.Vec.gen_run@47a0e44e
+
+=== `gen` is an `F`-algebra; `⦇gen⦈`: `cons ⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-vec-fold>
+
+// The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is OUTSIDE `F`
+// on the left and INSIDE it on the right — that is all the recursion there is.  `cons=𝟙` here, so
+// on the left it is the `[m+1]` bracket alone.  Every bead is a function, so the dots are filled.
+#disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
+  dpanel(3.3, 8.15, 6.3,
+  ((2.762, 2.2, "bot", none, none), (3.903, 2.2, "bot", none, none), (4.528, 2.2, "bot", none, none), (5.676, 2.2, "bot", none, none), (3.074, "top", 2.2, none, none), (4.216, "top", 2.2, none, none), (5.102, "top", 2.2, none, none)),
+  ((2.2, [`⦇gen⦈`], black, 3.074, 4.088),),
+  ((3.074, [`F`]), (4.216, [`[m]`]), (5.102, [`[n]`]), (6.3, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.528, [`F`]), (5.676, [`[m]`]), (6.3, [`A`])),
+  obj: ((2.2, [`A`]),),
+  defn: ((3.074, 4.216, 3.3, [`[m+1]`]), (4.528, 5.676, 0, [`[m+1]`])),
+  cert: (expect: "⦇gen⦈", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m+1][n]⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83"), frame: 3, top: 2, defn: ("x[k+1]": "F(x[k])"))),
+  EQ,
+  dpanel(3.3, 8.31, 6.46,
+  ((2.762, 1.1, "bot", none, none), (3.903, 1.1, "bot", none, none), (4.946, 1.1, "bot", none, none), (5.833, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.903, 2.2, 1.1, [`[n]`], none), (4.946, 2.2, 1.1, [`[p]`], none), (5.833, 2.2, 1.1, [`[m]`], none), (4.216, "top", 2.2, none, none), (5.259, "top", 2.2, none, none)),
+  ((2.2, [`⦇gen⦈`], black, 4.216, 4.7375), (1.1, [`gen`], black, 2.762, 4.2975)),
+  ((2.762, [`F`]), (4.216, [`[m]`]), (5.259, [`[n]`]), (6.46, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.946, [`F`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  defn: ((2.762, 4.216, 3.3, [`[m+1]`]), (4.946, 5.833, 0, [`[m+1]`])),
+  cert: (expect: "F(𝟙,⦇gen⦈)gen", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "gen": "F(x[n][p][m])⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f"), defn: ("x[k+1]": "F(x[k])"))),
+
+  src[the `[m+1]` bracket puts the column back on the matrix, then the fold reads all of it],
+  [],
+  src[the fold reads the rest under `F`, then one `gen` puts the column in front],
+))]<vec-fold-diag>
+   // lean:AOP.A7_4_CylinderVec.Vec.cons_genFold@5d95f82a
+
+#disp[#align(center)[```
+xs = 1 2 3 4                                    : A[m][n], m=2
+     5 6 7 8
+
+⦇gen⦈(xs) = gen((1,2,3,4), ⦇gen⦈(5,6,7,8))
+⦇gen⦈(5,6,7,8)                                    one column: each square its own one-square path
+   = 5
+     6
+     7
+     8                                          : A[n][1][1]
+```]]<vec-fold-step>
+
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @vec-step: the tail
+  folds to the column `5 6 7 8`, one path per row and each of them one square long, and `gen` on it
+  is that walk.]])
+
+=== `Q≜F(𝟙,moves trans Vec(n)(est(R))) zip`, `F(A[n],A[n][m])⟶A[n][m+1]` <sec-cyl-vec-q>
+
+// `gen` with the choice made: `concat` and `cp` are gone, and `est(R)` takes one of the three
+// candidates a row is offered before the new square is put in front of it.  In `Rel` now, so
+// `moves` is lax (hollow) where `trans` and `zip` are strict, and `est(R)` claims no naturality.
+#disp[#align(center, dpanel(5.5, 7.9, 6.05,
+  ((2.762, 1.1, "bot", none, none), (3.648, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.648, 3.3, 1.1, [`[n]`], none), (4.535, 3.3, 2.2, [`[3]`], none), (3.648, 4.4, 3.3, [`[3]`], none), (4.535, 4.4, 3.3, [`[n]`], none), (3.961, "top", 4.4, none, none), (5.421, "top", "bot", none, none)),
+  ((4.4, [`moves`], black, 3.961, 3.961, "lax"), (3.3, [`trans`], black, 3.648, 4.0915), (2.2, [`est(R)`], black, 4.535), (1.1, [`zip`], black, 2.762, 3.205)),
+  ((2.762, [`F`]), (3.961, [`[n]`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`[n]`]), (3.648, [`F`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  obj: ((4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
+  defn: ((3.648, 5.421, 0, [`[m+1]`]),),
+  cert: (expect: "F(𝟙,moves trans Vec(n)(est(R)))zip", src: "F(A[n][m])", tgt: "A[n][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!lax=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.moves_lax_natural@78f5ec90!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.trans_natural@ecc5fb3e!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.zip_natural@12046f44!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0"), defn: ("x[k+1]": "F(x[k])"))))]<vec-q-diag>
+   // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a
+
+#disp[#align(center)[```
+u = ((1,2,3,4),C)                               : F(A[n],A[n][m])
+    C = 5                                         one path per row, one square long
+        6
+        7
+        8
+F(𝟙,moves trans Vec(n)(est(R)))                   𝟙 keeps the column, the paths move
+  moves(C)                                        down, unmoved, up: a 3×n matrix
+   = 6 7 8 5
+     5 6 7 8
+     8 5 6 7                                    : A[3][n][m]
+  trans(that)                                     the transpose: row k gets rows k-1, k, k+1
+   = 6 5 8
+     7 6 5
+     8 7 6
+     5 8 7                                      : A[n][3][m]
+  Vec(n)(est(R))(that)                            the cheapest into each row — chosen BEFORE
+   = 5 5 6 5                                    : A[n][m]   the new square is put in front
+zip(that)                                         each row: its square, and the one predecessor
+   = 1 5                                          that survived; the `[m+1]` bracket is cons
+     2 5
+     3 6
+     4 5                                        : A[n][m+1]
+```]]<vec-q-step>
+
+=== `paths est(R)⊒⦇Q⦈ est(R)` <sec-cyl-vec-deriv>
+
+// This section's own box vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
+// corner for a relation and a square box for a map.
+#let cv-paths = ([`paths`], 1.9, false)
+#let cv-fold = ([`⦇gen⦈`], 3.6, false)
+#let cv-concat = ([`concat`], 2.0, false)
+#let cv-Nest = ([`Vec(n)(est(R))`], 4.3, true)
+#let cv-foldQ = ([`⦇Q⦈`], 1.5, true)
+#let cv-gen = ([`gen`], 2.7, false)
+#let cv-FNest = ([`F(𝟙,Vec(n)(est(R)))`], 5.7, true)
+#let cv-Q = ([`Q`], 0.8, true)
+
+#let cvp(body, s: 92%) = P(cetz.canvas(length: 0.8cm, body), s: s)
+// The end names are ANCHORED, not centred at a hand-measured x: one of them is `F(A[n],A[n][p][m])`
+// and every row would otherwise need its own offset.
+#let cvrun(lft, rgt, items) = {
+  d.content((-0.2, 0), text(10pt)[#lft], anchor: "east")
+  boxrun(0, 0, items)
+  d.content((boxrun-w(items) + 0.2, 0), text(10pt)[#rgt], anchor: "west")
+}
+
+// B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
+// becomes `concat`, and the two steps that moved the minimum inside the set become one.
+#disp[#calc-table(
+  Thm[`paths est(R)⊒⦇Q⦈ est(R)` \
+    #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
+     row and then a cheapest of those `n`, which costs `O(n×m)`.
+ ]],
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-paths, est-R-box))), [])],
+  [#dpanel(3.3, 6.38, 4.53,
+  ((3.016, 2.2, 1.1, [`[np]`], none), (3.903, 2.2, "bot", none, none), (3.016, "top", 2.2, none, none), (3.903, "top", 2.2, none, none)),
+  ((2.2, [`paths`], black, 3.016), (1.1, [`est(R)`], black, 3.016)),
+  ((3.016, [`[m]`]), (3.903, [`[n]`]), (4.53, [`Nat`])),
+  ((3.903, [`[m]`]), (4.53, [`Nat`])),
+  obj: ((2.2, [`Nat`]), (1.1, [`Nat`])),
+  cert: (expect: "paths est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("paths": "Nat[m][n]⟶Nat[np][m]!lean=lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+
+  [#vstep(EQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-concat, est-R-box))),
+    [#src[@vec-defn-cyl at `paths`]])],
+  [#dpanel(4.4, 7.17, 5.32,
+  ((3.074, 2.2, 1.1, [`[np]`], none), (2.762, 3.3, 2.2, [`[n]`], none), (3.804, 3.3, 2.2, [`[p]`], none), (4.691, 3.3, "bot", none, none), (3.074, "top", 3.3, none, none), (4.117, "top", 3.3, none, none)),
+  ((3.3, [`⦇gen⦈`], black, 3.074, 3.5955), (2.2, [`concat`], black, 2.762, 3.283), (1.1, [`est(R)`], black, 3.074)),
+  ((3.074, [`[m]`]), (4.117, [`[n]`]), (5.32, [`Nat`])),
+  ((4.691, [`[m]`]), (5.32, [`Nat`])),
+  obj: ((3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
+  cert: (expect: "⦇gen⦈concat est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.concat_natural@cc5628c5!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@632dd38e", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+
+  [#vstep(RQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-Nest, est-R-box))),
+    [#src[a cheapest of each of the `n` rows, then a cheapest of those; `R` transitive]])],
+  [#dpanel(4.4, 7.17, 5.32,
+  ((2.762, 3.3, 1.1, [`[n]`], none), (3.804, 3.3, 2.2, [`[p]`], none), (4.691, 3.3, "bot", none, none), (3.074, "top", 3.3, none, none), (4.117, "top", 3.3, none, none)),
+  ((3.3, [`⦇gen⦈`], black, 3.074, 3.5955), (2.2, [`est(R)`], black, 3.804), (1.1, [`est(R)`], black, 2.762)),
+  ((3.074, [`[m]`]), (4.117, [`[n]`]), (5.32, [`Nat`])),
+  ((4.691, [`[m]`]), (5.32, [`Nat`])),
+  obj: ((3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
+  cert: (expect: "⦇gen⦈Vec(n)(est(R))est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+
+  [#vstep(RQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-foldQ, est-R-box))),
+    [#src[@cata-fusion at @vec-cyl-fusion]])],
+  [#dpanel(3.3, 6.12, 4.27,
+  ((2.762, 2.2, 1.1, [`[n]`], none), (3.648, 2.2, "bot", none, none), (2.762, "top", 2.2, none, none), (3.648, "top", 2.2, none, none)),
+  ((2.2, [`⦇Q⦈`], black, 2.762), (1.1, [`est(R)`], black, 2.762)),
+  ((2.762, [`[m]`]), (3.648, [`[n]`]), (4.27, [`Nat`])),
+  ((3.648, [`[m]`]), (4.27, [`Nat`])),
+  obj: ((2.2, [`Nat`]), (1.1, [`Nat`])),
+  cert: (expect: "⦇Q⦈est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("⦇Q⦈": "Nat[m][n]⟶Nat[n][m]!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold@a322e759", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+
+  Thm[`Vec(j)(est(R)) est(R)⊑concat est(R)`, `R` transitive \
+    #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
+     `jk` entries laid end to end.
+ ]],
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_concat@8fdae89e
+
+  Thm[`⦇Q⦈⊑⦇gen⦈ Vec(n)(est(R))`, `R` reflexive, transitive and monotonic \
+    #src[the one path per row the greedy fold keeps is one of the `p` that `⦇gen⦈` generates for
+     that row, and a cheapest of them.
+ ]],
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold_le_genFold@6553db32
+)]<vec-cyl-laws>
+
+// B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
+// column; the right-hand side kills the `[p]` before, and that swap is the whole step.
+#disp[#calc-table(
+  Thm[`gen Vec(n)(est(R))⊒F(𝟙,Vec(n)(est(R)))Q` \
+    #src[choosing a cheapest of each square's `p` paths before the column is extended is no better
+     than extending first and choosing among the `3p`.
+ ]],
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_fusion@c44594b9
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], cvp(cvrun([`F(A[n],A[n][p][m])`], [`A[n][m+1]`], (cv-gen, cv-Nest)), s: 88%), [])],
+  [#dpanel(3.3, 8.31, 6.46,
+  ((2.762, 2.2, "bot", none, none), (4.059, 2.2, 1.1, [`[3p]`], none), (4.946, 2.2, "bot", none, none), (5.833, 2.2, "bot", none, none), (2.762, "top", 2.2, none, none), (4.059, "top", 2.2, none, none), (4.946, "top", 2.2, none, none), (5.833, "top", 2.2, none, none)),
+  ((2.2, [`gen`], black, 2.762, 4.2975), (1.1, [`est(R)`], black, 4.059)),
+  ((2.762, [`F`]), (4.059, [`[n]`]), (4.946, [`[p]`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  ((2.762, [`[n]`]), (4.946, [`F`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  defn: ((4.946, 5.833, 0, [`[m+1]`]),),
+  cert: (expect: "gen Vec(n)(est(R))", src: "F(A[n][p][m])", tgt: "A[n][m+1]", sigs: ("gen": "F(x[n][p][m])⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "F(x[k])")))],
+
+  [#vstep(RQ, cvp(cvrun([`F(A[n],A[n][p][m])`], [`A[n][m+1]`], (cv-FNest, cv-Q)), s: 88%),
+    [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
+  [#dpanel(3.3, 7.9, 6.05,
+  ((2.762, 1.1, "bot", none, none), (3.648, 1.1, "bot", none, none), (5.421, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.648, "top", 1.1, none, none), (4.535, "top", 2.2, none, none), (5.421, "top", 1.1, none, none)),
+  ((2.2, [`est(R)`], black, 4.535), (1.1, [`Q`], black, 2.762)),
+  ((2.762, [`F`]), (3.648, [`[n]`]), (4.535, [`[p]`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`[n]`]), (3.648, [`F`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  defn: ((3.648, 5.421, 0, [`[m+1]`]),),
+  cert: (expect: "F(𝟙,Vec(n)(est(R)))Q", src: "F(A[n][p][m])", tgt: "A[n][m+1]", sigs: ("Q": "F(x[n][m])⟶x[n][m+1]!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "F(x[k])")))],
+
+  Thm[(7.13) on `Vec`: `F(𝟙,est(R))⊑cp est(R)`, `R` monotonic \
+    #src[putting the new square in front of every one of the `p` candidates and then choosing a
+     cheapest is beaten by choosing a cheapest first and putting the square in front of that one.
+ ]],
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_7_13@8bf677c6
+)]<vec-cyl-fusion>
 
 == The security van problem
 
@@ -8761,11 +8999,11 @@ both lists empty.
       the two lengths]])],
   // The program is the branch above with each box replaced by a function computing it, so the wires
   // and the beads are the same picture: only the labels change.
-  [#dpanel(5.5, 8.92, 7.07,
-  ((3.016, 4.4, 1.1, [`list`], none), (4.675, 2.2, "bot", none, none), (4.158, 4.4, 2.2, [`Op×−`], none), (5.768, 3.3, 2.2, [`list`], none), (5.3, 4.4, 3.3, [`Δ`], none), (6.441, 4.4, 3.3, [`list`], none), (4.158, "top", 4.4, none, none), (5.3, "top", 4.4, none, none)),
-  ((4.4, [`unstep`], black, 4.158), (3.3, [`mle`], black, 5.3), (2.2, [`cons`], black, 4.158, 4.963), (1.1, [`minlist(R)`], black, 3.016)),
-  ((4.158, [`Δ`]), (5.3, [`list`]), (7.07, [`Char`])),
-  ((4.675, [`list`]), (7.07, [`Op`])),
+  [#dpanel(5.5, 9.39, 7.54,
+  ((3.016, 4.4, 1.1, [`list`], none), (5.143, 2.2, "bot", none, none), (4.627, 4.4, 2.2, [`Op×−`], none), (6.237, 3.3, 2.2, [`list`], none), (5.768, 4.4, 3.3, [`Δ`], none), (6.91, 4.4, 3.3, [`list`], none), (4.627, "top", 4.4, none, none), (5.768, "top", 4.4, none, none)),
+  ((4.4, [`unstep`], black, 4.627), (3.3, [`mle`], black, 5.768), (2.2, [`cons`], black, 4.627, 5.432), (1.1, [`minlist(R)`], black, 3.016)),
+  ((4.627, [`Δ`]), (5.768, [`list`]), (7.54, [`Char`])),
+  ((5.143, [`list`]), (7.54, [`Op`])),
   obj: ((4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
   cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
 
@@ -9126,11 +9364,11 @@ the longest repeated tail; #h(4pt)
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
-  [#dpanel(5.5, 8.28, 6.43,
-  ((3.016, 4.4, 1.1, [`list`], none), (5.184, 2.2, "bot", none, none), (4.668, 4.4, 2.2, [`−×Code`], none), (5.809, 3.3, 2.2, [`list`], none), (5.809, 4.4, 3.3, [`list`], none), (4.668, "top", 4.4, none, none)),
-  ((4.4, [`reduce`], black, 4.668), (3.3, [`encode`], black, 5.809), (2.2, [`snoc`], black, 4.668), (1.1, [`minlist(R)`], black, 3.016)),
-  ((4.668, [`list`]), (6.43, [`Char`])),
-  ((5.184, [`list`]), (6.43, [`Code`])),
+  [#dpanel(5.5, 8.6, 6.75,
+  ((3.016, 4.4, 1.1, [`list`], none), (5.497, 2.2, "bot", none, none), (4.98, 4.4, 2.2, [`−×Code`], none), (6.122, 3.3, 2.2, [`list`], none), (6.122, 4.4, 3.3, [`list`], none), (4.98, "top", 4.4, none, none)),
+  ((4.4, [`reduce`], black, 4.98), (3.3, [`encode`], black, 6.122), (2.2, [`snoc`], black, 4.98), (1.1, [`minlist(R)`], black, 3.016)),
+  ((4.98, [`list`]), (6.75, [`Char`])),
+  ((5.497, [`list`]), (6.75, [`Code`])),
   obj: ((4.4, [`Char`]), (3.3, [`Code`]), (2.2, [`Code`]), (1.1, [`Code`])),
   cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: ("reduce": "[Char]⟶[[Char]×Code]", "encode": "[Char]⟶[Code]", "snoc": "[Code]×Code⟶[Code]", "minlist": "[x]⟶x")))],
 )]<code-laws>

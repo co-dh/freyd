@@ -120,6 +120,9 @@
   // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`fcol` maps `[3p]`
   // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
   "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
+  // `concat` glues the `[n]` and `[p]` axes into the one axis `[np]`, which stands beside both of
+  // them in `⦇gen⦈concat est(R)`: its own hue, ΔE76 ≥ 50 from each.
+  "[np]": rgb("#cb677e"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
   // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
   "Digit×−": rgb("#a58a6e"))

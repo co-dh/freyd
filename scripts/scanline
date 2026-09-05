@@ -31,7 +31,8 @@ from relexpr import (alias, BREAK, CARRIER, CLOSERS, DVAR, INTERVAL, IVAR, OPENE
                      fill, fuse,
                      help_if, hole_last, hole_slot, ibind, idxhead, interchange, is_index, isub,
                      listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
-                     require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx)
+                     require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx,
+                     varsof)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -264,7 +265,15 @@ def a_dpanel(p, r):
             # zero height, and the note draws one bezier dot to dot instead of kinking there — only
             # where this lane is the ONLY one between those two beads and its column lies BETWEEN
             # the two dots, so the straight line sweeps the corridor the columned route already did.
-            alone = sum(1 for o in r['lanes'] if o[1] == y0 and o[2] == y1) == 1
+            # ALONE IN THE CORRIDOR, `dpanel`'s own rule: a lane whose column lies between the two
+            # dots and is live across the gap has ink there, and the straight line sweeps from one
+            # side of that column to the other — two wires that meet have exchanged.
+            corr = [] if y0 == 'top' or y1 == 'bot' else \
+                [o for j, o in enumerate(r['lanes']) if j != i
+                 and min(dx(y0), dx(y1)) + EPS < o[0] < max(dx(y0), dx(y1)) - EPS
+                 and (o[1] == 'top' or o[1] >= y0 - EPS)
+                 and (o[2] == 'bot' or o[2] <= y1 + EPS)]
+            alone = not corr and sum(1 for o in r['lanes'] if o[1] == y0 and o[2] == y1) == 1
             if (alone and y0 != 'top' and y1 != 'bot' and un is None
                     and y0 - kb <= y1 + kd + EPS
                     and min(dx(y0), dx(y1)) - EPS <= x <= max(dx(y0), dx(y1)) + EPS):
@@ -285,10 +294,11 @@ def a_dpanel(p, r):
         # rule is stated once and the boxes swept here are the boxes drawn.  A rec `scripts/diagram`
         # builds is not ink yet, so it names nothing.
         if i in r.get('named', ()):
-            # `dpanel` writes it on the birth row, or at the end of the knee where a leg of the
-            # same bead is born west of this one and sweeps that row.
-            swept = any(o[1] == y0 and o[0] < x for o in r['lanes'])
-            yn = (y0 - gk[('b', float(y0))] - LLH / 2
+            # `dpanel` writes it on the birth row, or half a name's height below the knee's end
+            # where another strand — a lane born on the same bead west of this one, or one dying on
+            # it — sweeps that row.  The drop is `dpanel`'s own, knee capped at 0.3.
+            swept = any((o[1] == y0 or o[2] == y0) and o[0] < x for o in r['lanes'])
+            yn = (y0 - min(gk[('b', float(y0))], 0.3) - LLH / 2
                   if swept and un is None and y0 != 'top' else y0)
             p.labels.append((lab, x, yn, lbox(x, yn, lab)))
         if un is not None:
@@ -897,14 +907,31 @@ def first_diff(got, want):
     return "" if len(g) == len(w) else f"; the panel has {len(g)} factors, the formula {len(w)}"
 
 
+def polyrow(p, label):
+    """Is this bead's row an arrow AT ANY OBJECT — a free object variable in either port?  The
+    panel's own `sigs:` first, as everywhere: a row it overrides is a different arrow."""
+    row = ((typed(sigs(), p.cert.get("sigs")) or {}).get("sigs") or {}).get(
+        label[:label.find('(')] if label.find('(') > 0 else label)
+    if not isinstance(row, dict) or not row.get("src"):
+        return False
+    return bool(varsof(parse(row["src"])) | varsof(parse(row["tgt"])))
+
+
 def crosscheck(ps):
     """One bead label, one signature within a display — the cheap catch for a bead moved onto the
-    wrong wire.  Across displays the same name is a different arrow, so the scope is the display."""
+    wrong wire.  Across displays the same name is a different arrow, so the scope is the display.
+
+    A bead whose ROW is polymorphic is exempt: `est(R) : x[k]⟶x` collapses whichever index it is
+    given and `⦇gen⦈ : x[m][n]⟶x[n][p][m]` stands at `[m]` on one side of a fold equation and at
+    `[m+1]` on the other, so the drawn wires are what fixes the instance and not the name.  What
+    checks THOSE is the respelling: each panel is read back and compared to its own formula."""
     sigs, wlab, bad = {}, {}, []
     for p in ps:
         for w in p.wires:
             wlab.setdefault(w.label, p.id)
         for b in p.beads:
+            if polyrow(p, b.label):
+                continue
             cons = tuple(sorted(w.label for w in p.wires if abs(w.ybot - b.y) < EPS
                                 and owner(p, w, b.y) is b))
             made = tuple(sorted(w.label for w in p.wires if abs(w.ytop - b.y) < EPS

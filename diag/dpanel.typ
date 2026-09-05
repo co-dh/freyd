@@ -380,15 +380,28 @@
     // beside; `dnamed` says on which lanes that name is nowhere else on the page.
     let nm = dnm(l, top, bot)
     let col = if nm == none { none } else { fcol(nm) }
-    let alone = lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1
+    // ALONE IN THE CORRIDOR, not merely on the two rows: a lane whose column lies between the two
+    // dots and is live across the gap has ink there, and the straight line sweeps from one side of
+    // that column to the other — two wires that meet have exchanged.
+    let corr = if l.at(1) == "top" or l.at(2) == "bot" { () } else {
+      let (a, b) = (dx(l.at(1)), dx(l.at(2)))
+      lanes.enumerate().filter(o => o.at(0) != i
+        and o.at(1).at(0) > calc.min(a, b) + 1e-6 and o.at(1).at(0) < calc.max(a, b) - 1e-6
+        and (o.at(1).at(1) == "top" or o.at(1).at(1) >= l.at(1) - 1e-6)
+        and (o.at(1).at(2) == "bot" or o.at(1).at(2) <= l.at(2) + 1e-6))
+    }
+    let alone = (corr.len() == 0
+      and lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1)
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
                         alone: alone) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
-    // On the birth row, where every arm leaves its dot vertically — EXCEPT where a leg of the same
-    // bead is born west of this one: that leg sweeps from the dot across the very gap the name is
-    // written in, so the name drops to the end of the knee, where both are back in their columns.
+    // On the birth row, where every arm leaves its dot vertically — EXCEPT where another strand
+    // sweeps that row west of this lane: a leg of the same bead born there, or a lane DYING there,
+    // which arrives at the dot across the very gap the name is written in.  Then the name drops to
+    // the end of the knee, where both are back in their columns.
     if nmd.contains(i) {
-      let swept = lanes.any(o => o.at(1) == l.at(1) and o.at(0) < l.at(0))
+      let swept = lanes.any(o =>
+        (o.at(1) == l.at(1) or o.at(2) == l.at(1)) and o.at(0) < l.at(0))
       // Half a name's height BELOW the knee's end, so the box's top edge is where the sibling's
       // strand has just come vertical; on the knee's own end the box still straddles the bend.
       hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { calc.min(kb, 0.3) + 0.161 } else { 0 })),

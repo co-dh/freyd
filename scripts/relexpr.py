@@ -345,7 +345,9 @@ def spell(e):
 # letters are renamed apart with the scheme they belong to (`k@2`), which is what keeps a ground index
 # — every one a `--src`/`--tgt` writes — matching itself alone; a DEFN's are bare letters, since a
 # defn is one pattern applied once.
-IVAR = re.compile(r"[a-z]@[0-9a-z]+")
+# The tag is DIGITS (with the initial algebra's own `s` after them), never letters: `[jk]` is a
+# PRODUCT of two index letters, and a greedy `[0-9a-z]+` would read `j@1k@1` as the one name `j@1k`.
+IVAR = re.compile(r"[a-z]@[0-9]+s?")
 DVAR = re.compile("[" + "".join(sorted(set(string.ascii_lowercase) - VARS)) + "]")
 
 
@@ -379,7 +381,12 @@ def defns(d):
 
 
 def dmatch(pat, e, ix):
-    """A defn's left side against a node: index heads by `ibind`, everything else literally."""
+    """A defn's left side against a node: index heads by `ibind`, an OBJECT VARIABLE against any
+    subterm, everything else literally."""
+    # `x[k+1]≜F(x[k])` abbreviates every object's `[k+1]`, not the one letter the note happens to
+    # write it at: `A[m+1][n]` is `(A[n])[m+1]`, so the base the bracket sits on is `A[n]`.
+    if pat[0] == 'atom' and pat[1] in VARS:
+        return ix.setdefault(pat[1], e) == e
     if pat[0] == 'app' and e[0] == 'app' and idxhead(pat[1]) and idxhead(e[1]):
         return ibind(pat[1][1:-1], e[1][1:-1], ix, DVAR) and dmatch(pat[2], e[2], ix)
     if pat[0] == 'app' and e[0] == 'app' and pat[1] == e[1]:
@@ -388,7 +395,9 @@ def dmatch(pat, e, ix):
 
 
 def dput(e, ix):
-    """A defn's side with its index variables written out."""
+    """A defn's side with its index variables written out and its object variable put back."""
+    if e[0] == 'atom' and e[1] in VARS and e[1] in ix:
+        return ix[e[1]]
     return ('app', isub(e[1], ix, DVAR), dput(e[2], ix)) + e[3:] \
         if e[0] == 'app' and idxhead(e[1]) else rec(e, lambda x: dput(x, ix))
 
@@ -416,6 +425,17 @@ def tidy(e):
     if e[0] == 'prod' and all(x[0] == 'conv' for x in e[1]):
         return ('conv', ('prod', [x[1] for x in e[1]]))
     return e
+
+
+def varsof(e):
+    """The signature's free OBJECT variables — the letters that make it polymorphic.  `letters`
+    gives the functors and stops at the bottom atom, which is exactly the one that says `for any
+    object`."""
+    if isinstance(e, (list, tuple)):
+        if e and e[0] == 'atom':
+            return {e[1]} & VARS
+        return set().union(set(), *(varsof(x) for x in e if isinstance(x, (list, tuple))))
+    return set()
 
 
 def rec(e, f):

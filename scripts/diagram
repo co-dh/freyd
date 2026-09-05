@@ -149,16 +149,6 @@ def letters(e):
     return letters(e[1]) if e[0] == 'conv' else set()
 
 
-def varsof(e):
-    """The signature's free variables — the letters that make it polymorphic.  `letters` gives the
-    functors and stops at the bottom atom, which is exactly the one that says `for any object`."""
-    if isinstance(e, (list, tuple)):
-        if e and e[0] == 'atom':
-            return {e[1]} & VARS
-        return set().union(set(), *(varsof(x) for x in e if isinstance(x, (list, tuple))))
-    return set()
-
-
 class Undecided(Exception):
     """A polymorphic row that states no `nat:`.  The picture cannot be drawn from it either way."""
 
@@ -183,7 +173,7 @@ def natural(core, sigs):
     if core[0] == 'app' or len(spell(core).removesuffix('%∋')) == 1:
         return False
     r = row(core, sigs, 0)
-    if r is not None and (varsof(r[0]) | varsof(r[1])):
+    if r is not None and (sl.varsof(r[0]) | sl.varsof(r[1])):
         raise Undecided(f'{lab} : {spell(r[0])}⟶{spell(r[1])} is polymorphic and states no `nat:` — '
                         f'add `nat` and the Lean proof in `nat-lean` to its row, or name the object '
                         f'it is an arrow at')
@@ -394,7 +384,9 @@ def matches(pat, lane, sub, ix):
     if wire_eq(pat, lane):
         return True
     if sl.idxhead(pat) and sl.idxhead(lane):
-        return sl.ibind(pat[1:-1], lane[1:-1], ix)
+        # Either side may be the ground one: a fold's target index (`3^m` paths) is named by no
+        # letter of its source, so it is the PANEL's own port that settles the scheme's `[3p]`.
+        return sl.ibind(pat[1:-1], lane[1:-1], ix) or sl.ibind(lane[1:-1], pat[1:-1], ix)
     if len(ps) != len(ws):
         return False
     for p, w in zip(ps, ws):
@@ -591,7 +583,9 @@ class Lane:
     """One wire, from the factor that makes it to the factor that eats it."""
     def __init__(self, label, born=None):
         self.label, self.born, self.dies = label, born, None
-        self.x = None
+        # `pad` is room `layout` asks for on top of the name's own width, where the ink west of the
+        # lane reaches further east than that lane's column does.
+        self.x, self.pad = None, 0.0
 
 
 class Row:
@@ -629,16 +623,21 @@ def born_at(rows, tail, sub, dflt):
 def spine(e, ds):
     """An edge's wire stack and object, with the panel's `defn:` expanded: the note writes `A[m+1]`
     where the picture draws the wires `F(A[m])` is, and a picture's ports are the picture's.  Each
-    `(depth, label)` says how many wires stand left of the group the LEFT side's own functor names;
-    a replacement is not re-scanned, so its group runs from there to the last wire."""
+    `(depth, width, label)` says how many wires stand left of the group the LEFT side's own functor
+    names and how many the group is: the group ends where the LEFT side's own ARGUMENT begins, which
+    is not the last wire once that argument is itself a stack (`A[m+1][n] ≜ F(A[m][n])`)."""
     ws, marks = [], []
     while True:
         ix = {}
         hit = next(((l, r) for l, r in ds if sl.dmatch(l, e, ix)), None)
         if hit is not None:
+            rhs = norm(sl.dput(hit[1], ix))
             if hit[0][0] == 'app':
-                marks.append((len(ws), sl.isub(hit[0][1], ix, sl.DVAR)))
-            e, ds = norm(sl.dput(hit[1], ix)), ()
+                arg, x, d = norm(sl.dput(hit[0][2], ix)), rhs, 0
+                while x != arg and render(x) is None and layer(x)[0] is not None:
+                    x = layer(x)[1]; d += 1
+                marks.append((len(ws), d, sl.isub(hit[0][1], ix, sl.DVAR)))
+            e, ds = rhs, ()
         if render(e) is not None:
             return ws, e, marks
         w, inner = layer(e)
@@ -659,7 +658,11 @@ def refold(ws, ob):
 def elaborate(formula, src, tgt, table, ds=()):
     """The typed reading of a formula: one row per bead, carrying the wires its signature eats and
     the wires it makes.  A wire dies where it is CONSUMED — what a formula alone cannot say."""
-    sigs = {k: (norm(parse(v["src"])), norm(parse(v["tgt"]))) for k, v in table["sigs"].items()}
+    # A panel's `defn:` rewrites the SIGNATURES too, not only its ports: `⦇gen⦈ : x[m+1][n]⟶…`
+    # must meet the same `F` wire the source edge draws, or the bead types against a cut the
+    # abbreviation has already opened.
+    sigs = {k: (norm(sl.unabbrev(parse(v["src"]), ds)), norm(sl.unabbrev(parse(v["tgt"]), ds)))
+            for k, v in table["sigs"].items()}
     stack, obj, tmark = spine(norm(parse(src, sobj=True)), ds)
     tws, tob, bmark = spine(norm(parse(tgt, sobj=True)), ds)
     want = refold(tws, tob)
@@ -754,8 +757,15 @@ def elaborate(formula, src, tgt, table, ds=()):
         raise Unhandled(f"the object wire carries {spell(settle(atop, sub))}, which has no label")
     for r in rows:                         # the seam labels: what a formula alone cannot say either
         r.obj = render(settle(r.obj, sub))
-    return rows, made, otop, obot, [("top", d, l) for d, l in tmark] \
-        + [("bot", d, l) for d, l in bmark]
+    for l in made:                         # an index a LATER port settled is written out everywhere,
+        for _ in range(8):                 # chasing one scheme's letter through the next; one NO port
+            w = sl.isub(l.label, ix)       # settles keeps the scheme's own letter, which is the letter
+            if w == l.label:               # the note's formula writes it with (`[p]`, the `3^(m-1)`
+                break                      # paths of a square)
+            l.label = w
+        l.label = sl.IVAR.sub(lambda mm: mm.group().split('@')[0], l.label)
+    return rows, made, otop, obot, [("top",) + t for t in tmark] \
+        + [("bot",) + t for t in bmark]
 
 
 # ---------------------------------------------------------------- the panel a term denotes
@@ -855,7 +865,7 @@ def columns(rows, made):
                 continue
             # + 0.002: `l.x` is rounded to 3 decimals below, and the two roundings can eat 0.001
             # of an exactly-reserved gap, putting the wire back on the name box's own edge.
-            w = sl.LDX + sl.LCW * len(l.label) + 0.002
+            w = sl.LDX + sl.LCW * len(l.label) + 0.002 + l.pad
             west = [o for o in made if o.x < l.x - 1e-6 and o.born < l.dies and l.born < o.dies]
             if not west or l.x - max(o.x for o in west) >= w - 1e-6:
                 continue
@@ -869,8 +879,8 @@ def columns(rows, made):
     # The leftmost lane's own name is written west of it too, into the margin, so the margin holds
     # the wider of a column and that name — the same reservation the pass above makes between lanes.
     lo = min(made, key=lambda l: l.x) if made else None
-    gap = max(DX, sl.LDX + sl.LCW * len(lo.label) + 0.002) if lo and lo.label and len(lo.label) > 1 \
-        else DX
+    gap = max(DX, sl.LDX + sl.LCW * len(lo.label) + 0.002 + lo.pad) \
+        if lo and lo.label and len(lo.label) > 1 else DX
     off = X0 + gap - min(l.x for l in made) if made else 0.0
     for l in made:
         l.x = round(l.x + off, 3)
@@ -897,11 +907,56 @@ def defnports(rec, dfn):
     height of the edge they sit on, and the LEFT side's own label.  One name is written under the
     group in place of the per-wire labels, because that is the name the note's formula uses."""
     return [[xs[0], xs[-1], rec["h"] if edge == "top" else 0.0, lab]
-            for edge, d, lab in dfn
-            for xs in [sorted(p[0] for p in rec[edge] if p[0] != rec["xo"])[d:]] if xs]
+            for edge, d, w, lab in dfn
+            for xs in [sorted(p[0] for p in rec[edge] if p[0] != rec["xo"])[d:d + w]] if xs]
 
 
 def layout(rows, made, otop, obot, dfn, cert):
+    """`place`, widened until every lane's own name is clear of the ink.  `columns` reserves that
+    name's room from the west lane's COLUMN, and a knee bending east onto a dot reaches past it —
+    §13.5.4a's `[p]` is 0.001 clear of its neighbour's column and struck by that neighbour's descent.
+    So lay the panel out, ask the reader that REPORTS the strike, and widen the lane it names: each
+    widening moves the west lanes west and the dot they centre only half as far, so it converges.
+    Only the lanes `dnamed` actually names are tested: `columns` reserves room on all of them, but
+    a name a PORT already carries is not drawn beside the lane and is no reason to widen."""
+    for _ in range(12):
+        rec = place(rows, made, otop, obot, dfn, cert)
+        try:
+            hit = sl.labels(sl.Panel({**rec, "named": named(rec)}))
+        except (KeyError, IndexError, ValueError, ZeroDivisionError):
+            return rec                     # no reading, no widening: `--roundtrip` says what broke
+        struck = {s.split("the name ", 1)[1].split(",", 1)[0] for s in hit}
+        if not struck:
+            return rec
+        for l in made:
+            if f"{l.label}@{l.x:g}" in struck:
+                l.pad += DX / 4
+    return rec
+
+
+def named(rec):
+    """`dpanel`'s `dnamed`, in the generator's own terms: lanes of one name, each dying where the
+    next is born, are ONE wire; a chain that reaches an edge has its name in the port list already,
+    and any other chain writes it once, beside the lane born highest."""
+    ls = rec["lanes"]
+
+    def nm(ln):
+        ps = rec["top"] if ln[1] == "top" else rec["bot"] if ln[2] == "bot" else []
+        return ln[3] or next((q[1] for q in ps if abs(q[0] - ln[0]) < 1e-6), None)
+
+    lab, g = [nm(ln) for ln in ls], list(range(len(ls)))
+    for _ in range(len(ls)):               # one pass per lane closes a chain of at most that many
+        for i, a in enumerate(ls):
+            for j, b in enumerate(ls):
+                if lab[i] is not None and lab[i] == lab[j] and a[2] == b[1]:
+                    g[i] = g[j] = min(g[i], g[j])
+    edge = {g[i] for i, ln in enumerate(ls) if ln[1] == "top" or ln[2] == "bot"}
+    return [i for i in range(len(ls)) if g[i] not in edge
+            and all(g[j] != g[i] or ls[j][1] < ls[i][1] or (ls[j][1] == ls[i][1] and j >= i)
+                    for j in range(len(ls)))]
+
+
+def place(rows, made, otop, obot, dfn, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
