@@ -827,17 +827,20 @@ def layout(rows, made, otop, obot, cert):
     # A bead the row DECLARES natural is the picture's FIXED POINT: naturality is exactly the freedom
     # to slide the other beads past it (IntroString (1.15)), so the two sides of an equation must draw
     # it at ONE height and an ordinary arrow as the thing that moved.  Shifting every row up by that
-    # bead's index puts it at `n·DY` wherever it stands in the composite, and the frame below makes
-    # `n·DY` the canvas horizon, which is where `row`'s `align: horizon` lines the panels up.
+    # bead's index puts it at `n·DY` above the frame's FLOOR wherever it stands in the composite, so
+    # two panels that share a frame height line up on it under `row`'s `align: horizon`.
     k = next((i for i, r in enumerate(rows) if r.nat), 0)
     nat = any(r.nat for r in rows)
     # `--frame`/`cert.frame` OVERRIDES the frame height so two panels either side of an `=` can be
     # forced to the same frame (their `row`'s `align: horizon` lines up FRAME centres, not ports).
-    # The non-natural case reads off `hh` directly, so an override there repositions every bead;
-    # the natural case's `k`-shifted placement is independent of `hh` and is left alone.
-    hh = cert.get("frame", (2 * n if nat else max(n, 1) + 1) * DY)
-    ys = ([(n + k - i) * DY for i in range(n)] if nat else
-          [cert.get("top", hh - DY) - i * DY for i in range(n)])
+    # THE FRAME ENDS ONE ROW ABOVE THE TOPMOST BEAD — `n·DY` for a plain panel, `(n+k)·DY` for a
+    # shifted one.  The old `2·n` was the `k`-free upper bound, so every panel of the same bead count
+    # got one frame for free; it also left `n−k` empty rows on top, half the box in a `k=0` panel.
+    # `--top`/`cert.top` moves the first bead, which is the OTHER half of lining a short panel up
+    # with a tall one: the frame gives them one box, the top gives them one bead height.  It binds
+    # the shifted case too — the `k`-shift is only what it defaults to.
+    hh = cert.get("frame", (n + k + 1 if nat else max(n, 1) + 1) * DY)
+    ys = [cert.get("top", (n + k) * DY if nat else hh - DY) - i * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}

@@ -19,6 +19,7 @@ import glob, hashlib, json, math, os, re, subprocess, sys, time
 CACHE = ".lake/build/scanline-cache.json"
 
 EPS = 1e-6
+DY = 1.5                                       # one row: `scripts/diagram`'s bead pitch
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
 # The terminal object, which is the summand a non-recursive branch — `nil`, `zero` — collapses `F` to.
@@ -986,9 +987,14 @@ def natframe(p):
     """A bead DECLARED natural is the panel's fixed point.  Naturality is exactly the freedom to
     slide an ordinary arrow past it (IntroString (1.15)), so the two sides of an equation must show
     that bead at ONE height and the arrow as the thing that moved; drawing both beads in the same
-    two slots makes the reader hunt for what changed.  The frame does it: the natural bead sits on
-    the canvas horizon `h/2`, and `row`'s `align: horizon` then lands every panel of the display on
-    it.  Declared, not guessed — a merge is off the object wire too and is not what this is about."""
+    two slots makes the reader hunt for what changed.  `layout` does it by shifting every row up by
+    that bead's index, which lands it at one height above the frame's FLOOR whatever it stands in.
+    What the frame then owes is only its own content: IT ENDS ONE ROW ABOVE THE TOPMOST BEAD.  The
+    old rule made the bead the canvas horizon instead, which costs an empty row above for every bead
+    below — half the box in §13.5.3a, whose first bead is the natural one.  Two panels either side of
+    a step sign still need ONE box, and that is what a `frame:` in the cert says and `--pairs`
+    checks; a panel that declares one is exempt here.  Declared, not guessed — a merge is off the
+    object wire too and is not what this is about."""
     # The panel's OWN table, not the global one: a `sigs:` override that does not instantiate the
     # global row is a different arrow wearing the same letter (§11.4.2a's `S : B⟶C` against §13.3's
     # party `S`), and `typed` is where that is already decided.
@@ -998,12 +1004,18 @@ def natframe(p):
     # the first the composite meets is what makes the two sides of an equation agree, because a
     # reordering that moves an ordinary arrow past it leaves that bead first on both sides.
     bs = [b for b in p.beads if b.label in nat]
-    if not bs:
+    # `layout`'s rule, so only what `layout` laid out: a panel that declares its own frame is one
+    # half of a pair sharing a box (`--pairs` checks that), and a panel whose beads stand OFF the
+    # row grid — §13.4.3c's `party-hm`, on its own `HMY` heights — states its own geometry.
+    if not bs or p.helper != "dpanel" or p.cert.get("frame") is not None \
+       or p.cert.get("top") is not None \
+       or any(abs(b.y / (DY / 2) - round(b.y / (DY / 2))) > EPS for b in p.beads):
         return []
-    b = max(bs, key=lambda b: b.y)
-    return [] if abs(b.y - p.h / 2) <= EPS else \
-        [f"{p.id}: the natural bead {b.label} is at y={b.y:g}, off the horizon y={p.h / 2:g}"
-         f" — a panel drawing a natural transformation is framed on that bead"]
+    # a unit heads its lane half a row below the row it stands on, so it counts back that half
+    top = max(b.y + (DY / 2 if b.born else 0) for b in p.beads)
+    return [] if abs(p.h - (top + DY)) <= EPS else \
+        [f"{p.id}: the frame is {p.h:g} tall over a topmost bead at y={top:g}"
+         f" — a panel's frame ends one row ({DY:g}) above it"]
 
 
 def objhue(p):
