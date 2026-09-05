@@ -365,6 +365,15 @@ fails: taking the least under `R_A` and then mapping is not mapping and then tak
 parameterless beads — `union`, `setify`, `∋`, `∈`, `concat`, `cons`, `π₂` — are the natural ones and
 leave the object wire alone.
 
+**Drawing INSIDE a `⦇ ⦈`: what goes in the box is the ALGEBRA, not the fold.** IntroString (5.8), p. 147 gives two
+styles for `⦇a⦈` — a double circle annotated with the target algebra `a`, and, "if the algebra has structure", a
+rounded box holding the algebra's own diagram, "so it avoids the need to mix symbols and diagrams". Both carry `a`,
+never an unfolding of the recursion: the fold IS determined by its algebra. So the style pays exactly when the
+algebra is a composite of beads on lanes (`⦇F(𝟙,f)g⦈`, `⦇S%∋ est(R;H)⦈`) and buys nothing when it is not. A
+division is not: `%` is drawn only in the one shape `𝟙%∋`, the unit `Id⇒E`, which `isunit` heads a lane with — a
+general `frac(X,∋)` has no bead, so §11.6.2a's algebra `frac(F(∋)R,∋)` would put the same `frac` symbols inside a
+box that the bead label already carries.
+
 **But a free end is only legible if something receives it.** Drawing a unit or counit free, to mark it
 as structural against neighbouring beads that are data, needs the adjunction's other wire to land on —
 `i` beside `E`. Without it, one and the same wire with a free end at the top and a bound end at the

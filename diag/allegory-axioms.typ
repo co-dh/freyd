@@ -2450,11 +2450,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
 // banana, `T⟶EA` being where the power object enters, and `α`'s two components are one natural bead.
-#let cata-map-l = dpanel(4.4, 6.85, 5,
-  ((2.5, "top", 2.2, none, none), (4.375, 1.1, "bot", none, none)),
+#let cata-map-l = dpanel(4.4, 4.97, 3.12,
+  ((2.5, "top", 2.2, none, none), (2.5, 1.1, "bot", none, none)),
   ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇`#frc([`F(∋)R`])`⦈`])),
-  ((2.5, [`F`]), (5, [`T`])),
-  ((4.375, [`E`]), (5, [`A`])),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((2.5, [`E`]), (3.12, [`A`])),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
   cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
 #let cata-map-r = dpanel(4.4, 5.6, 3.75,
@@ -7780,11 +7780,11 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
 
   [#vstep(SQ, eb-pic((in-box, eb-estc, eb-tau)),
     [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
-  [#dpanel(4.4, 6.85, 5,
-  ((4.375, 3.3, 2.2, [`E`], none), (2.5, 0.55, "bot", none, frc([`𝟙`]))),
-  ((3.3, [`∈`]), (2.2, [`est(R∩S°S)`], black, 4.375)),
-  ((5, [`A`]),),
-  ((2.5, [`E`]), (5, [`A`])),
+  [#dpanel(4.4, 4.97, 3.12,
+  ((2.5, 3.3, 2.2, [`E`], none), (2.5, 0.55, "bot", none, frc([`𝟙`]))),
+  ((3.3, [`∈`]), (2.2, [`est(R∩S°S)`], black, 2.5)),
+  ((3.12, [`A`]),),
+  ((2.5, [`E`]), (3.12, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (0.55, [`A`])),
   cert: (expect: "∈ est(R∩S°S)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
