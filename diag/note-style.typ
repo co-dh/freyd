@@ -5,13 +5,23 @@
 // not reach the importer, so the document rules have to be applied by a function the note shows
 // itself through.  The helpers below are ordinary `#let`s and travel by import.
 
-// `theorem`, `example` are re-exported: a note that shows itself through `conf` uses the template's
-// environments too, and importing the template twice is the copy this file exists to avoid.
-#import "@preview/dvdtyp:1.0.1": dvdtyp, builder-thmline, colors, theorem, example
-// `definition` is rebuilt, not re-exported, to drop the "Definition 9.1." head: every block already
-// names its term in bold and nothing ever cited a definition by number.  The separator goes with it.
-#let definition = builder-thmline(color: colors.at(8))(
-  "definition", "", separator: []).with(numbering: none)
+// `theorem`, `example` are rebuilt here rather than re-exported: they must carry the same band as
+// `definition` below, and importing the template twice is the copy this file exists to avoid.
+#import "@preview/dvdtyp:1.0.1": dvdtyp, builder-thmbox, builder-thmline, colors
+/// THE ONE BAND A THEOREM-LIKE BOX OWNS: from its tint to the prose and displays it holds.  dvdtyp's
+/// 1.2em puts a blank line on every side of every picture inside the box, and a box holding three
+/// displays pays it twice; 0.5em still detaches the tint from the running text.
+#let THMPAD = 0.5em
+#let thmline(c, ..a) = builder-thmline(color: c, frame: (body-color: c.lighten(92%),
+  border-color: c.darken(10%), thickness: (left: 2pt), inset: THMPAD, radius: 0em), ..a)
+#let thmbox(c, ..a) = builder-thmbox(color: c, frame: (body-color: c.lighten(92%),
+  border-color: c.darken(10%), thickness: 1.5pt, inset: THMPAD, radius: 0.3em), ..a)
+// `definition` also drops the "Definition 9.1." head: every block already names its term in bold and
+// nothing ever cited a definition by number.  The separator goes with it.
+#let definition = thmline(colors.at(8))("definition", "", separator: []).with(numbering: none)
+#let theorem = thmbox(colors.at(6), shadow: (offset: (x: 3pt, y: 3pt), color: luma(70%)))(
+  "theorem", "Theorem")
+#let example = thmline(colors.at(16))("example", "Example").with(numbering: none)
 #import "cetz-nodraw.typ" as cetz
 #import "cetz-nodraw.typ": d
 #let NODRAW = cetz.NODRAW
@@ -115,9 +125,16 @@
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
+/// ONE BAND, ONE OWNER — the rule for every helper below and for `capbox`/`zline`/`zderiv` in
+/// `draw.typ`.  A vertical gap belongs to whatever draws the boundary on its far side: a theorem
+/// box's tint (`THMPAD`), `capbox`'s hairline, a table cell's rule, the block spacing between two
+/// displays.  A helper that only ARRANGES pictures — `P`, `fig`, `row`, `chain` — draws no boundary
+/// and so pads nothing; they nest four deep (`capbox` > `P` > `row` > `P` inside `dpan`) and each
+/// paid its own band, which is 22pt of blank above every string-diagram panel and 22pt below.
+///
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
 /// `key`: the picture also reports its crop box (`pic-meta`) — INSIDE the box, so the corner is its own.
-#let P(p, s: 92%, key: none) = align(center, box(inset: (y: 5pt), {
+#let P(p, s: 92%, key: none) = align(center, box({
   let q = scale(x: s, y: s, reflow: true, p)
   if key != none { pic-meta(key, q) }
   q
@@ -129,16 +146,16 @@
 #let Th(body) = table.cell(colspan: 3, text(12.5pt)[#body])
 /// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
 /// export, i.e. for the two primitive operations.
-#let fig(body) = align(center, box(inset: (y: 5pt), cetz.canvas(length: 0.78cm, body)))
+#let fig(body) = align(center, box(cetz.canvas(length: 0.78cm, body)))
 /// Pictures side by side.  Every exported canvas is symmetric about its own `y = 0`, so aligning on the
 /// horizon puts all their wires at one height; a per-box `baseline:` shift cannot, being a fraction of each.
-#let row(items, s: 100%) = align(center, box(inset: (y: 4pt), grid(
+#let row(items, s: 100%) = align(center, box(grid(
   columns: items.len(), align: horizon, column-gutter: 3pt,
   ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
 
 /// A proof in ONE ROW, the rule under each step.  The exporter draws the `=` (or `≤`) at the LEFT edge
 /// of every step after the first, so a left-aligned hint lands under it and the first hint is empty.
-#let chain(steps, hints, s: 62%) = align(center, box(inset: (y: 6pt), grid(
+#let chain(steps, hints, s: 62%) = align(center, box(grid(
   columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
   ..steps.map(t => scale(x: s, y: s, reflow: true, t)),
   ..hints.map(h => src[#h]))))
