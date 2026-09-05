@@ -6,6 +6,7 @@
     ./scripts/diff-crop --key 7.2b --caption "what changed" [--key 13.3.1a --caption "..."] [OUTDIR]
     ./scripts/diff-crop --key 7.2b --before OLD.pdf [--after NEW.pdf] [OUTDIR]
     ./scripts/diff-crop BEFORE.pdf AFTER.pdf [OUTDIR]
+    ./scripts/diff-crop --stack BEFORE.png AFTER.png --caption "what changed" [OUT.png]
 
 One image per CONNECTED REGION of change, not one per page: a page-wide bounding box is a whole table,
 and the chamfer that vanished inside it is invisible once a phone scales the pair down.  `before` is
@@ -32,8 +33,6 @@ import difflib, math, os, re, shutil, subprocess, sys, tempfile
 import xml.etree.ElementTree as ET
 
 DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
-# ImageMagick's default font renders every glyph as an empty box here; this face has both Latin and CJK.
-FONT = "/usr/share/fonts/noto-cjk/NotoSansCJK-Medium.ttc"
 MINAREA = 40                     # ignore antialiasing specks
 GAP = 90                         # change regions closer than this are one edit
 KEYPAD = 9                       # pt of white kept around a display's measured ink, white permitting
@@ -432,15 +431,78 @@ def merge(boxes):
     return sorted(boxes, key=lambda b: (b[1], b[0]))
 
 
+_BOX = {}
+
+
+def esc(t):
+    return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def textimg(text, out, color):
+    """One line of caption, drawn.  `pango:` and not `-annotate`, because a caption mixes the note's
+    alphabets — CJK, `𝟙`, `⟶`, `⊑` — and no single face covers them: `-font` picks ONE and draws an
+    empty box for everything it lacks, while pango goes through fontconfig and falls back per
+    character.  This is the renderer `checked` tests, so the test and the drawing cannot disagree."""
+    run("magick", "-background", "white", "-fill", color, "-pointsize", "22",
+        f"pango:{esc(text)}", out)
+
+
+def checked(text, where):
+    """`text` back, or exit naming the characters NOTHING installed can draw.  A missing character
+    renders as an empty box, identically for every one of them, and ImageMagick reports nothing — so
+    a caption in the wrong font is a row of boxes that still looks like text: invisible to the code
+    that wrote it, obvious only to the reader, and it has now shipped twice.  Each distinct
+    non-ASCII character is drawn alone and compared byte for byte against a private-use codepoint no
+    font maps; equal ink IS that box.  PGM, because PNG carries a timestamp."""
+    if not _BOX:
+        d = tempfile.mkdtemp(prefix="diff-crop-font.")
+        textimg("\U000f0000", f"{d}/box.pgm", "black")
+        _BOX["dir"], _BOX["ink"] = d, open(f"{d}/box.pgm", "rb").read()
+    bad = []
+    for ch in dict.fromkeys(c for c in text if ord(c) > 0x7f):
+        p = os.path.join(_BOX["dir"], "g.pgm")
+        textimg(ch, p, "black")
+        if os.path.exists(p) and open(p, "rb").read() == _BOX["ink"]:
+            bad.append(ch)
+    if bad:
+        sys.exit(f"diff-crop: no installed font draws {' '.join(bad)}, in the {where} {text!r} —"
+                 f" they would come out as empty boxes; install a face that covers them or reword")
+    return text
+
+
 def label(src, out, text, tmp, scale):
+    t = os.path.join(tmp, "lab.png")
+    textimg(checked(text, "label"), t, "red")
     run("magick", src, *scale, "-bordercolor", "white", "-border", "6", "-background", "white",
-        "-splice", "0x30", "-gravity", "northwest", "-font", FONT, "-pointsize", "22", "-fill", "red",
-        "-annotate", "+8+4", text, out)
+        "-splice", "0x30", t, "-gravity", "northwest", "-geometry", "+8+4", "-composite", out)
 
 
 def caption_strip(src, out, text):
-    run("magick", src, "-background", "white", "-splice", "0x36", "-gravity", "northwest",
-        "-font", FONT, "-pointsize", "22", "-fill", "black", "-annotate", "+8+6", text, out)
+    d = tempfile.mkdtemp(prefix="diff-crop-cap.")
+    try:
+        t = os.path.join(d, "cap.png")
+        textimg(checked(text, "caption"), t, "black")
+        run("magick", src, "-background", "white", "-splice", "0x36", t, "-gravity", "northwest",
+            "-geometry", "+8+6", "-composite", out)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def stack(before_png, after_png, out, caption=""):
+    """Two PNGs the note's PDF cannot supply — a panel redrawn by `scripts/diagram` either side of a
+    generator change — put through the SAME before-above-after and caption as a page crop, so a
+    review picture never has to be assembled by hand and never loses its caption or its font."""
+    tmp = tempfile.mkdtemp(prefix="diff-crop-stack.")
+    try:
+        label(before_png, f"{tmp}/sb.png", "BEFORE", tmp, [])
+        label(after_png, f"{tmp}/sa.png", "AFTER", tmp, [])
+        run("magick", f"{tmp}/sb.png", f"{tmp}/sa.png", "-background", "gray70", "-append", out)
+        if caption:
+            caption_strip(out, out, caption)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    print(f"stack: {before_png} over {after_png} -> {out} {size(out)[0]}x{size(out)[1]}")
+    return out
 
 
 def page_texts(pdf):
@@ -544,6 +606,16 @@ def head_copy(note):
 
 
 def main(argv):
+    if "--stack" in argv:
+        i = argv.index("--stack")
+        bp, ap = argv[i + 1], argv[i + 2]
+        cap = argv[argv.index("--caption") + 1] if "--caption" in argv else ""
+        rest = [a for j, a in enumerate(argv) if not a.startswith("--")
+                and j not in (i + 1, i + 2) and argv[j - 1] != "--caption"]
+        out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "diff-crop", "stack.png")
+        os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+        stack(bp, ap, out, cap)
+        return
     if "--key" in argv:
         # walk once: a --caption attaches to the --key just before it, or — before any --key,
         # or repeated with no --key of its own in between — becomes the default for keys with none.
