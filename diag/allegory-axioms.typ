@@ -6,13 +6,13 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, fcol, lanecheck, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, lanecheck, hm-bead, hm-name, hm-port, hm-region, hm-wire
 // The two panel helpers, one per convention: `cpanel` draws a circuit (wire = object, box = a
 // morphism), `dpanel` a Hinze–Marsden panel (wire = functor, bead = an arrow).  Neither file
 // imports the other.
 #import "cpanel.typ": cpanel
 #import "veccat1.typ": veccat-pic
-#import "dpanel.typ": DKN, dpan, dpanel, hm-meta
+#import "dpanel.typ": dpanel, hm-meta
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
@@ -2606,22 +2606,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 
 
-// A relator wire OPENED by the arrow that applies it and CLOSED by the one that consumes it; `born`
-// is an opener that CREATES the relator (`X⟶EX`), so the wire starts at that bead instead.
-#let dhandle(xa, xe, y0, y1, l, born: none) = {
-  if born == none { hm-wire(((xa, y0), (xe, y0 - DKN), (xe, y1 + DKN), (xa, y1))) } else {
-    hm-wire(((xe, y0), (xe, y1 + DKN), (xa, y1)))
-    hm-bead((xe, y0), born)
-  }
-  hm-name((xe - 0.32, (y0 + y1) / 2), l)
-}
-
-// The columns the wires stand in.  `F` is a relator, hence a WIRE; a reduce, an algebra and a
-// transpose are arrows, hence BEADS on the object wire.  `F(X)` costs no notation: it is the `X`
-// bead with the `F` wire running straight past it — that pass IS the relator's action.
-#let TXF = 0.60                                   // the `F` wire
-#let TXH = 1.20                                   // the `E` wire, inside `F`
-#let TXO = 1.95                                   // the object wire
 #let est-R-box = ([`est(R)`], 1.9, true)
 #let est-Rc-box = ([`est(R°)`], 2.2, true)
 #let thin-Q-box = ([`thin Q`], 1.9, true)
@@ -2639,28 +2623,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let in-box = ([`∈`], 0.75, true)
 #let LS-box = (frc([`⦇S⦈`]), 1.5, false)
 #let LH-box = (frc([`H`]), 0.95, false)
-#let tpan(h, beads, hands: (), joins: (), top: (), bot: [`A`], names: false, w: 4.5, xo: TXO, cert: (:)) = {
-  dpan(h, w, xo, {
-  for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
-  for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
-  for (y, l) in beads { hm-bead((xo, y), l) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { fcol(l) }) }
-  hm-port((xo, 0), bot, dir: -1, col: BCOL)
-  if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
-  }, s: 100%)
-  // `bot` is the one label the drawing pairs with `xo` by hand; emitted as a port list, so every
-  // panel's ports have one shape.
-  hm-meta((helper: "tpan", h: h, w: w, xo: xo, cert: cert,
-    beads: beads.map(b => b.map(plain)), hands: hands.map(hd => hd.map(plain)),
-    joins: joins.map(j => j.map(plain)),
-    top: top.map(p => p.map(plain)), bot: ((xo, plain(bot)),)))
-}
-// The right-hand side of a row: the single relation the chain is bounded by.  `w` is the label's
-// room, so a long one — `⦇S⦈°\X` — cannot run out of the panel.
-#let tpanR(h, y, l, w: 1.9, top: [`A`], bot: [`A`]) = dpan(h, w, 0.55, {
-  hm-bead((0.55, y), l)
-  hm-port((0.55, h), top, col: BCOL); hm-port((0.55, 0), bot, dir: -1, col: BCOL)
-}, s: 100%)
 #let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
 
 // Otherwise the heading lands alone at the foot of the reduce-of-maps page.
@@ -2699,7 +2661,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 === `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` <sec-hylo>
 
 // §@sec-hylo's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus
-// `s: 100%`, the size their `tpanR` partners keep.  `sigs:` types the section's abstract letters.
+// `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
+// of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
+// `top: 3` drops a lone bead to the height of the bead it stands against.
 #let hy-body = dpanel(5.5, 4.97, 3.12,
   ((2.5, 4.4, 1.1, [`F`], none),),
   ((4.4, [`S°`]), (3.3, [`⦇S⦈°`]), (2.2, [`⦇R⦈`]), (1.1, [`R`], black, 2.5)),
@@ -2729,27 +2693,71 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`A`])),
   cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
-#let hy-cata = dpanel(3.3, 3.725, 1.875,
+#let hy-cata = dpanel(5.5, 3.725, 1.875,
   (),
-  ((2.2, [`⦇S⦈°`]), (1.1, [`⦇R⦈`])),
+  ((4.4, [`⦇S⦈°`]), (3.3, [`⦇R⦈`])),
   ((1.875, [`B`]),),
   ((1.875, [`A`]),),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "⦇S⦈°⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
-#let hy-cataR = dpanel(2.2, 3.725, 1.875,
+  obj: ((4.4, [`T`]), (3.3, [`A`])),
+  cert: (expect: "⦇S⦈°⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B"), frame: 5), s: 100%)
+#let hy-cataR = dpanel(5.5, 3.725, 1.875,
   (),
-  ((1.1, [`⦇R⦈`]),),
+  ((3.3, [`⦇R⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`A`]),),
-  obj: ((1.1, [`A`]),),
-  cert: (expect: "⦇R⦈", src: "T", tgt: "A", sigs: ("⦇R⦈": "T⟶A")), s: 100%)
-#let hy-prefix = dpanel(4.4, 4.97, 3.12,
+  obj: ((3.3, [`A`]),),
+  cert: (expect: "⦇R⦈", src: "T", tgt: "A", sigs: ("⦇R⦈": "T⟶A"), frame: 5, top: 3), s: 100%)
+#let hy-rec = dpanel(5.5, 4.97, 3.12,
+  ((2.5, 4.4, 2.2, [`F`], none),),
+  ((4.4, [`α°`]), (3.3, [`⦇S⦈°\X`]), (2.2, [`R`], black, 2.5)),
+  ((3.12, [`T`]),),
+  ((3.12, [`A`]),),
+  obj: ((4.4, [`T`]), (3.3, [`A`]), (2.2, [`A`])),
+  cert: (expect: "α° F(⦇S⦈°\\X)R", src: "T", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈°\\X": "T⟶A"), frame: 5), s: 100%)
+#let hy-adj = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 1.1, [`F`], none),),
-  ((3.3, [`S°`]), (2.2, [`X`]), (1.1, [`R`], black, 2.5)),
+  ((4.4, [`⦇S⦈°`]), (3.3, [`α°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
-  obj: ((3.3, [`B`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A")), s: 100%)
+  obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "⦇S⦈° α° F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A"), frame: 5), s: 100%)
+#let hy-fuse = dpanel(5.5, 4.97, 3.12,
+  ((2.5, 4.4, 1.1, [`F`], none),),
+  ((4.4, [`S°`]), (3.3, [`⦇S⦈°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
+  ((3.12, [`B`]),),
+  ((3.12, [`A`]),),
+  obj: ((4.4, [`B`]), (3.3, [`T`]), (2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "S° F(⦇S⦈°)F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A"), frame: 5), s: 100%)
+#let hy-prefix = dpanel(5.5, 4.97, 3.12,
+  ((2.5, 4.4, 2.2, [`F`], none),),
+  ((4.4, [`S°`]), (3.3, [`X`]), (2.2, [`R`], black, 2.5)),
+  ((3.12, [`B`]),),
+  ((3.12, [`A`]),),
+  obj: ((4.4, [`B`]), (3.3, [`A`]), (2.2, [`A`])),
+  cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A"), frame: 5), s: 100%)
+// The right-hand side of a step: the one relation the chain is bounded by, at the height its
+// partner's own bead keeps — `X` against @hylo-least's `S°F(X)R`, `⦇S⦈°\X` against `α°F(⦇S⦈°\X)R`.
+#let hy-X = dpanel(5.5, 3.725, 1.875,
+  (),
+  ((3.3, [`X`]),),
+  ((1.875, [`B`]),),
+  ((1.875, [`A`]),),
+  obj: ((3.3, [`A`]),),
+  cert: (expect: "X", src: "B", tgt: "A", sigs: ("X": "B⟶A"), frame: 5, top: 3), s: 100%)
+#let hy-res = dpanel(5.5, 3.725, 1.875,
+  (),
+  ((3.3, [`⦇S⦈°\X`]),),
+  ((1.875, [`T`]),),
+  ((1.875, [`A`]),),
+  obj: ((3.3, [`A`]),),
+  cert: (expect: "⦇S⦈°\\X", src: "T", tgt: "A", sigs: ("⦇S⦈°\\X": "T⟶A"), frame: 5, top: 3), s: 100%)
+#let hy-mu = dpanel(5.5, 3.725, 1.875,
+  (),
+  ((3.3, [`(μX : S°F(X)R)`]),),
+  ((1.875, [`B`]),),
+  ((1.875, [`A`]),),
+  obj: ((3.3, [`A`]),),
+  cert: (expect: "(μX : S°F(X)R)", src: "B", tgt: "A", sigs: ("(μX : S°F(X)R)": "B⟶A"), frame: 5, top: 3), s: 100%)
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.
@@ -2780,28 +2788,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      satisfies the associated recursion inequation]],
   // lean:AOP.A6_3.hylo_le_of_prefixed@b892517c
   [#hchain(
-    (none, trow(hy-cata, tpanR(4.2, 2.1, [`X`], top: [`B`])),
+    (none, trow(hy-cata, hy-X),
      src[the conclusion]),
-    (IFF, trow(hy-cataR, tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`])),
+    (IFF, trow(hy-cataR, hy-res),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IMP, trow(
-      tpan(4.2, ((3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-        hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`T`]),), w: 4.8),
-      tpanR(4.2, 2.1, [`⦇S⦈°\X`], w: 3.0, top: [`T`])),
+    (IMP, trow(hy-rec, hy-res),
      src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
  ]),
      // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-    (IFF, trow(
-      tpan(4.2, ((3.6, [`⦇S⦈°`]), (3.0, [`α°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-        hands: ((TXF, 3.0, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
-      tpanR(4.2, 2.1, [`X`], top: [`B`])),
+    (IFF, trow(hy-adj, hy-X),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IFF, trow(
-      tpan(4.2, ((3.6, [`S°`]), (3.0, [`⦇S⦈°`]), (2.1, [`⦇S⦈°\X`]), (1.2, [`R`])),
-        hands: ((TXF, 3.6, 1.2, [`F`]),), top: ((TXO, [`B`]),), w: 4.8),
-      tpanR(4.2, 2.1, [`X`], top: [`B`])),
+    (IFF, trow(hy-fuse, hy-X),
      src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]),
-    (IMP, trow(hy-prefix, tpanR(4.2, 2.1, [`X`], top: [`B`])),
+    (IMP, trow(hy-prefix, hy-X),
      src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
   )],
 )]<hylo-least>
@@ -2814,13 +2813,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   [#hchain(
-    (none, tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`]),
+    (none, hy-mu,
      src[@mu-defn at `φ(X):=S°F(X)R`]),
     (SQ, hy-cata,
      src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
  `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]),
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-    (SQ, tpanR(4.2, 2.1, [`(μX : S°F(X)R)`], w: 5.8, top: [`B`]),
+    (SQ, hy-mu,
      src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
  ]),
@@ -4127,7 +4126,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
 // The monotonic-alg panels, emitted by `./scripts/diagram --sigs "f:F(x)⟶x" --src … --tgt … "<formula>"`
-// plus `s: 100%`, the size their `tpanR` partners keep.
+// plus `s: 100%`, so the labels print at the size the note sets them in.
 #let ma-Fest-lam = dpanel(8.8, 5.6, 3.75,
   ((2.5, "top", 1.1, none, none), (3.125, "top", 2.2, none, none)),
   ((2.2, [`est(R)`], black, 3.125), (1.1, [`f`], black, 2.5)),
@@ -4258,7 +4257,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   }
 }
 // The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
-// `s: 100%`, the size their `tpanR` partner keeps.
+// `s: 100%`, so the labels print at the size the note sets them in.
 #let gr-mon = dpanel(6.6, 5.6, 3.75,
   ((2.5, 2.75, 1.1, [`E`], frc([`𝟙`])), (3.125, 5.5, 2.2, [`F`], none)),
   ((5.5, [`S°`]), (4.4, [`R°`]), (2.2, [`S`], black, 3.125), (1.1, [`est(R)`], black, 2.5)),

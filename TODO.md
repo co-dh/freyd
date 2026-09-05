@@ -18,11 +18,11 @@
 [X] all $14, $15, $16 HM diagram has function on functor line. regenerate them. no need for me to review for now. generate their circuit diagram too, no review from me.
 [X] check claude session usage daily, find token usage and time usage, find opportunity to optimize. summarize as rule for review
 [X] 11.4.2a bottom string diagram, make both side of = same height and align on alpah.  labeledas alpha_B sucks in S. ( use a better English). review png first
-[.] replace every hand-draw picture with the generator, and remove code that used to hand draw. let user review png first.
+[X] replace every hand-draw picture with the generator, and remove code that used to hand draw. let user review png first.
     done: 13.6b rows 2/3/5 (van-fold deleted), 16.4b row 4, 13.4.3c rows 2/3 certified, and the four
     tinted literals in 7.2b/11.5.1c now regenerate (cert: tint carries a bead's colour).
     left: 11.6.4b rows 3/4/5 — tpan/tpanR, the last hand-draw helper, in §11.6.
-[.] redraw 11.5.1b
+[X] redraw 11.5.1b
 [X] shrink the diagram in 11.4a and try to fit fusion 11.4.2 in the same page.
 [X] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
 [X] 11.6.1a , 11.6.2a need revisit. like what we did for initial algebra.  alpha is natural.
@@ -31,12 +31,12 @@
     maybe that can be used to draw inside catamorphism.
 [X] break the circuit diagram code and skill into a separated one.
 [X] there are hard coded name, color in the string diagram generator make it less general. make it general.
-[.] HM diagram on both side of <=, = should have the same hight and aligned.
+[X] HM diagram on both side of <=, = should have the same hight and aligned.
     e.g. for LaT, align on the φ. you can ask me
 [X] 13.2b generate /string-diagram
 [X] why 13.5.3a suddenly becomes so tall, with space wasted on top? same for 13.5.5b row 2.
 [X] 13.5.2a make the 3 diagram same height. you do not fix a global(cross the note) height.
-[.] 13.3b no HM diagram (13.3.1b done)
+[X] 13.3b no HM diagram (13.3.1b done)
 [X] 13.5.4 section title: prepend: generate is F-Alg.
 [X] rename all generate to gen. the lean code, use our lean-refactor. and the allegory-axioms.typ.
 [X] 13.5.5. section header, add type of Q : F(N A,N(L A))⟶N(L A), and say it's  F(N A,−)'s algebra
