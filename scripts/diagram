@@ -310,8 +310,19 @@ def isvar(e):
 
 
 def fresh(e, n):
-    return ('atom', f"{e[1]}@{n}") if e[0] == 'atom' and e[1] in VARS \
-        else rec(e, lambda x: fresh(x, n))
+    if e[0] == 'atom' and e[1] in VARS:
+        return ('atom', f"{e[1]}@{n}")
+    e = rec(e, lambda x: fresh(x, n))
+    # An index functor's letters are variables of the SAME scheme, so they are renamed apart with it:
+    # `[k]` in two rows is two indices, and each bead binds its own against the cut it meets.
+    return ('app', sl.DVAR.sub(lambda m: f"{m.group()}@{n}", e[1]), e[2]) + e[3:] \
+        if e[0] == 'app' and sl.idxhead(e[1]) else e
+
+
+def iput(e, ix):
+    """Every index letter a factor bound, written into the labels that factor built."""
+    return ('app', sl.isub(e[1], ix), iput(e[2], ix)) + e[3:] \
+        if e[0] == 'app' and sl.idxhead(e[1]) else rec(e, lambda x: iput(x, ix))
 
 
 def loose(e):
@@ -336,19 +347,23 @@ def settle(e, sub):
     return rec(deref(e, sub), lambda x: settle(x, sub))
 
 
-def unify(a, b, sub, why):
-    """Two objects made equal, binding variables on either side."""
+def unify(a, b, sub, why, ix=None):
+    """Two objects made equal, binding variables on either side — and, where `ix` is given, the index
+    letters of a scheme's own `[3k]` against the cut's `[3p]`."""
     a, b = deref(a, sub), deref(b, sub)
+    heads = a[0] == b[0] == 'app' and a[1] != b[1] \
+        and not (ix is not None and sl.idxhead(a[1]) and sl.idxhead(b[1])
+                 and sl.ibind(a[1][1:-1], b[1][1:-1], ix))
     if isvar(a) or isvar(b):
         sub[a[1] if isvar(a) else b[1]] = ([], b if isvar(a) else a)
-    elif a[0] != b[0] or (a[0] in ('atom', 'app') and a[1] != b[1]) \
+    elif a[0] != b[0] or (a[0] == 'atom' and a[1] != b[1]) or heads \
             or (a[0] in ('comp', 'prod') and len(a[1]) != len(b[1])):
         raise Unhandled(f"{why}: {spell(a)} is not {spell(b)}")
     elif a[0] in ('comp', 'prod'):
         for x, y in zip(a[1], b[1]):
-            unify(x, y, sub, why)
+            unify(x, y, sub, why, ix)
     elif a[0] != 'atom':
-        unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why)
+        unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why, ix)
 
 
 def layer(e):
@@ -372,11 +387,14 @@ def layer(e):
     return ((e[3] if len(e) > 3 else e[1]), e[2]) if e[0] == 'app' else (None, None)
 
 
-def matches(pat, lane, sub):
-    """A scheme's wire against a live one: `x×−` takes the `A×−` context and binds `x` to `A`."""
+def matches(pat, lane, sub, ix):
+    """A scheme's wire against a live one: `x×−` takes the `A×−` context and binds `x` to `A`, and
+    the index functor's `[3k]` takes the cut's `[3p]`, binding the index letter."""
     ps, ws = pat.split('×'), lane.split('×')
     if wire_eq(pat, lane):
         return True
+    if sl.idxhead(pat) and sl.idxhead(lane):
+        return sl.ibind(pat[1:-1], lane[1:-1], ix)
     if len(ps) != len(ws):
         return False
     for p, w in zip(ps, ws):
@@ -394,7 +412,7 @@ def wire_eq(w, lane):
         or (w is not None and lane.startswith(w + '(') and lane.endswith('−)'))
 
 
-def eat(pat, lanes, obj, sub, why):
+def eat(pat, lanes, obj, sub, why, ix):
     """A source scheme against the cut: how many of its wires the bead consumes, the wires it eats
     that the cut carried FOLDED, and what is left on the object wire.  The context the formula names
     is peeled off before this — it never reaches here."""
@@ -409,19 +427,22 @@ def eat(pat, lanes, obj, sub, why):
             # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a
             # wire the scheme only names by a variable, and a port the panel's `split:` folds.
             e = deref(obj, sub)
-            if w is None or '@' in w or (not isvar(e) and render(e) is not None):
-                unify(pat, obj, sub, why)
+            # `@` in a wire name is a scheme's own variable — except an index functor's, whose
+            # letters are renamed apart too and which IS a wire the cut can be given.
+            if w is None or ('@' in w and not sl.idxhead(w)) \
+                    or (not isvar(e) and render(e) is not None):
+                unify(pat, obj, sub, why, ix)
                 return k, opened, obj
-            opened.append((w, obj))
-            obj, pat = open_out(obj, w, sub, why), inner
+            opened.append((sl.isub(w, ix), obj))
+            obj, pat = open_out(obj, w, sub, why, ix), inner
             continue
-        if w is None or not matches(w, lanes[k].label, sub):
+        if w is None or not matches(w, lanes[k].label, sub, ix):
             raise Unhandled(f"{why} wants {spell(settle(pat, sub))} where the cut has the"
                             f" {lanes[k].label} wire")
         pat, k = inner, k + 1
 
 
-def grow(pat, sub, why):
+def grow(pat, sub, why, ix):
     """A target scheme as a cut: the wires it opens, then the tail its variable still carries.  A
     target that renders whole folds into the object wire's label, as `peel` folds `list(A)` to `[A]`."""
     v = pat
@@ -432,15 +453,15 @@ def grow(pat, sub, why):
     keep = sub[v[1]][0] if v is not None and v[1] in sub else []
     ws = []
     while True:
-        e = settle(pat, sub)
+        e = iput(settle(pat, sub), ix)
         if not keep and not loose(e) and render(e) is not None:
             return ws, [], e
         if isvar(pat):
-            return ws, keep, sub[pat[1]][1] if pat[1] in sub else pat
+            return ws, keep, iput(sub[pat[1]][1], ix) if pat[1] in sub else pat
         w, inner = layer(pat)
         if w is None:
             return ws, [], e
-        ws.append(w); pat = inner
+        ws.append(sl.isub(w, ix)); pat = inner
 
 
 def own_comma(body):
@@ -552,16 +573,16 @@ def signature(core, sigs, n):
     return fresh(s, n), fresh(('app', 'E', t) if lab.endswith('%∋') else t, n)
 
 
-def open_out(obj, w, sub, why):
+def open_out(obj, w, sub, why, ix):
     """The wire `w` lifted off the object — `[A]` is `list` over `A`, and an object still unknown
     becomes whatever the factor asks it to be."""
     e = deref(obj, sub)
     if isvar(e):
         inner = ('atom', f"{e[1]}^{w}")
-        sub[e[1]] = ([], sl.act(w, inner, True))
+        sub[e[1]] = ([], sl.act(sl.isub(w, ix), inner, True))
         return inner
     a, inner = layer(e)
-    if not wire_eq(w, a):
+    if a is None or not matches(w, a, sub, ix):
         raise Unhandled(f"{why} runs under {w}, which does not lift off {spell(e)}")
     return inner
 
@@ -605,15 +626,49 @@ def born_at(rows, tail, sub, dflt):
     return next((i for i, r in enumerate(rows) if carries(settle(r.obj, sub))), dflt)
 
 
-def elaborate(formula, src, tgt, table):
+def spine(e, ds):
+    """An edge's wire stack and object, with the panel's `defn:` expanded: the note writes `A[m+1]`
+    where the picture draws the wires `F(A[m])` is, and a picture's ports are the picture's.  Each
+    `(depth, label)` says how many wires stand left of the group the LEFT side's own functor names;
+    a replacement is not re-scanned, so its group runs from there to the last wire."""
+    ws, marks = [], []
+    while True:
+        ix = {}
+        hit = next(((l, r) for l, r in ds if sl.dmatch(l, e, ix)), None)
+        if hit is not None:
+            if hit[0][0] == 'app':
+                marks.append((len(ws), sl.isub(hit[0][1], ix, sl.DVAR)))
+            e, ds = norm(sl.dput(hit[1], ix)), ()
+        if render(e) is not None:
+            return ws, e, marks
+        w, inner = layer(e)
+        if w is None:
+            raise Unhandled(f"no wire stack for the object {spell(e)}")
+        ws.append(w); e = inner
+        if len(ws) > 8:
+            raise Unhandled(f"the object {spell(e)} nests deeper than a panel can draw")
+
+
+def refold(ws, ob):
+    """A wire stack and its object back as one object — `peel` run backwards."""
+    for w in reversed(ws):
+        ob = sl.act(w, ob, True)
+    return ob
+
+
+def elaborate(formula, src, tgt, table, ds=()):
     """The typed reading of a formula: one row per bead, carrying the wires its signature eats and
     the wires it makes.  A wire dies where it is CONSUMED — what a formula alone cannot say."""
     sigs = {k: (norm(parse(v["src"])), norm(parse(v["tgt"]))) for k, v in table["sigs"].items()}
-    stack, obj = peel(norm(parse(src, sobj=True)))
-    want = norm(parse(tgt, sobj=True))
-    rel = alphabet(table, norm(parse(src, sobj=True)), want)
+    stack, obj, tmark = spine(norm(parse(src, sobj=True)), ds)
+    tws, tob, bmark = spine(norm(parse(tgt, sobj=True)), ds)
+    want = refold(tws, tob)
+    rel = alphabet(table, refold(stack, obj), want)
     made = [Lane(w, born=TOP) for w in stack]
-    lanes, sub, rows, atop, pending = list(made), {}, [], obj, []
+    # `sub` binds the OBJECT variables, `ix` the INDEX ones — `[3k]` against the cut's `[3p]` is a
+    # textual match on the bracket's own text, which no object unification can make.  Both are
+    # panel-wide because `fresh` renames each factor's letters apart before either is consulted.
+    lanes, sub, ix, rows, atop, pending = list(made), {}, {}, [], obj, []
     for i, e in enumerate(expand(norm(parse(formula, False)), rel)):
         pre, e, _ = across(e, rel)         # `∘`'s left letters are context; its right ones the tail keeps
         wrap, core = peel_arrow(e, [l.label for l in lanes[len(pre):]], rel)
@@ -630,7 +685,7 @@ def elaborate(formula, src, tgt, table):
                     and sl.alias().get(w, w) == sl.alias().get(lanes[k].label, lanes[k].label):
                 lanes[k].label = w
             if k >= len(lanes):                # a wire the formula names and the cut has not got is
-                obj = open_out(obj, w, sub, why)   # opened out of the object, at the bead above —
+                obj = open_out(obj, w, sub, why, ix)  # opened out of the object, at the bead above —
                 made.append(Lane(w, born=i - 1 if rows else TOP))   # or at the top edge if there is
                 lanes.append(made[-1])             # none, where the source itself opens further
                 if rows:
@@ -647,7 +702,7 @@ def elaborate(formula, src, tgt, table):
             # the note never draws (user, 2026-09-01).
             k = next(j for j, x in enumerate(core[1]) if x != ('atom', sl.UNIT))
             s, t = signature(core[1][k], sigs, i)
-            unify(s, norm(parse(reach.label.split('×')[k])), sub, why)
+            unify(s, norm(parse(reach.label.split('×')[k])), sub, why, ix)
             if render(settle(t, sub)) is None:
                 raise Unhandled(f"{why} lands the {reach.label} wire on"
                                 f" {spell(settle(t, sub))}×−, which is no wire label")
@@ -655,14 +710,14 @@ def elaborate(formula, src, tgt, table):
                               for j in range(len(core[1]))]) for v in (s, t))
         else:
             s, t = signature(core, sigs, i)
-        k, opened, obj = eat(s, lanes[len(wrap):], obj, sub, why)
+        k, opened, obj = eat(s, lanes[len(wrap):], obj, sub, why, ix)
         arms = lanes[len(wrap):len(wrap) + k]
         for w, e in opened:                # a wire opened HERE was born further up, where the object
             made.append(Lane(w))           # first carried it; it is drawn down to the bead eating it
             pending.append((made[-1], e, i)); arms.append(made[-1])
         if reach is None and opened:       # a bead with no lane of its own still reaches the wires
             reach = arms[k]                # it opened — a bead is a point, and every reach is an arm
-        ws, keep, obj = grow(t, sub, why)
+        ws, keep, obj = grow(t, sub, why, ix)
         # A wire the source only bound to a tail VARIABLE, which the target then does not carry, is
         # eaten here too: `⦇−⦈ : L(xs)⟶E(L(A))` swallows the `E` inside its `L`.  Left out of `arms`
         # it would be dropped from the cut with no closing row at all, and nothing draws its end.
@@ -676,7 +731,7 @@ def elaborate(formula, src, tgt, table):
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         rows.append(Row(spell(tidy(core)), arms, legs, reach, obj, natural(core, sigs)))
-    k, opened, obj = eat(want, lanes, obj, sub, f"the target {tgt}")
+    k, opened, obj = eat(want, lanes, obj, sub, f"the target {tgt}", ix)
     if k != len(lanes):
         raise Unhandled(f"the target {tgt} leaves the {lanes[k].label} wire live")
     for w, e in opened:
@@ -699,7 +754,8 @@ def elaborate(formula, src, tgt, table):
         raise Unhandled(f"the object wire carries {spell(settle(atop, sub))}, which has no label")
     for r in rows:                         # the seam labels: what a formula alone cannot say either
         r.obj = render(settle(r.obj, sub))
-    return rows, made, otop, obot
+    return rows, made, otop, obot, [("top", d, l) for d, l in tmark] \
+        + [("bot", d, l) for d, l in bmark]
 
 
 # ---------------------------------------------------------------- the panel a term denotes
@@ -836,7 +892,16 @@ def crosses(rec):
         return False
 
 
-def layout(rows, made, otop, obot, cert):
+def defnports(rec, dfn):
+    """A defn's boundary as `dpanel` takes it: the x span of the ports its right side opened, the
+    height of the edge they sit on, and the LEFT side's own label.  One name is written under the
+    group in place of the per-wire labels, because that is the name the note's formula uses."""
+    return [[xs[0], xs[-1], rec["h"] if edge == "top" else 0.0, lab]
+            for edge, d, lab in dfn
+            for xs in [sorted(p[0] for p in rec[edge] if p[0] != rec["xo"])[d:]] if xs]
+
+
+def layout(rows, made, otop, obot, dfn, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
@@ -958,6 +1023,8 @@ def layout(rows, made, otop, obot, cert):
                 break
         else:
             rec["opath"] = op
+    if dfn:
+        rec["defn"] = defnports(rec, dfn)
     return rec
 
 
@@ -965,7 +1032,7 @@ def layout(rows, made, otop, obot, cert):
 ROW = 0.625      # one book ROW: IntroString p.74's 0.5cm, in cetz's own `length: 0.8cm` canvas unit
 
 
-def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
+def booklayout(rows, made, otop, obot, dfn, cert, wr, hr, obreak):
     """IntroString p.74's own construction, in ROW UNITS (1 row = 0.5cm, one lane pitch = 2 rows).
     The lanes alive at the TOP stand in columns `0, 2, 4, …` in cut order, leftmost the outermost
     functor, and the object edge holds the column one lane pitch right of the last of them, running
@@ -1040,11 +1107,13 @@ def booklayout(rows, made, otop, obot, cert, wr, hr, obreak):
         rec["right"] = [[round(ye * ROW, 4), obot]]
     if obreak:
         rec["obreak"] = [by[i] for i in range(n) if ride[i]]
+    if dfn:
+        rec["defn"] = defnports(rec, dfn)
     return rec
 
 
 def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, ini=None, book=None,
-         frame=None, top=None, tint=None):
+         frame=None, top=None, tint=None, defn=None):
     """The panel a formula denotes, typed: `elaborate` says what the picture IS, `layout` chooses
     one of the pictures the book calls equal.  `split` and `own` ride in the `cert:` beside `src`
     and `tgt`, for the same reason they do — a formula alone does not say which picture of it the
@@ -1064,7 +1133,8 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     MU = {f: (o, None) for f, o in TBL.get("mu", {}).items()} | (parse_mu(ini) if ini else {})
     BR = branch(formula)
     cert = {"expect": formula, "src": src, "tgt": tgt} | ({"branch": BR} if BR else {})
-    rows, made, otop, obot = elaborate(formula, src, tgt, TBL)
+    ds = sl.defns(defn)
+    rows, made, otop, obot, dfn = elaborate(formula, src, tgt, TBL, ds)
     below = otop                       # the index dropped above must be what the picture puts there
     for r in rows:
         below = r.obj if r.obj is not None else below
@@ -1074,10 +1144,11 @@ def draw(formula, src, tgt, table=None, split=DEFSPLIT, own=None, slope=None, in
     cert = (cert | ({"split": split} if split != DEFSPLIT else {})
             | ({"mu": ini} if ini else {}) | ({"sigs": own} if own else {})
             | ({"slope": slope} if slope else {}) | ({"frame": frame} if frame else {})
-            | ({"top": top} if top is not None else {}) | ({"tint": tint} if tint else {}))
+            | ({"top": top} if top is not None else {}) | ({"tint": tint} if tint else {})
+            | ({"defn": defn} if defn else {}))
     if book:
-        return booklayout(rows, made, otop, obot, cert, *book)
-    return layout(rows, made, otop, obot, cert)
+        return booklayout(rows, made, otop, obot, dfn, cert, *book)
+    return layout(rows, made, otop, obot, dfn, cert)
 
 
 # ---------------------------------------------------------------- the typst call
@@ -1139,6 +1210,7 @@ def emit(r):
             + (f'  right: {lst(r["right"])},\n' if r.get("right") else "")
             + (f'  obreak: {tup(r["obreak"])},\n' if r.get("obreak") else "")
             + (f'  obj: {lst(r["obj"])},\n' if r.get("obj") else "")
+            + (f'  defn: {lst(r["defn"])},\n' if r.get("defn") else "")
             + ("  ostraight: true,\n" if r.get("ostraight") else "")
             + "  cert: (" + ", ".join(f'{k}: ' + (quoted(v) if isinstance(v, str) else
                 num(v) if isinstance(v, (int, float)) else
@@ -1179,7 +1251,8 @@ def roundtrip(path, frm, show, out, tbl):
             src, tgt = endpoints(sl.Panel(r))
             g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
                      r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"),
-                     top=r["cert"].get("top"), tint=r["cert"].get("tint"))
+                     top=r["cert"].get("top"), tint=r["cert"].get("tint"),
+                     defn=r["cert"].get("defn"))
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1231,7 +1304,7 @@ def certof(s):
     """A literal's `cert:` group as `draw` takes it: the string fields, and `sigs` as a dict."""
     c = {k: v.replace("\\\\", "\\") for k, v in re.findall(r'(\w+): "([^"]*)"', s)}
     c |= {k: float(v) for k, v in re.findall(r'(\w+): (-?\d+(?:\.\d+)?)\b', s)}
-    for f in ("sigs", "tint"):
+    for f in ("sigs", "tint", "defn"):
         k = s.find(f + ": (")
         if k >= 0:
             c[f] = dict(re.findall(r'"([^"]*)": "([^"]*)"', s[k:close(s, k + len(f) + 2) + 1]))
@@ -1264,7 +1337,7 @@ def regen(path, tbl, write):
         try:
             new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
                             c.get("sigs"), c.get("slope"), c.get("mu"),
-                            frame=c.get("frame"), top=c.get("top")))[1:-1]
+                            frame=c.get("frame"), top=c.get("top"), defn=c.get("defn")))[1:-1]
         except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -1463,7 +1536,14 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
               " separated by spaces; the key is left of the LAST colon.  A trailing `!nat` claims the"
               " row is a natural transformation and `!lax` that it is only lax, `=<marker>` after"
-              " either naming the declaration that says so"
+              " either naming the declaration that says so, and `!lean=<marker>` the declaration the"
+              " signature itself was read off — the same fields `hm-sigs.json` states, so"
+              " `hm-check --verify-sigs` audits a row a panel types exactly as it audits one there"
+              '\n--defn        the panel'"'"'s own abbreviations, `LHS≜RHS` pairs separated by spaces'
+              ' (`--defn "A[k+1]≜F(A[k])"`).  A lower-case letter inside an index bracket is a'
+              " variable, matched and substituted textually (`[3k]` takes `[3p]`), so one defn"
+              " covers every index.  The ports draw the RIGHT side, which is what the picture is,"
+              " and the edge writes the LEFT side's own name once under the wires it opened"
               '\n--mu          the initial algebra this row folds from, `FUNCTOR:OBJECT[⟶CARRIER]`'
               ' pairs — `--mu "F:list⁺(x)"` folds the `list⁺` §14.5 writes, laid over'
               " diag/hm-sigs.json's `mu`, and gives the carrier when the algebra is a composite with"
@@ -1517,9 +1597,11 @@ def main(argv):
     top = float(top) if top else None
     tint = sl.opt(argv, "--tint")
     tint = dict(x.rsplit("=", 1) for x in tint.split()) if tint else None
+    defn = sl.opt(argv, "--defn")
+    defn = dict(x.split("≜", 1) for x in defn.split()) if defn else None
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--frame", "--top", "--tint", "--panel", "--png")
+                         "--frame", "--top", "--tint", "--defn", "--panel", "--png")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -1547,7 +1629,7 @@ def main(argv):
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
     r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book, frame=frame, top=top, tint=tint)
+             book, frame=frame, top=top, tint=tint, defn=defn)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`

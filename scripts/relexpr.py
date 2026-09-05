@@ -15,7 +15,7 @@ arrow).  The two pictures share nothing else, so this file is the one place the 
 spellings of one arrow are compared in.  `opt`/`help_if` are here for the same reason: every
 script that reads this language has the same two flags.
 """
-import json, os, re, sys
+import json, os, re, string, sys
 
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
@@ -36,6 +36,28 @@ INTERVAL = re.compile(r"\[[^\[\]()]*\)")
 # A projection ends its own token: the note writes the guard of a conditional `π₁p`, with nothing
 # between the two arrows, and one bead reading `π₁p` is a composite drawn as though it were an atom.
 PROJ = ("π₁", "π₂")
+# A signature's OBJECT variables: single lower-case letters.  Every other lower-case letter is free
+# to name an INDEX, which is the one thing that tells `[x]` (a list) from `[k]` (an index functor).
+VARS = set("stuvwxyz")
+# §13.5.4's INDEX FUNCTOR `[k] : X ↦ X[k]`.  Its bracket carries an index — digits, `+`, `-`, the
+# lower-case letters no signature uses as an object variable, and `@` for a scheme renamed apart —
+# so `A[n]` reads as `[n]` applied to `A` where `E[A]` and `[x]` keep their existing readings.  Only
+# in POSTFIX position: a bracket that OPENS a term is still a list, a case or a fork.
+IDXCH = set(string.digits) | set("+-@") | (set(string.ascii_lowercase) - VARS)
+# The note's applicative spelling of that same functor, so a formula can write the arrow it lifts:
+# `Vec(n)(concat)` is `[n]` applied to `concat`, exactly as `N(union)` applies `N` to `union`.
+VEC = "Vec"
+
+
+def is_index(body):
+    """Whether a bracket's body is an INDEX rather than an object: `3p`, `m+1`, `k`, `3` are, `A`,
+    `x` and `[Int]` are not."""
+    return bool(body) and all(c in IDXCH for c in body)
+
+
+def idxhead(name):
+    """Whether an `app`'s head is an index functor — `[3p]`, `[m+1]` — rather than a relator."""
+    return name.startswith('[') and name.endswith(']') and is_index(name[1:-1])
 # An index is written as a SMALL CAPITAL — the subscript block has no `b` and no `c`, so one family
 # (`αᴀ`, `αʙ`, `αᴄ`) cannot be spelled with real subscripts at all.
 SMALLCAP = dict(zip("ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘꞯʀꜱᴛᴜᴠᴡʏᴢ", "ABCDEFGHIJKLMNOPQRSTUVWYZ"))
@@ -130,6 +152,22 @@ def p_prod(s, i, obj=False):
 
 
 def p_prim(s, i, obj=False):
+    """A primary with every INDEX bracket that follows it applied.  `A[m][n] ≜ (A[n])[m]`, so the
+    LEFTMOST bracket is the OUTERMOST functor and the chain is built from the right; the nodes carry
+    no context spelling, which is what makes `spell` write the whole chain back in one go."""
+    x, i = p_base(s, i, obj)
+    bs = []
+    while i < len(s) and s[i] == '[' and not INTERVAL.match(s, i):
+        j = matching(s, i)
+        if not is_index(s[i + 1:j]):
+            break
+        bs.append(s[i:j + 1]); i = j + 1
+    for b in reversed(bs):
+        x = ('app', b, x)
+    return x, i
+
+
+def p_base(s, i, obj=False):
     while i < len(s) and s[i] in " \t":
         i += 1
     if i >= len(s):
@@ -180,6 +218,13 @@ def p_prim(s, i, obj=False):
         raise ValueError(f"stray {s[i]!r} in {s!r}")
     if j < len(s) and s[j] == '(':
         k = matching(s, j)
+        # `Vec(n)(concat)` is the index functor `[n]` APPLIED, the one spelling that lets a formula
+        # lift an arrow along an index; the head it builds is the same `[n]` a postfix object writes,
+        # so the two compare equal at `norm`, which drops the spelling this tail records.
+        if s[i:j] == VEC and is_index(squeeze(s[j + 1:k])) and k + 1 < len(s) and s[k + 1] == '(':
+            m = matching(s, k + 1)
+            return ('app', '[' + squeeze(s[j + 1:k]) + ']', parse(s[k + 2:m], obj),
+                    s[i:k + 1] + '(−)'), m + 1
         # `F(X)` abbreviates `F(𝟙,X)` (the note's own `== Type relator` definition), so ONE live slot
         # parses as an application with a context saying which; `F(∋,∋)` stays one opaque bead.
         # In an OBJECT every slot is an object, so `𝟙` cannot mark the live one: there the LAST
@@ -192,16 +237,20 @@ def p_prim(s, i, obj=False):
         return ('app', s[i:j], parse(s[j + 1:k], obj)), k + 1
     if j < len(s) and s[j] == '[':
         # `[A]` is a name, so `E[A]` is an application spelled without parentheses; the argument
-        # keeps its brackets so the AST is exactly the one `E([A])` builds.
+        # keeps its brackets so the AST is exactly the one `E([A])` builds.  An INDEX bracket runs
+        # the other way — `A[n]` is `[n]` applied to `A` — and is left to `p_prim`'s postfix loop.
         k = matching(s, j)
-        return ('app', s[i:j], parse(s[j:k + 1], obj), s[i:j] + '−'), k + 1
+        if not is_index(s[j + 1:k]):
+            return ('app', s[i:j], parse(s[j:k + 1], obj), s[i:j] + '−'), k + 1
     return ('atom', s[i:j]), j
 
 
 def hole_last(ctx):
-    """Whether an `app` context acts in its LAST argument slot: `F(𝟙,−)`, `E−` and `thin −` do,
-    `F(−,𝟙)` does not.  A lane passes the last slot, so only that one reads as a wire."""
-    return ctx.rstrip(')').endswith('−')
+    """Whether an `app` context acts in its LAST argument slot: `F(𝟙,−)`, `E−`, `thin −` and the
+    index functor's own `−[k]` do, `F(−,𝟙)` does not.  A lane passes the last slot, so only that one
+    reads as a wire — and an index functor, having one slot, always passes it."""
+    c = ctx.rstrip(')')
+    return c.endswith('−') or (c.startswith('−') and idxhead(c[1:]))
 
 
 def unit_ctx(ctx):
@@ -237,7 +286,18 @@ def spell(e):
         return e[2]
     if k == 'app':      # a context — `E−`, `thin −`, `F(𝟙,−)` — spells by filling its own hole, so
         # the spelling cannot go stale when `rec` rewrites what is inside it (`F(𝟙,R)°` → `F(𝟙,R°)`).
-        return e[3].replace('−', spell(e[2])) if len(e) > 3 else f"{e[1]}({spell(e[2])})"
+        if len(e) > 3:
+            return e[3].replace('−', spell(e[2]))
+        if idxhead(e[1]):
+            # POSTFIX, leftmost bracket outermost: the WHOLE chain at once, since `A[n][p]` writes
+            # the outer functor first and a node-by-node spelling would come out reversed.
+            bs, x = [], e
+            while x[0] == 'app' and len(x) == 3 and idxhead(x[1]):
+                bs.append(x[1]); x = x[2]
+            b = spell(x)
+            return (f"({b})" if x[0] in ('comp', 'prod', 'hc', 'conv', 'union', 'cap') else b) \
+                + "".join(bs)
+        return f"{e[1]}({spell(e[2])})"
     if k == 'conv':
         return (f"({spell(e[1])})" if e[1][0] in ('comp', 'prod', 'union', 'cap')
                 else spell(e[1])) + '°'
@@ -260,6 +320,77 @@ def spell(e):
         # application of `pick`.  The other openers (`⦇`, `[`, `⟨`) cannot, so they still close up.
         out += ('' if out[-1] in CLOSERS or (p[0] in OPENERS and p[0] != '(') else ' ') + p
     return out
+
+
+# An index PATTERN is matched TEXTUALLY, each of its variables standing for a whole group: `3k` takes
+# `3p` binding `k=p`, `k+1` takes `m+1` binding `k=m`, a bare `k` takes the index whole, and `3`
+# matches only `3`.  Substitution is textual too, so `[3k]` at `k:=p` is `[3p]`.  A SIGNATURE's index
+# letters are renamed apart with the scheme they belong to (`k@2`), which is what keeps a ground index
+# — every one a `--src`/`--tgt` writes — matching itself alone; a DEFN's are bare letters, since a
+# defn is one pattern applied once.
+IVAR = re.compile(r"[a-z]@[0-9a-z]+")
+DVAR = re.compile("[" + "".join(sorted(set(string.ascii_lowercase) - VARS)) + "]")
+
+
+def ibind(pat, got, ix, var=IVAR):
+    """`pat` matched against the ground index `got`, binding its variables in `ix`; False, with `ix`
+    untouched, where the two do not fit."""
+    rx, last, vs = "", 0, []
+    for m in var.finditer(pat):
+        rx += re.escape(pat[last:m.start()]) + "(.+)"
+        last, vs = m.end(), vs + [m.group()]
+    hit = re.fullmatch(rx + re.escape(pat[last:]), got)
+    if hit is None:
+        return False
+    trial = dict(ix)
+    for v, x in zip(vs, hit.groups()):
+        if trial.setdefault(v, x) != x:
+            return False
+    ix.update(trial)
+    return True
+
+
+def isub(pat, ix, var=IVAR):
+    """`pat` with every bound index variable written out: `[3k@2]` at `k@2:=p` is `[3p]`."""
+    return var.sub(lambda m: ix.get(m.group(), m.group()), pat)
+
+
+def defns(d):
+    """A panel's `defn:` as the rewrite takes it: the note's own spelling of an object, and what it
+    abbreviates — `A[k+1] ≜ F(A[k])`, parsed as objects."""
+    return [(parse(k, True), parse(v, True)) for k, v in (d or {}).items()]
+
+
+def dmatch(pat, e, ix):
+    """A defn's left side against a node: index heads by `ibind`, everything else literally."""
+    if pat[0] == 'app' and e[0] == 'app' and idxhead(pat[1]) and idxhead(e[1]):
+        return ibind(pat[1][1:-1], e[1][1:-1], ix, DVAR) and dmatch(pat[2], e[2], ix)
+    if pat[0] == 'app' and e[0] == 'app' and pat[1] == e[1]:
+        return dmatch(pat[2], e[2], ix)
+    return pat == e
+
+
+def dput(e, ix):
+    """A defn's side with its index variables written out."""
+    return ('app', isub(e[1], ix, DVAR), dput(e[2], ix)) + e[3:] \
+        if e[0] == 'app' and idxhead(e[1]) else rec(e, lambda x: dput(x, ix))
+
+
+def unabbrev(e, ds, marks=None):
+    """`e` with each defn's LEFT side replaced by its RIGHT, outermost first: the note writes
+    `A[m+1]` where the picture draws the two wires `F(A[m])` is, and the ports must agree with the
+    picture.  A replacement is not re-scanned, so one boundary carries one defn; `marks` collects
+    `(the left side's own functor name, what it was replaced by)` for the label that boundary is
+    drawn with."""
+    for lhs, rhs in ds:
+        ix = {}
+        if dmatch(lhs, e, ix):
+            out = dput(rhs, ix)
+            if marks is not None:
+                marks.append((isub(lhs[1], ix, DVAR) if lhs[0] == 'app' else spell(dput(lhs, ix)),
+                              out))
+            return out
+    return rec(e, lambda x: unabbrev(x, ds, marks))
 
 
 def tidy(e):
@@ -313,6 +444,10 @@ def norm(e):
     if e[0] in ('cap', 'cond', 'cata', 'fork'):
         return ('atom', e[2])
     e = rec(e, norm)
+    # `A[n]` and `Vec(n)(A)` are two spellings of ONE application, and the tail records which was
+    # written; it goes here, where two readings of one arrow are compared.
+    if e[0] == 'app' and len(e) > 3 and idxhead(e[1]):
+        e = ('app', e[1], e[2])
     # A hole-LAST context is only a spelling — `F(𝟙,R)` is the picture `F(R)` — so it goes and every
     # `F(`-bearing certificate compares equal; a hole-first one stays, so `F(∋,𝟙)F(𝟙,∋)` cannot fuse.
     if e[0] == 'app' and len(e) > 3 and hole_last(e[3]) and unit_ctx(e[3]):

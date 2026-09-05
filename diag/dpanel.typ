@@ -314,8 +314,23 @@
 // `right` is a port list for the panel's RIGHT side, `(y, label)` each: the object edge may leave
 // through that side instead of the bottom (IntroString p.74).  `obreak` names the bead heights the
 // edge is broken at, and `ostraight` draws it as the book's straight polyline.
+// A DEFN BOUNDARY: `(x0, x1, y, label)`.  The note abbreviates an object — `A[m+1] ≜ F(A[m])` — and
+// the picture draws what the right side IS, two wires; the edge then writes the LEFT side's own name
+// once, under a thin bracket spanning both columns, instead of the two per-wire labels.  Reading the
+// two labels the reader would have to re-derive the abbreviation the note already stated.
+#let dbrace(x0, x1, y, l, h) = {
+  let dir = if y > h / 2 { 1 } else { -1 }
+  let c = fcol(l)
+  let yb = y + dir * 0.16
+  hm-wire(((x0, yb), (x1, yb)), col: c)
+  hm-wire(((x0, yb), (x0, yb - dir * 0.10)), col: c)
+  hm-wire(((x1, yb), (x1, yb - dir * 0.10)), col: c)
+  hm-port(((x0 + x1) / 2, yb), l, dir: dir, col: c)
+}
+#let dcovers(defn, y, x) = defn.any(d => calc.abs(d.at(2) - y) < 1e-6
+  and x >= d.at(0) - 1e-6 and x <= d.at(1) + 1e-6)
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
-            obreak: (), ostraight: false, obj: (), cert: (:)) = {
+            obreak: (), ostraight: false, obj: (), defn: (), cert: (:)) = {
   // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
   // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
   // on the wire, reads the same list back off `hm-meta`.
@@ -397,9 +412,13 @@
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
                            bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none }) }
   for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { fcol(l) }) }
+    if not dcovers(defn, h, x) {
+      hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { fcol(l) }) } }
   for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { obc } else { fcol(l) }) }
+    if not dcovers(defn, 0, x) {
+      hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1,
+              col: if x == xo { obc } else { fcol(l) }) } }
+  for (x0, x1, y, l) in defn { dbrace(x0, x1, y, l, h) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
   for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }

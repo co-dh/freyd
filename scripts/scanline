@@ -26,10 +26,12 @@ DY = 1.5                                       # one row: `scripts/diagram`'s be
 # names this file and `scripts/diagram` use.
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from relexpr import (alias, BREAK, CARRIER, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT, Unhandled,
-                     act, canon, deindex, dun, fill, fuse, help_if, hole_last, hole_slot,
-                     interchange, listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
-                     require_hole_last, spell, split_top, squeeze, tidy, unit_ctx)
+from relexpr import (alias, BREAK, CARRIER, CLOSERS, DVAR, INTERVAL, IVAR, OPENERS, PROJ, TERM,
+                     UNIT, Unhandled, VARS, VEC, act, canon, deindex, defns, dmatch, dput, dun,
+                     fill, fuse,
+                     help_if, hole_last, hole_slot, ibind, idxhead, interchange, is_index, isub,
+                     listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
+                     require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -673,7 +675,6 @@ def indexed(p):
 
 
 # ---------------------------------------------------------------- the declared tables
-VARS = set("stuvwxyz")                     # a signature's variables: single lower-case letters
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "hm-sigs.json")
 _TBL = None
@@ -708,6 +709,32 @@ def instance(row, d):
 NATWORD = {"nat": "strict", "lax": "lax"}
 
 
+def sigfields(v):
+    """One `--sigs` value read as a `hm-sigs.json` ROW: the signature, then the `!`-tagged claims a
+    signature cannot make.  `!nat`/`!lax` is the naturality the dot draws, `!lean` the declaration
+    the row's type was read off, and `=<marker>` after either — several separated by `,` — names what
+    proves it.  The field names are the table's own, so `hm-check --verify-sigs` audits a row a panel
+    types itself exactly as it audits one the table states."""
+    sig, _, rest = v.partition("!")
+    d = dict(zip(("src", "tgt"), sig.split("⟶")))
+    for f in rest.split("!") if rest else ():
+        tag, _, mark = f.partition("=")
+        # `lean:` is `cite-check`'s own prefix, written where the marker stands in the note; the row
+        # keeps the bare `Mod.decl@key` the table keeps.
+        ms = [m.removeprefix("lean:") for m in mark.split(",") if m]
+        if tag == "lean" and len(ms) == 1:
+            d["lean"] = ms[0]
+        elif tag in NATWORD:
+            d["nat"] = NATWORD[tag]
+            if ms:
+                d["nat-lean"] = ms
+        else:
+            raise Unhandled(f'`!{tag}={mark}` names no claim — write `!nat`/`!lax` for the'
+                            f' naturality the dot draws, or `!lean=<marker>` for the declaration the'
+                            f' row was read off')
+    return d
+
+
 def typed(table, own):
     """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
     one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
@@ -722,14 +749,10 @@ def typed(table, own):
     # drawn with a hollow dot.  Without it a one-letter `φ` falls through to the object wire, which
     # says it is an arrow of the base category — the one thing a LaT is not.
     def one(k, v):
-        sig, bang, rest = v.partition("!")
-        tag, _, mark = rest.partition("=")
-        if bang and tag not in NATWORD:
-            raise Unhandled(f'--sigs {k}: `!{tag}` names no naturality — write `!nat` for a strict '
-                            f'natural transformation or `!lax` for a lax one')
-        d = dict(zip(("src", "tgt"), sig.split("⟶")),
-                 **({"nat": NATWORD[tag]} if bang else {}),
-                 **({"cite": mark} if mark else {}))
+        try:
+            d = sigfields(v)
+        except Unhandled as x:
+            raise Unhandled(f"--sigs {k}: {x}") from None
         # A panel naming the global arrow — restating its signature, or INSTANTIATING it at this
         # display's objects (`cons : Op×[Op]⟶[Op]` for the row's `x×[x]⟶[x]`) — is that same arrow,
         # so what Lean proved of it still holds and the mark follows the proof, not the shape the
@@ -838,9 +861,10 @@ def subst(e, lhs, rhs):
 
 
 def read(s, cert, obj):
-    """The cert's OWN expression — aliases unfolded and the branch taken, but not normalised, so a
-    mismatch message spells the formula the file states and not `norm`'s picture quotient."""
-    e, used = unfold(parse(s, obj), cert.get('alias') or ())
+    """The cert's OWN expression — aliases unfolded, the panel's `defn:` abbreviations expanded and
+    the branch taken, but not normalised, so a mismatch message spells the formula the file states
+    and not `norm`'s picture quotient."""
+    e, used = unfold(unabbrev(parse(s, obj), defns(cert.get('defn'))), cert.get('alias') or ())
     if cert.get('branch'):
         e = take_branch(e, cert['branch'], obj, typed(sigs(), cert.get('sigs')))
     return e, used
