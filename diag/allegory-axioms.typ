@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, twobeadeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -1220,8 +1220,25 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
     node(TL.at(0), TL.at(1), black, `TA`); node(TR.at(0), TR.at(1), black, `TA`)
     node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
-  twobeadeq(`TA`, [`tri(f)`], [`⦇g⦈`], [`⦇F(𝟙,f)g⦈`], `A`, c1: GIVEN2, c2: INDUCED, c3: INDUCED,
-    typed: true, vcol: TCOL, regions: auto),
+  row((
+    dpanel(4.5, 3.725, 1.875,
+      (),
+      ((3, [`tri(f)`], GIVEN2), (1.5, [`⦇g⦈`], INDUCED)),
+      ((1.875, [`TA`]),),
+      ((1.875, [`A`]),),
+      obj: ((3, [`TA`]), (1.5, [`A`])),
+      cert: (expect: "tri(f)⦇g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
+        sigs: ("tri": "TA⟶TA", "g": "F(A,TA)⟶A"))),
+    [#h(7pt) = #h(7pt)],
+    dpanel(3, 3.725, 1.875,
+      (),
+      ((1.5, [`⦇F(𝟙,f)g⦈`], INDUCED),),
+      ((1.875, [`TA`]),),
+      ((1.875, [`A`]),),
+      obj: ((1.5, [`A`]),),
+      cert: (expect: "⦇F(𝟙,f)g⦈", src: "TA", tgt: "A", mu: "F:TA⟶A",
+        sigs: ("g": "F(A,TA)⟶A"))),
+  )),
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
 
@@ -2704,8 +2721,25 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   node(TB.at(0), TB.at(1), black, `TB`)
   node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
   }),
-  twobeadeq(`TA`, [`T(f)`], [`⦇h⦈`], [`⦇F(f,𝟙)h⦈`], `C`, c1: INDUCED, c2: INDUCED, c3: INDUCED,
-    typed: true, regions: auto),
+  row((
+    dpanel(4.5, 3.725, 1.875,
+      (),
+      ((3, [`T(f)`], INDUCED), (1.5, [`⦇h⦈`], INDUCED)),
+      ((1.875, [`TA`]),),
+      ((1.875, [`C`]),),
+      obj: ((3, [`TB`]), (1.5, [`C`])),
+      cert: (expect: "T(f)⦇h⦈", src: "TA", tgt: "C", mu: "F:TB⟶C",
+        sigs: ("T": "TA⟶TB", "h": "F(A,C)⟶C"))),
+    [#h(7pt) = #h(7pt)],
+    dpanel(3, 3.725, 1.875,
+      (),
+      ((1.5, [`⦇F(f,𝟙)h⦈`], INDUCED),),
+      ((1.875, [`TA`]),),
+      ((1.875, [`C`]),),
+      obj: ((1.5, [`C`]),),
+      cert: (expect: "⦇F(f,𝟙)h⦈", src: "TA", tgt: "C", mu: "F:TA⟶C",
+        sigs: ("h": "F(A,C)⟶C"))),
+  )),
   [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
  #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178
