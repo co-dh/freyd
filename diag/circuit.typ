@@ -439,3 +439,7 @@
 /// this file — `invert` always means "the ground under this is black".
 #let cut(a, b, radius: 0.1, invert: false) = d.rect(
   a, b, radius: radius, fill: if invert { white } else { black }, stroke: none)
+
+#let TAPEEDGE = rgb("#c25b5b")  // circuit.typ's own tape edge, which the tape functions do not export
+#let est-R-box = ([`est(R)`], 1.9, true)
+#let union-box = ([`union`], 1.75, false)

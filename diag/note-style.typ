@@ -178,3 +178,30 @@
   columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
   ..steps.map(t => scale(x: s, y: s, reflow: true, t)),
   ..hints.map(h => src[#h]))))
+
+// WHAT THE TABLE SETTLES, in its top row: the reader needs the destination before the steps, and a
+// footer would only confirm it.  Grey ground, heavier rule under it, no new font size.
+#let Thm(body, cols: 2) = table.cell(colspan: cols, fill: luma(233), align: center + horizon,
+  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
+
+// `auto` and not a fixed width: a panel column is as wide as the panels IN IT, so the column beside
+// it keeps every point they do not use.  A constant is a guess made against one table's widest panel
+// and spent in every other, and the picture it starves overflows its own column — both pictures are
+// centred, so they grow towards each other and a label of one lands on a label of the other
+// (`./scripts/labelfit`), which no per-panel geometry can prevent.
+#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+
+#let EQ = text(luma(140))[$=$]
+
+// The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
+// CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
+#let OPW = 10pt
+
+// A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
+// formula stack on one left edge — which `step`'s side-by-side branch cannot give.
+#let vstep(op, pic, f) = layout(sz => {
+  let row = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
+    column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
+  pic-meta(plain(f), row, width: sz.width)
+  row
+})

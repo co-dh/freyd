@@ -1289,6 +1289,12 @@
 #let cap(body) = align(center, box(width: 15cm, text(10.5pt, body)))
 #let law(n, body) = align(center, text(10.5pt)[*#n* #h(6pt) #body])
 
+// The step-table helpers, hoisted here so both `allegory-axioms.typ` and `allegory-appendix.typ` can
+// import them.  The step's relation sits at the LEFT EDGE of formula AND picture: `⊑`/`⊒` takes
+// `SLACK` where the proof loses information.
+#let SQ = text(SLACK)[$subset.eq.sq$]
+#let RQ = text(SLACK)[$supset.eq.sq$]
+
 // THE LAWS ARE NAMED, NOT NUMBERED, HERE: B&dM's `(2.10)`–`(2.13)` stay in the header as a citation,
 // and printing them would put a second numbering beside the note's own `(12.n)`.
 #law[the defining equation][`X = ⦇α`#sub[`B`]`⦈ ⟺ α`#sub[`T`]` X = F(X) α`#sub[`B`]]
