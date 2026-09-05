@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """diff-crop — the before/after pictures for a review, cut to what actually changed.
 
-    ./scripts/diff-crop                       # HEAD's PDF vs the working tree's, for both notes
+    ./scripts/diff-crop                          # HEAD's PDF vs the working tree's, for both notes
+    ./scripts/diff-crop --key 7.2b [--key 13.3.1a] [OUTDIR]   # one pair per named display
+    ./scripts/diff-crop --key 7.2b --before OLD.pdf [--after NEW.pdf] [OUTDIR]
     ./scripts/diff-crop BEFORE.pdf AFTER.pdf [OUTDIR]
 
 One image per CONNECTED REGION of change, not one per page: a page-wide bounding box is a whole table,
@@ -9,15 +11,40 @@ and the chamfer that vanished inside it is invisible once a phone scales the pai
 stacked ABOVE `after` so each half keeps the full screen width, and a small crop is blown up to MINW.
 A page whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
 whole review.
+
+Two measured faults shipped three clipped reviews in a row, and both are fixed here:
+
+  * THE DECLARED BOX IS NOT THE INK.  The `pic` table records what a display declares — `pic-meta` in
+    `diag/note-style.typ` stores `here().position()` and `measure(body, width: PAGEW - 2*MARGIN)` —
+    which for 7.2b says x 42.5..423.3 while the wires actually run to x 690.5, 267 pt further right.
+    A crop cut from that loses the right-hand panel.  The row is only a SEED for the page and a
+    starting y now; the extent is measured from `pdftocairo -svg` glyph and path coordinates, and the
+    crop takes the FULL page width so nothing can be cut off the sides.
+  * THE DISPLAY MOVES BETWEEN THE TWO PDFS.  An edit reflows the note, so page 9 of the after may be
+    page 8 or 10 of the before; cropping the before at the after's page number silently pictures
+    unrelated content (this is what happened to 13.3.1a).  Each PDF is searched for the display's own
+    text anchor, and a key whose anchor cannot be pinned to exactly one before page fails loudly
+    rather than falling back to the after's page number.  The whole-page mode aligns its pages by
+    text for the same reason, instead of diffing page i against page i and printing a warning.
 """
-import os, re, shutil, subprocess, sys, tempfile
+import difflib, math, os, re, shutil, subprocess, sys, tempfile
+import xml.etree.ElementTree as ET
 
 DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
 # ImageMagick's default font renders every glyph as an empty box here; this face has both Latin and CJK.
 FONT = "/usr/share/fonts/noto-cjk/NotoSansCJK-Medium.ttc"
 MINAREA = 40                     # ignore antialiasing specks
 GAP = 90                         # change regions closer than this are one edit
+KEYPAD = 9                       # pt of white kept around a display's measured ink, white permitting
+GUT = 15                         # pt: a wider gap than this is the gutter the display ends at
+NEAR = 4                         # pt: ink this close is the display's own, whatever the growth budget
+GROWMAX = 45                     # pt the band may run past the declared box before it stops chaining
+MARG = 3                         # pt the crop must clear the ink by, or the run aborts
+STRIP = 6                        # px checked blank at the top and bottom of every crop
+MINSIM = 0.5                     # below this two pages are different pages, not an edited one
 NOTES = ("diag/allegory-axioms.pdf", "diag/allegory2.pdf")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
 
 
 def run(*a):
@@ -28,13 +55,352 @@ def size(png):
     return tuple(int(x) for x in run("magick", "identify", "-format", "%wx%h", png).stdout.split("x"))
 
 
+def db_path():
+    """`book-index.db` is gitignored, so a worktree has none of its own; the main checkout beside the
+    common .git dir holds the one copy."""
+    p = os.path.join(ROOT, "book-index.db")
+    if os.path.exists(p):
+        return p
+    common = run("git", "-C", ROOT, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip()
+    return os.path.join(os.path.dirname(common), "book-index.db") if common else p
+
+
+# ---------------------------------------------------------------- measuring the ink from the SVG
+
+def tag(el):
+    return el.tag.rsplit("}", 1)[-1]
+
+
+def mul(m, n):
+    a, b, c, d, e, f = m
+    A, B, C, D, E, F = n
+    return (a * A + c * B, b * A + d * B, a * C + c * D, b * C + d * D, a * E + c * F + e, b * E + d * F + f)
+
+
+def xf(m, p):
+    return (m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5])
+
+
+ID = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
+def parse_tf(s):
+    """`matrix()`, `translate()`, `scale()` — the three forms pdftocairo emits, composed left to right."""
+    m = ID
+    for name, args in re.findall(r"(matrix|translate|scale)\s*\(([^)]*)\)", s or ""):
+        v = [float(x) for x in NUM.findall(args)]
+        if name == "matrix" and len(v) == 6:
+            m = mul(m, tuple(v))
+        elif name == "translate":
+            m = mul(m, (1, 0, 0, 1, v[0], v[1] if len(v) > 1 else 0))
+        elif name == "scale":
+            m = mul(m, (v[0], 0, 0, v[1] if len(v) > 1 else v[0], 0, 0))
+    return m
+
+
+ARGC = {"M": 2, "L": 2, "T": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4, "A": 7, "Z": 0}
+
+
+def pts(d):
+    """Every coordinate in a path — `C` carries three points, `H`/`V` only one ordinate, and a repeated
+    argument group means the command again."""
+    out, cur, start, i = [], (0.0, 0.0), (0.0, 0.0), 0
+    toks = re.findall(r"[MmLlHhVvCcSsQqTtAaZz]|" + NUM.pattern, d or "")
+    cmd = None
+    while i < len(toks):
+        t = toks[i]
+        if re.match(r"[A-Za-z]", t):
+            cmd, i = t, i + 1
+            if cmd in "Zz":
+                cur = start
+                continue
+        if cmd is None or cmd in "Zz":
+            break
+        u, rel, n = cmd.upper(), cmd.islower(), ARGC[cmd.upper()]
+        if i + n > len(toks):
+            break
+        v = [float(x) for x in toks[i:i + n]]
+        i += n
+        if u == "H":
+            cur = (cur[0] + v[0] if rel else v[0], cur[1])
+        elif u == "V":
+            cur = (cur[0], cur[1] + v[0] if rel else v[0])
+        else:
+            base = cur if rel else (0.0, 0.0)
+            pairs = [(base[0] + v[k], base[1] + v[k + 1]) for k in range(0, n - 1, 2)] if u != "A" else \
+                    [(base[0] + v[5], base[1] + v[6])]
+            out += pairs
+            cur = pairs[-1]
+            if u == "M":
+                start = cur
+        out.append(cur)
+    return out
+
+
+def bbox(ps):
+    if not ps:
+        return None
+    xs, ys = [p[0] for p in ps], [p[1] for p in ps]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+def walk(el, m, glyphs, out):
+    for c in el:
+        t = tag(c)
+        if t in ("defs", "clipPath", "symbol", "mask"):
+            continue                     # a clip box is the page, not ink; a def is drawn only via <use>
+        cm = mul(m, parse_tf(c.get("transform")))
+        if t == "path":
+            b = bbox([xf(cm, p) for p in pts(c.get("d", ""))])
+        elif t == "use":
+            href = c.get("{http://www.w3.org/1999/xlink}href") or c.get("href") or ""
+            g, x, y = glyphs.get(href.lstrip("#")), float(c.get("x", 0)), float(c.get("y", 0))
+            b = bbox([xf(cm, (x + g[0], y + g[1])), xf(cm, (x + g[2], y + g[3]))]) if g else None
+        elif t == "image":
+            x, y = float(c.get("x", 0)), float(c.get("y", 0))
+            b = bbox([xf(cm, (x, y)), xf(cm, (x + float(c.get("width", 0)), y + float(c.get("height", 0))))])
+        else:
+            b = None
+        if b:
+            out.append(b)
+        walk(c, cm, glyphs, out)
+
+
+def svg_ink(pdf, page, tmp):
+    """Every wire and glyph on `page`, as boxes in page points.  `pdftocairo -svg` writes the exact path
+    data, so the extent is measured rather than estimated, and it costs no image tokens."""
+    svg = os.path.join(tmp, f"ink-{page}-{abs(hash(pdf)) % 9999}.svg")
+    r = run("pdftocairo", "-svg", "-f", str(page), "-l", str(page), pdf, svg)
+    if not os.path.exists(svg):
+        sys.exit(f"diff-crop: pdftocairo -svg -f {page} {pdf}: {r.stderr.strip() or 'no output'}")
+    root = ET.parse(svg).getroot()
+    W, H = (float(NUM.findall(root.get(k, "0"))[0]) for k in ("width", "height"))
+    glyphs = {}
+    for d in root.iter():
+        if tag(d) != "defs":
+            continue
+        for g in d.iter():
+            if tag(g) == "g" and g.get("id", "").startswith("glyph"):
+                b = bbox([p for c in g.iter() if tag(c) == "path" for p in pts(c.get("d", ""))])
+                if b:
+                    glyphs[g.get("id")] = b
+    out = []
+    walk(root, ID, glyphs, out)
+    return W, H, out
+
+
+def chunks(boxes, step=0.25):
+    """The page's inked rows, run-length encoded: the white between two chunks is a candidate gutter."""
+    occ = set()
+    for b in boxes:
+        occ.update(range(int(b[1] / step), int(b[3] / step) + 1))
+    out = []
+    for r in sorted(occ):
+        if out and r <= out[-1][1] + 1:
+            out[-1][1] = r
+        else:
+            out.append([r, r])
+    return [(a * step, b * step) for a, b in out]
+
+
+def pad_at(fch, edge, up):
+    """The white there really is outside `edge`, and the pad that fits in it — a crop can then never
+    open onto ink, whatever the page put next to the display."""
+    near = [c[1] for c in fch if c[1] <= edge] if up else [c[0] for c in fch if c[0] >= edge]
+    gap = (edge - max(near)) if up and near else ((min(near) - edge) if not up and near else 1e9)
+    return max(MARG, min(KEYPAD, gap - 0.5)), gap
+
+
+def band(boxes, y0, y1, win):
+    """The display's real vertical extent, and the white left outside it.  The declared box clips wires
+    and labels, so start from the chunks the seed band touches and grow across every gutter narrower
+    than GUT.  `win` is the only bound: outside it lies a neighbouring display or a paragraph that a
+    5 pt line leading would otherwise chain the whole page in through."""
+    sel = [b for b in boxes if b[1] >= win[0] and b[3] <= win[1]]
+    ch = chunks(sel)
+    idx = [i for i, c in enumerate(ch) if c[1] >= y0 and c[0] <= y1]
+    if not idx and ch:
+        # A `pdftotext` word box starts at the font's ascent, a hair above the ink, so a seed taken
+        # from one can land in the gutter; the chunk it names is the nearest one, not none.
+        near = min(range(len(ch)), key=lambda i: max(ch[i][0] - y1, y0 - ch[i][1], 0))
+        idx = [near] if max(ch[near][0] - y1, y0 - ch[near][1], 0) < GUT else []
+    if not idx:
+        return None
+    lo, hi = idx[0], idx[-1]
+    # A chunk the window CUT SHORT is a neighbouring display showing through its own edge, not a part
+    # of this one; bridging to it would then snap the band out over the whole of that neighbour.
+    fch = chunks(boxes)
+    whole = lambda c: any(abs(f[0] - c[0]) < 0.5 and abs(f[1] - c[1]) < 0.5 for f in fch)
+    while lo > 0 and ch[lo][0] - ch[lo - 1][1] < GUT and whole(ch[lo - 1]):
+        lo -= 1
+    while hi + 1 < len(ch) and ch[hi + 1][0] - ch[hi][1] < GUT and whole(ch[hi + 1]):
+        hi += 1
+    # The chunks ARE the inked rows, so the band's own ends are the exact vertical extent; only the
+    # width has to be read off the boxes, and off `sel`, so a neighbour's tall frame cannot widen it.
+    b0, b1 = ch[lo][0], ch[hi][1]
+    # Snap to the chunks of the WHOLE page: a wire the window cut in half still crosses the crop edge,
+    # and a crop laid through it is the clip this tool exists to prevent.  A snap that would leave the
+    # window is refused and its gap reported as none, so the pixel check stands down instead of firing.
+    s0, s1 = b0, b1
+    for c in fch:
+        s0 = c[0] if c[0] <= b0 <= c[1] else s0
+        s1 = c[1] if c[0] <= b1 <= c[1] else s1
+    p0, g0 = pad_at(fch, s0, True) if s0 >= win[0] else (MARG, 0.0)
+    p1, g1 = pad_at(fch, s1, False) if s1 <= win[1] else (MARG, 0.0)
+    b0, b1 = (s0 if s0 >= win[0] else b0), (s1 if s1 <= win[1] else b1)
+    x = bbox([p for b in sel if b[3] >= b0 and b[1] <= b1 for p in ((b[0], b[1]), (b[2], b[3]))])
+    return (x[0], b0, x[2], b1), (p0, p1), (g0, g1)
+
+
+# ---------------------------------------------------------------- locating the display in each PDF
+
+def words(pdf, first=None, last=None):
+    """`pdftotext -bbox` words with their page positions, page-numbered from 1, y down from the top —
+    the same frame the SVG and the `pic` table use."""
+    a = ["pdftotext", "-q", "-bbox"] + (["-f", str(first), "-l", str(last)] if first else []) + [pdf, "-"]
+    out, page, res = run(*a).stdout, (first or 1) - 1, []
+    pat = r'<page\b|<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">(.*?)</word>'
+    for m in re.finditer(pat, out):
+        if m.group(0).startswith("<page"):
+            page += 1
+        else:
+            v = [float(x) for x in m.groups()[:4]]
+            res.append((page, v[0], v[1], v[2], v[3], re.sub(r"&[a-z]+;", "", m.group(5))))
+    return res
+
+
+def find_run(hay, needle):
+    for i in range(len(hay) - len(needle) + 1):
+        if hay[i:i + len(needle)] == needle:
+            return i
+    return -1
+
+
+def anchor(band_words, before):
+    """A word run from inside the display that lands on exactly ONE page of the before PDF.  Longest
+    runs first, because a single common word matches everywhere.  Returns (run, page, yMin)."""
+    by_page = {}
+    for w in before:
+        by_page.setdefault(w[0], []).append(w)
+    texts, tried = [w[5] for w in band_words], []
+    for n in range(min(6, len(texts)), 0, -1):
+        order = sorted(range(len(texts) - n + 1), key=lambda i: -sum(len(t) for t in texts[i:i + n]))
+        for i in order[:12]:             # the longest runs of each length, then shorter ones — not 400 tries
+            want = texts[i:i + n]
+            hits = [p for p, ws in sorted(by_page.items()) if find_run([w[5] for w in ws], want) >= 0]
+            if len(hits) == 1:
+                ws = by_page[hits[0]]
+                j = find_run([w[5] for w in ws], want)
+                # Its y in BOTH PDFs: the before band is the after band carried over on that difference,
+                # so the two must be the same words, not the band's topmost word against the anchor.
+                return " ".join(want), min(w[2] for w in band_words[i:i + n]), hits[0], \
+                    min(w[2] for w in ws[j:j + n])
+            tried.append((" ".join(want), hits))
+    return None, None, None, tried
+
+
+# ---------------------------------------------------------------- one before/after pair for a key
+
+def fmt(b):
+    return f"[x {b[0]:.1f}..{b[2]:.1f} y {b[1]:.1f}..{b[3]:.1f}]"
+
+
+def blank_strips(png, key, which, gaps):
+    """Belt and braces on the measured crop: the outermost pixels must really be white.  Skipped on an
+    edge where the page itself left less white than the strip is wide — there it would fail on air."""
+    W, H = size(png)
+    for y, edge, g in ((0, "top", gaps[0]), (H - STRIP, "bottom", gaps[1])):
+        if (g - 0.5) * DPI / 72.0 < STRIP:
+            print(f"{key}: the {which} crop has only {g:.1f} pt of white at the {edge} — strip not checked")
+            continue
+        v = run("magick", png, "-crop", f"{W}x{STRIP}+0+{y}", "+repage", "-format", "%[fx:minima]", "info:").stdout
+        if not v or float(v) < 0.98:
+            sys.exit(f"diff-crop {key}: the {edge} {STRIP} px of the {which} crop are not blank "
+                     f"(minima {v}) — the crop still clips the display")
+
+
+def assert_holds(rect, ink, key, which):
+    """No silent clip: the crop must contain the measured ink, with MARG pt of air above and below.
+    Left and right are only contained, not cleared — the crop is already the whole page width."""
+    if not (rect[0] <= ink[0] and rect[2] >= ink[2] and rect[1] <= ink[1] - MARG and rect[3] >= ink[3] + MARG):
+        sys.exit(f"diff-crop {key}: {which} crop {fmt(rect)} does not contain ink {fmt(ink)} "
+                 f"with {MARG} pt margin")
+
+
+def cut(pdf, page, y0, y1, W, out):
+    k = DPI / 72.0
+    run("pdftoppm", "-singlefile", "-png", "-r", str(DPI), "-f", str(page), "-l", str(page),
+        "-x", "0", "-y", str(max(0, int(y0 * k))), "-W", str(int(math.ceil(W * k))),
+        "-H", str(int(math.ceil((y1 - y0) * k))), pdf, out[:-4])
+
+
+def neighbours(key, page, sy, sh, H):
+    """The band another display on the page declares is off limits: two displays sit closer together
+    than a display and a paragraph do, so growth that crosses one is exactly the clip being fixed."""
+    q = (f"select y, h from pic where pdf_page = {page} and key <> '{key}' and "
+         f"book = (select book from pic where key = '{key}' limit 1)")
+    top, bot = 0.0, H
+    for r in run("sqlite3", "-readonly", db_path(), q).stdout.split():
+        y, h = (float(v) for v in r.split("|"))
+        if y + h <= sy + 1:
+            top = max(top, y + h)
+        elif y >= sy + sh - 1:
+            bot = min(bot, y)
+    return top, bot
+
+
+def keycrop(key, before_pdf, after_pdf, out, tmp):
+    row = run("sqlite3", "-readonly", db_path(),
+              f"select pdf_page, y, h from pic where key = '{key}' order by pdf_page limit 1").stdout.strip()
+    if not row:
+        sys.exit(f"diff-crop {key}: no such display in {db_path()} — `./scripts/book pic {key}` lists the keys")
+    ap, sy, sh = int(row.split("|")[0]), float(row.split("|")[1]), float(row.split("|")[2])
+    W, H, boxes = svg_ink(after_pdf, ap, tmp)
+    nb = neighbours(key, ap, sy, sh, H)
+    got = band(boxes, sy, sy + sh, (max(nb[0], sy - GROWMAX), min(nb[1], sy + sh + GROWMAX)))
+    if got is None:
+        sys.exit(f"diff-crop {key}: no ink on page {ap} of {after_pdf} near y {sy:.1f}..{sy + sh:.1f}")
+    aink, apads, agaps = got
+    aw = [w for w in words(after_pdf, ap, ap) if aink[1] <= (w[2] + w[4]) / 2 <= aink[3]]
+    txt, ay, bp, by = anchor(aw, words(before_pdf))
+    if txt is None:
+        sys.exit(f"diff-crop {key}: no text anchor from page {ap} pins the display to one page of "
+                 f"{before_pdf}; tried {by[:5]} — refusing to crop the after PDF's page number")
+    up, down = ay - aink[1], aink[3] - ay
+    bW, bH, bboxes = svg_ink(before_pdf, bp, tmp)
+    got = band(bboxes, by - up, by + down, (by - up - GROWMAX, by + down + GROWMAX))
+    if got is None:
+        sys.exit(f"diff-crop {key}: anchor '{txt}' found on page {bp} of {before_pdf} but no ink around it")
+    bink, bpads, bgaps = got
+    ay0, ay1 = max(0, aink[1] - apads[0]), min(H, aink[3] + apads[1])
+    by0, by1 = max(0, bink[1] - bpads[0]), min(bH, bink[3] + bpads[1])
+    assert_holds((0, ay0, W, ay1), aink, key, "after")
+    assert_holds((0, by0, bW, by1), bink, key, "before")
+    cb, ca = f"{tmp}/kb.png", f"{tmp}/ka.png"
+    cut(before_pdf, bp, by0, by1, bW, cb)
+    cut(after_pdf, ap, ay0, ay1, W, ca)
+    blank_strips(cb, key, "before", bgaps)
+    blank_strips(ca, key, "after", agaps)
+    label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
+    label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
+    pair = os.path.join(out, f"key-{key}.png")
+    run("magick", f"{tmp}/klb.png", f"{tmp}/kla.png", "-background", "gray70", "-append", pair)
+    print(f"{key}: after p{ap} ink {fmt(aink)}; before p{bp} ink {fmt(bink)}; anchor {txt!r}")
+    print(f"{key}: crop after [x 0.0..{W:.1f} y {ay0:.1f}..{ay1:.1f}] before [y {by0:.1f}..{by1:.1f}]"
+          f" -> {pair} {size(pair)[0]}x{size(pair)[1]}")
+    return pair
+
+
+# ---------------------------------------------------------------- whole-note pixel diff
+
 def components(diff):
-    """Bounding boxes of the changed blobs in an `compare -metric AE` difference image."""
+    """Bounding boxes of the changed blobs in an `compare -metric AE` difference image, and, when every
+    blob was page-wide, those instead: a page that changed all over is still worth showing, whole."""
     r = run("magick", diff, "-fuzz", "20%", "-fill", "white", "-opaque", "red", "-threshold", "50%",
             "-define", "connected-components:verbose=true",
             "-define", f"connected-components:area-threshold={MINAREA}",
             "-connected-components", "8", "null:")
-    out = []
+    out, big = [], []
     for ln in r.stdout.splitlines():
         m = re.match(r"\s*\d+:\s+(\d+)x(\d+)([+-]\d+)([+-]\d+)\s+[\d.,-]+\s+(\S+)", ln)
         if not m:
@@ -42,10 +408,8 @@ def components(diff):
         w, h, x, y = (int(v) for v in m.groups()[:4])
         if m.group(5).startswith(("gray(0)", "srgb(0,0,0)")):
             continue             # the unchanged black background, not an edit
-        if w > 1200 and w * h > 600000:
-            continue             # a whole-page blob: the layout moved, crop by page instead
-        out.append((x, y, x + w, y + h))
-    return out
+        (big if w > 1200 and w * h > 600000 else out).append((x, y, x + w, y + h))
+    return out or big
 
 
 def merge(boxes):
@@ -76,43 +440,123 @@ def caption_strip(src, out, text):
         "-font", FONT, "-pointsize", "22", "-fill", "black", "-annotate", "+8+6", text, out)
 
 
-def crops(before_pdf, after_pdf, out, tag="", caption=""):
+def page_texts(pdf):
+    ps = run("pdftotext", "-q", pdf, "-").stdout.split("\f")
+    return [re.sub(r"\s+", " ", p).strip() for p in (ps[:-1] if ps and not ps[-1].strip() else ps)]
+
+
+def pair_run(bs, as_):
+    """Monotone best match inside a run of pages that all changed: maximise the summed text similarity,
+    and leave a page unpaired rather than pair it with one it does not resemble."""
+    n, m = len(bs), len(as_)
+    sim = [[difflib.SequenceMatcher(None, b, a).quick_ratio() for a in as_] for b in bs]
+    dp = [[0.0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n - 1, -1, -1):
+        for j in range(m - 1, -1, -1):
+            take = sim[i][j] + dp[i + 1][j + 1] if sim[i][j] >= MINSIM else -1
+            dp[i][j] = max(take, dp[i + 1][j], dp[i][j + 1])
+    i, j, pairs = 0, 0, []
+    while i < n and j < m:
+        if sim[i][j] >= MINSIM and abs(dp[i][j] - (sim[i][j] + dp[i + 1][j + 1])) < 1e-9:
+            pairs.append((i, j))
+            i, j = i + 1, j + 1
+        elif dp[i + 1][j] >= dp[i][j + 1]:
+            i += 1
+        else:
+            j += 1
+    return pairs, [i for i in range(n) if i not in {p[0] for p in pairs}], \
+        [j for j in range(m) if j not in {p[1] for p in pairs}]
+
+
+def align(bt, at):
+    """Pair before pages with after pages BY CONTENT.  An edit that reflows the note shifts every later
+    page, and diffing page i against page i then reports a whole note of phantom changes."""
+    pairs, lb, la = [], [], []
+    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, bt, at, autojunk=False).get_opcodes():
+        if op == "equal":
+            pairs += list(zip(range(i1, i2), range(j1, j2)))
+        elif op == "delete":
+            lb += list(range(i1, i2))
+        elif op == "insert":
+            la += list(range(j1, j2))
+        else:
+            p, ub, ua = pair_run(bt[i1:i2], at[j1:j2])
+            pairs += [(i1 + i, j1 + j) for i, j in p]
+            lb += [i1 + i for i in ub]
+            la += [j1 + j for j in ua]
+    return sorted(pairs), lb, la
+
+
+def crops(before_pdf, after_pdf, out, tag_="", caption=""):
     tmp = tempfile.mkdtemp(prefix="diff-crop.")
     os.makedirs(out, exist_ok=True)
     os.makedirs(tmp + "/b"), os.makedirs(tmp + "/a")
     run("pdftoppm", "-r", str(DPI), "-png", before_pdf, tmp + "/b/p")
     run("pdftoppm", "-r", str(DPI), "-png", after_pdf, tmp + "/a/p")
     bs, as_ = sorted(os.listdir(tmp + "/b")), sorted(os.listdir(tmp + "/a"))
-    if len(bs) != len(as_):
-        print(f"{tag}page count differs: before {len(bs)}, after {len(as_)}")
+    pairs, lb, la = align(page_texts(before_pdf), page_texts(after_pdf))
+    for i in lb:
+        print(f"{tag_}before page {i + 1} has no match in the after PDF — not diffed")
+    for j in la:
+        print(f"{tag_}after page {j + 1} has no match in the before PDF — not diffed")
     made = []
-    for i in range(min(len(bs), len(as_))):
-        n, b, a, d = i + 1, f"{tmp}/b/{bs[i]}", f"{tmp}/a/{as_[i]}", f"{tmp}/d.png"
+    for i, j in pairs:
+        if i >= len(bs) or j >= len(as_):
+            continue
+        b, a, d = f"{tmp}/b/{bs[i]}", f"{tmp}/a/{as_[j]}", f"{tmp}/d.png"
         m = re.match(r"([\d.e+]+)", run("compare", "-metric", "AE", b, a, d).stderr.strip())
         if not m or float(m.group(1)) <= 0:
             continue
+        n = f"{j + 1}" if i == j else f"b{i + 1}a{j + 1}"
         W, H = size(b)
-        for j, (x0, y0, x1, y1) in enumerate(merge(components(d)), 1):
+        for k, (x0, y0, x1, y1) in enumerate(merge(components(d)), 1):
             x0, y0, x1, y1 = max(0, x0 - PAD), max(0, y0 - PAD), min(W, x1 + PAD), min(H, y1 + PAD)
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
             run("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
             run("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
             scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
-            label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag}p{n} BEFORE", tmp, scale)
-            label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag}p{n} AFTER", tmp, scale)
-            pair = os.path.join(out, f"{tag.strip('- ')}p{n}-{j}.png".lstrip("-"))
+            label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
+            label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag_}p{j + 1} AFTER", tmp, scale)
+            pair = os.path.join(out, f"{tag_.strip('- ')}p{n}-{k}.png".lstrip("-"))
             run("magick", f"{tmp}/lb.png", f"{tmp}/la.png", "-background", "gray70", "-append", pair)
             if caption:
                 caption_strip(pair, pair, caption)
             if size(pair)[1] > MAXH:
                 run("magick", pair, "-resize", f"x{MAXH}", pair)
-            print(f"{tag}page {n} region {j}: {geo} -> {pair}")
+            print(f"{tag_}page {n} region {k}: {geo} -> {pair}")
             made.append(pair)
     shutil.rmtree(tmp, ignore_errors=True)
     return made
 
 
+def head_copy(note):
+    """HEAD's committed PDF, written where the tools can open it; None if HEAD has no such file."""
+    old = os.path.join(tempfile.gettempdir(), "head-" + os.path.basename(note))
+    r = subprocess.run(["git", "-C", ROOT, "show", f"HEAD:{note}"], capture_output=True)
+    if r.returncode:
+        print(f"git show HEAD:{note}: {r.stderr.decode().strip()}")
+        return None
+    open(old, "wb").write(r.stdout)
+    return old
+
+
 def main(argv):
+    if "--key" in argv:
+        keys = [argv[i + 1] for i, a in enumerate(argv) if a == "--key" and i + 1 < len(argv)]
+        rest = [a for i, a in enumerate(argv)
+                if not a.startswith("--") and argv[i - 1] not in ("--key", "--before", "--after")]
+        note = NOTES[0]
+        after = argv[argv.index("--after") + 1] if "--after" in argv else os.path.join(ROOT, note)
+        before = argv[argv.index("--before") + 1] if "--before" in argv else head_copy(note)
+        if not before:
+            sys.exit(f"diff-crop: no before PDF for {note}")
+        out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "diff-crop")
+        os.makedirs(out, exist_ok=True)
+        tmp = tempfile.mkdtemp(prefix="diff-crop-key.")
+        for k in keys:
+            keycrop(k, before, after, out, tmp)
+        shutil.rmtree(tmp, ignore_errors=True)
+        return
     if len(argv) >= 2:
         crops(argv[0], argv[1], argv[2] if len(argv) > 2 else "review",
               caption=argv[3] if len(argv) > 3 else "")
@@ -124,13 +568,9 @@ def main(argv):
     for note in NOTES:
         if not os.path.exists(note):
             continue
-        old = os.path.join(tempfile.gettempdir(), "head-" + os.path.basename(note))
-        r = subprocess.run(["git", "show", f"HEAD:{note}"], capture_output=True)
-        if r.returncode:
-            print(f"git show HEAD:{note}: {r.stderr.decode().strip()}")
-            continue
-        open(old, "wb").write(r.stdout)
-        made += crops(old, note, out, tag=os.path.basename(note).replace(".pdf", "") + "-")
+        old = head_copy(note)
+        if old:
+            made += crops(old, note, out, tag_=os.path.basename(note).replace(".pdf", "") + "-")
     if not made:
         print("nothing changed since HEAD")
 
