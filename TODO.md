@@ -37,3 +37,4 @@
 [X] 13.5.4 section title: prepend: generate is F-Alg.
 [X] rename all generate to gen. the lean code, use our lean-refactor. and the allegory-axioms.typ.
 [X] 13.5.5. section header, add type of Q : F(N A,N(L A))⟶N(L A), and say it's  F(N A,−)'s algebra
+[X] squeeze the boxes around the diagrams. space has value.

@@ -904,7 +904,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 == `(R/S)(S/W)⊑R/W`
 
 
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   edges(-9.6, -4.8, ADMIRES); edges(0, -4.8, HATES); edges(0, 4.8, HATES); edges(9.6, 4.8, WORKS)
   arc((-9.6, 1.6), (-0.8, 1.6), 1, [`A/H` admires all])
   arc((0.8, 1.6), (9.6, 0), 1, [`H/W` hates all])
@@ -1015,7 +1015,7 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°` #src[]. In `Rel` `x` and `y` has the same imag
 `x` admires exactly whom `y` hates: `/` is *all of*, $frac(R, S)$ is *only all of*.
 
 
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   // `A`: who each `x` admires.  `H`: who each `y` hates.  `x` and `y` name the same three.
   for p in ("a", "b", "c") { syqedge(ADMIRERS.x1, PEOPLE.at(p), INDUCED, 1.1) }
   for p in ("a", "b") { syqedge(ADMIRERS.x2, PEOPLE.at(p), INDUCED.lighten(60%), 0.7) }
@@ -1420,7 +1420,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let y = 0.85
   wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
   bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
@@ -1691,7 +1691,7 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 
 // The book's figure turned a quarter turn, source at the left like every other picture here.  `R` and
 // `S` arc outside because their straight lines would run over `E C`; blue dashed is the induced arrow.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let (AB, PC, C) = ((-6.4, 0), (0.4, 0), (4.6, 0))
   let (A, B) = ((-3.4, 2.4), (-3.4, -2.4))
   ar(A, AB, black, s0: 0.5, s1: 0.9)
@@ -1929,7 +1929,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
 // where `a₁,a₂,a₃` is the source, not the target. Only this one has the empty image `R(2) = ∅`.
 #disp[#block(breakable: false)[
-#align(center, box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#align(center, box(cetz.canvas(length: 0.8cm, {
   let (L, RC) = (0, 3.2)
   let ys = (1.0, 0, -1.0)
   ar((L, ys.at(0)), (RC, ys.at(0)), GIVEN1, s0: 0.22, s1: 0.3)
@@ -3184,7 +3184,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
-#disp[#box(inset: (y: 8pt), cetz.canvas(length: 0.8cm, {
+#disp[#box(cetz.canvas(length: 0.8cm, {
   let (AE, E, AL, L) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
   ar(AE, E, GIVEN2, s0: 1.55, s1: 1.05); ar(AL, L, GIVEN2, s0: 1.2, s1: 0.7)
   ar(AE, AL, GIVEN1, s0: 0.55, s1: 0.55); ar(E, L, GIVEN1, s0: 0.55, s1: 0.55)
@@ -6761,7 +6761,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
-#let laws-pic(body) = align(center, box(inset: (y: 1pt),
+#let laws-pic(body) = align(center, box(
   scale(x: 84%, y: 84%, reflow: true, cetz.canvas(length: 0.8cm, body))))
 
 // The reason rides UNDER the formula, in the picture's own column: a column of its own cost the
