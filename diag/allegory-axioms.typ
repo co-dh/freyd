@@ -4042,7 +4042,27 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 // lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23
 ]]<lax-defn>
 
-#disp[#capbox(
+// The two panels of the inequation, emitted by `./scripts/diagram --sigs … --src … --tgt …` plus
+// `s: 100%`, the square's own size.  `φ` is `!lax`: the HOLLOW dot is the whole difference from a
+// natural transformation's filled one, and it is why `φ` may leave the object wire at all — a LaT is
+// a family, not an arrow at one object.  The bead is BARE, as §11.4's `α` is: the component's index
+// is the object wire it stands on, and the two panels differ in exactly where that wire is renamed.
+#let lax-hm-l = dpanel(6, 4.97, 3.12,
+  ((2.5, 3, "bot", none, none), (2.5, "top", 3, none, none)),
+  ((4.5, [`R`]), (3, [`φ`], black, 2.5, 2.5, "lax")),
+  ((2.5, [`G`]), (3.12, [`A`])),
+  ((2.5, [`F`]), (3.12, [`B`])),
+  obj: ((4.5, [`B`]), (3, [`B`])),
+  cert: (expect: "G(R)φ", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee")), s: 100%)
+#let lax-hm-r = dpanel(6, 4.97, 3.12,
+  ((2.5, 3, "bot", none, none), (2.5, "top", 3, none, none)),
+  ((3, [`φ`], black, 2.5, 2.5, "lax"), (1.5, [`R`])),
+  ((2.5, [`G`]), (3.12, [`A`])),
+  ((2.5, [`F`]), (3.12, [`B`])),
+  obj: ((3, [`A`]), (1.5, [`B`])),
+  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee")), s: 100%)
+
+#disp[#pair(
   cetz.canvas(length: 0.8cm, {
     let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
     ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
@@ -4053,6 +4073,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
     node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)
     node(GB.at(0), GB.at(1), black, `GB`); node(FB.at(0), FB.at(1), black, `FB`)
   }),
+  row((lax-hm-l, [#h(7pt) #SQ #h(7pt)], lax-hm-r)),
  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
   // lean:AOP.A5_1.LaxNatural@ba661fee
 )]<lax-str>
@@ -4394,11 +4415,33 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 `min≜est(≤)`.
 ]]<dist-defn>
 
+// The two panels of the inequation, emitted by `./scripts/diagram --frame 12 --sigs "f:F(A)⟶A"`
+// plus `s: 100%`, the square's own size.  They line up on `f`, so the picture says what moves:
+// `est(R)` starts INSIDE the functor on the left and ends up last of all on the right.  The right
+// panel factors `(F(∋)f)%∋` the way @lam-defn does — `𝟙%∋` births the `E` wire, `∋` kills the one
+// the source brought in — because a bead drawn whole would hide the very `E` the law is about.
+#let dist-hm-l = dpanel(12, 5.6, 3.75,
+  ((2.5, "top", 4.5, none, none), (3.125, "top", 6, none, none)),
+  ((6, [`est(R)`], black, 3.125), (4.5, [`f`], black, 2.5)),
+  ((2.5, [`F`]), (3.125, [`E`]), (3.75, [`A`])),
+  ((3.75, [`A`]),),
+  obj: ((6, [`A`]), (4.5, [`A`])),
+  cert: (expect: "F(est(R))f", src: "F(E(A))", tgt: "A", sigs: ("f": "F(A)⟶A"), frame: 12, top: 6),
+  s: 100%)
+#let dist-hm-r = dpanel(12, 6.23, 4.38,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.125, "top", 4.5, none, none), (3.75, "top", 6, none, none)),
+  ((6, [`∋`], black, 3.75, 3.75, "lax"), (4.5, [`f`], black, 3.125), (3, [`est(R)`], black, 2.5)),
+  ((3.125, [`F`]), (3.75, [`E`]), (4.38, [`A`])),
+  ((4.38, [`A`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
+  cert: (expect: "(F(∋)f)%∋ est(R)", src: "F(E(A))", tgt: "A", sigs: ("f": "F(A)⟶A")),
+  s: 100%)
+
 // The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
-// `F(est(R)) f` and `⊑` points NE.  Right: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
-#disp[#align(center, grid(columns: 2, align: horizon, column-gutter: 14pt,
-  capbox(
-    P(cetz.canvas(length: 0.8cm, {
+// `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
+#disp[#align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
+  pair(
+    cetz.canvas(length: 0.8cm, {
       let (FEA, EA, FA, A) = ((-3.6, 1.25), (3.6, 1.25), (-3.6, -1.25), (3.6, -1.25))
       ar(FEA, EA, GIVEN1, s0: 1.05, s1: 0.65); ar(FA, A, GIVEN1, s0: 0.65, s1: 0.45)
       ar(FEA, FA, GIVEN2, s0: 0.55, s1: 0.55); ar(EA, A, GIVEN2, s0: 0.55, s1: 0.55)
@@ -4407,9 +4450,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       lab(0, 0, SLACK, rot: -45deg)[`⊑`]
       node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
       node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-    }), s: 74%),
+    }),
+    row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
  [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
     // lean:AOP.A7_2.Distributes@e061e29e
+    s: 74%,
   ),
   capbox(
     P(cetz.canvas(length: 0.8cm, {
