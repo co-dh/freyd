@@ -4491,7 +4491,21 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((3.12, [`A`]),),
   obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "f° F(R)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
-#disp[#calc-table(cols: (1fr,), al: auto, 
+// The bare `R°`/`R` panels these rows pair with, emitted by `./scripts/diagram --src A --tgt A "R°"`
+// (resp. `"R"`); one binding each, reused wherever the row's right-hand side is that bare relation.
+#let ma-Rbare = dpanel(3, 3.725, 1.875,
+  (),
+  ((1.5, [`R°`]),),
+  ((1.875, [`A`]),),
+  ((1.875, [`A`]),),
+  cert: (expect: "R°", src: "A", tgt: "A"), s: 100%)
+#let ma-Rplain = dpanel(3, 3.725, 1.875,
+  (),
+  ((1.5, [`R`]),),
+  ((1.875, [`A`]),),
+  ((1.875, [`A`]),),
+  cert: (expect: "R", src: "A", tgt: "A"), s: 100%)
+#disp[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
@@ -4507,17 +4521,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
     trow(ma-Fest, ma-Fni),
     [and],
-    trow(ma-conj, tpanR(5.0, 2.5, [`R°`])),
+    trow(ma-conj, ma-Rbare),
   ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
   [#hchain(
-    (IFF, trow(ma-conj, tpanR(5.0, 2.5, [`R°`])),
+    (IFF, trow(ma-conj, ma-Rbare),
       src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
-    (IFF, trow(ma-Ro, tpanR(4.0, 2.0, [`R°`])),
+    (IFF, trow(ma-Ro, ma-Rbare),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
-    (IFF, trow(ma-R, tpanR(4.0, 2.0, [`R`])),
+    (IFF, trow(ma-R, ma-Rplain),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
      // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
     ]),
@@ -4610,7 +4624,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
-  [#trow(gr-mon, tpanR(6.0, 4.0, [`R°`]))],
+  [#trow(gr-mon, ma-Rbare)],
 
   [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
