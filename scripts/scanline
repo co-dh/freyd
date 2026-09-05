@@ -32,7 +32,7 @@ from relexpr import (alias, BREAK, CARRIER, CLOSERS, DVAR, INTERVAL, IVAR, OPENE
                      help_if, hole_last, hole_slot, ibind, idxhead, interchange, is_index, isub,
                      listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
                      require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx,
-                     varsof)
+                     varsof, width)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -701,8 +701,11 @@ def instance(row, d):
         return False
 
 
-# What a `--sigs` word's `!<tag>` claims, in `hm-sigs.json`'s own `nat` spelling.
-NATWORD = {"nat": "strict", "lax": "lax"}
+# What a `--sigs` word's `!<tag>` claims, in `hm-sigs.json`'s own `nat` spelling.  `!no` is the third
+# answer and belongs here for the same reason the other two do: a family Lean REFUTES draws on the
+# object wire, which is where an untyped letter falls anyway, so without a word for it the refutation
+# has nowhere to be cited and the two cases become indistinguishable in the note.
+NATWORD = {"nat": "strict", "lax": "lax", "no": "no"}
 
 
 def sigfields(v):

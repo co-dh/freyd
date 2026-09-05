@@ -331,7 +331,8 @@ def cnorm(e):
     xs = [y for x in e[1] for y in (x[1] if x[0] == 'comp' else [x])]   # rule 1: flatten,
     xs = juxta(xs)
     xs = fuse(xs) or xs
-    xs = [x for x in xs if x != ('atom', rx.UNIT)] or [('atom', rx.UNIT)]   # and `𝟙` is a wire
+    # and `𝟙` is a wire — as is `assocl`, a product being TWO wires here leaving it nothing to draw
+    xs = [x for x in xs if x[0] != 'atom' or x[1] not in rx.WIRING] or [('atom', rx.UNIT)]
     return xs[0] if len(xs) == 1 else ('comp', xs)
 
 

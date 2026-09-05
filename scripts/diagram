@@ -205,6 +205,34 @@ def render(e):
     return None
 
 
+def ground(e):
+    """The name a product's CONSTANT factor carries: a closed object folded WHOLE, whatever `split`
+    gives a wire of its own.  `[Int]×−` is the product bifunctor partially applied to the object
+    `[Int]` (IntroString Example 3.7) — one unary functor, one wire — and its `list` is part of that
+    functor's NAME, not a port the panel draws, because nothing of the object runs through it."""
+    global SPLIT
+    if sl.varsof(e):
+        return None
+    SPLIT, keep = frozenset(), SPLIT
+    try:
+        return render(e)
+    finally:
+        SPLIT = keep
+
+
+def wlabel(e):
+    """Either name a wire may carry: what `split` renders, else a closed object folded whole."""
+    return render(e) if render(e) is not None else ground(e)
+
+
+def wsettle(lab, sub):
+    """A lane a bead's TARGET scheme named with its own letter, written at the object the panel's
+    ports bound that letter to: `cons° : [x]⟶x×[x]` opens an `x×−` lane, and the ports say `[Int]`.
+    Left unsettled the picture would label a wire with a signature's variable, which names nothing."""
+    return '×'.join(wlabel(settle(('atom', p), sub)) or p if isvar(('atom', p)) else p
+                    for p in lab.split('×'))
+
+
 def peel(e):
     """A normalised object as (wires outermost first, the object the object wire itself carries)."""
     ws = []
@@ -356,23 +384,30 @@ def unify(a, b, sub, why, ix=None):
         unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why, ix)
 
 
-def layer(e):
+def layer(e, sub=None):
     """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it.  A
     product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
     `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
     staying folded on the object wire.  `norm` flattens nested products, so one end comes off and
     the rest is still a product: `Op×[C]×[C]` is `Op×−` over `[C]×[C]`.  A variable factor is a tail
     still to be unified, not a name a lane can be labelled with, so it is taken only when neither end
-    is a constant — that is what lets `𝟙×g`'s `z×Char` meet a `−×Char` lane."""
+    is a constant — that is what lets `𝟙×g`'s `z×Char` meet a `−×Char` lane.  Between the two comes
+    `ground`: a CLOSED factor the split refuses is still a name, so `[Int]×[[Int]]` opens `[Int]×−`
+    where nothing else could open at all, and a factor the split renders still wins over it.  `sub`
+    decides WHICH END on what the ports have already bound — `[x]×z` is `[Int]×−` once `x` is `Int`
+    — while the tail comes back unsettled, keeping the letter whose binding says which lanes the
+    factor beside it leaves running."""
     if e[0] == 'prod':
         xs = e[1]
+        st = [settle(x, sub) for x in xs] if sub is not None else xs
         if len(xs) == 2 and xs[0] == xs[1]:
             return 'Δ', xs[0]
-        for var in (False, True):
-            if render(xs[0]) is not None and isvar(xs[0]) == var:
-                return render(xs[0]) + '×−', xs[1] if len(xs) == 2 else ('prod', xs[1:])
-            if render(xs[-1]) is not None and isvar(xs[-1]) == var:
-                return '−×' + render(xs[-1]), xs[0] if len(xs) == 2 else ('prod', xs[:-1])
+        for lab in (lambda x: None if isvar(x) else render(x), ground,
+                    lambda x: render(x) if isvar(x) else None):
+            for k, mk in ((0, lambda w: w + '×−'), (-1, lambda w: '−×' + w)):
+                if lab(st[k]) is not None:
+                    rest = xs[1:] if k == 0 else xs[:-1]
+                    return mk(lab(st[k])), rest[0] if len(rest) == 1 else ('prod', rest)
         return None, None
     return ((e[3] if len(e) > 3 else e[1]), e[2]) if e[0] == 'app' else (None, None)
 
@@ -390,7 +425,10 @@ def matches(pat, lane, sub, ix):
     if len(ps) != len(ws):
         return False
     for p, w in zip(ps, ws):
-        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], parse(w)))[1] == parse(w)):
+        # NORMALISED: a lane's name may be a composite object (`[Int]×−`), and the variable it binds
+        # has to come out as the wire stack `list(Int)`, not as the atom the bracket parses to.
+        v = norm(parse(w))
+        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], v))[1] == v):
             return False
     return True
 
@@ -413,7 +451,10 @@ def eat(pat, lanes, obj, sub, why, ix):
         if isvar(pat) and pat[1] not in sub:
             sub[pat[1]] = (lanes[k:], obj)
             return k, opened, obj
-        w, inner = layer(deref(pat, sub))
+        # `sub`, not a bare deref: a scheme names its later wires with letters its earlier ones bound
+        # (`cons×𝟙`'s `x×[x]×z` learns `x` from the first wire), so peeling the raw form would ask a
+        # lane to match a variable where the cut already knows the object.
+        w, inner = layer(deref(pat, sub), sub)
         if k >= len(lanes):
             # past the end of the cut the scheme still names a wire: open it here rather than unify
             # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a
@@ -439,7 +480,7 @@ def grow(pat, sub, why, ix):
     target that renders whole folds into the object wire's label, as `peel` folds `list(A)` to `[A]`."""
     v = pat
     while not isvar(v):
-        v = layer(v)[1]
+        v = layer(v, sub)[1]
         if v is None:
             break
     keep = sub[v[1]][0] if v is not None and v[1] in sub else []
@@ -450,8 +491,8 @@ def grow(pat, sub, why, ix):
             return ws, [], e
         if isvar(pat):
             return ws, keep, iput(sub[pat[1]][1], ix) if pat[1] in sub else pat
-        w, inner = layer(pat)
-        if w is None:
+        w, inner = layer(pat, sub)             # `sub`-aware, as `eat` peels: a target names its
+        if w is None:                          # later wires with letters its earlier ones bound
             return ws, [], e
         ws.append(sl.isub(w, ix)); pat = inner
 
@@ -544,6 +585,13 @@ def signature(core, sigs, n):
     if core[0] == 'conv':
         s, t = signature(core[1], sigs, n)
         return t, s
+    if core[0] == 'prod':
+        # A product of arrows is the product of their signatures.  One factor may span SEVERAL wires
+        # — `cons×𝟙`'s `cons` eats two — which is why the cut is split by TYPE and not by counting
+        # factors, and `𝟙` is the identity on whatever it is handed, one fresh tail on either side.
+        ps = [(('atom', f"z@{n}_{k}"),) * 2 if x == ('atom', sl.UNIT) else signature(x, sigs, f"{n}_{k}")
+              for k, x in enumerate(core[1])]
+        return tuple(norm(('prod', [p[j] for p in ps])) for j in (0, 1))
     lab = core[1] if core[0] == 'app' else spell(core)
     # A many-slot application names its own head: `F(∋,∋)` is live in two slots, and a wire passes
     # ONE argument, so no lane and no bead can stand for it — a `sigs` row for `F` does not either.
@@ -698,7 +746,8 @@ def elaborate(formula, src, tgt, table, ds=()):
         reach = lanes[len(wrap)] if len(wrap) < len(lanes) else None
         if core[0] == 'prod' and reach is not None and '−' in reach.label \
                 and len(core[1]) == len(reach.label.split('×')) \
-                and sum(x != ('atom', sl.UNIT) for x in core[1]) == 1:
+                and sum(x != ('atom', sl.UNIT) for x in core[1]) == 1 \
+                and all(sl.width(x, e) == 1 for x in core[1] for e in ('src', 'tgt')):
             # `p×𝟙 : A×X⟶A×X` is an arrow of the object the `A×−` wire is applied to, so it is a
             # bead on the object wire that eats the lane and makes it again, as `thin : E(x)⟶E(x)`
             # eats `E` and makes `E`.  A bead ON the lane would be a natural transformation, which
@@ -706,7 +755,7 @@ def elaborate(formula, src, tgt, table, ds=()):
             k = next(j for j, x in enumerate(core[1]) if x != ('atom', sl.UNIT))
             s, t = signature(core[1][k], sigs, i)
             unify(s, norm(parse(reach.label.split('×')[k])), sub, why, ix)
-            if render(settle(t, sub)) is None:
+            if wlabel(settle(t, sub)) is None:
                 raise Unhandled(f"{why} lands the {reach.label} wire on"
                                 f" {spell(settle(t, sub))}×−, which is no wire label")
             s, t = (('prod', [settle(v, sub) if j == k else ('atom', f"z@{i}−")
@@ -758,6 +807,7 @@ def elaborate(formula, src, tgt, table, ds=()):
     for r in rows:                         # the seam labels: what a formula alone cannot say either
         r.obj = render(settle(r.obj, sub))
     for l in made:                         # an index a LATER port settled is written out everywhere,
+        l.label = wsettle(l.label, sub)    # as is a product context a bead's target only named
         for _ in range(8):                 # chasing one scheme's letter through the next; one NO port
             w = sl.isub(l.label, ix)       # settles keeps the scheme's own letter, which is the letter
             if w == l.label:               # the note's formula writes it with (`[p]`, the `3^(m-1)`
@@ -1616,8 +1666,9 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               " formula alone does not fix the ports"
               '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
               " separated by spaces; the key is left of the LAST colon.  A trailing `!nat` claims the"
-              " row is a natural transformation and `!lax` that it is only lax, `=<marker>` after"
-              " either naming the declaration that says so, and `!lean=<marker>` the declaration the"
+              " row is a natural transformation, `!lax` that it is only lax and `!no` that Lean"
+              " refutes even the lax square, `=<marker>` after any of the three"
+              " naming the declaration that says so, and `!lean=<marker>` the declaration the"
               " signature itself was read off — the same fields `hm-sigs.json` states, so"
               " `hm-check --verify-sigs` audits a row a panel types exactly as it audits one there"
               '\n--defn        the panel'"'"'s own abbreviations, `LHS≜RHS` pairs separated by spaces'

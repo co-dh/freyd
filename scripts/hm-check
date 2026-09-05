@@ -281,7 +281,7 @@ def sigrow(db, say, proofs, name, row, where):
     the moment Lean proves the square anyway, so the corpus is swept for a proof the table never took
     up.  A row that cites no declaration at all — a panel typing a letter of its own display — has no
     statement to read the letters off, and only the `nat` half is auditable."""
-    bad = []
+    bad, user = [], None
     if row.get("lean"):
         mark, _, k = row["lean"].partition("@")
         moved = cc.check(db, mark, k or None, where)
@@ -293,14 +293,24 @@ def sigrow(db, say, proofs, name, row, where):
         used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
         miss = [f"{l} as {'/'.join(spelt(l, say))}" for l in sorted(used)
                 if spelt(l, say) and not any(w in stmt for w in spelt(l, say))]
-        if stmt and miss:
+        # A declaration polymorphic in its OBJECTS — `relTop (a b : RelSet) : a ⟶ b` — names no
+        # structure at all, so it can spell none of the note's wires and there is nothing here to
+        # check: the objects are the panel's, not the declaration's.  Same reason a projection goes
+        # unchecked, one level up.  A statement that names SOME structure is still held to all of it.
+        if stmt and miss and any(w in stmt for ws in say.values() for w in ws):
             bad.append(f"{where}: {user} spells no {', no '.join(miss)} —"
                        f" it is `{' '.join(stmt.split())}`")
     if "nat" not in row:
         # A row with no `nat` claims nothing — but silence is only honest while Lean says
         # nothing either.  Once the corpus proves `<name>_natural`, `<name>_lax_natural` or
         # refutes it, the row is out of date, and no one would find that by reading the table.
-        free = [f"{m}.{u}" for u, m in proofs if u.split(".")[-1].split("_")[0] == name]
+        # The proof names its arrow: `ListRel.partition_natural` is about `ListRel.partition`, so a
+        # row citing `Paragraph.partition` — §14.5's own, a different arrow wearing the same word —
+        # is not the row that theorem is missing from.  A row citing nothing has only the word to go
+        # on and takes every proof of it.
+        ns = user.rpartition(".")[0] if user else None
+        free = [f"{m}.{u}" for u, m in proofs if u.split(".")[-1].split("_")[0] == name
+                and (ns is None or u.rpartition(".")[0] == ns)]
         if free:
             bad.append(f'{where}: no `nat`, but Lean has {free[0]} — state the mark and cite it'
                        f' in `nat-lean`, or rename that theorem if it is a different arrow')
@@ -344,11 +354,16 @@ def verify_sigs():
               db.execute("select user_name, module from decl_info where internal = 0 and"
                          " user_name like '%natural'")
               if u.split(".")[-1].endswith(("_natural", "_lax_natural", "_not_lax_natural"))]
-    # The sweep for a proof nobody took up asks whether the TABLE is out of date, so it is put to
-    # the table alone: a panel's own row is one display's letter, and the place to state the mark
-    # for the arrow it names is the row that names the arrow everywhere.
+    # The sweep for a proof nobody took up runs over a panel's OWN rows too.  It was once put to the
+    # table alone, on the grounds that a panel types one display's letter — but a panel types named
+    # arrows as well, and a row that pins one at `Int` while Lean states it for every type is exactly
+    # the row that quietly needs no `nat`: `diagram` asks for a verdict only where the SIGNATURE
+    # carries a variable, so the object the note happens to draw at decided whether the question got
+    # asked.  A one-letter key stays exempt, since a schematic `R` of one display is not the arrow
+    # some module's `R_not_lax_natural` refutes.
     rows = [(f"hm-sigs.json {n} : {r['src']} ⟶ {r['tgt']}", n, r, proofs)
-            for n, r in t["sigs"].items()] + [w + ((),) for w in own_rows()]
+            for n, r in t["sigs"].items()] + [w + (proofs if len(w[1]) > 1 else (),)
+                                              for w in own_rows()]
     bad = [b for where, name, row, pf in rows for b in sigrow(db, say, pf, name, row, where)]
     print(*bad, sep="\n", file=sys.stderr)
     print(f"hm-check: {len(rows)} signature rows audited against the declaration index,"

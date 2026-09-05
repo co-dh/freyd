@@ -19,6 +19,10 @@ import json, os, re, string, sys
 
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
+# `×` is FLAT here, so a re-bracketing of a product is the identity and drops with `𝟙`: both
+# pictures — a wire per factor, or one `A×−` context — read `A×(B×C)` and `(A×B)×C` as one cut, and
+# neither has anything to draw for the arrow between them.
+WIRING = {UNIT, "assocl", "assocr"}
 # The terminal object, which is the summand a non-recursive branch — `nil`, `zero` — collapses `F` to.
 TERM = "𝟏"
 
@@ -511,7 +515,7 @@ def norm(e):
     if e[0] in ('comp', 'prod', 'hc'):
         xs = [y for x in e[1] for y in (x[1] if x[0] == e[0] else [x])]
         if e[0] == 'comp':
-            xs = [x for x in xs if x != ('atom', UNIT)] or [('atom', UNIT)]
+            xs = [x for x in xs if x[0] != 'atom' or x[1] not in WIRING] or [('atom', UNIT)]
             xs = fuse(interchange(xs))
         return xs[0] if len(xs) == 1 else (e[0], xs)
     return e
@@ -548,12 +552,37 @@ def quot(e):
     return norm(canon(e))
 
 
+_WIDTH = None
+
+
+def width(e, end):
+    """How many ×-factors an arrow has at `end` (`'src'` or `'tgt'`), read off diag/hm-sigs.json,
+    and 1 wherever the table does not say.  `interchange` needs it: with `×` FLAT, two products of
+    the same length still pair off only when each left factor leaves as many wires as the right one
+    takes, and `(𝟙×cons°)(cons×𝟙)` is exactly where that fails — `cons°` leaves the two wires that
+    the `cons` beside the `𝟙` eats, so the naive pairing would read the composite as `cons×cons°`."""
+    global _WIDTH
+    if _WIDTH is None:
+        _WIDTH = {k: tuple(len(parse(v[s])[1]) if parse(v[s])[0] == 'prod' else 1
+                           for s in ('src', 'tgt'))
+                  for k, v in json.load(open(SIGS, encoding="utf-8"))["sigs"].items()}
+    if e[0] == 'conv':
+        return width(e[1], 'tgt' if end == 'src' else 'src')
+    if e[0] == 'comp':
+        return width(e[1][0] if end == 'src' else e[1][-1], end)
+    if e[0] == 'prod':
+        return sum(width(x, end) for x in e[1])
+    return _WIDTH.get(e[1], (1, 1))[end == 'tgt'] if e[0] == 'atom' else 1
+
+
 def interchange(xs):
     """`(a×b)(c×d)=(ac)×(bd)`: the picture reads two products at two heights, the display writes
     them at one, so both sides normalise to the merged form."""
     out = []
     for x in xs:
-        if out and out[-1][0] == 'prod' and x[0] == 'prod' and len(out[-1][1]) == len(x[1]):
+        if out and out[-1][0] == 'prod' and x[0] == 'prod' and len(out[-1][1]) == len(x[1]) \
+                and all(width(a, 'tgt') == width(b, 'src')
+                        for a, b in zip(out[-1][1], x[1])):
             out[-1] = norm(('prod', [('comp', [a, b]) for a, b in zip(out[-1][1], x[1])]))
         else:
             out.append(x)
