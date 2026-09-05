@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, CCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, yset, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, tfuneq, twobeadeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -131,12 +131,47 @@
   }
   out + (cur,)
 }
+// ---- THE OBJECT WIRE'S COLOUR IS ITS OBJECT.  A wire that changes object at a bead changes hue
+// there, so `A` visibly ends and `B` begins instead of one line wearing two names.  The hue is the
+// OBJECT'S, off `draw.typ`'s `OCOL`, so one object is one colour across the whole note.
+// The bands top to bottom as `(ytop, colour)`: the top port's object, then every seam that RENAMES
+// it — an endo bead leaves the object alone and starts no band.
+#let obands(h, obj, top, bot, ride) = {
+  let bs = ((h, plain(top)),)
+  for s in obj.sorted(key: s => -s.at(0)) {
+    if plain(s.at(1)) != bs.last().at(1) { bs.push((s.at(0), plain(s.at(1)))) }
+  }
+  // A panel the generator did not TYPE still ends at a named port, and a bottom port the bands do
+  // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, which is the
+  // same guess `scanline` makes when a panel says nothing, so the ink and the sweep agree.
+  if plain(bot) != bs.last().at(1) and ride != () { bs.push((calc.min(..ride), plain(bot))) }
+  bs.map(b => (b.at(0), OCOL.at(b.at(1))))
+}
+// The band a height falls in: the LAST one that opens above it, the bands running down the panel.
+#let ocolat(bs, y) = {
+  let c = if bs == () { BCOL } else { bs.first().at(1) }
+  for b in bs { if y < b.at(0) - 1e-9 { c = b.at(1) } }
+  c
+}
+// Cut a vertical run at the band seams with NO gap — `obroken`'s cut opens one, being a cut at a dot.
+#let ocut(seg, ys) = {
+  let (out, cur) = ((), (seg.at(0),))
+  for i in range(seg.len() - 1) {
+    let (a, b) = (seg.at(i), seg.at(i + 1))
+    for y in ys.filter(y => y < a.at(1) - 1e-9 and y > b.at(1) + 1e-9).sorted().rev() {
+      cur.push((a.at(0), y)); out.push(cur); cur = ((a.at(0), y),)
+    }
+    cur.push(b)
+  }
+  out + (cur,)
+}
+
 // `opath` slopes the object wire: a polyline top to bottom, kinked at bead heights, hugging the
 // lanes already born.  Fills and wire are built from the SAME pts, so the region edge IS the wire.
 // `straight` draws it as the book's own polyline instead of `oknee`'s bow, and `obreak` lists the
 // dots it is broken at.  An edge may STOP ON THE PANEL'S RIGHT SIDE rather than its bottom (all
 // three of IntroString p.74's figures do), and then both regions close along that side.
-#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, key: none) = P(
+#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, obnd: (), key: none) = P(
     cetz.canvas(length: 0.8cm, {
   let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
   let ok = if straight { 0 } else { oknee(op) }
@@ -147,7 +182,15 @@
             k: ok, straight: straight)
   hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
             k: ok, straight: straight)
-  for seg in obroken(op, obreak) { hm-wire(seg, col: BCOL, k: ok, straight: straight) }
+  // A SLOPED edge is drawn as ONE bow whose ink `scanline` re-models from `opath`; cutting it into
+  // two bows would move the ink without moving the model, so a sloped edge keeps a single hue.
+  for seg in obroken(op, obreak) {
+    let cuts = if opath == none and obnd.len() > 1 { obnd.slice(1).map(b => b.at(0)) } else { () }
+    for part in ocut(seg, cuts) {
+      hm-wire(part, col: ocolat(obnd, (part.first().at(1) + part.last().at(1)) / 2),
+              k: ok, straight: straight)
+    }
+  }
   body
 }), s: s, key: key)
 
@@ -303,7 +346,16 @@
 // through that side instead of the bottom (IntroString p.74).  `obreak` names the bead heights the
 // edge is broken at, and `ostraight` draws it as the book's straight polyline.
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
-            obreak: (), ostraight: false, cert: (:)) = {
+            obreak: (), ostraight: false, obj: (), cert: (:)) = {
+  // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
+  // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
+  // on the wire, reads the same list back off `hm-meta`.
+  let obnd = obands(h, obj, top.find(p => p.at(0) == xo).at(1),
+                    bot.find(p => p.at(0) == xo).at(1),
+                    beads.filter(b => b.at(4, default: none) == none).map(b => b.at(0)))
+  // Bound ONCE and used by both the ink and `hm-meta`: a check reading a value the drawing does not
+  // use is a check on a second copy of the rule, which is the bug the `knees` field exists to stop.
+  let (otc, obc) = (ocolat(obnd, h), ocolat(obnd, 0))
   // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
   // sides match, so taking the last one would make `xat` two functions in two languages, not one.
   let ok = if opath == none or ostraight { 0 } else { oknee(opath) }
@@ -369,13 +421,13 @@
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
                            bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none }) }
   for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { FCOL.at(plain(l)) }) }
   for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { obc } else { FCOL.at(plain(l)) }) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
   for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
-  }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight,
+  }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight, obnd: obnd,
      key: cert.at("expect", default: "dpanel"))
   // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
   // two knees disagree is a crossing the sweep would call clean while the page still braids.
@@ -385,7 +437,11 @@
     + (if opath == none { (:) } else { (opath: opath) })
     + (if right == () { (:) } else { (right: right.map(p => p.map(plain))) })
     + (if obreak == () { (:) } else { (obreak: obreak) })
-    + (if ostraight { (ostraight: true) } else { (:) }))
+    + (if ostraight { (ostraight: true) } else { (:) })
+    + (if obj == () { (:) } else { (obj: obj.map(p => p.map(plain))) })
+    // The object PORTS' hues, so the sweep can hold the rule that a wire changing object changes
+    // colour — the ink is a `dpan` argument and nothing else on the rec would show it.
+    + (ocol: (otc.to-hex(), obc.to-hex())))
 }
 
 #show: conf.with(title: "Relation Algebra")
@@ -1165,7 +1221,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
     node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   twobeadeq(`TA`, [`tri(f)`], [`⦇g⦈`], [`⦇F(𝟙,f)g⦈`], `A`, c1: GIVEN2, c2: INDUCED, c3: INDUCED,
-    typed: true, vcol: TCOL, bcol: BCOL, regions: auto),
+    typed: true, vcol: TCOL, regions: auto),
   [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
 )]<horner>
 
@@ -2320,31 +2376,34 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // component's index is the object wire it stands on, so a subscript would say it twice.
 // `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
 // `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
-// §11.4.2a's side condition must stay in `𝒜` — it SAYS `S` is an arrow of `Alg(F)`, which is not
-// statable inside `Alg(F)`; that is why the same letter is drawn on the object wire there.
-#let ia-hom-l = dpanel(4.5, 4.97, 3.12,
+// §11.4.2a draws the same `α` the same way, its side condition being this very square at `h := S`.
+#let ia-hom-l = dpanel(6, 4.97, 3.12,
   ((2.5, "top", 3, none, none),),
   ((3, [`α`], black, 2.5, 2.5), (1.5, [`h`])),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
+  obj: ((3, [`A`]), (1.5, [`B`])),
   cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
-#let ia-hom-r = dpanel(4.5, 4.97, 3.12,
-  ((2.5, "top", 1.5, none, none),),
-  ((3, [`h`]), (1.5, [`α`], black, 2.5, 2.5)),
+#let ia-hom-r = dpanel(6, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((4.5, [`h`]), (3, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
+  obj: ((4.5, [`B`]), (3, [`B`])),
   cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
-#let ia-cata-l = dpanel(4.5, 4.97, 3.12,
+#let ia-cata-l = dpanel(6, 4.97, 3.12,
   ((2.5, "top", 3, none, none),),
   ((3, [`α`], black, 2.5, 2.5), (1.5, [`⦇α⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
+  obj: ((3, [`T`]), (1.5, [`A`])),
   cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
-#let ia-cata-r = dpanel(4.5, 4.97, 3.12,
-  ((2.5, "top", 1.5, none, none),),
-  ((3, [`⦇α⦈`]), (1.5, [`α`], black, 2.5, 2.5)),
+#let ia-cata-r = dpanel(6, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((4.5, [`⦇α⦈`]), (3, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
+  obj: ((4.5, [`A`]), (3, [`A`])),
   cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 
 #disp[#definition[
@@ -2397,6 +2456,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
   ((1.5, [`⦇α⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`T`]),),
+  obj: ((1.5, [`T`]),),
   cert: (expect: "⦇α⦈", src: "T", tgt: "T", sigs: ("⦇α⦈": "T⟶T")), s: 100%)
 #let ia-refl-r = dpanel(1.5, 3.725, 1.875,
   (),
@@ -2433,18 +2493,36 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
 
 // `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
 // of `α` at `S` — the same two panels as (11.4a), at `h := S`.
-#let ia-fuse-l = dpanel(4.5, 4.97, 3.12,
+#let ia-fuse-l = dpanel(6, 4.97, 3.12,
   ((2.5, "top", 3, none, none),),
-  ((3, [`α`], black, 2.5), (1.5, [`S`])),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`S`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C")), s: 100%)
-#let ia-fuse-r = dpanel(4.5, 4.97, 3.12,
-  ((2.5, "top", 1.5, none, none),),
-  ((3, [`S`]), (1.5, [`α`], black, 2.5)),
+  obj: ((3, [`B`]), (1.5, [`C`])),
+  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let ia-fuse-r = dpanel(6, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((4.5, [`S`]), (3, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C")), s: 100%)
+  obj: ((4.5, [`C`]), (3, [`C`])),
+  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+// The conclusion, generated like the side condition above it: two BANANAS, so they keep an index
+// where the bare `α` cannot — `⦇αʙ⦈ : T⟶B` and `⦇αᴄ⦈ : T⟶C` are different arrows on one display.
+#let ia-fuse-cl = dpanel(4.5, 3.725, 1.875,
+  (),
+  ((3, [`⦇αʙ⦈`]), (1.5, [`S`])),
+  ((1.875, [`T`]),),
+  ((1.875, [`C`]),),
+  obj: ((3, [`B`]), (1.5, [`C`])),
+  cert: (expect: "⦇αʙ⦈S", src: "T", tgt: "C", sigs: ("⦇αʙ⦈": "T⟶B", "S": "B⟶C")), s: 100%)
+#let ia-fuse-cr = dpanel(3, 3.725, 1.875,
+  (),
+  ((1.5, [`⦇αᴄ⦈`]),),
+  ((1.875, [`T`]),),
+  ((1.875, [`C`]),),
+  obj: ((1.5, [`C`]),),
+  cert: (expect: "⦇αᴄ⦈", src: "T", tgt: "C", sigs: ("⦇αᴄ⦈": "T⟶C")), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -2469,8 +2547,7 @@ Fusion rewrites `⦇α`#sub[`B`]`⦈S` through a second algebra `α`#sub[`C`]` :
     src[the side condition],
     row((ia-fuse-l, [#h(7pt) = #h(7pt)], ia-fuse-r)),
     src[the conclusion],
-    twobeadeq(`T`, [`⦇α`#sub[`B`]`⦈`], `S`, [`⦇α`#sub[`C`]`⦈`], `C`, c1: INDUCED, c2: black, c3: INDUCED,
-      typed: true, regions: auto),
+    row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
   ),
   [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸αS=F(S)α` #h(6pt)
  #src[(2.12)]],
@@ -2926,6 +3003,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((6, [`S°`]), (4.5, [`⦇S⦈°`]), (3, [`⦇R⦈`]), (1.5, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
+  obj: ((6, [`B`]), (4.5, [`T`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "S° F(⦇S⦈°⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")),
   names: true, s: 100%)
 #let hy-split = dpanel(7.5, 4.97, 3.12,
@@ -2933,36 +3011,42 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((6, [`S°`]), (4.5, [`⦇S⦈°`]), (3, [`⦇R⦈`]), (1.5, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
+  obj: ((6, [`B`]), (4.5, [`T`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "S° F(⦇S⦈°)F(⦇R⦈)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-alg = dpanel(7.5, 4.97, 3.12,
   ((2.5, 6, 3, [`F`], none),),
   ((6, [`S°`]), (4.5, [`⦇S⦈°`]), (3, [`α`], black, 2.5), (1.5, [`⦇R⦈`])),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
+  obj: ((6, [`B`]), (4.5, [`T`]), (3, [`T`]), (1.5, [`A`])),
   cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-lambek = dpanel(7.5, 4.97, 3.12,
   ((2.5, 4.5, 3, [`F`], none),),
   ((6, [`⦇S⦈°`]), (4.5, [`α°`]), (3, [`α`], black, 2.5), (1.5, [`⦇R⦈`])),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
+  obj: ((6, [`T`]), (4.5, [`T`]), (3, [`T`]), (1.5, [`A`])),
   cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-cata = dpanel(4.5, 3.725, 1.875,
   (),
   ((3, [`⦇S⦈°`]), (1.5, [`⦇R⦈`])),
   ((1.875, [`B`]),),
   ((1.875, [`A`]),),
+  obj: ((3, [`T`]), (1.5, [`A`])),
   cert: (expect: "⦇S⦈°⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
 #let hy-cataR = dpanel(3, 3.725, 1.875,
   (),
   ((1.5, [`⦇R⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`A`]),),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "⦇R⦈", src: "T", tgt: "A", sigs: ("⦇R⦈": "T⟶A")), s: 100%)
 #let hy-prefix = dpanel(6, 4.97, 3.12,
   ((2.5, 4.5, 1.5, [`F`], none),),
   ((4.5, [`S°`]), (3, [`X`]), (1.5, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
+  obj: ((4.5, [`B`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "S° F(X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "S": "F(B)⟶B", "X": "B⟶A")), s: 100%)
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
@@ -3175,53 +3259,60 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
 // object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
 // `sb-hm-born` adds the `E` the transpose opens.
-#let sb-hm = dpanel(4.5, 7, 5.15,
+#let sb-hm = dpanel(6, 7, 5.15,
   ((3.387, 1.5, "bot", none, none), (2.762, "top", 1.5, none, none), (3.387, "top", 3, none, none), (4.528, "top", 1.5, none, none)),
   ((3, [`∋`], black, 3.387, 3.387, "lax"), (1.5, [`cons`], black, 2.762, 3.645)),
   ((2.762, [`A×−`]), (3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
   ((3.387, [`list`]), (5.15, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(𝟙×∋)cons", src: "A×E(list(A))", tgt: "list(A)"))
-#let sb-hm-born = dpanel(6, 7.63, 5.78,
-  ((2.5, 3.75, "bot", none, frc([`𝟙`])), (4.012, 1.5, "bot", none, none), (3.387, "top", 1.5, none, none), (4.012, "top", 3, none, none), (5.153, "top", 1.5, none, none)),
-  ((3, [`∋`], black, 4.012, 4.012, "lax"), (1.5, [`cons`], black, 3.387, 4.27)),
+#let sb-hm-born = dpanel(9, 7.63, 5.78,
+  ((2.5, 5.25, "bot", none, frc([`𝟙`])), (4.012, 3, "bot", none, none), (3.387, "top", 3, none, none), (4.012, "top", 4.5, none, none), (5.153, "top", 3, none, none)),
+  ((4.5, [`∋`], black, 4.012, 4.012, "lax"), (3, [`cons`], black, 3.387, 4.27)),
   ((3.387, [`A×−`]), (4.012, [`E`]), (5.153, [`list`]), (5.78, [`A`])),
   ((2.5, [`E`]), (4.012, [`list`]), (5.78, [`A`])),
+  obj: ((5.25, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(cons)", src: "A×E(list(A))", tgt: "E(list(A))"))
 // @subseq-EW-case draws the `π₂` operand of `cons ∪ π₂` in every row, never `cons`: the derivation
 // rewrites only `π₂` (@subseq-outr-square, then `∋%∋=𝟙`); `(𝟙×∋)cons` stays as `sb-hm` draws it.
 // Recipe for a union's lower operand: the `cert:` is the formula with the `∪` cut to that operand
 // by hand (`rank` in `scripts/diagram` would pick the other), and the cell's `#src` names it.
-#let sb-hm-p2a = dpanel(4.5, 7, 5.15,
+#let sb-hm-p2a = dpanel(6, 7, 5.15,
   ((2.762, "top", 1.5, none, none), (3.387, "top", 3, none, none), (4.528, "top", "bot", none, none)),
   ((3, [`∋`], black, 3.387, 3.387, "lax"), (1.5, [`π₂`], black, 2.762, 2.762, "lax")),
   ((2.762, [`A×−`]), (3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
   ((4.528, [`list`]), (5.15, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
-#let sb-hm-p2 = dpanel(6, 7.63, 5.78,
-  ((2.5, 3.75, "bot", none, frc([`𝟙`])), (3.387, "top", 1.5, none, none), (4.012, "top", 3, none, none), (5.153, "top", "bot", none, none)),
-  ((3, [`∋`], black, 4.012, 4.012, "lax"), (1.5, [`π₂`], black, 3.387, 3.387, "lax")),
+#let sb-hm-p2 = dpanel(9, 7.63, 5.78,
+  ((2.5, 5.25, "bot", none, frc([`𝟙`])), (3.387, "top", 3, none, none), (4.012, "top", 4.5, none, none), (5.153, "top", "bot", none, none)),
+  ((4.5, [`∋`], black, 4.012, 4.012, "lax"), (3, [`π₂`], black, 3.387, 3.387, "lax")),
   ((3.387, [`A×−`]), (4.012, [`E`]), (5.153, [`list`]), (5.78, [`A`])),
   ((2.5, [`E`]), (5.153, [`list`]), (5.78, [`A`])),
+  obj: ((5.25, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(𝟙×∋)E(π₂)", src: "A×E(list(A))", tgt: "E(list(A))"))
 // @subseq-EW-join's `π₂` operand at three steps, each the `∪` cut to `π₂` by hand (`rank` would pick
 // `cons`): after the distribution, after @relprod-pic slides the `∋` past `π₂`, and bare at the end.
-#let sb-hm-p2-dist = dpanel(4.5, 7, 5.15,
+#let sb-hm-p2-dist = dpanel(6, 7, 5.15,
   ((2.762, "top", 1.5, none, none), (3.387, "top", 3, none, none), (4.528, "top", "bot", none, none)),
   ((3, [`∋`], black, 3.387, 3.387, "lax"), (1.5, [`π₂`], black, 2.762, 2.762, "lax")),
   ((2.762, [`A×−`]), (3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
   ((4.528, [`list`]), (5.15, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(𝟙×∋)π₂", src: "A×E(list(A))", tgt: "list(A)"))
-#let sb-hm-p2-slid = dpanel(4.5, 7, 5.15,
+#let sb-hm-p2-slid = dpanel(6, 7, 5.15,
   ((2.762, "top", 3, none, none), (3.387, "top", 1.5, none, none), (4.528, "top", "bot", none, none)),
   ((3, [`π₂`], black, 2.762, 2.762, "lax"), (1.5, [`∋`], black, 3.387, 3.387, "lax")),
   ((2.762, [`A×−`]), (3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
   ((4.528, [`list`]), (5.15, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "π₂ ∋", src: "A×E(list(A))", tgt: "list(A)"))
 #let sb-hm-p2-bare = dpanel(3, 7, 5.15,
   ((2.762, "top", 1.5, none, none), (3.387, "top", "bot", none, none), (4.528, "top", "bot", none, none)),
   ((1.5, [`π₂`], black, 2.762, 2.762, "lax"),),
   ((2.762, [`A×−`]), (3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
   ((3.387, [`E`]), (4.528, [`list`]), (5.15, [`A`])),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "π₂", src: "A×E(list(A))", tgt: "E(list(A))"))
 
 #disp[#calc-table(
@@ -4272,36 +4363,42 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((3, [`est(R)`], black, 3.125), (1.5, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.125, [`E`]), (3.75, [`A`])),
   ((3.75, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(est(R))f", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
-#let ma-lam = dpanel(7.5, 6.23, 4.38,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.125, "top", 3, none, none), (3.75, "top", 4.5, none, none)),
-  ((4.5, [`∋`], black, 3.75, 3.75, "lax"), (3, [`f`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
+#let ma-lam = dpanel(12, 6.23, 4.38,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.125, "top", 4.5, none, none), (3.75, "top", 6, none, none)),
+  ((6, [`∋`], black, 3.75, 3.75, "lax"), (4.5, [`f`], black, 3.125), (3, [`est(R)`], black, 2.5)),
   ((3.125, [`F`]), (3.75, [`E`]), (4.38, [`A`])),
   ((4.38, [`A`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(F(∋)f)est(R)", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
-#let ma-Fni = dpanel(4.5, 5.6, 3.75,
+#let ma-Fni = dpanel(6, 5.6, 3.75,
   ((2.5, "top", 1.5, none, none), (3.125, "top", 3, none, none)),
   ((3, [`∋`], black, 3.125, 3.125, "lax"), (1.5, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.125, [`E`]), (3.75, [`A`])),
   ((3.75, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(∋)f", src: "F(E(A))", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
 #let ma-conj = dpanel(7.5, 5.6, 3.75,
   ((2.5, 6, 1.5, [`F`], none), (3.125, 4.5, 3, [`E`], none)),
   ((6, [`f°`]), (4.5, [`∈`]), (3, [`est(R)`], black, 3.125), (1.5, [`f`], black, 2.5)),
   ((3.75, [`A`]),),
   ((3.75, [`A`]),),
+  obj: ((6, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "f° F(∈)F(est(R))f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
 #let ma-Ro = dpanel(6, 4.97, 3.12,
   ((2.5, 4.5, 1.5, [`F`], none),),
   ((4.5, [`f°`]), (3, [`R°`]), (1.5, [`f`], black, 2.5)),
   ((3.12, [`A`]),),
   ((3.12, [`A`]),),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "f° F(R°)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
 #let ma-R = dpanel(6, 4.97, 3.12,
   ((2.5, 4.5, 1.5, [`F`], none),),
   ((4.5, [`f°`]), (3, [`R`]), (1.5, [`f`], black, 2.5)),
   ((3.12, [`A`]),),
   ((3.12, [`A`]),),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "f° F(R)f", src: "A", tgt: "A", sigs: ("f": "F(x)⟶x")), s: 100%)
 #disp[#calc-table(cols: (1fr,), al: auto, 
   // monotonic-alg row: Theorem 7.1
@@ -4367,24 +4464,28 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((7.5, [`S°`]), (6, [`R°`]), (3, [`S`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((3.75, [`A`]),),
   ((3.75, [`A`]),),
+  obj: ((7.5, [`A`]), (6, [`A`]), (3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "S° F(R°)𝟙%∋ E(S)est(R)", src: "A", tgt: "A", sigs: ("S": "F(x)⟶x")), s: 100%)
 #let gr-slid = dpanel(9, 5.6, 3.75,
   ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.125, 6, 3, [`F`], none)),
   ((7.5, [`R°`]), (6, [`S°`]), (3, [`S`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((3.75, [`A`]),),
   ((3.75, [`A`]),),
+  obj: ((7.5, [`A`]), (6, [`A`]), (3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "R° S° 𝟙%∋ E(S)est(R)", src: "A", tgt: "A", sigs: ("S": "F(x)⟶x")), s: 100%)
 #let gr-RR = dpanel(4.5, 3.725, 1.875,
   (),
   ((3, [`R°`]), (1.5, [`R°`])),
   ((1.875, [`A`]),),
   ((1.875, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "R° R°", src: "A", tgt: "A"), s: 100%)
 #let gr-R = dpanel(3, 3.725, 1.875,
   (),
   ((1.5, [`R°`]),),
   ((1.875, [`A`]),),
   ((1.875, [`A`]),),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "R°", src: "A", tgt: "A"), s: 100%)
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
 // `est(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
@@ -4561,29 +4662,33 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // Emitted verbatim by `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`: the
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
-#let tw-pfx1 = dpanel(6, 6.12, 4.27,
-  ((2.5, "top", 4.5, none, none), (3.641, 3, "bot", none, none), (3.641, "top", 3, none, none)),
-  ((4.5, [`α`], black, 2.5), (3, [`prefix`], black, 3.641, 3.641, "lax"), (1.5, [`p`])),
+#let tw-pfx1 = dpanel(9, 6.12, 4.27,
+  ((2.5, "top", 6, none, none), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
+  ((6, [`α`], black, 2.5), (4.5, [`prefix`], black, 3.641, 3.641, "lax"), (3, [`p`])),
   ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))
-#let tw-pfx2 = dpanel(6, 6.38, 4.53,
+#let tw-pfx2 = dpanel(9, 6.38, 4.53,
   ((3.074, 3, "bot", none, none), (2.762, "top", 3, none, none), (3.903, 4.5, 3, [`list`], none), (3.903, "top", 4.5, none, none)),
   ((4.5, [`prefix`], black, 3.903, 3.903, "lax"), (3, [`cons`], black, 2.762, 3.3325), (1.5, [`p`])),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((3.074, [`list`]), (4.53, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]list(p)", src: "F([A])", tgt: "[A]", branch: "cons"))
-#let tw-pfx3 = dpanel(7.5, 6.38, 4.53,
+#let tw-pfx3 = dpanel(12, 6.38, 4.53,
   ((3.074, 1.5, "bot", none, none), (2.762, 4.5, 1.5, [`A×−`], none), (2.762, "top", 4.5, none, none), (3.903, 6, 1.5, [`list`], none), (3.903, "top", 6, none, none)),
   ((6, [`prefix`], black, 3.903, 3.903, "lax"), (4.5, [`p×𝟙`], black, 2.762), (3, [`p`]), (1.5, [`cons`], black, 2.762, 3.3325)),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((3.074, [`list`]), (4.53, [`A`])),
+  obj: ((6, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
-#let tw-pfx4 = dpanel(7.5, 6.38, 4.53,
-  ((3.074, 1.5, "bot", none, none), (2.762, 6, 1.5, [`A×−`], none), (2.762, "top", 6, none, none), (3.903, 4.5, 1.5, [`list`], none), (3.903, "top", 4.5, none, none)),
-  ((6, [`p×𝟙`], black, 2.762), (4.5, [`prefix`], black, 3.903, 3.903, "lax"), (3, [`p`]), (1.5, [`cons`], black, 2.762, 3.3325)),
+#let tw-pfx4 = dpanel(12, 6.38, 4.53,
+  ((3.074, 3, "bot", none, none), (2.762, 7.5, 3, [`A×−`], none), (2.762, "top", 7.5, none, none), (3.903, 6, 3, [`list`], none), (3.903, "top", 6, none, none)),
+  ((7.5, [`p×𝟙`], black, 2.762), (6, [`prefix`], black, 3.903, 3.903, "lax"), (4.5, [`p`]), (3, [`cons`], black, 2.762, 3.3325)),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((3.074, [`list`]), (4.53, [`A`])),
+  obj: ((7.5, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]", branch: "cons"))
 
 #disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
@@ -5057,11 +5162,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     [#src[the specification — @est-defn's `est(R°)`.
  ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile@6fb798ac
-  [#align(center, dpanel(7.5, 6.12, 4.27,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`prefix`], black, 3.641, 3.641, "lax"), (3, [`p`]), (1.5, [`est(R°)`], black, 2.5)),
+  [#align(center, dpanel(12, 6.12, 4.27,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.641, 6, "bot", none, none), (3.641, "top", 6, none, none)),
+  ((6, [`prefix`], black, 3.641, 3.641, "lax"), (4.5, [`p`]), (3, [`est(R°)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]")))],
 
   [#vstep(EQ, twp(twrun((LS-box, est-Rc-box), from: [`[A]`]), s: 70%),
@@ -5072,6 +5178,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((3, [`⦇S⦈`], black, 3.641), (1.5, [`est(R°)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(⦇S⦈)%∋ est(R°)", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
@@ -5098,6 +5205,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((1.5, [`⦇S%∋ est(R°)⦈`], black, 3.016),),
   ((3.016, [`list`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
@@ -5125,6 +5233,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ((1.5, [`⦇[nil,(π₁p→cons,⊸ nil)]⦈`], black, 3.016),),
   ((3.016, [`list`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
@@ -5237,23 +5346,26 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // §13.3.4's generated panels, emitted verbatim by `./scripts/diagram --src … --tgt … "<formula>"`: a
 // bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
-#let mh-cons-sum = dpanel(4.5, 6.38, 4.53,
+#let mh-cons-sum = dpanel(6, 6.38, 4.53,
   ((3.074, 3, 1.5, [`list`], none), (2.762, "top", 3, none, none), (3.903, "top", 3, none, none)),
   ((3, [`cons`], black, 2.762, 3.3325), (1.5, [`sum`], black, 3.074)),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((4.53, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "cons sum", src: "A×list(A)", tgt: "A"))
 #let mh-alg-est = dpanel(6, 5.86, 4.01,
   ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.387, "top", 3, none, none)),
   ((3, [`plus`], black, 3.387), (1.5, [`est(≥)`], black, 2.5)),
   ((3.387, [`A×−`]), (4.01, [`Int`])),
   ((4.01, [`Int`]),),
+  obj: ((3.75, [`Int`]), (3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus"))
 #let mh-alg = dpanel(3, 4.97, 3.12,
   ((2.5, "top", 1.5, none, none),),
   ((1.5, [`zero`], black, 2.5),),
   ((2.5, [`𝟏`]), (3.12, [`Int`])),
   ((3.12, [`Int`]),),
+  obj: ((1.5, [`Int`]),),
   cert: (expect: "[zero,⊕]", src: "F(Int)", tgt: "Int", branch: "zero"))
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
 // `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×Int⟶Int"`.
@@ -5262,24 +5374,28 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3, [`plus`], black, 3.387), (1.5, [`est(≥)`], black, 2.5)),
   ((3.387, [`A×−`]), (4.01, [`Int`])),
   ((4.01, [`Int`]),),
+  obj: ((3.75, [`Int`]), (3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "𝟙%∋ E(plus)est(≥)", src: "A×Int", tgt: "Int", sigs: ("plus": "A×Int⟶Int")))
-#let mh-segsum = dpanel(7.5, 6.12, 4.27,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, 3, [`list`], none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`segment`], black, 3.641, 3.641, "lax"), (3, [`sum`], black, 3.641), (1.5, [`est(≥)`], black, 2.5)),
+#let mh-segsum = dpanel(12, 6.12, 4.27,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.641, 6, 4.5, [`list`], none), (3.641, "top", 6, none, none)),
+  ((6, [`segment`], black, 3.641, 3.641, "lax"), (4.5, [`sum`], black, 3.641), (3, [`est(≥)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((4.27, [`A`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(segment sum)est(≥)", src: "list(A)", tgt: "A"))
-#let mh-greedy = dpanel(7.5, 6.12, 4.27,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, 3, [`list`], none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`suffix`], black, 3.641, 3.641, "lax"), (3, [`⦇[zero,⊕]⦈`], black, 3.641), (1.5, [`est(≥)`], black, 2.5)),
+#let mh-greedy = dpanel(12, 6.12, 4.27,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.641, 6, 4.5, [`list`], none), (3.641, "top", 6, none, none)),
+  ((6, [`suffix`], black, 3.641, 3.641, "lax"), (4.5, [`⦇[zero,⊕]⦈`], black, 3.641), (3, [`est(≥)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((4.27, [`A`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥)", src: "list(A)", tgt: "A"))
-#let mh-shape = dpanel(12, 6.49, 4.64,
-  ((2.5, 9.75, 1.5, [`E`], frc([`𝟙`])), (2.877, 6.75, 3, [`E`], frc([`𝟙`])), (4.018, 6, 4.5, [`list`], none), (4.018, 9, 6, [`list`], none), (4.018, "top", 9, none, none)),
-  ((9, [`suffix`], black, 4.018, 4.018, "lax"), (6, [`prefix`], black, 4.018, 4.018, "lax"), (4.5, [`sum`], black, 4.018), (3, [`est(≥)`], black, 2.877), (1.5, [`est(≥)`], black, 2.5)),
+#let mh-shape = dpanel(21, 6.49, 4.64,
+  ((2.5, 11.25, 3, [`E`], frc([`𝟙`])), (2.877, 8.25, 4.5, [`E`], frc([`𝟙`])), (4.018, 7.5, 6, [`list`], none), (4.018, 10.5, 7.5, [`list`], none), (4.018, "top", 10.5, none, none)),
+  ((10.5, [`suffix`], black, 4.018, 4.018, "lax"), (7.5, [`prefix`], black, 4.018, 4.018, "lax"), (6, [`sum`], black, 4.018), (4.5, [`est(≥)`], black, 2.877), (3, [`est(≥)`], black, 2.5)),
   ((4.018, [`list`]), (4.64, [`A`])),
   ((4.64, [`A`]),),
+  obj: ((11.25, [`A`]), (10.5, [`A`]), (8.25, [`A`]), (7.5, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(suffix)E(𝟙%∋)E(E(prefix sum))E(est(≥))est(≥)", src: "list(A)", tgt: "A"))
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
@@ -5418,6 +5534,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3, [`sum`], black, 3.903), (1.5, [`plus`], black, 2.762)),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((4.53, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×x⟶x"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -5772,11 +5889,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`⦇k⦈ π₂ est(≥)` \
      #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
       ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
-  [#dpanel(6, 5.86, 4.01,
-  ((2.762, 4.5, 3, [`A×−`], none), (3.387, 4.5, 1.5, [`E`], none), (3.074, "top", 4.5, none, none)),
-  ((4.5, [`⦇k⦈`], black, 3.074), (3, [`π₂`], black, 2.762, 2.762, "lax"), (1.5, [`est(≥)`], black, 3.387)),
+  [#dpanel(9, 5.86, 4.01,
+  ((2.762, 6, 4.5, [`A×−`], none), (3.387, 6, 3, [`E`], none), (3.074, "top", 6, none, none)),
+  ((6, [`⦇k⦈`], black, 3.074), (4.5, [`π₂`], black, 2.762, 2.762, "lax"), (3, [`est(≥)`], black, 3.387)),
   ((3.074, [`list`]), (4.01, [`A`])),
   ((4.01, [`A`]),),
+  obj: ((6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "⦇k⦈π₂ est(≥)", src: "[A]", tgt: "A", sigs: ("⦇k⦈": "[A]⟶A×E(A)")))],
 )
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
@@ -6151,11 +6269,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep([], fpic((bx-slp, est-Rc-box)),
  [#src[@comb-fns]])],
     // lean:AOP.A7_7_Filter.filter@86c3d821
-  [#align(center, dpanel(7.5, 6.12, 4.27,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`subseq`], black, 3.641, 3.641, "lax"), (3, [`p`]), (1.5, [`est(R°)`], black, 2.5)),
+  [#align(center, dpanel(12, 6.12, 4.27,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.641, 6, "bot", none, none), (3.641, "top", 6, none, none)),
+  ((6, [`subseq`], black, 3.641, 3.641, "lax"), (4.5, [`p`]), (3, [`est(R°)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "(subseq list(p))%∋ est(R°)", src: "[A]", tgt: "[A]")))],
 
   [#vstep(EQ, fpic((bx-cS, est-Rc-box)),
@@ -6165,6 +6284,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3, [`⦇S⦈`], black, 3.641), (1.5, [`est(R°)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(⦇S⦈)%∋ est(R°)", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
@@ -6192,6 +6312,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((1.5, [`⦇S%∋ est(R°)⦈`], black, 3.016),),
   ((3.016, [`list`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]", sigs: ("⦇⦈": "[A]⟶[A]"))))],
 
   [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
@@ -6803,53 +6924,59 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
-#let d-out1 = dpanel(6, 6.12, 4.27,
-  ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.641, 3, "bot", none, none), (3.641, "top", 3, none, none)),
-  ((3, [`party`], black, 3.641, 3.641, "lax"), (1.5, [`est(R°)`], black, 2.5)),
+#let d-out1 = dpanel(9, 6.12, 4.27,
+  ((2.5, 5.25, 3, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
+  ((4.5, [`party`], black, 3.641, 3.641, "lax"), (3, [`est(R°)`], black, 2.5)),
   ((3.641, [`tree`]), (4.27, [`A`])),
   ((3.641, [`list`]), (4.27, [`A`])),
+  obj: ((5.25, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(party)est(R°)", src: "tree(A)", tgt: "[A]"))
 // Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
 // The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
 // `frc(⦇S⦈ choose)` is that one absorption step away.
-#let d-out2 = dpanel(7.5, 6.94, 5.09,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (2.877, 4.5, 3, [`Δ`], none), (4.47, 4.5, "bot", none, none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`⦇S⦈`], black, 3.641), (3, [`choose`], black, 2.877, 2.877, "lax"), (1.5, [`est(R°)`], black, 2.5)),
+#let d-out2 = dpanel(12, 6.94, 5.09,
+  ((2.5, 8.25, 4.5, [`E`], frc([`𝟙`])), (2.877, 7.5, 6, [`Δ`], none), (4.47, 7.5, "bot", none, none), (3.641, "top", 7.5, none, none)),
+  ((7.5, [`⦇S⦈`], black, 3.641), (6, [`choose`], black, 2.877, 2.877, "lax"), (4.5, [`est(R°)`], black, 2.5)),
   ((3.641, [`tree`]), (5.09, [`A`])),
   ((4.47, [`list`]), (5.09, [`A`])),
+  obj: ((8.25, [`A`]), (7.5, [`A`]), (6, [`A`]), (4.5, [`A`])),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
-#let d-out4 = dpanel(10.5, 7.26, 5.41,
-  ((2.813, 8.25, 6, [`E`], frc([`𝟙`])), (2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (3.189, 7.5, 3, [`Δ`], none), (4.783, 7.5, "bot", none, none), (3.954, "top", 7.5, none, none)),
-  ((7.5, [`⦇S⦈`], black, 3.954), (6, [`est((R×R)°)`], black, 2.813), (3, [`choose`], black, 3.189, 3.189, "lax"), (1.5, [`est(R°)`], black, 2.5)),
+#let d-out4 = dpanel(18, 7.26, 5.41,
+  ((2.813, 14.25, 12, [`E`], frc([`𝟙`])), (2.5, 9.75, 7.5, [`E`], frc([`𝟙`])), (3.189, 13.5, 9, [`Δ`], none), (4.783, 13.5, "bot", none, none), (3.954, "top", 13.5, none, none)),
+  ((13.5, [`⦇S⦈`], black, 3.954), (12, [`est((R×R)°)`], black, 2.813), (9, [`choose`], black, 3.189, 3.189, "lax"), (7.5, [`est(R°)`], black, 2.5)),
   ((3.954, [`tree`]), (5.41, [`A`])),
   ((4.783, [`list`]), (5.41, [`A`])),
+  obj: ((14.25, [`A`]), (13.5, [`A`]), (12, [`A`]), (9.75, [`A`]), (9, [`A`]), (7.5, [`A`])),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
-#let d-in5 = dpanel(6, 9.29, 7.44,
-  ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (4.528, 3, "bot", none, none), (5.67, 3, "bot", none, none), (3.387, "top", 3, none, none), (4.528, "top", 3, none, none), (5.67, "top", 3, none, none), (6.811, "top", 3, none, none)),
-  ((3, [`S`], black, 3.387, 5.099, "lax"), (1.5, [`est((R×R)°)`], black, 2.5)),
+#let d-in5 = dpanel(9, 9.29, 7.44,
+  ((2.5, 5.25, 3, [`E`], frc([`𝟙`])), (4.528, 4.5, "bot", none, none), (5.67, 4.5, "bot", none, none), (3.387, "top", 4.5, none, none), (4.528, "top", 4.5, none, none), (5.67, "top", 4.5, none, none), (6.811, "top", 4.5, none, none)),
+  ((4.5, [`S`], black, 3.387, 5.099, "lax"), (3, [`est((R×R)°)`], black, 2.5)),
   ((3.387, [`A×−`]), (4.528, [`list`]), (5.67, [`Δ`]), (6.811, [`list`]), (7.44, [`A`])),
   ((4.528, [`Δ`]), (5.67, [`list`]), (7.44, [`A`])),
+  obj: ((5.25, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(S)est((R×R)°)", src: "A×[[A]×[A]]", tgt: "[A]×[A]"))
-#let d-in6 = dpanel(6, 8.77, 6.92,
-  ((2.5, 3.75, 1.5, [`E`], frc([`𝟙`])), (4.841, 3, "bot", none, none), (3.387, "top", 3, none, none), (4.528, "top", 3, none, none), (5.153, "top", 3, none, none), (6.295, "top", 3, none, none)),
-  ((3, [`include`], black, 3.387, 4.841, "lax"), (1.5, [`est(R°)`], black, 2.5)),
+#let d-in6 = dpanel(9, 8.77, 6.92,
+  ((2.5, 5.25, 3, [`E`], frc([`𝟙`])), (4.841, 4.5, "bot", none, none), (3.387, "top", 4.5, none, none), (4.528, "top", 4.5, none, none), (5.153, "top", 4.5, none, none), (6.295, "top", 4.5, none, none)),
+  ((4.5, [`include`], black, 3.387, 4.841, "lax"), (3, [`est(R°)`], black, 2.5)),
   ((3.387, [`A×−`]), (4.528, [`list`]), (5.153, [`Δ`]), (6.295, [`list`]), (6.92, [`A`])),
   ((4.841, [`list`]), (6.92, [`A`])),
+  obj: ((5.25, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(include)est(R°)", src: "A×[[A]×[A]]", tgt: "[A]"))
 // `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
 // element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
 // beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
 // HAND-KEPT lanes, dots added by hand: regenerated, the unit's `E` lane goes leftmost and the sweep
 // reads `𝟙%∋` outside the `list` it is stated inside.
-#let d-in7 = dpanel(9, 8.27, 6.42,
+#let d-in7 = dpanel(15, 8.27, 6.42,
   ((2.762, "top", 7.5, none, none), (4.657, 1.5, "bot", none, none), (3.903, "top", 1.5, none, none), (4.28, 5.25, 3, [`E`], frc([`𝟙`])), (4.657, "top", 4.5, none, none), (5.798, "top", 1.5, none, none)),
   ((7.5, [`π₂`], black, 2.762, 2.762, "lax"), (4.5, [`choose`], black, 4.657, 4.657, "lax"), (3, [`est(R°)`], black, 4.28), (1.5, [`concat`], black, 3.903, 4.8505)),
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.657, [`Δ`]), (5.798, [`list`]), (6.42, [`A`])),
   ((4.657, [`list`]), (6.42, [`A`])),
+  obj: ((7.5, [`A`]), (5.25, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat", src: "A×[[A]×[A]]", tgt: "[A]"))
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
@@ -7037,23 +7164,26 @@ generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 === The cross product `cp≜`$frac(#[`F(𝟙,∋)`], ∋)$ <sec-cyl-cp>
 
 #disp[#align(center, grid(columns: (1fr, 1fr, 1fr), align: center + bottom, column-gutter: 10pt, row-gutter: 4pt,
-  dpanel(4.5, 7.88, 6.03,
-  ((2.5, 2.25, "bot", none, frc([`𝟙`])), (4.151, "top", "bot", none, none), (4.776, "top", 1.5, none, none), (5.401, "top", "bot", none, none)),
-  ((1.5, [`∋`], black, 4.776, 4.776, "lax"),),
+  dpanel(6, 7.88, 6.03,
+  ((2.5, 3.75, "bot", none, frc([`𝟙`])), (4.151, "top", "bot", none, none), (4.776, "top", 3, none, none), (5.401, "top", "bot", none, none)),
+  ((3, [`∋`], black, 4.776, 4.776, "lax"),),
   ((4.151, [`F(A,−)`]), (4.776, [`E`]), (5.401, [`L`]), (6.03, [`A`])),
   ((2.5, [`E`]), (4.151, [`F(A,−)`]), (5.401, [`L`]), (6.03, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(F(𝟙,∋))", src: "F(A,E(L(A)))", tgt: "E(F(A,L(A)))")),
-  dpanel(4.5, 7.11, 5.26,
-  ((2.5, 2.25, "bot", none, frc([`𝟙`])), (3.387, "top", "bot", none, none), (4.012, "top", 1.5, none, none), (4.637, "top", "bot", none, none)),
-  ((1.5, [`∋`], black, 4.012, 4.012, "lax"),),
+  dpanel(6, 7.11, 5.26,
+  ((2.5, 3.75, "bot", none, frc([`𝟙`])), (3.387, "top", "bot", none, none), (4.012, "top", 3, none, none), (4.637, "top", "bot", none, none)),
+  ((3, [`∋`], black, 4.012, 4.012, "lax"),),
   ((3.387, [`A×−`]), (4.012, [`E`]), (4.637, [`L`]), (5.26, [`A`])),
   ((2.5, [`E`]), (3.387, [`A×−`]), (4.637, [`L`]), (5.26, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`])),
   cert: (expect: "𝟙%∋ E(𝟙×∋)", src: "A×E(L(A))", tgt: "E(A×L(A))")),
   dpanel(3, 4.97, 3.12,
   ((2.5, 0.75, "bot", none, frc([`𝟙`])),),
   (),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((0.75, [`A`]),),
   cert: (expect: "𝟙%∋", src: "A", tgt: "E(A)")),
 
   src[`cp` on all of `F(A,E(L A))`],
@@ -7097,11 +7227,12 @@ cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collecte
 
 === `generate=F(𝟙,moves trans N(union)) zip N(cp P(α))` <sec-cyl-gen>
 
-#disp[#align(center, dpanel(10.5, 6.35, 4.5,
+#disp[#align(center, dpanel(18, 6.35, 4.5,
   ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
   ((9, [`moves`], black, 3.189, 3.189, "lax"), (7.5, [`trans`], black, 2.877, 3.1895, "lax"), (6, [`union`], black, 3.502, 3.6905), (4.5, [`zip`], black, 2.5, 2.6885, "lax"), (3, [`cp`], black, 2.877, 3.2675), (1.5, [`α`], black, 3.658)),
   ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
   ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
+  obj: ((9, [`LA`]), (7.5, [`LA`]), (6, [`LA`]), (4.5, [`LA`]), (3, [`LA`]), (1.5, [`LA`])),
   cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))")))]<gen-diag>
 
 #disp[#align(center)[```
@@ -7132,18 +7263,20 @@ N(cp P(α))(that)
 // The defining equation of @cata-defining at `generate`, both sides drawn: the fold bead is
 // OUTSIDE `F` on the left and INSIDE it on the right — that is all the recursion there is.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
-  dpanel(4.5, 6.54, 4.69,
-  ((2.5, "top", 3, none, none), (2.812, 1.5, "bot", none, none), (3.438, 1.5, "bot", none, none), (4.062, 1.5, "bot", none, none), (3.125, "top", 1.5, none, none), (3.75, "top", 1.5, none, none)),
-  ((3, [`α`], black, 2.5), (1.5, [`⦇generate⦈`], black, 3.125, 3.4375, "lax")),
+  dpanel(6, 6.54, 4.69,
+  ((2.5, "top", 4.5, none, none), (2.812, 3, "bot", none, none), (3.438, 3, "bot", none, none), (4.062, 3, "bot", none, none), (3.125, "top", 3, none, none), (3.75, "top", 3, none, none)),
+  ((4.5, [`α`], black, 2.5), (3, [`⦇generate⦈`], black, 3.125, 3.4375, "lax")),
   ((2.5, [`F`]), (3.125, [`L`]), (3.75, [`N`]), (4.69, [`A`])),
   ((2.812, [`N`]), (3.438, [`E`]), (4.062, [`L`]), (4.69, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`])),
   cert: (expect: "α⦇generate⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
   EQ,
-  dpanel(4.5, 6.6, 4.75,
+  dpanel(6, 6.6, 4.75,
   ((2.656, 1.5, "bot", none, none), (2.5, "top", 1.5, none, none), (2.877, 3, 1.5, [`N`], none), (3.502, 3, "bot", none, none), (4.127, 3, "bot", none, none), (3.189, "top", 3, none, none), (3.814, "top", 3, none, none)),
   ((3, [`⦇generate⦈`], black, 3.189, 3.5015, "lax"), (1.5, [`generate`], black, 2.5)),
   ((2.5, [`F`]), (3.189, [`L`]), (3.814, [`N`]), (4.75, [`A`])),
   ((2.656, [`N`]), (3.502, [`E`]), (4.127, [`L`]), (4.75, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(𝟙,⦇generate⦈)generate", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
 
   src[`α` puts the column back on the list, then the fold reads all of it],
@@ -7258,35 +7391,40 @@ N(α)(that)
 
 // ---- HINZE-MARSDEN, generated by `scripts/diagram --fold-list`.  A wire is a FUNCTOR: the object
 // wire carries `L(N(Nat))` down to `L(Nat)` and beside it ride `N` the tuple and `E` the path set.
-#let ca1 = dpanel(4.5, 5.6, 3.75,
+#let ca1 = dpanel(6, 5.6, 3.75,
   ((2.5, 3, 1.5, [`E`], none), (3.125, 3, "bot", none, none), (2.5, "top", 3, none, none), (3.125, "top", 3, none, none)),
   ((3, [`paths`], black, 2.5, 2.8125, "lax"), (1.5, [`est(R)`], black, 2.5)),
   ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`Nat`])),
   ((3.125, [`L`]), (3.75, [`Nat`])),
+  obj: ((3, [`Nat`]), (1.5, [`Nat`])),
   cert: (expect: "paths est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("paths": "L(N(x))⟶E(L(x))")))
-#let ca2 = dpanel(7.5, 6.23, 4.38,
+#let ca2 = dpanel(12, 6.23, 4.38,
   ((2.812, 3, 1.5, [`E`], none), (2.5, 4.5, 3, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, 3, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
   ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`union`], black, 2.5, 2.8125), (1.5, [`est(R)`], black, 2.812)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
+  obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
   cert: (expect: "⦇generate⦈setify union est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
-#let ca3 = dpanel(7.5, 6.23, 4.38,
+#let ca3 = dpanel(12, 6.23, 4.38,
   ((2.5, 4.5, 1.5, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, 3, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
   ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`est(R)`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
+  obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
   cert: (expect: "⦇generate⦈setify P(est(R))est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
-#let ca4 = dpanel(7.5, 6.23, 4.38,
+#let ca4 = dpanel(12, 6.23, 4.38,
   ((2.5, 3, 1.5, [`E`], none), (2.5, 6, 3, [`N`], none), (3.125, 6, 4.5, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
   ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`est(R)`], black, 3.125), (3, [`setify`], black, 2.5, 2.5, "lax"), (1.5, [`est(R)`], black, 2.5)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
+  obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
   cert: (expect: "⦇generate⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
-#let ca5 = dpanel(6, 5.6, 3.75,
-  ((2.5, 3, 1.5, [`E`], none), (2.5, 4.5, 3, [`N`], none), (3.125, 4.5, "bot", none, none), (2.5, "top", 4.5, none, none), (3.125, "top", 4.5, none, none)),
-  ((4.5, [`⦇Q⦈`], black, 2.5), (3, [`setify`], black, 2.5, 2.5, "lax"), (1.5, [`est(R)`], black, 2.5)),
+#let ca5 = dpanel(9, 5.6, 3.75,
+  ((2.5, 4.5, 3, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, "bot", none, none), (2.5, "top", 6, none, none), (3.125, "top", 6, none, none)),
+  ((6, [`⦇Q⦈`], black, 2.5), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`est(R)`], black, 2.5)),
   ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`Nat`])),
   ((3.125, [`L`]), (3.75, [`Nat`])),
+  obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`])),
   cert: (expect: "⦇Q⦈setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(L(x))")))
 
 // ---- Chain C, generated.  `F` is CURRIED to the unary `F(NA,−)`, so its wire is a functor and the algebra
@@ -7296,12 +7434,14 @@ N(α)(that)
   ((1.5, [`Q`], black, 2.5),),
   ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`LA`])),
   ((2.812, [`N`]), (3.75, [`LA`])),
+  obj: ((1.5, [`LA`]),),
   cert: (expect: "Q", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("Q": "F(N(x))⟶N(x)")))
-#let cc2 = dpanel(9, 5.98, 4.13,
+#let cc2 = dpanel(15, 5.98, 4.13,
   ((2.5, 3, "bot", none, none), (2.877, 3, 1.5, [`F`], none), (2.5, "top", 3, none, none), (2.877, 6, 3, [`N`], none), (3.502, 6, 4.5, [`E`], none), (2.877, 7.5, 6, [`E`], none), (3.502, 7.5, 6, [`N`], none), (3.189, "top", 7.5, none, none)),
   ((7.5, [`moves`], black, 3.189, 3.189, "lax"), (6, [`trans`], black, 2.877, 3.1895, "lax"), (4.5, [`est(R)`], black, 3.502), (3, [`zip`], black, 2.5, 2.6885, "lax"), (1.5, [`α`], black, 2.877)),
   ((2.5, [`F`]), (3.189, [`N`]), (4.13, [`LA`])),
   ((2.5, [`N`]), (4.13, [`LA`])),
+  obj: ((7.5, [`LA`]), (6, [`LA`]), (4.5, [`LA`]), (3, [`LA`]), (1.5, [`LA`])),
   cert: (expect: "F(𝟙,moves trans N(est(R)))zip N(α)", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("moves": "N(x)⟶E(N(x))", "trans": "E(N(x))⟶N(E(x))", "zip": "F(N(x))⟶N(F(x))")))
 
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
@@ -7370,12 +7510,14 @@ N(α)(that)
   ((3, [`generate`], black, 2.5), (1.5, [`est(R)`], black, 3.75)),
   ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`E`]), (4.38, [`LA`])),
   ((2.812, [`N`]), (4.38, [`LA`])),
+  obj: ((3, [`LA`]), (1.5, [`LA`])),
   cert: (expect: "generate N(est(R))", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("generate": "F(N(x))⟶N(x)")))
 #let cb2 = dpanel(4.5, 6.23, 4.38,
   ((2.812, 1.5, "bot", none, none), (2.5, "top", 1.5, none, none), (3.125, "top", 1.5, none, none), (3.75, "top", 3, none, none)),
   ((3, [`est(R)`], black, 3.75), (1.5, [`Q`], black, 2.5)),
   ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`E`]), (4.38, [`LA`])),
   ((2.812, [`N`]), (4.38, [`LA`])),
+  obj: ((3, [`LA`]), (1.5, [`LA`])),
   cert: (expect: "F(𝟙,N(est(R)))Q", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("Q": "F(N(x))⟶N(x)")))
 
 // B&dM §7.4, p. 183.  `generate` kills the base functor before the minimum is taken inside the
@@ -7534,6 +7676,7 @@ N(α)(that)
   ((4.5, [`partition`], black, 3.954), (3, [`secure`], black, 4.783), (1.5, [`est(R)`], black, 2.5)),
   ((3.954, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
+  obj: ((5.25, [`Int`]), (4.5, [`Int`]), (3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -7602,6 +7745,7 @@ N(α)(that)
   ((1.5, [`⦇S%∋ est(R;H)⦈`], black, 3.329),),
   ((3.329, [`list`]), (4.78, [`Int`])),
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
+  obj: ((1.5, [`Int`]),),
   cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("⦇⦈": "[x]⟶[[x]]")))],
 
   [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
@@ -7652,6 +7796,7 @@ N(α)(that)
   ((3, [`R;H`], black, 4.413), (1.5, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
 
   [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
@@ -7690,6 +7835,7 @@ N(α)(that)
   ((3, [`|R|`], black, 4.413), (1.5, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "|R|": "[[Int]]⟶[[Int]]")))],
 
   [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
@@ -7723,6 +7869,7 @@ N(α)(that)
   ((3, [`old`], black, 3.271), (1.5, [`R∩H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
@@ -7743,6 +7890,7 @@ N(α)(that)
   ((3, [`old`], black, 3.271), (1.5, [`R;H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
+  obj: ((3, [`Int`]), (1.5, [`Int`])),
   cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]")))],
 )]<van-mono>
 
@@ -7842,6 +7990,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((7.5, [`S°`]), (4.5, [`S`]), (3, [`est(R)`], black, 2.5)),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((7.5, [`A`]), (5.25, [`A`]), (4.5, [`A`]), (3, [`A`]), (0.75, [`A`])),
   cert: (expect: "S° S%∋ est(R)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
   [#vstep(EQ, eb-pic((So-box, eb-LamS, eb-estc, eb-tau)),
@@ -7856,6 +8005,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((4.5, [`∈`]), (3, [`est(R∩S°S)`], black, 4.375)),
   ((5, [`A`]),),
   ((2.5, [`E`]), (5, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (0.75, [`A`])),
   cert: (expect: "∈ est(R∩S°S)𝟙%∋", src: "A", tgt: "E(A)", sigs: ("S": "A⟶A", "R": "A⟶A")))],
 
   [#vstep(SQ, eb-pic((Qo-box, eb-tau)),
@@ -7865,6 +8015,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((3, [`Q°`]),),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((3, [`A`]), (0.75, [`A`])),
   cert: (expect: "Q° 𝟙%∋", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(SQ, eb-pic((Qo-box, in-box)),
@@ -7874,6 +8025,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((3, [`Q°`]), (1.5, [`∈`])),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 )]<thin-83>
 
@@ -7906,21 +8058,23 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
       `−⊑Q°∈`]])],
   // `(F(∋)S)%∋`, not `F(∋)S%∋`: `%∋` binds the atom before it, and B&dM Thm 8.1 / `Freyd.Alg.thinning`
   // put the whole composite under the transpose, so the `𝟙` is born ABOVE `∋`.
-  [#dpanel(12, 6.23, 4.38,
-  ((2.5, 1.5, "bot", none, none), (2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.125, 10.5, 3, [`F`], none), (3.75, 7.5, 4.5, [`E`], none)),
-  ((10.5, [`S°`]), (9, [`Q°`]), (7.5, [`∈`]), (4.5, [`∋`], black, 3.75, 3.75, "lax"), (3, [`S`], black, 3.125), (1.5, [`thin(Q)`], black, 2.5)),
+  [#dpanel(21, 6.23, 4.38,
+  ((2.5, 7.5, "bot", none, none), (2.5, 11.25, 7.5, [`E`], frc([`𝟙`])), (3.125, 16.5, 9, [`F`], none), (3.75, 13.5, 10.5, [`E`], none)),
+  ((16.5, [`S°`]), (15, [`Q°`]), (13.5, [`∈`]), (10.5, [`∋`], black, 3.75, 3.75, "lax"), (9, [`S`], black, 3.125), (7.5, [`thin(Q)`], black, 2.5)),
   ((4.38, [`A`]),),
   ((2.5, [`E`]), (4.38, [`A`])),
+  obj: ((16.5, [`A`]), (15, [`A`]), (13.5, [`A`]), (11.25, [`A`]), (10.5, [`A`]), (9, [`A`]), (7.5, [`A`])),
   cert: (expect: "S° F(Q° ∈)(F(∋)S)%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((Qo-box, So-box, nb-Fin, nb-LamS, thin-Q-box)),
     [#src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `Q°` has walked out of the `F` handle: that move IS the monotonicity assumption.
-  [#dpanel(12, 6.23, 4.38,
-  ((2.5, 1.5, "bot", none, none), (2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.125, 9, 3, [`F`], none), (3.75, 7.5, 4.5, [`E`], none)),
-  ((10.5, [`Q°`]), (9, [`S°`]), (7.5, [`∈`]), (4.5, [`∋`], black, 3.75, 3.75, "lax"), (3, [`S`], black, 3.125), (1.5, [`thin(Q)`], black, 2.5)),
+  [#dpanel(21, 6.23, 4.38,
+  ((2.5, 7.5, "bot", none, none), (2.5, 11.25, 7.5, [`E`], frc([`𝟙`])), (3.125, 15, 9, [`F`], none), (3.75, 13.5, 10.5, [`E`], none)),
+  ((16.5, [`Q°`]), (15, [`S°`]), (13.5, [`∈`]), (10.5, [`∋`], black, 3.75, 3.75, "lax"), (9, [`S`], black, 3.125), (7.5, [`thin(Q)`], black, 2.5)),
   ((4.38, [`A`]),),
   ((2.5, [`E`]), (4.38, [`A`])),
+  obj: ((16.5, [`A`]), (15, [`A`]), (13.5, [`A`]), (11.25, [`A`]), (10.5, [`A`]), (9, [`A`]), (7.5, [`A`])),
   cert: (expect: "Q° S° F(∈)(F(∋)S)%∋ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A", "S": "F(A)⟶A")))],
 
   [#vstep(SQ, nb-pic((Qo-box, in-box, thin-Q-box)),
@@ -7931,6 +8085,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((4.5, [`Q°`]), (3, [`∈`]), (1.5, [`thin(Q)`], black, 2.5)),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "Q° ∈ thin(Q)", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(SQ, nb-pic((Qo-box, Qo-box, in-box)),
@@ -7940,6 +8095,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((4.5, [`Q°`]), (3, [`Q°`]), (1.5, [`∈`])),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "Q° Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 
   [#vstep(EQ, nb-pic((Qo-box, in-box)),
@@ -7949,6 +8105,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((3, [`Q°`]), (1.5, [`∈`])),
   ((3.12, [`A`]),),
   ((2.5, [`E`]), (3.12, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "Q° ∈", src: "A", tgt: "E(A)", sigs: ("Q": "A⟶A")))],
 )]<thin-thm81>
 
@@ -7990,6 +8147,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((3, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
+  obj: ((1.5, [`A`]),),
   cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8016,6 +8174,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((4.5, [`⦇S⦈`]), (3, [`thin(Q)`], black, 2.5), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
+  obj: ((5.25, [`T`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "𝟙%∋ E(⦇S⦈)thin(Q)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8039,6 +8198,7 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((3, [`⦇S⦈`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
+  obj: ((3.75, [`T`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A")))],
 )]<thin-cor>
 
@@ -8099,6 +8259,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   ((3, [`⦇F(∋,𝟙)α⦈`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((3.125, [`L`]), (3.75, [`E`]), (4.38, [`A`])),
   ((3.438, [`L`]), (4.38, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇F(∋,𝟙)α⦈%∋ est(R)", src: "L(E(A))", tgt: "L(A)", sigs: ("⦇F(∋,𝟙)α⦈": "L(E(A))⟶L(A)", "R": "L(A)⟶L(A)")))],
 
   [#vstep(RQ, pb-pic((pb-alg, thin-Q-box), (est-R-box,)),
@@ -8111,6 +8272,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   ((3, [`⦇(F(∋,∋)α)%∋ thin(Q)⦈`], black, 2.5), (1.5, [`est(R)`], black, 2.5)),
   ((2.5, [`L`]), (3.125, [`E`]), (3.75, [`A`])),
   ((3.125, [`L`]), (3.75, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇(F(∋,∋)α)%∋ thin(Q)⦈est(R)", src: "L(E(A))", tgt: "L(A)", mu: "F:L(x)⟶E(L(A))", sigs: ("R": "L(A)⟶L(A)")))],
 
   [#vstep(EQ, pb-pic((pb-out, pb-Pa, union-box, thin-Q-box), (est-R-box,)),
@@ -8215,6 +8377,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`sort(P)`], black, 3.016), (1.5, [`thinlist(Q)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "sort(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("sort": "E(A)⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(EQ, tl-pic((tl-set, tl-ord, thinlist-Q-box)),
@@ -8224,6 +8387,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((4.5, [`setify°`], black, 3.016), (3, [`ordered(P)`], black, 3.016), (1.5, [`thinlist(Q)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((tl-set, thinlist-Q-box, tl-ord)),
@@ -8234,6 +8398,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((4.5, [`setify°`], black, 3.016), (3, [`thinlist(Q)`], black, 3.016), (1.5, [`ordered(P)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((thin-Q-box, tl-set, tl-ord)),
@@ -8244,6 +8409,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((4.5, [`thin(Q)`], black, 3.016), (3, [`setify°`], black, 3.016), (1.5, [`ordered(P)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(EQ, tl-pic((thin-Q-box, sort-P-box)),
@@ -8253,6 +8419,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`thin(Q)`], black, 3.016), (1.5, [`sort(P)`], black, 3.016)),
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "thin(Q)sort(P)", src: "E(A)", tgt: "[A]", sigs: ("sort": "E(A)⟶[A]", "Q": "A⟶A")))],
 )]<thinlist-86>
 
@@ -8281,11 +8448,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], lb-pic((lb-Lam, sort-P-box)), [])],
-  [#dpanel(9, 6.74, 4.89,
-  ((3.016, 1.5, "bot", none, none), (3.016, 6.75, 1.5, [`E`], frc([`𝟙`])), (3.641, "top", 4.5, none, none), (4.266, "top", 6, none, none)),
-  ((6, [`∋`], black, 4.266, 4.266, "lax"), (4.5, [`f`], black, 3.641), (3, [`p`]), (1.5, [`sort(P)`], black, 3.016)),
+  [#dpanel(15, 6.74, 4.89,
+  ((3.016, 3, "bot", none, none), (3.016, 8.25, 3, [`E`], frc([`𝟙`])), (3.641, "top", 6, none, none), (4.266, "top", 7.5, none, none)),
+  ((7.5, [`∋`], black, 4.266, 4.266, "lax"), (6, [`f`], black, 3.641), (4.5, [`p`]), (3, [`sort(P)`], black, 3.016)),
   ((3.641, [`F`]), (4.266, [`E`]), (4.89, [`A`])),
   ((3.016, [`list`]), (4.89, [`A`])),
+  obj: ((8.25, [`A`]), (7.5, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`])),
   cert: (expect: "(F(∋)f p)%∋ sort(P)", src: "F(E(A))", tgt: "[A]", sigs: ("f": "F(A)⟶A", "p": "A⟶A", "sort": "E(A)⟶[A]")))],
 
   [#vstep(EQ, lb-pic((lb-cp, lb-Efp, sort-P-box)),
@@ -8304,11 +8472,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
   // lane: the same coreflexive, applied to the sorted list instead of to the set.
   // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
-  [#dpanel(9, 6.74, 4.89,
+  [#dpanel(15, 6.74, 4.89,
   ((3.016, 1.5, "bot", none, none), (3.016, 3, 1.5, [`list`], none), (3.016, 5.25, 3, [`E`], frc([`𝟙`])), (3.641, "top", 4.5, none, none), (4.266, "top", 7.5, none, none)),
   ((7.5, [`∋`], black, 4.266, 4.266, "lax"), (4.5, [`f`], black, 3.641), (3, [`sort(P)`], black, 3.016), (1.5, [`filter(p)`], black, 3.016)),
   ((3.641, [`F`]), (4.266, [`E`]), (4.89, [`A`])),
   ((3.016, [`list`]), (4.89, [`A`])),
+  obj: ((7.5, [`A`]), (5.25, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(∋)f%∋ sort(P)filter(p)", src: "F(E(A))", tgt: "[A]", sigs: ("f": "F(A)⟶A", "sort": "E(A)⟶[A]", "filter": "[A]⟶[A]")))],
 
   [#vstep(RQ, lb-pic((lb-cp, lb-sfPf, lb-lf, lb-fil)),
@@ -8359,6 +8528,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`⦇S⦈`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
+  obj: ((3.75, [`T`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇S⦈%∋ est(R)", src: "T", tgt: "A", sigs: ("⦇S⦈": "T⟶A", "R": "A⟶A")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8386,6 +8556,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: ("S": "F(A)⟶A", "R": "A⟶A")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8422,6 +8593,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((4.5, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (3, [`sort(P)`], black, 3.016), (1.5, [`minlist(R)`], black, 3.016)),
   ((3.64, [`T`]),),
   ((3.64, [`A`]),),
+  obj: ((4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈sort(P)minlist(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "minlist": "[A]⟶A")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8462,6 +8634,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`⦇−thinlist(Q)⦈`]), (1.5, [`minlist(R)`], black, 3.016)),
   ((3.64, [`T`]),),
   ((3.64, [`A`]),),
+  obj: ((3, [`A`]), (1.5, [`A`])),
   cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "T", tgt: "A", sigs: ("⦇−thinlist(Q)⦈": "T⟶[A]", "minlist": "[A]⟶A")))],
 )]<thinlist-thm82>
 
@@ -8484,22 +8657,24 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit* — one wire, `F(EA)` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], qb-pic((nb-LamS, thin-Q-box, sort-P-box)), [])],
-  [#dpanel(9, 6.74, 4.89,
+  [#dpanel(15, 6.74, 4.89,
   ((3.016, 1.5, "bot", none, none), (3.016, 3, 1.5, [`E`], none), (3.016, 5.25, 3, [`E`], frc([`𝟙`])), (3.641, "top", 4.5, none, none), (4.266, "top", 7.5, none, none)),
   ((7.5, [`∋`], black, 4.266, 4.266, "lax"), (4.5, [`S`], black, 3.641), (3, [`thin(Q)`], black, 3.016), (1.5, [`sort(P)`], black, 3.016)),
   ((3.641, [`F`]), (4.266, [`E`]), (4.89, [`A`])),
   ((3.016, [`list`]), (4.89, [`A`])),
+  obj: ((7.5, [`A`]), (5.25, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(∋)S%∋ thin(Q)sort(P)", src: "F(E(A))", tgt: "[A]", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(RQ, qb-pic((nb-LamS, sort-P-box, thinlist-Q-box)),
     [#src[`sort P thinlist Q⊑thin Q sort P` — @thinlist-laws]])],
   // The node has walked up past `thin Q`, which comes out below it as `thinlist Q` on the `list`
   // lane: that exchange is the whole of (8.6), and the rest of the chain rewrites the algebra.
-  [#dpanel(9, 6.74, 4.89,
+  [#dpanel(15, 6.74, 4.89,
   ((3.016, 1.5, "bot", none, none), (3.016, 3, 1.5, [`list`], none), (3.016, 5.25, 3, [`E`], frc([`𝟙`])), (3.641, "top", 4.5, none, none), (4.266, "top", 7.5, none, none)),
   ((7.5, [`∋`], black, 4.266, 4.266, "lax"), (4.5, [`S`], black, 3.641), (3, [`sort(P)`], black, 3.016), (1.5, [`thinlist(Q)`], black, 3.016)),
   ((3.641, [`F`]), (4.266, [`E`]), (4.89, [`A`])),
   ((3.016, [`list`]), (4.89, [`A`])),
+  obj: ((7.5, [`A`]), (5.25, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "F(∋)S%∋ sort(P)thinlist(Q)", src: "F(E(A))", tgt: "[A]", sigs: ("S": "F(A)⟶A", "sort": "E(A)⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(EQ, qb-pic((qb-fork, qb-cup, sort-P-box, thinlist-Q-box)),
@@ -8589,11 +8764,12 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep([], kb-pic(none, (kb-spec, est-R-box)),
     [#frc([`subseq (within w)`])` est(R)`])],
-  [#dpanel(7.5, 6.12, 4.27,
-  ((2.5, 5.25, 1.5, [`E`], frc([`𝟙`])), (3.641, 3, "bot", none, none), (3.641, 4.5, 3, [`list`], none), (3.641, "top", 4.5, none, none)),
-  ((4.5, [`subseq`], black, 3.641, 3.641, "lax"), (3, [`within(w)`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
+  [#dpanel(12, 6.12, 4.27,
+  ((2.5, 6.75, 3, [`E`], frc([`𝟙`])), (3.641, 4.5, "bot", none, none), (3.641, 6, 4.5, [`list`], none), (3.641, "top", 6, none, none)),
+  ((6, [`subseq`], black, 3.641, 3.641, "lax"), (4.5, [`within(w)`], black, 3.641), (3, [`est(R)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`Item`])),
   ((3.641, [`list`]), (4.27, [`Item`])),
+  obj: ((6.75, [`Item`]), (6, [`Item`]), (4.5, [`Item`]), (3, [`Item`])),
   cert: (expect: "(subseq within(w))%∋ est(R)", src: "[Item]", tgt: "[Item]", sigs: ("within": "[Item]⟶[Item]", "R": "[Item]⟶[Item]")))],
 
   [#vstep(EQ, kb-pic(none, (kb-fus, est-R-box)),
@@ -8605,6 +8781,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`Item`])),
   ((3.641, [`list`]), (4.27, [`Item`])),
+  obj: ((3.75, [`Item`]), (3, [`Item`]), (1.5, [`Item`])),
   cert: (expect: "⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈%∋ est(R)", src: "[Item]", tgt: "[Item]", mu: "F:list(x)⟶[Item]", sigs: ("R": "[Item]⟶[Item]")))],
 
   [#vstep(RQ, kb-pic((listcp-F-box, pair-g-box, kb-mg, thinlist-Q-box), (minlist-R-box,)),
@@ -8616,6 +8793,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3, [`⦇−thinlist(Q)⦈`], black, 3.329), (1.5, [`minlist(R)`], black, 3.016)),
   ((3.329, [`list`]), (4.78, [`Item`])),
   ((3.329, [`list`]), (4.78, [`Item`])),
+  obj: ((3, [`Item`]), (1.5, [`Item`])),
   cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "[Item]", tgt: "[Item]", sigs: ("⦇−thinlist(Q)⦈": "[Item]⟶[[Item]]", "minlist": "[[Item]]⟶[Item]")))],
 
   [#vstep(EQ, kb-pic((kb-prog,), (minlist-R-box,)),
@@ -8702,6 +8880,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((4.5, [`partition`], black, 4.209), (3, [`fits(w)`], black, 5.293), (1.5, [`est(R)`], black, 2.5)),
   ((4.209, [`list⁺`]), (5.92, [`Word`])),
   ((3.896, [`list⁺`]), (5.293, [`list⁺`]), (5.92, [`Word`])),
+  obj: ((5.25, [`Word`]), (4.5, [`Word`]), (3, [`Word`]), (1.5, [`Word`])),
   cert: (expect: "(partition list⁺(fits(w)))%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("partition": "list⁺(Word)⟶list⁺(list⁺(Word))", "fits": "list⁺(Word)⟶list⁺(Word)", "R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-fus, est-R-box)),
@@ -8714,6 +8893,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((3, [`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`], black, 3.896), (1.5, [`est(R)`], black, 2.5)),
   ((3.896, [`list⁺`]), (6.54, [`Word`])),
   ((4.521, [`list⁺`]), (5.918, [`list⁺`]), (6.54, [`Word`])),
+  obj: ((3.75, [`Word`]),),
   cert: (expect: "⦇[wrap wrap,new ∪ (glue (ok w))]⦈%∋ est(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", mu: "F:list⁺(x)", sigs: ("R": "list⁺(list⁺(Word))⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic(none, (ab-split, est-R-box)),
@@ -8732,6 +8912,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((3, [`⦇−thinlist(Q)⦈`], black, 4.413), (1.5, [`minlist(R)`], black, 3.016)),
   ((4.413, [`list⁺`]), (6.43, [`Word`])),
   ((3.329, [`list⁺`]), (5.497, [`list⁺`]), (6.43, [`Word`])),
+  obj: ((3, [`Word`]), (1.5, [`Word`])),
   cert: (expect: "⦇−thinlist(Q)⦈minlist(R)", src: "list⁺(Word)", tgt: "list⁺(list⁺(Word))", sigs: ("⦇−thinlist(Q)⦈": "list⁺(Word)⟶[list⁺(list⁺(Word))]", "minlist": "[list⁺(list⁺(Word))]⟶list⁺(list⁺(Word))")))],
 
   [#vstep(EQ, ab-pic((ab-prog,), (minlist-R-box,)),
@@ -8802,6 +8983,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((3, [`tour`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
   ((3.641, [`list`]), (5.09, [`City`])),
   ((2.877, [`Δ`]), (4.47, [`list`]), (5.09, [`City`])),
+  obj: ((3.75, [`City`]), (3, [`City`]), (1.5, [`City`])),
   cert: (expect: "tour%∋ est(R)", src: "[City]", tgt: "[City]×[City]", sigs: ("tour": "[City]⟶[City]×[City]")), names: true)],
 
   [#vstep(EQ, ub-pic(none, (ub-fold, est-R-box)),
@@ -8817,6 +8999,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   ((3, [`⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`], black, 3.641), (1.5, [`minlist(R)`], black, 3.016)),
   ((3.641, [`list`]), (5.41, [`City`])),
   ((3.641, [`Δ`]), (4.783, [`list`]), (5.41, [`City`])),
+  obj: ((3, [`City`]), (1.5, [`City`])),
   cert: (expect: "⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈minlist(R)", src: "[City]", tgt: "[City]×[City]", sigs: ("⦇⦈": "[City]⟶[[City]×[City]]", "minlist": "[x]⟶x", "thinlist": "[x]⟶[x]", "listcp": "[x]⟶[x]", "cat": "[x]×[x]⟶[x]")))],
 
   [#vstep(EQ, ub-pic((ub-prog,), (minlist-R-box,)),
@@ -8902,6 +9085,7 @@ in @mu-defn.
   ((3, [`H`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`A`]),),
   ((3.12, [`B`]),),
+  obj: ((3.75, [`A`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: ("H": "A⟶B")), names: true)],
 
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
@@ -8940,6 +9124,7 @@ in @mu-defn.
   ((7.5, [`T°`]), (6, [`thin(Q)`], black, 2.5), (4.5, [`X`]), (3, [`h`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((3.75, [`A`]),),
   ((3.75, [`B`]),),
+  obj: ((8.25, [`A`]), (7.5, [`A`]), (6, [`A`]), (4.5, [`B`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "(T°)%∋ thin(Q)P(F(X)h)est(R)", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -8975,6 +9160,7 @@ in @mu-defn.
   ((7.5, [`Vᵢ°`]), (6, [`thin(Qᵢ)`], black, 2.5), (4.5, [`X`]), (3, [`Uᵢ`], black, 3.132), (1.5, [`est(R)`], black, 2.5)),
   ((3.76, [`A`]),),
   ((3.76, [`B`]),),
+  obj: ((8.25, [`A`]), (7.5, [`A`]), (6, [`A`]), (4.5, [`B`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 )]<dp-laws>
 
@@ -9054,6 +9240,7 @@ both lists empty.
   ((3, [`edit°`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((3.125, [`Δ`]), (4.266, [`list`]), (4.89, [`Char`])),
   ((3.641, [`list`]), (4.89, [`Op`])),
+  obj: ((3.75, [`Char`]), (3, [`Op`]), (1.5, [`Op`])),
   cert: (expect: "(edit°)%∋ est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("edit": "[Op]⟶[Char]×[Char]")), names: true)],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
@@ -9083,11 +9270,12 @@ both lists empty.
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
   // closes it again; `Δ` and the source `list` die and are remade at both beads, so each runs as a
   // loop between them.  `thin Q : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
-  [#dpanel(10.5, 8.4, 6.55,
-  ((2.5, 6, 1.5, [`E`], none), (2.5, 8.25, 6, [`E`], frc([`𝟙`])), (4.471, 3, "bot", none, none), (3.642, 7.5, 3, [`Op×−`], none), (5.096, 4.5, 3, [`list`], none), (4.627, 7.5, 4.5, [`Δ`], none), (5.925, 7.5, 4.5, [`list`], none), (3.954, "top", 7.5, none, none), (5.096, "top", 7.5, none, none)),
-  ((7.5, [`step°`], black, 3.954), (6, [`thin(Q)`], black, 2.5), (4.5, [`X`], black, 4.627), (3, [`cons`], black, 3.642, 4.369), (1.5, [`est(R)`], black, 2.5)),
+  [#dpanel(18, 8.4, 6.55,
+  ((2.5, 12, 7.5, [`E`], none), (2.5, 14.25, 12, [`E`], frc([`𝟙`])), (4.471, 9, "bot", none, none), (3.642, 13.5, 9, [`Op×−`], none), (5.096, 10.5, 9, [`list`], none), (4.627, 13.5, 10.5, [`Δ`], none), (5.925, 13.5, 10.5, [`list`], none), (3.954, "top", 13.5, none, none), (5.096, "top", 13.5, none, none)),
+  ((13.5, [`step°`], black, 3.954), (12, [`thin(Q)`], black, 2.5), (10.5, [`X`], black, 4.627), (9, [`cons`], black, 3.642, 4.369), (7.5, [`est(R)`], black, 2.5)),
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
+  obj: ((14.25, [`Char`]), (13.5, [`Char`]), (12, [`Char`]), (10.5, [`Op`]), (9, [`Op`]), (7.5, [`Op`])),
   cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
@@ -9097,11 +9285,12 @@ both lists empty.
       `base` returns]])],
   // The `step` branch of the `→`, not both: the `base` branch is `nil` on an empty pair, nothing to
   // draw.  `Op×−` is the summand `step°` opens.
-  [#dpanel(10.5, 8.4, 6.55,
-  ((2.5, 6, 1.5, [`E`], none), (2.5, 8.25, 6, [`E`], frc([`𝟙`])), (4.471, 3, "bot", none, none), (3.642, 7.5, 3, [`Op×−`], none), (5.096, 4.5, 3, [`list`], none), (4.627, 7.5, 4.5, [`Δ`], none), (5.925, 7.5, 4.5, [`list`], none), (3.954, "top", 7.5, none, none), (5.096, "top", 7.5, none, none)),
-  ((7.5, [`step°`], black, 3.954), (6, [`thin(U×V)`], black, 2.5), (4.5, [`X`], black, 4.627), (3, [`cons`], black, 3.642, 4.369), (1.5, [`est(R)`], black, 2.5)),
+  [#dpanel(18, 8.4, 6.55,
+  ((2.5, 12, 7.5, [`E`], none), (2.5, 14.25, 12, [`E`], frc([`𝟙`])), (4.471, 9, "bot", none, none), (3.642, 13.5, 9, [`Op×−`], none), (5.096, 10.5, 9, [`list`], none), (4.627, 13.5, 10.5, [`Δ`], none), (5.925, 13.5, 10.5, [`list`], none), (3.954, "top", 13.5, none, none), (5.096, "top", 13.5, none, none)),
+  ((13.5, [`step°`], black, 3.954), (12, [`thin(U×V)`], black, 2.5), (10.5, [`X`], black, 4.627), (9, [`cons`], black, 3.642, 4.369), (7.5, [`est(R)`], black, 2.5)),
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
+  obj: ((14.25, [`Char`]), (13.5, [`Char`]), (12, [`Char`]), (10.5, [`Op`]), (9, [`Op`]), (7.5, [`Op`])),
   cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
@@ -9111,11 +9300,12 @@ both lists empty.
       the two lengths]])],
   // The program is the branch above with each box replaced by a function computing it, so the wires
   // and the beads are the same picture: only the labels change.
-  [#dpanel(7.5, 8.92, 7.07,
-  ((3.016, 6, 1.5, [`list`], none), (4.675, 3, "bot", none, none), (4.158, 6, 3, [`Op×−`], none), (5.768, 4.5, 3, [`list`], none), (5.3, 6, 4.5, [`Δ`], none), (6.441, 6, 4.5, [`list`], none), (4.158, "top", 6, none, none), (5.3, "top", 6, none, none)),
-  ((6, [`unstep`], black, 4.158), (4.5, [`mle`], black, 5.3), (3, [`cons`], black, 4.158, 4.963), (1.5, [`minlist(R)`], black, 3.016)),
+  [#dpanel(12, 8.92, 7.07,
+  ((3.016, 9, 4.5, [`list`], none), (4.675, 6, "bot", none, none), (4.158, 9, 6, [`Op×−`], none), (5.768, 7.5, 6, [`list`], none), (5.3, 9, 7.5, [`Δ`], none), (6.441, 9, 7.5, [`list`], none), (4.158, "top", 9, none, none), (5.3, "top", 9, none, none)),
+  ((9, [`unstep`], black, 4.158), (7.5, [`mle`], black, 5.3), (6, [`cons`], black, 4.158, 4.963), (4.5, [`minlist(R)`], black, 3.016)),
   ((4.158, [`Δ`]), (5.3, [`list`]), (7.07, [`Char`])),
   ((4.675, [`list`]), (7.07, [`Op`])),
+  obj: ((9, [`Char`]), (7.5, [`Op`]), (6, [`Op`]), (4.5, [`Op`])),
   cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
@@ -9203,6 +9393,7 @@ both lists empty.
   ((3, [`flatten°`], black, 3.896), (1.5, [`est(R)`], black, 2.5)),
   ((3.896, [`list⁺`]), (4.52, [`A`])),
   ((3.896, [`tree`]), (4.52, [`A`])),
+  obj: ((3.75, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("flatten": "tree(A)⟶list⁺(A)")), names: true)],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9247,6 +9438,7 @@ both lists empty.
   ((6, [`cat°`], black, 3.896), (4.5, [`X`], black, 4.464), (3, [`bin`], black, 2.877), (1.5, [`est(R)`], black, 2.5)),
   ((3.896, [`list⁺`]), (5.09, [`A`])),
   ((3.896, [`tree`]), (5.09, [`A`])),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", branch: "cat", sigs: ("cat": "list⁺(A)×list⁺(A)⟶list⁺(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "X": "list⁺(A)⟶tree(A)")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9297,6 +9489,7 @@ both lists empty.
   ((6, [`splits`], black, 3.641), (4.5, [`mct`], black, 5.038), (3, [`bin`], black, 3.641), (1.5, [`minlist(R)`], black, 3.016)),
   ((3.641, [`list⁺`]), (5.66, [`A`])),
   ((4.158, [`tree`]), (5.66, [`A`])),
+  obj: ((6, [`A`]), (4.5, [`A`]), (3, [`A`]), (1.5, [`A`])),
   cert: (expect: "splits list((mct×mct)bin)minlist(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: ("splits": "list⁺(A)⟶[list⁺(A)×list⁺(A)]", "mct": "list⁺(A)⟶tree(A)", "bin": "tree(A)×tree(A)⟶tree(A)", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
@@ -9380,6 +9573,7 @@ the longest repeated tail; #h(4pt)
   ((3, [`decode°`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`Char`])),
   ((3.641, [`list`]), (4.27, [`Code`])),
+  obj: ((3.75, [`Char`]), (3, [`Code`]), (1.5, [`Code`])),
   cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: ("decode": "[Code]⟶[Char]")), names: true)],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9418,6 +9612,7 @@ the longest repeated tail; #h(4pt)
   ((7.5, [`extend°`], black, 4.98), (6, [`thin(Q)`], black, 2.5), (4.5, [`X`], black, 5.293), (3, [`snoc`], black, 4.151), (1.5, [`est(R)`], black, 2.5)),
   ((4.98, [`list`]), (5.92, [`Char`])),
   ((4.98, [`list`]), (5.92, [`Code`])),
+  obj: ((8.25, [`Char`]), (7.5, [`Char`]), (6, [`Char`]), (4.5, [`Code`]), (3, [`Code`]), (1.5, [`Code`])),
   cert: (expect: "([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", branch: "extend", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9449,6 +9644,7 @@ the longest repeated tail; #h(4pt)
   ((7.5, [`extend°`], black, 4.98), (6, [`thin(prefix°×(⊤+⊤))`], black, 2.5), (4.5, [`X`], black, 5.293), (3, [`snoc`], black, 4.151), (1.5, [`est(R)`], black, 2.5)),
   ((4.98, [`list`]), (5.92, [`Char`])),
   ((4.98, [`list`]), (5.92, [`Code`])),
+  obj: ((8.25, [`Char`]), (7.5, [`Char`]), (6, [`Char`]), (4.5, [`Code`]), (3, [`Code`]), (1.5, [`Code`])),
   cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)", src: "[Char]", tgt: "[Code]", sigs: ("extend": "[Char]×Code⟶[Char]", "snoc": "[Code]×Code⟶[Code]", "X": "[Char]⟶[Code]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9474,6 +9670,7 @@ the longest repeated tail; #h(4pt)
   ((6, [`reduce`], black, 4.668), (4.5, [`encode`], black, 5.809), (3, [`snoc`], black, 4.668), (1.5, [`minlist(R)`], black, 3.016)),
   ((4.668, [`list`]), (6.43, [`Char`])),
   ((5.184, [`list`]), (6.43, [`Code`])),
+  obj: ((6, [`Char`]), (4.5, [`Code`]), (3, [`Code`]), (1.5, [`Code`])),
   cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: ("reduce": "[Char]⟶[[Char]×Code]", "encode": "[Char]⟶[Code]", "snoc": "[Code]×Code⟶[Code]", "minlist": "[x]⟶x")))],
 )]<code-laws>
 
@@ -9522,6 +9719,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ((3, [`H`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`A`]),),
   ((3.12, [`B`]),),
+  obj: ((3.75, [`A`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: ("H": "A⟶B")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9558,6 +9756,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ((6, [`T°`]), (4.5, [`est(Q)`], black, 2.5), (3, [`X`]), (1.5, [`h`], black, 3.125)),
   ((3.75, [`A`]),),
   ((3.75, [`B`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", sigs: ("T": "F(A)⟶A", "h": "F(B)⟶B", "X": "A⟶B")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9593,6 +9792,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ((6, [`Vᵢ°`]), (4.5, [`est(Qᵢ)`], black, 2.5), (3, [`X`]), (1.5, [`Uᵢ`], black, 3.132)),
   ((3.76, [`A`]),),
   ((3.76, [`B`]),),
+  obj: ((6.75, [`A`]), (6, [`A`]), (4.5, [`A`]), (3, [`B`]), (1.5, [`B`])),
   cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: ("Vᵢ": "Fᵢ(A)⟶A", "Uᵢ": "Fᵢ(B)⟶B", "X": "A⟶B")))],
 )]<greedy-laws>
 
@@ -9652,6 +9852,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((3, [`detab°`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
   ((3.641, [`list`]), (4.27, [`Char`])),
   ((3.641, [`list`]), (4.27, [`Char`])),
+  obj: ((3.75, [`Char`]), (3, [`Char`]), (1.5, [`Char`])),
   cert: (expect: "(detab°)%∋ est(R)", src: "[Char]", tgt: "[Char]", sigs: ("detab": "[Char]⟶[Char]")), names: true)],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9718,6 +9919,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((6, [`expand°`], black, 4.464), (4.5, [`est(Q)`], black, 2.5), (3, [`X`], black, 5.293), (1.5, [`snoc`], black, 4.151)),
   ((4.464, [`list`]), (5.92, [`Char`])),
   ((4.464, [`list`]), (5.92, [`Char`])),
+  obj: ((6.75, [`Char`]), (6, [`Char`]), (4.5, [`Char`]), (3, [`Char`]), (1.5, [`Char`])),
   cert: (expect: "([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "[Char]", tgt: "[Char]", branch: "expand", sigs: ("expand": "[Char]×Char⟶[Char]", "snoc": "[Char]×Char⟶[Char]", "X": "[Char]⟶[Char]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9749,6 +9951,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((6, [`expand°`], black, 4.464), (4.5, [`est(V×U)`], black, 2.5), (3, [`X`], black, 5.293), (1.5, [`snoc`], black, 4.151)),
   ((4.464, [`list`]), (5.92, [`Char`])),
   ((4.464, [`list`]), (5.92, [`Char`])),
+  obj: ((6.75, [`Char`]), (6, [`Char`]), (4.5, [`Char`]), (3, [`Char`]), (1.5, [`Char`])),
   cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "[Char]", tgt: "[Char]", sigs: ("expand": "[Char]×Char⟶[Char]", "snoc": "[Char]×Char⟶[Char]", "X": "[Char]⟶[Char]")))],
 
   [#vstep(EQ, [],
@@ -9823,6 +10026,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((3, [`bagify°`], black, 3.641), (1.5, [`est(R)`], black, 2.5)),
   ((3.641, [`bag`]), (4.27, [`Job`])),
   ((3.641, [`list`]), (4.27, [`Job`])),
+  obj: ((3.75, [`Job`]), (3, [`Job`]), (1.5, [`Job`])),
   cert: (expect: "(bagify°)%∋ est(R)", src: "bag(Job)", tgt: "[Job]", sigs: ("bagify": "[Job]⟶bag(Job)")), names: true)],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9872,6 +10076,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((6, [`snag°`], black, 4.209), (4.5, [`est(Q)`], black, 2.5), (3, [`X`], black, 5.038), (1.5, [`snoc`], black, 3.896)),
   ((4.209, [`bag`]), (5.66, [`Job`])),
   ((4.209, [`list`]), (5.66, [`Job`])),
+  obj: ((6.75, [`Job`]), (6, [`Job`]), (4.5, [`Job`]), (3, [`Job`]), (1.5, [`Job`])),
   cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", branch: "snag", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9902,6 +10107,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((6, [`snag°`], black, 4.209), (4.5, [`est(Q')`], black, 2.5), (3, [`X`], black, 5.038), (1.5, [`snoc`], black, 3.896)),
   ((4.209, [`bag`]), (5.66, [`Job`])),
   ((4.209, [`list`]), (5.66, [`Job`])),
+  obj: ((6.75, [`Job`]), (6, [`Job`]), (4.5, [`Job`]), (3, [`Job`]), (1.5, [`Job`])),
   cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("snag": "bag(Job)×Job⟶bag(Job)", "snoc": "[Job]×Job⟶[Job]", "X": "bag(Job)⟶[Job]")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -9922,6 +10128,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((4.5, [`pick`], black, 3.584), (3, [`schedule`], black, 4.413), (1.5, [`snoc`], black, 3.271)),
   ((3.584, [`bag`]), (5.04, [`Job`])),
   ((3.584, [`list`]), (5.04, [`Job`])),
+  obj: ((4.5, [`Job`]), (3, [`Job`]), (1.5, [`Job`])),
   cert: (expect: "pick (schedule×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: ("pick": "bag(Job)⟶bag(Job)×Job", "schedule": "bag(Job)⟶[Job]", "snoc": "[Job]×Job⟶[Job]")))],
 )]<tardy-laws>
 
@@ -9983,6 +10190,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((3, [`intern°`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`[0,2¹⁶)`]),),
   ((3.12, [`Decimal`]),),
+  obj: ((3.75, [`[0,2¹⁶)`]), (3, [`Decimal`]), (1.5, [`Decimal`])),
   cert: (expect: "𝟙%∋ E(intern°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("intern": "Decimal⟶[0,2¹⁶)")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -10013,6 +10221,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((7.5, [`interval`]), (4.5, [`inrange`]), (3, [`val°`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`[0,2¹⁶)`]),),
   ((3.12, [`Decimal`]),),
+  obj: ((7.5, [`Interval`]), (5.25, [`Interval`]), (4.5, [`Real`]), (3, [`Decimal`]), (1.5, [`Decimal`])),
   cert: (expect: "interval 𝟙%∋ E(inrange val°)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "inrange": "Interval⟶Real", "val": "Decimal⟶Real")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -10042,6 +10251,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ((6, [`interval`]), (3, [`H`]), (1.5, [`est(R)`], black, 2.5)),
   ((3.12, [`[0,2¹⁶)`]),),
   ((3.12, [`Decimal`]),),
+  obj: ((6, [`Interval`]), (3.75, [`Interval`]), (3, [`Decimal`]), (1.5, [`Decimal`])),
   cert: (expect: "interval 𝟙%∋ E(H)est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: ("interval": "[0,2¹⁶)⟶Interval", "H": "Interval⟶Decimal")))],
 
   [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (

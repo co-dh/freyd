@@ -824,7 +824,13 @@ def layout(rows, made, otop, obot, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
     n = len(rows)
-    ys = [(n - i) * DY for i in range(n)]
+    # A bead the row DECLARES natural is the picture's FIXED POINT: naturality is exactly the freedom
+    # to slide the other beads past it (IntroString (1.15)), so the two sides of an equation must draw
+    # it at ONE height and an ordinary arrow as the thing that moved.  Shifting every row up by that
+    # bead's index puts it at `n·DY` wherever it stands in the composite, and the frame below makes
+    # `n·DY` the canvas horizon, which is where `row`'s `align: horizon` lines the panels up.
+    k = next((i for i, r in enumerate(rows) if r.nat), 0)
+    ys = [(n + k - i) * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
     beads, unit = [], {}
@@ -849,7 +855,9 @@ def layout(rows, made, otop, obot, cert):
         beads.append([ys[i], r.label, "#000000", reach, dot] + (["lax"] if r.nat == "lax" else [])
                      if dot is not None
                      else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
-    hh = (n + 1) * DY
+    # The natural bead is drawn on the HORIZON, so the frame reserves a row above every bead as well
+    # as below: `2n·DY` tall, centre `n·DY`.  A panel with no natural bead keeps the tight frame.
+    hh = (2 * n if any(r.nat for r in rows) else n + 1) * DY
 
     def xat(y, dying=True):
         """The sloped object wire's x at a height: one gap right of every lane alive there or NOT
@@ -898,7 +906,7 @@ def layout(rows, made, otop, obot, cert):
             xb = round(xb - 0.05, 2)
         run = min(2 * hh, max(DX, xb - xl))
         op, xo = [[round(xb + run, 2), hh], [xb, 0.0]], round(xb + run, 2)
-    rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": (n + 1) * DY,
+    rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": hh,
             "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
@@ -1080,6 +1088,7 @@ def emit(r):
             + (f'  opath: {lst(r["opath"])},\n' if r.get("opath") else "")
             + (f'  right: {lst(r["right"])},\n' if r.get("right") else "")
             + (f'  obreak: {tup(r["obreak"])},\n' if r.get("obreak") else "")
+            + (f'  obj: {lst(r["obj"])},\n' if r.get("obj") else "")
             + ("  ostraight: true,\n" if r.get("ostraight") else "")
             + "  cert: (" + ", ".join(f'{k}: ' + (quoted(v) if isinstance(v, str) else
                 "(" + ", ".join(f'{quoted(a)}: {quoted(b)}' for a, b in v.items()) + ")")

@@ -11,7 +11,7 @@
 // Same one-line rule.  NOT `cap`/`cup` from circuit and NOT `*` from note-style: this file already
 // binds `cap`, and note-style re-exports a `cetz`/`d` that would shadow hm.typ's.
 #import "circuit.typ": wire, bend, gbox, dot as wiredot, tape, TAPEEDGE
-#import "note-style.typ": P, src
+#import "note-style.typ": P, src, plain
 
 #set page(width: auto, height: auto, margin: 0.8cm, fill: white)
 #set text(font: "New Computer Modern", size: 11pt)
@@ -49,9 +49,31 @@
 
 // ------------------------------------- a wire's colour is its type (`typed: true`): ONE HUE PER OBJECT
 // Off the note's ARROW palette, since a bead's colour says which arrow; `C` gold not olive, too near `α_C`'s green.
-#let TCOL = rgb("#b91c1c")      // `T`, and `A` in the `Λ` panels, where no `T` runs
-#let BCOL = rgb("#0e7490")      // `B`
-#let CCOL = rgb("#a16207")      // `C`
+// FOUR HUES, named by hue and no longer by a letter: which object wears which is `OCOL` below.  They
+// are spread by HUE ANGLE — 35°, 70°, 142°, 234° — because two objects on one wire read as the same
+// object when their angles are close, whatever ΔE says: red against amber is 35° apart and was the
+// pair the note kept getting wrong, so no display now puts those two on one wire.
+#let TCOL = rgb("#b91c1c")      // red
+#let BCOL = rgb("#0e7490")      // teal
+#let CCOL = rgb("#a16207")      // amber
+#let GCOL = rgb("#00932d")      // green, the fourth: §16.4b runs four types down one wire
+
+// ONE OBJECT, ONE HUE, NOTE-WIDE.  Bands assigned by POSITION made `C` amber in one panel of §11.4.2a
+// and teal in the next, which is the one thing the colour is there to prevent.  Two objects share a
+// hue only where no display puts them on one wire: this map is a colouring of that co-occurrence
+// graph, and the ORDER within §16.4b's four is chosen so red and amber are never neighbours.  A new
+// object name belongs here — `obands` reads it with no default, so an unlisted one is a compile
+// error, not a wrong hue.
+#let OCOL = (
+  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL,
+  "Int": TCOL, "Nat": TCOL, "LA": TCOL, "Job": TCOL, "Item": TCOL, "Word": TCOL, "City": TCOL,
+  "Char": TCOL, "Code": BCOL, "Op": GCOL,
+  "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
+
+// `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
+// a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
+// `TA` are the three the note writes — and keeps the panel's positional default.
+#let ocol(c, l, d) = if c != auto { c } else if l == none { d } else { OCOL.at(plain(l), default: d) }
 
 // The FUNCTORS of `i ⊣ E`, keyed by name and OFF the palette above: the `Λ` panels set these wires
 // beside typed object wires.  `i` is black, this file's colour for a functor wire; `E` marks the pair.
@@ -147,9 +169,9 @@
 // scales the geometry alone, so a caller whose port names crowd sets it rather than shrinking them.
 #let homeq(w1, w2, top, mid, bot, out, ctop: black, cmid: black, cbot: black,
            fmid: none, cfmid: black, outsplit: none,
-           typed: false, tcol: TCOL, bcol: BCOL, gap: GAP, sep: [=], rev: false, length: 0.95cm,
+           typed: false, tcol: auto, bcol: auto, gap: GAP, sep: [=], rev: false, length: 0.95cm,
            regions: none, acol: AC, ucol: UC, frame: none) = {
-  let (cT, cB) = if typed { (tcol, bcol) } else { (black, black) }
+  let (cT, cB) = if typed { (ocol(tcol, w2, TCOL), ocol(bcol, out, BCOL)) } else { (black, black) }
   let panels = (
       // The `F` strand lands on row 1, above `mid`: `w2`-typed through the junction down to `mid`,
       // `out`-typed from `mid` down.
@@ -167,8 +189,9 @@
 // straight past it.  FOUR rows, so the shared `f` holds one height; functors black, the object strand typed.
 #let tfuneq(w1, w2, w3, out, act1, act2, f,
             cact1: black, cact2: black, cf: black,
-            tcol: TCOL, bcol: BCOL, gap: GAP, length: 0.95cm,
+            tcol: auto, bcol: auto, gap: GAP, length: 0.95cm,
             regions: none, acol: AC, ucol: UC, frame: none) = {
+  let (tcol, bcol) = (ocol(tcol, w3, TCOL), ocol(bcol, out, BCOL))
   // `T` takes the two-strand panel's object position and the object moves one pitch right; the extra row
   // goes on TOP, so the `F` strand, the pitch and the grey `𝟏` strip are the ones the panels beside it draw.
   let (xt, xo, w, h) = (XO, XO + SEP, W + SEP, H + PITCH)
@@ -191,9 +214,9 @@
 
 // `beadeq` — `b = 𝟙` on the wire `w`: a bead on the left, a BARE WIRE on the right, which is what the
 // identity is here.  One colour throughout, `b` being an endo-arrow — that is the law, not a gap.
-#let beadeq(w, b, out, cb: black, typed: false, wcol: TCOL,
+#let beadeq(w, b, out, cb: black, typed: false, wcol: auto,
             regions: none, acol: AC, ucol: UC, frame: none) = {
-  let c = if typed { wcol } else { black }
+  let c = if typed { ocol(wcol, w, TCOL) } else { black }
   hm-row(
     (
       onepanel(((H, 0, c),), ((H2, b, cb),), w, out, c, c, regions, acol, ucol, frame),
@@ -206,9 +229,10 @@
 // `twobeadeq` — `b1 b2 = b3`: `b1` and `b2` take rows 1 and 3 and `b3` their average, row 2, so the
 // collapse reads as two heights meeting.  `vcol` is the intermediate type, which the convention leaves unnamed.
 #let twobeadeq(w, b1, b2, b3, out, c1: black, c2: black, c3: black,
-               typed: false, tcol: TCOL, vcol: BCOL, bcol: CCOL,
+               typed: false, tcol: auto, vcol: BCOL, bcol: auto,
                regions: none, acol: AC, ucol: UC, frame: none) = {
-  let (cT, cV, cB) = if typed { (tcol, vcol, bcol) } else { (black, black, black) }
+  let (cT, cV, cB) = if typed { (ocol(tcol, w, TCOL), vcol, ocol(bcol, out, CCOL)) }
+    else { (black, black, black) }
   hm-row(
     (
       onepanel(
