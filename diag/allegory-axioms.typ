@@ -2727,6 +2727,22 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
 
 // `α` subscripted by its CARRIER through this section, `#sub` OUTSIDE the raw span (inside backticks `_` is
 // literal).  A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over.
+// The string half is generated, on (11.4a)'s two panels at `⦇αᴀ⦈ := X`: `α` carries the naturality
+// marker, so it draws as one natural bead whose two components are `α`#sub[`T`] and `α`#sub[`A`].
+#let cata-def-l = dpanel(6, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`X`])),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((3.12, [`A`]),),
+  obj: ((3, [`T`]), (1.5, [`A`])),
+  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let cata-def-r = dpanel(6, 4.97, 3.12,
+  ((2.5, "top", 3, none, none),),
+  ((4.5, [`X`]), (3, [`α`], black, 2.5, 2.5)),
+  ((2.5, [`F`]), (3.12, [`T`])),
+  ((3.12, [`A`]),),
+  obj: ((4.5, [`A`]), (3, [`A`])),
+  cert: (expect: "F(X)α", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
@@ -2739,8 +2755,7 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
-  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇α`#sub[`A`]`⦈`], [`α`#sub[`A`]], `A`,
-    typed: true, regions: (`𝒜`, `𝟏`), ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1),
+  row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
   [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`] #h(6pt)
  #src[]],
    // lean:AOP.A5_5.relCata_UP@e4a4905f
@@ -2792,6 +2807,22 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`A`]` := (F(∋) R)%∋`, `A := E A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
+// Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
+// banana, `T⟶EA` being where the power object enters, and `α`'s two components are one natural bead.
+#let cata-map-l = dpanel(6, 6.85, 5,
+  ((2.5, "top", 3, none, none), (4.375, 1.5, "bot", none, none)),
+  ((3, [`α`], black, 2.5, 2.5), (1.5, [`⦇`#frc([`F(∋)R`])`⦈`])),
+  ((2.5, [`F`]), (5, [`T`])),
+  ((4.375, [`E`]), (5, [`A`])),
+  obj: ((3, [`T`]), (1.5, [`A`])),
+  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
+#let cata-map-r = dpanel(6, 5.6, 3.75,
+  ((2.5, "top", 3, none, none), (3.125, 4.5, "bot", none, none)),
+  ((4.5, [`⦇`#frc([`F(∋)R`])`⦈`]), (3, [`α`], black, 2.5, 2.5)),
+  ((2.5, [`F`]), (3.75, [`T`])),
+  ((3.125, [`E`]), (3.75, [`A`])),
+  obj: ((4.5, [`A`]), (3, [`A`])),
+  cert: (expect: "F(⦇F(∋)R%∋⦈)α", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b")), s: 100%)
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   cetz.canvas(length: 0.8cm, {
@@ -2817,9 +2848,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
-  homeq(`F`, `T`, [`α`#sub[`T`]], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`], [`α`#sub[`EA`]], `EA`,
-    typed: true, regions: auto, ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, gap: 5.2,
-    outsplit: (`E`, `A`)),
+  row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
   [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
