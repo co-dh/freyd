@@ -7114,31 +7114,31 @@ N(cp P(α))(that)
 #disp[#align(center)[```
 a row is the outer index, a cell one path; an axis of length 1 is not drawn
 u = ((1,2,3,4),C)                               : F(A[n],A[n][1][1])
-    C = [5]                                       one candidate per row, one square long
-        [6]
-        [7]
-        [8]
+    C = 5                                         one candidate per row, one square long
+        6
+        7
+        8
 F(𝟙,moves trans Vec(n)(concat))                   𝟙 keeps the column, the candidates move
   moves(C)                                        down, unmoved, up: a 3×n matrix
-   = [6] [7] [8] [5]
-     [5] [6] [7] [8]
-     [8] [5] [6] [7]                            : A[3][n][1][1]
+   = 6 7 8 5
+     5 6 7 8
+     8 5 6 7                                    : A[3][n][1][1]
   trans(that)                                     the transpose: row k gets rows k-1, k, k+1
-   = [6] [5] [8]
-     [7] [6] [5]
-     [8] [7] [6]
-     [5] [8] [7]                                : A[n][3][1][1]
+   = 6 5 8
+     7 6 5
+     8 7 6
+     5 8 7                                      : A[n][3][1][1]
   Vec(n)(concat)(that)                            the same cells: three one-candidate lists
-   = [6] [5] [8]                                  are one three-candidate list
-     [7] [6] [5]
-     [8] [7] [6]
-     [5] [8] [7]                                : A[n][3][1]
+   = 6 5 8                                        are one three-candidate list
+     7 6 5
+     8 7 6
+     5 8 7                                      : A[n][3][1]
 zip(that)                                         each row: its square, and its candidates
-   = (1, [6] [5] [8])
-     (2, [7] [6] [5])
-     (3, [8] [7] [6])
-     (4, [5] [8] [7])                           : F(A,A[3][1])[n]
-Vec(n)(cp Vec(3)(α))(that)                        cp pairs, α prefixes: α(1,[6])=[1,6]
+   = (1, 6 5 8)
+     (2, 7 6 5)
+     (3, 8 7 6)
+     (4, 5 8 7)                                 : F(A,A[3][1])[n]
+Vec(n)(cp Vec(3)(α))(that)                        cp pairs, α prefixes: α(1,6)=[1,6]
    = [1,6] [1,5] [1,8]
      [2,7] [2,6] [2,5]
      [3,8] [3,7] [3,6]
