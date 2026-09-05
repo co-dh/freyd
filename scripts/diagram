@@ -1359,31 +1359,38 @@ def resolve_panel(arg, tbl):
     return None
 
 
+def row_entry(text, start, kind, entries, tbl, step):
+    """One `trow`/`row` call as (line, desc, panels, step).  An argument `resolve_panel` cannot trace
+    back to a panel goes into the desc as its own source text, so the gate's report names the row
+    instead of leaving it a number in a count."""
+    resolved = [resolve_panel(a, tbl) for a in entries]
+    panels = [] if any(r is None for r in resolved) or len(resolved) < 2 else resolved
+    names = [r[3] if r else " ".join(a.split())[:60] for r, a in zip(resolved, entries)]
+    return text.count("\n", 0, start) + 1, f"{kind}({', '.join(names)})", panels, step
+
+
 def pairs_rows(text, tbl):
-    """Every `trow(a, b)` and `row((a, sign, b, ...))` call, as (line, kind, names, panels) with
-    `panels` a list of `(frame, beads, name)` — empty when the row could not be resolved."""
+    """Every `trow(a, b)` and `row((a, sign, b, ...))` call, as (line, desc, panels, step): `panels` a
+    list of `(frame, beads, sigs, name)`, empty when a side could not be resolved, and `step` false
+    for a row that sets pictures side by side with no step sign between them."""
     rows = []
     for m in re.finditer(r'\btrow\(', text):
-        if text.rfind("#let trow(", 0, m.start()) == m.start() - 5:
+        if text[max(0, m.start() - 5):m.start()] == "#let ":     # the helper's own definition
             continue
         popen = m.end() - 1
         args = split_args(text[popen + 1:close(text, popen)])
-        line = text.count("\n", 0, m.start()) + 1
-        resolved = [resolve_panel(a, tbl) for a in args]
-        panels = [] if any(r is None for r in resolved) or len(resolved) < 2 else resolved
-        names = [(r[3] if r else "?") for r in resolved]
-        rows.append((line, f"trow({', '.join(names)})", panels))
+        rows.append(row_entry(text, m.start(), "trow", args, tbl, True))
     for m in re.finditer(r'\brow\(\(', text):
         popen = m.start() + 3
         args = split_args(text[popen + 1:close(text, popen)])
-        line = text.count("\n", 0, m.start()) + 1
         tup = args[0]
         entries = split_args(tup[1:-1] if tup.startswith("(") else tup)
-        panel_args = entries[0::2]
-        resolved = [resolve_panel(a, tbl) for a in panel_args]
-        panels = [] if any(r is None for r in resolved) or len(resolved) < 2 else resolved
-        names = [(r[3] if r else "?") for r in resolved]
-        rows.append((line, f"row({', '.join(names)})", panels))
+        # A step sign is markup (`[#h(7pt) = #h(7pt)]`), every other entry a canvas: that is what
+        # separates `a ⊑ b` — two readings of ONE statement, which must line up — from a row that
+        # merely sets two DIFFERENT pictures of the same thing beside each other.
+        signs = [e for e in entries if e.startswith("[") and e.endswith("]")]
+        rows.append(row_entry(text, m.start(), "row",
+                              [e for e in entries if e not in signs], tbl, bool(signs)))
     return rows
 
 
@@ -1395,11 +1402,14 @@ def pairs_check(path):
     text = open(path, encoding="utf-8").read()
     tbl = panel_table(text)
     rows = pairs_rows(text, tbl)
-    unresolved = sum(1 for _, _, panels in rows if not panels)
+    nostep = [f"{path}:{line}  {desc}  side by side, no step sign: nothing to align"
+              for line, desc, panels, step in rows if not step]
+    skipped = [f"{path}:{line}  {desc}  unresolved: a side is not a panel this can read"
+               for line, desc, panels, step in rows if step and not panels]
     aligned = unequal = 0
     fails = []
-    for line, desc, panels in rows:
-        if not panels:
+    for line, desc, panels, step in rows:
+        if not (step and panels):
             continue
         f0, b0, s0, _ = panels[0]
         bad = []
@@ -1415,10 +1425,10 @@ def pairs_check(path):
             fails.append(f"{path}:{line}  {desc}  " + "; ".join(bad))
         else:
             aligned += 1
-    if fails:
-        print(*fails, sep="\n")
+    if nostep or skipped or fails:
+        print(*nostep, *skipped, *fails, sep="\n")
     print(f"diagram --pairs: {len(rows)} rows, {aligned} aligned, {unequal} unequal,"
-          f" {unresolved} unresolved", file=sys.stderr)
+          f" {len(skipped)} unresolved, {len(nostep)} not a step", file=sys.stderr)
     sys.exit(unequal and f"diagram --pairs: {unequal} row{'s' * (unequal > 1)} disagree")
 
 
