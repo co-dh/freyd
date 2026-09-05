@@ -1038,7 +1038,7 @@ def unindexed(p):
     carrier only as a variable, is then the fold of EVERY algebra, and the reflection law reads "every
     catamorphism is the identity".  The banana must write the carrier: `⦇αᴀ⦈`.
 
-    A carrier that is a SHAPE is already written — `generate : F(N(x))⟶N(x)` and §13.3's
+    A carrier that is a SHAPE is already written — `gen : F(N(x))⟶N(x)` and §13.3's
     `S : x×[[x]×[x]]⟶[x]×[x]` fold at `N(x)` and `[x]×[x]`, whose `x` is the section's element type,
     the thing every bead on the page is polymorphic in.  Only a BARE variable names nothing."""
     tbl = typed(sigs(), p.cert.get("sigs"))["sigs"]

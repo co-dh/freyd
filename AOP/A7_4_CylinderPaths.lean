@@ -1,7 +1,7 @@
 /-
   Bird & de Moor, *Algebra of Programming* §7.4 (book pp. 180-184) — the four cylinder beads that
   are natural in the ELEMENT TYPE, which is the index `AOP.A7_4_Cylinder` does not have: it fixes
-  one `H` and one `I : InitialAlgebra H`, so `generate`'s tail `N(cp P(α))` is an algebra at the
+  one `H` and one `I : InitialAlgebra H`, so `gen`'s tail `N(cp P(α))` is an algebra at the
   single carrier `LA` and no square in the element type can be stated there.  Here `L` is the
   repo's list relator, which has an initial algebra at EVERY object, and the three beads are
   concrete relations, as in `AOP.A7_4_CylinderBeads`:
@@ -9,8 +9,8 @@
   - `zip  : F(N(x))⟶N(F(x))` at an ARBITRARY relator `F` — LAX, and lax is all that is proved.
   - `cp   : F(E x)⟶E(F(x))` at the list base functor `F X = L + (E × X)` — STRICT, the one square
     here that is an equality.
-  - `⦇generate⦈ : L(N(x))⟶N(E(L(x)))` — LAX, by induction on the list of columns.
-  - `paths ≜ ⦇generate⦈ setify union : L(N(x))⟶E(L(x))` — LAX, the three squares composed.
+  - `⦇gen⦈ : L(N(x))⟶N(E(L(x)))` — LAX, by induction on the list of columns.
+  - `paths ≜ ⦇gen⦈ setify union : L(N(x))⟶E(L(x))` — LAX, the three squares composed.
 
   `zip` AT AN ARBITRARY `F`.  The book's `zip : F(NA,NB)⟶N(F(A,B))` distributes the tuple out of
   BOTH slots of the base bifunctor, so at one element type it is the unary `F(N(x))⟶N(F(x))` with
@@ -93,7 +93,7 @@ public theorem zipF_lax_natural (F : Relator RelSet.{0} RelSet.{0}) (R : a ⟶ b
 
 /-- **`cp(inl d) = {inl d}`, `cp(e,S) = {(e,s) | s ∈ S}`** (book p.181): `cp ≜ frac(F(𝟙,∋),∋) :
     F(A,E B)⟶E(F(A,B))`, the cross product — the powerset pulled out of the base functor.  It is
-    the second half of `generate`'s tail `N(cp P(α))`: `cp` turns a column paired with a SET of
+    the second half of `gen`'s tail `N(cp P(α))`: `cp` turns a column paired with a SET of
     tails into the SET of pairs, and `P(α)` conses the column onto each of them.  At the repo's
     list functor `F X = L + (E × X)` the `𝟙` slot is the column `e`, so the first component is the
     same in every element of the answer; on the `L` summand there is no set to distribute and `cp`
@@ -201,9 +201,9 @@ public theorem cp_natural (L E : Type) (R : a ⟶ b) :
           · rintro ⟨s, hTs, rfl⟩
             exact hTs
 
-/-! ## `⦇generate⦈` -/
+/-! ## `⦇gen⦈` -/
 
-/-- **`⦇generate⦈` folded** (book p.181), `L(N(x))⟶N(E(L(x)))`: `generate` unfolded at a value is
+/-- **`⦇gen⦈` folded** (book p.181), `L(N(x))⟶N(E(L(x)))`: `gen` unfolded at a value is
     `F(𝟙,moves trans N(union)) zip N(cp P(α))` read pointwise — `moves trans N(union)` unions the
     path sets of every row (`moves` is every rotation), `zip` pairs the new column's row `k` with
     that union, and `N(cp P(α))` conses the square onto every path in it. -/
@@ -211,14 +211,14 @@ public theorem cp_natural (L E : Type) (R : a ⟶ b) :
   | ConsList.wrap _, _ => fun p => p = ConsList.wrap ()
   | ConsList.cons c cs, k => fun p => ∃ j q, genFn cs j q ∧ p = ConsList.cons (c k) q
 
-/-- **cyl-defn**: `⦇generate⦈ : L(N(x))⟶N(E(L(x)))`, one path set per row of the cylinder. -/
-@[expose] public def cataGenerate :
+/-- **cyl-defn**: `⦇gen⦈ : L(N(x))⟶N(E(L(x)))`, one path set per row of the cylinder. -/
+@[expose] public def cataGen :
     dList (Fin n → A) ⟶ dTuple n (PowerAllegory.powerObj (dList A)) :=
   graph fun xs => fun k => genFn xs k
 
 /-- The square at values: `L(N(R))`-related lists of columns fold to path sets that are
     Egli-Milner `L(R)`-related row by row.  The cons step needs both halves at every row `j`,
-    because `generate` unions all of them before consing; the union of Egli-Milner related
+    because `gen` unions all of them before consing; the union of Egli-Milner related
     families is Egli-Milner related, and `cons` then carries `R` on the square and `L(R)` on the
     tail. -/
 public theorem genFn_lax (R : dE A ⟶ dE B) :
@@ -241,39 +241,39 @@ public theorem genFn_lax (R : dE A ⟶ dE B) :
           obtain ⟨q', hq', hRq⟩ := ((powerRel_apply _ _ _).mp (genFn_lax R cs ds h.2 j)).2 q hq
           exact ⟨ConsList.cons (c k) q', ⟨j, q', hq', rfl⟩, ⟨h.1 k, hRq⟩⟩⟩
 
-/-- **`⦇generate⦈` is lax natural**: `L(N(R)) ⦇generate⦈ ⊑ ⦇generate⦈ N(P(L(R)))`.  `⦇generate⦈`
+/-- **`⦇gen⦈` is lax natural**: `L(N(R)) ⦇gen⦈ ⊑ ⦇gen⦈ N(P(L(R)))`.  `⦇gen⦈`
     is the graph of a function, so the square is `genFn_lax` at every row. -/
-public theorem cataGenerate_lax_natural (R : dE A ⟶ dE B) :
-    list (tupleP n R) ≫ cataGenerate ⊑ cataGenerate ≫ tupleP n (powerRel (list R)) := by
+public theorem cataGen_lax_natural (R : dE A ⟶ dE B) :
+    list (tupleP n R) ≫ cataGen ⊑ cataGen ≫ tupleP n (powerRel (list R)) := by
   refine le_iff.mpr fun xs u h => ?_
   obtain ⟨ys, hys, rfl⟩ := h
   exact ⟨fun k => genFn xs k, rfl, fun k => genFn_lax R xs ys hys k⟩
 
 /-! ## `paths` -/
 
-/-- **cyl-defn**: `paths ≜ ⦇generate⦈ setify union : L(N(x))⟶E(L(x))` — every path across the
+/-- **cyl-defn**: `paths ≜ ⦇gen⦈ setify union : L(N(x))⟶E(L(x))` — every path across the
     cylinder, the row it starts in forgotten. -/
 @[expose] public def pathsRel :
     dList (Fin n → A) ⟶ PowerAllegory.powerObj (dList A) :=
-  cataGenerate ≫ setify ≫ bigUnion
+  cataGen ≫ setify ≫ bigUnion
 
 /-- **`paths` is lax natural**: `L(N(R)) paths ⊑ paths P(L(R))`.  The three squares of its
-    definition in order — `⦇generate⦈` lax, `setify` lax at `P(L(R))`, and `union` strictly
+    definition in order — `⦇gen⦈` lax, `setify` lax at `P(L(R))`, and `union` strictly
     natural (`bigUnion_strict_relSet`), which is the one step that costs nothing. -/
 public theorem paths_lax_natural (R : dE A ⟶ dE B) :
     list (tupleP n R) ≫ pathsRel ⊑ pathsRel ≫ powerRel (list R) := by
   calc list (tupleP n R) ≫ pathsRel
-      = (list (tupleP n R) ≫ cataGenerate) ≫ setify ≫ bigUnion := by
+      = (list (tupleP n R) ≫ cataGen) ≫ setify ≫ bigUnion := by
         rw [pathsRel]; simp only [Cat.assoc]
-    _ ⊑ (cataGenerate ≫ tupleP n (powerRel (list R))) ≫ setify ≫ bigUnion :=
-        comp_mono_right (cataGenerate_lax_natural R) _
-    _ = cataGenerate ≫ (tupleP n (powerRel (list R)) ≫ setify) ≫ bigUnion := by
+    _ ⊑ (cataGen ≫ tupleP n (powerRel (list R))) ≫ setify ≫ bigUnion :=
+        comp_mono_right (cataGen_lax_natural R) _
+    _ = cataGen ≫ (tupleP n (powerRel (list R)) ≫ setify) ≫ bigUnion := by
         simp only [Cat.assoc]
-    _ ⊑ cataGenerate ≫ (setify ≫ powerRel (powerRel (list R))) ≫ bigUnion :=
+    _ ⊑ cataGen ≫ (setify ≫ powerRel (powerRel (list R))) ≫ bigUnion :=
         comp_mono_left _ (comp_mono_right (setify_lax_natural (powerRel (list R))) _)
-    _ = cataGenerate ≫ setify ≫ powerRel (powerRel (list R)) ≫ bigUnion := by
+    _ = cataGen ≫ setify ≫ powerRel (powerRel (list R)) ≫ bigUnion := by
         simp only [Cat.assoc]
-    _ = cataGenerate ≫ setify ≫ bigUnion ≫ powerRel (list R) := by
+    _ = cataGen ≫ setify ≫ bigUnion ≫ powerRel (list R) := by
         rw [bigUnion_strict_relSet]
     _ = pathsRel ≫ powerRel (list R) := by rw [pathsRel]; simp only [Cat.assoc]
 

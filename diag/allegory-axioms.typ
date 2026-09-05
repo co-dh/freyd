@@ -7276,16 +7276,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`F(A,EB)⟶E(F(A,B))`],
   [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`.],
 
-  [`generate≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
+  [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
-   // lean:AOP.A7_4_Cylinder.generate@4bd0bafd
+   // lean:AOP.A7_4_Cylinder.gen@4bd0bafd
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
-  [`generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-generate.],
+  [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
- [`paths≜⦇generate⦈ setify union` #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@c16ad5b9
+ [`paths≜⦇gen⦈ setify union` #src[]],
+  // lean:AOP.A7_4_Cylinder.paths@dbba0e86
   [`L N Nat⟶E(L Nat)`],
-  [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-generate's four sets: 12 paths, 3 from each entry row.],
+  [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
   [the specification \ `paths est(R)`],
   [`L N Nat⟶L Nat`],
@@ -7304,14 +7304,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // One raw block, not a grid: the four components line up because every glyph is one monospace
 // advance wide, which no measured column can promise.
 #disp[#align(center)[```
-⦇generate⦈[(5,6,7,8)] = ({[5]},{[6]},{[7]},{[8]})
+⦇gen⦈[(5,6,7,8)] = ({[5]},{[6]},{[7]},{[8]})
 
-generate((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
+gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
     ( {[1,5],[1,6],[1,8]},
       {[2,5],[2,6],[2,7]},
       {[3,6],[3,7],[3,8]},
       {[4,5],[4,7],[4,8]} )
-```]]<cyl-generate>
+```]]<cyl-gen>
 
 #disp[#block(breakable: false)[
 #table(
@@ -7398,7 +7398,7 @@ cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collecte
 
 #v(8pt)
 
-=== `generate=F(𝟙,moves trans N(union)) zip N(cp P(α))` <sec-cyl-gen>
+=== `gen=F(𝟙,moves trans N(union)) zip N(cp P(α))` <sec-cyl-gen>
 
 #disp[#align(center, dpanel(10.5, 6.35, 4.5,
   ((2.5, 4.5, "bot", none, none), (2.877, 3, "bot", none, none), (3.658, 3, 1.5, [`F`], none), (2.877, 4.5, 3, [`F`], none), (2.5, "top", 4.5, none, none), (2.877, 7.5, 4.5, [`N`], none), (3.658, 6, 3, [`E`], none), (3.502, 7.5, 6, [`E`], none), (2.877, 9, 7.5, [`E`], none), (3.502, 9, 7.5, [`N`], none), (3.189, "top", 9, none, none), (3.879, "top", 6, none, none)),
@@ -7431,43 +7431,43 @@ N(cp P(α))(that)
                                                                α prefixes it: α(1,[5])=[1,5]
 ```]]<gen-step>
 
-=== `generate` is an `F`-algebra; `⦇generate⦈`: `α⦇generate⦈=F(𝟙,⦇generate⦈)generate` <sec-cyl-fold>
+=== `gen` is an `F`-algebra; `⦇gen⦈`: `α⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-fold>
 
-// The defining equation of @cata-defining at `generate`, both sides drawn: the fold bead is
+// The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is
 // OUTSIDE `F` on the left and INSIDE it on the right — that is all the recursion there is.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
   dpanel(6, 6.54, 4.69,
   ((2.5, "top", 4.5, none, none), (2.812, 3, "bot", none, none), (3.438, 3, "bot", none, none), (4.062, 3, "bot", none, none), (3.125, "top", 3, none, none), (3.75, "top", 3, none, none)),
-  ((4.5, [`α`], black, 2.5), (3, [`⦇generate⦈`], black, 3.125, 3.4375, "lax")),
+  ((4.5, [`α`], black, 2.5), (3, [`⦇gen⦈`], black, 3.125, 3.4375, "lax")),
   ((2.5, [`F`]), (3.125, [`L`]), (3.75, [`N`]), (4.69, [`A`])),
   ((2.812, [`N`]), (3.438, [`E`]), (4.062, [`L`]), (4.69, [`A`])),
   obj: ((4.5, [`A`]), (3, [`A`])),
-  cert: (expect: "α⦇generate⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
+  cert: (expect: "α⦇gen⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
   EQ,
   dpanel(4.5, 6.6, 4.75,
   ((2.656, 1.5, "bot", none, none), (2.5, "top", 1.5, none, none), (2.877, 3, 1.5, [`N`], none), (3.502, 3, "bot", none, none), (4.127, 3, "bot", none, none), (3.189, "top", 3, none, none), (3.814, "top", 3, none, none)),
-  ((3, [`⦇generate⦈`], black, 3.189, 3.5015, "lax"), (1.5, [`generate`], black, 2.5)),
+  ((3, [`⦇gen⦈`], black, 3.189, 3.5015, "lax"), (1.5, [`gen`], black, 2.5)),
   ((2.5, [`F`]), (3.189, [`L`]), (3.814, [`N`]), (4.75, [`A`])),
   ((2.656, [`N`]), (3.502, [`E`]), (4.127, [`L`]), (4.75, [`A`])),
   obj: ((3, [`A`]), (1.5, [`A`])),
-  cert: (expect: "F(𝟙,⦇generate⦈)generate", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
+  cert: (expect: "F(𝟙,⦇gen⦈)gen", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
 
   src[`α` puts the column back on the list, then the fold reads all of it],
   [],
-  src[the fold reads the rest under `F`, then one `generate` puts the column in front],
+  src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate@4c4ca025
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate_lax_natural@822259ff
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
 
 #disp[#align(center)[```
 xs = [(1,2,3,4),(5,6,7,8)] = α((1,2,3,4),[(5,6,7,8)])   : L(N A)
 
-⦇generate⦈(xs) = generate((1,2,3,4), ⦇generate⦈[(5,6,7,8)])
+⦇gen⦈(xs) = gen((1,2,3,4), ⦇gen⦈[(5,6,7,8)])
 ```]]<fold-step>
 
-#align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @cyl-generate: the
+#align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @cyl-gen: the
   tail folds to `({[5]},{[6]},{[7]},{[8]})`, one path per row and each of them one square long,
-  and `generate` on it is @gen-step's walk.]])
+  and `gen` on it is @gen-step's walk.]])
 
 === `Q : F(N A,N(L A))⟶N(L A)`, an `F(N A,−)`-algebra: `Q=F(𝟙,moves trans N(est(R))) zip N(α)` <sec-cyl-deriv>
 
@@ -7496,12 +7496,12 @@ N(α)(that)
 // ---- §13.5.2's own vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
 // corner for a relation and a square box for a map.
 #let cb-paths = ([`paths`], 1.9, false)
-#let cb-fold = ([`⦇generate⦈`], 3.6, false)
+#let cb-fold = ([`⦇gen⦈`], 3.6, false)
 #let cb-setify = ([`setify`], 1.9, false)
 #let cb-Pest = ([`P(est(R))`], 3.0, true)
 #let cb-Nest = ([`N(est(R))`], 3.0, true)
 #let cb-foldQ = ([`⦇Q⦈`], 1.5, true)
-#let cb-gen = ([`generate`], 2.7, false)
+#let cb-gen = ([`gen`], 2.7, false)
 #let cb-FNest = ([`F(𝟙,N(est(R)))`], 4.4, true)
 #let cb-Q = ([`Q`], 0.8, true)
 #let cb-Fmtn = ([`F(𝟙,moves trans N(est(R)))`], 7.8, true)
@@ -7573,25 +7573,25 @@ N(α)(that)
   cert: (expect: "paths est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("paths": "L(N(x))⟶E(L(x))")))
 #let ca2 = dpanel(7.5, 6.23, 4.38,
   ((2.812, 3, 1.5, [`E`], none), (2.5, 4.5, 3, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, 3, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
-  ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`union`], black, 2.5, 2.8125), (1.5, [`est(R)`], black, 2.812)),
+  ((6, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`union`], black, 2.5, 2.8125), (1.5, [`est(R)`], black, 2.812)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
   obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
-  cert: (expect: "⦇generate⦈setify union est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  cert: (expect: "⦇gen⦈setify union est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca3 = dpanel(7.5, 6.23, 4.38,
   ((2.5, 4.5, 1.5, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, 3, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
-  ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`est(R)`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
+  ((6, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`est(R)`], black, 3.125), (1.5, [`est(R)`], black, 2.5)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
   obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
-  cert: (expect: "⦇generate⦈setify P(est(R))est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  cert: (expect: "⦇gen⦈setify P(est(R))est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca4 = dpanel(7.5, 6.23, 4.38,
   ((2.5, 3, 1.5, [`E`], none), (2.5, 6, 3, [`N`], none), (3.125, 6, 4.5, [`E`], none), (3.75, 6, "bot", none, none), (2.812, "top", 6, none, none), (3.438, "top", 6, none, none)),
-  ((6, [`⦇generate⦈`], black, 2.812, 3.125, "lax"), (4.5, [`est(R)`], black, 3.125), (3, [`setify`], black, 2.5, 2.5, "lax"), (1.5, [`est(R)`], black, 2.5)),
+  ((6, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (4.5, [`est(R)`], black, 3.125), (3, [`setify`], black, 2.5, 2.5, "lax"), (1.5, [`est(R)`], black, 2.5)),
   ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
   ((3.75, [`L`]), (4.38, [`Nat`])),
   obj: ((6, [`Nat`]), (4.5, [`Nat`]), (3, [`Nat`]), (1.5, [`Nat`])),
-  cert: (expect: "⦇generate⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  cert: (expect: "⦇gen⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca5 = dpanel(7.5, 5.6, 3.75,
   ((2.5, 4.5, 3, [`E`], none), (2.5, 6, 4.5, [`N`], none), (3.125, 6, "bot", none, none), (2.5, "top", 6, none, none), (3.125, "top", 6, none, none)),
   ((6, [`⦇Q⦈`], black, 2.5), (4.5, [`setify`], black, 2.5, 2.5, "lax"), (3, [`est(R)`], black, 2.5)),
@@ -7652,7 +7652,7 @@ N(α)(that)
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_laws@6fc8d336
+    // lean:AOP.A7_4_Cylinder.cyl_laws@4bbb7420
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, est-R-box))), [])],
@@ -7677,14 +7677,14 @@ N(α)(that)
 )]<cyl-laws>
 
 // ---- Chain B, generated.  `est(R)` is the one bead BOTH sides carry, and the base functor's own
-// bead travels past it: `generate` above it on the left, `Q` below it on the right.
+// bead travels past it: `gen` above it on the left, `Q` below it on the right.
 #let cb1 = dpanel(4.5, 6.23, 4.38,
   ((2.812, 3, "bot", none, none), (2.5, "top", 3, none, none), (3.125, "top", 3, none, none), (3.75, "top", 1.5, none, none)),
-  ((3, [`generate`], black, 2.5), (1.5, [`est(R)`], black, 3.75)),
+  ((3, [`gen`], black, 2.5), (1.5, [`est(R)`], black, 3.75)),
   ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`E`]), (4.38, [`LA`])),
   ((2.812, [`N`]), (4.38, [`LA`])),
   obj: ((3, [`LA`]), (1.5, [`LA`])),
-  cert: (expect: "generate N(est(R))", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("generate": "F(N(x))⟶N(x)")))
+  cert: (expect: "gen N(est(R))", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("gen": "F(N(x))⟶N(x)")))
 #let cb2 = dpanel(4.5, 6.23, 4.38,
   ((2.812, 1.5, "bot", none, none), (2.5, "top", 1.5, none, none), (3.125, "top", 1.5, none, none), (3.75, "top", 3, none, none)),
   ((3, [`est(R)`], black, 3.75), (1.5, [`Q`], black, 2.5)),
@@ -7693,16 +7693,16 @@ N(α)(that)
   obj: ((3, [`LA`]), (1.5, [`LA`])),
   cert: (expect: "F(𝟙,N(est(R)))Q", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("Q": "F(N(x))⟶N(x)")))
 
-// B&dM §7.4, p. 183.  `generate` kills the base functor before the minimum is taken inside the
+// B&dM §7.4, p. 183.  `gen` kills the base functor before the minimum is taken inside the
 // tuple; the right-hand side kills it after, and that swap is the whole step.
 #disp[
 #calc-table(
   // B&dM p.182: "The condition for fusion is N(min R)·generate ⊇ Q·F(id, N(min R)), and we can use this to
   // derive a definition of Q"
-  Thm[`generate N(est(R))⊒F(𝟙,N(est(R)))Q` \
+  Thm[`gen N(est(R))⊒F(𝟙,N(est(R)))Q` \
     #src[fusion: the condition for fusion in @cyl-laws's last step, used to derive a definition of `Q`.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_fusion@d69b5189
+    // lean:AOP.A7_4_Cylinder.cyl_fusion@10671cc3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),

@@ -14,7 +14,7 @@
 
   - `cyl_7_13`   — (7.13) `F(𝟙,est(R))α ⊑ cp P(α) est(R)`, Theorem 7.1 at `α` with
                    `Λ(F(𝟙,∋)α) = cp P(α)` (`Λ_absorption`).
-  - `cyl_fusion` — `generate N(est(R)) ⊒ F(𝟙,N(est(R)))Q`, the fusion condition of the last
+  - `cyl_fusion` — `gen N(est(R)) ⊒ F(𝟙,N(est(R)))Q`, the fusion condition of the last
                    step of `cyl-laws`, from (7.13) and the lax naturality of `zip`, `trans`
                    and `moves`.
   - `cyl_laws`   — `paths est(R) ⊒ ⦇Q⦈ setify est(R)`, the headline (book p.182).
@@ -35,13 +35,13 @@
 
   ONE PLACE THE NOTE'S REASON IS NOT LITERALLY THE FACT USED.  `cyl-laws`' third row cites
   "`setify` lax natural" for
-  `⦇generate⦈ setify P(est(R)) est(R) ⊒ ⦇generate⦈ N(est(R)) setify est(R)`.  Taken bare,
+  `⦇gen⦈ setify P(est(R)) est(R) ⊒ ⦇gen⦈ N(est(R)) setify est(R)`.  Taken bare,
   `N(est(R)) setify ⊑ setify P(est(R))` is the lax square, and it is exactly what `hsetify`
   below assumes — with `est(R)` on the right of BOTH sides, which is how the row uses it and
   what `OneRow` proves.  `P` here is `AOP.A5_4`'s Egli-Milner power RELATOR `powerRel`, not
   the existential image `existsImage`: the existential image is not monotonic, so no lax
   square through it holds, and (7.11) (`powerRel_est_le_bigUnion`) is stated for `powerRel`
-  too.  `P(α)` in `cyl-defn`'s `generate` IS the existential image, `α` being a map
+  too.  `P(α)` in `cyl-defn`'s `gen` IS the existential image, `α` being a map
   (`powerRel_map`).
 
   MIRRORING: diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; B&dM's `min R` is `est R`
@@ -65,19 +65,19 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
 
 /-! ## `cyl-defn` -/
 
-/-- **cyl-defn**: `generate ≜ F(𝟙,moves trans N(union)) zip N(cp P(α))`, of type
+/-- **cyl-defn**: `gen ≜ F(𝟙,moves trans N(union)) zip N(cp P(α))`, of type
     `F(NA,N(E(LA)))⟶N(E(LA))` — one fold step, extending every path of every row by the new
     column. -/
-@[expose] public noncomputable def generate :
+@[expose] public noncomputable def gen :
     G.obj (N.obj (PowerAllegory.powerObj I.t)) ⟶ N.obj (PowerAllegory.powerObj I.t) :=
   G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
       ≫ N.map (bigUnion (a := I.t)))
     ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (cpMap H I.t ≫ existsImage I.α)
 
-/-- **cyl-defn**: `paths ≜ ⦇generate⦈ setify union`, of type `L N Nat⟶E(L Nat)` — every path
+/-- **cyl-defn**: `paths ≜ ⦇gen⦈ setify union`, of type `L N Nat⟶E(L Nat)` — every path
     across the cylinder. -/
 @[expose] public noncomputable def paths : J.t ⟶ PowerAllegory.powerObj I.t :=
-  ⦇generate I moves trans zip⦈ ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion
+  ⦇gen I moves trans zip⦈ ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion
 
 /-- **cyl-defn**: the algebra the derivation's last step folds,
     `Q ≜ F(𝟙,moves trans N(est(R))) zip N(α)`. -/
@@ -99,8 +99,8 @@ public theorem cyl_7_13 (hHr : H.PreservesRecip) (R : I.t ⟶ I.t)
   calc H.map (est R) ≫ I.α ⊑ Λ (H.map (∋ I.t) ≫ I.α) ≫ est R := hd
     _ = cpMap H I.t ≫ existsImage I.α ≫ est R := by rw [← hcp, Cat.assoc]
 
-/-- **cyl-fusion** (book pp.182-183): `generate N(est(R)) ⊒ F(𝟙,N(est(R)))Q` — the fusion
-    condition of `cyl-laws`' last step.  `generate` kills the base functor before the minimum
+/-- **cyl-fusion** (book pp.182-183): `gen N(est(R)) ⊒ F(𝟙,N(est(R)))Q` — the fusion
+    condition of `cyl-laws`' last step.  `gen` kills the base functor before the minimum
     is taken inside the tuple; `Q` kills it after, and that swap is the whole step.
 
     The four hypotheses are the book's own justifications, at the one relation each is used
@@ -116,7 +116,7 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
     (hzip : G.map (N.map (est R)) ≫ zip I.t
       ⊑ zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R))) :
     G.map (N.map (est R)) ≫ Q I moves trans zip R
-      ⊑ generate I moves trans zip ≫ N.map (est R) := by
+      ⊑ gen I moves trans zip ≫ N.map (est R) := by
   -- the tuple-side chain: `N(est R)` slides through `moves`, `trans` and (7.11) to the front
   have hinner : N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R)
       ⊑ (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
@@ -172,8 +172,8 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
           ≫ zip (PowerAllegory.powerObj I.t)
           ≫ N.map (cpMap H I.t ≫ existsImage I.α) ≫ N.map (est R) :=
         comp_mono_left _ (comp_mono_left _ houter)
-    _ = generate I moves trans zip ≫ N.map (est R) := by
-        rw [generate]; simp only [Cat.assoc]
+    _ = gen I moves trans zip ≫ N.map (est R) := by
+        rw [gen]; simp only [Cat.assoc]
 
 /-! ## `cyl-laws` -/
 
@@ -181,42 +181,42 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
     across the cylinder is one fold over the columns that keeps, for every row, only the
     cheapest path that can start there.
 
-    The chain is the book's: `paths` unfolds to `⦇generate⦈ setify union est(R)`; (7.11)
+    The chain is the book's: `paths` unfolds to `⦇gen⦈ setify union est(R)`; (7.11)
     replaces `union` by `P(est(R))` (`powerRel_est_le_bigUnion`, `R` transitive); `setify`'s
     lax square moves the minimum inside the tuple (`hsetify`); and fusion at `cyl_fusion`
-    (`hfusion`) folds `Q` instead of `generate`. -/
+    (`hfusion`) folds `Q` instead of `gen`. -/
 public theorem cyl_laws (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
     (hfusion : G.map (N.map (est R)) ≫ Q I moves trans zip R
-      ⊑ generate I moves trans zip ≫ N.map (est R))
+      ⊑ gen I moves trans zip ≫ N.map (est R))
     (hsetify : N.map (est R) ≫ setify I.t ≫ est R
       ⊑ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R) :
     ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
       ⊑ paths I J moves trans zip setify ≫ est R := by
-  -- fusion: `⦇Q⦈ ⊑ ⦇generate⦈ N(est R)`, by the least-prefixed-point property of `⦇Q⦈`
+  -- fusion: `⦇Q⦈ ⊑ ⦇gen⦈ N(est R)`, by the least-prefixed-point property of `⦇Q⦈`
   have hcata : (⦇Q I moves trans zip R⦈ : J.t ⟶ N.obj I.t)
-      ⊑ ⦇generate I moves trans zip⦈ ≫ N.map (est R) := by
+      ⊑ ⦇gen I moves trans zip⦈ ≫ N.map (est R) := by
     apply relCata_le_of_prefixed J
-    calc J.α° ≫ G.map (⦇generate I moves trans zip⦈ ≫ N.map (est R))
+    calc J.α° ≫ G.map (⦇gen I moves trans zip⦈ ≫ N.map (est R))
             ≫ Q I moves trans zip R
-        = J.α° ≫ G.map ⦇generate I moves trans zip⦈
+        = J.α° ≫ G.map ⦇gen I moves trans zip⦈
             ≫ G.map (N.map (est R)) ≫ Q I moves trans zip R := by
           rw [G.map_comp]; simp only [Cat.assoc]
-      _ ⊑ J.α° ≫ G.map ⦇generate I moves trans zip⦈
-            ≫ generate I moves trans zip ≫ N.map (est R) :=
+      _ ⊑ J.α° ≫ G.map ⦇gen I moves trans zip⦈
+            ≫ gen I moves trans zip ≫ N.map (est R) :=
           comp_mono_left _ (comp_mono_left _ hfusion)
-      _ = J.α° ≫ (J.α ≫ ⦇generate I moves trans zip⦈) ≫ N.map (est R) := by
+      _ = J.α° ≫ (J.α ≫ ⦇gen I moves trans zip⦈) ≫ N.map (est R) := by
           rw [relCata_cancel J]; simp only [Cat.assoc]
-      _ = ⦇generate I moves trans zip⦈ ≫ N.map (est R) := by
+      _ = ⦇gen I moves trans zip⦈ ≫ N.map (est R) := by
           rw [← Cat.assoc, ← Cat.assoc, J.recip_alpha_alpha, Cat.id_comp]
   calc ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
-      ⊑ (⦇generate I moves trans zip⦈ ≫ N.map (est R)) ≫ setify I.t ≫ est R :=
+      ⊑ (⦇gen I moves trans zip⦈ ≫ N.map (est R)) ≫ setify I.t ≫ est R :=
         comp_mono_right hcata _
-    _ = ⦇generate I moves trans zip⦈ ≫ N.map (est R) ≫ setify I.t ≫ est R := by
+    _ = ⦇gen I moves trans zip⦈ ≫ N.map (est R) ≫ setify I.t ≫ est R := by
         simp only [Cat.assoc]
-    _ ⊑ ⦇generate I moves trans zip⦈
+    _ ⊑ ⦇gen I moves trans zip⦈
           ≫ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R :=
         comp_mono_left _ hsetify
-    _ ⊑ ⦇generate I moves trans zip⦈
+    _ ⊑ ⦇gen I moves trans zip⦈
           ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion ≫ est R :=
         comp_mono_left _ (comp_mono_left _ (powerRel_est_le_bigUnion htrans))
     _ = paths I J moves trans zip setify ≫ est R := by rw [paths]; simp only [Cat.assoc]

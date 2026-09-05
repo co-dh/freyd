@@ -76,14 +76,14 @@
         "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
       ]
     },
-    "⦇generate⦈": {
+    "⦇gen⦈": {
       "src": "L(N(x))",
       "tgt": "N(E(L(x)))",
-      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate@4c4ca025",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025",
       "note": "§15's fold over the columns; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
       "nat": "lax",
       "nat-lean": [
-        "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGenerate_lax_natural@822259ff"
+        "AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8"
       ]
     },
     "⦇S%∋ est(R;H)⦈": {
@@ -173,7 +173,7 @@
         "AOP.A7_4_CarrierBeads.RelSet.Carrier.plus_not_lax_natural@73d728aa"
       ]
     },
-    "generate": {
+    "gen": {
       "src": "F(N(x))",
       "tgt": "N(x)",
       "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
@@ -333,8 +333,8 @@
     "paths": {
       "src": "L(N(x))",
       "tgt": "E(L(x))",
-      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.pathsRel@85049eb8",
-      "note": "`⦇generate⦈setify union`, natural in the ELEMENT type — the index AOP.A7_4_Cylinder has not got, since it fixes one initial algebra",
+      "lean": "AOP.A7_4_CylinderPaths.RelSet.Tuple.pathsRel@6167d608",
+      "note": "`⦇gen⦈setify union`, natural in the ELEMENT type — the index AOP.A7_4_Cylinder has not got, since it fixes one initial algebra",
       "nat": "lax",
       "nat-lean": [
         "AOP.A7_4_CylinderPaths.RelSet.Tuple.paths_lax_natural@abed3a18"
