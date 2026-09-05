@@ -26,3 +26,4 @@
 [ ] revisit 11.6.2a. alpha is natural and draw wrong. secondly, how to draw things inside (| |),
     IntroString has fold (| |) for different purpose, but claude said that catamorphsim is a special case of fold,
     maybe that can be used to draw inside catamorphism.
+[X] break the circuit diagram code and skill into a separated one.

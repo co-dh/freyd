@@ -12,7 +12,8 @@
 // names its term in bold and nothing ever cited a definition by number.  The separator goes with it.
 #let definition = builder-thmline(color: colors.at(8))(
   "definition", "", separator: []).with(numbering: none)
-#import "circuit.typ": cetz, d
+#import "cetz-nodraw.typ" as cetz
+#import "cetz-nodraw.typ": d
 #let NODRAW = cetz.NODRAW
 
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless

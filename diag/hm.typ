@@ -4,7 +4,8 @@
 // order.  Sibling of circuit.typ, where a wire is an object and pictures read left to right.
 // THE ONE INVARIANT: a region boundary and the wire bounding it come from THE SAME `pts` through THE
 // SAME `hm-path` — bind the list once, never hand-fit a fill to a wire.
-#import "circuit.typ": cetz, d, lw
+#import "cetz-nodraw.typ" as cetz
+#import "cetz-nodraw.typ": d, lw
 
 // Where a bend's control points sit along its drop.  The golden ratio, from the CTAN package
 // `string-diagrams`, whose model (not code) this file follows.
