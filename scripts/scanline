@@ -35,7 +35,9 @@ from relexpr import (ALIAS, BREAK, CLOSERS, INTERVAL, OPENERS, PROJ, TERM, UNIT,
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
 # below build THE SAME `pts` those helpers build and hand them to `poly`, which is `hm-seg`; the
 # curve maths lives here once, so a crossing is looked for in the shape actually drawn.
-HMK, HMQ, DKN = 0.618, 0.3915, 0.45
+HMK, HMQ, DKN, DY = 0.618, 0.3915, 0.45, 1.1   # `DY` is one ROW — `scripts/diagram`'s own, and
+# the knee is 0.3 of it: a knee measured in absolute units does not shrink when the row does, and a
+# row-and-a-bit of knee is what braids two strands falling on one bead.
 NEAR = 0.06                      # a hit this close to a junction IS that junction, not a crossing
 
 
@@ -205,7 +207,7 @@ def dknees(r, X, h):
                     c = min(c, 0.5 * abs((min(o) if s == 'd' else max(o)) - y))
                 run[(s, float(y))] = max(run.get((s, float(y)), 0.0), abs(X(y) - x))
                 cap[(s, float(y))] = min(cap.get((s, float(y)), 99.0), c)
-    return {k: min(0.45 + 0.25 * run[k], cap[k]) for k in run}
+    return {k: min(0.3 * DY + 0.25 * run[k], cap[k]) for k in run}
 
 
 def dippts(x, X, h, y0, y1, ybs, gk):

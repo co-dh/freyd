@@ -28,6 +28,10 @@
 // `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
 // of the object wire, `𝟏` right of it.
 #let DKN = 0.45                                   // the handle's knee
+// One ROW — `scripts/diagram`'s own `DY`, respelled so a panel can report its size as the COMPLEXITY
+// it was drawn from: `rows` beads deep and `wires` wide.  A pair's `cert.frame` is a row count for
+// that reason, so re-measuring the row (`./scripts/labelfit`) moves no number in this file.
+#let DY = 1.1
 // IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line, which runs
 // STRAIGHT through it; the functor wires that composite is made of bend in to the bead and out again.
 // `k` is how far above and below the node the lane leaves its column: a panel stacking four lanes in
@@ -208,7 +212,7 @@
     }
   }
   let gk = (:)
-  for (k, v) in run { gk.insert(k, calc.min(0.45 + 0.25 * v, cap.at(k))) }
+  for (k, v) in run { gk.insert(k, calc.min(0.3 * DY + 0.25 * v, cap.at(k))) }
   gk
 }
 // A lane runs from where its functor is BORN to where it DIES: `"top"`/`"bot"` for a panel edge, a
@@ -366,7 +370,7 @@
       let swept = lanes.any(o => o.at(1) == l.at(1) and o.at(0) < l.at(0))
       // Half a name's height BELOW the knee's end, so the box's top edge is where the sibling's
       // strand has just come vertical; on the knee's own end the box still straddles the bend.
-      hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { kb + 0.161 } else { 0 })),
+      hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { calc.min(kb, 0.3) + 0.161 } else { 0 })),
               nm, col: col, anchor: "east")
     }
   }
@@ -396,7 +400,11 @@
      key: cert.at("expect", default: "dpanel"))
   // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
   // two knees disagree is a crossing the sweep would call clean while the page still braids.
-  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, cert: cert, knees: gk, ok: ok, named: nmd,
+  // The panel's COMPLEXITY, so a display is laid out from what is in the picture and not by eye:
+  // `rows` is how many bead heights deep the frame is, `wires` how many lines cross it — the lanes
+  // plus the object edge.  A pair's `cert.frame` is one panel's `rows` written into the other.
+  hm-meta((helper: "dpanel", h: h, w: w, xo: xo, rows: calc.round(h / DY), wires: lanes.len() + 1,
+    cert: cert, knees: gk, ok: ok, named: nmd,
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
     + (if opath == none { (:) } else { (opath: opath) })
