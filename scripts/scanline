@@ -1073,20 +1073,32 @@ def instance(row, d):
         return False
 
 
+# What a `--sigs` word's `!<tag>` claims, in `hm-sigs.json`'s own `nat` spelling.
+NATWORD = {"nat": "strict", "lax": "lax"}
+
+
 def typed(table, own):
     """The table with a panel's own `sigs:` laid over it: `R: "F(A)⟶A"` types an abstract letter of
     one display, which no `hm-sigs.json` row could — there is no declaration to cite for it."""
     if not own:
         return table
-    # `!nat` on the end is `hm-sigs.json`'s `"nat": "strict"`, which a signature cannot say:
-    # `α : F(x)⟶x` and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is one.  `=<marker>`
-    # after it names the theorem that says so, and `cite-check` verifies it where it stands, so the
-    # claim stops being the author's word — the whole point of `LaxNatural` being a `Prop`.
+    # `!<tag>` on the end is `hm-sigs.json`'s `"nat"`, which a signature cannot say: `α : F(x)⟶x`
+    # and `τ : C(B(x))⟶B(C(x))` have the same shape and only one is natural.  `=<marker>` after it
+    # names the theorem that says so, and `cite-check` verifies it where it stands, so the claim
+    # stops being the author's word — the whole point of `LaxNatural` being a `Prop`.  `!lax` is the
+    # weaker claim `hm-sigs.json` spells `"nat": "lax"` (B&dM 5.13, `G(R)φ⊑φF(R)` with equality
+    # failing): still off the object wire, since it is a family and not an arrow at one object, but
+    # drawn with a hollow dot.  Without it a one-letter `φ` falls through to the object wire, which
+    # says it is an arrow of the base category — the one thing a LaT is not.
     def one(k, v):
-        sig, nat, mark = v.partition("!nat")
+        sig, bang, rest = v.partition("!")
+        tag, _, mark = rest.partition("=")
+        if bang and tag not in NATWORD:
+            raise Unhandled(f'--sigs {k}: `!{tag}` names no naturality — write `!nat` for a strict '
+                            f'natural transformation or `!lax` for a lax one')
         d = dict(zip(("src", "tgt"), sig.split("⟶")),
-                 **({"nat": "strict"} if nat else {}),
-                 **({"cite": mark[1:]} if mark.startswith("=") else {}))
+                 **({"nat": NATWORD[tag]} if bang else {}),
+                 **({"cite": mark} if mark else {}))
         # A panel naming the global arrow — restating its signature, or INSTANTIATING it at this
         # display's objects (`cons : Op×[Op]⟶[Op]` for the row's `x×[x]⟶[x]`) — is that same arrow,
         # so what Lean proved of it still holds and the mark follows the proof, not the shape the

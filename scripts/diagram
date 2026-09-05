@@ -1377,11 +1377,11 @@ def pairs_check(path):
 
 
 def sigpair(x):
-    """One `--sigs` word: `NAME:SRC⟶TGT[!nat[=lean:Mod.decl@key]]`, cut at the SIGNATURE's last
-    colon.  Not the word's — a marker carries colons of its own, and they come after `!nat`."""
-    head, nat, mark = x.partition("!nat")
+    """One `--sigs` word: `NAME:SRC⟶TGT[!nat|!lax[=lean:Mod.decl@key]]`, cut at the SIGNATURE's last
+    colon.  Not the word's — a marker carries colons of its own, and they come after the `!`."""
+    head, bang, rest = x.partition("!")
     k, _, v = head.rpartition(":")
-    return k, v + nat + mark
+    return k, v + bang + rest
 
 
 # A formula to a PICTURE in one command.  The scratch lives beside the note because its `#import`
@@ -1419,7 +1419,9 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               '\n\n--src/--tgt   the panel'"'"'s source/target objects; required in default mode — a'
               " formula alone does not fix the ports"
               '\n--sigs        extra bead signatures beyond diag/hm-sigs.json, `NAME:SRC⟶TGT` pairs'
-              " separated by spaces; the key is left of the LAST colon"
+              " separated by spaces; the key is left of the LAST colon.  A trailing `!nat` claims the"
+              " row is a natural transformation and `!lax` that it is only lax, `=<marker>` after"
+              " either naming the declaration that says so"
               '\n--mu          the initial algebra this row folds from, `FUNCTOR:OBJECT[⟶CARRIER]`'
               ' pairs — `--mu "F:list⁺(x)"` folds the `list⁺` §14.5 writes, laid over'
               " diag/hm-sigs.json's `mu`, and gives the carrier when the algebra is a composite with"

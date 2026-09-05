@@ -97,7 +97,9 @@
   "P": rgb("#00767e"),
   // §11.5.1's type functor and the fork that feeds the bifunctor its two arguments, `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜`.
   // They share a panel with `F`, hence ΔE76 37 and 41 from it and from each other.
-  "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"))
+  "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"),
+  // §13.2's SOURCE relator: a LaT `φ : G⇒F` puts the two in one panel, hence ΔE76 59 from `F`.
+  "G": rgb("#babd56"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
