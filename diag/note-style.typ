@@ -134,11 +134,20 @@
 ///
 /// An exported picture, shrunk to fit a table cell.  `reflow` so the cell measures the shrunk size.
 /// `key`: the picture also reports its crop box (`pic-meta`) — INSIDE the box, so the corner is its own.
-#let P(p, s: 92%, key: none) = align(center, box({
+///
+/// FIT, and not merely centre: a picture wider than the column it is given is drawn ON TOP of the
+/// column beside it, and since both neighbours are centred they grow towards each other until a
+/// label of one lands on a label of the other (`./scripts/labelfit`).  No geometry inside a panel
+/// can prevent that — the panel is not told the width — so the one place that knows it, this one,
+/// spends the second scale factor.  `s` stays what the picture asked for whenever it fits.
+#let P(p, s: 92%, key: none) = layout(sz => align(center, box({
   let q = scale(x: s, y: s, reflow: true, p)
+  let w = measure(q).width
+  let f = if w > sz.width and sz.width > 0pt { sz.width / w * 100% } else { 100% }
+  let q = if f == 100% { q } else { scale(x: f, y: f, reflow: true, q) }
   if key != none { pic-meta(key, q) }
   q
-}))
+})))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
 /// states cannot be read at all.
 #let Pin(p, s: 70%) = box(baseline: 36%, scale(x: s, y: s, reflow: true, p))
