@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""inkfit — every word the text layer states is ON the paper and nothing is painted over it.
+
+`labelfit` asks whether two labels INSIDE one panel touch.  This asks the prior question, of the whole
+page: is the word legible at all?  Three ways it is not, all measured off the compiled PDF:
+
+  * CUT      — the word's box crosses the paper edge, so the part outside the trim is not printed.
+               The paper, not the text column, is the boundary: a display's number is placed in the
+               margin on purpose, and only the trim ends it.
+  * BURIED   — a filled path painted AFTER the word's glyphs covers part of its box.  `pdftocairo -svg`
+               keeps document order and turns every glyph into a `<use>`, so "later" is exact and no
+               rendering is needed.  This is what made `(13.4.4a)` print `3.4.4a`.
+  * COLLIDED — two words on DIFFERENT baselines overlap: one line of type has landed on another,
+               anywhere on the page, panel or prose.
+
+    ./scripts/inkfit                      # the notes, every page
+    ./scripts/inkfit some.pdf --page 53   # one page of one file
+
+Geometry: `pdftotext -bbox` for the word boxes, `figgeom` for the paths.  No image tokens.
+"""
+import importlib.util, os, re, subprocess, sys, tempfile
+from importlib.machinery import SourceFileLoader
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NOTES = [os.path.join(ROOT, "diag", n) for n in ("allegory-axioms.pdf", "allegory2.pdf")]
+BURY = 0.4   # pt of a word box a later fill must cover before the word counts as buried
+HIT = 0.5    # two word boxes must OVERLAP by this much to collide — a shared edge is not one
+HIDE = 0.4   # …and cover this share of the smaller box: tight setting clips boxes, it does not hide words
+LINE = 1.5   # words whose baselines agree this closely are ONE line of type — their spacing is `labelfit`'s
+SAME = 6.0   # boxes whose tops are this close and which touch sideways are one word: a base and its subscript
+NEAR = 2.0   # a glyph's origin is inside its own word's box up to this slack
+
+_spec = importlib.util.spec_from_loader(
+    "figgeom", SourceFileLoader("figgeom", os.path.join(ROOT, "scripts", "figgeom")))
+figgeom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(figgeom)
+
+
+def bez(p0, c1, c2, p1, n=4):
+    for i in range(1, n + 1):
+        t = i / n
+        u = 1 - t
+        yield (u**3 * p0[0] + 3*u*u*t * c1[0] + 3*u*t*t * c2[0] + t**3 * p1[0],
+               u**3 * p0[1] + 3*u*u*t * c1[1] + 3*u*t*t * c2[1] + t**3 * p1[1])
+
+
+def rings(sub):
+    """A path as closed point rings, curves flattened — what a point must be tested against."""
+    out = []
+    for s in sub:
+        pts = [s[0][1][0]]
+        for c, ps in s:
+            pts += list(bez(*ps)) if c == "C" else [ps[-1]]
+        out.append(pts)
+    return out
+
+
+def inside(rs, p):
+    """Even-odd: is the point covered by the fill?  Rings, not bounding boxes — the note's regions
+    are curved, and a bbox test would call every label under a panel's corner buried."""
+    hit = False
+    for pts in rs:
+        for i in range(len(pts)):
+            a, b = pts[i - 1], pts[i]
+            if (a[1] > p[1]) != (b[1] > p[1]) and \
+               p[0] < a[0] + (p[1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1]):
+                hit = not hit
+    return hit
+
+
+def ink(svg):
+    """(order, kind, …) for everything drawn, in DOCUMENT order: 'glyph' at a point, 'fill' as rings."""
+    body = svg.split("</defs>", 1)[1] if "</defs>" in svg else svg
+    for k, m in enumerate(re.finditer(r"<use\b[^>]*/>|<path\b[^>]*/>", body)):
+        a = m.group(0)
+        if a.startswith("<use"):
+            x = re.search(r'\bx="(-?[\d.]+)"', a)
+            y = re.search(r'\by="(-?[\d.]+)"', a)
+            if x and y:
+                yield k, "glyph", (float(x[1]), float(y[1]))
+            continue
+        d = re.search(r'\bd="([^"]*)"', a)
+        fill = (re.search(r'\bfill="([^"]*)"', a) or [None, "none"])[1]
+        op = float((re.search(r'\bfill-opacity="([\d.]+)"', a) or [None, "1"])[1])
+        if not d or fill == "none" or op < 0.95:
+            continue
+        tm = re.search(r'transform="matrix\(([^)]*)\)"', a)
+        mt = figgeom.matrix(tm[1] if tm else "")
+        sub = [[(c, [figgeom.apply(mt, p) for p in ps]) for c, ps in s] for s in figgeom.subpaths(d[1])]
+        pts = [p for s in sub for _, ps in s for p in ps]
+        if pts:
+            yield k, "fill", (figgeom.bbox(pts), rings(sub), figgeom.hexcol(fill))
+
+
+def overlap(a, b, i):
+    return min(a[i + 2], b[i + 2]) - max(a[i], b[i])
+
+
+def oneword(a, b):
+    """A base and its subscript are ONE word: tops a hair apart, and they only touch sideways."""
+    return abs(a[1] - b[1]) < SAME and overlap(a, b, 0) < 2.0
+
+
+def buried(bb, last, fills):
+    """The x-range of the word box that a fill painted after ALL of its glyphs covers, in pt.
+
+    Sampled on the box's own middle line: a word is a row of glyphs, so a fill that hides any of it
+    hides an interval of that line, and the interval's width is what the failure line has to name.
+    After the LAST glyph, not the first: a label's own white knockout is painted between the two,
+    and taking the first would call every knocked-out label buried under its own backing."""
+    y = (bb[1] + bb[3]) / 2
+    n = max(8, int((bb[2] - bb[0]) / 0.5))
+    xs = [bb[0] + (bb[2] - bb[0]) * i / (n - 1) for i in range(n)]
+    hid = [x for x in xs if any(k > last and fb[0] <= x <= fb[2] and fb[1] <= y <= fb[3]
+                                and inside(rs, (x, y)) for k, fb, rs, _ in fills)]
+    return (min(hid), max(hid)) if hid else None
+
+
+def page(pdf, pno, pw, ph, td):
+    svgf = os.path.join(td, "p.svg")
+    subprocess.run(["pdftocairo", "-svg", "-f", str(pno), "-l", str(pno), pdf, svgf], check=True)
+    drawn = list(ink(open(svgf).read()))
+    glyphs = [(k, p) for k, kind, p in drawn if kind == "glyph"]
+    fills = [(k, d[0], d[1], d[2]) for k, kind, d in drawn if kind == "fill"]
+    words = list(figgeom.labels(pdf, pno))
+    bad = []
+    for t, _, bb in words:
+        out = max(-bb[0], -bb[1], bb[2] - pw, bb[3] - ph)
+        if out > 0:
+            bad.append(f"p.{pno} {t!r} CUT by the paper edge: {out:.1f}pt of its box is outside "
+                       f"the {pw:.0f}x{ph:.0f}pt trim (box x[{bb[0]:.1f},{bb[2]:.1f}])")
+            continue
+        mine = [k for k, p in glyphs if bb[0] - NEAR <= p[0] <= bb[2] + NEAR and bb[1] - NEAR <= p[1] <= bb[3] + NEAR]
+        if not mine:
+            continue
+        over = [f for f in fills if f[1][0] <= bb[2] and f[1][2] >= bb[0] and f[1][1] <= bb[3] and f[1][3] >= bb[1]]
+        hid = buried(bb, max(mine), over)
+        if hid and hid[1] - hid[0] >= BURY:
+            bad.append(f"p.{pno} {t!r} BURIED: a fill painted after it covers x[{hid[0]:.1f},{hid[1]:.1f}]"
+                       f" — {hid[1] - hid[0]:.1f}pt of a box that runs x[{bb[0]:.1f},{bb[2]:.1f}]")
+    for j in range(len(words)):
+        for k in range(j + 1, len(words)):
+            (ta, _, a), (tb, _, b) = words[j], words[k]
+            if oneword(a, b) or overlap(a, b, 0) < HIT or overlap(a, b, 1) < HIT:
+                continue
+            if abs(a[3] - b[3]) < LINE:
+                continue  # one baseline, so one line of type: how tight it is set is `labelfit`'s question
+            f = overlap(a, b, 0) * overlap(a, b, 1) / min((a[2] - a[0]) * (a[3] - a[1]),
+                                                          (b[2] - b[0]) * (b[3] - b[1]))
+            if f < HIDE:
+                continue
+            bad.append(f"p.{pno} {ta!r} and {tb!r} COLLIDED: {f * 100:.0f}% of the smaller box is "
+                       f"under the other ({overlap(a, b, 0):.1f}x{overlap(a, b, 1):.1f}pt)")
+    return bad
+
+
+def check(pdf, one=0):
+    info = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True).stdout
+    n = int(re.search(r"Pages:\s+(\d+)", info)[1])
+    pw, ph = (float(v) for v in re.search(r"Page size:\s+([\d.]+) x ([\d.]+)", info).groups())
+    bad = []
+    with tempfile.TemporaryDirectory() as td:
+        for p in ([one] if one else range(1, n + 1)):
+            bad += page(pdf, p, pw, ph, td)
+    for line in bad:
+        print("inkfit: " + line)
+    print(f"inkfit: {os.path.basename(pdf)}, {n} pages, {len(bad)} unreadable words")
+    return 1 if bad else 0
+
+
+def main(argv):
+    named = [a for a in argv if a.endswith(".pdf")]
+    for pdf in named:
+        if not os.path.exists(pdf):
+            sys.exit(f"inkfit: no {pdf} — compile the note first")
+    # Unnamed: whichever notes are built.  `make c` compiles one of the two, `make p` both.
+    pdfs = named or [n for n in NOTES if os.path.exists(n)]
+    if not pdfs:
+        sys.exit(f"inkfit: none of {', '.join(NOTES)} — compile a note first")
+    one = int(argv[argv.index("--page") + 1]) if "--page" in argv else 0
+    rc = 0
+    for pdf in pdfs:
+        rc |= check(pdf, one)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
