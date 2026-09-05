@@ -36,6 +36,7 @@
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let PAGEW = 25cm
 #let MARGIN = 1.5cm
+#let NUMGAP = 0.15cm  // column edge to the display number's LEFT edge; the rest of MARGIN is its room to grow
 #let conf(title: "", body) = {
   set page(width: PAGEW, height: 35cm, margin: MARGIN)
   set text(size: 11.5pt)
@@ -72,8 +73,17 @@
   }
   // THE NUMBER SITS IN THE RIGHT MARGIN and takes no width: a column of its own cost every display
   // about 35pt.  `breakable` because a figure is not, and the chain tables here run over a page break.
+  // `dx` is MEASURED, never a constant: `place(top + right)` fixes the number's RIGHT edge at `dx`
+  // past the column, so a constant leaves its LEFT edge to the number's own width, and anything
+  // wider than that constant reaches back INTO the column — where the display's own tint is painted
+  // after the `place` and covers the overrun.  `(13.4.4a)` printed `3.4.4a`.  Measuring makes the
+  // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
+  // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
-    place(top + right, dx: 1.0cm, text(9pt, luma(130), it.counter.display(it.numbering)))
+    context {
+      let n = text(9pt, luma(130), it.counter.display(it.numbering))
+      place(top + right, dx: measure(n).width + NUMGAP, n)
+    }
     // A string-diagram panel is addressed by its display and its place in it (see `hm-meta`), so the
     // count restarts here; the update draws nothing.
     counter("hm-panel").update(0)

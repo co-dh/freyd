@@ -33,6 +33,7 @@ SLICE := diag/circuit-slice.typ
 p: $(STAMP) slice circuit pairs cite spell scan-strict
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
+	./scripts/inkfit
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
 
@@ -60,6 +61,7 @@ pairs:
 # it straight after its own compile instead, and pays nothing extra.
 labels: diag/allegory-axioms.pdf
 	./scripts/labelfit
+	./scripts/inkfit
 
 diag/allegory-axioms.pdf: diag/allegory-axioms.typ $(wildcard diag/*.typ)
 	typst compile diag/allegory-axioms.typ $@
