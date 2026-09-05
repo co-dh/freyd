@@ -479,11 +479,11 @@ is the wires `[n] [p] [m] A`, and `[n]`, `[p]`, `[m]` are three functors, so one
 is the silent-black mistake again: once `trans` has swapped two of them the reader cannot tell which is
 which. The colour follows the axis, not the length: `[p]` and `[3p]` are one candidate axis that `concat`
 lengthened, `[m]` and `[m+1]` one path axis, so the wire keeps its hue across the bead that changed its
-length. `idxcol(label)` in `diag/draw.typ` is the rule — the letters inside the first `[…]` of the label
+length. `fcol(label)` in `diag/draw.typ` is the rule — the letters inside the first `[…]` of the label
 name the axis, a constant index (`[3]`) is an axis of its own, and a lift that carries one index
 (`𝟙×[p]`, `[n]×[n]`, `⟨𝟙,[m]⟩`) takes that index's hue — and the four axis lanes are `FCOL` entries, so a
-new axis letter draws through `fcol`'s free-hue path without an edit. Hand-drawn or generated, pass the
-wire's own label to `idxcol`; never a local `VEC = …` constant.
+new axis letter draws through `fcol`'s free-hue path without an edit. Pass the
+wire's own label to `fcol`; never a local `VEC = …` constant.
 
 **Every `FCOL` addition moves every UNNAMED lane.** `fcol` indexes the free-hue list by the name's hash,
 and the list shrinks around each new entry, so a lane that was drawing on a free hue lands on a different

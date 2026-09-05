@@ -117,7 +117,7 @@
   "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"),
   // §13.2's SOURCE relator: a LaT `φ : G⇒F` puts the two in one panel, hence ΔE76 59 from `F`.
   "G": rgb("#babd56"),
-  // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`idxcol` below maps `[3p]`
+  // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`fcol` maps `[3p]`
   // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
   "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
@@ -514,8 +514,18 @@
 // A LANE'S COLOUR.  `FCOL`'s entry where it has one — so no panel in the note moves — and otherwise
 // the free hue the name's own number picks, which is why a new functor draws without an edit here.
 // Empty palette is the one failure, and it names the name and the two ways out.
+// AN INDEX FUNCTOR `[e]` IS COLOURED BY ITS AXIS, not by its length: `[p]` and `[3p]` are one candidate
+// axis that `concat` lengthened, `[m]` and `[m+1]` one path axis, and the wire must keep its hue across
+// the bead that changed the length or the reader loses which axis it is.  The letters of `e` name the
+// axis; a constant index (`[3]`) is an axis of its own.  A lift that carries one index — `𝟙×[p]`,
+// `⟨𝟙,[m]⟩` — takes that index's hue, so the label is read whole and its first `[…]` decides.
 #let fcol(nm) = {
-  let n = plain(nm)
+  let s = plain(nm)
+  let m = s.match(regex("\\[([^\\]]*)\\]"))
+  let n = if m == none { s } else {
+    let e = m.captures.at(0)
+    let ax = e.replace(regex("[^a-zA-Z]+"), "")
+    "[" + (if ax == "" { e } else { ax }) + "]" }
   if n in FCOL { FCOL.at(n) } else {
     let free = freehues()
     assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
@@ -523,18 +533,6 @@
       + " `FCOL` already names — give `" + n + "` an entry in `FCOL` (diag/draw.typ) or widen `RINGS`")
     free.at(calc.rem(namehash(n), free.len()))
   }
-}
-// AN INDEX FUNCTOR `[e]` IS COLOURED BY ITS AXIS, not by its length: `[p]` and `[3p]` are one candidate
-// axis that `concat` lengthened, `[m]` and `[m+1]` one path axis, and the wire must keep its hue across
-// the bead that changed the length or the reader loses which axis it is.  The letters of `e` name the
-// axis; a constant index (`[3]`) is an axis of its own.  A lift that carries one index — `𝟙×[p]`,
-// `[n]×[n]`, `⟨𝟙,[m]⟩` — takes that index's hue, so a label is passed whole and its first `[…]` read.
-#let idxcol(l) = {
-  let s = plain(l)
-  let m = s.match(regex("\\[([^\\]]*)\\]"))
-  let e = if m == none { s } else { m.captures.at(0) }
-  let ax = e.replace(regex("[^a-zA-Z]+"), "")
-  fcol("[" + (if ax == "" { e } else { ax }) + "]")
 }
 // THE PALETTE'S RULE IS ONLY TRUE PANEL BY PANEL — two lanes that never share a picture may reuse a
 // band — so this is where it is checked: every pair of lanes drawn together, and every lane against
