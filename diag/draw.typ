@@ -70,6 +70,21 @@
   "Char": TCOL, "Code": BCOL, "Op": GCOL,
   "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
 
+// A NAME'S OWN NUMBER — FNV over its bytes, with the round's `+` where FNV-1a has an exclusive or,
+// which `calc` does not carry.  Every derived hue below is indexed by it, so a name always draws in
+// the same colour and the choice is reproducible without a table.
+#let namehash(s) = {
+  let h = 2166136261
+  for b in array(bytes(s)) { h = calc.rem((h + b) * 16777619, 4294967296) }
+  h
+}
+// An object the map does not list still needs ONE hue, note-wide, and these four bands are all there
+// are: take the band from the name, so a new object is drawn before anyone declares it and always in
+// the same band.  DELIBERATE sharing stays in `OCOL` above — a derived band is only a starting point,
+// and two objects that must be told apart in one panel are what an entry there is for.
+#let OBANDS = (TCOL, BCOL, CCOL, GCOL)
+#let objcol(l) = OCOL.at(plain(l), default: OBANDS.at(calc.rem(namehash(plain(l)), OBANDS.len())))
+
 // `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
 // a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
 // `TA` are the three the note writes — and keeps the panel's positional default.
@@ -80,7 +95,9 @@
 #let ADJC = (i: black, E: rgb("#ea580c"))
 // Functor wires are coloured BY NAME; a bead sits ON the wire it changes, so the FIXED obstacles are the
 // bead hues `GIVEN1`/`GIVEN2`/`INDUCED`/`SLACK` and the object hues `BCOL`/`TCOL`/`CCOL`.  ΔE76 ≥ 25 from
-// every one, ≥ 30 between two lanes sharing a panel, ≥ 12 between any two; muted, so the beads stay loudest.
+// every one, ≥ 29 between two lanes sharing a panel, ≥ 12 between any two; muted, so the beads stay loudest.
+// THE ENTRIES BELOW ARE DATA, NOT THE RULE: `fcol` derives a hue for a name they do not list, and
+// `lanecheck` measures every panel's lanes against its beads, so nothing here rests on a hand count.
 #let FCOL = (
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
   "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
@@ -432,6 +449,94 @@
 #let INDUCED = rgb("#1a5fb4")   // blue
 
 #let SLACK = rgb("#c2247f")     // pink
+
+// ==== ΔE76, and the hue a lane gets when `FCOL` does not name it ==================================
+// CIELAB (D65) and the ΔE76 distance in it — the separation the palette is designed around, COMPUTED
+// here rather than written into a comment per letter, because a comment cannot fail when a hue moves.
+#let _lin(u) = if u <= 0.04045 { u / 12.92 } else { calc.pow((u + 0.055) / 1.055, 2.4) }
+#let _fw(t) = if t > 0.008856 { calc.root(t, 3) } else { 7.787 * t + 16 / 116 }
+#let lab76(c) = {
+  let (r, g, b) = rgb(c).components(alpha: false).map(u => _lin(u / 100%))
+  let y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  let (fx, fy, fz) = (_fw((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047), _fw(y),
+                      _fw((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883))
+  (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+}
+#let dE76(a, b) = {
+  let (p, q) = (lab76(a), lab76(b))
+  calc.sqrt(calc.pow(p.at(0) - q.at(0), 2) + calc.pow(p.at(1) - q.at(1), 2)
+            + calc.pow(p.at(2) - q.at(2), 2))
+}
+// Lab back to sRGB.  A point outside the gamut is NOT clipped: clipping lands it somewhere else in
+// Lab, where the separation it was chosen for no longer holds, so the caller drops it instead.
+#let _unf(t) = if t > 0.206893 { t * t * t } else { (t - 16 / 116) / 7.787 }
+#let _gam(u) = if u <= 0.0031308 { 12.92 * u } else { 1.055 * calc.pow(u, 1 / 2.4) - 0.055 }
+#let labcol(L, A, B) = {
+  let y = (L + 16) / 116
+  let (X, Y, Z) = (0.95047 * _unf(y + A / 500), _unf(y), 1.08883 * _unf(y - B / 200))
+  let ch = (3.2406 * X - 1.5372 * Y - 0.4986 * Z, -0.9689 * X + 1.8758 * Y + 0.0415 * Z,
+            0.0557 * X - 0.2040 * Y + 1.0570 * Z)
+  // The 0.001 slack is the round trip's own error, and the clamp is only for that slack: a point
+  // further out than it is dropped above, never squeezed back in.
+  if ch.any(u => u < -0.001 or u > 1.001) { none }
+  else { rgb(..ch.map(u => calc.max(0%, calc.min(100%, _gam(u) * 100%)))) }
+}
+
+#let SEPFIX = 25      // a lane against a bead hue or an object hue — the two things it is read beside
+#let SEPPAIR = 12     // a lane against another lane anywhere in the note
+#let SEPPANEL = 29    // ... and against one drawn in the SAME panel; the note's own tightest is `F`/`L`
+// The rings the muted band is: lightness and chroma in Lab, hue swept round each.  Six of them, not
+// one, because one ring at one lightness has too few points left once the declared lanes and the
+// fixed obstacles have taken their neighbourhoods.
+#let RINGS = ((38, 30), (50, 30), (62, 30), (44, 42), (56, 42), (66, 36))
+
+// The hues STILL FREE: every ring point clear of the beads, the object hues and every declared lane,
+// thinned so two of them are themselves apart.  Pure, so Typst memoises it — one sweep per document.
+#let freehues() = {
+  let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, TCOL, BCOL, CCOL, GCOL)
+  let out = ()
+  for (L, C) in RINGS {
+    for i in range(90) {
+      let c = labcol(L, C * calc.cos(i * 4deg), C * calc.sin(i * 4deg))
+      if (c != none and obst.all(o => dE76(c, o) >= SEPFIX)
+          and FCOL.values().all(o => dE76(c, o) >= SEPPAIR)
+          and out.all(o => dE76(c, o) >= SEPPAIR + 1)) { out.push(c) }
+    }
+  }
+  out
+}
+// A LANE'S COLOUR.  `FCOL`'s entry where it has one — so no panel in the note moves — and otherwise
+// the free hue the name's own number picks, which is why a new functor draws without an edit here.
+// Empty palette is the one failure, and it names the name and the two ways out.
+#let fcol(nm) = {
+  let n = plain(nm)
+  if n in FCOL { FCOL.at(n) } else {
+    let free = freehues()
+    assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
+      + " within ΔE76 " + str(SEPFIX) + " of a bead or object hue, or " + str(SEPPAIR) + " of a lane"
+      + " `FCOL` already names — give `" + n + "` an entry in `FCOL` (diag/draw.typ) or widen `RINGS`")
+    free.at(calc.rem(namehash(n), free.len()))
+  }
+}
+// THE PALETTE'S RULE IS ONLY TRUE PANEL BY PANEL — two lanes that never share a picture may reuse a
+// band — so this is where it is checked: every pair of lanes drawn together, and every lane against
+// the beads and object hues drawn beside it.  `lanes` and `obst` are `(name, colour)` pairs.
+#let lanecheck(id, lanes, obst) = {
+  for (i, a) in lanes.enumerate() {
+    for b in lanes.slice(i + 1) {
+      let d = dE76(a.at(1), b.at(1))
+      assert(a.at(0) == b.at(0) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
+        + a.at(0) + "` and `" + b.at(0) + "` are ΔE76 " + str(calc.round(d, digits: 1)) + " apart,"
+        + " under " + str(SEPPANEL) + " — give one of them its own entry in `FCOL` (diag/draw.typ)")
+    }
+    for o in obst {
+      let d = dE76(a.at(1), o.at(1))
+      assert(d >= SEPFIX, message: "panel `" + id + "`: the lane `" + a.at(0) + "` is ΔE76 "
+        + str(calc.round(d, digits: 1)) + " from " + o.at(0) + " drawn on it, under " + str(SEPFIX)
+        + " — give the lane its own entry in `FCOL` (diag/draw.typ)")
+    }
+  }
+}
 
 // The 2-cell helpers, used by the Maps and Power-allegory sections below.  The two fills mean
 // nothing on their own: one hue apiece to tell the two regions `Map(𝒜)` and `𝒜` apart.

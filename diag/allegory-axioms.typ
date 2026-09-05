@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, TCOL, BCOL, OCOL, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, FCOL, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
+#import "draw.typ": snake, homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, fcol, lanecheck, hm-bead, hm-join, hm-name, hm-port, hm-region, hm-wire
 #import "cpanel.typ": cpanel
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -133,7 +133,7 @@
 }
 // ---- THE OBJECT WIRE'S COLOUR IS ITS OBJECT.  A wire that changes object at a bead changes hue
 // there, so `A` visibly ends and `B` begins instead of one line wearing two names.  The hue is the
-// OBJECT'S, off `draw.typ`'s `OCOL`, so one object is one colour across the whole note.
+// OBJECT'S, off `draw.typ`'s `objcol`, so one object is one colour across the whole note.
 // The bands top to bottom as `(ytop, colour)`: the top port's object, then every seam that RENAMES
 // it — an endo bead leaves the object alone and starts no band.
 #let obands(h, obj, top, bot, ride) = {
@@ -145,7 +145,7 @@
   // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, which is the
   // same guess `scanline` makes when a panel says nothing, so the ink and the sweep agree.
   if plain(bot) != bs.last().at(1) and ride != () { bs.push((calc.min(..ride), plain(bot))) }
-  bs.map(b => (b.at(0), OCOL.at(b.at(1))))
+  bs.map(b => (b.at(0), objcol(b.at(1))))
 }
 // The band a height falls in: the LAST one that opens above it, the bands running down the panel.
 #let ocolat(bs, y) = {
@@ -381,15 +381,22 @@
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
   let gk = dknees(dx, h, lanes, beads)
   let nmd = dnamed(lanes, top, bot)
+  // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
+  // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
+  // two lanes that never share a picture may reuse a band, and only the panel knows which those are.
+  lanecheck(cert.at("expect", default: "dpanel"),
+    lanes.map(l => dnm(l, top, bot)).filter(n => n != none).map(n => (plain(n), fcol(n))),
+    beads.map(b => (plain(b.at(1)), b.at(2, default: black)))
+      + obnd.map(o => ("the object wire", o.at(1))))
   dpan(h, w, xo, {
   for (i, l) in lanes.enumerate() {
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
     let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
     let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
-    // The lane's functor name keys `FCOL`, and the colour names a wire that has a PORT to be read
+    // The lane's functor name names its colour, and the colour names a wire that has a PORT to be read
     // beside; `dnamed` says on which lanes that name is nowhere else on the page.
     let nm = dnm(l, top, bot)
-    let col = if nm == none { none } else { FCOL.at(plain(nm)) }
+    let col = if nm == none { none } else { fcol(nm) }
     let alone = lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
                         alone: alone) }
@@ -413,7 +420,7 @@
     if dy.len() > 1 {
       let nm = dnm(dy.sorted(key: l => l.at(0)).first(), top, bot)
       hm-wire(((dx(b.at(0)) - HSTUB, b.at(0)), (dx(b.at(0)) + HSTUB, b.at(0))),
-              ..(if nm == none { (:) } else { (col: FCOL.at(plain(nm))) }))
+              ..(if nm == none { (:) } else { (col: fcol(nm)) }))
     }
   }
   // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
@@ -421,9 +428,9 @@
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
                            bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none }) }
   for (x, l) in top {
-    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { FCOL.at(plain(l)) }) }
+    hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { fcol(l) }) }
   for (x, l) in bot {
-    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { obc } else { FCOL.at(plain(l)) }) }
+    hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, col: if x == xo { obc } else { fcol(l) }) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
   for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
@@ -3033,7 +3040,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   for hd in hands { dhandle(xo, hd.at(0), hd.at(1), hd.at(2), hd.at(3), born: hd.at(4, default: none)) }
   for (x, y, k) in joins { hm-join(x, h, xo, y, knee: k) }
   for (y, l) in beads { hm-bead((xo, y), l) }
-  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { FCOL.at(plain(l)) }) }
+  for (x, l) in top { hm-port((x, h), l, col: if x == xo { BCOL } else { fcol(l) }) }
   hm-port((xo, 0), bot, dir: -1, col: BCOL)
   if names { hm-name((1.05, 0.30), [`Rel`]); hm-name((3.4, 0.30), [`𝟏`]) }
   }, s: 100%)
