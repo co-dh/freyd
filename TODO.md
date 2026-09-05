@@ -22,7 +22,7 @@
     done: 13.6b rows 2/3/5 (van-fold deleted), 16.4b row 4, 13.4.3c rows 2/3 certified, and the four
     tinted literals in 7.2b/11.5.1c now regenerate (cert: tint carries a bead's colour).
     left: 11.6.4b rows 3/4/5 — tpan/tpanR, the last hand-draw helper, in §11.6.
-[.] redraw 11.5.1b
+[X] redraw 11.5.1b
 [X] shrink the diagram in 11.4a and try to fit fusion 11.4.2 in the same page.
 [X] on string diagram, (|alpha |) take type argument from the line under it. add this to 11.4a,  11.4.2a.
 [X] 11.6.1a , 11.6.2a need revisit. like what we did for initial algebra.  alpha is natural.
