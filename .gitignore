@@ -29,6 +29,8 @@ FirstOrderTheoryOfDiagramChasing.pdf
 GraphicRewritingLean4.pdf
 MachineCheckedCategoricalDiagrammaticReasoning.pdf
 Frobenius.pdf
+# Downloaded papers, named year_author_title; `scripts/book` indexes them next to the ones above.
+/doc/*.pdf
 # dependency graph rendered by `lean-refactor graph`
 /refactor-graph.html
 # Figure clips cut out of the papers above by scripts/paper-figs, plus the docstring sidecars the

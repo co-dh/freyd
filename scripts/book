@@ -98,11 +98,15 @@ def creator(path):
 NOTES = {"diag/allegory-axioms.pdf": "axioms"}
 
 
+DIRS = ("AOP", "doc")  # subdirectories scanned for third-party PDFs, alongside ROOT itself
+
+
 def scope():
     """The third-party PDFs, plus NOTES.  A render of our own is DETECTED, not named: everything Typst
     made in this tree is ours and its `.typ` is the greppable source (CLAUDE.md); nothing downloaded is."""
-    return [rel for rel in sorted(os.listdir(ROOT)) + sorted("AOP/" + f
-                                                             for f in os.listdir(ROOT + "/AOP"))
+    rels = sorted(os.listdir(ROOT)) + [rel for d in DIRS
+                                        for rel in sorted(d + "/" + f for f in os.listdir(ROOT + "/" + d))]
+    return [rel for rel in rels
             if rel.endswith(".pdf") and "Typst" not in creator(os.path.join(ROOT, rel))] + list(NOTES)
 
 
