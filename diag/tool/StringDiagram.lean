@@ -265,8 +265,9 @@ def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : Opt
       && !wires.any fun w => (Wire.expr w).containsFVar v.fvarId!
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
-    `strictNatural_prod` over `wrap_natural`, `strictNatural_recip` over `cons_natural`.  Bounded
-    because the search is over the whole environment at every step. -/
+    `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
+    three `𝟙 Tx × cons°` needs, and the deepest bead the note draws.  Bounded because the search is
+    over the whole environment at every step, so each step multiplies the scan. -/
 def FUEL : Nat := 3
 
 /-- What the environment says about a bead: the mark it draws — `"strict"`, `"lax"`, `"spider"`

@@ -244,6 +244,14 @@ example {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ} {K L 
 public theorem strictNatural_id (F : Relator 𝒜 ℬ) : StrictNatural F F (fun a => 𝟙 (F.obj a)) :=
   fun {_ _} R => by rw [Cat.comp_id, Cat.id_comp]
 
+/-- A relator on the INSIDE reindexes a STRICTLY natural family along its object map, the twin of
+    `laxNatural_inside`: the new equation at `R` is `φ`'s own at `K.map R`, so it is as free as the
+    lax one and needs none of `strictNatural_outside`'s `congrArg`. -/
+public theorem strictNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator 𝒞 𝒜) (h : StrictNatural F G φ) :
+    StrictNatural (Relator.comp K F) (Relator.comp K G) (fun c => φ (K.obj c)) :=
+  fun {_ _} R => h (K.map R)
+
 /-- A relator on the OUTSIDE carries a STRICTLY natural family to a strictly natural one, which
     `Relator.map_slides` cannot give: the equality is carried by `congrArg` and then split by
     `map_comp`, where the lax version has only monotonicity.  The twin of `laxNatural_outside`,
