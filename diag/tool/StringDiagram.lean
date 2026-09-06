@@ -264,8 +264,10 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
+  if (← findSquare strict must).isSome then return some "strict"
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
   if (← findProof lax ``Freyd.Alg.LaxNatural must).isSome then return some "lax"
+  if (← findSquare lax must).isSome then return some "lax"
   let nolax ← Meta.mkAppM ``Not #[← Meta.mkAppM ``Freyd.Alg.LaxNatural #[G, F, φ]]
   if (← findProof nolax ``Not must).isSome then return none
   throwError "the bead `{label}` is a family in the object but no declaration says whether it is \
@@ -308,6 +310,15 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name) (
         args[args.size - 1]!
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
+    -- A product whose factors VARY with the object is the bifunctor `×` fed by a pairing, so `φ×ψ`
+    -- is ONE bead on the pairing lane with `×` running past it.  Only a CONSTANT left factor is a
+    -- lane of its own, and that is the only reading under which `φ` acts on the lanes below it.
+    let (ex, ey) ← homEnds e
+    let (ax, _) ← peelObj objVars cat regionTy ex
+    let (ay, _) ← peelObj objVars cat regionTy ey
+    if ax.size > 0 && ay.size > 0 && !(ax[0]!.isTimesL) && (← Wire.beq ax[0]! ay[0]!) then
+      return #[{ pass := pass.push ax[0]!, arms := ax.extract 1 ax.size,
+                 legs := ay.extract 1 ay.size, core := e }]
     if ← isIdArrow ψ then return ← rowsOf objVars regionTy cat pass true φ
     if ← isIdArrow φ then
       let (x, _) ← homEnds φ
@@ -411,19 +422,15 @@ def drawString (declName : Name) (side : Option String) (branch : Option Nat)
             `{← plain arrow}` is not one"
         pure (if i == 0 then l else r)
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
-    -- family can carry a dot.  A binder counts when it INDEXES objects — one of the region, or a
-    -- type the region's objects are built from (`Tx : Type` with `dSched Tx : RelSet`); which of
-    -- them a given bead is a family in is decided per bead, by occurring in its object too.
+    -- family can carry a dot.  A binder counts when it is an OBJECT OF THE REGION, and nothing
+    -- else: a family in `Tx : Type` whose objects are `dE Tx : RelSet` is indexed by the image of
+    -- `dE`, not by the region, so `StrictNatural F G φ` is not even a statement about it.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src
     let cat ← relatorCatalogue
     let mut objVars : Array Expr := #[]
     for x in xs do
-      -- The REGION's own binder is not one: every relator mentions it, and counting it would
-      -- reject every wire there is.
-      if regionTy.containsFVar x.fvarId! then continue
-      let t ← Meta.inferType x
-      if (← Meta.isDefEq t regionTy) || (← Meta.whnf t).isSort then objVars := objVars.push x
+      if ← Meta.isDefEq (← Meta.inferType x) regionTy then objVars := objVars.push x
     let p ← panelOf regionTy cat arrow objVars
     let nm := declName.toString ++ (match side with | some s => "." ++ s | none => "")
       ++ (match branch with | some i => if i == 0 then ".inl" else ".inr" | none => "")

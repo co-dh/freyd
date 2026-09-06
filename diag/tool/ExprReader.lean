@@ -110,6 +110,11 @@ def Wire.label : Wire → MetaM String
   | .timesL l => return (← plain l) ++ "×−"
   | .pairW p _ => relLabel p
 
+/-- Is this lane a CONSTANT left factor?  That is the one lane a product map can act underneath. -/
+def Wire.isTimesL : Wire → Bool
+  | .timesL _ => true
+  | _ => false
+
 def Wire.beq (a b : Wire) : MetaM Bool :=
   match a, b with
   | .rel x, .rel y => Meta.isDefEq x y
@@ -313,8 +318,12 @@ partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
     let la ← peelLefts regionTy a
-    let (ws, o) ← peelObj objVars cat regionTy b
-    return (la ++ ws, o)
+    -- `A×−` is a lane only while `A` is CONSTANT.  A left factor that mentions an object the
+    -- statement quantifies over varies with the wire underneath it, so the product is the bifunctor
+    -- `×` fed by a pairing — which the catalogue's own `timesRel` peels, over the product region.
+    unless la.any (fun w => objVars.any fun v => (Wire.expr w).containsFVar v.fvarId!) do
+      let (ws, o) ← peelObj objVars cat regionTy b
+      return (la ++ ws, o)
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then
       let (ws, o) ← peelObj objVars cat src inner
@@ -416,5 +425,15 @@ def findProof (want : Expr) (head : Name) (must : NameSet) : MetaM (Option Name)
     let (_, _, body) ← Meta.forallMetaTelescope ci.type
     if ← Meta.isDefEq body want then hit := some n
   return hit
+
+/-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class:
+    `StrictNatural`/`LaxNatural` are exposed definitions, so unfolding one and opening its binders
+    gives the very equation (or inclusion) a hand-written declaration states, and its own head is
+    what to search under. -/
+def findSquare (prop : Expr) (must : NameSet) : MetaM (Option Name) := do
+  let some body ← Meta.unfoldDefinition? prop | return none
+  let (_, _, sq) ← Meta.forallMetaTelescope body
+  let .const h _ := sq.getAppFn | return none
+  findProof sq h must
 
 end Freyd.StrDiag
