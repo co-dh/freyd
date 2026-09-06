@@ -131,6 +131,19 @@ public theorem filter_alg (p : E → Bool) : subseq ≫ listP p = cataR (Salg p)
 
 /-! ## The note's `filter-mono` and the greedy row -/
 
+/-- The `filter-mono` display's first step, `(𝟙×R°)(π₂ ∪ (p×𝟙) cons)=(𝟙×R°)π₂ ∪ (p×R°) cons`:
+    `R°` reaches each operand of the `∪` on its own, and on the `cons` one it stands beside `p`
+    as the pair's second strand.  `takewhile_mono_fork` is the same step with `⊸ nil` for `π₂`. -/
+public theorem filter_mono_fork (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ ((graph fun q : E × List E => q.2) ∪ pcons p)
+      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ (graph fun q : E × List E => q.2)
+        ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
+  have hcons : rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p
+      = rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
+    unfold pcons
+    rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
+  rw [DistributiveAllegory.comp_union_distrib, hcons]
+
 /-- The `filter-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step lands
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
