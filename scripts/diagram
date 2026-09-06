@@ -168,7 +168,8 @@ def natural(core, sigs):
     # An APPLICATION names one object: `est(R) : E(x)⟶x` reads polymorphic, but the `R` it is given
     # is one relation at one object, and naturality would need `E(f) est(R_B) = est(R_A) f` for every
     # `f`, which fails — `f` need not be monotone.  A schematic one-letter name is endo by construction.
-    if core[0] == 'app' or len(spell(core).removesuffix('%∋')) == 1:
+    # A DIVISION is not schematic: `𝟙%∋` is an arrow the corpus names, so its own row answers for it.
+    if core[0] == 'app' or len(spell(core)) == 1:
         return False
     r = row(core, sigs, 0)
     if r is not None and (sl.varsof(r[0]) | sl.varsof(r[1])):
@@ -598,6 +599,9 @@ def signature(core, sigs, n):
                         f' one argument, so write {lab}(𝟙,−) with a single non-𝟙 slot')
     sl.require_hole_last(core)
     r = row(core, sigs, n)
+    # The division's `E` is DERIVED from the underlying relation's row (`R%∋ = Λ(R)`), so a row of
+    # the label's own — `𝟙%∋ : x⟶E(x)` — already states that target and must not be wrapped twice.
+    wrap = r is None
     if r is None:
         # A bare one-letter name is the note's abstract relation — `R`, `p`, the `𝟙` of `𝟙%∋` — and a
         # letter can only be endo on the object wire, so the schematic reading IS its signature.  Any
@@ -608,7 +612,7 @@ def signature(core, sigs, n):
                             f' schematic letter; pass --sigs "{lab}:SRC⟶TGT"')
         r = (('atom', 'x'), ('atom', 'x'))
     s, t = r
-    return fresh(s, n), fresh(('app', 'E', t) if lab.endswith('%∋') else t, n)
+    return fresh(s, n), fresh(('app', 'E', t) if wrap and lab.endswith('%∋') else t, n)
 
 
 def open_out(obj, w, sub, why, ix):
@@ -1036,7 +1040,7 @@ def place(rows, made, otop, obot, dfn, cert):
         if isunit(r):
             if len(r.legs) != 1:
                 raise Unhandled(f"the unit {r.label} opens {len(r.legs)} wires; a lane heads one")
-            unit[r.legs[0]] = r.label
+            unit[r.legs[0]] = (r.label, r.nat)
             ys[i] -= DY / 2                # half a step, so the knees above sweep clear of it
             continue
         # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
@@ -1102,10 +1106,13 @@ def place(rows, made, otop, obot, dfn, cert):
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": hh,
             "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
+            # A lane's 6th element is `"lax"`, as a bead's is: the head bead a unit gives the lane
+            # draws the naturality its row states, hollow where the square commutes one way only.
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
                        "bot" if l.dies == n else ys[l.dies],
                        None if l.born == TOP or l.dies == n else l.label,
-                       unit.get(l)] for l in made],
+                       unit.get(l, (None, None))[0]]
+                      + (["lax"] if unit.get(l, (None, None))[1] == "lax" else []) for l in made],
             "beads": beads,
             # the object wire's type at every seam.  `dpanel` takes no such argument, so `emit`
             # drops it: a panel pasted into the note is read back by the sweep's own guess.
@@ -1287,6 +1294,13 @@ def quoted(v):
     return '"' + v.replace("\\", "\\\\") + '"'
 
 
+def lanecode(l):
+    """One lane as Typst source.  The naturality marker is spelled as a BEAD's is — the quoted word
+    `"lax"`, not a label — so one claim has one spelling wherever the note carries it."""
+    return ("(" + ", ".join(cell(x) for x in l[:5])
+            + (f', "{l[5]}"' if len(l) > 5 else "") + ")")
+
+
 def beadcode(b, tint):
     """One bead as Typst source.  Its colour slot is the note's, not the drawing's: a panel beside a
     commutative square tints each bead to the arrow it stands for, and `cert: tint` is where that
@@ -1304,7 +1318,8 @@ def emit(r):
     tint = c.get("tint") or {}
     beads = [b[:2] + [None, b[3]] + b[4:] if len(b) > 3 else b for b in r["beads"]]
     return (f'#dpanel({num(r["h"])}, {num(r["w"])}, {num(r["xo"])},\n'
-            f'  {lst(r["lanes"])},\n'
+            + "  (" + ", ".join(lanecode(l) for l in r["lanes"])
+            + ("," if len(r["lanes"]) == 1 else "") + "),\n"
             + "  (" + ", ".join(beadcode(b, tint)
                                 for b in beads) + ("," if len(beads) == 1 else "") + "),\n"
             + f'  {lst(r["top"])},\n  {lst(r["bot"])},\n'

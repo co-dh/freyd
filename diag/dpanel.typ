@@ -218,7 +218,7 @@
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
 // the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
 // `dknees` gave the bead this lane is born on and the one it dies on.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false) = {
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false, ulax: false) = {
   let wc = if col == none { (:) } else { (col: col) }
   // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
   // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
@@ -247,7 +247,9 @@
   hm-wire(pts, ..(if flat { (k: 0) } else { (:) }), ..wc,
           hs: (if not flat and y0 != "top" and un == none { (0,) } else { () })
             + (if not flat and y1 != "bot" { (pts.len() - 1,) } else { () }))
-  if un != none { hm-bead((x, y0), un) }
+  // The unit's own dot draws its naturality, exactly as a bead's does: hollow where the row says
+  // `lax`, because the singleton's naturality square commutes one way only.
+  if un != none { hm-bead((x, y0), un, bg: if ulax { fb-ALLC } else { none }) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out, at
@@ -393,7 +395,7 @@
     let alone = (corr.len() == 0
       and lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1)
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
-                        alone: alone) }
+                        alone: alone, ulax: l.at(5, default: none) == "lax") }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // On the birth row, where every arm leaves its dot vertically — EXCEPT where another strand
     // sweeps that row west of this lane: a leg of the same bead born there, or a lane DYING there,
