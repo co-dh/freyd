@@ -53,6 +53,25 @@ public theorem new_natural (S : dE A ⟶ dE B) :
   rw [new_eq, new_eq, ← Cat.assoc, rprodMap_comp, Cat.comp_id, ← wrap_natural S, Cat.assoc,
     ← cons_natural (list S), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
 
+/-- **`wrap×𝟙` is STRICTLY natural**: `(S×list(list S))(wrap×𝟙) = (wrap×𝟙)(list S×list(list S))`.
+    The bead the note draws between `new`'s two factors, and it is `strictNatural_prod` at `wrap`
+    and the identity family — `×` closes in the strict theory, so nothing is computed here.  The
+    four `prodMap_eq_rprodMap` rewrites are the concrete model's product read as the allegory's. -/
+public theorem wrapProd_natural (S : dE A ⟶ dE B) :
+    rprodMap S (list (list S)) ≫ rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B)))
+      = rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A)))
+        ≫ rprodMap (list S) (list (list S)) := by
+  rw [← RelSet.prodMap_eq_rprodMap S (list (list S)),
+    ← RelSet.prodMap_eq_rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B))),
+    ← RelSet.prodMap_eq_rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A))),
+    ← RelSet.prodMap_eq_rprodMap (list S) (list (list S))]
+  exact strictNatural_prod (F := listRelator) (F' := Relator.comp listRelator listRelator)
+    (G := Relator.idRelator RelSet.{0}) (G' := Relator.comp listRelator listRelator)
+    (φ := fun a => (singleR () : dE a.carrier ⟶ dList a.carrier))
+    (ψ := fun a => 𝟙 ((Relator.comp listRelator listRelator).obj a))
+    (fun {_ _} R => (wrap_natural R).symm)
+    (fun {_ _} _ => by rw [Cat.comp_id, Cat.id_comp]) S
+
 /-! ## `head` is lax only -/
 
 /-- **`head` is lax natural**: `list(list S) head ⊑ head list(S)`.  A `list(list S)`-image of a

@@ -35,7 +35,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 
 /-- Diamond check: `RelProd`/`topMor` (division-allegory side) and `Λ`/`∋`
     (unguarded-power side) resolve on the SAME `Allegory 𝒜`. -/
-noncomputable example (a b : 𝒜) : RelProd a b := relProd a b
+example (a b : 𝒜) : Nonempty (RelProd a b) := relProd_nonempty a b
 noncomputable example (a c : 𝒜) (R : c ⟶ a) : c ⟶ PowerAllegory.powerObj a := Λ R
 example (a : 𝒜) (f : a ⟶ PowerAllegory.powerObj a) : Prop := Map f
 

@@ -1320,9 +1320,9 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 
 #disp[#block(inset: (y: 6pt))[
  `⟨R,S⟩π₁=Dom(S)R` #src[] #h(1.4cm)
-  // lean:AOP.A5_2.pair_outl@5cb53112
+  // lean:AOP.A5_2.pair_outl@18c8ddee
  `⟨R,S⟩π₂=Dom(R)S` #src[]
-  // lean:AOP.A5_2.pair_outr@a6bc4ebd
+  // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
@@ -1476,7 +1476,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
    half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
    this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
  ]],
-   // lean:AOP.A5_2.pair_prodMap@9d21307f
+   // lean:AOP.A5_2.pair_prodMap@8861fda2
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1486,7 +1486,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 74%),
 
  [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outl@5cb53112
+  // lean:AOP.A5_2.pair_outl@18c8ddee
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1497,7 +1497,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 74%),
 
  [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outr@a6bc4ebd
+  // lean:AOP.A5_2.pair_outr@ce99887d
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$C$]
@@ -1508,7 +1508,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   }), s: 74%),
 
  [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[]],
-  // lean:AOP.A5_2.pair_recip_pair@c082becf
+  // lean:AOP.A5_2.pair_recip_pair@7b967917
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$E$]
@@ -1536,7 +1536,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow;
  ]],
-   // lean:AOP.A5_2.map_comp_pair@bbc85d03
+   // lean:AOP.A5_2.map_comp_pair@4056dfe1
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
     lab(-0.35, 0, black)[$D$]
@@ -2427,7 +2427,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[]],
-  // lean:AOP.A6_ConsList.initial@79b3402c
+  // lean:AOP.A6_ConsList.initial@0ebba980
 
   [the fold, pointwise],
   [`⦇[c,f]⦈(zero)=c` \ `⦇[c,f]⦈(succ(n))=f(⦇[c,f]⦈(n))`],
@@ -4429,6 +4429,94 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #align(center)[`nil R=⊤`, #h(4pt) `nil R°=nil` #h(4pt) #src[`nil` is the shortest list — below
   every list, and above only itself, so it loses every `est(R°)`]]
 ])]<takewhile-defn>
+
+// `prefix` ON ITS OWN, before `takewhile` specialises it: the fold's defining square, the two Hinze–Marsden
+// panels either side of the `=`, and the algebra's circuit.  Panels emitted verbatim by
+//   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" "α prefix"
+//   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
+//   ./scripts/circuit --src "F([A])" --tgt "[A]" "[nil,⊸ nil ∪ cons]"
+// `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
+#let pfx-def-l = dpanel(4.4, 6.12, 4.27,
+  ((2.812, 2.2, "bot", none, none), (2.812, 3.3, 2.2, [`list`], none), (2.5, "top", 3.3, none, none), (3.641, "top", 3.3, none, none)),
+  ((3.3, [`α`], black, 2.5, 3.0705), (2.2, [`prefix`], black, 2.812, 2.812, "lax")),
+  ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
+  ((2.812, [`list`]), (4.27, [`A`])),
+  obj: ((3.3, [`A`]), (2.2, [`A`])),
+  cert: (expect: "α prefix", src: "F([A])", tgt: "[A]", sigs: ("α": "F([x])⟶[x]!nat=lean:AOP.A5_6_ListCombinators.ListRel.alphaR_natural@97dbed2a!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987"), frame: 4, top: 3))
+#let pfx-def-r = dpanel(4.4, 6.38, 4.53,
+  ((3.074, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.903, 2.2, 1.1, [`list`], none), (3.903, "top", 2.2, none, none)),
+  ((2.2, [`prefix`], black, 3.903, 3.903, "lax"), (1.1, [`cons`], black, 2.762, 3.3325)),
+  ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
+  ((3.074, [`list`]), (4.53, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(prefix)[nil,⊸ nil ∪ cons]", src: "F([A])", tgt: "[A]", branch: "cons", frame: 4))
+
+#disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
+  Thm[`prefix≜⦇[nil,⊸ nil ∪ cons]⦈` \
+    #src[the fold whose algebra, at each `cons`, stops with `nil` or keeps the head:
+      `xs prefix ys⟺∃zs. xs=ys⧺zs`]
+    // lean:AOP.A5_6_ListCombinators.prefix_cata@82edcdaa
+    // lean:AOP.A5_6_ListCombinators.prefixP_iff_append@1c6dd07f
+    ],
+  table.header([*the defining square* `α prefix=F(prefix)[nil,⊸ nil ∪ cons]` — build the list and then
+      take a prefix, or take a prefix of the tail and then rebuild with the algebra],
+    [*Hinze–Marsden*]),
+
+  [#cetz.canvas(length: 0.8cm, {
+    // The same 5.2 × 2.7 square as @cata-defining, `prefix` in the induced arrow's place.
+    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
+    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
+    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
+    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+    lab(0, 1.9, GIVEN2)[`α=[nil,cons]`]; lab(0, -1.9, GIVEN1)[`[nil,⊸ nil ∪ cons]`]
+    lab(-4.2, 0, INDUCED)[`F(prefix)`]; lab(3.7, 0, INDUCED)[`prefix`]
+    node(FT.at(0), FT.at(1), black, `F([A])`); node(T.at(0), T.at(1), black, `[A]`)
+    node(FA.at(0), FA.at(1), GIVEN1, `F([A])`); node(A.at(0), A.at(1), GIVEN1, `[A]`)
+  }) \
+  #src[`F=𝟏+A×−`, so `F(prefix)=𝟙+𝟙×prefix`: the head passes, the fold recurses on the tail alone]
+  // lean:AOP.A6_ConsList.F@61b71616
+  ],
+  [#row((pfx-def-l, [#h(7pt) = #h(7pt)], pfx-def-r)) \
+   #src[the `cons` operand of `⊸ nil ∪ cons`; `⊸ nil` makes a constant and draws nothing]],
+
+  [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "open", nin: 1, nout: 0),
+        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+      ), seams: ()),
+    (k: "seq", nin: 1, nout: 1, items: (
+        (k: "open", nin: 1, nout: 2),
+        (k: "union", nin: 2, nout: 1, bodies: (
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
+                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
+                    ), seams: ())),
+              ), seams: ()),
+            (k: "seq", nin: 2, nout: 1, items: (
+                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
+              ), seams: ()),
+          )),
+      ), seams: (
+        (
+          0,
+          ("A", "[A]", ),
+        ),
+      )),
+  ), src: ("F[A]", ), tgt: ("[A]", )),
+  cert: (expect: "[nil,⊸ nil ∪ cons]", src: "F([A])", tgt: "[A]")) \
+   #src[the algebra `[nil,⊸ nil ∪ cons] : F([A])⟶[A]` as a circuit: `nil` on the `𝟏` branch; on a pair
+     `(a,ys′)` two outputs, `nil` and `cons(a,ys′)`]],
+  [#src[`nil prefix ys⟺ys=nil`] \
+   #src[`cons(a,xs′) prefix ys⟺ys=nil ∨ ∃ys′. xs′ prefix ys′ ∧ ys=cons(a,ys′)`] \
+   #src[a right fold: `α°` peels, `F(prefix)` recurses, the algebra runs on the way back; `init*`
+     (@comb-fns) is the tail-recursive form] \
+   #src[lax natural only, `list(R) prefix⊑prefix list(R)`: `list(R)` first needs an `R`-image of every
+     element, `prefix` first may have dropped the ones without]
+   // lean:AOP.A5_6_ListCombinators.prefixP@6b59adf4
+   // lean:AOP.A5_7_ListBeads.prefix_lax_natural@b07fb2c5
+   // lean:AOP.A5_7_ListBeads.prefix_not_strict@e360d358
+   ],
+)]<prefix-defn>
 
 #let bx-p = ([`p`], 0.65, true)
 // HINZE–MARSDEN (IntroString.pdf §1.4.2), @party-mono-branch's second column at this section's data:
@@ -7333,11 +7421,11 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.new_eq@e9699c4a
   [#dpanel(3.3, 9.16, 7.31,
   ((4.923, 1.1, "bot", none, none), (3.781, 2.2, 1.1, [`[Int]×−`], none), (3.781, "top", 2.2, none, none), (4.923, "top", 1.1, none, none), (6.064, "top", 1.1, none, none), (6.689, 1.1, "bot", none, none)),
-  ((2.2, [`wrap×𝟙`], black, 3.781), (1.1, [`cons`], black, 3.781, 4.9225)),
+  ((2.2, [`wrap×𝟙`], black, 3.781, 3.781), (1.1, [`cons`], black, 3.781, 4.9225)),
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((2.2, [`Int`]),),
-  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]"))],
+  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
 
   [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons` \
    #src[`cons°` splits the schedule into its first segment and the rest, the first `cons` puts the
@@ -7414,11 +7502,11 @@ zip(that)                                         each row: its square, and the 
      // lean:AOP.A7_5_Van.new_eq_cons@4d0d4d7b
   [#dpanel(4.4, 9.16, 7.31,
   ((4.923, 1.1, "bot", none, none), (3.781, 3.3, 1.1, [`[Int]×−`], none), (3.781, "top", 3.3, none, none), (4.923, 2.2, 1.1, [`list`], none), (6.064, 2.2, 1.1, [`list`], none), (4.923, "top", 2.2, none, none), (6.064, "top", 2.2, none, none), (6.689, 1.1, "bot", none, none)),
-  ((3.3, [`wrap×𝟙`], black, 3.781), (2.2, [`R`], black, 4.923), (1.1, [`cons`], black, 3.781, 4.9225)),
+  ((3.3, [`wrap×𝟙`], black, 3.781, 3.781), (2.2, [`R`], black, 4.923), (1.1, [`cons`], black, 3.781, 4.9225)),
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f", "wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
 
   [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
    no-longer schedule leaves it no longer — and `new⊑new ∪ old`]],

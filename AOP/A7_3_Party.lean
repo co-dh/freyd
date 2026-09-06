@@ -317,7 +317,7 @@ public theorem include_monotonic :
 
 /-- **party-mono-branch `g := choose` row / Ex 7.38's hypothesis**: `(R×R)°choose ⊑ choose R°`
     — `choose_monotonic` at `R°` (via `choose_eq` and `(R×R)° = R°×R°`), re-proved on the
-    graph-level spelling so its closure stays free of `topMor`'s classical choice. -/
+    graph-level spelling, which reduces on a pair where the abstract product's apex does not. -/
 public theorem chooseR_monotonic :
     (rprodMap (R rating) (R rating))° ≫ chooseR ⊑ chooseR ≫ (R rating)° := by
   apply le_iff.mpr; intro p y

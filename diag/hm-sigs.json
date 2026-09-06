@@ -63,7 +63,11 @@
     "α": {
       "src": "F(x)",
       "tgt": "x",
-      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f"
+      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
+      ]
     },
     "[,]": {
       "src": "F(x)",

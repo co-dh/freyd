@@ -1059,14 +1059,14 @@ public class TabularUnitaryDivisionAllegory (𝒜 : Type u) extends
 section HeytingHom
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜]
 
-open Allegory in
-/-- The maximal morphism `⊤ : a → b` of a unitary allegory: `p_a ≫ p_b°` for the
-    (map) projections to the unit.  `topMor_max`: every `R ⊑ ⊤`. -/
-@[expose] public noncomputable def topMor (a b : 𝒜) : a ⟶ b :=
-  (unit_proj_is_map a).choose ≫ (unit_proj_is_map b).choose°
+-- Named by DIVISION, not by the book's `p_a ≫ p_b°` (§2.152): the unit projection exists only
+-- as `∃`, so choosing one would put `Classical.choice` under every `RelProd`-typed statement.
+/-- The maximal morphism `⊤ : a → b`: `𝟘/𝟘`, which by §2.31's adjointness is above every
+    `R : a ⟶ b`, since `R ≫ 𝟘 = 𝟘`.  It equals the book's `p_a ≫ p_b°` by `unit_proj_max`. -/
+@[expose] public def topMor (a b : 𝒜) : a ⟶ b := (𝟘 : a ⟶ b) / (𝟘 : b ⟶ b)
 
 public theorem topMor_max {a b : 𝒜} (R : a ⟶ b) : R ⊑ topMor a b :=
-  unit_proj_max _ (unit_proj_is_map a).choose_spec _ (unit_proj_is_map b).choose_spec R
+  (le_div_iff R _ _).mpr (by rw [DistributiveAllegory.comp_zero]; exact le_refl _)
 
 /-- A chosen tabulation `(ℓ₁, ℓ₂) : γ → a` of the maximal morphism `⊤ : a → a`. -/
 @[expose] public noncomputable def topTab (a : 𝒜) : Σ γ : 𝒜, (γ ⟶ a) × (γ ⟶ a) :=
@@ -1347,7 +1347,7 @@ public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ 
 --   paragraph + §2.32) is split between THIS file (the §2.316 Heyting machinery) and MapCat.lean
 --   (the subobject bridge + the `Logos` instance):
 --   • §2.316 HOM-POSET HEYTING ARROW (this file, `section HeytingHom`):
---     - `topMor`/`topMor_max`: the maximal morphism `⊤_{a,b} = p_a ≫ p_b°` of the unit (`R ⊑ ⊤`).
+--     - `topMor`/`topMor_max`: the maximal morphism `⊤_{a,b} = 𝟘/𝟘`, the book's `p_a ≫ p_b°`.
 --     - `topTab`: a chosen tabulation `(ℓ₁,ℓ₂) : γ → a` of `⊤_a` (via `TabularAllegory.tabular`).
 --     - `phiCor R := 1_γ ∩ ℓ₁ R ℓ₂°`,  `psiCor c := ℓ₁° c ℓ₂`:  the ORDER-ISO `(a,a) ≅ Cor(γ)`.
 --       `psi_phi : ψ(φ R) = R` (via `tab_recover`) and `phi_psi : φ(ψ c) = c` for coreflexive `c`

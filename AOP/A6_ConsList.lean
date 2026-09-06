@@ -130,12 +130,27 @@ public theorem F_eq_sum_prod (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') :
     simp [F, Fmap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
       RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> grind
 
+/-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
+    on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
+    square needs the action that moves it. -/
+@[expose] public def Fbimap (L : Type) {E E' : Type} {c c' : RelSet.{0}} (R : dE E ⟶ dE E')
+    (S : c ⟶ c') : Fobj L E c ⟶ Fobj L E' c' :=
+  fun u v => match u, v with
+    | Sum.inl d, Sum.inl d' => d = d'
+    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
+    | _, _ => False
+
 /-! ## `ConsList L E` is the initial algebra of `F` -/
 
 /-- The constructor map `[wrap, cons] : F (ConsList L E) → ConsList L E`. -/
 @[expose] public def con : (Fobj L E (dCL L E)).carrier → ConsList L E
   | Sum.inl d => ConsList.wrap d
   | Sum.inr p => ConsList.cons p.1 p.2
+
+/-- **The initial list algebra `α = [nil,cons] : F([A]) ⟶ [A]`** — `con` as a relation, the arrow
+    the note's `α` bead draws.  `initial`'s own `α` field, named so the picture has a declaration
+    to cite at the carrier the list actually is. -/
+@[expose] public def alphaR : (F L E).obj (dCL L E) ⟶ dCL L E := graph con
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
 @[expose] public def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : ConsList L E → c.carrier → Prop
@@ -182,7 +197,7 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
 /-- The initial `F`-algebra structure on `ConsList L E`. -/
 @[expose, instance] public def initial (L E : Type) : InitialAlgebra (F L E) where
   t := dCL L E
-  α := graph con
+  α := alphaR
   α_map := graph_map con
   cata f _ := cataFold f
   cata_map f hf := cataFold_map f hf
@@ -221,7 +236,7 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
       have key := congrFun (congrFun hcomm (Sum.inl d)) r
       constructor
       · intro hh
-        have hlhs : (graph con ≫ h) (Sum.inl d) r := ⟨ConsList.wrap d, rfl, hh⟩
+        have hlhs : (alphaR ≫ h) (Sum.inl d) r := ⟨ConsList.wrap d, rfl, hh⟩
         rw [key] at hlhs
         obtain ⟨v, hv, hfv⟩ := hlhs
         cases v with
@@ -237,7 +252,7 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
       have key := congrFun (congrFun hcomm (Sum.inr (dig, tail))) r
       constructor
       · intro hh
-        have hlhs : (graph con ≫ h) (Sum.inr (dig, tail)) r := ⟨ConsList.cons dig tail, rfl, hh⟩
+        have hlhs : (alphaR ≫ h) (Sum.inr (dig, tail)) r := ⟨ConsList.cons dig tail, rfl, hh⟩
         rw [key] at hlhs
         obtain ⟨v, hv, hfv⟩ := hlhs
         cases v with
