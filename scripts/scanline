@@ -32,7 +32,7 @@ from relexpr import (alias, BREAK, CARRIER, CLOSERS, DVAR, INTERVAL, IVAR, OPENE
                      help_if, hole_last, hole_slot, ibind, idxhead, interchange, is_index, isub,
                      listable, load, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
                      require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx,
-                     unscope, width)
+                     unscope, varsof, width)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -193,7 +193,7 @@ def dknees(r, X, h):
     column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55."""
     bys = [b[0] for b in r['beads']]
     run, cap = {}, {}
-    for (x, y0, y1, nm, un) in r['lanes']:
+    for (x, y0, y1, nm, un, *_) in r['lanes']:
         yt, yb = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, X, x, yt, yb)
         if un is not None and ds:
@@ -253,7 +253,7 @@ def a_dpanel(p, r):
             if a is None or b is None or abs(a - b) > 1e-9:
                 p.kdrift.append(f"{p.id}: the knee {k[0]}@y={k[1]:g} is {a} in the note and {b} in"
                                 f" the sweep — `dknees` states one rule twice, and they differ")
-    for i, (x, y0, y1, nm, un) in enumerate(r['lanes']):
+    for i, (x, y0, y1, nm, un, *_) in enumerate(r['lanes']):
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, dx, x, yt, yb)
         if ds:                             # `ddip`'s points — the arms the crossed wires make

@@ -267,6 +267,15 @@
       "note": "∈≜∋°, no declaration of its own: the row is eps's, read backwards",
       "not-lax": "AOP.A5_7_PowerBeads.mem_not_laxNatural@506c4b42"
     },
+    "𝟙%∋": {
+      "src": "x",
+      "tgt": "E(x)",
+      "lean": "Freyd.S2_40.singletonMap@d4216ae4",
+      "nat": "lax",
+      "nat-lean": [
+        "AOP.A5_7_PowerBeads.singleton_laxNatural@3fb7b1a0"
+      ]
+    },
     "union": {
       "src": "E(E(x))",
       "tgt": "E(x)",
