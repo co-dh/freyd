@@ -132,7 +132,10 @@ def allegoryInst (regionTy : Expr) : MetaM Expr := do
     let t ← instantiateMVars d.type
     if t.isAppOfArity ``Freyd.Alg.Allegory 1 then
       if ← Meta.isDefEq t.appArg! regionTy then return d.toExpr
-  Meta.synthInstance (← Meta.mkAppM ``Freyd.Alg.Allegory #[regionTy])
+  -- Built with `mkAppMeta`, not `mkAppM`: an allegory's HOM universe is not fixed by its object
+  -- type, so the class application still holds a level metavariable that instance search is the
+  -- thing to solve — `mkAppM` refuses to hand back a term holding one.
+  Meta.synthInstance (← mkAppMeta ``Freyd.Alg.Allegory #[regionTy]).1
 
 /-- The identity relator of a region, built with the region's OWN instance rather than a level
     metavariable — the empty wire stack is a relator like any other and has to be nameable. -/

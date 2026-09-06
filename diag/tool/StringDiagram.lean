@@ -273,6 +273,14 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
     | throwError "the bead `{label}` makes wires that are not relators, so there is no \
       naturality statement to look for: {← legsW.mapM (Meta.ppExpr ·.expr)}"
+  -- A wire is a relator of the WHOLE region, so it cannot mention the object the bead is a family
+  -- in.  `α : F(A,TA) ⟶ TA` peels its source to `F(A,−)`, which does: read that way the bead has
+  -- no naturality statement at all, and the stack has to be `⟨𝟙,T⟩` then `F` before it has one.
+  for w in armsW ++ legsW do
+    if (w.expr.containsFVar v.fvarId!) then
+      throwError "the bead `{label}` runs on the wire `{← Meta.ppExpr w.expr}`, which mentions the \
+        object `{← Meta.ppExpr v}` it is a family in — that stack is not a relator of the region, \
+        so it states no naturality"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
