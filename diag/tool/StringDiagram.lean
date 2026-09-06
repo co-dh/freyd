@@ -163,6 +163,7 @@ def columns (p : Panel) : Array Lane := Id.run do
     if !moved then break
   -- The leftmost lane's own name is written into the margin, so the margin holds the wider of a
   -- column and that name.
+  if ls.isEmpty then return ls
   let lo := ls.foldl (fun a b => if b.x < a.x then b else a) ls[0]!
   let gap := if lo.label.length > 1 then
       max DX (LDX + LCW * lo.label.length.toFloat + 0.002 + lo.pad) else DX
@@ -237,31 +238,41 @@ private def LIVE : Int := -2
 def familyVar (core oX : Expr) (objVars : Array Expr) : Option Expr :=
   objVars.find? fun v => core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
 
+/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity, which is the
+    relator the note's label names and the one a naturality statement has to be about. -/
+def wireRelator (regionTy : Expr) : Wire → MetaM Expr
+  | .rel r => return r
+  | .timesL l => do
+    let inst ← allegoryInst regionTy
+    Meta.mkAppM ``Freyd.Alg.Relator.prod
+      #[← Meta.mkAppOptM ``Freyd.Alg.Relator.const
+          #[some regionTy, some regionTy, some inst, some inst, some l],
+        ← idRelatorOf regionTy]
+
 /-- The composite relator a wire stack is, outermost first: `[W₀,W₁]` is `comp W₁ W₀`, whose object
     map is `W₀.obj ∘ W₁.obj`. -/
-def stackRelator (ws : Array Expr) (idr : Expr) : MetaM Expr := do
-  if ws.isEmpty then return idr
-  let mut acc := ws[ws.size - 1]!
+def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
+  if ws.isEmpty then return ← idRelatorOf regionTy
+  let mut acc ← wireRelator regionTy ws[ws.size - 1]!
   for i in [0 : ws.size - 1] do
-    acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ws[ws.size - 2 - i]!]
+    acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
   return acc
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
     a hollow one, a refuted `LaxNatural` the object wire; nothing found is an error naming the
     three statements it looked for, because no declaration means no dot. -/
-def verdict (armsW legsW : Array Expr) (core v : Expr) (label : String) :
+def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label : String) :
     MetaM (Option String) := do
   let φ ← Meta.mkLambdaFVars #[v] core
   -- The three statements have to be BUILDABLE before they can be searched for: a wire that is not
   -- a `Relator` — a bifunctor applied to two arrows, say — has no `StrictNatural` to state, and
   -- saying so names the bead instead of leaving an elaboration error to stand for it.
-  let idr ← Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[← Meta.inferType v, none]
-  let some G ← (some <$> stackRelator armsW idr) <|> pure none
+  let some G ← (some <$> stackRelator regionTy armsW) <|> pure none
     | throwError "the bead `{label}` runs under wires that are not relators, so there is no \
-      naturality statement to look for: {← armsW.mapM Meta.ppExpr}"
-  let some F ← (some <$> stackRelator legsW idr) <|> pure none
+      naturality statement to look for: {← armsW.mapM (Meta.ppExpr ·.expr)}"
+  let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
     | throwError "the bead `{label}` makes wires that are not relators, so there is no \
-      naturality statement to look for: {← legsW.mapM Meta.ppExpr}"
+      naturality statement to look for: {← legsW.mapM (Meta.ppExpr ·.expr)}"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
@@ -273,55 +284,95 @@ def verdict (armsW legsW : Array Expr) (core v : Expr) (label : String) :
     natural — looked for `{← Meta.ppExpr strict}`, `{← Meta.ppExpr lax}` and \
     `{← Meta.ppExpr nolax}`"
 
+/-- What one factor does to the stack: how many lanes run past it on the OUTSIDE, the lanes it
+    eats, the lanes it makes, and the arrow itself. -/
+structure RowSpec where
+  pass  : Array Wire
+  arms  : Array Wire
+  legs  : Array Wire
+  core  : Expr
+  deriving Inhabited
+
+/-- The rows a factor is.  A factor is taken apart until what is left acts on ONE contiguous block
+    of lanes, and the parts that are identities are what runs past:
+
+    * `F.map R` is `R` with `F`'s wires running past OUTSIDE it — the rule that was already here;
+    * a product map `φ×𝟙` is `φ` on the left factor's lanes with the rest of the stack running
+      past, and `𝟙×ψ` is `ψ` on the rest with the left factor's lanes running past;
+    * a composite inside either of those is still a composite, so `(cons secure)×𝟙` is two beads.
+
+    Comparing the two ends' wire STACKS cannot do this: `cons : [A]×[[A]] ⟶ [[A]]` and
+    `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
+    does not.  What separates them is the factor's own form, which is what is read here.  A factor
+    whose two ends are DIFFERENT objects with the SAME stack is a re-bracketing of a product —
+    `assocl` — and a picture has no bracketing to redraw, so it is no row at all. -/
+partial def rowsOf (regionTy : Expr) (cat : Array Name) (pass : Array Wire) (inLeft : Bool)
+    (e : Expr) : MetaM (Array RowSpec) := do
+  let fs := factors e
+  if fs.size > 1 then
+    let mut out : Array RowSpec := #[]
+    for f in fs do out := out ++ (← rowsOf regionTy cat pass inLeft f)
+    return out
+  match e.getAppFnArgs with
+  | (``Freyd.Functor.map, args) =>
+    if args.size ≥ 6 then
+      return ← rowsOf regionTy cat (pass ++ (wiresOf args[4]!).map Wire.rel) inLeft
+        args[args.size - 1]!
+  | _ => pure ()
+  if let some (φ, ψ) ← asProdMap? regionTy e then
+    if ← isIdArrow ψ then return ← rowsOf regionTy cat pass true φ
+    if ← isIdArrow φ then
+      let (x, _) ← homEnds φ
+      return ← rowsOf regionTy cat (pass ++ (← peelLefts regionTy x)) inLeft ψ
+  let (x, y) ← homEnds e
+  let arms ← if inLeft then peelLefts regionTy x else pure (← peelObj regionTy cat x).1
+  let legs ← if inLeft then peelLefts regionTy y else pure (← peelObj regionTy cat y).1
+  if arms.size == legs.size && !(← Meta.isDefEq x y) then
+    let mut same := true
+    for i in [0 : arms.size] do
+      unless ← Wire.beq arms[i]! legs[i]! do same := false
+    if same then return #[]
+  return #[{ pass, arms, legs, core := e }]
+
 /-- One side of a statement, as a panel. -/
-def panelOf (side : Expr) (objVars : Array Expr) : MetaM Panel := do
-  let some (src, tgt) := homObjs? (← Meta.inferType side)
-    | throwError "not an arrow of a category: {← Meta.ppExpr side}"
-  let (ws0, o0) := peelObj src
+def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
+    MetaM Panel := do
+  let (src, tgt) ← homEnds side
+  let (ws0, o0) ← peelObj regionTy cat src
   let mut lanes : Array Lane := #[]
   let mut stack : Array Nat := #[]
   for w in ws0 do
-    lanes := lanes.push { label := ← plain w, born := -1, dies := LIVE }
+    lanes := lanes.push { label := ← w.label, born := -1, dies := LIVE }
     stack := stack.push (lanes.size - 1)
   let mut rows : Array Row := #[]
-  let fs := factors side
-  for i in [0 : fs.size] do
-    let (pass, core) := peelMap fs[i]!
-    let some (x, y) := homObjs? (← Meta.inferType core)
-      | throwError "not an arrow of a category: {← Meta.ppExpr core}"
-    let (wsX, _oX) := peelObj x
-    let (wsY, oY) := peelObj y
-    -- The wires the two ends SHARE below the change are one lane running past, not a death and a
-    -- birth: `F.map R` leaves `F` alone whatever `R` does to the object.
-    let mut k := 0
-    let mut more := true
-    while more do
-      if k < wsX.size && k < wsY.size then
-        if ← Meta.isDefEq wsX[wsX.size - 1 - k]! wsY[wsY.size - 1 - k]! then k := k + 1
-        else more := false
-      else more := false
-    let eat := wsX.size - k
-    if pass.size + eat > stack.size then
-      throwError "the factor `{← plain core}` eats {eat} wires under {pass.size}, and only \
-        {stack.size} are live"
-    let arms := (stack.extract pass.size (pass.size + eat))
-    for a in arms do lanes := lanes.set! a { lanes[a]! with dies := (i : Int) }
-    let mut legs : Array Nat := #[]
-    for j in [0 : wsY.size - k] do
-      lanes := lanes.push { label := ← plain wsY[j]!, born := (i : Int), dies := LIVE }
-      legs := legs.push (lanes.size - 1)
-    stack := stack.extract 0 pass.size ++ legs ++ stack.extract (pass.size + eat) stack.size
-    let label ← plain core
-    let sameEnd ← Meta.isDefEq _oX oY
-    let nat ← match (if sameEnd then familyVar core _oX objVars else none) with
-      | none => pure none
-      | some v => verdict (pass ++ wsX.extract 0 eat) (pass ++ wsY.extract 0 (wsY.size - k))
-                    core v label
-    rows := rows.push { label, arms, legs, obj := ← plain oY, nat }
-  let n : Int := fs.size
+  for f in factors side do
+    let (_, fy) ← homEnds f
+    let obj ← plain (← peelObj regionTy cat fy).2
+    for r in ← rowsOf regionTy cat #[] false f do
+      let p := r.pass.size
+      if p + r.arms.size > stack.size then
+        throwError "the factor `{← plain r.core}` eats {r.arms.size} wires under {p}, and \
+          only {stack.size} are live"
+      let i : Int := rows.size
+      let arms := stack.extract p (p + r.arms.size)
+      for a in arms do lanes := lanes.set! a { lanes[a]! with dies := i }
+      let mut legs : Array Nat := #[]
+      for w in r.legs do
+        lanes := lanes.push { label := ← w.label, born := i, dies := LIVE }
+        legs := legs.push (lanes.size - 1)
+      stack := stack.extract 0 p ++ legs ++ stack.extract (p + r.arms.size) stack.size
+      let label ← plain r.core
+      let (cx, cy) ← homEnds r.core
+      let (_, ox) ← peelObj regionTy cat cx
+      let (_, oy) ← peelObj regionTy cat cy
+      let nat ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars else none) with
+        | none => pure none
+        | some v => verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
+      rows := rows.push { label, arms, legs, obj, nat }
+  let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
-  return { lanes, rows, otop := ← plain o0, obot := ← plain (peelObj tgt).2 }
+  return { lanes, rows, otop := ← plain o0, obot := ← plain (← peelObj regionTy cat tgt).2 }
 
 /-- `--string <Name>[.lhs|.rhs]`.  A `def` is drawn by its BODY unfolded one level; a statement
     with two sides is drawn one side at a time. -/
@@ -343,13 +394,13 @@ def drawString (declName : Name) (side : Option String) (frame topRow scale : Op
       | some _, _ => throwError "{declName} has no two sides to draw one of"
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.
-    let some (src, _) := homObjs? (← Meta.inferType arrow)
-      | throwError "not an arrow of a category: {← Meta.ppExpr arrow}"
-    let regionTy ← Meta.inferType (peelObj src).2
+    let (src, _) ← homEnds arrow
+    let regionTy ← Meta.inferType src
+    let cat ← relatorCatalogue regionTy
     let mut objVars : Array Expr := #[]
     for x in xs do
       if ← Meta.isDefEq (← Meta.inferType x) regionTy then objVars := objVars.push x
-    let p ← panelOf arrow objVars
+    let p ← panelOf regionTy cat arrow objVars
     let nm := declName.toString ++ (match side with | some s => "." ++ s | none => "")
     return emit p nm frame topRow scale
 

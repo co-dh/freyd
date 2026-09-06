@@ -19,10 +19,22 @@ open Lean
 
 namespace Freyd.StrDiag
 
+/-- A one-field record IS its field as far as a picture is concerned: the object `⟨Tx⟩` of a
+    category of sets is the set `Tx`, and printing the wrapper makes every lane label unreadable.
+    Generic over the environment — any constructor with exactly one field, no list of names. -/
+partial def unwrapRecords (e : Expr) : MetaM Expr :=
+  Meta.transform e (post := fun x => do
+    let .const n _ := x.getAppFn | return .continue
+    let some (.ctorInfo ci) := (← getEnv).find? n | return .continue
+    if ci.numFields != 1 then return .continue
+    let args := x.getAppArgs
+    if args.size != ci.numParams + 1 then return .continue
+    return .done args[args.size - 1]!)
+
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/
 def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr e)
+  let s := toString (← Meta.ppExpr (← unwrapRecords e))
   let s := s.replace "Freyd.Alg.RelSet." "" |>.replace "Freyd.Alg." "" |>.replace "Freyd." ""
     |>.replace "Alg." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
@@ -52,13 +64,179 @@ partial def wiresOf (f : Expr) : Array Expr :=
   | (``Freyd.idFunctor, _) => #[]
   | _ => #[f]
 
+/-- The head of a statement's CONCLUSION, under whatever `∀` binders it carries. -/
+partial def concHead : Expr → Name
+  | .forallE _ _ b _ => concHead b
+  | .mdata _ b => concHead b
+  | t => (t.getAppFn.constName?).getD Name.anonymous
+
+/-! ### The wire stack of an OBJECT, asked of the environment
+
+  §13.6's objects are records and defs — `dSched Tx`, `⟨Tx × Sched Tx⟩` — not `F.obj X`, so a
+  syntactic peel finds nothing in them.  What a picture needs is the RELATORS whose action they
+  are, and the environment is where those live: every constant whose type is `Relator 𝒜 𝒜` is a
+  candidate wire, and `X` carries that wire when `R.obj ?a` unifies with `X`.  No list of relator
+  names in the tool. -/
+
+/-- One wire of a stack: a relator, or the LEFT FACTOR of a product — `A×−` is a wire whose label
+    names the factor, and the rest of the stack is what the product's right factor peels to. -/
+inductive Wire where
+  | rel (r : Expr)
+  | timesL (l : Expr)
+  deriving Inhabited
+
+def Wire.expr : Wire → Expr
+  | .rel r => r
+  | .timesL l => l
+
+def Wire.label : Wire → MetaM String
+  | .rel r => plain r
+  | .timesL l => return (← plain l) ++ "×−"
+
+def Wire.beq (a b : Wire) : MetaM Bool :=
+  match a, b with
+  | .rel x, .rel y => Meta.isDefEq x y
+  | .timesL x, .timesL y => Meta.isDefEq x y
+  | _, _ => return false
+
+/-- The `Allegory` instance of a region, LOCAL one first.  A statement quantified over its own
+    `[Allegory 𝒜]` has no global instance to find, and synthesising one with the hom universe still
+    a level metavariable is what made `idRelator` unbuildable for an empty wire stack. -/
+def allegoryInst (regionTy : Expr) : MetaM Expr := do
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    if t.isAppOfArity ``Freyd.Alg.Allegory 1 then
+      if ← Meta.isDefEq t.appArg! regionTy then return d.toExpr
+  Meta.synthInstance (← Meta.mkAppM ``Freyd.Alg.Allegory #[regionTy])
+
+/-- The identity relator of a region, built with the region's OWN instance rather than a level
+    metavariable — the empty wire stack is a relator like any other and has to be nameable. -/
+def idRelatorOf (regionTy : Expr) : MetaM Expr := do
+  Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[regionTy, some (← allegoryInst regionTy)]
+
+/-- The two factors of a product object: `X` is `a × b` when the region's own product apex
+    `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
+def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+  let s ← Meta.saveState
+  try
+    let a ← Meta.mkFreshExprMVar (some regionTy)
+    let b ← Meta.mkFreshExprMVar (some regionTy)
+    let apex ← Meta.mkAppM ``Freyd.Alg.RelProd.p #[← Meta.mkAppM ``Freyd.Alg.HasRelProd.relProd #[a, b]]
+    if ← Meta.isDefEq apex X then
+      let a ← instantiateMVars a
+      let b ← instantiateMVars b
+      if !a.hasExprMVar && !b.hasExprMVar then return some (a, b)
+    s.restore; return none
+  catch _ => s.restore; return none
+
+/-- The endorelators of a region the environment NAMES.  A combinator — `comp`, `prod`, `pair` —
+    is excluded by its own type: it takes a relator as an argument, so peeling with it would peel
+    with an unknown, and `const`/`idRelator` are excluded at the peel by the progress test. -/
+def relatorCatalogue (regionTy : Expr) : MetaM (Array Name) := do
+  let env ← getEnv
+  let mut out : Array Name := #[]
+  for (n, ci) in env.constants do
+    if n.isInternal || ci.isUnsafe || concHead ci.type != ``Freyd.Alg.Relator then continue
+    let s ← Meta.saveState
+    let ok : Bool ← try
+      let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let (args, _, concl) ← Meta.forallMetaTelescope
+        (ci.type.instantiateLevelParams ci.levelParams lvls)
+      let mut good := true
+      for a in args do
+        if (← instantiateMVars (← Meta.inferType a)).isAppOf ``Freyd.Alg.Relator then good := false
+      let cargs := concl.getAppArgs
+      if !good || cargs.size < 2 then pure false
+      else pure ((← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy))
+    catch _ => pure false
+    s.restore
+    if ok then out := out.push n
+  return out.qsort (fun a b => a.toString < b.toString)
+
+/-- `X` as `R.obj a` for the catalogue entry `n`, or `none`.  Progress is required — a relator
+    that gives back `X` itself peels nothing — and so is a fully determined answer, which is what
+    keeps a relator with an undetermined parameter from matching anything. -/
+def peelWith? (n : Name) (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+  let some ci := (← getEnv).find? n | return none
+  let s ← Meta.saveState
+  try
+    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+    let (args, _, concl) ← Meta.forallMetaTelescope
+      (ci.type.instantiateLevelParams ci.levelParams lvls)
+    let cargs := concl.getAppArgs
+    unless (← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy) do
+      s.restore; return none
+    let R := mkAppN (mkConst n lvls) args
+    let inner ← Meta.mkFreshExprMVar (some regionTy)
+    let app ← Meta.mkAppM ``Freyd.Functor.obj
+      #[← Meta.mkAppM ``Freyd.Alg.Relator.toFunctor #[R], inner]
+    if ← Meta.isDefEq app X then
+      let inner ← instantiateMVars inner
+      let R ← instantiateMVars R
+      if !inner.hasExprMVar && !R.hasExprMVar && !(← Meta.isDefEq inner X) then
+        return some (R, inner)
+    s.restore; return none
+  catch _ => s.restore; return none
+
+/-- A product's LEFT factor as lanes.  `(A×B)×C` and `A×(B×C)` are the same stack of lanes, which
+    is why an associativity re-bracketing is invisible in a picture. -/
+partial def peelLefts (regionTy a : Expr) : MetaM (Array Wire) := do
+  match ← splitTimes? regionTy a with
+  | some (x, y) => return (← peelLefts regionTy x) ++ (← peelLefts regionTy y)
+  | none => return #[Wire.timesL a]
+
 /-- An object peeled into its wire stack (outermost first) and the object underneath. -/
-partial def peelObj (e : Expr) : Array Expr × Expr :=
-  match e.getAppFnArgs with
-  | (``Freyd.Functor.obj, args) => match lastTwo args with
-    | some (f, x) => let (ws, o) := peelObj x; (wiresOf f ++ ws, o)
-    | none => (#[], e)
-  | _ => (#[], e)
+partial def peelObj (regionTy : Expr) (cat : Array Name) (X : Expr) :
+    MetaM (Array Wire × Expr) := do
+  match X.getAppFnArgs with
+  | (``Freyd.Functor.obj, args) =>
+    if let some (f, x) := lastTwo args then
+      let (ws, o) ← peelObj regionTy cat x
+      return ((wiresOf f).map Wire.rel ++ ws, o)
+  | _ => pure ()
+  if let some (a, b) ← splitTimes? regionTy X then
+    let la ← peelLefts regionTy a
+    let (ws, o) ← peelObj regionTy cat b
+    return (la ++ ws, o)
+  for n in cat do
+    if let some (R, inner) ← peelWith? n regionTy X then
+      let (ws, o) ← peelObj regionTy cat inner
+      return (#[Wire.rel R] ++ ws, o)
+  return (#[], X)
+
+/-- The two ends of an arrow. -/
+def homEnds (e : Expr) : MetaM (Expr × Expr) := do
+  let some p := homObjs? (← Meta.inferType e)
+    | throwError "not an arrow of a category: {← Meta.ppExpr e}"
+  return p
+
+/-- Is this arrow an identity? -/
+def isIdArrow (e : Expr) : MetaM Bool := do
+  let (x, y) ← homEnds e
+  if !(← Meta.isDefEq x y) then return false
+  Meta.isDefEq e (← Meta.mkAppM ``Cat.id #[x])
+
+/-- A PRODUCT MAP, recognised by its TYPE and nothing else: a constant applied to exactly two
+    arrows `φ : a ⟶ a'`, `ψ : b ⟶ b'` whose own two ends are the products of those ends.  That
+    type has only one inhabitant a picture can mean, so no name is needed — and it is what says
+    which lanes the factor touches, where comparing the two wire stacks cannot: `cons` and
+    `secure×𝟙` have the same stacks below them and eat wholly different wires. -/
+def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  let .const _ _ := e.getAppFn | return none
+  let args := e.getAppArgs
+  let mut arrows : Array Expr := #[]
+  for a in args do
+    if (homObjs? (← Meta.inferType a)).isSome then arrows := arrows.push a
+  unless arrows.size == 2 do return none
+  let (x, y) ← homEnds e
+  let some (a, b) ← splitTimes? regionTy x | return none
+  let some (a', b') ← splitTimes? regionTy y | return none
+  let (φa, φa') ← homEnds arrows[0]!
+  let (ψb, ψb') ← homEnds arrows[1]!
+  unless (← Meta.isDefEq a φa) && (← Meta.isDefEq a' φa')
+      && (← Meta.isDefEq b ψb) && (← Meta.isDefEq b' ψb') do return none
+  return some (arrows[0]!, arrows[1]!)
 
 /-- A factor with the relators it runs UNDER stripped off: `F.map (G.map R)` is `R` with the wires
     `F`, `G` running past it.  Outermost first. -/
@@ -96,12 +274,6 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .mdata _ b | .proj _ _ b => consts b acc
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
-
-/-- The head of a statement's CONCLUSION, under whatever `∀` binders it carries. -/
-partial def concHead : Expr → Name
-  | .forallE _ _ b _ => concHead b
-  | .mdata _ b => concHead b
-  | t => (t.getAppFn.constName?).getD Name.anonymous
 
 /-- Is `want` proved by some declaration of the environment?  Candidates are the constants whose
     conclusion is headed by `head` and whose statement mentions everything the family does; each
