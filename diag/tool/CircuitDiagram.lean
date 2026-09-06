@@ -119,6 +119,9 @@ def headWord (s : String) : String :=
 def applyLabel (f a : String) : String :=
   if a.startsWith "[" then f ++ a
   else if f.length == 1 && (headWord a).length == 1 then f ++ a
+  -- Only a SINGLE object name may stay bare (`F Int`); anything longer would read as a second
+  -- argument, so it is parenthesised — `F(CL.ConsList Unit A)`, never `F CL.ConsList Unit A`.
+  else if a.any (· == ' ') then f ++ "(" ++ a ++ ")"
   else f ++ " " ++ a
 
 mutual
