@@ -938,5 +938,15 @@ public theorem sum_cata :
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
+-- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
+-- the name.  Changes no statement and no `stmt_key`.
+-- NOT HERE: `prefixR`, which the note calls `prefix`.  `prefix` is one of Lean's own command
+-- keywords, so the printer escapes an identifier of that name and writes `«prefix»`, which is
+-- worse than the declaration's own name; the label stays `prefixR`.
+open Lean PrettyPrinter in
+@[app_unexpander dList] public meta def unexpandDList : Unexpander
+  | `($_ $A) => `([$A])
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.ListRel
 
