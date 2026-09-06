@@ -1267,6 +1267,104 @@ def draw (declName : Name) : MetaM String := do
         let (d, _) := renderCells (← toCells body) 0.0
         return page declName doc ("cetz.canvas({\n" ++ d ++ "\n})\n")
 
+/-! ### `--sig`: the elaborated TYPE, as JSON
+
+`hm-check --verify-sigs` holds a note signature row against the declaration its `lean:` marker
+names, and the only honest way to do that is to COMPARE THE TYPES.  The pretty printer cannot
+supply them: it prints `⟶` with the category erased, so `F(X) ⟶ X` in `FAlg F` and `F(X) ⟶ X` in
+the base category read the same, which is exactly the confusion the gate exists to catch.  So the
+type is walked as an `Expr` and emitted as nested JSON arrays — an application is
+`["<constant>", arg, …]`, a variable its binder name — with instance arguments and universe levels
+dropped, because neither is anything the note draws. -/
+
+/-- One JSON string.  The corpus's names are identifiers and notation glyphs, so only the structural
+    characters and the control range can occur; everything else goes through untouched. -/
+def jstr (s : String) : String :=
+  let esc (c : Char) : String :=
+    if c == '"' then "\\\"" else if c == '\\' then "\\\\"
+    else if c == '\n' then "\\n" else if c == '\r' then "\\r" else if c == '\t' then "\\t"
+    else if c.toNat < 0x20 then
+      let hex := Nat.toDigits 16 c.toNat
+      "\\u" ++ "".pushn '0' (4 - hex.length) ++ String.ofList hex
+    else c.toString
+  "\"" ++ s.foldl (fun acc c => acc ++ esc c) "" ++ "\""
+
+def jarr (xs : List String) : String := "[" ++ String.intercalate ", " xs ++ "]"
+
+def jobj (kvs : List (String × String)) : String :=
+  "{" ++ String.intercalate ", " (kvs.map fun (k, v) => jstr k ++ ": " ++ v) ++ "}"
+
+/-- The binder kinds of a constant's own telescope, in order.  An APPLICATION carries its instance
+    arguments as ordinary `Expr`s, so the only place to learn which of them are instances is the
+    head constant's type. -/
+partial def binderKinds (env : Environment) (n : Name) : List BinderInfo :=
+  match env.find? n with
+  | none => []
+  | some ci =>
+    let rec go : Expr → List BinderInfo → List BinderInfo
+      | .forallE _ _ b bi, acc => go b (bi :: acc)
+      | .mdata _ b, acc => go b acc
+      | _, acc => acc.reverse
+    go ci.type []
+
+/-- The type as nested JSON arrays.  A binder is walked through a telescope so its variables come
+    out under their own names, which is what lets the caller see that `alpha_natural_alg`'s `f`
+    ranges over the homs of `FAlg F` and not over the base category's. -/
+partial def sexp (e : Expr) : MetaM String := do
+  match e with
+  | .mdata _ b => sexp b
+  | .letE _ _ v b _ => sexp (b.instantiate1 v)
+  | .forallE .. => telescope "∀" Meta.forallTelescope e
+  | .lam .. => telescope "λ" Meta.lambdaTelescope e
+  | .proj s i b => return jarr [jstr s!"{s}.{i}", ← sexp b]
+  | _ =>
+    let args := e.getAppArgs
+    match e.getAppFn with
+    | .const n _ =>
+      let kinds := binderKinds (← getEnv) n
+      let keep := args.toList.zipIdx.filterMap fun (a, i) =>
+        if kinds[i]? == some .instImplicit then none else some a
+      return jarr (jstr n.toString :: (← keep.mapM sexp))
+    | .fvar fid =>
+      let nm := jstr (← fid.getUserName).toString
+      let ss ← args.toList.mapM sexp
+      return if args.isEmpty then nm else jarr (nm :: ss)
+    | .sort l => return jstr s!"Sort {l}"
+    | .lit (.natVal k) => return jstr (toString k)
+    | .lit (.strVal s) => return jstr s
+    | .bvar i => return jstr s!"#{i}"
+    | .mvar _ => return jstr "?m"
+    | f => return jarr (jstr (toString (← Meta.ppExpr f)) :: (← args.toList.mapM sexp))
+where
+  telescope (tag : String)
+      (walk : Expr → (Array Expr → Expr → MetaM String) → MetaM String) (e : Expr) : MetaM String :=
+    walk e fun xs body => do
+      let bs ← xs.toList.mapM fun x => do
+        let d ← x.fvarId!.getDecl
+        return jarr [jstr d.userName.toString, ← sexp d.type]
+      return jarr (jstr tag :: bs ++ [← sexp body])
+
+def kindOf : ConstantInfo → String
+  | .axiomInfo _ => "axiom" | .defnInfo _ => "def"     | .thmInfo _ => "theorem"
+  | .opaqueInfo _ => "opaque" | .quotInfo _ => "quot"  | .inductInfo _ => "inductive"
+  | .ctorInfo _ => "ctor" | .recInfo _ => "rec"
+
+/-- One JSON line for `declName`: its kind, the binders it quantifies over (instances dropped,
+    hypotheses kept — a `Prop`-typed binder is as much a part of what the row claims as an object
+    one), and the type they end in.  `forallTelescope`, never the reducing form: whnf would unfold
+    `Cat.Hom` into whatever the instance defines it as and the category — the region the note draws
+    in — would be gone before the walk ever saw it. -/
+def sig (declName : Name) : MetaM String := do
+  let some ci := (← getEnv).find? declName
+    | throwError "no such declaration: {declName}"
+  Meta.forallTelescope ci.type fun xs body => do
+    let bs ← xs.toList.filterMapM fun x => do
+      let d ← x.fvarId!.getDecl
+      if d.binderInfo == .instImplicit then return none
+      return some (jobj [("name", jstr d.userName.toString), ("type", ← sexp d.type)])
+    return jobj [("name", jstr declName.toString), ("kind", jstr (kindOf ci)),
+                 ("binders", jarr bs), ("type", ← sexp body)]
+
 /-! ### Driver -/
 
 /-- Every module of a library root except this tool, so the exporter can name any declaration of
@@ -1284,19 +1382,21 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
-   --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ"
+   --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
+   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps"
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
-  let args := args.filter (· != "--proof")
+  let sigMode := args.contains "--sig"
+  let args := args.filter (fun a => a != "--proof" && a != "--sig")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
-  IO.FS.createDirAll "diag/generated"
+  unless sigMode do IO.FS.createDirAll "diag/generated"
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
   -- Generalized field notation prints a class projection through its instance argument, so `Δ_a`
@@ -1314,13 +1414,17 @@ def main (args : List String) : IO UInt32 := do
   let mut status : UInt32 := 0
   for arg in args do
     let run : CoreM String :=
-      Meta.MetaM.run' (if proofMode then drawProof arg.toName else draw arg.toName)
+      Meta.MetaM.run' (if sigMode then sig arg.toName
+        else if proofMode then drawProof arg.toName else draw arg.toName)
     match ← (do pure (some (← Prod.fst <$> run.toIO ctx { env }))) <|> pure none with
     | none =>
-      IO.eprintln s!"diag-export: cannot draw `{arg}` — no such declaration in `Freyd` or `diag.*`, \
-        or (with --proof) no calc chain in its proof term"
+      IO.eprintln (if sigMode then
+          s!"diag-export --sig: no such declaration in `Freyd`, `diag.*` or `AOP.*`: {arg}"
+        else s!"diag-export: cannot draw `{arg}` — no such declaration in `Freyd` or `diag.*`, \
+          or (with --proof) no calc chain in its proof term")
       status := 1
     | some text =>
+      if sigMode then IO.println text else
       let path := System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString

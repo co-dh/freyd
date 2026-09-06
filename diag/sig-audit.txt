@@ -1,0 +1,106 @@
+sig-audit — what `./scripts/hm-check --verify-sigs` reports once every row is held against the TYPE
+of the declaration it cites, not against the letters of its printed statement.  96 failures over 399
+rows, in five classes.  The note itself is untouched: this is the work order.
+
+Regenerate with `./scripts/hm-check --verify-sigs`; `diag/hm-sigs.json`'s `spelling`, `clear` and
+`regions` are what the translation reads.
+
+
+== A. The α of the CATEGORY OF ALGEBRAS drawn as an α of the note's own region (30 failures, 10 rows)
+
+`alphaComp X : (liftRelator F).obj X ⟶ X` is an arrow of `FAlg F`, not of the note's region, and
+`liftRelator F` is the lifted relator on that category, not the `F` the panel draws.  Its naturality
+`alpha_natural_alg` quantifies `(f : X ⟶ Y)` over HOMOMORPHISMS of `FAlg F`, where the panel's
+`h : A⟶B` is an arrow of the base category.  Three failures per row, one per claim.
+
+rows: 11.4a.1  11.4a.2  11.4a.3  11.4a.4  11.4.2a.1  11.4.2a.2
+      11.6.1a.1  11.6.1a.2  11.6.2a.1  11.6.2a.2
+sig:  "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b
+                 !lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"
+
+  Freyd.Alg.alphaComp is an arrow of FAlg(𝒜, F), which is no region the note draws in — its type is
+  Hom(FAlg(𝒜, F), obj(FAlg(𝒜, F), FAlg(𝒜, F), liftRelator(𝒜, F), X), X)
+
+  Freyd.Alg.alphaComp's type is Hom(FAlg(𝒜, F), obj(FAlg(𝒜, F), FAlg(𝒜, F), liftRelator(𝒜, F), X), X)
+  — Freyd.Alg.liftRelator has no spelling in hm-sigs.json; the row says F(x)⟶x
+
+  nat-lean Freyd.Alg.alpha_natural_alg slides an arrow of FAlg(𝒜, F), which is no region the note
+  draws in — the panel's h : A⟶B is an arrow of the region
+
+
+== B. `nat` claimed of an arrow at ONE object (51 failures)
+
+A row with no variable in its signature is not a family, so no naturality can be claimed or refuted
+of it.  Each: drop `nat`/`nat-lean`, or make the row the family it means — a variable in the
+signature, and a theorem quantifying over it.
+
+  13.6.2b.2, 13.6.3a.1, 13.6.3a.3, 13.6.5a.1, 13.6.5a.2, 13.6.5b.1, 13.6.5b.2, 13.6.5b.3, 13.6.5b.4,
+  13.6.5b.5, 13.6.5b.6, 13.6.6a.2, 13.6.6b.2   sigs new : Int×[[Int]]⟶[[Int]]                (strict)
+  13.6.3a.1, 13.6.3a.2, 13.6.3a.3, 13.6.5b.2, 13.6.5b.3, 13.6.6b.2
+      sigs R : [[Int]]⟶[[Int]]!no=…Van.R_not_lax_natural@95cdf4e1!lean=…Van.R@2d7aa64f       (no)
+  13.6.5b.5, 13.6.6c.1, 13.6.6c.2, 13.6.6d.3
+      sigs R∩H : [[Int]]⟶[[Int]]!no=…Van.RH_inter_not_lax_natural@518031f4                   (no)
+  13.6.5b.1, 13.6.5b.6, 13.6.6d.1, 13.6.6d.4
+      sigs R;H : [[Int]]⟶[[Int]]!no=…Van.RH_not_lax_natural@6e801887!lean=…Van.RH@ac9006f0   (no)
+  15.2b.2, 15.2b.3, 15.2b.4        sigs cons : Op×[Op]⟶[Op]                                  (strict)
+  14.3c.2, 14.3c.3, 14.3c.4
+      sigs setify : [A]⟶E(A)!lax=…setify_lax_natural@6042f786,…setify_not_strict@4cb31790
+                             !lean=…ListRel.setify@25397e9a                                  (lax)
+  13.6.5a.2, 13.6.5b.4, 13.6.6a.2
+      sigs H : [[Int]]⟶[[Int]]!no=…Van.H_not_lax_natural@c647d911!lean=…Van.Hrel@a9423ec2    (no)
+  13.6.2a.1, 13.6.3a.2
+      sigs wrap×𝟙 : Int×[[Int]]⟶[Int]×[[Int]]!nat=…Van.wrapProd_natural@16571948             (strict)
+  13.6.2b.1, 13.6.7a.1             sigs partition : [Int]⟶[[Int]]                            (strict)
+  13.6.6b.1, 13.6.6d.2
+      sigs |R| : [[Int]]⟶[[Int]]!no=…Van.strict_not_lax_natural@b7597db7!lean=…Van.strictR   (no)
+  13.6.5a.1, 13.6.6a.1
+      sigs ⊤ : [[Int]]⟶[[Int]]!no=…Van.top_not_lax_natural@38ea2f45!lean=…RelSet.relTop      (no)
+  13.6.2b.2, 13.6.4a.2
+      sigs nil : 𝟏⟶[[Int]]!nat=…Van.nil_natural@a93144d4!lean=…CL.wrapR@41c2dca6             (strict)
+  13.3.4e.2                        sigs plus : A×Int⟶Int                                     (no)
+  16.4b.4                          sigs α : F(Decimal)⟶Decimal                               (no)
+  13.5.4a.1
+      sigs paths : Nat[m][n]⟶Nat[np][m]!nat=…Vec.paths_natural@54a4beda!lean=…Vec.paths      (strict)
+  13.6.4a.1                        sigs prefix : [Int]⟶[Int]                                 (lax)
+  13.6.4a.1                        sigs head : [[Int]]⟶[Int]                                 (lax)
+
+
+== C. The row's type is not the declaration's (10 failures)
+
+  hm-sigs.json plus : A×x ⟶ x
+  13.3.4c.2 sigs plus : A×x⟶x
+  13.3.4e.2 sigs plus : A×Int⟶Int
+      Freyd.Alg.RelSet.Carrier.plusR is Int×Int⟶Int — the row says A where Lean has Int
+
+  13.5.2a.2 sigs gen, 13.5.4b.1 sigs gen : F(x[n][p][m])⟶x[n][3p][m+1]
+      Freyd.Alg.Vec.gen is A[k]×A[k][k][k]⟶A[k][k][k] — the row says F(x[n][p][m]) where Lean has
+      A[k]×A[k][k][k].  The note's `F` lane is the partially applied `A×−`, which the type does not
+      carry; either the row names the product or `F` gets a spelling that is one.
+
+  13.5.1a.1 sigs cp : F(x[k])⟶F(x)[k]
+      Freyd.Alg.Vec.cp is A×X[k]⟶A×X[k] — same `F` = `A×−`
+  13.5.1a.1 sigs zip, 13.5.3a.1 sigs zip : F(x[k])⟶F(x)[k]
+      Freyd.Alg.Vec.zip is A[k]×X[k]⟶A×X[k] — same `F` = `A×−`
+  13.5.4b.2 sigs Q : F(x[n][m])⟶x[n][m+1]
+      Freyd.Alg.Vec.Rel.Q is a[k]×a[k][k]⟶a[k][k] — same `F` = `A×−`
+
+  hm-sigs.json S : x×[[x]×[x]] ⟶ [x]×[x]
+      Freyd.Alg.RelSet.Party.S is F(list(A)×list(A))⟶list(A)×list(A) — the row says
+      x×list(list(x)×list(x)) where Lean has F(list(A)×list(A))
+
+
+== D. `nat` stated with no `lean` (4 failures)
+
+The verdict is drawn on the row's own arrow; with none named there is nothing to hold the theorem to.
+
+  11.5.1b.1, 11.5.1b.2
+      sigs α : "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627"
+  13.2b.1, 13.2b.2
+      sigs φ : "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"
+
+
+== E. The row cites something that is not an arrow (1 failure)
+
+  hm-sigs.json include : x×[[x]×[x]] ⟶ [x]
+      Freyd.Alg.RelSet.Party.includeFn is no arrow — its type is ConsList(Unit, A), a Lean function
+      with its arguments in the telescope.  Cite the relation, not the function it is the graph of.

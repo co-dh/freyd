@@ -29,37 +29,86 @@
   "mu": {
     "F": "list(x)"
   },
+  "clear": [
+    "//: the heads the note draws THROUGH — a wrapper round a carrier type, a coercion that makes a",
+    "//  relator a functor. They name no lane: what the note draws is what is inside them.",
+    "Freyd.Alg.RelSet.mk",
+    "Freyd.Alg.RelSet.carrier",
+    "Freyd.Alg.RelSet.CL.dE",
+    "Freyd.Alg.RelSet.CL.dL",
+    "Freyd.Alg.Relator.toFunctor",
+    "Freyd.Alg.BiRelator.toFunctor"
+  ],
+  "regions": [
+    "//: the CATEGORIES the note draws in. An arrow of anything else — a hom of `FAlg`, of `Alg` —",
+    "//  is not the `h : A⟶B` a panel carries, however much its statement reads like the panel's law.",
+    "//  A Lean type VARIABLE is always a region: it is the ambient allegory the module quantifies over.",
+    "Freyd.Alg.RelSet"
+  ],
   "spelling": {
-    "//": "How Lean writes each of the note's names — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index. A BEAD's name belongs here too wherever Lean writes it as notation instead of as the constant's own name: `∋` is `PowerAllegory.eps`, and every theorem about it spells the glyph, so a `nat-lean` about `∋` would otherwise read as a theorem about some other arrow.",
-    "list": [
+    "//": "What each Lean head DENOTES, in the note's own object language: the key is the note object it stands for, with a variable for each of the head's object arguments, taken left to right. `list(x)` is a head the note draws as one `list` lane over its last argument; `list(list(x))` a Lean name that folds TWO of the note's lanes into one (`Sched` is a list of segments, which are lists); `x×y` a binary former; a key with no variable is a constant object. A head entry is the constant's FULL name, or `[name, i, …]` naming the argument positions the variables take when they are not the trailing ones (`RelProd.p 𝒜 a b self` carries its factors at 1 and 2). One head may appear under SEVERAL keys — `dTuple` is both the note's `L` and its `N`, two index functors at two lengths, and no Lean name tells them apart — and the match takes whichever the row asks for. `hm-check --verify-sigs` translates a cited declaration's type through this table and unifies it with the row; a head with no entry is a failure that names the head.",
+    "list(x)": [
       "List",
-      "dCL",
-      "Seg",
-      "Sched"
+      "Freyd.Alg.RelSet.ListRel.dList",
+      "Freyd.Alg.RelSet.CL.ConsList",
+      ["Freyd.Alg.RelSet.CL.dCL", 1],
+      "Freyd.Alg.RelSet.Van.Seg"
     ],
-    "tree": [
+    "list(list(x))": [
+      "Freyd.Alg.RelSet.Van.dSched",
+      "Freyd.Alg.RelSet.Van.Sched"
+    ],
+    "tree(x)": [
       "Rose",
-      "I.t"
+      "Freyd.Alg.RelSet.RT.dRose",
+      ["Freyd.Alg.InitialAlgebra.t", 1]
     ],
-    "E": [
-      "powerObj"
+    "T": [
+      ["Freyd.Alg.InitialAlgebra.t"]
     ],
-    "F": [
-      ".obj",
-      "Fo ",
-      "Prod.map",
-      ".carrier ×"
+    "E(x)": [
+      "Freyd.Alg.PowerAllegory.powerObj"
     ],
-    "[]": [
-      "Vec",
-      "dTuple"
+    "F(x)": [
+      "Freyd.Alg.RelSet.CL.F",
+      ["Freyd.Alg.RelSet.CL.Fobj", 2],
+      ["Freyd.Alg.RelSet.Poly.Fo", 2],
+      "Freyd.Alg.RelSet.RT.F"
     ],
-    "×": [
-      "×",
-      "Prod"
+    "x[k]": [
+      "Freyd.Alg.Vec",
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1]
     ],
-    "∋": [
-      "∋"
+    "L(x)": [
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1],
+      "Freyd.Alg.RelSet.ListRel.dList"
+    ],
+    "N(x)": [
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1],
+      ["\u2200", 1]
+    ],
+    "list\u207a(x)": [
+      ["Freyd.Alg.RelSet.CL.dCL", 1]
+    ],
+    "list\u207a(list\u207a(x))": [
+      "Freyd.Alg.RelSet.Paragraph.dPara"
+    ],
+    "x×y": [
+      ["Prod", 0, 1],
+      ["Freyd.Alg.RelSet.prod", 0, 1],
+      ["Freyd.Alg.RelProd.p", 1, 2]
+    ],
+    "Int": [
+      "Int"
+    ],
+    "Nat": [
+      "Nat"
+    ],
+    "Bool": [
+      "Bool"
+    ],
+    "𝟏": [
+      "Unit"
     ]
   },
   "sigs": {
