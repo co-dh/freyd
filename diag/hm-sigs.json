@@ -97,7 +97,7 @@
       "note": "§15's fold over the cylinder tuple; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+        "AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold_not_lax_natural@d3d1f3d1"
       ]
     },
     "⦇gen⦈": {

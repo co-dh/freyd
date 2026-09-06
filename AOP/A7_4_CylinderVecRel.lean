@@ -192,6 +192,48 @@ public theorem cons_Qfold (R : (i : Nat) → dTuple i a ⟶ dTuple i a) {n m : N
   rw [← Cat.assoc, h]
   exact Cat.id_comp _
 
+/-- **`⦇Q⦈` is not even lax natural**: there is no law
+    `Vec(m+1)(Vec(n)(f)) ⦇Q⦈ ⊑ ⦇Q⦈ Vec(n)(Vec(m+1)(f))` holding for every carrier, every order and
+    every `f`.  It fails at `a = Bool`, `n = 2`, `m = 1`, the order `R = 𝟙` and the constant
+    `f = false`, on the input whose two columns are both `(true,false)`.  With `R = 𝟙` the `est`
+    inside `Q` keeps a path only where the three `moves` neighbours AGREE: on that input they
+    disagree, so `⦇Q⦈` is empty there and the right-hand side has nothing to offer, while `f`
+    flattens every entry to `false` FIRST, making the neighbours agree, so the left-hand side goes
+    through. -/
+public theorem Qfold_not_lax_natural :
+    ¬ ∀ (a : RelSet.{0}) (n m : Nat) (R : (i : Nat) → dTuple i a ⟶ dTuple i a) (f : a ⟶ a),
+        tupleP (m + 1) (tupleP n f) ≫ Qfold R m ⊑ Qfold R m ≫ tupleP n (tupleP (m + 1) f) := by
+  intro h
+  have key := le_iff.mp
+    (h (⟨Bool⟩ : RelSet.{0}) 2 1 (fun i => 𝟙 (dTuple i (⟨Bool⟩ : RelSet.{0})))
+      (RelSet.graph fun _ => false))
+    (fun _ i => decide (i.val = 0))
+    (fun _ => cons ((false : Bool), fun _ => (false : Bool)))
+  -- `f` first: every entry becomes `false`, the three `moves` neighbours agree, `est 𝟙` answers.
+  obtain ⟨u, hu, -⟩ := key (by
+    refine ⟨fun _ _ => false, fun _ _ => rfl, ?_⟩
+    refine ⟨(fun _ => false, fun _ _ => false), rfl, ?_⟩
+    refine ⟨(fun _ => false, fun _ _ => false), ⟨rfl, rfl⟩, ?_⟩
+    exact ⟨(fun _ => false, fun _ _ => false),
+      ⟨rfl, _, rfl, _, rfl, fun _ => ⟨⟨⟨0, by decide⟩, rfl⟩, fun _ => rfl⟩⟩,
+      _, rfl, fun _ => rfl⟩)
+  -- `⦇Q⦈` first: entries `0` and `1` of the column differ, so no `est 𝟙` image exists at row `0`.
+  obtain ⟨y, hy, w, hw, v, hv, -⟩ := hu
+  subst hy
+  obtain ⟨w₁, w₂⟩ := w
+  obtain ⟨-, hw2⟩ := hw
+  subst hw2
+  obtain ⟨-, s, hs, tt, ht, hest⟩ := hv
+  subst hs
+  subst ht
+  obtain ⟨-, hall⟩ := hest (0 : Fin 2)
+  -- row `0` sees `w₂ 1`, `w₂ 0`, `w₂ 1` — `false`, `true`, `false`, and `est 𝟙` needs all three
+  have hfalse : (false : Bool) = true := by
+    have h0 := hall (0 : Fin 3)
+    have h1 := hall (1 : Fin 3)
+    exact congrFun (h0.symm.trans h1) (0 : Fin 1)
+  exact absurd hfalse (by decide)
+
 /-! ## The laws of the derivation -/
 
 /-- **`Vec(j)(est(S)) est(S) ⊑ concat est(S)`** — a cheapest of each of the `j` rows and then a
