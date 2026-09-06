@@ -113,11 +113,11 @@
     "⦇S%∋ est(R;H)⦈": {
       "src": "[x]",
       "tgt": "[[x]]",
-      "lean": "AOP.A5_5.relCata@6ef23f02",
-      "note": "§13.4's greedy fold — `relCata` at the algebra `S%∋ est(R;H)`, cited as the operator the way the thinned fold is, because the corpus has no declaration for that algebra's fold. NOT `partition`, whose strict square IS proved (`RelSet.ListRel.partition_natural`); its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "lean": "AOP.A7_5_Van.Van.greedyFold@3cf151ab",
+      "note": "§13.4's greedy fold itself — `⦇Λ(S) est(R;H)⦈` at the van's own `S`, `R` and `H`, `[Tx]⟶[[Tx]]`. NOT `partition`, whose strict square IS proved (`RelSet.ListRel.partition_natural`)",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.relCata_not_lax_natural@fef916b7"
+        "AOP.A7_5_VanBeads.Van.greedyFold_not_lax_natural@3a27bdfc"
       ]
     },
     "⦇(F(∋)S)%∋ thin(Q)⦈": {

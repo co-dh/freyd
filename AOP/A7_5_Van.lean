@@ -400,6 +400,11 @@ public theorem old_eq :
   junc (sumCop (dL Unit) ⟨Tx × Sched Tx⟩) (wrapR : dL Unit ⟶ dSched Tx)
     (graph (progFn amount N))
 
+/-- **van-laws**, the greedy fold `⦇S%∋ est(R;H)⦈` the note's §13.4 draws: at each transaction
+    `S` offers both the new segment and the glued one, and `est(R;H)` keeps the `R;H`-least. -/
+@[expose] public def greedyFold (amount : Tx → Int) (N : Int) : dList Tx ⟶ dSched Tx :=
+  ⦇Λ (Salg amount N) ≫ est (RH Tx)⦈
+
 /-! ## `van-defn`'s fusion: `partition list(secure) = ⦇S⦈` -/
 
 /-- Every segment of the schedule is secure. -/
