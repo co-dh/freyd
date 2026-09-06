@@ -127,32 +127,46 @@ partial def concHead : Expr → Name
 inductive Wire where
   | rel (r : Expr)
   | timesL (l : Expr)
-  /-- A PAIRING `⟨F,G⟩ : 𝒜 ⟶ 𝒜×𝒜`: the lane an object of a product region opens, carrying the
-      relator it is and the spelling of its two halves, which no single constant names. -/
-  | pairW (p : Expr) (lab : String)
+  /-- A PAIRING `⟨F,G⟩ : 𝒜 ⟶ 𝒜×𝒜`: the lane an object of a product region opens, which no single
+      constant names. -/
+  | pairW (p : Expr)
   deriving Inhabited
 
 def Wire.expr : Wire → Expr
   | .rel r => r
   | .timesL l => l
-  | .pairW p _ => p
+  | .pairW p => p
 
-/-- A relator's own spelling as a LANE.  A pairing and an identity have no name of their own, so
-    they are written structurally — `⟨𝟙,T⟩` — and the length of that string is what reserves the
-    lane's room, which is why it cannot be left to the pretty printer's `⟨𝟙, T⟩`. -/
+/-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
+    pairing, an identity, a composite and the product bifunctor have no name of their own, so they
+    are written structurally — `⟨𝟙,T⟩`, `𝟙`, `list list`, `×` — and the length of that string is
+    what reserves the lane's room, which is why it cannot be left to `Relator.comp list list`.
+    Every head here is matched as an `Expr` head, so nothing rests on how a name prints.
+    A composite is juxtaposition in DIAGRAM order — `comp F G` is `F` then `G` — and it is read off
+    `wiresOf`, which is what drops the identity factors and flattens the nesting. -/
 partial def relLabel (r : Expr) : MetaM String := do
   match r.getAppFnArgs with
   | (``Freyd.Alg.Relator.pair, args) =>
     match lastTwo args with
     | some (f, g) => return "⟨" ++ (← relLabel f) ++ "," ++ (← relLabel g) ++ "⟩"
     | none => plain r
+  | (``Freyd.Alg.Relator.prod, args) =>
+    match lastTwo args with
+    | some (f, g) => return (← relLabel f) ++ "×" ++ (← relLabel g)
+    | none => plain r
+  | (``Freyd.Alg.Relator.comp, _) =>
+    -- `wiresOf` is OUTERMOST first; juxtaposition is diagram order, so it is read back to front.
+    let ws := wiresOf r
+    if ws.isEmpty then return "𝟙"
+    return " ".intercalate (← ws.toList.reverse.mapM relLabel)
+  | (``Freyd.Alg.timesRel, _) => return "×"
   | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
   | _ => plain r
 
 def Wire.label : Wire → MetaM String
   | .rel r => relLabel r
   | .timesL l => return (← plain l) ++ "×−"
-  | .pairW p _ => relLabel p
+  | .pairW p => relLabel p
 
 /-- Is this lane a CONSTANT left factor?  That is the one lane a product map can act underneath. -/
 def Wire.isTimesL : Wire → Bool
@@ -163,7 +177,7 @@ def Wire.beq (a b : Wire) : MetaM Bool :=
   match a, b with
   | .rel x, .rel y => Meta.isDefEq x y
   | .timesL x, .timesL y => Meta.isDefEq x y
-  | .pairW x _, .pairW y _ => Meta.isDefEq x y
+  | .pairW x, .pairW y => Meta.isDefEq x y
   | _, _ => return false
 
 /-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
@@ -227,7 +241,7 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
     relator the note's label names and the one a naturality statement has to be about. -/
 def wireRelator (regionTy : Expr) : Wire → MetaM Expr
   | .rel r => return r
-  | .pairW p _ => return p
+  | .pairW p => return p
   | .timesL l => do
     let inst ← allegoryInst regionTy
     Meta.mkAppM ``Freyd.Alg.Relator.prod
@@ -243,12 +257,6 @@ def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
   for i in [0 : ws.size - 1] do
     acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
   return acc
-
-/-- A wire stack's own spelling, for a lane that is a PAIRING of two stacks: the empty stack is the
-    identity, and a stack of several wires is written outermost first. -/
-def stackLabel (ws : Array Wire) : MetaM String := do
-  if ws.isEmpty then return "𝟙"
-  return "∘".intercalate (← ws.toList.mapM Wire.label)
 
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
     `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
@@ -357,8 +365,7 @@ partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr
           let bot ← Meta.inferType ox
           let p ← Meta.mkAppM ``Freyd.Alg.Relator.pair
             #[← stackRelator bot wsx, ← stackRelator bot wsy]
-          let lab := "⟨" ++ (← stackLabel wsx) ++ "," ++ (← stackLabel wsy) ++ "⟩"
-          return (#[Wire.pairW p lab], ox)
+          return (#[Wire.pairW p], ox)
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
     let la ← peelLefts regionTy a
@@ -581,7 +588,13 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
 /-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
     about — the proposition's last argument — with the region's own projections dropped, those
     being where the object variable was substituted in rather than anything the bead is built
-    from.  A `¬` is stripped first: refuting a family is a statement about that same family. -/
+    from.  A `¬` is stripped first: refuting a family is a statement about that same family.
+
+    KEEPING THE OBJECTS IS WHAT MAKES THE SEARCH FINITE IN PRACTICE.  Narrowing this to the ARROWS
+    of the family — dropping the objects they are taken at, which is what a naturality theorem is
+    general in — is the reading the statement wants, and it opens the square search to every
+    equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
+    under (`scripts/cap`) and the process dies. -/
 def mustOf (want : Expr) : MetaM NameSet := do
   let p := match want.getAppFnArgs with | (``Not, #[q]) => q | _ => want
   let some φ := p.getAppArgs.back? | return consts want

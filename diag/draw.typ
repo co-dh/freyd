@@ -131,7 +131,13 @@
   "Digit×−": rgb("#a58a6e"),
   // §13.6.1's `[Int]×−`, the segment `new`, `glue` and `old` build: it stands beside `Int×−` and
   // `list` in every one of their panels, hence ΔE76 43 and 40 from those two.
-  "[Int]×−": rgb("#613a56"))
+  "[Int]×−": rgb("#613a56"),
+  // §13.6.1's van, generated: the product bifunctor `×` and the four pairings that feed it.  All
+  // five stand in the one panel with `list`, so all six are pairwise ΔE76 ≥ 29 (29.3 at the
+  // closest; to `list`: 54, 49, 34, 71, 69) — which is why they are picked TOGETHER, and picked
+  // from hues already rounded to 8 bits, the rounding being worth ΔE76 1 on its own.
+  "×": rgb("#5f3f32"), "⟨𝟙,list list⟩": rgb("#1f4e48"), "⟨list,list list⟩": rgb("#454460"),
+  "⟨𝟙,⟨list,list list⟩ ×⟩": rgb("#3d4c14"), "⟨⟨𝟙,list⟩ ×,list list⟩": rgb("#8a1831"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.

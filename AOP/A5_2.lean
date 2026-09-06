@@ -30,7 +30,7 @@ public import Freyd.S2_30
 public import AOP.A4_2
 public import AOP.A5_1
 
-universe v v₂ u₂ u
+universe v v₂ v₃ u₂ u₃ u
 
 namespace Freyd.Alg
 
@@ -503,6 +503,22 @@ variable [HasRelProd 𝒜]
     which is the one a closure theorem states its conclusion in. -/
 @[diag_bridge ←] public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
     Relator.prod F G = Relator.comp (Relator.pair F G) timesRel := rfl
+
+/-- A relator on the INSIDE distributes over a product: running `K` first and then `F×G` is
+    running `K F` and `K G` and taking their product, on the same apex.  A SPELLING BRIDGE: a
+    closure theorem reindexed along `K` (`laxNatural_inside`, `strictNatural_inside`) states its
+    conclusion with the `K` OUTSIDE the product, where a panel's own lane stack has it
+    distributed — one arrow, two spellings, and the search has to see them as one. -/
+@[diag_bridge] public theorem Relator.comp_prod {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) (F G : Relator 𝒮 𝒜) :
+    Relator.comp K (Relator.prod F G) = Relator.prod (Relator.comp K F) (Relator.comp K G) := rfl
+
+/-- The identity relator composed on is no relator at all.  A SPELLING BRIDGE for the same
+    reason as the last: a lane stack of one wire IS that wire, where a closure theorem
+    instantiated at the identity leaves the `comp` standing. -/
+@[diag_bridge] public theorem Relator.comp_id {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) :
+    Relator.comp K (Relator.idRelator 𝒮) = K := rfl
 
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
     relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
