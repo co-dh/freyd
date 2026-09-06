@@ -770,6 +770,22 @@ public theorem subseq_cata :
       · exact Or.inl ⟨rfl, hy⟩
       · exact subseqP.weaken hy
 
+/-- The note's `subseq-EW-join` second row: **`(𝟙×∋)(cons ∪ π₂) = (𝟙×∋)cons ∪ (𝟙×∋)π₂`** —
+    `comp_union_distrib` at `subseq`'s algebra, the instance the row states. -/
+public theorem prod_ni_union_dist :
+    rprodMap (𝟙 (dE A)) (∋ (dList A))
+        ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ graph fun p : A × ConsList Unit A => p.2) :=
+  DistributiveAllegory.comp_union_distrib _ _ _
+
+/-- The note's `subseq-EW-join` third row: **`(𝟙×∋)π₂ = π₂∋`** — `rprodMap_id_snd` at `∋`, the
+    instance the row states: the membership crosses the projection unchanged. -/
+public theorem prod_ni_proj_slide :
+    rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2)
+      = (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
+  rprodMap_id_snd _
+
 /-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
     second arm of `subseq`'s algebra under the power transpose.  Composition distributes over the
     `∪`, `(𝟙×∋)π₂ = π₂∋` slides the membership past the projection (`rprodMap_id_snd`), `Λ` of a

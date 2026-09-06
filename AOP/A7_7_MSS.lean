@@ -161,24 +161,6 @@ public theorem mss_mono : MonotonicAlg (F := F Unit Int) Salg geq := by
           · subst hw
             exact ⟨a + c, (Salg_inr a c _).mpr (Or.inr rfl), Int.add_le_add_left hc a⟩
 
-/-- The `mss-mono` display's `⊑` step, `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus ⊑ ⊸ zero ∪ plus ≥`: the `zero`
-    operand discards the pair, so the `≥` it carried in is gone, and on the `plus` operand the
-    `≥` comes back out on the sum — `plus` is a map and monotonic, so `(≥×≥) plus ⊑ plus ≥`. -/
-public theorem mss_mono_slide :
-    (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) geq ≫ (graph fun _ : Int × Int => (0 : Int)))
-        ∪ (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) geq ≫ (graph fun q : Int × Int => q.1 + q.2))
-      ⊑ (graph fun _ : Int × Int => (0 : Int))
-          ∪ ((graph fun q : Int × Int => q.1 + q.2) ≫ geq) :=
-  le_iff.mpr fun q w h => by
-    obtain ⟨a, b⟩ := q
-    rcases h with ⟨⟨a', b'⟩, -, hw⟩ | ⟨⟨a', b'⟩, ⟨ha, hb⟩, hw⟩
-    · exact Or.inl hw
-    · refine Or.inr ⟨a + b, rfl, ?_⟩
-      show w ≤ a + b
-      cases ha
-      rw [hw]
-      exact Int.add_le_add_left hb a
-
 /-- The greedy row: `⦇Λ(S) est(≥)⦈ ⊑ Λ(⦇S⦈) est(≥)` — Theorem 7.2 at the preorder `≥`, with
     `mss_mono` for its hypothesis. -/
 public theorem mss_greedy : cataR (Salg%∋ ≫ est(geq)) ⊑ (cataR Salg)%∋ ≫ est(geq) := by
