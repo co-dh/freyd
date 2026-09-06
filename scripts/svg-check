@@ -75,6 +75,22 @@ def apply(m, p):
 NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
 
 
+def bezier_points(ctrl, steps=12):
+    """A curve SAMPLED, never its control polygon: a control point stands further out than the ink
+    ever goes, and a curve tested through it reports a crossing where the page has none."""
+    n = len(ctrl) - 1
+    out = []
+    for s in range(1, steps + 1):
+        t = s / steps
+        x = y = 0.0
+        for i, (px, py) in enumerate(ctrl):
+            b = math.comb(n, i) * (t ** i) * ((1 - t) ** (n - i))
+            x += b * px
+            y += b * py
+        out.append((x, y))
+    return out
+
+
 def path_points(d):
     """Every subpath of `d` as (points, closed).  A curve contributes its control points, which is
     enough for a bounding box and for the endpoints, and no picture here needs more."""
@@ -109,13 +125,11 @@ def path_points(d):
         elif cmd in "Vv":
             cur = (cur[0], base[1] + n(0)); i += 1; pts.append(cur)
         elif cmd in "Cc":
-            for k in (0, 2, 4):
-                pts.append((base[0] + n(k), base[1] + n(k + 1)))
-            cur = pts[-1]; i += 6
+            c = [cur] + [(base[0] + n(k), base[1] + n(k + 1)) for k in (0, 2, 4)]
+            pts += bezier_points(c); cur = c[-1]; i += 6
         elif cmd in "Qq":
-            for k in (0, 2):
-                pts.append((base[0] + n(k), base[1] + n(k + 1)))
-            cur = pts[-1]; i += 4
+            c = [cur] + [(base[0] + n(k), base[1] + n(k + 1)) for k in (0, 2)]
+            pts += bezier_points(c); cur = c[-1]; i += 4
         elif cmd in "Ss":
             for k in (0, 2):
                 pts.append((base[0] + n(k), base[1] + n(k + 1)))
@@ -249,8 +263,13 @@ def nearest(p, nodes):
 
 
 def cycle_of(nodes, edges):
-    """The face's polygon: the node centres walked in the order the arrows join them.  `None` when
-    the arrows are not one closed walk — a digon, or a picture with more than one face."""
+    """The region a face encloses.  With three nodes or more it is the polygon of node centres walked
+    in the order the arrows join them; with two it is the box the two arcs sweep, which is the only
+    region a pair of parallel arrows bounds.  `None` when the arrows are not one closed walk."""
+    if len(nodes) == 2:
+        xs = [p[0] for e in edges for p in e.pts]
+        ys = [p[1] for e in edges for p in e.pts]
+        return [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]
     adj = {i: [] for i in range(len(nodes))}
     for e in edges:
         a, b = nearest(e.pts[0], nodes), nearest(e.pts[-1], nodes)

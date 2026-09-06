@@ -101,8 +101,9 @@ structure Edge where
   tgt : String
   label : String
   side : String
-  /-- Perpendicular bow, in grid units.  Zero for every edge of a face with three or more nodes;
-      two parallel arrows between one pair of nodes would otherwise be drawn on top of each other. -/
+  /-- How far the edge bows out of its chord, in grid units — a MAGNITUDE: which way it bows is
+      `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
+      parallel arrows between one pair of nodes would otherwise be drawn on top of each other. -/
   bow : Float := 0.0
 
 /-- A face: the relation the two paths round it are asserted to stand in, and where to set it. -/
@@ -187,8 +188,10 @@ def faceOf (sym : String) (lhs rhs : Array Expr) : MetaM (Array Node × Array Ed
   -- The grid is as wide as the wider of its two horizontal legs and as tall as the taller of its
   -- two vertical ones; a leg a chord does not use counts for nothing.  Both sides chords is the
   -- digon: one column, no rows, and the two edges told apart by their bow.
-  let nx := (max (if right == 0 then 0 else top) (if left == 0 then 0 else bot)).max 1
-  let ny := max right left
+  -- A leg belongs to a path only when that path turns a corner: `legs` gives a chord `(1, 0)`, whose
+  -- `1` is the whole path and not a leg, so a side with a zero SECOND leg contributes neither.
+  let nx := (max (if right == 0 then 0 else top) (if bot == 0 then 0 else bot)).max 1
+  let ny := max (if right == 0 then 0 else right) (if bot == 0 then 0 else left)
   let (fx, fy) := (nx.toFloat, ny.toFloat)
   let bowed := ny == 0
   let mut nodes : Array Node := #[]
@@ -217,7 +220,7 @@ def faceOf (sym : String) (lhs rhs : Array Expr) : MetaM (Array Node × Array Ed
   for j in [0:m] do
     edges := edges.push
       { src := nodeId "v" j m, tgt := nodeId "v" (j+1) m, label := (← arrowLabel rhs[j]!),
-        side := sideAt left bot true j, bow := if bowed then -0.9 else 0.0 }
+        side := sideAt left bot true j, bow := if bowed then 0.9 else 0.0 }
   -- The symbol goes at the average of the face's corners, which for a convex polygon is inside it.
   let cx := nodes.foldl (fun a v => a + v.gx) 0.0 / nodes.size.toFloat
   let cy := nodes.foldl (fun a v => a + v.gy) 0.0 / nodes.size.toFloat
