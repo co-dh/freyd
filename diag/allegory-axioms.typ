@@ -2218,7 +2218,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 
   [type relator],
   [`T(R)°=T(R°)`, for `F` preserving `°`],
@@ -2256,14 +2256,14 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
   ((2.812, [`T`]), (4.52, [`B`])),
   obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "α T(f)", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B"), frame: 4))
+  cert: (expect: "α T(f)", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92!lean=lean:AOP.A5_5_TypeFunctor.alphaT@534a2e87", "f": "A⟶B"), frame: 4))
 #let tfun-r = dpanel(4.4, 6.37, 4.52,
   ((2.812, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none), (3.896, "top", 2.2, none, none)),
   ((3.3, [`f`]), (2.2, [`α`], black, 2.5, 3.198)),
   ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
   ((2.812, [`T`]), (4.52, [`B`])),
   obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "F(⟨𝟙,T⟩(f))α", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B"), frame: 4, top: 3))
+  cert: (expect: "F(⟨𝟙,T⟩(f))α", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92!lean=lean:AOP.A5_5_TypeFunctor.alphaT@534a2e87", "f": "A⟶B"), frame: 4, top: 3))
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
   let (FA, TA) = ((-3, 2.5), (3, 2.5))
@@ -2284,7 +2284,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
   [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
  #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 )]<tfun-sq>
 
 - `F : 𝒜×𝒜⟶𝒜` is a bifunctor and a wire is a unary functor, so the two arguments are packed first:
@@ -5220,7 +5220,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3.387, [`A×−`]), (4.01, [`Int`])),
   ((4.01, [`Int`]),),
   obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus"))
+  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus", sigs: ("plus": "A×Int⟶Int")))
 #let mh-alg = dpanel(2.2, 4.97, 3.12,
   ((2.5, "top", 1.1, none, none),),
   ((1.1, [`zero`], black, 2.5),),
@@ -5396,7 +5396,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((4.53, [`A`]),),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×x⟶x"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
+  cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×A⟶A"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -6357,7 +6357,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(17.8, -y - 0.5, black)[`def`]
 }), s: 80%)
 #align(center, src[])]<include-pic>
-// lean:AOP.A7_3_Party.include_eq@d4df2bf2
+// lean:AOP.A7_3_Party.include_eq@afb11121
 
 // The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
 // `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
@@ -6381,7 +6381,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(17.8, -y - 0.5, black)[`bf`]
 }), s: 80%)
 #align(center, src[])]<exclude-pic>
-// lean:AOP.A7_3_Party.exclude_eq@05c2777f
+// lean:AOP.A7_3_Party.exclude_eq@ae3657ab
 
 // `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
 #disp[#align(center, grid(
@@ -6608,7 +6608,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`g`],
   [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`
  #src[], `g:=π₁` its mirror
-   // lean:AOP.A7_3_Party.include_monotonic@c4d977bd
+   // lean:AOP.A7_3_Party.include_monotonic@226b6fb6
    `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁ ∪ π₂` is the union
  of the two #h(4pt) #src[@lax-closure].
    // lean:AOP.A7_3_Party.chooseR_monotonic@8817d447
@@ -8460,7 +8460,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((tl-set, thinlist-Q-box, tl-ord)),
     [#src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
@@ -8471,7 +8471,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((thin-Q-box, tl-set, tl-ord)),
     [#src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
@@ -8482,7 +8482,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
+  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(EQ, tl-pic((thin-Q-box, sort-P-box)),
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
@@ -9348,7 +9348,7 @@ both lists empty.
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
   obj: ((6.05, [`Char`]), (5.5, [`Char`]), (4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
+  cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "x×[x]⟶[x]", "X": "[Char]×[Char]⟶[Op]")))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
       (eb-thinUV, eb-PXb, est-R-box)),
@@ -9363,7 +9363,7 @@ both lists empty.
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
   obj: ((6.05, [`Char`]), (5.5, [`Char`]), (4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
+  cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "x×[x]⟶[x]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
@@ -9378,7 +9378,7 @@ both lists empty.
   ((4.627, [`Δ`]), (5.768, [`list`]), (7.54, [`Char`])),
   ((5.143, [`list`]), (7.54, [`Op`])),
   obj: ((4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
+  cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "x×[x]⟶[x]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
     [`mle(xs,ys)=head(column(xs,ys))`, #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
