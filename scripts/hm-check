@@ -285,10 +285,16 @@ def exported(names):
     """The elaborated type of every declaration the audit cites, from ONE `diag-export --sig`
     process.  Cached under the index's own `stmt_key`, so a corpus that has not moved starts no Lean
     at all and a statement that HAS moved re-exports — the same key `cite-check` holds the marker
-    to, which is what keeps the cache from outliving the type it holds."""
+    to, which is what keeps the cache from outliving the type it holds.  And under the EXPORTER's
+    own identity: the shape of an entry is the exporter's (how a bound field or a Prop's value is
+    spelled), so a rebuilt `diag-export` drops the whole cache rather than being read through entries
+    an older one wrote — which is how a stale `T(F)` and a `LaxNatural` with no body outlived a fix."""
+    st = os.stat(os.path.join(ROOT, ".lake", "build", "bin", "diag-export"))
+    exe = f"{st.st_size}:{st.st_mtime_ns}"
     try:
-        cache = json.load(open(SIGCACHE, encoding="utf-8"))
-    except (OSError, ValueError):
+        disk = json.load(open(SIGCACHE, encoding="utf-8"))
+        cache = disk["sigs"] if disk.get("exporter") == exe else {}
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
         cache = {}
     want = {f"{n}@{k}": n for n, k in names}
     todo = sorted({n for w, n in want.items() if w not in cache})
@@ -301,7 +307,7 @@ def exported(names):
         cache = {w: cache[w] if w in cache else got[n] for w, n in want.items()
                  if w in cache or n in got}
         os.makedirs(os.path.dirname(SIGCACHE), exist_ok=True)
-        json.dump(cache, open(SIGCACHE, "w", encoding="utf-8"))
+        json.dump({"exporter": exe, "sigs": cache}, open(SIGCACHE, "w", encoding="utf-8"))
     return {n: cache[w] for w, n in want.items() if w in cache}
 
 
