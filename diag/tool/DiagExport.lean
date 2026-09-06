@@ -1450,9 +1450,7 @@ def main (args : List String) : IO UInt32 := do
     { fileName := "<diag-export>", fileMap := default,
       options := opts,
       -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
-      -- `Freyd.Alg` too: the banana `⦇R⦈` and the allegory notations are declared inside it, and a
-      -- notation the printer cannot reach comes out as the raw application it abbreviates.
-      openDecls := [.simple `Freyd [], .simple `Freyd.Alg [], .simple `Freyd.Diag.SymMonCat [],
+      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat [],
         .simple `Freyd.Diag.Word []] }
   let mut status : UInt32 := 0
   for arg in args do

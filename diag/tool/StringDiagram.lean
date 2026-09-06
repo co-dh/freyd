@@ -252,9 +252,16 @@ def stackRelator (ws : Array Expr) (idr : Expr) : MetaM Expr := do
 def verdict (armsW legsW : Array Expr) (core v : Expr) (label : String) :
     MetaM (Option String) := do
   let φ ← Meta.mkLambdaFVars #[v] core
+  -- The three statements have to be BUILDABLE before they can be searched for: a wire that is not
+  -- a `Relator` — a bifunctor applied to two arrows, say — has no `StrictNatural` to state, and
+  -- saying so names the bead instead of leaving an elaboration error to stand for it.
   let idr ← Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[← Meta.inferType v, none]
-  let G ← stackRelator armsW idr
-  let F ← stackRelator legsW idr
+  let some G ← (some <$> stackRelator armsW idr) <|> pure none
+    | throwError "the bead `{label}` runs under wires that are not relators, so there is no \
+      naturality statement to look for: {← armsW.mapM Meta.ppExpr}"
+  let some F ← (some <$> stackRelator legsW idr) <|> pure none
+    | throwError "the bead `{label}` makes wires that are not relators, so there is no \
+      naturality statement to look for: {← legsW.mapM Meta.ppExpr}"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
