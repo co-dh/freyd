@@ -123,6 +123,9 @@
   // `concat` glues the `[n]` and `[p]` axes into the one axis `[np]`, which stands beside both of
   // them in `⦇gen⦈concat est(R)`: its own hue, ΔE76 ≥ 50 from each.
   "[np]": rgb("#cb677e"),
+  // §13.5's cons context: the product with the ROW `A[n]`, a different functor from `A×−` under the
+  // index and drawn beside it, so it takes a brown of its own — ΔE76 ≥ 32 from `A×−` and every axis.
+  "A[n]×−": rgb("#605b28"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
   // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
   "Digit×−": rgb("#a58a6e"),

@@ -640,7 +640,11 @@ def act(label, e, obj=False):
         return ('app', head, e,
                 head + '(' + ','.join('−' if b == '−' else (b if obj else UNIT) for b in bs) + ')')
     if '−' in label:
-        return ('prod', [e if p == '−' else ('atom', p if obj else UNIT) for p in label.split('×')])
+        # The named slot is PARSED, like the object wire's own label in `fold_cut`: `A[n]×−` names
+        # the object `A[n]`, and left as an atom spelling it the cut would differ from the very src
+        # it spells the same.
+        return ('prod', [e if p == '−' else (norm(parse(p, True)) if obj else ('atom', UNIT))
+                         for p in label.split('×')])
     if label == 'Δ':
         return ('prod', [e, e])
     return ('app', label, e)

@@ -214,7 +214,10 @@ def ground(e):
         return None
     SPLIT, keep = frozenset(), SPLIT
     try:
-        return render(e)
+        # `render` folds back only what the split gave a wire to; an index functor it never folds,
+        # so `A[n]` would name nothing and `A[n]×A[n][p][m]` open no lane at all.  A CLOSED object
+        # is a name whatever its wires, and its own spelling is that name.
+        return render(e) if render(e) is not None else spell(e)
     finally:
         SPLIT = keep
 
@@ -326,6 +329,14 @@ def isvar(e):
     return e[0] == 'atom' and '@' in e[1] and e[1].split('@')[0] in VARS
 
 
+def hasvar(e):
+    """Does the object name an object with a LETTER anywhere in it? — `isvar` down the whole tree.
+    `sl.varsof` cannot answer it here: a scheme's letters are renamed apart (`x@3`) and no longer the
+    table's own, so it counts none of them."""
+    return isvar(e) or (e[0] == 'app' and hasvar(e[2])) or (e[0] == 'conv' and hasvar(e[1])) \
+        or (e[0] in ('comp', 'prod', 'hc') and any(hasvar(x) for x in e[1]))
+
+
 def fresh(e, n):
     if e[0] == 'atom' and e[1] in VARS:
         return ('atom', f"{e[1]}@{n}")
@@ -402,7 +413,11 @@ def layer(e, sub=None):
         if len(xs) == 2 and xs[0] == xs[1]:
             return 'Δ', xs[0]
         for lab in (lambda x: None if isvar(x) else render(x), ground,
-                    lambda x: render(x) if isvar(x) else None):
+                    lambda x: render(x) if isvar(x) else None,
+                    # Last: a variable UNDER wires — `x[k]×y[k]` names its factor `x[k]`, which the
+                    # cut settles to `A[n]` the way a bare `x` is settled to `A`.  Only where every
+                    # earlier reading gave nothing, so no product that opens today moves.
+                    lambda x: spell(x) if hasvar(x) else None):
             for k, mk in ((0, lambda w: w + '×−'), (-1, lambda w: '−×' + w)):
                 if lab(st[k]) is not None:
                     rest = xs[1:] if k == 0 else xs[:-1]
@@ -426,10 +441,31 @@ def matches(pat, lane, sub, ix):
     for p, w in zip(ps, ws):
         # NORMALISED: a lane's name may be a composite object (`[Int]×−`), and the variable it binds
         # has to come out as the wire stack `list(Int)`, not as the atom the bracket parses to.
-        v = norm(parse(w))
-        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], v))[1] == v):
+        if p != w and not wfit(norm(parse(p)), norm(parse(w)), sub, ix):
             return False
     return True
+
+
+def wfit(pat, e, sub, ix):
+    """A scheme's wire NAME against the cut's, node for node.  A variable takes the object under it
+    (`x` takes `A`) and keeps it everywhere; a variable UNDER wires takes the same wires over its own
+    (`x[k]×−` takes `A[n]×−`), which is what lets one row type a bead whose product context is built
+    from the very object the panel draws.  Nothing here opens a wire: a lane is a NAME, and this only
+    says the two names are one."""
+    if isvar(pat):
+        return sub.setdefault(pat[1], ([], e))[1] == e
+    if pat[0] != e[0]:
+        return False
+    if pat[0] == 'atom':
+        return pat[1] == e[1]
+    if pat[0] == 'app':
+        h, g = pat[1], e[1]
+        return (h == g or (sl.idxhead(h) and sl.idxhead(g)
+                           and (sl.ibind(h[1:-1], g[1:-1], ix) or sl.ibind(g[1:-1], h[1:-1], ix)))) \
+            and wfit(pat[2], e[2], sub, ix)
+    if pat[0] in ('prod', 'comp', 'hc'):
+        return len(pat[1]) == len(e[1]) and all(wfit(a, b, sub, ix) for a, b in zip(pat[1], e[1]))
+    return pat == e
 
 
 def wire_eq(w, lane):
