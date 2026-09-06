@@ -290,7 +290,7 @@ cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collecte
   ((2.5, [`F`]), (3.189, [`N`]), (3.879, [`E`]), (4.5, [`LA`])),
   ((2.5, [`N`]), (2.877, [`E`]), (4.5, [`LA`])),
   obj: ((6.6, [`LA`]), (5.5, [`LA`]), (4.4, [`LA`]), (3.3, [`LA`]), (2.2, [`LA`]), (1.1, [`LA`])),
-  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))")))]<gen-diag>
+  cert: (expect: "F(𝟙,moves trans N(union))zip N(cp P(α))", src: "F(N(E(LA)))", tgt: "N(E(LA))", sigs: ("α": "F(LA)⟶LA!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"))))]<gen-diag>
 
 #disp[#align(center)[```
 u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
@@ -320,13 +320,13 @@ N(cp P(α))(that)
 // The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is
 // OUTSIDE `F` on the left and INSIDE it on the right — that is all the recursion there is.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
-  dpanel(3.3, 6.54, 4.69,
-  ((2.5, "top", 2.2, none, none), (2.812, 1.1, "bot", none, none), (3.438, 1.1, "bot", none, none), (4.062, 1.1, "bot", none, none), (3.125, "top", 1.1, none, none), (3.75, "top", 1.1, none, none)),
-  ((2.2, [`α`], black, 2.5), (1.1, [`⦇gen⦈`], black, 3.125, 3.4375, "lax")),
-  ((2.5, [`F`]), (3.125, [`L`]), (3.75, [`N`]), (4.69, [`A`])),
-  ((2.812, [`N`]), (3.438, [`E`]), (4.062, [`L`]), (4.69, [`A`])),
+  dpanel(3.3, 6.23, 4.38,
+  ((2.5, 1.1, "bot", none, none), (3.125, 1.1, "bot", none, none), (3.75, 1.1, "bot", none, none), (2.812, 2.2, 1.1, [`L`], none), (3.438, 2.2, 1.1, [`N`], none), (2.5, "top", 2.2, none, none), (3.125, "top", 2.2, none, none), (3.75, "top", 2.2, none, none)),
+  ((2.2, [`α`], black, 2.5), (1.1, [`⦇gen⦈`], black, 2.812, 3.125, "lax")),
+  ((2.5, [`F`]), (3.125, [`L`]), (3.75, [`N`]), (4.38, [`A`])),
+  ((2.5, [`N`]), (3.125, [`E`]), (3.75, [`L`]), (4.38, [`A`])),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "α⦇gen⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))"))),
+  cert: (expect: "α⦇gen⦈", src: "F(L(N(A)))", tgt: "N(E(L(A)))", sigs: ("⦇⦈": "L(N(x))⟶N(E(L(x)))", "α": "F(L(N(A)))⟶L(N(A))!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"))),
   EQ,
   dpanel(3.3, 6.6, 4.75,
   ((2.656, 1.1, "bot", none, none), (2.5, "top", 1.1, none, none), (2.877, 2.2, 1.1, [`N`], none), (3.502, 2.2, "bot", none, none), (4.127, 2.2, "bot", none, none), (3.189, "top", 2.2, none, none), (3.814, "top", 2.2, none, none)),
@@ -499,7 +499,7 @@ N(α)(that)
   ((2.5, [`F`]), (3.189, [`N`]), (4.13, [`LA`])),
   ((2.5, [`N`]), (4.13, [`LA`])),
   obj: ((5.5, [`LA`]), (4.4, [`LA`]), (3.3, [`LA`]), (2.2, [`LA`]), (1.1, [`LA`])),
-  cert: (expect: "F(𝟙,moves trans N(est(R)))zip N(α)", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("moves": "N(x)⟶E(N(x))", "trans": "E(N(x))⟶N(E(x))", "zip": "F(N(x))⟶N(F(x))")))
+  cert: (expect: "F(𝟙,moves trans N(est(R)))zip N(α)", src: "F(N(LA))", tgt: "N(LA)", split: "", sigs: ("moves": "N(x)⟶E(N(x))", "trans": "E(N(x))⟶N(E(x))", "zip": "F(N(x))⟶N(F(x))", "α": "F(LA)⟶LA!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2")))
 
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
 // of maps turns it into the program.
