@@ -60,6 +60,18 @@ def run(*a):
     return subprocess.run(a, capture_output=True, text=True, errors="replace")
 
 
+def emit(*a):
+    """A call that WRITES a file: its failure must name the tool's OWN complaint.  `run` hands back a
+    result nobody reads, so a magick that wrote nothing surfaced two frames later as `int('')` out of
+    `size` — the error that exits 0.  The probes stay on `run`, where a non-zero exit is the answer
+    (`compare` exits 1 when the images differ)."""
+    r = run(*a)
+    if r.returncode:
+        raise RuntimeError(f"{a[0]} {' '.join(str(x) for x in a[1:])[:200]} exit {r.returncode}: "
+                           f"{(r.stderr or r.stdout).strip()[:400] or 'no message'}")
+    return r
+
+
 def size(png):
     return tuple(int(x) for x in run("magick", "identify", "-format", "%wx%h", png).stdout.split("x"))
 
@@ -338,7 +350,7 @@ def assert_holds(rect, ink, key, which):
 
 def cut(pdf, page, y0, y1, W, out):
     k = DPI / 72.0
-    run("pdftoppm", "-singlefile", "-png", "-r", str(DPI), "-f", str(page), "-l", str(page),
+    emit("pdftoppm", "-singlefile", "-png", "-r", str(DPI), "-f", str(page), "-l", str(page),
         "-x", "0", "-y", str(max(0, int(y0 * k))), "-W", str(int(math.ceil(W * k))),
         "-H", str(int(math.ceil((y1 - y0) * k))), pdf, out[:-4])
 
@@ -485,7 +497,7 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
     pair = os.path.join(out, f"key-{slug(key)}.png")
-    run("magick", f"{tmp}/klb.png", f"{tmp}/kla.png", "-background", "gray70", "-append", pair)
+    emit("magick", f"{tmp}/klb.png", f"{tmp}/kla.png", "-background", "gray70", "-append", pair)
     if caption:
         caption_strip(pair, pair, caption)
     print(f"{key}: after p{ap} ink {fmt(aink)}; before p{bp} ink {fmt(bink)}; anchor {txt!r}")
@@ -536,7 +548,10 @@ _BOX = {}
 
 
 def esc(t):
-    return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # `%` doubled BEFORE the markup entities: magick interpolates image properties in every filename
+    # argument, so the note's `%∋` reached pango as one byte of the `∋` and it refused the whole
+    # caption as invalid UTF-8 — the symbolic division sign is in half the keys this cuts.
+    return t.replace("%", "%%").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def textimg(text, out, color):
@@ -544,7 +559,7 @@ def textimg(text, out, color):
     alphabets — CJK, `𝟙`, `⟶`, `⊑` — and no single face covers them: `-font` picks ONE and draws an
     empty box for everything it lacks, while pango goes through fontconfig and falls back per
     character.  This is the renderer `checked` tests, so the test and the drawing cannot disagree."""
-    run("magick", "-background", "white", "-fill", color, "-pointsize", "22",
+    emit("magick", "-background", "white", "-fill", color, "-pointsize", "22",
         f"pango:{esc(text)}", out)
 
 
@@ -574,7 +589,7 @@ def checked(text, where):
 def label(src, out, text, tmp, scale):
     t = os.path.join(tmp, "lab.png")
     textimg(checked(text, "label"), t, "red")
-    run("magick", src, *scale, "-bordercolor", "white", "-border", "6", "-background", "white",
+    emit("magick", src, *scale, "-bordercolor", "white", "-border", "6", "-background", "white",
         "-splice", "0x30", t, "-gravity", "northwest", "-geometry", "+8+4", "-composite", out)
 
 
@@ -583,7 +598,7 @@ def caption_strip(src, out, text):
     try:
         t = os.path.join(d, "cap.png")
         textimg(checked(text, "caption"), t, "black")
-        run("magick", src, "-background", "white", "-splice", "0x36", t, "-gravity", "northwest",
+        emit("magick", src, "-background", "white", "-splice", "0x36", t, "-gravity", "northwest",
             "-geometry", "+8+6", "-composite", out)
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -597,7 +612,7 @@ def stack(before_png, after_png, out, caption=""):
     try:
         label(before_png, f"{tmp}/sb.png", "BEFORE", tmp, [])
         label(after_png, f"{tmp}/sa.png", "AFTER", tmp, [])
-        run("magick", f"{tmp}/sb.png", f"{tmp}/sa.png", "-background", "gray70", "-append", out)
+        emit("magick", f"{tmp}/sb.png", f"{tmp}/sa.png", "-background", "gray70", "-append", out)
         if caption:
             caption_strip(out, out, caption)
     finally:
@@ -657,8 +672,8 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
     tmp = tempfile.mkdtemp(prefix="diff-crop.")
     os.makedirs(out, exist_ok=True)
     os.makedirs(tmp + "/b"), os.makedirs(tmp + "/a")
-    run("pdftoppm", "-r", str(DPI), "-png", before_pdf, tmp + "/b/p")
-    run("pdftoppm", "-r", str(DPI), "-png", after_pdf, tmp + "/a/p")
+    emit("pdftoppm", "-r", str(DPI), "-png", before_pdf, tmp + "/b/p")
+    emit("pdftoppm", "-r", str(DPI), "-png", after_pdf, tmp + "/a/p")
     bs, as_ = sorted(os.listdir(tmp + "/b")), sorted(os.listdir(tmp + "/a"))
     pairs, lb, la = align(page_texts(before_pdf), page_texts(after_pdf))
     for i in lb:
@@ -678,17 +693,17 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
         for k, (x0, y0, x1, y1) in enumerate(merge(components(d)), 1):
             x0, y0, x1, y1 = max(0, x0 - PAD), max(0, y0 - PAD), min(W, x1 + PAD), min(H, y1 + PAD)
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
-            run("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
-            run("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
+            emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
+            emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
             scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
             label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
             label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag_}p{j + 1} AFTER", tmp, scale)
             pair = os.path.join(out, f"{tag_.strip('- ')}p{n}-{k}.png".lstrip("-"))
-            run("magick", f"{tmp}/lb.png", f"{tmp}/la.png", "-background", "gray70", "-append", pair)
+            emit("magick", f"{tmp}/lb.png", f"{tmp}/la.png", "-background", "gray70", "-append", pair)
             if caption:
                 caption_strip(pair, pair, caption)
             if size(pair)[1] > MAXH:
-                run("magick", pair, "-resize", f"x{MAXH}", pair)
+                emit("magick", pair, "-resize", f"x{MAXH}", pair)
             print(f"{tag_}page {n} region {k}: {geo} -> {pair}")
             made.append(pair)
     shutil.rmtree(tmp, ignore_errors=True)
