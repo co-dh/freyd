@@ -36,6 +36,7 @@ module
 
 public import AOP.A7_5_Van
 public import AOP.A5_7_ListBeads
+public import AOP.A7_4_Horner
 
 namespace Freyd.Alg.RelSet.Van
 
@@ -258,5 +259,117 @@ public theorem nil_natural (S : dE A ⟶ dE B) :
     cases w with
     | wrap u => cases u; rfl
     | cons _ _ => exact hrw.elim
+
+/-! ## The greedy fold is not even lax natural -/
+
+variable {Tx : Type} {amount : Tx → Int} {N : Int}
+
+/-- The fold `⦇S%∋ est(R;H)⦈` read one transaction at a time: the empty stretch has only the
+    empty schedule to answer with. -/
+public theorem greedyFold_wrap (r : Sched Tx) :
+    greedyFold amount N (ConsList.wrap ()) r ↔ r = ConsList.wrap () := by
+  rw [greedyFold, ← cataR_eq_relCata]
+  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH Tx) (Sum.inl ()) r) ?_
+  constructor
+  · rintro ⟨hmem, -⟩
+    rw [Salg, junc_sum_inl] at hmem
+    exact hmem
+  · rintro rfl
+    refine ⟨?_, fun z hz => ?_⟩
+    · rw [Salg, junc_sum_inl]; rfl
+    · rw [Salg, junc_sum_inl] at hz
+      obtain rfl : z = ConsList.wrap () := hz
+      exact le_iff.mp RH_refl _ _ rfl
+
+/-- The fold `⦇S%∋ est(R;H)⦈` at a `cons`: the tail's answer `y` is extended by `new∪old`, and
+    the answer kept is one of those extensions that is `R;H`-below every one of them. -/
+public theorem greedyFold_cons (a : Tx) (x : Seg Tx) (r : Sched Tx) :
+    greedyFold amount N (ConsList.cons a x) r
+      ↔ ∃ y, greedyFold amount N x y ∧ (newR Tx ∪ oldR amount N) (a, y) r
+          ∧ ∀ z, (newR Tx ∪ oldR amount N) (a, y) z → RH Tx r z := by
+  rw [greedyFold, ← cataR_eq_relCata]
+  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH Tx)) (ConsList.cons a x) r
+      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH Tx)) x y
+          ∧ (Λ (Salg amount N) ≫ est (RH Tx)) (Sum.inr (a, y)) r).trans ?_
+  constructor
+  · rintro ⟨y, hy, hmem⟩
+    rw [Λ_comp_est_apply] at hmem
+    obtain ⟨h1, h2⟩ := hmem
+    rw [Salg, junc_sum_inr] at h1
+    refine ⟨y, hy, h1, fun z hz => h2 z ?_⟩
+    rw [Salg, junc_sum_inr]
+    exact hz
+  · rintro ⟨y, hy, h1, h2⟩
+    refine ⟨y, hy, ?_⟩
+    rw [Λ_comp_est_apply]
+    refine ⟨?_, fun z hz => h2 z ?_⟩
+    · rw [Salg, junc_sum_inr]; exact h1
+    · rw [Salg, junc_sum_inr] at hz; exact hz
+
+/-- Two kinds of transaction, priced so that one of each fits a van visit and two of the dear
+    kind do not: `false` costs 1 and `true` costs 6, against the note's `N = 10`. -/
+@[expose] public def vanAmount : Bool → Int := fun b => if b then 6 else 1
+
+/-- The greedy fold on a one-transaction stretch: `new` is the only extension of the empty
+    schedule, so the least of them is `[[a]]`. -/
+public theorem greedyFold_single (a : Bool) :
+    greedyFold vanAmount 10 (ConsList.cons a (ConsList.wrap ()))
+      (ConsList.cons (ConsList.cons a (ConsList.wrap ())) (ConsList.wrap ())) := by
+  refine (greedyFold_cons _ _ _).mpr ⟨ConsList.wrap (), (greedyFold_wrap _).mpr rfl, Or.inl rfl, ?_⟩
+  rintro z (rfl | ⟨s, t, hst, -, -⟩)
+  · exact le_iff.mp RH_refl _ _ rfl
+  · simp at hst
+
+/-- **The greedy fold `⦇S%∋ est(R;H)⦈` is not even lax natural**: `list(S) ⦇S%∋ est(R;H)⦈ ⊑
+    ⦇S%∋ est(R;H)⦈ list(list(S))` fails at `S = not` on the stretch `[false,false]`.  Two cheap
+    transactions are one secure segment, so the greedy schedule of `[false,false]` is
+    `[[false,false]]` — one van visit; negating them first makes the pair too dear, `old` is
+    barred and the greedy schedule of `[true,true]` is `[[true],[true]]` — two visits, and no
+    `list(list(not))`-image of a one-visit schedule.  The fold's algebra names its own carrier
+    and its own `amount`, so it is an arrow at one object and not a family over it. -/
+public theorem greedyFold_not_lax_natural :
+    ¬ (list (graph not) ≫ greedyFold vanAmount 10
+        ⊑ greedyFold vanAmount 10 ≫ list (list (graph not))) := by
+  intro h
+  have hmap : list (graph not)
+      (ConsList.cons false (ConsList.cons false (ConsList.wrap ())))
+      (ConsList.cons true (ConsList.cons true (ConsList.wrap ()))) := by
+    rw [list_graph]; rfl
+  -- `[true,true]` is too dear to glue, so the greedy answer there is two segments
+  have htt : greedyFold vanAmount 10 (ConsList.cons true (ConsList.cons true (ConsList.wrap ())))
+      (ConsList.cons (ConsList.cons true (ConsList.wrap ()))
+        (ConsList.cons (ConsList.cons true (ConsList.wrap ())) (ConsList.wrap ()))) := by
+    refine (greedyFold_cons _ _ _).mpr ⟨_, greedyFold_single true, Or.inl rfl, ?_⟩
+    rintro z (rfl | ⟨s, t, hst, -, hsec⟩)
+    · exact le_iff.mp RH_refl _ _ rfl
+    · injection hst with hs _
+      subst hs
+      exact absurd hsec (by decide)
+  obtain ⟨w, hw, hfw⟩ := le_iff.mp h _ _ ⟨_, hmap, htt⟩
+  -- `[false,false]` IS secure, so `old` is on offer and every greedy answer has one segment
+  obtain ⟨y, hy, -, hest⟩ := (greedyFold_cons _ _ _).mp hw
+  obtain ⟨y', hy', hmem', -⟩ := (greedyFold_cons _ _ _).mp hy
+  obtain rfl : y' = ConsList.wrap () := (greedyFold_wrap _).mp hy'
+  obtain rfl : y = ConsList.cons (ConsList.cons false (ConsList.wrap ())) (ConsList.wrap ()) := by
+    rcases hmem' with rfl | ⟨s, t, hst, -, -⟩
+    · rfl
+    · simp at hst
+  have hlen : clen w ≤ 1 :=
+    (hest (ConsList.cons (ConsList.cons false (ConsList.cons false (ConsList.wrap ())))
+        (ConsList.wrap ()))
+      (Or.inr ⟨ConsList.cons false (ConsList.wrap ()), ConsList.wrap (), rfl, rfl,
+        by decide⟩)).1
+  simp only [list_graph] at hfw
+  have hfw' : ConsList.cons (ConsList.cons true (ConsList.wrap ()))
+      (ConsList.cons (ConsList.cons true (ConsList.wrap ())) (ConsList.wrap ()))
+      = cmap (cmap not) w := hfw
+  cases w with
+  | wrap u => simp [cmap] at hfw'
+  | cons s t =>
+    cases t with
+    | wrap u => simp [cmap] at hfw'
+    | cons s' t' =>
+      have h2 : clen t' + 1 + 1 ≤ 1 := hlen
+      omega
 
 end Freyd.Alg.RelSet.Van
