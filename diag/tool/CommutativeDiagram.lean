@@ -336,7 +336,10 @@ def main (args : List String) : IO UInt32 := do
   -- which is not an arrow's name and hides the `𝟙 X` and `R°` notations behind it.
   -- `⟶`, `≫`, `°` and `⊑` are all `Freyd`/`Freyd.Alg` notations, so the printer only reaches them
   -- with those namespaces opened.
-  let opts : Options := Options.empty.setBool `pp.fieldNotation.generalized false
+  let opts : Options := (Options.empty.setBool `pp.fieldNotation.generalized false).setBool
+    -- A structure instance is not an application, so no unexpander can reach a bundled
+    -- object; printed as a constructor it becomes one, and the note's own name comes back.
+    `pp.structureInstances false
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default, options := opts,
       openDecls := openNs.map (.simple · []) }
