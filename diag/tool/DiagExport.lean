@@ -1445,7 +1445,12 @@ def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
+  -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
+  -- extension state, so a class declared in one of these modules is not known to BE a class and
+  -- every instance argument of a term built from it stays an unassigned metavariable — which makes
+  -- an object built from `relProd` stick instead of reducing to the concrete product.
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
+    (loadExts := true)
   -- Each route writes under its own directory: the three functors are three pictures of one name.
   let outDir := if stringMode then "diag/generated/string"
     else if circuitMode then "diag/generated/circuit" else "diag/generated"

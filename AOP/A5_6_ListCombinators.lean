@@ -826,6 +826,18 @@ public theorem prefix_cata :
       · exact trivial
       · exact ⟨rfl, hy⟩
 
+/-- **`α prefix = F(𝟙,prefix)[nil, ⊸nil ∪ cons]`**: the fold law of `prefix` in the cancellation
+    form (5.12) — build the list, then take a prefix, is take a prefix of the tail and then
+    either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
+    picture of the two sides is drawn from. -/
+public theorem prefix_cancel :
+    (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
+      = (F Unit A).map (prefixR : dList A ⟶ dList A)
+        ≫ (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A) := by
+  rw [prefix_cata]
+  exact relCata_cancel (initial Unit A) _
+
 /-- **`prefix = cat° π₁`** (note `comb-fns`): split `x` as `ys ++ v` and keep the left part.
     `π₁ = graph (·.1)`, as in `subseq_cata`. -/
 public theorem prefix_cat :
