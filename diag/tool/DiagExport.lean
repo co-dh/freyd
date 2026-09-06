@@ -1321,10 +1321,18 @@ partial def sexp (e : Expr) : MetaM String := do
     let args := e.getAppArgs
     match e.getAppFn with
     | .const n _ =>
-      let kinds := binderKinds (← getEnv) n
-      let keep := args.toList.zipIdx.filterMap fun (a, i) =>
-        if kinds[i]? == some .instImplicit then none else some a
-      return jarr (jstr n.toString :: (← keep.mapM sexp))
+      let env ← getEnv
+      -- A FIELD of a bound structure — `I.t`, `X.carrier`, the coercion `R.toFunctor` — reads as a
+      -- constant applied to the structure, and for a CLASS field that structure argument is
+      -- instance-implicit and would be dropped, leaving `InitialAlgebra.t 𝒜 inst F`: a name that
+      -- looks like one object of the note's own where it is the carrier of whatever `I` is bound to.
+      -- Emitted as `[".", field, base]` so the reader can tell the two apart.
+      match env.getProjectionFnInfo? n with
+      | some pi =>
+        if args.size == pi.numParams + 1 && args[pi.numParams]!.isFVar then
+          return jarr [jstr ".", jstr n.toString, ← sexp args[pi.numParams]!]
+        projless env n args
+      | none => projless env n args
     | .fvar fid =>
       let nm := jstr (← fid.getUserName).toString
       let ss ← args.toList.mapM sexp
@@ -1336,6 +1344,11 @@ partial def sexp (e : Expr) : MetaM String := do
     | .mvar _ => return jstr "?m"
     | f => return jarr (jstr (toString (← Meta.ppExpr f)) :: (← args.toList.mapM sexp))
 where
+  projless (env : Environment) (n : Name) (args : Array Expr) : MetaM String := do
+    let kinds := binderKinds env n
+    let keep := args.toList.zipIdx.filterMap fun (a, i) =>
+      if kinds[i]? == some .instImplicit then none else some a
+    return jarr (jstr n.toString :: (← keep.mapM sexp))
   telescope (tag : String)
       (walk : Expr → (Array Expr → Expr → MetaM String) → MetaM String) (e : Expr) : MetaM String :=
     walk e fun xs body => do
@@ -1353,7 +1366,11 @@ def kindOf : ConstantInfo → String
     hypotheses kept — a `Prop`-typed binder is as much a part of what the row claims as an object
     one), and the type they end in.  `forallTelescope`, never the reducing form: whnf would unfold
     `Cat.Hom` into whatever the instance defines it as and the category — the region the note draws
-    in — would be gone before the walk ever saw it. -/
+    in — would be gone before the walk ever saw it.
+
+    A definition that lands in `Prop` also carries its `value`: it DEFINES a statement rather than
+    stating one, so a caller asking what square it claims has to read the body — `LaxNatural F G φ`
+    says nothing in its type, and the inequation is the whole of what a panel drawing `φ` cites. -/
 def sig (declName : Name) : MetaM String := do
   let some ci := (← getEnv).find? declName
     | throwError "no such declaration: {declName}"
@@ -1362,8 +1379,11 @@ def sig (declName : Name) : MetaM String := do
       let d ← x.fvarId!.getDecl
       if d.binderInfo == .instImplicit then return none
       return some (jobj [("name", jstr d.userName.toString), ("type", ← sexp d.type)])
-    return jobj [("name", jstr declName.toString), ("kind", jstr (kindOf ci)),
-                 ("binders", jarr bs), ("type", ← sexp body)]
+    let val : List (String × String) ← match ci.value?, body with
+      | some v, .sort .zero => do pure [("value", ← sexp (← Meta.instantiateLambda v xs))]
+      | _, _ => pure []
+    return jobj ([("name", jstr declName.toString), ("kind", jstr (kindOf ci)),
+                  ("binders", jarr bs), ("type", ← sexp body)] ++ val)
 
 /-! ### Driver -/
 
