@@ -296,8 +296,12 @@ def boxPic (label : String) (ins outs : Array Obj) (src tgt : Obj) (isMap : Bool
     #[("label", .s label), ("chamfer", .b (!isMap)), ("frac", .b frac), ("flip", .b flip)]
 
 def seqPic (items : Array Pic) (seams : Array (Nat × Array String)) (objs : Array Obj) : Pic :=
-  let ins := if h : items.size > 0 then (items[0]'h).ins else #[]
-  let outs := if h : items.size > 0 then (items[items.size - 1]'(by omega)).outs else #[]
+  -- An EMPTY run is the IDENTITY, whose ports are its object's wires, not none: the `𝟙` lane of a
+  -- `𝟙×∋` stack draws no box but still carries its strand, and reading the ports off the items
+  -- would leave the panel one strand short of the arrow it draws.
+  let bare := if h : objs.size > 0 then ((objs[0]'h).wires.toOption.getD #[]) else #[]
+  let ins := if h : items.size > 0 then (items[0]'h).ins else bare
+  let outs := if h : items.size > 0 then (items[items.size - 1]'(by omega)).outs else bare
   { val := nodeOf "seq" ins.size outs.size
       #[("items", .arr (items.map (·.val))),
         ("seams", .arr (seams.map fun (i, ls) => .arr #[.n i, .arr (ls.map .s)]))],
