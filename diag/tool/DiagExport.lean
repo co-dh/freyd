@@ -1433,6 +1433,12 @@ def main (args : List String) : IO UInt32 := do
   -- unexpander table is empty, so not one `notation` in the repo is applied to a label.
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
     (loadExts := true)
+  -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
+  -- `openDecls` below resolves NAMES in those scopes; a `scoped notation`'s unexpander is extension
+  -- state that only `open` activates, so without this `𝟙 A` prints as `Cat.id A`.
+  let scopes := [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+  let exts ← scopedEnvExtensionsRef.get
+  let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
   -- Each route writes under its own directory: the three functors are three pictures of one name.
   let outDir := if stringMode then "diag/generated/string"
     else if circuitMode then "diag/generated/circuit" else "diag/generated"
@@ -1447,10 +1453,7 @@ def main (args : List String) : IO UInt32 := do
     (Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default,
-      options := opts,
-      -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
-      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat [],
-        .simple `Freyd.Diag.Word []] }
+      options := opts, openDecls := scopes.map (.simple · []) }
   let mut status : UInt32 := 0
   for arg in args do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the

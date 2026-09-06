@@ -434,6 +434,13 @@ open Lean PrettyPrinter in
   | `($_ ()) => `($(mkIdent `nil))
   | _ => throw ()
 
+-- B&dM's `wrap` is `singleR` at the empty leaf: the leaf argument is matched as `()` for the same
+-- reason as `nil` above.
+open Lean PrettyPrinter in
+@[app_unexpander singleR] public meta def unexpandWrap : Unexpander
+  | `($_ ()) => `($(mkIdent `wrap))
+  | _ => throw ()
+
 -- The leaf CONSTRUCTOR as an arrow, at the empty leaf type, is that same `nil`.  A DELABORATOR and
 -- not an unexpander: the leaf type is an implicit argument, so it is in the term and not in the
 -- syntax, and only something that reads the term can tell `nil` from a leaf carrying a value.
