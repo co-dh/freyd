@@ -61,6 +61,8 @@ import AOP.A4_5
 -- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
 -- box = morphism, left to right), emitted for `diag/cpanel.typ`.
 import diag.tool.CircuitDiagram
+-- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
+import diag.tool.CommutativeDiagram
 
 open Lean
 
@@ -1429,6 +1431,7 @@ def takeOpt (args : List String) (flag : String) : Option Nat × List String :=
   | rest => (none, rest)
 
 def main (args : List String) : IO UInt32 := do
+  if args.contains "--commutative" then return ← Freyd.CommutativeDiagram.main args
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"

@@ -1,0 +1,396 @@
+#!/usr/bin/env python3
+"""svg-check — read a commutative-diagram page back out of its SVG and check its geometry.
+
+There is no ground truth in the note for a picture nobody has drawn before, so the checks here are
+GEOMETRIC and read only what Typst actually emitted: no `.typ` source, no cert, no formula.  A
+Typst SVG makes that possible because every `d.content` leaves its frame in the file as an unstroked
+rectangle and every `box(fill: white)` leaves a filled one, so a page's labels are recoverable as
+boxes and its arrows as the stroked paths between them.
+
+  ./scripts/svg-check diag/generated/commutative/*.svg
+  ./scripts/svg-check --ref diag/natsq.svg diag/generated/commutative/Foo.svg
+
+WHAT IS CHECKED
+  reach   every arrow's two ends lie within 0.05cm of a node label's box grown by the natsq gap,
+          and the two ends belong to DIFFERENT nodes — an arrow that stops short of what it points
+          at, or doubles back on its own node, is the failure a picture cannot show.
+  clear   no arrow crosses a label box, node label or edge label alike.
+  face    the relation symbol lies inside the polygon the nodes bound, and every edge label lies
+          outside it: the one thing inside a face is what the face asserts.
+  natsq   a four-node rectangle — a naturality square — has natsq's own edge length and arrowhead,
+          except where its labels are too wide to fit in that step, in which case it has exactly the
+          step those labels need.
+
+The reference numbers are `diag/natsq.typ`'s, read off its SVG; `--ref` re-derives them from a
+freshly compiled copy rather than trusting the constants below.
+"""
+
+import math
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+PT = 72.0 / 2.54  # pt per cm
+
+# `diag/natsq.typ`: `cetz.canvas(length: 0.9cm)` with its square's corners 6.4 units apart across
+# and 2.6 down, its labels 10pt in a 4pt-inset box, and a `">"` mark at scale 0.5.  In points:
+NATSQ = dict(stepx=6.4 * 0.9 * PT, stepy=2.6 * 0.9 * PT, mark=2.8346457, markw=2.1259842)
+# `cdpanel.typ`'s own constants, in points — the panel is drawn at `length: 0.9cm`.
+LGAP = 0.9 * 0.9 * PT
+GAP = 0.55 * 0.9 * PT  # natsq's arrow shortening: how far a grown label box reaches
+TOL = 0.05 * PT        # 0.05cm
+EPS = 0.35             # a point of slack for the renderer's own rounding
+
+
+# ---- transforms -------------------------------------------------------------------------------
+
+def mat_mul(a, b):
+    return (a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+            a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+            a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5])
+
+
+def parse_transform(s):
+    m = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", s or ""):
+        v = [float(x) for x in re.split(r"[\s,]+", args.strip()) if x]
+        if name == "matrix":
+            n = tuple(v)
+        elif name == "translate":
+            n = (1.0, 0.0, 0.0, 1.0, v[0], v[1] if len(v) > 1 else 0.0)
+        elif name == "scale":
+            n = (v[0], 0.0, 0.0, v[1] if len(v) > 1 else v[0], 0.0, 0.0)
+        else:
+            continue
+        m = mat_mul(m, n)
+    return m
+
+
+def apply(m, p):
+    return (m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5])
+
+
+# ---- path data --------------------------------------------------------------------------------
+
+NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
+
+
+def bezier_points(ctrl, steps=12):
+    """A curve SAMPLED, never its control polygon: a control point stands further out than the ink
+    ever goes, and a curve tested through it reports a crossing where the page has none."""
+    n = len(ctrl) - 1
+    out = []
+    for s in range(1, steps + 1):
+        t = s / steps
+        x = y = 0.0
+        for i, (px, py) in enumerate(ctrl):
+            b = math.comb(n, i) * (t ** i) * ((1 - t) ** (n - i))
+            x += b * px
+            y += b * py
+        out.append((x, y))
+    return out
+
+
+def path_points(d):
+    """Every subpath of `d` as (points, closed).  A curve contributes its control points, which is
+    enough for a bounding box and for the endpoints, and no picture here needs more."""
+    toks = re.findall(r"[MmLlHhVvCcSsQqTtAaZz]|" + NUM.pattern, d)
+    out, pts, closed = [], [], False
+    cur = (0.0, 0.0)
+    start = (0.0, 0.0)
+    i, cmd = 0, None
+    while i < len(toks):
+        t = toks[i]
+        if re.fullmatch(r"[A-Za-z]", t):
+            cmd = t
+            i += 1
+            if cmd in "Zz":
+                if pts:
+                    out.append((pts, True))
+                pts, closed = [], False
+                cur = start
+                continue
+        n = lambda k: float(toks[i + k])
+        rel = cmd.islower()
+        base = cur if rel else (0.0, 0.0)
+        if cmd in "Mm":
+            cur = (base[0] + n(0), base[1] + n(1)); i += 2
+            if pts:
+                out.append((pts, False))
+            pts, start = [cur], cur
+        elif cmd in "Ll":
+            cur = (base[0] + n(0), base[1] + n(1)); i += 2; pts.append(cur)
+        elif cmd in "Hh":
+            cur = (base[0] + n(0), cur[1]); i += 1; pts.append(cur)
+        elif cmd in "Vv":
+            cur = (cur[0], base[1] + n(0)); i += 1; pts.append(cur)
+        elif cmd in "Cc":
+            c = [cur] + [(base[0] + n(k), base[1] + n(k + 1)) for k in (0, 2, 4)]
+            pts += bezier_points(c); cur = c[-1]; i += 6
+        elif cmd in "Qq":
+            c = [cur] + [(base[0] + n(k), base[1] + n(k + 1)) for k in (0, 2)]
+            pts += bezier_points(c); cur = c[-1]; i += 4
+        elif cmd in "Ss":
+            for k in (0, 2):
+                pts.append((base[0] + n(k), base[1] + n(k + 1)))
+            cur = pts[-1]; i += 4
+        elif cmd in "Tt":
+            cur = (base[0] + n(0), base[1] + n(1)); i += 2; pts.append(cur)
+        elif cmd in "Aa":
+            cur = (base[0] + n(5), base[1] + n(6)); i += 7; pts.append(cur)
+        else:
+            i += 1
+    if pts:
+        out.append((pts, closed))
+    # A one-point subpath is the `M 0 0` an arrowhead opens with before its own relative `m`: it is
+    # not ink, and counted as an arrow it makes every head look like a stray edge.
+    return [(p, c) for p, c in out if len(p) > 1]
+
+
+class Shape:
+    def __init__(self, pts, closed, fill, stroke):
+        self.pts, self.closed, self.fill, self.stroke = pts, closed, fill, stroke
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        self.box = (min(xs), min(ys), max(xs), max(ys))
+
+    @property
+    def centre(self):
+        x0, y0, x1, y1 = self.box
+        return ((x0 + x1) / 2, (y0 + y1) / 2)
+
+    def is_rect(self):
+        x0, y0, x1, y1 = self.box
+        return (self.closed and len(self.pts) <= 6
+                and all(abs(p[0] - x0) < EPS or abs(p[0] - x1) < EPS for p in self.pts)
+                and all(abs(p[1] - y0) < EPS or abs(p[1] - y1) < EPS for p in self.pts))
+
+
+def shapes_of(path):
+    tree = ET.parse(path)
+    root = tree.getroot()
+    vb = [float(x) for x in (root.get("viewBox") or "0 0 0 0").split()]
+    out = []
+
+    def walk(node, m):
+        m = mat_mul(m, parse_transform(node.get("transform")))
+        if node.tag.endswith("path") and node.get("d"):
+            for pts, closed in path_points(node.get("d")):
+                out.append(Shape([apply(m, p) for p in pts], closed,
+                                 node.get("fill"), node.get("stroke")))
+        for kid in node:
+            walk(kid, m)
+
+    walk(root, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+    return out, vb
+
+
+# ---- geometry ---------------------------------------------------------------------------------
+
+def dist_to_box(p, box, grow=0.0):
+    x0, y0, x1, y1 = box
+    dx = max(x0 - grow - p[0], 0.0, p[0] - (x1 + grow))
+    dy = max(y0 - grow - p[1], 0.0, p[1] - (y1 + grow))
+    return math.hypot(dx, dy)
+
+
+def seg_hits_box(a, b, box, shrink=0.0):
+    """Liang–Barsky: does the segment meet the box, pulled in by `shrink` so a mere touch is not a
+    crossing?"""
+    x0, y0, x1, y1 = box[0] + shrink, box[1] + shrink, box[2] - shrink, box[3] - shrink
+    if x0 >= x1 or y0 >= y1:
+        return False
+    t0, t1 = 0.0, 1.0
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    for p, q in ((-dx, a[0] - x0), (dx, x1 - a[0]), (-dy, a[1] - y0), (dy, y1 - a[1])):
+        if abs(p) < 1e-12:
+            if q < 0:
+                return False
+        else:
+            r = q / p
+            if p < 0:
+                t0 = max(t0, r)
+            else:
+                t1 = min(t1, r)
+            if t0 > t1:
+                return False
+    return True
+
+
+def in_polygon(p, poly):
+    inside = False
+    for i in range(len(poly)):
+        (x0, y0), (x1, y1) = poly[i], poly[(i + 1) % len(poly)]
+        if (y0 > p[1]) != (y1 > p[1]):
+            if p[0] < x0 + (p[1] - y0) / (y1 - y0) * (x1 - x0):
+                inside = not inside
+    return inside
+
+
+# ---- the checks -------------------------------------------------------------------------------
+
+def read_page(path):
+    shapes, vb = shapes_of(path)
+    page = (vb[2] - vb[0]) * (vb[3] - vb[1]) if len(vb) == 4 else 0.0
+    nodes, frames, edges, heads = [], [], [], []
+    for s in shapes:
+        area = (s.box[2] - s.box[0]) * (s.box[3] - s.box[1])
+        if s.is_rect() and not s.stroke:
+            if s.fill and s.fill.lower() == "#ffffff":
+                if page and area > 0.98 * page:
+                    continue          # the page's own white ground
+                nodes.append(s)
+            elif s.fill == "none":
+                frames.append(s)
+        elif s.stroke:
+            (heads if s.closed else edges).append(s)
+    # A frame sitting on a node's white box is that node's own frame; the rest are the free labels —
+    # the edge labels and the relation symbol.
+    free, seen = [], []
+    for f in frames:
+        c = f.centre
+        if any(dist_to_box(c, n.box) < EPS for n in nodes):
+            continue
+        if any(math.dist(c, d) < 1.0 for d in seen):
+            continue
+        seen.append(c)
+        free.append(f)
+    return nodes, free, edges, heads
+
+
+def nearest(p, nodes):
+    return min(range(len(nodes)), key=lambda i: dist_to_box(p, nodes[i].box))
+
+
+def cycle_of(nodes, edges):
+    """The region a face encloses.  With three nodes or more it is the polygon of node centres walked
+    in the order the arrows join them; with two it is the box the two arcs sweep, which is the only
+    region a pair of parallel arrows bounds.  `None` when the arrows are not one closed walk."""
+    if len(nodes) == 2:
+        xs = [p[0] for e in edges for p in e.pts]
+        ys = [p[1] for e in edges for p in e.pts]
+        return [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]
+    adj = {i: [] for i in range(len(nodes))}
+    for e in edges:
+        a, b = nearest(e.pts[0], nodes), nearest(e.pts[-1], nodes)
+        if a == b:
+            return None
+        adj[a].append(b)
+        adj[b].append(a)
+    if len(nodes) < 3 or any(len(v) != 2 for v in adj.values()):
+        return None
+    order, prev, cur = [0], None, 0
+    while True:
+        nxt = adj[cur][0] if adj[cur][0] != prev else adj[cur][1]
+        if nxt == 0:
+            break
+        order.append(nxt)
+        prev, cur = cur, nxt
+        if len(order) > len(nodes):
+            return None
+    return None if len(order) != len(nodes) else [nodes[i].centre for i in order]
+
+
+def check(path, ref):
+    nodes, free, edges, heads = read_page(path)
+    bad = []
+    if not nodes or not edges:
+        return [f"{path}: no diagram found — {len(nodes)} node boxes, {len(edges)} arrows"]
+
+    for e in edges:
+        a, b = e.pts[0], e.pts[-1]
+        ia, ib = nearest(a, nodes), nearest(b, nodes)
+        for p, i, end in ((a, ia, "tail"), (b, ib, "head")):
+            d = dist_to_box(p, nodes[i].box, GAP)
+            if d > TOL:
+                bad.append(f"{path}: reach — an arrow's {end} is {d / PT:.3f}cm outside every "
+                           f"node box grown by the natsq gap")
+        if ia == ib:
+            bad.append(f"{path}: reach — an arrow leaves and arrives at the same node box")
+
+    for e in edges:
+        for j in range(len(e.pts) - 1):
+            a, b = e.pts[j], e.pts[j + 1]
+            for box, what in ([(n.box, "node") for n in nodes]
+                              + [(f.box, "edge") for f in free]):
+                if seg_hits_box(a, b, box, shrink=EPS):
+                    bad.append(f"{path}: clear — an arrow crosses a {what} label box")
+                    break
+
+    poly = cycle_of(nodes, edges)
+    if poly is None:
+        bad.append(f"{path}: face — the arrows are not one closed walk through "
+                   f"{len(nodes)} nodes, so there is no polygon to test")
+    else:
+        inside = [f for f in free if in_polygon(f.centre, poly)]
+        if len(inside) != 1:
+            bad.append(f"{path}: face — {len(inside)} labels lie inside the polygon, want exactly "
+                       f"one (the relation symbol)")
+
+    for h in heads:
+        w = max(h.box[2] - h.box[0], h.box[3] - h.box[1])
+        t = min(h.box[2] - h.box[0], h.box[3] - h.box[1])
+        if abs(w - ref["mark"]) > EPS or abs(t - ref["markw"]) > EPS:
+            bad.append(f"{path}: natsq — an arrowhead is {w:.2f}×{t:.2f}pt, "
+                       f"natsq's is {ref['mark']:.2f}×{ref['markw']:.2f}pt")
+            break
+
+    # A four-node rectangle is a naturality square, and its step is natsq's unless its own labels
+    # need more: the panel opens the grid rather than drawing one label over the next.
+    if len(nodes) == 4:
+        cs = sorted(n.centre for n in nodes)
+        xs = sorted({round(c[0], 3) for c in cs})
+        ys = sorted({round(c[1], 3) for c in cs})
+        if len(xs) == 2 and len(ys) == 2:
+            hw = {}
+            hh = {}
+            for n in nodes:
+                cx, cy = n.centre
+                hw[round(cx, 3)] = max(hw.get(round(cx, 3), 0.0), (n.box[2] - n.box[0]) / 2)
+                hh[round(cy, 3)] = max(hh.get(round(cy, 3), 0.0), (n.box[3] - n.box[1]) / 2)
+            want_x = max(ref["stepx"], hw[xs[0]] + hw[xs[1]] + LGAP)
+            want_y = max(ref["stepy"], hh[ys[0]] + hh[ys[1]] + LGAP)
+            if abs((xs[1] - xs[0]) - want_x) > EPS:
+                bad.append(f"{path}: natsq — the square is {(xs[1] - xs[0]) / PT:.3f}cm across, "
+                           f"want {want_x / PT:.3f}cm")
+            if abs((ys[1] - ys[0]) - want_y) > EPS:
+                bad.append(f"{path}: natsq — the square is {(ys[1] - ys[0]) / PT:.3f}cm down, "
+                           f"want {want_y / PT:.3f}cm")
+    return bad
+
+
+def ref_of(path):
+    """natsq's own numbers, re-derived: its square's two centre distances and its arrowhead."""
+    nodes, _, _, heads = read_page(path)
+    cs = [n.centre for n in nodes]
+    xs = sorted({round(c[0], 1) for c in cs})
+    ys = sorted({round(c[1], 1) for c in cs})
+    h = heads[0]
+    return dict(stepx=xs[-1] - xs[0], stepy=ys[-1] - ys[0],
+                mark=max(h.box[2] - h.box[0], h.box[3] - h.box[1]),
+                markw=min(h.box[2] - h.box[0], h.box[3] - h.box[1]))
+
+
+def main(argv):
+    ref, files = NATSQ, []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--ref":
+            ref = ref_of(argv[i + 1]); i += 2
+        else:
+            files.append(argv[i]); i += 1
+    if not files:
+        print(__doc__.strip().splitlines()[0], file=sys.stderr)
+        return 2
+    bad = []
+    for f in files:
+        b = check(f, ref)
+        bad += b
+        print(("FAIL " if b else "ok   ") + f)
+    for line in bad:
+        print("  " + line, file=sys.stderr)
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
