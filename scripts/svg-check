@@ -8,21 +8,22 @@ rectangle and every `box(fill: white)` leaves a filled one, so a page's labels a
 boxes and its arrows as the stroked paths between them.
 
   ./scripts/svg-check diag/generated/commutative/*.svg
-  ./scripts/svg-check --ref diag/natsq.svg diag/generated/commutative/Foo.svg
+  ./scripts/svg-check --ref diag/cdref.svg diag/generated/commutative/Foo.svg
 
 WHAT IS CHECKED
-  reach   every arrow's two ends lie within 0.05cm of a node label's box grown by the natsq gap,
+  reach   every arrow's two ends lie within 0.05cm of a node label's box grown by the note's gap,
           and the two ends belong to DIFFERENT nodes — an arrow that stops short of what it points
           at, or doubles back on its own node, is the failure a picture cannot show.
   clear   no arrow crosses a label box, node label or edge label alike.
   face    the relation symbol lies inside the polygon the nodes bound, and every edge label lies
           outside it: the one thing inside a face is what the face asserts.
-  natsq   a four-node rectangle — a naturality square — has natsq's own edge length and arrowhead,
-          except where its labels are too wide to fit in that step, in which case it has exactly the
-          step those labels need.
+  square  a four-node rectangle — a naturality square — has the note's own edge length and
+          arrowhead, except where its labels are too wide to fit in that step, in which case it has
+          exactly the step those labels need.
 
-The reference numbers are `diag/natsq.typ`'s, read off its SVG; `--ref` re-derives them from a
-freshly compiled copy rather than trusting the constants below.
+The reference numbers are `diag/cdref.typ`'s — the note's own `<initial-defn>` square, which is what
+`cdpanel` draws — read off its SVG; `--ref` re-derives them from a freshly compiled copy rather than
+trusting the constants below.
 """
 
 import math
@@ -32,12 +33,13 @@ import xml.etree.ElementTree as ET
 
 PT = 72.0 / 2.54  # pt per cm
 
-# `diag/natsq.typ`: `cetz.canvas(length: 0.9cm)` with its square's corners 6.4 units apart across
-# and 2.6 down, its labels 10pt in a 4pt-inset box, and a `">"` mark at scale 0.5.  In points:
-NATSQ = dict(stepx=6.4 * 0.9 * PT, stepy=2.6 * 0.9 * PT, mark=2.8346457, markw=2.1259842)
-# `cdpanel.typ`'s own constants, in points — the panel is drawn at `length: 0.9cm`.
-LGAP = 0.9 * 0.9 * PT
-GAP = 0.55 * 0.9 * PT  # natsq's arrow shortening: how far a grown label box reaches
+# `diag/cdref.typ`, the note's own `<initial-defn>` square: `cetz.canvas(length: 0.8cm)` with its
+# corners 5.2 units apart across and 2.7 down, labels 10pt in a 4pt-inset box, and `ar`'s `">"` mark
+# at scale 0.5 — whose size is absolute, not scaled by the canvas length.  In points:
+NOTESQ = dict(stepx=5.2 * 0.8 * PT, stepy=2.7 * 0.8 * PT, mark=2.8346457, markw=2.1259842)
+# `cdpanel.typ`'s own constants, in points — the panel is drawn at `length: 0.8cm`.
+LGAP = 0.9 * 0.8 * PT
+GAP = 0.55 * 0.8 * PT  # the note's arrow shortening: how far a grown label box reaches
 TOL = 0.05 * PT        # 0.05cm
 EPS = 0.35             # a point of slack for the renderer's own rounding
 
@@ -304,7 +306,7 @@ def check(path, ref):
             d = dist_to_box(p, nodes[i].box, GAP)
             if d > TOL:
                 bad.append(f"{path}: reach — an arrow's {end} is {d / PT:.3f}cm outside every "
-                           f"node box grown by the natsq gap")
+                           f"node box grown by the note's gap")
         if ia == ib:
             bad.append(f"{path}: reach — an arrow leaves and arrives at the same node box")
 
@@ -331,11 +333,11 @@ def check(path, ref):
         w = max(h.box[2] - h.box[0], h.box[3] - h.box[1])
         t = min(h.box[2] - h.box[0], h.box[3] - h.box[1])
         if abs(w - ref["mark"]) > EPS or abs(t - ref["markw"]) > EPS:
-            bad.append(f"{path}: natsq — an arrowhead is {w:.2f}×{t:.2f}pt, "
-                       f"natsq's is {ref['mark']:.2f}×{ref['markw']:.2f}pt")
+            bad.append(f"{path}: square — an arrowhead is {w:.2f}×{t:.2f}pt, "
+                       f"the note's is {ref['mark']:.2f}×{ref['markw']:.2f}pt")
             break
 
-    # A four-node rectangle is a naturality square, and its step is natsq's unless its own labels
+    # A four-node rectangle is a naturality square, and its step is the note's unless its labels
     # need more: the panel opens the grid rather than drawing one label over the next.
     if len(nodes) == 4:
         cs = sorted(n.centre for n in nodes)
@@ -351,16 +353,16 @@ def check(path, ref):
             want_x = max(ref["stepx"], hw[xs[0]] + hw[xs[1]] + LGAP)
             want_y = max(ref["stepy"], hh[ys[0]] + hh[ys[1]] + LGAP)
             if abs((xs[1] - xs[0]) - want_x) > EPS:
-                bad.append(f"{path}: natsq — the square is {(xs[1] - xs[0]) / PT:.3f}cm across, "
+                bad.append(f"{path}: square — it is {(xs[1] - xs[0]) / PT:.3f}cm across, "
                            f"want {want_x / PT:.3f}cm")
             if abs((ys[1] - ys[0]) - want_y) > EPS:
-                bad.append(f"{path}: natsq — the square is {(ys[1] - ys[0]) / PT:.3f}cm down, "
+                bad.append(f"{path}: square — it is {(ys[1] - ys[0]) / PT:.3f}cm down, "
                            f"want {want_y / PT:.3f}cm")
     return bad
 
 
 def ref_of(path):
-    """natsq's own numbers, re-derived: its square's two centre distances and its arrowhead."""
+    """The reference square's own numbers: its two centre distances and its arrowhead."""
     nodes, _, _, heads = read_page(path)
     cs = [n.centre for n in nodes]
     xs = sorted({round(c[0], 1) for c in cs})
@@ -372,7 +374,7 @@ def ref_of(path):
 
 
 def main(argv):
-    ref, files = NATSQ, []
+    ref, files = NOTESQ, []
     i = 0
     while i < len(argv):
         if argv[i] == "--ref":

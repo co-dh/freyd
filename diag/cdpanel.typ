@@ -31,11 +31,16 @@
 // SMALLER than the note's, and never so small that two labels touch: a long label pushes the grid
 // open rather than being drawn over its neighbour, which is the failure a fixed step guarantees.
 #let LGAP = 0.9
-// An edge label's clearance from its edge, measured from the label's near side.  0.30 is what puts
-// the note's top label on `y = ±1.9`, one line-half above the `y = ±1.35` corners.
-#let LABGAP = 0.30
+// An edge label's clearance from its edge, measured from the label's near side.  0.416 plus a
+// one-line label's own half-height is the 0.55 the note holds its top label at, `lab(0, ±1.9)`
+// against corners on `y = ±1.35`.
+#let LABGAP = 0.416
 // The relation between the two paths, set larger than the labels: it is what the picture asserts.
 #let SYMSIZE = 13pt
+// What an arrow keeps clear of the label box it leaves.  The note's own square stands its arrows
+// 0.55 off a node CENTRE, which clears a two-letter box; a label wide enough to swallow that stub
+// pushes the arrow out to its own box instead, or the arrowhead is drawn under the label.
+#let ACLEAR = 0.12
 
 #let cu(l, length) = l / length
 
@@ -76,6 +81,14 @@
   else if side == "left" { (-1.0, 0.0) } else { (1.0, 0.0) }
 }
 
+// How far the label box of a node reaches along a ray leaving its centre: the nearer of the two
+// faces the ray can cross.
+#let reach(h, u) = {
+  let tx = if calc.abs(u.at(0)) < 1e-9 { 1e9 } else { h.at(0) / calc.abs(u.at(0)) }
+  let ty = if calc.abs(u.at(1)) < 1e-9 { 1e9 } else { h.at(1) / calc.abs(u.at(1)) }
+  calc.min(tx, ty)
+}
+
 #let cdbody(nodes, edges, faces, length) = {
   let ext = (:)
   for n in nodes { ext.insert(n.id, hext(n.label, NPAD, length)) }
@@ -91,9 +104,8 @@
 
   let at = (:)
   for n in nodes { at.insert(n.id, pos(n.at)) }
-  // The arrows first, the white node boxes over them: `ar` stops a fixed 0.55 off each node's
-  // CENTRE — the note's own clearance — and the box that is drawn last covers whatever stub of the
-  // arrow reaches under the label.
+  // The arrows first, the white node boxes over them, so a stub that does reach under a label is
+  // covered rather than drawn over it.
   for e in edges {
     let (a, b) = (at.at(e.at("from")), at.at(e.at("to")))
     // The label is set along the EDGE's own perpendicular, `side` choosing only which of the two it
@@ -109,7 +121,9 @@
     } else { per }
     // `ar`'s `bow` is signed towards the LEFT normal, and `nm` is the side the label is on.
     let sgn = if nm.at(0) * per.at(0) + nm.at(1) * per.at(1) < 0 { -1 } else { 1 }
-    ar(a, b, black, s0: 0.55, s1: 0.55, bow: sgn * e.bow)
+    ar(a, b, black, bow: sgn * e.bow,
+      s0: calc.max(0.55, reach(ext.at(e.at("from")), u) + ACLEAR),
+      s1: calc.max(0.55, reach(ext.at(e.at("to")), (-u.at(0), -u.at(1))) + ACLEAR))
     let lh = hext(e.label, 0pt, length)
     // How far the label box reaches in that direction — its support function, so the WHOLE box
     // clears the edge and not just its centre.
