@@ -152,6 +152,10 @@ partial def objOf (o : Expr) : MetaM Obj := do
 /-- A carrier TYPE.  `×` is the product of wires, `⊕` the coproduct only a tape opens, `Unit` the
     empty word, and a list its bracketed spelling. -/
 partial def typeObj (t : Expr) : MetaM Obj := do
+  -- A CARRIER TYPE IS ITS OBJECT, and must be read before `whnfD` for the same reason the power
+  -- object is: `(E[A]).carrier` unfolds to a predicate type that says nothing, and then the second
+  -- summand of `F(E[A])` no longer matches `∋`'s source, so the fused `𝟙×∋` draws `𝟙×𝟙`.
+  if let (``Freyd.Alg.RelSet.carrier, #[o]) := t.getAppFnArgs then return ← objOf o
   let t ← Meta.whnfD t
   match t.getAppFnArgs with
   | (``Prod, #[a, b]) => do
@@ -395,7 +399,11 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
           | (``Freyd.Functor.map, fa), (``Freyd.Alg.junc, ja) =>
             match fa.back?, lastTwo ja with
             | some r, some (u, v) => do
-              let (s, t) ← endsOf fs[i + 1]!
+              -- The tape forks at the FUNCTOR's source `F(a)`, not at the junction's `F(b)`: the
+              -- fused `𝟙×R` is drawn on the summand `R` still has to cross, and reading the arms
+              -- off `F(b)` leaves no strand for `R` to sit on, so it silently drew `𝟙×𝟙`.
+              let (s, _) ← endsOf fs[i]!
+              let (_, t) ← endsOf fs[i + 1]!
               pure (some (← casePic u v s t (fuse := some r)))
             | _, _ => pure none
           | _, _ => pure none
@@ -423,7 +431,13 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
 /-- A run: its factors and the objects between them, which is what the seam rule reads. -/
 partial def drawRun (e : Expr) : MetaM Pic := do
   let (items, objs) ← runParts e
-  return seqPic items (seamsOf objs) objs
+  -- A run of ONE factor IS that factor: a `seq` around it would add a port stub at each end and
+  -- draw a picture wider than the arrow it draws.  Only a seamless singleton — a seam is a label
+  -- the run itself carries, and a bare item has nowhere to keep it.
+  let seams := seamsOf objs
+  if h : items.size == 1 && seams.isEmpty then
+    return items[0]'(by simp at h; omega)
+  return seqPic items seams objs
 
 partial def runParts (e : Expr) : MetaM (Array Pic × Array Obj) := do
   let items ← drawItems e
