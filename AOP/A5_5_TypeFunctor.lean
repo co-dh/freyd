@@ -149,11 +149,17 @@ public theorem typeMap_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
   rw [typeMap_defn I S, typeMap_fusion I R, typeMap_defn I (R ≫ S), ← Cat.assoc,
     ← F.map_comp, Cat.comp_id]
 
+/-- **§2.7 p. 51**: the initial algebras as one FAMILY in the parameter — `αᴀ : F(A,TA) ⟶ TA`,
+    the note's `α : F(⟨𝟙,T⟩(A))⟶T(A)`, whose square in `A` is `alpha_natural` below.  Not the
+    single arrow `α : F(T)⟶T` of one initial algebra (@cata-defn): the same letter, indexed. -/
+@[expose] public def alphaT (a : 𝒜) : F.obj a (I a).t ⟶ (I a).t := (I a).α
+
 /-- **§2.7 p. 51**: `αT(R) = F(R,T(R))α` — "`α` is a natural transformation from
     `G(R) = F(R,T(R))` to `T`": building and then mapping is mapping the parts and then
     building.  The cancellation `α⦇·⦈ = F(⦇·⦈)·` (5.12) plus interchange. -/
 public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
-    (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α := by
+    alphaT I a ≫ typeMap I R = F.map R (typeMap I R) ≫ alphaT I b := by
+  show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α
   rw [typeMap_defn I R, relCata_cancel (I a)]
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange']
@@ -165,7 +171,8 @@ public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
 public theorem typeMap_recip (hF : F.PreservesRecip) {a b : 𝒜} (R : a ⟶ b) :
     (typeMap I R)° = typeMap I R° := by
   have hrec : (typeMap I R)° ≫ (I a).α° = (I b).α° ≫ (F.map R (typeMap I R))° := by
-    rw [← Allegory.recip_comp, ← Allegory.recip_comp, alpha_natural I R]
+    rw [← Allegory.recip_comp, ← Allegory.recip_comp,
+      show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α from alpha_natural I R]
   rw [typeMap_defn I R°]
   refine (relCata_UP (I b) _ _).mp ?_
   dsimp only [BiRelator.appl]

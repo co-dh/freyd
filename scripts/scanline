@@ -805,6 +805,14 @@ def summand(br, table, arg=None):
     return spell(inst(norm(cut), sub))
 
 
+def same_summand(a, b):
+    """Two summands are ONE when they unify, not when they print alike: a row naming its element by
+    its own variable (`cons : x×[x]⟶[x]`, so `x×−`) is the same summand as the constant the panel's
+    ports bind that letter to (`step`'s `Op×−`)."""
+    xs, ys = a.split('×'), b.split('×')
+    return len(xs) == len(ys) and all(x == y or x in VARS or y in VARS for x, y in zip(xs, ys))
+
+
 def take_branch(e, br, obj, table=None):
     """A display states the whole case split and the panel draws ONE branch: `[a,b]` keeps the
     component naming it, `x∪y` the operand naming it, `F` becomes that branch's summand.  A second
@@ -821,7 +829,7 @@ def take_branch(e, br, obj, table=None):
     if e[0] == 'case':                     # `[zero,⊸ zero ∪ plus]`: the component that IS the branch
         s = summand(br, table)
         parts = [x for x in e[1] if spell(x) == br] or [x for x in e[1] if br in spell(x)] \
-            or [x for x in e[1] if s != TERM and summand(brname(x), table) == s]
+            or [x for x in e[1] if s != TERM and same_summand(summand(brname(x), table), s)]
         if len(parts) == 1:
             ops = [x for x in parts[0][1] if br in spell(x)] if parts[0][0] == 'union' else []
             return take_branch(ops[0] if len(ops) == 1 else parts[0], br, obj, table)

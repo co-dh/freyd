@@ -117,8 +117,9 @@ def branch(formula):
     if cut(e, False, None) == e:
         return None
     ks = picks(e, [])
-    if len({sl.summand(k, TBL) for k in ks}) != 1:
-        raise Unhandled(f"the choices {ks} cut to the summands {[sl.summand(k, TBL) for k in ks]};"
+    ss = [sl.summand(k, TBL) for k in ks]
+    if any(not sl.same_summand(ss[0], s) for s in ss):
+        raise Unhandled(f"the choices {ks} cut to the summands {ss};"
                         f" one panel draws one branch, so they must be the same summand")
     return ks[0]
 
@@ -425,7 +426,7 @@ def unify(a, b, sub, why, ix=None):
         unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why, ix)
 
 
-def layer(e, sub=None):
+def layer(e, sub=None, lane=None):
     """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it.  A
     product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
     `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
@@ -441,7 +442,10 @@ def layer(e, sub=None):
     if e[0] == 'prod':
         xs = e[1]
         st = [settle(x, sub) for x in xs] if sub is not None else xs
-        if len(xs) == 2 and xs[0] == xs[1]:
+        # A doubled factor reads BOTH ways — `Δ`, or `x×−` over `x` — and only the cut says
+        # which, exactly as `peel_arrow` takes `Δ` on `live == 'Δ'`.  `choose : x×x⟶x` meets a `Δ`
+        # lane; the list's `plus : A×A⟶A` meets the `A×−` its own base functor opened.
+        if len(xs) == 2 and xs[0] == xs[1] and lane in (None, 'Δ'):
             return 'Δ', xs[0]
         for lab in (lambda x: None if isvar(x) else render(x), ground,
                     lambda x: render(x) if isvar(x) else None,
@@ -520,7 +524,7 @@ def eat(pat, lanes, obj, sub, why, ix):
         # `sub`, not a bare deref: a scheme names its later wires with letters its earlier ones bound
         # (`cons×𝟙`'s `x×[x]×z` learns `x` from the first wire), so peeling the raw form would ask a
         # lane to match a variable where the cut already knows the object.
-        w, inner = layer(deref(pat, sub), sub)
+        w, inner = layer(deref(pat, sub), sub, lanes[k].label if k < len(lanes) else None)
         if k >= len(lanes):
             # past the end of the cut the scheme still names a wire: open it here rather than unify
             # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a

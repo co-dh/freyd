@@ -54,7 +54,8 @@
     "Freyd.Alg.RelSet.CL.dE",
     "Freyd.Alg.RelSet.CL.dL",
     "Freyd.Alg.Relator.toFunctor",
-    "Freyd.Alg.BiRelator.toFunctor"
+    "Freyd.Alg.BiRelator.toFunctor",
+    "Freyd.Alg.BiRelator.appl"
   ],
   "regions": [
     "//: the CATEGORIES the note draws in. An arrow of anything else — a hom of `FAlg`, of `Alg` —",
@@ -122,6 +123,15 @@
     ],
     "𝟏": [
       "Unit"
+    ],
+    "T(x)": [
+      ["Freyd.Alg.InitialAlgebra.t", 2]
+    ],
+    "F(⟨𝟙,T⟩(x))": [
+      ["Freyd.Alg.BiRelator.obj", 2]
+    ],
+    "x×[[x]×[x]]": [
+      "Freyd.Alg.RelSet.Party.dBranch"
     ]
   },
   "sigs": {
@@ -242,13 +252,10 @@
       ]
     },
     "plus": {
-      "src": "A×x",
-      "tgt": "x",
+      "src": "Int×Int",
+      "tgt": "Int",
       "lean": "AOP.A7_4_CarrierBeads.RelSet.Carrier.plusR@1ee04124",
-      "nat": "no",
-      "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.plus_not_lax_natural@73d728aa"
-      ]
+      "note": "integer addition, the step of the fold `sum` — one arrow at the one object its display fixes, so it is no family and states no `nat`; a panel naming the summand it opens writes the element wire `A` over the carrier"
     },
     "gen": {
       "src": "F(N(x))",
@@ -364,21 +371,21 @@
     "include": {
       "src": "x×[[x]×[x]]",
       "tgt": "[x]",
-      "lean": "AOP.A7_3_Party.includeFn@9197f738",
+      "lean": "AOP.A7_3_Party.includeR@ee73476b",
       "nat": "lax",
       "nat-lean": [
-        "AOP.A5_7_PartyBeads.RelSet.Party.include_lax_natural@a6c10a34",
-        "AOP.A5_7_PartyBeads.RelSet.Party.include_not_strict@b1445291"
+        "AOP.A5_7_PartyBeads.RelSet.Party.include_lax_natural@9c306772",
+        "AOP.A5_7_PartyBeads.RelSet.Party.include_not_strict@72e0e45f"
       ]
     },
     "S": {
       "src": "x×[[x]×[x]]",
       "tgt": "[x]×[x]",
-      "lean": "AOP.A7_3_Party.S@d9fff80c",
+      "lean": "AOP.A7_3_Party.S@3baa06bd",
       "nat": "lax",
       "nat-lean": [
         "AOP.A5_7_PartyBeads.RelSet.Party.S_lax_natural@135a267b",
-        "AOP.A5_7_PartyBeads.RelSet.Party.S_not_strict@6743f50d"
+        "AOP.A5_7_PartyBeads.RelSet.Party.S_not_strict@3c897c35"
       ]
     },
     "party": {
