@@ -1084,12 +1084,20 @@ def sliced(pre, secs, sel):
             + "".join(b for s in sel for b in s["text"]))
 
 
-def query(path):
+def marked(pre, secs):
+    """The whole note verbatim, with a `secmark` record emitted before every heading, so the full
+    query's panels partition by the SOURCE POSITION that drew them — total by construction, and
+    invalidated by the section sha that owns the lines."""
+    return "".join(pre) + "".join('#metadata((kind: "secmark", num: %s))\n' % json.dumps(s["num"])
+                                  + "".join(s["text"]) for s in secs)
+
+
+def query(path, kinds=("scanline",), name=None):
     out = subprocess.run(["typst", "query", "--input", "nodraw=1", path, "metadata",
                           "--field", "value"], capture_output=True, text=True)
     if out.returncode:
-        sys.exit(f"scanline: typst query {path}: {out.stderr.strip()}")
-    return [v for v in json.loads(out.stdout) if isinstance(v, dict) and v.get("kind") == "scanline"]
+        sys.exit(f"scanline: typst query {name or path}: {out.stderr.strip()}")
+    return [v for v in json.loads(out.stdout) if isinstance(v, dict) and v.get("kind") in kinds]
 
 
 def owns(num):
@@ -1147,9 +1155,31 @@ def panels(path, frm, full=False):
         print(f"scanline: {len(stale)} section{'s' * (len(stale) != 1)} re-read"
               f" ({', '.join(s['num'] for s in stale) or 'none'}), {len(secs) - len(stale)} cached")
     else:
-        recs = query(path)
+        # Partition by POSITION, not by id: a section's panel ids need not start with its heading
+        # number (the note's last chapter is counted 16.4 and draws 17.3.*), and an id-prefix test
+        # dropped every panel no section claimed — so the next run, rebuilt from this table, was
+        # short by fifteen and said nothing.  The marker makes the partition total by construction.
+        open(SLICE, "w", encoding="utf-8").write(marked(pre, secs))
+        try:
+            vals = query(SLICE, ("scanline", "secmark"), path)
+        finally:
+            os.remove(SLICE)
+        by, cur = {s["num"]: s for s in secs}, None
         for s in secs:
-            s["recs"] = [r for r in recs if owns(s["num"])(r["id"])]
+            s["recs"] = []
+        for v in vals:
+            if v["kind"] == "secmark":
+                cur = by[v["num"]]
+            elif cur is None:
+                sys.exit(f"scanline: {path}: panel {v['id']} is drawn before the first heading,"
+                         " so no section's sha invalidates it")
+            else:
+                cur["recs"].append(v)
+        recs = [r for s in secs for r in s["recs"]]
+    ids = [r["id"] for r in recs]
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        sys.exit(f"scanline: {path}: one panel id drawn twice ({', '.join(dup)})")
     if secs:                                      # a file with no headings has nothing to cache
         os.makedirs(os.path.dirname(GATE), exist_ok=True)
         json.dump(dict(key, sections={s["num"]: {"sha": s["sha"], "decls": s["dmap"],
@@ -1209,11 +1239,8 @@ def main(argv):
     frm = opt(argv, "--from")
     keep = not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
     hs = lit_hashes(path) if keep else None
-    if keep and "--full" not in argv:
-        c = json.load(open(CACHE, encoding="utf-8")) if os.path.exists(CACHE) else {}
-        if c.get("path") == path and c.get("hashes") == hs and c.get("pass"):
-            print(f"scanline: {len(hs)} panel literals unchanged since last pass — skipped")
-            return
+    # The obligations are the panels the FILE draws, enumerated before any cache is consulted: a
+    # cached pass may skip the WORK of re-checking a panel, never subtract it from the total.
     recs = panels(path, frm, "--full" in argv)
     if "--spell" in argv:
         n, bad = respell(recs)
@@ -1223,6 +1250,11 @@ def main(argv):
             sys.exit(f"scanline: {len(bad)} string{'s' * (len(bad) > 1)} the grammar cannot"
                      " write back")
         return
+    skipped = []
+    if keep and "--full" not in argv:
+        c = json.load(open(CACHE, encoding="utf-8")) if os.path.exists(CACHE) else {}
+        if c.get("path") == path and c.get("hashes") == hs and c.get("pass"):
+            skipped, recs = recs, []              # a PASS for the identical panel literals
     ps, bad, note, unhandled, drawn = [], [], [], [], []
     warn = {"cut order": [], "ink": []}
     for r in recs:
@@ -1260,7 +1292,8 @@ def main(argv):
                           f" ({', '.join(f['below'])})   {f['spelled']}")
     print(*note, sep="\n")
     cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
-    print(f"scanline: {len(recs)} panels, {len(ps)} swept, {cert} certified,"
+    print(f"scanline: {len(recs) + len(skipped)} panels, {len(ps)} swept,"
+          f" {len(skipped)} skipped as unchanged, {cert} certified,"
           f" {len(unhandled)} unhandled, {len(bad)} failures")
     if keep:
         json.dump({"path": path, "hashes": hs, "pass": not bad and not unhandled},
@@ -1302,11 +1335,15 @@ _HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict]
 --list         print one line per panel: its id and the composite the sweep reads it as
 
 With no flags, sweeps every panel in the file (default diag/allegory-axioms.typ), prints the
-`cert:` mismatches, and a summary line "N panels, M swept, C certified, U unhandled, F failures" to
-stdout; per-panel warnings and failures go to stderr.  Must be run from a place that resolves
-`diag/` (or pass the file explicitly), since panel literals live there.  Exit status is nonzero on
-any failed check or unhandled panel.  A pass is cached by literal hash, so a second run with no
-changes prints "panel literals unchanged since last pass — skipped" and exits 0."""
+`cert:` mismatches, and a summary line "N panels, M swept, K skipped as unchanged, C certified, U
+unhandled, F failures" to stdout; per-panel warnings and failures go to stderr.  Must be run from a
+place that resolves `diag/` (or pass the file explicitly), since panel literals live there.  Exit
+status is nonzero on any failed check or unhandled panel.
+
+N is what the FILE draws and is counted before any cache is read; the caches skip WORK only and can
+never move it.  Two of them: the sections whose source is unchanged hand back the records of the
+last query instead of re-running typst (reported as "sections re-read … cached"), and a whole-file
+PASS for the identical panel literals skips the checks themselves, which is the K above."""
 
 
 if __name__ == "__main__":       # `scripts/diagram` imports the parser, the rewrites and `spell`
