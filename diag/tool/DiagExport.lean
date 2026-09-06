@@ -57,6 +57,8 @@ import diag.S2_124
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
+-- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
+import diag.tool.CommutativeDiagram
 
 open Lean
 
@@ -1412,6 +1414,7 @@ def usage : String :=
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps"
 
 def main (args : List String) : IO UInt32 := do
+  if args.contains "--commutative" then return ← Freyd.CommutativeDiagram.main args
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
