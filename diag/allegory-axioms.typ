@@ -1312,7 +1312,7 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 
 #disp[#definition[
 The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
-// lean:AOP.A5_2.pair@df1791ca
+// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 where `(π₁,π₂)` is the tabulation of `⊤`
 #src[].
 // lean:AOP.A5_2.eq_topMor@31e6622f lean:AOP.A5_2.joint_id@f9cba0f7
@@ -1363,7 +1363,7 @@ the monoid's unit law:
   wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
   lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
 }), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[]]), s: 100%)]<fork-collapse>
-// lean:AOP.A5_2.pair@df1791ca
+// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 
 
 === Relational product `R×S`
