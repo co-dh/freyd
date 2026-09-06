@@ -461,5 +461,15 @@ open Lean PrettyPrinter in
   | `($_ $R $S) => `($R × $S)
   | _ => throw ()
 
+-- A CONSTANT map is the note's `⊸ c`: discard whatever came in, then `c`.  The test is the one the
+-- reading rests on — the bound variable does not occur in the body — so a map that DOES use its
+-- argument keeps its own spelling.  Changes no statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander graph] public meta def unexpandGraphConst : Unexpander
+  | `($_ fun $x:ident => $c) =>
+    if (c.raw.find? fun s => s.isIdent && s.getId == x.getId).isSome then throw ()
+    else `($(mkIdent (Name.mkSimple "⊸")) $c)
+  | _ => throw ()
+
 end RelSet
 end Freyd.Alg

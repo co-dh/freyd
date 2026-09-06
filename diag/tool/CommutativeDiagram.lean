@@ -38,6 +38,8 @@
 -- are names this file can quote.  It does NOT import `DiagExport`: that module imports THIS one, to
 -- route `--commutative`, and the four helpers below are its own, copied rather than made circular.
 import Lean
+-- `StrDiag.split`: one copy of what relation a statement states, and what its two sides are.
+import diag.tool.ExprReader
 import AOP.A4_5
 
 open Lean
@@ -262,21 +264,13 @@ def cdPage (declName : Name) (ns : Array Node) (es : Array Edge) (fs : Array Fac
         #text(11pt)[*`" ++ declName.toString ++ "`*]\n\n\
         #cdpanel(nodes, edges, faces, s: 100%, cert: cert)\n"
 
-/-- The relation between two sides of a statement, and the sides. -/
-def split (e : Expr) : Option (String × Expr × Expr) :=
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.le, args) => (lastTwo args).map fun (l, r) => ("⊑", l, r)
-  | (``LE.le, args) => (lastTwo args).map fun (l, r) => ("≤", l, r)
-  | (``Eq, args) => (lastTwo args).map fun (l, r) => ("=", l, r)
-  | _ => none
-
 /-- Open the binders, and if what they expose is not yet an equation take ONE delta step on its head
     and open the binders THAT exposes.  `StrictNatural F G φ` needs exactly one such step; a
     statement that needs none is the common case and pays nothing.  Everything happens inside the
     telescope, so the locals the binders introduce are in scope where the face is built. -/
 partial def build (declName : Name) (ty : Expr) (fuel : Nat) : MetaM String := do
   Meta.forallTelescopeReducing ty fun _ body => do
-    match split body with
+    match StrDiag.split body with
     | some (sym, l, r) =>
       let (ns, es, fs) ← faceOf sym (sideArrows l) (sideArrows r)
       return cdPage declName ns es fs

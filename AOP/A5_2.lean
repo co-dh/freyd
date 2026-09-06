@@ -535,4 +535,12 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
 
 end ProdRelator
 
+-- printing-only unexpander: the note's spelling.  `R×S` is what (5.2) is called, and the two
+-- products it is taken over are the objects' own, which the sign already says.  Changes no
+-- statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander prodMap] public meta def unexpandProdMap : Unexpander
+  | `($_ $_ $_ $R $S) => `($R × $S)
+  | _ => throw ()
+
 end Freyd.Alg

@@ -21,12 +21,18 @@ namespace Freyd.StrDiag
 
 /-- A one-field record IS its field as far as a picture is concerned: the object `⟨Tx⟩` of a
     category of sets is the set `Tx`, and printing the wrapper makes every lane label unreadable.
-    Generic over the environment — any constructor with exactly one field, no list of names. -/
+    Generic over the environment — any constructor with exactly one field, no list of names.
+
+    A RECORD is a type with ONE constructor.  Without that test the leaf `wrap ()` of a cons-list —
+    a one-field constructor of a type that has another — prints as `()`, and the note's `nil`
+    disappears from the label of an algebra that is about nothing else. -/
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
     let .const n _ := x.getAppFn | return .continue
     let some (.ctorInfo ci) := (← getEnv).find? n | return .continue
     if ci.numFields != 1 then return .continue
+    let some (.inductInfo ii) := (← getEnv).find? ci.induct | return .continue
+    if ii.ctors.length != 1 then return .continue
     let args := x.getAppArgs
     if args.size != ci.numParams + 1 then return .continue
     return .done args[args.size - 1]!)
@@ -430,6 +436,129 @@ partial def factors (e : Expr) : Array Expr :=
     | some (f, g) => factors f ++ factors g
     | none => #[e]
   | _ => #[e]
+
+/-- The relation between the two sides of a statement, and the sides.  ONE copy: the string, the
+    circuit and the commutative functors and the proof walk all ask this same question of a head. -/
+def split (e : Expr) : Option (String × Expr × Expr) :=
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.le, args) => (lastTwo args).map fun (l, r) => ("⊑", l, r)
+  | (``LE.le, args) => (lastTwo args).map fun (l, r) => ("≤", l, r)
+  | (``Eq, args) => (lastTwo args).map fun (l, r) => ("=", l, r)
+  | _ => none
+
+/-- `split`, retrying once through the definition of a named predicate.  `Total (R ∩ S)` is a `Prop`
+    with no sides until `Total` is unfolded; then it is `𝟙 ≤ (R ∩ S);(R ∩ S)°` and draws.
+
+    ONE delta step, never `whnf`: `whnf` keeps going past `LE.le` into the `OrderedCat` projection it
+    is a field of, and the whole inequation collapses into one opaque box. -/
+def splitM (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
+  if let some r := split e then return some r
+  let .const n us := e.getAppFn | return none
+  let some ci := (← getEnv).find? n | return none
+  let some v := ci.value? | return none
+  return split ((mkAppN (v.instantiateLevelParams ci.levelParams us) e.getAppArgs).headBeta)
+
+/-! ### One branch of a side
+
+  A statement's side can be a BINARY OPERATION on arrows, and then a panel may draw one operand of
+  it: `.inl`/`.inr` on a route names which.  Which operation it is is read off the run's own type —
+  a union or a meet by its two arrows of the SAME hom, a junction by the `Coproduct` it is over. -/
+
+/-- A factor as a JUNCTION over a coproduct: `junc C X Y`, under whatever definition spells it —
+    `sumMap C D R S` is `junc C (R ≫ D.u₁) (S ≫ D.u₂)`, the same fork behind another name.  Delta
+    on the head constant only, so nothing below the junction is opened. -/
+partial def juncOf? (e : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
+  if e.isAppOf ``Freyd.Alg.junc then
+    let args := e.getAppArgs
+    if args.size ≥ 3 then
+      return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+  match ← Meta.unfoldDefinition? e with
+  | some e' => juncOf? e'
+  | none => return none
+
+/-- The apex and the two SUMMANDS of a coproduct, read off the TYPE `Coproduct s a₁ a₂` of its
+    structure — the only place they are written, and no argument of the junction. -/
+def summands? (C : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
+  let t ← Meta.inferType C
+  unless t.isAppOf ``Freyd.Alg.Coproduct do return none
+  let args := t.getAppArgs
+  if args.size < 3 then return none
+  return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+
+/-- A factor as a functor's action on an arrow, `F.map R`. -/
+def functorMap? (e : Expr) : Option (Expr × Expr) :=
+  match e.getAppFnArgs with
+  | (``Freyd.Functor.map, args) =>
+    if args.size ≥ 6 then some (args[4]!, args[args.size - 1]!) else none
+  | _ => none
+
+/-- What a functor does to ONE summand.  The summand's own PRODUCT structure says it, and nothing
+    else has to be known about the functor: the summand IS `R`'s source and the action is `R`, or it
+    is a product and the action is `𝟙×` the action on its right factor — the slot the recursion sits
+    in.  `𝟏` and any other summand not built over `R`'s source is untouched, and the answer is
+    `none`: that arm carries no action at all, which is what leaves the leaf arm bare.
+
+    The product map is the ALLEGORY's own `prodMap` over the region's own products, so which lanes
+    it touches is settled where every other factor's are — by `asProdMap?`, off the type. -/
+partial def summandAction (regionTy a R : Expr) : MetaM (Option Expr) := do
+  let (rs, _) ← homEnds R
+  if ← Meta.isDefEq a rs then return some R
+  let some (l, r) ← splitTimes? regionTy a | return none
+  let some act ← summandAction regionTy r R | return none
+  let (_, aTgt) ← homEnds act
+  let (P, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[l, r]
+  let (Q, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[l, aTgt]
+  return some (← instantiateMVars
+    (← Meta.mkAppM ``Freyd.Alg.prodMap #[P, Q, ← Meta.mkAppM ``Cat.id #[l], act]))
+
+/-- A run rebuilt from its factors, in diagram order. -/
+def compose (fs : Array Expr) : MetaM Expr := do
+  let mut acc := fs[0]!
+  for i in [1 : fs.size] do acc ← Meta.mkAppM ``Cat.comp #[acc, fs[i]!]
+  return acc
+
+/-- ONE OPERAND of the binary operation a side is, `i` naming which.  What that operation is comes
+    from the run's own type, never from a spelling:
+
+    * the last factor is a UNION or a MEET — two arrows of the same hom as itself — and the operand
+      keeps the run before it: `X ≫ (U ∪ V)` selects `X ≫ V`, a bare `U ∪ V` selects `V`;
+    * the run starts at the apex of a COPRODUCT and ends in a junction over it, and the operand is
+      one ARM.  The whole run is precomposed with that summand's injection, and
+      `uᵢ ≫ F.map R ≫ junc C g h` is `Fᵢ(R) ≫ hᵢ`: the injection slides through the functor into
+      the summand's own action, and the junction absorbs it.
+
+    Selectors chain — `.inr.inr` is the arm, and then that arm's operand. -/
+def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
+  let fs := factors e
+  if let some (l, r) ← binOperands? fs[fs.size - 1]! then
+    return ← compose ((fs.extract 0 (fs.size - 1)).push (if i == 0 then l else r))
+  let (src, _) ← homEnds e
+  let mut hit : Option (Nat × Expr × Expr × Expr × Expr) := none
+  for k in [0 : fs.size] do
+    if hit.isNone then
+      if let some (C, X, Y) ← juncOf? fs[k]! then
+        if let some (s, a₁, a₂) ← summands? C then
+          if ← Meta.isDefEq s src then hit := some (k, a₁, a₂, X, Y)
+  let some (j, a₁, a₂, X, Y) := hit
+    | throwError "`.inl`/`.inr` names one operand of a union or a meet, or one arm of a junction \
+        over a coproduct at the source of the run, and `{← plain e}` runs into neither"
+  let mut parts : Array Expr := #[]
+  let mut obj := if i == 0 then a₁ else a₂
+  for k in [0 : j] do
+    let some (_, R) := functorMap? fs[k]!
+      | throwError "the arm is behind `{← plain fs[k]!}`, which is not a functor acting on an \
+          arrow, so the injection has nothing to slide through"
+    if let some act ← summandAction regionTy obj R then
+      parts := parts.push act
+      obj := (← homEnds act).2
+  let arm := if i == 0 then X else Y
+  let (armSrc, _) ← homEnds arm
+  unless ← Meta.isDefEq armSrc obj do
+    throwError "the arm `{← plain arm}` starts at `{← plain armSrc}`, and the run carries the \
+      summand `{← plain obj}` into it"
+  parts := parts.push arm
+  for k in [j + 1 : fs.size] do parts := parts.push fs[k]!
+  compose parts
 
 /-! ### The dot
 

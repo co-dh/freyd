@@ -451,7 +451,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
 
 /-- `--string <Name>[.lhs|.rhs]`.  A `def` is drawn by its BODY unfolded one level; a statement
     with two sides is drawn one side at a time. -/
-def drawString (declName : Name) (side : Option String) (branch : Option Nat)
+def drawString (declName : Name) (side : Option String) (branch : List Nat)
     (frame topRow scale : Option Nat) : MetaM String := withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
@@ -462,22 +462,11 @@ def drawString (declName : Name) (side : Option String) (branch : Option Nat)
         | some v => (mkAppN v xs).headBeta
         | none => body
       else body
-    let arrow ← match side, body.getAppFnArgs with
-      | none, _ => pure body
-      | some s, (``Eq, #[_, l, r]) | some s, (``Freyd.Alg.le, #[_, _, _, _, l, r]) =>
-        pure (if s == "lhs" then l else r)
-      | some _, _ => throwError "{declName} has no two sides to draw one of"
-    -- `.inl`/`.inr` is ONE OPERAND of the binary operation at the head of that side — a union
-    -- draws as two panels with `∪` between them, one per operand.  Recognised by its TYPE and
-    -- nothing else: the last two arguments are arrows of the same hom as the whole, which no
-    -- composition is (`Cat.comp`'s ends are the two OUTER objects, not its own).
-    let arrow ← match branch with
-      | none => pure arrow
-      | some i => do
-        let some (l, r) ← binOperands? arrow
-          | throwError "`.inl`/`.inr` draws one operand of a union or meet, and \
-            `{← plain arrow}` is not one"
-        pure (if i == 0 then l else r)
+    let arrow ← match side with
+      | none => pure body
+      | some s => match split body with
+        | some (_, l, r) => pure (if s == "lhs" then l else r)
+        | none => throwError "{declName} has no two sides to draw one of"
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
     -- region is a ONE-FIELD STRUCTURE over an index type, when it is that INDEX: `Tx : Type`
@@ -493,9 +482,15 @@ def drawString (declName : Name) (side : Option String) (branch : Option Nat)
       if ← Meta.isDefEq t regionTy then objVars := objVars.push x
       else if let some it := idxTy then
         if ← Meta.isDefEq t it then objVars := objVars.push x
+    -- `.inl`/`.inr` is ONE BRANCH of the side, and the selectors CHAIN: each names an operand of
+    -- the binary operation what the one before it left is, outermost first.  What that operation
+    -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
+    -- `branchOf`, and the object variables are the statement's own either way.
+    let mut arrow := arrow
+    for i in branch do arrow ← branchOf regionTy arrow i
     let p ← panelOf regionTy cat arrow objVars
     let nm := declName.toString ++ (match side with | some s => "." ++ s | none => "")
-      ++ (match branch with | some i => if i == 0 then ".inl" else ".inr" | none => "")
+      ++ branch.foldl (fun s i => s ++ (if i == 0 then ".inl" else ".inr")) ""
     return emit p nm frame topRow scale
 
 end Freyd.StrDiag

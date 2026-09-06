@@ -426,4 +426,22 @@ open Lean PrettyPrinter in
 @[app_unexpander alphaR] public meta def unexpandAlphaR : Unexpander
   | _ => `($(mkIdent `α))
 
+-- The leaf at the EMPTY leaf type is the note's `nil`: `wrap ()` is the one cons-list with no
+-- elements.  At any other leaf type it is a leaf carrying a value and keeps its own spelling, which
+-- is why the unit argument is matched and not the constructor alone.
+open Lean PrettyPrinter in
+@[app_unexpander ConsList.wrap] public meta def unexpandNil : Unexpander
+  | `($_ ()) => `($(mkIdent `nil))
+  | _ => throw ()
+
+-- The leaf CONSTRUCTOR as an arrow, at the empty leaf type, is that same `nil`.  A DELABORATOR and
+-- not an unexpander: the leaf type is an implicit argument, so it is in the term and not in the
+-- syntax, and only something that reads the term can tell `nil` from a leaf carrying a value.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.wrapR] public meta def delabWrapRAsNil : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size != 2 then failure
+  unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure
+  `($(mkIdent `nil))
+
 end Freyd.Alg.RelSet.CL

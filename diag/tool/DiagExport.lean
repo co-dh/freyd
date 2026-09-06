@@ -1016,26 +1016,6 @@ partial def toCells (e : Expr) : MetaM (Array Cell) := do
 
 end
 
-/-- The relation between the two sides of a statement, and the sides. -/
-def split (e : Expr) : Option (String × Expr × Expr) :=
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.le, args) => (lastTwo args).map fun (l, r) => ("⊑", l, r)
-  | (``LE.le, args) => (lastTwo args).map fun (l, r) => ("≤", l, r)
-  | (``Eq, args) => (lastTwo args).map fun (l, r) => ("=", l, r)
-  | _ => none
-
-/-- `split`, retrying once through the definition of a named predicate.  `Total (R ∩ S)` is a `Prop`
-    with no sides until `Total` is unfolded; then it is `𝟙 ≤ (R ∩ S);(R ∩ S)°` and draws.
-
-    ONE delta step, never `whnf`: `whnf` keeps going past `LE.le` into the `OrderedCat` projection it
-    is a field of, and the whole inequation collapses into one opaque box. -/
-def splitM (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
-  if let some r := split e then return some r
-  let .const n us := e.getAppFn | return none
-  let some ci := (← getEnv).find? n | return none
-  let some v := ci.value? | return none
-  return split ((mkAppN (v.instantiateLevelParams ci.levelParams us) e.getAppArgs).headBeta)
-
 /-! ### Proofs
 
 A `calc` proof elaborates to nested `Trans.trans`/`Eq.trans`, so its intermediate terms are all
@@ -1071,7 +1051,7 @@ partial def chainOrLeaf (e : Expr) : MetaM (Array Step) := do
   | some c => return c
   | none =>
     let t ← (do pure (some (← Meta.inferType e))) <|> pure none
-    match ← t.mapM splitM with
+    match ← t.mapM StrDiag.splitM with
     | some (some st) => return #[st]
     | _ => return #[]
 
@@ -1242,12 +1222,12 @@ def draw (declName : Name) : MetaM String := do
     -- bare `a ⟶ b` and says nothing.  A THEOREM is never unfolded — `ci.value?` is its proof, and an
     -- `↔` statement does not split, so testing only for a split would draw the proof term.
     let isDef := match ci with | .defnInfo _ => true | _ => false
-    let body := if isDef && (split tybody).isNone then
+    let body := if isDef && (StrDiag.split tybody).isNone then
         match ci.value? with
         | some v => (mkAppN v xs).headBeta
         | none => tybody
       else tybody
-    match ← splitM body with
+    match ← StrDiag.splitM body with
     | some (sym, lhs, rhs) =>
       -- The two SIDES are bound as well as the whole statement, as for `↔` below: a note that wants
       -- to caption each side — "one shop with both" under one, "two shops" under the other — needs
@@ -1260,7 +1240,7 @@ def draw (declName : Name) : MetaM String := do
       -- An `↔` between two containments — the shunting rules — is four drawings in a row.
       match body.getAppFnArgs with
       | (``Iff, #[l, r]) =>
-        match ← splitM l, ← splitM r with
+        match ← StrDiag.splitM l, ← StrDiag.splitM r with
         | some (s₁, a, b), some (s₂, c, d) =>
           -- The two SIDES are bound as well as the whole `⟺`.  A proof of an `↔` runs one side to
           -- the other, so a note presenting that proof wants each side on its own — as the
@@ -1475,14 +1455,22 @@ def main (args : List String) : IO UInt32 := do
   for arg in args do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
     -- string and circuit routes read a side, the others take the name whole.
-    -- `<Name>.lhs.inr` is ONE arm of the fork at the head of that side — the branch a panel draws
-    -- when the other arm carries none of the law's content.  The selector goes LAST, after the
-    -- side it selects inside, and only on the circuit route: a fork is a tape, which the
-    -- Hinze–Marsden functor does not draw.
-    let (stem, branch) :=
-      if (circuitMode || stringMode) && arg.endsWith ".inl" then (arg.dropEnd 4, some 0)
-      else if (circuitMode || stringMode) && arg.endsWith ".inr" then (arg.dropEnd 4, some 1)
-      else (arg, none)
+    -- `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork,
+    -- the panel draws when the other carries none of the law's content.  The selectors go LAST,
+    -- after the side they select inside, and they CHAIN: `.inr.inr` is the arm and then that arm's
+    -- operand, each applied to what the one before it left.  Outermost first, so the list is built
+    -- by consing as the suffixes come off the end.
+    let mut stem : String.Slice := arg
+    let mut branch : List Nat := []
+    let mut more := circuitMode || stringMode
+    while more do
+      if stem.endsWith ".inl" then
+        stem := stem.dropEnd 4
+        branch := 0 :: branch
+      else if stem.endsWith ".inr" then
+        stem := stem.dropEnd 4
+        branch := 1 :: branch
+      else more := false
     let (base, side) :=
       if (stringMode || circuitMode) && stem.endsWith ".lhs" then (stem.dropEnd 4, some "lhs")
       else if (stringMode || circuitMode) && stem.endsWith ".rhs" then (stem.dropEnd 4, some "rhs")

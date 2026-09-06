@@ -422,4 +422,12 @@ theorem cond_spec {s a b : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Coref
 
 end Guard
 
+-- printing-only unexpander: the book's own spelling of (5.9).  `[R,S]` is the case morphism, and
+-- the coproduct it is taken over is the source object's own.  Changes no statement and no
+-- `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander junc] public meta def unexpandJunc : Unexpander
+  | `($_ $_ $R $S) => `([$R, $S])
+  | _ => throw ()
+
 end Freyd.Alg
