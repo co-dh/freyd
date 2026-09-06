@@ -99,6 +99,30 @@ def Wire.beq (a b : Wire) : MetaM Bool :=
   | .timesL x, .timesL y => Meta.isDefEq x y
   | _, _ => return false
 
+/-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
+    ones given and the instance arguments synthesised afterwards, when the category they mention is
+    known.  `mkAppM` cannot do this: it refuses a result that still holds a metavariable, and a peel
+    is precisely an application whose remaining argument is what unification has to find. -/
+def mkAppMeta (n : Name) (last : Array Expr) : MetaM (Expr × Array Expr) := do
+  let some ci := (← getEnv).find? n | throwError "no constant {n}"
+  let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+  let (args, bis, _) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+  unless args.size ≥ last.size do throwError "{n} takes fewer than {last.size} arguments"
+  for i in [0 : last.size] do
+    unless ← Meta.isDefEq args[args.size - last.size + i]! last[i]! do
+      throwError "{n} does not apply to {← Meta.ppExpr last[i]!}"
+  -- WHICH arguments are instances is the declaration's own binder info; `isClass?` on the argument
+  -- TYPE is a guess, and a guess that says "no" leaves the application stuck with no error at all.
+  for i in [0 : args.size] do
+    unless bis[i]! == .instImplicit do continue
+    let .mvar id := args[i]! | continue
+    if ← id.isAssigned then continue
+    let t ← instantiateMVars (← id.getType)
+    unless (← Meta.isClass? t).isSome do throwError "{n} arg {i} not a class: {← Meta.ppExpr t}"
+    let .some v ← Meta.trySynthInstance t | throwError "no instance for {← Meta.ppExpr t}"
+    unless ← Meta.isDefEq args[i]! v do throwError "{n}: instance mismatch at {← Meta.ppExpr t}"
+  return (mkAppN (mkConst n lvls) args, args)
+
 /-- The `Allegory` instance of a region, LOCAL one first.  A statement quantified over its own
     `[Allegory 𝒜]` has no global instance to find, and synthesising one with the hom universe still
     a level metavariable is what made `idRelator` unbuildable for an empty wire stack. -/
@@ -122,7 +146,8 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
   try
     let a ← Meta.mkFreshExprMVar (some regionTy)
     let b ← Meta.mkFreshExprMVar (some regionTy)
-    let apex ← Meta.mkAppM ``Freyd.Alg.RelProd.p #[← Meta.mkAppM ``Freyd.Alg.HasRelProd.relProd #[a, b]]
+    let (prod, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[a, b]
+    let (apex, _) ← mkAppMeta ``Freyd.Alg.RelProd.p #[prod]
     if ← Meta.isDefEq apex X then
       let a ← instantiateMVars a
       let b ← instantiateMVars b
@@ -169,8 +194,8 @@ def peelWith? (n : Name) (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := 
       s.restore; return none
     let R := mkAppN (mkConst n lvls) args
     let inner ← Meta.mkFreshExprMVar (some regionTy)
-    let app ← Meta.mkAppM ``Freyd.Functor.obj
-      #[← Meta.mkAppM ``Freyd.Alg.Relator.toFunctor #[R], inner]
+    let (fR, _) ← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]
+    let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[fR, inner]
     if ← Meta.isDefEq app X then
       let inner ← instantiateMVars inner
       let R ← instantiateMVars R

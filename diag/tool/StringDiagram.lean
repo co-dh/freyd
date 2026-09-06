@@ -374,10 +374,23 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
   return { lanes, rows, otop := ← plain o0, obot := ← plain (← peelObj regionTy cat tgt).2 }
 
+/-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
+    `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
+    and every label prints as `Cat.comp` — the picture then comes out with no lanes at all and no
+    error to say why.  Every prefix of the name is opened, which is exactly the scope the
+    declaration itself was elaborated in. -/
+def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
+  let mut ns : List OpenDecl := []
+  let mut pre := declName
+  while !pre.isAnonymous do
+    pre := pre.getPrefix
+    unless pre.isAnonymous do ns := .simple pre [] :: ns
+  withTheReader Core.Context (fun c => { c with openDecls := c.openDecls ++ ns }) k
+
 /-- `--string <Name>[.lhs|.rhs]`.  A `def` is drawn by its BODY unfolded one level; a statement
     with two sides is drawn one side at a time. -/
 def drawString (declName : Name) (side : Option String) (frame topRow scale : Option Nat) :
-    MetaM String := do
+    MetaM String := withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescopeReducing ci.type fun xs body => do
