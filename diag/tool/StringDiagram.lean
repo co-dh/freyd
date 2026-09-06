@@ -317,9 +317,6 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
         return some { mark := none, lean := n }
       return none
-  if found.isNone then
-    if (← IO.getEnv "DIAG_WHY").isSome then
-      IO.eprintln s!"SPIDER {label}\n  {← Meta.ppExpr strict}\n  BRIDGED {← Meta.ppExpr (← bridge br strict).expr}"
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
