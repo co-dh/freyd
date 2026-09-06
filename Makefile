@@ -30,7 +30,7 @@ SLICE := diag/circuit-slice.typ
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit pairs cite spell scan-strict
+p: $(STAMP) slice circuit pairs cite spell scan-strict hm-sigs
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
@@ -113,7 +113,7 @@ scan-strict:
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: circuit pairs labels cite spell scan-strict
+c: circuit pairs labels cite spell scan-strict hm-sigs
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.

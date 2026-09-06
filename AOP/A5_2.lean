@@ -10,7 +10,7 @@
   statement below is already in the mirrored form; do not re-translate.
 
   Setting: a TABULAR UNITARY DIVISION ALLEGORY (`Freyd.S2_3`), which supplies `topMor`
-  (the maximal arrow `⊤ : a → b`, via the unit projections) and full tabulation
+  (the maximal arrow `⊤ : a → b`, named by division as `𝟘/𝟘`) and full tabulation
   (`TabularAllegory.tabular`).
 
   Investigated `Freyd.S2_147_MapCat`'s `mapHasBinaryProducts` (binary products of
@@ -22,7 +22,7 @@
   `Map(𝒜)` CATEGORY, with objects packaged as `{f // Map f}` subtypes), whereas `RelProd`
   needs the raw `𝒜`-level legs directly.  Unwinding `Cone.π₁.val` etc. would be strictly
   more code than mirroring `S2_3.topTab`'s direct `TabularAllegory.tabular (topMor a b)`
-  pattern, which is what `relProd` below does.
+  pattern, which is what `relProd_nonempty` below does.
 -/
 module
 
@@ -38,10 +38,10 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜]
 
 /-! ## `topMor` is self-converse under swap (needed for (5.6)/(5.7)) -/
 
-/-- `(⊤ : a → b)° = ⊤ : b → a`.  Immediate from `topMor`'s definition as `p_a ≫ p_b°`. -/
-public theorem recip_topMor (a b : 𝒜) : (topMor a b)° = topMor b a := by
-  unfold topMor
-  rw [Allegory.recip_comp, Allegory.recip_recip]
+/-- `(⊤ : a → b)° = ⊤ : b → a`.  From maximality alone — each side is above the other's
+    converse — so it does not depend on which arrow `topMor` is named by. -/
+public theorem recip_topMor (a b : 𝒜) : (topMor a b)° = topMor b a :=
+  le_antisymm (topMor_max _) (recip_le_iff.mp (topMor_max _))
 
 /-! ## §5.2  The relational product `RelProd a b` (book p.114)
 
@@ -90,19 +90,15 @@ public class HasRelProd (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] wh
 
 export HasRelProd (relProd)
 
-/-- The fallback choice, by tabulating `⊤ : a → b` (mirrors `S2_3.topTab`'s choice pattern).
-    LOW priority, so an allegory that names its own product apex wins. -/
-@[expose] public noncomputable instance (priority := low) : HasRelProd 𝒜 where
-  relProd a b :=
-    let t := TabularAllegory.tabular (topMor a b)
-    { p := t.choose
-      outl := t.choose_spec.choose
-      outr := t.choose_spec.choose_spec.choose
-      tab := t.choose_spec.choose_spec.choose_spec }
-
--- Everything below takes the choice as a PARAMETER: without this the fallback instance above
--- would be baked into `Relator.prod`, and `Rel(Set)`'s own apex could never be seen.
-variable [HasRelProd 𝒜]
+-- No fallback `instance` tabulating `⊤` by `Exists.choose`: being an instance it filled itself
+-- in wherever a statement forgot to ask, putting `Classical.choice` under the whole §5.2 chain.
+/-- Every pair of objects HAS a relational product — tabulate `⊤ : a → b`.  A `Nonempty`, not a
+    CHOSEN one: eliminating it into a PROOF costs no choice, which is what keeps (5.3)/(5.8) and
+    everything built on them constructive; only `Relator.prod`, which needs an OBJECT, takes
+    `HasRelProd`. -/
+public theorem relProd_nonempty (x y : 𝒜) : Nonempty (RelProd x y) := by
+  obtain ⟨p, f, g, h⟩ := TabularAllegory.tabular (topMor x y)
+  exact ⟨⟨p, f, g, h⟩⟩
 
 /-! ## Two generic `topMor`-cancellation facts, used repeatedly below -/
 
@@ -421,7 +417,8 @@ public theorem prodMap_factor (P : RelProd a b) (M : RelProd a' b) (Q : RelProd 
 public theorem RelProd.pair_prodMap {P : RelProd a b} {Q : RelProd a' b'}
     (X : c ⟶ a) (Y : c ⟶ b) (R : a ⟶ a') (S : b ⟶ b') :
     P.pair X Y ≫ prodMap P Q R S = Q.pair (X ≫ R) (Y ≫ S) := by
-  rw [← prodMap_factor P (relProd a' b) Q R S, ← Cat.assoc, RelProd.pair_prodMap_fst,
+  obtain ⟨M⟩ := relProd_nonempty a' b
+  rw [← prodMap_factor P M Q R S, ← Cat.assoc, RelProd.pair_prodMap_fst,
     RelProd.pair_prodMap_snd]
 
 /-- `×` preserves composition (B&dM p.114: the product relator "also preserves
@@ -439,7 +436,7 @@ public theorem prodMap_comp {a'' b'' : 𝒜} (P : RelProd a b) (M : RelProd a' b
 public theorem RelProd.pair_recip_pair {P : RelProd a b} {d : 𝒜}
     (X : c ⟶ a) (Y : c ⟶ b) (R : d ⟶ a) (S : d ⟶ b) :
     P.pair X Y ≫ (P.pair R S)° = (X ≫ R°) ∩ (Y ≫ S°) := by
-  have D : RelProd d d := relProd d d
+  obtain ⟨D⟩ := relProd_nonempty d d
   have hdel : Map (D.pair (Cat.id d) (Cat.id d)) :=
     D.pair_map (id_is_map_local d) (id_is_map_local d)
   have hdom : dom (Cat.id d) = Cat.id d := (id_is_map_local d).1
@@ -461,6 +458,10 @@ public theorem RelProd.pair_recip_pair {P : RelProd a b} {d : 𝒜}
 /-! ## Relators are closed under product; B&dM p.133's `outr` example of lax naturality -/
 
 section ProdRelator
+
+-- The CHOICE of apex enters only here, where a relator must name an object for each `x`; taking
+-- it as a parameter is what lets `Rel(Set)` be recognised on its own `a.carrier × b.carrier`.
+variable [HasRelProd 𝒜]
 
 /-- Relators are closed under product: `X ↦ F X × G X`, `R ↦ F R × G R`, on `relProd`'s
     canonical choice.  The functor laws are `prodMap`'s composed with `F`'s and `G`'s. -/

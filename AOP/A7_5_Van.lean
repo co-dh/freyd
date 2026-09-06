@@ -317,6 +317,68 @@ public theorem old_eq_ok_glue : oldR amount N = okR amount N ≫ glueR Tx := by
     subst h2
     exact ⟨s, t, hx, hr, hsec⟩
 
+/-! ### `new`, `glue`, `old` point-free, as B&dM write them on p.185 -/
+
+/-- The re-bracketing B&dM write as `assocl` (p.185); the note's pictures draw nothing for it,
+    a product being flat there. -/
+@[expose] public def assoclR (A B C : Type) :
+    (⟨A × B × C⟩ : RelSet.{0}) ⟶ ⟨(A × B) × C⟩ := graph fun p => ((p.1, p.2.1), p.2.2)
+
+/-- **van-defn**: `new = (wrap×𝟙) cons` (book p.185) — the transaction becomes a segment of its
+    own, and that segment is consed onto the schedule. -/
+public theorem new_eq :
+    newR Tx = rprodMap (singleR () : dE Tx ⟶ dList Tx) (𝟙 (dSched Tx)) ≫ consR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · intro h
+    obtain rfl : r = ConsList.cons (ConsList.cons a (ConsList.wrap ())) x := h
+    exact ⟨(ConsList.cons a (ConsList.wrap ()), x), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨⟨s, y⟩, ⟨hs, hy⟩, hr⟩
+    obtain rfl : s = ConsList.cons a (ConsList.wrap ()) := hs
+    obtain rfl : x = y := hy
+    exact hr
+
+/-- **van-defn**: `glue = (𝟙×cons°) assocl (cons×𝟙) cons` (book p.185) — `cons°` splits the
+    schedule into its first segment and the rest, the transaction goes on the front of that
+    segment, and the lengthened segment is consed back on. -/
+public theorem glue_eq :
+    glueR Tx = rprodMap (𝟙 (dE Tx)) ((consR : (⟨Seg Tx × Sched Tx⟩ : RelSet.{0}) ⟶ dSched Tx)°)
+      ≫ assoclR Tx (Seg Tx) (Sched Tx)
+      ≫ rprodMap (consR : (⟨Tx × Seg Tx⟩ : RelSet.{0}) ⟶ dList Tx) (𝟙 (dSched Tx))
+      ≫ consR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨s, t, hx, hr⟩
+    exact ⟨(a, s, t), ⟨rfl, hx⟩, ((a, s), t), rfl, (ConsList.cons a s, t), ⟨rfl, rfl⟩, hr⟩
+  · rintro ⟨⟨a', s, t⟩, ⟨ha, hx⟩, w, hw, ⟨u, v⟩, ⟨hu, hv⟩, hr⟩
+    obtain rfl : a = a' := ha
+    obtain rfl : w = ((a, s), t) := hw
+    obtain rfl : u = ConsList.cons a s := hu
+    obtain rfl : t = v := hv
+    exact ⟨s, t, hx, hr⟩
+
+/-- **van-defn**: `old = (𝟙×cons°) assocl ((cons secure)×𝟙) cons` (book p.185) — `glue` with the
+    lengthened first segment required to stay secure. -/
+public theorem old_eq :
+    oldR amount N
+      = rprodMap (𝟙 (dE Tx)) ((consR : (⟨Seg Tx × Sched Tx⟩ : RelSet.{0}) ⟶ dSched Tx)°)
+        ≫ assoclR Tx (Seg Tx) (Sched Tx)
+        ≫ rprodMap ((consR : (⟨Tx × Seg Tx⟩ : RelSet.{0}) ⟶ dList Tx) ≫ secure amount N)
+            (𝟙 (dSched Tx))
+        ≫ consR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨s, t, hx, hr, hsec⟩
+    exact ⟨(a, s, t), ⟨rfl, hx⟩, ((a, s), t), rfl, (ConsList.cons a s, t),
+      ⟨⟨ConsList.cons a s, rfl, rfl, hsec⟩, rfl⟩, hr⟩
+  · rintro ⟨⟨a', s, t⟩, ⟨ha, hx⟩, w, hw, ⟨u, v⟩, ⟨⟨z, hz, hzu, hsec⟩, hv⟩, hr⟩
+    obtain rfl : a = a' := ha
+    obtain rfl : w = ((a, s), t) := hw
+    obtain rfl : z = ConsList.cons a s := hz
+    obtain rfl : u = ConsList.cons a s := hzu.symm
+    obtain rfl : t = v := hv
+    exact ⟨s, t, hx, hr, hsec⟩
+
 /-- **van-defn**: `S ≜ [nil,new∪old]`, the algebra whose fold is every splitting of the
     transactions into secure segments. -/
 @[expose] public def Salg (amount : Tx → Int) (N : Int) :
@@ -439,6 +501,41 @@ public theorem van_spec
 
 /-! ## `van-mono`: (7.14) holds, (7.15) is FALSE, (7.16) and (7.17) hold on `R;H` -/
 
+/-- **(7.14)'s first step** (book p.186, "since `cons` is monotonic on `R` (exercise)"):
+    `(𝟙×R)cons ⊑ cons R` — consing a segment onto the shorter of two schedules leaves the
+    shorter schedule, both sides having gained exactly one segment. -/
+public theorem cons_mono_R :
+    rprodMap (𝟙 (⟨Seg Tx⟩ : RelSet.{0})) (R Tx)
+        ≫ (consR : (⟨Seg Tx × Sched Tx⟩ : RelSet.{0}) ⟶ dSched Tx)
+      ⊑ consR ≫ R Tx :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, ⟨hss, hR⟩, hcons⟩ := h
+    obtain ⟨s, x⟩ := u
+    obtain ⟨s', y⟩ := v
+    obtain rfl : r = ConsList.cons s' y := hcons
+    obtain rfl : s = s' := hss
+    refine ⟨ConsList.cons s x, rfl, ?_⟩
+    show clen x + 1 ≤ clen y + 1
+    have : clen x ≤ clen y := hR
+    omega
+
+/-- **(7.14)'s second step** (book p.186, "definition of `new`"): `(𝟙×R)new = (wrap×R)cons` —
+    `new` IS `(wrap×𝟙)cons` (`new_eq`), and the `R` on the second component slides past the
+    `wrap` on the first, the two acting on disjoint halves of the pair. -/
+public theorem new_eq_cons :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (R Tx) ≫ newR Tx
+      = rprodMap (singleR () : dE Tx ⟶ dList Tx) (R Tx)
+        ≫ (consR : (⟨Seg Tx × Sched Tx⟩ : RelSet.{0}) ⟶ dSched Tx) := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨⟨b, y⟩, ⟨hab, hR⟩, hnew⟩
+    obtain rfl : a = b := hab
+    obtain rfl : r = newFn (a, y) := hnew
+    exact ⟨(ConsList.cons a (ConsList.wrap ()), y), ⟨rfl, hR⟩, rfl⟩
+  · rintro ⟨⟨s, y⟩, ⟨hs, hR⟩, hr⟩
+    obtain rfl : s = ConsList.cons a (ConsList.wrap ()) := hs
+    exact ⟨(a, y), ⟨rfl, hR⟩, hr⟩
+
 /-- **(7.14)** (book p.186): `(𝟙×R)new ⊑ (new∪old)R` — opening a segment of its own for the
     new transaction keeps the schedule no longer than opening one on a longer schedule. -/
 public theorem van_7_14 :
@@ -492,6 +589,100 @@ public theorem van_7_15_false :
     injection hy with hs ht
     subst hs
     exact hbad hsec'
+
+/-- **(7.18)** (book p.187): `(𝟙×⊤)new ⊑ new H` — whatever the two second components are,
+    both sides open the segment `[a]` of their own, so the two first segments are equal and
+    `H` holds outright. -/
+public theorem van_7_18 :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (relTop (dSched Tx) (dSched Tx)) ≫ newR Tx
+      ⊑ newR Tx ≫ Hrel Tx :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, ⟨hab, -⟩, hnew⟩ := h
+    obtain ⟨a, x⟩ := u
+    obtain ⟨b, y⟩ := v
+    obtain rfl : r = newFn (b, y) := hnew
+    obtain rfl : a = b := hab
+    exact ⟨newFn (a, x), rfl, Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
+      ConsList.cons a (ConsList.wrap ()), y, rfl, rfl,
+      prefixP.refl (ConsList.cons a (ConsList.wrap ()))⟩⟩
+
+/-- **(7.19)** (book p.187): `(𝟙×⊤)old ⊑ new H` — `old` leaves `[a]` at the front of the first
+    segment it lengthens, and `[a]` is what `new` makes that segment, so `[a]` is a prefix of
+    it whatever the two second components are. -/
+public theorem van_7_19 :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (relTop (dSched Tx) (dSched Tx)) ≫ oldR amount N
+      ⊑ newR Tx ≫ Hrel Tx :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, ⟨hab, -⟩, s, t, -, hr, -⟩ := h
+    obtain ⟨a, x⟩ := u
+    obtain ⟨b, y⟩ := v
+    obtain rfl : a = b := hab
+    subst hr
+    exact ⟨newFn (a, x), rfl, Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
+      ConsList.cons a s, t, rfl, rfl, ⟨rfl, prefixP.nil s⟩⟩⟩
+
+/-- **(7.20)** (book p.187): `(𝟙×|R|)old ⊑ new R` — `old` keeps the schedule's length, so a
+    STRICTLY shorter schedule stays no longer than the one `new` builds, which is one segment
+    longer than the schedule it started from. -/
+public theorem van_7_20 :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (strictR Tx) ≫ oldR amount N ⊑ newR Tx ≫ R Tx :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, ⟨hab, hlt⟩, s, t, hv, hr, -⟩ := h
+    obtain ⟨a, x⟩ := u
+    obtain ⟨b, y⟩ := v
+    obtain rfl : a = b := hab
+    subst hv
+    subst hr
+    refine ⟨newFn (a, x), rfl, ?_⟩
+    show clen x + 1 ≤ clen t + 1
+    have : clen x < clen t + 1 := hlt
+    omega
+
+/-- **(7.21)** (book p.187): `(𝟙×(R∩H))old ⊑ old (R∩H)` — `H` makes the one first segment a
+    prefix of the other's, so prefix-closure of `secure` (`secureP_prefix`) lets `old` fire on
+    this side too, and it keeps both the length and the prefix. -/
+public theorem van_7_21 :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (R Tx ∩ Hrel Tx) ≫ oldR amount N
+      ⊑ oldR amount N ≫ (R Tx ∩ Hrel Tx) :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, ⟨hab, hle, hH⟩, s, t, hv, hr, hsec⟩ := h
+    obtain ⟨a, x⟩ := u
+    obtain ⟨b, y⟩ := v
+    obtain rfl : a = b := hab
+    subst hv
+    subst hr
+    rcases hH with ⟨s₀, t₀, s', t', hx, hy', hpre⟩ | ⟨-, hy'⟩
+    · subst hx
+      injection hy' with hs ht
+      subst hs
+      subst ht
+      have hsec₀ : secureP amount N (ConsList.cons a s₀) :=
+        secureP_prefix (show prefixP (ConsList.cons a s₀) (ConsList.cons a s) from
+          ⟨rfl, hpre⟩) hsec
+      exact ⟨ConsList.cons (ConsList.cons a s₀) t₀, ⟨s₀, t₀, rfl, rfl, hsec₀⟩, hle,
+        Or.inl ⟨ConsList.cons a s₀, t₀, ConsList.cons a s, t, rfl, rfl, ⟨rfl, hpre⟩⟩⟩
+    · nomatch hy'
+
+/-- **(7.19) and (7.20) intersected** (book p.187): `(𝟙×|R|)old ⊑ new (R∩H)` — `new` is a
+    function, so what it is `H`-below and `R`-below it is `(R∩H)`-below, and `|R| ⊑ ⊤` feeds
+    (7.19). -/
+public theorem van_strict_old :
+    rprodMap (𝟙 (⟨Tx⟩ : RelSet.{0})) (strictR Tx) ≫ oldR amount N
+      ⊑ newR Tx ≫ (R Tx ∩ Hrel Tx) :=
+  le_iff.mpr fun u r h => by
+    obtain ⟨v, hv, hold⟩ := h
+    obtain ⟨w, hw, hR⟩ :=
+      le_iff.mp (van_7_20 (amount := amount) (N := N)) u r ⟨v, hv, hold⟩
+    obtain ⟨w', hw', hH⟩ :=
+      le_iff.mp (van_7_19 (amount := amount) (N := N)) u r ⟨v, ⟨hv.1, trivial⟩, hold⟩
+    obtain rfl : w = newFn u := hw
+    obtain rfl : w' = newFn u := hw'
+    exact ⟨newFn u, rfl, hR, hH⟩
+
+/-- **`X∩Y ⊑ X;Y`** (book p.188): a pair related by both `R` and `H` is related by the refined
+    order, whose second half only has to supply `H` where `R` holds in both directions. -/
+public theorem inter_le_RH : R Tx ∩ Hrel Tx ⊑ RH Tx :=
+  le_iff.mpr fun _ _ h => ⟨h.1, fun _ => h.2⟩
 
 /-- **(7.16)** (book p.187): `(𝟙×(R;H))new ⊑ (new∪old)(R;H)` — the `new` half of the
     monotonicity on the refined order.  Both sides start `[a]`, so `H` holds outright and

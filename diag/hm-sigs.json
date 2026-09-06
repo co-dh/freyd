@@ -32,7 +32,10 @@
   "spelling": {
     "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index.",
     "list": [
-      "List"
+      "List",
+      "dCL",
+      "Seg",
+      "Sched"
     ],
     "tree": [
       "Rose",
@@ -60,7 +63,11 @@
     "α": {
       "src": "F(x)",
       "tgt": "x",
-      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f"
+      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
+      ]
     },
     "[,]": {
       "src": "F(x)",
@@ -197,6 +204,34 @@
         "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
       ]
     },
+    "partition": {
+      "src": "[x]",
+      "tgt": "[[x]]",
+      "lean": "AOP.A5_6_ListCombinators.RelSet.ListRel.partition@27a85ee0",
+      "nat": "strict",
+      "nat-lean": [
+        "AOP.A5_7_ListBeads.RelSet.ListRel.partition_natural@c69814dc"
+      ]
+    },
+    "new": {
+      "src": "x×[[x]]",
+      "tgt": "[[x]]",
+      "lean": "AOP.A7_5_Van.Van.newR@7c794276",
+      "nat": "strict",
+      "nat-lean": [
+        "AOP.A7_5_VanBeads.Van.new_natural@a8d46d3b"
+      ]
+    },
+    "head": {
+      "src": "[[x]]",
+      "tgt": "[x]",
+      "lean": "AOP.A7_5_Van.Van.headR@6756d172",
+      "nat": "lax",
+      "nat-lean": [
+        "AOP.A7_5_VanBeads.Van.head_lax_natural@b17a6243",
+        "AOP.A7_5_VanBeads.Van.head_not_strict@c4c2f025"
+      ]
+    },
     "cons": {
       "src": "x×[x]",
       "tgt": "[x]",
@@ -204,6 +239,15 @@
       "nat": "strict",
       "nat-lean": [
         "AOP.A5_6_ListCombinators.RelSet.ListRel.cons_natural@295aeb89"
+      ]
+    },
+    "wrap": {
+      "src": "x",
+      "tgt": "[x]",
+      "lean": "AOP.A6_ConsList.CL.singleR@8359ba20",
+      "nat": "strict",
+      "nat-lean": [
+        "AOP.A5_6_ListCombinators.RelSet.ListRel.wrap_natural@9b57cea2"
       ]
     },
     "∋": {

@@ -368,17 +368,27 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
     coprod := fun a b => ⟨a.carrier ⊕ b.carrier⟩
     has_coproduct := sumCop }
 
+/-- `⊤ : a ⟶ b` in `Rel(Set)`, constructively: a hom here IS a predicate, so the greatest one
+    is the predicate that holds everywhere.  The abstract `topMor` of a unitary allegory picks
+    the two unit projections with `Exists.choose` and is therefore noncomputable; this one costs
+    no choice, so a statement that names `⊤` stays axiom-clean. -/
+@[expose] public def relTop (a b : RelSet.{u}) : a ⟶ b := fun _ _ => True
+
+/-- `relTop` is the greatest relation: every `R : a ⟶ b` is below it. -/
+public theorem le_relTop {a b : RelSet.{u}} (R : a ⟶ b) : R ⊑ relTop a b :=
+  le_iff.mpr fun _ _ _ => trivial
+
 /-- `⊤` in `Rel(Set)` relates everything to everything: it is above the full relation, hence
-    equal to it.  (`topMor` itself is chosen classically inside `RelProd.tab`, so it is read
-    through `topMor_max` rather than computed.) -/
+    equal to it.  (`topMor` is the abstract division `𝟘/𝟘`, so it is read through `topMor_max`
+    rather than unfolded.) -/
 public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
     topMor a b x y :=
   le_iff.mp (topMor_max (fun _ _ => True : a ⟶ b)) x y trivial
 
 /-- Rel(Set)'s own relational product: the cartesian product `a.carrier × b.carrier` with the two
     projection graphs, which tabulate `⊤ : a ⟶ b`.  Named concretely for the same reason as
-    `coprod` above — the generic choice of A5_2 tabulates `⊤` through `Exists.choose`, whose apex
-    never reduces, so `Relator.prod` could not be recognised as the product of two datatypes. -/
+    `coprod` above — an apex obtained from A5_2's `relProd_nonempty` never reduces, so
+    `Relator.prod` could not be recognised as the product of two datatypes. -/
 @[expose] public instance : HasRelProd RelSet.{u} where
   relProd a b :=
     { p := ⟨a.carrier × b.carrier⟩
@@ -406,7 +416,7 @@ public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : 
     exact ⟨⟨q.1, ⟨p.1, rfl, hR⟩, rfl⟩, ⟨q.2, ⟨p.2, rfl, hS⟩, rfl⟩⟩
 
 /-- Relational pairing `⟨R,S⟩` in `Rel(Set)`: `x ↦ (y,z)` iff `R x y` and `S x z` — the
-    graph-level form of (5.1), free of the classically chosen `topMor` inside `RelProd.tab`
+    graph-level form of (5.1), free of the abstract `topMor` inside `RelProd.tab`
     (which `pair_eq_rpair` below shows it equals). -/
 @[expose] public def rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
     c ⟶ (⟨a.carrier × b.carrier⟩ : RelSet.{u}) :=

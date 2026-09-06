@@ -411,11 +411,14 @@ example {a : 𝒜} (P : RelProd a a) {T : a ⟶ a} :
 -- product, for the (5.6) reason `pair_slides` gives.
 /-- `X×Y` slides past `Ta×Tb` whenever `X` slides past `Ta` and `Y` past `Tb`: `prodMap_comp`
     flattens both composites — an EQUALITY, so nothing is dropped — and `prodMap_mono` then
-    compares them componentwise. -/
-public theorem prodMap_slides {a b a' b' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
-    {Ta : a ⟶ a} {Tb : b ⟶ b} {Tc : a' ⟶ a'} {Td : b' ⟶ b'} {X : a ⟶ a'} {Y : b ⟶ b'}
-    (hX : Ta ≫ X ⊑ X ≫ Tc) (hY : Tb ≫ Y ⊑ Y ≫ Td) :
-    prodMap P P Ta Tb ≫ prodMap P Q X Y ⊑ prodMap P Q X Y ≫ prodMap Q Q Tc Td := by
+    compares them componentwise.  Stated over FOUR products and non-endo arrows, for the same
+    reason `pair_slides` is: `laxNatural_prod`'s square names a different product at each of its
+    four corners, and is then an INSTANCE rather than the same calculation written again. -/
+public theorem prodMap_slides {a b a' b' c d c' d' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
+    (P' : RelProd c d) (Q' : RelProd c' d') {Ta : a ⟶ a'} {Tb : b ⟶ b'} {Tc : c ⟶ c'}
+    {Td : d ⟶ d'} {X : a ⟶ c} {Y : b ⟶ d} {X' : a' ⟶ c'} {Y' : b' ⟶ d'}
+    (hX : Ta ≫ X' ⊑ X ≫ Tc) (hY : Tb ≫ Y' ⊑ Y ≫ Td) :
+    prodMap P Q Ta Tb ≫ prodMap Q Q' X' Y' ⊑ prodMap P P' X Y ≫ prodMap P' Q' Tc Td := by
   rw [prodMap_comp, prodMap_comp]
   exact prodMap_mono hX hY
 
@@ -487,6 +490,32 @@ public theorem laxNatural_swap {F F' : Relator 𝒮 𝒜} :
     exact prodMap_outr_le _ _ _ _
   · rw [Cat.assoc, RelProd.pair_outr, (relProd (F.obj y) (F'.obj y)).outr_map.1, Cat.id_comp]
     exact prodMap_outl_le _ _ _ _
+
+/-- **`×` CLOSES in LaT**: `φ : G ⟶ F` and `ψ : G' ⟶ F'` lax natural give the PRODUCT MAP
+    `φ×ψ : G×G' ⟶ F×F'` lax natural.  Not the fork `laxNatural_pair` — the two families here run
+    between four different relators, and the square's four corners are four different products,
+    which is what `prodMap_slides` is stated over. -/
+public theorem laxNatural_prod {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    {ψ : ∀ x : 𝒮, G'.obj x ⟶ F'.obj x} (hφ : LaxNatural F G φ) (hψ : LaxNatural F' G' ψ) :
+    LaxNatural (Relator.prod F F') (Relator.prod G G')
+      (fun x => prodMap (relProd (G.obj x) (G'.obj x)) (relProd (F.obj x) (F'.obj x))
+        (φ x) (ψ x)) :=
+  fun {_ _} R => prodMap_slides _ _ _ _ (hφ R) (hψ R)
+
+/-- **And `×` closes STRICTLY too** — unlike the fork, whose `outl` already fails to cancel
+    (`laxNatural_pair_outl`), the product map creates no slack: `prodMap_comp` flattens each side
+    to ONE `prodMap`, and the two components are then the two hypotheses verbatim. -/
+public theorem strictNatural_prod {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    {ψ : ∀ x : 𝒮, G'.obj x ⟶ F'.obj x} (hφ : StrictNatural F G φ) (hψ : StrictNatural F' G' ψ) :
+    StrictNatural (Relator.prod F F') (Relator.prod G G')
+      (fun x => prodMap (relProd (G.obj x) (G'.obj x)) (relProd (F.obj x) (F'.obj x))
+        (φ x) (ψ x)) :=
+  fun {x y} R => by
+  show prodMap (relProd (G.obj x) (G'.obj x)) (relProd (G.obj y) (G'.obj y)) (G.map R) (G'.map R)
+      ≫ prodMap (relProd (G.obj y) (G'.obj y)) (relProd (F.obj y) (F'.obj y)) (φ y) (ψ y)
+    = prodMap (relProd (G.obj x) (G'.obj x)) (relProd (F.obj x) (F'.obj x)) (φ x) (ψ x)
+      ≫ prodMap (relProd (F.obj x) (F'.obj x)) (relProd (F.obj y) (F'.obj y)) (F.map R) (F'.map R)
+  rw [prodMap_comp, prodMap_comp, hφ R, hψ R]
 
 end LaxNaturalPair
 

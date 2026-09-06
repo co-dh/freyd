@@ -44,3 +44,9 @@
 [X] 13.4.4a too much space at the bottom of string diagrams. add checker, find root cause, fix in general.
 [X] in general, the lable are covered by the text. e.g. (13.4.4a becomes 3.4.4a. add checker, find root cause, fix in general
 [X] add $13.6.1 for prefix . secure <= secure . prefix. on Bird P185. add string diagram for secure(bmax def) and it,
+[X] add string diagram of new, glue, fusion , old  in algprog.pdf P185 as 13.6.1. lean proof, mark.
+[X] add string diagram of prove of 7.14 algprog.pdf P186 as 13.6.2. lean proof, mark.
+[X] add string diagram of H as 2 string diagram for each branch of U of algprog.pdf P186 as 13.6.3. lean proof. mark.
+[X] add string diagram of 7.16 and 7.17 algprog.pdf P187 as 13.6.4. lean proof. mark.
+[X] add string diagram of 7.19, 20, 21 of algprog.pdf P187 as 13.6.5. plus the derive on P188. lean proof. mark.
+

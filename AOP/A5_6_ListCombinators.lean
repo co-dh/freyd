@@ -27,7 +27,7 @@ variable {A : Type}
 /-- `list A = ConsList Unit A` (`nil = wrap ()`, `cons a x`). -/
 @[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
-/-! ## Membership `inlist : A ← list A` -/
+/-! ## Membership `inlist : A ← list A` and `setify : E A ← list A` -/
 
 /-- `a ∈ x`. -/
 @[expose] public def inlistP : ConsList Unit A → A → Prop
@@ -36,6 +36,14 @@ variable {A : Type}
 
 /-- The membership relation `inlist : list A ⟶ A`. -/
 def inlist : dList A ⟶ dE A := inlistP
+
+/-- **`setify[a₁,…,aₙ] = {a₁,…,aₙ}`** (B&dM §7.3 p.177), `setify : [A]⟶E(A)`: a list goes to the
+    set of its elements, so the order and the repetitions are forgotten.  It is the classifier of
+    `inlist` — `Λ(inlist)`, `graph` of `x ↦ {a | a ∈ x}`, hence a MAP by `graph_map`, since a list
+    has exactly one element set.  `AOP.A7_4_CylinderBeads`'s `Tuple.setify` is the §7.4 arrow of the
+    same name at the tuple relator, `Aⁿ⟶E(A)`, forgetting which row a component came from; the
+    two are different arrows and neither is an instance of the other. -/
+@[expose] public def setify : dList A ⟶ PowerAllegory.powerObj (dE A) := graph inlistP
 
 /-! ## Permutation `perm : list A ← list A` -/
 
@@ -540,6 +548,16 @@ public theorem listP_mono {B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b �
 public theorem list_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : list R ⊑ list S :=
   le_iff.mpr (listP_mono (le_iff.mp h))
 
+/-- `list` BUNDLED as a relator, so §5.7's closure theorems — `laxNatural_prod`,
+    `strictNatural_prod` — can be read at it.  `RelSet` is a one-field structure, so `dE a.carrier`
+    IS `a` and the object part is just `list`'s own target. -/
+@[expose] public def listRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dList a.carrier
+  map R := list R
+  map_id _ := list_id
+  map_comp R S := list_comp R S
+  map_mono h := list_mono h
+
 public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
     ∀ (y : ConsList Unit B) (x : ConsList Unit A), listP R° y x ↔ listP R x y
   | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
@@ -621,6 +639,54 @@ public theorem cons_natural {B : Type} (R : dE A ⟶ dE B) :
     | wrap _ => exact hz.elim
     | cons b y => exact ⟨(b, y), ⟨hz.1, hz.2⟩, rfl⟩
 
+/-- **The free theorem of `wrap`**, and it is STRICT: `wrap list(R) = R wrap`.  Both sides relate
+    `a` to the one-element list `[b]` exactly when `R a b`, and to nothing else. -/
+public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
+    (singleR () : dE A ⟶ dList A) ≫ list R = R ≫ singleR () := by
+  apply hom_ext; intro a w
+  constructor
+  · rintro ⟨_, rfl, hz⟩
+    cases w with
+    | wrap _ => exact hz.elim
+    | cons b y =>
+      cases y with
+      | wrap _ => exact ⟨b, hz.1, rfl⟩
+      | cons _ _ => exact hz.2.elim
+  · rintro ⟨b, hab, rfl⟩
+    exact ⟨ConsList.cons a (ConsList.wrap ()), rfl, hab, trivial⟩
+
+/-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is
+    STRICT: `α list(R) = F(R,list R) α`.  The `nil` branch is the leaf identity, the `cons` branch is
+    `cons_natural` read off the constructors — so the note's `α` bead is a natural transformation
+    `F∘⟨𝟙,list⟩ ⇒ list` and leaves the object wire.  (The OTHER family, `α` over its CARRIER at a
+    fixed element type, is refuted by `Carrier.listAlg_not_lax_natural`; these are different squares.) -/
+public theorem alphaR_natural (R : dE A ⟶ dE B) :
+    (alphaR : (F Unit A).obj (dList A) ⟶ dList A) ≫ list R
+      = Fbimap Unit R (list R) ≫ (alphaR : (F Unit B).obj (dList B) ⟶ dList B) := by
+  apply hom_ext; intro u w
+  cases u with
+  | inl d =>
+    cases w with
+    | wrap e => exact ⟨fun _ => ⟨Sum.inl e, rfl, rfl⟩, fun _ => ⟨ConsList.wrap d, rfl, trivial⟩⟩
+    | cons b y =>
+      refine ⟨fun h => ?_, fun h => ?_⟩
+      · obtain ⟨_, rfl, hz⟩ := h; exact hz.elim
+      · obtain ⟨v, hv, hw⟩ := h
+        cases v with
+        | inl e => exact nomatch hw
+        | inr q => exact hv.elim
+  | inr p =>
+    obtain ⟨a, x⟩ := p
+    refine ⟨fun h => ?_, fun h => ?_⟩
+    · obtain ⟨_, rfl, hz⟩ := h
+      cases w with
+      | wrap e => exact hz.elim
+      | cons b y => exact ⟨Sum.inr (b, y), ⟨hz.1, hz.2⟩, rfl⟩
+    · obtain ⟨v, hv, rfl⟩ := h
+      cases v with
+      | inl e => exact hv.elim
+      | inr q => obtain ⟨b, y⟩ := q; exact ⟨ConsList.cons a x, rfl, hv.1, hv.2⟩
+
 /-- **The free theorem of `concat`**, and it is STRICT: `list(list R) concat = concat list(R)`.
     `⊑` is `listP_cconcat`, `⊒` is `listP_cconcat_split`. -/
 public theorem concat_natural {B : Type} (R : dE A ⟶ dE B) :
@@ -678,8 +744,8 @@ public theorem total_eq (f : A → Int) :
 
 /-- **`subseq = ⦇[nil, cons ∪ π₂]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; at each
     element either `cons` keeps the head or `π₂` drops it.  `π₂` is spelled as its Rel(Set)
-    value `graph (·.2)` — definitionally `(relProd _ _).outr` — to keep the axioms
-    `Classical.choice`-free (the abstract `topMor` inside `RelProd` is chosen classically). -/
+    value `graph (·.2)` — definitionally `(relProd _ _).outr` — so that the fold's square
+    reduces on a pair, which the abstract projection does not. -/
 public theorem subseq_cata :
     (subseq : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR

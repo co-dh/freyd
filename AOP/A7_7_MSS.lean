@@ -456,9 +456,9 @@ public theorem suffixMax_not_relCata :
   `suffixMax_not_relCata` shows that set alone cannot carry.
 
   `⟨·,·⟩`, `π₁`, `π₂` are spelled with `Rel(Set)`'s own `rpair`/`rprodMap`/`graph`, not with
-  `RelProd`: `RelProd.tab` is typed by `topMor`, which is `Exists.choose`n, so every statement
-  naming `RelProd` — `cup` included — carries `Classical.choice`.  `scanStep_union` below is the
-  one bridge to the note's `cup` spelling, and pays that cost alone. -/
+  `RelProd`, because those reduce on a pair while `RelProd`'s apex is only a chosen tabulation.
+  (`RelProd` no longer costs `Classical.choice`: `topMor` is the division `𝟘/𝟘`.)
+  `scanStep_union` below is the one bridge to the note's `cup` spelling. -/
 
 /-- `w ≜ (𝟙×π₁)⊕`: the running maximum at `cons a x`, from `a` and the value `π₁` carries. -/
 @[expose] public def wstep : (⟨Int × (Int × (Int → Prop))⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
