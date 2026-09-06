@@ -215,4 +215,17 @@ public theorem typeMap_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
 
 end TypeRelator
 
+-- printing-only unexpanders: the note's spelling.  `α` indexed by the object it is the component
+-- at, `T` applied to the arrow it maps: §2.7's own `α_A : F(A,TA) ⟶ TA` and `T(R)`.  The family
+-- argument `I` is not part of either name — it is which initial algebras, not which component.
+open Lean PrettyPrinter in
+@[app_unexpander alphaT] public meta def unexpandAlphaT : Unexpander
+  | `($_ $_ $a) => `($(mkIdent `α) $a)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander typeMap] public meta def unexpandTypeMap : Unexpander
+  | `($_ $_ $R) => `($(mkIdent `T) $R)
+  | _ => throw ()
+
 end Freyd.Alg

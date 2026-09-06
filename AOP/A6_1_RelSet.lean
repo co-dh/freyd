@@ -438,5 +438,22 @@ public theorem pair_eq_rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
   · rintro ⟨h1, h2⟩
     exact ⟨⟨p.1, h1, rfl⟩, ⟨p.2, h2, rfl⟩⟩
 
+-- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
+-- takes every label from `Meta.ppExpr`, so an object has to PRINT as what the note calls it.  The
+-- bundling is Lean's, not the book's: the note writes one name for the object and for the type it
+-- relates, so `RelSet.mk X` and `X.carrier` both print as `X`.  They change no statement and no
+-- `stmt_key`.  `pp.structureInstances` must be off for the first of them to be reached at all — a
+-- `{ carrier := X }` is a structure instance, which is not an application and which no unexpander
+-- sees.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.mk] public meta def unexpandRelSetMk : Unexpander
+  | `($_ $c) => `($c)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.carrier] public meta def unexpandRelSetCarrier : Unexpander
+  | `($_ $x) => `($x)
+  | _ => throw ()
+
 end RelSet
 end Freyd.Alg

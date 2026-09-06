@@ -625,12 +625,18 @@
 
 // `ar` pulls both ends back off the node centres: a head drawn at a centre is buried under that node's
 // own white box.  `s0`/`s1` are the clearances — 0.95 leaving `A × B` sideways, 0.55 entering vertically.
-#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45) = {
+// `bow` bends the arrow that far off its chord, towards the chord's LEFT normal (negative for the
+// right): two arrows between ONE pair of nodes are drawn on top of each other otherwise.
+#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45, bow: 0) = {
   let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
   let n = calc.sqrt(dx * dx + dy * dy)
-  d.line((a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy),
-    (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy),
-    mark: (end: ">", scale: 0.5), stroke: (thickness: 0.75pt, paint: col, dash: dash))
+  let p = (a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy)
+  let q = (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy)
+  let st = (thickness: 0.75pt, paint: col, dash: dash)
+  if bow == 0 { d.line(p, q, mark: (end: ">", scale: 0.5), stroke: st) } else {
+    d.bezier(p, q, ((p.at(0) + q.at(0)) / 2 - bow / n * dy, (p.at(1) + q.at(1)) / 2 + bow / n * dx),
+      mark: (end: ">", scale: 0.5), stroke: st)
+  }
 }
 
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box

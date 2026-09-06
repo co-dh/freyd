@@ -308,6 +308,12 @@ def draw (declName : Name) : MetaM String := do
     (d.splitOn "\n").headD "" |>.replace "`" "" |>.replace "*" ""
   build declName doc ci.type 3
 
+/-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
+    activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
+    `⊑` and the fold's `⦇ ⦈`; the rest the note's own spellings. -/
+def openNs : List Name :=
+  [`Freyd, `Freyd.Alg, `Freyd.Alg.RelSet, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+
 /-- `--commutative`'s own entry point.  ONE environment per process, as in `DiagExport.main`: the
     import happens once and every name on the command line is drawn from it. -/
 def main (args : List String) : IO UInt32 := do
@@ -317,7 +323,11 @@ def main (args : List String) : IO UInt32 := do
     return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
+  -- `loadExts` is what makes a label read as the repo's own notation: without it the delaborator's
+  -- unexpander table is empty, so not one `notation` in the repo — nor `Eq`'s own `=` — is applied
+  -- and every label is a raw application (`relCata R`, `instCat.id X`).
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
+    (loadExts := true)
   IO.FS.createDirAll "diag/generated/commutative"
   -- Field notation stays ON, unlike the string-diagram route: a node here is an OBJECT, and
   -- `(F.appl a).obj X` is the object, where `Functor.obj (Relator.toFunctor (BiRelator.appl F a)) X`
@@ -326,11 +336,18 @@ def main (args : List String) : IO UInt32 := do
   -- which is not an arrow's name and hides the `𝟙 X` and `R°` notations behind it.
   -- `⟶`, `≫`, `°` and `⊑` are all `Freyd`/`Freyd.Alg` notations, so the printer only reaches them
   -- with those namespaces opened.
-  let opts : Options := Options.empty.setBool `pp.fieldNotation.generalized false
+  let opts : Options := (Options.empty.setBool `pp.fieldNotation.generalized false).setBool
+    -- A structure instance is not an application, so no unexpander can reach a bundled
+    -- object; printed as a constructor it becomes one, and the note's own name comes back.
+    `pp.structureInstances false
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default, options := opts,
-      openDecls := [.simple `Freyd [], .simple `Freyd.Alg [], .simple `Freyd.Alg.RelSet [],
-        .simple `Freyd.Diag.SymMonCat [], .simple `Freyd.Diag.Word []] }
+      openDecls := openNs.map (.simple · []) }
+  -- `openDecls` alone only SHORTENS names.  Every notation the repo writes is `scoped`, and a
+  -- scoped unexpander lives in a scoped extension that `open` activates during elaboration — which
+  -- an exe never runs.  Without this the labels read `Cat.id X`, `Cat.comp R S`, and the note's own
+  -- spellings below never fire either.
+  let env := (← (do for ns in openNs do activateScoped ns : CoreM Unit).toIO ctx { env }).2.env
   let mut status : UInt32 := 0
   for arg in args do
     let run : CoreM String := Meta.MetaM.run' (draw arg.toName)
