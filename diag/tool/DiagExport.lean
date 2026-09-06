@@ -57,6 +57,9 @@ import diag.S2_124
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
+-- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
+-- box = morphism, left to right), emitted for `diag/cpanel.typ`.
+import diag.tool.CircuitDiagram
 
 open Lean
 
@@ -1406,21 +1409,25 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --circuit] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
-   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps"
+   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
+   --circuit draws the CIRCUIT of each declaration to diag/generated/circuit/<name>.typ;\n\
+   a statement takes a side, `<name>.lhs` or `<name>.rhs`"
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
-  let args := args.filter (fun a => a != "--proof" && a != "--sig")
+  let circuitMode := args.contains "--circuit"
+  let args := args.filter (fun a => a != "--proof" && a != "--sig" && a != "--circuit")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
   unless sigMode do IO.FS.createDirAll "diag/generated"
+  if circuitMode then IO.FS.createDirAll "diag/generated/circuit"
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
   -- Generalized field notation prints a class projection through its instance argument, so `Δ_a`
@@ -1437,19 +1444,32 @@ def main (args : List String) : IO UInt32 := do
         .simple `Freyd.Diag.Word []] }
   let mut status : UInt32 := 0
   for arg in args do
+    -- `<decl>.lhs`/`<decl>.rhs` name a SIDE, and only the circuit route reads one; the suffix is
+    -- split off here because a declaration named `…lhs` is not one of them.
+    let (declArg, side) :=
+      if circuitMode && arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
+      else if circuitMode && arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs")
+      else (arg, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
+        else if circuitMode then Freyd.CircuitDiagram.drawDecl declArg.toName side
         else if proofMode then drawProof arg.toName else draw arg.toName)
-    match ← (do pure (some (← Prod.fst <$> run.toIO ctx { env }))) <|> pure none with
-    | none =>
+    -- The elaborator's own message, not just the failure: a circuit that cannot be drawn says
+    -- WHICH operator or object stopped it, and swallowing that leaves nothing to act on.
+    let outcome : IO (Except String String) :=
+      try pure (.ok (← Prod.fst <$> run.toIO ctx { env })) catch ex => pure (.error (toString ex))
+    match ← outcome with
+    | .error msg =>
+      IO.eprintln msg
       IO.eprintln (if sigMode then
           s!"diag-export --sig: no such declaration in `Freyd`, `diag.*` or `AOP.*`: {arg}"
         else s!"diag-export: cannot draw `{arg}` — no such declaration in `Freyd` or `diag.*`, \
           or (with --proof) no calc chain in its proof term")
       status := 1
-    | some text =>
+    | .ok text =>
       if sigMode then IO.println text else
-      let path := System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+      let path := if circuitMode then System.FilePath.mk s!"diag/generated/circuit/{arg}.typ"
+        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString
   return status
