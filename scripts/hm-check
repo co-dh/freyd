@@ -269,6 +269,9 @@ HOM, COMP = "Cat.Hom", "Cat.comp"
 # `obj C D F X`: the lane's NAME comes from `F` and the object from `X`, so this one head is read
 # structurally rather than through the table — the table has no way to say "my name is my argument".
 FOBJ = "Freyd.Functor.obj"
+# `[".", field, base]`: a field of a BOUND structure — `I.t`, `X.carrier` — which names no object or
+# lane of the note's own, whatever the table happens to say about the field's own constant.
+PROJ = "."
 # The two sides of a naturality square, and where they sit in the head's arguments.
 REL = {"Eq", "Ne", "Freyd.Alg.le", "LE.le"}
 # The square stated as a predicate instead of an equation: `LaxNatural S T F G τ`, whose arrow runs
@@ -345,15 +348,25 @@ def fill(pat, sub):
     return sub[pat[1]] if pat[0] == 'atom' and pat[1] in sub else dg.sl.rec(pat, lambda x: fill(x, sub))
 
 
+def deproj(e, clear):
+    """A term the table has no business naming: a wrapper the note draws THROUGH — `RelSet.mk`, the
+    coercion that makes a relator a functor — is stripped, and a FIELD of a bound structure (`I.t`,
+    `X.carrier`) becomes a plain name.  `I` is a binder, so `I.t` is the carrier of whatever the
+    caller instantiates it with — a variable of the note's language, not one of its objects, and the
+    row is free to call it `LA` in one panel and `L(N(A))` in another."""
+    while isinstance(e, list) and (e[0] in clear or (e[0] == PROJ and e[1] in clear)):
+        e = e[-1]
+    return f"{e[2]}.{e[1].rpartition('.')[2]}" if isinstance(e, list) and e[0] == PROJ else e
+
+
 def tr(e, tbl, clear, miss):
     """One Lean type as the note's own object tree.  A binder becomes `('lv', name)` — an object the
     row may call whatever it likes — a head with several readings an `('alt', …)` the match resolves,
     and a head the table does not name is recorded in `miss` and left as a node nothing matches."""
+    e = deproj(e, clear)
     if isinstance(e, str):
         return ('lv', e)
     h, args = e[0], e[1:]
-    if h in clear:                       # a wrapper the note draws THROUGH: `RelSet.mk`, a coercion
-        return tr(args[-1], tbl, clear, miss)
     if h == FOBJ:
         return named(args[-2], tr(args[-1], tbl, clear, miss), tbl, clear, miss)
     forms = tbl.get(h)
@@ -371,20 +384,18 @@ def tr(e, tbl, clear, miss):
 
 def named(f, x, tbl, clear, miss):
     """`F.obj X` — the lane's name off `F`, read through the coercions that make a relator a functor.
-    A functor VARIABLE names no lane and matches whatever the row calls it."""
-    while isinstance(f, list) and f[0] in clear:
-        f = f[-1]
+    A functor VARIABLE names no lane of the note's own: it becomes `('fv', name)`, which the row may
+    call what it likes — but only ONE thing, since `G(x)⟶F(x)` and `F(x)⟶F(x)` are different arrows
+    and a binder Lean writes twice is one functor."""
+    f = deproj(f, clear)
     if isinstance(f, str):
-        return ('app', ANY, x)
+        return ('app', ('fv', f), x)
     forms = tbl.get(f[0])
     if forms is None:
         miss.append(f[0])
         return ('?', f[0])
     alts = [fill(pat, {vs[0]: x}) for pat, vs, _ in forms if len(vs) == 1]
     return alts[0] if len(alts) == 1 else ('alt', alts) if alts else ('?', f[0])
-
-
-ANY = "*"                       # a lane Lean leaves as a functor variable: the row names it
 
 
 def shown(e):
@@ -395,16 +406,25 @@ def shown(e):
         return f"⟨{e[1].rpartition('.')[2]}⟩"
     if e[0] == 'alt':
         return shown(e[1][0])
-    if e[0] == 'app' and e[1] == ANY:
-        return f"?({shown(e[2])})"
+    if e[0] == 'app' and isinstance(e[1], tuple):
+        return f"?{e[1][1]}({shown(e[2])})"
     return sl.spell(dg.sl.rec(e, lambda x: ('atom', shown(x))))
 
 
 def sameh(a, b):
     """Two lane names for one lane.  Every INDEX functor is one Lean type whatever the index, so
     `[n]`, `[3p]` and `[m+1]` are the table's one `[k]` key — the index is the note's own arithmetic
-    and no Lean head carries it."""
-    return a == b or a == ANY or b == ANY or (sl.idxhead(a) and sl.idxhead(b))
+    and no Lean head carries it.  A functor VARIABLE names no lane at all; WHICH one the row may
+    call it is settled by `lane`, not here."""
+    return isinstance(b, tuple) or a == b or (sl.idxhead(a) and sl.idxhead(b))
+
+
+def lane(a, b, sub, why):
+    """A functor VARIABLE takes the row's name and KEEPS it, both ways round: a row is free to call
+    Lean's `G` whatever it likes, and not free to call two of Lean's lanes by one name nor one lane
+    by two — `G(x)⟶F(x)` and `F(x)⟶F(x)` are different arrows."""
+    return bound(f"Lean's {b[1]}", f"(){b[1]}", ('lv', a), sub, why) \
+        and bound(f"the row's {a}", f"{a}()", ('lv', b[1]), sub, why)
 
 
 def bound(what, key, val, sub, why):
@@ -441,7 +461,8 @@ def fit(pat, e, sub, why):
         why.append(f"the row says {sl.spell(pat)} where Lean has {shown(e)}")
         return False
     if pat[0] == 'app':
-        return fit(pat[2], e[2], sub, why)
+        return (not isinstance(e[1], tuple) or lane(pat[1], e[1], sub, why)) \
+            and fit(pat[2], e[2], sub, why)
     if pat[0] in ('prod', 'comp', 'hc'):
         return all([fit(a, b, sub, why) for a, b in zip(pat[1], e[1])])
     return True
@@ -481,13 +502,31 @@ def find(e, ok):
     return None
 
 
-def natshape(rec, arrow):
+def binds(e, out=None):
+    """Every binder an exported term introduces under itself — the `∀ a b (R : a ⟶ b)` a square
+    quantifies its arrow over, which is where a DEFINITION keeps what a theorem states up front."""
+    out = [] if out is None else out
+    if isinstance(e, list):
+        if e[0] in ("∀", "λ"):
+            out += [{"name": b[0], "type": b[1]} for b in e[1:-1]]
+            binds(e[-1], out)
+        else:
+            [binds(a, out) for a in e[1:]]
+    return out
+
+
+def natshape(rec, arrow, defined=False):
     """The region a naturality theorem slides its arrow in, or the reason it is not a naturality
     square at all.  The square is `L ≫ G(f) = F(f) ≫ L'` — an `Eq`, a `⊑` for the lax form, either
     under a `¬` (and possibly an `∃`) for a refutation — with the row's own arrow on both sides; or
-    it is the same statement packed into `LaxNatural`/`StrictNatural`.  The region is read off the
-    binder the square slides, because THAT is the arrow the panel draws `h : A⟶B` as."""
-    node = find(rec["type"], lambda h: h in REL or h in NATPRED)
+    it is the same statement packed into `LaxNatural`/`StrictNatural`.  A SCHEMATIC row's square is
+    the cited definition's own BODY: `LaxNatural F G φ` states nothing in its type, and the
+    inequation it defines is the whole of what the panel drawing `φ` claims.  The region is read off
+    the binder the square slides, because THAT is the arrow the panel draws `h : A⟶B` as."""
+    expr = rec.get("value") if defined else rec["type"]
+    if expr is None:
+        return None, "states no square — it is no definition, so it has no body to be one"
+    node = find(expr, lambda h: h in REL or h in NATPRED)
     if node is None:
         return None, "states no square — no `=`, no `⊑` and no `LaxNatural`"
     if not occurs(node, arrow):
@@ -499,7 +538,7 @@ def natshape(rec, arrow):
         return None, "its two sides are not composites, so it states no square"
     # The arrow the square slides: a binder of hom type that the square actually mentions.  Failing
     # that — a refutation at named objects binds nothing — the composite's own category.
-    for b in rec["binders"]:
+    for b in rec["binders"] + binds(expr):
         t = b["type"]
         if isinstance(t, list) and t[0] == HOM and occurs(node, b["name"]):
             return t[1], None
@@ -540,6 +579,32 @@ def keyed(db, mark):
     (k,) = db.execute("select stmt_key from decl_info where internal = 0 and module = ?"
                       " and user_name = ?", (mod, user)).fetchone()
     return user, f"{(k or 0) & 0xffffffff:08x}"
+
+
+def marked(m):
+    """One marker: the declaration, the key its statement was certified at, and — for a SCHEMATIC
+    row — the BINDER of that declaration which is the arrow the row types.  A display that DEFINES
+    what it draws has no declaration of its own to cite: `lean:AOP.A5_1.LaxNatural@ba661fee#φ` says
+    the arrow is that definition's `φ`, and keeps "no declaration, no dot" intact."""
+    mark, _, rest = m.partition("@")
+    k, _, binder = rest.partition("#")
+    return mark, k or None, binder or None
+
+
+def schematic(rec, binder):
+    """The arrow a schematic row types, as a record of its own: the binder's type with the family's
+    own `∀ a` stripped, so the objects on either side of the `⟶` are the ones the row spells."""
+    b = next((x for x in rec["binders"] if x["name"] == binder), None)
+    if b is None:
+        names = ", ".join(f"`{x['name']}`" for x in rec["binders"]) or "nothing"
+        return None, f"binds no `{binder}` — it binds {names}"
+    t, bs = b["type"], []
+    while isinstance(t, list) and t[0] == "∀":
+        bs += [{"name": p[0], "type": p[1]} for p in t[1:-1]]
+        t = t[-1]
+    if not (isinstance(t, list) and t[0] == HOM):
+        return None, f"binds `{binder}` at {leanstr(b['type'])}, which is no family of arrows"
+    return {"type": t, "binders": rec["binders"] + bs, "value": rec.get("value")}, None
 
 
 def typerow(env, user, rec, row, where):
@@ -584,18 +649,23 @@ def sigrow(env, proofs, name, row, where):
     or refuted.  A row with no `nat` claims nothing, which for a polymorphic row is not an option —
     `diagram` refuses to draw one — and which stops being honest the moment Lean proves the square
     anyway, so the corpus is swept for a proof the table never took up."""
-    bad, user, cat = [], None, None
+    bad, user, cat, arrow, binder = [], None, None, None, None
     if row.get("lean"):
-        mark, _, k = row["lean"].partition("@")
-        moved = cc.check(env["db"], mark, k or None, where)
+        mark, k, binder = marked(row["lean"])
+        moved = cc.check(env["db"], mark, k, where)
         if moved:
             return [moved]
         user, _ = keyed(env["db"], mark)
-        rec = env["sig"].get(user)
+        rec, arrow, who = env["sig"].get(user), user, user
         if rec is None:
             bad.append(f"{where}: {user} has no type — `diag-export --sig` printed none for it")
-        else:
-            bad += typerow(env, user, rec, row, where)
+        elif binder:
+            rec, why = schematic(rec, binder)
+            arrow, who = binder, f"{user}#{binder}"
+            if why:
+                bad.append(f"{where}: {user} {why}")
+        if rec is not None:
+            bad += typerow(env, who, rec, row, where)
             cat = (hom(rec) or (None,))[0]
     if "nat" not in row:
         # A row with no `nat` claims nothing — but silence is only honest while Lean says
@@ -645,7 +715,12 @@ def sigrow(env, proofs, name, row, where):
         if nrec is None:
             bad.append(f"{where}: nat-lean {nu} has no type — `diag-export --sig` printed none")
             continue
-        reg, why = natshape(nrec, user)
+        if binder and nu != user:
+            bad.append(f"{where}: nat-lean {nu} is not {user}, whose binder `{binder}` the row"
+                       f" types — a schematic arrow satisfies its own definition's square and"
+                       f" there is no other statement it could be held to")
+            continue
+        reg, why = natshape(nrec, arrow, binder is not None)
         if why:
             bad.append(f"{where}: nat-lean {nu} {why} — it is {leanstr(nrec['type'])}")
         elif not region(reg, env["regions"]):

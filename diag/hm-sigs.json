@@ -60,11 +60,7 @@
     ],
     "tree(x)": [
       "Rose",
-      "Freyd.Alg.RelSet.RT.dRose",
-      ["Freyd.Alg.InitialAlgebra.t", 1]
-    ],
-    "T": [
-      ["Freyd.Alg.InitialAlgebra.t"]
+      "Freyd.Alg.RelSet.RT.dRose"
     ],
     "E(x)": [
       "Freyd.Alg.PowerAllegory.powerObj"

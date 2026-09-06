@@ -1,31 +1,16 @@
 sig-audit — what `./scripts/hm-check --verify-sigs` reports once every row is held against the TYPE
-of the declaration it cites, not against the letters of its printed statement.  96 failures over 399
-rows, in five classes.  The note itself is untouched: this is the work order.
+of the declaration it cites, not against the letters of its printed statement.  63 failures over 414
+rows, in four classes.  The note itself is untouched: this is the work order.
 
 Regenerate with `./scripts/hm-check --verify-sigs`; `diag/hm-sigs.json`'s `spelling`, `clear` and
-`regions` are what the translation reads.
+`regions` are what the translation reads.  The row counts below are the classes as first read; each
+section's rows are the ones still failing at the count above.
 
 
-== A. The α of the CATEGORY OF ALGEBRAS drawn as an α of the note's own region (30 failures, 10 rows)
+== A. RESOLVED — the α of the CATEGORY OF ALGEBRAS drawn as an α of the note's own region
 
-`alphaComp X : (liftRelator F).obj X ⟶ X` is an arrow of `FAlg F`, not of the note's region, and
-`liftRelator F` is the lifted relator on that category, not the `F` the panel draws.  Its naturality
-`alpha_natural_alg` quantifies `(f : X ⟶ Y)` over HOMOMORPHISMS of `FAlg F`, where the panel's
-`h : A⟶B` is an arrow of the base category.  Three failures per row, one per claim.
-
-rows: 11.4a.1  11.4a.2  11.4a.3  11.4a.4  11.4.2a.1  11.4.2a.2
-      11.6.1a.1  11.6.1a.2  11.6.2a.1  11.6.2a.2
-sig:  "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b
-                 !lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"
-
-  Freyd.Alg.alphaComp is an arrow of FAlg(𝒜, F), which is no region the note draws in — its type is
-  Hom(FAlg(𝒜, F), obj(FAlg(𝒜, F), FAlg(𝒜, F), liftRelator(𝒜, F), X), X)
-
-  Freyd.Alg.alphaComp's type is Hom(FAlg(𝒜, F), obj(FAlg(𝒜, F), FAlg(𝒜, F), liftRelator(𝒜, F), X), X)
-  — Freyd.Alg.liftRelator has no spelling in hm-sigs.json; the row says F(x)⟶x
-
-  nat-lean Freyd.Alg.alpha_natural_alg slides an arrow of FAlg(𝒜, F), which is no region the note
-  draws in — the panel's h : A⟶B is an arrow of the region
+The §11.4/§11.6 rewrite deleted `alphaComp`, `liftRelator` and `alpha_natural_alg`; the panels now
+cite an arrow of the note's own region.
 
 
 == B. `nat` claimed of an arrow at ONE object (51 failures)
@@ -58,7 +43,6 @@ signature, and a theorem quantifying over it.
   13.6.2b.2, 13.6.4a.2
       sigs nil : 𝟏⟶[[Int]]!nat=…Van.nil_natural@a93144d4!lean=…CL.wrapR@41c2dca6             (strict)
   13.3.4e.2                        sigs plus : A×Int⟶Int                                     (no)
-  16.4b.4                          sigs α : F(Decimal)⟶Decimal                               (no)
   13.5.4a.1
       sigs paths : Nat[m][n]⟶Nat[np][m]!nat=…Vec.paths_natural@54a4beda!lean=…Vec.paths      (strict)
   13.6.4a.1                        sigs prefix : [Int]⟶[Int]                                 (lax)
@@ -95,8 +79,12 @@ The verdict is drawn on the row's own arrow; with none named there is nothing to
 
   11.5.1b.1, 11.5.1b.2
       sigs α : "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627"
-  13.2b.1, 13.2b.2
-      sigs φ : "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"
+
+13.2b.1 and 13.2b.2 were the same failure and are fixed: the display DEFINES the lax square, so `φ`
+is a binder of the definition it cites and not a declaration of its own.  A marker may now name the
+binder — `lean:AOP.A5_1.LaxNatural@ba661fee#φ` — and the row's type is read off that binder, its
+`nat-lean` held to that same declaration's body.  §11.5's `α` is a different case: it cites a
+theorem, and what it lacks is the arrow the theorem is about.
 
 
 == E. The row cites something that is not an arrow (1 failure)

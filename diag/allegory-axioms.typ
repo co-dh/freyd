@@ -3631,14 +3631,14 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ((2.5, [`G`]), (3.12, [`A`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "G(R)φ", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "G(R)φ", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee!lean=lean:AOP.A5_1.LaxNatural@ba661fee#φ"), frame: 4, top: 3), s: 100%)
 #let lax-hm-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none)),
   ((2.2, [`φ`], black, 2.5, 2.5, "lax"), (1.1, [`R`])),
   ((2.5, [`G`]), (3.12, [`A`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"), frame: 4), s: 100%)
+  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee!lean=lean:AOP.A5_1.LaxNatural@ba661fee#φ"), frame: 4), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
