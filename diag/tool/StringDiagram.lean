@@ -288,15 +288,25 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
       naturality statement to look for: {← legsW.mapM (Meta.ppExpr ·.expr)}"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
-  if let some n ← findProof strict ``Freyd.Alg.StrictNatural {} FUEL then
-    return { mark := some "strict", lean := n }
-  if let some n ← findSquare strict must FUEL then return { mark := some "strict", lean := n }
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
-  if let some n ← findProof lax ``Freyd.Alg.LaxNatural {} FUEL then
-    return { mark := some "lax", lean := n }
-  if let some n ← findSquare lax must FUEL then return { mark := some "lax", lean := n }
-  let nolax ← Meta.mkAppM ``Not #[← Meta.mkAppM ``Freyd.Alg.LaxNatural #[G, F, φ]]
-  if let some n ← findProof nolax ``Not must FUEL then return { mark := none, lean := n }
+  -- The refutation is of the very statement just searched for, `¬ LaxNatural F G φ`, and not of
+  -- one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is not
+  -- even well typed unless the bead happens to end where it starts.
+  let nolax ← Meta.mkAppM ``Not #[lax]
+  -- One bead scans the environment three times over, so the SEARCH is not under the panel's own
+  -- heartbeat budget; what bounds it is `CANDIDATE_HEARTBEATS` on each unification it tries.
+  let found : Option Verdict ←
+    Core.withCurrHeartbeats <| withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
+      if let some n ← findProof strict ``Freyd.Alg.StrictNatural {} FUEL then
+        return some { mark := some "strict", lean := n }
+      if let some n ← findSquare strict must FUEL then
+        return some { mark := some "strict", lean := n }
+      if let some n ← findProof lax ``Freyd.Alg.LaxNatural {} FUEL then
+        return some { mark := some "lax", lean := n }
+      if let some n ← findSquare lax must FUEL then return some { mark := some "lax", lean := n }
+      if let some n ← findProof nolax ``Not must FUEL then return some { mark := none, lean := n }
+      return none
+  if let some vd := found then return vd
   throwError "the bead `{label}` is a family in the object but no declaration says whether it is \
     natural — looked for `{← Meta.ppExpr strict}`, `{← Meta.ppExpr lax}` and \
     `{← Meta.ppExpr nolax}`"

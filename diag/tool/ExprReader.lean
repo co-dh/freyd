@@ -460,6 +460,11 @@ def mustOf (want : Expr) : MetaM NameSet := do
   return (consts φ).toList.foldl
     (fun acc n => if env.isProjectionFn n then acc else acc.insert n) {}
 
+/-- One candidate's share of the search. Unifying a square against a concrete region unfolds every
+    relator on both sides, which costs more than a whole default budget, so this is twice the
+    default rather than a fraction of it; the head and `must` filters are what keep the scan short. -/
+def CANDIDATE_HEARTBEATS : Nat := 400000
+
 mutual
 
 /-- Is `want` proved by some declaration of the environment?  Candidates are the constants whose
@@ -476,7 +481,11 @@ partial def findProof (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) 
     let has := consts ci.type
     if must.any (fun m => !has.contains m) then continue
     let s ← Meta.saveState
-    let ok : Bool ← try
+    -- Each candidate gets its OWN heartbeat budget.  One unification that diverges — a relator
+    -- metavariable applied to an object, which has no most general solution — would otherwise
+    -- spend the whole panel's, and the panel then fails on a declaration it was never going to
+    -- use, naming the wrong thing.
+    let attempt : MetaM Bool := do
       -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
       -- parameters are rigid, so a polymorphic closure theorem could never match a concrete
       -- region and the search would silently pass it over.
@@ -484,7 +493,14 @@ partial def findProof (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) 
       let (args, bis, body) ← Meta.forallMetaTelescope
         (ci.type.instantiateLevelParams ci.levelParams lvls)
       if ← Meta.isDefEq body want then discharge args bis fuel else pure false
-    catch _ => pure false
+    -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
+    -- `try`/`catch` in `MetaM` rethrows those, so the budget above would end the panel instead of
+    -- ending the candidate.
+    let ok : Bool ← tryCatchRuntimeEx
+      (Core.withCurrHeartbeats
+        (withTheReader Core.Context
+          (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS }) attempt))
+      (fun _ => pure false)
     if ok then hit := some n else s.restore
   return hit
 
