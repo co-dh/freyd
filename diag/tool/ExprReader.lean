@@ -465,51 +465,91 @@ def mustOf (want : Expr) : MetaM NameSet := do
     default rather than a fraction of it; the head and `must` filters are what keep the scan short. -/
 def CANDIDATE_HEARTBEATS : Nat := 400000
 
+/-- The SPELLING BRIDGES, read by their ATTRIBUTE and never by a lemma name: `@[diag_bridge]` is
+    what the repo declares an equation between two spellings of one arrow with, and the tool asks
+    the environment which those are.  A closure theorem written in the abstract `prodMap` and a
+    van square written in the book's `R×S` are then one statement to the search — and the proof it
+    builds is carried back across the same bridge, so nothing is believed that is not proved. -/
+def bridges : MetaM Meta.Simp.Context := do
+  let some ext ← Meta.getSimpExtension? `diag_bridge
+    | throwError "no `diag_bridge` simp set — the spelling bridges are declared by that attribute \
+        (`register_simp_attr diag_bridge`, AOP/A5_1.lean); without it a bead's statement and a \
+        candidate's cannot be compared"
+  Meta.Simp.mkContext (simpTheorems := #[← ext.getTheorems])
+    (congrTheorems := ← Meta.getSimpCongrTheorems)
+
+/-- One proposition normalised through the bridges: the rewritten form, and the proof that it is
+    the one asked for. -/
+def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.fst <$> Meta.simp e br
+
+/-- A candidate becomes a VERDICT only as a proof that CHECKS.  `pf` proves the candidate's own
+    conclusion `rc.expr`; `rw` is the wanted proposition's own trip across the bridges, so
+    `mkEqMPR` lands the term back on `want` itself, and `check` re-elaborates it from nothing. -/
+def checked (want : Expr) (rw rc : Meta.Simp.Result) (n : Name) (pf : Expr) :
+    MetaM (Option (Name × Expr)) := do
+  let proof ← instantiateMVars (← rw.mkEqMPR (← rc.mkEqMP pf))
+  if proof.hasExprMVar then return none
+  Meta.check proof
+  unless ← Meta.isDefEq (← Meta.inferType proof) want do return none
+  return some (n, proof)
+
+/-- `a = b` read the other way round.  Not `Eq.symm` applied to a proof — the STATEMENT, so the
+    search can look for the mirrored square; anything but an equation has no mirror. -/
+def flipEq? (e : Expr) : MetaM (Option Expr) := do
+  let some (_, l, r) := e.eq? | return none
+  return some (← Meta.mkEq r l)
+
 mutual
 
-/-- Is `want` proved by some declaration of the environment?  Candidates are the constants whose
-    conclusion is headed by `head` and whose statement mentions everything the family does; each
-    one's type is opened at FRESH UNIVERSES with metavariables and unified with `want`, and every
-    argument the unification left open must then be answered in its own right. -/
-partial def findProof (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) :
-    MetaM (Option Name) := do
+/-- Is `want` PROVED by some declaration of the environment — and what is the proof?  Candidates
+    are the constants whose conclusion is headed by `head` and whose statement mentions everything
+    the family does; each one's type is opened at FRESH UNIVERSES with metavariables, both its
+    conclusion and `want` are normalised through the spelling bridges, and the two are unified.
+    Every argument the unification left open must then be answered in its own right, and what comes
+    back is the candidate applied to those arguments — a term, checked before it is believed. -/
+partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) :
+    MetaM (Option (Name × Expr)) := do
   let env ← getEnv
-  let mut hit : Option Name := none
+  let rw ← bridge br want
+  let mut hit : Option (Name × Expr) := none
   for (n, ci) in env.constants do
     if hit.isSome then break
     if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
     let has := consts ci.type
     if must.any (fun m => !has.contains m) then continue
     let s ← Meta.saveState
-    -- Each candidate gets its OWN heartbeat budget.  One unification that diverges — a relator
-    -- metavariable applied to an object, which has no most general solution — would otherwise
-    -- spend the whole panel's, and the panel then fails on a declaration it was never going to
-    -- use, naming the wrong thing.
-    let attempt : MetaM Bool := do
+    let attempt : MetaM (Option (Name × Expr)) := do
       -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
       -- parameters are rigid, so a polymorphic closure theorem could never match a concrete
       -- region and the search would silently pass it over.
       let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
       let (args, bis, body) ← Meta.forallMetaTelescope
         (ci.type.instantiateLevelParams ci.levelParams lvls)
-      if ← Meta.isDefEq body want then discharge args bis fuel else pure false
+      let rc ← bridge br body
+      -- THE MATCH IS THE ONE BOUNDED STEP, and it is bounded FROM ITS OWN START.  Unifying a
+      -- relator metavariable applied to an object has no most general solution and can diverge, so
+      -- it gets a budget of its own; what follows — discharging the factors' squares, checking the
+      -- assembled term — is more searching, and a budget there is a dot lost to a timeout.
+      unless ← Core.withCurrHeartbeats (withTheReader Core.Context
+        (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
+        (Meta.isDefEq rc.expr rw.expr)) do return none
+      unless ← discharge br args bis fuel do return none
+      checked want rw rc n (mkAppN (.const n lvls) args)
     -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
     -- `try`/`catch` in `MetaM` rethrows those, so the budget above would end the panel instead of
-    -- ending the candidate.
-    let ok : Bool ← tryCatchRuntimeEx
-      (Core.withCurrHeartbeats
-        (withTheReader Core.Context
-          (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS }) attempt))
-      (fun _ => pure false)
-    if ok then hit := some n else s.restore
+    -- ending the candidate.  It also ends a candidate whose assembled term fails `Meta.check`.
+    let ok : Option (Name × Expr) ← tryCatchRuntimeEx attempt (fun _ => pure none)
+    if ok.isSome then hit := ok else s.restore
   return hit
 
-/-- Every argument the match left open has to be ANSWERED, or the candidate proves nothing.  A
-    closure theorem — `strictNatural_prod`, `strictNatural_recip`, `laxNatural_inside` — states a
-    compound family's square out of its factors' squares, so this is what makes a compound bead's
-    dot exactly its factors' dots and never more.  An instance argument is synthesised; a
-    non-`Prop` argument left open means the match itself pinned nothing down, and is a refusal. -/
-partial def discharge (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat) : MetaM Bool := do
+/-- Every argument the match left open has to be ANSWERED — and answered with a term, which is
+    what assigns the metavariable and so what makes the assembled application a proof.  A closure
+    theorem — `strictNatural_prod`, `strictNatural_recip`, `laxNatural_inside` — states a compound
+    family's square out of its factors' squares, so this is what makes a compound bead's dot
+    exactly its factors' dots and never more.  An instance argument is synthesised; a non-`Prop`
+    argument left open means the match itself pinned nothing down, and is a refusal. -/
+partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat) :
+    MetaM Bool := do
   for i in [0 : args.size] do
     let .mvar id := args[i]! | continue
     if ← id.isAssigned then continue
@@ -520,32 +560,45 @@ partial def discharge (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat) 
       continue
     unless ← Meta.isProp t do return false
     if fuel == 0 then return false
-    let some _ ← findAnyProof t (fuel - 1) | return false
+    let some (_, pf) ← findAnyProof br t (fuel - 1) | return false
+    unless ← Meta.isDefEq args[i]! pf do return false
   return true
 
 /-- The search for ONE naturality proposition, under both the head it is written with and the head
     of the SQUARE it unfolds to.  `StrictNatural`/`LaxNatural` are exposed definitions, so
     unfolding one and opening its binders gives the very equation (or inclusion) a hand-written
     declaration states, and its own head is what to search under. -/
-partial def findAnyProof (want : Expr) (fuel : Nat) : MetaM (Option Name) := do
+partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
+    MetaM (Option (Name × Expr)) := do
   let some h := want.getAppFn.constName? | return none
   -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
   -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
   -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
   -- so the filter buys nothing there; the SQUARE search, headed by `=` or `⊑`, keeps it.
-  if let some n ← findProof want h {} fuel then return some n
+  if let some r ← findProof br want h {} fuel then return some r
   -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
   -- like `False`, which every refutation in the environment matches with its own hypotheses left
   -- to be found — a search that answers the question it was not asked.
   unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural do return none
-  findSquare want (← mustOf want) fuel
+  findSquare br want (← mustOf want) fuel
 
-/-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class. -/
-partial def findSquare (prop : Expr) (must : NameSet) (fuel : Nat) : MetaM (Option Name) := do
+/-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
+    The binders are opened as FREE VARIABLES, not metavariables: the square is then the very
+    equation a hand-written declaration states, and the proof found for it closes back over `a`,
+    `b`, `R` — `mkLambdaFVars` — into a proof of the class the bead asked about.  A square stated
+    the other way round is the SAME square: `Eq.symm` is a proof term like any other, so the
+    mirrored form is searched for too rather than the direction a declaration happens to be
+    written in deciding whether a bead has a dot. -/
+partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (fuel : Nat) :
+    MetaM (Option (Name × Expr)) := do
   let some body ← Meta.unfoldDefinition? prop | return none
-  let (_, _, sq) ← Meta.forallMetaTelescope body
-  let .const h _ := sq.getAppFn | return none
-  findProof sq h must fuel
+  Meta.forallTelescope body fun xs sq => do
+    let .const h _ := sq.getAppFn | return none
+    if let some (n, pf) ← findProof br sq h must fuel then
+      return some (n, ← Meta.mkLambdaFVars xs pf)
+    let some sqm ← flipEq? sq | return none
+    let some (n, pf) ← findProof br sqm h must fuel | return none
+    return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
 
 end
 

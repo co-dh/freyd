@@ -405,7 +405,7 @@ public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
 
 /-- On the product just chosen, the abstract `R×S` of (5.2) IS the pointwise `rprodMap` — the
     projections being graphs, both legs of `pair` collapse to a component lookup. -/
-public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+@[diag_bridge ←] public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     prodMap (relProd a b) (relProd a' b') R S = rprodMap R S := by
   apply hom_ext
   intro p q

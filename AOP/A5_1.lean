@@ -29,6 +29,18 @@ public import Lean
 
 universe v₁ v₂ v₃ u₁ u₂ u₃ u
 
+public meta section
+open Lean in
+/-- A SPELLING BRIDGE: an equation between two spellings of ONE arrow, which a picture must not
+    tell apart.  `diag/tool/StringDiagram.lean` normalises a bead's wanted naturality statement and
+    a candidate declaration's own through this set before unifying them, so a square stated in the
+    book's `R×S` and a closure theorem stated in the abstract `prodMap` are one statement to the
+    search — and the proof it then builds is `Simp.Result.mkEqMP`'d across the bridge and CHECKED,
+    so the dot rests on a term, not on a name match.  Tag only an equation that is a change of
+    spelling: anything a reader would call a different arrow belongs in a theorem, not here. -/
+register_simp_attr diag_bridge
+end
+
 namespace Freyd.Alg
 
 /-- A RELATOR (B&dM §5.1 p. 111): a monotonic functor between allegories. -/

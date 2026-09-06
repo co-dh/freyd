@@ -107,9 +107,11 @@
 /// move the name off the dot: centred on one it falls inside the fork of a merge.
 /// `bg` is the colour BEHIND the dot and makes it hollow at the same radius — a naturality that
 /// holds only laxly, which is a weaker claim and so must not draw the same mark as a strict one.
-#let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none) = {
-  d.circle(p, radius: HMR, fill: if bg == none { col } else { bg },
-           stroke: if bg == none { none } else { col + lw })
+/// `dot: false` drops the mark entirely and leaves the name beside the wires that meet there: the
+/// book's SPIDER (IntroString §2.2.4), for a family no declaration says anything about.
+#let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none, dot: true) = {
+  if dot { d.circle(p, radius: HMR, fill: if bg == none { col } else { bg },
+           stroke: if bg == none { none } else { col + lw }) }
   if label != none {
     d.content((p.at(0) + dx, p.at(1) + dy), text(col)[#label], anchor: anchor)
   }

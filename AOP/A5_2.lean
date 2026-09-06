@@ -497,8 +497,11 @@ variable [HasRelProd 𝒜]
   map_comp _ _ := (prodMap_comp _ _ _ _ _ _ _).symm
   map_mono h := prodMap_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
 
-/-- `F×G` IS the pairing followed by the product bifunctor, on the nose. -/
-public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+/-- `F×G` IS the pairing followed by the product bifunctor, on the nose.  A SPELLING BRIDGE: a
+    picture packs the two arguments (`⟨F,G⟩` then the bifunctor) where the library writes one
+    product relator, and the `←` orientation rewrites the picture's spelling into the library's,
+    which is the one a closure theorem states its conclusion in. -/
+@[diag_bridge ←] public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
     Relator.prod F G = Relator.comp (Relator.pair F G) timesRel := rfl
 
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product

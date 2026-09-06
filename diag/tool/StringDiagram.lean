@@ -199,17 +199,22 @@ def emit (p : Panel) (declName : String) (frame topRow scale : Option Nat) : Str
     let dot : Option Float :=
       if xsr.isEmpty || r.nat.isNone then none
       else some (roundTo 4 ((minA xsr 1e9 + maxA xsr (-1e9)) / 2.0))
-    let lax := if r.nat == some "lax" then ", \"lax\"" else ""
+    -- The 6th element is the MARK: `"lax"` a hollow dot, `"spider"` no dot at all.
+    let mark := match r.nat with
+      | some "lax" => ", \"lax\"" | some "spider" => ", \"spider\"" | _ => ""
     beads := beads.push <| match reach, dot with
       | none, _ => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
       | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
       | some rc, some d =>
         "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
-          ++ lax ++ ")"
+          ++ mark ++ ")"
     objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
-    if let some nl := r.natLean then
+    -- Every FAMILY the tool looked at gets a row, the spider included: a reader must be able to
+    -- see that the search ran and came back empty, which an absent row cannot say.
+    if r.nat.isSome || r.natLean.isSome then
       nats := nats.push
-        ("(" ++ str r.label ++ ", " ++ str (r.nat.getD "not-lax") ++ ", " ++ str nl.toString ++ ")")
+        ("(" ++ str r.label ++ ", " ++ str (r.nat.getD "not-lax") ++ ", "
+          ++ str ((r.natLean.map Name.toString).getD "") ++ ")")
   let lanecode : Lane → String := fun l =>
     let birth := if l.born < 0 then "\"top\"" else num ys[l.born.toNat]!
     let death := if l.dies >= (n : Int) then "\"bot\"" else num ys[l.dies.toNat]!
@@ -264,16 +269,20 @@ def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : Opt
     because the search is over the whole environment at every step. -/
 def FUEL : Nat := 3
 
-/-- What the environment says about a bead: the mark it draws — `"strict"`, `"lax"`, or none where
-    the family is refuted and the bead rides the object wire — and the declaration that says so. -/
+/-- What the environment says about a bead: the mark it draws — `"strict"`, `"lax"`, `"spider"`
+    where nothing is proved either way, or none where the family is REFUTED and the bead rides the
+    object wire — and the declaration that says so, which a spider has none of. -/
 structure Verdict where
   mark : Option String
-  lean : Name
+  lean : Option Name
   deriving Inhabited
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
-    a hollow one, a refuted `LaxNatural` the object wire; nothing found is an error naming the
-    three statements it looked for, because no declaration means no dot. -/
+    a hollow one, a refuted `LaxNatural` the object wire — each of them a proof term the search
+    ASSEMBLED and `Meta.check`ed, never a name whose statement merely unified.  Where none of the
+    three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
+    looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
+    spider"). -/
 def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label : String) :
     MetaM Verdict := do
   let φ ← familyOf regionTy v core
@@ -293,23 +302,28 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   -- one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is not
   -- even well typed unless the bead happens to end where it starts.
   let nolax ← Meta.mkAppM ``Not #[lax]
-  -- One bead scans the environment three times over, so the SEARCH is not under the panel's own
-  -- heartbeat budget; what bounds it is `CANDIDATE_HEARTBEATS` on each unification it tries.
-  let found : Option Verdict ←
-    Core.withCurrHeartbeats <| withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
-      if let some n ← findProof strict ``Freyd.Alg.StrictNatural {} FUEL then
+  -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
+  -- and not from `verdict`.
+  let br ← bridges
+  let found : Option Verdict ← id do
+      if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
         return some { mark := some "strict", lean := n }
-      if let some n ← findSquare strict must FUEL then
+      if let some (n, _) ← findSquare br strict must FUEL then
         return some { mark := some "strict", lean := n }
-      if let some n ← findProof lax ``Freyd.Alg.LaxNatural {} FUEL then
+      if let some (n, _) ← findProof br lax ``Freyd.Alg.LaxNatural {} FUEL then
         return some { mark := some "lax", lean := n }
-      if let some n ← findSquare lax must FUEL then return some { mark := some "lax", lean := n }
-      if let some n ← findProof nolax ``Not must FUEL then return some { mark := none, lean := n }
+      if let some (n, _) ← findSquare br lax must FUEL then
+        return some { mark := some "lax", lean := n }
+      if let some (n, _) ← findProof br nolax ``Not must FUEL then
+        return some { mark := none, lean := n }
       return none
-  if let some vd := found then return vd
-  throwError "the bead `{label}` is a family in the object but no declaration says whether it is \
-    natural — looked for `{← Meta.ppExpr strict}`, `{← Meta.ppExpr lax}` and \
-    `{← Meta.ppExpr nolax}`"
+  if found.isNone then
+    if (← IO.getEnv "DIAG_WHY").isSome then
+      IO.eprintln s!"SPIDER {label}\n  {← Meta.ppExpr strict}\n  BRIDGED {← Meta.ppExpr (← bridge br strict).expr}"
+  -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
+  -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
+  -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
+  return found.getD { mark := some "spider", lean := none }
 
 /-- What one factor does to the stack: how many lanes run past it on the OUTSIDE, the lanes it
     eats, the lanes it makes, and the arrow itself. -/
@@ -377,7 +391,13 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name) (
 
 /-- One side of a statement, as a panel. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
-    MetaM Panel := do
+    MetaM Panel :=
+  -- A HEARTBEAT BUDGET BOUNDS A UNIFICATION, NOT A WALK.  One bead's search reads every declaration
+  -- in the environment and spends far more than any default allowance, and a budget only ever
+  -- measures from where it was set — so a panel under one dies on whatever step follows a search,
+  -- naming an `isDefEq` that is not the expensive one.  What bounds the work is
+  -- `CANDIDATE_HEARTBEATS` on each match the search tries, and `scripts/cap` on the process.
+  withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
   let (src, tgt) ← homEnds side
   let (ws0, o0) ← peelObj objVars cat regionTy src
   let mut lanes : Array Lane := #[]
@@ -389,7 +409,8 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   for f in factors side do
     let (_, fy) ← homEnds f
     let obj ← plain (← peelObj objVars cat regionTy fy).2
-    for r in ← rowsOf objVars regionTy cat #[] false f do
+    let specs ← rowsOf objVars regionTy cat #[] false f
+    for r in specs do
       let p := r.pass.size
       if p + r.arms.size > stack.size then
         throwError "the factor `{← plain r.core}` eats {r.arms.size} wires under {p}, and \
@@ -411,7 +432,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
         | none => pure none
         | some v => some <$> verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
       rows := rows.push
-        { label, arms, legs, obj, nat := vd.bind (·.mark), natLean := vd.map (·.lean) }
+        { label, arms, legs, obj, nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
