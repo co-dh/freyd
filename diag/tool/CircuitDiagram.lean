@@ -379,6 +379,16 @@ def wiresOf (o : Obj) : MetaM (Array Obj) :=
   | .ok ws => return ws
   | .error m => throwError m
 
+/-- A DEFINED arrow opened to its body, on the same test `leaf` uses: a name the labeller keeps is
+    never opened, and a body with no clause has no circuit inside it.  Every clause that matches on
+    a factor's HEAD must go through this, or a rule fires on `[f,g]` written out and misses the same
+    junction under the name a `def` gave it. -/
+def openDef (e : Expr) : MetaM Expr := do
+  if isNamed e then return e
+  match ← Meta.unfoldDefinition? e with
+  | some v => let b := v.headBeta; return (if hasClause b then b else e)
+  | none => return e
+
 mutual
 
 /-- §3 row 5: a composite is its factors' pictures, ports glued.  The factors are flattened, so a
@@ -394,8 +404,9 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
       -- Tape fusion, `F(R)[f,g] = [f,(𝟙×R)g]`: keyed on the two node SHAPES, and a theorem of the
       -- relator, so a functor handing over to a case draws the ONE tape the note draws instead of
       -- two in series.  Without it the picture is a correct but uglier equal.
-      let fused ← if i + 1 < fs.size then
-          match fs[i]!.getAppFnArgs, fs[i + 1]!.getAppFnArgs with
+      let fused ← if i + 1 < fs.size then do
+          let nxt ← openDef fs[i + 1]!
+          match fs[i]!.getAppFnArgs, nxt.getAppFnArgs with
           | (``Freyd.Functor.map, fa), (``Freyd.Alg.junc, ja) =>
             match fa.back?, lastTwo ja with
             | some r, some (u, v) => do
@@ -587,10 +598,16 @@ partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pi
 partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
   let (rs, rt) ← endsOf r
   let ps := if s.kind == .prod then s.parts else #[s]
+  -- The functor recurses on ONE slot — the LAST factor of the summand, the same convention that
+  -- names the pattern functor in `objOf` — so `R` goes there and bare wire on the rest.  Matching
+  -- EVERY factor whose object is `R`'s source draws `R×R` the moment the two agree, as they do at
+  -- `F(X)=𝟏+Int×X`.
+  let hit := (List.range ps.size).reverse.find? fun i => (ps[i]!).same rs
   let mut ls := #[]
   let mut outs := #[]
-  for p in ps do
-    if p.same rs then
+  for i in [0 : ps.size] do
+    let p := ps[i]!
+    if hit == some i then
       ls := ls.push (← lane (← draw r)); outs := outs.push rt
     else
       ls := ls.push (seqPic #[] #[] #[p]); outs := outs.push p
