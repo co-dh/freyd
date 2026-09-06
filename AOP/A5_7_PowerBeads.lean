@@ -1,8 +1,9 @@
 /-
   Bird & de Moor §5.7, settled in the set model: which of the POWER-ALLEGORY beads are natural.
 
-  `∋` is lax and no better; `∈ ≜ ∋°` is not even lax; `⋃` — lax abstractly
-  (`bigUnion_lax_natural`, AOP.A5_4) — is STRICT over `Rel(Set)`.
+  `∋` is lax and no better; `∈ ≜ ∋°` is not even lax; the singleton `𝟙%∋` is lax (and no more:
+  its strict square holds only for a map); `⋃` — lax abstractly (`bigUnion_lax_natural`,
+  AOP.A5_4) — is STRICT over `Rel(Set)`.
 
   Both refutations run on one witness: `boolTip = {(true,true)} : Bool ⟶ Bool`, which has no
   image at `false`, together with the full set `{true,false} : [Bool]`.  Composition is diagram
@@ -32,6 +33,27 @@ public theorem eps_laxNatural :
   fun R => powerRel_eps_lax R
 
 end EpsLax
+
+/-! ## `𝟙%∋` is lax natural, bundled -/
+
+section SingletonLax
+
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
+/-- **B&dM p.106**, bundled: the singleton `𝟙%∋` IS a lax natural transformation from the
+    identity relator to the power relator — `R ≫ 𝟙%∋ ⊑ 𝟙%∋ ≫ P R` for EVERY relation `R`, not
+    only for a map.  The inequality is `singletonMap_powerRel_lax` (`AOP.A8_1`), read at
+    `LaxNatural`'s definition.
+
+    What fails off the maps is the STRICT square `f ≫ 𝟙%∋ = 𝟙%∋ ≫ E f` of `singletonMap_natural`
+    (`AOP.A4_6`), whose right-hand side is the map `Λ R` onto the WHOLE `R`-image of a point; the
+    power relator is the Egli–Milner relation instead, which relates `{x}` to every non-empty
+    subset of that image, and each singleton `{y}` the left-hand side produces is one of them. -/
+public theorem singleton_laxNatural :
+    LaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.idRelator 𝒜) (fun _ => singletonMap) :=
+  fun R => singletonMap_powerRel_lax R
+
+end SingletonLax
 
 /-! ## The set model read pointwise, and the witness
 

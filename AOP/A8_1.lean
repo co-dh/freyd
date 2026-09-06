@@ -118,6 +118,31 @@ public theorem singletonMap_le_recip_eps :
   have h := recip_mono (singletonMap_recip_le_eps (a := a))
   rwa [Allegory.recip_recip] at h
 
+/-- **`τ` is LAX NATURAL from `𝟙` to `P`**: `S ≫ singletonMap ⊑ singletonMap ≫ powerRel S` for
+    EVERY relation `S`, not only for a map — the singleton of an `S`-image of `x` is an
+    Egli–Milner `S`-image of `{x}`.  Shunting across the map `τ` leaves the two halves of
+    `powerRel`, each of which `τ∋ = 𝟙` collapses.
+
+    The STRICT square is `singletonMap_natural` (`AOP.A4_6`) and it needs the map: with two
+    `S`-images the singleton `{y}` is a proper subset of `S`'s image of `x`, so `existsImage S`
+    — a map onto that whole image — misses it, while `powerRel S` relates `{x}` to every
+    NON-EMPTY subset of it and `{y}` is one. -/
+public theorem singletonMap_powerRel_lax (S : a ⟶ b) :
+    S ≫ singletonMap ⊑ singletonMap ≫ powerRel S := by
+  apply (map_shunt_left (Λ_is_map' (𝟙 a)) _ _).mp
+  refine le_inter ?_ ?_
+  · apply (le_leftDiv_iff _ _ _).mpr
+    calc (∋ a)° ≫ singletonMap° ≫ S ≫ singletonMap
+        = ((singletonMap ≫ ∋ a)°) ≫ S ≫ singletonMap := by
+          rw [Allegory.recip_comp]; simp only [Cat.assoc]
+      _ = S ≫ singletonMap := by rw [singletonMap_comp_eps, recip_id, Cat.id_comp]
+      _ ⊑ S ≫ (∋ b)° := comp_mono_left _ singletonMap_le_recip_eps
+  · apply (le_div_iff _ _ _).mpr
+    calc (singletonMap° ≫ S ≫ singletonMap) ≫ ∋ b
+        = singletonMap° ≫ S ≫ singletonMap ≫ ∋ b := by simp only [Cat.assoc]
+      _ = singletonMap° ≫ S := by rw [singletonMap_comp_eps, Cat.comp_id]
+      _ ⊑ ∋ a ≫ S := comp_mono_right singletonMap_recip_le_eps _
+
 /-- `T°·ΛT ⊑ ∋` mirrored: `T° ≫ Λ T ⊑ (∋ a)°` — the transpose of `T` cancels against `T°` down
     to a membership.  Shared by (8.3) thin-elimination-with-context and THEOREM 8.1. -/
 public theorem recip_comp_Λ_le_recip_eps (T : b ⟶ a) : T° ≫ Λ T ⊑ (∋ a)° := by
