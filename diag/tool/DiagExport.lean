@@ -1447,8 +1447,8 @@ def main (args : List String) : IO UInt32 := do
     -- `<decl>.lhs`/`<decl>.rhs` name a SIDE, and only the circuit route reads one; the suffix is
     -- split off here because a declaration named `…lhs` is not one of them.
     let (declArg, side) :=
-      if circuitMode && arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
-      else if circuitMode && arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs")
+      if circuitMode && arg.endsWith ".lhs" then ((arg.dropEnd 4).toString, some "lhs")
+      else if circuitMode && arg.endsWith ".rhs" then ((arg.dropEnd 4).toString, some "rhs")
       else (arg, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName

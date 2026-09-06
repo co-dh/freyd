@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""svg-diff OLD.svg NEW.svg — the geometry two Typst SVGs do NOT share.
+
+Compares DRAWINGS, not files: every path, rect, circle and glyph is reduced to its own coordinates
+under the composed `transform` chain, the two pages are aligned on the shared bounding box, and
+what is reported is the shapes present in one page and absent from the other beyond a tolerance.
+Exit 0 iff the sets agree, so it is a gate as well as a report.
+
+Geometry only — no XML text, no attribute strings.  A glyph is compared as its BOX, since Typst
+emits every letter as a `<use>` of an outline whose identity is a hash nobody can read back.
+
+    ./scripts/svg-diff a.svg b.svg [--tol 0.01] [--unit cm]
+"""
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+NS = "{http://www.w3.org/2000/svg}"
+# Typst writes its SVG in points unless told otherwise; the note's tolerances are in cm.
+PT_PER_CM = 72 / 2.54
+
+
+def mul(a, b):
+    """Compose two affine matrices given as (a, b, c, d, e, f)."""
+    return (a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+            a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+            a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5])
+
+
+def apply(m, x, y):
+    return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+
+
+NUM = r"[-+0-9.eE]+"
+
+
+def parse_transform(s):
+    m = (1, 0, 0, 1, 0, 0)
+    for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", s or ""):
+        v = [float(t) for t in re.split(r"[\s,]+", args.strip()) if t]
+        if name == "translate":
+            m = mul(m, (1, 0, 0, 1, v[0], v[1] if len(v) > 1 else 0))
+        elif name == "scale":
+            m = mul(m, (v[0], 0, 0, v[1] if len(v) > 1 else v[0], 0, 0))
+        elif name == "matrix":
+            m = mul(m, tuple(v))
+    return m
+
+
+def path_points(d):
+    """Every coordinate a path command names, in the path's own frame.  Absolute and relative
+    commands alike, so a generator that emits `l` where another emits `L` still compares."""
+    out, cur, start = [], (0.0, 0.0), (0.0, 0.0)
+    for cmd, argstr in re.findall(r"([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)", d or ""):
+        v = [float(t) for t in re.findall(NUM, argstr)]
+        rel = cmd.islower()
+        c = cmd.upper()
+        i = 0
+        while True:
+            if c == "Z":
+                cur = start
+                break
+            n = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4, "T": 2, "A": 7}[c]
+            if i + n > len(v):
+                break
+            a = v[i:i + n]
+            if c == "H":
+                p = (cur[0] + a[0], cur[1]) if rel else (a[0], cur[1])
+            elif c == "V":
+                p = (cur[0], cur[1] + a[0]) if rel else (cur[0], a[0])
+            elif c == "A":
+                p = (cur[0] + a[5], cur[1] + a[6]) if rel else (a[5], a[6])
+            else:
+                x, y = a[n - 2], a[n - 1]
+                p = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            out.append(p)
+            if c == "M":
+                start = p
+            cur = p
+            i += n
+    return out
+
+
+def shapes(path):
+    """Every drawn thing as `(kind, coordinate…)` in page coordinates."""
+    root = ET.parse(path).getroot()
+    out = []
+
+    def walk(el, m):
+        m = mul(m, parse_transform(el.get("transform")))
+        tag = el.tag
+        if tag == NS + "path":
+            pts = [apply(m, x, y) for x, y in path_points(el.get("d"))]
+            if pts:
+                out.append(("path", el.get("fill", "none"), tuple(pts)))
+        elif tag == NS + "rect":
+            x, y = float(el.get("x", 0)), float(el.get("y", 0))
+            w, h = float(el.get("width", 0)), float(el.get("height", 0))
+            out.append(("rect", "", (apply(m, x, y), apply(m, x + w, y + h))))
+        elif tag == NS + "circle":
+            cx, cy = float(el.get("cx", 0)), float(el.get("cy", 0))
+            out.append(("circle", el.get("r", ""), (apply(m, cx, cy),)))
+        elif tag == NS + "use":
+            # A glyph: its own outline is a hash, so it is compared as the point it is placed at.
+            out.append(("glyph", "", (apply(m, float(el.get("x", 0)), float(el.get("y", 0))),)))
+        for kid in el:
+            walk(kid, m)
+
+    walk(root, (1, 0, 0, 1, 0, 0))
+    return out
+
+
+def bbox(ss):
+    pts = [p for s in ss for p in s[2]]
+    return (min(p[0] for p in pts), min(p[1] for p in pts)) if pts else (0.0, 0.0)
+
+
+def key(s, off, tol):
+    """A shape's identity: its kind and its points, shifted to the page's own origin and rounded to
+    the tolerance, so two drawings that differ only by where the page put them still agree."""
+    return (s[0], s[1],
+            tuple((round((p[0] - off[0]) / tol), round((p[1] - off[1]) / tol)) for p in s[2]))
+
+
+def main(argv):
+    args = [a for a in argv if not a.startswith("--")]
+    if len(args) != 2:
+        print(__doc__)
+        return 2
+    tol, unit = 0.01, "cm"
+    for a in argv:
+        if a.startswith("--tol"):
+            tol = float(a.split("=", 1)[1])
+        if a.startswith("--unit"):
+            unit = a.split("=", 1)[1]
+    t = tol * (PT_PER_CM if unit == "cm" else 1)
+    old, new = shapes(args[0]), shapes(args[1])
+    ko, kn = bbox(old), bbox(new)
+    from collections import Counter
+    co = Counter(key(s, ko, t) for s in old)
+    cn = Counter(key(s, kn, t) for s in new)
+    only_old, only_new = co - cn, cn - co
+    for label, c in (("only in " + args[0], only_old), ("only in " + args[1], only_new)):
+        for k, n in sorted(c.items(), key=lambda kv: str(kv[0])):
+            pts = ", ".join(f"({x * tol:.2f},{y * tol:.2f})" for x, y in k[2][:4])
+            more = "…" if len(k[2]) > 4 else ""
+            print(f"{label}: {k[0]} ×{n} at {pts}{more}")
+    total = sum(only_old.values()) + sum(only_new.values())
+    print(f"{len(old)} shapes vs {len(new)}; {total} unmatched at {tol}{unit}")
+    return 0 if total == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
