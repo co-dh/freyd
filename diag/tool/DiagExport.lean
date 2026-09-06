@@ -54,6 +54,7 @@ import Lean
 import diag.FO
 import diag.Tape
 import diag.S2_124
+import diag.tool.StringDiagram
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
@@ -1406,21 +1407,37 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --string] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
-   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps"
+   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
+   --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ;\n\
+     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation\n\
+   --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
+     the per-panel display scale the note picks (`s: N%`) — all three --string only"
+
+/-- One `--frame N` style option, and the arguments with it removed. -/
+def takeOpt (args : List String) (flag : String) : Option Nat × List String :=
+  match args with
+  | a :: b :: rest =>
+    if a == flag then (b.toNat?, rest)
+    else let (v, r) := takeOpt (b :: rest) flag; (v, a :: r)
+  | rest => (none, rest)
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
-  let args := args.filter (fun a => a != "--proof" && a != "--sig")
+  let stringMode := args.contains "--string"
+  let (frame, args) := takeOpt args "--frame"
+  let (topRow, args) := takeOpt args "--top"
+  let (scale, args) := takeOpt args "--scale"
+  let args := args.filter (fun a => a != "--proof" && a != "--sig" && a != "--string")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
-  unless sigMode do IO.FS.createDirAll "diag/generated"
+  unless sigMode do IO.FS.createDirAll (if stringMode then "diag/generated/string" else "diag/generated")
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
   -- Generalized field notation prints a class projection through its instance argument, so `Δ_a`
@@ -1433,23 +1450,31 @@ def main (args : List String) : IO UInt32 := do
     { fileName := "<diag-export>", fileMap := default,
       options := opts,
       -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
-      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat [],
+      -- `Freyd.Alg` too: the banana `⦇R⦈` and the allegory notations are declared inside it, and a
+      -- notation the printer cannot reach comes out as the raw application it abbreviates.
+      openDecls := [.simple `Freyd [], .simple `Freyd.Alg [], .simple `Freyd.Diag.SymMonCat [],
         .simple `Freyd.Diag.Word []] }
   let mut status : UInt32 := 0
   for arg in args do
+    -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own.
+    let (base, side) :=
+      if arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
+      else if arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs") else (arg, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
+        else if stringMode then StrDiag.drawString base.toName side frame topRow scale
         else if proofMode then drawProof arg.toName else draw arg.toName)
-    match ← (do pure (some (← Prod.fst <$> run.toIO ctx { env }))) <|> pure none with
-    | none =>
-      IO.eprintln (if sigMode then
-          s!"diag-export --sig: no such declaration in `Freyd`, `diag.*` or `AOP.*`: {arg}"
-        else s!"diag-export: cannot draw `{arg}` — no such declaration in `Freyd` or `diag.*`, \
-          or (with --proof) no calc chain in its proof term")
+    -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
+    -- and a bead whose naturality nobody proved has a message naming the three statements it
+    -- looked for.
+    match ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO with
+    | .error ex =>
+      IO.eprintln s!"diag-export: {arg}: {ex}"
       status := 1
-    | some text =>
+    | .ok text =>
       if sigMode then IO.println text else
-      let path := System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+      let path := if stringMode then System.FilePath.mk s!"diag/generated/string/{arg}.typ"
+        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString
   return status
