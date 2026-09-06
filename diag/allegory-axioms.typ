@@ -1987,48 +1987,43 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 == Initial algebra
 
 // §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
-// the squares' own size.  The bead is `α` BARE: an algebra is a transformation `F⇒Id`, and the
-// component's index is the object wire it stands on, so a subscript would say it twice.  The FOLD
-// takes its carrier off that same wire — `⦇α⦈` over an `A` wire IS `⦇αᴀ⦈` — and `scripts/diagram`
-// strips an index written anyway, `scripts/scanline` refusing one a hand-laid panel keeps.
-// `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
-// `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
-// §11.4.2a draws the same `α` the same way, its side condition being this very square at `h := S`.
+// the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
+// (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
+// (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
 #let ia-hom-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`h`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`f`], black, 2.5), (2.2, [`h`])),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
-  obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`A`]), (2.2, [`B`])),
+  cert: (expect: "f h", src: "F(A)", tgt: "B", sigs: ("f": "F(A)⟶A", "g": "F(B)⟶B", "h": "A⟶B"), frame: 4, top: 3), s: 100%)
 #let ia-hom-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`h`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`h`]), (1.1, [`g`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
-  obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`B`]), (1.1, [`B`])),
+  cert: (expect: "F(h)g", src: "F(A)", tgt: "B", sigs: ("f": "F(A)⟶A", "g": "F(B)⟶B", "h": "A⟶B"), frame: 4, top: 2), s: 100%)
 #let ia-cata-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇α⦈`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`α`], black, 2.5), (2.2, [`⦇f⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α⦇f⦈", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "⦇f⦈": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let ia-cata-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`⦇α⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`⦇f⦈`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(⦇f⦈)f", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "⦇f⦈": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 2), s: 100%)
 
 #disp[#definition[
-An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
-An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
-`α`#sub[`A`]` h=F(h)α`#sub[`B`].
-The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
-`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`]
+An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
+An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` with `f h=F(h)g`.
+The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
+every F-algebra `f`
 #src[].
 // lean:AOP.A5_5.InitialAlgebra@a45a8436
 
@@ -2039,13 +2034,13 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
       let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
       ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
       ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN2)[`α`#sub[`A`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+      lab(0, 1.9, GIVEN2)[`f`]; lab(0, -1.9, GIVEN1)[`g`]
       lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
       node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
       node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
     }),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
-    [`αh=F(h)α`],
+    [`f h=F(h)g`],
   )
   #pair(
     cetz.canvas(length: 0.8cm, {
@@ -2053,13 +2048,13 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
       ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
       ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
       ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
-      lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
+      lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`f`]
+      lab(-3.95, 0, INDUCED)[`F(⦇f⦈)`]; lab(3.45, 0, INDUCED)[`⦇f⦈`]
       node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
       node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
     }),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
-    [`α⦇αᴀ⦈=F(⦇αᴀ⦈)α`],
+    [`α⦇f⦈=F(⦇f⦈)f`],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -2069,7 +2064,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
 // THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
 // alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
-// bead is the fold's carrier, so `⦇α⦈` here is `⦇αᴛ⦈` and not the fold of every algebra at once.
+// bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
 #let ia-refl-l = dpanel(2.2, 3.725, 1.875,
   (),
   ((1.1, [`⦇α⦈`]),),
@@ -2090,58 +2085,58 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
     ar(FT, FT2, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
+    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN2)[`α`]
     lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
     node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
     node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
   }),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
- [`⦇αᴛ⦈=𝟙` #h(6pt) #src[(2.11)]],
+ [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
   // lean:AOP.A6_3.relCata_alpha@656cd4b8
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
-Taking a value apart with `α`#sub[`T`] and putting it straight back is doing nothing.
+Taking a value apart with `α` and putting it straight back is doing nothing.
 
 === Fusion
 
-// `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
-// is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
-When `S : B⟶C` is an F-homomorphism from `α`#sub[`B`] to `α`#sub[`C`], folding with `α`#sub[`B`] and
-then applying `S` is folding with `α`#sub[`C`].
+// `T` is already the initial algebra's carrier, so the two algebras of the law take their own letters,
+// `R` on `B` and `Q` on `C`; `S` is the homomorphism between them, not an algebra.
+When `S : B⟶C` is an F-homomorphism from `R : F(B)⟶B` to `Q : F(C)⟶C`, folding with `R` and
+then applying `S` is folding with `Q`.
 
-// `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
-// of `α` at `S` — the same two panels as (11.4a), at `h := S`.
+// `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
+// square of @initial-defn at `f := R`, `g := Q`, `h := S`.
 #let ia-fuse-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`S`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`R`], black, 2.5), (2.2, [`S`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`B`]), (2.2, [`C`])),
+  cert: (expect: "R S", src: "F(B)", tgt: "C", sigs: ("R": "F(B)⟶B", "Q": "F(C)⟶C", "S": "B⟶C"), frame: 4, top: 3), s: 100%)
 #let ia-fuse-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`S`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`S`]), (1.1, [`Q`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  obj: ((3.3, [`C`]), (2.2, [`C`])),
-  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
-// The conclusion, generated like the side condition above it: two BANANAS reading `⦇α⦈` alike, and
-// what tells them apart is the wire under each — `B` on the left, `C` on the right.
+  obj: ((2.2, [`C`]), (1.1, [`C`])),
+  cert: (expect: "F(S)Q", src: "F(B)", tgt: "C", sigs: ("R": "F(B)⟶B", "Q": "F(C)⟶C", "S": "B⟶C"), frame: 4, top: 2), s: 100%)
+// The conclusion, generated like the side condition above it: the two folds differ by their algebra,
+// and the wire under each says where it lands — `B` on the left, `C` on the right.
 #let ia-fuse-cl = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇α⦈`]), (1.1, [`S`])),
+  ((2.2, [`⦇R⦈`]), (1.1, [`S`])),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "⦇α⦈S", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶B", "S": "B⟶C")), s: 100%)
+  cert: (expect: "⦇R⦈S", src: "T", tgt: "C", sigs: ("⦇R⦈": "T⟶B", "S": "B⟶C")), s: 100%)
 #let ia-fuse-cr = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇α⦈`]),),
+  ((2.2, [`⦇Q⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`C`]),),
-  cert: (expect: "⦇α⦈", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶C"), frame: 3, top: 2), s: 100%)
+  cert: (expect: "⦇Q⦈", src: "T", tgt: "C", sigs: ("⦇Q⦈": "T⟶C"), frame: 3, top: 2), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -2154,9 +2149,9 @@ then applying `S` is folding with `α`#sub[`C`].
     ar(FB, FC, black, s0: 0.55, s1: 0.55)
     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(B, C, black, s0: 0.55, s1: 0.55)
-    lab(-4.25, 1.25, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3.7, 1.25, INDUCED)[`⦇α`#sub[`B`]`⦈`]
+    lab(-3.95, 1.25, INDUCED)[`F(⦇R⦈)`]; lab(3.45, 1.25, INDUCED)[`⦇R⦈`]
     lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
-    lab(0, 3.05, GIVEN2)[`α`#sub[`T`]]; lab(0, 0.55, GIVEN1)[`α`#sub[`B`]]; lab(0, -1.95, GIVEN1)[`α`#sub[`C`]]
+    lab(0, 3.05, GIVEN2)[`α`]; lab(0, 0.55, GIVEN1)[`R`]; lab(0, -1.95, GIVEN1)[`Q`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
     node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
@@ -2168,7 +2163,7 @@ then applying `S` is folding with `α`#sub[`C`].
     src[the conclusion],
     row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
   ),
-  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸αS=F(S)α` #h(6pt)
+  [`⦇R⦈S=⦇Q⦈⟸R S=F(S)Q` #h(6pt)
  #src[(2.12)]],
    // lean:AOP.A5_5.relCata_fusion@15d8a5b5
   s: 92%,
@@ -2350,31 +2345,30 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 == Reduce <sec-cata>
 
 #disp[#definition[
-let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the subcategory of functions. 
-α#sub[T] is also initial in the allegory:
+let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcategory of functions.
+`α` is also initial in the allegory:
 ]]<cata-defn>
 
 
 === The defining equation
 
-// `α` subscripted by its CARRIER through this section, `#sub` OUTSIDE the raw span (inside backticks `_` is
-// literal).  A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over.
-// The string half is generated, on (11.4a)'s two panels at `⦇αᴀ⦈ := X`: `α` carries the naturality
-// marker, so it draws as one natural bead whose two components are `α`#sub[`T`] and `α`#sub[`A`].
+// A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over from the
+// square.  The string half is generated, on @initial-defn's two panels at `⦇f⦈ := X`: two ALGEBRAS,
+// `α` at `T` and `f` at `A`, each an arrow at its own carrier and so a bead on the object wire.
 #let cata-def-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`X`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`α`], black, 2.5), (2.2, [`X`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let cata-def-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`X`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`X`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(X)α", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(X)f", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 2), s: 100%)
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
@@ -2382,13 +2376,13 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
+    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`f`]
     lab(-4.0, 0, INDUCED)[`F(X)`]; lab(3.6, 0, INDUCED)[`X`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
-  [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`] #h(6pt)
+  [`X=⦇f⦈⟺αX=F(X)f` #h(6pt)
  #src[]],
    // lean:AOP.A5_5.relCata_UP@e4a4905f
 )]<cata-defining>
@@ -2437,24 +2431,24 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 === `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`
 
-// B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`A`]` := (F(∋) R)%∋`, `A := E A`,
+// B&dM p.121's figure, mirrored: @cata-defining's square at `f := `#frc([`F(∋)R`])`, `A := E A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
-// banana, `T⟶EA` being where the power object enters, and `α`'s two components are one natural bead.
+// banana, `T⟶EA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(EA)⟶EA`.
 #let cata-map-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none), (2.5, 1.1, "bot", none, none)),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇`#frc([`F(∋)R`])`⦈`])),
+  ((2.5, "top", 3.3, none, none), (2.5, 2.2, "bot", none, none)),
+  ((3.3, [`α`], black, 2.5), (2.2, [`⦇`#frc([`F(∋)R`])`⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((2.5, [`E`]), (3.12, [`A`])),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let cata-map-r = dpanel(4.4, 5.6, 3.75,
-  ((2.5, "top", 2.2, none, none), (3.125, 3.3, "bot", none, none)),
-  ((3.3, [`⦇`#frc([`F(∋)R`])`⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.812, 1.1, "bot", none, none), (2.5, "top", 1.1, none, none), (3.125, 2.2, 1.1, [`E`], none)),
+  ((2.2, [`⦇`#frc([`F(∋)R`])`⦈`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.75, [`T`])),
-  ((3.125, [`E`]), (3.75, [`A`])),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇F(∋)R%∋⦈)α", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  ((2.812, [`E`]), (3.75, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(⦇F(∋)R%∋⦈)f", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "f": "F(E(A))⟶E(A)"), frame: 4, top: 2), s: 100%)
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   cetz.canvas(length: 0.8cm, {
@@ -2467,13 +2461,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(FE, FA, black, s0: 0.55, s1: 0.55)
     ar(E, A, black, s0: 0.55, s1: 0.55)
-    lab(0, 2.05, GIVEN2)[`α`#sub[`T`]]
+    lab(0, 2.05, GIVEN2)[`α`]
     lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)`]
     lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`]
-    lab(0, -0.65, GIVEN1)[`α`#sub[`EA`]]
+    lab(0, -0.65, GIVEN1)[`f`]
     lab(0, -1.95, GIVEN1)[$frac(#[`F(∋)R`], ∋)$]
     lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
-    lab(0, -3.35, black)[`α`#sub[`A`]]
     lab(0, -4.45, black)[`R`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FE.at(0), FE.at(1), GIVEN1, `F(EA)`); node(E.at(0), E.at(1), GIVEN1, `EA`)
@@ -2481,7 +2474,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
   row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
-  [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
+  [`α⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 )]<cata-map-square>
@@ -2490,15 +2483,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // and the next row opens with the `⟺` that carries it over.
 #disp[
 #zline(
-  zsqc([`α`#sub[`T`]` X`], [`F(X)R`], eq: true),
+  zsqc([`αX`], [`F(X)R`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc([$frac(#[`α`#sub[`T`]` X`], ∋)$], [$frac(#[`F(X)R`], ∋)$], eq: true),
+  zsqc([$frac(#[`αX`], ∋)$], [$frac(#[`F(X)R`], ∋)$], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc([$frac(#[`α`#sub[`T`]` X`], ∋)$], [$frac(#[`F(`$frac(#[`X`], ∋)$ `∋)R`], ∋)$], eq: true),
+  zsqc([$frac(#[`αX`], ∋)$], [$frac(#[`F(`$frac(#[`X`], ∋)$ `∋)R`], ∋)$], eq: true),
 )
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[relator, fusion twice],
-  zsqc([`α`#sub[`T`] $frac(#[`X`], ∋)$], [`F(`$frac(#[`X`], ∋)$`)` $frac(#[`F(∋)R`], ∋)$], eq: true),
+  zsqc([`α` $frac(#[`X`], ∋)$], [`F(`$frac(#[`X`], ∋)$`)` $frac(#[`F(∋)R`], ∋)$], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[reduce of maps],
   zsqc([$frac(#[`X`], ∋)$], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
@@ -2660,14 +2653,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`B`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+  cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2")), s: 100%)
 #let hy-lambek = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 2.2, [`F`], none),),
   ((4.4, [`⦇S⦈°`]), (3.3, [`α°`]), (2.2, [`α`], black, 2.5), (1.1, [`⦇R⦈`])),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+  cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2")), s: 100%)
 #let hy-cata = dpanel(5.5, 3.725, 1.875,
   (),
   ((2.2, [`⦇S⦈°`]), (1.1, [`⦇R⦈`])),
@@ -2688,14 +2681,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "α° F(⦇S⦈°\\X)R", src: "T", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈°\\X": "T⟶A"), frame: 5, top: 4), s: 100%)
+  cert: (expect: "α° F(⦇S⦈°\\X)R", src: "T", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈°\\X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 5, top: 4), s: 100%)
 #let hy-adj = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 1.1, [`F`], none),),
   ((4.4, [`⦇S⦈°`]), (3.3, [`α°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "⦇S⦈° α° F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A"), frame: 5), s: 100%)
+  cert: (expect: "⦇S⦈° α° F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 5), s: 100%)
 #let hy-fuse = dpanel(5.5, 4.97, 3.12,
   ((2.5, 4.4, 1.1, [`F`], none),),
   ((4.4, [`S°`]), (3.3, [`⦇S⦈°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
@@ -4432,17 +4425,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // `prefix` ON ITS OWN, before `takewhile` specialises it: the fold's defining square, the two Hinze–Marsden
 // panels either side of the `=`, and the algebra's circuit.  Panels emitted verbatim by
-//   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" "α prefix"
+//   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" --sigs "α:F([A])⟶[A]" "α prefix"
 //   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
 //   ./scripts/circuit --src "F([A])" --tgt "[A]" "[nil,⊸ nil ∪ cons]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
 #let pfx-def-l = dpanel(4.4, 6.12, 4.27,
   ((2.812, 2.2, "bot", none, none), (2.812, 3.3, 2.2, [`list`], none), (2.5, "top", 3.3, none, none), (3.641, "top", 3.3, none, none)),
-  ((3.3, [`α`], black, 2.5, 3.0705), (2.2, [`prefix`], black, 2.812, 2.812, "lax")),
+  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 2.812, 2.812, "lax")),
   ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
   ((2.812, [`list`]), (4.27, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "α prefix", src: "F([A])", tgt: "[A]", sigs: ("α": "F([x])⟶[x]!nat=lean:AOP.A5_6_ListCombinators.ListRel.alphaR_natural@97dbed2a!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987"), frame: 4, top: 3))
+  cert: (expect: "α prefix", src: "F([A])", tgt: "[A]", sigs: ("α": "F([A])⟶[A]!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987"), frame: 4, top: 3))
 #let pfx-def-r = dpanel(4.4, 6.38, 4.53,
   ((3.074, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.903, 2.2, 1.1, [`list`], none), (3.903, "top", 2.2, none, none)),
   ((2.2, [`prefix`], black, 3.903, 3.903, "lax"), (1.1, [`cons`], black, 2.762, 3.3325)),
@@ -4531,12 +4524,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
 #let tw-pfx1 = dpanel(4.4, 6.12, 4.27,
-  ((2.5, "top", 3.3, none, none), (3.641, 2.2, "bot", none, none), (3.641, "top", 2.2, none, none)),
-  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 3.641, 3.641, "lax"), (1.1, [`p`])),
+  ((2.812, 2.2, "bot", none, none), (2.812, 3.3, 2.2, [`list`], none), (2.5, "top", 3.3, none, none), (3.641, "top", 3.3, none, none)),
+  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 2.812, 2.812, "lax"), (1.1, [`p`])),
   ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
-  ((3.641, [`list`]), (4.27, [`A`])),
+  ((2.812, [`list`]), (4.27, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))
+  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]", sigs: ("α": "F([A])⟶[A]!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987")))
 #let tw-pfx2 = dpanel(4.4, 6.38, 4.53,
   ((3.074, 2.2, "bot", none, none), (2.762, "top", 2.2, none, none), (3.903, 3.3, 2.2, [`list`], none), (3.903, "top", 3.3, none, none)),
   ((3.3, [`prefix`], black, 3.903, 3.903, "lax"), (2.2, [`cons`], black, 2.762, 3.3325), (1.1, [`p`])),
@@ -5475,7 +5468,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
-#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
+#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `R:=[nil,⊸ nil ∪ cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
  ]])
