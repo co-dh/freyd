@@ -232,6 +232,18 @@ public theorem laxNatural_of_strictNatural {F G : Relator 𝒜 ℬ}
     {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (h : StrictNatural F G φ) : LaxNatural F G φ :=
   fun {_ _} R => le_of_eq (h R)
 
+/-- THE CONVERSE OF A STRICTLY NATURAL FAMILY IS STRICTLY NATURAL, the other way round — read the
+    square at `R°` and take its converse, which needs both relators to preserve `°`.  Lax has no
+    such rule: `recip_not_laxNatural` (A6_1_OrdRelSet) refutes it. -/
+public theorem strictNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : StrictNatural F G φ) :
+    StrictNatural G F (fun a => (φ a)°) := by
+  intro a b R
+  have e := congrArg Allegory.recip (h R°)
+  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
+    Allegory.recip_recip] at e
+  exact e.symm
+
 /-- Theorem 5.2's right-hand side with the EQUALITY on maps weakened to an INCLUSION: the
     `LaxNatural` inequation at the maps only.  It is strictly weaker than `LaxNatural` —
     `laxOnMaps_not_laxNatural` (A6_1_OrdRelSet) — so Theorem 5.2's equality is forced, not a

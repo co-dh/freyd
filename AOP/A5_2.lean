@@ -475,6 +475,29 @@ variable [HasRelProd 𝒜]
     simp only [F.map_comp, G.map_comp]; exact (prodMap_comp _ _ _ _ _ _ _).symm
   map_mono h := prodMap_mono (F.map_mono h) (G.map_mono h)
 
+/-- The PAIRING of two relators into the PRODUCT allegory: `x ↦ (F x, G x)`, `R ↦ (F R, G R)`. -/
+@[expose] public def Relator.pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    (F G : Relator 𝒮 𝒜) : Relator 𝒮 (𝒜 × 𝒜) where
+  obj x := (F.obj x, G.obj x)
+  map R := (F.map R, G.map R)
+  map_id x := Prod.ext (F.map_id x) (G.map_id x)
+  map_comp R S := Prod.ext (F.map_comp R S) (G.map_comp R S)
+  map_mono h := Prod.ext (F.map_mono h) (G.map_mono h)
+
+/-- The product bifunctor AS A RELATOR `𝒜 × 𝒜 ⟶ 𝒜`, on the same `relProd` apex `Relator.prod`
+    takes.  Splitting `F×G` through it is what makes a product TWO NESTED WIRES in a picture —
+    the pairing inside the region `𝒜×𝒜`, this one outside it — and not two parallel wires. -/
+@[expose] public def timesRel : Relator (𝒜 × 𝒜) 𝒜 where
+  obj p := (relProd p.1 p.2).p
+  map R := prodMap (relProd _ _) (relProd _ _) R.1 R.2
+  map_id p := prodMap_id (relProd p.1 p.2)
+  map_comp _ _ := (prodMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := prodMap_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+/-- `F×G` IS the pairing followed by the product bifunctor, on the nose. -/
+public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+    Relator.prod F G = Relator.comp (Relator.pair F G) timesRel := rfl
+
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
     relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
 @[expose] public def Δ (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
