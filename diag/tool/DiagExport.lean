@@ -58,6 +58,9 @@ import diag.tool.StringDiagram
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
+-- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
+-- box = morphism, left to right), emitted for `diag/cpanel.typ`.
+import diag.tool.CircuitDiagram
 
 open Lean
 
@@ -1407,12 +1410,13 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
-   --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ;\n\
-     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation\n\
+   --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
+   --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
+     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes)\n\
    --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
      the per-panel display scale the note picks (`s: N%`) — all three --string only"
 
@@ -1429,15 +1433,19 @@ def main (args : List String) : IO UInt32 := do
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
   let stringMode := args.contains "--string"
+  let circuitMode := args.contains "--circuit"
   let (frame, args) := takeOpt args "--frame"
   let (topRow, args) := takeOpt args "--top"
   let (scale, args) := takeOpt args "--scale"
-  let args := args.filter (fun a => a != "--proof" && a != "--sig" && a != "--string")
+  let args := args.filter (fun a => a != "--proof" && a != "--sig" && a != "--string" && a != "--circuit")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
-  unless sigMode do IO.FS.createDirAll (if stringMode then "diag/generated/string" else "diag/generated")
+  -- Each route writes under its own directory: the three functors are three pictures of one name.
+  let outDir := if stringMode then "diag/generated/string"
+    else if circuitMode then "diag/generated/circuit" else "diag/generated"
+  unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
   -- Generalized field notation prints a class projection through its instance argument, so `Δ_a`
@@ -1454,13 +1462,16 @@ def main (args : List String) : IO UInt32 := do
         .simple `Freyd.Diag.Word []] }
   let mut status : UInt32 := 0
   for arg in args do
-    -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own.
+    -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
+    -- string and circuit routes read a side, the others take the name whole.
     let (base, side) :=
-      if arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
-      else if arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs") else (arg, none)
+      if (stringMode || circuitMode) && arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
+      else if (stringMode || circuitMode) && arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs")
+      else (arg, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName side frame topRow scale
+        else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName side
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
     -- and a bead whose naturality nobody proved has a message naming the three statements it
@@ -1471,7 +1482,7 @@ def main (args : List String) : IO UInt32 := do
       status := 1
     | .ok text =>
       if sigMode then IO.println text else
-      let path := if stringMode then System.FilePath.mk s!"diag/generated/string/{arg}.typ"
+      let path := if stringMode || circuitMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
         else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString
