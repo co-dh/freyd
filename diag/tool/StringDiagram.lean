@@ -325,9 +325,14 @@ partial def rowsOf (regionTy : Expr) (cat : Array Name) (pass : Array Wire) (inL
       let (x, _) ← homEnds φ
       return ← rowsOf regionTy cat (pass ++ (← peelLefts regionTy x)) inLeft ψ
   let (x, y) ← homEnds e
-  let arms ← if inLeft then peelLefts regionTy x else pure (← peelObj regionTy cat x).1
-  let legs ← if inLeft then peelLefts regionTy y else pure (← peelObj regionTy cat y).1
-  if arms.size == legs.size && !(← Meta.isDefEq x y) then
+  let (ax, ox) ← peelObj regionTy cat x
+  let (ay, oy) ← peelObj regionTy cat y
+  let arms ← if inLeft then peelLefts regionTy x else pure ax
+  let legs ← if inLeft then peelLefts regionTy y else pure ay
+  -- A re-bracketing is the ONE factor a picture does not show: the same lanes over the same object
+  -- at both ends.  The object has to be compared too — `⦇R⦈ : t F ⟶ c` has no lanes at either end
+  -- and is not invisible.
+  if (← Meta.isDefEq ox oy) && arms.size == legs.size && !(← Meta.isDefEq x y) then
     let mut same := true
     for i in [0 : arms.size] do
       unless ← Wire.beq arms[i]! legs[i]! do same := false
