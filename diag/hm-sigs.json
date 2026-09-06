@@ -113,11 +113,11 @@
     "⦇S%∋ est(R;H)⦈": {
       "src": "[x]",
       "tgt": "[[x]]",
-      "lean": "AOP.A5_6_ListCombinators.partition@27a85ee0",
-      "note": "§13.4's partition fold; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
+      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "note": "§13.4's greedy fold — `relCata` at the algebra `S%∋ est(R;H)`, cited as the operator the way the thinned fold is, because the corpus has no declaration for that algebra's fold. NOT `partition`, whose strict square IS proved (`RelSet.ListRel.partition_natural`); its panel types `⦇⦈` itself, so the shape's row cannot reach it",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.relCata_not_lax_natural@fef916b7"
       ]
     },
     "⦇(F(∋)S)%∋ thin(Q)⦈": {
