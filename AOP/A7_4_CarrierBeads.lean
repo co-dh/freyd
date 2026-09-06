@@ -88,6 +88,20 @@ public theorem sum_not_lax_natural : ¬ (list succI ≫ sumR ⊑ sumR ≫ succI)
   subst hc'
   exact absurd (show (0 : Int) = 1 from hf) (by decide)
 
+/-- **The fold OPERATOR `⦇⦈` is not lax natural**: there is no law `list(f) ⦇R⦈ ⊑ ⦇R⦈ f` holding
+    for every element type, every algebra and every `f`.  A different subject from
+    `sum_not_lax_natural`, which refutes the square for ONE arrow: this refutes the law for the
+    operator, which is what a panel drawing a bare `⦇⦈` claims, and what no single arrow can
+    settle either way.  It follows from the instance because a law holding of every algebra would
+    hold of `[zero,plus]`, whose fold is `sum` (`sum_cata`). -/
+public theorem relCata_not_lax_natural :
+    ¬ ∀ (A : Type) (R : (CL.F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)
+        (f : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩), list f ≫ relCata R ⊑ relCata R ≫ f := by
+  intro h
+  refine sum_not_lax_natural ?_
+  rw [sum_cata]
+  exact h Int _ succI
+
 
 /-- The note's `plus : A×x⟶x`, at `A = x = Int`. -/
 @[expose] public def plusR : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph (fun p => p.1 + p.2)

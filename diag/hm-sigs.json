@@ -87,7 +87,7 @@
       "lean": "AOP.A5_5.relCata@6ef23f02",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.relCata_not_lax_natural@fef916b7"
       ]
     },
     "⦇Q⦈": {
@@ -127,7 +127,7 @@
       "note": "§14.3's thinned fold; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.relCata_not_lax_natural@fef916b7"
       ]
     },
     "prefix": {
