@@ -455,5 +455,11 @@ open Lean PrettyPrinter in
   | `($_ $x) => `($x)
   | _ => throw ()
 
+-- The relational product of two arrows is the note's `f×g`, the same sign its objects wear.
+open Lean PrettyPrinter in
+@[app_unexpander rprodMap] public meta def unexpandRprodMap : Unexpander
+  | `($_ $R $S) => `($R × $S)
+  | _ => throw ()
+
 end RelSet
 end Freyd.Alg

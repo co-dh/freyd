@@ -925,4 +925,33 @@ public theorem van_spec_false_without_hsingle :
     simp only [secureP, ceilingFn, floorFn]; omega
   exact hbad hall.1
 
+-- printing-only unexpanders: the note's spelling.  §7.5 writes a segment `[Int]` and a schedule
+-- `[[Int]]` — the brackets ARE the names, `Seg`/`Sched` being what the Lean side calls them — and
+-- `glue`/`assocl` are arrows of one shape at every index, so the objects they are taken at are not
+-- part of the name (`glue≜(𝟙×cons°) assocl (cons×𝟙) cons`).  No statement and no `stmt_key` moves.
+open Lean PrettyPrinter in
+@[app_unexpander Seg] public meta def unexpandSeg : Unexpander
+  | `($_ $A) => `([$A])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Sched] public meta def unexpandSched : Unexpander
+  | `($_ $A) => `([[$A]])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dSched] public meta def unexpandDSched : Unexpander
+  | `($_ $A) => `([[$A]])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander glueR] public meta def unexpandGlueR : Unexpander
+  | `($_ $_) => `($(mkIdent `glue))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander assoclR] public meta def unexpandAssoclR : Unexpander
+  | `($_ $_ $_ $_) => `($(mkIdent `assocl))
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.Van

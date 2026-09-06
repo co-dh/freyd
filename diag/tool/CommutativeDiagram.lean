@@ -312,7 +312,8 @@ def draw (declName : Name) : MetaM String := do
     activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
     `⊑` and the fold's `⦇ ⦈`; the rest the note's own spellings. -/
 def openNs : List Name :=
-  [`Freyd, `Freyd.Alg, `Freyd.Alg.RelSet, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+  [`Freyd, `Freyd.Alg, `Freyd.Alg.RelSet, `Freyd.Alg.RelSet.CL, `Freyd.Alg.RelSet.ListRel,
+    `Freyd.Alg.RelSet.Van, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
 
 /-- `--commutative`'s own entry point.  ONE environment per process, as in `DiagExport.main`: the
     import happens once and every name on the command line is drawn from it. -/
@@ -329,14 +330,14 @@ def main (args : List String) : IO UInt32 := do
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
     (loadExts := true)
   IO.FS.createDirAll "diag/generated/commutative"
-  -- Field notation stays ON, unlike the string-diagram route: a node here is an OBJECT, and
-  -- `(F.appl a).obj X` is the object, where `Functor.obj (Relator.toFunctor (BiRelator.appl F a)) X`
-  -- is a transcript of how it is built.  GENERALIZED field notation is off for the reason that
-  -- route gives: a class projection printed through its anonymous instance comes out `instCat.id X`,
-  -- which is not an arrow's name and hides the `𝟙 X` and `R°` notations behind it.
+  -- Field notation is OFF.  It prints a functor's action by the FIELD's name, `F.obj X`, where the
+  -- book applies the functor's own letter, `F X`; and it is tried BEFORE an unexpander, so
+  -- `S1_18`'s `Functor.obj`/`Functor.map` unexpanders only fire once it is off.  What field
+  -- notation was hiding — the coercion `Relator.toFunctor` — is peeled by its own unexpander
+  -- (`A5_1`), so the head is still the relator's letter.
   -- `⟶`, `≫`, `°` and `⊑` are all `Freyd`/`Freyd.Alg` notations, so the printer only reaches them
   -- with those namespaces opened.
-  let opts : Options := (Options.empty.setBool `pp.fieldNotation.generalized false).setBool
+  let opts : Options := (Options.empty.setBool `pp.fieldNotation false).setBool
     -- A structure instance is not an application, so no unexpander can reach a bundled
     -- object; printed as a constructor it becomes one, and the note's own name comes back.
     `pp.structureInstances false

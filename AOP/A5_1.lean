@@ -22,6 +22,10 @@ module
 
 public import Freyd.S2_10
 public import AOP.A4_2
+-- for the printing-only unexpanders at the end of this file.  Lean 4 core's own metaprogramming
+-- API, which ships with the toolchain: no `require`, no manifest entry, the mathlib-free build
+-- unchanged (same reasoning as `Freyd.Exacts`).
+public import Lean
 
 universe v₁ v₂ v₃ u₁ u₂ u₃ u
 
@@ -283,5 +287,36 @@ theorem Relator.map_dom_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
   No non-circular derivation was found in the time available.  Only Theorem 5.1(a)
   (`Relator.preservesRecip_of_tabular`) is formalized; nothing later in this file, and
   nothing so far outside it, depends on the converse direction. -/
+
+-- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
+-- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
+-- it as.  The three below belong to `Freyd.S1_10`/`S1_18` by their constants, and live here by
+-- their IMPORTS: those two modules are upstream of every other in the repo and carry no
+-- metaprogramming at all, so `import Lean` there would put the Lean frontend under the whole book
+-- core for the sake of a picture's label.  This is the first module of the relator layer that
+-- already has it.  None of them changes a statement or a `stmt_key`.
+--
+-- A functor's two actions are written by APPLYING the functor's own letter — `F A` for the object,
+-- `F h` for the arrow — never by naming the field.  A structure that EXTENDS `Functor` reaches
+-- them through `toFunctor`, which comes off with them, so the head is the relator's own letter.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Functor.obj] public meta def unexpandFunctorObj : Unexpander
+  | `($_ $F $X) => `($F $X)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Functor.map] public meta def unexpandFunctorMap : Unexpander
+  | `($_ $F $h) => `($F $h)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Relator.toFunctor] public meta def unexpandRelatorToFunctor : Unexpander
+  | `($_ $F) => `($F)
+  | _ => throw ()
+
+-- NOT HERE: the identity, which the book writes BARE (`glue≜(𝟙×cons°) assocl (cons×𝟙) cons`).
+-- `S1_10`'s `scoped notation "𝟙" A` registers its own unexpander for `Cat.id`, and that one is
+-- tried first and succeeds, so a second unexpander dropping the object is dead code — the printer
+-- writes `𝟙Tx`.  Losing the object would need the notation itself to change, which is parsing.
 
 end Freyd.Alg

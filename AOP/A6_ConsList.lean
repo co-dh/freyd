@@ -387,4 +387,43 @@ public theorem cata_converse_eq {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
         · have hpa : pa = dig := hpq.trans hda.symm
           rw [hpa] at hp; exact hp
 
+-- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
+-- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
+-- it as.  The note writes a list by its BRACKETS (`[A]`), the base functor by its letter alone —
+-- `L` and `E` are which `F`, not arguments of the application — and `dE` names no former at all:
+-- it is the object the element type already is (`glue:Int×[[Int]]⟶[[Int]]`).  They change no
+-- statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander ConsList] public meta def unexpandConsListObj : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dCL] public meta def unexpandDCL : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dE] public meta def unexpandDE : Unexpander
+  | `($_ $E) => `($E)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander F] public meta def unexpandF : Unexpander
+  | `($_ $_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Fbimap] public meta def unexpandFbimap : Unexpander
+  | `($_ $_ $R $S) => `($(mkIdent `F) $R $S)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander consR] public meta def unexpandConsR : Unexpander
+  | _ => `($(mkIdent `cons))
+
+open Lean PrettyPrinter in
+@[app_unexpander alphaR] public meta def unexpandAlphaR : Unexpander
+  | _ => `($(mkIdent `α))
+
 end Freyd.Alg.RelSet.CL

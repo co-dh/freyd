@@ -228,4 +228,16 @@ open Lean PrettyPrinter in
   | `($_ $_ $R) => `($(mkIdent `T) $R)
   | _ => throw ()
 
+-- A bifunctor's two actions are applied the same way its unary case is (`S1_18`): the letter, then
+-- the two arguments — §2.7's `F(A,TA)` and `F(f,T(f))`, whose comma an unexpander cannot spell.
+open Lean PrettyPrinter in
+@[app_unexpander BiRelator.obj] public meta def unexpandBiRelatorObj : Unexpander
+  | `($_ $F $a $b) => `($F $a $b)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander BiRelator.map] public meta def unexpandBiRelatorMap : Unexpander
+  | `($_ $F $R $S) => `($F $R $S)
+  | _ => throw ()
+
 end Freyd.Alg
