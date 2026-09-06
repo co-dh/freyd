@@ -803,6 +803,30 @@ public theorem subseq_alg_join :
       (PowerAllegory.powerObj (dList A))),
     pair_eq_rpair, Λ_absorption, Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
 
+/-- The note's `subseq-EW-case` third row: **`F(∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
+    `F(∋)` IS the sum `𝟙+𝟙×∋` (`F_eq_sum_prod`), and a sum before a junction is the junction of
+    the branches (`sumMap_junc`), the leaf arm's `𝟙` cancelling. -/
+public theorem subseq_alg_sum_junc :
+    (F Unit A).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+          (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
+  rw [← F_eq_sum_prod]
+  show sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
+      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) (∋ (dList A))) ≫ _ = _
+  rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap]
+
+/-- The note's `subseq-EW-case` last row: **`nil%∋ = nil 𝟙%∋`** — the leaf arm alone.  `nil` is a
+    map, so `Λ` fuses out of it (`Λ_fusion` at `𝟙`), leaving the singleton `𝟙%∋ = Λ(𝟙)`. -/
+public theorem Λ_nil_singleton :
+    Λ (wrapR : dL Unit ⟶ dList A) = wrapR ≫ singletonMap := by
+  have h := Λ_fusion (graph_map (ConsList.wrap : Unit → ConsList Unit A)) (Cat.id (dList A))
+  rw [Cat.comp_id] at h
+  exact h
+
 /-- **`prefix = ⦇[nil, nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
     branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
 public theorem prefix_cata :

@@ -152,6 +152,10 @@ partial def objOf (o : Expr) : MetaM Obj := do
 /-- A carrier TYPE.  `×` is the product of wires, `⊕` the coproduct only a tape opens, `Unit` the
     empty word, and a list its bracketed spelling. -/
 partial def typeObj (t : Expr) : MetaM Obj := do
+  -- A CARRIER TYPE IS ITS OBJECT, and must be read before `whnfD` for the same reason the power
+  -- object is: `(E[A]).carrier` unfolds to a predicate type that says nothing, and then the second
+  -- summand of `F(E[A])` no longer matches `∋`'s source, so the fused `𝟙×∋` draws `𝟙×𝟙`.
+  if let (``Freyd.Alg.RelSet.carrier, #[o]) := t.getAppFnArgs then return ← objOf o
   let t ← Meta.whnfD t
   match t.getAppFnArgs with
   | (``Prod, #[a, b]) => do
@@ -375,6 +379,16 @@ def wiresOf (o : Obj) : MetaM (Array Obj) :=
   | .ok ws => return ws
   | .error m => throwError m
 
+/-- A DEFINED arrow opened to its body, on the same test `leaf` uses: a name the labeller keeps is
+    never opened, and a body with no clause has no circuit inside it.  Every clause that matches on
+    a factor's HEAD must go through this, or a rule fires on `[f,g]` written out and misses the same
+    junction under the name a `def` gave it. -/
+def openDef (e : Expr) : MetaM Expr := do
+  if isNamed e then return e
+  match ← Meta.unfoldDefinition? e with
+  | some v => let b := v.headBeta; return (if hasClause b then b else e)
+  | none => return e
+
 mutual
 
 /-- §3 row 5: a composite is its factors' pictures, ports glued.  The factors are flattened, so a
@@ -390,12 +404,17 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
       -- Tape fusion, `F(R)[f,g] = [f,(𝟙×R)g]`: keyed on the two node SHAPES, and a theorem of the
       -- relator, so a functor handing over to a case draws the ONE tape the note draws instead of
       -- two in series.  Without it the picture is a correct but uglier equal.
-      let fused ← if i + 1 < fs.size then
-          match fs[i]!.getAppFnArgs, fs[i + 1]!.getAppFnArgs with
+      let fused ← if i + 1 < fs.size then do
+          let nxt ← openDef fs[i + 1]!
+          match fs[i]!.getAppFnArgs, nxt.getAppFnArgs with
           | (``Freyd.Functor.map, fa), (``Freyd.Alg.junc, ja) =>
             match fa.back?, lastTwo ja with
             | some r, some (u, v) => do
-              let (s, t) ← endsOf fs[i + 1]!
+              -- The tape forks at the FUNCTOR's source `F(a)`, not at the junction's `F(b)`: the
+              -- fused `𝟙×R` is drawn on the summand `R` still has to cross, and reading the arms
+              -- off `F(b)` leaves no strand for `R` to sit on, so it silently drew `𝟙×𝟙`.
+              let (s, _) ← endsOf fs[i]!
+              let (_, t) ← endsOf fs[i + 1]!
               pure (some (← casePic u v s t (fuse := some r)))
             | _, _ => pure none
           | _, _ => pure none
@@ -423,7 +442,13 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
 /-- A run: its factors and the objects between them, which is what the seam rule reads. -/
 partial def drawRun (e : Expr) : MetaM Pic := do
   let (items, objs) ← runParts e
-  return seqPic items (seamsOf objs) objs
+  -- A run of ONE factor IS that factor: a `seq` around it would add a port stub at each end and
+  -- draw a picture wider than the arrow it draws.  Only a seamless singleton — a seam is a label
+  -- the run itself carries, and a bare item has nowhere to keep it.
+  let seams := seamsOf objs
+  if h : items.size == 1 && seams.isEmpty then
+    return items[0]'(by simp at h; omega)
+  return seqPic items seams objs
 
 partial def runParts (e : Expr) : MetaM (Array Pic × Array Obj) := do
   let items ← drawItems e
@@ -546,20 +571,8 @@ partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pi
   let arms : Array (Expr × Obj × Bool) := #[(f, ss[0]!, false), (g, ss[1]!, true)]
   for arm in arms do
     let (br, s, last) := (arm.1, arm.2.1, arm.2.2)
-    let (items, objs) ← runParts br
+    let (items, objs) ← armParts br src s (if last then fuse else none) (opened := true)
     let ws ← wiresOf s
-    let op := mkPic "open" #[src] ws src s true #[]
-    -- the fused `𝟙×R` lands on the strands the functor recurses on: the summand's factors that
-    -- ARE `R`'s source, the others staying bare wire
-    let (items, objs) ← match fuse with
-      | some r =>
-        if last then do
-          let pre ← fusedStack s r
-          pure (#[pre] ++ items, #[s] ++ objs)
-        else pure (items, objs)
-      | none => pure (items, objs)
-    let items := #[op] ++ items
-    let objs := #[src] ++ objs
     let seams := (if ws.isEmpty then #[] else #[(0, ws.map (·.label))])
       ++ (seamsOf objs).filter (·.1 != 0)
     let body := seqPic items seams objs
@@ -568,15 +581,68 @@ partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pi
   return mkPic "case" #[src] bodies[0]!.outs src tgt isMap
     #[("bodies", .arr (bodies.map (·.val)))]
 
+/-- One arm of a fork: its factors and the objects between them.  `opened` says whether the
+    coproduct wire ARRIVES here — inside a `case` it does, and the arm opens it into its summand's
+    strands; taken alone by a `.inl`/`.inr` route the summand IS the source, and there is nothing
+    to open. -/
+partial def armParts (br : Expr) (src s : Obj) (fuse : Option Expr) (opened : Bool) :
+    MetaM (Array Pic × Array Obj) := do
+  let (items, objs) ← runParts br
+  -- the fused `𝟙×R` lands on the strands the functor recurses on: the summand's factors that
+  -- ARE `R`'s source, the others staying bare wire
+  let (items, objs) ← match fuse with
+    | some r => do let pre ← fusedStack s r; pure (#[pre] ++ items, #[s] ++ objs)
+    | none => pure (items, objs)
+  if !opened then return (items, objs)
+  return (#[mkPic "open" #[src] (← wiresOf s) src s true #[]] ++ items, #[src] ++ objs)
+
+/-- `.inl`/`.inr` on a route: ONE arm of the fork at the head of the run, drawn with the summand as
+    the SOURCE — what a panel draws when the other arm is a constant and carries none of the law's
+    content.  The rule is over the FORM of the run: a junction at its head, alone or behind the
+    functor whose tape fuses into it, and every factor after the fork stays on the arm. -/
+partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
+  let fs := if e.isAppOf ``Cat.comp then factorList e else #[e]
+  let head ← openDef fs[0]!
+  let nxt ← if fs.size > 1 then openDef fs[1]! else pure head
+  let (j, fuse) :=
+    if head.isAppOf ``Freyd.Alg.junc then (0, none)
+    else if fs.size > 1 && fs[0]!.isAppOf ``Freyd.Functor.map && nxt.isAppOf ``Freyd.Alg.junc then
+      (1, fs[0]!.getAppArgs.back?)
+    else (fs.size, none)
+  if j ≥ fs.size then
+    throwError "`.inl`/`.inr` draws one arm of a fork, and this side has none at the head of its \
+      run: it starts with {← arrLabel fs[0]!}"
+  let some (u, v) := lastTwo (← openDef fs[j]!).getAppArgs
+    | throwError "a junction with no arms: {← arrLabel fs[j]!}"
+  let (src, _) ← endsOf fs[0]!
+  let ss := src.parts
+  if ss.size != 2 then
+    throwError "the fork at {src.label} has {ss.size} summands, and `.inl`/`.inr` names two"
+  let (its, objs') ← armParts (if i == 0 then u else v) src ss[i]!
+    (if i == 1 then fuse else none) (opened := false)
+  let mut items := its
+  let mut objs := objs'
+  for k in [j + 1 : fs.size] do
+    let more ← drawItems fs[k]!
+    items := items ++ more
+    for it in more do objs := objs.push it.tgt
+  return seqPic items (seamsOf objs) objs
+
 /-- The `𝟙×R` the tape fusion puts on a branch: `R` on the strands the functor recurses on — the
     summand's factors that ARE `R`'s source — and bare wire on the rest. -/
 partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
   let (rs, rt) ← endsOf r
   let ps := if s.kind == .prod then s.parts else #[s]
+  -- The functor recurses on ONE slot — the LAST factor of the summand, the same convention that
+  -- names the pattern functor in `objOf` — so `R` goes there and bare wire on the rest.  Matching
+  -- EVERY factor whose object is `R`'s source draws `R×R` the moment the two agree, as they do at
+  -- `F(X)=𝟏+Int×X`.
+  let hit := (List.range ps.size).reverse.find? fun i => (ps[i]!).same rs
   let mut ls := #[]
   let mut outs := #[]
-  for p in ps do
-    if p.same rs then
+  for i in [0 : ps.size] do
+    let p := ps[i]!
+    if hit == some i then
       ls := ls.push (← lane (← draw r)); outs := outs.push rt
     else
       ls := ls.push (seqPic #[] #[] #[p]); outs := outs.push p
@@ -640,13 +706,14 @@ partial def toRelation (e : Expr) : MetaM Expr := do
 
 /-- The panel: the tree with its ports named, one label per STRAND — a product is two wires, so it
     is two labels, never one reading `A×[A]`. -/
-def panel (e : Expr) : MetaM Val := do
-  let p ← drawRun e
+def ports (p : Pic) : Val :=
   match p.val with
-  | .dict kvs => return .dict (kvs ++
+  | .dict kvs => .dict (kvs ++
       #[("src", .arr (p.ins.map fun o => .s o.label)),
         ("tgt", .arr (p.outs.map fun o => .s o.label))])
-  | v => return v
+  | v => v
+
+def panel (e : Expr) : MetaM Val := return ports (← drawRun e)
 
 /-- The declaration's picture.  A `def` is unfolded ONE level and drawn by its body; a theorem is
     split by its relation symbol and the named side drawn.
@@ -657,8 +724,8 @@ def panel (e : Expr) : MetaM Val := do
     the FORM of the type — every binder of every declaration is reachable this way — not a table of
     the hypotheses somebody wanted; a `def`'s body is not unfolded when a binder is named, since
     the binder belongs to the type. -/
-def drawDecl (declName : Name) (side : Option String) (binder : Option String := none) :
-    MetaM String := do
+def drawDecl (declName : Name) (side : Option String) (binder : Option String := none)
+    (branch : Option Nat := none) : MetaM String := do
   let some ci := (← getEnv).find? declName
     | throwError "no such declaration: {declName}"
   Meta.forallTelescopeReducing ci.type fun xs tybody => do
@@ -692,9 +759,12 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
           `{declName}.lhs` or `{declName}.rhs`"
       | none, some s => throwError "`{declName}` is not an equation or containment: no `.{s}`"
       | none, _ => pure body
-    let tree ← panel e
+    let tree ← match branch with
+      | some i => pure (ports (← armOf e i))
+      | none => panel e
     let name := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
       ++ (match side with | some s => "." ++ s | none => "")
+      ++ (match branch with | some i => if i == 0 then ".inl" else ".inr" | none => "")
     return "// GENERATED by `diag-export --circuit` — do not edit; regenerate with\n\
       //   ./scripts/diag-export --circuit " ++ name ++ "\n\
       #import \"../../cpanel.typ\": *\n\n\

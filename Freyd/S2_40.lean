@@ -435,7 +435,7 @@ public theorem symm_div_eq_Λ_comp {a b c : 𝒜} [PowerAllegory 𝒜] (R : a �
 
 /-- `Entire R ↔ 1 ⊑ RR°` (§2.122): since `dom R = 1 ∩ RR°` and `1 ∩ RR° ⊑ 1` always,
     `dom R = 1` is equivalent to `1 ⊑ RR°`. -/
-private theorem entire_iff_one_le {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) :
+public theorem entire_iff_one_le {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) :
     Entire R ↔ Cat.id a ⊑ R ≫ R° := by
   dsimp [Entire, dom]
   constructor

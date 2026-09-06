@@ -15,7 +15,8 @@
 
   Contents:
   §1  `junc` (B&dM 5.9) and its universal-property lemmas, `junc_recip`.
-  §2  (5.11) cancellation `junc_recip_junc`.
+  §2  (5.11) cancellation `junc_recip_junc`, and `junc_map`.
+  §2b `Λ[R,S] = [ΛR,ΛS]` (pp. 117–118).
   §3  `sumMap` (B&dM 5.10) and its functor laws.
   §4  Ex 5.12.
   §5  Guards and conditionals (Ex 5.17).
@@ -24,6 +25,7 @@ module
 
 public import Freyd.S2_20
 public import AOP.A4_5
+public import AOP.A4_6  -- `Λ` (§4.6), for the power transpose of a junction
 public import AOP.A5_1
 
 universe v₂ u₂ v u
@@ -120,7 +122,48 @@ public theorem junc_recip_junc {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a�
     (junc C U V)° ≫ junc C R S = (U° ≫ R) ∪ (V° ≫ S) := by
   rw [junc_recip, union_comp_distrib, Cat.assoc, Cat.assoc, u₁_junc, u₂_junc]
 
+/-- A junction of MAPS is a map.  Simplicity is (5.11) `[f,g]°[f,g] = (f°f) ∪ (g°g)`, both
+    branches below `1`; entirety is the fifth coproduct equation `[u₁,u₂] = 1` pushed through
+    `[f,g][f,g]° = [f([f,g]°), g([f,g]°)]`, each branch dominating its injection because
+    `1 ⊑ ff°`.  Nothing here asks the branches to share a source or a target. -/
+public theorem junc_map {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {f : a₁ ⟶ c} {g : a₂ ⟶ c}
+    (hf : Map f) (hg : Map g) : Map (junc C f g) := by
+  refine ⟨(entire_iff_one_le _).mpr ?_, ?_⟩
+  · have h₁ : C.u₁ ⊑ f ≫ (junc C f g)° := by
+      rw [junc_recip]
+      calc C.u₁ = Cat.id a₁ ≫ C.u₁ := (Cat.id_comp _).symm
+        _ ⊑ (f ≫ f°) ≫ C.u₁ := comp_mono_right (entire_id_le hf.1) _
+        _ = f ≫ (f° ≫ C.u₁) := Cat.assoc _ _ _
+        _ ⊑ f ≫ ((f° ≫ C.u₁) ∪ (g° ≫ C.u₂)) := comp_mono_left _ (le_union_left _ _)
+    have h₂ : C.u₂ ⊑ g ≫ (junc C f g)° := by
+      rw [junc_recip]
+      calc C.u₂ = Cat.id a₂ ≫ C.u₂ := (Cat.id_comp _).symm
+        _ ⊑ (g ≫ g°) ≫ C.u₂ := comp_mono_right (entire_id_le hg.1) _
+        _ = g ≫ (g° ≫ C.u₂) := Cat.assoc _ _ _
+        _ ⊑ g ≫ ((f° ≫ C.u₁) ∪ (g° ≫ C.u₂)) := comp_mono_left _ (le_union_right _ _)
+    rw [junc_comp, ← junc_injections C]
+    exact junc_mono C h₁ h₂
+  · show (junc C f g)° ≫ junc C f g ⊑ Cat.id c
+    rw [junc_recip_junc]
+    exact union_lub hf.2 hg.2
+
 end Junc
+
+/-! ## §2b  The power transpose of a junction (B&dM §5.3, p.118) -/
+
+section ΛJunc
+
+variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
+
+/-- **B&dM pp. 117–118**: `Λ[R,S] = [ΛR,ΛS]` — the coproduct of maps applied underneath the
+    bijection `·∋ ⊣ Λ`.  `[ΛR,ΛS]` is a map (`junc_map` on `Λ_is_map'`) and `[ΛR,ΛS]∋ =
+    [ΛR∋,ΛS∋] = [R,S]`, so the universal property of `Λ` names it `Λ[R,S]`. -/
+public theorem Λ_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :
+    Λ (junc C R S) = junc C (Λ R) (Λ S) :=
+  (Λ_unique _ _ (junc_map C (Λ_is_map' R) (Λ_is_map' S))
+    (by rw [junc_comp, Λ_eps_eq', Λ_eps_eq'])).symm
+
+end ΛJunc
 
 /-! ## §3  `sumMap` (B&dM 5.10) -/
 
