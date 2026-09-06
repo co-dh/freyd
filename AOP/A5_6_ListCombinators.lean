@@ -963,13 +963,20 @@ public theorem sum_cata :
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
 -- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
--- the name.  Changes no statement and no `stmt_key`.
--- NOT HERE: `prefixR`, which the note calls `prefix`.  `prefix` is one of Lean's own command
--- keywords, so the printer escapes an identifier of that name and writes `«prefix»`, which is
--- worse than the declaration's own name; the label stays `prefixR`.
+-- the name; `listRelator` is its lane `list`; `prefixR` is `prefix`, a Lean keyword, which the
+-- printer escapes as `«prefix»` and the label emitter (`diag/tool/ExprReader`) unescapes.
+-- Changes no statement and no `stmt_key`.
 open Lean PrettyPrinter in
 @[app_unexpander dList] public meta def unexpandDList : Unexpander
   | `($_ $A) => `([$A])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander listRelator] public meta def unexpandListRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `list))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
 
 end Freyd.Alg.RelSet.ListRel

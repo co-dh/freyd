@@ -34,7 +34,9 @@ partial def unwrapRecords (e : Expr) : MetaM Expr :=
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/
 def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr (← unwrapRecords e))
+  -- A label is the note's spelling, not Lean syntax: a name the parser would need escaped (`prefix`
+  -- is a keyword) prints bare, so the `«»` the formatter wraps it in are dropped.
+  let s := (toString (← Meta.ppExpr (← unwrapRecords e))).replace "«" "" |>.replace "»" ""
   let s := s.replace "Freyd.Alg.RelSet." "" |>.replace "Freyd.Alg." "" |>.replace "Freyd." ""
     |>.replace "Alg." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)

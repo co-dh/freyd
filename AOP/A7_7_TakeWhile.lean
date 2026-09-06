@@ -627,4 +627,10 @@ public theorem takewhile_entire (p : E → Bool) : Entire (takewhile p) := by
   rw [takewhile_eq_cata p, ← takeWhile_emerges p]
   exact graph_entire _
 
+-- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.GCTakeWhile

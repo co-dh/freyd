@@ -3,15 +3,15 @@
   (the Eilenberg–Wright lemma, book pp. 121–122).
 
   For a relator `F` on `𝒜` with an initial algebra `α : F t ⟶ t` in the subcategory of
-  MAPS of `𝒜`, every algebra `R : F c ⟶ c` (a relation, not necessarily a map) has a
-  UNIQUE relational catamorphism `(|R|) : t ⟶ c` characterised by
+  MAPS of `𝒜`, every algebra `R : F A ⟶ A` (a relation, not necessarily a map) has a
+  UNIQUE relational catamorphism `(|R|) : t ⟶ A` characterised by
   `α · X = FX · R ⟺ X = (|R|)`  (5.12, mirrored to diagram order: `α ≫ X = F.map X ≫ R`).
 
   B&dM's construction: `(|R|) = ∈ · (|Λ(R·F∈)|)`, i.e. transpose the relational algebra
-  `R : F c ⟶ c` through the power object of `c` to the MAP algebra
-  `Λ(R·F∈) : F [c] ⟶ [c]` (Freyd: `Λ (F.map (∋ c) ≫ R) : F.obj (powerObj c) ⟶ powerObj c`),
+  `R : F A ⟶ A` through the power object of `A` to the MAP algebra
+  `Λ(R·F∈) : F [A] ⟶ [A]` (Freyd: `Λ (F.map (∋ A) ≫ R) : F.obj (powerObj A) ⟶ powerObj A`),
   take the ordinary (map) catamorphism of that, and compose with `∈` to come back down
-  to `c`.  All composition is diagram order (Freyd `≫`), mirroring B&dM's `·`.
+  to `A`.  All composition is diagram order (Freyd `≫`), mirroring B&dM's `·`.
 
   Needs Lemma 5.1 ("relators preserve maps": `Map f → Map (F f) ∧ F(f°) = (F f)°`) — its
   canonical home is `A5_1.lean` (added by a parallel wave); a private copy is proved here
@@ -33,90 +33,90 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
 -- (Lemma 5.1 "relators preserve maps" now comes from A5_1: `Relator.map_is_map`.)
 
 /-- **B&dM p.121**: `F` has an initial algebra `α : F t ⟶ t` IN THE SUBCATEGORY OF MAPS —
-    `α` is a map, and for every MAP algebra `f : F c ⟶ c` there is a unique map
-    `cata f hf : t ⟶ c` with `α ≫ cata f hf = F.map (cata f hf) ≫ f`
+    `α` is a map, and for every MAP algebra `f : F A ⟶ A` there is a unique map
+    `cata f hf : t ⟶ A` with `α ≫ cata f hf = F.map (cata f hf) ≫ f`
     (B&dM `cata f hf · α = f · F(cata f hf)`, mirrored). -/
 public class InitialAlgebra (F : Relator 𝒜 𝒜) where
   t : 𝒜
   α : F.obj t ⟶ t
   α_map : Map α
-  cata : ∀ {c : 𝒜} (f : F.obj c ⟶ c), Map f → (t ⟶ c)
-  cata_map : ∀ {c : 𝒜} (f : F.obj c ⟶ c) (hf : Map f), Map (cata f hf)
-  cata_comm : ∀ {c : 𝒜} (f : F.obj c ⟶ c) (hf : Map f), α ≫ cata f hf = F.map (cata f hf) ≫ f
-  cata_unique : ∀ {c : 𝒜} (f : F.obj c ⟶ c) (hf : Map f) (h : t ⟶ c), Map h →
+  cata : ∀ {A : 𝒜} (f : F.obj A ⟶ A), Map f → (t ⟶ A)
+  cata_map : ∀ {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f), Map (cata f hf)
+  cata_comm : ∀ {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f), α ≫ cata f hf = F.map (cata f hf) ≫ f
+  cata_unique : ∀ {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) (h : t ⟶ A), Map h →
     α ≫ h = F.map h ≫ f → h = cata f hf
 
 variable {F}
 
 /-- **B&dM p.121**: the RELATIONAL catamorphism `(|R|) = ∈·(|Λ(R·F∈)|)` (mirrored):
-    transpose the algebra `R : F c ⟶ c` to the map algebra `Λ(R·F∈) : F[c] ⟶ [c]`, take
+    transpose the algebra `R : F A ⟶ A` to the map algebra `Λ(R·F∈) : F[A] ⟶ [A]`, take
     its (map) catamorphism, and compose back down with `∈`. -/
-@[expose] public def relCata [I : InitialAlgebra F] {c : 𝒜} (R : F.obj c ⟶ c) : I.t ⟶ c :=
-  I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c
+@[expose] public def relCata [I : InitialAlgebra F] {A : 𝒜} (R : F.obj A ⟶ A) : I.t ⟶ A :=
+  I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A
 
 /-- The book's banana brackets `(|R|)`.  The ONE global binding: the structural folds `cataR`
     equal `relCata` only propositionally (`cataR_eq_relCata`), so they are spelled by name. -/
 notation:max "⦇" R "⦈" => relCata R
 
-public theorem relCata_unfold (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    relCata R = I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) ≫ ∋ c := rfl
+public theorem relCata_unfold (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    relCata R = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := rfl
 
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
-    of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ c`
+    of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ A`
     (not just maps). -/
-public theorem relCata_UP (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) (X : I.t ⟶ c) :
+public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
     (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R := by
   constructor
   · intro h
-    -- `Λ X` is a map, so `X = Λ X ≫ ∋ c`; rewrite both sides of `h` through this map
-    -- and transport the equation to `Λ (F.map (∋ c) ≫ R)` via `Λ_fusion`.
-    have hX_eps : Λ X ≫ ∋ c = X := Λ_eps_eq' X
-    have hFX : F.map X = F.map (Λ X) ≫ F.map (∋ c) := by
-      -- rewrite the LARGER pattern `Λ X ≫ ∋ c` (not bare `X`) so the `Λ X` inside it
+    -- `Λ X` is a map, so `X = Λ X ≫ ∋ A`; rewrite both sides of `h` through this map
+    -- and transport the equation to `Λ (F.map (∋ A) ≫ R)` via `Λ_fusion`.
+    have hX_eps : Λ X ≫ ∋ A = X := Λ_eps_eq' X
+    have hFX : F.map X = F.map (Λ X) ≫ F.map (∋ A) := by
+      -- rewrite the LARGER pattern `Λ X ≫ ∋ A` (not bare `X`) so the `Λ X` inside it
       -- does not spuriously get rewritten too.
-      have hcomp : F.map (Λ X ≫ ∋ c) = F.map (Λ X) ≫ F.map (∋ c) := F.map_comp _ _
+      have hcomp : F.map (Λ X ≫ ∋ A) = F.map (Λ X) ≫ F.map (∋ A) := F.map_comp _ _
       rwa [hX_eps] at hcomp
-    have hRHS : Λ (F.map X ≫ R) = F.map (Λ X) ≫ Λ (F.map (∋ c) ≫ R) := by
+    have hRHS : Λ (F.map X ≫ R) = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
       rw [hFX, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
     have hLHS : Λ (I.α ≫ X) = I.α ≫ Λ X := Λ_fusion I.α_map X
-    have heq : I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ c) ≫ R) := by
+    have heq : I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
       rw [← hLHS, h, hRHS]
-    have hAX_eq_u : Λ X = I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) :=
+    have hAX_eq_u : Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
       I.cata_unique _ (Λ_is_map' _) (Λ X) (Λ_is_map' X) heq
     rw [relCata_unfold, ← hAX_eq_u, hX_eps]
   · intro h
     rw [h, relCata_unfold]
-    generalize hu_def : I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) = u
-    have hu_comm : I.α ≫ u = F.map u ≫ Λ (F.map (∋ c) ≫ R) := by
+    generalize hu_def : I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) = u
+    have hu_comm : I.α ≫ u = F.map u ≫ Λ (F.map (∋ A) ≫ R) := by
       rw [← hu_def]; exact I.cata_comm _ _
-    calc I.α ≫ (u ≫ ∋ c)
-        = (I.α ≫ u) ≫ ∋ c := by rw [Cat.assoc]
-      _ = (F.map u ≫ Λ (F.map (∋ c) ≫ R)) ≫ ∋ c := by rw [hu_comm]
-      _ = F.map u ≫ (Λ (F.map (∋ c) ≫ R) ≫ ∋ c) := by rw [Cat.assoc]
-      _ = F.map u ≫ (F.map (∋ c) ≫ R) := by rw [Λ_eps_eq']
-      _ = (F.map u ≫ F.map (∋ c)) ≫ R := by rw [Cat.assoc]
-      _ = F.map (u ≫ ∋ c) ≫ R := by rw [F.map_comp]
+    calc I.α ≫ (u ≫ ∋ A)
+        = (I.α ≫ u) ≫ ∋ A := by rw [Cat.assoc]
+      _ = (F.map u ≫ Λ (F.map (∋ A) ≫ R)) ≫ ∋ A := by rw [hu_comm]
+      _ = F.map u ≫ (Λ (F.map (∋ A) ≫ R) ≫ ∋ A) := by rw [Cat.assoc]
+      _ = F.map u ≫ (F.map (∋ A) ≫ R) := by rw [Λ_eps_eq']
+      _ = (F.map u ≫ F.map (∋ A)) ≫ R := by rw [Cat.assoc]
+      _ = F.map (u ≫ ∋ A) ≫ R := by rw [F.map_comp]
 
 /-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
-public theorem relCata_cancel (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
+public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     I.α ≫ relCata R = F.map (relCata R) ≫ R :=
   (relCata_UP I R (relCata R)).mpr rfl
 
 /-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
     `(|f|) = cata f hf` when `f` is a map. -/
-theorem relCata_map (I : InitialAlgebra F) {c : 𝒜} (f : F.obj c ⟶ c) (hf : Map f) :
+theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) :
     relCata f = I.cata f hf :=
   ((relCata_UP I f (I.cata f hf)).mp (I.cata_comm f hf)).symm
 
 /-- `Λ(|R|) = (|Λ(R·F∈)|)` (B&dM p.121): the power-transpose of the relational catamorphism
     is exactly the map catamorphism of the transposed algebra it was built from. -/
-theorem Λ_relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
-    Λ (relCata R) = I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) := by
+theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    Λ (relCata R) = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) := by
   rw [relCata_unfold]
-  generalize hu_def : I.cata (Λ (F.map (∋ c) ≫ R)) (Λ_is_map' _) = u
+  generalize hu_def : I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) = u
   have hu_map : Map u := hu_def ▸ I.cata_map _ _
-  exact ((Λ_UP (u ≫ ∋ c) hu_map).mpr rfl).symm
+  exact ((Λ_UP (u ≫ ∋ A) hu_map).mpr rfl).symm
 
 /-! ## §2.6  Fusion (2.12) and Ex 2.35 (book pp. 46, 49)
 
@@ -131,8 +131,8 @@ theorem Λ_relCata (I : InitialAlgebra F) {c : 𝒜} (R : F.obj c ⟶ c) :
     Unlike the inclusion laws (6.4)/(6.5) of `AOP.A6_2` this needs NO local completeness —
     no `Sup`/`Inf`, no fixed point — only `relCata_UP` and `relCata_cancel`: the composite
     `(|R|) S` is shown to satisfy `Q`'s defining equation, and uniqueness does the rest. -/
-public theorem relCata_fusion (I : InitialAlgebra F) {c d : 𝒜} {R : F.obj c ⟶ c}
-    {Q : F.obj d ⟶ d} {S : c ⟶ d} (h : R ≫ S = F.map S ≫ Q) :
+public theorem relCata_fusion (I : InitialAlgebra F) {A d : 𝒜} {R : F.obj A ⟶ A}
+    {Q : F.obj d ⟶ d} {S : A ⟶ d} (h : R ≫ S = F.map S ≫ Q) :
     relCata R ≫ S = relCata Q := by
   apply (relCata_UP I Q (relCata R ≫ S)).mp
   calc I.α ≫ relCata R ≫ S
@@ -164,11 +164,11 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {a x : 𝒜} (f : x ⟶ a)
   B&dM's exercise asks to show `Entire R → Entire (|R|)`, hinting "use reflection to show
   `dom (|R|) = id`".  Genuine attempts (3):
 
-  1. `dom (relCata I R) = dom (u ≫ ∋ c) = dom (u ≫ dom (∋ c))` via `dom_comp_dom` (A4_2),
-     with `u` the map catamorphism above.  This reduces the goal to `u ≫ dom (∋ c) `
+  1. `dom (relCata I R) = dom (u ≫ ∋ A) = dom (u ≫ dom (∋ A))` via `dom_comp_dom` (A4_2),
+     with `u` the map catamorphism above.  This reduces the goal to `u ≫ dom (∋ A) `
      having full domain, i.e. that `u` (hence, by the same shape of argument, `(|R|)`
-     itself) always lands in the coreflexive "nonempty-set" part of `[c]` cut out by
-     `dom (∋ c)`.  Proving THAT needs an inductive/fusion argument on `u` as the initial
+     itself) always lands in the coreflexive "nonempty-set" part of `[A]` cut out by
+     `dom (∋ A)`.  Proving THAT needs an inductive/fusion argument on `u` as the initial
      map-catamorphism — exactly as hard as the original goal, not a reduction.
   2. Apply `dom`/`congrArg` to `relCata_cancel`'s equation `α ≫ (|R|) = F(|R|) ≫ R` and push
      `dom` through both sides via `dom_comp_dom` + `Entire R` (`dom R = id`, so
@@ -180,7 +180,7 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {a x : 𝒜} (f : x ⟶ a)
   3. Tried to phrase "R entire" as a subalgebra/mono condition on `t` and use
      `cata_unique` as an induction principle (the standard "no-junk" argument for initial
      algebras).  `InitialAlgebra` as specified only bundles the universal property for
-     MAPS `t ⟶ c` against a FIXED target `c` (uniqueness of the homomorphism solving
+     MAPS `t ⟶ A` against a FIXED target `A` (uniqueness of the homomorphism solving
      `α ≫ h = F.map h ≫ f`); it does not give an induction/extremal principle over
      mono-subobjects of `t` needed to transport a pointwise property ("is `R`-entire")
      through `α`.  That principle is extra initial-algebra infrastructure this file's
