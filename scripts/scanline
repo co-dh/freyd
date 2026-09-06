@@ -30,9 +30,9 @@ from relexpr import (alias, BREAK, CARRIER, CLOSERS, DVAR, INTERVAL, IVAR, OPENE
                      UNIT, Unhandled, VARS, VEC, act, canon, deindex, defns, dmatch, dput, dun,
                      fill, fuse,
                      help_if, hole_last, hole_slot, ibind, idxhead, interchange, is_index, isub,
-                     listable, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
+                     listable, load, matching, norm, opt, p_prim, p_prod, parse, quot, rec,
                      require_hole_last, spell, split_top, squeeze, tidy, unabbrev, unit_ctx,
-                     varsof, width)
+                     unscope, width)
 
 # ---------------------------------------------------------------- the ink
 # `hm.typ`'s own constants and the knees the note's panel helpers hand `hm-wire`.  The adapters
@@ -893,12 +893,14 @@ def certify(p):
     return bad, note
 
 
-def fold_cut(p, cut):
-    """A cut spelled as one 1-cell: leftmost wire outermost, object wire innermost."""
-    e = ('atom', cut[-1][1])
+def fold_cut(p, cut, ds=()):
+    """A cut spelled as one 1-cell: leftmost wire outermost, object wire innermost.  The object
+    wire's label is PARSED, so `[A]` reads `list(A)` the way a row's `[x]` does, and the panel's own
+    `defn:` abbreviations are expanded — a cut is compared against expressions, never against text."""
+    e = parse(cut[-1][1], True)
     for (_, l) in reversed(cut[:-1]):
         e = act(l, e, obj=True)
-    return e
+    return norm(unabbrev(e, ds))
 
 
 def first_diff(got, want):
@@ -910,53 +912,94 @@ def first_diff(got, want):
     return "" if len(g) == len(w) else f"; the panel has {len(g)} factors, the formula {len(w)}"
 
 
-def polyrow(p, label):
-    """Is this bead's row an arrow AT ANY OBJECT — a free object variable in either port?  The
-    panel's own `sigs:` first, as everywhere: a row it overrides is a different arrow."""
-    row = ((typed(sigs(), p.cert.get("sigs")) or {}).get("sigs") or {}).get(
-        label[:label.find('(')] if label.find('(') > 0 else label)
-    if not isinstance(row, dict) or not row.get("src"):
-        return False
-    return bool(varsof(parse(row["src"])) | varsof(parse(row["tgt"])))
+def diagram():
+    """`scripts/diagram`, on demand: it loads THIS module as it starts, so a top-level import here
+    would not terminate.  Registering the running copy under its own name is what makes the two
+    meet in the middle — `load` then hands `diagram` this module rather than executing a second
+    one, and there is one `Unhandled` class for both to raise and catch."""
+    if "scanline" not in sys.modules:
+        sys.modules["scanline"] = sys.modules[__name__]
+    return load("diagram")
+
+
+def beadrow(dg, lab, rows, cert, n):
+    """The arrow a bead's LABEL is — `diagram`'s own `signature`, never a slice of the text — cut
+    to the branch the panel declares, since `α : F(Decimal)⟶Decimal` drawn on the `step` arm is `α`
+    at that arm's summand.  `None` where there is no arrow to be an instance of: the branch arm
+    itself keys the BRACKET, and only `cert: branch:` says which arm the panel drew."""
+    if lab == cert.get("branch"):
+        return None
+    try:
+        r = dg.signature(dg.parse(lab, False), rows, n)
+    except (Unhandled, ValueError, KeyError, StopIteration, RecursionError):
+        return None
+    if not cert.get("branch"):
+        return r
+    t = typed(sigs(), cert.get("sigs"))
+    return tuple(take_branch(e, cert["branch"], True, t) for e in r)
 
 
 def crosscheck(ps):
-    """One bead label, one signature within a display — the cheap catch for a bead moved onto the
-    wrong wire.  Across displays the same name is a different arrow, so the scope is the display.
+    """ONE criterion, asked of every bead: what the panel DREW it between is that bead's own arrow
+    at some object.  The drawn source is the TAIL of the cut above it — everything from its leftmost
+    column rightwards, object wire included — because a signature's variable stands for a whole tail
+    and the wires west of that column are the context `factor` wraps the arrow in; the row's own
+    variables stay free, so `est(R) : E(x)⟶x` may stand at two objects of one display and
+    `⦇gen⦈ : L(N(x))⟶N(E(L(x)))` at two indices.  `prefix : [x]⟶[x]` drawn on the object wire alone
+    is `prefix` at NO object, and that is the catch this exists for: a bead moved off the wire it
+    belongs on spells the same composite when nothing sits west of it, so the respelling is blind
+    to it where this is not.
 
-    A bead whose ROW is polymorphic is exempt: `est(R) : x[k]⟶x` collapses whichever index it is
-    given and `⦇gen⦈ : x[m][n]⟶x[n][p][m]` stands at `[m]` on one side of a fold equation and at
-    `[m+1]` on the other, so the drawn wires are what fixes the instance and not the name.  What
-    checks THOSE is the respelling: each panel is read back and compared to its own formula."""
-    sigs, wlab, bad = {}, {}, []
+    Nothing is decided ahead of the drawing, and no bead is exempt for the shape of its name — what
+    a label is polymorphic in is read off its arrow.  The one GAP is a label with no arrow to
+    resolve, the `branch` arm of a bracket algebra, which is counted and named rather than passed
+    over in silence."""
+    dg, wlab, bad, gap = diagram(), {}, [], []
     for p in ps:
+        c = p.cert
+        own = c.get("sigs") or {}
+        t = typed(sigs(), own)
+        # The globals `signature` reads, set exactly as `draw` sets them for this panel: a fold's
+        # initial algebra and a panel's own `defn:` both change what a label is an arrow between.
+        dg.SPLIT = frozenset((c.get("split") or dg.DEFSPLIT).split())
+        dg.OWN, dg.TBL, dg.BR = frozenset(own), t, None
+        dg.NAT = {k: v["nat"] for k, v in t["sigs"].items() if isinstance(v, dict) and "nat" in v}
+        dg.MU = {f: (o, None) for f, o in t.get("mu", {}).items()} \
+            | (dg.parse_mu(c["mu"]) if c.get("mu") else {})
+        ds = defns(c.get("defn"))
+        rows = {k: (norm(unabbrev(parse(v["src"]), ds)), norm(unabbrev(parse(v["tgt"]), ds)))
+                for k, v in t["sigs"].items()}
         for w in p.wires:
             wlab.setdefault(w.label, p.id)
-        for b in p.beads:
-            if polyrow(p, b.label):
+        for n, b in enumerate(p.beads):
+            lab = deindex(b.label or "")[0]     # a fold's carrier is the object wire, not the key
+            if not lab:
                 continue
-            cons = tuple(sorted(w.label for w in p.wires if abs(w.ybot - b.y) < EPS
-                                and owner(p, w, b.y) is b))
-            made = tuple(sorted(w.label for w in p.wires if abs(w.ytop - b.y) < EPS
-                                and owner(p, w, b.y) is b))
-            key = (p.id.rsplit('.', 1)[0], b.label)
-            sigs.setdefault(key, {})[(cons, made, abs(p.col(b) - p.xo) < EPS)] = p.id
-    for (disp, label), seen in sigs.items():
-        if len(seen) > 1:
-            bad.append(f"{disp}: the bead {label} has {len(seen)} signatures — "
-                       + "; ".join(f"{pid} {sigline(s)}" for s, pid in seen.items()))
+            i = next(k for k in range(len(p.levels)) if abs(p.levels[k] - b.y) < EPS)
+            lo = min(touched(p, b, p.cuts[i])) - EPS
+            drew = tuple(fold_cut(p, [(x, l) for (x, l) in cut if x >= lo], ds)
+                         for cut in (p.cuts[i], p.cuts[i + 1]))
+            say = beadrow(dg, lab, rows, c, str(n))
+            if say is None:
+                gap.append(f"{p.id}: {lab}")
+                continue
+            sub, ix = {}, {}
+            try:
+                for r, d, end in zip(say, drew, ("source", "target")):
+                    dg.unify(r, d, sub, end, ix)
+            except (Unhandled, ValueError) as e:
+                bad.append(f"{p.id}: the bead {lab} is drawn {spell(drew[0])}⟶{spell(drew[1])},"
+                           f" which is not {unscope(spell(say[0]))}⟶{unscope(spell(say[1]))} at"
+                           f" any object — {e}")
     for label, pid in wlab.items():
         hit = [p.id for p in ps for b in p.beads if b.label == label]
         if hit:
             bad.append(f"{pid}: {label} labels a WIRE here and a BEAD in {hit[0]} — a wire is a"
                        f" functor, and may never carry an arrow's name")
+    if gap:
+        print(f"scanline: {len(gap)} bead{'s' * (len(gap) > 1)} whose label names no arrow of its"
+              f" own — the branch arm of a bracket algebra ({', '.join(gap)})")
     return bad
-
-
-def sigline(s):
-    cons, made, on = s
-    return (("on the object wire" if on else "off the object wire")
-            + f", consumes ({', '.join(cons) or '—'}), creates ({', '.join(made) or '—'})")
 
 
 # ---------------------------------------------------------------- driver

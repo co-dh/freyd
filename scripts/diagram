@@ -28,13 +28,11 @@ come back the same — cut down to the one branch it draws, where the formula st
 `--compare` rebuilds every `dpanel(` literal the note holds from its own `cert:` and fails on any
 drift, and `--write` splices the rebuilt ones over them, the note's own trailing arguments kept.
 """
-import difflib, importlib.machinery, importlib.util, json, os, re, subprocess, sys
+import difflib, json, os, re, subprocess, sys
 
-sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the two scripts
-_P = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanline")
-_S = importlib.util.spec_from_loader("scanline", importlib.machinery.SourceFileLoader("scanline", _P))
-sl = importlib.util.module_from_spec(_S)
-_S.loader.exec_module(sl)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from relexpr import load                        # noqa: E402 — the path has to be set first
+sl = load("scanline")
 norm, spell, tidy, rec, Unhandled = sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
 
 
