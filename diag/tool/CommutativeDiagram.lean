@@ -221,10 +221,11 @@ def faceOf (sym : String) (lhs rhs : Array Expr) : MetaM (Array Node × Array Ed
     edges := edges.push
       { src := nodeId "v" j m, tgt := nodeId "v" (j+1) m, label := (← arrowLabel rhs[j]!),
         side := sideAt left bot true j, bow := if bowed then 0.9 else 0.0 }
+  -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
   -- The symbol goes at the average of the face's corners, which for a convex polygon is inside it.
   let cx := nodes.foldl (fun a v => a + v.gx) 0.0 / nodes.size.toFloat
   let cy := nodes.foldl (fun a v => a + v.gy) 0.0 / nodes.size.toFloat
-  return (nodes, edges, #[{ sym, gx := cx, gy := cy }])
+  return (nodes, edges, if sym == "=" then #[] else #[{ sym, gx := cx, gy := cy }])
 
 /-! ### Emitting the page -/
 
