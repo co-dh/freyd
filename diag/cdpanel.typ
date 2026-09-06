@@ -89,6 +89,11 @@
     ..nodes.filter(n => n.at.at(0) == c).map(n => ext.at(n.id).at(0))))
   let rowh = rows.map(r => calc.max(
     ..nodes.filter(n => n.at.at(1) == r).map(n => ext.at(n.id).at(1))))
+  // Every box in a row is drawn at the row's height (see below), so that is also the height an
+  // arrow has to clear: the clipping and the ink must be measured from the same box.
+  for n in nodes {
+    ext.insert(n.id, (ext.at(n.id).at(0), rowh.at(rows.position(r => r == n.at.at(1)))))
+  }
   let xps = axis(cols, STEPX, colh)
   let yps = axis(rows, STEPY, rowh)
   let pos(a) = (interp(cols, xps, a.at(0)), interp(rows, yps, a.at(1)))
@@ -106,17 +111,32 @@
     let eb = ext.at(e.at("to"))
     let p = exitpt(a, ea.at(0), ea.at(1), u, ARRGAP)
     let q = exitpt(b, eb.at(0), eb.at(1), (-u.at(0), -u.at(1)), ARRGAP)
-    let nm = normalOf(e.side)
+    // The label is set along the EDGE's own perpendicular, `side` choosing only which of the two it
+    // is.  An axis normal clears a horizontal or vertical edge and not a diagonal one: a wide label
+    // offset straight up from the midpoint of a 45° chord has that chord run through it.
+    let ax = normalOf(e.side)
+    let per = (-u.at(1), u.at(0))
+    let nm = if per.at(0) * ax.at(0) + per.at(1) * ax.at(1) < 0 {
+      (-per.at(0), -per.at(1))
+    } else { per }
     let mid = ((p.at(0) + q.at(0)) / 2 + nm.at(0) * e.bow,
       (p.at(1) + q.at(1)) / 2 + nm.at(1) * e.bow)
     if e.bow == 0 { d.line(p, q, mark: MARK, stroke: STROKE) }
     else { d.bezier(p, q, mid, mark: MARK, stroke: STROKE) }
     let lh = hext(e.label, length, 0pt)
+    // How far the label box reaches in that direction — its support function, so the WHOLE box
+    // clears the edge and not just its centre.
     let off = LABGAP + calc.abs(nm.at(0)) * lh.at(0) + calc.abs(nm.at(1)) * lh.at(1)
     d.content((mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off), text(NSIZE, e.label))
   }
+  // ONE HEIGHT PER ROW.  cetz centres a content's own frame, and a label with a descender has a
+  // taller frame than one without, so labels drawn at the same row coordinate come out at different
+  // heights and the arrow between them slopes.  Giving every box in a row the row's height — the
+  // height the row was spaced for — is what makes a row level.
   for n in nodes {
-    d.content(at.at(n.id), box(inset: NPAD, fill: white, text(NSIZE, n.label)))
+    let h = rowh.at(rows.position(r => r == n.at.at(1))) * 2 * length
+    d.content(at.at(n.id),
+      box(inset: NPAD, fill: white, height: h, align(horizon, text(NSIZE, n.label))))
   }
   for f in faces { d.content(pos(f.at), text(SYMSIZE)[#f.sym]) }
 }
