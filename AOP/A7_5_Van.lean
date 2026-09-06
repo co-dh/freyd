@@ -228,10 +228,15 @@ public theorem H_eq :
 /-- **van-defn**: `|R| ≜ R∩¬R°`, the strict part `R` splits into. -/
 @[expose] public def strictR (Tx : Type) : dSched Tx ⟶ dSched Tx := fun p q => clen p < clen q
 
+/-- **van-defn**: `R∩H` — no longer, AND with the first segment a prefix of the other's.  The §7.5
+    displays draw it as ONE bead, so it is one arrow here: a bead is an arrow, and an arrow the note
+    hangs a naturality verdict on needs a declaration to hang it from. -/
+@[expose] public def RinterH (Tx : Type) : dSched Tx ⟶ dSched Tx := R Tx ∩ Hrel Tx
+
 /-- **van-mono**, second row: `R;H = |R|∪(R∩H)` — the split the monotonicity proof
     distributes over.  It is also all the certification `|R| ≜ R∩¬R°` gets: the allegory
     carries no complement, so the strict part is named by this equation rather than by `¬`. -/
-public theorem RH_eq_strict : RH Tx = strictR Tx ∪ (R Tx ∩ Hrel Tx) := by
+public theorem RH_eq_strict : RH Tx = strictR Tx ∪ RinterH Tx := by
   apply hom_ext; intro p q
   constructor
   · rintro ⟨hle, hH⟩

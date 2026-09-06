@@ -160,6 +160,15 @@ def natural(core, sigs):
     variable at all needs no statement: it is one arrow between two named objects."""
     if core[0] == 'conv':
         return natural(core[1], sigs)
+    if core[0] == 'prod':
+        # A PRODUCT is typed factor by factor (`signature` above), and it is natural the same way:
+        # `𝟙` is natural at every object, so `wrap×𝟙` is `wrap`'s own square in the first component
+        # and nothing in the second.  The WEAKEST factor decides — one lax factor makes the product
+        # lax, one refuted factor puts the whole bead back on the object wire — because the square
+        # the product states is the factors' squares side by side.  Without this a product wearing a
+        # natural factor falls through to the object wire, which says it is an arrow at one object.
+        fs = [natural(x, sigs) for x in core[1] if x != ('atom', sl.UNIT)]
+        return bool(fs) and all(fs) and ("lax" if "lax" in fs else "strict")
     lab = core[1] if core[0] == 'app' else spell(core)
     k = key(core, sigs)                # the row it reads its objects off is the row that says this
     if k in NAT:                       # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is

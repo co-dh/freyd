@@ -7429,7 +7429,7 @@ zip(that)                                         each row: its square, and the 
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((2.2, [`Int`]),),
-  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
+  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]"))],
 
   [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons` \
    #src[`cons°` splits the schedule into its first segment and the rest, the first `cons` puts the
@@ -7437,7 +7437,7 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.glue_eq@f4301628
   [#dpanel(4.4, 10.56, 8.71,
   ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.271, "top", 2.2, none, none), (5.178, 3.3, 2.2, [`[Int]×−`], none), (6.319, 3.3, 1.1, [`list`], none), (5.49, "top", 3.3, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
-  ((3.3, [`cons°`], black, 5.49, 5.49), (2.2, [`cons×𝟙`], black, 3.271), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((3.3, [`cons°`], black, 5.49, 5.49), (2.2, [`cons×𝟙`], black, 3.271, 4.2245), (1.1, [`cons`], black, 3.428, 5.444)),
   ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
   ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
@@ -7449,7 +7449,7 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.old_eq@b9c3949e
   [#dpanel(5.5, 10.56, 8.71,
   ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.428, 3.3, 2.2, [`[Int]×−`], none), (3.271, "top", 3.3, none, none), (5.178, 4.4, 3.3, [`[Int]×−`], none), (6.319, 4.4, 1.1, [`list`], none), (5.49, "top", 4.4, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
-  ((4.4, [`cons°`], black, 5.49, 5.49), (3.3, [`cons×𝟙`], black, 3.271), (2.2, [`secure×𝟙`], black, 3.428), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((4.4, [`cons°`], black, 5.49, 5.49), (3.3, [`cons×𝟙`], black, 3.271, 4.2245), (2.2, [`secure×𝟙`], black, 3.428), (1.1, [`cons`], black, 3.428, 5.444)),
   ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
   ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
   obj: ((4.4, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`])),
@@ -7464,13 +7464,13 @@ zip(that)                                         each row: its square, and the 
   ((3.329, [`list`]), (4.78, [`Int`])),
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "partition list(secure)", src: "[Int]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "partition": "[Int]⟶[[Int]]")))
+  cert: (expect: "partition list(secure)", src: "[Int]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "partition": "[x]⟶[[x]]")))
 #let van-fus-r = dpanel(3.3, 7.26, 5.41,
   ((3.016, "top", 1.1, none, none), (3.641, 1.1, "bot", none, none), (4.783, 1.1, "bot", none, none)),
   ((1.1, [`⦇[nil,new ∪ old]⦈`], black, 3.016),),
   ((3.016, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
-  cert: (expect: "⦇[nil,new ∪ old]⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 3))
+  cert: (expect: "⦇[nil,new ∪ old]⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "nil": "𝟏⟶[[x]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 3))
 
 #disp[#capbox(
   row((van-fus-l, [#h(7pt) = #h(7pt)], van-fus-r)),
@@ -7500,7 +7500,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#EQ #h(5pt) `(wrap×R)cons` \ #src[`new≜(wrap×𝟙)cons` — @van-algebras — and `(wrap×𝟙)(𝟙×R)=(wrap×R)`]],
      // lean:AOP.A7_5_Van.new_eq_cons@4d0d4d7b
@@ -7510,7 +7510,7 @@ zip(that)                                         each row: its square, and the 
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f", "wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
+  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
    no-longer schedule leaves it no longer — and `new⊑new ∪ old`]],
@@ -7521,7 +7521,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 )]<van-714>
 
 === `H≜(head prefix° head°) ∪ (nil° nil)` <sec-van-h>
@@ -7535,14 +7535,14 @@ zip(that)                                         each row: its square, and the 
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "head prefix° head°", src: "[[Int]]", tgt: "[[Int]]", sigs: ("head": "[[Int]]⟶[Int]", "prefix": "[Int]⟶[Int]")))
+  cert: (expect: "head prefix° head°", src: "[[Int]]", tgt: "[[Int]]", sigs: ("head": "[[x]]⟶[x]", "prefix": "[x]⟶[x]")))
 #let van-h-r = dpanel(4.4, 7.46, 5.61,
   ((3.329, "top", 2.2, none, none), (4.987, "top", 2.2, none, none), (3.017, 1.1, "bot", none, none), (4.158, 1.1, "bot", none, none)),
   ((2.2, [`nil°`], black, 3.329, 4.158), (1.1, [`nil`], black, none, 3.5875)),
   ((3.329, [`list`]), (4.987, [`list`]), (5.61, [`Int`])),
   ((3.017, [`list`]), (4.158, [`list`]), (5.61, [`Int`])),
   obj: ((2.2, [`𝟏`]), (1.1, [`Int`])),
-  cert: (expect: "nil° nil", src: "[[Int]]", tgt: "[[Int]]", sigs: ("nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 4))
+  cert: (expect: "nil° nil", src: "[[Int]]", tgt: "[[Int]]", sigs: ("nil": "𝟏⟶[[x]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 4))
 
 #disp[#capbox(
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
@@ -7562,21 +7562,21 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f"), frame: 4, top: 2))
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f"), frame: 4, top: 2))
 #let van-718-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`⊤`], black, 4.413), (2.2, [`new`], black, 3.271, 4.4125)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×⊤)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×⊤)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "⊤": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
 #let van-718-r = dpanel(4.4, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.H_not_lax_natural@c647d911!lean=lean:AOP.A7_5_Van.Van.Hrel@a9423ec2"), frame: 4, top: 2))
+  cert: (expect: "new H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.H_not_lax_natural@c647d911!lean=lean:AOP.A7_5_Van.Van.Hrel@a9423ec2"), frame: 4, top: 2))
 
 #disp[#capbox(
   row((van-718-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
@@ -7600,7 +7600,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R;H)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "(𝟙×R;H)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 
   [#SQ #h(5pt) `(𝟙×R)new` \ #src[`R;H⊑R` — @van-defn]],
      // lean:AOP.A7_5_Van.RH_le_R@84a882e3
@@ -7610,7 +7610,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
   [#row((van-newR, [#h(7pt) ∩ #h(7pt)], van-718-r))],
@@ -7622,7 +7622,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+  cert: (expect: "new (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb")))],
 
   [#SQ #h(5pt) `new (R;H)` \ #src[`X∩Y⊑X;Y`, and `new⊑new ∪ old`]],
      // lean:AOP.A7_5_Van.inter_le_RH@a000aeda
@@ -7632,7 +7632,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "new R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 )]<van-716>
 
 === `(𝟙×(R;H))old⊑(new ∪ old)(R;H)` <sec-van-717>
@@ -7646,28 +7646,28 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×⊤)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×⊤)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "⊤": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
 #let van-720-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`|R|`], black, 4.413), (2.2, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f"), frame: 4, top: 3))
 #let van-721-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`R∩H`], black, 4.413), (2.2, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb"), frame: 4, top: 3))
 #let van-721-r = dpanel(4.4, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`old`], black, 3.271), (1.1, [`R∩H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 2))
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb"), frame: 4, top: 2))
 
 #disp[#capbox(
   row((van-719-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
@@ -7719,7 +7719,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
+  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
 
   [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7751,14 +7751,14 @@ zip(that)                                         each row: its square, and the 
   cert: (expect: "(𝟙×|R|)old ∪ (𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
  ]])],
-     // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
+     // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
   [#dpanel(3.3, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`|R|`], black, 4.413), (1.1, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f")))],
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f")))],
 
   [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7794,7 +7794,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -7815,7 +7815,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 )]<van-mono>
 
 === The derivation <sec-van-deriv>
@@ -7859,7 +7859,7 @@ zip(that)                                         each row: its square, and the 
   ((3.954, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
   obj: ((3.85, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
+  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[x]⟶[[x]]", "secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
