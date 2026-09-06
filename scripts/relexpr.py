@@ -15,7 +15,23 @@ arrow).  The two pictures share nothing else, so this file is the one place the 
 spellings of one arrow are compared in.  `opt`/`help_if` are here for the same reason: every
 script that reads this language has the same two flags.
 """
-import json, os, re, string, sys
+import importlib.machinery, importlib.util, json, os, re, string, sys
+
+sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the scripts
+
+
+def load(name):
+    """A sibling SCRIPT (`scanline`, `diagram`, `cite-check`) as a module, REGISTERED under its
+    name so one process holds exactly one copy: a second `scanline` would give `Unhandled` a second
+    class, which the first one's `except` cannot catch.  Registering is also what lets the two
+    depend on each other — `diagram` loads `scanline` as it starts and `scanline` loads `diagram`
+    when a bead has to be typed — since each finds the copy the other made."""
+    if name not in sys.modules:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+        s = importlib.util.spec_from_loader(name, importlib.machinery.SourceFileLoader(name, p))
+        sys.modules[name] = importlib.util.module_from_spec(s)
+        s.loader.exec_module(sys.modules[name])
+    return sys.modules[name]
 
 # A unit's source is `Id`: it contains no object wire, so the bead may not sit on one.
 UNIT = "𝟙"
@@ -429,6 +445,17 @@ def tidy(e):
     if e[0] == 'prod' and all(x[0] == 'conv' for x in e[1]):
         return ('conv', ('prod', [x[1] for x in e[1]]))
     return e
+
+
+SCOPE = re.compile(r"@[A-Za-z0-9_]+")
+
+
+def unscope(s):
+    """A spelling with the scope marks taken off.  `signature` renames a row's variables apart —
+    `x@3`, and an index `[k@3]` with them — so two beads may both say `x`; a message quoting the row
+    must quote it the way the table writes it, and a matcher comparing two rows must compare them
+    modulo that renaming."""
+    return SCOPE.sub("", s)
 
 
 def varsof(e):

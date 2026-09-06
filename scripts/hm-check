@@ -39,18 +39,12 @@ usage: hm-check [label…]            every fixture, or the ones whose file name
        hm-check --geom [label…]     our render's geometry beside the book's, in one shared frame
        hm-check --geom --strict     the same, exiting nonzero on any delta past 0.02cm
 """
-import importlib.machinery, importlib.util, json, math, os, re, sqlite3, subprocess, sys
+import json, math, os, re, sqlite3, subprocess, sys
 
-sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-
-
-def load(name):
-    p = os.path.join(HERE, name)
-    s = importlib.util.spec_from_loader(name, importlib.machinery.SourceFileLoader(name, p))
-    m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
-
+sys.path.insert(0, HERE)
+from relexpr import load                    # noqa: E402 — the path has to be set first
 
 dg = load("diagram")
 sl = dg.sl                                 # THE scanline `draw` raises from: a second copy of the

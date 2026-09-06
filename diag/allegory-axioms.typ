@@ -6566,10 +6566,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     // The first and last panels are the row the display states; the two in between are the steps the
     // `R°` bead takes to get from one to the other, so their `expect` is the composite itself, with
     // no `include` to abbreviate it — the bead sits inside what `include` would name.
-    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,), split: ""),
-           (expect: "(𝟙×list(g))(𝟙×list(R°))(𝟙×concat)h", split: ""),
-           (expect: "(𝟙×list(g))(𝟙×concat)(𝟙×R°)h", split: ""),
-           (expect: "include R°", alias: (INCL,), split: "")).at(rs))
+    // `g` and `h` are the display's own letters, and the panel draws them consuming a lane — `g`
+    // the `Δ`, `h` the `A×−` — so the schematic reading `x⟶x` a bare letter otherwise falls to is
+    // not what they are: type them here, where the display introduces them.
+    cert: ((expect: "(𝟙×list((R×R)°))include", alias: (INCL,)),
+           (expect: "(𝟙×list(g))(𝟙×list(R°))(𝟙×concat)h"),
+           (expect: "(𝟙×list(g))(𝟙×concat)(𝟙×R°)h"),
+           (expect: "include R°", alias: (INCL,))).at(rs)
+      + (split: "", sigs: ("g": "[A]×[A]⟶[A]", "h": "A×[A]⟶[A]")))
 }
 
 #let step = step.with(pw: 319pt)
@@ -8220,7 +8224,9 @@ For `Q : A⟶A`, #h(4pt) `thin Q≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt)
   ((2.2, [`⦇(F(∋)S)%∋ thin(Q)⦈`]), (1.1, [`est(R)`], black, 2.5)),
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
-  obj: ((1.1, [`A`]),),
+  // The seam under the reduce, as the same panel carries it in §14.3: `est(R) : E(x)⟶x` leaves the
+  // object it was handed, so the wire between the two beads is already `A` and not `T`.
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
   cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", sigs: ("S": "F(A)⟶A", "⦇⦈": "T⟶y")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
