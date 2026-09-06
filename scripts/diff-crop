@@ -2,6 +2,7 @@
 """diff-crop — the before/after pictures for a review, cut to what actually changed.
 
     ./scripts/diff-crop                          # HEAD's PDF vs the working tree's, for both notes
+    ./scripts/diff-crop --changed [REV] [OUTDIR] # every PANEL whose drawing changed since REV
     ./scripts/diff-crop --key 7.2b [--key 13.3.1a] [OUTDIR]   # one pair per named display
     ./scripts/diff-crop --key 7.2b --caption "what changed" [--key 13.3.1a --caption "..."] [OUTDIR]
     ./scripts/diff-crop --key 7.2b --before OLD.pdf [--after NEW.pdf] [OUTDIR]
@@ -13,6 +14,12 @@ and the chamfer that vanished inside it is invisible once a phone scales the pai
 stacked ABOVE `after` so each half keeps the full screen width, and a small crop is blown up to MINW.
 A page whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
 whole review.
+
+A picture is REFUSED, not written, when it would misinform: when the crop draws none of the names its
+key composes or its caption puts in backticks, and when the two halves are pixel-identical.  Choosing
+the displays by eye is what produced both — four pairs of pure reflow, and one page captioned for a
+bead it never drew — so `--changed` reads the panels whose geometry actually moved out of the two .typ
+files and crops each by its own key, with nothing left to pick.
 
 Two measured faults shipped three clipped reviews in a row, and both are fixed here:
 
@@ -29,7 +36,7 @@ Two measured faults shipped three clipped reviews in a row, and both are fixed h
     rather than falling back to the after's page number.  The whole-page mode aligns its pages by
     text for the same reason, instead of diffing page i against page i and printing a warning.
 """
-import difflib, math, os, re, shutil, subprocess, sys, tempfile
+import difflib, hashlib, math, os, re, shutil, subprocess, sys, tempfile
 import xml.etree.ElementTree as ET
 
 DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
@@ -48,7 +55,9 @@ NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
 
 
 def run(*a):
-    return subprocess.run(a, capture_output=True, text=True)
+    # errors="replace": magick writes its warnings in the ambient 8-bit encoding, and a caption full of
+    # ∋ and ° makes one that is not UTF-8 — decoding it strictly crashed the run instead of the picture.
+    return subprocess.run(a, capture_output=True, text=True, errors="replace")
 
 
 def size(png):
@@ -337,8 +346,8 @@ def cut(pdf, page, y0, y1, W, out):
 def neighbours(key, page, sy, sh, H):
     """The band another display on the page declares is off limits: two displays sit closer together
     than a display and a paragraph do, so growth that crosses one is exactly the clip being fixed."""
-    q = (f"select y, h from pic where pdf_page = {page} and key <> '{key}' and "
-         f"book = (select book from pic where key = '{key}' limit 1)")
+    q = (f"select y, h from pic where pdf_page = {page} and key <> '{sq(key)}' and "
+         f"book = (select book from pic where key = '{sq(key)}' limit 1)")
     top, bot = 0.0, H
     for r in run("sqlite3", "-readonly", db_path(), q).stdout.split():
         y, h = (float(v) for v in r.split("|"))
@@ -349,11 +358,85 @@ def neighbours(key, page, sy, sh, H):
     return top, bot
 
 
+def sq(s):
+    return s.replace("'", "''")
+
+
+def slug(key):
+    """A filename that still names the panel — a key is a formula and carries spaces, slashes and °.  The
+    digest is not decoration: `new (R∩H)` and `new R;H` reduce to the same letters, and one silently
+    overwrote the other's picture."""
+    letters = re.sub(r"-{2,}", "-", re.sub(r"[^\w.]+", "-", key)).strip("-")[:56]
+    return f"{letters or 'panel'}-{hashlib.sha1(key.encode()).hexdigest()[:4]}"
+
+
+def typ_panels(text):
+    """Every `#dpanel` in a note source, as `expect` -> the geometry that draws it, cert stripped.  Two
+    versions of a panel with the same geometry draw the same picture whatever happened to its markers,
+    so this is what decides whether there is anything to review."""
+    out = {}
+    for m in re.finditer(r"(?<![\w#-])#?dpanel\(", text):     # `#dpanel(` and `#let x = dpanel(` alike
+        i, d = m.end(), 1
+        while d:
+            d += (text[i] == "(") - (text[i] == ")")
+            i += 1
+        body = text[m.end():i - 1]
+        j = body.find("cert:")
+        e = re.search(r'expect:\s*"((?:[^"\\]|\\.)*)"', body[j:] if j >= 0 else "")
+        out.setdefault(e.group(1) if e else f"?{m.start()}", []).append(
+            " ".join((body[:j] if j >= 0 else body).split()))
+    return out
+
+
+def changed_panels(before_typ, after_typ):
+    """The panels a review has to show: redrawn, then new.  A panel with no `expect:` has no key to
+    crop by, so it is counted and named as a gap rather than silently dropped."""
+    a, b = typ_panels(before_typ), typ_panels(after_typ)
+    anon = sorted(g for k, v in a.items() if k.startswith("?") for g in v) != \
+        sorted(g for k, v in b.items() if k.startswith("?") for g in v)
+    return (sorted(k for k in set(a) & set(b) if not k.startswith("?") and a[k] != b[k]),
+            sorted(k for k in set(b) - set(a) if not k.startswith("?")), anon)
+
+
+NAME = re.compile(r"[A-Za-z][A-Za-z0-9]{2,}")
+
+
+def needs(key, caption):
+    """What the picture must actually draw: every name its key composes, and every name the caption puts
+    in backticks.  A numbered display key (`14.5b`) names nothing and demands nothing — the caption is
+    then the only claim, and it is still checked, because a page captioned `partition` with no partition
+    drawn on it is the failure this exists to stop."""
+    return sorted(set(NAME.findall(key)) |
+                  {t for q in re.findall(r"`([^`]*)`", caption) for t in NAME.findall(q)})
+
+
+def shows(pdf, page, y0, y1, need, key, which, after_only=False):
+    blob = "".join(w[5] for w in words(pdf, page, page) if y0 <= (w[2] + w[4]) / 2 <= y1)
+    miss = [t for t in need if t not in blob]
+    if miss:
+        raise Refuse(f"{key}: the {which} crop (p{page} y {y0:.1f}..{y1:.1f}) draws no "
+                     f"{', '.join(miss)} — it is not picturing what the key and the caption claim; "
+                     f"if the note has been rebuilt since, `make p` re-indexes `pic` and the box moves",
+                     after_only)
+
+
+class Refuse(Exception):
+    """A picture that would misinform the reader.  Named, not written, and the run ends non-zero.
+    `after_only` says the AFTER half was sound and only the before could not be found or trusted, so the
+    new drawing is still worth showing alone — a panel drops out of the review only when there is
+    nothing true to show."""
+
+    def __init__(self, msg, after_only=False):
+        super().__init__(msg)
+        self.after_only = after_only
+
+
 def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     row = run("sqlite3", "-readonly", db_path(),
-              f"select pdf_page, y, h from pic where key = '{key}' order by pdf_page limit 1").stdout.strip()
+              f"select pdf_page, y, h from pic where key = '{sq(key)}' order by pdf_page limit 1").stdout.strip()
     if not row:
-        sys.exit(f"diff-crop {key}: no such display in {db_path()} — `./scripts/book pic {key}` lists the keys")
+        raise Refuse(f"{key}: no such display in {db_path()} — the index is behind the note; "
+                     f"`make p` re-indexes it, and `./scripts/book pic {key}` lists the keys")
     ap, sy, sh = int(row.split("|")[0]), float(row.split("|")[1]), float(row.split("|")[2])
     W, H, boxes = svg_ink(after_pdf, ap, tmp)
     nb = neighbours(key, ap, sy, sh, H)
@@ -361,29 +444,47 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     if got is None:
         sys.exit(f"diff-crop {key}: no ink on page {ap} of {after_pdf} near y {sy:.1f}..{sy + sh:.1f}")
     aink, apads, agaps = got
+    ay0, ay1 = max(0, aink[1] - apads[0]), min(H, aink[3] + apads[1])
+    assert_holds((0, ay0, W, ay1), aink, key, "after")
+    need = needs(key, caption)
+    shows(after_pdf, ap, ay0, ay1, need, key, "after")
+    ca = f"{tmp}/ka.png"
+    cut(after_pdf, ap, ay0, ay1, W, ca)
+    blank_strips(ca, key, "after", agaps)
+    if before_pdf is None:                     # a panel the change ADDED: there is no before to show
+        pair = os.path.join(out, f"key-{slug(key)}.png")
+        label(ca, pair, f"{key} NEW p{ap}", tmp, [])
+        if caption:
+            caption_strip(pair, pair, caption)
+        print(f"{key}: new on p{ap}, crop [y {ay0:.1f}..{ay1:.1f}] -> {pair} "
+              f"{size(pair)[0]}x{size(pair)[1]}")
+        return pair
     aw = [w for w in words(after_pdf, ap, ap) if aink[1] <= (w[2] + w[4]) / 2 <= aink[3]]
     txt, ay, bp, by = anchor(aw, words(before_pdf))
     if txt is None:
-        sys.exit(f"diff-crop {key}: no text anchor from page {ap} pins the display to one page of "
-                 f"{before_pdf}; tried {by[:5]} — refusing to crop the after PDF's page number")
+        raise Refuse(f"{key}: no text anchor from page {ap} pins the display to one page of "
+                     f"{before_pdf}; tried {by[:5]} — refusing to crop the after PDF's page number",
+                     after_only=True)
     up, down = ay - aink[1], aink[3] - ay
     bW, bH, bboxes = svg_ink(before_pdf, bp, tmp)
     got = band(bboxes, by - up, by + down, (by - up - GROWMAX, by + down + GROWMAX))
     if got is None:
-        sys.exit(f"diff-crop {key}: anchor '{txt}' found on page {bp} of {before_pdf} but no ink around it")
+        raise Refuse(f"{key}: anchor '{txt}' found on page {bp} of {before_pdf} but no ink around it",
+                     after_only=True)
     bink, bpads, bgaps = got
-    ay0, ay1 = max(0, aink[1] - apads[0]), min(H, aink[3] + apads[1])
     by0, by1 = max(0, bink[1] - bpads[0]), min(bH, bink[3] + bpads[1])
-    assert_holds((0, ay0, W, ay1), aink, key, "after")
     assert_holds((0, by0, bW, by1), bink, key, "before")
-    cb, ca = f"{tmp}/kb.png", f"{tmp}/ka.png"
+    shows(before_pdf, bp, by0, by1, need, key, "before", after_only=True)
+    cb = f"{tmp}/kb.png"
     cut(before_pdf, bp, by0, by1, bW, cb)
-    cut(after_pdf, ap, ay0, ay1, W, ca)
     blank_strips(cb, key, "before", bgaps)
-    blank_strips(ca, key, "after", agaps)
+    if size(cb) == size(ca) and re.match(r"0\b", run("compare", "-metric", "AE", cb, ca,
+                                                    f"{tmp}/kd.png").stderr.strip()):
+        raise Refuse(f"{key}: the before and after crops are pixel-identical — this display did not "
+                     f"change, and a pair the reader cannot tell apart costs him the whole review")
     label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
-    pair = os.path.join(out, f"key-{key}.png")
+    pair = os.path.join(out, f"key-{slug(key)}.png")
     run("magick", f"{tmp}/klb.png", f"{tmp}/kla.png", "-background", "gray70", "-append", pair)
     if caption:
         caption_strip(pair, pair, caption)
@@ -605,7 +706,68 @@ def head_copy(note):
     return old
 
 
+def at_rev(rev, path, binary=False):
+    """`path` as of `rev`, written beside the tools when it is a PDF they have to open."""
+    r = subprocess.run(["git", "-C", ROOT, "show", f"{rev}:{path}"], capture_output=True)
+    if r.returncode:
+        sys.exit(f"diff-crop: git show {rev}:{path}: {r.stderr.decode().strip()}")
+    if not binary:
+        return r.stdout.decode()
+    p = os.path.join(tempfile.gettempdir(), f"at-{rev.replace('/', '-')}-{os.path.basename(path)}")
+    open(p, "wb").write(r.stdout)
+    return p
+
+
+def cut_keys(keys, before_pdf, after_pdf, out, captions=()):
+    """One picture per key, and a non-zero exit if any of them would have misinformed the reader.  A
+    refusal names the key and writes nothing — the point is that a bad picture never reaches him, not
+    that the run stops at the first one."""
+    tmp = tempfile.mkdtemp(prefix="diff-crop-key.")
+    made, bad = [], []
+    try:
+        for k, cap in zip(keys, captions or [""] * len(keys)):
+            try:
+                made.append(keycrop(k, before_pdf, after_pdf, out, tmp, caption=cap))
+            except Refuse as e:
+                print(f"diff-crop REFUSED {e}")
+                bad.append(k)
+                if e.after_only:       # the new drawing is sound; only its `before` could not be pinned
+                    try:
+                        made.append(keycrop(k, None, after_pdf, out, tmp,
+                                            caption=f"{cap} (before not located)"))
+                    except Refuse as e2:
+                        print(f"diff-crop REFUSED {e2}")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return made, bad
+
+
 def main(argv):
+    if "--changed" in argv:
+        # The review of a note edit, with nothing chosen by hand: the panels whose GEOMETRY moved are
+        # read out of the two .typ files, and each is cropped by its own key.  Picking display keys by
+        # eye is what shipped four pictures of pure reflow and one captioned for a bead it never drew.
+        i = argv.index("--changed")
+        rev = argv[i + 1] if i + 1 < len(argv) and not argv[i + 1].startswith("-") else "HEAD"
+        note, typ = NOTES[0], NOTES[0][:-4] + ".typ"
+        rest = [a for j, a in enumerate(argv)
+                if not a.startswith("-") and j not in (i + 1,) and argv[j - 1] != "--caption"]
+        out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "diff-crop")
+        os.makedirs(out, exist_ok=True)
+        redrawn, new, anon = changed_panels(at_rev(rev, typ), open(os.path.join(ROOT, typ)).read())
+        if anon:
+            print(f"diff-crop: a #dpanel with no `expect:` in its cert changed — it has no key to crop"
+                  f" by and is NOT in the pictures below; give it a cert to get it reviewed")
+        if not redrawn and not new:
+            print(f"diff-crop: no panel of {typ} draws differently from {rev}")
+            return
+        after = os.path.join(ROOT, note)
+        pairs, badp = cut_keys(redrawn, at_rev(rev, note, binary=True), after, out,
+                               [f"redrawn: {k}" for k in redrawn])
+        made, bad = cut_keys(new, None, after, out, [f"new panel: {k}" for k in new])
+        print(f"diff-crop: {len(pairs) + len(made)} pictures in {out}; "
+              f"{len(redrawn)} redrawn, {len(new)} new, {len(bad + badp)} refused")
+        sys.exit(1 if bad or badp else 0)
     if "--stack" in argv:
         i = argv.index("--stack")
         bp, ap = argv[i + 1], argv[i + 2]
@@ -648,11 +810,8 @@ def main(argv):
             sys.exit(f"diff-crop: no before PDF for {note}")
         out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "diff-crop")
         os.makedirs(out, exist_ok=True)
-        tmp = tempfile.mkdtemp(prefix="diff-crop-key.")
-        for k, caption in keys:
-            keycrop(k, before, after, out, tmp, caption=caption)
-        shutil.rmtree(tmp, ignore_errors=True)
-        return
+        made, bad = cut_keys([k for k, _ in keys], before, after, out, [c for _, c in keys])
+        sys.exit(1 if bad else 0)
     if len(argv) >= 2:
         crops(argv[0], argv[1], argv[2] if len(argv) > 2 else "review",
               caption=argv[3] if len(argv) > 3 else "")
