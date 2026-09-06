@@ -92,3 +92,23 @@ theorem, and what it lacks is the arrow the theorem is about.
   hm-sigs.json include : x×[[x]×[x]] ⟶ [x]
       Freyd.Alg.RelSet.Party.includeFn is no arrow — its type is ConsList(Unit, A), a Lean function
       with its arguments in the telescope.  Cite the relation, not the function it is the graph of.
+
+
+== F. A CONVERSE wearing its bead's verdict, on a rule nobody proved (7 panels)
+
+Not a signature row: `./scripts/diagram --roundtrip` reports these, since it is the DRAWING that
+claims it.  `natural()` gives `p°` whatever verdict `p` has.  `diag/hm-sigs.json`'s `closure` now
+licenses a compound's verdict only from a cited theorem, and `conv` has none, so these seven stop.
+
+  13.6.2a.2, 13.6.2a.3  cons°   (strict)      A relator commutes with `°` only where it PRESERVES
+  13.6.4a.2             nil°    (strict)      it, so the rule is `StrictNatural F G φ → StrictNatural
+                                              G F (φ°)` under `F.PreservesRecip`, `G.PreservesRecip`
+                                              — true in `RelSet`, which is tabular, and unproved.
+                                              A marker on a theorem whose hypotheses the picture does
+                                              not carry licenses nothing: prove it, and say in
+                                              `closure` what the rule asks.
+
+  13.6.4a.1             prefix° (lax)         REFUTED: `recip_not_laxNatural` (AOP.A6_1_OrdRelSet)
+  14.3c.2, 14.3c.3,     setify° (lax)         exhibits a lax `φ` whose `φ°` is not lax.  These four
+  14.3c.4                                     draw a hollow dot on a false rule; the bead belongs on
+                                              the object wire unless its own row states otherwise.

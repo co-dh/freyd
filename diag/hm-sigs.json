@@ -29,6 +29,23 @@
   "mu": {
     "F": "list(x)"
   },
+  "closure": {
+    "//": [
+      "The rules by which a COMPOUND bead inherits its verdict from its parts, and the Lean theorem",
+      "that IS each rule: `scripts/diagram`'s `natural()` derives a `p×q` verdict from `p` and `q`,",
+      "which is a theorem about `Relator.prod` and not a reading of the picture, so it is drawn only",
+      "from here.  A compound with no rule of its own verdict is `Undecided` — no declaration, no dot.",
+      "`relator` is the former the rule is about; the theorem's conclusion must be that former's own",
+      "square, which is what `hm-check --verify-sigs` holds each marker to.  A verdict ABSENT from a",
+      "rule is refused: `conv` carries no `lax`, because `recip_not_laxNatural` exhibits a lax `φ`",
+      "whose `φ°` is not lax."
+    ],
+    "prod": {
+      "relator": "Freyd.Alg.Relator.prod",
+      "strict": "AOP.A5_7.strictNatural_prod@1802c7e8",
+      "lax": "AOP.A5_7.laxNatural_prod@dc776aa7"
+    }
+  },
   "clear": [
     "//: the heads the note draws THROUGH — a wrapper round a carrier type, a coercion that makes a",
     "//  relator a functor. They name no lane: what the note draws is what is inside them.",

@@ -151,6 +151,28 @@ class Undecided(Exception):
     """A polymorphic row that states no `nat:`.  The picture cannot be drawn from it either way."""
 
 
+# The rules by which a COMPOUND bead inherits a verdict from its parts, each with the Lean theorem
+# that is the rule.  `diag/hm-sigs.json`'s `closure`, beside the signatures, because it is the same
+# kind of fact: a claim the note draws and the corpus proves.  A compound whose rule is not there is
+# `Undecided` — deriving the dot from the parts is a theorem, and no declaration, no dot.
+CLOSURE = sl.sigs().get("closure") or {}
+
+
+def closed(how, fs, core):
+    """A compound bead's verdict, from its parts'.  The WEAKEST part decides — one lax part makes the
+    compound lax, one refuted part puts the whole bead back on the object wire — because the square
+    the compound states is the parts' squares side by side.  Which is a THEOREM about the former,
+    not a reading of the picture, so it is drawn only where `closure` names the proof of it."""
+    if not fs or not all(fs):
+        return False
+    v = "lax" if "lax" in fs else "strict"
+    if v not in (CLOSURE.get(how) or {}):
+        raise Undecided(f"{spell(core)} is {v} in every part, but diag/hm-sigs.json's `closure`"
+                        f" names no proof that a {how} of {v} parts is {v} — cite one there, or"
+                        f" give the bead a row of its own with its own `nat`")
+    return v
+
+
 def natural(core, sigs):
     """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
     Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean`.  No
@@ -159,16 +181,16 @@ def natural(core, sigs):
     an ERROR rather than a default — drawing it either way is a claim nobody checked.  A row with no
     variable at all needs no statement: it is one arrow between two named objects."""
     if core[0] == 'conv':
-        return natural(core[1], sigs)
+        # A CONVERSE is not the free ride it looks: `recip_not_laxNatural` exhibits a lax `φ` whose
+        # `φ°` is not lax, so the rule holds for the strict verdict and fails for the lax one.  Which
+        # of the two `closure` licenses is exactly what `closure.conv` says.
+        return closed('conv', [natural(core[1], sigs)], core)
     if core[0] == 'prod':
         # A PRODUCT is typed factor by factor (`signature` above), and it is natural the same way:
         # `𝟙` is natural at every object, so `wrap×𝟙` is `wrap`'s own square in the first component
-        # and nothing in the second.  The WEAKEST factor decides — one lax factor makes the product
-        # lax, one refuted factor puts the whole bead back on the object wire — because the square
-        # the product states is the factors' squares side by side.  Without this a product wearing a
-        # natural factor falls through to the object wire, which says it is an arrow at one object.
-        fs = [natural(x, sigs) for x in core[1] if x != ('atom', sl.UNIT)]
-        return bool(fs) and all(fs) and ("lax" if "lax" in fs else "strict")
+        # and nothing in the second.  Without this a product wearing a natural factor falls through
+        # to the object wire, which says it is an arrow at one object.
+        return closed('prod', [natural(x, sigs) for x in core[1] if x != ('atom', sl.UNIT)], core)
     lab = core[1] if core[0] == 'app' else spell(core)
     k = key(core, sigs)                # the row it reads its objects off is the row that says this
     if k in NAT:                       # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is

@@ -1378,7 +1378,11 @@ def sig (declName : Name) : MetaM String := do
     let bs ← xs.toList.filterMapM fun x => do
       let d ← x.fvarId!.getDecl
       if d.binderInfo == .instImplicit then return none
-      return some (jobj [("name", jstr d.userName.toString), ("type", ← sexp d.type)])
+      -- Whether the binder is a HYPOTHESIS: a rule may be cited as a licence only for what it
+      -- asks, and a `Prop` in the telescope is something the picture has to carry.
+      let p ← Meta.isProp d.type
+      return some (jobj [("name", jstr d.userName.toString), ("type", ← sexp d.type),
+                         ("prop", if p then "true" else "false")])
     let val : List (String × String) ← match ci.value?, body with
       | some v, .sort .zero => do pure [("value", ← sexp (← Meta.instantiateLambda v xs))]
       | _, _ => pure []

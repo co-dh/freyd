@@ -275,8 +275,10 @@ PROJ = "."
 # The two sides of a naturality square, and where they sit in the head's arguments.
 REL = {"Eq", "Ne", "Freyd.Alg.le", "LE.le"}
 # The square stated as a predicate instead of an equation: `LaxNatural S T F G τ`, whose arrow runs
-# in the SOURCE category `S`.
-NATPRED = {"Freyd.Alg.LaxNatural", "Freyd.Alg.StrictNatural"}
+# in the SOURCE category `S`.  Keyed by the verdict a row draws, because a `closure` rule licensing
+# one verdict must conclude THAT verdict's square and no other.
+VERDICT = {"strict": "Freyd.Alg.StrictNatural", "lax": "Freyd.Alg.LaxNatural"}
+NATPRED = set(VERDICT.values())
 
 
 def exported(names):
@@ -732,6 +734,51 @@ def sigrow(env, proofs, name, row, where):
     return bad
 
 
+def closurerow(env, how, rule, where):
+    """The licence a COMPOUND bead's verdict is drawn on.  `natural()` reads `p×q`'s verdict off `p`
+    and `q`, which is a THEOREM about `Relator.prod` and not a reading of the picture, so the marker
+    naming that theorem is held exactly as a `nat-lean` is — and to two things more.  It must
+    CONCLUDE the compound's own square in the verdict it licenses, since a rule proved of the sum
+    licenses nothing about the product and a lax rule licenses no strict dot.  And it must ASK only
+    what the parts already say: a hypothesis beyond the parts' own squares is a condition the
+    picture does not carry, so a dot drawn on it is again a claim nobody checked."""
+    bad, rel = [], rule.get("relator")
+    if rel is None:
+        return [f"{where}: names no `relator` — the former the rule is about is what its conclusion"
+                f" has to be a square of, and with none named nothing holds it to one"]
+    for verdict, m in rule.items():
+        if verdict == "relator" or verdict.startswith("//"):
+            continue
+        want = VERDICT.get(verdict)
+        if want is None:
+            bad.append(f"{where}: `{verdict}` is no verdict a bead is drawn with — {', '.join(VERDICT)}")
+            continue
+        mark, k, _ = marked(m)
+        moved = cc.check(env["db"], mark, k, f"{where} {verdict}")
+        if moved:
+            bad.append(moved)
+            continue
+        nu, _ = keyed(env["db"], mark)
+        rec = env["sig"].get(nu)
+        if rec is None:
+            bad.append(f"{where} {verdict}: {nu} has no type — `diag-export --sig` printed none")
+            continue
+        t = rec["type"]
+        if not (isinstance(t, list) and t[0] == want):
+            bad.append(f"{where} {verdict}: {nu} concludes {leanstr(t)}, which is no {verdict}"
+                       f" square — the {verdict} dot on a {how} is drawn on this and nothing else")
+        elif sum(1 for a in t[1:] if isinstance(a, list) and a[0] == rel) < 2:
+            bad.append(f"{where} {verdict}: {nu} concludes {leanstr(t)}, which is no square of"
+                       f" {rel} — the rule says a {how} of {verdict} parts is {verdict}")
+        for b in rec["binders"]:
+            bt = b["type"]
+            if b.get("prop") and not (isinstance(bt, list) and bt[0] == want):
+                bad.append(f"{where} {verdict}: {nu} also asks {leanstr(bt)}, which is not one of"
+                           f" the parts' own squares — a {how} carries only its parts' verdicts,"
+                           f" so a rule wanting more licenses no dot")
+    return bad
+
+
 def own_rows():
     """The rows the NOTE's own panels state, `(where, name, row)` each.  A panel types a letter of
     its one display, which no `hm-sigs.json` row could — and the claims it hangs on that letter are
@@ -831,22 +878,26 @@ def verify_sigs():
     # Every type the gate needs, asked for in ONE process: a marker resolves to a declaration and the
     # index's key for it, and `exported` starts Lean only for the ones the cache does not already
     # hold at that key.
+    closure = {k: v for k, v in (t.get("closure") or {}).items() if not k.startswith("//")}
     named = {}
-    for _, _, row, _ in rows:
-        for m in marksof(row):
-            mark = m.partition("@")[0]
-            if mark not in named and cc.resolve(db, mark):
-                named[mark] = keyed(db, mark)
+    for m in [m for _, _, row, _ in rows for m in marksof(row)] \
+            + [m for r in closure.values() for k, m in r.items() if k != "relator"]:
+        mark = m.partition("@")[0]
+        if mark not in named and cc.resolve(db, mark):
+            named[mark] = keyed(db, mark)
     env = {"db": db, "sig": exported(set(named.values())),
            "tbl": table({k: v for k, v in t["spelling"].items() if k != "//"}),
            "clear": {x for x in t["clear"] if not x.startswith("//")},
            "regions": {x for x in t["regions"] if not x.startswith("//")}}
     bad = [b for where, name, row, pf in rows for b in sigrow(env, pf, name, row, where)]
+    bad += [b for how, rule in closure.items()
+            for b in closurerow(env, how, rule, f"hm-sigs.json closure {how}")]
     beads, unrowed = drawn(t)
     bad += unrowed
     print(*bad, sep="\n", file=sys.stderr)
-    print(f"hm-check: {len(beads)} beads drawn, each asked what it is an arrow between, and"
-          f" {len(rows)} signature rows audited against the declaration index, {len(bad)} adrift")
+    print(f"hm-check: {len(beads)} beads drawn, each asked what it is an arrow between,"
+          f" {len(rows)} signature rows and {len(closure)} compound-verdict rules audited against"
+          f" the declaration index, {len(bad)} adrift")
     return 1 if bad else 0
 
 
