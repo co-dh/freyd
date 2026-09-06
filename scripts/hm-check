@@ -338,6 +338,55 @@ def own_rows():
             for k, v in own.items()]
 
 
+def drawn(tbl):
+    """Every bead DRAWN in the note, and the ones no row types — the OBLIGATIONS, against which the
+    rows are only the RECORDS.  Auditing the rows finds a wrong one and cannot find a MISSING one: a
+    bead drawn with no row anywhere is never asked what it is an arrow between, never asked for a
+    naturality verdict, and the gate exits 0.  Deleting a row must therefore fail HERE.
+
+    The arrow is resolved by `diagram`'s own `signature`, never by a second copy of the head rule, so
+    the labels that key no row of their own are exempt for the reasons that rule already states:
+      · a CONVERSE is its arrow read backwards — `R°` is `R`'s row with the ports swapped;
+      · a PRODUCT is typed factor by factor, and `𝟙` is the identity on whatever it is handed;
+      · a one-letter SCHEMATIC name (`R`, `p`, the `𝟙` of `𝟙%∋`) is endo on the object wire by
+        construction: it names no arrow the corpus could cite, and the display's own formula is
+        where it is introduced — the panel may still type it in `cert: sigs:`, and `own_rows` audits
+        that as a row like any other;
+      · a BRANCH of a bracket algebra is still the ALGEBRA's arrow and keys the bracket (`[,]`) —
+        the panel's `cert: branch:` names the arm drawn, which the label alone cannot say."""
+    out, bad = [], []
+    for r in sl.panels(NOTE, None):
+        p = sl.Panel(r)
+        c = p.cert
+        own = c.get("sigs") or {}
+        t = sl.typed(tbl, own)
+        # The globals `signature` reads, set exactly as `draw` sets them for this panel: a fold's
+        # initial algebra and a panel's own `defn:` both change what a label is an arrow between.
+        dg.SPLIT = frozenset((c.get("split") or dg.DEFSPLIT).split())
+        dg.OWN, dg.TBL, dg.BR = frozenset(own), t, None
+        dg.NAT = {k: v["nat"] for k, v in t["sigs"].items() if isinstance(v, dict) and "nat" in v}
+        dg.MU = {f: (o, None) for f, o in t.get("mu", {}).items()} \
+            | (dg.parse_mu(c["mu"]) if c.get("mu") else {})
+        ds = sl.defns(c.get("defn"))
+        sigs = {k: (dg.norm(sl.unabbrev(dg.parse(v["src"]), ds)),
+                    dg.norm(sl.unabbrev(dg.parse(v["tgt"]), ds)))
+                for k, v in t["sigs"].items()}
+        for b in p.beads:
+            lab = sl.deindex(b.label or "")[0]   # a fold's carrier is the object wire, not the key
+            if not lab:
+                continue
+            out.append((p.id, lab))
+            if lab == c.get("branch"):
+                continue
+            try:
+                dg.signature(dg.parse(lab, False), sigs, "b")
+            except (sl.Unhandled, ValueError, KeyError, StopIteration, RecursionError) as ex:
+                bad.append(f"{p.id}: the bead {lab} is drawn with no signature row — every bead"
+                           f" drawn is an arrow between two things, and the row is where that is"
+                           f" stated and cited [{type(ex).__name__}: {ex}]")
+    return out, bad
+
+
 def verify_sigs():
     """Every row of `diag/hm-sigs.json` against the declaration its marker names.  `cite-check` says
     the statement still has the key the row was read against; then the letters the row's objects use
@@ -365,9 +414,11 @@ def verify_sigs():
             for n, r in t["sigs"].items()] + [w + (proofs if len(w[1]) > 1 else (),)
                                               for w in own_rows()]
     bad = [b for where, name, row, pf in rows for b in sigrow(db, say, pf, name, row, where)]
+    beads, unrowed = drawn(t)
+    bad += unrowed
     print(*bad, sep="\n", file=sys.stderr)
-    print(f"hm-check: {len(rows)} signature rows audited against the declaration index,"
-          f" {len(bad)} adrift")
+    print(f"hm-check: {len(beads)} beads drawn, each asked what it is an arrow between, and"
+          f" {len(rows)} signature rows audited against the declaration index, {len(bad)} adrift")
     return 1 if bad else 0
 
 
