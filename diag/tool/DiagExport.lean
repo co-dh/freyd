@@ -1468,8 +1468,8 @@ def main (args : List String) : IO UInt32 := do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
     -- string and circuit routes read a side, the others take the name whole.
     let (base, side) :=
-      if (stringMode || circuitMode) && arg.endsWith ".lhs" then (arg.dropRight 4, some "lhs")
-      else if (stringMode || circuitMode) && arg.endsWith ".rhs" then (arg.dropRight 4, some "rhs")
+      if (stringMode || circuitMode) && arg.endsWith ".lhs" then (arg.dropEnd 4, some "lhs")
+      else if (stringMode || circuitMode) && arg.endsWith ".rhs" then (arg.dropEnd 4, some "rhs")
       else (arg, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
