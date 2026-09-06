@@ -2000,28 +2000,28 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
   obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
 #let ia-hom-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
   ((3.3, [`h`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
   obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
 #let ia-cata-l = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
   ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇α⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
 #let ia-cata-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
   ((3.3, [`⦇α⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
 
 #disp[#definition[
 An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
@@ -2118,14 +2118,14 @@ then applying `S` is folding with `α`#sub[`C`].
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
   obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
 #let ia-fuse-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
   ((3.3, [`S`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
   obj: ((3.3, [`C`]), (2.2, [`C`])),
-  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
 // The conclusion, generated like the side condition above it: two BANANAS reading `⦇α⦈` alike, and
 // what tells them apart is the wire under each — `B` on the left, `C` on the right.
 #let ia-fuse-cl = dpanel(3.3, 3.725, 1.875,
@@ -2367,14 +2367,14 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
 #let cata-def-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, "top", 2.2, none, none),),
   ((3.3, [`X`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(X)α", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "F(X)α", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
@@ -2447,14 +2447,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((2.5, [`F`]), (3.12, [`T`])),
   ((2.5, [`E`]), (3.12, [`A`])),
   obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4), s: 100%)
+  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
 #let cata-map-r = dpanel(4.4, 5.6, 3.75,
   ((2.5, "top", 2.2, none, none), (3.125, 3.3, "bot", none, none)),
   ((3.3, [`⦇`#frc([`F(∋)R`])`⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
   ((2.5, [`F`]), (3.75, [`T`])),
   ((3.125, [`E`]), (3.75, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇F(∋)R%∋⦈)α", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "F(⦇F(∋)R%∋⦈)α", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   cetz.canvas(length: 0.8cm, {

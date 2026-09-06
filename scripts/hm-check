@@ -264,13 +264,23 @@ def spelt(l, say):
     return say.get("[]" if sl.idxhead(l) else l)
 
 
+def stmt_of(db, mark):
+    """The declaration a marker names, and the statement the index holds for it."""
+    user, mod = cc.resolve(db, mark)[0][:2]
+    (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
+                         " and user_name = ?", (mod, user)).fetchone()
+    return user, stmt or ""
+
+
 def sigrow(db, say, proofs, name, row, where):
     """One signature row against the declaration its marker names, wherever the row is stated.
     `cite-check` says the statement still has the key the row was read against; then the letters the
     row's objects use must be spelled somewhere in that statement — a projection carries none, so it
     goes unchecked.  A row STATING a `nat` is held to the same standard: the mark it draws is a
     theorem, so `nat-lean` must name the declaration behind it — `"strict"` and `"lax"` the proof of
-    the square, `"no"` the counterexample refuting it.  A row with no `nat` claims nothing, which for
+    the square, `"no"` the counterexample refuting it — and that declaration must be ABOUT the row's
+    own arrow: the constant its `lean` names has to be spelled in the cited statement, or the verdict
+    is drawn on a theorem about something else.  A row with no `nat` claims nothing, which for
     a polymorphic row is not an option — `diagram` refuses to draw one — and which stops being honest
     the moment Lean proves the square anyway, so the corpus is swept for a proof the table never took
     up.  A row that cites no declaration at all — a panel typing a letter of its own display — has no
@@ -281,9 +291,7 @@ def sigrow(db, say, proofs, name, row, where):
         moved = cc.check(db, mark, k or None, where)
         if moved:
             return [moved]
-        user, mod = cc.resolve(db, mark)[0][:2]
-        (stmt,) = db.execute("select stmt from decl_info where internal = 0 and module = ?"
-                             " and user_name = ?", (mod, user)).fetchone()
+        user, stmt = stmt_of(db, mark)
         used = set().union(*(dg.letters(sl.norm(sl.parse(row[e]))) for e in ("src", "tgt")))
         miss = [f"{l} as {'/'.join(spelt(l, say))}" for l in sorted(used)
                 if spelt(l, say) and not any(w in stmt for w in spelt(l, say))]
@@ -313,11 +321,24 @@ def sigrow(db, say, proofs, name, row, where):
     if not marks:
         return bad + [f'{where}: nat is "{row["nat"]}" with no nat-lean — add the marker of the'
                       f' declaration that proves it, as `Mod.decl@key`']
+    # And the theorem must be about the row's OWN arrow.  The key only says the cited statement has
+    # not moved under the author, so a verdict could be drawn on a theorem refuting some other
+    # arrow's naturality — one counterexample about `sum` stood behind four folds that are not
+    # `sum`.  Lean writes the arrow as the last component of the declaration the row's `lean` names,
+    # or as the notation the spelling table gives its note name (`∋`, never `eps`); one of those
+    # must occur in the cited statement.  A row citing no `lean` has no arrow to hold it to.
+    spells = ([user.rpartition(".")[2]] + list(say.get(name) or ())) if user else []
     for m in [marks] if isinstance(marks, str) else marks:
         mark, _, k = m.partition("@")
         moved = cc.check(db, mark, k or None, f"{where} nat-lean")
         if moved:
             bad.append(moved)
+            continue
+        nu, nstmt = stmt_of(db, mark)
+        if spells and not any(w in nstmt for w in spells):
+            bad.append(f"{where}: nat-lean {nu} is not about {user} — it is"
+                       f" `{' '.join(nstmt.split())}`, which names no {' and no '.join(spells)};"
+                       f" cite a theorem about the arrow, or fix the row's `lean`")
     return bad
 
 
@@ -387,7 +408,8 @@ def verify_sigs():
     must be spelled somewhere in that statement — a projection carries none, so it goes unchecked.
     A row STATING a `nat` is held to the same standard: the mark it draws is a theorem, so `nat-lean`
     must name the declaration behind it — `"strict"` and `"lax"` the proof of the square, `"no"` the
-    counterexample refuting it.  A row with no `nat` claims nothing, which for a polymorphic row is
+    counterexample refuting it — and it must be ABOUT that arrow, its statement naming the constant
+    the row's `lean` names.  A row with no `nat` claims nothing, which for a polymorphic row is
     not an option — `diagram` refuses to draw one — and which stops being honest the moment Lean
     proves the square anyway, so the corpus is swept for a proof the table never took up."""
     t = sl.sigs()

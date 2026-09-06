@@ -30,7 +30,7 @@
     "F": "list(x)"
   },
   "spelling": {
-    "//": "How Lean writes each of the note's wire letters — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index.",
+    "//": "How Lean writes each of the note's names — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index. A BEAD's name belongs here too wherever Lean writes it as notation instead of as the constant's own name: `∋` is `PowerAllegory.eps`, and every theorem about it spells the glyph, so a `nat-lean` about `∋` would otherwise read as a theorem about some other arrow.",
     "list": [
       "List",
       "dCL",
@@ -57,6 +57,9 @@
     "×": [
       "×",
       "Prod"
+    ],
+    "∋": [
+      "∋"
     ]
   },
   "sigs": {
@@ -90,7 +93,7 @@
     "⦇Q⦈": {
       "src": "L(N(x))",
       "tgt": "N(L(x))",
-      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "lean": "AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold@a322e759",
       "note": "§15's fold over the cylinder tuple; its panel types `⦇⦈` itself, so the shape's row cannot reach it",
       "nat": "no",
       "nat-lean": [
