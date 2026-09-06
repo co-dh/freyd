@@ -253,29 +253,10 @@ public theorem cyl_step {p₀ q₀ q : 𝒜} (R : I.t ⟶ I.t)
 
 namespace OneRow
 
-/-- `τ` is lax natural from `𝟙` to `P`: `S τ ⊑ τ P(S)` — the singleton of an `S`-image is an
-    Egli-Milner `S`-image of the singleton.  Shunting across the map `τ` leaves the two halves
-    of `powerRel`, each of which `τ ∋ = 𝟙` collapses.  It is `moves` and `setify` at `n = 1`. -/
-public theorem comp_singletonMap_le {a b : 𝒜} (S : a ⟶ b) :
-    S ≫ singletonMap ⊑ singletonMap ≫ powerRel S := by
-  apply (map_shunt_left (Λ_is_map' (𝟙 a)) _ _).mp
-  refine le_inter ?_ ?_
-  · apply (le_leftDiv_iff _ _ _).mpr
-    calc (∋ a)° ≫ singletonMap° ≫ S ≫ singletonMap
-        = ((singletonMap ≫ ∋ a)°) ≫ S ≫ singletonMap := by
-          rw [Allegory.recip_comp]; simp only [Cat.assoc]
-      _ = S ≫ singletonMap := by rw [singletonMap_comp_eps, recip_id, Cat.id_comp]
-      _ ⊑ S ≫ (∋ b)° := comp_mono_left _ singletonMap_le_recip_eps
-  · apply (le_div_iff _ _ _).mpr
-    calc (singletonMap° ≫ S ≫ singletonMap) ≫ ∋ b
-        = singletonMap° ≫ S ≫ singletonMap ≫ ∋ b := by simp only [Cat.assoc]
-      _ = singletonMap° ≫ S := by rw [singletonMap_comp_eps, Cat.comp_id]
-      _ ⊑ ∋ a ≫ S := comp_mono_right singletonMap_recip_le_eps _
-
 /-- **The `cyl-laws` headline with nothing assumed but (7.13)**: at `N ≜ 𝟙` — a cylinder one
     row high, where `moves` and `setify` are both `τ` and `trans` and `zip` are identities —
     every lax-naturality hypothesis of `cyl_fusion` and `cyl_laws` is discharged, by
-    `comp_singletonMap_le` and by the unit laws.  So those hypotheses are consistent, and
+    `singletonMap_powerRel_lax` and by the unit laws.  So those hypotheses are consistent, and
     `cyl_laws` is not vacuous. -/
 public theorem oneRow_laws (I : InitialAlgebra H) (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
     (h713 : H.map (est R) ≫ I.α ⊑ cpMap H I.t ≫ existsImage I.α ≫ est R) :
@@ -290,12 +271,12 @@ public theorem oneRow_laws (I : InitialAlgebra H) (R : I.t ⟶ I.t) (htrans : R 
     R htrans
     (cyl_fusion (N := Relator.idRelator 𝒜) (G := H) I (fun _ => singletonMap)
       (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (H.obj x)) R htrans h713
-      (comp_singletonMap_le (est R))
+      (singletonMap_powerRel_lax (est R))
       (le_of_eq ((Cat.comp_id _).trans (Cat.id_comp _).symm))
       (le_of_eq ((Cat.comp_id _).trans (Cat.id_comp _).symm))) ?_
   show est R ≫ singletonMap ≫ est R ⊑ singletonMap ≫ powerRel (est R) ≫ est R
   rw [← Cat.assoc, ← Cat.assoc]
-  exact comp_mono_right (comp_singletonMap_le (est R)) _
+  exact comp_mono_right (singletonMap_powerRel_lax (est R)) _
 
 end OneRow
 
