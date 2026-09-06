@@ -1444,7 +1444,10 @@ def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
+  -- `loadExts` loads the imported modules' environment extensions, the delaborator's unexpander
+  -- table among them: without it not one `notation` in the repo is applied to a label.
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
+    (loadExts := true)
   -- Each route writes under its own directory: the three functors are three pictures of one name.
   let outDir := if stringMode then "diag/generated/string"
     else if circuitMode then "diag/generated/circuit" else "diag/generated"
