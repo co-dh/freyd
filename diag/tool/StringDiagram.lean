@@ -82,6 +82,9 @@ structure Row where
   legs  : Array Nat
   obj   : String
   nat   : Option String := none
+  /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
+      bead the environment REFUTES, which draws no dot and is a claim all the same. -/
+  natLean : Option Name := none
   deriving Inhabited
 
 structure Panel where
@@ -184,8 +187,10 @@ def emit (p : Panel) (declName : String) (frame topRow scale : Option Nat) : Str
   let ys : Array Float := Array.mk ((List.range n).map fun i => (t0 - i.toFloat) * DY)
   let xo := roundTo 2 (maxA (ls.map (·.x)) X0 + DX)
   let cell (s : String) : String := "[`" ++ s ++ "`]"
+  let str (s : String) : String := "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\""
   let mut beads : Array String := #[]
   let mut objs : Array String := #[]
+  let mut nats : Array String := #[]
   for i in [0 : n] do
     let r := p.rows[i]!
     let idx := if r.arms.isEmpty then r.legs else r.arms
@@ -202,6 +207,9 @@ def emit (p : Panel) (declName : String) (frame topRow scale : Option Nat) : Str
         "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
           ++ lax ++ ")"
     objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
+    if let some nl := r.natLean then
+      nats := nats.push
+        ("(" ++ str r.label ++ ", " ++ str (r.nat.getD "not-lax") ++ ", " ++ str nl.toString ++ ")")
   let lanecode : Lane → String := fun l =>
     let birth := if l.born < 0 then "\"top\"" else num ys[l.born.toNat]!
     let death := if l.dies >= (n : Int) then "\"bot\"" else num ys[l.dies.toNat]!
@@ -218,7 +226,11 @@ def emit (p : Panel) (declName : String) (frame topRow scale : Option Nat) : Str
    #import \"../../dpanel.typ\": *\n\n\
    #let pic = dpanel(" ++ num hh ++ ", " ++ num (roundTo 2 (xo + PAD)) ++ ", " ++ num xo ++ ",\n  "
     ++ tup (ls.map lanecode) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top ++ ",\n  " ++ tup bot
-    ++ ",\n  obj: " ++ tup objs ++ ",\n  cert: (lean: \"" ++ declName ++ "\")"
+    ++ ",\n  obj: " ++ tup objs
+    -- A dot is a theorem, so the panel CITES the declaration each of its verdicts came from —
+    -- including a refuted one, which draws no dot and is a claim all the same.
+    ++ ",\n  cert: (lean: \"" ++ declName ++ "\""
+    ++ (if nats.isEmpty then "" else ", nat: " ++ tup nats) ++ ")"
     ++ (match scale with | some v => ", s: " ++ toString v ++ "%" | none => "") ++ ")\n"
 
 /-! ### The functor: an arrow of the allegory as a panel
@@ -234,16 +246,37 @@ private def LIVE : Int := -2
     two ends stand over the SAME object and it varies with that object.  `α : F(T)⟶T` at an initial
     algebra's carrier does not vary — `T` is one object, not a parameter — and `⦇R⦈ : T⟶A` does not
     even stand over one, so both are 2-cells between CONSTANT 1-cells `𝟏 → 𝒜`, which is the object
-    wire.  `αᴀ : F(⟨𝟙,T⟩(A))⟶T(A)` does, which is why the two come out different by construction. -/
-def familyVar (core oX : Expr) (objVars : Array Expr) : Option Expr :=
-  objVars.find? fun v => core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
+    wire.  `αᴀ : F(⟨𝟙,T⟩(A))⟶T(A)` does, which is why the two come out different by construction.
+
+    A WIRE that mentions the object rules the bead out too: a lane is a relator of the WHOLE
+    region, so `α : F(A,TA) ⟶ TA` read with its source peeled to `F(A,−)` runs on a lane that is
+    a different functor at each `A` and states no naturality at all.  The packing `⟨𝟙,T⟩` then `F`
+    is what gives that same bead lanes it can be a family over; where no packed relator exists —
+    `F Unit A`, the base functor with the element type baked in — the bead is an arrow at one
+    object and carries no dot. -/
+def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : Option Expr :=
+  objVars.find? fun v =>
+    core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
+      && !wires.any fun w => (Wire.expr w).containsFVar v.fvarId!
+
+/-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
+    `strictNatural_prod` over `wrap_natural`, `strictNatural_recip` over `cons_natural`.  Bounded
+    because the search is over the whole environment at every step. -/
+def FUEL : Nat := 3
+
+/-- What the environment says about a bead: the mark it draws — `"strict"`, `"lax"`, or none where
+    the family is refuted and the bead rides the object wire — and the declaration that says so. -/
+structure Verdict where
+  mark : Option String
+  lean : Name
+  deriving Inhabited
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
     a hollow one, a refuted `LaxNatural` the object wire; nothing found is an error naming the
     three statements it looked for, because no declaration means no dot. -/
 def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label : String) :
-    MetaM (Option String) := do
-  let φ ← Meta.mkLambdaFVars #[v] core
+    MetaM Verdict := do
+  let φ ← familyOf regionTy v core
   -- The three statements have to be BUILDABLE before they can be searched for: a wire that is not
   -- a `Relator` — a bifunctor applied to two arrows, say — has no `StrictNatural` to state, and
   -- saying so names the bead instead of leaving an elaboration error to stand for it.
@@ -253,23 +286,17 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
     | throwError "the bead `{label}` makes wires that are not relators, so there is no \
       naturality statement to look for: {← legsW.mapM (Meta.ppExpr ·.expr)}"
-  -- A wire is a relator of the WHOLE region, so it cannot mention the object the bead is a family
-  -- in.  `α : F(A,TA) ⟶ TA` peels its source to `F(A,−)`, which does: read that way the bead has
-  -- no naturality statement at all, and the stack has to be `⟨𝟙,T⟩` then `F` before it has one.
-  for w in armsW ++ legsW do
-    if (w.expr.containsFVar v.fvarId!) then
-      throwError "the bead `{label}` runs on the wire `{← Meta.ppExpr w.expr}`, which mentions the \
-        object `{← Meta.ppExpr v}` it is a family in — that stack is not a relator of the region, \
-        so it states no naturality"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
-  if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
-  if (← findSquare strict must).isSome then return some "strict"
+  if let some n ← findProof strict ``Freyd.Alg.StrictNatural {} FUEL then
+    return { mark := some "strict", lean := n }
+  if let some n ← findSquare strict must FUEL then return { mark := some "strict", lean := n }
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
-  if (← findProof lax ``Freyd.Alg.LaxNatural must).isSome then return some "lax"
-  if (← findSquare lax must).isSome then return some "lax"
+  if let some n ← findProof lax ``Freyd.Alg.LaxNatural {} FUEL then
+    return { mark := some "lax", lean := n }
+  if let some n ← findSquare lax must FUEL then return { mark := some "lax", lean := n }
   let nolax ← Meta.mkAppM ``Not #[← Meta.mkAppM ``Freyd.Alg.LaxNatural #[G, F, φ]]
-  if (← findProof nolax ``Not must).isSome then return none
+  if let some n ← findProof nolax ``Not must FUEL then return { mark := none, lean := n }
   throwError "the bead `{label}` is a family in the object but no declaration says whether it is \
     natural — looked for `{← Meta.ppExpr strict}`, `{← Meta.ppExpr lax}` and \
     `{← Meta.ppExpr nolax}`"
@@ -369,10 +396,12 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
       let (cx, cy) ← homEnds r.core
       let (_, ox) ← peelObj objVars cat regionTy cx
       let (_, oy) ← peelObj objVars cat regionTy cy
-      let nat ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars else none) with
+      let wires := r.pass ++ r.arms ++ r.legs
+      let vd ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars wires else none) with
         | none => pure none
-        | some v => verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
-      rows := rows.push { label, arms, legs, obj, nat }
+        | some v => some <$> verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
+      rows := rows.push
+        { label, arms, legs, obj, nat := vd.bind (·.mark), natLean := vd.map (·.lean) }
   let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
@@ -422,15 +451,20 @@ def drawString (declName : Name) (side : Option String) (branch : Option Nat)
             `{← plain arrow}` is not one"
         pure (if i == 0 then l else r)
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
-    -- family can carry a dot.  A binder counts when it is an OBJECT OF THE REGION, and nothing
-    -- else: a family in `Tx : Type` whose objects are `dE Tx : RelSet` is indexed by the image of
-    -- `dE`, not by the region, so `StrictNatural F G φ` is not even a statement about it.
+    -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
+    -- region is a ONE-FIELD STRUCTURE over an index type, when it is that INDEX: `Tx : Type`
+    -- names the object `⟨Tx⟩ : RelSet`, `dE Tx` IS that object, and `⟨a.carrier⟩` is `a`, so the
+    -- two readings are one family and `StrictNatural F G φ` is a statement about it after all.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src
     let cat ← relatorCatalogue
+    let idxTy ← regionIndexType? regionTy
     let mut objVars : Array Expr := #[]
     for x in xs do
-      if ← Meta.isDefEq (← Meta.inferType x) regionTy then objVars := objVars.push x
+      let t ← Meta.inferType x
+      if ← Meta.isDefEq t regionTy then objVars := objVars.push x
+      else if let some it := idxTy then
+        if ← Meta.isDefEq t it then objVars := objVars.push x
     let p ← panelOf regionTy cat arrow objVars
     let nm := declName.toString ++ (match side with | some s => "." ++ s | none => "")
       ++ (match branch with | some i => if i == 0 then ".inl" else ".inr" | none => "")

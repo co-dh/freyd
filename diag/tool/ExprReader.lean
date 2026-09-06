@@ -66,6 +66,42 @@ partial def wiresOf (f : Expr) : Array Expr :=
   | (``Freyd.idFunctor, _) => #[]
   | _ => #[f]
 
+/-! ### A region built as a ONE-FIELD STRUCTURE over its index
+
+  `RelSet` is `⟨carrier : Type⟩`, so a theorem about it quantifies over the INDEX — `A : Type` —
+  and speaks of the objects `dE A`, `dList A`.  Such a binder IS an object variable of the region:
+  the object is `a : 𝒞` and the index is its field, and `⟨𝒞.field a⟩` is `a` by structure eta, so
+  the two readings are the same term.  Read off `getStructureInfo?`, so any region built that way
+  works and no wrapper, projection or abbreviation is named here. -/
+
+/-- The region's ONE field, or `none` where the region is not a one-field structure. -/
+def regionField? (regionTy : Expr) : MetaM (Option Name) := do
+  let some C := regionTy.getAppFn.constName? | return none
+  let some info := getStructureInfo? (← getEnv) C | return none
+  if info.fieldNames.size == 1 then return info.fieldNames[0]? else return none
+
+/-- The type an INDEX binder must have to name an object of the region: the type the region's one
+    field has.  `none` where the region is not a one-field structure, or where that field's type
+    mentions the object itself — an index could not then stand for it. -/
+def regionIndexType? (regionTy : Expr) : MetaM (Option Expr) := do
+  let some f ← regionField? regionTy | return none
+  Meta.withLocalDeclD `a regionTy fun a => do
+    let t ← instantiateMVars (← Meta.inferType (← Meta.mkProjection a f))
+    if t.containsFVar a.fvarId! then return none else return some t
+
+/-- A family as a function of an OBJECT of the region.  A statement quantifying over the object
+    itself abstracts that binder; one quantifying over the region's INDEX abstracts a fresh object
+    `a` after `A := 𝒞.field a`, which is the same family read through the structure's constructor
+    and is well typed because `F.obj ⟨𝒞.field a⟩` IS `F.obj a`. -/
+def familyOf (regionTy v core : Expr) : MetaM Expr := do
+  if ← Meta.isDefEq (← Meta.inferType v) regionTy then return ← Meta.mkLambdaFVars #[v] core
+  let some f ← regionField? regionTy
+    | throwError "the family {← Meta.ppExpr core} is indexed by {← Meta.ppExpr v}, which is \
+        neither an object of the region {← Meta.ppExpr regionTy} nor its index — that region is \
+        not a one-field structure, so it has no index"
+  Meta.withLocalDeclD `a regionTy fun a => do
+    Meta.mkLambdaFVars #[a] (core.replaceFVar v (← Meta.mkProjection a f))
+
 /-- The head of a statement's CONCLUSION, under whatever `∀` binders it carries. -/
 partial def concHead : Expr → Name
   | .forallE _ _ b _ => concHead b
@@ -413,10 +449,25 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
+/-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
+    about — the proposition's last argument — with the region's own projections dropped, those
+    being where the object variable was substituted in rather than anything the bead is built
+    from.  A `¬` is stripped first: refuting a family is a statement about that same family. -/
+def mustOf (want : Expr) : MetaM NameSet := do
+  let p := match want.getAppFnArgs with | (``Not, #[q]) => q | _ => want
+  let some φ := p.getAppArgs.back? | return consts want
+  let env ← getEnv
+  return (consts φ).toList.foldl
+    (fun acc n => if env.isProjectionFn n then acc else acc.insert n) {}
+
+mutual
+
 /-- Is `want` proved by some declaration of the environment?  Candidates are the constants whose
     conclusion is headed by `head` and whose statement mentions everything the family does; each
-    one's type is opened with metavariables and unified with `want`. -/
-def findProof (want : Expr) (head : Name) (must : NameSet) : MetaM (Option Name) := do
+    one's type is opened at FRESH UNIVERSES with metavariables and unified with `want`, and every
+    argument the unification left open must then be answered in its own right. -/
+partial def findProof (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) :
+    MetaM (Option Name) := do
   let env ← getEnv
   let mut hit : Option Name := none
   for (n, ci) in env.constants do
@@ -424,18 +475,62 @@ def findProof (want : Expr) (head : Name) (must : NameSet) : MetaM (Option Name)
     if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
     let has := consts ci.type
     if must.any (fun m => !has.contains m) then continue
-    let (_, _, body) ← Meta.forallMetaTelescope ci.type
-    if ← Meta.isDefEq body want then hit := some n
+    let s ← Meta.saveState
+    let ok : Bool ← try
+      -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
+      -- parameters are rigid, so a polymorphic closure theorem could never match a concrete
+      -- region and the search would silently pass it over.
+      let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let (args, bis, body) ← Meta.forallMetaTelescope
+        (ci.type.instantiateLevelParams ci.levelParams lvls)
+      if ← Meta.isDefEq body want then discharge args bis fuel else pure false
+    catch _ => pure false
+    if ok then hit := some n else s.restore
   return hit
 
-/-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class:
-    `StrictNatural`/`LaxNatural` are exposed definitions, so unfolding one and opening its binders
-    gives the very equation (or inclusion) a hand-written declaration states, and its own head is
-    what to search under. -/
-def findSquare (prop : Expr) (must : NameSet) : MetaM (Option Name) := do
+/-- Every argument the match left open has to be ANSWERED, or the candidate proves nothing.  A
+    closure theorem — `strictNatural_prod`, `strictNatural_recip`, `laxNatural_inside` — states a
+    compound family's square out of its factors' squares, so this is what makes a compound bead's
+    dot exactly its factors' dots and never more.  An instance argument is synthesised; a
+    non-`Prop` argument left open means the match itself pinned nothing down, and is a refusal. -/
+partial def discharge (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat) : MetaM Bool := do
+  for i in [0 : args.size] do
+    let .mvar id := args[i]! | continue
+    if ← id.isAssigned then continue
+    let t ← instantiateMVars (← id.getType)
+    if bis[i]! == .instImplicit then
+      let .some v ← Meta.trySynthInstance t | return false
+      unless ← Meta.isDefEq args[i]! v do return false
+      continue
+    unless ← Meta.isProp t do return false
+    if fuel == 0 then return false
+    let some _ ← findAnyProof t (fuel - 1) | return false
+  return true
+
+/-- The search for ONE naturality proposition, under both the head it is written with and the head
+    of the SQUARE it unfolds to.  `StrictNatural`/`LaxNatural` are exposed definitions, so
+    unfolding one and opening its binders gives the very equation (or inclusion) a hand-written
+    declaration states, and its own head is what to search under. -/
+partial def findAnyProof (want : Expr) (fuel : Nat) : MetaM (Option Name) := do
+  let some h := want.getAppFn.constName? | return none
+  -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
+  -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
+  -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
+  -- so the filter buys nothing there; the SQUARE search, headed by `=` or `⊑`, keeps it.
+  if let some n ← findProof want h {} fuel then return some n
+  -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
+  -- like `False`, which every refutation in the environment matches with its own hypotheses left
+  -- to be found — a search that answers the question it was not asked.
+  unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural do return none
+  findSquare want (← mustOf want) fuel
+
+/-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class. -/
+partial def findSquare (prop : Expr) (must : NameSet) (fuel : Nat) : MetaM (Option Name) := do
   let some body ← Meta.unfoldDefinition? prop | return none
   let (_, _, sq) ← Meta.forallMetaTelescope body
   let .const h _ := sq.getAppFn | return none
-  findProof sq h must
+  findProof sq h must fuel
+
+end
 
 end Freyd.StrDiag
