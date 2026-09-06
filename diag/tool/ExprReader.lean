@@ -83,20 +83,38 @@ partial def concHead : Expr → Name
 inductive Wire where
   | rel (r : Expr)
   | timesL (l : Expr)
+  /-- A PAIRING `⟨F,G⟩ : 𝒜 ⟶ 𝒜×𝒜`: the lane an object of a product region opens, carrying the
+      relator it is and the spelling of its two halves, which no single constant names. -/
+  | pairW (p : Expr) (lab : String)
   deriving Inhabited
 
 def Wire.expr : Wire → Expr
   | .rel r => r
   | .timesL l => l
+  | .pairW p _ => p
+
+/-- A relator's own spelling as a LANE.  A pairing and an identity have no name of their own, so
+    they are written structurally — `⟨𝟙,T⟩` — and the length of that string is what reserves the
+    lane's room, which is why it cannot be left to the pretty printer's `⟨𝟙, T⟩`. -/
+partial def relLabel (r : Expr) : MetaM String := do
+  match r.getAppFnArgs with
+  | (``Freyd.Alg.Relator.pair, args) =>
+    match lastTwo args with
+    | some (f, g) => return "⟨" ++ (← relLabel f) ++ "," ++ (← relLabel g) ++ "⟩"
+    | none => plain r
+  | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
+  | _ => plain r
 
 def Wire.label : Wire → MetaM String
-  | .rel r => plain r
+  | .rel r => relLabel r
   | .timesL l => return (← plain l) ++ "×−"
+  | .pairW p _ => relLabel p
 
 def Wire.beq (a b : Wire) : MetaM Bool :=
   match a, b with
   | .rel x, .rel y => Meta.isDefEq x y
   | .timesL x, .timesL y => Meta.isDefEq x y
+  | .pairW x _, .pairW y _ => Meta.isDefEq x y
   | _, _ => return false
 
 /-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
@@ -142,6 +160,47 @@ def allegoryInst (regionTy : Expr) : MetaM Expr := do
 def idRelatorOf (regionTy : Expr) : MetaM Expr := do
   Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[regionTy, some (← allegoryInst regionTy)]
 
+/-- The two halves of a PRODUCT region. -/
+def prodRegions? (ty : Expr) : Option (Expr × Expr) :=
+  match ty.getAppFnArgs with
+  | (``Prod, #[a, b]) => some (a, b)
+  | _ => none
+
+/-- A fresh OBJECT of a region — a PAIR of fresh objects where the region is a product, because a
+    projection out of a metavariable does not reduce and the unifier then cannot see through
+    `(a,b).1` at all: it fails with no error, which is the peel that finds nothing. -/
+partial def freshObj (ty : Expr) : MetaM Expr := do
+  match prodRegions? ty with
+  | some (a, b) => Meta.mkAppM ``Prod.mk #[← freshObj a, ← freshObj b]
+  | none => Meta.mkFreshExprMVar (some ty)
+
+/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity, which is the
+    relator the note's label names and the one a naturality statement has to be about. -/
+def wireRelator (regionTy : Expr) : Wire → MetaM Expr
+  | .rel r => return r
+  | .pairW p _ => return p
+  | .timesL l => do
+    let inst ← allegoryInst regionTy
+    Meta.mkAppM ``Freyd.Alg.Relator.prod
+      #[← Meta.mkAppOptM ``Freyd.Alg.Relator.const
+          #[some regionTy, some regionTy, some inst, some inst, some l],
+        ← idRelatorOf regionTy]
+
+/-- The composite relator a wire stack is, outermost first: `[W₀,W₁]` is `comp W₁ W₀`, whose object
+    map is `W₀.obj ∘ W₁.obj`. -/
+def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
+  if ws.isEmpty then return ← idRelatorOf regionTy
+  let mut acc ← wireRelator regionTy ws[ws.size - 1]!
+  for i in [0 : ws.size - 1] do
+    acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
+  return acc
+
+/-- A wire stack's own spelling, for a lane that is a PAIRING of two stacks: the empty stack is the
+    identity, and a stack of several wires is written outermost first. -/
+def stackLabel (ws : Array Wire) : MetaM String := do
+  if ws.isEmpty then return "𝟙"
+  return "∘".intercalate (← ws.toList.mapM Wire.label)
+
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
     `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
 def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
@@ -161,7 +220,7 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
 /-- The endorelators of a region the environment NAMES.  A combinator — `comp`, `prod`, `pair` —
     is excluded by its own type: it takes a relator as an argument, so peeling with it would peel
     with an unknown, and `const`/`idRelator` are excluded at the peel by the progress test. -/
-def relatorCatalogue (regionTy : Expr) : MetaM (Array Name) := do
+def relatorCatalogue : MetaM (Array Name) := do
   let env ← getEnv
   let mut out : Array Name := #[]
   for (n, ci) in env.constants do
@@ -174,9 +233,7 @@ def relatorCatalogue (regionTy : Expr) : MetaM (Array Name) := do
       let mut good := true
       for a in args do
         if (← instantiateMVars (← Meta.inferType a)).isAppOf ``Freyd.Alg.Relator then good := false
-      let cargs := concl.getAppArgs
-      if !good || cargs.size < 2 then pure false
-      else pure ((← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy))
+      pure (good && concl.getAppArgs.size ≥ 2)
     catch _ => pure false
     s.restore
     if ok then out := out.push n
@@ -185,25 +242,42 @@ def relatorCatalogue (regionTy : Expr) : MetaM (Array Name) := do
 /-- `X` as `R.obj a` for the catalogue entry `n`, or `none`.  Progress is required — a relator
     that gives back `X` itself peels nothing — and so is a fully determined answer, which is what
     keeps a relator with an undetermined parameter from matching anything. -/
-def peelWith? (n : Name) (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
+    MetaM (Option (Expr × Expr × Expr)) := do
   let some ci := (← getEnv).find? n | return none
   let s ← Meta.saveState
   try
     let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
-    let (args, _, concl) ← Meta.forallMetaTelescope
+    let (args, bis, concl) ← Meta.forallMetaTelescope
       (ci.type.instantiateLevelParams ci.levelParams lvls)
     let cargs := concl.getAppArgs
-    unless (← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy) do
-      s.restore; return none
+    -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
+    -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
+    unless (← Meta.isDefEq cargs[1]! regionTy) do s.restore; return none
+    -- Instance arguments can only be synthesised once the regions are known, and left unsolved
+    -- they leave the relator holding a metavariable that the `hasExprMVar` test then drops with no
+    -- error — the peel that silently finds nothing.
+    for i in [0 : args.size] do
+      unless bis[i]! == .instImplicit do continue
+      let .mvar id := args[i]! | continue
+      if ← id.isAssigned then continue
+      let .some v ← Meta.trySynthInstance (← instantiateMVars (← id.getType))
+        | s.restore; return none
+      unless ← Meta.isDefEq args[i]! v do s.restore; return none
+    let src ← instantiateMVars cargs[0]!
     let R := mkAppN (mkConst n lvls) args
-    let inner ← Meta.mkFreshExprMVar (some regionTy)
+    let inner ← freshObj src
     let (fR, _) ← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]
     let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[fR, inner]
     if ← Meta.isDefEq app X then
       let inner ← instantiateMVars inner
       let R ← instantiateMVars R
-      if !inner.hasExprMVar && !R.hasExprMVar && !(← Meta.isDefEq inner X) then
-        return some (R, inner)
+      let src ← instantiateMVars src
+      -- A wire is a relator of the REGION, so it cannot mention an object the statement quantifies
+      -- over: `F(A,−)` is a different functor at each `A` and no lane can carry it.
+      if objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
+      if !inner.hasExprMVar && !R.hasExprMVar && !src.hasExprMVar && !(← Meta.isDefEq inner X) then
+        return some (R, src, inner)
     s.restore; return none
   catch _ => s.restore; return none
 
@@ -215,21 +289,35 @@ partial def peelLefts (regionTy a : Expr) : MetaM (Array Wire) := do
   | none => return #[Wire.timesL a]
 
 /-- An object peeled into its wire stack (outermost first) and the object underneath. -/
-partial def peelObj (regionTy : Expr) (cat : Array Name) (X : Expr) :
+partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array Wire × Expr) := do
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
-      let (ws, o) ← peelObj regionTy cat x
+      let (ws, o) ← peelObj objVars cat regionTy x
       return ((wiresOf f).map Wire.rel ++ ws, o)
+  | (``Prod.mk, args) =>
+    -- An object of a PRODUCT region IS a pair, and the pair of the two halves' stacks is the
+    -- PAIRING relator — ONE lane, with the product region on its outside.  Both halves have to
+    -- stand over the same object: that is what makes the pairing a functor of one variable.
+    if let some (l, r) := prodRegions? regionTy then
+      if args.size == 4 then
+        let (wsx, ox) ← peelObj objVars cat l args[2]!
+        let (wsy, oy) ← peelObj objVars cat r args[3]!
+        if ← Meta.isDefEq ox oy then
+          let bot ← Meta.inferType ox
+          let p ← Meta.mkAppM ``Freyd.Alg.Relator.pair
+            #[← stackRelator bot wsx, ← stackRelator bot wsy]
+          let lab := "⟨" ++ (← stackLabel wsx) ++ "," ++ (← stackLabel wsy) ++ "⟩"
+          return (#[Wire.pairW p lab], ox)
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
     let la ← peelLefts regionTy a
-    let (ws, o) ← peelObj regionTy cat b
+    let (ws, o) ← peelObj objVars cat regionTy b
     return (la ++ ws, o)
   for n in cat do
-    if let some (R, inner) ← peelWith? n regionTy X then
-      let (ws, o) ← peelObj regionTy cat inner
+    if let some (R, src, inner) ← peelWith? n objVars regionTy X then
+      let (ws, o) ← peelObj objVars cat src inner
       return (#[Wire.rel R] ++ ws, o)
   return (#[], X)
 
@@ -276,6 +364,17 @@ partial def peelMap (e : Expr) : Array Expr × Expr :=
       (wiresOf args[4]! ++ ws, r)
     else (#[], e)
   | _ => (#[], e)
+
+/-- The two OPERANDS of a binary operation on ONE hom — a union, a meet.  Recognised by its TYPE:
+    an application whose last two arguments are arrows of the same hom as the whole.  A composite
+    is not one, its own ends being the two OUTER objects rather than either factor's. -/
+def binOperands? (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  let t ← Meta.inferType e
+  if (homObjs? t).isNone || e.isAppOf ``Cat.comp then return none
+  let some (l, r) := lastTwo e.getAppArgs | return none
+  unless (← Meta.isDefEq (← Meta.inferType l) t) && (← Meta.isDefEq (← Meta.inferType r) t) do
+    return none
+  return some (l, r)
 
 /-- A composite flattened into its factors, in diagram order. -/
 partial def factors (e : Expr) : Array Expr :=

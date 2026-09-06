@@ -30,7 +30,7 @@ public import Freyd.S2_30
 public import AOP.A4_2
 public import AOP.A5_1
 
-universe v₂ u₂ u
+universe v v₂ u₂ u
 
 namespace Freyd.Alg
 
@@ -475,8 +475,11 @@ variable [HasRelProd 𝒜]
     simp only [F.map_comp, G.map_comp]; exact (prodMap_comp _ _ _ _ _ _ _).symm
   map_mono h := prodMap_mono (F.map_mono h) (G.map_mono h)
 
-/-- The PAIRING of two relators into the PRODUCT allegory: `x ↦ (F x, G x)`, `R ↦ (F R, G R)`. -/
-@[expose] public def Relator.pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+/-- The PAIRING of two relators into the PRODUCT allegory: `x ↦ (F x, G x)`, `R ↦ (F R, G R)`.
+    Its own `𝒜`, not the section's: pairing needs the product ALLEGORY and nothing else, and a
+    signature carrying the section's `TabularUnitaryDivisionAllegory` projection instead would not
+    typecheck beside a relator whose allegory instance reached `𝒜` by another route. -/
+@[expose] public def Relator.pair {𝒜 : Type u} [Allegory.{v} 𝒜] {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
     (F G : Relator 𝒮 𝒜) : Relator 𝒮 (𝒜 × 𝒜) where
   obj x := (F.obj x, G.obj x)
   map R := (F.map R, G.map R)
