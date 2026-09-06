@@ -1419,7 +1419,8 @@ def usage : String :=
    --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes)\n\
-     `<name>.lhs.inl` / `.inr` draws ONE ARM of the fork at that side's head (--circuit)\n\
+     `<name>.lhs.inl` / `.inr` draws ONE ARM of the fork (--circuit) or ONE OPERAND of the\n\
+       union or meet (--string) at that side's head\n\
    `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too (--circuit)\n\
    --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
      the per-panel display scale the note picks (`s: N%`) — all three --string only"
@@ -1479,8 +1480,8 @@ def main (args : List String) : IO UInt32 := do
     -- side it selects inside, and only on the circuit route: a fork is a tape, which the
     -- Hinze–Marsden functor does not draw.
     let (stem, branch) :=
-      if circuitMode && arg.endsWith ".inl" then (arg.dropEnd 4, some 0)
-      else if circuitMode && arg.endsWith ".inr" then (arg.dropEnd 4, some 1)
+      if (circuitMode || stringMode) && arg.endsWith ".inl" then (arg.dropEnd 4, some 0)
+      else if (circuitMode || stringMode) && arg.endsWith ".inr" then (arg.dropEnd 4, some 1)
       else (arg, none)
     let (base, side) :=
       if (stringMode || circuitMode) && stem.endsWith ".lhs" then (stem.dropEnd 4, some "lhs")
@@ -1494,7 +1495,7 @@ def main (args : List String) : IO UInt32 := do
       | _ => (base.toString, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
-        else if stringMode then StrDiag.drawString base.toName side frame topRow scale
+        else if stringMode then StrDiag.drawString base.toName side branch frame topRow scale
         else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName side binder branch
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,

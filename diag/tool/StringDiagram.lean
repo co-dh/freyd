@@ -238,26 +238,6 @@ private def LIVE : Int := -2
 def familyVar (core oX : Expr) (objVars : Array Expr) : Option Expr :=
   objVars.find? fun v => core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
 
-/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity, which is the
-    relator the note's label names and the one a naturality statement has to be about. -/
-def wireRelator (regionTy : Expr) : Wire → MetaM Expr
-  | .rel r => return r
-  | .timesL l => do
-    let inst ← allegoryInst regionTy
-    Meta.mkAppM ``Freyd.Alg.Relator.prod
-      #[← Meta.mkAppOptM ``Freyd.Alg.Relator.const
-          #[some regionTy, some regionTy, some inst, some inst, some l],
-        ← idRelatorOf regionTy]
-
-/-- The composite relator a wire stack is, outermost first: `[W₀,W₁]` is `comp W₁ W₀`, whose object
-    map is `W₀.obj ∘ W₁.obj`. -/
-def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
-  if ws.isEmpty then return ← idRelatorOf regionTy
-  let mut acc ← wireRelator regionTy ws[ws.size - 1]!
-  for i in [0 : ws.size - 1] do
-    acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
-  return acc
-
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
     a hollow one, a refuted `LaxNatural` the object wire; nothing found is an error naming the
     three statements it looked for, because no declaration means no dot. -/
@@ -284,8 +264,10 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   if (← findProof strict ``Freyd.Alg.StrictNatural must).isSome then return some "strict"
+  if (← findSquare strict must).isSome then return some "strict"
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
   if (← findProof lax ``Freyd.Alg.LaxNatural must).isSome then return some "lax"
+  if (← findSquare lax must).isSome then return some "lax"
   let nolax ← Meta.mkAppM ``Not #[← Meta.mkAppM ``Freyd.Alg.LaxNatural #[G, F, φ]]
   if (← findProof nolax ``Not must).isSome then return none
   throwError "the bead `{label}` is a family in the object but no declaration says whether it is \
@@ -314,27 +296,36 @@ structure RowSpec where
     does not.  What separates them is the factor's own form, which is what is read here.  A factor
     whose two ends are DIFFERENT objects with the SAME stack is a re-bracketing of a product —
     `assocl` — and a picture has no bracketing to redraw, so it is no row at all. -/
-partial def rowsOf (regionTy : Expr) (cat : Array Name) (pass : Array Wire) (inLeft : Bool)
-    (e : Expr) : MetaM (Array RowSpec) := do
+partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name) (pass : Array Wire)
+    (inLeft : Bool) (e : Expr) : MetaM (Array RowSpec) := do
   let fs := factors e
   if fs.size > 1 then
     let mut out : Array RowSpec := #[]
-    for f in fs do out := out ++ (← rowsOf regionTy cat pass inLeft f)
+    for f in fs do out := out ++ (← rowsOf objVars regionTy cat pass inLeft f)
     return out
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
-      return ← rowsOf regionTy cat (pass ++ (wiresOf args[4]!).map Wire.rel) inLeft
+      return ← rowsOf objVars regionTy cat (pass ++ (wiresOf args[4]!).map Wire.rel) inLeft
         args[args.size - 1]!
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
-    if ← isIdArrow ψ then return ← rowsOf regionTy cat pass true φ
+    -- A product whose factors VARY with the object is the bifunctor `×` fed by a pairing, so `φ×ψ`
+    -- is ONE bead on the pairing lane with `×` running past it.  Only a CONSTANT left factor is a
+    -- lane of its own, and that is the only reading under which `φ` acts on the lanes below it.
+    let (ex, ey) ← homEnds e
+    let (ax, _) ← peelObj objVars cat regionTy ex
+    let (ay, _) ← peelObj objVars cat regionTy ey
+    if ax.size > 0 && ay.size > 0 && !(ax[0]!.isTimesL) && (← Wire.beq ax[0]! ay[0]!) then
+      return #[{ pass := pass.push ax[0]!, arms := ax.extract 1 ax.size,
+                 legs := ay.extract 1 ay.size, core := e }]
+    if ← isIdArrow ψ then return ← rowsOf objVars regionTy cat pass true φ
     if ← isIdArrow φ then
       let (x, _) ← homEnds φ
-      return ← rowsOf regionTy cat (pass ++ (← peelLefts regionTy x)) inLeft ψ
+      return ← rowsOf objVars regionTy cat (pass ++ (← peelLefts regionTy x)) inLeft ψ
   let (x, y) ← homEnds e
-  let (ax, ox) ← peelObj regionTy cat x
-  let (ay, oy) ← peelObj regionTy cat y
+  let (ax, ox) ← peelObj objVars cat regionTy x
+  let (ay, oy) ← peelObj objVars cat regionTy y
   let arms ← if inLeft then peelLefts regionTy x else pure ax
   let legs ← if inLeft then peelLefts regionTy y else pure ay
   -- A re-bracketing is the ONE factor a picture does not show: the same lanes over the same object
@@ -351,7 +342,7 @@ partial def rowsOf (regionTy : Expr) (cat : Array Name) (pass : Array Wire) (inL
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Panel := do
   let (src, tgt) ← homEnds side
-  let (ws0, o0) ← peelObj regionTy cat src
+  let (ws0, o0) ← peelObj objVars cat regionTy src
   let mut lanes : Array Lane := #[]
   let mut stack : Array Nat := #[]
   for w in ws0 do
@@ -360,8 +351,8 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let mut rows : Array Row := #[]
   for f in factors side do
     let (_, fy) ← homEnds f
-    let obj ← plain (← peelObj regionTy cat fy).2
-    for r in ← rowsOf regionTy cat #[] false f do
+    let obj ← plain (← peelObj objVars cat regionTy fy).2
+    for r in ← rowsOf objVars regionTy cat #[] false f do
       let p := r.pass.size
       if p + r.arms.size > stack.size then
         throwError "the factor `{← plain r.core}` eats {r.arms.size} wires under {p}, and \
@@ -376,8 +367,8 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
       stack := stack.extract 0 p ++ legs ++ stack.extract (p + r.arms.size) stack.size
       let label ← plain r.core
       let (cx, cy) ← homEnds r.core
-      let (_, ox) ← peelObj regionTy cat cx
-      let (_, oy) ← peelObj regionTy cat cy
+      let (_, ox) ← peelObj objVars cat regionTy cx
+      let (_, oy) ← peelObj objVars cat regionTy cy
       let nat ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars else none) with
         | none => pure none
         | some v => verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
@@ -385,7 +376,8 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
-  return { lanes, rows, otop := ← plain o0, obot := ← plain (← peelObj regionTy cat tgt).2 }
+  return { lanes, rows, otop := ← plain o0,
+           obot := ← plain (← peelObj objVars cat regionTy tgt).2 }
 
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
@@ -402,8 +394,8 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
 
 /-- `--string <Name>[.lhs|.rhs]`.  A `def` is drawn by its BODY unfolded one level; a statement
     with two sides is drawn one side at a time. -/
-def drawString (declName : Name) (side : Option String) (frame topRow scale : Option Nat) :
-    MetaM String := withDeclScope declName do
+def drawString (declName : Name) (side : Option String) (branch : Option Nat)
+    (frame topRow scale : Option Nat) : MetaM String := withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescopeReducing ci.type fun xs body => do
@@ -418,16 +410,30 @@ def drawString (declName : Name) (side : Option String) (frame topRow scale : Op
       | some s, (``Eq, #[_, l, r]) | some s, (``Freyd.Alg.le, #[_, _, _, _, l, r]) =>
         pure (if s == "lhs" then l else r)
       | some _, _ => throwError "{declName} has no two sides to draw one of"
+    -- `.inl`/`.inr` is ONE OPERAND of the binary operation at the head of that side — a union
+    -- draws as two panels with `∪` between them, one per operand.  Recognised by its TYPE and
+    -- nothing else: the last two arguments are arrows of the same hom as the whole, which no
+    -- composition is (`Cat.comp`'s ends are the two OUTER objects, not its own).
+    let arrow ← match branch with
+      | none => pure arrow
+      | some i => do
+        let some (l, r) ← binOperands? arrow
+          | throwError "`.inl`/`.inr` draws one operand of a union or meet, and \
+            `{← plain arrow}` is not one"
+        pure (if i == 0 then l else r)
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
-    -- family can carry a dot.
+    -- family can carry a dot.  A binder counts when it is an OBJECT OF THE REGION, and nothing
+    -- else: a family in `Tx : Type` whose objects are `dE Tx : RelSet` is indexed by the image of
+    -- `dE`, not by the region, so `StrictNatural F G φ` is not even a statement about it.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src
-    let cat ← relatorCatalogue regionTy
+    let cat ← relatorCatalogue
     let mut objVars : Array Expr := #[]
     for x in xs do
       if ← Meta.isDefEq (← Meta.inferType x) regionTy then objVars := objVars.push x
     let p ← panelOf regionTy cat arrow objVars
     let nm := declName.toString ++ (match side with | some s => "." ++ s | none => "")
+      ++ (match branch with | some i => if i == 0 then ".inl" else ".inr" | none => "")
     return emit p nm frame topRow scale
 
 end Freyd.StrDiag

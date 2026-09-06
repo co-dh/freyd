@@ -26,6 +26,9 @@
 module
 
 public import AOP.A6_2
+-- §5.7's `StrictNatural` and `Relator.pair`: `α`'s square is a NATURALITY statement, and saying so
+-- needs the 2-cell vocabulary.  The file already reaches forward to ch. 6 for `relCata_mono`.
+public import AOP.A5_7
 
 universe v u
 
@@ -102,6 +105,23 @@ public theorem preservesRecip_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜]
   have h2 : F.map (𝟙 a₁) S° = (F.map (𝟙 a₁) S)° :=
     Relator.preservesRecip_of_tabular (F.appl a₁) S
   rw [← F.interchange R° S°, h1, h2, ← Allegory.recip_comp, F.interchange']
+
+/-- `F` AS A UNARY RELATOR out of the PRODUCT allegory: `(a,b) ↦ F.obj a b`, `(R,S) ↦ F.map R S`.
+    B&dM's bifunctor "arranged so that fixing the first argument describes the initial algebra" is
+    a relator `𝒜×𝒜 ⟶ 𝒜` once its two arguments are packed, and that is the only form in which it
+    is a single functor of one variable — which is what an argument that itself varies with the
+    parameter (`F(R,T(R))`) needs before it can be read as one thing applied to one arrow. -/
+@[expose] public def toRelator : Relator (𝒜 × 𝒜) 𝒜 where
+  obj p := F.obj p.1 p.2
+  map R := F.map R.1 R.2
+  map_id p := F.map_id p.1 p.2
+  map_comp R S := F.map_comp R.1 S.1 R.2 S.2
+  map_mono h := F.map_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+/-- The two spellings of one arrow: `F(R,S)` is the unary relator at the pair `(R,S)`.  Packing the
+    arguments is a change of notation and nothing else — both sides are `F.map R S`. -/
+public theorem map_eq_toRelator {a₁ a₂ b₁ b₂ : 𝒜} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂) :
+    F.map R S = F.toRelator.map ((R, S) : ((a₁, b₁) : 𝒜 × 𝒜) ⟶ (a₂, b₂)) := rfl
 
 end BiRelator
 
@@ -212,6 +232,16 @@ public theorem typeMap_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
   map_id := typeMap_id I
   map_comp R S := (typeMap_comp I R S).symm
   map_mono := typeMap_mono I
+
+/-- **§2.7 p. 51 as a 2-CELL**: `α` is STRICTLY NATURAL from `F∘⟨𝟙,T⟩` to `T`.  Same square as
+    `alpha_natural`, with both sides spelled as relators of `𝒜`: `F(R,T(R))` is `F` applied to the
+    pairing `⟨𝟙,T⟩` at the one arrow `R`, so the source is a relator and not a family of objects,
+    which is what makes the square a naturality statement rather than an equation per `A`. -/
+public theorem alphaT_strictNatural :
+    StrictNatural (typeRelator I)
+      (Relator.comp (Relator.pair (Relator.idRelator 𝒜) (typeRelator I)) F.toRelator)
+      (alphaT I) :=
+  fun R => (alpha_natural I R).symm
 
 end TypeRelator
 
