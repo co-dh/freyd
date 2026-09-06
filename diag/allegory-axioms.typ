@@ -1312,7 +1312,7 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 
 #disp[#definition[
 The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
-// lean:AOP.A5_2.pair@df1791ca
+// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 where `(π₁,π₂)` is the tabulation of `⊤`
 #src[].
 // lean:AOP.A5_2.eq_topMor@31e6622f lean:AOP.A5_2.joint_id@f9cba0f7
@@ -1363,7 +1363,7 @@ the monoid's unit law:
   wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
   lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
 }), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[]]), s: 100%)]<fork-collapse>
-// lean:AOP.A5_2.pair@df1791ca
+// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 
 
 === Relational product `R×S`
@@ -1987,48 +1987,43 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 == Initial algebra
 
 // §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
-// the squares' own size.  The bead is `α` BARE: an algebra is a transformation `F⇒Id`, and the
-// component's index is the object wire it stands on, so a subscript would say it twice.  The FOLD
-// takes its carrier off that same wire — `⦇α⦈` over an `A` wire IS `⦇αᴀ⦈` — and `scripts/diagram`
-// strips an index written anyway, `scripts/scanline` refusing one a hand-laid panel keeps.
-// `α` is `!nat` here and NOWHERE else: the ambient category of these four panels is `Alg(F)`, where
-// `α : F̃⇒Id` holds by construction, so its dot sits on the `F` lane and the object wire runs past.
-// §11.4.2a draws the same `α` the same way, its side condition being this very square at `h := S`.
+// the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
+// (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
+// (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
 #let ia-hom-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`h`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`f`], black, 2.5), (2.2, [`h`])),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
-  obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "α h", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`A`]), (2.2, [`B`])),
+  cert: (expect: "f h", src: "F(A)", tgt: "B", sigs: ("f": "F(A)⟶A", "g": "F(B)⟶B", "h": "A⟶B"), frame: 4, top: 3), s: 100%)
 #let ia-hom-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`h`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`h`]), (1.1, [`g`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`A`])),
   ((3.12, [`B`]),),
-  obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "F(h)α", src: "F(A)", tgt: "B", sigs: ("h": "A⟶B", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`B`]), (1.1, [`B`])),
+  cert: (expect: "F(h)g", src: "F(A)", tgt: "B", sigs: ("f": "F(A)⟶A", "g": "F(B)⟶B", "h": "A⟶B"), frame: 4, top: 2), s: 100%)
 #let ia-cata-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇α⦈`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`α`], black, 2.5), (2.2, [`⦇f⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇α⦈", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α⦇f⦈", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "⦇f⦈": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let ia-cata-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`⦇α⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`⦇f⦈`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇α⦈)α", src: "F(T)", tgt: "A", sigs: ("⦇α⦈": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(⦇f⦈)f", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "⦇f⦈": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 2), s: 100%)
 
 #disp[#definition[
-An *F-algebra* on `A` is a map `α`#sub[`A`]` : FA⟶A`.
-An *F-homomorphism* from `α`#sub[`A`] to `α`#sub[`B`] is a map `h : A⟶B` with
-`α`#sub[`A`]` h=F(h)α`#sub[`B`].
-The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one F-homomorphism
-`⦇α`#sub[`A`]`⦈ : T⟶A` to every F-algebra `α`#sub[`A`]
+An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
+An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` with `f h=F(h)g`.
+The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
+every F-algebra `f`
 #src[].
 // lean:AOP.A5_5.InitialAlgebra@a45a8436
 
@@ -2039,13 +2034,13 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
       let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
       ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
       ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN2)[`α`#sub[`A`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`B`]]
+      lab(0, 1.9, GIVEN2)[`f`]; lab(0, -1.9, GIVEN1)[`g`]
       lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
       node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
       node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
     }),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
-    [`αh=F(h)α`],
+    [`f h=F(h)g`],
   )
   #pair(
     cetz.canvas(length: 0.8cm, {
@@ -2053,13 +2048,13 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
       ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
       ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
       ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
-      lab(-4.25, 0, INDUCED)[`F(⦇α`#sub[`A`]`⦈)`]; lab(3.7, 0, INDUCED)[`⦇α`#sub[`A`]`⦈`]
+      lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`f`]
+      lab(-3.95, 0, INDUCED)[`F(⦇f⦈)`]; lab(3.45, 0, INDUCED)[`⦇f⦈`]
       node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
       node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
     }),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
-    [`α⦇αᴀ⦈=F(⦇αᴀ⦈)α`],
+    [`α⦇f⦈=F(⦇f⦈)f`],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -2069,7 +2064,7 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
 // THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
 // alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
-// bead is the fold's carrier, so `⦇α⦈` here is `⦇αᴛ⦈` and not the fold of every algebra at once.
+// bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
 #let ia-refl-l = dpanel(2.2, 3.725, 1.875,
   (),
   ((1.1, [`⦇α⦈`]),),
@@ -2090,58 +2085,58 @@ The *initial algebra* `α`#sub[`T`]` : FT⟶T` is the F-algebra with exactly one
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
     ar(FT, FT2, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN2)[`α`#sub[`T`]]
+    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN2)[`α`]
     lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
     node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
     node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
   }),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
- [`⦇αᴛ⦈=𝟙` #h(6pt) #src[(2.11)]],
+ [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
   // lean:AOP.A6_3.relCata_alpha@656cd4b8
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
-Taking a value apart with `α`#sub[`T`] and putting it straight back is doing nothing.
+Taking a value apart with `α` and putting it straight back is doing nothing.
 
 === Fusion
 
-// `T` is already the initial algebra's carrier, so the second algebra's is `C`.  `R` is `α_B` and `Q`
-// is `α_C`; `S` keeps its letter, being the homomorphism, not an algebra — a subscript would miscast it.
-When `S : B⟶C` is an F-homomorphism from `α`#sub[`B`] to `α`#sub[`C`], folding with `α`#sub[`B`] and
-then applying `S` is folding with `α`#sub[`C`].
+// `T` is already the initial algebra's carrier, so the two algebras of the law take their own letters,
+// `R` on `B` and `Q` on `C`; `S` is the homomorphism between them, not an algebra.
+When `S : B⟶C` is an F-homomorphism from `R : F(B)⟶B` to `Q : F(C)⟶C`, folding with `R` and
+then applying `S` is folding with `Q`.
 
-// `s: 92%`: the one row that does not fit at full size.  The side condition is the naturality square
-// of `α` at `S` — the same two panels as (11.4a), at `h := S`.
+// `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
+// square of @initial-defn at `f := R`, `g := Q`, `h := S`.
 #let ia-fuse-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`S`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`R`], black, 2.5), (2.2, [`S`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "α S", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`B`]), (2.2, [`C`])),
+  cert: (expect: "R S", src: "F(B)", tgt: "C", sigs: ("R": "F(B)⟶B", "Q": "F(C)⟶C", "S": "B⟶C"), frame: 4, top: 3), s: 100%)
 #let ia-fuse-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`S`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`S`]), (1.1, [`Q`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`B`])),
   ((3.12, [`C`]),),
-  obj: ((3.3, [`C`]), (2.2, [`C`])),
-  cert: (expect: "F(S)α", src: "F(B)", tgt: "C", sigs: ("S": "B⟶C", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
-// The conclusion, generated like the side condition above it: two BANANAS reading `⦇α⦈` alike, and
-// what tells them apart is the wire under each — `B` on the left, `C` on the right.
+  obj: ((2.2, [`C`]), (1.1, [`C`])),
+  cert: (expect: "F(S)Q", src: "F(B)", tgt: "C", sigs: ("R": "F(B)⟶B", "Q": "F(C)⟶C", "S": "B⟶C"), frame: 4, top: 2), s: 100%)
+// The conclusion, generated like the side condition above it: the two folds differ by their algebra,
+// and the wire under each says where it lands — `B` on the left, `C` on the right.
 #let ia-fuse-cl = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇α⦈`]), (1.1, [`S`])),
+  ((2.2, [`⦇R⦈`]), (1.1, [`S`])),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`B`]), (1.1, [`C`])),
-  cert: (expect: "⦇α⦈S", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶B", "S": "B⟶C")), s: 100%)
+  cert: (expect: "⦇R⦈S", src: "T", tgt: "C", sigs: ("⦇R⦈": "T⟶B", "S": "B⟶C")), s: 100%)
 #let ia-fuse-cr = dpanel(3.3, 3.725, 1.875,
   (),
-  ((2.2, [`⦇α⦈`]),),
+  ((2.2, [`⦇Q⦈`]),),
   ((1.875, [`T`]),),
   ((1.875, [`C`]),),
   obj: ((2.2, [`C`]),),
-  cert: (expect: "⦇α⦈", src: "T", tgt: "C", sigs: ("⦇α⦈": "T⟶C"), frame: 3, top: 2), s: 100%)
+  cert: (expect: "⦇Q⦈", src: "T", tgt: "C", sigs: ("⦇Q⦈": "T⟶C"), frame: 3, top: 2), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -2154,9 +2149,9 @@ then applying `S` is folding with `α`#sub[`C`].
     ar(FB, FC, black, s0: 0.55, s1: 0.55)
     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(B, C, black, s0: 0.55, s1: 0.55)
-    lab(-4.25, 1.25, INDUCED)[`F(⦇α`#sub[`B`]`⦈)`]; lab(3.7, 1.25, INDUCED)[`⦇α`#sub[`B`]`⦈`]
+    lab(-3.95, 1.25, INDUCED)[`F(⦇R⦈)`]; lab(3.45, 1.25, INDUCED)[`⦇R⦈`]
     lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
-    lab(0, 3.05, GIVEN2)[`α`#sub[`T`]]; lab(0, 0.55, GIVEN1)[`α`#sub[`B`]]; lab(0, -1.95, GIVEN1)[`α`#sub[`C`]]
+    lab(0, 3.05, GIVEN2)[`α`]; lab(0, 0.55, GIVEN1)[`R`]; lab(0, -1.95, GIVEN1)[`Q`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
     node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
@@ -2168,7 +2163,7 @@ then applying `S` is folding with `α`#sub[`C`].
     src[the conclusion],
     row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
   ),
-  [`⦇α`#sub[`B`]`⦈S=⦇α`#sub[`C`]`⦈⟸αS=F(S)α` #h(6pt)
+  [`⦇R⦈S=⦇Q⦈⟸R S=F(S)Q` #h(6pt)
  #src[(2.12)]],
    // lean:AOP.A5_5.relCata_fusion@15d8a5b5
   s: 92%,
@@ -2223,7 +2218,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 
   [type relator],
   [`T(R)°=T(R°)`, for `F` preserving `°`],
@@ -2261,14 +2256,14 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
   ((2.812, [`T`]), (4.52, [`B`])),
   obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "α T(f)", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B"), frame: 4))
+  cert: (expect: "α T(f)", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92!lean=lean:AOP.A5_5_TypeFunctor.alphaT@534a2e87", "f": "A⟶B"), frame: 4))
 #let tfun-r = dpanel(4.4, 6.37, 4.52,
   ((2.812, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none), (3.896, "top", 2.2, none, none)),
   ((3.3, [`f`]), (2.2, [`α`], black, 2.5, 3.198)),
   ((2.5, [`F`]), (3.896, [`⟨𝟙,T⟩`]), (4.52, [`A`])),
   ((2.812, [`T`]), (4.52, [`B`])),
   obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "F(⟨𝟙,T⟩(f))α", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627", "f": "A⟶B"), frame: 4, top: 3))
+  cert: (expect: "F(⟨𝟙,T⟩(f))α", src: "F(⟨𝟙,T⟩(A))", tgt: "T(B)", sigs: ("α": "F(⟨𝟙,T⟩(x))⟶T(x)!nat=lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92!lean=lean:AOP.A5_5_TypeFunctor.alphaT@534a2e87", "f": "A⟶B"), frame: 4, top: 3))
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
   let (FA, TA) = ((-3, 2.5), (3, 2.5))
@@ -2289,7 +2284,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
   [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
  #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@bf347627
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 )]<tfun-sq>
 
 - `F : 𝒜×𝒜⟶𝒜` is a bifunctor and a wire is a unary functor, so the two arguments are packed first:
@@ -2350,31 +2345,30 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 == Reduce <sec-cata>
 
 #disp[#definition[
-let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the subcategory of functions. 
-α#sub[T] is also initial in the allegory:
+let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcategory of functions.
+`α` is also initial in the allegory:
 ]]<cata-defn>
 
 
 === The defining equation
 
-// `α` subscripted by its CARRIER through this section, `#sub` OUTSIDE the raw span (inside backticks `_` is
-// literal).  A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over.
-// The string half is generated, on (11.4a)'s two panels at `⦇αᴀ⦈ := X`: `α` carries the naturality
-// marker, so it draws as one natural bead whose two components are `α`#sub[`T`] and `α`#sub[`A`].
+// A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over from the
+// square.  The string half is generated, on @initial-defn's two panels at `⦇f⦈ := X`: two ALGEBRAS,
+// `α` at `T` and `f` at `A`, each an arrow at its own carrier and so a bead on the object wire.
 #let cata-def-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`X`])),
+  ((2.5, "top", 3.3, none, none),),
+  ((3.3, [`α`], black, 2.5), (2.2, [`X`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α X", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let cata-def-r = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none),),
-  ((3.3, [`X`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.5, "top", 1.1, none, none),),
+  ((2.2, [`X`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((3.12, [`A`]),),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(X)α", src: "F(T)", tgt: "A", sigs: ("X": "T⟶A", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(X)f", src: "F(T)", tgt: "A", sigs: ("f": "F(A)⟶A", "X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 2), s: 100%)
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
     // The same 5.2 × 2.7 square as @cata-map-square's top row, so the two pictures overlay.
@@ -2382,13 +2376,13 @@ let `F` be a relator and has  *initial algebra* `α`#sub[T]` : FT⟶T` in the su
     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
     ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
     ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`#sub[`T`]]; lab(0, -1.9, GIVEN1)[`α`#sub[`A`]]
+    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`f`]
     lab(-4.0, 0, INDUCED)[`F(X)`]; lab(3.6, 0, INDUCED)[`X`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
   }),
   row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
-  [`X=⦇α`#sub[`A`]`⦈⟺α`#sub[`T`]` X=F(X)α`#sub[`A`] #h(6pt)
+  [`X=⦇f⦈⟺αX=F(X)f` #h(6pt)
  #src[]],
    // lean:AOP.A5_5.relCata_UP@e4a4905f
 )]<cata-defining>
@@ -2437,24 +2431,24 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 === `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`
 
-// B&dM p.121's figure, mirrored: @cata-defining's square at `α`#sub[`A`]` := (F(∋) R)%∋`, `A := E A`,
+// B&dM p.121's figure, mirrored: @cata-defining's square at `f := `#frc([`F(∋)R`])`, `A := E A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
-// banana, `T⟶EA` being where the power object enters, and `α`'s two components are one natural bead.
+// banana, `T⟶EA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(EA)⟶EA`.
 #let cata-map-l = dpanel(4.4, 4.97, 3.12,
-  ((2.5, "top", 2.2, none, none), (2.5, 1.1, "bot", none, none)),
-  ((2.2, [`α`], black, 2.5, 2.5), (1.1, [`⦇`#frc([`F(∋)R`])`⦈`])),
+  ((2.5, "top", 3.3, none, none), (2.5, 2.2, "bot", none, none)),
+  ((3.3, [`α`], black, 2.5), (2.2, [`⦇`#frc([`F(∋)R`])`⦈`])),
   ((2.5, [`F`]), (3.12, [`T`])),
   ((2.5, [`E`]), (3.12, [`A`])),
-  obj: ((2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4), s: 100%)
+  obj: ((3.3, [`T`]), (2.2, [`A`])),
+  cert: (expect: "α⦇F(∋)R%∋⦈", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 4, top: 3), s: 100%)
 #let cata-map-r = dpanel(4.4, 5.6, 3.75,
-  ((2.5, "top", 2.2, none, none), (3.125, 3.3, "bot", none, none)),
-  ((3.3, [`⦇`#frc([`F(∋)R`])`⦈`]), (2.2, [`α`], black, 2.5, 2.5)),
+  ((2.812, 1.1, "bot", none, none), (2.5, "top", 1.1, none, none), (3.125, 2.2, 1.1, [`E`], none)),
+  ((2.2, [`⦇`#frc([`F(∋)R`])`⦈`]), (1.1, [`f`], black, 2.5)),
   ((2.5, [`F`]), (3.75, [`T`])),
-  ((3.125, [`E`]), (3.75, [`A`])),
-  obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "F(⦇F(∋)R%∋⦈)α", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "α": "F(x)⟶x!nat=lean:AOP.A5_5_AlgCat.Freyd.Alg.alpha_natural_alg@0f02718b!lean=lean:AOP.A5_5_AlgCat.Freyd.Alg.alphaComp@8a97e626"), frame: 4, top: 3), s: 100%)
+  ((2.812, [`E`]), (3.75, [`A`])),
+  obj: ((2.2, [`A`]), (1.1, [`A`])),
+  cert: (expect: "F(⦇F(∋)R%∋⦈)f", src: "F(T)", tgt: "E(A)", sigs: ("⦇F(∋)R%∋⦈": "T⟶E(A)", "f": "F(E(A))⟶E(A)"), frame: 4, top: 2), s: 100%)
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   cetz.canvas(length: 0.8cm, {
@@ -2467,13 +2461,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
     ar(FE, FA, black, s0: 0.55, s1: 0.55)
     ar(E, A, black, s0: 0.55, s1: 0.55)
-    lab(0, 2.05, GIVEN2)[`α`#sub[`T`]]
+    lab(0, 2.05, GIVEN2)[`α`]
     lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)`]
     lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`]
-    lab(0, -0.65, GIVEN1)[`α`#sub[`EA`]]
+    lab(0, -0.65, GIVEN1)[`f`]
     lab(0, -1.95, GIVEN1)[$frac(#[`F(∋)R`], ∋)$]
     lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
-    lab(0, -3.35, black)[`α`#sub[`A`]]
     lab(0, -4.45, black)[`R`]
     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
     node(FE.at(0), FE.at(1), GIVEN1, `F(EA)`); node(E.at(0), E.at(1), GIVEN1, `EA`)
@@ -2481,7 +2474,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   }),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
   row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
-  [`α`#sub[`T`]` ⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
+  [`α⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 )]<cata-map-square>
@@ -2490,15 +2483,15 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // and the next row opens with the `⟺` that carries it over.
 #disp[
 #zline(
-  zsqc([`α`#sub[`T`]` X`], [`F(X)R`], eq: true),
+  zsqc([`αX`], [`F(X)R`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc([$frac(#[`α`#sub[`T`]` X`], ∋)$], [$frac(#[`F(X)R`], ∋)$], eq: true),
+  zsqc([$frac(#[`αX`], ∋)$], [$frac(#[`F(X)R`], ∋)$], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
-  zsqc([$frac(#[`α`#sub[`T`]` X`], ∋)$], [$frac(#[`F(`$frac(#[`X`], ∋)$ `∋)R`], ∋)$], eq: true),
+  zsqc([$frac(#[`αX`], ∋)$], [$frac(#[`F(`$frac(#[`X`], ∋)$ `∋)R`], ∋)$], eq: true),
 )
 #zline(
   zstep(op: sym.arrow.l.r.double, under: true)[relator, fusion twice],
-  zsqc([`α`#sub[`T`] $frac(#[`X`], ∋)$], [`F(`$frac(#[`X`], ∋)$`)` $frac(#[`F(∋)R`], ∋)$], eq: true),
+  zsqc([`α` $frac(#[`X`], ∋)$], [`F(`$frac(#[`X`], ∋)$`)` $frac(#[`F(∋)R`], ∋)$], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[reduce of maps],
   zsqc([$frac(#[`X`], ∋)$], [`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
@@ -2660,14 +2653,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`B`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+  cert: (expect: "S° F(⦇S⦈°)α⦇R⦈", src: "B", tgt: "A", sigs: ("S": "F(B)⟶B", "⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2")), s: 100%)
 #let hy-lambek = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 2.2, [`F`], none),),
   ((4.4, [`⦇S⦈°`]), (3.3, [`α°`]), (2.2, [`α`], black, 2.5), (1.1, [`⦇R⦈`])),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`A`])),
-  cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B")), s: 100%)
+  cert: (expect: "⦇S⦈° α° α⦇R⦈", src: "B", tgt: "A", sigs: ("⦇R⦈": "T⟶A", "⦇S⦈": "T⟶B", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2")), s: 100%)
 #let hy-cata = dpanel(5.5, 3.725, 1.875,
   (),
   ((2.2, [`⦇S⦈°`]), (1.1, [`⦇R⦈`])),
@@ -2688,14 +2681,14 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   ((3.12, [`T`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "α° F(⦇S⦈°\\X)R", src: "T", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈°\\X": "T⟶A"), frame: 5, top: 4), s: 100%)
+  cert: (expect: "α° F(⦇S⦈°\\X)R", src: "T", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈°\\X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 5, top: 4), s: 100%)
 #let hy-adj = dpanel(5.5, 4.97, 3.12,
   ((2.5, 3.3, 1.1, [`F`], none),),
   ((4.4, [`⦇S⦈°`]), (3.3, [`α°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
   ((3.12, [`B`]),),
   ((3.12, [`A`]),),
   obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "⦇S⦈° α° F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A"), frame: 5), s: 100%)
+  cert: (expect: "⦇S⦈° α° F(⦇S⦈°\\X)R", src: "B", tgt: "A", sigs: ("R": "F(A)⟶A", "⦇S⦈": "T⟶B", "⦇S⦈°\\X": "T⟶A", "α": "F(T)⟶T!lean=lean:AOP.A5_5.Freyd.Alg.InitialAlgebra.α@c4c898e2"), frame: 5), s: 100%)
 #let hy-fuse = dpanel(5.5, 4.97, 3.12,
   ((2.5, 4.4, 1.1, [`F`], none),),
   ((4.4, [`S°`]), (3.3, [`⦇S⦈°`]), (2.2, [`⦇S⦈°\X`]), (1.1, [`R`], black, 2.5)),
@@ -3638,14 +3631,14 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ((2.5, [`G`]), (3.12, [`A`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   obj: ((3.3, [`B`]), (2.2, [`B`])),
-  cert: (expect: "G(R)φ", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"), frame: 4, top: 3), s: 100%)
+  cert: (expect: "G(R)φ", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee!lean=lean:AOP.A5_1.LaxNatural@ba661fee#φ"), frame: 4, top: 3), s: 100%)
 #let lax-hm-r = dpanel(4.4, 4.97, 3.12,
   ((2.5, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none)),
   ((2.2, [`φ`], black, 2.5, 2.5, "lax"), (1.1, [`R`])),
   ((2.5, [`G`]), (3.12, [`A`])),
   ((2.5, [`F`]), (3.12, [`B`])),
   obj: ((2.2, [`A`]), (1.1, [`B`])),
-  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee"), frame: 4), s: 100%)
+  cert: (expect: "φ F(R)", src: "G(A)", tgt: "F(B)", sigs: ("R": "A⟶B", "φ": "G(x)⟶F(x)!lax=lean:AOP.A5_1.LaxNatural@ba661fee!lean=lean:AOP.A5_1.LaxNatural@ba661fee#φ"), frame: 4), s: 100%)
 
 #disp[#pair(
   cetz.canvas(length: 0.8cm, {
@@ -4432,17 +4425,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // `prefix` ON ITS OWN, before `takewhile` specialises it: the fold's defining square, the two Hinze–Marsden
 // panels either side of the `=`, and the algebra's circuit.  Panels emitted verbatim by
-//   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" "α prefix"
+//   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" --sigs "α:F([A])⟶[A]" "α prefix"
 //   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
 //   ./scripts/circuit --src "F([A])" --tgt "[A]" "[nil,⊸ nil ∪ cons]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
 #let pfx-def-l = dpanel(4.4, 6.12, 4.27,
   ((2.812, 2.2, "bot", none, none), (2.812, 3.3, 2.2, [`list`], none), (2.5, "top", 3.3, none, none), (3.641, "top", 3.3, none, none)),
-  ((3.3, [`α`], black, 2.5, 3.0705), (2.2, [`prefix`], black, 2.812, 2.812, "lax")),
+  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 2.812, 2.812, "lax")),
   ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
   ((2.812, [`list`]), (4.27, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`])),
-  cert: (expect: "α prefix", src: "F([A])", tgt: "[A]", sigs: ("α": "F([x])⟶[x]!nat=lean:AOP.A5_6_ListCombinators.ListRel.alphaR_natural@97dbed2a!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987"), frame: 4, top: 3))
+  cert: (expect: "α prefix", src: "F([A])", tgt: "[A]", sigs: ("α": "F([A])⟶[A]!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987"), frame: 4, top: 3))
 #let pfx-def-r = dpanel(4.4, 6.38, 4.53,
   ((3.074, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.903, 2.2, 1.1, [`list`], none), (3.903, "top", 2.2, none, none)),
   ((2.2, [`prefix`], black, 3.903, 3.903, "lax"), (1.1, [`cons`], black, 2.762, 3.3325)),
@@ -4531,12 +4524,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
 #let tw-pfx1 = dpanel(4.4, 6.12, 4.27,
-  ((2.5, "top", 3.3, none, none), (3.641, 2.2, "bot", none, none), (3.641, "top", 2.2, none, none)),
-  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 3.641, 3.641, "lax"), (1.1, [`p`])),
+  ((2.812, 2.2, "bot", none, none), (2.812, 3.3, 2.2, [`list`], none), (2.5, "top", 3.3, none, none), (3.641, "top", 3.3, none, none)),
+  ((3.3, [`α`], black, 2.5), (2.2, [`prefix`], black, 2.812, 2.812, "lax"), (1.1, [`p`])),
   ((2.5, [`F`]), (3.641, [`list`]), (4.27, [`A`])),
-  ((3.641, [`list`]), (4.27, [`A`])),
+  ((2.812, [`list`]), (4.27, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))
+  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]", sigs: ("α": "F([A])⟶[A]!lean=lean:AOP.A6_ConsList.CL.alphaR@d7bb4987")))
 #let tw-pfx2 = dpanel(4.4, 6.38, 4.53,
   ((3.074, 2.2, "bot", none, none), (2.762, "top", 2.2, none, none), (3.903, 3.3, 2.2, [`list`], none), (3.903, "top", 3.3, none, none)),
   ((3.3, [`prefix`], black, 3.903, 3.903, "lax"), (2.2, [`cons`], black, 2.762, 3.3325), (1.1, [`p`])),
@@ -5227,7 +5220,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((3.387, [`A×−`]), (4.01, [`Int`])),
   ((4.01, [`Int`]),),
   obj: ((2.75, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus"))
+  cert: (expect: "𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥)", src: "F(Int)", tgt: "Int", branch: "plus", sigs: ("plus": "A×Int⟶Int")))
 #let mh-alg = dpanel(2.2, 4.97, 3.12,
   ((2.5, "top", 1.1, none, none),),
   ((1.1, [`zero`], black, 2.5),),
@@ -5403,7 +5396,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   ((2.762, [`A×−`]), (3.903, [`list`]), (4.53, [`A`])),
   ((4.53, [`A`]),),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×x⟶x"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
+  cert: (expect: "(𝟙×sum)plus", src: "A×[A]", tgt: "A", sigs: ("plus": "A×A⟶A"))) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -5475,7 +5468,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
-#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `α`#sub[`B`]` :=[nil,⊸ nil ∪ cons]`,
+#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `R:=[nil,⊸ nil ∪ cons]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
  ]])
@@ -6364,7 +6357,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(17.8, -y - 0.5, black)[`def`]
 }), s: 80%)
 #align(center, src[])]<include-pic>
-// lean:AOP.A7_3_Party.include_eq@d4df2bf2
+// lean:AOP.A7_3_Party.include_eq@afb11121
 
 // The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
 // `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
@@ -6388,7 +6381,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lab(17.8, -y - 0.5, black)[`bf`]
 }), s: 80%)
 #align(center, src[])]<exclude-pic>
-// lean:AOP.A7_3_Party.exclude_eq@05c2777f
+// lean:AOP.A7_3_Party.exclude_eq@ae3657ab
 
 // `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
 #disp[#align(center, grid(
@@ -6615,7 +6608,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`g`],
   [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`
  #src[], `g:=π₁` its mirror
-   // lean:AOP.A7_3_Party.include_monotonic@c4d977bd
+   // lean:AOP.A7_3_Party.include_monotonic@226b6fb6
    `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁ ∪ π₂` is the union
  of the two #h(4pt) #src[@lax-closure].
    // lean:AOP.A7_3_Party.chooseR_monotonic@8817d447
@@ -7027,28 +7020,28 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [A cheapest path from the entry side to the exit side.],
 )]<vec-defn-cyl>
 
-=== `gen≜F(𝟙,moves trans Vec(n)(concat)) zip Vec(n)(cp)` <sec-cyl-vec>
+=== `gen≜(𝟙×(moves trans Vec(n)(concat))) zip Vec(n)(cp)` <sec-cyl-vec>
 
 // Beside @sec-cyl-gen: `union` becomes `concat`, `trans` the transpose, and `α` drops out because
 // `wrap` and `cons` are identities.  A one-square path is its square, which is what keeps `[1]` out
 // of every type; the `[m+1]` bracket under the ports is the hidden `cons`.
 #disp[#align(center, dpanel(6.6, 9.04, 7.19,
-  ((2.762, 2.2, "bot", none, none), (3.903, 1.1, "bot", none, none), (5.306, 1.1, "bot", none, none), (3.903, 2.2, 1.1, [`F`], none), (2.762, "top", 2.2, none, none), (3.903, 4.4, 2.2, [`[n]`], none), (5.306, 3.3, 1.1, [`[3p]`], none), (4.79, 4.4, 3.3, [`[3]`], none), (3.903, 5.5, 4.4, [`[3]`], none), (4.79, 5.5, 4.4, [`[n]`], none), (4.216, "top", 5.5, none, none), (5.676, "top", 3.3, none, none), (6.563, "top", "bot", none, none)),
+  ((2.762, 2.2, "bot", none, none), (3.903, 1.1, "bot", none, none), (5.306, 1.1, "bot", none, none), (3.903, 2.2, 1.1, [`A×−`], none), (2.762, "top", 2.2, none, none), (3.903, 4.4, 2.2, [`[n]`], none), (5.306, 3.3, 1.1, [`[3p]`], none), (4.79, 4.4, 3.3, [`[3]`], none), (3.903, 5.5, 4.4, [`[3]`], none), (4.79, 5.5, 4.4, [`[n]`], none), (4.216, "top", 5.5, none, none), (5.676, "top", 3.3, none, none), (6.563, "top", "bot", none, none)),
   ((5.5, [`moves`], black, 4.216, 4.216), (4.4, [`trans`], black, 3.903, 4.3465), (3.3, [`concat`], black, 4.79, 5.233), (2.2, [`zip`], black, 2.762, 3.3325), (1.1, [`cp`], black, 3.903, 4.6045)),
-  ((2.762, [`F`]), (4.216, [`[n]`]), (5.676, [`[p]`]), (6.563, [`[m]`]), (7.19, [`A`])),
-  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (5.306, [`F`]), (6.563, [`[m]`]), (7.19, [`A`])),
+  ((2.762, [`A[n]×−`]), (4.216, [`[n]`]), (5.676, [`[p]`]), (6.563, [`[m]`]), (7.19, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (5.306, [`A×−`]), (6.563, [`[m]`]), (7.19, [`A`])),
   obj: ((5.5, [`A`]), (4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
   defn: ((5.306, 6.563, 0, [`[m+1]`]),),
-  cert: (expect: "F(𝟙,moves trans Vec(n)(concat))zip Vec(n)(cp)", src: "F(A[n][p][m])", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@1374d571!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@37b9e848", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("x[k+1]": "F(x[k])"))))]<vec-gen-diag>
+  cert: (expect: "(𝟙×(moves trans Vec(n)(concat)))zip Vec(n)(cp)", src: "A[n]×A[n][p][m]", tgt: "A[n][3p][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!nat=lean:AOP.A7_4_CylinderVec.Vec.moves_natural@ec7b33a9!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVec.Vec.trans_natural@7fa329f4!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "concat": "x[j][k]⟶x[jk]!nat=lean:AOP.A7_4_CylinderVec.Vec.concat_natural@1374d571!lean=lean:AOP.A7_4_CylinderVec.Vec.concat@37b9e848", "zip": "x[k]×y[k]⟶(x×y)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.zip_natural@66880cd8!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0", "cp": "x×y[k]⟶(x×y)[k]!nat=lean:AOP.A7_4_CylinderVec.Vec.cp_natural@c9f4a92d!lean=lean:AOP.A7_4_CylinderVec.Vec.cp@aa2952d2"), defn: ("x[k+1]": "x×x[k]"))))]<vec-gen-diag>
 
 #disp[#align(center)[```
 a row is the outer index, a cell one path
-u = ((1,2,3,4),C)                               : F(A[n],A[n])
+u = ((1,2,3,4),C)                               : A[n]×A[n]
     C = 5                                         one candidate per row, one square long:
         6                                         a column of squares
         7
         8
-F(𝟙,moves trans Vec(n)(concat))                   𝟙 keeps the column, the candidates move
+(𝟙×(moves trans Vec(n)(concat)))                  𝟙 keeps the column, the candidates move
   moves(C)                                        down, unmoved, up: a 3×n matrix
    = 6 7 8 5
      5 6 7 8
@@ -7063,7 +7056,7 @@ zip(that)                                         each row: its square, and its 
    = (1, 6 5 8)
      (2, 7 6 5)
      (3, 8 7 6)
-     (4, 5 8 7)                                 : F(A,A[3])[n]
+     (4, 5 8 7)                                 : (A×A[3])[n]
 Vec(n)(cp)(that)                                  cp pairs the square with each candidate:
    = 1 6   2 7   3 8   4 5                        row k of that is the k-th 3×2 block, left
      1 5   2 6   3 7   4 8                        to right; each line a two-square path
@@ -7071,29 +7064,29 @@ Vec(n)(cp)(that)                                  cp pairs the square with each 
 ```]]<vec-step>
    // lean:AOP.A7_4_CylinderVec.Vec.gen_run@47a0e44e
 
-=== `gen` is an `F`-algebra; `⦇gen⦈`: `cons ⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-vec-fold>
+=== `gen` is an `F`-algebra; `⦇gen⦈`: `cons ⦇gen⦈=(𝟙×⦇gen⦈)gen` <sec-cyl-vec-fold>
 
 // The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is OUTSIDE `F`
 // on the left and INSIDE it on the right — that is all the recursion there is.  `cons=𝟙` here, so
 // on the left it is the `[m+1]` bracket alone.  Every bead is a function, so the dots are filled.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
   dpanel(3.3, 8.15, 6.3,
-  ((2.762, 2.2, "bot", none, none), (3.903, 2.2, "bot", none, none), (4.528, 2.2, "bot", none, none), (5.676, 2.2, "bot", none, none), (3.074, "top", 2.2, none, none), (4.216, "top", 2.2, none, none), (5.102, "top", 2.2, none, none)),
+  ((2.762, 2.2, "bot", none, none), (3.903, 2.2, "bot", none, none), (4.79, 2.2, "bot", none, none), (5.676, 2.2, "bot", none, none), (3.074, "top", 2.2, none, none), (4.216, "top", 2.2, none, none), (5.102, "top", 2.2, none, none)),
   ((2.2, [`⦇gen⦈`], black, 3.074, 4.088),),
-  ((3.074, [`F`]), (4.216, [`[m]`]), (5.102, [`[n]`]), (6.3, [`A`])),
-  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.528, [`F`]), (5.676, [`[m]`]), (6.3, [`A`])),
+  ((3.074, [`A[n]×−`]), (4.216, [`[m]`]), (5.102, [`[n]`]), (6.3, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.79, [`A×−`]), (5.676, [`[m]`]), (6.3, [`A`])),
   obj: ((2.2, [`A`]),),
-  defn: ((3.074, 4.216, 3.3, [`[m+1]`]), (4.528, 5.676, 0, [`[m+1]`])),
-  cert: (expect: "⦇gen⦈", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m+1][n]⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83"), frame: 3, top: 2, defn: ("x[k+1]": "F(x[k])"))),
+  defn: ((3.074, 4.216, 3.3, [`[m+1]`]), (4.79, 5.676, 0, [`[m+1]`])),
+  cert: (expect: "⦇gen⦈", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m+1][n]⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83"), frame: 3, top: 2, defn: ("x[k+1]": "x×x[k]"))),
   EQ,
   dpanel(3.3, 8.31, 6.46,
   ((2.762, 1.1, "bot", none, none), (3.903, 1.1, "bot", none, none), (4.946, 1.1, "bot", none, none), (5.833, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.903, 2.2, 1.1, [`[n]`], none), (4.946, 2.2, 1.1, [`[p]`], none), (5.833, 2.2, 1.1, [`[m]`], none), (4.216, "top", 2.2, none, none), (5.259, "top", 2.2, none, none)),
   ((2.2, [`⦇gen⦈`], black, 4.216, 4.7375), (1.1, [`gen`], black, 2.762, 4.2975)),
-  ((2.762, [`F`]), (4.216, [`[m]`]), (5.259, [`[n]`]), (6.46, [`A`])),
-  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.946, [`F`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  ((2.762, [`A[n]×−`]), (4.216, [`[m]`]), (5.259, [`[n]`]), (6.46, [`A`])),
+  ((2.762, [`[n]`]), (3.903, [`[3p]`]), (4.946, [`A×−`]), (5.833, [`[m]`]), (6.46, [`A`])),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
   defn: ((2.762, 4.216, 3.3, [`[m+1]`]), (4.946, 5.833, 0, [`[m+1]`])),
-  cert: (expect: "F(𝟙,⦇gen⦈)gen", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "gen": "F(x[n][p][m])⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f"), defn: ("x[k+1]": "F(x[k])"))),
+  cert: (expect: "(𝟙×⦇gen⦈)gen", src: "A[m+1][n]", tgt: "A[n][3p][m+1]", sigs: ("⦇gen⦈": "x[m][n]⟶x[n][p][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.genFold_natural@368cbf3b!lean=lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83", "gen": "x[n]×x[n][p][m]⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f"), defn: ("x[k+1]": "x×x[k]"))),
 
   src[the `[m+1]` bracket puts the column back on the matrix, then the fold reads all of it],
   [],
@@ -7117,7 +7110,7 @@ xs = 1 2 3 4                                    : A[m][n], m=2
   folds to the column `5 6 7 8`, one path per row and each of them one square long, and `gen` on it
   is that walk.]])
 
-=== `Q≜F(𝟙,moves trans Vec(n)(est(R))) zip`, `F(A[n],A[n][m])⟶A[n][m+1]` <sec-cyl-vec-q>
+=== `Q≜(𝟙×(moves trans Vec(n)(est(R)))) zip`, `A[n]×A[n][m]⟶A[n][m+1]` <sec-cyl-vec-q>
 
 // `gen` with the choice made: `concat` and `cp` are gone, and `est(R)` takes one of the three
 // candidates a row is offered before the new square is put in front of it.  In `Rel` now, so
@@ -7125,20 +7118,20 @@ xs = 1 2 3 4                                    : A[m][n], m=2
 #disp[#align(center, dpanel(5.5, 7.9, 6.05,
   ((2.762, 1.1, "bot", none, none), (3.648, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.648, 3.3, 1.1, [`[n]`], none), (4.535, 3.3, 2.2, [`[3]`], none), (3.648, 4.4, 3.3, [`[3]`], none), (4.535, 4.4, 3.3, [`[n]`], none), (3.961, "top", 4.4, none, none), (5.421, "top", "bot", none, none)),
   ((4.4, [`moves`], black, 3.961, 3.961, "lax"), (3.3, [`trans`], black, 3.648, 4.0915), (2.2, [`est(R)`], black, 4.535), (1.1, [`zip`], black, 2.762, 3.205)),
-  ((2.762, [`F`]), (3.961, [`[n]`]), (5.421, [`[m]`]), (6.05, [`A`])),
-  ((2.762, [`[n]`]), (3.648, [`F`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`A[n]×−`]), (3.961, [`[n]`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`[n]`]), (3.648, [`A×−`]), (5.421, [`[m]`]), (6.05, [`A`])),
   obj: ((4.4, [`A`]), (3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
   defn: ((3.648, 5.421, 0, [`[m+1]`]),),
-  cert: (expect: "F(𝟙,moves trans Vec(n)(est(R)))zip", src: "F(A[n][m])", tgt: "A[n][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!lax=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.moves_lax_natural@78f5ec90!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.trans_natural@ecc5fb3e!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7", "zip": "F(x[k])⟶F(x)[k]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.zip_natural@12046f44!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0"), defn: ("x[k+1]": "F(x[k])"))))]<vec-q-diag>
+  cert: (expect: "(𝟙×(moves trans Vec(n)(est(R))))zip", src: "A[n]×A[n][m]", tgt: "A[n][m+1]", sigs: ("moves": "x[k]⟶x[3][k]!lax=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.moves_lax_natural@78f5ec90!lean=lean:AOP.A7_4_CylinderVec.Vec.moves@2e5d9d24", "trans": "x[3][k]⟶x[k][3]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.trans_natural@ecc5fb3e!lean=lean:AOP.A7_4_CylinderVec.Vec.trans@09091122", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7", "zip": "x[k]×y[k]⟶(x×y)[k]!nat=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.zip_natural@12046f44!lean=lean:AOP.A7_4_CylinderVec.Vec.zip@26985fa0"), defn: ("x[k+1]": "x×x[k]"))))]<vec-q-diag>
    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a
 
 #disp[#align(center)[```
-u = ((1,2,3,4),C)                               : F(A[n],A[n][m])
+u = ((1,2,3,4),C)                               : A[n]×A[n][m]
     C = 5                                         one path per row, one square long
         6
         7
         8
-F(𝟙,moves trans Vec(n)(est(R)))                   𝟙 keeps the column, the paths move
+(𝟙×(moves trans Vec(n)(est(R))))                  𝟙 keeps the column, the paths move
   moves(C)                                        down, unmoved, up: a 3×n matrix
    = 6 7 8 5
      5 6 7 8
@@ -7196,7 +7189,7 @@ zip(that)                                         each row: its square, and the 
   ((3.016, [`[m]`]), (3.903, [`[n]`]), (4.53, [`Nat`])),
   ((3.903, [`[m]`]), (4.53, [`Nat`])),
   obj: ((2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "paths est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("paths": "Nat[m][n]⟶Nat[np][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.paths_natural@54a4beda!lean=lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
+  cert: (expect: "paths est(R)", src: "Nat[m][n]", tgt: "Nat[m]", sigs: ("paths": "x[m][n]⟶x[np][m]!nat=lean:AOP.A7_4_CylinderVec.Vec.paths_natural@54a4beda!lean=lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7")))],
 
   [#vstep(EQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-concat, est-R-box))),
     [#src[@vec-defn-cyl at `paths`]])],
@@ -7244,7 +7237,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
 // column; the right-hand side kills the `[p]` before, and that swap is the whole step.
 #disp[#calc-table(
-  Thm[`gen Vec(n)(est(R))⊒F(𝟙,Vec(n)(est(R)))Q` \
+  Thm[`gen Vec(n)(est(R))⊒(𝟙×Vec(n)(est(R)))Q` \
     #src[choosing a cheapest of each square's `p` paths before the column is extended is no better
      than extending first and choosing among the `3p`.
  ]],
@@ -7255,22 +7248,22 @@ zip(that)                                         each row: its square, and the 
   [#dpanel(3.3, 8.31, 6.46,
   ((2.762, 2.2, "bot", none, none), (4.059, 2.2, 1.1, [`[3p]`], none), (4.946, 2.2, "bot", none, none), (5.833, 2.2, "bot", none, none), (2.762, "top", 2.2, none, none), (4.059, "top", 2.2, none, none), (4.946, "top", 2.2, none, none), (5.833, "top", 2.2, none, none)),
   ((2.2, [`gen`], black, 2.762, 4.2975), (1.1, [`est(R)`], black, 4.059)),
-  ((2.762, [`F`]), (4.059, [`[n]`]), (4.946, [`[p]`]), (5.833, [`[m]`]), (6.46, [`A`])),
-  ((2.762, [`[n]`]), (4.946, [`F`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  ((2.762, [`A[n]×−`]), (4.059, [`[n]`]), (4.946, [`[p]`]), (5.833, [`[m]`]), (6.46, [`A`])),
+  ((2.762, [`[n]`]), (4.946, [`A×−`]), (5.833, [`[m]`]), (6.46, [`A`])),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
   defn: ((4.946, 5.833, 0, [`[m+1]`]),),
-  cert: (expect: "gen Vec(n)(est(R))", src: "F(A[n][p][m])", tgt: "A[n][m+1]", sigs: ("gen": "F(x[n][p][m])⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "F(x[k])")))],
+  cert: (expect: "gen Vec(n)(est(R))", src: "A[n]×A[n][p][m]", tgt: "A[n][m+1]", sigs: ("gen": "x[n]×x[n][p][m]⟶x[n][3p][m+1]!nat=lean:AOP.A7_4_CylinderVec.Vec.gen_natural@24fdd01d!lean=lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "x×x[k]")))],
 
   [#vstep(RQ, cvp(cvrun([`F(A[n],A[n][p][m])`], [`A[n][m+1]`], (cv-FNest, cv-Q)), s: 88%),
     [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
   [#dpanel(3.3, 7.9, 6.05,
   ((2.762, 1.1, "bot", none, none), (3.648, 1.1, "bot", none, none), (5.421, 1.1, "bot", none, none), (2.762, "top", 1.1, none, none), (3.648, "top", 1.1, none, none), (4.535, "top", 2.2, none, none), (5.421, "top", 1.1, none, none)),
   ((2.2, [`est(R)`], black, 4.535), (1.1, [`Q`], black, 2.762)),
-  ((2.762, [`F`]), (3.648, [`[n]`]), (4.535, [`[p]`]), (5.421, [`[m]`]), (6.05, [`A`])),
-  ((2.762, [`[n]`]), (3.648, [`F`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`A[n]×−`]), (3.648, [`[n]`]), (4.535, [`[p]`]), (5.421, [`[m]`]), (6.05, [`A`])),
+  ((2.762, [`[n]`]), (3.648, [`A×−`]), (5.421, [`[m]`]), (6.05, [`A`])),
   obj: ((2.2, [`A`]), (1.1, [`A`])),
   defn: ((3.648, 5.421, 0, [`[m+1]`]),),
-  cert: (expect: "F(𝟙,Vec(n)(est(R)))Q", src: "F(A[n][p][m])", tgt: "A[n][m+1]", sigs: ("Q": "F(x[n][m])⟶x[n][m+1]!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "F(x[k])")))],
+  cert: (expect: "(𝟙×Vec(n)(est(R)))Q", src: "A[n]×A[n][p][m]", tgt: "A[n][m+1]", sigs: ("Q": "x[n]×x[n][m]⟶x[n][m+1]!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q@cf11297a", "est": "x[k]⟶x!lean=lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7"), defn: ("x[k+1]": "x×x[k]")))],
 
   Thm[(7.13) on `Vec`: `F(𝟙,est(R))⊑cp est(R)`, `R` monotonic \
     #src[putting the new square in front of every one of the `p` candidates and then choosing a
@@ -7429,7 +7422,7 @@ zip(that)                                         each row: its square, and the 
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((2.2, [`Int`]),),
-  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
+  cert: (expect: "(wrap×𝟙)cons", src: "Int×[[Int]]", tgt: "[[Int]]"))],
 
   [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons` \
    #src[`cons°` splits the schedule into its first segment and the rest, the first `cons` puts the
@@ -7437,7 +7430,7 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.glue_eq@f4301628
   [#dpanel(4.4, 10.56, 8.71,
   ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.271, "top", 2.2, none, none), (5.178, 3.3, 2.2, [`[Int]×−`], none), (6.319, 3.3, 1.1, [`list`], none), (5.49, "top", 3.3, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
-  ((3.3, [`cons°`], black, 5.49, 5.49), (2.2, [`cons×𝟙`], black, 3.271), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((3.3, [`cons°`], black, 5.49, 5.49), (2.2, [`cons×𝟙`], black, 3.271, 4.2245), (1.1, [`cons`], black, 3.428, 5.444)),
   ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
   ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
@@ -7449,7 +7442,7 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.old_eq@b9c3949e
   [#dpanel(5.5, 10.56, 8.71,
   ((5.568, 1.1, "bot", none, none), (3.428, 2.2, 1.1, [`[Int]×−`], none), (3.428, 3.3, 2.2, [`[Int]×−`], none), (3.271, "top", 3.3, none, none), (5.178, 4.4, 3.3, [`[Int]×−`], none), (6.319, 4.4, 1.1, [`list`], none), (5.49, "top", 4.4, none, none), (7.46, "top", 1.1, none, none), (8.085, 1.1, "bot", none, none)),
-  ((4.4, [`cons°`], black, 5.49, 5.49), (3.3, [`cons×𝟙`], black, 3.271), (2.2, [`secure×𝟙`], black, 3.428), (1.1, [`cons`], black, 3.428, 5.444)),
+  ((4.4, [`cons°`], black, 5.49, 5.49), (3.3, [`cons×𝟙`], black, 3.271, 4.2245), (2.2, [`secure×𝟙`], black, 3.428), (1.1, [`cons`], black, 3.428, 5.444)),
   ((3.271, [`Int×−`]), (5.49, [`list`]), (7.46, [`list`]), (8.71, [`Int`])),
   ((5.568, [`list`]), (8.085, [`list`]), (8.71, [`Int`])),
   obj: ((4.4, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`])),
@@ -7464,13 +7457,13 @@ zip(that)                                         each row: its square, and the 
   ((3.329, [`list`]), (4.78, [`Int`])),
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "partition list(secure)", src: "[Int]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "partition": "[Int]⟶[[Int]]")))
+  cert: (expect: "partition list(secure)", src: "[Int]", tgt: "[[Int]]", sigs: ("secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a", "partition": "[x]⟶[[x]]")))
 #let van-fus-r = dpanel(3.3, 7.26, 5.41,
   ((3.016, "top", 1.1, none, none), (3.641, 1.1, "bot", none, none), (4.783, 1.1, "bot", none, none)),
   ((1.1, [`⦇[nil,new ∪ old]⦈`], black, 3.016),),
   ((3.016, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
-  cert: (expect: "⦇[nil,new ∪ old]⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 3))
+  cert: (expect: "⦇[nil,new ∪ old]⦈", src: "[Int]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "nil": "𝟏⟶[[x]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 3))
 
 #disp[#capbox(
   row((van-fus-l, [#h(7pt) = #h(7pt)], van-fus-r)),
@@ -7500,7 +7493,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#EQ #h(5pt) `(wrap×R)cons` \ #src[`new≜(wrap×𝟙)cons` — @van-algebras — and `(wrap×𝟙)(𝟙×R)=(wrap×R)`]],
      // lean:AOP.A7_5_Van.new_eq_cons@4d0d4d7b
@@ -7510,7 +7503,7 @@ zip(that)                                         each row: its square, and the 
   ((3.781, [`Int×−`]), (4.923, [`list`]), (6.064, [`list`]), (7.31, [`Int`])),
   ((4.923, [`list`]), (6.689, [`list`]), (7.31, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f", "wrap×𝟙": "Int×[[Int]]⟶[Int]×[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.wrapProd_natural@16571948")))],
+  cert: (expect: "(wrap×R)cons", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
    no-longer schedule leaves it no longer — and `new⊑new ∪ old`]],
@@ -7521,7 +7514,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 )]<van-714>
 
 === `H≜(head prefix° head°) ∪ (nil° nil)` <sec-van-h>
@@ -7535,14 +7528,14 @@ zip(that)                                         each row: its square, and the 
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   ((3.016, [`list`]), (4.158, [`list`]), (4.78, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "head prefix° head°", src: "[[Int]]", tgt: "[[Int]]", sigs: ("head": "[[Int]]⟶[Int]", "prefix": "[Int]⟶[Int]")))
+  cert: (expect: "head prefix° head°", src: "[[Int]]", tgt: "[[Int]]", sigs: ("head": "[[x]]⟶[x]", "prefix": "[x]⟶[x]")))
 #let van-h-r = dpanel(4.4, 7.46, 5.61,
   ((3.329, "top", 2.2, none, none), (4.987, "top", 2.2, none, none), (3.017, 1.1, "bot", none, none), (4.158, 1.1, "bot", none, none)),
   ((2.2, [`nil°`], black, 3.329, 4.158), (1.1, [`nil`], black, none, 3.5875)),
   ((3.329, [`list`]), (4.987, [`list`]), (5.61, [`Int`])),
   ((3.017, [`list`]), (4.158, [`list`]), (5.61, [`Int`])),
   obj: ((2.2, [`𝟏`]), (1.1, [`Int`])),
-  cert: (expect: "nil° nil", src: "[[Int]]", tgt: "[[Int]]", sigs: ("nil": "𝟏⟶[[Int]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 4))
+  cert: (expect: "nil° nil", src: "[[Int]]", tgt: "[[Int]]", sigs: ("nil": "𝟏⟶[[x]]!nat=lean:AOP.A7_5_VanBeads.Van.nil_natural@a93144d4!lean=lean:AOP.A6_ConsList.CL.wrapR@41c2dca6"), frame: 4))
 
 #disp[#capbox(
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
@@ -7562,21 +7555,21 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f"), frame: 4, top: 2))
+  cert: (expect: "new R", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f"), frame: 4, top: 2))
 #let van-718-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`⊤`], black, 4.413), (2.2, [`new`], black, 3.271, 4.4125)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×⊤)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×⊤)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "⊤": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
 #let van-718-r = dpanel(4.4, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`new`], black, 3.271, 4.4125), (1.1, [`H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.H_not_lax_natural@c647d911!lean=lean:AOP.A7_5_Van.Van.Hrel@a9423ec2"), frame: 4, top: 2))
+  cert: (expect: "new H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.H_not_lax_natural@c647d911!lean=lean:AOP.A7_5_Van.Van.Hrel@a9423ec2"), frame: 4, top: 2))
 
 #disp[#capbox(
   row((van-718-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
@@ -7600,7 +7593,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R;H)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "(𝟙×R;H)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 
   [#SQ #h(5pt) `(𝟙×R)new` \ #src[`R;H⊑R` — @van-defn]],
      // lean:AOP.A7_5_Van.RH_le_R@84a882e3
@@ -7610,7 +7603,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
+  cert: (expect: "(𝟙×R)new", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.R_not_lax_natural@95cdf4e1!lean=lean:AOP.A7_5_Van.Van.R@2d7aa64f")))],
 
   [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
   [#row((van-newR, [#h(7pt) ∩ #h(7pt)], van-718-r))],
@@ -7622,7 +7615,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+  cert: (expect: "new (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb")))],
 
   [#SQ #h(5pt) `new (R;H)` \ #src[`X∩Y⊑X;Y`, and `new⊑new ∪ old`]],
      // lean:AOP.A7_5_Van.inter_le_RH@a000aeda
@@ -7632,7 +7625,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "new R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "Int×[[Int]]⟶[[Int]]", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "new R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("new": "x×[[x]]⟶[[x]]", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 )]<van-716>
 
 === `(𝟙×(R;H))old⊑(new ∪ old)(R;H)` <sec-van-717>
@@ -7646,28 +7639,28 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×⊤)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "⊤": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×⊤)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "⊤": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.top_not_lax_natural@38ea2f45!lean=lean:AOP.A6_1_RelSet.RelSet.relTop@17fc3cc3"), frame: 4, top: 3))
 #let van-720-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`|R|`], black, 4.413), (2.2, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f"), frame: 4, top: 3))
 #let van-721-l = dpanel(4.4, 8.03, 6.18,
   ((3.584, 2.2, "bot", none, none), (5.242, 2.2, "bot", none, none), (3.271, "top", 2.2, none, none), (4.413, 3.3, 2.2, [`list`], none), (5.554, 3.3, 2.2, [`list`], none), (4.413, "top", 3.3, none, none), (5.554, "top", 3.3, none, none)),
   ((3.3, [`R∩H`], black, 4.413), (2.2, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((3.3, [`Int`]), (2.2, [`Int`])),
-  cert: (expect: "(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 3))
+  cert: (expect: "(𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb"), frame: 4, top: 3))
 #let van-721-r = dpanel(4.4, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.584, 2.2, 1.1, [`list`], none), (5.242, 2.2, 1.1, [`list`], none), (3.271, "top", 2.2, none, none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`old`], black, 3.271), (1.1, [`R∩H`], black, 3.584)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4"), frame: 4, top: 2))
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb"), frame: 4, top: 2))
 
 #disp[#capbox(
   row((van-719-l, [#h(7pt) #SQ #h(7pt)], van-718-r)),
@@ -7719,7 +7712,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
+  cert: (expect: "(𝟙×R;H)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0"))) \ #src[the `old` operand of `new ∪ old`, in every row]],
 
   [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7751,14 +7744,14 @@ zip(that)                                         each row: its square, and the 
   cert: (expect: "(𝟙×|R|)old ∪ (𝟙×(R∩H))old", src: "Int×[[Int]]", tgt: "[[Int]]"))],
     [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
  ]])],
-     // lean:AOP.A7_5_Van.RH_eq_strict@63c91c5e
+     // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
   [#dpanel(3.3, 8.03, 6.18,
   ((3.584, 1.1, "bot", none, none), (5.242, 1.1, "bot", none, none), (3.271, "top", 1.1, none, none), (4.413, 2.2, 1.1, [`list`], none), (5.554, 2.2, 1.1, [`list`], none), (4.413, "top", 2.2, none, none), (5.554, "top", 2.2, none, none)),
   ((2.2, [`|R|`], black, 4.413), (1.1, [`old`], black, 3.271)),
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f")))],
+  cert: (expect: "(𝟙×|R|)old", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "|R|": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.strict_not_lax_natural@b7597db7!lean=lean:AOP.A7_5_Van.Van.strictR@9f4d506f")))],
 
   [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -7794,7 +7787,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_inter_not_lax_natural@518031f4")))],
+  cert: (expect: "old (R∩H)", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R∩H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RinterH_not_lax_natural@d73a1aa2!lean=lean:AOP.A7_5_Van.Van.RinterH@bb2a67cb")))],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -7815,7 +7808,7 @@ zip(that)                                         each row: its square, and the 
   ((3.271, [`Int×−`]), (4.413, [`list`]), (5.554, [`list`]), (6.18, [`Int`])),
   ((3.584, [`list`]), (5.242, [`list`]), (6.18, [`Int`])),
   obj: ((2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[Int]]⟶[[Int]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
+  cert: (expect: "old R;H", src: "Int×[[Int]]", tgt: "[[Int]]", sigs: ("old": "Int×[[Int]]⟶[[Int]]!lean=lean:AOP.A7_5_Van.Van.oldR@97635832", "R;H": "[[x]]⟶[[x]]!no=lean:AOP.A7_5_VanBeads.Van.RH_not_lax_natural@6e801887!lean=lean:AOP.A7_5_Van.Van.RH@ac9006f0")))],
 )]<van-mono>
 
 === The derivation <sec-van-deriv>
@@ -7859,7 +7852,7 @@ zip(that)                                         each row: its square, and the 
   ((3.954, [`list`]), (5.41, [`Int`])),
   ((3.641, [`list`]), (4.783, [`list`]), (5.41, [`Int`])),
   obj: ((3.85, [`Int`]), (3.3, [`Int`]), (2.2, [`Int`]), (1.1, [`Int`])),
-  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[Int]⟶[[Int]]", "secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
+  cert: (expect: "𝟙%∋ E(partition)E(list(secure))est(R)", src: "[Int]", tgt: "[[Int]]", sigs: ("partition": "[x]⟶[[x]]", "secure": "[Int]⟶[Int]!lean=lean:AOP.A7_5_Van.Van.secure@c08f6d3a")))],
 
   [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
     (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
@@ -8467,7 +8460,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° ordered(P)thinlist(Q)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((tl-set, thinlist-Q-box, tl-ord)),
     [#src[`ordered P thinlist Q⊑thinlist Q ordered P`, since `thinlist Q⊑subseq` — @thinlist-defn —
@@ -8478,7 +8471,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
+  cert: (expect: "setify° thinlist(Q)ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "thinlist": "[A]⟶[A]")))],
 
   [#vstep(SQ, tl-pic((thin-Q-box, tl-set, tl-ord)),
     [#src[@thinlist-defn's `thinlist Q setify⊑setify thin Q` after `setify°`, at `setify°setify⊑𝟙`
@@ -8489,7 +8482,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   ((3.016, [`E`]), (3.64, [`A`])),
   ((3.016, [`list`]), (3.64, [`A`])),
   obj: ((3.3, [`A`]), (2.2, [`A`]), (1.1, [`A`])),
-  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[A]⟶E(A)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
+  cert: (expect: "thin(Q)setify° ordered(P)", src: "E(A)", tgt: "[A]", sigs: ("setify": "[x]⟶E(x)!lax=lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_lax_natural@6042f786,lean:AOP.A5_7_ListBeads.RelSet.ListRel.setify_not_strict@4cb31790!lean=lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@25397e9a", "ordered": "[A]⟶[A]", "Q": "A⟶A")))],
 
   [#vstep(EQ, tl-pic((thin-Q-box, sort-P-box)),
     [#src[`sort P≜setify° ordered P` — @thinlist-defn]])],
@@ -9355,7 +9348,7 @@ both lists empty.
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
   obj: ((6.05, [`Char`]), (5.5, [`Char`]), (4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "Op×[Op]⟶[Op]", "X": "[Char]×[Char]⟶[Op]")))],
+  cert: (expect: "([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)", src: "[Char]×[Char]", tgt: "[Op]", branch: "step", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "cons": "x×[x]⟶[x]", "X": "[Char]×[Char]⟶[Op]")))],
 
   [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
       (eb-thinUV, eb-PXb, est-R-box)),
@@ -9370,7 +9363,7 @@ both lists empty.
   ((3.954, [`Δ`]), (5.096, [`list`]), (6.55, [`Char`])),
   ((4.471, [`list`]), (6.55, [`Op`])),
   obj: ((6.05, [`Char`]), (5.5, [`Char`]), (4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]")))],
+  cert: (expect: "(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("step": "Op×([Char]×[Char])⟶[Char]×[Char]", "X": "[Char]×[Char]⟶[Op]", "cons": "x×[x]⟶[x]")))],
 
   [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
@@ -9385,7 +9378,7 @@ both lists empty.
   ((4.627, [`Δ`]), (5.768, [`list`]), (7.54, [`Char`])),
   ((5.143, [`list`]), (7.54, [`Op`])),
   obj: ((4.4, [`Char`]), (3.3, [`Op`]), (2.2, [`Op`]), (1.1, [`Op`])),
-  cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "Op×[Op]⟶[Op]", "minlist": "[x]⟶x")))],
+  cert: (expect: "unstep list((𝟙×mle)cons)minlist(R)", src: "[Char]×[Char]", tgt: "[Op]", sigs: ("unstep": "[Char]×[Char]⟶[Op×([Char]×[Char])]", "mle": "[Char]×[Char]⟶[Op]", "cons": "x×[x]⟶[x]", "minlist": "[x]⟶x")))],
 
   [#vstep(EQ, [],
     [`mle(xs,ys)=head(column(xs,ys))`, #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \

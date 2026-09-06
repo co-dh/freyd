@@ -103,23 +103,8 @@ public theorem relCata_not_lax_natural :
   exact h Int _ succI
 
 
-/-- The note's `plus : A×x⟶x`, at `A = x = Int`. -/
+/-- The note's `plus`: integer addition, the step of `sum=⦇[zero,plus]⦈`.  ONE arrow, at the one
+    object `Int` its display fixes — no family, hence nothing for a naturality square to slide. -/
 @[expose] public def plusR : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph (fun p => p.1 + p.2)
-
-/-- Doubling: `plus` commutes with `(+1)`, so the `est`/`sum` witness does not reach it. -/
-@[expose] public def dblI : dE Int ⟶ dE Int := graph (fun n => n + n)
-
-/-- **`plus : A×x⟶x` is not even lax natural**: `(𝟙×f) plus ⊑ plus f` fails at `f` the doubling
-    map and the pair `(1,0)` — adding after doubling the second component gives `1`, doubling
-    after adding gives `2`. -/
-public theorem plus_not_lax_natural :
-    ¬ (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) dblI ≫ plusR ⊑ plusR ≫ dblI) := by
-  intro h
-  obtain ⟨w, hw, hf⟩ :=
-    RelSet.le_iff.mp h (1, 0) 1
-      ⟨(1, 0), ⟨rfl, (rfl : (0 : Int) = 0 + 0)⟩, (rfl : (1 : Int) = 1 + 0)⟩
-  have hw' : w = 1 := hw
-  subst hw'
-  exact absurd (show (1 : Int) = 2 from hf) (by decide)
 
 end Freyd.Alg.RelSet.Carrier

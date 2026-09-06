@@ -29,49 +29,112 @@
   "mu": {
     "F": "list(x)"
   },
+  "closure": {
+    "//": [
+      "The rules by which a COMPOUND bead inherits its verdict from its parts, and the Lean theorem",
+      "that IS each rule: `scripts/diagram`'s `natural()` derives a `p×q` verdict from `p` and `q`,",
+      "which is a theorem about `Relator.prod` and not a reading of the picture, so it is drawn only",
+      "from here.  A compound with no rule of its own verdict is `Undecided` — no declaration, no dot.",
+      "`relator` is the former the rule is about; the theorem's conclusion must be that former's own",
+      "square, which is what `hm-check --verify-sigs` holds each marker to.  A verdict ABSENT from a",
+      "rule is refused: `conv` carries no `lax`, because `recip_not_laxNatural` exhibits a lax `φ`",
+      "whose `φ°` is not lax."
+    ],
+    "prod": {
+      "relator": "Freyd.Alg.Relator.prod",
+      "strict": "AOP.A5_7.strictNatural_prod@1802c7e8",
+      "lax": "AOP.A5_7.laxNatural_prod@dc776aa7"
+    }
+  },
+  "clear": [
+    "//: the heads the note draws THROUGH — a wrapper round a carrier type, a coercion that makes a",
+    "//  relator a functor. They name no lane: what the note draws is what is inside them.",
+    "Freyd.Alg.RelSet.mk",
+    "Freyd.Alg.RelSet.carrier",
+    "Freyd.Alg.RelSet.CL.dE",
+    "Freyd.Alg.RelSet.CL.dL",
+    "Freyd.Alg.Relator.toFunctor",
+    "Freyd.Alg.BiRelator.toFunctor",
+    "Freyd.Alg.BiRelator.appl"
+  ],
+  "regions": [
+    "//: the CATEGORIES the note draws in. An arrow of anything else — a hom of `FAlg`, of `Alg` —",
+    "//  is not the `h : A⟶B` a panel carries, however much its statement reads like the panel's law.",
+    "//  A Lean type VARIABLE is always a region: it is the ambient allegory the module quantifies over.",
+    "Freyd.Alg.RelSet"
+  ],
   "spelling": {
-    "//": "How Lean writes each of the note's names — `tree` is the rose functor's initial algebra, which Lean names by its carrier, and `[]` stands for EVERY index functor `[k]`, one Lean type whatever the index. A BEAD's name belongs here too wherever Lean writes it as notation instead of as the constant's own name: `∋` is `PowerAllegory.eps`, and every theorem about it spells the glyph, so a `nat-lean` about `∋` would otherwise read as a theorem about some other arrow.",
-    "list": [
+    "//": "What each Lean head DENOTES, in the note's own object language: the key is the note object it stands for, with a variable for each of the head's object arguments, taken left to right. `list(x)` is a head the note draws as one `list` lane over its last argument; `list(list(x))` a Lean name that folds TWO of the note's lanes into one (`Sched` is a list of segments, which are lists); `x×y` a binary former; a key with no variable is a constant object. A head entry is the constant's FULL name, or `[name, i, …]` naming the argument positions the variables take when they are not the trailing ones (`RelProd.p 𝒜 a b self` carries its factors at 1 and 2). One head may appear under SEVERAL keys — `dTuple` is both the note's `L` and its `N`, two index functors at two lengths, and no Lean name tells them apart — and the match takes whichever the row asks for. `hm-check --verify-sigs` translates a cited declaration's type through this table and unifies it with the row; a head with no entry is a failure that names the head.",
+    "list(x)": [
       "List",
-      "dCL",
-      "Seg",
-      "Sched"
+      "Freyd.Alg.RelSet.ListRel.dList",
+      "Freyd.Alg.RelSet.CL.ConsList",
+      ["Freyd.Alg.RelSet.CL.dCL", 1],
+      "Freyd.Alg.RelSet.Van.Seg"
     ],
-    "tree": [
+    "list(list(x))": [
+      "Freyd.Alg.RelSet.Van.dSched",
+      "Freyd.Alg.RelSet.Van.Sched"
+    ],
+    "tree(x)": [
       "Rose",
-      "I.t"
+      "Freyd.Alg.RelSet.RT.dRose"
     ],
-    "E": [
-      "powerObj"
+    "E(x)": [
+      "Freyd.Alg.PowerAllegory.powerObj"
     ],
-    "F": [
-      ".obj",
-      "Fo ",
-      "Prod.map",
-      ".carrier ×"
+    "F(x)": [
+      "Freyd.Alg.RelSet.CL.F",
+      ["Freyd.Alg.RelSet.CL.Fobj", 2],
+      ["Freyd.Alg.RelSet.Poly.Fo", 2],
+      "Freyd.Alg.RelSet.RT.F"
     ],
-    "[]": [
-      "Vec",
-      "dTuple"
+    "x[k]": [
+      "Freyd.Alg.Vec",
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1]
     ],
-    "×": [
-      "×",
-      "Prod"
+    "L(x)": [
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1],
+      "Freyd.Alg.RelSet.ListRel.dList"
     ],
-    "∋": [
-      "∋"
+    "N(x)": [
+      ["Freyd.Alg.RelSet.Tuple.dTuple", 1],
+      ["\u2200", 1]
+    ],
+    "list\u207a(x)": [
+      ["Freyd.Alg.RelSet.CL.dCL", 1]
+    ],
+    "list\u207a(list\u207a(x))": [
+      "Freyd.Alg.RelSet.Paragraph.dPara"
+    ],
+    "x×y": [
+      ["Prod", 0, 1],
+      ["Freyd.Alg.RelSet.prod", 0, 1],
+      ["Freyd.Alg.RelProd.p", 1, 2]
+    ],
+    "Int": [
+      "Int"
+    ],
+    "Nat": [
+      "Nat"
+    ],
+    "Bool": [
+      "Bool"
+    ],
+    "𝟏": [
+      "Unit"
+    ],
+    "T(x)": [
+      ["Freyd.Alg.InitialAlgebra.t", 2]
+    ],
+    "F(⟨𝟙,T⟩(x))": [
+      ["Freyd.Alg.BiRelator.obj", 2]
+    ],
+    "x×[[x]×[x]]": [
+      "Freyd.Alg.RelSet.Party.dBranch"
     ]
   },
   "sigs": {
-    "α": {
-      "src": "F(x)",
-      "tgt": "x",
-      "lean": "AOP.A6_Poly_List.listAlg@7ee30a4f",
-      "nat": "no",
-      "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.listAlg_not_lax_natural@5cfe2504"
-      ]
-    },
     "[,]": {
       "src": "F(x)",
       "tgt": "x",
@@ -189,13 +252,10 @@
       ]
     },
     "plus": {
-      "src": "A×x",
-      "tgt": "x",
+      "src": "Int×Int",
+      "tgt": "Int",
       "lean": "AOP.A7_4_CarrierBeads.RelSet.Carrier.plusR@1ee04124",
-      "nat": "no",
-      "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.plus_not_lax_natural@73d728aa"
-      ]
+      "note": "integer addition, the step of the fold `sum` — one arrow at the one object its display fixes, so it is no family and states no `nat`; a panel naming the summand it opens writes the element wire `A` over the carrier"
     },
     "gen": {
       "src": "F(N(x))",
@@ -311,21 +371,21 @@
     "include": {
       "src": "x×[[x]×[x]]",
       "tgt": "[x]",
-      "lean": "AOP.A7_3_Party.includeFn@9197f738",
+      "lean": "AOP.A7_3_Party.includeR@ee73476b",
       "nat": "lax",
       "nat-lean": [
-        "AOP.A5_7_PartyBeads.RelSet.Party.include_lax_natural@a6c10a34",
-        "AOP.A5_7_PartyBeads.RelSet.Party.include_not_strict@b1445291"
+        "AOP.A5_7_PartyBeads.RelSet.Party.include_lax_natural@9c306772",
+        "AOP.A5_7_PartyBeads.RelSet.Party.include_not_strict@72e0e45f"
       ]
     },
     "S": {
       "src": "x×[[x]×[x]]",
       "tgt": "[x]×[x]",
-      "lean": "AOP.A7_3_Party.S@d9fff80c",
+      "lean": "AOP.A7_3_Party.S@3baa06bd",
       "nat": "lax",
       "nat-lean": [
         "AOP.A5_7_PartyBeads.RelSet.Party.S_lax_natural@135a267b",
-        "AOP.A5_7_PartyBeads.RelSet.Party.S_not_strict@6743f50d"
+        "AOP.A5_7_PartyBeads.RelSet.Party.S_not_strict@3c897c35"
       ]
     },
     "party": {

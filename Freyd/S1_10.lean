@@ -26,4 +26,6 @@ scoped infixr:25 " ⟶ "  => Cat.Hom
 scoped infixr:80 " ≫ "  => Cat.comp
 /-- The book's identity morphism `1_A`, with the object explicit for reliable elaboration. -/
 scoped notation:max "𝟙" A:max => Cat.id A
+-- This notation registers its own unexpander for `Cat.id`, which is why a picture's label reads
+-- `𝟙Tx` where the note writes a bare `𝟙`: a second unexpander is tried after it and never fires.
 end Freyd

@@ -233,3 +233,7 @@ def IdMorphs (C : Type u) [Cat.{v} C] := C
     by sending each identity `id_X` to the identity `id_{FX}`. -/
 def functor_on_idMorphs {C : Type u₁} [Cat.{v} C] {D : Type u₂} [Cat.{v} D]
     (F : Functor C D) : IdMorphs C → IdMorphs D := F.obj
+
+-- The printing-only unexpanders for `Functor.obj`/`Functor.map` (the note applies the functor's own
+-- letter, `F A` and `F h`) are in `AOP.A5_1`, beside the relator's: this module carries no
+-- metaprogramming, and `import Lean` here would put the Lean frontend under the book core.

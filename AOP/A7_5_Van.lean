@@ -228,10 +228,15 @@ public theorem H_eq :
 /-- **van-defn**: `|R| ≜ R∩¬R°`, the strict part `R` splits into. -/
 @[expose] public def strictR (Tx : Type) : dSched Tx ⟶ dSched Tx := fun p q => clen p < clen q
 
+/-- **van-defn**: `R∩H` — no longer, AND with the first segment a prefix of the other's.  The §7.5
+    displays draw it as ONE bead, so it is one arrow here: a bead is an arrow, and an arrow the note
+    hangs a naturality verdict on needs a declaration to hang it from. -/
+@[expose] public def RinterH (Tx : Type) : dSched Tx ⟶ dSched Tx := R Tx ∩ Hrel Tx
+
 /-- **van-mono**, second row: `R;H = |R|∪(R∩H)` — the split the monotonicity proof
     distributes over.  It is also all the certification `|R| ≜ R∩¬R°` gets: the allegory
     carries no complement, so the strict part is named by this equation rather than by `¬`. -/
-public theorem RH_eq_strict : RH Tx = strictR Tx ∪ (R Tx ∩ Hrel Tx) := by
+public theorem RH_eq_strict : RH Tx = strictR Tx ∪ RinterH Tx := by
   apply hom_ext; intro p q
   constructor
   · rintro ⟨hle, hH⟩
@@ -919,5 +924,34 @@ public theorem van_spec_false_without_hsingle :
   have hbad : ¬ secureP (fun i : Int => i) 0 (ConsList.cons (5 : Int) (ConsList.wrap ())) := by
     simp only [secureP, ceilingFn, floorFn]; omega
   exact hbad hall.1
+
+-- printing-only unexpanders: the note's spelling.  §7.5 writes a segment `[Int]` and a schedule
+-- `[[Int]]` — the brackets ARE the names, `Seg`/`Sched` being what the Lean side calls them — and
+-- `glue`/`assocl` are arrows of one shape at every index, so the objects they are taken at are not
+-- part of the name (`glue≜(𝟙×cons°) assocl (cons×𝟙) cons`).  No statement and no `stmt_key` moves.
+open Lean PrettyPrinter in
+@[app_unexpander Seg] public meta def unexpandSeg : Unexpander
+  | `($_ $A) => `([$A])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Sched] public meta def unexpandSched : Unexpander
+  | `($_ $A) => `([[$A]])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dSched] public meta def unexpandDSched : Unexpander
+  | `($_ $A) => `([[$A]])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander glueR] public meta def unexpandGlueR : Unexpander
+  | `($_ $_) => `($(mkIdent `glue))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander assoclR] public meta def unexpandAssoclR : Unexpander
+  | `($_ $_ $_ $_) => `($(mkIdent `assocl))
+  | _ => throw ()
 
 end Freyd.Alg.RelSet.Van

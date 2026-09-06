@@ -26,6 +26,9 @@
 module
 
 public import AOP.A6_2
+-- §5.7's `StrictNatural` and `Relator.pair`: `α`'s square is a NATURALITY statement, and saying so
+-- needs the 2-cell vocabulary.  The file already reaches forward to ch. 6 for `relCata_mono`.
+public import AOP.A5_7
 
 universe v u
 
@@ -103,6 +106,23 @@ public theorem preservesRecip_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜]
     Relator.preservesRecip_of_tabular (F.appl a₁) S
   rw [← F.interchange R° S°, h1, h2, ← Allegory.recip_comp, F.interchange']
 
+/-- `F` AS A UNARY RELATOR out of the PRODUCT allegory: `(a,b) ↦ F.obj a b`, `(R,S) ↦ F.map R S`.
+    B&dM's bifunctor "arranged so that fixing the first argument describes the initial algebra" is
+    a relator `𝒜×𝒜 ⟶ 𝒜` once its two arguments are packed, and that is the only form in which it
+    is a single functor of one variable — which is what an argument that itself varies with the
+    parameter (`F(R,T(R))`) needs before it can be read as one thing applied to one arrow. -/
+@[expose] public def toRelator : Relator (𝒜 × 𝒜) 𝒜 where
+  obj p := F.obj p.1 p.2
+  map R := F.map R.1 R.2
+  map_id p := F.map_id p.1 p.2
+  map_comp R S := F.map_comp R.1 S.1 R.2 S.2
+  map_mono h := F.map_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+/-- The two spellings of one arrow: `F(R,S)` is the unary relator at the pair `(R,S)`.  Packing the
+    arguments is a change of notation and nothing else — both sides are `F.map R S`. -/
+public theorem map_eq_toRelator {a₁ a₂ b₁ b₂ : 𝒜} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂) :
+    F.map R S = F.toRelator.map ((R, S) : ((a₁, b₁) : 𝒜 × 𝒜) ⟶ (a₂, b₂)) := rfl
+
 end BiRelator
 
 /-! ## The type functor `T` of an initial type `(α,T)`
@@ -149,11 +169,17 @@ public theorem typeMap_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
   rw [typeMap_defn I S, typeMap_fusion I R, typeMap_defn I (R ≫ S), ← Cat.assoc,
     ← F.map_comp, Cat.comp_id]
 
+/-- **§2.7 p. 51**: the initial algebras as one FAMILY in the parameter — `αᴀ : F(A,TA) ⟶ TA`,
+    the note's `α : F(⟨𝟙,T⟩(A))⟶T(A)`, whose square in `A` is `alpha_natural` below.  Not the
+    single arrow `α : F(T)⟶T` of one initial algebra (@cata-defn): the same letter, indexed. -/
+@[expose] public def alphaT (a : 𝒜) : F.obj a (I a).t ⟶ (I a).t := (I a).α
+
 /-- **§2.7 p. 51**: `αT(R) = F(R,T(R))α` — "`α` is a natural transformation from
     `G(R) = F(R,T(R))` to `T`": building and then mapping is mapping the parts and then
     building.  The cancellation `α⦇·⦈ = F(⦇·⦈)·` (5.12) plus interchange. -/
 public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
-    (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α := by
+    alphaT I a ≫ typeMap I R = F.map R (typeMap I R) ≫ alphaT I b := by
+  show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α
   rw [typeMap_defn I R, relCata_cancel (I a)]
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange']
@@ -165,7 +191,8 @@ public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
 public theorem typeMap_recip (hF : F.PreservesRecip) {a b : 𝒜} (R : a ⟶ b) :
     (typeMap I R)° = typeMap I R° := by
   have hrec : (typeMap I R)° ≫ (I a).α° = (I b).α° ≫ (F.map R (typeMap I R))° := by
-    rw [← Allegory.recip_comp, ← Allegory.recip_comp, alpha_natural I R]
+    rw [← Allegory.recip_comp, ← Allegory.recip_comp,
+      show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α from alpha_natural I R]
   rw [typeMap_defn I R°]
   refine (relCata_UP (I b) _ _).mp ?_
   dsimp only [BiRelator.appl]
@@ -206,6 +233,41 @@ public theorem typeMap_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
   map_comp R S := (typeMap_comp I R S).symm
   map_mono := typeMap_mono I
 
+/-- **§2.7 p. 51 as a 2-CELL**: `α` is STRICTLY NATURAL from `F∘⟨𝟙,T⟩` to `T`.  Same square as
+    `alpha_natural`, with both sides spelled as relators of `𝒜`: `F(R,T(R))` is `F` applied to the
+    pairing `⟨𝟙,T⟩` at the one arrow `R`, so the source is a relator and not a family of objects,
+    which is what makes the square a naturality statement rather than an equation per `A`. -/
+public theorem alphaT_strictNatural :
+    StrictNatural (typeRelator I)
+      (Relator.comp (Relator.pair (Relator.idRelator 𝒜) (typeRelator I)) F.toRelator)
+      (alphaT I) :=
+  fun R => (alpha_natural I R).symm
+
 end TypeRelator
+
+-- printing-only unexpanders: the note's spelling.  `α` indexed by the object it is the component
+-- at, `T` applied to the arrow it maps: §2.7's own `α_A : F(A,TA) ⟶ TA` and `T(R)`.  The family
+-- argument `I` is not part of either name — it is which initial algebras, not which component.
+open Lean PrettyPrinter in
+@[app_unexpander alphaT] public meta def unexpandAlphaT : Unexpander
+  | `($_ $_ $a) => `($(mkIdent `α) $a)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander typeMap] public meta def unexpandTypeMap : Unexpander
+  | `($_ $_ $R) => `($(mkIdent `T) $R)
+  | _ => throw ()
+
+-- A bifunctor prints on its second argument only, as the endofunctor `F(A,−)` it is at a fixed
+-- parameter: juxtaposing both, `F R (T R)`, reads as a composite under the book's convention.
+open Lean PrettyPrinter in
+@[app_unexpander BiRelator.obj] public meta def unexpandBiRelatorObj : Unexpander
+  | `($_ $F $_ $b) => `($F $b)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander BiRelator.map] public meta def unexpandBiRelatorMap : Unexpander
+  | `($_ $F $_ $S) => `($F $S)
+  | _ => throw ()
 
 end Freyd.Alg

@@ -117,8 +117,9 @@ def branch(formula):
     if cut(e, False, None) == e:
         return None
     ks = picks(e, [])
-    if len({sl.summand(k, TBL) for k in ks}) != 1:
-        raise Unhandled(f"the choices {ks} cut to the summands {[sl.summand(k, TBL) for k in ks]};"
+    ss = [sl.summand(k, TBL) for k in ks]
+    if any(not sl.same_summand(ss[0], s) for s in ss):
+        raise Unhandled(f"the choices {ks} cut to the summands {ss};"
                         f" one panel draws one branch, so they must be the same summand")
     return ks[0]
 
@@ -151,6 +152,28 @@ class Undecided(Exception):
     """A polymorphic row that states no `nat:`.  The picture cannot be drawn from it either way."""
 
 
+# The rules by which a COMPOUND bead inherits a verdict from its parts, each with the Lean theorem
+# that is the rule.  `diag/hm-sigs.json`'s `closure`, beside the signatures, because it is the same
+# kind of fact: a claim the note draws and the corpus proves.  A compound whose rule is not there is
+# `Undecided` — deriving the dot from the parts is a theorem, and no declaration, no dot.
+CLOSURE = sl.sigs().get("closure") or {}
+
+
+def closed(how, fs, core):
+    """A compound bead's verdict, from its parts'.  The WEAKEST part decides — one lax part makes the
+    compound lax, one refuted part puts the whole bead back on the object wire — because the square
+    the compound states is the parts' squares side by side.  Which is a THEOREM about the former,
+    not a reading of the picture, so it is drawn only where `closure` names the proof of it."""
+    if not fs or not all(fs):
+        return False
+    v = "lax" if "lax" in fs else "strict"
+    if v not in (CLOSURE.get(how) or {}):
+        raise Undecided(f"{spell(core)} is {v} in every part, but diag/hm-sigs.json's `closure`"
+                        f" names no proof that a {how} of {v} parts is {v} — cite one there, or"
+                        f" give the bead a row of its own with its own `nat`")
+    return v
+
+
 def natural(core, sigs):
     """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
     Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean`.  No
@@ -159,7 +182,16 @@ def natural(core, sigs):
     an ERROR rather than a default — drawing it either way is a claim nobody checked.  A row with no
     variable at all needs no statement: it is one arrow between two named objects."""
     if core[0] == 'conv':
-        return natural(core[1], sigs)
+        # A CONVERSE is not the free ride it looks: `recip_not_laxNatural` exhibits a lax `φ` whose
+        # `φ°` is not lax, so the rule holds for the strict verdict and fails for the lax one.  Which
+        # of the two `closure` licenses is exactly what `closure.conv` says.
+        return closed('conv', [natural(core[1], sigs)], core)
+    if core[0] == 'prod':
+        # A PRODUCT is typed factor by factor (`signature` above), and it is natural the same way:
+        # `𝟙` is natural at every object, so `wrap×𝟙` is `wrap`'s own square in the first component
+        # and nothing in the second.  Without this a product wearing a natural factor falls through
+        # to the object wire, which says it is an arrow at one object.
+        return closed('prod', [natural(x, sigs) for x in core[1] if x != ('atom', sl.UNIT)], core)
     lab = core[1] if core[0] == 'app' else spell(core)
     k = key(core, sigs)                # the row it reads its objects off is the row that says this
     if k in NAT:                       # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is
@@ -214,7 +246,10 @@ def ground(e):
         return None
     SPLIT, keep = frozenset(), SPLIT
     try:
-        return render(e)
+        # `render` folds back only what the split gave a wire to; an index functor it never folds,
+        # so `A[n]` would name nothing and `A[n]×A[n][p][m]` open no lane at all.  A CLOSED object
+        # is a name whatever its wires, and its own spelling is that name.
+        return render(e) if render(e) is not None else spell(e)
     finally:
         SPLIT = keep
 
@@ -326,6 +361,14 @@ def isvar(e):
     return e[0] == 'atom' and '@' in e[1] and e[1].split('@')[0] in VARS
 
 
+def hasvar(e):
+    """Does the object name an object with a LETTER anywhere in it? — `isvar` down the whole tree.
+    `sl.varsof` cannot answer it here: a scheme's letters are renamed apart (`x@3`) and no longer the
+    table's own, so it counts none of them."""
+    return isvar(e) or (e[0] == 'app' and hasvar(e[2])) or (e[0] == 'conv' and hasvar(e[1])) \
+        or (e[0] in ('comp', 'prod', 'hc') and any(hasvar(x) for x in e[1]))
+
+
 def fresh(e, n):
     if e[0] == 'atom' and e[1] in VARS:
         return ('atom', f"{e[1]}@{n}")
@@ -383,7 +426,7 @@ def unify(a, b, sub, why, ix=None):
         unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why, ix)
 
 
-def layer(e, sub=None):
+def layer(e, sub=None, lane=None):
     """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it.  A
     product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
     `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
@@ -399,10 +442,17 @@ def layer(e, sub=None):
     if e[0] == 'prod':
         xs = e[1]
         st = [settle(x, sub) for x in xs] if sub is not None else xs
-        if len(xs) == 2 and xs[0] == xs[1]:
+        # A doubled factor reads BOTH ways — `Δ`, or `x×−` over `x` — and only the cut says
+        # which, exactly as `peel_arrow` takes `Δ` on `live == 'Δ'`.  `choose : x×x⟶x` meets a `Δ`
+        # lane; the list's `plus : A×A⟶A` meets the `A×−` its own base functor opened.
+        if len(xs) == 2 and xs[0] == xs[1] and lane in (None, 'Δ'):
             return 'Δ', xs[0]
         for lab in (lambda x: None if isvar(x) else render(x), ground,
-                    lambda x: render(x) if isvar(x) else None):
+                    lambda x: render(x) if isvar(x) else None,
+                    # Last: a variable UNDER wires — `x[k]×y[k]` names its factor `x[k]`, which the
+                    # cut settles to `A[n]` the way a bare `x` is settled to `A`.  Only where every
+                    # earlier reading gave nothing, so no product that opens today moves.
+                    lambda x: spell(x) if hasvar(x) else None):
             for k, mk in ((0, lambda w: w + '×−'), (-1, lambda w: '−×' + w)):
                 if lab(st[k]) is not None:
                     rest = xs[1:] if k == 0 else xs[:-1]
@@ -426,10 +476,31 @@ def matches(pat, lane, sub, ix):
     for p, w in zip(ps, ws):
         # NORMALISED: a lane's name may be a composite object (`[Int]×−`), and the variable it binds
         # has to come out as the wire stack `list(Int)`, not as the atom the bracket parses to.
-        v = norm(parse(w))
-        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], v))[1] == v):
+        if p != w and not wfit(norm(parse(p)), norm(parse(w)), sub, ix):
             return False
     return True
+
+
+def wfit(pat, e, sub, ix):
+    """A scheme's wire NAME against the cut's, node for node.  A variable takes the object under it
+    (`x` takes `A`) and keeps it everywhere; a variable UNDER wires takes the same wires over its own
+    (`x[k]×−` takes `A[n]×−`), which is what lets one row type a bead whose product context is built
+    from the very object the panel draws.  Nothing here opens a wire: a lane is a NAME, and this only
+    says the two names are one."""
+    if isvar(pat):
+        return sub.setdefault(pat[1], ([], e))[1] == e
+    if pat[0] != e[0]:
+        return False
+    if pat[0] == 'atom':
+        return pat[1] == e[1]
+    if pat[0] == 'app':
+        h, g = pat[1], e[1]
+        return (h == g or (sl.idxhead(h) and sl.idxhead(g)
+                           and (sl.ibind(h[1:-1], g[1:-1], ix) or sl.ibind(g[1:-1], h[1:-1], ix)))) \
+            and wfit(pat[2], e[2], sub, ix)
+    if pat[0] in ('prod', 'comp', 'hc'):
+        return len(pat[1]) == len(e[1]) and all(wfit(a, b, sub, ix) for a, b in zip(pat[1], e[1]))
+    return pat == e
 
 
 def wire_eq(w, lane):
@@ -453,7 +524,7 @@ def eat(pat, lanes, obj, sub, why, ix):
         # `sub`, not a bare deref: a scheme names its later wires with letters its earlier ones bound
         # (`cons×𝟙`'s `x×[x]×z` learns `x` from the first wire), so peeling the raw form would ask a
         # lane to match a variable where the cut already knows the object.
-        w, inner = layer(deref(pat, sub), sub)
+        w, inner = layer(deref(pat, sub), sub, lanes[k].label if k < len(lanes) else None)
         if k >= len(lanes):
             # past the end of the cut the scheme still names a wire: open it here rather than unify
             # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a

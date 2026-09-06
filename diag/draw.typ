@@ -123,12 +123,21 @@
   // `concat` glues the `[n]` and `[p]` axes into the one axis `[np]`, which stands beside both of
   // them in `⦇gen⦈concat est(R)`: its own hue, ΔE76 ≥ 50 from each.
   "[np]": rgb("#cb677e"),
+  // §13.5's cons context: the product with the ROW `A[n]`, a different functor from `A×−` under the
+  // index and drawn beside it, so it takes a brown of its own — ΔE76 ≥ 32 from `A×−` and every axis.
+  "A[n]×−": rgb("#605b28"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
   // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
   "Digit×−": rgb("#a58a6e"),
   // §13.6.1's `[Int]×−`, the segment `new`, `glue` and `old` build: it stands beside `Int×−` and
   // `list` in every one of their panels, hence ΔE76 43 and 40 from those two.
-  "[Int]×−": rgb("#613a56"))
+  "[Int]×−": rgb("#613a56"),
+  // §13.6.1's van, generated: the product bifunctor `×` and the four pairings that feed it.  All
+  // five stand in the one panel with `list`, so all six are pairwise ΔE76 ≥ 29 (29.3 at the
+  // closest; to `list`: 54, 49, 34, 71, 69) — which is why they are picked TOGETHER, and picked
+  // from hues already rounded to 8 bits, the rounding being worth ΔE76 1 on its own.
+  "×": rgb("#5f3f32"), "⟨𝟙,list list⟩": rgb("#1f4e48"), "⟨list,list list⟩": rgb("#454460"),
+  "⟨𝟙,⟨list,list list⟩ ×⟩": rgb("#3d4c14"), "⟨⟨𝟙,list⟩ ×,list list⟩": rgb("#8a1831"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -622,12 +631,18 @@
 
 // `ar` pulls both ends back off the node centres: a head drawn at a centre is buried under that node's
 // own white box.  `s0`/`s1` are the clearances — 0.95 leaving `A × B` sideways, 0.55 entering vertically.
-#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45) = {
+// `bow` bends the arrow that far off its chord, towards the chord's LEFT normal (negative for the
+// right): two arrows between ONE pair of nodes are drawn on top of each other otherwise.
+#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45, bow: 0) = {
   let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
   let n = calc.sqrt(dx * dx + dy * dy)
-  d.line((a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy),
-    (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy),
-    mark: (end: ">", scale: 0.5), stroke: (thickness: 0.75pt, paint: col, dash: dash))
+  let p = (a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy)
+  let q = (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy)
+  let st = (thickness: 0.75pt, paint: col, dash: dash)
+  if bow == 0 { d.line(p, q, mark: (end: ">", scale: 0.5), stroke: st) } else {
+    d.bezier(p, q, ((p.at(0) + q.at(0)) / 2 - bow / n * dy, (p.at(1) + q.at(1)) / 2 + bow / n * dx),
+      mark: (end: ">", scale: 0.5), stroke: st)
+  }
 }
 
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box

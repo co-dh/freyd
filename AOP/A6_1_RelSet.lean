@@ -405,7 +405,7 @@ public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
 
 /-- On the product just chosen, the abstract `R×S` of (5.2) IS the pointwise `rprodMap` — the
     projections being graphs, both legs of `pair` collapse to a component lookup. -/
-public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+@[diag_bridge ←] public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
     prodMap (relProd a b) (relProd a' b') R S = rprodMap R S := by
   apply hom_ext
   intro p q
@@ -437,6 +437,39 @@ public theorem pair_eq_rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
     exact ⟨(show y = p.1 from hy1) ▸ hy, (show z = p.2 from hz1) ▸ hz⟩
   · rintro ⟨h1, h2⟩
     exact ⟨⟨p.1, h1, rfl⟩, ⟨p.2, h2, rfl⟩⟩
+
+-- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
+-- takes every label from `Meta.ppExpr`, so an object has to PRINT as what the note calls it.  The
+-- bundling is Lean's, not the book's: the note writes one name for the object and for the type it
+-- relates, so `RelSet.mk X` and `X.carrier` both print as `X`.  They change no statement and no
+-- `stmt_key`.  `pp.structureInstances` must be off for the first of them to be reached at all — a
+-- `{ carrier := X }` is a structure instance, which is not an application and which no unexpander
+-- sees.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.mk] public meta def unexpandRelSetMk : Unexpander
+  | `($_ $c) => `($c)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.carrier] public meta def unexpandRelSetCarrier : Unexpander
+  | `($_ $x) => `($x)
+  | _ => throw ()
+
+-- The relational product of two arrows is the note's `f×g`, the same sign its objects wear.
+open Lean PrettyPrinter in
+@[app_unexpander rprodMap] public meta def unexpandRprodMap : Unexpander
+  | `($_ $R $S) => `($R × $S)
+  | _ => throw ()
+
+-- A CONSTANT map is the note's `⊸ c`: discard whatever came in, then `c`.  The test is the one the
+-- reading rests on — the bound variable does not occur in the body — so a map that DOES use its
+-- argument keeps its own spelling.  Changes no statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander graph] public meta def unexpandGraphConst : Unexpander
+  | `($_ fun $x:ident => $c) =>
+    if (c.raw.find? fun s => s.isIdent && s.getId == x.getId).isSome then throw ()
+    else `($(mkIdent (Name.mkSimple "⊸")) $c)
+  | _ => throw ()
 
 end RelSet
 end Freyd.Alg

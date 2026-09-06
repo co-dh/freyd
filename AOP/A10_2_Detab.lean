@@ -461,4 +461,10 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
     (by rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
   rwa [hH] at key
 
+-- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.Detab

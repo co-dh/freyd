@@ -189,6 +189,16 @@ public theorem laxNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G 
     LaxNatural (Relator.comp K F) (Relator.comp K G) (fun c => φ (K.obj c)) :=
   fun {_ _} R => h (K.map R)
 
+/-- A relator on the OUTSIDE carries a lax natural transformation to a lax natural one:
+    `K ∘ φ : K ∘ G ⟶ K ∘ F`, with `K` running last.  `map_mono` on `φ`'s own inequation at `R`,
+    read through `map_comp` on both sides — `Relator.map_slides` at `Ta, Tb := G.map R, F.map R`
+    and `X, X' := φ b, φ a`. -/
+public theorem laxNatural_outside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator ℬ 𝒞) (h : LaxNatural F G φ) :
+    LaxNatural (Relator.comp F K) (Relator.comp G K) (fun a => K.map (φ a)) :=
+  fun {_ _} R => K.map_slides (h R)
+
+
 /-! ### HORIZONTAL composition is TWO operations, not one
 
   `φ : G ⟶ F` between `𝒜` and `ℬ` and `χ : L ⟶ K` between `ℬ` and `𝒞` compose to
@@ -227,10 +237,48 @@ example {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ} {K L 
 @[expose] public def StrictNatural (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
   ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b = φ a ≫ F.map R
 
+/-- THE IDENTITY 2-CELL: `𝟙` at every object is strictly natural, `F(R) ≫ 𝟙 = F(R) = 𝟙 ≫ F(R)`.
+    The identity of `laxNaturalCat` below, and the factor a compound family carries wherever one
+    side of a product is left alone — `φ×𝟙` closes through `strictNatural_prod` only if `𝟙` has a
+    square of its own. -/
+public theorem strictNatural_id (F : Relator 𝒜 ℬ) : StrictNatural F F (fun a => 𝟙 (F.obj a)) :=
+  fun {_ _} R => by rw [Cat.comp_id, Cat.id_comp]
+
+/-- A relator on the INSIDE reindexes a STRICTLY natural family along its object map, the twin of
+    `laxNatural_inside`: the new equation at `R` is `φ`'s own at `K.map R`, so it is as free as the
+    lax one and needs none of `strictNatural_outside`'s `congrArg`. -/
+public theorem strictNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator 𝒞 𝒜) (h : StrictNatural F G φ) :
+    StrictNatural (Relator.comp K F) (Relator.comp K G) (fun c => φ (K.obj c)) :=
+  fun {_ _} R => h (K.map R)
+
+/-- A relator on the OUTSIDE carries a STRICTLY natural family to a strictly natural one, which
+    `Relator.map_slides` cannot give: the equality is carried by `congrArg` and then split by
+    `map_comp`, where the lax version has only monotonicity.  The twin of `laxNatural_outside`,
+    which is stated with the rest of the lax closure above. -/
+public theorem strictNatural_outside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
+    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator ℬ 𝒞) (h : StrictNatural F G φ) :
+    StrictNatural (Relator.comp F K) (Relator.comp G K) (fun a => K.map (φ a)) := by
+  intro a b R
+  have := congrArg K.map (h R)
+  rwa [K.map_comp, K.map_comp] at this
+
 /-- Every strictly natural family is lax natural: the inequation at `R` is its own equality. -/
 public theorem laxNatural_of_strictNatural {F G : Relator 𝒜 ℬ}
     {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (h : StrictNatural F G φ) : LaxNatural F G φ :=
   fun {_ _} R => le_of_eq (h R)
+
+/-- THE CONVERSE OF A STRICTLY NATURAL FAMILY IS STRICTLY NATURAL, the other way round — read the
+    square at `R°` and take its converse, which needs both relators to preserve `°`.  Lax has no
+    such rule: `recip_not_laxNatural` (A6_1_OrdRelSet) refutes it. -/
+public theorem strictNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : StrictNatural F G φ) :
+    StrictNatural G F (fun a => (φ a)°) := by
+  intro a b R
+  have e := congrArg Allegory.recip (h R°)
+  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
+    Allegory.recip_recip] at e
+  exact e.symm
 
 /-- Theorem 5.2's right-hand side with the EQUALITY on maps weakened to an INCLUSION: the
     `LaxNatural` inequation at the maps only.  It is strictly weaker than `LaxNatural` —
@@ -682,7 +730,7 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
     `F(R) ≫ 𝟙 = F(R) = 𝟙 ≫ F(R)`, and composition is `comp_slides` at every `R`. -/
 @[expose] public instance laxNaturalCat : Cat.{max u₁ v₂} (Relator 𝒜 ℬ) where
   Hom F G := LaT F G
-  id F := ⟨fun a => 𝟙 (F.obj a), fun _ => by rw [Cat.comp_id, Cat.id_comp]; exact le_refl _⟩
+  id F := ⟨fun a => 𝟙 (F.obj a), laxNatural_of_strictNatural (strictNatural_id F)⟩
   comp φ ψ := ⟨fun a => φ.1 a ≫ ψ.1 a, fun R => comp_slides (φ.2 R) (ψ.2 R)⟩
   id_comp φ := Subtype.ext (funext fun a => Cat.id_comp (φ.1 a))
   comp_id φ := Subtype.ext (funext fun a => Cat.comp_id (φ.1 a))

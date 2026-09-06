@@ -770,6 +770,63 @@ public theorem subseq_cata :
       · exact Or.inl ⟨rfl, hy⟩
       · exact subseqP.weaken hy
 
+/-- The note's `subseq-EW-join` second row: **`(𝟙×∋)(cons ∪ π₂) = (𝟙×∋)cons ∪ (𝟙×∋)π₂`** —
+    `comp_union_distrib` at `subseq`'s algebra, the instance the row states. -/
+public theorem prod_ni_union_dist :
+    rprodMap (𝟙 (dE A)) (∋ (dList A))
+        ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ graph fun p : A × ConsList Unit A => p.2) :=
+  DistributiveAllegory.comp_union_distrib _ _ _
+
+/-- The note's `subseq-EW-join` third row: **`(𝟙×∋)π₂ = π₂∋`** — `rprodMap_id_snd` at `∋`, the
+    instance the row states: the membership crosses the projection unchanged. -/
+public theorem prod_ni_proj_slide :
+    rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2)
+      = (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
+  rprodMap_id_snd _
+
+/-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
+    second arm of `subseq`'s algebra under the power transpose.  Composition distributes over the
+    `∪`, `(𝟙×∋)π₂ = π₂∋` slides the membership past the projection (`rprodMap_id_snd`), `Λ` of a
+    union is the fork into `cup` (`Λ_union`), and then absorption takes `Λ` inside the `cons`
+    operand while fusion and `Λ(∋)=𝟙` leave the `π₂` operand bare. -/
+public theorem subseq_alg_join :
+    Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+        ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))
+      = rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
+          (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+        ≫ cup (relProd (PowerAllegory.powerObj (dList A))
+            (PowerAllegory.powerObj (dList A))) := by
+  rw [DistributiveAllegory.comp_union_distrib, rprodMap_id_snd,
+    Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
+      (PowerAllegory.powerObj (dList A))),
+    pair_eq_rpair, Λ_absorption, Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
+
+/-- The note's `subseq-EW-case` third row: **`F(∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
+    `F(∋)` IS the sum `𝟙+𝟙×∋` (`F_eq_sum_prod`), and a sum before a junction is the junction of
+    the branches (`sumMap_junc`), the leaf arm's `𝟙` cancelling. -/
+public theorem subseq_alg_sum_junc :
+    (F Unit A).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+          (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
+  rw [← F_eq_sum_prod]
+  show sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
+      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) (∋ (dList A))) ≫ _ = _
+  rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap]
+
+/-- The note's `subseq-EW-case` last row: **`nil%∋ = nil 𝟙%∋`** — the leaf arm alone.  `nil` is a
+    map, so `Λ` fuses out of it (`Λ_fusion` at `𝟙`), leaving the singleton `𝟙%∋ = Λ(𝟙)`. -/
+public theorem Λ_nil_singleton :
+    Λ (wrapR : dL Unit ⟶ dList A) = wrapR ≫ singletonMap := by
+  have h := Λ_fusion (graph_map (ConsList.wrap : Unit → ConsList Unit A)) (Cat.id (dList A))
+  rw [Cat.comp_id] at h
+  exact h
+
 /-- **`prefix = ⦇[nil, nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
     branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
 public theorem prefix_cata :
@@ -792,6 +849,18 @@ public theorem prefix_cata :
     · rintro ⟨y, hy, rfl | rfl⟩
       · exact trivial
       · exact ⟨rfl, hy⟩
+
+/-- **`α prefix = F(𝟙,prefix)[nil, ⊸nil ∪ cons]`**: the fold law of `prefix` in the cancellation
+    form (5.12) — build the list, then take a prefix, is take a prefix of the tail and then
+    either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
+    picture of the two sides is drawn from. -/
+public theorem prefix_cancel :
+    (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
+      = (F Unit A).map (prefixR : dList A ⟶ dList A)
+        ≫ (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A) := by
+  rw [prefix_cata]
+  exact relCata_cancel (initial Unit A) _
 
 /-- **`prefix = cat° π₁`** (note `comb-fns`): split `x` as `ys ++ v` and keep the left part.
     `π₁ = graph (·.1)`, as in `subseq_cata`. -/
@@ -892,6 +961,23 @@ public theorem sum_cata :
     ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => Iff.rfl, fun a x r => ?_⟩)
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
+
+-- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
+-- the name; `listRelator` is its lane `list`; `prefixR` is `prefix`, a Lean keyword, which the
+-- printer escapes as `«prefix»` and the label emitter (`diag/tool/ExprReader`) unescapes.
+-- Changes no statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander dList] public meta def unexpandDList : Unexpander
+  | `($_ $A) => `([$A])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander listRelator] public meta def unexpandListRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `list))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
 
 end Freyd.Alg.RelSet.ListRel
 
