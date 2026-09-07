@@ -19,6 +19,8 @@ module
 
 public import AOP.A6_2
 public import AOP.A5_4
+-- for `junc_Λ_est`: the coproduct bracket and `Λ_junc` live in §5.3.
+public import AOP.A5_3
 
 universe u
 
@@ -111,6 +113,23 @@ theorem singletonMap_comp_est (R : A ⟶ A) :
     singletonMap ≫ est R = Cat.id A ∩ R° := by
   show Λ (Cat.id A) ≫ est R = Cat.id A ∩ R°
   rw [Λ_comp_est, recip_id, leftDiv_id]
+
+/-- **A map is its own extremum**: `Λ f ≫ est R = f` for `f` a map and `R` reflexive — the set
+    `Λ f` names is the singleton `{f(x)}`, and reflexivity makes its one element `R`-greatest.
+    This is the leaf arm (`⊸ nil`, `zero`) of every §13.3 step chain. -/
+public theorem Λ_map_comp_est {f : B ⟶ A} (hf : Map f) {R : A ⟶ A} (hrefl : Cat.id A ⊑ R) :
+    Λ f ≫ est R = f := by
+  rw [Λ_comp_est]
+  refine le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) ((le_leftDiv_iff _ _ _).mpr ?_))
+  have h : Cat.id A ⊑ R° := by have := recip_mono hrefl; rwa [recip_id] at this
+  exact le_trans hf.2 h
+
+/-- **`est` splits over a coproduct**: `Λ[T,U] ≫ est R = [Λ T ≫ est R, Λ U ≫ est R]` — choosing
+    an `R`-greatest of the set the bracket offers is choosing one branchwise.  `Λ_junc` then
+    `junc_comp`; it is the first step of `takewhile_step`, `filter_step` and `mss_step` alike. -/
+public theorem junc_Λ_est {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) (T : a₁ ⟶ A) (U : a₂ ⟶ A)
+    (R : A ⟶ A) : Λ (junc C T U) ≫ est R = junc C (Λ T ≫ est R) (Λ U ≫ est R) := by
+  rw [Λ_junc, junc_comp]
 
 /-! ## (7.1)/(7.3): lower-bound laws (book p.166) -/
 

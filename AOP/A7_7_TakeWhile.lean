@@ -199,6 +199,10 @@ example : twCL (fun n => decide (n < 1)) (ofList [1, 2]) = [] := by decide
   fun xs ys => xs.length ≤ ys.length
 
 /-- `R°` is transitive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
+public theorem lenLE_recip_refl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ (lenLE (E := E))° :=
+  le_iff.mpr fun _ _ h => by cases h; exact Nat.le_refl _
+
+/-- `R°` is transitive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
 public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
   le_iff.mpr fun xs zs h => by
     obtain ⟨ys, h1, h2⟩ := h
@@ -485,6 +489,20 @@ public theorem takewhile_mono_nil :
   · rintro rfl
     exact ⟨[], rfl, Nat.le_refl 0⟩
 
+/-- The step both mono chains share: **`(𝟙×R°) pcons(p) ⊑ pcons(p) R°`** — `p` still holds of the
+    head, and a shorter tail makes a shorter `cons`. -/
+public theorem pcons_slide (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p ⊑ pcons p ≫ lenLE° :=
+  le_iff.mpr fun q ws h => by
+    obtain ⟨x, c⟩ := q
+    obtain ⟨q', hq, hp⟩ := h
+    obtain ⟨x', c'⟩ := q'
+    obtain ⟨hx, hlen⟩ := hq
+    cases hx
+    obtain ⟨hpx, hws⟩ := (pcons_apply p x c' ws).mp hp
+    subst hws
+    exact ⟨x :: c, (pcons_apply p x c (x :: c)).mpr ⟨hpx, rfl⟩, Nat.succ_le_succ hlen⟩
+
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
 public theorem takewhile_mono_cons (p : E → Bool) :
     rprodMap (𝟙 (dE E)) (lenLE (E := E))°
@@ -553,35 +571,33 @@ theorem discNil_union_pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
 /-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]` —
     the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
     coproduct is the coproduct of the composites. -/
-public theorem takewhile_step1 (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°)
+public theorem takewhile_step1 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
+    (Salg p)%∋ ≫ est(R)
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
-          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
-  unfold Salg; rw [Λ_junc, junc_comp]
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
+          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R
 
-/-- `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one element and the longest of a
-    one-element set is that element.  The `nil` arm of every algebra of §7.7. -/
-public theorem Λ_nil_comp_est :
-    (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°)
-      = graph (fun _ => ([] : List E)) := by
-  apply hom_ext; intro D ws
-  rw [Λ_comp_est_apply]
-  refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
-  have hz' : z = ([] : List E) := hz
-  have hw' : ws = ([] : List E) := h
-  subst hz'; subst hw'; exact Nat.le_refl 0
+/-- `nil%∋ est(R) = nil` for any REFLEXIVE `R` — `nil` is a map, so its singleton has one element
+    and the `R`-greatest of a one-element set is that element.  The `nil` arm of every algebra of
+    §7.7; the order never enters beyond `𝟙 ⊑ R`. -/
+public theorem Λ_nil_comp_est {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
+    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
+    (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R)
+      = graph (fun _ => ([] : List E)) :=
+  Λ_map_comp_est (graph_map _) hrefl
 
-/-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
-    element and the longest of a one-element set is that element. -/
-public theorem takewhile_step2 (p : E → Bool) :
+/-- Step 2 of `takewhile-step`: `nil%∋ est(R) = nil` — `nil` is a map, so its singleton has one
+    element and the `R`-greatest of a one-element set is that element. -/
+public theorem takewhile_step2 (p : E → Bool) {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
+    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
     junc (sumCop (dL Unit) ⟨E × List E⟩)
-        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
-        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
+        ((discNil ∪ pcons p)%∋ ≫ est(R))
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
           (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
-  rw [Λ_nil_comp_est]
+          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
+  rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
     offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
@@ -632,7 +648,8 @@ public theorem takewhile_step3 (p : E → Bool) :
     not.  The right side is the AoPA route's algebra, so both routes share one program. -/
 public theorem takewhile_step (p : E → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) :=
-  (takewhile_step1 p).trans ((takewhile_step2 p).trans (takewhile_step3 p))
+  (takewhile_step1 p lenLE°).trans
+    ((takewhile_step2 p lenLE_recip_refl).trans (takewhile_step3 p))
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
