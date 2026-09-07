@@ -63,7 +63,7 @@ def foldScan : ConsList Unit Int → ScanCarrier
   | ConsList.cons x xs => scanSt x (foldScan xs)
 
 /-- The base condition is a COMPUTATION: `foldScan (wrap d) = scanG d`. -/
-theorem foldScan_wrap : ∀ d : Unit, foldScan (ConsList.wrap d) = scanG d := fun _ => rfl
+theorem foldScan_wrap : ∀ D : Unit, foldScan (ConsList.wrap D) = scanG D := fun _ => rfl
 
 /-- The step condition IS `foldScan`'s cons equation. -/
 theorem foldScan_cons :

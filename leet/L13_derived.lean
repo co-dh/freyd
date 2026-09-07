@@ -69,7 +69,7 @@ def romanCL : ConsList Unit Int → Int × Option Int
   | ConsList.cons x xs => st x (romanCL xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `romanCL (wrap d) = g d`. -/
-theorem romanCL_wrap : ∀ d : Unit, romanCL (ConsList.wrap d) = g d := fun _ => rfl
+theorem romanCL_wrap : ∀ D : Unit, romanCL (ConsList.wrap D) = g D := fun _ => rfl
 
 /-- The step condition IS `romanCL`'s cons equation: `romanCL (cons x xs) = st x (romanCL xs)`. -/
 theorem romanCL_cons :

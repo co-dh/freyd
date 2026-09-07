@@ -189,7 +189,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 /-- **§2.351**: `R/ₛR` is characterised among SYMMETRIC morphisms by
     `T ⊑ R/ₛR ↔ T R ⊑ R`.  (The general `le_symmDiv_iff` adds the condition
     `T° R ⊑ R`, which collapses to `T R ⊑ R` once `T° = T`.) -/
-theorem symmetric_le_symmDiv_self_iff {a b : 𝒜} (T : a ⟶ a) (R : a ⟶ b)
+theorem symmetric_le_symmDiv_self_iff {A B : 𝒜} (T : A ⟶ A) (R : A ⟶ B)
     (hT : Symmetric T) : T ⊑ R /ₛ R ↔ T ≫ R ⊑ R := by
   rw [le_symmDiv_iff]
   constructor
@@ -207,7 +207,7 @@ theorem symmetric_le_symmDiv_self_iff {a b : 𝒜} (T : a ⟶ a) (R : a ⟶ b)
     simplicity, with `P := R/ₛ1` and `D := Dom P`, `(D·R)°·R = R°·D·R ⊑
     R°·(P P°)·R = (R°P)(P°R) ⊑ 1·1 = 1`, using `P° R ⊑ 1` (`P ⊑ R/ₛ1`) and its
     reciprocal `R° P ⊑ 1`. -/
-theorem simplePart_eq_domSimplicity_comp {a b : 𝒜} (R : a ⟶ b) :
+theorem simplePart_eq_domSimplicity_comp {A B : 𝒜} (R : A ⟶ B) :
     simplePart R = domSimplicity R ≫ R := by
   show simplePart R = dom (simplePart R) ≫ R
   apply le_antisymm
@@ -218,13 +218,13 @@ theorem simplePart_eq_domSimplicity_comp {a b : 𝒜} (R : a ⟶ b) :
   · -- `(Dom R/ₛ1)·R ⊑ R/ₛ1`, via `simplePart_largest`
     apply simplePart_largest R (dom (simplePart R)) (dom_coreflexive _)
     -- remaining: `(dom (R/ₛ1) ≫ R)° ≫ R ⊑ 1`
-    have hPR : (simplePart R)° ≫ R ⊑ Cat.id b :=
-      ((le_symmDiv_iff (simplePart R) R (Cat.id b)).mp (le_refl _)).2
-    have hRP : R° ≫ simplePart R ⊑ Cat.id b := by
+    have hPR : (simplePart R)° ≫ R ⊑ Cat.id B :=
+      ((le_symmDiv_iff (simplePart R) R (Cat.id B)).mp (le_refl _)).2
+    have hRP : R° ≫ simplePart R ⊑ Cat.id B := by
       have h := recip_mono hPR
       rwa [Allegory.recip_comp, Allegory.recip_recip, recip_id] at h
     have hDP : dom (simplePart R) ⊑ simplePart R ≫ (simplePart R)° := inter_lb_right _ _
-    have hid : Cat.id b ≫ Cat.id b ⊑ Cat.id b := by rw [Cat.id_comp]; exact le_refl _
+    have hid : Cat.id B ≫ Cat.id B ⊑ Cat.id B := by rw [Cat.id_comp]; exact le_refl _
     have e1 : (dom (simplePart R) ≫ R)° ≫ R = (R° ≫ dom (simplePart R)) ≫ R := by
       rw [Allegory.recip_comp, dom_recip]
     rw [e1]

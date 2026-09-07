@@ -58,7 +58,7 @@ def encodeCL : CL.ConsList Unit (List Int) → List Int
   | CL.ConsList.wrap _    => []
   | CL.ConsList.cons s xs => LC271.encode1 s ++ encodeCL xs
 
-theorem encodeCL_wrap (d : Unit) : encodeCL (CL.ConsList.wrap d) = encG d := rfl
+theorem encodeCL_wrap (D : Unit) : encodeCL (CL.ConsList.wrap D) = encG D := rfl
 theorem encodeCL_cons (s : List Int) (xs : CL.ConsList Unit (List Int)) :
     encodeCL (CL.ConsList.cons s xs) = encSt s (encodeCL xs) := rfl
 

@@ -47,13 +47,13 @@ namespace Freyd.Alg
 public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     extends Freyd.Functor 𝒜 ℬ where
   /-- MONOTONICITY — the defining extra over a plain functor. -/
-  map_mono : ∀ {a b : 𝒜} {R S : a ⟶ b}, R ⊑ S → map R ⊑ map S
+  map_mono : ∀ {A B : 𝒜} {R S : A ⟶ B}, R ⊑ S → map R ⊑ map S
 
 /-- A relator PRESERVES CONVERSE when `F(R°) = (FR)°`.  Automatic over a tabular source
     (Theorem 5.1); carried as a hypothesis where tabularity is not otherwise needed. -/
 @[expose] public def Relator.PreservesRecip {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     (F : Relator 𝒜 ℬ) : Prop :=
-  ∀ {a b : 𝒜} (R : a ⟶ b), F.map R° = (F.map R)°
+  ∀ {A B : 𝒜} (R : A ⟶ B), F.map R° = (F.map R)°
 
 /-- The identity relator. -/
 @[expose] public def Relator.idRelator (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Relator 𝒜 𝒜 where
@@ -69,18 +69,18 @@ public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
     (F : Relator 𝒜 ℬ) (G : Relator ℬ 𝒞) : Relator 𝒜 𝒞 where
   obj := G.obj ∘ F.obj
   map R := G.map (F.map R)
-  map_id a := by simp [F.map_id, G.map_id]
+  map_id A := by simp [F.map_id, G.map_id]
   map_comp R S := by simp [F.map_comp, G.map_comp]
   map_mono h := G.map_mono (F.map_mono h)
 
 /-- The CONSTANT relator `X ↦ b`, `R ↦ 𝟙 b`.  With `Relator.prod` it expresses `A×−`
     as `Relator.prod (Relator.const A) (Relator.idRelator 𝒜)`. -/
 @[expose] public def Relator.const {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-    (b : ℬ) : Relator 𝒜 ℬ where
-  obj _ := b
-  map _ := 𝟙 b
+    (B : ℬ) : Relator 𝒜 ℬ where
+  obj _ := B
+  map _ := 𝟙 B
   map_id _ := rfl
-  map_comp _ _ := (Cat.id_comp (𝟙 b)).symm
+  map_comp _ _ := (Cat.id_comp (𝟙 B)).symm
   map_mono _ := le_refl _
 
 -- Lives in §5.1, not with §5.7's theorems about it: it mentions nothing but two relators and a
@@ -89,8 +89,8 @@ public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
     a family `φ a : G.obj a ⟶ F.obj a`, is LAX NATURAL when `G.map R ≫ φ b ⊑ φ a ≫ F.map R`
     for every `R : a ⟶ b`. -/
 @[expose] public def LaxNatural {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-    (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
-  ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b ⊑ φ a ≫ F.map R
+    (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
+  ∀ {A B : 𝒜} (R : A ⟶ B), G.map R ≫ φ B ⊑ φ A ≫ F.map R
 
 /-- A relator carries a LAX SQUARE to a lax square: `Ta ≫ X ⊑ X' ≫ Tb` gives
     `F(Ta) ≫ F(X) ⊑ F(X') ≫ F(Tb)`.  Just `map_mono` read through `map_comp` on both sides.
@@ -118,28 +118,28 @@ public theorem Relator.map_slides {𝒜 : Type u₁} {ℬ : Type u₂}
 
 private theorem relator_map_recip_map_aux {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (obj : 𝒜 → ℬ)
-    (map : {a b : 𝒜} → (a ⟶ b) → (obj a ⟶ obj b))
-    (map_id : ∀ (a : 𝒜), map (Cat.id a) = Cat.id (obj a))
-    (map_comp : ∀ {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c), map (R ≫ S) = map R ≫ map S)
-    (map_mono : ∀ {a b : 𝒜} {R S : a ⟶ b}, R ⊑ S → map R ⊑ map S)
-    {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
+    (map : {A B : 𝒜} → (A ⟶ B) → (obj A ⟶ obj B))
+    (map_id : ∀ (A : 𝒜), map (Cat.id A) = Cat.id (obj A))
+    (map_comp : ∀ {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C), map (R ≫ S) = map R ≫ map S)
+    (map_mono : ∀ {A B : 𝒜} {R S : A ⟶ B}, R ⊑ S → map R ⊑ map S)
+    {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     map f° = (map f)° ∧ Map (map f) := by
-  have h1 : Cat.id (obj a) ⊑ map f ≫ map f° := by
+  have h1 : Cat.id (obj A) ⊑ map f ≫ map f° := by
     simpa [map_id, map_comp] using map_mono (entire_id_le hf.1)
-  have h2 : map f° ≫ map f ⊑ Cat.id (obj b) := by
+  have h2 : map f° ≫ map f ⊑ Cat.id (obj B) := by
     simpa [map_id, map_comp] using map_mono hf.2
   exact recip_of_comp_id h1 h2
 
 /-- **Lemma 5.1**, first half (B&dM p. 112): a relator sends the converse of a map to the
     converse of its image. -/
 public theorem Relator.map_recip_map {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     F.map f° = (F.map f)° :=
   (relator_map_recip_map_aux F.obj F.map F.map_id F.map_comp F.map_mono hf).1
 
 /-- **Lemma 5.1**, second half (B&dM p. 112): a relator sends a map to a map. -/
 public theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {f : a ⟶ b} (hf : Map f) :
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     Map (F.map f) :=
   (relator_map_recip_map_aux F.obj F.map F.map_id F.map_comp F.map_mono hf).2
 
@@ -151,8 +151,8 @@ public theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
 
 public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) : F.PreservesRecip := by
-  intro a b R
-  obtain ⟨c, f, g, hf_map, hg_map, hR, _⟩ := TabularAllegory.tabular R
+  intro A B R
+  obtain ⟨C, f, g, hf_map, hg_map, hR, _⟩ := TabularAllegory.tabular R
   have hRrecip : R° = g° ≫ f := by rw [hR, Allegory.recip_comp, Allegory.recip_recip]
   have hFmapR : F.map R = (F.map f)° ≫ F.map g := by
     rw [hR, F.map_comp, F.map_recip_map hf_map]
@@ -164,9 +164,9 @@ public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type 
     is built from `𝟙`, `≫` and `°`, and over a tabular source a relator preserves all three
     (Theorem 5.1(a)), so `𝟙 = F(𝟙) ⊑ F(R ≫ R°) = F R ≫ (F R)°`. -/
 public theorem Relator.entire_map {𝒜 : Type u₁} {ℬ : Type u₂}
-    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {R : a ⟶ b}
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} {R : A ⟶ B}
     (hR : Entire R) : Entire (F.map R) := by
-  show 𝟙 (F.obj a) ∩ F.map R ≫ (F.map R)° = 𝟙 (F.obj a)
+  show 𝟙 (F.obj A) ∩ F.map R ≫ (F.map R)° = 𝟙 (F.obj A)
   refine le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) ?_)
   rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
   have h := F.map_mono (entire_id_le hR)
@@ -175,11 +175,11 @@ public theorem Relator.entire_map {𝒜 : Type u₁} {ℬ : Type u₂}
 /-- A relator carries SIMPLICITY: over a tabular source it preserves converse (Theorem 5.1(a)),
     so `(F R)° ≫ F R = F(R° ≫ R) ⊑ F(𝟙) = 𝟙`. -/
 public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
-    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} {R : a ⟶ b}
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} {R : A ⟶ B}
     (hR : Simple R) : Simple (F.map R) := by
-  show (F.map R)° ≫ F.map R ⊑ 𝟙 (F.obj b)
+  show (F.map R)° ≫ F.map R ⊑ 𝟙 (F.obj B)
   rw [← Relator.preservesRecip_of_tabular F R, ← F.map_comp]
-  have h := F.map_mono (show R° ≫ R ⊑ 𝟙 b from hR)
+  have h := F.map_mono (show R° ≫ R ⊑ 𝟙 B from hR)
   rwa [F.map_id] at h
 
 /-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 112)
@@ -193,11 +193,11 @@ public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
 
 theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] {F G : Relator 𝒜 ℬ}
-    (hobj : ∀ a, F.obj a = G.obj a)
-    (hmaps : ∀ {a b : 𝒜} (f : a ⟶ b), Map f → HEq (F.map f) (G.map f))
-    {a b : 𝒜} (R : a ⟶ b) : HEq (F.map R) (G.map R) := by
+    (hobj : ∀ A, F.obj A = G.obj A)
+    (hmaps : ∀ {A B : 𝒜} (f : A ⟶ B), Map f → HEq (F.map f) (G.map f))
+    {A B : 𝒜} (R : A ⟶ B) : HEq (F.map R) (G.map R) := by
   have hobjeq : F.obj = G.obj := funext hobj
-  obtain ⟨c, f, g, hf_map, hg_map, hR, _⟩ := TabularAllegory.tabular R
+  obtain ⟨C, f, g, hf_map, hg_map, hR, _⟩ := TabularAllegory.tabular R
   obtain ⟨⟨obj, map, map_id, map_comp⟩, map_mono⟩ := F
   dsimp only at hobjeq hmaps ⊢
   subst hobjeq
@@ -226,13 +226,13 @@ theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     either coreflexivity (`map_inter_coreflexive` below) or the stronger
     `AllegoryFunctor.map_inter` (S2_147). -/
 theorem Relator.map_inter_le {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} (R S : a ⟶ b) :
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R S : A ⟶ B) :
     F.map (R ∩ S) ⊑ F.map R ∩ F.map S :=
   le_inter (F.map_mono (inter_lb_left R S)) (F.map_mono (inter_lb_right R S))
 
 theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
-    {a : 𝒜} {X Y : a ⟶ a} (hX : Coreflexive X) (hY : Coreflexive Y) :
+    {A : 𝒜} {X Y : A ⟶ A} (hX : Coreflexive X) (hY : Coreflexive Y) :
     F.map (X ∩ Y) = F.map X ∩ F.map Y := by
   have hFX : Coreflexive (F.map X) := by
     have := F.map_mono hX; rwa [F.map_id] at this
@@ -249,12 +249,12 @@ theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
 
 theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) (hc : F.PreservesRecip)
-    {a b : 𝒜} (R : a ⟶ b) : F.map (dom R) = dom (F.map R) := by
+    {A B : 𝒜} (R : A ⟶ B) : F.map (dom R) = dom (F.map R) := by
   have hcoref : Coreflexive (F.map (dom R)) := by
     have := F.map_mono (dom_coreflexive R); rwa [F.map_id] at this
   apply le_antisymm
   · have h2 : F.map (dom R) ⊑ F.map R ≫ (F.map R)° := by
-      have := F.map_mono (inter_lb_right (Cat.id a) (R ≫ R°))
+      have := F.map_mono (inter_lb_right (Cat.id A) (R ≫ R°))
       rwa [F.map_comp, hc R] at this
     exact le_inter hcoref h2
   · rw [dom_UP hcoref]
@@ -264,7 +264,7 @@ theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
 /-- Ex 5.5, tabular corollary: over a tabular source, `Theorem 5.1(a)` discharges the
     converse-preservation hypothesis automatically. -/
 theorem Relator.map_dom_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
-    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a b : 𝒜} (R : a ⟶ b) :
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R : A ⟶ B) :
     F.map (dom R) = dom (F.map R) :=
   Relator.map_dom F (Relator.preservesRecip_of_tabular F) R
 

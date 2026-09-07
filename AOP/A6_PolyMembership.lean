@@ -66,10 +66,10 @@ def path_to_eps {F : PolyF} {A X : Type} {x : sem F A X} {y : X} (p : Path F x .
 /-! ## The membership / weakest-precondition residual (aopa `ε-⍀`) -/
 
 /-- Predicate inclusion (aopa `_⊆_` on `B → Set`). -/
-def subPred {a : RelSet.{0}} (P Q : a.carrier → Prop) : Prop := ∀ x, P x → Q x
+def subPred {A : RelSet.{0}} (P Q : A.carrier → Prop) : Prop := ∀ x, P x → Q x
 
 /-- The weakest-precondition residual `R ⍀ P` (aopa `_⍀_`): points whose every `R`-image lies in `P`. -/
-def wpre {c b : RelSet.{0}} (R : c ⟶ b) (P : b.carrier → Prop) : c.carrier → Prop :=
+def wpre {C B : RelSet.{0}} (R : C ⟶ B) (P : B.carrier → Prop) : C.carrier → Prop :=
   fun z => ∀ x, R z x → P x
 
 /-- aopa `ε-⍀-⊆`: `(ε F ≫ S) ⍀ P ⊆ S ⍀ (fmapP F P)`. -/

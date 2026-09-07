@@ -129,10 +129,10 @@ public theorem spl_effective {𝒜 : Type u} [Allegory 𝒜] {E : SplObj 𝒜} (
     `srcTabulation_of_semiSimple_split` yields a source-apex jointly-monic *map* span
     `(f° F₀, f° G₀)` of any morphism, which is exactly a `Tabulates`. -/
 public theorem tabular_of_semiSimple_splits {ℬ : Type u} [Allegory ℬ]
-    (hss : ∀ {a b : ℬ} (R : a ⟶ b), SemiSimple R) (hsplit : SplitsSymmIdem ℬ)
-    {a b : ℬ} (R : a ⟶ b) : Tabular R :=
-  let ⟨c, F, G, hF, hG, hU, hm⟩ := srcTabulation_of_semiSimple_split hsplit R (hss R)
-  ⟨c, F, G, hF, hG, hU, hm⟩
+    (hss : ∀ {A B : ℬ} (R : A ⟶ B), SemiSimple R) (hsplit : SplitsSymmIdem ℬ)
+    {A B : ℬ} (R : A ⟶ B) : Tabular R :=
+  let ⟨C, F, G, hF, hG, hU, hm⟩ := srcTabulation_of_semiSimple_split hsplit R (hss R)
+  ⟨C, F, G, hF, hG, hU, hm⟩
 
 /-! ### §2.16(10) ingredient 1 — `SplObj 𝒜` splits its own symmetric idempotents. -/
 
@@ -272,12 +272,12 @@ def splObj_tabular_of_tabular {𝒜 : Type u} [TabularAllegory 𝒜] :
     `splObj_tabular_of_semiSimple` supplies `htab` via `TabularAllegory.tabular`. -/
 theorem semiSimple_of_splObj_tabular {𝒜 : Type u} [Allegory 𝒜]
     (htab : ∀ {E F : SplObj 𝒜} (Ψ : E ⟶ F), Tabular Ψ)
-    {a b : 𝒜} (R : a ⟶ b) : SemiSimple R := by
+    {A B : 𝒜} (R : A ⟶ B) : SemiSimple R := by
   obtain ⟨C, P, Q, hPmap, hQmap, hRfac, _hjoint⟩ := htab (embHom R)
   -- Legs simple in `𝒜`: `Simple P` in `SplObj` is `P° ≫ P ⊑ id_{embObj a}`; via `splLe_iff`
   -- the underlying is `P.R° ≫ P.R ⊑ (Cat.id (embObj a)).R = Cat.id a` — `Simple P.R` in `𝒜`.
-  have hFsimple : Simple P.R := (splLe_iff (P° ≫ P) (Cat.id (embObj a))).mp hPmap.2
-  have hGsimple : Simple Q.R := (splLe_iff (Q° ≫ Q) (Cat.id (embObj b))).mp hQmap.2
+  have hFsimple : Simple P.R := (splLe_iff (P° ≫ P) (Cat.id (embObj A))).mp hPmap.2
+  have hGsimple : Simple Q.R := (splLe_iff (Q° ≫ Q) (Cat.id (embObj B))).mp hQmap.2
   -- `R = P.R° ≫ Q.R`:  `embHom R = P° ≫ Q` underlies as `R = P.R° ≫ Q.R` (`(embHom R).R = R`).
   have hR : R = P.R° ≫ Q.R := congrArg SplHom.R hRfac
   exact ⟨C.carrier, P.R, Q.R, hFsimple, hGsimple, hR⟩
@@ -649,10 +649,10 @@ public theorem splObj_split_equivalence {𝒜 : Type u} [Allegory 𝒜] {E : Spl
     `embHom (R/S) = splDiv (embHom R) (embHom S)` — so it is a faithful representation OF DIVISION
     ALLEGORIES (it already preserves `≫`/`°`/`∩`/`∪`).  On `embObj a` the idempotent is the identity
     (`idSymIdem`, `.e = 1`), so `splDiv`'s `E.e ≫ (R/S) ≫ F.e` collapses to `R/S`. -/
-public theorem embHom_div {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
-    (embHom (R / S) : embObj a ⟶ embObj b) = splDiv (embHom R) (embHom S) := by
+public theorem embHom_div {𝒜 : Type u} [DivisionAllegory 𝒜] {A B C : 𝒜} (R : A ⟶ C) (S : B ⟶ C) :
+    (embHom (R / S) : embObj A ⟶ embObj B) = splDiv (embHom R) (embHom S) := by
   apply SplHom.ext
-  show R / S = (embObj a).idem.e ≫ ((embHom R).R / (embHom S).R) ≫ (embObj b).idem.e
+  show R / S = (embObj A).idem.e ≫ ((embHom R).R / (embHom S).R) ≫ (embObj B).idem.e
   simp only [embObj, idSymIdem, embHom_R, Cat.id_comp, Cat.comp_id]
 
 /-! ## Goal A — `EffectiveDivisionAllegory (SplObj 𝒜)` for a semi-simple division allegory
@@ -861,8 +861,8 @@ end SplCorObj
 
 -- §2.136 dual: for a SYMMETRIC SIMPLE `A`, `(R ∩ S) ≫ A = R≫A ∩ S≫A`.
 -- (Reciprocate `simple_dist_inter` applied to `A°` and use `A° = A`.)
-public theorem splCor_dist_inter_right {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {A : b ⟶ b}
-    (hAsym : A° = A) (hsimpleA : Simple A) (R S : a ⟶ b) :
+public theorem splCor_dist_inter_right {𝒜 : Type u} [Allegory 𝒜] {a B : 𝒜} {A : B ⟶ B}
+    (hAsym : A° = A) (hsimpleA : Simple A) (R S : a ⟶ B) :
     (R ∩ S) ≫ A = (R ≫ A) ∩ (S ≫ A) := by
   -- ((R∩S)≫A)° = A≫(R∩S)° = A≫(R°∩S°) = A≫R° ∩ A≫S° = (R≫A)° ∩ (S≫A)°
   have key : ((R ∩ S) ≫ A)° = ((R ≫ A) ∩ (S ≫ A))° := by
@@ -871,20 +871,20 @@ public theorem splCor_dist_inter_right {𝒜 : Type u} [Allegory 𝒜] {a b : �
   have := congrArg (·°) key
   simpa only [Allegory.recip_recip] using this
 
-private theorem splCor_entire_to_le {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {f : a ⟶ b}
-    (h : Entire f) : Cat.id a ⊑ f ≫ f° := by
+private theorem splCor_entire_to_le {𝒜 : Type u} [Allegory 𝒜] {A B : 𝒜} {f : A ⟶ B}
+    (h : Entire f) : Cat.id A ⊑ f ≫ f° := by
   unfold Entire dom at h; exact h ▸ inter_lb_right _ _
 
 -- `R ⊑ dom R ≫ R` (= `R ⊑ (1 ∩ R≫R°) ≫ R`); §2.122 helper (re-derived; the S2_1 one is private).
-private theorem le_dom_comp' {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
-    R ⊑ (Cat.id a ∩ R ≫ R°) ≫ R := by
-  have h := modular_le (Cat.id a) R R
+private theorem le_dom_comp' {𝒜 : Type u} [Allegory 𝒜] {A B : 𝒜} (R : A ⟶ B) :
+    R ⊑ (Cat.id A ∩ R ≫ R°) ≫ R := by
+  have h := modular_le (Cat.id A) R R
   simp only [Cat.id_comp, Allegory.inter_idem] at h
   exact h
 
 -- `cod` factoring (dual): `R ⊑ R ≫ (1 ∩ R°≫R)`.
-public theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) :
-    R ⊑ R ≫ (Cat.id b ∩ R° ≫ R) := by
+public theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {A B : 𝒜} (R : A ⟶ B) :
+    R ⊑ R ≫ (Cat.id B ∩ R° ≫ R) := by
   have h := recip_mono (le_dom_comp' R°)
   -- le_dom_comp' R° : R° ⊑ (1 ∩ R°≫R°°)≫R°;  reciprocate.
   rw [Allegory.recip_comp, Allegory.recip_inter, recip_id, Allegory.recip_comp,
@@ -894,23 +894,23 @@ public theorem le_comp_cod {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} (R : a �
 -- §2.166 factoring: `p°≫q` factors through the coreflexive `1 ∩ p≫p° ∩ q≫q°`.
 -- (Insert `cod p° = 1∩p≫p°` after `p°`, then `dom q = 1∩q≫q°` before `q`; the two coreflexives
 --  compose to their intersection by `coreflexive_comp_eq_inter`.)
-public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p : c ⟶ x) (q : c ⟶ y) :
-    p° ≫ q ⊑ p° ≫ (Cat.id c ∩ p ≫ p° ∩ q ≫ q°) ≫ q := by
-  have hcodp : p° ⊑ p° ≫ (Cat.id c ∩ p ≫ p°) := by
+public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {C x y : 𝒜} (p : C ⟶ x) (q : C ⟶ y) :
+    p° ≫ q ⊑ p° ≫ (Cat.id C ∩ p ≫ p° ∩ q ≫ q°) ≫ q := by
+  have hcodp : p° ⊑ p° ≫ (Cat.id C ∩ p ≫ p°) := by
     have := le_comp_cod p°
     rwa [Allegory.recip_recip] at this
-  have hdomq : q ⊑ (Cat.id c ∩ q ≫ q°) ≫ q := le_dom_comp' q
-  have hcorL : Coreflexive (Cat.id c ∩ p ≫ p°) := inter_lb_left _ _
-  have hcorR : Coreflexive (Cat.id c ∩ q ≫ q°) := inter_lb_left _ _
+  have hdomq : q ⊑ (Cat.id C ∩ q ≫ q°) ≫ q := le_dom_comp' q
+  have hcorL : Coreflexive (Cat.id C ∩ p ≫ p°) := inter_lb_left _ _
+  have hcorR : Coreflexive (Cat.id C ∩ q ≫ q°) := inter_lb_left _ _
   -- p°≫q ⊑ (p°≫(1∩pp°))≫q ⊑ (p°≫(1∩pp°))≫((1∩qq°)≫q)
-  have h1 : p° ≫ q ⊑ p° ≫ (Cat.id c ∩ p ≫ p°) ≫ q := by
+  have h1 : p° ≫ q ⊑ p° ≫ (Cat.id C ∩ p ≫ p°) ≫ q := by
     rw [← Cat.assoc]; exact comp_mono_right hcodp q
-  have h2 : p° ≫ (Cat.id c ∩ p ≫ p°) ≫ q
-      ⊑ p° ≫ (Cat.id c ∩ p ≫ p°) ≫ (Cat.id c ∩ q ≫ q°) ≫ q :=
+  have h2 : p° ≫ (Cat.id C ∩ p ≫ p°) ≫ q
+      ⊑ p° ≫ (Cat.id C ∩ p ≫ p°) ≫ (Cat.id C ∩ q ≫ q°) ≫ q :=
     comp_mono_left p° (comp_mono_left _ hdomq)
   refine le_trans h1 (le_trans h2 ?_)
   -- merge the two coreflexives:  (1∩pp°)≫(1∩qq°) = (1∩pp°) ∩ (1∩qq°) = 1∩pp°∩qq°.
-  rw [← Cat.assoc (Cat.id c ∩ p ≫ p°) (Cat.id c ∩ q ≫ q°) q,
+  rw [← Cat.assoc (Cat.id C ∩ p ≫ p°) (Cat.id C ∩ q ≫ q°) q,
       coreflexive_comp_eq_inter hcorL hcorR]
   refine comp_mono_left p° (comp_mono_right ?_ q)
   -- (1∩pp°) ∩ (1∩qq°) = 1∩pp°∩qq°  (drop the redundant second `1`); show ⊑.
@@ -923,30 +923,30 @@ public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p :
 -- (in Rel: the diagonal restricted to `{s ∈ Ee : (s,s) ∈ X}` lies inside `Ee`).
 -- Used in §2.166 (pre-tabular) to show the source-apex leg `A≫f` already absorbs `E.e`
 -- on the right (`A≫f≫E.e = A≫f`), so the absorbed legs reduce to Freyd's bare legs.
-public theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
-    {Ee : a ⟶ a} (hsym : Ee° = Ee) (hidem : Ee ≫ Ee = Ee) (X : a ⟶ a) :
-    Cat.id a ∩ Ee ≫ X ⊑ Ee := by
-  have hDcor : Coreflexive (Cat.id a ∩ Ee ≫ X) := inter_lb_left _ _
-  have hDsym : (Cat.id a ∩ Ee ≫ X)° = Cat.id a ∩ Ee ≫ X :=
+public theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {A : 𝒜}
+    {Ee : A ⟶ A} (hsym : Ee° = Ee) (hidem : Ee ≫ Ee = Ee) (X : A ⟶ A) :
+    Cat.id A ∩ Ee ≫ X ⊑ Ee := by
+  have hDcor : Coreflexive (Cat.id A ∩ Ee ≫ X) := inter_lb_left _ _
+  have hDsym : (Cat.id A ∩ Ee ≫ X)° = Cat.id A ∩ Ee ≫ X :=
     symmetric_eq (coreflexive_symmetric_idempotent hDcor).1
   -- D = D° = 1 ∩ X°≫Ee  ⊑ X°≫Ee
-  have hDle : Cat.id a ∩ Ee ≫ X ⊑ X° ≫ Ee := by
-    have hrw : Cat.id a ∩ Ee ≫ X = Cat.id a ∩ X° ≫ Ee := by
+  have hDle : Cat.id A ∩ Ee ≫ X ⊑ X° ≫ Ee := by
+    have hrw : Cat.id A ∩ Ee ≫ X = Cat.id A ∩ X° ≫ Ee := by
       have h := hDsym
       rw [Allegory.recip_inter, recip_id, Allegory.recip_comp, hsym] at h
       exact h.symm
     rw [hrw]; exact inter_lb_right _ _
   -- D = D ∩ 1 ⊑ (X°≫Ee)∩1 ⊑ (X°∩Ee)≫Ee ⊑ Ee≫Ee = Ee
   refine le_trans (le_inter hDle (inter_lb_left _ _)) ?_
-  have hmod := modular_le X° Ee (Cat.id a)
+  have hmod := modular_le X° Ee (Cat.id A)
   rw [Cat.id_comp, hsym] at hmod
   refine le_trans hmod ?_
   calc (X° ∩ Ee) ≫ Ee ⊑ Ee ≫ Ee := comp_mono_right (inter_lb_right _ _) Ee
     _ = Ee := hidem
 
 -- Dual modular law (reciprocal of `modular_le`):  `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`.
-public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
-    (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) : (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
+public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {A B C : 𝒜}
+    (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) : (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
   have hr := recip_mono (modular_le S° R° T°)
   rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
       Allegory.recip_recip] at hr

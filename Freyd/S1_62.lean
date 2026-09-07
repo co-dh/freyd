@@ -3633,27 +3633,27 @@ def IsInitialObj (z : 𝒞) : Prop := ∀ X : 𝒞, ∃ f : z ⟶ X, ∀ g : z �
 
 /-- The COVER predicate: `f : a → b` is a cover — every monic it factors through is iso
     (the repo's `Cover`, §1.512). -/
-def IsCoverObj {a b : 𝒞} (f : a ⟶ b) : Prop := Cover f
+def IsCoverObj {A B : 𝒞} (f : A ⟶ B) : Prop := Cover f
 
 /-- The IMAGE predicate for `em : im → b` of `f : a → b`: `em` is monic, `f` factors through
     `em`, and `em` is the LEAST such monic (any monic `m` that `f` factors through receives
     `em`).  This is the universal property of the image subobject, written with raw morphisms
     (no `Subobject`) so it transports under a functor. -/
-def IsImageObj {a b im : 𝒞} (em : im ⟶ b) (f : a ⟶ b) : Prop :=
-  Monic em ∧ (∃ ℓ : a ⟶ im, ℓ ≫ em = f) ∧
-    ∀ (c : 𝒞) (m : c ⟶ b), Monic m → (∃ k : a ⟶ c, k ≫ m = f) →
-      ∃ j : im ⟶ c, j ≫ m = em
+def IsImageObj {A B im : 𝒞} (em : im ⟶ B) (f : A ⟶ B) : Prop :=
+  Monic em ∧ (∃ ℓ : A ⟶ im, ℓ ≫ em = f) ∧
+    ∀ (C : 𝒞) (m : C ⟶ B), Monic m → (∃ k : A ⟶ C, k ≫ m = f) →
+      ∃ j : im ⟶ C, j ≫ m = em
 
 /-- The DISJOINT-COPRODUCT predicate for `(c, inl, inr)` over `a, b`: `(c, inl, inr)` is a
     coproduct (couniversal property), the injections are monic, and they are DISJOINT — any pair
     `u : x → a`, `v : x → b` with `u ≫ inl = v ≫ inr` factors through an object on which all
     maps coincide (the pullback `inl ×_c inr` is initial, stated elementarily). -/
-def IsDisjointCoprodObj {a b c : 𝒞} (inl : a ⟶ c) (inr : b ⟶ c) : Prop :=
-  (∀ (X : 𝒞) (u : a ⟶ X) (v : b ⟶ X),
-      ∃ h : c ⟶ X, inl ≫ h = u ∧ inr ≫ h = v ∧
-        ∀ k : c ⟶ X, inl ≫ k = u → inr ≫ k = v → k = h) ∧
+def IsDisjointCoprodObj {A B C : 𝒞} (inl : A ⟶ C) (inr : B ⟶ C) : Prop :=
+  (∀ (X : 𝒞) (u : A ⟶ X) (v : B ⟶ X),
+      ∃ h : C ⟶ X, inl ≫ h = u ∧ inr ≫ h = v ∧
+        ∀ k : C ⟶ X, inl ≫ k = u → inr ≫ k = v → k = h) ∧
   Monic inl ∧ Monic inr ∧
-  (∀ (x : 𝒞) (u : x ⟶ a) (v : x ⟶ b), u ≫ inl = v ≫ inr →
+  (∀ (x : 𝒞) (u : x ⟶ A) (v : x ⟶ B), u ≫ inl = v ≫ inr →
       ∀ (Y : 𝒞) (p q : x ⟶ Y), p = q)
 
 end Predicates
@@ -4125,8 +4125,8 @@ theorem isImageObj_of_isImage {𝒟 : Type u₂} [Cat.{u} 𝒟] {A B : 𝒟}
     {f : A ⟶ B} {I : Subobject 𝒟 B} (h : IsImage f I) : IsImageObj I.arr f := by
   obtain ⟨⟨ℓ, hℓ⟩, hmin⟩ := h
   refine ⟨I.monic, ⟨ℓ, hℓ⟩, ?_⟩
-  intro c m hm hk
-  obtain ⟨j, hj⟩ := hmin (Subobject.mk c m hm) hk
+  intro C m hm hk
+  obtain ⟨j, hj⟩ := hmin (Subobject.mk C m hm) hk
   exact ⟨j, hj⟩
 
 section RegularAtoms2

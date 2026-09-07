@@ -26,12 +26,12 @@ variable {𝒜 : Type u} [Allegory 𝒜]
   `comp_mono_right` plus `le_inter`, so no use of the equational axiom is needed. -/
 
 /-- Order form of semi-distributivity (B&dM p.83): `R(S∩T) ⊑ RS ∩ RT`. -/
-theorem comp_inter_le {a b c : 𝒜} (R : a ⟶ b) (S T : b ⟶ c) :
+theorem comp_inter_le {A B C : 𝒜} (R : A ⟶ B) (S T : B ⟶ C) :
     R ≫ (S ∩ T) ⊑ (R ≫ S) ∩ (R ≫ T) :=
   le_inter (comp_mono_left R (inter_lb_left S T)) (comp_mono_left R (inter_lb_right S T))
 
 /-- Order form of semi-distributivity, other side (B&dM p.83): `(S∩T)R ⊑ SR ∩ TR`. -/
-public theorem inter_comp_le {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
+public theorem inter_comp_le {A B C : 𝒜} (S T : A ⟶ B) (R : B ⟶ C) :
     (S ∩ T) ≫ R ⊑ (S ≫ R) ∩ (T ≫ R) :=
   le_inter (comp_mono_right (inter_lb_left S T) R) (comp_mono_right (inter_lb_right S T) R)
 
@@ -44,7 +44,7 @@ public theorem inter_comp_le {a b c : 𝒜} (S T : a ⟶ b) (R : b ⟶ c) :
   remains, kept to preserve that file's import footprint). -/
 
 /-- Dual form of the modular law (B&dM p.83 proof step): `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`. -/
-public theorem modular_le_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem modular_le_right {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) :
     (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
   have hr := recip_mono (modular_le S° R° T°)
   rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
@@ -58,7 +58,7 @@ public theorem modular_le_right {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : 
     Book proof: `(R≫S)∩T ⊑ ((R∩T≫S°)≫S)∩T` (`modular_le` plus `T` on the nose), then
     `modular_le_right` on `U := R∩T≫S°` gives `U≫S ∩ T ⊑ U≫(S∩U°≫T)`, and `U°≫T ⊑ R°≫T`
     since `U ⊑ R`. -/
-public theorem modular_sym {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
+public theorem modular_sym {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) :
     (R ≫ S) ∩ T ⊑ (R ∩ T ≫ S°) ≫ (S ∩ R° ≫ T) := by
   have step1 : (R ≫ S) ∩ T ⊑ ((R ∩ T ≫ S°) ≫ S) ∩ T :=
     le_inter (modular_le R S T) (inter_lb_right _ _)
@@ -74,26 +74,26 @@ public theorem modular_sym {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶
 
 /-- **B&dM 4.9**: `(R°≫S) ∩ id_b ⊑ (R∩S)°≫(R∩S)`, for `R S : a ⟶ b`.
     Instantiate `modular_sym` with `(R°, S, id_b)` and simplify. -/
-theorem recip_comp_inter_id_le {a b : 𝒜} (R S : a ⟶ b) :
-    (R° ≫ S) ∩ Cat.id b ⊑ (R ∩ S)° ≫ (R ∩ S) := by
-  have h := modular_sym R° S (Cat.id b)
+theorem recip_comp_inter_id_le {A B : 𝒜} (R S : A ⟶ B) :
+    (R° ≫ S) ∩ Cat.id B ⊑ (R ∩ S)° ≫ (R ∩ S) := by
+  have h := modular_sym R° S (Cat.id B)
   simp only [Cat.id_comp, Allegory.recip_recip, Cat.comp_id] at h
   rw [← Allegory.recip_inter, Allegory.inter_comm S R] at h
   exact h
 
 /-- **B&dM 4.10**: `R ⊑ R≫R°≫R`, for any `R`.  Canonical home — S2_22's identical
     `self_le_comp_recip_comp` was deduped into this lemma at wave collection. -/
-public theorem le_comp_recip_comp {a b : 𝒜} (R : a ⟶ b) : R ⊑ (R ≫ R°) ≫ R := by
-  have h := modular_le (Cat.id a) R R
-  have h1 : R ⊑ (Cat.id a ∩ R ≫ R°) ≫ R := by
+public theorem le_comp_recip_comp {A B : 𝒜} (R : A ⟶ B) : R ⊑ (R ≫ R°) ≫ R := by
+  have h := modular_le (Cat.id A) R R
+  have h1 : R ⊑ (Cat.id A ∩ R ≫ R°) ≫ R := by
     simpa [Cat.id_comp, Allegory.inter_idem] using h
-  exact le_trans h1 (comp_mono_right (inter_lb_right (Cat.id a) (R ≫ R°)) R)
+  exact le_trans h1 (comp_mono_right (inter_lb_right (Cat.id A) (R ≫ R°)) R)
 
 /-! ## §4.1  Refinement of an intersection through a factor (B&dM Exercise 4.5) -/
 
 /-- **Ex 4.5**: `R ∩ (U≫V) = R ∩ ((U∩R≫V°)≫V)`, for `U : a ⟶ b`, `V : b ⟶ c`, `R : a ⟶ c`.
     `⊒` by monotonicity (`U∩R≫V° ⊑ U`); `⊑` by `modular_le` (`R∩(U≫V) = (U≫V)∩R ⊑ (U∩RV°)V`). -/
-theorem inter_comp_refine {a b c : 𝒜} (U : a ⟶ b) (V : b ⟶ c) (R : a ⟶ c) :
+theorem inter_comp_refine {A B C : 𝒜} (U : A ⟶ B) (V : B ⟶ C) (R : A ⟶ C) :
     R ∩ (U ≫ V) = R ∩ ((U ∩ R ≫ V°) ≫ V) := by
   apply le_antisymm
   · have h1 : R ∩ (U ≫ V) ⊑ (U ∩ R ≫ V°) ≫ V := by

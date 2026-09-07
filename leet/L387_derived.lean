@@ -70,7 +70,7 @@ def countMapCL : ConsList Unit Int → AHashMap Nat
   | ConsList.wrap _    => g1 ()
   | ConsList.cons x xs => st1 x (countMapCL xs)
 
-theorem countMapCL_wrap : ∀ d : Unit, countMapCL (ConsList.wrap d) = g1 d := fun _ => rfl
+theorem countMapCL_wrap : ∀ D : Unit, countMapCL (ConsList.wrap D) = g1 D := fun _ => rfl
 
 theorem countMapCL_cons :
     ∀ (x : Int) (xs : ConsList Unit Int), countMapCL (ConsList.cons x xs) = st1 x (countMapCL xs) :=
@@ -127,7 +127,7 @@ def foldCL2 (m : AHashMap Nat) : ConsList Unit Int → Carrier2
   | ConsList.wrap _    => g2 ()
   | ConsList.cons c xs => st2 m c (foldCL2 m xs)
 
-theorem foldCL2_wrap (m : AHashMap Nat) : ∀ d : Unit, foldCL2 m (ConsList.wrap d) = g2 d :=
+theorem foldCL2_wrap (m : AHashMap Nat) : ∀ D : Unit, foldCL2 m (ConsList.wrap D) = g2 D :=
   fun _ => rfl
 
 theorem foldCL2_cons (m : AHashMap Nat) :

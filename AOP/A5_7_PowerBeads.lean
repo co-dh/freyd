@@ -29,7 +29,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     Egli–Milner definition — read at `LaxNatural`'s definition; `AOP.A5_7`'s `eps_lax_natural`
     is the same fact before the power relator is bundled. -/
 public theorem eps_laxNatural :
-    LaxNatural (Relator.idRelator 𝒜) (powerRelator (𝒜 := 𝒜)) (fun a => ∋ a) :=
+    LaxNatural (Relator.idRelator 𝒜) (powerRelator (𝒜 := 𝒜)) (fun A => ∋ A) :=
   fun R => powerRel_eps_lax R
 
 end EpsLax
@@ -63,31 +63,31 @@ end SingletonLax
 
 /-- `powerRel` in `Rel(Set)`, pointwise: `X (P R) Y` iff every element of `X` `R`-reaches into
     `Y` (term₁) and every element of `Y` is `R`-reachable from `X` (term₂). -/
-public theorem powerRel_apply {a b : RelSet.{u}} (R : a ⟶ b)
-    (X : (PowerAllegory.powerObj a).carrier) (Y : (PowerAllegory.powerObj b).carrier) :
+public theorem powerRel_apply {A B : RelSet.{u}} (R : A ⟶ B)
+    (X : (PowerAllegory.powerObj A).carrier) (Y : (PowerAllegory.powerObj B).carrier) :
     powerRel R X Y ↔ (∀ x, X x → ∃ y, R x y ∧ Y y) ∧ (∀ y, Y y → ∃ x, X x ∧ R x y) :=
   Iff.rfl
 
 /-- `bigUnion` in `Rel(Set)`, pointwise: `⋃` relates the family `F` to exactly one set, the set
     of the elements of the members of `F`.  `⋃` is a map (`Λ_is_map'`) with `⋃ ≫ ∋ = ∋∋`
     (`Λ_eps_eq'`); simplicity pins the set, entireness produces it. -/
-public theorem bigUnion_apply {a : RelSet.{u}}
-    (F : (PowerAllegory.powerObj (PowerAllegory.powerObj a)).carrier)
-    (U : (PowerAllegory.powerObj a).carrier) :
-    bigUnion (a := a) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
-  have hmap : Map (bigUnion (a := a)) := by
-    show Map (Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a)); exact Λ_is_map' _
-  have heq : bigUnion (a := a) ≫ ∋ a = ∋ (PowerAllegory.powerObj a) ≫ ∋ a := Λ_eps_eq' _
-  have fwd : ∀ V : (PowerAllegory.powerObj a).carrier, bigUnion (a := a) F V →
+public theorem bigUnion_apply {A : RelSet.{u}}
+    (F : (PowerAllegory.powerObj (PowerAllegory.powerObj A)).carrier)
+    (U : (PowerAllegory.powerObj A).carrier) :
+    bigUnion (A := A) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
+  have hmap : Map (bigUnion (A := A)) := by
+    show Map (Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A)); exact Λ_is_map' _
+  have heq : bigUnion (A := A) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ ∋ A := Λ_eps_eq' _
+  have fwd : ∀ V : (PowerAllegory.powerObj A).carrier, bigUnion (A := A) F V →
       ∀ x, (V x ↔ ∃ X, F X ∧ X x) := by
     intro V hFV x
     constructor
     · intro hVx
-      have h1 : (bigUnion (a := a) ≫ ∋ a) F x := ⟨V, hFV, hVx⟩
+      have h1 : (bigUnion (A := A) ≫ ∋ A) F x := ⟨V, hFV, hVx⟩
       rw [heq] at h1
       exact h1
     · intro hx
-      have h2 : (bigUnion (a := a) ≫ ∋ a) F x := by rw [heq]; exact hx
+      have h2 : (bigUnion (A := A) ≫ ∋ A) F x := by rw [heq]; exact hx
       obtain ⟨V', hFV', hV'x⟩ := h2
       exact RelSet.simple_uniq hmap.2 hFV' hFV ▸ hV'x
   refine ⟨fwd U, fun hdesc => ?_⟩
@@ -107,7 +107,7 @@ public theorem bigUnion_apply {a : RelSet.{u}}
     empty at `{true,false}`, because term₁ demands that EVERY member `R`-reach into the output
     and the member `false` reaches nothing. -/
 public theorem eps_not_strict :
-    ∃ (a : RelSet.{0}) (R : a ⟶ a), ¬ (∋ a ≫ R ⊑ powerRel R ≫ ∋ a) := by
+    ∃ (A : RelSet.{0}) (R : A ⟶ A), ¬ (∋ A ≫ R ⊑ powerRel R ≫ ∋ A) := by
   refine ⟨⟨Bool⟩, boolTip, fun h => ?_⟩
   obtain ⟨T, hT, -⟩ := RelSet.le_iff.mp h (fun _ => True) true ⟨true, trivial, rfl, rfl⟩
   obtain ⟨y, hy, -⟩ :=
@@ -127,7 +127,7 @@ public theorem eps_not_strict :
     `∈` has no declaration of its own — the note's convention reads it as `∋` backwards. -/
 public theorem mem_not_laxNatural :
     ¬ LaxNatural (powerRelator (𝒜 := RelSet.{0})) (Relator.idRelator RelSet.{0})
-        (fun a => (∋ a)°) := by
+        (fun A => (∋ A)°) := by
   intro h
   have hsq : boolTip ≫ (∋ (⟨Bool⟩ : RelSet.{0}))°
       ⊑ (∋ (⟨Bool⟩ : RelSet.{0}))° ≫ powerRel boolTip := h boolTip
@@ -148,16 +148,16 @@ public theorem mem_not_laxNatural :
 
     The abstract statement stays lax: `powerRel_est_lt_bigUnion` (`AOP.A6_1_OrdRelSet`) is the
     neighbouring square that genuinely fails. -/
-public theorem bigUnion_strict_relSet {a b : RelSet.{u}} (R : a ⟶ b) :
+public theorem bigUnion_strict_relSet {A B : RelSet.{u}} (R : A ⟶ B) :
     powerRel (powerRel R) ≫ bigUnion = bigUnion ≫ powerRel R := by
-  have hlax : powerRel (powerRel R) ≫ bigUnion (a := b) ⊑ bigUnion (a := a) ≫ powerRel R :=
+  have hlax : powerRel (powerRel R) ≫ bigUnion (A := B) ⊑ bigUnion (A := A) ≫ powerRel R :=
     bigUnion_lax_natural R
   refine le_antisymm hlax (RelSet.le_iff.mpr fun F Y hFY => ?_)
   obtain ⟨U, hFU, hUY⟩ := hFY
   have hU := (bigUnion_apply F U).mp hFU
   have hEM := (powerRel_apply R U Y).mp hUY
   -- Each member `X` of `F` is `P R`-related to the part of `Y` it reaches.
-  have hkey : ∀ X : (PowerAllegory.powerObj a).carrier, F X →
+  have hkey : ∀ X : (PowerAllegory.powerObj A).carrier, F X →
       powerRel R X (fun y => Y y ∧ ∃ x, X x ∧ R x y) := by
     intro X hFX
     refine (powerRel_apply R X _).mpr ⟨fun x hXx => ?_, ?_⟩

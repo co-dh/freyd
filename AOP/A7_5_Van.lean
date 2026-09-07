@@ -461,14 +461,14 @@ public theorem van_spec
     (hsingle : ∀ a : Tx, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
     partition ≫ list (secure amount N) = ⦇Salg amount N⦈ := by
   refine (relCata_UP (initial Unit Tx) _ _).mp ((cata_square_junc_iff _ _ _).mpr ⟨?_, ?_⟩)
-  · intro d r
+  · intro D r
     rw [partSecure_apply]
     constructor
     · rintro ⟨hcat, hne, -⟩
-      show r = ConsList.wrap d
+      show r = ConsList.wrap D
       exact eq_nil_of_cconcat_nil r hcat hne
     · intro h
-      obtain rfl : r = ConsList.wrap d := h
+      obtain rfl : r = ConsList.wrap D := h
       exact ⟨rfl, trivial, trivial⟩
   · intro a x r
     simp only [partSecure_apply]
@@ -761,12 +761,12 @@ public theorem van_mono_alg :
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hS⟩ := h
     cases u with
-    | inl d =>
+    | inl D =>
       cases v with
       | inl d' =>
         rw [Salg, junc_sum_inl] at hS
         obtain rfl : r = ConsList.wrap d' := hS
-        refine ⟨ConsList.wrap d, ?_, Nat.le_refl _, fun _ => Or.inr ⟨rfl, rfl⟩⟩
+        refine ⟨ConsList.wrap D, ?_, Nat.le_refl _, fun _ => Or.inr ⟨rfl, rfl⟩⟩
         rw [Salg, junc_sum_inl]
         rfl
       | inr q => exact False.elim hFv
@@ -798,7 +798,7 @@ public theorem prog_le_greedy :
   · -- the program's answer is one of `new` and `old`
     refine le_iff.mpr fun u r h => ?_
     cases u with
-    | inl d =>
+    | inl D =>
       rw [progAlg, junc_sum_inl] at h
       rw [Salg, junc_sum_inl]
       exact h
@@ -825,11 +825,11 @@ public theorem prog_le_greedy :
     show RH Tx r' r
     have hS' : Salg amount N u r := hS
     cases u with
-    | inl d =>
+    | inl D =>
       rw [Salg, junc_sum_inl] at hS'
       rw [progAlg, junc_sum_inl] at hprog
-      obtain rfl : r = ConsList.wrap d := hS'
-      obtain rfl : r' = ConsList.wrap d := hprog
+      obtain rfl : r = ConsList.wrap D := hS'
+      obtain rfl : r' = ConsList.wrap D := hprog
       exact ⟨Nat.le_refl _, fun _ => Or.inr ⟨rfl, rfl⟩⟩
     | inr p =>
       rw [Salg, junc_sum_inr] at hS'

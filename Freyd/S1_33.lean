@@ -242,16 +242,16 @@ public class ProsetCat (α : Type u) : Type u where
 
 /-- Turn a `ProsetCat` into a `Cat` instance.  Hom-sets are proof-irrelevant (thin). -/
 @[expose] public instance prosetToCat {α : Type u} [P : ProsetCat α] : Cat.{0} α where
-  Hom a b := PLift (P.le a b)
-  id a := ⟨P.refl a⟩
+  Hom A B := PLift (P.le A B)
+  id A := ⟨P.refl A⟩
   comp h k := ⟨P.trans h.down k.down⟩
   id_comp _ := rfl
   comp_id _ := rfl
   assoc _ _ _ := rfl
 
 /-- In a preorder-category any two parallel hom-set elements are equal (thin category). -/
-theorem proset_hom_subsingleton {α : Type u} [ProsetCat α] {a b : α}
-    (f g : a ⟶ b) : f = g := by
+theorem proset_hom_subsingleton {α : Type u} [ProsetCat α] {A B : α}
+    (f g : A ⟶ B) : f = g := by
   obtain ⟨_⟩ := f; obtain ⟨_⟩ := g; rfl
 
 /-- A functor between preorder-categories is always an embedding (§1.333).
@@ -265,8 +265,8 @@ theorem proset_functor_embedding {α β : Type u}
 /-- §1.333: a functor between preorders is monotone (order-preserving). -/
 theorem proset_functor_monotone {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β] (F : Functor α β)
-    {a b : α} (hab : P.le a b) : Q.le (F.obj a) (F.obj b) :=
-  (F.map (⟨hab⟩ : (a ⟶ b))).down
+    {A B : α} (hab : P.le A B) : Q.le (F.obj A) (F.obj B) :=
+  (F.map (⟨hab⟩ : (A ⟶ B))).down
 
 /-- §1.333: a functor between preorders is full iff the ordering on the domain is induced
     by the ordering on the range: P.le a b ↔ Q.le (F a) (F b).
@@ -280,14 +280,14 @@ theorem proset_functor_monotone {α β : Type u}
 theorem proset_functor_full_iff_induced {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β] (F : Functor α β) :
     Full F ↔
-    (∀ a b : α, P.le a b ↔ Q.le (F.obj a) (F.obj b)) := by
+    (∀ A B : α, P.le A B ↔ Q.le (F.obj A) (F.obj B)) := by
   constructor
-  · intro hFull a b
+  · intro hFull A B
     constructor
     · intro hab
-      exact (F.map (⟨hab⟩ : (a ⟶ b))).down
+      exact (F.map (⟨hab⟩ : (A ⟶ B))).down
     · intro hFab
-      obtain ⟨f, _⟩ := hFull (⟨hFab⟩ : (F.obj a ⟶ F.obj b))
+      obtain ⟨f, _⟩ := hFull (⟨hFab⟩ : (F.obj A ⟶ F.obj B))
       exact f.down
   · intro hInd A B h
     exact ⟨⟨(hInd A B).mpr h.down⟩, proset_hom_subsingleton _ _⟩
@@ -296,15 +296,15 @@ theorem proset_functor_full_iff_induced {α β : Type u}
     Uses fullness to lift Q-morphisms in both directions to P-morphisms, then antisymP. -/
 theorem proset_full_faithful_inj {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β]
-    (antisymP : ∀ {a b : α}, P.le a b → P.le b a → a = b)
+    (antisymP : ∀ {A B : α}, P.le A B → P.le B A → A = B)
     (F : Functor α β)
     (hFull : Full F)
     (_ : Faithful F) :
-    ∀ a b : α, F.obj a = F.obj b → a = b := fun a b hFab => by
-  have h_ab : Q.le (F.obj a) (F.obj b) := hFab ▸ Q.refl (F.obj a)
-  have h_ba : Q.le (F.obj b) (F.obj a) := hFab ▸ Q.refl (F.obj b)
-  obtain ⟨f, _⟩ := hFull (⟨h_ab⟩ : (F.obj a ⟶ F.obj b))
-  obtain ⟨g, _⟩ := hFull (⟨h_ba⟩ : (F.obj b ⟶ F.obj a))
+    ∀ A B : α, F.obj A = F.obj B → A = B := fun A B hFab => by
+  have h_ab : Q.le (F.obj A) (F.obj B) := hFab ▸ Q.refl (F.obj A)
+  have h_ba : Q.le (F.obj B) (F.obj A) := hFab ▸ Q.refl (F.obj B)
+  obtain ⟨f, _⟩ := hFull (⟨h_ab⟩ : (F.obj A ⟶ F.obj B))
+  obtain ⟨g, _⟩ := hFull (⟨h_ba⟩ : (F.obj B ⟶ F.obj A))
   exact antisymP f.down g.down
 
 /-- §1.333: an injective-on-objects functor between posets is faithful (§1.333 backward).
@@ -312,9 +312,9 @@ theorem proset_full_faithful_inj {α β : Type u}
     A = B and then any f : A → A is its own inverse. -/
 theorem proset_inj_faithful {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β]
-    (antisymQ : ∀ {a b : β}, Q.le a b → Q.le b a → a = b)
+    (antisymQ : ∀ {A B : β}, Q.le A B → Q.le B A → A = B)
     (F : Functor α β)
-    (hInj : ∀ a b : α, F.obj a = F.obj b → a = b) :
+    (hInj : ∀ A B : α, F.obj A = F.obj B → A = B) :
     Faithful F :=
   ⟨proset_functor_embedding F, fun {A B} f hiso => by
     obtain ⟨g, _, _⟩ := hiso
@@ -343,12 +343,12 @@ theorem proset_inj_faithful {α β : Type u}
       injectivity gives a = b, and then IsIso f is trivial. -/
 theorem proset_faithful_iff_injective {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β]
-    (antisymP : ∀ {a b : α}, P.le a b → P.le b a → a = b)
-    (antisymQ : ∀ {a b : β}, Q.le a b → Q.le b a → a = b)
+    (antisymP : ∀ {A B : α}, P.le A B → P.le B A → A = B)
+    (antisymQ : ∀ {A B : β}, Q.le A B → Q.le B A → A = B)
     (F : Functor α β)
     (hFull : Full F) :
     Faithful F ↔
-    (∀ a b : α, F.obj a = F.obj b → a = b) := by
+    (∀ A B : α, F.obj A = F.obj B → A = B) := by
   constructor
   · intro hFaith
     exact proset_full_faithful_inj antisymP F hFull hFaith
@@ -362,24 +362,24 @@ theorem proset_faithful_iff_injective {α β : Type u}
     equivalently a bijection F with P.le a b ↔ Q.le (F a) (F b). -/
 theorem proset_equiv_iff_ord_iso {α β : Type u}
     [P : ProsetCat α] [Q : ProsetCat β]
-    (antisymP : ∀ {a b : α}, P.le a b → P.le b a → a = b)
-    (antisymQ : ∀ {a b : β}, Q.le a b → Q.le b a → a = b)
+    (antisymP : ∀ {A B : α}, P.le A B → P.le B A → A = B)
+    (antisymQ : ∀ {A B : β}, Q.le A B → Q.le B A → A = B)
     (F : Functor α β) :
     EquivalenceFunctor F ↔
-    ((∀ a b : α, F.obj a = F.obj b → a = b) ∧
-     (∀ b : β, ∃ a : α, F.obj a = b) ∧
-     (∀ a b : α, P.le a b ↔ Q.le (F.obj a) (F.obj b))) := by
+    ((∀ A B : α, F.obj A = F.obj B → A = B) ∧
+     (∀ B : β, ∃ A : α, F.obj A = B) ∧
+     (∀ A B : α, P.le A B ↔ Q.le (F.obj A) (F.obj B))) := by
   constructor
   · intro ⟨hEmb, hFull, hRep⟩
     refine ⟨?_, ?_, ?_⟩
     · -- Injective on objects: from Fa = Fb, use fullness to get morphisms a→b and b→a,
       -- then antisymP.
-      intro a b hFab
+      intro A B hFab
       -- Fa = Fb, so id_{Fa} : Fa ⟶ Fb in Q-cat.
-      have h_ab : Q.le (F.obj a) (F.obj b) := hFab ▸ Q.refl (F.obj a)
-      have h_ba : Q.le (F.obj b) (F.obj a) := hFab ▸ Q.refl (F.obj b)
-      obtain ⟨f, _⟩ := hFull (⟨h_ab⟩ : (F.obj a ⟶ F.obj b))
-      obtain ⟨g, _⟩ := hFull (⟨h_ba⟩ : (F.obj b ⟶ F.obj a))
+      have h_ab : Q.le (F.obj A) (F.obj B) := hFab ▸ Q.refl (F.obj A)
+      have h_ba : Q.le (F.obj B) (F.obj A) := hFab ▸ Q.refl (F.obj B)
+      obtain ⟨f, _⟩ := hFull (⟨h_ab⟩ : (F.obj A ⟶ F.obj B))
+      obtain ⟨g, _⟩ := hFull (⟨h_ba⟩ : (F.obj B ⟶ F.obj A))
       exact antisymP f.down g.down
     · -- Surjective: from HasRepresentativeImage
       intro B
@@ -388,11 +388,11 @@ theorem proset_equiv_iff_ord_iso {α β : Type u}
       -- h : Q.le (FA) B, k : Q.le B (FA); antisymQ gives FA = B
       exact ⟨A, antisymQ h.down k.down⟩
     · -- Order iff
-      intro a b; constructor
+      intro A B; constructor
       · intro hab
-        exact (F.map (⟨hab⟩ : (a ⟶ b))).down
+        exact (F.map (⟨hab⟩ : (A ⟶ B))).down
       · intro hFaFb
-        obtain ⟨f, _⟩ := hFull (⟨hFaFb⟩ : (F.obj a ⟶ F.obj b))
+        obtain ⟨f, _⟩ := hFull (⟨hFaFb⟩ : (F.obj A ⟶ F.obj B))
         exact f.down
   · intro ⟨hInj, hSurj, hOrd⟩
     refine ⟨proset_functor_embedding F, ?_, ?_⟩

@@ -150,15 +150,15 @@ def mapSnoc (f : Int → Int) : dSL Unit Int ⟶ dSL Unit Int := cataR (graph (m
 
 /-- Relabel the element slot of an algebra `ψ` by `f`: `[ u ↦ ψ (inl u) , (r,x) ↦ ψ (r, f x) ]`.
     The `F`-shape action of `f` on the element component. -/
-def relabel (f : Int → Int) {c : RelSet.{0}} (ψ : Fobj Unit Int c ⟶ c) :
-    Fobj Unit Int c ⟶ c :=
+def relabel (f : Int → Int) {C : RelSet.{0}} (ψ : Fobj Unit Int C ⟶ C) :
+    Fobj Unit Int C ⟶ C :=
   fun u v => match u with
     | Sum.inl u0 => ψ (Sum.inl u0) v
     | Sum.inr p => ψ (Sum.inr (p.1, f p.2)) v
 
 /-- The fusion condition for map promotion: pushing `cataR ψ` through the map algebra equals
     the `F`-lifted `cataR ψ` followed by the element-relabelled algebra. -/
-theorem mapAlg_fusion_cond (f : Int → Int) {c : RelSet.{0}} (ψ : Fobj Unit Int c ⟶ c) :
+theorem mapAlg_fusion_cond (f : Int → Int) {C : RelSet.{0}} (ψ : Fobj Unit Int C ⟶ C) :
     graph (mapAlg f) ≫ cataR ψ
       = (F Unit Int).map (cataR ψ) ≫ relabel f ψ := by
   apply hom_ext
@@ -198,7 +198,7 @@ theorem mapAlg_fusion_cond (f : Int → Int) {c : RelSet.{0}} (ψ : Fobj Unit In
     `relabel f ψ`: `map f · reduce ψ = cata (relabel f ψ)`.  This is Bird's map-promotion law,
     derived here purely from the equational fold-fusion `cataR_fusion` (`AOP.Deriv1`), no
     induction. -/
-theorem map_reduce_fusion (f : Int → Int) {c : RelSet.{0}} (ψ : Fobj Unit Int c ⟶ c) :
+theorem map_reduce_fusion (f : Int → Int) {C : RelSet.{0}} (ψ : Fobj Unit Int C ⟶ C) :
     mapSnoc f ≫ cataR ψ = cataR (relabel f ψ) :=
   Deriv.cataR_fusion (graph (mapAlg f)) (cataR ψ) (relabel f ψ) (mapAlg_fusion_cond f ψ)
 

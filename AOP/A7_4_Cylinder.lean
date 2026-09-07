@@ -71,7 +71,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
 @[expose] public noncomputable def gen :
     G.obj (N.obj (PowerAllegory.powerObj I.t)) ⟶ N.obj (PowerAllegory.powerObj I.t) :=
   G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-      ≫ N.map (bigUnion (a := I.t)))
+      ≫ N.map (bigUnion (A := I.t)))
     ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (cpMap H I.t ≫ existsImage I.α)
 
 /-- **cyl-defn**: `paths ≜ ⦇gen⦈ setify union`, of type `L N Nat⟶E(L Nat)` — every path
@@ -120,7 +120,7 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
   -- the tuple-side chain: `N(est R)` slides through `moves`, `trans` and (7.11) to the front
   have hinner : N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R)
       ⊑ (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R) := by
+          ≫ N.map (bigUnion (A := I.t))) ≫ N.map (est R) := by
     calc N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R)
         = (N.map (est R) ≫ moves I.t) ≫ trans I.t ≫ N.map (est R) := by
           simp only [Cat.assoc]
@@ -136,10 +136,10 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
             ≫ N.map (powerRel (est R) ≫ est R) := by
           rw [N.map_comp]; simp only [Cat.assoc]
       _ ⊑ moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-            ≫ N.map (bigUnion (a := I.t) ≫ est R) :=
+            ≫ N.map (bigUnion (A := I.t) ≫ est R) :=
           comp_mono_left _ (comp_mono_left _ (N.map_mono (powerRel_est_le_bigUnion htrans)))
       _ = (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-            ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R) := by
+            ≫ N.map (bigUnion (A := I.t))) ≫ N.map (est R) := by
           rw [N.map_comp]; simp only [Cat.assoc]
   -- the base-functor side: `zip` lax natural, then (7.13)
   have houter : N.map (H.map (est R)) ≫ N.map I.α
@@ -153,22 +153,22 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
           ≫ zip I.t ≫ N.map I.α := by
         rw [Q, ← Cat.assoc, ← G.map_comp]
     _ ⊑ G.map ((moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R)) ≫ zip I.t ≫ N.map I.α :=
+          ≫ N.map (bigUnion (A := I.t))) ≫ N.map (est R)) ≫ zip I.t ≫ N.map I.α :=
         comp_mono_right (G.map_mono hinner) _
     _ = G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t)))
+          ≫ N.map (bigUnion (A := I.t)))
           ≫ (G.map (N.map (est R)) ≫ zip I.t) ≫ N.map I.α := by
         rw [G.map_comp]; simp only [Cat.assoc]
     _ ⊑ G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t)))
+          ≫ N.map (bigUnion (A := I.t)))
           ≫ (zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R))) ≫ N.map I.α :=
         comp_mono_left _ (comp_mono_right hzip _)
     _ = G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t)))
+          ≫ N.map (bigUnion (A := I.t)))
           ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R)) ≫ N.map I.α := by
         simp only [Cat.assoc]
     _ ⊑ G.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
-          ≫ N.map (bigUnion (a := I.t)))
+          ≫ N.map (bigUnion (A := I.t)))
           ≫ zip (PowerAllegory.powerObj I.t)
           ≫ N.map (cpMap H I.t ≫ existsImage I.α) ≫ N.map (est R) :=
         comp_mono_left _ (comp_mono_left _ houter)

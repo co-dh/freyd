@@ -31,8 +31,8 @@ namespace Freyd.Alg
     `Y = {(0,q),(1,r)}`.  `X` and `Y` are monotone, but `X ∩ Y = {(1,r)}` is not: `Ta ≫ (X∩Y)`
     relates `0` to `r` while `(X∩Y) ≫ Tb` relates `0` to nothing. -/
 public theorem inter_not_monotonic :
-    ∃ (a b : OrdObj RelSet.{0}) (X Y : MonoHom a b),
-      ¬ (a.ord ≫ (X.val ∩ Y.val) ⊑ (X.val ∩ Y.val) ≫ b.ord) := by
+    ∃ (A B : OrdObj RelSet.{0}) (X Y : MonoHom A B),
+      ¬ (A.ord ≫ (X.val ∩ Y.val) ⊑ (X.val ∩ Y.val) ≫ B.ord) := by
   refine ⟨⟨⟨Bool⟩, fun x y => x = false ∧ y = true⟩, ordMerge,
     ⟨fun x y => y = cond x (some true) none, ?_⟩,
     ⟨fun x y => y = cond x (some true) (some false), ?_⟩, ?_⟩
@@ -53,9 +53,9 @@ public theorem inter_not_monotonic :
     `(T×T) ≫ merge` (take `p→r` and `q→r`, both landing on `r`) but not in `merge ≫ T`, which
     already needs `p=q`.  Contrast `pair_slides` at `𝟙`, the lax copy law, which holds. -/
 public theorem merge_not_monotonic :
-    ∃ (a : OrdObj RelSet.{0}) (merge : (relProd a.carrier a.carrier).p ⟶ a.carrier),
-      ¬ (prodMap (relProd a.carrier a.carrier) (relProd a.carrier a.carrier) a.ord a.ord ≫ merge
-          ⊑ merge ≫ a.ord) := by
+    ∃ (A : OrdObj RelSet.{0}) (merge : (relProd A.carrier A.carrier).p ⟶ A.carrier),
+      ¬ (prodMap (relProd A.carrier A.carrier) (relProd A.carrier A.carrier) A.ord A.ord ≫ merge
+          ⊑ merge ≫ A.ord) := by
   refine ⟨ordMerge, fun x z => x.1 = z ∧ x.2 = z, ?_⟩
   intro h
   rw [RelSet.prodMap_eq_rprodMap] at h
@@ -75,8 +75,8 @@ public theorem merge_not_monotonic :
   for a counterexample. -/
 
 /-- `Δ`'s action is the pointwise `R×R` — `prodMap_eq_rprodMap` read at a pair of points. -/
-private theorem delta_map_apply {a b : RelSet.{0}} (R : a ⟶ b)
-    (p : a.carrier × a.carrier) (q : b.carrier × b.carrier) :
+private theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
+    (p : A.carrier × A.carrier) (q : B.carrier × B.carrier) :
     (Δ RelSet.{0}).map R p q ↔ (R p.1 q.1 ∧ R p.2 q.2) := by
   rw [show (Δ RelSet.{0}).map R = RelSet.rprodMap R R from RelSet.prodMap_eq_rprodMap R R]
   exact Iff.rfl
@@ -91,10 +91,10 @@ private theorem delta_map_apply {a b : RelSet.{0}} (R : a ⟶ b)
     `false = true`.  The step that fails is the last one of `union_slides`'s calculation:
     `(π₁ ≫ R) ∩ (π₂ ≫ R) ⊑ (π₁ ∩ π₂) ≫ R` is semi-distributivity BACKWARDS. -/
 public theorem laxNatural_inter_false :
-    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ a, G.obj a ⟶ F.obj a),
-      LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun a => φ a ∩ ψ a) := by
-  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun a => (relProd a a).outl,
-    fun a => (relProd a a).outr, outl_lax_natural, outr_lax_natural, ?_⟩
+    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ A, G.obj A ⟶ F.obj A),
+      LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) := by
+  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
+    fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural, ?_⟩
   intro h
   let R : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ y => y = false
   obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
@@ -108,9 +108,9 @@ public theorem laxNatural_inter_false :
     `false`, which `π₂°` pairs with any first component — but not in `π₂° ≫ (R×R)`, which must
     fire `R` on the FIRST component too and so can only reach `false` there. -/
 public theorem recip_not_laxNatural :
-    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ a, G.obj a ⟶ F.obj a),
-      LaxNatural F G φ ∧ ¬ LaxNatural G F (fun a => (φ a)°) := by
-  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun a => (relProd a a).outr,
+    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A),
+      LaxNatural F G φ ∧ ¬ LaxNatural G F (fun A => (φ A)°) := by
+  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outr,
     outr_lax_natural, ?_⟩
   intro h
   let R : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ y => y = false
@@ -123,10 +123,10 @@ public theorem recip_not_laxNatural :
     can, and at `R = ⊤ : 1 ⟶ Bool` the pair `((∗,∗),∗)` lies in `(R×R) ≫ φ Bool` — route the two
     components to `false` and to `true` — but not in `φ 1`, where `∗ = ∗`. -/
 public theorem laxOnMaps_not_laxNatural :
-    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ a, G.obj a ⟶ F.obj a),
+    ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A),
       LaxOnMaps F G φ ∧ ¬ LaxNatural F G φ := by
   refine ⟨Relator.const (⟨Unit⟩ : RelSet.{0}), Δ RelSet.{0}, fun _ p _ => p.1 ≠ p.2, ?_, ?_⟩
-  · intro a b f hf
+  · intro A B f hf
     refine RelSet.le_iff.mpr ?_
     rintro p u ⟨q, hq, hne⟩
     obtain ⟨h1, h2⟩ := (delta_map_apply f p q).mp hq
@@ -153,12 +153,12 @@ public theorem laxOnMaps_not_laxNatural :
     — while `(S×S) ≫ outr` must fire `S` on the FIRST component too, and `S` is empty at
     `false`. -/
 public theorem hcomp_inner_first_ne_outer_first :
-    ∃ (F G K L : Relator RelSet.{0} RelSet.{0}) (φ : ∀ a, G.obj a ⟶ F.obj a)
-      (χ : ∀ b, L.obj b ⟶ K.obj b), LaxNatural F G φ ∧ LaxNatural K L χ ∧
-      (fun a => L.map (φ a) ≫ χ (F.obj a)) ≠ (fun a => χ (G.obj a) ≫ K.map (φ a)) := by
+    ∃ (F G K L : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A)
+      (χ : ∀ B, L.obj B ⟶ K.obj B), LaxNatural F G φ ∧ LaxNatural K L χ ∧
+      (fun A => L.map (φ A) ≫ χ (F.obj A)) ≠ (fun A => χ (G.obj A) ≫ K.map (φ A)) := by
   refine ⟨Relator.const (⟨Bool⟩ : RelSet.{0}), Relator.const (⟨Bool⟩ : RelSet.{0}),
     Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun _ x _ => x = true,
-    fun b => (relProd b b).outr,
+    fun B => (relProd B B).outr,
     fun _ => by show 𝟙 _ ≫ _ ⊑ _ ≫ 𝟙 _; rw [Cat.id_comp, Cat.comp_id]; exact le_refl _,
     outr_lax_natural, ?_⟩
   intro h
@@ -211,7 +211,7 @@ public theorem outr_not_strictNatural :
         (fun _ _ => False) (𝟙 (⟨Unit⟩ : RelSet.{0}))
       ≫ (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
       = (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr ≫ 𝟙 (⟨Unit⟩ : RelSet.{0}) :=
-    hstrict (a := ⟨Unit⟩) (b := ⟨Unit⟩) (fun _ _ => False)
+    hstrict (A := ⟨Unit⟩) (B := ⟨Unit⟩) (fun _ _ => False)
   have hne : ((relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
       ≫ 𝟙 (⟨Unit⟩ : RelSet.{0})) ((), ()) () := ⟨(), rfl, rfl⟩
   rw [← heq] at hne
@@ -226,8 +226,8 @@ public theorem outr_not_strictNatural :
 /-- `Rel(Set)`'s ONE-element object is not terminal — an arrow `a ⟶ 1` is a subset of `a`, not a
     single arrow — but the EMPTY object is, here and in `Rel(Set)` itself: any two relations
     `a ⟶ ∅` are equal by `funext`, and the monotonicity side condition is vacuous. -/
-public theorem ordEmpty_terminal (a : OrdObj RelSet.{0}) :
-    ∃ X : MonoHom a ordEmpty, ∀ Y : MonoHom a ordEmpty, Y = X :=
+public theorem ordEmpty_terminal (A : OrdObj RelSet.{0}) :
+    ∃ X : MonoHom A ordEmpty, ∀ Y : MonoHom A ordEmpty, Y = X :=
   ⟨⟨fun _ y => y.elim, RelSet.le_iff.mpr fun _ y => y.elim⟩,
    fun _ => Subtype.ext (funext fun _ => funext fun y => y.elim)⟩
 
@@ -270,9 +270,9 @@ public theorem ordEmpty_terminal (a : OrdObj RelSet.{0}) :
 /-- Over `UnitAlleg` EVERY family is lax natural: the one arrow is the identity, both relators
     send it to an identity, and the inequation collapses to `φ ⊑ φ`. -/
 public theorem unitAlleg_laxNatural {F G : Relator UnitAlleg RelSet.{0}}
-    (φ : ∀ a : UnitAlleg, G.obj a ⟶ F.obj a) : LaxNatural F G φ := by
-  intro a b R
-  rw [show G.map R = 𝟙 (G.obj a) from G.map_id a, show F.map R = 𝟙 (F.obj a) from F.map_id a,
+    (φ : ∀ A : UnitAlleg, G.obj A ⟶ F.obj A) : LaxNatural F G φ := by
+  intro A B R
+  rw [show G.map R = 𝟙 (G.obj A) from G.map_id A, show F.map R = 𝟙 (F.obj A) from F.map_id A,
     Cat.id_comp, Cat.comp_id]
   exact le_refl _
 
@@ -402,7 +402,7 @@ public theorem relSetEmpty_zero :
   `est(R)`-reaches into the output") already fails at the member `∅`, which has no `est`: one
   uncovered member empties `P(est(R))` at `xss`, hence empties `P(est(R)) est(R)` there. -/
 public theorem powerRel_est_lt_bigUnion :
-    ∃ (a : RelSet.{0}) (R : a ⟶ a), 𝟙 a ⊑ R ∧ R ≫ R ⊑ R ∧
+    ∃ (A : RelSet.{0}) (R : A ⟶ A), 𝟙 A ⊑ R ∧ R ≫ R ⊑ R ∧
       ¬ (bigUnion ≫ est R ⊑ powerRel (est R) ≫ est R) := by
   refine ⟨⟨Unit⟩, 𝟙 _, le_refl _, ?_, ?_⟩
   · rw [Cat.id_comp]; exact le_refl _

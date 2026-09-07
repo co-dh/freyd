@@ -64,8 +64,8 @@ public theorem id_le_pi2_lenLE_cons :
 
 /-! ### Pointwise unfolds of `S` -/
 
-theorem Salg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    Salg p (Sum.inl d) ws ↔ ws = [] := by
+theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 /-- `S`'s cons branch `π₂ ∪ (p×𝟙) cons` at `(x,c)`: drop the head, or keep a passing one. -/
@@ -94,7 +94,7 @@ theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
 public theorem filter_alg_comm (p : E → Bool) :
     (initial Unit E).α ≫ (subseq ≫ listP p)
       = (F Unit E).map (subseq ≫ listP p) ≫ Salg p := by
-  refine (cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩
+  refine (cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩
   · constructor
     · rintro ⟨ys, hs, hl⟩
       cases ys with
@@ -141,12 +141,12 @@ public theorem filter_mono (p : E → Bool) :
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hws : ws = [] := (Salg_inl p d' ws).mp hS
           subst hws
-          exact ⟨[], (Salg_inl p d []).mpr rfl, Nat.le_refl 0⟩
+          exact ⟨[], (Salg_inl p D []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       obtain ⟨x, c⟩ := q
@@ -194,15 +194,15 @@ public theorem filter_step (p : E → Bool) :
   apply hom_ext; intro u ws
   rw [Λ_comp_est_apply]
   cases u with
-  | inl d =>
+  | inl D =>
       constructor
       · rintro ⟨hS, -⟩
-        exact (Salg_inl p d ws).mp hS
+        exact (Salg_inl p D ws).mp hS
       · intro h0
         have hws : ws = [] := h0
         subst hws
-        refine ⟨(Salg_inl p d []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p d z).mp hz
+        refine ⟨(Salg_inl p D []).mpr rfl, fun z hz => ?_⟩
+        have hz' : z = [] := (Salg_inl p D z).mp hz
         subst hz'
         exact Nat.le_refl 0
   | inr q =>
@@ -244,7 +244,7 @@ public theorem filter_step (p : E → Bool) :
   | ConsList.wrap _ => []
   | ConsList.cons x xs => fStep p x (filtCL p xs)
 
-theorem filtCL_wrap (p : E → Bool) (d : Unit) : filtCL p (ConsList.wrap d) = [] := rfl
+theorem filtCL_wrap (p : E → Bool) (D : Unit) : filtCL p (ConsList.wrap D) = [] := rfl
 
 theorem filtCL_cons (p : E → Bool) (x : E) (t : ConsList Unit E) :
     filtCL p (ConsList.cons x t) = fStep p x (filtCL p t) := rfl
@@ -290,7 +290,7 @@ theorem sub_eq_of_length : ∀ {a b : List E}, Sub a b → b.length ≤ a.length
 /-- Achievability: `filtCL p u` is itself a `p`-passing subsequence of the list `u` carries. -/
 public theorem filt_sound (p : E → Bool) :
     ∀ u : ConsList Unit E, (subseq ≫ listP p) u (filtCL p u)
-  | ConsList.wrap d => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p d)⟩
+  | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p D)⟩
   | ConsList.cons x t => by
       obtain ⟨ys, hs, hl⟩ := filt_sound p t
       rw [filtCL_cons]
@@ -305,7 +305,7 @@ public theorem filt_sound (p : E → Bool) :
     that drops a passing element is beaten by the one that keeps it. -/
 public theorem filt_best (p : E → Bool) :
     ∀ (u : ConsList Unit E) (ws : List E), (subseq ≫ listP p) u ws → Sub ws (filtCL p u)
-  | ConsList.wrap d, ws, ⟨ys, hs, hl⟩ => by
+  | ConsList.wrap D, ws, ⟨ys, hs, hl⟩ => by
       cases ys with
       | wrap v =>
           have hws : ws = [] := (listPAlg_inl p v ws).mp hl

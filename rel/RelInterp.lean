@@ -83,9 +83,9 @@ structure FinObj : Type where
   card : Nat
 
 instance : Cat FinObj where
-  Hom a b := Fin a.card → Fin b.card → Bool
+  Hom A B := Fin A.card → Fin B.card → Bool
   id _ := fun x y => decide (x = y)
-  comp {a b c} R S := fun x z => anyFin b.card fun y => R x y && S y z
+  comp {A B C} R S := fun x z => anyFin B.card fun y => R x y && S y z
   id_comp R := bool_fun_ext fun x z => by
     constructor
     · intro h
@@ -119,11 +119,11 @@ instance : Cat FinObj where
       exact anyFin_iff.mpr ⟨y, Bool.and_eq_true_iff.mpr
         ⟨anyFin_iff.mpr ⟨z, Bool.and_eq_true_iff.mpr ⟨hR, hS⟩⟩, hT⟩⟩
 
-@[simp] theorem comp_apply {a b c : FinObj} (R : a ⟶ b) (S : b ⟶ c) (x : Fin a.card)
-    (z : Fin c.card) : (R ≫ S) x z = anyFin b.card (fun y => R x y && S y z) := rfl
+@[simp] theorem comp_apply {A B C : FinObj} (R : A ⟶ B) (S : B ⟶ C) (x : Fin A.card)
+    (z : Fin C.card) : (R ≫ S) x z = anyFin B.card (fun y => R x y && S y z) := rfl
 
-@[simp] theorem id_apply {a : FinObj} (x y : Fin a.card) :
-    (Cat.id a : a ⟶ a) x y = decide (x = y) := rfl
+@[simp] theorem id_apply {A : FinObj} (x y : Fin A.card) :
+    (Cat.id A : A ⟶ A) x y = decide (x = y) := rfl
 
 private theorem bool_absorb₁ : ∀ a b : Bool, (a || (b && a)) = a := by decide
 private theorem bool_absorb₂ : ∀ a b : Bool, ((a || b) && a) = a := by decide
@@ -168,14 +168,14 @@ instance : Allegory FinObj where
     · intro h
       exact (Bool.and_eq_true_iff.mp h).1
 
-@[simp] theorem recip_apply {a b : FinObj} (R : a ⟶ b) (y : Fin b.card) (x : Fin a.card) :
+@[simp] theorem recip_apply {A B : FinObj} (R : A ⟶ B) (y : Fin B.card) (x : Fin A.card) :
     R° y x = R x y := rfl
 
-@[simp] theorem inter_apply {a b : FinObj} (R S : a ⟶ b) (x : Fin a.card) (y : Fin b.card) :
+@[simp] theorem inter_apply {A B : FinObj} (R S : A ⟶ B) (x : Fin A.card) (y : Fin B.card) :
     (R ∩ S) x y = (R x y && S x y) := rfl
 
 /-- The allegory order in `FinRel` is pointwise Boolean implication. -/
-theorem le_iff {a b : FinObj} {R S : a ⟶ b} :
+theorem le_iff {A B : FinObj} {R S : A ⟶ B} :
     R ⊑ S ↔ ∀ x y, R x y = true → S x y = true := by
   constructor
   · intro h x y hR
@@ -227,12 +227,12 @@ instance : DistributiveAllegory FinObj :=
       Bool.and_or_distrib_left _ _ _
     zero_union := fun R => funext fun x => funext fun y => Bool.false_or _ }
 
-@[simp] theorem union_apply {a b : FinObj} (R S : a ⟶ b) (x : Fin a.card) (y : Fin b.card) :
+@[simp] theorem union_apply {A B : FinObj} (R S : A ⟶ B) (x : Fin A.card) (y : Fin B.card) :
     (R ∪ S) x y = (R x y || S x y) := rfl
 
 instance : DivisionAllegory FinObj :=
   { (inferInstance : DistributiveAllegory FinObj) with
-    div := fun {a b c} R S => fun x y => allFin c.card fun z => !(S y z) || R x z
+    div := fun {A B C} R S => fun x y => allFin C.card fun z => !(S y z) || R x z
     div_comp_le := fun R S => le_iff.mpr fun x z h => by
       obtain ⟨y, hy⟩ := anyFin_iff.mp h
       obtain ⟨hdiv, hS⟩ := Bool.and_eq_true_iff.mp hy
@@ -241,17 +241,17 @@ instance : DivisionAllegory FinObj :=
       allFin_iff.mpr fun z => impB_iff.mpr fun hS =>
         le_iff.mp h x z (anyFin_iff.mpr ⟨y, Bool.and_eq_true_iff.mpr ⟨hT, hS⟩⟩) }
 
-@[simp] theorem div_apply {a b c : FinObj} (R : a ⟶ c) (S : b ⟶ c) (x : Fin a.card)
-    (y : Fin b.card) :
-    (DivisionAllegory.div R S) x y = allFin c.card (fun z => !(S y z) || R x z) := rfl
+@[simp] theorem div_apply {A B C : FinObj} (R : A ⟶ C) (S : B ⟶ C) (x : Fin A.card)
+    (y : Fin B.card) :
+    (DivisionAllegory.div R S) x y = allFin C.card (fun z => !(S y z) || R x z) := rfl
 
 /-! ## Power objects: subsets of `Fin n` coded as the bits of a number `< 2^n` -/
 
 /-- The power object `[a]`: subsets of `Fin card` as bit-codes in `Fin (2^card)`. -/
-def pow (a : FinObj) : FinObj := ⟨2 ^ a.card⟩
+def pow (A : FinObj) : FinObj := ⟨2 ^ A.card⟩
 
 /-- EXECUTABLE membership `∋ : [a] ⟶ a` — bit `y` of the code `P`. -/
-def epsB (a : FinObj) : pow a ⟶ a := fun P y => P.val.testBit y.val
+def epsB (A : FinObj) : pow A ⟶ A := fun P y => P.val.testBit y.val
 
 /-- Encode a predicate on `Fin n` as a number `< 2^n` (little-endian bits). -/
 def encNat : (n : Nat) → (Fin n → Bool) → Nat
@@ -289,18 +289,18 @@ theorem encNat_testBit : ∀ (n : Nat) (f : Fin n → Bool) (i : Fin n),
     exact encNat_testBit n (fun j => f j.succ) ⟨i, Nat.lt_of_succ_lt_succ hi⟩
 
 /-- The graph of a function as an executable relation (cf. `RelSet.graph`). -/
-def graphB {a b : FinObj} (f : Fin a.card → Fin b.card) : a ⟶ b := fun x y => decide (y = f x)
+def graphB {A B : FinObj} (f : Fin A.card → Fin B.card) : A ⟶ B := fun x y => decide (y = f x)
 
-theorem graphB_map {a b : FinObj} (f : Fin a.card → Fin b.card) : Map (graphB f) := by
+theorem graphB_map {A B : FinObj} (f : Fin A.card → Fin B.card) : Map (graphB f) := by
   refine ⟨?_, ?_⟩
   · -- Entire: dom (graphB f) = 1
-    show dom (graphB f) = Cat.id a
+    show dom (graphB f) = Cat.id A
     refine bool_fun_ext fun x x' => ⟨fun h => (Bool.and_eq_true_iff.mp h).1, fun h => ?_⟩
     refine Bool.and_eq_true_iff.mpr ⟨h, anyFin_iff.mpr ⟨f x, Bool.and_eq_true_iff.mpr
       ⟨decide_eq_true_iff.mpr rfl, decide_eq_true_iff.mpr ?_⟩⟩⟩
     rw [decide_eq_true_iff.mp h]
   · -- Simple: single-valued
-    show (graphB f)° ≫ graphB f ⊑ Cat.id b
+    show (graphB f)° ≫ graphB f ⊑ Cat.id B
     refine le_iff.mpr fun y y' h => ?_
     obtain ⟨x, hx⟩ := anyFin_iff.mp h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp hx
@@ -308,14 +308,14 @@ theorem graphB_map {a b : FinObj} (f : Fin a.card → Fin b.card) : Map (graphB 
       ((decide_eq_true_iff.mp h1).trans (decide_eq_true_iff.mp h2).symm)
 
 /-- `∋` is straight: bit-codes with the same members are equal (`Nat.eq_of_testBit_eq`). -/
-theorem epsB_straight (b : FinObj) : Straight (epsB b) := by
-  show (epsB b /ₛ epsB b) ⊑ Cat.id (pow b)
+theorem epsB_straight (B : FinObj) : Straight (epsB B) := by
+  show (epsB B /ₛ epsB B) ⊑ Cat.id (pow B)
   rw [le_iff]
   intro P Q h
   obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp h
   -- h1 : Q ⊆ P (right division), h2 : P ⊆ Q (converse leg)
   refine decide_eq_true_iff.mpr (Fin.ext (Nat.eq_of_testBit_eq fun i => ?_))
-  match Nat.decLt i b.card with
+  match Nat.decLt i B.card with
   | .isTrue hi =>
     have hQP := impB_iff.mp (allFin_iff.mp h1 ⟨i, hi⟩)
     have hPQ := impB_iff.mp (allFin_iff.mp h2 ⟨i, hi⟩)
@@ -328,20 +328,20 @@ theorem epsB_straight (b : FinObj) : Straight (epsB b) := by
     rw [hP, hQ]
 
 /-- `∋` is thick: every relation is classified by the graph of its encoded image. -/
-theorem epsB_thick {b c : FinObj} (R : c ⟶ b) :
-    ∃ f : c ⟶ pow b, Map f ∧ f ≫ epsB b = R := by
-  refine ⟨graphB (fun x => ⟨encNat b.card (fun v => R x v), encNat_lt _ _⟩), graphB_map _, ?_⟩
+theorem epsB_thick {B C : FinObj} (R : C ⟶ B) :
+    ∃ f : C ⟶ pow B, Map f ∧ f ≫ epsB B = R := by
+  refine ⟨graphB (fun x => ⟨encNat B.card (fun v => R x v), encNat_lt _ _⟩), graphB_map _, ?_⟩
   refine bool_fun_ext fun x v => ⟨fun h => ?_, fun h => ?_⟩
   · obtain ⟨P, hP⟩ := anyFin_iff.mp h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp hP
     rw [decide_eq_true_iff.mp h1] at h2
-    have h2' : (encNat b.card (fun v => R x v)).testBit v.val = true := h2
-    rw [encNat_testBit b.card (fun v => R x v) v] at h2'
+    have h2' : (encNat B.card (fun v => R x v)).testBit v.val = true := h2
+    rw [encNat_testBit B.card (fun v => R x v) v] at h2'
     exact h2'
-  · refine anyFin_iff.mpr ⟨⟨encNat b.card (fun v => R x v), encNat_lt _ _⟩,
+  · refine anyFin_iff.mpr ⟨⟨encNat B.card (fun v => R x v), encNat_lt _ _⟩,
       Bool.and_eq_true_iff.mpr ⟨decide_eq_true_iff.mpr rfl, ?_⟩⟩
-    show (encNat b.card (fun v => R x v)).testBit v.val = true
-    rw [encNat_testBit b.card (fun v => R x v) v]
+    show (encNat B.card (fun v => R x v)).testBit v.val = true
+    rw [encNat_testBit B.card (fun v => R x v) v]
     exact h
 
 /-- `FinRel` is a POWER ALLEGORY — so all `∋`/`Λ` laws hold of the executable model too. -/
@@ -361,23 +361,23 @@ instance : PowerAllegory FinObj :=
 /-- Relation-algebra expressions over `FinRel`, indexed by source and target object. -/
 inductive RE : FinObj → FinObj → Type where
   /-- Ground data: a finite Boolean relation (the "database"). -/
-  | atom {a b : FinObj} (R : a ⟶ b) : RE a b
-  | id (a : FinObj) : RE a a
-  | comp {a b c : FinObj} : RE a b → RE b c → RE a c
-  | conv {a b : FinObj} : RE a b → RE b a
-  | meet {a b : FinObj} : RE a b → RE a b → RE a b
-  | join {a b : FinObj} : RE a b → RE a b → RE a b
-  | bot (a b : FinObj) : RE a b
-  | top (a b : FinObj) : RE a b
+  | atom {A B : FinObj} (R : A ⟶ B) : RE A B
+  | id (A : FinObj) : RE A A
+  | comp {A B C : FinObj} : RE A B → RE B C → RE A C
+  | conv {A B : FinObj} : RE A B → RE B A
+  | meet {A B : FinObj} : RE A B → RE A B → RE A B
+  | join {A B : FinObj} : RE A B → RE A B → RE A B
+  | bot (A B : FinObj) : RE A B
+  | top (A B : FinObj) : RE A B
   /-- Right division `R/S` (§2.31). -/
-  | div {a b c : FinObj} : RE a c → RE b c → RE a b
+  | div {A B C : FinObj} : RE A C → RE B C → RE A B
   /-- Membership `∋ : [a] ⟶ a` (§2.41). -/
-  | eps (a : FinObj) : RE (pow a) a
+  | eps (A : FinObj) : RE (pow A) A
 
 /-- **The interpreter.**  Each constructor is evaluated by the corresponding operation of the
     PROVEN allegory instances above, so every consequence of the allegory axioms holds of the
     results by construction — soundness is free.  Total and executable. -/
-def eval : {a b : FinObj} → RE a b → (a ⟶ b)
+def eval : {A B : FinObj} → RE A B → (A ⟶ B)
   | _, _, .atom R => R
   | _, _, .id a => Cat.id a
   | _, _, .comp e f => eval e ≫ eval f
@@ -391,42 +391,42 @@ def eval : {a b : FinObj} → RE a b → (a ⟶ b)
 
 /-! ### Soundness for free: the allegory laws hold of evaluated terms via the instances -/
 
-example {a b c : FinObj} (e : RE a b) (f : RE b c) :
+example {A B C : FinObj} (e : RE A B) (f : RE B C) :
     eval (.conv (.comp e f)) = eval (.comp (.conv f) (.conv e)) :=
   Allegory.recip_comp (eval e) (eval f)
 
-example {a b c : FinObj} (T : RE a b) (R : RE a c) (S : RE b c) :
+example {A B C : FinObj} (T : RE A B) (R : RE A C) (S : RE B C) :
     eval T ⊑ eval (.div R S) ↔ eval (.comp T S) ⊑ eval R :=
   le_div_iff (eval T) (eval R) (eval S)
 
-example {a : FinObj} : eval (.eps a) = ∋ a := rfl
+example {A : FinObj} : eval (.eps A) = ∋ A := rfl
 
 /-! ### The B&dM spec vocabulary as DERIVED syntax (book definitions verbatim) -/
 
 /-- Left division `S\R = (R°/S°)°` (§2.312, `Freyd.S2_3.leftDiv` verbatim). -/
-def leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) : RE b c :=
+def leftDivE {A B C : FinObj} (S : RE A B) (R : RE A C) : RE B C :=
   .conv (.div (.conv R) (.conv S))
 
 /-- Power transpose `Λ`: `Λ R = R /ₛ ∋ = (R/∋) ∩ ((∋/R)°)` (§2.331 + §2.41 verbatim). -/
-def AE {a b : FinObj} (R : RE a b) : RE a (pow b) :=
-  .meet (.div R (.eps b)) (.conv (.div (.eps b) R))
+def AE {A B : FinObj} (R : RE A B) : RE A (pow B) :=
+  .meet (.div R (.eps B)) (.conv (.div (.eps B) R))
 
 /-- The note's one extremum operator `est R = ∋ ∩ (∈\R°)` (`AOP.A7_1.est` verbatim). -/
-def estE {a : FinObj} (R : RE a a) : RE (pow a) a :=
-  .meet (.eps a) (leftDivE (.conv (.eps a)) (.conv R))
+def estE {A : FinObj} (R : RE A A) : RE (pow A) A :=
+  .meet (.eps A) (leftDivE (.conv (.eps A)) (.conv R))
 
 /-- The derived syntax means what the book means: `eval (leftDivE S R) = S\R`. -/
-theorem eval_leftDivE {a b c : FinObj} (S : RE a b) (R : RE a c) :
+theorem eval_leftDivE {A B C : FinObj} (S : RE A B) (R : RE A C) :
     eval (leftDivE S R) = leftDiv (eval S) (eval R) := rfl
 
 /-- `eval (AE R) = Λ(eval R)` — the §2.41 power transpose, on the nose. -/
-theorem eval_AE {a b : FinObj} (R : RE a b) : eval (AE R) = Λ (eval R) := rfl
+theorem eval_AE {A B : FinObj} (R : RE A B) : eval (AE R) = Λ (eval R) := rfl
 
 /-- `eval (estE R)` is `est R = ∋ ∩ (∈\R°)` (`AOP.A7_1.est`'s body, which is stated there
     under `UnguardedPowerLCDA`; `FinRel` has no computable arbitrary `Sup`, so we state the
     body directly). -/
-theorem eval_estE {a : FinObj} (R : RE a a) :
-    eval (estE R) = (∋ a ∩ leftDiv ((∋ a)°) ((eval R)°)) := rfl
+theorem eval_estE {A : FinObj} (R : RE A A) :
+    eval (estE R) = (∋ A ∩ leftDiv ((∋ A)°) ((eval R)°)) := rfl
 
 /-! ### Pointwise semantics of the spec vocabulary — the general TRANSPORT layer
 
@@ -439,10 +439,10 @@ theorem eval_estE {a : FinObj} (R : RE a a) :
   `rel.AutoDeriveSearch`, where LC 121's instance is chained to `L121.solve_correct`. -/
 
 /-- `Λ` pointwise: `Λ R` relates `x` to exactly the bit-code of its `R`-image. -/
-theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).card) :
-    Λ R x P = true ↔ ∀ v, epsB b P v = R x v := by
-  show (allFin b.card (fun v => !(epsB b P v) || R x v)
-     && allFin b.card (fun v => !(R x v) || epsB b P v)) = true ↔ _
+theorem Λ_apply {A B : FinObj} (R : A ⟶ B) (x : Fin A.card) (P : Fin (pow B).card) :
+    Λ R x P = true ↔ ∀ v, epsB B P v = R x v := by
+  show (allFin B.card (fun v => !(epsB B P v) || R x v)
+     && allFin B.card (fun v => !(R x v) || epsB B P v)) = true ↔ _
   constructor
   · intro h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp h
@@ -458,10 +458,10 @@ theorem Λ_apply {a b : FinObj} (R : a ⟶ b) (x : Fin a.card) (P : Fin (pow b).
 
 /-- `max` pointwise: `eval (estE d)` relates a bit-code `P` to `w` iff `w ∈ P` and `w`
     `d`-dominates every member of `P` (B&dM §7.1 `max D = min D°`, executably). -/
-theorem estE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin a.card) :
+theorem estE_apply {A : FinObj} (d : RE A A) (P : Fin (pow A).card) (w : Fin A.card) :
     eval (estE d) P w = true ↔
-      (epsB a P w = true ∧ ∀ z, epsB a P z = true → eval d w z = true) := by
-  show (epsB a P w && allFin a.card (fun z => !(epsB a P z) || eval d w z)) = true ↔ _
+      (epsB A P w = true ∧ ∀ z, epsB A P z = true → eval d w z = true) := by
+  show (epsB A P w && allFin A.card (fun z => !(epsB A P z) || eval d w z)) = true ↔ _
   constructor
   · intro h
     obtain ⟨h1, h2⟩ := Bool.and_eq_true_iff.mp h
@@ -473,11 +473,11 @@ theorem estE_apply {a : FinObj} (d : RE a a) (P : Fin (pow a).card) (w : Fin a.c
     `(x, v)` iff `v` is `e`-achievable from `x` and `d`-dominates every `e`-achievable value.
     The existential over `2^card` subset codes is discharged by the encoded image itself
     (`encNat`), so no powerset reasoning survives into the statement. -/
-theorem Λ_comp_est_apply {a b : FinObj} (e : RE a b) (d : RE b b)
-    (x : Fin a.card) (v : Fin b.card) :
+theorem Λ_comp_est_apply {A B : FinObj} (e : RE A B) (d : RE B B)
+    (x : Fin A.card) (v : Fin B.card) :
     eval (.comp (AE e) (estE d)) x v = true ↔
       (eval e x v = true ∧ ∀ z, eval e x z = true → eval d v z = true) := by
-  show anyFin (pow b).card (fun P => eval (AE e) x P && eval (estE d) P v) = true ↔ _
+  show anyFin (pow B).card (fun P => eval (AE e) x P && eval (estE d) P v) = true ↔ _
   constructor
   · intro h
     obtain ⟨P, hP⟩ := anyFin_iff.mp h
@@ -486,14 +486,14 @@ theorem Λ_comp_est_apply {a b : FinObj} (e : RE a b) (d : RE b b)
     obtain ⟨hmem, hdom⟩ := (estE_apply d P v).mp h2
     exact ⟨by rw [← hA v]; exact hmem, fun z hz => hdom z (by rw [hA z]; exact hz)⟩
   · rintro ⟨h1, h2⟩
-    refine anyFin_iff.mpr ⟨⟨encNat b.card (fun u => eval e x u), encNat_lt _ _⟩,
+    refine anyFin_iff.mpr ⟨⟨encNat B.card (fun u => eval e x u), encNat_lt _ _⟩,
       Bool.and_eq_true_iff.mpr ⟨?_, ?_⟩⟩
-    · exact (Λ_apply (eval e) x _).mpr fun u => encNat_testBit b.card (fun u => eval e x u) u
+    · exact (Λ_apply (eval e) x _).mpr fun u => encNat_testBit B.card (fun u => eval e x u) u
     · refine (estE_apply d _ v).mpr ⟨?_, fun z hz => h2 z ?_⟩
-      · show (encNat b.card (fun u => eval e x u)).testBit v.val = true
-        rw [encNat_testBit b.card (fun u => eval e x u) v]; exact h1
-      · have hz' : (encNat b.card (fun u => eval e x u)).testBit z.val = true := hz
-        rw [encNat_testBit b.card (fun u => eval e x u) z] at hz'; exact hz'
+      · show (encNat B.card (fun u => eval e x u)).testBit v.val = true
+        rw [encNat_testBit B.card (fun u => eval e x u) v]; exact h1
+      · have hz' : (encNat B.card (fun u => eval e x u)).testBit z.val = true := hz
+        rw [encNat_testBit B.card (fun u => eval e x u) z] at hz'; exact hz'
 
 
 /-! ## Demo 4 — the DERIVED PROGRAM run by STRUCTURAL FOLD (polynomial, NO powerset)
