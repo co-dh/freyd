@@ -258,4 +258,11 @@ public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
 
 end PowerCalculus
 
+-- Printing-only: B&dM's `E R`, with the bracket the note puts round an operator's argument
+-- (`E(R)`) — the term itself carries none, so it has to be in the syntax the printer emits.
+open Lean PrettyPrinter in
+@[app_unexpander existsImage] public meta def unexpandExistsImage : Unexpander
+  | `($_ $R) => `($(mkIdent `E) ($R))
+  | _ => throw ()
+
 end Freyd.Alg

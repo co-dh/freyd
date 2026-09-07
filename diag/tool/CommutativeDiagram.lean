@@ -75,48 +75,29 @@ def plain (e : Expr) : MetaM String := do
     |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
-/-- A single NAME — one run of letters and digits.  That is what decides a bracket: brackets exist
-    to stop a compound reading as a composite, and a name cannot be one. -/
-def isName (s : String) : Bool :=
-  s.length == 1 || (!s.isEmpty && s.all fun c => c.isAlphanum || c == '_' || c == '\'')
+/-- The note's SPACING, and nothing else.  Lean's formatter always sets an application's argument
+    off from its head (`F T`, `E A`, `E (R)`) and an infix off from its operands (`A × B`,
+    `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched, it is what the
+    `app_unexpander` beside the constant already printed. -/
+def tight (e : Expr) : MetaM String := do return (← plain e).replace " " ""
 
-/-- A picture label.  Every SPELLING comes from an unexpander beside the constant, through `plain`;
-    what no unexpander can say is the note's SPACING, because Lean's formatter always sets an
-    application's argument off with a space where the note sets it against the head.  So the
-    applications a picture writes TIGHT are here, and only those: a relator's action on an OBJECT is
-    bare when the object is a single name (`FT`, `EA`) and bracketed otherwise (`F(A×B)`), its
-    action on an ARROW always bracketed (`F(⦇f⦈)`, `E(R)`), and the product and the fork close up
-    (`A×B`, `⟨⦇h⦈,⦇k⦈⟩`).  A node already says which object an operator is taken at, so `∋ b` and
-    `π₁` drop theirs. -/
+/-- The heads the note sets tight: a relator's action on an object, the power object and the
+    existential image, the product and the fork.  A head not listed keeps the formatter's spacing
+    (`T R`, `α A`), which is what the note draws for those. -/
+def tightHeads : Array Name :=
+  #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj, ``Freyd.Alg.existsImage,
+    ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair]
+
+/-- A picture label: `plain`'s spelling, closed up where the note closes it, plus the ONE bracket no
+    term carries — a relator's action on an ARROW (`F(⦇R⦈)`, `F(⟨f,g⟩)`), where the bracket is the
+    note's way of saying the argument is applied and not composed. -/
 partial def label (e : Expr) : MetaM String := do
-  let obj (x : Expr) : MetaM String := do
-    let s ← label x; return if isName s then s else "(" ++ s ++ ")"
   match e.getAppFnArgs with
-  | (``Freyd.Alg.PowerAllegory.eps, _) => return "∋"
-  | (``Freyd.HasBinaryProducts.fst, _) => return "π₁"
-  | (``Freyd.HasBinaryProducts.snd, _) => return "π₂"
-  | (``Freyd.Alg.singletonMap, _) => return "𝟙%∋"
-  | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
-    match args.back? with | some a => return "E" ++ (← obj a) | none => plain e
-  | (``Freyd.Alg.existsImage, args) =>
-    match args.back? with | some r => return "E(" ++ (← label r) ++ ")" | none => plain e
-  | (``Freyd.HasBinaryProducts.prod, args) =>
-    match StrDiag.lastTwo args with
-    | some (a, b) => return (← label a) ++ "×" ++ (← label b)
-    | none => plain e
-  | (``Freyd.HasBinaryProducts.pair, args) =>
-    match StrDiag.lastTwo args with
-    | some (f, g) => return "⟨" ++ (← label f) ++ "," ++ (← label g) ++ "⟩"
-    | none => plain e
-  | (``Freyd.Functor.obj, args) =>
-    match StrDiag.lastTwo args with
-    | some (f, x) => return (← label f) ++ (← obj x)
-    | none => plain e
   | (``Freyd.Functor.map, _) =>
     match StrDiag.functorMap? e with
     | some (f, r) => return (← label f) ++ "(" ++ (← label r) ++ ")"
     | none => plain e
-  | _ => plain e
+  | (c, _) => if tightHeads.contains c then tight e else plain e
 
 /-- Every `.lean` file under `dir`, as module names below `pre` — the exe imports one environment
     holding all of them and draws every name on the command line from it. -/

@@ -1511,4 +1511,20 @@ theorem pre_positive_well_joined_equiv {𝒜 : Type u} [PrePositivePowerAllegory
 -- intersections. Then any cocartesian functor T : C → S is everywhere empty (T = ∅).
 -- (Needs: logos/topos functors, cocartesian, ultra-filters; not in repo.)
 
+/-! ### Printing -/
+
+/-- The note's spelling of the singleton `Λ(𝟙)` (§2.415): the fraction with the identity over `∋`. -/
+notation:max "𝟙%∋" => singletonMap
+
+-- Printing-only: `∋` is taken at the object its target already names, so a label repeats nothing by
+-- dropping the argument; `E` is the power object's own letter.  No statement changes.
+open Lean PrettyPrinter in
+@[app_unexpander PowerAllegory.eps] public meta def unexpandEps : Unexpander
+  | _ => `(∋)
+
+open Lean PrettyPrinter in
+@[app_unexpander PowerAllegory.powerObj] public meta def unexpandPowerObj : Unexpander
+  | `($_ $A) => `($(mkIdent `E) $A)
+  | _ => throw ()
+
 end Freyd.Alg

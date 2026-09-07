@@ -326,4 +326,27 @@ public theorem pair_precomp {𝒞 : Type u} [Cat.{v} 𝒞] [HasBinaryProducts �
   pair_uniq (g ≫ a) (g ≫ b) (g ≫ pair a b)
     (by rw [Cat.assoc, fst_pair]) (by rw [Cat.assoc, snd_pair])
 
+/-! ### Printing -/
+
+-- Printing-only unexpanders: §1.423's own spellings.  A projection is taken at the objects the
+-- reader already has in front of him, so `π₁`/`π₂` drop theirs; `⟨f,g⟩` and `A×B` are how the book
+-- writes the pairing and the product.  No statement and no `stmt_key` changes.
+open Lean PrettyPrinter in
+@[app_unexpander HasBinaryProducts.fst] public meta def unexpandFst : Unexpander
+  | _ => `($(mkIdent `π₁))
+
+open Lean PrettyPrinter in
+@[app_unexpander HasBinaryProducts.snd] public meta def unexpandSnd : Unexpander
+  | _ => `($(mkIdent `π₂))
+
+open Lean PrettyPrinter in
+@[app_unexpander HasBinaryProducts.prod] public meta def unexpandProd : Unexpander
+  | `($_ $A $B) => `($A × $B)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander HasBinaryProducts.pair] public meta def unexpandPair : Unexpander
+  | `($_ $f $g) => `(⟨$f, $g⟩)
+  | _ => throw ()
+
 end Freyd
