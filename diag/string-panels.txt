@@ -23,7 +23,7 @@
 -,-	7.2b/horner	tri(f)⦇g⦈ = ⦇F(𝟙,f)g⦈	# the display carries no marker of its own
 -,-,Freyd.Alg.InitialAlgebra.cata_comm.lhs,Freyd.Alg.InitialAlgebra.cata_comm.rhs	11.4a/initial-defn	f h = F(h)g = α⦇f⦈ = F(⦇f⦈)f	# the first two panels are the homomorphism square `f h = F(h)g`, which no declaration states on its own; `InitialAlgebra` named the STRUCTURE, which is no arrow. The last two are `cata_comm`, the same declaration @cata-defining's square is drawn from, and its binder is already the note's `f`.
 Freyd.Alg.relCata_alpha.lhs,Freyd.Alg.relCata_alpha.rhs	11.4.1a/cata-reflection	⦇α⦈ = 𝟙
--,-,-,-	11.4.2a/cata-fusion	R S = F(S)Q = ⦇R⦈S = ⦇Q⦈	# candidates: Freyd.Alg.relCata_fusion
+Freyd.Alg.relCata_fusion#h.lhs,Freyd.Alg.relCata_fusion#h.rhs,Freyd.Alg.relCata_fusion.lhs,Freyd.Alg.relCata_fusion.rhs	11.4.2a/cata-fusion	R S = F(S)Q = ⦇R⦈S = ⦇Q⦈	# the hypothesis and the conclusion, two sides each
 Freyd.Alg.alpha_natural.lhs,Freyd.Alg.alpha_natural.rhs	11.5.1b/tfun-sq	α T(f) = F(⟨𝟙,T⟩(f))α
 Freyd.Alg.typeMap_fusion.lhs,Freyd.Alg.typeMap_fusion.rhs	11.5.1c/tfun-fusion	T(f)⦇h⦈ = ⦇F(f,𝟙)h⦈
 Freyd.Alg.relCata_UP.lhs,Freyd.Alg.relCata_UP.rhs	11.6.1a/cata-defining	α X = F(X)f
