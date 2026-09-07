@@ -9,6 +9,7 @@ boxes and its arrows as the stroked paths between them.
 
   ./scripts/svg-check diag/generated/commutative/*.svg
   ./scripts/svg-check --ref diag/cdref.svg diag/generated/commutative/Foo.svg
+  ./scripts/svg-check --against diag/cdref.svg diag/generated/commutative/Foo.svg
 
 WHAT IS CHECKED
   reach   every arrow's two ends lie within 0.05cm of a node label's box grown by the note's gap,
@@ -18,16 +19,30 @@ WHAT IS CHECKED
   face    every edge label lies outside the polygon the nodes bound, and at most one label — the
           relation symbol — inside it: a face commutes unless marked, so an equation carries none
           (the note's own `<initial-defn>` square, `diag/cdref.typ`) and a lax face its `⊑`/`≤`.
+          A CHORD — the dashed arrow a pasted pair induces — cuts the polygon in two, and each half
+          is a face in its own right, so each holds at most one label.
   square  a four-node rectangle — a naturality square — has the note's own edge length and
           arrowhead, except where its labels are too wide to fit in that step, in which case it has
           exactly the step those labels need.
+
+  wiring  `--against <ref.svg>` only: the page is joined up as the reference is — same number of
+          diagrams, same nodes per diagram, and every arrow between the same two grid CELLS, dashed
+          where the reference's is.  Coordinates are deliberately absent: the note hand-places a
+          corner to fit a label of its own and writes its own letters, so `scripts/svg-diff`'s
+          primitive-by-primitive report never comes back empty against a generated panel and cannot
+          be a gate.  A wrong direction, a missing arrow and a missing dash survive here.
+
+`face`, `square` and `wiring` are about ONE diagram, so they run per connected component: a page may
+hold several, as `cdrow` does for a conjunction whose two faces share no edge.
 
 The reference numbers are `diag/cdref.typ`'s — the note's own `<initial-defn>` square, which is what
 `cdpanel` draws — read off its SVG; `--ref` re-derives them from a freshly compiled copy rather than
 trusting the constants below.
 """
 
+import itertools
 import math
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -36,13 +51,15 @@ PT = 72.0 / 2.54  # pt per cm
 
 # `diag/cdref.typ`, the note's own `<initial-defn>` square: `cetz.canvas(length: 0.8cm)` with its
 # corners 5.2 units apart across and 2.7 down, labels 10pt in a 4pt-inset box, and `ar`'s `">"` mark
-# at scale 0.5 — whose size is absolute, not scaled by the canvas length.  In points:
-NOTESQ = dict(stepx=5.2 * 0.8 * PT, stepy=2.7 * 0.8 * PT, mark=2.8346457, markw=2.1259842)
+# at scale 0.5 — whose size is absolute, not scaled by the canvas length — measured along its OWN
+# axis by `caliper`, since a mark on a diagonal or bowed arrow is turned.  In points:
+NOTESQ = dict(stepx=5.2 * 0.8 * PT, stepy=2.7 * 0.8 * PT, mark=3.0273683, markw=1.9906052)
 # `cdpanel.typ`'s own constants, in points — the panel is drawn at `length: 0.8cm`.
 LGAP = 0.9 * 0.8 * PT
 GAP = 0.55 * 0.8 * PT  # the note's arrow shortening: how far a grown label box reaches
 TOL = 0.05 * PT        # 0.05cm
 EPS = 0.35             # a point of slack for the renderer's own rounding
+HEADNEAR = 3.0         # how far an arrowhead's box centre sits from the tip its arrow ends at
 
 
 # ---- transforms -------------------------------------------------------------------------------
@@ -151,8 +168,9 @@ def path_points(d):
 
 
 class Shape:
-    def __init__(self, pts, closed, fill, stroke):
+    def __init__(self, pts, closed, fill, stroke, dash=None):
         self.pts, self.closed, self.fill, self.stroke = pts, closed, fill, stroke
+        self.dash = bool(dash)
         xs = [p[0] for p in pts]
         ys = [p[1] for p in pts]
         self.box = (min(xs), min(ys), max(xs), max(ys))
@@ -180,7 +198,8 @@ def shapes_of(path):
         if node.tag.endswith("path") and node.get("d"):
             for pts, closed in path_points(node.get("d")):
                 out.append(Shape([apply(m, p) for p in pts], closed,
-                                 node.get("fill"), node.get("stroke")))
+                                 node.get("fill"), node.get("stroke"),
+                                 node.get("stroke-dasharray")))
         for kid in node:
             walk(kid, m)
 
@@ -258,6 +277,11 @@ def read_page(path):
             continue
         seen.append(c)
         free.append(f)
+    # AN ARROW IS A STROKE WITH A HEAD ON IT.  `ar` marks every one it draws, so a stroked path with
+    # no mark at either end is some other ink — a fraction bar in a label such as `<adj-E-bend>`'s
+    # `𝟙/∋`, a rule, an underline — and counted as an arrow it invents a wire the page has not got.
+    edges = [e for e in edges
+             if any(math.dist(h.centre, p) < HEADNEAR for h in heads for p in (e.pts[0], e.pts[-1]))]
     return nodes, free, edges, heads
 
 
@@ -265,22 +289,37 @@ def nearest(p, nodes):
     return min(range(len(nodes)), key=lambda i: dist_to_box(p, nodes[i].box))
 
 
-def cycle_of(nodes, edges):
-    """The region a face encloses.  With three nodes or more it is the polygon of node centres walked
-    in the order the arrows join them; with two it is the box the two arcs sweep, which is the only
-    region a pair of parallel arrows bounds.  `None` when the arrows are not one closed walk."""
-    if len(nodes) == 2:
-        xs = [p[0] for e in edges for p in e.pts]
-        ys = [p[1] for e in edges for p in e.pts]
-        return [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]
-    adj = {i: [] for i in range(len(nodes))}
-    for e in edges:
-        a, b = nearest(e.pts[0], nodes), nearest(e.pts[-1], nodes)
-        if a == b:
-            return None
+def components(nodes, edges):
+    """The page's separate diagrams.  A `cdrow` sets two panels side by side, and a statement about
+    ONE polygon says nothing about a page holding two."""
+    up = list(range(len(nodes)))
+
+    def find(i):
+        while up[i] != i:
+            up[i] = up[up[i]]
+            i = up[i]
+        return i
+
+    ends = [(nearest(e.pts[0], nodes), nearest(e.pts[-1], nodes)) for e in edges]
+    for a, b in ends:
+        up[find(a)] = find(b)
+    out = {}
+    for i, n in enumerate(nodes):
+        out.setdefault(find(i), ([], []))[0].append(n)
+    for e, (a, _) in zip(edges, ends):
+        out[find(a)][1].append(e)
+    return list(out.values())
+
+
+def cycle_through(n, pairs):
+    """The closed walk visiting each of `n` nodes once, or `None` if `pairs` are not one."""
+    if len(pairs) != n:
+        return None
+    adj = {i: [] for i in range(n)}
+    for a, b in pairs:
         adj[a].append(b)
         adj[b].append(a)
-    if len(nodes) < 3 or any(len(v) != 2 for v in adj.values()):
+    if any(len(v) != 2 for v in adj.values()):
         return None
     order, prev, cur = [0], None, 0
     while True:
@@ -289,9 +328,134 @@ def cycle_of(nodes, edges):
             break
         order.append(nxt)
         prev, cur = cur, nxt
-        if len(order) > len(nodes):
+        if len(order) > n:
             return None
-    return None if len(order) != len(nodes) else [nodes[i].centre for i in order]
+    return order if len(order) == n else None
+
+
+def cut(face, a, b):
+    """A face cut by the chord `a`–`b`: the two arcs of its walk between them, each closed by it."""
+    i, j = sorted((face.index(a), face.index(b)))
+    return [face[i:j + 1], face[j:] + face[:i + 1]]
+
+
+def faces_of(nodes, edges):
+    """The regions the arrows bound.  With three nodes or more they are one closed walk, possibly
+    with CHORDS — the induced arrow a pasted pair draws dashed across the polygon — and each chord
+    cuts the region holding its two ends in two.  With two nodes the one region is the box the
+    parallel arcs sweep.  `None` when the arrows are no such walk."""
+    if len(nodes) == 2:
+        xs = [p[0] for e in edges for p in e.pts]
+        ys = [p[1] for e in edges for p in e.pts]
+        return [[(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]]
+    n = len(nodes)
+    pairs = []
+    for e in edges:
+        a, b = nearest(e.pts[0], nodes), nearest(e.pts[-1], nodes)
+        if a == b:
+            return None
+        pairs.append((a, b))
+    if n < 3 or len(pairs) < n:
+        return None
+    # WHICH arrows are the chords is not written in the SVG, so every choice of the right number of
+    # them is tried and the one leaving a single walk through every node wins.
+    for chords in itertools.combinations(range(len(pairs)), len(pairs) - n):
+        walk = cycle_through(n, [p for i, p in enumerate(pairs) if i not in chords])
+        if walk is None:
+            continue
+        fs = [walk]
+        for i in chords:
+            a, b = pairs[i]
+            k = next((j for j, f in enumerate(fs) if a in f and b in f), None)
+            if k is None:
+                return None
+            fs = fs[:k] + cut(fs[k], a, b) + fs[k + 1:]
+        return [[nodes[i].centre for i in f] for f in fs]
+    return None
+
+
+def caliper(pts):
+    """A shape's length and width along its OWN axis, not the page's.  An arrowhead on a bowed or
+    diagonal arrow is the same mark turned, and its axis-aligned box is not its size."""
+    d, (p, q) = max(((math.dist(a, b), (a, b)) for a in pts for b in pts), key=lambda t: t[0])
+    if d < EPS:
+        return 0.0, 0.0
+    u = ((q[0] - p[0]) / d, (q[1] - p[1]) / d)
+    hs = [(r[0] - p[0]) * u[1] - (r[1] - p[1]) * u[0] for r in pts]
+    return d, max(hs) - min(hs)
+
+
+def cluster(vs, tol=EPS):
+    """Values closer together than `tol` are one line."""
+    out = []
+    for v in sorted(vs):
+        if not out or v - out[-1][-1] > tol:
+            out.append([v])
+        else:
+            out[-1].append(v)
+    return [sum(g) / len(g) for g in out]
+
+
+def grid_lines(edges):
+    """The rows and columns a panel is laid out on, read off the STRAIGHT arrows: a horizontal arrow
+    runs along its row's own y, a vertical one along its column's x.  A node's white box is NOT that
+    position — the renderer places it by its label's text metrics, so it drifts up to a point from
+    one label to the next — and the step is a fact about the layout, not about a font."""
+    xs, ys = [], []
+    for e in edges:
+        a, b = e.pts[0], e.pts[-1]
+        if abs(a[1] - b[1]) < EPS:
+            ys.append((a[1] + b[1]) / 2)
+        if abs(a[0] - b[0]) < EPS:
+            xs.append((a[0] + b[0]) / 2)
+    return cluster(xs), cluster(ys)
+
+
+def wiring(path):
+    """A page's WIRING: how many diagrams, how many nodes each, and which grid CELL each arrow runs
+    from and to, dashed or not.  That is the part of a picture its statement fixes.  Coordinates are
+    not in it: the note hand-places a corner to fit a label of its own (`<banana-split>`'s ±4.6) and
+    writes its own letters, so two honest drawings of one statement differ there and nowhere else."""
+    nodes, _, edges, _ = read_page(path)
+    out = []
+    for ns, es in components(nodes, edges):
+        # Half the note's own clearance: two columns stand at least `LGAP` apart, and a node's white
+        # box drifts by under a point from the layout point, so nothing else can fall in between.
+        cols = cluster([n.centre[0] for n in ns], LGAP / 2)
+        rows = cluster([n.centre[1] for n in ns], LGAP / 2)
+
+        def cell(p):
+            c = ns[nearest(p, ns)].centre
+            return (min(range(len(cols)), key=lambda i: abs(cols[i] - c[0])),
+                    min(range(len(rows)), key=lambda i: abs(rows[i] - c[1])))
+
+        out.append((min(n.centre[0] for n in ns), len(ns),
+                    sorted((cell(e.pts[0]), cell(e.pts[-1]), e.dash) for e in es)))
+    return [(k, a) for _, k, a in sorted(out)]
+
+
+def against(ref_path, path):
+    """`path`'s wiring against `ref_path`'s, panel by panel, left to right.  Reported by BASENAME, so
+    a line reads the same wherever the two were compiled and can be recorded as an accepted one."""
+    r, g = os.path.basename(ref_path), os.path.basename(path)
+    a, b = wiring(ref_path), wiring(path)
+    if len(a) != len(b):
+        return [f"{g}: wiring — {len(b)} diagrams, {r} has {len(a)}"]
+    bad = []
+    for i, ((ka, ea), (kb, eb)) in enumerate(zip(a, b), 1):
+        if ka != kb:
+            bad.append(f"{g}: wiring — panel {i} has {kb} nodes, {r}'s has {ka}")
+        for e in [x for x in ea if x not in eb]:
+            bad.append(f"{g}: wiring — panel {i} lacks the {arrow_str(e)} that {r} draws")
+        for e in [x for x in eb if x not in ea]:
+            bad.append(f"{g}: wiring — panel {i} adds the {arrow_str(e)} that {r} has not")
+    return bad
+
+
+def arrow_str(e):
+    (a, b, dash) = e
+    return (f"{'dashed ' if dash else ''}arrow from column {a[0]} row {a[1]} "
+            f"to column {b[0]} row {b[1]}")
 
 
 def check(path, ref):
@@ -320,66 +484,65 @@ def check(path, ref):
                     bad.append(f"{path}: clear — an arrow crosses a {what} label box")
                     break
 
-    poly = cycle_of(nodes, edges)
-    if poly is None:
-        bad.append(f"{path}: face — the arrows are not one closed walk through "
-                   f"{len(nodes)} nodes, so there is no polygon to test")
-    else:
-        inside = [f for f in free if in_polygon(f.centre, poly)]
-        if len(inside) > 1:
-            bad.append(f"{path}: face — {len(inside)} labels lie inside the polygon, want at most "
-                       f"one (the relation symbol; an equation carries none)")
+    for ns, es in components(nodes, edges):
+        polys = faces_of(ns, es)
+        if polys is None:
+            bad.append(f"{path}: face — the arrows are not one closed walk through "
+                       f"{len(ns)} nodes, so there is no polygon to test")
+        for poly in polys or []:
+            inside = [f for f in free if in_polygon(f.centre, poly)]
+            if len(inside) > 1:
+                bad.append(f"{path}: face — {len(inside)} labels lie inside a face bounded by "
+                           f"{len(poly)} nodes, want at most one (the relation symbol, or the "
+                           f"chord's own label; an equation carries none)")
+        bad += rule_square(path, ref, ns, es)
 
     for h in heads:
-        w = max(h.box[2] - h.box[0], h.box[3] - h.box[1])
-        t = min(h.box[2] - h.box[0], h.box[3] - h.box[1])
+        w, t = caliper(h.pts)
         if abs(w - ref["mark"]) > EPS or abs(t - ref["markw"]) > EPS:
             bad.append(f"{path}: square — an arrowhead is {w:.2f}×{t:.2f}pt, "
                        f"the note's is {ref['mark']:.2f}×{ref['markw']:.2f}pt")
             break
 
-    # A four-node rectangle is a naturality square, and its step is the note's unless its labels
-    # need more: the panel opens the grid rather than drawing one label over the next.
-    if len(nodes) == 4:
-        cs = sorted(n.centre for n in nodes)
-        xs = sorted({round(c[0], 3) for c in cs})
-        ys = sorted({round(c[1], 3) for c in cs})
-        if len(xs) == 2 and len(ys) == 2:
-            hw = {}
-            hh = {}
-            for n in nodes:
-                cx, cy = n.centre
-                hw[round(cx, 3)] = max(hw.get(round(cx, 3), 0.0), (n.box[2] - n.box[0]) / 2)
-                hh[round(cy, 3)] = max(hh.get(round(cy, 3), 0.0), (n.box[3] - n.box[1]) / 2)
-            want_x = max(ref["stepx"], hw[xs[0]] + hw[xs[1]] + LGAP)
-            want_y = max(ref["stepy"], hh[ys[0]] + hh[ys[1]] + LGAP)
-            if abs((xs[1] - xs[0]) - want_x) > EPS:
-                bad.append(f"{path}: square — it is {(xs[1] - xs[0]) / PT:.3f}cm across, "
-                           f"want {want_x / PT:.3f}cm")
-            if abs((ys[1] - ys[0]) - want_y) > EPS:
-                bad.append(f"{path}: square — it is {(ys[1] - ys[0]) / PT:.3f}cm down, "
-                           f"want {want_y / PT:.3f}cm")
+    return bad
+
+
+def rule_square(path, ref, nodes, edges):
+    """A four-node rectangle is a naturality square, and its step is the note's unless its labels
+    need more: the panel opens the grid rather than drawing one label over the next."""
+    xs, ys = grid_lines(edges)
+    if len(nodes) != 4 or len(xs) != 2 or len(ys) != 2:
+        return []
+    hw, hh = {}, {}
+    for n in nodes:
+        kx = min(xs, key=lambda v: abs(v - n.centre[0]))
+        ky = min(ys, key=lambda v: abs(v - n.centre[1]))
+        hw[kx] = max(hw.get(kx, 0.0), (n.box[2] - n.box[0]) / 2)
+        hh[ky] = max(hh.get(ky, 0.0), (n.box[3] - n.box[1]) / 2)
+    bad = []
+    for got, want, way in ((xs[1] - xs[0], max(ref["stepx"], hw[xs[0]] + hw[xs[1]] + LGAP), "across"),
+                           (ys[1] - ys[0], max(ref["stepy"], hh[ys[0]] + hh[ys[1]] + LGAP), "down")):
+        if abs(got - want) > EPS:
+            bad.append(f"{path}: square — it is {got / PT:.3f}cm {way}, want {want / PT:.3f}cm")
     return bad
 
 
 def ref_of(path):
-    """The reference square's own numbers: its two centre distances and its arrowhead."""
-    nodes, _, _, heads = read_page(path)
-    cs = [n.centre for n in nodes]
-    xs = sorted({round(c[0], 1) for c in cs})
-    ys = sorted({round(c[1], 1) for c in cs})
-    h = heads[0]
-    return dict(stepx=xs[-1] - xs[0], stepy=ys[-1] - ys[0],
-                mark=max(h.box[2] - h.box[0], h.box[3] - h.box[1]),
-                markw=min(h.box[2] - h.box[0], h.box[3] - h.box[1]))
+    """The reference square's own numbers: its two step lengths and its arrowhead."""
+    _, _, edges, heads = read_page(path)
+    xs, ys = grid_lines(edges)
+    mark, markw = caliper(heads[0].pts)
+    return dict(stepx=xs[-1] - xs[0], stepy=ys[-1] - ys[0], mark=mark, markw=markw)
 
 
 def main(argv):
-    ref, files = NOTESQ, []
+    ref, cmp_to, files = NOTESQ, None, []
     i = 0
     while i < len(argv):
         if argv[i] == "--ref":
             ref = ref_of(argv[i + 1]); i += 2
+        elif argv[i] == "--against":
+            cmp_to = argv[i + 1]; i += 2
         else:
             files.append(argv[i]); i += 1
     if not files:
@@ -387,7 +550,7 @@ def main(argv):
         return 2
     bad = []
     for f in files:
-        b = check(f, ref)
+        b = check(f, ref) + (against(cmp_to, f) if cmp_to else [])
         bad += b
         print(("FAIL " if b else "ok   ") + f)
     for line in bad:

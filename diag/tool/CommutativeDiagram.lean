@@ -107,6 +107,9 @@ structure Edge where
       `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
       parallel arrows between one pair of nodes would otherwise be drawn on top of each other. -/
   bow : Float := 0.0
+  /-- Drawn dashed.  The one dashed edge is a pasted pair's CHORD — the arrow the two faces share is
+      the one they induce, and the note draws every induced arrow dashed. -/
+  dash : Bool := false
 
 /-- Where a face's symbol is set, once the grid is known. -/
 structure FaceMark where
@@ -136,6 +139,16 @@ def Path.rename (p : Path) (nm : Nat → String) : Path :=
   { nodes := (List.range p.nodes.size).toArray.map fun i => (nm i, (p.nodes[i]!).2),
     edges := p.edges.map fun (s, t, f) => (ren s, ren t, f),
     src := ren p.src, tgt := ren p.tgt }
+
+/-- A path renamed to be ONE SIDE of a face: its two ENDS take the shared names `s`/`t` and its
+    interior its own `pre`-prefixed ones.  Identifying the ends is what makes two paths one graph. -/
+def Path.endName (p : Path) (pre : String) : Path :=
+  p.rename fun i => if i == 0 then "s" else if i + 1 == p.nodes.size then "t" else s!"{pre}{i}"
+
+/-- The path walked backwards.  Each edge keeps its OWN direction — reversing a walk turns the
+    arrows round only in the reader's eye, never in the graph. -/
+def Path.mirror (p : Path) : Path :=
+  { nodes := p.nodes.reverse, edges := p.edges.reverse, src := p.tgt, tgt := p.src }
 
 /-- The object at a vertex — how a path says what its ends ARE, `src` and `tgt` being ids. -/
 def Path.objAt (p : Path) (id : String) : MetaM Expr :=
@@ -179,11 +192,17 @@ partial def interp (e : Expr) : MetaM Path := do
   | (``Cat.id, _) => return Path.id (← StrDiag.homEnds e).1
   | _ => Path.arrow e
 
-/-- A face: two paths with the SAME two ends, and the relation asserted between them. -/
+/-- A face: two paths with the SAME two ends, and the relation asserted between them.
+
+    `chord` is what PASTING leaves: two faces sharing exactly one edge are one polygon — the two
+    faces' other sides, as one closed walk — with that edge drawn straight across it.  `sym` is then
+    the relation the `lhs` side of the chord asserts and the chord's second component the `rhs`
+    side's; with no chord `sym` is the whole face's. -/
 structure Face where
   sym : String
   lhs : Path
   rhs : Path
+  chord : Option (Expr × String) := none
 
 /-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
     A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
@@ -198,14 +217,47 @@ def Face.of (sym : String) (p q : Path) : MetaM Face := do
     throwError "the two sides end at different objects: {← plain pb} and {← plain qb}"
   let drawable (r : Path) (o : Expr) : MetaM Path := do
     if r.edges.isEmpty then Path.arrow (← Meta.mkAppM ``Cat.id #[o]) else return r
-  -- The two SHARED vertices are the ends, so they take the shared names and each side's interior
-  -- its own; that identification is what makes the two paths one graph.
-  let name (pre : String) (k i : Nat) : String :=
-    if i == 0 then "s" else if i == k then "t" else s!"{pre}{i}"
   let lhs ← drawable p pa
   let rhs ← drawable q qa
-  return { sym, lhs := lhs.rename (name "u" lhs.edges.size),
-           rhs := rhs.rename (name "v" rhs.edges.size) }
+  return { sym, lhs := lhs.endName "u", rhs := rhs.endName "v" }
+
+/-- The face's boundary as ONE CLOSED WALK: `edges[i]` joins `nodes[i]` to `nodes[i+1]`, the last
+    back to the first, each edge keeping its own direction.  The walk ignores those directions,
+    which is what lets a face be traversed against an arrow — as one of two pasted faces must be. -/
+def Face.cycle (fc : Face) : Array (String × Expr) × Array (String × String × Expr) :=
+  (fc.lhs.nodes.pop ++ (fc.rhs.nodes.extract 1 fc.rhs.nodes.size).reverse,
+   fc.lhs.edges ++ fc.rhs.edges.reverse)
+
+/-- One face's boundary OPENED at its `i`-th edge: the rest of the walk, laid out so that it runs
+    from that edge's SOURCE to its target — the direction the chord itself points, which is how the
+    two sides of a paste agree on which corner is which. -/
+def Face.opened (ns : Array (String × Expr)) (es : Array (String × String × Expr)) (i : Nat)
+    : Path :=
+  let k := ns.size
+  let ns' := ns.extract (i + 1) k ++ ns.extract 0 (i + 1)
+  let es' := (es.extract (i + 1) k ++ es.extract 0 (i + 1)).pop
+  let w : Path := { nodes := ns', edges := es', src := ns'[0]!.1, tgt := ns'[k - 1]!.1 }
+  -- The opened edge joins `ns'[k-1]` back to `ns'[0]`, so the walk leaves the edge's source already
+  -- exactly when that source is `ns'[0]`.
+  if es[i]!.1 == w.src then w else w.mirror
+
+/-- Two faces pasted along the ONE edge they share: the union is one polygon — their other sides, as
+    a closed walk — with that edge as a chord.  `none` when they share no edge or more than one,
+    which is the pair the caller sets SIDE BY SIDE instead; that is the whole rule, and it is what
+    makes the note's own two choices fall out of the terms rather than out of a table. -/
+def Face.paste (f g : Face) : MetaM (Option Face) := do
+  let (fn, fe) := f.cycle
+  let (gn, ge) := g.cycle
+  let mut hits : Array (Nat × Nat) := #[]
+  for i in [0 : fe.size] do
+    for j in [0 : ge.size] do
+      if ← Meta.isDefEq fe[i]!.2.2 ge[j]!.2.2 then hits := hits.push (i, j)
+  unless hits.size == 1 do return none
+  let (i, j) := hits[0]!
+  let p := Face.opened fn fe i
+  let q := Face.opened gn ge j
+  return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
+                chord := some (fe[i]!.2.2, g.sym) }
 
 /-! ### The grid
 
@@ -271,74 +323,159 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     edges := edges.push { src, tgt, label := (← plain f), side := sideAt left bot true j,
                           bow := if bowed then 0.9 else 0.0 }
   -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
-  -- The symbol goes at the average of the face's corners, which for a convex polygon is inside it.
-  let cx := nodes.foldl (fun a v => a + v.gx) 0.0 / nodes.size.toFloat
-  let cy := nodes.foldl (fun a v => a + v.gy) 0.0 / nodes.size.toFloat
-  return (nodes, edges, if fc.sym == "=" then #[] else #[{ sym := fc.sym, gx := cx, gy := cy }])
+  -- The symbol goes at the average of ITS OWN corners, which for a convex polygon is inside it —
+  -- and a chord splits the polygon in two, so each side's symbol takes that side's corners alone.
+  let vs := nodes
+  let mark (sym : String) (ids : Array String) : Array FaceMark :=
+    let ps := ids.filterMap fun id => (vs.find? (·.id == id)).map fun v => (v.gx, v.gy)
+    let k := ps.size.toFloat
+    if sym == "=" || ps.isEmpty then #[] else
+      #[{ sym, gx := ps.foldl (fun a p => a + p.1) 0.0 / k,
+          gy := ps.foldl (fun a p => a + p.2) 0.0 / k }]
+  match fc.chord with
+  | none => return (nodes, edges, mark fc.sym (nodes.map (·.id)))
+  | some (c, sym) =>
+    -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
+    -- induce, and its label is set above it, the one label the outer polygon may hold.
+    let withChord := edges.push
+      { src := "s", tgt := "t", label := (← plain c), side := "top", dash := true }
+    return (nodes, withChord,
+      mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
 
 /-! ### Emitting the page -/
 
-def typstNodes (ns : Array Node) : String :=
-  "(\n" ++ String.join (ns.toList.map fun v =>
-    s!"  (id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: raw({typstString v.label})),\n")
-    ++ ")\n"
+/-- An array literal, one row a line.  `close` is what follows the closing `)`: a top-level `#let`
+    ends there, a field of a panel dict needs the comma that separates it from the next field. -/
+def typstArr (rows : List String) (close : String) : String :=
+  "(\n" ++ String.join (rows.map fun r => s!"  {r},\n") ++ ")" ++ close
 
-def typstEdges (es : Array Edge) : String :=
-  "(\n" ++ String.join (es.toList.map fun e =>
-    s!"  (from: {typstString e.src}, to: {typstString e.tgt}, \
-       label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}),\n")
-    ++ ")\n"
+def typstNodes (ns : Array Node) (close := "\n") : String :=
+  typstArr (ns.toList.map fun v =>
+    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: raw({typstString v.label}))")
+    close
 
-def typstFaces (fs : Array FaceMark) : String :=
-  "(\n" ++ String.join (fs.toList.map fun f =>
-    s!"  (sym: {typstString f.sym}, at: ({fmt f.gx}, {fmt f.gy})),\n") ++ ")\n"
+-- `dash` is written only where it is set: the chord is the one dashed edge, and a `dash: false` on
+-- every other line is a field no reader of the file has to know about.
+def typstEdges (es : Array Edge) (close := "\n") : String :=
+  typstArr (es.toList.map fun e =>
+    s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
+       label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}\
+       {if e.dash then ", dash: true" else ""})")
+    close
+
+def typstFaces (fs : Array FaceMark) (close := "\n") : String :=
+  typstArr (fs.toList.map fun f => s!"(sym: {typstString f.sym}, at: ({fmt f.gx}, {fmt f.gy}))") close
+
+/-- One panel's three tables. -/
+abbrev Panel := Array Node × Array Edge × Array FaceMark
+
+def typstPanels (ps : Array Panel) : String :=
+  typstArr (ps.toList.map fun (ns, es, fs) =>
+    "(nodes: " ++ typstNodes ns ",\n   edges: " ++ typstEdges es ",\n   faces: "
+      ++ typstFaces fs ")") "\n"
 
 /-- The generated file is BOTH a standalone page and an importable module, as the string-diagram
     exporter's is: `pic` is bound at the top for a note that wants the picture in a table cell.
     The page below draws the panel UNSCALED — `pic` carries the note's `s: 74%`, and `scripts/svg-check`
-    measures this page against `diag/natsq.typ`, which is drawn at full size. -/
-def cdPage (declName : Name) (ns : Array Node) (es : Array Edge) (fs : Array FaceMark) : String :=
-  "// GENERATED by `diag-export --commutative` — do not edit; regenerate with\n\
-   //   ./scripts/diag-export --commutative " ++ declName.toString ++ "\n\
-   #import \"../../cdpanel.typ\": *\n\n"
-    ++ "#let nodes = " ++ typstNodes ns
-    ++ "#let edges = " ++ typstEdges es
-    ++ "#let faces = " ++ typstFaces fs
-    ++ "#let cert = (lean: " ++ typstString declName.toString ++ ")\n"
-    ++ "#let pic = cdpanel(nodes, edges, faces, cert: cert)\n\n"
-    ++ "#set page(width: auto, height: auto, margin: 12pt)\n\
-        #set text(size: 10pt)\n\n\
-        #text(11pt)[*`" ++ declName.toString ++ "`*]\n\n\
-        #cdpanel(nodes, edges, faces, s: 100%, cert: cert)\n"
+    measures this page against `diag/natsq.typ`, which is drawn at full size.
 
-/-- Open the binders, and if what they expose is not yet an equation take ONE delta step on its head
-    and open the binders THAT exposes.  `StrictNatural F G φ` needs exactly one such step; a
-    statement that needs none is the common case and pays nothing.  Everything happens inside the
-    telescope, so the locals the binders introduce are in scope where the face is built. -/
-partial def build (declName : Name) (ty : Expr) (fuel : Nat) : MetaM String := do
-  Meta.forallTelescopeReducing ty fun _ body => do
+    ONE panel is written as one panel, not as a row of one: a page holding a single face and a page
+    holding a row are different pages, and `cdrow` is the row's helper. -/
+def cdPage (sel : String) (ps : Array Panel) : String :=
+  let head := "// GENERATED by `diag-export --commutative` — do not edit; regenerate with\n\
+    //   ./scripts/diag-export --commutative " ++ sel ++ "\n\
+    #import \"../../cdpanel.typ\": *\n\n"
+  let cert := "#let cert = (lean: " ++ typstString sel ++ ")\n"
+  let tail := "\n#set page(width: auto, height: auto, margin: 12pt)\n\
+    #set text(size: 10pt)\n\n\
+    #text(11pt)[*`" ++ sel ++ "`*]\n\n"
+  match ps with
+  | #[(ns, es, fs)] =>
+    head ++ "#let nodes = " ++ typstNodes ns ++ "#let edges = " ++ typstEdges es
+      ++ "#let faces = " ++ typstFaces fs ++ cert
+      ++ "#let pic = cdpanel(nodes, edges, faces, cert: cert)\n"
+      ++ tail ++ "#cdpanel(nodes, edges, faces, s: 100%, cert: cert)\n"
+  | _ =>
+    head ++ "#let panels = " ++ typstPanels ps ++ cert
+      ++ "#let pic = cdrow(panels, cert: cert)\n"
+      ++ tail ++ "#cdrow(panels, s: 100%, cert: cert)\n"
+
+/-- The FACES a statement asserts.  An equation or inequation is one; a CONJUNCTION is one per
+    conjunct, each drawn on its own grid unless the two paste; an `↔` is the side `side` names,
+    because the two sides of an equivalence are two claims and not two paths.  What is not yet any
+    of those gets ONE delta step on its head and its binders opened — `StrictNatural F G φ` needs
+    exactly one such step, and a statement that needs none pays nothing. -/
+partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat)
+    : MetaM (Array Face) := do
+  match body.getAppFnArgs with
+  | (``And, #[l, r]) => return (← faces what l side fuel) ++ (← faces what r side fuel)
+  | (``Iff, #[l, r]) =>
+    let some s := side
+      | throwError "{what}: an `↔` is two claims, not two paths — name a side, `{what}.lhs` or \
+          `{what}.rhs`"
+    faces what (if s == "lhs" then l else r) none fuel
+  | _ =>
     match StrDiag.split body with
-    | some (sym, l, r) =>
-      let (ns, es, fs) ← layout (← Face.of sym (← interp l) (← interp r))
-      return cdPage declName ns es fs
+    | some (sym, l, r) => return #[← Face.of sym (← interp l) (← interp r)]
     | none =>
       if fuel == 0 then
-        throwError "{declName}: not an equation or inequation of composites, and no definition to \
+        throwError "{what}: not an equation or inequation of composites, and no definition to \
           open — {← Meta.ppExpr body}"
       let .const n us := body.getAppFn
-        | throwError "{declName}: not an equation or inequation of composites — \
-            {← Meta.ppExpr body}"
+        | throwError "{what}: not an equation or inequation of composites — {← Meta.ppExpr body}"
       let some ci := (← getEnv).find? n
-        | throwError "{declName}: no such constant in the statement's head: {n}"
+        | throwError "{what}: no such constant in the statement's head: {n}"
       let some v := ci.value?
-        | throwError "{declName}: `{n}` heads the statement and has no definition to open"
-      build declName ((mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta)
-        (fuel - 1)
+        | throwError "{what}: `{n}` heads the statement and has no definition to open"
+      let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
+      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1)
 
-/-- Draw the statement of `declName` as a commutative diagram. -/
-def draw (declName : Name) : MetaM String := do
-  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  build declName ci.type 3
+/-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
+def part (s : String) : Name × Option String :=
+  if s.endsWith ".lhs" then ((s.dropEnd 4).toString.toName, some "lhs")
+  else if s.endsWith ".rhs" then ((s.dropEnd 4).toString.toName, some "rhs")
+  else (s.toName, none)
+
+/-- Draw one or more statements as ONE page.  The FIRST names the telescope and every other is
+    instantiated at its binders: two faces of one picture are about one set of objects and arrows,
+    and separately opened binders would be two variables that only look alike, so nothing would ever
+    be found shared.  Two faces sharing exactly one edge are pasted along it; anything else is one
+    panel per face, set side by side. -/
+def draw (sel : String) : MetaM String := do
+  let parts := (sel.splitOn "+").toArray.map part
+  let (n₀, s₀) := parts[0]!
+  let some ci := (← getEnv).find? n₀ | throwError "no such declaration: {n₀}"
+  Meta.forallTelescopeReducing ci.type fun xs body => do
+    let mut fs ← faces n₀ body s₀ 3
+    for (n, s) in parts.extract 1 parts.size do
+      let some c := (← getEnv).find? n | throwError "no such declaration: {n}"
+      -- Matched by TYPE, not by position or by name: the two declarations may bind the same objects
+      -- in either order — an instance before or after the objects it is about — and a binder's name
+      -- is not what says two statements are about one arrow.
+      -- Its UNIVERSES are metavariables too: two modules name the same level differently (`u` and
+      -- `u_1`), and a level left as a parameter makes `Type u` and `Type u_1` two different types.
+      let us ← c.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let (ms, _, b) ← Meta.forallMetaTelescope (c.type.instantiateLevelParams c.levelParams us)
+      let mut free := xs
+      for m in ms do
+        let ty ← Meta.inferType m
+        let mut hit := false
+        for i in [0 : free.size] do
+          unless hit do
+            if ← commitWhen (do
+                if ← Meta.isDefEq ty (← Meta.inferType free[i]!) then Meta.isDefEq m free[i]!
+                else return false) then
+              free := free.extract 0 i ++ free.extract (i + 1) free.size
+              hit := true
+        unless hit do
+          throwError "{n} binds `{← Meta.ppExpr ty}`, which {n₀} does not — it binds \
+            {← free.mapM fun x => do return m!"`{← Meta.ppExpr (← Meta.inferType x)}`"} — so the \
+            two are not statements about one set of objects and arrows and cannot be one picture"
+      fs := fs ++ (← faces n (← instantiateMVars b) s 3)
+    if let #[f, g] := fs then
+      if let some fc ← Face.paste f g then
+        return cdPage sel #[← layout fc]
+    return cdPage sel (← fs.mapM layout)
 
 /-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
     activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
@@ -352,7 +489,9 @@ def openNs : List Name :=
 def main (args : List String) : IO UInt32 := do
   let args := args.filter (fun a => a != "--commutative")
   if args.isEmpty then
-    IO.eprintln "usage: diag-export --commutative <declaration-name> [<declaration-name> ...]"
+    IO.eprintln "usage: diag-export --commutative <selector> [<selector> ...]\n\
+      a selector is `<decl>`, `<decl>.lhs`/`.rhs` for one side of an `↔`, and `<a>+<b>` for two\n\
+      statements drawn as one page — pasted along the edge they share, or set side by side"
     return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
@@ -383,7 +522,7 @@ def main (args : List String) : IO UInt32 := do
   let env := (← (do for ns in openNs do activateScoped ns : CoreM Unit).toIO ctx { env }).2.env
   let mut status : UInt32 := 0
   for arg in args do
-    let run : CoreM String := Meta.MetaM.run' (draw arg.toName)
+    let run : CoreM String := Meta.MetaM.run' (draw arg)
     -- The thrown message is the DIAGNOSIS — which statement was reached and why it is not a face —
     -- so a declaration this functor declines to draw says so in its own terms rather than as a
     -- blanket "cannot draw", which is the error that sends a reader back to the source.
