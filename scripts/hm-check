@@ -303,8 +303,15 @@ def exported(names):
         p = subprocess.run([os.path.join(ROOT, "scripts", "diag-export"), "--sig"] + todo,
                            cwd=ROOT, capture_output=True, text=True)
         got = {r["name"]: r for r in (json.loads(l) for l in p.stdout.splitlines() if l.strip())}
-        if not got and p.stderr:
+        # A run that typed SOME of `todo` and refused the rest used to say nothing: its complaint
+        # was printed only for an empty answer, so the refused rows silently went unchecked.
+        if p.stderr.strip():
             print(p.stderr.strip(), file=sys.stderr)
+        miss = [n for n in todo if n not in got]
+        if p.returncode or miss:
+            print(f"hm-check: {os.path.join(ROOT, 'scripts', 'diag-export')} --sig exited"
+                  f" {p.returncode} and typed {len(got)} of {len(todo)}; nothing came back for"
+                  f" {', '.join(miss) or 'none of them by name'}", file=sys.stderr)
         cache = {w: cache[w] if w in cache else got[n] for w, n in want.items()
                  if w in cache or n in got}
         os.makedirs(os.path.dirname(SIGCACHE), exist_ok=True)
