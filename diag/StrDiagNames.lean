@@ -100,6 +100,18 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent (Name.mkSimple "⊕")))
 
 open Lean PrettyPrinter in
+/-- The power relator's lane is the note's `E`, the letter its object action already prints with
+    (`E A`) and the only lane the note draws over a power object — 113 of them, and no `P` lane. -/
+@[app_unexpander powerRelator] def unexpandPowerRelator : Unexpander
+  | _ => `($(mkIdent `E))
+
+open Lean PrettyPrinter in
+/-- The diagonal relator's lane is `Δ`: the category it is taken over is the panel's region, which
+    the lane already sits in, so `Δ 𝒜` writes it twice. -/
+@[app_unexpander Δ] def unexpandDiagonalRelator : Unexpander
+  | _ => `($(mkIdent `Δ))
+
+open Lean PrettyPrinter in
 /-- The least fixed point is the note's bead `(μX : S°F(X)R)` — the binder and the body it binds,
     which is what a TYPE ASCRIPTION already spells, so no new notation is needed for the brackets. -/
 @[app_unexpander mu] def unexpandMu : Unexpander
