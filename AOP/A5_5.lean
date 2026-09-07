@@ -252,3 +252,18 @@ public theorem pair_eq_relCata_pair_iff [HasBinaryProducts 𝒜] (I : InitialAlg
            by rw [← snd_pair (I.α ≫ f) (I.α ≫ g), hEq, snd_pair]⟩
 
 end Freyd.Alg
+
+namespace Freyd.Alg
+
+variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+
+/-- **BANANA SPLIT (B&dM figure 7b)**: the product's universal property read AT THE TWO FOLDS.
+    `⟨⦇h⦈,⦇k⦈⟩` is the one arrow `T⟶A×B` with components `⦇h⦈` and `⦇k⦈`, and these are the two
+    triangles the note draws round it — which is why the statement is the pair of β-laws at
+    `⦇h⦈`, `⦇k⦈` rather than the β-laws at two arbitrary arrows. -/
+public theorem relCata_pair_beta [HasBinaryProducts 𝒜] (I : InitialAlgebra F) {A B : 𝒜}
+    (h : F.obj A ⟶ A) (k : F.obj B ⟶ B) :
+    pair ⦇h⦈ ⦇k⦈ ≫ fst = ⦇h⦈ ∧ pair ⦇h⦈ ⦇k⦈ ≫ snd = ⦇k⦈ :=
+  ⟨fst_pair _ _, snd_pair _ _⟩
+
+end Freyd.Alg

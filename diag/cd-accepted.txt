@@ -6,34 +6,8 @@
 # A difference is accepted only when the note's drawing says something the STATEMENT does not, or
 # lays out corners of its own.  A wrong direction, an arrow through a label, a chord that is not
 # straight — none of those can be accepted: they are the drawer's bug, and the drawer is fixed.
-
-# WHICH ARROW IS INDUCED IS NOT IN THE EQUATION.  The note draws `⦇f⦈` dashed because the fold's
-# uniqueness is what produces it; `α⦇R⦈ = F(⦇R⦈)R` says only that the square commutes, and every
-# arrow in it is given on the same footing.  The one dash the drawer does write is a pasted pair's
-# CHORD, which the paste itself produces.
-Freyd.Alg.relCata_cancel | panel 1 adds the arrow from column 1 row 0 to column 1 row 1 that cdref.svg has not
-Freyd.Alg.relCata_cancel | panel 1 lacks the dashed arrow from column 1 row 0 to column 1 row 1 that cdref.svg draws
-
-# The same, once per conjunct: `f` and `g` are what the fold's uniqueness gives, and the left side of
-# the `↔` — all this panel draws — does not say so.
-Freyd.Alg.pair_eq_relCata_pair_iff.lhs | panel 1 adds the arrow from column 1 row 0 to column 1 row 1 that cdref-fokkinga.svg has not
-Freyd.Alg.pair_eq_relCata_pair_iff.lhs | panel 1 lacks the dashed arrow from column 1 row 0 to column 1 row 1 that cdref-fokkinga.svg draws
-Freyd.Alg.pair_eq_relCata_pair_iff.lhs | panel 2 adds the arrow from column 1 row 0 to column 1 row 1 that cdref-fokkinga.svg has not
-Freyd.Alg.pair_eq_relCata_pair_iff.lhs | panel 2 lacks the dashed arrow from column 1 row 0 to column 1 row 1 that cdref-fokkinga.svg draws
-
-# A FAN AGAINST A SQUARE WITH A CHORD.  The note lays `T` above `A`, `A×B`, `B` in a row and hand-places
-# that row at ±4.6 so `⟨⦇h⦈,⦇k⦈⟩` fits between the induced arrow and `⦇h⦈`'s leg.  The drawer pastes the
-# product's two β-laws along the arrow they share, `⟨f,g⟩`, and lays the resulting closed walk out on
-# its own uniform grid, so the shared arrow becomes the dashed chord of a square: the same four objects
-# and the same five arrows, each between the same two of them, embedded in the plane differently.
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 adds the arrow from column 0 row 0 to column 0 row 1 that cdref-banana.svg has not
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 adds the arrow from column 0 row 0 to column 1 row 0 that cdref-banana.svg has not
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 adds the arrow from column 1 row 1 to column 1 row 0 that cdref-banana.svg has not
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 adds the dashed arrow from column 0 row 0 to column 1 row 1 that cdref-banana.svg has not
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 lacks the arrow from column 1 row 0 to column 0 row 1 that cdref-banana.svg draws
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 lacks the arrow from column 1 row 0 to column 2 row 1 that cdref-banana.svg draws
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 lacks the arrow from column 1 row 1 to column 2 row 1 that cdref-banana.svg draws
-Freyd.HasBinaryProducts.fst_pair+Freyd.HasBinaryProducts.snd_pair | panel 1 lacks the dashed arrow from column 1 row 0 to column 1 row 1 that cdref-banana.svg draws
-
-# `Freyd.Alg.Λ_eps_eq'+Freyd.Alg.Λ_eq_singleton_existsImage` against `cdref-adjE.typ` has NONE: the two
-# laws pasted along `Λ R` give the note's own bent square, arrow for arrow, dash and all.
+#
+# EMPTY, and that is the point: every one of the four panels with a reference drawing now joins up
+# exactly as the note draws it.  What used to be excused here was the drawer's, not the note's —
+# which arrow is INDUCED (`Face.dashes`) and when a pasted pair is a FAN rather than a square
+# (`Face.isFan`), both now read off the statement.

@@ -332,3 +332,14 @@ open Lean PrettyPrinter in
 -- writes `𝟙Tx`.  Losing the object would need the notation itself to change, which is parsing.
 
 end Freyd.Alg
+
+section
+/-- The INDUCED-ARROW CONSTRUCTORS: a constant carries this when APPLYING it is what a universal
+    property gives — the fold `⦇R⦈`, the pairing `⟨f,g⟩`, the transpose `Λ R`.  The commutative
+    diagrams draw such an arrow DASHED (`diag/tool/CommutativeDiagram.lean`, `Face.dashes`), and
+    they read the attribute rather than a name list of their own, so a new constructor is marked
+    where it is declared and every picture dashes it without another line in the drawer.  Tag only
+    a constructor whose OUTPUT the law produces: `F` is not one, because `F(⦇f⦈)` is `F`'s action
+    on an arrow some other law produced. -/
+register_label_attr diag_induced
+end
