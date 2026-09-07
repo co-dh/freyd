@@ -154,5 +154,7 @@ open Lean PrettyPrinter in
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
 -- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
+-- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
+attribute [diag_unfold] RelSet.ListRel.prefAlg
 
 end Freyd.Alg

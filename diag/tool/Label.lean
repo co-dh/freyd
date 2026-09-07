@@ -143,6 +143,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Alg.est, args) => un 4 0 "est(" ")" args
   | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) => un 4 0 "⦇" "⦈" args
   | (``Freyd.Alg.Λ, args) => un 2 3 "" "%∋" args
+  -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
+  -- precedence inside, nothing after the comma, as the note sets it.
+  | (``Freyd.Alg.junc, args) => do
+    match lastTwo (← arrows args) with
+    | some (f, g) => return "[" ++ (← labelAt 0 f) ++ "," ++ (← labelAt 0 g) ++ "]"
+    | none => plain e
   -- The TYPE FUNCTOR's action on an arrow is a relator's action like any other, so it takes the same
   -- brackets as `F(R)`: `T(f)`, never `T f`, juxtaposition being composition and nothing else.  The
   -- letter is `typeRelator`'s own unexpander's (`diag/StrDiagNames.lean`), which the lane wears too.
