@@ -62,13 +62,17 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
   -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
   -- `(R S) ∩ T`.
-  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String :=
-    match lastTwo args with
+  -- An operand is an ARROW, picked by its TYPE and not by its position: `I.cata f hf` carries the
+  -- algebra AND the proof it is one, and taking the last argument wrote `⦇hf⦈` for `⦇f⦈`.
+  let arrows (args : Array Expr) : MetaM (Array Expr) :=
+    args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
+  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String := do
+    match lastTwo (← arrows args) with
     | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
     | none => plain e
   -- The one argument of a unary operator, at the precedence its operand is set at.
-  let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM String :=
-    match args.back? with
+  let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM String := do
+    match (← arrows args).back? with
     | some r => return wrap p (pre ++ (← labelAt cp r) ++ post)
     | none => plain e
   match e.getAppFnArgs with
@@ -105,7 +109,8 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     bin 1 " ∪ " args
   | (``Freyd.Diag.ClosedLinearBicat.residual, args)
   | (``Freyd.Alg.DivisionAllegory.div, args) => bin 1 " / " args
-  | (``Freyd.Alg.leftDiv, args) => bin 1 " \\ " args
+  -- The note sets the left division TIGHT (`⦇S⦈°\X`, 11.6.4b) where `/` and `∪` keep their spaces.
+  | (``Freyd.Alg.leftDiv, args) => bin 1 "\\" args
   | (``Freyd.Alg.symmDiv, args) => bin 1 " /ₛ " args
   | (``Freyd.Alg.impl, args) => bin 1 " ⇨ " args
   | (``Freyd.Alg.thenRel, args) => bin 1 " ⨾ " args
