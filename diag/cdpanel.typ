@@ -121,7 +121,8 @@
     } else { per }
     // `ar`'s `bow` is signed towards the LEFT normal, and `nm` is the side the label is on.
     let sgn = if nm.at(0) * per.at(0) + nm.at(1) * per.at(1) < 0 { -1 } else { 1 }
-    ar(a, b, black, bow: sgn * e.bow,
+    // The chord of a pasted pair is the one dashed edge — the arrow the two faces induce.
+    ar(a, b, black, bow: sgn * e.bow, dash: if e.at("dash", default: false) { "dashed" } else { none },
       s0: calc.max(0.55, reach(ext.at(e.at("from")), u) + ACLEAR),
       s1: calc.max(0.55, reach(ext.at(e.at("to")), (-u.at(0), -u.at(1))) + ACLEAR))
     let lh = hext(e.label, 0pt, length)
@@ -144,4 +145,15 @@
   context P(cetz.canvas(length: length, cdbody(nodes, edges, faces, length)), s: s,
     key: cert.at("expect", default: "cdpanel"))
   metadata((kind: "commutative", helper: "cdpanel", cert: cert))
+}
+
+// Two faces that share no edge, or more than one, are not one polygon — the note's `<fokkinga>` pair
+// shares `α` and `F(⟨f,g⟩)`, so a single square cannot carry both — and are set SIDE BY SIDE, at the
+// note's own gutter.  ONE `P` around the row, so the panels scale together and keep one step.
+#let CDGUTTER = 34pt
+#let cdrow(panels, s: 74%, length: LENGTH, cert: (:)) = {
+  context P(grid(columns: panels.len(), align: horizon, column-gutter: CDGUTTER,
+    ..panels.map(p => cetz.canvas(length: length, cdbody(p.nodes, p.edges, p.faces, length)))),
+    s: s, key: cert.at("expect", default: "cdpanel"))
+  metadata((kind: "commutative", helper: "cdrow", cert: cert))
 }
