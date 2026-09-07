@@ -177,10 +177,10 @@ public theorem typeMap_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
 /-- **§2.7 p. 51**: `αT(R) = F(R,T(R))α` — "`α` is a natural transformation from
     `G(R) = F(R,T(R))` to `T`": building and then mapping is mapping the parts and then
     building.  The cancellation `α⦇·⦈ = F(⦇·⦈)·` (5.12) plus interchange. -/
-public theorem alpha_natural {A B : 𝒜} (R : A ⟶ B) :
-    alphaT I A ≫ typeMap I R = F.map R (typeMap I R) ≫ alphaT I B := by
-  show (I A).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I B).α
-  rw [typeMap_defn I R, relCata_cancel (I A)]
+public theorem alpha_natural {A B : 𝒜} (f : A ⟶ B) :
+    alphaT I A ≫ typeMap I f = F.map f (typeMap I f) ≫ alphaT I B := by
+  show (I A).α ≫ typeMap I f = F.map f (typeMap I f) ≫ (I B).α
+  rw [typeMap_defn I f, relCata_cancel (I A)]
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange']
 
