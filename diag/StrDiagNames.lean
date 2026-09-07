@@ -10,6 +10,10 @@
 -/
 import AOP.A5_5_TypeFunctor
 import AOP.A5_5
+-- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
+import AOP.A8_6_Tour
+-- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
+import diag.tool.ExprReader
 
 namespace Freyd.Alg
 
@@ -17,6 +21,12 @@ namespace Freyd.Alg
 -- the initial algebra's, the fork from the product's, the transpose from the power object's.  The
 -- attribute is `AOP.A5_1`'s; the tags are here because dashing is the DIAGRAM's vocabulary.
 attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pair Λ
+
+-- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
+-- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
+-- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
+-- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
+attribute [diag_unfold] RelSet.Tour.tour
 
 open Lean PrettyPrinter in
 /-- The bifunctor's unary form is still the same bifunctor: the note's lane is `F`. -/

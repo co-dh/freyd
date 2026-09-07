@@ -17,6 +17,12 @@ import AOP.A5_7
 
 open Lean
 
+/-- WHICH DEFINITIONS A PICTURE OPENS.  The mirror of a name kept: where the NOTE writes a `def`'s
+    BODY and Lean prints its name, the picture is of the body, so the exporter opens it before
+    drawing.  Registered HERE, in the file that reads it — an attribute is only usable in a module
+    that imports the one declaring it, so the tags go in `diag/StrDiagNames.lean`. -/
+register_label_attr diag_unfold
+
 namespace Freyd.StrDiag
 
 /-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
@@ -473,6 +479,17 @@ partial def factors (e : Expr) : Array Expr :=
     | some (f, g) => factors f ++ factors g
     | none => #[e]
   | _ => #[e]
+
+/-- A term whose head the NOTE writes as its BODY, opened; anything else unchanged.  Which heads is
+    `@[diag_unfold]`'s answer — set beside the declaration, or in `diag/StrDiagNames.lean` where the
+    declaration is not the diagram's to edit — so no picture functor carries a list of names.  The
+    mirror of `diag_induced`: that one says a name is KEPT and dashed, this one that it is opened. -/
+def openNoted (e : Expr) : MetaM Expr := do
+  let .const n _ := e.getAppFn | return e
+  unless (← Lean.labelled `diag_unfold).contains n do return e
+  match ← Meta.unfoldDefinition? e with
+  | some v => return v.headBeta
+  | none => return e
 
 /-- The relation between the two sides of a statement, and the sides.  ONE copy: the string, the
     circuit and the commutative functors and the proof walk all ask this same question of a head. -/

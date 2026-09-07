@@ -44,6 +44,8 @@ import Lean
 -- `StrDiag`: one copy of what a statement states, of an arrow's two ends, and of an application's
 -- last two arguments.
 import diag.tool.ExprReader
+-- The note's spelling of a term, shared with the string and circuit pictures.
+import diag.tool.Label
 import AOP.A4_5
 
 open Lean
@@ -65,37 +67,9 @@ def fmt (x : Float) : String :=
   let s := s!"{m / 100}.{if frac < 10 then "0" else ""}{frac}"
   if n < 0.0 then "-" ++ s else s
 
-/-- Lean's pretty printer, on one line.  The repo's namespaces carry no information inside a picture
-    of the repo's own algebra, so they come off.  This is the ONE source of every label here: where
-    the note spells a constant differently, the fix is an `app_unexpander` beside that constant, not
-    a table in this file. -/
-def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr e)
-  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
-
-/-- The note's SPACING, and nothing else.  Lean's formatter always sets an application's argument
-    off from its head (`F T`, `E A`, `E (R)`) and an infix off from its operands (`A × B`,
-    `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched, it is what the
-    `app_unexpander` beside the constant already printed. -/
-def tight (e : Expr) : MetaM String := do return (← plain e).replace " " ""
-
-/-- The heads the note sets tight: a relator's action on an object, the power object and the
-    existential image, the product and the fork.  A head not listed keeps the formatter's spacing
-    (`T R`, `α A`), which is what the note draws for those. -/
-def tightHeads : Array Name :=
-  #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj, ``Freyd.Alg.existsImage,
-    ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair]
-
-/-- A picture label: `plain`'s spelling, closed up where the note closes it, plus the ONE bracket no
-    term carries — a relator's action on an ARROW (`F(⦇R⦈)`, `F(⟨f,g⟩)`), where the bracket is the
-    note's way of saying the argument is applied and not composed. -/
-partial def label (e : Expr) : MetaM String := do
-  match e.getAppFnArgs with
-  | (``Freyd.Functor.map, _) =>
-    match StrDiag.functorMap? e with
-    | some (f, r) => return (← label f) ++ "(" ++ (← label r) ++ ")"
-    | none => plain e
-  | (c, _) => if tightHeads.contains c then tight e else plain e
+-- Every label of every picture is `diag/tool/Label.lean`'s: one spelling of composition, of the
+-- converse and of the note's brackets, shared with the string and circuit functors.
+open StrDiag (plain label)
 
 /-- Every `.lean` file under `dir`, as module names below `pre` — the exe imports one environment
     holding all of them and draws every name on the command line from it. -/

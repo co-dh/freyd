@@ -23,6 +23,8 @@ import Lean
 -- `StrDiag.split` and the rest of the elaborated-term reader: one copy of a question every picture
 -- functor asks — what relation a statement states, and what its two sides are.
 import diag.tool.ExprReader
+-- The note's spelling of a term, shared with the string and commutative pictures.
+import diag.tool.Label
 import AOP.A10_1
 import AOP.A7_7_MSS
 import AOP.A7_7_Filter
@@ -216,34 +218,10 @@ def hasClause (e : Expr) : Bool :=
   | ``Freyd.Alg.RelSet.rprodMap | ``Freyd.Alg.prodMap | ``Freyd.Functor.map => true
   | _ => false
 
-mutual
-
-partial def arrLabel (e : Expr) : MetaM String := do
-  match e.getAppFnArgs with
-  | (``Cat.id, _) => return "𝟙"
-  | (``Freyd.Alg.PowerAllegory.eps, _) => return "∋"
-  | (``Freyd.Alg.est, args) =>
-    match args.back? with
-    | some r => return "est(" ++ (← arrLabel r) ++ ")"
-    | none => plain e
-  | (``Freyd.Alg.Λ, args) =>
-    match args.back? with
-    | some r => return (← arrLabel r) ++ "%∋"
-    | none => plain e
-  | (``Freyd.Alg.Allegory.recip, args) =>
-    match args.back? with
-    | some r => return (← arrLabel r) ++ "°"
-    | none => plain e
-  | (``Freyd.Alg.RelSet.graph, args) =>
-    match args.back? with
-    | some f => mapLabel f
-    | none => plain e
-  | _ => plain e
-
 /-- The label of a MAP given by its function.  A cons cell is `cons`, a projection its `π`, a
     constant the thing it creates — each read off the function's own body, so the next map built
     the same way gets the same name without anything being added here. -/
-partial def mapLabel (f : Expr) : MetaM String := do
+def mapLabel (f : Expr) : MetaM String := do
   let f ← Meta.whnfD f
   match f with
   | .lam _ _ body _ =>
@@ -270,7 +248,16 @@ partial def mapLabel (f : Expr) : MetaM String := do
     | (``Prod.snd, _) => return "π₂"
     | _ => plain f
 
-end
+/-- The label a box carries.  A MAP GIVEN BY ITS FUNCTION is named from that function's own body —
+    a question about the map, which only this functor asks — and everything else is the note's
+    spelling, `diag/tool/Label.lean`'s, the same one the string and commutative pictures write. -/
+def arrLabel (e : Expr) : MetaM String := do
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    match args.back? with
+    | some f => mapLabel f
+    | none => StrDiag.label e
+  | _ => StrDiag.label e
 
 /-! ### The picture
 
@@ -331,6 +318,12 @@ def Val.kindOf : Val → Option String
   | .dict kvs => kvs.findSome? fun (k, v) =>
       if k == "k" then (match v with | Val.s t => some t | _ => none) else none
   | _ => none
+
+/-- The same node under a different label — how a `def` opened for its WIRING keeps its own name. -/
+def Val.relabel (v : Val) (s : String) : Val :=
+  match v with
+  | .dict kvs => .dict (kvs.map fun (k, x) => if k == "label" then (k, .s s) else (k, x))
+  | v => v
 
 def Val.flag (v : Val) (name : String) : Bool :=
   match v with
@@ -547,7 +540,15 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
 partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
   if !(isNamed e) then
     if let some v ← Meta.unfoldDefinition? e then
-      if hasClause v then return ← draw v
+      if hasClause v then
+        let p ← draw v
+        -- THE LABEL IS THE TERM AS IT STOOD BEFORE OPENING.  Opening a `def` gives the WIRING —
+        -- whether the box is a map's rectangle, how many strands it spans — and never the name: a
+        -- body that draws as ONE box is that one arrow, and the note writes it by the name the
+        -- definition gave it (`plus`, `glue`), not by the lambda the body happens to be.
+        if p.val.kindOf == some "box" then
+          return { p with val := p.val.relabel (← arrLabel e) }
+        return p
   return boxPic (← arrLabel e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
 
 partial def lane (p : Pic) : MetaM Pic := do
