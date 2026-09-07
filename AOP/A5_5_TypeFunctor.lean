@@ -272,4 +272,62 @@ open Lean PrettyPrinter in
   | `($_ $F $_ $S) => `($F $S)
   | _ => throw ()
 
+/-! ## §3.2  Ruby triangles and Horner's rule
+
+  B&dM §3.2 pp. 58-59, mirrored to diagram order.  For `f : A ⟶ A` the RUBY TRIANGLE
+  `tri(f) : TA ⟶ TA` applies `f` one more time at each level of the structure — on cons-lists
+  `tri(f)[a₀,a₁,…,aᵢ,…,aₙ] = [a₀,f(a₁),…,fⁱ(aᵢ),…,fⁿ(aₙ)]`, the book's four stages ending at
+  `tri(f) = ⦇F(𝟙,T(f))α⦈` for an arbitrary initial type `(α,T)`.  Horner's rule fuses the
+  triangle into the fold that follows it, and its whole side condition is the one distribution
+  law `gf = F(f,f)g`. -/
+
+/-- **B&dM §3.2 p. 59**: the RUBY TRIANGLE `tri(f) = ⦇F(𝟙,T(f))α⦈ : TA ⟶ TA` — rebuild the
+    structure with `α`, mapping `f` over the substructure already built, so what sits `i` levels
+    down comes out under `fⁱ`. -/
+@[expose] public def tri {A : 𝒜} (f : A ⟶ A) : (I A).t ⟶ (I A).t :=
+  relCata (I := I A) (F.map (𝟙 A) (typeMap I f) ≫ alphaT I A)
+
+/-- The defining equation, unfolded — `tri(f) = ⦇F(𝟙,T(f))α⦈` as a citable statement. -/
+public theorem tri_defn {A : 𝒜} (f : A ⟶ A) :
+    tri I f = relCata (I := I A) (F.map (𝟙 A) (typeMap I f) ≫ alphaT I A) := rfl
+
+/-- Under `gf = F(f,f)g` the two ways of pushing `f` through a fold agree: `T(f)⦇g⦈ = ⦇g⦈f` —
+    mapping `f` over the structure and then folding is folding and then applying `f` once.  Type
+    functor fusion turns the left side into `⦇F(f,𝟙)g⦈`, and (2.12)-fusion turns the right side
+    into the same fold, its side condition being exactly the hypothesis after interchange. -/
+public theorem typeMap_comp_relCata {A : 𝒜} {f : A ⟶ A} {g : F.obj A A ⟶ A}
+    (h : g ≫ f = F.map f f ≫ g) :
+    typeMap I f ≫ relCata (I := I A) g = relCata (I := I A) g ≫ f := by
+  rw [typeMap_fusion I f g]
+  refine (relCata_fusion (I A) ?_).symm
+  show g ≫ f = F.map (𝟙 A) f ≫ (F.map f (𝟙 A) ≫ g)
+  rw [← Cat.assoc, F.interchange' f f]
+  exact h
+
+/-- **HORNER'S RULE (B&dM §3.2, pp. 58-59)**: `tri(f)⦇g⦈ = ⦇F(𝟙,f)g⦈ ⟸ gf = F(f,f)g` — a
+    triangle followed by a fold is a single fold, whose algebra applies `f` to the parameter
+    before `g`.  For cons-lists and `g = plus`, `f = (×x)` this is the schoolbook way of
+    evaluating a polynomial, which is why the book calls it Horner's rule.  One (2.12)-fusion,
+    whose side condition reduces by `α⦇g⦈ = F(𝟙,⦇g⦈)g` and `typeMap_comp_relCata` to the
+    hypothesis. -/
+public theorem tri_cata_fusion {A : 𝒜} {f : A ⟶ A} {g : F.obj A A ⟶ A}
+    (h : g ≫ f = F.map f f ≫ g) :
+    tri I f ≫ relCata (I := I A) g = relCata (I := I A) (F.map (𝟙 A) f ≫ g) := by
+  rw [tri_defn I f]
+  refine relCata_fusion (I A) ?_
+  show (F.map (𝟙 A) (typeMap I f) ≫ (I A).α) ≫ relCata (I := I A) g
+      = F.map (𝟙 A) (relCata (I := I A) g) ≫ (F.map (𝟙 A) f ≫ g)
+  calc (F.map (𝟙 A) (typeMap I f) ≫ (I A).α) ≫ relCata (I := I A) g
+      = F.map (𝟙 A) (typeMap I f) ≫ ((I A).α ≫ relCata (I := I A) g) := Cat.assoc _ _ _
+    _ = F.map (𝟙 A) (typeMap I f) ≫ (F.map (𝟙 A) (relCata (I := I A) g) ≫ g) := by
+          rw [relCata_cancel (I A) g]
+    _ = (F.map (𝟙 A) (typeMap I f) ≫ F.map (𝟙 A) (relCata (I := I A) g)) ≫ g :=
+          (Cat.assoc _ _ _).symm
+    _ = F.map (𝟙 A) (typeMap I f ≫ relCata (I := I A) g) ≫ g := by
+          rw [← F.map_comp, Cat.id_comp]
+    _ = F.map (𝟙 A) (relCata (I := I A) g ≫ f) ≫ g := by rw [typeMap_comp_relCata I h]
+    _ = (F.map (𝟙 A) (relCata (I := I A) g) ≫ F.map (𝟙 A) f) ≫ g := by
+          rw [← F.map_comp, Cat.id_comp]
+    _ = F.map (𝟙 A) (relCata (I := I A) g) ≫ (F.map (𝟙 A) f ≫ g) := Cat.assoc _ _ _
+
 end Freyd.Alg
