@@ -9,8 +9,14 @@
   `AOP` module already spells the same functor's action on arrows `T(R)`.
 -/
 import AOP.A5_5_TypeFunctor
+import AOP.A5_5
 
 namespace Freyd.Alg
+
+-- WHICH ARROWS A PICTURE DASHES.  Each is the arrow a universal property produces: the fold from
+-- the initial algebra's, the fork from the product's, the transpose from the power object's.  The
+-- attribute is `AOP.A5_1`'s; the tags are here because dashing is the DIAGRAM's vocabulary.
+attribute [diag_induced] relCata Freyd.HasBinaryProducts.pair Λ
 
 open Lean PrettyPrinter in
 /-- The bifunctor's unary form is still the same bifunctor: the note's lane is `F`. -/

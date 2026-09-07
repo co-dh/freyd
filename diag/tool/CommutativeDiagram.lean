@@ -75,6 +75,49 @@ def plain (e : Expr) : MetaM String := do
     |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
+/-- A single NAME — one run of letters and digits.  That is what decides a bracket: brackets exist
+    to stop a compound reading as a composite, and a name cannot be one. -/
+def isName (s : String) : Bool :=
+  s.length == 1 || (!s.isEmpty && s.all fun c => c.isAlphanum || c == '_' || c == '\'')
+
+/-- A picture label.  Every SPELLING comes from an unexpander beside the constant, through `plain`;
+    what no unexpander can say is the note's SPACING, because Lean's formatter always sets an
+    application's argument off with a space where the note sets it against the head.  So the
+    applications a picture writes TIGHT are here, and only those: a relator's action on an OBJECT is
+    bare when the object is a single name (`FT`, `EA`) and bracketed otherwise (`F(A×B)`), its
+    action on an ARROW always bracketed (`F(⦇f⦈)`, `E(R)`), and the product and the fork close up
+    (`A×B`, `⟨⦇h⦈,⦇k⦈⟩`).  A node already says which object an operator is taken at, so `∋ b` and
+    `π₁` drop theirs. -/
+partial def label (e : Expr) : MetaM String := do
+  let obj (x : Expr) : MetaM String := do
+    let s ← label x; return if isName s then s else "(" ++ s ++ ")"
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.PowerAllegory.eps, _) => return "∋"
+  | (``Freyd.HasBinaryProducts.fst, _) => return "π₁"
+  | (``Freyd.HasBinaryProducts.snd, _) => return "π₂"
+  | (``Freyd.Alg.singletonMap, _) => return "𝟙%∋"
+  | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
+    match args.back? with | some a => return "E" ++ (← obj a) | none => plain e
+  | (``Freyd.Alg.existsImage, args) =>
+    match args.back? with | some r => return "E(" ++ (← label r) ++ ")" | none => plain e
+  | (``Freyd.HasBinaryProducts.prod, args) =>
+    match StrDiag.lastTwo args with
+    | some (a, b) => return (← label a) ++ "×" ++ (← label b)
+    | none => plain e
+  | (``Freyd.HasBinaryProducts.pair, args) =>
+    match StrDiag.lastTwo args with
+    | some (f, g) => return "⟨" ++ (← label f) ++ "," ++ (← label g) ++ "⟩"
+    | none => plain e
+  | (``Freyd.Functor.obj, args) =>
+    match StrDiag.lastTwo args with
+    | some (f, x) => return (← label f) ++ (← obj x)
+    | none => plain e
+  | (``Freyd.Functor.map, _) =>
+    match StrDiag.functorMap? e with
+    | some (f, r) => return (← label f) ++ "(" ++ (← label r) ++ ")"
+    | none => plain e
+  | _ => plain e
+
 /-- Every `.lean` file under `dir`, as module names below `pre` — the exe imports one environment
     holding all of them and draws every name on the command line from it. -/
 partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) := do
@@ -107,8 +150,8 @@ structure Edge where
       `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
       parallel arrows between one pair of nodes would otherwise be drawn on top of each other. -/
   bow : Float := 0.0
-  /-- Drawn dashed.  The one dashed edge is a pasted pair's CHORD — the arrow the two faces share is
-      the one they induce, and the note draws every induced arrow dashed. -/
+  /-- Drawn dashed.  THE NOTE DASHES THE ARROW THE STATEMENT PRODUCES, and nothing else — see
+      `Face.dashes`. -/
   dash : Bool := false
 
 /-- Where a face's symbol is set, once the grid is known. -/
@@ -203,12 +246,15 @@ structure Face where
   lhs : Path
   rhs : Path
   chord : Option (Expr × String) := none
+  /-- Arrows the statement's OTHER side, across an `↔`, says this one produces — see `inducedIn`.
+      Empty for a statement that is a single claim, where the head constant says it instead. -/
+  induced : Array Expr := #[]
 
 /-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
     A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
     drawable on a grid, a decision about the PICTURE and not a fact about the term, which is why it
     lives here and not in `interp`. -/
-def Face.of (sym : String) (p q : Path) : MetaM Face := do
+def Face.of (sym : String) (p q : Path) (induced : Array Expr := #[]) : MetaM Face := do
   let (pa, pb) := (← p.objAt p.src, ← p.objAt p.tgt)
   let (qa, qb) := (← q.objAt q.src, ← q.objAt q.tgt)
   unless ← Meta.isDefEq pa qa do
@@ -219,7 +265,7 @@ def Face.of (sym : String) (p q : Path) : MetaM Face := do
     if r.edges.isEmpty then Path.arrow (← Meta.mkAppM ``Cat.id #[o]) else return r
   let lhs ← drawable p pa
   let rhs ← drawable q qa
-  return { sym, lhs := lhs.endName "u", rhs := rhs.endName "v" }
+  return { sym, lhs := lhs.endName "u", rhs := rhs.endName "v", induced }
 
 /-- The face's boundary as ONE CLOSED WALK: `edges[i]` joins `nodes[i]` to `nodes[i+1]`, the last
     back to the first, each edge keeping its own direction.  The walk ignores those directions,
@@ -259,6 +305,46 @@ def Face.paste (f g : Face) : MetaM (Option Face) := do
   return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
                 chord := some (fe[i]!.2.2, g.sym) }
 
+/-! ### Which arrow the statement PRODUCES -/
+
+/-- The INDUCED-ARROW CONSTRUCTORS, read by their ATTRIBUTE and never by a name list here: a
+    constant carries `@[diag_induced]` when applying it is what a universal property gives — the
+    fold `⦇R⦈`, the pairing `⟨f,g⟩`, the transpose `Λ R`.  A new one is tagged beside its
+    declaration and every picture dashes it without another line in this file. -/
+def inducedHeads : MetaM (Array Name) := do return ← Lean.labelled `diag_induced
+
+/-- Whether an arrow is one an induced constructor BUILT — its head, not something under it:
+    `⦇f⦈` is induced and `F(⦇f⦈)` is `F`'s action on it. -/
+def isInduced (heads : Array Name) (f : Expr) : Bool :=
+  match f.getAppFn with | .const n _ => heads.contains n | _ => false
+
+/-- The arrows a claim says are produced.  One side of an equation is produced when the OTHER is
+    headed by an induced constructor, and so is every arrow ARGUMENT of an induced constructor at
+    its head: `⟨f,g⟩=⦇⟨h,k⟩⦈` produces `⟨f,g⟩`, hence `f` and `g`. -/
+partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
+  let heads ← inducedHeads
+  let rec parts (x : Expr) : MetaM (Array Expr) := do
+    unless isInduced heads x do return #[x]
+    let mut out := #[x]
+    for a in x.getAppArgs do
+      if (← Meta.inferType a).isAppOf ``Cat.Hom then out := out ++ (← parts a)
+    return out
+  match e.getAppFnArgs with
+  | (``And, #[l, r]) => return (← inducedIn l) ++ (← inducedIn r)
+  | _ =>
+    let some (_, l, r) := StrDiag.split e | return #[]
+    if isInduced heads r then parts l else if isInduced heads l then parts r else return #[]
+
+/-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  A pasted pair produces its
+    CHORD — the arrow the two faces share is the one they jointly determine — and nothing else, so
+    `⦇h⦈` and `⦇k⦈` under the fan's `⟨⦇h⦈,⦇k⦈⟩` stay solid: some other law produced them.  A single
+    face has no chord, and then an arrow is produced when an induced constructor heads it
+    (`α⦇f⦈=F(⦇f⦈)f` produces `⦇f⦈`) or when the other side of the statement's `↔` says so. -/
+def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
+  if fc.chord.isSome then return false
+  if isInduced (← inducedHeads) f then return true
+  fc.induced.anyM fun g => Meta.isDefEq g f
+
 /-! ### The grid
 
 A path of `n` edges from the top-left corner to the bottom-right one runs along two legs, and the
@@ -288,9 +374,49 @@ def sideAt (first second : Nat) (mirror : Bool) (i : Nat) : String :=
   else if mirror then (if i < first then "left" else "bottom")
   else (if i < first then "top" else "right")
 
+/-- A FAN, the one pasted shape that is not a square: every arrow of the polygon LEAVES an end of
+    the chord, so the two ends are two apexes over one row of shared targets, and the chord runs
+    between them.  Laid out that way — the chord's source above, its target below it, the two
+    interior vertices left and right of the target — where a square would put the chord on a
+    diagonal and one apex's two arrows in opposite directions.  `⟨⦇h⦈,⦇k⦈⟩π₁=⦇h⦈ ∧ ⟨⦇h⦈,⦇k⦈⟩π₂=⦇k⦈`
+    is a fan; `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)` is not, its `E(R)` arriving AT the chord's target. -/
+def Face.isFan (fc : Face) : Bool :=
+  fc.chord.isSome && fc.lhs.edges.size == 2 && fc.rhs.edges.size == 2 &&
+    (fc.lhs.edges ++ fc.rhs.edges).all fun (s, _, _) => s == "s" || s == "t"
+
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
 def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+  if fc.isFan then
+    -- Three columns, two rows: the apex over the middle of the row its chord ends in.
+    let place (p : Path) (side₀ : String) (gx : Float) : MetaM (Array Node × Array Edge) := do
+      let mut ns : Array Node := #[]
+      let mut es : Array Edge := #[]
+      for i in [0:3] do
+        let (id, o) := p.nodes[i]!
+        let p := if i == 0 then (1.0, 0.0) else if i == 1 then (gx, -1.0) else (1.0, -1.0)
+        ns := ns.push { id, gx := p.1, gy := p.2, label := (← label o) }
+      for i in [0:2] do
+        let (src, tgt, f) := p.edges[i]!
+        es := es.push { src, tgt, label := (← label f), side := if i == 0 then side₀ else "bottom",
+                        dash := ← fc.dashes f }
+      return (ns, es)
+    let (ln, le) ← place fc.lhs "left" 0.0
+    let (rn, re) ← place fc.rhs "right" 2.0
+    let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let some (c, sym) := fc.chord | throwError "a fan is a pasted pair and has a chord"
+    -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
+    -- of the face the `lhs` bounds.
+    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "left",
+                                 dash := true : Edge }]
+    let mark (s : String) (ids : Array String) : Array FaceMark :=
+      let ps := ids.filterMap fun id => (nodes.find? (·.id == id)).map fun v => (v.gx, v.gy)
+      let k := ps.size.toFloat
+      if s == "=" || ps.isEmpty then #[] else
+        #[{ sym := s, gx := ps.foldl (fun a p => a + p.1) 0.0 / k,
+            gy := ps.foldl (fun a p => a + p.2) 0.0 / k }]
+    return (nodes, edges,
+      mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
   let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
   let (top, right) := legs n false
   let (left, bot) := legs m true
@@ -309,19 +435,19 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   for i in [0:n+1] do
     let (id, o) := fc.lhs.nodes[i]!
     let (gx, gy) := vertexAt top right fx fy false i
-    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← plain o) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
   for j in [0:m+1] do
     let (id, o) := fc.rhs.nodes[j]!
     let (gx, gy) := vertexAt left bot fx fy true j
-    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← plain o) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
-    edges := edges.push { src, tgt, label := (← plain f), side := sideAt top right false i,
-                          bow := if bowed then 0.9 else 0.0 }
+    edges := edges.push { src, tgt, label := (← label f), side := sideAt top right false i,
+                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
-    edges := edges.push { src, tgt, label := (← plain f), side := sideAt left bot true j,
-                          bow := if bowed then 0.9 else 0.0 }
+    edges := edges.push { src, tgt, label := (← label f), side := sideAt left bot true j,
+                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f }
   -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
   -- The symbol goes at the average of ITS OWN corners, which for a convex polygon is inside it —
   -- and a chord splits the polygon in two, so each side's symbol takes that side's corners alone.
@@ -338,7 +464,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
     let withChord := edges.push
-      { src := "s", tgt := "t", label := (← plain c), side := "top", dash := true }
+      { src := "s", tgt := "t", label := (← label c), side := "top", dash := true }
     return (nodes, withChord,
       mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
 
@@ -406,17 +532,21 @@ def cdPage (sel : String) (ps : Array Panel) : String :=
     of those gets ONE delta step on its head and its binders opened — `StrictNatural F G φ` needs
     exactly one such step, and a statement that needs none pays nothing. -/
 partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat)
-    : MetaM (Array Face) := do
+    (induced : Array Expr := #[]) : MetaM (Array Face) := do
   match body.getAppFnArgs with
-  | (``And, #[l, r]) => return (← faces what l side fuel) ++ (← faces what r side fuel)
+  | (``And, #[l, r]) =>
+    return (← faces what l side fuel induced) ++ (← faces what r side fuel induced)
   | (``Iff, #[l, r]) =>
     let some s := side
       | throwError "{what}: an `↔` is two claims, not two paths — name a side, `{what}.lhs` or \
           `{what}.rhs`"
-    faces what (if s == "lhs" then l else r) none fuel
+    -- The side NOT drawn is still read: it is where an equivalence says which of the drawn
+    -- arrows the statement produces, and that is what the picture dashes.
+    let (this, other) := if s == "lhs" then (l, r) else (r, l)
+    faces what this none fuel (induced ++ (← inducedIn other))
   | _ =>
     match StrDiag.split body with
-    | some (sym, l, r) => return #[← Face.of sym (← interp l) (← interp r)]
+    | some (sym, l, r) => return #[← Face.of sym (← interp l) (← interp r) induced]
     | none =>
       if fuel == 0 then
         throwError "{what}: not an equation or inequation of composites, and no definition to \
@@ -428,7 +558,7 @@ partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat
       let some v := ci.value?
         | throwError "{what}: `{n}` heads the statement and has no definition to open"
       let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
-      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1)
+      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced
 
 /-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
 def part (s : String) : Name × Option String :=

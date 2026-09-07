@@ -44,10 +44,22 @@
 
 #let cu(l, length) = l / length
 
+// A label whose arrow is a SYMMETRIC DIVISION is set as the fraction the note sets it as — the
+// transpose `R%∋` and the singleton `𝟙%∋` are `frac(R, ∋)` and `frac(𝟙, ∋)`, and that is what the
+// note's `<adj-E-bend>` draws.  Every label of that shape, never a named one: the division is the
+// label's own operator, so the panel does not have to know which arrow it came from.
+#let lbl(l) = {
+  let t = l.at("text", default: none)
+  if t != none and t.contains("%") {
+    let p = t.split("%")
+    $frac(#raw(p.at(0)), #raw(p.slice(1).join("%")))$
+  } else { l }
+}
+
 // A label's half-width and half-height in canvas units.  `pad` is the box inset a node label wears
 // and an edge label does not.
-#let hext(lbl, pad, length) = {
-  let m = measure(box(inset: pad, text(NSIZE, lbl)))
+#let hext(l, pad, length) = {
+  let m = measure(box(inset: pad, text(NSIZE, l)))
   (cu(m.width, length) / 2, cu(m.height, length) / 2)
 }
 
@@ -91,7 +103,7 @@
 
 #let cdbody(nodes, edges, faces, length) = {
   let ext = (:)
-  for n in nodes { ext.insert(n.id, hext(n.label, NPAD, length)) }
+  for n in nodes { ext.insert(n.id, hext(lbl(n.label), NPAD, length)) }
   let cols = nodes.map(n => n.at.at(0)).dedup().sorted()
   let rows = nodes.map(n => n.at.at(1)).dedup().sorted()
   let colh = cols.map(c => calc.max(
@@ -121,18 +133,18 @@
     } else { per }
     // `ar`'s `bow` is signed towards the LEFT normal, and `nm` is the side the label is on.
     let sgn = if nm.at(0) * per.at(0) + nm.at(1) * per.at(1) < 0 { -1 } else { 1 }
-    // The chord of a pasted pair is the one dashed edge — the arrow the two faces induce.
+    // A dashed edge is the arrow the statement PRODUCES (`Face.dashes`), which is what the note dashes.
     ar(a, b, black, bow: sgn * e.bow, dash: if e.at("dash", default: false) { "dashed" } else { none },
       s0: calc.max(0.55, reach(ext.at(e.at("from")), u) + ACLEAR),
       s1: calc.max(0.55, reach(ext.at(e.at("to")), (-u.at(0), -u.at(1))) + ACLEAR))
-    let lh = hext(e.label, 0pt, length)
+    let lh = hext(lbl(e.label), 0pt, length)
     // How far the label box reaches in that direction — its support function, so the WHOLE box
     // clears the edge and not just its centre.
     let off = LABGAP + calc.abs(nm.at(0)) * lh.at(0) + calc.abs(nm.at(1)) * lh.at(1) + e.bow
     let mid = ((a.at(0) + b.at(0)) / 2, (a.at(1) + b.at(1)) / 2)
-    lab(mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off, black, e.label)
+    lab(mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off, black, lbl(e.label))
   }
-  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), black, n.label) }
+  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), black, lbl(n.label)) }
   for f in faces {
     let p = pos(f.at)
     d.content(p, text(SYMSIZE)[#f.sym])
