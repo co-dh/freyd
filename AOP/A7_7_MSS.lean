@@ -129,37 +129,130 @@ public theorem mss_prefix_sum : prefixR ≫ sumR = cataR Salg := by
         show r = a + csum zs
         rw [hr, hy]
 
+/-! ## §13.3.4 generically: `zero`, `plus`, and an order
+
+  Not one of the `mss-prefix-sum` or `mss-mono` panels is about `Int`.  The leaf arm needs only
+  that the order is REFLEXIVE, the `plus` arm only that `plus` is MONOTONIC in its running total,
+  and the fusion only that the map fused in is ENTIRE.  So the seven drawn steps are stated once
+  over `(zero, plus, R)` and the `Int` rows below are their instances. -/
+
+section Generic
+
+variable {E : Type} {A : RelSet.{0}} (zero : dL Unit ⟶ A)
+  (plus : (⟨E × A.carrier⟩ : RelSet.{0}) ⟶ A) (R : A ⟶ A)
+
+/-- **`⊸ zero`** — discard the argument, then `zero`.  Left generic in the source so the same
+    arrow serves the algebra (`E×A`) and the fused form (`E×[A]`). -/
+@[expose] public def discZero {X : RelSet.{0}} (zero : dL Unit ⟶ A) : X ⟶ A :=
+  (graph fun _ : X.carrier => ()) ≫ zero
+
+/-- The note's **`S ≜ [zero, ⊸ zero ∪ plus]`**, generically. -/
+@[expose] public def plusAlg : Fobj Unit E A ⟶ A :=
+  junc (sumCop (dL Unit) ⟨E × A.carrier⟩) zero (discZero zero ∪ plus)
+
+/-- **`(𝟙×S)⊸ zero ⊑ ⊸ zero`** — the argument is discarded, so what `S` did to it cannot show. -/
+public theorem rprodMap_comp_discZero_le {B c' : RelSet.{0}} (S : B ⟶ c') :
+    rprodMap (𝟙 (dE E)) S ≫ (discZero zero : (⟨E × c'.carrier⟩ : RelSet.{0}) ⟶ A)
+      ⊑ (discZero zero : (⟨E × B.carrier⟩ : RelSet.{0}) ⟶ A) :=
+  le_iff.mpr fun _ _ h => by
+    obtain ⟨_, _, _, _, hu⟩ := h
+    exact ⟨(), rfl, hu⟩
+
+/-- **`(𝟙×S)⊸ zero = ⊸ zero`** for `S` entire — the `mss-prefix-sum` reason "`(𝟙×sum)⊸=⊸`,
+    `sum` entire": every argument HAS an `S`-image, so the discard loses nothing. -/
+public theorem rprodMap_comp_discZero {B c' : RelSet.{0}} {S : B ⟶ c'} (hS : Entire S) :
+    rprodMap (𝟙 (dE E)) S ≫ (discZero zero : (⟨E × c'.carrier⟩ : RelSet.{0}) ⟶ A)
+      = (discZero zero : (⟨E × B.carrier⟩ : RelSet.{0}) ⟶ A) := by
+  refine le_antisymm (rprodMap_comp_discZero_le zero S) (le_iff.mpr fun p w h => ?_)
+  obtain ⟨_, _, hu⟩ := h
+  obtain ⟨y, hy, _⟩ := le_iff.mp ((entire_iff_one_le S).mp hS) p.2 p.2 rfl
+  exact ⟨(p.1, y), ⟨rfl, hy⟩, (), rfl, hu⟩
+
+/-- `mss-prefix-sum` rows 1→2: **`⊸ zero ∪ (𝟙×S) plus = (𝟙×S)(⊸ zero ∪ plus)`** — composition
+    distributes over the union, and `S` entire keeps the `⊸ zero` arm. -/
+public theorem plusAlg_fuse_fork {B : RelSet.{0}} {S : B ⟶ A} (hS : Entire S) :
+    (discZero zero : (⟨E × B.carrier⟩ : RelSet.{0}) ⟶ A) ∪ (rprodMap (𝟙 (dE E)) S ≫ plus)
+      = rprodMap (𝟙 (dE E)) S ≫ (discZero zero ∪ plus) := by
+  rw [DistributiveAllegory.comp_union_distrib, rprodMap_comp_discZero zero hS]
+
+/-- `mss-prefix-sum` rows 2→3: **`[zero,(𝟙×S)(⊸ zero ∪ plus)] = F(S)[zero,⊸ zero ∪ plus]`** —
+    the relator's action slides out of the bracket. -/
+public theorem plusAlg_fuse_relator {B : RelSet.{0}} (S : B ⟶ A) :
+    junc (sumCop (dL Unit) ⟨E × B.carrier⟩) zero (rprodMap (𝟙 (dE E)) S ≫ (discZero zero ∪ plus))
+      = (F Unit E).map S ≫ plusAlg zero plus :=
+  (Fmap_comp_junc Unit E S zero (discZero zero ∪ plus)).symm
+
+/-- `mss-mono` rows 1→2: **`(𝟙×R)(⊸ zero ∪ plus) = (𝟙×R)⊸ zero ∪ (𝟙×R) plus`**. -/
+public theorem mss_mono_fork :
+    rprodMap (𝟙 (dE E)) R ≫ (discZero zero ∪ plus)
+      = rprodMap (𝟙 (dE E)) R ≫ discZero zero ∪ rprodMap (𝟙 (dE E)) R ≫ plus :=
+  DistributiveAllegory.comp_union_distrib _ _ _
+
+/-- **`⊸ zero ⊑ ⊸ zero R`** — the order is reflexive. -/
+public theorem mss_mono_nil (hrefl : Cat.id A ⊑ R) :
+    (discZero zero : (⟨E × A.carrier⟩ : RelSet.{0}) ⟶ A) ⊑ discZero zero ≫ R :=
+  le_iff.mpr fun _ w h => ⟨w, h, le_iff.mp hrefl w w rfl⟩
+
+/-- `mss-mono` rows 1→4: **`(𝟙×R)(⊸ zero ∪ plus) ⊑ (⊸ zero ∪ plus)R`**. -/
+public theorem mss_mono_cons (hrefl : Cat.id A ⊑ R)
+    (hplus : rprodMap (𝟙 (dE E)) R ≫ plus ⊑ plus ≫ R) :
+    rprodMap (𝟙 (dE E)) R ≫ (discZero zero ∪ plus) ⊑ (discZero zero ∪ plus) ≫ R := by
+  rw [mss_mono_fork zero plus R, union_comp_distrib]
+  exact union_mono (le_trans (rprodMap_comp_discZero_le zero R) (mss_mono_nil zero R hrefl)) hplus
+
+/-- The `mss-mono` header, generically: **`F(R)[zero,⊸ zero ∪ plus] ⊑ [zero,⊸ zero ∪ plus]R`** —
+    `plus` monotonic and the order reflexive is all it takes. -/
+public theorem plusAlg_mono (hrefl : Cat.id A ⊑ R)
+    (hplus : rprodMap (𝟙 (dE E)) R ≫ plus ⊑ plus ≫ R) :
+    MonotonicAlg (F := F Unit E) (plusAlg zero plus) R := by
+  show (F Unit E).map R ≫ plusAlg zero plus ⊑ plusAlg zero plus ≫ R
+  rw [plusAlg, Fmap_comp_junc, junc_comp]
+  exact junc_mono _ (le_iff.mpr fun _ w h => ⟨w, h, le_iff.mp hrefl w w rfl⟩)
+    (mss_mono_cons zero plus R hrefl hplus)
+
+end Generic
+
 /-! ## The note's `mss-mono` and the greedy row -/
+
+/-- `≥` is reflexive — the other half of the greedy theorem's preorder hypothesis, and what the
+    `zero` arm of `mss-mono` needs. -/
+public theorem geq_refl : Cat.id (⟨Int⟩ : RelSet.{0}) ⊑ geq :=
+  le_iff.mpr fun a b h => by cases h; exact Int.le_refl a
+
+/-- The `plus` arm's hypothesis at `Int`: **`(𝟙×≥)plus ⊑ plus ≥`** — a bigger running total makes
+    a bigger sum (`Int.add_le_add_left`). -/
+public theorem plus_mono :
+    rprodMap (𝟙 (dE Int)) geq ≫ (graph fun q : Int × Int => q.1 + q.2)
+      ⊑ (graph fun q : Int × Int => q.1 + q.2) ≫ geq :=
+  le_iff.mpr fun p w h => by
+    obtain ⟨a, c⟩ := p
+    obtain ⟨q, hq, hw⟩ := h
+    obtain ⟨a', c'⟩ := q
+    obtain ⟨ha, hc⟩ := hq
+    cases ha
+    exact ⟨a + c, rfl, by rw [hw]; exact Int.add_le_add_left hc a⟩
+
+/-- `⊸ zero` at `Int` is the constant `zero`: the discard is the only thing between them. -/
+public theorem discZero_zero :
+    (discZero (graph fun _ : Unit => (0 : Int))
+        : (⟨Int × Int⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}))
+      = (graph (fun _ : Int × Int => (0 : Int))
+          : (⟨Int × Int⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0})) := by
+  apply hom_ext; intro _ w
+  exact ⟨fun ⟨_, _, hu⟩ => hu, fun h => ⟨(), rfl, h⟩⟩
+
+/-- The note's `S` at `Int` IS the generic `[zero,⊸ zero ∪ plus]`. -/
+theorem Salg_eq_plusAlg :
+    Salg = plusAlg (graph fun _ : Unit => (0 : Int)) (graph fun q : Int × Int => q.1 + q.2) := by
+  unfold Salg plusAlg zeroPlus
+  rw [discZero_zero]
 
 /-- The `mss-mono` row: `F(≥) S ⊑ S ≥`, whose `plus` branch is `(𝟙×≥)(⊸ zero ∪ plus) ⊑
     (⊸ zero ∪ plus)≥` — `plus` is monotonic, so a bigger running total gives a bigger step;
     the `zero` branch is `zero ⊑ zero ≥`. -/
 public theorem mss_mono : MonotonicAlg (F := F Unit Int) Salg geq := by
-  show (F Unit Int).map geq ≫ Salg ⊑ Salg ≫ geq
-  apply le_iff.mpr
-  intro u w h
-  obtain ⟨v, hv, hS⟩ := h
-  cases u with
-  | inl D =>
-      cases v with
-      | inl d' =>
-          have hw : w = 0 := (Salg_inl d' w).mp hS
-          subst hw
-          exact ⟨0, (Salg_inl D 0).mpr rfl, Int.le_refl 0⟩
-      | inr q => exact hv.elim
-  | inr q =>
-      obtain ⟨a, c⟩ := q
-      cases v with
-      | inl d' => exact hv.elim
-      | inr q' =>
-          obtain ⟨a', c'⟩ := q'
-          obtain ⟨ha, hc⟩ := hv
-          cases ha
-          rcases (Salg_inr a c' w).mp hS with hw | hw
-          · subst hw
-            exact ⟨0, (Salg_inr a c 0).mpr (Or.inl rfl), Int.le_refl 0⟩
-          · subst hw
-            exact ⟨a + c, (Salg_inr a c _).mpr (Or.inr rfl), Int.add_le_add_left hc a⟩
+  rw [Salg_eq_plusAlg]
+  exact plusAlg_mono _ _ _ geq_refl plus_mono
 
 /-- The greedy row: `⦇Λ(S) est(≥)⦈ ⊑ Λ(⦇S⦈) est(≥)` — Theorem 7.2 at the preorder `≥`, with
     `mss_mono` for its hypothesis. -/

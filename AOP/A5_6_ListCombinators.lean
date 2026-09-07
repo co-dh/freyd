@@ -827,12 +827,17 @@ public theorem Λ_nil_singleton :
   rw [Cat.comp_id] at h
   exact h
 
-/-- **`prefix = ⦇[nil, nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
+/-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
+    display draws: on the leaf, `nil`; on a head and a tail-prefix, either discard and stop with
+    `nil` or keep the head.  Named so the fold below has an arrow to be the fold OF. -/
+@[expose] public def prefAlg : (F Unit A).obj (dList A) ⟶ dList A :=
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+    ((graph fun _ => ConsList.wrap ()) ∪ consR)
+
+/-- **`prefix = ⦇[nil, ⊸ nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
     branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
 public theorem prefix_cata :
-    (prefixR : dList A ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-          ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+    (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show prefixP r (ConsList.wrap D) ↔ r = ConsList.wrap D
@@ -857,8 +862,7 @@ public theorem prefix_cata :
 public theorem prefix_cancel :
     (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
       = (F Unit A).map (prefixR : dList A ⟶ dList A)
-        ≫ (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-            ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A) := by
+        ≫ (prefAlg : (F Unit A).obj (dList A) ⟶ dList A) := by
   rw [prefix_cata]
   exact relCata_cancel (initial Unit A) _
 

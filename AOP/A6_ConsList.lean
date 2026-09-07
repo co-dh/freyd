@@ -130,6 +130,36 @@ public theorem F_eq_sum_prod (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
     simp [F, Fmap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
       RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> grind
 
+/-- **`F(R) = 𝟙 + 𝟙×R`** in the coproduct calculus: `F`'s action as a `sumMap` over the concrete
+    coproducts `sumCop`, the leaf arm an identity and the pair arm `𝟙×R` on the tail.  This is
+    the decomposition every §13.3 monotonicity circuit draws before it slides `R` past the
+    algebra. -/
+public theorem Fmap_eq_sumMap (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
+    (F L E).map R = sumMap (sumCop (dL L) ⟨E × C.carrier⟩) (sumCop (dL L) ⟨E × c'.carrier⟩)
+      (𝟙 (dL L)) (rprodMap (𝟙 (dE E)) R) := by
+  apply hom_ext; intro u v
+  constructor
+  · intro h
+    cases u with
+    | inl d => cases v with
+      | inl d' => exact Or.inl ⟨d, rfl, d', h, rfl⟩
+      | inr q => exact h.elim
+    | inr p => cases v with
+      | inl d' => exact h.elim
+      | inr q => exact Or.inr ⟨p, rfl, q, h, rfl⟩
+  · intro h
+    cases h with
+    | inl h => obtain ⟨d, h1, e, h2, h3⟩ := h; subst h1; subst h3; exact h2
+    | inr h => obtain ⟨p, h1, q, h2, h3⟩ := h; subst h1; subst h3; exact h2
+
+/-- **`F(S)[T,U] = [T,(𝟙×S)U]`** — the relator slides into the bracket: the leaf arm is
+    untouched, the pair arm picks up `𝟙×S` in front.  Every §13.3 "{relator}" step is this. -/
+public theorem Fmap_comp_junc (L E : Type) {C c' D : RelSet.{0}} (S : C ⟶ c')
+    (T : dL L ⟶ D) (U : (⟨E × c'.carrier⟩ : RelSet.{0}) ⟶ D) :
+    (F L E).map S ≫ junc (sumCop (dL L) ⟨E × c'.carrier⟩) T U
+      = junc (sumCop (dL L) ⟨E × C.carrier⟩) T (rprodMap (𝟙 (dE E)) S ≫ U) := by
+  rw [Fmap_eq_sumMap, sumMap_junc, Cat.id_comp]
+
 /-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
     on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
     square needs the action that moves it. -/
