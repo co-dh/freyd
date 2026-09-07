@@ -18,12 +18,12 @@ import json, subprocess, sys, xml.etree.ElementTree as ET
 
 def words(pdf):
     xml_text = subprocess.run(["pdftotext", "-bbox", pdf, "-"], check=True,
-                               capture_output=True, text=True).stdout
+                               capture_output=True, text=True, encoding="utf-8").stdout
     root = ET.fromstring(xml_text)
     return {el.text for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "word" and el.text}
 
 def title_tokens(strong_json_file):
-    with open(strong_json_file) as f:
+    with open(strong_json_file, encoding="utf-8") as f:
         text = f.read().strip()
     nodes = json.loads(text) if text else []
     tokens = set()
