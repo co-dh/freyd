@@ -570,4 +570,46 @@ open Lean PrettyPrinter in
 @[app_unexpander RelProd.outr] public meta def unexpandOutr : Unexpander
   | _ => `($(mkIdent `π₂))
 
+/-! ## The adjoint triple `𝓓 ⊣ ·⊤ ⊣ 𝟙∩·/⊤`
+
+  `⊤` read as an operator on hom-sets rather than as one arrow.  Between the COREFLEXIVES on
+  `c` and the hom-set `c ⟶ b` there are three operators — `𝓓`, `·⊤`, `𝟙∩·/⊤` — and each
+  consecutive pair is an adjunction, so `·⊤` is a right adjoint by the first and a left adjoint
+  by the second.  Both halves are stated as the iff an adjunction IS: the left adjoint's value
+  is below `X` exactly when the argument is below the right adjoint's value.  Only two universal
+  properties are spent, `dom_coref_comp` (§2.10) and `le_div_iff` (§2.31); coreflexivity of `X`
+  is what makes the two poset ends line up, and the chain stops at three (`·⊤` preserves neither
+  all meets nor all joins in general). -/
+
+/-- `𝓓 ⊣ ·⊤`: `𝓓S ⊑ X ≡ S ⊑ X⊤`, for a COREFLEXIVE `X : c ⟶ c` and `S : c ⟶ b`.  Taking the
+    domain is LEFT adjoint to composing with `⊤`.  Left to right is `S = (𝓓S)S ⊑ XS ⊑ X⊤`;
+    right to left is monotonicity of `𝓓` followed by `𝓓(XT) = X ∩ 𝓓T ⊑ X`. -/
+public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX : Coreflexive X) :
+    dom S ⊑ X ↔ S ⊑ X ≫ topMor c b := by
+  -- a coreflexive is its own domain: `𝓓X = 𝟙∩XX° = 𝟙∩X = X`, by symmetry and idempotence.
+  have hdomX : dom X = X := by
+    obtain ⟨hsym, hidem⟩ := coreflexive_symmetric_idempotent hX
+    show Cat.id c ∩ (X ≫ X°) = X
+    rw [symmetric_eq hsym, hidem, Allegory.inter_comm]; exact hX
+  constructor
+  · intro h
+    calc S ⊑ dom S ≫ S := le_dom_comp S
+      _ ⊑ X ≫ S := comp_mono_right h S
+      _ ⊑ X ≫ topMor c b := comp_mono_left X (topMor_max S)
+  · intro h
+    have hS : X ≫ S = S := by
+      rw [← hdomX, ← inter_comp_topMor_eq_dom_comp S X]; exact h
+    exact (dom_UP hX).mpr (by rw [hS]; exact le_refl S)
+
+/-- `·⊤ ⊣ 𝟙∩·/⊤`: `X⊤ ⊑ R ≡ X ⊑ 𝟙∩R/⊤`, for a COREFLEXIVE `X : c ⟶ c` and `R : c ⟶ b`.
+    Composing with `⊤` is LEFT adjoint to `R ↦ 𝟙∩R/⊤`, the third link of the triple.  Right to
+    left is the division UP alone; left to right adds `X ⊑ 𝟙`, which is coreflexivity — the
+    `𝟙∩` is exactly what lands the right adjoint back in the coreflexives. -/
+public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X : c ⟶ c}
+    (hX : Coreflexive X) :
+    X ≫ topMor c b ⊑ R ↔ X ⊑ Cat.id c ∩ (R / topMor c b) := by
+  constructor
+  · intro h; exact le_inter hX ((le_div_iff X R (topMor c b)).mpr h)
+  · intro h; exact (le_div_iff X R (topMor c b)).mp (le_trans h (inter_lb_right _ _))
+
 end Freyd.Alg
