@@ -15,8 +15,9 @@ WHAT IS CHECKED
           and the two ends belong to DIFFERENT nodes — an arrow that stops short of what it points
           at, or doubles back on its own node, is the failure a picture cannot show.
   clear   no arrow crosses a label box, node label or edge label alike.
-  face    the relation symbol lies inside the polygon the nodes bound, and every edge label lies
-          outside it: the one thing inside a face is what the face asserts.
+  face    every edge label lies outside the polygon the nodes bound, and at most one label — the
+          relation symbol — inside it: a face commutes unless marked, so an equation carries none
+          (the note's own `<initial-defn>` square, `diag/cdref.typ`) and a lax face its `⊑`/`≤`.
   square  a four-node rectangle — a naturality square — has the note's own edge length and
           arrowhead, except where its labels are too wide to fit in that step, in which case it has
           exactly the step those labels need.
@@ -325,9 +326,9 @@ def check(path, ref):
                    f"{len(nodes)} nodes, so there is no polygon to test")
     else:
         inside = [f for f in free if in_polygon(f.centre, poly)]
-        if len(inside) != 1:
-            bad.append(f"{path}: face — {len(inside)} labels lie inside the polygon, want exactly "
-                       f"one (the relation symbol)")
+        if len(inside) > 1:
+            bad.append(f"{path}: face — {len(inside)} labels lie inside the polygon, want at most "
+                       f"one (the relation symbol; an equation carries none)")
 
     for h in heads:
         w = max(h.box[2] - h.box[0], h.box[3] - h.box[1])
