@@ -53,6 +53,20 @@ public theorem monotonicAlg_iff_sandwich (hf : Map f) : MonotonicAlg f R ↔ F.m
   rw [← Cat.assoc]
   exact map_shunt_right hf (F.map R) (f ≫ R)
 
+/-- **`F(∈)F(est R) ⊑ F(R°)`** — (7.5)'s bound `∈ est(R) ⊑ R°` carried through the relator. -/
+public theorem Fmap_eps_comp_Fmap_est_le (R : A ⟶ A) :
+    F.map ((∋ A)°) ≫ F.map (est R) ⊑ F.map (R°) := by
+  rw [← F.map_comp]
+  exact F.map_mono (recip_eps_comp_est_le R)
+
+/-- The `mon-thm71` middle step: **`f° F(∈)F(est R)f ⊑ f° F(R°)f`** — the same bound, conjugated
+    by `f`.  It is what turns the transposed side of Theorem 7.1 into the order itself. -/
+public theorem conj_Fmap_eps_est_le (f : F.obj A ⟶ A) (R : A ⟶ A) :
+    f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ f° ≫ F.map (R°) ≫ f := by
+  refine comp_mono_left _ ?_
+  rw [← Cat.assoc]
+  exact comp_mono_right (Fmap_eps_comp_Fmap_est_le R) f
+
 /-- `f` is monotonic on `R` iff it is monotonic on `R°` — conjugation is preserved by converse,
     using `hFr` to push `F.map` through `°`. -/
 public theorem monotonicAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
