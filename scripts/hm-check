@@ -448,7 +448,7 @@ def bound(what, key, val, sub, why):
 def fit(pat, e, sub, why):
     """The row's object against the declaration's.  Unification runs BOTH ways: a row variable takes
     any Lean term, and a Lean binder takes any row object — a panel drawn at `Int` is INSTANTIATING
-    a declaration polymorphic in `Tx`, which is the same arrow, so the concrete side must be free to
+    a declaration polymorphic in `X`, which is the same arrow, so the concrete side must be free to
     meet the abstract one.  Either way the binding has to hold everywhere.  A row CONSTANT against a
     Lean CONSTANT must be a name that head denotes; no letter is looked for in any string, and the
     shapes have to agree node for node."""

@@ -194,7 +194,7 @@ def p_prim(s, i, obj=False):
     LEFTMOST bracket is the OUTERMOST functor and the chain is built from the right; the nodes carry
     no context spelling, which is what makes `spell` write the whole chain back in one go."""
     x, i = p_base(s, i, obj)
-    # AN IDENTITY PRINTED WITH ITS OBJECT is still the identity: Lean writes `𝟙[[Tx]]`, `𝟙A`, and
+    # AN IDENTITY PRINTED WITH ITS OBJECT is still the identity: Lean writes `𝟙[[X]]`, `𝟙A`, and
     # the object is redundant in a cut reading — it names the very lanes running past the bead.
     if (x[0] == 'app' and x[1] == UNIT) \
             or (x[0] == 'atom' and x[1].startswith(UNIT) and x[1][len(UNIT):].isalnum()):

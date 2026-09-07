@@ -19,8 +19,8 @@ open Lean
 
 namespace Freyd.StrDiag
 
-/-- A one-field record IS its field as far as a picture is concerned: the object `⟨Tx⟩` of a
-    category of sets is the set `Tx`, and printing the wrapper makes every lane label unreadable.
+/-- A one-field record IS its field as far as a picture is concerned: the object `⟨X⟩` of a
+    category of sets is the set `X`, and printing the wrapper makes every lane label unreadable.
     Generic over the environment — any constructor with exactly one field, no list of names.
 
     A RECORD is a type with ONE constructor.  Without that test the leaf `wrap ()` of a cons-list —
@@ -116,7 +116,7 @@ partial def concHead : Expr → Name
 
 /-! ### The wire stack of an OBJECT, asked of the environment
 
-  §13.6's objects are records and defs — `dSched Tx`, `⟨Tx × Sched Tx⟩` — not `F.obj X`, so a
+  §13.6's objects are records and defs — `dSched X`, `⟨X × Sched X⟩` — not `F.obj X`, so a
   syntactic peel finds nothing in them.  What a picture needs is the RELATORS whose action they
   are, and the environment is where those live: every constant whose type is `Relator 𝒜 𝒜` is a
   candidate wire, and `X` carries that wire when `R.obj ?a` unifies with `X`.  No list of relator

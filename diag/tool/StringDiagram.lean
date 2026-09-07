@@ -403,7 +403,7 @@ def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
     `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
-    three `𝟙 Tx × cons°` needs, and the deepest bead the note draws.  Bounded because the search is
+    three `𝟙 X × cons°` needs, and the deepest bead the note draws.  Bounded because the search is
     over the whole environment at every step, so each step multiplies the scan. -/
 def FUEL : Nat := 3
 
@@ -686,8 +686,8 @@ def drawString (declName : Name) (side binder : Option String) (branch : List Na
     let arrow := parts[0]!.2
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
-    -- region is a ONE-FIELD STRUCTURE over an index type, when it is that INDEX: `Tx : Type`
-    -- names the object `⟨Tx⟩ : RelSet`, `dE Tx` IS that object, and `⟨a.carrier⟩` is `a`, so the
+    -- region is a ONE-FIELD STRUCTURE over an index type, when it is that INDEX: `X : Type`
+    -- names the object `⟨X⟩ : RelSet`, `dE X` IS that object, and `⟨a.carrier⟩` is `a`, so the
     -- two readings are one family and `StrictNatural F G φ` is a statement about it after all.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src

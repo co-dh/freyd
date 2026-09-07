@@ -3,7 +3,7 @@
 
   A bead the note draws OFF the object wire claims a naturality square — `G(S) φ ⊑ φ F(S)` for
   EVERY relation `S`, not only for the maps.  `Sched` is `list∘list` and `Seg` is `list` as
-  functors of the transaction type `Tx`, so each of the six families of `AOP.A7_5_Van` gets its
+  functors of the transaction type `X`, so each of the six families of `AOP.A7_5_Van` gets its
   square at an arbitrary `S : dE A ⟶ dE B`.  The verdicts:
 
   * `new` is STRICTLY natural (`new_natural`).  It is `(wrap×𝟙) cons`, and both factors are
@@ -222,7 +222,7 @@ public theorem top_not_lax_natural :
 
 /-! ## `nil` is strictly natural
 
-  The note's `nil : 𝟏 ⟶ [[Tx]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched Tx` —
+  The note's `nil : 𝟏 ⟶ [[X]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched X` —
   the same relation `H_eq` already writes there — so no new definition is made for it. -/
 
 /-- **`nil` is STRICTLY natural**: `𝟙 nil = nil list(list S)`.  `nil` produces the empty schedule

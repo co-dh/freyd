@@ -3,7 +3,7 @@
 
   The note's tables carry a *type* column beside every definition, hand-typed today: `[[Int]]⟶[[Int]]`
   beside `R≜length≤length°`.  A hand-typed cell is a claim nobody checks, and it is exactly the claim
-  the environment can settle — `R Tx`'s hom type IS `dSched Tx ⟶ dSched Tx`, and the printing-only
+  the environment can settle — `R X`'s hom type IS `dSched X ⟶ dSched X`, and the printing-only
   unexpanders of `AOP` are what turn that into the note's brackets.  So the cell is GENERATED from the
   declaration the row already cites, and carries a `lean:<decl>@<key>` marker of its own: a statement
   that moves under the note fails `cite-check` here too.
@@ -15,7 +15,7 @@
   statement, never a guessed cell.
 
   NO STRING SURGERY ON THE PRINTED TYPE.  The spelling is whatever the delaborator and the repo's
-  unexpanders give (`dList A` ⇝ `[A]`, `Sched Tx` ⇝ `[[Tx]]`, a `RelSet.mk` wrapper peeled), so a
+  unexpanders give (`dList A` ⇝ `[A]`, `Sched X` ⇝ `[[X]]`, a `RelSet.mk` wrapper peeled), so a
   head with no unexpander prints as its raw Lean name and is a DEFECT to fix where those live —
   never here.
 -/
