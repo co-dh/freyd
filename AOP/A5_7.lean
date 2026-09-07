@@ -780,6 +780,16 @@ public theorem recip_oplax {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A 
     Allegory.recip_recip] at hr
   exact hr
 
+/-- And back, by the same rewriting: the converse of an OPLAX family is LAX, so `(φ°)°` closes the
+    pair and neither condition is a dead end. -/
+public theorem recip_lax {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
+    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : OpLaxNatural F G φ) :
+    LaxNatural G F (fun A => (φ A)°) := fun {A B} R => by
+  have hr := recip_mono (h R°)
+  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
+    Allegory.recip_recip] at hr
+  exact hr
+
 end LaTCat
 
 /-! ## The constant relator at a ZERO OBJECT is a zero object of the LaT category
@@ -840,55 +850,5 @@ public theorem strictNatural_const {b b' : ℬ} (f : b ⟶ b') :
   fun {_ _} _ => by show 𝟙 b ≫ f = f ≫ 𝟙 b'; rw [Cat.id_comp, Cat.comp_id]
 
 end ConstLane
-
-end Freyd.Alg
-
-namespace Freyd.Alg
-
-/-! ## §5.7, the CONVERSE of a lax natural family
-
-  Lax naturality is not closed under `°` — `recip_not_laxNatural` (A6_1_OrdRelSet) refutes it — but
-  the converse family is not thereby unconstrained: it satisfies the SAME square with the inclusion
-  the other way round.  That is a condition of its own, so it gets a name of its own. -/
-
-section Oplax
-
-variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-
-/-- The `LaxNatural` inequation REVERSED: `φ A ≫ F.map R ⊑ G.map R ≫ φ B`, the same family and the
-    same square with `⊑` turned round.  This is what the CONVERSE of a lax natural family
-    satisfies (`laxNatural_recip`), and it is not `LaxNatural` of any pair of relators. -/
-@[expose] public def OplaxNatural (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
-  ∀ {A B : 𝒜} (R : A ⟶ B), φ A ≫ F.map R ⊑ G.map R ≫ φ B
-
-/-- Every strictly natural family is oplax natural: the equation at `R` is its own inequation, read
-    the other way. -/
-public theorem oplaxNatural_of_strictNatural {F G : Relator 𝒜 ℬ}
-    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (h : StrictNatural F G φ) : OplaxNatural F G φ :=
-  fun {_ _} R => le_of_eq (h R).symm
-
-/-- The CONVERSE of a LAX natural family is OPLAX natural — `strictNatural_recip` with `⊑` in place
-    of `=`.  Same proof: read `φ`'s square at `R°`, take converses, and the two relators' own
-    `PreservesRecip` puts `F.map R°`, `G.map R°` back as `(F.map R)°`, `(G.map R)°`. -/
-public theorem laxNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
-    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : LaxNatural F G φ) :
-    OplaxNatural G F (fun A => (φ A)°) := by
-  intro A B R
-  have e := recip_mono (h R°)
-  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
-    Allegory.recip_recip] at e
-  exact e
-
-/-- And back: the converse of an OPLAX natural family is LAX natural, so `(φ°)°` closes the pair. -/
-public theorem oplaxNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
-    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : OplaxNatural F G φ) :
-    LaxNatural G F (fun A => (φ A)°) := by
-  intro A B R
-  have e := recip_mono (h R°)
-  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
-    Allegory.recip_recip] at e
-  exact e
-
-end Oplax
 
 end Freyd.Alg

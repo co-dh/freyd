@@ -746,7 +746,7 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
   -- like `False`, which every refutation in the environment matches with its own hypotheses left
   -- to be found — a search that answers the question it was not asked.
   unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
-      || h == ``Freyd.Alg.OplaxNatural do return none
+      || h == ``Freyd.Alg.OpLaxNatural do return none
   findSquare br want (← mustOf want) fuel
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.

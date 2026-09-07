@@ -434,7 +434,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
-  let oplax ← Meta.mkAppM ``Freyd.Alg.OplaxNatural #[F, G, φ]
+  let oplax ← Meta.mkAppM ``Freyd.Alg.OpLaxNatural #[F, G, φ]
   -- The refutation is of the very statement just searched for, `¬ LaxNatural F G φ`, and not of
   -- one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is not
   -- even well typed unless the bead happens to end where it starts.
@@ -458,7 +458,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
       -- unfolding it would scan every `⊑` in the environment for a shape only `laxNatural_recip`
       -- ever produces — and that closure's own hypothesis IS searched as a square, through
       -- `discharge`.  A whole extra sweep per bead is what the H panels' budget cannot pay.
-      if let some (n, _) ← findProof br oplax ``Freyd.Alg.OplaxNatural {} FUEL then
+      if let some (n, _) ← findProof br oplax ``Freyd.Alg.OpLaxNatural {} FUEL then
         return some { mark := some "oplax", lean := n }
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
         return some { mark := none, lean := n }
@@ -627,13 +627,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
-    MetaM Diagram :=
-  -- A HEARTBEAT BUDGET BOUNDS A UNIFICATION, NOT A WALK.  One bead's search reads every declaration
-  -- in the environment and spends far more than any default allowance, and a budget only ever
-  -- measures from where it was set — so a panel under one dies on whatever step follows a search,
-  -- naming an `isDefEq` that is not the expensive one.  What bounds the work is
-  -- `CANDIDATE_HEARTBEATS` on each match the search tries, and `scripts/cap` on the process.
-  withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
+    MetaM Diagram := do
   let d ← interp regionTy cat objVars #[] side
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
@@ -660,6 +654,12 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     deep the other one is. -/
 def drawString (declName : Name) (side binder : Option String) (branch : List Nat)
     (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
+    -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
+    -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
+    -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
+    -- `isDefEq` that is not the expensive one.  `CANDIDATE_HEARTBEATS` bounds each match tried and
+    -- `scripts/cap` bounds the process; nothing between them needs an allowance of its own.
+    withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
     withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"

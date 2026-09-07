@@ -278,7 +278,7 @@ REL = {"Eq", "Ne", "Freyd.Alg.le", "LE.le"}
 # in the SOURCE category `S`.  Keyed by the verdict a row draws, because a `closure` rule licensing
 # one verdict must conclude THAT verdict's square and no other.
 VERDICT = {"strict": "Freyd.Alg.StrictNatural", "lax": "Freyd.Alg.LaxNatural",
-           "oplax": "Freyd.Alg.OplaxNatural"}
+           "oplax": "Freyd.Alg.OpLaxNatural"}
 NATPRED = set(VERDICT.values())
 
 

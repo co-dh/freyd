@@ -26,8 +26,8 @@
       (p.184): every one-transaction stretch is secure.  `van_spec` is FALSE without it —
       `van_spec_false_without_hsingle` refutes it at `N = 0` on the single transaction `5`,
       where `partition list(secure)` is empty and `⦇S⦈` still returns `[[5]]`, because `new`
-      carries no security test.  Transactions are therefore an abstract type `Tx` with an
-      `amount : Tx → Int`, as `AOP.A8_5`'s words carry a `len`, and `hsingle` bounds them.
+      carries no security test.  Transactions are therefore an abstract type `X` with an
+      `amount : X → Int`, as `AOP.A8_5`'s words carry a `len`, and `hsingle` bounds them.
 
   2.  `secure` is closed under dropping the FIRST transaction (`secureP_tail`).  The note's
       `van-laws` cites `secure prefix ⊑ prefix secure` — PREFIX-closure — for the fusion row,
