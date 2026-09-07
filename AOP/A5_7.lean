@@ -780,6 +780,16 @@ public theorem recip_oplax {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A 
     Allegory.recip_recip] at hr
   exact hr
 
+/-- And back, by the same rewriting: the converse of an OPLAX family is LAX, so `(φ°)°` closes the
+    pair and neither condition is a dead end. -/
+public theorem recip_lax {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
+    (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : OpLaxNatural F G φ) :
+    LaxNatural G F (fun A => (φ A)°) := fun {A B} R => by
+  have hr := recip_mono (h R°)
+  rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
+    Allegory.recip_recip] at hr
+  exact hr
+
 end LaTCat
 
 /-! ## The constant relator at a ZERO OBJECT is a zero object of the LaT category

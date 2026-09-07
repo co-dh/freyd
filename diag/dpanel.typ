@@ -423,10 +423,12 @@
   }
   // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
   // hollow — punched out in the region behind it, which is the `Rel` side every dot sits in.
+  // `"oplax"` draws the same: it is the same one-way square with `⊑` the other way round (the
+  // converse of a lax family), and WHICH way is written in the `cert:`, not in the ink.
   // It is `"spider"` where the environment proves neither naturality nor its refutation: NO dot at
   // all, only the name where the wires meet, because a mark would claim what nobody has proved.
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
-                           bg: if b.at(5, default: none) == "lax" { fb-ALLC } else { none },
+                           bg: if b.at(5, default: none) in ("lax", "oplax") { fb-ALLC } else { none },
                            dot: b.at(5, default: none) != "spider") }
   for (x, l) in top {
     if not dcovers(defn, h, x) {

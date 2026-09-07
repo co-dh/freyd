@@ -239,18 +239,26 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let mut nats : Array String := #[]
   for i in [0 : n] do
     let r := p.rows[i]!
-    -- A bead with NO arms stands on the object wire and its legs bend OUT of it, so it writes no
-    -- x fields: a reach taken from the legs draws it on the very wire it creates.
+    -- THE BAR SPANS THE ARMS, THE DOT SITS ON WHAT THE BEAD TOUCHES.  A bead with NO arms stands on
+    -- the object wire and its legs bend OUT of it, so it writes no reach — a bar taken from the legs
+    -- would be drawn on the very wires it creates.  Its DOT is still theirs: the mark is the bead's
+    -- own, and the only wires it has to sit among are the legs.
     let xsr := r.arms.map fun j => ls[j]!.x
+    let xsl := r.legs.map fun j => ls[j]!.x
+    let xsd := if xsr.isEmpty then xsl else xsr
     let reach : Option Float := if xsr.isEmpty then none else some (minA xsr 1e9)
     let dot : Option Float :=
-      if xsr.isEmpty || r.nat.isNone then none
-      else some (roundTo 4 ((minA xsr 1e9 + maxA xsr (-1e9)) / 2.0))
-    -- The 6th element is the MARK: `"lax"` a hollow dot, `"spider"` no dot at all.
+      if xsd.isEmpty || r.nat.isNone then none
+      else some (roundTo 4 ((minA xsd 1e9 + maxA xsd (-1e9)) / 2.0))
+    -- The 6th element is the MARK: `"lax"` and `"oplax"` a hollow dot — the square commutes one way
+    -- only, and which way is the cert's business — `"spider"` no dot at all.
     let mark := match r.nat with
-      | some "lax" => ", \"lax\"" | some "spider" => ", \"spider\"" | _ => ""
+      | some "lax" => ", \"lax\"" | some "oplax" => ", \"oplax\""
+      | some "spider" => ", \"spider\"" | _ => ""
     beads := beads.push <| match reach, dot with
-      | none, _ => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
+      | none, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
+      | none, some d =>
+        "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, " ++ num d ++ mark ++ ")"
       | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
       | some rc, some d =>
         "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
@@ -351,26 +359,46 @@ def emitStatement (declName : String) (parts : Array (String × Diagram))
   running past), then its own source and target say which wires it eats and which it makes: the
   stack they share below the change is untouched, everything above it dies and is reborn. -/
 
-/-- Whether this factor is a FAMILY in the region's object, and so a candidate 2-cell at all: its
-    two ends stand over the SAME object and it varies with that object.  `α : F(T)⟶T` at an initial
-    algebra's carrier does not vary — `T` is one object, not a parameter — and `⦇R⦈ : T⟶A` does not
-    even stand over one, so both are 2-cells between CONSTANT 1-cells `𝟏 → 𝒜`, which is the object
-    wire.  `αᴀ : F(⟨𝟙,T⟩(A))⟶T(A)` does, which is why the two come out different by construction.
+/-- The two RELATORS of a family `φ`, read off `φ`'s OWN type: open its binder and read each end of
+    the arrow underneath as a relator in that variable (`relatorOfObj`).  Built this way the
+    proposition `StrictNatural F G φ` type-checks by construction — `φ a : G.obj a ⟶ F.obj a` holds
+    because `G` and `F` ARE those two ends — where a stack of lane labels is a second spelling of
+    the same thing that can disagree with it. -/
+def relatorsOf (cat : Array Name) (regionTy φ : Expr) : MetaM (Expr × Expr) :=
+  Meta.lambdaBoundedTelescope φ 1 fun xs body => do
+    let some v := xs[0]?
+      | throwError "not a family: `{← Meta.ppExpr φ}` takes no object of {← Meta.ppExpr regionTy}"
+    let (x, y) ← homEnds body
+    let G ← instantiateMVars (← relatorOfObj cat regionTy v x)
+    let F ← instantiateMVars (← relatorOfObj cat regionTy v y)
+    -- A relator that still mentions the object, or holds a metavariable, is not a relator of the
+    -- region: it would escape this telescope as a loose variable, and the reading FAILED.
+    if G.containsFVar v.fvarId! || F.containsFVar v.fvarId! || G.hasExprMVar || F.hasExprMVar then
+      throwError "the ends of `{← Meta.ppExpr body}` do not read as relators of \
+        {← Meta.ppExpr regionTy}: one of them still varies with {← Meta.ppExpr v}"
+    return (G, F)
 
-    A WIRE that mentions the object rules the bead out too: a lane is a relator of the WHOLE
-    region, so `α : F(A,TA) ⟶ TA` read with its source peeled to `F(A,−)` runs on a lane that is
-    a different functor at each `A` and states no naturality at all.  The packing `⟨𝟙,T⟩` then `F`
-    is what gives that same bead lanes it can be a family over; where no packed relator exists —
-    `F Unit A`, the base functor with the element type baked in — the bead is an arrow at one
-    object and carries no dot.
+/-- Whether this factor is a FAMILY in the region's object, and so a candidate 2-cell at all: it
+    varies with that object, and both its ends are objects a RELATOR spells.  `α : F(T)⟶T` at an
+    initial algebra's carrier does not vary — `T` is one object, not a parameter — and `⦇R⦈ : T⟶A`
+    does not even stand over one, so both are 2-cells between CONSTANT 1-cells `𝟏 → 𝒜`, which is the
+    object wire.  `αᴀ : F(⟨𝟙,T⟩(A))⟶T(A)` does, which is why the two come out different by
+    construction.
+
+    The two ends need not be the SAME object: `nil : 𝟏⟶[[x]]` is a family whose source is constant,
+    and `Relator.const` spells that.  What rules a bead out is an end no relator spells at all —
+    `α : F(A,TA) ⟶ TA` with `A` pinned in the base functor, `F Unit A` — because there is then no
+    naturality to state, which is exactly what `relatorsOf` fails on.
 
     ABSTRACTABLE over the object, not merely MENTIONING it: `S° : b⟶F(b)` names `b` only through
     the type of the local `S : F(b)⟶b`, so `fun b => S°` is ill-typed and `S` is one arrow. -/
-def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : MetaM (Option Expr) :=
+def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
   objVars.findM? fun v => do
-    unless core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
-        && !wires.any (Wire.mentions v.fvarId!) do
-      return false
+    unless core.containsFVar v.fvarId! do return false
+    -- WHETHER THE ENDS ARE OBJECTS A RELATOR SPELLS IS `verdict`'S QUESTION, asked of the statement
+    -- itself and answered with a spider where they are not.  A test on the LANES here refuses the
+    -- whole product family `[v]×[[v]]⟶[[v]]` on account of a label, and it is a second reading of
+    -- the same thing, which is what let the two disagree.
     try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
@@ -393,20 +421,20 @@ structure Verdict where
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
     spider"). -/
-def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core φ : Expr) (label : String) :
-    MetaM Verdict := do
-  -- The three statements have to be BUILDABLE before they can be searched for: a wire that is not
-  -- a `Relator` — a bifunctor applied to two arrows, say — has no `StrictNatural` to state, and
-  -- saying so names the bead instead of leaving an elaboration error to stand for it.
-  let some G ← (some <$> stackRelator regionTy armsW) <|> pure none
-    | throwError "the bead `{label}` runs under wires that are not relators, so there is no \
-      naturality statement to look for: {← armsW.mapM Wire.label}"
-  let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
-    | throwError "the bead `{label}` makes wires that are not relators, so there is no \
-      naturality statement to look for: {← legsW.mapM Wire.label}"
+def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdict := do
+  -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
+  -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
+  -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
+  -- can disagree with it, and did.
+  -- An end no relator spells — `F Unit A`, the base functor with the element type baked in — leaves
+  -- no proposition to search for, and that is a SPIDER: the tool looked, there was nothing to look
+  -- at, and the bead makes no claim.  Naming it an error would fail the whole panel over one bead.
+  let some (G, F) ← (some <$> relatorsOf cat regionTy φ) <|> pure none
+    | return { mark := some "spider", lean := none }
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
+  let oplax ← Meta.mkAppM ``Freyd.Alg.OpLaxNatural #[F, G, φ]
   -- The refutation is of the very statement just searched for, `¬ LaxNatural F G φ`, and not of
   -- one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is not
   -- even well typed unless the bead happens to end where it starts.
@@ -423,6 +451,15 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core φ : Expr) (label
         return some { mark := some "lax", lean := n }
       if let some (n, _) ← findSquare br lax must FUEL then
         return some { mark := some "lax", lean := n }
+      -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
+      -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot
+      -- whose square points the other way, and the `nat:` row is where the direction is written.
+      -- The CLASS only, not the square: nothing in the repo states a raw oplax inequation, so
+      -- unfolding it would scan every `⊑` in the environment for a shape only `laxNatural_recip`
+      -- ever produces — and that closure's own hypothesis IS searched as a square, through
+      -- `discharge`.  A whole extra sweep per bead is what the H panels' budget cannot pay.
+      if let some (n, _) ← findProof br oplax ``Freyd.Alg.OpLaxNatural {} FUEL then
+        return some { mark := some "oplax", lean := n }
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
         return some { mark := none, lean := n }
       return none
@@ -441,32 +478,30 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
   return { lanes, rows := #[], top := ix, bot := ix, otop := o, obot := o }
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
-    The VERDICT is searched HERE, under `vpass` — the relators the bead runs under are part of its
-    naturality statement, where a lane merely drawn past it is not.
+    The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
+    drawn past it are alike none of its naturality statement's business.
 
     `fam` is the family the bead is a component of, where the caller already knows it: `φ×𝟙` varies
     with the object UNDER its lane, not with an object variable of the statement, so no fvar of the
     statement abstracts it.  Left off, the family is read off the statement's own object binders. -/
-def Diagram.bead (regionTy : Expr) (objVars : Array Expr) (vpass arms legs : Array Wire)
-    (ox oy core : Expr) (fam : Option Expr := none) : MetaM Diagram := do
+def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
+    (arms legs : Array Wire) (ox oy core : Expr) (fam : Option Expr := none) :
+    MetaM Diagram := do
   let mut lanes : Array Lane := #[]
   for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
   for w in legs do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
-  -- Only the wires of the bead's own naturality statement are asked about here.  A lane a `beside`
-  -- puts west of it cannot change the answer: it is either part of `vpass` or a lane the bead does
-  -- not touch, and a lane that MENTIONS an object variable is a different functor at each object,
-  -- which is what `familyVar` refuses.
+  -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
+  -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
+  -- away a naturality the environment proves.
   let φ ← match fam with
     | some φ => pure (some φ)
     | none =>
-      if ← Meta.isDefEq ox oy then
-        match ← familyVar core ox objVars (vpass ++ arms ++ legs) with
-        | some v => some <$> familyOf regionTy v core
-        | none => pure none
-      else pure none
+      match ← familyVar core objVars with
+      | some v => some <$> familyOf regionTy v core
+      | none => pure none
   let vd ← match φ with
     | none => pure none
-    | some φ => some <$> verdict regionTy (vpass ++ arms) (vpass ++ legs) core φ (← plain core)
+    | some φ => some <$> verdict regionTy cat core φ
   let top := Array.mk (List.range arms.size)
   let bot := Array.mk (List.range' arms.size legs.size)
   let row : Row :=
@@ -581,23 +616,18 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
     let fam ← Meta.withLocalDeclD `Y regionTy fun Y => do
       Meta.mkLambdaFVars #[Y] (← Meta.mkAppM n #[φ, ← Meta.mkAppM ``Cat.id #[Y]])
-    let d ← Diagram.bead regionTy objVars #[] #[Wire.timesL a] #[Wire.timesL a'] ox oy e (some fam)
+    let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+      (some fam)
     return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
-  Diagram.bead regionTy objVars vpass ax ay ox oy e
+  Diagram.bead regionTy cat objVars ax ay ox oy e
 
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
-    MetaM Diagram :=
-  -- A HEARTBEAT BUDGET BOUNDS A UNIFICATION, NOT A WALK.  One bead's search reads every declaration
-  -- in the environment and spends far more than any default allowance, and a budget only ever
-  -- measures from where it was set — so a panel under one dies on whatever step follows a search,
-  -- naming an `isDefEq` that is not the expensive one.  What bounds the work is
-  -- `CANDIDATE_HEARTBEATS` on each match the search tries, and `scripts/cap` on the process.
-  withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
+    MetaM Diagram := do
   let d ← interp regionTy cat objVars #[] side
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
@@ -624,6 +654,12 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     deep the other one is. -/
 def drawString (declName : Name) (side binder : Option String) (branch : List Nat)
     (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
+    -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
+    -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
+    -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
+    -- `isDefEq` that is not the expensive one.  `CANDIDATE_HEARTBEATS` bounds each match tried and
+    -- `scripts/cap` bounds the process; nothing between them needs an allowance of its own.
+    withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
     withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"

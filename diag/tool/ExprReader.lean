@@ -356,6 +356,55 @@ partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr
       return (#[Wire.rel R] ++ ws, o)
   return (#[], X)
 
+/-- An OBJECT read as a RELATOR in `v` — the one reader every naturality statement is built from.
+
+    A bead's naturality is a statement about the family `fun v => core`, so its two relators are
+    that family's two END OBJECTS as functions of `v`, and nothing else: a LANE LABEL is never
+    consulted.  The reading is structural, and total on the object formers the peel knows:
+
+    * `X` free of `v` — `Relator.const X`, whose `map` is `𝟙 X`.  A bead with a CONSTANT end (`nil`,
+      whose source is the one-point schedule) is a family like any other; it is not the identity
+      relator, and reading it as one is what left `nil` with no statement to look for.
+    * `v` itself — the identity relator.
+    * `A × B` — the product of the two readings, so a left factor that MENTIONS `v` (`[v]×[[v]]`,
+      the source of `cons`) is read too, where pinning it into a constant `A×−` could not be.
+    * `F(X)` — `F` after the reading of `X`, `F` peeled off by the same catalogue the lanes use.
+
+    Anything else mentioning `v` has no reading, and the bead it belongs to gets no verdict: it is
+    refused here rather than being silently read as something it is not. -/
+partial def relatorOfObj (cat : Array Name) (regionTy v X : Expr) : MetaM Expr := do
+  let .fvar vid := v | throwError "the family variable {← Meta.ppExpr v} is not a local"
+  if !X.containsFVar vid then
+    let inst ← allegoryInst regionTy
+    return ← Meta.mkAppOptM ``Freyd.Alg.Relator.const
+      #[some regionTy, some regionTy, some inst, some inst, some X]
+  -- `isDefEq`, not `==`: where the region is a one-field structure over an index, the object comes
+  -- back rebuilt from its projection (`⟨a.f⟩`), which is `a` only up to eta.
+  if ← Meta.isDefEq X v then return ← idRelatorOf regionTy
+  if let some (a, b) ← splitTimes? regionTy X then
+    return ← Meta.mkAppM ``Freyd.Alg.Relator.prod
+      #[← relatorOfObj cat regionTy v a, ← relatorOfObj cat regionTy v b]
+  match X.getAppFnArgs with
+  | (``Freyd.Functor.obj, args) =>
+    if let some (f, x) := lastTwo args then
+      let ws := wiresOf f
+      if ws.any (·.containsFVar vid) then
+        throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no relator \
+          of the region and {← Meta.ppExpr X} has no reading"
+      let mut acc ← relatorOfObj cat regionTy v x
+      for i in [0 : ws.size] do
+        acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ws[ws.size - 1 - i]!]
+      return acc
+  | _ => pure ()
+  -- `#[v]`: the wire peeled off has to be a relator of the REGION, so one that mentions `v` is no
+  -- reading of `X` at all — refusing it here is both the correctness rule and what keeps the peel
+  -- from ranging over the whole catalogue at every level.
+  for n in cat do
+    if let some (R, src, inner) ← peelWith? n #[v] regionTy X then
+      return ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[← relatorOfObj cat src v inner, R]
+  throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no relator of \
+    {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
+
 /-- The two ends of an arrow. -/
 def homEnds (e : Expr) : MetaM (Expr × Expr) := do
   let some p := homObjs? (← Meta.inferType e)
@@ -696,7 +745,8 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
   -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
   -- like `False`, which every refutation in the environment matches with its own hypotheses left
   -- to be found — a search that answers the question it was not asked.
-  unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural do return none
+  unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
+      || h == ``Freyd.Alg.OpLaxNatural do return none
   findSquare br want (← mustOf want) fuel
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
