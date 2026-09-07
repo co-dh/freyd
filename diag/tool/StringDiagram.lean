@@ -421,8 +421,7 @@ structure Verdict where
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
     spider"). -/
-def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) (label : String) :
-    MetaM Verdict := do
+def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdict := do
   -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
   -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
@@ -479,22 +478,18 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
   return { lanes, rows := #[], top := ix, bot := ix, otop := o, obot := o }
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
-    The VERDICT is searched HERE, under `vpass` — the relators the bead runs under are part of its
-    naturality statement, where a lane merely drawn past it is not.
+    The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
+    drawn past it are alike none of its naturality statement's business.
 
     `fam` is the family the bead is a component of, where the caller already knows it: `φ×𝟙` varies
     with the object UNDER its lane, not with an object variable of the statement, so no fvar of the
     statement abstracts it.  Left off, the family is read off the statement's own object binders. -/
 def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (vpass arms legs : Array Wire) (ox oy core : Expr) (fam : Option Expr := none) :
+    (arms legs : Array Wire) (ox oy core : Expr) (fam : Option Expr := none) :
     MetaM Diagram := do
   let mut lanes : Array Lane := #[]
   for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
   for w in legs do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
-  -- Only the wires of the bead's own naturality statement are asked about here.  A lane a `beside`
-  -- puts west of it cannot change the answer: it is either part of `vpass` or a lane the bead does
-  -- not touch, and a lane that MENTIONS an object variable is a different functor at each object,
-  -- which is what `familyVar` refuses.
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
   -- away a naturality the environment proves.
@@ -506,7 +501,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       | none => pure none
   let vd ← match φ with
     | none => pure none
-    | some φ => some <$> verdict regionTy cat core φ (← plain core)
+    | some φ => some <$> verdict regionTy cat core φ
   let top := Array.mk (List.range arms.size)
   let bot := Array.mk (List.range' arms.size legs.size)
   let row : Row :=
@@ -621,13 +616,13 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
     let fam ← Meta.withLocalDeclD `Y regionTy fun Y => do
       Meta.mkLambdaFVars #[Y] (← Meta.mkAppM n #[φ, ← Meta.mkAppM ``Cat.id #[Y]])
-    let d ← Diagram.bead regionTy cat objVars #[] #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+    let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
       (some fam)
     return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
-  Diagram.bead regionTy cat objVars vpass ax ay ox oy e
+  Diagram.bead regionTy cat objVars ax ay ox oy e
 
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be. -/
