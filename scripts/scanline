@@ -1371,7 +1371,19 @@ def main(argv):
             and len(paths) == 1)
     # The obligations are the panels the FILES draw, enumerated before any cache is consulted: a
     # cached pass may skip the WORK of re-checking a panel, never subtract it from the total.
-    per = [(p, panels(p, frm, "--full" in argv)) for p in paths]
+    # A named file that is not there is an OBLIGATION with no picture — the exporter refused the
+    # declaration — so it is one named failure and the rest of the batch is still swept.
+    missing = [p for p in paths if not os.path.exists(p)]
+    # One unreadable file is ONE failure, not the end of the batch: the other files' panels are
+    # obligations too, and a run that stops at the first typst error reports on none of them.
+    per, unread = [], []
+    for p in paths:
+        if p in missing:
+            continue
+        try:
+            per.append((p, panels(p, frm, "--full" in argv)))
+        except SystemExit as e:
+            unread.append(str(e))
     allrecs = [r for _, rs in per for r in rs]
     if "--spell" in argv:
         LEANSIG.update(leansigs(allrecs))
@@ -1392,7 +1404,11 @@ def main(argv):
                     "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
                     "expr": spell(tidy(p.expr))} for p in swept],
                   open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    if fail:
+    for p in missing:
+        print(f"scanline: {p} was never drawn — `./scripts/diag-export --string` refused the"
+              f" declaration it is named after; its own message says why", file=sys.stderr)
+    print(*unread, sep="\n", file=sys.stderr)
+    if fail or missing or unread:
         sys.exit(1)
 
 
