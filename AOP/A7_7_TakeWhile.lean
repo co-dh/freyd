@@ -489,6 +489,20 @@ public theorem takewhile_mono_nil :
   · rintro rfl
     exact ⟨[], rfl, Nat.le_refl 0⟩
 
+/-- The step both mono chains share: **`(𝟙×R°) pcons(p) ⊑ pcons(p) R°`** — `p` still holds of the
+    head, and a shorter tail makes a shorter `cons`. -/
+public theorem pcons_slide (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p ⊑ pcons p ≫ lenLE° :=
+  le_iff.mpr fun q ws h => by
+    obtain ⟨x, c⟩ := q
+    obtain ⟨q', hq, hp⟩ := h
+    obtain ⟨x', c'⟩ := q'
+    obtain ⟨hx, hlen⟩ := hq
+    cases hx
+    obtain ⟨hpx, hws⟩ := (pcons_apply p x c' ws).mp hp
+    subst hws
+    exact ⟨x :: c, (pcons_apply p x c (x :: c)).mpr ⟨hpx, rfl⟩, Nat.succ_le_succ hlen⟩
+
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
 public theorem takewhile_mono_cons (p : E → Bool) :
     rprodMap (𝟙 (dE E)) (lenLE (E := E))°

@@ -134,6 +134,23 @@ public theorem filter_alg (p : E → Bool) : subseq ≫ listP p = cataR (Salg p)
 /-- The `filter-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step lands
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
+public theorem filter_mono_cons (p : E → Bool) :
+    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ ((graph fun q : E × List E => q.2) ∪ pcons p)
+      ⊑ ((graph fun q : E × List E => q.2) ∪ pcons p) ≫ lenLE° :=
+  calc rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ ((graph fun q : E × List E => q.2) ∪ pcons p)
+      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ (graph fun q : E × List E => q.2)
+          ∪ rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p :=
+        DistributiveAllegory.comp_union_distrib _ _ _
+    _ = (graph fun q : E × List E => q.2) ≫ (lenLE (E := E))°
+          ∪ rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p := by
+        rw [rprodMap_id_snd]
+    _ ⊑ (graph fun q : E × List E => q.2) ≫ (lenLE (E := E))° ∪ pcons p ≫ lenLE° :=
+        union_mono (le_refl _) (pcons_slide p)
+    _ = ((graph fun q : E × List E => q.2) ∪ pcons p) ≫ lenLE° :=
+        (union_comp_distrib _ _ _).symm
+
+/-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
+    `nil ⊑ nil R°`. -/
 public theorem filter_mono (p : E → Bool) :
     MonotonicAlg (F := F Unit E) (Salg p) lenLE° := by
   show (F Unit E).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
@@ -149,19 +166,13 @@ public theorem filter_mono (p : E → Bool) :
           exact ⟨[], (Salg_inl p D []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
-      obtain ⟨x, c⟩ := q
       cases v with
       | inl d' => exact hv.elim
       | inr q' =>
-          obtain ⟨x', c'⟩ := q'
-          obtain ⟨hx, hlen⟩ := hv
-          cases hx
-          rcases (Salg_inr p x c' ws).mp hS with hws | ⟨hp, hws⟩
-          · subst hws
-            exact ⟨c, (Salg_inr p x c c).mpr (Or.inl rfl), hlen⟩
-          · subst hws
-            exact ⟨x :: c, (Salg_inr p x c (x :: c)).mpr (Or.inr ⟨hp, rfl⟩),
-              Nat.succ_le_succ hlen⟩
+          -- `Salg`'s `cons` summand IS the `∪` the chain above works on, and `F(R°)` there is `𝟙×R°`.
+          obtain ⟨vs, hvs, hlen⟩ :=
+            le_iff.mp (filter_mono_cons p) q ws ⟨q', hv, (junc_sum_inr _ _ _ _).mp hS⟩
+          exact ⟨vs, (junc_sum_inr _ _ _ _).mpr hvs, hlen⟩
 
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
