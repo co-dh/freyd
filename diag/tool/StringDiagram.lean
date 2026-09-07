@@ -662,6 +662,23 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let (ay, oy) ← peelObj objVars cat regionTy y
   Diagram.bead regionTy cat objVars ax ay ox oy e
 
+/-- ONE STEP OF THE SELECTOR CHAIN that goes inside a side: an operand of a binary operation, an arm
+    of a junction, or the BODY of a least fixed point.  `.body` opens a BINDER, so the chain cannot
+    be a list of operand indices: the bound arrow is a wire of the picture, and a number says
+    nothing about where in the chain that wire is opened. -/
+inductive Sel where | inl | inr | body
+  deriving Inhabited, DecidableEq
+
+/-- The suffix the selector is written with — what `diag-export` parses and names the file by. -/
+def Sel.suffix : Sel → String
+  | .inl => ".inl" | .inr => ".inr" | .body => ".body"
+
+/-- The function a least fixed point is taken of, `mu φ`, by the HEAD CONSTANT. -/
+def muArg? (e : Expr) : Option Expr :=
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.mu, args) => args.back?
+  | _ => none
+
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
@@ -669,6 +686,37 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let d ← interp regionTy cat objVars #[] side
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
+
+/-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
+    `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
+    the picture draws that local as a wire and prints it by that name — so the panel has to be built
+    while the local is still in scope, which is why this takes a continuation instead of handing an
+    expression back. -/
+partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (sel : List Sel) (e : Expr)
+    (k : Expr → MetaM α) : MetaM α := do
+  match sel with
+  | [] => k e
+  | .inl :: rest => withSel regionTy rest (← branchOf regionTy e 0) k
+  | .inr :: rest => withSel regionTy rest (← branchOf regionTy e 1) k
+  | .body :: rest =>
+    let some φ := muArg? e
+      | throwError "`.body` names the body of a least fixed point, and `{← plain e}` is not one"
+    Meta.lambdaBoundedTelescope φ 1 fun xs b => do
+      unless xs.size == 1 do
+        throwError "`{← plain φ}` binds no arrow, so `.body` opens no wire to draw the body on"
+      withSel regionTy rest b k
+
+/-- Every part of the statement drawn, each under its own selectors' locals, and the file emitted
+    inside all of them: a bead's ends are printed from the `Expr`, so a local opened for one part is
+    still needed when the last part's panel is written out. -/
+partial def withParts (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (sel : List Sel)
+    (drawn : List (String × Expr)) (acc : Array (String × Diagram))
+    (k : Array (String × Diagram) → MetaM String) : MetaM String :=
+  match drawn with
+  | [] => k acc
+  | (sym, e) :: rest =>
+    withSel regionTy sel e fun e' => do
+      withParts regionTy cat objVars sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars)) k
 
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
@@ -690,7 +738,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     A statement is drawn WHOLE — both sides in one frame — or one side at a time; either way every
     side is read, because the frame is a property of the statement and a side alone cannot know how
     deep the other one is. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (branch : List Nat)
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
     (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
@@ -760,21 +808,17 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
-    let mut ps : Array (String × Diagram) := #[]
-    for (sym, e) in drawn do
-      let mut e := e
-      for i in branch do e ← branchOf regionTy e i
-      ps := ps.push (sym, ← panelOf regionTy cat e objVars)
-    if sigsOnly then return ← sigLines (ps.map (·.2))
-    let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
-      ++ path.foldl (fun a s => a ++ "." ++ s) ""
-      ++ branch.foldl (fun s i => s ++ (if i == 0 then ".inl" else ".inr")) ""
-    -- A branch panel can be deeper than the side it was cut from — `R ∪ S` is one row and `R` may
-    -- be three — so the frame is the deepest of the statement's sides AND of what is drawn.
-    let fr := frame.getD (ps.foldl (fun a (_, p) => max a (framex p))
-      (sides.foldl (fun a p => max a (framex p)) 2))
-    if ps.size == 1 then
-      return ← emit ps[0]!.2 nm (some fr) (some (topRow.getD (topOf fr ref ps[0]!.2))) scale
-    return ← emitStatement nm ps (some fr) topRow scale
+    withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
+      if sigsOnly then return ← sigLines (ps.map (·.2))
+      let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
+        ++ path.foldl (fun a s => a ++ "." ++ s) ""
+        ++ sel.foldl (fun s x => s ++ x.suffix) ""
+      -- A branch panel can be deeper than the side it was cut from — `R ∪ S` is one row and `R` may
+      -- be three — so the frame is the deepest of the statement's sides AND of what is drawn.
+      let fr := frame.getD (ps.foldl (fun a (_, p) => max a (framex p))
+        (sides.foldl (fun a p => max a (framex p)) 2))
+      if ps.size == 1 then
+        return ← emit ps[0]!.2 nm (some fr) (some (topRow.getD (topOf fr ref ps[0]!.2))) scale
+      return ← emitStatement nm ps (some fr) topRow scale
 
 end Freyd.StrDiag
