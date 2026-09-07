@@ -24,30 +24,40 @@ PANELS=diag/cd-panels.txt
 ACCEPT=diag/cd-accepted.txt
 rc=0
 
+# The manifest read ONCE, into the two fields every loop below wants: selector, and reference or
+# `-`.  Each loop used to re-read it and select `NF == 2`, so a line carrying a trailing comment was
+# drawn and then held to nothing.  `#` opens a comment only after whitespace — a Lean selector may
+# carry one — and a line with more fields than that is an error naming itself, not a line to skip.
+awk '/^[ \t]*#/ { next } { sub(/[ \t]+#.*$/, "") } NF == 0 { next }
+     NF > 2 { printf "cd-check: %s line %d has %d fields, not a selector and at most one" \
+                     " reference: %s\n", FILENAME, FNR, NF, $0 > "/dev/stderr"; bad = 1; next }
+     { print $1, (NF == 2 ? $2 : "-") }
+     END { exit bad }' "$PANELS" > "$OUT/panels"
+
 # One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
 # so a second invocation pays for the whole `Freyd` import again.
 # shellcheck disable=SC2046
-./scripts/diag-export --commutative $(awk '!/^#/ && NF {print $1}' "$PANELS")
+./scripts/diag-export --commutative $(awk '{print $1}' "$OUT/panels")
 
-awk '!/^#/ && NF {print $1}' "$PANELS" | while read -r s; do
+awk '{print $1}' "$OUT/panels" | while read -r s; do
   typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.svg"
 done
-awk '!/^#/ && NF == 2 {print $2}' "$PANELS" | sort -u | while read -r r; do
+awk '$2 != "-" {print $2}' "$OUT/panels" | sort -u | while read -r r; do
   typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.svg"
 done
 
 # PDFs and the panel's own title-line query, for the label check below — only the panels that have
 # a reference need either, since a panel with no reference has nothing to compare its labels to.
-awk '!/^#/ && NF == 2 {print $1}' "$PANELS" | while read -r s; do
+awk '$2 != "-" {print $1}' "$OUT/panels" | while read -r s; do
   typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.pdf"
   typst query --root . "diag/generated/commutative/$s.typ" strong > "$OUT/gen/$s.strong.json"
 done
-awk '!/^#/ && NF == 2 {print $2}' "$PANELS" | sort -u | while read -r r; do
+awk '$2 != "-" {print $2}' "$OUT/panels" | sort -u | while read -r r; do
   typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.pdf"
 done
 
 for f in diag/cdref*.typ; do
-  awk -v r="$(basename "$f")" '!/^#/ && $2 == r {found = 1} END {exit !found}' "$PANELS" || {
+  awk -v r="$(basename "$f")" '$2 == r {found = 1} END {exit !found}' "$OUT/panels" || {
     echo "cd-check: $f is a reference drawing no line of $PANELS names, so nothing is held to it" >&2
     rc=1
   }
@@ -55,7 +65,7 @@ done
 
 ./scripts/svg-check "$OUT"/gen/*.svg || rc=1
 
-awk '!/^#/ && NF == 2 {print $1, $2}' "$PANELS" | while read -r s r; do
+awk '$2 != "-" {print $1, $2}' "$OUT/panels" | while read -r s r; do
   ./scripts/svg-check --against "$OUT/ref/${r%.typ}.svg" "$OUT/gen/$s.svg" >/dev/null \
     2>"$OUT/$s.err" || true
   sed 's|^ *[^:]*: wiring — ||' "$OUT/$s.err" > "$OUT/$s.got"

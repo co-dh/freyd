@@ -707,7 +707,9 @@ def leansigs(recs):
                      f" {p.stderr.strip() or p.stdout.strip()}")
         rows = {}
         for line in p.stdout.splitlines():
-            i, lab, sig = line.split("\t")
+            # The first two fields are the exporter's; the signature is the REST of the line, so
+            # nothing a type spells can add a field and turn this into a traceback.
+            i, lab, sig = line.split("\t", 2)
             rows.setdefault(int(i), []).append((lab, sig))
         for k, pid in enumerate(ids):
             out[pid] = rows.get(k + 1, [])
@@ -738,6 +740,17 @@ def instance(row, d):
 NATWORD = {"nat": "strict", "lax": "lax", "oplax": "oplax", "no": "no"}
 
 
+def arrow(sig, who):
+    """A signature's two ends.  `split_top` and not `str.split`, because an object may spell an
+    arrow of its own — `E(A⟶B)` — and cutting at every `⟶` would hand back three ends and fold the
+    picture against the wrong one; a signature that names other than two is `who`'s bug, said so."""
+    ends = split_top(sig, '⟶')
+    if len(ends) != 2:
+        sys.exit(f"scanline: {who} typed {sig!r}, which names {len(ends)} end(s), not a source and"
+                 f" a target")
+    return ends
+
+
 def sigfields(v):
     """One `--sigs` value read as a `hm-sigs.json` ROW: the signature, then the `!`-tagged claims a
     signature cannot make.  `!nat`/`!lax` is the naturality the dot draws, `!lean` the declaration
@@ -745,7 +758,7 @@ def sigfields(v):
     proves it.  The field names are the table's own, so `hm-check --verify-sigs` audits a row a panel
     types itself exactly as it audits one the table states."""
     sig, _, rest = v.partition("!")
-    d = dict(zip(("src", "tgt"), sig.split("⟶")))
+    d = dict(zip(("src", "tgt"), arrow(sig, "a `sigs:` row")))
     for f in rest.split("!") if rest else ():
         tag, _, mark = f.partition("=")
         # `lean:` is `cite-check`'s own prefix, written where the marker stands in the note; the row
@@ -838,8 +851,9 @@ def summand(br, table, arg=None):
 def same_summand(a, b):
     """Two summands are ONE when they unify, not when they print alike: a row naming its element by
     its own variable (`cons : x×[x]⟶[x]`, so `x×−`) is the same summand as the constant the panel's
-    ports bind that letter to (`step`'s `Op×−`)."""
-    xs, ys = a.split('×'), b.split('×')
+    ports bind that letter to (`step`'s `Op×−`).  Cut at the TOP-level `×` only: `(A×B)×−` is two
+    factors, and `str.split` makes it three and unifies it with nothing."""
+    xs, ys = split_top(a, '×'), split_top(b, '×')
     return len(xs) == len(ys) and all(x == y or x in VARS or y in VARS for x, y in zip(xs, ys))
 
 
@@ -1040,17 +1054,18 @@ def crosscheck(ps):
                              for cut in (p.cuts[i], p.cuts[i + 1]))
                 # Each end is a CUT — lanes outermost first, then the object — folded by the very
                 # function that folds the drawn one, so the two are built in one language.
-                src, tgt = ls[n][1].split("⟶")
-                say = tuple(fold_cut(p, [(0, l) for l in e.split("|")], ds) for e in (src, tgt))
+                src, tgt = arrow(ls[n][1], f"{EXPORT} --string --sigs {c['lean']}")
+                slanes, tlanes = split_top(src, "|"), split_top(tgt, "|")
+                say = tuple(fold_cut(p, [(0, l) for l in e], ds) for e in (slanes, tlanes))
                 # A bead's ARMS are its source's lanes, and its reach is how far west they run: a
                 # bead whose source is the bare object reaches nothing, and one drawn reaching a
                 # lane it does not eat says it is a transformation of that functor.
-                if (b.reach is not None) != ("|" in src):
+                if (b.reach is not None) != (len(slanes) > 1):
                     bad.append(f"{p.id}: the bead {b.label} is drawn "
                                + ("reaching a lane" if b.reach is not None
                                   else "on the object wire alone")
-                               + f", but {c['lean']} types it {src.replace('|', ' ')}⟶"
-                               + tgt.replace('|', ' '))
+                               + f", but {c['lean']} types it {' '.join(slanes)}⟶"
+                               + ' '.join(tlanes))
             if say is None:
                 gap.append(f"{p.id}: {lab}")
                 continue
@@ -1315,7 +1330,7 @@ VALOPT = ("--view", "--panel", "--from", "--json")   # flags whose next word is 
 
 
 def positional(argv):
-    """The file argument: the first word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
+    """The file arguments: every word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
     --full f` opened `0-.1` as the file, because a value does not start with `-` either."""
     out, skip = [], False
     for a in argv:
@@ -1325,12 +1340,13 @@ def positional(argv):
             skip = a in VALOPT
         else:
             out.append(a)
-    return out[0] if out else "diag/allegory-axioms.typ"
+    return out or ["diag/allegory-axioms.typ"]
 
 
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
-    path = positional(argv)
+    paths = positional(argv)
+    path = paths[0]
     view = opt(argv, "--view")
     if view:
         pre, secs = parts(path)
@@ -1350,20 +1366,59 @@ def main(argv):
         return
     only = opt(argv, "--panel")
     frm = opt(argv, "--from")
-    keep = not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
-    hs = lit_hashes(path) if keep else None
-    # The obligations are the panels the FILE draws, enumerated before any cache is consulted: a
+    # A cache keyed on ONE path cannot answer for a batch, so a batch does not read one.
+    keep = (not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
+            and len(paths) == 1)
+    # The obligations are the panels the FILES draw, enumerated before any cache is consulted: a
     # cached pass may skip the WORK of re-checking a panel, never subtract it from the total.
-    recs = panels(path, frm, "--full" in argv)
-    LEANSIG.update(leansigs(recs))
+    # A named file that is not there is an OBLIGATION with no picture — the exporter refused the
+    # declaration — so it is one named failure and the rest of the batch is still swept.
+    missing = [p for p in paths if not os.path.exists(p)]
+    # One unreadable file is ONE failure, not the end of the batch: the other files' panels are
+    # obligations too, and a run that stops at the first typst error reports on none of them.
+    per, unread = [], []
+    for p in paths:
+        if p in missing:
+            continue
+        try:
+            per.append((p, panels(p, frm, "--full" in argv)))
+        except SystemExit as e:
+            unread.append(str(e))
+    allrecs = [r for _, rs in per for r in rs]
     if "--spell" in argv:
-        n, bad = respell(recs)
+        LEANSIG.update(leansigs(allrecs))
+        n, bad = respell(allrecs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
         if bad:
             print(*bad, sep="\n", file=sys.stderr)
             sys.exit(f"scanline: {len(bad)} string{'s' * (len(bad) > 1)} the grammar cannot"
                      " write back")
         return
+    fail, swept = 0, []
+    for path, recs in per:
+        n, ps = check(path, recs, argv, only, keep)
+        fail += n
+        swept += ps
+    if opt(argv, "--json"):
+        json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
+                    "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
+                    "expr": spell(tidy(p.expr))} for p in swept],
+                  open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    for p in missing:
+        print(f"scanline: {p} was never drawn — `./scripts/diag-export --string` refused the"
+              f" declaration it is named after; its own message says why", file=sys.stderr)
+    print(*unread, sep="\n", file=sys.stderr)
+    if fail or missing or unread:
+        sys.exit(1)
+
+
+def check(path, recs, argv, only, keep):
+    """One file's panels swept, its failures named on stderr: how many failed, and the panels."""
+    # A panel id is the FILE's (`0-.1` in every generated picture), so one file's Lean types would
+    # answer for the next file's panel of the same id: the table is built afresh for each.
+    LEANSIG.clear()
+    LEANSIG.update(leansigs(recs))
+    hs = lit_hashes(path) if keep else None
     skipped = []
     if keep and "--full" not in argv:
         c = json.load(open(CACHE, encoding="utf-8")) if os.path.exists(CACHE) else {}
@@ -1392,11 +1447,6 @@ def main(argv):
     if "--strict" in argv:
         bad += warn["cut order"] + warn["ink"] + drawn
         warn = {k: [] for k in warn}; drawn = []
-    if opt(argv, "--json"):
-        json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
-                    "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
-                    "expr": spell(tidy(p.expr))} for p in ps],
-                  open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if only or "--list" in argv:
         for p in ps:
             print(f"{p.id:<12} {spell(tidy(p.expr))}")
@@ -1431,14 +1481,20 @@ def main(argv):
     if bad:
         print(*[f"{path}: {b}" for b in bad], sep="\n", file=sys.stderr)
         first = next((p for p in ps if bad[0].startswith(p.id.rsplit('.', 1)[0])), None)
-        sys.exit(f"scanline: {len(bad)} check{'s' * (len(bad) > 1)} failed"
-                 + (f"; the first is drawn at {locate(path, first)}" if first else ""))
-    if unhandled:
-        sys.exit(f"scanline: {len(unhandled)} panels the sweep has no rule for")
+        print(f"scanline: {len(bad)} check{'s' * (len(bad) > 1)} failed"
+              + (f"; the first is drawn at {locate(path, first)}" if first else ""),
+              file=sys.stderr)
+    elif unhandled:
+        print(f"scanline: {len(unhandled)} panels the sweep has no rule for", file=sys.stderr)
+    return len(bad) + len(unhandled), ps
 
 
 _HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict] [--full]
-       [--json FILE] [--list] [diag/allegory-axioms.typ]
+       [--json FILE] [--list] [FILE ...]
+
+SEVERAL FILES in one run, each swept and reported on its own line, the exit status non-zero if any
+of them failed — `make scan-generated` hands over every picture the manifest names in one call.
+The literal cache is one file's, so a batch neither reads nor writes it.
 
 --panel ID     sweep and print only the one panel with this metadata id, with its per-bead factors
 --from FIELD   read `#metadata` with this --field name instead of the default "value"

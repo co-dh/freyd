@@ -5,6 +5,7 @@ other.
 
     ./scripts/string-check            # every display
     ./scripts/string-check 13.6       # only the displays whose number starts so
+    ./scripts/string-check --selectors  # the manifest's selectors, one per line, for `make`
 
 THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
   every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
@@ -108,6 +109,11 @@ def svg(src, dst):
 
 
 def main(argv):
+    # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
+    # gate's, so the two cannot come to disagree about what the manifest names.
+    if "--selectors" in argv:
+        print(*sorted({s for _, _, sels in obligations() for s in sels if s != "-"}), sep="\n")
+        return 0
     want = argv[0] if argv else ""
     os.makedirs(OUT, exist_ok=True)
     live = note_panels()
@@ -125,9 +131,15 @@ def main(argv):
 
     todo = sorted({s for d, _, sels in rows if d in live and d.startswith(want)
                    for s in sels if s != "-"})
+    # The FILE is the answer to "did it draw", so the ones about to be drawn are deleted first: a
+    # selector the exporter refuses was otherwise checked against LAST run's picture and said `ok`.
+    for s in todo:
+        if os.path.exists(f"diag/generated/string/{s}.typ"):
+            os.remove(f"diag/generated/string/{s}.typ")
+    drawn, exrc = "", 0
     if todo:
         p = run("./scripts/diag-export", "--string", *todo)
-        drawn = p.stderr + p.stdout
+        drawn, exrc = p.stderr + p.stdout, p.returncode
     for d, disp, sels in rows:
         if d not in live or not d.startswith(want):
             continue
@@ -143,7 +155,9 @@ def main(argv):
                 continue
             gen = f"diag/generated/string/{sel}.typ"
             if not os.path.exists(gen):
-                err = next((l for l in drawn.splitlines() if sel in l), "no such file drawn")
+                err = next((l for l in drawn.splitlines() if sel in l),
+                           f"./scripts/diag-export --string exited {exrc} and named no reason"
+                           if exrc else "the exporter drew no file and said nothing")
                 print(f"{tag} {sel}: CANNOT-DRAW {err}")
                 rc = 1
                 continue
