@@ -265,6 +265,22 @@ theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj A ⟶ A} {T : F.obj
     rw [c1, c2]
     exact le_trans hbound hchain
 
+/-! ### The optimisation chain (note §15.1b)
+
+  `H%∋ est(R) ⊒ (T°)%∋ thin(Q)P(F(X)h)est(R)`: the note draws the spec as the single bead `X`
+  sitting inside the body, so the step abstracts that abbreviation out of `dp_thin_prefixed`. -/
+
+/-- Step 1: at `X≜H%∋ est(R)` the thinning body is below the spec — the prefixed point
+    Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
+public theorem dynamic_programming_thin_step1 (hFr : F.PreservesRecip)
+    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A}
+    {X : B ⟶ A} (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
+    (hX : X = Λ H ≫ est R) :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
+  subst hX
+  exact dp_thin_prefixed hFr hh hmono htrans hHfix hQ
+
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
     recursion — provided `Q` interacts correctly with `H := ⦇h⦈·⦇T⦈°` and `h` (hypothesis
@@ -277,7 +293,8 @@ public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlg
         ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
+    (dynamic_programming_thin_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 
