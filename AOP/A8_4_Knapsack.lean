@@ -360,6 +360,48 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
         obtain rfl : r = y := hcase
         exact ⟨subseqP.weaken hsy, hwy⟩
 
+/-- **knap-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [nil,cons]`,
+    `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
+    `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
+public theorem knap_laws_step1 {l lF : RelSet.{0}}
+    {sortP : PowerAllegory.powerObj (dList Item) ⟶ l}
+    {sortF : ((F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)) →
+      (PowerAllegory.powerObj ((F Unit Item).obj (dList Item)) ⟶ lF)}
+    {listcp : (F Unit Item).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
+    {filterp₁ thinlist : l ⟶ l} {minlist : l ⟶ dList Item} {Pr : RelProd l l}
+    {Pr' : RelProd (PowerAllegory.powerObj (dList Item)) (PowerAllegory.powerObj (dList Item))}
+    {mergeP : Pr.p ⟶ l}
+    (hsortF : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
+      X ⊑ Y → sortF X ⊑ sortF Y)
+    (h88₁ : sortF (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ sortP)
+    (h88₂ : sortF (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
+      ⊑ powerRel (graph dropFn) ≫ sortP)
+    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage (within wt w) ≫ sortP)
+    (h811 : (F Unit Item).map sortP ≫ listcp
+      ⊑ cpMap (F Unit Item) (dList Item) ≫ sortF ((F Unit Item).map (R vol)))
+    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h86 : sortP ≫ thinlist ⊑ thinRel (Q vol wt) ≫ sortP)
+    (h87 : sortP ≫ minlist ⊑ est (R vol)) :
+    ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 l) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+      ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
+  have hm₂ : MonotonicAlg (F := F Unit Item) (graph dropFn ≫ 𝟙 (dList Item)) (Q vol wt) := by
+    rw [Cat.comp_id]; exact knap_mono_drop
+  have h89₂ : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dList Item)) ≫ sortP := by
+    rw [Cat.comp_id, existsImage_id, Cat.id_comp]
+    exact le_refl _
+  have key := thinningList (F := F Unit Item) (F_preservesRecip Unit Item) (initial Unit Item)
+    (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within wt w) (p₂ := 𝟙 (dList Item))
+    (P := R vol) (Q := Q vol wt) (R := R vol)
+    (graph_map con) (graph_map dropFn) Q_le_R Q_refl Q_trans R_recip_trans
+    knap_mono_cons hm₂ hsortF knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
+  rw [Cat.comp_id (graph dropFn)] at key
+  exact key
+
+/-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
+public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
+    Λ ⦇Salg wt w⦈ ≫ est (R vol) = Λ (subseq ≫ within wt w) ≫ est (R vol) := by
+  rw [knap_spec hw hwt]
+
 /-- **knap-laws** (B&dM §8.4, p.206): the knapsack problem as a fold that thins the packings
     kept at each item —
     `Λ(subseq (within w)) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R`.
@@ -388,18 +430,7 @@ public theorem knap_laws {l lF : RelSet.{0}} (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ 
     (h87 : sortP ≫ minlist ⊑ est (R vol)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 l) ≫ mergeP ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (subseq ≫ within wt w) ≫ est (R vol) := by
-  have hm₂ : MonotonicAlg (F := F Unit Item) (graph dropFn ≫ 𝟙 (dList Item)) (Q vol wt) := by
-    rw [Cat.comp_id]; exact knap_mono_drop
-  have h89₂ : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dList Item)) ≫ sortP := by
-    rw [Cat.comp_id, existsImage_id, Cat.id_comp]
-    exact le_refl _
-  have key := thinningList (F := F Unit Item) (F_preservesRecip Unit Item) (initial Unit Item)
-    (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within wt w) (p₂ := 𝟙 (dList Item))
-    (P := R vol) (Q := Q vol wt) (R := R vol)
-    (graph_map con) (graph_map dropFn) Q_le_R Q_refl Q_trans R_recip_trans
-    knap_mono_cons hm₂ hsortF knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
-  rw [Cat.comp_id (graph dropFn)] at key
-  rw [knap_spec hw hwt]
-  exact key
+  rw [← knap_laws_step2 hw hwt]
+  exact knap_laws_step1 hsortF h88₁ h88₂ h89₁ h811 h810 h86 h87
 
 end Freyd.Alg.RelSet.Knapsack
