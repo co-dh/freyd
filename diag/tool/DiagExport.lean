@@ -1412,17 +1412,23 @@ def main (args : List String) : IO UInt32 := do
     -- by consing as the suffixes come off the end.
     -- A SIDE SELECTOR CHAINS TOO: a statement can be built from statements (`↔`, `∧`), so
     -- `.lhs.lhs` is the left equation and then its left side, and one loop comes off the end.
+    -- `<Name>.lhs.body` is the BODY of a least fixed point, its binder instantiated by a local whose
+    -- wire the panel draws: one more step of the same chain, so it comes off the end with the rest
+    -- and keeps its place among them (`.body.inr` is the body, then that body's operand).
     let mut stem : String.Slice := arg
-    let mut branch : List Nat := []
+    let mut branch : List StrDiag.Sel := []
     let mut sides : List String := []
     let mut more := circuitMode || stringMode
     while more do
       if stem.endsWith ".inl" then
         stem := stem.dropEnd 4
-        branch := 0 :: branch
+        branch := .inl :: branch
       else if stem.endsWith ".inr" then
         stem := stem.dropEnd 4
-        branch := 1 :: branch
+        branch := .inr :: branch
+      else if stem.endsWith ".body" then
+        stem := stem.dropEnd 5
+        branch := .body :: branch
       else if stem.endsWith ".lhs" then
         stem := stem.dropEnd 4
         sides := "lhs" :: sides
@@ -1443,7 +1449,12 @@ def main (args : List String) : IO UInt32 := do
           StrDiag.drawString base.toName sides binder branch frame topRow scale sigsMode
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
-        else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
+        else if circuitMode then
+          if branch.contains .body then
+            throwError "`.body` opens a least fixed point's binder as a WIRE, which only the string \
+              route draws"
+          else Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
+            (branch.map fun s => if s == .inl then 0 else 1)
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
