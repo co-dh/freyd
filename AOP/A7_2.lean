@@ -157,38 +157,49 @@ section Greedy
 
 variable {R : A ⟶ A} {S : F.obj A ⟶ A}
 
+/-- Step 1 of the greedy chain: `S°F(R°)(`#frc(S)` est(R)) ⊑ R°S°(`#frc(S)` est(R))` — the
+    monotonicity hypothesis, conversed (`F(R)°=F(R°)`, `(SR)°=R°S°`), slides `R°` out of the
+    relator's span and up above `S°`; the three arrows to its right do not move. -/
+public theorem greedy_step1 (hFr : F.PreservesRecip) {R : A ⟶ A} {S : F.obj A ⟶ A}
+    (hmono : MonotonicAlg S R) :
+    S° ≫ F.map R° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ S° ≫ (S%∋ ≫ est(R)) := by
+  have hslide : S° ≫ F.map R° ⊑ R° ≫ S° := by
+    have h := recip_mono hmono
+    have heqL : (F.map R ≫ S)° = S° ≫ F.map R° := by
+      rw [Allegory.recip_comp, hFr R]
+    have heqR : (S ≫ R)° = R° ≫ S° := Allegory.recip_comp _ _
+    rwa [heqL, heqR] at h
+  have hB := comp_mono_right hslide (S%∋ ≫ est(R))
+  rwa [Cat.assoc S° (F.map R°) (S%∋ ≫ est(R)), Cat.assoc R° S° (S%∋ ≫ est(R))] at hB
+
+/-- Step 2 of the greedy chain: `R°S°(`#frc(S)` est(R)) ⊑ R°R°` — `S%∋ est(R)` is below the
+    left division `S°\R°` (`est(R) ⊑ ∈\R°`), and `S°(S°\R°) ⊑ R°` cancels it against `S°`. -/
+public theorem greedy_step2 {R : A ⟶ A} {S : F.obj A ⟶ A} :
+    R° ≫ S° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ R° := by
+  have hdiv : S%∋ ≫ est(R) ⊑ (S° \ R°) := by
+    rw [Λ_comp_est]; exact inter_lb_right _ _
+  exact le_trans (comp_mono_left _ (comp_mono_left _ hdiv))
+    (comp_mono_left _ (leftDiv_comp_le _ _))
+
+/-- Step 3 of the greedy chain: `R°R° ⊑ R°` — transitivity of `R`, conversed. -/
+public theorem greedy_step3 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R° ⊑ R° := by
+  have h := recip_mono htrans
+  rwa [Allegory.recip_comp] at h
+
 /-- **Theorem 7.2 (THE GREEDY THEOREM, B&dM p.173)**: `⦇est R·ΛS⦈ ⊆ est R·Λ⦇S⦈` if `S` is
     monotonic on the preorder `R`, mirrored.  (B&dM state it for `min R` with `S` monotonic
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
 public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
     ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
-  have htrans' : R° ≫ R° ⊑ R° := by
-    have h := recip_mono htrans
-    rwa [Allegory.recip_comp] at h
   apply le_Λ_comp_est_iff.mpr
   refine ⟨?_, ?_⟩
   · have hi : Λ S ≫ est R ⊑ S := by
       have h := comp_mono_left (Λ S) (show est R ⊑ ∋ A from inter_lb_left _ _)
       rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
-  · have step1 : S° ≫ F.map R° ⊑ R° ≫ S° := by
-      have h := recip_mono hmono
-      have heqL : (F.map R ≫ S)° = S° ≫ F.map R° := by
-        rw [Allegory.recip_comp, hFr R]
-      have heqR : (S ≫ R)° = R° ≫ S° := Allegory.recip_comp _ _
-      rwa [heqL, heqR] at h
-    have step2 : Λ S ≫ est R ⊑ (S° \ R°) := by
-      rw [Λ_comp_est]; exact inter_lb_right _ _
-    have hprefixed : S° ≫ F.map R° ≫ (Λ S ≫ est R) ⊑ R° := by
-      have hB : (S° ≫ F.map R°) ≫ (Λ S ≫ est R) ⊑ (R° ≫ S°) ≫ (Λ S ≫ est R) :=
-        comp_mono_right step1 _
-      rw [Cat.assoc S° (F.map R°) (Λ S ≫ est R), Cat.assoc R° S° (Λ S ≫ est R)] at hB
-      have hC : R° ≫ (S° ≫ (Λ S ≫ est R)) ⊑ R° ≫ (S° ≫ (S° \ R°)) :=
-        comp_mono_left _ (comp_mono_left _ step2)
-      have hD : R° ≫ (S° ≫ (S° \ R°)) ⊑ R° ≫ R° := comp_mono_left _ (leftDiv_comp_le _ _)
-      exact le_trans hB (le_trans hC (le_trans hD htrans'))
-    exact hylo_le_of_prefixed hFr I hprefixed
+  · exact hylo_le_of_prefixed hFr I
+      (le_trans (greedy_step1 hFr hmono) (le_trans greedy_step2 (greedy_step3 htrans)))
 
 end Greedy
 

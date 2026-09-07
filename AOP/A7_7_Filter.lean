@@ -185,37 +185,70 @@ theorem fStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : fStep
 theorem fStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : fStep p x c = c := by
   unfold fStep; rw [h]
 
-/-- The `filter-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,π₂)]` — at `(a,xs)` the algebra allows
-    `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
-    The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
-    `⊸ nil`. -/
-public theorem filter_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) := by
+/-- The power object of `[A]`, and the product of two copies of it — where the `∪` of two
+    transposes is taken. -/
+public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0}))
+    (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0})) :=
+  relProd _ _
+
+/-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the
+    transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
+    is the coproduct of the composites. -/
+public theorem filter_step1 (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°)
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  unfold Salg; rw [Λ_junc, junc_comp]
+
+/-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` — the `nil` arm, as in `takewhile-step`. -/
+public theorem filter_step2 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  rw [Λ_nil_comp_est]
+
+/-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
+    a union is the pair of the transposes followed by the power object's union. -/
+public theorem filter_step3 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
+            ≫ cup (PL (E := E)) ≫ est(lenLE°)) := by
+  rw [Λ_union _ _ (PL (E := E)), pair_eq_rpair, Cat.assoc]
+
+/-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
+    `(a,xs)` the union is `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and
+    `xs` loses the second.  The head is dropped, not the whole tail: the one place `π₂` shows
+    against takewhile's `⊸ nil`. -/
+public theorem filter_step4 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
+          ≫ cup (PL (E := E)) ≫ est(lenLE°))
+      = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) := by
+  rw [← filter_step3]
   apply hom_ext; intro u ws
-  rw [Λ_comp_est_apply]
   cases u with
-  | inl D =>
-      constructor
-      · rintro ⟨hS, -⟩
-        exact (Salg_inl p D ws).mp hS
-      · intro h0
-        have hws : ws = [] := h0
-        subst hws
-        refine ⟨(Salg_inl p D []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p D z).mp hz
-        subst hz'
-        exact Nat.le_refl 0
+  | inl D => rw [junc_sum_inl]; exact Iff.rfl
   | inr q =>
       obtain ⟨x, c⟩ := q
+      rw [junc_sum_inr, Λ_comp_est_apply]
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = fStep p x c
-        rcases (Salg_inr p x c ws).mp hS with hws | ⟨hp, hws⟩
+        rcases (Scons_apply p x c ws).mp hS with hws | ⟨hp, hws⟩
         · subst hws
           cases hpx : p x with
           | false => rw [fStep_neg hpx]
           | true =>
-              have hz := hmax (x :: ws) ((Salg_inr p x ws _).mpr (Or.inr ⟨hpx, rfl⟩))
+              have hz := hmax (x :: ws) ((Scons_apply p x ws _).mpr (Or.inr ⟨hpx, rfl⟩))
               exact absurd hz (Nat.not_succ_le_self _)
         · rw [fStep_pos hp, hws]
       · intro h0
@@ -224,17 +257,25 @@ public theorem filter_step (p : E → Bool) :
         | true =>
             rw [fStep_pos hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨-, hz'⟩
+            refine ⟨(Scons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
+            rcases (Scons_apply p x c z).mp hz with hz' | ⟨-, hz'⟩
             · subst hz'; exact Nat.le_succ _
             · subst hz'; exact Nat.le_refl _
         | false =>
             rw [fStep_neg hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x ws _).mpr (Or.inl rfl), fun z hz => ?_⟩
-            rcases (Salg_inr p x ws z).mp hz with hz' | ⟨hp', hz'⟩
+            refine ⟨(Scons_apply p x ws _).mpr (Or.inl rfl), fun z hz => ?_⟩
+            rcases (Scons_apply p x ws z).mp hz with hz' | ⟨hp', hz'⟩
             · subst hz'; exact Nat.le_refl _
             · rw [hpx] at hp'; nomatch hp'
+
+/-- The `filter-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,π₂)]` — at `(a,xs)` the algebra allows
+    `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
+    The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
+    `⊸ nil`. -/
+public theorem filter_step (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) :=
+  (filter_step1 p).trans ((filter_step2 p).trans ((filter_step3 p).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
