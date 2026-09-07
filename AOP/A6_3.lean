@@ -12,7 +12,10 @@
 
   Contents:
   * `relCata_alpha`  (B&dM p.142): `⦇α⦈ = id`.
-  * `hyloBody_monotonic`, **Theorem 6.2** (`hylo_eq_mu`) and its corollary `hylo_le_of_prefixed`.
+  * `hyloBody_monotonic`, the fixed-point equation `hylo_fixed`, the leastness
+    `hylo_le_of_prefixed`, and **Theorem 6.2** (`hylo_eq_mu`).  The note's three chains
+    (§11.6.4a/b/c) draw one panel per step, so each step is a `*_step<k>` theorem of its own and
+    the three named theorems are their composition.
   * Ex 6.10: hylomorphisms of simple algebra/coalgebra pairs are simple (`mu_simple`,
     `hylo_simple`).
   * Corollary 6.1 (`hylo_body_coprod_decompose`, `hylo_eq_mu_coprod`): the hylo body over a
@@ -55,55 +58,139 @@ public theorem hyloBody_monotonic {A B : 𝒜} (R : F.obj A ⟶ A) (S : F.obj B 
     Monotonic (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
+/-- The CONVERSE of the fold's cancellation law `α⦇R⦈ = F(⦇R⦈)R` (`relCata_cancel`), which needs
+    the relator to preserve converse: `⦇R⦈°α° = R°F(⦇R⦈°)`.  Both hylomorphism chains carry a
+    leading `⦇S⦈°α°` across the unfold with it. -/
+public theorem relCata_cancel_recip (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A : 𝒜}
+    (R : F.obj A ⟶ A) : (relCata R)° ≫ I.α° = R° ≫ F.map ((relCata R)°) := by
+  have hcancel_recip : (I.α ≫ relCata R)° = (F.map (relCata R) ≫ R)° := by
+    rw [relCata_cancel I R]
+  rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr (relCata R)] at hcancel_recip
+  exact hcancel_recip
+
+/-! ### The fixed-point chain (note §11.6.4a)
+
+  `S°F(⦇S⦈°⦇R⦈)R = S°F(⦇S⦈°)F(⦇R⦈)R = S°F(⦇S⦈°)α⦇R⦈ = ⦇S⦈°α°α⦇R⦈ = ⦇S⦈°⦇R⦈`, one theorem per
+  step; `hylo_fixed` is their composition. -/
+
+/-- Step 1: the relator splits the composite, `F(⦇S⦈°⦇R⦈) = F(⦇S⦈°)F(⦇R⦈)`. -/
+public theorem hylo_fixed_step1 (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
+      = S° ≫ F.map ((relCata S)°) ≫ F.map (relCata R) ≫ R := by
+  rw [F.map_comp, Cat.assoc]
+
+/-- Step 2: the fold's cancellation `F(⦇R⦈)R = α⦇R⦈` (`relCata_cancel` at `R`). -/
+public theorem hylo_fixed_step2 (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    S° ≫ F.map ((relCata S)°) ≫ F.map (relCata R) ≫ R
+      = S° ≫ F.map ((relCata S)°) ≫ I.α ≫ relCata R := by
+  rw [relCata_cancel I R]
+
+/-- Step 3: the unfold's conversed cancellation `⦇S⦈°α° = S°F(⦇S⦈°)`, read backwards. -/
+public theorem hylo_fixed_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    S° ≫ F.map ((relCata S)°) ≫ I.α ≫ relCata R
+      = (relCata S)° ≫ I.α° ≫ I.α ≫ relCata R :=
+  calc S° ≫ F.map ((relCata S)°) ≫ I.α ≫ relCata R
+      = (S° ≫ F.map ((relCata S)°)) ≫ I.α ≫ relCata R := (Cat.assoc _ _ _).symm
+    _ = ((relCata S)° ≫ I.α°) ≫ I.α ≫ relCata R := by rw [relCata_cancel_recip hFr I S]
+    _ = (relCata S)° ≫ I.α° ≫ I.α ≫ relCata R := Cat.assoc _ _ _
+
+/-- Step 4: `α°α = 𝟙`, so the two structure maps cancel. -/
+public theorem hylo_fixed_step4 (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    (relCata S)° ≫ I.α° ≫ I.α ≫ relCata R = (relCata S)° ≫ relCata R := by
+  rw [← Cat.assoc I.α° I.α (relCata R), I.recip_alpha_alpha, Cat.id_comp]
+
+/-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored) — the form in which
+    ch. 9's dynamic-programming theorems consume the hylomorphism theorem (B&dM p.220, "definition
+    of `H` and hylomorphism theorem"). -/
+public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R :=
+  ((hylo_fixed_step1 I R S).trans (hylo_fixed_step2 I R S)).trans
+    ((hylo_fixed_step3 hFr I R S).trans (hylo_fixed_step4 I R S))
+
+/-! ### The leastness chain (note §11.6.4b)
+
+  Six inclusions, each implying the one above it:
+  `⦇S⦈°⦇R⦈⊑X ⟸ ⦇R⦈⊑⦇S⦈°\X ⟸ α°F(⦇S⦈°\X)R⊑⦇S⦈°\X ⟸ ⦇S⦈°α°F(⦇S⦈°\X)R⊑X
+   ⟸ S°F(⦇S⦈°)F(⦇S⦈°\X)R⊑X ⟸ S°F(X)R⊑X`.
+  The last is the hypothesis `h`, so every step carries it; they are declared bottom-up, which is
+  the order in which they are proved. -/
+
+/-- Step 4, the row above the hypothesis: the relator rejoins `F(⦇S⦈°)F(⦇S⦈°\X)` into
+    `F(⦇S⦈°(⦇S⦈°\X))`, and the division's counit `⦇S⦈°(⦇S⦈°\X) ⊑ X` reduces it to `h`. -/
+public theorem hylo_le_of_prefixed_step4 (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
+    S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X := by
+  have hcomp : S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R
+      = S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R := by
+    rw [F.map_comp, Cat.assoc]
+  rw [hcomp]
+  have hWX : (relCata S)° ≫ (((relCata S)°) \ X) ⊑ X := leftDiv_comp_le _ X
+  exact le_trans (comp_mono_left S° (comp_mono_right (F.map_mono hWX) R)) h
+
+/-- Step 3: `⦇S⦈°α° = S°F(⦇S⦈°)` (`relCata_cancel_recip`) rewrites the head of step 4's row. -/
+public theorem hylo_le_of_prefixed_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
+    (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X := by
+  have hkey : (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
+      = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R :=
+    calc (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
+        = ((relCata S)° ≫ I.α°) ≫ F.map (((relCata S)°) \ X) ≫ R := (Cat.assoc _ _ _).symm
+      _ = (S° ≫ F.map ((relCata S)°)) ≫ F.map (((relCata S)°) \ X) ≫ R := by
+          rw [relCata_cancel_recip hFr I S]
+      _ = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R := Cat.assoc _ _ _
+  rw [hkey]
+  exact hylo_le_of_prefixed_step4 I h
+
+/-- Step 2: the division adjunction `⦇S⦈°· ⊣ ⦇S⦈°\·` (`le_leftDiv_iff`) moves the leading
+    converse to the other side. -/
+public theorem hylo_le_of_prefixed_step2 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
+    I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ ((relCata S)°) \ X :=
+  (le_leftDiv_iff _ ((relCata S)°) X).mpr (hylo_le_of_prefixed_step3 hFr I h)
+
+/-- Step 1: the fold's own leastness (`relCata_le_of_prefixed`) at the prefixed point
+    `⦇S⦈°\X`. -/
+public theorem hylo_le_of_prefixed_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
+    relCata R ⊑ ((relCata S)°) \ X :=
+  relCata_le_of_prefixed I (hylo_le_of_prefixed_step2 hFr I h)
+
 /-- **Step B of Theorem 6.2**: the hylomorphism `[[R,S]]` refines any prefixed point `X` of the
     body `S° ≫ F.map X ≫ R` — proved DIRECTLY (not via `hylo_eq_mu`, which uses this as its
     leastness half). -/
 public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
-    (relCata S)° ≫ relCata R ⊑ X := by
-  apply (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp
-  apply relCata_le_of_prefixed
-  apply (le_leftDiv_iff _ ((relCata S)°) X).mpr
-  have hkey : (relCata S)° ≫ I.α° = S° ≫ F.map ((relCata S)°) := by
-    have hcancel_recip : (I.α ≫ relCata S)° = (F.map (relCata S) ≫ S)° := by
-      rw [relCata_cancel I S]
-    rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr (relCata S)] at hcancel_recip
-    exact hcancel_recip
-  have hcomp : (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
-      = S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R := by
-    rw [F.map_comp, ← Cat.assoc, ← Cat.assoc, hkey, Cat.assoc, Cat.assoc, Cat.assoc]
-  rw [hcomp]
-  have hWX : (relCata S)° ≫ (((relCata S)°) \ X) ⊑ X := leftDiv_comp_le _ X
-  exact le_trans (comp_mono_left S° (comp_mono_right (F.map_mono hWX) R)) h
+    (relCata S)° ≫ relCata R ⊑ X :=
+  (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp (hylo_le_of_prefixed_step1 hFr I h)
+
+/-! ### The two inclusions of Theorem 6.2 (note §11.6.4c)
+
+  `(μX : S°F(X)R) ⊑ ⦇S⦈°⦇R⦈ ⊑ (μX : S°F(X)R)`: the chain leaves `μ` and comes back to it, so
+  `hylo_eq_mu` is the antisymmetry of the two steps. -/
+
+/-- Step 1: `μ` is below every fixed point, and `hylo_fixed` says `⦇S⦈°⦇R⦈` is one. -/
+public theorem hylo_eq_mu_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) ⊑ (relCata S)° ≫ relCata R :=
+  mu_le_of_fixed (hylo_fixed hFr I R S)
+
+/-- Step 2: `hylo_le_of_prefixed` at the prefixed point `μ` itself. -/
+public theorem hylo_eq_mu_step2 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    (relCata S)° ≫ relCata R ⊑ mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
+  hylo_le_of_prefixed hFr I (mu_prefixed (hyloBody_monotonic R S))
 
 /-- **Theorem 6.2 (hylomorphism theorem, B&dM p.142)**: the hylomorphism `[[R,S]]` (mirrored:
     `(|S|)° ≫ (|R|)`) equals the least fixed point of the body `S° ≫ F.map X ≫ R`. -/
 public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
-    (relCata S)° ≫ relCata R = mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) := by
-  have hφ_mono : Monotonic (fun X : B ⟶ A => S° ≫ F.map X ≫ R) := hyloBody_monotonic R S
-  have hstepA : S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
-      = (relCata S)° ≫ relCata R := by
-    have h1 : F.map ((relCata S)° ≫ relCata R)
-        = (F.map (relCata S))° ≫ F.map (relCata R) := by
-      rw [F.map_comp, hFr]
-    have h4 : S° ≫ (F.map (relCata S))° = (relCata S)° ≫ I.α° := by
-      have hcancel_recip : (I.α ≫ relCata S)° = (F.map (relCata S) ≫ S)° := by
-        rw [relCata_cancel I S]
-      rw [Allegory.recip_comp, Allegory.recip_comp] at hcancel_recip
-      exact hcancel_recip.symm
-    rw [h1, ← Cat.assoc, ← Cat.assoc, h4, Cat.assoc, Cat.assoc, ← relCata_cancel I R,
-      ← Cat.assoc I.α° I.α (relCata R), I.recip_alpha_alpha, Cat.id_comp]
-  exact le_antisymm (hylo_le_of_prefixed hFr I (mu_prefixed hφ_mono)) (mu_le_of_fixed hstepA)
-
-/-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored), extracted from
-    Theorem 6.2 via `mu_fixed` — the form in which ch. 9's dynamic-programming theorems consume
-    the hylomorphism theorem (B&dM p.220, "definition of `H` and hylomorphism theorem"). -/
-public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
-    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
-    S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R := by
-  rw [hylo_eq_mu hFr I R S]
-  exact mu_fixed (hyloBody_monotonic R S)
+    (relCata S)° ≫ relCata R = mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
+  le_antisymm (hylo_eq_mu_step2 hFr I R S) (hylo_eq_mu_step1 hFr I R S)
 
 end Hylo
 

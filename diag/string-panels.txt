@@ -28,9 +28,9 @@ Freyd.Alg.alpha_natural.lhs,Freyd.Alg.alpha_natural.rhs	11.5.1b/tfun-sq	α T(f) 
 Freyd.Alg.typeMap_fusion.lhs,Freyd.Alg.typeMap_fusion.rhs	11.5.1c/tfun-fusion	T(f)⦇h⦈ = ⦇F(f,𝟙)h⦈
 Freyd.Alg.relCata_UP.lhs,Freyd.Alg.relCata_UP.rhs	11.6.1a/cata-defining	α X = F(X)f
 Freyd.Alg.Λ_relCata.lhs,Freyd.Alg.Λ_relCata.rhs	11.6.2a/cata-map-square	α⦇F(∋)R%∋⦈ = F(⦇F(∋)R%∋⦈)f
--,-,-,-,-	11.6.4a/hylo-fix	S° F(⦇S⦈°⦇R⦈)R = S° F(⦇S⦈°)F(⦇R⦈)R = S° F(⦇S⦈°)α⦇R⦈ = ⦇S⦈° α° α⦇R⦈ = ⦇S⦈°⦇R⦈	# candidates: Freyd.Alg.hylo_fixed Freyd.Alg.InitialAlgebra.recip_alpha_alpha
-Freyd.Alg.hylo_le_of_prefixed.lhs,Freyd.Alg.hylo_le_of_prefixed.rhs,-,-,-,-,-,-,-,-,-,-	11.6.4b/hylo-least	⦇S⦈°⦇R⦈ = X = ⦇R⦈ = ⦇S⦈°\X = α° F(⦇S⦈°\X)R = ⦇S⦈°\X = ⦇S⦈° α° F(⦇S⦈°\X)R = X = S° F(⦇S⦈°)F(⦇S⦈°\X)R = X = S° F(X)R = X
--,-,-	11.6.4c/hylo-mu	(μX : S°F(X)R) = ⦇S⦈°⦇R⦈ = (μX : S°F(X)R)	# candidates: Freyd.Alg.hylo_eq_mu Freyd.Alg.mu_le_of_fixed Freyd.Alg.mu_prefixed
+Freyd.Alg.hylo_fixed_step1.lhs,Freyd.Alg.hylo_fixed_step1.rhs,Freyd.Alg.hylo_fixed_step2.rhs,Freyd.Alg.hylo_fixed_step3.rhs,Freyd.Alg.hylo_fixed_step4.rhs	11.6.4a/hylo-fix	S° F(⦇S⦈°⦇R⦈)R = S° F(⦇S⦈°)F(⦇R⦈)R = S° F(⦇S⦈°)α⦇R⦈ = ⦇S⦈° α° α⦇R⦈ = ⦇S⦈°⦇R⦈
+Freyd.Alg.hylo_le_of_prefixed.lhs,Freyd.Alg.hylo_le_of_prefixed.rhs,Freyd.Alg.hylo_le_of_prefixed_step1.lhs,Freyd.Alg.hylo_le_of_prefixed_step1.rhs,Freyd.Alg.hylo_le_of_prefixed_step2.lhs,Freyd.Alg.hylo_le_of_prefixed_step2.rhs,Freyd.Alg.hylo_le_of_prefixed_step3.lhs,Freyd.Alg.hylo_le_of_prefixed_step3.rhs,Freyd.Alg.hylo_le_of_prefixed_step4.lhs,Freyd.Alg.hylo_le_of_prefixed_step4.rhs,Freyd.Alg.hylo_le_of_prefixed#h.lhs,Freyd.Alg.hylo_le_of_prefixed#h.rhs	11.6.4b/hylo-least	⦇S⦈°⦇R⦈ = X = ⦇R⦈ = ⦇S⦈°\X = α° F(⦇S⦈°\X)R = ⦇S⦈°\X = ⦇S⦈° α° F(⦇S⦈°\X)R = X = S° F(⦇S⦈°)F(⦇S⦈°\X)R = X = S° F(X)R = X
+Freyd.Alg.hylo_eq_mu_step1.lhs,Freyd.Alg.hylo_eq_mu_step1.rhs,Freyd.Alg.hylo_eq_mu_step2.rhs	11.6.4c/hylo-mu	(μX : S°F(X)R) = ⦇S⦈°⦇R⦈ = (μX : S°F(X)R)
 -,-,-,-,-	12.1b/subseq-EW-case	(𝟙×∋)π₂ = (𝟙×∋)π₂ = (𝟙×∋)π₂ = 𝟙%∋ E(𝟙×∋)E(π₂) = 𝟙%∋ E(𝟙×∋)E(π₂)	# candidates: Freyd.Alg.RelSet.ListRel.subseq_cata
 -,-,-,-,-	12.1d/subseq-EW-join	(𝟙×∋)cons = (𝟙×∋)π₂ = π₂ ∋ = 𝟙%∋ E(𝟙×∋)E(cons) = π₂	# the display carries no marker of its own
 Freyd.Alg.LaxNatural.lhs,Freyd.Alg.LaxNatural.rhs	13.2b/lax-str	G(R)φ = φ F(R)
