@@ -14,6 +14,9 @@
     `𝟙 a`                        the empty path
     `L = R`, `L ⊑ R`             one face, the two paths sharing their ends, the symbol between
 
+  `interp` gives that value — a `Path`, a graph open at two ends — and `Face.of` puts two of them
+  with the same ends into one face; the grid is a SEPARATE pass, `layout`, over the face's boundary.
+
   Nothing here reads a table, a formula string or the note.  The nodes come from `inferType`ing each
   factor and reading `Cat.Hom`'s two object arguments, so the picture is the type, not a transcript
   of it; the labels are `Meta.ppExpr` under the repo's own notations, through `DiagExport.labelAt`.
@@ -36,9 +39,10 @@
 -/
 -- `AOP.A4_5` pulls the `Freyd` core and the allegory layer, so `Cat.comp`, `Cat.Hom` and `Alg.le`
 -- are names this file can quote.  It does NOT import `DiagExport`: that module imports THIS one, to
--- route `--commutative`, and the four helpers below are its own, copied rather than made circular.
+-- route `--commutative`, so the typst helpers below are its own rather than made circular.
 import Lean
--- `StrDiag.split`: one copy of what relation a statement states, and what its two sides are.
+-- `StrDiag`: one copy of what a statement states, of an arrow's two ends, and of an application's
+-- last two arguments.
 import diag.tool.ExprReader
 import AOP.A4_5
 
@@ -47,10 +51,6 @@ open Lean
 namespace Freyd.CommutativeDiagram
 
 /-! ### `DiagExport`'s helpers, copied because the import runs the other way -/
-
-/-- The two arrow arguments of a binary operator applied with instance and object arguments. -/
-def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
-  if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
 /-- Typst string literal: only `\` and `"` can end it early. -/
 def typstString (s : String) : String :=
@@ -108,50 +108,104 @@ structure Edge where
       parallel arrows between one pair of nodes would otherwise be drawn on top of each other. -/
   bow : Float := 0.0
 
-/-- A face: the relation the two paths round it are asserted to stand in, and where to set it. -/
-structure Face where
+/-- Where a face's symbol is set, once the grid is known. -/
+structure FaceMark where
   sym : String
   gx : Float
   gy : Float
 
-/-! ### From the statement to the graph -/
+/-! ### The value of an arrow expression: a path -/
 
-/-- The arrows of one side, in diagram order.  `≫` flattens and `𝟙` contributes nothing; every
-    other expression is one arrow, whatever it is made of. -/
-partial def factors (e : Expr) : Array Expr :=
+/-- A graph open at two ends.  `nodes` are the vertices in path order, `edges` the arrows between
+    them, `src`/`tgt` the ids of the two ends.  Only the three constructors below build one. -/
+structure Path where
+  nodes : Array (String × Expr)
+  edges : Array (String × String × Expr)
+  src : String
+  tgt : String
+
+/-- The `i`-th vertex's id while a path is being built.  A path is a LINE, so a vertex's position is
+    already a unique name and no counter has to be carried between the constructors. -/
+def Path.nid (i : Nat) : String := s!"n{i}"
+
+/-- Every vertex renamed by its POSITION, the edges and the two ends following.  One renaming, used
+    both to keep `comp`'s two operands apart and to give a face's ends their shared names. -/
+def Path.rename (p : Path) (nm : Nat → String) : Path :=
+  let ren (id : String) : String :=
+    match p.nodes.findIdx? (·.1 == id) with | some i => nm i | none => id
+  { nodes := (List.range p.nodes.size).toArray.map fun i => (nm i, (p.nodes[i]!).2),
+    edges := p.edges.map fun (s, t, f) => (ren s, ren t, f),
+    src := ren p.src, tgt := ren p.tgt }
+
+/-- The object at a vertex — how a path says what its ends ARE, `src` and `tgt` being ids. -/
+def Path.objAt (p : Path) (id : String) : MetaM Expr :=
+  match p.nodes.find? (·.1 == id) with
+  | some (_, o) => return o
+  | none => throwError "no vertex {id} in a path of {p.nodes.size}"
+
+/-- The empty path at `o`: one vertex, no edge.  It is the unit of `comp` by construction, which is
+    everything an identity INSIDE a composite ever meant. -/
+def Path.id (o : Expr) : Path :=
+  { nodes := #[(nid 0, o)], edges := #[], src := nid 0, tgt := nid 0 }
+
+/-- One edge, its two vertices read off the arrow's OWN TYPE — never guessed from the shape of the
+    statement it came from. -/
+def Path.arrow (f : Expr) : MetaM Path := do
+  let (a, b) ← StrDiag.homEnds f
+  return { nodes := #[(nid 0, a), (nid 1, b)], edges := #[(nid 0, nid 1, f)],
+           src := nid 0, tgt := nid 1 }
+
+/-- `q` after `p`, with `p.tgt` and `q.src` IDENTIFIED.  GATE: those two objects must agree, or the
+    composite does not exist and the picture would glue arrows that never meet. -/
+def Path.comp (p q : Path) : MetaM Path := do
+  let a ← p.objAt p.tgt
+  let b ← q.objAt q.src
+  unless ← Meta.isDefEq a b do
+    throwError "these do not compose: the first path ends at {← plain a}, the second starts at \
+      {← plain b}"
+  let p := p.rename nid
+  let q := q.rename fun j => nid (j + p.nodes.size - 1)
+  return { nodes := p.nodes ++ q.nodes.extract 1 q.nodes.size, edges := p.edges ++ q.edges,
+           src := p.src, tgt := q.tgt }
+
+/-- A term read as a path.  Composition is the ONLY structural case — that is the functor law; `𝟙`
+    is the empty path, and any other expression is one edge, whatever it is made of. -/
+partial def interp (e : Expr) : MetaM Path := do
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
-    match lastTwo args with
-    | some (f, g) => factors f ++ factors g
-    | none => #[e]
-  | (``Cat.id, _) => #[]
-  | _ => #[e]
+    match StrDiag.lastTwo args with
+    | some (f, g) => Path.comp (← interp f) (← interp g)
+    | none => Path.arrow e
+  | (``Cat.id, _) => return Path.id (← StrDiag.homEnds e).1
+  | _ => Path.arrow e
 
-/-- One side's edges.  An identity INSIDE a composite is the empty path and disappears; a side that
-    is NOTHING BUT an identity keeps it, because a face needs two nodes and a loop is not drawable
-    on a grid. -/
-def sideArrows (e : Expr) : Array Expr :=
-  let fs := factors e
-  if fs.isEmpty then #[e] else fs
+/-- A face: two paths with the SAME two ends, and the relation asserted between them. -/
+structure Face where
+  sym : String
+  lhs : Path
+  rhs : Path
 
-/-- The two objects an arrow runs between, read off its type.  `whnf` only as a fallback: a hom that
-    is already `@Cat.Hom _ _ a b` must not be unfolded into the instance's own carrier. -/
-def homEnds (e : Expr) : MetaM (Expr × Expr) := do
-  let t ← instantiateMVars (← Meta.inferType e)
-  let ends (t : Expr) : Option (Expr × Expr) :=
-    match t.getAppFnArgs with
-    | (``Cat.Hom, args) => lastTwo args
-    | _ => none
-  match ends t with
-  | some r => return r
-  | none =>
-    match ends (← Meta.whnf t) with
-    | some r => return r
-    | none => throwError "not an arrow: {← Meta.ppExpr e} : {← Meta.ppExpr t}"
-
-/-- An arrow's label — the same printer as an object's, because an edge and a node say the same kind
-    of thing about the term they came from. -/
-def arrowLabel (e : Expr) : MetaM String := plain e
+/-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
+    A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
+    drawable on a grid, a decision about the PICTURE and not a fact about the term, which is why it
+    lives here and not in `interp`. -/
+def Face.of (sym : String) (p q : Path) : MetaM Face := do
+  let (pa, pb) := (← p.objAt p.src, ← p.objAt p.tgt)
+  let (qa, qb) := (← q.objAt q.src, ← q.objAt q.tgt)
+  unless ← Meta.isDefEq pa qa do
+    throwError "the two sides start at different objects: {← plain pa} and {← plain qa}"
+  unless ← Meta.isDefEq pb qb do
+    throwError "the two sides end at different objects: {← plain pb} and {← plain qb}"
+  let drawable (r : Path) (o : Expr) : MetaM Path := do
+    if r.edges.isEmpty then Path.arrow (← Meta.mkAppM ``Cat.id #[o]) else return r
+  -- The two SHARED vertices are the ends, so they take the shared names and each side's interior
+  -- its own; that identification is what makes the two paths one graph.
+  let name (pre : String) (k i : Nat) : String :=
+    if i == 0 then "s" else if i == k then "t" else s!"{pre}{i}"
+  let lhs ← drawable p pa
+  let rhs ← drawable q qa
+  return { sym, lhs := lhs.rename (name "u" lhs.edges.size),
+           rhs := rhs.rename (name "v" rhs.edges.size) }
 
 /-! ### The grid
 
@@ -182,9 +236,10 @@ def sideAt (first second : Nat) (mirror : Bool) (i : Nat) : String :=
   else if mirror then (if i < first then "left" else "bottom")
   else (if i < first then "top" else "right")
 
-/-- The graph of one face: the two paths, the nodes they share and the symbol between them. -/
-def faceOf (sym : String) (lhs rhs : Array Expr) : MetaM (Array Node × Array Edge × Array Face) := do
-  let (n, m) := (lhs.size, rhs.size)
+/-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
+    Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
+def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+  let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
   let (top, right) := legs n false
   let (left, bot) := legs m true
   -- The grid is as wide as the wider of its two horizontal legs and as tall as the taller of its
@@ -198,36 +253,28 @@ def faceOf (sym : String) (lhs rhs : Array Expr) : MetaM (Array Node × Array Ed
   let bowed := ny == 0
   let mut nodes : Array Node := #[]
   let mut edges : Array Edge := #[]
-  -- A node's object is the SOURCE of the arrow leaving it, or the TARGET of the last arrow for the
-  -- end node — read off the arrow's own type, never guessed from the statement's shape.
-  let objAt (side : Array Expr) (i : Nat) : MetaM Expr := do
-    if h : i < side.size then return (← homEnds side[i]).1
-    else return (← homEnds side[side.size - 1]!).2
-  let nodeId (pre : String) (i k : Nat) : String :=
-    if i == 0 then "s" else if i == k then "t" else s!"{pre}{i}"
+  -- The two paths share their end vertices, so the second contributes only its interior.
   for i in [0:n+1] do
+    let (id, o) := fc.lhs.nodes[i]!
     let (gx, gy) := vertexAt top right fx fy false i
-    let id := nodeId "u" i n
-    unless nodes.any (·.id == id) do
-      nodes := nodes.push { id, gx, gy, label := (← plain (← objAt lhs i)) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← plain o) }
   for j in [0:m+1] do
+    let (id, o) := fc.rhs.nodes[j]!
     let (gx, gy) := vertexAt left bot fx fy true j
-    let id := nodeId "v" j m
-    unless nodes.any (·.id == id) do
-      nodes := nodes.push { id, gx, gy, label := (← plain (← objAt rhs j)) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← plain o) }
   for i in [0:n] do
-    edges := edges.push
-      { src := nodeId "u" i n, tgt := nodeId "u" (i+1) n, label := (← arrowLabel lhs[i]!),
-        side := sideAt top right false i, bow := if bowed then 0.9 else 0.0 }
+    let (src, tgt, f) := fc.lhs.edges[i]!
+    edges := edges.push { src, tgt, label := (← plain f), side := sideAt top right false i,
+                          bow := if bowed then 0.9 else 0.0 }
   for j in [0:m] do
-    edges := edges.push
-      { src := nodeId "v" j m, tgt := nodeId "v" (j+1) m, label := (← arrowLabel rhs[j]!),
-        side := sideAt left bot true j, bow := if bowed then 0.9 else 0.0 }
+    let (src, tgt, f) := fc.rhs.edges[j]!
+    edges := edges.push { src, tgt, label := (← plain f), side := sideAt left bot true j,
+                          bow := if bowed then 0.9 else 0.0 }
   -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
   -- The symbol goes at the average of the face's corners, which for a convex polygon is inside it.
   let cx := nodes.foldl (fun a v => a + v.gx) 0.0 / nodes.size.toFloat
   let cy := nodes.foldl (fun a v => a + v.gy) 0.0 / nodes.size.toFloat
-  return (nodes, edges, if sym == "=" then #[] else #[{ sym, gx := cx, gy := cy }])
+  return (nodes, edges, if fc.sym == "=" then #[] else #[{ sym := fc.sym, gx := cx, gy := cy }])
 
 /-! ### Emitting the page -/
 
@@ -242,7 +289,7 @@ def typstEdges (es : Array Edge) : String :=
        label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}),\n")
     ++ ")\n"
 
-def typstFaces (fs : Array Face) : String :=
+def typstFaces (fs : Array FaceMark) : String :=
   "(\n" ++ String.join (fs.toList.map fun f =>
     s!"  (sym: {typstString f.sym}, at: ({fmt f.gx}, {fmt f.gy})),\n") ++ ")\n"
 
@@ -250,7 +297,7 @@ def typstFaces (fs : Array Face) : String :=
     exporter's is: `pic` is bound at the top for a note that wants the picture in a table cell.
     The page below draws the panel UNSCALED — `pic` carries the note's `s: 74%`, and `scripts/svg-check`
     measures this page against `diag/natsq.typ`, which is drawn at full size. -/
-def cdPage (declName : Name) (ns : Array Node) (es : Array Edge) (fs : Array Face) : String :=
+def cdPage (declName : Name) (ns : Array Node) (es : Array Edge) (fs : Array FaceMark) : String :=
   "// GENERATED by `diag-export --commutative` — do not edit; regenerate with\n\
    //   ./scripts/diag-export --commutative " ++ declName.toString ++ "\n\
    #import \"../../cdpanel.typ\": *\n\n"
@@ -272,7 +319,7 @@ partial def build (declName : Name) (ty : Expr) (fuel : Nat) : MetaM String := d
   Meta.forallTelescopeReducing ty fun _ body => do
     match StrDiag.split body with
     | some (sym, l, r) =>
-      let (ns, es, fs) ← faceOf sym (sideArrows l) (sideArrows r)
+      let (ns, es, fs) ← layout (← Face.of sym (← interp l) (← interp r))
       return cdPage declName ns es fs
     | none =>
       if fuel == 0 then
