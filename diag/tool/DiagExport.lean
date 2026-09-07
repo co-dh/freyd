@@ -55,6 +55,7 @@ import diag.FO
 import diag.Tape
 import diag.S2_124
 import diag.tool.StringDiagram
+import diag.tool.TypeRender
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
@@ -1392,12 +1393,15 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --type] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
    --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
+   --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
+     an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
+     categories a relator runs between; no side or branch selector applies\n\
    --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
      one line `<panel>\\t<label>\\t<src>⟶<tgt>`, which `scripts/scanline` reads at check time\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
@@ -1427,11 +1431,13 @@ def main (args : List String) : IO UInt32 := do
   let stringMode := args.contains "--string"
   let sigsMode := args.contains "--sigs"
   let circuitMode := args.contains "--circuit"
+  let typeMode := args.contains "--type"
   let (frame, args) := takeOpt args "--frame"
   let (topRow, args) := takeOpt args "--top"
   let (scale, args) := takeOpt args "--scale"
   let args := args.filter (fun a =>
-    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--string" && a != "--circuit")
+    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--string" && a != "--circuit"
+      && a != "--type")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
@@ -1449,7 +1455,8 @@ def main (args : List String) : IO UInt32 := do
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
   -- Each route writes under its own directory: the three functors are three pictures of one name.
   let outDir := if stringMode then "diag/generated/string"
-    else if circuitMode then "diag/generated/circuit" else "diag/generated"
+    else if circuitMode then "diag/generated/circuit"
+    else if typeMode then "diag/generated/type" else "diag/generated"
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
@@ -1500,6 +1507,7 @@ def main (args : List String) : IO UInt32 := do
         else if stringMode then
           StrDiag.drawString base.toName side binder branch frame topRow scale sigsMode
         else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName side binder branch
+        else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
     -- and a bead whose naturality nobody proved has a message naming the three statements it
@@ -1510,7 +1518,7 @@ def main (args : List String) : IO UInt32 := do
       status := 1
     | .ok text =>
       if sigMode then IO.println text else if sigsMode then IO.print text else
-      let path := if stringMode || circuitMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
+      let path := if stringMode || circuitMode || typeMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
         else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString
