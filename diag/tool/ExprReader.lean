@@ -345,6 +345,54 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     s.restore; return none
   catch _ => s.restore; return none
 
+/-- The ARROW analogue of `peelWith?`: `e` as `F(r)` for the catalogue entry `n`, or `none`.  A
+    relator's action on arrows has a name of its own in the environment — `list R`, `existsImage R`
+    — and a picture must read those the way it reads `F.map R`, one wire running past a bead, or a
+    whole composite under `F` comes out as one bead nobody can slide anything past.  Asked by
+    `isDefEq` against `F.map ?r`, so every spelling of the action answers, and progress is required
+    for the same reason it is there: `idRelator.map` gives back `e` and peels nothing. -/
+def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
+    MetaM (Option (Expr × Expr)) := do
+  let some ci := (← getEnv).find? n | return none
+  let s ← Meta.saveState
+  try
+    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+    let (args, bis, concl) ← Meta.forallMetaTelescope
+      (ci.type.instantiateLevelParams ci.levelParams lvls)
+    let cargs := concl.getAppArgs
+    -- An ENDORELATOR of the region, both ends: the bead's own lanes are what runs past it, and a
+    -- wire out of another region has none of them to run on.
+    unless (← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy) do
+      s.restore; return none
+    for i in [0 : args.size] do
+      unless bis[i]! == .instImplicit do continue
+      let .mvar id := args[i]! | continue
+      if ← id.isAssigned then continue
+      let .some v ← Meta.trySynthInstance (← instantiateMVars (← id.getType))
+        | s.restore; return none
+      unless ← Meta.isDefEq args[i]! v do s.restore; return none
+    let R := mkAppN (mkConst n lvls) args
+    let (fR, _) ← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]
+    -- The functor is the FIRST explicit argument of the projection, so the application is built
+    -- with it already in place: an all-metavariable one cannot synthesise `Cat ?𝒞` and throws.
+    let x ← Meta.mkFreshExprMVar (some regionTy)
+    let y ← Meta.mkFreshExprMVar (some regionTy)
+    let r ← Meta.mkFreshExprMVar (some (← Meta.mkAppM ``Cat.Hom #[x, y]))
+    let app ← Meta.mkAppM ``Freyd.Functor.map #[fR, r]
+    unless ← Meta.isDefEq app e do s.restore; return none
+    let r ← instantiateMVars r
+    let R ← instantiateMVars R
+    if r.hasExprMVar || R.hasExprMVar then s.restore; return none
+    if objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
+    if ← Meta.isDefEq r e then s.restore; return none
+    return some (R, r)
+  catch _ => s.restore; return none
+
+/-- The first catalogue relator `e` is the action of, and the arrow underneath. -/
+def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
+    MetaM (Option (Expr × Expr)) :=
+  cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
+
 /-- An object peeled into its wire stack (outermost first) and the object underneath.
 
     A PRODUCT `A×Y` is the ONE lane `A×−` over the lanes of `Y`, whatever `A` is.  `×` is a functor

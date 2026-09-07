@@ -657,6 +657,13 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
       let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
       return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
+  -- A RELATOR'S ACTION IS THE `F.map` ROUTE WHATEVER IT IS SPELLED: `list (Λ(R) est(Q))` is that
+  -- composite drawn under the `list` wire, two beads, not one bead nobody can read the run inside
+  -- of.  Last, so a factor the reader already has a form for keeps it.
+  if let some (R, r) ← peelMap? cat objVars regionTy e then
+    let ws := (wiresOf R).map Wire.rel
+    let d ← interp regionTy cat objVars (vpass ++ ws) r
+    return ← (← Diagram.id ws d.otop).beside d
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
