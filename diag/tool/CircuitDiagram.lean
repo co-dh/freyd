@@ -94,11 +94,11 @@ partial def Obj.wires : Obj → Except String (Array Obj)
     let mut out := #[]
     for p in ps do out := out ++ (← p.wires)
     return out
-  | o@(.mk l .sum ps) => do
+  | o@(.mk _ .sum ps) => do
     let ss := ps.filter fun p => p.kind != .one
-    if h : ss.size = 1 then (ss[0]'(by omega)).wires
-    else throw s!"`{l}` sums {ss.size} summands besides `𝟏`: a case split, which only a tape \
-      draws — not a port's wires ({o.label})"
+    -- `𝟏+X` is not drawn, so its port is `X`'s strands.  A coproduct of two REAL summands stays
+    -- ONE wire at a port: the tape fork is what opens it, and a port is where none forks.
+    if h : ss.size = 1 then (ss[0]'(by omega)).wires else return #[o]
   | o@(.mk _ .opaq _) => return #[o]
 
 /-! ### Labels
@@ -213,6 +213,7 @@ def isNamed (e : Expr) : Bool :=
 def hasClause (e : Expr) : Bool :=
   match e.getAppFnArgs.1 with
   | ``Cat.comp | ``Cat.id | ``Freyd.Alg.Λ | ``Freyd.Alg.junc | ``Freyd.Alg.relCata
+  | ``Freyd.Alg.mu
   | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.Allegory.inter
   | ``Freyd.Alg.DistributiveAllegory.union | ``Freyd.Alg.RelSet.graph
   | ``Freyd.Alg.RelSet.rprodMap | ``Freyd.Alg.prodMap | ``Freyd.Functor.map => true
@@ -498,6 +499,12 @@ partial def draw (e : Expr) : MetaM Pic := do
   -- Nothing crosses the LEFT pair: the input arrives at them and the algebra's strands start
   -- inside, and that break IS the recursion.  The carrier labels the output wire only where it
   -- differs from that wire's own label; a product carrier is already drawn as its wires.
+  -- A least fixpoint is drawn by its BODY at the recursion variable: the note's `X` inside
+  -- `P(F(X)h)` IS that variable, so `μ` costs no box — the picture is the body's.
+  | (``Freyd.Alg.mu, args) =>
+    match args.back? with
+    | some φ => Meta.lambdaTelescope φ fun _ b => drawRun b
+    | none => leaf e src tgt
   | (``Freyd.Alg.relCata, args) =>
     match args.back? with
     | some r =>
